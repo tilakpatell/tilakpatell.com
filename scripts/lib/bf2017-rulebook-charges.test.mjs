@@ -63,6 +63,10 @@ describe('the fuel charges’ reader', () => {
   it('reads the keypad’s reach over the button’s own: 1 m on its 3× transform, from any side, one at a time, a let-go starting over', () => {
     expect(R.interact).toMatchObject({ distance: 1, scale: 3, angle: 360, facing: 360, one: true, keep: false });
     expect(R.interact.fast).toEqual({ factor: 0.5, abilities: [3290040204, 3157191067], _source: expect.stringMatching(/WSRemotePlayerAbilityState/) });
+    // (each value by its record's field, as the rulebooks' test reads a source: the keypad's into the button's, the multiplier's In1, the charge's facing)
+    expect(R.interact._source).toMatch(/^Gameplay\/GameModes\/Shared\/Interacts\/PF_Interact_Keypad#InterfaceDescriptorData field \S+ into \S+\.InteractionMaxDistance/);
+    expect(R.interact._source).toMatch(/PF_Interact_Button#TransformMultiplierEntityData\.\d+\.In1/);
+    expect(R.interact._source).toMatch(/PF_Interact_PlanetaryBattle_Bomb#InterfaceDescriptorData field \S+ into SelectFloatEntityData\.\d+/);
   });
 
   it('gives the arm to the core’s Team2 and the defuse to the other', () => {
@@ -106,6 +110,8 @@ describe('the fuel charges’ reader', () => {
     expect(Object.keys(rules)).toEqual(['PF_Interact_PlanetaryBattle_Bomb']);
     expect(rules.PF_Interact_PlanetaryBattle_Bomb.arm.hold).toBe(2);
     expect(rules.PF_Interact_PlanetaryBattle_Bomb.local.at[1]).toBeCloseTo(1.58, 2);
+    // (the keypad's place by the three BlueprintTransforms it is composed of)
+    expect(rules.PF_Interact_PlanetaryBattle_Bomb.local._source).toMatch(/^Gameplay\/GameModes\/Shared\/Interacts\/PF_Interact_PlanetaryBattle_Bomb#SpatialPrefabReferenceObjectData\.\d+\.BlueprintTransform × .+_Core#.+ × .+_Keypad#/);
   });
 
   it('lists a field the level wires into a charge that the rules are not read for', () => {

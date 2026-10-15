@@ -48,12 +48,12 @@
 //
 //   chargeRules(root, bomb) → { local, teams, interact, arm, defuse, fuse, live, settle, marker, _source } | null
 //   chargesOf(root, dir, sub) → { list: [{ id, name, at, yaw, label, charge, keypad, enabledBy, rules, unread?, win, _source }],
-//     rules: { [prefab]: chargeRules (local as { at, yaw }) } }: a charge's rules are its prefab's, kept once
+//     rules: { [prefab]: chargeRules (local as { at, yaw, _source }) } }: a charge's rules are its prefab's, kept once
 //     (the map row's `chargeRules`), as long as the level wires nothing into the charge but its locator, its
 //     Enabled and its ObjectiveName (any other field it sets is in the charge's `unread`)
 
 import { fieldHash as H } from './bf2017-abilities.mjs';
-import { follow, loadAsset, objectsOf, rootOf, shortName } from './bf2017-ebx.mjs';
+import { follow, loadAsset, rootOf, shortName } from './bf2017-ebx.mjs';
 import { graphOf } from './bf2017-rulebook-spawnlogic.mjs';
 
 const s32 = (h) => h | 0;
@@ -263,18 +263,27 @@ export function chargeRules(root, bomb) {
   const wi = U ? U.objects.findIndex((o) => o?.$type === 'WorldInteractionEntityData') : -1;
   if (wi < 0) return null;
   const W = U.objects[wi];
-  const mul = objectsOf(U, 'TransformMultiplierEntityData')[0];
+  const mulRef = typed(U, 'TransformMultiplierEntityData')[0];
+  const mul = U.objects[mulRef];
   const chain = `${B.name} → ${C.name} → ${K.name} → ${U.name}`;
 
   // the keypad's place in the charge: the core's own place in the charge, the keypad's in the core, the button's in the keypad
   const local = compose(compose(tf(B.objects[ci].BlueprintTransform), tf(C.objects[ki].BlueprintTransform)), tf(K.objects[bi].BlueprintTransform));
+  const placed = (A, i) => `${A.name}#${A.objects[i].$type}.${i}.BlueprintTransform`;
+  local._source = `${placed(B, ci)} × ${placed(C, ki)} × ${placed(K, bi)} (the core's place in the charge, the keypad's in the core, the button's in the keypad: at their trans, yaw their forward)`;
 
   // the reach: the keypad's values into the button's fields, else the button's own
   const kv = (field) => ifaceInto(K, bi, field)?.[0];
+  // (each value's record field: the keypad's interface field into the button's, else the button's own)
+  const kvSource = (name) => {
+    const v = ifaceInto(K, bi, H(name));
+    return v && v[0] != null ? `${K.name}#InterfaceDescriptorData field ${s32(v[1])} into ${K.objects[bi].$type}.${bi}.${name}` : `${U.name}#WorldInteractionEntityData.${wi}.${name}`;
+  };
   const distance = kv(H('InteractionMaxDistance')) ?? W.InteractionMaxDistance;
   const angle = kv(H('InteractionMaxAngle')) ?? W.InteractionMaxAngle;
   // (the facing: the charge's SelectFloat into the core's, as the charge's own CompareBool selects it)
   let facing = W.InteractionFacingMaxAngle;
+  let facingSource = `${U.name}#WorldInteractionEntityData.${wi}.InteractionFacingMaxAngle`;
   const facingSel = into(B, ci, H('InteractionFacingMaxAngle'))
     .map((c) => c.Source.$ref)
     .find((r) => B.objects[r]?.$type === 'SelectFloatEntityData');
@@ -284,7 +293,10 @@ export function chargeRules(root, bomb) {
     const want = bool?.[0] ? H('OnTrue') : H('OnFalse');
     const ev = evInto(B, facingSel).find((e) => e.Source.$ref === cmp?.Source.$ref && s32(e.SourceEvent.Id) === want);
     const v = ev ? ifaceInto(B, facingSel, ev.TargetEvent.Id) : null;
-    if (typeof v?.[0] === 'number') facing = v[0];
+    if (typeof v?.[0] === 'number') {
+      facing = v[0];
+      facingSource = `${B.name}#InterfaceDescriptorData field ${s32(v[1])} into SelectFloatEntityData.${facingSel} (its CompareBoolEntityData.${cmp.Source.$ref}'s branch) into ${B.objects[ci].$type}.${ci}.InteractionFacingMaxAngle`;
+    }
   }
   // (one at a time: the Bool on AllowMoreInteractors is set false when an interaction starts)
   const allow = into(U, wi, H('AllowMoreInteractors'))[0]?.Source.$ref;
@@ -388,7 +400,7 @@ export function chargeRules(root, bomb) {
       one,
       keep,
       ...(fast ? { fast } : {}),
-      _source: `${chain}: the keypad's InteractionMaxDistance and InteractionMaxAngle into the button's WorldInteractionEntityData (its own ${W.InteractionMaxDistance}, ${W.InteractionMaxAngle}); the button's TransformMultiplierEntityData.In1 (the interaction's Transform); the charge's SelectFloat into InteractionFacingMaxAngle; the Bool on AllowMoreInteractors set false on OnInteractStart; the button's CompareBools on ${BUTTON_KEEP_IF} resetting its StopWatch on OnInteractStart/Stop, the core's Not(${IS_BOMB}) into it`,
+      _source: `${kvSource('InteractionMaxDistance')} (distance), ${kvSource('InteractionMaxAngle')} (angle), over the button's own (${U.name}#WorldInteractionEntityData.${wi}.InteractionMaxDistance, .InteractionMaxAngle: ${W.InteractionMaxDistance}, ${W.InteractionMaxAngle}); ${U.name}#TransformMultiplierEntityData.${mulRef}.In1 (scale: its right's length, on the interaction's Transform); ${facingSource} (facing); the Bool on AllowMoreInteractors set false on OnInteractStart; the button's CompareBools on ${BUTTON_KEEP_IF} resetting its StopWatch on OnInteractStart/Stop, the core's Not(${IS_BOMB}) into it`,
     },
     arm: { hold: off?.value ?? null, by: 'attack', ...(off?.setting ? { setting: off.setting } : {}), _source: `${K.name}#ConditionalFloatEntityData.${condRef}.ValueIfFalse (the charge off) ← ${C.name}'s SelectFloat "Bomb: " ← ${off?._source ?? '?'}` },
     defuse: { hold: on?.value ?? null, by: 'defend', ...(on?.setting ? { setting: on.setting } : {}), _source: `${K.name}#ConditionalFloatEntityData.${condRef}.ValueIfTrue (armed: its EventSwitch on the button's Success) ← ${C.name}'s SelectFloat "Bomb: " ← ${on?._source ?? '?'}` },
@@ -458,6 +470,6 @@ export function chargesOf(root, dir, sub) {
   }
   // (each prefab's rules by its short name; the keypad's place in the charge as a point and a yaw)
   const shared = {};
-  for (const [bp, R] of rules) if (R) shared[shortName(bp)] = { ...R, local: { at: [R.local.t.x, R.local.t.y, R.local.t.z].map(r3), yaw: r3(yawOf(R.local.f)) } };
+  for (const [bp, R] of rules) if (R) shared[shortName(bp)] = { ...R, local: { at: [R.local.t.x, R.local.t.y, R.local.t.z].map(r3), yaw: r3(yawOf(R.local.f)), _source: R.local._source } };
   return { list: out.sort((a, b) => a.id.localeCompare(b.id)), rules: shared };
 }
