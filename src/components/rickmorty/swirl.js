@@ -2,10 +2,11 @@
 // GLSL, shared with the Three.js scenes) drawn on plain canvases through one
 // WebGL context for the whole page.
 //
-// createSwirl(canvas, { size, seed, onFail }) → { draw(t, open), dispose } or null
+// createSwirl(canvas, { size, seed, onFail }) → { draw(t, open) → painted, dispose } or null
 // runSwirl(canvas, { size, seed, open, calm, onFail }) → { stop } or null
 
 import { SWIRL_GLSL } from '../../lib/three/swirl';
+import { shownLoop } from '../../lib/shownLoop';
 
 export { SWIRL_GLSL };
 
@@ -42,7 +43,7 @@ function sharedGL() {
   let gl = null;
   try {
     // a full-screen triangle has no edges to smooth: no multisampling
-    gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false });
+    gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false, powerPreference: 'high-performance' });
   } catch {
     gl = null;
   }
@@ -118,12 +119,13 @@ export function createSwirl(canvas, { size = [0.34, 0.45], seed = 0, onFail } = 
       canvas.height = h;
     }
   };
+  // (true once a frame is painted: a still portal knows its frame is there)
   const draw = (t, open = 1) => {
-    if (gone) return;
+    if (gone) return false;
     const sw = sharedGL(); // a fresh one, should the last have been lost
     if (!sw || !linked(sw)) {
       if (!sw || sw.state === 'broken') onFail?.();
-      return;
+      return false;
     }
     fit();
     const { gl, u, canvas: src } = sw;
@@ -144,6 +146,7 @@ export function createSwirl(canvas, { size = [0.34, 0.45], seed = 0, onFail } = 
     // and copied over this one's last frame (WebGL's corner is the bottom left)
     ctx.globalCompositeOperation = 'copy';
     ctx.drawImage(src, 0, src.height - h, w, h, 0, 0, w, h);
+    return true;
   };
   const dispose = () => {
     if (gone) return;
@@ -154,27 +157,37 @@ export function createSwirl(canvas, { size = [0.34, 0.45], seed = 0, onFail } = 
 }
 
 // Run a portal on a canvas until stop(): only while it's on screen and the
-// tab is showing, one still frame for reduced motion. `open()` gives the
-// opening (0…1) for a frame, so a caller can snap it shut and swirl it open.
+// tab is showing (lib/shownLoop: out of view no frame is asked for at all),
+// one still frame for reduced motion, drawn again only when the opening or
+// the canvas's size changes. `open()` gives the opening (0…1) for a frame,
+// so a caller can snap it shut and swirl it open.
 export function runSwirl(canvas, { size, seed, open = () => 1, calm = false, onFail } = {}) {
   const s = createSwirl(canvas, { size, seed, onFail });
   if (!s) return null;
-  let raf = 0;
-  let visible = true;
-  const io = typeof IntersectionObserver !== 'undefined' ? new IntersectionObserver(([e]) => (visible = e.isIntersecting)) : null;
-  io?.observe(canvas);
   const t0 = performance.now();
+  // (the still frame's last drawing: the opening, the box and the pixel
+  // ratio it was drawn for; a 2D canvas whose context the browser restores
+  // comes back empty, so it is drawn again then)
+  let still = null;
+  const restored = () => (still = null);
+  canvas.addEventListener('contextrestored', restored);
   const frame = (now) => {
-    raf = requestAnimationFrame(frame);
-    if (!visible || document.hidden) return;
     const k = open(now);
-    s.draw(calm ? 3 : (now - t0) / 1000, k);
+    if (calm) {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      if (still && still.k === k && still.w === w && still.h === h && still.dpr === dpr) return;
+      if (s.draw(3, k)) still = { k, w, h, dpr };
+      return;
+    }
+    s.draw((now - t0) / 1000, k);
   };
-  raf = requestAnimationFrame(frame);
+  const loop = shownLoop(canvas, frame);
   return {
     stop() {
-      cancelAnimationFrame(raf);
-      io?.disconnect();
+      loop.stop();
+      canvas.removeEventListener('contextrestored', restored);
       s.dispose();
     },
   };

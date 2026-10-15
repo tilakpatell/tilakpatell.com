@@ -58,12 +58,19 @@ export const placeWidget = (el, { width, height }) => placeIn(el, { x: 0, y: 0, 
 // an element's box inside its parent's, at scale k (the viewport's shorter
 // side over the reference's 1080): anchored as the game anchors (the
 // element's own point at its anchor on the parent's), offset in the
-// reference's pixels; a PositionExpansion element from the parent's corner
+// reference's pixels; a PositionExpansion element from the parent's corner,
+// its size and position the ones it has at the parent's recorded size
+// (`parent.design`, reference pixels) and its expansion the share of the
+// parent's growth past that it takes (a Play tile's outline, recorded at
+// its 256 × 256 widget's size, grows round the 504 × 736 tile)
 export function placeIn(el, parent, k) {
   const [w, h] = (el.size ?? [0, 0]).map((v) => v * k);
   if (el.layout?.fill) {
-    const [px, py] = (el.layout.position ?? [0, 0]).map((v) => v * k);
-    return { x: parent.x + px, y: parent.y + py, w, h };
+    const [px, py] = el.layout.position ?? [0, 0];
+    const [ex, ey, ew, eh] = el.layout.expansion ?? [0, 0, 0, 0];
+    const gx = parent.design ? parent.w / k - parent.design[0] : 0;
+    const gy = parent.design ? parent.h / k - parent.design[1] : 0;
+    return { x: parent.x + (px + ex * gx) * k, y: parent.y + (py + ey * gy) * k, w: w + ew * gx * k, h: h + eh * gy * k };
   }
   const [ax, ay] = el.anchor ?? [0, 0];
   const [ox, oy] = (el.offset ?? [0, 0]).map((v) => v * k);

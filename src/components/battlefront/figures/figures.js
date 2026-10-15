@@ -65,6 +65,7 @@ import { faceAlongZ } from './facing.js';
 import { createHeld, heldOf } from './held.js';
 import { CROSSFADE, LOCO_STATES, clipSpeed, locoBlend, locoClips, packClip, packFallback, relAngle, stateFor, timeAt } from './locomotion.js';
 import { strideOf } from './stride.js';
+import { skinBodies } from '../../../lib/bf2017/collection.js';
 
 export const SIDE_OF_TEAM = { 1: 'light', 2: 'dark' };
 export const KINDS = { dark: 'snowtrooper', light: 'hothtrooper' };
@@ -82,12 +83,20 @@ export const BODIES = {
   wookiee: { url: crew('wookiee'), cuts: { lod: true, full: true, fullMB: 34, fullDL: 19 } },
   ...Object.fromEntries(['luke', 'leia', 'han', 'chewie', 'lando', 'obiwan', 'anakin', 'bobafett', 'bossk', 'vader', 'palpatine', 'maul', 'dooku'].map((k) => [k, { url: crew(k), pack: k }])),
 };
+// A skin's own body, for each crew kind the Collection's skins wear that the
+// table has no row of (lib/bf2017/collection.js's skinBodies): a hero's look
+// on its hero's clips, cut as the hero is; a trooper's on its light cuts
+// alone (its .lod1 and .far are in the site; its full cut's share of the
+// ledger is not measured yet, so it is not asked for).
+for (const { kind, pack } of skinBodies()) BODIES[kind] ??= pack ? { url: crew(kind), pack } : { url: crew(kind), cuts: { lod: true, far: true } };
 // The body a deployed unit wears: the rulebook's hero or reinforcement id
 // (sim.js's unitId) to its kind; a unit with none here yet (Yoda, Iden,
 // Grievous, the jump troopers, the ISB agent, the Ewok on its own rig) and
 // every class wear their side's trooper
 export const UNIT_KINDS = { luke: 'luke', leia: 'leia', hansolo: 'han', chewbacca: 'chewie', lando: 'lando', obiwan: 'obiwan', anakin: 'anakin', bobafett: 'bobafett', bossk: 'bossk', darthvader: 'vader', emperor: 'palpatine', maul: 'maul', dooku: 'dooku', DeathTrooper: 'deathtrooper', WookieWarrior: 'wookiee' };
-export const kindOf = (e, kinds = KINDS) => UNIT_KINDS[e.unitId] ?? kinds[SIDE_OF_TEAM[e.team]] ?? kinds.dark;
+// (first the skin picked in the Collection, `appearance` on the view's row: sim.js carries it from the deploy; one
+// with no body here is passed over)
+export const kindOf = (e, kinds = KINDS) => (e.appearance && BODIES[e.appearance] ? e.appearance : null) ?? UNIT_KINDS[e.unitId] ?? kinds[SIDE_OF_TEAM[e.team]] ?? kinds.dark;
 export const figureCuts = ({ level, lowData = false }) => ({ of: (kind) => BODIES[kind]?.cuts ?? null, level, lowData, load: (url) => loadGLTF(url) });
 // The near cut a kind's figures will want, fetched ahead (the waiting
 // screen's minute: the player otherwise deployed on the light cut and the

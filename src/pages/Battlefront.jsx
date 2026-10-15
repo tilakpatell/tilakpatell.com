@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import BattlefrontWorld from '../components/battlefront/BattlefrontWorld.jsx';
-import { LEVEL_MODES, LEVELS, MODES, firstModeOf, routeFor, wayBack } from '../components/battlefront';
+import { LEVEL_MODES, LEVELS, MODES, firstModeOf, menuRouteFor, routeFor, wayBack } from '../components/battlefront';
 import { useDocumentTitle } from '../lib/hooks';
 
 // The game's own front end (its Start, main menu and Play screens), loaded
@@ -23,7 +23,7 @@ export default function Battlefront() {
   const navigate = useNavigate();
   // (the address's knobs, ?gpu= and ?post=, go on with the player into the
   // battle, and so does where they came from: a galaxy world's ?from=)
-  const { search } = useLocation();
+  const { search, state } = useLocation();
   const back = wayBack(search);
   useDocumentTitle(level ? 'Battlefront · Hoth' : 'Battlefront');
   if (!level)
@@ -31,7 +31,8 @@ export default function Battlefront() {
       <main className="bf-page">
         <h1 className="sr-only">Star Wars Battlefront II</h1>
         <Suspense fallback={null}>
-          <FrontEnd playable={playable} onPlay={(l, m) => navigate(`${routeFor(l, m)}${search}`)} />
+          {/* (a round set up here, with no world behind: the level's page begins it, the options handed on with the move) */}
+          <FrontEnd playable={playable} onPlay={(l, m, options) => (options ? navigate(`${menuRouteFor(l)}${search}`, { state: { round: options } }) : navigate(`${routeFor(l, m)}${search}`))} />
         </Suspense>
       </main>
     );
@@ -40,7 +41,7 @@ export default function Battlefront() {
     return (
       <main className="bf-page">
         <h1 className="sr-only">Star Wars Battlefront II</h1>
-        <BattlefrontWorld level={level} mode={firstModeOf(level)} menu back={back} playable={playable} onOther={(l, m) => navigate(`${routeFor(l, m)}${search}`)} />
+        <BattlefrontWorld level={level} mode={firstModeOf(level)} menu back={back} playable={playable} round={state?.round ?? null} onOther={(l, m) => navigate(`${routeFor(l, m)}${search}`)} />
       </main>
     );
   if (!playable(level, mode)) return <Navigate to={routeFor()} replace />;

@@ -13,6 +13,7 @@
 import * as THREE from 'three';
 import { createMeshyCast } from '../portal/meshyCast';
 import { pixelRatio } from '../../../lib/device';
+import { shownLoop } from '../../../lib/shownLoop';
 import { quiet, releaseContext } from '../../../lib/three/renderer';
 import { BODIES, castOf, gearWorn } from './looks';
 import { dressColors } from './dress';
@@ -23,13 +24,18 @@ const ALL = Object.values(BODIES).flat();
 const KINDS = Object.fromEntries(ALL.map((b) => [b.id, { a: b.asset, h: b.h }]));
 const RIGGED = new Set(ALL.map((b) => b.asset));
 const TALL = 1.7; // (every body shown the same height, so the gear's what changes)
+// a turntable turning slowly is drawn at most this often (the hangar's
+// rate, universe/shipyard/showroomRules), and at the display's own while it
+// is dragged: drawn on every beat of a 144 Hz screen, a small figure turning
+// cost a second GL context's work 144 times a second
+const FPS = 30;
 // each cast’s studio: the disc, its ring, the light from behind
 const STUDIO = { rickmorty: { base: 0x2a2234, ring: 0x97ce4c, rim: 0x9dff5a }, breakingbad: { base: 0x3b2c22, ring: 0x5fc8ef, rim: 0xffc27a } };
 
 export function createWardrobePreview(canvas, { reduced = false } = {}) {
   let renderer;
   try {
-    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }));
+    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }));
   } catch {
     return null;
   }
@@ -94,6 +100,9 @@ export function createWardrobePreview(canvas, { reduced = false } = {}) {
     camera.position.set(0, 1.0, dist);
     camera.lookAt(0, 0.86, 0);
     camera.updateProjectionMatrix();
+    // (a new size clears the drawing buffer: drawn again at once, not at the
+    // loop's next 30th of a second, which left it blank a few beats)
+    renderer.render(scene, camera);
   };
   fit();
   const sizing = new ResizeObserver(fit);
@@ -119,11 +128,13 @@ export function createWardrobePreview(canvas, { reduced = false } = {}) {
   canvas.addEventListener('pointerup', up);
   canvas.addEventListener('pointercancel', up);
 
-  let raf = 0;
+  // (drawn only while the canvas is in view and the tab showing,
+  // lib/shownLoop: a closed or scrolled-away wardrobe draws nothing; at FPS
+  // unless dragged)
   let last = performance.now();
   const t0 = last;
   const frame = (now) => {
-    raf = requestAnimationFrame(frame);
+    if (!drag && now - last < 1000 / FPS - 1) return;
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     yaw += spin * dt;
@@ -131,7 +142,7 @@ export function createWardrobePreview(canvas, { reduced = false } = {}) {
     figure?.update?.((now - t0) / 1000, 0, 0);
     renderer.render(scene, camera);
   };
-  raf = requestAnimationFrame(frame);
+  const loop = shownLoop(canvas, frame);
 
   return {
     async show(look) {
@@ -168,7 +179,7 @@ export function createWardrobePreview(canvas, { reduced = false } = {}) {
       if (changed && !reduced) wave();
     },
     dispose() {
-      cancelAnimationFrame(raf);
+      loop.stop();
       sizing.disconnect();
       canvas.removeEventListener('pointerdown', down);
       canvas.removeEventListener('pointermove', move);

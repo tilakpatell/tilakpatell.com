@@ -24,6 +24,7 @@ await ctx.addInitScript(([q, intro]) => {
   window.localStorage.setItem('tp-intro', '1');
   window.localStorage.setItem('tp-3d', '"on"');
   window.localStorage.setItem('tp-worlds', '"load"');
+  window.localStorage.setItem('tp-software', '"on"'); // (past the Star Wars worlds' GPU gate, lib/fit)
   window.localStorage.setItem('tp-quality', JSON.stringify(q));
   // (a first visit drops him in from the sky: INTRO=1 to see it, otherwise he's already on the lawn)
   if (intro) window.localStorage.removeItem('tp-inv-world-at');

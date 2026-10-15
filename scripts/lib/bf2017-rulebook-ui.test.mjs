@@ -68,7 +68,15 @@ describe('the screens', () => {
     const field = Object.keys(cells.Play.binds)[0];
     expect(cell.slots[field]).toContain('MenuText');
     expect(book.strings.ID_MAINMENU_SCR_PLAY).toBe('PLAY');
-    expect(book._missing).toContain('widget: UI/Frontend/Widgets/Breadcrumbs/BreadcrumbWidget');
+    expect(book._missing).not.toContain('widget: UI/Frontend/Widgets/Breadcrumbs/BreadcrumbWidget');
+  });
+
+  it('keeps a dynamic list’s cell template, its cell size and direction, and reads the template as a widget', () => {
+    const byId = (els, id) => els.reduce((hit, e) => hit ?? (e.id === id ? e : byId(e.children ?? [], id)), null);
+    const crumbs = book.widgets['UI/Frontend/Widgets/Breadcrumbs/BreadcrumbWidget'];
+    const list = byId(crumbs.elements, 'BreadcrumbList');
+    expect(list.dynamic).toEqual({ template: 'UI/Frontend/Widgets/Breadcrumbs/BreadcrumbListCell', cellSize: [200, 32], spacing: 0, horizontal: true, sized: true });
+    expect(book.widgets['UI/Frontend/Widgets/Breadcrumbs/BreadcrumbListCell']).toBeTruthy();
   });
 
   it('pairs a link with the screen of its name', () => {
@@ -129,6 +137,25 @@ describe('the screens', () => {
     expect(b.screens[name].elements.map((e) => e.id)).toEqual(['Title']);
     expect(b.screens[name].elements[0].text).toBe('#1234ABCD');
     expect(b._skipped).toEqual(['S1/UI/Frontend/Widgets/KyloRen/KyloRenCard']);
+  });
+});
+
+describe('the textures, the blends and the padding', () => {
+  const byId = (els, id) => els.reduce((hit, e) => hit ?? (e.id === id ? e : byId(e.children ?? [], id)), null);
+  it('keeps a texture box’s picture: its Id, the TextureRef its widget’s mapping gives it, its UV and its fit', () => {
+    const book = screensOf(ROOT, { names: ['UI/Frontend/Screens/StartFlow/PairingScreen'], strings: STRINGS });
+    const bg = byId(book.screens['UI/Frontend/Screens/StartFlow/PairingScreen'].elements, 'Background');
+    expect(bg.texture).toEqual({ id: 2069381427, ref: '3D80EC7618F789C7', uv: [0, 0, 1, 1], align: 'stretch' });
+  });
+
+  it('keeps a film drawn additive, and a padded container’s padding', () => {
+    const book = screensOf(ROOT, { names: ['UI/Frontend/Widgets/Play/PlayTile'], strings: STRINGS });
+    const tile = book.screens['UI/Frontend/Widgets/Play/PlayTile'];
+    expect(byId(tile.elements, 'Texts').padding).toEqual([30, 0, 30, 0]);
+    const video = book.widgets['UI/Frontend/Widgets/Play/PlayTileVideoWidget'];
+    expect(byId(video.elements, 'Video').blend).toBe('additive');
+    // (alpha blend is the default, and is not written)
+    expect(byId(tile.elements, 'Title').blend).toBeUndefined();
   });
 });
 

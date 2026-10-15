@@ -15,7 +15,7 @@
 //   portraitOf(id, faction) → its portrait's url (a class's by faction), or null; iconKey(svgAsset)
 //   picksOf(store, id, { faction }) → { faction, skin, pose, cards, emotes, voiceLines } with the game's defaults
 //   pick(store, id, field, value, { faction }) → the store with that pick (a slot field toggled, SLOTS at most)
-//   appearanceOf(store, id, { faction }) → the crew kind the pick wears in the field, or null
+//   appearanceOf(store, id, { faction }) → the crew kind a picked skin wears in the field, or null (nothing picked, or the default appearance)
 //   characterOfOffer(offer) → { id, faction } | null: a deploy offer's character
 //   label(name) → one of the screens' run-time words (EQUIP STAR CARDS, REINFORCEMENTS …)
 //   readStore(storage), writeStore(storage, store): `bf-collection`, never throwing
@@ -37,7 +37,7 @@ export const FACTION_NAMES = { rebel: 'REBEL ALLIANCE', empire: 'GALACTIC EMPIRE
 export const PACKS = { luke: 'luke', leia: 'leia', hansolo: 'han', chewbacca: 'chewie', lando: 'lando', obiwan: 'obiwan', anakin: 'anakin', bobafett: 'bobafett', bossk: 'bossk', darthvader: 'vader', emperor: 'palpatine', maul: 'maul', dooku: 'dooku' };
 export const CREW_DIR = '/models/galaxy/bf2017/crew';
 // each one's portrait (UI/Bitmaps/Portraits/Portrait_<name>), a class's by faction
-export const PORTRAITS = { luke: 'LukeSkywalker', leia: 'LeiaOrgana', hansolo: 'HanSolo', chewbacca: 'Chewbacca', lando: 'LandoCalrissian', yoda: 'Yoda', obiwan: 'ObiWan', anakin: 'Anakin', darthvader: 'DarthVader', emperor: 'Palpatine', bobafett: 'BobaFett', bossk: 'Bossk', iden: 'IdenVersio', maul: 'DarthMaul', dooku: 'Dooku', grievous: 'Grievous', ARC: 'ARCTrooper', BX: 'BXCommando', CloneCommando: 'CloneCommando', CloneJumpTrooper: 'CloneJetTrooper', Droideka: 'Droideka', WookieWarrior: 'WookieWarrior' };
+export const PORTRAITS = { luke: 'LukeSkywalker', leia: 'LeiaOrgana', hansolo: 'HanSolo', chewbacca: 'Chewbacca', lando: 'LandoCalrissian', yoda: 'Yoda', obiwan: 'ObiWan', anakin: 'Anakin', darthvader: 'DarthVader', emperor: 'Palpatine', bobafett: 'BobaFett', bossk: 'Bossk', iden: 'IdenVersio', maul: 'DarthMaul', dooku: 'Dooku', grievous: 'Grievous', ARC: 'ARCTrooper', BX: 'BXCommando', CloneCommando: 'CloneCommando', CloneJumpTrooper: 'CloneJetTrooper', Droideka: 'Droideka', WookieWarrior: 'WookieWarrior', DeathTrooper: 'Deathtrooper', RebelJumpTrooper: 'RebelRocketJumper', EwokRebel: 'Ewok', ISBAgent: 'ISB_Agent' }; // (the last four: the rulebook's reinforcements the Collection has no row of; the Imperial jump trooper has no portrait in the game)
 const FACTION_PORTRAITS = { rebel: 'TH_RebelDuros', empire: 'TH_ImperialOfficer', republic: 'TH_Phase2_SpecialistClone', cis: 'TH_SeparatistDroid' };
 export const portraitOf = (id, faction = null) => portrait(C[id]?.kind === 'trooper' ? FACTION_PORTRAITS[faction ?? factionsOf(id)[0]] : PORTRAITS[id]);
 // an icon's name in the sprites (the last two parts of its SvgImage's)
@@ -158,9 +158,13 @@ export function pick(store, id, field, value, { faction = null } = {}) {
   return { ...(store ?? {}), [key]: { ...was, [field]: next } };
 }
 
+// (only a skin that was picked, and not the first: the default appearance is
+// what the level gives a class, the snowtrooper on Hoth, and a hero's own body)
 export function appearanceOf(store, id, { faction = null } = {}) {
   const p = picksOf(store, id, { faction });
-  const s = p.skin ? skinRow(p.skin) : null;
+  const kept = store?.[keyOf(id, p.faction)]?.skin ?? null;
+  if (!kept || kept !== p.skin || kept === skinsFor(id, { faction: p.faction })[0]?.id) return null;
+  const s = skinRow(kept);
   return s?.body ?? s?.stand ?? null;
 }
 
@@ -195,4 +199,15 @@ export function writeStore(storage, store) {
   } catch {
     return false;
   }
+}
+
+// The bodies the skins wear (a skin's `body`, its crew kind), each once: a
+// hero's look with its hero's own clip pack, a trooper's or a
+// reinforcement's with none. The Battlefront world's figures keep a row a
+// kind from this (figures/figures.js's BODIES), so a skin picked here is
+// the body that is drawn.
+export function skinBodies() {
+  const seen = new Map();
+  for (const s of Object.values(BOOK.skins)) if (s.body && !seen.has(s.body)) seen.set(s.body, { kind: s.body, pack: PACKS[s.of] ?? null });
+  return [...seen.values()];
 }

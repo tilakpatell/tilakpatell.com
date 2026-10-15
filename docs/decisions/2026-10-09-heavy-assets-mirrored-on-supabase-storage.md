@@ -1,6 +1,6 @@
 # The heavy assets are mirrored on Supabase Storage; the site stays whole
 
-Date: 2026-10-09. The plan: `docs/superpowers/plans/2026-10-09-asset-hosting.md`; where it is left: `docs/superpowers/HANDOFF-planet-flight.md` (lane I).
+Date: 2026-10-09. The plan: `docs/superpowers/plans/2026-10-09-asset-hosting.md`; where it is left: `docs/superpowers/HANDOFF-galaxy.md` (lane I).
 
 ## Context
 
@@ -18,6 +18,8 @@ The files a pack names under the listed folders, of a heavy kind and 64 KB or mo
 - The free tier (1 GB stored, about 5 GB out a month) holds the set but not the site's traffic: Pro before `ASSET_BASE` is set for everyone.
 
 - 2026-10-10 (lane S, `docs/decisions/2026-10-10-battlefront-2017-assets.md`): the bucket is `site-assets` (`assets` was never made), shared with the game-derived files; `src/data/galaxyAssets.json` holds those remote-only entries (manifest committed, files not), the build merges it with this manifest into the one the loaders read, and `--prune` spares what it names.
+
+- 2026-10-15: the month’s cached egress reached 387 GB of the 250 included, and the arithmetic named the deploy, not the visitors: `scripts/assets-check.mjs` asked one byte of all 77,545 published files at every deploy, and 28 deploys of the bucket’s 13.8 GB is that sum. The deploy now asks only what the manifests gained or changed since the last deploy that went out (`--since`), and never reads an answer’s body (`scripts/lib/pool.mjs`’s `peek`). Nothing automated walks the whole bucket again; if the chart stays high after this, the R2 hedge below is next.
 
 ## Revisit when
 

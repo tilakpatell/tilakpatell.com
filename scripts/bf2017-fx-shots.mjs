@@ -29,6 +29,7 @@ await ctx.addInitScript(() => {
   window.localStorage.setItem('tp-universe-ship', JSON.stringify('xwing'));
   window.localStorage.setItem('tp-galaxy-panel', JSON.stringify('tucked'));
   window.localStorage.setItem('tp-worlds', JSON.stringify('load'));
+  window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
 });
 const page = await ctx.newPage();
 // (a heavy world draws a frame in tens of seconds in software GL)

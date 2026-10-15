@@ -368,6 +368,13 @@
         384
       ]
     },
+    "UI/Bitmaps/Frontend/4k_KeyArtPairingScreen": {
+      "path": "ui/bf2017/bitmaps/frontend-4k-keyartpairingscreen.webp",
+      "size": [
+        2048,
+        2048
+      ]
+    },
     "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/BobaFett/BobaFett_Card_01_Mid": {
       "path": "ui/bf2017/bitmaps/bobafett-bobafett-card-01-mid.webp",
       "size": [
@@ -1122,6 +1129,34 @@
       "size": [
         448,
         560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Tiles/Backup-Arcade": {
+      "path": "ui/bf2017/bitmaps/tiles-backup-arcade.webp",
+      "size": [
+        576,
+        240
+      ]
+    },
+    "UI/Bitmaps/Frontend/Tiles/Backup-Campaign": {
+      "path": "ui/bf2017/bitmaps/tiles-backup-campaign.webp",
+      "size": [
+        576,
+        480
+      ]
+    },
+    "UI/Bitmaps/Frontend/Tiles/Backup-Connect": {
+      "path": "ui/bf2017/bitmaps/tiles-backup-connect.webp",
+      "size": [
+        576,
+        240
+      ]
+    },
+    "UI/Bitmaps/Frontend/Tiles/Starfighter_small": {
+      "path": "ui/bf2017/bitmaps/tiles-starfighter-small.webp",
+      "size": [
+        576,
+        240
       ]
     },
     "UI/Bitmaps/GameModeTiles/ExpoMask": {

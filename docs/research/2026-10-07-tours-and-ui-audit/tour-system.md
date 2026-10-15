@@ -2,7 +2,7 @@
 
 A map of what is in the repo today (`/home/user/new-portfolio-website`, HEAD d2cb3535, 2026-10-07), written so an architect can extend it into three audience-specific site-wide tours (recruiter, player, mixed) without re-reading the code. Every path is relative to the repo root; `file:line` points at the line that makes the claim.
 
-The design the current code follows is `docs/superpowers/specs/2026-10-07-site-tour-design.md` (38 lines) and its handoff `docs/superpowers/HANDOFF-site-tour.md` (25 lines). The architecture notes for the tour and the guide are `docs/architecture.md:16-17`. The last commits touching the tour are `a3cf3f77` (the tour), `e7d2d3e9` (each world's basics), `a2489b4b` (the map's first-flight basics), `010c594e` (stops kept with the run they loaded for), `3640245e` (basics module moved beside the tour) and `39f85d34` (Minecraft's basics).
+The design the current code follows is `docs/superpowers/specs/2026-10-07-site-tour-design.md` (38 lines) and its handoff `docs/superpowers/HANDOFF-universe.md` (25 lines). The architecture notes for the tour and the guide are `docs/architecture.md:16-17`. The last commits touching the tour are `a3cf3f77` (the tour), `e7d2d3e9` (each world's basics), `a2489b4b` (the map's first-flight basics), `010c594e` (stops kept with the run they loaded for), `3640245e` (basics module moved beside the tour) and `39f85d34` (Minecraft's basics).
 
 There are three things that share the same cards:
 
@@ -279,7 +279,7 @@ No. Concretely:
   - `src/components/tour/brief.test.js`: every world in `WORLDS` has a brief key (`:7-9`); deeper paths share one (`:11-17`); the site's pages, the map and a mission briefing have none (`:19-21`); `ASKED` keys never resolve by path (`:23-25`); `BRIEFED` keys resolve to themselves (`:27-29`); `briefHere` once per world and never for `webdriver` (`:32-45`); `sawBrief` keeps 60 (`:47-52`).
   - `src/components/tour/briefs.test.js`: `BRIEFS` keys equal `[...BRIEFED, ...ASKED]` (`:24-26`); every nudged guide page has a brief (`:28-30`); first stop has no `at`/`keys`/`touch`, last stop's `at === 'guide'` and text contains `?` (`:32-39`); 3 to 6 stops, unique ids, text > 20 (`:41-51`); at least one stop with `keys` and one with `touch` (`:53-58`); each row has ≤ 5 entries, 2 cells, parses to a key, a description > 1 char (`:60-71`); every `at` is marked (`:73-76`); `rowsFor` picks per device (`:78-84`).
   - `src/components/guide/pages.test.js` and `keys.test.js` as in section 6; `src/lib/restart.test.js:15-18` checks `VISIT_KEYS` includes `tp-tour`.
-- The handoff's command: `npx vitest run src/lib/tour.test.js src/components/tour/brief.test.js src/components/tour` (`docs/superpowers/HANDOFF-site-tour.md:25`).
+- The handoff's command: `npx vitest run src/lib/tour.test.js src/components/tour/brief.test.js src/components/tour` (`docs/superpowers/HANDOFF-universe.md:25`).
 - Browser checks are Playwright scripts, not tests: `scripts/autopilot-check.mjs:164-167` seeds `tp-intro`, `tp-start` and `tp-quality` so the intro and the choice are skipped; the offer would still show on those routes after 2.4 s unless the script also seeds `tp-tour`; briefs are suppressed by `navigator.webdriver` (`brief.js:49-50`).
 
 ---

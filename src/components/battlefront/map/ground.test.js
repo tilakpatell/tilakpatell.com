@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { imageLayerFrom } from '../../../lib/land/layers.js';
 import { mapsFor } from '../../../lib/three/ground/snow.js';
-import { SNOW_BASE, SNOW_MAPS, SNOW_ROLES } from '../../../lib/three/ground/snowMaps.js';
-import { FAR_DROP, LAND_QUIET, LAND_UNDER, PATCH_M, PATCH_MOVE, PATCH_UNDER, buildGround, canAsk, needsPatch, patchOrigin } from './ground.js';
+import { SNOW_FILES, SNOW_KIND } from '../../../lib/three/ground/snowMaps.js';
+import { FAR_DROP, LAND_QUIET, LAND_UNDER, NEAR_STEP, PATCH_M, PATCH_MOVE, PATCH_UNDER, buildGround, canAsk, maskFrames, nearStep, needsPatch, patchOrigin } from './ground.js';
 
 // (the transcoder is the browser's: here a map's bytes parse to a bare texture)
 vi.mock('../../../lib/three/gltf.js', () => ({
@@ -16,7 +16,20 @@ const layer = imageLayerFrom({ heightScale: 1024, heightOffset: 0, holePixels: 0
 const terrain = { near: { min: [-4, -4], size: [9, 9], metresPerPixel: 1 }, far: { min: [-16, -16], size: [9, 9], metresPerPixel: 4 } };
 const renderer = { isWebGPURenderer: true, getMaxAnisotropy: () => 16 };
 // the pack's rows as the import writes them
-const rows = Object.fromEntries(Object.entries(SNOW_MAPS).map(([slug, m]) => [slug, { ...m.sizes, srgb: Boolean(m.srgb) }]));
+const rows = {
+  ...Object.fromEntries(Object.entries(SNOW_FILES).map(([slug, m]) => [slug, { ...m.sizes, srgb: Boolean(m.srgb) }])),
+  masks: { mid: 352, high: 704, ultra: 1408, srgb: false },
+};
+// level.json's terrain.masks as the masks script writes it (its two frames)
+const masks = {
+  tex: 'terrain/masks.ktx2',
+  size: [1408, 2304],
+  frames: {
+    near: { corner: [-397, -380], metresPerPixel: 0.5, layers: [0, 1] },
+    far: { corner: [-1229, -1020], metresPerPixel: 2, layers: [2, 3] },
+  },
+};
+const origin = [205, 362.296875, -1540];
 // a site that has the files whose path passes `has`, and a 404 for the rest
 const site = (has) => {
   const asked = [];
@@ -53,6 +66,17 @@ describe('what may be asked for', () => {
   });
   it('a development checkout’s own copy', () => {
     expect(canAsk(url, row, { dev: true, remote: (u) => u })).toBe(true);
+  });
+});
+
+describe('the mask frames', () => {
+  it('lays each frame in the game’s frame, finest first; low reads none', () => {
+    expect(maskFrames(masks, origin, 'ultra')).toEqual([
+      { name: 'near', layers: [0, 1], corner: [-192, -1920], extent: [704, 1152] },
+      { name: 'far', layers: [2, 3], corner: [-1024, -2560], extent: [2816, 4608] },
+    ]);
+    expect(maskFrames(masks, origin, 'low')).toEqual([]);
+    expect(maskFrames(undefined, origin, 'ultra')).toEqual([]);
   });
 });
 
@@ -94,11 +118,11 @@ describe('the snow’s landing', () => {
   it('a pack that lists the maps and a site without them: every miss quiet, the flat colour kept', async () => {
     const asked = site(() => false);
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const g = buildGround(layer, terrain, { world: 'hoth', pack: { tex: rows }, tier: 'ultra', renderer });
+    const g = buildGround(layer, terrain, { world: 'hoth', pack: { tex: rows, terrain: { masks }, origin }, tier: 'ultra', renderer });
     g.update([0, 0]);
     await expect(g.ready).resolves.toBeNull();
-    // (each map asked for, of the bucket first where the manifest names it, then of the site)
-    expect(new Set(asked.map((u) => u.split('/tex/').pop())).size).toBe(mapsFor('ultra').length);
+    // (each file asked for, of the bucket first where the manifest names it, then of the site: the maps and the mask array)
+    expect(new Set(asked.map((u) => u.split('/').pop())).size).toBe(mapsFor('ultra').length + 1);
     expect(warn).not.toHaveBeenCalled();
     for (const name of ['near', 'far', 'patch']) {
       expect(g.getObjectByName(`ground:${name}`).material.isNodeMaterial, name).toBeFalsy();
@@ -107,8 +131,8 @@ describe('the snow’s landing', () => {
     warn.mockRestore();
     g.dispose();
   });
-  it('the sparkle alone there (the bucket today): no snow without the 4 m map', async () => {
-    site((url) => url.includes(SNOW_ROLES.sparkle));
+  it('the flow map alone there (the bucket before the arrays): no snow without the normals', async () => {
+    site((url) => url.includes(SNOW_KIND.flow));
     const g = buildGround(layer, terrain, { world: 'hoth', pack: { tex: rows }, tier: 'high', renderer });
     await expect(g.ready).resolves.toBeNull();
     expect(g.getObjectByName('ground:near').material.isNodeMaterial).toBeFalsy();
@@ -116,11 +140,13 @@ describe('the snow’s landing', () => {
   });
   it('the maps there: the snow is laid over the flat ground, which goes once nothing has been building', async () => {
     const asked = site(() => true);
-    const g = buildGround(layer, terrain, { world: 'hoth', pack: { tex: rows }, tier: 'ultra', renderer });
+    const g = buildGround(layer, terrain, { world: 'hoth', pack: { tex: rows, terrain: { masks }, origin }, tier: 'ultra', renderer });
     g.update([0, 0]);
     const built = await g.ready;
     expect(built.near.flat).toBe(false);
-    expect(asked.some((u) => u.endsWith(`tex/${SNOW_BASE}.2048.ktx2`))).toBe(true);
+    expect(built.near.samples.mask).toBe(4);
+    expect(asked.some((u) => u.endsWith(`tex/${SNOW_KIND.normals}.2048.ktx2`))).toBe(true);
+    expect(asked.filter((u) => u.endsWith('terrain/masks.1408.ktx2'))).toHaveLength(1);
     for (const name of ['near', 'far', 'patch']) {
       const snow = g.getObjectByName(`ground:${name}`);
       const was = g.getObjectByName(`ground:${name}:flat`);
@@ -164,5 +190,15 @@ describe('the snow’s landing', () => {
     for (let i = 0; i < LAND_QUIET; i++) g.update([0, 0]);
     expect(g.getObjectByName('ground:near:flat')).toBeFalsy();
     g.dispose();
+  });
+});
+
+// (Low is the floor: the near grid at 8 m, a quarter of the 4 m grid's
+// 0.82 M triangles over Hoth's near map, the most of Low's frame)
+describe('the near grid’s spacing by tier', () => {
+  it('is 8 m at Low and 4 m above it', () => {
+    expect(NEAR_STEP).toBe(4);
+    expect(nearStep('low')).toBe(8);
+    for (const t of ['mid', 'high', 'ultra']) expect(nearStep(t)).toBe(4);
   });
 });

@@ -16,4 +16,5 @@ export { default as EndOfRound } from './EndOfRound.jsx';
 export { default as KillScreen } from './KillScreen.jsx';
 export { default as Scoreboard } from './Scoreboard.jsx';
 export { default as FrontEnd } from './FrontEnd.jsx';
+export { default as InstantAction } from './InstantAction.jsx';
 export { default as Collection } from './Collection.jsx';

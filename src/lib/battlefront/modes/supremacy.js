@@ -7,8 +7,17 @@
 // the ground. The capital ships' half (the boarding, PF_DestroyableObjective
 // _Venator) is not played: `gaps` says so. Pure.
 //
+// A post has spawn points of its own: the level's neutral ones standing on
+// it (`AlternateSpawnEntityData` of team 0, Hoth's six a post, all of
+// priority 9 where a side's first places are 1). The side that holds the
+// post comes back in on them, by the spawn's own rule (spawn.js: the
+// highest priority that is safe). By hand: that a neutral point is a post's
+// when it stands inside the post's reach; the level's other neutral points,
+// 40 to 80 m from any post, are left out, whose they are not being read.
+//
 //   createMode({ rulebook, level, map }) → m
 //   tick(m, dt, world)   onEvent(m, e)   view(m)   force(m)   and round.js's sideOf, teamOf, spawnSets, walkersOf, canRespawn
+//   postSpawns(m, side) → [spawn point]   (the points of the posts the side holds)
 
 import { mapOf } from '../rulebook.js';
 import { ADVANTAGE_MAX } from './objectives.js';
@@ -16,6 +25,8 @@ import { STAGE_SETUP } from './galacticAssault.js';
 import { baseMode, finish, refuseUnplaced, sense, viewOf } from './round.js';
 
 export { sideOf, spawnSets, teamOf, walkersOf } from './round.js';
+
+export const postSpawns = (m, side) => m.objectives.filter((o) => o.owner === side).flatMap((o) => o.spawns);
 
 export const SETUP_SECONDS = STAGE_SETUP;
 // Where the level wires none: PF_CapturePoint_Mode1's CaptureDuration and PF_UI_Mode1's MaxReinforcements as Hoth_02 sets them
@@ -32,8 +43,8 @@ const clamp = (v) => Math.max(-1, Math.min(1, v));
 
 // a command post: +1 the attackers' (team `attack`), −1 the defenders', 0 nobody's; whoever stands on it alone moves it
 const post = {
-  create({ at, seconds, index }) {
-    return { type: 'capture', name: `post ${index}`, index, at, reach: POST_REACH, seconds, meter: 0, owner: null, contested: false, moving: null, done: false, tick: post.tick, view: post.view };
+  create({ at, seconds, index, spawns = [] }) {
+    return { type: 'capture', name: `post ${index}`, index, at, reach: POST_REACH, seconds, spawns, meter: 0, owner: null, contested: false, moving: null, done: false, tick: post.tick, view: post.view };
   },
   tick(o, dt, { inside }) {
     const net = (inside.attack ?? 0) - (inside.defend ?? 0);
@@ -57,7 +68,10 @@ export function createMode({ rulebook = null, level = null, map = null }) {
   const ui = mine.find((p) => /^PF_UI_Mode1$/i.test(p.name));
   const max = ui?.inputs?.MaxReinforcements ?? REINFORCEMENTS;
   const m = baseMode({ kind: 'supremacy', label: 'Supremacy', map: m0, level, attack: 1, setup: SETUP_SECONDS });
-  m.objectives = posts.map((p, i) => post.create({ at: xz(p.at), seconds: p.inputs?.CaptureDuration ?? CAPTURE_DURATION, index: p.inputs?.ObjectiveIndex ?? i + 1 }));
+  // (a post's own spawn points: the level's neutral ones on it)
+  const neutral = (m0.spawns ?? []).filter((s) => s.mode === 'supremacy' && s.team === 0 && s.at);
+  const on = (at) => neutral.filter((s) => Math.hypot(s.at[0] - at[0], s.at[2] - at[1]) <= POST_REACH);
+  m.objectives = posts.map((p, i) => post.create({ at: xz(p.at), seconds: p.inputs?.CaptureDuration ?? CAPTURE_DURATION, index: p.inputs?.ObjectiveIndex ?? i + 1, spawns: on(xz(p.at)) }));
   m.tickets = { attack: max, defend: max };
   m.bleed = 0;
   // (seconds a reinforcement: the game's, or a round's that sets its own, Instant Action's length)
