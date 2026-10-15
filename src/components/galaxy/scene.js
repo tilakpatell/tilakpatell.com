@@ -75,7 +75,7 @@ import { audioContext } from '../../lib/audio';
 import { clamp01, disposeTree, singlePass } from '../../lib/three/renderer';
 import { twinScene } from '../../lib/three/hookNodes';
 import { PMREMGenerator } from 'three/webgpu';
-import { prepareScene, warmDraw } from '../../lib/three/gpuWork';
+import { warmDraw } from '../../lib/three/gpuWork';
 import { settle as settleWithin } from '../../lib/settle';
 import { device } from '../../lib/device';
 import { dropTransmission } from '../../lib/three/glass';
@@ -2794,7 +2794,17 @@ export async function create(canvas, ctx) {
       onProgress?.(0, 'load');
       await settleWithin(ready, 20000);
       if (!alive() || disposed) return;
-      await prepareScene({ renderer, roots: [scene], scene, camera, target: post.target, render: () => post.render(64, 64), onProgress, alive: () => alive() && !disposed });
+      // (the node renderer's, as the surface prepares: the hooked materials
+      // swapped for their twins, every program made through compileAsync,
+      // then one small draw through the post, so its passes are made too;
+      // lib/three/gpuWork's slices are the classic renderer's)
+      twinScene(scene);
+      onProgress?.(0.35, 'shaders');
+      if (gfx.compile) await settleWithin(Promise.resolve(gfx.compile(scene, camera, scene)).catch(() => {}), 600000);
+      if (!alive() || disposed) return;
+      onProgress?.(0.8, 'first draw');
+      post.render(64, 64);
+      onProgress?.(1, 'first draw');
     },
     // the war's battle here as warfront.js has it (WarHud.jsx, BattleEnd.jsx), or null
     warInfo: () => war?.info ?? null,
