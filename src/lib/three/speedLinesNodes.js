@@ -36,7 +36,7 @@ function lineNodes(u) {
       .mul(0.92)
       .oneMinus()
       .mul(aStar.w)
-      .mul(smoothstep(DEPTH, DEPTH * 0.55, head))
+      .mul(smoothstep(DEPTH * 0.55, DEPTH, head).oneMinus()) // (the GLSL’s falling edge, which WGSL leaves undefined)
       .mul(smoothstep(NEAR, NEAR + 8, head))
       .mul(u.uStretch),
     'vFade',
