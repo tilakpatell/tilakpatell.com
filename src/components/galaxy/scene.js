@@ -73,7 +73,7 @@ import { plan as cockpitPlan } from '../cockpit/timeline';
 import { freeKit } from '../cockpit/kit';
 import { audioContext } from '../../lib/audio';
 import { clamp01, disposeTree, precompile, precompilePasses, singlePass } from '../../lib/three/renderer';
-import { prepareScene } from '../../lib/three/gpuWork';
+import { prepareScene, warmDraw } from '../../lib/three/gpuWork';
 import { settle as settleWithin } from '../../lib/settle';
 import { device } from '../../lib/device';
 import { dropTransmission } from '../../lib/three/glass';
@@ -2136,6 +2136,9 @@ export async function create(canvas, ctx) {
   const toShip = new THREE.Vector3();
   let first = true;
   let lastNow = 0;
+  // (development: the times a named view holds the scene at, and the ship it
+  // picked when the page had none; null, as it always is in production: view(), below)
+  let still = null;
   function render(ms, now) {
     if (import.meta.env.DEV) {
       // (the gap between this frame and the last, as the page saw it: a tab that was hidden shows as one long frame)
@@ -2152,9 +2155,11 @@ export async function create(canvas, ctx) {
       state.world?.setDetail(detail);
     }
     // (the frame as the game runs it: slowed through a hitstop)
-    const dt = feel.step(ms / 1000);
-    const t = reduced ? 0 : (now - t0) / 1000;
-    const wt = wall();
+    // (held by a named view, development's: no time passes, and the clocks read what it set)
+    const held = import.meta.env.DEV ? still : null;
+    const dt = held ? 0 : feel.step(ms / 1000);
+    const t = held ? held.t : reduced ? 0 : (now - t0) / 1000;
+    const wt = held ? held.wt : wall();
     if (!flying() && props.ship) setShip(props.ship);
     if (!state.ship && state.kind && state.sys) {
       // a new pilot: out of hyperspace into the system you asked for, or,
@@ -2265,7 +2270,8 @@ export async function create(canvas, ctx) {
     sky.focus(state.jump?.phase === 'align' ? state.jump.to.id : (state.aim?.id ?? null));
     sky.update(camera, t);
     if (skyStreaks) {
-      skyStreaks.group.visible = !inTunnel && !state.enclosed;
+      // (and not under a held view: where the lanes' ships are is a dice roll, not a clock's)
+      skyStreaks.group.visible = !inTunnel && !state.enclosed && !(import.meta.env.DEV && still);
       skyStreaks.update(dt);
     }
     models.update(t);
@@ -2677,6 +2683,97 @@ export async function create(canvas, ctx) {
     window.__gltfStats = gltfStats; // { requests, parses }: the models asked for, and the files fetched and parsed for them
   }
 
+  // (development: a named view for scripts/gpu-parity.mjs, as Earth's: the
+  // ship put somewhere fixed and stopped, the camera behind it in the chase
+  // seat and there at once, and the scene held still, so two renders of it
+  // can be compared. Held means no time passes (render, above) and the
+  // clocks read fixed times, so the planet, the moons and the set pieces
+  // stand where those put them; and what's down to a dice roll rather than
+  // a clock is let go: the hunters and the escort sent off, the shots in
+  // flight landed and their flashes out, the lanes' traffic hidden.
+  // 'hub', the system as it opens: at its arrival spot (the middle of its
+  // spread), looking in at the planet; 'orbit', the planet from close in,
+  // over its day side, filling the right of the view with its limb across
+  // the middle; 'fleet', just off the ships the system's holder keeps in
+  // orbit (or the war's battle's, or a set piece's capital), the planet
+  // behind them. The script picks no ship, so with none an X-wing, its
+  // model mounted here as soon as it's in: the scene's own mounts it after
+  // a warm-up that runs on frames, which the script's stopped clock doesn't
+  // give it before the shot. The promise is kept once that model's in.)
+  const VIEWS = ['hub', 'orbit', 'fleet'];
+  const holdView = import.meta.env.DEV
+    ? (name) => {
+        if (!VIEWS.includes(name)) throw new Error(`no view ${name}`);
+        const sys = state.sys;
+        const r = sys.body?.r ?? 40;
+        let mounted = Promise.resolve();
+        if (!state.kind) {
+          setShip('xwing');
+          const model = state.model;
+          mounted = loadModel(SHIP_MODELS.xwing).then((m) => {
+            if (!m || disposed || state.model !== model) return;
+            dropTransmission(m);
+            model.dress?.(m);
+            // (and the scene's own copy, when its warm-up's done, gives way to it)
+            if (model.mount(m)) model.mount = () => false;
+            else disposeTree(m);
+          });
+        }
+        still = { t: 60, wt: Math.floor(wall() / 60) * 60, ship: state.kind };
+        let pose;
+        if (name === 'hub') pose = arrival(sys, null, () => 0.5);
+        else if (name === 'orbit') {
+          // half as high again as the planet's radius, off its sunward side,
+          // and turned so its middle sits to the right of the nose
+          const [sx, , sz] = sys.suns[0].dir;
+          const a = Math.atan2(sz, sx) + 0.6;
+          const d = r * 1.5;
+          const x = Math.cos(a) * d;
+          const z = Math.sin(a) * d;
+          pose = { x, y: r * 0.3, z, heading: Math.atan2(x, z) + 0.45 };
+        } else {
+          // the holder's ships in orbit, else the war's capitals, else the biggest thing that isn't a planet or a moon
+          const at = state.world.garrison[0]?.at ?? war?.solids?.[0]?.at ?? [...state.world.solids].filter((o) => o.id !== 'planet' && !o.id.startsWith('moon') && !o.id.startsWith('place')).sort((p, q) => q.r - p.r)[0]?.at ?? [r * 2, 0, 0];
+          // (ten out from it and a little to one side, the nose turned off it so the ship's not in front of it)
+          const out = Math.hypot(at[0], at[2]) || 1;
+          const [ux, uz] = [at[0] / out, at[2] / out];
+          const x = at[0] + ux * 10 - uz * 3;
+          const z = at[2] + uz * 10 + ux * 3;
+          pose = { x, y: at[1] + 2, z, heading: Math.atan2(x - at[0], z - at[2]) - 0.4 };
+        }
+        state.ship = { ...spawn(null, pose), pitch: 0, speed: 0 };
+        Object.assign(state, { jump: null, crash: null, dive: null, auto: null, aim: null, lock: null, held: null, view: 'chase', cabK: 0, fovBase: FOV, streak: 0, kick: 0, shake: 0, hurt: 0, flare: 1, eclipse: 1 });
+        state.bias.fill(0);
+        camQOn = false;
+        blendTo.k = 1;
+        dustAmount = 0.35; // (where a ship at rest has it: the frame's easing towards it is held too)
+        hunters?.clear();
+        wingmen?.clear();
+        pickups.clear();
+        later.length = 0;
+        interdictor?.hide();
+        for (const pl of plumes) pl.trail.clear();
+        bolts.update(1e3);
+        flashes.update(1e3);
+        post.flare(1);
+        ctx.invalidate();
+        // and everything drawn once, whole, before the promise is kept: the
+        // frame guard holds back what's new to the chip (the ship's model,
+        // a close-up's maps) till frames have readied it, which the stopped
+        // clock doesn't give; a warm draw is drawn whole, and its fence is
+        // waited on through messages, which that clock doesn't stop
+        const soon = () =>
+          new Promise((go) => {
+            const c = new MessageChannel();
+            c.port1.onmessage = () => (c.port1.close(), go());
+            c.port2.postMessage(null);
+          });
+        return Promise.all([ready, mounted])
+          .then(() => !disposed && warmDraw(renderer, () => post.render(64, 64), [scene], { frame: soon }))
+          .then(() => ctx.invalidate());
+      }
+    : null;
+
   return {
     ready,
     // everything sent to the graphics chip before the galaxy's shown (the
@@ -2700,14 +2797,17 @@ export async function create(canvas, ctx) {
       measure();
     },
     render,
+    ...(holdView ? { view: holdView } : {}),
     update(next) {
       props = next;
-      if ((next.ship ?? null) !== state.kind) {
+      // (the ship a held view picked stays while the page has none: development's)
+      const ship = next.ship ?? ((import.meta.env.DEV && still?.ship) || null);
+      if (ship !== state.kind) {
         state.loadout = readLoadout(next.loadout ?? STOCK_LOADOUT); // (a new ship comes fitted as it was left)
         state.build = sameBuild(next.build) ? state.build : readBuildWire(next.build ? writeBuild(next.build) : null); // (and on the hull it was left on)
         state.tune = readTune(next.tune); // (and tuned as it was)
       }
-      setShip(next.ship ?? null);
+      setShip(ship);
       setBuild(next.build ?? null);
       setLoadout(next.loadout);
       setTune(next.tune);
