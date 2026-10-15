@@ -11,7 +11,7 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
-export const LOOK_NAMES = ['modern', 'ultra', 'n64'];
+const LOOK_NAMES = ['modern', 'ultra', 'n64'];
 
 export function makeLook(renderer, scene, camera, { bloom = true } = {}) {
   const size = renderer.getSize(new THREE.Vector2());

@@ -119,7 +119,7 @@ export async function webReady(doc, { tris, tex, acrossSeams = false }) {
 // What a generated mesh's UV seams block (an atlas of thousands of charts
 // locks their edges): meshoptimizer's own simplify, allowed to collapse
 // across seams, straight on each primitive's indices.
-export const permissive = (tris) => async (doc) => {
+const permissive = (tris) => async (doc) => {
   const total = triangles(doc);
   for (const mesh of doc.getRoot().listMeshes()) {
     for (const prim of mesh.listPrimitives()) {

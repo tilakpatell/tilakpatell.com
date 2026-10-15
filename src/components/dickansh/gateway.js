@@ -24,7 +24,7 @@ const MODELS = {
   ganesha: '/models/dickansh/ganesha.glb',
   diya: '/models/dickansh/diya.glb',
 };
-export const CUTOUTS = ['/dickansh/posters/pushpa-01.webp', '/dickansh/posters/pushpa-06.webp', '/dickansh/posters/dhurandhar-02.webp', '/dickansh/posters/dhurandhar-07.webp'];
+const CUTOUTS = ['/dickansh/posters/pushpa-01.webp', '/dickansh/posters/pushpa-06.webp', '/dickansh/posters/dhurandhar-02.webp', '/dickansh/posters/dhurandhar-07.webp'];
 
 const SKY_VS = /* glsl */ `
 varying vec3 vDir;

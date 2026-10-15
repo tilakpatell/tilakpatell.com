@@ -98,7 +98,7 @@ export const fileName = (name) => `${String(name).split('/').pop()}.json`;
 
 // ── the partition ──
 
-export const isPartition = (v) => Array.isArray(v?.objects) && v.objects.length > 0;
+const isPartition = (v) => Array.isArray(v?.objects) && v.objects.length > 0;
 
 export function derefPartition(part) {
   if (!isPartition(part)) return part;
@@ -161,7 +161,7 @@ export function curveOf(ev, input = 'EfNormTime') {
 // them sampled at SPLINE_SAMPLES + 1 even steps over 0…1 (held flat past
 // the ends): the runtime reads it as a table. YValues3 and GValues3 are
 // kept out (their use is not known).
-export const SPLINE_SAMPLES = 16;
+const SPLINE_SAMPLES = 16;
 export function splineTable(curve) {
   if (!curve) return null;
   const lanes = (k) => [0, 1, 2].flatMap((i) => ['x', 'y', 'z', 'w'].map((c) => num(curve[`${k}${i}`]?.[c]) ?? 0));

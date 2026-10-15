@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { psnr, ssim } from './lib/frame-metrics.mjs';
 
-export const PPD = 67; // _source: NVIDIA FLIP’s default pixels per degree (Andersson et al. 2020, §5: 0.7 m from a 0.7 m wide 3,840-pixel monitor)
+const PPD = 67; // _source: NVIDIA FLIP’s default pixels per degree (Andersson et al. 2020, §5: 0.7 m from a 0.7 m wide 3,840-pixel monitor)
 
 // FLIP’s command line (flip-evaluator 1.7) prints its pooled values; the mean is the score
 export function parseFlip(stdout) {

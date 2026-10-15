@@ -29,7 +29,7 @@ export function seeded(seed) {
 // ── where everything is ──
 
 export const BAG_END = { x: -18, z: -24, r: 6.5 };
-export const BENCH = { x: -13.6, z: -18.6 };
+const BENCH = { x: -13.6, z: -18.6 };
 // Bagshot Row, under the Hill: Sam's is the yellow door
 export const HOLES = [
   { id: 'row1', x: -34, z: -11.5, r: 4, door: 0xb8402c, seed: 3 },
@@ -211,7 +211,7 @@ export const FENCES = [
 
 // The garden fences in front of Bag End and the holes, with the gate in the
 // middle: [x0, z0, x1, z1].
-export const GARDENS = [
+const GARDENS = [
   [BAG_END.x - 5.2, BAG_END.z + 7.4, BAG_END.x - 0.55, BAG_END.z + 7.4],
   [BAG_END.x + 0.55, BAG_END.z + 7.4, BAG_END.x + 5.2, BAG_END.z + 7.4],
   ...HOLES.flatMap((h) => {
@@ -895,7 +895,7 @@ export const SPOON_SPOTS = [
 ];
 // her round, along the lanes: west to the hedge, the mill, the pond, over
 // the bridge to the Green Dragon, back up to the Party Tree, and home
-export const LOBELIA_ROUTE = [
+const LOBELIA_ROUTE = [
   [LOBELIA.x, LOBELIA.z],
   [-13.2, -4.6],
   [-29.4, -4.6],

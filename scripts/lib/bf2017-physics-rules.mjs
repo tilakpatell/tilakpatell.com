@@ -78,7 +78,7 @@ export function loadAsset(root, name) {
   return JSON.parse((file.endsWith('.gz') ? zlib.gunzipSync(buf) : buf).toString('utf8'));
 }
 
-export const assetNames = (root, under = '') => [...indexOf(root).keys()].filter((n) => n.startsWith(under.toLowerCase()));
+const assetNames = (root, under = '') => [...indexOf(root).keys()].filter((n) => n.startsWith(under.toLowerCase()));
 
 export const deref = (asset, v) => (v && typeof v === 'object' && Number.isInteger(v.$ref) ? (asset.objects[v.$ref] ?? null) : null);
 
@@ -368,7 +368,7 @@ export function ragdollRow(asset, follow = null) {
 // ── the soldier (lane P1) ──
 
 // the thirteen CharacterPhysicsData records the survey found
-export const SOLDIER_RECORDS = [
+const SOLDIER_RECORDS = [
   'Gameplay/Characters/DefaultSoldierPhysics',
   'Gameplay/Characters/DefaultSoldierPhysics_AI',
   'Gameplay/Characters/DefaultSoldierPhysics_B1Droid',
@@ -596,7 +596,7 @@ export function shareBodies(rows) {
 // projectiles.json holds it; the page reads this small join, never the
 // whole projectiles book. A weapon with no projectile (the bowcaster's
 // second fire) is left out; the default rifle's bolt is the fallback.
-export const FALLBACK_PROJECTILE = 'Gameplay/Equipment/Rifles/_DefaultWeapon/BlasterProjectile_Default_Rifle';
+const FALLBACK_PROJECTILE = 'Gameplay/Equipment/Rifles/_DefaultWeapon/BlasterProjectile_Default_Rifle';
 
 export function impulseRows(weapons, projectiles) {
   const byName = new Map((projectiles?.rows ?? []).map((p) => [String(p.name).toLowerCase(), p]));

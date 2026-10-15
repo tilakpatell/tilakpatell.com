@@ -30,7 +30,7 @@ export const stageTitle = (life) => (life.route === 'offgrid' && STAGE_INFO[life
 // each stage's card's line (off the grid, the carpet store's and the
 // finale's are the woods'); the diagnosis's is Roy's own, said in his voice
 // (./voicelines.js)
-export const STAGE_LINES = {
+const STAGE_LINES = {
   kid: 'A boy at the window, dreaming of the NFL.',
   football: 'Friday night under the lights, and the end zone a long way off.',
   carpet: 'The dream goes on the shelf: a family to provide for, and a job at the carpet store.',

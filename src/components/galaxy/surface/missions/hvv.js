@@ -461,7 +461,7 @@ export function hvvView(b) {
 }
 
 // ── the mission row a world gets (missions/index.js) ──
-export const HVV_SIDES = {
+const HVV_SIDES = {
   light: { id: 'heroes', name: 'The heroes', short: 'Heroes', colour: '#7fc8ff' },
   dark: { id: 'villains', name: 'The villains', short: 'Villains', colour: '#ff6a5a' },
 };

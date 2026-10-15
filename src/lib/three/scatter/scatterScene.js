@@ -22,10 +22,10 @@ import { applySway, swayOf } from './wind.js';
 
 // metres the visitor walks before the ring is refilled (a dissolve band is
 // several metres deep, so a refill every few metres is not seen)
-export const REPACK_M = 3;
+const REPACK_M = 3;
 // the share of its reach past which a type draws its LOD1 (the game's
 // Lod0DissolveOutDistanceFactor where a type has one, else this)
-export const LOD1_AT = 0.5;
+const LOD1_AT = 0.5;
 // the tiles kept generated beyond the ring (walking back is free)
 const KEEP_TILES = 400;
 // a type sinks this share of its height into the ground, so a stone on a

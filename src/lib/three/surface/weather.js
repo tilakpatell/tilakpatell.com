@@ -51,11 +51,11 @@ export const UP_MAX = 0.9;
 // EnlightenComponentData TerrainColor, 0.547, 0.594, 0.644, is the lit
 // ground's bounce, not the snow's albedo); the design's roughness for the
 // sparkle map's flakes
-export const SNOW_COLOR = [0.9, 0.93, 0.96];
+const SNOW_COLOR = [0.9, 0.93, 0.96];
 export const SNOW_ROUGHNESS = 0.35;
 // a desert's dust (Jakku's and Tatooine's sand, a mid sRGB tan in linear),
 // matte
-export const SAND_COLOR = [0.62, 0.45, 0.28];
+const SAND_COLOR = [0.62, 0.45, 0.28];
 export const SAND_ROUGHNESS = 0.9;
 // wet: the albedo darkened by water filling the pores, glossy
 export const WET_DARKEN = 0.6;

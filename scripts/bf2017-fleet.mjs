@@ -119,7 +119,7 @@ async function source([file, , , from], { ultra = false } = {}) {
 }
 let SURFACE_FROM = () => null;
 
-export async function writeFleet(rows) {
+async function writeFleet(rows) {
   const reader = await io();
   const credits = JSON.parse(await readFile(join(ROOT, 'src/data/modelCredits.json'), 'utf8'));
   const { MODELS } = await import('../src/components/galaxy/surface/catalog/bf2017-vehicles.js');

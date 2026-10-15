@@ -39,11 +39,10 @@ export const SPAN = 0.56 * Math.PI;
 // the gates: the Great Gate east, then turn and turn about, north and south of the prow
 export const GATE_A = [0, -0.42, 0.42, -0.42, 0.42, -0.42, 0.42];
 export const GATE_W = 5.2;
-export const GATE_H = 7;
+const GATE_H = 7;
 export const ROAD_W = 7;
 // the road along level k runs round its middle
-export const ROAD_R = WALL_R.slice(0, 6).map((r, k) => (r + WALL_R[k + 1]) / 2);
-export const levelY = (k) => LEVEL_Y[Math.max(0, Math.min(6, k))];
+const ROAD_R = WALL_R.slice(0, 6).map((r, k) => (r + WALL_R[k + 1]) / 2);
 // which level (x, z) is on: -1 outside the walls (or the mountain behind)
 export function levelOf(x, z) {
   const r = Math.hypot(x, z);
@@ -276,7 +275,7 @@ export const GUARDS = [
 export const BEREGOND = { x: 13, z: 8.6, face: Math.PI / 2, r: 3.2 };
 export const HALL_DOOR = { x: -6.4, z: 0, r: 2.8 };
 export const OVERLOOK = { x: PROW.x1 - 3.4, z: 0, r: 3.4 };
-export const PROW_WALK = { x0: WALL_R[6] - 3, x1: PROW.x1 - 1.4, w: PROW.w - 2 };
+const PROW_WALK = { x0: WALL_R[6] - 3, x1: PROW.x1 - 1.4, w: PROW.w - 2 };
 // where the road comes into the Citadel, facing the tree
 export const COURT_IN = (() => {
   const p = roadAt(ROAD_LEN);

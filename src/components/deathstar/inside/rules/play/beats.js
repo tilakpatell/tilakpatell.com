@@ -12,7 +12,7 @@
 import { drain, newGame, step } from '../game';
 import { feedPlot, startPlot } from './plot';
 
-export function finishStep(g, cur) {
+function finishStep(g, cur) {
   const t = cur.target ?? {};
   const n = Number.isFinite(cur.need) ? cur.need : 1;
   if (cur.type === 'reach' || cur.type === 'escort') feedPlot(g, { type: 'at', room: t.spot ? g.layout.station.spots[t.spot]?.room : t.room, spot: t.spot ?? null, with: [cur.need].filter((x) => typeof x === 'string') });

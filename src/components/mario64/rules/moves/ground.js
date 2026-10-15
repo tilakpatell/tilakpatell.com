@@ -11,7 +11,7 @@ import { takeOff } from './air';
 export const RUN = 32;
 const TURN = 0.2; // radians a frame toward the stick (the original's 0x800)
 
-export function toFreefall(m) {
+function toFreefall(m) {
   m.airborne = true;
   m.vel.y = 0;
   setAction(m, 'freefall');
@@ -19,7 +19,7 @@ export function toFreefall(m) {
 
 // the next jump of a chain: a double within 5 frames of landing a single, a
 // triple after a double when fast enough
-export function nextJump(m) {
+function nextJump(m) {
   if (m.chain.t <= 5) {
     if (m.chain.n === 1) return 'double';
     if (m.chain.n === 2 && m.fwd > 20) return 'triple';

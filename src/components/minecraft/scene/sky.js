@@ -14,7 +14,7 @@ import { instancedBufferAttribute } from 'three/tsl';
 import { cloudMaterial as cloudLook, domeMaterial, spriteMaterial, starsMaterial } from './nodes.js';
 import { moonPhase, skyColours, starBrightness, sunAngle, sunrise } from '../rules/time.js';
 
-export const CLOUDS_Y = 128;
+const CLOUDS_Y = 128;
 const SUN_DISTANCE = 300;
 const SUN_SIZE = 90; // the game's 30 at 100
 const MOON_SIZE = 60; // the game's 20 at 100

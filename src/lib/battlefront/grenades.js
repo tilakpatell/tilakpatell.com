@@ -30,7 +30,6 @@ export const FLIGHT = { gravity: -9.8, bounce: 0.25, minBounce: 3, tumble: 180 }
 // `Server:ExplosionEntity:OffsetQuery` (0x140c367f0): the blast point 0.2 m back along the hit normal;
 // `ExplosionEntityData.MaxOcclusionRaycastRadius 0.5`.
 export const SURFACE_OFFSET = 0.2;
-export const OCCLUSION_RADIUS = 0.5;
 // The flash's split (`Splitter_Grenade_Projectile`: five `FireProjectileEntityData` at the gate): the five
 // sub-flashes' own speed and fuse are not in the finding; by hand, so they land about the carrier.
 export const SPLIT = { count: 5, speed: 5, fuse: 0.5 };

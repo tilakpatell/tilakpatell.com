@@ -97,7 +97,7 @@ export const SWATCHES = [
   { id: 'voidblack', name: 'Void black', hex: '#24222b' },
 ];
 // …and Breaking Bad’s
-export const BB_SWATCHES = [
+const BB_SWATCHES = [
   { id: 'hazmatyellow', name: 'Hazmat yellow', hex: '#f0d43a' },
   { id: 'bluesky', name: 'Blue Sky blue', hex: '#5fc8ef' },
   { id: 'heisenbergblack', name: 'Heisenberg black', hex: '#1f1e22' },

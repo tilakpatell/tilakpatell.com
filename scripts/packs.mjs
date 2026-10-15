@@ -76,7 +76,7 @@ export async function buildManifest(pack, { dist, publicDir, chunksOf = () => []
 }
 
 // every world's manifest and the index, into dist/packs; throws when a pack is out of step
-export async function writePacks(root, dist = join(root, 'dist'), log = console.log, base = process.env.VITE_ASSET_BASE ?? '') {
+async function writePacks(root, dist = join(root, 'dist'), log = console.log, base = process.env.VITE_ASSET_BASE ?? '') {
   const publicDir = join(root, 'public');
   // the files the bucket holds, as the bundle's manifest has them (scripts/assets-manifest.mjs)
   const remote = base ? { base, manifest: bundledManifest(root, publicDir) } : null;
