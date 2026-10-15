@@ -56,7 +56,7 @@ void main() {
 }
 `;
 
-export const TRACK_FS = /* glsl */ `
+const TRACK_FS = /* glsl */ `
 uniform vec4 uChannel;
 varying float vAlpha;
 varying float vSide;

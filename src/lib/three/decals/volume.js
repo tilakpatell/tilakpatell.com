@@ -33,8 +33,8 @@ import { decalNodes } from './look.js';
 export const VOLUME_BACKENDS = ['webgpu', 'nodes-webgl'];
 // the cosine between the surface's normal and the box's Y below which the
 // decal is gone (about 75°) and above which it is whole (60°)
-export const CLIP_MIN = 0.25;
-export const CLIP_MAX = 0.5;
+const CLIP_MIN = 0.25;
+const CLIP_MAX = 0.5;
 // the share of the box's half-width over which a volume decal fades out at
 // its sides (the records carry no falloff)
 export const EDGE = 0.15;

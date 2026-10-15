@@ -47,7 +47,7 @@ const RAD = Math.PI / 180;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const fin = (v) => Number.isFinite(v);
 // (frame-rate free: the share of the gap closed in dt at `rate` per second)
-export const blendK = (rate, dt) => 1 - Math.exp(-Math.max(0, rate) * Math.max(0, dt));
+const blendK = (rate, dt) => 1 - Math.exp(-Math.max(0, rate) * Math.max(0, dt));
 
 export function armFor(row, pitchDeg) {
   const r = row.reducedArm;
