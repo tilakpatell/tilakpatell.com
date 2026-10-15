@@ -11,7 +11,10 @@
 // nothing by contact and is found only by the two query groups), a zone
 // (a sensor volume: characters), and two groups no collider wears, for
 // queries: a projectile's path (the floor, objects, hurtboxes) and a line
-// of sight (the floor, objects, characters). `filterOf` builds a query's
+// of sight (the floor, objects, characters); and a barrier (a solid only a
+// character meets: the game's CharacterCollisionGeometry layer, which
+// meets characters and ragdolls alone, bf2-re findings/46's pair table; a
+// bolt's flight, a sight and the camera pass it). `filterOf` builds a query's
 // groups: every membership, and the named groups in its filter; since
 // objects wear the floor's bit, a filter that names the floor admits them
 // too (there is no floor-only query). Pure.
@@ -19,7 +22,7 @@
 //   MEMBERS: { [name]: bit }; GROUPS: { [name]: groups }; filterOf(...names) → groups
 
 const ALL = 1;
-export const MEMBERS = { floor: ALL, object: 2, bumper: 4, character: 8, hurtbox: 16, zone: 32, projectile: 64, sight: 128 };
+export const MEMBERS = { floor: ALL, object: 2, bumper: 4, character: 8, hurtbox: 16, zone: 32, projectile: 64, sight: 128, barrier: 256 };
 const M = MEMBERS;
 const group = (member, filter) => ((member << 16) | filter) >>> 0;
 
@@ -27,11 +30,12 @@ export const GROUPS = {
   floor: group(ALL, ALL | M.character),
   object: group(ALL | M.object, ALL | M.bumper | M.character),
   bumper: group(M.bumper, M.object),
-  character: group(M.character, ALL | M.object | M.character | M.zone),
+  character: group(M.character, ALL | M.object | M.character | M.zone | M.barrier),
   hurtbox: group(M.hurtbox, M.projectile | M.sight),
   zone: group(M.zone, M.character),
   projectile: group(M.projectile, ALL | M.object | M.hurtbox),
   sight: group(M.sight, ALL | M.object | M.character),
+  barrier: group(M.barrier, M.character),
 };
 
 export function filterOf(...names) {

@@ -22,7 +22,7 @@ export const USED = 'src/data/bf2017/library-used.json';
 
 const read = (p) => JSON.parse(readFileSync(p, 'utf8'));
 
-export async function sliceCode(root = ROOT) {
+async function sliceCode(root = ROOT) {
   // (a file URL, not the path: on Windows a bare C:\ path reads as a URL scheme and the import fails)
   const { gameUrl } = await import(pathToFileURL(join(root, 'src/components/galaxy/surface/catalog/bf2017-slug.js')).href);
   const slice = sliceFor(read(join(root, PUBLISHED)), read(join(root, USED)), { urlFor: gameUrl });

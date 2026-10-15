@@ -110,7 +110,7 @@ export function buildLitPost(renderer, passes) {
 // The limits a device is asked for: the adapter's own values for the ones a
 // world's chain can exceed at the defaults. Nothing when there is no WebGPU
 // (the renderer then draws on WebGL 2) or the adapter will not say.
-export const RAISED_LIMITS = ['maxColorAttachmentBytesPerSample', 'maxColorAttachments', 'maxStorageBuffersPerShaderStage'];
+export const RAISED_LIMITS = ['maxColorAttachmentBytesPerSample', 'maxColorAttachments', 'maxStorageBuffersPerShaderStage', 'maxSampledTexturesPerShaderStage', 'maxSamplersPerShaderStage'];
 const navigatorGpu = () => (typeof navigator !== 'undefined' ? navigator.gpu : undefined);
 async function firstAdapter(gpu = navigatorGpu()) {
   try {

@@ -874,7 +874,7 @@ describe('the Starfighter Assault’s stand-ins on the game’s hulls', () => {
 
   it('flies every ship a level names on the game’s file, bow to +z, credited to the game', async () => {
     const { modelsAt } = await import('./models');
-    const MODELS = modelsAt('high'); // (a desktop's rows: at ultra the kits' are their ultra cuts)
+    const MODELS = modelsAt('mid'); // (a laptop's rows: on a desktop the kits' are their ultra cuts and the fighters' the game's plain surface cuts)
     const credits = (await import('../../data/modelCredits.json')).default;
     for (const level of ['sb_endor', 'sb_kamino', 'sb_droidbattleship', 'sb_fondor']) {
       const stages = (await import(`../../data/bf2017/maps/${level}.stages.json`)).default;

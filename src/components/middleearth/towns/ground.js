@@ -132,7 +132,7 @@ export function makeTufts(count, { radius, height, growable, seed = 99, base = 0
 // Puddles: [x, z, rx, rz, turn] each, a flat pool a hair over the mud. They
 // hold the sky by the angle you see them at (more at a glance), glint with
 // the lamps near them (up to eight: setLights), and ring with rain.
-export const MAX_LIGHTS = 8;
+const MAX_LIGHTS = 8;
 export function makePuddles(list, height) {
   const uniforms = THREE.UniformsUtils.merge([
     THREE.UniformsLib.fog,

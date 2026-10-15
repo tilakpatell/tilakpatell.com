@@ -53,7 +53,6 @@ export const BOLS = {
   Tak: ['tak'],
 };
 
-export const strokesFor = (bol) => BOLS[bol] || [];
 // How a bol is written: Tak is the Ta that closes TiRaKiTa, short and damped.
 export const bolLabel = (bol) => (bol === 'Tak' ? 'Ta' : bol);
 export const isBol = (bol) => bol === '-' || Boolean(BOLS[bol]);
@@ -152,7 +151,7 @@ export function accent(taal, beat) {
 // A phrase played three times with a rest between, timed so its very last
 // stroke falls on sam. Returned as [beat, bol] pairs counted from the start of
 // the cycle it begins in; the last one is at `beats`, the next cycle's sam.
-export const TIHAI_PHRASE = ['Dha', '-', 'Ti', 'Ra', 'Ki', 'Tak', 'Dha'];
+const TIHAI_PHRASE = ['Dha', '-', 'Ti', 'Ra', 'Ki', 'Tak', 'Dha'];
 
 export function planTihai(beats, phrase = TIHAI_PHRASE, gap = 1) {
   const per = phrase.length * 3 + gap * 2; // in pulses

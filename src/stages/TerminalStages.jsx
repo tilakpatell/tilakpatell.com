@@ -50,26 +50,6 @@ function Transcript({ entries, prompt, state }) {
 }
 
 // ─── Unix shell ─────────────────────────────────────────────────────────────
-const SHELL = [
-  { cmd: 'ls src | grep "\\.c$" | wc -l', out: ['3'] },
-  { cmd: 'sort names.txt > sorted.txt', out: [] },
-  { cmd: 'head -n 2 < sorted.txt', out: ['ada', 'grace'] },
-  { cmd: 'sleep 30 &', out: ['[1] 4127'] },
-  { cmd: 'jobs', out: ['[1]+  Running    sleep 30 &'] },
-  { cmd: 'cd .. && pwd', out: ['/home/tilak'] },
-];
-
-export function ShellStage() {
-  const [ref, inView] = useInView({ rootMargin: '0px' });
-  const state = useTyped(SHELL, inView);
-  return (
-    <div ref={ref}>
-      <StageWindow title="tsh · a Unix shell in C" right="pipes · redirection · jobs">
-        <Transcript entries={SHELL} prompt="tsh>" state={state} />
-      </StageWindow>
-    </div>
-  );
-}
 
 // ─── FUSE file system ───────────────────────────────────────────────────────
 const FS = [
@@ -188,74 +168,4 @@ export function ApiStage() {
 }
 
 // ─── Smart summarizer ───────────────────────────────────────────────────────
-const SENTENCES = [
-  { text: 'The city council approved a plan on Tuesday to put solar panels on every public school by 2030.', score: 0.92 },
-  { text: 'Officials said the panels would cut electricity costs and double as teaching tools for science classes.', score: 0.74 },
-  { text: 'The meeting ran long, and several residents spoke about unrelated parking concerns.', score: 0.11 },
-  { text: 'Funding will come from a state clean-energy grant, so no new local taxes are needed.', score: 0.66 },
-  { text: 'A pilot installation at two high schools begins next spring.', score: 0.41 },
-];
-const SUM_PHASES = [
-  { ms: 1800, label: 'Input article' },
-  { ms: 2200, label: 'Encode each sentence with BERT' },
-  { ms: 2400, label: 'Score sentences for salience' },
-  { ms: 3600, label: 'Keep the top three: the summary' },
-];
 
-export function SummarizerStage() {
-  const [ref, inView] = useInView({ rootMargin: '0px' });
-  const reduced = useReducedMotion();
-  const [phase, setPhase] = useState(reduced ? 3 : 0);
-  useEffect(() => {
-    if (!inView || reduced) return undefined;
-    const t = setTimeout(() => setPhase((p) => (p + 1) % SUM_PHASES.length), SUM_PHASES[phase].ms);
-    return () => clearTimeout(t);
-  }, [phase, inView, reduced]);
-  const ranked = [...SENTENCES].sort((a, b) => b.score - a.score).slice(0, 3);
-
-  return (
-    <div ref={ref} className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-      <StageWindow title="article.txt" right={SUM_PHASES[phase].label}>
-        <ol className="grid gap-3 p-4">
-          {SENTENCES.map((s, i) => {
-            const keep = ranked.includes(s);
-            return (
-              <li key={i} className="grid grid-cols-[1fr_4.5rem] items-center gap-4">
-                <p
-                  className="text-sm leading-relaxed transition-all duration-500"
-                  style={{
-                    color: phase === 3 && !keep ? 'var(--muted)' : 'var(--text-body)',
-                    opacity: phase === 3 && !keep ? 0.55 : 1,
-                    background: phase === 1 ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'transparent',
-                    transitionDelay: phase === 1 ? `${i * 120}ms` : '0ms',
-                  }}
-                >
-                  {s.text}
-                </p>
-                <span className="relative h-2 overflow-hidden rounded-full" style={{ background: 'var(--surface-2)' }} aria-label={`score ${s.score}`}>
-                  <span
-                    className="absolute inset-y-0 left-0 rounded-full transition-all duration-700"
-                    style={{ width: phase >= 2 ? `${s.score * 100}%` : '0%', background: keep ? 'var(--accent)' : 'var(--muted)' }}
-                  />
-                </span>
-              </li>
-            );
-          })}
-        </ol>
-      </StageWindow>
-      <StageWindow title="summary.txt">
-        <div className="p-4 text-sm leading-relaxed">
-          {phase === 3 ? (
-            SENTENCES.filter((s) => ranked.includes(s)).map((s, i) => (
-              <p key={i} className="stage-fade mb-2 text-ink" data-on="true">
-                {s.text}
-              </p>
-            ))
-          ) : (
-            <p className="mono text-muted">Waiting for scores…</p>
-          )}
-        </div>
-      </StageWindow>
-    </div>
-  );
-}

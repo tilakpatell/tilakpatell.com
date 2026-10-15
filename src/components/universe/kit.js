@@ -110,7 +110,7 @@ export function rounded(g, x, y, w, h, r) {
 }
 
 // A small hologram tile, for what a station holds (a project, a company)
-export function holoTile(title, sub, color, w) {
+function holoTile(title, sub, color, w) {
   const tex = paint(
     (g, w, h) => {
       rounded(g, 6, 6, w - 12, h - 12, 14);

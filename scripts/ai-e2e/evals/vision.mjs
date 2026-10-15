@@ -89,7 +89,7 @@ export function passes(r) {
   return out;
 }
 
-export const resultsDir = () => process.env.AI_RESULTS ?? join(HERE, '..', 'results');
+const resultsDir = () => process.env.AI_RESULTS ?? join(HERE, '..', 'results');
 export const today = () => new Date().toISOString().slice(0, 10);
 
 // The backends this machine can reach: Claude Code when it's logged in, Qwen3-VL when its files are here.

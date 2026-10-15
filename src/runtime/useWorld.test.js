@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adoptable, madeFor, recoverNow, watchNear } from './useWorld';
+import { adoptable, madeFor, recoverNow, sameProps, watchNear } from './useWorld';
 
 // A page mounting a module finds a world of that module already on the
 // runtime: one handed over to it (adopt it), or one made for something else
@@ -96,5 +96,28 @@ describe('a world made when its box comes near', () => {
     const stop = watchNear({}, '0px', () => seen.push(true), { IO });
     stop();
     expect(made[0].off).toBe(true);
+  });
+});
+
+// (the page's props reach its world's update() only when one changed: a
+// page that re-renders eight times a second with the same props, as
+// Battlefront's does for its HUD, asked its world for a fresh frame each time)
+describe('whether a page’s props are the ones its world has', () => {
+  it('are the same when every value is, in a new object or the same one', () => {
+    const p = { level: 'hoth', mode: 'ga', weather: 'day' };
+    expect(sameProps(p, p)).toBe(true);
+    expect(sameProps(p, { level: 'hoth', mode: 'ga', weather: 'day' })).toBe(true);
+    expect(sameProps(undefined, undefined)).toBe(true);
+    expect(sameProps(null, undefined)).toBe(true);
+  });
+
+  it('differ when a value, a callback or the set of names does', () => {
+    const f = () => {};
+    expect(sameProps({ a: 1 }, { a: 2 })).toBe(false);
+    expect(sameProps({ on: f }, { on: () => {} })).toBe(false);
+    expect(sameProps({ on: f }, { on: f })).toBe(true);
+    expect(sameProps({ a: 1 }, { a: 1, b: undefined })).toBe(false);
+    expect(sameProps({ a: 1 }, null)).toBe(false);
+    expect(sameProps({ a: NaN }, { a: NaN })).toBe(true);
   });
 });

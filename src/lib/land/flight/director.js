@@ -36,7 +36,7 @@ import { rngOf } from './routes.js';
 export const EVENT_FIRST = 60; // s after arrival before your own roll
 export const EVENT_MIN_GAP = 45; // s between one ending and the next starting
 export const SLOT = 90; // s of wall clock, each with one roll a cell
-export const CHANCE = 0.55; // a slot's chance of an event
+const CHANCE = 0.55; // a slot's chance of an event
 export const DAY = 1200; // s of wall clock in the planet's day
 export const SUNDOWN = 0.7; // the day's share at sundown; night until NIGHT_END
 const NIGHT_END = 0.05;

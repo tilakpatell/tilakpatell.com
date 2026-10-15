@@ -38,7 +38,7 @@ export function rebindJoints(partJoints, bodyJoints, joints, weights = null) {
 // it is put through m. With `moves` (a matrix for each of the part's
 // joints), each vertex goes through its own joints' moves, blended by its
 // weights, where they differ from m. Floats only (dequantize first).
-export function toBodyBind(prim, m, moves = null) {
+function toBodyBind(prim, m, moves = null) {
   const pos = prim.getAttribute('POSITION');
   if (pos) {
     const a = pos.getArray().slice();
@@ -83,7 +83,7 @@ export function toBodyBind(prim, m, moves = null) {
 
 // m for a part's skin against the body's: the body's bind undone, then the
 // part's, read at the first joint they share
-export function bindDelta(partIbm, bodyIbm) {
+function bindDelta(partIbm, bodyIbm) {
   return mul4(invert4(bodyIbm), partIbm);
 }
 

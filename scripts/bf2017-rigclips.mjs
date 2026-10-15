@@ -91,7 +91,7 @@ async function fetched(root, bucketPath) {
 const restOf = (node, path) => (path === 'rotation' ? node.getRotation() : path === 'translation' ? node.getTranslation() : node.getScale());
 
 // one clip's channels, in place and resampled: [{ node, path, times, values }]
-export function clipChannels(anim, { fps, additive }) {
+function clipChannels(anim, { fps, additive }) {
   const channels = anim.listChannels();
   const end = Math.max(...channels.map((c) => c.getSampler().getInput().getMax([])[0]));
   const traj = channels.find((c) => c.getTargetNode().getName() === TRAJ && c.getTargetPath() === 'rotation');
@@ -140,7 +140,7 @@ export function clipChannels(anim, { fps, additive }) {
   };
 }
 
-export async function packRig(rig, { fps = 24, root, out, anims }) {
+async function packRig(rig, { fps = 24, root, out, anims }) {
   // (a walker's, or a world's set piece: walrusSets/events.js)
   const spec = RIGS[rig] ?? EVENT_RIGS[rig];
   if (!spec) throw new Error(`--pack: ${rig}? (${[...Object.keys(RIGS), ...Object.keys(EVENT_RIGS)].join(', ')})`);

@@ -1,0 +1,84 @@
+{
+  "_from": { "about": "The heroes' and villains' kit beyond heroes.json and abilities.json: how each one moves, stands, jumps and fights, read from the game's state machine and records through bf2-re's findings 28, 41 and 46 (C:/Users/tilak/source/repos/bf2-re/findings, data/physics/soldier-physics-states.txt). Each number carries its source; a hand number says so and has a line in NOTES.md (\"The heroes' kit\").", "date": "2026-10-12" },
+  "drives": {
+    "saber": { "speed": 4.725, "back": 0.89, "strafe": 0.935, "sprint": 1.7, "_source": "DefaultSoldierStateMachine Physics.Loco.Node #3910 DriveWithInput.Luke (and #5916 .Yoda): Velocity 4.725, scaling f/b/l/r 1/0.89/0.935/0.935; the sprint ×1.7 the machine runs (finding 46 §2)" },
+    "vader": { "speed": 4.25, "back": 0.89, "strafe": 0.935, "sprint": 1.7, "_source": "finding 46 §2, DriveWithInput.Vader: 4.25, 0.89 / 0.935" },
+    "blaster": { "speed": 4.25, "back": 0.75, "strafe": 0.85, "sprint": 1.7, "_source": "Physics.Loco.Node #4333 DriveWithInput.BlasterHero: Velocity 4.25, scaling 1/0.75/0.85/0.85" },
+    "bossk": { "speed": 4.35, "back": 0.75, "strafe": 0.85, "sprint": 1.7, "_source": "Physics.Loco.Node #6075 DriveWithInput.Bossk: Velocity 4.35, scaling 1/0.75/0.85/0.85" },
+    "blocking": { "speed": 2.4, "back": 1, "strafe": 1, "sprint": 1, "_source": "Physics.Loco.Node #3577 DriveWithInput.Blocking: Velocity 2.4, SprintTopSpeedMultiplier 0, scaling 1/1/1/1" },
+    "attack": { "speed": 5, "back": 0.75, "strafe": 0.85, "sprint": 1, "_source": "Physics.Attack.Node #6165 DriveWithInput.AimedAttack: Velocity 5, scaling 1/0.75/0.85/0.85 (a strike's step under the stick)" },
+    "evade": { "speed": 10, "_source": "AirControlInEvade (the roll, the dodge): 10 m/s at gain 0.4 (finding 46 §2)" }
+  },
+  "bodies": {
+    "DefaultHeroPhysics": { "height": 1.7, "eye": 1.55, "_source": "Gameplay/Characters/heroes/DefaultHeroPhysics#CharacterPhysicsData.Poses[0] (Height, EyePosition.y); a hero's crouch does not shrink it" },
+    "DefaultHeroPhysics_Tall": { "height": 1.95, "eye": 1.55, "_source": "Gameplay/Characters/heroes/DefaultHeroPhysics_Tall#CharacterPhysicsData.Poses[0]" },
+    "YodaPhysics": { "height": 1.2, "eye": 1.0, "_source": "Gameplay/Kits/Hero/Yoda/YodaPhysics#CharacterPhysicsData.Poses[0]" },
+    "MaulHeroPhysics": { "height": 1.7, "eye": 1.55, "_source": "Gameplay/Kits/Hero/Maul/MaulHeroPhysics#CharacterPhysicsData.Poses[0]" }
+  },
+  "jumps": {
+    "force": { "vy": 9, "weight": 0.3, "hold": 0.33, "gravity": -20, "air": 6, "_source": "Physics.Force.Jump.Node #797 Physics_ForceJumpMedium: TargetVelocity (0,9,0), Weights (0,0.3,0) a 30 Hz tick; #740 Network_Physics_FallHero −20; a hero's air speed 6 (finding 46 §2); the hold, 10 ticks, finding 46's estimate" },
+    "vader": { "vy": 7, "weight": 0.3, "hold": 0.33, "gravity": -20, "air": 6, "_source": "Physics.Jump.Node #10065 Network_Physics_Jump_Vader: TargetVelocity (0,7,0), Weights (0,0.3,0)" },
+    "grievous": { "vy": 20, "weight": 1, "hold": 0.033, "gravity": -50, "air": 6, "_source": "Physics.Force.Jump.Grievous.Node Jump.Grievous: y 20 outright; FallHero.Grievous −50" },
+    "bossk": { "vy": 20, "weight": 0.2, "hold": 0.1, "gravity": -45, "air": 6, "_source": "Physics.Force.Jump.Bossk.Node Jump_Bossk: to 20 at 0.2; #3762 FallHero.Bossk −45; the hold, 3 ticks, by hand" },
+    "chewbacca": { "vy": 9, "weight": 0.3, "hold": 0.33, "gravity": -30, "air": 6, "_source": "the Force jump's rise; Chewbacca's fall −30 (finding 46 §2, heroes' gravity)" },
+    "yoda": { "height": 1.6, "gravity": -20, "air": 6, "penalty": false, "_source": "Gameplay/Kits/Hero/Yoda/YodaPhysics#JumpStateData.JumpHeight 1.6, no landing penalty (JumpPenaltyTime 0)" },
+    "landing": { "seconds": 0.1, "factor": 0.2, "_source": "JumpPenaltyTime 0.1, JumpPenaltyFactor 0.2 on every record but Yoda's (finding 46 §2)" }
+  },
+  "strike": {
+    "chain": 6,
+    "next": 0.5,
+    "contact": [0.42, 0.58],
+    "rest": 1.83,
+    "unstaggerable": 0.42,
+    "_source": "A.<Hero>.Attack.SeqFLOW at 60 Hz (finding 41, the combo): the next strike opens at tick 30, ExecuteKill ticks 25–35, the node 110 ticks to rest, Unstaggerable ticks 0–25"
+  },
+  "deflect": { "speed": 350, "start": 36, "end": 30, "startDistance": 20, "endDistance": 40, "ttl": 3, "_source": "BlasterProjectile_SaberDeflect (finding 41, block, deflect, stamina): 350 m/s, 36 → 30 over 20–40 m, 3 s" },
+  "melee": { "damage": 65, "delay": 0.03, "reach": 1.5, "every": 0.5, "_source": "Affector_Damage_Melee_Hero_Han … 65, DelayInitialDamageTime 0.03 (finding 41); the reach and the rate the AutoPlayers' AP_MeleeDistanceM 1.5 every 0.5 s (finding 28 §6)" },
+  "immunity": { "seconds": 1.5, "_source": "Affector_ForceImmunity applied 1.5 s after a Force hit (finding 41, PF_Affectors_Shared_Lightsaber)" },
+  "impulse": { "push": 130, "pull": 120, "tackle": 95, "mass": 100, "_source": "Physics.ForcePushed.Node BaseImpulseMagnitude: push 130, pull 120, a tackle 95; the capsule's Mass 100 (finding 46 §2, what makes a hero different 5)" },
+  "ai": {
+    "swordDistance": [2, 5],
+    "attack": [3, 5],
+    "guard": [2, 4],
+    "pause": [2, 3],
+    "abilities": 10,
+    "strafe": 0.005,
+    "dodge": 0.2,
+    "_source": "AutoPlayerSettings for the saber bots: SwordAttackDistance 2..5 m, attack 3..5 s, guard 2..4 s, pause 2..3 s, abilities from 10 m, HeroStrafeProbabilityPerFrame 0.005, dodge roll 0.2 (finding 28 §6)"
+  },
+  "waves": {
+    "pause": { "attack": 180, "defend": 60 },
+    "max": [1, 1, 2, 2, 3],
+    "_source": "AP_WavesHeroes_PauseTime_Attack 180 (→ 120 by phase), _Start 60 defend; AP_Heroes_MaxCount_Attackers_Phase1..5 1,1,2,2,3 (finding 28 §5)"
+  },
+  "heroes": {
+    "luke": { "drive": "saber", "body": "DefaultHeroPhysics", "jump": "force", "saber": "luke", "abilities": "luke" },
+    "leia": { "drive": "blaster", "body": "DefaultHeroPhysics", "jump": "force", "abilities": "leia" },
+    "hansolo": { "drive": "blaster", "body": "DefaultHeroPhysics", "jump": "force", "abilities": "han" },
+    "chewbacca": { "drive": "blaster", "body": "DefaultHeroPhysics_Tall", "jump": "chewbacca", "abilities": "chewie" },
+    "lando": { "drive": "blaster", "body": "DefaultHeroPhysics", "jump": "force", "abilities": "lando" },
+    "yoda": { "drive": "saber", "body": "YodaPhysics", "jump": "yoda", "saber": "yoda", "abilities": "yoda" },
+    "obiwan": { "drive": "saber", "body": "DefaultHeroPhysics", "jump": "force", "saber": "obiwan", "abilities": "obiwan" },
+    "anakin": { "drive": "saber", "body": "DefaultHeroPhysics", "jump": "force", "saber": "anakin", "abilities": "anakin" },
+    "bobafett": { "drive": "blaster", "body": "DefaultHeroPhysics", "jump": "force", "abilities": "bobafett" },
+    "bossk": { "drive": "bossk", "body": "DefaultHeroPhysics", "jump": "bossk", "abilities": "bossk" },
+    "darthvader": { "drive": "vader", "body": "DefaultHeroPhysics_Tall", "jump": "vader", "saber": "vader", "abilities": "vader" },
+    "emperor": { "drive": "saber", "body": "DefaultHeroPhysics", "jump": "force", "lightning": true, "abilities": "palpatine" },
+    "maul": { "drive": "saber", "body": "MaulHeroPhysics", "jump": "force", "saber": "maul", "abilities": "maul" },
+    "iden": { "drive": "blaster", "body": "DefaultHeroPhysics", "jump": "force", "abilities": "iden" },
+    "grievous": { "drive": "saber", "body": "DefaultHeroPhysics_Tall", "jump": "grievous", "saber": "grievous", "abilities": "grievous" },
+    "dooku": { "drive": "saber", "body": "DefaultHeroPhysics", "jump": "force", "saber": "dooku", "abilities": "dooku" }
+  },
+  "hand": {
+    "lunge": { "stop": 1.0, "max": 20, "_source": "hand: a strike's warp onto its pick ends a metre off it (the query reaches 1.5 m ahead: its 3 m sphere round a point 1.5 m back), at most 20 m/s (the lunge's 8 m before the 0.42 s window)" },
+    "rush": { "speed": 9, "seconds": 0.6, "_source": "hand: the dashes are warp clips (finding 46 §2, 4); a dash with no ActiveTime carries 0.6 s at 9 m/s, about the 5 m of Luke's A.Luke.ForceDash.Fwd.01" },
+    "knock": { "seconds": 0.6, "_source": "hand: a shove's `knock` metres carried over 0.6 s (the WarpPush clip's), the victim held meanwhile" },
+    "stun": { "seconds": 1.6, "_source": "hand: lightning and a stun hold the victim 1.6 s (the galaxy's STUN; the reaction's clip is the state machine's)" },
+    "throw": { "range": 16, "_source": "hand: a thrown saber flies out and back over its ActiveTime, at most 16 m out (the galaxy's SABER.throw.range)" },
+    "lightning": { "tick": 0.1, "_source": "hand: Ability_Emperor_ForceLightning's 14 damage lands each 0.1 s of the held stream" },
+    "chain": { "hops": 2, "hop": 8, "_source": "hand: chain lightning leaps twice more, 8 m a leap (the galaxy's CHAIN)" },
+    "aura": { "tick": 1, "_source": "hand: the Dark Aura's 15 lands once a second on each enemy inside it" },
+    "barrier": { "seconds": 8, "_source": "hand: Yoda's Presence shields for 8 s where its record gives no active time" },
+    "mindTrick": { "seconds": 5, "_source": "hand: the tricked fire nothing for 5 s" }
+  }
+}

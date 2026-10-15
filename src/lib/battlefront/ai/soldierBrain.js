@@ -49,26 +49,26 @@ const spotNear = (nav, x, z, r, y) => (nav?.mesh ? meshNearest(nav, x, z, r, y) 
 // The class a soldier plays → the game's AI template for it.
 export const ROLES = { assault: 'rifleman', heavy: 'heavy', officer: 'officer', specialist: 'sniper' };
 // A weapon family → the AI weapon row (aim box, preferred range) and the firing patterns' weapon.
-export const AI_WEAPONS = { rifle: 'AI_Rifle', heavy: 'AI_Heavy', pistol: 'AI_Pistol_Officer', sniper: 'AI_Sniper', hero: 'AI_Rifle', special: 'AI_Rifle' };
-export const PATTERN_WEAPONS = { rifle: 'AssaultRifle', heavy: 'MachineGun', pistol: 'Pistol', sniper: 'SniperRifle', hero: 'AssaultRifle', special: 'AssaultRifle' };
+const AI_WEAPONS = { rifle: 'AI_Rifle', heavy: 'AI_Heavy', pistol: 'AI_Pistol_Officer', sniper: 'AI_Sniper', hero: 'AI_Rifle', special: 'AI_Rifle' };
+const PATTERN_WEAPONS = { rifle: 'AssaultRifle', heavy: 'MachineGun', pistol: 'Pistol', sniper: 'SniperRifle', hero: 'AssaultRifle', special: 'AssaultRifle' };
 
 // Knobs the data does not hold, each the game's by observation:
 export const SIGHT = 100; // metres a bot sees (the templates' sensing areas are single-player only)
 export const CONE = 0.25; // the cosine of a bot's half view angle (about 75° either side)
-export const HEARING = 40; // metres a shot is heard
+const HEARING = 40; // metres a shot is heard
 export const AIM_SETTLE = 2; // seconds on one target for the aim box to shrink from its max to its min
 export const REPLAN = 1.5; // seconds a path is kept before it is planned again
 export const HIDE_HEALTH = 0.4; // the share of health under which a bot hides
-export const SUPPRESSED = 1; // the suppression a bot hides at (near misses fill it by the shooter's SuppressionValue)
+const SUPPRESSED = 1; // the suppression a bot hides at (near misses fill it by the shooter's SuppressionValue)
 export const STRAFE = 4; // metres a bot attacking in the open steps aside
-export const WANDER = 30; // metres round the objective a bot with nothing to do searches
+const WANDER = 30; // metres round the objective a bot with nothing to do searches
 const NEAR_GOAL = 0.8;
 // A bot with a task this far outside its radius goes there rather than
 // fight, unless the enemy is inside FIGHT_AWAY; it interacts only with no
 // enemy believed inside INTERACT_CLEAR (the commander's rule). By hand.
-export const TASK_SLACK = 10;
-export const FIGHT_AWAY = 20;
-export const INTERACT_CLEAR = 10;
+const TASK_SLACK = 10;
+const FIGHT_AWAY = 20;
+const INTERACT_CLEAR = 10;
 // A goal further than this is walked to by legs of LEG metres, each its own
 // search, so a long walk across a Galactic Assault map never floods A*. By hand.
 export const FAR = 80;

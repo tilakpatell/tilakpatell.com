@@ -96,7 +96,7 @@ export { applyRound } from './sim.js';
 export const loadSettings = () => import('../../data/bf2017/gameSettings.json').then((m) => m.default);
 
 export const DIFFICULTIES = ['rookie', 'normal', 'expert'];
-export const LENGTHS = ['short', 'medium', 'long'];
+const LENGTHS = ['short', 'medium', 'long'];
 export const RATES = ['slow', 'default', 'fast'];
 // The most bots a side may be asked for: the game's own, the most of its AI count options (InstantActionNum…AI_PC).
 export const MAX_SIDE = 32;
@@ -107,14 +107,14 @@ export const MAX_SIDE = 32;
 export const SIDE_BY_DETAIL = { low: 5, mid: 8, high: 13, ultra: MAX_SIDE };
 export const sideCap = (detail) => SIDE_BY_DETAIL[detail] ?? SIDE_BY_DETAIL.mid;
 // Instant Action's own mode: Supremacy's command posts.
-export const OWN_MODE = 'supremacy';
+const OWN_MODE = 'supremacy';
 // The mode the AutoPlayers' rows are asked by: none of autoPlayer.js's SUFFIX, so the settings' `_Mode8`.
 const AP_ROWS = 'instantAction';
 // The stages an objective mode's waves are held for (the settings' `_Phase<n>` rows).
 const PHASES = 5;
 
 // The command posts' bot logic a round may ask for: the game's own, or the Instant Action Overhaul V2's.
-export const BOT_LOGICS = ['game', 'overhaul'];
+const BOT_LOGICS = ['game', 'overhaul'];
 
 export const DEFAULTS = { level: 'hoth', mode: OWN_MODE, era: 'Orig', team: 2, difficulty: 'rookie', length: 'medium', bpRate: 'default', allEraHeroes: false, heroes: true, vehicles: true, reinforcements: true, bots: null, botLogic: 'game', overhaul: null };
 

@@ -18,13 +18,13 @@ Phase 1.
 
 ## What is there now (pointers, not repeats)
 
-- Surfaces: `HANDOFF-galaxy-surfaces.md`. Seventeen worlds have quests,
+- Surfaces: `HANDOFF-galaxy.md`. Seventeen worlds have quests,
   missions, heroes, sabers, guns and enemies that burst, strafe, shield and
   parry. The ground wears photo scans up close.
 - Foliage: `2026-10-06-foliage-landscape-design.md` (checkpoints F0–F19).
   It is in flight on `claude/sharp-carson-h9c6mp` (PR #383: Naboo's Lake
   Country, Varykino's cypresses, Yavin's undergrowth, Mustafar's rock).
-- Space: `HANDOFF-galaxy-upgrade.md`, `HANDOFF-galaxy-roam.md`. The roam
+- Space: `HANDOFF-galaxy.md`, `HANDOFF-galaxy.md`. The roam
   director runs the hunt, the Star Destroyer and the bounty hunter (Phase 1
   "Outlaws", merged as #403). The owner has already decided the order of
   the expansion: traffic and events, then named NPCs, then open systems,

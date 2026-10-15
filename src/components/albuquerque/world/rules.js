@@ -167,7 +167,7 @@ export const CRYSTALS = [
   { id: 'b11', x: -49, z: 166 },
   { id: 'b12', x: 150, z: -140 },
 ];
-export const CRYSTAL_REACH = 3.4;
+const CRYSTAL_REACH = 3.4;
 
 // Deliveries: a drop somewhere out in the desert and a clock.
 export const DROPS = [
@@ -736,7 +736,7 @@ export function signalAt(t) {
 // the corner behind (past the crossing) to the stop line at the one ahead,
 // kept to the right of the centre line by `off`.
 const LANE = { stop: 4.2 }; // the stop line, this far back from the cross street's kerb
-export function lanePath(k, dir, off) {
+function lanePath(k, dir, off) {
   const e = EDGES[k];
   const [A, B] = dir > 0 ? [NODES[e.a], NODES[e.b]] : [NODES[e.b], NODES[e.a]];
   const len = Math.hypot(B.x - A.x, B.z - A.z);
@@ -1065,7 +1065,7 @@ export function stepTraffic(cars, dt, t, obstacles = NONE) {
 // and Juan Tabo, in the traffic, stopping where it stops.
 const nodeAt = (x, z) => NODES.find((n) => n.x === x && n.z === z).id;
 export const HANK_ROUTE = [nodeAt(0, 0), nodeAt(-60, 0), nodeAt(-120, 0), nodeAt(-120, -60), nodeAt(-60, -60), nodeAt(0, -60)];
-export const createHank = () => createTraffic(1, { route: HANK_ROUTE })[0];
+const createHank = () => createTraffic(1, { route: HANK_ROUTE })[0];
 // Hank first, then everyone else, none of them on top of each other or of `avoid` (you)
 export function createStreets(n, { avoid = [] } = {}) {
   const hank = createHank();

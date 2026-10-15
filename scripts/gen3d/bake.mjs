@@ -20,7 +20,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 // what a Linux Blender tarball lacks on a bare WSL Ubuntu (libSM, libICE), from conda-forge
 const WSL_LIBS = `~/${'miniforge3'}/envs/x11libs/lib`;
 
-export function blenderWindows() {
+function blenderWindows() {
   if (process.env.BLENDER && existsSync(process.env.BLENDER)) return process.env.BLENDER;
   for (const root of [localDir('blender'), 'C:\\Program Files\\Blender Foundation']) {
     if (!existsSync(root)) continue;
@@ -34,7 +34,7 @@ export function blenderWindows() {
 }
 
 let wslBlender;
-export function blenderWsl() {
+function blenderWsl() {
   if (wslBlender !== undefined) return wslBlender;
   wslBlender = null;
   if (process.platform !== 'win32') return null;

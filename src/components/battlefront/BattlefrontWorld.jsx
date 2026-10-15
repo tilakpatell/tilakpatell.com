@@ -215,7 +215,7 @@ export default function BattlefrontWorld({ level = 'hoth', mode = 'galacticAssau
       {st.cover && <div className="bf-cover" aria-hidden="true" />}
       {st.menu && FrontEnd && <FrontEnd start="menu" playable={playable} level={level} onPlay={onPlay} onExit={() => navigate(way.to)} />}
       <Wipe phase={st.wipe} />
-      {st.loading && Loading && <Loading mode={pending?.mode ?? roundMode ?? mode} level={level} progress={progress.value} waiting={phase === 'pre' ? progress.line : null} onBack={phase === 'pre' ? backOut : null} />}
+      {st.loading && Loading && <Loading mode={pending?.mode ?? roundMode ?? mode} level={level} waiting={progress.line} onBack={phase === 'pre' ? backOut : null} />}
       {snap && (
         <BattlefrontHud
           view={snap}

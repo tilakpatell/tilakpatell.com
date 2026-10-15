@@ -34,7 +34,7 @@ export const PUSH = 0.002;
 // toward the decal's centre, not away (the wall's back, the ceiling under
 // a floor), FACING_SLACK metres of give for the face the centre sits on
 export const FACING = 0.25;
-export const FACING_SLACK = 0.05;
+const FACING_SLACK = 0.05;
 // drawn after the opaque world and the sky
 export const DECAL_ORDER = 10;
 // the box's frame onto the projector's, as [x, y, z, w]: a projected box

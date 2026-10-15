@@ -29,7 +29,7 @@ export const TILE_M = {
 };
 const TILE_PX = 2048;
 // the sparkle's own tile: its 512 px over a metre, a glint a couple of millimetres
-export const SPARKLE_TILE_M = 1;
+const SPARKLE_TILE_M = 1;
 // roughness per layer kind, until the layer shaders' smoothness maps are read
 // (packed snow is wind-polished, rock and chunks rougher)
 export const ROUGHNESS = {
@@ -47,7 +47,7 @@ export const FADE = {
   _source: 'FADE: the design’s 300 m (spec §4, Q2); the end judged on the shot',
 };
 // how sharp the height blend is: (mask × height)^4, normalised (Review Focus 2)
-export const HEIGHT_SHARPNESS = 4;
+const HEIGHT_SHARPNESS = 4;
 
 // Each world's layers, in rule order (the first rule that holds claims a
 // pixel; the last takes the rest), and the colour of its ground far off.
@@ -198,7 +198,7 @@ export function groundJson({ world, scatter, index, masks, have = {}, stats = {}
 
 // Review Focus 2: a blue channel that varies carries a height (the Arctic
 // `_N` maps carry a height in blue); a constant one carries nothing
-export const BLUE_FLAT = 4 / 255;
+const BLUE_FLAT = 4 / 255;
 export function blendModeOf(blue) {
   let s = 0;
   let s2 = 0;

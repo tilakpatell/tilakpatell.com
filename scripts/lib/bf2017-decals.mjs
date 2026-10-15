@@ -71,7 +71,7 @@ function turn(v, [x, y, z, w]) {
 const qmul = ([ax, ay, az, aw], [bx, by, bz, bw]) => [aw * bx + ax * bw + ay * bz - az * by, aw * by - ax * bz + ay * bw + az * bx, aw * bz + ax * by - ay * bx + az * bw, aw * bw - ax * bx - ay * by - az * bz];
 
 // the volume decal shaders that bend the surface's normal and draw no colour
-export const NORMAL_ONLY = /NormalOnly/i;
+const NORMAL_ONLY = /NormalOnly/i;
 
 export function readDecal(raw, extras = {}) {
   if (!raw || raw.enabled === false) return { skip: 'off' };

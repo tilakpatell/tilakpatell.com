@@ -111,6 +111,34 @@ describe('createInput', () => {
     expect(s.tapped).toEqual({});
   });
 
+  // (a new Set, objects and two closures a frame were garbage on the
+  // runtime's path: the snapshot is the frame's, and no world keeps it)
+  it('is one snapshot, refreshed by each sample, with nothing made anew', () => {
+    const win = fakeTarget();
+    const input = createInput({ readPad: () => null });
+    input.attach({ win, host: fakeTarget() });
+    input.bind({ go: ['KeyW'] });
+    win.fire('keydown', press('KeyW'));
+    const a = input.sample(0);
+    const { keys, pressed, pointer, stick, action, axis, tapped } = a;
+    expect(a.pressed.has('KeyW')).toBe(true);
+    const b = input.sample(16);
+    expect(b).toBe(a);
+    expect(b.keys).toBe(keys);
+    expect(b.pointer).toBe(pointer);
+    expect(b.stick).toBe(stick);
+    expect(b.action).toBe(action);
+    expect(b.axis).toBe(axis);
+    expect(b.tapped).toBe(tapped);
+    expect(b.action('go')).toBe(true);
+    expect(b.pressed.has('KeyW')).toBe(false);
+    // (the two press sets take turns: the one handed out is never the one filling)
+    win.fire('keydown', press('KeyD'));
+    expect(b.pressed.has('KeyD')).toBe(false);
+    expect(input.sample(32).pressed).toBe(pressed);
+    expect(input.sample(48).pressed.has('KeyD')).toBe(false);
+  });
+
   it('the pointer is in the host box, with a drag since the last sample', () => {
     const host = fakeTarget();
     const input = createInput();

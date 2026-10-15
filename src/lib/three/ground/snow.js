@@ -5,7 +5,7 @@
 // read here is the game's read.
 //
 // The game paints eight layers over its base snow by per-texel masks (the
-// TerrainStreamingTree's rasters, laid into the pack's three mask frames by
+// TerrainStreamingTree's rasters, laid into the pack's two mask frames by
 // scripts/bf2017-terrain-masks.mjs) and blends them top down, each layer's
 // mask shaped by its own maps: 7 blowing snow (the wisps' streaks × its
 // mask), 6 rocky (height-blended by Rocky_02_N's blue), 5 rocky packed
@@ -199,7 +199,7 @@ export function createSnowGround({ maps = {}, masks = [], tier = 'high', three, 
     const tex = at && has(at.kind) ? maps[at.kind] : null;
     if (!tex) return null;
     const node = texture(tex, uv ?? xz.mul(cyclesOf(r.cycles)));
-    samples[at.kind === 'normals' ? 'normal' : 'data']++;
+    samples[at.kind === 'normals' || /_n$/.test(r.map) ? 'normal' : 'data']++;
     return SNOW_FILES[at.slug].layers ? node.depth(int(at.layer)) : node;
   };
   const tangent = (s) => s.xy.mul(2).sub(1);

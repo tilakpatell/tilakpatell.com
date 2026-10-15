@@ -1,6 +1,6 @@
 # The galaxy's surfaces, to the Shire's standard: the living layer. The design
 
-Date: 2026-10-09. Status: design, written by an architecting session from the owner's brief, for an implementing session (phases in order, one commit each on `claude/compassionate-turing-a8zq9v`). The plan is `docs/superpowers/plans/2026-10-09-galaxy-surfaces-living-layer.md`; the hand-off is `docs/superpowers/HANDOFF-galaxy-surfaces-living-layer.md`.
+Date: 2026-10-09. Status: design, written by an architecting session from the owner's brief, for an implementing session (phases in order, one commit each on `claude/compassionate-turing-a8zq9v`). The plan is `docs/superpowers/plans/2026-10-09-galaxy-surfaces-living-layer.md`; the hand-off is `docs/superpowers/HANDOFF-galaxy.md`.
 
 ## What the owner asked
 
@@ -90,7 +90,7 @@ Each is off on `low`, off on a phone, and dropped at the pace's last step with t
 
 ### 6. What it costs, and the gate
 
-Every world is held by `scripts/galaxy-check.mjs surface <id>` with `BUDGET=1`: draw calls and triangles no more than its baseline +10% and never over its level's row (`src/lib/budgets.js`: high 3M triangles, 700 calls; mid 1.5M, 500), its models within the row's MB. The worlds sit well under the row today (high: Dagobah 1.33M, Kashyyyk 1.41M, Yavin 1.81M, Naboo 1.38M, Sorgan 1.21M, Lothal 1.00M; `HANDOFF-galaxy-asset-upgrade.md`), so a world may grow past its own baseline +10% in this lane, under the row, and the phase that grows it re-makes `lab/baseline/surface-high.json` and `surface-mid.json` for that world and says the numbers in its commit. Endor is `KNOWN_OVER` (4.32M at high) and may not grow: its built ferns (0.52M) come out as its kit ferns (Fern_1 is 288 triangles) go in, so it ends lighter, and the commit says by how much.
+Every world is held by `scripts/galaxy-check.mjs surface <id>` with `BUDGET=1`: draw calls and triangles no more than its baseline +10% and never over its level's row (`src/lib/budgets.js`: high 3M triangles, 700 calls; mid 1.5M, 500), its models within the row's MB. The worlds sit well under the row today (high: Dagobah 1.33M, Kashyyyk 1.41M, Yavin 1.81M, Naboo 1.38M, Sorgan 1.21M, Lothal 1.00M; `HANDOFF-galaxy.md`), so a world may grow past its own baseline +10% in this lane, under the row, and the phase that grows it re-makes `lab/baseline/surface-high.json` and `surface-mid.json` for that world and says the numbers in its commit. Endor is `KNOWN_OVER` (4.32M at high) and may not grow: its built ferns (0.52M) come out as its kit ferns (Fern_1 is 288 triangles) go in, so it ends lighter, and the commit says by how much.
 
 The arithmetic at high, a plains world: cover inside 160 m at the recipe's density is about 2,200 items at a mean 250 triangles, 0.55M; mid 300 items at 600, 0.18M; trees 120 at 4,000 full within `lodDistance`, LOD1 past it, about 0.25M; the kit's draws about 20 species × 2 parts × 2 bands plus their shadow stand-ins, under 120 calls. Naboo lands near 2.4M and 500 calls. Mid (`props` 0.75, no antiTile, 256 leaves) near 1.4M. Low (0.5, no leaves, no tracks, no lines) near 0.8M, the row.
 

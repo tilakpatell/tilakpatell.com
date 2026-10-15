@@ -48,7 +48,7 @@ const caster = (p) => p.kind === 'emperor';
 // set on you: brains.js's fight with you as its mark, or the story's word (a hostile with a script)
 const setOn = (p) => (p.mode === 'fight' && p.mind?.fight?.target === 'you') || (p.mode === 'scripted' && p.hostile === true);
 
-export function foesOf(g) {
+function foesOf(g) {
   const you = g.you;
   if (!(you.hp > 0)) return [];
   return g.crew.people.filter((p) => p.hp > 0 && LIVE.has(p.mode) && (blade(p) || caster(p)) && setOn(p) && p.room === you.room && flat(p, you) <= RANGE && Math.abs(p.y - you.y) < 3);

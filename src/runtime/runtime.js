@@ -119,6 +119,9 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   let tier = null; // the renderer tier, once asked (decideTier)
   let tierWhy = null; // and its reason, where the decider gives one ({ tier, why }: lib/gpuProbe's)
   let pacer = null; // the cadence's judge for the world that is up (createCadence)
+  // (what the judge is told each frame, one object refilled: a new one a
+  // frame was garbage on the runtime's path, the every-world hand-off's item 2)
+  const told = { interval: 0, cpuMs: 0, gpuMs: null, floored: false, beatMs: undefined };
   const clockNow = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
   let tiering = null; // its one asking, shared by every mount meanwhile
   const listeners = new Set();
@@ -200,7 +203,12 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     // behind this one, whose making these frames carry
     if (pacer && !rt.loading) {
       const clock = gfx.renderer ? clocks.get(gfx.renderer) : null;
-      const next = pacer.frame(t, { interval, cpuMs, gpuMs: clock?.available ? (clock.last ?? null) : null, floored: Boolean(quality.floored), beatMs: loop.beat ?? undefined });
+      told.interval = interval;
+      told.cpuMs = cpuMs;
+      told.gpuMs = clock?.available ? (clock.last ?? null) : null;
+      told.floored = Boolean(quality.floored);
+      told.beatMs = loop.beat ?? undefined;
+      const next = pacer.frame(t, told);
       if (next !== null) loop.setCadence?.(next);
     }
     // (the cover is read after the draw, in the frame's own task: see cover())

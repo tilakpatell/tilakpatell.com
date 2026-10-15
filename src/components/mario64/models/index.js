@@ -16,4 +16,3 @@ const loadedFor = (type) => (HD_FOR[type] ? hdCopy(HD_FOR[type], { own: OWN.has(
 
 export const makeActor = (a) => (THINGS[a.type] ?? CAST[a.type] ?? NONE)(a, loadedFor(a.type));
 export const makeProp = (p) => (PROPS[p.kind] ?? NONE)(p, loadedFor(p.kind));
-export const MODELLED = [...Object.keys(THINGS), ...Object.keys(CAST)];

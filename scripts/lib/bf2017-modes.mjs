@@ -21,7 +21,7 @@
 import { isSequel } from './bf2017-manifest.mjs';
 import { resolveStrings } from './bf2017-ebx.mjs';
 
-export const LAYER_MODES = [
+const LAYER_MODES = [
   [/^FantasyBattle$/i, 'galacticAssault'],
   [/^SpaceBattle$/i, 'starfighter'],
   [/^(HeroArena|HeroesVsVillains)$/i, 'hvv'],
@@ -36,9 +36,9 @@ export const LAYER_MODES = [
   [/^Mode9$/i, 'coop'],
   [/^(PlanetaryMissions|SpaceArcadeTeamBattle)$/i, 'arcade'],
 ];
-export const MODE_ORDER = LAYER_MODES.map(([, m]) => m).filter((m, i, a) => a.indexOf(m) === i);
+const MODE_ORDER = LAYER_MODES.map(([, m]) => m).filter((m, i, a) => a.indexOf(m) === i);
 
-export const MODE_STRINGS = {
+const MODE_STRINGS = {
   galacticAssault: 'ID_RP_GAMEMODE_PLANETARYBATTLES',
   starfighter: 'ID_RP_GAMEMODE_SPACEBATTLES',
   hvv: 'ID_RP_GAMEMODE_HEROESVSVILLAINS',
@@ -85,7 +85,7 @@ export const LEVEL_WORLDS = {
   sb_fondor_01: { world: 'fondor', space: true },
   sb_droidbattleship_01: { world: 'ryloth', space: true },
 };
-export const LEVEL_STRINGS = { hoth: 'ID_RP_LEVEL_HOTH', endor: 'ID_RP_LEVEL_ENDOR', tatooine: 'ID_RP_LEVEL_TATOOINE', geonosis: 'ID_RP_LEVEL_GEONOSIS', kashyyyk: 'ID_RP_LEVEL_KASHYYYK', naboo: 'ID_RP_LEVEL_NABOO', yavin: 'ID_RP_LEVEL_YAVIN', kamino: 'ID_RP_LEVEL_KAMINO', bespin: 'ID_RP_LEVEL_BESPIN', felucia: 'ID_RP_LEVEL_FELUCIA', deathstar: 'ID_RP_LEVEL_DEATHSTARII', fondor: 'ID_RP_LEVEL_FONDOR', ryloth: 'ID_RP_LEVEL_DROIDBATTLESHIP', jabbaspalace_01: 'ID_RP_LEVEL_JABBASPALACE' };
+const LEVEL_STRINGS = { hoth: 'ID_RP_LEVEL_HOTH', endor: 'ID_RP_LEVEL_ENDOR', tatooine: 'ID_RP_LEVEL_TATOOINE', geonosis: 'ID_RP_LEVEL_GEONOSIS', kashyyyk: 'ID_RP_LEVEL_KASHYYYK', naboo: 'ID_RP_LEVEL_NABOO', yavin: 'ID_RP_LEVEL_YAVIN', kamino: 'ID_RP_LEVEL_KAMINO', bespin: 'ID_RP_LEVEL_BESPIN', felucia: 'ID_RP_LEVEL_FELUCIA', deathstar: 'ID_RP_LEVEL_DEATHSTARII', fondor: 'ID_RP_LEVEL_FONDOR', ryloth: 'ID_RP_LEVEL_DROIDBATTLESHIP', jabbaspalace_01: 'ID_RP_LEVEL_JABBASPALACE' };
 
 const shortOf = (s) => String(typeof s === 'string' ? s : (s?.name ?? s?.path ?? '')).split('/').pop();
 const fileOf = (level) => shortOf(level).toLowerCase();

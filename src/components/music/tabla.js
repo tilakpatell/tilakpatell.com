@@ -47,7 +47,6 @@ const failing = () => performance.now() - failedAt < 8000;
 // Fetch and decode the strokes ahead of the first one (on scroll, say). Needs
 // no click: nothing starts playing.
 export const warmTabla = () => load().catch(() => null);
-export const tablaReady = () => Boolean(ready);
 
 // ── The mix ────────────────────────────────────────────────────────────────
 let bus = null;
