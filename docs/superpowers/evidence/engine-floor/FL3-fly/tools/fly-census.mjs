@@ -27,7 +27,7 @@ try {
   await page.waitForFunction(() => window.__FLIGHT__ && window.__RUNTIME__?.status === 'on', null, { timeout: 240000 });
   await page.waitForFunction(() => window.__FLIGHT__.stats().leaves > 100, null, { timeout: 120000 }).catch(() => {});
   await page.waitForTimeout(8000);
-  const out = await page.evaluate(() => {
+  const out = await page.evaluate(async () => {
     const scene = window.__FLIGHT__.scene;
     const count = (root) => {
       const c = { objects: 0, visible: 0, meshes: 0, shownMeshes: 0, instanced: 0, instances: 0, auto: 0, materials: new Set() };
@@ -50,7 +50,30 @@ try {
       return { ...c, materials: c.materials.size };
     };
     const rows = scene.children.map((o) => ({ name: o.name || o.type, ...count(o) }));
-    return { backend: window.__RUNTIME__.backend ?? window.__RUNTIME__.gfx?.backend, total: count(scene), rows, info: window.__RUNTIME__.gfx?.renderer?.info?.render };
+    // (the POIs' meshes that move: each one's matrix within its landmark,
+    // read now and again two seconds on)
+    const marks = [];
+    for (const top of scene.children)
+      if (top.name.startsWith('landmark:'))
+        top.traverse((o) => {
+          if (!o.isMesh) return;
+          const m = o.matrixWorld.clone().premultiply(top.matrixWorld.clone().invert());
+          marks.push([top.name, o, m]);
+        });
+    await new Promise((r) => setTimeout(r, 2000));
+    const moving = {};
+    for (const [name, o, m] of marks) {
+      const now = o.matrixWorld.clone().premultiply(o.parent && scene.getObjectByName(name).matrixWorld.clone().invert());
+      if (!now.equals(m)) (moving[name] ??= []).push(o.name || o.parent?.name || o.type);
+    }
+    // (the POIs' materials: their kind, the marks a hook leaves, their own nodes)
+    const mats = {};
+    for (const [, o] of marks)
+      for (const m of [o.material].flat()) {
+        const k = `${m.type}|${m.name}|${Object.keys(m.userData).join(',')}|${['positionNode', 'colorNode', 'emissiveNode', 'normalNode', 'opacityNode'].filter((n) => m[n]).join(',')}|${m.transparent ? 't' : ''}${o.isInstancedMesh ? 'i' : ''}${o.matrixWorld.determinant() < 0 ? '-' : ''}`;
+        mats[k] = (mats[k] ?? 0) + 1;
+      }
+    return { mats, moving, backend: window.__RUNTIME__.backend ?? window.__RUNTIME__.gfx?.backend, total: count(scene), rows, info: window.__RUNTIME__.gfx?.renderer?.info?.render };
   });
   console.log(JSON.stringify(out, null, 1));
 } finally {
