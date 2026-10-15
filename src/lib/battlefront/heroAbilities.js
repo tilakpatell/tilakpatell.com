@@ -20,6 +20,8 @@
 import KIT from '../../data/bf2017/heroKit.json';
 import { apply } from './affectors.js';
 import { heightAt, lineClear, walkable } from './nav.js';
+import { meshMove } from './meshNav.js';
+import { STEP } from './core.js';
 import { chestOf, eyeOf } from './soldier.js';
 
 const H = KIT.hand;
@@ -80,8 +82,16 @@ export function shove(o, dir, metres, now) {
   hold(o, now + t, 'knocked');
 }
 
-// a step across the navgrid, sliding along what blocks it (soldier.js's move, at a given distance)
+// a step of a given length, sliding along what blocks it (soldier.js's move, at a given distance): on the
+// soldier's own body where it has one (the player's on the level's shapes, map/walk.js's mover), on the
+// level's navmesh where it stands on one (meshNav.js), else across the navgrid
 export function slide(nav, s, dx, dz) {
+  const d = Math.hypot(dx, dz);
+  if (d > 1e-9 && (s.mover || nav?.mesh)) {
+    const dir = [dx / d, dz / d];
+    const m = s.mover ? s.mover(s, dir, STEP, nav, d / STEP) : meshMove(s, dir, STEP, nav, d / STEP);
+    if (m !== null) return m > 1e-9;
+  }
   for (const [mx, mz] of [
     [dx, dz],
     [dx, 0],
@@ -93,7 +103,8 @@ export function slide(nav, s, dx, dz) {
     if (nav && !walkable(nav, x, z)) continue;
     s.at[0] = x;
     s.at[2] = z;
-    if (nav && !s.hero?.air) s.at[1] = heightAt(nav, x, z);
+    if (nav && s.hero?.air) s.hero.air.floor = heightAt(nav, x, z);
+    else if (nav) s.at[1] = heightAt(nav, x, z);
     return true;
   }
   return false;

@@ -1,8 +1,12 @@
 // The heroes on the sim: their kit, the saber's chain and block, the jump,
 // and their abilities with the records' numbers.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { loadRulebook } from './rulebook.js';
 import { buildNav } from './nav.js';
+import { load as loadNavmesh } from './navmesh.js';
+import { attachMesh, meshStand } from './meshNav.js';
 import { field } from './fixtures/field.js';
 import { hothFlatNav } from './fixtures/hothFlat.js';
 import { addPlayer, createSim, deploy, step, view } from './sim.js';
@@ -166,5 +170,67 @@ describe('the abilities, on the records’ numbers', () => {
     const ev = run(sim, 60, (i) => [{ id, move: [0, 0], look: 0, aim: [AT[0], 1.4, AT[2] + 50], ability: i === 0 ? 1 : 0 }]);
     expect(ev.find((e) => e.type === 'hit' && e.target === t.id)).toMatchObject({ part: 'saber', damage: 130 });
     expect(sim.entities.get(id).hero.thrown).toBe(null);
+  });
+});
+
+// Hoth's playthrough mesh (scripts/bf2017-navmesh-cut.mjs) over a grid whose ground is the mountain's snow, 77 m
+// over the fuel room: a hero standing, jumping or rushing on the mesh keeps to the room's floor
+const MESH = readFileSync(join(import.meta.dirname, '../../../scripts/fixtures/bf2017/navmesh/hoth-playthrough.bin'));
+const SNOW = 436;
+const onMesh = () => createSim({ rulebook: rb, nav: attachMesh(buildNav({ heightAt: () => SNOW, bounds: { min: [150, -1800], max: [260, -1500] } }), loadNavmesh(MESH, { mesh: 'playthrough' })), seed: 7 });
+// (the fuel room, under the mountain: 32 m of floor east of here, 15 west)
+const ROOM = [209, 359.2, -1755];
+const EAST = Math.PI / 2;
+
+describe('a hero on the level’s navmesh', () => {
+  it('walks by its own drive there: ahead at 4.725 m/s, backing off at 0.89 of it', () => {
+    const sim = onMesh();
+    const id = addPlayer(sim, { team: 2, hero: 'luke', at: ROOM, yaw: EAST });
+    const s = sim.entities.get(id);
+    const go = (move) => {
+      const a = s.at.slice();
+      run(sim, 10, () => [{ id, move, look: EAST }]);
+      return Math.hypot(s.at[0] - a[0], s.at[2] - a[2]);
+    };
+    expect(go([1, 0])).toBeCloseTo(4.725 / 2, 1);
+    expect(go([-1, 0])).toBeCloseTo((4.725 * 0.89) / 2, 1);
+  });
+
+  it('jumps off the room’s floor and lands on it again, walking or standing, never on the snow over it', () => {
+    for (const move of [[0, 0], [1, 0]]) {
+      const sim = onMesh();
+      const id = addPlayer(sim, { team: 2, hero: 'luke', at: ROOM, yaw: EAST });
+      const s = sim.entities.get(id);
+      const floor = s.at[1];
+      let top = 0;
+      run(sim, 40, (i) => {
+        top = Math.max(top, s.at[1] - floor);
+        return [{ id, move, look: EAST, jump: i === 0 }];
+      });
+      expect(top, `${move}`).toBeGreaterThan(3);
+      expect(top, `${move}`).toBeLessThan(5);
+      expect(s.hero.air, `${move}`).toBe(null);
+      // (on the floor where it came down: walking east, the room's floor rises a little)
+      expect(s.at[1], `${move}`).toBeCloseTo(meshStand(sim.nav, s.at, 1)[1], 1);
+      expect(Math.abs(s.at[1] - floor), `${move}`).toBeLessThan(1);
+    }
+  });
+
+  it('rushes along the floor: Luke’s dash carries him about 5 m east and leaves him on it', () => {
+    const sim = onMesh();
+    const id = addPlayer(sim, { team: 2, hero: 'luke', at: ROOM, yaw: EAST });
+    const s = sim.entities.get(id);
+    const from = s.at.slice();
+    run(sim, 30, (i) => [{ id, move: [0, 0], look: EAST, aim: [260, 360.6, -1755], ability: i === 0 ? 3 : 0 }]);
+    expect(s.at[0] - from[0]).toBeGreaterThan(4);
+    expect(s.at[1]).toBeCloseTo(from[1], 0);
+  });
+
+  it('lays Bossk’s mines on the room’s floor, where a blast of theirs reaches who stands by them', () => {
+    const sim = onMesh();
+    const s = sim.entities.get(addPlayer(sim, { team: 2, hero: 'bossk', at: ROOM, yaw: EAST }));
+    run(sim, 20, (i) => [{ id: s.id, move: [0, 0], look: EAST, aim: [260, 360.6, -1755], ability: i === 0 ? 3 : 0 }]);
+    expect(s.hero.mines).toHaveLength(3);
+    for (const m of s.hero.mines) expect(Math.abs(m.at[1] - s.at[1])).toBeLessThan(1);
   });
 });

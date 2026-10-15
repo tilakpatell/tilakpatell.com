@@ -23,6 +23,7 @@ import { remove } from './affectors.js';
 import { fire as fireBolt } from './bolts.js';
 import { SPLIT, createGrenade, throwFrom } from './grenades.js';
 import { heightAt } from './nav.js';
+import { meshStand } from './meshNav.js';
 import { syncGun } from './kit.js';
 import { chestOf, eyeOf } from './soldier.js';
 import { createGun } from './weapons.js';
@@ -254,7 +255,10 @@ export const BLASTER = {
       s.hero.mines = [];
       for (let i = 1; i <= fx.hand.count; i++) {
         const at = [s.at[0] + Math.sin(yaw) * fx.hand.apart * i, s.at[1], s.at[2] + Math.cos(yaw) * fx.hand.apart * i];
-        if (sim.nav) at[1] = heightAt(sim.nav, at[0], at[2]);
+        // (on the level's navmesh, the floor nearest the hero's own: a hangar's, not the snow over it)
+        const stood = sim.nav?.mesh ? meshStand(sim.nav, at, 2) : null;
+        if (stood) at[1] = stood[1];
+        else if (sim.nav) at[1] = heightAt(sim.nav, at[0], at[2]);
         s.hero.mines.push({ at, armAt: now + fx.arm, until: now + fx.hand.life, trigger: fx.trigger, row });
       }
       sim.out?.push({ t: now, type: 'mines', by: s.id, at: s.hero.mines.map((m) => m.at.slice()) });

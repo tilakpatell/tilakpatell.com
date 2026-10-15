@@ -28,7 +28,6 @@ import { createSaberSim, saberOf } from '../combat/saber2017.js';
 import { end as endAbility } from './abilities.js';
 import { apply } from './affectors.js';
 import { fire as fireBolt } from './bolts.js';
-import { heightAt } from './nav.js';
 import { chestOf } from './soldier.js';
 import { STEP } from './core.js';
 import { AI_DAMAGE_SCALE, damageAt } from './weapons.js';
@@ -113,7 +112,9 @@ export function jump(sim, s, now) {
   const j = s.cls.jump;
   if (!H || !j || H.air || !s.alive) return false;
   // (Yoda's record gives a height: the rise that reaches it under his fall)
-  H.air = { vy: j.height ? Math.sqrt(-2 * j.gravity * j.height) : 0, t0: now };
+  // (floor: the ground under the hero, kept by whatever moves it while it is up, its landing's: the navgrid's,
+  // the navmesh's floor, its own body's ground, soldier.js, meshNav.js, map/walk.js)
+  H.air = { vy: j.height ? Math.sqrt(-2 * j.gravity * j.height) : 0, t0: now, floor: s.at[1] };
   s.blocking = false;
   H.saber?.block(false, now);
   sim.out?.push({ t: now, type: 'jump', by: s.id });
@@ -155,9 +156,8 @@ function stepAir(sim, s, now, dt) {
   if (now - A.t0 < (j.hold ?? 0)) A.vy += (j.vy - A.vy) * (1 - Math.pow(1 - j.weight, dt * 30));
   else A.vy += j.gravity * dt;
   s.at[1] += A.vy * dt;
-  const ground = sim.nav ? heightAt(sim.nav, s.at[0], s.at[2]) : 0;
-  if (s.at[1] <= ground && A.vy <= 0) {
-    s.at[1] = ground;
+  if (s.at[1] <= A.floor && A.vy <= 0) {
+    s.at[1] = A.floor;
     H.air = null;
     if (j.penalty !== false) apply(s.stack, { id: 'landing', property: 'speed', op: 'mul', value: KIT.jumps.landing.factor, until: now + KIT.jumps.landing.seconds });
     sim.out?.push({ t: now, type: 'land', by: s.id });

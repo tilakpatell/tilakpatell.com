@@ -191,11 +191,15 @@ function driveScale(s, dir, len) {
   return f2 * (f >= 0 ? 1 : (row.back ?? 1)) + (1 - f2) * (row.strafe ?? 1);
 }
 
+// the soldier's pace going along dir: its speed, a hero's by its drive's scaling for that way (the navmesh's
+// step and the player's body, map/walk.js, take it as the navgrid's does)
+export const speedAlong = (s, dir) => speedOf(s) * driveScale(s, dir, Math.hypot(dir[0], dir[1]));
+
 // a step along dir (a unit [x, z]) at the soldier's speed, sliding along what blocks it: on the level's
 // navmesh where the battle has one and the soldier stands on it (meshNav.js), else on the navgrid
 export function move(s, dir, dt, nav) {
   if (nav?.mesh) {
-    const m = meshMove(s, dir, dt, nav, speedOf(s));
+    const m = meshMove(s, dir, dt, nav, speedAlong(s, dir));
     if (m !== null) return m;
   }
   const len = Math.hypot(dir[0], dir[1]);
@@ -219,8 +223,9 @@ export function move(s, dir, dt, nav) {
     if (!walkable(nav, x, z)) continue;
     s.at[0] = x;
     s.at[2] = z;
-    // (a hero off the ground keeps its height: heroKit.js's jump)
-    if (!s.hero?.air) s.at[1] = heightAt(nav, x, z);
+    // (a hero off the ground keeps its height, the ground under it kept for its landing: heroKit.js's jump)
+    if (s.hero?.air) s.hero.air.floor = heightAt(nav, x, z);
+    else s.at[1] = heightAt(nav, x, z);
     s.vel[0] = mx / dt;
     s.vel[2] = mz / dt;
     s.moving = true;
