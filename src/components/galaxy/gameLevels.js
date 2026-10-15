@@ -10,6 +10,7 @@
 //   gameMenuFor(system) → the address, or null for a world that lands on its surface
 //   landsOnSurface(system) → false for a game world: a page lists nothing of a surface for it
 //   wayDown(system, district) → { to, game }: where the galaxy goes when you land
+//   groundBattle(systemRow) → where a world's battle is fought on the ground, or null
 
 export const GAME_MENU = { hoth: '/battlefront/hoth?from=%2Fgalaxy%2Fhoth' };
 
@@ -22,3 +23,9 @@ export function wayDown(system, district = null) {
   if (menu) return { to: menu, game: true };
   return { to: `/galaxy/${system}/surface${district ? `?district=${encodeURIComponent(district)}` : ''}`, game: false };
 }
+
+// Where the battle on a world is fought on the ground (the war card's link):
+// the game's menu for a game world, else the assault its briefing lists
+// (systems.js's `game.also`), else nowhere. Takes the system's row, since
+// systems.js reads this file.
+export const groundBattle = (system) => (system ? (gameMenuFor(system.id) ?? system.game?.also?.find((a) => a.id === 'assault' && a.to)?.to ?? null) : null);
