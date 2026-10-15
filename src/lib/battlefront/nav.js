@@ -23,12 +23,14 @@
 // leave no room for a soldier's capsule, built offline by the physics
 // engine) is taken as it is when it fits the grid: its blocked cells are
 // solid, its fine grid makes `walkable` exact, its tops stop a line of sight
-// (`solid: -2`) and its edges give cover slots. A box solid blocks only
-// where its top is a step or more above the ground (the soldier's
-// `StepHeight`), so a box buried in the ground blocks nothing.
+// (`solid: -2`: over the whole cell where the top was measured, over the
+// cell's blocked fine cells where it was not) and its edges give cover
+// slots. A box solid blocks only where its top is a step or more above the
+// ground (the soldier's `StepHeight`), so a box buried in the ground blocks
+// nothing.
 // Pure: typed arrays, no three.js.
 
-import { fineBlocked, maskFits } from './navMask.js';
+import { fineBlocked, maskFits, unmeasuredTop } from './navMask.js';
 import { search } from './navSearch.js';
 
 export const MAX_EXPAND = 20000;
@@ -109,7 +111,7 @@ export function buildNav({ heightAt, bounds, cell = 2, solids = [], maxSlope = 0
         }
       walk[i] = ok;
     }
-  const nav = { cell, cols, rows, origin, height, walk, solid, boxes, near, radius, step, mask: fits, slots: [], buckets: new Map(), scratch: null };
+  const nav = { cell, cols, rows, origin, height, walk, solid, boxes, near, radius, step, mask: fits, unmeasured: fits ? unmeasuredTop(fits) : 0, slots: [], buckets: new Map(), scratch: null };
   nav.slots = findSlots(nav, cover);
   for (const s of nav.slots) {
     const k = bucketKey(s.at[0], s.at[2]);
@@ -324,10 +326,19 @@ function segBox(b, a, e) {
   return t0;
 }
 
-// below a mask cell's top at the segment's fraction t
-function inMask(nav, a, b, t) {
-  const i = indexAt(nav, a[0] + (b[0] - a[0]) * t, a[2] + (b[2] - a[2]) * t);
-  return i >= 0 && nav.mask.top[i] > 0 && a[1] + (b[1] - a[1]) * t < nav.height[i] + nav.mask.top[i] / 10;
+// The segment's point at fraction t against the mask: 2 inside a shape, 1
+// under the top of a cell whose shape stands elsewhere in it, 0 clear of it.
+// A top the builder measured stands for the whole cell. Where it measured none
+// (navMask.js's unmeasuredTop: the shape is beside the cell's middle) the
+// column stands only over the fine cells a capsule cannot stand in.
+function maskAt(nav, a, b, t) {
+  const m = nav.mask;
+  const x = a[0] + (b[0] - a[0]) * t;
+  const z = a[2] + (b[2] - a[2]) * t;
+  const i = indexAt(nav, x, z);
+  // (not under the top, said this way round: a cell with no height stops nothing, as before)
+  if (i < 0 || !m.top[i] || !(a[1] + (b[1] - a[1]) * t < nav.height[i] + m.top[i] / 10)) return 0;
+  return m.top[i] !== nav.unmeasured || !m.fine || fineBlocked(m, x, z) ? 2 : 1;
 }
 
 // the first solid (or the ground, or the mask) segment a→b meets: its fraction and point
@@ -336,6 +347,7 @@ export function firstSolid(nav, a, b) {
   const steps = Math.max(1, Math.ceil(d / (nav.cell / 2)));
   const tried = new Set();
   let best = null;
+  let was = 0;
   for (let k = 0; k <= steps; k++) {
     const t = k / steps;
     const x = a[0] + (b[0] - a[0]) * t;
@@ -351,18 +363,27 @@ export function firstSolid(nav, a, b) {
     }
     // a solid already met before the last sample: nothing nearer is left
     if (best && best.t <= (k - 1) / steps) break;
-    if (nav.mask && inMask(nav, a, b, t)) {
-      // (the entry, to an eighth of a cell: back from this sample towards the last)
-      let tt = t;
-      for (let q = 1; k > 0 && q <= 4; q++) {
+    if (nav.mask) {
+      const now = maskAt(nav, a, b, t);
+      // (the entry, to an eighth of a cell: back from this sample towards the
+      // last; beside a narrowed column those points are tried though this
+      // sample is clear, its fine cells being a quarter of a cell wide: on
+      // the way into the column, `now`, and on the way out of it, `was`. The
+      // third point only tells for a clip shorter than a fine cell is wide,
+      // and no test holds it)
+      let tt = now === 2 ? t : -1;
+      for (let q = 1; k > 0 && (now || was) && q <= 3; q++) {
         const t2 = (k - 1 + q / 4) / steps;
-        if (inMask(nav, a, b, t2)) {
+        if (maskAt(nav, a, b, t2) === 2) {
           tt = t2;
           break;
         }
       }
-      if (!best || tt < best.t) best = { t: tt, solid: -2 };
-      break;
+      was = now;
+      if (tt >= 0) {
+        if (!best || tt < best.t) best = { t: tt, solid: -2 };
+        break;
+      }
     }
     const y = a[1] + (b[1] - a[1]) * t;
     // (under the terrain, the navmesh's certified free space is not ground: Echo Base under the snow, meshNav.js's open)
