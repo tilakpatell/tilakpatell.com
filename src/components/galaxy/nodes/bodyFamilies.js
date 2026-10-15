@@ -44,15 +44,19 @@ export const whirl = (p, c, w, k) => {
 const CELLS = [0, 1, 2, 3, 4, 5, 6, 7].map((k) => [k & 1, (k >> 1) & 1, (k >> 2) & 1]);
 
 // craters: the 8 cells round p, a crater in some of them; height and gradient
-export const cratersWith = (n) =>
-  Fn(
-    ([p, density, depth]) => {
+// (laid out, so the eight cells are one function in the shader, not
+// written out at each of its calls; the seed comes in as an argument, as the
+// noise’s does: read from outside, it is declared only in the first program
+// the function is built into, and a second planet failed to compile)
+export const cratersWith = (n) => {
+  const craters = Fn(
+    ([p, density, depth, seed]) => {
       const base = floor(p.sub(0.5)).toVar();
       const acc = vec3(0.0).toVar(); // (the GLSL’s acc.yzw; accH its .x)
       const accH = float(0.0).toVar();
       for (const [x, y, z] of CELLS) {
         const cell = base.add(vec3(x, y, z)).toVar();
-        const h = n.hash33(cell).toVar();
+        const h = n.raw.hash33(cell, seed).toVar();
         If(h.x.lessThanEqual(density), () => {
           const c = cell.add(0.5).add(h.sub(0.5).mul(0.4));
           const rr = float(0.12).add(float(0.22).mul(h.y).mul(h.y)).toVar();
@@ -74,8 +78,10 @@ export const cratersWith = (n) =>
       }
       return vec4(accH, acc);
     },
-    { p: 'vec3', density: 'float', depth: 'float', return: 'vec4' },
+    { p: 'vec3', density: 'float', depth: 'float', seed: 'vec3', return: 'vec4' },
   );
+  return (p, density, depth) => craters(p, density, depth, n.seed);
+};
 
 // (a crease’s sharpness k: the smoothstep that draws it, and its slope)
 const crease = (k, r, a) => smoothstep(float(1.0).sub(k), float(1.0).sub(k.mul(0.25)), r).mul(a);
