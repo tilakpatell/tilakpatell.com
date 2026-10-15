@@ -12,11 +12,20 @@
 //         sweep(from, dir, len, r) → metres along dir to the first shape | null,
 //         floor(x, y, z, reach = 3) → the height of the first shape or ground under a point (the export's frame) | null,
 //         stats(), dispose() }
-//   createPartsCollision({ parts: { outside: { pack, loadBin }, inside: { pack, loadBin } | null }, physics, tier, deps })
-//     → the same face, for a level and its interior (map/level.js's `inner`):
-//       add(key, bin, band, part) and drop(key, part) by the part the stream
-//       names ('inside', else the outside), the sweep the nearer of the two,
-//       setTerrain(heightAt) the outside's (a pack-frame sampler)
+//   createPartsCollision({ parts: { outside: { pack, loadBin }, inside: { pack, loadBin } | null, mode: { pack, loadBin, mode, match } | null }, physics, tier, deps })
+//     → the same face, for a level, its interior (map/level.js's `inner`) and
+//       its mode's part (its `modePart`): add(key, bin, band, part) and
+//       drop(key, part) by the part the stream names ('inside', 'mode', else
+//       the outside), the sweep the nearest of them, setTerrain(heightAt) the
+//       outside's (a pack-frame sampler). The mode part's cells go in without
+//       what its doors and props move (doorsTable.js's splitCell: those are
+//       map/doorsScene.js's bodies), and its mode.json's walls, the mode's
+//       OBBCollisionEntityData, go in at once as fixed boxes (modeBoxes):
+//       the Static layer's meet everything, the CharacterCollisionGeometry
+//       layer's (findings/46's pair table: characters and ragdolls only) are
+//       the physics groups' barriers, which only a character meets; the camera's
+//       sweep passes them, as the game's CameraCollision layer does
+//   modeBoxes(boxes) → [body desc]: those walls as lane P0's world takes them (pure)
 //   armCaster({ heightAt, collision, nav, clear, step, radius }) → castArm(from, dir, len)
 //     the nearer of a march over the ground and a ball swept through the
 //     shapes (with no engine: the navgrid's solids and mask, firstSolid)
@@ -24,6 +33,8 @@
 
 import * as laneL from '../../galaxy/shared/level.js';
 import { firstSolid } from '../../../lib/battlefront/nav.js';
+import { filterOf } from '../../../lib/physics/groups.js';
+import { splitCell } from './doorsTable.js';
 
 // m: the ball swept along the arm (Gameplay/Characters/StormTrooperShared#SoldierCameraComponentData.CameraCullSphereRadius; its use as the sweep's radius is hand)
 export const CULL_RADIUS = 0.15;
@@ -31,6 +42,8 @@ export const ARM_STEP = 0.2; // m the camera's ray marches along the arm over th
 export const ARM_CLEAR = 0.25; // m above the ground the camera keeps (hand)
 
 const I = { x: 0, y: 0, z: 0, w: 1 };
+// (the camera's sweep: everything it met before but a soldiers-only wall)
+const ARM_GROUPS = filterOf('floor', 'object', 'bumper', 'character', 'hurtbox', 'zone', 'projectile', 'sight');
 
 export const wantsEngine = (opts) => laneL.wantsEngine(opts);
 
@@ -75,7 +88,7 @@ export function createLevelCollision({ pack, loadBin, physics, tier = 'high', de
       if (!balls.has(r)) balls.set(r, new RAPIER.Ball(r));
       const [px, pz] = turn(from[0] - ox, from[2] - oz);
       const [dx, dz] = turn(dir[0], dir[2]);
-      const h = world.castShape({ x: px, y: from[1] - oy, z: pz }, I, { x: dx * len, y: dir[1] * len, z: dz * len }, balls.get(r), 0, 1, true);
+      const h = world.castShape({ x: px, y: from[1] - oy, z: pz }, I, { x: dx * len, y: dir[1] * len, z: dz * len }, balls.get(r), 0, 1, true, undefined, ARM_GROUPS);
       return h ? h.time_of_impact * len : null;
     },
     floor(x, y, z, reach = 3) {
@@ -98,6 +111,16 @@ export function createLevelCollision({ pack, loadBin, physics, tier = 'high', de
   };
 }
 
+export function modeBoxes(boxes = []) {
+  return boxes.map((b) => ({
+    type: 'fixed',
+    group: b.layer === 'character' ? 'barrier' : 'floor',
+    position: [...b.at],
+    rotation: b.rotation ? [...b.rotation] : [0, 0, 0, 1],
+    colliders: [b.radius ? { shape: 'ball', args: [b.radius] } : { shape: 'cuboid', args: [...b.half] }],
+  }));
+}
+
 export function createPartsCollision({ parts, physics, tier = 'high', deps = {} }) {
   const each = Object.fromEntries(
     Object.entries(parts)
@@ -105,9 +128,20 @@ export function createPartsCollision({ parts, physics, tier = 'high', deps = {} 
       .map(([name, p]) => [name, createLevelCollision({ pack: p.pack, loadBin: p.loadBin, physics, tier, deps })]),
   );
   const all = Object.values(each);
-  const of = (part) => each[part === 'inside' ? 'inside' : 'outside'];
+  const of = (part) => each[part === 'inside' || part === 'mode' ? part : 'outside'];
+  // (the mode part's cells without what its doors and props move; its walls in at once)
+  const mode = parts.mode?.pack ? parts.mode : null;
+  const cellOf = (key, bin, part) => (part === 'mode' && mode?.match && bin && !Array.isArray(bin) ? splitCell(mode.pack.cells?.[key]?.draws, bin, mode.match) : bin);
+  const walls = [];
+  for (const desc of modeBoxes(mode?.mode?.boxes ?? [])) {
+    try {
+      walls.push(physics.add(desc));
+    } catch {
+      // (a box the engine won't build: the rest still go in)
+    }
+  }
   return {
-    add: (key, bin, band, part) => of(part)?.add(key, bin, band) ?? Promise.resolve(),
+    add: (key, bin, band, part) => of(part)?.add(key, cellOf(key, bin, part), band) ?? Promise.resolve(),
     drop: (key, part) => of(part)?.drop(key),
     // (the frame's slice of time shared between the parts, the nearest cells first)
     update: (ms = 4, at = null) => all.reduce((n, c) => n + c.update(ms / all.length, at), 0),
@@ -126,11 +160,15 @@ export function createPartsCollision({ parts, physics, tier = 'high', deps = {} 
     stats() {
       const out = {};
       for (const c of all) for (const [k, v] of Object.entries(c.stats() ?? {})) if (typeof v === 'number') out[k] = (out[k] ?? 0) + v;
+      if (walls.length) out.walls = walls.length;
       return out;
     },
     // (the ground is the outside's: the interior has none of its own)
     setTerrain: (heightAt, opts) => each.outside?.setTerrain(heightAt, opts),
-    dispose: () => all.forEach((c) => c.dispose()),
+    dispose: () => {
+      all.forEach((c) => c.dispose());
+      for (const w of walls.splice(0)) physics.remove(w);
+    },
   };
 }
 

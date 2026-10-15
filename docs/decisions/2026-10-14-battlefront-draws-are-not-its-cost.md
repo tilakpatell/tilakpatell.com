@@ -1,6 +1,6 @@
 # Battlefront’s draws are not what its frame costs: no texture arrays for Hoth’s material shapes
 
-**Date:** 2026-10-14 · **Status:** accepted · **Where:** `docs/superpowers/HANDOFF-performance-lanes.md` (lane P3), `src/components/galaxy/surface/level/` (`levelGpu.js`, `levelBatch.js`, `levelGltf.js`), `src/lib/three/gpuScene/`, `src/components/battlefront/`
+**Date:** 2026-10-14 · **Status:** accepted · **Where:** `docs/superpowers/HANDOFF-runtime.md` (lane P3), `src/components/galaxy/surface/level/` (`levelGpu.js`, `levelBatch.js`, `levelGltf.js`), `src/lib/three/gpuScene/`, `src/components/battlefront/`
 
 ## Context
 

@@ -14,7 +14,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 // is anybody on the radio)
 export const VOICED = ['rick', 'morty', 'luke', 'han', 'walt', 'jesse', 'hank'];
 // and the worlds' speakers with a voice of their own (common.py keeps the same list)
-export const WORLD_VOICED = [
+const WORLD_VOICED = [
   'gandalf', 'aragorn', 'sam', 'frodo', 'galadriel', 'boromir', 'pippin', 'gimli', 'saruman', 'gollum', 'elrond', 'merry',
   'butterbur', 'theoden', 'legolas', 'arwen', 'bilbo', 'hama', 'haldir', 'denethor', 'grima', 'celeborn',
   'michael', 'jim', 'erin',
@@ -98,7 +98,7 @@ export function worldLines(lists, { lineId, voiceOf, spoken }) {
 }
 
 // the voicelines.js files under a folder, as paths from `root`
-export function voicelineFiles(root, dir = 'src') {
+function voicelineFiles(root, dir = 'src') {
   return readdirSync(join(root, dir), { withFileTypes: true }).flatMap((d) => {
     const path = `${dir}/${d.name}`;
     if (d.isDirectory()) return voicelineFiles(root, path);

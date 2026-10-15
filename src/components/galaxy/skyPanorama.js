@@ -12,7 +12,7 @@
 // panoramaUrl(sys, level) → '/textures/galaxy/sky/space/<name>.<width>.ktx2' | null
 //   (ultra 4096 wide, high 2048, mid 1024, low none; never wider than the game's)
 
-export const PANORAMA_WIDTH = { endor: 4096, core: 4096, rim: 2048 };
+const PANORAMA_WIDTH = { endor: 4096, core: 4096, rim: 2048 };
 const BY_SYSTEM = { endor: 'endor', naboo: 'rim', fondor: 'rim' };
 const BY_REGION = { 'Core Worlds': 'core', 'Outer Rim Territories': 'rim' };
 const WIDTH = { ultra: 4096, high: 2048, mid: 1024 };

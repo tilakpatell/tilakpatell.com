@@ -1,9 +1,16 @@
 {
+  "art-mix": 7,
   "big-files": 30,
-  "lint-disables": 54,
-  "todo-notes": 0,
+  "boundary-breaks": 481,
+  "client-json-kb": 1260,
+  "cycles": 5,
+  "doc-binaries": 1,
+  "glsl-sites": 619,
   "hud-kit": 1,
   "kbd-styles": 70,
+  "lint-disables": 54,
+  "loops": 58,
+  "renderers": 16,
   "stack-pages": 0,
-  "art-mix": 7
+  "todo-notes": 0
 }

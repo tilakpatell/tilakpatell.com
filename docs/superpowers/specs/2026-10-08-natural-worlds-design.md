@@ -1,6 +1,6 @@
 # Natural worlds: real ground, rivers that run, grass that bends, and a car on it. The design
 
-Date: 2026-10-08. Status: design, written from the owner's brief by an architecting session, for an Opus 5.5 implementation session (phases in order, one pull request each). The plan is `docs/superpowers/plans/2026-10-08-natural-worlds.md`; the hand-off is `docs/superpowers/HANDOFF-natural-worlds.md`; the reading behind it is `docs/research/2026-10-08-folio-2025-physics-terrain-streaming.md`.
+Date: 2026-10-08. Status: design, written from the owner's brief by an architecting session, for an Opus 5.5 implementation session (phases in order, one pull request each). The plan is `docs/superpowers/plans/2026-10-08-natural-worlds.md`; the hand-off is `docs/superpowers/HANDOFF-worlds.md`; the reading behind it is `docs/research/2026-10-08-folio-2025-physics-terrain-streaming.md`.
 
 ## What the owner asked
 

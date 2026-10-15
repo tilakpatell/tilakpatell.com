@@ -150,7 +150,7 @@ export function bringAlong(g) {
 // crouch (held).
 const HOLD = 0.55; // metres from your middle to his
 const HOLD_CLEAR = 0.25; // metres he keeps from a wall
-export function heldUp(g) {
+function heldUp(g) {
   return g.flags?.has('carrying') ? (g.crew.people.find((p) => p.tag === 'with:vader' && p.hp > 0) ?? null) : null;
 }
 

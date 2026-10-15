@@ -10,26 +10,26 @@
 // level (`hoth.json`, `hoth.2.json`, `hoth.stages.json`, `hoth.<mode>.json`).
 // Hoth is bundled; every other level is fetched when asked (`loadLevel`).
 
-import abilities from '../../data/bf2017/abilities.json';
-import ai from '../../data/bf2017/ai.json';
-import arcade from '../../data/bf2017/arcade.json';
+import abilities from 'virtual:bf2017-abilities';
+import ai from 'virtual:bf2017-ai';
+import arcade from 'virtual:bf2017-arcade';
 import cameras from '../../data/bf2017/cameras.json';
-import cards from '../../data/bf2017/cards.json';
+import cards from 'virtual:bf2017-cards';
 import classes from '../../data/bf2017/classes.json';
 import heroes from '../../data/bf2017/heroes.json';
-import kits from '../../data/bf2017/kits.json';
-import hoth from '../../data/bf2017/maps/hoth.json';
-import hothLighting from '../../data/bf2017/maps/hoth.lighting.json';
+import kits from 'virtual:bf2017-kits';
+import hoth from 'virtual:bf2017-hoth';
+import hothLighting from 'virtual:bf2017-hothLighting';
 import hothStages from '../../data/bf2017/maps/hoth.stages.json';
 import modes from '../../data/bf2017/modes.json';
 import points from '../../data/bf2017/points.json';
-import reinforcements from '../../data/bf2017/reinforcements.json';
+import reinforcements from 'virtual:bf2017-reinforcements';
 import squads from '../../data/bf2017/squads.json';
 import strings from '../../data/bf2017/strings.json';
-import teams from '../../data/bf2017/teams.json';
-import ui from '../../data/bf2017/ui.json';
-import vehicles from '../../data/bf2017/vehicles.json';
-import weapons from '../../data/bf2017/weapons.json';
+import teams from 'virtual:bf2017-teams';
+import ui from 'virtual:bf2017-ui';
+import vehicles from 'virtual:bf2017-vehicles';
+import weapons from 'virtual:bf2017-weapons';
 
 // The game's level key (`hoth_01`) for a short name the older readers use
 // (`hoth`, and lane H's `endor`, `tatooine`, `geonosis`, `kashyyyk`).

@@ -142,7 +142,7 @@ const TIERS = ['low', 'mid', 'high', 'ultra'];
 
 // The modes a level's sub-levels carry (lane F's table, and Strike's
 // `Domination`, the layer PF_Strike_Bombs and PF_Strike_CTF stand in)
-export function modesInRecords(subworlds = []) {
+function modesInRecords(subworlds = []) {
   const names = subworlds.map((s) =>
     String(s?.name ?? s)
       .split('/')

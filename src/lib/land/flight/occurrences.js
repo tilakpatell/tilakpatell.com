@@ -89,7 +89,7 @@ export const OCC = {
 };
 
 // ── the Expanse: by its system (the note's last row) ──
-export function expanseOccurrences(spec, system) {
+function expanseOccurrences(spec, system) {
   const out = [o('wreck', 'a wreck', 0.3)];
   if (spec.type === 'rock' || spec.type === 'desert' || spec.type === 'ice') out.push(o('cave', 'a mine', 0.25));
   if (system?.faction?.id && system.faction.id !== 'independent') out.push(o('beacon', 'a colony beacon', 0.2));

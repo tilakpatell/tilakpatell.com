@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { hullOf } from '../../lib/combat/hulls';
+import { pieceCapitalPose } from '../../lib/combat/pose';
 import { CAPITAL, JUMP, LENGTH, PARTS, createCapital, jumpSmear } from './capitalRules';
 import { SIDES } from './sides';
 
@@ -313,5 +316,32 @@ describe('its hull as solids (ship.js’s), for flying into it', () => {
     run(cap, DT);
     expect(cap.state).toBe('out');
     expect(cap.solids).toEqual([]);
+  });
+});
+
+describe('the hull as the game’s shapes (the galaxy’s hulls design)', () => {
+  const bin = readFileSync(new URL('../../../scripts/fixtures/bf2017/physics/destroyer-hull.bin', import.meta.url));
+  const SD = hullOf(bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength));
+  const hulls = { get: (kind) => (kind === 'destroyer' ? SD : null) };
+  // a point in the ship's own frame (shares of its length: right, up, forward) where it's drawn
+  const on = (cap, [r, u, f]) => {
+    const p = pieceCapitalPose(cap);
+    const m = p.basis;
+    return [cap.at[0] + (m[0] * r + m[3] * u + m[6] * f) * cap.len, cap.at[1] + (m[1] * r + m[4] * u + m[7] * f) * cap.len, cap.at[2] + (m[2] * r + m[5] * u + m[8] * f) * cap.len];
+  };
+
+  it('a shot at its wing’s edge meets the hull, where the chain of spheres missed; the space beside it stays open', () => {
+    const spheres = arrive();
+    settle(spheres);
+    const cap = createCapital({ rand: seeded(), hulls });
+    cap.arrive('destroyer', [10, -0.5, -28], Math.PI / 2 + 0.3);
+    settle(cap);
+    expect(through(spheres, on(spheres, [0.25, 0, -0.35]))).toBeNull();
+    const hit = through(cap, on(cap, [0.25, 0, -0.35]));
+    expect(hit).toMatchObject({ type: 'shielded', down: false });
+    expect(hit.property).toBe(132);
+    expect(through(cap, on(cap, [0.5, 0, -0.35]))).toBeNull();
+    // the shield domes are still the chain's own spheres over the hull
+    expect(through(cap, part(cap, 'dome0').at)?.type).toBe('part');
   });
 });

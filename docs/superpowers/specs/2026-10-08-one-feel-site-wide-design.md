@@ -185,7 +185,7 @@ Phase 2 (every world), each lane applying all six pieces to its worlds by the ro
 | 2E the games | `claude/one-feel-games` | the compound and the HQ games, Invincible, the Caribbean tide |
 | 2F the rest | `claude/one-feel-rest` | C-137, Dot Matrix, Mario 64, Minecraft, Earth, Music, Dick-ansh, the cartridges, the GPU stage, the page scenes |
 
-The handoff `docs/superpowers/HANDOFF-one-feel.md` carries the status table; each lane fills its row before it stops.
+The handoff `docs/superpowers/HANDOFF-universe.md` carries the status table; each lane fills its row before it stops.
 
 ## Change of course (2026-10-08, evening)
 

@@ -256,7 +256,7 @@ export function glowTexture(inner = 'rgba(255,255,255,1)', mid = 'rgba(160,220,2
 
 // The plume under a fan: a cone of hot air, brightest at the duct, streaked
 // and wavering (the shimmer), fading as it spreads.
-export function plumeMaterial(color = 0x9fdcff) {
+function plumeMaterial(color = 0x9fdcff) {
   return new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
@@ -542,7 +542,7 @@ export function quinjetMaterials(paint) {
 // Its origin is the middle of its base; the sling's ring is at the top.
 
 // The Tesseract: a cube of blue light with a lattice in it that shifts.
-export function tesseractMaterial() {
+function tesseractMaterial() {
   return new THREE.ShaderMaterial({
     toneMapped: false,
     uniforms: { uTime: { value: 0 }, uPower: { value: 1 } },

@@ -8,6 +8,7 @@ import packs from './scripts/packs.mjs'
 import assetManifest from './scripts/assets-manifest.mjs'
 import bf2Dev from './scripts/bf2-dev.mjs'
 import librarySlice from './scripts/library-slice.mjs'
+import dataSlice from './scripts/data-slice.mjs'
 import rapierWasm from './scripts/rapier-wasm.mjs'
 
 // Whether this checkout has the game's sounds on disk (the Hoth set under
@@ -29,10 +30,12 @@ export default defineConfig({
   // scripts/bf2-dev.mjs; nothing when it is unset)
   // (and the object library's slice of the asset manifest as a virtual
   // module, so the galaxy's chunk carries a few paths and not 16 MB:
-  // scripts/library-slice.mjs, lane D3)
+  // scripts/library-slice.mjs, lane D3; and the Battlefront rulebook's
+  // three big records fetched as JSON, not parsed in its chunks:
+  // scripts/data-slice.mjs, lane FL1)
   // (and Rapier's wasm import sent to the shim that streams the binary:
   // scripts/rapier-wasm.mjs, lane X3)
-  plugins: [librarySlice(), rapierWasm(), iconsApart(), react(), prerender(), packs(), assetManifest(), bf2Dev()],
+  plugins: [librarySlice(), dataSlice(), rapierWasm(), iconsApart(), react(), prerender(), packs(), assetManifest(), bf2Dev()],
   // (the icons' modules import react-icons' own GenIcon: bundled up front in dev)
   // (scanned from the site's own page only: the tool pages under scripts/ and
   // .claude/ import aliases and packages the site doesn't, and a failed scan

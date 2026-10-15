@@ -46,7 +46,7 @@ function packFrame(pack) {
   };
 }
 
-async function loadBodies(physics, pack, loadBin) {
+export async function loadBodies(physics, pack, loadBin) {
   const section = pack.physics ?? { meshes: {}, materials: {} };
   const byMesh = {};
   for (const [mesh, rec] of Object.entries(section.meshes ?? {})) {

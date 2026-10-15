@@ -127,7 +127,6 @@ export const REFUGE = { x: -620, z: -130 };
 // ── the Crack of Doom ──
 // Inside the mountain: in at the door (x = 0), along the spur to its
 // broken tip over the fire.
-export const SPUR = { len: 14, w: 1.6 };
 export const EDGE = { x: 14 };
 
 // A saved spot, if it's fair (only the crossing is walked).

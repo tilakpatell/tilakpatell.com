@@ -1,6 +1,6 @@
 # The galaxy at the game's fidelity: shadows, volumetrics, particles and cameras from the game's own records. The design
 
-Date: 2026-10-10 (evening). Status: design for Opus 5.5 to implement; the owner asked for it. Builds on `2026-10-10-galaxy-engine-design.md` (the stack: `src/lib/three/light/`, merged as PR #827), `2026-10-10-bf2017-levels-lighting-sabers-design.md` (lanes L, G: the level packs and the derived light, G merged as #833), `2026-10-10-battlefront-game-design.md` (the game; its lane 5 is not started and takes this), `2026-10-10-bf2017-physics-design.md` (P0–P4; P4's hit effects and decals are not repeated here). Plans: `docs/superpowers/plans/2026-10-10-bf-fidelity-lane{S,V,X,C,N,U}-*.md`. Hand-off: the "Fidelity" section of `docs/superpowers/HANDOFF-galaxy-engine.md`.
+Date: 2026-10-10 (evening). Status: design for Opus 5.5 to implement; the owner asked for it. Builds on `2026-10-10-galaxy-engine-design.md` (the stack: `src/lib/three/light/`, merged as PR #827), `2026-10-10-bf2017-levels-lighting-sabers-design.md` (lanes L, G: the level packs and the derived light, G merged as #833), `2026-10-10-battlefront-game-design.md` (the game; its lane 5 is not started and takes this), `2026-10-10-bf2017-physics-design.md` (P0–P4; P4's hit effects and decals are not repeated here). Plans: `docs/superpowers/plans/2026-10-10-bf-fidelity-lane{S,V,X,C,N,U}-*.md`. Hand-off: the "Fidelity" section of `docs/superpowers/HANDOFF-galaxy.md`.
 
 ## What the owner asked
 

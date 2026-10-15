@@ -30,11 +30,11 @@ import { TROOPS } from './troops';
 
 export const GRUDGE = 90; // seconds a squad you shot at counts you its enemy
 export const FACING = Math.PI / 7.2; // 25°: no shot till it faces its target this near
-export const SUPPRESS = { near: 2, for: 1.5 };
+const SUPPRESS = { near: 2, for: 1.5 };
 export const LOST = 2; // seconds after losing sight it may send one burst at the last place
 export const SENSE = 0.1; // seconds between a soldier's looks round
-export const OUT_OF_REACH = 10; // seconds a soldier lets be a target its leash won't reach
-export const ENGAGED = 20; // seconds a fight stretches the leash after the last sight
+const OUT_OF_REACH = 10; // seconds a soldier lets be a target its leash won't reach
+const ENGAGED = 20; // seconds a fight stretches the leash after the last sight
 const WALK = 0.42; // of its run, on a beat or going home
 
 const P = (x, z) => ({ x, y: 0, z });

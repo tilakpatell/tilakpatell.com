@@ -300,7 +300,7 @@ function write(done, outDir, source) {
   return summary;
 }
 
-export function readLedger(outDir) {
+function readLedger(outDir) {
   return JSON.parse(gunzipSync(readFileSync(join(outDir, 'ledger.json.gz'))).toString('utf8'));
 }
 

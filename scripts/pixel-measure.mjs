@@ -21,7 +21,7 @@ import sharp from 'sharp';
 const RING = 40;
 const r3 = (v) => Number(v.toFixed(3));
 
-export function luminanceOf({ data, width, height, channels }) {
+function luminanceOf({ data, width, height, channels }) {
   const lum = new Float32Array(width * height);
   for (let i = 0; i < width * height; i++) {
     const o = i * channels;

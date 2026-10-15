@@ -48,7 +48,7 @@ export function stoneTextures(renderer, { seed = 3, size = 256, dark = [40, 35, 
 }
 
 // A Balrog's hide: charred plates, and fire showing in the cracks between.
-export function magmaTextures(renderer, { seed = 7, size = 256, repeat = [2, 2] } = {}) {
+function magmaTextures(renderer, { seed = 7, size = 256, repeat = [2, 2] } = {}) {
   const n = makeNoise(seed);
   const cells = makeCells(seed + 5);
   const field = new Float32Array(size * size);
@@ -373,7 +373,7 @@ function limb(a, b, r0, r1, mat, radial = 8) {
 }
 
 // A tube along a curve through `points`, thinning from r0 to r1.
-export function taperedTube(points, { segments = 18, radial = 7, r0 = 0.2, r1 = 0.02 } = {}) {
+function taperedTube(points, { segments = 18, radial = 7, r0 = 0.2, r1 = 0.02 } = {}) {
   const curve = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p)));
   const g = new THREE.TubeGeometry(curve, segments, 1, radial, false);
   const pos = g.attributes.position;

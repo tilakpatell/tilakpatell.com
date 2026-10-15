@@ -27,11 +27,11 @@ import { reduceHull } from './bf2017-physics.mjs';
 // root 1's triangles over all its parts (a capital's site hull's, so a game
 // capital costs what a site one does) and root 0's solids (what a contact
 // query loops over)
-export const CAPITAL_TRIS = 4000;
-export const CAPITAL_SOLIDS = 256;
+const CAPITAL_TRIS = 4000;
+const CAPITAL_SOLIDS = 256;
 // a root 0 solid less than this share of the length across is a greeble
 // (a vent, a rail): dropped from contact first
-export const GREEBLE = 0.01;
+const GREEBLE = 0.01;
 // each part's fewest triangles (a part with fewer keeps its own); one the
 // simplifier leaves under four is a box of its own, so a turret stays hittable
 const FLOOR = 12;
@@ -298,7 +298,7 @@ function fewer(solids, maxSolids, greeble) {
 }
 
 // a hull's bytes: what the bucket serves and the page fetches with the model
-export const CAPITAL_BYTES = 120000;
+const CAPITAL_BYTES = 120000;
 // What gives, in turn, while a hull is over its bytes, contact's fidelity
 // last (a solid cut to fewer points shrinks inside its first self, and
 // neighbours that met stop meeting: a fighter-sized gap through the MC80's

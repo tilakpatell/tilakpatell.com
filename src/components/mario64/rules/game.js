@@ -17,7 +17,7 @@ import { rest } from './collide';
 import { START_LIVES, newMario, setAction, stepMario } from './mario';
 import { blank, giveStar, hasStar, starTotal } from './save';
 
-export const STEP_DT = 1 / 30;
+const STEP_DT = 1 / 30;
 export const MAX_STEPS = 4;
 const STARGET_FRAMES = 90;
 const DEAD_FRAMES = 75;

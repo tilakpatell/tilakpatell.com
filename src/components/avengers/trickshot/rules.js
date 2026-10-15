@@ -23,7 +23,7 @@ export const BOW = {
   shakeAfter: 2.4, // seconds at full draw before the aim shakes
   gravity: 9.81,
 };
-export const TRICKS = ['explosive', 'emp', 'split'];
+const TRICKS = ['explosive', 'emp', 'split'];
 export const STONE_SCORE = 250; // across the three rounds, for Clint's half of the Soul Stone
 
 // ring colours from the outside in, two rings each: white, black, blue, red, gold

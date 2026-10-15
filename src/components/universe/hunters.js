@@ -61,8 +61,9 @@ export { FACTIONS, HUNTER_KINDS, NAMES };
 
 // (`factions` and `kinds` are these, unless another map brings its own: the
 // galaxy's Separatists and the Imperial remnant, galaxy/hunted.js)
-export function createHunters(parent, { small = false, fleet = createFleet(), factions = FACTIONS, kinds = HUNTER_KINDS, solids = [], engines = null } = {}) {
-  const hunt = createHunt({ factions, kinds, solids, lasers: small ? 16 : 28 });
+export function createHunters(parent, { small = false, fleet = createFleet(), factions = FACTIONS, kinds = HUNTER_KINDS, solids = [], engines = null, hulls = null } = {}) {
+  // (`hulls`: galaxy/hulls.js's, the hunters' hit shapes for your shots: asked for as a pack comes)
+  const hunt = createHunt({ factions, kinds, solids, lasers: small ? 16 : 28, hulls });
   const pool = {}; // kind → models not in use
   let difficulty = null; // (set: the `difficulty` below)
   const shown = new Set(); // the hunters with a model out
@@ -156,6 +157,7 @@ export function createHunters(parent, { small = false, fleet = createFleet(), fa
       // (their models, the ones that are models and not here yet: nothing else
       // asks for a hunter's, and a kind flies as its built one until it comes)
       fleet.want?.([...new Set(members.map((h) => drawnAs(h.kind)))]);
+      hulls?.want([...new Set(members.flatMap((h) => [`hunter/${drawnAs(h.kind)}`, drawnAs(h.kind)]))]);
       for (const h of members) {
         h.view = take(h.kind);
         shown.add(h);

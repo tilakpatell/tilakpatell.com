@@ -119,18 +119,31 @@ export async function createPlacedLights(scene, renderer, { points, spots = SPOT
   group.name = 'placed-lights';
   const pointPool = [];
   const spotPool = [];
+  // (each light's matrix made where it is moved, in set(), not recomposed
+  // with the graph's every frame: the pool is 1,040 lights, still but for
+  // the few the frame places, a fifth of Battlefront's graph; the
+  // performance lanes' P4)
   for (let i = 0; i < nPoints; i++) {
     const l = new THREE.PointLight(0xffffff, 0, 1, 2);
     l.castShadow = false;
+    l.matrixAutoUpdate = false;
     pointPool.push(l);
     group.add(l);
   }
   for (let i = 0; i < spots; i++) {
     const l = new THREE.SpotLight(0xffffff, 0, 1, Math.PI / 4, 0.5, 2);
     l.castShadow = false;
+    l.matrixAutoUpdate = false;
+    l.target.matrixAutoUpdate = false;
     spotPool.push(l);
     group.add(l, l.target);
   }
+  // (a light's matrix made again only when its place changed)
+  const place = (o, x, y, z) => {
+    if (o.position.x === x && o.position.y === y && o.position.z === z) return;
+    o.position.set(x, y, z);
+    o.updateMatrix();
+  };
   scene.add(group);
 
   let lit = 0;
@@ -147,8 +160,8 @@ export async function createPlacedLights(scene, renderer, { points, spots = SPOT
         if (s >= spotPool.length) continue;
         const l = spotPool[s++];
         const [inner, outer] = rec.cone ?? [Math.PI / 4, Math.PI / 3];
-        l.position.set(...rec.pos);
-        l.target.position.set(rec.pos[0] + (rec.dir?.[0] ?? 0), rec.pos[1] + (rec.dir?.[1] ?? -1), rec.pos[2] + (rec.dir?.[2] ?? 0));
+        place(l, rec.pos[0], rec.pos[1], rec.pos[2]);
+        place(l.target, rec.pos[0] + (rec.dir?.[0] ?? 0), rec.pos[1] + (rec.dir?.[1] ?? -1), rec.pos[2] + (rec.dir?.[2] ?? 0));
         l.angle = outer / 2;
         l.penumbra = outer > 0 ? Math.min(1, Math.max(0, 1 - inner / outer)) : 0;
         l.distance = rec.range ?? 10;
@@ -157,7 +170,7 @@ export async function createPlacedLights(scene, renderer, { points, spots = SPOT
       } else {
         if (p >= pointPool.length) continue;
         const l = pointPool[p++];
-        l.position.set(...rec.pos);
+        place(l, rec.pos[0], rec.pos[1], rec.pos[2]);
         l.distance = rec.range ?? 10;
         l.color.setRGB(...(rec.color ?? [1, 1, 1]));
         l.intensity = (rec.candela ?? 0) * w * scale;

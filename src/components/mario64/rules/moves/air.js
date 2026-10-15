@@ -9,11 +9,11 @@
 import { airStep, emit, groundStep, hurt, setAction, setGroundVel, wallYaw } from '../physics';
 import { approach, turnToward, wrapAngle } from '../vec';
 
-export const FALL_HURT = 1150;
+const FALL_HURT = 1150;
 
 // steering in the air: drag toward 0, a push along the facing, and a
 // sideways drift from the stick, as the original does it
-export function airControl(m, { drag = 32 } = {}) {
+function airControl(m, { drag = 32 } = {}) {
   m.fwd = m.fwd > 0 ? Math.max(0, m.fwd - 0.35) : Math.min(0, m.fwd + 0.35);
   let side = 0;
   if (m.mag > 0) {

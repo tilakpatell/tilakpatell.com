@@ -45,8 +45,6 @@ export function hillHeight(x, z) {
   return h;
 }
 export const STOCKADE = { r: HILL.foot + 4, gate: 0, gateW: 7 };
-// the stockade's ring, as a radius in the hill's own measure, round its angle
-export const onStockade = (x, z) => Math.abs(hillR(x, z) - STOCKADE.r) < 1;
 
 // ── the road and the stair ──
 // From the barrows outside, in at the gate, and straight up the east face
@@ -111,7 +109,7 @@ export const FLOWERS = [2, 5, 6, 9, 10, 13, 15]
   .map((b, i) => ({ i, x: b.x + (i % 2 ? 2 : -2), z: b.z - Math.sign(b.z) * (b.r - 1.2), r: 1.8 }));
 // where you lay them: at the foot of Théodred's barrow, by the road
 export const GRAVE = { x: THEODRED.x, z: THEODRED.z - Math.sign(THEODRED.z) * (THEODRED.r + 0.6), r: 2.4 };
-export const barrowHeight = (x, z) => {
+const barrowHeight = (x, z) => {
   let h = 0;
   for (const b of BARROWS) {
     const d = Math.hypot(x - b.x, z - b.z);
@@ -127,7 +125,7 @@ export const groundAt = (x, z) => hillHeight(x, z) + barrowHeight(x, z);
 // along the barrow road.
 export const ARRIVE = { x: 214, z: 0, face: Math.PI };
 export const insideStockade = (x, z, m = 0) => hillR(x, z) <= STOCKADE.r - 1 - m;
-export const onBarrowRoad = (x, z, m = 0) => x >= GATE.x - 2 && x <= ROAD.x0 - m && Math.abs(z) <= 32 - m;
+const onBarrowRoad = (x, z, m = 0) => x >= GATE.x - 2 && x <= ROAD.x0 - m && Math.abs(z) <= 32 - m;
 export const walkable = (x, z, m = 0) => (insideStockade(x, z, m) && !(x > MEDUSELD.x0 - 0.4 && x < MEDUSELD.x1 + 0.4 && Math.abs(z) < MEDUSELD.z1 + 0.4)) || onBarrowRoad(x, z, m) || (Math.abs(z) < STOCKADE.gateW / 2 - 0.6 && x > GATE.x - 8 && x < GATE.x + 4);
 export const HILL_COLLIDERS = [
   ...HOUSES.map((h, i) => ({ id: `house${i}`, kind: 'box', x: h.x, z: h.z, w: h.d, d: h.w, turn: h.face, top: h.h + 3 })),

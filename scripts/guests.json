@@ -1,0 +1,9 @@
+{
+  "about": "The site's own cast as bodies on Star Wars Battlefront II (2017)'s skeleton (scripts/guest-rig.mjs, scripts/guest-clips.mjs). A row a person: the Wardrobe's body ids (src/components/rickmorty/wardrobe/looks.js) with the Meshy file each is made from, the game hero whose own pack its clips are taken with, and the grip: where a gun's grip (the game's Wep_Root) sits in the right hand bone's own frame, metres. `source` says where a grip is from: `game` is the game's man's own, to the millimetre (scripts/lib/guest-clips.mjs's GAME_GRIP: 0.0868, 0.0335, 0.0311 through the pistol's aim); Morty's is that at his hand's size. None has been placed by eye on its own hand yet: only Rick's was looked at closely (docs/superpowers/evidence/guests/README.md).",
+  "rows": [
+    { "who": "rick", "host": "han", "bodies": { "rick": "public/games/meshy/rick.glb" }, "grip": [0.087, 0.033, 0.031], "source": "game" },
+    { "who": "morty", "host": "lando", "bodies": { "morty": "public/games/meshy/morty.glb" }, "grip": [0.069, 0.026, 0.024], "source": "game, at his hand's size: 0.79 of the man's" },
+    { "who": "walt", "host": "bossk", "bodies": { "walt": "public/models/cockpit/walt.glb" }, "grip": [0.087, 0.033, 0.031], "source": "game" },
+    { "who": "jesse", "host": "lando", "bodies": { "jesse": "public/models/cockpit/jesse.glb" }, "grip": [0.087, 0.033, 0.031], "source": "game" }
+  ]
+}

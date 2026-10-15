@@ -186,6 +186,7 @@ export function fire(gun, now, { stance = 'stand', moving = false } = {}) {
     // (a negative perShot is the sentry's: its cone tightens as it spins)
     gun.spread = sway.perShot >= 0 ? Math.min(sway.max, gun.spread + sway.perShot) : Math.max(sway.max - sway.min, gun.spread + sway.perShot);
     gun.rr = rr;
+    gun.sway = sway;
     gun.lastShot = at;
     if (gun.row.heat) {
       gun.heat = Math.min(1, gun.heat + gun.row.heat.perBullet);
@@ -205,8 +206,11 @@ export function tick(gun, dt, now) {
   // (the barrel winds down with the trigger up: ChargeUpDecrease)
   if (f?.preFire && now - gun.lastPull > PULL_GAP + EDGE) gun.spin = Math.max(0, gun.spin - (f.chargeDown ?? 0) * dt);
   const sway = swayOf(gun.row, 'stand', false);
+  // (a row whose standing cone never opens has no fall of its own, Han Solo's DL-44: what its last shot's
+  // row added, on the move, falls by that row's, or it would stay open for good)
+  const decay = sway.decay === 0 && gun.sway ? gun.sway.decay : sway.decay;
   // (a negative decay is the sentry's: the cone opens again when the trigger drops)
-  if (now - gun.lastShot >= sway.noFireDelay) gun.spread = sway.decay >= 0 ? Math.max(0, gun.spread - sway.decay * dt) : Math.min(0, gun.spread - sway.decay * dt);
+  if (now - gun.lastShot >= sway.noFireDelay) gun.spread = decay >= 0 ? Math.max(0, gun.spread - decay * dt) : Math.min(0, gun.spread - decay * dt);
   // (the kick falls from its shot's own time: one fired this step has not begun to, so the
   // view sees the whole 0.7° before it goes, whatever the step)
   const fall = (gun.rr ?? recoilRow(gun.row, 'stand', false)).decay * Math.max(0, Math.min(dt, now - gun.lastShot));
@@ -229,6 +233,10 @@ export function tick(gun, dt, now) {
       gun.state = 'ready';
       gun.mag = gun.row.ammo.magazine;
     }
+  } else if (h?.risePerSecond) {
+    // (an ability's weapon heats on its own, `HeatIncreasePerSecond`: its heat is the ability's clock)
+    gun.heat = Math.min(1, gun.heat + h.risePerSecond * dt);
+    if (gun.heat >= h.threshold - EDGE) overheat(gun, now);
   } else if (h && now - gun.lastShot >= COOL_DELAY) {
     gun.heat = Math.max(0, gun.heat - h.dropPerSecond * (gun.coolMul ?? 1) * dt);
   }
@@ -276,6 +284,8 @@ export function damageAt(row, dist, { bot = false } = {}) {
   // (a row that is the AI's own already, the sentry's and the turret's, is not halved again)
   const scale = bot && !row.aiDamage ? AI_DAMAGE_SCALE : 1;
   if (!d) return (HAND_DAMAGE[row.family] ?? HAND_DAMAGE.rifle) * scale;
+  // (a round that only bursts, Bossk's micro-grenade: its damage is its blast's, sim.js)
+  if (d.start == null && d.blast) return 0;
   const span = d.endDistance - d.startDistance;
   const t = span <= 0 ? (dist > d.startDistance ? 1 : 0) : Math.min(1, Math.max(0, (dist - d.startDistance) / span));
   return (d.start * (d.max ?? 1) * (1 - t) + d.end * (d.min ?? 1) * t) * scale;

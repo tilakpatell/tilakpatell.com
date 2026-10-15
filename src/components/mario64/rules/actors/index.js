@@ -14,8 +14,8 @@ import { FOES } from './foes';
 import { OBJECTS } from './objects';
 
 export const TYPES = { ...OBJECTS, ...FOES };
-export const MARIO_R = 37;
-export const MARIO_H = 160;
+const MARIO_R = 37;
+const MARIO_H = 160;
 const REACH = 70; // how far past him a punch or kick lands
 
 export function newScene({ world, mario, save, area = {} }) {
@@ -72,7 +72,7 @@ function overlaps(m, a, extra = 0) {
 
 // (where he was at the start of the frame: a fast fall crosses a Goomba's
 // top within one)
-export function howMet(m, a) {
+function howMet(m, a) {
   const mid = a.pos.y + a.h / 2;
   const y = m.prevY ?? m.pos.y;
   if ((m.action === 'pound' || (m.action === 'poundland' && m.t <= 1)) && y >= mid - 20) return 'pound';
@@ -116,7 +116,7 @@ export function tryTalk(g) {
 // B beside something holdable (from behind, for the king): picked up
 const BUSY = new Set(['held', 'thrown', 'gone', 'flat', 'knocked', 'stunned', 'defeated', 'return']);
 const CAN_GRAB = new Set(['idle', 'walk', 'stop', 'land', 'crouch', 'skid']);
-export function tryGrab(g) {
+function tryGrab(g) {
   const m = g.mario;
   if (m.airborne || m.held || !CAN_GRAB.has(m.action)) return false;
   for (const a of g.actors) {

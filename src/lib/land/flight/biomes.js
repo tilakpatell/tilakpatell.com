@@ -20,7 +20,7 @@ const smoothstep = (a, b, x) => {
 
 // one pair of noises a spec, not one a call: a leaf asks 1,225 points
 const climates = new WeakMap();
-export function climateOf(spec) {
+function climateOf(spec) {
   let c = climates.get(spec);
   if (!c) {
     const t = noiseFor(spec.seed, { ...spec.climate, octaves: 3 });

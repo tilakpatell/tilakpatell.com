@@ -14,7 +14,7 @@
 
 import { LOOK } from './look';
 
-export const LOOK_NAMES = ['modern', 'ultra', 'n64'];
+const LOOK_NAMES = ['modern', 'ultra', 'n64'];
 
 // (the scene drawn with no multisampling, as the composer's buffer was: the
 // node renderer's four samples made a High frame on SwiftShader 1.6 times

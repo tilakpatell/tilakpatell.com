@@ -21,7 +21,7 @@ import { SHOT } from './dimensions/duel';
 export { roomSolids } from './roomSolids';
 
 // the portal-green zap of Rick's gun, and how high Morty holds it
-export const ZAP = { colour: '#9dff4a', hand: 1.15, ahead: 0.35, side: 0.25 };
+const ZAP = { colour: '#9dff4a', hand: 1.15, ahead: 0.35, side: 0.25 };
 
 // a person in the crowd as rickall.js's crosshair has them: an upright
 // cylinder, aimR round, from the floor to the top of their head
