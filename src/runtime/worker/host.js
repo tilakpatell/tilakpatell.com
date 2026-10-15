@@ -23,6 +23,7 @@ import { CALLS, DOORS, MESSAGES, packInput } from './protocol';
 import { readOverride } from '../backend';
 import { readFps } from '../cadence';
 import { device, sharpness } from '../../lib/device';
+import { lostTwice, TIER_KEY } from '../../lib/gpuProbe';
 
 const { up, down } = MESSAGES;
 const KEY = 'tp-worker';
@@ -93,6 +94,11 @@ export function createWorkerRuntime({
     pump = raf(frame);
   };
   const stop = () => {
+    // (a mount still waiting on this worker is answered: it was not shown)
+    const waiting = shownAt;
+    shownAt = null;
+    again = null;
+    waiting?.(false);
     if (pump) caf(pump);
     pump = 0;
     if (worker) {
@@ -184,29 +190,43 @@ export function createWorkerRuntime({
   };
 
   const toWorker = (module, props, host) => {
-    if (page.current) page.unmount();
+    // (one still being made on the page is let go too: its seq bumped, it never lands beside this one)
+    if (page.current || page.loading) page.unmount();
     stop();
+    let offscreen = null;
+    let el = null;
+    try {
+      el = doc.createElement('canvas');
+      el.className = 'world-canvas';
+      offscreen = el.transferControlToOffscreen();
+      worker = makeWorker();
+    } catch {
+      // (no worker to be had after all: the page draws it, and every world after)
+      worker = null;
+      fallen = true;
+      mode = 'page';
+      return page.mount(module, props, host);
+    }
     mode = 'worker';
     lostModule = null;
     frames = [];
-    const el = doc.createElement('canvas');
-    el.className = 'world-canvas';
     host.prepend(el);
     if (host.dataset) host.dataset.fresh = '';
     canvas = el;
-    const offscreen = el.transferControlToOffscreen();
-    worker = makeWorker();
     worker.onmessage = onDown;
     worker.onerror = (e) => onDown({ data: { type: down.failed, message: String(e?.message ?? 'the worker failed') } });
     const r = host.getBoundingClientRect?.();
     const search = win?.location?.search ?? '';
     const hash = win?.location?.hash ?? '';
     let stored = null;
+    let keptTier = null;
     try {
       stored = win?.localStorage?.getItem('tp-gpu') ?? null;
+      keptTier = win?.localStorage?.getItem(TIER_KEY) ?? null;
     } catch {
       /* storage unavailable */
     }
+    const override = readOverride(search, hash, stored);
     const saves = Object.fromEntries((module.saves ?? []).map((k) => [k, page.saves.get(k)]));
     current = {
       module,
@@ -229,7 +249,9 @@ export function createWorkerRuntime({
         detail: detail(),
         sharp: sharp(),
         video: clonable(page.video),
-        override: readOverride(search, hash, stored),
+        override,
+        // (a chip lost twice this week starts on WebGL 2 here too, index.js's `lost`)
+        lost: override !== 'webgpu' && lostTwice(keptTier),
         fps: readFps(win),
         calibrate: !/[?&]calibrate=off\b/.test(`${search}&${hash}`),
         tier: page.tier ?? null,
@@ -239,9 +261,10 @@ export function createWorkerRuntime({
     );
     page.input.attach({ win, host });
     pump = raf(frame);
-    again = [module, props, host];
+    const asked = [module, props, host];
     return new Promise((resolve) => {
       shownAt = resolve;
+      again = asked;
     });
   };
 
@@ -312,8 +335,12 @@ export function createWorkerRuntime({
     },
     requality(level) {
       if (mode !== 'worker') return page.requality(level);
+      // (the budget first, as the page runtime's own; a world the worker
+      // cannot retune in place is offered the reload, as on the page)
+      page.quality?.retune?.(level);
       post({ type: up.quality, level });
-      return current ? 'tuned' : 'idle';
+      if (!current) return 'idle';
+      return current.module.onQuality ? 'tuned' : 'reload';
     },
     revideo(values) {
       if (mode !== 'worker') return page.revideo(values);

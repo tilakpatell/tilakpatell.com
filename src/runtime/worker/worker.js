@@ -161,6 +161,10 @@ export function serve(scope, { load, now = () => performance.now(), epoch = () =
     fadeOut: (ms) => tell('audio.fadeOut', [ms]),
   };
 
+  let closed = false; // told to let go: a start still on its way stops at its next await
+  // (the worker's own beats where it has them, as Chromium's and Firefox's
+  // dedicated workers do; a timer's where it has not)
+  const beats = typeof scope.requestAnimationFrame === 'function' ? {} : { raf: (f) => setTimeout(() => f(now()), 16), caf: (id) => clearTimeout(id) };
   const start = async (m) => {
     const open = MODULES[m.module] ?? null;
     if (!open) {
@@ -169,18 +173,28 @@ export function serve(scope, { load, now = () => performance.now(), epoch = () =
     }
     size = { w: m.w ?? 1, h: m.h ?? 1 };
     const parts = await load();
+    if (closed) return;
     const modules = parts.modules ?? MODULES;
     const canvas = m.canvas;
     // (three's setSize writes the canvas's style, which an OffscreenCanvas has not)
     if (canvas && !canvas.style) canvas.style = {};
+    // (ready once a frame is drawn, as the page runtime's 'on' is: the page's
+    // box keeps its canvas clear till then)
+    let told = false;
+    const tellReady = () => {
+      if (told || rt?.status !== 'on') return;
+      told = true;
+      post({ type: down.ready, backend: rt.gfx?.backend ?? null });
+    };
     const timed = (step, opts) =>
       parts.createLoop((t) => {
         const began = now();
         const more = step(t);
+        tellReady();
         const clock = rt?.gpuClock;
         post({ type: down.frame, ms: now() - began, at: t, gpu: clock?.available ? (clock.last ?? null) : null, inputAt: input.at, drawnAt: epoch() });
         return more;
-      }, opts);
+      }, { ...opts, ...beats });
     rt = parts.createRuntime({
       makeBackend: (kind, opts) => parts.makeBackend(kind, { ...opts, canvas, invalidate: () => rt?.invalidate() }),
       loop: timed,
@@ -207,8 +221,11 @@ export function serve(scope, { load, now = () => performance.now(), epoch = () =
     const host = { dataset: {}, prepend() {}, appendChild() {}, getBoundingClientRect: () => ({ width: size.w, height: size.h }) };
     try {
       const module = (await (modules[m.module] ?? open)()).default;
+      if (closed) return;
       const shown = await rt.mount(module, m.props, host);
-      post(shown ? { type: down.ready, backend: rt.gfx?.backend ?? null } : { type: down.failed, message: rt.failure?.message ?? 'not shown' });
+      if (closed) return;
+      if (shown) tellReady();
+      else post({ type: down.failed, message: rt.failure?.message ?? 'not shown' });
     } catch (err) {
       post({ type: down.failed, message: String(err?.message ?? err) });
     }
@@ -248,6 +265,7 @@ export function serve(scope, { load, now = () => performance.now(), epoch = () =
         break;
       }
       case up.unmount:
+        closed = true;
         rt?.dispose();
         rt = null;
         scope.close();

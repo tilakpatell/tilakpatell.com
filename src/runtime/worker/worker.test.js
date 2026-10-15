@@ -33,6 +33,7 @@ function fakeCreateRuntime(made) {
       input: opts.input,
       gfx: { backend: 'nodes-webgl' },
       current: null,
+      status: 'idle',
       resize: vi.fn(),
       setVisible: vi.fn(),
       invalidate: vi.fn(),
@@ -43,9 +44,11 @@ function fakeCreateRuntime(made) {
         await opts.makeBackend('nodes', { budget: {} });
         const world = await module.create(rt, props);
         rt.current = { module, world, host, props };
-        // (and its loop steps the world: the frame a probe reads)
+        rt.status = 'ready';
+        // (and its loop steps the world: the frame a probe reads; drawn, it is 'on')
         rt.step = (opts.loop ?? ((s) => s))((t) => {
           world.step?.(1 / 60, opts.input.sample(t), t);
+          rt.status = 'on';
           return true;
         }, {});
         return true;
@@ -102,6 +105,10 @@ describe('the runtime in a worker', () => {
     expect(mod.create).toHaveBeenCalledWith(made[0], { a: 1 });
     // (the box the runtime measures is the page's size, there being no DOM)
     expect(made[0].current.host.getBoundingClientRect()).toMatchObject({ width: 640, height: 360 });
+    // (ready once a frame is drawn, not when the world is made: the page's box stays clear till then)
+    expect(scope.of('ready')).toEqual([]);
+    made[0].step.step(16);
+    made[0].step.step(32);
     expect(scope.of('ready')).toEqual([{ type: 'ready', backend: 'nodes-webgl' }]);
   });
 
@@ -191,6 +198,18 @@ describe('the runtime in a worker', () => {
     await expect(asked).resolves.toEqual({ t: 9 });
     // (the AudioContext is the page's: no node crosses)
     expect(() => rt.opts.audio.bus()).toThrow(/page/);
+  });
+});
+
+describe('a worker told to let go while it starts', () => {
+  it('makes nothing after the unmount', async () => {
+    const { scope, made } = setUp();
+    scope.send(init());
+    scope.send({ type: 'unmount' });
+    await settle();
+    expect(made).toHaveLength(0);
+    expect(scope.of('ready')).toEqual([]);
+    expect(scope.closed).toBe(true);
   });
 });
 

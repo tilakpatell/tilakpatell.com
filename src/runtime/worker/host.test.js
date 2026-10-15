@@ -48,7 +48,7 @@ function fakeHost() {
     getBoundingClientRect: () => ({ width: 640.4, height: 359.6 }),
   };
 }
-function setUp() {
+function setUp({ makeWorker = null } = {}) {
   const page = fakePage();
   const workers = [];
   const frames = [];
@@ -61,6 +61,7 @@ function setUp() {
     doc,
     can: () => true,
     makeWorker: () => {
+      if (makeWorker) return makeWorker();
       const w = fakeWorker();
       workers.push(w);
       return w;
@@ -219,5 +220,40 @@ describe('the page’s face of a world drawn in a worker', () => {
     rt.video = { hdr: 'on' };
     expect(page.video).toEqual({ hdr: 'on' });
     expect(rt.saves).toBe(page.saves);
+  });
+
+  it('lets a world still being made on the page go before the worker draws', () => {
+    const { rt, page } = setUp();
+    page.loading = { id: 'universe' };
+    rt.mount(LIT, {}, fakeHost());
+    expect(page.unmount).toHaveBeenCalled();
+  });
+
+  it('mounts on the page when no worker can be had', async () => {
+    const { rt, page } = setUp({
+      makeWorker: () => {
+        throw new Error('no module workers');
+      },
+    });
+    const host = fakeHost();
+    await expect(rt.mount(LIT, {}, host)).resolves.toBe(true);
+    expect(page.mount).toHaveBeenCalledWith(LIT, {}, host);
+    expect(host.kids).toHaveLength(0);
+  });
+
+  it('answers a worker mount another mount replaced: not shown', async () => {
+    const { rt } = setUp();
+    const first = rt.mount(LIT, {}, fakeHost());
+    rt.mount({ id: 'battlefront' }, {}, fakeHost());
+    await expect(first).resolves.toBe(false);
+  });
+
+  it('offers a reload for a quality the world cannot take in place', () => {
+    const { rt, page, workers } = setUp();
+    page.quality.retune = vi.fn();
+    rt.mount(LIT, {}, fakeHost());
+    expect(rt.requality('low')).toBe('reload');
+    expect(page.quality.retune).toHaveBeenCalledWith('low');
+    expect(workers[0].of('quality').at(-1).m).toEqual({ type: 'quality', level: 'low' });
   });
 });
