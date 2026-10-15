@@ -62,7 +62,8 @@ void main() {
 
 // one piece of a solid place: a geometry at `at` with a colour
 const piece = (parts, geom, at, color, q = null, scale = 1) => {
-  const g = geom.toNonIndexed();
+  // (the icosahedron and octahedron come non-indexed: three warns on asking again)
+  const g = geom.index ? geom.toNonIndexed() : geom;
   if (q) g.applyQuaternion(q);
   if (scale !== 1) g.scale(scale, scale, scale);
   g.translate(at[0], at[1], at[2]);
@@ -70,7 +71,7 @@ const piece = (parts, geom, at, color, q = null, scale = 1) => {
   const c = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) c.set(color, i * 3);
   g.setAttribute('color', new THREE.BufferAttribute(c, 3));
-  geom.dispose();
+  if (g !== geom) geom.dispose();
   parts.push(g);
 };
 // an icosahedron with its surface pushed in and out by the seed: a rock, a comet's head

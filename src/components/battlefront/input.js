@@ -10,7 +10,10 @@
 //   (an ability key, Q E F as the HUD shows them or 1 2 3, is read once as
 //   `ability` and, while it stays down, as `abilityHeld`: a grenade leaves
 //   on its release, grenades.js's hold rule; `holdAbility(slot)` is a
-//   check's finger on one, 0 to lift it)
+//   check's finger on one, 0 to lift it; E is read too, while it stays down,
+//   as `interactHeld`: the game's interactions are held, a gate's panel or a
+//   bomb a second and more, its WorldInteraction's StopWatch running while
+//   the key is; `holdInteract(on)` is a check's finger on it)
 //
 // While the deploy screen is up, `swallow(true)`: nothing reaches the sim
 // but the deploy itself (Enter). Esc is the browser's: it releases the
@@ -43,6 +46,7 @@ export function createInput({ win = typeof window !== 'undefined' ? window : nul
   let touch = [0, 0];
   let swallowed = false;
   let finger = 0; // an ability slot a check holds down
+  let interactFinger = false; // the interact a check holds down
 
   function onKey(e, isDown) {
     if (SWALLOW.has(e.code) && !swallowed && !PAGE_KEYS.has(e.target?.tagName)) e.preventDefault?.();
@@ -104,6 +108,10 @@ export function createInput({ win = typeof window !== 'undefined' ? window : nul
     press(name, value = true) {
       once[name] = value;
     },
+    holdInteract(on) {
+      interactFinger = Boolean(on);
+      if (interactFinger) once.interact = true;
+    },
     holdAbility(slot) {
       finger = slot || 0;
       if (finger) once.ability = finger;
@@ -145,6 +153,7 @@ export function createInput({ win = typeof window !== 'undefined' ? window : nul
         abilityHeld: swallowed ? 0 : ABILITY_KEYS.findIndex((keys) => keys.some((k) => down.has(k))) + 1 || finger,
         vent: !swallowed && Boolean(once.vent),
         interact: !swallowed && Boolean(once.interact),
+        interactHeld: !swallowed && (down.has('KeyE') || interactFinger),
         deploy: Boolean(once.deploy),
       };
       for (const k of Object.keys(once)) delete once[k];

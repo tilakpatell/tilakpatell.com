@@ -89,7 +89,7 @@ export function createFleet({ prepare = null, build = buildTraffic, glb = GLB, l
             const turn = new THREE.Group();
             turn.rotation.y = def.nose;
             turn.add(root);
-            const box = new THREE.Box3().setFromObject(turn);
+            const box = new THREE.Box3().setFromObject(turn, true); // (precise: the vertices, as galaxy/models.js normalise measures)
             root.position.sub(box.getCenter(new THREE.Vector3()).applyAxisAngle(new THREE.Vector3(0, 1, 0), -def.nose));
             const holder = new THREE.Group();
             holder.add(turn);
