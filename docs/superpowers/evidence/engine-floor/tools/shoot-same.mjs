@@ -231,6 +231,20 @@ try {
       if (now < when) await page.clock.fastForward(Math.ceil(when - now));
       await page.clock.setSystemTime(new Date(CLOCK.getTime() + when));
       await page.evaluate(() => window.__reseed(0x51a7e));
+      if (process.env.PROBE_POST) {
+        await page.evaluate(() => {
+          const r = window.__universeDebug.renderer;
+          if (!r.__counted) {
+            const was = r.render.bind(r);
+            r.__counted = true;
+            r.render = (...a) => {
+              if (!r.getRenderTarget()) window.__drawAt.push(Math.round(performance.now()));
+              return was(...a);
+            };
+          }
+          window.__drawAt = [];
+        });
+      }
       await page.evaluate(() => window.dispatchEvent(new Event('tp:uncover')));
       for (let n = 0; n < FRAMES; n++) {
         await page.clock.runFor(16);
@@ -244,7 +258,7 @@ try {
             const { post, renderer, state } = window.__universeDebug;
             const val = (v) => (typeof v === 'number' ? +v.toFixed(5) : v?.isVector2 || v?.isVector3 || v?.isColor ? v.toArray().map((x) => +x.toFixed(5)) : undefined);
             const passes = post.composer.passes.map((p) => ({ k: p.constructor.name, on: p.enabled, s: val(p.strength), r: val(p.radius), t: val(p.threshold), u: p.uniforms ? Object.fromEntries(Object.entries(p.uniforms).map(([n, u]) => [n, val(u.value)]).filter(([, v]) => v !== undefined)) : undefined }));
-            return JSON.stringify({ ratio: renderer.getPixelRatio(), sharp: post.sharpness, pr: post.ratio, view: state.view, low: state.low, passes });
+            return JSON.stringify({ drawn: window.__drawAt.length, first: window.__drawAt.slice(0, 3), last: window.__drawAt.slice(-3), ratio: renderer.getPixelRatio(), sharp: post.sharpness, pr: post.ratio, view: state.view, low: state.low, passes });
           }),
         );
       }
