@@ -4,15 +4,19 @@ import * as THREE from 'three';
 // WebGPURenderer needs a browser; a stand-in records what it was made with
 const made = [];
 let fallBack = false; // (three's renderer, finding no adapter, on its WebGL 2 backend)
+let software = false; // (a fallback adapter: WebGPU drawn on the CPU)
 vi.mock('three/webgpu', () => ({
   WebGPURenderer: class {
     constructor(options) {
       this.options = options;
       let destroyed;
       const lost = new Promise((resolve) => (destroyed = resolve));
-      this.backend = fallBack ? { isWebGLBackend: true } : { isWebGPUBackend: true, device: { lost } };
+      // (three r186 keeps no adapter on its backend: the device's adapterInfo is the chip)
+      this.backend = fallBack ? { isWebGLBackend: true } : { isWebGPUBackend: true, device: { lost, adapterInfo: { vendor: 'amd', architecture: 'rdna-3', description: '', isFallbackAdapter: software } } };
       // (a device destroyed on dispose says it's lost, as a real one does)
       this.destroy = () => destroyed({ reason: 'destroyed' });
+      // (and one lost while drawing says why: a hung chip's 'unknown')
+      this.lose = () => destroyed({ reason: 'unknown', message: 'DXGI_ERROR_DEVICE_HUNG' });
       this.init = vi.fn(async () => {});
       this.setPixelRatio = vi.fn();
       this.setSize = vi.fn();
@@ -34,7 +38,7 @@ vi.mock('../lib/three/light/passes.js', () => ({
   }),
 }));
 
-const { adapterLimits, buildPostProcessing, createWebGPU, RAISED_LIMITS } = await import('./webgpu');
+const { adapterLimits, buildPostProcessing, createWebGPU, isFallback, RAISED_LIMITS } = await import('./webgpu');
 const { mipBias, setMipState } = await import('../lib/three/mipBias');
 
 const fakeCanvas = () => ({ addEventListener: vi.fn(), removeEventListener: vi.fn() });
@@ -96,12 +100,40 @@ describe('createWebGPU', () => {
     expect(canvas.addEventListener).not.toHaveBeenCalled(); // (the device says when it's lost)
   });
 
+  it('a fallback adapter is no GPU: the renderer let go and the make refused, for WebGL 2 to be made instead', async () => {
+    software = true;
+    try {
+      await expect(createWebGPU(fakeCanvas(), {})).rejects.toThrow(/fallback adapter/);
+      expect(made.at(-1).dispose).toHaveBeenCalled();
+    } finally {
+      software = false;
+    }
+  });
+
+  it('a fallback adapter is refused before a renderer is made, by the adapter’s info or its own flag', async () => {
+    const was = globalThis.navigator;
+    for (const adapter of [{ limits: {}, info: { isFallbackAdapter: true } }, { limits: {}, isFallbackAdapter: true }]) {
+      Object.defineProperty(globalThis, 'navigator', { value: { gpu: { requestAdapter: async () => adapter } }, configurable: true });
+      const before = made.length;
+      try {
+        await expect(createWebGPU(fakeCanvas(), {})).rejects.toThrow(/fallback adapter/);
+        expect(made.length).toBe(before);
+      } finally {
+        Object.defineProperty(globalThis, 'navigator', { value: was, configurable: true });
+      }
+    }
+    // (a hardware adapter's info is the chip named in a loss, where the device has none)
+    expect(isFallback({ info: { isFallbackAdapter: false } })).toBe(false);
+    expect(isFallback(null, { adapterInfo: { isFallbackAdapter: true } })).toBe(true);
+  });
+
   it('a device lost while drawing is reported, and one destroyed by its own dispose is not', async () => {
     const onLost = vi.fn();
     const gfx = await createWebGPU(fakeCanvas(), { onLost });
-    made[0].destroy();
+    made[0].lose();
     await Promise.resolve();
     expect(onLost).toHaveBeenCalledTimes(1);
+    expect(onLost).toHaveBeenCalledWith(expect.objectContaining({ reason: 'unknown', message: 'DXGI_ERROR_DEVICE_HUNG', adapter: { vendor: 'amd', architecture: 'rdna-3' } }));
     const onLost2 = vi.fn();
     const gfx2 = await createWebGPU(fakeCanvas(), { onLost: onLost2 });
     gfx2.dispose();

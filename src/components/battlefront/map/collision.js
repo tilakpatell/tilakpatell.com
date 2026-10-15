@@ -8,9 +8,15 @@
 // camera's arm must not pass through.
 //
 //   createLevelCollision({ pack, loadBin, physics, tier, deps })
-//     → { add(key, bin, band) → Promise, drop(key), update(ms = 4) → bodies added,
+//     → { add(key, bin, band) → Promise, drop(key), update(ms = 4, at = the player's [x, y, z]) → bodies added,
 //         sweep(from, dir, len, r) → metres along dir to the first shape | null,
+//         floor(x, y, z, reach = 3) → the height of the first shape or ground under a point (the export's frame) | null,
 //         stats(), dispose() }
+//   createPartsCollision({ parts: { outside: { pack, loadBin }, inside: { pack, loadBin } | null }, physics, tier, deps })
+//     → the same face, for a level and its interior (map/level.js's `inner`):
+//       add(key, bin, band, part) and drop(key, part) by the part the stream
+//       names ('inside', else the outside), the sweep the nearer of the two,
+//       setTerrain(heightAt) the outside's (a pack-frame sampler)
 //   armCaster({ heightAt, collision, nav, clear, step, radius }) → castArm(from, dir, len)
 //     the nearer of a march over the ground and a ball swept through the
 //     shapes (with no engine: the navgrid's solids and mask, firstSolid)
@@ -39,6 +45,7 @@ export function createLevelCollision({ pack, loadBin, physics, tier = 'high', de
   // (map/level.js's toPack, with the height and for a direction too)
   const turn = (x, z) => [x * c + z * s, -x * s + z * c];
   const near = new Set();
+  const down = new RAPIER.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: -1, z: 0 });
   let gone = false;
 
   return {
@@ -55,9 +62,10 @@ export function createLevelCollision({ pack, loadBin, physics, tier = 'high', de
       near.delete(key);
       lp.drop(key);
     },
-    update(ms = 4) {
+    update(ms = 4, at = null) {
       if (gone) return 0;
-      const added = lp.update(ms);
+      // (the cells nearest the player first: the floor under them before the far side of the map)
+      const added = lp.update(ms, at ? turn(at[0] - ox, at[2] - oz) : null);
       // (the engine sees a body only after a step)
       if (added) world.step();
       return added;
@@ -70,12 +78,59 @@ export function createLevelCollision({ pack, loadBin, physics, tier = 'high', de
       const h = world.castShape({ x: px, y: from[1] - oy, z: pz }, I, { x: dx * len, y: dir[1] * len, z: dz * len }, balls.get(r), 0, 1, true);
       return h ? h.time_of_impact * len : null;
     },
+    floor(x, y, z, reach = 3) {
+      if (gone) return null;
+      const [px, pz] = turn(x - ox, z - oz);
+      down.origin.x = px;
+      down.origin.y = y - oy;
+      down.origin.z = pz;
+      const h = world.castRay(down, reach, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS);
+      return h ? y - h.timeOfImpact : null;
+    },
+    // (the ground's heights in the pack's frame, for the walk: a heightfield a 64 m square in each near cell)
+    setTerrain: (heightAt, opts) => lp.setTerrain(heightAt, opts),
     stats: () => lp.stats(),
     dispose() {
       gone = true;
       near.clear();
       lp.dispose();
     },
+  };
+}
+
+export function createPartsCollision({ parts, physics, tier = 'high', deps = {} }) {
+  const each = Object.fromEntries(
+    Object.entries(parts)
+      .filter(([, p]) => p?.pack)
+      .map(([name, p]) => [name, createLevelCollision({ pack: p.pack, loadBin: p.loadBin, physics, tier, deps })]),
+  );
+  const all = Object.values(each);
+  const of = (part) => each[part === 'inside' ? 'inside' : 'outside'];
+  return {
+    add: (key, bin, band, part) => of(part)?.add(key, bin, band) ?? Promise.resolve(),
+    drop: (key, part) => of(part)?.drop(key),
+    // (the frame's slice of time shared between the parts, the nearest cells first)
+    update: (ms = 4, at = null) => all.reduce((n, c) => n + c.update(ms / all.length, at), 0),
+    // (one engine for every part: the first part's ray sees them all)
+    floor: (x, y, z, reach) => all[0]?.floor(x, y, z, reach) ?? null,
+    // (bodies still waiting to go into the world: the walk holds a soldier in the air until they are in)
+    queued: () => all.reduce((n, c) => n + (c.stats()?.queued ?? 0), 0),
+    sweep(from, dir, len, r) {
+      let best = null;
+      for (const c of all) {
+        const d = c.sweep(from, dir, len, r);
+        if (d != null && (best == null || d < best)) best = d;
+      }
+      return best;
+    },
+    stats() {
+      const out = {};
+      for (const c of all) for (const [k, v] of Object.entries(c.stats() ?? {})) if (typeof v === 'number') out[k] = (out[k] ?? 0) + v;
+      return out;
+    },
+    // (the ground is the outside's: the interior has none of its own)
+    setTerrain: (heightAt, opts) => each.outside?.setTerrain(heightAt, opts),
+    dispose: () => all.forEach((c) => c.dispose()),
   };
 }
 

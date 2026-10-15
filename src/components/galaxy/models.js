@@ -14,7 +14,9 @@
 // it has none), and a slot swaps over the moment it is.
 //
 // createModels({ prepare(object) → Promise }) → { slot(kind, size, { tint }) → slot,
-//   want(kinds), prebuild(kinds), builtCount, update(t), dispose() }
+//   want(kinds), prebuild(kinds), hulls, builtCount, update(t), dispose() }
+// hulls: the kinds’ hit shapes, loaded with their models (hulls.js); `hulls.get(kind)`
+// is a Hull or null until it has loaded
 // slot: { holder (place it, turn it), kind, size, ready }; every model sits in
 // its holder centred, nose along +z, +y up, `size` long nose to tail (a
 // station, or a ship that flies upright, `size` at its biggest side:
@@ -29,6 +31,7 @@ import { GLB } from '../universe/glbFleet';
 import { fitScale } from '../universe/shipFit';
 import { BUILT_KINDS } from '../universe/trafficModels';
 import { GALAXY_KINDS, buildGalaxyShip } from './fleet';
+import { createHulls } from './hulls';
 
 // which way each loaded model's nose points as it comes (turned to +z): the
 // universe's, and the galaxy's own from Sketchfab (scripts/sketchfab-galaxy.mjs),
@@ -355,7 +358,8 @@ const idle = (fn) => (typeof requestIdleCallback === 'function' ? requestIdleCal
 const unidle = (id) => (typeof requestIdleCallback === 'function' ? cancelIdleCallback(id) : clearTimeout(id));
 
 // (`load` is the page's one parse of a file, gltfCache.js; a test hands in its own)
-export function createModels({ prepare = null, load: fetchModel = loadGLTF } = {}) {
+// (`hulls` is the hit shapes’ loader, hulls.js, reading MODELS’s rows for the HQ cut; a test hands in its own)
+export function createModels({ prepare = null, load: fetchModel = loadGLTF, hulls = createHulls({ models: MODELS }) } = {}) {
   const loaded = new Map(); // kind → { holder, size, fit } (a loaded model, normalised)
   const lods = new Map(); // kind → the LOD's scene, in the shared material
   const lodReady = new Map(); // kind → its holder, fitted like the full model and warmed
@@ -498,23 +502,29 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF } = {
       const s = { kind, size, holder, inner, model: null, real: false, lod: false, ready: false, tint };
       slots.push(s);
       if (MODELS[kind]) load(kind);
+      // (and its hull, so a ship placed without a want before it still gets one)
+      hulls.want([kind]);
       fill(s);
       return s;
     },
     // start loading these now (before a slot wants them)
     want(kinds) {
       for (const k of kinds) if (MODELS[k]) load(k);
+      hulls.want(kinds);
     },
     // build these kinds' templates ahead, for the slots of a system about to be
     // built (they flew as the loaded model's stand-in, or are the built ship itself)
     prebuild(kinds) {
       if (dead) return;
+      hulls.want(kinds);
       for (const k of kinds) {
         const kind = BUILT.has(k) ? k : STAND_IN[k];
         if (kind && BUILT.has(kind) && !built.has(kind) && !loaded.has(k) && !queue.includes(kind)) queue.push(kind);
       }
       if (queue.length && !slice) slice = idle(buildNext);
     },
+    // the hit shapes, for the battle (Hull | null by kind)
+    hulls,
     // how many templates are built (for the tests)
     get builtCount() {
       return built.size;
@@ -533,6 +543,7 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF } = {
     },
     dispose() {
       dead = true;
+      hulls.dispose();
       if (slice) unidle(slice);
       slice = 0;
       queue.length = 0;

@@ -18,6 +18,9 @@
 //          Instant Action's *_Mode8, the waves) and Instant Action's bot logic
 //          (scripts/lib/bf2017-rulebook-settings.mjs): gameSettings.json
 //   node scripts/bf2017-data.mjs saber [--root <dir>] [--out src/data/bf2017]   the lightsaber's rulebook (scripts/lib/bf2017-rulebook-saber.mjs): saber.json
+//   node scripts/bf2017-data.mjs damage --root <dir> [--maps <dir>] [--headers <dir>] [--fixtures]
+//          the game's damage in space (scripts/lib/bf2017-rulebook-damage.mjs): the
+//          material grid, the fighters' bolts, the capitals' parts: damage.json
 //
 //   root   the export: data.tsv and data/<Name>.json(.gz), with the web build
 //          under web/ (the bucket's layout: lab/assets/bf2017 after
@@ -36,6 +39,8 @@ import { cutAsset, isSequel, loadAsset, readWebJson, resolveStrings, rootOf, web
 import { abilityRow, cardRow, classRow, heroRow, indexOf, linkBlocks, reinforcementRow, teamRow, vehicleRow, weaponRow } from './lib/bf2017-rulebook.mjs';
 import { aiCreatures, aiNames, aiRulebook, aiSquadron } from './lib/bf2017-rulebook-ai.mjs';
 import { airRulebook } from './lib/bf2017-rulebook-air.mjs';
+import { capitalModules, damageFixtures, damageRulebook } from './lib/bf2017-rulebook-damage.mjs';
+import { headerFile, readHeader } from './lib/bf2017-hulls.mjs';
 import { camerasRow, copyUiAssets, lightingRow, uiRow } from './lib/bf2017-rulebook-look.mjs';
 import { mapRow } from './lib/bf2017-rulebook-map.mjs';
 import { SCREEN_GLOB, infoOf, loadingOf, screensOf, shapesOf } from './lib/bf2017-rulebook-ui.mjs';
@@ -338,6 +343,47 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       const to = join(ROOT, typeof args.out === 'string' ? args.out : join('src', 'data', 'bf2017'), 'air.json');
       writeFileSync(to, JSON.stringify({ _from: { export: EXPORT, date: new Date().toISOString().slice(0, 10) }, ...book }) + '\n');
       console.log(`air: ${Object.keys(book.vehicles).length} vehicles, ${book.refused.length} refused, ${book._missing.length} missing; wrote ${relative(ROOT, to)} (${Math.round(statSync(to).size / 1024)} KB)`);
+    } else if (argv[0] === 'damage') {
+      // the game's damage in space (the hulls plan's Task 7, findings/62):
+      // src/data/bf2017/damage.json, the capitals' kits read off the space
+      // levels' maps (--maps: the folder holding maps/, the export's web_opt)
+      // and their parts' properties off the physics headers (--headers:
+      // resdump's HavokPhysicsData); --fixtures writes the test's cut copies
+      // into scripts/fixtures/bf2017/damage/ instead
+      const args = parseArgs(argv.slice(1));
+      const root = typeof args.root === 'string' ? args.root : join(ROOT, 'lab', 'assets', 'bf2017');
+      const headers = typeof args.headers === 'string' ? args.headers : join(ROOT, 'lab', 'assets', 'bf2017', 'resdump', 'res', 'HavokPhysicsData');
+      const bytesOf = (res) => (existsSync(join(headers, headerFile(res))) ? readFileSync(join(headers, headerFile(res))) : null);
+      if (args.fixtures) {
+        const out = join(ROOT, 'scripts', 'fixtures', 'bf2017', 'damage');
+        const { records, headers: bins } = damageFixtures(root, bytesOf);
+        const rows = [];
+        for (const r of records) {
+          const file = join(out, 'data', `${r.name}.json`);
+          mkdirSync(dirname(file), { recursive: true });
+          writeFileSync(file, JSON.stringify(r.json));
+          rows.push([r.name, r.type, `data/${r.name}.json`, 0].join('\t'));
+          console.log(`  ${relative(ROOT, file)} ${statSync(file).size} bytes`);
+        }
+        writeFileSync(join(out, 'data.tsv'), rows.sort().join('\n') + '\n');
+        for (const h of bins) {
+          mkdirSync(join(out, 'headers'), { recursive: true });
+          writeFileSync(join(out, 'headers', headerFile(h.res)), h.bytes);
+        }
+      } else {
+        const maps = typeof args.maps === 'string' ? args.maps : [join(dirname(root), 'web_opt'), join(root, 'web')].find((d) => existsSync(join(d, 'maps'))) ?? root;
+        const header = (res) => {
+          const bytes = bytesOf(res);
+          return bytes && readHeader(bytes);
+        };
+        const book = damageRulebook(root, { kits: capitalModules(root, maps), header });
+        for (const m of book._missing) console.log(`  missing: ${m}`);
+        const to = join(ROOT, typeof args.out === 'string' ? args.out : join('src', 'data', 'bf2017'), 'damage.json');
+        writeFileSync(to, JSON.stringify({ _from: { export: EXPORT, date: new Date().toISOString().slice(0, 10) }, ...book }) + '\n');
+        const parts = Object.values(book.capitals).reduce((n, c) => n + Object.keys(c.parts).length, 0);
+        const turrets = Object.values(book.capitals).reduce((n, c) => n + Object.keys(c.turrets).length, 0);
+        console.log(`damage: the grid ${Object.keys(book.grid).length} × ${Object.keys(Object.values(book.grid)[0]).length} (agreeing with ${book.gridFrom.agrees.join(', ') || 'no other'}), ${Object.keys(book.fighters).length} fighters, ${Object.keys(book.capitals).length} capitals (${parts} parts, ${turrets} turrets), ${Object.keys(book.stand).length} stand-ins, ${book._missing.length} missing; wrote ${relative(ROOT, to)} (${Math.round(statSync(to).size / 1024)} KB)`);
+      }
     } else if (argv[0] === 'saber') {
       const args = parseArgs(argv.slice(1));
       const root = typeof args.root === 'string' ? args.root : join(ROOT, 'lab', 'assets', 'bf2017');

@@ -43,6 +43,7 @@ await ctx.addInitScript(() => {
     window.localStorage.setItem('tp-intro', '1');
     window.localStorage.setItem('tp-start', '"home"');
     window.localStorage.setItem('tp-worlds', '"load"');
+    window.localStorage.setItem('tp-software', '"on"'); // (past the Star Wars worlds' GPU gate, lib/fit)
   } catch {
     /* nothing to keep on a blank page */
   }

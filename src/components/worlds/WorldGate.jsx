@@ -5,7 +5,11 @@ import { gpu, Hold3D } from '../../lib/gpu';
 import { device, storageFree, worldCheck } from '../../lib/device';
 import { local, storage } from '../../lib/hooks';
 import { byPath } from '../universe/universes';
-import { WORLD_MB, worldAt } from './worlds';
+import { WORLD_MB, needsGpu, wayOut, worldAt } from './worlds';
+import { FIT_KEY, readTry, starWarsFit } from '../../lib/fit';
+import UnfitCard from './UnfitCard';
+import { GpuHint } from './GpuHint';
+import { browserOf, gpuHint, HINT_KEY, osOf } from '../../lib/gpuHint';
 import { cardState, sizeText, usePack } from './usePack';
 import { InstallCard, InstallPill } from './InstallCard';
 import './worldgate.css';
@@ -45,7 +49,49 @@ const WHY = {
   storage: 'This device is short on space, so it waits for you.',
 };
 
+// (a Star Wars world on a device lib/fit says cannot run it: the card
+// instead of the page, so nothing of the world is fetched; ?software=on, or
+// the card's Try anyway, kept for the visit, lets it in)
+const fitFor = (pathname) => {
+  if (!needsGpu(pathname)) return { ok: true, why: null };
+  const { search, hash } = typeof window !== 'undefined' ? window.location : { search: '', hash: '' };
+  return starWarsFit({ gpu: gpu(), device: look(), tryAnyway: readTry(search, hash, local.get(FIT_KEY) ?? storage.get(FIT_KEY)) });
+};
+
+// (the system and the browser, for the graphics hint's steps)
+const where = () => {
+  const nav = typeof navigator !== 'undefined' ? navigator : {};
+  const ua = nav.userAgent ?? '';
+  return { os: osOf({ ua, platform: nav.userAgentData?.platform ?? '' }), browser: browserOf(ua) };
+};
+
+// (lib/gpuHint: a built-in chip drawing on Windows or Linux)
+const hintFor = () => {
+  const g = gpu();
+  return gpuHint({ renderer: g.renderer, software: g.software, phone: device().phone, os: where().os });
+};
+
 export default function WorldGate({ pathname, children }) {
+  const [fit, setFit] = useState(() => fitFor(pathname));
+  // (looked at after the first paint: gpu() makes a throwaway context; the
+  // chip told is kept, so the hint floats over a world once a chip, while
+  // the weak card below gives its steps whenever it is shown)
+  const [chipHint, setChipHint] = useState(null);
+  const [told, setTold] = useState(() => local.get(HINT_KEY));
+  useEffect(() => setChipHint(hintFor()), []);
+  const hint = chipHint && chipHint.chip !== told ? chipHint : null;
+  const closeHint = () => {
+    if (!chipHint) return;
+    local.set(HINT_KEY, chipHint.chip);
+    setTold(chipHint.chip);
+  };
+  useEffect(() => setFit(fitFor(pathname)), [pathname]);
+  // (let in at once: the write is for the rest of the visit, and a blocked
+  // storage keeps nothing, which must not keep the card up)
+  const tryAnyway = () => {
+    storage.set(FIT_KEY, 'on');
+    setFit({ ok: true, why: null });
+  };
   const world = worldAt(pathname);
   const to = world?.to ?? null;
   const mb = to ? WORLD_MB[to] ?? 1 : 0;
@@ -137,10 +183,14 @@ export default function WorldGate({ pathname, children }) {
     prompt = <InstallPill state={state} pack={p.pack} progress={p.progress} onInstall={p.install} onClose={noOffer} />;
   }
 
+  if (!fit.ok) return <UnfitCard name={name ?? 'This world'} why={fit.why} way={wayOut(pathname)} onTry={tryAnyway} steps={fit.why === 'weak' && chipHint ? where() : null} />;
+  // (over a world only, once a chip: the classic pages draw little)
+  const gpuNote = world && hint ? <GpuHint chip={hint.chip} os={hint.os} browser={where().browser} onClose={closeHint} /> : null;
   return (
     <Hold3D.Provider value={hold}>
       {children}
       {prompt && createPortal(prompt, document.body)}
+      {gpuNote && createPortal(gpuNote, document.body)}
     </Hold3D.Provider>
   );
 }

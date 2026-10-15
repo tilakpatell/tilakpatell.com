@@ -37,6 +37,12 @@ import { backendOf, loadThree } from './three.js';
 export const POINT_POOL = 1024; // ClusteredLighting's maxLights
 export const SPOT_POOL = 16; // spots are not clustered: the nearest sixteen
 export const POINT_FALLBACK = 64; // the base lighting's pool where clustering cannot run (A2)
+// Low's pool, the floor's (the every-chip-plays addendum): without clustering
+// every lit pixel walks the whole pool, 64 points and 16 spots, so Low draws
+// the nearest few, the hangar's own lamps among them
+export const LOW_LAMPS = Object.freeze({ points: 8, spots: 2 });
+// the pool a tier and the video settings ask for (applyGameLight's)
+export const lampPool = (tier, video = null) => (tier === 'low' ? LOW_LAMPS : video?.localLights === 'nearest' ? { points: POINT_FALLBACK } : {});
 export const CLUSTER = { tileSize: 32, zSlices: 24, perCluster: 64 }; // three's defaults, as the design gives them
 export const CELL = 128; // m: lights.json's cell, the level pack's
 export const CULL_AREA = 0.005; // the record's CullScreenArea: under this a light is not drawn

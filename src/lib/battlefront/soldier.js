@@ -16,6 +16,7 @@ import physics from '../../data/bf2017/physics/soldier.json';
 import { ROLL, createAbilities, tick as tickAbilities } from './abilities.js';
 import { createStack, resolve, tick as tickStack } from './affectors.js';
 import { heightAt, walkable } from './nav.js';
+import { meshMove } from './meshNav.js';
 import { createGun, tick as tickGun } from './weapons.js';
 
 const BODY = physics.rows[physics.default];
@@ -190,8 +191,13 @@ function driveScale(s, dir, len) {
   return f2 * (f >= 0 ? 1 : (row.back ?? 1)) + (1 - f2) * (row.strafe ?? 1);
 }
 
-// a step along dir (a unit [x, z]) at the soldier's speed, sliding along what blocks it
+// a step along dir (a unit [x, z]) at the soldier's speed, sliding along what blocks it: on the level's
+// navmesh where the battle has one and the soldier stands on it (meshNav.js), else on the navgrid
 export function move(s, dir, dt, nav) {
+  if (nav?.mesh) {
+    const m = meshMove(s, dir, dt, nav, speedOf(s));
+    if (m !== null) return m;
+  }
   const len = Math.hypot(dir[0], dir[1]);
   const step = speedOf(s) * dt * driveScale(s, dir, len);
   if (!s.alive || len < 1e-9 || step <= 0) {

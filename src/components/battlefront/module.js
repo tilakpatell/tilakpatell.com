@@ -19,7 +19,7 @@
 // fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
 // 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js),
 // 'bots' (each living bot's side, mode, target, whether it fires, its order's key (`post2`), and for a round's bot the enemy whose line it watches and whether that line is clear),
-// 'nav' (the battle's navgrid, for a check),
+// 'nav' (the battle's navgrid, for a check), 'place' [x, z, y?] (the player's soldier stood there, on the sim's ground without a y: a check's walk of the map), 'where' (the player's place, and whether its body walks the level's shapes), 'walkersHome' (each escort's walker at its route's end: a check's way into stage 2),
 // 'instantActionSchema' (a promise of the setup screen's options),
 // 'instantAction' options (a promise of { ok, props } to mount the round with:
 // create's `instantAction`, lib/battlefront/instantAction.js) and 'round'
@@ -40,6 +40,8 @@
 
 import * as THREE from 'three';
 import { device } from '../../lib/device.js';
+import { floorRatio } from '../../lib/floorRatio.js';
+import { CAPPING } from '../../lib/gpuProbe.js';
 import { textureTier } from '../../lib/video.js';
 import { loadNavSearch } from '../../lib/battlefront/navWasm.js';
 import { camerasOf, levelForMode, levelKey, lightingOf, loadLevel, loadRulebook, mapOf, squadsOf, teamsFor } from '../../lib/battlefront/rulebook.js';
@@ -56,8 +58,11 @@ import { createKitFx } from './fx/kit.js';
 import { markerProjection } from './hud/widgets.js';
 import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
-import { armCaster, createLevelCollision, wantsEngine } from './map/collision.js';
-import { PLAYER_ID, STEP, addPlayer, createBattle, deploy, grant, roundBattle, spawnFor, step, view } from './battle.js';
+import { armCaster, createPartsCollision, wantsEngine } from './map/collision.js';
+import { createWalker } from './map/walk.js';
+import { holesOf } from '../../lib/land/holes.js';
+import SOLDIER_BODY from '../../data/bf2017/physics/soldier.json';
+import { PLAYER_ID, STEP, addPlayer, botsAt, createBattle, deploy, grant, roundBattle, spawnFor, step, view } from './battle.js';
 import { entryFor, lightsJsonOf } from './weather.js';
 import { guardOf } from '../../lib/three/pipelineGuard.js';
 import { ADAPT_S, arrivalExposure, stopsFrom } from './waiting.js';
@@ -68,6 +73,7 @@ import { litWith, picturesOf } from './picture.js';
 import { headroom, upscaleKind } from '../../lib/three/light/post.js';
 import { headroomAt } from '../../runtime/quality.js';
 import { loadSettings, optionsFor, roundFor, sideCap } from '../../lib/battlefront/instantAction.js';
+import { heightAt as navHeight, walkable } from '../../lib/battlefront/nav.js';
 
 export const HUD_HZ = 8; // snapshots a second to the page
 export const PLAYER_TEAM = 2; // the attackers on Hoth, the Empire (maps/hoth.stages.json)
@@ -86,9 +92,11 @@ export default {
   // chain of thirty passes; TRAA already smooths the edges that extra
   // ratio was for.
   sharpness: 'own',
-  // (read as the world starts: the screen the window is on then)
+  // (read as the world starts: the screen the window is on then; at Low,
+  // the floor, 1,280 × 720 at most, lib/floorRatio)
   get ratio() {
-    return typeof window !== 'undefined' ? Math.max(1, Math.min(2, window.devicePixelRatio || 1)) : 1;
+    if (typeof window === 'undefined') return 1;
+    return floorRatio(Math.max(1, Math.min(2, window.devicePixelRatio || 1)), { w: window.innerWidth, h: window.innerHeight, detail: device().detail });
   },
   label: 'Hoth from Star Wars Battlefront II (2017), drawn from the game’s own level, light and figures. W A S D to move, the mouse to look and fire, Enter to deploy.',
   async create(rt, { level: levelName = 'hoth', mode = 'galacticAssault', weather: askedWeather = null, instantAction = null } = {}) {
@@ -117,6 +125,9 @@ export default {
     // brings them)
     let collision = null;
     let physics = null;
+    let walker = null; // the player's body on the level's shapes (map/walk.js), with the engine
+    // (the cells the stream has handed on, kept so a collision made after them is given them too)
+    const streamed = new Map();
     // (on WebGPU the level is GPU-first lane N1's scene: the rows culled by
     // compute and one indirect draw a material group, so the level costs
     // the frame no JavaScript a draw; Hoth at ultra on the owner's 5090,
@@ -125,14 +136,27 @@ export default {
     // same to 46.7 dB with the chain off (docs/superpowers/evidence/gpu-first/N1).
     // ?level=cpu in the address keeps the instanced path, for a check; a
     // device without indirect-first-instance and WebGL 2 keep it always:
-    // levelScene.js's canDrawGpuScene)
+    // levelScene.js's canDrawGpuScene; and a chip that is T0 for being weak
+    // by its name, slow on the probe or lost (lib/gpuProbe's CAPPING), whose
+    // compute cull and depth pyramid cost it more than they save: GPU-first
+    // lane N6's “level path: batched” on T0. A T0 for want of a feature, a
+    // strong desktop's WebGPU without timestamp-query, keeps the GPU scene)
     const flags = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search) : null;
-    const gpuScene = rt.gfx.backend === 'webgpu' && flags?.get('level') !== 'cpu';
+    const weak = rt.tier === 'T0' && CAPPING.has(rt.tierWhy);
+    const gpuScene = rt.gfx.backend === 'webgpu' && !weak && flags?.get('level') !== 'cpu';
     // (?ground=flat: the ground in its flat colour, the game's snow maps left
     // off, for a check that measures what the snow costs; `detail` is the
     // quality level in force, 'ultra' on a strong card where the tier is
     // 'high': the ground's 1 m patch and its map sizes read it)
-    const level = createLevel({ scene, tier, detail: device().detail, texTier: textureTier(tier, rt.video), renderer, world: levelName, gpuScene, snow: flags?.get('ground') !== 'flat', onCell: (k, b, band) => collision?.add(k, b, band), onDrop: (k) => collision?.drop(k) });
+    const level = createLevel({ scene, tier, detail: device().detail, texTier: textureTier(tier, rt.video), renderer, world: levelName, gpuScene, snow: flags?.get('ground') !== 'flat', ...(flags?.get('inside') === 'off' ? { inside: null } : {}) /* (?inside=off: the level without its interior pack, a check's measure of what Echo Base costs) */, onCell: (k, b, band, part) => {
+        streamed.set(`${part}|${k}`, [k, b, band, part]);
+        collision?.add(k, b, band, part);
+      },
+      onDrop: (k, part) => {
+        streamed.delete(`${part}|${k}`);
+        collision?.drop(k, part);
+      },
+    });
     // (the ragdoll book, 144 KB, comes after the page: no body falls as one until it has)
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
     // (each body's cut by its distance, the game's LOD0 near on a level that upgrades: figures.js)
@@ -160,10 +184,20 @@ export default {
       const { createPhysics, preload } = await import('../../lib/physics/world.js');
       await preload();
       physics = await createPhysics();
-      collision = createLevelCollision({ pack: level.pack, loadBin: level.loadBin, physics, tier });
+      // (the outside's and its interior's, Hoth's Echo Base: map/level.js's inner)
+      collision = createPartsCollision({ parts: { outside: { pack: level.pack, loadBin: level.loadBin }, inside: level.inner }, physics, tier });
+      // (the ground's own holes left out of its collider: the hangar mouths and the trench tunnels, lib/land/holes.js)
+      collision.setTerrain((px, pz) => level.packHeightAt(px, pz) ?? 0, { holes: holesOf(level.pack.terrain) });
+      for (const a of streamed.values()) collision.add(...a);
+      walker = createWalker({ physics, pack: level.pack, row: SOLDIER_BODY.rows[SOLDIER_BODY.default], ground: (x, z) => level.heightAt(x, z) });
     };
     // (the navgrid's mask, the pack's nav.bin: where the game's shapes leave no room to walk)
-    const [mask] = await Promise.all([level.navOf(), engine().catch(() => null)]);
+    // (the navmesh asked for only where the pack says it has one: Hoth's, scripts/bf2017-navmesh.mjs)
+    const meshFile = level.pack?.navmesh?.file ?? null;
+    const [mask, navBytes] = await Promise.all([level.navOf(), meshFile ? level.loadBin(meshFile).catch(() => null) : null, engine().catch(() => null)]);
+    // (the level's own navmesh, its NavPower polygons: the bots' floors one over another, battle.js's NAVMESH_OF;
+    // their feet on the level's shapes where the engine has them round the player)
+    const navmesh = navBytes ? { bytes: new Uint8Array(navBytes), floor: (x, y, z) => collision?.floor(x, y, z) ?? null } : null;
     // (an Instant Action round, the setup screen's choices: lib/battlefront/instantAction.js reads the
     // server's rows for them, and the sim takes the round at its making: sim.js's roundIn)
     // (the machine's share of a round's bots, by its quality level: every bot is a body drawn and a mind stepped)
@@ -180,7 +214,7 @@ export default {
     const elsewhere = battleLevel !== levelKey(levelName);
     if (elsewhere) await loadLevel(battleLevel);
     const worldSides = elsewhere ? teamsFor(rb, levelName, round?.era ?? 'Orig') : null;
-    let sim = createBattle({ rulebook: rb, level: elsewhere ? battleLevel : levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask, ...(worldSides ? { teams: { 1: worldSides.light, 2: worldSides.dark } } : {}), ...(round ? { bots: round.bots, era: round.era, difficulty: round.difficulty, instantAction: round } : {}) });
+    let sim = createBattle({ rulebook: rb, level: elsewhere ? battleLevel : levelName, mode, heightAt: (x, z) => level.heightAt(x, z), mask, navmesh, ...(worldSides ? { teams: { 1: worldSides.light, 2: worldSides.dark } } : {}), ...(round ? { bots: round.bots, era: round.era, difficulty: round.difficulty, instantAction: round } : { bots: botsAt(device().detail) }) });
     let me = addPlayer(sim, { team });
     // the game's sounds (sound/): the player on the runtime's bus, the
     // director on the sim's events; the one-shots the first minute needs
@@ -207,6 +241,9 @@ export default {
     let arrival = null; // { t, stops }: the exposure adapting after the wipe's swap
     let arrivedAt = null; // ms (performance.now) of the first deploy, and of the first frame drawn after it
     let firstFieldAt = null;
+    // (the way in's marks, ms of the page's clock: the world made, the level's boot in; waiting.js's loadLine)
+    let madeAt = null;
+    let levelAt = null;
     let building = 0; // post chains being built (a weather's, the pace's)
     const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
@@ -378,7 +415,8 @@ export default {
         source: rt.quality?.source ?? 'cpu',
         gpuMs: gpuClock?.available ? (gpuClock.median ?? null) : null,
         pixels: pixels(),
-        adapter: renderer.backend?.adapter?.info?.description || renderer.backend?.adapter?.info?.device || null,
+        // (three keeps the adapter's info on the device, not on its backend: runtime/webgpu.js)
+        adapter: (({ description, device } = {}) => description || device || null)(renderer.backend?.device?.adapterInfo ?? renderer.backend?.adapter?.info),
       };
     };
 
@@ -398,7 +436,7 @@ export default {
         points: v.points,
         // (evade: the game's two rolls, HealthEvade's charges; the sim's rolls are not counted, so the two stand)
         player: p && { id: p.id, state: p.state, at: p.at.slice(), yaw: p.yaw, team: p.team, hp: p.hp, hpMax: p.hpMax, heat: p.heat, warning: p.warning, overheated: p.overheated, coolWindow: p.coolWindow, cls: p.cls, weapon: p.weapon, hitAt: p.hitAt, killAt: p.killAt, evade: p.evade, abilities: p.abilities?.length ? p.abilities : [1, 2, 3].map((slot) => ({ slot, recharge: 1, ready: true })), shield: p.shield, over: p.over, flashed: p.flashed, flash: p.flash, ability: p.ability, unit: p.unit ?? null, cards: p.cards ?? [] },
-        mode: v.mode && { stageName: v.mode.stageName, objectives: v.mode.objectives.map((o) => ({ id: o.id, name: o.name, meter: o.meter, at: o.at })), tickets: v.mode.tickets, result: v.mode.result },
+        mode: v.mode && { stageName: v.mode.stageName, objectives: v.mode.objectives.map((o) => ({ id: o.id, name: o.name, meter: o.meter, at: o.at })), tickets: v.mode.tickets, result: v.mode.result, gates: v.mode.gates },
         // (the radar's soldiers: who, where, which side, up or down, firing)
         entities: v.entities.map((e) => ({ id: e.id, team: e.team, kind: e.kind, at: e.at, alive: e.alive, firing: e.firing })),
         killLog: v.killLog.slice(),
@@ -408,7 +446,7 @@ export default {
         level: { loaded: level.loaded(), progress: level.progress(), ...level.stats(), physics: physicsStats() },
         shaders: { pending: guard?.pending() ?? 0, held: guard?.held() ?? 0, building },
         machine: machine(),
-        marks: { arrivedAt, firstFieldAt },
+        marks: { arrivedAt, firstFieldAt, madeAt, levelAt: (levelAt ??= level.loaded() ? now() : null) },
         backend: rt.gfx.backend,
         weather,
         parked,
@@ -432,7 +470,8 @@ export default {
         const v = view(sim);
         input.swallow(v.deploy.open);
         // (the first deploy is the waiting screen's, through the wipe: the input's Enter waits for it)
-        if (v.deploy.open && read.deploy && !parked) doDeploy();
+        const deploying = v.deploy.open && read.deploy && !parked;
+        if (deploying) doDeploy();
         acc = Math.min(acc + dt, STEP * MAX_STEPS);
         pressed.ability = v.deploy.open ? 0 : read.ability || pressed.ability;
         pressed.roll = !v.deploy.open && (read.roll || pressed.roll);
@@ -444,22 +483,32 @@ export default {
           acc -= STEP;
           stepped += STEP;
           lastAt = body()?.at.slice() ?? null;
+          // (the player walks the level's shapes where the engine is: map/walk.js)
+          if (walker && body() && body().mover !== walker.mover) body().mover = walker.mover;
           const once = first ? { ...read, ...pressed } : { ...read, jump: false, roll: false, ability: 0, vent: false, interact: false };
           if (first) Object.assign(pressed, { ability: 0, roll: false, vent: false });
           first = false;
           // (every event to the sound director; the explosions to the kit drawing too)
-          const events = step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, roll: once.roll, vent: once.vent, ability: once.ability, abilityHeld: once.abilityHeld }]);
+          const events = step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, roll: once.roll, vent: once.vent, ability: once.ability, abilityHeld: once.abilityHeld, interact: once.interact, interactHeld: once.interactHeld }]);
           heard.push(...events);
           for (const e of events) if (e.type === 'explosion') booms.push(e);
         }
-        if (stepped > 0) director.update(view(sim), heard, stepped, { waiting: parked });
-        collision?.update(4);
         // (the view again, after the steps: its entities' `at` are the sim's
         // own arrays, live, while their step time `t` and the rest are read
         // when it is taken; the figures pair a step's place with its time to
         // glide between two steps, and read before the steps the pair was
-        // one step out, the body drawn a step forward then a step back)
-        const drawn = view(sim);
+        // one step out, the body drawn a step forward then a step back. One
+        // view after the steps serves the sound and the drawing, the
+        // colliders' streaming between them touching no sim; a frame with
+        // no step and no deploy draws the view it began with: the view is
+        // one object refilled, and building it three times a frame was the
+        // world's own main-thread cost)
+        const after = stepped > 0 || deploying ? view(sim) : v;
+        if (stepped > 0) director.update(after, heard, stepped, { waiting: parked });
+        // (a soldier held in the air for want of a floor gets the frame's time for the shapes under it)
+        collision?.update(walker?.held ? 16 : 4, body()?.at ?? null);
+        walker?.step();
+        const drawn = after;
         const p = body();
         if (sim.player.state === 'alive' && p) {
           const look = input.look();
@@ -553,6 +602,10 @@ export default {
             // (a check's trigger: held down until told to let go)
             input.button('left', Boolean(arg?.on ?? true));
             return { ok: true, on: Boolean(arg?.on ?? true) };
+          case 'interact':
+            // (a check's finger on the interact: held down until told to let go)
+            input.holdInteract(Boolean(arg?.on ?? true));
+            return { ok: true, on: Boolean(arg?.on ?? true) };
           case 'ability':
             // (a check's finger on an ability key: { slot } pressed, held until { slot: 0 }; { tap: slot } pressed and let go)
             if (arg?.tap) input.press('ability', arg.tap);
@@ -582,10 +635,33 @@ export default {
             return beginRound(arg ?? {});
           case 'bots':
             // (the bots as the sim has them, for a check: each one's side, what it is doing, whom it is after, whether it is firing)
-            return [...sim.sim.entities.values()].filter((e) => e.bot && e.kind === 'soldier' && e.alive).map((e) => ({ id: e.id, team: e.team, mode: e.brain?.intent?.mode ?? null, target: e.brain?.target ?? null, firing: e.gun ? sim.sim.time - e.gun.lastShot < 0.2 : false, at: e.at.map((n) => Math.round(n)), watching: e.brain?.apCandidate ?? null, order: e.brain?.task?.key ?? null, lineClear: e.brain?.apLof ? e.brain.apLof.clearSince !== null : null }));
+            return [...sim.sim.entities.values()].filter((e) => e.bot && e.kind === 'soldier' && e.alive).map((e) => ({ id: e.id, team: e.team, mode: e.brain?.intent?.mode ?? null, target: e.brain?.target ?? null, firing: e.gun ? sim.sim.time - e.gun.lastShot < 0.2 : false, at: e.at.map((n) => Math.round(n)), watching: e.brain?.apCandidate ?? null, order: e.brain?.task?.key ?? null, lineClear: e.brain?.apLof ? e.brain.apLof.clearSince !== null : null, way: e.brain?.path ? { n: e.brain.path.length, wp: e.brain.wp, goal: e.brain.intent?.goal?.map((n) => Math.round(n)) ?? null, stuck: Math.round((e.brain.stuck ?? 0) * 10) / 10 } : null }));
           case 'nav':
-            // (the battle's navgrid itself, for a check of a way over it)
-            return sim.nav;
+            // (the battle's navgrid itself, for a check of a way over it; its navmesh by name only)
+            return { ...sim.nav, mesh: sim.nav.mesh ? { name: sim.nav.mesh.name, polys: sim.nav.mesh.polyCount, links: sim.nav.mesh.links.length } : null };
+          case 'walkersHome': {
+            // (a check's way into stage 2: each escort's walker at the end of its route, so its gate unlocks)
+            const ga = sim.sim.ga;
+            if (!ga?.objectives) return { ok: false, why: 'no Galactic Assault' };
+            const homed = ga.objectives.filter((o) => o.type === 'escort' && o.walker?.alive);
+            for (const o of homed) o.walker.dist = o.walker.length;
+            return { ok: true, walkers: homed.length };
+          }
+          case 'where': {
+            // (a check's read of the player: the place, and whether the body on the level's shapes moves it)
+            const b = body();
+            return b ? { at: b.at.map((v) => Math.round(v * 100) / 100), body: Boolean(b.mover), grounded: b.grounded ?? null, interact: Boolean(b.interact) } : null;
+          }
+          case 'place': {
+            // (a check's walk of the map: the player's soldier stood at [x, z] on the sim's ground, and what the ground and the mask say there)
+            const b = body();
+            if (!b || !sim.nav) return { ok: false, why: b ? 'no nav' : 'not deployed' };
+            const [x, z, y = null] = arg;
+            b.at[0] = x;
+            b.at[2] = z;
+            b.at[1] = y ?? navHeight(sim.nav, x, z);
+            return { ok: true, at: b.at.slice(), terrain: level.heightAt(x, z), walkable: walkable(sim.nav, x, z) };
+          }
           case 'gpu':
             return rt.gfx.backend;
           case 'ragdolls':
@@ -623,6 +699,7 @@ export default {
         figures.dispose();
         ragdolls.dispose();
         level.dispose();
+        walker?.dispose();
         collision?.dispose();
         physics?.dispose();
         if (typeof window !== 'undefined' && window.__battlefront?.world === world) delete window.__battlefront;
@@ -631,6 +708,7 @@ export default {
     // (`light` and `chain`: the light stack's parts and the chain as drawn, for a check in the browser)
     // (`sounds`: the player's counter by name and kind, the duck and the stem in force, the HDR window, for scripts/bf2017-sound-check.mjs)
     if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, sounds: () => ({ ...sound.stats(), duck: sound.duckKind, music: sound.musicName, window: { ...director.state.window }, suppressed: director.state.suppressed, listener: director.state.listener }), get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
+    madeAt = now();
     return world;
   },
 };

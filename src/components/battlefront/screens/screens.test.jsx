@@ -14,6 +14,7 @@ import MainMenu from './MainMenu.jsx';
 import Play from './Play.jsx';
 import Scoreboard from './Scoreboard.jsx';
 import Spawn from './Spawn.jsx';
+import { figureOf } from './spawnFigure';
 import Start from './Start.jsx';
 
 const html = (el) => renderToStaticMarkup(el);
@@ -25,25 +26,42 @@ const OFFERS = [
 const TEAMS = { 1: { name: 'REBELS', rows: [{ id: 'a', name: 'Trooper 1', kills: 3, deaths: 1, points: 300 }] }, 2: { name: 'EMPIRE', rows: [{ id: 'b', name: 'You', kills: 5, deaths: 0, points: 900 }] } };
 
 describe("the game's screens, each from its tree", () => {
-  it('starts with the press-start line in the game’s words, the keyboard’s key named', () => {
+  it('starts on the game’s press-start screen, its line in the game’s words, the keyboard’s key named', () => {
     expect(pressStart()).toBe('PRESS ENTER TO START');
     const h = html(<Start onNext={() => {}} />);
+    expect(h).toContain('data-screen="UI/Frontend/Screens/StartFlow/PairingScreen"');
     expect(h).toContain('PRESS ENTER TO START');
     expect(h).toMatch(/role="dialog"/);
+    expect(h).not.toContain('ACCOUNT PICKER');
   });
 
-  it("draws the main menu's tabs as the game's cells, Play among them", () => {
+  it("draws the main menu's tabs as buttons over the game's cells, HOME's page under them", () => {
     const h = html(<MainMenu />);
-    expect(h).toContain('data-screen="UI/Frontend/Screens/Start/MainMenuScreen"');
-    expect(h).toMatch(/data-link="UI\/Data\/LinkAssets\/Play\/PlayScreen"/);
+    expect(h).toContain('data-layers="UI/Frontend/Screens/Start/MainMenuScreen UI/Frontend/Screens/Start/StartScreen"');
+    expect(h).toMatch(/class="hud-screen-hit"[^>]*data-link="UI\/Data\/LinkAssets\/Play\/PlayScreen"/);
     expect(h).not.toContain('OPEN SOCIAL HUB');
+    expect(h).not.toMatch(/aria-label="Store"/);
+    // HOME's page offline, as the game draws it without a connection: one news tile of the two it holds there, no loader
+    expect(h).toContain('CONNECT FOR MORE FEATURES');
+    expect(h).not.toContain('LEAP INTO GALACTIC ASSAULT');
+    expect(h).not.toContain('CONNECTING...');
   });
 
-  it("draws Play's tiles in the boxes its tree gives them, Multiplayer live and the rest greyed", () => {
+  it("draws Play's tiles from their tree under the tabs, Multiplayer live and the rest greyed", () => {
     const h = html(<Play />);
-    expect(h).toMatch(/data-tile="Multiplayer"/);
-    expect(h).toContain('MULTIPLAYER');
-    expect(h).toMatch(/<button[^>]*aria-disabled="true"[^>]*data-tile="COOP"/);
+    expect(h).toMatch(/aria-label="MULTIPLAYER"/);
+    expect(h).toMatch(/aria-label="CO-OP MISSIONS"[^>]*aria-disabled="true"/);
+    expect(h).toMatch(/aria-label="SINGLE PLAYER"/);
+    expect(h).toMatch(/aria-label="PLAY"/);
+    expect(h).toContain('A selection of multiplayer modes');
+  });
+
+  it('draws Single Player under the breadcrumb, and no tabs', () => {
+    const h = html(<Play at="single" />);
+    expect(h).toMatch(/aria-label="SINGLE PLAYER"/);
+    expect(h).not.toMatch(/aria-label="CAREER"/);
+    expect(h).toMatch(/aria-label="INSTANT ACTION"/);
+    expect(h).toMatch(/aria-label="CAMPAIGN"[^>]*aria-disabled="true"/);
   });
 
   it("puts each mode's card in its list's box on the multiplayer screen", () => {
@@ -71,15 +89,45 @@ describe("the game's screens, each from its tree", () => {
     expect(html(<Loading mode="supremacy" level="hoth" />)).toContain('Single player epic battles against AI opponents offline.');
   });
 
-  it("lists the offers in the spawn screen's cells over its tree, and falls back to lane 5's deploy screen with no tree", () => {
-    const h = html(<Spawn deploy={{ open: true, offers: OFFERS }} points={0} name={(o) => o.id.toUpperCase()} />);
+  it('the spawn screen as the game draws it: the offer in hand in its panel, the classes as tiles, the rest as portraits, the foot’s three buttons', () => {
+    const offers = [
+      { kind: 'class', id: 'd-orig-assault', cls: 'assault', cost: 0 },
+      { kind: 'class', id: 'd-orig-heavy', cls: 'heavy', cost: 0 },
+      { kind: 'class', id: 'd-orig-officer', cls: 'officer', cost: 0 },
+      { kind: 'class', id: 'd-orig-specialist', cls: 'specialist', cost: 0 },
+      { kind: 'reinforcement', id: 'DeathTrooper', cost: 1500 },
+      { kind: 'hero', id: 'darthvader', cost: 4000 },
+    ];
+    const h = html(<Spawn first deploy={{ open: true, offers, team: 2 }} points={0} name={(o) => o.id.toUpperCase()} />);
     expect(h).toContain('data-screen="UI/Customize/Screens/SpawnOverlayScreen"');
-    expect(h).toContain('D-ORIG-ASSAULT');
-    expect(h).toMatch(/data-kind="hero"[^>]*aria-disabled="true"/);
+    // (the first life: the game's pre-round line)
+    expect(h).toContain('PREROUND: EQUIP AND UNLOCK CARDS');
+    // the panel: the offer in hand, and its three card slots
+    expect(h).toMatch(/class="bf-spawn-panel"[\s\S]*?<h2[^>]*>D-ORIG-ASSAULT<\/h2>/);
+    expect((h.match(/class="bf-spawn-slot"/g) ?? []).length).toBe(3);
+    // the strip: the four classes as tiles with the game's class icons, the first in hand
+    const tiles = [...h.matchAll(/class="bf-spawn-screen-cell bf-spawn-tile" data-kind="class" data-offer="([^"]+)" aria-pressed="(true|false)"/g)].map((m) => [m[1], m[2]]);
+    expect(tiles).toEqual([
+      ['d-orig-assault', 'true'],
+      ['d-orig-heavy', 'false'],
+      ['d-orig-officer', 'false'],
+      ['d-orig-specialist', 'false'],
+    ]);
+    expect(h).toMatch(/data-offer="d-orig-heavy"[^>]*>[\s\S]*?classes\.svg#[a-z0-9-]*heavy/);
+    // the portraits: a reinforcement and a hero by the game's own, hatched while their Battle Points are not earned
+    expect(h).toMatch(/data-kind="reinforcement" data-offer="DeathTrooper" aria-pressed="false" aria-disabled="true"[^>]*>[\s\S]*?portraits-portrait-deathtrooper\.webp/);
+    expect(h).toMatch(/data-kind="hero" data-offer="darthvader" aria-pressed="false" aria-disabled="true"[^>]*>[\s\S]*?portraits-portrait-darthvader\.webp/);
+    expect(h).toMatch(/class="bf-spawn-points"[\s\S]*?>0<[\s\S]*?BATTLE POINTS/);
+    expect([...h.matchAll(/data-foot="([a-z]+)"/g)].map((m) => m[1])).toEqual(['select', 'abilities', 'appearances']);
+  });
+
+  it('after the first life: no pre-round line; the squad mates to spawn on, one that cannot be greyed with the game’s reason; with no tree, lane 5’s deploy screen', () => {
     const squad = html(<Spawn deploy={{ open: true, offers: OFFERS, spawns: [{ id: 'hq', kind: 'hq', name: 'HQ' }, { id: 'm1', kind: 'mate', name: 'Trooper 2', blocked: true, reason: 'IN COMBAT' }] }} points={0} />);
+    expect(squad).not.toContain('PREROUND');
     expect(squad).toContain('aria-label="Where to deploy"');
     expect(squad).toMatch(/data-spawn="mate"[^>]*aria-disabled="true"/);
     expect(squad).toContain('IN COMBAT');
+    expect(squad).toMatch(/data-kind="hero"[^>]*aria-disabled="true"/);
     const fallback = html(<Spawn screen="NoSuchScreen" deploy={{ open: true, offers: OFFERS }} points={0} />);
     expect(fallback).toContain('bf-offers');
     expect(fallback).toContain('id="bf-deploy-title"');
@@ -176,7 +224,7 @@ describe('the front end over a world', () => {
   it('lands in the main menu when asked, drawn from the game’s tree', () => {
     const h = html(<FrontEnd start="menu" onExit={() => {}} />);
     expect(h).toContain('data-front-end="menu"');
-    expect(h).toContain('data-screen="UI/Frontend/Screens/Start/MainMenuScreen"');
+    expect(h).toMatch(/data-layers="UI\/Frontend\/Screens\/Start\/MainMenuScreen /);
   });
   it('opens on the Start screen when it stands alone', () => {
     expect(html(<FrontEnd />)).toContain('data-front-end="start"');
@@ -199,5 +247,21 @@ describe('the front end’s ways out', () => {
     expect(w.home).toBe(null);
     expect(w.back).toBe(onExit);
     expect(w.first).toBe('[data-link$="/PlayScreen"]');
+  });
+});
+
+describe('the character on the spawn screen', () => {
+  it('is the body the offer in hand would wear in the field: the side’s trooper, a picked skin, a hero’s own', () => {
+    const assault = { kind: 'class', id: 'd-orig-assault', cls: 'assault' };
+    expect(figureOf(assault, 2, {})).toEqual({ name: 'snowtrooper', rig: 'walrus', src: { url: '/models/galaxy/bf2017/crew/snowtrooper.glb' }, pack: null, kind: 'snowtrooper' });
+    expect(figureOf({ kind: 'class', id: 'l-orig-assault', cls: 'assault' }, 1, {}).kind).toBe('hothtrooper');
+    expect(figureOf(assault, 2, { 'assault.empire': { skin: 'assault.empire.scariff' } }).kind).toBe('shoretrooper');
+    expect(figureOf({ kind: 'hero', id: 'darthvader' }, 2, {})).toMatchObject({ kind: 'vader', pack: 'vader' });
+    // (a unit with no body here yet: its side's trooper, as in the field)
+    expect(figureOf({ kind: 'reinforcement', id: 'ISBAgent' }, 2, {}).kind).toBe('snowtrooper');
+  });
+  it('stands on the screen for the offer in hand', () => {
+    const h = html(<Spawn first deploy={{ open: true, offers: OFFERS, team: 2 }} points={0} />);
+    expect(h).toMatch(/class="bf-spawn-figure"[^>]*>\s*<div class="bf-collection-stage"/);
   });
 });

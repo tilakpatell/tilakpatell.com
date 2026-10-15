@@ -33,6 +33,7 @@ try {
     window.localStorage.setItem('tp-galaxy-panel', JSON.stringify('tucked'));
     window.sessionStorage.setItem('tp-galaxy-intro', '1');
     window.localStorage.setItem('tp-worlds', JSON.stringify('load'));
+    window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
     const held = Date.UTC(2026, 9, 5, 12);
     Date.now = () => held;
   });

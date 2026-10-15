@@ -170,3 +170,7 @@ The design is `specs/2026-10-13-hoth-landing-game-menu-design.md` (approved by t
 - **For a check.** The stage carries `data-bf-stage="menu|loading|spawn|field"` and `data-bf-ready`; the first life's Deploy is `.bf-spawn-screen-cell[data-kind="class"]`, or Enter. `scripts/bf-landing-check.mjs` walks and times an address (in Git Bash on Windows, with `MSYS_NO_PATHCONV=1`).
 - **Left in the tree, unreached.** Hoth's old surface missions (`surface/missions/index.js`, `MISSIONS.hoth`: the first transport, with its achievement) and the code that makes Hoth's ground: the owner keeps them for a free-roam mode. `module.js`'s comments still say "the waiting screen".
 - **Next.** Phase 2: PLAY → SINGLE PLAYER → INSTANT ACTION as the game has it, and the setup screen on the game's tree, drawn from `lib/battlefront/instantActionForm.js` (the sim lane's) and started with `world.do('round')`. Phase 2b: the loading screen and the first spawn screen laid out as the game draws them (the pictures are on the desktop, `.scratch-check/out/game/` in the lane's worktree). Then the skins worn in battle (`figures.js`'s `BODIES` and `kindOf`), and the Instant Action Overhaul's options.
+
+## The front end on the canvas, and its room (2026-10-13)
+
+`HANDOFF-bf2017-front-end-canvas.md`: the canvas screens (Start, HOME, Play, Single Player painted from the game's trees) and the front end's 3D room behind HOME and PLAY, lit from the game's own records, with HOME's Chewbacca. Its to-do list leads with Chewbacca's lighting and HOME's loot box and currency.

@@ -140,6 +140,7 @@ async function main() {
       keep(window.localStorage, 'tp-start', '"universe"');
       keep(window.localStorage, 'tp-galaxy-panel', '"tucked"');
       keep(window.localStorage, 'tp-worlds', '"load"');
+      keep(window.localStorage, 'tp-software', '"on"'); // (past the Star Wars worlds' GPU gate, lib/fit)
       keep(window.localStorage, 'tp-tour', '"skipped"');
       keep(window.sessionStorage, 'tp-galaxy-intro', '1');
     });
