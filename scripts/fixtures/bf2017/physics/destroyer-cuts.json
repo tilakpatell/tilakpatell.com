@@ -1,0 +1,35 @@
+{
+  "_source": "node scripts/bf2017-hulls.mjs --only destroyer --fixture: the Star Destroyer's hull (endor-isd's modules' shapes cut to a capital's budget, 123 parts) as written, and each cut's box as galaxy/models.js's normalise measures it",
+  "kind": "destroyer",
+  "parts": 123,
+  "cuts": [
+    {
+      "url": "/models/galaxy/destroyer.glb",
+      "nose": 0,
+      "min": [
+        -442.00691,
+        -112.857949,
+        -795.674341
+      ],
+      "max": [
+        441.999424,
+        332.481917,
+        775.755921
+      ]
+    },
+    {
+      "url": "/models/galaxy/destroyer.ultra.glb",
+      "nose": 0,
+      "min": [
+        -442.00691,
+        -112.857949,
+        -795.671292
+      ],
+      "max": [
+        441.999424,
+        332.481516,
+        775.755921
+      ]
+    }
+  ]
+}
