@@ -237,7 +237,7 @@ try {
         await page.waitForTimeout(50);
       }
       await page.waitForTimeout(300);
-      await page.screenshot({ path: join(out, `pose-${poses[i]}${phone ? '-phone' : ''}.png`), type: 'png', animations: 'disabled', caret: 'hide', timeout: 120000 });
+      await page.screenshot({ path: join(out, `pose-${poses[i]}${phone ? '-phone' : ''}.png`), type: 'png', animations: 'disabled', caret: 'hide', timeout: 600000 });
       console.log(`  pose ${poses[i]}: shot (page time ${Math.round(now)} ms)`);
     }
     report.routes[route] = { frames, pageTime: Math.round(at), errors: [...new Set(errors)] };
