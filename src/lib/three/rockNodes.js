@@ -17,38 +17,11 @@
 // rockHook(material, { tier, scale }) → the node material, pitted after any hook on it
 // rock(seed, { craters }) → a lumpy rock's geometry, about a unit across; rng(seed)
 
-import * as THREE from "three";
-import { MeshStandardNodeMaterial } from "three/webgpu";
-import {
-  abs,
-  cross,
-  dFdx,
-  dFdy,
-  dot,
-  float,
-  fwidth,
-  length,
-  materialRoughness,
-  min,
-  modelWorldMatrix,
-  normalize,
-  positionGeometry,
-  positionView,
-  sign,
-  smoothstep,
-  uniform,
-  varying,
-  vec3,
-  vec4,
-} from "three/tsl";
-import {
-  asNode,
-  instanceMatrixOf,
-  keyed,
-  onColor,
-  onNormal,
-} from "./hookNodes";
-import { noiseWith } from "./noiseNodes";
+import * as THREE from 'three';
+import { MeshStandardNodeMaterial } from 'three/webgpu';
+import { abs, cross, dFdx, dFdy, dot, float, fwidth, length, materialRoughness, min, modelWorldMatrix, normalize, positionGeometry, positionView, sign, smoothstep, uniform, varying, vec3, vec4 } from 'three/tsl';
+import { asNode, instanceMatrixOf, keyed, onColor, onNormal } from './hookNodes';
+import { noiseWith } from './noiseNodes';
 
 // a deterministic "random", so a rock is the same every visit
 export function rng(seed) {
@@ -70,32 +43,20 @@ export function rock(seed, { craters = false } = {}) {
   let g = new THREE.IcosahedronGeometry(1, craters ? 2 : 1);
   if (craters) {
     // (the faces' copies of a point made one, so it shades smooth)
-    g.deleteAttribute("normal");
-    g.deleteAttribute("uv");
+    g.deleteAttribute('normal');
+    g.deleteAttribute('uv');
     g = mergeByPosition(g);
   }
   const pos = g.attributes.position;
-  const waves = Array.from({ length: 5 }, () => [
-    new THREE.Vector3(rand() - 0.5, rand() - 0.5, rand() - 0.5).normalize(),
-    1.5 + rand() * 3.5,
-    rand() * 6,
-    0.06 + rand() * 0.1,
-  ]);
+  const waves = Array.from({ length: 5 }, () => [new THREE.Vector3(rand() - 0.5, rand() - 0.5, rand() - 0.5).normalize(), 1.5 + rand() * 3.5, rand() * 6, 0.06 + rand() * 0.1]);
   const v = new THREE.Vector3();
   const squash = new THREE.Vector3(1, 0.65 + rand() * 0.3, 0.8 + rand() * 0.25);
-  const pits = craters
-    ? Array.from({ length: 8 }, () => [
-        new THREE.Vector3(rand() - 0.5, rand() - 0.5, rand() - 0.5).normalize(),
-        0.3 + rand() * 0.3,
-        0.08 + rand() * 0.07,
-      ])
-    : [];
+  const pits = craters ? Array.from({ length: 8 }, () => [new THREE.Vector3(rand() - 0.5, rand() - 0.5, rand() - 0.5).normalize(), 0.3 + rand() * 0.3, 0.08 + rand() * 0.07]) : [];
   // the same point on every face that shares it moves the same way
   for (let i = 0; i < pos.count; i++) {
     v.fromBufferAttribute(pos, i).normalize();
     let k = 1;
-    for (const [dir, f, ph, amp] of waves)
-      k += Math.sin(v.dot(dir) * f + ph) * (craters ? amp * 0.5 : amp);
+    for (const [dir, f, ph, amp] of waves) k += Math.sin(v.dot(dir) * f + ph) * (craters ? amp * 0.5 : amp);
     if (!craters) k -= Math.max(0, v.dot(waves[0][0]) - 0.6) * 0.5; // a flat, broken side
     for (const [dir, a, depth] of pits) {
       const d = Math.acos(Math.min(1, Math.max(-1, v.dot(dir))));
@@ -127,7 +88,7 @@ function mergeByPosition(g) {
   }
   g.dispose();
   const m = new THREE.BufferGeometry();
-  m.setAttribute("position", new THREE.Float32BufferAttribute(out, 3));
+  m.setAttribute('position', new THREE.Float32BufferAttribute(out, 3));
   m.setIndex(index);
   return m;
 }
@@ -137,7 +98,7 @@ const fall = (a, b, x) => smoothstep(b, a, x).oneMinus();
 
 export const ROCK_RELIEF = uniform(1);
 
-export function rockMaterial({ tier = "high", scale = 1 } = {}) {
+export function rockMaterial({ tier = 'high', scale = 1 } = {}) {
   return rockHook(
     new MeshStandardNodeMaterial({
       roughness: 0.92,
@@ -149,8 +110,8 @@ export function rockMaterial({ tier = "high", scale = 1 } = {}) {
   );
 }
 
-export function rockHook(mat, { tier = "high", scale = 1 } = {}) {
-  if (tier === "low") return mat;
+export function rockHook(mat, { tier = 'high', scale = 1 } = {}) {
+  if (tier === 'low') return mat;
   const m = asNode(mat);
   // (the pits shade it: its faces needn't be flat to read as rock)
   m.flatShading = false;
@@ -176,25 +137,13 @@ export function rockHook(mat, { tier = "high", scale = 1 } = {}) {
     // it by where it is, so no two rocks of a shape are pitted the same
     // (and how big the rock is in the world, so the pits' slope is the same at any size)
     const im = instanceMatrixOf(builder);
-    const obj = varying(
-      im
-        ? positionGeometry.add(im.mul(vec4(0, 0, 0, 1)).xyz.mul(0.37))
-        : positionGeometry,
-      "vRockObj",
-    );
-    const size = varying(
-      length(
-        modelWorldMatrix.mul(
-          vec4(im ? im.mul(vec4(1, 0, 0, 0)).xyz : vec3(1, 0, 0), 0),
-        ).xyz,
-      ),
-      "vRockSize",
-    );
-    const h = rockPits(obj).toVar("rockH");
-    const pit = fall(0.05, -0.45, h).toVar("rockPit");
+    const obj = varying(im ? positionGeometry.add(im.mul(vec4(0, 0, 0, 1)).xyz.mul(0.37)) : positionGeometry, 'vRockObj');
+    const size = varying(length(modelWorldMatrix.mul(vec4(im ? im.mul(vec4(1, 0, 0, 0)).xyz : vec3(1, 0, 0), 0)).xyz), 'vRockSize');
+    const h = rockPits(obj).toVar('rockH');
+    const pit = fall(0.05, -0.45, h).toVar('rockPit');
     const show = fall(0.6, 0.2, length(fwidth(obj)).mul(u.uRockScale))
       .mul(u.uRockRelief)
-      .toVar("rockShow");
+      .toVar('rockShow');
     k = { h, pit, show, size };
     builds.set(builder, k);
     return k;
@@ -214,7 +163,7 @@ export function rockHook(mat, { tier = "high", scale = 1 } = {}) {
         ),
       );
     },
-    "rock",
+    'rock',
     u,
   );
   // a little rougher: roughnessmap_fragment's factor, before three clamps
@@ -222,12 +171,7 @@ export function rockHook(mat, { tier = "high", scale = 1 } = {}) {
   const variants = m.setupVariants;
   m.setupVariants = function (builder) {
     const own = this.roughnessNode;
-    this.roughnessNode = min(
-      1.0,
-      (own ? float(own) : materialRoughness).add(
-        float(0.05).mul(parts(builder).pit),
-      ),
-    );
+    this.roughnessNode = min(1.0, (own ? float(own) : materialRoughness).add(float(0.05).mul(parts(builder).pit)));
     try {
       return variants.call(this, builder);
     } finally {
@@ -248,7 +192,7 @@ export function rockHook(mat, { tier = "high", scale = 1 } = {}) {
       const grad = sign(det).mul(dFdx(h).mul(r1).add(dFdy(h).mul(r2)));
       return normalize(abs(det).mul(normal).sub(grad));
     },
-    "rock-bump",
+    'rock-bump',
   );
-  return keyed(m, "rock-rough");
+  return keyed(m, 'rock-rough');
 }
