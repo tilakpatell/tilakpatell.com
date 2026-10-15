@@ -1,6 +1,6 @@
 # The world runtime
 
-Date: 2026-10-06. Status: approved design; the first world (Earth) moves in the same session. The plan is `docs/superpowers/plans/2026-10-06-world-runtime.md`; the hand-off for the sessions that move the other worlds is `docs/superpowers/HANDOFF-world-runtime.md`.
+Date: 2026-10-06. Status: approved design; the first world (Earth) moves in the same session. The plan is `docs/superpowers/plans/2026-10-06-world-runtime.md`; the hand-off for the sessions that move the other worlds is `docs/superpowers/HANDOFF-runtime.md`.
 
 ## Why
 

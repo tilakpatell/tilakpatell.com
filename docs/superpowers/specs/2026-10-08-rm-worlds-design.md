@@ -1,6 +1,6 @@
 # The Rick and Morty worlds, made immense: eight planets with things to do. The design
 
-Date: 2026-10-08. Status: design, written from the owner's brief by an architecting session, for Opus 5.5 implementation sessions (one phase per pull request, each merged to `main` before the next starts). The plan is `docs/superpowers/plans/2026-10-08-rm-worlds.md`; the hand-off is `docs/superpowers/HANDOFF-rm-worlds.md`.
+Date: 2026-10-08. Status: design, written from the owner's brief by an architecting session, for Opus 5.5 implementation sessions (one phase per pull request, each merged to `main` before the next starts). The plan is `docs/superpowers/plans/2026-10-08-rm-worlds.md`; the hand-off is `docs/superpowers/HANDOFF-worlds.md`.
 
 ## What the owner asked
 

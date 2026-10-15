@@ -1,6 +1,6 @@
 # Lane S1’s evidence: the fleet on the game’s hulls
 
-The plan is `docs/superpowers/plans/2026-10-11-bf2017-space-laneS1-fleet.md`; the hand-off section, `docs/superpowers/HANDOFF-bf2017.md` (“Lane S1”). Everything here was measured on 2026-10-11 in a cloud container (four cores, headless Chromium in software GL, the page’s clock held as `galaxy-check.mjs` holds it, the dev server with the public bucket as its asset base), at the lane’s head before `origin/main` (`d78da3d2`) was merged in; the merge brought nothing the space layer draws.
+The plan is `docs/superpowers/plans/2026-10-11-bf2017-space-laneS1-fleet.md`; the hand-off section, `docs/superpowers/HANDOFF-battlefront.md` (“Lane S1”). Everything here was measured on 2026-10-11 in a cloud container (four cores, headless Chromium in software GL, the page’s clock held as `galaxy-check.mjs` holds it, the dev server with the public bucket as its asset base), at the lane’s head before `origin/main` (`d78da3d2`) was merged in; the merge brought nothing the space layer draws.
 
 ## The sheet
 

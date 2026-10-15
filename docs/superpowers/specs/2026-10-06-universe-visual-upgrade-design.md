@@ -1,6 +1,6 @@
 # The universe map, lit by its sun: a visual upgrade of the engine, the planets and the models — design
 
-Date: 2026-10-06. Status: approved by the owner’s brief (autonomous session; the owner asked for the architecture, a merged PR, and a hand-off to an implementing session). The plan is `docs/superpowers/plans/2026-10-06-universe-visual-upgrade.md`; the hand-off is `docs/superpowers/HANDOFF-universe-visuals.md`.
+Date: 2026-10-06. Status: approved by the owner’s brief (autonomous session; the owner asked for the architecture, a merged PR, and a hand-off to an implementing session). The plan is `docs/superpowers/plans/2026-10-06-universe-visual-upgrade.md`; the hand-off is `docs/superpowers/HANDOFF-universe.md`.
 
 ## The brief
 
@@ -8,7 +8,7 @@ Date: 2026-10-06. Status: approved by the owner’s brief (autonomous session; t
 
 “The game engine” here is what every flight on the site draws through: `src/components/universe/post.js` (the HDR target, the bloom, the final grade; the galaxy and its surfaces draw through the same file), the scene’s lighting in `universe/scene.js`, and the shared pieces in `src/lib/three/`. “The planets” are the fandoms’ worlds on the universe map (`universe/planets.js` and the bakers in `scripts/planets/`), and the same worlds from the ground (`universe/landings/`). “The models and styles” are the hero ships, the traffic, the rocks and the stations, and the look each fandom’s planet wears.
 
-The galaxy’s own planets (`galaxy/bodies.js`) and the galaxy’s surfaces are other lanes (`2026-10-06-planets-overhaul-design.md`, `2026-10-05-galaxy-upgrade-design.md`). This design borrows from them and gives back to them through `src/lib/three/`, and touches nothing under `galaxy/surface/`. Moving the universe map onto the world runtime is the runtime lane’s (`HANDOFF-world-runtime.md`); nothing here depends on it, and nothing here makes it harder: every change keeps `scene.js`’s `create(canvas, ctx)` shape.
+The galaxy’s own planets (`galaxy/bodies.js`) and the galaxy’s surfaces are other lanes (`2026-10-06-planets-overhaul-design.md`, `2026-10-05-galaxy-upgrade-design.md`). This design borrows from them and gives back to them through `src/lib/three/`, and touches nothing under `galaxy/surface/`. Moving the universe map onto the world runtime is the runtime lane’s (`HANDOFF-runtime.md`); nothing here depends on it, and nothing here makes it harder: every change keeps `scene.js`’s `create(canvas, ctx)` shape.
 
 ## Where things stand
 

@@ -1,6 +1,6 @@
 # Infinite worlds: install packs, chunked space, a seeded universe and saves that keep. The design
 
-Date: 2026-10-07. Status: design, written from the owner's brief by an architecting session, for Opus 5.5 implementation sessions working in parallel. The plan is `docs/superpowers/plans/2026-10-07-infinite-worlds.md`; the hand-off is `docs/superpowers/HANDOFF-infinite-worlds.md`.
+Date: 2026-10-07. Status: design, written from the owner's brief by an architecting session, for Opus 5.5 implementation sessions working in parallel. The plan is `docs/superpowers/plans/2026-10-07-infinite-worlds.md`; the hand-off is `docs/superpowers/HANDOFF-universe.md`.
 
 ## What the owner asked
 
