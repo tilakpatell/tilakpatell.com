@@ -18,6 +18,7 @@ import { INTERACT_REACH, UPLINK_RANGE, insidePolygon } from '../modes/objectives
 import { WAVE } from '../spawn.js';
 import { reachOf } from '../gates.js';
 import { gateStand, meshPath } from '../meshNav.js';
+import { keypadStand } from '../charges.js';
 
 // Seconds between the commander's orders, by hand.
 export const ASSIGN = 5;
@@ -82,7 +83,11 @@ function pointOf(o) {
 
 function spotOf(c, o) {
   if (!c.nav) return o.at;
-  if (!c.spots.has(o)) c.spots.set(o, nearestWalkable(c.nav, o.at[0], o.at[1], 6) ?? o.at);
+  if (!c.spots.has(o)) {
+    // (a fuel charge: the navmesh's floor nearest its keypad that reaches it, charges.js; else the grid's nearest)
+    const stand = o.charge ? keypadStand(c.nav, o.charge) : null;
+    c.spots.set(o, stand ? [stand[0], stand[2]] : (nearestWalkable(c.nav, o.at[0], o.at[1], 6) ?? o.at));
+  }
   return c.spots.get(o);
 }
 
@@ -134,6 +139,11 @@ function orders(c, o, role) {
   const i = c.ga.objectives.indexOf(o);
   if (role === 'escort') return task(c, `o${i}`, { at, role, radius: ESCORT_RADIUS });
   if (o.type === 'carry') return task(c, `o${i}:${role}:${o.carrier ? 'to' : 'at'}`, { at, spot: at, role, radius: role === 'take' && !o.carrier ? 0 : HOLD_RADIUS });
+  if (o.type === 'arm' && o.charge && role === 'take') {
+    // (a fuel charge's keypad: to its stand, then hold within the AutoPlayers' start radius of it, as at a gate's panel)
+    const spot = spotOf(c, o);
+    return task(c, `o${i}:${role}`, { at: spot, spot, role, interact: true, radius: 0, reach: GATE_START, ...(c.ways ? { stays: true } : {}) });
+  }
   if (o.type === 'arm' || o.type === 'uplink') {
     const interact = role === 'take';
     return task(c, `o${i}:${role}`, { at, spot: spotOf(c, o), role, interact, radius: interact ? 0 : HOLD_RADIUS + INTERACT_REACH, ...(c.ways ? { stays: true } : {}) });

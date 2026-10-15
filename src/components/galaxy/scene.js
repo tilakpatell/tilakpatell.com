@@ -91,6 +91,9 @@ import { REAIM_MS, parkBehind, pilotSpace, reached } from '../universe/pilotGoal
 import { createHunters } from '../universe/hunters';
 import { createShipHits, solidsWith } from '../universe/shipHits';
 import { contact, keptSpeed } from '../../lib/combat/contact';
+import { hullContact, probeSphere } from '../../lib/combat/hulls';
+import { capitalPose } from '../../lib/combat/pose';
+import { shipVelocity } from '../universe/hunterRules';
 import { createFleet } from '../universe/glbFleet';
 import { createSetPieces } from '../universe/setpieces';
 import { createCrash } from '../universe/crash';
@@ -286,7 +289,7 @@ export async function create(canvas, ctx) {
   const pops = createCrash(scene);
   const fleet = createFleet({ build: buildGalaxyShip, glb: HUNTER_GLB });
   fleet.prepare = (o) => warm(o);
-  const hunters = reduced ? null : createHunters(scene, { small, fleet, factions: FACTIONS, kinds: KINDS, solids: () => state.space?.solids ?? [] });
+  const hunters = reduced ? null : createHunters(scene, { small, fleet, factions: FACTIONS, kinds: KINDS, solids: () => state.space?.solids ?? [], hulls: models.hulls });
   let hunts = 0; // packs sent this visit (the first is a small one)
   const roam = createRoam(); // what happens while you roam: the director on the system's side
   const wingmen = hunters ? createWingmen(scene, { fleet, solids: () => state.space?.solids ?? [] }) : null; // (your side's escort: roamRules.js)
@@ -306,7 +309,7 @@ export async function create(canvas, ctx) {
     }
     return state.effects;
   };
-  const pieces = reduced ? null : createSetPieces(scene, { small, fleet, solids: () => state.space?.solids ?? [] }); // (clear of this system's planet, not the universe map's)
+  const pieces = reduced ? null : createSetPieces(scene, { small, fleet, solids: () => state.space?.solids ?? [], hulls: models.hulls }); // (clear of this system's planet, not the universe map's)
   // the Empire's count of your jumps, and the Interdictor waiting on the one that's due
   // the places found out in the open (places.js), kept across visits
   const finds = createFinds({ store: { get: () => window.localStorage.getItem(FOUND_KEY), set: (v) => window.localStorage.setItem(FOUND_KEY, v) } });
@@ -1137,6 +1140,64 @@ export async function create(canvas, ctx) {
     }
     if (state.shield <= 0) startDestroyed(by, rammed);
   };
+  // The big ships' hulls (the galaxy's hulls design): the war's capitals and
+  // the set piece's, each as the game's shapes at the pose it's drawn at, and
+  // the ship (a ball of its radius) kept out of them after the step: pushed
+  // back out the face it crossed, and what the step says of a planet's
+  // bump or crash said of this, by the closing speed. The chain of spheres
+  // each hull keeps as a solid stays in the step, thinner than the hull, so
+  // it's the hull that's met first.
+  const ball = probeSphere(SHIP.radius);
+  const ballPose = { at0: [0, 0, 0], at1: [0, 0, 0], basis: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]), scale: 1 };
+  const vShip = [0, 0, 0];
+  const bigHulls = () => {
+    const out = [];
+    const b = war?.battle;
+    if (b && !b.over) {
+      for (const cap of b.capitals) {
+        if (!cap.alive || cap.gone || cap.jumped) continue;
+        const hull = models.hulls.get(cap.kind);
+        if (hull) out.push({ id: `war-${cap.id}-0`, hull, pose: capitalPose(cap, b.drawn.t, b.drawn.reduced), reach: hull.radius * cap.size });
+      }
+    }
+    const piece = pieces?.shapes;
+    if (piece) out.push(piece);
+    return out;
+  };
+  const heldOffHulls = (before, after, events) => {
+    if (state.dive || state.crash || powers.mods.ghost) return after;
+    const list = bigHulls();
+    if (!list.length) return after;
+    let ship = after;
+    const way = apart(before.x, before.y, before.z, after.x, after.y, after.z);
+    for (const o of list) {
+      const at = o.pose.at1;
+      if (apart(ship.x, ship.y, ship.z, at[0], at[1], at[2]) > o.reach + SHIP.radius + way) continue;
+      ballPose.at0[0] = before.x;
+      ballPose.at0[1] = before.y;
+      ballPose.at0[2] = before.z;
+      let hit = null;
+      // (a hull is many solids: out of one it may still be in the next, so a few goes)
+      for (let n = 0; n < 3; n++) {
+        ballPose.at1[0] = ship.x;
+        ballPose.at1[1] = ship.y;
+        ballPose.at1[2] = ship.z;
+        const c = hullContact(ball, ballPose, o.hull, o.pose);
+        if (!c) break;
+        ship = { ...ship, x: ship.x + c.normal[0] * c.depth, y: ship.y + c.normal[1] * c.depth, z: ship.z + c.normal[2] * c.depth };
+        hit = c;
+      }
+      if (!hit) continue;
+      shipVelocity(ship, vShip);
+      const into = -(vShip[0] * hit.normal[0] + vShip[1] * hit.normal[1] + vShip[2] * hit.normal[2]);
+      if (into > SHIP.crash) events.push({ type: 'crash', id: o.id, at: [ship.x, ship.y, ship.z], normal: hit.normal, speed: into });
+      else if (into > 0) {
+        events.push({ type: 'bump', id: o.id, hard: into > SHIP.crash * 0.55, speed: into, force: into * SHIP.mass, at: [ship.x, ship.y, ship.z], normal: hit.normal });
+        ship = { ...ship, speed: ship.speed * (1 - 0.3 * Math.min(1, into / SHIP.crash)) };
+      }
+    }
+    return ship;
+  };
   // The ship's way this frame swept against every other small ship
   // (shipHits.js; the big ones are solids, in the step): a glance pushes it
   // off with a soft bump, a ram takes the shields (not just back from a
@@ -1572,6 +1633,7 @@ export async function create(canvas, ctx) {
         }
       }
     }
+    ship = heldOffHulls(before, ship, events); // (kept out of the capitals' hulls: the galaxy's hulls design)
     state.ship = ship;
     // the star the nose is on, if it's on one; flying out of the system
     // with it there, you're on your way to it

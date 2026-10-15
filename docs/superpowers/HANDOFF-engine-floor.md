@@ -29,7 +29,7 @@ The owner’s word (2026-10-15): remove the bloat, every world on WebGPU, everyt
 | FL2 Battlefront’s backdrop and the hero stage | onto the runtime | the same | after #1000 to #1004 merge | | `claude/engine-floor-fl2-bf-stages` | | |
 | FL3 /fly | the port, rebuilt | `…-laneFL3-ports.md` | now, from `claude/perf-p1-fly` | `session_01JvmxqpFGWxNax2cfZ6MPFj` (Opus 5.5, 19:29 UTC) | `claude/engine-floor-fl3-fly` | | |
 | FL3 the Mario 64 tribute and the Death Star’s inside | the ports | the same | now, from `claude/perf-p1-mario64` and `claude/perf-p1-ds-inside` | `session_01CuSPuDEPmbPYgn7EZHAPZJ` (Opus 5.5, 19:29 UTC) | `claude/engine-floor-fl3-mario64`, `…-fl3-ds-inside` | | |
-| FL3 the galaxy | the port | the same | now | `session_01FVfsnhXZobwg2tJHpsQAkV` (Opus 5.5, 19:29 UTC) | `claude/engine-floor-fl3-galaxy` | | |
+| FL3 the galaxy | the port | the same | now | `session_01FVfsnhXZobwg2tJHpsQAkV` (Opus 5.5, 19:29 UTC) | `claude/engine-floor-fl3-galaxy` (the shared twins: `…-fl3-galaxy-shared`; the rest of the twins: `…-fl3-galaxy-twins`) | #1011 (merged) | in three parts: the shared twins (atmosphere, noise, rock, speed lines; #1011, merged), every other twin the galaxy reaches (its own, the universe map’s, the cockpit’s cabs, the post), the flip; `evidence/engine-floor/FL3-galaxy/README.md` |
 | FL3 each world FL2 lands | the port | the same, by the FL2 session that landed it | as FL2 merges | | `claude/engine-floor-fl3-<world>` | | |
 | FL4 | the classic renderer retired | written when FL3’s table is full | after FL2 and FL3 | | `claude/engine-floor-fl4-retire` | | |
 | FL5 | the frame off the main thread, a spike | `…-laneFL5-worker.md` | now | `session_016PMwUHmdV6TMKuTeoRKCYe` (Opus 5.5, 19:29 UTC) | `claude/engine-floor-fl5-worker` | | |

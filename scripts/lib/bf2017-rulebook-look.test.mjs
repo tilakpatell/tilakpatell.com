@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { isSequel } from './bf2017-ebx.mjs';
-import { camerasRow, copyUiAssets, lightingRow, uiRow } from './bf2017-rulebook-look.mjs';
+import { areasOf, camerasRow, copyUiAssets, lightingRow, patchOf, placeAreas, uiRow } from './bf2017-rulebook-look.mjs';
 import { checkSources } from './bf2017-rulebook.mjs';
 
 const ROOT = join(import.meta.dirname, '..', 'fixtures', 'bf2017', 'data');
@@ -97,5 +97,40 @@ describe('the UI row', () => {
     const copied = copyUiAssets(ROOT, out, u);
     expect(copied.icons).toBe(2);
     expect(existsSync(join(out, 'icons', 'UI/SVG/Classes/Class_Troopers_Assault_01.svg'))).toBe(true);
+  });
+});
+
+describe('the interiors’ proximity blends', () => {
+  // (Hoth's wiring cut down: the layer's area and VE reference, the level's connections, a box in another layer)
+  const T = (at) => ({ right: { x: 1, y: 0, z: 0 }, up: { x: 0, y: 1, z: 0 }, forward: { x: 0, y: 0, z: 1 }, trans: at });
+  const lighting = { name: 'Levels/MP/Hoth_01/Lighting', objects: [{ $type: 'LayerData' }, { $type: 'AreaProximityEntityData', $guid: 'a', ProximityDistance: 20, LocalPlayerId: 'LocalPlayerId_0' }, { $type: 'VisualEnvironmentReferenceObjectData', $guid: 'v', Priority: 0, Blueprint: { $asset: 'Levels/Lighting/Hoth/Interior_01/VE_PV_Hoth_Interior_01' } }, { $type: 'AreaProximityEntityData', $guid: 'b', ProximityDistance: 20, LocalPlayerId: 'LocalPlayerId_1' }] };
+  const shapes = { name: 'Levels/MP/Hoth_01/Default_Lighting', objects: [{ $type: 'OBBData', $guid: 'o', Transform: T({ x: 217.6719, y: 374.9233, z: -1770.4879 }), HalfExtents: { x: 58.8856, y: 15.9026, z: 97.0492 } }] };
+  const at = (asset, guid) => ({ $asset: asset.name, $class: guid });
+  const level = { name: 'Levels/MP/Hoth_01/Hoth_01', objects: [{ $type: 'LevelData', PropertyConnections: [{ Source: at(lighting, 'a'), Target: at(lighting, 'v'), SourceField: '0x0b87df4b', TargetField: '0x65d22203' }], LinkConnections: [{ Source: at(lighting, 'a'), Target: at(shapes, 'o'), SourceField: '0x31fb3b9f', TargetField: '0x00000000' }, { Source: at(lighting, 'b'), Target: at(shapes, 'o'), SourceField: '0x31fb3b9f', TargetField: '0x00000000' }] }] };
+
+  it('reads the VE an area drives and the boxes it measures from, the split screen’s left out', () => {
+    const areas = areasOf([{ name: lighting.name, asset: lighting }, { name: shapes.name, asset: shapes }], [level]);
+    expect(areas).toHaveLength(1);
+    expect(areas[0]).toMatchObject({ proximity: 20, ves: [{ ve: 'Levels/Lighting/Hoth/Interior_01/VE_PV_Hoth_Interior_01', priority: 0 }] });
+    expect(areas[0].shapes[0]).toMatchObject({ kind: 'box', at: [217.6719, 374.9233, -1770.4879], half: [58.8856, 15.9026, 97.0492] });
+  });
+
+  it('places a prefab’s areas by its transform, the $ref ends resolved inside it; one that follows no player’s view (LocalPlayerId_Invalid, the ice caves’) left out', () => {
+    const pfOf = (player) => ({ name: 'levels/mp/hoth_01/prefabs/pf_icecave_02', objects: [{ $type: 'SpatialPrefabBlueprint', PropertyConnections: [{ Source: { $ref: 1 }, Target: { $ref: 2 }, SourceField: '0x0b87df4b', TargetField: '0x65d22203' }], LinkConnections: [{ Source: { $ref: 1 }, Target: { $ref: 3 }, SourceField: '0x31fb3b9f' }] }, { $type: 'AreaProximityEntityData', ProximityDistance: 3, LocalPlayerId: player }, { $type: 'VisualEnvironmentReferenceObjectData', Priority: 0, Blueprint: { $asset: 'Levels/Lighting/Hoth/Interior_01/VE_PV_Hoth_Interior_01' } }, { $type: 'OBBData', Transform: T({ x: 1, y: 2, z: 3 }), HalfExtents: { x: 1, y: 1, z: 1 } }] });
+    const invalid = pfOf('LocalPlayerId_Invalid');
+    expect(areasOf([{ name: invalid.name, asset: invalid }], [invalid])).toEqual([]);
+    const pf = pfOf('LocalPlayerId_0');
+    const turned = { right: { x: 0, y: 0, z: -1 }, up: { x: 0, y: 1, z: 0 }, forward: { x: 1, y: 0, z: 0 }, trans: { x: 10, y: 300, z: -1000 } };
+    const [a] = placeAreas(areasOf([{ name: pf.name, asset: pf }], [pf]), turned, 'Default_Lighting:377');
+    expect(a.proximity).toBe(3);
+    expect(a.shapes[0].at).toEqual([13, 302, -1001]);
+    expect(a.shapes[0].basis[0]).toEqual([0, 0, -1]);
+  });
+
+  it('keeps a VE’s overridden fields only, at their values', () => {
+    const ve = { name: 'Lighting/VE/VE_No_Sun', objects: [{ $type: 'VisualEnvironmentEntityData', Priority: 1000, ExplicitPriorityEnable: false }, { $type: 'OutdoorLightComponentData', PropertyOverrides: ['CloudShadowEnable', 'SunColor', 'SunIntensity'], CloudShadowEnable: false, SunColor: { x: 0, y: 0, z: 0 }, SunIntensity: 0.001, SunRotationY: 45 }] };
+    const p = patchOf(ve);
+    expect(p).toMatchObject({ priority: 1000, explicit: false, components: { OutdoorLight: { CloudShadowEnable: false, SunColor: [0, 0, 0], SunIntensity: 0.001 } } });
+    expect(p.components.OutdoorLight.SunRotationY).toBeUndefined();
   });
 });
