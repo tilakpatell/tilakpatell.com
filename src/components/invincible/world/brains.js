@@ -14,7 +14,7 @@
 
 import { WALK } from './traffic';
 
-export const BRAIN = { walk: 1.3, run: 4, flee: 6, fright: 40, calm: 20, cheer: 4, cheerR: 80, gatherR: 25, gather: 12, near: 6, waveR: 15, wave: 3, waveCool: 20, lookR: 30, roam: 20, roamMin: 6, mill: 4 };
+const BRAIN = { walk: 1.3, run: 4, flee: 6, fright: 40, calm: 20, cheer: 4, cheerR: 80, gatherR: 25, gather: 12, near: 6, waveR: 15, wave: 3, waveCool: 20, lookR: 30, roam: 20, roamMin: 6, mill: 4 };
 
 const angle = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
