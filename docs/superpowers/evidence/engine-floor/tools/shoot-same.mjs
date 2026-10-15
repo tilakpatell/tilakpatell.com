@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = fileURLToPath(new URL('../../../../../', import.meta.url));
 const CLOCK = new Date('2026-10-08T12:00:00Z');
 const FRAMES = 120;
+const SETTLE = 600; // frames at least after a pose (above)
 const SYNC = 90000; // (past the slowest floor's coming on in software, with room)
 
 const argv = process.argv.slice(2);
@@ -225,8 +226,23 @@ try {
       }
       const posed = await page.evaluate(() => window.__posed);
       if (posed !== 'ok') throw new Error(`pose ${poses[i]}: ${posed ?? 'never done'}`);
+      // What comes in after a pose comes a slice a frame (a planet's near
+      // maps, nearMaps.js; what the frame guard held back), as fast as it
+      // loads in real time: frames till it's all in, and at least SETTLE
+      // of them, so what eases a step a frame (the orbits' fade) is where
+      // it rests on both floors however many it took.
+      let held = 0;
+      for (let n = 0; n < 2400; n++) {
+        if (n >= SETTLE) {
+          const done = await page.evaluate(() => (window.__universe().near ?? []).length > 0 && !(window.__tpGuardPending?.() ?? 0));
+          held = done ? held + 1 : 0;
+          if (held >= 30 || (n >= 1500 && !done)) break;
+        }
+        await page.clock.runFor(16);
+        await page.waitForTimeout(25);
+      }
       await page.waitForTimeout(settle);
-      const when = SYNC + (i + 1) * 20000;
+      const when = SYNC + (i + 1) * 60000;
       const now = await page.evaluate(() => performance.now());
       if (now < when) await page.clock.fastForward(Math.ceil(when - now));
       await page.clock.setSystemTime(new Date(CLOCK.getTime() + when));
