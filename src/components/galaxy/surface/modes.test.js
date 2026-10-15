@@ -5,6 +5,7 @@ import { missionOf } from './missions';
 import BOOK from '../../../data/bf2017/modes.json';
 import { landLine } from './landLine';
 import { systemById } from '../systems';
+import { gameMenuFor } from '../gameLevels';
 import { tilesFor } from '../../../lib/bf2017/films';
 
 const card = (system, id, ctx) => modesFor(system, ctx).find((c) => c.id === id);
@@ -26,8 +27,9 @@ describe('the modes on a world', () => {
     expect(MODES.find((m) => m.id === 'hvv').name).toBe('Heroes vs Villains');
   });
   it('Hoth: Galactic Assault, Heroes vs Villains, Blast and its story live (lane H’s rows); a mode the level has and no mission yet, coming', () => {
-    // (Hoth's Galactic Assault is the Battlefront world, the game's own level, with the way back; the others stay the galaxy's: 2026-10-11's deploy-flow design)
-    expect(card('hoth', 'galacticAssault')).toMatchObject({ state: 'live', to: '/battlefront/hoth/galacticAssault?from=%2Fgalaxy%2Fhoth' });
+    // (Hoth lands in the game's own menu and never on this menu: gameLevels.js, the 2026-10-13 design; so no card here knows the Battlefront world)
+    expect(gameMenuFor('hoth')).toBe('/battlefront/hoth?from=%2Fgalaxy%2Fhoth');
+    for (const c of modesFor('hoth')) for (const to of [c.to, ...(c.options ?? []).map((o) => o.to)]) expect(to ?? '', c.id).not.toMatch(/^\/battlefront\//);
     expect(card('endor', 'galacticAssault')).toMatchObject({ state: 'live', to: '/galaxy/endor/surface?mode=galacticAssault', mission: 'assault' });
     expect(card('hoth', 'story')).toMatchObject({ state: 'live', to: '/galaxy/hoth/surface?mission=transport' });
     expect(card('hoth', 'hvv')).toMatchObject({ state: 'live', to: '/galaxy/hoth/surface?mode=hvv', mission: 'hvv' });
@@ -65,7 +67,9 @@ describe('the modes on a world', () => {
     expect(readAsk(null)).toBe('ask');
   });
   it('the galaxy panel’s light line says what the menu would', () => {
-    for (const id of LANDABLE) expect(landLine(systemById(id)), id).toBe(liveLine(id));
+    // (a world that lands in the game's menu has no menu of this kind: its line is its briefing's)
+    for (const id of LANDABLE) if (!gameMenuFor(id)) expect(landLine(systemById(id)), id).toBe(liveLine(id));
+    expect(landLine(systemById('hoth'))).toBe('Galactic Assault');
   });
 });
 

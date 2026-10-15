@@ -219,13 +219,18 @@ describe('the site’s asset pool', () => {
     expect(pool.progress()).toMatchObject({ bytes: 3, total: 10, inFlight: 1 });
   });
 
-  it('is two at once on a saver connection, four on a weak device or a phone, six on a desktop, eight at ultra', () => {
+  // (by the connection, not the quality level, since 2026-10-13: Low fetched
+  // Hoth's 700 files four at a time where Ultra fetched eight, and the
+  // lowest level was the slowest to arrive)
+  it('is two at once on a saver connection, four on a phone, eight anywhere else at any level', () => {
     expect(poolSize('high', true)).toBe(2);
     expect(poolSize('low', true)).toBe(2);
-    expect(poolSize('low', false)).toBe(4);
-    expect(poolSize('mid', false)).toBe(4);
-    expect(poolSize('high', false)).toBe(6);
+    expect(poolSize('low', false, true)).toBe(4);
+    expect(poolSize('mid', false, true)).toBe(4);
+    expect(poolSize('low', false)).toBe(8);
+    expect(poolSize('mid', false)).toBe(8);
+    expect(poolSize('high', false)).toBe(8);
     expect(poolSize('ultra', false)).toBe(8);
-    expect(poolSize(undefined, false)).toBe(4);
+    expect(poolSize(undefined, false)).toBe(8);
   });
 });

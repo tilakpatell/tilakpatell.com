@@ -54,6 +54,7 @@ await ctx.addInitScript((q) => {
   window.localStorage.setItem('tp-intro', '1');
   window.localStorage.setItem('tp-start', '"universe"');
   window.localStorage.setItem('tp-worlds', JSON.stringify('load'));
+  window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
   window.localStorage.setItem('tp-quality', q);
 }, QUALITY);
 const page = await ctx.newPage();
@@ -64,9 +65,9 @@ await page.goto(`${BASE}/#/battlefront/hoth/galacticAssault?gpu=webgpu`, { waitU
 await page.waitForFunction(() => Boolean(window.__battlefront?.view), null, { timeout: WAIT, polling: 1000 });
 await page.waitForFunction(() => window.__battlefront.view().level.loaded, null, { timeout: WAIT, polling: 1000 });
 // (the waiting screen's own Deploy, through its wipe: the field is behind it until then)
-await page.waitForSelector('[data-deploy]:not([disabled])', { timeout: WAIT });
-await page.click('[data-deploy]');
-await page.waitForSelector('.bf-waiting', { state: 'detached', timeout: WAIT });
+await page.waitForSelector('[data-bf-stage="spawn"]', { timeout: WAIT });
+await page.click('.bf-spawn-screen-cell[data-kind="class"]');
+await page.waitForSelector('[data-bf-stage="field"]', { timeout: WAIT });
 await page.waitForTimeout(1500);
 
 const door = (action, x) => page.evaluate(([a, y]) => window.__battlefront.do(a, y), [action, x]);

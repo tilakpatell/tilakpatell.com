@@ -3,7 +3,8 @@
 import { describe, expect, it } from 'vitest';
 import gs from '../../data/bf2017/gameSettings.json';
 import { hothFlatNav } from './fixtures/hothFlat.js';
-import { DEFAULTS, MAX_SIDE, erasFor, optionsFor, roundFor, startInstantAction } from './instantAction.js';
+import { DEFAULTS, MAX_SIDE, erasFor, optionsFor, roundFor, sideCap, startInstantAction } from './instantAction.js';
+import { STEPS } from './ai/botLogicOverhaul.js';
 import { MODES } from './modes/index.js';
 import { aiOf, loadRulebook } from './rulebook.js';
 import { step } from './sim.js';
@@ -103,23 +104,85 @@ describe('the round', () => {
   });
 });
 
+describe('the game’s own counts', () => {
+  const profile = aiOf(rb).instantAction;
+
+  it('are read with their least, most and starting value', () => {
+    expect(profile.InstantActionNumEnemyAI_PC).toMatchObject({ value: 20, min: 0, max: 32, step: 1 });
+    expect(profile.InstantActionEnemyHeroCount).toMatchObject({ value: 2, min: 0, max: 4 });
+    expect(profile.InstantActionFriendlyReinforcementCount).toMatchObject({ value: 4, min: 0, max: 20 });
+    expect(profile.InstantActionEnemyVehicleCount).toMatchObject({ value: 1, min: 0, max: 2 });
+  });
+
+  it('a round with them starts where they start: 20 bots a side, 2 heroes, 4 reinforcements, 1 vehicle', () => {
+    const r = roundFor(gs, {}, { profile });
+    expect(r.bots).toEqual({ [ME]: 20, [THEM]: 20 });
+    for (const n of [1, 2]) expect(r.caps[n]).toEqual({ heroes: { max: 4, bots: 2 }, reinforcements: { max: 12, bots: 4 }, vehicles: { bots: 1 } });
+    expect(r.sources['size.theirs']).toBe('Gameplay/Profiles/InstantActionParams/InstantActionNumEnemyAI_PC');
+    expect(r.scaled).toBe(false);
+  });
+
+  it('take a count up to the option’s most and no further', () => {
+    expect(roundFor(gs, { reinforcements: { enemyCount: 20 } }, { profile }).caps[THEM].reinforcements).toEqual({ max: 20, bots: 20 });
+    expect(() => roundFor(gs, { reinforcements: { enemyCount: 21 } }, { profile })).toThrow(/reinforcements\.enemyCount 21/);
+    expect(() => roundFor(gs, { heroes: { friendlyCount: 5 } }, { profile })).toThrow(/heroes\.friendlyCount 5/);
+    expect(roundFor(gs, { bots: { enemy: 0, friendly: 32 } }, { profile }).bots).toEqual({ [ME]: 32, [THEM]: 0 });
+  });
+
+  it('come down to the machine’s share', () => {
+    expect(roundFor(gs, {}, { profile, cap: 8 })).toMatchObject({ bots: { [ME]: 8, [THEM]: 8 }, scaled: true });
+  });
+});
+
+describe('the machine’s share', () => {
+  it('lets a weaker machine draw fewer soldiers a side, the strongest the game’s most', () => {
+    expect(sideCap('low')).toBeLessThan(sideCap('mid'));
+    expect(sideCap('mid')).toBeLessThan(sideCap('high'));
+    expect(sideCap('high')).toBeLessThanOrEqual(sideCap('ultra'));
+    expect(sideCap('ultra')).toBe(MAX_SIDE);
+    expect(sideCap('no such level')).toBe(sideCap('mid'));
+  });
+
+  it('brings a round’s own sizes down to it, and says so', () => {
+    const r = roundFor(gs, { difficulty: 'normal' }, { cap: 5 });
+    expect(r.bots).toEqual({ [ME]: 5, [THEM]: 5 });
+    expect(r.cap).toBe(5);
+    expect(r.scaled).toBe(true);
+    const full = roundFor(gs, { difficulty: 'normal' }, { cap: MAX_SIDE });
+    expect(full.bots).toEqual({ [ME]: 11, [THEM]: 13 });
+    expect(full.scaled).toBe(false);
+    expect(roundFor(gs, { difficulty: 'normal' }).cap).toBe(MAX_SIDE);
+  });
+
+  it('refuses a count asked past it, and offers none past it', () => {
+    expect(() => roundFor(gs, { bots: { enemy: 9 } }, { cap: 8 })).toThrow(/bots\.enemy 9 is not a whole number from 1 to 8/);
+    expect(roundFor(gs, { bots: { enemy: 8, friendly: 2 } }, { cap: 8 }).bots).toEqual({ [ME]: 2, [THEM]: 8 });
+    const opts = optionsFor(gs, { rulebook: rb, level: 'hoth', cap: 8 });
+    const of = (id) => opts.find((o) => o.id === id);
+    expect(of('bots.enemy')).toMatchObject({ max: 8, default: 8 });
+    expect(of('bots.friendly')).toMatchObject({ max: 8, default: 8 });
+    expect(optionsFor(gs, { rulebook: rb, level: 'hoth' }).find((o) => o.id === 'bots.enemy').max).toBe(MAX_SIDE);
+  });
+});
+
 describe('the options', () => {
   const opts = optionsFor(gs, { rulebook: rb, level: 'hoth' });
   const of = (id) => opts.find((o) => o.id === id);
 
   it('are the game’s own setup options, in the screen’s order: the enemy’s before the player’s side’s', () => {
     expect(opts.map((o) => o.id)).toEqual([
-      'mode', 'difficulty', 'length',
+      'mode', 'level', 'difficulty', 'length',
       'bpRate', 'bots.enemy', 'bots.friendly',
       'heroes.enemyCount', 'heroes.friendlyCount',
       'reinforcements.enemyCount', 'reinforcements.friendlyCount',
       'vehicles.enemyCount', 'vehicles.friendlyCount',
       'heroes.enemy', 'heroes.friendly', 'vehicles.enemy', 'vehicles.friendly', 'allEraHeroes',
-      'team', 'era',
+      'team', 'era', 'botLogic',
+      'overhaul.aim', 'overhaul.reaction', 'overhaul.dodging', 'overhaul.spread',
     ]);
     // (the screen's two headings, and what the game's screen has no row for)
-    expect(opts.filter((o) => o.group === 'modifiers').map((o) => o.id)).toEqual(['mode', 'difficulty', 'length']);
-    expect(opts.filter((o) => o.group === 'site').map((o) => o.id)).toEqual(['era']);
+    expect(opts.filter((o) => o.group === 'modifiers').map((o) => o.id)).toEqual(['mode', 'level', 'difficulty', 'length']);
+    expect(opts.filter((o) => o.group === 'site').map((o) => o.id)).toEqual(['era', 'botLogic']);
     expect(of('bpRate').group).toBe('advanced');
     expect(of('difficulty').option).toBe('InstantActionDifficulty');
     expect(of('heroes.enemy').option).toBe('InstantActionEnemyHeroes');
@@ -131,16 +194,20 @@ describe('the options', () => {
     // (the screen's first difficulty, its Normal, is the AutoPlayers' Rookie row)
     expect(of('difficulty').default).toBe(of('difficulty').choices[ia.InstantActionDifficulty.default]);
     expect(of('difficulty').default).toBe('rookie');
-    // (names only where the strings table holds every one: the difficulty's are not in it, and its values are the screen's own words)
-    expect(of('difficulty').labels).toBeUndefined();
+    // (the items' own names: the difficulty's ids end NORMAL, HARD and EXPERT, and the game's words for them are these)
+    expect(of('difficulty').labels).toEqual(['ROOKIE', 'NORMAL', 'EXPERT']);
     expect(of('length').labels).toEqual(['SHORT', 'MEDIUM', 'LONG']);
     expect(of('bpRate').labels).toEqual(['SLOW', 'DEFAULT', 'FAST']);
     expect(of('length').default).toBe('medium');
     expect(of('bpRate').default).toBe('default');
     expect(of('heroes.enemy').default).toBe(true);
     expect(of('allEraHeroes').default).toBe(false);
-    expect(of('heroes.enemyCount')).toMatchObject({ kind: 'count', min: 0, max: 4, default: 3 });
-    expect(of('reinforcements.friendlyCount')).toMatchObject({ min: 0, max: 12, default: 10 });
+    // (the counts are the game's own options': their least, most and starting value)
+    expect(of('bots.enemy')).toMatchObject({ kind: 'count', min: 0, max: 32, default: 20, source: 'Gameplay/Profiles/InstantActionParams/InstantActionNumEnemyAI_PC' });
+    expect(of('bots.friendly')).toMatchObject({ min: 0, max: 32, default: 20 });
+    expect(of('heroes.enemyCount')).toMatchObject({ kind: 'count', min: 0, max: 4, default: 2 });
+    expect(of('reinforcements.friendlyCount')).toMatchObject({ min: 0, max: 20, default: 4 });
+    expect(of('vehicles.enemyCount')).toMatchObject({ min: 0, max: 2, default: 1 });
   });
 
   it('every option’s default is a choice the round takes', () => {
@@ -156,10 +223,130 @@ describe('the options', () => {
     expect(of('mode').choices.every((m) => MODES.includes(m))).toBe(true);
   });
 
+  it('the modes on offer are the world’s, Instant Action’s own first: Hoth’s page offers Supremacy, its second level’s', () => {
+    expect(of('mode').choices[0]).toBe('supremacy');
+    expect(of('mode').default).toBe('supremacy');
+    expect(of('mode').choices).toContain('galacticAssault');
+    expect(new Set(of('mode').choices).size).toBe(of('mode').choices.length);
+    // (a level whose world holds no Supremacy starts on its own first mode)
+    const kamino = optionsFor(gs, { rulebook: rb, level: 'kamino_01' }).find((o) => o.id === 'mode');
+    expect(kamino.choices.includes('supremacy') ? kamino.default : kamino.choices[0]).toBe(kamino.default);
+  });
+
   it('the eras on offer are the ones the teams table holds for the level', () => {
     expect(erasFor(rb, 'hoth')).toEqual(['Orig']);
     expect(of('era').choices).toEqual(['Orig']);
     expect(() => startInstantAction({ rulebook: rb, gs, nav: hothFlatNav(rb), mode: 'galacticAssault', era: 'Prequel' })).toThrow(/teams Prequel:hoth_01/);
+  });
+});
+
+describe('the rows’ words', () => {
+  const opts = optionsFor(gs, { rulebook: rb, level: 'hoth' });
+  const of = (id) => opts.find((o) => o.id === id);
+
+  it('are the game’s own for its rows: the title and the help line under the list', () => {
+    expect(of('mode')).toMatchObject({ label: 'MODE', help: 'Select gamemode.' });
+    expect(of('difficulty')).toMatchObject({ label: 'AI DIFFICULTY', help: 'Change the difficulty of combat to your preferred setting.' });
+    expect(of('length')).toMatchObject({ label: 'ROUND LENGTH', help: 'Choose between short, medium and long matches.' });
+    expect(of('bpRate')).toMatchObject({ label: 'BATTLE POINTS', help: 'Set the rate of earning Battle Points.' });
+    expect(of('bots.enemy')).toMatchObject({ label: 'ENEMY AI COUNT', help: 'Maximum number of enemy AI. This will affect performance.' });
+    expect(of('reinforcements.friendlyCount').label).toBe('FRIENDLY REINFORCEMENT COUNT');
+    expect(of('allEraHeroes')).toMatchObject({ label: 'ENABLE HEROES FROM ANY ERA', help: 'Enable the use of heroes from any Star Wars era' });
+    // (the table holds no help line for the two friendly switches)
+    expect(of('heroes.friendly')).toMatchObject({ label: 'FRIENDLY HEROES', help: null });
+    for (const o of opts) expect(typeof o.label).toBe('string');
+  });
+
+  it('a switch’s two words are the game’s OFF and ON; a mode’s name is the game’s for it', () => {
+    expect(of('heroes.enemy').labels).toEqual(['OFF', 'ON']);
+    expect(of('mode').labels[of('mode').choices.indexOf('supremacy')]).toBe('SUPREMACY');
+    expect(of('mode').labels[of('mode').choices.indexOf('galacticAssault')]).toBe('GALACTIC ASSAULT');
+  });
+
+  it('the location is a row of one choice, the page’s level by its world’s name', () => {
+    expect(of('level')).toMatchObject({ group: 'modifiers', kind: 'choice', choices: ['hoth'], labels: ['HOTH'], default: 'hoth', label: 'LOCATION', help: 'Set the map to play.', option: 'InstantActionLevelToPlay' });
+  });
+
+  it('say what the sim does not act on yet, and what a row waits on', () => {
+    expect(opts.filter((o) => o.carried).map((o) => o.id)).toEqual(['vehicles.enemyCount', 'vehicles.friendlyCount', 'vehicles.enemy', 'vehicles.friendly', 'allEraHeroes']);
+    expect(of('botLogic').when).toEqual({ mode: 'supremacy' });
+    expect(of('overhaul.spread').when).toEqual({ mode: 'supremacy', botLogic: 'overhaul' });
+    expect(of('difficulty').when).toBeUndefined();
+  });
+
+  it('take the profile’s words where it holds them, whatever the site would have said', () => {
+    const ia = rb.ai.instantAction;
+    const told = { ...rb, ai: { ...rb.ai, instantAction: { ...ia, InstantActionBPRate: { ...ia.InstantActionBPRate, title: { text: 'THE GAME’S WORD' }, help: { text: 'Its line.' } } } } };
+    expect(optionsFor(gs, { rulebook: told, level: 'hoth' }).find((o) => o.id === 'bpRate')).toMatchObject({ label: 'THE GAME’S WORD', help: 'Its line.' });
+  });
+
+  it('say which rows the game’s own screen lists: its thirteen, ending at the friendly vehicle count', () => {
+    expect(opts.filter((o) => o.listed).map((o) => o.id)).toEqual([
+      'mode', 'level', 'difficulty', 'length',
+      'bpRate', 'bots.enemy', 'bots.friendly',
+      'heroes.enemyCount', 'heroes.friendlyCount',
+      'reinforcements.enemyCount', 'reinforcements.friendlyCount',
+      'vehicles.enemyCount', 'vehicles.friendlyCount',
+    ]);
+    // (the five switches are the profile’s options, with words in the string table and no row on the screen)
+    expect(opts.filter((o) => o.group === 'advanced' && !o.listed).map((o) => o.id)).toEqual(['heroes.enemy', 'heroes.friendly', 'vehicles.enemy', 'vehicles.friendly', 'allEraHeroes']);
+    for (const o of opts) expect(typeof o.listed).toBe('boolean');
+  });
+
+  it('with no rulebook every row still has a name, the site’s own', () => {
+    for (const o of optionsFor(gs)) expect(o.label.length).toBeGreaterThan(0);
+  });
+});
+
+describe('the Overhaul’s logic', () => {
+  const opts = optionsFor(gs, { rulebook: rb, level: 'hoth' });
+  const of = (id) => opts.find((o) => o.id === id);
+  const ask = (overhaul) => roundFor(gs, { mode: 'supremacy', botLogic: 'overhaul', ...(overhaul ? { overhaul } : {}) });
+
+  it('is the site’s own choice, and the game’s logic unless asked', () => {
+    expect(of('botLogic')).toMatchObject({ group: 'site', kind: 'choice', choices: ['game', 'overhaul'], default: 'game', source: 'hand' });
+    expect(roundFor(gs, { mode: 'supremacy' }).botLogic).toMatchObject({ kind: 'game', radius: 8 });
+  });
+
+  it('has the mod’s rows: three of its five steps, and its spread', () => {
+    expect(opts.filter((o) => o.group === 'overhaul').map((o) => o.id)).toEqual(['overhaul.aim', 'overhaul.reaction', 'overhaul.dodging', 'overhaul.spread']);
+    expect(STEPS).toEqual(['veryEasy', 'easy', 'medium', 'hard', 'veryHard']);
+    for (const id of ['overhaul.aim', 'overhaul.reaction', 'overhaul.dodging']) expect(of(id)).toMatchObject({ kind: 'choice', choices: STEPS, default: 'medium' });
+    expect(of('overhaul.spread')).toMatchObject({ kind: 'toggle', default: true });
+  });
+
+  it('asked for, the round carries the mod’s numbers: its radius, its six seconds, its middle steps', () => {
+    const r = ask();
+    expect(r.botLogic).toEqual({ kind: 'overhaul', radius: 10, spread: true });
+    for (const team of [1, 2]) {
+      expect(r.waves[team].soldiers).toMatchObject({ pause: 0, delay: 6 });
+      // (the mod's own scale in place of the rows': 1, and no row by side: the spread is the side's)
+      expect(r.ap[team]).toMatchObject({ noiseScale: 1, sideScale: 1, fov: 110, lofReaction: 0.1, dodgeRoll: 0.05 });
+    }
+  });
+
+  it('a step asked for is the mod’s table’s', () => {
+    const r = ask({ aim: 'veryHard', reaction: 'veryEasy', dodging: 'hard', spread: false });
+    expect(r.ap[1]).toMatchObject({ noiseScale: 0.125, fov: 180, lofReaction: 0.5, dodgeRoll: 0.1 });
+    expect(r.ap[2]).toMatchObject({ noiseScale: 0.125, fov: 180, lofReaction: 0.5, dodgeRoll: 0.1 });
+    expect(r.botLogic.spread).toBe(false);
+    expect(ask({ aim: 'veryEasy' }).ap[1]).toMatchObject({ noiseScale: 100, fov: 40 });
+    // (the mod holds a field of view for Hard and never applies it: the rows' own stays)
+    expect(ask({ aim: 'hard' }).ap[1].noiseScale).toBe(0.5);
+    expect(ask({ aim: 'hard' }).ap[1].fov).toBe(roundFor(gs, { mode: 'supremacy' }).ap[1].fov);
+  });
+
+  it('a logic or a step that is not one is refused', () => {
+    expect(() => roundFor(gs, { mode: 'supremacy', botLogic: 'mine' })).toThrow(/botLogic mine/);
+    expect(() => ask({ aim: 'harder' })).toThrow(/overhaul.aim harder/);
+    expect(() => ask({ spread: 'yes' })).toThrow(/overhaul.spread/);
+  });
+
+  it('is the command posts’ alone: an objective mode’s round is as it was', () => {
+    const r = roundFor(gs, { mode: 'galacticAssault', botLogic: 'overhaul', overhaul: { aim: 'veryHard' } });
+    expect(r.botLogic).toBeNull();
+    expect(r.ap).toEqual(roundFor(gs, { mode: 'galacticAssault' }).ap);
+    expect(r.wavesBy).toEqual(roundFor(gs, { mode: 'galacticAssault' }).wavesBy);
   });
 });
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadRulebook } from '../../lib/battlefront/rulebook.js';
 import { hothFlatNav } from '../../lib/battlefront/fixtures/hothFlat.js';
 import { addPlayer as addSoldier } from '../../lib/battlefront/sim.js';
-import { STEP, addPlayer, createBattle, deploy, step, view, worldMove } from './battle.js';
+import { BOTS, STEP, addPlayer, botsAt, createBattle, deploy, step, view, worldMove } from './battle.js';
 import { LEVEL_MODES, MODES } from './index.js';
 import naboo from '../../data/bf2017/maps/naboo.json';
 
@@ -201,9 +201,9 @@ describe('the pieces together: the squad list, the figures and the fallen', () =
 });
 
 describe('the other modes on the game world’s route (lane 6)', () => {
-  it('knows their ids; a level plays the modes its pack has (Hoth’s Galactic Assault today)', () => {
+  it('knows their ids; a level plays the modes its world has a level for (Hoth’s Galactic Assault, and Supremacy on its second level)', () => {
     expect(MODES).toEqual(['galacticAssault', 'strike', 'extraction', 'ewokHunt', 'supremacy']);
-    expect(LEVEL_MODES).toEqual({ hoth: ['galacticAssault'] });
+    expect(LEVEL_MODES).toEqual({ hoth: ['galacticAssault', 'supremacy'] });
   });
   it('a battle in Strike takes the mode’s objectives from the level’s map rulebook', () => {
     const book = { ...rb, maps: { ...rb.maps, naboo: { map: naboo.rows, stages: {} } } };
@@ -217,5 +217,14 @@ describe('the other modes on the game world’s route (lane 6)', () => {
   });
   it('refuses a mode it does not know', () => {
     expect(() => createBattle({ rulebook: rb, level: 'hoth', mode: 'conquest', nav })).toThrow(/conquest/);
+  });
+});
+
+// (Low is the floor: every bot is a body drawn and a mind stepped, so five a
+// side at Low, Instant Action's own cap, and the page's eight above)
+describe('the bots a side by the quality level', () => {
+  it('is five at Low and eight above', () => {
+    expect(botsAt('low')).toEqual({ 1: 5, 2: 5 });
+    for (const d of ['mid', 'high', 'ultra', undefined]) expect(botsAt(d)).toEqual({ 1: BOTS, 2: BOTS });
   });
 });

@@ -20,9 +20,11 @@
 //   living, and `hitDir`, the shot's way, for the death clip's side)
 //   (inputs: the page's { id, move: [right, ahead], yaw, pitch, fire, aim: bool, sprint, crouch, roll, ability, abilityHeld, vent })
 
-import { classOf, mapOf, squadsOf, stagesOf, stringOf, teamsFor } from '../../lib/battlefront/rulebook.js';
+import { classOf, levelForMode, mapOf, squadsOf, stagesOf, stringOf, teamsFor } from '../../lib/battlefront/rulebook.js';
 import { balance, earnedBy, offers as offersOf } from '../../lib/battlefront/battlePoints.js';
 import { buildNav, heightAt } from '../../lib/battlefront/nav.js';
+import { attachMesh } from '../../lib/battlefront/meshNav.js';
+import { load as loadNavmesh } from '../../lib/battlefront/navmesh.js';
 import { STEP, createSim, deploy as deploySim, outOf, squadBlocks, step as stepSim, view as viewSim } from '../../lib/battlefront/sim.js';
 import { joinSquad, squadRows } from '../../lib/battlefront/ai/squad.js';
 import { aiOf } from '../../lib/battlefront/rulebook.js';
@@ -30,10 +32,17 @@ import { hurt } from '../../lib/battlefront/soldier.js';
 import { slotsOf } from '../../lib/battlefront/kit.js';
 import { charges } from '../../lib/battlefront/abilities.js';
 import { modeFor } from '../../lib/battlefront/modes/index.js';
+import { SIDE_BY_DETAIL } from '../../lib/battlefront/instantAction.js';
 import { KINDS } from '../../lib/battlefront/modes/objectives.js';
 
 export { STEP };
 export const BOTS = 8; // bots a side on the page (the arena runs 20; the page draws each as a figure)
+// (Low is the floor: every bot is a body drawn and a mind stepped, so Low
+// takes Instant Action's own cap, five a side; the page's eight above)
+export const botsAt = (detail) => {
+  const n = Math.min(BOTS, SIDE_BY_DETAIL[detail] ?? BOTS);
+  return { 1: n, 2: n };
+};
 export const NAV_CELL = 2; // m: the design's navgrid (decision 7)
 export const BACK_TO_DEPLOY = 3; // s after the player goes down before the deploy screen comes back
 export const KILL_LOG = 6; // lines kept
@@ -97,12 +106,27 @@ function objectivesOf(b) {
   return out;
 }
 
-export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault', heightAt: groundAt = () => 0, bots = { 1: BOTS, 2: BOTS }, seed = 1, cell = NAV_CELL, nav = null, mask = null, teams = null, era = 'Orig', difficulty = null, instantAction = null } = {}) {
+// The level's own navmesh streams a mode walks (lib/battlefront/navmesh.js; bf2-re findings/57): Galactic
+// Assault's bots the playthrough mesh, the one over its whole field (the game streams none for the mode,
+// a players' one). The other modes keep the navgrid, by hand.
+export const NAVMESH_OF = { galacticAssault: 'playthrough' };
+
+export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault', heightAt: groundAt = () => 0, bots = { 1: BOTS, 2: BOTS }, seed = 1, cell = NAV_CELL, nav = null, mask = null, navmesh = null, teams = null, era = 'Orig', difficulty = null, instantAction = null } = {}) {
   const map = mapOf(rulebook, level);
   if (!modeFor(mode)) throw new Error(`mode ${mode}: not one the game world runs`);
   const file = mode === 'galacticAssault' ? stagesOf(rulebook, level, mode) : null;
   const grid = nav ?? buildNav({ heightAt: groundAt, bounds: { min: map.bounds.min, max: map.bounds.max }, cell, cover: aiOf(rulebook).cover.constants, mask });
   if (mask && !grid.mask) console.warn(`battlefront: the nav mask (${mask.cols} × ${mask.rows} of ${mask.cell} m) is not this map's grid; walking the ground alone`);
+  // (the level's navmesh, a fresh load a battle: a gate's doorway is its round's; navmesh: { bytes, floor })
+  const stream = NAVMESH_OF[mode];
+  if (navmesh?.bytes && stream) {
+    try {
+      attachMesh(grid, loadNavmesh(navmesh.bytes, { mesh: stream }), { floor: navmesh.floor ?? null });
+    } catch (err) {
+      console.warn(`battlefront: the navmesh did not load (${err.message}); the navgrid alone`);
+      grid.mesh = null;
+    }
+  } else grid.mesh = null;
   // (teams: { 1, 2 } where the level has no row of its own in teams.json, which holds Hoth's alone)
   // (era, difficulty, instantAction: an Instant Action round's, lib/battlefront/instantAction.js; the game's own where none is asked)
   const sim = createSim({ rulebook, level, era, nav: grid, seed, bots, teams, mode, difficulty, instantAction });
@@ -113,6 +137,7 @@ export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault
     stage: file?.stages?.[0] ?? null,
     sim,
     nav: grid,
+    navmesh,
     objectives: [],
     sides: teams ? { light: teams[1], dark: teams[2] } : teamsFor(rulebook, level, era),
     level,
@@ -146,6 +171,17 @@ function waitToDeploy(b) {
   const me = sim.entities.get(p.id);
   if (me?.alive || me?.respawn === false) return;
   sim.deploying.set(p.id, { id: p.id, team: p.team, bot: false, since: sim.time });
+}
+
+// A round's battle made beside the one the page has (the setup screen's Start, in place: module.js swaps
+// them): the round's mode on the level of this world that holds it (lib/battlefront/rulebook.js's
+// levelForMode, loaded by the caller), on the first battle's navgrid where the two levels share their
+// ground, with the world's own sides. The first battle is left as it was.
+export function roundBattle(b, round, { heightAt = () => 0, mask = null, seed = b.sim.seed + 1 } = {}) {
+  const level = levelForMode(b.rulebook, b.level, round.mode);
+  const map = mapOf(b.rulebook, level);
+  const same = ['min', 'max'].every((k) => map.bounds[k][0] === b.map.bounds[k][0] && map.bounds[k][1] === b.map.bounds[k][1]);
+  return createBattle({ rulebook: b.rulebook, level, mode: round.mode, heightAt, nav: same ? b.nav : null, mask, navmesh: same ? b.navmesh : null, seed, teams: { 1: b.sides.light, 2: b.sides.dark }, bots: round.bots, era: round.era, difficulty: round.difficulty, instantAction: round });
 }
 
 export function addPlayer(b, { team = 2 } = {}) {
@@ -204,6 +240,9 @@ export function step(b, inputs = []) {
       ability: inp.ability || 0,
       abilityHeld: inp.abilityHeld || 0,
       vent: Boolean(inp.vent),
+      // (the interact held: a gate's panel, a bomb)
+      interact: Boolean(inp.interact),
+      interactHeld: Boolean(inp.interactHeld ?? inp.interact),
     });
   }
   const events = stepSim(b.sim, mapped);
@@ -287,7 +326,11 @@ function modeOf(b, v, p) {
   const attacking = p && b.sim.ga && b.sim.M?.sideOf ? b.sim.M.sideOf(b.sim.ga, p.team) === 'attack' : true;
   const stage = m.stage ?? null;
   const words = stage ? stringOf(b.rulebook, attacking ? stage.name : (stage.nameDefend ?? stage.name)) : null;
-  return { stage: stage?.index ?? 0, stageName: words, objectives: b.objectives, tickets: m.tickets ?? null, phase: m.phase ?? null, timer: m.timer ?? null, result: m.result ?? null };
+  // (the bar draws one number: where a mode counts reinforcements a side, Supremacy, the player's side's;
+  // both sides' go beside it for a bar that draws the two)
+  const t = m.tickets ?? null;
+  const bySide = t !== null && typeof t === 'object' ? t : null;
+  return { stage: stage?.index ?? 0, stageName: words, objectives: b.objectives, tickets: bySide ? (bySide[attacking ? 'attack' : 'defend'] ?? null) : t, ticketsBySide: bySide, phase: m.phase ?? null, timer: m.timer ?? null, result: m.result ?? null, gates: m.gates ?? [] };
 }
 
 export function view(b) {

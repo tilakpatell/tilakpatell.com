@@ -25,7 +25,7 @@ const VERT = 'attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }
 function startGL(canvas, frag, names) {
   let gl = null;
   try {
-    gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false, depth: false, stencil: false, preserveDrawingBuffer: false });
+    gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false, depth: false, stencil: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' });
   } catch {
     gl = null;
   }

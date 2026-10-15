@@ -25,7 +25,7 @@ export default function GalaxyBackdrop() {
     if (!on || !ref.current) return undefined;
     let renderer;
     try {
-      renderer = quiet(new THREE.WebGLRenderer({ canvas: ref.current, antialias: false, powerPreference: 'low-power' }));
+      renderer = quiet(new THREE.WebGLRenderer({ canvas: ref.current, antialias: false, powerPreference: 'high-performance' }));
     } catch {
       return undefined;
     }

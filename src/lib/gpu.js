@@ -35,7 +35,7 @@ export function probe(doc = typeof document !== 'undefined' ? document : undefin
     let caveat = false;
     let { gl, webgl2 } = context(doc.createElement('canvas'), { failIfMajorPerformanceCaveat: true, powerPreference: 'high-performance' });
     if (!gl) {
-      ({ gl, webgl2 } = context(doc.createElement('canvas'), {}));
+      ({ gl, webgl2 } = context(doc.createElement('canvas'), { powerPreference: 'high-performance' }));
       caveat = !!gl;
     }
     if (!gl) return none;

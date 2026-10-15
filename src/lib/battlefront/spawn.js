@@ -1,6 +1,7 @@
 // Where a soldier deploys (spec catalogue 6): the stage's spawn sets are the
-// map's spawn areas (`SpawnLocationFinderShapeData` polygons); the exact
-// spots are the team's spawn points inside them, by priority, those clear
+// map's spawn areas (`SpawnLocationFinderShapeData` polygons) and, where the
+// level's spawn logic switches them, its spawn points; the exact spots are
+// the team's points the set names, else its points inside the areas, by priority, those clear
 // of enemies first; when none is clear, the area's point furthest from the
 // nearest enemy, so a living team always has somewhere. Or on a squadmate
 // out of contact (squad spawn: at the first of the game's friendly spawn
@@ -45,15 +46,21 @@ function pointsIn(map, ids, team, mode) {
   if (!byKey) cache.set(map, (byKey = new Map()));
   const key = `${mode}|${team}|${ids.join(',')}`;
   if (byKey.has(key)) return byKey.get(key);
-  const areas = spawnsFor(map, { mode, ids }).filter((p) => p.points);
-  const points = spawnsFor(map, { mode, team }).filter((s) => s.at && areas.some((a) => insidePolygon(a.points, s.at[0], s.at[2])));
+  const listed = spawnsFor(map, { mode, ids });
+  const areas = listed.filter((p) => p.points);
+  // (a set that names its spawn points, as a level's spawn logic does, deploys on those; else on the team's points inside its areas)
+  const named = listed.filter((s) => s.at && s.team === team);
+  const points = named.length ? named : spawnsFor(map, { mode, team }).filter((s) => s.at && areas.some((a) => insidePolygon(a.points, s.at[0], s.at[2])));
   const out = { areas, points };
   byKey.set(key, out);
   return out;
 }
 
-export function pickSpawn({ map, ids, team, enemies = [], rand = Math.random, mode = 'galacticAssault' }) {
-  const { areas, points } = pointsIn(map, ids, team, mode);
+export function pickSpawn({ map, ids, team, enemies = [], rand = Math.random, mode = 'galacticAssault', extra = [] }) {
+  const set = pointsIn(map, ids, team, mode);
+  const areas = set.areas;
+  // (points given beside the set's own: the command posts' the side holds, modes/supremacy.js)
+  const points = extra.length ? [...set.points, ...extra] : set.points;
   const safe = points.filter((s) => nearest([s.at[0], s.at[2]], enemies) >= SAFE);
   if (safe.length) {
     const top = Math.max(...safe.map((s) => s.priority ?? 0));

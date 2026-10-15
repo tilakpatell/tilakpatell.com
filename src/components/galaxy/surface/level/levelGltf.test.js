@@ -455,6 +455,26 @@ describe('every map at its smallest row first, promoted in place (lane N4)', () 
     expect(asked).toHaveLength(1);
   });
 
+  // (Low is the floor, the most compressed web settings: a map stays at its
+  // first row there, half the texture fetches and uploads of a promotion)
+  it('at Low keeps every map at its first row, never promoted to Low’s own', async () => {
+    const { loader, asked } = loaderWith({ tier: 'low', sizes: { t_b_n__normal: { first: 256, low: 512, mid: 1024, high: 1024, srgb: false } } });
+    const tex = await loader.texture('tex/t_b_n__normal.ktx2');
+    await tick();
+    await tick();
+    expect(tex.image.width).toBe(256);
+    expect(asked.map(([p]) => p)).toEqual(['tex/t_b_n__normal.256.ktx2']);
+  });
+
+  it('at Low still fetches Low’s own row where the first cannot be had, and promotes nothing after', async () => {
+    const { loader, asked } = loaderWith({ tier: 'low', missing: ['tex/t_b_n__normal.256.ktx2'], sizes: { t_b_n__normal: { first: 256, low: 512, mid: 1024, high: 1024, srgb: false } } });
+    const tex = await loader.texture('tex/t_b_n__normal.ktx2');
+    await tick();
+    await tick();
+    expect(tex.image.width).toBe(512);
+    expect(asked.map(([p]) => p)).toEqual(['tex/t_b_n__normal.256.ktx2', 'tex/t_b_n__normal.512.ktx2']);
+  });
+
   it('falls back to the tier’s row where the first cannot be had', async () => {
     const { loader, asked } = loaderWith({ missing: ['tex/t_a_n__normal.128.ktx2'] });
     const tex = await loader.texture('tex/t_a_n__normal.ktx2');

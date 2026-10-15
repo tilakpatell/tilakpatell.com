@@ -8,6 +8,9 @@
 
 export const ROUTE = '/battlefront';
 export const routeFor = (level = 'hoth', mode = 'galacticAssault', { from = null } = {}) => `${ROUTE}/${level}/${mode}${from ? `?from=${encodeURIComponent(from)}` : ''}`;
+// the game's menu over a level's world (no mode named: the menu chooses it;
+// docs/superpowers/specs/2026-10-13-hoth-landing-game-menu-design.md)
+export const menuRouteFor = (level = 'hoth', { from = null } = {}) => `${ROUTE}/${level}${from ? `?from=${encodeURIComponent(from)}` : ''}`;
 // the way back a route's search names, or null: a galaxy world's page alone
 // (`/galaxy/<system>`), never another origin or an arbitrary path
 export function wayBack(search = '') {
@@ -20,5 +23,7 @@ export const LEVELS = ['hoth'];
 // the modes the game world runs (src/lib/battlefront/modes/index.js), and those each level's pack plays:
 // a level's own modes are its map rulebook's (modes.json); a pack that lands adds its row
 export const MODES = ['galacticAssault', 'strike', 'extraction', 'ewokHunt', 'supremacy'];
-export const LEVEL_MODES = { hoth: ['galacticAssault'] };
+export const LEVEL_MODES = { hoth: ['galacticAssault', 'supremacy'] };
+// the mode a level's world is mounted in behind the menu, or null for a level this world has not got
+export const firstModeOf = (level) => LEVEL_MODES[level]?.[0] ?? null;
 export { default as battlefrontModule } from './module.js';

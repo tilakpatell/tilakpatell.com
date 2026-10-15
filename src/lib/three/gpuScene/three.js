@@ -15,6 +15,7 @@
 //   indirectOf(renderObject) → { attribute, offsets } | null (what the backend will draw from)
 //   hasIndirect(renderer) → boolean: the backend draws indirect with firstInstance (WebGPU; never the node renderer over WebGL 2)
 //   upload(attribute, span, itemsPer) (one dirty span of a storage attribute sent, not the whole buffer)
+//   widen(span | null, start, count = 1) → the span over both (the elements set since the last upload)
 
 import { backendOf, loadThree } from '../light/three.js';
 
@@ -50,6 +51,10 @@ export function indirectOf(renderObject) {
 // with indirect-first-instance, an optional feature three asks for wherever
 // the adapter has it: 99.99 % of web3dsurvey's reports, the research note's §1)
 export const hasIndirect = (renderer) => backendOf(renderer) === 'webgpu' && renderer.backend?.hasFeature?.('indirect-first-instance') !== false;
+
+// one span over every element touched since the last send (upload keeps one
+// range a call: elements set one by one in a frame are widened into one)
+export const widen = (span, start, count = 1) => (span ? { start: Math.min(span.start, start), count: Math.max(span.start + span.count, start + count) - Math.min(span.start, start) } : { start, count });
 
 export function upload(attribute, span, itemsPer = 1) {
   if (!span) return;

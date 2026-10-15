@@ -2,8 +2,9 @@ import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { skeleton } from '../../../lib/three/fixtures/gameSkeleton.js';
 import { AITRAJECTORY_TURN } from './facing.js';
-import { BODIES, BODY_MIDDLE, BODY_REACH, UNIT_KINDS, createFigures, cullBy, kindOf } from './figures.js';
+import { BODIES, BODY_MIDDLE, BODY_REACH, UNIT_KINDS, createFigures, cullBy, kindOf, preloadBody } from './figures.js';
 import { createHeld, weaponUrl } from './held.js';
+import { skinBodies } from '../../../lib/bf2017/collection.js';
 
 const settle = async () => {
   for (let i = 0; i < 6; i++) await Promise.resolve();
@@ -398,6 +399,30 @@ describe('the body a unit wears', () => {
     for (const kind of Object.values(UNIT_KINDS)) expect(BODIES[kind]).toBeTruthy();
   });
 
+  it('is the skin picked in the Collection, where the site has that body', () => {
+    expect(kindOf({ team: 1, unitId: 'luke', appearance: 'lukehoth' })).toBe('lukehoth');
+    expect(kindOf({ team: 2, unitId: null, appearance: 'stormtrooper' })).toBe('stormtrooper');
+    // (a look with no body here, or none picked: the unit's own, as before)
+    expect(kindOf({ team: 1, unitId: 'luke', appearance: 'nosuchbody' })).toBe('luke');
+    expect(kindOf({ team: 2, unitId: null, appearance: null })).toBe('snowtrooper');
+    expect(kindOf({ team: 2, unitId: 'darthvader' })).toBe('vader');
+  });
+
+  it('has a body for every skin the Collection can pick: a hero’s look on its hero’s own clips, a trooper’s on its light cuts', () => {
+    const rows = skinBodies();
+    expect(rows.length).toBeGreaterThanOrEqual(40);
+    for (const { kind, pack } of rows) {
+      expect(BODIES[kind], kind).toBeTruthy();
+      expect(BODIES[kind].url, kind).toBe(`/models/galaxy/bf2017/crew/${kind}.glb`);
+      if (pack) expect(BODIES[kind].pack, kind).toBe(pack);
+      else expect(BODIES[kind].cuts?.lod, kind).toBe(true);
+    }
+    expect(BODIES.lukehoth).toEqual({ url: '/models/galaxy/bf2017/crew/lukehoth.glb', pack: 'luke' });
+    expect(BODIES.stormtrooper).toEqual({ url: '/models/galaxy/bf2017/crew/stormtrooper.glb', cuts: { lod: true, far: true } });
+    // (the rows the table had are its own: the snowtrooper keeps its full cut)
+    expect(BODIES.snowtrooper.cuts.full).toBe(true);
+  });
+
   it('loads a hero on its light cut with its own clips, and builds the figure again when the id comes back as another unit', async () => {
     const loads = [];
     const figs = createFigures({ scene: new THREE.Scene(), loadBody: async (url, kind) => (loads.push([url, kind]), body()), held: createHeld({ load: () => Promise.resolve({ scene: new THREE.Group(), animations: [] }) }), loadStance: () => Promise.resolve(new Map()) });
@@ -413,5 +438,17 @@ describe('the body a unit wears', () => {
     expect(figs.figure(3)).not.toBe(trooper);
     expect(figs.figure(3).kind).toBe('vader');
     expect(trooper.model.parent).toBe(null);
+  });
+});
+
+describe('the near body fetched ahead', () => {
+  const cutsAt = (level, asked) => ({ of: (kind) => (kind === 'snowtrooper' ? { lod: true, far: true, full: true, fullMB: 1, fullDL: 1 } : null), level, lowData: false, load: (u) => (asked.push(u), Promise.resolve({})) });
+  it('asks for the kind’s LOD0 on a level that draws it near, and nothing on one that never does', async () => {
+    const asked = [];
+    await preloadBody('snowtrooper', cutsAt('high', asked));
+    expect(asked).toEqual([BODIES.snowtrooper.url]);
+    expect(preloadBody('snowtrooper', cutsAt('low', asked))).toBe(null);
+    expect(preloadBody('hothtrooper', cutsAt('high', asked))).toBe(null);
+    expect(asked).toHaveLength(1);
   });
 });

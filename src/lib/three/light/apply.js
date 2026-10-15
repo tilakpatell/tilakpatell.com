@@ -44,7 +44,7 @@ import { lerpEntry, readEntry } from './entry.js';
 import { cloudShadowNode } from './clouds.js';
 import { createContactShadows } from './contact.js';
 import { createFog } from './fog.js';
-import { POINT_FALLBACK, createPlacedLights } from './placed.js';
+import { createPlacedLights, lampPool } from './placed.js';
 import { passesFor, raysLight } from './post.js';
 import { createProbeGrid, createProbes } from './probes.js';
 import { filterFor, pcssFilter, readPcss, vsmFallback } from './shadows.js';
@@ -168,7 +168,7 @@ export async function applyGameLight(scene, renderer, entry, { tier = 'high', ca
   const hemi = new THREE.HemisphereLight(new THREE.Color(...params.ambient.sky), new THREE.Color(...params.ambient.ground), params.ambient.intensity);
   hemi.name = 'sky-light';
   scene.add(hemi);
-  const placed = lights ? await createPlacedLights(scene, renderer, { source: lights, scale: params.gameToSite, clustered, ...(vid?.localLights === 'nearest' ? { points: POINT_FALLBACK } : {}) }) : null;
+  const placed = lights ? await createPlacedLights(scene, renderer, { source: lights, scale: params.gameToSite, clustered, ...lampPool(tier, vid) }) : null;
 
   // (a renderer that cannot draw, a test's, gets no baked environment)
   const canDraw = typeof renderer.setRenderTarget === 'function';

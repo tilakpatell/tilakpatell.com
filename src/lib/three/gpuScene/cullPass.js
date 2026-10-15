@@ -19,7 +19,7 @@
 //   indirect  the draws' arguments, five u32 a slot (camera slots, then shadow): three.js's IndirectStorageBufferAttribute
 //
 // createCull(renderer, { scene, table, hzb, three, slots }) → {
-//   nodes: { rows, visible, state, visibleRead, stateRead } (draws.js's vertex pull), uniforms, indirect,
+//   nodes: { rows, visible, state, visibleRead, stateRead } (draws.js's vertex pull), uniforms, indirect, slotKeys,
 //   setSlot(s, { key, indexCount, firstIndex, baseVertex }), slotCount,
 //   run(camera, { now, width, height, occlude }), stats() → { tested, culled, occluded, drawn } (read every 30 frames),
 //   read() → Promise<every buffer as u32> (the parity check's),
@@ -29,7 +29,7 @@ import { FADE, JITTER, MESH_U32, NONE, SHADOW_REACH } from './cull.js';
 import { MIN_RADIUS } from '../../level/lod.js';
 import { MAX_LODS, lodIndexNode } from './lodRule.js';
 import { FLAG } from './pack.js';
-import { upload } from './three.js';
+import { upload, widen } from './three.js';
 
 // frames between two reads of the stats (a read waits on the GPU: never every frame)
 export const STATS_EVERY = 30;
@@ -116,7 +116,9 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
         const prev = st.x.shiftRight(uint(4)).bitAnd(uint(15)).toVar();
         const changed = bitcast(st.y, 'float').toVar();
         const done = bool(head.w.lessThan(0).or(d.greaterThan(u.K.mul(R)))).toVar();
-        If(done, () => stat(1));
+        If(done, () => {
+          stat(1);
+        });
         const base = m.mul(uint(MESH_U32));
         const keyAt = (k) => tab.element(base.add(uint(MAX_LODS)).add(k.mul(2)).add(mir));
         const loaded = (k) => k.lessThan(uint(MAX_LODS)).and(keyAt(min(k, uint(MAX_LODS - 1))).notEqual(uint(0)));
@@ -128,8 +130,12 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
           // nearest coarser loaded, the nearest finer)
           const coarser = uint(NONE).toVar();
           const finer = uint(NONE).toVar();
-          for (let f = MAX_LODS - 1; f >= 0; f--) If(uint(f).greaterThan(want).and(loaded(uint(f))), () => coarser.assign(uint(f)));
-          for (let f = 0; f < MAX_LODS; f++) If(uint(f).lessThan(want).and(loaded(uint(f))), () => finer.assign(uint(f)));
+          for (let f = MAX_LODS - 1; f >= 0; f--) If(uint(f).greaterThan(want).and(loaded(uint(f))), () => {
+              coarser.assign(uint(f));
+            });
+          for (let f = 0; f < MAX_LODS; f++) If(uint(f).lessThan(want).and(loaded(uint(f))), () => {
+              finer.assign(uint(f));
+            });
           k.assign(select(loaded(want), want, select(loaded(old), old, select(coarser.notEqual(uint(NONE)), coarser, finer))));
           If(k.equal(uint(NONE)), () => {
             done.assign(true);
@@ -142,12 +148,18 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
             changed.assign(u.now);
           });
           const key = keyAt(k).sub(uint(1)).toVar();
-          If(d.sub(R).lessThanEqual(u.reach).and(flags.bitAnd(uint(FLAG.horizon)).equal(uint(0))), () => emit(key, i, true));
+          If(d.sub(R).lessThanEqual(u.reach).and(flags.bitAnd(uint(FLAG.horizon)).equal(uint(0))), () => {
+            emit(key, i, true);
+          });
           Loop(6, ({ i: j }) => {
             const pl = u.planes.element(j);
-            If(dot(pl.xyz, c).add(pl.w).lessThan(R.negate()), () => done.assign(true));
+            If(dot(pl.xyz, c).add(pl.w).lessThan(R.negate()), () => {
+              done.assign(true);
+            });
           });
-          If(done, () => stat(1));
+          If(done, () => {
+            stat(1);
+          });
           if (hzb) {
             If(done.not().and(u.hzbOn.equal(uint(1))), () => {
               const v = u.view.mul(vec4(c, 1)).xyz.toVar();
@@ -174,7 +186,9 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
           If(done.not(), () => {
             stat(3);
             emit(key, i, false);
-            If(prev.notEqual(uint(NONE)).and(prev.notEqual(k)).and(u.now.sub(changed).lessThan(u.fade)).and(loaded(prev)), () => emit(keyAt(prev).sub(uint(1)), i, false));
+            If(prev.notEqual(uint(NONE)).and(prev.notEqual(k)).and(u.now.sub(changed).lessThan(u.fade)).and(loaded(prev)), () => {
+              emit(keyAt(prev).sub(uint(1)), i, false);
+            });
           });
         });
         st.assign(tsl.uvec2(k.bitOr(prev.shiftLeft(uint(4))), bitcast(changed, 'uint')));
@@ -200,6 +214,10 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
   let reading = false;
   let tableVersion = -1;
   let slotCount = 0;
+  // (the slots' keys set since the last run, sent as one span then: upload()
+  // keeps one range a call, so a group of parts set in one frame sent only
+  // its last slot's key, and the others drew key 0's rows with their mesh)
+  let slotsDirty = null;
   const _m = new THREE.Matrix4();
   const _f = new THREE.Frustum();
 
@@ -207,6 +225,8 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
     // (the vertex stage reads storage read-only: views of the same buffers)
     nodes: { rows, visible, state, visibleRead: storage(visibleAttr, 'uint', Math.max(1, table.room * 2)).toReadOnly(), stateRead: storage(stateAttr, 'uvec2', cap).toReadOnly() },
     uniforms: u,
+    // (the slots' keys as the CPU holds them and the span still to send: the tests')
+    slotKeys: slotKeyAttr,
     indirect,
     slots,
     keys,
@@ -218,7 +238,7 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
     setSlot(s, { key, indexCount, firstIndex, baseVertex }) {
       if (s >= slots) throw new Error(`the GPU scene holds ${slots} draw slots`);
       slotKeyAttr.array[s] = key;
-      upload(slotKeyAttr, { start: s, count: 1 });
+      slotsDirty = widen(slotsDirty, s);
       for (const at of [s, slots + s]) {
         indirect.array.set([indexCount, 0, firstIndex, baseVertex, 0], at * 5);
       }
@@ -229,6 +249,8 @@ export function createCull(renderer, { scene, table, hzb = null, three, slots = 
     run(camera, { now = 0, width, height, occlude = true } = {}) {
       if (scene.capacity !== cap) throw new Error('the GPU scene grew: make the cull again');
       upload(rowsAttr, scene.takeDirty(), 2);
+      upload(slotKeyAttr, slotsDirty);
+      slotsDirty = null;
       if (table.version !== tableVersion) {
         tableAttr.needsUpdate = true;
         tableVersion = table.version;

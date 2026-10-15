@@ -78,3 +78,56 @@ The Hoth surface rows wait on two seams: lane T2 (Hoth on `'nodes'`) and the lev
 | `render()` on the main thread, Hoth | `perf-probe.mjs` `main` column | under 2 ms | | |
 | GPU frame, Hoth (G1's clock) | `perf-probe.mjs` | no higher than lane U's | | |
 | parity, three poses | `gpu-parity.mjs` | its thresholds | | |
+
+## The laptop, 2026-10-12: Hoth on the GPU scene by default
+
+The owner asked for the whole site to run on the GPU ("make the entire site dependent on GPU not the CPU"). The Battlefront world's level had the GPU scene behind `?level=gpu` since #947; on the owner's RTX 5090 (Edge, headless, `--enable-unsafe-webgpu --use-angle=d3d11`, 1,600 × 900, `tp-quality` ultra, `Math.random` seeded so both runs roll the same day and battle) it drew a different picture from lane L's instanced path, for three reasons, each fixed here:
+
+1. **Every draw slot read key 0's rows but the last one set in a frame.** `cullPass.setSlot` sent each slot's key with `upload()`, which keeps one update range a call (`clearUpdateRanges` first), so a group whose parts were set together (`draws.js`'s rebuild sets all of a group's slots in one go) sent only its last slot's key; the others kept 0 and drew key 0's list with their own mesh. On Hoth that took most rocks off the ridge and drew their meshes at another key's rows (a red-painted rock group showed one speck far from its rows). The keys set since the last run now go up as one span (`three.js`'s `widen`), at the run. `cullPass.test.js` fails on the old code (`[{ start: 5, count: 1 }]` against `[{ start: 1, count: 5 }]`).
+2. **The tangents were not turned.** The vertex pull turned the position and the normal by the row's quaternion but left `tangentLocal` as the file had it (three's own `BatchNode` turns it), so a turned row's normal map shaded from an unturned frame. Now turned with the position.
+3. **"Destroyed texture used in a submit".** The static groups draw from one render bundle, and a bundle replays the bind groups it was recorded with; the level's loader swaps a finer row into a map by disposing it (`levelGltf.js`'s `swapInto`), so the bundle went on binding the destroyed GPU texture (8 errors a load locally, the 128² first rows; production showed the same). `draws.js` now watches every texture a group samples, its node graph's included (`sampledBy`), and records the bundle again on a dispose (`stats().rerecords`).
+
+What was checked and found right on the way: the cull against its CPU twin (`cullCpu` with the same camera: the same 5,097 rows with the pyramid off, the same lists key by key; the pyramid takes 226 more); the bounding spheres against every loaded file's geometry (132 files, none outside its sphere); the far backdrop ring culled on the GPU and drawn by the instanced path (its parts sit behind the camera: the instanced path does not cull an instance); no mirrored rows on Hoth; the LOD fade (no row fading at rest); the pipeline guard (the picture the same with it disposed).
+
+| measure (Hoth, ultra, 1,600 × 900, the 5090) | instanced (lane L) | GPU scene | `_source` |
+|---|---|---|---|
+| parity, the chain off (`?post=off`), PSNR against the instanced path | | 25.7 dB before the fixes, **46.7 dB** after | the shots' diff, 2026-10-12 |
+| parity, the full chain | | 32.3 dB (TRAA's history and SSGI's noise differ run to run) | the same |
+| frame p50 / p95, 8 s on the field, local dev | 32.1 / 46.6 ms | **12.3 / 19.9 ms** | `.scratch-check/gpu-ab.mjs` A/B, back to back |
+| the world's `draw()` on the main thread, p50 | 27.9 ms | **9.7 ms** | the same |
+| draw calls a frame, p50 | 459 | 245 | the same |
+| production (tilakpatell.com, before this change) frame p50 / p95 | 29.8 / 129.6 ms | 20.2 / 35.3 ms behind `?level=gpu`, with the destroyed textures | the same, `BASE=https://tilakpatell.com` |
+| CPU throttled 2× (the built-in-chip stand-in), frame p50 | 150 ms | 109 ms | the same, `THROTTLE=2` |
+
+So the GPU scene is the level's path on every WebGPU device that draws indirect with `indirect-first-instance` (`canDrawGpuScene`); `?level=cpu` keeps the instanced path for a check, and WebGL 2 keeps it always. What is left of the frame's JavaScript on Hoth is not the level's: a CPU profile of the throttled load puts it in three's per-object work (`getUniforms`, `_projectObject`, `updateMatrixWorld`/`compose` for the soldiers' 248-bone skeletons, `writeBuffer`): the soldiers on the GPU are the next target.
+
+## The desk, 2026-10-13: the world matrices once a frame, and the two together
+
+three works out a scene's world matrices on every `render()` call (`Renderer.js`'s `_renderScene`: `scene.matrixWorldAutoUpdate`), and the field's frame is the scene's pass and two to four shadow cascades, so Hoth's graph (5,727 objects: 4,261 bones, 1,042 placed lights) was walked 3.6 times a frame. `battlefront/module.js` now turns that off and walks it once in `draw()`, after `level.beforeRender`. Nothing goes a frame stale that was fresh before: `CSMShadowNode.updateBefore` updates its cascade lights itself, and the sky and the sun follow the camera in `light.update`, during the step.
+
+Edge 154 headless on the RTX 5090, WebGPU, 2,560 × 1,440, uncapped, local dev, Hoth's Galactic Assault, the same seeded day each run. Other sessions were using the machine, so a row is a size, not a figure to the decimal.
+
+| measure | before | after | `_source` |
+|---|---|---|---|
+| `updateMatrixWorld`, ms a frame of a 16 s walk (CPU profile, inclusive) | 2.4 to 3.5 (`main`, instanced level) | 0.7 to 1.0 | `.scratch-check/lag-probe.mjs`, two runs each, 2026-10-13 |
+| the same page, the walk switched off and on every 4 s, frame p50 | 9.3 ms | 8.0 ms | `.scratch-check/lag-ab.mjs` on `main` |
+| this branch, instanced level (`?level=cpu`) against the GPU scene: idle frame p50 | 8.7 and 11.9 ms | 6.5 and 6.5 ms | `lag-probe.mjs`, interleaved, two runs each |
+| the same, a 16 s walk, frame p50 / p95 | 18.6 / 130.3 and 14.6 / 29.7 ms | 6.5 / 12.7 and 7.5 / 11.5 ms | the same |
+| the same, per-object binding updates, ms a frame | 6.3 and 4.6 | 0.9 and 1.7 | the same, the walk's CPU profile |
+| the chip's own time a frame (`timestamp-query`) | 2.2 to 3.3 ms | 3.8 to 4.9 ms | the page's `machine.gpuMs` |
+
+The 0.4 to 1.1 s frame gap at the start of every profiled walk was the probe's own: it falls where the CPU profiler starts and is not there with the profiler off (the longest gap of a 12 s walk 47 to 76 ms, three runs, against 778 and 841 ms with it on: `.scratch-check/hitch.mjs`). What is the page's: frames of 85 to 155 ms in the first ten seconds after a deploy, while three builds node shaders in slices (`Scheduler.yield.then` in the browser's long-frame entries).
+
+Not fixed here: those frames after the deploy, and each cascade's `_projectObject` still visits every bone and placed light (1.2 to 1.4 ms a frame; hiding the bones from that walk was tried in the page and gave back 0.1 ms, so it was left).
+
+## The desk, 2026-10-13: a part's skin cut to the joints it uses
+
+With the level on the GPU scene, the soldiers were what the frame's JavaScript was spent on: 17 of them, 16 between 230 and 360 m from the eye, each the game's LOD4 in 5 to 7 parts (`lib/budgets.js` holds the light cut to 400 m at ultra), every part bound to the whole rig. three sends a drawn part's joint list to the chip each frame, and the frame before's beside it for the velocity pass. Counted in the page from three's decoded geometry (the files are meshopt-packed): a trooper's backpack uses 1 joint of 252, its cape 4, a helmet 6 to 13, the legs 13, the body 25 to 46, the gloves 46 to 48, a head 51. `lib/three/skinPrune.js` cuts each part's skeleton to those, once a geometry, after the cloth's re-weighting; `?skin=whole` keeps the file's rig for a check. No vertex moves (`skinPrune.test.js` holds a posed part to the same place before and after), and the same view with and without shows the same body (looked at, not scored).
+
+| measure (the GPU scene, 2,560 × 1,440, the soldiers hidden and shown every 4 s in one page, five rounds) | whole rig (`?skin=whole`) | cut skins | `_source` |
+|---|---|---|---|
+| what the 17 soldiers cost a frame, p50 | 3.1 and 2.5 ms | 1.3 and 1.3 ms | `.scratch-check/lag-ab4.mjs`, two runs each, interleaved, 2026-10-13 |
+| the same, mean | 3.8 and 3.6 ms | 1.8 and 2.1 ms | the same |
+| the frame, p50 / p95 | 8.6 / 13.9 and 8.1 / 14.7 ms | 6.9 / 10.7 and 6.9 / 12.4 ms | the same |
+
+An earlier run of the same test, with the game itself open on the machine and every frame about twice as long, put the soldiers at 11 ms of a 19 ms frame on the whole rig: their share, not the figure, is what carries.

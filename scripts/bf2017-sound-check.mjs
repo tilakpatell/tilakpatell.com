@@ -67,6 +67,7 @@ await ctx.addInitScript((quality) => {
   window.localStorage.setItem('tp-intro', '1');
   window.localStorage.setItem('tp-start', JSON.stringify('universe'));
   window.localStorage.setItem('tp-worlds', JSON.stringify('load'));
+  window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
   window.localStorage.setItem('tp-quality', quality);
   // the independent counter: every buffer source started, every <audio> played, and which still play
   const hook = { buffers: 0, elements: 0, elementUrls: [] };
@@ -193,22 +194,22 @@ try {
     await page.mouse.up();
     out.phases.short = await phase({ moved: moved(from, (await me())?.at) });
   } else {
-    // the waiting screen: the loading cue's intro, then its loop; the world behind it unheard
+    // the loading screen: the loading cue's intro, then its loop; the world behind it unheard
     await page.waitForTimeout(6000);
     out.phases.waiting = await phase({ parked: await page.evaluate(() => window.__battlefront.view().parked) });
     await page.waitForFunction(() => window.__battlefront.view().level.loaded, null, { timeout: WAIT, polling: 1000 });
     out.loadedMs = Date.now() - t0;
     const ready = await page
-      .waitForSelector('[data-deploy]:not([disabled])', { timeout: READY })
+      .waitForSelector('[data-bf-stage="spawn"]', { timeout: READY })
       .then(() => true)
       .catch(() => false);
     out.readyMs = Date.now() - t0;
     out.phases.ready = await phase({ ready });
     if (ready) {
-      // the screen's own Deploy: the wipe, the world's deploy at its swap, the cue faded out
-      await page.click('[data-deploy]');
+      // the spawn screen's own Deploy: the wipe, the world's deploy at its swap, the cue faded out
+      await page.click('.bf-spawn-screen-cell[data-kind="class"]');
       await page.waitForFunction(() => window.__battlefront.view().parked === false && window.__battlefront.view().player?.state === 'alive', null, { timeout: 20000, polling: 100 });
-      out.deploy = { ok: true, by: 'the waiting screen' };
+      out.deploy = { ok: true, by: 'the spawn screen' };
     } else {
       out.deploy = { ...(await door('deploy', { classId: CLASS })), by: 'the dev door (the screen was not ready in time: its cue plays on)' };
     }
@@ -329,7 +330,7 @@ try {
     await page.screenshot({ path: join(OUT, 'end-of-round.png') });
     out.view = await page.evaluate(() => {
       const v = window.__battlefront.view();
-      return { player: v.player && { state: v.player.state, heat: v.player.heat, overheated: v.player.overheated, weapon: v.player.weapon }, stage: v.mode?.stageName, result: v.mode?.result, entities: v.entities?.length, weather: v.weather, waiting: Boolean(document.querySelector('.bf-waiting')) };
+      return { player: v.player && { state: v.player.state, heat: v.player.heat, overheated: v.player.overheated, weapon: v.player.weapon }, stage: v.mode?.stageName, result: v.mode?.result, entities: v.entities?.length, weather: v.weather, waiting: Boolean(document.querySelector('[data-bf-stage="loading"], [data-bf-stage="spawn"]')) };
     });
   }
 } catch (e) {

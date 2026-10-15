@@ -29,7 +29,7 @@ export function assetPool() {
     let size = 3;
     try {
       const d = device();
-      size = poolSize(d.detail === 'ultra' ? 'ultra' : d.tier, d.saveData);
+      size = poolSize(d.detail, d.saveData, d.phone);
     } catch {
       // (no device to read: a phone's three)
     }

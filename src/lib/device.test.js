@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BUDGETS, budget, classifyDevice, pixelRatio, quality, rendererTier, resetDevice, setQuality, sharpness, worldCheck } from './device';
+import { BUDGETS, budget, classifyDevice, device, holdAuto, pixelRatio, quality, rendererTier, resetDevice, setQuality, sharpness, signals, worldCheck } from './device';
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 const PIXEL = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36';
@@ -57,6 +57,8 @@ describe('telling what a device can afford', () => {
 
 const RTX5090 = 'ANGLE (NVIDIA, NVIDIA GeForce RTX 5090 (0x00002B85) Direct3D11 vs_5_0 ps_5_0, D3D11)';
 const UHD620 = 'ANGLE (Intel, Intel(R) UHD Graphics 620 Direct3D11 vs_5_0 ps_5_0, D3D11)';
+const R740M = 'ANGLE (AMD, AMD Radeon(TM) 740M Graphics (0x000015BF) Direct3D11 vs_5_0 ps_5_0, D3D11)';
+const R780M = 'ANGLE (AMD, AMD Radeon(TM) 780M Graphics (0x000015BF) Direct3D11 vs_5_0 ps_5_0, D3D11)';
 
 describe('the detail level: the tier, graded by the graphics chip', () => {
   it('raises a desktop with a strong graphics card to ultra', () => {
@@ -69,8 +71,48 @@ describe('the detail level: the tier, graded by the graphics chip', () => {
     expect(classifyDevice({ ua: WINDOWS, memory: 16 })).toMatchObject({ tier: 'high', detail: 'ultra' });
   });
 
-  it('holds a weak built-in chip at high, leaving the tier alone', () => {
-    expect(classifyDevice({ ua: WINDOWS, memory: 8, cores: 4, renderer: UHD620 })).toMatchObject({ tier: 'high', grade: 'mid', detail: 'high', auto: 'high' });
+  // (the owner's word, 2026-10-13: a weak chip, or none, is Low under Auto;
+  // a Radeon 740M on High hung its GPU in Hoth)
+  it('puts a weak chip on low, leaving the tier alone, and a stronger one where it was', () => {
+    expect(classifyDevice({ ua: WINDOWS, memory: 8, cores: 4, renderer: UHD620 })).toMatchObject({ tier: 'high', grade: 'mid', detail: 'low', auto: 'low' });
+    expect(classifyDevice({ ua: WINDOWS, memory: 32, cores: 12, renderer: R740M })).toMatchObject({ tier: 'high', detail: 'low', auto: 'low' });
+    // (the 780M, 71, and the entry cards: Ultra as before, the probe and the pace after it)
+    expect(classifyDevice({ ua: WINDOWS, memory: 32, renderer: R780M })).toMatchObject({ tier: 'high', detail: 'ultra', auto: 'ultra' });
+    // (a GTX 1060, 100, and up: as before)
+    expect(classifyDevice({ ua: WINDOWS, memory: 16, renderer: 'ANGLE (NVIDIA, NVIDIA GeForce GTX 1060 6GB Direct3D11)' }).detail).toBe('ultra');
+  });
+
+  it('holds Auto at low for a chip the renderer tier kept as weak, slow or lost, never over a hand pick', () => {
+    expect(classifyDevice({ ua: WINDOWS, memory: 16, renderer: RTX5090, hold: 'low' })).toMatchObject({ tier: 'high', detail: 'low', auto: 'low' });
+    expect(classifyDevice({ ua: WINDOWS, memory: 16, renderer: RTX5090, hold: 'low', override: 'ultra' })).toMatchObject({ detail: 'ultra', auto: 'low' });
+    expect(classifyDevice({ ua: WINDOWS, memory: 16, renderer: RTX5090, hold: null }).detail).toBe('ultra');
+  });
+
+  // (storage blocked, a private window: the hold this page decided still holds this page)
+  it('holds Auto at low for the page where nothing can be kept', () => {
+    vi.stubGlobal('window', { location: { search: '', hash: '' }, navigator: { userAgent: WINDOWS, hardwareConcurrency: 8 }, matchMedia: () => ({ matches: false }), screen: { width: 1920, height: 1080 }, innerWidth: 1920, get localStorage() { throw new Error('denied'); } });
+    try {
+      resetDevice();
+      expect(device().detail).toBe('ultra');
+      holdAuto('low');
+      expect(device().detail).toBe('low');
+    } finally {
+      holdAuto(null);
+      resetDevice();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('reads the hold from the kept tier', () => {
+    const store = new Map([['tp-tier', JSON.stringify({ tier: 'T0', info: { vendor: 'amd', architecture: 'rdna-3' }, why: 'slow' })]]);
+    vi.stubGlobal('window', { location: { search: '', hash: '' }, navigator: { userAgent: WINDOWS }, matchMedia: () => ({ matches: false }), screen: { width: 1920, height: 1080 }, innerWidth: 1920, localStorage: { getItem: (k) => store.get(k) ?? null } });
+    try {
+      expect(signals({ renderer: RTX5090 }).hold).toBe('low');
+      store.set('tp-tier', JSON.stringify({ tier: 'T1', info: {} }));
+      expect(signals({ renderer: RTX5090 }).hold).toBe(null);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('starts a phone at mid and software WebGL at low', () => {

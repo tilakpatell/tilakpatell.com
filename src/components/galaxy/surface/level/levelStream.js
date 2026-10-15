@@ -41,6 +41,7 @@ import { bootCells, coarseReach, headingOf, prefetchAhead, priorityOf } from '..
 import { bandOf } from './levelPack.js';
 import { createFetchQueue } from './levelQueue.js';
 import { poolSize } from '../../../../lib/net/assetFetch.js';
+import { device } from '../../../../lib/device.js';
 
 const RETRY_MS = 10000;
 // metres walked before the heading is read again (a step's jitter is not a turn)
@@ -72,8 +73,9 @@ export function createLevelStream({
   parallel = null,
   now = () => performance.now(),
 }) {
-  // (as many at once as the site's own pool takes on the tier: 8 on ultra, 6 on high, else 4)
-  const queue = createFetchQueue({ fetch, parallel: parallel ?? poolSize(tier0), signal });
+  // (as many at once as the site's own pool takes on this connection: 8, 4 on a phone, 2 saving data)
+  const d = device();
+  const queue = createFetchQueue({ fetch, parallel: parallel ?? poolSize(tier0, d.saveData, d.phone), signal });
   let tier = tier0;
   let started = false;
   let coarseDone = !pack.coarse?.index;

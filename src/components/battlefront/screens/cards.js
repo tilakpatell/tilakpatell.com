@@ -38,3 +38,9 @@ export const menuItems = (tree) =>
     .map((b) => ({ box: b, label: boxesOf({ boxes: [b] }).find((x) => x.type === 'text' && x.text)?.text ?? b.id.split('/').pop() }))
     .filter((i) => !LEFT_OUT.test(i.label) && i.box.y < (tree.size?.[1] ?? 1080));
 
+// The front end's ways out. Alone, the main menu's HOME tab and its Escape
+// both go back to the Start screen. Over a level's world (`onExit`) Escape is
+// the way out of the world, HOME goes nowhere (it is the first tab and held
+// the focus: Enter on arriving left the game and threw the loaded level
+// away), and the focus starts on PLAY.
+export const frontEndWays = ({ toStart, onExit = null }) => ({ home: onExit ? null : toStart, back: onExit ?? toStart, first: onExit ? '[data-link$="/PlayScreen"]' : null });

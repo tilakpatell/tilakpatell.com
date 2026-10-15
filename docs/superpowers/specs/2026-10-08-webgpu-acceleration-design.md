@@ -84,3 +84,17 @@ The quality tiers, the pace, the calibration and the gate are the runtime’s an
 ## Rollout
 
 Pull request 1 (this lane’s infrastructure: the three kinds, the closure guard, the parity and perf scripts, the docs), then one pull request per port in the order above, each merged on its own as soon as its checks and tables are in. A port whose parity fails is not merged; it is fixed or the module stays `'glsl'`.
+
+## Addendum, 2026-10-13: every world, by its measure
+
+The owner's word: every world defaults to WebGPU, the renderer that does the most with the chip, choosing whatever gives the best quality for the performance; and a TSL twin is as good as the GLSL it replaces, or better, never worse.
+
+What the research of the day found (`docs/research/2026-10-13-webgpu-wasm-and-engines.md`, c9): WebGPU the API costs less a draw, but three's node renderer spends more of the main thread a mesh than the classic one (r183, 4,000 meshes: 9.7 ms a frame against 4.5, the first frame 167 ms against 32, the same with `forceWebGL`: the renderer's own bookkeeping). Its gains come from what only it has: render bundles, indirect draws, compute culling, a GPU-resident scene. So a world moved 1:1 can lose frames on a laptop, and a world moved and rebuilt for it gains them.
+
+So each port, in this design's order and then the rest of the site's worlds, ships only when all three hold, its tables in the pull request:
+
+1. **Parity, shader by shader**: `scripts/twin-parity.mjs` for each twin (32 dB and under 2 % of pixels off, the line it already keeps), `scripts/gpu-parity.mjs` for the world. A twin under the line is fixed, not merged.
+2. **Frames, both ways**: `scripts/perf-probe.mjs` on the classic renderer and on the node renderer, the main thread's milliseconds and the GPU's, at Low and at High. The world draws on WebGPU where it is no slower; where it is slower, it is rebuilt the node renderer's way first (`BundleGroup` round what never moves, instancing for what repeats, the GPU scene for a level) and measured again.
+3. **The closure clean**: `shading.test.js`, and `glsl-sites` lower by the world's count.
+
+The worlds not on the runtime (the universe map, Middle-earth, the Rick and Morty worlds, the Avengers' compound, Cybertron, Scranton, Albuquerque, the Death Star's trench, Invincible, the Caribbean, the music room, the classic pages' scenes) first become world modules on the runtime, still `'glsl'`, which gives them the renderer tier's Auto, the cadence and loss recovery at once; their ports follow. The order after Mario 64 and the Expanse flight: the Death Star's inside (13 files in its closure), the universe map (the most visited), the galaxy (54), then the rest by visits.

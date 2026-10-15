@@ -38,8 +38,10 @@ export const forget = {
 // and a tier decided there would be kept for the chip it fell back from.
 // The timestamps are let go after the probe (N2's controller turns them on
 // again for its own reading), so a page pays for them for that second only.
+// The chip's WebGL name (lib/gpu) goes with the facts: a weak one by name is
+// T0 with no probe at all. → { tier, why } (lib/gpuProbe's reasons)
 export async function rendererTier(gfx) {
-  const [{ adapterFacts, decideTier, probeTier, readTier, PROBE, TIER_KEY }, { createGpuTime }, { device }] = await Promise.all([import('../lib/gpuProbe'), import('../lib/three/gpuTime'), import('../lib/device')]);
+  const [{ adapterFacts, decideTier, probeTier, readTier, PROBE, TIER_KEY }, { createGpuTime }, { device }, { gpu }] = await Promise.all([import('../lib/gpuProbe'), import('../lib/three/gpuTime'), import('../lib/device'), import('../lib/gpu')]);
   const { search, hash } = window.location;
   let stored = null;
   try {
@@ -47,7 +49,10 @@ export async function rendererTier(gfx) {
   } catch {
     /* storage unavailable: probed this page */
   }
-  if (gfx?.backend !== 'webgpu' || !gfx.renderer) return readTier(search, hash, stored, null).tier;
+  if (gfx?.backend !== 'webgpu' || !gfx.renderer) {
+    const kept = readTier(search, hash, stored, null);
+    return { tier: kept.tier, why: kept.why ?? null };
+  }
   const adapter = await navigator.gpu?.requestAdapter?.({ powerPreference: 'high-performance' }).catch(() => null);
   const renderer = gfx.renderer;
   const probe = async () => {
@@ -65,6 +70,6 @@ export async function rendererTier(gfx) {
       dispose();
     }
   };
-  const { tier } = await decideTier({ search, hash, stored, facts: adapterFacts(adapter), phone: device().phone, probe });
-  return tier;
+  const { tier, why } = await decideTier({ search, hash, stored, facts: adapterFacts(adapter), phone: device().phone, name: gpu().renderer, probe });
+  return { tier, why };
 }

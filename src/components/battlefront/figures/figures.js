@@ -45,17 +45,19 @@
 // hand once they have the body (no figure to hold it, no muzzle to fire
 // from), and comes back with the view's `weapon` if it stands again.
 //
-//   createFigures({ scene, loadBody, kinds, held, loadStance, ragdolls, cuts }) →
+//   createFigures({ scene, loadBody, kinds, held, loadStance, ragdolls, cuts, prune }) →
 //     { update(entities, dt, alpha, eye), figure(id), muzzleOf(id, out), count(), dispose() }
 //   cuts: { of(kind) → its cut row | null, level, lowData, load(url) → glTF } or
 //     null (every body on its light cut); figureCuts({ level, lowData }) the page's
 //   BODIES: a kind's plain file and cut row (crewList.js's rows for the same files)
+//   preloadBody(kind, cuts) → Promise | null: that kind's near cut fetched ahead
 
 import * as THREE from 'three';
 import { cloneScene, loadGLTF } from '../../../lib/three/gltfCache.js';
 import { clipsFor, cutsToLoad, loadWalrusBody, loadWalrusPacks, packUrls, PACK_DIR, swapBody } from '../../../lib/three/walrus.js';
-import { createCutter } from '../../../lib/three/walrusCuts.js';
+import { createCutter, cutWanted, ledgerFor } from '../../../lib/three/walrusCuts.js';
 import { CLOTH_PART, reskinCloth } from '../../../lib/three/clothFallback.js';
+import { pruneSkin } from '../../../lib/three/skinPrune.js';
 import { resolveClip } from '../../../lib/three/walrusRig.js';
 import { stancePackUrl } from '../../../lib/three/walrusStance.js';
 import { stanceClips } from '../../../lib/three/walrusSets/stance.js';
@@ -63,6 +65,7 @@ import { faceAlongZ } from './facing.js';
 import { createHeld, heldOf } from './held.js';
 import { CROSSFADE, LOCO_STATES, clipSpeed, locoBlend, locoClips, packClip, packFallback, relAngle, stateFor, timeAt } from './locomotion.js';
 import { strideOf } from './stride.js';
+import { skinBodies } from '../../../lib/bf2017/collection.js';
 
 export const SIDE_OF_TEAM = { 1: 'light', 2: 'dark' };
 export const KINDS = { dark: 'snowtrooper', light: 'hothtrooper' };
@@ -80,13 +83,34 @@ export const BODIES = {
   wookiee: { url: crew('wookiee'), cuts: { lod: true, full: true, fullMB: 34, fullDL: 19 } },
   ...Object.fromEntries(['luke', 'leia', 'han', 'chewie', 'lando', 'obiwan', 'anakin', 'bobafett', 'bossk', 'vader', 'palpatine', 'maul', 'dooku'].map((k) => [k, { url: crew(k), pack: k }])),
 };
+// A skin's own body, for each crew kind the Collection's skins wear that the
+// table has no row of (lib/bf2017/collection.js's skinBodies): a hero's look
+// on its hero's clips, cut as the hero is; a trooper's on its light cuts
+// alone (its .lod1 and .far are in the site; its full cut's share of the
+// ledger is not measured yet, so it is not asked for).
+for (const { kind, pack } of skinBodies()) BODIES[kind] ??= pack ? { url: crew(kind), pack } : { url: crew(kind), cuts: { lod: true, far: true } };
 // The body a deployed unit wears: the rulebook's hero or reinforcement id
 // (sim.js's unitId) to its kind; a unit with none here yet (Yoda, Iden,
 // Grievous, the jump troopers, the ISB agent, the Ewok on its own rig) and
 // every class wear their side's trooper
 export const UNIT_KINDS = { luke: 'luke', leia: 'leia', hansolo: 'han', chewbacca: 'chewie', lando: 'lando', obiwan: 'obiwan', anakin: 'anakin', bobafett: 'bobafett', bossk: 'bossk', darthvader: 'vader', emperor: 'palpatine', maul: 'maul', dooku: 'dooku', DeathTrooper: 'deathtrooper', WookieWarrior: 'wookiee' };
-export const kindOf = (e, kinds = KINDS) => UNIT_KINDS[e.unitId] ?? kinds[SIDE_OF_TEAM[e.team]] ?? kinds.dark;
+// (first the skin picked in the Collection, `appearance` on the view's row: sim.js carries it from the deploy; one
+// with no body here is passed over)
+export const kindOf = (e, kinds = KINDS) => (e.appearance && BODIES[e.appearance] ? e.appearance : null) ?? UNIT_KINDS[e.unitId] ?? kinds[SIDE_OF_TEAM[e.team]] ?? kinds.dark;
 export const figureCuts = ({ level, lowData = false }) => ({ of: (kind) => BODIES[kind]?.cuts ?? null, level, lowData, load: (url) => loadGLTF(url) });
+// The near cut a kind's figures will want, fetched ahead (the waiting
+// screen's minute: the player otherwise deployed on the light cut and the
+// 18 MB LOD0 landed 10 to 25 s later), admitted to the level's share under
+// the key the figures' cutters use, and left in the page's cache for them.
+// Null where the level never draws it near.
+export function preloadBody(kind, cuts) {
+  const row = cuts?.of(kind);
+  const url = BODIES[kind]?.url;
+  if (!row || !url) return null;
+  if (cutWanted(0, cuts.level, { hasLod: Boolean(row.lod), hasFar: Boolean(row.far), lowData: cuts.lowData, admitted: true }) !== 'plain') return null;
+  if (!ledgerFor(cuts.level).admit(url, { gpu: row.fullMB ?? 0, download: row.fullDL ?? 0 })) return null;
+  return Promise.resolve(cuts.load(url)).catch(() => null);
+}
 const loadKind = (url, kind) => loadWalrusBody(url, { packs: packUrls(BODIES[kind]?.pack ?? null) });
 const ONCE = new Set(['die.fwd', 'die.back', 'die', 'dodge.front', 'hit.chest', 'crouch']);
 
@@ -136,19 +160,23 @@ const DEAD = new Set(['dying', 'down']);
 // a body's meshes as the figures draw them: each casts and takes shadows,
 // its cloth on lib/three/clothFallback's skin (the game simulates it; drawn
 // on the file's fallback skin it webs between the legs), the whole culled by
-// one sphere
-function dress(model) {
+// one sphere; and, with `prune`, each part's skin cut to the joints its
+// vertices use (lib/three/skinPrune: every part is exported on the whole
+// 248-joint rig, and each drawn part sends its whole list to the chip every
+// frame), after the cloth's re-weighting, which reads the whole rig
+function dress(model, prune = true) {
   model.traverse((o) => {
     if (o.isMesh) {
       o.castShadow = true;
       o.receiveShadow = true;
     }
     if (o.isSkinnedMesh && [].concat(o.material).some((m) => CLOTH_PART.test(m?.name ?? ''))) reskinCloth(o);
+    if (prune && o.isSkinnedMesh) pruneSkin(o);
   });
   cullBy(model);
 }
 
-export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held = createHeld(), loadStance = loadStancePack, ragdolls = null, cuts = null } = {}) {
+export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held = createHeld(), loadStance = loadStancePack, ragdolls = null, cuts = null, prune = true } = {}) {
   const root = new THREE.Group();
   root.name = 'figures';
   scene.add(root);
@@ -167,7 +195,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
         // (gone, or this id's figure made again for another unit since)
         if (gone || figs.get(e.id) !== f) return;
         faceAlongZ(model);
-        dress(model);
+        dress(model, prune);
         f.model = model;
         f.clips = clips;
         f.sockets = sockets ?? null;
@@ -207,7 +235,7 @@ export function createFigures({ scene, loadBody = loadKind, kinds = KINDS, held 
       return;
     }
     for (const o of old) for (const m of [].concat(o.material)) m.dispose();
-    dress(f.model);
+    dress(f.model, prune);
   }
 
   // the weapon the view says it holds, and that weapon's stance

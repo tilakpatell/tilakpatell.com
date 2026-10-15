@@ -14,8 +14,13 @@
 // a free-running loop that lands on 16.7 one frame and 50 the next. A kick
 // from rest draws on its first beat; `setCadence(n)` takes from the next.
 //
+// The display's own beat (`beat`, ms): the shortest of the last 32 beats'
+// intervals, so a heavy frame's long one is never read as the screen's; null
+// until two beats have come. runtime/cadence.js steps by it on a 120 or 144
+// Hz screen.
+//
 // createLoop(step, { raf, caf, can, cadence }) → { kick(), stop(), running,
-//   cadence, setCadence(n) }
+//   cadence, setCadence(n), beat }
 // step(now) → true for another frame; can() → whether a frame may be asked for.
 
 export function createLoop(step, { raf = (f) => requestAnimationFrame(f), caf = (id) => cancelAnimationFrame(id), can = () => true, cadence: every = 1 } = {}) {
@@ -25,8 +30,19 @@ export function createLoop(step, { raf = (f) => requestAnimationFrame(f), caf = 
   const whole = (n) => (Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1);
   let cadence = whole(every);
   let wait = 0; // beats to let go by before the next step
+  let lastNow = null; // the last beat's time, for the display's own (`beat`)
+  const beats = [];
   const frame = (now) => {
     id = 0;
+    if (lastNow !== null) {
+      const d = now - lastNow;
+      // (a beat between a 240 Hz screen's and a stall's)
+      if (d > 3 && d < 100) {
+        beats.push(d);
+        if (beats.length > 32) beats.shift();
+      }
+    }
+    lastNow = now;
     if (wait > 0) {
       wait -= 1;
       if (can()) id = raf(frame);
@@ -55,6 +71,9 @@ export function createLoop(step, { raf = (f) => requestAnimationFrame(f), caf = 
     get cadence() {
       return cadence;
     },
+    get beat() {
+      return beats.length ? Math.min(...beats) : null;
+    },
     setCadence(n) {
       cadence = whole(n);
       wait = Math.min(wait, cadence - 1);
@@ -63,6 +82,7 @@ export function createLoop(step, { raf = (f) => requestAnimationFrame(f), caf = 
       if (id) caf(id);
       id = 0;
       again = false;
+      lastNow = null; // (the time stopped is no beat)
     },
     get running() {
       return id !== 0 || drawing;
