@@ -34,6 +34,14 @@ describe('GROUPS', () => {
     expect(meets(GROUPS.hurtbox, GROUPS.floor)).toBe(false);
   });
 
+  it('a barrier meets a character and nothing else: not the floor, an object, a bolt’s or a sight’s query', () => {
+    expect(meets(GROUPS.barrier, GROUPS.character)).toBe(true);
+    expect(meets(GROUPS.barrier, GROUPS.floor)).toBe(false);
+    expect(meets(GROUPS.barrier, GROUPS.object)).toBe(false);
+    expect(member(GROUPS.barrier) & filter(GROUPS.projectile)).toBe(0);
+    expect(member(GROUPS.barrier) & filter(GROUPS.sight)).toBe(0);
+  });
+
   it('a zone meets a character and nothing else by contact', () => {
     expect(meets(GROUPS.zone, GROUPS.character)).toBe(true);
     expect(meets(GROUPS.zone, GROUPS.floor)).toBe(false);
@@ -51,6 +59,6 @@ describe('GROUPS', () => {
     const bits = Object.values(MEMBERS);
     expect(new Set(bits).size).toBe(bits.length);
     for (const b of bits) expect(b & (b - 1)).toBe(0);
-    expect(Object.keys(GROUPS)).toEqual(['floor', 'object', 'bumper', 'character', 'hurtbox', 'zone', 'projectile', 'sight']);
+    expect(Object.keys(GROUPS)).toEqual(['floor', 'object', 'bumper', 'character', 'hurtbox', 'zone', 'projectile', 'sight', 'barrier']);
   });
 });

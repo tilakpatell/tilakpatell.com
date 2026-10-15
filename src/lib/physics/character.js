@@ -32,7 +32,7 @@ import { filterOf } from './groups';
 export const CHARACTER = { offset: 0.02, nudge: 0.01, step: { height: 0.35, minWidth: 0.2 }, slope: { climb: 50, slide: 60 }, snap: 0.3, gravity: 15.5, knockDecay: 6 };
 
 const RAD = Math.PI / 180;
-const SOLIDS = filterOf('floor', 'object', 'character');
+const SOLIDS = filterOf('floor', 'object', 'character', 'barrier');
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 

@@ -14,6 +14,8 @@
 //   tick(vm, dt)                 the graph's delays
 //   enabled(vm, id)              true | false (a spawn record the graph switches), null when it does not
 //   portsOf(vm, role)            [{ id, ref, node }]: the prefab ports of a role ('lead', 'ownedByTeam2', 'destroyed', 'opened', 'stageChanged')
+//   (a mode part's graph, map/doors.js's, adds `synced` bools, which pass their In on until an
+//   event sets them, and `waypoint` and `route` nodes, which only the page fires)
 
 // How many rounds a settle runs before it stops: the graph has no loop the
 // game would run forever, so this is only a guard.
@@ -47,6 +49,9 @@ export function value(vm, ref, depth = 0) {
     }
     case 'bool':
       return vm.bools[id] ?? n.value;
+    // (a synced bool passes its In on until an event sets it: a mode part's graph, spawnLogic's `targets`)
+    case 'synced':
+      return vm.bools[id] ?? get('In', n.value);
     case 'and':
     case 'or': {
       const vals = [];
@@ -86,6 +91,7 @@ function deliver(vm, to, depth) {
   const ins = vm.spec.inputs[id] ?? {};
   switch (n?.type) {
     case 'bool':
+    case 'synced':
       if (ev === 'SetTrue') vm.bools[id] = true;
       else if (ev === 'SetFalse') vm.bools[id] = false;
       else if (ev === 'Toggle') vm.bools[id] = !(vm.bools[id] ?? n.value);
