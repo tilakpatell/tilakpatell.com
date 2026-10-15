@@ -47,3 +47,22 @@ describe('the stage on a shared renderer', () => {
     expect(LADDER).toEqual(['full', 'ratio', 'shadows', 'bloom', 'low']);
   });
 });
+
+describe('the page’s frame as the world’s draw', async () => {
+  const { pageFrame } = await import('./stage');
+  const stage = { hold: () => true, giveBack: () => {} };
+  it('starts a frame begun anew on 16 ms, as the page’s own loop did, then the runtime’s interval', () => {
+    const calls = [];
+    const ref = { current: null };
+    const page = pageFrame(stage, ref);
+    expect(page.wants()).toBe(false);
+    page.draw({ dt: 0.02, now: 1 });
+    ref.current = (ms) => calls.push(ms);
+    expect(page.wants()).toBe(true);
+    page.draw({ dt: 0, now: 2 });
+    page.draw({ dt: 0.02, now: 3 });
+    ref.current = (ms) => calls.push(-ms); // (live again: a new frame)
+    page.draw({ dt: 0, now: 4 });
+    expect(calls).toEqual([16, 20, -16]);
+  });
+});

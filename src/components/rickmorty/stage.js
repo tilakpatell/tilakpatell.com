@@ -372,3 +372,34 @@ export function createStage(rt, { soft = false, bloom = BLOOM, exposure = LOOK.e
     },
   };
 }
+
+// The page's frame run as the world's draw (the Citadel's and C-137's
+// modules): `ref.current` is the page's frame while its world is live, null
+// when not. Run with the renderer held the stage's way, and timed as the
+// page's own loop timed it (lib/hooks' useFrameLoop): a frame begun anew (the
+// page's, set again) starts on 16 ms, not on the runtime's interval, whose
+// loop may have run on meanwhile (the cover's fade, the world's first draw),
+// so the world's clock reads as it did before the runtime drew it.
+// pageFrame(stage, ref) → { draw({ dt, now }), wants(), setRef(ref) }
+export function pageFrame(stage, ref = null) {
+  let at = ref;
+  let last = null;
+  return {
+    draw({ dt, now }) {
+      const fn = at?.current ?? null;
+      const fresh = fn !== last;
+      last = fn;
+      if (!fn) return;
+      const was = stage.hold();
+      try {
+        fn(fresh ? 16 : dt * 1000, now);
+      } finally {
+        if (was) stage.giveBack();
+      }
+    },
+    wants: () => Boolean(at?.current),
+    setRef(next) {
+      if (next) at = next;
+    },
+  };
+}

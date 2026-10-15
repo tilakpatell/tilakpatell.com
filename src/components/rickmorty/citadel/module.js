@@ -15,7 +15,7 @@
 
 import { device } from '../../../lib/device';
 import { WORLD_MB } from '../../worlds/worlds';
-import { stageRatio } from '../stage';
+import { pageFrame, stageRatio } from '../stage';
 
 export default {
   id: 'citadel',
@@ -32,25 +32,14 @@ export default {
     const api = await createCitadelWorld(rt, { looks });
     const { stage } = api;
     stage.giveBack(); // (built: the renderer is the runtime's again until the first frame)
-    let tick = frame;
+    const page = pageFrame(stage, frame);
     return {
       api,
       resize: (w, h) => api.resize(w, h),
       prepare: (onProgress, opts) => api.prepare(onProgress, opts),
-      draw({ dt, now }) {
-        const fn = tick?.current;
-        if (!fn) return;
-        const was = stage.hold();
-        try {
-          fn(dt * 1000, now);
-        } finally {
-          if (was) stage.giveBack();
-        }
-      },
-      wants: () => Boolean(tick?.current),
-      update(props) {
-        if (props?.frame) tick = props.frame;
-      },
+      draw: page.draw,
+      wants: page.wants,
+      update: (props) => page.setRef(props?.frame),
       lowerQuality: (level) => stage.lowerQuality(level),
       dispose: () => api.dispose(),
     };
