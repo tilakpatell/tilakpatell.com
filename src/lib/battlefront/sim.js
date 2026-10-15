@@ -729,7 +729,8 @@ function stepMode(sim) {
   for (const e of sim.M.tick(ga, STEP, { soldiers, alive })) {
     emit(sim, e);
     if (e.type === 'objective' && e.kind === 'capture') for (const o of ga.objectives) if (o.name === e.name) for (const id of o.inside.attack) sim.stats.get(id).captures++;
-    if (e.type === 'armed') for (const o of ga.objectives) if (o.name === e.name) for (const i of o.interactions) sim.stats.get(i.id).arms++;
+    // (a charge armed: the one whose hold armed it)
+    if (e.type === 'armed') for (const id of e.by ?? []) if (sim.stats.has(id)) sim.stats.get(id).arms++;
     // (a gate's leaves wide enough apart for a soldier: the way through its doorway joins the navmesh's two sides)
     if (e.type === 'gate' && e.state === 'passable' && sim.nav?.mesh) doorway(sim.nav, ga.gates.list.find((g) => g.id === e.id));
   }

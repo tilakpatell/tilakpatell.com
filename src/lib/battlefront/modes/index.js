@@ -1,6 +1,7 @@
 // The modes the sim runs (sim.js's `mode`), by id: each with Galactic
 // Assault's shape (galacticAssault.js): create, tick, onEvent, sideOf,
-// teamOf, spawnSets, canRespawn, walkersOf, view, force.
+// teamOf, spawnSets, canRespawn, walkersOf, view, force (and sounds, where a
+// mode makes something heard: the bots' senses take it, ai/bots.js).
 //
 //   modeFor(id) → the mode, or null      MODES: the ids
 
