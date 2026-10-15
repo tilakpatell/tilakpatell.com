@@ -18,6 +18,8 @@
 // trigger), 'ability' { slot } held or { tap } pressed, 'roll', 'kit' (what
 // fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
 // 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js),
+// 'rows' on (the far soldiers as rows, or every soldier a figure, on a page
+// opened with ?rows=on; it answers with how many are which: figures/figures.js),
 // 'bots' (each living bot's side, mode, target, whether it fires, its order's key (`post2`), its yaw, health, whether it interacts and the enemies it believes in (`+` seen), and for a round's bot the enemy whose line it watches and whether that line is clear),
 // 'nav' (the battle's navgrid, for a check), 'doors' (the mode part's doors and gates: each one's open fraction, and what its scene draws), 'place' [x, z, y?] (the player's soldier stood there, on the sim's ground without a y: a check's walk of the map), 'where' (the player's place, and whether its body walks the level's shapes), 'walkersHome' (each escort's walker at its route's end: a check's way into stage 2), 'captured' (each capture point of the stage at a full meter: a check's way into stage 3), 'objectives' (the stage's objectives as the mode has them: a charge's keypad, hold, fuse and holder),
 // 'instantActionSchema' (a promise of the setup screen's options),
@@ -52,6 +54,7 @@ import { createCameraRig } from './cameraRig.js';
 import { recoilOf } from '../../lib/battlefront/weapons.js';
 import { appearanceOf, characterOfOffer, picksOf, readStore } from '../../lib/bf2017/collection.js';
 import { KINDS, SIDE_OF_TEAM, createFigures, figureCuts, preloadBody } from './figures/figures.js';
+import { wantsRows, zoomOf } from './figures/band.js';
 import { RAGDOLLS, createRagdolls } from './figures/ragdolls.js';
 import { createBolts } from './fx/bolts.js';
 import { createKitFx } from './fx/kit.js';
@@ -69,6 +72,8 @@ import { PLAYER_ID, STEP, addPlayer, botsAt, createBattle, deploy, grant, roundB
 import { entryFor } from './weather.js';
 import { levelLightOf } from './baseLight.js';
 import { guardOf } from '../../lib/three/pipelineGuard.js';
+import { createFigureRows } from '../../lib/three/figureRows/rows.js';
+import { loadThree } from '../../lib/three/light/three.js';
 import { ADAPT_S, arrivalExposure, stopsFrom } from './waiting.js';
 import { createSoundPlayer } from './sound/player.js';
 import { PRELOAD, createDirector } from './sound/director.js';
@@ -166,8 +171,14 @@ export default {
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
     // (each body's cut by its distance, the game's LOD0 near on a level that upgrades: figures.js)
     const cuts = figureCuts({ level: device().detail, lowData: Boolean(device().saveData) });
+    // (with ?rows=on in the address, a soldier past the band's distance, 91 m at ultra, is a row of an
+    // instanced draw, not a figure: the site's own economy, lib/three/figureRows, figures/band.js. Off for
+    // every visitor, and always off on a backend that is not WebGPU (band.js's wantsRows), until the
+    // owner's GPU has shown a row is the figure's picture with the post chain on and what it saves at 24 a
+    // side: docs/superpowers/evidence/far-soldiers-rows, which also says what is not shown)
+    const rows = wantsRows(flags, renderer) ? createFigureRows({ scene, renderer, tsl: (await loadThree()).tsl }) : null;
     // (?skin=whole in the address: every part on the file's whole rig, for a check that measures what the cut skins save)
-    const figures = createFigures({ scene, ragdolls, cuts, prune: flags?.get('skin') !== 'whole' });
+    const figures = createFigures({ scene, ragdolls, cuts, prune: flags?.get('skin') !== 'whole', rows });
     // (the player's side's near body fetched behind the waiting screen, so the first deploy is already on it)
     preloadBody(KINDS[SIDE_OF_TEAM[PLAYER_TEAM]], cuts);
     const bolts = createBolts(scene);
@@ -559,7 +570,8 @@ export default {
         }
         if (pose) rig.set(pose);
         rig.update(dt);
-        figures.update(drawn.entities, dt, Math.min(1, acc / STEP), camera.position);
+        // (the rows' band by the camera's own field of view, as the rig has just set it: one at the game's 55°)
+        figures.update(drawn.entities, dt, Math.min(1, acc / STEP), camera.position, zoomOf(camera.fov));
         ragdolls.update(dt);
         clock += dt;
         // (each bolt leaves its owner's gun: fx/bolts.js)
@@ -581,6 +593,8 @@ export default {
       draw({ renderer: r }) {
         level.beforeRender(camera);
         scene.updateMatrixWorld();
+        // (the far soldiers' rows, from the bones as that walk left them)
+        figures.place(camera);
         if (post) post.render();
         else r.render(scene, camera);
         level.afterRender();
@@ -712,6 +726,10 @@ export default {
             return rt.gfx.backend;
           case 'ragdolls':
             return ragdolls.count();
+          case 'rows':
+            // (a check's switch, and what is a row now: ok is whether this page draws rows at all)
+            if (arg !== undefined) figures.setRows(Boolean(arg));
+            return { ok: Boolean(rows), ...figures.stats(), drawn: rows?.stats() ?? null };
           default:
             return { ok: false, why: `no action ${action}` };
         }
@@ -743,6 +761,7 @@ export default {
         bolts.dispose();
         kitFx.dispose();
         figures.dispose();
+        rows?.dispose();
         ragdolls.dispose();
         doorsScene?.dispose();
         level.dispose();
@@ -752,9 +771,9 @@ export default {
         if (typeof window !== 'undefined' && window.__battlefront?.world === world) delete window.__battlefront;
       },
     };
-    // (`light` and `chain`: the light stack's parts and the chain as drawn, for a check in the browser)
+    // (`light` and `chain`: the light stack's parts and the chain as drawn, for a check in the browser; `figures`: the soldiers' own, for a check that times them)
     // (`sounds`: the player's counter by name and kind, the duck and the stem in force, the HDR window, for scripts/bf2017-sound-check.mjs)
-    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, sounds: () => ({ ...sound.stats(), duck: sound.duckKind, music: sound.musicName, window: { ...director.state.window }, suppressed: director.state.suppressed, listener: director.state.listener }), get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
+    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, figures, sounds: () => ({ ...sound.stats(), duck: sound.duckKind, music: sound.musicName, window: { ...director.state.window }, suppressed: director.state.suppressed, listener: director.state.listener }), get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
     madeAt = now();
     return world;
   },
