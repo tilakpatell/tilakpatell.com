@@ -19,7 +19,7 @@ The owner’s word (2026-10-15): remove the bloat, every world on WebGPU, everyt
 | FL1 | the sweep: nine scripts, knip, the records out of the chunks | `…-laneFL1-sweep.md` | now | | `claude/engine-floor-fl1-sweep` | | |
 | FL2 the universe map | onto the runtime | `…-laneFL2-onto-the-runtime.md` | now, from `claude/perf-p2-universe` | | `claude/engine-floor-fl2-universe` | | |
 | FL2 Middle-earth | onto the runtime | the same | now | | `claude/engine-floor-fl2-middleearth` | | |
-| FL2 Rick and Morty | onto the runtime | the same | now | | `claude/engine-floor-fl2-rickmorty` | | |
+| FL2 Rick and Morty | onto the runtime | the same | now | 2026-10-15 | `claude/engine-floor-fl2-rickmorty` | | blocked: the runtime holds one world and `/c-137` draws four to six at once; two stills of the same build differ, so the pixel gate needs a held still first (`evidence/engine-floor/FL2-rickmorty/README.md`) |
 | FL2 the Avengers and Invincible | onto the runtime | the same | now | | `claude/engine-floor-fl2-avengers` | | |
 | FL2 Cybertron | onto the runtime | the same | after the four above | | `claude/engine-floor-fl2-cybertron` | | |
 | FL2 Scranton and Albuquerque | onto the runtime | the same | after the four above | | `claude/engine-floor-fl2-office` | | |

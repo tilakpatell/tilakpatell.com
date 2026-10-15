@@ -82,15 +82,30 @@ try {
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto(`${base}/#${route}`, { waitUntil: 'load', timeout: 120000 });
     await page.evaluate(() => document.fonts?.ready).catch(() => {});
-    for (let f = 0; f < frames; f++) {
+    // (a frame: the network quiet before the next, so an asset lands on the
+    // same one each run)
+    const frame = async () => {
       await page.clock.runFor(16);
       for (let w = 0; w < 400 && pending > 0; w++) await quiet();
       await quiet();
+    };
+    // Until every loading veil on the page is done (or a minute of frames),
+    // then the same number of frames each run: how long the loading takes
+    // varies with the machine's work (the decoders' workers, the shaders),
+    // and a world's own time starts when it's shown, so the frames are
+    // counted from there
+    let loading = 0;
+    for (; loading < 3750; loading++) {
+      await frame();
+      if (loading > 5 && (await page.evaluate(() => !document.querySelector('.loading-veil:not(.is-done)')))) break;
+    }
+    for (let f = 0; f < frames; f++) {
+      await frame();
       if (scroll && f === 10) await page.evaluate((y) => window.scrollTo(0, y), scroll);
     }
     const name = `${route.replace(/^\//, '').replace(/[/:]/g, '_') || 'root'}${phone ? '-phone' : ''}-${tag}.png`;
     await writeFile(join(out, name), await page.screenshot({ type: 'png', timeout: 120000 }));
-    console.log(`${route} → ${name}${errors.length ? ` (errors: ${errors.join(' | ').slice(0, 300)})` : ''}`);
+    console.log(`${route} → ${name} (ready after ${loading} frames)${errors.length ? ` (errors: ${errors.join(' | ').slice(0, 300)})` : ''}`);
     await ctx.close();
   }
 } finally {
