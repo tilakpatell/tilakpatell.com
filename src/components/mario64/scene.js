@@ -32,6 +32,7 @@ import { AREAS, buildArea } from './courses/index';
 import { makeLook } from './looks';
 import { hdTemplate, loadHd } from './models/hd';
 import { makeActor, makeMario, makeProp } from './models/index';
+import { instanceStill } from './instanced';
 import { makeHdMario } from './models/mario-hd';
 import { canvasTexture } from './models/common';
 import { createMarioBody, easeFace, faceFor, lookFor } from './motion';
@@ -39,6 +40,8 @@ import { splatMaterial } from './nodes';
 import { MATS } from './textures';
 
 export const S = 0.01;
+// (props that never move, drawn as one mesh a kind: ./instanced.js)
+const STILL = new Set(['tree', 'pine', 'rock']);
 const lerp = (a, b, t) => a + (b - a) * t;
 const lerpAngle = (a, b, t) => {
   let d = b - a;
@@ -203,6 +206,8 @@ export function createScene(renderer, { small = false, post } = {}) {
       group.remove(o);
       o.traverse?.((c) => {
         if (c.isMesh && c.parent && (c.userData.own || group === world)) c.geometry.dispose();
+        // (an instanced mesh's own buffer: its geometry and material are the props')
+        if (c.isInstancedMesh) c.dispose();
       });
     }
   }
@@ -257,6 +262,8 @@ export function createScene(renderer, { small = false, post } = {}) {
       props.add(model.root);
       model.root.userData.model = model;
     }
+    // (the trees, pines and rocks never move: one mesh a kind, ./instanced.js)
+    instanceStill(props, (o) => STILL.has(o.userData.model?.prop?.kind));
     if (scene.environment) scene.environment.dispose?.();
     scene.environment = pmrem.fromEquirectangular(sky.hdr).texture;
     scene.environmentIntensity = area.sky === 'inside' ? 1.1 : 1.45;
