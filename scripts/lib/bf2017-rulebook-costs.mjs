@@ -213,7 +213,7 @@ export function pointsRulebook(root) {
 // Where the chain ends anywhere else (a SelectInt, a Math whose input is
 // the Arcade's setting), the value is unread and the row says so.
 
-export const KIT_PREFABS = {
+const KIT_PREFABS = {
   planetaryBattles: 'Gameplay/GameModes/Shared/PF_KitLimitations_PlanetaryBattles',
   hvv: 'Gameplay/GameModes/Shared/PF_KitLimitations_HeroesVSVillains',
   trooperModes: 'Gameplay/GameModes/Shared/PF_KitLimitations_TrooperModes',

@@ -32,7 +32,7 @@ const SEQUEL_SETTING = /(^|[_!])(tako|fo)([_-]|$)|^bb(8|9e)/i;
 export const sequelSetting = (name) => isSequel(name) || SEQUEL_SETTING.test(name);
 
 export const SETTINGS = 'Online/GameSettingsContainer';
-export const BOT_LOGIC = { mode8: 'Gameplay/GameModes/Mode8/Prefabs/Mode8_BotLogic_AttackObjectives' };
+const BOT_LOGIC = { mode8: 'Gameplay/GameModes/Mode8/Prefabs/Mode8_BotLogic_AttackObjectives' };
 
 // A setting's text as its type: "2,5" is 2.5 (the one comma the export holds)
 export function valueOf(type, text) {

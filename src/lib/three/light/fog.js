@@ -66,7 +66,7 @@ import { upsample } from './volumetrics.js';
 
 export const FOG_STEPS = { ultra: 32, high: 16 };
 export const FOG_SCALE = 0.4; // the fog example's resolution scale
-export const MEDIA_REACH = 400; // m: how far along the view the media are marched
+const MEDIA_REACH = 400; // m: how far along the view the media are marched
 
 const clamp01 = (x) => Math.min(1, Math.max(0, x));
 

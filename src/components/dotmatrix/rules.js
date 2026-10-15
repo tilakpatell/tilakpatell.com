@@ -127,7 +127,7 @@ export const BLOCKS = [
 // The cloud over the sea to the south-west, which only a pipe reaches, with
 // a pipe of its own to go back by.
 export const CLOUD = { x0: 1, z0: 29, x1: 5, z1: 33, lo: 6, top: 7 };
-export const PIPE_H = 1.25;
+const PIPE_H = 1.25;
 
 // The pipes: the garden's middle one has the cartridge on it, with a plant
 // in each pipe round it; four plain ones stand at the garden's corners; and
@@ -641,7 +641,6 @@ const loopLen = SNAKE.loop.reduce((n, p, i) => {
   const q = SNAKE.loop[(i + 1) % SNAKE.loop.length];
   return n + Math.hypot(q[0] - p[0], q[1] - p[1]);
 }, 0);
-export const SNAKE_LOOP = loopLen;
 export function alongLoop(s) {
   let d = ((s % loopLen) + loopLen) % loopLen;
   for (let i = 0; i < SNAKE.loop.length; i++) {

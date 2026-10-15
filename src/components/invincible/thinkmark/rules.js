@@ -51,7 +51,7 @@ export const BOSSES = {
   thragg: { name: 'Thragg', hp: 680, r: 1.35, orbit: 21, speed: 40, charge: 116, windup: 0.66, recover: 1.4, slamAfter: 1, double: true, dmg: { charge: 24, slam: 19, counter: 8 }, leaveAt: 0 },
 };
 
-export const FLAXAN = { r: 0.8, speed: 21, orbit: [15, 27], aim: 0.75, gap: [2.3, 3.8], bolt: 34, boltLife: 3, dmg: 8 };
+const FLAXAN = { r: 0.8, speed: 21, orbit: [15, 27], aim: 0.75, gap: [2.3, 3.8], bolt: 34, boltLife: 3, dmg: 8 };
 export const WAVES = [
   { n: 4, hp: 1, age: 0, gap: 1 },
   { n: 6, hp: 1, age: 1, gap: 0.85 },

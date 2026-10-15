@@ -13,7 +13,7 @@
 // encodeInput(e) → text; decodeInput(text) → e | null (clamped, checked)
 // preferCodecs(codecs) → the same codecs, the ones CODECS names first
 
-export const PROTOCOL = 1;
+const PROTOCOL = 1;
 
 export const THRESHOLDS = {
   lanP95Ms: 80,

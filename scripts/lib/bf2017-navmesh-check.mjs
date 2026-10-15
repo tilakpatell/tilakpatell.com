@@ -16,12 +16,12 @@ import { instancesOf } from '../../src/components/galaxy/surface/level/levelPhys
 
 // places the game's bots must reach (the game's frame): Echo Base's hangar
 // floors and its fuel rooms, from the walk on claude/hoth-map (HANDOFF-hoth-map.md)
-export const PROBES = {
+const PROBES = {
   hangars: { x: [170, 260], z: [-1700, -1560], y: 359 },
   fuelRooms: { x: [180, 240], z: [-1780, -1750], y: 359 },
 };
-export const WALKERS_START = [47, 313, -1000];
-export const FUEL_ROOM = [209, 359, -1755];
+const WALKERS_START = [47, 313, -1000];
+const FUEL_ROOM = [209, 359, -1755];
 
 async function terrainOf(dir, pack) {
   const t = pack.terrain;

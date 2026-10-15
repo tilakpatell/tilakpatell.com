@@ -3375,4 +3375,4 @@ export function createShireKit(renderer) {
 }
 
 // The helpers the other walkable towns (../towns) build their own houses with.
-export { parts, tf, B, cyl, ball, cylX, cylZ, lathe, tube, blob, roundBox, sector, roofGeo, gableGeo, underRidge, beam, squareWindow, timberWall, plankDoor, roundWindow, lanternParts, barrelParts, benchParts, lampParts, flowerBed, bush, boxUV, fillColor, mergeAll, rng };
+export { parts, tf, B, cyl, ball, cylX, cylZ, lathe, tube, blob, roundBox, sector, roofGeo, gableGeo, underRidge, beam, squareWindow, timberWall, plankDoor, roundWindow, lanternParts, barrelParts, benchParts, lampParts, bush, boxUV, fillColor, mergeAll, rng };

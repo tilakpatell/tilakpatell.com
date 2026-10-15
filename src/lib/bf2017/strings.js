@@ -17,7 +17,7 @@ import TABLE from '../../data/bf2017/strings.json';
 
 export const STRINGS = TABLE.rows;
 
-export const NAME_FOR = {
+const NAME_FOR = {
   'hero:luke': 'ID_CHAR_LUKE',
   'hero:leia': 'ID_CHAR_LEIA',
   'hero:han': 'ID_CHAR_HAN_SOLO',

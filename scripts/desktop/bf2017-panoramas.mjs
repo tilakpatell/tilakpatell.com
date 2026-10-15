@@ -30,7 +30,7 @@ import { ddsToKtx2, fromHalf, zstdReady } from '../lib/ktx2-hdr.mjs';
 import { jsonLines, keyState, runCli, step, textureIndexFile } from './bf2017-desk.mjs';
 
 // The sizes made: a panorama's two tiers, a gradient at its own.
-export const PANORAMA_SIZES = [
+const PANORAMA_SIZES = [
   { tier: 'ultra', width: 4096, height: 1024 },
   { tier: 'high', width: 2048, height: 512 },
 ];

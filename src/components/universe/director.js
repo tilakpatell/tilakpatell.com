@@ -86,7 +86,7 @@ export const EVENTS = {
 };
 // whether an event can happen where you are (an event with no `zones`, as
 // the galaxy's own, can happen anywhere; not told where you are, anything)
-export const canBe = (e, zone) => !e.zones || !zone || e.zones.includes(zone);
+const canBe = (e, zone) => !e.zones || !zone || e.zones.includes(zone);
 // where the ship is: in a region ('place': regions.js's regionAt, the home
 // system's among them), or out between them ('void')
 export const zoneOf = (s, { regionAt }) => (regionAt(s.x, s.y ?? 0, s.z) ? 'place' : 'void');

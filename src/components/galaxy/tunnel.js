@@ -90,7 +90,7 @@ export function nearestOn(path, p) {
 }
 
 // the chamber at the far end: its middle, a little past the tube's end
-export const chamberAt = (tube) => add(tube.path.pts[tube.path.pts.length - 1], tube.path.tans[tube.path.tans.length - 1], tube.chamber * 0.8);
+const chamberAt = (tube) => add(tube.path.pts[tube.path.pts.length - 1], tube.path.tans[tube.path.tans.length - 1], tube.chamber * 0.8);
 
 export function keepIn(tube, p, margin = 0.15) {
   const { path, radius, chamber } = tube;

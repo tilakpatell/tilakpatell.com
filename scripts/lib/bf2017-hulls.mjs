@@ -600,7 +600,7 @@ export function facing(hull, drawn, { tie = TIE } = {}) {
 // the last of its path, lower case, without `.glb`, `_physics_win32`, a LOD's
 // `_lod<n>` or `_mesh`. (src/data/bf2017/damage.json keys a capital's parts'
 // health by these names.)
-export const slugOfFile = (file) =>
+const slugOfFile = (file) =>
   String(file)
     .split('/')
     .pop()

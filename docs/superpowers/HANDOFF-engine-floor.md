@@ -16,7 +16,7 @@ The owner’s word (2026-10-15): remove the bloat, every world on WebGPU, everyt
 | lane | what | plan | starts | session | branch | PR | state |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | FL0 | the measure and the ratchet | `…-laneFL0-measure.md` | now | `session_01YUV5yjrWyfUGMMqF5LU364` (Opus 5.5, spawned 2026-10-15 19:29 UTC) | `claude/engine-floor-fl0-measure` | | |
-| FL1 | the sweep: nine scripts, the exports scan, the records out of the chunks | `…-laneFL1-sweep.md` | now | `session_01XMU7wWCLuC4w8awvNsvgC3` (Opus 5.5, 19:29 UTC) | `claude/engine-floor-fl1-sweep` | | |
+| FL1 | the sweep: nine scripts, the exports scan, the records out of the chunks | `…-laneFL1-sweep.md` | now | `session_01XMU7wWCLuC4w8awvNsvgC3` (Opus 5.5, 19:29 UTC) | `claude/engine-floor-fl1-sweep` | #1013 | done: nine scripts gone; exports 531 → 87 (the rest explained); `instantAction` 2.2 MB → 529 KB, `FrontEnd` 860 → 104 KB; `ui.json` inline until `css` leaves `ui/index.js`; the requests’ early start in `pages/Battlefront.jsx` open (`FL1/README.md`) |
 | FL2 the universe map | onto the runtime | `…-laneFL2-onto-the-runtime.md` | now, from `claude/perf-p2-universe` | `session_01Y1FH7HN9EUkZMaSmhse4xt` (Opus 5.5, 19:29 UTC; goes on to FL3) | `claude/engine-floor-fl2-universe` | | |
 | FL2 Middle-earth | onto the runtime | the same | now | `session_01G8eoBfhJotc8EawZtkbnVz` (Opus 5.5, 19:29 UTC; goes on to FL3) | `claude/engine-floor-fl2-middleearth` | | |
 | FL2 Rick and Morty | onto the runtime | the same | now | `session_018hxbif6MyBRqJUTqE5XcJb` (Opus 5.5, 19:29 UTC; goes on to FL3) | `claude/engine-floor-fl2-rickmorty` | | |

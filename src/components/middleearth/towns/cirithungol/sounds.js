@@ -145,7 +145,7 @@ export function phial() {
   [1047, 1319, 1568, 2093].forEach((f, i) => tone(ac, out, t + i * 0.06, { f, gain: 0.05, attack: 0.05, length: 1.8 }));
 }
 // Shelob: a long wet hiss
-export function hiss2() {
+function hiss2() {
   const [ac, out] = ready();
   if (!ac) return;
   const t = ac.currentTime + 0.01;

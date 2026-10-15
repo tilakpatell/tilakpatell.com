@@ -6,7 +6,7 @@
 
 export const SAVE = 'tp-m64';
 export const SAVE_VERSION = 1;
-export const COURSE_IDS = ['bobomb', 'snow', 'beach', 'haunt', 'bowser'];
+const COURSE_IDS = ['bobomb', 'snow', 'beach', 'haunt', 'bowser'];
 export const LOOKS = ['modern', 'ultra', 'n64'];
 
 export const blank = () => ({ stars: {}, look: 'modern', sound: true });

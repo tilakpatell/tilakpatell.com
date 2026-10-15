@@ -17,7 +17,7 @@
 
 import * as THREE from 'three';
 
-export const TORPEDOES = 4;
+const TORPEDOES = 4;
 const ORANGE = new THREE.Color('#ff7a3a');
 const GREEN = new THREE.Color('#8dff5a');
 const BLUE = new THREE.Color(0.55, 1.5, 3.4);

@@ -80,7 +80,7 @@ export const capOf = (model) => (model.kind === 'capital' ? { ...CAPS.capital, t
 
 // the LOD the whole model takes: the first whose parts together fit the
 // cap, else the lightest (and simplified after)
-export function lodFor(parts, entries, cap) {
+function lodFor(parts, entries, cap) {
   const levels = Math.max(...parts.map((p) => entries.get(p.file)?.lods.length ?? 1));
   const at = (L) => parts.reduce((t, p) => t + (lodOf(entries.get(p.file), L)?.triangles ?? 0), 0);
   for (let L = 0; L < levels; L++) if (at(L) <= cap) return { lod: L, tris: at(L) };
@@ -217,7 +217,7 @@ export async function makeSpace(system, opts) {
 
 // the game's three asteroid tracks (the rocks turn on them: galaxy/
 // rocksPlaced.js), by size: src/data/galaxy/space/tracks.json
-export async function writeTracks(root) {
+async function writeTracks(root) {
   const out = {};
   for (const size of ['large', 'medium', 'small']) {
     const dir = localPath(root, `web/animtracks/a3/objects/props/objectsets/_generic/asteroid_${size}_01/animtrackdata`);

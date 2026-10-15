@@ -59,7 +59,7 @@ export function skeletonOf(doc) {
   return keep.size;
 }
 
-export async function writeSkeleton(from, out) {
+async function writeSkeleton(from, out) {
   const rw = await io();
   const doc = await rw.read(from);
   const joints = skeletonOf(doc);

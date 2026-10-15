@@ -49,7 +49,7 @@ const FRONTED = new Set(['furnace', 'chest', 'pumpkin', 'jack_o_lantern'].map(id
 const STAIRS = id('oak_stairs');
 const CHEST = id('chest');
 const FURNACES = new Set([id('furnace'), id('lit_furnace')]);
-export const CHEST_SLOTS = 27;
+const CHEST_SLOTS = 27;
 const DOOR = id('oak_door');
 const LOGS = new Set(BLOCKS.filter((b) => b.name.endsWith('_log')).map((b) => b.id));
 

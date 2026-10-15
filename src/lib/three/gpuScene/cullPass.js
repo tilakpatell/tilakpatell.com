@@ -32,7 +32,7 @@ import { FLAG } from './pack.js';
 import { upload, widen } from './three.js';
 
 // frames between two reads of the stats (a read waits on the GPU: never every frame)
-export const STATS_EVERY = 30;
+const STATS_EVERY = 30;
 const STATS = 4;
 
 export function createCull(renderer, { scene, table, hzb = null, three, slots = 256 }) {

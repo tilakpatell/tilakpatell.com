@@ -90,7 +90,7 @@ function framePlane(w, h, gold) {
   return g;
 }
 
-export const DOC_AT = new THREE.Vector3(0, 9.5, -40);
+const DOC_AT = new THREE.Vector3(0, 9.5, -40);
 
 export function build({ renderer, exhibits, doc, tribute }) {
   const scene = new THREE.Scene();
