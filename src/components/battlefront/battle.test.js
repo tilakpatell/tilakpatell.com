@@ -203,6 +203,26 @@ describe('the battle on the sim in its own mode, with the page’s deploy screen
     expect(view(c).player.at[1]).toBeCloseTo(at, 9);
   });
 
+  it('keeps a hero’s jump pressed a moment before he lands, and jumps as his feet touch (the site’s press buffer)', () => {
+    const hero = () => {
+      const b = make();
+      addPlayer(b, { team: 1 });
+      grant(b, 4000);
+      deploy(b, 'player', { kind: 'hero', id: 'luke' });
+      return { b, air: () => view(b).entities.find((e) => e.id === b.player.id).act.air };
+    };
+    // (how many steps a jump lasts)
+    const once = hero();
+    step(once.b, [{ id: 'player', move: [0, 0], yaw: 0, jump: true }]);
+    let n = 1;
+    while (once.air() && n < 100) (step(once.b, [{ id: 'player', move: [0, 0], yaw: 0 }]), n++);
+    expect(n).toBeLessThan(100);
+    // (pressed again on the step he comes down in, still in the air as it is read: up again on the next)
+    const again = hero();
+    for (let i = 0; i <= n; i++) step(again.b, [{ id: 'player', move: [0, 0], yaw: 0, jump: i === 0 || i === n - 1 }]);
+    expect(again.air()).toBe(true);
+  });
+
   it('puts the player down when told, for the kill screen', () => {
     const b = make({ 1: 1, 2: 1 });
     addPlayer(b, { team: 2 });

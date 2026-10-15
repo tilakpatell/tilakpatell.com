@@ -36,6 +36,7 @@ import { modeFor } from '../../lib/battlefront/modes/index.js';
 import { abilitiesFor, say } from '../../lib/bf2017/collection.js';
 import { SIDE_BY_DETAIL } from '../../lib/battlefront/instantAction.js';
 import { KINDS } from '../../lib/battlefront/modes/objectives.js';
+import { createPress } from '../../lib/press.js';
 
 export { STEP };
 export const BOTS = 8; // bots a side on the page (the arena runs 20; the page draws each as a figure)
@@ -145,6 +146,8 @@ export function createBattle({ rulebook, level = 'hoth', mode = 'galacticAssault
     level,
     mode,
     player: null, // { team, id, state: 'deploying' | 'alive' | 'down', downAt, earned, hits }
+    // (the player's jump, buffered as the site's every jump is: lib/press.js)
+    jump: createPress(),
     killLog: [],
     names: new Map(),
     spent: [], // { bolt, until }: the bolts the sim let go of lately, for the drawing (SPENT)
@@ -239,6 +242,10 @@ export function step(b, inputs = []) {
     const pitch = inp.pitch ?? 0;
     // (the aim leaves the player's own body: a soldier's 1.4 m, a taller or shorter unit's by its height)
     const chest = [me.at[0], me.at[1] + me.body.chest, me.at[2]];
+    // (a hero's jump, Space: a press a moment before his feet touch still jumps as they do; a trooper has none,
+    // the sim's heroKit.js)
+    if (inp.jump) b.jump.press();
+    b.jump.ground(!me.hero?.air, STEP);
     mapped.push({
       id: me.id,
       move: worldMove(inp.move ?? [0, 0], yaw),
@@ -248,8 +255,7 @@ export function step(b, inputs = []) {
       aiming: Boolean(inp.aim),
       crouch: Boolean(inp.crouch),
       sprint: Boolean(inp.sprint),
-      // (a hero's jump, Space: the sim's heroKit.js; a trooper has none)
-      jump: Boolean(inp.jump),
+      jump: b.jump.take(),
       roll: Boolean(inp.roll),
       ability: inp.ability || 0,
       abilityHeld: inp.abilityHeld || 0,
