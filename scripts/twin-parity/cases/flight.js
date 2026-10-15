@@ -1,11 +1,11 @@
 // The planet flight's own twins (src/components/expanse/flight/nodes.js):
 // its sky dome and its city's lit windows, each built once with the GLSL
 // original (scene.js's skyDome, ground.js's cityMaterial) and once with its
-// twin (the originals kept in glsl.js, which the flight no longer
+// twin (the originals kept in ./flightGlsl.js, which the flight no longer
 // imports). On the flight's island (scripts/lib/flight-island.mjs): it goes
 // with the flight.
 import * as THREE from 'three';
-import { cityMaterial as cityO, skyDome as skyO } from '../../../src/components/expanse/flight/glsl.js';
+import { cityMaterial as cityO, skyDome as skyO } from './flightGlsl.js';
 import { cityMaterial as cityN, skyDome as skyN } from '../../../src/components/expanse/flight/nodes.js';
 
 // the dome round the camera, looking a little up from the horizon, so the

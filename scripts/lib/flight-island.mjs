@@ -39,6 +39,7 @@ export const ISLAND = {
     'scripts/lib/flight-island.mjs',
     'scripts/lib/flight-island.test.mjs',
     'scripts/twin-parity/cases/flight.js',
+    'scripts/twin-parity/cases/flightGlsl.js',
     'supabase/migrations/20261009000000_world_entities.sql',
     'supabase/migrations/20261009000100_placement_reads_x_z.sql',
     'supabase/migrations/20261009000200_entity_hits_and_realtime.sql',

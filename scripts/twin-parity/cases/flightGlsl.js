@@ -1,8 +1,10 @@
 // The flight's own two GLSL shaders, as they were before the flight went
 // onto the node renderer (lane P1): the sky dome (scene.js's) and the city's
 // lit windows (ground.js's). Nothing the flight draws imports this file:
-// it is kept for the twins' parity check (scripts/twin-parity/cases/
-// flight.js) and their test (nodes.test.js), against ./nodes.js.
+// it is kept beside the twins' parity check (./flight.js) for it and for
+// the twins' test (src/components/expanse/flight/nodes.test.js), against
+// the flight's nodes.js; out of src/, so the measure's glsl-sites counts
+// only GLSL a page can still draw with.
 //
 //   skyDome(low, high) → the dome (a Mesh), material.uniforms { uLow, uHigh }
 //   cityMaterial(colour) → a standard material, 'flight-city'

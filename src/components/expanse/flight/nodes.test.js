@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { cityMaterial as cityGlsl, skyDome as skyGlsl } from './glsl.js';
+import { cityMaterial as cityGlsl, skyDome as skyGlsl } from '../../../../scripts/twin-parity/cases/flightGlsl.js';
 import { cityMaterial, skyDome } from './nodes.js';
 
 // The flight's two shaders of its own as nodes, against the GLSL ones: the

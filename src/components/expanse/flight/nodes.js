@@ -3,8 +3,8 @@
 // the GLSL one's twin (scene.js's skyDome, ground.js's cityMaterial) with
 // the same flags, the same uniforms under the same names and the same
 // arithmetic, so the flight draws the same picture on WebGPU and WebGL 2.
-// The GLSL ones stay for the parity check (scripts/twin-parity) and their
-// tests.
+// The GLSL ones stay for the parity check (scripts/twin-parity/cases/
+// flightGlsl.js) and their tests.
 //
 //   skyDome(low, high) → the dome (a Mesh): material.uniforms { uLow, uHigh }
 //     (occurrenceScene tints the sky through them, each a uniform node whose
