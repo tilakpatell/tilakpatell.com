@@ -318,7 +318,7 @@ export function shieldFrag(u) {
     const hcell = hash12(id.add(floor(P.x.mul(3.0).add(P.y.mul(5.0)).add(P.z.mul(7.0))))).toVar();
     const glint = smoothstep(0.92, 1.0, sin(u.uTime.mul(hcell.add(0.6)).add(hcell.mul(40.0)))).mul(0.6).toVar();
     const V = normalize(cameraPosition.sub(positionWorld));
-    const fres = pow(float(1.0).sub(abs(dot(normalize(vN), V))), 3.0).toVar();
+    const fres = pow(max(float(1.0).sub(abs(dot(normalize(vN), V))), 0), 3.0).toVar(); // (a dot a hair over 1 at the limb: no pow of a negative)
     const shimmer = float(0.75).add(float(0.25).mul(sin(u.uTime.mul(1.7).add(dot(P, vec3(9.0, 13.0, 7.0))))));
     const col = vec3(0.3, 0.6, 1.0).mul(float(0.003).add(edge.mul(glint.add(0.07)).mul(shimmer).mul(fres.add(0.4))).add(fres.mul(0.08)).add(glint.mul(0.03))).mul(u.uShield).toVar();
     // the bump: a flash where the ship hit, the cells round it lit up, and a
