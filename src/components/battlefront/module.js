@@ -63,7 +63,8 @@ import { createWalker } from './map/walk.js';
 import { holesOf } from '../../lib/land/holes.js';
 import SOLDIER_BODY from '../../data/bf2017/physics/soldier.json';
 import { PLAYER_ID, STEP, addPlayer, botsAt, createBattle, deploy, grant, roundBattle, spawnFor, step, view } from './battle.js';
-import { entryFor, lightsJsonOf } from './weather.js';
+import { entryFor } from './weather.js';
+import { levelLightOf } from './baseLight.js';
 import { guardOf } from '../../lib/three/pipelineGuard.js';
 import { ADAPT_S, arrivalExposure, stopsFrom } from './waiting.js';
 import { createSoundPlayer } from './sound/player.js';
@@ -323,7 +324,7 @@ export default {
     const first = lit(weather);
     // (cadence: lane N3's far cascades drawn every fourth frame, the near
     // ones every frame; the whole level was drawn into all four each frame)
-    const light = await applyGameLight(scene, renderer, first.entry, { tier, video: rt.video ?? null, camera, lights: lightsJsonOf(lighting.lights), picture: first.picture, cadence: true, onChain: (passes) => swapPost(passes) });
+    const light = await applyGameLight(scene, renderer, first.entry, { tier, video: rt.video ?? null, camera, ...(await levelLightOf({ lighting, pictures, level, tier, off: flags?.get('light'), volumes: flags?.get('volumes') === 'on' })) /* (the lamps, the interiors' VEs, the base's probes: baseLight.js; ?light=lamps,inside,probes leaves those out, ?volumes=on marches the volumetrics, for a check) */, picture: first.picture, cadence: true, onChain: (passes) => swapPost(passes) });
     // (?post=off in the address: the scene drawn with no chain, for a check)
     const asked = typeof window !== 'undefined' ? new URLSearchParams(window.location.hash.split('?')[1] ?? window.location.search).get('post') : null;
     // The pace's level on the chain (runtime/quality's headroomAt): first
