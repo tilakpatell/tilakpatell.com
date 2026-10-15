@@ -19,7 +19,7 @@
 // fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
 // 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js),
 // 'bots' (each living bot's side, mode, target, whether it fires, its order's key (`post2`), its yaw, health, whether it interacts and the enemies it believes in (`+` seen), and for a round's bot the enemy whose line it watches and whether that line is clear),
-// 'nav' (the battle's navgrid, for a check), 'place' [x, z, y?] (the player's soldier stood there, on the sim's ground without a y: a check's walk of the map), 'where' (the player's place, and whether its body walks the level's shapes), 'walkersHome' (each escort's walker at its route's end: a check's way into stage 2), 'captured' (each capture point of the stage at a full meter: a check's way into stage 3), 'objectives' (the stage's objectives as the mode has them: a charge's keypad, hold, fuse and holder),
+// 'nav' (the battle's navgrid, for a check), 'doors' (the mode part's doors and gates: each one's open fraction, and what its scene draws), 'place' [x, z, y?] (the player's soldier stood there, on the sim's ground without a y: a check's walk of the map), 'where' (the player's place, and whether its body walks the level's shapes), 'walkersHome' (each escort's walker at its route's end: a check's way into stage 2), 'captured' (each capture point of the stage at a full meter: a check's way into stage 3), 'objectives' (the stage's objectives as the mode has them: a charge's keypad, hold, fuse and holder),
 // 'instantActionSchema' (a promise of the setup screen's options),
 // 'instantAction' options (a promise of { ok, props } to mount the round with:
 // create's `instantAction`, lib/battlefront/instantAction.js) and 'round'
@@ -60,6 +60,9 @@ import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
 import { armCaster, createPartsCollision, wantsEngine } from './map/collision.js';
 import { createWalker } from './map/walk.js';
+import { arrive as arriveRoute, createDoors, destroy as destroyVehicle, stepDoors } from './map/doors.js';
+import { createDoorsScene } from './map/doorsScene.js';
+import { sideOf } from '../../lib/battlefront/modes/galacticAssault.js';
 import { holesOf } from '../../lib/land/holes.js';
 import SOLDIER_BODY from '../../data/bf2017/physics/soldier.json';
 import { PLAYER_ID, STEP, addPlayer, botsAt, createBattle, deploy, grant, roundBattle, spawnFor, step, view } from './battle.js';
@@ -149,7 +152,8 @@ export default {
     // off, for a check that measures what the snow costs; `detail` is the
     // quality level in force, 'ultra' on a strong card where the tier is
     // 'high': the ground's 1 m patch and its map sizes read it)
-    const level = createLevel({ scene, tier, detail: device().detail, texTier: textureTier(tier, rt.video), renderer, world: levelName, gpuScene, snow: flags?.get('ground') !== 'flat', ...(flags?.get('inside') === 'off' ? { inside: null } : {}) /* (?inside=off: the level without its interior pack, a check's measure of what Echo Base costs) */, onCell: (k, b, band, part) => {
+    // (`mode`: the mode's own part of the level where it has one, Hoth's Galactic Assault: map/level.js's MODES)
+    const level = createLevel({ scene, tier, detail: device().detail, texTier: textureTier(tier, rt.video), renderer, world: levelName, mode, gpuScene, snow: flags?.get('ground') !== 'flat', ...(flags?.get('inside') === 'off' ? { inside: null } : {}) /* (?inside=off: the level without its interior pack, a check's measure of what Echo Base costs) */, onCell: (k, b, band, part) => {
         streamed.set(`${part}|${k}`, [k, b, band, part]);
         collision?.add(k, b, band, part);
       },
@@ -186,7 +190,7 @@ export default {
       await preload();
       physics = await createPhysics();
       // (the outside's and its interior's, Hoth's Echo Base: map/level.js's inner)
-      collision = createPartsCollision({ parts: { outside: { pack: level.pack, loadBin: level.loadBin }, inside: level.inner }, physics, tier });
+      collision = createPartsCollision({ parts: { outside: { pack: level.pack, loadBin: level.loadBin }, inside: level.inner, mode: level.modePart }, physics, tier });
       // (the ground's own holes left out of its collider: the hangar mouths and the trench tunnels, lib/land/holes.js)
       collision.setTerrain((px, pz) => level.packHeightAt(px, pz) ?? 0, { holes: holesOf(level.pack.terrain) });
       for (const a of streamed.values()) collision.add(...a);
@@ -199,6 +203,11 @@ export default {
     // (the level's own navmesh, its NavPower polygons: the bots' floors one over another, battle.js's NAVMESH_OF;
     // their feet on the level's shapes where the engine has them round the player)
     const navmesh = navBytes ? { bytes: new Uint8Array(navBytes), floor: (x, y, z) => collision?.floor(x, y, z) ?? null } : null;
+    // (the mode part's doors, gates and state props: map/doors.js's rule, map/doorsScene.js's things, a round's own state)
+    const part = level.modePart;
+    const doorsFor = (m) => (part?.mode && m === 'galacticAssault' ? createDoors(part.mode, { origin: part.pack.origin }) : null);
+    let doors = doorsFor(mode);
+    const doorsScene = part?.mode ? createDoorsScene({ part, physics }) : null;
     // (an Instant Action round, the setup screen's choices: lib/battlefront/instantAction.js reads the
     // server's rows for them, and the sim takes the round at its making: sim.js's roundIn)
     // (the machine's share of a round's bots, by its quality level: every bot is a body drawn and a mind stepped)
@@ -387,6 +396,7 @@ export default {
       me = addPlayer(sim, { team });
       director = createDirector({ player: sound, me: PLAYER_ID, team });
       castArm = armCaster({ heightAt: (x, z) => level.heightAt(x, z), collision, nav: sim.nav });
+      doors = doorsFor(battleMode);
       park = parkOf();
       picked = null;
       mate = null;
@@ -468,7 +478,9 @@ export default {
         const kicked = rig.offset();
         read.yaw += kicked.yaw;
         read.pitch += kicked.pitch;
-        const v = view(sim);
+        // (the frame's lean view: the HUD's snapshot alone makes the deploy
+        // screen's rows, the squad's and the scoreboard, battle.js's view)
+        const v = view(sim, { lean: true });
         input.swallow(v.deploy.open);
         // (the first deploy is the waiting screen's, through the wipe: the input's Enter waits for it)
         const deploying = v.deploy.open && read.deploy && !parked;
@@ -505,8 +517,20 @@ export default {
         // no step and no deploy draws the view it began with: the view is
         // one object refilled, and building it three times a frame was the
         // world's own main-thread cost)
-        const after = stepped > 0 || deploying ? view(sim) : v;
+        const after = stepped > 0 || deploying ? view(sim, { lean: true }) : v;
         if (stepped > 0) director.update(after, heard, stepped, { waiting: parked });
+        // (the doors moved before the world steps: a leaf's body goes where it is drawn; the
+        // gates' run is lib/battlefront/gates.js's, through Galactic Assault's view where the
+        // sim has them: until then shut)
+        if (doors) {
+          const ga = sim.sim.ga ?? null;
+          const soldiers = [];
+          for (const e of sim.sim.entities.values()) if (e.kind === 'soldier' && e.alive) soldiers.push({ at: e.at, team: e.team, side: ga ? sideOf(ga, e.team) : null, alive: true });
+          // (the frame's own view's: built once already)
+          const gates = after.mode?.gates ?? {};
+          stepDoors(doors, dt, { soldiers, ga, gates });
+          doorsScene?.update(doors);
+        }
         // (a soldier held in the air for want of a floor gets the frame's time for the shapes under it)
         collision?.update(walker?.held ? 16 : 4, body()?.at ?? null);
         walker?.step();
@@ -641,6 +665,12 @@ export default {
           case 'nav':
             // (the battle's navgrid itself, for a check of a way over it; its navmesh by name only)
             return { ...sim.nav, mesh: sim.nav.mesh ? { name: sim.nav.mesh.name, polys: sim.nav.mesh.polyCount, links: sim.nav.mesh.links.length } : null };
+          case 'doors':
+            // (a check's read of the mode part: each door's and gate's open fraction, the scene's counts;
+            // { arrive: path } a walker home by its route, { destroyed: [spawner ids] } their vehicles down, as the game's events)
+            if (doors && arg?.arrive) arriveRoute(doors, arg.arrive);
+            if (doors && arg?.destroyed) for (const id of arg.destroyed) destroyVehicle(doors, id);
+            return doors ? { doors: Object.fromEntries([...doors.doors, ...doors.gates].map((d) => [d.def.id, Math.round(d.ip.value * 1000) / 1000])), stage: doors.stage, scene: doorsScene?.stats() ?? null } : null;
           case 'walkersHome': {
             // (a check's way into stage 2: each escort's walker at the end of its route, so its gate unlocks)
             const ga = sim.sim.ga;
@@ -714,6 +744,7 @@ export default {
         kitFx.dispose();
         figures.dispose();
         ragdolls.dispose();
+        doorsScene?.dispose();
         level.dispose();
         walker?.dispose();
         collision?.dispose();

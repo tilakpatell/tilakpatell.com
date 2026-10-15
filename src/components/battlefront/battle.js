@@ -16,9 +16,10 @@
 //   (cards: a hero's star card ids from the Collection's store; the view's player carries `abilities` with the game's names and `cards`)
 //   (kind 'class' | 'reinforcement' | 'hero', the offer's id; `classId` alone is a class; nothing is the side's first class)
 //   (the player keeps one soldier id, PLAYER_ID, life to life, in one squad from the start)
-//   step(battle, inputs) → events ; view(battle) → the page's view (each fallen
+//   step(battle, inputs) → events ; view(battle, { lean }) → the page's view (each fallen
 //   entity's `fall`: { t, part, dir, at, weapon } from its kill, null on the
-//   living, and `hitDir`, the shot's way, for the death clip's side)
+//   living, and `hitDir`, the shot's way, for the death clip's side; `lean`,
+//   the frame's: no deploy offers or spawns, squad rows or scoreboard)
 //   (inputs: the page's { id, move: [right, ahead], yaw, pitch, fire, aim: bool, sprint, crouch, jump, roll, ability, abilityHeld, vent })
 
 import { classOf, levelForMode, mapOf, squadsOf, stagesOf, stringOf, teamsFor } from '../../lib/battlefront/rulebook.js';
@@ -353,14 +354,24 @@ function modeOf(b, v, p) {
   return { stage: stage?.index ?? 0, stageName: words, objectives: b.objectives, tickets: bySide ? (bySide[attacking ? 'attack' : 'defend'] ?? null) : t, ticketsBySide: bySide, phase: m.phase ?? null, timer: m.timer ?? null, result: m.result ?? null, gates: m.gates ?? [] };
 }
 
-export function view(b) {
+// `lean`: the frame's own view (the module's step every frame, the director
+// twenty times a second, about 80 calls a second): what they draw and play
+// from, with the deploy screen's open and side but none of its offers or
+// spawns, nor the squad's rows, nor the scoreboard, which only the HUD's
+// view reads (its snapshot, eight a second); those are left as the last
+// full view made them, its rows untouched, since the HUD's snapshot holds
+// them (the every-world hand-off's performance item 7)
+export function view(b, { lean = false } = {}) {
   const v = viewSim(b.sim);
   const t = b.sim.time;
   b.objectives = objectivesOf(b);
   for (const e of v.entities) {
     const s = b.sim.entities.get(e.id);
     e.alive = Boolean(s?.alive);
-    e.vel = [s?.vel?.[0] ?? 0, s?.vel?.[2] ?? 0];
+    // (one pair a soldier, filled again: a new one a soldier a call was garbage)
+    const vel = (e.vel ??= [0, 0]);
+    vel[0] = s?.vel?.[0] ?? 0;
+    vel[1] = s?.vel?.[2] ?? 0;
     // (an ability's weapon has no mesh of its own yet: the figure keeps its rifle in hand)
     e.weapon = (s?.gunBase ?? s?.gun)?.row?.id ?? null;
     e.t = t;
@@ -398,8 +409,15 @@ export function view(b) {
   out.grenades = v.grenades ?? [];
   out.teams = v.teams;
   out.points = p && b.sim.bp ? balance(b.sim.bp, p.id) : 0;
-  out.deploy = { open: p?.state === 'deploying', offers: p ? offers(b, p.team) : [], team: p?.team ?? 2, spawns: p ? spawns(b, p) : [] };
-  out.squad = p ? squadRows(b.sim.brains.squads, b.sim, p.id, { names: squadsOf(b.rulebook).names.map((n) => stringOf(b.rulebook, n)), nameOf: (id) => nameOf(b, id) }) : null;
+  if (lean) {
+    const d = (b.leanDeploy ??= { open: false, team: 2 });
+    d.open = p?.state === 'deploying';
+    d.team = p?.team ?? 2;
+    out.deploy = d;
+  } else {
+    out.deploy = { open: p?.state === 'deploying', offers: p ? offers(b, p.team) : [], team: p?.team ?? 2, spawns: p ? spawns(b, p) : [] };
+    out.squad = p ? squadRows(b.sim.brains.squads, b.sim, p.id, { names: squadsOf(b.rulebook).names.map((n) => stringOf(b.rulebook, n)), nameOf: (id) => nameOf(b, id) }) : null;
+  }
   out.player = p && {
     id: p.id ?? 'player',
     team: p.team,
@@ -435,6 +453,7 @@ export function view(b) {
   };
   out.mode = modeOf(b, v, p);
   out.killLog = b.killLog;
+  if (lean) return out;
   const stats = b.sim.stats;
   out.scoreboard = Object.fromEntries(
     [1, 2].map((team) => [

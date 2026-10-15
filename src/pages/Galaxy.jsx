@@ -352,6 +352,8 @@ export default function Galaxy() {
       return;
     }
     prefetchSurface();
+    // (the route's own page first: GalaxyLanding.jsx, which asks for the surface's)
+    import('./GalaxyLanding').catch(() => {});
     import('./GalaxySurface').catch(() => {});
   }, [at, current]);
 
