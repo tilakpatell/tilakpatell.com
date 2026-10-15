@@ -49,3 +49,72 @@ export function instanceStill(group, still) {
   }
   return made;
 }
+
+// makePool(geometry, material, size, parent) → { mesh, add() → slot,
+//   set(slot, x, y, z, scale, visible), remove(slot), clear(), dispose() }
+//   things that come and go and move every frame (the cast's blob shadows),
+//   drawn as one InstancedMesh: a slot each, a hidden or let-go slot drawn
+//   at no size; full, it grows to twice its size in a new mesh (put in
+//   `parent` in the old one's place). Not culled: its things move, and one
+//   draw of a few flat discs costs less than its bounds made every frame.
+const NOWHERE = new THREE.Matrix4().makeScale(0, 0, 0);
+
+export function makePool(geometry, material, size, parent = null) {
+  const make = (n) => {
+    const im = new THREE.InstancedMesh(geometry, material, n);
+    im.frustumCulled = false;
+    im.count = 0;
+    return im;
+  };
+  let mesh = make(size);
+  parent?.add(mesh);
+  const free = [];
+  const m = new THREE.Matrix4();
+  const at = new THREE.Vector3();
+  const scale = new THREE.Vector3();
+  const turn = new THREE.Quaternion();
+  const grow = () => {
+    const next = make(mesh.instanceMatrix.count * 2);
+    next.instanceMatrix.array.set(mesh.instanceMatrix.array);
+    next.count = mesh.count;
+    next.instanceMatrix.needsUpdate = true;
+    if (parent) {
+      parent.remove(mesh);
+      parent.add(next);
+    }
+    mesh.dispose();
+    mesh = next;
+  };
+  return {
+    get mesh() {
+      return mesh;
+    },
+    add() {
+      if (free.length) return free.pop();
+      if (mesh.count === mesh.instanceMatrix.count) grow();
+      const slot = mesh.count++;
+      mesh.setMatrixAt(slot, NOWHERE);
+      mesh.instanceMatrix.needsUpdate = true;
+      return slot;
+    },
+    set(slot, x, y, z, s, visible) {
+      if (visible) m.compose(at.set(x, y, z), turn, scale.setScalar(s));
+      mesh.setMatrixAt(slot, visible ? m : NOWHERE);
+      mesh.instanceMatrix.needsUpdate = true;
+    },
+    remove(slot) {
+      mesh.setMatrixAt(slot, NOWHERE);
+      mesh.instanceMatrix.needsUpdate = true;
+      free.push(slot);
+    },
+    // (every slot let go at once: a new area's cast)
+    clear() {
+      mesh.count = 0;
+      free.length = 0;
+    },
+    dispose() {
+      parent?.remove(mesh);
+      mesh.dispose();
+    },
+  };
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { instanceStill } from './instanced';
+import { instanceStill, makePool } from './instanced';
 
 // a prop as ./models/things.js makes one: a root, the model under it
 function prop(geo, mat, x, s = 1) {
@@ -56,5 +56,51 @@ describe('the still props, instanced', () => {
     expect(moving.children).toHaveLength(1);
     expect(alone.children).toHaveLength(1);
     expect(group.children.some((o) => o.isInstancedMesh)).toBe(false);
+  });
+});
+
+describe('a pool of instances', () => {
+  const geo = new THREE.CircleGeometry();
+  const mat = new THREE.MeshBasicMaterial();
+
+  it('gives each a slot, puts it where it is told, and hides what is hidden or let go', () => {
+    const pool = makePool(geo, mat, 4);
+    const a = pool.add();
+    const b = pool.add();
+    expect(pool.mesh.count).toBe(2);
+    pool.set(a, 1, 2, 3, 0.5, true);
+    pool.set(b, 4, 5, 6, 2, false);
+    const m = new THREE.Matrix4();
+    pool.mesh.getMatrixAt(a, m);
+    const p = new THREE.Vector3();
+    const s = new THREE.Vector3();
+    m.decompose(p, new THREE.Quaternion(), s);
+    expect(p.toArray()).toEqual([1, 2, 3]);
+    expect(s.toArray()).toEqual([0.5, 0.5, 0.5]);
+    // (three reads a matrix of no size as one of size 1: its diagonal says)
+    const size = (slot) => (pool.mesh.getMatrixAt(slot, m), [m.elements[0], m.elements[5], m.elements[10]]);
+    expect(size(b)).toEqual([0, 0, 0]);
+    // (a slot let go is drawn as nothing, and is the next one given)
+    pool.remove(a);
+    expect(size(a)).toEqual([0, 0, 0]);
+    expect(pool.add()).toBe(a);
+    expect(pool.mesh.count).toBe(2);
+    pool.clear();
+    expect(pool.mesh.count).toBe(0);
+    expect(pool.add()).toBe(0);
+  });
+
+  it('grows when it is full, keeping what it holds', () => {
+    const pool = makePool(geo, mat, 1);
+    const a = pool.add();
+    pool.set(a, 7, 0, 0, 1, true);
+    const first = pool.mesh;
+    const b = pool.add();
+    expect(b).toBe(1);
+    expect(pool.mesh).not.toBe(first);
+    expect(pool.mesh.count).toBe(2);
+    const m = new THREE.Matrix4();
+    pool.mesh.getMatrixAt(a, m);
+    expect(new THREE.Vector3().setFromMatrixPosition(m).x).toBe(7);
   });
 });

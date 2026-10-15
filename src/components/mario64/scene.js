@@ -32,7 +32,7 @@ import { AREAS, buildArea } from './courses/index';
 import { makeLook } from './looks';
 import { hdTemplate, loadHd } from './models/hd';
 import { makeActor, makeMario, makeProp } from './models/index';
-import { instanceStill } from './instanced';
+import { instanceStill, makePool } from './instanced';
 import { makeHdMario } from './models/mario-hd';
 import { canvasTexture } from './models/common';
 import { createMarioBody, easeFace, faceFor, lookFor } from './motion';
@@ -185,6 +185,10 @@ export function createScene(renderer, { small = false, post } = {}) {
   const blobMat = new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, color: blobTex ? '#ffffff' : '#000000', opacity: blobTex ? 1 : 0.3 });
   const blobGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
   const marioBlob = new THREE.Mesh(blobGeo, blobMat);
+  // (the cast's blobs, one draw for all of them: ./instanced.js)
+  const blobs = new THREE.Group();
+  scene.add(blobs);
+  const blobPool = makePool(blobGeo, blobMat, 32, blobs);
   marioBlob.renderOrder = 2;
   scene.add(marioBlob);
 
@@ -243,6 +247,7 @@ export function createScene(renderer, { small = false, post } = {}) {
     clear(world);
     clear(props);
     clear(cast);
+    blobPool.clear();
     models.clear();
     for (const m of meshes) world.add(m);
     water = [];
@@ -324,9 +329,7 @@ export function createScene(renderer, { small = false, post } = {}) {
         cast.add(model.root);
         let blob = null;
         if (a.r > 0 && a.type !== 'painting' && a.type !== 'door' && a.type !== 'stardoor') {
-          blob = new THREE.Mesh(blobGeo, blobMat);
-          blob.scale.setScalar(a.r * S * 2.6);
-          cast.add(blob);
+          blob = { slot: blobPool.add(), size: a.r * S * 2.6 };
         }
         entry = { model, blob };
         models.set(a.id, entry);
@@ -345,15 +348,12 @@ export function createScene(renderer, { small = false, post } = {}) {
       }
       const speed = Math.hypot(a.pos.x - al.x, a.pos.z - al.z) * 30 * S;
       entry.model.update(a, t, g, { dt, since: t - entry.at, prev: entry.prev, speed });
-      if (entry.blob) {
-        entry.blob.visible = a.alive && a.state !== 'gone';
-        entry.blob.position.set(ax, ((a.floorY ?? a.pos.y) + 2) * S, az);
-      }
+      if (entry.blob) blobPool.set(entry.blob.slot, ax, ((a.floorY ?? a.pos.y) + 2) * S, az, entry.blob.size, a.alive && a.state !== 'gone');
     }
     for (const [id, entry] of models)
       if (!live.has(id)) {
         cast.remove(entry.model.root);
-        if (entry.blob) cast.remove(entry.blob);
+        if (entry.blob) blobPool.remove(entry.blob.slot);
         models.delete(id);
       }
     for (const o of props.children) o.userData.model?.update?.(o.userData.model.prop, t, g);
@@ -448,6 +448,7 @@ export function createScene(renderer, { small = false, post } = {}) {
       clear(world);
       clear(props);
       clear(cast);
+      blobPool.dispose();
       mario.dispose?.();
       look.dispose();
       pmrem.dispose();
