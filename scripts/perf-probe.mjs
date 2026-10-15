@@ -16,7 +16,7 @@
 // (?gpu=webgl|webgpu: a port's frame-time table is two runs of the same
 // journey; a 'glsl' world is on the classic renderer either way, and each
 // journey's report names the backend it was actually drawn on), OUT is
-// where the JSON report goes.
+// where the JSON report goes; CAP=on keeps vsync (software GL: below).
 // planet flight: begin
 // FLY picks the /fly journey's planet (default Hoth).
 // planet flight: end
@@ -707,8 +707,14 @@ const { adapterFor, angleFor, findChromium, launchArgs } = await import('./lib/c
 const chrome = findChromium();
 if (!chrome) throw new Error('no Chromium (set CHROME=/path/to/chrome)');
 // (the machine's own chip, uncapped, so a frame's time is what it cost;
-// scripts/lib/chromium.mjs)
-const args = launchArgs({ angle: angleFor(), webgpu: gpu === 'webgpu', adapter: adapterFor(), uncapped: true });
+// scripts/lib/chromium.mjs. CAP=on keeps vsync: on software GL (the cloud
+// container's SwiftShader) an uncapped page fills the GPU process's command
+// buffer and every frame's GL calls wait on it, so `main` measures how fast
+// the CPU rasterises, not the page's JavaScript: Mario 64 at play, 84 ms a
+// frame in rAF on the classic renderer and 209 on the node one uncapped,
+// 5.6 and 3.2 capped. Compare two runs on the same setting only.)
+const capped = process.env.CAP === 'on';
+const args = launchArgs({ angle: angleFor(), webgpu: gpu === 'webgpu', adapter: adapterFor(), uncapped: !capped });
 if (process.platform === 'darwin') args.push('--enable-gpu-rasterization');
 const browser = await chromium.launch({ executablePath: chrome, args });
 const report = {};
