@@ -156,6 +156,16 @@ try {
       frames++;
       await page.waitForTimeout(25);
     }
+    // (with --settle-frames, frames till the frame guard holds nothing back,
+    // at least SETTLE of them, before the real-time settle: as after a pose)
+    if (args['settle-frames']) {
+      let calm = 0;
+      for (let n = 0; n < 2400 && calm < 30; n++) {
+        if (n >= SETTLE) calm = (await page.evaluate(() => window.__tpGuardPending?.() ?? 0)) ? 0 : calm + 1;
+        await page.clock.runFor(16);
+        await page.waitForTimeout(25);
+      }
+    }
     await page.waitForTimeout(settle);
     // (from here every run is the same: the page's time put at one moment,
     // the scatter reseeded, and the same frames run from there)
