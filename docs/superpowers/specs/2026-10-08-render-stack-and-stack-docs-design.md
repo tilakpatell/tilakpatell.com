@@ -109,7 +109,7 @@ The pages, grouped where a package is only ever used with another:
 
 - `docs/architecture.md` gets one sentence at the top pointing at `docs/stack/` and `docs/decisions/`, and nothing else moves out of it in this lane. (Moving its three.js paragraphs onto `three.md` is a later repair for the steward, one paragraph at a time, each a link left behind.)
 - The handoffs stay where they are. A move of 45 files breaks 45 links across specs, the autopilot skill and open pull requests for no reader’s gain this week.
-- The WebGPU lane’s files (`src/runtime/backend.js`, `webgpu.js`, `runtime.js`, `shading.test.js`, `scripts/gpu-parity*`, `scripts/perf-probe.mjs`, `docs/superpowers/HANDOFF-webgpu-acceleration.md`) are another session’s. This lane does not touch them; `webgpu-tsl.md` describes them as they are on `main` when it is written, and names the lane’s design for what is coming.
+- The WebGPU lane’s files (`src/runtime/backend.js`, `webgpu.js`, `runtime.js`, `shading.test.js`, `scripts/gpu-parity*`, `scripts/perf-probe.mjs`, `docs/superpowers/HANDOFF-runtime.md`) are another session’s. This lane does not touch them; `webgpu-tsl.md` describes them as they are on `main` when it is written, and names the lane’s design for what is coming.
 - `README.md`’s “Tech stack” list gains one line linking `docs/stack/`.
 
 ### Testing

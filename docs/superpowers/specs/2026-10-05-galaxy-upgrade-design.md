@@ -11,7 +11,7 @@ Design for a broad pass over the Star Wars galaxy (`/galaxy`, `src/components/ga
 - There's more in it: new ships, more of the models already downloaded put to use, and fuller worlds.
 - There are new things to do: a third playable mission (Geonosis), capital-ship takedowns in the big battles, and a cinematic camera.
 
-## Rules carried over (from `docs/superpowers/HANDOFF-galaxy-surfaces.md`)
+## Rules carried over (from `docs/superpowers/HANDOFF-galaxy.md`)
 
 - No sequel trilogy (Episodes 7–9) anywhere. After Episode 6, only The Mandalorian and Ahsoka.
 - Don't edit the ship-customisation session's files: `universe/shipModels.js`, `hulls.js`, `livery.js`, `modules.js`, `outfit.js`, `paint.js`, `Hangar.jsx`. Don't swap `xwing-hd.glb` or `falcon-hd.glb`, and keep `/models/universe/falcon.glb`.
