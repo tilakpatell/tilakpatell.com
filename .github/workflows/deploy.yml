@@ -4,11 +4,18 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      full-check:
+        description: 'Hold every file in the bucket to the manifests, not only what changed since the last deploy (half an hour, and the bucket’s whole egress once)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
   pages: write
   id-token: write
+  # the last deploy that went out, read from the Actions API for the assets check
+  actions: read
 
 # A deploy takes about forty minutes, and a merge to main lands more often
 # than that when several sessions work at once: with the running deploy
@@ -37,12 +44,37 @@ jobs:
       - run: npm run lint
       - run: npm test
       # the public bucket held to its manifests (scripts/assets-check.mjs):
-      # every published file there at its size, a year's cache, before a
-      # build that sends visitors to it
+      # a published file there at its size, a year's cache, before a build
+      # that sends visitors to it. Only the files the manifests gained or
+      # changed since the last deploy that went out (its commit from the
+      # Actions API, fetched so the script can read the manifests as they
+      # were): those before were held then, and a bucket path is never
+      # overwritten. Every file only on a run by hand with full-check, or when
+      # no earlier deploy is found. (Until 2026-10-15 every deploy asked all
+      # 77,545 files: half an hour each, and, if the CDN counts a one-byte
+      # range as the whole file, the bucket's 14 GB of egress a deploy; the
+      # month's 28 deploys and its 387 GB of cached egress are that sum.)
       - if: ${{ vars.ASSET_BASE != '' }}
-        run: node scripts/assets-check.mjs
+        id: last-deploy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FULL: ${{ inputs.full-check }}
+        run: |
+          since=""
+          if [ "$FULL" != "true" ]; then
+            since=$(gh run list --workflow deploy.yml --branch main --status success --limit 1 --json headSha --jq '.[0].headSha // empty' || true)
+            if [ -n "$since" ] && ! git fetch --depth=1 origin "$since"; then
+              echo "the last deploy's commit $since could not be fetched: every file is checked"
+              since=""
+            fi
+          fi
+          echo "since=$since" >> "$GITHUB_OUTPUT"
+          echo "assets check since: ${since:-(every file)}"
+      - if: ${{ vars.ASSET_BASE != '' }}
+        run: node scripts/assets-check.mjs ${SINCE:+--since "$SINCE"}
         env:
           ASSET_BASE: ${{ vars.ASSET_BASE }}
+          SINCE: ${{ steps.last-deploy.outputs.since }}
       - run: npm run build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
