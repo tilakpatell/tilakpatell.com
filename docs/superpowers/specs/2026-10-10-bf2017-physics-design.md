@@ -1,6 +1,6 @@
 # The galaxy's physics from the game: Havok shapes, the soldier's body, bolts, ragdolls, vehicles and surfaces. The design
 
-Date: 2026-10-10. Status: **design, written from a survey of the owner's Frosty export on the desktop and of what is on `origin/main` and in the open Battlefront PRs**; implementation sessions follow, one lane each (`docs/superpowers/plans/2026-10-10-bf2017-phaseP0-shapes.md`, `-phaseP1-body.md`, `-phaseP2-bolts-ragdolls.md`, `-phaseP3-vehicles.md`, `-phaseP4-surfaces.md`). The hand-off is `docs/superpowers/HANDOFF-bf2017-physics.md`. It stands beside the asset designs (`2026-10-10-battlefront-2017-asset-pipeline-design.md`, PR #802; `2026-10-10-bf2017-levels-lighting-sabers-design.md`, PR #810) and the game design (`2026-10-10-battlefront-game-design.md`, PR #812), takes from them and gives to them, and rebuilds nothing of theirs.
+Date: 2026-10-10. Status: **design, written from a survey of the owner's Frosty export on the desktop and of what is on `origin/main` and in the open Battlefront PRs**; implementation sessions follow, one lane each (`docs/superpowers/plans/2026-10-10-bf2017-phaseP0-shapes.md`, `-phaseP1-body.md`, `-phaseP2-bolts-ragdolls.md`, `-phaseP3-vehicles.md`, `-phaseP4-surfaces.md`). The hand-off is `docs/superpowers/HANDOFF-battlefront.md`. It stands beside the asset designs (`2026-10-10-battlefront-2017-asset-pipeline-design.md`, PR #802; `2026-10-10-bf2017-levels-lighting-sabers-design.md`, PR #810) and the game design (`2026-10-10-battlefront-game-design.md`, PR #812), takes from them and gives to them, and rebuilds nothing of theirs.
 
 ## What the owner asked
 
@@ -10,7 +10,7 @@ So: the Star Wars worlds (`src/components/galaxy/surface/`) should collide, walk
 
 ## What the export holds (measured on the desktop, 2026-10-10)
 
-The export is `C:\Users\tilak\Downloads\BF2_Extract` (`web\` masters, `web_opt\` the web build; `web_opt\GUIDE.md` §5 and `README.md` describe it). The same files are in the private bucket `bf2017-assets` (`web/physics/`, `web/physics.jsonl`, `web/terrain/`, `data/<Name>.json.gz`; the hand-off `HANDOFF-bf2017.md` says the physics went up on 2026-10-10 with 119 stragglers queued; check the first fetch).
+The export is `C:\Users\tilak\Downloads\BF2_Extract` (`web\` masters, `web_opt\` the web build; `web_opt\GUIDE.md` §5 and `README.md` describe it). The same files are in the private bucket `bf2017-assets` (`web/physics/`, `web/physics.jsonl`, `web/terrain/`, `data/<Name>.json.gz`; the hand-off `HANDOFF-battlefront.md` says the physics went up on 2026-10-10 with 119 stragglers queued; check the first fetch).
 
 | part | what | where | numbers |
 | --- | --- | --- | --- |

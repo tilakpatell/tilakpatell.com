@@ -46,7 +46,7 @@ The quest panel and the things-to-do list stay out of the way while the battle r
 - `systems.js`: Hoth's briefing keeps the mission another lane shipped the same day (*The First Transport*, on foot) and carries the battle beside it, as `game.also` (a second mission on the same world, with its own line and button on the briefing page and the galaxy's panel: *The Battle of Hoth*, you a Rebel trooper or a snowtrooper; the snowspeeder is the vehicle to add to it later, Battlefront's way); Geonosis's game becomes *The Battle of Geonosis*, live (a clone or a battle droid on the plain), and its *Seismic Charges* flight moves to the games design's list, to come back as a `game.also` of its own.
 - `Achievements.jsx`: `galacticassault`.
 - `guide/pages.js`: a tip on the surface page for the assault.
-- `README.md`, `docs/architecture.md`, `docs/superpowers/HANDOFF-galactic-assault.md`: what it is, where it lives, what's left.
+- `README.md`, `docs/architecture.md`, `docs/superpowers/HANDOFF-battlefront.md`: what it is, where it lives, what's left.
 
 ## Not in this slice
 
