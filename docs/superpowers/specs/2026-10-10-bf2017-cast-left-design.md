@@ -1,6 +1,6 @@
 # What is left of the Battlefront II (2017) cast: the beasts and riders, Yoda and Grievous, the Death Star's crew, one atlas a kind, the walkers' fall and the far fleet, hurtboxes, the textures that never went up, and the sound. The design
 
-Date: 2026-10-10. Status: **design, written from a survey of the owner's Frosty export on the desktop (`C:\Users\tilak\Downloads\BF2_Extract`, its `web\data`, `web\anims.jsonl`, `web\models.jsonl`, `web\textures.jsonl`, `web_opt\upload_state.tsv` and `logs\`) and of `origin/main` at `dc64fc27` (#834)**; implementation sessions follow, one lane each (`docs/superpowers/plans/2026-10-10-bf2017-cast-left-lane{D,B,Y,I,T,W,H}-*.md`). It is the fourth design on the same export after the pipeline (`2026-10-10-battlefront-2017-asset-pipeline-design.md`, #802), the levels, light and sabers (`2026-10-10-bf2017-levels-lighting-sabers-design.md`, #810) and the physics (`2026-10-10-bf2017-physics-design.md`, #817), beside the game design (`2026-10-10-battlefront-game-design.md`, #812) and the engine decision (`2026-10-10-galaxy-engine-design.md`, #819). It takes what those built and finishes the cast they left; it rebuilds nothing of theirs. The hand-off is `HANDOFF-bf2017.md`, section "The fourth design".
+Date: 2026-10-10. Status: **design, written from a survey of the owner's Frosty export on the desktop (`C:\Users\tilak\Downloads\BF2_Extract`, its `web\data`, `web\anims.jsonl`, `web\models.jsonl`, `web\textures.jsonl`, `web_opt\upload_state.tsv` and `logs\`) and of `origin/main` at `dc64fc27` (#834)**; implementation sessions follow, one lane each (`docs/superpowers/plans/2026-10-10-bf2017-cast-left-lane{D,B,Y,I,T,W,H}-*.md`). It is the fourth design on the same export after the pipeline (`2026-10-10-battlefront-2017-asset-pipeline-design.md`, #802), the levels, light and sabers (`2026-10-10-bf2017-levels-lighting-sabers-design.md`, #810) and the physics (`2026-10-10-bf2017-physics-design.md`, #817), beside the game design (`2026-10-10-battlefront-game-design.md`, #812) and the engine decision (`2026-10-10-galaxy-engine-design.md`, #819). It takes what those built and finishes the cast they left; it rebuilds nothing of theirs. The hand-off is `HANDOFF-battlefront.md`, section "The fourth design".
 
 ## What the owner asked
 
@@ -192,7 +192,7 @@ Phase 0's and 1's Global Constraints (the rig whole, the game's clips only, no s
 
 The dwarf spider droid's walk (no clips; a cut-at-the-joints rig is its own small lane if wanted); surface rides on fighters; the AT-AT's interior (`Interior_*` meshes); the navmesh; the sequel kinds; sound mixing beyond gain and falloff from the patch records; a per-kind atlas of the native full cut.
 
-## 8. Corrections to the hand-off (`HANDOFF-bf2017.md`)
+## 8. Corrections to the hand-off (`HANDOFF-battlefront.md`)
 
 1. "Waiting on uploads": nothing is in flight; §1.1. The hand-off's section "The fourth design" says so and names lane D.
 2. "The Ewok, the astromechs, the probe and the tauntaun have no set in the game's data": the Ewok and the tauntaun do (§1.3); the AT-RT too.

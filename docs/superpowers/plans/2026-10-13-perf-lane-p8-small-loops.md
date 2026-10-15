@@ -8,7 +8,7 @@
 
 **Tech Stack:** plain DOM and three.js; Vitest.
 
-**Spec:** `docs/superpowers/HANDOFF-performance-lanes.md` (lane P8), `docs/superpowers/HANDOFF-every-world-on-webgpu.md` items 8, 15, 16 and 18.
+**Spec:** `docs/superpowers/HANDOFF-runtime.md` (lane P8), `docs/superpowers/HANDOFF-runtime.md` items 8, 15, 16 and 18.
 
 ## Global constraints
 

@@ -1,6 +1,6 @@
 # A ram knocks the other ship, and another pilot is told
 
-Date: 2026-10-09. Follows [Ship contact: big ships are solids, small ships are bodies](2026-10-09-ship-contact.md), which left both out. Where it was left: `docs/superpowers/HANDOFF-ship-contact.md`.
+Date: 2026-10-09. Follows [Ship contact: big ships are solids, small ships are bodies](2026-10-09-ship-contact.md), which left both out. Where it was left: `docs/superpowers/HANDOFF-galaxy.md`.
 
 ## Context
 
