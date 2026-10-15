@@ -246,7 +246,15 @@ try {
         });
       }
       await page.evaluate(() => window.dispatchEvent(new Event('tp:uncover')));
-      for (let n = 0; n < FRAMES; n++) {
+      // (TWICE: woken again after the first frame, as the runtime's loop
+      // draws a world at rest twice for each wake: for main's leg, to show
+      // that one frame more is the whole of a difference)
+      if (process.env.TWICE) {
+        await page.clock.runFor(16);
+        await page.waitForTimeout(50);
+        await page.evaluate(() => window.dispatchEvent(new Event('tp:uncover')));
+      }
+      for (let n = 0; n < FRAMES - (process.env.TWICE ? 1 : 0); n++) {
         await page.clock.runFor(16);
         await page.waitForTimeout(50);
       }
