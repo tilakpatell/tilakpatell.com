@@ -29,6 +29,27 @@ The port is cut into pull requests that each stand: the shared twins first, the 
 
 | twin | original | test | parity case | dB | % off |
 | --- | --- | --- | --- | --- | --- |
+| `lib/three/speedLinesNodes.js` | `speedLines.js` | `speedLinesNodes.test.js` | `speedlines:stretched` | 61.4 | 0.00 |
+| `lib/three/atmosphereNodes.js` | `atmosphere.js` | `atmosphereNodes.test.js` | `atmosphere:space` | 69.3 | 0.00 |
+| | | | `atmosphere:space-two-suns` | 68.5 | 0.00 |
+| | | | `atmosphere:flat` | 65.0 | 0.00 |
+| | | | `atmosphere:inside` | 58.8 | 0.00 |
+| `lib/three/noiseNodes.js` | `noiseGlsl.js` (a string, no site) | `noiseNodes.test.js` | `noise:hash13`, `hash33`, `noise`, `noised`, `noised2`, `fbm`, `fbmd` (each function drawn raw) | 52.1 to 52.9 | 0.00 |
+| `lib/three/rockNodes.js` | `rock.js` | `rockNodes.test.js` | `rock:high` | 60.5 | 0.00 |
+| | | | `rock:low` | 59.5 | 0.00 |
+| | | | `rock:hook` | 61.2 | 0.00 |
+| | | | `rock:shared` (one material on four instanced meshes and a plain one, as the belt has it) | 62.4 | 0.00 |
+
+Each on the `webgl` leg (`nodes-webgl`, SwiftShader) in the container, `node scripts/twin-parity.mjs <case>`; the `webgpu` leg is the owner’s machines’ and is not run here. What a twin does differently, and why:
+
+- `speedLinesNodes`, `atmosphereNodes`: `fog: false` on the node material (a `ShaderMaterial` never took fog; a node material does by default); the atmosphere’s shell `toneMapped: false` too, its GLSL having no tone-mapping chunk.
+- `atmosphereNodes`: `inscatter(u, { steps })` is the march as a typed `Fn(ro, rd, tMax)` returning the colour in `xyz` and what gets through in `w`, `STEPS` baked as the loop’s count; the march’s early returns are a `select`, so it is valid WGSL. `atmosphereParams`, `stepsFor`, `skyColoursFor` are copied, not imported (`atmosphere.js` holds the `ShaderMaterial`); FL4 deletes the original.
+- `noiseNodes`: `noiseWith(uSeed, { octaves })` returns the GLSL’s functions bound to one seed (`octaves` the GLSL’s `FBM_OCT`), each built once as a shader function; the seed is passed into each as an argument (read from outside a function’s body, three declares it only in the first program the function is built into, and a second, a material shared by two meshes, failed to compile).
+- `rockNodes`: `rng`, `rock` copied (as above); `ROCK_RELIEF` a uniform node whose `.value` the universe map’s pace still writes; `rockHook` returns the node material, as the other node hooks do, so its caller uses what it returns.
+
+## The checks (the shared twins’ pull request)
+
+`npm run lint` clean; `npm run build` clean; `node scripts/health.mjs --check --skip build` within budget (`glsl-sites` 619: twins are new files, and the count falls at the flip). `npm test`: 17 files over their 5 s limit under the full suite’s load (the parity builds of other twins on the same four cores), each green run alone (`npx vitest run <file>`), none of them this lane’s.
 
 ## The before
 
