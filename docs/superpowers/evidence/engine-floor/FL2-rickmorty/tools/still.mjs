@@ -12,7 +12,7 @@
 //
 //   node still.mjs --dist dist --routes /c-137,/c-137/citadel --out dir
 //     [--frames 480] [--phone] [--quality high|mid|low] [--tag before]
-//     [--scroll 0] (a page scrolled to y before the shot)
+//     [--scroll 0] (a page scrolled to y before the shot) [--size 1440x900]
 import { spawn } from 'node:child_process';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -55,7 +55,8 @@ for (let t = 0; ; t++) {
 }
 const exe = (await readdir('/opt/pw-browsers')).filter((n) => /^chromium-\d+$/.test(n)).map((n) => `/opt/pw-browsers/${n}/chrome-linux/chrome`).find(existsSync);
 const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl', '--js-flags=--max-old-space-size=4096'] });
-const viewport = phone ? { width: 390, height: 844 } : { width: 1440, height: 900 };
+const [vw, vh] = String(args.size ?? '1440x900').split('x').map(Number); // (smaller is quicker in software)
+const viewport = phone ? { width: 390, height: 844 } : { width: vw, height: vh };
 const idle = Number(args.idle) || 150; // ms of real time a frame waits, for the work off the page (workers, decoders, shaders)
 const quiet = (ms = 25) => new Promise((r) => setTimeout(r, ms));
 try {
