@@ -15,7 +15,7 @@ The owner’s word (2026-10-15): remove the bloat, every world on WebGPU, everyt
 
 | lane | what | plan | starts | session | branch | PR | state |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| FL0 | the measure and the ratchet | `…-laneFL0-measure.md` | now | | `claude/engine-floor-fl0-measure` | | |
+| FL0 | the measure and the ratchet | `…-laneFL0-measure.md` | now | 2026-10-15 | `claude/engine-floor-fl0-measure` | #1007 | done: `renderers` 16, `loops` 58, `client-json-kb` 3,941 (budget 3,945), `doc-binaries` 4, `glsl-sites` 619, `boundary-breaks` 479, `cycles` 5, all budgeted; `evidence/engine-floor/FL0/` |
 | FL1 | the sweep: nine scripts, knip, the records out of the chunks | `…-laneFL1-sweep.md` | now | | `claude/engine-floor-fl1-sweep` | | |
 | FL2 the universe map | onto the runtime | `…-laneFL2-onto-the-runtime.md` | now, from `claude/perf-p2-universe` | | `claude/engine-floor-fl2-universe` | | |
 | FL2 Middle-earth | onto the runtime | the same | now | | `claude/engine-floor-fl2-middleearth` | | |
