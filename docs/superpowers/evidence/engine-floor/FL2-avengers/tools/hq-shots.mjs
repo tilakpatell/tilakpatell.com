@@ -113,6 +113,11 @@ async function shoot(browser, base, t) {
     set('tp-quality', JSON.stringify(q));
     // (a seeded Math.random: scatter, sparks and crowds the same each run)
     let s = 0x2f6b1d3 >>> 0;
+    // (and seeded again at the target's first frame: what took a number
+    // while it loaded, a toast's key, a crowd far off, took as many as the
+    // loading's real time let it, and the sparks of its first frames were
+    // drawn from wherever that left the sequence)
+    window.__fl2seed = (n) => (s = n >>> 0);
     Math.random = () => {
       s = (s + 0x6d2b79f5) >>> 0;
       let x = s;
@@ -186,7 +191,10 @@ async function shoot(browser, base, t) {
           performance.now = () => raw() + off;
           e.render = function (...a) {
             window.__fl2n++;
-            if (window.__fl2n === 1) off = 600000 - raw();
+            if (window.__fl2n === 1) {
+              off = 600000 - raw();
+              window.__fl2seed(0x51ed);
+            }
             return f.apply(this, a);
           };
           e.__fl2 = true;
@@ -218,6 +226,7 @@ async function shoot(browser, base, t) {
       await step(counted ? 50 : 25);
       const now = await presents();
       if (now > last) counted++;
+      if (counted === 1 && now > last) await page.evaluate(() => window.__fl2seed(0x51ed));
       last = now;
     }
   }
