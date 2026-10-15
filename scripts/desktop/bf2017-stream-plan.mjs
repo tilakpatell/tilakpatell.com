@@ -16,7 +16,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { REPO, summary } from './lib.mjs';
 
-export const SENDER = 'scripts/desktop/bf2017-stream.mjs';
+const SENDER = 'scripts/desktop/bf2017-stream.mjs';
 
 // The sender's arguments from the inputs. → { args } | { error }
 export function streamArgs(env = process.env) {
