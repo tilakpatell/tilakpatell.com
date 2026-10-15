@@ -211,7 +211,20 @@ try {
       await page.waitForTimeout(25);
     }
     for (let i = 0; i < poses.length; i++) {
-      await page.evaluate((n) => window.__universe().pose(n), poses[i]);
+      // (the hook waits on frames of its own: started, then the clock stepped till it's done)
+      await page.evaluate((n) => {
+        window.__posed = null;
+        Promise.resolve(window.__universe().pose(n)).then(
+          () => (window.__posed = 'ok'),
+          (e) => (window.__posed = String(e?.message ?? e)),
+        );
+      }, poses[i]);
+      for (let n = 0; n < 3000 && !(await page.evaluate(() => window.__posed)); n++) {
+        await page.clock.runFor(16);
+        await page.waitForTimeout(25);
+      }
+      const posed = await page.evaluate(() => window.__posed);
+      if (posed !== 'ok') throw new Error(`pose ${poses[i]}: ${posed ?? 'never done'}`);
       await page.waitForTimeout(settle);
       const when = SYNC + (i + 1) * 20000;
       const now = await page.evaluate(() => performance.now());
