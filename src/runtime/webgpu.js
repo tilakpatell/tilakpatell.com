@@ -60,6 +60,11 @@ export function buildPostProcessing(renderer, passes) {
   if (passes.some((p) => NODE_PASSES.has(p.kind))) return buildLitPost(renderer, passes);
   let post = null;
   let scenePass = null;
+  let disposed = false;
+  const free = () => {
+    post?.dispose?.();
+    scenePass?.dispose?.();
+  };
   const ready = Promise.all([import('three/webgpu'), import('three/tsl'), import('three/addons/tsl/display/BloomNode.js')]).then(([webgpu, tsl, bloomMod]) => {
     post = new webgpu.PostProcessing(renderer);
     let node = null;
@@ -77,6 +82,12 @@ export function buildPostProcessing(renderer, passes) {
       else throw new Error(`unknown pass ${p.kind}`);
     }
     post.outputNode = node;
+    // (let go before it was built, as a world's look switching its bloom
+    // twice in a frame does: freed now, and nothing drawn with it)
+    if (disposed) {
+      free();
+      post = null;
+    }
     return post;
   });
   return {
@@ -88,8 +99,8 @@ export function buildPostProcessing(renderer, passes) {
     setSize: () => {},
     compile: () => settle(ready, 4000),
     dispose: () => {
-      post?.dispose?.();
-      scenePass?.dispose?.();
+      disposed = true;
+      free();
     },
   };
 }

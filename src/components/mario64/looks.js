@@ -25,6 +25,7 @@ export function makeLook(post, scene, camera, { bloom = true } = {}) {
   // draws until it is, as the composer's bloom was switched between frames)
   let coming = null;
   let look = 'modern';
+  let gone = false;
   return {
     render() {
       chain.render();
@@ -38,19 +39,27 @@ export function makeLook(post, scene, camera, { bloom = true } = {}) {
       return look;
     },
     setBloom(on) {
-      if (Boolean(on) === glow) return;
+      // (the governor may lower a world on its way out: nothing built then)
+      if (gone || Boolean(on) === glow) return;
       glow = Boolean(on);
       coming?.dispose();
       const next = post(passesFor(scene, camera, glow));
       coming = next;
-      Promise.resolve(next.ready)
-        .catch(() => null)
-        .then(() => {
+      Promise.resolve(next.ready).then(
+        () => {
           if (coming !== next) return;
           coming = null;
           chain.dispose();
           chain = next;
-        });
+        },
+        // (a chain that could not be built would draw nothing: the one
+        // drawing now goes on drawing)
+        () => {
+          if (coming !== next) return;
+          coming = null;
+          next.dispose();
+        },
+      );
     },
     get look() {
       return look;
@@ -62,6 +71,7 @@ export function makeLook(post, scene, camera, { bloom = true } = {}) {
       return chain.passes;
     },
     dispose() {
+      gone = true;
       coming?.dispose();
       coming = null;
       chain.dispose();

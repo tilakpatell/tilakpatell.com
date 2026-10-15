@@ -26,7 +26,17 @@ vi.mock('three/webgpu', () => ({
       made.push(this);
     }
   },
+  // (the plain chain's graph: only whether it is let go is looked at)
+  PostProcessing: class {
+    constructor(renderer) {
+      this.renderer = renderer;
+      this.render = vi.fn();
+      this.dispose = vi.fn();
+      posts.push(this);
+    }
+  },
 }));
+const posts = [];
 vi.mock('../lib/settle', () => ({ settle: (p) => p }));
 // the game light's chain is lib/three/light/passes.js's to build (its own test builds every kind)
 const built = [];
@@ -179,6 +189,14 @@ describe('buildPostProcessing', () => {
     expect(chain.pipeline.render).toHaveBeenCalledTimes(1);
     post.dispose();
     expect(chain.dispose).toHaveBeenCalled();
+  });
+  it('lets go of a plain chain let go before it was built, once it is', async () => {
+    const chain = buildPostProcessing({}, [{ kind: 'render', scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera() }, { kind: 'output' }]);
+    chain.dispose();
+    await chain.ready;
+    expect(posts.at(-1).dispose).toHaveBeenCalled();
+    chain.render();
+    expect(posts.at(-1).render).not.toHaveBeenCalled();
   });
   it('says whether the chain is temporal, for the mip bias at native (lane N2)', async () => {
     setMipState({ scale: 1, classic: false });

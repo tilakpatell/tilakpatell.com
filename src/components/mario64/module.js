@@ -353,7 +353,11 @@ export default {
         else enterArea(g, v.area, v.entry);
         g.mode = 'play';
         g.dialogs = [];
-        await scene.setArea(g.areaId);
+        // (an area that fails to load leaves the game free, as step()'s does)
+        await scene.setArea(g.areaId).catch((e) => {
+          loading = false;
+          throw e;
+        });
         if (gone) return;
         shown = g.areaId;
         g.t = 0;

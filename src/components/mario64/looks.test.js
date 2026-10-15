@@ -17,7 +17,8 @@ function fakePost() {
   const built = [];
   const post = (passes) => {
     let ready;
-    const chain = { passes, ready: new Promise((r) => (ready = r)), render: vi.fn(), setSize: vi.fn(), dispose: vi.fn(), done: () => ready() };
+    let fail;
+    const chain = { passes, ready: new Promise((r, f) => ((ready = r), (fail = f))), render: vi.fn(), setSize: vi.fn(), dispose: vi.fn(), done: () => ready(), fail: () => fail(new Error('no chain')) };
     built.push(chain);
     return chain;
   };
@@ -91,6 +92,27 @@ describe('the look’s chain', () => {
     look.dispose();
     expect(built[2].dispose).toHaveBeenCalled();
     expect(built[3].dispose).toHaveBeenCalled();
+  });
+
+  it('keeps the chain it has when the new one fails to build', async () => {
+    const { post, built } = fakePost();
+    const look = makeLook(post, scene, camera);
+    look.setBloom(false);
+    built[1].fail();
+    await settle();
+    expect(built[1].dispose).toHaveBeenCalled();
+    expect(built[0].dispose).not.toHaveBeenCalled();
+    look.render();
+    expect(built[0].render).toHaveBeenCalledTimes(1);
+    expect(look.passes).toBe(built[0].passes);
+  });
+
+  it('builds nothing once it is gone', () => {
+    const { post, built } = fakePost();
+    const look = makeLook(post, scene, camera);
+    look.dispose();
+    look.setBloom(false);
+    expect(built).toHaveLength(1);
   });
 
   it('keeps the composer’s picks: modern until the looks slice', () => {
