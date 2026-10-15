@@ -120,8 +120,10 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
       onCrash,
     },
     // (a pocket universe is a map of its own: made afresh for its seed, never
-    // the last one's adopted, which a remount for a new key would have had)
-    rebuild: universe,
+    // the last one's adopted, which a remount for a new key would have had;
+    // and made again when reduced motion is turned on or off, which the
+    // scene reads once, as useScene made it again)
+    rebuild: `${universe ?? 'shared'}|${reduced ? 'still' : 'moving'}`,
     // (what the scene says comes out through the runtime's events: useWorld's, not a prop)
     onEvent: (e) => {
       if (e.type === 'launch') setFlown(true);

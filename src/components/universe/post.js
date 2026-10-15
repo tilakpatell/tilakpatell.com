@@ -302,13 +302,16 @@ const FINAL = {
 // each optional, knee (a soft-knee bright pass, KNEE), falloff (the five
 // mips' weights, sharpest first: three's [1, 0.8, 0.6, 0.4, 0.2], which a
 // radius over 0 flattens toward the widest), flareMax (the most a flare
-// scales it by) and cap (the bloom's first level's long side, at most)
-export function createPost(renderer, scene, camera, { small = false, bloom: look = null } = {}) {
+// scales it by) and cap (the bloom's first level's long side, at most).
+// ratio: the most the scene will draw at, where it isn't the renderer's
+// now (a world made on the runtime's renderer while the one before it
+// still draws there, at that world's ratio)
+export function createPost(renderer, scene, camera, { small = false, bloom: look = null, ratio = renderer.getPixelRatio() } = {}) {
   // multisampled below a pixel ratio of about 2; at 2 the pixels are too
   // small for jagged edges to show, and on a half-float target four samples
   // a pixel cost more than the rest of the frame put together. (With its
   // depth, for the black hole's lens to tell what's in front of it.)
-  const samples = renderer.getPixelRatio() >= 1.75 ? 0 : small ? 2 : 4;
+  const samples = ratio >= 1.75 ? 0 : small ? 2 : 4;
   const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples, depthTexture: new THREE.DepthTexture(1, 1) });
   const composer = new EffectComposer(renderer, target);
   composer.addPass(new RenderPass(scene, camera));

@@ -483,9 +483,9 @@ export async function create(canvas, ctx) {
   // the whole sky, bloom and all, at a retina 2 is more than most graphics
   // chips draw smoothly while flying, and the names and the HUD are crisp
   // DOM anyway), its size and sharpness the runtime’s; what the map sets on
-  // it goes back as it was when the map goes (./borrow.js)
+  // it is set only while it draws, or goes back when it goes (./borrow.js)
   const { renderer } = ctx.rt.gfx;
-  const giveBack = borrow(renderer);
+  const borrowed = borrow(renderer);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.08, 45000); // (out to the far side of deep space; the near plane follows the view, place())
   scene.add(camera); // it carries the streaks
@@ -634,7 +634,9 @@ export async function create(canvas, ctx) {
   // what metal reflects, and the passes after the scene (post.js)
   let env = spaceEnvironment(renderer, T['sky-glow']);
   scene.environment = env.texture;
-  const post = createPost(renderer, scene, camera, { small });
+  // (multisampled as at the map's own 1.5 at most, module.js: made at a
+  // handover, the renderer is still at the last world's ratio)
+  const post = createPost(renderer, scene, camera, { small, ratio: Math.min(renderer.getPixelRatio(), 1.5) });
   // the map's lens (post.js; the galaxy keeps its picture): a floor under
   // the sky, a little more contrast, and the corners soft but on a low tier
   post.setToe(...MAP_LENS.toe);
@@ -5891,7 +5893,7 @@ export async function create(canvas, ctx) {
       scene,
       camera,
       target: post.target,
-      render: () => post.render(64, 64),
+      render: () => borrowed.during(() => post.render(64, 64)),
       onProgress,
       // (gpuWork chains frame().then(frame): what one resolves with is never an option of the next)
       frame: () => prepFrame(),
@@ -5910,7 +5912,8 @@ export async function create(canvas, ctx) {
       measure();
       watchPanel();
     },
-    render,
+    // (the map's settings on the shared renderer only while it draws: ./borrow.js)
+    render: (ms, now) => borrowed.during(() => render(ms, now)),
     // sent before it's seen (above); not on a low tier (software WebGL, a
     // budget phone), where the graphics chip's work is the processor's and
     // its memory is short: things go up as they're first seen there, as before
@@ -6145,6 +6148,8 @@ export async function create(canvas, ctx) {
       sectorFleet.dispose();
       for (const tr of trenches) tr.dispose();
       phone.dispose();
+      // (its cube's target: on the runtime's renderer, which outlives the map)
+      sky.dispose();
       novae.dispose();
       burst.clear();
       burst.dispose();
@@ -6154,10 +6159,17 @@ export async function create(canvas, ctx) {
       disposeTree(scene);
       post.dispose();
       env.dispose();
-      // (the renderer and its canvas are the runtime's, for the next world: as they were)
-      giveBack();
-      canvas.removeAttribute('aria-hidden');
-      canvas.style.cursor = '';
+      // (the renderer and its canvas are the runtime's: put as they were once
+      // the map has gone, unless the next world has them by then. A handover
+      // makes the next world before it lets the map go, and places it in the
+      // same task, so its settings are on them already and stay)
+      const rt = ctx.rt;
+      setTimeout(() => {
+        if (rt.current || rt.loading) return;
+        borrowed.giveBack();
+        canvas.removeAttribute('aria-hidden');
+        canvas.style.cursor = '';
+      }, 0);
     },
   };
 }
