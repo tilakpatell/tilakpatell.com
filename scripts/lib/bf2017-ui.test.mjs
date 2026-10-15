@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { bitmapWanted, excludedFilms, filmRows, fontLicence, OWNER_LICENCE, iconFamily, iconName, isSequelFilm, isSequelUi, spriteOf, stringTables, symbolOf, vttOf } from './bf2017-ui.mjs';
+import { bitmapWanted, collectionImages, excludedFilms, filmRows, fontLicence, OWNER_LICENCE, iconFamily, iconName, isSequelFilm, isSequelUi, spriteOf, stringTables, symbolOf, vttOf } from './bf2017-ui.mjs';
 
 const MISC = readFileSync(join(import.meta.dirname, '..', 'fixtures', 'bf2017', 'web', 'misc.jsonl'), 'utf8')
   .split('\n')
@@ -91,5 +91,14 @@ describe('the 2017 front end’s cut', () => {
     expect(bitmapWanted('UI/Bitmaps/Portraits/Portrait_KyloRen')).toBe(false);
     expect(bitmapWanted('UI/Bitmaps/GameModeTiles/GMTile_Supremacy_Sequel')).toBe(false);
     expect(bitmapWanted('UI/Bitmaps/Frontend/Whatever')).toBe(false);
+    // (the front end's own screens draw these: HOME's offline tiles, the press-start key art)
+    expect(bitmapWanted('UI/Bitmaps/Frontend/Tiles/Backup-Campaign')).toBe(true);
+    expect(bitmapWanted('UI/Bitmaps/Frontend/4k_KeyArtPairingScreen')).toBe(true);
+  });
+
+  it('takes the Collection’s card art by name, not the sequel’s', () => {
+    const book = { cards: { 'luke.1': { image: 'UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LukeSkywalker/Card_LukeSkywalker_01_Mid' }, 'rey.1': { image: 'UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Rey/Card_Rey_01_Mid' }, 'x.1': { image: null } } };
+    expect([...collectionImages(book)]).toEqual(['UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LukeSkywalker/Card_LukeSkywalker_01_Mid']);
+    expect(collectionImages(null).size).toBe(0);
   });
 });

@@ -64,9 +64,10 @@
 // withPicture(entry, row) → { entry, picture }: a <world>.picture.json weather's row laid over an entry (below)
 // pictureOf(entry, picture) → { grade, lut, panorama, gradient, cloudShadow } | null
 //   (the caller's `picture`, or the entry's own `entry.picture`: true for the
-//   record's numbers alone, or { lut: { url, size }, panorama: { url, horizon },
+//   record's numbers alone, or { lut: { url, size }, panorama: { url, horizon, hdr },
 //   gradient: { url }, cloudShadow: { url } } for its textures too; null
 //   without one, so a world that asks for nothing draws as before)
+// panoramaSource(panorama, tier) → { url, hdr: bool }: the copy a tier loads (below)
 
 // the bloom pyramid's level each of the record's Gaussians blurs at
 export const GAUSSIAN_LEVELS = [1, 2, 3, 4, 5];
@@ -239,8 +240,23 @@ export function pictureOf(entry, picture = null) {
   return {
     grade,
     lut: grade?.lut && urls.lut?.url ? { url: urls.lut.url, size: urls.lut.size ?? GAME_LUT_SIZE } : null,
-    panorama: sky && urls.panorama?.url ? { ...sky, url: urls.panorama.url, horizon: urls.panorama.horizon ?? null } : null,
+    panorama: sky && urls.panorama?.url ? { ...sky, url: urls.panorama.url, horizon: urls.panorama.horizon ?? null, hdr: urls.panorama.hdr ?? null } : null,
     gradient: sky?.gradient && urls.gradient?.url ? { name: sky.gradient, url: urls.gradient.url, rotation: sky.rotation } : null,
     cloudShadow: cloud && urls.cloudShadow?.url ? { ...cloud, url: urls.cloudShadow.url } : null,
   };
+}
+
+// The copy of a painted sky a tier loads. The bucket's UASTC panorama is
+// clamped to 0…1 (the sun's surround and the bright cloud are lost); lane W's
+// HDR copy (`hdr: { url (the stem), widths, format }`, RGBA16F KTX2, nothing
+// clamped) is taken on the tiers that afford its bytes, at the widest size
+// under the tier's cap (HDR_WIDTH). The rest, and a sky with no HDR copy,
+// load the UASTC. Pure.
+export const HDR_WIDTH = { ultra: 4096, high: 2048 };
+export function panoramaSource(panorama, tier) {
+  if (!panorama?.url) return null;
+  const cap = HDR_WIDTH[tier];
+  const widths = (panorama.hdr?.widths ?? []).filter((w) => Number.isFinite(w) && w <= cap);
+  if (!cap || !panorama.hdr?.url || !widths.length) return { url: panorama.url, hdr: false };
+  return { url: `${panorama.hdr.url}.${Math.max(...widths)}.ktx2`, hdr: true };
 }

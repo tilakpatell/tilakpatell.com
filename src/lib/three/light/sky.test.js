@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readEntry } from './entry';
 import * as THREE from 'three/webgpu';
-import { PANORAMA_MEET, ZENITH_SHARE, createSky, panoramaGain, skyRadiance, skyUniforms } from './sky';
+import { PANORAMA_MEET, ZENITH_SHARE, createSky, meetGain, panoramaGain, skyRadiance, skyUniforms, sunLobe } from './sky';
 import { panoramaOf } from './grade';
 import hoth from './fixtures/hoth.ve.json';
 
@@ -59,10 +59,32 @@ describe('the painted panorama (lane Q6)', () => {
     // the disc only toward the sun
     expect(lum(skyRadiance(v.sunDir, v))).toBeGreaterThan(lum(skyRadiance(v.sunDir, v, { disc: false })) * 2);
   });
-  it('the gain brings the panorama’s horizon to the model’s where they meet, through the calibrated luminance', () => {
+  it('the sun is the game’s HG lobe: flat at SunColor × SunScale (the record’s 120,000 nits at the site’s exposure) to about 1°, a halo past it, nothing by 10°', () => {
     const p = readEntry(hoth.sunny);
     const v = skyUniforms(p);
-    const g = panoramaGain(p, HORIZON);
+    const deg = (d) => Math.cos((d * Math.PI) / 180);
+    // (g = 1 − SunSize: the lobe over 1 at the centre, clamped)
+    expect(sunLobe(1, 0.004)).toBe(1);
+    expect(sunLobe(deg(0.9), 0.004)).toBe(1);
+    expect(sunLobe(deg(2), 0.004)).toBeGreaterThan(0.08);
+    expect(sunLobe(deg(2), 0.004)).toBeLessThan(0.16);
+    expect(sunLobe(deg(5), 0.004)).toBeLessThan(0.01);
+    expect(sunLobe(deg(10), 0.004)).toBeLessThan(1e-3);
+    expect(sunLobe(-1, 0.004)).toBeLessThan(1e-5);
+    // the peak: SunScale over k (the record names none, so SUN_TO_SKY × LuminanceScale: 120,000 / k), in SunColor, no air between
+    const peak = skyRadiance(v.sunDir, v);
+    const beside = skyRadiance(v.sunDir, v, { disc: false });
+    for (let i = 0; i < 3; i++) expect(peak[i] - beside[i]).toBeCloseTo(v.sunColor[i] * v.sunScale, 6);
+    expect(v.sunScale).toBeCloseTo(120000 * p.gameToSite, 6);
+  });
+  it('the gain is the record’s luminance scale, as the game’s sky shader multiplies its painting; meetGain keeps the old fit', () => {
+    const p = readEntry(hoth.sunny);
+    const v = skyUniforms(p);
+    expect(panoramaGain(p, HORIZON)).toBeCloseTo(p.sky.luminance, 9);
+    // (calibrate.js's factor reaches it: twice the sky's luminance, twice the gain)
+    expect(panoramaGain({ ...p, sky: { ...p.sky, luminance: p.sky.luminance * 2 } }, HORIZON)).toBeCloseTo(p.sky.luminance * 2, 6);
+    expect(panoramaGain(p, null)).toBe(1);
+    const g = meetGain(p, HORIZON);
     let s = 0;
     for (let i = 0; i < 32; i++) {
       const a = (i / 32) * Math.PI * 2;
@@ -70,9 +92,7 @@ describe('the painted panorama (lane Q6)', () => {
       s += lum(skyRadiance([r * Math.sin(a), PANORAMA_MEET, r * Math.cos(a)], v, { disc: false }));
     }
     expect(Math.abs((g * lum(HORIZON)) / (s / 32) - 1)).toBeLessThan(1e-9);
-    // (calibrate.js's factor reaches it: twice the sky's luminance, twice the gain)
-    expect(panoramaGain({ ...p, sky: { ...p.sky, luminance: p.sky.luminance * 2 } }, HORIZON)).toBeCloseTo(g * 2, 6);
-    expect(panoramaGain(p, null)).toBe(1);
+    expect(meetGain(p, null)).toBe(1);
   });
   it('createSky takes the panorama behind the disc, its gain following the weather; without one the sky is as it was', async () => {
     const texture = new THREE.Texture();

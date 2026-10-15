@@ -120,6 +120,25 @@ export async function createContactShadows(scene, renderer, { tier = 'high', siz
       const was = { target: renderer.getRenderTarget?.() ?? null, override: scene.overrideMaterial, background: scene.background, environment: scene.environment, fogNode: scene.fogNode };
       const clear = { color: renderer.getClearColor(new THREE.Color()), alpha: renderer.getClearAlpha() };
       Object.assign(scene, { overrideMaterial: depthMaterial, background: null, environment: null, fogNode: null });
+      // Each pass draws the tracked figures alone (CONTACT_LAYER), but the
+      // renderer still walks the whole scene to find them: on Hoth that is
+      // six thousand instances sixteen times a frame, a fifth of the CPU's
+      // frame on the owner's desktop. So every top-level branch that holds
+      // no tracked figure is hidden for the passes and shown again after.
+      const keep = new Set();
+      for (const [o, c] of tracked) {
+        keep.add(c.plane); // (its visibility is the pass's own gate below)
+        let n = o;
+        while (n && n.parent !== scene) n = n.parent;
+        if (n) keep.add(n);
+      }
+      const hidden = [];
+      for (const child of scene.children) {
+        if (!keep.has(child) && child.visible) {
+          child.visible = false;
+          hidden.push(child);
+        }
+      }
       try {
         renderer.setClearColor(0x000000, 0);
         for (const n of near) {
@@ -132,6 +151,7 @@ export async function createContactShadows(scene, renderer, { tier = 'high', siz
         }
       } finally {
         // (the scene and the renderer given back, a throw or not)
+        for (const child of hidden) child.visible = true;
         Object.assign(scene, { overrideMaterial: was.override, background: was.background, environment: was.environment, fogNode: was.fogNode });
         renderer.setRenderTarget(was.target);
         renderer.setClearColor(clear.color, clear.alpha);

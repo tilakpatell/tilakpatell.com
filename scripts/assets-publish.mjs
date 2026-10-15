@@ -43,7 +43,7 @@ export const BUCKET = 'site-assets';
 // hash is what makes the file immutable. (A HEAD there always says
 // no-cache, so assets-check.mjs asks for one byte instead.)
 export const CACHE = 'max-age=31536000';
-const TYPES = { ...KINDS, '.json': 'application/json', '.bin': 'application/octet-stream', '.webm': 'video/webm', '.wasm': 'application/wasm' };
+const TYPES = { ...KINDS, '.json': 'application/json', '.bin': 'application/octet-stream', '.webm': 'video/webm', '.wasm': 'application/wasm', '.mp3': 'audio/mpeg' };
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const mb = (n) => `${(n / 1e6).toFixed(1)} MB`;

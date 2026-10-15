@@ -17,11 +17,11 @@ export const CRAWLS = {
   },
   hoth: {
     episode: 'Episode V',
-    title: 'The First Transport',
+    title: 'The Battle of Hoth',
     paragraphs: [
       'It is a dark time for the Rebellion. An Imperial probe droid has found Echo Base, the Rebels’ secret stronghold on the remote ice world of Hoth, and Darth Vader’s Death Squadron has come out of lightspeed to crush it.',
       'The Imperial fleet cannot fire through the base’s energy shield, so General Veers has landed his walkers and his snowtroopers on the ice to take the shield generator by force, while the Rebels load their transports to flee the planet two at a time.',
-      'A Star Destroyer waits above the first transport’s only way out. Now the ground crew of Echo Base must get the last of the cargo aboard, hold off the snowtroopers coming over the ridge, and reach the ion cannon in time to clear the sky…',
+      'Now the walkers come on across the snow toward the uplinks and the hangars, and behind them the Empire’s soldiers. The Rebels in the trenches of Outpost Delta must hold each line long enough for the transports to get away…',
     ],
   },
   endor: {

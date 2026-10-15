@@ -168,6 +168,9 @@ export function standardDepth(tsl, THREE, raw, under = 1) {
 // a chain's targets are held under the default maxColorAttachmentBytesPerSample
 // of 32. textures: [{ channels: 1 | 2 | 4, half: bool }].
 export const MRT_RG = true;
+// the frame's meter (a render pass's `meter`, apply.js's): the log luminance of the scene's own colour
+// over the middle `spot` of the screen (the record's SpotMeterScale), drawn each frame into this many texels
+export const METER_SIZE = [32, 18];
 export const ATTACHMENT_LIMIT = 32;
 export const attachmentCost = (textures) => textures.reduce((sum, t) => sum + (t.channels === 1 ? (t.half ? 2 : 1) : t.channels === 2 ? (t.half ? 4 : 2) : 8), 0);
 
@@ -182,7 +185,7 @@ export async function buildChain(renderer, passes) {
   const { THREE, tsl } = await loadThree();
   const mods = {};
   await Promise.all([...kinds].filter((k) => ADDONS[k]).map(async (k) => (mods[k] = await ADDONS[k]())));
-  const { pass, mrt, output, normalView, directionToColor, colorToDirection, diffuseColor, velocity, metalness, roughness, vec2, vec3, vec4, sample, texture3D } = tsl;
+  const { pass, mrt, output, normalView, packNormalToRGB, unpackRGBToNormal, diffuseColor, velocity, metalness, roughness, vec2, vec3, vec4, sample, texture3D } = tsl;
   const Pipeline = THREE.RenderPipeline ?? THREE.PostProcessing;
   const pipeline = new Pipeline(renderer);
   const nodes = []; // (made here, disposed here)
@@ -205,6 +208,7 @@ export async function buildChain(renderer, passes) {
   // (after a `tonemap` pass the picture is tone-mapped already: the encoding only)
   let shown = false;
   let toned = false;
+  let graded = false; // (the LUT read the gamma-encoded picture: its output is the display value)
   const display = (n) => {
     if (shown) return n;
     shown = true;
@@ -238,7 +242,7 @@ export async function buildChain(renderer, passes) {
         const scenePass = keep(pass(p.scene, p.camera, antialias(passes) ? {} : { samples: 0 }));
         if (under < 1) scenePass.setResolutionScale(under);
         const outs = { output };
-        if (needs.normal) outs.normal = directionToColor(normalView);
+        if (needs.normal) outs.normal = packNormalToRGB(normalView);
         if (needs.diffuse) outs.diffuse = diffuseColor;
         if (needs.velocity) outs.velocity = velocity;
         if (needs.metalRough) outs.metalRough = vec2(metalness, roughness);
@@ -262,13 +266,20 @@ export async function buildChain(renderer, passes) {
         g.depth = renderer.reversedDepthBuffer === true ? keep(standardDepth(tsl, THREE, g.rawDepth, under)) : g.rawDepth;
         if (outs.normal) {
           const packed = scenePass.getTextureNode('normal');
-          g.normal = sample((uv) => colorToDirection(packed.sample(uv)));
+          g.normal = sample((uv) => unpackRGBToNormal(packed.sample(uv)));
         }
         if (outs.diffuse) g.diffuse = scenePass.getTextureNode('diffuse');
         if (outs.velocity) g.velocity = scenePass.getTextureNode('velocity');
         if (outs.metalRough) g.metalRough = scenePass.getTextureNode('metalRough');
         g.scenePass = scenePass;
         node = g.color;
+        if (p.meter) {
+          const s = Number.isFinite(p.meter.spot) && p.meter.spot > 0 ? p.meter.spot : 1;
+          const at = tsl.uv().sub(0.5).mul(s).add(0.5);
+          const lum = tsl.log2(tsl.max(tsl.luminance(g.color.sample(at).rgb), tsl.float(1e-8)));
+          g.meter = keep(tsl.rtt(vec4(lum, 0, 0, 1), METER_SIZE[0], METER_SIZE[1], { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, generateMipmaps: false }));
+          p.meter.target = g.meter;
+        }
         break;
       }
       case 'ssgi': {
@@ -386,7 +397,25 @@ export async function buildChain(renderer, passes) {
         break;
       case 'lut': {
         if (!p.texture) break;
-        node = keep(mods.lut.lut3D(toned ? node : display(node), texture3D(p.texture), p.texture.image.width, tsl.float(p.intensity ?? 1)));
+        // After the record's tone map, the game's own order (read from its
+        // tonemap composite shader, the owner's bf2-re study, findings 02):
+        // the clamped picture is gamma-2.2 encoded, the grading LUT is read
+        // with that encoded value, and what the LUT gives is the display
+        // value itself, encoded no further. Read with the linear value and
+        // encoded after, as before, Hoth's LUT (black below 0.13, white from
+        // 0.875) crushed every shadow and mid-tone to black: the navy field.
+        // (and a second LUT, `inside` { texture, weight: a uniform }, read with the same value and mixed by
+        // its weight: the game's colour-cube builder weighs one cube a VE, findings 02's g_weights; a mix
+        // of the two reads is the read of the mixed cube)
+        const graded2 = (input, out) => (p.inside?.texture && p.inside.weight ? tsl.mix(out, mods.lut.lut3D(input, texture3D(p.inside.texture), p.inside.texture.image.width, tsl.float(1)), p.inside.weight) : out);
+        if (toned) {
+          const encoded = vec4(tsl.pow(tsl.max(node.rgb, 0), 1 / 2.2), node.a);
+          node = keep(graded2(encoded, mods.lut.lut3D(encoded, texture3D(p.texture), p.texture.image.width, tsl.float(p.intensity ?? 1))));
+          graded = true;
+        } else {
+          const input = display(node);
+          node = keep(graded2(input, mods.lut.lut3D(input, texture3D(p.texture), p.texture.image.width, tsl.float(p.intensity ?? 1))));
+        }
         break;
       }
       case 'traa':
@@ -417,8 +446,12 @@ export async function buildChain(renderer, passes) {
         throw new Error(`unknown pass ${p.kind}`);
     }
   }
-  // (tone-mapped in the chain and not yet shown: the encoding is the chain's last step)
-  if (toned) node = display(node);
+  // (tone-mapped in the chain and not yet shown: the encoding is the chain's
+  // last step; graded through the LUT, the picture is the display's already)
+  if (toned && !graded) node = display(node);
+  else if (graded) shown = true;
+  // (the meter read into the picture at no weight, so its target is drawn every frame)
+  if (g.meter) node = node.add(vec4(g.meter.sample(vec2(0.5, 0.5)).r.mul(0), 0, 0, 0));
   pipeline.outputNode = node;
   return {
     pipeline,

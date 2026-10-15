@@ -287,5 +287,8 @@ export function vttOf(ssa, say = (key) => key) {
 // The UI bitmaps the site's parts name: heroes' and vehicles' portraits, the
 // mode and side tiles, the HUD's own art. (The front end's 692 card and menu
 // bitmaps are the game's world's to ask for by name.)
-const BITMAPS = /^UI\/(Bitmaps\/(Portraits|GameModeTiles|ChooseSideTiles|SupplyCrateIcons)|Art\/(HUD|LoadingScreens))\//;
+const BITMAPS = /^UI\/(Bitmaps\/(Portraits|GameModeTiles|ChooseSideTiles|SupplyCrateIcons|Frontend\/Tiles)\/|Bitmaps\/Frontend\/4k_KeyArtPairingScreen$|Art\/(HUD|LoadingScreens)\/)/;
 export const bitmapWanted = (name) => BITMAPS.test(name) && !isSequelUi(name);
+// the card and menu bitmaps the Collection asks for by name (its star cards'
+// art: src/data/bf2017/collection.json's `image`s), the sequel's left out
+export const collectionImages = (book) => new Set(Object.values(book?.cards ?? {}).flatMap((c) => [c.image]).filter((n) => n && !isSequelUi(n)));

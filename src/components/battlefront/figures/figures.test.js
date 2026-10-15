@@ -2,8 +2,9 @@ import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { skeleton } from '../../../lib/three/fixtures/gameSkeleton.js';
 import { AITRAJECTORY_TURN } from './facing.js';
-import { createFigures } from './figures.js';
+import { BODIES, BODY_MIDDLE, BODY_REACH, UNIT_KINDS, createFigures, cullBy, kindOf, preloadBody } from './figures.js';
 import { createHeld, weaponUrl } from './held.js';
+import { skinBodies } from '../../../lib/bf2017/collection.js';
 
 const settle = async () => {
   for (let i = 0; i < 6; i++) await Promise.resolve();
@@ -265,6 +266,51 @@ describe('a soldier’s stride against the ground', () => {
     expect(f.actions.get('idle').timeScale).toBe(1);
   });
 
+  it('blends the nearest directions and gaits on one phase: a turn or a speed change moves weights, never cuts a clip', async () => {
+    const clips = { idle: clip('idle'), walk: walking('walk', [0, 2]), 'walk.right': walking('walk.right', [-2, 0]), 'walk.back': walking('walk.back', [0, -1.6]), 'walk.left': walking('walk.left', [2, 0]), run: walking('run', [0, 4]) };
+    const figs = paced(clips);
+    figs.update([runner({ vel: [0, 2] })], 0.1);
+    await settle();
+    // ahead at the walk's pace: the walk alone, every loco action made and in step
+    figs.update([runner({ vel: [0, 2] })], 0.1);
+    const f = figs.figure(4);
+    expect(f.clip).toBe('walk');
+    expect([...f.loco].sort()).toEqual(['run', 'walk', 'walk.back', 'walk.left', 'walk.right']);
+    const w = (n) => f.weights.get(n) ?? 0;
+    expect(w('walk')).toBeCloseTo(1, 9);
+    for (const n of f.loco) expect(f.actions.get(n).timeScale, n).toBeCloseTo(1, 9);
+    expect(f.phase).toBeCloseTo(0.1, 9);
+    // a step to the right-ahead at the walk's diagonal pace: half the walk, half the right strafe, eased over CROSSFADE, the sum one
+    const diag = [-1, 1];
+    figs.update([runner({ vel: diag, t: 1 })], 0.05);
+    expect(w('walk')).toBeCloseTo(1 - 0.05 / 0.15, 6);
+    expect(w('walk.right')).toBeCloseTo(0.05 / 0.15, 6);
+    figs.update([runner({ vel: diag, t: 2 })], 0.05);
+    figs.update([runner({ vel: diag, t: 3 })], 0.05);
+    expect(w('walk')).toBeCloseTo(0.5, 6);
+    expect(w('walk.right')).toBeCloseTo(0.5, 6);
+    expect([...f.weights.values()].reduce((a, b) => a + b, 0)).toBeCloseTo(1, 6);
+    // (the walk kept running through it: never stopped or restarted)
+    expect(f.actions.get('walk').isRunning()).toBe(true);
+    expect(f.actions.get('walk').time).toBeCloseTo(0.1 + 0.15, 6);
+    // faster, ahead: the run comes in by speed, the phase runs on at the body's speed over the blend's pace
+    figs.update([runner({ vel: [0, 3], t: 4 })], 0.1);
+    const run = f.actions.get('run');
+    expect(run.timeScale).toBeGreaterThan(0);
+    expect(f.actions.get('walk').timeScale).toBeCloseTo(run.timeScale, 9);
+    expect(f.phase).toBeGreaterThan(0.25);
+    // stood still: the idle, the loco actions held
+    figs.update([runner({ t: 5 })], 0.1);
+    expect(f.clip).toBe('idle');
+    expect(run.timeScale).toBe(0);
+    expect(f.walking).toBe(false);
+    // off again: from the feet passing (phase 0), every loco action seated there
+    figs.update([runner({ vel: [0, 2], t: 6 })], 0.1);
+    expect(f.walking).toBe(true);
+    expect(f.phase).toBeCloseTo(0.1, 9);
+    expect(f.actions.get('walk').time).toBeCloseTo(0.1, 9);
+  });
+
   it('plays a run clip with no root travel at its own pace', async () => {
     const figs = paced({ idle: clip('idle'), run: clip('run') });
     figs.update([runner({ vel: [0, 3.8] })], 0.1);
@@ -274,5 +320,135 @@ describe('a soldier’s stride against the ground', () => {
     expect(f.clip).toBe('run');
     expect(f.speeds.get('run')).toBe(null);
     expect(f.actions.get('run').timeScale).toBe(1);
+  });
+});
+
+describe('cullBy', () => {
+  const part = (size, y) => {
+    const g = new THREE.BoxGeometry(size, size, size);
+    g.translate(0, y, 0);
+    const m = new THREE.SkinnedMesh(g, new THREE.MeshStandardMaterial());
+    m.frustumCulled = false;
+    return m;
+  };
+  it('culls every part of a body by one sphere round the body, carried into each part’s own frame', () => {
+    const model = new THREE.Group();
+    const glove = part(0.2, 1.2);
+    const torso = part(0.8, 1);
+    // (a part on a node in centimetres, off to one side)
+    const holder = new THREE.Group();
+    holder.scale.setScalar(0.01);
+    holder.position.set(0.5, 0, 0);
+    const cape = part(80, 100);
+    holder.add(cape);
+    model.add(glove, torso, holder);
+    const whole = cullBy(model);
+    expect(whole.radius).toBe(BODY_REACH);
+    expect(whole.center.toArray()).toEqual(BODY_MIDDLE);
+    for (const o of [glove, torso, cape]) expect(o.frustumCulled).toBe(true);
+    expect(glove.boundingSphere.radius).toBe(BODY_REACH);
+    expect(glove.boundingSphere.center.toArray()).toEqual(BODY_MIDDLE);
+    expect(cape.boundingSphere.radius).toBeCloseTo(BODY_REACH * 100, 6);
+    expect(cape.boundingSphere.center.toArray().map((v) => Math.round(v))).toEqual([-50, 100, 0]);
+    // (the same sphere in the world, whichever part asks)
+    const s = cape.boundingSphere.clone().applyMatrix4(cape.matrixWorld);
+    expect(s.center.toArray().map((v) => +v.toFixed(6))).toEqual(BODY_MIDDLE);
+    expect(s.radius).toBeCloseTo(BODY_REACH, 6);
+  });
+  it('scales with a body drawn larger, and leaves a body with no skinned part alone', () => {
+    const model = new THREE.Group();
+    model.scale.setScalar(2);
+    model.add(part(1, 1));
+    expect(cullBy(model).radius).toBeCloseTo(BODY_REACH * 2, 6);
+    const bare = new THREE.Group();
+    bare.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+    expect(cullBy(bare)).toBeNull();
+  });
+});
+
+describe('a soldier’s cut by its distance from the eye', () => {
+  const run = async (eye) => {
+    const asked = [];
+    const cuts = { of: (kind) => (kind === 'snowtrooper' ? { lod: true, far: true, full: true, fullMB: 1, fullDL: 1 } : null), level: 'high', lowData: false, load: (u) => (asked.push(u), Promise.resolve(null)) };
+    const figs = createFigures({ scene: new THREE.Scene(), loadBody: async () => body(), held: createHeld({ load: () => Promise.resolve({ scene: new THREE.Group(), animations: [] }) }), loadStance: () => Promise.resolve(new Map()), cuts });
+    figs.update([soldier], 0.016, 1, eye);
+    await settle();
+    figs.update([{ ...soldier, t: 1 }], 0.016, 1, eye);
+    await settle();
+    return asked;
+  };
+
+  it('asks for the game’s LOD0 near and the far cut past the level’s mid', async () => {
+    expect(await run(new THREE.Vector3(5, 1.6, 3))).toEqual([BODIES.snowtrooper.url]);
+    expect(await run(new THREE.Vector3(500, 1.6, 1))).toEqual([BODIES.snowtrooper.url.replace(/\.glb$/, '.far.glb')]);
+  });
+
+  it('asks nothing without an eye or a row', async () => {
+    expect(await run(null)).toEqual([]);
+  });
+});
+
+describe('the body a unit wears', () => {
+  it('is the hero’s or the reinforcement’s own, else the side’s trooper', () => {
+    expect(kindOf({ team: 2, unitId: 'darthvader' })).toBe('vader');
+    expect(kindOf({ team: 1, unitId: 'hansolo' })).toBe('han');
+    expect(kindOf({ team: 2, unitId: 'DeathTrooper' })).toBe('deathtrooper');
+    // (one with no body here yet, and a class)
+    expect(kindOf({ team: 1, unitId: 'yoda' })).toBe('hothtrooper');
+    expect(kindOf({ team: 2, unitId: null })).toBe('snowtrooper');
+    for (const kind of Object.values(UNIT_KINDS)) expect(BODIES[kind]).toBeTruthy();
+  });
+
+  it('is the skin picked in the Collection, where the site has that body', () => {
+    expect(kindOf({ team: 1, unitId: 'luke', appearance: 'lukehoth' })).toBe('lukehoth');
+    expect(kindOf({ team: 2, unitId: null, appearance: 'stormtrooper' })).toBe('stormtrooper');
+    // (a look with no body here, or none picked: the unit's own, as before)
+    expect(kindOf({ team: 1, unitId: 'luke', appearance: 'nosuchbody' })).toBe('luke');
+    expect(kindOf({ team: 2, unitId: null, appearance: null })).toBe('snowtrooper');
+    expect(kindOf({ team: 2, unitId: 'darthvader' })).toBe('vader');
+  });
+
+  it('has a body for every skin the Collection can pick: a hero’s look on its hero’s own clips, a trooper’s on its light cuts', () => {
+    const rows = skinBodies();
+    expect(rows.length).toBeGreaterThanOrEqual(40);
+    for (const { kind, pack } of rows) {
+      expect(BODIES[kind], kind).toBeTruthy();
+      expect(BODIES[kind].url, kind).toBe(`/models/galaxy/bf2017/crew/${kind}.glb`);
+      if (pack) expect(BODIES[kind].pack, kind).toBe(pack);
+      else expect(BODIES[kind].cuts?.lod, kind).toBe(true);
+    }
+    expect(BODIES.lukehoth).toEqual({ url: '/models/galaxy/bf2017/crew/lukehoth.glb', pack: 'luke' });
+    expect(BODIES.stormtrooper).toEqual({ url: '/models/galaxy/bf2017/crew/stormtrooper.glb', cuts: { lod: true, far: true } });
+    // (the rows the table had are its own: the snowtrooper keeps its full cut)
+    expect(BODIES.snowtrooper.cuts.full).toBe(true);
+  });
+
+  it('loads a hero on its light cut with its own clips, and builds the figure again when the id comes back as another unit', async () => {
+    const loads = [];
+    const figs = createFigures({ scene: new THREE.Scene(), loadBody: async (url, kind) => (loads.push([url, kind]), body()), held: createHeld({ load: () => Promise.resolve({ scene: new THREE.Group(), animations: [] }) }), loadStance: () => Promise.resolve(new Map()) });
+    figs.update([soldier], 0.016);
+    await settle();
+    const trooper = figs.figure(3);
+    figs.update([{ ...soldier, unitId: 'darthvader', t: 1 }], 0.016);
+    await settle();
+    expect(loads).toEqual([
+      ['/models/galaxy/bf2017/crew/snowtrooper.lod1.glb', 'snowtrooper'],
+      ['/models/galaxy/bf2017/crew/vader.lod1.glb', 'vader'],
+    ]);
+    expect(figs.figure(3)).not.toBe(trooper);
+    expect(figs.figure(3).kind).toBe('vader');
+    expect(trooper.model.parent).toBe(null);
+  });
+});
+
+describe('the near body fetched ahead', () => {
+  const cutsAt = (level, asked) => ({ of: (kind) => (kind === 'snowtrooper' ? { lod: true, far: true, full: true, fullMB: 1, fullDL: 1 } : null), level, lowData: false, load: (u) => (asked.push(u), Promise.resolve({})) });
+  it('asks for the kind’s LOD0 on a level that draws it near, and nothing on one that never does', async () => {
+    const asked = [];
+    await preloadBody('snowtrooper', cutsAt('high', asked));
+    expect(asked).toEqual([BODIES.snowtrooper.url]);
+    expect(preloadBody('snowtrooper', cutsAt('low', asked))).toBe(null);
+    expect(preloadBody('hothtrooper', cutsAt('high', asked))).toBe(null);
+    expect(asked).toHaveLength(1);
   });
 });

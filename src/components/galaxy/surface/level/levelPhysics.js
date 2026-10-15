@@ -28,7 +28,7 @@
 //     → { add(key, bin) / addCell → Promise (bin: the cell's own, lane L's
 //         32-byte records, read with pack.cells[key].draws; or
 //         [{ mesh, position, quaternion, scale }]),
-//       drop(key) / removeCell, setTerrain(heightAt | { near, far }), timed(stepMs),
+//       drop(key) / removeCell, setTerrain(heightAt | { near, far }, { holes }), timed(stepMs),
 //         update(ms = 4, at = [x, z] (the nearest cell's first))
 //         → bodies added, stats() → { cells, bodies, colliders,
 //         uniqueShapes, triangles, heightfields, queued, dropped, stepMs },
@@ -42,7 +42,7 @@
 //     (maps in metres; on the scene, pass setTerrain lane L's own sampler,
 //     (x, z) => LAYERS.image(x, z, layer), so the floor is the ground drawn)
 
-import { addHeightfield } from '../../../../lib/physics/heightfield.js';
+import { addHeightfield, addHoledGround } from '../../../../lib/physics/heightfield.js';
 import { budgetCell, cellBodies, collidersOf, readShapes } from '../../../../lib/physics/havok.js';
 
 // (measured on Hoth's densest cell, Echo Base: 400 colliders keep 93% of its
@@ -107,6 +107,7 @@ export function createLevelPhysics({ physics, pack, loadBin, tier = 'high', budg
   const shapes = new Map(); // mesh → Promise<colliders | null>
   const cells = new Map(); // key → { bodies, queue, heightfields, dropped, colliders, triangles }
   let heightAt = null;
+  let holes = null; // (the terrain's own holes, lib/land/holes.js: a 64 m square holding one is a mesh without them)
   let disposed = false;
   let stepMs = 0;
 
@@ -136,7 +137,10 @@ export function createLevelPhysics({ physics, pack, loadBin, tier = 'high', budg
         const z = cz * cellSize + j * terrainCell;
         const heights = new Float32Array(n * n);
         for (let iz = 0; iz < n; iz++) for (let ix = 0; ix < n; ix++) heights[iz * n + ix] = heightAt(x + ix * (terrainCell / (n - 1)), z + iz * (terrainCell / (n - 1)));
-        cell.heightfields.push(addHeightfield(physics, { heights, n, size: terrainCell, x, z }));
+        if (holes?.any(x, z, x + terrainCell, z + terrainCell)) {
+          const body = addHoledGround(physics, { heights, n, size: terrainCell, x, z, hole: holes.at });
+          if (body) cell.heightfields.push(body);
+        } else cell.heightfields.push(addHeightfield(physics, { heights, n, size: terrainCell, x, z }));
       }
   }
 
@@ -207,9 +211,10 @@ export function createLevelPhysics({ physics, pack, loadBin, tier = 'high', budg
     add: addCell,
     drop: removeCell,
     update,
-    setTerrain(source) {
+    setTerrain(source, { holes: cut = null } = {}) {
       if (disposed) return;
       heightAt = typeof source === 'function' ? source : source ? imageHeight(source) : null;
+      holes = cut;
       for (const [key, cell] of cells) {
         for (const b of cell.heightfields) physics.remove(b);
         cell.heightfields = [];

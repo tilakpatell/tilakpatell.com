@@ -8,16 +8,23 @@
 // enemy, at each poll, presses the first of its three abilities that has a
 // charge, its gap over and its condition met (`abilities.js`'s recharge is
 // the cooldown rule). Which prefab drives which of the class's abilities is
-// read from their names, by hand (`ABILITY_LOGIC`, NOTES.md), as are the
-// grenades' throw (`THROW`). Pure.
+// read from their names, by hand (`ABILITY_LOGIC`, NOTES.md). A grenade is
+// thrown as `throw.js` plans it (the game's AIProjectileComponentData: 10 to
+// 50 m, the team's token, the arc checked), at the target's last known
+// position; an AutoPlayer (the online fill, `autoPlayer`) presses the
+// officer's turret alone. Pure.
 //
 //   abilitiesFor(rb, cls) → ability rows for newSoldier: the roll, then the class's three by slot
 //   skirmishRole(cls) → the Skirmish template a class plays ('heavy')
-//   pollEvery(skirmish) → [min, max] seconds          pressAbility(b, { target, now }) → { slot, id } | null
-//     b: { s, rand, role, skirmish, abilityAt?, gaps? }; target: the brain's belief (visible, at)
+//   pollEvery(skirmish) → [min, max] seconds          pressAbility(b, { target, now, world?, autoPlayer? }) → { slot, id } | null
+//     b: { s, rand, role, skirmish, abilityAt?, gaps? }; target: the brain's belief (visible, at); world: { nav } for the arc
 
 import { abilityOf } from '../rulebook.js';
 import { ROLL, charges, press } from '../abilities.js';
+import { kitRow } from '../kit.js';
+import { eyeOf } from '../soldier.js';
+import { firstSolid, heightAt } from '../nav.js';
+import { RANGE, planThrow, pressesAbility, takeToken } from './throw.js';
 
 // The class's abilities → the AI logic prefab that drives each (by name).
 export const ABILITY_LOGIC = {
@@ -32,12 +39,12 @@ export const ABILITY_LOGIC = {
   DefaultAbility_Specialist_Infiltration: 'Infiltration02',
   DefaultAbility_Assault_ScanDart: 'ScanPistol',
 };
-// The farthest a bot throws a grenade at, metres, by hand.
-export const THROW = 25;
+// The farthest a bot throws a grenade at, metres: the AI projectile's maximum (throw.js's RANGE).
+export const THROW = RANGE[1];
 const SLOTS = { left: 1, middle: 2, right: 3 };
 
 export function abilitiesFor(rb, cls) {
-  const rows = (cls.abilities ?? []).map((a, i) => ({ ...abilityOf(rb, a.asset.slice(a.asset.lastIndexOf('/') + 1)), slot: SLOTS[a.slot] ?? i + 1 }));
+  const rows = (cls.abilities ?? []).map((a, i) => ({ ...kitRow(abilityOf(rb, a.asset.slice(a.asset.lastIndexOf('/') + 1))), slot: SLOTS[a.slot] ?? i + 1 }));
   return [{ ...ROLL, slot: 0 }, ...rows.sort((a, b) => a.slot - b.slot)];
 }
 
@@ -61,7 +68,7 @@ function ruleOf(skirmish, logic, b) {
   return { gap, range, below };
 }
 
-export function pressAbility(b, { target, now }) {
+export function pressAbility(b, { target, now, world = null, autoPlayer = false }) {
   if (now < (b.abilityAt ?? -Infinity)) return null;
   const [lo, hi] = pollEvery(b.skirmish);
   b.abilityAt = now + lo + b.rand() * (hi - lo);
@@ -71,11 +78,23 @@ export function pressAbility(b, { target, now }) {
   b.gaps ??= {};
   for (const a of s.abilities.list) {
     const logic = ABILITY_LOGIC[a.row.id];
-    if (!logic || charges(s.abilities, a.slot) < 1 || now < (b.gaps[a.slot] ?? -Infinity)) continue;
+    if (!logic || !pressesAbility(logic, { autoPlayer }) || charges(s.abilities, a.slot) < 1 || now < (b.gaps[a.slot] ?? -Infinity)) continue;
     const rule = ruleOf(b.skirmish, logic, b);
     if (d > rule.range) continue;
     if (rule.below != null && s.hp / s.hpMax >= rule.below) continue;
+    let plan = null;
+    if (logic === 'Grenade') {
+      // (the throw planned first: the token free, the range, the dispersion, the arc; at the last known position)
+      const nav = world?.nav ?? null;
+      plan = planThrow({ from: eyeOf(s), target: [target.at.x, target.at.y, target.at.z], now, rand: b.rand, team: s.team, tokens: s.kit?.tokens ?? null, heightAt: nav ? (x, z) => heightAt(nav, x, z) : null, solid: nav ? (p, q) => firstSolid(nav, p, q) : null });
+      if (!plan) continue;
+    }
     if (!press(s.abilities, a.slot, now).fired) continue;
+    if (plan) {
+      // (the team's token: no other grenade of the side for 12 to 24 s)
+      s.throwPlan = plan;
+      if (s.kit?.tokens) takeToken(s.kit.tokens, s.team, now, b.rand, b.difficulty?.name ?? null);
+    }
     if (rule.gap) b.gaps[a.slot] = now + rule.gap.min + b.rand() * (rule.gap.max - rule.gap.min);
     return { slot: a.slot, id: a.row.id };
   }

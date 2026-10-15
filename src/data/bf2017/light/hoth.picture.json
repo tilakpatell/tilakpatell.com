@@ -57,6 +57,16 @@
         "_source": {
           "horizon": "measured: the mean of the decoded web/textures/levels/lighting/hoth/sunny_01/t_hoth_sunny_02_c.ktx2's foot row, linear 0…1 (rowMean)",
           "size": "web/textures/levels/lighting/hoth/sunny_01/t_hoth_sunny_02_c.ktx2's own (the desktop's UASTC encode)"
+        },
+        "hdr": {
+          "url": "textures/galaxy/bf2017/hdr/t_hoth_sunny_02_c",
+          "widths": [
+            2048
+          ],
+          "format": "rgba16f",
+          "_source": {
+            "widths": "the export's web_opt/hdr/<file>.2048.ktx2 (RGBA16F, Zstandard: scripts/desktop/bf2017-panoramas.mjs), copied to public/textures/galaxy/bf2017/hdr/; the 4096 (23 MB) is not shipped"
+          }
         }
       },
       "gradient": {
@@ -123,6 +133,16 @@
         "_source": {
           "horizon": "measured: the mean of the decoded web/textures/levels/lighting/hoth/sunset_01/t_hoth_sunset_01_panoramic_c.ktx2's foot row, linear 0…1 (rowMean)",
           "size": "web/textures/levels/lighting/hoth/sunset_01/t_hoth_sunset_01_panoramic_c.ktx2's own (the desktop's UASTC encode)"
+        },
+        "hdr": {
+          "url": "textures/galaxy/bf2017/hdr/t_hoth_sunset_01_panoramic_c",
+          "widths": [
+            2048
+          ],
+          "format": "rgba16f",
+          "_source": {
+            "widths": "the export's web_opt/hdr/<file>.2048.ktx2 (RGBA16F, Zstandard: scripts/desktop/bf2017-panoramas.mjs), copied to public/textures/galaxy/bf2017/hdr/; the 4096 (23 MB) is not shipped"
+          }
         }
       },
       "gradient": {
@@ -189,6 +209,16 @@
         "_source": {
           "horizon": "measured: the mean of the decoded web/textures/levels/lighting/hoth/sunny_01/t_hoth_sunny_02_c.ktx2's foot row, linear 0…1 (rowMean)",
           "size": "web/textures/levels/lighting/hoth/sunny_01/t_hoth_sunny_02_c.ktx2's own (the desktop's UASTC encode)"
+        },
+        "hdr": {
+          "url": "textures/galaxy/bf2017/hdr/t_hoth_sunny_02_c",
+          "widths": [
+            2048
+          ],
+          "format": "rgba16f",
+          "_source": {
+            "widths": "the export's web_opt/hdr/<file>.2048.ktx2 (RGBA16F, Zstandard: scripts/desktop/bf2017-panoramas.mjs), copied to public/textures/galaxy/bf2017/hdr/; the 4096 (23 MB) is not shipped"
+          }
         }
       },
       "gradient": {

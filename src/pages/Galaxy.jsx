@@ -13,6 +13,7 @@ import EarnNote from '../components/universe/EarnNote';
 import { useEarn } from '../components/universe/useEarn';
 import { FIRST, parseSystem, systemById } from '../components/galaxy/systems';
 import { SITES, canLand } from '../components/galaxy/surface/sites';
+import { wayDown } from '../components/galaxy/gameLevels';
 import { starfighterAt } from '../components/galaxy/surface/missions/starfighterMaps';
 import galaxyModule from '../components/galaxy/module';
 import surfaceModule from '../components/galaxy/surface/module';
@@ -279,8 +280,9 @@ export default function Galaxy() {
   const onCrash = useCallback(
     (id) => {
       if (!id || !canLand(id) || leaving) return false;
-      prefetchSurface();
-      const to = `/galaxy/${id}/surface`;
+      // (a world on the game's own level: its menu, and nothing of the surface fetched)
+      const { to, game } = wayDown(id);
+      if (!game) prefetchSurface();
       setLeaving({ to, crash: true });
       timer.current = setTimeout(() => navigate(to), 700);
       return true;
@@ -304,8 +306,13 @@ export default function Galaxy() {
     (id, district = null) => {
       if (!canLand(id) || leaving) return;
       audioContext();
+      const { to, game } = wayDown(id, district);
+      // (a world on the game's own level lands in the game's menu: by the route, with no surface made or handed over)
+      if (game) {
+        leave(to, { land: true });
+        return;
+      }
       prefetchSurface();
-      const to = `/galaxy/${id}/surface${district ? `?district=${encodeURIComponent(district)}` : ''}`;
       const host = view.current.live ? view.current.host?.() : null;
       // (another of the world's maps lands by the route: the handed-over world is the main one)
       if (!host || district) {
@@ -338,6 +345,12 @@ export default function Galaxy() {
   // near a planet you can land on: the surface's code, and its page's, come ahead
   useEffect(() => {
     if (!(at === 'planet' || at === 'cloudcity') || !canLand(current)) return;
+    // (a world on the game's own level: the game's page and its screens come ahead instead)
+    if (wayDown(current).game) {
+      import('./Battlefront').catch(() => {});
+      import('../components/battlefront/screens/index.js').catch(() => {});
+      return;
+    }
     prefetchSurface();
     import('./GalaxySurface').catch(() => {});
   }, [at, current]);

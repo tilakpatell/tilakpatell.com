@@ -13,6 +13,45 @@ function harness() {
 }
 
 describe('the player’s hands', () => {
+  it('reads an ability key once as the press and, while it is down, as held: Q E F or 1 2 3', () => {
+    const { input, key } = harness();
+    key('KeyQ', true);
+    expect(input.read()).toMatchObject({ ability: 1, abilityHeld: 1 });
+    expect(input.read()).toMatchObject({ ability: 0, abilityHeld: 1 });
+    key('KeyQ', false);
+    expect(input.read()).toMatchObject({ ability: 0, abilityHeld: 0 });
+    key('KeyE', true);
+    expect(input.read()).toMatchObject({ ability: 2, abilityHeld: 2, interact: true });
+    key('KeyE', false);
+    key('Digit3', true);
+    expect(input.read()).toMatchObject({ ability: 3, abilityHeld: 3 });
+    key('Digit3', false);
+    key('KeyF', true);
+    expect(input.read().ability).toBe(3);
+    key('KeyF', false);
+    // (a check's finger)
+    input.holdAbility(1);
+    expect(input.read()).toMatchObject({ ability: 1, abilityHeld: 1 });
+    expect(input.read()).toMatchObject({ ability: 0, abilityHeld: 1 });
+    input.holdAbility(0);
+    expect(input.read().abilityHeld).toBe(0);
+  });
+
+  it('reads E as an interact held for as long as it is down: a gate’s panel is held a second', () => {
+    const { input, key } = harness();
+    key('KeyE', true);
+    expect(input.read()).toMatchObject({ interact: true, interactHeld: true });
+    expect(input.read()).toMatchObject({ interact: false, interactHeld: true });
+    key('KeyE', false);
+    expect(input.read().interactHeld).toBe(false);
+    // (a check's finger)
+    input.holdInteract(true);
+    expect(input.read()).toMatchObject({ interact: true, interactHeld: true });
+    expect(input.read().interactHeld).toBe(true);
+    input.holdInteract(false);
+    expect(input.read().interactHeld).toBe(false);
+  });
+
   it('walks forward on W and strafes on D', () => {
     const { input, key } = harness();
     key('KeyW', true);

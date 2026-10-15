@@ -27,7 +27,9 @@ describe('the schema', () => {
     expect(presetValues('ultra')).toMatchObject({ shadows: 'ultra', shadowDistance: 140, gi: 'high', volumetric: 'high', fogQuality: 'high', godRays: 'on', lensFlare: 'on' });
     expect(presetValues('high')).toMatchObject({ shadows: 'medium', shadowDistance: 30, gi: 'medium', volumetric: 'low', godRays: 'off' });
     expect(presetValues('mid')).toMatchObject({ gi: 'ssao', shadows: 'low', contactShadows: 'off', cloudShadows: 'on', anisotropy: '4' });
-    expect(presetValues('low')).toMatchObject({ gi: 'off', shadows: 'off', bloom: 'on', filmGrain: 'off', aberration: 'off', anisotropy: '1' });
+    // (Low is the floor since 2026-10-13, the most compressed web settings: no bloom, as BUDGETS.low.bloom on the classic renderer)
+    expect(presetValues('low')).toMatchObject({ gi: 'off', shadows: 'off', bloom: 'off', filmGrain: 'off', aberration: 'off', anisotropy: '1' });
+    expect(presetValues('mid').bloom).toBe('on');
   });
 });
 

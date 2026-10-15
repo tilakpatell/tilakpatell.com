@@ -10,7 +10,8 @@
 //   stage for this hero at this level (a figure on the game's skeleton, at
 //   mid and over), and the clip it stands in
 // STAGE: where the pieces stand, from the level (relative to the dome)
-// createHeroStage(canvas, { level, reduced }) → { show(spec), resize(), dispose() } | null
+// createHeroStage(canvas, { level, reduced }) → { show(spec), play(clip), resize(), dispose() } | null
+//   play(clip): one of the figure's clips once ('emote.2', 'victory.1'), then its idle again
 
 import * as THREE from 'three';
 import { KITS } from './catalog/bf2017-frontend';
@@ -20,6 +21,7 @@ import { cutFor, loadWalrusBody, packUrls } from '../../../lib/three/walrus';
 import { ktx2Loader, loadGltf } from '../../../lib/three/gltf';
 import { pixelRatio } from '../../../lib/device';
 import { quiet, releaseContext } from '../../../lib/three/renderer';
+import { shownLoop } from '../../../lib/shownLoop';
 
 // where the pieces stand: src/data/bf2017/stage.json (the level's own
 // placings, from the dome's foot; the hero at its middle)
@@ -35,11 +37,16 @@ export function stageFor({ level, hero }) {
 }
 
 const rgb = (v, k = 1) => new THREE.Color(v[0] * k, v[1] * k, v[2] * k);
+// the idle is drawn at most this often, and at the display's own rate while
+// the stage is dragged: a hero breathing needs no 144 frames a second from a
+// second GL context beside the runtime's (the hangar's turntable is drawn at
+// 30 too, universe/shipyard/showroomRules)
+const FPS = 30;
 
 export function createHeroStage(canvas, { level = 'high', reduced = false } = {}) {
   let renderer;
   try {
-    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false }));
+    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' }));
   } catch {
     return null;
   }
@@ -92,11 +99,41 @@ export function createHeroStage(canvas, { level = 'high', reduced = false } = {}
   let figure = null;
   let mixer = null;
   let wanted = null;
+  let clips = null;
+  let idle = null;
+  let asked = null; // (a clip asked for before the figure landed)
   const clear = () => {
     if (figure) turn.remove(figure);
     mixer?.stopAllAction();
     figure = null;
     mixer = null;
+    clips = null;
+    idle = null;
+  };
+  // one of the figure's clips once (an emote, a victory pose: the Collection's
+  // preview), eased in from the idle and back to it; nothing for a clip the
+  // figure's packs lack
+  const play = (name) => {
+    asked = name ?? null;
+    const clip = name && clips?.[name];
+    if (!mixer || !clip) return false;
+    const a = mixer.clipAction(clip);
+    a.reset();
+    a.setLoop(THREE.LoopOnce, 1);
+    a.clampWhenFinished = true;
+    a.play();
+    if (idle && idle !== a) a.crossFadeFrom(idle, 0.25, false);
+    const back = (e) => {
+      if (e.action !== a) return;
+      mixer?.removeEventListener('finished', back);
+      if (!idle || idle === a) return;
+      idle.reset().play();
+      idle.crossFadeFrom(a, 0.3, false);
+    };
+    mixer.addEventListener('finished', back);
+    asked = null;
+    draw();
+    return true;
   };
   const show = (spec) => {
     const url = spec?.src?.url;
@@ -115,9 +152,11 @@ export function createHeroStage(canvas, { level = 'high', reduced = false } = {}
         });
         turn.add(figure);
         mixer = new THREE.AnimationMixer(figure);
+        clips = body.clips;
         const clip = POSES.map((n) => body.clips[n]).find(Boolean);
-        if (clip) mixer.clipAction(clip).play();
+        if (clip) (idle = mixer.clipAction(clip)).play();
         mixer.update(reduced ? 0 : 0.01);
+        if (asked) play(asked);
         draw();
       })
       .catch(() => {});
@@ -135,17 +174,19 @@ export function createHeroStage(canvas, { level = 'high', reduced = false } = {}
     if (alive) renderer.render(scene, camera);
   }
   // (still under reduced motion: one frame a change; else the idle breathes
-  // and the stage turns a little toward the drag)
-  let raf = 0;
+  // and the stage turns a little toward the drag, only while the canvas is in
+  // view and the tab showing: lib/shownLoop. A second GL context beside the
+  // runtime's, it drew every frame while the Collection was open, its tab
+  // put away or not)
   let last = performance.now();
   const tick = (now) => {
-    raf = requestAnimationFrame(tick);
+    if (drag == null && now - last < 1000 / FPS - 1) return;
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     mixer?.update(dt);
     draw();
   };
-  if (!reduced) raf = requestAnimationFrame(tick);
+  const loop = reduced ? null : shownLoop(canvas, tick);
   let drag = null;
   const down = (e) => (drag = e.clientX);
   const move = (e) => {
@@ -158,17 +199,22 @@ export function createHeroStage(canvas, { level = 'high', reduced = false } = {}
   canvas.addEventListener('pointerdown', down);
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerup', up);
+  // (a swipe the page takes, touch-action pan-y, ends in a cancel, not an
+  // up: a drag left set would hold the stage at the display's rate)
+  window.addEventListener('pointercancel', up);
   resize();
 
   return {
     show,
+    play,
     resize,
     dispose() {
       alive = false;
-      cancelAnimationFrame(raf);
+      loop?.stop();
       canvas.removeEventListener('pointerdown', down);
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
       clear();
       renderer.dispose();
       releaseContext(renderer);

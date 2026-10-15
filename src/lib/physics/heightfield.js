@@ -14,6 +14,10 @@
 //   addHeightfield(physics, { heights, n = 65, size = 64, x, z, friction =
 //     0.2, restitution = 0.15, tag = null }) → Body (remove it with physics.remove)
 //   (tag: the ground's material index, lib/physics/materials.js's, for the queries)
+//   addHoledGround(physics, { heights, n, size, x, z, hole(px, pz) → bool, friction, restitution })
+//     → Body | null: the same ground as a triangle mesh with no triangle over a
+//     hole (Rapier's heightfield cannot leave one out from JS); null when every
+//     triangle is a hole
 
 export function addHeightfield(physics, { heights, n = 65, size = 64, x = 0, z = 0, friction = 0.2, restitution = 0.15, tag = null }) {
   if (!heights || heights.length !== n * n) throw new Error(`physics: a heightfield of ${n} × ${n} needs ${n * n} heights, not ${heights?.length}`);
@@ -28,4 +32,30 @@ export function addHeightfield(physics, { heights, n = 65, size = 64, x = 0, z =
     restitution,
     colliders: [{ shape: 'heightfield', args: [n - 1, n - 1, cols, [size, 1, size], physics.RAPIER.HeightFieldFlags.FIX_INTERNAL_EDGES], ...(tag != null ? { tag } : {}) }],
   });
+}
+
+export function addHoledGround(physics, { heights, n = 65, size = 64, x = 0, z = 0, hole, friction = 0.2, restitution = 0.15 }) {
+  if (!heights || heights.length !== n * n) throw new Error(`physics: a ground of ${n} × ${n} needs ${n * n} heights, not ${heights?.length}`);
+  const step = size / (n - 1);
+  const vertices = new Float32Array(n * n * 3);
+  for (let iz = 0; iz < n; iz++)
+    for (let ix = 0; ix < n; ix++) {
+      const k = (iz * n + ix) * 3;
+      vertices[k] = x + ix * step;
+      vertices[k + 1] = heights[iz * n + ix];
+      vertices[k + 2] = z + iz * step;
+    }
+  const tris = [];
+  for (let iz = 0; iz < n - 1; iz++)
+    for (let ix = 0; ix < n - 1; ix++) {
+      const a = iz * n + ix;
+      const b = a + 1;
+      const c = a + n;
+      const d = c + 1;
+      // (a triangle goes where its middle is over a hole; wound so its face is up, +y)
+      if (!hole(x + (ix + 1 / 3) * step, z + (iz + 2 / 3) * step)) tris.push(a, c, b);
+      if (!hole(x + (ix + 2 / 3) * step, z + (iz + 1 / 3) * step)) tris.push(b, c, d);
+    }
+  if (!tris.length) return null;
+  return physics.add({ type: 'fixed', position: [0, 0, 0], group: 'floor', friction, restitution, colliders: [{ shape: 'trimesh', args: [vertices, Uint32Array.from(tris)] }] });
 }

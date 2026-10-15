@@ -37,15 +37,19 @@
 // `timestamp-query`, keeps the pace) through quality.setSource; a world on
 // the GPU clock never has its canvas resized by it (the output size
 // never changes: TAA's history). The loop's cadence is cadence.js's: every
-// second beat for a visitor who pins 30 (`fps`) or on lane N6's T0.
+// second beat for a visitor who pins 30 (`fps`); otherwise every beat until
+// the frames say 60 cannot hold with nothing left to lower, then an even 30
+// (createCadence, fed each frame's interval, its main-thread time and the
+// GPU clock's), and back.
 // `tier` (gfx) → Promise<'T0' | 'T1' | 'T2' | null>: the device's renderer
 // tier (lib/gpuProbe, the GPU-first design's G1), asked once a page, before
 // the first 'nodes' world is made, so its one-second probe runs under the
 // loading screen and never in a world's frames; `rt.tier` holds the answer
-// (null until then, or when it could not say). A classic world never asks.
+// (null until then, or when it could not say), `rt.tierWhy` its reason
+// where the decider returns { tier, why }. A classic world never asks.
 
 import { createLoop } from '../lib/three/loop';
-import { cadenceFor } from './cadence';
+import { createCadence } from './cadence';
 import { settle } from '../lib/settle';
 import { pickBackend } from './backend';
 import { createHandover } from './handover';
@@ -81,12 +85,17 @@ export function createEvents() {
   };
 }
 
-export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, video = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug(), gpuClock = null, fps = null, tier: decideTier = null }) {
+export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input, quality, saves = null, store = null, assets, audio, workers = null, video = null, origin = createOrigin(), events = createEvents(), gpu = false, override = null, visible = () => true, calibrate: calibrating = true, debug = createDebug(), gpuClock = null, fps = null, tier: decideTier = null, onLoss = null, lost: startLost = false }) {
   let gfx = null;
   const clocks = new WeakMap(); // a renderer's GPU clock, made once (it turns on its timestamps)
   let kind = null; // the backend asked for
   let coming = null; // { kind, promise }: a backend still being made, for every mount that asks meanwhile
-  let lostWebGPU = false;
+  // (`lost` at creation: a chip whose WebGPU device was lost twice this
+  // week starts on the node renderer over WebGL 2, lib/gpuProbe's lostTwice)
+  let lostWebGPU = Boolean(startLost);
+  let lastLoss = null; // the backend kind the last loss was on
+  let losses = 0; // this visit's, of any kind
+  let lostModule = null; // the id of the world up, or being made, when it was
   let status = 'idle';
   let failure = null; // { world, name, message, module }: why the last world failed
   const failed = (mod, err) => {
@@ -108,6 +117,9 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   let fresh = null; // the box of a mount not yet drawn, marked data-fresh
   let resized = null; // { w, h }: the box's new size, for the next frame to take
   let tier = null; // the renderer tier, once asked (decideTier)
+  let tierWhy = null; // and its reason, where the decider gives one ({ tier, why }: lib/gpuProbe's)
+  let pacer = null; // the cadence's judge for the world that is up (createCadence)
+  const clockNow = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
   let tiering = null; // its one asking, shared by every mount meanwhile
   const listeners = new Set();
   const dev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
@@ -138,8 +150,10 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   const frame = (t) => {
     if (!current) return false;
     const dt = last ? Math.min(MAX_DT, (t - last) / 1000) : 0.016;
+    const interval = last ? t - last : 0;
     last = t;
     const { world } = current;
+    let cpuMs = 0;
     try {
       // the box's new size (rt.resize), before the draw, for the same reason
       // as the quality level below
@@ -171,13 +185,22 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
         if (shift) events.emit('origin', { shift });
       }
       const snapshot = input.sample(t);
+      const began = clockNow();
       world.step?.(dt, snapshot, t);
       world.draw({ dt, now: t, renderer: gfx.renderer, quality });
+      cpuMs = clockNow() - began;
     } catch (err) {
       if (dev) console.error(`[${current.module.id}] frame failed`, err);
       failed(current.module, err);
       fail();
       return false;
+    }
+    // 60 or an even 30 (createCadence); not while the next world is made
+    // behind this one, whose making these frames carry
+    if (pacer && !rt.loading) {
+      const clock = gfx.renderer ? clocks.get(gfx.renderer) : null;
+      const next = pacer.frame(t, { interval, cpuMs, gpuMs: clock?.available ? (clock.last ?? null) : null, floored: Boolean(quality.floored), beatMs: loop.beat ?? undefined });
+      if (next !== null) loop.setCadence?.(next);
     }
     // (the cover is read after the draw, in the frame's own task: see cover())
     if (takeSnap) {
@@ -288,7 +311,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     kind = want;
     const asked = { kind: want, promise: null };
     coming = asked;
-    asked.promise = new Promise((resolve) => resolve(makeBackend(want, { budget: quality.budget, onLost: () => rt.lost(), hdr: rt.video?.hdr === 'on' }))).then(
+    asked.promise = new Promise((resolve) => resolve(makeBackend(want, { budget: quality.budget, onLost: (loss) => rt.lost(loss), hdr: rt.video?.hdr === 'on' }))).then(
       (made) => {
         // another kind asked for since (or the runtime let go): this one goes too
         if (coming !== asked) {
@@ -301,12 +324,15 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       },
       (err) => {
         if (coming === asked) coming = null; // (the next mount tries again)
-        // WebGPU that would not start (an adapter refused, a device the
-        // browser would not make: Safari's on some Macs, an old driver):
-        // counted as lost, once, and the world made on the next kind down
-        // (backend.js: the node renderer over WebGL 2, or the classic one)
-        if (want === 'webgpu' && !lostWebGPU) {
-          if (dev) console.warn('WebGPU did not start: the next renderer down', err);
+        // (WebGPU tried and not had: no device, an init that threw, a
+        // fallback adapter, an adapter refused: Safari's on some Macs, an
+        // old driver. Counted as lost and the world made at once, and for
+        // the rest of the page, on the next renderer down, the owner's order:
+        // backend.js's node renderer over WebGL 2, or the classic one for a
+        // module with a classic path at low and mid. ?gpu=webgpu asked for
+        // WebGPU outright: the failure is the answer it wants)
+        if (want === 'webgpu' && override !== 'webgpu' && (coming === null || coming === asked)) {
+          if (dev) console.warn('WebGPU could not be had: the next renderer down', err);
           lostWebGPU = true;
           if (kind === want) kind = null;
           return backendFor(module);
@@ -329,7 +355,8 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     // (the drawing buffer's pixels: the 4K start the world's headroomAt takes)
     const pixels = Math.round((gfx.size?.w ?? 0) * (gfx.size?.h ?? 0) * ratioFor(module) ** 2);
     quality.setSource?.(onGpu ? 'gpu' : nodes ? 'cpu' : 'classic', { gpuTime: onGpu ? clocks.get(gfx.renderer) : null, fps, tier, pixels });
-    loop.setCadence?.(cadenceFor({ tier: tier ?? quality.tier, fps }));
+    pacer = createCadence({ fps });
+    loop.setCadence?.(pacer.every);
     quality.reset?.();
     quality.hold?.(WARM_UP);
     gfx.setRatio?.(ratioFor(module));
@@ -349,7 +376,10 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       tiering ??= Promise.resolve()
         .then(() => decideTier(made))
         .then(
-          (t) => (tier = t ?? null),
+          (t) => {
+            tier = (t && typeof t === 'object' ? t.tier : t) ?? null;
+            tierWhy = (t && typeof t === 'object' ? t.why : null) ?? null;
+          },
           (err) => {
             if (dev) console.warn('the renderer tier could not be decided', err);
           },
@@ -500,6 +530,27 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     get tier() {
       return tier;
     },
+    get tierWhy() {
+      return tierWhy;
+    },
+    // (a loss there is somewhere to come back from: one on WebGPU, whose
+    // next backend is the node renderer over WebGL 2, or the visit's first
+    // on WebGL, a driver's reset that a fresh context on a fresh canvas
+    // outlives; useWorld mounts its page's world again once. A second on
+    // WebGL is the chip's answer: the page says so, with Reload)
+    get recoverable() {
+      return lastLoss === 'webgpu' || (lastLoss != null && losses === 1);
+    },
+    // (whose world that was: only its page mounts again, useWorld's recoverNow)
+    get lostModule() {
+      return lostModule;
+    },
+    // (the chip's own clock on the renderer that is up, lib/three/gpuTime,
+    // or null: a world's waiting screen reads its median for the pace's
+    // recommendation)
+    get gpuClock() {
+      return gfx?.renderer ? (clocks.get(gfx.renderer) ?? null) : null;
+    },
     get failure() {
       return failure;
     },
@@ -533,9 +584,20 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       current?.world.setVisible?.(shown);
       if (shown) loop.kick();
     },
-    // the context is gone: the world with it; the next mount makes a backend afresh
-    lost() {
-      if (kind === 'webgpu') lostWebGPU = true;
+    // the context is gone: the world with it, and any world still being
+    // made on it (its make ends at its next check, quietly: the status is
+    // 'lost', not 'failed'); the next mount makes a backend afresh. `loss`
+    // ({ reason, message, adapter }, webgpu.js's) goes to onLoss with the
+    // kind it was on, for the chip's record (runtime/index.js)
+    lost(loss = {}) {
+      const on = kind;
+      if (on === 'webgpu') lostWebGPU = true;
+      lastLoss = on;
+      losses += 1;
+      lostModule = (current?.module ?? (making?.token === seq ? making.module : null))?.id ?? null;
+      seq += 1;
+      making = null;
+      coming = null;
       const was = current;
       current = null;
       clearHost();
@@ -544,6 +606,11 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       gfx?.dispose();
       gfx = null;
       setStatus('lost');
+      try {
+        onLoss?.({ ...(loss ?? {}), kind: on });
+      } catch (err) {
+        if (dev) console.warn('the loss could not be kept', err);
+      }
     },
     async mount(module, props = {}, host) {
       const mod = validateModule(module);

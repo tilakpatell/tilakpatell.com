@@ -15,6 +15,7 @@ import physics from '../../data/bf2017/physics/soldier.json';
 import { ROLL, createAbilities, tick as tickAbilities } from './abilities.js';
 import { createStack, resolve, tick as tickStack } from './affectors.js';
 import { heightAt, walkable } from './nav.js';
+import { meshMove } from './meshNav.js';
 import { createGun, tick as tickGun } from './weapons.js';
 
 const BODY = physics.rows[physics.default];
@@ -120,7 +121,8 @@ export function hurt(s, { damage, part = 'chest', by = null, now = 0 }) {
 export function speedOf(s) {
   if (s.state === 'roll') return ROLL_SPEED;
   const pose = s.stance === 'crouch' ? GROUND.crouch : GROUND.stand;
-  const sprint = s.sprint && pose.sprintMultiplier > 0 ? pose.sprintMultiplier : 1;
+  // (an ability's AbilitySprintSpeedMultiplier, the vanguard's and infiltration's 1.3, on the sprint alone)
+  const sprint = s.sprint && pose.sprintMultiplier > 0 ? pose.sprintMultiplier * resolve(s.stack, 'sprint', 1) : 1;
   return resolve(s.stack, 'speed', pose.velocity * sprint);
 }
 
@@ -143,8 +145,13 @@ export function roll(s, dir, now) {
   s.rollDir = [...dir];
 }
 
-// a step along dir (a unit [x, z]) at the soldier's speed, sliding along what blocks it
+// a step along dir (a unit [x, z]) at the soldier's speed, sliding along what blocks it: on the level's
+// navmesh where the battle has one and the soldier stands on it (meshNav.js), else on the navgrid
 export function move(s, dir, dt, nav) {
+  if (nav?.mesh) {
+    const m = meshMove(s, dir, dt, nav, speedOf(s));
+    if (m !== null) return m;
+  }
   const step = speedOf(s) * dt;
   const len = Math.hypot(dir[0], dir[1]);
   if (!s.alive || len < 1e-9 || step <= 0) {

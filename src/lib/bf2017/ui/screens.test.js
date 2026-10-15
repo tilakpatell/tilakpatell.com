@@ -13,6 +13,51 @@ const flat = (boxes, out = []) => {
 const byId = (boxes, id) => flat(boxes).find((b) => b.id.endsWith(id));
 const near = (a, b) => expect(Math.abs(a - b)).toBeLessThanOrEqual(1);
 
+const boxesUnder = (box) => flat(box.children ?? []);
+const findBox = (tree, name) => flat(tree.boxes).find((b) => b.id.split('/').pop() === name);
+
+describe('the parts that grow, the lists the code fills, the boxes that bleed', () => {
+  it('draws a Play tile’s outline round the whole tile', () => {
+    const tree = screen('PlayScreen');
+    const tile = findBox(tree, 'Multiplayer');
+    const outline = boxesUnder(tile).find((b) => b.id.endsWith('/Outline'));
+    expect([outline.x, outline.y, outline.w, outline.h]).toEqual([tile.x, tile.y, tile.w, tile.h]);
+  });
+
+  it('lays a dynamic list’s cells from its template, the crumbs’ words in its empty texts', () => {
+    const tree = screen('MainMenuScreen', { items: { BreadcrumbList: [{ id: 'play', label: 'PLAY' }, { id: 'single', label: 'SINGLE PLAYER' }] } });
+    const cells = findBox(tree, 'BreadcrumbList').children;
+    expect(cells.map((c) => c.label)).toEqual(['PLAY', 'SINGLE PLAYER']);
+    expect(cells[1].x).toBeGreaterThan(cells[0].x);
+    expect(boxesUnder(cells[0]).some((b) => b.type === 'text' && b.text === 'PLAY')).toBe(true);
+  });
+
+  it('lays a padded container’s parts inside its padding: a tile’s words 30 px in', () => {
+    const tile = findBox(screen('PlayScreen'), 'Multiplayer');
+    const title = boxesUnder(tile).find((b) => b.id.endsWith('/Title'));
+    expect(title.x).toBe(tile.x + 30);
+  });
+
+  it('carries a box’s picture and its blend', () => {
+    expect(findBox(screen('PairingScreen'), 'Background').texture).toMatchObject({ ref: '3D80EC7618F789C7', align: 'stretch' });
+    const video = boxesUnder(findBox(screen('PlayScreen'), 'Multiplayer')).find((b) => b.type === 'video');
+    expect(video.blend).toBe('additive');
+  });
+
+  it('drops the parts a screen leaves out inside a named box, so they take no room: the footer’s BACK first', () => {
+    const tree = screen('PlayScreen', { drop: { FooterBar: ['Select', 'Edit', 'View', 'Select#2', 'Back#2', 'Select#3', 'Back#3', 'c11'] } });
+    const cells = flat(findBox(tree, 'SocialHubTargetedList').children).filter((b) => b.type === 'cell');
+    expect(cells.map((c) => c.id.split('/').pop())).toEqual(['Back']);
+    expect(cells[0].x).toBe(97);
+    // (outside the named box, a part of the same name stays)
+    expect(findBox(screen('PlayScreen', { drop: { NoSuchBox: ['Multiplayer'] } }), 'Multiplayer')).toBeTruthy();
+  });
+
+  it('marks a root box the tree expands over the whole frame as bleeding to the window', () => {
+    expect(findBox(screen('PairingScreen'), 'Background').bleed).toBe(true);
+  });
+});
+
 describe("a screen's tree, resolved", () => {
   it('holds the front end and the in-game screens the era rule allows', () => {
     expect(SCREENS).toContain('UI/Frontend/Screens/Start/MainMenuScreen');
@@ -80,6 +125,27 @@ describe("a screen's tree, resolved", () => {
     expect(faceFor('NewsGothicRomanBT80px')).toEqual({ family: 'var(--font-bf-text)', size: 80, weight: 400 });
     expect(faceFor('Aurebesh14px').family).toBe('var(--font-aurebesh)');
     expect(faceFor('Univers620BoldCondensed30px').family).toBe('var(--font-bf-hud)');
+  });
+
+  it('gives no two siblings one id, in any screen: a second of a name is name#2', () => {
+    const dups = [];
+    for (const name of SCREENS) {
+      const walk = (boxes, parent) => {
+        const seen = new Set();
+        for (const b of boxes ?? []) {
+          if (seen.has(b.id)) dups.push(`${name} ${parent}/${b.id.split('/').pop()}`);
+          seen.add(b.id);
+          walk(b.children, b.id);
+        }
+      };
+      walk(screen(name).boxes, '');
+    }
+    expect(dups).toEqual([]);
+    // (the in-game menu holds siblings the export names alike, the page keyed them twice)
+    const menu = flat(screen('IngameMenuMPScreen').boxes).map((b) => b.id);
+    const second = menu.find((id) => /#2$/.test(id));
+    expect(second).toBeDefined();
+    expect(menu).toContain(second.replace(/#2$/, ''));
   });
 
   it('returns null for a screen it does not hold', () => {

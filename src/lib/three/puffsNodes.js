@@ -92,7 +92,9 @@ function puffHooks(m, u, { trunk = false, wind = null } = {}) {
       }
       const cut = u.uPuffBlob.sample(puv).r.sub(0.3);
       const thin = cut.lessThan(0.1);
-      If(flag ? thin.and(flag.lessThan(0.5)) : thin, () => Discard());
+      If(flag ? thin.and(flag.lessThan(0.5)) : thin, () => {
+        Discard();
+      });
       const tone = mix(u.uPuffA, u.uPuffB, smoothstep(0, 1, dot(normalize(normalWorldGeometry), normalize(u.uPuffSun))));
       return d.rgb.mul(flag ? select(flag.greaterThan(0.5), u.uPuffBark, tone) : tone);
     },

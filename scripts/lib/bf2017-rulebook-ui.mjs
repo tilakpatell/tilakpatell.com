@@ -133,6 +133,25 @@ function elementOf(a, i, ctx, w, depth = 0) {
   if (typeof o.PaletteIndex === 'number' && o.PaletteIndex) el.palette = o.PaletteIndex;
   if (typeof o.Alpha === 'number' && o.Alpha !== 1) el.alpha = r4(o.Alpha);
   if (o.Visible === false) el.visible = false;
+  // (how the box is laid on what is under it; alpha blend, the default, is not written)
+  if (typeof o.BlendMode === 'string' && o.BlendMode !== 'WSUIBlendMode_AlphaBlend') el.blend = o.BlendMode.replace(/^WSUIBlendMode_/, '').toLowerCase();
+  if (o.$type === 'PaddingContainerData' && o.Padding) el.padding = [o.Padding.PaddingLeft, o.Padding.PaddingTop, o.Padding.PaddingRight, o.Padding.PaddingBottom].map((v) => r2(v ?? 0));
+  if (o.$type === 'TextureElementData') {
+    // its picture: the Id (the field hash of the texture's short name), and
+    // the TextureRef the widget's own mapping gives that Id where the box
+    // holds none (`<widget>_automapping`, or a mapping the widget names)
+    const id = o.Texture?.Id ?? 0;
+    const own = o.Texture?.TextureRef && /[1-9A-F]/i.test(o.Texture.TextureRef) ? o.Texture.TextureRef : null;
+    el.texture = {
+      id,
+      ref: own ?? (id ? mappedRef(ctx.root, a, id) : null),
+      uv: [o.UvRect?.x ?? 0, o.UvRect?.y ?? 0, o.UvRect?.z ?? 1, o.UvRect?.w ?? 1].map(r4),
+      align:
+        String(o.TextureAlignment ?? '')
+          .replace(/^UITextureAlignment_/, '')
+          .toLowerCase() || 'stretch',
+    };
+  }
   if (o.$type === 'TextElementData') {
     el.font = asset(o.FontStyle) ? shortName(asset(o.FontStyle)) : null;
     if (typeof o.FontPaletteIndex === 'number' && o.FontPaletteIndex) el.fontPalette = o.FontPaletteIndex;
@@ -194,6 +213,13 @@ function elementOf(a, i, ctx, w, depth = 0) {
     }
     ctx.want.add(name);
   }
+  // a list the game's code fills, one cell a datum, each made from the
+  // template (the breadcrumb's crumbs): the page lays it from its own data
+  if (o.$type === 'StandardListElementData' && asset(o.CellTemplate) && !isEra(asset(o.CellTemplate))) {
+    const template = asset(o.CellTemplate);
+    el.dynamic = { template, cellSize: xy(o.CellSize, 'X', 'Y'), spacing: o.Spacing ?? 0, horizontal: Boolean(o.Horizontal), sized: Boolean(o.CellsUseDynamicSize) };
+    ctx.want.add(template);
+  }
   if (/^Static(Tab)?ListElementData$/.test(o.$type)) {
     // the list's cells are the widget's StaticListCellEntityData components
     // (those whose events go to this list, when any does), in the order the
@@ -237,6 +263,20 @@ function elementOf(a, i, ctx, w, depth = 0) {
   return el;
 }
 
+// The TextureRef a widget's texture mappings give a texture Id: the
+// mappings it names, then its own `<name>_automapping` (the export indexes
+// those in lower case), or null.
+function mappedRef(root, a, id) {
+  if (!root) return null;
+  const top = deref(a, rootOf(a)?.Object);
+  const names = [...(top?.TextureMappings ?? []).map((m) => m?.$asset).filter(Boolean), `${String(a.name ?? '').toLowerCase()}_automapping`];
+  for (const n of names) {
+    const m = follow(root, n);
+    for (const o of m?.objects ?? []) for (const out of o?.Output ?? []) if (out.Id === id && /[1-9A-F]/i.test(out.TextureRef ?? '')) return out.TextureRef;
+  }
+  return null;
+}
+
 // One widget blueprint: its root's size and layers, its interface slots.
 function treeOf(root, name, ctx) {
   const a = follow(root, name);
@@ -276,7 +316,9 @@ function treeOf(root, name, ctx) {
 // The screens the site draws: the front end's, and the in-game ones the
 // battle uses (the spawn overlay, the in-game menu, the end of round, the
 // scoreboard and the kill card).
-export const SCREEN_GLOB = /^UI\/(Frontend\/Screens\/.+|LoadingScreens\/MPLoadLevel\/.+|InGame\/(Spawn|InGameMenu|EndOfRound|Scoreboard|Death)\/.+|Customize\/Screens\/SpawnOverlayScreen)$/;
+// (the Customize screens are the Collection's: the appearances, emotes,
+// voice lines, victory poses and star cards, src/data/bf2017/collection.json)
+export const SCREEN_GLOB = /^UI\/(Frontend\/Screens\/.+|LoadingScreens\/MPLoadLevel\/.+|InGame\/(Spawn|InGameMenu|EndOfRound|Scoreboard|Death)\/.+|Customize\/Screens\/.+)$/;
 
 // The words the site's front end says that no tree names (the trees fill
 // them at run time): the Play screen's tiles, press-start, the outcome and
@@ -285,6 +327,7 @@ export const FRONT_END_KEYS = ['ID_PLAY_SCR_MULTIPLAYER', 'ID_PLAY_SCR_CAMPAIGN'
 
 export function screensOf(root, { names, strings = null, depth = 6 } = {}) {
   const ctx = {
+    root,
     keys: new Set(FRONT_END_KEYS),
     shapes: new Set(),
     links: new Set(),

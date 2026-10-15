@@ -16,25 +16,35 @@
 // turns following into going to the objective and staying on it, firing
 // on the way, and holding the interaction there when no enemy is close.
 //
-//   createBrain(s, { ai, role, rand, aimScale, system, difficulty, pve }) → brain   (aimScale widens the aim box: a
+//   createBrain(s, { ai, role, rand, aimScale, system, difficulty, pve, ap }) → brain   (aimScale widens the aim box: a
 //     mode's lethality lever; system: the AI system row, ai.system by default, AISystem_PvE for a pve bot;
 //     difficulty: `difficulty.js`'s row, which times the first shot at a new target, the aim's settling and
-//     widens the aim at a target that sprints or crouches; pve: the Skirmish template, tactics and abilities)
+//     widens the aim at a target that sprints or crouches; pve: the Skirmish template, tactics and abilities;
+//     ap: the AutoPlayers' numbers, autoPlayer.js's, for a bot of an Instant Action round: its view is then the
+//     tracker's and its trigger the line of fire's, stepped in act, in place of the aim box and the reaction)
 //   think(brain, world, now) → intent { mode, target, goal, stance, fire, aim }
 //   act(brain, intent, s, dt, world, now)        patternStep(brain) → fire this frame?
-//   world: { nav, lineClear(a, b), squad: { centre, leader, posture } | null, objective, task, enemies, others, shoot(s, aim), who(id) }
+//   world: { nav, lineClear(a, b), squad: { centre, leader, posture } | null, objective, task, enemies, others, shoot(s, aim), who(id), roll(s, dir) }
 //   task: { at: [x, z], spot: [x, z], radius, interact, reach, role }
 
 import { pick } from '../../ai/utility.js';
 import { createSenses } from '../../ai/perception.js';
 import { lead } from '../../combat/aim.js';
-import { findPath, walkable, cellAt, nearestWalkable } from '../nav.js';
+import { findPath, heightAt, walkable, cellAt, nearestWalkable } from '../nav.js';
+import { meshNearest, meshPath } from '../meshNav.js';
+import { fieldTo, legAlong } from '../navField.js';
 import { chestOf, move } from '../soldier.js';
+import { kickAim } from '../weapons.js';
 import { clock, profile } from '../core.js';
 import { pickCover, queryFor } from './cover.js';
 import { pickTarget } from './targeting.js';
 import { queryFor as gameQuery, runQuery } from './coverQuery.js';
 import { skirmishRole, pressAbility } from './skirmish.js';
+import { AHEAD, FACING, TARGET, aimPoint, burstStep, createAim, createBurst, createEvasion, createLof, crouched, groundOk, lofStep, mayFire, noiseOf, strafeSide, takeRoll, viewMiss, viewPoint, viewStep, weaponClass } from './autoPlayer.js';
+
+// a walkable spot near a place: on the level's navmesh at the soldier's height where the battle has
+// one (the floor it is on, not the one over it: meshNav.js), else the navgrid's
+const spotNear = (nav, x, z, r, y) => (nav?.mesh ? meshNearest(nav, x, z, r, y) : null) ?? nearestWalkable(nav, x, z, r);
 
 // The class a soldier plays → the game's AI template for it.
 export const ROLES = { assault: 'rifleman', heavy: 'heavy', officer: 'officer', specialist: 'sniper' };
@@ -63,13 +73,15 @@ export const INTERACT_CLEAR = 10;
 // search, so a long walk across a Galactic Assault map never floods A*. By hand.
 export const FAR = 80;
 export const LEG = 40;
+// How near the round of the place it was sent to a bot leaves that place's field for a search of its own, m (by hand).
+const SENT_NEAR = 4;
 // The cells one of those searches may open before it gives up, by hand.
 export const SEARCH_CELLS = 6000;
 // A waypoint cell a bot has failed to step into (open on the grid, too
 // narrow for its body) is left out of its paths this long, by hand.
 export const AVOID = 10;
 
-export function createBrain(s, { ai, role: given = null, rand = Math.random, aimScale = 1, system: sys = null, difficulty = null, pve = false }) {
+export function createBrain(s, { ai, role: given = null, rand = Math.random, aimScale = 1, system: sys = null, difficulty = null, pve = false, ap = null }) {
   // a Skirmish bot plays its class's PvE template, tactics and AI weapon, under the PvE AI system
   const pveRole = pve ? skirmishRole(s.cls ?? {}) : null;
   const pveTemplate = pve ? ai.skirmish?.templates?.[pveRole] : null;
@@ -89,6 +101,15 @@ export function createBrain(s, { ai, role: given = null, rand = Math.random, aim
     difficulty,
     pve: !!pveTemplate,
     skirmish: pveTemplate ? ai.skirmish : null,
+    // (an AutoPlayer's: its numbers, its tracker, its line of fire and its weapon class's noise in degrees)
+    ap,
+    apAim: ap ? createAim() : null,
+    apLof: ap ? createLof() : null,
+    apEvade: ap ? createEvasion() : null,
+    apClass: ap ? weaponClass(family, s.weapon?.id) : null,
+    apNoise: ap ? noiseOf(ap, weaponClass(family, s.weapon?.id)) : 0,
+    apBurst: ap ? createBurst() : null,
+    apCandidate: null, // the enemy whose line of fire the tracker is watching
     target: null,
     targetSince: 0,
     assigned: null,
@@ -102,7 +123,8 @@ export function createBrain(s, { ai, role: given = null, rand = Math.random, aim
     coverScores: ai.coverScores ?? {},
     preferred: aiWeapon?.outdoorPreferredRange ?? aiWeapon?.preferredRange ?? system?.preferredRange ?? null,
     rand,
-    senses: createSenses({ sight: { range: SIGHT, cone: CONE, far: 1 }, hearing: { range: HEARING }, memory: template.targetLostTime, intuition: 2.5 }),
+    // (an AutoPlayer's sight is its tracker's field of view, AP_TargetTrackerFieldOfViewDegrees to either side: the code's half angle)
+    senses: createSenses({ sight: { range: SIGHT, cone: ap ? Math.cos(ap.fov * (Math.PI / 180)) : CONE, far: 1 }, hearing: { range: HEARING }, memory: template.targetLostTime, intuition: 2.5 }),
     me: { pos: { x: 0, y: 0, z: 0 }, dir: { x: 0, y: 0, z: 1 }, beliefs: {} },
     intent: { mode: 'follow', target: null, goal: null, stance: 'stand', fire: false, aim: null },
     current: null,
@@ -178,6 +200,10 @@ function penalty(brain, e) {
   return 1;
 }
 
+// An AutoPlayer's engaging distance, which bounds who can be its target: AP_MaxTargetEngagingDistanceScale ×
+// the gun's own range (the code: the held weapon's MaxRangeMeterDistance), 2.5 × 200 m for a blaster.
+export const engaging = (brain, range) => brain.ap.engageScale * range;
+
 export function aimAt(brain, from, belief, now, who = null) {
   const tgt = v3(belief);
   if (brain.aimTarget !== belief.id) {
@@ -211,7 +237,7 @@ const OPTIONS = [
 ];
 
 // a point `by` metres from `from` away from `threat`, leaning toward the squad's centre
-function fallBack(nav, from, threat, centre, by = 8) {
+function fallBack(nav, from, threat, centre, by = 8, y = null) {
   let ax = from[0] - threat[0];
   let az = from[1] - threat[1];
   const L = Math.hypot(ax, az) || 1;
@@ -229,10 +255,125 @@ function fallBack(nav, from, threat, centre, by = 8) {
   }
   const M = Math.hypot(ax, az) || 1;
   const goal = [from[0] + (ax / M) * by, from[1] + (az / M) * by];
-  return (nav && nearestWalkable(nav, goal[0], goal[1], 6)) ?? goal;
+  return (nav && spotNear(nav, goal[0], goal[1], 6, y)) ?? goal;
+}
+
+const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+
+// An AutoPlayer's target as the game's tracker has it (its code, NOTES.md): of every living enemy inside the
+// engaging distance (no sight is asked of them), the target it has is kept while it is under two seconds old
+// and its line was clear lately; after that every think picks again: the nearest inside the field of view,
+// taken only once its line of fire's flag is true. The nearest in view with no line of fire leaves the bot
+// with no target, though a farther one stands in the open. → a belief of the target, or null
+function trackerTarget(brain, world, s, me, from, now) {
+  const reach = engaging(brain, s.weapon?.range ?? 200);
+  const fov = brain.ap.fov * (Math.PI / 180);
+  const near = (t) => Math.hypot(t.at.x - me[0], t.at.z - me[1]);
+  const list = (world.targets ?? []).filter((t) => near(t) <= reach);
+  const cur = brain.target != null ? (list.find((t) => t.id === brain.target) ?? null) : null;
+  let pick = cur && now - brain.targetSince < TARGET.minSwitch && now - brain.apLof.lastClear < TARGET.clearWithin ? cur : null;
+  if (!pick) {
+    let best = Infinity;
+    let cand = null;
+    for (const t of list) {
+      const d = near(t);
+      if (d < best && Math.abs(wrap(Math.atan2(t.at.x - me[0], t.at.z - me[1]) - s.yaw)) < fov) [cand, best] = [t, d];
+    }
+    if (cand) {
+      // (each enemy's line has its own clocks: another candidate starts them again)
+      if (cand.id !== brain.apCandidate) {
+        brain.apCandidate = cand.id;
+        brain.apLof = createLof();
+      }
+      if (lofStep(brain.apLof, brain.ap, { clear: world.lineClear(from, [cand.at.x, cand.at.y, cand.at.z]), now })) pick = cand;
+    }
+  }
+  const id = pick?.id ?? null;
+  if (id !== brain.target) {
+    brain.target = id;
+    brain.targetSince = now;
+  }
+  return pick ? { id: pick.id, at: pick.at, vel: pick.vel, visible: true, confidence: 1, hostile: true } : null;
+}
+
+// An AutoPlayer's think (the game's own bot, NOTES.md: it has no cover, no hiding and no fleeing). Its target is
+// the tracker's. It keeps to its way, the post or the objective it was sent to, and fires at its target as it
+// goes; while it and its target each face the other inside 45° it leaves its way to strafe (autoPlayer.js's
+// strafeSide: a leg a side for the settings' time, the ground that way probed each think and a failed side
+// barred; the leg may also go forward or back, crouched or not, and open with its dodge roll). The aim point,
+// the view and the trigger are stepped in act. By hand: it sprints with no target, far from where it is
+// going; at an objective to be worked on it works, as the other bots do, with no enemy near.
+function thinkAutoPlayer(brain, world, now) {
+  const s = brain.s;
+  const me = flat(s.at);
+  const from = world.muzzle ? world.muzzle(s) : chestOf(s);
+  const b = trackerTarget(brain, world, s, me, from, now);
+  const task = world.task ?? null;
+  const fromTask = task ? d2(me, task.at) : Infinity;
+  const tgt = b ? [b.at.x, b.at.z] : null;
+  const dist = tgt ? d2(me, tgt) : Infinity;
+  const intent = { mode: b ? 'attack' : task ? 'objective' : 'follow', target: b?.id ?? null, goal: null, stance: 'stand', fire: !!b, aim: b ? v3(b) : null, sprint: false, interact: false };
+  brain.strafe = 0;
+  if (b) {
+    const ax = tgt[0] - me[0];
+    const az = tgt[1] - me[1];
+    const L = Math.hypot(ax, az) || 1;
+    const toT = Math.atan2(ax, az);
+    const who = world.who?.(b.id) ?? null;
+    const facing = Math.abs(wrap(toT - s.yaw)) <= FACING && (!who || Math.abs(wrap(toT + Math.PI - (who.yaw ?? 0))) <= FACING);
+    if (!facing) brain.apEvade = createEvasion();
+    else {
+      const g = brain.ap.groundCheck;
+      const stands = (side) => {
+        const x = me[0] + (az / L) * g.distance * side;
+        const z = me[1] - (ax / L) * g.distance * side;
+        return walkable(world.nav, x, z) && groundOk(brain.ap, heightAt(world.nav, x, z) - s.at[1]);
+      };
+      brain.strafe = strafeSide(brain.apEvade, brain.ap, { now, rand: brain.rand, ground: world.nav ? stands : null });
+    }
+    if (brain.strafe) {
+      // (the stick: the leg's side across the line to the target, and forward or back along it)
+      const fwd = brain.apEvade.fwd;
+      const stick = [(az / L) * brain.strafe + (ax / L) * fwd, -(ax / L) * brain.strafe + (az / L) * fwd];
+      const n = Math.hypot(stick[0], stick[1]) || 1;
+      intent.goal = [me[0] + (stick[0] / n) * STRAFE, me[1] + (stick[1] / n) * STRAFE];
+      intent.stance = crouched(brain.apEvade) ? 'crouch' : 'stand';
+      if (takeRoll(brain.apEvade)) intent.roll = [stick[0] / n, stick[1] / n];
+    }
+  } else brain.apEvade = createEvasion();
+  if (!brain.strafe) {
+    if (task?.interact && fromTask <= (task.reach ?? 3) && dist > INTERACT_CLEAR) {
+      intent.mode = 'interact';
+      intent.goal = task.spot ?? task.at;
+      intent.stance = 'crouch';
+      intent.interact = true;
+      intent.fire = false;
+    } else if (task) {
+      // (its post: there, then round it inside its radius)
+      if (task.interact || !task.radius) intent.goal = task.spot ?? task.at;
+      else {
+        if (!brain.wander || brain.wanderFor !== task || d2(me, brain.wander) < 2 || d2(brain.wander, task.at) > task.radius + 1) {
+          const a = brain.rand() * Math.PI * 2;
+          const r = brain.rand() * task.radius;
+          brain.wander = (world.nav && spotNear(world.nav, task.at[0] + Math.cos(a) * r, task.at[1] + Math.sin(a) * r, 6, s.at[1])) ?? task.spot ?? task.at;
+          brain.wanderFor = task;
+        }
+        intent.goal = brain.wander;
+      }
+      intent.sprint = !b && fromTask > (task.radius ?? 0) + TASK_SLACK + 20;
+    } else if (world.objective) {
+      intent.goal = world.objective;
+      intent.sprint = !b && d2(me, world.objective) > TASK_SLACK + 20;
+    }
+  }
+  brain.cover = null;
+  brain.current = intent.mode;
+  brain.intent = intent;
+  return intent;
 }
 
 export function think(brain, world, now) {
+  if (brain.ap) return thinkAutoPlayer(brain, world, now);
   const s = brain.s;
   const me = flat(s.at);
   const seen = Object.values(brain.me.beliefs ?? {}).filter((x) => x.hostile);
@@ -271,11 +412,12 @@ export function think(brain, world, now) {
     // (a new target's first shot waits the difficulty's reaction at its distance)
     const ready = !brain.difficulty || now - brain.targetSince >= brain.difficulty.reaction(dist);
     intent.fire = ready && b.visible && dist <= range && world.lineClear(from, v3(b));
-    if (brain.pve) intent.ability = pressAbility(brain, { target: b, now });
+    // (a Skirmish bot's class abilities; the online fill's AutoPlayers press the officer's turret alone: ai/throw.js)
+    if (s.abilities.list.length > 1) intent.ability = pressAbility(brain, { target: b, now, world, autoPlayer: !brain.pve });
   }
   if (mode === 'flee') {
     const slot = findCover('flee');
-    intent.goal = slot ? flat(slot.at) : fallBack(world.nav, me, tgt, world.squad?.centre, 15);
+    intent.goal = slot ? flat(slot.at) : fallBack(world.nav, me, tgt, world.squad?.centre, 15, s.at[1]);
     intent.sprint = true;
     intent.fire = false;
     // (fled into the cover its query chose: it hides there)
@@ -288,7 +430,7 @@ export function think(brain, world, now) {
   } else if (mode === 'hide') {
     const keep = brain.cover && world.taken?.get(brain.cover) === s.id;
     const slot = keep ? brain.cover : findCover('hide');
-    intent.goal = slot ? flat(slot.at) : fallBack(world.nav, me, tgt, world.squad?.centre);
+    intent.goal = slot ? flat(slot.at) : fallBack(world.nav, me, tgt, world.squad?.centre, 8, s.at[1]);
     intent.stance = 'crouch';
     intent.fire = false;
     brain.cover = slot ?? null;
@@ -316,13 +458,13 @@ export function think(brain, world, now) {
       intent.stance = slot.height === 'crouch' ? 'crouch' : 'stand';
     } else {
       // in the open: step aside across the line of fire, the side changing every few seconds
+      const ax = tgt[0] - me[0];
+      const az = tgt[1] - me[1];
+      const L = Math.hypot(ax, az) || 1;
       if (now >= brain.strafeAt) {
         brain.strafe = brain.rand() < 0.5 ? -1 : 1;
         brain.strafeAt = now + 1.5 + brain.rand() * 2;
       }
-      const ax = tgt[0] - me[0];
-      const az = tgt[1] - me[1];
-      const L = Math.hypot(ax, az) || 1;
       intent.goal = [me[0] + (az / L) * STRAFE * brain.strafe, me[1] - (ax / L) * STRAFE * brain.strafe];
       intent.stance = 'crouch';
     }
@@ -342,7 +484,7 @@ export function think(brain, world, now) {
       if (!brain.wander || brain.wanderFor !== task || d2(me, brain.wander) < 2 || d2(brain.wander, task.at) > task.radius + 1) {
         const a = brain.rand() * Math.PI * 2;
         const r = brain.rand() * task.radius;
-        brain.wander = (world.nav && nearestWalkable(world.nav, task.at[0] + Math.cos(a) * r, task.at[1] + Math.sin(a) * r, 6)) ?? task.spot ?? task.at;
+        brain.wander = (world.nav && spotNear(world.nav, task.at[0] + Math.cos(a) * r, task.at[1] + Math.sin(a) * r, 6, s.at[1])) ?? task.spot ?? task.at;
         brain.wanderFor = task;
       }
       intent.goal = brain.wander;
@@ -357,7 +499,7 @@ export function think(brain, world, now) {
         const base = d2(me, world.objective) > WANDER ? world.objective : me;
         const a = brain.rand() * Math.PI * 2;
         const r = 8 + brain.rand() * WANDER;
-        brain.wander = (world.nav && nearestWalkable(world.nav, base[0] + Math.cos(a) * r, base[1] + Math.sin(a) * r, 8)) ?? world.objective;
+        brain.wander = (world.nav && spotNear(world.nav, base[0] + Math.cos(a) * r, base[1] + Math.sin(a) * r, 8, s.at[1])) ?? world.objective;
       }
       intent.goal = brain.wander;
     }
@@ -389,9 +531,27 @@ function plan(brain, world, s, goal, now) {
   const from = flat(s.at);
   const blocked = blockedCells(world, s, goal, now < (brain.avoidUntil ?? -Infinity) ? brain.avoid : null);
   const d = d2(from, goal);
-  let path = d <= FAR ? findPath(world.nav, from, goal, { blocked, max: SEARCH_CELLS }) : null;
-  // too far for one search, or walled off for now: a leg toward it
-  if (!path) {
+  // (sent to a place that stays, a post or a fixed objective (its order says so), and not yet round it: its way is the place's
+  // field first, which goes round what one search does not, a way too long for its cells and a wall thinner
+  // than a cell, which the search walks into (a bot sent past either stood at the wall). navField.js: one
+  // field for every bot sent there, kept on the navgrid; round the place itself a search of its own is
+  // enough. A place that moves, a walker's or a crowd's middle, has no field: one would be made for each
+  // place it passes)
+  const t = world.task;
+  const sent = t?.stays && d2(goal, t.at) <= (t.radius ?? 0) + 2 && d2(from, t.at) > (t.radius ?? 0) + SENT_NEAR ? t.at : null;
+  let path = null;
+  // (the level's own navmesh where the battle has one: its way, the floors one over another told apart; no
+  // way on it, the base shut behind its gates, is a straight leg that the mesh's walls stop)
+  const meshed = world.nav?.mesh ? meshPath(world.nav, from, goal, { fromY: s.at[1] }) : undefined;
+  if (meshed) path = meshed;
+  if (meshed === undefined && sent) {
+    const f = fieldTo(world.nav, sent);
+    path = f ? legAlong(world.nav, f, from, LEG) : null;
+    if (path && path.length < 2) path = null;
+  }
+  if (meshed === undefined && !path && d <= FAR) path = findPath(world.nav, from, goal, { blocked, max: SEARCH_CELLS });
+  // too far for one search, or walled off for now, and no field's way: a leg in a line toward it
+  if (meshed === undefined && !path) {
     const k = Math.min(1, LEG / (d || 1));
     const mid = nearestWalkable(world.nav, from[0] + (goal[0] - from[0]) * k, from[1] + (goal[1] - from[1]) * k, 8);
     path = mid ? findPath(world.nav, from, mid, { blocked, max: SEARCH_CELLS }) : null;
@@ -423,8 +583,10 @@ function navigate(brain, world, s, goal, dt, now) {
       brain.avoidUntil = now + AVOID;
     }
     const a = brain.rand() * Math.PI * 2;
-    const spot = nearestWalkable(world.nav, s.at[0] + Math.cos(a) * 6, s.at[2] + Math.sin(a) * 6, 6);
-    if (spot && walkable(world.nav, spot[0], spot[1])) brain.path = findPath(world.nav, flat(s.at), spot, { blocked: brain.avoid }) ?? [flat(s.at), spot];
+    const spot = spotNear(world.nav, s.at[0] + Math.cos(a) * 6, s.at[2] + Math.sin(a) * 6, 6, s.at[1]);
+    const way = world.nav?.mesh && spot ? meshPath(world.nav, flat(s.at), spot, { fromY: s.at[1] }) : undefined;
+    if (way) brain.path = way;
+    else if (spot && walkable(world.nav, spot[0], spot[1])) brain.path = findPath(world.nav, flat(s.at), spot, { blocked: brain.avoid }) ?? [flat(s.at), spot];
     brain.wp = 1;
     brain.pathGoal = goal;
     brain.pathAt = now;
@@ -440,10 +602,42 @@ export function act(brain, intent, s, dt, world, now) {
   // a bot walks upright and crouches where it means to stay
   s.stance = intent.stance === 'crouch' && (arrived || intent.mode === 'attack') ? 'crouch' : 'stand';
   navigate(brain, world, s, intent.goal, dt, now);
-  const look = intent.aim ?? (s.moving ? [s.at[0] + s.vel[0], 0, s.at[2] + s.vel[2]] : null);
+  // (an AutoPlayer's dodge roll, drawn with its strafe leg: asked of the world once, which rolls it if its evade is charged)
+  if (intent.roll) {
+    world.roll?.(s, intent.roll);
+    intent.roll = null;
+  }
+  // (its own gun's recoil kicks its view as a player's: weapons.js's amplitude on the aim point)
+  const from = world.muzzle ? world.muzzle(s) : chestOf(s);
+  let aim = intent.aim;
+  let fire = intent.fire && !!aim && world.lineClear(from, aim);
+  if (brain.ap) {
+    // (an AutoPlayer's update, the game's own: an aim point drawn afresh under its noise round the led
+    // target; the view turned toward it; a burst begun when the view line passes inside the weapon's
+    // tolerance of where the target is, with its line of fire's flag, and held and let go by the weapon's
+    // cadence. The target's place is its own, sight or none, for as long as the flag lasts)
+    const e = intent.target ? (world.who?.(intent.target) ?? null) : null;
+    let start = false;
+    aim = null;
+    if (e?.alive) {
+      const at = chestOf(e);
+      // (its weapon class's noise, by its side's scale where the round draws one: the world's `aimScale`)
+      const noise = brain.apNoise * (world.aimScale ?? 1);
+      viewStep(brain.apAim, brain.ap, { from, point: aimPoint(brain.ap, { from, at, vel: e.vel, noise, rand: brain.rand }), dt });
+      const miss = viewMiss(brain.apAim, from, at);
+      aim = viewPoint(brain.apAim, from, Math.max(AHEAD, miss.along));
+      const flag = lofStep(brain.apLof, brain.ap, { clear: world.lineClear(from, at), now });
+      start = !!intent.fire && flag && mayFire(brain.apClass, noise, miss);
+    }
+    fire = burstStep(brain.apBurst, brain.apClass, { start, now }) && !!aim;
+  }
+  const look = aim ?? (s.moving ? [s.at[0] + s.vel[0], 0, s.at[2] + s.vel[2]] : null);
   if (look) s.yaw = Math.atan2(look[0] - s.at[0], look[2] - s.at[2]);
-  s.aim = intent.aim;
+  s.aim = aim;
   s.interact = !!intent.interact && !!intent.goal && d2(flat(s.at), intent.goal) < NEAR_GOAL + 2;
-  const firing = patternStep(brain);
-  if (intent.fire && firing && intent.aim && world.lineClear(world.muzzle ? world.muzzle(s) : chestOf(s), intent.aim)) world.shoot(s, intent.aim);
+  // (an AutoPlayer's cadence is its burst's, above; the other bots' is their firing pattern's)
+  const firing = brain.ap ? true : patternStep(brain);
+  // (a flashed bot fires nothing for the flash's 5 s: kit.js)
+  const flashed = (s.flashedUntil ?? -Infinity) > now;
+  if (fire && firing && !flashed) world.shoot(s, kickAim(s.gun, from, aim));
 }

@@ -80,10 +80,16 @@ export function headroomAt(level = 0, { tier = null, pixels = 0 } = {}) {
   return { scale: steps.at(-1), shed: l - steps.length + 1 };
 }
 
+// the tier a quality level is drawn on (lib/device's rows: ultra is the
+// high tier with a strong card)
+const tierOf = (level) => (level === 'ultra' || !BUDGETS[level] ? 'high' : level);
+
 export function createQuality({ tier, detail, pace = createPace(), floorAfter = 2500, dpr = Infinity, minRatio = null, sharp = sharpness(), source: asked = 'cpu', gpuTime = null, fps = null } = {}) {
-  // (a tier given alone is its own level: the tests, a forced tier)
+  // (a tier given alone is its own level: the tests, a forced tier; a
+  // level given alone, or the device's, is its own tier, ultra being the
+  // high tier: a laptop Auto holds at Low is drawn on the low tier)
   detail ??= tier ?? device().detail;
-  tier ??= device().tier;
+  tier ??= tierOf(detail);
   let budget = BUDGETS[detail] ?? BUDGETS[tier] ?? BUDGETS.high;
   let k = sharp;
   // the screen's ratio, or the budget row's least where that's more (its
@@ -127,7 +133,9 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
   };
   setSource(asked, { gpuTime, fps });
   return {
-    tier,
+    get tier() {
+      return tier;
+    },
     // the level picked (low, mid, high, ultra): the budget row's name, which
     // runtime/backend.js reads to pick the renderer
     get detail() {
@@ -148,6 +156,11 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
     get source() {
       return onGpu() ? 'gpu' : 'cpu';
     },
+    // (nothing left to lower: the GPU controller at its floor, or the pace
+    // at its last step: runtime/cadence.js's createCadence reads it)
+    get floored() {
+      return onGpu() ? Boolean(dyn.floored) : floored || level >= last;
+    },
     // (the post chain's internal scale: the controller's on the GPU clock, else headroomAt's)
     get internal() {
       return internal();
@@ -160,8 +173,11 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
     },
     retune(level) {
       budget = BUDGETS[level] ?? BUDGETS.high;
-      // (the level the 4K start reads: stepsAt; an unknown one is high's, as its budget is)
+      // (the level the 4K start reads: stepsAt, an unknown one high's, as its
+      // budget is; and the tier a world built from here reads for its chain,
+      // its cut and its boot)
       detail = BUDGETS[level] ? level : 'high';
+      tier = tierOf(level);
     },
     setSharpness(next) {
       k = Number.isFinite(next) ? Math.min(2, Math.max(0.5, next)) : 1;

@@ -188855,6 +188855,12 @@
     "from": "models/galaxy/bf2017/levels/hoth/nav.bin",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/hoth/navmesh.bin": {
+    "hash": "f89713c640cc",
+    "bytes": 1823700,
+    "from": "models/galaxy/bf2017/levels/hoth/navmesh.bin",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/hoth/outpost/cells/-1_-1.bin": {
     "hash": "2a51e3490882",
     "bytes": 11552,
@@ -199811,10 +199817,76 @@
     "from": "models/galaxy/bf2017/levels/hoth/terrain/far.png",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/hoth/terrain/masks.1408.ktx2": {
+    "hash": "4c1b1c8ebbe9",
+    "bytes": 2313814,
+    "from": "models/galaxy/bf2017/levels/hoth/terrain/masks.1408.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/terrain/masks.352.ktx2": {
+    "hash": "a7c5d9feb5bd",
+    "bytes": 234577,
+    "from": "models/galaxy/bf2017/levels/hoth/terrain/masks.352.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/terrain/masks.704.ktx2": {
+    "hash": "e7b2d6fa578c",
+    "bytes": 725967,
+    "from": "models/galaxy/bf2017/levels/hoth/terrain/masks.704.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/hoth/terrain/near.png": {
     "hash": "1744d4a64556",
     "bytes": 2619228,
     "from": "models/galaxy/bf2017/levels/hoth/terrain/near.png",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.1024.ktx2": {
+    "hash": "7d7c5fe50d15",
+    "bytes": 1778638,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.2048.ktx2": {
+    "hash": "a1af1c050926",
+    "bytes": 5649706,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.2048.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.512.ktx2": {
+    "hash": "1cf338ecda2d",
+    "bytes": 466418,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_colours.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_data.1024.ktx2": {
+    "hash": "7f232c986969",
+    "bytes": 4199823,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_data.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_data.512.ktx2": {
+    "hash": "aed8e258fda1",
+    "bytes": 1140933,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_data.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.1024.ktx2": {
+    "hash": "fff1ff3a54b2",
+    "bytes": 10150936,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.2048.ktx2": {
+    "hash": "95dc5e673972",
+    "bytes": 39572549,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.2048.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.512.ktx2": {
+    "hash": "f411e6b7fef7",
+    "bytes": 2576988,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/hoth_snow_normals.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rock_large_01_c.1024.ktx2": {
@@ -200273,6 +200345,24 @@
     "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_04_c.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_04_lod_01_n__normal.1024.ktx2": {
+    "hash": "d713ce87737e",
+    "bytes": 1502169,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_04_lod_01_n__normal.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_04_lod_01_n__normal.256.ktx2": {
+    "hash": "dd87cd505d2a",
+    "bytes": 111676,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_04_lod_01_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_04_lod_01_n__normal.512.ktx2": {
+    "hash": "b4f6ad4679d7",
+    "bytes": 414309,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_04_lod_01_n__normal.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_05_n__normal.2048.ktx2": {
     "hash": "0c2093b2c9e8",
     "bytes": 1700355,
@@ -200361,6 +200451,60 @@
     "hash": "7ca4187bb1bc",
     "bytes": 126407,
     "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_07_n__normal.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_01_n__normal.1024.ktx2": {
+    "hash": "cd27555f6191",
+    "bytes": 914073,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_01_n__normal.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_01_n__normal.256.ktx2": {
+    "hash": "3d345a4dd360",
+    "bytes": 71152,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_01_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_01_n__normal.512.ktx2": {
+    "hash": "4cbb38798168",
+    "bytes": 260345,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_01_n__normal.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_03_n__normal.1024.ktx2": {
+    "hash": "3cd86ccf4bab",
+    "bytes": 1039389,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_03_n__normal.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_03_n__normal.256.ktx2": {
+    "hash": "9878c52ca1ef",
+    "bytes": 76605,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_03_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_03_n__normal.512.ktx2": {
+    "hash": "ba4907cb9e84",
+    "bytes": 284765,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_03_n__normal.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_06_n__normal.2048.ktx2": {
+    "hash": "5ed893da5f59",
+    "bytes": 1083160,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_06_n__normal.2048.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_06_n__normal.256.ktx2": {
+    "hash": "d9d0bc88fdd4",
+    "bytes": 20837,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_06_n__normal.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_06_n__normal.512.ktx2": {
+    "hash": "f32a8ee406c0",
+    "bytes": 77798,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwall_large_lod_06_n__normal.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwallmossy_large_01_c.1024.ktx2": {
@@ -200543,6 +200687,24 @@
     "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_rockwallmossy_medium_02_n__normal.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snow_02_n.1024.ktx2": {
+    "hash": "e239733f7ab7",
+    "bytes": 753156,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snow_02_n.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snow_02_n.2048.ktx2": {
+    "hash": "514b8f62e751",
+    "bytes": 2860327,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snow_02_n.2048.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snow_02_n.512.ktx2": {
+    "hash": "609f162bb831",
+    "bytes": 212350,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snow_02_n.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowchunkywind_01_n.1024.ktx2": {
     "hash": "9355f452947e",
     "bytes": 1269425,
@@ -200561,6 +200723,18 @@
     "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowchunkywind_01_n.512.ktx2",
     "tier": "pack"
   },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowdetail_01_n.256.ktx2": {
+    "hash": "6c80442a489c",
+    "bytes": 33830,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowdetail_01_n.256.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowdetail_01_n.512.ktx2": {
+    "hash": "334fcbcd36af",
+    "bytes": 167000,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowdetail_01_n.512.ktx2",
+    "tier": "pack"
+  },
   "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowpacked_04_n.1024.ktx2": {
     "hash": "5b9381a0299b",
     "bytes": 1225771,
@@ -200577,6 +200751,18 @@
     "hash": "394b532b9f3d",
     "bytes": 302964,
     "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowpacked_04_n.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowpackedsmoothness_01_rgbm.1024.ktx2": {
+    "hash": "25aaa0b5f6b5",
+    "bytes": 1239249,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowpackedsmoothness_01_rgbm.1024.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowpackedsmoothness_01_rgbm.512.ktx2": {
+    "hash": "a97cc313c5ae",
+    "bytes": 322131,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowpackedsmoothness_01_rgbm.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/t_arcticbase_snowrockypacked_04_n.1024.ktx2": {
@@ -201051,6 +201237,12 @@
     "hash": "5c2998c950a9",
     "bytes": 299692,
     "from": "models/galaxy/bf2017/levels/hoth/tex/t_atatdetail_01_ns.512.ktx2",
+    "tier": "pack"
+  },
+  "models/galaxy/bf2017/levels/hoth/tex/t_blowingsnowflowmap_01_c.512.ktx2": {
+    "hash": "31b9aeb23699",
+    "bytes": 67247,
+    "from": "models/galaxy/bf2017/levels/hoth/tex/t_blowingsnowflowmap_01_c.512.ktx2",
     "tier": "pack"
   },
   "models/galaxy/bf2017/levels/hoth/tex/t_box_m_01_a_cs.128.ktx2": {
@@ -462119,6 +462311,144 @@
     "from": "objects/props/landmarks/_rebelalliance/bd_frigatenebulonb_01/frigatenebulonb_01_mesh",
     "tier": "surface"
   },
+  "models/galaxy/hulls/arc170.bin": {
+    "hash": "c9255097fb9e",
+    "bytes": 15624,
+    "from": "arc170",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/awing.bin": {
+    "hash": "94f18fdbdc23",
+    "bytes": 15512,
+    "from": "awing",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/corvette.bin": {
+    "hash": "330419a4cadd",
+    "bytes": 6156,
+    "from": "corvette",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/destroyer.bin": {
+    "hash": "a11220a46a08",
+    "bytes": 114904,
+    "from": "destroyer",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/falcon.bin": {
+    "hash": "ff371f165250",
+    "bytes": 37256,
+    "from": "falcon",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/hyena.bin": {
+    "hash": "3173d5fd69ed",
+    "bytes": 26668,
+    "from": "hyena",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/interceptor.bin": {
+    "hash": "81e303a95b28",
+    "bytes": 21484,
+    "from": "interceptor",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/moncal.bin": {
+    "hash": "5ea3f351de67",
+    "bytes": 107320,
+    "from": "moncal",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/n1.bin": {
+    "hash": "f9fbcb7c7804",
+    "bytes": 17240,
+    "from": "n1",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/nebulon.bin": {
+    "hash": "c1703853eedb",
+    "bytes": 5104,
+    "from": "nebulon",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/providence.bin": {
+    "hash": "90c67d9b9fc9",
+    "bytes": 4852,
+    "from": "providence",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/slave1.bin": {
+    "hash": "7ef536af9f6d",
+    "bytes": 21012,
+    "from": "slave1",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/tie.bin": {
+    "hash": "a27ddfe5288d",
+    "bytes": 16604,
+    "from": "tie",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/tieadvanced.bin": {
+    "hash": "ec8e7803f316",
+    "bytes": 18148,
+    "from": "tieadvanced",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/tiebomber.bin": {
+    "hash": "ec02326f4b39",
+    "bytes": 43900,
+    "from": "tiebomber",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/trifighter.bin": {
+    "hash": "fb5e26e2c368",
+    "bytes": 27388,
+    "from": "trifighter",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/uwing.bin": {
+    "hash": "12efbbc35124",
+    "bytes": 68024,
+    "from": "uwing",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/venator.bin": {
+    "hash": "4681da17645f",
+    "bytes": 117172,
+    "from": "venator",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/vulture.bin": {
+    "hash": "df68e8b55cb5",
+    "bytes": 30748,
+    "from": "vulture",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/vwing.bin": {
+    "hash": "176d06073606",
+    "bytes": 14272,
+    "from": "vwing",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/xwing.bin": {
+    "hash": "081ffe2926e7",
+    "bytes": 9024,
+    "from": "xwing",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/xwing65.bin": {
+    "hash": "7e8c568e012c",
+    "bytes": 9024,
+    "from": "xwing65",
+    "tier": "hull"
+  },
+  "models/galaxy/hulls/ywing.bin": {
+    "hash": "0d2239053d3e",
+    "bytes": 20116,
+    "from": "ywing",
+    "tier": "hull"
+  },
   "models/galaxy/kits/frontendstage.glb": {
     "hash": "41ddc7ffbc14",
     "bytes": 344216,
@@ -464500,6 +464830,18 @@
     "bytes": 1511344,
     "from": "gameplay/vehicles/air/ywing/vehicle_air_ywing_static_donotuse_mesh",
     "tier": "surface"
+  },
+  "textures/galaxy/bf2017/hdr/t_hoth_sunny_02_c.2048.ktx2": {
+    "hash": "b0b4213197cd",
+    "bytes": 6039186,
+    "from": "textures/galaxy/bf2017/hdr/t_hoth_sunny_02_c.2048.ktx2",
+    "tier": "pack"
+  },
+  "textures/galaxy/bf2017/hdr/t_hoth_sunset_01_panoramic_c.2048.ktx2": {
+    "hash": "a9bc242d1c1a",
+    "bytes": 5052072,
+    "from": "textures/galaxy/bf2017/hdr/t_hoth_sunset_01_panoramic_c.2048.ktx2",
+    "tier": "pack"
   },
   "textures/galaxy/bf2017/light/bespin/dusk.clouds.ktx2": {
     "hash": "2ce80128dd43",

@@ -7,11 +7,17 @@
 // round the player nearest first; the horizon last) and keeps every cell's
 // bytes once fetched; this hands it the player's place in the pack's frame.
 // The ground is the pack's two heightmaps (the `image` layer), drawn here
-// (ground.js) since the pack carries no ground mesh: the galaxy draws its
-// own over it.
+// (ground.js) since the pack carries no ground mesh, in the game's snow on
+// the node renderer: the galaxy draws its own over it.
 //
-//   createLevel({ scene, tier, texTier, renderer, world = 'hoth', ground = true, onCell, onDrop, deps })
-//     → { ready: Promise, group, origin, pack, update([x, y, z]), heightAt(x, z),
+//   createLevel({ scene, tier, detail, texTier, renderer, world = 'hoth', inside = INSIDE[world], ground = true, snow = true, onCell, onDrop, deps })
+//   (inside: the level's interior, a district pack in the same frame drawn and
+//    streamed with it: Hoth's Echo Base, `hoth/base`, which the pack builder
+//    cuts from under the ground with --inside; its cells reach onCell and
+//    onDrop with a fourth argument, 'inside', its keys being its own)
+//   (snow: the ground in the game's snow maps on the node renderer; false, the flat colour;
+//    detail: the quality level, 'ultra' where the tier is 'high' on a strong card, for the ground)
+//     → { ready: Promise, group, origin, pack, inner: { pack, loadBin } | null, update([x, y, z]), heightAt(x, z), packHeightAt(px, pz),
 //         loadBin(path), navOf() → Promise<mask | null>, progress(), loaded(), stats(), dispose() }
 //   (onCell(key, bin, band) and onDrop(key): the stream's cells as they come
 //   and go, for the collision; navOf: the pack's nav.bin, navMask.js's)
@@ -22,6 +28,11 @@ import { LAYERS } from "../../../lib/land/layers.js";
 import { inflateMask } from "../../../lib/battlefront/navMask.js";
 import * as laneL from "../../galaxy/shared/level.js";
 import { buildGround } from "./ground.js";
+
+// The levels whose interior is a pack of its own (scripts/bf2017-level.mjs
+// --district <name> --inside: the instances under the ground), by hand: the
+// pack does not name its interior.
+export const INSIDE = { hoth: 'base' };
 
 export function toPack(pack, [x, , z]) {
   const [ox, , oz] = pack.origin ?? [0, 0, 0];
@@ -49,13 +60,25 @@ const DEPS = {
   navOf: (world) => bytes(world)("nav.bin").then(inflateMask),
 };
 
+// the two parts' numbers added (a count each; the rest the outside's)
+function sum(a, b) {
+  if (!b) return a;
+  const out = { ...a };
+  for (const [k, v] of Object.entries(b)) if (typeof v === 'number' && typeof a[k] === 'number') out[k] = a[k] + v;
+  return out;
+}
+
 export function createLevel({
   scene,
   tier = "high",
   texTier = null,
   renderer = null,
   world = "hoth",
+  inside = INSIDE[world] ?? null,
   ground = true,
+  snow = true,
+  detail = null,
+  gpuScene = false,
   onCell = () => {},
   onDrop = () => {},
   deps = {},
@@ -73,8 +96,12 @@ export function createLevel({
   let last = null;
   let gone = false;
   const fetchBytes = bytes(world);
+  // (the interior, in the same frame: its cells told apart from the outside's, whose keys it shares)
+  const sub = inside
+    ? createLevel({ scene, tier, texTier, renderer, world: `${world}/${inside}`, inside: null, ground: false, gpuScene, onCell: (k, b, band) => onCell(k, b, band, 'inside'), onDrop: (k) => onDrop(k, 'inside'), deps })
+    : null;
 
-  const ready = (async () => {
+  const outside = (async () => {
     const [p, img] = await Promise.all([
       d.packOf(world),
       d.imageLayer(world).catch(() => null),
@@ -92,11 +119,17 @@ export function createLevel({
       fetchBytes,
       sizes: pack.tex,
     });
+    // (GPU-first lane N1's scene where asked and the renderer draws
+    // indirect: the rows culled by compute, one indirect draw a material
+    // group, the static groups in a render bundle; elsewhere lane L's
+    // instanced path, as before)
     level = d.createLevelScene({
       scene: group,
       pack,
       loadGltf: loader.load,
       tier,
+      gpuScene,
+      renderer: gpuScene ? renderer : null,
     });
     stream = d.createLevelStream({
       pack,
@@ -109,18 +142,21 @@ export function createLevel({
       onDrop,
     });
     if (ground && layer) {
-      groundMesh = buildGround(layer, pack.terrain);
+      groundMesh = buildGround(layer, pack.terrain, { world, pack, tier: detail ?? tier, renderer: snow ? renderer : null });
       group.add(groundMesh);
     }
     if (last) update(last);
   })();
+  const ready = Promise.all([outside, sub?.ready]).then(() => {});
 
   function update(at) {
     last = at;
+    sub?.update(at);
     if (!stream) return;
     const p = toPack(pack, at);
     stream.update(p, tier);
     level.update(p);
+    groundMesh?.update(p);
   }
 
   return {
@@ -131,6 +167,9 @@ export function createLevel({
     },
     get pack() {
       return pack;
+    },
+    get inner() {
+      return sub?.pack ? { pack: sub.pack, loadBin: sub.loadBin } : null;
     },
     loadBin: fetchBytes,
     navOf: () =>
@@ -145,20 +184,29 @@ export function createLevel({
       const [px, pz] = toPack(pack, [x, 0, z]);
       return LAYERS.image(px, pz, layer) + (pack.origin?.[1] ?? 0);
     },
-    loaded: () => stream?.ready() ?? false,
-    progress: () => stream?.progress() ?? 0,
-    stats: () => level?.stats() ?? { tris: 0, calls: 0, instances: 0 },
+    // the ground's height in the pack's frame (its origin's height off), for the physics' heightfields; null until it is in
+    packHeightAt: (px, pz) => (layer ? LAYERS.image(px, pz, layer) : null),
+    loaded: () => (stream?.ready() ?? false) && (!sub || sub.loaded()),
+    progress: () => (sub ? ((stream?.progress() ?? 0) + sub.progress()) / 2 : (stream?.progress() ?? 0)),
+    stats: () => sum(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }, sub?.stats()),
+    // (the GPU scene's frame: the occluders' depth, the pyramid and the cull
+    // before the scene is drawn, the queries read after; nothing on the other paths)
+    beforeRender: (camera) => {
+      level?.beforeRender?.(camera);
+      sub?.beforeRender(camera);
+    },
+    afterRender: () => {
+      level?.afterRender?.();
+      sub?.afterRender();
+    },
+    debug: () => level?.debug?.() ?? null,
     dispose() {
       gone = true;
+      sub?.dispose();
       stream?.dispose();
       level?.dispose();
       loader?.dispose();
-      if (groundMesh) {
-        groundMesh.traverse((o) => {
-          o.geometry?.dispose();
-          o.material?.dispose();
-        });
-      }
+      groundMesh?.dispose();
       group.removeFromParent();
     },
   };

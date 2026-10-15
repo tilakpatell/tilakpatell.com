@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadRulebook } from '../../lib/battlefront/rulebook.js';
 import { hothFlatNav } from '../../lib/battlefront/fixtures/hothFlat.js';
 import { addPlayer as addSoldier } from '../../lib/battlefront/sim.js';
-import { STEP, addPlayer, createBattle, deploy, step, view, worldMove } from './battle.js';
+import { BOTS, STEP, addPlayer, botsAt, createBattle, deploy, step, view, worldMove } from './battle.js';
 import { LEVEL_MODES, MODES } from './index.js';
 import naboo from '../../data/bf2017/maps/naboo.json';
 
@@ -10,7 +10,7 @@ const rb = loadRulebook();
 const nav = hothFlatNav(rb);
 const make = (bots = { 1: 0, 2: 0 }) => createBattle({ rulebook: rb, level: 'hoth', mode: 'galacticAssault', nav, bots });
 
-describe('the battle on lane 1’s sim, with the deploy screen lane 2 will own', () => {
+describe('the battle on the sim in its own mode, with the page’s deploy screen', () => {
   it('starts the player on the deploy screen with the side’s classes on offer and the stage in the game’s words', () => {
     const b = make();
     addPlayer(b, { team: 2 });
@@ -28,7 +28,9 @@ describe('the battle on lane 1’s sim, with the deploy screen lane 2 will own',
     expect(v.deploy.open).toBe(false);
     expect(v.player.state).toBe('alive');
     expect(v.player.weapon).toBe(rb.classes['d-orig-heavy'].weapon);
-    expect(v.entities).toHaveLength(1);
+    // (the player, and the stage's two walkers: the sim's own mode)
+    expect(v.entities.filter((e) => e.kind === 'soldier')).toHaveLength(1);
+    expect(v.entities.filter((e) => e.kind === 'walker')).toHaveLength(2);
     expect(deploy(b, 'player', { classId: 'l-orig-heavy' }).ok).toBe(false);
   });
 
@@ -126,7 +128,7 @@ describe('the battle on lane 1’s sim, with the deploy screen lane 2 will own',
   it('fields the bots and ends the round when told', () => {
     const b = make({ 1: 2, 2: 2 });
     addPlayer(b, { team: 2 });
-    expect(view(b).entities).toHaveLength(4);
+    expect(view(b).entities.filter((e) => e.kind === 'soldier')).toHaveLength(4);
     b.force('win', 2);
     expect(view(b).mode.result).toEqual({ winner: 2, why: 'forced' });
   });
@@ -199,20 +201,30 @@ describe('the pieces together: the squad list, the figures and the fallen', () =
 });
 
 describe('the other modes on the game world’s route (lane 6)', () => {
-  it('knows their ids; a level plays the modes its pack has (Hoth’s Galactic Assault today)', () => {
+  it('knows their ids; a level plays the modes its world has a level for (Hoth’s Galactic Assault, and Supremacy on its second level)', () => {
     expect(MODES).toEqual(['galacticAssault', 'strike', 'extraction', 'ewokHunt', 'supremacy']);
-    expect(LEVEL_MODES).toEqual({ hoth: ['galacticAssault'] });
+    expect(LEVEL_MODES).toEqual({ hoth: ['galacticAssault', 'supremacy'] });
   });
   it('a battle in Strike takes the mode’s objectives from the level’s map rulebook', () => {
     const book = { ...rb, maps: { ...rb.maps, naboo: { map: naboo.rows, stages: {} } } };
     const t = rb.teams['Orig:hoth_01'];
     const b = createBattle({ rulebook: book, level: 'naboo', mode: 'strike', nav, bots: { 1: 0, 2: 0 }, teams: { 1: t.light, 2: t.dark } });
-    expect(b.objectives.map((o) => [o.type, o.name, o.at.map(Math.round)])).toEqual([
-      ['arm', 'A', [696, 0, 1]],
-      ['arm', 'B', [758, 0, 9]],
+    // (where they stand on the map; the height is the navgrid's ground there)
+    expect(b.objectives.map((o) => [o.type, o.name, [o.at[0], o.at[2]].map(Math.round)])).toEqual([
+      ['arm', 'A', [696, 1]],
+      ['arm', 'B', [758, 9]],
     ]);
   });
   it('refuses a mode it does not know', () => {
     expect(() => createBattle({ rulebook: rb, level: 'hoth', mode: 'conquest', nav })).toThrow(/conquest/);
+  });
+});
+
+// (Low is the floor: every bot is a body drawn and a mind stepped, so five a
+// side at Low, Instant Action's own cap, and the page's eight above)
+describe('the bots a side by the quality level', () => {
+  it('is five at Low and eight above', () => {
+    expect(botsAt('low')).toEqual({ 1: 5, 2: 5 });
+    for (const d of ['mid', 'high', 'ultra', undefined]) expect(botsAt(d)).toEqual({ 1: BOTS, 2: BOTS });
   });
 });

@@ -251,7 +251,7 @@ export function passesFor(tier, entry, backend = 'webgpu', refs = {}) {
   const grade = refs.grade ?? null;
   const hbao = grade?.ao ?? null;
   const make = {
-    render: () => ({ kind: 'render', scene: refs.scene, camera: refs.camera }),
+    render: () => ({ kind: 'render', scene: refs.scene, camera: refs.camera, ...(refs.meter ? { meter: refs.meter } : {}) }),
     ssgi: (preset) => ({ kind: 'ssgi', preset, temporal: tier === 'ultra', ...SSGI[tier === 'ultra' ? 'temporal' : 'plain'][preset], radius: SSGI_RADIUS, gi: GI, camera: refs.camera }),
     ao: () => ({ kind: 'ao', radius: p.ao.radius, bias: p.ao.bias, power: p.ao.power, ...(hbao ? { radius: hbao.radius, scale: hbao.exponent, falloff: hbao.attenuation, blur: hbao.blur, hbao } : {}), camera: refs.camera }),
     ssr: () => ({ kind: 'ssr', maxDistance: 40, thickness: 0.1, roughnessCutoff: SSR_ROUGHNESS, camera: refs.camera }),
@@ -269,7 +269,7 @@ export function passesFor(tier, entry, backend = 'webgpu', refs = {}) {
       const flare = rec ? flareElements(rec) : null;
       return { kind: 'lensflare', threshold: 0.5, ghostSamples: 4, ghostSpacing: 0.25, ...(flare?.elements.length ? { ...lensflareParams(flare), flare, sunDir: p.sun.dir.slice(), camera: refs.camera } : {}) };
     },
-    lut: () => ({ kind: 'lut', texture: refs.lut ?? p.grade.lut ?? null, intensity: 1 }),
+    lut: () => ({ kind: 'lut', texture: refs.lut ?? p.grade.lut ?? null, intensity: 1, ...(refs.lutInside?.texture ? { inside: refs.lutInside } : {}) }),
     traa: () => ({ kind: 'traa', camera: refs.camera }),
     smaa: () => ({ kind: 'smaa' }),
     output: () => ({ kind: 'output' }),

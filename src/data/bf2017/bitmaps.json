@@ -3,6 +3,1827 @@
     "export": "build 489592",
     "date": "2026-10-10"
   },
-  "rows": {},
-  "missing": 111
+  "rows": {
+    "S5/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Grievous/Card_Grievous_01_Mid": {
+      "path": "ui/bf2017/bitmaps/grievous-card-grievous-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Grievous/Card_Grievous_02_Mid": {
+      "path": "ui/bf2017/bitmaps/grievous-card-grievous-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Grievous/Card_Grievous_03_Mid": {
+      "path": "ui/bf2017/bitmaps/grievous-card-grievous-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Grievous/Card_Grievous_04_Mid": {
+      "path": "ui/bf2017/bitmaps/grievous-card-grievous-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Grievous/Card_Grievous_05_Mid": {
+      "path": "ui/bf2017/bitmaps/grievous-card-grievous-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Grievous/Card_Grievous_06_Mid": {
+      "path": "ui/bf2017/bitmaps/grievous-card-grievous-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Grievous/Card_Grievous_07_Mid": {
+      "path": "ui/bf2017/bitmaps/grievous-card-grievous-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Grievous/Card_Grievous_08_Mid": {
+      "path": "ui/bf2017/bitmaps/grievous-card-grievous-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Grievous/Card_Grievous_09_Mid": {
+      "path": "ui/bf2017/bitmaps/grievous-card-grievous-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Obi-Wan/Card_Obi-Wan_01_Mid": {
+      "path": "ui/bf2017/bitmaps/obi-wan-card-obi-wan-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Obi-Wan/Card_Obi-Wan_02_Mid": {
+      "path": "ui/bf2017/bitmaps/obi-wan-card-obi-wan-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Obi-Wan/Card_Obi-Wan_03_Mid": {
+      "path": "ui/bf2017/bitmaps/obi-wan-card-obi-wan-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Obi-Wan/Card_Obi-Wan_04_Mid": {
+      "path": "ui/bf2017/bitmaps/obi-wan-card-obi-wan-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Obi-Wan/Card_Obi-Wan_05_Mid": {
+      "path": "ui/bf2017/bitmaps/obi-wan-card-obi-wan-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Obi-Wan/Card_Obi-Wan_06_Mid": {
+      "path": "ui/bf2017/bitmaps/obi-wan-card-obi-wan-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Obi-Wan/Card_Obi-Wan_07_Mid": {
+      "path": "ui/bf2017/bitmaps/obi-wan-card-obi-wan-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Obi-Wan/Card_Obi-Wan_08_Mid": {
+      "path": "ui/bf2017/bitmaps/obi-wan-card-obi-wan-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S5_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Obi-Wan/Card_Obi-Wan_09_Mid": {
+      "path": "ui/bf2017/bitmaps/obi-wan-card-obi-wan-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Dooku/Card_Dooku_01_Mid": {
+      "path": "ui/bf2017/bitmaps/dooku-card-dooku-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Dooku/Card_Dooku_02_Mid": {
+      "path": "ui/bf2017/bitmaps/dooku-card-dooku-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Dooku/Card_Dooku_03_Mid": {
+      "path": "ui/bf2017/bitmaps/dooku-card-dooku-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Dooku/Card_Dooku_04_Mid": {
+      "path": "ui/bf2017/bitmaps/dooku-card-dooku-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Dooku/Card_Dooku_05_Mid": {
+      "path": "ui/bf2017/bitmaps/dooku-card-dooku-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Dooku/Card_Dooku_06_Mid": {
+      "path": "ui/bf2017/bitmaps/dooku-card-dooku-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Dooku/Card_Dooku_07_Mid": {
+      "path": "ui/bf2017/bitmaps/dooku-card-dooku-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Dooku/Card_Dooku_08_Mid": {
+      "path": "ui/bf2017/bitmaps/dooku-card-dooku-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Dooku/Card_Dooku_09_Mid": {
+      "path": "ui/bf2017/bitmaps/dooku-card-dooku-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Anakin/Card_Anakin_01_Mid": {
+      "path": "ui/bf2017/bitmaps/anakin-card-anakin-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Anakin/Card_Anakin_02_Mid": {
+      "path": "ui/bf2017/bitmaps/anakin-card-anakin-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Anakin/Card_Anakin_03_Mid": {
+      "path": "ui/bf2017/bitmaps/anakin-card-anakin-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Anakin/Card_Anakin_04_Mid": {
+      "path": "ui/bf2017/bitmaps/anakin-card-anakin-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Anakin/Card_Anakin_05_Mid": {
+      "path": "ui/bf2017/bitmaps/anakin-card-anakin-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Anakin/Card_Anakin_06_Mid": {
+      "path": "ui/bf2017/bitmaps/anakin-card-anakin-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Anakin/Card_Anakin_07_Mid": {
+      "path": "ui/bf2017/bitmaps/anakin-card-anakin-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Anakin/Card_Anakin_08_Mid": {
+      "path": "ui/bf2017/bitmaps/anakin-card-anakin-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "S6_1/UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Anakin/Card_Anakin_09_Mid": {
+      "path": "ui/bf2017/bitmaps/anakin-card-anakin-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Art/HUD/MissionObjectives/Glow_rectangle": {
+      "path": "ui/bf2017/bitmaps/missionobjectives-glow-rectangle.webp",
+      "size": [
+        256,
+        64
+      ]
+    },
+    "UI/Art/HUD/MissionObjectives/MissionIconBg": {
+      "path": "ui/bf2017/bitmaps/missionobjectives-missioniconbg.webp",
+      "size": [
+        56,
+        56
+      ]
+    },
+    "UI/Art/HUD/MissionObjectives/grid": {
+      "path": "ui/bf2017/bitmaps/missionobjectives-grid.webp",
+      "size": [
+        360,
+        260
+      ]
+    },
+    "UI/Art/HUD/Starfighter/GradientToCenter": {
+      "path": "ui/bf2017/bitmaps/starfighter-gradienttocenter.webp",
+      "size": [
+        256,
+        128
+      ]
+    },
+    "UI/Art/HUD/Targeting/SpaceBattlesMouseCursorSolid": {
+      "path": "ui/bf2017/bitmaps/targeting-spacebattlesmousecursorsolid.webp",
+      "size": [
+        200,
+        200
+      ]
+    },
+    "UI/Art/HUD/Vignette/vignette": {
+      "path": "ui/bf2017/bitmaps/vignette-vignette.webp",
+      "size": [
+        960,
+        540
+      ]
+    },
+    "UI/Art/HUD/Weapons/T_MPLScopeScanlines_01_C": {
+      "path": "ui/bf2017/bitmaps/weapons-t-mplscopescanlines-01-c.webp",
+      "size": [
+        128,
+        128
+      ]
+    },
+    "UI/Art/HUD/Weapons/T_MPLScopeScanlines_02_C": {
+      "path": "ui/bf2017/bitmaps/weapons-t-mplscopescanlines-02-c.webp",
+      "size": [
+        128,
+        128
+      ]
+    },
+    "UI/Art/HUD/_TextureMappings/GenericSoldierHUDTextures_texture": {
+      "path": "ui/bf2017/bitmaps/texturemappings-genericsoldierhudtextures-texture.webp",
+      "size": [
+        1196,
+        1044
+      ]
+    },
+    "UI/Art/HUD/_TextureMappings/GenericVehicleHUDTextures_texture": {
+      "path": "ui/bf2017/bitmaps/texturemappings-genericvehiclehudtextures-texture.webp",
+      "size": [
+        592,
+        492
+      ]
+    },
+    "UI/Art/LoadingScreens/keyArt_SplashScreen": {
+      "path": "ui/bf2017/bitmaps/loadingscreens-keyart-splashscreen.webp",
+      "size": [
+        1920,
+        1080
+      ]
+    },
+    "UI/Art/LoadingScreens/keyArt_UICelebrationSplashScreen": {
+      "path": "ui/bf2017/bitmaps/loadingscreens-keyart-uicelebrationsplashscreen.webp",
+      "size": [
+        1920,
+        1080
+      ]
+    },
+    "UI/Bitmaps/ChooseSideTiles/CSTile_OT_DarkSide_GalacticEmpire": {
+      "path": "ui/bf2017/bitmaps/choosesidetiles-cstile-ot-darkside-galacticempire.webp",
+      "size": [
+        504,
+        384
+      ]
+    },
+    "UI/Bitmaps/ChooseSideTiles/CSTile_OT_LightSide_RebelAlliance": {
+      "path": "ui/bf2017/bitmaps/choosesidetiles-cstile-ot-lightside-rebelalliance.webp",
+      "size": [
+        504,
+        384
+      ]
+    },
+    "UI/Bitmaps/ChooseSideTiles/CSTile_PT_DarkSide_Separatists": {
+      "path": "ui/bf2017/bitmaps/choosesidetiles-cstile-pt-darkside-separatists.webp",
+      "size": [
+        504,
+        384
+      ]
+    },
+    "UI/Bitmaps/ChooseSideTiles/CSTile_PT_LightSide_GalacticRepublic": {
+      "path": "ui/bf2017/bitmaps/choosesidetiles-cstile-pt-lightside-galacticrepublic.webp",
+      "size": [
+        504,
+        384
+      ]
+    },
+    "UI/Bitmaps/Frontend/4k_KeyArtPairingScreen": {
+      "path": "ui/bf2017/bitmaps/frontend-4k-keyartpairingscreen.webp",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/BobaFett/BobaFett_Card_01_Mid": {
+      "path": "ui/bf2017/bitmaps/bobafett-bobafett-card-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/BobaFett/Card_BobaFett_02_Mid": {
+      "path": "ui/bf2017/bitmaps/bobafett-card-bobafett-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/BobaFett/Card_BobaFett_03_Mid": {
+      "path": "ui/bf2017/bitmaps/bobafett-card-bobafett-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/BobaFett/Card_BobaFett_04_Mid": {
+      "path": "ui/bf2017/bitmaps/bobafett-card-bobafett-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/BobaFett/Card_BobaFett_05_Mid": {
+      "path": "ui/bf2017/bitmaps/bobafett-card-bobafett-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/BobaFett/Card_BobaFett_06_Mid": {
+      "path": "ui/bf2017/bitmaps/bobafett-card-bobafett-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/BobaFett/Card_BobaFett_07_Mid": {
+      "path": "ui/bf2017/bitmaps/bobafett-card-bobafett-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/BobaFett/Card_BobaFett_08_Mid": {
+      "path": "ui/bf2017/bitmaps/bobafett-card-bobafett-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/BobaFett/Card_BobaFett_09_Mid": {
+      "path": "ui/bf2017/bitmaps/bobafett-card-bobafett-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Bossk/Card_Bossk_01_Mid": {
+      "path": "ui/bf2017/bitmaps/bossk-card-bossk-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Bossk/Card_Bossk_02_Mid": {
+      "path": "ui/bf2017/bitmaps/bossk-card-bossk-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Bossk/Card_Bossk_03_Mid": {
+      "path": "ui/bf2017/bitmaps/bossk-card-bossk-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Bossk/Card_Bossk_04_Mid": {
+      "path": "ui/bf2017/bitmaps/bossk-card-bossk-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Bossk/Card_Bossk_05_Mid": {
+      "path": "ui/bf2017/bitmaps/bossk-card-bossk-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Bossk/Card_Bossk_06_Mid": {
+      "path": "ui/bf2017/bitmaps/bossk-card-bossk-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Bossk/Card_Bossk_07_Mid": {
+      "path": "ui/bf2017/bitmaps/bossk-card-bossk-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Bossk/Card_Bossk_08_Mid": {
+      "path": "ui/bf2017/bitmaps/bossk-card-bossk-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Bossk/Card_Bossk_09_Mid": {
+      "path": "ui/bf2017/bitmaps/bossk-card-bossk-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Chewbacca/Card_Chewbacca_01_Mid": {
+      "path": "ui/bf2017/bitmaps/chewbacca-card-chewbacca-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Chewbacca/Card_Chewbacca_02_Mid": {
+      "path": "ui/bf2017/bitmaps/chewbacca-card-chewbacca-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Chewbacca/Card_Chewbacca_03_Mid": {
+      "path": "ui/bf2017/bitmaps/chewbacca-card-chewbacca-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Chewbacca/Card_Chewbacca_04_Mid": {
+      "path": "ui/bf2017/bitmaps/chewbacca-card-chewbacca-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Chewbacca/Card_Chewbacca_05_Mid": {
+      "path": "ui/bf2017/bitmaps/chewbacca-card-chewbacca-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Chewbacca/Card_Chewbacca_06_Mid": {
+      "path": "ui/bf2017/bitmaps/chewbacca-card-chewbacca-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Chewbacca/Card_Chewbacca_07_Mid": {
+      "path": "ui/bf2017/bitmaps/chewbacca-card-chewbacca-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Chewbacca/Card_Chewbacca_08_Mid": {
+      "path": "ui/bf2017/bitmaps/chewbacca-card-chewbacca-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Chewbacca/Card_Chewbacca_09_Mid": {
+      "path": "ui/bf2017/bitmaps/chewbacca-card-chewbacca-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthMaul/Card_DarthMaul_01_Mid": {
+      "path": "ui/bf2017/bitmaps/darthmaul-card-darthmaul-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthMaul/Card_DarthMaul_02_Mid": {
+      "path": "ui/bf2017/bitmaps/darthmaul-card-darthmaul-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthMaul/Card_DarthMaul_03_Mid": {
+      "path": "ui/bf2017/bitmaps/darthmaul-card-darthmaul-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthMaul/Card_DarthMaul_04_Mid": {
+      "path": "ui/bf2017/bitmaps/darthmaul-card-darthmaul-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthMaul/Card_DarthMaul_05_Mid": {
+      "path": "ui/bf2017/bitmaps/darthmaul-card-darthmaul-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthMaul/Card_DarthMaul_06_Mid": {
+      "path": "ui/bf2017/bitmaps/darthmaul-card-darthmaul-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthMaul/Card_DarthMaul_07_Mid": {
+      "path": "ui/bf2017/bitmaps/darthmaul-card-darthmaul-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthMaul/Card_DarthMaul_08_Mid": {
+      "path": "ui/bf2017/bitmaps/darthmaul-card-darthmaul-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthMaul/Card_DarthMaul_09_Mid": {
+      "path": "ui/bf2017/bitmaps/darthmaul-card-darthmaul-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthVader/Card_DarthVader_01_Mid": {
+      "path": "ui/bf2017/bitmaps/darthvader-card-darthvader-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthVader/Card_DarthVader_02_Mid": {
+      "path": "ui/bf2017/bitmaps/darthvader-card-darthvader-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthVader/Card_DarthVader_03_Mid": {
+      "path": "ui/bf2017/bitmaps/darthvader-card-darthvader-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthVader/Card_DarthVader_04_Mid": {
+      "path": "ui/bf2017/bitmaps/darthvader-card-darthvader-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthVader/Card_DarthVader_05_Mid": {
+      "path": "ui/bf2017/bitmaps/darthvader-card-darthvader-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthVader/Card_DarthVader_06_Mid": {
+      "path": "ui/bf2017/bitmaps/darthvader-card-darthvader-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthVader/Card_DarthVader_07_Mid": {
+      "path": "ui/bf2017/bitmaps/darthvader-card-darthvader-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthVader/Card_DarthVader_08_Mid": {
+      "path": "ui/bf2017/bitmaps/darthvader-card-darthvader-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/DarthVader/Card_DarthVader_09_Mid": {
+      "path": "ui/bf2017/bitmaps/darthvader-card-darthvader-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Emperor/Card_Emperor_01_Mid": {
+      "path": "ui/bf2017/bitmaps/emperor-card-emperor-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Emperor/Card_Emperor_02_Mid": {
+      "path": "ui/bf2017/bitmaps/emperor-card-emperor-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Emperor/Card_Emperor_03_Mid": {
+      "path": "ui/bf2017/bitmaps/emperor-card-emperor-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Emperor/Card_Emperor_04_Mid": {
+      "path": "ui/bf2017/bitmaps/emperor-card-emperor-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Emperor/Card_Emperor_05_Mid": {
+      "path": "ui/bf2017/bitmaps/emperor-card-emperor-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Emperor/Card_Emperor_06_Mid": {
+      "path": "ui/bf2017/bitmaps/emperor-card-emperor-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Emperor/Card_Emperor_07_Mid": {
+      "path": "ui/bf2017/bitmaps/emperor-card-emperor-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Emperor/Card_Emperor_08_Mid": {
+      "path": "ui/bf2017/bitmaps/emperor-card-emperor-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Emperor/Card_Emperor_09_Mid": {
+      "path": "ui/bf2017/bitmaps/emperor-card-emperor-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/HanSolo/Card_HanSolo_01_Mid": {
+      "path": "ui/bf2017/bitmaps/hansolo-card-hansolo-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/HanSolo/Card_HanSolo_02_Mid": {
+      "path": "ui/bf2017/bitmaps/hansolo-card-hansolo-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/HanSolo/Card_HanSolo_03_Mid": {
+      "path": "ui/bf2017/bitmaps/hansolo-card-hansolo-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/HanSolo/Card_HanSolo_04_Mid": {
+      "path": "ui/bf2017/bitmaps/hansolo-card-hansolo-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/HanSolo/Card_HanSolo_05_Mid": {
+      "path": "ui/bf2017/bitmaps/hansolo-card-hansolo-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/HanSolo/Card_HanSolo_06_Mid": {
+      "path": "ui/bf2017/bitmaps/hansolo-card-hansolo-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/HanSolo/Card_HanSolo_07_Mid": {
+      "path": "ui/bf2017/bitmaps/hansolo-card-hansolo-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/HanSolo/Card_HanSolo_08_Mid": {
+      "path": "ui/bf2017/bitmaps/hansolo-card-hansolo-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/HanSolo/Card_HanSolo_09_Mid": {
+      "path": "ui/bf2017/bitmaps/hansolo-card-hansolo-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/IdenVersio/Card_IdenVersio_01_Mid": {
+      "path": "ui/bf2017/bitmaps/idenversio-card-idenversio-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/IdenVersio/Card_IdenVersio_02_Mid": {
+      "path": "ui/bf2017/bitmaps/idenversio-card-idenversio-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/IdenVersio/Card_IdenVersio_03_Mid": {
+      "path": "ui/bf2017/bitmaps/idenversio-card-idenversio-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/IdenVersio/Card_IdenVersio_04_Mid": {
+      "path": "ui/bf2017/bitmaps/idenversio-card-idenversio-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/IdenVersio/Card_IdenVersio_05_Mid": {
+      "path": "ui/bf2017/bitmaps/idenversio-card-idenversio-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/IdenVersio/Card_IdenVersio_06_Mid": {
+      "path": "ui/bf2017/bitmaps/idenversio-card-idenversio-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/IdenVersio/Card_IdenVersio_07_Mid": {
+      "path": "ui/bf2017/bitmaps/idenversio-card-idenversio-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/IdenVersio/Card_IdenVersio_08_Mid": {
+      "path": "ui/bf2017/bitmaps/idenversio-card-idenversio-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/IdenVersio/Card_IdenVersio_09_Mid": {
+      "path": "ui/bf2017/bitmaps/idenversio-card-idenversio-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LandoCalrissian/Card_LandoCalrissian_01_Mid": {
+      "path": "ui/bf2017/bitmaps/landocalrissian-card-landocalrissian-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LandoCalrissian/Card_LandoCalrissian_02_Mid": {
+      "path": "ui/bf2017/bitmaps/landocalrissian-card-landocalrissian-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LandoCalrissian/Card_LandoCalrissian_03_Mid": {
+      "path": "ui/bf2017/bitmaps/landocalrissian-card-landocalrissian-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LandoCalrissian/Card_LandoCalrissian_04_Mid": {
+      "path": "ui/bf2017/bitmaps/landocalrissian-card-landocalrissian-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LandoCalrissian/Card_LandoCalrissian_05_Mid": {
+      "path": "ui/bf2017/bitmaps/landocalrissian-card-landocalrissian-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LandoCalrissian/Card_LandoCalrissian_06_Mid": {
+      "path": "ui/bf2017/bitmaps/landocalrissian-card-landocalrissian-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LandoCalrissian/Card_LandoCalrissian_07_Mid": {
+      "path": "ui/bf2017/bitmaps/landocalrissian-card-landocalrissian-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LandoCalrissian/Card_LandoCalrissian_08_Mid": {
+      "path": "ui/bf2017/bitmaps/landocalrissian-card-landocalrissian-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LandoCalrissian/Card_LandoCalrissian_09_Mid": {
+      "path": "ui/bf2017/bitmaps/landocalrissian-card-landocalrissian-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LeiaOrgana/Card_LeiaOrgana_01_Mid": {
+      "path": "ui/bf2017/bitmaps/leiaorgana-card-leiaorgana-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LeiaOrgana/Card_LeiaOrgana_02_Mid": {
+      "path": "ui/bf2017/bitmaps/leiaorgana-card-leiaorgana-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LeiaOrgana/Card_LeiaOrgana_03_Mid": {
+      "path": "ui/bf2017/bitmaps/leiaorgana-card-leiaorgana-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LeiaOrgana/Card_LeiaOrgana_04_Mid": {
+      "path": "ui/bf2017/bitmaps/leiaorgana-card-leiaorgana-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LeiaOrgana/Card_LeiaOrgana_05_Mid": {
+      "path": "ui/bf2017/bitmaps/leiaorgana-card-leiaorgana-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LeiaOrgana/Card_LeiaOrgana_06_Mid": {
+      "path": "ui/bf2017/bitmaps/leiaorgana-card-leiaorgana-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LeiaOrgana/Card_LeiaOrgana_07_Mid": {
+      "path": "ui/bf2017/bitmaps/leiaorgana-card-leiaorgana-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LeiaOrgana/Card_LeiaOrgana_08_Mid": {
+      "path": "ui/bf2017/bitmaps/leiaorgana-card-leiaorgana-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LeiaOrgana/Card_LeiaOrgana_09_Mid": {
+      "path": "ui/bf2017/bitmaps/leiaorgana-card-leiaorgana-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LukeSkywalker/Card_LukeSkywalker_01_Mid": {
+      "path": "ui/bf2017/bitmaps/lukeskywalker-card-lukeskywalker-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LukeSkywalker/Card_LukeSkywalker_02_Mid": {
+      "path": "ui/bf2017/bitmaps/lukeskywalker-card-lukeskywalker-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LukeSkywalker/Card_LukeSkywalker_03_Mid": {
+      "path": "ui/bf2017/bitmaps/lukeskywalker-card-lukeskywalker-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LukeSkywalker/Card_LukeSkywalker_04_Mid": {
+      "path": "ui/bf2017/bitmaps/lukeskywalker-card-lukeskywalker-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LukeSkywalker/Card_LukeSkywalker_05_Mid": {
+      "path": "ui/bf2017/bitmaps/lukeskywalker-card-lukeskywalker-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LukeSkywalker/Card_LukeSkywalker_06_Mid": {
+      "path": "ui/bf2017/bitmaps/lukeskywalker-card-lukeskywalker-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LukeSkywalker/Card_LukeSkywalker_07_Mid": {
+      "path": "ui/bf2017/bitmaps/lukeskywalker-card-lukeskywalker-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LukeSkywalker/Card_LukeSkywalker_08_Mid": {
+      "path": "ui/bf2017/bitmaps/lukeskywalker-card-lukeskywalker-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/LukeSkywalker/Card_LukeSkywalker_09_Mid": {
+      "path": "ui/bf2017/bitmaps/lukeskywalker-card-lukeskywalker-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Yoda/Card_Yoda_01_Mid": {
+      "path": "ui/bf2017/bitmaps/yoda-card-yoda-01-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Yoda/Card_Yoda_02_Mid": {
+      "path": "ui/bf2017/bitmaps/yoda-card-yoda-02-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Yoda/Card_Yoda_03_Mid": {
+      "path": "ui/bf2017/bitmaps/yoda-card-yoda-03-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Yoda/Card_Yoda_04_Mid": {
+      "path": "ui/bf2017/bitmaps/yoda-card-yoda-04-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Yoda/Card_Yoda_05_Mid": {
+      "path": "ui/bf2017/bitmaps/yoda-card-yoda-05-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Yoda/Card_Yoda_06_Mid": {
+      "path": "ui/bf2017/bitmaps/yoda-card-yoda-06-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Yoda/Card_Yoda_07_Mid": {
+      "path": "ui/bf2017/bitmaps/yoda-card-yoda-07-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Yoda/Card_Yoda_08_Mid": {
+      "path": "ui/bf2017/bitmaps/yoda-card-yoda-08-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Cards/Card_Images/Characters/Yoda/Card_Yoda_09_Mid": {
+      "path": "ui/bf2017/bitmaps/yoda-card-yoda-09-mid.webp",
+      "size": [
+        448,
+        560
+      ]
+    },
+    "UI/Bitmaps/Frontend/Tiles/Backup-Arcade": {
+      "path": "ui/bf2017/bitmaps/tiles-backup-arcade.webp",
+      "size": [
+        576,
+        240
+      ]
+    },
+    "UI/Bitmaps/Frontend/Tiles/Backup-Campaign": {
+      "path": "ui/bf2017/bitmaps/tiles-backup-campaign.webp",
+      "size": [
+        576,
+        480
+      ]
+    },
+    "UI/Bitmaps/Frontend/Tiles/Backup-Connect": {
+      "path": "ui/bf2017/bitmaps/tiles-backup-connect.webp",
+      "size": [
+        576,
+        240
+      ]
+    },
+    "UI/Bitmaps/Frontend/Tiles/Starfighter_small": {
+      "path": "ui/bf2017/bitmaps/tiles-starfighter-small.webp",
+      "size": [
+        576,
+        240
+      ]
+    },
+    "UI/Bitmaps/GameModeTiles/ExpoMask": {
+      "path": "ui/bf2017/bitmaps/gamemodetiles-expomask.webp",
+      "size": [
+        504,
+        736
+      ]
+    },
+    "UI/Bitmaps/GameModeTiles/ExpoMaskHalf": {
+      "path": "ui/bf2017/bitmaps/gamemodetiles-expomaskhalf.webp",
+      "size": [
+        504,
+        368
+      ]
+    },
+    "UI/Bitmaps/GameModeTiles/GMTile_Blast": {
+      "path": "ui/bf2017/bitmaps/gamemodetiles-gmtile-blast.webp",
+      "size": [
+        504,
+        764
+      ]
+    },
+    "UI/Bitmaps/GameModeTiles/GMTile_Ewokhunt": {
+      "path": "ui/bf2017/bitmaps/gamemodetiles-gmtile-ewokhunt.webp",
+      "size": [
+        504,
+        764
+      ]
+    },
+    "UI/Bitmaps/GameModeTiles/GMTile_GalacticAssault": {
+      "path": "ui/bf2017/bitmaps/gamemodetiles-gmtile-galacticassault.webp",
+      "size": [
+        504,
+        764
+      ]
+    },
+    "UI/Bitmaps/GameModeTiles/GMTile_HeroBrawl": {
+      "path": "ui/bf2017/bitmaps/gamemodetiles-gmtile-herobrawl.webp",
+      "size": [
+        504,
+        764
+      ]
+    },
+    "UI/Bitmaps/GameModeTiles/GMTile_HeroShips": {
+      "path": "ui/bf2017/bitmaps/gamemodetiles-gmtile-heroships.webp",
+      "size": [
+        504,
+        764
+      ]
+    },
+    "UI/Bitmaps/GameModeTiles/GMTile_HeroShowdown": {
+      "path": "ui/bf2017/bitmaps/gamemodetiles-gmtile-heroshowdown.webp",
+      "size": [
+        504,
+        764
+      ]
+    },
+    "UI/Bitmaps/GameModeTiles/GMTile_StarfighterAssault": {
+      "path": "ui/bf2017/bitmaps/gamemodetiles-gmtile-starfighterassault.webp",
+      "size": [
+        504,
+        764
+      ]
+    },
+    "UI/Bitmaps/GameModeTiles/GMTile_Strike": {
+      "path": "ui/bf2017/bitmaps/gamemodetiles-gmtile-strike.webp",
+      "size": [
+        504,
+        764
+      ]
+    },
+    "UI/Bitmaps/GameModeTiles/GMTile_Supremacy_Original": {
+      "path": "ui/bf2017/bitmaps/gamemodetiles-gmtile-supremacy-original.webp",
+      "size": [
+        504,
+        764
+      ]
+    },
+    "UI/Bitmaps/GameModeTiles/GMTile_Supremacy_Prequel": {
+      "path": "ui/bf2017/bitmaps/gamemodetiles-gmtile-supremacy-prequel.webp",
+      "size": [
+        504,
+        764
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_AAT": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-aat.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_ARCTrooper": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-arctrooper.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_ATAT": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-atat.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_ATRT": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-atrt.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_ATRTRebel": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-atrtrebel.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_ATST": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-atst.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_AWing": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-awing.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Airspeeder": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-airspeeder.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Anakin": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-anakin.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Arc170": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-arc170.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_B2": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-b2.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_B2RPRocketDroid": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-b2rprocketdroid.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_BARC": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-barc.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_BTLAYWing": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-btlaywing.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_BTLBYWing": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-btlbywing.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_BXCommando": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-bxcommando.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_BobaFett": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-bobafett.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Bossk": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-bossk.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Chewbacca": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-chewbacca.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_CloneCommando": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-clonecommando.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_CloneJetTrooper": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-clonejettrooper.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_DarthMaul": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-darthmaul.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_DarthVader": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-darthvader.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Deathtrooper": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-deathtrooper.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Dooku": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-dooku.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Droideka": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-droideka.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Ewok": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-ewok.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_FlameTrooper": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-flametrooper.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Grievous": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-grievous.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Grizzlyboat": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-grizzlyboat.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Gunner": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-gunner.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_HanBearded": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-hanbearded.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_HanSolo": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-hansolo.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_HansFalcon": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-hansfalcon.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Honeybee": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-honeybee.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Hyenabomber": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-hyenabomber.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_ISB_Agent": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-isb-agent.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_IdenRebel": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-idenrebel.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_IdenVersio": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-idenversio.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_LAAT": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-laat.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_LIUV": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-liuv.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_LandoCalrissian": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-landocalrissian.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_LeiaOrgana": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-leiaorgana.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_LukeSkywalker": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-lukeskywalker.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_MTT": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-mtt.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_N1Starfighter": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-n1starfighter.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_ObiWan": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-obiwan.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Palpatine": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-palpatine.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_RebelRocketJumper": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-rebelrocketjumper.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_RebelRocketTrooper": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-rebelrockettrooper.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Red5": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-red5.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_STAP": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-stap.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Scimitar": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-scimitar.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Skispeeder": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-skispeeder.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Slave1": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-slave1.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Speederbike": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-speederbike.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_TH_ImperialOfficer": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-th-imperialofficer.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_TH_Phase1_SpecialistClone": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-th-phase1-specialistclone.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_TH_Phase2_SpecialistClone": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-th-phase2-specialistclone.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_TH_RebelDuros": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-th-rebelduros.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_TH_SeparatistDroid": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-th-separatistdroid.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_TIEBomber": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-tiebomber.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_TX130": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-tx130.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_TieAdvanced": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-tieadvanced.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_TieFighter": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-tiefighter.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_TieInterceptor": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-tieinterceptor.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_TriFighter": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-trifighter.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_UWing": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-uwing.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_VWing": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-vwing.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_VultureDroid": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-vulturedroid.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_WookieWarrior": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-wookiewarrior.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_X34Landspeeder": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-x34landspeeder.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_XWingT65": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-xwingt65.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_Yoda": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-yoda.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/Portraits/Portrait_YodasStarfighter": {
+      "path": "ui/bf2017/bitmaps/portraits-portrait-yodasstarfighter.webp",
+      "size": [
+        224,
+        224
+      ]
+    },
+    "UI/Bitmaps/SupplyCrateIcons/Lootbox_BetaReward": {
+      "path": "ui/bf2017/bitmaps/supplycrateicons-lootbox-betareward.webp",
+      "size": [
+        84,
+        96
+      ]
+    },
+    "UI/Bitmaps/SupplyCrateIcons/Lootbox_Daily": {
+      "path": "ui/bf2017/bitmaps/supplycrateicons-lootbox-daily.webp",
+      "size": [
+        84,
+        96
+      ]
+    },
+    "UI/Bitmaps/SupplyCrateIcons/Lootbox_Event": {
+      "path": "ui/bf2017/bitmaps/supplycrateicons-lootbox-event.webp",
+      "size": [
+        84,
+        96
+      ]
+    },
+    "UI/Bitmaps/SupplyCrateIcons/Lootbox_Hero": {
+      "path": "ui/bf2017/bitmaps/supplycrateicons-lootbox-hero.webp",
+      "size": [
+        84,
+        96
+      ]
+    },
+    "UI/Bitmaps/SupplyCrateIcons/Lootbox_Origin": {
+      "path": "ui/bf2017/bitmaps/supplycrateicons-lootbox-origin.webp",
+      "size": [
+        84,
+        96
+      ]
+    },
+    "UI/Bitmaps/SupplyCrateIcons/Lootbox_Random": {
+      "path": "ui/bf2017/bitmaps/supplycrateicons-lootbox-random.webp",
+      "size": [
+        84,
+        96
+      ]
+    },
+    "UI/Bitmaps/SupplyCrateIcons/Lootbox_Trooper": {
+      "path": "ui/bf2017/bitmaps/supplycrateicons-lootbox-trooper.webp",
+      "size": [
+        84,
+        96
+      ]
+    },
+    "UI/Bitmaps/SupplyCrateIcons/Lootbox_Vehicle": {
+      "path": "ui/bf2017/bitmaps/supplycrateicons-lootbox-vehicle.webp",
+      "size": [
+        84,
+        96
+      ]
+    }
+  },
+  "missing": 0
 }

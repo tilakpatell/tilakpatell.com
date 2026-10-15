@@ -87,6 +87,7 @@ async function leg(kind) {
     window.localStorage.setItem('tp-intro', '1');
     window.localStorage.setItem('tp-start', '"universe"');
     window.localStorage.setItem('tp-worlds', JSON.stringify('load'));
+    window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
     if (q) window.localStorage.setItem('tp-quality', q);
   }, QUALITY);
   const page = await ctx.newPage();
@@ -191,6 +192,7 @@ async function walkScreens(kind) {
     window.localStorage.setItem('tp-intro', '1');
     window.localStorage.setItem('tp-start', '"universe"');
     window.localStorage.setItem('tp-worlds', JSON.stringify('load'));
+    window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
     if (q) window.localStorage.setItem('tp-quality', q);
   }, QUALITY);
   const page = await ctx.newPage();
@@ -260,7 +262,7 @@ async function walkScreens(kind) {
 // the battle's screens: the HUD's crosshair, the pause menu, the kill
 // screen, the end of round
 async function screensInWorld(page, at, wait) {
-  await at('hud', '.bf-hud .hud-reticle-shape', wait);
+  await at('hud', '.bf-hud .hud-reticle-shape', wait, 'attached');
   await page.keyboard.press('Escape');
   await at('ingame-menu', '[data-screen$="/IngameMenuMPScreen"]', wait);
   await page.click('[data-item="RESUME"]');

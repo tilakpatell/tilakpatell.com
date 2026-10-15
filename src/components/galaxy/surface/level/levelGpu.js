@@ -34,6 +34,31 @@ const STEP = 8;
 
 export const canDrawGpuScene = (renderer) => Boolean(renderer) && hasIndirect(renderer);
 
+// The camera in the level's own frame. The rows are in the pack's frame,
+// and the Battlefront map puts the level group at the pack's origin, turned
+// by its yaw (map/level.js), while the cull and the occluders' prepass read
+// a camera in the frame of the rows: given the world's camera they culled
+// everything (Hoth: 5,813 of 6,050 rows, nothing drawn). The scene's own
+// draws sit under the group and three places them; only the cull's camera
+// moves. (the galaxy's level is at the origin: the two are the same there)
+const _rootInv = new THREE.Matrix4();
+export function localCameraOf(root, camera, local = new THREE.PerspectiveCamera()) {
+  local.matrixAutoUpdate = false;
+  local.matrixWorldAutoUpdate = false;
+  root.updateWorldMatrix(true, false);
+  _rootInv.copy(root.matrixWorld).invert();
+  local.matrixWorld.multiplyMatrices(_rootInv, camera.matrixWorld);
+  local.matrix.copy(local.matrixWorld);
+  local.matrixWorldInverse.copy(local.matrixWorld).invert();
+  local.projectionMatrix.copy(camera.projectionMatrix);
+  local.projectionMatrixInverse.copy(camera.projectionMatrixInverse);
+  local.near = camera.near;
+  local.far = camera.far;
+  local.coordinateSystem = camera.coordinateSystem;
+  local._reversedDepth = camera.reversedDepth; // (the renderer's own field under the getter)
+  return local;
+}
+
 export function createLevelGpu({ scene, pack, loadGltf, tier, renderer = null, keyOf = materialKey, occlude = true }) {
   const root = new THREE.Group();
   root.name = 'level:gpuScene';
@@ -50,6 +75,7 @@ export function createLevelGpu({ scene, pack, loadGltf, tier, renderer = null, k
   let sorts = 0;
   let disposed = false;
   let frames = 0;
+  const local = new THREE.PerspectiveCamera(); // (the camera in the rows' frame: localCameraOf)
   const clock = typeof performance !== 'undefined' ? () => performance.now() / 1000 : () => Date.now() / 1000;
   const t0 = clock();
 
@@ -58,7 +84,8 @@ export function createLevelGpu({ scene, pack, loadGltf, tier, renderer = null, k
       const three = await t.loadGpuThree();
       if (disposed) return;
       const size = renderer.getDrawingBufferSize(new three.THREE.Vector2());
-      const hzb = occlude ? h.createHzb(renderer, { width: size.x, height: size.y, three }) : null;
+      // (the pyramid on the device's own depth: reversed on WebGPU, where near is 1; built standard it hid every row)
+      const hzb = occlude ? h.createHzb(renderer, { width: size.x, height: size.y, three, reversed: renderer.reversedDepthBuffer === true }) : null;
       // (a slot a part and key: the pack's mesh materials over its files, both sides)
       const slots = Math.max(64, table.keys.reduce((n, k) => n + (pack.meshes[k.mesh].mats ?? 2), 0) * 2);
       const cull = c.createCull(renderer, { scene: rows, table, hzb, three, slots });
@@ -171,11 +198,14 @@ export function createLevelGpu({ scene, pack, loadGltf, tier, renderer = null, k
     beforeRender(camera) {
       if (!gpu || disposed) return;
       renderer.getDrawingBufferSize(gpu.size);
-      if (gpu.hzb && frames > 0) gpu.hzb.update(gpu.draws.prepass(camera, gpu.size.x, gpu.size.y));
-      gpu.cull.run(camera, { now: clock() - t0, width: gpu.size.x, height: gpu.size.y, occlude: Boolean(gpu.hzb) });
+      const cam = localCameraOf(root, camera, local);
+      if (gpu.hzb && frames > 0) gpu.hzb.update(gpu.draws.prepass(cam, gpu.size.x, gpu.size.y));
+      gpu.cull.run(cam, { now: clock() - t0, width: gpu.size.x, height: gpu.size.y, occlude: Boolean(gpu.hzb) });
       frames++;
     },
     afterRender() {},
+    // (development: the scene's own state for a check in the browser)
+    debug: () => ({ table, rows, files, ranges, last, gpu, local, dropped, root, tier }),
     rebuilds: () => sorts,
     cells: () => [...ranges.keys()],
     stats() {

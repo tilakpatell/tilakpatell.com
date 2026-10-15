@@ -28,8 +28,18 @@ describe('applyGameLight', () => {
     const urls = { lut: { url: '/nope.lut.png', size: 17 }, panorama: { url: '/nope.ktx2', horizon: [0.7, 0.8, 0.9] } };
     const missing = await applyGameLight(scene, fakeRenderer(), hoth.sunny, { tier: 'ultra', camera, picture: urls });
     expect(missing.parts.picture.missing).toEqual(expect.arrayContaining(['/nope.lut.png', '/nope.ktx2']));
+    expect(missing.parts.picture.format).toBeNull();
     expect(missing.passes.map((p) => p.kind)).not.toContain('lut');
     missing.dispose();
+    // (lane W's HDR copy is asked for first on ultra and high, the UASTC in its place when it fails; mid asks for the UASTC alone)
+    const hdr = { ...urls, panorama: { ...urls.panorama, hdr: { url: '/nope-hdr', widths: [2048], format: 'rgba16f' } } };
+    const tiered = await applyGameLight(scene, fakeRenderer(), hoth.sunny, { tier: 'ultra', camera, picture: hdr });
+    expect(tiered.parts.picture.missing).toEqual(expect.arrayContaining(['/nope-hdr.2048.ktx2', '/nope.ktx2']));
+    tiered.dispose();
+    const mid = await applyGameLight(scene, fakeRenderer(), hoth.sunny, { tier: 'mid', camera, picture: hdr });
+    expect(mid.parts.picture.missing).not.toContain('/nope-hdr.2048.ktx2');
+    expect(mid.parts.picture.missing).toContain('/nope.ktx2');
+    mid.dispose();
     // the classic renderer takes none of it
     const classic = await applyGameLight(scene, { isWebGLRenderer: true, shadowMap: { enabled: false } }, hoth.sunny, { tier: 'ultra', camera, picture: true, post: false });
     expect(classic.parts.grade).toBeNull();

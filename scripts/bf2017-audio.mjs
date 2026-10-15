@@ -6,10 +6,14 @@
 // bf2017/, at the name gameSounds.js then gives the site's sound.
 //
 //   node --env-file=.env.local scripts/bf2017-audio.mjs              (what audio the bucket holds)
-//   node --env-file=.env.local scripts/bf2017-audio.mjs <bucket path> --as <file under public/audio/galaxy/bf2017/>
+//   node --env-file=.env.local scripts/bf2017-audio.mjs <bucket path> --as <file under public/audio/galaxy/bf2017/> [--stereo]
 //
 // ffmpeg makes the MP3 (mono, 96 kbit/s, the level the site's clips are
-// at); the keys, SUPABASE_URL and BF2017_KEY (or SUPA_KEY), are never printed.
+// at; `--stereo` keeps two channels at 112 kbit/s for a music stem or a bed,
+// a quad bed's front pair); the keys, SUPABASE_URL and BF2017_KEY (or
+// SUPA_KEY), are never printed. The sound export (bf2-re/findings/
+// 36-sound-export.md) lands under `web/sounds`; the Hoth set is made whole
+// from the owner's copy by scripts/bf2017-sounds.mjs, this is for one file.
 
 import { execFile } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -24,8 +28,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'public/audio/galaxy/bf2017');
 const BUCKET = 'bf2017-assets';
 const AUDIO = /\.(wav|ogg|opus|mp3|flac|m4a|aac)$/i;
-// where the drop's audio would be
-const ROOTS = ['data/Sound', 'web/audio', 'web/sound'];
+// where the drop's audio would be (`web/sounds`: the sound export's WAVs)
+const ROOTS = ['data/Sound', 'web/audio', 'web/sound', 'web/sounds'];
 
 function keys() {
   const base = process.env.SUPABASE_URL;
@@ -81,5 +85,7 @@ const raw = join(tmpdir(), `bf2017-audio-${process.pid}${from.slice(from.lastInd
 await writeFile(raw, Buffer.from(await res.arrayBuffer()));
 const out = join(OUT, args.as.replace(/\.[a-z0-9]+$/i, '.mp3'));
 await mkdir(dirname(out), { recursive: true });
-await promisify(execFile)('ffmpeg', ['-y', '-loglevel', 'error', '-i', raw, '-ac', '1', '-b:a', '96k', out]);
+// (a stereo stem keeps two channels; a quad or 6-channel bed its front pair)
+const channels = args.stereo ? ['-af', 'pan=stereo|c0=c0|c1=c1', '-b:a', '112k'] : ['-ac', '1', '-b:a', '96k'];
+await promisify(execFile)('ffmpeg', ['-y', '-loglevel', 'error', '-i', raw, ...channels, out]);
 console.log(`${from} → ${out.slice(ROOT.length + 1)}`);

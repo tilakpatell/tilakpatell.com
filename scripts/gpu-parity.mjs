@@ -32,7 +32,7 @@
 // Chromium (a desktop's own chip); 'auto' is swiftshader on Linux without a
 // display, system elsewhere.
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, rmdirSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -101,6 +101,7 @@ async function shoot(browser, base, leg) {
     set('tp-start', '"universe"');
     set('tp-sound', 'off');
     set('tp-worlds', JSON.stringify('load'));
+    set('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
     set('tp-tour', 'skipped');
     window.sessionStorage.setItem('tp-galaxy-intro', '1');
     window.__tpKeepFrames = true; // (the classic renderer's last frame kept readable)
@@ -245,6 +246,18 @@ try {
       report.before = { ref: before, sha, ...leg.info, errors: leg.errors, views: Object.keys(leg.shots) };
     } finally {
       await server?.close();
+      // (the junction to this checkout's packages goes first, on its own: a
+      // recursive delete of the worktree on Windows followed it and took
+      // packages out of the real node_modules, sharp's colour among them)
+      try {
+        unlinkSync(join(wt, 'node_modules'));
+      } catch {
+        try {
+          rmdirSync(join(wt, 'node_modules'));
+        } catch {
+          /* (gone already) */
+        }
+      }
       // (on Windows a file the browser or Vite still holds makes git refuse
       // the removal: the folder is then deleted directly and the worktree
       // pruned, and the before pictures are kept either way)

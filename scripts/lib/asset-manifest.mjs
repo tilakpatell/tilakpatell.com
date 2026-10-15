@@ -15,7 +15,7 @@
 // hashOf(buf) → 12 hex; publishedPath(path, hash) → '<hash>/<path>'
 // readManifest(file) / writeManifest(file, entries): keys sorted
 // diff(manifest, files) → { add, change, same, gone }
-// gameFiles(credits, publicDir) → [{ path, bytes, hash, from, tier }]
+// gameFiles(credits, publicDir, hulls) → [{ path, bytes, hash, from, tier }]
 // freshGalaxy(manifest, publicDir) → the entries a build may use
 // ignoreBlock(gitignore, paths) → the text with its marked block rewritten
 // bytesOf(path, { publicDir, manifest }) → a file's size, on disk or published
@@ -24,6 +24,7 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { hashOf, keyOf, readManifest as readJson } from '../assets-upload.mjs';
 
 export { hashOf };
@@ -37,6 +38,13 @@ const TITLE = 'Star Wars Battlefront II (2017): ';
 // (textures/galaxy/bf2017/hdr: lane W's HDR skies, made on the desktop,
 // scripts/desktop/bf2017-panoramas.mjs; tens of MB each, never in git)
 const PACKS = ['models/galaxy/bf2017', 'models/galaxy/space', 'textures/galaxy/sky/space', 'textures/galaxy/bf2017/hdr'];
+// the ships' hit shapes (scripts/bf2017-hulls.mjs, src/data/galaxyHulls.json):
+// a hull made from the game's shapes (`source: 'game'`) or from a model that
+// lives only in the bucket (`publish`) is published; one made from a model in
+// git is committed beside it, so PACKS never names the folder
+const HULLS = 'models/galaxy/hulls';
+const HULL_ROWS = fileURLToPath(new URL('../../src/data/galaxyHulls.json', import.meta.url));
+const hullRows = () => JSON.parse(readFileSync(HULL_ROWS, 'utf8'));
 // the game's films (scripts/bf2017-ui.mjs): the WebM only, its poster and
 // captions beside it stay committed
 const FILMS = 'films/bf2017';
@@ -45,6 +53,10 @@ const FILMS = 'films/bf2017';
 // beside them stay committed (the classic surface's, small)
 const PICTURE = 'textures/galaxy/bf2017/light';
 const PICTURED = /\.(panorama|gradient|clouds)\.ktx2$|\.lut33\.png$/;
+// the game's sounds (scripts/bf2017-sounds.mjs: the Hoth set as MP3, with
+// its index src/data/bf2017/sounds.json committed beside them); until they
+// are published they are served from public/ like any committed audio
+export const SOUNDS = 'audio/galaxy/bf2017';
 const CUTS = ['lod1', 'far', 'ultra'];
 // A level pack's text stays in git (level.json, its parts' JSON, the README:
 // the tests, the sites and the other lanes read them, and they are small);
@@ -89,11 +101,12 @@ const measure = (publicDir, path) => {
 // credit from the game names (crew or surface), each of its cuts beside it
 // (.lod1, .far, .ultra), and everything under models/galaxy/bf2017 (the clip
 // packs) and models/galaxy/space (the space levels), the level packs but their
-// level.json and README, the game's films under films/bf2017, and the
-// records' pictures under textures/galaxy/bf2017/light (PICTURED). Meshy's,
+// level.json and README, the game's films under films/bf2017, the
+// records' pictures under textures/galaxy/bf2017/light (PICTURED), and the
+// game's sounds under audio/galaxy/bf2017 (SOUNDS). Meshy's,
 // Sketchfab's and Quaternius's stay committed: their credits name another
 // source. Sorted by path.
-export function gameFiles(credits, publicDir) {
+export function gameFiles(credits, publicDir, hulls = hullRows()) {
   const out = new Map();
   for (const c of Object.values(credits)) {
     if (c?.source !== GAME || !c.file) continue;
@@ -111,6 +124,11 @@ export function gameFiles(credits, publicDir) {
     if (PACK_KEPT.test(path)) continue;
     if (!out.has(path)) out.set(path, { path, ...measure(publicDir, path), from: path, tier: 'pack' });
   }
+  for (const [key, row] of Object.entries(hulls)) {
+    if (row.source !== 'game' && !row.publish) continue;
+    const path = `${HULLS}/${key}.bin`;
+    if (existsSync(join(publicDir, path))) out.set(path, { path, ...measure(publicDir, path), from: key, tier: 'hull' });
+  }
   for (const abs of walk(join(publicDir, FILMS)).filter((f) => f.endsWith('.webm'))) {
     const path = abs.slice(publicDir.length + 1).split('\\').join('/');
     out.set(path, { path, ...measure(publicDir, path), from: path, tier: 'film' });
@@ -118,6 +136,10 @@ export function gameFiles(credits, publicDir) {
   for (const abs of walk(join(publicDir, PICTURE)).filter((f) => PICTURED.test(f))) {
     const path = abs.slice(publicDir.length + 1).split('\\').join('/');
     out.set(path, { path, ...measure(publicDir, path), from: path, tier: 'picture' });
+  }
+  for (const abs of walk(join(publicDir, SOUNDS)).filter((f) => f.endsWith('.mp3'))) {
+    const path = abs.slice(publicDir.length + 1).split('\\').join('/');
+    out.set(path, { path, ...measure(publicDir, path), from: path, tier: 'sound' });
   }
   return [...out.values()].sort((a, b) => (a.path < b.path ? -1 : 1));
 }

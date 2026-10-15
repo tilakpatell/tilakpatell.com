@@ -657,6 +657,7 @@ async function check() {
       keep(window.localStorage, 'tp-intro', '1');
       keep(window.localStorage, 'tp-start', '"home"');
       keep(window.localStorage, 'tp-worlds', '"load"');
+      keep(window.localStorage, 'tp-software', '"on"'); // (past the Star Wars worlds' GPU gate, lib/fit)
       keep(window.localStorage, 'tp-tour', '"skipped"');
       keep(window.localStorage, 'tp-galaxy-panel', '"tucked"');
       keep(window.sessionStorage, 'tp-galaxy-intro', '1');

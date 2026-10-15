@@ -10,4 +10,4 @@ Luke on Hoth at high quality, then Vader five metres ahead (`__surfaceDo('duel',
 
 Read off the page: two saber lights in the scene, Luke's and Vader's, each at 1.2 (high); no page error; no asset request failed.
 
-Not measured here: the frame time with four lit blades. SwiftShader drew a frame in 4.8 s (median of 120), so the number says nothing of a GPU; the chain past the first stroke didn't run either, the game's clock barely moving between calls at that rate. Both want a machine with a GPU (`HANDOFF-saber-forms.md`'s "How to check").
+Not measured here: the frame time with four lit blades. SwiftShader drew a frame in 4.8 s (median of 120), so the number says nothing of a GPU; the chain past the first stroke didn't run either, the game's clock barely moving between calls at that rate. Both want a machine with a GPU (`HANDOFF-battlefront.md`'s "How to check").

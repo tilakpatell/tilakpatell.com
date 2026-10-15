@@ -6,14 +6,15 @@
 // the Falcon, the RV, the cruiser), so what you see is what you fly. A new
 // paint or part is a new outfit on the same ship; a new hull or module is a
 // new ship. Pointing at a slot pulses what's bolted there. It draws at
-// most FPS frames a second, only while the tab is visible, and stops on
-// dispose. After rickmorty/wardrobe/preview.js.
+// most FPS frames a second, only while the tab is visible and the canvas
+// in view, and stops on dispose. After rickmorty/wardrobe/preview.js.
 //
 // createShowroom(canvas, { reduced }) → { show({ kind, build, loadout }),
 //   focus(slot | null), dispose() } | null (no WebGL)
 
 import * as THREE from 'three';
 import { pixelRatio } from '../../../lib/device';
+import { shownLoop } from '../../../lib/shownLoop';
 import { disposeTree, quiet, releaseContext } from '../../../lib/three/renderer';
 import { cloneScene, loadGLTF } from '../../../lib/three/gltfCache';
 import { dropTransmission } from '../../../lib/three/glass';
@@ -29,7 +30,7 @@ const PULSE_COLOR = new THREE.Color('#7cc8ff');
 export function createShowroom(canvas, { reduced = false } = {}) {
   let renderer;
   try {
-    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }));
+    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }));
   } catch {
     return null;
   }
@@ -206,14 +207,12 @@ export function createShowroom(canvas, { reduced = false } = {}) {
   canvas.addEventListener('wheel', wheel, { passive: false });
   canvas.addEventListener('keydown', keydown);
 
-  // the frame loop: at most FPS, and none while the tab's hidden
-  let raf = 0;
+  // the frame loop: at most FPS, and none while the tab's hidden or the
+  // canvas is out of view (lib/shownLoop: no frame asked for at all)
   let last = performance.now();
   let drawn = 0;
   const t0 = last;
   const frame = (now) => {
-    raf = requestAnimationFrame(frame);
-    if (document.visibilityState !== 'visible') return;
     if (now - drawn < 1000 / FPS - 1) return;
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
@@ -235,7 +234,7 @@ export function createShowroom(canvas, { reduced = false } = {}) {
       dirty = false;
     }
   };
-  raf = requestAnimationFrame(frame);
+  const loop = shownLoop(canvas, frame);
 
   return {
     show({ kind, build = null, loadout }) {
@@ -266,7 +265,7 @@ export function createShowroom(canvas, { reduced = false } = {}) {
     },
     dispose() {
       gone = true;
-      cancelAnimationFrame(raf);
+      loop.stop();
       sizing.disconnect();
       canvas.removeEventListener('pointerdown', down);
       canvas.removeEventListener('pointermove', move);

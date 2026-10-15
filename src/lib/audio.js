@@ -283,7 +283,17 @@ export function loadBuffer(url) {
       url,
       prefetch(url)
         // decoding detaches the buffer it is given, so decode a copy
-        .then((data) => new Promise((resolve, reject) => ac.decodeAudioData(data.slice(0), resolve, reject)))
+        // (the call answers twice, through its callbacks and through the
+        // promise it returns: both go to the one promise here, or bytes that
+        // are not audio, a page served where a file should be, leave the
+        // returned one rejected with nobody listening)
+        .then(
+          (data) =>
+            new Promise((resolve, reject) => {
+              const p = ac.decodeAudioData(data.slice(0), resolve, reject);
+              if (p && typeof p.then === 'function') p.then(resolve, reject);
+            }),
+        )
         // the decoded buffer is the cache now; the raw bytes would only double the memory
         .then((buf) => (bytes.delete(url), buf))
         .catch((e) => {
