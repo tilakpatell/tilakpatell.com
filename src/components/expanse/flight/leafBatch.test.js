@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { createLeafBatch } from './leafBatch';
 
@@ -65,13 +65,32 @@ describe('the ground’s leaves as one batch', () => {
     expect(box.min.y).toBe(5);
   });
 
-  it('grows when every slot is in use, the leaves it held kept', () => {
-    const batch = createLeafBatch(new THREE.MeshLambertMaterial(), { slots: 1 });
-    const made = [0, 64, 128, 192, 256].map((x) => batch.add(leaf(x, 0), answer()));
-    for (const h of made) batch.show(h, true);
-    expect(batch.live()).toBe(5);
-    expect(shown(batch)).toEqual([0, 64, 128, 192, 256].map((x) => [x, 0]));
-    expect(batch.mesh.maxInstanceCount).toBeGreaterThanOrEqual(5);
+  // (three's batch node takes the batch's matrix and indirect textures as
+  // the material is built: setInstanceCount makes new ones, and a built
+  // material goes on reading the old, so a full batch is made again, never
+  // resized, and the old one leaves the scene)
+  it('grows when every slot is in use, as a new batch, the leaves it held kept and their showing', () => {
+    const resize = vi.spyOn(THREE.BatchedMesh.prototype, 'setInstanceCount');
+    const parent = new THREE.Group();
+    try {
+      const batch = createLeafBatch(new THREE.MeshLambertMaterial(), { slots: 1, parent });
+      const first = [0, 64].map((x) => batch.add(leaf(x, 0), answer()));
+      batch.show(first[0], true);
+      const was = batch.mesh;
+      const made = [...first, ...[128, 192, 256].map((x) => batch.add(leaf(x, 0), answer()))];
+      for (const h of made.slice(2)) batch.show(h, true);
+      expect(batch.live()).toBe(5);
+      expect(shown(batch)).toEqual([0, 128, 192, 256].map((x) => [x, 0]));
+      expect(batch.mesh).not.toBe(was);
+      expect(parent.children).toEqual([batch.mesh]);
+      expect(resize).not.toHaveBeenCalled();
+      // (a handle from before the growth still works)
+      batch.show(made[1], true);
+      batch.remove(made[0]);
+      expect(shown(batch)).toEqual([64, 128, 192, 256].map((x) => [x, 0]));
+    } finally {
+      resize.mockRestore();
+    }
   });
 
   it('takes a bigger leaf than its slots hold into a slot of its own size', () => {
@@ -80,7 +99,7 @@ describe('the ground’s leaves as one batch', () => {
     batch.remove(small);
     const big = batch.add(leaf(0, 0), answer(8));
     batch.show(big, true);
-    expect(big.geometry).not.toBe(small.geometry);
+    expect(shown(batch)).toEqual([[0, 0]]);
     const box = batch.mesh.getBoundingBoxAt(big.geometry, new THREE.Box3());
     expect(box.max.x).toBe(64);
   });

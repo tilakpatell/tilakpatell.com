@@ -20,7 +20,8 @@ const server = await createServer({ root: resolve('.'), server: { host: '127.0.0
 await server.listen();
 const browser = await chromium.launch({ executablePath: findChromium(), args: launchArgs({ angle: angleFor(), webgpu: false, uncapped: true }) });
 try {
-  const ctx = await browser.newContext({ viewport: { width: 480, height: 300 } });
+  const [vw, vh] = (process.env.VIEW ?? '480x300').split('x').map(Number);
+  const ctx = await browser.newContext({ viewport: { width: vw, height: vh } });
   await ctx.addInitScript(() => {
     const set = (k, v) => window.localStorage.setItem(k, v);
     set('tp-intro', '1');
@@ -107,6 +108,34 @@ try {
       }),
     FRAMES,
   );
+  // (LEAVES=1: the batch's leaves shown, and any two that overlap: a
+  // coarser leaf left showing over finer ones)
+  if (process.env.LEAVES)
+    console.log(
+      JSON.stringify(
+        await page.evaluate(() => {
+          const b = window.__FLIGHT__.scene.getObjectByName('flight-ground-leaves');
+          if (!b) return { batch: null };
+          const m = new b.matrixWorld.constructor();
+          b.geometry.computeBoundingBox();
+          const box = new b.geometry.boundingBox.constructor();
+          const shown = [];
+          for (let i = 0; i < b.instanceCount; i++) {
+            if (!b.getVisibleAt(i)) continue;
+            b.getMatrixAt(i, m);
+            b.getBoundingBoxAt(b.getGeometryIdAt(i), box);
+            shown.push({ i, g: b.getGeometryIdAt(i), x: m.elements[12], z: m.elements[14], w: box.max.x - box.min.x });
+          }
+          const overlaps = [];
+          for (const a of shown)
+            for (const c of shown)
+              if (a.i < c.i && a.x < c.x + c.w - 1 && c.x < a.x + a.w - 1 && a.z < c.z + c.w - 1 && c.z < a.z + a.w - 1) overlaps.push([a, c]);
+          return { shown: shown.length, stats: window.__FLIGHT__.stats(), overlaps: overlaps.slice(0, 6), n: overlaps.length };
+        }),
+      ),
+    );
+  // (SHOT=file.png: the held view as it was drawn, for a look)
+  if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
   let hot = null;
   if (cdp) {
     const { profile } = await cdp.send('Profiler.stop');
