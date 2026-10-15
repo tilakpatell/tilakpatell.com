@@ -38,8 +38,11 @@ export function createInputStore(post) {
     detach() {
       pending = held = null;
     },
-    take(packed) {
+    at: null, // the page's clock (on the epoch) at the sample the last frame read
+    seen: null, // and at the newest it was sent
+    take(packed, at = null) {
       pending = mergeInput(pending, packed);
+      this.seen = at;
     },
     bind(names, { axes: ax = {} } = {}) {
       actions = { ...names };
@@ -54,6 +57,7 @@ export function createInputStore(post) {
     bindings: () => ({ actions: { ...actions }, axes: { ...axes } }),
     setStick() {}, // (the page's touch stick writes the page's input)
     sample() {
+      this.at = this.seen;
       const now = pending ?? held;
       if (pending) held = { ...pending, pressed: [], tapped: {}, pointer: { ...pending.pointer, drag: null } };
       pending = null;
@@ -62,7 +66,44 @@ export function createInputStore(post) {
   };
 }
 
-export function serve(scope, { load, now = () => performance.now() }) {
+// (`epoch`: the clock the page's input times are on, timeOrigin the two share
+// though each starts its own performance.now)
+// What three reaches for that a worker has not: `new Image()` (SMAANode's
+// two look-up tables, given as data: URLs). Without it the game light's
+// chain failed to build and the worker drew black. The stand-in is an
+// OffscreenCanvas, which three uploads as it would an image, with `src`
+// decoded into it and `onload` called after, as an image's is.
+export function imageShim(scope, { decode = (url) => fetch(url).then((r) => r.blob()).then((b) => scope.createImageBitmap(b)) } = {}) {
+  if (typeof scope.Image !== 'undefined' || typeof scope.OffscreenCanvas !== 'function') return false;
+  scope.Image = function WorkerImage() {
+    const el = new scope.OffscreenCanvas(1, 1);
+    let src = '';
+    el.onload = null;
+    el.onerror = null;
+    el.complete = false;
+    Object.defineProperty(el, 'src', {
+      get: () => src,
+      set(url) {
+        src = url;
+        decode(url).then(
+          (bitmap) => {
+            el.width = bitmap.width;
+            el.height = bitmap.height;
+            el.getContext('2d').drawImage(bitmap, 0, 0);
+            bitmap.close?.();
+            el.complete = true;
+            el.onload?.({ target: el });
+          },
+          (err) => el.onerror?.(err),
+        );
+      },
+    });
+    return el;
+  };
+  return true;
+}
+
+export function serve(scope, { load, now = () => performance.now(), epoch = () => performance.timeOrigin + performance.now() }) {
   const post = (m, transfer) => {
     try {
       scope.postMessage(m, transfer ?? []);
@@ -137,7 +178,7 @@ export function serve(scope, { load, now = () => performance.now() }) {
         const began = now();
         const more = step(t);
         const clock = rt?.gpuClock;
-        post({ type: down.frame, ms: now() - began, at: t, gpu: clock?.available ? (clock.last ?? null) : null });
+        post({ type: down.frame, ms: now() - began, at: t, gpu: clock?.available ? (clock.last ?? null) : null, inputAt: input.at, drawnAt: epoch() });
         return more;
       }, opts);
     rt = parts.createRuntime({
@@ -179,7 +220,7 @@ export function serve(scope, { load, now = () => performance.now() }) {
         start(m).catch((err) => post({ type: down.failed, message: String(err?.message ?? err) }));
         break;
       case up.input:
-        input.take(m.snapshot);
+        input.take(m.snapshot, m.at ?? null);
         break;
       case up.resize:
         size = { w: m.w, h: m.h };
@@ -219,6 +260,7 @@ export function serve(scope, { load, now = () => performance.now() }) {
 // In a worker: the real parts, brought in at the first init
 /* global WorkerGlobalScope */
 if (typeof WorkerGlobalScope !== 'undefined' && typeof self !== 'undefined' && self instanceof WorkerGlobalScope) {
+  imageShim(self);
   serve(self, {
     load: async () => {
       const [{ createRuntime }, { makeBackend, loaders, forget }, { createQuality }, { createPace }, { createAssets }, { createLoop }, { createGpuTime }] = await Promise.all([import('../runtime'), import('../browser'), import('../quality'), import('../../lib/three/pace'), import('../assets'), import('../../lib/three/loop'), import('../../lib/three/gpuTime')]);

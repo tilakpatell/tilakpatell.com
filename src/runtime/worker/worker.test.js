@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createEvents } from '../runtime';
 import { packInput } from './protocol';
-import { createInputStore, serve } from './worker';
+import { createInputStore, imageShim, serve } from './worker';
 
 // a stand-in for the worker's global scope: what it posts, and a way to
 // hand it a message as the page would
@@ -82,6 +82,7 @@ function setUp({ modules } = {}) {
       let t = 0;
       return () => (t += 4);
     })(),
+    epoch: () => 5000,
   });
   return { scope, made, backends, mod, w };
 }
@@ -140,8 +141,10 @@ describe('the runtime in a worker', () => {
     const { scope, made } = setUp();
     scope.send(init());
     await settle();
+    scope.send({ type: 'input', snapshot: packInput({}), at: 4990 });
     made[0].step.step(16);
-    expect(scope.of('frame')[0]).toMatchObject({ type: 'frame', ms: 4, at: 16, gpu: null });
+    // (inputAt to drawnAt: the page's sample to the frame sent, the input-to-picture check)
+    expect(scope.of('frame')[0]).toMatchObject({ type: 'frame', ms: 4, at: 16, gpu: null, inputAt: 4990, drawnAt: 5000 });
     made[0].events.emit('score', { n: 3 });
     expect(scope.of('event')).toEqual([{ type: 'event', name: 'score', data: { n: 3 } }]);
     made[0].hud({ hp: 80 });
@@ -198,5 +201,33 @@ describe('createInputStore', () => {
     store.take(packInput({ keys: new Set(), pressed: new Set() }));
     expect(store.sample().pressed.has('KeyE')).toBe(true);
     expect(store.sample().pressed.size).toBe(0);
+  });
+});
+
+describe('imageShim', () => {
+  it('gives a worker an Image three can upload, loaded as an image is', async () => {
+    const drawn = [];
+    class FakeOffscreen {
+      constructor(w, h) {
+        this.width = w;
+        this.height = h;
+      }
+      getContext() {
+        return { drawImage: (b) => drawn.push(b) };
+      }
+    }
+    const scope = { OffscreenCanvas: FakeOffscreen };
+    const bitmap = { width: 160, height: 560, close: vi.fn() };
+    expect(imageShim(scope, { decode: async () => bitmap })).toBe(true);
+    const img = new scope.Image();
+    const loaded = new Promise((r) => (img.onload = r));
+    img.src = 'data:image/png;base64,AAAA';
+    await loaded;
+    expect(img).toBeInstanceOf(FakeOffscreen);
+    expect([img.width, img.height, img.complete]).toEqual([160, 560, true]);
+    expect(drawn).toEqual([bitmap]);
+    expect(bitmap.close).toHaveBeenCalled();
+    // (a scope with an Image of its own keeps it)
+    expect(imageShim({ Image: class {}, OffscreenCanvas: FakeOffscreen })).toBe(false);
   });
 });

@@ -26,6 +26,7 @@ import { CAPPING, lossHolds, lostTwice, noteLoss, TIER_KEY } from '../lib/gpuPro
 import { gpu } from '../lib/gpu';
 import { read as readVideo, resolve as resolveVideo } from '../lib/video';
 import { installer } from './install';
+import { canWorker, createWorkerRuntime, workerAsked } from './worker/host';
 import './runtime.css';
 
 // lib/video.js's values as this device may draw them (its detail the ceiling)
@@ -135,6 +136,8 @@ export function runtime() {
     // time, which the renderer's own submit cost dominates
     gpuClock: (renderer) => createGpuTime(renderer),
   });
+  // (?worker=on, lane FL5's spike: a world with a worker door drawn off the main thread)
+  if (workerAsked(win) && canWorker(win)) instance = createWorkerRuntime({ page: instance, win });
   // a world's install (install.js): the same one the gate and /worlds use
   instance.install = installer();
   if (win) {

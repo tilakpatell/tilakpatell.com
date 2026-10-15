@@ -22,6 +22,11 @@ export const MESSAGES = Object.freeze({
   down: Object.freeze({ ready: 'ready', failed: 'failed', event: 'event', hud: 'hud', frame: 'frame', lost: 'lost', call: 'call', bind: 'bind' }),
 });
 
+// The worlds a worker can draw: a module's id → the door worker.js opens
+// for it. Only a module whose `create` reads neither `document` nor
+// `window` is one (the lane's README lists what Battlefront's reads).
+export const DOORS = Object.freeze({ 'fixture-lit': 'litWorld' });
+
 // The page's services a world in the worker may ask for, by name. Only the
 // ones whose answer can be cloned: `saves.watch` takes a callback and
 // `audio.bus` hands back an AudioNode, so neither crosses (README).
