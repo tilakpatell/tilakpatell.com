@@ -181,7 +181,7 @@ export function landColumns(reach = 820) {
 }
 // rows (ahead of the mesh's origin): 2 m, then 4 m, then 8 m apart. The mesh
 // steps 8 m at a time, so every row stays on the same world lattice.
-export const LAND_STEP = 8;
+const LAND_STEP = 8;
 function landRows(big) {
   const zs = [];
   const near = big ? 2 : 4;
@@ -190,7 +190,7 @@ function landRows(big) {
   for (let d = 500; d <= 760; d += 8) zs.push(d);
   return zs;
 }
-export const LAND_BEHIND = 64; // the mesh starts this far behind you
+const LAND_BEHIND = 64; // the mesh starts this far behind you
 
 function landGeometry(big) {
   const xs = landColumns();
