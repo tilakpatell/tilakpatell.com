@@ -22,9 +22,11 @@ import { lineClear, shields } from '../nav.js';
 import { chestOf, eyeOf, roll } from '../soldier.js';
 import { press } from '../abilities.js';
 import { onRoll } from '../kit.js';
+import { heroRoll } from '../heroKit.js';
 import { act, createBrain, think } from './soldierBrain.js';
 import { alert, createSquads, deliver, squadOf, update } from './squad.js';
 import { factionOf, nameFor } from './names.js';
+import { heroAct, heroIntent } from './heroBrain.js';
 
 // The suppression a player's shots give, with no tactics row of their own: the Rebel soldier's.
 const PLAYER_TACTICS = 'AIRebelSoldierTactics';
@@ -108,7 +110,9 @@ function worldFor(sim, b, s) {
     roll: (who, dir) => {
       if (!press(who.abilities, 0, sim.time).fired) return false;
       roll(who, dir, sim.time);
-      onRoll(who, sim.time);
+      // (a hero's dodge is its own: heroKit.js)
+      if (who.hero) heroRoll(who, sim.time);
+      else onRoll(who, sim.time);
       return true;
     },
     who: (id) => sim.entities.get(id) ?? null,
@@ -190,7 +194,10 @@ export function stepBrains(sim) {
       b.nextThink += THINK;
       sim.thinks = (sim.thinks ?? 0) + 1;
     }
-    act(b, b.intent, s, STEP, world, sim.time);
+    // (a hero bot: its saber's way to the mark, its buttons, its abilities: heroBrain.js; a rush carries it on its own)
+    if (s.hero) heroIntent(sim, b, s);
+    if (!s.hero?.rush) act(b, b.intent, s, STEP, world, sim.time);
+    if (s.hero) heroAct(sim, b, s, sim.time);
   }
 }
 
