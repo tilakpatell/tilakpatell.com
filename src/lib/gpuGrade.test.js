@@ -75,4 +75,20 @@ describe('grading a graphics chip by its name', () => {
     expect(gpuScore(d3d('GeForce RTX 3060'))).toBeGreaterThanOrEqual(GRADE_AT.high);
     expect(gpuScore(intel('UHD Graphics 620'))).toBeLessThan(GRADE_AT.high);
   });
+
+  // (the Star Wars worlds' floor, lib/fit's MIN_SCORE 10, tells Intel's
+  // generations apart: Skylake's HD 5xx and Kaby Lake's 6xx in, the older out)
+  it('scores Intel’s HD Graphics by its generation', () => {
+    expect(gpuScore(intel('HD Graphics 620'))).toBe(11);
+    expect(gpuScore(intel('HD Graphics 520'))).toBe(10);
+    expect(gpuScore(intel('HD Graphics 5500'))).toBe(7);
+    expect(gpuScore(intel('HD Graphics 6000'))).toBe(7);
+    expect(gpuScore(intel('HD Graphics 4600'))).toBe(6);
+    expect(gpuScore(intel('HD Graphics 5000'))).toBe(6);
+    expect(gpuScore(intel('HD Graphics 4000'))).toBe(4);
+    expect(gpuScore(intel('HD Graphics 2500'))).toBe(4);
+    expect(gpuScore(intel('HD Graphics 3000'))).toBe(3);
+    expect(gpuScore(intel('HD Graphics'))).toBe(5);
+    expect(gpuScore(intel('UHD Graphics 620'))).toBe(11);
+  });
 });

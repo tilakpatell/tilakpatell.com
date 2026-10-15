@@ -21,6 +21,7 @@ import { cutFor, loadWalrusBody, packUrls } from '../../../lib/three/walrus';
 import { ktx2Loader, loadGltf } from '../../../lib/three/gltf';
 import { pixelRatio } from '../../../lib/device';
 import { quiet, releaseContext } from '../../../lib/three/renderer';
+import { shownLoop } from '../../../lib/shownLoop';
 
 // where the pieces stand: src/data/bf2017/stage.json (the level's own
 // placings, from the dome's foot; the hero at its middle)
@@ -36,11 +37,16 @@ export function stageFor({ level, hero }) {
 }
 
 const rgb = (v, k = 1) => new THREE.Color(v[0] * k, v[1] * k, v[2] * k);
+// the idle is drawn at most this often, and at the display's own rate while
+// the stage is dragged: a hero breathing needs no 144 frames a second from a
+// second GL context beside the runtime's (the hangar's turntable is drawn at
+// 30 too, universe/shipyard/showroomRules)
+const FPS = 30;
 
 export function createHeroStage(canvas, { level = 'high', reduced = false } = {}) {
   let renderer;
   try {
-    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false }));
+    renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' }));
   } catch {
     return null;
   }
@@ -168,17 +174,19 @@ export function createHeroStage(canvas, { level = 'high', reduced = false } = {}
     if (alive) renderer.render(scene, camera);
   }
   // (still under reduced motion: one frame a change; else the idle breathes
-  // and the stage turns a little toward the drag)
-  let raf = 0;
+  // and the stage turns a little toward the drag, only while the canvas is in
+  // view and the tab showing: lib/shownLoop. A second GL context beside the
+  // runtime's, it drew every frame while the Collection was open, its tab
+  // put away or not)
   let last = performance.now();
   const tick = (now) => {
-    raf = requestAnimationFrame(tick);
+    if (drag == null && now - last < 1000 / FPS - 1) return;
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     mixer?.update(dt);
     draw();
   };
-  if (!reduced) raf = requestAnimationFrame(tick);
+  const loop = reduced ? null : shownLoop(canvas, tick);
   let drag = null;
   const down = (e) => (drag = e.clientX);
   const move = (e) => {
@@ -191,6 +199,9 @@ export function createHeroStage(canvas, { level = 'high', reduced = false } = {}
   canvas.addEventListener('pointerdown', down);
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerup', up);
+  // (a swipe the page takes, touch-action pan-y, ends in a cancel, not an
+  // up: a drag left set would hold the stage at the display's rate)
+  window.addEventListener('pointercancel', up);
   resize();
 
   return {
@@ -199,10 +210,11 @@ export function createHeroStage(canvas, { level = 'high', reduced = false } = {}
     resize,
     dispose() {
       alive = false;
-      cancelAnimationFrame(raf);
+      loop?.stop();
       canvas.removeEventListener('pointerdown', down);
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
       clear();
       renderer.dispose();
       releaseContext(renderer);

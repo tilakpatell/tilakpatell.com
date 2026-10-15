@@ -62,3 +62,20 @@
 @media (prefers-reduced-motion: reduce) { .install-bar > span { transition: none; } }
 @keyframes world-gate-in { from { opacity: 0; transform: translateY(16px); } }
 @media (prefers-reduced-motion: reduce) { .world-gate { animation: none; } }
+
+/* a Star Wars world on a device it cannot run on (UnfitCard): the house notice, alone on the page */
+.world-unfit { display: grid; place-items: center; min-height: calc(100svh - var(--page-top, 4rem)); padding: 1rem; }
+.world-unfit-card { display: flex; flex-direction: column; gap: 0.75rem; width: min(32rem, 100%); padding: 1.25rem 1.5rem; }
+.world-unfit-title { display: flex; align-items: center; gap: 0.5rem; }
+.world-unfit-text { line-height: 1.5; color: var(--muted); }
+.world-unfit-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+/* the graphics hint (GpuHint.jsx): the gate's panel at the top, clear of
+   the install card and the pill at the foot */
+.world-gpu-hint { top: calc(var(--page-top, 4rem) + 8px); bottom: auto; }
+.world-gpu-steps { margin-top: 0.5rem; padding-left: 1.1rem; list-style: decimal; font-size: 0.85rem; line-height: 1.5; color: rgba(233, 237, 243, 0.8); }
+.world-gpu-steps li + li { margin-top: 0.35rem; }
+.world-gpu-steps code { font: 500 0.8rem/1.4 var(--font-mono); overflow-wrap: anywhere; color: #fff; }
+.world-gpu-copy { margin-top: 0.3rem; }
+.world-unfit .world-gpu-steps { color: var(--muted); }
+.world-unfit .world-gpu-steps code { color: var(--text); }

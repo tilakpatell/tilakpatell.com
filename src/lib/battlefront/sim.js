@@ -18,7 +18,7 @@
 // three.js, no DOM.
 //
 //   createSim({ rulebook, level, era, nav, seed, teams, bots, mode, spawns, oob, difficulty, pve, instantAction }) → sim
-//   deploy(sim, id, { kind, id, spawn: 'point' | 'squad', mate }) → { ok, why }
+//   deploy(sim, id, { kind, id, spawn: 'point' | 'squad', mate, appearance, cards }) → { ok, why }   (cards: a hero's star card ids, cards.js)
 //   step(sim, inputs = []) → events     inputs: [{ id, move: [x, z], look, fire, aim: [x, y, z], crouch, sprint, roll, ability, abilityHeld, vent, cool }]
 //     (the class abilities, kit.js: 'ability' { id, slot, phase, why }, 'throw', 'explosion', 'split', 'turret', 'turretDown',
 //     'turretGone'; a blast's hit has part 'blast'; a bot's bolt on a human waits its bucket, ai/buckets.js)
@@ -29,10 +29,11 @@
 //   drain(sim) → the event log so far, cleared
 
 import { seeded } from '../seeded.js';
-import { aiOf, classOf, heroOf, mapOf, reinforcementOf, spawnsFor, squadsOf, stringOf, teamsFor, weaponOf } from './rulebook.js';
+import { aiOf, classOf, mapOf, reinforcementOf, spawnsFor, squadsOf, stringOf, teamsFor, weaponOf } from './rulebook.js';
 import { press } from './abilities.js';
 import { createBolts, fire as fireBolt, step as stepBolts } from './bolts.js';
 import { heightAt, lineClear, nearestMainland, nearestWalkable, walkable } from './nav.js';
+import { doorway, meshStand } from './meshNav.js';
 import { STEP, clock, muzzleOf, profile, shoot } from './core.js';
 import { capsulesOf, chestOf, hurt, move, newSoldier, roll, tick as tickSoldier } from './soldier.js';
 import { coolPress, damageAt, vent } from './weapons.js';
@@ -48,6 +49,7 @@ import { SPREAD, createDealer, dealFor, nextFor, ownerChanged, stepDealer } from
 import { fieldTo } from './navField.js';
 import { absorb, createKit, grenadesOf, hurtTurret, onAbility, onRoll, stepKit } from './kit.js';
 import { createGunner } from './ai/vehicleBrain.js';
+import { burstAt, cardsFor, createHero, equip, heroAbilities, heroClass, heroInput, heroPress, heroRoll, heroTakes, onHeroAbility, stepHeroes, viewHero } from './heroKit.js';
 import { balance, buy, createPoints, earn, hit as bpHit, kill as bpKill, offers } from './battlePoints.js';
 import { AIM_SCALE, GUNNERS } from './modes/galacticAssault.js';
 import { modeFor } from './modes/index.js';
@@ -174,13 +176,17 @@ function addSoldier(sim, { team, classId, cls: row = null, at, yaw = 0, bot, id:
   const cls = sim.ga?.health?.[team] ? { ...base, health: sim.ga.health[team] } : base;
   const id = given ?? `${bot ? 'b' : 'p'}${sim.nextId++}`;
   // a deploy in a mode lands on the map's main walkable region, never in a pocket the made-up cover walls off
-  const spot = sim.nav ? (sim.ga ? nearestMainland(sim.nav, at[0], at[2], 12) : nearestWalkable(sim.nav, at[0], at[2], 12)) : null;
-  const where = spot ? [spot[0], 0, spot[1]] : [...at];
-  if (sim.nav) where[1] = heightOf(sim, where);
+  // (on the level's navmesh where the battle has one: the place's own floor, a hangar's under the mountain's snow)
+  const stood = sim.nav?.mesh ? meshStand(sim.nav, at, 12) : null;
+  const spot = !stood && sim.nav ? (sim.ga ? nearestMainland(sim.nav, at[0], at[2], 12) : nearestWalkable(sim.nav, at[0], at[2], 12)) : null;
+  const where = stood ?? (spot ? [spot[0], 0, spot[1]] : [...at]);
+  if (sim.nav && !stood) where[1] = heightOf(sim, where);
   // (every soldier carries its class's abilities: a player presses them, a Skirmish bot's brain does, an AutoPlayer's the turret alone)
-  const abilities = cls.abilities ? { abilities: abilitiesFor(sim.rb, cls) } : {};
-  const s = newSoldier(cls, { id, team, at: where, yaw, rand: sim.rand, bot, weapon: weaponOf(sim.rb, cls.weapon), ...abilities });
+  // (a hero's are its own: its dodge and its three, hero.js)
+  const abilities = cls.hero ? { abilities: heroAbilities(sim.rb, cls.hero) } : cls.abilities ? { abilities: abilitiesFor(sim.rb, cls) } : {};
+  const s = newSoldier(cls, { id, team, at: where, yaw, rand: sim.rand, bot, weapon: cls.weapon ? weaponOf(sim.rb, cls.weapon) : null, ...abilities });
   s.kit = sim.kit;
+  if (cls.hero) createHero(s, cls.hero);
   // (the difficulty's health for a player)
   if (!bot && sim.difficulty && sim.difficulty.health !== 1) s.hp = s.hpMax = s.hpMax * sim.difficulty.health;
   s.capsules = capsulesOf(s);
@@ -322,8 +328,14 @@ function addWalkers(sim) {
 
 const heightOf = (sim, at) => heightAt(sim.nav, at[0], at[2]);
 
-export function addPlayer(sim, { team, classId, at, yaw = 0, id = null }) {
-  const s = addSoldier(sim, { team, classId, at, yaw, bot: false, id });
+export function addPlayer(sim, { team, classId, hero = null, at, yaw = 0, id = null, bot = false }) {
+  // (a hero by its rulebook id: its own kit, hero.js; `bot` for a hero bot set down by a test or a mode)
+  const cls = hero ? heroClass(sim.rb, hero, classOf(sim.rb, sim.teams[team].classes[0])) : null;
+  const s = addSoldier(sim, { team, classId, cls, at, yaw, bot, id });
+  if (bot) {
+    addBrain(sim, s);
+    return s.id;
+  }
   sim.brains?.add?.(s);
   // a player is in a squad: a squad made for one (a displaced bot's) the commander orders too
   const { created } = sim.brains ? joinSquad(sim.brains.squads, sim, s.id) : {};
@@ -393,9 +405,11 @@ export function deploy(sim, id, choice) {
   const base = classOf(sim.rb, sim.teams[team].classes[0]);
   let cls = null;
   if (offer.kind === 'class') cls = classOf(sim.rb, offer.id);
+  // a hero on its own kit: its health and regen, its weapon or its saber, its drive, body, jump and abilities (hero.js)
+  else if (offer.kind === 'hero') cls = heroClass(sim.rb, offer.id, base);
   else {
-    // a hero or a reinforcement deploys on its own health, as its side's first class until lanes 3 and 4 give it its own kit
-    const unit = offer.kind === 'hero' ? heroOf(sim.rb, offer.id) : reinforcementOf(sim.rb, offer.id);
+    // a reinforcement deploys on its own health, as its side's first class until the troopers lane gives it its own kit
+    const unit = reinforcementOf(sim.rb, offer.id);
     cls = { ...base, health: unit.health, regen: unit.regen ?? base.regen, unit: offer.kind, unitId: offer.id };
   }
   const at = [...spot.at];
@@ -410,6 +424,8 @@ export function deploy(sim, id, choice) {
   }
   // (the Collection's pick, a crew kind the figure wears: the screens' appearance, carried and nothing else)
   s.appearance = choice.appearance ?? null;
+  // (the star cards the Collection keeps for a hero, three at most, on this soldier once: cards.js; a bot carries none)
+  if (cls.hero && !entry.bot) equip(s, cardsFor(cls.hero, choice.cards, sim.rb));
   protect(s, sim.time);
   if (entry.bot) {
     // a fresh bot takes its squad's orders at once
@@ -473,16 +489,19 @@ function applyInput(sim, inp) {
   s.sprint = !!inp.sprint;
   if (inp.roll && press(s.abilities, 0, sim.time).fired) {
     roll(s, inp.move ?? [Math.sin(s.yaw), Math.cos(s.yaw)], sim.time);
-    onRoll(s, sim.time);
+    (s.hero ? heroRoll : onRoll)(s, sim.time);
   }
   if (inp.aim) s.aim = inp.aim;
   s.abilityHeld = inp.abilityHeld ?? 0;
-  if (inp.ability) press(s.abilities, inp.ability, sim.time);
+  if (inp.ability && !heroPress(sim, s, inp.ability)) press(s.abilities, inp.ability, sim.time); // (a hero's active ability may take the press for itself, its next detonator: heroKit.js)
   if (inp.vent && s.gun) vent(s.gun, sim.time);
   if (inp.cool && s.gun) coolPress(s.gun, sim.time);
-  if (s.state !== 'roll') move(s, inp.move ?? [0, 0], STEP, sim.nav);
-  if (inp.fire) shoot(sim, s, inp.aim ?? chestAhead(s));
-  s.interact = !!inp.interact;
+  // (a hero's saber, block, beam and jump: heroKit.js, its rush carrying it on its own; a soldier with a body of its own, the player on the level's shapes, moves by it: map/walk.js)
+  if (s.hero) heroInput(sim, s, { fire: inp.fire, aiming: inp.aiming, jump: inp.jump }, sim.time);
+  if (s.state !== 'roll' && !s.hero?.rush) (s.mover ?? move)(s, inp.move ?? [0, 0], STEP, sim.nav);
+  if (inp.fire && !s.hero?.saber && !s.hero?.lightning) shoot(sim, s, inp.aim ?? chestAhead(s));
+  // (an interaction is held, the key down: a gate's panel or a bomb a second and more)
+  s.interact = !!(inp.interactHeld ?? inp.interact);
 }
 
 const chestAhead = (s) => {
@@ -536,6 +555,8 @@ function resolveBolts(sim) {
   const evs = stepBolts(sim.bolts, STEP, { bodies, nav: sim.nav, now: sim.time });
   if (profile.on) profile.bolts += clock() - t0;
   for (const e of evs) {
+    // (a round that bursts where it lands, the bowcaster's bolt, a micro-grenade, bursts on a wall too: heroKit.js)
+    if (e.type === 'wall') burstAt(sim, e, { shooter: sim.entities.get(e.bolt.owner) });
     if (e.type === 'hit') {
       const target = sim.entities.get(e.target);
       // (a turret an earlier bolt of this step shot down)
@@ -549,6 +570,8 @@ function resolveBolts(sim) {
       const scale = sim.difficulty && target.bot === false && shooter?.bot ? sim.difficulty.damage : 1;
       const grace = mayHurt(sim.buckets, { shooter, target, shotAt: e.bolt.born, now: sim.time });
       let damage = grace ? damageAt(e.bolt.weapon, e.dist, { bot: !!shooter?.bot }) * scale : 0;
+      // (a bolt a saber's block turns or a Squad Shield takes is gone; any other that bursts does so by its bolt's own factor: heroKit.js)
+      if (heroTakes(sim, target, e, damage, { shooter, scale, grace })) continue;
       if (target.kind === 'turret') {
         const r = hurtTurret(sim, target, damage);
         emit(sim, { type: 'hit', by: e.bolt.owner, target: e.target, part: 'body', damage: Math.round(damage * 100) / 100 });
@@ -577,12 +600,14 @@ export function step(sim, inputs = []) {
   stepGunners(sim);
   for (const s of sim.entities.values()) {
     if (s.kind !== 'soldier') continue;
-    if (s.state === 'roll' && s.alive) move(s, s.rollDir, STEP, sim.nav);
+    if (s.state === 'roll' && s.alive) (s.mover ?? move)(s, s.rollDir, STEP, sim.nav);
     for (const e of tickSoldier(s, STEP, sim.time)) {
       emit(sim, { ...e, by: s.id });
       if (e.type === 'ability') onAbility(sim, s, e);
+      if (e.type === 'ability' && s.hero) for (const r of onHeroAbility(sim, s, e)) applyKit(sim, r);
     }
   }
+  for (const r of stepHeroes(sim)) applyKit(sim, r); // (the heroes: their sabers, beams, jumps, rushes, throws and shoves, heroKit.js)
   // (the kit: the grenades fly, the turrets fire, the fields burn; its damage applied here)
   for (const r of stepKit(sim)) applyKit(sim, r);
   release(sim);
@@ -607,9 +632,10 @@ function applyKit(sim, r) {
     const damage = absorb(target, h.damage, { dir: h.dir, now: sim.time });
     const was = hurt(target, { damage, part: 'chest', by: r.by, now: sim.time });
     target.combatAt = sim.time;
-    if (r.type === 'blast') emit(sim, { type: 'hit', by: r.by, target: h.id, part: 'blast', damage: Math.round(damage * 100) / 100, dir: h.dir, at: [...r.at] });
+    const part = r.part ?? 'blast'; // (a hero's: 'saber' or 'force', heroKit.js)
+    if (r.type === 'blast') emit(sim, { type: 'hit', by: r.by, target: h.id, part, damage: Math.round(damage * 100) / 100, dir: h.dir, at: [...r.at] });
     if (sim.bp && r.by !== h.id) bpHit(sim.bp, target.id, r.by, sim.time);
-    if (was === 'down') downed(sim, target, r.by, 'blast', null, null);
+    if (was === 'down') downed(sim, target, r.by, part, null, null);
   }
 }
 
@@ -704,6 +730,8 @@ function stepMode(sim) {
     emit(sim, e);
     if (e.type === 'objective' && e.kind === 'capture') for (const o of ga.objectives) if (o.name === e.name) for (const id of o.inside.attack) sim.stats.get(id).captures++;
     if (e.type === 'armed') for (const o of ga.objectives) if (o.name === e.name) for (const i of o.interactions) sim.stats.get(i.id).arms++;
+    // (a gate's leaves wide enough apart for a soldier: the way through its doorway joins the navmesh's two sides)
+    if (e.type === 'gate' && e.state === 'passable' && sim.nav?.mesh) doorway(sim.nav, ga.gates.list.find((g) => g.id === e.id));
   }
   if (ga.stage !== stage) {
     addWalkers(sim);
@@ -791,6 +819,7 @@ export function view(sim, { player = null } = {}) {
     e.hidden = !!s.hidden;
     e.ability = s.kitActive?.id ?? null;
     e.weapon = s.gun?.row?.id ?? null;
+    viewHero(e, s, sim.time); // (its body; a hero's strike, block, ability, jump and throw for its figure, a choked body's lift, one the smoke hides: heroKit.js)
     e.oob = s.oobSince != null ? Math.max(0, OOB_SECONDS - (sim.time - s.oobSince)) : null;
   }
   v.entities.length = i;

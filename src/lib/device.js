@@ -17,9 +17,12 @@
 //             (lib/gpuGrade): 'ultra', 'high', 'mid', or null where the name
 //             doesn't say (and on a phone, where the tier already does)
 //   detail    the quality level in force: 'low', 'mid', 'high' or 'ultra'.
-//             Auto gives a laptop or desktop with a graphics chip 'ultra'
-//             (one whose chip grades 'mid', old built-in graphics, 'high'),
-//             a phone or a small computer its tier, software WebGL 'low'.
+//             Auto gives a laptop or desktop with a graphics chip 'ultra',
+//             but by the chip's name (lib/gpuGrade's score, AUTO_BY_SCORE)
+//             a weak one 'low'; a phone or a small computer its tier, software WebGL
+//             'low'; and 'low' for a chip the renderer tier kept as weak,
+//             slow or lost (lib/gpuProbe's tierHold: the owner's word on
+//             2026-10-13, a weak chip or none is Low under Auto).
 //             lib/detail turns it into texture sizes and segment counts,
 //             lib/budgets into how much is drawn. The tier is never
 //             'ultra': every check of the tier stays as it was.
@@ -40,8 +43,8 @@
 // picked by hand is never capped. ?quality=low (or mid, high, ultra) in the
 // address pins one for that visit, over what is kept.
 
-import { gpuGrade } from './gpuGrade';
-import { readTier, TIER_KEY } from './gpuProbe';
+import { gpuGrade, gpuScore } from './gpuGrade';
+import { readTier, tierHold, TIER_KEY } from './gpuProbe';
 import { anisotropyOf, read as readVideo, resolve as resolveVideo, samplesFor } from './video.js';
 
 const KEY = 'tp-quality';
@@ -67,19 +70,30 @@ export const BUDGETS = {
   low: { tier: 'low', ratio: 1, antialias: false, samples: 0, shadows: false, shadowMap: 512, bloom: 0, aniso: 1, stars: 0.35 },
 };
 
-// What Auto picks from the tier and the chip's grade: a laptop or desktop
-// with a graphics chip ultra, unless its chip grades 'mid' (high); anything
-// else its tier. A cap (`{ renderer, level }`, kept when this chip struggled
-// at ultra) holds it down for that chip only.
-function detailOf(tier, grade, renderer, cap) {
+// Auto by the chip's score where its name gives one (lib/gpuGrade, a GTX
+// 1060 at 100): under 50 (old and basic built-in graphics, the Radeon 740M,
+// Iris Xe) Low. _source: the every-chip-plays design (2026-10-13): a 740M
+// given High hung its GPU in Hoth; the owner: a weak chip is Low. (A band
+// at Mid for 50 to 100 would take the entry discrete cards too, the GTX
+// 1650 and the RTX 3050 laptop's: not asked for.)
+export const AUTO_BY_SCORE = [[50, 'low']];
+
+// What Auto picks from the tier and the chip: a laptop or desktop with a
+// graphics chip ultra, unless its score says Low (AUTO_BY_SCORE);
+// anything else its tier. A hold from the renderer tier (lib/gpuProbe's
+// tierHold) and a cap (`{ renderer, level }`, kept when this chip struggled
+// at ultra) hold it down, the cap for that chip only.
+const lower = (a, b) => (LEVELS.indexOf(b) < LEVELS.indexOf(a) ? b : a);
+function detailOf(tier, score, renderer, cap, hold) {
   let detail = tier;
-  if (tier === 'high') detail = grade === 'mid' ? 'high' : 'ultra';
-  if (cap && cap.renderer === renderer && LEVELS.includes(cap.level) && LEVELS.indexOf(detail) > LEVELS.indexOf(cap.level)) detail = cap.level;
+  if (tier === 'high') detail = Number.isFinite(score) ? (AUTO_BY_SCORE.find(([under]) => score < under)?.[1] ?? 'ultra') : 'ultra';
+  if (LEVELS.includes(hold)) detail = lower(detail, hold);
+  if (cap && cap.renderer === renderer && LEVELS.includes(cap.level)) detail = lower(detail, cap.level);
   return detail;
 }
 
 // The tier from what the browser tells us. Pure, so it can be tested.
-export function classifyDevice({ ua = '', touchPoints = 0, coarse = false, screen = 1920, memory = null, cores = null, saveData = false, net = '', renderer = '', software = false, override = null, cap = null } = {}) {
+export function classifyDevice({ ua = '', touchPoints = 0, coarse = false, screen = 1920, memory = null, cores = null, saveData = false, net = '', renderer = '', software = false, override = null, cap = null, hold = null } = {}) {
   const phone = MOBILE_UA.test(ua) || (/Macintosh/.test(ua) && touchPoints > 1) || (coarse && screen < 900);
   const lowData = Boolean(saveData) || /(^|-)2g$/.test(net);
   const why = [];
@@ -95,7 +109,7 @@ export function classifyDevice({ ua = '', touchPoints = 0, coarse = false, scree
     if (why.length) tier = 'mid';
   }
   const grade = phone ? null : gpuGrade(renderer);
-  const auto = detailOf(tier, grade, renderer, cap);
+  const auto = detailOf(tier, phone ? null : gpuScore(renderer), renderer, cap, hold);
   let detail = auto;
   // (a level picked by hand: never capped)
   if (LEVELS.includes(override)) {
@@ -162,11 +176,13 @@ export function signals(gpuInfo = {}) {
     software: Boolean(gpuInfo.software),
     override: readOverride(),
     cap: readCap(),
+    hold: tierHold(readKey(TIER_KEY)) ?? pageHold,
   };
 }
 
 let cached = null;
 let gpuLook = null;
+let pageHold = null; // (holdAuto's: this page's hold, where storage keeps none)
 
 // The device, looked at once. lib/gpu hands over its look at the graphics
 // chip when it makes one, which can sharpen the answer (a weak phone chip,
@@ -178,6 +194,17 @@ export function device() {
 export function noteGpu(info) {
   gpuLook = info;
   cached = null;
+}
+
+// Hold Auto at `level` for this page (runtime/index.js, once the renderer
+// tier or a loss says so), beside the hold read from the kept tier: with
+// storage blocked (a private window) that one is never kept, and the page
+// that decided it would have drawn above it (the review's minor 1).
+// null lets go.
+export function holdAuto(level) {
+  pageHold = LEVELS.includes(level) ? level : null;
+  cached = null;
+  videoCache = null;
 }
 
 // Look again from scratch (the tests; a mode just changed).
@@ -246,10 +273,12 @@ export function capDetail(level = 'high') {
 
 // The renderer's numbers. With no tier given, this device's: the ultra row
 // for a strong card, otherwise its tier's.
+// (the detail level's row: it is the tier's, or ultra on a strong card, or
+// lower where Auto held it: a held Low draws Low's row)
 export const budget = (tier, video = videoValues()) => {
   if (tier == null) {
     const d = device();
-    tier = d.detail === 'ultra' ? 'ultra' : d.tier;
+    tier = LEVELS.includes(d.detail) ? d.detail : d.tier;
   }
   const row = BUDGETS[tier] ?? BUDGETS.high;
   // (the video settings, lib/video.js: multisampling and anisotropy under

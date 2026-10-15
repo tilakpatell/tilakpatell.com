@@ -101,10 +101,12 @@ describe('createDynres', () => {
 });
 
 describe('dynresFor', () => {
-  it('budgets 33.3 ms when the visitor pins 30 or the tier is T0, and floors T0 at 0.58', () => {
+  // (T0 aims at 60 like the rest since 2026-10-13, under its lower floor;
+  // runtime/cadence.js's createCadence takes it to an even 30 when it cannot)
+  it('budgets 33.3 ms when the visitor pins 30, 16.7 otherwise, and floors T0 at 0.58', () => {
     expect(dynresFor({ tier: 'T1' })).toMatchObject({ budgetMs: 16.7, floor: 0.67 });
     expect(dynresFor({ tier: 'ultra' })).toMatchObject({ budgetMs: 16.7, floor: 0.67 });
-    expect(dynresFor({ tier: 'T0' })).toMatchObject({ budgetMs: 33.3, floor: 0.58 });
+    expect(dynresFor({ tier: 'T0' })).toMatchObject({ budgetMs: 16.7, floor: 0.58 });
     expect(dynresFor({ tier: 'high', fps: 30 })).toMatchObject({ budgetMs: 33.3, floor: 0.67 });
   });
 });

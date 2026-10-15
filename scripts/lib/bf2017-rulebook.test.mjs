@@ -2,7 +2,7 @@ import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { abilityRow, cardRow, checkSources, classRow, heroRow, kitRow, reinforcementRow, teamRow, vehicleRow, weaponRow } from './bf2017-rulebook.mjs';
+import { abilityRow, cardRow, checkSources, classRow, heroRow, kitRow, linkBlocks, reinforcementRow, teamRow, vehicleRow, weaponRow } from './bf2017-rulebook.mjs';
 
 const ROOT = join(import.meta.dirname, '..', 'fixtures', 'bf2017', 'data');
 const A280C = 'Gameplay/Equipment/Rifles/A280C/Ability_Weapon_BlasterRifle_A280C';
@@ -108,6 +108,71 @@ describe('abilities, cards and classes', () => {
     expect(c.weapons).toContain('a280c');
     expect(c.kits).toEqual(['Kit_L_Assault_Orig_HO']);
     expect(checkSources(c)).toEqual([]);
+  });
+});
+
+describe('a blaster hero’s ability, with what it does', () => {
+  const HAN = 'Gameplay/Kits/Hero/HanSolo/';
+
+  it('reads the Detonite Charge’s blast from its projectile, each number with its record', () => {
+    const a = abilityRow(ROOT, `${HAN}Ability_HanSolo_DemolitionGrenade`);
+    expect(a).toMatchObject({ kind: 'weapon', slot: 'left', activation: 0.4, recharge: 18 });
+    expect(a.effect).toMatchObject({ kind: 'charge', damage: 200, inner: 5, radius: 10, impulse: 5000, gravity: -14, speed: 12, retrigger: 0.3, _missing: [] });
+    expect(a.effect.damage_source).toBe(`${HAN}HanSolo_DetonateGrenade_Projectile#ExplosionEntityData.BlastDamage`);
+    expect(checkSources(a)).toEqual([]);
+  });
+
+  it('reads Shoulder Charge from its prefab and its affectors: the reach, the damage to a trooper and a hero, the push, the damage taken by card rank', () => {
+    const e = abilityRow(ROOT, `${HAN}Ability_HanSolo_ShoulderCharges`).effect;
+    expect(e).toMatchObject({ kind: 'dash', reach: 1, damage: { trooper: 200, hero: 150 }, held: 3, knock: 3, taken: 0.75, takenByRank: [0.75, 0.7, 0.65, 0.6], _missing: [] });
+    // (one of the prefab's four affector applies: the source says which)
+    expect(e.held_source).toMatch(/PF_ShoulderCharge_HanSolo#AffectorApplyEntityData(\[\d\])?\.Duration$/);
+    expect(e.knock_source).toBe('derived: the name of Gameplay/Prefabs/Affectors/CharacterState/Affector_ForcePushed_3m');
+    expect(e.takenByRank_source).toContain('Affector_HanSolo_SharpshooterDMGReduction1#DamageMultiplierAffectorAsset.RankData.{0..3}.DamageMultiplier');
+    expect(checkSources(e)).toEqual([]);
+  });
+
+  it('reads Sharpshooter’s weapon whole, its heat from the config its blueprint keeps in itself', () => {
+    const e = abilityRow(ROOT, `${HAN}Ability_HanSolo_Sharpshooterz`).effect;
+    expect(e.kind).toBe('weaponSwap');
+    expect(e.weapon).toMatchObject({ id: 'W_Pistol_DL44_HanSolo_Sharpshooterz', firing: { rof: 350, mode: 'automatic' }, damage: { start: 65, end: 40, startDistance: 15, endDistance: 35 } });
+    expect(e.weapon.heat).toMatchObject({ perBullet: 0.08, risePerSecond: 0.04, dropPerSecond: 0, dropDelay: 0.7, threshold: 0.8 });
+    expect(e.weapon.heat.perBullet_source).toBe('Gameplay/Equipment/Heroes/DL44/W_Pistol_DL44_HanSolo_Sharpshooterz#OverheatConfig.HeatPerBullet');
+    expect(checkSources(e)).toEqual([]);
+  });
+
+  it('names whom an ability blocks and when, from its record’s list and two flags', () => {
+    const names = ['Ability_HanSolo_DemolitionGrenade', 'Ability_HanSolo_Sharpshooterz', 'Ability_HanSolo_ShoulderCharges'];
+    const rows = linkBlocks(ROOT, Object.fromEntries(names.map((n) => [n, abilityRow(ROOT, `${HAN}${n}`)])));
+    // (the charge blocks the other two and the dodge, named from its own record, through its activation alone)
+    expect(rows.Ability_HanSolo_DemolitionGrenade.blocking).toEqual({ whom: ['Ability_HanSolo_Sharpshooterz', 'Ability_HanSolo_ShoulderCharges', 'Ability_Evade_CharacterState'], activation: true, active: false });
+    expect(linkBlocks(ROOT, { x: abilityRow(ROOT, `${HAN}Ability_HanSolo_DemolitionGrenade`) }, []).x.blocking.whom).toEqual([]);
+    expect(rows.Ability_HanSolo_Sharpshooterz.blocking).toMatchObject({ activation: true, active: true });
+    expect(new Set(rows.Ability_HanSolo_Sharpshooterz.blocking.whom)).toEqual(new Set(['Ability_HanSolo_ShoulderCharges', 'Ability_HanSolo_DemolitionGrenade']));
+    for (const r of Object.values(rows)) expect(checkSources(r)).toEqual([]);
+  });
+
+  it('gives a weapon active cooling only where its config holds the super zone the cooling is played in', () => {
+    expect(weaponRow(ROOT, A280C).heat.cooling.super).toEqual([0.4, 0.3]);
+    const root = rootWith('Gameplay/Equipment/Rifles/A280C/OverheatConfig_Rifle_A280C', (a) => {
+      for (const o of a.objects) for (const band of o?.ActiveCooldownSettings?.DifficultyInterval ?? []) band.SuperZoneInterval = null;
+      return a;
+    });
+    const w = weaponRow(root, A280C);
+    expect(w.heat).toMatchObject({ perBullet: 0.03334, threshold: 0.8, penalty: 3 });
+    expect(w.heat.cooling).toBeUndefined();
+  });
+
+  it('leaves out a number its record lacks and says so; an ability with no effect listed has none', () => {
+    const root = rootWith(`${HAN}HanSolo_DetonateGrenade_Projectile`, (a) => {
+      a.objects = a.objects.filter((o) => o.$type !== 'ExplosionEntityData');
+      return a;
+    });
+    const e = abilityRow(root, `${HAN}Ability_HanSolo_DemolitionGrenade`).effect;
+    expect(e.damage).toBeUndefined();
+    expect(e.gravity).toBe(-14);
+    expect(e._missing).toHaveLength(4);
+    expect(abilityRow(ROOT, 'Gameplay/Kits/Hero/DarthVader/Ability_DarthVader_ForceChoke_02').effect).toBeUndefined();
   });
 });
 

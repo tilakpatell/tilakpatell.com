@@ -2,7 +2,7 @@
 
 Paste the prompt below into a fresh Claude Code session. Use one session per lane, and fill in the five slots at the top. Leave the rest as it is.
 
-The lanes at the bottom are filled in for what was in flight on 6 October 2026, so they'll go stale. Before reusing one, check `git branch -r --no-merged origin/main` and the open PRs.
+The lanes at the bottom are the open pull requests on 14 October 2026, so they will go stale. Before reusing one, check the open PRs and the “Left” section of the area’s handoff.
 
 ## The prompt
 
@@ -17,7 +17,7 @@ MERGE:       {{yes: merge once CI is green | no: open the PR and stop}}
 
 ## What you have
 You have none of those sessions' conversation history. The `Claude-Session:` links in their commit trailers won't open on this account. Everything they knew is in the repo:
-- the handoffs: docs/superpowers/HANDOFF-*.md
+- the handoffs: docs/superpowers/HANDOFF-*.md, one an area (battlefront, galaxy, universe, worlds, runtime), each with what landed and what is left
 - the specs and plans: docs/superpowers/specs/ and plans/
 - the backlog: docs/autopilot/backlog.md
 - the architecture notes: docs/architecture.md
@@ -71,10 +71,10 @@ Follow the owner's standing rules. They're in two places: the "Standing rules" s
 - If MERGE is yes: wait for the CI check to pass, then merge with a merge commit. Never merge red. Never force-push. Never merge a PR outside your lane.
 
 ## 6. Hand off, in the same PR
-- Update or create docs/superpowers/HANDOFF-<area>.md, with three sections:
-  - **Done**, with PR numbers.
+- Update the area’s handoff, docs/superpowers/HANDOFF-<area>.md (one of battlefront, galaxy, universe, worlds, runtime; a new area gets a new one), keeping its sections:
+  - **Landed**: what works and where in the code, with PR numbers.
   - **Left**, in order. Each item says where it is and what done looks like.
-  - **Checking it**: URLs, dev hooks, gotchas.
+  - **The owner’s rules** for the area, kept as they were.
   Write it so a session on either account can pick up with no history.
 - If you finished a backlog item, tick it. If you found something outside your lane, add it to the backlog rather than doing it.
 - End with a short report:
@@ -85,96 +85,16 @@ Follow the owner's standing rules. They're in two places: the "Standing rules" s
   - any file you touched outside your lane
 ```
 
-## Lanes in flight (6 October 2026)
+## Lanes in flight (14 October 2026)
 
-All four open PRs had green CI on 6 October. Each lane below is one session.
+Each is one session. START FROM the pull request’s branch; READ FIRST its handoff (`docs/superpowers/HANDOFF-battlefront.md` for the Hoth and Battlefront lanes, `HANDOFF-runtime.md` for performance) and the spec the handoff names; GOAL: check it in the browser, fix what is broken, merge when CI is green.
 
-### 1. Dagobah mission, PR #247
-- **START FROM:** `#247` (`claude/youthful-einstein-nxsa3a`)
-- **READ FIRST:**
-  - `docs/superpowers/specs/2026-10-06-dagobah-mission-design.md`
-  - `docs/superpowers/HANDOFF-galaxy-surfaces.md`
-  - `docs/superpowers/plans/2026-10-05-site-review.md`
-- **GOAL:** play Do or Do Not through in the browser. Fix anything broken, then merge.
-- **MERGE:** yes
+- #1004 `claude/hoth-terrain-weight`: Hoth’s ground by the tier’s texel density.
+- #1002 `claude/hoth-charges`: Hoth’s fuel charges as the game runs them.
+- #1001 `claude/hoth-ga-doors`: Galactic Assault’s base doors, gates and mode walls.
+- #1000 `claude/hoth-base-light`: Echo Base under its own light.
+- #993 `claude/perf-p4-main-thread`: performance lane P4, the main thread.
+- #984 `claude/bf-landing-leftovers`: Hoth’s old surface address out of the links and checks.
+- Drafts, not yet ready for a pickup: #982 far soldiers as rows, #975 guests on the game’s rig, #974 a hero’s own kit and star cards, #970 the bots’ line of fire, #968 a design, #912 WebGPU by default on the Star Wars worlds.
 
-### 2. Cybertron: Metroplex, Barricade and Iacon's skyline, PR #246
-- **START FROM:** `#246` (`claude/jolly-newton-f5oiko`)
-- **READ FIRST:** `docs/superpowers/HANDOFF-cybertron-world.md`, the copy on that branch.
-- **GOAL:** check Metroplex waking and Barricade ramming in the browser, then merge. Then take the next item from the handoff's "Left" section in a new PR.
-- **MERGE:** yes
-
-### 3. Fingers round the gun, PR #242
-- **START FROM:** `#242` (`claude/kind-meitner-wndmww`)
-- **READ FIRST:**
-  - `src/components/universe/grip.js` and `grip.test.js`
-  - `scripts/preview/gunplay.html`
-  - the gunplay line on that branch's `docs/architecture.md`
-- **GOAL:** check the grip in the preview and on a landing, then merge.
-- **MERGE:** yes
-
-### 4. Multiplayer across the worlds, part 2, PR #234
-- **START FROM:** `#234` (`claude/magical-hypatia-assk57`)
-- **READ FIRST:**
-  - `docs/superpowers/specs/2026-10-05-multiplayer-across-worlds-design.md`
-  - `scripts/online-check.mjs`
-- **GOAL:** run `scripts/online-check.mjs` across the worlds, fix what fails, then merge. This PR touches a dozen worlds' `*World.jsx` and `scene.js` files, so check it against every other open PR first.
-- **MERGE:** yes
-
-### 5. Galaxy perf (branch with 20 commits, no PR yet)
-- **START FROM:** `origin/claude/sharp-carson-h9c6mp`
-- **READ FIRST:** on that branch:
-  - `docs/superpowers/specs/2026-10-05-galaxy-upgrade-design.md`
-  - `docs/superpowers/plans/2026-10-05-galaxy-upgrade-phase-1.md`
-  - `docs/superpowers/plans/2026-10-05-galaxy-upgrade-phase-2.md`
-- **GOAL:** phase 1 looks done; confirm that against the plan's checks. Open its PR with before and after counts, then merge. Phase 2 goes in its own PR afterwards.
-- **MERGE:** yes
-- **Note:** this lane shares `src/components/galaxy/systems.js` with lane 1. Merge lane 1 first, then merge main into this branch.
-
-### 6. Albuquerque: foliage, grass, wheels, matcaps (Step 1 merged)
-- **START FROM:** `main`
-- **READ FIRST:**
-  - `docs/superpowers/plans/2026-10-06-albuquerque-grounding-foliage-wheels.md`: the plan; Tasks A1–A3 are done
-  - the "Implementation notes" at the end of `docs/superpowers/specs/2026-10-06-baked-look-and-toy-physics-design.md`
-  - `docs/superpowers/specs/2026-10-06-ground-grass-foliage-design.md`
-  - `src/lib/three/foliage.js` and `lod.js`, built and tested but not wired in yet
-- **GOAL:** the plan's next task. Step G first:
-  - G1, foliage normals in `city.js` and `scene.js`
-  - then G2–G6
-  - then Step 2 (cannon-es) and Step 3 (matcaps)
-  - measure the mid tier before and after with `scripts/abq-qa.mjs`, and never accept a slower frame
-- **MERGE:** yes
-
-### 7. The backlog
-- **START FROM:** `main`
-- **READ FIRST:** `docs/autopilot/backlog.md`, the handoff for the item you pick, and `.claude/skills/autopilot/SKILL.md`.
-- **GOAL:** one unchecked item, finished.
-- **MERGE:** yes
-- **Note:** if the autopilot Routine is still switched on, it takes the top unchecked item every four hours. Pick one further down so the two don't collide.
-
-### 8. GPU detail: quality that scales with the graphics card
-- **START FROM:** `main`, once `claude/gpu-detail-quality` is merged
-- **READ FIRST:** `docs/superpowers/HANDOFF-gpu-detail.md`
-- **GOAL:** its handoff's next item.
-- **MERGE:** yes
-
-### 9. Beyond WebGL: the WebGPU foundation
-- **START FROM:** `main`, once the spec's PR is merged and the owner has approved the spec
-- **READ FIRST:**
-  - `docs/superpowers/HANDOFF-webgpu-worlds.md`
-  - `docs/superpowers/specs/2026-10-06-webgpu-worlds-and-living-worlds-design.md`
-  - `docs/superpowers/plans/2026-10-06-webgpu-foundation.md`
-- **GOAL:** Foundation A, task by task: `/lab/gpu` drawing on both backends, `scripts/gpu-check.mjs` green, `src/lib/tsl/` tested.
-- **MERGE:** yes
-
-## Where the lanes stand (6 October, evening)
-
-- **Merged:** lane 2 (#246, then #249), lane 3 (#242), lane 6's Step 1.
-- **Still open:** lane 1 (#247) and lane 4 (#234).
-- **Being worked by sessions on this machine:**
-  - galaxy sky baking and the jump (lane 5)
-  - the Star Wars world on the runtime (`claude/world-runtime-galaxy`)
-  - Invincible's UI
-  - crew voices (`claude/crew-voices-hq`)
-  - GPU detail (lane 8)
-- **Before starting a lane:** check `git branch -r --no-merged origin/main` and the open PRs. Before merging anything: merge `origin/main` in, and tell the other sessions which files you touched.
+For anything else, take an item from the “Left” section of a handoff or the top of `docs/autopilot/backlog.md`, and start from `main`.

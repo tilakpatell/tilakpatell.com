@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ADAPT_S, DARKROOM_EV, QUIET_S, VARIANTS, WIPE, arrivalExposure, pickVariant, readiness, stopsFrom } from './waiting.js';
+import { ADAPT_S, DARKROOM_EV, QUIET_S, SHADER_WAIT_S, VARIANTS, WIPE, arrivalExposure, loadLine, pickVariant, readiness, stopsFrom } from './waiting.js';
 
 describe('the rules of the way in', () => {
   it('keeps the game’s numbers: the darkroom’s EV, the wipe’s three delays, the adaptation', () => {
@@ -36,6 +36,25 @@ describe('the rules of the way in', () => {
     expect(settling.line).toBe('Settling');
     const ready = readiness({ loaded: true, progress: 1, quietFor: QUIET_S });
     expect(ready).toEqual({ value: 1, ready: true, line: 'Ready' });
+  });
+
+  // (the pipeline guard keeps any frame from waiting on a shader: what is
+  // still building appears as it lands, so the door no longer waits for it,
+  // past the level's arrival and SHADER_WAIT_S; a laptop compiling every
+  // pipeline through D3D12 waited minutes, the owner's 2026-10-13 report)
+  it('says in one line where the way in spent its time', () => {
+    const line = loadLine({ now: 23400, marks: { madeAt: 6100, levelAt: 18200 }, shaders: { pending: 4, held: 8, building: 0 }, machine: { backend: 'webgpu', tier: 'T0' }, detail: 'low' });
+    expect(line).toBe('[battlefront] in at 23.4 s: the world made at 6.1 s, the level in at 18.2 s, 12 shaders still building; webgpu, T0, low');
+    expect(loadLine({ now: 1000, marks: {}, shaders: {}, machine: {} })).toBe('[battlefront] in at 1.0 s: the world made at ?, the level in at ?, 0 shaders still building; ?, ?, ?');
+  });
+
+  it('opens SHADER_WAIT_S after the level is in, whatever is still building', () => {
+    expect(SHADER_WAIT_S).toBe(5);
+    expect(readiness({ loaded: true, progress: 1, pending: 3, held: 40, peak: 60, waited: 4.9 }).ready).toBe(false);
+    expect(readiness({ loaded: true, progress: 1, pending: 3, held: 40, peak: 60, waited: SHADER_WAIT_S })).toEqual({ value: 1, ready: true, line: 'Ready' });
+    expect(readiness({ loaded: true, progress: 1, building: 1, waited: 6 }).ready).toBe(true);
+    // (never before the level itself is in)
+    expect(readiness({ loaded: false, progress: 0.9, waited: 60 }).ready).toBe(false);
   });
 
   it('adapts the exposure from the darkroom’s stops to the day’s over a quarter second', () => {

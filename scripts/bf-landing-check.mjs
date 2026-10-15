@@ -47,6 +47,7 @@ await ctx.addInitScript(() => {
   localStorage.setItem('tp-intro', '1');
   localStorage.setItem('tp-start', '"universe"');
   localStorage.setItem('tp-worlds', JSON.stringify('load'));
+  localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
   window.__check = { tasks: [], gaps: [], worlds: 0 };
   try {
     new PerformanceObserver((l) => l.getEntries().forEach((e) => window.__check.tasks.push(Math.round(e.duration)))).observe({ type: 'longtask', buffered: true });
