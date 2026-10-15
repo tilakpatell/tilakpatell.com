@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import HQFrame from '../../avengers/hq/HQFrame';
-import { register, useStage } from '../../avengers/hq/useStage';
+import { register, useStage, useStageFrame } from '../../avengers/shared/runtime';
+import gameModule from './module';
 import { useAchievements } from '../../Achievements';
 import { edges, readPad, typing } from '../../games/pad';
 import { use3D } from '../../../lib/gpu';
-import { local, prefersReducedMotion, useFrameLoop } from '../../../lib/hooks';
+import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
 import { useVoiced } from '../../../lib/useVoiced';
@@ -12,7 +13,6 @@ import { CHAPTERS, DIFFICULTY, MARK, WAVES, bossTell, cycle, dodge, lockTarget, 
 import { VOICE } from './voicelines';
 import './thinkmark.css';
 
-const load = () => import('./scene');
 const sfx = () => import('../../../lib/sfx');
 const play = (name) => sfx().then((s) => s[name]?.());
 const buzz = (ms) => {
@@ -51,7 +51,7 @@ export default function ThinkMark({ fallback, onResult = null }) {
   const resultRef = useRef(onResult);
   resultRef.current = onResult;
   const three = use3D();
-  const stage = useStage(load, { enabled: three.on, id: 'thinkmark', forced: three.mode === 'on' });
+  const stage = useStage(gameModule, { enabled: three.on, id: 'thinkmark', forced: three.mode === 'on' });
   const { unlock } = useAchievements();
   const [level, setLevel] = useState(() => (DIFFICULTY[local.get(LEVEL, 'hero')] ? local.get(LEVEL, 'hero') : 'hero'));
   const [done, setDone] = useState(() => Number(local.get(DONE, 0)) || 0);
@@ -289,7 +289,7 @@ export default function ThinkMark({ fallback, onResult = null }) {
     },
     [handle, paused, stage.view, steer, ui.loading],
   );
-  useFrameLoop(tick, stage.status === 'on' && stage.visible);
+  useStageFrame(stage, tick, stage.status === 'on' && stage.visible);
 
   // nothing stays held when the window loses focus; pause when scrolled away
   useEffect(() => {

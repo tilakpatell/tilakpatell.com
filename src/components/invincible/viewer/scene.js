@@ -4,7 +4,7 @@
 // their skeletons the same way).
 
 import * as THREE from 'three';
-import { createEngine, hot } from '../../avengers/hq/engine';
+import { createStage, hot } from '../../avengers/hq/stage';
 import { POSES, figure, loadFigure } from '../../../lib/three/rig';
 import { prefersReducedMotion } from '../../../lib/hooks';
 import { CAST, asset } from '../cast';
@@ -12,9 +12,9 @@ import { LOOK } from './look';
 
 const damp = (v, to, rate, dt) => v + (to - v) * (1 - Math.exp(-rate * dt));
 
-export async function create(canvas, { onLost, onSlow } = {}) {
+export async function create(rt, { onSlow } = {}) {
   const calm = prefersReducedMotion();
-  const engine = createEngine(canvas, { exposure: 1.05, fov: 28, near: 0.05, far: 80, bloom: LOOK.bloom, onLost, onSlow });
+  const engine = createStage(rt, { exposure: 1.05, fov: 28, near: 0.05, far: 80, bloom: LOOK.bloom, onSlow });
   const { scene, camera } = engine;
   await engine.setSky('noon', { background: false, envIntensity: 0.9, sunIntensity: 2.6, sunDir: [0.5, 0.8, 0.7], fill: 0.25 });
   scene.background = new THREE.Color(0x070a12);

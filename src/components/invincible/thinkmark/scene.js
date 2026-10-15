@@ -9,7 +9,7 @@
 // that never ends up inside a tower. The HUD is drawn by the page on top.
 
 import * as THREE from 'three';
-import { createEngine, hot } from '../../avengers/hq/engine';
+import { createStage, hot } from '../../avengers/hq/stage';
 import { createVfx } from '../../avengers/hq/vfx';
 import { createFeel } from '../../avengers/hq/feel';
 import { buildHumanoid, poseHumanoid } from '../../avengers/hq/kit/humanoid';
@@ -37,9 +37,9 @@ const LOOK = {
   night: { sky: 'night', rotate: 0, env: 0.22, bg: 0.2, sun: 0.75, sunDir: [-0.3, 0.75, -0.4], sunColor: [0.62, 0.72, 1], fill: 0.42, fog: { density: 0.0011, color: new THREE.Color(0.075, 0.088, 0.105) }, night: 1, exposure: 1 },
 };
 
-export async function create(canvas, { onLost, onSlow } = {}) {
+export async function create(rt, { onSlow } = {}) {
   const calm = prefersReducedMotion();
-  const engine = createEngine(canvas, { exposure: 1, fov: FOV, near: 0.1, far: 2800, bloom: ART.bloom, onLost, onSlow });
+  const engine = createStage(rt, { exposure: 1, fov: FOV, near: 0.1, far: 2800, bloom: ART.bloom, onSlow });
   const { scene, camera } = engine;
   const small = engine.small;
   const C = city();
@@ -154,7 +154,7 @@ export async function create(canvas, { onLost, onSlow } = {}) {
     look = L;
     scene.fog = null;
     await engine.setSky(L.sky, { rotate: L.rotate, envIntensity: L.env, bgIntensity: L.bg, sunIntensity: L.sun, sunColor: L.sunColor, sunDir: L.sunDir, fill: L.fill, fog: L.fog });
-    engine.renderer.toneMappingExposure = L.exposure;
+    engine.exposure = L.exposure;
     town.setNight(L.night);
   }
   await setChapter(0);

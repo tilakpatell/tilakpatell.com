@@ -9,7 +9,7 @@
 
 import * as THREE from 'three';
 import { loadTexture, variant, sharpen } from '../../../lib/three/textures';
-import { hot } from '../../avengers/hq/engine';
+import { hot } from '../../avengers/hq/stage';
 import { BODIES, SPACE } from './orbit';
 
 const RE = SPACE.RE;

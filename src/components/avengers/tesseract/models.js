@@ -5,7 +5,7 @@
 // cable, the landing pads, the windsocks, the gantry, the hangar, rain.
 
 import * as THREE from 'three';
-import { hot } from '../hq/engine';
+import { hot } from '../hq/stage';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PartBuilder, canvasTexture, placed, rbox } from '../hq/kit/shapes';
 import { logoTexture } from '../hq/kit/world';

@@ -8,7 +8,7 @@
 // skyline running off into the haze beyond where anyone can fly.
 
 import * as THREE from 'three';
-import { hot } from '../../avengers/hq/engine';
+import { hot } from '../../avengers/hq/stage';
 import { KIND, boxField, facadeMaterial } from '../../../lib/three/facade';
 import { CITY, HALF, RIVER, cellKind, rng } from './city';
 import { sharpen } from '../../../lib/three/textures';

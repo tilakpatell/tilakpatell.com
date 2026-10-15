@@ -3,7 +3,7 @@
 // arm, and the shield in flight along the path the rules worked out.
 
 import * as THREE from 'three';
-import { createEngine, hot } from '../hq/engine';
+import { createStage, hot } from '../hq/stage';
 import { pbr, preload } from '../hq/assets';
 import { buildHumanoid, poseHumanoid } from '../hq/kit/humanoid';
 import { canvasTexture, rbox } from '../hq/kit/shapes';
@@ -17,9 +17,9 @@ import { buildShield, courtTexture, hazardTexture } from './models';
 const WALL_H = 1.05;
 const WALL_T = 0.26;
 
-export async function create(canvas, { onLost, onSlow } = {}) {
+export async function create(rt, { onSlow } = {}) {
   const calm = prefersReducedMotion();
-  const engine = createEngine(canvas, { exposure: 1.2, fov: 40, near: 0.1, far: 200, bloom: { strength: 0.45, radius: 0.4, threshold: 0.96 }, onLost, onSlow });
+  const engine = createStage(rt, { exposure: 1.2, fov: 40, near: 0.1, far: 200, bloom: { strength: 0.45, radius: 0.4, threshold: 0.96 }, onSlow });
   const { scene, camera } = engine;
   const small = engine.small;
   await preload({ sets: ['concrete-floor', 'rubber-tiles', 'sci-panels', 'concrete-wall', 'painted-metal', 'leather', 'brushed-steel', 'corrugated'], skies: ['hall'], models: ['fluorescent', 'shelves', 'crate', 'toolchest', 'extinguisher', 'tyre', 'barrel'], small });
@@ -171,7 +171,7 @@ export async function create(canvas, { onLost, onSlow } = {}) {
 
   const vfx = createVfx(scene, { calm, debrisMaterial: glassShards, ground: 0 });
   const feel = createFeel({ seed: 3, calm, baseFov: 40, offset: 0.08 });
-  // ?debug: the feel's numbers on the one panel (hq/engine's tune)
+  // ?debug: the feel's numbers on the one panel (hq/stage's tune)
   engine.tune(feelGroups(feel), 'ricochet');
 
   // ── a room's pieces, rebuilt when the room changes ──

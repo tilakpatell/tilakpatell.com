@@ -7,7 +7,7 @@
 // createPacks(scene) → { update(found, t), at(id), dispose }
 
 import * as THREE from 'three';
-import { hot } from '../hq/engine';
+import { hot } from '../hq/stage';
 import { canvasTexture, rbox } from '../hq/kit/shapes';
 import { PACKS } from './rules';
 

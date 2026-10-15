@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import HQFrame from '../hq/HQFrame';
-import { register, useStage } from '../hq/useStage';
+import { register, useStage, useStageFrame } from '../hq/useStage';
+import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
 import { useAchievements } from '../../Achievements';
 import { use3D } from '../../../lib/gpu';
-import { local, useFrameLoop } from '../../../lib/hooks';
+import { local } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
 import { ROOMS, botsLeft, limitFor, newRoom, stepRoom, throwShield } from './rules';
 import './ricochet.css';
 import '../../../styles/lazy/avengers.css';
 
-const load = () => import('./scene');
 const sfx = () => import('../../../lib/sfx');
 const play = (name, ...a) => sfx().then((s) => s[name]?.(...a));
 const buzz = (ms) => {
@@ -33,7 +33,7 @@ function loadSave() {
 
 export default function Ricochet({ fallback }) {
   const three = use3D();
-  const stage = useStage(load, { enabled: three.on, id: 'ricochet', forced: three.mode === 'on' });
+  const stage = useStage(gameModule, { enabled: three.on, id: 'ricochet', forced: three.mode === 'on' });
   const { unlock } = useAchievements();
   const [save, setSave] = useState(loadSave);
   const [index, setIndex] = useState(() => Math.min(loadSave().reached, ROOMS.length) - 1);
@@ -182,7 +182,7 @@ export default function Ricochet({ fallback }) {
     },
     [handle, index, stage.view, sync, ui.phase],
   );
-  useFrameLoop(tick, stage.status === 'on' && stage.visible);
+  useStageFrame(stage, tick, stage.status === 'on' && stage.visible);
 
   // ── input ──
   const setFromPointer = (e) => {

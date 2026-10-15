@@ -4,7 +4,7 @@
 // by the page on top.
 
 import * as THREE from 'three';
-import { createEngine, hot } from '../hq/engine';
+import { createStage, hot } from '../hq/stage';
 import { pbr, preload } from '../hq/assets';
 import { buildCompound, buildGround, fbm, logoTexture, scatter, trees } from '../hq/kit/world';
 import { buildHumanoid, poseHumanoid } from '../hq/kit/humanoid';
@@ -33,9 +33,9 @@ const angleTo = (a, b) => {
   return d;
 };
 
-export async function create(canvas, { onLost, onSlow } = {}) {
+export async function create(rt, { onSlow } = {}) {
   const calm = prefersReducedMotion();
-  const engine = createEngine(canvas, { exposure: 1.0, fov: FOV, near: 0.1, far: 1200, bloom: { strength: 0.75, radius: 0.55, threshold: 0.9 }, onLost, onSlow });
+  const engine = createStage(rt, { exposure: 1.0, fov: FOV, near: 0.1, far: 1200, bloom: { strength: 0.75, radius: 0.55, threshold: 0.9 }, onSlow });
   const { scene, camera, sun, hemi } = engine;
   const small = engine.small;
 
@@ -303,7 +303,7 @@ export async function create(canvas, { onLost, onSlow } = {}) {
   const vfx = createVfx(scene, { calm, ground: 0.02, maxSparks: 1200, debrisMaterial: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0.4 }) });
   const zap = lightningPool(scene, 14);
   const feel = createFeel({ seed: 3, calm, baseFov: FOV, offset: 0.09 });
-  // ?debug: the feel's numbers on the one panel (hq/engine's tune)
+  // ?debug: the feel's numbers on the one panel (hq/stage's tune)
   engine.tune(feelGroups(feel), 'lawn');
   const ray = new THREE.Raycaster();
   const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);

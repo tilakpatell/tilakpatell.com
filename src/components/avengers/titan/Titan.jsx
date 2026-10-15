@@ -1,7 +1,8 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { use3D } from '../../../lib/gpu';
-import { prefersReducedMotion, useFrameLoop } from '../../../lib/hooks';
-import { register, useLive, warmed } from '../hq/useStage';
+import { prefersReducedMotion } from '../../../lib/hooks';
+import { drawOnce, register, useStage, useStageFrame } from '../hq/useStage';
+import gameModule from './module';
 import { STONES } from '../../interests/stones';
 import '../../../styles/lazy/avengers.css';
 
@@ -9,79 +10,24 @@ import '../../../styles/lazy/avengers.css';
 // the dusk, a button over each socket (they follow the hand), and the snap.
 // The drawing of the gauntlet (`fallback`) stays where there's no 3D, and
 // while another of the page's 3D views is the live one (hq/useStage's useLive).
-const load = () => import('./scene');
 
 const Titan = forwardRef(function Titan({ have, onSet, fallback }, ref) {
   const three = use3D();
-  const wrap = useRef(null);
-  const canvas = useRef(null);
-  const view = useRef(null);
   const buttons = useRef({});
-  const [status, setStatus] = useState('idle'); // idle | loading | on | failed
   const calm = useRef(typeof window !== 'undefined' && prefersReducedMotion());
   const haveRef = useRef(have);
   haveRef.current = have;
-
-  const { active: near, visible } = useLive(wrap, { id: 'titan', enabled: three.on, warm: load });
-
-  useEffect(() => {
-    if (!three.on || !near || status === 'failed') return undefined;
-    let dead = false;
-    const fail = () => {
-      view.current?.dispose();
-      view.current = null;
-      if (!dead) setStatus('failed');
-    };
-    setStatus('loading');
-    load()
-      .then(async (mod) => {
-        if (dead || !canvas.current) return;
-        try {
-          const v = await mod.create(canvas.current, { calm: calm.current, onLost: fail });
-          if (dead) {
-            v.dispose();
-            return;
-          }
-          await warmed(v); // its shaders linked before the first frame
-          if (dead || v.engine?.lost) {
-            v.dispose();
-            return;
-          }
-          view.current = v;
-          const r = wrap.current.getBoundingClientRect();
-          v.resize(r.width, r.height);
-          v.setStones(haveRef.current);
-          v.render(1 / 60);
-          setStatus('on');
-        } catch (err) {
-          if (import.meta.env.DEV) console.error('[titan] 3D failed', err);
-          fail();
-        }
-      })
-      .catch(fail);
-    return () => {
-      dead = true;
-      view.current?.dispose();
-      view.current = null;
-      setStatus((s) => (s === 'failed' ? s : 'idle'));
-    };
-    // status is read only to stay down after a failure
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [three.on, near]);
+  // (never too slow for its page: the gauntlet keeps its 3D, as it did)
+  const options = useMemo(() => ({ calm: calm.current }), []);
+  const stage = useStage(gameModule, { enabled: three.on, id: 'titan', forced: true, options, props: { stones: haveRef } });
+  const { view, visible } = stage;
+  const status = stage.status === 'slow' || stage.status === 'lost' ? 'failed' : stage.status;
 
   useEffect(() => {
     view.current?.setStones(have);
-  }, [have, status]);
+  }, [have, status, view]);
 
-  useEffect(() => {
-    const el = wrap.current;
-    if (status !== 'on' || !el || typeof ResizeObserver === 'undefined') return undefined;
-    const ro = new ResizeObserver(([e]) => view.current?.resize(e.contentRect.width, e.contentRect.height));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [status]);
-
-  useEffect(() => (status === 'on' ? register('titan', { view: view.current }) : undefined), [status]);
+  useEffect(() => (status === 'on' ? register('titan', { view: view.current }) : undefined), [status, view]);
 
   // the buttons follow the sockets, every frame
   const place = () => {
@@ -97,18 +43,22 @@ const Titan = forwardRef(function Titan({ have, onSet, fallback }, ref) {
       b.style.visibility = p.front && !v.dusting ? 'visible' : 'hidden';
     }
   };
-  useFrameLoop(
-    (dt) => {
-      view.current?.render(dt / 1000);
-      place();
-    },
-    status === 'on' && visible,
-  );
+  // a frame each frame while it's on screen (the runtime's loop; its first,
+  // its stones set, as it comes up: ./module.js), but with reduced motion
+  const tick = (dt) => {
+    view.current?.render(dt / 1000);
+    place();
+  };
+  useStageFrame(stage, tick, status === 'on' && visible && !calm.current);
   // with reduced motion there's no loop: draw when something changes
   useEffect(() => {
     if (status !== 'on' || !calm.current) return;
-    view.current?.render(1 / 60);
-    place();
+    drawOnce(stage, () => {
+      view.current?.render(1 / 60);
+      place();
+    });
+    // (stage is this page's own, the same each render)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, have]);
 
   // the snap: true if the 3D is doing it (and calls `done(tony)` at the moment
@@ -123,9 +73,9 @@ const Titan = forwardRef(function Titan({ have, onSet, fallback }, ref) {
 
   const on = status === 'on';
   return (
-    <div ref={wrap} className="titan-stage" data-on={on || undefined}>
+    <div ref={stage.wrap} className="titan-stage" data-on={on || undefined}>
       {!on && fallback}
-      {three.on && status !== 'failed' && <canvas ref={canvas} className="titan-canvas" data-on={on || undefined} aria-hidden="true" />}
+      {three.on && status !== 'failed' && <div ref={stage.host} className="titan-canvas" data-on={on || undefined} aria-hidden="true" />}
       {on && (
         <div className="titan-sockets" role="group" aria-label="Infinity Stones">
           {STONES.map((s) => {

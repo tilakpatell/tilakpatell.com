@@ -8,7 +8,7 @@
 
 import * as THREE from 'three';
 import { canvasTexture, PartBuilder } from '../../avengers/hq/kit/shapes';
-import { hot } from '../../avengers/hq/engine';
+import { hot } from '../../avengers/hq/stage';
 import { buildPerson, posePerson } from './people';
 import { CARDS, RINGS } from './quests';
 

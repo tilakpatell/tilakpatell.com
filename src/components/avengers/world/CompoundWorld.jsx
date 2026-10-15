@@ -1,7 +1,7 @@
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { audioContext } from '../../../lib/audio';
 import { use3D } from '../../../lib/gpu';
-import { local, prefersReducedMotion, useFrameLoop, useInView, useMediaQuery } from '../../../lib/hooks';
+import { local, prefersReducedMotion, useInView, useMediaQuery } from '../../../lib/hooks';
 import { readPad, typing } from '../../games/pad';
 import { keyDown, keyUp, moveOf } from '../../middleearth/towns/keys';
 import { useTravellers } from '../../middleearth/towns/useTravellers';
@@ -18,7 +18,8 @@ import { clock, stoneFor, stoneLine } from './labels';
 import { useVoiced } from '../../../lib/useVoiced';
 import { sayVoiced } from '../../../lib/voiced';
 import LoadingVeil from '../../worlds/LoadingVeil';
-import { throttled } from '../../worlds/loadingSteps';
+import { useStage, useStageFrame } from '../hq/useStage';
+import compound from './module';
 
 // The Avengers compound, the world: walk about the compound as Spider-Man,
 // and go into the buildings to play their games. Anyone else online here
@@ -114,12 +115,10 @@ export default function CompoundWorld({ onPortal }) {
 const ROOM = { bound: 260, motion: true };
 
 function World({ api, prog, inside, enter, portal, gl, setGl }) {
-  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   // other players online here, as holograms (middleearth/towns/useTravellers)
   const trav = useTravellers('avengers', gl === 'on', ROOM);
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.25 });
-  const canvas = useRef(null);
   const map = useRef(null);
   // the map's canvas, as many pixels as the screen has under it (sharp on a
   // 2× screen, and at a phone's 96 px): fitted when its box changes, not
@@ -215,50 +214,43 @@ function World({ api, prog, inside, enter, portal, gl, setGl }) {
     return () => clearTimeout(t);
   }, [trick]);
 
-  // the world: made once, kept while you're inside a building
+  // the world: made once, kept while you're inside a building or another of
+  // the page's 3D views is the live one (./module.js keeps it), drawn by the
+  // runtime when it's the page's live view (hq/useStage)
   useEffect(() => {
-    let dead = false;
-    const fit = () => {
-      const c = canvas.current;
-      if (!c || !api.current) return;
-      const r = c.getBoundingClientRect();
-      api.current.resize(Math.round(r.width), Math.round(r.height));
-    };
-    import('./scene')
-      .then(({ createCompoundWorld }) => {
-        if (dead || !canvas.current) return null;
-        return createCompoundWorld(canvas.current, { onLost: () => !dead && setGl('lost'), calm: prefersReducedMotion() });
-      })
-      .then(async (a) => {
-        if (!a) return;
-        if (dead) {
-          a.dispose();
-          return;
-        }
-        api.current = a;
-        fit();
-        // everything on the graphics chip before it's shown (its shaders, its
-        // pictures, one draw), behind the loading screen
-        await a.prepare?.(throttled(setPrep), { alive: () => !dead });
-        if (dead || a.lost) return;
-        if (import.meta.env.DEV) window.__HQWORLD__ = { api: a, sim: sim.current, enter }; // for the QA scripts
-        setGl('on');
-      })
-      .catch((e) => {
-        if (import.meta.env.DEV) console.error(e);
-        if (!dead) setGl('failed');
-      });
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null;
-    if (canvas.current) ro?.observe(canvas.current);
+    compound.keep(true);
     const s = sim.current;
     return () => {
-      dead = true;
-      ro?.disconnect();
       local.set(AT, keep(s.h));
-      api.current?.dispose();
+      compound.keep(false);
+    };
+  }, []);
+  const options = useMemo(() => ({ calm: prefersReducedMotion() }), []);
+  const stage = useStage(compound, { enabled: !inside, id: 'compound', forced: true, options });
+  const prep = stage.progress; // (how far it's got sending itself to the graphics chip)
+  // (the box: in view for the keys, and the page's live view by its share of the screen)
+  const stageBox = useCallback(
+    (el) => {
+      box.current = el;
+      stage.wrap.current = el;
+    },
+    [box, stage.wrap],
+  );
+  // its state for the page: loading until it's first on, and on from then
+  // on while it's off the runtime (inside a building, or Titan's down the
+  // page), as the world made once always was; down as it fails
+  useEffect(() => {
+    if (stage.status === 'on') setGl('on');
+    else if (stage.status === 'failed' || stage.status === 'lost') setGl(stage.status);
+  }, [stage.status, setGl]);
+  useEffect(() => {
+    if (stage.status !== 'on') return undefined;
+    api.current = stage.view.current;
+    if (import.meta.env.DEV) window.__HQWORLD__ = { api: api.current, sim: sim.current, enter }; // for the QA scripts
+    return () => {
       api.current = null;
     };
-  }, [api, setGl, enter]);
+  }, [stage.status, stage.view, api, enter]);
 
   // out of a building: back outside its door, the camera off to one side so it isn't in the wall
   const was = useRef(inside);
@@ -279,7 +271,7 @@ function World({ api, prog, inside, enter, portal, gl, setGl }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inside]);
 
-  const live = gl === 'on' && inView && !inside;
+  const live = stage.status === 'on' && inView && !inside;
 
   const go = useCallback(() => {
     const s = sim.current;
@@ -349,8 +341,8 @@ function World({ api, prog, inside, enter, portal, gl, setGl }) {
     };
   }, [live, go, photoMode, changePhoto]);
 
-  // ── every frame ──
-  useFrameLoop((ms) => {
+  // ── every frame ── (the runtime's loop, through the world's draw)
+  const tick = (ms) => {
     const a = api.current;
     if (!a || a.lost) return;
     const s = sim.current;
@@ -541,7 +533,6 @@ function World({ api, prog, inside, enter, portal, gl, setGl }) {
       a.render({ hero: s.h, travellers: others, camYaw: s.yaw, camPitch: s.pitch, camDist: (touch ? 8.4 : 7.6) * set.camera, shake: set.shake, near: s.near, done: p.done, next: p.next, portal: p.portal, tour: s.tour, found: s.found, say: s.say, move: { mx: mv.x, mz: mv.z, len: Math.hypot(mv.x, mv.z) } }, ms * fast);
     } catch (err) {
       if (import.meta.env.DEV) console.error(err);
-      a.dispose();
       api.current = null;
       setGl('failed');
       return;
@@ -562,7 +553,8 @@ function World({ api, prog, inside, enter, portal, gl, setGl }) {
     }
     if (++s.frame % 4 === 0) drawMap(map.current, mapBox.current, s.h, p, others, s.found, s.tour);
     if (s.frame % 120 === 0 && s.h.mode === 'ground') local.set(AT, keep(s.h));
-  }, live);
+  };
+  useStageFrame(stage, tick, live);
 
   // drag to look round
   const drag = useRef(null);
@@ -631,11 +623,11 @@ function World({ api, prog, inside, enter, portal, gl, setGl }) {
   };
 
   return (
-    <div ref={box} className="cw-stage" data-touch={touch || undefined} data-photo={photo ? '' : undefined}>
-      <canvas ref={canvas} className="cw-canvas" data-on={gl === 'on' || undefined} aria-label="The Avengers compound in 3D: the hangar, the main building and its glass wing, the training center, the lab and the range, and Spider-Man on the lawn" role="img" onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} onWheel={(e) => sim.current.photo && changePhoto({ dist: sim.current.photo.dist * (e.deltaY > 0 ? 1.1 : 1 / 1.1) })} />
+    <div ref={stageBox} className="cw-stage" data-touch={touch || undefined} data-photo={photo ? '' : undefined}>
+      <div ref={stage.host} className="cw-canvas" data-on={stage.status === 'on' || undefined} aria-label="The Avengers compound in 3D: the hangar, the main building and its glass wing, the training center, the lab and the range, and Spider-Man on the lawn" role="img" onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} onWheel={(e) => sim.current.photo && changePhoto({ dist: sim.current.photo.dist * (e.deltaY > 0 ? 1.1 : 1 / 1.1) })} />
       <div ref={speedRef} className="cw-speed" aria-hidden="true" />
       <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Flying in to the compound" />
-      <CompoundHud touch={touch} gl={gl} prog={prog} hud={hud} sim={sim} enter={enter} portal={portal} trav={trav} list={list} setList={setList} tuning={tuning} setTuning={setTuning} photo={photo} photoMode={photoMode} changePhoto={changePhoto} onSavePhoto={() => savePhoto(api.current, canvas.current, sim.current, progRef.current)} settings={settings} changeSettings={changeSettings} tourMsg={tourMsg} pack={pack} trick={trick} styleRef={styleRef} tourRef={tourRef} map={map} bubble={bubble} bubbleRef={bubbleRef} tourBest={tourBest} styleBest={styleBest} found={found} toTour={toTour} travel={travel} onStick={onStick} />
+      <CompoundHud touch={touch} gl={gl} prog={prog} hud={hud} sim={sim} enter={enter} portal={portal} trav={trav} list={list} setList={setList} tuning={tuning} setTuning={setTuning} photo={photo} photoMode={photoMode} changePhoto={changePhoto} onSavePhoto={() => savePhoto(api.current, stage.rt?.gfx?.canvas, sim.current, progRef.current)} settings={settings} changeSettings={changeSettings} tourMsg={tourMsg} pack={pack} trick={trick} styleRef={styleRef} tourRef={tourRef} map={map} bubble={bubble} bubbleRef={bubbleRef} tourBest={tourBest} styleBest={styleBest} found={found} toTour={toTour} travel={travel} onStick={onStick} />
     </div>
   );
 }

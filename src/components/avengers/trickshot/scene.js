@@ -4,7 +4,7 @@
 // the sight's pins, the score) is drawn by the page on top.
 
 import * as THREE from 'three';
-import { createEngine, hot } from '../hq/engine';
+import { createStage, hot } from '../hq/stage';
 import { pbr, preload } from '../hq/assets';
 import { buildGround, fbm, scatter, trees } from '../hq/kit/world';
 import { PartBuilder, canvasTexture, rbox } from '../hq/kit/shapes';
@@ -80,9 +80,9 @@ function lawnLines() {
   });
 }
 
-export async function create(canvas, { onLost, onSlow } = {}) {
+export async function create(rt, { onSlow } = {}) {
   const calm = prefersReducedMotion();
-  const engine = createEngine(canvas, { exposure: 1.02, fov: BASE_FOV, near: 0.03, far: 900, bloom: { strength: 0.42, radius: 0.5, threshold: 0.96 }, onLost, onSlow });
+  const engine = createStage(rt, { exposure: 1.02, fov: BASE_FOV, near: 0.03, far: 900, bloom: { strength: 0.42, radius: 0.5, threshold: 0.96 }, onSlow });
   const { scene, camera } = engine;
   const small = engine.small;
 
@@ -438,7 +438,7 @@ export async function create(canvas, { onLost, onSlow } = {}) {
 
   const vfx = createVfx(scene, { calm, ground: 0, debrisMaterial: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, metalness: 0.1 }) });
   const feel = createFeel({ seed: 7, calm, baseFov: BASE_FOV, offset: 0.05 });
-  // ?debug: the feel's numbers on the one panel (hq/engine's tune)
+  // ?debug: the feel's numbers on the one panel (hq/stage's tune)
   engine.tune(feelGroups(feel), 'trickshot');
 
   // a camera that never moves, for turning the pointer into an aim
