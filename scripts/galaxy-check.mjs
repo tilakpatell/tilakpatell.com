@@ -73,7 +73,8 @@ import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { budget } from '../src/lib/budgets.js';
 import { summarise } from './cpu-profile.mjs';
-import { BUCKET_URL, MODEL_FILE, baselineOf, limitsFor, overBy } from './galaxy-budget.mjs';
+import { BUCKET_URL, MODEL_FILE, baselineOf, limitsFor, overBy, shotLevels } from './galaxy-budget.mjs';
+import sharp from 'sharp';
 import { noisy } from './lib/noise.mjs';
 
 const [mode = 'space', list = 'tatooine'] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
@@ -432,7 +433,14 @@ for (const id of list.split(',')) {
     // end of the run: the other worlds go on)
     const shotAt = Date.now();
     await page.screenshot({ path: `${out}/${name}.png`, timeout: Number(process.env.SHOT_WAIT ?? 120000) }).then(
-      () => console.log(`${id.padEnd(10)} shot in ${((Date.now() - shotAt) / 1000).toFixed(1)} s`),
+      async () => {
+        console.log(`${id.padEnd(10)} shot in ${((Date.now() - shotAt) / 1000).toFixed(1)} s`);
+        // (how bright it came out, galaxy-budget.mjs's shotLevels: the log is
+        // all of a CI job's picture the cloud can read)
+        const raw = await sharp(`${out}/${name}.png`).raw().toBuffer({ resolveWithObject: true }).catch(() => null);
+        const lv = raw && shotLevels(raw.data, raw.info.channels);
+        if (lv) console.log(`${''.padEnd(10)} shot mean ${lv.mean.map((v) => v.toFixed(3)).join(' ')}  white ${(lv.white * 100).toFixed(1)} %`);
+      },
       (e) => errors.push(`the screenshot did not come in ${((Date.now() - shotAt) / 1000).toFixed(0)} s: ${String(e?.message ?? e).split('\n')[0]}`),
     );
     const profile = process.env.PROFILE ? await profileOf(page, Number(process.env.PROFILE), `${out}/${name}`, bf) : null;
