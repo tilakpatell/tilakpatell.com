@@ -16,7 +16,11 @@ import { LOOK } from './look';
 
 export const LOOK_NAMES = ['modern', 'ultra', 'n64'];
 
-export const passesFor = (scene, camera, bloom) => [{ kind: 'render', scene, camera }, ...(bloom ? [{ kind: 'bloom', ...LOOK.bloom, composer: true }] : []), { kind: 'output' }];
+// (the scene drawn with no multisampling, as the composer's buffer was: the
+// node renderer's four samples made a High frame on SwiftShader 1.6 times
+// as long, 0.8 frames a second against 1.3, for edges the composer never
+// drew)
+export const passesFor = (scene, camera, bloom) => [{ kind: 'render', scene, camera, samples: 0 }, ...(bloom ? [{ kind: 'bloom', ...LOOK.bloom, composer: true }] : []), { kind: 'output' }];
 
 export function makeLook(post, scene, camera, { bloom = true } = {}) {
   let glow = Boolean(bloom);

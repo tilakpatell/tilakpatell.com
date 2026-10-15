@@ -70,7 +70,10 @@ export function buildPostProcessing(renderer, passes) {
     let node = null;
     for (const p of passes) {
       if (p.kind === 'render') {
-        scenePass = tsl.pass(p.scene, p.camera);
+        // (samples: the multisampling of the scene's buffer, the renderer's
+        // unless the pass says; a world whose composer drew into a plain
+        // buffer asks for 0, or it draws four times the samples it did)
+        scenePass = tsl.pass(p.scene, p.camera, p.samples === undefined ? {} : { samples: p.samples });
         node = scenePass.getTextureNode();
       } else if (p.kind === 'bloom') {
         if (!node) throw new Error('a bloom pass needs a render pass first');

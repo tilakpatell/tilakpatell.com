@@ -35,6 +35,9 @@ describe('the look’s chain', () => {
     expect(composer.passes.map((p) => p.constructor.name)).toEqual(['RenderPass', 'UnrealBloomPass', 'OutputPass']);
     expect(passesFor(scene, camera, true).map((p) => p.kind)).toEqual(['render', 'bloom', 'output']);
     expect(passesFor(scene, camera, true)[0]).toMatchObject({ scene, camera });
+    // (the composer's scene buffer had no multisampling: neither has the chain's)
+    expect(passesFor(scene, camera, true)[0].samples).toBe(0);
+    expect(passesFor(scene, camera, false)[0].samples).toBe(0);
   });
 
   it('blooms with the composer’s three numbers, read from the look', () => {

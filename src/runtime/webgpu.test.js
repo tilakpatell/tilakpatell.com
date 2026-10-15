@@ -190,6 +190,18 @@ describe('buildPostProcessing', () => {
     post.dispose();
     expect(chain.dispose).toHaveBeenCalled();
   });
+  it('draws the scene at the samples its render pass asks for, the renderer’s when it asks none', async () => {
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera();
+    const asks = buildPostProcessing({}, [{ kind: 'render', scene, camera, samples: 0 }, { kind: 'output' }]);
+    await asks.ready;
+    expect(posts.at(-1).outputNode.passNode.options).toEqual({ samples: 0 });
+    asks.dispose();
+    const plain = buildPostProcessing({}, [{ kind: 'render', scene, camera }, { kind: 'output' }]);
+    await plain.ready;
+    expect(posts.at(-1).outputNode.passNode.options.samples).toBeUndefined();
+    plain.dispose();
+  });
   it('lets go of a plain chain let go before it was built, once it is', async () => {
     const chain = buildPostProcessing({}, [{ kind: 'render', scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera() }, { kind: 'output' }]);
     chain.dispose();
