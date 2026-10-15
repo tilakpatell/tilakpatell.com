@@ -437,14 +437,14 @@ export const THINGS_TO_DO = [
   {
     id: 'galactic-assault',
     title: 'Fight for the command posts on Hoth',
-    to: '/galaxy/hoth/surface?mission=assault',
+    to: '/battlefront/hoth?from=%2Fgalaxy%2Fhoth', // (the game's own menu over its Hoth: components/galaxy/gameLevels.js)
     area: '/galaxy/surface',
     kind: 'game',
     audience: 'both',
     seconds: 600,
     phone: true,
-    blurb: 'Two armies and the posts between them. The battle sim is seeded and tested, and balanced by letting the AI fight it out.',
-    done: { achievement: 'galacticassault' },
+    blurb: 'The 2017 game’s own Hoth behind its own menu. Two armies and the posts between them, in a battle sim that is seeded and tested.',
+    done: { visited: '/battlefront/hoth' },
   },
   {
     id: 'greedo',

@@ -8,7 +8,7 @@ import { SHIP_MODELS } from '../universe/shipModels';
 import { BUILT_KINDS } from '../universe/trafficModels';
 import { GALAXY_KINDS, buildGalaxyShip } from './fleet';
 import { KINDS } from './hunted';
-import { ARRIVAL, HD_MAPS, HQ, HULL, HUNTER_GLB, LIGHT_CUTS, LOD_FAR, LOD_NEAR, MADE, MODELS, STAND_IN, ULTRA, createModels, lodLevels, lodUrl, modelsAt, withHq } from './models';
+import { ARRIVAL, HD_MAPS, HIGH_CUTS, HQ, HULL, HUNTER_GLB, LIGHT_CUTS, LOD_FAR, LOD_NEAR, MADE, MODELS, STAND_IN, ULTRA, createModels, lodLevels, lodUrl, modelsAt, withHq } from './models';
 import { SYSTEMS, kindsIn } from './systems';
 
 const at = (path) => new URL(`../../../public${path}`, import.meta.url);
@@ -81,10 +81,11 @@ describe('the galaxy’s models', () => {
   // ultra; the plain rows are a desktop's, modelsAt('high'))
   describe('the game’s hulls', () => {
     const HIGH = modelsAt('high');
+    const MID = modelsAt('mid');
 
     it('draws the war’s capitals from the space levels’ kits at the fleet’s cut, bow to +z, and the Lucrehulk and the Arquitens as before', () => {
-      for (const kind of ['destroyer', 'moncal', 'venator', 'corvette', 'providence', 'lucrehulk']) expect(HIGH[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose: 0 });
-      expect(HIGH.lightcruiser).toEqual({ url: '/models/galaxy/lightcruiser.glb', nose: -Math.PI / 2 });
+      for (const kind of ['destroyer', 'moncal', 'venator', 'corvette', 'providence', 'lucrehulk']) expect(MID[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose: 0 });
+      expect(MID.lightcruiser).toEqual({ url: '/models/galaxy/lightcruiser.glb', nose: -Math.PI / 2 });
       // (the universe map keeps its own Star Destroyer and Venator: the galaxy's rows are the game's)
       for (const detail of ['low', 'mid', 'high', 'ultra']) {
         expect(modelsAt(detail).destroyer.url, detail).not.toBe('/models/universe/star-destroyer.glb');
@@ -108,6 +109,22 @@ describe('the galaxy’s models', () => {
       expect(HUNTER_GLB.redleader.url).toBe(MODELS.xwing.url);
     });
 
+    it('draws the game’s other fighters at their plain surface cut on a desktop, nose 0, the fleet’s light file on a phone or a laptop, the same far copy', () => {
+      const files = { tie: 'tiefighter', tiebomber: 'tiebomber', tieadvanced: 'tieadvanced', awing: 'awing', ywing: 'ywing', uwing: 'uwing', n1: 'n1fighter', arc170: 'arc170', vulture: 'vulture', trifighter: 'trifighter', cloudcar: 'cloudcar', vwing: 'vwing', hyena: 'hyena', xwing65: 'xwing' };
+      expect(Object.keys(HIGH_CUTS).sort()).toEqual(Object.keys(files).sort());
+      for (const [kind, file] of Object.entries(files)) {
+        expect(HIGH_CUTS[kind], kind).toEqual({ url: `/models/galaxy/surface/${file}.glb`, nose: 0 });
+        expect(onSite(HIGH_CUTS[kind].url), kind).toBe(true);
+        expect(bytesOf(HIGH_CUTS[kind].url), kind).toBeGreaterThan(bytesOf(`/models/galaxy/${kind}.glb`));
+        for (const detail of ['high', 'ultra']) expect(modelsAt(detail)[kind], `${detail} ${kind}`).toEqual({ ...MID[kind], url: HIGH_CUTS[kind].url, nose: 0 });
+        for (const detail of ['low', 'mid']) expect(modelsAt(detail)[kind].url, `${detail} ${kind}`).toBe(`/models/galaxy/${kind}.glb`);
+        expect(lodUrl(kind, modelsAt('high')), kind).toBe(`/models/galaxy/lod/${kind}.glb`);
+      }
+      // (a kind the fleet turned: its fleet file wears the row's nose, its surface file none)
+      expect(MID.uwing.nose).toBe(Math.PI);
+      expect(HIGH.uwing.nose).toBe(0);
+    });
+
     it('draws a fighter’s light cut on a phone or a laptop, the plain one on a desktop, the same far copy either way', () => {
       for (const detail of ['low', 'mid']) for (const kind of Object.keys(LIGHT_CUTS)) expect(modelsAt(detail)[kind], `${detail} ${kind}`).toEqual({ ...HIGH[kind], url: LIGHT_CUTS[kind] });
       for (const detail of ['high', 'ultra']) for (const kind of Object.keys(LIGHT_CUTS)) expect(modelsAt(detail)[kind].url, `${detail} ${kind}`).toBe(HIGH[kind].url);
@@ -116,11 +133,11 @@ describe('the galaxy’s models', () => {
       expect(withHq({ tie: { url: '/t.glb', nose: 0 } }, 'low')).toEqual({ tie: { url: '/t.glb', nose: 0 } });
     });
 
-    it('draws the kits’ ultra cuts on the strongest graphics alone, the same far copies', () => {
+    it('draws the kits’ ultra cuts, the game’s 1,024 maps, on a desktop (high and ultra), the fleet’s cut on a phone or a laptop, the same far copies', () => {
       for (const kind of ['destroyer', 'moncal', 'venator', 'corvette', 'providence']) {
         expect(ULTRA[kind], kind).toBe(`/models/galaxy/${kind}.ultra.glb`);
-        expect(modelsAt('ultra')[kind], kind).toEqual({ ...HIGH[kind], url: ULTRA[kind] });
-        for (const detail of ['low', 'mid', 'high']) expect(modelsAt(detail)[kind].url, `${detail} ${kind}`).toBe(HIGH[kind].url);
+        for (const detail of ['high', 'ultra']) expect(modelsAt(detail)[kind], `${detail} ${kind}`).toEqual({ ...MID[kind], url: ULTRA[kind] });
+        for (const detail of ['low', 'mid']) expect(modelsAt(detail)[kind].url, `${detail} ${kind}`).toBe(`/models/galaxy/${kind}.glb`);
         expect(lodUrl(kind, modelsAt('ultra')), kind).toBe(`/models/galaxy/lod/${kind}.glb`);
       }
     });
@@ -129,7 +146,7 @@ describe('the galaxy’s models', () => {
   it('has the ten ships brought in (from Sketchfab; the Munificent since made again with Meshy, the Providence the game’s), each turned to fly nose first, and the Razor Crest that walks the surfaces', () => {
     const noses = { tie: 0, tiebomber: 0, tieadvanced: 0, shuttle: 0, lightcruiser: -Math.PI / 2, gozanti: 0, munificent: 0, providence: 0, nubian: 0, ghost: 0 };
     for (const [kind, nose] of Object.entries(noses)) {
-      expect(modelsAt('high')[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose }); // (a desktop's rows: the Providence's at ultra is its ultra cut)
+      expect(modelsAt('mid')[kind], kind).toEqual({ url: `/models/galaxy/${kind}.glb`, nose }); // (a laptop's rows: a desktop's TIEs are the game's plain cuts, its Providence the kit's ultra cut)
       expect(onSite(MODELS[kind].url), kind).toBe(true);
     }
     expect(MODELS.razorcrest).toEqual({ url: '/models/galaxy/surface/razorcrest.glb', nose: 0 });
@@ -246,7 +263,7 @@ describe('the galaxy’s models', () => {
       for (const detail of ['high', 'ultra']) {
         const m = withHq(base, detail);
         expect(m.nebulon).toEqual({ url: '/models/galaxy/hq/nebulon.glb', nose: HQ.nebulon.nose, hq: true });
-        expect(m.tie).toBe(base.tie);
+        expect(m.tie).toEqual({ ...base.tie, url: HIGH_CUTS.tie.url, nose: 0 }); // (a desktop's TIE is the game's plain cut)
       }
     });
 
@@ -292,12 +309,16 @@ describe('the galaxy’s models', () => {
     // Star Destroyer's kit at the fleet's cut is 2,049 KB (50 maps at 256),
     // so a phone or a laptop with the game's light cuts comes to 3.76 MB,
     // held under 4; a desktop takes the plain cuts (the X-wing's 3,147 KB,
-    // the interceptor's 2,164), 7.86 MB, held under 9, from the bucket's CDN
-    // with a year's cache; at ultra the Star Destroyer's 21.6 MB ultra cut
-    // and the corvette's 1.9 MB besides, 29.1 MB, held under 40)
-    it('is the Star Destroyer, the corvette, the X-wing and the interceptor, with their far-off copies, under 4 MB on a phone or a laptop, 9 on a desktop, 40 at ultra', () => {
+    // the interceptor's 2,164) and, since the space fidelity design
+    // (2026-10-15), the kits' ultra cuts, the Star Destroyer's 21.6 MB and
+    // the corvette's 1.9: 29.1 MB at high as at ultra, held under 40, from
+    // the bucket's CDN with a year's cache. The row was 9 at high while the
+    // Star Destroyer came at the fleet's cut, whose 256 maps are the blur
+    // the design names; the lighter `high` cut it asks of the owner's desktop
+    // brings this back under 15.)
+    it('is the Star Destroyer, the corvette, the X-wing and the interceptor, with their far-off copies, under 4 MB on a phone or a laptop, 40 on a desktop and at ultra', () => {
       expect(ARRIVAL).toEqual(['destroyer', 'corvette', 'xwing', 'interceptor']);
-      for (const [detail, cap] of [['low', 4e6], ['mid', 4e6], ['high', 9e6], ['ultra', 40e6]]) {
+      for (const [detail, cap] of [['low', 4e6], ['mid', 4e6], ['high', 40e6], ['ultra', 40e6]]) {
         const models = modelsAt(detail);
         const bytes = ARRIVAL.flatMap((k) => [models[k].url, lodUrl(k, models)]).reduce((n, url) => n + bytesOf(url), 0);
         expect(bytes, detail).toBeLessThan(cap);

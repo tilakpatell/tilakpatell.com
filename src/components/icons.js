@@ -14,4 +14,5 @@ export {
   RiArrowRightUpLine as IconOut,
   RiFileCopyLine as IconCopy,
   RiCheckLine as IconDone,
+  RiCpuLine as IconChip,
 } from 'react-icons/ri';

@@ -76,4 +76,4 @@ Three lanes run at once, each owning its files. Nothing is shared but `universe/
 
 ## Rollout
 
-Three branches from `main`, at once: `claude/universe-polish-a` (the ship), `claude/universe-polish-b` (the sky), `claude/universe-polish-c` (the lens). Lane B's first pull request (the palette and the dead code) merges first and small; the rest of each lane is one pull request, merged on its own as its checks and tables are in. Lane C retakes the README's two pictures in a last small pull request once A and B are on `main`. The handoff `docs/superpowers/HANDOFF-universe-polish.md` carries the status table, one row per lane.
+Three branches from `main`, at once: `claude/universe-polish-a` (the ship), `claude/universe-polish-b` (the sky), `claude/universe-polish-c` (the lens). Lane B's first pull request (the palette and the dead code) merges first and small; the rest of each lane is one pull request, merged on its own as its checks and tables are in. Lane C retakes the README's two pictures in a last small pull request once A and B are on `main`. The handoff `docs/superpowers/HANDOFF-universe.md` carries the status table, one row per lane.

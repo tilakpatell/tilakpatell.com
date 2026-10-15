@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { WIDGETS, colour, fontFor, placeWidget, portrait, widget } from './index';
+import { WIDGETS, colour, fontFor, placeIn, placeWidget, portrait, widget } from './index';
 
 describe('the game’s HUD widgets, for its world', () => {
   it('gives a widget its tree, its layout and its words in the game’s text', () => {
@@ -27,6 +27,15 @@ describe('the game’s HUD widgets, for its world', () => {
     expect(br.y).toBeCloseTo(720 - 100 * (720 / 1080), 6);
     expect(br.w).toBeCloseTo(200, 6);
     expect(placeWidget({ anchor: [0, 0], size: [100, 100], offset: [10, 20] }, { width: 1920, height: 1080 })).toEqual({ x: 10, y: 20, w: 100, h: 100 });
+  });
+
+  it('grows an expanding element with its parent past the parent’s recorded size', () => {
+    const el = { size: [256, 256], layout: { fill: true, expansion: [0, 0, 1, 1], position: [0, 0] } };
+    expect(placeIn(el, { x: 97, y: 224, w: 504, h: 736, design: [256, 256] }, 1)).toEqual({ x: 97, y: 224, w: 504, h: 736 });
+    const half = { size: [1728, 736], layout: { fill: true, expansion: [0.5, 0.5, 0, 0], position: [97, 224] } };
+    expect(placeIn(half, { x: 0, y: 0, w: 2120, h: 1080, design: [1920, 1080] }, 1)).toEqual({ x: 197, y: 224, w: 1728, h: 736 });
+    // (no design given: as before, the element's own size from the parent's corner)
+    expect(placeIn(el, { x: 10, y: 20, w: 504, h: 736 }, 1)).toEqual({ x: 10, y: 20, w: 256, h: 256 });
   });
 
   it('reads the game’s palette, and nothing past it', () => {

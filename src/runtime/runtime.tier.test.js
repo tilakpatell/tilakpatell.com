@@ -33,6 +33,19 @@ describe('the renderer tier', () => {
     expect(rt.tier).toBe('T1');
   });
 
+  it('keeps the reason a decider gives with it: rt.tierWhy', async () => {
+    const rt = make(vi.fn(async () => ({ tier: 'T0', why: 'features' })));
+    const seen = [];
+    await rt.mount(nodes('a', seen), {}, fakeHost());
+    expect(seen).toEqual(['T0']);
+    expect(rt.tier).toBe('T0');
+    expect(rt.tierWhy).toBe('features');
+    // (a bare tier, as before: no reason)
+    const plain = make(vi.fn(async () => 'T1'));
+    await plain.mount(nodes('b'), {}, fakeHost());
+    expect(plain.tierWhy).toBeNull();
+  });
+
   it('is never asked for a classic world', async () => {
     const tier = vi.fn(async () => 'T2');
     const rt = make(tier);

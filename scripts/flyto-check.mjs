@@ -69,6 +69,7 @@ async function visitor(name, ship, viewport) {
       window.localStorage.setItem('tp-universe-ship', JSON.stringify(s));
       window.localStorage.setItem('tp-universe-drive', JSON.stringify('super'));
       window.localStorage.setItem('tp-worlds', JSON.stringify('load')); // (the 3D without the gate's asking: software GL is slow)
+      window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: a software GL is the point here)
       window.sessionStorage.setItem('tp-gl-anyway', 'true');
       window.sessionStorage.setItem('tp-galaxy-intro', '1'); // (the galaxy's “long time ago” seen)
       // every line the HUD shows, kept (a note is up for a few seconds of the wall's time)

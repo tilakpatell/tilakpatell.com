@@ -280,6 +280,19 @@ describe('the rows’ words', () => {
     expect(optionsFor(gs, { rulebook: told, level: 'hoth' }).find((o) => o.id === 'bpRate')).toMatchObject({ label: 'THE GAME’S WORD', help: 'Its line.' });
   });
 
+  it('say which rows the game’s own screen lists: its thirteen, ending at the friendly vehicle count', () => {
+    expect(opts.filter((o) => o.listed).map((o) => o.id)).toEqual([
+      'mode', 'level', 'difficulty', 'length',
+      'bpRate', 'bots.enemy', 'bots.friendly',
+      'heroes.enemyCount', 'heroes.friendlyCount',
+      'reinforcements.enemyCount', 'reinforcements.friendlyCount',
+      'vehicles.enemyCount', 'vehicles.friendlyCount',
+    ]);
+    // (the five switches are the profile’s options, with words in the string table and no row on the screen)
+    expect(opts.filter((o) => o.group === 'advanced' && !o.listed).map((o) => o.id)).toEqual(['heroes.enemy', 'heroes.friendly', 'vehicles.enemy', 'vehicles.friendly', 'allEraHeroes']);
+    for (const o of opts) expect(typeof o.listed).toBe('boolean');
+  });
+
   it('with no rulebook every row still has a name, the site’s own', () => {
     for (const o of optionsFor(gs)) expect(o.label.length).toBeGreaterThan(0);
   });

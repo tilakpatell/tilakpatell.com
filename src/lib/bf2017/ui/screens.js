@@ -6,7 +6,7 @@
 // cells' links to the screens they go to. And the loading screens: a
 // level's film and one of the game's hints for the mode.
 //
-// screen(name, { viewport, data, strings }) → { name, size, boxes, links,
+// screen(name, { viewport, data, strings, items, drop }) → { name, size, boxes, links,
 //   states, navigation } | null, by the screen's full or short name.
 //   boxes: [{ id, type, x, y, w, h, colour, alpha, hidden, font, text, key,
 //   align, shape, svg, film, widget, link, screen, label, children }] in the
@@ -55,6 +55,17 @@ function slotTexts(binds, slots) {
   return out;
 }
 
+// an element's words as the box will show them
+function textFor(el, ctx, slots) {
+  const key = slots[el.id] ?? el.text ?? null;
+  return (ctx.data?.[el.id] ?? (key ? say(key, ctx) : (el.literal ?? ''))) || ctx.blank || '';
+}
+
+// The width a line of words takes in the game's condensed face: 0.48 em a
+// letter (hand: the capture's SINGLE PLAYER, 146 px at 24 px, and PLAY, 47 px)
+const LETTER_EM = 0.48;
+const wordsWidth = (text, font) => String(text).length * LETTER_EM * (faceFor(font).size ?? 18);
+
 function boxOf(el, at, path, ctx, slots) {
   const box = { id: `${path}/${el.id}`, type: el.type, x: at.x, y: at.y, w: at.w, h: at.h };
   const ink = typeof el.palette === 'number' ? colour(el.palette) : el.colour ? css(el.colour) : null;
@@ -68,13 +79,25 @@ function boxOf(el, at, path, ctx, slots) {
     const key = slots[el.id] ?? el.text ?? null;
     if (key) box.key = key;
     box.text = ctx.data?.[el.id] ?? (key ? say(key, ctx) : (el.literal ?? ''));
+    // (a cell of a list the code fills: its empty words are the datum's)
+    if (!box.text && ctx.blank) box.text = ctx.blank;
     if (el.font) box.font = faceFor(el.font);
     if (el.align) box.align = el.align;
     if (el.wrap) box.wrap = true;
   }
-  for (const k of ['shape', 'svg', 'film', 'fill', 'line', 'points']) if (el[k] !== undefined) box[k] = el[k];
+  for (const k of ['shape', 'svg', 'film', 'fill', 'line', 'points', 'texture', 'blend']) if (el[k] !== undefined) box[k] = el[k];
   return box;
 }
+
+// a padded container's inner box: its parts are laid inside the padding
+// (left, top, right, bottom, in the reference's pixels), and its recorded
+// size less the padding is what they grow past
+function padded(at, pad, k) {
+  if (!pad) return at;
+  const [l, t, r, b] = pad.map((v) => v * k);
+  return { ...at, x: at.x + l, y: at.y + t, w: Math.max(0, at.w - l - r), h: Math.max(0, at.h - t - b) };
+}
+const paddedSize = (size, pad) => (pad ? [size[0] - pad[0] - pad[2], size[1] - pad[1] - pad[3]] : size);
 
 // A box's id among its siblings: the export names siblings alike (a
 // footer's two Select cells, a stack's DecoLineSeparation lines, 405 pairs
@@ -87,6 +110,18 @@ const unique = (sibs, id) => {
   return n > 1 ? `${id}#${n}` : id;
 };
 
+// A part a screen drops (`drop`, by the name of the box it is inside: the
+// footer's cells the PC's game does not show) takes no room: counted among
+// its siblings' names, then left out.
+function dropped(sibs, key, name, ctx) {
+  if (!ctx.dropping) return false;
+  const n = (sibs.get(key) ?? 0) + 1;
+  if (!ctx.dropping.has(n > 1 ? `${name}#${n}` : name)) return false;
+  sibs.set(key, n);
+  return true;
+}
+const scoped = (el, ctx) => (ctx.drop?.[el.id] ? { ...ctx, dropping: new Set(ctx.drop[el.id]) } : ctx);
+
 function expand(elements, parent, path, ctx, slots = {}, seen = new Set(), depth = 0) {
   if (depth > MAX_DEPTH) return [];
   const out = [];
@@ -94,25 +129,34 @@ function expand(elements, parent, path, ctx, slots = {}, seen = new Set(), depth
   // (a stack lays its children one after another along its direction)
   let cursor = 0;
   for (const el of elements ?? []) {
+    // (a part a list's datum leaves out takes no room: the crumb's divider before the first)
+    if (ctx.hide?.has(el.id) || dropped(sibs, `${path}/${el.id}`, el.id, ctx)) continue;
     let at;
     if (parent.stack) {
       const size = (widgetSized(el).size ?? [0, 0]).map((v) => v * ctx.k);
       const down = /TopDown|BottomUp/i.test(parent.stack.direction);
+      // (in a cell sized to its words, a word takes its own width along the stack)
+      if (!down && ctx.blank && el.type === 'text') size[0] = Math.max(size[0], wordsWidth(textFor(el, ctx, slots), el.font) * ctx.k);
       const free = placeIn(el, parent, ctx.k);
       at = down ? { x: free.x, y: parent.y + cursor, w: size[0], h: size[1] } : { x: parent.x + cursor, y: free.y, w: size[0], h: size[1] };
       cursor += (down ? size[1] : size[0]) + parent.stack.spacing * ctx.k;
     } else at = placeIn(widgetSized(el), parent, ctx.k);
     const box = boxOf(el, at, path, ctx, slots);
     box.id = unique(sibs, box.id);
-    const inner = { ...at, ...(el.stack ? { stack: el.stack } : {}) };
+    // (a root box the tree expands over the whole frame: drawn over the whole window)
+    if (depth === 0 && !path && el.layout?.fill && String(el.layout.expansion) === '0,0,1,1') box.bleed = true;
+    const inner = { ...padded(at, el.padding, ctx.k), ...(el.stack ? { stack: el.stack } : {}), ...(el.size ? { design: paddedSize(el.size, el.padding) } : {}) };
+    const sub = scoped(el, ctx);
     if (el.widget) {
       const w = ROWS.widgets[el.widget];
       box.widget = el.widget;
-      if (w && !seen.has(el.widget)) box.children = expand(w.elements, inner, box.id, ctx, slotTexts(el.binds, w.slots), new Set([...seen, el.widget]), depth + 1);
+      if (w && !seen.has(el.widget)) box.children = expand(w.elements, { ...inner, design: w.size ?? inner.design }, box.id, sub, slotTexts(el.binds, w.slots), new Set([...seen, el.widget]), depth + 1);
+    } else if (el.dynamic && ctx.items?.[el.id]) {
+      box.children = itemsOf(el.dynamic, ctx.items[el.id], inner, box.id, sub, seen, depth);
     } else if (el.list) {
-      box.children = cellsOf(el.list, inner, box.id, ctx, seen, depth);
+      box.children = cellsOf(el.list, inner, box.id, sub, seen, depth);
     } else if (el.children?.length) {
-      box.children = expand(el.children, inner, box.id, ctx, slots, seen, depth + 1);
+      box.children = expand(el.children, inner, box.id, sub, slots, seen, depth + 1);
     }
     out.push(box);
   }
@@ -153,7 +197,8 @@ function cellSize(w, label) {
 function cellsOf(list, at, path, ctx, seen, depth) {
   let cursor = 0;
   const sibs = new Map();
-  return list.cells.map((c) => {
+  return list.cells.flatMap((c) => {
+    if (dropped(sibs, `${path}/${c.id}`, c.id, ctx)) return [];
     const w = ROWS.widgets[c.widget];
     const key = Object.values(c.binds ?? {})[0];
     const label = key ? say(key, ctx) : c.id;
@@ -165,18 +210,56 @@ function cellsOf(list, at, path, ctx, seen, depth) {
       cell.link = c.link;
       cell.screen = ROWS.links[c.link] ?? null;
     }
-    if (w && !seen.has(c.widget)) cell.children = expand(w.elements, box, cell.id, ctx, slotTexts(c.binds, w.slots), new Set([...seen, c.widget]), depth + 1);
+    if (w && !seen.has(c.widget)) cell.children = expand(w.elements, { ...box, ...(w.size ? { design: w.size } : {}) }, cell.id, ctx, slotTexts(c.binds, w.slots), new Set([...seen, c.widget]), depth + 1);
     return cell;
   });
 }
 
-export function screen(name, { viewport = { width: 1920, height: 1080 }, data = null, strings = null } = {}) {
+// A list the game's code fills (the breadcrumb): one cell a datum
+// ({ id, label, link?, hide? }: `hide` the template's parts it leaves out),
+// each made from the list's template, sized to what it draws where the
+// list's cells are sized so, laid along the list
+// (a datum's cell draws every part it keeps, the ones its tree records hidden
+// too: the code shows them; what it does not draw is its `hide`, left out)
+const DRAWN = new Set(['text', 'fill', 'vectorShape', 'svg', 'texture', 'rectangle']);
+function drawnRight(boxes) {
+  let r = -Infinity;
+  for (const b of boxes ?? []) {
+    if (DRAWN.has(b.type)) r = Math.max(r, b.x + b.w);
+    r = Math.max(r, drawnRight(b.children));
+  }
+  return r;
+}
+
+function itemsOf(dyn, items, at, path, ctx, seen, depth) {
+  const w = ROWS.widgets[dyn.template];
+  let cursor = 0;
+  const sibs = new Map();
+  return items.map((it) => {
+    const [cw, ch] = (dyn.sized ? [cellSize(null, it.label)[0], dyn.cellSize[1]] : dyn.cellSize).map((v) => v * ctx.k);
+    const box = dyn.horizontal ? { x: at.x + cursor, y: at.y, w: cw, h: ch } : { x: at.x, y: at.y + cursor, w: cw, h: ch };
+    cursor += (dyn.horizontal ? cw : ch) + dyn.spacing * ctx.k;
+    const cell = { id: unique(sibs, `${path}/${it.id}`), type: 'cell', ...box, label: it.label, ...(it.link ? { link: it.link } : {}) };
+    if (w && !seen.has(dyn.template)) cell.children = expand(w.elements, { ...box, ...(w.size ? { design: w.size } : {}) }, cell.id, { ...ctx, blank: it.label, hide: new Set(it.hide ?? []) }, {}, new Set([...seen, dyn.template]), depth + 1);
+    // (sized to what it draws: the right edge of its words and marks)
+    if (dyn.sized && dyn.horizontal && cell.children) {
+      const right = drawnRight(cell.children);
+      if (right > cell.x) {
+        cursor += right - cell.x - cell.w;
+        cell.w = right - cell.x;
+      }
+    }
+    return cell;
+  });
+}
+
+export function screen(name, { viewport = { width: 1920, height: 1080 }, data = null, strings = null, items = null, drop = null } = {}) {
   const s = findScreen(name);
   if (!s) return null;
   const { width, height } = viewport;
-  const ctx = { k: Math.min(width, height) / 1080, data, strings: strings ?? TABLE };
+  const ctx = { k: Math.min(width, height) / 1080, data, strings: strings ?? TABLE, items, drop };
   const full = fullName(name);
-  const boxes = expand(s.elements, { x: 0, y: 0, w: width, h: height }, '', ctx, {}, new Set([full]));
+  const boxes = expand(s.elements, { x: 0, y: 0, w: width, h: height, ...(s.size ? { design: s.size } : {}) }, '', ctx, {}, new Set([full]));
   return {
     name: full,
     size: [width, height],

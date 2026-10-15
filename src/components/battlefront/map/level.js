@@ -10,10 +10,23 @@
 // (ground.js) since the pack carries no ground mesh, in the game's snow on
 // the node renderer: the galaxy draws its own over it.
 //
-//   createLevel({ scene, tier, detail, texTier, renderer, world = 'hoth', ground = true, snow = true, onCell, onDrop, deps })
+//   createLevel({ scene, tier, detail, texTier, renderer, world = 'hoth', inside = INSIDE[world], mode = null, ground = true, snow = true, onCell, onDrop, deps })
+//   (inside: the level's interior, a district pack in the same frame drawn and
+//    streamed with it: Hoth's Echo Base, `hoth/base`, which the pack builder
+//    cuts from under the ground with --inside; its cells reach onCell and
+//    onDrop with a fourth argument, 'inside', its keys being its own)
+//   (mode: the mode played; where the level has a part for it (MODES: Hoth's
+//    Galactic Assault, `hoth/ga`, the FantasyBattle sub-level's own meshes,
+//    built with --part) it is a third pack in the same frame, its cells
+//    handed on as 'mode'. Its mode.json (scripts/bf2017-level-mode.mjs) says
+//    which of its instances the doors and the state props move or switch:
+//    those leave its far table (map/doorsTable.js), and the level's
+//    `modePart` hands them to map/doorsScene.js)
 //   (snow: the ground in the game's snow maps on the node renderer; false, the flat colour;
 //    detail: the quality level, 'ultra' where the tier is 'high' on a strong card, for the ground)
-//     → { ready: Promise, group, origin, pack, update([x, y, z]), heightAt(x, z),
+//     → { ready: Promise, group, origin, pack, inner: { pack, loadBin } | null,
+//         modePart: { pack, loadBin, group, mode, match, rows: Promise<rows>, loadGltf } | null (once ready),
+//         update([x, y, z]), heightAt(x, z), packHeightAt(px, pz),
 //         loadBin(path), navOf() → Promise<mask | null>, progress(), loaded(), stats(), dispose() }
 //   (onCell(key, bin, band) and onDrop(key): the stream's cells as they come
 //   and go, for the collision; navOf: the pack's nav.bin, navMask.js's)
@@ -24,6 +37,18 @@ import { LAYERS } from "../../../lib/land/layers.js";
 import { inflateMask } from "../../../lib/battlefront/navMask.js";
 import * as laneL from "../../galaxy/shared/level.js";
 import { buildGround } from "./ground.js";
+import { controlled } from "./doors.js";
+import { matcher, splitTable } from "./doorsTable.js";
+
+// The levels whose interior is a pack of its own (scripts/bf2017-level.mjs
+// --district <name> --inside: the instances under the ground), by hand: the
+// pack does not name its interior.
+export const INSIDE = { hoth: 'base' };
+// The levels' mode parts (scripts/bf2017-level.mjs --district <name> --part:
+// a mode's sub-level), by mode, by hand: Galactic Assault's on Hoth (the pack
+// /models/galaxy/bf2017/levels/hoth/ga/level.json, `node scripts/bf2017-level.mjs
+// levels/mp/hoth_01 --world hoth --district ga --subs FantasyBattle --spot 205 -1540 --part`)
+export const MODES = { hoth: { galacticAssault: 'ga' } };
 
 export function toPack(pack, [x, , z]) {
   const [ox, , oz] = pack.origin ?? [0, 0, 0];
@@ -49,7 +74,19 @@ const DEPS = {
   createLevelScene: laneL.createLevelScene,
   createLevelStream: laneL.createLevelStream,
   navOf: (world) => bytes(world)("nav.bin").then(inflateMask),
+  modeOf: (world) =>
+    bytes(world)("mode.json").then((b) =>
+      JSON.parse(new TextDecoder().decode(b)),
+    ),
 };
+
+// the two parts' numbers added (a count each; the rest the outside's)
+function sum(a, b) {
+  if (!b) return a;
+  const out = { ...a };
+  for (const [k, v] of Object.entries(b)) if (typeof v === 'number' && typeof a[k] === 'number') out[k] = a[k] + v;
+  return out;
+}
 
 export function createLevel({
   scene,
@@ -57,6 +94,9 @@ export function createLevel({
   texTier = null,
   renderer = null,
   world = "hoth",
+  inside = INSIDE[world] ?? null,
+  mode = null,
+  still = false,
   ground = true,
   snow = true,
   detail = null,
@@ -78,14 +118,34 @@ export function createLevel({
   let last = null;
   let gone = false;
   const fetchBytes = bytes(world);
+  // (the interior, in the same frame: its cells told apart from the outside's, whose keys it shares)
+  const sub = inside
+    ? createLevel({ scene, tier, texTier, renderer, world: `${world}/${inside}`, inside: null, ground: false, gpuScene, onCell: (k, b, band) => onCell(k, b, band, 'inside'), onDrop: (k) => onDrop(k, 'inside'), deps })
+    : null;
+  // (the mode's part, the same again: its still art drawn, what moves split out for the doors)
+  const part = mode && MODES[world]?.[mode];
+  const modeSub = part
+    ? createLevel({ scene, tier, texTier, renderer, world: `${world}/${part}`, inside: null, mode: null, still: true, ground: false, gpuScene, onCell: (k, b, band) => onCell(k, b, band, 'mode'), onDrop: (k) => onDrop(k, 'mode'), deps })
+    : null;
+  const subs = [sub, modeSub].filter(Boolean);
+  // (a still part: its mode.json, the matcher of what moves, and those rows once the far table is in)
+  let modeJson = null;
+  let match = null;
+  let gotRows = null;
+  const rows = still ? new Promise((resolve) => (gotRows = resolve)) : null;
 
-  const ready = (async () => {
-    const [p, img] = await Promise.all([
+  const outside = (async () => {
+    const [p, img, mj] = await Promise.all([
       d.packOf(world),
       d.imageLayer(world).catch(() => null),
+      still ? d.modeOf(world).catch(() => null) : null,
     ]);
     if (gone) return;
     pack = p;
+    if (still) {
+      modeJson = mj;
+      match = matcher(pack, mj ? controlled(mj) : []);
+    }
     layer = img;
     group.position.fromArray(pack.origin ?? [0, 0, 0]);
     group.rotation.y = -(pack.yaw ?? 0);
@@ -114,7 +174,15 @@ export function createLevel({
       fetch: (path) => fetchBytes(path),
       wanted: laneL.wanted,
       tier,
-      onFar: level.setTable,
+      // (a still part's far table without what the doors and the props move: those rows to modePart.rows)
+      onFar: still
+        ? (bin) => {
+            const split = splitTable(pack, bin, match);
+            pack.far.draws = split.draws;
+            level.setTable(split.bin);
+            gotRows(split.rows);
+          }
+        : level.setTable,
       onHorizon: level.setHorizon,
       onCell,
       onDrop,
@@ -125,9 +193,11 @@ export function createLevel({
     }
     if (last) update(last);
   })();
+  const ready = Promise.all([outside, ...subs.map((x) => x.ready)]).then(() => {});
 
   function update(at) {
     last = at;
+    for (const x of subs) x.update(at);
     if (!stream) return;
     const p = toPack(pack, at);
     stream.update(p, tier);
@@ -144,6 +214,16 @@ export function createLevel({
     get pack() {
       return pack;
     },
+    get inner() {
+      return sub?.pack ? { pack: sub.pack, loadBin: sub.loadBin } : null;
+    },
+    get modePart() {
+      return modeSub?.still ?? null;
+    },
+    // (a still part's own: what map/doorsScene.js takes)
+    get still() {
+      return still && pack ? { pack, loadBin: fetchBytes, group, mode: modeJson, match, rows, loadGltf: (path) => loader?.load(path) ?? Promise.resolve(null) } : null;
+    },
     loadBin: fetchBytes,
     navOf: () =>
       Promise.resolve()
@@ -157,16 +237,25 @@ export function createLevel({
       const [px, pz] = toPack(pack, [x, 0, z]);
       return LAYERS.image(px, pz, layer) + (pack.origin?.[1] ?? 0);
     },
-    loaded: () => stream?.ready() ?? false,
-    progress: () => stream?.progress() ?? 0,
-    stats: () => level?.stats() ?? { tris: 0, calls: 0, instances: 0 },
+    // the ground's height in the pack's frame (its origin's height off), for the physics' heightfields; null until it is in
+    packHeightAt: (px, pz) => (layer ? LAYERS.image(px, pz, layer) : null),
+    loaded: () => (stream?.ready() ?? false) && subs.every((x) => x.loaded()),
+    progress: () => ((stream?.progress() ?? 0) + subs.reduce((n, x) => n + x.progress(), 0)) / (1 + subs.length),
+    stats: () => subs.reduce((a, x) => sum(a, x.stats()), level?.stats() ?? { tris: 0, calls: 0, instances: 0 }),
     // (the GPU scene's frame: the occluders' depth, the pyramid and the cull
     // before the scene is drawn, the queries read after; nothing on the other paths)
-    beforeRender: (camera) => level?.beforeRender?.(camera),
-    afterRender: () => level?.afterRender?.(),
+    beforeRender: (camera) => {
+      level?.beforeRender?.(camera);
+      for (const x of subs) x.beforeRender(camera);
+    },
+    afterRender: () => {
+      level?.afterRender?.();
+      for (const x of subs) x.afterRender();
+    },
     debug: () => level?.debug?.() ?? null,
     dispose() {
       gone = true;
+      for (const x of subs) x.dispose();
       stream?.dispose();
       level?.dispose();
       loader?.dispose();

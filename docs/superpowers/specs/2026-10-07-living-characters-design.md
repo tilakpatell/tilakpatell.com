@@ -241,4 +241,4 @@ What "natural" means here, as checks:
 - Every rigged figure on the site goes through an animator; every procedural one through `gait.js`; no world computes `move` by hand.
 - Every world in W0–W7 has its pull request merged with the checks above green and its shots.
 - The credit track is done to the balance the user funds, each item recorded in its task ledger.
-- `docs/superpowers/HANDOFF-living-characters.md` says what's on the layer, what's on the credit track and what's left, for the next session.
+- `docs/superpowers/HANDOFF-runtime.md` says what's on the layer, what's on the credit track and what's left, for the next session.

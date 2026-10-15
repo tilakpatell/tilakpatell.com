@@ -70,9 +70,22 @@
 // placeCapitals), its plan's objectives at the level's own points
 // (battleStages.js's `on.point`).
 //
+// And the hulls (the galaxy's hulls design, 2026-10-14): with `hulls`
+// (galaxy/hulls.js's: get(kind) → lib/combat/hulls.js's Hull, or null until
+// it has loaded), a bolt meets a fighter, a runner or a capital ship on its
+// shapes, carried into the ship's frame by its pose (lib/combat/pose.js: the
+// same turn the scene draws it at, a capital's bob included through
+// `drawn`, which the scene sets each frame); the sphere each was hit within
+// before stays in front as the broad phase, and a kind whose hull isn't here
+// is hit as that sphere, as before. The hit says `part` and `property` (the
+// part's physics material) where a hull decided it. And a fighter flying at
+// a capital ship is kept out of its hull each step (hullContact: pushed out
+// along the face it met, its nose eased along it), on its own hull's probes
+// or, till that's here, a ball of its half-length.
+//
 // createBattle({ war, attacker, at, axis, perSide, rand, lines, radius,
 //   avoid, clock, elapsed, shared, onMine, tickets, objectivesOn, ace,
-//   runners, plan, director, layout }) → battle (with
+//   runners, plan, director, layout, hulls }) → battle (with
 //   runners, disable(id, s), wreck(id), moveCapital(cap, d), turnCapital(cap, axis, a),
 //   addRunner({ team, kind, size, hp, from, to, speed })):
 //   { teams, capitals, fighters, bolts, phase, clock, over, you, defender, lines, radius, length,
@@ -95,6 +108,8 @@
 // hyperspace, battleFleet.js: not destroyed).
 
 import { sweptHit } from './targeting';
+import { hullContact, probeSphere, segmentHit } from '../../lib/combat/hulls';
+import { basisOf, capitalPose } from '../../lib/combat/pose';
 import { NAMES } from './wars';
 import { BATTLE, UP, ZERO, copy, cross, dist2, len, norm, set, turnToward, v3 } from './battleKit';
 import { flyFighter, muster, spawn } from './battleAi';
@@ -108,7 +123,7 @@ import { pressureOf } from './battleDifficulty';
 
 export { BATTLE, WIDTH, inSights, perSide, turnToward } from './battleKit';
 
-export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0], perSide: n = 20, rand = Math.random, lines = BATTLE.lines, radius = BATTLE.radius, avoid = [], clock = BATTLE.clock, elapsed = 0, shared = null, onMine = null, tickets = true, objectivesOn = 'flagship', ace = {}, runners = null, plan = null, director = null, planet = null, tactics = false, layout = null }) {
+export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0], perSide: n = 20, rand = Math.random, lines = BATTLE.lines, radius = BATTLE.radius, avoid = [], clock = BATTLE.clock, elapsed = 0, shared = null, onMine = null, tickets = true, objectivesOn = 'flagship', ace = {}, runners = null, plan = null, director = null, planet = null, tactics = false, layout = null, hulls = null }) {
   const defender = 1 - attacker;
   const C = v3(...at);
   const A = norm(v3(axis[0], 0, axis[1])); // from the first side's line to the second's
@@ -135,6 +150,65 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
     runners: [],
     stageOpen: true, // (with a director: whether the stage's open yet, and if not, how long till it is)
     opensIn: 0,
+    drawn: { t: 0, reduced: false }, // (the scene's clock and whether it's reduced: a capital's bob, for the hulls)
+  };
+
+  // ── the hulls: a ship's shapes, where its kind's have loaded ──
+  const hullOf = (kind) => hulls?.get(kind) ?? null;
+  const capPose = (cap) => capitalPose(cap, b.drawn.t, b.drawn.reduced);
+  const A0 = [0, 0, 0];
+  const A1 = [0, 0, 0];
+  // a fighter's or a runner's pose over a step: from `a0` to `a1`, turned as it's drawn
+  const shipPose = (o, a0, a1) => {
+    A0[0] = a0.x;
+    A0[1] = a0.y;
+    A0[2] = a0.z;
+    A1[0] = a1.x;
+    A1[1] = a1.y;
+    A1[2] = a1.z;
+    return { at0: A0, at1: A1, basis: basisOf(o.fwd, UP, o.bank ?? 0), scale: o.size };
+  };
+  // how far along p0→p1 a bolt meets the ship (its sphere of `r` as the
+  // broad phase, then its hull where it has one): { k, hit } or null
+  const shipHit = (o, p0, p1, a0, a1, r) => {
+    const hull = hullOf(o.kind);
+    const k = sweptHit(p0, p1, a0, a1, hull ? Math.max(r, hull.radius * o.size) : r);
+    if (k === null) return null;
+    if (!hull) return { k, hit: null };
+    const h = segmentHit(hull, shipPose(o, a0, a1), p0, p1);
+    return h ? { k: h.t, hit: h } : null;
+  };
+  // what a hull's hit adds to a hit object
+  const onPart = (h) => (h ? { at: v3(h.point[0], h.point[1], h.point[2]), part: h.part, property: h.property } : {});
+  // the probes a fighter is kept out of a hull with: its own hull's, else a ball of its half-length
+  const balls = new Map();
+  const probesOf = (f) => {
+    const own = hullOf(f.kind);
+    if (own) return own;
+    let ball = balls.get(f.size);
+    if (!ball) balls.set(f.size, (ball = probeSphere(f.size * 0.5)));
+    return ball;
+  };
+  const keepOut = (f) => {
+    for (const cap of b.capitals) {
+      if (!cap.alive) continue;
+      const hull = hullOf(cap.kind);
+      if (!hull) continue;
+      const reach = hull.radius * cap.size + f.size;
+      if (dist2(cap.pos, f.pos) > reach * reach) continue;
+      const pose = capPose(cap);
+      // (a hull is many solids: out of one it may still be in the next, so a few goes)
+      for (let n = 0; n < 3; n++) {
+        const c = hullContact(probesOf(f), shipPose(f, f.prev, f.pos), hull, pose);
+        if (!c) break;
+        f.pos.x += c.normal[0] * c.depth;
+        f.pos.y += c.normal[1] * c.depth;
+        f.pos.z += c.normal[2] * c.depth;
+        // its nose eased along the face it met, so it slides off rather than pressing on
+        norm(set(f.fwd, f.fwd.x + c.normal[0] * 0.5, f.fwd.y + c.normal[1] * 0.5, f.fwd.z + c.normal[2] * 0.5));
+        set(f.vel, f.fwd.x * f.speed, f.fwd.y * f.speed, f.fwd.z * f.speed);
+      }
+    }
   };
 
   // ── the battle's inner context, for its parts (battleAi, battleCapitals, battleRunners) ──
@@ -231,6 +305,13 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
         const k = sweptHit(p0, p1, s.pos, s.pos, s.r);
         if (k !== null && (!best || k < best.k)) best = { cap, sub: s, k };
       }
+      const hull = hullOf(cap.kind);
+      if (hull) {
+        // (its own shapes, turned and bobbed as it's drawn: a bolt at a wing's edge meets the wing)
+        const h = segmentHit(hull, capPose(cap), p0, p1);
+        if (h && (!best || h.t < best.k)) best = { cap, sub: null, k: h.t, part: h.part, property: h.property };
+        continue;
+      }
       for (const sp of cap.spheres) {
         const k = sweptHit(p0, p1, sp.c, sp.c, sp.r);
         if (k !== null && (!best || k < best.k)) best = { cap, sub: null, k };
@@ -317,9 +398,9 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
         for (const f of b.fighters) {
           if (!f.alive || f.team === o.team) continue;
           if (dist2(f.pos, p1) > (step + 3) ** 2) continue;
-          const k = sweptHit(p0, p1, f.prev, f.pos, f.size * 0.6);
-          if (k !== null && k < first) {
-            first = k;
+          const h = shipHit(f, p0, p1, f.prev, f.pos, f.size * 0.6);
+          if (h && h.k < first) {
+            first = h.k;
             hitF = f;
           }
         }
@@ -336,7 +417,7 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
       if (!done) {
         for (const r of b.runners) {
           if (!r.alive || r.team === o.team) continue;
-          if (sweptHit(p0, p1, r.prev, r.pos, r.size * 0.5) === null) continue;
+          if (shipHit(r, p0, p1, r.prev, r.pos, r.size * 0.5) === null) continue;
           done = true;
           if (r.shared) {
             r.hitBy += 1;
@@ -465,8 +546,10 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
     if (!b.over) b.clock += dt;
     else b.since += dt;
     for (const f of b.fighters) {
-      if (f.alive) flyFighter(k, f, dt);
-      else if (!k.tactics && Number.isFinite(f.respawn) && !b.over) {
+      if (f.alive) {
+        flyFighter(k, f, dt);
+        keepOut(f);
+      } else if (!k.tactics && Number.isFinite(f.respawn) && !b.over) {
         f.respawn -= dt;
         if (f.respawn <= 0) {
           spawn(k, f, false);
@@ -504,12 +587,12 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
   const back = v3();
   const drawnBack = (o) => set(back, o.seen.x - o.vel.x * frame, o.seen.y - o.vel.y * frame, o.seen.z - o.vel.z * frame);
   // one of the other side's fighters hit by you, worth `damage`
-  const hitFighter = (f, damage) => {
-    if (stages?.isAce(f)) return { id: f.id, kind: f.kind, at: copy(v3(), f.seen), size: f.size, down: stages.hitAce(f, damage, pending) };
+  const hitFighter = (f, damage, h = null) => {
+    if (stages?.isAce(f)) return { id: f.id, kind: f.kind, at: copy(v3(), f.seen), size: f.size, down: stages.hitAce(f, damage, pending), ...onPart(h) };
     f.hp -= damage;
     const down = f.hp <= 0;
     if (down) pending.push(kill(f, true));
-    return { id: f.id, kind: f.kind, at: copy(v3(), f.seen), size: f.size, down };
+    return { id: f.id, kind: f.kind, at: copy(v3(), f.seen), size: f.size, down, ...onPart(h) };
   };
   // the same for one you rammed (shipHits.js), by its id
   b.strike = (id, damage = 1) => {
@@ -520,24 +603,27 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
   b.hit = (from, to, damage = 1) => {
     if (b.you.team === null || b.over) return null;
     let hitF = null;
+    let hitOn = null; // (the hull's word on it, where it decided)
     let first = Infinity;
     for (const f of b.fighters) {
       if (!f.alive || f.team === b.you.team) continue;
-      const k = sweptHit(from, to, drawnBack(f), f.seen, Math.max(0.35, f.size * 0.9));
-      if (k !== null && k < first) {
-        first = k;
+      const h = shipHit(f, from, to, drawnBack(f), f.seen, Math.max(0.35, f.size * 0.9));
+      if (h && h.k < first) {
+        first = h.k;
         hitF = f;
+        hitOn = h.hit;
       }
     }
     // (or a runner of the other side's, nearer)
     let hitR = null;
     for (const r of b.runners) {
       if (!r.alive || r.team === b.you.team) continue;
-      const k = sweptHit(from, to, drawnBack(r), r.seen, Math.max(0.5, r.size * 0.5));
-      if (k !== null && k < first) {
-        first = k;
+      const h = shipHit(r, from, to, drawnBack(r), r.seen, Math.max(0.5, r.size * 0.5));
+      if (h && h.k < first) {
+        first = h.k;
         hitR = r;
         hitF = null;
+        hitOn = h.hit;
       }
     }
     const h = capitalHit(from, to, b.you.team);
@@ -580,25 +666,25 @@ export function createBattle({ war, attacker = 0, at = [0, 0, 0], axis = [1, 0],
     }
     if (hitR && (!h || first <= h.k)) {
       hitR.hitBy += 1;
-      if (hitR.shared) return { id: hitR.id, kind: hitR.kind, at: copy(v3(), hitR.seen), size: hitR.size, down: runs.hit(hitR, damage, pending) };
+      if (hitR.shared) return { id: hitR.id, kind: hitR.kind, at: copy(v3(), hitR.seen), size: hitR.size, down: runs.hit(hitR, damage, pending), ...onPart(hitOn) };
       hitR.hp -= damage;
       const down = hitR.hp <= 0;
       if (down) {
         hitR.alive = false;
         pending.push({ type: 'runner', id: hitR.id, team: hitR.team, kind: hitR.kind, at: copy(v3(), hitR.pos), mine: true });
       }
-      return { id: hitR.id, kind: hitR.kind, at: copy(v3(), hitR.seen), size: hitR.size, down };
+      return { id: hitR.id, kind: hitR.kind, at: copy(v3(), hitR.seen), size: hitR.size, down, ...onPart(hitOn) };
     }
-    if (hitF && (!h || first <= h.k)) return hitFighter(hitF, damage);
+    if (hitF && (!h || first <= h.k)) return hitFighter(hitF, damage, hitOn);
     if (!h) return null;
     // (with a director a hit's a punch of the objective's hp: what it's worth is shared out by the director)
     if (h.sub && subHit(h.sub, damage * (stages ? 1 : BATTLE.youShare), true, pending)) return { id: h.sub.num, kind: 'subsystem', sub: h.sub.id, at: h.at, size: 1, down: !h.sub.alive };
     if (shielded(h.cap)) {
       pending.push({ type: 'impact', at: h.at, size: 0.6, shield: true });
-      return { id: h.cap.id, kind: 'shield', at: h.at, size: 0.4, down: false, shield: true };
+      return { id: h.cap.id, kind: 'shield', at: h.at, size: 0.4, down: false, shield: true, ...(h.part !== undefined ? { part: h.part, property: h.property } : {}) };
     }
     hullHit(h.cap, damage * BATTLE.youShare * BATTLE.youHull, pending);
-    return { id: h.cap.id, kind: h.cap.kind, at: h.at, size: 0.4, down: false, capital: true };
+    return { id: h.cap.id, kind: h.cap.kind, at: h.at, size: 0.4, down: false, capital: true, ...(h.part !== undefined ? { part: h.part, property: h.property } : {}) };
   };
 
   // what your guns can lock on to: the other side's fighters, then the

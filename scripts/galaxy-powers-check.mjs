@@ -46,6 +46,7 @@ const open = async (crew, viewport = { width: 1280, height: 720 }, system = 'tat
     window.localStorage.setItem('tp-start', '"universe"');
     window.localStorage.setItem('tp-universe-ship', JSON.stringify(s));
     window.localStorage.setItem('tp-worlds', '"load"');
+    window.localStorage.setItem('tp-software', '"on"'); // (past the Star Wars worlds' GPU gate, lib/fit)
     window.localStorage.setItem('tp-galaxy-panel', '"tucked"');
     window.sessionStorage.setItem('tp-galaxy-intro', '1');
   }, crew);

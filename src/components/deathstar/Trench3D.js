@@ -805,7 +805,8 @@ export function createTrench3D(canvas, { onLost, onSlow } = {}) {
     if (perf.acc < 3000) return;
     const avg = perf.acc / perf.n;
     perf.acc = perf.n = 0;
-    if (avg < 40) return;
+    // (36 ms: over a battery saver's even 30, under the site's floor of 30 fps)
+    if (avg < 36) return;
     if (ratio > 1) {
       ratio = 1;
       resize(size.w, size.h);

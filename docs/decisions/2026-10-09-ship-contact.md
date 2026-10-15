@@ -1,6 +1,6 @@
 # Ship contact: big ships are solids, small ships are bodies
 
-Date: 2026-10-09. The long version: `docs/superpowers/specs/2026-10-09-ship-contact-design.md`; where it was left: `docs/superpowers/HANDOFF-ship-contact.md`.
+Date: 2026-10-09. The long version: `docs/superpowers/specs/2026-10-09-ship-contact-design.md`; where it was left: `docs/superpowers/HANDOFF-galaxy.md`.
 
 ## Context
 

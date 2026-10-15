@@ -1,6 +1,6 @@
 # NPC and player rigging: hands and fingers, a crouch, and a figure’s own proportions. The design
 
-Date: 2026-10-08. Status: design, written from the owner’s brief by an architecting session, for an Opus 5.5 implementation session (phases in order, one branch each). The plan is `docs/superpowers/plans/2026-10-08-npc-player-rigging.md`; the hand-off is `docs/superpowers/HANDOFF-npc-player-rigging.md`; the decision is `docs/decisions/2026-10-08-fingers-on-the-meshy-skeleton.md`.
+Date: 2026-10-08. Status: design, written from the owner’s brief by an architecting session, for an Opus 5.5 implementation session (phases in order, one branch each). The plan is `docs/superpowers/plans/2026-10-08-npc-player-rigging.md`; the hand-off is `docs/superpowers/HANDOFF-runtime.md`; the decision is `docs/decisions/2026-10-08-fingers-on-the-meshy-skeleton.md`.
 
 ## What the owner asked
 

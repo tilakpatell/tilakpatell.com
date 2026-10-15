@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { WORLD_MB, WORLDS, wayOut, worldAt } from './worlds';
+import { NEEDS_GPU, needsGpu, WORLD_MB, WORLDS, wayOut, worldAt } from './worlds';
 
 describe('the worlds', () => {
   it('each say how much they download, so a phone can be asked first', () => {
@@ -30,5 +30,12 @@ describe('the worlds', () => {
     expect(wayOut('/invincible', 'universe')).toEqual({ label: 'Universe map', to: '/universe/invincible' });
     expect(wayOut('/invincible', null)).toEqual({ label: 'Universe map', to: '/universe/invincible' });
     expect(wayOut('/invincible', 'home')).toEqual({ label: 'Classic site', to: '/home' });
+  });
+
+  // (the owner's word, 2026-10-13: the Star Wars worlds need a real GPU, their assets are so heavy)
+  it('say which need a GPU: the galaxy and everything under it, Battlefront and the station inside', () => {
+    expect(NEEDS_GPU).toEqual(['/galaxy', '/battlefront', '/deathstar/inside']);
+    for (const p of ['/galaxy', '/galaxy/hoth', '/battlefront', '/battlefront/hoth/galacticAssault', '/deathstar/inside']) expect(needsGpu(p), p).toBe(true);
+    for (const p of ['/', '/deathstar', '/avengers', '/galaxyish', '/middle-earth/moria']) expect(needsGpu(p), p).toBe(false);
   });
 });

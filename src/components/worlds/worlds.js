@@ -41,6 +41,14 @@ export const WORLD_MB = {
   // (the soldiers' LOD0 cuts, the snowtrooper's 18 MB and the Hoth trooper's 27, stream from the bucket near the eye under lib/three/walrusCuts' FULL_SHARE, 30 MB on high and 160 on ultra, none below; like the level pack, not counted here)
 };
 
+// The worlds that need a real GPU (lib/fit's starWarsFit): the Star Wars
+// worlds, drawn from the 2017 game's own levels, cast and ships, the
+// heaviest assets on the site (the owner's word, 2026-10-13). A device
+// without one is shown WorldGate's card instead. The trench run, /deathstar,
+// is drawn in code (a third of an MB) and plays anywhere.
+export const NEEDS_GPU = ['/galaxy', '/battlefront', '/deathstar/inside'];
+export const needsGpu = (pathname) => NEEDS_GPU.some((to) => pathname === to || pathname.startsWith(`${to}/`));
+
 // The world a path is in: '/middle-earth/moria' is Middle-earth. Some
 // worlds sit inside another's address ('/dot-matrix/64' inside
 // '/dot-matrix'), so the longest match wins: each gets its own download size

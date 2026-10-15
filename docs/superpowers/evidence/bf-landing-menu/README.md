@@ -37,3 +37,24 @@ Decision 9 asks that the menu answer within 100 ms throughout the load. After th
 
 - `menu.webp`: the game's main menu over Hoth's world, 2.5 s after the old surface address.
 - `field.webp`: the field after the menu, Play, the spawn screen and Enter.
+
+## Phase 2: the way to Instant Action, and its setup screen (2026-10-13)
+
+Walked in headless Edge at 1,600 × 900 on the dev server, from `/battlefront/hoth?from=/galaxy/hoth`:
+
+- PLAY's tiles: MULTIPLAYER, CO-OP, SINGLE PLAYER (the running game's third tile; the site said Campaign). SINGLE PLAYER's: CAMPAIGN and ARCADE greyed, INSTANT ACTION live (`single-player.webp`).
+- The setup screen (`instant-action-setup.webp`), beside the game's own (`.scratch-check/out/game/02-instant-action.png` and `D:\bf2-ghidra\abil63\live\setup-rows-*.png` on the desktop): the same two headings, the same thirteen rows in the same order with the same words and values (SUPREMACY, HOTH, ROOKIE, MEDIUM, DEFAULT, 20, 20, 2, 2, 4, 4, 1, 1), the help line under the list, the level's panel, the planet, and PLAY, RESET TO DEFAULTS, CHANGE FACTION, BACK. Below the game's thirteen, the list goes on with the switches and the two rows that are the site's own (ERA, BOT LOGIC).
+- The keys: down, down, right moved to AI DIFFICULTY and set NORMAL, the help line the game's ("Change the difficulty of combat to your preferred setting.").
+- A round begun from it, with ENEMY AI COUNT 6, FRIENDLY AI COUNT 5 and the side changed: PLAY, the loading screen, then the spawn screen over the same world (the host element is the same one, nothing mounted again): Supremacy, five command posts, team 1 (Rebel Alliance) with 5 soldiers beside and 6 against, the Rebel classes on offer. Enter: the field, alive. No page errors.
+
+## Phase 2b, the loading screen (2026-10-13)
+
+`loading.webp`, at the game window's own size (1,306 × 791), beside the game's (`.scratch-check/out/game/03-loading-hoth.png` on the desktop): the planet's film; HOTH, OUTPOST DELTA and the game's words for Instant Action at the top left; a hint in the yellow box; the striped mark at the bottom right. The site's bar and its "per cent" line are gone, as the game shows neither; what the load waits on is said for a screen reader alone.
+
+## Phase 2b, the first spawn screen (2026-10-13)
+
+`spawn.webp`, at the game window's own size (1,306 × 733), beside the game's (`.scratch-check/out/game/04-preround-spawn.png` on the desktop): the pre-round line; the panel with the class in hand and its three card slots; the strip, four class tiles with the game's class icons (the one in hand ticked) and the ten portraits, hatched with their price while their Battle Points are not earned; the Battle Points over the strip's end; SELECT, VIEW ABILITIES and APPEARANCES at the foot (the last two not in this world yet); and the class in hand standing on the right in the dark room, the body it will wear in the field (Hoth's snowtrooper for the Empire's assault).
+
+Checked in headless Edge: the stage draws the body; the battle's clock holds while the screen stands (6.1 s and 6.1 s two seconds apart), as the game's pre-round holds the battle; Enter deploys through the wipe and the clock goes on (8.6 s), the player alive. No page errors.
+
+Not as the game has it yet: the panel's level badge, its weapon and the EQUIP CARDS and EQUIP WEAPONS buttons; the Aurebesh line is the name set in the game's Aurebesh face.

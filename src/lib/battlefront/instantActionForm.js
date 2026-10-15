@@ -16,8 +16,9 @@
 //
 //   defaultsOf(schema) → options
 //   rowsFor(schema, options) → [{ id, group, kind: 'choice' | 'count' | 'toggle', label, text, value, choices?, min?, max?,
-//     acts, help }]      (text: what the row shows now, in the game's words: a choice's name, a number, ON or OFF;
-//     acts: the world acts on the row as the options stand; help: the game's line for it, or null)
+//     acts, listed, help }]      (text: what the row shows now, in the game's words: a choice's name, a number, ON or
+//     OFF; acts: the world acts on the row as the options stand; listed: the game's own screen has this row, one of
+//     its thirteen; help: the game's line for it, or null)
 //   step(schema, options, id, dir) → options      (dir: -1 ◀ or 1 ▶)
 //   setCount(schema, options, id, n) → options    (a slider dragged)
 //   sidesOf(schema, options) → [{ team, chosen }]      (what CHANGE FACTION steps through)
@@ -66,6 +67,7 @@ export function rowsFor(schema, options) {
       ...(o.kind === 'choice' ? { choices: [...o.choices] } : {}),
       ...(o.kind === 'count' ? { min: o.min, max: o.max } : {}),
       acts,
+      listed: !!o.listed,
       help: o.help ?? null,
     };
   });

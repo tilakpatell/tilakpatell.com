@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deploysThrough, latch, phaseFor, standing } from './stage';
+import { deploysThrough, latch, phaseFor, playWay, standing } from './stage';
 
 const s = (o) => standing({ inMenu: false, phase: 'pre', ready: false, ...o });
 
@@ -12,7 +12,8 @@ describe('what stands over the Battlefront world', () => {
     expect(s({ inMenu: true, ready: true })).toMatchObject({ rest: true });
     // (while it loads it draws: the shaders of what the camera sees build from what is drawn)
     expect(s({ inMenu: true })).toMatchObject({ rest: false });
-    expect(s({ ready: true })).toMatchObject({ rest: false });
+    // (out of the menu and not yet ready, the loading screen: it draws)
+    expect(s({})).toMatchObject({ rest: false });
     expect(s({ ready: true, phase: 'in' })).toMatchObject({ rest: false });
   });
   it('out of the menu before the level is ready: the loading screen, never the spawn screen', () => {
@@ -74,5 +75,33 @@ describe('the first life’s Deploy', () => {
     // (the wipe runs its own course)
     expect(phaseFor('down', { parked: false })).toBe('down');
     expect(phaseFor('in', { parked: false })).toBe('in');
+  });
+});
+
+describe('Play, pressed in the menu over a world', () => {
+  const mounted = { level: 'hoth', mode: 'galacticAssault' };
+  it('a round’s options begin a round in the world that is there', () => {
+    expect(playWay(mounted, 'hoth', 'supremacy', { mode: 'supremacy' })).toBe('round');
+  });
+  it('the level and mode that are mounted: the menu closes over them', () => {
+    expect(playWay(mounted, 'hoth', 'galacticAssault')).toBe('same');
+    expect(playWay(mounted, 'hoth', undefined)).toBe('same');
+  });
+  it('another level or mode, with no round’s options: by its address', () => {
+    expect(playWay(mounted, 'hoth', 'supremacy')).toBe('other');
+    expect(playWay(mounted, 'endor', 'galacticAssault')).toBe('other');
+  });
+});
+
+describe('the dark room', () => {
+  const s = (o) => standing({ inMenu: false, phase: 'pre', ready: true, ...o });
+  it('the world rests under the first spawn screen, as the game’s pre-round holds the battle, and wakes as the wipe goes down', () => {
+    expect(s({})).toMatchObject({ spawn: true, rest: true });
+    expect(s({ phase: 'down' })).toMatchObject({ spawn: true, rest: false });
+    expect(s({ phase: 'in' })).toMatchObject({ rest: false });
+  });
+  it('does not rest where the game’s screens cannot cover it', () => {
+    expect(s({ screens: false })).toMatchObject({ spawn: true, rest: false });
+    expect(s({ screens: null })).toMatchObject({ rest: false });
   });
 });

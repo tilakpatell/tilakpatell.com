@@ -45,7 +45,9 @@
 // (AutoPlayers: `pve` off), the difficulty, the Battle Points' rate, the
 // reinforcements and their bleed on a mode that counts them, each side's caps
 // (its commander's for the bots, the offers' for the side), the AutoPlayers'
-// waves for a fallen bot's return and for a hero's or a reinforcement's, and
+// waves for a fallen bot's return and for a hero's or a reinforcement's, how
+// often it comes in on a squadmate (`AP_SquadSpawnProbability`: else at a
+// spawn point, a command post its side holds, modes/supremacy.js), and
 // their aim, line of fire and strafe (ai/soldierBrain.js reads each side's
 // numbers off `sim.instantAction`). On command posts (Supremacy, Instant
 // Action's own mode) each bot's post is the game's bot logic's, on its spawn
@@ -59,7 +61,8 @@
 //
 //   erasFor(rulebook, level) → ['Orig', …]
 //   optionsFor(gs, { rulebook, level, team }) → [{ id, group: 'modifiers' | 'advanced' | 'faction' | 'site' | 'overhaul', kind: 'choice' | 'toggle' | 'count', choices?, labels?, min?, max?, default, option, source,
-//     label, help, carried?, when? }]   (label, help: the row's own words on the game's screen, the string table's;
+//     label, help, listed, carried?, when? }]   (label, help: the row's own words on the game's screen, the string table's;
+//     listed: the game's own screen has this row;
 //     carried: the sim does not act on it yet; when: what else must be chosen for it to act; the screen's logic
 //     over these rows is instantActionForm.js)
 //     (in the game's screen's order, the enemy's of a pair before the player's side's)
@@ -197,9 +200,9 @@ export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team =
   const foe = rowsFor(g, 3 - team);
   const most = Math.max(1, Math.min(MAX_SIDE, cap));
   // The screen's order (the game's Instant Action screen as it draws them, NOTES.md): Game Modifiers, then
-  // Advanced Settings with the enemy's of each pair before the player's side's; the switches, which the
-  // screen draws past what was seen of it, after the counts; the side is the screen's Change Faction; the
-  // era is the site's own row.
+  // Advanced Settings with the enemy's of each pair before the player's side's, ending at the friendly
+  // vehicle count; the profile's five switches, which that screen does not list, after the counts; the
+  // side is the screen's Change Faction; the era is the site's own row.
   const rows = {
     modifiers: [
       // (the modes' names are the game's for each, modes.json's: its own list of this option is Supremacy and its two Missions)
@@ -244,7 +247,12 @@ export function optionsFor(gs, { rulebook = null, level = DEFAULTS.level, team =
       .concat([{ id: 'overhaul.spread', kind: 'toggle', labels: ['OFF', 'ON'], default: true, option: 'IAIAIAdaptiveDifficulty', label: 'AI DIFFICULTY SPREAD' }])
       .map((o) => ({ ...o, source: 'iao-v2', help: null, when: { mode: OWN_MODE, botLogic: 'overhaul' } })),
   };
-  return Object.entries(rows).flatMap(([group, list]) => list.map((o) => ({ ...o, group })));
+  // (`listed`: a row of the game's own screen. Its list is thirteen rows and ends at the friendly vehicle
+  // count; the five switches under them here are the profile's options, worded by the string table, with
+  // no row on that screen)
+  const UNLISTED = ['heroes.enemy', 'heroes.friendly', 'vehicles.enemy', 'vehicles.friendly', 'allEraHeroes'];
+  const listed = (group, o) => (group === 'modifiers' || group === 'advanced') && !UNLISTED.includes(o.id);
+  return Object.entries(rows).flatMap(([group, list]) => list.map((o) => ({ ...o, group, listed: listed(group, o) })));
 }
 
 const oneOf = (what, value, list) => {

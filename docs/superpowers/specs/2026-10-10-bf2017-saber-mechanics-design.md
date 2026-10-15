@@ -1,6 +1,6 @@
 # The lightsaber as the 2017 game's: one path, the game's hit rules, hitboxes, block, stamina, dash. The design
 
-Date: 2026-10-10 (night). Status: **design, for one Opus 5.5 implementation session (lane S).** Plan: `docs/superpowers/plans/2026-10-10-bf2017-saber-laneS.md`. It stands on lane X's stroke tables (`HANDOFF-bf2017.md`, "Lane X, the sabers"), phase 1's heroes on the game's rig, lane P2's bone capsules, and replaces the site's own saber rules (`combatRules.js`'s stances, guard, parry, dodge) with the game's, read from its records.
+Date: 2026-10-10 (night). Status: **design, for one Opus 5.5 implementation session (lane S).** Plan: `docs/superpowers/plans/2026-10-10-bf2017-saber-laneS.md`. It stands on lane X's stroke tables (`HANDOFF-battlefront.md`, "Lane X, the sabers"), phase 1's heroes on the game's rig, lane P2's bone capsules, and replaces the site's own saber rules (`combatRules.js`'s stances, guard, parry, dodge) with the game's, read from its records.
 
 ## What the owner asked
 

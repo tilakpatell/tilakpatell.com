@@ -17,10 +17,13 @@
 //     Node ('/@fs/…', 'file://…', a bare absolute path, or '/node_modules/…'
 //     under root)
 
+// (a Windows path keeps no slash before its drive: '/C:/x' read as a path is C:\C:\x)
+const drive = (p) => p.replace(/^\/([A-Za-z]:[\\/])/, '$1');
+
 export function pathOf(url, root = globalThis.process?.cwd?.() ?? '') {
   let p = String(url).replace(/[?#].*$/, '');
-  if (p.startsWith('file://')) return decodeURIComponent(new URL(p).pathname);
-  if (p.startsWith('/@fs/')) return p.slice('/@fs'.length);
+  if (p.startsWith('file://')) return drive(decodeURIComponent(new URL(p).pathname));
+  if (p.startsWith('/@fs/')) return drive(p.slice('/@fs'.length));
   if (p.startsWith('/node_modules/')) return root.replace(/\/+$/, '') + p;
   return p;
 }

@@ -29,6 +29,9 @@
 import { readFileSync } from 'node:fs';
 import { follow, isSequel, pointsOf, readWebJson, shortName, transformOf, webFile } from './bf2017-ebx.mjs';
 import { indexOf } from './bf2017-rulebook.mjs';
+import { chargesOf } from './bf2017-rulebook-charges.mjs';
+import { gatesOf } from './bf2017-rulebook-gates.mjs';
+import { spawnLogic } from './bf2017-rulebook-spawnlogic.mjs';
 
 // The mode layers by the game's own mode ids (UI/Data/GameModes/<id>'s
 // GameModeId and AurebeshGameModeName: Domination "STRIKE", Mode1
@@ -225,7 +228,11 @@ export function mapRow(root, level, { modes = MODE_LAYERS } = {}) {
   const all = [...indexOf(root).keys()];
   const names = all.filter((n) => n.toLowerCase().startsWith(dir.toLowerCase()) && !n.slice(dir.length).includes('/'));
   const row = { level: name, modes: [], spawns: [], polygons: [], volumes: [], spheres: [], boxes: [], waypoints: [], oob: { team1: [], team2: [] }, locators: [], cameras: [], prefabs: [], strings: [], unplaced: [], _missing: [] };
-  const seen = new Set();
+  const seen = new Map();
+  // (a spawn point read twice, at the same place for the same team: the id it was kept under)
+  const alias = new Map();
+  // (the modes whose spawns the sub-world's graph switches: Galactic Assault's, read as the game reads it)
+  const logic = {};
   // (each mode's objects by guid, for its sub-world's wiring: guid → a prefab row, or a locator's position)
   const byGuid = new Map();
   for (const [mode, named] of Object.entries(modes)) {
@@ -235,7 +242,21 @@ export function mapRow(root, level, { modes = MODE_LAYERS } = {}) {
     const layer = found.slice(dir.length);
     row.modes.push(mode);
     // (any case: the droid battleship's are `Spacebattle_Phase1`)
-    const layers = names.filter((n) => shortName(n).toLowerCase().startsWith(`${layer}_`.toLowerCase()) && RULE_LAYER.test(shortName(n))).concat((EXTRA_LAYERS[layer] ?? []).map((l) => `${dir}${l}`).filter((n) => names.includes(n)));
+    const graph = mode === 'galacticAssault' ? spawnLogic(root, dir, layer) : null;
+    if (graph) logic[mode] = graph;
+    // (the mode's interact gates, from the same graph: Hoth's hangar blast doors)
+    const gates = mode === 'galacticAssault' ? gatesOf(root, dir, layer) : [];
+    if (gates.length) row.gates = gates.map((g) => ({ ...g, mode }));
+    // (and its fuel charges: Hoth's stage-3 PF_Interact_PlanetaryBattle_Bomb, their keypads and timings)
+    // (each charge's own place and wiring; its prefab's rules once, in chargeRules)
+    const charges = mode === 'galacticAssault' ? chargesOf(root, dir, layer) : null;
+    if (charges?.list.length) {
+      row.charges = charges.list.map((c) => ({ ...c, mode }));
+      row.chargeRules = charges.rules;
+    }
+    // (and the layers holding the records that graph switches: Kamino's `_Zone<n>`, Endor's `_W<n>`, Crait's `_Phase_<n>`)
+    const switched = new Set(Object.keys(graph?.enables ?? {}).map((id) => id.slice(0, id.lastIndexOf(':')).toLowerCase()));
+    const layers = names.filter((n) => shortName(n).toLowerCase().startsWith(`${layer}_`.toLowerCase()) && (RULE_LAYER.test(shortName(n)) || switched.has(shortName(n).toLowerCase()))).concat((EXTRA_LAYERS[layer] ?? []).map((l) => `${dir}${l}`).filter((n) => names.includes(n)));
     for (const ln of layers) {
       const asset = follow(root, ln);
       if (!asset) {
@@ -256,8 +277,11 @@ export function mapRow(root, level, { modes = MODE_LAYERS } = {}) {
           case 'AlternateSpawnEntityData': {
             const t = transformOf(o);
             const key = `${mode}|${o.Team}|${vec(o.Transform.trans).map((v) => v.toFixed(2)).join(',')}`;
-            if (seen.has(key)) return;
-            seen.add(key);
+            if (seen.has(key)) {
+              alias.set(id, seen.get(key));
+              return;
+            }
+            seen.set(key, id);
             row.spawns.push({ ...base, team: teamOf(o.Team), priority: o.Priority, enabled: Boolean(o.Enabled), at: vec(o.Transform.trans), yaw: r3(t.yaw), ...(phaseOf(lay) ? { phase: phaseOf(lay) } : {}) });
             return;
           }
@@ -322,6 +346,12 @@ export function mapRow(root, level, { modes = MODE_LAYERS } = {}) {
     }
   }
 
+  // (a graph's switch of a point read twice moves onto the id it was kept under: on when either is)
+  for (const [mode, graph] of Object.entries(logic)) {
+    const enables = {};
+    for (const [id, ref] of Object.entries(graph.enables)) (enables[alias.get(id) ?? id] ??= []).push(ref);
+    row.spawnLogic = { ...row.spawnLogic, [mode]: { ...graph, enables } };
+  }
   for (const mode of row.modes) wire(root, row, mode, byGuid, names.find((n) => n.slice(dir.length).toLowerCase() === modeLayerOf(modes, mode, names, dir)));
   // (an objective the extractor cannot place: no transform of its own and no site wired in; a mode on this map refuses to start until it is)
   for (const p of row.prefabs) if (!p.at && OBJECTIVE.test(p.name) && !Object.keys(p.inputs ?? {}).some((k) => /location|transform/i.test(k))) row.unplaced.push({ id: p.id, mode: p.mode, layer: p.layer, name: p.name, why: 'an objective prefab with no transform and no site wired to it', _source: p._source });
