@@ -279,7 +279,16 @@ for (const id of list.split(',')) {
       );
     // (and a game level's cells round you in: a district's pack, smaller than
     // its world's, can be measured before its first cells land otherwise)
-    if (mode === 'surface') await page.waitForFunction(() => (window.__surfaceScene.level?.()?.progress ?? 1) >= 1, null, { timeout: Number(process.env.DRAW_WAIT ?? 600000), polling: 2000 }).catch(() => errors.push('the level never came in round you'));
+    // (each wait from here says when it is done, so a job cut off by its
+    // time limit still says how far its world got: Scarif's and Kamino's
+    // on lane T2's runs said nothing after "up" for two and a half hours)
+    const stage = (what, since) => console.log(`${id.padEnd(10)} ${what} in ${((Date.now() - since) / 1000).toFixed(0)} s`);
+    const levelAt = Date.now();
+    if (mode === 'surface')
+      await page.waitForFunction(() => (window.__surfaceScene.level?.()?.progress ?? 1) >= 1, null, { timeout: Number(process.env.DRAW_WAIT ?? 600000), polling: 2000 }).then(
+        () => stage('the level round you', levelAt),
+        () => errors.push('the level never came in round you'),
+      );
     // (a district is measured from where you stand once down, not from the
     // landing's watch: its ship held 320 m up by the held clock, the camera
     // sees the sky. You set down 8 m off the ship's right, facing the
@@ -301,9 +310,11 @@ for (const id of list.split(',')) {
     // the guard can be told to hold nothing at all, window.__tpGuardOff, lane
     // E4's, that is done before the count instead, and this waits on nothing)
     {
-      const until = Date.now() + Number(process.env.GUARD_WAIT ?? 600000);
+      const guardAt = Date.now();
+      const until = guardAt + Number(process.env.GUARD_WAIT ?? 600000);
       while ((await page.evaluate(() => (window.__tpGuardOff ? 0 : (window.__RUNTIME__?.invalidate(), window.__tpGuardPending?.() ?? 0)))) && Date.now() < until) await page.waitForTimeout(1000);
       if (Date.now() >= until) errors.push('the frame guard still held draws back');
+      else stage('the frame guard clear', guardAt);
     }
     // (in space, the ship put in one place, the same for every run: off the
     // planet on its sun side, facing it, stopped. The seeded randomness alone
@@ -335,7 +346,20 @@ for (const id of list.split(',')) {
     // frame was counted and its draws left out. Held back no longer, and three
     // frames drawn, compiling all of it, before the frames that are counted:
     // lane E4's, PR #911)
-    await page.evaluate(
+    // (FRAME_WAIT, 40 minutes a phase: the warm-up's three frames, then the
+    // counted ones; a world whose frames never come fails on its own line
+    // instead of holding the job till its limit)
+    const frameWait = Number(process.env.FRAME_WAIT ?? 2400000);
+    const within = async (what, since, p) => {
+      let timer = null;
+      try {
+        return await Promise.race([p, new Promise((_, no) => (timer = setTimeout(() => no(new Error(`${what} did not come in ${((Date.now() - since) / 1000).toFixed(0)} s`)), frameWait)))]);
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+    const warmAt = Date.now();
+    await within('the three warm-up frames', warmAt, page.evaluate(
       () =>
         new Promise((done) => {
           window.__tpGuardOff?.();
@@ -347,9 +371,11 @@ for (const id of list.split(',')) {
           };
           requestAnimationFrame(tick);
         }),
-    );
+    ));
+    stage('the three warm-up frames', warmAt);
     // one whole frame's counts (every pass), and the frame times over 4 s
-    const stats = await page.evaluate(
+    const countAt = Date.now();
+    const stats = await within('the counted frames', countAt, page.evaluate(
       (surface) =>
         new Promise((done) => {
           const renderer = surface === 'battlefront' ? window.__RUNTIME__.gfx.renderer : surface ? window.__surfaceScene.renderer : window.__galaxyDebug.renderer;
@@ -399,7 +425,8 @@ for (const id of list.split(',')) {
           requestAnimationFrame(tick);
         }),
       bf ? 'battlefront' : mode === 'surface',
-    );
+    ));
+    stage(`${stats.frames} counted frames`, countAt);
     // (DIAG=1: what each of the scene's top groups costs, by drawing a frame
     // with it hidden: the calls and triangles it takes, largest first)
     if (process.env.DIAG && mode === 'surface') {
