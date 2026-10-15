@@ -175,6 +175,24 @@ describe('the scripts’ fetch pool', () => {
     expect(head.headers.get('content-length')).toBe('99');
   });
 
+  it('a peek keeps the headers and lets the body go unread, whole-file 200 or one-byte 206', async () => {
+    const cancelled = [];
+    const answer = (code, n) => {
+      const res = new Response(new Uint8Array(n), { status: code, headers: { 'content-length': String(n), 'cache-control': 'max-age=31536000' } });
+      const body = res.body;
+      res.body.cancel = async () => void cancelled.push(code);
+      return Object.defineProperty(res, 'body', { value: body });
+    };
+    const pool = createPool({ fetch: scripted([() => answer(200, 5000), () => answer(206, 1)]) });
+    const whole = await pool.run({ url: 'https://b/x', headers: { range: 'bytes=0-0' }, peek: true });
+    const part = await pool.run({ url: 'https://b/y', headers: { range: 'bytes=0-0' }, peek: true });
+    expect([whole.status, whole.http, whole.bytes, whole.body]).toEqual(['fetched', 200, 0, undefined]);
+    expect(whole.headers.get('cache-control')).toBe('max-age=31536000');
+    expect([part.status, part.http, part.bytes]).toEqual(['fetched', 206, 0]);
+    expect(cancelled).toEqual([200, 206]);
+    expect(pool.stats().bytes).toBe(0);
+  });
+
   it('a 4xx that is neither missing nor 429 fails at once (a refusal does not change on asking again)', async () => {
     const fetch = scripted([status(403)]);
     const r = await createPool({ fetch, sleep: async () => {} }).run({ url: 'https://b/x' });
