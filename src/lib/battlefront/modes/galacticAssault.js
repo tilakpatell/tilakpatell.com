@@ -21,10 +21,13 @@
 //   onEvent(ga, { type: 'down', side }) → { respawn }      canRespawn(ga, side)
 //   spawnSets(ga) → { attack: ids, defend: ids }    sideOf(ga, team)    teamOf(ga, side)
 //   view(ga) → the HUD's objective bar        force(ga) (tests: every live objective done)
+//   sounds(ga) → [{ type, at: { x, y, z }, from, radius }]   what the round makes heard: a fuel charge's keypad
+//     while one holds it (its button's interaction sound, the charges rows' `sound`), heard by the holder's enemies
 
 import { mapOf, stagesOf, vehicleOf, volumeOf } from '../rulebook.js';
 import { createLogic, enabled, escortLead, fireEvent, portsOf, setInput, setStage, tick as tickLogic } from '../spawnLogic.js';
 import { arrive, createGates, openness, tick as tickGates } from '../gates.js';
+import { canUse as reachesKeypad, chargeOf } from '../charges.js';
 import { BOMBING_RUN, ESCORT_REACH, UPLINK_RANGE, INTERACT_REACH, KINDS, VULNERABLE_SECONDS, insidePolygon } from './objectives.js';
 
 // `PF_GameMode_Conquest_Staged`'s delays: 12 s before the first stage, 6 s between stages.
@@ -69,8 +72,11 @@ function make(rb, map, def) {
     return KINDS.uplink.create({ at: KINDS.capture.create({ volume: v }).at, name });
   }
   if (def.type === 'arm') {
+    // (a fuel charge the map rulebook reads: its keypad's place, its label, its holds and fuse; else the prefab's place)
+    const charge = chargeOf(map, def.prefab);
     const p = map.prefabs.find((x) => x.id === def.prefab);
-    return KINDS.arm.create({ at: [p.at[0], p.at[2]], name });
+    const at = charge?.keypad?.at ?? p.at;
+    return KINDS.arm.create({ at: [at[0], at[2]], name: charge?.label ?? name, charge });
   }
   throw new Error(`objective ${def.type}: not a Galactic Assault kind`);
 }
@@ -207,7 +213,7 @@ function senseObjectives(ga, soldiers) {
         if (insidePolygon(o.volume.points, xz[0], xz[1])) o.inside[s.side].push(s.id);
       } else if (o.type === 'escort') {
         if (s.side === 'attack' && near(xz, [o.walker.at[0], o.walker.at[2]], ESCORT_REACH)) o.near++;
-      } else if (near(xz, o.at, INTERACT_REACH)) {
+      } else if (o.charge ? reachesKeypad(o.charge, s.at) : near(xz, o.at, INTERACT_REACH)) {
         o.inside[s.side].push(s.id);
         if (s.interact) o.interactions.push({ side: s.side, id: s.id, held: true });
       }
@@ -270,7 +276,8 @@ export function tick(ga, dt, world = { soldiers: [], alive: { attack: 0, defend:
       for (const w of walkersOf(ga)) if (w.alive) w.hp = Math.max(0, w.hp - BOMBING_RUN * w.hpMax);
       ga.out.push({ type: 'uplink', name: o.name, by: o.interactions.filter((i) => i.side === 'defend').map((i) => i.id) });
     }
-    if (o.type === 'arm' && o.armed !== was.armed) ga.out.push({ type: o.armed ? 'armed' : 'defused', name: o.name });
+    // (a charge's step: armed, defused, its fuse's sound, detonated; by whoever finished the hold that armed or defused it)
+    if (o.type === 'arm') for (const f of o.fired ?? []) ga.out.push({ type: f, name: o.name, id: o.def?.prefab ?? null, by: [...(o.by ?? [])] });
     if (o.done && !was.done) ga.out.push({ type: 'objective', kind: o.type, name: o.name });
     // (a walker home: its route's gate unlocks, the other's is barred)
     if (o.type === 'escort' && o.done && !was.done && o.def?.waypoints) ga.out.push(...arrive(ga.gates, o.def.waypoints));
@@ -319,10 +326,24 @@ export function force(ga) {
     if (o.type === 'escort') o.walker.dist = o.walker.length;
     if (o.type === 'arm') {
       o.armed = true;
-      o.fuse = 0;
+      o.wait = 0;
+      o.elapsed = o.rules.fuse;
     }
     if (o.type === 'hold') o.held = o.seconds;
   }
+}
+
+// (the keypad sounds from its button from OnInteractStart to OnInteractStop, the patch's attenuation falling out to
+// `reach` m: the bots' senses take it as a stimulus from the one holding it, out to there)
+export function sounds(ga) {
+  const out = [];
+  for (const o of ga.objectives ?? []) {
+    const snd = o.charge?.sound;
+    if (o.type !== 'arm' || o.done || !o.holder || !snd?.whileHeld || !(snd.reach > 0)) continue;
+    const [x, y, z] = o.charge.keypad.at;
+    out.push({ type: 'keypad', at: { x, y, z }, from: o.holder, radius: snd.reach });
+  }
+  return out;
 }
 
 export function view(ga) {

@@ -8,7 +8,13 @@
 // floors of a place one over another (Echo Base under the mountain's snow),
 // which the 2D grid on the terrain's heightmap never did; the grid is still
 // what a soldier off the mesh walks, and what the line of sight and the cover
-// read.
+// read, but under the terrain a point is open where the mesh certifies it:
+// NavPower bakes a polygon only where its agent stands, so the agent's
+// height (the mesh's `height`, 1.8 m on Hoth's playthrough mesh) over a
+// polygon is free of the level (`open`, which nav.js's firstSolid asks
+// before it takes the terrain for the ground). Without it the grid took the
+// mountain's snow, 75 m over the fuel rooms, for the ground of every line in
+// Echo Base: no bot there saw or hit anyone.
 //
 // Feet stand on the ground, not on the mesh: NavPower's polygons ride 0.07 to
 // 0.62 m over the floor they were baked from (findings/57). Where the
@@ -17,6 +23,7 @@
 // (the page's physics, round the player); else the mesh less LIFT.
 //
 //   attachMesh(nav, mesh, { floor }) → nav     floor(x, y, z) → the floor's height under a point, or null
+//     (and nav.open(x, y, z) → whether a point is within the mesh's agent height over a polygon)
 //   meshMove(s, dir, dt, nav, speed) → metres moved, or null off the mesh (the grid's step then)
 //   meshPath(nav, from, to, { fromY, toY }) → [[x, z]] | null (no way), undefined (no mesh)
 //     (toY left out: the goal's floor is the one the walker can reach nearest its own height)
@@ -42,9 +49,27 @@ const SNAP = 4;
 // m: how near a link's end a walker steps onto it, its way's next point the other end (by hand)
 const LINK_NEAR = 1.5;
 
+// m: the agent a mesh was baked for, where it says none (findings/57: Hoth's playthrough mesh, 1.8 high, 0.4 round)
+const AGENT_HEIGHT = 1.8;
+const AGENT_RADIUS = 0.4;
+
 export function attachMesh(nav, mesh, { floor = null } = {}) {
   nav.mesh = mesh;
   nav.floor = floor;
+  // (the agent's column over a polygon, and its radius beyond the polygon's rim, which the bake erodes the floor by)
+  const h = mesh?.height > 0 ? mesh.height : AGENT_HEIGHT;
+  const r = mesh?.radius > 0 ? mesh.radius : AGENT_RADIUS;
+  nav.open = mesh
+    ? (x, y, z) => {
+        const p = mesh.toPack([x, y, z]);
+        if (mesh.locate(p[0], p[1], p[2], { above: 0, below: h }) >= 0) return true;
+        const under = (poly) => {
+          const f = mesh.heightOn(poly, p[0], p[2]);
+          return f <= p[1] && f >= p[1] - h;
+        };
+        return mesh.nearest(p[0], p[1], p[2], { radius: r, flat: true, accept: under }) !== null;
+      }
+    : null;
   return nav;
 }
 
@@ -74,10 +99,18 @@ function linkFrom(mesh, p, poly, dx, dz) {
   return null;
 }
 
+// a hero off the ground (heroKit.js's jump) is walked by its floor, and keeps its own height: the floor under
+// it kept for its landing; any other soldier stands on the floor
+const footOf = (s) => (s.hero?.air ? [s.at[0], s.hero.air.floor, s.at[2]] : s.at);
+function feet(s, y) {
+  if (s.hero?.air) s.hero.air.floor = y;
+  else s.at[1] = y;
+}
+
 // a step along the link the walker is on, to its far end and off it there
 function linkMove(s, nav, step, dt) {
   const mesh = nav.mesh;
-  const p0 = mesh.toPack(s.at);
+  const p0 = mesh.toPack(footOf(s));
   const { b } = s.link;
   const left = Math.hypot(b[0] - p0[0], b[2] - p0[2]);
   const k = left <= step ? 1 : step / left;
@@ -88,7 +121,7 @@ function linkMove(s, nav, step, dt) {
   s.vel[2] = (g[2] - s.at[2]) / dt;
   const moved = Math.hypot(g[0] - s.at[0], g[2] - s.at[2]);
   s.at[0] = g[0];
-  s.at[1] = s.link ? g[1] : feetAt(nav, g[0], g[2], g[1] + LIFT);
+  feet(s, s.link ? g[1] : feetAt(nav, g[0], g[2], g[1] + LIFT));
   s.at[2] = g[2];
   s.moving = true;
   return moved;
@@ -100,7 +133,7 @@ export function meshMove(s, dir, dt, nav, speed) {
   const len = Math.hypot(dir[0], dir[1]);
   const step = speed * dt;
   if (s.link && s.alive && step > 0) return linkMove(s, nav, step, dt);
-  const p0 = mesh.toPack(s.at);
+  const p0 = mesh.toPack(footOf(s));
   const poly = polyAt(mesh, p0);
   if (poly < 0) return null;
   if (!s.alive || len < 1e-9 || step <= 0) {
@@ -130,7 +163,7 @@ export function meshMove(s, dir, dt, nav, speed) {
     s.vel[2] = (game[2] - s.at[2]) / dt;
     const moved = Math.hypot(game[0] - s.at[0], game[2] - s.at[2]);
     s.at[0] = game[0];
-    s.at[1] = y;
+    feet(s, y);
     s.at[2] = game[2];
     s.moving = true;
     return moved;
