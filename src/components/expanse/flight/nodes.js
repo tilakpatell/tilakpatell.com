@@ -35,11 +35,12 @@ export function skyDome(low, high) {
   return mesh;
 }
 
-// ground.js's hash, as nodes
+// ground.js's hash, as nodes: its `p += dot(…)` written as a sum, not an
+// assignment (an assignment outside an Fn has no stack, and TSL drops it)
 const cityHash = (p) => {
-  const a = fract(p.mul(vec2(123.34, 456.21))).toVar();
-  a.addAssign(dot(a, a.add(45.32)));
-  return fract(a.x.mul(a.y));
+  const a = fract(p.mul(vec2(123.34, 456.21)));
+  const b = a.add(dot(a, a.add(45.32)));
+  return fract(b.x.mul(b.y));
 };
 
 // A city's facades: lit windows read from where a face is in the world, so

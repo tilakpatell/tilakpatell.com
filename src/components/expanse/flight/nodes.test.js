@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { cityMaterial as cityGlsl, skyDome as skyGlsl } from './glsl.js';
 import { cityMaterial, skyDome } from './nodes.js';
@@ -51,5 +51,21 @@ describe('the flight’s city as nodes', () => {
     const b = cityMaterial('#202428');
     expect(a).not.toBe(b);
     expect(b.color.getHex()).toBe(0x202428);
+  });
+
+  // (a TSL assignment outside an Fn has no stack: three says so and drops
+  // it, so the hash lost its second step and the windows never lit, lane
+  // P1's 20.9 dB)
+  it('builds its window hash without a word from TSL', () => {
+    const said = [];
+    const err = vi.spyOn(console, 'error').mockImplementation((...a) => said.push(a.join(' ')));
+    const warn = vi.spyOn(console, 'warn').mockImplementation((...a) => said.push(a.join(' ')));
+    try {
+      cityMaterial('#8a8f99');
+    } finally {
+      err.mockRestore();
+      warn.mockRestore();
+    }
+    expect(said).toEqual([]);
   });
 });
