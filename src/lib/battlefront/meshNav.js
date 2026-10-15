@@ -74,10 +74,18 @@ function linkFrom(mesh, p, poly, dx, dz) {
   return null;
 }
 
+// a hero off the ground (heroKit.js's jump) is walked by its floor, and keeps its own height: the floor under
+// it kept for its landing; any other soldier stands on the floor
+const footOf = (s) => (s.hero?.air ? [s.at[0], s.hero.air.floor, s.at[2]] : s.at);
+function feet(s, y) {
+  if (s.hero?.air) s.hero.air.floor = y;
+  else s.at[1] = y;
+}
+
 // a step along the link the walker is on, to its far end and off it there
 function linkMove(s, nav, step, dt) {
   const mesh = nav.mesh;
-  const p0 = mesh.toPack(s.at);
+  const p0 = mesh.toPack(footOf(s));
   const { b } = s.link;
   const left = Math.hypot(b[0] - p0[0], b[2] - p0[2]);
   const k = left <= step ? 1 : step / left;
@@ -88,7 +96,7 @@ function linkMove(s, nav, step, dt) {
   s.vel[2] = (g[2] - s.at[2]) / dt;
   const moved = Math.hypot(g[0] - s.at[0], g[2] - s.at[2]);
   s.at[0] = g[0];
-  s.at[1] = s.link ? g[1] : feetAt(nav, g[0], g[2], g[1] + LIFT);
+  feet(s, s.link ? g[1] : feetAt(nav, g[0], g[2], g[1] + LIFT));
   s.at[2] = g[2];
   s.moving = true;
   return moved;
@@ -100,7 +108,7 @@ export function meshMove(s, dir, dt, nav, speed) {
   const len = Math.hypot(dir[0], dir[1]);
   const step = speed * dt;
   if (s.link && s.alive && step > 0) return linkMove(s, nav, step, dt);
-  const p0 = mesh.toPack(s.at);
+  const p0 = mesh.toPack(footOf(s));
   const poly = polyAt(mesh, p0);
   if (poly < 0) return null;
   if (!s.alive || len < 1e-9 || step <= 0) {
@@ -130,7 +138,7 @@ export function meshMove(s, dir, dt, nav, speed) {
     s.vel[2] = (game[2] - s.at[2]) / dt;
     const moved = Math.hypot(game[0] - s.at[0], game[2] - s.at[2]);
     s.at[0] = game[0];
-    s.at[1] = y;
+    feet(s, y);
     s.at[2] = game[2];
     s.moving = true;
     return moved;
