@@ -182,6 +182,27 @@ describe('the battle on the sim in its own mode, with the page’s deploy screen
     expect(view(c).player.abilities.map((a) => a.name)).toEqual([null, null, null]);
   });
 
+  it('jumps a hero on the page’s jump, up off the ground and down again; a trooper has no jump', () => {
+    const b = make();
+    addPlayer(b, { team: 1 });
+    grant(b, 4000);
+    expect(deploy(b, 'player', { kind: 'hero', id: 'luke' }).ok).toBe(true);
+    const me = () => view(b).entities.find((e) => e.id === b.player.id);
+    const ground = me().at[1];
+    step(b, [{ id: 'player', move: [0, 0], yaw: 0, jump: true }]);
+    expect(me().act.air).toBe(true);
+    for (let i = 0; i < 10; i++) step(b, [{ id: 'player', move: [0, 0], yaw: 0 }]);
+    expect(me().at[1] - ground).toBeGreaterThan(1);
+    for (let i = 0; i < 40; i++) step(b, [{ id: 'player', move: [0, 0], yaw: 0 }]);
+    expect(me().act.air).toBe(false);
+    const c = make();
+    addPlayer(c, { team: 1 });
+    deploy(c, 'player', { classId: 'l-orig-assault' });
+    const at = view(c).player.at[1];
+    step(c, [{ id: 'player', move: [0, 0], yaw: 0, jump: true }]);
+    expect(view(c).player.at[1]).toBeCloseTo(at, 9);
+  });
+
   it('puts the player down when told, for the kill screen', () => {
     const b = make({ 1: 1, 2: 1 });
     addPlayer(b, { team: 2 });

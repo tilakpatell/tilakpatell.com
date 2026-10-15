@@ -170,7 +170,7 @@ export default {
     const kitFx = createKitFx(scene);
     const booms = []; // the steps' explosions since the last frame drawn
     // (a press read on a frame with no step of the sim's, two frames in three at 60 Hz, waits for the next that has one)
-    const pressed = { ability: 0, roll: false, vent: false };
+    const pressed = { ability: 0, jump: false, roll: false, vent: false };
     const rig = createCameraRig(camera);
     const input = createInput({ maxPitch: (cams.soldier.maxPitch * Math.PI) / 180 });
     input.attach();
@@ -392,7 +392,7 @@ export default {
       lastAt = null;
       pose = null;
       acc = 0;
-      Object.assign(pressed, { ability: 0, roll: false, vent: false });
+      Object.assign(pressed, { ability: 0, jump: false, roll: false, vent: false });
       booms.length = 0;
       parked = true;
       arrival = null;
@@ -474,6 +474,7 @@ export default {
         if (deploying) doDeploy();
         acc = Math.min(acc + dt, STEP * MAX_STEPS);
         pressed.ability = v.deploy.open ? 0 : read.ability || pressed.ability;
+        pressed.jump = !v.deploy.open && (read.jump || pressed.jump);
         pressed.roll = !v.deploy.open && (read.roll || pressed.roll);
         pressed.vent = !v.deploy.open && (read.vent || pressed.vent);
         let first = true;
@@ -486,10 +487,10 @@ export default {
           // (the player walks the level's shapes where the engine is: map/walk.js)
           if (walker && body() && body().mover !== walker.mover) body().mover = walker.mover;
           const once = first ? { ...read, ...pressed } : { ...read, jump: false, roll: false, ability: 0, vent: false, interact: false };
-          if (first) Object.assign(pressed, { ability: 0, roll: false, vent: false });
+          if (first) Object.assign(pressed, { ability: 0, jump: false, roll: false, vent: false });
           first = false;
           // (every event to the sound director; the explosions to the kit drawing too)
-          const events = step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, roll: once.roll, vent: once.vent, ability: once.ability, abilityHeld: once.abilityHeld, interact: once.interact, interactHeld: once.interactHeld }]);
+          const events = step(sim, [{ id: me, move: once.move, yaw: once.yaw, pitch: once.pitch, fire: once.fire, aim: once.aim, sprint: once.sprint, crouch: once.crouch, jump: once.jump, roll: once.roll, vent: once.vent, ability: once.ability, abilityHeld: once.abilityHeld, interact: once.interact, interactHeld: once.interactHeld }]);
           heard.push(...events);
           for (const e of events) if (e.type === 'explosion') booms.push(e);
         }
