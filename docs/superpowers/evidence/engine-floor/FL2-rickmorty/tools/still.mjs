@@ -13,6 +13,7 @@
 //   node still.mjs --dist dist --routes /c-137,/c-137/citadel --out dir
 //     [--frames 480] [--phone] [--quality high|mid|low] [--tag before]
 //     [--scroll 0] (a page scrolled to y before the shot) [--size 1440x900]
+//     [--local key=json;…] [--wait 300]
 import { spawn } from 'node:child_process';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -37,6 +38,11 @@ const phone = Boolean(args.phone);
 const quality = args.quality ?? 'high';
 const tag = args.tag ?? 'shot';
 const scroll = Number(args.scroll) || 0;
+// (--local key=json;key=json: put in the page's storage before it loads, the
+// same for the before and the after: a returning visitor, say, whose
+// first-visit flourish draws its sparks at random while the page loads)
+const stored = String(args.local ?? '').split(';').filter(Boolean).map((kv) => [kv.slice(0, kv.indexOf('=')), kv.slice(kv.indexOf('=') + 1)]);
+const waitMax = Number(args.wait) || 300; // s at most for the loading veils
 await mkdir(out, { recursive: true });
 
 const { chromium } = await import('playwright-core');
@@ -62,6 +68,9 @@ const quiet = (ms = 25) => new Promise((r) => setTimeout(r, ms));
 try {
   for (const route of routes) {
     const ctx = await browser.newContext({ viewport, hasTouch: phone, deviceScaleFactor: 1, reducedMotion: 'no-preference' });
+    await ctx.addInitScript((kept) => {
+      for (const [k, v] of kept) window.localStorage.setItem(k, v);
+    }, stored);
     await ctx.addInitScript((q) => {
       window.localStorage.setItem('tp-intro', '1');
       window.localStorage.setItem('tp-start', '"universe"');
@@ -158,11 +167,11 @@ try {
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto(`${base}/#${route}`, { waitUntil: 'load', timeout: 120000 });
     await page.evaluate(() => document.fonts?.ready).catch(() => {});
-    // until every loading veil on the page is done, in real time (two minutes at most)
+    // until every loading veil on the page is done, in real time (--wait s at most)
     let loading = 0;
-    for (; loading < 1200; loading++) {
+    for (; loading < waitMax * 10; loading++) {
       await quiet(100);
-      if (loading > 10 && pending === 0 && (await page.evaluate(() => !document.querySelector('.loading-veil:not(.is-done)')))) break;
+      if (loading > 10 && (await page.evaluate(() => !document.querySelector('.loading-veil:not(.is-done)')))) break;
     }
     await quiet(idle * 10);
     if (scroll) await page.evaluate((y) => window.scrollTo(0, y), scroll);
