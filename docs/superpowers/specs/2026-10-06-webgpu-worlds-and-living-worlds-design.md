@@ -1,6 +1,6 @@
 # Beyond WebGL: the WebGPU worlds, the uncharted planets and the living worlds — design
 
-Date: 2026-10-06. Status: **drafted by an autonomous session from the owner's brief; the pull request is the review.** Nothing in it is built yet: the foundation's plan is `docs/superpowers/plans/2026-10-06-webgpu-foundation.md`, the hand-off is `docs/superpowers/HANDOFF-webgpu-worlds.md`, and the research behind every claim is `docs/research/2026-10-06-beyond-webgl-webgpu-and-living-worlds.md`. The open questions at the end need the owner's answers before parts 2 to 4 start; part 1 can start on approval of this document.
+Date: 2026-10-06. Status: **drafted by an autonomous session from the owner's brief; the pull request is the review.** Nothing in it is built yet: the foundation's plan is `docs/superpowers/plans/2026-10-06-webgpu-foundation.md`, the hand-off is `docs/superpowers/HANDOFF-runtime.md`, and the research behind every claim is `docs/research/2026-10-06-beyond-webgl-webgpu-and-living-worlds.md`. The open questions at the end need the owner's answers before parts 2 to 4 start; part 1 can start on approval of this document.
 
 ## The brief
 

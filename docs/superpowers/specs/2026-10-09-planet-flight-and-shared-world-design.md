@@ -1,6 +1,6 @@
 # Planet flight, streamed ground and a shared world: the design
 
-Date: 2026-10-09. Status: design, written from the owner's brief by an architecting session, for Opus 5.5 implementation sessions working in parallel (one lane each). The plans are `docs/superpowers/plans/2026-10-09-flight-terrain.md`, `-durable-world.md`, `-spatial-channels.md` and `-shared-world-integration.md`; the hand-off is `docs/superpowers/HANDOFF-planet-flight.md`; the references are `docs/research/2026-10-09-flight-terrain-and-shared-world-references.md`; the decision on a server is `docs/decisions/2026-10-09-supabase-for-durable-shared-state.md`.
+Date: 2026-10-09. Status: design, written from the owner's brief by an architecting session, for Opus 5.5 implementation sessions working in parallel (one lane each). The plans are `docs/superpowers/plans/2026-10-09-flight-terrain.md`, `-durable-world.md`, `-spatial-channels.md` and `-shared-world-integration.md`; the hand-off is `docs/superpowers/HANDOFF-galaxy.md`; the references are `docs/research/2026-10-09-flight-terrain-and-shared-world-references.md`; the decision on a server is `docs/decisions/2026-10-09-supabase-for-durable-shared-state.md`.
 
 ## What the owner asked
 

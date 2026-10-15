@@ -364,7 +364,7 @@ Starts only when Task 1 has no open question.
 **Files:**
 - Create: `src/components/galaxy/warLength.test.js`
 - Modify: `scripts/perf-probe.mjs` (a `galaxyWar` journey: `/galaxy/<the war’s system>`, wait for the battle’s `__galaxy` dev hook to report it on, fly into it 10 s, fire 10 s)
-- Modify: `docs/superpowers/evidence/galaxy-hulls/README.md`, `docs/superpowers/HANDOFF-fleet-war.md` (what changed, what is left)
+- Modify: `docs/superpowers/evidence/galaxy-hulls/README.md`, `docs/superpowers/HANDOFF-galaxy.md` (what changed, what is left)
 
 **Interfaces:**
 - Consumes: everything above.
