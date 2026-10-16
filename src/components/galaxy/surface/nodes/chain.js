@@ -25,8 +25,7 @@
 //   stepOf(sharpness) → the pace's step for a sharpness (pure)
 
 import { finalGrade, finalUniforms, finite } from './final';
-import { UNREAL } from './post';
-import { LOOK } from '../../../universe/look';
+import { HOUSE_BLOOM, UNREAL } from './post';
 import { STEPS } from '../../../../lib/three/pace';
 import { headroom, passesFor } from '../../../../lib/three/light/post';
 import { headroomAt } from '../../../../runtime/quality';
@@ -49,13 +48,13 @@ export const stepOf = (k) => {
 };
 
 // The tier's chain with the surface's bloom and its FINAL as the grade
-export function chainPasses(tier, entry, backend, refs, { bloom = LOOK.bloom, grade = null } = {}) {
+export function chainPasses(tier, entry, backend, refs, { bloom = HOUSE_BLOOM, grade = null } = {}) {
   const passes = passesFor(tier, entry, backend, refs).map((p) => (p.kind === 'bloom' && !p.gaussians ? { ...p, strength: bloom.strength * UNREAL, radius: bloom.radius, threshold: bloom.threshold } : p));
   return grade ? headroom([...passes, { kind: 'grade', node: grade }], { scale: 1, shed: 0 }) : passes;
 }
 
 export function createChainPost(renderer, scene, camera, { small = false, tier = 'high', backend = 'webgpu', bloom: look = null } = {}) {
-  const BLOOM = { ...LOOK.bloom, ...look };
+  const BLOOM = { ...HOUSE_BLOOM, ...look };
   const { u, tNoise, noiseSize } = finalUniforms({ small });
   const grade = (tex) => finalGrade(u, (at) => finite(tex.sample(at).rgb), { tNoise });
   let refs = null; // what light() was handed

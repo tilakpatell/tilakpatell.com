@@ -30,6 +30,8 @@ const SOFTEST = 0.6;
 // strength is handed over three times over. (The runtime's own bloom pass,
 // src/runtime/webgpu.js, has the same third: lane R's to settle.)
 export const UNREAL = 3;
+// (the house's bloom, universe/look.js's, for ./chain.js's chain as for this post)
+export const HOUSE_BLOOM = LOOK.bloom;
 
 // (universe/post.js's, the same rule: half the frame, its long side capped)
 export function bloomSize(w, h, { small = false, cap = 640 } = {}) {
