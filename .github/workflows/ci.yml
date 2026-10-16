@@ -53,11 +53,13 @@ jobs:
 
   # The Star Wars worlds on the node renderer, as worlds.yml boots them (its
   # header says how and why): on a pull request three of the seventeen, a
-  # gate (each world up, no error; the rows reported). Hoth, the world with
-  # the game's level, its own picture and the cascades, and two without a
-  # pack, on the site's Rapier ground (surface/sitePhysics.js). All seventeen
-  # run nightly and by hand (worlds.yml), as the seventeen took CI past
-  # twenty minutes. The steps are worlds.yml's: keep the two alike.
+  # gate (each world up, no error; the rows reported): three without a pack,
+  # on the site's Rapier ground (surface/sitePhysics.js), Mustafar with its
+  # lava. All seventeen run nightly and by hand (worlds.yml), as the
+  # seventeen took CI past twenty minutes; the worlds with a level pack are
+  # the slow ones (Hoth did not come up in 150 minutes on 2026-10-15, its
+  # ground now the game's nine layers), so they are the nightly's. The
+  # steps are worlds.yml's: keep the two alike.
   worlds:
     name: Worlds on the node renderer (${{ matrix.world }})
     runs-on: ubuntu-latest
@@ -65,7 +67,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        world: [hoth, dagobah, coruscant]
+        world: [dagobah, coruscant, mustafar]
     steps:
       - uses: actions/checkout@v7
 
