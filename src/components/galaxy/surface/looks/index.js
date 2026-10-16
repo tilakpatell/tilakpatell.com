@@ -1,21 +1,13 @@
-// Which renderer's looks the surface draws with: ./nodes.js on the node
-// renderer, ./classic.js on the classic one (low and mid without WebGPU,
-// runtime/backend.js). The scene picks once, as it is made
-// (module.js hands it the set its backend can draw, and scene.js calls
-// pickLooks), and every part that makes a material asks looks() rather than
-// import a renderer's file itself, so the node renderer's closure reaches
-// no GLSL and the classic renderer is handed no node material. Until a
-// scene picks, the node set (the tests, a part made on its own).
+// The surface's looks: ./nodes.js, the twins lane T wrote beside each GLSL
+// original and the game's light under them, on whichever renderer the
+// surface is made on (WebGPU, or the node renderer over WebGL 2:
+// runtime/backend.js; there is no classic path, by the owner's ruling on
+// lane T2). Every part that makes a material asks looks() rather than
+// import the twins itself, so the surface names what it draws with in one
+// place.
 //
-//   pickLooks(set) → set; looks() → the set in use
+//   looks() → the set
 
 import * as nodes from './nodes';
 
-let current = nodes;
-
-export function pickLooks(set) {
-  current = set ?? nodes;
-  return current;
-}
-
-export const looks = () => current;
+export const looks = () => nodes;

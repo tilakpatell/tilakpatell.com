@@ -45,10 +45,9 @@ describe('the surface’s entry', () => {
 });
 
 describe('the stack', () => {
-  it('only on the node renderer, at every level', async () => {
+  it('at every level, and none at a level it does not know', async () => {
     expect(STACK_TIERS).toEqual(['low', 'mid', 'high', 'ultra']);
-    expect(await createSurfaceStack({ backend: 'webgl', tier: 'high' })).toBe(null);
-    expect(await createSurfaceStack({ backend: 'webgpu', tier: 'potato' })).toBe(null);
+    expect(await createSurfaceStack({ tier: 'potato' })).toBe(null);
   });
 });
 

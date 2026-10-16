@@ -10,7 +10,7 @@ WebAssembly is the browser’s own, not a package, and so has no row; its page i
 <!-- census:start -->
 | package | version | page | files |
 | --- | --- | --- | --- |
-| `three` | ^0.186.1 | [three.md](three.md) | 685 |
+| `three` | ^0.186.1 | [three.md](three.md) | 681 |
 | `react` | ^19.3.0 | [react.md](react.md) | 315 |
 | `sharp` | ^0.35.5 | [assets-pipeline.md](assets-pipeline.md) | 89 |
 | `react-router-dom` | ^7.18.4 | [react.md](react.md) | 84 |

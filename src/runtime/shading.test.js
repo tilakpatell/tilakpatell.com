@@ -76,7 +76,6 @@ describe('a nodes module keeps its promise', () => {
 // file and path, each with why it is safe: taken only on the classic
 // renderer. A new one changes this list, so it is never added unseen.
 const CLASSIC = {
-  'components/galaxy/surface/module.js': ['./looks/classic'], // the low level's surface (runtime/backend.js: `classic: true`), on rt.gfx.backend 'webgl'
   'lib/three/scatter/wind.js': ['../foliage.js'], // the GLSL sway, when the renderer is not a node one (`nodes` false)
 };
 

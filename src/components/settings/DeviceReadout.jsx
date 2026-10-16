@@ -8,8 +8,9 @@ import { rendererReport } from '../../runtime/backend.js';
 // memory, whether hardware acceleration is on) and, while a world is up on
 // the runtime, what it costs: the frame time, the draw calls and the
 // triangles of the last frame (its renderer's info), read twice a second,
-// and which renderer it draws with (WebGPU, WebGL 2 through the node
-// renderer, or the classic one: runtime/backend.js), with the ?gpu= asked.
+// and which renderer it draws with (WebGPU or WebGL 2 through the node
+// renderer for a 'nodes' world, the classic one for a 'glsl' world:
+// runtime/backend.js), with the ?gpu= asked.
 
 const GRADE = { ultra: 'Strong', high: 'Good', mid: 'Modest' };
 const TIER = { high: 'Laptop or desktop', mid: 'Phone, tablet or small computer', low: 'Weak device' };
@@ -44,7 +45,7 @@ function useLive() {
       sum = 0;
       count = 0;
       const renderer = rt?.current ? rendererLine({ backend: rt.gfx?.backend, override: rt.override }) : null;
-      const report = rt?.current ? rendererReport({ backend: rt.gfx?.backend, shading: rt.current.module?.shading, gpu: Boolean(navigator.gpu) }) : null;
+      const report = rt?.current ? rendererReport({ backend: rt.gfx?.backend, gpu: Boolean(navigator.gpu) }) : null;
       setLive(info ? { ms, calls: info.render.calls, triangles: info.render.triangles, renderer, report } : ms != null ? { ms } : null);
     }, 500);
     return () => {

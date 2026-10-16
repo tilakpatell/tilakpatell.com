@@ -1,9 +1,9 @@
-// The surface's looks on the node renderer (WebGPU, or WebGL 2 through the
-// node renderer): every level on WebGPU, high and ultra without it
-// (runtime/backend.js). The twins lane T wrote beside each GLSL original,
-// by the same names as ./classic.js, so scene.js and its parts draw with
-// whichever set the renderer can; and the game's light under them (the
-// post on the game's chain, nodes/chain.js; the stack, nodes/stack.js).
+// The surface's looks on the node renderer (WebGPU where the browser has
+// it, WebGL 2 through the node renderer where it has not, at every level:
+// runtime/backend.js). The twins lane T wrote beside each GLSL original,
+// which scene.js and its parts draw with through ./index.js's looks(); and
+// the game's light under them (the post on the game's chain, nodes/chain.js;
+// the stack, nodes/stack.js).
 
 import { PMREMGenerator } from 'three/webgpu';
 import { singlePass } from '../../../../lib/three/renderer';
@@ -36,7 +36,6 @@ import { beamMaterial } from '../nodes/activity';
 import { columnMaterial, meterMaterial } from '../nodes/missions';
 import { wallMaterial } from '../nodes/hvv';
 
-export const name = 'nodes';
 export { createPost, SHIP_MODELS, buildShip, LENGTH, PARTY, loadPartyFigure, loadSharedFigure, createGameFx, createMeshyCast, withWardrobe };
 export { createSky, wearScanSet, createSkyFog, createWater, createWeather, createKit, createHouse, createDust, createGrass, createWind, createGroundMap, floorShadow, groundWorld };
 export { groundMaterial, createPortalFx, meshyJoints, createBoltMeshes, beamMaterial, columnMaterial, meterMaterial, wallMaterial, PMREMGenerator, createStack, levelJson };

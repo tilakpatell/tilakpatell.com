@@ -136,11 +136,6 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
     get tier() {
       return tier;
     },
-    // the level picked (low, mid, high, ultra): the budget row's name, which
-    // runtime/backend.js reads to pick the renderer
-    get detail() {
-      return detail;
-    },
     get budget() {
       return budget;
     },
@@ -173,10 +168,9 @@ export function createQuality({ tier, detail, pace = createPace(), floorAfter = 
     },
     retune(level) {
       budget = BUDGETS[level] ?? BUDGETS.high;
-      // (the level the 4K start reads: stepsAt, an unknown one high's, as its
-      // budget is; and the tier a world built from here reads for its chain,
-      // its cut and its boot)
-      detail = BUDGETS[level] ? level : 'high';
+      // (the level the 4K start reads: stepsAt; and the tier a world built
+      // from here reads for its chain, its cut and its boot)
+      detail = level;
       tier = tierOf(level);
     },
     setSharpness(next) {

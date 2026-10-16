@@ -7,8 +7,8 @@
 //   move it) casts through lane S's cascades (sun.js's castCascades: four
 //   on high and ultra, two on mid), filtered by PCSS on high and ultra and
 //   PCF on mid (shadows.js), under the record's cloud shadows where the
-//   record has them (clouds.js). Its old 2,048² map and its snapping are the
-//   classic renderer's.
+//   record has them (clouds.js), in place of its old 2,048² map and its
+//   snapping.
 // - Contact shadows under you and your crew (contact.js).
 // - The level's volumetric glows and cones (volumes.json beside the pack,
 //   lane V's volumetrics.js), on high and ultra, in the chain.
@@ -33,11 +33,11 @@
 //     (pure): lane G's derived shape from the site, its sun where the scene's
 //     shines from (the site's suns are the dome's, in its own angles), the
 //     picture's VE record beside it
-//   createSurfaceStack({ scene, renderer, camera, sun, site, tier, backend,
-//     post, picture, volumes, dome, skyFog }) → Promise<null | { track(object),
+//   createSurfaceStack({ scene, renderer, camera, sun, site, tier, post,
+//     picture, volumes, dome, skyFog }) → Promise<null | { track(object),
 //     (volumes: the pack's volumes.json, or a promise of it)
 //     untrack(object), update(dt, camera), parts, dispose() }>
-//     (null on the classic renderer)
+//     (null at a level it does not know)
 
 import { GAME_TO_SITE } from '../../../../lib/three/gameLight';
 
@@ -84,8 +84,8 @@ export function surfaceEntry(site, picture = null, { sunDir = null } = {}) {
   return entry;
 }
 
-export async function createSurfaceStack({ scene, renderer, camera, sun, site, tier = 'high', backend = 'webgpu', post = null, picture: asked = null, volumes = null, dome = null, skyFog = null }) {
-  if (backend === 'webgl' || !STACK_TIERS.includes(tier)) return null;
+export async function createSurfaceStack({ scene, renderer, camera, sun, site, tier = 'high', post = null, picture: asked = null, volumes = null, dome = null, skyFog = null }) {
+  if (!STACK_TIERS.includes(tier)) return null;
   const picture = await Promise.resolve(asked).catch(() => null);
   const [{ loadThree }, { castCascades }, { filterFor, pcssFilter, readPcss, vsmFallback }, { cloudShadowNode }, { createContactShadows }, { CONES_LIT, createVolumetrics }, { pictureOf }] = await Promise.all([
     import('../../../../lib/three/light/three.js'),

@@ -54,7 +54,7 @@ import { systemById } from '../systems';
 import { readBuildWire, writeBuild } from '../../universe/shipyard/build';
 import * as THREE from 'three';
 import { disposeTree } from '../../../lib/three/renderer';
-import { pickLooks } from './looks';
+import { looks } from './looks';
 import { nextFrame as breathe } from '../../../lib/three/gpuWork';
 import { STEPS } from '../../../lib/three/pace';
 import { settle as settleWithin } from '../../../lib/settle';
@@ -201,11 +201,10 @@ const BACK = new THREE.Vector3(0, 0, -1); // (a figure's own back, falling over 
 const AHEAD = new THREE.Vector3(0, 0, 1);
 const WHEEL_PX = 90; // the pointer this far from where it was when the wheel opened is all the way out
 
-// (`set`: the renderer's looks, ./looks/nodes.js or ./looks/classic.js,
-// which module.js picks by the backend; the node set when none is given)
-export async function create(canvas, ctx, set) {
+export async function create(canvas, ctx) {
   const { reduced, rt } = ctx;
-  const L = pickLooks(set);
+  // (what it draws with: the twins and the game's light, ./looks/nodes.js)
+  const L = looks();
   const { createPost, SHIP_MODELS, buildShip, LENGTH, PARTY, loadPartyFigure, createGameFx, createMeshyCast, withWardrobe, createSky, wearScanSet, createSkyFog, createWater, createWeather, createKit, createHouse, createDust, createGrass, createWind, createGroundMap, floorShadow, groundWorld, PMREMGenerator } = L;
   let props = ctx;
   let disposed = false;
@@ -231,11 +230,11 @@ export async function create(canvas, ctx, set) {
   const gameOff = import.meta.env.DEV && /[?&]gamelight=off\b/.test(window.location.search);
   const gameLight = gameOff || mission?.site?.sky || mission?.site?.light ? null : gameLightOf(own);
   // (one exposure for the sun, the sky and the lamps where the world draws in
-  // its record's picture, the node renderer's: the record's lux and nits over
+  // its record's picture: the record's lux and nits over
   // the camera's k, as the stack lights the painted sky and the lamps
   // (calibrate.js) and the Battlefront world its Hoth; elsewhere lane G's
   // fitted rate, gameLight.js's)
-  const rate = gameLight && L.name === 'nodes' && PICTURES[own.gameLight] ? ONE_EXPOSURE : undefined;
+  const rate = gameLight && PICTURES[own.gameLight] ? ONE_EXPOSURE : undefined;
   const site = gameSite(own, gameLight, 'clear', rate);
   // the models kinds are looked up in: the galaxy's, with a page's own book
   // laid over it (the Rick and Morty planets'), never written into it
@@ -259,7 +258,7 @@ export async function create(canvas, ctx, set) {
   const camera = new THREE.PerspectiveCamera(60, 1, 0.12, 16000);
   scene.add(camera);
   canvas.setAttribute('aria-hidden', 'true');
-  // (on the node renderer the game's chain for the level, nodes/chain.js; the classic post ignores the level)
+  // (the game's chain for the level, nodes/chain.js)
   const post = createPost(renderer, scene, camera, { small, tier: level, backend: rt.gfx.backend });
   // the house look (lib/three/house: shade is a colour, never grey) over
   // everything lit, from the site's look (look.js); the fog stays the
@@ -306,19 +305,19 @@ export async function create(canvas, ctx, set) {
     sun.shadow.normalBias = 0.05;
   }
   scene.add(sun, sun.target);
-  // the game's light under it on the node renderer, at every level (nodes/stack.js:
-  // the sun's cascades, contact shadows, the level's volumes, the chain's
-  // record); none on the classic renderer. Awaited before the first draw.
+  // the game's light under it, at every level (nodes/stack.js: the sun's
+  // cascades, contact shadows, the level's volumes, the chain's record).
+  // Awaited before the first draw.
   let stack = null;
   // (the world's picture: a page's, the site's, or the game's own where the
   // world is under its light and the site has its records, nodes/picture.js;
   // a site's `picture` that only names its file, lane P's, is read there)
   const sitePicture = site.picture && typeof site.picture === 'object' ? site.picture : null;
-  const picture = ctx.picture ?? sitePicture ?? (gameLight && L.name === 'nodes' ? pictureFor(own.gameLight).catch(() => null) : null);
+  const picture = ctx.picture ?? sitePicture ?? (gameLight ? pictureFor(own.gameLight).catch(() => null) : null);
   // (the pack's volumes.json where it has one: Endor's has none, and a fetch
   // the stack awaits only later must not reject unheard meanwhile)
   const volumes = site.level ? Promise.resolve(L.levelJson(site.level, 'volumes.json')).catch(() => null) : null;
-  const stacking = L.createStack({ scene, renderer, camera, sun, site, tier: level, backend: rt.gfx.backend, post, picture, volumes, dome: sky.mesh, skyFog })
+  const stacking = L.createStack({ scene, renderer, camera, sun, site, tier: level, post, picture, volumes, dome: sky.mesh, skyFog })
     .then((made) => {
       if (disposed) return made?.dispose();
       stack = made;
@@ -3250,15 +3249,14 @@ export async function create(canvas, ctx, set) {
   // first draws it: on the node renderer over WebGL 2 lane T's walk linked
   // 82 programs mid-move, the worst frame 1.5 s (evidence/galaxy-engine/T/
   // flip). Looked at every WARM_EVERY s; a change in the level's draws
-  // sends its root through the warm-up (compileAsync; the node renderer's
-  // alone: the classic one's warm-up is as it was).
+  // sends its root through the warm-up (compileAsync).
   const WARM_EVERY = 1.5; // s
   let warmClock = 0;
   let warmedDraws = -1;
   let warming = false;
   function warmStreamed(dt) {
     warmClock += dt;
-    if (L.name !== 'nodes' || warmClock < WARM_EVERY || warming || !gameLevel) return;
+    if (warmClock < WARM_EVERY || warming || !gameLevel) return;
     warmClock = 0;
     const draws = gameLevel.stats().calls;
     const root = draws !== warmedDraws ? scene.getObjectByName('level') : null;
@@ -3709,8 +3707,8 @@ export async function create(canvas, ctx, set) {
     // (the props' scanned surfaces on before their shaders are made, so
     // they're made once)
     await Promise.all([placer.ready.catch(() => {}), kit.ready.catch(() => {}), stacking]);
-    // (the floor's baked light where the sun has no cascades: the classic renderer's, and low's:
-    // the node renderer's sun casts through its cascades, nodes/stack.js)
+    // (the floor's baked light where the sun has no cascades, low's: from
+    // mid up the sun casts through its cascades, nodes/stack.js)
     if (!disposed && !site.noGround && !stack?.parts.cascades) {
       const R = 170;
       lit = groundWorld({

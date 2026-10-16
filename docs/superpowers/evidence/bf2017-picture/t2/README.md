@@ -4,18 +4,18 @@ The design (`docs/superpowers/specs/2026-10-11-bf2017-picture-everywhere-design.
 
 ## What runs where
 
-WebGPU, the node renderer, is the default for everything where the browser has it (the owner's word, 2026-10-11); the classic renderer is the fallback for low and mid without it. Rapier (WebAssembly) is the physics on every Star Wars world, every tier and a phone: a world from the 2017 game (a level pack with its shapes: Hoth) stands on the game's own collision (`level/levelPhysics.js`, low at half mid's collider budget, a judgement until a phone is measured); every other world on a Rapier world of its drawn ground and the solids and floors it is walked on (`surface/sitePhysics.js`, 64 m cells in a ring round you). The 2017 soldier's body (`playerBody.js`) stands on either; if WebAssembly cannot start, the walker stays.
+WebGPU, the node renderer, is the default for everything where the browser has it (the owner's word, 2026-10-11); without it, the node renderer over WebGL 2, at every level. The lane first brought the classic renderer back as the fallback at low and mid without WebGPU (the GLSL originals in `surface/looks/classic.js`); the owner ruled it out, as main's rule of 2026-10-13 has every world on WebGPU or the node renderer and the engine floor's FL4 retires the classic one, so it is gone and nothing in the lane is classic or GLSL. Rapier (WebAssembly) is the physics on every Star Wars world, every tier and a phone: a world from the 2017 game (a level pack with its shapes: Hoth) stands on the game's own collision (`level/levelPhysics.js`, low at half mid's collider budget, a judgement until a phone is measured); every other world on a Rapier world of its drawn ground and the solids and floors it is walked on (`surface/sitePhysics.js`, 64 m cells in a ring round you). The 2017 soldier's body (`playerBody.js`) stands on either; if WebAssembly cannot start, the walker stays.
 
-| level | WebGPU | no WebGPU | `?gpu=webgl` | `?gpu=classic` |
-| --- | --- | --- | --- | --- |
-| low | WebGPU | classic | classic | classic |
-| mid | WebGPU | classic | classic | classic |
-| high | WebGPU | WebGL 2, node renderer | WebGL 2, node renderer | classic |
-| ultra | WebGPU | WebGL 2, node renderer | WebGL 2, node renderer | classic |
+| level | WebGPU | no WebGPU | `?gpu=webgl` |
+| --- | --- | --- | --- |
+| low | WebGPU | WebGL 2, node renderer | WebGL 2, node renderer |
+| mid | WebGPU | WebGL 2, node renderer | WebGL 2, node renderer |
+| high | WebGPU | WebGL 2, node renderer | WebGL 2, node renderer |
+| ultra | WebGPU | WebGL 2, node renderer | WebGL 2, node renderer |
 
-`src/runtime/backend.test.js` pins every cell; `src/runtime/runtime.test.js` that a quality change wanting the other renderer reloads the world on it. The settings panel's readout says “Drawn with WebGPU”, “WebGL 2, node renderer” or “classic”, and the `?gpu=` asked.
+`src/runtime/backend.test.js` pins every cell (and that `?gpu=classic` asks for nothing); `src/runtime/runtime.test.js` that a quality change never remakes the world on another renderer, and that WebGPU that will not start at low or mid falls to the node renderer over WebGL 2; `src/components/galaxy/surface/module.test.js` that the surface has no classic path. The settings panel's readout says “Drawn with WebGPU” or “WebGL 2, node renderer”, and the `?gpu=` asked.
 
-**Apple silicon.** A Mac's chip is no GeForce but a strong one, and is drawn as one: Chrome names it through ANGLE's Metal renderer (`Apple M2 Pro`), graded by generation and class (`lib/gpuGrade.js`: an M1 a good chip, a Max or an Ultra the top grade), Safari says only “Apple GPU” and Firefox rounds the name, and either way a Mac is a laptop or desktop with Auto at ultra (`lib/device.test.js` pins each). WebGPU that will not start (an adapter refused, a device the browser will not make) is counted as lost once and the world made on the next renderer down (`src/runtime/runtime.test.js`), never a failed mount.
+**Apple silicon.** A Mac's chip is no GeForce but a strong one, and is drawn as one: Chrome names it through ANGLE's Metal renderer (`Apple M2 Pro`), graded by generation and class (`lib/gpuGrade.js`: an M1 a good chip, a Max or an Ultra the top grade), Safari says only “Apple GPU” and Firefox rounds the name, and either way a Mac is a laptop or desktop with Auto at ultra (`lib/device.test.js` pins each). WebGPU that will not start (an adapter refused, a device the browser will not make) is counted as lost once and the world made on the node renderer over WebGL 2 (`src/runtime/runtime.test.js`, main's #985), never a failed mount.
 
 **The game's physics books.** The surface reads the 2017 soldier (`soldier.json`, the body's speeds and capsule), the bone capsules for hits (`bones.json`, `boltPlay.js`) and the level's material grid (`materials.json`: impacts and footprints, and now the Rapier world's colliders' tags, friction and bounce where the site names its materials). Only Hoth's grid and Hoth's Havok shapes are in the repo; another world's take the same paths the day its pack and grid are built (lanes E1 to E4).
 
@@ -70,6 +70,6 @@ What the seventeen said on lane T2's last full run (`6f8af3fe`, 2026-10-12), and
 
 ## Left for the owner's laptop
 
-- `BUDGET=1 QUALITY=high node scripts/galaxy-check.mjs surface tatooine,hoth,endor,yavin,bespin,dagobah,mustafar,coruscant,naboo,kashyyyk,kamino,geonosis,scarif,nevarro,mandalore,lothal,sorgan` with `ANGLE=d3d11` (or metal): every world's calls, triangles, MB, p50 and p95, beside `GPU=classic` for the classic numbers and shots. The baseline was made on the classic renderer; if the node renderer counts its passes differently, a node baseline is made from that run, with its reason in the commit.
+- `BUDGET=1 QUALITY=high node scripts/galaxy-check.mjs surface tatooine,hoth,endor,yavin,bespin,dagobah,mustafar,coruscant,naboo,kashyyyk,kamino,geonosis,scarif,nevarro,mandalore,lothal,sorgan` with `ANGLE=d3d11` (or metal): every world's calls, triangles, MB, p50 and p95. The baseline was made on the classic renderer; if the node renderer counts its passes differently, a node baseline is made from that run, with its reason in the commit.
 - The WebGPU leg (the container's SwiftShader device drops its instance).
 - Hoth's triangles with the cascades against the 3M row; if over, the cascade count or `SHADOW_REACH` (`level/levelScene.js`) is the lever.

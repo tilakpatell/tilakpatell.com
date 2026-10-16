@@ -2,9 +2,7 @@
 // written for lib/three/useScene (create(canvas, ctx) → { render(ms, now)
 // → bool, ... }) into a world module without changing it.
 //
-// A world module: { id, shading: 'glsl' | 'nodes', classic?, mb, label?, ratio?, sharpness?, create(rt, props) }
-// (`classic`: a 'nodes' module that brings a classic path, for low and mid
-// without WebGPU: runtime/backend.js; its create reads rt.gfx.backend)
+// A world module: { id, shading: 'glsl' | 'nodes', mb, label?, ratio?, sharpness?, create(rt, props) }
 // (`label` says what the canvas shows, for a screen reader; `ratio` caps its
 // pixel ratio; `sharpness: 'own'`: when frames run late its world draws
 // softer through its own passes, told the level by lowerQuality, and the
@@ -43,7 +41,7 @@ export function validateWorld(world) {
   return world;
 }
 
-// fromScene(id, create, { shading, classic, mb, label, ratio, sharpness }): the scene's
+// fromScene(id, create, { shading, mb, label, ratio, sharpness }): the scene's
 // render(ms, now) is the world's draw, its answer is wants(); ctx gets the
 // runtime as `rt` (its renderer, saves, sounds, assets), the canvas's box
 // as `el`, the runtime's invalidate and lost, and the quality floor as
@@ -55,11 +53,10 @@ export function validateWorld(world) {
 // replacing. The scene itself is `world.scene`, for the page's calls; a
 // scene's `tune()` is the world's, for the ?debug panel.
 const HELD = 200; // events kept at most before a page is listening
-export function fromScene(id, create, { shading = 'glsl', classic = false, mb = 0, label, ratio, sharpness } = {}) {
+export function fromScene(id, create, { shading = 'glsl', mb = 0, label, ratio, sharpness } = {}) {
   return {
     id,
     shading,
-    ...(classic ? { classic } : {}),
     mb,
     ...(label ? { label } : {}),
     ...(ratio ? { ratio } : {}),

@@ -142,9 +142,9 @@ export function applyMotion(motion, doc = typeof document !== 'undefined' ? docu
 }
 
 // The renderer the world up draws with, in the panel's words, and the
-// ?gpu= it honours (runtime/backend.js: the node renderer from mid up on the
-// Star Wars worlds, the classic at low; ?gpu=webgl keeps the node renderer
-// on WebGL 2 where it would take WebGPU)
+// ?gpu= it honours (runtime/backend.js: WebGPU or the node renderer over
+// WebGL 2 on the Star Wars worlds, at every level; ?gpu=webgl keeps the node
+// renderer on WebGL 2 where it would take WebGPU)
 export function rendererLine({ backend = null, override = null } = {}) {
   const name = RENDERER_NAMES[backend];
   if (!name) return null;

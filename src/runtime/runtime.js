@@ -304,7 +304,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   const ratioFor = (mod) => (quality.ratioUnder ? quality.ratioUnder(mod?.ratio, { unscaled: mod?.sharpness === 'own' }) : quality.ratio);
 
   const backendFor = async (module) => {
-    const want = pickBackend({ gpu, shading: module.shading, classic: Boolean(module.classic), tier: quality.detail, override, lost: lostWebGPU });
+    const want = pickBackend({ gpu, shading: module.shading, override, lost: lostWebGPU });
     if (gfx && kind === want && !gfx.lost) return gfx;
     // one of this kind on its way already: a mount meanwhile waits for that
     // one (React's second run of an effect mounts again at once, and a second
@@ -333,16 +333,12 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       (err) => {
         if (coming === asked) coming = null; // (the next mount tries again)
         // (WebGPU tried and not had: no device, an init that threw, a
-        // fallback adapter, an adapter refused: Safari's on some Macs, an
-        // old driver. Counted as lost and the world made at once, and for
-        // the rest of the page, on the next renderer down, the owner's order:
-        // backend.js's node renderer over WebGL 2, or the classic one for a
-        // module with a classic path at low and mid. ?gpu=webgpu asked for
-        // WebGPU outright: the failure is the answer it wants)
+        // fallback adapter: the node renderer over WebGL 2 at once, and for
+        // the rest of the page, the owner's order of the two. ?gpu=webgpu
+        // asked for WebGPU outright: the failure is the answer it wants)
         if (want === 'webgpu' && override !== 'webgpu' && (coming === null || coming === asked)) {
-          if (dev) console.warn('WebGPU could not be had: the next renderer down', err);
+          if (dev) console.warn('WebGPU could not be had: the node renderer over WebGL 2', err);
           lostWebGPU = true;
-          if (kind === want) kind = null;
           return backendFor(module);
         }
         throw err;
@@ -750,10 +746,6 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       // (the budget first: a world mounted next is built at the new level)
       quality.retune?.(level);
       if (!current || rt.loading) return 'idle';
-      // (a level that wants the other renderer, runtime/backend.js: the world
-      // is made again, on it)
-      const { module: mod } = current;
-      if (pickBackend({ gpu, shading: mod.shading, classic: Boolean(mod.classic), tier: quality.detail, override, lost: lostWebGPU }) !== kind) return 'reload';
       if (gfx) gfx.setRatio?.(ratioFor(current.module));
       const { world, module } = current;
       const tune = world.onQuality ? () => world.onQuality(level) : module.onQuality ? () => module.onQuality(level, world, rt) : null;

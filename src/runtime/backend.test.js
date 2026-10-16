@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { KINDS, LEVELS, RENDERER_NAMES, pickBackend, readOverride, rendererReport } from './backend';
+import { KINDS, RENDERER_NAMES, pickBackend, readOverride, rendererReport } from './backend';
 
 describe('pickBackend', () => {
   it('a glsl module always gets the classic renderer', () => {
@@ -34,60 +34,36 @@ describe('readOverride', () => {
   });
 });
 
-describe('pickBackend by the quality level (a nodes module with a classic path)', () => {
-  // tier × gpu × override, every cell: [tier, gpu, override, lost, kind]
-  const TABLE = [
-    ['low', true, null, false, 'webgpu'],
-    ['low', true, 'webgpu', false, 'webgpu'],
-    ['low', true, 'webgl', false, 'webgl'],
-    ['low', false, null, false, 'webgl'],
-    ['low', false, 'webgpu', false, 'webgl'],
-    ['low', false, 'webgl', false, 'webgl'],
-    ['mid', true, null, false, 'webgpu'],
-    ['mid', true, 'webgpu', false, 'webgpu'],
-    ['mid', true, 'webgl', false, 'webgl'],
-    ['mid', true, null, true, 'webgl'],
-    ['mid', false, null, false, 'webgl'],
-    ['mid', false, 'webgpu', false, 'webgl'],
-    ['mid', false, 'webgl', false, 'webgl'],
-    ['high', true, null, false, 'webgpu'],
-    ['high', true, 'webgpu', false, 'webgpu'],
-    ['high', true, 'webgl', false, 'nodes-webgl'],
-    ['high', true, null, true, 'nodes-webgl'],
-    ['high', false, null, false, 'nodes-webgl'],
-    ['high', false, 'webgpu', false, 'nodes-webgl'],
-    ['high', false, 'webgl', false, 'nodes-webgl'],
-    ['ultra', true, null, false, 'webgpu'],
-    ['ultra', true, 'webgpu', false, 'webgpu'],
-    ['ultra', true, 'webgl', false, 'nodes-webgl'],
-    ['ultra', true, null, true, 'nodes-webgl'],
-    ['ultra', false, null, false, 'nodes-webgl'],
-    ['ultra', false, 'webgpu', false, 'nodes-webgl'],
-    ['ultra', false, 'webgl', false, 'nodes-webgl'],
-  ];
-  for (const [tier, gpu, override, lost, kind] of TABLE) {
-    it(`${tier}, ${gpu ? 'WebGPU' : 'no WebGPU'}, ?gpu=${override ?? 'unset'}${lost ? ', lost once' : ''} → ${kind}`, () => {
-      expect(pickBackend({ shading: 'nodes', classic: true, tier, gpu, override, lost })).toBe(kind);
-    });
-  }
+// The Star Wars worlds are 'nodes' modules: whatever the quality level, the
+// device or the address asks, one never draws on the classic renderer (the
+// owner's ruling on lane T2, and main's rule of 2026-10-13: every world on
+// WebGPU or on the node renderer over WebGL 2).
+describe('a nodes module at every quality level', () => {
+  const LEVELS = ['low', 'mid', 'high', 'ultra'];
+  const OVERRIDES = [null, 'webgl', 'webgpu', 'classic'];
 
-  it('covers every level', () => {
-    expect(new Set(TABLE.map((r) => r[0]))).toEqual(new Set(LEVELS));
+  it('WebGPU where the browser has it, the node renderer over WebGL 2 everywhere else: never the classic renderer', () => {
+    const cells = [];
+    for (const tier of LEVELS)
+      for (const gpu of [true, false])
+        for (const override of OVERRIDES)
+          for (const lost of [false, true]) {
+            // (a module that still says it brings a classic path, and the level it is drawn at: neither picks the renderer)
+            const kind = pickBackend({ shading: 'nodes', classic: true, tier, gpu, override, lost });
+            const want = gpu && !lost && override !== 'webgl' ? 'webgpu' : 'nodes-webgl';
+            if (kind !== want) cells.push(`${tier}, ${gpu ? 'WebGPU' : 'no WebGPU'}, ?gpu=${override ?? 'unset'}${lost ? ', lost once' : ''}: ${kind}`);
+          }
+    expect(cells).toEqual([]);
   });
 
-  it('a nodes module without a classic path keeps the node renderer at every level', () => {
-    for (const tier of LEVELS) {
-      expect(pickBackend({ shading: 'nodes', tier, gpu: true })).toBe('webgpu');
-      expect(pickBackend({ shading: 'nodes', tier, gpu: false })).toBe('nodes-webgl');
-    }
+  it('?gpu=classic is no renderer a visitor can ask for', () => {
+    expect(readOverride('?gpu=classic', '', null)).toBe(null);
+    expect(readOverride('', '#/galaxy?gpu=classic', null)).toBe(null);
+    expect(readOverride('', '', 'classic')).toBe(null);
   });
 
-  it('WebGPU, where the browser has it, at every level: the default for everything', () => {
-    for (const tier of LEVELS) expect(pickBackend({ shading: 'nodes', classic: true, tier, gpu: true })).toBe('webgpu');
-  });
-
-  it('a glsl module is classic at every level, whatever it says of a classic path', () => {
-    for (const tier of LEVELS) expect(pickBackend({ shading: 'glsl', classic: true, tier, gpu: true })).toBe('webgl');
+  it('a glsl module is classic at every level, as ever', () => {
+    for (const tier of LEVELS) expect(pickBackend({ shading: 'glsl', tier, gpu: true })).toBe('webgl');
   });
 
   it('names every kind for the settings panel', () => {
@@ -95,27 +71,16 @@ describe('pickBackend by the quality level (a nodes module with a classic path)'
   });
 });
 
-describe('?gpu=classic', () => {
-  it('the classic renderer at any level for a module with a classic path, nothing for one without', () => {
-    for (const tier of LEVELS) {
-      expect(pickBackend({ shading: 'nodes', classic: true, tier, gpu: true, override: 'classic' })).toBe('webgl');
-      expect(pickBackend({ shading: 'nodes', tier, gpu: true, override: 'classic' })).toBe('webgpu');
-    }
-    expect(readOverride('?gpu=classic', '', null)).toBe('classic');
-  });
-});
-
 describe('rendererReport', () => {
-  it('WebGPU is the best; a classic-only world’s classic is its best', () => {
+  it('WebGPU is the best; a glsl world’s classic renderer is its best, its only one', () => {
     expect(rendererReport({ backend: 'webgpu' })).toMatchObject({ name: 'WebGPU', best: true });
-    expect(rendererReport({ backend: 'webgl', shading: 'glsl' })).toMatchObject({ name: 'classic', best: true });
+    expect(rendererReport({ backend: 'webgl' })).toMatchObject({ name: 'classic', best: true });
   });
 
-  it('anything less on a nodes world says why, and what would give the best', () => {
+  it('the node renderer over WebGL 2 says why it is not WebGPU, and what would give it', () => {
     expect(rendererReport({ backend: 'nodes-webgl', gpu: false })).toMatchObject({ best: false, note: expect.stringContaining('no WebGPU') });
+    expect(rendererReport({ backend: 'nodes-webgl', gpu: false }).note).toContain('Chrome, Edge or Safari 26');
     expect(rendererReport({ backend: 'nodes-webgl', gpu: true })).toMatchObject({ best: false, note: expect.stringContaining('didn’t start') });
-    expect(rendererReport({ backend: 'webgl', gpu: true })).toMatchObject({ best: false, note: expect.stringContaining('?gpu=classic') });
-    expect(rendererReport({ backend: 'webgl', gpu: false })).toMatchObject({ best: false, note: expect.stringContaining('High') });
     expect(rendererReport({})).toBe(null);
   });
 });

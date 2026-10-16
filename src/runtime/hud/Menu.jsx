@@ -19,9 +19,9 @@ import { currentRuntime } from '../current';
 // picking something; the focus goes back to its button. A disclosure, not
 // an ARIA menu: its entries are plain buttons and links, Tab between them.
 // Last, a line saying what the picture is drawn with (`renderer`: WebGPU,
-// WebGL 2 through the node renderer, or classic, read from the runtime
-// when the list opens) and, where it isn't the world's best, why and what
-// would give the best (backend.js's rendererReport).
+// WebGL 2 through the node renderer, or classic for a 'glsl' world, read
+// from the runtime when the list opens) and, where it isn't the world's
+// best, why and what would give the best (backend.js's rendererReport).
 export default function Menu({ label = 'Menu', todo = null, voices = true, controls = true, players = null, noun = 'players', lore = null, way = null, renderer = true, className = '', children = null }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -111,7 +111,7 @@ export function VoicesItem() {
 // What the picture is drawn with, read from the runtime as the list opens
 export function RendererLine({ report = null }) {
   const rt = report ? null : currentRuntime();
-  const r = report ?? rendererReport({ backend: rt?.current ? rt.gfx?.backend : null, shading: rt?.current?.module?.shading, gpu: typeof navigator !== 'undefined' && Boolean(navigator.gpu) });
+  const r = report ?? rendererReport({ backend: rt?.current ? rt.gfx?.backend : null, gpu: typeof navigator !== 'undefined' && Boolean(navigator.gpu) });
   if (!r) return null;
   return (
     <p className="hud-menu-note" data-keep data-best={r.best || undefined}>

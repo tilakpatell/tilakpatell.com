@@ -14,9 +14,8 @@
 //   OATH='{"since":1,"war":"gcw","oaths":{"gcw":{"side":"rebel","sworn":1}}}' … (sworn, at the held clock's campaign)
 //   ANGLE=d3d11 … (draw on the graphics chip, not in software)
 //   GPU=webgpu … (or webgl: the runtime's ?gpu= override, for a 'nodes' world; each
-//     result says the backend that drew it: webgl, nodes-webgl or webgpu; or
-//     classic: the galaxy surface on the classic renderer at any level, for a
-//     parity shot, the shot's name saying which)
+//     result says the backend that drew it: webgl, nodes-webgl or webgpu, and
+//     the shot's name says which was asked)
 //   PHASE_WAIT=900000 … (ms for the world to come up: a level pack in software GL takes minutes)
 //   DIAG=1 … (each of the scene's top groups' share of the calls, hidden in turn)
 //   DISTRICT=<id> … surface: the world's district (?district=) instead of its main map
@@ -100,7 +99,7 @@ const asked = /^(\d+)x(\d+)$/.exec(process.env.VIEW ?? '');
 const viewport = asked ? { width: +asked[1], height: +asked[2] } : quality === 'ultra' && realGpu ? { width: 2560, height: 1440 } : { width: 1280, height: 720 };
 mkdirSync(out, { recursive: true });
 
-const gpu = process.env.GPU ?? null; // (webgpu, webgl or classic: the runtime's override)
+const gpu = process.env.GPU ?? null; // (webgpu or webgl: the runtime's override)
 const browser = await chromium.launch({ executablePath: chrome, args: ['--use-gl=angle', `--use-angle=${angle}`, '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', ...(gpu === 'webgpu' ? ['--enable-unsafe-webgpu'] : [])] });
 // The main thread's CPU profile over `seconds` of play (lane X2): sampled
 // every 0.5 ms through the DevTools protocol, the frames counted by the
