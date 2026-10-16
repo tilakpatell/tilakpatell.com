@@ -75,7 +75,7 @@ import { audioContext } from '../../lib/audio';
 import { clamp01, disposeTree, singlePass } from '../../lib/three/renderer';
 import { twinScene } from '../../lib/three/hookNodes';
 import { PMREMGenerator } from 'three/webgpu';
-import { warmDraw } from '../../lib/three/gpuWork';
+import { revealAll, warmDraw } from '../../lib/three/gpuWork';
 import { settle as settleWithin } from '../../lib/settle';
 import { device } from '../../lib/device';
 import { dropTransmission } from '../../lib/three/glass';
@@ -2862,7 +2862,22 @@ export async function create(canvas, ctx) {
       // lib/three/gpuWork's slices are the classic renderer's)
       twinScene(scene);
       onProgress?.(0.35, 'shaders');
-      if (gfx.compile) await settleWithin(Promise.resolve(gfx.compile(scene, camera, scene)).catch(() => {}), 600000);
+      if (gfx.compile) {
+        // (hidden things too and nothing culled, as the classic warm draw
+        // has them: compileAsync makes only what the camera sees, so the
+        // engines' trails, hidden till the ship first moves, were linked in
+        // the frame they first showed in, seconds of a hitch on a software
+        // GL; three makes every pipeline before compileAsync's first wait,
+        // so all is put back as it was straight after the call)
+        const shown = revealAll(scene);
+        let made;
+        try {
+          made = Promise.resolve(gfx.compile(scene, camera, scene));
+        } finally {
+          shown();
+        }
+        await settleWithin(made.catch(() => {}), 600000);
+      }
       if (!alive() || disposed) return;
       onProgress?.(0.8, 'first draw');
       post.render(64, 64);
