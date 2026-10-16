@@ -14,7 +14,7 @@
 // drawn to, read from WebGL’s draws to the screen.)
 //
 //   node tools/hq-shots.mjs --out <dir> [--ref origin/main] [--only a,b]
-//     [--frames 90] [--quality low|high]
+//     [--frames 90] [--quality low|high] [--resume] [--limit 900]
 //   node tools/hq-shots.mjs --compare <dirA> <dirB>
 //
 // --ref serves a worktree of that ref (this checkout’s node_modules linked
@@ -267,6 +267,9 @@ async function shoot(browser, base, t) {
       // (seeded again before each frame until its first, so the first draws
       // from the same place whatever the loading took)
       await quiet();
+      // (before its first frame, the real time for whatever it loaded to
+      // land: a figure parsed, its pictures decoded, so it's in by frame one)
+      if (!counted) await page.waitForTimeout(3000).then(quiet);
       if (!counted) await page.evaluate(() => window.__fl2seed(0x51ed));
       if (process.env.SHOTS_TRACE) console.log(`  trace ${t.id} between: ` + (await page.evaluate(() => { const c = window.__fl2calls.join(' | '); window.__fl2trace = true; window.__fl2calls = []; return c; })));
       await step(counted ? 50 : 25);
@@ -283,6 +286,9 @@ async function shoot(browser, base, t) {
     while (counted < FRAMES) {
       if (late()) throw new Error(`${t.id}: stuck at ${counted} frames`);
       await quiet();
+      // (before its first frame, the real time for whatever it loaded to
+      // land: a figure parsed, its pictures decoded, so it's in by frame one)
+      if (!counted) await page.waitForTimeout(3000).then(quiet);
       if (!counted) await page.evaluate(() => window.__fl2seed(0x51ed));
       await step(counted ? 50 : 25);
       const now = await presents();
@@ -318,6 +324,11 @@ try {
   server = await serve(root, join(tmpdir(), `hq-shots-vite-${report.sha}`));
   for (const t of targets) {
     const t0 = Date.now();
+    // (--resume: a target already shot in --out is kept, for a run cut short)
+    if (args.resume && existsSync(join(OUT, `${t.id}.png`))) {
+      console.log(`${t.id}: kept`);
+      continue;
+    }
     try {
       const r = await shoot(browser, server.base, t);
       report.targets[t.id] = { ok: true, seconds: Math.round((Date.now() - t0) / 1000), errors: r.errors };
