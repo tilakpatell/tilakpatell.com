@@ -52,7 +52,7 @@ import { CREW } from './crewList';
 import { stanceFor } from './gameStance';
 import { shoreStep, turnToward } from './walker';
 
-export const ENGAGE = 10; // m: within this of the mark it has, it fences
+const ENGAGE = 10; // m: within this of the mark it has, it fences
 export const LEAVE = 14; // m: past this it hunts you as the others do (hostiles.js)
 const TURN = 6; // rad/s it squares up to you between strikes
 const CHEST = 1.2; // m: where a swipe meets you

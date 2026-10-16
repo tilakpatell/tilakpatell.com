@@ -33,7 +33,7 @@ const grows = (t) => GROWS.has(t.kind) || String(t.model ?? '').startsWith('kit:
 // A site's ground as the flight reads it: a site on the game's level keeps
 // its own land for the flight (ground.flight), the heightmap being the
 // surface's alone
-export const flightGround = (g) => (g?.flight ? { ...g, layers: g.flight } : g);
+const flightGround = (g) => (g?.flight ? { ...g, layers: g.flight } : g);
 export const siteGround = (id) => flightGround(siteOf(id)?.ground);
 
 const sites = new Map(); // id → { site, height }: made once a page

@@ -22,7 +22,7 @@ import { ownMap } from './ownMap';
 // Lambda at [−10, 41] in the place)
 const PAD = [390, -189];
 // a shaft's foot: under the lowest deck walked, above the station's core
-export const DEATHSTAR_FALL = -60;
+const DEATHSTAR_FALL = -60;
 
 export const DEATHSTAR = {
   id: 'deathstar',

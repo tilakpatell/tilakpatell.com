@@ -40,7 +40,7 @@ function worldBox(w, h, d, x, y, z, tile = T) {
 }
 
 // ── the HYDRA emblem: the skull and its six tentacles ──
-export function drawEmblem(x, cx, cy, r, color = '#c41a1f') {
+function drawEmblem(x, cx, cy, r, color = '#c41a1f') {
   x.save();
   x.translate(cx, cy);
   x.fillStyle = color;
@@ -201,7 +201,7 @@ function rackLights() {
 }
 
 // a terminal's screen: HYDRA's red interface, or access granted in blue
-export function screenTexture(kind) {
+function screenTexture(kind) {
   return canvasTexture(256, 160, (x, w, h) => {
     const red = kind === 'hydra';
     x.fillStyle = red ? '#1a0405' : '#031018';

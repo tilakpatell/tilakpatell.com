@@ -186,12 +186,12 @@ function rim(side, z0, z1) {
   return out;
 }
 const gap = BRIDGE.w / 2 + 0.3;
-export const GORGE_WALLS = [...rim(-1, -70, BRIDGE.z - gap), ...rim(-1, BRIDGE.z + gap, 70), ...rim(1, -70, BRIDGE.z - gap), ...rim(1, BRIDGE.z + gap, 70)];
+const GORGE_WALLS = [...rim(-1, -70, BRIDGE.z - gap), ...rim(-1, BRIDGE.z + gap, 70), ...rim(1, -70, BRIDGE.z - gap), ...rim(1, BRIDGE.z + gap, 70)];
 // the bridge's railings
-export const BRIDGE_WALLS = [-1, 1].map((s) => [BRIDGE.x - BRIDGE.len / 2, BRIDGE.z + s * (BRIDGE.w / 2 - 0.1), BRIDGE.x + BRIDGE.len / 2, BRIDGE.z + s * (BRIDGE.w / 2 - 0.1), 0.12, true]);
+const BRIDGE_WALLS = [-1, 1].map((s) => [BRIDGE.x - BRIDGE.len / 2, BRIDGE.z + s * (BRIDGE.w / 2 - 0.1), BRIDGE.x + BRIDGE.len / 2, BRIDGE.z + s * (BRIDGE.w / 2 - 0.1), 0.12, true]);
 // the court's balustrade, round all but its way in (the south, +z)
-export const COURT_OPEN = [Math.PI / 2 - 0.42, Math.PI / 2 + 0.42];
-export const COURT_WALLS = (() => {
+const COURT_OPEN = [Math.PI / 2 - 0.42, Math.PI / 2 + 0.42];
+const COURT_WALLS = (() => {
   const out = [];
   const a0 = COURT_OPEN[1];
   const a1 = COURT_OPEN[0] + Math.PI * 2;

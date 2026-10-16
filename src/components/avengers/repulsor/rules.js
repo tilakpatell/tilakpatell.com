@@ -61,7 +61,7 @@ const PRIME_PARTS = [
   { name: 'core', dx: 0, dy: 0.1, r: 0.6, hp: 26, core: true },
 ];
 const PRIME_PATTERN = ['volley', 'summon', 'volley', 'missiles'];
-export const PRIME_Z = -30;
+const PRIME_Z = -30;
 export const PRIME_SCALE = 3.2;
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));

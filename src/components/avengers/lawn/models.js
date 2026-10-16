@@ -6,7 +6,7 @@ import { hot } from '../hq/stage';
 import { PartBuilder, canvasTexture, rbox, taper } from '../hq/kit/shapes';
 
 // Knotwork for the hammer's ends: interlaced loops, as a bump map.
-export function knotTexture() {
+function knotTexture() {
   return canvasTexture(
     256,
     256,

@@ -13,7 +13,7 @@
 // its integer coordinates. Angles in degrees, 0 east, 90 south.
 
 export const DIRS = { N: [0, -1], E: [1, 0], S: [0, 1], W: [-1, 0] };
-export const OPP = { N: 'S', S: 'N', E: 'W', W: 'E' };
+const OPP = { N: 'S', S: 'N', E: 'W', W: 'E' };
 const ANGLE = { E: 0, S: 90, W: 180, N: 270 };
 export const angleOf = (dir) => ANGLE[dir];
 
@@ -263,7 +263,7 @@ function enter(ax, ay, dx, dy, x0, y0, x1, y1) {
 
 // The fraction of the way from a to b at which something opaque stops the
 // view (1 when nothing does).
-export function sightClip(def, ax, ay, bx, by) {
+function sightClip(def, ax, ay, bx, by) {
   const dx = bx - ax;
   const dy = by - ay;
   const x0 = Math.floor(Math.min(ax, bx) + 0.5);
@@ -279,7 +279,7 @@ export function sightClip(def, ax, ay, bx, by) {
     }
   return best;
 }
-export const lineOfSight = (def, ax, ay, bx, by) => sightClip(def, ax, ay, bx, by) >= 1;
+const lineOfSight = (def, ax, ay, bx, by) => sightClip(def, ax, ay, bx, by) >= 1;
 
 // Whether a viewer at (ox, oy) looking along `angle` sees the tile (x, y).
 function inCone(def, ox, oy, angle, x, y, { range, half }) {
@@ -392,7 +392,7 @@ export function intent(s, g) {
 
 // The guard a bite that way would hit: the first thing in a clear straight
 // line, if it's an awake guard within range.
-export function biteTarget(s, dir) {
+function biteTarget(s, dir) {
   const [dx, dy] = DIRS[dir];
   for (let i = 1; i <= BITE.range; i++) {
     const x = s.px + dx * i;

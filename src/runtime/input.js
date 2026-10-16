@@ -16,6 +16,7 @@ import { edges, readPad as readGamepad, typing as inField } from '../components/
 
 // (typing needs the DOM: in Node nothing is a field)
 const safeTyping = (t) => typeof HTMLElement !== 'undefined' && inField(t);
+const NO_TAPS = Object.freeze({});
 
 export function createInput({ readPad = readGamepad, typing = safeTyping, capture = true } = {}) {
   const keys = new Set();
@@ -28,6 +29,26 @@ export function createInput({ readPad = readGamepad, typing = safeTyping, captur
   let padBefore = null;
   let win = null;
   let host = null;
+  // The snapshot, one for the input's life and refreshed by each sample: a
+  // new Set, the pointer's and the stick's objects and two closures every
+  // frame were garbage on the runtime's path (the every-world hand-off's
+  // performance item 2). It is the frame's: a world reads it in its step and
+  // keeps nothing of it.
+  const held = new Set();
+  let spare = new Set();
+  const drag = { dx: 0, dy: 0 };
+  const action = (name) => {
+    const codes = actions[name];
+    if (!codes) return false;
+    for (const code of codes) if (held.has(code)) return true;
+    return false;
+  };
+  const axis = (name) => {
+    const pair = axes[name];
+    if (!pair) return 0;
+    return (action(pair[1]) ? 1 : 0) - (action(pair[0]) ? 1 : 0);
+  };
+  const snap = { keys: held, pressed: null, pad: null, tapped: NO_TAPS, pointer: { x: 0, y: 0, down: false, drag: null }, stick: { x: 0, y: 0 }, action, axis };
 
   const onKeyDown = (e) => {
     if (typing(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -139,21 +160,32 @@ export function createInput({ readPad = readGamepad, typing = safeTyping, captur
     },
     sample() {
       const pad = readPad() ?? null;
-      const tapped = edges(pad, padBefore);
+      // (no pad, nothing tapped: the one empty answer, not a new one a frame)
+      snap.tapped = pad ? edges(pad, padBefore) : NO_TAPS;
+      snap.pad = pad;
       padBefore = pad;
-      const held = new Set(keys);
-      const now = pressed;
-      pressed = new Set();
-      const action = (name) => (actions[name] ?? []).some((code) => held.has(code));
-      const axis = (name) => {
-        const pair = axes[name];
-        if (!pair) return 0;
-        return (action(pair[1]) ? 1 : 0) - (action(pair[0]) ? 1 : 0);
-      };
+      held.clear();
+      for (const code of keys) held.add(code);
+      // the presses since the last sample handed out; the other set,
+      // emptied, fills until the next (they take turns)
+      snap.pressed = pressed;
+      pressed = spare;
+      pressed.clear();
+      spare = snap.pressed;
       // the drag: how far the pointer moved since the last sample, while it's down
-      const drag = pointer.down && (pointer.dx || pointer.dy) ? { dx: pointer.dx, dy: pointer.dy } : null;
+      const p = snap.pointer;
+      p.x = pointer.x;
+      p.y = pointer.y;
+      p.down = pointer.down;
+      if (pointer.down && (pointer.dx || pointer.dy)) {
+        drag.dx = pointer.dx;
+        drag.dy = pointer.dy;
+        p.drag = drag;
+      } else p.drag = null;
       pointer.dx = pointer.dy = 0;
-      return { keys: held, pressed: now, pad, tapped, pointer: { x: pointer.x, y: pointer.y, down: pointer.down, drag }, stick: { x: stick.x, y: stick.y }, action, axis };
+      snap.stick.x = stick.x;
+      snap.stick.y = stick.y;
+      return snap;
     },
   };
 }

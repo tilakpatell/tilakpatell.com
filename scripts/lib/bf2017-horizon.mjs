@@ -45,7 +45,7 @@ export const IMPOSTOR_BYTES = 16;
 // few atlases a level since each is a 2,048² map (the boot slice's bytes).
 // (and only a mesh of 100 triangles or more at its last LOD: a card is two,
 // and a flat board of 32 gains nothing by one)
-export const IMPOSTOR = Object.freeze({
+const IMPOSTOR = Object.freeze({
   count: 40,
   tris: 20000,
   lastTris: 100,
@@ -66,8 +66,6 @@ export const CELL_TRIS = 12000;
 // (3 MB, the design's §4 N4) less the far list and the near cells: Hoth's
 // grid at 12,000 a cell is 3.1 MB, at 4,000 about a megabyte.
 export const CELL_TRIS_LO = 4000;
-// which tiers draw the light cut _source: the budget rows' own (low and mid swap a kit model to its LOD1)
-export const LO_TIERS = Object.freeze(['low', 'mid']);
 
 export const coarseKey = (x, z, cell = COARSE) => cellKey(Math.floor(x / cell), Math.floor(z / cell));
 

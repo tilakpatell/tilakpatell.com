@@ -109,8 +109,6 @@ export const SPACE_LEVELS = {
   kamino: { at: [1000, 40, 600], r: 65, name: 'The Republic fleet over Kamino, as Battlefront II has it' },
   naboo: { at: [-1150, 0, -750], r: 267, name: 'The Separatist blockade, its droid control ship and the Republic come for it' },
 };
-// (where the files are: published, src/data/galaxyAssets.json)
-export const SPACE_DIR = '/models/galaxy/space/';
 const PACKS = import.meta.glob('../../data/galaxy/space/*.json', { import: 'default' });
 
 export async function piecesFor(sysId) {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { GAME_MENU, gameMenuFor, landsOnSurface, wayDown } from './gameLevels';
+import { GAME_MENU, gameMenuFor, groundBattle, landsOnSurface, wayDown } from './gameLevels';
+import { systemById } from './systems';
 import { canLand } from './surface/sites';
 
 describe('the worlds that land in the game', () => {
@@ -19,5 +20,14 @@ describe('the worlds that land in the game', () => {
     expect(wayDown('hoth', 'echo base')).toEqual({ to: '/battlefront/hoth?from=%2Fgalaxy%2Fhoth', game: true });
     expect(wayDown('endor')).toEqual({ to: '/galaxy/endor/surface', game: false });
     expect(wayDown('coruscant', 'level 1313')).toEqual({ to: '/galaxy/coruscant/surface?district=level%201313', game: false });
+  });
+});
+
+describe('the battle on a world’s ground', () => {
+  it('is the game’s menu for a game world, the surface’s assault for the rest, and nothing where there is neither', () => {
+    expect(groundBattle(systemById('hoth'))).toBe('/battlefront/hoth?from=%2Fgalaxy%2Fhoth');
+    expect(groundBattle(systemById('endor'))).toBe('/galaxy/endor/surface?mission=assault');
+    expect(groundBattle(systemById('dagobah'))).toBe(null);
+    expect(groundBattle(null)).toBe(null);
   });
 });

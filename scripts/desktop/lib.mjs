@@ -54,19 +54,6 @@ export const ghCommand = (args) => {
 export const gh = (...args) => sh(...ghCommand(args));
 export const git = (root, ...args) => sh('git', ['-C', root, ...args]);
 
-// gh, retried: GitHub's API fails now and then (a 502, a reset), and one
-// blip shouldn't fail a job that took ten minutes of GPU
-export async function ghRetry(args, { tries = 3, wait = 3000 } = {}) {
-  for (let i = 1; ; i++) {
-    try {
-      return gh(...args);
-    } catch (e) {
-      if (i >= tries) throw e;
-      await sleep(wait * i);
-    }
-  }
-}
-
 // A label or a comment is bookkeeping: its failure is logged, never fatal.
 export function quietly(fn, what) {
   try {

@@ -22,7 +22,7 @@ function moat(x, z) {
   return -420 * Math.min(smooth(d / 140), smooth((MOAT_W - d) / 140));
 }
 
-export function groundsHeight(x, z) {
+function groundsHeight(x, z) {
   let h = wobble(x, z, 0.8) * 30;
   if (outside(x, z, ...COURT) === 0) h = 0;
   h += moat(x, z);

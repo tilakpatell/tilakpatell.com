@@ -132,7 +132,7 @@ function sign(text, { w = 1024, h = 160, bg = '#0e1a33', fg = '#ffd23a', font = 
 }
 
 // a car from boxes: body, cabin, wheels (the front toward +z)
-export function addCar(b, key, { x, z, yaw = 0, len = 4.6, wid = 1.85 }) {
+function addCar(b, key, { x, z, yaw = 0, len = 4.6, wid = 1.85 }) {
   const c = Math.cos(yaw);
   const s = Math.sin(yaw);
   const at = (lx, ly, lz) => [x + lx * c + lz * s, ly, z - lx * s + lz * c];

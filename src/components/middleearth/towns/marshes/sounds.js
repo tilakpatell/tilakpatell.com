@@ -115,7 +115,7 @@ function thunder(out0, k = 1) {
   hiss(ac, o, t + 0.2, { type: 'lowpass', f: 220, gain: 0.45 * k, attack: 0.3, length: 2.8, sweep: 80 });
 }
 // thunder, rolling round the rocks
-export const thunderClap = () => thunder(null, 1);
+const thunderClap = () => thunder(null, 1);
 export { thunderClap as thunder };
 // a knock against the rock
 export function knock() {

@@ -16,7 +16,7 @@ import { CEILING, DOORS, P, ROOMS, SOLID, rect, roomAt } from './layout';
 import { sharpen } from '../../../lib/three/textures';
 
 export const TILE_X = 1.22; // the grid: 4 ft along x
-export const TILE_Z = 0.61; // 2 ft along z
+const TILE_Z = 0.61; // 2 ft along z
 const CEILED = ['bullpen', 'michael', 'conference', 'hallway', 'men', 'women', 'annex', 'breakroom', 'darryl', 'supplies', 'lobby'];
 
 // every tile centre in a room (and in no smaller room inside it), clear of its walls

@@ -1,6 +1,6 @@
 # The galaxy's people and props, upgraded and rigged from the assets repo. The design
 
-Date: 2026-10-08. Status: design, written from the owner's brief by an architecting session, for an Opus 5.5 implementation session (phases in order, one branch each). The plan is `docs/superpowers/plans/2026-10-08-galaxy-asset-upgrade.md`; the hand-off is `docs/superpowers/HANDOFF-galaxy-asset-upgrade.md`.
+Date: 2026-10-08. Status: design, written from the owner's brief by an architecting session, for an Opus 5.5 implementation session (phases in order, one branch each). The plan is `docs/superpowers/plans/2026-10-08-galaxy-asset-upgrade.md`; the hand-off is `docs/superpowers/HANDOFF-galaxy.md`.
 
 ## What the owner asked
 

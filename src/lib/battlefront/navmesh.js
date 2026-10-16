@@ -455,8 +455,11 @@ export function load(buffer, { mesh = 0, links: useLinks = true, cell = 4 } = {}
     const na = nearest(a[0], a[1], a[2], { radius: snap });
     const nb = nearest(b[0], b[1], b[2], { radius: snap });
     if (!na || !nb || na.poly === nb.poly) return -1;
-    const length = points.reduce((sum, q, k) => (k ? sum + Math.hypot(q[0] - points[k - 1][0], q[1] - points[k - 1][1], q[2] - points[k - 1][2]) : 0), 0);
-    const k = links.push({ id: -1, from: na.poly, to: nb.poly, points, both, length }) - 1;
+    // (its ends where they meet the mesh, so a walker over it lands on a polygon: Hoth's east doorway's inner
+    // end, 2 m in from the gate's line, is 5 cm off the base's floor, and a walker left there stood off the mesh)
+    const ends = [na.point, ...points.slice(1, -1), nb.point];
+    const length = ends.reduce((sum, q, k) => (k ? sum + Math.hypot(q[0] - ends[k - 1][0], q[1] - ends[k - 1][1], q[2] - ends[k - 1][2]) : 0), 0);
+    const k = links.push({ id: -1, from: na.poly, to: nb.poly, points: ends, both, length }) - 1;
     hop(na.poly, -2 - 2 * k);
     if (both) hop(nb.poly, -3 - 2 * k);
     join(na.poly, nb.poly);

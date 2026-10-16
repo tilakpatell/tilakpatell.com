@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ARM_SECONDS, CAPTURE_SECONDS, DEFUSE_SECONDS, FUSE_SECONDS, WALKER_SPEED, arm, capture, escort, hold, insidePolygon, uplink } from './objectives.js';
+import hoth from '../../../data/bf2017/maps/hoth.json';
+import { chargeOf } from '../charges.js';
+import { ARM_SECONDS, CAPTURE_SECONDS, DEFUSE_SECONDS, FUSE_SECONDS, WALKER_SPEED, arm, armRules, capture, escort, hold, insidePolygon, uplink } from './objectives.js';
 
 const square = { points: [[0, 0], [10, 0], [10, 10], [0, 10]] };
 const run = (kind, o, seconds, ctx, dt = 0.05) => {
@@ -109,5 +111,98 @@ describe('the objectives', () => {
     }
     expect(fired).toBe(1);
     expect(o.rest).toBeGreaterThan(0);
+  });
+});
+
+// Hoth's fuel charge as the map rulebook reads it (PF_Interact_PlanetaryBattle_Core: bf2-re findings/63)
+describe('a fuel charge, as its core runs it', () => {
+  const row = chargeOf(hoth.rows, 'FantasyBattle_Logic:131');
+  const by = (side, ...ids) => ({ interactions: ids.map((id) => ({ side, id, held: true })) });
+  const none = { interactions: [] };
+  // (a step of 0.05 s: the events it fires)
+  const steps = (o, seconds, ctx) => {
+    const fired = [];
+    for (let t = 0; t < seconds - 1e-9; t += 0.05) {
+      arm.tick(o, 0.05, ctx);
+      fired.push(...o.fired);
+    }
+    return fired;
+  };
+
+  it('reads the core’s numbers: a 2 s arm, a 3 s defuse, a 45 s fuse, the keypad 5 s after the stage', () => {
+    expect(armRules(row)).toMatchObject({ arm: 2, defuse: 3, fuse: 45, live: 5, settle: 0.1, one: true, keep: false, pause: true, reset: true, warn: 1.33 });
+  });
+
+  it('takes no hold before its keypad comes on', () => {
+    const o = arm.create({ at: [0, 0], charge: row });
+    steps(o, 4.9, by('attack', 'a'));
+    expect(o.progress).toBe(0);
+    steps(o, 0.1, none);
+    expect(o.wait).toBe(0);
+  });
+
+  it('arms 0.1 s after a 2 s hold, one attacker at a time, by whoever finished it', () => {
+    const o = arm.create({ at: [0, 0], charge: row });
+    steps(o, 5, none);
+    // (a second attacker at the keypad adds nothing: one holds it)
+    let fired = steps(o, 2, by('attack', 'a', 'b'));
+    expect(o.progress).toBeCloseTo(1, 6);
+    expect(fired).toEqual([]);
+    fired = steps(o, 0.1, by('attack', 'a', 'b'));
+    expect(fired).toEqual(['armed']);
+    expect(o.by).toEqual(['a']);
+    expect(o.fuse).toBeCloseTo(45, 1);
+  });
+
+  it('starts over for the next holder when the one holding lets go', () => {
+    const o = arm.create({ at: [0, 0], charge: row });
+    steps(o, 5, none);
+    steps(o, 1.5, by('attack', 'a', 'b'));
+    expect(o.holder).toBe('a');
+    // (a lets go, b holds on: b's hold begins again, one step of it)
+    steps(o, 0.05, by('attack', 'b'));
+    expect(o.holder).toBe('b');
+    expect(o.progress).toBeCloseTo(0.025, 6);
+    expect(steps(o, 1.9, by('attack', 'b'))).toEqual([]);
+    expect(steps(o, 0.3, by('attack', 'b'))).toEqual(['armed']);
+    expect(o.by).toEqual(['b']);
+  });
+
+  it('starts the hold over when it is let go, and a defender cannot touch it unarmed', () => {
+    const o = arm.create({ at: [0, 0], charge: row });
+    steps(o, 5, none);
+    steps(o, 1.5, by('attack', 'a'));
+    steps(o, 0.05, none);
+    expect(o.progress).toBe(0);
+    steps(o, 3, by('defend', 'r'));
+    expect(o.progress).toBe(0);
+    expect(o.armed).toBe(false);
+  });
+
+  it('stops the fuse while a defender holds the keypad, runs it on when they let go, and goes off at 45 s', () => {
+    const o = arm.create({ at: [0, 0], charge: row });
+    steps(o, 5, none);
+    steps(o, 2.1, by('attack', 'a'));
+    steps(o, 10, none);
+    const left = o.fuse;
+    steps(o, 2, by('defend', 'r'));
+    expect(o.paused).toBe(true);
+    expect(o.fuse).toBeCloseTo(left, 6);
+    // (the explosion's sound 1.33 s before it goes)
+    const fired = steps(o, left + 0.1, none);
+    expect(fired).toEqual(['warn', 'detonated']);
+    expect(o.done).toBe(true);
+  });
+
+  it('is defused 0.1 s after a 3 s hold, its fuse reset, and armed again by the attackers', () => {
+    const o = arm.create({ at: [0, 0], charge: row });
+    steps(o, 5, none);
+    steps(o, 2.1, by('attack', 'a'));
+    steps(o, 20, none);
+    expect(steps(o, 3.1, by('defend', 'r'))).toEqual(['defused']);
+    expect(o.armed).toBe(false);
+    expect(o.by).toEqual(['r']);
+    expect(steps(o, 2.1, by('attack', 'a'))).toEqual(['armed']);
+    expect(o.fuse).toBeCloseTo(45, 1);
   });
 });

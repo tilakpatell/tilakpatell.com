@@ -84,7 +84,7 @@
 
 ### Task 7: the record and the gates
 
-**Files:** Create `docs/decisions/2026-10-13-every-chip-plays.md`; modify `docs/superpowers/HANDOFF-gpu-first.md` (the N6 row: what this lands of it).
+**Files:** Create `docs/decisions/2026-10-13-every-chip-plays.md`; modify `docs/superpowers/HANDOFF-runtime.md` (the N6 row: what this lands of it).
 
 - [ ] `npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build`: all green.
 - [ ] The container's load probe on the new production build at Low (film blocked): the level in and the field ready sooner than 209 s, the load line printed.

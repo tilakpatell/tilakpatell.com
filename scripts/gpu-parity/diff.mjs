@@ -8,9 +8,9 @@
 //   psnr (dB over the three channels; Infinity when they're the same) }
 // passes({ psnr, off }) → the spec's bar: PSNR ≥ 32 dB and under 2 % off
 
-export const OFF_BY = 16; // /255: past this a pixel has visibly changed
-export const MIN_PSNR = 32; // dB
-export const MAX_OFF = 0.02;
+const OFF_BY = 16; // /255: past this a pixel has visibly changed
+const MIN_PSNR = 32; // dB
+const MAX_OFF = 0.02;
 
 export function diff(a, b) {
   if (a.width !== b.width || a.height !== b.height) throw new Error(`two sizes: ${a.width}×${a.height} and ${b.width}×${b.height}`);

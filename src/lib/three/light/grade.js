@@ -74,7 +74,7 @@ export const GAUSSIAN_LEVELS = [1, 2, 3, 4, 5];
 // three's BloomNode weighs its five mips by these at radius 0 (its source)
 export const BLOOM_FACTORS = [1, 0.8, 0.6, 0.4, 0.2];
 // the export's GradingLutAssets are all 33³ (textures.jsonl, 63 of them)
-export const GAME_LUT_SIZE = 33;
+const GAME_LUT_SIZE = 33;
 // The records' tone maps as the chain's: Linear clamps the exposed scene to
 // 0…1; FilmicNeutral (Endor, Geonosis, Naboo, Yavin) is Frostbite's neutral
 // filmic curve, whose shape is not in the export: three's Neutral (Khronos

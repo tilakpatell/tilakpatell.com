@@ -271,7 +271,7 @@ const round = (v, k = 3) => +v.toFixed(k);
 // from overhead ('up'), up from below ('rise'), or from a side (the
 // figure's own, by the hips' facing, so a strike that turns the body still
 // reads as it cuts: a tip moving to its left cuts from the right)
-export function strokeDir(rows, [t0, t1]) {
+function strokeDir(rows, [t0, t1]) {
   const inside = rows.filter((r) => r.t >= t0 && r.t <= t1);
   const span = inside.length > 1 ? inside : rows;
   const [dx, dy] = sub(span.at(-1).body, span[0].body);
@@ -301,7 +301,7 @@ export function strokeSide(rows, [t0, t1], ahead = AHEAD) {
 
 // the plane the blade sweeps in its window: the normal of the turn from
 // frame to frame of the blade (tip less socket), summed
-export function sweepPlane(rows, [t0, t1]) {
+function sweepPlane(rows, [t0, t1]) {
   const inside = rows.filter((r) => r.t >= t0 && r.t <= t1);
   const n = new THREE.Vector3();
   const a = new THREE.Vector3();
@@ -338,7 +338,7 @@ function firstKey(clip) {
 
 // when the blade comes to rest after the window: the first frame of a tenth
 // of a second slower than SETTLE (the clip's end if it never does)
-export function settleAfter(rows, after, end) {
+function settleAfter(rows, after, end) {
   const speed = (i) => Math.hypot(...rows[i].hand.map((v, j) => v - rows[i - 1].hand[j])) / Math.max(1e-6, rows[i].t - rows[i - 1].t);
   const hold = Math.max(1, Math.round(0.1 / Math.max(1e-6, rows[1]?.t - rows[0]?.t || 1)));
   for (let i = 1; i < rows.length - hold; i++) {

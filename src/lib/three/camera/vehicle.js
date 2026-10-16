@@ -37,7 +37,7 @@ export const LIMIT_SETTLE = 6;
 // (hand: the seat's arm and field when the vehicle's rows have none; the
 // cameras' offsets are in the vehicles' meshes, not the export)
 export const VEHICLE_ARM = 8;
-export const VEHICLE_FOV = 70;
+const VEHICLE_FOV = 70;
 
 const RAD = Math.PI / 180;
 const fin = (v) => Number.isFinite(v);

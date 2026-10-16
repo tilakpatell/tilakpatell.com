@@ -18,7 +18,7 @@ export const CEILING = 2.75;
 // hallway's two ends. Added for walking: Michael's office and the
 // conference room (in their glass fronts), Darryl's office, the break room,
 // the supply room, both restrooms, Ryan's closet and the stairwell.
-export const DOORWAYS = [
+const DOORWAYS = [
   'M142 40 V70', // the suite, from the lobby
   'M514 200 V228', // the bullpen to the kitchen hallway
   'M739 200 V228', // the hallway to the annex
@@ -134,17 +134,17 @@ export const VENDING = [box(809, 18, 20, 26, { top: 1.85 }), box(809, 48, 20, 26
 export const FILES = [box(505, 236, 9, 46, { top: 1.3 }), box(150, 245, 11, 32, { top: 1.3 }), box(906, 150, 20, 14, { top: 1.3 })];
 export const SHELVES = [box(163, 488, 133, 18, { top: 2.1 }), box(163, 400, 14, 82, { top: 2.1 }), box(282, 400, 14, 82, { top: 2.1 })];
 export const PLANTS = [circle(150, 22, 0.28), circle(212, 140, 0.28), circle(918, 368, 0.28), circle(744, 168, 0.28), circle(318, 20, 0.24)];
-export const MICHAEL_CHAIRS = [circle(256, 92, 0.3), circle(290, 92, 0.3)];
-export const CABINET = box(208, 64, 14, 44, { top: 1.1 }); // Michael's credenza, his Dundies on it
+const MICHAEL_CHAIRS = [circle(256, 92, 0.3), circle(290, 92, 0.3)];
+const CABINET = box(208, 64, 14, 44, { top: 1.1 }); // Michael's credenza, his Dundies on it
 export const TABLE = (() => {
   const t = CONFERENCE_TABLE;
   return box(t.x, t.y, t.w, t.h, { low: true });
 })();
-export const COUNTER = box(KITCHEN_COUNTER.x, KITCHEN_COUNTER.y, KITCHEN_COUNTER.w, KITCHEN_COUNTER.h, { low: true });
-export const KTABLE = circle(KITCHEN_TABLE.x, KITCHEN_TABLE.y, KITCHEN_TABLE.r * U + 0.05, { low: true });
-export const BTABLES = BREAK_TABLES.map(([x, y]) => circle(x, y, 0.5, { low: true }));
+const COUNTER = box(KITCHEN_COUNTER.x, KITCHEN_COUNTER.y, KITCHEN_COUNTER.w, KITCHEN_COUNTER.h, { low: true });
+const KTABLE = circle(KITCHEN_TABLE.x, KITCHEN_TABLE.y, KITCHEN_TABLE.r * U + 0.05, { low: true });
+const BTABLES = BREAK_TABLES.map(([x, y]) => circle(x, y, 0.5, { low: true }));
 // the reception counter: its L, as two boxes
-export const RECEPTION_COUNTER = [box(162, 178, 52, 14, { low: true }), box(200, 178, 14, 42, { low: true })];
+const RECEPTION_COUNTER = [box(162, 178, 52, 14, { low: true }), box(200, 178, 14, 42, { low: true })];
 // the stairs going down in the stairwell, and its rail
 export const STAIRWELL = { ...rect(ROOMS.stairs), flight: box(565, 24, 112, 60, { low: true }) };
 
@@ -198,7 +198,7 @@ const WH_COLLIDERS = [
   { kind: 'circle', ...WH_PROPS.barrel, top: 0.95 },
 ];
 // the dock's open door, out to the lot (the other one's shut)
-export const DOCK_DOOR = { z: WAREHOUSE.z + WAREHOUSE.d / 2 + 3.5, w: 3.2 };
+const DOCK_DOOR = { z: WAREHOUSE.z + WAREHOUSE.d / 2 + 3.5, w: 3.2 };
 const WH_WALLS = (() => {
   const { x, z, w, d } = WAREHOUSE;
   return [

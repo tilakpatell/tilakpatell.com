@@ -188,7 +188,7 @@ async function texturesOf(env, root, r, glbBucketPath, seen) {
 // A whole set at once (`--all '<glob>'`): every LOD, collision mesh and map
 // of every model whose name matches, through the pool, then the maps the
 // GLBs name besides. One line a file, one summary line.
-export async function fetchAll(env, root, manifest, glob, { textures = true, collision = true } = {}) {
+async function fetchAll(env, root, manifest, glob, { textures = true, collision = true } = {}) {
   const jobs = jobsFor(manifest, glob, { textures, collision });
   const seen = new Set(jobs.filter((j) => j.kind === 'texture').flatMap((j) => [j.path, ...j.sources]));
   const results = await Promise.all(

@@ -20,7 +20,7 @@ export const SWING = { min: 0.25, max: 2 };
 export const BEND = 0.4;
 // the flutter's frequency and depth per unit of WindWiggle (a leaf's quiver,
 // the house's shrub 3.4 Hz at 0.012 m)
-export const WIGGLE = { hz: 3.4, depth: 0.012 };
+const WIGGLE = { hz: 3.4, depth: 0.012 };
 // the slowest and quickest sway (a heavy frond to a twig)
 const HZ = { min: 0.15, max: 3 };
 

@@ -93,14 +93,14 @@ export async function makeSky(folder, id, { name, mean = 0.8, root = join(ROOT, 
 
 // where the bucket keeps each panorama the space maps name (their extras'
 // SkyComponentData: PanoramicTexture)
-export const PANORAMAS = {
+const PANORAMAS = {
   t_space_endor01_c: 'web/textures/levels/space/sb_endor_01/planet/t_space_endor01_c.ktx2',
   t_space_01_c: 'web/textures/lighting/textures/space/t_space_01_c.ktx2',
   t_space_no_large_stars_01_c: 'web/textures/lighting/textures/space/t_space_no_large_stars_01_c.ktx2',
 };
-export const PANORAMA_WIDTHS = [4096, 2048, 1024];
+const PANORAMA_WIDTHS = [4096, 2048, 1024];
 
-export async function makePanorama(name, { as, root = join(ROOT, 'lab', 'assets', 'bf2017'), out = join(ROOT, 'public', 'textures', 'galaxy', 'sky', 'space') } = {}) {
+async function makePanorama(name, { as, root = join(ROOT, 'lab', 'assets', 'bf2017'), out = join(ROOT, 'public', 'textures', 'galaxy', 'sky', 'space') } = {}) {
   if (!PANORAMAS[name]) throw new Error(`${name}: not a panorama (${Object.keys(PANORAMAS).join(', ')})`);
   if (!/^[a-z0-9]+$/.test(as ?? '')) throw new Error('--as: what the site calls it, letters and digits (endor)');
   const bytes = new Uint8Array(await readFile(await bucketFile(root, PANORAMAS[name])));
@@ -132,7 +132,7 @@ export async function makePanorama(name, { as, root = join(ROOT, 'lab', 'assets'
 }
 
 // a panorama as a level area's sky dome (galaxy/levelArea.js reads a picture, not a KTX2)
-export async function makePanoramaWebp(name, world, { root = join(ROOT, 'lab', 'assets', 'bf2017'), width = 2048 } = {}) {
+async function makePanoramaWebp(name, world, { root = join(ROOT, 'lab', 'assets', 'bf2017'), width = 2048 } = {}) {
   if (!PANORAMAS[name]) throw new Error(`${name}: not a panorama (${Object.keys(PANORAMAS).join(', ')})`);
   if (!/^[a-z0-9_]+$/.test(world ?? '')) throw new Error('--webp: the level pack, letters, digits and _ (sb_fondor)');
   const sharp = createRequire(createRequire(import.meta.url).resolve('ndarray-pixels'))('sharp');
@@ -153,7 +153,7 @@ const GLOBE_OVER = 4; // (rendered at four times the size and brought down, so t
 
 // the worlds with a skin (src/data/planetSkins.json: a colour map on disk, the
 // site's mid cut) and no picture: their globes are rendered from the skin
-export async function skinnedGlobes({ skins, pictures = GLOBES, publicDir = join(ROOT, 'public') }) {
+async function skinnedGlobes({ skins, pictures = GLOBES, publicDir = join(ROOT, 'public') }) {
   const out = [];
   for (const [system, skin] of Object.entries(skins)) {
     if (!skin.color || pictures[system]) continue;
@@ -164,7 +164,7 @@ export async function skinnedGlobes({ skins, pictures = GLOBES, publicDir = join
 
 const hexRgb = (hex) => (typeof hex === 'string' && /^#[0-9a-f]{6}$/i.test(hex) ? [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) : null);
 
-export async function makeGlobes({ root = join(ROOT, 'lab', 'assets', 'bf2017'), out = join(ROOT, 'public', 'models', 'galaxy', 'space', 'globes'), data = join(ROOT, 'src', 'data', 'galaxy', 'space', 'globes.json'), skins = join(ROOT, 'src', 'data', 'planetSkins.json') } = {}) {
+async function makeGlobes({ root = join(ROOT, 'lab', 'assets', 'bf2017'), out = join(ROOT, 'public', 'models', 'galaxy', 'space', 'globes'), data = join(ROOT, 'src', 'data', 'galaxy', 'space', 'globes.json'), skins = join(ROOT, 'src', 'data', 'planetSkins.json') } = {}) {
   const sharp = createRequire(createRequire(import.meta.url).resolve('ndarray-pixels'))('sharp');
   await mkdir(out, { recursive: true });
   const index = {};

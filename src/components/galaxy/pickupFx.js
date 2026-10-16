@@ -17,7 +17,7 @@ import { cloneScene, loadGLTF } from '../../lib/three/gltfCache';
 import { disposeTree } from '../../lib/three/renderer';
 import { PICKUP_RULES } from './pickups';
 
-export const PICKUP_MODEL = '/models/galaxy/pickups.glb';
+const PICKUP_MODEL = '/models/galaxy/pickups.glb';
 export const LOOK = { size: 1.1, glow: 2.4, spin: 1.2, bob: 0.15, bobHz: 1.4, blinkHz: 4, emissive: 0.55 };
 export const GLOW = { repair: '#6dff9a', overcharge: '#ffb347', rapid: '#ff6a5c', bubble: '#7fd6ff', charge: '#c7a6ff' };
 

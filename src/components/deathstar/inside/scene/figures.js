@@ -15,7 +15,6 @@
 // stands in as a plain capsule, so nobody vanishes.
 //
 //   PEOPLE                 kind → { url, tall }: the heroes and the stormtrooper
-//   GUN_KINDS              the guns a figure can hold: e11, dl44, dh17, a280
 //   ALIAS                  the rules’ older clip names to the library’s (hit, die, dieFwd, dieBlown, taunt)
 //   PRELOAD                the clips fetched up front, so the first fight isn’t late
 //   motionOf(speed, side = 0, turn = 0) → { move, speed, side, turn }   pure: the animator’s motion for a
@@ -123,7 +122,6 @@ const GUNS = {
     ['rod', [0.013, 0.16], [0, 0.1, -0.16], 'grey'],
   ],
 };
-export const GUN_KINDS = Object.keys(GUNS);
 
 function makeGun(kind, finish) {
   const spec = GUNS[kind];
