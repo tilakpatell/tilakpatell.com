@@ -11,7 +11,7 @@ Lane FL3 of the engine floor (`docs/superpowers/specs/2026-10-15-engine-floor-de
 | | files reached | with GLSL |
 | --- | --- | --- |
 | `origin/main` (`f97079c7`…, the flight `'glsl'`) | 296 | 13: `expanse/flight/ground.js`, `expanse/flight/scene.js`, `lib/three/{recolour,puffs,wind,foliage,groundLook,groundmap,core,house}.js`, `galaxy/surface/props/{shaders,windows}.js`, `galaxy/surface/weather.js` |
-| this branch (the flight `'nodes'`) | 292 | **0** |
+| this branch (the flight `'nodes'`) | 295 | **0** |
 
 `src/runtime/shading.test.js`: 11 passed.
 
