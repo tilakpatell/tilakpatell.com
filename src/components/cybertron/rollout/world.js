@@ -89,7 +89,7 @@ export const LOOK = {
 // One cache per renderer: an environment map belongs to the GL context it
 // was made in.
 const HDRI = new WeakMap();
-export function loadHdri(name, stage) {
+function loadHdri(name, stage) {
   const { renderer } = stage;
   if (!HDRI.has(renderer)) HDRI.set(renderer, new Map());
   const cache = HDRI.get(renderer);

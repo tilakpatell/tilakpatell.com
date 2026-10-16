@@ -10,7 +10,7 @@
 // frame can be drawn.
 
 // a town that hides this much of the screen or more...
-export const MOSTLY = 3 / 4;
+const MOSTLY = 3 / 4;
 // ...has the map drawn behind it at most this often, in ms (a film's rate)
 export const COVERED_MS = 1000 / 24;
 

@@ -18,8 +18,8 @@
 import { loadThree } from './three.js';
 
 export const CONTACT_SIZE = 2; // m: the square under a figure
-export const CONTACT_HEIGHT = 1; // m: what is within this of the ground darkens it
-export const CONTACT_LAYER = 30; // the layer the passes draw (tracked figures only)
+const CONTACT_HEIGHT = 1; // m: what is within this of the ground darkens it
+const CONTACT_LAYER = 30; // the layer the passes draw (tracked figures only)
 const DARKNESS = 0.6; // the square's darkest, under a foot on the ground
 const BLUR = 1.5; // texels: the blur's step
 const TIERS = {

@@ -4,7 +4,7 @@
 // (the defenders' call for a bombing run on the walkers). Pure.
 //
 //   capture.create({ volume, name, meter }) → o      capture.tick(o, dt, { inside: { attack, defend } })
-//   arm.create({ at, name }) → o                     arm.tick(o, dt, { interactions: [{ side, id, held }] })
+//   arm.create({ at, name, charge }) → o             arm.tick(o, dt, { interactions: [{ side, id, held }] })   (charge: a map rulebook `charges` row)
 //   uplink.create({ at, name }) → o                  uplink.tick(o, dt, { interactions, open })
 //   escort.create({ path, health, name }) → o        escort.tick(o, dt, { near })   (o.walker is the walker's body)
 //   hold.create({ volume, seconds, name }) → o       hold.tick(o, dt, { inside })
@@ -18,7 +18,8 @@ export const CAPTURE_SECONDS = 60;
 export const ADVANTAGE_MAX = 6;
 // The HUD's thirds of the meter (`PF_CapturePoint`'s 0.33 and 0.66).
 export const THIRDS = [0.33, 0.66];
-// `SW02_VO_BombInteract`'s shape, by hand: hold 6 s to arm, 30 s of fuse, 6 s to defuse.
+// A bomb's holds and fuse where the map rulebook keeps no charge for it (Strike's), by hand: hold 6 s to arm,
+// 30 s of fuse, 6 s to defuse. Hoth's fuel charges read theirs (`charges`: 2 s, 45 s, 3 s).
 export const ARM_SECONDS = 6;
 export const FUSE_SECONDS = 30;
 export const DEFUSE_SECONDS = 6;
@@ -80,37 +81,115 @@ export const capture = {
 };
 
 // -- arm: an attacker holds the interaction to arm, a defender to defuse; the fuse runs out and it is done --
+//
+// With a row of the map rulebook's `charges` (Hoth's fuel charges, bf2-re findings/63) the charge runs as the
+// game's PF_Interact_PlanetaryBattle_Core does: its keypad comes on `live` seconds after the stage enables it;
+// one soldier holds it at a time (the button's AllowMoreInteractors off while one does), the attackers while
+// it is off (the arm hold) and the defenders once armed (the defuse hold); a hold let go starts again; a
+// finished hold arms or defuses `settle` seconds later (the keypad's Delay); the fuse stops while a defender
+// holds the keypad and runs on when they let go; a defuse resets it, and the attackers may arm it again.
+// Without one (Strike's bombs) the hand values above: anyone of the side, the fuse running through a defuse.
+//   arm.create({ at, name, charge }) → o      o.fired: the step's events ('armed', 'defused', 'detonated', 'warn');
+//   o.by: who finished the hold that armed or defused it
 
-const holding = (interactions, side) => (interactions ?? []).some((i) => i.side === side && i.held);
+export function armRules(charge = null) {
+  if (!charge) return { arm: ARM_SECONDS, defuse: DEFUSE_SECONDS, fuse: FUSE_SECONDS, live: 0, settle: 0, one: false, keep: false, pause: false, reset: true, warn: 0 };
+  const f = charge.fuse ?? {};
+  return {
+    arm: charge.arm?.hold ?? ARM_SECONDS,
+    defuse: charge.defuse?.hold ?? DEFUSE_SECONDS,
+    // (the StopWatch's Multiplier: the fuse runs that many seconds a second)
+    fuse: (f.seconds ?? FUSE_SECONDS) / (f.multiplier || 1),
+    live: charge.live?.seconds ?? 0,
+    settle: charge.settle?.seconds ?? 0,
+    one: Boolean(charge.interact?.one),
+    keep: Boolean(charge.interact?.keep),
+    pause: Boolean(f.pausedWhileHeld),
+    reset: f.resetOnDefuse !== false,
+    warn: f.warn ?? 0,
+  };
+}
 
 export const arm = {
-  create({ at, name = null }) {
-    return { type: 'arm', name, at, armed: false, fuse: 0, progress: 0, defuse: 0, done: false };
+  create({ at, name = null, charge = null }) {
+    const rules = armRules(charge);
+    return { type: 'arm', name, at, charge, rules, armed: false, fuse: 0, elapsed: 0, progress: 0, defuse: 0, holder: null, by: [], paused: false, wait: rules.live, settling: null, warned: false, fired: [], done: false };
   },
   tick(o, dt, { interactions }) {
+    o.fired = [];
     if (o.done) return;
-    if (!o.armed) {
-      o.progress = holding(interactions, 'attack') ? o.progress + dt / ARM_SECONDS : 0;
-      if (o.progress >= 1 - 1e-9) {
-        o.armed = true;
-        o.fuse = FUSE_SECONDS;
-        o.progress = 0;
-        o.defuse = 0;
+    const R = o.rules ?? armRules(o.charge);
+    if (o.wait > 1e-9) {
+      o.wait -= dt;
+      if (o.wait <= 1e-9) o.wait = 0;
+      return;
+    }
+    // (who holds: the side the keypad is for, the one already at it, else the first)
+    const side = o.armed ? 'defend' : 'attack';
+    const held = (interactions ?? []).filter((i) => i.held && i.side === side);
+    const key = o.armed ? 'defuse' : 'progress';
+    let holding;
+    if (R.one) {
+      const had = o.holder;
+      if (o.holder && !held.some((i) => i.id === o.holder)) o.holder = null;
+      if (!o.holder && held.length) o.holder = held[0].id;
+      holding = Boolean(o.holder);
+      // (the one who held it let go: the next starts over, the button's StopWatch reset on OnInteractStop)
+      if (had && o.holder !== had && !R.keep && o.settling === null) o[key] = 0;
+    } else holding = held.length > 0;
+    if (!holding && !R.keep && o.settling === null) o[key] = 0;
+    else if (holding && o.settling === null) {
+      o[key] = Math.min(1, o[key] + dt / (o.armed ? R.defuse : R.arm));
+      if (o[key] >= 1 - 1e-9) {
+        o.settling = R.settle;
+        o.by = R.one ? [o.holder] : held.map((i) => i.id);
       }
-      return;
     }
-    o.defuse = holding(interactions, 'defend') ? o.defuse + dt / DEFUSE_SECONDS : 0;
-    if (o.defuse >= 1 - 1e-9) {
-      o.armed = false;
-      o.fuse = 0;
-      o.defuse = 0;
-      return;
+    o.paused = o.armed && R.pause && holding;
+    if (o.settling !== null) {
+      o.settling -= dt;
+      if (o.settling <= 1e-9) {
+        o.settling = null;
+        o.holder = null;
+        if (!o.armed) {
+          o.armed = true;
+          if (R.reset) o.elapsed = 0;
+          o.progress = 0;
+          o.defuse = 0;
+          o.warned = false;
+          o.fired.push('armed');
+        } else {
+          o.armed = false;
+          if (R.reset) o.elapsed = 0;
+          o.defuse = 0;
+          o.progress = 0;
+          o.paused = false;
+          o.fired.push('defused');
+        }
+      }
     }
-    o.fuse = Math.max(0, o.fuse - dt);
-    if (o.fuse <= 1e-9) o.done = true;
+    // (the fuse starts on the step after the armed event)
+    if (o.armed && !o.paused && !o.fired.includes('armed')) {
+      o.elapsed += dt;
+      if (!o.warned && R.warn > 0 && R.fuse - o.elapsed <= R.warn + 1e-9) {
+        o.warned = true;
+        o.fired.push('warn');
+      }
+      if (o.elapsed >= R.fuse - 1e-9) {
+        o.armed = false;
+        o.done = true;
+        o.fired.push('detonated');
+      }
+    }
+    o.fuse = o.armed ? Math.max(0, R.fuse - o.elapsed) : 0;
   },
-  view: (o) => ({ type: o.type, name: o.name, meter: o.armed ? o.fuse / FUSE_SECONDS : o.progress, owner: o.done ? 'attack' : 'defend', contested: false, armed: o.armed, fuse: o.fuse, progress: o.armed ? o.defuse : o.progress }),
+  view: (o) => {
+    const R = o.rules ?? armRules(o.charge);
+    return { type: o.type, name: o.name, meter: o.armed ? o.fuse / R.fuse : o.progress, owner: o.done ? 'attack' : 'defend', contested: false, armed: o.armed, fuse: o.fuse, progress: o.armed ? o.defuse : o.progress, paused: o.paused, live: o.wait <= 0 };
+  },
 };
+
+const holding = (interactions, side) => (interactions ?? []).some((i) => i.side === side && i.held);
 
 // -- uplink: a defender holds the console to call a bombing run (o.fired for the step it lands), then it rests --
 

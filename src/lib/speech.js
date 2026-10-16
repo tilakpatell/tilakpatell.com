@@ -29,7 +29,7 @@ export const FADE = 150; // ms: a line cut short fades for 0.12 s (lib/clips)
 export const GAP = 300; // ms of quiet between one line and the next
 export const REST = 1200; // ms of quiet before a passing remark
 export const WAIT = 4000; // ms a line may wait before it's too late to say it
-export const PRESSED = 500; // ms after a press that a line counts as asked for
+const PRESSED = 500; // ms after a press that a line counts as asked for
 
 export function createSpeech({ now = () => performance.now(), recentInput = () => false, muted = () => false } = {}) {
   let floor = null; // the line being said (or loading)

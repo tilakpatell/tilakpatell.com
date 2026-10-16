@@ -22,7 +22,7 @@ import { deref, loadAsset, objectsOf } from './bf2017-ebx.mjs';
 import { weaponId } from './bf2017-rulebook.mjs';
 
 export const SKELETON = 'Characters/Rigs/Weapon/WeaponSke01';
-export const MUZZLE_BONE = 'Wep_Muzzle';
+const MUZZLE_BONE = 'Wep_Muzzle';
 export const STANCE_OF = { wabsRif: 't', wabsPstl: 'p', wabsLMG: 'l' };
 const UNGATED = '00000000-0000-0000-0000-000000000000';
 const vec = (v) => [v.x, v.y, v.z];

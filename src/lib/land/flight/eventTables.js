@@ -227,7 +227,7 @@ const weatherOf = (type) => {
   return [e(kind, LINES[kind], { weight: 2 }), ...(kind === 'dust' ? [] : [e('dust', LINES.dust)])];
 };
 
-export function expanseEvents(spec, system) {
+function expanseEvents(spec, system) {
   const out = weatherOf(spec.type);
   if (system?.hazard === 'pirates') out.push(e('ambush', 'Pirates: an ambush from the ground.', { model: 'mercenary', n: 5 }), e('raid', 'Pirate gunboats come for you.', { model: 'gunboat', n: 2 }));
   if ((system?.traffic ?? 0) > 0.3) out.push(e('convoy', 'A convoy passes.', { model: 'freighter' }));

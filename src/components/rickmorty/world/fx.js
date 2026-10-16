@@ -4,7 +4,7 @@
 // under Morty and the cruiser. None of it is inked.
 
 import * as THREE from 'three';
-import { hot } from '../../../lib/stage3d';
+import { hot } from '../stage';
 import { dotTexture } from '../../middleearth/towns/bake';
 import { SWIRL_GLSL } from '../swirl';
 

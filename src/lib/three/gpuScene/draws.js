@@ -42,7 +42,7 @@ import { FADE } from './cull.js';
 import { fadeNodes } from './lodFade.js';
 import { setIndirect } from './three.js';
 
-export const MAX_TEXTURES = 16;
+const MAX_TEXTURES = 16;
 
 export function texturesOf(material) {
   const out = new Set();

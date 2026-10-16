@@ -1,1 +1,0 @@
-{"_source":"a probe that ssrLoadModule-s src/lib/physics/world.js through vite.createServer as scripts/x2-profile.mjs does, makes a world, adds a ball and steps it 120 times; the cloud container, 2026-10-11","build":"simd","state":"ready","loadMs":3950,"steps":120}

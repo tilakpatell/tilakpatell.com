@@ -147,4 +147,4 @@ Every module in `lib/ai` has a test that runs it on plain numbers with a seeded 
 
 - `src/lib/ai/` with the eight modules and their tests, in `docs/architecture.md`'s "Where things live".
 - The four integrations above, each merged on its own with `npm run lint`, `npm test`, `npm run build` and `node scripts/health.mjs --check --skip build` clean, a flight or walk checked in headless Chromium (`scripts/autopilot-check.mjs --only smoke` on the world's routes; a seeded fight read from `window.__universeDebug`), and no visitor-facing loss.
-- `docs/superpowers/HANDOFF-npc-intelligence.md` saying what's on the toolkit and what isn't, for the next session.
+- `docs/superpowers/HANDOFF-runtime.md` saying what's on the toolkit and what isn't, for the next session.

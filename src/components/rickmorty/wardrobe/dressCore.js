@@ -28,8 +28,12 @@ import { bodyById, swatchById } from './looks';
 export const MAX_REGIONS = 6; // (five a body’s own at most, and Mr. White’s hands besides)
 
 // 0 head, 1 torso and arms, 2 hips and thighs, 3 shins, 4 feet, 5 hands (a
-// zone no region takes: skin stays skin)
-export const zoneOf = (bone) => (/neck|Head|head/.test(bone) ? 0 : /Hand/.test(bone) ? 5 : /Foot|Toe/.test(bone) ? 4 : /UpLeg|Hips/.test(bone) ? 2 : /Leg/.test(bone) ? 3 : 1);
+// zone no region takes: skin stays skin). By Meshy's names, and by the 2017
+// game's for a guest fitted to its skeleton (scripts/guest-rig.mjs): the
+// limbs are named alike, the game's back is Spine, Spine1, Spine2 where
+// Meshy's is Spine02, Spine01, Spine (all the torso's), and its neck is Neck
+// and Neck1 where Meshy's is neck.
+export const zoneOf = (bone) => (/[Nn]eck|Head|head/.test(bone) ? 0 : /Hand/.test(bone) ? 5 : /Foot|Toe/.test(bone) ? 4 : /UpLeg|Hips/.test(bone) ? 2 : /Leg/.test(bone) ? 3 : 1);
 
 // A float `zone` for each vertex, from its strongest bone; and `lower`, how
 // much of it the hips and legs move (zones 2 to 4), which blends smoothly

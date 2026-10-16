@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { hullOf } from '../../lib/combat/hulls';
 import { BOMB, FACTIONS, FIGHT, HOLDOFF, HUNTER_KINDS, HUNTER_SENSES, LOSE, NAMES, SHIP_R, TRAITS, blocked, clearOf, createHunt, entryPoint, fightSpeed, hitRadius, packPlan, shipVelocity, slotsFor, turnRate, turnRateAt, turnToward } from './hunterRules';
 import { KINDS as GALAXY_KINDS, FACTIONS as GALAXY_FACTIONS } from '../galaxy/hunted';
 import { PACE, SHIP } from './ship';
@@ -1121,5 +1123,37 @@ describe('what the crews’ ship powers do to them', () => {
     fly(hunt.lasers[2], 0, 7);
     expect(hunt.swallow({ x: 0, y: 0, z: 0 }, 6)).toBe(2);
     expect(hunt.lasers.map((m) => m.on)).toEqual([false, false, true, false]);
+  });
+});
+
+describe('the hulls (the galaxy’s hulls design)', () => {
+  it('your shot meets a hunter on its hull, turned as it flies: over its back it misses, through its body it hits', () => {
+    const bin = readFileSync(new URL('../../../scripts/fixtures/bf2017/physics/xwing-hull.bin', import.meta.url));
+    const XW = hullOf(bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength));
+    const hulls = { get: (kind) => (kind === 'xwing' ? XW : null) };
+    const hunt = createHunt({ rand: seeded(9), kinds: GALAXY_KINDS, factions: GALAXY_FACTIONS, hulls });
+    hunt.pack('rebellion', start(), { size: 3, ace: false });
+    for (let t = 0; t < 2; t += DT) hunt.update(DT, start());
+    const h = hunt.live.find((o) => o.kind === 'xwing');
+    expect(h).toBeTruthy();
+    // held level, flying along +z, so its hull's frame is the world's
+    Object.assign(h.pos, { x: 40, y: 3, z: -20 });
+    Object.assign(h.prev, h.pos);
+    Object.assign(h.vel, { x: 0, y: 0, z: 10 });
+    h.bank = 0;
+    const over = h.type.size * 0.2; // (above its box, 0.095 of its length tall, and inside its sphere)
+    const across = (y) => hunt.hit({ x: h.pos.x - 1, y: h.pos.y + y, z: h.pos.z }, { x: h.pos.x + 1, y: h.pos.y + y, z: h.pos.z }, 0.01);
+    expect(across(over)).toBeNull();
+    const hit = across(0);
+    expect(hit).toMatchObject({ id: h.id, kind: 'xwing', property: 68 });
+    expect(hit.at.y).toBeCloseTo(3, 3);
+    // and a kind with no hull is hit as its sphere
+    const plain = createHunt({ rand: seeded(9), kinds: GALAXY_KINDS, factions: GALAXY_FACTIONS, hulls: { get: () => null } });
+    plain.pack('rebellion', start(), { size: 3, ace: false });
+    for (let t = 0; t < 2; t += DT) plain.update(DT, start());
+    const g = plain.live.find((o) => o.kind === 'xwing');
+    Object.assign(g.pos, { x: 40, y: 3, z: -20 });
+    Object.assign(g.prev, g.pos);
+    expect(plain.hit({ x: 39, y: 3 + over, z: -20 }, { x: 41, y: 3 + over, z: -20 }, 0.01)).toMatchObject({ id: g.id });
   });
 });

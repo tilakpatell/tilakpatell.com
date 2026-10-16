@@ -14,7 +14,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { hot } from '../../../../lib/stage3d';
+import { hot } from '../../stage';
 import { FURNITURE, LINKS, PEOPLE, RINGS } from '../rules';
 import { at, mergeParts, rng } from '../kit';
 import { BALL, BALL8, BOX, CYL, CYL8, PLANE, TAU, fitText, lathe, makeRoom, tiledPaint, tube } from './shell';

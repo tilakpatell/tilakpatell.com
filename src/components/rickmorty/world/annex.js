@@ -13,7 +13,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { hot } from '../../../lib/stage3d';
+import { hot } from '../stage';
 import { ARCADE, AREAS, LINKS } from './rules';
 import { at, batch, coloured, fitModel, glowMaterial, logoText, neonCopy, paint, rng, speckle } from './kit';
 import { ANNEX_LIGHT, ANNEX_SKY, makeSky } from './sky';

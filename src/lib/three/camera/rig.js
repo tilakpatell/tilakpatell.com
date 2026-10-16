@@ -29,8 +29,8 @@ export const RECOIL_SPRING = { k: 220, c: 26 };
 // (hand: the trauma lost per second)
 export const SHAKE_DECAY = 1.6;
 // (hand: at full trauma, the most the shake moves the camera (m) and rolls it (rad))
-export const SHAKE_MOVE = 0.08;
-export const SHAKE_ROLL = 0.035;
+const SHAKE_MOVE = 0.08;
+const SHAKE_ROLL = 0.035;
 // (hand: a knock's reach: its trauma halves at this distance, m)
 export const SHAKE_FALLOFF = 25;
 

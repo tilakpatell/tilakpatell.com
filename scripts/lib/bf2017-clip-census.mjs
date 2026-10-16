@@ -13,7 +13,6 @@
 //   familyOf(name)                 → the name's first part ('A_Luke_…' → 'A')
 //   skeletonOf(entry)              → the skeleton's last part ('Walrus_HumanMale')
 //   ownerOf(entry)                 → { state: 'owned' | 'excluded', by } | null
-//   firstHeld(anims, names, ok)    → the first spelling the manifest has that `ok` takes, else null
 //   censusRows(anims, used)        → { bySkeleton, byFamily, totals }
 //   censusMarkdown(rows, { date }) → the page
 
@@ -46,14 +45,6 @@ export function ownerOf(entry) {
   if (OWNED_SKELETONS[sk]) return { state: 'owned', by: OWNED_SKELETONS[sk] };
   for (const [re, by, what] of OWNED_PATTERNS) if (re.test(what === 'name' ? entry.name : sk)) return { state: 'owned', by };
   if (SEQUEL_SKELETONS.has(sk) || isSequel(entry.name) || /^(Jakku|Crait|Takodana)_/i.test(entry.name)) return { state: 'excluded', by: 'era' };
-  return null;
-}
-
-export function firstHeld(anims, names, ok = () => true) {
-  for (const n of [].concat(names ?? [])) {
-    const e = anims.get(n) ?? [...anims.values()].find((x) => x.name.toLowerCase() === String(n).toLowerCase());
-    if (e && ok(e)) return e.name;
-  }
   return null;
 }
 

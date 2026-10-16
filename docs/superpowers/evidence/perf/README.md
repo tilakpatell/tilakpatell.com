@@ -1,6 +1,6 @@
 # Performance lane P0: the measure, and the two machines’ baseline
 
-Lane P0 of `docs/superpowers/HANDOFF-performance-lanes.md`. Plan: `docs/superpowers/plans/2026-10-13-perf-lane-p0-measure.md`. Every later lane (P1 to P8) measures before and after with the same probe and puts its rows beside these.
+Lane P0 of `docs/superpowers/HANDOFF-runtime.md`. Plan: `docs/superpowers/plans/2026-10-13-perf-lane-p0-measure.md`. Every later lane (P1 to P8) measures before and after with the same probe and puts its rows beside these.
 
 ## What the probe reports
 
@@ -103,5 +103,3 @@ To be run by the owner with the commands above.
 
 | route | machine | drawn on | quality | ready s | fps | p50 ms | worst 1 % ms | main ms | GPU ms | draws | programs | late pipelines |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-</content>
-</invoke>

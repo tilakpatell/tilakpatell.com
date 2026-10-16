@@ -26,7 +26,6 @@ import { text } from './strings';
 
 export const STORE_KEY = 'bf-collection';
 export const CARD_SLOTS = 3; // (a hero carries three of its nine)
-export const RARITIES = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
 export const FACTIONS = ['rebel', 'empire', 'republic', 'cis'];
 export const FACTION_SIDE = { rebel: 'light', empire: 'dark', republic: 'light', cis: 'dark' };
 // (the four sides as the game's choose-side tiles name them: CSTile_OT_LightSide_RebelAlliance …)

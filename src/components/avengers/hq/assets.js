@@ -153,11 +153,6 @@ export async function placeModel(name, { node } = {}) {
   return holder;
 }
 
-export const modelSize = (name, node) => {
-  const b = (node ? MODELS[name]?.nodes?.[node] : MODELS[name]) ?? { min: [0, 0, 0], max: [1, 1, 1] };
-  return { w: b.max[0] - b.min[0], h: b.max[1] - b.min[1], d: b.max[2] - b.min[2] };
-};
-
 // Every geometry and material in a model, as instanced-mesh parts: one draw
 // per part however many copies are placed. `transforms` is a list of
 // THREE.Matrix4. Returns a group of InstancedMeshes.
