@@ -153,8 +153,9 @@ try {
       // and a frame loop started again during the loading (a box scrolled
       // into view, a status come back) starts on 16 ms of its own: how many
       // times that happens is the machine's. So the grain's clock, in a
-      // program with both uTime and uGrain and in no other, is the stepped
-      // time, in the before and the after alike.
+      // program with both uTime and uGrain and in no other, is held at 0, in
+      // the before and the after alike (a frame more or less then shows as
+      // what moved, not as grain over the whole picture).
       const grainAt = new WeakSet();
       for (const Gl of [window.WebGLRenderingContext, window.WebGL2RenderingContext].filter(Boolean)) {
         const where = Gl.prototype.getUniformLocation;
@@ -165,7 +166,7 @@ try {
           return at;
         };
         Gl.prototype.uniform1f = function (at, v) {
-          return set1.call(this, at, at && grainAt.has(at) ? now() / 1000 : v);
+          return set1.call(this, at, at && grainAt.has(at) ? 0 : v);
         };
       }
       // (and no CSS animation or transition, before or after: theirs run on
