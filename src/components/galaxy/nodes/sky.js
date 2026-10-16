@@ -10,7 +10,8 @@
 // differs on the node renderer, and why:
 //
 // - The stars and the other systems' stars: the node renderer draws a point
-//   one pixel wide, so each is a quad, instanced once a star (a Mesh on an
+//   one pixel wide, so each is a quad (drawn as one triangle round it:
+//   pointsGeometry), instanced once a star (a Mesh on an
 //   InstancedBufferGeometry: `position`, `aSize`, `aColor`, `aFocus` per
 //   instance, as the GLSL's attributes, and its corner per vertex), sized in
 //   pixels as gl_PointSize was; the beacons' draw range is the geometry's
@@ -255,9 +256,9 @@ function bakeMaterial() {
   return mat;
 }
 
-// a point as the GLSL drew it, gl_PointSize pixels square: a quad, its
-// corner (−½…½) out from the star's place by that many pixels; the corner
-// as gl_PointCoord (0…1, y down) for the fragment
+// a point as the GLSL drew it, gl_PointSize pixels square: a triangle round
+// that square, its corner (the square's −½…½) out from the star's place by
+// that many pixels; the corner as gl_PointCoord (0…1, y down) for the fragment
 const corner = attribute('aCorner', 'vec2');
 const pointCoord = vec2(corner.x.add(0.5), float(0.5).sub(corner.y)).toVarying('vPointCoord');
 const pointClip = (sizePx, k) => {
@@ -265,10 +266,15 @@ const pointClip = (sizePx, k) => {
   const off = corner.mul(sizePx).div(viewportSize.mul(0.5)).mul(p.w);
   return vec4(p.xy.add(off), p.z, p.w);
 };
+// (one triangle round the square, not two in it: each point's colour is
+// nothing outside its disc and the blend adds it, so the corners it draws
+// past the square add nothing; a star is a pixel or a few, and a software
+// GL spends more setting up each tiny triangle than shading it, so the
+// 12,000 stars at High cost about half what two triangles each did)
 function pointsGeometry(n, attrs) {
   const geo = new THREE.InstancedBufferGeometry();
-  geo.setIndex([0, 1, 2, 0, 2, 3]);
-  geo.setAttribute('aCorner', new THREE.BufferAttribute(new Float32Array([-0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5]), 2));
+  geo.setIndex([0, 1, 2]);
+  geo.setAttribute('aCorner', new THREE.BufferAttribute(new Float32Array([-0.5, -0.5, 1.5, -0.5, -0.5, 1.5]), 2));
   for (const [name, size] of Object.entries(attrs)) geo.setAttribute(name, new THREE.InstancedBufferAttribute(new Float32Array(n * size), size));
   geo.instanceCount = n;
   return geo;
