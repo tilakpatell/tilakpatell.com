@@ -14,7 +14,7 @@
 //   node still.mjs --dist dist --routes /c-137,/c-137/citadel --out dir
 //     [--frames 480] [--phone] [--quality high|mid|low] [--tag before]
 //     [--scroll 0] (a page scrolled to y before the shot) [--size 1440x900]
-//     [--local key=json;…] [--wait 300]
+//     [--local key=json;…] [--wait 300] [--base http://…] [--probe expr]
 import { spawn } from 'node:child_process';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -44,13 +44,14 @@ const scroll = Number(args.scroll) || 0;
 // first-visit flourish draws its sparks at random while the page loads)
 const stored = String(args.local ?? '').split(';').filter(Boolean).map((kv) => [kv.slice(0, kv.indexOf('=')), kv.slice(kv.indexOf('=') + 1)]);
 const waitMax = Number(args.wait) || 300; // s at most for the loading veils
+const probe = typeof args.probe === 'string' ? args.probe : null; // (an expression read at the shot, for finding what differs)
 await mkdir(out, { recursive: true });
 
 const { chromium } = await import('playwright-core');
 const port = 4800 + Math.floor(Math.random() * 900);
 const vite = join(dirname(createRequire(join(ROOT, 'package.json')).resolve('vite/package.json')), 'bin/vite.js');
 const server = spawn(process.execPath, [vite, 'preview', '--outDir', dist, '--port', String(port), '--strictPort', '--host', '127.0.0.1'], { cwd: ROOT, stdio: 'ignore' });
-const base = `http://127.0.0.1:${port}`;
+const base = typeof args.base === 'string' ? args.base : `http://127.0.0.1:${port}`; // (--base: a server already up, a dev one say)
 for (let t = 0; ; t++) {
   try {
     if ((await fetch(base)).ok) break;
@@ -219,7 +220,8 @@ try {
     }
     const name = `${route.replace(/^\//, '').replace(/[/:]/g, '_') || 'root'}${phone ? '-phone' : ''}-${tag}.png`;
     await writeFile(join(out, name), await page.screenshot({ type: 'png', timeout: 120000 }));
-    console.log(`${route} → ${name} (ready after ${loading / 10} s)${errors.length ? ` (errors: ${errors.join(' | ').slice(0, 300)})` : ''}`);
+    const read = probe ? ` probe: ${JSON.stringify(await page.evaluate(probe).catch((e) => String(e.message)))}` : '';
+    console.log(`${route} → ${name} (ready after ${loading / 10} s)${read}${errors.length ? ` (errors: ${errors.join(' | ').slice(0, 300)})` : ''}`);
     await ctx.close();
   }
 } finally {
