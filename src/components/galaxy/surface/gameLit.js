@@ -4,7 +4,9 @@
 // its grading LUT in the post's last pass, and its weathers, faded into one
 // another over 20 s as the site fades its own.
 //
-//   createGameLit({ light, state, scene, sun, hemi, sky, house, post, … })
+//   createGameLit({ light, state, scene, sun, hemi, sky, house, post, rate, … })
+//     (rate: siteLightFrom's, lane G's constants unless given: ONE_EXPOSURE
+//     where the world draws in its record's picture, the scene's)
 //     → null for a world without a record; else { zone(z), weather(state,
 //       { fade }), step(dt), outdoorProbe({ id, url }), debug(), dispose() }
 //
@@ -77,6 +79,7 @@ export function createGameLit({
   probes = null,
   lutLoad = loadLut,
   url = assetUrl,
+  rate = undefined,
 } = {}) {
   if (!light?.weathers) return null;
   // (prefiltered by the node renderer's PMREM on the node renderer: the
@@ -87,7 +90,7 @@ export function createGameLit({
   let inZone = false;
   let probeOn = false; // (the scene's environment is a probe, not the dome)
   let entry = weatherEntry(light, state);
-  let d = siteLightFrom(entry);
+  let d = siteLightFrom(entry, rate);
   let fade = null;
   // the outdoor light as it stands (the scene's lighting(z) zeroes the sun
   // in a room and puts it back from here)
@@ -183,7 +186,7 @@ export function createGameLit({
       const from = snapshot({ sun, hemi, scene, sky });
       if (inZone) Object.assign(from, { sun: outdoor.sun, sky: outdoor.sky, ground: outdoor.ground, ambient: outdoor.ambient, fog: outdoor.fog, density: outdoor.density });
       entry = e;
-      d = siteLightFrom(entry);
+      d = siteLightFrom(entry, rate);
       const to = targetOf(d, { ...from, floor: fogFloor });
       fade = { from, to, t: 0, secs: Math.max(0, secs), turned: false };
       if (!fade.secs) this.step(0);

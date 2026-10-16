@@ -4,9 +4,11 @@
 // already reads: site.sky, site.light, site.fog. Pure, so the numbers are
 // pinned in tests; the scene wires them (gameSite).
 //
-//   siteLightFrom(entry) → { sky, light, fog, exposure, bloom, grading, wind } | null
-//   gameSite(site, light, state) → the site under the game's light, or the
+//   siteLightFrom(entry, rate?) → { sky, light, fog, exposure, bloom, grading, wind } | null
+//   gameSite(site, light, state, rate?) → the site under the game's light, or the
 //     site itself when the world has no record
+//   (rate: { factor, skyFactor }, lane G's constants unless given; ONE_EXPOSURE
+//   for a world drawn in its record's picture)
 //
 // The game's units are a camera's: the sun in lux, the sky's brightness in
 // its own scale (SkyComponentData.LuminanceScale), the exposure in EV. Two
@@ -22,6 +24,15 @@
 export const GAME_TO_SITE = 0.0713;
 export const SKY_TO_SITE = 0.2006;
 export const PROBE_TO_SITE = 52.4;
+
+// One exposure for the sun, the sky and the lamps (the 2026-10-12 post-order
+// decision, lib/three/light/calibrate.js): the record's lux and nits over the
+// camera's k, 1.2 × 2^(EV − compensation), no fitted constant. exposureOf
+// below is 2^(compensation − EV), so the rate over it is 1 / 1.2. The node
+// stack lights a record's painted sky and lamps so; a world drawn in its
+// record's picture takes it for its sun and fill too, or its sky stands to
+// its sun 4.6 times over what the game has (Hoth: sun 9.21, sky 2.52)
+export const ONE_EXPOSURE = { factor: 1 / 1.2, skyFactor: 1 / 1.2 };
 
 // Bloom as a share of Hoth sunny's, the world the site's bloom was set on.
 const BLOOM_REF = 0.1;
@@ -137,8 +148,8 @@ export function siteLightFrom(entry, { factor = GAME_TO_SITE, skyFactor = SKY_TO
 // clouds, the moons, the sun's size and glow, the haze's amount). The fog
 // is never thinner than the site's own, while the ground under it is the
 // site's (a clearer fog would show where its land ends).
-export function gameSite(site, light, state) {
-  const d = siteLightFrom(weatherEntry(light, state));
+export function gameSite(site, light, state, rate = undefined) {
+  const d = siteLightFrom(weatherEntry(light, state), rate);
   if (!d || !site) return site;
   const suns = site.sky?.suns ?? [];
   const sky = { ...site.sky, ...defined({ zenith: d.sky.zenith, horizon: d.sky.horizon, hazeColor: d.sky.hazeColor }) };

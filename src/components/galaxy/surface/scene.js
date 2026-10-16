@@ -136,12 +136,12 @@ import { standable } from './sites/validity';
 import { floraTint } from './flora';
 import { footprintOf, impactOf, loadMaterials, tagOf } from '../../../lib/physics/materials';
 import { landingLook, printOf } from './impactLook';
-import { gameSite } from '../../../lib/three/gameLight';
+import { ONE_EXPOSURE, gameSite } from '../../../lib/three/gameLight';
 import { gameLightOf } from '../../../data/bf2017/light/index';
 import { createGameLit } from './gameLit';
 import { createPlayerBody } from './playerBody';
 import { createSitePhysics } from './sitePhysics';
-import { pictureFor } from './nodes/picture';
+import { PICTURES, pictureFor } from './nodes/picture';
 import { segmentRay } from '../../../lib/physics/blast';
 import CAMERAS from '../../../data/bf2017/cameras.json';
 import { createSoldierMemo, soldierPose } from '../../../lib/three/camera/soldier';
@@ -230,7 +230,13 @@ export async function create(canvas, ctx, set) {
   // the before shots)
   const gameOff = import.meta.env.DEV && /[?&]gamelight=off\b/.test(window.location.search);
   const gameLight = gameOff || mission?.site?.sky || mission?.site?.light ? null : gameLightOf(own);
-  const site = gameSite(own, gameLight, 'clear');
+  // (one exposure for the sun, the sky and the lamps where the world draws in
+  // its record's picture, the node renderer's: the record's lux and nits over
+  // the camera's k, as the stack lights the painted sky and the lamps
+  // (calibrate.js) and the Battlefront world its Hoth; elsewhere lane G's
+  // fitted rate, gameLight.js's)
+  const rate = gameLight && L.name === 'nodes' && PICTURES[own.gameLight] ? ONE_EXPOSURE : undefined;
+  const site = gameSite(own, gameLight, 'clear', rate);
   // the models kinds are looked up in: the galaxy's, with a page's own book
   // laid over it (the Rick and Morty planets'), never written into it
   const models = ctx.models ? { ...SURFACE_MODELS, ...ctx.models } : SURFACE_MODELS;
@@ -357,7 +363,7 @@ export async function create(canvas, ctx, set) {
   scene.environmentIntensity = 0.4;
   // the level's probe for it once it lands, its grade (high and ultra) and
   // its weathers, where the game lights this world
-  const gameLit = createGameLit({ light: gameLight, scene, sun, hemi, sky, house, post: post.on ? post : null, renderer, grade: !small && (level === 'high' || level === 'ultra'), fogFloor: own.fog?.density ?? 0, reframe });
+  const gameLit = createGameLit({ light: gameLight, scene, sun, hemi, sky, house, post: post.on ? post : null, renderer, grade: !small && (level === 'high' || level === 'ultra'), fogFloor: own.fog?.density ?? 0, rate, reframe });
 
   // (a frame's breath between the build's big steps: it's made behind the
   // dive, which goes on drawing meanwhile, and one long task stopped it)

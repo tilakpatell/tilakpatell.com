@@ -9,7 +9,7 @@
 // the house's (universe/look.js's, three times over for the TSL node:
 // ./post.js's UNREAL) unless the record's picture gives its five Gaussians.
 // With the picture, FINAL takes the record's linear tone map and reads its
-// LUT before the encoding (uLinear).
+// LUT as the game does, with the clamped picture gamma-2.2 encoded (uLinear).
 //
 // The pace's sharpness is the internal resolution: each step is
 // runtime/quality.js's headroomAt (the picture drawn under the screen and
@@ -30,16 +30,17 @@ import { LOOK } from '../../../universe/look';
 import { STEPS } from '../../../../lib/three/pace';
 import { headroom, passesFor } from '../../../../lib/three/light/post';
 import { headroomAt } from '../../../../runtime/quality';
-import { LOOK as HOUSE } from '../../../../lib/three/houseNodes';
 
 const SOFTEST = 0.6;
-// Under the record's linear tone map the picture is exposed as lane Q6 drew
-// Hoth's records (its fixture and the laptop's shots, docs/superpowers/
-// evidence/bf2017-surfaces/Q6): at the house's exposure, lib/three/house's
-// LOOK.exposure (1.4, what the house tone mapper's lift asks of a world),
-// times the site's own. At the site's alone the linear map draws a stop
-// and a half darker than the game's day.
-export const LINEAR_EXPOSURE = HOUSE.exposure;
+// Under the record's linear tone map the picture is exposed once, by the
+// record: its light is already over the camera's k (the stack's sky and
+// lamps, calibrate.js; the scene's sun and fill, gameLight.js's
+// ONE_EXPOSURE), so nothing of the house's goes on top, only the site's own.
+// (Lane T2 first put the house's 1.4 here, lib/three/house's LOOK.exposure:
+// a second exposure, set while FINAL read the LUT with linear values and the
+// light was dimmed by lane G's constants, which made the day a stop and a
+// half dark; both are gone.)
+export const LINEAR_EXPOSURE = 1;
 
 export const stepOf = (k) => {
   let best = 0;

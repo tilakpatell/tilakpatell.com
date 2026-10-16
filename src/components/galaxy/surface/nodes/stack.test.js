@@ -53,8 +53,11 @@ describe('the stack', () => {
 });
 
 describe('the chain’s exposure under the record', () => {
-  it('the house’s exposure under the record’s linear tone map, as lane Q6 drew Hoth', async () => {
+  // (one exposure: the record's own, in its light, calibrate.js's; the
+  // house's 1.4 on top of it was a second, set when the LUT was read with
+  // linear values and the light dimmed to hide it)
+  it('none of the house’s under the record’s linear tone map: the record’s own, in its light', async () => {
     const { LINEAR_EXPOSURE } = await import('./chain');
-    expect(LINEAR_EXPOSURE).toBe(1.4);
+    expect(LINEAR_EXPOSURE).toBe(1);
   });
 });

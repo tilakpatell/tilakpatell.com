@@ -7,9 +7,12 @@
 // ./chain.js's (the game's chain, lib/three/light/post.js, before it).
 //
 // With `uLinear` on (the record's picture, lane Q6: its TonemapMethod_Linear)
-// the shoulder is the record's linear tone map (a clamp to 0…1) and the LUT
-// reads that linear picture before it is encoded, the game's order; the
-// house's saturation and contrast are set aside with it, as grading() does.
+// the shoulder is the record's linear tone map (a clamp to 0…1), and the
+// game's order follows (its tonemap composite, the owner's bf2-re study,
+// findings 02; lib/three/light/passes.js's `graded`): the clamp gamma-2.2
+// encoded, the LUT read with that, its answer shown as it is; without a LUT,
+// the clamp sRGB-encoded. The house's saturation and contrast are set aside
+// with it, as grading() does.
 //
 //   finalUniforms({ small }) → { u, tNoise, noiseSize }
 //   finalGrade(u, lit, { tNoise }) → the node: vec4, encoded (lit(uv) → the
@@ -73,7 +76,7 @@ export function finalUniforms({ small = false } = {}) {
     tLut: texture3D(BLANK_LUT),
     uLutSize: uniform(2),
     uLutMix: uniform(0),
-    // the record's linear tone map, the LUT read before the encoding (1), or the house's shoulder (0)
+    // the record's linear tone map and the game's order for its LUT (1), or the house's shoulder (0)
     uLinear: uniform(0),
   };
   return { u, tNoise, noiseSize };
@@ -115,10 +118,12 @@ export function finalGrade(u, lit, { tNoise }) {
     lin.mulAssign(select(u.uToe.y.greaterThan(0), smoothstep(u.uToe.x, u.uToe.y, dot(lin, vec3(0.2126, 0.7152, 0.0722))), float(1)));
     const c = vec3(0).toVar();
     If(u.uLinear.greaterThan(0), () => {
-      // the record's: a linear tone map, its LUT on the linear 0…1 picture, then the encoding
+      // the record's: a linear tone map, then the game's order (read with the
+      // linear value, Hoth's LUT, black under 0.13, sent the shadows and
+      // mid-tones to black)
       const toned = clamp(lin, 0, 1).toVar();
-      If(u.uLutMix.greaterThan(0), () => toned.assign(lut(toned)));
       c.assign(srgb(toned));
+      If(u.uLutMix.greaterThan(0), () => c.assign(lut(pow(toned, vec3(1 / 2.2)))));
     }).Else(() => {
       c.assign(srgb(clamp(shoulder(lin), 0, 1)));
       const l = dot(c, vec3(0.2126, 0.7152, 0.0722));
