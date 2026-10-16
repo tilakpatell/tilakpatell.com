@@ -1,10 +1,14 @@
 // The duel’s shaders as GLSL, as saber.js drew them on the classic renderer:
 // kept for the parity check (scripts/twin-parity/cases/deathstar.js) and the
 // twins’ tests, never imported by the world (its 'nodes' closure reaches
-// ../nodes/saber.js instead, the same factories as nodes).
+// src/components/deathstar/inside/scene/nodes/saber.js instead, the same factories as nodes).
 //
 //   bladeGlowMaterial() → 'ds-saber-glow'   the blades’ glows, the arcs, sparks, flashes and ripples, added
 //   trailMaterial() → 'ds-trail'   the ribbon a swung blade leaves, added
+//
+// It lives here, beside the check that reads it, and not under src/: the
+// world’s GLSL is gone from the site once it is ported (glsl-sites counts
+// src/ only). Lane FL4 deletes it with the other originals.
 
 import * as THREE from 'three';
 

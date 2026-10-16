@@ -1,7 +1,7 @@
 // The windows’ views’ shaders as GLSL, as views.js drew them on the classic
 // renderer: kept for the parity check (scripts/twin-parity/cases/deathstar.js)
 // and the twins’ tests, never imported by the world (its 'nodes' closure
-// reaches ../nodes/sky.js instead, the same factories as nodes). views.js’s
+// reaches src/components/deathstar/inside/scene/nodes/sky.js instead, the same factories as nodes). views.js’s
 // header says what each is.
 //
 //   skyUniforms(sun: Vector3, colour: [r, g, b]) → { uOrigin, uSun, uSunColour }   shared by everything a view draws
@@ -10,9 +10,13 @@
 //   bodyMaterial(u, { air, map, normal, rough, clouds, giant }) → material.uniforms.uDrift, uAir …
 //   haloMaterial(u, { air, r })   air: the body’s uAir, so the two share it
 //   sunlit(material, u) → material   the view’s sun in a loaded model’s own lighting, kept out of the house look
+//
+// It lives here, beside the check that reads it, and not under src/: the
+// world’s GLSL is gone from the site once it is ported (glsl-sites counts
+// src/ only). Lane FL4 deletes it with the other originals.
 
 import * as THREE from 'three';
-import { NOISE } from '../../../../../lib/three/noiseGlsl';
+import { NOISE } from '../../../../src/lib/three/noiseGlsl';
 
 const FAR_GLSL = /* glsl */ `
 uniform vec3 uOrigin;

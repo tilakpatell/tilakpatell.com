@@ -1,5 +1,5 @@
 // The rooms’ own shaders on the node renderer (lane P1, the inside’s port by
-// lane T’s method): each of ../glsl/rooms.js’s as TSL, with the same
+// lane T’s method): each of scripts/twin-parity/originals/deathstar/rooms.js’s as TSL, with the same
 // factories, flags, uniforms (uniform nodes under the GLSL names, which the
 // rooms write through `.value`) and arithmetic.
 //

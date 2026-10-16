@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { describe, expect, it } from 'vitest';
-import * as glsl from '../glsl/sky';
+import * as glsl from '../../../../../../scripts/twin-parity/originals/deathstar/sky';
 import * as nodes from './sky';
 import { buildShaders } from './fixtures/build';
 

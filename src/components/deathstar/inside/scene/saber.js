@@ -10,7 +10,7 @@
 // blade and arc, so nothing goes flat.
 //
 // The shaders are TSL (./nodes/saber.js); the GLSL they were is
-// ./glsl/saber.js, for the parity check.
+// scripts/twin-parity/originals/deathstar/saber.js, for the parity check.
 //
 // Everything is made at the start and pooled (four draws however hard the
 // fight: hilts, cores, trails, and every glow, arc, spark, flash and ripple

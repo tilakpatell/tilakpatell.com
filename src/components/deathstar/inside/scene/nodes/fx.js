@@ -1,5 +1,5 @@
 // The fight’s effects on the node renderer (lane P1, the inside’s port by
-// lane T’s method): each of ../glsl/fx.js’s shaders as TSL, with the same
+// lane T’s method): each of scripts/twin-parity/originals/deathstar/fx.js’s shaders as TSL, with the same
 // names, flags and arithmetic, reading the same per-instance attributes fx.js
 // writes, so the bolts, sparks, fire, smoke and scorches draw as they did.
 //

@@ -1,7 +1,7 @@
 // The rooms’ own shaders as GLSL, as the rooms drew them on the classic
 // renderer: kept for the parity check (scripts/twin-parity/cases/deathstar.js)
 // and the twins’ tests, never imported by the world (its 'nodes' closure
-// reaches ../nodes/rooms.js instead, the same factories as nodes).
+// reaches src/components/deathstar/inside/scene/nodes/rooms.js instead, the same factories as nodes).
 //
 //   glowMaterial({ color, base, fall, strength, rim, axis, radius, top, soft })   the shafts’ light, added
 //     (rooms/shaft/depths.js’s header says what each option does); uniforms.uTime runs bands up it
@@ -13,6 +13,10 @@
 //     MeshStandardMaterial(params) whose normal map is sampled twice drifting two ways, with the
 //     dianoga’s rings (rooms/deep/compactor.js)
 //   starPoints(pos, colour, map, { size }) → Points   the stars past a bay’s mouth, `size` pixels across
+//
+// It lives here, beside the check that reads it, and not under src/: the
+// world’s GLSL is gone from the site once it is ported (glsl-sites counts
+// src/ only). Lane FL4 deletes it with the other originals.
 
 import * as THREE from 'three';
 

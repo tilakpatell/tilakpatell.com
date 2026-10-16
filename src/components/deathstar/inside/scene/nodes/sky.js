@@ -1,5 +1,5 @@
 // What the station’s windows show, on the node renderer (lane P1, the
-// inside’s port by lane T’s method): each of ../glsl/sky.js’s shaders as
+// inside’s port by lane T’s method): each of scripts/twin-parity/originals/deathstar/sky.js’s shaders as
 // TSL, with the same factories, flags, uniforms (uniform nodes under the
 // GLSL names, which views.js writes through `.value`) and arithmetic, so
 // the sky, the planets and the battle draw as they did. views.js’s header

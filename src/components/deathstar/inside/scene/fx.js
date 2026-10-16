@@ -13,7 +13,7 @@
 // muzzle flare and an explosion’s flash; whichever is brighter has it.
 //
 // The shaders are TSL (./nodes/fx.js: a glow, a puff, a scorch); the GLSL
-// they were is ./glsl/fx.js, for the parity check.
+// they were is scripts/twin-parity/originals/deathstar/fx.js, for the parity check.
 //
 // Bolts are drawn as the rules have them: call bolt(b) for every bolt in
 // the air each frame (combat.js’s `combat.bolts`), before update(dt); one

@@ -30,7 +30,7 @@ import * as THREE from 'three';
 import { panelLayout, roomWalls } from '../../kit';
 
 // (the glow is TSL, the node renderer’s: ../../nodes/rooms.js; the GLSL it
-// was is ../../glsl/rooms.js, for the parity check)
+// was is scripts/twin-parity/originals/deathstar/rooms.js, for the parity check)
 export { glowMaterial } from '../../nodes/rooms';
 
 // a deep wall’s look: tall plain bays, deep ribs, a band at each storey’s head

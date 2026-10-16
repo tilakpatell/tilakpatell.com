@@ -1,5 +1,5 @@
 // The duel on the node renderer (lane P1, the inside’s port by lane T’s
-// method): ../glsl/saber.js’s two shaders as TSL, with the same names, flags
+// method): scripts/twin-parity/originals/deathstar/saber.js’s two shaders as TSL, with the same names, flags
 // and arithmetic, reading the attributes saber.js writes.
 //
 //   bladeGlowMaterial() → 'ds-saber-glow'   the blades’ glows, the arcs, sparks, flashes and ripples, added

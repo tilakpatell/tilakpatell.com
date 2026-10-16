@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import * as glsl from '../glsl/rooms';
+import * as glsl from '../../../../../../scripts/twin-parity/originals/deathstar/rooms';
 import * as nodes from './rooms';
 import { buildShaders } from './fixtures/build';
 

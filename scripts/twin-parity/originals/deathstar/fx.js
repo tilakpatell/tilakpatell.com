@@ -1,12 +1,16 @@
 // The fight’s effects’ shaders as GLSL, as fx.js drew them on the classic
 // renderer: kept for the parity check (scripts/twin-parity/cases/deathstar.js)
 // and the twins’ tests, never imported by the world (its 'nodes' closure
-// reaches ../nodes/fx.js instead, the same factories as nodes). fx.js’s
+// reaches src/components/deathstar/inside/scene/nodes/fx.js instead, the same factories as nodes). fx.js’s
 // header says what each draws.
 //
 //   spriteMaterial() → 'ds-glow'   the bolts’ glows, sparks and muzzle flashes, added
 //   puffMaterial() → 'ds-puff'   fire and smoke, premultiplied
 //   scorchMaterial() → 'ds-scorch'   the burns on the walls, premultiplied, pulled towards the eye
+//
+// It lives here, beside the check that reads it, and not under src/: the
+// world’s GLSL is gone from the site once it is ported (glsl-sites counts
+// src/ only). Lane FL4 deletes it with the other originals.
 
 import * as THREE from 'three';
 

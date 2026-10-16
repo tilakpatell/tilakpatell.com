@@ -161,7 +161,7 @@ export function openOf(ctx, id) {
 // ── light in the air ──
 
 // (TSL, the node renderer’s: ../../nodes/rooms.js; the GLSL it was is
-// ../../glsl/rooms.js, for the parity check)
+// scripts/twin-parity/originals/deathstar/rooms.js, for the parity check)
 export { hazeMaterial } from '../../nodes/rooms';
 
 // ── the end of every room ──

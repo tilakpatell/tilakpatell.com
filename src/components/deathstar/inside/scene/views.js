@@ -20,7 +20,7 @@
 // room’s house look. A view keeps to about 30 draws. The battle is stateless:
 // where every fighter, bolt and flash is comes from the time, round a loop.
 // The shaders are TSL (./nodes/sky.js, the node renderer’s); the GLSL they
-// were is ./glsl/sky.js, for the parity check.
+// were is scripts/twin-parity/originals/deathstar/sky.js, for the parity check.
 //
 //   VIEW_KINDS: 'space' 'alderaan' 'yavin' 'endor' 'endor-battle' 'ds1-exterior' 'ds2-exterior'
 //   angleOf(radius, distance) → degrees a sphere spans;  apparent(size, distance, at) → its size drawn at `at`

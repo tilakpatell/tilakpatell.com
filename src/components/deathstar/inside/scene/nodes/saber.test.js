@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import * as glsl from '../glsl/saber';
+import * as glsl from '../../../../../../scripts/twin-parity/originals/deathstar/saber';
 import * as nodes from './saber';
 import { createSabers } from '../saber';
 import { buildShaders } from './fixtures/build';

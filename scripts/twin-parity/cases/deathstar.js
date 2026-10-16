@@ -1,18 +1,18 @@
 // The Death Star’s inside (lane P1): each of its twins built once with the
-// GLSL original (src/components/deathstar/inside/scene/glsl/, which the
+// GLSL original (scripts/twin-parity/originals/deathstar/, which the
 // world no longer imports) and once with the TSL one (scene/nodes/), the
 // same in every other way: the windows’ sky, planets, battle and the view’s
 // sun on a loaded ship; the rooms’ glows, haze, fields, water and the stars
 // past a mouth; the fight’s and the duel’s sprites; and the two shared twins
 // the inside took up, lib/three’s explosionsNodes and dyeNodes.
 import * as THREE from 'three';
-import * as SO from '../../../src/components/deathstar/inside/scene/glsl/sky.js';
+import * as SO from '../originals/deathstar/sky.js';
 import * as SN from '../../../src/components/deathstar/inside/scene/nodes/sky.js';
-import * as RO from '../../../src/components/deathstar/inside/scene/glsl/rooms.js';
+import * as RO from '../originals/deathstar/rooms.js';
 import * as RN from '../../../src/components/deathstar/inside/scene/nodes/rooms.js';
-import * as FO from '../../../src/components/deathstar/inside/scene/glsl/fx.js';
+import * as FO from '../originals/deathstar/fx.js';
 import * as FN from '../../../src/components/deathstar/inside/scene/nodes/fx.js';
-import * as BO from '../../../src/components/deathstar/inside/scene/glsl/saber.js';
+import * as BO from '../originals/deathstar/saber.js';
 import * as BN from '../../../src/components/deathstar/inside/scene/nodes/saber.js';
 import * as EO from '../../../src/lib/three/explosions.js';
 import * as EN from '../../../src/lib/three/explosionsNodes.js';
