@@ -137,16 +137,13 @@ describe('the Middle-earth module', () => {
     expect(views.dispose).toHaveBeenCalled();
   });
 
-  it('publishes its world at its first frame to the pictures waiting for it, and says so when there is none', async () => {
+  it('publishes its world as it’s made to the pictures waiting for it, and says so when there is none', async () => {
     engineNow()?.dispose(); // (the tests above' last world, published at its frame)
     askAgain();
     const waiting = engine();
     const views = fakeViews();
     vi.doMock('../../runtime/views', () => ({ createViews: () => views }));
     const world = await middleEarth.create(fakeRt());
-    // (not until the runtime's loop runs it: a tick started before then stood still)
-    expect(engineNow()).toBe(null);
-    world.step(0.016, {}, 16);
     await expect(waiting).resolves.toBe(world);
     expect(engineNow()).toBe(world);
     world.dispose();

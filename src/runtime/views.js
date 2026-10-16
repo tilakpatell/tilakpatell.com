@@ -214,30 +214,37 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
   // over about ten frames, and a margin to take it from the one that has it,
   // so the map drawn every other frame under a town, or two boxes drawing
   // the same, don't take turns at the canvas)
-  // The buffer's size: room for every view at its sharpest, and for the
-  // lead's box to come out in whole CSS pixels. The compositor puts a
-  // canvas on whole pixels: the lead's corner, h rows of its own drawn as
-  // bh, is only where its own canvas would have been when the canvas's
-  // height is too (H × h / bh whole), so H is a multiple of bh / gcd(h, bh)
-  // (1383 rows for a 738-pixel box drawn at 1.25, 922 rows; 1,125 would
-  // have put every row of it up to half a texel off), and the same for W.
+  // The buffer's size: the lead's own, as its own canvas was, so the
+  // compositor shows the same texture the same size (a taller buffer,
+  // scaled the same, still came out a level off along a few rows, the GPU's
+  // rounding of a texel's place). Only while another view is drawing and
+  // needs more room does it grow, to room for every view drawing, with the
+  // lead's box still in whole CSS pixels: the compositor puts a canvas on
+  // whole pixels, so H × h / bh is whole, H a multiple of bh / gcd(h, bh)
+  // (1383 rows for a 738-pixel box drawn at 1.25, 922 rows), and the same
+  // for W; it comes back to the lead's size once they've stopped.
   const gcd = (a, b) => (b ? gcd(b, a % b) : a);
   const room = (have, own, box) => {
     const step = own / gcd(box, own);
     return Math.max(own, Math.ceil(have / step) * step);
   };
+  const ownBuffer = (v, R) => {
+    const r = Math.min(v.want, R);
+    return [Math.floor(v.size.w * r), Math.floor(v.size.h * r)];
+  };
   const wanted = () => {
     const R = gfx.ratio || ratioOf();
-    let W = Math.floor((gfx.size?.w ?? canvas.width / R) * R);
-    let H = Math.floor((gfx.size?.h ?? canvas.height / R) * R);
+    let W = lead ? 0 : canvas.width;
+    let H = lead ? 0 : canvas.height;
     for (const v of views.values()) {
-      const r = Math.min(v.want, R);
-      W = Math.max(W, Math.floor(v.size.w * r));
-      H = Math.max(H, Math.floor(v.size.h * r));
+      if (v !== lead && v.idle >= IDLE) continue;
+      const [w, h] = ownBuffer(v, R);
+      W = Math.max(W, w);
+      H = Math.max(H, h);
     }
     if (!lead) return [W, H];
-    const r = Math.min(lead.want, R);
-    const [bw, bh] = [Math.floor(lead.size.w * r), Math.floor(lead.size.h * r)];
+    const [bw, bh] = ownBuffer(lead, R);
+    if (W === bw && H === bh) return [bw, bh];
     return [room(W, bw, lead.size.w), room(H, bh, lead.size.h)];
   };
   // (made once, the next frame it's wanted, before anything is drawn in it:
@@ -252,7 +259,11 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
     const R = ratioOf();
     renderer.setDrawingBufferSize((W + 0.5) / R, (H + 0.5) / R, R);
     for (const v of views.values()) v.fit();
-    if (lead) place(lead);
+    if (lead) {
+      place(lead);
+      // (a buffer made again is cleared: the lead drawn in it this frame)
+      switched = true;
+    }
   };
 
   const pick = () => {
@@ -306,13 +317,17 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
         state: { ...runtimeState, ...state },
         pixels: 0,
         score: 0,
-        idle: 0,
+        idle: IDLE, // (frames since it last drew: not yet)
         drew: false,
         last: null,
       };
       // (its pixels: its size at its ratio, inside the buffer)
+      // (its sharpest, unless its pixels at that wouldn't fit in the buffer:
+      // then as sharp as fits, until the buffer grows for it)
       const fit = () => {
-        v.ratio = Math.max(0.01, Math.min(v.want, ratioOf(), canvas.width / v.size.w, canvas.height / v.size.h));
+        const r = Math.min(v.want, ratioOf());
+        const fits = Math.floor(v.size.w * r) <= canvas.width && Math.floor(v.size.h * r) <= canvas.height;
+        v.ratio = Math.max(0.01, fits ? r : Math.min(r, canvas.width / v.size.w, canvas.height / v.size.h));
       };
       v.fit = fit;
       Object.defineProperty(v, 'buffer', { get: () => [Math.floor(v.size.w * v.ratio), Math.floor(v.size.h * v.ratio)] });

@@ -19,9 +19,8 @@
 // stages (./stage.js) draw through their views; their quality steps are
 // the runtime's governor's (lowerQuality), in the old watchdog's order.
 //
-// The world is published for the components (engine(), engineNow()) at its
-// first frame, once the runtime's loop runs it (a tick started before that
-// stood still until it did, and the map's easing came out of step): a
+// The world is published for the components (engine(), engineNow()) as
+// it's made (the runtime places it and starts its loop in the same task): a
 // component waits for it before making its scene on the shared renderer;
 // when there is none (no 3D, or the world failed), refuse() tells them, and
 // they show their drawings as they did when WebGL couldn't be had.
@@ -137,7 +136,6 @@ export function makeWorld(rt, { createViews, doc = typeof document !== 'undefine
     },
     step(dt, input, now) {
       if (disposed) return;
-      if (up !== world && !refused) publish(world);
       views.frame();
       // (in the order they were started, as requestAnimationFrame ran its
       // callbacks: what each takes from Math.random comes in the same turn)
@@ -210,6 +208,11 @@ export default {
   calibrate: false,
   async create(rt) {
     const { createViews } = await import('../../runtime/views');
-    return makeWorld(rt, { createViews });
+    const world = makeWorld(rt, { createViews });
+    // (published as it's made: the runtime places it and starts its loop in
+    // the same task, so no frame of a tick started from here is lost, and
+    // the pictures are made in the frame they were before)
+    publish(world);
+    return world;
   },
 };

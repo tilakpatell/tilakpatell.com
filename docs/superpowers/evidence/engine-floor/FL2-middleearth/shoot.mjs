@@ -103,7 +103,9 @@ async function shoot() {
   quietMs = Number(opt('quiet', 1200)); // (ms with nothing in flight after each loading frame)
   const probe = opt('probe');
   const map3d = args.includes('--map3d');
-  const quality = opt('quality', 'high'); // (an expression read at the shot, for finding what differs)
+  const quality = opt('quality', 'high');
+  const split = args.includes('--split-stream');
+  const traceRandom = args.includes('--trace-random'); // (an expression read at the shot, for finding what differs)
   const only = opt('only')?.split(',');
   await mkdir(out, { recursive: true });
   const { chromium } = await import('playwright-core');
@@ -127,8 +129,9 @@ async function shoot() {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
     // (--map3d: the WebGL map, which a browser drawing in software never
     // gets, by development's switch, MapBackdrop.jsx's forced())
+    if (traceRandom) await ctx.addInitScript(() => window.localStorage.setItem('tp-trace-random', '1'));
     if (map3d) await ctx.addInitScript(() => window.localStorage.setItem('tp-map3d', 'force'));
-    await ctx.addInitScript((q) => {
+    await ctx.addInitScript(([q, split]) => {
       window.localStorage.setItem('tp-intro', '1');
       window.localStorage.setItem('tp-start', '"universe"');
       window.localStorage.setItem('tp-quality', q);
@@ -140,13 +143,39 @@ async function shoot() {
       window.__reseed = (n) => {
         s = n;
       };
-      Math.random = () => {
-        s = (s + 0x6d2b79f5) | 0;
-        let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      const next = (k) => {
+        k.s = (k.s + 0x6d2b79f5) | 0;
+        let t = Math.imul(k.s ^ (k.s >>> 15), 1 | k.s);
         t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
       };
-    }, shot.quality ?? quality);
+      const main = {
+        get s() {
+          return s;
+        },
+        set s(v) {
+          s = v;
+        },
+      };
+      // (what the runtime draws from it, its renderer and its views made
+      // before the scenes are, three's ids for what they make, comes from a
+      // stream of its own: the after build has the runtime and the before
+      // hasn't, and a scene built after it took its embers' places from
+      // further down the one stream)
+      const own = { s: 0x7a11 };
+      const runtime = /\/assets\/(runtime|browser|views|module)-[\w-]+\.js/;
+      Error.stackTraceLimit = 64;
+      // (--trace-random: each call's chunks, for finding where two builds part)
+      window.__randoms = [];
+      Math.random = () => {
+        if (window.__traceRandom) {
+          const chunks = (new Error().stack.match(/\/assets\/[\w.-]+?(?=-[\w-]{8}\.js)/g) ?? []).map((c) => c.slice(8));
+          window.__randoms.push(`${Math.round(performance.now())} ${[...new Set(chunks)].slice(0, 4).join('<')}`);
+        }
+        return split && runtime.test(new Error().stack) ? next(own) : next(main);
+      };
+      window.__traceRandom = localStorage.getItem('tp-trace-random') === '1';
+    }, [shot.quality ?? quality, split]);
     // (the page's CSS animations and transitions run on real time: none)
     await ctx.addInitScript(() => {
       const still = () => {
@@ -161,6 +190,29 @@ async function shoot() {
     await page.clock.install({ time: new Date('2026-10-15T12:00:00Z') });
     // (installed, it still runs on real time: stopped)
     await page.clock.pauseAt(new Date('2026-10-15T12:00:01Z'));
+    // (a response is handed over only between frames, never while the
+    // clock is stepped: what a load sets going, a scene made, its first
+    // frame asked for, then happens in the gap after it, and a frame never
+    // lands before or after a load by the luck of the moment it arrived)
+    let stepping = false;
+    await page.route('**/*', async (route) => {
+      let response;
+      try {
+        response = await route.fetch();
+      } catch {
+        return route.abort().catch(() => {});
+      }
+      while (stepping) await sleep(5);
+      await route.fulfill({ response }).catch(() => {});
+    });
+    const step = async (ms) => {
+      stepping = true;
+      try {
+        await page.clock.runFor(ms);
+      } finally {
+        stepping = false;
+      }
+    };
     // (requests in flight: a loading frame waits for them, in real time)
     let inflight = 0;
     page.on('request', () => inflight++);
@@ -200,7 +252,7 @@ async function shoot() {
       let ok = false;
       for (let i = 0; i < 3000 && !ok; i++) {
         await whole();
-        await page.clock.runFor(16);
+        await step(16);
         await quiet();
         ok = await ready();
       }
@@ -209,11 +261,12 @@ async function shoot() {
       // what's still loading comes in on a stopped clock, before the frames counted
       await quiet();
       await sleep(settle);
+      if (traceRandom) await writeFile(join(out, `${shot.id}.randoms.txt`), (await page.evaluate(() => window.__randoms)).join('\n'));
       await page.evaluate(() => window.__reseed(0x51ed));
       const trace = [];
       for (let i = 0; i < (shot.part ? Math.max(frames, partFrames) : frames); i++) {
         await whole();
-        await page.clock.runFor(16);
+        await step(16);
         await sleep(5);
         if (probe && args.includes('--trace')) trace.push(await page.evaluate(probe).catch(() => null));
       }

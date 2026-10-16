@@ -287,7 +287,7 @@ describe('createViews', () => {
     expect(views.lead).toBe(vm);
   });
 
-  it('sizes the buffer so the lead’s box comes out in whole CSS pixels, with room for every view', () => {
+  it('makes the buffer the lead’s own size, and grows it, the lead’s box in whole CSS pixels, only while a bigger view draws', () => {
     const { views, box, renderer, canvas, gfx } = setup();
     gfx.ratio = 1.25;
     gfx.size = { w: 1440, h: 900 };
@@ -298,18 +298,38 @@ describe('createViews', () => {
     canvas.width = 1800;
     canvas.height = 1125;
     const town = box();
+    const map = box();
     const vt = views.add(town.el, { ratio: 1.25 });
+    const vm = views.add(map.el, { ratio: 1.25 });
     vt.resize(1440, 738);
+    vm.resize(1440, 900);
     town.show(1440 * 738);
+    map.show(1);
     views.frame();
     vt.draw(() => {});
+    views.flush();
     views.frame();
     expect(views.lead).toBe(vt);
-    // (922 rows for 738 pixels: a multiple of 461 rows, at least the window's 1,125)
+    // (alone: its own 922 rows, as its own canvas had)
     expect(vt.buffer).toEqual([1800, 922]);
+    expect([canvas.width, canvas.height]).toEqual([1800, 922]);
+    expect(canvas.style.height).toBe('738px');
+    // (the map drawing too: room for its 1,125 rows, a multiple of 461 for the town's box)
+    vt.draw(() => {});
+    vm.draw(() => {});
+    views.flush();
+    views.frame();
+    expect(views.lead).toBe(vt);
     expect([canvas.width, canvas.height]).toEqual([1800, 1383]);
     expect(canvas.style.height).toBe('1107px');
     expect(canvas.style.top).toBe(`${738 - 1107}px`);
+    // (the map stopped: back to the town's own once it's been idle a while)
+    for (let i = 0; i < 40; i++) {
+      vt.draw(() => {});
+      views.flush();
+      views.frame();
+    }
+    expect([canvas.width, canvas.height]).toEqual([1800, 922]);
   });
 
   it('draws a new lead that didn’t draw this frame over the old lead’s frame left in the corner', () => {
