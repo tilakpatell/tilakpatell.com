@@ -129,8 +129,10 @@ async function shoot(browser, base, leg) {
     const on = await page.evaluate(() => window.__RUNTIME__?.status === 'on' && Boolean(window.__RUNTIME__.current?.world));
     if (on) break;
     if (Date.now() - started > 240000) throw new Error(`${leg}: the world never came on`);
-    // (a world behind a gate with a way through for everyone: Minecraft's password, past to the tribute)
-    if (!gated) gated = await page.getByRole('button', { name: /Walk the tribute/ }).click({ timeout: 200 }).then(() => true, () => false);
+    // (a world behind a gate with a way through for everyone: Minecraft's
+    // password, past to the tribute; the N64 at /dot-matrix/64, asking for
+    // a ROM, past to the Mario 64 tribute, by either of the page's buttons)
+    if (!gated) gated = await page.getByRole('button', { name: /Walk the tribute|play the fan tribute/i }).first().click({ timeout: 200 }).then(() => true, () => false);
     await page.clock.runFor(16);
     await page.waitForTimeout(25);
   }
@@ -201,13 +203,33 @@ async function shoot(browser, base, leg) {
         }
         if (calm < 10) say(`  note: ${leg}: '${view}' never settled in ${n} frames; its picture may be part-loaded`);
       }
+      // (what a view brings in is held back by the classic renderer's frame
+      // guard till its shaders link, which in software takes many frames:
+      // Mario 64's terrain was missing from every classic view's picture,
+      // shot six frames after the view was asked for. Frames run till
+      // nothing is held back, as after the world came on.)
+      let more = 0;
+      while ((await held()) && more < 600) {
+        await page.clock.runFor(16);
+        await page.waitForTimeout(50);
+        more++;
+      }
+      if (more) say(`  note: ${leg}: '${view}' took ${more} frames more before nothing was held back`);
     }
+    // (the gate's button, clicked above, was scrolled into view by the
+    // click, and where the page lands as the gate gives way to the world is
+    // a race: Mario 64's legs were shot at 0, 104 and 563 px down. Every
+    // leg is shot from the top.)
+    await page.evaluate(() => window.scrollTo(0, 0));
     await frames(100);
     // (the frames drawn in that 100 ms reach the screen on the compositor's
     // next frame, in real time: the page's own rAF is the stopped clock's)
     await page.waitForTimeout(300);
     const file = join(OUT, `${view}-${leg}.png`);
-    await page.screenshot({ path: file, type: 'png', animations: 'disabled', caret: 'hide', timeout: 120000 });
+    // (a frame of the node renderer on SwiftShader's WebGL 2 takes one to
+    // three seconds, and a shot waits for the next: Mario 64's bobomb took
+    // 52 s with the clock running, and over two minutes with it stopped)
+    await page.screenshot({ path: file, type: 'png', animations: 'disabled', caret: 'hide', timeout: 600000 });
     shots[view] = file;
   }
   await ctx.close();
