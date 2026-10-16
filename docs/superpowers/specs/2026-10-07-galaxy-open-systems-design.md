@@ -1,6 +1,6 @@
 # The galaxy's open systems, finished: super speed and places to find. The design
 
-Phase 6 of `HANDOFF-galaxy-roam.md`, the part Lane D (PR #548) left: the systems are 2,400 across now, with the sublight drive up to 120 out in the open. This finishes them. Journeys with deep-space stops and ships to fly beside on a lane are their own lane, after this.
+Phase 6 of `HANDOFF-galaxy.md`, the part Lane D (PR #548) left: the systems are 2,400 across now, with the sublight drive up to 120 out in the open. This finishes them. Journeys with deep-space stops and ships to fly beside on a lane are their own lane, after this.
 
 ## What the owner asked for
 

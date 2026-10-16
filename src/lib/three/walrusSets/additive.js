@@ -78,7 +78,7 @@ export const ADD_SET = {
 
 // (the game's stance aims are named Up and Left and stand at about these;
 // a target further round takes the whole pose and the chest does the rest)
-export const AIM_RANGE = { pitch: Math.PI / 3, yaw: Math.PI / 2 };
+const AIM_RANGE = { pitch: Math.PI / 3, yaw: Math.PI / 2 };
 
 const share = (v, range) => (Number.isFinite(v) ? Math.min(1, Math.max(0, v / range)) : 0);
 export const additiveFor = (pitch, yaw) => ({

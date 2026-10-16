@@ -11,16 +11,6 @@ const EVENT = 'tp:stones';
 export const STONE_IDS = ['space', 'mind', 'reality', 'power', 'time', 'soul'];
 export const SOUL_HALVES = ['soul-clint', 'soul-natasha'];
 
-// which game gives which stone, for the map and the rail
-export const STONE_FROM = {
-  power: 'stark',
-  reality: 'thor',
-  mind: 'cap',
-  soul: ['hawkeye', 'widow'],
-  time: 'banner',
-  space: 'vault',
-};
-
 function read() {
   try {
     const v = JSON.parse(window.localStorage.getItem(KEY) ?? '[]');

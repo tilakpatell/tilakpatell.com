@@ -166,7 +166,7 @@ export const goalOf = (id) => BY_ID.get(id)?.via ?? id;
 // the place itself (its gate, for a star system) when it's in the ship's sector.
 // (Another pilot, `pilot:<id>` (pilotGoal.js), is in whichever sector their
 // `pose` says: legOf(ship, id, pose))
-export const sectorOfGoal = (id) => {
+const sectorOfGoal = (id) => {
   const g = GOALS[goalOf(id)];
   return g ? sectorOf(...g.at) : null;
 };

@@ -26,7 +26,6 @@
 //       colour and normal maps (maps.color, maps.normal) in place of the
 //       GLB's, and a snow variation snowed from the start; a recipe without
 //       one draws as before
-//   loadGameMaterial() → Promise<(recipe, maps, opts) => material> with three loaded
 //
 // material.userData.game = { family, features: [...], parallaxSteps, picture } says what
 // was wired, for the evidence and the tests (`picture`: the mip bias at every
@@ -35,7 +34,6 @@
 // under comes from the pack's sizes); mid the detail and the emissive; low
 // the GLB as it is.
 
-import { loadThree } from '../light/three.js';
 import { biasedTexture, composeOverlays, overlayName, specularAA } from './compose.js';
 import { dsiColor, dsiMetal, dsiNodes, dsiRoughness } from './dsi.js';
 import { AOSLICE_LEVELS, EMISSIVE_EXPOSURE, EMISSIVE_MAX, METAL_CHANNEL, PAINT_CHANNEL, PARALLAX_STEPS } from './families.js';
@@ -46,25 +44,25 @@ import { snowOverlay } from './weather.js';
 
 // The export's rebuilt detail normal has no smoothness channel; the share of
 // SmoothnessDetail_Intensity applied evenly until the desktop's raw maps land
-export const DETAIL_SMOOTHNESS_WEIGHT = 0.25;
+const DETAIL_SMOOTHNESS_WEIGHT = 0.25;
 // a breakup map's neutral grey (an overlay colour multiplies by rgb / 0.5)
 export const BREAKUP_NEUTRAL = 0.5;
 // GrungeIntensity reaches 3 on the large vehicles: the mask's weight per unit
-export const GRUNGE_WEIGHT = 0.25;
+const GRUNGE_WEIGHT = 0.25;
 // grunge roughens what it covers by this much at full mask
-export const GRUNGE_ROUGHNESS = 0.35;
+const GRUNGE_ROUGHNESS = 0.35;
 // the embers sit in the scorch mask's deepest part: its value to this power
-export const EMBER_POWER = 4;
+const EMBER_POWER = 4;
 // an ember's colour (a hot coal, the presets' ScorchEmberColor is not in the dump)
-export const EMBER_COLOR = [1, 0.35, 0.08];
+const EMBER_COLOR = [1, 0.35, 0.08];
 // worn edges go to bare metal this smooth
-export const WEAR_ROUGHNESS = 0.3;
+const WEAR_ROUGHNESS = 0.3;
 // Reflectance to F0 (Lagarde and de Rousiers 2014, "Moving Frostbite to
 // PBR": f0 = 0.16 × reflectance²); three's specularIntensity multiplies its
 // own F0 of 0.04, so the factor is 0.16 / 0.04 = 4 × reflectance²
 export const REFLECTANCE_TO_SPECULAR = 4;
 // the share of the sun a leaf passes through at SubsurfaceBackfaceScale 1
-export const TRANSLUCENCY_WEIGHT = 0.25;
+const TRANSLUCENCY_WEIGHT = 0.25;
 
 // the most slices a detail array is sampled at (the characters' have 3)
 export const MAX_SLICES = 4;
@@ -78,11 +76,6 @@ export const TIER_MAPS = {
   high: null,
   ultra: null,
 };
-
-export async function loadGameMaterial() {
-  const three = await loadThree();
-  return (recipe, maps, opts = {}) => createGameMaterial(recipe, maps, { ...opts, three });
-}
 
 // the DSI master's paint on a material, flat: no map, its own numbers
 function dsiFlat(m, p) {
@@ -139,7 +132,7 @@ export function fromGlb(THREE, glb, physical) {
 // A blink period past this many seconds is a steady light: BlinkLength runs
 // 0.1–16 s across the dump, and the few at 1,000 to 1,000,000 are the
 // artists' "never" (Hoth's catwalk box has 1,000)
-export const BLINK_MAX = 60;
+const BLINK_MAX = 60;
 
 // The sun a material's translucency and lobes are lit by, as uniforms one
 // level can share and move: set(direction, color) with the direction toward

@@ -74,7 +74,7 @@ export async function buildGround({ size = 900, seg = 180, texture = 'grass', ti
 // Trees along a set of points [x, z, height, kind, seed]: kind 0–2 are
 // Poly Haven's firs, 3 the broadleaf. Each is a card with a picture of the
 // real model (scripts/hq-impostors.mjs), lit by the scene through its normals.
-export const TREE_KINDS = ['fir-a', 'fir-b', 'fir-c', 'broadleaf'];
+const TREE_KINDS = ['fir-a', 'fir-b', 'fir-c', 'broadleaf'];
 export async function trees(points, { heightAt = () => 0 } = {}) {
   const group = new THREE.Group();
   const lists = TREE_KINDS.map(() => []);

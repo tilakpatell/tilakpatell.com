@@ -153,7 +153,7 @@ export const galaxyPlacer =
 // cache ahead of their landmark (a kit model's file is small, and fetched
 // with its landmark)
 const fetchedKinds = new Set();
-export function prefetchModels(list) {
+function prefetchModels(list) {
   for (const p of list) {
     if (p.model || fetchedKinds.has(p.kind) || !usesModel(p)) continue;
     fetchedKinds.add(p.kind);

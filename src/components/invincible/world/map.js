@@ -126,7 +126,7 @@ export function blockKind(i, j) {
 }
 
 // how downtown a point is: 1 in the middle, to 0 far out
-export const coreAt = (x, z) => Math.exp(-((Math.hypot(x - 60, z + 80) / 720) ** 2));
+const coreAt = (x, z) => Math.exp(-((Math.hypot(x - 60, z + 80) / 720) ** 2));
 
 // ── the suburbs ──
 // block (a, m): a counts west from the arterial at x = −1700, m south from z = 0

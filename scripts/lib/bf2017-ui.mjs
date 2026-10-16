@@ -22,7 +22,7 @@ import { isSequel } from './bf2017-manifest.mjs';
 // The films of the sequel era (the plan's Global Constraints) by the codes
 // their names carry, and the whole of the Resurrection epilogue (act 3:
 // thirty years on, the First Order's rise) by its folder or its prefix.
-export const SEQUEL_FILMS = ['m1tak', 'm4jak', 'm5sta', 'crait', 'dqar', 'jakku', 'starkiller', 'takodana', 'resurgent', 'paintball'];
+const SEQUEL_FILMS = ['m1tak', 'm4jak', 'm5sta', 'crait', 'dqar', 'jakku', 'starkiller', 'takodana', 'resurgent', 'paintball'];
 // names in the UI's files the manifest's list doesn't catch: Poe's ship, the
 // First Order's TIEs and AT-ST, its officers and police, the sequel tiles
 const UI_SEQUEL = ['blackone', 'tiefighterfo', 'tiefightersf', 'atst_fo', 'bermudacop', 'jumpcop', 'idenresistance', 'supremacy_sequel', 'cstile_st_', 'xwingt70', 'reylightsaber', 'bb-8', 'bb-9e'];
@@ -166,7 +166,7 @@ export function iconFamily(file) {
   return fam.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 }
 
-export const symbolId = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const symbolId = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 // One SVG file as a <symbol>: its viewBox kept, its white fills made the
 // text colour (so the HUD tints it), its ids made the symbol's own.
@@ -214,7 +214,7 @@ export function spriteOf(icons) {
 // the fonts included (the owner, 2026-10-10). The open-licence ones keep
 // the licence their own name table states, with its text beside them; the
 // rest are the owner's (the game's licence).
-export const FONT_LICENCES = [
+const FONT_LICENCES = [
   { match: /^Roboto-/, licence: 'Apache-2.0', file: 'LICENSE-Apache-2.0.txt', by: 'Google (Christian Robertson)' },
   { match: /^NotoSansCJK/, licence: 'OFL-1.1', file: 'OFL.txt', by: 'Adobe Systems Incorporated, for Google’s Noto' },
   { match: /^NotoKufiArabic/, licence: 'OFL-1.1', file: 'OFL.txt', by: 'Google (Monotype Design Team)' },
@@ -227,7 +227,7 @@ export const fontLicence = (file) => FONT_LICENCES.find((l) => l.match.test(base
 
 // A key's family: the word after ID_ (ID_W_A280 → W, ID_HINT_… → HINT); a
 // string whose key the game's data never names is filed by its hash.
-export const stringFamily = (key) => key.match(/^ID_([A-Z0-9]+)/)?.[1] ?? '_hash';
+const stringFamily = (key) => key.match(/^ID_([A-Z0-9]+)/)?.[1] ?? '_hash';
 
 // The families the galaxy's screens read synchronously (beside lane 0's
 // rows): names of characters, classes, weapons, vehicles, heroes' tips, the

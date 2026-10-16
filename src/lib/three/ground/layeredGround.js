@@ -34,11 +34,11 @@ import { loadThree } from '../light/three.js';
 
 export const TIER_LAYERS = { ultra: 4, high: 4, mid: 2, low: 0 };
 // degrees: planar under the first, triplanar over the second (35° ± 5°)
-export const TRIPLANAR = [30, 40];
+const TRIPLANAR = [30, 40];
 // how much the detail normal bends the ground's (UDN: n + d × strength)
 export const DETAIL_STRENGTH = 0.6;
 // a layer's height where its map carries none: the middle of the range
-export const HEIGHT_FLAT = 0.5;
+const HEIGHT_FLAT = 0.5;
 // how far a map's smoothness (its alpha) moves the layer's roughness from
 // the named value, per unit under or over its mean
 export const SMOOTH_GAIN = 0.5;
@@ -49,7 +49,7 @@ const TRI_SHARPNESS = 4;
 export const TINT = { rocky: 0.8, chunky: 0.96, rough: 0.98, packed: 1.03, snow: 1 };
 // the sparkle: its glint's sharpness against the sun, and its strength
 // against the sun's colour (judged on the shot)
-export const SPARKLE = { power: 64, gain: 2 };
+const SPARKLE = { power: 64, gain: 2 };
 
 const kindOf = (l) => Object.keys(TINT).find((k) => l.id === k || l.name?.toLowerCase().includes(k)) ?? 'snow';
 const smooth = (a, b, x) => {

@@ -29,6 +29,7 @@
 // A weapon's display name is the string `ID_W_<id>` (ID_W_A280C → "A280C").
 
 import { assetRefs, deref, follow, isSequel as isSequelName, objectsOf, pick, pointee, readIndex, rootOf, shortName } from './bf2017-ebx.mjs';
+import { effectOf } from './bf2017-rulebook-effects.mjs';
 
 export { isSequel } from './bf2017-ebx.mjs';
 
@@ -156,8 +157,15 @@ export function weaponRow(root, name) {
     f.mode = fn.FireLogic.FireLogicType.replace(/^flt/, '').replace(/Fire$/, '').toLowerCase();
 
     const capacity = fn.Ammo?.MagazineCapacity;
+    // (a magazine of −1 is a blaster that heats; so is one whose own overheat config heats a bullet, whatever
+    // magazine its firing data keeps: Boba Fett's EE-3 holds 10,000, Bossk's micro-grenades 1,000)
+    const lost = [];
+    const heats = capacity !== -1 && objectsOf(blueprint, 'OverheatComponentData').length ? heatOf(root, blueprint, firing, fn, lost) : null;
     if (capacity === -1) row.heat = heatOf(root, blueprint, firing, fn, missing);
-    else {
+    else if (heats?.perBullet > 0) {
+      row.heat = heats;
+      missing.push(...lost);
+    } else {
       row.ammo = {};
       take(row.ammo, 'magazine', firing, fn, 'Ammo.MagazineCapacity');
       take(row.ammo, 'magazines', firing, fn, 'Ammo.NumberOfMagazines');
@@ -176,7 +184,9 @@ export function weaponRow(root, name) {
       const blaster = objectsOf(blueprint, 'BlasterWeaponData')[0];
       take(d, 'min', blueprint, blaster, 'ProjectileParameters.MinDamageMultiplier');
       take(d, 'max', blueprint, blaster, 'ProjectileParameters.MaxDamageMultiplier');
-      const blast = reach(root, bullet.Explosion, missing, 'explosion');
+      // (the explosion a record of its own, or kept in the projectile's: the bowcaster's bolt, a micro-grenade)
+      const inner = deref(bolt.asset, bullet.Explosion);
+      const blast = inner ? { asset: bolt.asset, obj: inner } : reach(root, bullet.Explosion, missing, 'explosion');
       if (blast) {
         d.blast = {};
         for (const [k, p] of [['damage', 'BlastDamage'], ['inner', 'InnerBlastRadius'], ['radius', 'BlastRadius'], ['shockwave', 'ShockwaveRadius'], ['impulse', 'BlastImpulse']]) take(d.blast, k, blast.asset, blast.obj, p);
@@ -214,14 +224,19 @@ export function weaponRow(root, name) {
 function heatOf(root, blueprint, firing, fn, missing) {
   const heat = {};
   const mod = objectsOf(blueprint, 'WeaponOverheatModifier')[0];
-  const conf = reach(root, objectsOf(blueprint, 'OverheatComponentData')[0]?.OverheatConfig, missing, 'overheat config');
-  const cfg = conf && (deref(conf.asset, rootOf(conf.asset).Data) ?? conf.obj);
+  const ref = objectsOf(blueprint, 'OverheatComponentData')[0]?.OverheatConfig;
+  // (a hero's ability weapon keeps its config in the blueprint itself, a `$ref` and not a record of its own)
+  const own = deref(blueprint, ref);
+  const conf = own ? { asset: blueprint, obj: own } : reach(root, ref, missing, 'overheat config');
+  const cfg = conf && (own ?? deref(conf.asset, rootOf(conf.asset).Data) ?? conf.obj);
   const or = (key, a, aPath, b, bObj, bPath) => (pick(a.obj, aPath) > 0 ? take(heat, key, a.asset, a.obj, aPath) : bObj && take(heat, key, b, bObj, bPath));
   if (mod?.HeatPerBullet > 0) take(heat, 'perBullet', blueprint, mod, 'HeatPerBullet');
   else if (cfg) take(heat, 'perBullet', conf.asset, cfg, 'HeatPerBullet');
   if (cfg) {
     take(heat, 'dropPerSecond', conf.asset, cfg, 'HeatDropPerSecond');
     take(heat, 'dropDelay', conf.asset, cfg, 'OverheatDropDelay');
+    // (a weapon whose heat rises on its own is an ability's clock: Sharpshooter's 0.04 a second)
+    if (cfg.HeatIncreasePerSecond > 0) take(heat, 'risePerSecond', conf.asset, cfg, 'HeatIncreasePerSecond');
   } else take(heat, 'dropPerSecond', firing, fn, 'OverHeat.HeatDropPerSecond');
   // (the firing data's threshold and penalty, the config's when it has none)
   or('threshold', { asset: firing, obj: fn }, 'OverHeat.OverHeatThreshold', conf?.asset, cfg, 'OverHeatThreshold');
@@ -230,18 +245,20 @@ function heatOf(root, blueprint, firing, fn, missing) {
   take(heat, 'overheatedDrop', conf.asset, cfg, 'OverheatedDropMultiplier');
   take(heat, 'warning', conf.asset, cfg, 'HeatWarningThreshold');
   const ac = cfg.ActiveCooldownSettings;
-  if (ac?.EnableActiveCooldown) {
+  const band = ac?.DifficultyInterval?.[0];
+  const sup = band && deref(conf.asset, band.SuperZoneInterval);
+  // (active cooling is its window and the super zone inside it: a config that gives no super zone, Bossk's
+  // micro-grenades', the dual RK-3's, has no cooling the gun model can run, and the row says none)
+  if (ac?.EnableActiveCooldown && sup) {
     const c = (heat.cooling = {});
-    const band = ac.DifficultyInterval?.[0];
-    if (band) withSources(Object.assign(c, { window: [band.Start, band.End] }), { window: where(conf.asset, cfg, 'ActiveCooldownSettings.DifficultyInterval.0.{Start,End}') });
+    withSources(Object.assign(c, { window: [band.Start, band.End] }), { window: where(conf.asset, cfg, 'ActiveCooldownSettings.DifficultyInterval.0.{Start,End}') });
     take(c, 'shrink', conf.asset, cfg, 'ActiveCooldownSettings.DifficultyIncrementation.OnSuccess');
     take(c, 'reset', conf.asset, cfg, 'ActiveCooldownSettings.DifficultyIncrementation.OnFailure');
     take(c, 'successPenalty', conf.asset, cfg, 'ActiveCooldownSettings.SuccessPenaltyTime');
     take(c, 'failurePenalty', conf.asset, cfg, 'ActiveCooldownSettings.FailurePenaltyTime');
     take(c, 'minHeat', conf.asset, cfg, 'ActiveCooldownSettings.MinimumTriggerHeat');
     if (cfg.VentingSettings?.EnableVenting) take(c, 'vent', conf.asset, cfg, 'VentingSettings.Duration');
-    const sup = band && deref(conf.asset, band.SuperZoneInterval);
-    if (sup) withSources(Object.assign(c, { super: [sup.Start, sup.End] }), { super: where(conf.asset, sup, '{Start,End}') });
+    withSources(Object.assign(c, { super: [sup.Start, sup.End] }), { super: where(conf.asset, sup, '{Start,End}') });
   }
   return heat;
 }
@@ -292,7 +309,33 @@ export function abilityRow(root, name) {
     }
   }
   row.ranks = [...ranks.keys()].sort((a, b) => a - b).map((level) => ({ level, level_source: `${asset.name}#PlayerAbilityPropertyOutputModifier.Values.MinAbilityLevel`, modifiers: ranks.get(level) }));
+  // (what a blaster hero's ability does, from the records its prefab reaches: bf2017-rulebook-effects.mjs)
+  const effect = effectOf(root, row.id, { weaponRow });
+  if (effect) row.effect = effect;
   return row;
+}
+
+// Whom an ability blocks, and when: the record's `BlockedPlayerAbilityIds` (each the `Identifier` of another
+// ability's record) with its two flags, `ApplyBlockPlayerAbilitiesDuringActivation` and `…DuringActive`. The ids
+// are named among the rows given and the records in `also` (the heroes' dodge, which no kit lists among its
+// three); an id none of them carries (an emote, a melee) is left out. Each row gains
+// `blocking: { whom: [ability ids], activation, active }`.
+export const BLOCKABLE = ['Gameplay/Kits/Hero/Ability_Evade_CharacterState'];
+export function linkBlocks(root, rows, also = BLOCKABLE) {
+  const named = new Map();
+  const idOf = (name) => {
+    const asset = follow(root, name);
+    return asset && typeof rootOf(asset).Identifier === 'number' ? rootOf(asset).Identifier >>> 0 : null;
+  };
+  for (const r of Object.values(rows)) if (idOf(r.asset) !== null) named.set(idOf(r.asset), r.id);
+  for (const name of also) if (idOf(name) !== null) named.set(idOf(name), shortName(name));
+  for (const r of Object.values(rows)) {
+    const a = follow(root, r.asset);
+    const rec = a && rootOf(a);
+    if (!rec) continue;
+    r.blocking = { whom: [...new Set((rec.BlockedPlayerAbilityIds ?? []).map((id) => named.get(id >>> 0)).filter(Boolean))], activation: Boolean(rec.ApplyBlockPlayerAbilitiesDuringActivation), active: Boolean(rec.ApplyBlockPlayerAbilitiesDuringActive) };
+  }
+  return rows;
 }
 
 // A star card: an `SC_*` ability, or a `U_*` unlock naming one.
@@ -417,6 +460,15 @@ export function heroRow(root, kitName, { side = null } = {}) {
   const deflect = names.find((n) => /\/U_Lightsaber_Deflect_[^/]*$/.test(n));
   const primary = base.primaryAsset;
   const id = folder.split('/')[3].toLowerCase();
+  // (a hero whose kit applies no regeneration on spawn, Leia: her own regeneration record in her folder)
+  if (!base.regen) {
+    const own = names.filter((n) => /\/Affector_[^/]*HealthRegen$/.test(n)).map((n) => follow(root, n)).find((a) => a && rootOf(a).$type === 'SoldierHealthRegenerationAffectorAsset');
+    if (own) {
+      base.regen = {};
+      take(base.regen, 'rate', own, rootOf(own), 'RankData.0.RegenerationRate');
+      take(base.regen, 'delay', own, rootOf(own), 'RankData.0.RegenerationDelay');
+    }
+  }
   return {
     ...base,
     id,
@@ -426,6 +478,8 @@ export function heroRow(root, kitName, { side = null } = {}) {
     ...(armour.length ? { armour_source: armour.map((n) => `${n}#MaxHealthAffectorAsset.MaxHealth`).join(' ') } : {}),
     primary: primary ? shortName(primary) : null,
     primaryAsset: primary,
+    // (the weapons rulebook's row for that primary: a blaster hero's own gun)
+    ...(primary && weaponChain(root, primary).blueprint ? { weapon: weaponId(weaponChain(root, primary).blueprint.name), weapon_source: `${primary}#${rootOf(follow(root, primary)).$type}.Unlock` } : {}),
     saber: /Lightsaber/.test(blueprint) ? { blueprint: shortName(blueprint), deflect: deflect ? shortName(deflect) : null } : null,
     clipPrefix: shortName(blueprint).replace(/^Hero_(Lightsaber|Weapon)_?/, '') || null,
   };

@@ -267,7 +267,7 @@ function release(root) {
 // A thing built of many small meshes (a parking lot's cars and poles) as a
 // few: its plain meshes merged into one per material, in its own frame;
 // anything skinned, instanced or many-materialled is left as it is.
-export function mergeStatic(object) {
+function mergeStatic(object) {
   object.updateMatrixWorld(true);
   const inv = new THREE.Matrix4().copy(object.matrixWorld).invert();
   const by = new Map(); // material → [geometry in object space]

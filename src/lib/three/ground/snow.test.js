@@ -6,7 +6,8 @@ import { NEAR_BAND, createSnowGround, displaceHeight, dynamicS, layerMasks, laye
 describe('the record (snowMaps.js)', () => {
   it('packs the listing’s maps into three arrays: the _C maps sRGB (the flow map decoded into the linear one), the rest linear', () => {
     expect(Object.keys(SNOW_FILES)).toHaveLength(3);
-    expect(SNOW_FILES[SNOW_KIND.normals].layers).toHaveLength(9);
+    expect(SNOW_FILES[SNOW_KIND.normals].layers).toHaveLength(8);
+    expect(SNOW_FILES[SNOW_KIND.data].layers).toHaveLength(5);
     for (const [slug, f] of Object.entries(SNOW_FILES)) {
       for (const m of f.layers) expect(Boolean(f.srgb || f.linearised?.includes(m)), m).toBe(/_c$/.test(m));
       expect(Object.keys(f.sizes), slug).toEqual(['low', 'mid', 'high', 'ultra']);
@@ -15,11 +16,33 @@ describe('the record (snowMaps.js)', () => {
   });
   it('finds every read’s map in a file, but the soot’s (read only under a dynamic mask)', () => {
     for (const [key, r] of Object.entries(READS)) {
-      if (key === 'soot') expect(mapAt(r.map)).toBeNull();
+      // (the soot is read only under a dynamic mask; t14's 125 m noise feeds only material2, not drawn)
+      if (key === 'soot' || key === 'chunkyNoise') expect(mapAt(r.map), key).toBeNull();
       else expect(mapAt(r.map), key).toBeTruthy();
     }
     expect(mapAt('t_arcticbase_snowrough_03_n')).toEqual({ slug: SNOW_KIND.normals, kind: 'normals', layer: 1 });
-    expect(mapAt('t_blowingsnowflowmap_01_c')).toEqual({ slug: SNOW_KIND.data, kind: 'data', layer: 4 });
+    expect(mapAt('t_blowingsnowflowmap_01_c')).toEqual({ slug: SNOW_KIND.data, kind: 'data', layer: 3 });
+    expect(mapAt('t_arcticbase_snowtrampled_01_n')).toEqual({ slug: SNOW_KIND.data, kind: 'data', layer: 4 });
+  });
+  it('sizes each array by its maps’ tilings: on ultra no read finer than the 4 m snow, every 0.2 map at least half its density, the flow map whole', () => {
+    // the export's sizes (textures.jsonl's srcWidth; every other map 2048)
+    const exported = { t_arcticbase_snowdetail_01_n: 512, t_arcticbase_snowsparkle_03_rgbm: 512, t_blowingsnowflowmap_01_c: 1024 };
+    const texels = (map, tier) => Math.min(SNOW_FILES[mapAt(map).slug].sizes[tier], exported[map] ?? 2048);
+    const density = (key, tier) => {
+      const r = READS[key];
+      const c = Array.isArray(r.cycles) ? Math.max(...r.cycles) : r.cycles;
+      return texels(r.map, tier) * c;
+    };
+    // (the rough map's 0.5 reads are finer: it keeps its texels for its 0.08 read)
+    for (const key of ['detail', 'trampled', 'sparkle', 'packed', 'rocky']) expect(density(key, 'ultra'), key).toBeLessThanOrEqual(density('snow4', 'ultra'));
+    for (const tier of ['mid', 'high', 'ultra'])
+      for (const key of ['packed', 'chunky', 'roughPacked', 'rockyPacked', 'rocky', 'rockyColour', 'rockyPackedColour', 'trampled']) expect(density(key, tier), `${tier} ${key}`).toBeGreaterThanOrEqual(density('snow4', tier) / 2);
+    // (the slow reads keep every texel: the 33 m swells and the rough map's 0.08 at the array's full size)
+    for (const key of ['wavey', 'snow33', 'roughPackedDetail']) expect(SNOW_FILES[mapAt(READS[key].map).slug].sizes.ultra, key).toBe(2048);
+    // (the flow map, 1024 in the export and the game, read whole on ultra, as the game reads it at Texture.SkipMipmapCount 0)
+    expect(SNOW_FILES[mapAt(READS.flow.map).slug].sizes.ultra).toBe(exported.t_blowingsnowflowmap_01_c);
+    // (no array bigger than its biggest map)
+    for (const [slug, f] of Object.entries(SNOW_FILES)) expect(f.sizes.ultra, slug).toBeLessThanOrEqual(Math.max(...f.layers.map((m) => exported[m] ?? 2048)));
   });
   it('carries the listing’s tilings', () => {
     expect([READS.snow4.cycles, READS.snow33.cycles, READS.detail.cycles]).toEqual([0.25, 0.03, 1]);
@@ -148,8 +171,9 @@ describe('the material', () => {
     const three = await loadThree();
     const g = createSnowGround({ maps: stubs(three.THREE), masks: masks(three.THREE), tier: 'ultra', three, displace: true });
     expect(g.flat).toBe(false);
-    // (normals: 4 m, 33 m, packed, wavey, chunky, rough packed, its 0.08 read, the rough 0.5 read, trampled, the two rocks, and the displacement's)
-    expect(g.samples).toEqual({ normal: 12, data: 7, mask: 6 });
+    // (normal maps: 4 m, 33 m, the 1 m detail, packed, wavey, chunky, rough packed, its 0.08 read, the rough 0.5 read,
+    // trampled, the two rocks, and the displacement's; the rest: the flow, the two streaks, the sparkle, the two rock colours)
+    expect(g.samples).toEqual({ normal: 13, data: 6, mask: 6 });
     expect(g.material.colorNode).toBeTruthy();
     expect(g.material.normalNode).toBeTruthy();
     expect(g.material.positionNode).toBeTruthy();
@@ -159,7 +183,7 @@ describe('the material', () => {
   it('mid reads the layers without the blowing snow', async () => {
     const three = await loadThree();
     const g = createSnowGround({ maps: stubs(three.THREE), masks: masks(three.THREE), tier: 'mid', three });
-    expect(g.samples).toEqual({ normal: 11, data: 3, mask: 6 });
+    expect(g.samples).toEqual({ normal: 12, data: 2, mask: 6 });
     g.dispose();
   });
   it('the far grid: no 1 m detail, no sparkle, no displacement', async () => {
@@ -174,7 +198,7 @@ describe('the material', () => {
     const maps = { ...stubs(three.THREE), soot: new three.THREE.Texture() };
     const g = createSnowGround({ maps, masks: [], tier: 'high', three, dynamic: { texture: new three.THREE.Texture(), corner: [0, 0], extent: [10, 10] } });
     expect(g.samples.mask).toBe(0);
-    expect(g.samples.data).toBe(7 + 2);
+    expect(g.samples.data).toBe(6 + 2);
     g.dispose();
   });
   it('low, or no normals, is the record’s colour alone', async () => {
@@ -195,8 +219,8 @@ describe('the material', () => {
     delete maps.data;
     delete maps.colours;
     const g = createSnowGround({ maps, masks: [], tier: 'high', three });
-    // (no data: no detail, streaks or sparkle; no colours: the rocks in the base colour)
-    expect(g.samples).toEqual({ normal: 11, data: 0, mask: 0 });
+    // (no data: no detail, trampled snow, streaks or sparkle; no colours: the rocks in the base colour)
+    expect(g.samples).toEqual({ normal: 10, data: 0, mask: 0 });
     expect(g.flat).toBe(false);
   });
 });

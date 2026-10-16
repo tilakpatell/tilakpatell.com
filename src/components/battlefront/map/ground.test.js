@@ -20,13 +20,13 @@ const rows = {
   ...Object.fromEntries(Object.entries(SNOW_FILES).map(([slug, m]) => [slug, { ...m.sizes, srgb: Boolean(m.srgb) }])),
   masks: { mid: 352, high: 704, ultra: 1408, srgb: false },
 };
-// level.json's terrain.masks as the masks script writes it (two of the three frames)
+// level.json's terrain.masks as the masks script writes it (its two frames)
 const masks = {
   tex: 'terrain/masks.ktx2',
   size: [1408, 2304],
   frames: {
     near: { corner: [-397, -380], metresPerPixel: 0.5, layers: [0, 1] },
-    far: { corner: [-1229, -1020], metresPerPixel: 4, layers: [4, 5] },
+    far: { corner: [-1229, -1020], metresPerPixel: 2, layers: [2, 3] },
   },
 };
 const origin = [205, 362.296875, -1540];
@@ -73,7 +73,7 @@ describe('the mask frames', () => {
   it('lays each frame in the game’s frame, finest first; low reads none', () => {
     expect(maskFrames(masks, origin, 'ultra')).toEqual([
       { name: 'near', layers: [0, 1], corner: [-192, -1920], extent: [704, 1152] },
-      { name: 'far', layers: [4, 5], corner: [-1024, -2560], extent: [5632, 9216] },
+      { name: 'far', layers: [2, 3], corner: [-1024, -2560], extent: [2816, 4608] },
     ]);
     expect(maskFrames(masks, origin, 'low')).toEqual([]);
     expect(maskFrames(undefined, origin, 'ultra')).toEqual([]);

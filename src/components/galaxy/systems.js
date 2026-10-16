@@ -80,7 +80,7 @@ export const filmShort = (id) => FILMS[id]?.episode ?? FILMS[id]?.short ?? '';
 // out past the Expansion Region (UNKNOWN: within `half` of due west, and
 // further out than `from`).
 export const CORE = [12, 9.8];
-export const BULGE = 0.18;
+const BULGE = 0.18;
 export const REGIONS = [
   { id: 'deep', name: 'Deep Core', r: 0.5 },
   { id: 'core', name: 'Core Worlds', r: 2.1 },
@@ -1270,7 +1270,7 @@ export function regionAt([x, z]) {
 }
 
 // light-years across the map, roughly (the galaxy is 120,000 across)
-export const LY_PER_SQUARE = 120000 / (RIM * 2);
+const LY_PER_SQUARE = 120000 / (RIM * 2);
 export const distance = (a, b) => Math.hypot(b.pos[0] - a.pos[0], b.pos[1] - a.pos[1]);
 export const lightYears = (a, b) => Math.round((distance(a, b) * LY_PER_SQUARE) / 100) * 100;
 

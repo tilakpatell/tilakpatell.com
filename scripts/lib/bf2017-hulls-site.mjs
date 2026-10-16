@@ -23,10 +23,10 @@ import { reduceHull } from './bf2017-physics.mjs';
 // the drawing worse (a drawn vertex's mean distance from the hull 1.5 % of the
 // length, against 1.0 % at 0.05); the sloppy one has no bound: the budget is
 // the bound
-export const SITE_ERROR = 0.05;
+const SITE_ERROR = 0.05;
 // root 0's solids: up to this many convex hulls of the drawn vertices, each of
 // at most 64 points (reduceHull's)
-export const SITE_SOLIDS = 8;
+const SITE_SOLIDS = 8;
 
 // The drawn model's triangles in the frame it is drawn in, its vertices
 // welded where they meet (to a millionth of its length): { positions, indices }

@@ -544,7 +544,7 @@ Routes: /galaxy/:system/surface (GalaxySurface: surface/scene.js, where every ch
   - Troopers fire with arms hanging at idle: no gunplay on NPCs, no raised weapon, no aim, no muzzle/recoil body motion.
   - Dooku/Obi-Wan (crew rigs): heldBlade is parented to the holder at a fixed hip-height offset (heldBlade.js:24), not RightHand. The rigged arm swings in the walk while the blade floats beside it.
   - Hit, knock, stagger and death are all rigid whole-body tilts (activity.js:489, 540, 576). Clips-hit/fall/shot are unused. A knocked figure slides upright-tilted rather than tumbling.
-  - The 'search' event isn't shown (no ? over the head, HANDOFF-npc-intelligence.md:22). No bark/gesture when spotting you (mode change hold->close etc.).
+  - The 'search' event isn't shown (no ? over the head, HANDOFF-runtime.md:22). No bark/gesture when spotting you (mode change hold->close etc.).
   - No look-at beyond whole-body yaw; 'look'/'search' modes don't sweep the head.
 - **Opportunities:**
   - Pass a motion object: hostileStep already knows out.x/z vs b.x/z. Compute speed/side in the figure's frame plus turn and call fig.update(dt, move, motion) + fig.after(), so locomotion hip-turns strafes and backpedals and phase-locks the stride. Requires crew figures (rigged()).
@@ -872,7 +872,7 @@ Routes: /cybertron -> src/pages/Cybertron.jsx: GameWorld (line 170), RollOut (li
   - Cybertron foes: perception plus squad tokens.
   - Goombas: perception.
   - Bob-ombs, King, Chomp, Toad, Cybertron people and all of Roll out: none. They are hand-rolled state machines or scripted.
-- Only the Bob-ombs and the Cybertron foes' missing cover/flank are already noted in docs/superpowers/HANDOFF-npc-intelligence.md:16-17.
+- Only the Bob-ombs and the Cybertron foes' missing cover/flank are already noted in docs/superpowers/HANDOFF-runtime.md:16-17.
 - No tests cover bots.js figure animation, rollout/meshyCast.js, transform3d.js, mario64 cast.js or mario-hd.js.
 
 ## Avengers (/avengers: Compound world plus its in-world games Smash Run, Thwip!, Infiltration) and Invincible (/invincible: city world InvWorld, Think, Mark!, GDA viewer)
@@ -1040,7 +1040,7 @@ Routes: /avengers: CompoundWorld (src/pages/Avengers.jsx:156). Its doors open In
 
 ### Atom Eve's patrol (companion)
 
-- **Files:** src/components/invincible/world/npcs.js:22-29, src/components/invincible/world/npcs.js:83-93, src/components/invincible/world/npcs.js:120-165, docs/superpowers/HANDOFF-npc-intelligence.md:18
+- **Files:** src/components/invincible/world/npcs.js:22-29, src/components/invincible/world/npcs.js:83-93, src/components/invincible/world/npcs.js:120-165, docs/superpowers/HANDOFF-runtime.md:18
 - **Model:** Meshy GLB eve.glb on Meshy's skeleton, with the hero clip set (idle, walk, run, punch, hit, land, wave, cheer, hover, fly) through rig.js
 - **Animation:** act('fly') when fast, else act('hover'). The holder leans along the velocity (or the fly clip lies along it) and slerps.
 - **AI:** Hand-rolled: a parametric ellipse loop, and a stop/wait/patience/done state machine (npcs.js:124-138). It does not use lib/ai; the handoff lists her as left to do.
@@ -1166,7 +1166,7 @@ Routes: /avengers: CompoundWorld (src/pages/Avengers.jsx:156). Its doors open In
    - the compound's per-NPC overrides
    None of them uses rig.js POSES. humanoid.js:715 swings the right arm ±0.4 rad even in 'idle' (left arm amp is 0). Most callers overwrite shoulderR afterwards; Smash's flung soldiers (smash/scene.js:669) do not.
 
-3. No character in scope uses src/lib/ai. Every behaviour is hand-rolled (Eve, the ThinkMark bosses, the Flaxans, traffic walkers) or a fixed schedule (Infiltration guards, which must stay deterministic for solveLevel). Eve is already listed as left to do in HANDOFF-npc-intelligence.md:18.
+3. No character in scope uses src/lib/ai. Every behaviour is hand-rolled (Eve, the ThinkMark bosses, the Flaxans, traffic walkers) or a fixed schedule (Infiltration guards, which must stay deterministic for solveLevel). Eve is already listed as left to do in HANDOFF-runtime.md:18.
 
 4. All Invincible figures are Meshy-rigged (scripts/meshy-invincible.mjs), so the shared clips-*.glb library (SHARED_CLIPS: scared, fall, hit, cheer, happy, wave, sitcross, drink, taunt, shoot, punch, dance, shot) can be put on them directly with clips.js retarget(clip, hipsY). That is the cheapest big win. The Avengers Sketchfab models (Thor Mixamo-like, Hulk Unreal, Widow Auto-Rig Pro, Spider-Man) need a bone map first; rig.js's role finder already knows those names.
 
@@ -1256,7 +1256,7 @@ Routes: /middle-earth (MapHub -> mapDiorama.js figures), /middle-earth/shire (Sh
   - Binary flags: w = running ? 1 : 0, and the troll/goblin phase is t*(running ? 10 : 0). The pose pops at every corner stop and start (amonhen/props.js:2580, moria/props.js:3189-3190).
   - No attack on catch. The 'caught' event is text and a reset. The Uruk swing loops through the chase instead of timing to contact (amonhen/scene.js:543).
   - No hit reactions. 'alert' is standing still: no point, shout or flinch. The troll roars continuously while hunting rather than once on 'seen'.
-  - Chasers do not separate. walkTo heads straight at the belief and push() checks only colliders (watchers.js:72-85, 214), so several stack on one spot. The search.flood chase grid is built but unused (HANDOFF-npc-intelligence.md:20).
+  - Chasers do not separate. walkTo heads straight at the belief and push() checks only colliders (watchers.js:72-85, 214), so several stack on one spot. The search.flood chase grid is built but unused (HANDOFF-runtime.md:20).
   - Boromir's charge raises his right arm through the wave param (amonhen/scene.js:506), so he waves while charging.
 - **Opportunities:**
   - Pass the actual watcher speed to the rigs: a distance-accumulated phase and a 0..1 walk/run blend (meshyCast-style move).
@@ -1319,7 +1319,7 @@ Routes: /middle-earth (MapHub -> mapDiorama.js figures), /middle-earth/shire (Sh
 - **Files:** src/components/middleearth/shire/rules.js:446,462-591 (HUNT, DOG_ROUNDS, stepHunt), src/components/middleearth/shire/scene.js:584-602 (dogs), 636-657 (sheep), 662-681 (rider), src/components/middleearth/shire/props.js:2459,2509,2566 (sheep, dog, blackRider), src/components/middleearth/shire/ShireWorld.jsx:463, src/components/middleearth/towns/bree/scene.js:569-579 (Bill)
 - **Model:** Procedural props-kit creatures (Groups with legs, head, tail; rider and horse).
 - **Animation:** Dogs: legs sin(t*10) on patrol, sin(t*18) on chase, tail wag, a hop on 'seen'. Sheep: legs sin(t*9)*0.4, graze head-dip. Rider's horse: legs sin(t*9); the rider leans and sniffs. Bill: legs forced to 0 every frame, neck sway only.
-- **AI:** Dogs: stepHunt is a hand copy of the old watchers loop, with no lib/ai. HUNT sets far:1.2 and search:6 (rules.js:446) but nothing reads them, though HANDOFF-npc-intelligence.md:11 lists HUNT as tuned. Sheep: a Math.random random-walk inside the renderer (scene.js:638-653). Rider: fixed path riderAt(r.s) with phases coming, sniff, leaving.
+- **AI:** Dogs: stepHunt is a hand copy of the old watchers loop, with no lib/ai. HUNT sets far:1.2 and search:6 (rules.js:446) but nothing reads them, though HANDOFF-runtime.md:11 lists HUNT as tuned. Sheep: a Math.random random-walk inside the renderer (scene.js:638-653). Rider: fixed path riderAt(r.s) with phases coming, sniff, leaving.
 - **Problems:**
   - The dogs' detection timer, suspicion and shared search are dead config: stepHunt ignores far and search.
   - Dog cadence is fixed against patrol 1.7 and chase 5.2 m/s. Sheep step at 0.7 m/s on a fixed leg rate.
@@ -1450,7 +1450,7 @@ Better local patterns worth promoting to shared:
 
 Duplication:
 - turnTo copied in 7 town scenes (amonhen:381, cirithungol:378, lorien:658, marshes:394, moria:496, orthanc:400, rivendell:418), in watchers.js:35 and in shire/rules.js.
-- shire/rules.js:500-591 stepHunt is a hand copy of the old watchers loop. HUNT.far and HUNT.search are dead config, contradicting HANDOFF-npc-intelligence.md:11.
+- shire/rules.js:500-591 stepHunt is a hand copy of the old watchers loop. HUNT.far and HUNT.search are dead config, contradicting HANDOFF-runtime.md:11.
 - towns/walker.js copies the Shire's HOBBIT walker.
 - 2 Gollum builders (marshes/props.js:837, doom/props.js:3300), plus a toy one and a Lorien capsule.
 - 2 orc rig/pose pairs (cirithungol/props.js:1569/1683, doom/props.js:1983/2160), plus kit.makeOrc, the Moria goblin, the Amon Hen Uruk and the Marshes eastRig.
@@ -2009,7 +2009,7 @@ Routes: /c-137 (App.jsx:351 -> pages/RickMorty.jsx:9,97 -> RmWorld). The street,
 (6) The sit-on-Rick's-clip code is copied three times (house.js:191-205, school.js:258-272, diner.js:169-185) beside seatOwn (people.js:115). All of them start the sit at time 0.
 (7) Nothing in the world turns a head or neck bone. Summer's post-mixer arm override (upstairs.js:471-482) is the only layered bone pose and is the pattern for a look-at layer.
 (8) Shared clips never used by any NPC here: wave, happy, cheer, dance, taunt, scared, shot, shoot. Only punch/hit/fall (duels), sitcross (Evil Morty) and Rick's drink fidget are used. RmWorld.jsx:810 spot.anim is dead: no data sets it.
-(9) AI: npc.js is the one shared brain for the street and every dimension. It is hand-rolled (hunt > wander > watch, plus bark) and uses only lib/ai/steer.js. perception.js, search.js, squad.js, utility.js, tree.js and spatial.js are unused here. docs/superpowers/HANDOFF-npc-intelligence.md:21 says steer.js is not wired into any world; that is stale, npc.js uses it. Morty is missing from steering separation (npc.js:67-73).
+(9) AI: npc.js is the one shared brain for the street and every dimension. It is hand-rolled (hunt > wander > watch, plus bark) and uses only lib/ai/steer.js. perception.js, search.js, squad.js, utility.js, tree.js and spatial.js are unused here. docs/superpowers/HANDOFF-runtime.md:21 says steer.js is not wired into any world; that is stale, npc.js uses it. Morty is missing from steering separation (npc.js:67-73).
 (10) Ghost Mortys get t+g.x as their clock (ghosts.js:150 -> scene.js:255 -> meshyCast.js:500), so the mixer dt depends on direction of travel.
 (11) Out of scope, not audited: roy/scene.js (Roy: A Life Well Lived). It has its own procedural code-built figure with a stride() helper (roy/scene.js:784); some strides are paced by distance (1825), others by time, which slides (2315: t*11).
 (12) The walk-cycle foot-slide numbers are estimates from clip durations (walk 1.067 s, run 0.667 s); stride length was not measured.

@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { toon } from '../portal/toon';
 import { bake } from '../../middleearth/towns/bake';
 import { makeCanvas } from '../../../lib/paint';
-import { hot } from '../../../lib/stage3d';
+import { hot } from '../stage';
 
 const LOW = -14; // the lower city's floor, under the terrace
 const RAIL = { r: 47.5, y: 7.2 }; // the monorail's track

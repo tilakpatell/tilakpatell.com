@@ -35,7 +35,7 @@ const CITY = new Set(['tower', 'needle']);
 // the ship keeps them to 120 m, so they come in as it comes down to land,
 // and past that the palette's own colour and noise carry the ground (a 6 m
 // tile seen from a cruising ship repeats as a grid across the land)
-export const SCAN_FADE = { near: 20, far: 120 };
+const SCAN_FADE = { near: 20, far: 120 };
 
 // the planet as the ground material reads a site: its ground look, its water
 export function siteOf(spec) {

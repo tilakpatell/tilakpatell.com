@@ -116,7 +116,7 @@ export const FAMILIES = [
 
 // A per-world instance (SS_Naboo_Concrete_01) takes the family whose slots
 // it has: every slot pattern in `all` must match one of its slots.
-export const SLOT_FAMILIES = [
+const SLOT_FAMILIES = [
   { name: 'hair', all: [/^HairColorTexture$/] },
   { name: 'head', all: [/RSSSAO$/i] },
   { name: 'character', all: [/^_?Base[Cc]olou?r$/, /^_?Normal$/, /^AOSlice$/] },

@@ -4,7 +4,7 @@
 // red). A metric without a budget is reported, never failed: that's how a
 // new metric lands, measured first and budgeted a merge later.
 
-export const KB_STEP = 5;
+const KB_STEP = 5;
 
 export function check(metrics, budgets) {
   const over = [];

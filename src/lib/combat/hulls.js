@@ -22,6 +22,9 @@
 //       (contact then reads the ray triangles as a closed mesh).
 //   hullFromTriangles(positions, indices, { maxTris, property, name }) → Hull:
 //     a drawn model’s triangles, clustered on a grid until under `maxTris`.
+//   probeSphere(r) → a small ship’s stand-in for hullContact, where it has no
+//     hull of its own (the player’s, a fighter whose hull hasn’t loaded): the
+//     26 directions’ points at `r` and the middle as its probes, no shapes.
 //   segmentHit(hull, pose, a, b) → { t, part, property, point, normal } | null
 //   hullContact(small, smallPose, big, bigPose) → { normal, depth, at, part } | null
 
@@ -484,6 +487,12 @@ export function hullFromTriangles(positions, indices, { maxTris = 1500, property
   for (let i = 0; i < idx.length; i++) for (let k = 0; k < 3; k++) tris[i * 3 + k] = pos[idx[i] * 3 + k];
   const rays = treeOf(tris, new Uint8Array(n), new Uint8Array(n).fill(property));
   return finish(0, [{ name, property }], rays, [], []);
+}
+
+export function probeSphere(r) {
+  const probes = new Float32Array(DIRS.length + 3);
+  for (let i = 0; i < DIRS.length; i++) probes[i] = DIRS[i] * r;
+  return { radius: r, parts: [], rays: treeOf(new Float32Array(0), new Uint8Array(0), new Uint8Array(0)), probes, solids: [] };
 }
 
 export function segmentHit(hull, { at0, at1, basis: m, scale }, a, b) {

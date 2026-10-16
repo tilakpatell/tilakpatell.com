@@ -3,7 +3,7 @@
 // palette is the kit’s own (./kit.js: the walls, the floors, the wood, the
 // metal, the glass, the portal’s green), and Morty’s and Rick’s clothes
 // from the wardrobe (../wardrobe/) are the one mixed thing, on purpose.
-// The house tone (Neutral, through lib/stage3d): the exposure was tuned
+// The house tone (Neutral, through ../stage): the exposure was tuned
 // under it.
 //
 // One folder, three scenes, each with its own bloom (BLOOMS): the street

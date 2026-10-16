@@ -1,6 +1,6 @@
 # WebGPU, WebAssembly and game-engine performance: research notes (2026-10-13)
 
-For tilakpatell.com: three r186 `WebGPURenderer` (TSL, WebGPU with a WebGL 2 fallback) and the classic `WebGLRenderer`, meshopt, KTX2/Basis, module workers, a Frostbite-era level port, hosted on GitHub Pages. The targets are at least 60 fps on strong GPUs, at least 30 on weak integrated ones, and no main-thread lag.
+For tilakpatell.com: three r186 `WebGPURenderer` (TSL, WebGPU with a WebGL 2 fallback) and the classic `WebGLRenderer`, meshopt, KTX2/Basis, module workers, hosted on GitHub Pages. The targets are at least 60 fps on strong GPUs, at least 30 on weak integrated ones, and no main-thread lag.
 
 Method: web search and fetch, between 2026-10-13 and now. Skill files and pages were read as reference only. Nothing was installed, run or downloaded, and the repository was not edited. Primary sources outrank the skill files. Tags in square brackets point to the source list. "(search)" means a claim rests on search snippets, not a fetched page. "(unverified)" means it comes from general knowledge and was not re-checked in this pass.
 

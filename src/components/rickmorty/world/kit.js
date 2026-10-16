@@ -11,7 +11,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { canvasTexture, hot } from '../../../lib/stage3d';
+import { canvasTexture, hot } from '../stage';
 import { rng } from '../../../lib/texture';
 import { toon } from '../portal/toon';
 

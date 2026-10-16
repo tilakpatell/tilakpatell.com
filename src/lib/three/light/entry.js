@@ -33,6 +33,7 @@
 // read. `entry.gameToSite` still wins over both.
 //
 // readEntry(entry, { origin }) → { sun, ambient, sky, fog, shadow, exposure, bloom, ao, grade, gameToSite }
+//   (entry.meter: { sky }, the sky's luminance the meter sees, calibrate.js's)
 // lerpEntry(a, b, t) → the same shape, a weather crossfade at t in 0…1
 
 import { bloomThreshold, calibrate } from './calibrate.js';
@@ -93,7 +94,8 @@ export function readEntry(entry = {}, { origin = [0, 0, 0] } = {}) {
   const fogRec = comp(r, 'Fog');
   const tone = comp(r, 'Tonemap');
   const grade = comp(r, 'ColorCorrection');
-  const cal = calibrate(r);
+  // (the meter's sky where the view sees less of it: the interiors', apply.js)
+  const cal = calibrate(r, e.meter ?? {});
   const k = num(e.gameToSite, cal?.gameToSite ?? exposureOf(tone) ?? 1);
   // the sky's own rate: lane G's SKY_TO_SITE where calibrated, else the sun's
   const skyK = e.gameToSite == null && cal ? cal.sky / Math.max(1e-12, num(skyRec.LuminanceScale, 0)) : k;

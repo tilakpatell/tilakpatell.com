@@ -30,6 +30,10 @@
 // (`calibrate=off`, as the QA scripts have it: the world drawn at its
 // sharpest step without the twelve timed frames, minutes in software.)
 //
+// Since 2026-10-13 Hoth's surface address goes on to the game's menu
+// (src/components/galaxy/gameLevels.js): the surface has no route until its
+// free roam does, so this says so and stops (exit 2) rather than time out.
+//
 //   node scripts/stream-check.mjs [--phone] [--fast] [--json <file>]
 //   BASE=http://127.0.0.1:4173 QUALITY=ultra|high|mid|low CHROME=<path> WAIT=90000
 
@@ -172,9 +176,13 @@ async function main() {
     await page.goto(`${base}/?quality=${quality}&calibrate=off#/galaxy/hoth/surface`, { waitUntil: 'domcontentloaded', timeout: 240000 });
     // the world up: the scene answers (the veil lifts as it does)
     const up = await page
-      .waitForFunction(() => Boolean(window.__surface?.()?.phase), null, { timeout: wait, polling: 100 })
+      .waitForFunction(() => Boolean(window.__surface?.()?.phase) || !window.location.hash.includes('/surface'), null, { timeout: wait, polling: 100 })
       .then(() => Date.now())
       .catch(() => null);
+    if (!page.url().includes('/surface')) {
+      console.error(`stream-check: no surface at #/galaxy/hoth/surface: it went on to ${page.url().replace(base, '')} (the game's menu). Nothing to measure until Hoth's free roam has a route.`);
+      return 2;
+    }
     const walkableMB = up ? fetched() / 1e6 : null;
     const figure = up
       ? await page

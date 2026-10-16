@@ -5,14 +5,28 @@
 const DEAD = 0.18;
 const dz = (v) => (Math.abs(v) < DEAD ? 0 : (v - Math.sign(v) * DEAD) / (1 - DEAD));
 
+// (read every frame by every world: the list is walked as it is, where two
+// copies of it a frame were garbage with no pad in sight; a pad's own
+// reading stays a new object, since the worlds keep the last one to find
+// presses with edges())
 export function readPad() {
-  let pads = [];
+  let pads = null;
   try {
-    pads = navigator.getGamepads?.() ?? [];
+    pads = navigator.getGamepads?.() ?? null;
   } catch {
     return null; // blocked by a permissions policy
   }
-  const p = [...pads].find((g) => g && g.connected && g.mapping === 'standard') ?? [...pads].find((g) => g && g.connected);
+  if (!pads) return null;
+  let p = null;
+  for (let i = 0; i < pads.length; i++) {
+    const g = pads[i];
+    if (!g || !g.connected) continue;
+    if (g.mapping === 'standard') {
+      p = g;
+      break;
+    }
+    p ??= g;
+  }
   if (!p) return null;
   const b = (i) => Boolean(p.buttons[i]?.pressed);
   return {

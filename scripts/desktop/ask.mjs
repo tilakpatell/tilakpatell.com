@@ -14,7 +14,7 @@
 import { fileURLToPath } from 'node:url';
 import { gh } from './lib.mjs';
 
-export async function pipelineFor(name) {
+async function pipelineFor(name) {
   if (name === 'gen3d') return (await import('../gen3d/runner.mjs')).pipeline;
   if (name === 'voices') return (await import('../voices/runner.mjs')).pipeline;
   if (name === 'motion') return (await import('../motion/runner.mjs')).pipeline;
