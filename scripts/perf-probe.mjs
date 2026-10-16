@@ -589,8 +589,6 @@ const JOURNEYS = {
     mark('end');
   },
   avengers: worldPage('/avengers', { ready: (p) => p.waitForSelector('.cw-canvas[data-on]', { timeout: 300000 }) }),
-  // the Graysons' city, flown into from the top of the Invincible page
-  invincible: worldPage('/invincible', { ready: (p) => p.waitForSelector('.iw-canvas[data-on]', { timeout: 300000 }) }),
   shire: worldPage('/middle-earth/shire'),
   // Middle-earth's map, the hub of its places: the opening flight skipped
   // (tp-me-opening), Frodo walked on the 3D map; no click, which would fly
