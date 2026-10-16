@@ -126,13 +126,28 @@ try {
       let stepping = false;
       let queue = new Map();
       let id = 1e6;
+      // (one asked for before the stepping and given after it is moved to the
+      // stepped frames, not run on the browser's time between two of them)
+      const moved = new Map();
       window.requestAnimationFrame = (fn) => {
-        if (!stepping) return realRaf(() => fn(now()));
+        if (!stepping) {
+          const real = realRaf(() => {
+            if (!stepping) return fn(now());
+            const n = ++id;
+            queue.set(n, fn);
+            moved.set(real, n);
+          });
+          return real;
+        }
         const n = ++id;
         queue.set(n, fn);
         return n;
       };
-      window.cancelAnimationFrame = (n) => (n > 1e6 ? queue.delete(n) : realCancel(n));
+      window.cancelAnimationFrame = (n) => {
+        if (n > 1e6) return queue.delete(n);
+        if (moved.has(n)) return queue.delete(moved.get(n));
+        return realCancel(n);
+      };
       // The grade's grain (lib/stage3d's GRADE, ../../../../src/components/
       // rickmorty/stage.js's) counts its clock from the frames it's drawn,
       // and a frame loop started again during the loading (a box scrolled
