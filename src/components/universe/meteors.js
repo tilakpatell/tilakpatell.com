@@ -17,7 +17,7 @@ import { meteorLane } from './lanes';
 import { rock } from './belt';
 import { rockHook } from '../../lib/three/rock';
 
-export const METEOR = { count: 24, speed: [12, 16], size: [0.25, 0.7], spread: 40, across: 4, up: 3, damage: 8, life: 30 };
+const METEOR = { count: 24, speed: [12, 16], size: [0.25, 0.7], spread: 40, across: 4, up: 3, damage: 8, life: 30 };
 const SHIP_R = 0.3; // how close a rock must come to the ship's way to hit it, plus its size
 const BOLT_R = 0.12; // and a bolt to a rock, plus the rock's size
 

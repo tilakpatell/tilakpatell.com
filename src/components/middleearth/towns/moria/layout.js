@@ -19,7 +19,7 @@ import { pushOut } from '../walker';
 // the cliff's foot runs along z = CLIFF, the Doors in it at x = 0; the
 // lake's edge is at z = SHORE; the shore runs out west to east
 export const GATE = { cliff: -14, shore: 4, west: -26, east: 22, door: { x: 0, w: 3.6 } };
-export const HOLLY = [
+const HOLLY = [
   [-4.6, -12.4, 1],
   [4.6, -12.4, 1.05],
 ];
@@ -92,7 +92,7 @@ export const CHAMBER = { x: 6, z: -HALL.d / 2 - 8, w: 16, d: 14, door: 3.2 };
 // in the back right corner, three columns down each side wall)
 export const TOMB = { x: CHAMBER.x, z: CHAMBER.z, w: 2.8, d: 1.5 };
 export const WELL = { x: CHAMBER.x + 5, z: CHAMBER.z - 5, r: 1.05 };
-export const CHAMBER_COLUMNS = [-7, 7].flatMap((dx) => [-4.5, 0, 4.5].map((dz) => ({ x: CHAMBER.x + dx, z: CHAMBER.z + dz, r: 0.72 })));
+const CHAMBER_COLUMNS = [-7, 7].flatMap((dx) => [-4.5, 0, 4.5].map((dz) => ({ x: CHAMBER.x + dx, z: CHAMBER.z + dz, r: 0.72 })));
 // the way out to the stair and the bridge
 export const EAST_DOOR = { x: HALL.w / 2, z: 0, w: 4 };
 // on the side: an old shaft in the floor between the pillars of the hall's

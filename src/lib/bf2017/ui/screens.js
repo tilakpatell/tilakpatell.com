@@ -18,7 +18,7 @@
 // word(key, args) → one of the game's words the screens rulebook carries
 // SCREENS, WIDGETS_IN_SCREENS: the names there are
 
-import BOOK from '../../../data/bf2017/screens.json';
+import BOOK from 'virtual:bf2017-screens';
 import LOADING from '../../../data/bf2017/loading.json';
 import { FILMS, filmFor, filmOf } from '../films';
 import { STRINGS, text } from '../strings';

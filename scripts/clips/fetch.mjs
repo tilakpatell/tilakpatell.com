@@ -26,7 +26,7 @@ const exists = (p) =>
   );
 
 // the page's own sound: og:audio first, else the first play button
-export function soundOnPage(html, page) {
+function soundOnPage(html, page) {
   const og = html.match(/<meta[^>]+property=["']og:audio["'][^>]+content=["']([^"']+\.mp3)["']/i) ?? html.match(/<meta[^>]+content=["']([^"']+\.mp3)["'][^>]+property=["']og:audio["']/i);
   const button = html.match(/(\/media\/sounds\/[^"'\s)]+\.mp3)/i);
   const found = og?.[1] ?? button?.[1];

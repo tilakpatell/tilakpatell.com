@@ -21,7 +21,7 @@ import { fbm, hash2, noise2, ridged, smoothstep } from '../../components/galaxy/
 
 export { noise2 };
 
-export const BLOCK_WALL = 14; // m a metre: a tower's wall, steep, not sheer
+const BLOCK_WALL = 14; // m a metre: a tower's wall, steep, not sheer
 
 export const LAYERS = {
   // broad rises and falls, ±height

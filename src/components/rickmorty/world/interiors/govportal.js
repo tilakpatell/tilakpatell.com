@@ -7,8 +7,8 @@ import * as THREE from 'three';
 import { BALL8, PLANE } from './shell';
 import { glowSpot } from './lab';
 
-export const PORTAL_W = 1.5;
-export const PORTAL_H = 2.2;
+const PORTAL_W = 1.5;
+const PORTAL_H = 2.2;
 
 // (x, z) the foot of its face, `turn` the way it faces (rules.js's: 0 south)
 export function govPortal(R, x, z, turn, { open = () => true } = {}) {

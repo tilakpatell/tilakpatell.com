@@ -30,10 +30,10 @@
 export const FEATHER = { slope: 4, height: 0.75, density: 0.15 };
 // where density counts as 'high': half of `full` (a level's own apron, its
 // dressing round a door, is several meshes a square metre)
-export const DENSITY_HIGH = 0.5;
+const DENSITY_HIGH = 0.5;
 // metres: the field a pixel's height is measured against, when the world's
 // ground.json does not say (a trench is a few tens of metres across)
-export const FIELD_M = 64;
+const FIELD_M = 64;
 
 const smooth = (a, b, x) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));

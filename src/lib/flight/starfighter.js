@@ -115,7 +115,7 @@ export function bankOf(q) {
 
 // ── the handling ──
 
-export function handlingOf(row) {
+function handlingOf(row) {
   const h = row?.handling ?? row;
   if (!h?.maxSpeed) throw new Error(`${row?.id ?? 'a starfighter'}: no handling`);
   return h;

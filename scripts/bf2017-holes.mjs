@@ -21,7 +21,7 @@ import { parseArgs } from './lib/args.mjs';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
-export function holeRuns(data, w, h, hole = 0) {
+function holeRuns(data, w, h, hole = 0) {
   const rows = {};
   let count = 0;
   for (let j = 0; j < h; j++) {

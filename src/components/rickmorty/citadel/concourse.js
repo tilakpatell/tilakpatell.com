@@ -14,7 +14,7 @@ import { SWIRL_GLSL } from '../swirl';
 import { toon, toonify } from '../portal/toon';
 import { bake } from '../../middleearth/towns/bake';
 import { makeCanvas } from '../../../lib/paint';
-import { hot } from '../../../lib/stage3d';
+import { hot } from '../stage';
 import { ARCH, BALLPIT, BENCHES, BOOTH, BOOTH_BACK, CORE, DESKS, DOORS, KIOSKS, PEN, PLANTERS, PLANTER_R, SLIDE } from './layout';
 import { buildCity } from './city';
 import { fluidMaterial } from './fluid';

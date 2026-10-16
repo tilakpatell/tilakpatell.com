@@ -82,7 +82,8 @@ function aimAngles(s) {
 }
 
 // the gun in the hand: the latest pressed ability's that is still up, else the soldier's own
-function syncGun(s) {
+// (a hero's swapped weapon too: heroBlaster.js)
+export function syncGun(s) {
   let top = null;
   for (const a of s.abilities.list) if (a.gun && a.phase !== 'idle' && (!top || a.startedAt >= top.startedAt)) top = a;
   if (top) {
@@ -311,7 +312,8 @@ function stepGrenades(sim, K, now, requests) {
       if (ev.type === 'split') {
         for (let i = 0; i < ev.count; i++) {
           const a = (i / ev.count) * Math.PI * 2;
-          keep.push(born(K, createGrenade(GRENADES.flashSub, { at: [ev.at[0], ev.at[1] + 0.3, ev.at[2]], vel: [Math.cos(a) * SPLIT.speed * 0.5, SPLIT.speed, Math.sin(a) * SPLIT.speed * 0.5], owner: g.owner, team: g.team, now, bot: g.bot })));
+          // (the officer's flash splits into its sub-flashes; a hero's round into its own: Chewbacca's shock grenade)
+          keep.push(born(K, createGrenade(g.row.sub ?? GRENADES.flashSub, { at: [ev.at[0], ev.at[1] + 0.3, ev.at[2]], vel: [Math.cos(a) * SPLIT.speed * 0.5, SPLIT.speed, Math.sin(a) * SPLIT.speed * 0.5], owner: g.owner, team: g.team, now, bot: g.bot })));
         }
         sim.out.push({ t: now, type: 'split', by: g.owner, at: ev.at });
       } else if (ev.type === 'explode') {
@@ -341,10 +343,22 @@ function stepFields(sim, K, now, requests) {
     if (now + 1e-9 < f.next) continue;
     f.next += f.row.tick;
     for (const o of sim.entities.values()) {
+      // (smoke hides whoever stands inside it, of either side, for as long as it stands: a flag the view carries)
+      if (f.row.hides > 0 && o.kind === 'soldier' && o.alive && dist3(o.at, f.at) <= f.row.hides) o.hiddenUntil = now + f.row.tick * 1.5;
       if (o.kind !== 'soldier' || !o.alive || o.team === f.team || dist3(chestOf(o), f.at) > f.row.radius) continue;
-      apply(o.stack, { id: 'Stunned', property: 'speed', op: 'set', value: 0, until: now + f.row.apply });
-      o.stunnedUntil = now + f.row.apply;
-      requests.push({ type: 'field', by: f.by, id: o.id, damage: f.row.perSecond * f.row.tick, at: f.at });
+      // (the shock's field stuns; a hero's cloud does not, and one may only hold a blaster down: heroBlaster.js;
+      // a field with `immune` shocks no one again inside that time, Chewbacca's: Affector_StunImmunity)
+      if (f.row.apply > 0 && !((o.stunImmuneUntil ?? -Infinity) > now)) {
+        apply(o.stack, { id: 'Stunned', property: 'speed', op: 'set', value: 0, until: now + f.row.apply });
+        o.stunnedUntil = now + f.row.apply;
+        if (f.row.immune > 0) o.stunImmuneUntil = now + f.row.immune;
+      }
+      if (f.row.noFire > 0) o.noFireUntil = Math.max(o.noFireUntil ?? 0, now + f.row.noFire);
+      // (a cloud's first touch is its `InitialDamage`, each tick after it the rate's share)
+      const first = f.row.first != null && !(f.seen ??= new Set()).has(o.id);
+      if (first) f.seen.add(o.id);
+      const damage = first ? f.row.first : f.row.perSecond * f.row.tick;
+      if (damage > 0) requests.push({ type: 'field', by: f.by, id: o.id, damage, at: f.at });
     }
   }
   K.spots = K.spots.filter((p) => p.until > now);

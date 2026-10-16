@@ -21,7 +21,7 @@ import { assetUrl } from '../assetBase';
 export const FILMS = TABLE.rows;
 
 // the modes the site has → the game's menu tiles for them
-export const MODE_TILES = {
+const MODE_TILES = {
   assault: ['multiplayer'],
   heroes: ['vs', 'light', 'dark'],
   skirmish: ['skirmish'],

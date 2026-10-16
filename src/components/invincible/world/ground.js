@@ -15,7 +15,7 @@ import { noiseAtlas } from '../../../lib/texture';
 import { BEACH, CITY, COAST, GRID, HILLS, LOT, RIVER, SUBURB, WATER_Y, WORLD, blockKind, groundAt, subBlock } from './map';
 
 export const LAND = 7000; // how far the river runs north, off the edge of the world
-export const LAND_FAR = 40000; // how far the land goes
+const LAND_FAR = 40000; // how far the land goes
 const KIND_CODE = { built: 1, park: 2, plaza: 3, lot: 4, gda: 5 };
 
 // From far off. The streets are drawn wider with the distance, from 1× at

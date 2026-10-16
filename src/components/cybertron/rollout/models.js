@@ -577,35 +577,3 @@ export function buildCar(M, tex, look = 0, hover = false) {
 
 // ── things to hit ──
 
-export function buildDebris(M, tex, look = 0, stage = 'jasper') {
-  const g = new THREE.Group();
-  const kind = look % 4;
-  if (stage === 'kaon' || kind === 0) {
-    // scrap: a heap of plates and a girder
-    const metal = M.armour(stage === 'kaon' ? 0x5a4a44 : 0x6a6f78, { roughness: 0.6 });
-    for (let i = 0; i < 5; i++) g.add(mesh(rbox(0.6 + (i % 3) * 0.3, 0.12, 0.7, 0.02), metal, (i - 2) * 0.22, 0.12 + i * 0.12, ((i * 37) % 5) * 0.08 - 0.15, 0.1 * i, i, 0.15 * (i - 2)));
-    g.add(mesh(new THREE.BoxGeometry(1.5, 0.18, 0.18), M.steel, 0, 0.55, 0, 0, 0.5, 0.3));
-  } else if (kind === 1) {
-    // crates off a truck
-    const wood = new THREE.MeshStandardMaterial({ color: 0x9a6a3a, roughness: 0.85, map: tex.crate });
-    g.add(mesh(new THREE.BoxGeometry(0.9, 0.9, 0.9), wood, -0.3, 0.45, 0, 0, 0.3, 0));
-    g.add(mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), wood, 0.45, 0.35, 0.2, 0, -0.4, 0));
-    g.add(mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), wood, 0.05, 1.12, 0.05, 0, 0.8, 0));
-  } else if (kind === 2) {
-    // a fallen rock
-    const rockGeo = new THREE.IcosahedronGeometry(0.8, 1);
-    const p = rockGeo.attributes.position;
-    for (let i = 0; i < p.count; i++) {
-      const k = 0.75 + (((i * 7919) % 97) / 97) * 0.45;
-      p.setXYZ(i, p.getX(i) * k, p.getY(i) * k * 0.75, p.getZ(i) * k);
-    }
-    rockGeo.computeVertexNormals();
-    g.add(mesh(rockGeo, new THREE.MeshStandardMaterial({ map: tex.rock, normalMap: tex.rockN, roughness: 0.95 }), 0, 0.5, 0));
-  } else {
-    // a wrecked car on its roof, burning
-    const burnt = M.armour(0x2a2622, { roughness: 0.8 });
-    g.add(mesh(rbox(1.6, 0.5, 2.6, 0.1), burnt, 0, 0.5, 0, 0, 0.2, Math.PI));
-    g.add(mesh(rbox(1.3, 0.35, 1.4, 0.1), burnt, 0, 0.12, 0.1, 0, 0.2, Math.PI));
-  }
-  return g;
-}

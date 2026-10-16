@@ -75,7 +75,7 @@ export const MODELS = {
 };
 
 // Poly Haven HDRIs, one per stage: the light the metal reflects
-export const HDRIS = {
+const HDRIS = {
   jasper: 'rogland_sunset',
   mission: 'modern_buildings_night',
   kaon: 'abandoned_tank_farm_05',

@@ -71,7 +71,7 @@ export const TROOPS = {
 
 // a bolt on foot, for the one step: how fast, how far
 export const BOLT = { speed: FOOT.bolt, range: FOOT.bolt * FOOT.boltLife };
-export const STANDS = 2.2 * METRE; // the least a solid stands (a rock you can't see over); `top` if it says
+const STANDS = 2.2 * METRE; // the least a solid stands (a rock you can't see over); `top` if it says
 
 // how big each ship is parked, against the people who fly it (in flight
 // they're all drawn the same size): a scale on the flying model

@@ -104,7 +104,7 @@ const release = () => {
 // A portal on a plain canvas (no Three.js): draw(t, open) paints one frame.
 // Returns null where WebGL isn't there, so the caller can show its CSS one;
 // `onFail` hears if the shader turns out not to link after all.
-export function createSwirl(canvas, { size = [0.34, 0.45], seed = 0, onFail } = {}) {
+function createSwirl(canvas, { size = [0.34, 0.45], seed = 0, onFail } = {}) {
   if (!sharedGL()) return null;
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;

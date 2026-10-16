@@ -2,9 +2,10 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import { createPortal } from 'react-dom';
 import '@fontsource/luckiest-guy/400.css';
 import { useAchievements } from '../../Achievements';
+import { WorldHost, useWorld } from '../../../runtime';
 import { audioContext } from '../../../lib/audio';
 import { use3D } from '../../../lib/gpu';
-import { local, useFrameLoop, useInView, useMediaQuery } from '../../../lib/hooks';
+import { local, useInView, useMediaQuery } from '../../../lib/hooks';
 import GpuGate from '../../games/GpuGate';
 import { readPad, typing } from '../../games/pad';
 import { keyDown, keyUp } from '../../middleearth/towns/keys';
@@ -75,7 +76,7 @@ import { createEmoteWheel, emotePacket, keepEmote, readEmote } from '../../../li
 import { createPress, pressGroups } from '../../../lib/press';
 import { lineHold } from './living';
 import LoadingVeil from '../../worlds/LoadingVeil';
-import { throttled } from '../../worlds/loadingSteps';
+import { rmWorldModule } from './module';
 import { createLook } from '../../../runtime/look';
 import { FRICTION, coneFor } from '../../../lib/combat/aim';
 import { createLockOn } from '../../../lib/combat/lockOn';
@@ -416,13 +417,11 @@ export default function RmWorld({ start = null, onLeave = null }) {
 const ROOM = { bound: boundOf(AREAS), motion: true };
 
 function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave }) {
-  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const touchRef = useRef(touch);
   touchRef.current = touch;
   const trav = useTravellers('c137', gl === 'on', ROOM);
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.35 });
-  const canvas = useRef(null);
   const map = useRef(null);
   const brand = useRef(null); // (the title and what to do: Total Rickall's memory card keeps off it)
   const sim = useRef(null);
@@ -457,6 +456,11 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   // the wardrobe: how Morty looks here (and Rick, wherever he turns up)
   const [looks, setLook] = useLooks();
   const looksRef = useRef(looks);
+  // the world: the runtime's (./module.js, one a landing), its frame the
+  // page's (below), handed in as `frame` while the world's live
+  const frame = useRef(null);
+  const view = useWorld(rmWorldModule(planet), { props: { looks: looksRef.current, frame }, enabled: gl !== 'failed' && gl !== 'lost' });
+  const canvas = view.host; // (the world's box, where the canvas was)
   looksRef.current = looks;
   const [wardrobe, setWardrobe] = useState(false);
   // the portal gun's dial, open at its stand in the garage (it holds Morty still, as the wardrobe does)
@@ -1041,143 +1045,126 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const fns = useRef({});
   fns.current = { act, go, shoot: shootRickall, landRickall, stop: stopRickall, start: startRickall, end: endRickall, npc, fire, landDuel, gun: openDial };
 
-  // ── the world: made once, kept while something's open over it ──
+  // ── the world: made by the runtime, kept while something's open over it ──
+  const status = view.status;
+  const made = view.world.current;
+  // (the runtime's status is the last world's until this one's mount
+  // reports: a world that failed before, then Retry, read as failed again)
+  const heard = useRef(false);
+  if (status === 'loading' || status === 'ready' || status === 'on') heard.current = true;
   useEffect(() => {
-    let dead = false;
-    const fit = () => {
-      const c = canvas.current;
-      if (!c || !api.current) return;
-      const r = c.getBoundingClientRect();
-      api.current.resize(Math.round(r.width), Math.round(r.height));
-    };
-    import('./scene')
-      .then(({ createRmWorld }) => {
-        if (dead || !canvas.current) return null;
-        return createRmWorld(canvas.current, { onLost: () => !dead && setGl('lost'), looks: looksRef.current });
-      })
-      .then(async (a) => {
-        if (!a) return;
-        if (dead) {
-          a.dispose();
-          return;
-        }
-        api.current = a;
-        a.tune?.(pressGroups(sim.current.press)); // (behind ?debug: the feel's numbers and the jump's)
-        a.act?.('arcade', 'setBoard', readBest());
-        a.setLooks?.(looksRef.current); // (a look picked while it loaded)
-        if (import.meta.env.DEV) {
-          // for the QA scripts (scripts/c137-shots.mjs): where everyone is, E,
-          // a jump to anywhere, and a trip anywhere the way a door makes it
-          const s = sim.current;
-          const land = () => {
-            if (s.flying) s.c = { ...s.c, y: CRUISER.hover, vy: 0, speed: 0, bank: 0, bankV: 0 };
-            s.flying = false;
-            s.landing = false;
-          };
-          const warp = (area, x, z, face = Math.PI / 2) => {
-            land();
-            s.area = area;
-            s.m = newMorty({ x, z, face }, s.m.mode); // (in Total Rickall, still in the living room)
-            s.yaw = behindYaw(face);
+    if (!heard.current) return;
+    if (status === 'failed') setGl('failed');
+    else if (status === 'lost') setGl('lost');
+  }, [status, setGl]);
+  useEffect(() => {
+    const a = made?.api;
+    // (only the runtime's current world, and this page's: a planet changed to
+    // is still drawing as the old one this render, which the mount lets go)
+    const rt = view.rt;
+    if (!a || status !== 'on' || api.current === a || rt?.current?.world !== made || rt.current.module !== rmWorldModule(planet)) return;
+    api.current = a;
+    a.tune?.(pressGroups(sim.current.press)); // (behind ?debug: the feel's numbers and the jump's)
+    a.act?.('arcade', 'setBoard', readBest());
+    a.setLooks?.(looksRef.current); // (a look picked while it loaded)
+    if (import.meta.env.DEV) {
+      // for the QA scripts (scripts/c137-shots.mjs): where everyone is, E,
+      // a jump to anywhere, and a trip anywhere the way a door makes it
+      const s = sim.current;
+      const land = () => {
+        if (s.flying) s.c = { ...s.c, y: CRUISER.hover, vy: 0, speed: 0, bank: 0, bankV: 0 };
+        s.flying = false;
+        s.landing = false;
+      };
+      const warp = (area, x, z, face = Math.PI / 2) => {
+        land();
+        s.area = area;
+        s.m = newMorty({ x, z, face }, s.m.mode); // (in Total Rickall, still in the living room)
+        s.yaw = behindYaw(face);
+        s.keys.clear();
+      };
+      window.__C137__ = Object.assign(window.__C137__ ?? {}, {
+        api: a,
+        sim: s,
+        act: () => fns.current.act(),
+        complete,
+        warp,
+        // the portal gun's dial, set as the stand in the garage sets it
+        dial(id) {
+          writeDial(id);
+          dialRef.current = portalTarget(id);
+          return dialRef.current;
+        },
+        // Total Rickall, with `seed` (by the egg first, if he isn't in the
+        // house): resolves true once it's on. Then lookAt(id) stands Morty
+        // in front of someone with them in the sights, as a player would,
+        // and shoot() is F. (sim.rickall has the game.)
+        rickall(seed = 1) {
+          if (s.area !== 'house') warp('house', -305.1, -6.5, 0);
+          return fns.current.start(seed);
+        },
+        // (from the room's middle side of them first, then round either
+        // way, the first place he can stand with them in the sights)
+        lookAt(id, back = 1.3) {
+          const R = rkRules.current;
+          const run = s.rickall;
+          const p = run?.game?.people.find((o) => o.id === id);
+          if (!p || !R) return false;
+          const mid = { x: -301.8, z: -4.95 }; // (the living room's middle)
+          const toward = Math.atan2(mid.z - p.z, mid.x - p.x);
+          for (const turn of [0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2, 1.6, -1.6, 2.2, -2.2, Math.PI]) {
+            const a = toward + turn;
+            const at = { x: p.x + Math.cos(a) * (p.r + back), z: p.z + Math.sin(a) * (p.r + back) };
+            const m = newMorty({ ...at, face: Math.atan2(-(p.z - at.z), p.x - at.x) }, 'rickall');
+            const stood = stepMorty(m, { x: 0, z: 0 }, 1 / 60, 'house', { crowd: crowdOf(run) });
+            if (Math.hypot(stood.x - at.x, stood.z - at.z) > 0.01) continue;
+            let yaw = s.yaw;
+            for (let i = 0; i < 4; i++) {
+              const o = R.sight(m, yaw);
+              yaw = Math.atan2(-(p.x - o.x), -(p.z - o.z));
+            }
+            const o = R.sight(m, yaw);
+            const pitch = Math.atan2(o.y - p.h * 0.6, Math.hypot(p.x - o.x, p.z - o.z)) + R.SIGHT.level - R.SIGHT.tip;
+            if (R.aimAt(run.game, R.sight(m, yaw, pitch)) !== id) continue;
+            s.m = m;
+            s.yaw = yaw;
+            s.pitch = pitch;
+            s.dragAt = s.t;
             s.keys.clear();
-          };
-          window.__C137__ = Object.assign(window.__C137__ ?? {}, {
-            api: a,
-            sim: s,
-            act: () => fns.current.act(),
-            complete,
-            warp,
-            // the portal gun's dial, set as the stand in the garage sets it
-            dial(id) {
-              writeDial(id);
-              dialRef.current = portalTarget(id);
-              return dialRef.current;
-            },
-            // Total Rickall, with `seed` (by the egg first, if he isn't in the
-            // house): resolves true once it's on. Then lookAt(id) stands Morty
-            // in front of someone with them in the sights, as a player would,
-            // and shoot() is F. (sim.rickall has the game.)
-            rickall(seed = 1) {
-              if (s.area !== 'house') warp('house', -305.1, -6.5, 0);
-              return fns.current.start(seed);
-            },
-            // (from the room's middle side of them first, then round either
-            // way, the first place he can stand with them in the sights)
-            lookAt(id, back = 1.3) {
-              const R = rkRules.current;
-              const run = s.rickall;
-              const p = run?.game?.people.find((o) => o.id === id);
-              if (!p || !R) return false;
-              const mid = { x: -301.8, z: -4.95 }; // (the living room's middle)
-              const toward = Math.atan2(mid.z - p.z, mid.x - p.x);
-              for (const turn of [0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2, 1.6, -1.6, 2.2, -2.2, Math.PI]) {
-                const a = toward + turn;
-                const at = { x: p.x + Math.cos(a) * (p.r + back), z: p.z + Math.sin(a) * (p.r + back) };
-                const m = newMorty({ ...at, face: Math.atan2(-(p.z - at.z), p.x - at.x) }, 'rickall');
-                const stood = stepMorty(m, { x: 0, z: 0 }, 1 / 60, 'house', { crowd: crowdOf(run) });
-                if (Math.hypot(stood.x - at.x, stood.z - at.z) > 0.01) continue;
-                let yaw = s.yaw;
-                for (let i = 0; i < 4; i++) {
-                  const o = R.sight(m, yaw);
-                  yaw = Math.atan2(-(p.x - o.x), -(p.z - o.z));
-                }
-                const o = R.sight(m, yaw);
-                const pitch = Math.atan2(o.y - p.h * 0.6, Math.hypot(p.x - o.x, p.z - o.z)) + R.SIGHT.level - R.SIGHT.tip;
-                if (R.aimAt(run.game, R.sight(m, yaw, pitch)) !== id) continue;
-                s.m = m;
-                s.yaw = yaw;
-                s.pitch = pitch;
-                s.dragAt = s.t;
-                s.keys.clear();
-                return true;
-              }
-              return false;
-            },
-            shoot: () => fns.current.shoot(),
-            stopRickall: () => fns.current.stop(),
-            // through a door that isn't there: the fade, a place that loads
-            // when it's entered built first, and Morty out at (x, z) facing
-            // `face`, the camera behind him. False if he's already on his way
-            // somewhere.
-            goto(area, x, z, face = Math.PI / 2) {
-              if (!AREAS[area]) throw new Error(`C-137: no area ${area}`);
-              if (s.fading) return false;
-              land();
-              fns.current.go({ id: 'goto', area: s.area, kind: 'door', to: area, label: '', arrive: { x, z, face } });
-              return true;
-            },
-            // true once he's there and nothing's still loading: the place, and
-            // whoever's in it
-            ready: () => api.current === a && !a.lost && !s.fading && a.hasArea(s.area) && a.loading() === 0,
-          });
-        }
-        // a planet: built before Morty's put in it, and its portal swirling open behind him
-        if (planet) {
-          if (!a.hasArea(planet.area)) await a.ensureArea(planet.area).catch(() => {});
-          if (dead || api.current !== a || a.lost) return; // (gone, or the context lost meanwhile: it's said so)
-          a.fx('portal', { at: planet.back });
-          sound('portalHop');
-        }
-        fit();
-        // everything on the graphics chip before it's shown, behind the loading screen
-        await a.prepare?.(throttled(setPrep), { alive: () => !dead && api.current === a });
-        if (dead || api.current !== a) return;
-        setGl('on');
-      })
-      .catch((e) => {
-        if (import.meta.env.DEV) console.error(e);
-        if (!dead) setGl('failed');
+            return true;
+          }
+          return false;
+        },
+        shoot: () => fns.current.shoot(),
+        stopRickall: () => fns.current.stop(),
+        // through a door that isn't there: the fade, a place that loads
+        // when it's entered built first, and Morty out at (x, z) facing
+        // `face`, the camera behind him. False if he's already on his way
+        // somewhere.
+        goto(area, x, z, face = Math.PI / 2) {
+          if (!AREAS[area]) throw new Error(`C-137: no area ${area}`);
+          if (s.fading) return false;
+          land();
+          fns.current.go({ id: 'goto', area: s.area, kind: 'door', to: area, label: '', arrive: { x, z, face } });
+          return true;
+        },
+        // true once he's there and nothing's still loading: the place, and
+        // whoever's in it
+        ready: () => api.current === a && !a.lost && !s.fading && a.hasArea(s.area) && a.loading() === 0,
       });
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null;
-    if (canvas.current) ro?.observe(canvas.current);
-    return () => {
-      dead = true;
-      ro?.disconnect();
-      api.current?.dispose();
+    }
+    // a planet's portal, opened behind him as the world was made (./module.js)
+    if (planet) sound('portalHop');
+    setGl('on');
+  }, [made, status, api, setGl, complete, planet, view.rt]);
+  // (another landing: its own world, loading until it's up)
+  useEffect(
+    () => () => {
       api.current = null;
       setGl((g) => (g === 'on' ? 'loading' : g));
-    };
-  }, [api, setGl, complete, planet]);
+    },
+    [api, setGl, planet],
+  );
 
   // keys and the frame loop only while the world's on screen and nothing's
   // open over it (closing the effect lets go of every key held)
@@ -1295,10 +1282,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       wheel.current.cancel();
       s.keys.clear();
     };
-  }, [live, closeList, strike, planet, toggleLock]);
+  }, [live, closeList, strike, planet, toggleLock, canvas]);
 
-  // ── every frame ──
-  useFrameLoop((ms) => {
+  // ── every frame (the runtime's: the module's draw runs it while live) ──
+  const tick = (ms) => {
     const a = api.current;
     if (!a || a.lost) return;
     const s = sim.current;
@@ -1538,9 +1525,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       );
     } catch (err) {
       if (import.meta.env.DEV) console.error(err);
-      a.dispose();
       api.current = null;
-      setGl('failed');
+      setGl('failed'); // (the world goes with it: useWorld lets it go)
       return;
     }
 
@@ -1595,7 +1581,18 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       s.npcs = api.current?.act(s.area, 'npcs') ?? null;
       drawMap(map.current, s, goalOf(progRef.current.next, s, planet), s.t);
     }
-  }, live);
+  };
+  const tickRef = useRef(tick);
+  tickRef.current = tick;
+  // (live: the frame handed to the world, and the runtime's loop woken for it)
+  useEffect(() => {
+    if (!live) return undefined;
+    frame.current = (ms, now) => tickRef.current(ms, now);
+    view.rt?.invalidate();
+    return () => {
+      frame.current = null;
+    };
+  }, [live, view.rt]);
 
   // something open over the world: let go of the stick and the up and down buttons
   useEffect(() => {
@@ -1607,7 +1604,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     const knob = canvas.current?.parentElement?.querySelector('.hud-stick');
     knob?.style.removeProperty('--sx');
     knob?.style.removeProperty('--sy');
-  }, [open]);
+  }, [open, canvas]);
 
   // ── the pointer. A mouse or a trackpad looks through runtime/look.js: a
   // click locks the pointer and its movement turns the view (and in Total
@@ -1640,7 +1637,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       l.detach();
       looker.current = null;
     };
-  }, []);
+  }, [canvas]);
   const drag = useRef(null);
   const onPointer = (e) => {
     const s = sim.current;
@@ -1697,12 +1694,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const placeName = hud.flying ? 'Over the Smiths’ street' : (hud.room ?? AREA_NAME[hud.area]);
   return (
     <div ref={box} className="rm-world-stage" data-touch={touch || undefined} data-flying={hud.flying || undefined} data-area={hud.area}>
-      <canvas
-        ref={canvas}
+      <WorldHost
+        world={view}
         className="rm-world-canvas"
         data-on={gl === 'on' || undefined}
-        role="img"
-        aria-label={planet ? `${planet.name} in 3D: Morty in front of the portal he came through, his way back to space` : 'The Smiths’ street in 3D: the Smith house with Rick’s garage, Harry Herpson High across the road, Rick’s space cruiser in the driveway, and Morty on the sidewalk'}
         onPointerDown={onPointer}
         onPointerMove={onPointer}
         onPointerUp={onPointer}
@@ -1717,7 +1712,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           <p>Opening a portal to {inLine(opening)}…</p>
         </div>
       )}
-      <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title={`Opening a portal${planet ? ` to ${planet.name}` : ''}`} />
+      <LoadingVeil shown={gl === 'loading'} progress={view.progress.value} step={view.progress.step} title={`Opening a portal${planet ? ` to ${planet.name}` : ''}`} />
 
       <RmHud
         touch={touch}

@@ -67,7 +67,7 @@ export const ROLE_SOURCES = {
   paving: { color: `${NAT}/yavin/_yavintemple/_commontextures/t_yavintemple_floor_tile_01_co.ktx2`, normal: `${NAT}/yavin/_yavintemple/_commontextures/t_yavintemple_floor_tile_01_nss__normal.ktx2`, orm: `${NAT}/yavin/_yavintemple/_commontextures/t_yavintemple_floor_tile_01_nss__orm_9093a788.ktx2`, metres: 3, keep: 0.1, mean: 0.82 },
 };
 
-export const BF2017_SCANS = '/textures/galaxy/bf2017';
+const BF2017_SCANS = '/textures/galaxy/bf2017';
 
 export const roleFiles = (role, size = '') => {
   const f = (name) => `${BF2017_SCANS}/${role}/${name}${size ? `-${size}` : ''}.webp`;

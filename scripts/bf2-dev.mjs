@@ -11,7 +11,7 @@ import { extname, join, normalize, resolve, sep } from 'node:path';
 const TYPES = { '.json': 'application/json', '.jsonl': 'application/x-ndjson', '.glb': 'model/gltf-binary', '.png': 'image/png', '.ktx2': 'image/ktx2', '.svg': 'image/svg+xml', '.ttf': 'font/ttf', '.otf': 'font/otf', '.bin': 'application/octet-stream' };
 
 // the web build under a root: web_opt where the export has it, else web
-export function webRoot(root) {
+function webRoot(root) {
   if (!root) return null;
   const opt = resolve(root, 'web_opt');
   return existsSync(opt) ? opt : resolve(root, 'web');

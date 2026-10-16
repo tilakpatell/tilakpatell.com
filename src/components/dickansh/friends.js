@@ -9,7 +9,7 @@
 import * as THREE from 'three';
 import { sharpen } from '../../lib/three/textures';
 
-export const FRIENDS_AT = new THREE.Vector3(0, 13, 0);
+const FRIENDS_AT = new THREE.Vector3(0, 13, 0);
 const RING = 7.2;
 const HAND = "'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive";
 

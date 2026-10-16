@@ -10,7 +10,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { hot } from '../../../../lib/stage3d';
+import { hot } from '../../stage';
 import { FURNITURE, MEMORY_COLORS, RINGS } from '../rules';
 import { at, rng } from '../kit';
 import { BOX, PLANE, TAU, makeRoom, tiledPaint } from './shell';

@@ -321,7 +321,7 @@ function loadModel(url) {
 }
 const MODELS = Object.fromEntries([...Object.values(GEAR), ...Object.values(BB_GEAR)].flat().filter((g) => g.file).map((g) => [g.id, g.file])); // (the gear that’s a model of someone else’s)
 const models = new Map();
-export function loadGear(id) {
+function loadGear(id) {
   if (!MODELS[id]) return Promise.resolve(buildGear(id));
   if (!models.has(id))
     models.set(

@@ -19,7 +19,7 @@
 // once and never freed, and each landing aims it (aimCanopy) and each frame
 // moves it on (tickCanopy, not with motion turned down).
 //
-//   CANOPY, familyOf(node), crownMaterial(material), canopyLevel(), setCanopyLevel(level)
+//   CANOPY, familyOf(node), crownMaterial(material), canopyLevel()
 //   cardGroups(geometry) → Int32Array, bakeCanopy(geometry, { foot, top, family, crown })
 //   canopy() → { wind, uniforms }; aimCanopy({ n, f, R }), lookCanopy(look),
 //     windCanopy({ strength, angle }), tickCanopy(dt), sunCanopy(dir), seeCanopy(point | null)
@@ -74,8 +74,6 @@ export function canopyLevel() {
   }
   return level;
 }
-// (the tests)
-export const setCanopyLevel = (l) => (level = l);
 
 // Which card each vertex is on: the vertices its triangles join, whatever
 // order they're in (the GLBs' are each a block of 4); numbered from 0
