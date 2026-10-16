@@ -196,13 +196,21 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
   const status = view.status;
   const hostBox = view.host; // (the world's box, where the canvas was)
   const made = view.world.current;
+  // (the runtime's status is the last world's until this one's mount
+  // reports: a world that failed before, then Retry, read as failed again)
+  const heard = useRef(false);
+  if (status === 'loading' || status === 'ready' || status === 'on') heard.current = true;
   useEffect(() => {
-    if (status === 'failed' || status === 'slow') setGl('failed');
+    if (!heard.current) return;
+    if (status === 'failed') setGl('failed');
     else if (status === 'lost') setGl('lost');
   }, [status, setGl]);
   useEffect(() => {
     const a = made?.api;
-    if (!a || status !== 'on' || api.current === a) return;
+    // (only the runtime's current world, and this page's: a planet changed to
+    // is still drawing as the old one this render, which the mount lets go)
+    const rt = view.rt;
+    if (!a || status !== 'on' || api.current === a || rt?.current?.world !== made || rt.current.module !== citadelModule) return;
     api.current = a;
     a.tune?.(); // (behind ?debug: the shake's numbers)
     a.setLooks?.(looksRef.current); // (a look picked while it loaded)
@@ -221,7 +229,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
       sounds().then((x) => x.portal());
       clip('portalGun');
     }
-  }, [made, status, setGl, complete]);
+  }, [made, status, setGl, complete, view.rt]);
   useEffect(() => {
     const s = sim.current;
     return () => {

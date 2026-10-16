@@ -480,3 +480,5 @@
 
 /* the runtime's box where the canvas was: laid out as the canvas was (.rm-world-canvas), over the runtime's own .world-host */
 .rm-world-stage > .rm-world-canvas { position: absolute; inset: 0; }
+/* (the box fades in, as the canvas did: the runtime canvas's own fade-in would fade it twice) */
+.rm-world-stage > .rm-world-canvas > .world-canvas { transition: none; }

@@ -13,10 +13,14 @@
 //
 // The renderer is shared: whatever the stage sets on it (the tone mapping,
 // the exposure, shadows, `info.autoReset`, the clear colour) is set as each
-// frame starts and given back as it ends (`hold`, `giveBack`), so a world
-// handed over to, or the runtime's own cover, finds it as it left it.
+// of its calls starts and given back as it ends (`hold`, `giveBack`), so a
+// world handed over from, still drawing while this one's built, or the
+// runtime's own cover, finds it as it left it. A scene that sets something
+// on the renderer itself (houseOn's tone mapping) does it between hold and
+// giveBack, and the stage keeps it as its own. `track` (an array) is told
+// of the stage as it's made, so a build that fails can dispose it.
 //
-// createStage(rt, { soft, bloom, exposure, shadows, fov, near, far, autoReset }) →
+// createStage(rt, { soft, bloom, exposure, shadows, fov, near, far, autoReset, title, track }) →
 //   { renderer, scene, camera, composer, prepare, bloomPass, grade, resize,
 //     scale, render(ms), dispose, precompile, setLevel, lowerQuality(level),
 //     tune, ratio, size, lost, disposed, quality, shadows }
@@ -145,7 +149,7 @@ export function rendererState(renderer) {
 // bloom, then sharpness again (lib/stage3d's ladder, the governor's levels).
 export const LADDER = ['full', 'ratio', 'shadows', 'bloom', 'low'];
 
-export function createStage(rt, { soft = false, bloom = BLOOM, exposure = LOOK.exposure, shadows = false, fov = 60, near = 0.1, far = 600, title = null } = {}) {
+export function createStage(rt, { soft = false, bloom = BLOOM, exposure = LOOK.exposure, shadows = false, fov = 60, near = 0.1, far = 600, autoReset = true, title = null, track = null } = {}) {
   const fit = budget();
   const { renderer } = rt.gfx;
   const state = rendererState(renderer);
@@ -153,6 +157,7 @@ export function createStage(rt, { soft = false, bloom = BLOOM, exposure = LOOK.e
   // it as it's built: houseOn, info.autoReset; `mine` is updated from what
   // the renderer holds as each draw ends, and the runtime's put back)
   const theirs = state.read();
+  renderer.info.autoReset = autoReset;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = exposure;
@@ -176,9 +181,7 @@ export function createStage(rt, { soft = false, bloom = BLOOM, exposure = LOOK.e
     state.write(held);
     held = null;
   };
-  // (made while held: a scene's builders set the renderer as they go)
-  hold();
-  held = theirs;
+  state.write(theirs); // (the runtime's again until the stage's first call)
 
   const full = stageRatio({ soft });
   const scene = new THREE.Scene();
@@ -281,7 +284,8 @@ export function createStage(rt, { soft = false, bloom = BLOOM, exposure = LOOK.e
     if (was) giveBack();
   };
 
-  const tuning = stageTune({ bloomPass, title: () => title?.() || (typeof document !== 'undefined' ? document.title : null) });
+  // (titled, as lib/stage3d's was, by the page the canvas is on)
+  const tuning = stageTune({ bloomPass, title: () => title?.() || rt.gfx?.canvas?.closest?.('[data-route]')?.dataset.route || (typeof document !== 'undefined' ? document.title : null) });
 
   const dispose = () => {
     if (disposed) return;
@@ -332,7 +336,7 @@ export function createStage(rt, { soft = false, bloom = BLOOM, exposure = LOOK.e
     }
   };
 
-  return {
+  const stage = {
     renderer,
     scene,
     camera,
@@ -371,6 +375,8 @@ export function createStage(rt, { soft = false, bloom = BLOOM, exposure = LOOK.e
       return mine.shadows;
     },
   };
+  track?.push(stage);
+  return stage;
 }
 
 // The page's frame run as the world's draw (the Citadel's and C-137's

@@ -10,7 +10,7 @@
 // It draws what the component hands it each frame and decides nothing;
 // ./rules.js has the rules.
 //
-// createRmWorld(rt, { looks }) resolves to { render(state, ms),
+// createRmWorld(rt, { looks, track }) resolves to { render(state, ms),
 // resize(w, h), dispose(), lost, fx(type, data), act(area, name, ...args),
 // info(), ensureArea(id), hasArea(id), loading() (how many loads are still
 // going: an area being built, a figure being fetched), project(x, y, z) }, where state is
@@ -157,11 +157,11 @@ const TMP = new THREE.Vector3();
 const EAR_DIR = new THREE.Vector3(); // (the way the camera looks, for where a knock is heard from)
 
 // looks: the wardrobe's ({ rick, morty }): Morty's is the one he wears here
-export async function createRmWorld(rt, { looks = null } = {}) {
+export async function createRmWorld(rt, { looks = null, track: stages = null } = {}) {
   const dev = device();
   const tier = dev.tier;
   const fit = budget();
-  const stage = createStage(rt, { shadows: true, fov: 55, near: 0.3, far: 1000, exposure: 1.05, bloom: BLOOMS.street });
+  const stage = createStage(rt, { shadows: true, fov: 55, near: 0.3, far: 1000, exposure: 1.05, bloom: BLOOMS.street, autoReset: false, track: stages }); // (counted over the whole frame, every pass)
   // the shake (lib/three/feel: trauma², still under reduced motion) and the
   // knocks (a hard landing, the cruiser's bump) by the hit law, a thud where
   // it was, heard from the camera
@@ -194,14 +194,13 @@ export async function createRmWorld(rt, { looks = null } = {}) {
   const house = createHouse();
   house.sky({ low: STREET_SKY.low, high: STREET_SKY.top, below: 1, sunDir: SUN_DIR });
   stage.grade({ contrast: 0.06, saturation: 1.12, vignette: 0.12, grain: 0.008, shadow: [0, 0.004, 0.012], high: [0.012, 0.008, 0] });
-  renderer.info.autoReset = false; // counted over the whole frame, every pass
   const big = Math.min(window.screen?.width ?? 1280, window.screen?.height ?? 800) >= 700;
 
   // ── light ──
   const hemi = new THREE.HemisphereLight(0xd6f0ff, 0x6a9a4a, 1.3);
   const sun = new THREE.DirectionalLight(0xfff3df, 2.4);
   const sunDir = SUN_DIR; // (the sky's sun is where the light comes from)
-  sun.castShadow = renderer.shadowMap.enabled;
+  sun.castShadow = stage.shadows; // (the stage's, not the shared renderer's as it stands between frames)
   sun.shadow.mapSize.set(fit.shadowMap, fit.shadowMap);
   Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 160 });
   sun.shadow.bias = -0.0005;

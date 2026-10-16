@@ -9,7 +9,7 @@
 // less often, out of view not at all; the crowd's nearest few are live
 // figures of the people's cast (./crowd.js's live).
 //
-// createCitadelWorld(rt, { looks }) → Promise<{ render(state, ms),
+// createCitadelWorld(rt, { looks, track }) → Promise<{ render(state, ms),
 // fx(type, at?), screenOf(kind, id), resize, dispose, info, lost,
 // suggestYaw, stage }>, drawn on the runtime's renderer (../stage.js;
 // ./module.js mounts it)
@@ -96,17 +96,16 @@ function clearance(from, to, inside = insideAt) {
 }
 
 // looks: the wardrobe's ({ rick, morty }): Rick's is the one you walk about as
-export async function createCitadelWorld(rt, { looks = null } = {}) {
+export async function createCitadelWorld(rt, { looks = null, track = null } = {}) {
   const tier = device().tier;
   const soft = tier === 'low';
-  const stage = createStage(rt, { soft, shadows: false, fov: 52, near: 0.1, far: 520, bloom: LOOK.bloom });
+  const stage = createStage(rt, { soft, shadows: false, fov: 52, near: 0.1, far: 520, bloom: LOOK.bloom, autoReset: false, track });
   // the shake (lib/three/feel: trauma², none under reduced motion) at the
   // Citadel's own numbers: a decay of 0.8 a second, 0.5 off at full, no roll
   const feel = createFeel({ baseFov: 52, offset: 0.5 });
   feel.set({ decay: 0.8, roll: 0 });
   stage.grade({ contrast: 0.08, saturation: 1.08, vignette: 0.2, grain: 0.008, shadow: [0.0, 0.012, 0.02], high: [0.02, 0.012, 0.0] });
   const { scene, camera, renderer } = stage;
-  renderer.info.autoReset = false;
   // the city's golden haze
   scene.fog = new THREE.Fog(0xe0b57a, 80, 360);
 
@@ -513,7 +512,10 @@ export async function createCitadelWorld(rt, { looks = null } = {}) {
 
   // the house look: one shadow colour from the dome's light; the city keeps its own haze
   // (the stage starts at the house's exposure already: lifting it again would wash the city out)
+  // (set on the renderer the stage's way, and kept as the stage's: ../stage)
+  stage.hold();
   house = houseOn({ renderer, scene, sun: key, hemi, keepExposure: true, look: { fog: false } });
+  stage.giveBack();
   await stage.precompile();
 
   return {

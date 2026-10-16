@@ -23,15 +23,24 @@ export default {
   mb: WORLD_MB['/c-137'],
   label: 'The Citadel of Ricks in 3D: a terrace over a city of pale green towers under a great dome, a column of green portal fluid at its middle, crowded with Ricks and Mortys, and Rick C-137 walking through it',
   calibrate: false,
-  sharpness: 'own',
+  // (a low-tier world draws straight to the canvas, through no buffers of
+  // its own: its sharpness is the canvas's, the runtime's to set, as
+  // lib/stage3d sized its canvas for it)
+  get sharpness() {
+    return device().tier === 'low' ? undefined : 'own';
+  },
   get ratio() {
     return stageRatio({ soft: device().tier === 'low' });
   },
   async create(rt, { looks = null, frame = null } = {}) {
     const { createCitadelWorld } = await import('./scene');
-    const api = await createCitadelWorld(rt, { looks });
+    // (a build that fails frees the stage it made, and the renderer is the runtime's as it was)
+    const stages = [];
+    const api = await createCitadelWorld(rt, { looks, track: stages }).catch((err) => {
+      for (const s of stages) s.dispose();
+      throw err;
+    });
     const { stage } = api;
-    stage.giveBack(); // (built: the renderer is the runtime's again until the first frame)
     const page = pageFrame(stage, frame);
     return {
       api,

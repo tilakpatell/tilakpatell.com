@@ -1048,13 +1048,21 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   // ── the world: made by the runtime, kept while something's open over it ──
   const status = view.status;
   const made = view.world.current;
+  // (the runtime's status is the last world's until this one's mount
+  // reports: a world that failed before, then Retry, read as failed again)
+  const heard = useRef(false);
+  if (status === 'loading' || status === 'ready' || status === 'on') heard.current = true;
   useEffect(() => {
-    if (status === 'failed' || status === 'slow') setGl('failed');
+    if (!heard.current) return;
+    if (status === 'failed') setGl('failed');
     else if (status === 'lost') setGl('lost');
   }, [status, setGl]);
   useEffect(() => {
     const a = made?.api;
-    if (!a || status !== 'on' || api.current === a) return;
+    // (only the runtime's current world, and this page's: a planet changed to
+    // is still drawing as the old one this render, which the mount lets go)
+    const rt = view.rt;
+    if (!a || status !== 'on' || api.current === a || rt?.current?.world !== made || rt.current.module !== rmWorldModule(planet)) return;
     api.current = a;
     a.tune?.(pressGroups(sim.current.press)); // (behind ?debug: the feel's numbers and the jump's)
     a.act?.('arcade', 'setBoard', readBest());
@@ -1148,7 +1156,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     // a planet's portal, opened behind him as the world was made (./module.js)
     if (planet) sound('portalHop');
     setGl('on');
-  }, [made, status, api, setGl, complete, planet]);
+  }, [made, status, api, setGl, complete, planet, view.rt]);
   // (another landing: its own world, loading until it's up)
   useEffect(
     () => () => {

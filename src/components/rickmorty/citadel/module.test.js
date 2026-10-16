@@ -29,12 +29,23 @@ describe('the Citadel’s module', () => {
     expect(m.ratio).toBeGreaterThan(0);
   });
 
-  it('makes the scene on the runtime and gives the renderer back once built', async () => {
+  it('makes the scene on the runtime', async () => {
     const rt = { gfx: { renderer: {} } };
     const world = validateWorld(await citadel.create(rt, { looks: { rick: 'x' } }));
-    expect(calls.at(-1)).toEqual({ rt, opts: { looks: { rick: 'x' } } });
-    expect(stage.giveBack).toHaveBeenCalled();
+    expect(calls.at(-1).rt).toBe(rt);
+    expect(calls.at(-1).opts.looks).toEqual({ rick: 'x' });
     expect(world.api).toBeTruthy();
+  });
+
+  it('frees the stage a build that fails made', async () => {
+    const { createCitadelWorld } = await import('./scene');
+    const made = { dispose: vi.fn() };
+    createCitadelWorld.mockImplementationOnce(async (rt, { track }) => {
+      track.push(made);
+      throw new Error('no models');
+    });
+    await expect(citadel.create({ gfx: {} }, {})).rejects.toThrow('no models');
+    expect(made.dispose).toHaveBeenCalledTimes(1);
   });
 
   it('draws the page’s frame, held the stage’s way, and wants none without one', async () => {

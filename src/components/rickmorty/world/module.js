@@ -36,15 +36,24 @@ export function rmWorldModule(planet = null) {
     mb: WORLD_MB['/c-137'],
     label: planet ? `${planet.name} in 3D: Morty in front of the portal he came through, his way back to space` : STREET,
     calibrate: false,
-    sharpness: 'own',
+    // (a low-tier world draws straight to the canvas, through no buffers of
+    // its own: its sharpness is the canvas's, the runtime's to set, as
+    // lib/stage3d sized its canvas for it)
+    get sharpness() {
+      return device().tier === 'low' ? undefined : 'own';
+    },
     get ratio() {
       return stageRatio({ soft: device().tier === 'low' });
     },
     async create(rt, { looks = null, frame = null } = {}) {
       const { createRmWorld } = await import('./scene');
-      const api = await createRmWorld(rt, { looks });
+      // (a build that fails frees the stage it made, and the renderer is the runtime's as it was)
+      const stages = [];
+      const api = await createRmWorld(rt, { looks, track: stages }).catch((err) => {
+        for (const s of stages) s.dispose();
+        throw err;
+      });
       const { stage } = api;
-      stage.giveBack(); // (built: the renderer is the runtime's again until the first frame)
       // a planet: built before Morty's put in it, and its portal swirling open behind him
       if (planet) {
         if (!api.hasArea(planet.area)) await api.ensureArea(planet.area).catch(() => {});
