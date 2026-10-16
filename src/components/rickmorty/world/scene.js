@@ -10,7 +10,7 @@
 // It draws what the component hands it each frame and decides nothing;
 // ./rules.js has the rules.
 //
-// createRmWorld(canvas, { onLost }) resolves to { render(state, ms),
+// createRmWorld(rt, { looks, track }) resolves to { render(state, ms),
 // resize(w, h), dispose(), lost, fx(type, data), act(area, name, ...args),
 // info(), ensureArea(id), hasArea(id), loading() (how many loads are still
 // going: an area being built, a figure being fetched), project(x, y, z) }, where state is
@@ -34,7 +34,7 @@
 // without it walk as they always did).
 
 import * as THREE from 'three';
-import { createStage, disposeTree } from '../../../lib/stage3d';
+import { createStage, disposeTree } from '../stage';
 import { createHouse, shadowFor } from '../../../lib/three/house';
 import { budget, device } from '../../../lib/device';
 import { createPace } from '../../../lib/three/pace';
@@ -157,11 +157,11 @@ const TMP = new THREE.Vector3();
 const EAR_DIR = new THREE.Vector3(); // (the way the camera looks, for where a knock is heard from)
 
 // looks: the wardrobe's ({ rick, morty }): Morty's is the one he wears here
-export async function createRmWorld(canvas, { onLost, looks = null } = {}) {
+export async function createRmWorld(rt, { looks = null, track: stages = null } = {}) {
   const dev = device();
   const tier = dev.tier;
   const fit = budget();
-  const stage = createStage(canvas, { shadows: true, fov: 55, near: 0.3, far: 1000, exposure: 1.05, bloom: BLOOMS.street, onLost });
+  const stage = createStage(rt, { shadows: true, fov: 55, near: 0.3, far: 1000, exposure: 1.05, bloom: BLOOMS.street, autoReset: false, track: stages }); // (counted over the whole frame, every pass)
   // the shake (lib/three/feel: trauma², still under reduced motion) and the
   // knocks (a hard landing, the cruiser's bump) by the hit law, a thud where
   // it was, heard from the camera
@@ -194,14 +194,13 @@ export async function createRmWorld(canvas, { onLost, looks = null } = {}) {
   const house = createHouse();
   house.sky({ low: STREET_SKY.low, high: STREET_SKY.top, below: 1, sunDir: SUN_DIR });
   stage.grade({ contrast: 0.06, saturation: 1.12, vignette: 0.12, grain: 0.008, shadow: [0, 0.004, 0.012], high: [0.012, 0.008, 0] });
-  renderer.info.autoReset = false; // counted over the whole frame, every pass
   const big = Math.min(window.screen?.width ?? 1280, window.screen?.height ?? 800) >= 700;
 
   // ── light ──
   const hemi = new THREE.HemisphereLight(0xd6f0ff, 0x6a9a4a, 1.3);
   const sun = new THREE.DirectionalLight(0xfff3df, 2.4);
   const sunDir = SUN_DIR; // (the sky's sun is where the light comes from)
-  sun.castShadow = renderer.shadowMap.enabled;
+  sun.castShadow = stage.shadows; // (the stage's, not the shared renderer's as it stands between frames)
   sun.shadow.mapSize.set(fit.shadowMap, fit.shadowMap);
   Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 160 });
   sun.shadow.bias = -0.0005;
@@ -526,7 +525,7 @@ export async function createRmWorld(canvas, { onLost, looks = null } = {}) {
 
   // ── each frame ──
   // (up as well as down, as the universe's: a step is the composer's
-  // buffers made again, not the canvas, lib/stage3d)
+  // buffers made again, not the canvas, ../stage)
   const pace = createPace();
   const pending = []; // effects asked for, for the next frame
   let sharp = 1;
@@ -543,7 +542,7 @@ export async function createRmWorld(canvas, { onLost, looks = null } = {}) {
     const s = pace.frame(now);
     if (s !== null) {
       sharp = s;
-      stage.scale(s); // (made with the next frame the stage draws: lib/stage3d)
+      stage.scale(s); // (made with the next frame the stage draws: ../stage)
     }
     const dt = Math.min(0.1, ms / 1000);
     t += dt;
@@ -785,7 +784,7 @@ export async function createRmWorld(canvas, { onLost, looks = null } = {}) {
     ground: import.meta.env.DEV ? floorLight : null, // for the QA scripts
     house: import.meta.env.DEV ? house : null, // for the QA scripts
     render,
-    prepare: stage.prepare, // (everything sent to the graphics chip before it's seen: lib/stage3d)
+    prepare: stage.prepare, // (everything sent to the graphics chip before it's seen: ../stage)
     resize: stage.resize,
     fx: fxEvent,
     // a knock of `force` at [x, y, z] (the hit law: a thud, and its shake); a shake of its own
@@ -820,6 +819,9 @@ export async function createRmWorld(canvas, { onLost, looks = null } = {}) {
     get lost() {
       return stage.lost;
     },
+    // (the module's: the renderer held the stage's way round a frame, the
+    // governor's level, the canvas's ratio)
+    stage,
     dispose() {
       if (stage.disposed) return;
       floorLight?.dispose();

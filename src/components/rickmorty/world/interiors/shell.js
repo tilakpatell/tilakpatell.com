@@ -10,7 +10,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { hot } from '../../../../lib/stage3d';
+import { hot } from '../../stage';
 import { toon } from '../../portal/toon';
 import { at, batch, coloured, mergeParts, paint, rng } from '../kit';
 import { PLAN } from '../rules';
