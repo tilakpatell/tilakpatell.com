@@ -12,7 +12,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { Fn, OnBeforeFrameUpdate, attribute, cameraProjectionMatrix, dot, floor, fract, instancedDynamicBufferAttribute, length, mix, modelViewMatrix, positionGeometry, smoothstep, uniform, varyingProperty, vec3, vec4 } from 'three/tsl';
+import { Fn, attribute, cameraProjectionMatrix, dot, floor, fract, length, mix, modelViewMatrix, positionGeometry, smoothstep, uniform, varyingProperty, vec3, vec4 } from 'three/tsl';
 import { instanceMatrixOf } from './hookNodes';
 
 const LIFE = 1.4; // seconds
@@ -68,24 +68,6 @@ const keepPremultiplied = (m) => {
   return m;
 };
 
-// The instance’s colour in the vertex stage (GLSL’s instanceColor), kept in
-// step with the mesh’s own as three’s instancing keeps it (Instance.js):
-// a buffer of its own over the same array, its version followed each frame.
-const colourBuffers = new WeakMap();
-function instanceColourOf(builder) {
-  const colours = builder?.object?.instanceColor;
-  if (!colours) return vec3(1);
-  let ib = colourBuffers.get(colours);
-  if (!ib) {
-    ib = new THREE.InstancedInterleavedBuffer(colours.array, 3, 1);
-    colourBuffers.set(colours, ib);
-  }
-  OnBeforeFrameUpdate(() => {
-    if (ib.version !== colours.version) ib.version = colours.version;
-  });
-  return vec3(instancedDynamicBufferAttribute(ib, 'vec3', 3, 0));
-}
-
 // the fireball: a quad facing the camera, a ball of noise that churns
 function fireMaterial(u) {
   const material = keepPremultiplied(new MeshBasicNodeMaterial({ lights: false, transparent: true, depthWrite: false, premultipliedAlpha: true, blending: THREE.NormalBlending, toneMapped: false, fog: false }));
@@ -118,11 +100,9 @@ function ringMaterial() {
   const material = keepPremultiplied(new MeshBasicNodeMaterial({ lights: false, transparent: true, depthWrite: false, premultipliedAlpha: true, blending: THREE.AdditiveBlending, toneMapped: false, fog: false }));
   const vUv = varyingProperty('vec2', 'vRingUv');
   const vAge = varyingProperty('float', 'vRingAge');
-  const vColour = varyingProperty('vec3', 'vRingColour');
   material.vertexNode = Fn((builder) => {
     vUv.assign(positionGeometry.xy);
     vAge.assign(attribute('aAge', 'float'));
-    vColour.assign(instanceColourOf(builder));
     const im = instanceMatrixOf(builder);
     const mv = modelViewMatrix.mul(im ? im.mul(vec4(0, 0, 0, 1)) : vec4(0, 0, 0, 1));
     const scale = im ? length(im.element(0).xyz) : 1;
@@ -131,7 +111,11 @@ function ringMaterial() {
   const d = length(vUv);
   const ring = smoothstep(0.82, 0.95, d).mul(smoothstep(0.95, 1, d).oneMinus());
   const a = ring.mul(vAge.oneMinus());
-  material.colorNode = vColour.mul(a);
+  // (the ring's colour, the GLSL's instanceColor, is three's to put on: a
+  // node material multiplies its colour by an instanced mesh's
+  // instanceColor itself, so multiplying by it here too drew the ring in
+  // its colour squared, 9 % of its pixels off the GLSL's)
+  material.colorNode = vec3(a);
   material.opacityNode = a;
   return material;
 }
