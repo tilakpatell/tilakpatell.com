@@ -21,6 +21,7 @@ import { sharpen } from '../../../../../../lib/three/textures';
 import { furnish } from '../../../rules/furnish';
 import { grimeOf } from './cells';
 import { box, boundsOf, cyl, digitRects, drawWith, finish, flagsOf, hazeMaterial, plate, resolve, stepClose } from './parts';
+import { waterSurface } from '../../nodes/rooms';
 
 export const MASHER = { depth: 0.3, travel: 1.25 };
 const DEEP = 0.98; // the water over the bottom: the floating junk (furnish.js, 0.96 up, 0.08 thick) rides in it
@@ -194,23 +195,9 @@ function waterMaterial(renderer, water) {
   map.generateMipmaps = true;
   map.needsUpdate = true;
   sharpen(map, { renderer, color: false, repeat: [(water.x1 - water.x0) / 2.6, (water.z1 - water.z0) / 2.6] });
-  const uniforms = { uTime: { value: 0 }, uRipple: { value: new THREE.Vector3(0, 0, 0) } };
-  const m = new THREE.MeshStandardMaterial({ name: 'ds-water', color: 0x3d3f20, roughness: 0.16, metalness: 0.1, emissive: 0x10130a, normalMap: map, normalScale: new THREE.Vector2(0.45, 0.45), transparent: true, opacity: 0.88, envMapIntensity: 1.2 });
-  m.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms);
-    shader.vertexShader = `varying vec2 vWater;\n${shader.vertexShader}`.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vWater = (modelMatrix * vec4(transformed, 1.0)).xz;');
-    const chunk = THREE.ShaderChunk.normal_fragment_maps.replace(
-      'vec3 mapN = texture2D( normalMap, vNormalMapUv ).xyz * 2.0 - 1.0;',
-      `vec3 mapN = normalize( ( texture2D( normalMap, vNormalMapUv + vec2( uTime * 0.013, uTime * 0.006 ) ).xyz * 2.0 - 1.0 )
-        + ( texture2D( normalMap, vNormalMapUv * 1.7 + vec2( -uTime * 0.008, uTime * 0.011 ) ).xyz * 2.0 - 1.0 ) );
-      vec2 toward = vWater - uRipple.xy;
-      float far = length( toward );
-      mapN.xy += ( toward / max( far, 0.001 ) ) * vec2( 1.0, -1.0 ) * cos( far * 9.0 - uTime * 3.0 ) * exp( -far * 0.9 ) * uRipple.z;`,
-    );
-    shader.fragmentShader = `uniform float uTime;\nuniform vec3 uRipple;\nvarying vec2 vWater;\n${shader.fragmentShader}`.replace('#include <normal_fragment_maps>', chunk);
-  };
-  m.customProgramCacheKey = () => 'ds-water';
-  return { material: m, map, uniforms };
+  // (the surface’s two drifting samples and the rings: ../../nodes/rooms.js’s waterSurface)
+  const { material, uniforms } = waterSurface({ name: 'ds-water', color: 0x3d3f20, roughness: 0.16, metalness: 0.1, emissive: 0x10130a, normalMap: map, normalScale: new THREE.Vector2(0.45, 0.45), transparent: true, opacity: 0.88, envMapIntensity: 1.2 });
+  return { material, map, uniforms };
 }
 
 export function buildCompactor(kit, room, layout, { renderer = null } = {}) {

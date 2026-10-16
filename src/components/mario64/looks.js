@@ -1,47 +1,84 @@
-// How the picture is finished. Modern: the scene, a light bloom, ACES tone
-// mapping (in the output pass). Ultra and N64 come with the looks slice; until
-// then they draw as Modern.
+// How the picture is finished. Modern: the scene, a light bloom (the look’s,
+// ./look.js), then the renderer’s tone mapping and colour space, as the
+// runtime’s node post chain (rt.gfx.post: its passes as data, runtime/
+// webgpu.js). The EffectComposer it replaces is
+// scripts/twin-parity/originals/mario64.js’s makeLook, kept
+// for the parity check. Ultra and N64 come with the looks slice; until then
+// they draw as Modern.
 //
-// makeLook(renderer, scene, camera, { bloom }) → { render(), setSize(w, h),
-//   setLook(name), dispose() }
+// makeLook(post, scene, camera, { bloom }) → { render(), setSize(w, h),
+//   setLook(name), setBloom(on), look, ready, passes, dispose() }
+//   (post: rt.gfx.post, passes → a chain { ready, passes, render(),
+//   setSize(), dispose() })
+// passesFor(scene, camera, bloom) → the chain’s passes
 
-import * as THREE from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { LOOK } from './look';
 
 const LOOK_NAMES = ['modern', 'ultra', 'n64'];
 
-export function makeLook(renderer, scene, camera, { bloom = true } = {}) {
-  const size = renderer.getSize(new THREE.Vector2());
-  const composer = new EffectComposer(renderer);
-  composer.addPass(new RenderPass(scene, camera));
-  const glow = new UnrealBloomPass(new THREE.Vector2(Math.max(1, size.x), Math.max(1, size.y)), 0.32, 0.55, 0.92);
-  glow.enabled = bloom;
-  composer.addPass(glow);
-  composer.addPass(new OutputPass());
+// (the scene drawn with no multisampling, as the composer's buffer was: the
+// node renderer's four samples made a High frame on SwiftShader 1.6 times
+// as long, 0.8 frames a second against 1.3, for edges the composer never
+// drew)
+export const passesFor = (scene, camera, bloom) => [{ kind: 'render', scene, camera, samples: 0 }, ...(bloom ? [{ kind: 'bloom', ...LOOK.bloom, composer: true }] : []), { kind: 'output' }];
+
+export function makeLook(post, scene, camera, { bloom = true } = {}) {
+  let glow = Boolean(bloom);
+  let chain = post(passesFor(scene, camera, glow));
+  // (a chain being built, its bloom put on or taken off: the one before
+  // draws until it is, as the composer's bloom was switched between frames)
+  let coming = null;
   let look = 'modern';
+  let gone = false;
   return {
     render() {
-      composer.render();
+      chain.render();
     },
+    // (the node chain takes the renderer's size and ratio as it draws)
     setSize(w, h) {
-      composer.setPixelRatio(renderer.getPixelRatio());
-      composer.setSize(w, h);
+      chain.setSize?.(w, h);
     },
     setLook(name) {
       look = LOOK_NAMES.includes(name) ? name : 'modern';
       return look;
     },
     setBloom(on) {
-      glow.enabled = on;
+      // (the governor may lower a world on its way out: nothing built then)
+      if (gone || Boolean(on) === glow) return;
+      glow = Boolean(on);
+      coming?.dispose();
+      const next = post(passesFor(scene, camera, glow));
+      coming = next;
+      Promise.resolve(next.ready).then(
+        () => {
+          if (coming !== next) return;
+          coming = null;
+          chain.dispose();
+          chain = next;
+        },
+        // (a chain that could not be built would draw nothing: the one
+        // drawing now goes on drawing)
+        () => {
+          if (coming !== next) return;
+          coming = null;
+          next.dispose();
+        },
+      );
     },
     get look() {
       return look;
     },
+    get ready() {
+      return chain.ready;
+    },
+    get passes() {
+      return chain.passes;
+    },
     dispose() {
-      composer.dispose();
+      gone = true;
+      coming?.dispose();
+      coming = null;
+      chain.dispose();
     },
   };
 }

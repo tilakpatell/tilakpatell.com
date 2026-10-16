@@ -57,4 +57,5 @@ window.runCase = async (name) => {
   }
   return res;
 };
+out.backend = node.backend.isWebGPUBackend ? 'WebGPU' : 'WebGL 2';
 out.ready = true;

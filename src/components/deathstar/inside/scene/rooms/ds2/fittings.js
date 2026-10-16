@@ -18,6 +18,7 @@
 //   blinker() → { material, update(t), dispose() }   lights that beep a short flash a second
 
 import * as THREE from 'three';
+import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { detailCanvas, sharpen } from '../../../../../../lib/three/textures';
 import { buildGun } from '../../guns';
 
@@ -206,7 +207,9 @@ function paintTarget(kit) {
 
 export function targetFace(kit, renderer) {
   const texture = sharpen(new THREE.CanvasTexture(paintTarget(kit)), { renderer, color: true });
-  const material = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.25, emissive: 0xffffff, emissiveIntensity: 1.5, emissiveMap: texture, name: 'ds2-target' });
+  // (a node material from the start: it pulses each frame, and the house look
+  // puts its own copy of a classic material in its place, which no pulse reaches)
+  const material = new MeshStandardNodeMaterial({ color: 0x000000, roughness: 0.25, emissive: 0xffffff, emissiveIntensity: 1.5, emissiveMap: texture, name: 'ds2-target' });
   return {
     material,
     update(t) {
@@ -251,7 +254,8 @@ export function nameFace(kit, text, renderer) {
 }
 
 export function blinker() {
-  const material = new THREE.MeshStandardMaterial({ color: 0x041008, roughness: 0.4, emissive: 0x6dff9a, emissiveIntensity: 0.4, name: 'ds2-blink' });
+  // (a node material from the start, as the target’s face is: it blinks each frame)
+  const material = new MeshStandardNodeMaterial({ color: 0x041008, roughness: 0.4, emissive: 0x6dff9a, emissiveIntensity: 0.4, name: 'ds2-blink' });
   return {
     material,
     // a short bright flash a second, a beep the eye can hear

@@ -10,7 +10,9 @@
 //   node scripts/twin-parity.mjs                    every case, the node side on WebGL 2
 //   node scripts/twin-parity.mjs house sky          the cases whose names hold these
 //   GPU=webgpu node scripts/twin-parity.mjs         the node side on WebGPU, where Chromium has an adapter
+//   GPU=webgpu ANGLE=d3d11 node scripts/twin-parity.mjs   (Windows: SwiftShader's GL leaves Edge no WebGPU adapter)
 //   CHROMIUM=/path/to/chrome, PORT=5198, OUT=dir (default scripts/twin-parity/out: the pictures)
+//   ANGLE=swiftshader (the default) | d3d11 | metal | …: the GL both sides draw on
 //
 // Exit 1 when a case errors or throws; the numbers are for the reader (a
 // twin passes at the parity check's line: 32 dB and under 2 % off).
@@ -58,7 +60,8 @@ const server = await createServer({
   logLevel: 'error',
 });
 await server.listen();
-const args = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
+const angle = process.env.ANGLE ?? 'swiftshader';
+const args = [`--use-angle=${angle}`, ...(angle === 'swiftshader' ? ['--enable-unsafe-swiftshader'] : []), '--ignore-gpu-blocklist'];
 if (webgpu) args.push('--enable-unsafe-webgpu', '--disable-blink-features=WebGPUExperimentalFeatures');
 // (the machine's own Chromium where CHROMIUM is not set: Edge or Chrome on
 // Windows, Playwright's on a Mac, /opt/pw-browsers in the cloud; the
@@ -71,9 +74,15 @@ try {
     failed = true;
     console.log('page error:', String(e).slice(0, 2000));
   });
-  await page.goto(`http://localhost:${PORT}/${webgpu ? '?gpu=webgpu' : ''}`);
+  // (Vite scans and bundles the cases' dependencies on a cold start: past
+  // Playwright's 30 s on Windows with another dev server busy beside it)
+  await page.goto(`http://localhost:${PORT}/${webgpu ? '?gpu=webgpu' : ''}`, { timeout: 180000 });
   await page.waitForFunction(() => window.__out?.ready, null, { timeout: 60000 });
-  const names = (await page.evaluate(() => window.names)).filter((n) => !want.length || want.some((w) => n.includes(w)));
+  // (three's renderer, asked for WebGPU and finding no adapter, draws on
+  // WebGL 2 without a word: the table says which it was)
+  const backend = await page.evaluate(() => window.__out.backend);
+  console.log(`node side on ${backend}${webgpu && backend !== 'WebGPU' ? ' (asked for WebGPU: no adapter here; ANGLE=d3d11 on Windows)' : ''}\n`);
+  const names =(await page.evaluate(() => window.names)).filter((n) => !want.length || want.some((w) => n.includes(w)));
   mkdirSync(OUT, { recursive: true });
   console.log('| Case | Status | PSNR | Off |\n|---|---|---|---|');
   for (const name of names) {

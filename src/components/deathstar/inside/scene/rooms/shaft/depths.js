@@ -17,7 +17,7 @@
 //     every `every`-th storey’s band lit
 //   hazeOf(rect, layers, { hole }) → Mesh   black layers across rect ({ x0, x1, z0, z1 }) at layers.ys,
 //     each layers.opacity, with a round hole ({ x, z, r }) where something stands through them
-//   glowMaterial({ color, base, fall, strength, rim, axis, radius, top, soft }) → ShaderMaterial   added
+//   glowMaterial({ color, base, fall, strength, rim, axis, radius, top, soft }) → a node material   added
 //     light that thins out `fall` metres a time (e) above `base` and is gone by `top` (from `soft` under
 //     it); rim: softened where its surface is seen edge-on (a haze), else as bright face-on as edge-on (a
 //     glowing surface); radius: fading out to that far from the axis; uniforms.uTime runs bands up it
@@ -28,6 +28,10 @@
 
 import * as THREE from 'three';
 import { panelLayout, roomWalls } from '../../kit';
+
+// (the glow is TSL, the node renderer’s: ../../nodes/rooms.js; the GLSL it
+// was is scripts/twin-parity/originals/deathstar/rooms.js, for the parity check)
+export { glowMaterial } from '../../nodes/rooms';
 
 // a deep wall’s look: tall plain bays, deep ribs, a band at each storey’s head
 const DEEP = { bay: 2.4, rib: 0.34, ribDepth: 0.22, kick: 0, band: 0.5, tall: 1.9, lights: false };
@@ -85,72 +89,6 @@ export function hazeOf(rect, { ys, opacity }, { hole = null } = {}) {
   mesh.renderOrder = 1;
   mesh.matrixAutoUpdate = false;
   return mesh;
-}
-
-const GLOW_VERT = /* glsl */ `
-varying vec3 vWorld;
-varying vec3 vNormal;
-void main() {
-  vec4 w = modelMatrix * vec4(position, 1.0);
-  vWorld = w.xyz;
-  vNormal = normalize(mat3(modelMatrix) * normal);
-  gl_Position = projectionMatrix * viewMatrix * w;
-}`;
-
-// Light thinning out exponentially up from its source, in slow bands
-// climbing it; a haze fades towards where it is seen edge-on (its
-// silhouette, where the eye passes through little of it), a disc fades
-// out to its rim.
-const GLOW_FRAG = /* glsl */ `
-uniform vec3 uColor;
-uniform float uBase;
-uniform float uFall;
-uniform float uStrength;
-uniform float uRim;
-uniform float uTime;
-uniform vec3 uAxis;
-uniform float uRadius;
-uniform float uTop;
-uniform float uSoft;
-varying vec3 vWorld;
-varying vec3 vNormal;
-void main() {
-  float h = max(0.0, vWorld.y - uBase);
-  float density = exp(-h / uFall);
-  vec3 v = normalize(cameraPosition - vWorld);
-  float face = abs(dot(normalize(vNormal), v));
-  float edge = mix(1.0, pow(face, 1.6), uRim);
-  float fade = uRadius > 0.0 ? 1.0 - smoothstep(0.0, uRadius, length(vWorld.xz - uAxis.xz)) : 1.0;
-  float bands = 0.82 + 0.18 * sin(vWorld.y * 0.9 - uTime * 2.2);
-  float a = uStrength * density * edge * fade * fade * bands * (1.0 - smoothstep(uTop - uSoft, uTop, vWorld.y));
-  // (alpha 1 under additive blending adds the colour times a, not times a squared)
-  gl_FragColor = vec4(uColor * a, 1.0);
-  #include <tonemapping_fragment>
-  #include <colorspace_fragment>
-}`;
-
-export function glowMaterial({ color = 0xbfdcff, base = 0, fall = 10, strength = 1, rim = true, axis = { x: 0, z: 0 }, radius = 0, top = Infinity, soft = 1 } = {}) {
-  return new THREE.ShaderMaterial({
-    uniforms: {
-      uColor: { value: new THREE.Color(color) },
-      uBase: { value: base },
-      uFall: { value: fall },
-      uStrength: { value: strength },
-      uRim: { value: rim ? 1 : 0 },
-      uTime: { value: 0 },
-      uAxis: { value: new THREE.Vector3(axis.x, 0, axis.z) },
-      uRadius: { value: radius },
-      uTop: { value: Number.isFinite(top) ? top : 1e9 },
-      uSoft: { value: soft },
-    },
-    vertexShader: GLOW_VERT,
-    fragmentShader: GLOW_FRAG,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    side: THREE.DoubleSide,
-    fog: false,
-  });
 }
 
 export function glowDiscs({ x, z, r, ys }, material) {

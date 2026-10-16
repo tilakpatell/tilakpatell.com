@@ -9,6 +9,9 @@
 // them; with no bloom (the low tier) the glows are still drawn round each
 // blade and arc, so nothing goes flat.
 //
+// The shaders are TSL (./nodes/saber.js); the GLSL they were is
+// scripts/twin-parity/originals/deathstar/saber.js, for the parity check.
+//
 // Everything is made at the start and pooled (four draws however hard the
 // fight: hilts, cores, trails, and every glow, arc, spark, flash and ripple
 // as one set of sprites), and `warm` compiles its shaders before the first
@@ -51,6 +54,7 @@ import { seeded } from '../../../../lib/seeded';
 import { precompile } from '../../../../lib/three/renderer';
 import { STROKES } from '../rules/saber';
 import { createSlots } from './fx';
+import { bladeGlowMaterial, trailMaterial } from './nodes/saber';
 
 export const SEG = 7;
 const MOST = 6; // the finest an arc is ever cut: 64 pieces
@@ -232,76 +236,6 @@ export function arcPath(from, to, rand, { depth = 4, branches = 3, jag = 0.2 } =
   return written;
 }
 
-// ── the shaders ──
-
-// A sprite: a quad facing the eye, drawn out along a way (a blade, an
-// arc’s piece) by as much of it as is seen across the view, so a blade
-// pointed at you is a round glow. A soft glow, or with a band (aSize.z) a
-// thin bright ring at its edge, as a ripple in the air catches the light.
-const SPRITE_VERT = /* glsl */ `
-attribute vec3 aAt;
-attribute vec3 aDir;
-attribute vec3 aSize;
-attribute vec3 aColour;
-varying vec2 vP;
-varying float vCore;
-varying float vHalf;
-varying float vBand;
-varying vec3 vColour;
-void main() {
-  vec4 c = viewMatrix * vec4(aAt, 1.0);
-  vec2 axis = (viewMatrix * vec4(aDir, 0.0)).xy;
-  float seen = length(axis);
-  axis = seen > 1e-4 ? axis / seen : vec2(1.0, 0.0);
-  vec2 side = vec2(-axis.y, axis.x);
-  float core = aSize.x * seen;
-  vec2 p = vec2(position.x * (core + aSize.y), position.y * aSize.y);
-  c.xy += axis * p.x + side * p.y;
-  gl_Position = projectionMatrix * c;
-  vP = p;
-  vCore = core;
-  vHalf = aSize.y;
-  vBand = aSize.z;
-  vColour = aColour;
-}`;
-const SPRITE_FRAG = /* glsl */ `
-varying vec2 vP;
-varying float vCore;
-varying float vHalf;
-varying float vBand;
-varying vec3 vColour;
-void main() {
-  vec2 q = vec2(max(abs(vP.x) - vCore, 0.0), vP.y);
-  float r = length(q) / vHalf;
-  if (r >= 1.0) discard;
-  float glow = exp(-r * r * 5.0) * (1.0 - r);
-  float w = max(vBand, 1e-3);
-  float x = (r - 1.0 + w) / (0.5 * w);
-  float ring = exp(-x * x);
-  gl_FragColor = vec4(vColour * mix(glow, ring, step(1e-4, vBand)), 1.0);
-  #include <colorspace_fragment>
-}`;
-
-// A trail: the ribbon between where a blade was and where it is, brightest
-// along the tip’s path and fading to nothing at the hilt’s.
-const TRAIL_VERT = /* glsl */ `
-attribute vec3 aColour;
-attribute float aEdge;
-varying vec3 vColour;
-varying float vEdge;
-void main() {
-  vColour = aColour;
-  vEdge = aEdge;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}`;
-const TRAIL_FRAG = /* glsl */ `
-varying vec3 vColour;
-varying float vEdge;
-void main() {
-  gl_FragColor = vec4(vColour * vEdge * vEdge * vEdge, 1.0);
-  #include <colorspace_fragment>
-}`;
-
 // ── the parts ──
 
 // A hilt turned along +y, the fist round y = 0: a steel pommel, the black
@@ -379,7 +313,7 @@ export function createSabers(scene, { tier = 'high' } = {}) {
   trailGeo.setAttribute('aEdge', new THREE.BufferAttribute(edge, 1));
   trailGeo.setIndex(index);
   trailGeo.setDrawRange(0, 0);
-  const trailMat = new THREE.ShaderMaterial({ name: 'ds-trail', vertexShader: TRAIL_VERT, fragmentShader: TRAIL_FRAG, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, toneMapped: false });
+  const trailMat = trailMaterial();
   const trails = new THREE.Mesh(trailGeo, trailMat);
   trails.name = 'saber-trails';
   trails.renderOrder = 4;
@@ -392,7 +326,7 @@ export function createSabers(scene, { tier = 'high' } = {}) {
   const sDir = perInstance(spriteGeo, 'aDir', spriteCap, 3);
   const sSize = perInstance(spriteGeo, 'aSize', spriteCap, 3);
   const sColour = perInstance(spriteGeo, 'aColour', spriteCap, 3);
-  const spriteMat = new THREE.ShaderMaterial({ name: 'ds-saber-glow', vertexShader: SPRITE_VERT, fragmentShader: SPRITE_FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
+  const spriteMat = bladeGlowMaterial();
   const sprites = new THREE.Mesh(spriteGeo, spriteMat);
   sprites.name = 'saber-sprites';
   sprites.renderOrder = 5;

@@ -37,7 +37,7 @@ const BLANK_LUT = (() => {
 // (three's UnrealBloomPass.js, `3.0 * bloomStrength`); the TSL bloom by
 // the strength alone. So the same numbers glow a third as much: the
 // strength is handed over three times over. (The runtime's own bloom pass,
-// src/runtime/webgpu.js, has the same third: lane R's to settle.)
+// src/runtime/webgpu.js, makes up the same third in its composerGlow.)
 export const UNREAL = 3;
 
 // (universe/post.js's, the same rule: half the frame, its long side capped)

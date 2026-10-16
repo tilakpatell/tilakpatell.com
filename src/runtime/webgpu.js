@@ -34,6 +34,22 @@ import { createJitter } from '../lib/three/jitter';
 
 export const hasWebGPU = () => typeof navigator !== 'undefined' && Boolean(navigator.gpu);
 
+// What a bloom pass adds on this backend: the glow the WebGL backend's
+// UnrealBloomPass adds, so a world's bloom is the same on either. BloomNode
+// blurs and weighs the mips as that pass does, but hands back strength ×
+// the mips; UnrealBloomPass composites 3 × strength × the mips (its
+// “backwards compatibility” with an older alpha-based glow), the brightest
+// of their channels as its alpha, and adds both to the picture (additive,
+// premultiplied: one and one). Plain BloomNode drew every glow at a third
+// of the composer’s (Mario 64’s look: 18 dB off it, 32 dB and over with
+// this; twin-parity’s mario64:look). Asked for by the pass (`composer:
+// true`), so a world tuned on this backend’s own bloom (Battlefront’s
+// chain, lib/three/light/post.js) keeps the glow it was tuned on.
+export function composerGlow(tsl, glow) {
+  const g = glow.rgb.mul(3);
+  return tsl.vec4(g, tsl.max(g.r, tsl.max(g.g, g.b)));
+}
+
 // the chain as data → a PostProcessing graph; `ready` resolves once the
 // nodes are loaded, and render() draws nothing until then. A chain with any
 // of the game light's passes goes to buildLitPost.
@@ -44,22 +60,37 @@ export function buildPostProcessing(renderer, passes) {
   if (passes.some((p) => NODE_PASSES.has(p.kind))) return buildLitPost(renderer, passes);
   let post = null;
   let scenePass = null;
+  let disposed = false;
+  const free = () => {
+    post?.dispose?.();
+    scenePass?.dispose?.();
+  };
   const ready = Promise.all([import('three/webgpu'), import('three/tsl'), import('three/addons/tsl/display/BloomNode.js')]).then(([webgpu, tsl, bloomMod]) => {
     post = new webgpu.PostProcessing(renderer);
     let node = null;
     for (const p of passes) {
       if (p.kind === 'render') {
-        scenePass = tsl.pass(p.scene, p.camera);
+        // (samples: the multisampling of the scene's buffer, the renderer's
+        // unless the pass says; a world whose composer drew into a plain
+        // buffer asks for 0, or it draws four times the samples it did)
+        scenePass = tsl.pass(p.scene, p.camera, p.samples === undefined ? {} : { samples: p.samples });
         node = scenePass.getTextureNode();
       } else if (p.kind === 'bloom') {
         if (!node) throw new Error('a bloom pass needs a render pass first');
-        node = node.add(bloomMod.bloom(node, p.strength ?? BLOOM.strength, p.radius ?? BLOOM.radius, p.threshold ?? BLOOM.threshold));
+        const glow = bloomMod.bloom(node, p.strength ?? BLOOM.strength, p.radius ?? BLOOM.radius, p.threshold ?? BLOOM.threshold);
+        node = node.add(p.composer ? composerGlow(tsl, glow) : glow);
       } else if (p.kind === 'output') {
         // (the output transform is the renderer's own on this backend)
       } else if (p.kind === 'shader') throw new Error('a shader pass needs the webgl backend');
       else throw new Error(`unknown pass ${p.kind}`);
     }
     post.outputNode = node;
+    // (let go before it was built, as a world's look switching its bloom
+    // twice in a frame does: freed now, and nothing drawn with it)
+    if (disposed) {
+      free();
+      post = null;
+    }
     return post;
   });
   return {
@@ -71,8 +102,8 @@ export function buildPostProcessing(renderer, passes) {
     setSize: () => {},
     compile: () => settle(ready, 4000),
     dispose: () => {
-      post?.dispose?.();
-      scenePass?.dispose?.();
+      disposed = true;
+      free();
     },
   };
 }

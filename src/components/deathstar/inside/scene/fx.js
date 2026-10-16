@@ -12,6 +12,9 @@
 // intensity 0 so the room’s shaders never change when it lights, is the
 // muzzle flare and an explosion’s flash; whichever is brighter has it.
 //
+// The shaders are TSL (./nodes/fx.js: a glow, a puff, a scorch); the GLSL
+// they were is scripts/twin-parity/originals/deathstar/fx.js, for the parity check.
+//
 // Bolts are drawn as the rules have them: call bolt(b) for every bolt in
 // the air each frame (combat.js’s `combat.bolts`), before update(dt); one
 // not given again is gone (it struck something, or ran out of range).
@@ -38,6 +41,7 @@
 import * as THREE from 'three';
 import { precompile } from '../../../../lib/three/renderer';
 import { WEAPONS } from '../rules/combat';
+import { puffMaterial, scorchMaterial, spriteMaterial } from './nodes/fx';
 
 const STEP = 1 / 30; // the game’s step: a bolt is never carried on further than one
 const BOLT = { length: 0.9, r: 0.028, glow: 0.16 }; // a bolt’s core and how far its glow reaches round it
@@ -104,123 +108,6 @@ export function createSlots(n) {
   };
 }
 
-// ── the shaders ──
-
-// A sprite: a quad facing the eye, a soft round glow, or drawn out along a
-// way (a bolt’s glow, a spark’s streak) by as much of that way as is seen
-// across the view, so a bolt coming straight at you is a round glow.
-const SPRITE_VERT = /* glsl */ `
-attribute vec3 aAt;
-attribute vec3 aDir;
-attribute vec2 aSize;
-attribute vec3 aColour;
-varying vec2 vP;
-varying float vCore;
-varying float vHalf;
-varying vec3 vColour;
-void main() {
-  vec4 c = viewMatrix * vec4(aAt, 1.0);
-  vec2 axis = (viewMatrix * vec4(aDir, 0.0)).xy;
-  float seen = length(axis);
-  axis = seen > 1e-4 ? axis / seen : vec2(1.0, 0.0);
-  vec2 side = vec2(-axis.y, axis.x);
-  float core = aSize.x * seen;
-  vec2 p = vec2(position.x * (core + aSize.y), position.y * aSize.y);
-  c.xy += axis * p.x + side * p.y;
-  gl_Position = projectionMatrix * c;
-  vP = p;
-  vCore = core;
-  vHalf = aSize.y;
-  vColour = aColour;
-}`;
-const SPRITE_FRAG = /* glsl */ `
-varying vec2 vP;
-varying float vCore;
-varying float vHalf;
-varying vec3 vColour;
-void main() {
-  vec2 q = vec2(max(abs(vP.x) - vCore, 0.0), vP.y);
-  float r = length(q) / vHalf;
-  if (r >= 1.0) discard;
-  gl_FragColor = vec4(vColour * exp(-r * r * 5.0) * (1.0 - r), 1.0);
-  #include <colorspace_fragment>
-}`;
-
-// a cheap value noise, for the ragged edges of smoke, fire and scorches
-const NOISE = /* glsl */ `
-float hash(vec2 p) {
-  p = fract(p * vec2(123.34, 456.21));
-  p += dot(p, p + 45.32);
-  return fract(p.x * p.y);
-}
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
-}`;
-
-// A puff: a billow facing the eye. Its colour is premultiplied, so fire
-// (light, nothing covered) and smoke (grey, covering what is behind) share
-// one draw: alpha 0 adds, alpha 1 covers.
-const PUFF_VERT = /* glsl */ `
-attribute vec3 aAt;
-attribute vec4 aShape;
-attribute vec4 aColour;
-varying vec2 vUv;
-varying vec2 vSeed;
-varying vec4 vColour;
-void main() {
-  vec4 c = viewMatrix * vec4(aAt, 1.0);
-  float s = sin(aShape.y);
-  float k = cos(aShape.y);
-  c.xy += mat2(k, s, -s, k) * position.xy * aShape.x;
-  gl_Position = projectionMatrix * c;
-  vUv = position.xy;
-  vSeed = aShape.zw;
-  vColour = aColour;
-}`;
-const PUFF_FRAG = /* glsl */ `
-${NOISE}
-varying vec2 vUv;
-varying vec2 vSeed;
-varying vec4 vColour;
-void main() {
-  float d = length(vUv);
-  if (d >= 1.0) discard;
-  vec2 p = vUv * 2.2 + vSeed;
-  float n = noise(p) * 0.65 + noise(p * 2.3 + 3.1) * 0.35;
-  float shape = smoothstep(1.0, 0.25, d + (n - 0.5) * 0.6);
-  gl_FragColor = vColour * shape;
-  #include <colorspace_fragment>
-}`;
-
-// A scorch: soot darkening the wall, ragged at its edge, with an ember at
-// its middle that glows orange and cools. Premultiplied too: the soot
-// covers, the ember adds.
-const SCORCH_VERT = /* glsl */ `
-attribute vec3 aBurn;
-varying vec2 vUv;
-varying vec3 vBurn;
-void main() {
-  vUv = position.xy * 2.0;
-  vBurn = aBurn;
-  gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
-}`;
-const SCORCH_FRAG = /* glsl */ `
-${NOISE}
-varying vec2 vUv;
-varying vec3 vBurn;
-void main() {
-  float d = length(vUv);
-  if (d >= 1.0) discard;
-  float n = noise(vUv * 3.0 + vBurn.z);
-  float soot = smoothstep(1.0, 0.15, d + (n - 0.5) * 0.55) * 0.85 * vBurn.y;
-  float ember = smoothstep(0.45, 0.0, d + (n - 0.5) * 0.3) * vBurn.x;
-  gl_FragColor = vec4(vec3(3.0, 0.9, 0.25) * ember, soot);
-  #include <colorspace_fragment>
-}`;
-
 // ── the effects ──
 
 const quadGeo = () => {
@@ -273,7 +160,7 @@ export function createFx(scene, { small = false } = {}) {
   const sDir = perInstance(spriteGeo, 'aDir', spriteCap, 3);
   const sSize = perInstance(spriteGeo, 'aSize', spriteCap, 2);
   const sColour = perInstance(spriteGeo, 'aColour', spriteCap, 3);
-  const spriteMat = new THREE.ShaderMaterial({ name: 'ds-glow', vertexShader: SPRITE_VERT, fragmentShader: SPRITE_FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
+  const spriteMat = spriteMaterial();
   const sprites = new THREE.Mesh(spriteGeo, spriteMat);
   sprites.name = 'fx-sprites';
   sprites.frustumCulled = false;
@@ -284,7 +171,7 @@ export function createFx(scene, { small = false } = {}) {
   const pAt = perInstance(puffGeo, 'aAt', N.puffs, 3);
   const pShape = perInstance(puffGeo, 'aShape', N.puffs, 4);
   const pColour = perInstance(puffGeo, 'aColour', N.puffs, 4);
-  const puffMat = new THREE.ShaderMaterial({ name: 'ds-puff', vertexShader: PUFF_VERT, fragmentShader: PUFF_FRAG, transparent: true, depthWrite: false, premultipliedAlpha: true, blending: THREE.NormalBlending, toneMapped: false });
+  const puffMat = puffMaterial();
   const puffs = new THREE.Mesh(puffGeo, puffMat);
   puffs.name = 'fx-puffs';
   puffs.frustumCulled = false;
@@ -294,7 +181,7 @@ export function createFx(scene, { small = false } = {}) {
   const scorchGeo = new THREE.PlaneGeometry(1, 1);
   const burn = perInstance(scorchGeo, 'aBurn', N.scorches, 3);
   // (pulled towards the eye in depth, so a scorch never fights the wall it is on)
-  const scorchMat = new THREE.ShaderMaterial({ name: 'ds-scorch', vertexShader: SCORCH_VERT, fragmentShader: SCORCH_FRAG, transparent: true, depthWrite: false, premultipliedAlpha: true, blending: THREE.NormalBlending, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4, toneMapped: false });
+  const scorchMat = scorchMaterial();
   const scorches = new THREE.InstancedMesh(scorchGeo, scorchMat, N.scorches);
   scorches.name = 'fx-scorches';
   scorches.count = 0;
