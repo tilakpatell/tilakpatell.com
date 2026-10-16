@@ -58,6 +58,8 @@ try {
   const page = await ctx.newPage();
   const t0 = Date.now();
   await page.goto(`http://127.0.0.1:${port}/#${route}`, { waitUntil: 'load', timeout: 120000 });
+  // (in software at Low the site asks before it loads a world: the same answer either side)
+  await page.getByRole('button', { name: /Open without installing/ }).click({ timeout: 20000 }).catch(() => {});
   await page.waitForFunction((sel) => document.querySelector(`${sel}[data-on]`), on, { timeout: 600000, polling: 1000 });
   const ready = (Date.now() - t0) / 1000;
   await page.waitForTimeout(3000); // (its first frames: shaders, the cover's fade)
