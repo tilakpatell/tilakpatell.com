@@ -232,6 +232,24 @@ async function shoot() {
       }
       await new Promise((release) => waiting.push({ url: route.request().url(), release: () => route.fulfill({ response }).catch(() => {}).then(release) }));
     });
+    // (what an answer sets going, a chunk run, a scene made from it, done
+    // before the next is handed over: a task posted to the page's queue
+    // comes back after everything queued before it, a few times over)
+    const settled = async () => {
+      for (let i = 0; i < 4; i++) {
+        await page
+          .evaluate(
+            () =>
+              new Promise((done) => {
+                const c = new MessageChannel();
+                c.port1.onmessage = () => done();
+                c.port2.postMessage(0);
+              }),
+          )
+          .catch(() => {});
+        await sleep(15);
+      }
+    };
     const handOver = async () => {
       while (waiting.length) {
         // (everything asked for back from the server first, then all of it in order)
@@ -244,7 +262,7 @@ async function shoot() {
             break;
           }
           await w.release();
-          await sleep(10);
+          await settled();
         }
       }
     };
