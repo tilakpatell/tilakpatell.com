@@ -112,8 +112,7 @@ async function shoot(browser, base, t) {
     set('tp-tour', 'skipped');
     set('tp-quality', JSON.stringify(q));
     // (a seeded Math.random: scatter, sparks and crowds the same each run)
-    // A sequence for each place in the code that asks (its file, line and
-    // column): what one caller takes never moves another's numbers, so a
+    // A sequence for each file in the code that asks: what one caller takes never moves another's numbers, so a
     // game's rain, built from where the loading had left one shared
     // sequence, is the same however many numbers the loading took first
     // (three's ids for every object made, a toast's key, a crowd far off).
@@ -136,6 +135,8 @@ async function shoot(browser, base, t) {
     // (and every sequence started again before each frame until the
     // target's first: what took numbers while it loaded took as many as the
     // loading's real time let it)
+    window.__fl2sites = () => [...sites.keys()].map((k) => `${k} ${counts.get(k)}`).sort();
+    const counts = new Map();
     window.__fl2seed = (n) => {
       salt = n >>> 0;
       sites.clear();
@@ -148,8 +149,12 @@ async function shoot(browser, base, t) {
       Error.stackTraceLimit = limit;
       // (where it was asked from, as the same on any server: no host, no
       // query, no dependency cache's folder)
-      const site = (stack.split('\n')[2] ?? '').trim().replace(/https?:\/\/[^/]+/, '').replace(/\?[^:)]*/, '').replace(/\/@fs\/[^)]*?\/deps\//, '/deps/');
+      // (the file alone, not its line: a file's lines move by one with an
+      // import rewritten, and its own calls come in the same order anyway)
+      const frame = (stack.split('\n')[2] ?? '').trim();
+      const site = (frame.match(/\(?((?:https?:\/\/[^/]+)?\/[^?:)\s]+)/)?.[1] ?? frame).replace(/https?:\/\/[^/]+/, '').replace(/\/@fs\/.*?\/deps\//, '/deps/');
       if (window.__fl2trace) window.__fl2calls.push(site);
+      counts.set(site, (counts.get(site) ?? 0) + 1);
       return next(site);
     };
     // draws to a canvas’s own buffer (no framebuffer bound), counted per canvas
@@ -270,6 +275,7 @@ async function shoot(browser, base, t) {
       // (before its first frame, the real time for whatever it loaded to
       // land: a figure parsed, its pictures decoded, so it's in by frame one)
       if (!counted) await page.waitForTimeout(3000).then(quiet);
+      if (process.env.SHOTS_SITES && !counted) console.log(`  sites ${t.id}:\n    ${(await page.evaluate(() => window.__fl2sites())).join('\n    ')}`);
       if (!counted) await page.evaluate(() => window.__fl2seed(0x51ed));
       if (process.env.SHOTS_TRACE) console.log(`  trace ${t.id} between: ` + (await page.evaluate(() => { const c = window.__fl2calls.join(' | '); window.__fl2trace = true; window.__fl2calls = []; return c; })));
       await step(counted ? 50 : 25);
@@ -289,6 +295,7 @@ async function shoot(browser, base, t) {
       // (before its first frame, the real time for whatever it loaded to
       // land: a figure parsed, its pictures decoded, so it's in by frame one)
       if (!counted) await page.waitForTimeout(3000).then(quiet);
+      if (process.env.SHOTS_SITES && !counted) console.log(`  sites ${t.id}:\n    ${(await page.evaluate(() => window.__fl2sites())).join('\n    ')}`);
       if (!counted) await page.evaluate(() => window.__fl2seed(0x51ed));
       await step(counted ? 50 : 25);
       const now = await presents();
