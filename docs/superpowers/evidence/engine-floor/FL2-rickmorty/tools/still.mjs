@@ -44,6 +44,7 @@ const scroll = Number(args.scroll) || 0;
 // first-visit flourish draws its sparks at random while the page loads)
 const stored = String(args.local ?? '').split(';').filter(Boolean).map((kv) => [kv.slice(0, kv.indexOf('=')), kv.slice(kv.indexOf('=') + 1)]);
 const waitMax = Number(args.wait) || 300; // s at most for the loading veils
+const tweak = typeof args.tweak === 'string' ? args.tweak : null; // (an expression run before the stepped frames, for finding what differs)
 const probe = typeof args.probe === 'string' ? args.probe : null; // (an expression read at the shot, for finding what differs)
 await mkdir(out, { recursive: true });
 
@@ -82,7 +83,22 @@ try {
       let a = 0;
       const seed = (n) => (a = n);
       seed(0x9e3779b9);
+      // No sound, either side: a sound's noise is made from Math.random, a
+      // sample at a time (the Citadel's hum: tens of thousands of them), and
+      // when it's made against when a frame throws its sparks is a promise's
+      // timing, so with sound on, the sparks drew other numbers in the after
+      // than in the before. (lib/audio has no context then, and every sound
+      // is a no-op.)
+      // (three's renderers and scenes as they're made, for --probe: window.__seen)
+      window.__seen = [];
+      window.__THREE_DEVTOOLS__ = new EventTarget();
+      window.__THREE_DEVTOOLS__.addEventListener('observe', (e) => window.__seen.push(e.detail));
+      delete window.AudioContext;
+      delete window.webkitAudioContext;
+      let drawn = 0; // (how many, for --probe: window.__rands)
+      Object.defineProperty(window, '__rands', { get: () => drawn });
       Math.random = () => {
+        drawn += 1;
         a |= 0;
         a = (a + 0x6d2b79f5) | 0;
         let t = Math.imul(a ^ (a >>> 15), 1 | a);
@@ -158,15 +174,26 @@ try {
       // the before and the after alike (a frame more or less then shows as
       // what moved, not as grain over the whole picture).
       const grainAt = new WeakSet();
+      const clockOf = new WeakMap();
+      window.__clocks = {};
       for (const Gl of [window.WebGLRenderingContext, window.WebGL2RenderingContext].filter(Boolean)) {
         const where = Gl.prototype.getUniformLocation;
         const set1 = Gl.prototype.uniform1f;
         Gl.prototype.getUniformLocation = function (program, name) {
           const at = where.call(this, program, name);
           if (at && name === 'uTime' && where.call(this, program, 'uGrain')) grainAt.add(at);
+          // (a clock's last value by its program's other uniforms, for --probe: window.__clocks)
+          if (at && name === 'uTime') clockOf.set(at, where.call(this, program, 'uAgitate') ? 'fluid' : where.call(this, program, 'uRed') ? 'curve' : 'other');
           return at;
         };
+        const store = Gl.prototype.renderbufferStorageMultisample;
+        if (store)
+          Gl.prototype.renderbufferStorageMultisample = function (target, samples, format, w, h) {
+            (window.__clocks.samples ??= {})[`${samples}@${w}x${h}`] = true;
+            return store.call(this, target, samples, format, w, h);
+          };
         Gl.prototype.uniform1f = function (at, v) {
+          if (at && clockOf.has(at)) window.__clocks[clockOf.get(at)] = v;
           return set1.call(this, at, at && grainAt.has(at) ? 0 : v);
         };
       }
@@ -183,6 +210,7 @@ try {
           if (stepping) return;
           if (frozen === null) frozen = vt = STILL_AT;
           stepping = true;
+          window.__randsAtStart = drawn;
           seed(0x2545f491);
         },
         frame() {
@@ -213,6 +241,7 @@ try {
     if (scroll) await page.evaluate((y) => window.scrollTo(0, y), scroll);
     await page.evaluate(() => window.__still.start());
     await quiet(idle);
+    if (tweak) await page.evaluate(tweak);
     for (let f = 0; f < frames; f++) {
       await page.evaluate(() => window.__still.frame());
       await quiet(idle);

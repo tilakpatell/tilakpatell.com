@@ -95,6 +95,8 @@ function clearance(from, to, inside = insideAt) {
   return 1;
 }
 
+const fontReady = (face, ms = 3000) => (typeof document !== 'undefined' && document.fonts?.load ? Promise.race([document.fonts.load(face).catch(() => {}), new Promise((r) => setTimeout(r, ms))]) : Promise.resolve());
+
 // looks: the wardrobe's ({ rick, morty }): Rick's is the one you walk about as
 export async function createCitadelWorld(rt, { looks = null, track = null } = {}) {
   const tier = device().tier;
@@ -136,6 +138,11 @@ export async function createCitadelWorld(rt, { looks = null, track = null } = {}
   const models = createModels({ base: '/games/kenney' });
   const made = [];
   let concourse, rooms, people, crowd, props;
+  // the Central Finite Curve's words are painted in Orbitron (./curve.js),
+  // the face the page loads for itself: waited for (three seconds at most),
+  // or the band came out in the fallback whenever the font arrived after the
+  // world began building, which was a matter of which was quicker
+  await fontReady('700 54px Orbitron');
   try {
     [concourse, rooms] = await allOrUndo([buildConcourse(renderer, { models, tier }), buildRooms(renderer, { models, tier })], made);
     scene.add(concourse.group, rooms.factory, rooms.council);
