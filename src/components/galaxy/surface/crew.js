@@ -24,7 +24,7 @@
 //   all stand on); on Jabba they do nothing.
 
 import * as THREE from 'three';
-import { loadPartyFigure, loadSharedFigure } from './nodes/figures';
+import { looks } from './looks';
 import { METRE } from '../../universe/foot';
 import { breathe } from '../../../lib/three/gait';
 import { NO_CALLS, seedOf } from '../../../lib/three/figureCalls';
@@ -82,8 +82,8 @@ export async function crewFigure(kind, i = 0) {
   const how = figureLoaderFor(c, DRESSED.has(kind));
   const fig =
     how === 'shared'
-      ? await loadSharedFigure(fileOf(c), c.tall, { seed }).catch(() => null)
-      : await loadPartyFigure({ id: kind, name: kind, tall: c.tall, src: { url: fileOf(c) }, rig: c.rig, pack: c.pack, ownRig: c.ownRig, bones: c.bones, cuts: cutsOf(c) }, null).catch((e) => refused(kind, e));
+      ? await looks().loadSharedFigure(fileOf(c), c.tall, { seed }).catch(() => null)
+      : await looks().loadPartyFigure({ id: kind, name: kind, tall: c.tall, src: { url: fileOf(c) }, rig: c.rig, pack: c.pack, ownRig: c.ownRig, bones: c.bones, cuts: cutsOf(c) }, null).catch((e) => refused(kind, e));
   if (!fig) return null;
   const model = new THREE.Group();
   model.scale.setScalar(1 / METRE);

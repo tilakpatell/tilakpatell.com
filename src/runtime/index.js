@@ -26,6 +26,7 @@ import { CAPPING, lossHolds, lostTwice, noteLoss, TIER_KEY } from '../lib/gpuPro
 import { gpu } from '../lib/gpu';
 import { read as readVideo, resolve as resolveVideo } from '../lib/video';
 import { installer } from './install';
+import { setCurrentRuntime } from './current';
 import './runtime.css';
 
 // lib/video.js's values as this device may draw them (its detail the ceiling)
@@ -137,6 +138,7 @@ export function runtime() {
   });
   // a world's install (install.js): the same one the gate and /worlds use
   instance.install = installer();
+  setCurrentRuntime(instance);
   if (win) {
     const wake = () => instance.invalidate();
     document.addEventListener('visibilitychange', wake);

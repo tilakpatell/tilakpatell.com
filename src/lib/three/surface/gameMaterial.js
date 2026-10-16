@@ -179,7 +179,7 @@ export function createGameMaterial(recipe, maps = {}, { tier = 'high', overlays 
   }
   const allow = (f) => tier !== 'mid' || ON_MID.has(f);
   const want = (f, ok) => ok && allow(f) && (features.push(f), true);
-  const { uv, vec2, vec3, vec4, float, mix, max, dot, normalize, normalMap, normalWorld, positionWorld, positionViewDirection, saturate, step, fract, time, pow, Fn, Loop, If, parallaxDirection } = tsl;
+  const { uv, vec2, vec3, vec4, float, mix, max, dot, normalize, normalMap, normalWorld, positionWorld, positionViewDirection, saturate, step, fract, time, pow, Fn, Loop, If, mat3, positionView, normalViewGeometry } = tsl;
   // (every map sampled at the post chain's mip bias: GPU-first lane N2, compose.js)
   const texture = biasedTexture(tsl);
   game.picture = { mipBias: true, specularAA: true };
@@ -209,7 +209,25 @@ export function createGameMaterial(recipe, maps = {}, { tier = 'high', overlays 
     const base = uv0;
     uv0 = Fn(() => {
       const layer = float(1 / steps);
-      const dir = parallaxDirection;
+      // (the view ray in the tangent frame of the geometry alone: its normal
+      // and the position's and the uv's screen derivatives, three's
+      // tangentViewFrame over normalViewGeometry. three's parallaxDirection
+      // reads TBNViewMatrix, whose normal, and with tangents its bitangent,
+      // is the material's own outside the normal's build: the normal map at
+      // this uv, so the uv asked for itself, "Recursion detected", and
+      // Naboo's trim set failed its program on WebGL 2)
+      const n = normalViewGeometry;
+      const q0 = positionView.dFdx();
+      const q1 = positionView.dFdy();
+      const st0 = vec2(base).dFdx();
+      const st1 = vec2(base).dFdy();
+      const q1perp = q1.cross(n);
+      const q0perp = n.cross(q0);
+      const t = q1perp.mul(st0.x).add(q0perp.mul(st1.x));
+      const b = q1perp.mul(st0.y).add(q0perp.mul(st1.y));
+      const det = max(dot(t, t), dot(b, b));
+      const k = det.equal(0).select(float(0), det.inverseSqrt());
+      const dir = positionViewDirection.mul(mat3(t.mul(k), b.mul(k), n));
       const delta = dir.xy
         .div(max(dir.z.abs(), float(0.05)))
         .mul(scale)

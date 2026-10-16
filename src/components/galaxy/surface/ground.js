@@ -35,9 +35,9 @@
 import * as THREE from 'three';
 import { HALF } from './terrain';
 import { sharpen } from '../../../lib/three/textures';
-import { groundMaterial as shade } from '../../../lib/three/groundLookNodes';
+import { looks } from './looks';
 
-export const groundMaterial = (site, opts = {}) => shade(site, { half: HALF, ...opts });
+export const groundMaterial = (site, opts = {}) => looks().groundMaterial(site, { half: HALF, ...opts });
 
 // The mesh, from the height grid: lines × lines vertices, each cell two
 // triangles split from (i, j + 1) to (i + 1, j) (as heightGrid reads them)

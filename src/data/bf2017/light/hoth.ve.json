@@ -1,0 +1,756 @@
+{
+ "_from": "web/maps/levels/mp/hoth_01/hoth_01.extras.json, environments; the fields readEntry reads, trimmed; the fog's ForwardLightScattering fields from src/data/bf2017/maps/hoth.lighting.json (lane V); the day's SunFlareComponentData (its elements, shaders left out) from the bucket's data/Levels/Lighting/Hoth/Sunny_01/VE_Sky_Arctic_Sunny_01; its MotionBlurComponentData's switches and scale; lane S's shadow, PCSS and cloud fields from src/data/bf2017/maps/hoth.lighting.json (rows.weathers.<w>.sun.raw, .shadows and .wind.raw); lane Q6's picture fields (TonemapComponentData's method and five Gaussians, ColorCorrectionComponentData's switches, DynamicAOComponentData's HBAO numbers, SkyComponentData's panorama and gradient, OutdoorLightComponentData's cloud-shadow texture) from the bucket's data/<name>.json.gz, assets by name (copied from src/lib/three/light/fixtures/hoth.ve.json for the galaxy surface, lane T2: the weathers' whole VisualEnvironment records)",
+ "sunny": {
+  "name": "Levels/Lighting/Hoth/Sunny_01/VE_Sky_Arctic_Sunny_01",
+  "record": {
+   "OutdoorLightComponentData": [
+    {
+     "SunColor": [
+      1,
+      0.95591,
+      0.91762
+     ],
+     "SkyColor": [
+      0,
+      0,
+      0
+     ],
+     "GroundColor": [
+      0,
+      0,
+      0
+     ],
+     "SunRotationX": 265.61,
+     "SunRotationY": 32.943,
+     "SunIntensity": 128000,
+     "ShadowSunRotationX": 284.42,
+     "ShadowSunRotationY": 82.044,
+     "SunAngularRadius": 0.29,
+     "SunPcssInitialSampleCount": 8,
+     "SunPcssMaximumSampleCount": 256,
+     "SunPcssFilterErrorThresholdPct": 0.05,
+     "SunPenumbraSize": 4,
+     "SunPcssShadowFilterScale": 1,
+     "CloudShadowSize": 8192,
+     "CloudShadowCoverage": 1,
+     "CloudShadowExponent": 1,
+     "SecondaryCloudShadowSize": 500,
+     "SecondaryCloudShadowCoverage": 0.3,
+     "SecondaryCloudShadowExponent": 8,
+     "CloudShadowSpeed.x": 0,
+     "CloudShadowSpeed.y": 0,
+     "SecondaryCloudShadowSpeed.x": 0,
+     "SecondaryCloudShadowSpeed.y": 0,
+     "ParticleSunShadowFactor": 1,
+     "ParticleSunShadowSmoothing": 0.5,
+     "CloudShadowEnable": true,
+     "CloudShadowTexture": "Objects/Nature/Arctic/_ArcticBase/_CommonTextures/T_Arctic_01_CloudShadow_RGBM",
+     "CloudShadowIsTopDown": true,
+     "CloudShadowAddressingMode": "TaWrap",
+     "CloudXZTranslation": [
+      0.0,
+      0.0
+     ],
+     "SecondaryCloudShadowTexture": null
+    }
+   ],
+   "SkyComponentData": [
+    {
+     "CloudLayer1Color": [
+      1,
+      1,
+      1
+     ],
+     "RayleighScatteringCoefficient": [
+      1e-05,
+      1e-05,
+      3e-05
+     ],
+     "LuminanceScale": 35000,
+     "SunSize": 0.004,
+     "MieScatteringCoefficient": 0,
+     "MieG": 0.785,
+     "ScaleHeightMie": 1.2,
+     "RayleighScatteringCoefficientScale": 1,
+     "ScaleHeightRayleigh": 8,
+     "SkyType": "SkyType_Procedural",
+     "PanoramicTexture": "Levels/Lighting/Hoth/Sunny_01/T_Hoth_Sunny_02_C",
+     "SkyGradientTexture": "Levels/Lighting/Hoth/Sunny_01/T_Hoth_Sunny_02_Fog_C",
+     "PanoramicRotation": 0.963,
+     "PanoramicUVMinX": 0.0,
+     "PanoramicUVMaxX": 1.0,
+     "PanoramicUVMinY": 0.01,
+     "PanoramicUVMaxY": 1.0,
+     "PanoramicTileFactor": 1.0,
+     "SkyGradientFollowsPanoramicUVs": false
+    }
+   ],
+   "FogComponentData": [
+    {
+     "Curve": [
+      2.23109,
+      -4.56547,
+      2.92437,
+      -0.00879
+     ],
+     "FogColor": [
+      1,
+      1,
+      1
+     ],
+     "Start": 50,
+     "End": 10000,
+     "HeightFogAltitude": 320,
+     "HeightFogDepth": 50,
+     "HeightFogVisibilityRange": 3000,
+     "Enable": true,
+     "HeightFogEnable": true,
+     "ForwardLightScatteringColor": [
+      0.423267663,
+      0.5967023,
+      1
+     ],
+     "ForwardLightScatteringPhaseG": 0.883,
+     "ForwardLightScatteringStrength": 3.741,
+     "ForwardLightScatteringPresence": 0,
+     "ForwardLightScatteringExtinction": 2.239,
+     "ForwardLightScatteringRotationX": 0,
+     "ForwardLightScatteringRotationY": 60
+    }
+   ],
+   "TonemapComponentData": [
+    {
+     "BloomScale": [
+      0.1,
+      0.1,
+      0.1
+     ],
+     "EV": 10,
+     "ExposureCompensation": 1.5,
+     "ClampEV": true,
+     "MinEV": 11,
+     "MaxEV": 15,
+     "AutomaticExposure": true,
+     "TonemapMethod": "TonemapMethod_Linear",
+     "BloomMethod": "BloomMethod_GaussianSimple",
+     "GaussianSharpness": 0.5,
+     "Gaussian1Weight": 0.0,
+     "Gaussian2Weight": 0.0,
+     "Gaussian3Weight": 0.2,
+     "Gaussian4Weight": 0.35,
+     "Gaussian5Weight": 0.5,
+     "Gaussian1Color": [
+      0.0619481429,
+      0.07671939,
+      0.09758735
+     ],
+     "Gaussian2Color": [
+      0.0619481429,
+      0.07671939,
+      0.09758735
+     ],
+     "Gaussian3Color": [
+      0.204426751,
+      0.239505738,
+      0.287440836
+     ],
+     "Gaussian4Color": [
+      0.168863758,
+      0.204489663,
+      0.2541521
+     ],
+     "Gaussian5Color": [
+      0.406536341,
+      0.568836153,
+      0.8148467
+     ],
+     "LensDirtTexture": null,
+     "FFTKernelTexture": null
+    }
+   ],
+   "ColorCorrectionComponentData": [
+    {
+     "HdrColorGradingLut": "Levels/Lighting/Hoth/Sunny_01/T_CC_Hoth_Sunny_01",
+     "ColorGradingMaxHdrValue": 1,
+     "ColorGradingEnable": true,
+     "Enable": true
+    }
+   ],
+   "SunFlareComponentData": [
+    {
+     "Element1SizeOccluderCurve": {
+      "x": 0,
+      "y": 0,
+      "z": -0.5,
+      "w": 1
+     },
+     "Element1SizeScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element1AlphaOccluderCurve": {
+      "x": 0.434081852,
+      "y": 0.149560273,
+      "z": -1.58364689,
+      "w": 1
+     },
+     "Element1AlphaScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element1RotationDistCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 0
+     },
+     "Element2SizeOccluderCurve": {
+      "x": 0,
+      "y": 0,
+      "z": -0.5,
+      "w": 1
+     },
+     "Element2SizeScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element2AlphaOccluderCurve": {
+      "x": 0.434081852,
+      "y": 0.149560273,
+      "z": -1.58364689,
+      "w": 1
+     },
+     "Element2AlphaScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element2RotationDistCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 0
+     },
+     "Element3SizeOccluderCurve": {
+      "x": 0,
+      "y": 0,
+      "z": -0.5,
+      "w": 1
+     },
+     "Element3SizeScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element3AlphaOccluderCurve": {
+      "x": 0.434081852,
+      "y": 0.149560273,
+      "z": -1.58364689,
+      "w": 1
+     },
+     "Element3AlphaScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 0.25
+     },
+     "Element3RotationDistCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 0
+     },
+     "Element4SizeOccluderCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 0.9549999
+     },
+     "Element4SizeScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element4AlphaOccluderCurve": {
+      "x": 0.434081852,
+      "y": 0.149560273,
+      "z": -1.58364689,
+      "w": 1
+     },
+     "Element4AlphaScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element4RotationDistCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 0
+     },
+     "Element5SizeOccluderCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element5SizeScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element5AlphaOccluderCurve": {
+      "x": 0,
+      "y": 0,
+      "z": -1,
+      "w": 1
+     },
+     "Element5AlphaScreenPosCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+     },
+     "Element5RotationDistCurve": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 0
+     },
+     "Element1Size": {
+      "x": 2,
+      "y": 2
+     },
+     "Element2Size": {
+      "x": 0.5,
+      "y": 0.5
+     },
+     "Element3Size": {
+      "x": 2,
+      "y": 2
+     },
+     "Element4Size": {
+      "x": 2.5,
+      "y": 0.075
+     },
+     "Element5Size": {
+      "x": 0.25,
+      "y": 0.25
+     },
+     "OccluderSize": 4000,
+     "Element1RayDistance": 0,
+     "Element1RotationLocal": 0,
+     "Element1RotationDistMultiplier": 1,
+     "Element2RayDistance": 0.8,
+     "Element2RotationLocal": 0,
+     "Element2RotationDistMultiplier": 1,
+     "Element3RayDistance": 0.9,
+     "Element3RotationLocal": 0,
+     "Element3RotationDistMultiplier": 1,
+     "Element4RayDistance": 0,
+     "Element4RotationLocal": 0,
+     "Element4RotationDistMultiplier": 1,
+     "Element5RayDistance": 0,
+     "Element5RotationLocal": 0,
+     "Element5RotationDistMultiplier": 1,
+     "Element1Enable": true,
+     "Element1RotationAlignedToRay": false,
+     "Element2Enable": true,
+     "Element2RotationAlignedToRay": true,
+     "Element3Enable": true,
+     "Element3RotationAlignedToRay": true,
+     "Element4Enable": true,
+     "Element4RotationAlignedToRay": false,
+     "Element5Enable": false,
+     "Element5RotationAlignedToRay": false
+    }
+   ],
+   "MotionBlurComponentData": [
+    {
+     "MotionBlurEnable": true,
+     "MotionBlurScale": 1,
+     "MotionBlurCentered": false,
+     "RadialBlurEnable": false
+    }
+   ],
+   "ShadowsComponentData": [
+    {
+     "SunShadowmapViewDistance.Low": 30,
+     "SunShadowmapViewDistance.Medium": 30,
+     "SunShadowmapViewDistance.High": 30,
+     "SunShadowmapViewDistance.Ultra": 70,
+     "SunShadowmapViewDistance.Cinematic": -1
+    }
+   ],
+   "WindComponentData": [
+    {
+     "WindDirection": 0,
+     "WindStrength": 5
+    }
+   ],
+   "DynamicAOComponentData": [
+    {
+     "Enable": true,
+     "DynamicAOFactor": 1.0,
+     "HbaoRadius": 1.5,
+     "HbaoAngleBias": 15.0,
+     "HbaoAttenuation": 0.7,
+     "HbaoContrast": 0.65,
+     "HbaoMaxFootprintRadius": 0.075,
+     "HbaoPowerExponent": 2.0,
+     "HbaoBlurRadius": 8.0,
+     "HbaoBlurSharpness": 4.0,
+     "AffectOutdoorLight": true,
+     "TemporalFilterEnable": true
+    }
+   ]
+  }
+ },
+ "sunset": {
+  "name": "Levels/Lighting/Hoth/Sunset_01/VE_PV_Hoth_Sunset_01",
+  "record": {
+   "OutdoorLightComponentData": [
+    {
+     "SunColor": [
+      0.9819,
+      0.28355,
+      0.11473
+     ],
+     "SkyColor": [
+      0,
+      0,
+      0
+     ],
+     "GroundColor": [
+      0,
+      0,
+      0
+     ],
+     "SunRotationX": 110,
+     "SunRotationY": 10.25,
+     "SunIntensity": 22500,
+     "ShadowSunRotationX": 284.42,
+     "ShadowSunRotationY": 82.044,
+     "SunAngularRadius": 0.29,
+     "SunPcssInitialSampleCount": 8,
+     "SunPcssMaximumSampleCount": 256,
+     "SunPcssFilterErrorThresholdPct": 0.05,
+     "SunPenumbraSize": 4,
+     "SunPcssShadowFilterScale": 1,
+     "CloudShadowSize": 8192,
+     "CloudShadowCoverage": 1,
+     "CloudShadowExponent": 5,
+     "SecondaryCloudShadowSize": 500,
+     "SecondaryCloudShadowCoverage": 0.3,
+     "SecondaryCloudShadowExponent": 8,
+     "CloudShadowSpeed.x": 0,
+     "CloudShadowSpeed.y": 0,
+     "SecondaryCloudShadowSpeed.x": 0,
+     "SecondaryCloudShadowSpeed.y": 0,
+     "ParticleSunShadowFactor": 1,
+     "ParticleSunShadowSmoothing": 0.5,
+     "CloudShadowEnable": true,
+     "CloudShadowTexture": "Levels/Lighting/Hoth/Sunset_01/T_Hoth_01_Sunset_CloudShadow_C",
+     "CloudShadowIsTopDown": true,
+     "CloudShadowAddressingMode": "TaWrap",
+     "CloudXZTranslation": [
+      0.0,
+      0.0
+     ],
+     "SecondaryCloudShadowTexture": null
+    }
+   ],
+   "SkyComponentData": [
+    {
+     "CloudLayer1Color": [
+      1,
+      1,
+      1
+     ],
+     "RayleighScatteringCoefficient": [
+      1e-05,
+      1e-05,
+      3e-05
+     ],
+     "LuminanceScale": 3000,
+     "SunSize": 0.004,
+     "MieScatteringCoefficient": 0,
+     "MieG": 0.785,
+     "ScaleHeightMie": 1.2,
+     "RayleighScatteringCoefficientScale": 1,
+     "ScaleHeightRayleigh": 8,
+     "SkyType": "SkyType_Procedural",
+     "PanoramicTexture": "Levels/Lighting/Hoth/Sunset_01/T_Hoth_Sunset_01_Panoramic_C",
+     "SkyGradientTexture": "Levels/Lighting/Hoth/Sunset_01/T_Hoth_Sunset_01_Fog_C",
+     "PanoramicRotation": 0.737,
+     "PanoramicUVMinX": 0.0,
+     "PanoramicUVMaxX": 1.0,
+     "PanoramicUVMinY": 0.0,
+     "PanoramicUVMaxY": 1.0,
+     "PanoramicTileFactor": 1.0,
+     "SkyGradientFollowsPanoramicUVs": false
+    }
+   ],
+   "FogComponentData": [
+    {
+     "Curve": [
+      -0.76136,
+      0.9553,
+      0.6373,
+      -0.01764
+     ],
+     "FogColor": [
+      1,
+      1,
+      1
+     ],
+     "Start": 125,
+     "End": 2500,
+     "HeightFogAltitude": 285,
+     "HeightFogDepth": 65,
+     "HeightFogVisibilityRange": 500,
+     "Enable": true,
+     "HeightFogEnable": true,
+     "ForwardLightScatteringColor": [
+      0.9818974,
+      0.283554882,
+      0.114725284
+     ],
+     "ForwardLightScatteringPhaseG": 0.984,
+     "ForwardLightScatteringStrength": 3.676,
+     "ForwardLightScatteringPresence": 0.765,
+     "ForwardLightScatteringExtinction": 1.471,
+     "ForwardLightScatteringRotationX": 0,
+     "ForwardLightScatteringRotationY": 60
+    }
+   ],
+   "TonemapComponentData": [
+    {
+     "BloomScale": [
+      0.1,
+      0.1,
+      0.1
+     ],
+     "EV": 10,
+     "ExposureCompensation": 1,
+     "ClampEV": true,
+     "MinEV": 9.5,
+     "MaxEV": 10.4,
+     "AutomaticExposure": true,
+     "TonemapMethod": "TonemapMethod_Linear",
+     "BloomMethod": "BloomMethod_GaussianSimple",
+     "GaussianSharpness": 0.5,
+     "Gaussian1Weight": 0.0,
+     "Gaussian2Weight": 0.0,
+     "Gaussian3Weight": 0.2,
+     "Gaussian4Weight": 0.35,
+     "Gaussian5Weight": 0.5,
+     "Gaussian1Color": [
+      0.0619481429,
+      0.07671939,
+      0.09758735
+     ],
+     "Gaussian2Color": [
+      0.0619481429,
+      0.07671939,
+      0.09758735
+     ],
+     "Gaussian3Color": [
+      0.204426751,
+      0.239505738,
+      0.287440836
+     ],
+     "Gaussian4Color": [
+      0.168863758,
+      0.204489663,
+      0.2541521
+     ],
+     "Gaussian5Color": [
+      0.406536341,
+      0.568836153,
+      0.8148467
+     ],
+     "LensDirtTexture": null,
+     "FFTKernelTexture": null
+    }
+   ],
+   "ColorCorrectionComponentData": [
+    {
+     "HdrColorGradingLut": "Levels/Lighting/Hoth/Sunset_01/T_CC_Hoth_Sunset_01",
+     "ColorGradingMaxHdrValue": 1,
+     "ColorGradingEnable": true,
+     "Enable": true
+    }
+   ],
+   "ShadowsComponentData": [
+    {
+     "SunShadowmapViewDistance.Low": 30,
+     "SunShadowmapViewDistance.Medium": 30,
+     "SunShadowmapViewDistance.High": 30,
+     "SunShadowmapViewDistance.Ultra": 70,
+     "SunShadowmapViewDistance.Cinematic": -1
+    }
+   ],
+   "WindComponentData": [
+    {
+     "WindDirection": 0,
+     "WindStrength": 5
+    }
+   ],
+   "DynamicAOComponentData": [
+    {
+     "Enable": true,
+     "DynamicAOFactor": 1.0,
+     "HbaoRadius": 1.5,
+     "HbaoAngleBias": 15.0,
+     "HbaoAttenuation": 0.7,
+     "HbaoContrast": 0.65,
+     "HbaoMaxFootprintRadius": 0.075,
+     "HbaoPowerExponent": 2.0,
+     "HbaoBlurRadius": 8.0,
+     "HbaoBlurSharpness": 4.0,
+     "AffectOutdoorLight": true,
+     "TemporalFilterEnable": true
+    }
+   ]
+  }
+ },
+ "interior": {
+  "name": "Levels/Lighting/Hoth/Interior_01/VE_PV_Hoth_Interior_01",
+  "record": {
+   "OutdoorLightComponentData": [
+    {
+     "SunColor": [
+      1,
+      0.971,
+      0.914
+     ],
+     "SkyColor": [
+      0.318,
+      0.341,
+      0.4
+     ],
+     "GroundColor": [
+      0.05,
+      0.05,
+      0.05
+     ],
+     "SunRotationX": 0,
+     "SunRotationY": 60,
+     "SunIntensity": 1,
+     "CloudShadowEnable": true,
+     "CloudShadowTexture": null,
+     "CloudShadowIsTopDown": false,
+     "CloudShadowAddressingMode": "TaWrap",
+     "CloudXZTranslation": [
+      0.0,
+      0.0
+     ],
+     "SecondaryCloudShadowTexture": null
+    }
+   ],
+   "FogComponentData": [
+    {
+     "Curve": [
+      1.31352,
+      -2.39811,
+      1.7232,
+      -0.04448
+     ],
+     "FogColor": [
+      1,
+      1,
+      1
+     ],
+     "Start": 250,
+     "End": 2500,
+     "HeightFogAltitude": 0,
+     "HeightFogDepth": 50,
+     "HeightFogVisibilityRange": 3000,
+     "Enable": true,
+     "HeightFogEnable": true,
+     "ForwardLightScatteringColor": [
+      0.423267663,
+      0.5967023,
+      1
+     ],
+     "ForwardLightScatteringPhaseG": 0.883,
+     "ForwardLightScatteringStrength": 3.741,
+     "ForwardLightScatteringPresence": 0.714,
+     "ForwardLightScatteringExtinction": 2.239,
+     "ForwardLightScatteringRotationX": 0,
+     "ForwardLightScatteringRotationY": 60
+    }
+   ],
+   "TonemapComponentData": [
+    {
+     "BloomScale": [
+      0.05,
+      0.05,
+      0.05
+     ],
+     "EV": 10,
+     "ExposureCompensation": 1.5,
+     "ClampEV": true,
+     "MinEV": 8.5,
+     "MaxEV": 10.5,
+     "AutomaticExposure": true,
+     "TonemapMethod": "TonemapMethod_FilmicNeutral",
+     "BloomMethod": "BloomMethod_GaussianSimple",
+     "GaussianSharpness": 0.5,
+     "Gaussian1Weight": 1.0,
+     "Gaussian2Weight": 1.0,
+     "Gaussian3Weight": 1.0,
+     "Gaussian4Weight": 1.0,
+     "Gaussian5Weight": 1.0,
+     "Gaussian1Color": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "Gaussian2Color": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "Gaussian3Color": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "Gaussian4Color": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "Gaussian5Color": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "LensDirtTexture": null,
+     "FFTKernelTexture": null
+    }
+   ],
+   "ColorCorrectionComponentData": [
+    {
+     "HdrColorGradingLut": "Levels/Lighting/Hoth/Interior_01/T_CC_Hoth_Interior_01",
+     "ColorGradingMaxHdrValue": 1,
+     "ColorGradingEnable": true,
+     "Enable": true
+    }
+   ]
+  }
+ }
+}

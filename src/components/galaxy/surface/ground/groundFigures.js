@@ -23,6 +23,18 @@ import { DEATH, fallen, healthBar, markMaterials } from '../activity';
 import { HOSTILE_BODY, createPosture, fallOf, hostileBody, whereHit } from '../hostiles';
 import { groundAt, pushOut } from '../walker';
 import { rigRagdoll } from '../../../../lib/three/ragdollPhysics';
+import { ragdollOf, rig2017 } from '../../../../lib/three/ragdoll2017';
+import { isGameSkeleton } from '../../../../lib/physics/boneCapsules';
+
+// The game's own fifteen bodies for a soldier on the game's skeleton
+// (ragdoll.json's trooper row, lane P2: the Battlefront world's fallen),
+// fetched with the first ground war; the house ragdoll for any other figure
+const ROW = 'stormtroopershared';
+let gameRow = null;
+const gameRagdoll = () => {
+  gameRow ??= import('../../../../data/bf2017/physics/ragdoll.json').then((m) => ragdollOf(m.default ?? m, ROW)).catch(() => null);
+  return gameRow;
+};
 import { ARMS, dressOf } from './troops';
 import { createGunplay } from '../../../universe/gunplay';
 import { budgetClock, createAnimBudget } from '../../../../lib/three/animBudget';
@@ -90,6 +102,8 @@ export function createPool({ make }) {
 }
 
 export function createFigures({ parent, world, warm = (o) => Promise.resolve(o), kit = null, tier = 'high', only = false, uniforms = null }) {
+  let row = null;
+  gameRagdoll().then((r) => (row = r));
   const group = new THREE.Group();
   group.name = 'ground';
   parent.add(group);
@@ -346,7 +360,8 @@ export function createFigures({ parent, world, warm = (o) => Promise.resolve(o),
         t.holder.updateMatrixWorld(true);
         const dir = fallOf({ push, from, at: t.soldier.b, yaw: t.soldier.b.yaw });
         const v = t.soldier.vel ?? [0, 0];
-        t.rag = rigRagdoll(bones, { collide, push: { x: dir.x, y: 0, z: dir.z }, speed, velocity: { x: v[0] ?? 0, y: 0, z: v[1] ?? 0 } });
+        const opts = { collide, push: { x: dir.x, y: 0, z: dir.z }, speed, velocity: { x: v[0] ?? 0, y: 0, z: v[1] ?? 0 } };
+        t.rag = row && isGameSkeleton(bones) ? rig2017(bones, row, opts) : rigRagdoll(bones, opts);
         ragdolls++;
       }
       t.death = {

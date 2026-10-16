@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { onVoicesChange, setVoicesOn, voicesOn } from '../../lib/audio';
 import { openGuide } from '../../lib/palette';
 import PlayersChip from './PlayersChip';
+import { rendererReport } from '../backend';
+import { currentRuntime } from '../current';
 
 // A world's one Menu, top right: the world's own settings first (as
 // children: <MenuItem>s), then the voices switch (`voices`), Things to do, Controls (the site's guide, so
@@ -16,7 +18,11 @@ import PlayersChip from './PlayersChip';
 // Esc is the menu's: the world doesn't also back out of something), or on
 // picking something; the focus goes back to its button. A disclosure, not
 // an ARIA menu: its entries are plain buttons and links, Tab between them.
-export default function Menu({ label = 'Menu', todo = null, voices = true, controls = true, players = null, noun = 'players', lore = null, way = null, className = '', children = null }) {
+// Last, a line saying what the picture is drawn with (`renderer`: WebGPU,
+// WebGL 2 through the node renderer, or classic for a 'glsl' world, read
+// from the runtime when the list opens) and, where it isn't the world's
+// best, why and what would give the best (backend.js's rendererReport).
+export default function Menu({ label = 'Menu', todo = null, voices = true, controls = true, players = null, noun = 'players', lore = null, way = null, renderer = true, className = '', children = null }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const button = useRef(null);
@@ -68,6 +74,7 @@ export default function Menu({ label = 'Menu', todo = null, voices = true, contr
           )}
           {players && <PlayersChip {...players} noun={noun} lore={lore} item />}
           {way && <Link to={way.to}>{way.label}</Link>}
+          {renderer && <RendererLine />}
         </div>
       )}
     </div>
@@ -98,5 +105,19 @@ export function VoicesItem() {
     <button type="button" data-keep aria-pressed={on} onClick={() => setVoicesOn(!on)}>
       Voices {on ? 'on' : 'off'}
     </button>
+  );
+}
+
+// What the picture is drawn with, read from the runtime as the list opens
+export function RendererLine({ report = null }) {
+  const rt = report ? null : currentRuntime();
+  const r = report ?? rendererReport({ backend: rt?.current ? rt.gfx?.backend : null, gpu: typeof navigator !== 'undefined' && Boolean(navigator.gpu) });
+  if (!r) return null;
+  return (
+    <p className="hud-menu-note" data-keep data-best={r.best || undefined}>
+      Picture: <b>{r.name}</b>
+      {r.best ? ' · the best' : ''}
+      <span>{r.note}</span>
+    </p>
   );
 }

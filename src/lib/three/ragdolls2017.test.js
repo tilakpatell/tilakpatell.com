@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import book from '../../../data/bf2017/physics/ragdoll.json';
-import death from '../../../data/bf2017/physics/death.json';
-import { skeleton } from '../../../lib/three/fixtures/gameSkeleton.js';
-import { CORPSES, LEAD, RAGDOLLS, RANGE, SINK, createRagdolls } from './ragdolls.js';
+import book from '../../data/bf2017/physics/ragdoll.json';
+import death from '../../data/bf2017/physics/death.json';
+import { skeleton } from './fixtures/gameSkeleton.js';
+import { CORPSES, LEAD, RAGDOLLS, RANGE, SINK, createRagdolls } from './ragdolls2017.js';
 
 // a figure as figures.js holds one: a model on the game's skeleton and its mixer
 function figure(x = 0, z = 0) {

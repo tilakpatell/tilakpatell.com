@@ -1,158 +1,38 @@
-// What's out in the world for the quest you're on (quests.js says where you
-// are in it): a beam of light where it wants you to go, the things to pick
-// up, the gates of a race (the next one lit), and what's to be shot at
-// (targets, womp rats, droids, troopers who shoot back), each a figure
-// that wanders or holds its ground and goes down when it's hit enough.
-//
-// createActivity({ parent, world, warm, beam color }) → { show(quest,
-// progress), update(dt, you, t) → events (pickups and kills, for the
-// quest), targets (what the blaster can hit: { x, y, z, r, hit(damage) }),
-// kill(tag), shooters (who fire back, or swipe: { from, spread, damage,
-// melee }), clear(), dispose() }
-//
-// A step's spawn: { kind, n, at, spread, roam, speed, hp, tag, scale,
-// model, still, face, y, level (the height it's on, where there are
-// floors over floors: a pit under a throne room), leash, hostile: { range, every, spread, damage,
-// burst, strafe, shield (hostiles.js's: bursts of fire, circling you, a shield that soaks hits),
-// blade ({ color, hilt?, stance? }: a lit saber in its hand, and on the 2017 game's rig it fences: duellists.js), parry (the
-// share of your strikes a duellist holds its block for: the game's rules decide the rest), guard (a brawler's: strokes it turns),
-// delay (before its first shot), chase (m/s: it comes for you), melee,
-// reach (how close it has to be to hit), cone, far, smell, memory (what it
-// perceives: hostiles.js's sensesFor), force ({ every, push }: a duellist's
-// shove at you, every so often, close to) }, side ('yours': it fights beside
-// you, at the nearest hostile, and the hostiles fire at it; a shot's `at`
-// and `victim` say so) }
-//
-// Every figure has a head (hostiles.js's hostileStep, on lib/ai): it
-// knows you only as it perceives you (the world's solids are its line of
-// sight: walker.js's lineClear), weighs what to do with you in sight (hold
-// and fire, strafe, close, back off, take cover from your line of fire or
-// flank round when it has no shot: `shot` tokens, SHOTS at once across the
-// world, and `melee` tokens, one swing at a time), goes to look where it
-// last had you, and joins its group's search (one lib/ai/search a tag: the
-// spots that could hide you round where you were lost, shared) before it
-// goes back to its wander. Its shots go to what it believes (a shot's `to`,
-// which the scene aims at; `guessed` when it can only guess). An `update`
-// event { type: 'search', tag } says a group has started looking.
-//
-// And a body that shows it (hostiles.js's hostileBody, the seam from
-// brain to body): its feet paced to the ground its head moves it over (a
-// strafer's hips toward its travel, its chest on you), its head on what it
-// watches or sweeping as it searches, with a '?' over it while it looks
-// for you and a '!' when it has you again; crouched in cover once it's
-// there, standing to fire. A rigged one holds its gun in its hand and
-// raises it to aim and fire from the muzzle (universe/gunplay.js, as
-// yours), or plays the pistol's aim and shot on its upper half; a
-// duellist's saber is in its own hand, held at guard and swung in its
-// strokes (heldBlade.js's bladeInHand; duellists.js fences with it: what
-// lands on you is what its blade sweeps, handed to the scene through
-// shooters as a melee contact). It flinches by where it's hit, goes down by
-// the way the shot went (die.fwd, die.back, die.blown) and lies a while
-// before it goes; one with no clips falls over about its feet that way. A
-// Tusken brandishes its rifle over its head when it sees you. Bodies never
-// change what the heads decide: every shot, kill and event is as it was.
-// hit(t, damage, { at }) takes where it landed (a point in the world: the
-// head or the chest).
+// createActivity: the quest's activity out in the world (./index.js says what
+// it gives and what a spawn takes).
 
 import * as THREE from 'three';
-import { buildFigure } from './figures';
-import { anyFigure, modelFigure } from './actors';
-import { crewFigure } from './crew';
-import { PROPS } from './props';
-import { groundAt, shoreStep, turnToward } from './walker';
-import { stepTarget } from './quests';
-import { rng } from './noise';
-
-// ── the pure parts ──
-// a duellist's Force: its push falls due every `force.every` seconds while
-// you're within 8 m of it (t.forceAt: when it last pushed)
-export const nextForce = (t, h, dYou, time) => Boolean(h?.force) && dYou <= 8 && time - (t.forceAt ?? -99) >= (h.force.every ?? 7);
-// one on your side (spec.side: 'yours') fights the nearest hostile that's
-// up, never you and never its own side
-export function friendlyAim(t, targets) {
-  if (t.spec?.side !== 'yours') return null;
-  let best = null;
-  let bd = Infinity;
-  for (const o of targets) {
-    if (o === t || o.down || !o.hostile || o.spec?.side === 'yours') continue;
-    const d = Math.hypot(o.b.x - t.b.x, o.b.z - t.b.z);
-    if (d < bd) {
-      bd = d;
-      best = o;
-    }
-  }
-  return best;
-}
-// a hostile's mark: you, or a friend of yours nearer to it than you are
-// ({ x, z, victim }: the friend, or null when it's you; null with nobody)
-export function hostileAim(t, you, targets) {
-  let best = you ? { x: you.x, z: you.z, victim: null } : null;
-  let bd = you ? Math.hypot(you.x - t.b.x, you.z - t.b.z) : Infinity;
-  for (const o of targets) {
-    if (o === t || o.down || o.spec?.side !== 'yours') continue;
-    const d = Math.hypot(o.b.x - t.b.x, o.b.z - t.b.z);
-    if (d < bd) {
-      bd = d;
-      best = { x: o.b.x, z: o.b.z, victim: o };
-    }
-  }
-  return best;
-}
-// What a hostile carries, by kind (universe/gunplay.js's GUNS): a Tusken's
-// long cycler rifle, Jango's WESTAR-34, the troopers' E-11s, the clones'
-// DC-15As, the battle droids' E-5s, a Rebel's A280; a blaster pistol for
-// anyone else with a gun (a spawn's own `gun` first). A duellist carries
-// its saber; a brawler, a beast or a target that doesn't fight back, nothing.
-export { ARMS }; // (ground/troops.js's: the one table)
-export function armsOf(s) {
-  const h = s?.hostile;
-  if (!h) return null;
-  if (h.blade) return 'saber';
-  if (h.melee) return null;
-  return s.gun ?? ARMS[s.kind] ?? 'blaster';
-}
-// how one starts when it sees you, by kind, in place of react.js's alert:
-// a Tusken's cry, its rifle brandished over its head (a clip on its upper
-// half, so long, the gun's own pose let go meanwhile)
-const STARTS = { tusken: { clip: 'cheer', for: 1.6 } };
-// up to fire: its next shot due within half a second (and not left waiting
-// long for its turn), or one just fired: what stands it out of its crouch
-// and brings the gun up, ahead of the shot rather than after it
-export const upToFire = (t, time) => Boolean(t.aim && t.cool < 0.5 && t.cool > -0.4) || time - (t.firedAt ?? -Infinity) < 0.9;
-// going down: a fall over `fall` seconds about its feet (for one with no
-// clip to fall on; a clip's own length otherwise), then lying `lie`, then
-// sinking `deep` metres over `sink` and gone
-export const DEATH = { fall: 0.9, lie: 2, sink: 0.6, deep: 0.35 };
-// `down` seconds after it went (len: its clip's length, null for the tip)
-// → { k (0…1 of the tip), sink (metres), gone }
-export function fallen(down, len = null) {
-  const lain = (len ?? DEATH.fall) + DEATH.lie;
-  return { k: Math.min(1, down / DEATH.fall), sink: down > lain ? Math.min(1, (down - lain) / DEATH.sink) * DEATH.deep : 0, gone: down > lain + DEATH.sink };
-}
-import { absorb, ALERT_CLIP, bodyClip, createPosture, fallOf, hostileBody, hostileStep, startBurst, stepBurst, whereHit } from './hostiles';
-import { lineClear } from './walker';
-import { createTokens } from '../../../lib/ai/squad';
-import { createSearch } from '../../../lib/ai/search';
-import { candidates } from '../../../lib/ai/spatial';
-import { createPortalFx, meshyJoints } from '../../../lib/three/portalFxNodes';
-import { beamMaterial } from './nodes/activity';
-import { createGadgetFx } from '../../../lib/three/gadgetFx';
-import { fallTurn } from '../../../lib/three/locomotion';
-import { preload } from '../../../lib/three/clipLibrary';
-import { createGunplay } from '../../universe/gunplay';
-import { SHOW_KILLS } from './weaponRules';
-import { bladeInHand, heldBlade } from './heldBlade';
-import { blastClass } from './walkers';
-import { asTarget, duelFor, fence, landed, recoiled, reeling, stun } from './duellists';
-import { GAME_HP } from './abilityRules';
-import { onHit } from '../../../lib/combat/duel';
-import { sharpen } from '../../../lib/three/textures';
-import { ARMS } from './ground/troops';
-import { hitSide } from '../../../lib/three/walrusSets/additive';
-import { detailLevel } from '../../../lib/detail';
-import { loadScene, playScene } from '../../../lib/three/scenePlayer';
-import { richClips } from '../../../lib/three/walrus';
-import { introScene } from '../../../lib/three/walrusSets/scenes';
+import { buildFigure } from '../figures';
+import { anyFigure, modelFigure } from '../actors';
+import { crewFigure } from '../crew';
+import { PROPS } from '../props';
+import { groundAt, shoreStep, turnToward } from '../walker';
+import { stepTarget } from '../quests';
+import { rng } from '../noise';
+import { absorb, ALERT_CLIP, bodyClip, createPosture, fallOf, hostileBody, hostileStep, startBurst, stepBurst, whereHit } from '../hostiles';
+import { lineClear } from '../walker';
+import { createTokens } from '../../../../lib/ai/squad';
+import { createSearch } from '../../../../lib/ai/search';
+import { candidates } from '../../../../lib/ai/spatial';
+import { looks } from '../looks';
+import { createGadgetFx } from '../../../../lib/three/gadgetFx';
+import { fallTurn } from '../../../../lib/three/locomotion';
+import { RAGDOLLS, createRagdolls } from '../../../../lib/three/ragdolls2017';
+import { preload } from '../../../../lib/three/clipLibrary';
+import { createGunplay } from '../../../universe/gunplay';
+import { SHOW_KILLS } from '../weaponRules';
+import { bladeInHand, heldBlade } from '../heldBlade';
+import { blastClass } from '../walkers';
+import { asTarget, duelFor, fence, landed, recoiled, reeling, stun } from '../duellists';
+import { GAME_HP } from '../abilityRules';
+import { onHit } from '../../../../lib/combat/duel';
+import { hitSide } from '../../../../lib/three/walrusSets/additive';
+import { detailLevel } from '../../../../lib/detail';
+import { loadScene, playScene } from '../../../../lib/three/scenePlayer';
+import { richClips } from '../../../../lib/three/walrus';
+import { introScene } from '../../../../lib/three/walrusSets/scenes';
+import { armsOf, fallen, friendlyAim, hostileAim, nextForce, STARTS, upToFire } from './rules';
+import { SPECIAL, beam, gateMesh, healthBar, markMaterials, pickupMesh } from './marks';
 
 const SHOTS = 3; // enemies firing at you at once, across a world (the rest move)
 const UP = new THREE.Vector3(0, 1, 0);
@@ -162,139 +42,18 @@ const _from = new THREE.Vector3();
 const _q = new THREE.Quaternion();
 const _yq = new THREE.Quaternion();
 
-
-// a beam of light standing on a spot, and a ring round it on the ground
-function beam(color) {
-  const g = new THREE.Group();
-  const mat = beamMaterial(color);
-  const geo = new THREE.CylinderGeometry(1.1, 1.1, 60, 20, 1, true).translate(0, 30, 0);
-  const m = new THREE.Mesh(geo, mat);
-  m.renderOrder = 6;
-  g.add(m);
-  const ring = new THREE.Mesh(new THREE.RingGeometry(1.4, 1.9, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(2.5), toneMapped: false, transparent: true, opacity: 0.8, depthWrite: false }));
-  ring.position.y = 0.08;
-  g.add(ring);
-  g.userData = { mat, ring };
-  return g;
-}
-
-// something to pick up: a glowing crate (or a droid part, a power cell)
-function pickupMesh(color) {
-  const g = new THREE.Group();
-  const box = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshStandardMaterial({ color: '#c8c2b6', roughness: 0.5, metalness: 0.4, emissive: new THREE.Color(color), emissiveIntensity: 0.6 }));
-  box.position.y = 0.6;
-  box.castShadow = true;
-  g.add(box);
-  const glow = new THREE.Mesh(new THREE.SphereGeometry(0.55, 14, 10), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(1.5), transparent: true, opacity: 0.25, depthWrite: false, blending: THREE.AdditiveBlending }));
-  glow.position.y = 0.6;
-  g.add(glow);
-  return g;
-}
-
-// a gate of a race: a ring standing across the way, lit when it's next
-function gateMesh() {
-  const m = new THREE.Mesh(new THREE.TorusGeometry(6, 0.35, 10, 40), new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false, transparent: true, opacity: 0.85 }));
-  m.position.y = 5;
-  return m;
-}
-
-// a training remote, hovering and darting (for blaster practice)
-function remote() {
-  const g = new THREE.Group();
-  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 10), new THREE.MeshStandardMaterial({ color: '#6a6e74', metalness: 0.7, roughness: 0.3 }));
-  g.add(ball);
-  for (let i = 0; i < 6; i++) {
-    const n = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.1, 6), new THREE.MeshBasicMaterial({ color: '#ff5a3a' }));
-    const a = (i / 6) * Math.PI * 2;
-    n.position.set(Math.cos(a) * 0.22, 0, Math.sin(a) * 0.22);
-    n.rotation.z = Math.PI / 2;
-    n.rotation.y = -a;
-    g.add(n);
-  }
-  return { model: g, tall: 0.45, update() {}, dispose() {}, hover: 1.6 };
-}
-
-// (the womp rats are the catalogue's model now: catalog/library.js)
-const SPECIAL = { remote };
-
-// A health bar over a hostile's head: a sprite with a small canvas, red
-// for what's left, blue over it for a shield, redrawn only when they change
-export function healthBar() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 10;
-  const c = canvas.getContext('2d');
-  const texture = new THREE.CanvasTexture(canvas);
-  sharpen(texture);
-  texture.minFilter = THREE.LinearFilter;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false }));
-  sprite.scale.set(0.9, 0.14, 1);
-  sprite.renderOrder = 5;
-  return {
-    sprite,
-    draw(hp, shield, guard = 0) {
-      c.clearRect(0, 0, 64, 10);
-      c.fillStyle = 'rgba(0,0,0,0.6)';
-      c.fillRect(0, 2, 64, 6);
-      c.fillStyle = '#ff4a3d';
-      c.fillRect(1, 3, Math.round(62 * Math.max(0, Math.min(1, hp))), 4);
-      if (shield > 0) {
-        c.fillStyle = '#7fd0ff';
-        c.fillRect(1, 0, Math.round(62 * Math.min(1, shield)), 2);
-      }
-      // (a duellist's guard: white over the top, gone when it's broken)
-      if (guard > 0) {
-        c.fillStyle = '#ffffff';
-        c.fillRect(1, 0, Math.round(62 * Math.min(1, guard)), 2);
-      }
-      texture.needsUpdate = true;
-    },
-    dispose() {
-      texture.dispose();
-      sprite.material.dispose();
-    },
-  };
-}
-
-// The marks over a hostile's head: '?' while it looks for you, '!' when it
-// has you again. One canvas each, shared by every head that shows it.
-export function markMaterials() {
-  const made = {};
-  return {
-    of(ch) {
-      if (made[ch]) return made[ch];
-      const canvas = document.createElement('canvas');
-      canvas.width = canvas.height = 64;
-      const c = canvas.getContext('2d');
-      c.font = 'bold 54px system-ui, sans-serif';
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.lineWidth = 7;
-      c.strokeStyle = 'rgba(0,0,0,0.75)';
-      c.strokeText(ch, 32, 35);
-      c.fillStyle = ch === '!' ? '#ff5a3d' : '#ffd36a';
-      c.fillText(ch, 32, 35);
-      const texture = new THREE.CanvasTexture(canvas);
-      sharpen(texture);
-      made[ch] = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false });
-      return made[ch];
-    },
-    dispose() {
-      for (const m of Object.values(made)) {
-        m.map.dispose();
-        m.dispose();
-      }
-    },
-  };
-}
-
-export function createActivity({ parent, world, warm = (o) => Promise.resolve(o), color = '#ffd36a', kit = null, onShow = null, blast = null }) {
+export function createActivity({ parent, world, warm = (o) => Promise.resolve(o), color = '#ffd36a', kit = null, onShow = null, blast = null, tier = 'mid' }) {
+  // the fallen as the game's ragdoll (lib/three/ragdolls2017.js, the
+  // Battlefront world's: the death clip's first moments, then the game's
+  // fifteen bodies on ragdoll.json's row, the bolt's impulse at the bone it
+  // struck, on this world's ground), as many at once as the tier takes
+  const ragdolls = createRagdolls({ book: import('../../../../data/bf2017/physics/ragdoll.json').then((m) => m.default ?? m), floorAt: (x, z) => groundAt(world, x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
   const group = new THREE.Group();
   group.name = 'activity';
   parent.add(group);
   // Rick's guns' kills: through a portal, frozen and shattered, shrunk and
   // popped (onShow(how, event) for the sounds of them)
-  const pfx = createPortalFx({ parent: group });
+  const pfx = looks().createPortalFx({ parent: group });
   const gfx = createGadgetFx({ parent: group });
   const marker = beam(color);
   marker.visible = false;
@@ -329,6 +88,7 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
     searches.clear();
     tokens.clear();
     for (const t of targets) {
+      ragdolls.drop(t);
       t.show?.dispose();
       t.bar?.dispose();
       t.blade?.dispose();
@@ -576,8 +336,14 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
   // while, then into the ground and gone
   const STOOD = { speed: 0, side: 0, turn: 0 };
   const dying = (t, dt, time, eye) => {
-    const d = (t.death ??= { dir: fallOf({ from: lastYou, at: t.b, yaw: t.b.yaw }), force: 0.3, clip: null, started: false, y: null });
+    const d = (t.death ??= { dir: fallOf({ from: lastYou, at: t.b, yaw: t.b.yaw }), force: 0.3, clip: null, started: false, y: null, rag: false });
     const fig = t.fig;
+    // (a body the ragdoll has taken lies as the game's bodies fall: nothing more here)
+    if (d.rag && ragdolls.handed(t)) {
+      if (!fig?.model?.visible) t.holder.visible = false;
+      t.blade?.out(dt, time, { forward: _fwd.set(Math.sin(t.b.yaw), 0, Math.cos(t.b.yaw)), up: UP, eye });
+      return;
+    }
     const hover = fig?.hover ?? t.spec.y ?? 0;
     if (!d.started) {
       d.started = true;
@@ -595,6 +361,8 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
       const cls = blastClass(t.spec.kind);
       if (cls && blast) blast(new THREE.Vector3(t.b.x, groundAt(world, t.b.x, t.b.z, t.spec.level ?? Infinity) + (fig?.tall ?? 2) * 0.5, t.b.z), cls);
       d.y = groundAt(world, t.b.x, t.b.z, t.spec.level ?? Infinity) + hover;
+      // (a figure on the game's skeleton falls as its ragdoll after the clip's first moments)
+      if (fig?.model) d.rag = ragdolls.fall(t, { model: fig.model, mixer: fig.mixer ?? fig.anim?.mixer ?? null }, { fall: { dir: [d.dir.x, 0, d.dir.z], at: null, part: t.part ?? null, weapon: null }, vel: t.knock ? [t.knock.vx, t.knock.vz] : null, eye });
     }
     const k = t.knock;
     if (k) {
@@ -703,6 +471,7 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
     // yours in it: lib/combat/saber2017.js); eye: the camera's position (their blades' light: saberLight.js)
     update(dt, you, time, { actors, door, swinging = null, mine = null, eye = null } = {}) {
       const events = [];
+      ragdolls.update(dt);
       const { quest, progress } = shown;
       const step = quest?.steps[progress?.step];
       // the beam, on where it wants you (or on the door in, for a step
@@ -755,7 +524,7 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
             if (t.mark) t.mark.visible = false;
             if (t.how === 'freeze') t.show = gfx.freeze({ root: t.holder, tall, up, push, on });
             else if (t.how === 'shrink') t.show = gfx.shrink({ root: t.holder, tall, up, on });
-            else t.show = pfx.swallow({ root: t.holder, tall, up, push, joints: meshyJoints(t.holder, 1, tall), on });
+            else t.show = pfx.swallow({ root: t.holder, tall, up, push, joints: looks().meshyJoints(t.holder, 1, tall), on });
             t.holder.userData.show = t.show; // (for the QA scripts: the show's handle)
             onShow?.(t.how, 'hit');
           }
@@ -975,6 +744,7 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
     dispose() {
       dead = true;
       clearStep();
+      ragdolls.dispose();
       pfx.dispose();
       gfx.dispose();
       marks.dispose();

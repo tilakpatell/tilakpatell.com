@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { budget } from '../src/lib/budgets.js';
-import { BUCKET_MB, BUCKET_SOURCE, BUCKET_URL, KNOWN_OVER, MODEL_FILE, baselineOf, limitsFor, overBy } from './galaxy-budget.mjs';
+import { BUCKET_MB, BUCKET_SOURCE, BUCKET_URL, KNOWN_OVER, MODEL_FILE, baselineOf, limitsFor, overBy, shotLevels } from './galaxy-budget.mjs';
 
 describe('what the galaxy check holds a world to', () => {
   it('holds a world to its baseline +10%, under its level’s row', () => {
@@ -77,5 +77,19 @@ describe('baselineOf: what a run is held to beside its row', () => {
     expect(baselineOf(list, 'endor', 'village')).toBe(null);
     const l = limitsFor({ id: 'endor', quality: 'high', row: budget('high'), base: baselineOf(list, 'endor', 'village') });
     expect(l).toMatchObject({ calls: 700, tris: 3e6, floor: 0 });
+  });
+});
+
+describe('how bright a shot came out (reported, not held)', () => {
+  it('gives the mean of each channel, 0 to 1, and the share of pixels clipped white', () => {
+    // (four RGBA pixels: black, mid grey, white, and a red at full)
+    const px = Uint8Array.from([0, 0, 0, 255, 128, 128, 128, 255, 255, 255, 255, 255, 255, 0, 0, 255]);
+    const l = shotLevels(px, 4);
+    expect(l.mean[0]).toBeCloseTo((0 + 128 + 255 + 255) / 4 / 255, 3);
+    expect(l.mean[1]).toBeCloseTo((0 + 128 + 255 + 0) / 4 / 255, 3);
+    expect(l.white).toBeCloseTo(0.25, 3);
+    // (RGB rows too, and nothing at all)
+    expect(shotLevels(Uint8Array.from([255, 255, 255, 0, 0, 0]), 3).white).toBeCloseTo(0.5, 3);
+    expect(shotLevels(new Uint8Array(0), 4)).toBeNull();
   });
 });

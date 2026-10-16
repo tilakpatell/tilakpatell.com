@@ -49,6 +49,8 @@
 // biasFor(texel, { bias, normalBias }) → { bias, normalBias }   (pure)
 // cadenceFor(n) → { near, far, split } | null; cascadeDue(i, frame, cadence, entered) → boolean   (pure)
 // inCascade(p, r, centre, { right, up, forward }, { half, near, far }) → boolean   (pure)
+// castCascades(light, entry, { tier, filter, farShadow, cloud, cadence, video }) → Promise<null | { csm, shadowDir, setShadowSun, follow(), track(object), untrack(object), update(camera), dispose }>
+//   (the same cascades on a light a world already has: the galaxy surface's)
 // createSun(entry, { tier, rays, filter, farShadow, cloud, cadence }) → Promise<{ light, rays, csm, shadowDir, cadence, set(params), setShadowSun([x, y] | null), track(object), untrack(object), update(camera), dispose }>
 
 import { readEntry, sunDir } from './entry.js';
@@ -250,8 +252,22 @@ async function sunCSM() {
       return false;
     }
 
-    // over the last BLEND of the last cascade, into the distant shadow
+    // over the last BLEND of the last cascade, into the distant shadow.
+    // Built once and handed to every material the sun falls on: three's setup
+    // makes a new reference to the cascades' splits each time it is asked, a
+    // uniform block of its own name in every material's program, so no two
+    // materials shared a program (Tatooine's 379 materials, 369 programs, each
+    // a link of its own; the Fn's body is still built for each material)
     setup(builder) {
+      if (this.made) {
+        if (this.camera === null) this._init(builder);
+        return this.made;
+      }
+      this.made = this.cascadeShadow(builder);
+      return this.made;
+    }
+
+    cascadeShadow(builder) {
       const cascades = super.setup(builder);
       const far = uniform(this.maxFar).onRenderUpdate(() => Math.min(this.maxFar, this.camera.far));
       const t = positionView.z.negate().div(far);
@@ -263,6 +279,67 @@ async function sunCSM() {
     }
   };
   return SunCSM;
+}
+
+// The cascades on a DirectionalLight a world already has (the galaxy
+// surface's sun, which its weather, rooms and day move): the same cascades,
+// filter, clouds, cadence and shadow sun as createSun's, its colour, strength
+// and direction left to the world. No cascades on low (null).
+export async function castCascades(light, entry, { tier = 'high', filter = null, farShadow = null, cloud = null, cadence = null, video = null } = {}) {
+  const { THREE } = await loadThree();
+  const record = readShadowRecord(entry);
+  const { n, far, map } = cascadesFor(tier, record.viewDistance, video);
+  if (!(n > 0)) return null;
+  const params = readEntry(entry);
+  const shadowDir = new THREE.Vector3();
+  let lockShadow = false;
+  // the record's shadow sun, or (null) cast along the light
+  const setShadowSun = (rot) => {
+    lockShadow = Boolean(rot);
+    if (lockShadow) shadowDir.set(...sunDir(rot[0], rot[1])).normalize();
+    else shadowDir.copy(light.position).sub(light.target.position).normalize();
+  };
+  setShadowSun(record.shadowSun);
+  light.castShadow = true;
+  const size = Math.min(map, params.shadow.mapSize);
+  light.shadow.mapSize.set(size, size);
+  light.shadow.bias = params.shadow.bias;
+  light.shadow.normalBias = params.shadow.normalBias;
+  Object.assign(light.shadow.camera, { near: 0.5, far: LIGHT_MARGIN * 2 + far * 2 });
+  const Csm = await sunCSM();
+  const pace = cadence === true ? cadenceFor(n) : cadence ? { ...cadenceFor(n), ...cadence } : null;
+  const csm = new Csm(light, { cascades: n, maxFar: Math.min(far, params.shadow.far ?? far), mode: 'practical', lightMargin: LIGHT_MARGIN }, { shadowDir, filter, farShadow, cloud, base: { bias: params.shadow.bias, normalBias: params.shadow.normalBias }, cadence: pace });
+  csm.fade = true;
+  light.shadow.shadowNode = csm;
+  let projection = '';
+  return {
+    csm,
+    shadowDir,
+    setShadowSun,
+    get locked() {
+      return lockShadow;
+    },
+    // (cast along the light: its direction, each frame, unless the record's shadow sun holds it)
+    follow() {
+      if (!lockShadow) shadowDir.copy(light.position).sub(light.target.position).normalize();
+    },
+    // a body whose entering a cached cascade redraws it at once (the cadence)
+    track: (object) => csm.tracked.add(object),
+    untrack: (object) => csm.tracked.delete(object),
+    // (the cascades follow the view's pose each frame by themselves; a new
+    // projection, a resize or a zoom, refits their splits and sizes)
+    update(camera) {
+      if (csm.camera && camera?.isCamera) {
+        const key = `${camera.fov},${camera.aspect},${camera.near},${camera.far},${camera.zoom}`;
+        if (projection && key !== projection) csm.updateFrustums();
+        projection = key;
+      }
+    },
+    dispose() {
+      csm.dispose();
+      if (light.shadow.shadowNode === csm) light.shadow.shadowNode = null;
+    },
+  };
 }
 
 export async function createSun(entry, { tier = 'high', rays = false, filter = null, farShadow = null, cloud = null, cadence = null, video = null } = {}) {

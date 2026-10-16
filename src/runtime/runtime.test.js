@@ -645,6 +645,37 @@ describe('createRuntime', () => {
     expect(makeBackend.mock.calls[3][0]).toBe('webgl');
   });
 
+  // (the owner's ruling on lane T2: no Star Wars world draws on the classic
+  // renderer, whatever its level; a module that says it brings a classic
+  // path is not taken at its word)
+  it('a nodes module is made on the node renderer at every quality level, and a change of level never remakes it on another', async () => {
+    const quality = { ...fakeQuality(), detail: 'high', retune: vi.fn((l) => (quality.detail = l)) };
+    const { rt, makeBackend } = make({ gpu: false, quality });
+    const surface = { id: 's', shading: 'nodes', classic: true, create: () => fakeWorld({ onQuality: vi.fn() }) }; // (a world that retunes in place)
+    await rt.mount(surface, {}, fakeHost());
+    for (const level of ['low', 'mid', 'high', 'ultra', 'low']) expect(rt.requality(level)).not.toBe('reload');
+    expect(makeBackend.mock.calls.map((c) => c[0])).toEqual(['nodes-webgl']);
+    for (const level of ['low', 'mid']) {
+      quality.detail = level;
+      await rt.mount({ ...surface, id: `s-${level}` }, {}, fakeHost());
+    }
+    expect(makeBackend.mock.calls.map((c) => c[0])).toEqual(['nodes-webgl']);
+  });
+
+  it('WebGPU at low and mid where the browser has it, and the node renderer over WebGL 2 where it will not start: never the classic renderer', async () => {
+    for (const detail of ['low', 'mid']) {
+      const quality = { ...fakeQuality(), detail };
+      const ok = make({ gpu: true, quality });
+      await ok.rt.mount({ id: 's', shading: 'nodes', classic: true, create: () => fakeWorld() }, {}, fakeHost());
+      expect(ok.makeBackend.mock.calls.map((c) => c[0])).toEqual(['webgpu']);
+      const makeBackend = vi.fn((kind) => (kind === 'webgpu' ? Promise.reject(new Error('no device')) : fakeBackend()));
+      const { rt } = make({ gpu: true, quality, makeBackend });
+      await rt.mount({ id: 's', shading: 'nodes', classic: true, create: () => fakeWorld() }, {}, fakeHost());
+      expect(makeBackend.mock.calls.map((c) => c[0])).toEqual(['webgpu', 'nodes-webgl']);
+      expect(rt.status).toBe('ready');
+    }
+  });
+
   it('settles on an even 30 when the frames stay under 50 fps with nothing left to lower, and starts at every beat', async () => {
     const loop = fakeLoop();
     loop.ctl.setCadence = vi.fn();

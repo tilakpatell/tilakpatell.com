@@ -222,6 +222,35 @@ describe('createGameMaterial', () => {
     expect(features(make({ ...r, params: { ...r.params, parallax: { on: false, scale: 0.02 } } }))).toEqual([]);
   });
 
+  // (Naboo's trim set, SS_Naboo_TrimSet_01, on a mesh with tangents as the
+  // level's GLBs have them: the parallax's frame read the material's own
+  // normal, the normal map at the parallax's uv, so the uv asked for itself
+  // and the program failed on WebGL 2, "Recursion detected")
+  it('parallax builds on a mesh with tangents: its uv never asks for itself', () => {
+    const { THREE } = three;
+    const r = { family: 'instance', maps: { detail: 'D', height: 'H' }, params: { detail: { tiling: [1, 1], normal: 1, smoothness: 0, strength: 1 }, uvSet: 0, aoDirt: [0.27, 0.22, 0.19], parallax: { on: true, scale: 0.02 }, alphaTest: false, doubleSided: false } };
+    const m = make(r, {}, { tier: 'high' });
+    expect(m.userData.game.parallaxSteps).toBe(8);
+    const geometry = new THREE.BoxGeometry();
+    geometry.computeTangents();
+    const canvas = { style: {}, addEventListener() {}, removeEventListener() {}, getContext: () => null, width: 1, height: 1 };
+    const renderer = new THREE.WebGPURenderer({ canvas, forceWebGL: true });
+    const b = new THREE.GLSLNodeBuilder(new THREE.Mesh(geometry, m), renderer);
+    b.scene = new THREE.Scene();
+    b.camera = new THREE.PerspectiveCamera();
+    b.material = m;
+    b.context.material = m;
+    const warn = console.warn;
+    console.warn = () => {};
+    try {
+      b.build();
+    } finally {
+      console.warn = warn;
+    }
+    expect(b.fragmentShader).toMatch(/for \(/);
+    expect(b.fragmentShader).not.toMatch(/Recursion detected/);
+  });
+
   it('runs the overlays in order with the hook context, and lists them', () => {
     const seen = [];
     function snowOverlay(ctx) {
