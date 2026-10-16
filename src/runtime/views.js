@@ -108,6 +108,9 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
   const realSize = renderer.getDrawingBufferSize;
   // (the renderer's own: gfx's ratio fitted to what the chip holds at this size)
   const ratioOf = () => renderer.getPixelRatio?.() || gfx.ratio || 1;
+  // (the sharpest a view may draw at: the runtime's, whatever the renderer's
+  // is set to for the lead)
+  const ceiling = () => gfx.ratio || ratioOf();
   const full = () => renderer.setViewport?.(0, 0, canvas.width / ratioOf(), canvas.height / ratioOf());
 
   // the canvas parked, out of sight and out of the layout, in the world's host
@@ -242,7 +245,7 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
     return [Math.floor(v.size.w * r), Math.floor(v.size.h * r)];
   };
   const wanted = () => {
-    const R = gfx.ratio || ratioOf();
+    const R = ceiling();
     let W = lead ? 0 : canvas.width;
     let H = lead ? 0 : canvas.height;
     for (const v of views.values()) {
@@ -264,9 +267,20 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
     if (!renderer.setDrawingBufferSize) return;
     const side = most();
     const [W, H] = wanted().map((n) => Math.min(n, side));
-    if (canvas.width === W && canvas.height === H) return;
-    const R = ratioOf();
-    renderer.setDrawingBufferSize((W + 0.5) / R, (H + 0.5) / R, R);
+    // (the buffer the lead's own: the renderer sized as its own was, its box
+    // at its ratio, so what three sizes from the renderer's size and ratio,
+    // a point's size, is what it was)
+    const own = lead && W === lead.buffer[0] && H === lead.buffer[1] ? lead : null;
+    const size = renderer.getSize?.({ set(x, y) { this.x = x; this.y = y; return this; } });
+    if (own) {
+      const r = Math.min(own.want, ceiling());
+      if (canvas.width === W && canvas.height === H && renderer.getPixelRatio?.() === r && size?.x === own.size.w && size?.y === own.size.h) return;
+      renderer.setDrawingBufferSize(own.size.w, own.size.h, r);
+    } else {
+      if (canvas.width === W && canvas.height === H) return;
+      const R = ceiling();
+      renderer.setDrawingBufferSize((W + 0.5) / R, (H + 0.5) / R, R);
+    }
     for (const v of views.values()) v.fit();
     if (lead) {
       place(lead);
@@ -334,7 +348,7 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
       // (its sharpest, unless its pixels at that wouldn't fit in the buffer:
       // then as sharp as fits, until the buffer grows for it)
       const fit = () => {
-        const r = Math.min(v.want, ratioOf());
+        const r = Math.min(v.want, ceiling());
         const fits = Math.floor(v.size.w * r) <= canvas.width && Math.floor(v.size.h * r) <= canvas.height;
         v.ratio = Math.max(0.01, fits ? r : Math.min(r, canvas.width / v.size.w, canvas.height / v.size.h));
       };
