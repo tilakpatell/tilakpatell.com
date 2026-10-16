@@ -116,7 +116,7 @@ describe('createViews', () => {
   it('parks the canvas, unseen, in the world’s host until a view leads', () => {
     const { host, canvas } = setup();
     expect(canvas.parentNode).toBe(host);
-    expect(canvas.style.visibility).toBe('hidden');
+    expect(canvas.style.display).toBe('none');
   });
 
   it('draws a view that isn’t leading in the corner and copies it onto its own canvas', () => {
@@ -379,6 +379,31 @@ describe('createViews', () => {
     expect(last).toHaveBeenCalledOnce();
     expect(a.el.drawn.at(-1)[0]).toBe('copy');
     expect(canvas.parentNode).toBe(host);
+  });
+
+  it('leaves a view off screen undrawn after its first frame, the buffer kept to the lead’s own', () => {
+    const { views, box } = setup();
+    const a = box();
+    const b = box();
+    const va = views.add(a.el);
+    const vb = views.add(b.el);
+    va.resize(400, 200);
+    vb.resize(400, 200);
+    a.show(80000);
+    b.show(0);
+    const first = vi.fn();
+    views.frame();
+    vb.draw(first);
+    expect(first).toHaveBeenCalledOnce();
+    const later = vi.fn();
+    views.frame();
+    vb.draw(later);
+    expect(later).not.toHaveBeenCalled();
+    // (on screen again: drawn)
+    b.show(100);
+    views.frame();
+    vb.draw(later);
+    expect(later).toHaveBeenCalledOnce();
   });
 
   it('puts the runtime’s state back and the canvas in its host when let go', () => {

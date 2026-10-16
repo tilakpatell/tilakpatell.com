@@ -110,10 +110,12 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
   const ratioOf = () => renderer.getPixelRatio?.() || gfx.ratio || 1;
   const full = () => renderer.setViewport?.(0, 0, canvas.width / ratioOf(), canvas.height / ratioOf());
 
-  // the canvas parked, unseen, in the world's host
+  // the canvas parked, out of sight and out of the layout, in the world's host
   const park = () => {
     if (parking && canvas.parentNode !== parking) parking.prepend(canvas);
-    if (canvas.style) canvas.style.visibility = 'hidden';
+    // (out of the page's layout, not just unseen: a hidden canvas is still a
+    // layer of its own, and the page was put together a pixel otherwise)
+    if (canvas.style) canvas.style.display = 'none';
   };
 
   // (the buffer drawn at the view's ratio: its bottom-left corner is the
@@ -128,7 +130,7 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
     // (out of the flow before anything of the view's place is read: in it,
     // the canvas pushed the view down by its own height)
     st.position = 'absolute';
-    st.visibility = '';
+    st.display = '';
     st.pointerEvents = 'none';
     // the buffer is the view's own: the canvas is laid out as its own canvas
     // was, by the page's CSS for it (its classes), however fractional its box
@@ -368,6 +370,14 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
         },
         draw(fn) {
           if (disposed || views.get(el) !== v) return;
+          // (none of it on screen, and drawn before: nothing to see, and its
+          // drawing grew the buffer past the lead's own. Its first frame is
+          // drawn, so what's near the screen has its shaders ready when it
+          // comes in, as a picture made early to be ready was)
+          if (!(v.pixels > 0) && v.last && lead !== v) {
+            v.last = fn;
+            return;
+          }
           fit();
           v.drew = true;
           v.last = fn;

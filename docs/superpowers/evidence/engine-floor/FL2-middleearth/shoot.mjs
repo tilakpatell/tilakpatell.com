@@ -163,6 +163,7 @@ async function shoot() {
       // hasn't, and a scene built after it took its embers' places from
       // further down the one stream)
       const own = { s: 0x7a11 };
+      const ids = { s: 0x1d5 };
       const runtime = /\/assets\/(runtime|browser|views|module)-[\w-]+\.js/;
       Error.stackTraceLimit = 64;
       // (--trace-random: each call's chunks, for finding where two builds part)
@@ -172,7 +173,14 @@ async function shoot() {
           const chunks = (new Error().stack.match(/\/assets\/[\w.-]+?(?=-[\w-]{8}\.js)/g) ?? []).map((c) => c.slice(8));
           window.__randoms.push(`${Math.round(performance.now())} ${[...new Set(chunks)].slice(0, 4).join('<')}`);
         }
-        return split && runtime.test(new Error().stack) ? next(own) : next(main);
+        if (split && runtime.test(new Error().stack)) return next(own);
+        // (three's own draws, its ids for what's made, generateUUID, from a
+        // stream of their own: each stage made a renderer of its own before,
+        // 36 draws each, and the after build makes one, so every scene made
+        // after the first took its rain and its embers from 36 further down)
+        const caller = new Error().stack.split('\n')[2] ?? '';
+        if (/\/assets\/three\.[\w]+-[\w-]+\.js/.test(caller)) return next(ids);
+        return next(main);
       };
       window.__traceRandom = localStorage.getItem('tp-trace-random') === '1';
       if (window.__traceRandom) {
