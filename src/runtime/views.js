@@ -38,7 +38,7 @@
 //
 // createViews(gfx, { observe }) → { add(el, { ratio, state, opaque }) → view,
 //   enter(el), of(el), frame(), flush(), resize(), lead, dispose() }
-// view: { el, resize(w, h), setRatio(r), draw(fn), size, ratio, buffer,
+// view: { el, resize(w, h), setRatio(r), draw(fn), drawNow(fn), size, ratio, buffer,
 //   leading, dispose() } (`draw(fn)`: fn draws the view's frame, the
 //   renderer set for it; `size`: CSS pixels; `buffer`: its pixels in the
 //   corner)
@@ -421,6 +421,18 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
           }
           within(v, fn);
           copy(v);
+        },
+        // (outside a frame: a first frame drawn as it's prepared, behind the
+        // loading screen. Onto its own canvas, and the lead drawn again in
+        // the same task, so the canvas the browser shows never has it)
+        drawNow(fn) {
+          if (disposed || views.get(el) !== v) return;
+          fit();
+          v.last = fn;
+          within(v, fn);
+          if (lead === v) return;
+          copy(v);
+          if (lead?.last) within(lead, lead.last);
         },
         dispose() {
           stopObserving();

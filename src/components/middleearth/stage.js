@@ -18,9 +18,9 @@
 //   the world, which calls the stage's onLost, as the context's event did.
 // - The frame guard is the runtime renderer's; the composer's buffers are
 //   named to it as frames (frameGuard's frames()).
-// - prepare()'s first draw goes into the composer's buffer, not to the
-//   canvas: drawn outside a frame, it would show in whichever box has the
-//   canvas until the next frame.
+// - prepare()'s first draw is the view's drawNow: onto the stage's own
+//   canvas, and the lead drawn again at once, so the shared canvas never
+//   shows it outside a frame.
 
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -206,17 +206,12 @@ export function createStage(canvas, { soft = false, bloom = BLOOM, exposure = LO
     });
   };
 
-  // the scene drawn once into the composer's buffer (or a buffer its size,
-  // soft), for prepareScene's first draw: everything sent, nothing shown
-  let warmTarget = null;
+  // prepareScene's first draw: the frame, onto the stage's own canvas, as
+  // lib/stage3d's drew it there (a town loaded but not yet going showed it)
   const warm = () => {
-    world.views.enter(canvas);
-    const into = soft ? (warmTarget ??= new THREE.WebGLRenderTarget(...view.buffer)) : composer.readBuffer;
-    const was = renderer.getRenderTarget();
-    renderer.setRenderTarget(into);
-    renderer.render(scene, camera);
-    renderer.setRenderTarget(was);
-    drawn = true; // (as lib/stage3d's prepare drew its first frame: the next isn't warmed again)
+    sizing.fit();
+    view.drawNow(frame);
+    drawn = true;
   };
   const prepare = async (onProgress, { alive = () => true } = {}) => {
     const on = () => alive() && !lost && !disposed;
@@ -229,8 +224,6 @@ export function createStage(canvas, { soft = false, bloom = BLOOM, exposure = LO
     if (!on()) return;
     world.views.enter(canvas);
     await prepareScene({ renderer, roots: [scene], scene, camera, target: soft ? null : composer.readBuffer, render: warm, onProgress, alive: on });
-    warmTarget?.dispose();
-    warmTarget = null;
   };
 
   return {

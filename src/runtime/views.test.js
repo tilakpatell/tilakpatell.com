@@ -444,6 +444,29 @@ describe('createViews', () => {
     expect(calls).toEqual([]);
   });
 
+  it('draws a frame outside a frame onto the view’s own canvas, the lead drawn again at once', () => {
+    const { views, box } = setup();
+    const a = box();
+    const b = box();
+    const va = views.add(a.el);
+    const vb = views.add(b.el);
+    va.resize(400, 200);
+    vb.resize(300, 100);
+    a.show(80000);
+    const lead = vi.fn();
+    views.frame();
+    va.draw(lead);
+    views.flush();
+    views.frame();
+    expect(views.lead).toBe(va);
+    lead.mockClear();
+    const warm = vi.fn();
+    vb.drawNow(warm);
+    expect(warm).toHaveBeenCalledOnce();
+    expect(b.el.drawn.at(-1)[0]).toBe('copy');
+    expect(lead).toHaveBeenCalledOnce();
+  });
+
   it('puts the runtime’s state back and the canvas in its host when let go', () => {
     const { views, box, renderer, canvas, host } = setup();
     const before = readState(renderer);
