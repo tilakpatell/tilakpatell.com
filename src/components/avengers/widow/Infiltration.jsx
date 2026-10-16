@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import HQFrame from '../hq/HQFrame';
-import { register, useStage } from '../hq/useStage';
+import { register, useStage, useStageFrame } from '../hq/useStage';
+import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
 import { useAchievements } from '../../Achievements';
 import { use3D } from '../../../lib/gpu';
-import { local, prefersReducedMotion, useFrameLoop } from '../../../lib/hooks';
+import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { BITE, DIRS, LEVEL_COUNT, LEVELS, act, biteTargets, cloneState, guardAt, laserOn, newLevel, parseLevel, pathTo, solveLevel } from './rules';
 import './widow.css';
 import '../../../styles/lazy/avengers.css';
 
-const load = () => import('./scene');
 const sfx = () => import('../../../lib/sfx');
 const play = (name) => sfx().then((s) => s[name]?.());
 const buzz = (ms) => {
@@ -42,7 +42,7 @@ const readSave = () => Math.max(0, Math.min(LEVEL_COUNT, Number(local.get(SAVE, 
 
 export default function Infiltration({ fallback }) {
   const three = use3D();
-  const stage = useStage(load, { enabled: three.on, id: 'widow', forced: three.mode === 'on' });
+  const stage = useStage(gameModule, { enabled: three.on, id: 'widow', forced: three.mode === 'on' });
   const { unlock } = useAchievements();
   const [cleared, setCleared] = useState(readSave);
   const [index, setIndex] = useState(() => Math.min(readSave(), LEVEL_COUNT - 1));
@@ -288,7 +288,7 @@ export default function Infiltration({ fallback }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [doAction, stage.view, ui.phase, calm],
   );
-  useFrameLoop(tick, stage.status === 'on' && stage.visible);
+  useStageFrame(stage, tick, stage.status === 'on' && stage.visible);
 
   // nothing stays held or aimed when the window loses focus
   useEffect(() => {

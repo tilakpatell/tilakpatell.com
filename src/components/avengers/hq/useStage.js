@@ -1,11 +1,14 @@
-// A game's 3D view, made only when it's needed. The page has seven games, the
-// map of the compound and Titan, and a phone (or a laptop) can't hold nine
-// WebGL contexts, or build two while you scroll: so there is one live view on
-// the page at a time (useLive, below), the one most on screen once the scrolling
-// settles. It draws only while it's on screen; the others wait with their
-// menus over a dark screen, their code fetched ahead as they come near.
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { settle } from '../../../lib/settle';
+// A game's 3D view, made only when it's needed. A page has several games
+// (the compound, each building's game, Titan; Invincible's world, its game
+// and its viewer) and the runtime one renderer, which draws one world at a
+// time: so there is one live view on the page at a time (useLive, below),
+// the one most on screen once the scrolling settles, mounted on the runtime
+// (useStage, through runtime/useWorld). It draws only while it's on screen;
+// the others wait with their menus over a dark screen, their code fetched
+// ahead as they come near.
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useWorld } from '../../../runtime/useWorld';
+import { runtime } from '../../../runtime/index';
 
 // ── one live 3D view on the page ──
 const SETTLE = 240; // ms of quiet scrolling before a view is built
@@ -31,18 +34,16 @@ function pick() {
   current = best;
   stages.get(best).set(true);
 }
+// (with no view live, the first is picked at once: the settling is for
+// not building one view after another as the page scrolls past them, and
+// a page opening on its world waited it out for nothing)
 const schedule = () => {
   clearTimeout(timer);
-  timer = setTimeout(pick, SETTLE);
+  timer = setTimeout(pick, current ? SETTLE : 0);
 };
 if (import.meta.env.DEV && typeof window !== 'undefined') {
   window.__LIVE__ = { stages, get current() { return current; } };
 }
-
-// A view's shaders, linked in the background before its first frame
-// (hq/engine's precompile), so drawing it doesn't stall the page; four seconds
-// at most, and never a failure.
-export const warmed = (v) => settle(v?.engine?.precompile?.(), 4000);
 
 // `active`: this one is the page's live 3D view; `visible`: it's on screen
 export function useLive(ref, { id, enabled = true, warm }) {
@@ -53,14 +54,24 @@ export function useLive(ref, { id, enabled = true, warm }) {
   useEffect(() => {
     const el = ref.current;
     if (!enabled || !el) return undefined;
-    if (typeof IntersectionObserver === 'undefined') {
-      setActive(true);
-      setVisible(true);
-      return undefined;
-    }
     const key = `${id}:${Math.random().toString(36).slice(2)}`;
     const st = { ratio: 0, set: setActive };
     stages.set(key, st);
+    // (no observer: every one as good as on screen, and still one at a time,
+    // the first asked for)
+    if (typeof IntersectionObserver === 'undefined') {
+      st.ratio = 1;
+      setVisible(true);
+      schedule();
+      return () => {
+        stages.delete(key);
+        if (current === key) {
+          current = null;
+          schedule();
+        }
+        setActive(false);
+      };
+    }
     const seen = new IntersectionObserver(
       ([e]) => {
         st.ratio = e.isIntersecting ? e.intersectionRatio : 0;
@@ -95,83 +106,88 @@ export function useLive(ref, { id, enabled = true, warm }) {
   return { active: enabled && active, visible };
 }
 
-export function useStage(load, { enabled, id, forced = false }) {
+// A game's world module (./module.js) on the runtime, while it's the page's
+// live view: { wrap (useLive's box), host (the screen the runtime's canvas
+// goes in), view (the scene, while it's the runtime's world), status (idle |
+// loading | on | failed | slow | lost), near, visible, retry, frame, rt,
+// progress (its prepare's, for a loading screen) }.
+// A view that failed, or was too slow (past the governor's floor, unless
+// 3D was switched on outright), stays down until a retry; a lost one is the
+// runtime's to bring back once (useWorld), and down after that.
+export function useStage(module, { enabled, id, forced = false, options = null, props: more = null }) {
   const wrap = useRef(null);
-  const canvas = useRef(null);
-  const view = useRef(null);
-  const [status, setStatus] = useState('idle'); // idle | loading | on | failed | slow | lost
+  const frame = useRef(null); // the page's frame, run by the world's draw (useStageFrame)
+  const [down, setDown] = useState(null); // failed | slow: down until a retry
   const [attempt, setAttempt] = useState(0);
-  const failed = useRef(false); // a view that failed stays failed until a retry
-  const loadRef = useRef(load);
-  loadRef.current = load;
-  // a visitor who switched 3D on keeps it on, however slow: quality drops instead
   const forcedRef = useRef(forced);
   forcedRef.current = forced;
 
   // the page's live 3D view (make it), and on screen (draw it)
-  const { active: near, visible } = useLive(wrap, { id, enabled, warm: load });
-
+  const { active: near, visible } = useLive(wrap, { id, enabled: enabled && !down, warm: module.warm });
+  // (what the world is made with: the page's frame, the scene's options, and
+  // what a module's `first` reads; read as it's made)
+  const moreRef = useRef(more);
+  moreRef.current = more;
+  const props = useMemo(() => ({ ...(moreRef.current ?? {}), frame, options }), [options]);
+  const onEvent = useCallback((e) => {
+    if (e.type === 'slow' && !forcedRef.current) setDown('slow');
+  }, []);
+  const mounting = Boolean(enabled && near && !down);
+  const hostOf = useRef(null); // useWorld's ref to the box
+  // (the box measured before the world is mounted: its start's sharpness
+  // is the tier's pixels over it, ./module.js; this runs before useWorld's)
   useEffect(() => {
-    if (!enabled || !near || failed.current) {
-      setStatus((s) => (s === 'on' || s === 'loading' ? 'idle' : s));
-      return undefined;
-    }
-    let dead = false;
-    const drop = (why) => {
-      view.current?.dispose();
-      view.current = null;
-      failed.current = true;
-      if (!dead) setStatus(why);
-    };
-    setStatus('loading');
-    loadRef
-      .current()
-      .then(async (mod) => {
-        if (dead || !canvas.current) return;
-        try {
-          const v = await mod.create(canvas.current, { onLost: () => drop('lost'), onSlow: () => !forcedRef.current && drop('slow') });
-          if (dead) {
-            v.dispose();
-            return;
-          }
-          await warmed(v);
-          if (dead || failed.current) {
-            v.dispose();
-            return;
-          }
-          view.current = v;
-          const r = wrap.current?.querySelector('.hq-screen')?.getBoundingClientRect();
-          if (r) v.resize(r.width, r.height);
-          setStatus('on');
-        } catch (err) {
-          if (import.meta.env.DEV) console.error(`[${id}] 3D failed`, err);
-          drop('failed');
-        }
-      })
-      .catch(() => drop('failed'));
-    return () => {
-      dead = true;
-      view.current?.dispose();
-      view.current = null;
-    };
-  }, [enabled, near, attempt, id]);
-
-  // keep the view the size of its screen
+    const r = hostOf.current?.current?.getBoundingClientRect?.();
+    if (mounting && r) module.measure?.(r.width, r.height);
+  }, [mounting, module]);
+  const world = useWorld(module, { props, enabled: mounting, onEvent, attempt });
+  hostOf.current = world.host;
+  const rt = world.rt;
+  const mine = rt?.current?.module === module;
   useEffect(() => {
-    const el = wrap.current?.querySelector('.hq-screen');
-    if (!el || typeof ResizeObserver === 'undefined') return undefined;
-    const ro = new ResizeObserver(([e]) => view.current?.resize(e.contentRect.width, e.contentRect.height));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [status]);
-
+    if (world.status === 'failed' && rt?.failure?.world === module.id) setDown('failed');
+  }, [world.status, rt, module]);
+  let status = 'idle';
+  if (down) status = down;
+  else if (enabled && near) {
+    if (world.status === 'on' && mine) status = 'on';
+    else if (world.status === 'lost' && rt?.lostModule === module.id && !rt.recoverable) status = 'lost';
+    else status = 'loading';
+  }
+  // the scene, while it's the runtime's world
+  const view = useMemo(
+    () => ({
+      get current() {
+        const c = typeof window !== 'undefined' ? runtime().current : null;
+        return c?.module === module ? (c.world.view ?? null) : null;
+      },
+    }),
+    [module],
+  );
   const retry = useCallback(() => {
-    failed.current = false;
-    setStatus('idle');
+    setDown(null);
     setAttempt((n) => n + 1);
   }, []);
+  return { wrap, host: world.host, view, status, near, visible, retry, frame, rt, progress: world.progress };
+}
 
-  return { wrap, canvas, view, status, near, visible, retry };
+// The page's frame, run each frame by the world while `active` (the
+// runtime's loop draws only while the world wants frames: none while the
+// page's isn't drawing). `once(fn)`: one frame now, for a page that draws
+// only when something changes (reduced motion).
+export function useStageFrame(stage, tick, active) {
+  const rt = stage.rt;
+  // (set as each render is committed, never from a render React may drop)
+  useLayoutEffect(() => {
+    stage.frame.current = active ? tick : null;
+  });
+  useEffect(() => {
+    if (active) rt?.invalidate();
+  }, [active, rt]);
+}
+export function drawOnce(stage, fn) {
+  stage.frame.once = fn;
+  stage.rt?.invalidate();
 }
 
 // For the browser checks: each game, its state and its view, in development.

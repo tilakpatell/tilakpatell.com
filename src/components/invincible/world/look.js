@@ -1,6 +1,6 @@
 // Invincible’s city (components/worlds/looks.js): scanned, the HQ engine’s
 // physically based materials and glTF figures under the house look
-// (Neutral through houseOn, ../../avengers/hq/engine.js).
+// (Neutral through houseOn, ../../avengers/hq/stage.js).
 //
 // The bloom keeps the numbers the city was lit by, a threshold of 0.92, so
 // the windows at night, the beacons and the villains’ blasts glow as they

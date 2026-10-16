@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useStage } from '../../avengers/hq/useStage';
+import { register, useStage, useStageFrame } from '../../avengers/shared/runtime';
+import gameModule from './module';
 import { use3D } from '../../../lib/gpu';
-import { useFrameLoop } from '../../../lib/hooks';
 import { capturePointer } from '../../../lib/pointer';
-
-const load = () => import('./scene');
 
 // The GDA's files on the three of them, Cecil's way: who, what they can do,
 // and what to do about it.
@@ -54,7 +52,7 @@ const POSE_NAMES = [
 // One of the three at a time, on a turntable: drag to turn him, pick a pose.
 export default function Viewer() {
   const three = use3D();
-  const stage = useStage(load, { enabled: three.on, id: 'gda-viewer' });
+  const stage = useStage(gameModule, { enabled: three.on, id: 'gda-viewer' });
   const [who, setWho] = useState('mark');
   const [pose, setPose] = useState('stand');
   const [ready, setReady] = useState(false);
@@ -76,7 +74,17 @@ export default function Viewer() {
   }, [pose, stage.status, stage.view]);
 
   const tick = useCallback((dtMs) => stage.view.current?.render(Math.min(0.05, dtMs / 1000)), [stage.view]);
-  useFrameLoop(tick, stage.status === 'on' && stage.visible);
+  useStageFrame(stage, tick, stage.status === 'on' && stage.visible);
+  // (for the browser checks, in development: its view, as each HQ game's)
+  useEffect(
+    () =>
+      register('viewer', {
+        get view() {
+          return stage.view.current;
+        },
+      }),
+    [stage.view],
+  );
 
   const onPointerDown = (e) => {
     capturePointer(e);
@@ -111,7 +119,7 @@ export default function Viewer() {
             onPointerCancel={() => (drag.current = null)}
             onKeyDown={onKeyDown}
           >
-            <canvas ref={stage.canvas} className="hq-canvas" data-on={(stage.status === 'on' && ready) || undefined} aria-hidden="true" />
+            <div ref={stage.host} className="hq-canvas" data-on={(stage.status === 'on' && ready) || undefined} aria-hidden="true" />
             {(stage.status !== 'on' || !ready) && (
               <div className="hq-loading" aria-hidden="true">
                 <span className="hq-loading-ring" />

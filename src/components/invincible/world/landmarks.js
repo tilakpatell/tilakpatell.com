@@ -11,7 +11,7 @@
 
 import * as THREE from 'three';
 import { PartBuilder, canvasTexture } from '../../avengers/hq/kit/shapes';
-import { hot } from '../../avengers/hq/engine';
+import { hot } from '../../avengers/hq/stage';
 import { SKIN, towerField, towerMaterial } from './facade';
 
 const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);

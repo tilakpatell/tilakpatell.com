@@ -5,7 +5,7 @@
 // dust, sparks, flashes and fire; the HUD is drawn by the page on top.
 
 import * as THREE from 'three';
-import { createEngine, hot } from '../hq/engine';
+import { createStage, hot } from '../hq/stage';
 import { loadSet, pbr, preload } from '../hq/assets';
 import { buildCompound, fbm, scatter, trees } from '../hq/kit/world';
 import { canvasTexture } from '../hq/kit/shapes';
@@ -85,10 +85,10 @@ const hangarApron = (x, z) => box(x, z, 690, 840, -44, 26, 12);
 // Is a spot clear of the airfield, the runway, the hangar and the way itself?
 const open = (x, z, way = 6) => airfield(x, z) < 0.05 && hangarApron(x, z) < 0.05 && Math.abs(z) > way;
 
-export async function create(canvas, { onLost, onSlow, tier } = {}) {
+export async function create(rt, { onSlow, tier } = {}) {
   const calm = prefersReducedMotion();
-  const engine = createEngine(canvas, { exposure: 1.0, fov: FOV, near: 0.5, far: 2600, bloom: { strength: 0.55, radius: 0.5, threshold: 0.92 }, onLost, onSlow, tier });
-  const { scene, camera, sun, hemi, renderer } = engine;
+  const engine = createStage(rt, { exposure: 1.0, fov: FOV, near: 0.5, far: 2600, bloom: { strength: 0.55, radius: 0.5, threshold: 0.92 }, onSlow, tier });
+  const { scene, camera, sun, hemi } = engine;
   const small = engine.small;
 
   const sets = ['grass', 'rock', 'concrete-floor', 'concrete-worn', 'asphalt', 'corrugated', 'sci-panels', 'brushed-steel', 'painted-metal', 'steel-plate'];
@@ -107,7 +107,7 @@ export async function create(canvas, { onLost, onSlow, tier } = {}) {
     skyBg = S.bgIntensity;
     sunBase = sun.intensity;
     hemiBase = hemi.intensity;
-    renderer.toneMappingExposure = S.exposure;
+    engine.exposure = S.exposure;
     keyLight.intensity = S.key ?? 0.8;
     keyLight.color.set(name === 'storm' ? 0x9fb4d8 : 0xffe6cc);
     storm = name === 'storm';
@@ -510,7 +510,7 @@ export async function create(canvas, { onLost, onSlow, tier } = {}) {
 
   const vfx = createVfx(scene, { calm, ground: 0.05, maxSparks: small ? 500 : 900, maxPuffs: small ? 160 : 260 });
   const feel = createFeel({ calm, baseFov: FOV, offset: 0.9 });
-  // ?debug: the feel's numbers on the one panel (hq/engine's tune)
+  // ?debug: the feel's numbers on the one panel (hq/stage's tune)
   engine.tune(feelGroups(feel), 'tesseract');
 
   // ── state for drawing ──

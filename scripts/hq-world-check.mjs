@@ -11,7 +11,7 @@
 // frame's alpha back (under 1, the page shows through the canvas);
 // SWEEP=x,z (PITCH=a,b) turns the camera round him, with NAN=1 scanning each
 // view's HDR frame for NaN, infinite and blinding pixels instead; SPIN=n
-// turns it over time as the frame-rate watchdog steps the tier down;
+// turns it over time as the runtime's governor steps the tier down;
 // BEAM=1 (ONLY=i, PROBE=x,y;…) puts the camera beside each door's beam;
 // UNITS=1 lists each shader's texture units.
 import { chromium } from 'playwright-core';
@@ -43,7 +43,7 @@ await page.waitForFunction(() => window.__HQWORLD__?.api && document.querySelect
 console.log('compound up in', ((Date.now() - t0) / 1000).toFixed(1), 's');
 console.log('context', await page.evaluate(() => JSON.stringify(window.__HQWORLD__.api.engine.renderer.getContext().getContextAttributes())));
 // (the HUD hidden, so the picture is all world)
-if (!process.env.HUD) await page.addStyleTag({ content: '.cw-stage > :not(canvas), header, nav, [class*="guide"] { display: none !important; }' });
+if (!process.env.HUD) await page.addStyleTag({ content: '.cw-stage > :not(.cw-canvas), header, nav, [class*="guide"] { display: none !important; }' });
 await page.evaluate(() => {
   window.__HQWORLD__.api.skipIntro();
   document.querySelector('.cw-canvas')?.scrollIntoView({ block: 'center' });
@@ -95,8 +95,8 @@ async function scanHdr(tag) {
   });
   console.log('hdr', tag, JSON.stringify(r));
 }
-// SPIN=n: n frames over time while the camera keeps turning (the watchdog
-// steps the tier down meanwhile, as on a slow machine), each with its tier
+// SPIN=n: n frames over time while the camera keeps turning (the runtime's
+// governor steps the tier down meanwhile, as on a slow machine), each with its tier
 if (process.env.SPIN) {
   for (let k = 0; k < Number(process.env.SPIN); k++) {
     await page.evaluate((k) => {

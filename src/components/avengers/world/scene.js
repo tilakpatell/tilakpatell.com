@@ -11,12 +11,12 @@
 // over it until its stone is won, and the stone over it after; and, once the
 // Space Stone is back, the portal over the helipad.
 //
-// createCompoundWorld(canvas, { onLost, calm }) → { render(state, ms),
+// createCompoundWorld(rt, { calm }) → { render(state, ms),
 // screenOf(kind, id), fx(type, data), resize, dispose, engine, info, lost }.
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { createEngine, hot } from '../hq/engine';
+import { createStage, hot } from '../hq/stage';
 import { pbr, preload } from '../hq/assets';
 import { antiTile, detailNormal } from '../../../lib/three/surface';
 import { canvasTexture, rbox } from '../hq/kit/shapes';
@@ -398,11 +398,11 @@ function beamMaterial(color) {
   });
 }
 
-export async function createCompoundWorld(canvas, { onLost, calm = false } = {}) {
+export async function createCompoundWorld(rt, { calm = false } = {}) {
   // (the glow only for what's past lit paint: a white wall full in the sun
   // comes to about 1.3, and at the old 1.2 the training center's front was a
   // slab of light; the glows, the lintels and the beams are well over)
-  const engine = createEngine(canvas, { exposure: 1, fov: 52, near: 0.15, far: 2400, bloom: LOOK.bloom, onLost });
+  const engine = createStage(rt, { exposure: 1, fov: 52, near: 0.15, far: 2400, bloom: LOOK.bloom });
   const { scene, sun, camera, renderer } = engine;
   const small = engine.small;
   const sets = ['grass', 'forest-floor', 'concrete-floor', 'concrete-worn', 'corrugated', 'rock', 'asphalt', 'leather', 'carbon', 'painted-metal', 'planks'];
@@ -2117,7 +2117,7 @@ export async function createCompoundWorld(canvas, { onLost, calm = false } = {})
     ground: import.meta.env.DEV ? ground : null, // for the QA scripts
     scene: import.meta.env.DEV ? scene : null, // for the QA scripts
     render,
-    prepare: engine.prepare, // (everything sent to the graphics chip before it's seen: hq/engine)
+    prepare: engine.prepare, // (everything sent to the graphics chip before it's seen: hq/stage)
     fx,
     screenOf,
     resize: (w, h) => engine.resize(w, h),

@@ -2,7 +2,7 @@
 // the portal over the trees, and lightning.
 
 import * as THREE from 'three';
-import { hot } from '../hq/engine';
+import { hot } from '../hq/stage';
 import { PartBuilder, canvasTexture, rbox, taper } from '../hq/kit/shapes';
 
 // Knotwork for the hammer's ends: interlaced loops, as a bump map.

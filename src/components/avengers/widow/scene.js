@@ -8,7 +8,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { createEngine, hot } from '../hq/engine';
+import { createStage, hot } from '../hq/stage';
 import { instanceModel, preload } from '../hq/assets';
 import { buildHumanoid, poseHumanoid } from '../hq/kit/humanoid';
 import { mixPose, snapPose } from '../hq/kit/blend';
@@ -272,9 +272,9 @@ function holoMaterial(color = BLUE) {
   return m;
 }
 
-export async function create(canvas, { onLost, onSlow, tier } = {}) {
+export async function create(rt, { onSlow, tier } = {}) {
   const calm = prefersReducedMotion();
-  const engine = createEngine(canvas, { exposure: 1.2, fov: FOV, near: 0.5, far: 300, bloom: { strength: 0.65, radius: 0.55, threshold: 0.9 }, onLost, onSlow, tier });
+  const engine = createStage(rt, { exposure: 1.2, fov: FOV, near: 0.5, far: 300, bloom: { strength: 0.65, radius: 0.55, threshold: 0.9 }, onSlow, tier });
   const { scene, camera } = engine;
   const small = engine.small;
   await preload({ sets: ['concrete-floor', 'concrete-worn', 'sci-panels', 'painted-metal', 'steel-plate', 'brushed-steel', 'carbon', 'plywood'], skies: ['hall'], models: ['extinguisher'], small, renderer: engine.renderer });
@@ -477,7 +477,7 @@ export async function create(canvas, { onLost, onSlow, tier } = {}) {
 
   const vfx = createVfx(scene, { calm, ground: 0.04, maxDebris: 40 });
   const feel = createFeel({ seed: 7, calm, baseFov: FOV, offset: 0.06 });
-  // ?debug: the feel's numbers on the one panel (hq/engine's tune)
+  // ?debug: the feel's numbers on the one panel (hq/stage's tune)
   engine.tune(feelGroups(feel), 'widow');
   const coneColor = new THREE.Color();
   const tmpColor = new THREE.Color();

@@ -8,7 +8,7 @@
 // statics; createFlags(scene, M) and createRings(scene) are the moving ones.
 
 import * as THREE from 'three';
-import { hot } from '../hq/engine';
+import { hot } from '../hq/stage';
 import { canvasTexture } from '../hq/kit/shapes';
 import { BENCHES, COMMS, FLAGS, FLAG_H, PLANTERS, RING_R, ROOF_PLANT, TOUR, V } from './rules';
 

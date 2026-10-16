@@ -5,7 +5,7 @@
 
 import * as THREE from 'three';
 import { PartBuilder, lathe, rbox, taper } from '../hq/kit/shapes';
-import { hot } from '../hq/engine';
+import { hot } from '../hq/stage';
 import { instanced as pool } from '../hq/kit/instanced';
 
 // ── Ultron's drone: a silver orb in a ring, four thrusters, a red stare ──

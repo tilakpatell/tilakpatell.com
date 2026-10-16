@@ -149,9 +149,9 @@ describe('game feel', () => {
 });
 
 // (the level, which is the visitor's pick or Auto by the chip, not the device's class)
-describe('the engine’s tier from the site’s level', () => {
+describe('the stage’s tier from the site’s level', () => {
   it('reads lib/device’s detail: Low picked by hand is low, Ultra is high', async () => {
-    const { tierOfDetail } = await import('./engine.js');
+    const { tierOfDetail } = await import('./stage.js');
     expect(tierOfDetail('low')).toBe('low');
     expect(tierOfDetail('mid')).toBe('medium');
     expect(tierOfDetail('high')).toBe('high');
