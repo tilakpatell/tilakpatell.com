@@ -27,9 +27,8 @@ export function useTick(tick, active, { canvas = null } = {}) {
       h.dispose();
       handle.current = null;
     };
-    // (the canvas is the component's, the same throughout)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [world]);
+    // (the canvas, a ref, is the same object throughout)
+  }, [world, canvas]);
   useEffect(() => {
     const h = handle.current;
     if (!h) return;

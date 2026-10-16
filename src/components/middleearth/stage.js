@@ -23,11 +23,6 @@
 //   shows it outside a frame.
 
 import * as THREE from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { budget } from '../../lib/device';
 import { guardOf } from '../../lib/three/frameGuard';
 import { prepareScene, warmDraw } from '../../lib/three/gpuWork';
@@ -72,16 +67,16 @@ export function createStage(canvas, { soft = false, bloom = BLOOM, exposure = LO
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(fov, 16 / 9, near, far);
 
-  // the scene renders into a multisampled target, then bloom, then the tone
-  // map, then the grade (lib/stage3d's chain, as it was)
-  const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: soft ? 0 : fit.samples });
-  const composer = new EffectComposer(renderer, target);
-  composer.addPass(new RenderPass(scene, camera));
-  const bloomPass = new UnrealBloomPass(new THREE.Vector2(256, 256), bloom.strength, bloom.radius, bloom.threshold);
-  composer.addPass(bloomPass);
-  composer.addPass(new OutputPass());
-  const gradePass = new ShaderPass(GRADE);
-  composer.addPass(gradePass);
+  // the scene renders into a multisampled half-float target, then bloom,
+  // then the tone map, then the grade: lib/stage3d's chain, built by the
+  // runtime (rt.gfx.post), its buffers multisampled as lib/stage3d's were
+  const post = world.rt.gfx.post([{ kind: 'render', scene, camera }, { kind: 'bloom', strength: bloom.strength, radius: bloom.radius, threshold: bloom.threshold }, { kind: 'output' }, { kind: 'shader', material: GRADE }]);
+  const { composer } = post;
+  const [, bloomPass, , gradePass] = post.passes;
+  for (const t of [composer.renderTarget1, composer.renderTarget2]) {
+    t.samples = soft ? 0 : fit.samples;
+    t.dispose();
+  }
   const unguard = guardOf(renderer)?.frames?.((t) => t === composer.renderTarget1 || t === composer.renderTarget2) ?? (() => {});
   const grade = (o = {}) => {
     const u = gradePass.uniforms;
