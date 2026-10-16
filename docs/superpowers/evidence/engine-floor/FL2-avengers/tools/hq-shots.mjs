@@ -304,6 +304,7 @@ async function shoot(browser, base, t) {
     }
   }
   if (counted !== FRAMES) throw new Error(`${t.id}: ${counted} frames, not ${FRAMES}`);
+  if (process.env.SHOTS_EVAL) console.log(`  eval ${t.id}: ${await page.evaluate((x) => JSON.stringify((0, eval)(x)), process.env.SHOTS_EVAL)}`);
   if (process.env.SHOTS_TRACE) console.log(`  times ${t.id}: ${await page.evaluate(() => JSON.stringify(window.__fl2times ?? null))}`);
   await page.waitForTimeout(300);
   const file = join(OUT, `${t.id}.png`);
