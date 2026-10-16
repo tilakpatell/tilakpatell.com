@@ -34,9 +34,12 @@ function pick() {
   current = best;
   stages.get(best).set(true);
 }
+// (with no view live, the first is picked at once: the settling is for
+// not building one view after another as the page scrolls past them, and
+// a page opening on its world waited it out for nothing)
 const schedule = () => {
   clearTimeout(timer);
-  timer = setTimeout(pick, SETTLE);
+  timer = setTimeout(pick, current ? SETTLE : 0);
 };
 if (import.meta.env.DEV && typeof window !== 'undefined') {
   window.__LIVE__ = { stages, get current() { return current; } };
