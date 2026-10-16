@@ -22,9 +22,11 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { loadSet } from '../../../src/components/avengers/hq/assets';
 import { SCALE } from '../../../src/components/mario64/courses/index';
-import { LOOK_NAMES } from '../../../src/components/mario64/looks';
 import { S } from '../../../src/components/mario64/scene';
 import { MATS } from '../../../src/components/mario64/textures';
+
+// (looks.js’s own, which it no longer exports: lane FL1’s sweep)
+const LOOK_NAMES = ['modern', 'ultra', 'n64'];
 
 // The terrain's material: three sets blended by the splat attribute. The
 // first is the base (its uv is the kit's, x/z over its scale); the others are

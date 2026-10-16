@@ -27,7 +27,7 @@
 
 import * as THREE from 'three';
 import { PMREMGenerator } from 'three/webgpu';
-import { loadSet, loadSky } from '../avengers/hq/assets';
+import { loadSet, loadSky } from './sets';
 import { AREAS, buildArea } from './courses/index';
 import { makeLook } from './looks';
 import { hdTemplate, loadHd } from './models/hd';

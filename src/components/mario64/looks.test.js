@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { makeLook as composerLook } from '../../../scripts/twin-parity/originals/mario64.js';
 import { LOOK } from './look.js';
-import { LOOK_NAMES, makeLook, passesFor } from './looks.js';
+import { makeLook, passesFor } from './looks.js';
 
 // The look’s chain (the runtime’s node post: rt.gfx.post) against the
 // EffectComposer it replaces (scripts/twin-parity/originals/mario64.js’s
@@ -122,7 +122,7 @@ describe('the look’s chain', () => {
     const { post } = fakePost();
     const look = makeLook(post, scene, camera);
     const glsl = composerLook(stubRenderer(), scene, camera);
-    for (const name of [...LOOK_NAMES, 'nope']) expect(look.setLook(name)).toBe(glsl.setLook(name));
+    for (const name of ['modern', 'ultra', 'n64', 'nope']) expect(look.setLook(name)).toBe(glsl.setLook(name));
     expect(look.look).toBe(glsl.look);
   });
 });

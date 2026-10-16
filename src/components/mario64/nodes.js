@@ -17,7 +17,7 @@
 import * as THREE from 'three';
 import { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
 import { abs, attribute, clamp, exp, fract, length, max, modelWorldMatrix, normalGeometry, output, positionLocal, positionWorld, pow, reference, sin, smoothstep, texture, uniform, uv, varying, vec3, vec4 } from 'three/tsl';
-import { loadSet } from '../avengers/hq/assets';
+import { loadSet } from './sets';
 import { SCALE } from './courses/index';
 import { MATS } from './textures';
 
