@@ -433,7 +433,10 @@ const JOURNEYS = {
   async universe(page, mark) {
     mark('load');
     await page.goto(`${this.base}/${this.q}#/universe`, { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => typeof window.__universe === 'function' && window.__universe().ship, null, { timeout: 180000 });
+    // (the ship is there as the map is made; the map is on screen when its
+    // box says so, data-gl="on" from useScene or useWorld alike: timed from
+    // the ship, a map on the runtime was measured behind its loading screen)
+    await page.waitForFunction(() => typeof window.__universe === 'function' && window.__universe().ship && document.querySelector('.universe-map')?.dataset.gl === 'on', null, { timeout: 300000 });
     mark('settle');
     await wait(page, 4000);
     mark('idle');

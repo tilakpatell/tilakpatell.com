@@ -84,12 +84,17 @@ export function project(point, pose, { w, h }, { sx = 0, sy = 0 } = {}) {
   return [((nx + 1) / 2) * w + sx, ((1 - ny) / 2) * h + sy, z];
 }
 
-// A universe's centre with the map turned by `yaw` (three.js rotation.y).
-export function worldPos(id, yaw = 0) {
+// A universe's centre with the map turned by `yaw` (three.js rotation.y),
+// written into `out` where there is one (a dive asks every frame of it).
+export function worldPos(id, yaw = 0, out = null) {
   const [x, y, z] = POSITIONS[id];
   const c = Math.cos(yaw);
   const s = Math.sin(yaw);
-  return [x * c + z * s, y, -x * s + z * c];
+  if (!out) return [x * c + z * s, y, -x * s + z * c];
+  out[0] = x * c + z * s;
+  out[1] = y;
+  out[2] = -x * s + z * c;
+  return out;
 }
 
 // The home system in the open area, whichever way it's turned: the nearest
