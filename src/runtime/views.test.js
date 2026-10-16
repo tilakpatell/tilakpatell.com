@@ -406,6 +406,44 @@ describe('createViews', () => {
     expect(later).toHaveBeenCalledOnce();
   });
 
+  it('makes an opaque view’s alpha one after it draws, the GL state as it was', () => {
+    const { views, box, renderer } = setup();
+    const calls = [];
+    let mask = [true, true, true, true];
+    let clear = [0.1, 0.2, 0.3, 0];
+    renderer.getContext = () => ({
+      COLOR_WRITEMASK: 1,
+      COLOR_CLEAR_VALUE: 2,
+      SCISSOR_TEST: 3,
+      COLOR_BUFFER_BIT: 4,
+      getParameter: (k) => (k === 1 ? [...mask] : [...clear]),
+      isEnabled: () => false,
+      colorMask: (...m) => {
+        mask = m;
+        calls.push(['mask', ...m]);
+      },
+      clearColor: (...c) => {
+        clear = c;
+        calls.push(['clearColor', ...c]);
+      },
+      clear: (b) => calls.push(['clear', b, ...mask, ...clear]),
+    });
+    const a = box();
+    const b = box();
+    const va = views.add(a.el, { opaque: true });
+    const vb = views.add(b.el);
+    va.resize(100, 100);
+    vb.resize(100, 100);
+    va.draw(() => {});
+    // (alpha alone, cleared to one)
+    expect(calls).toContainEqual(['clear', 4, false, false, false, true, 0, 0, 0, 1]);
+    expect(mask).toEqual([true, true, true, true]);
+    expect(clear).toEqual([0.1, 0.2, 0.3, 0]);
+    calls.length = 0;
+    vb.draw(() => {});
+    expect(calls).toEqual([]);
+  });
+
   it('puts the runtime’s state back and the canvas in its host when let go', () => {
     const { views, box, renderer, canvas, host } = setup();
     const before = readState(renderer);

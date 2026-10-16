@@ -50,6 +50,8 @@ export function createStage(canvas, { soft = false, bloom = BLOOM, exposure = LO
   const full = stageRatio({ soft });
   const view = world.views.add(canvas, {
     ratio: full,
+    // (its own canvas had no alpha)
+    opaque: true,
     state: {
       toneMapping: THREE.NeutralToneMapping,
       toneMappingExposure: exposure,

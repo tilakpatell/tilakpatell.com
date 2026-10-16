@@ -36,7 +36,7 @@
 // renderer's getDrawingBufferSize says the view's size (a shader sized from
 // it is the size it was).
 //
-// createViews(gfx, { observe }) → { add(el, { ratio, state }) → view,
+// createViews(gfx, { observe }) → { add(el, { ratio, state, opaque }) → view,
 //   enter(el), of(el), frame(), flush(), resize(), lead, dispose() }
 // view: { el, resize(w, h), setRatio(r), draw(fn), size, ratio, buffer,
 //   leading, dispose() } (`draw(fn)`: fn draws the view's frame, the
@@ -204,10 +204,29 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
     renderer.getDrawingBufferSize = (target) => target.set(bw, bh);
     try {
       fn();
+      if (v.opaque) solid();
     } finally {
       renderer.getDrawingBufferSize = realSize;
       full();
     }
+  };
+  // (a view whose own canvas had no alpha comes out opaque, as that one
+  // did: drawn straight to the canvas, what blends leaves alpha under one
+  // where the page's background showed through; the GL state put back as
+  // it was, so three's cache of it holds)
+  const solid = () => {
+    const gl = renderer.getContext?.();
+    if (!gl?.colorMask) return;
+    const mask = gl.getParameter(gl.COLOR_WRITEMASK);
+    const clear = gl.getParameter(gl.COLOR_CLEAR_VALUE);
+    const scissor = gl.isEnabled(gl.SCISSOR_TEST);
+    if (scissor) gl.disable(gl.SCISSOR_TEST);
+    gl.colorMask(false, false, false, true);
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.colorMask(mask[0], mask[1], mask[2], mask[3]);
+    gl.clearColor(clear[0], clear[1], clear[2], clear[3]);
+    if (scissor) gl.enable(gl.SCISSOR_TEST);
   };
   // what's in the corner, onto the view's own canvas
   const copy = (v) => {
@@ -330,12 +349,13 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
       const v = views.get(el);
       if (v) enter(v);
     },
-    add(el, { ratio = 1, state = {} } = {}) {
+    add(el, { ratio = 1, state = {}, opaque = false } = {}) {
       views.get(el)?.view.dispose();
       const v = {
         el,
         size: { w: 1, h: 1 },
         want: ratio,
+        opaque,
         ratio: 1,
         state: { ...runtimeState, ...state },
         pixels: 0,

@@ -34,6 +34,8 @@ export function createMapBackdrop(canvas, { onLost, me } = {}) {
   // (what arrives late is held back by the runtime renderer's frame guard)
   const view = me.views.add(canvas, {
     ratio: pixelRatio(1.5),
+    // (its own canvas had no alpha)
+    opaque: true,
     state: {
       toneMapping: THREE.ACESFilmicToneMapping,
       toneMappingExposure: 1.15,
