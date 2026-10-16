@@ -88,8 +88,45 @@ What runs differently on the node renderer, and the rule each twin keeps for it:
 
 `npm run lint` clean; `npm run build` clean; `node scripts/health.mjs --check --skip build` within budget (`glsl-sites` 619: twins are new files, and the count falls at the flip). `npm test`: 17 files over their 5 s limit under the full suite’s load (the parity builds of other twins on the same four cores), each green run alone (`npx vitest run <file>`), none of them this lane’s.
 
-## The before
+## The flip (the third pull request)
 
-The probe’s first run (`QUALITY=low node scripts/perf-probe.mjs galaxy`, 2026-10-15) ran beside seven parity builds on the container’s four cores and is not a number: it is run again on a quiet machine before the flip.
+`galaxy/module.js` says `shading: 'nodes'`; every import the galaxy reached GLSL through takes the twin (`scene.js`, `spaceLevel.js`, `cabs.js`, `powers.js`, `warfront.js`, `warpieces/{endor,hangar,run}.js`, `speedLines.js`); `universe/planets.js`’s one-line `loadModel` is written in `scene.js`. The galaxy warms and prepares the node renderer’s way, as the surface does: the hooked materials swapped for their twins (`twinScene`), every program made through `compileAsync` with what is hidden shown and nothing culled for the call (else the engine trails, hidden until the ship first moves, were linked in play), then one small draw through the post.
 
-## The after
+`node docs/superpowers/evidence/perf/tools/glsl-closure.mjs src/components/galaxy/module.js`: 627 files reached, **0 with GLSL** (53 before). `src/runtime/shading.test.js` green.
+
+`glsl-sites` stays 619: the measure counts every file under `src/`, and the originals stay until FL4 (the twins’ rule). Ten of the galaxy’s own originals are reached by nothing but their tests and parity cases after the flip (`world`, `skyStreaks`, `placesDraw`, `spacePieces`, `rocks`, `rocksPlaced`, `levelArea`, `areaWeather`, `interdictor`, `tunnel`: about 13 sites); `sky`, `fx` and `bodies` are still the universe map’s and the Expanse’s.
+
+### The world’s parity
+
+Named views in development (`world.view(name)`, the earth module’s pattern, `galaxy/module.js` and `scene.js`): `hub` (the system as it opens), `orbit` (Tatooine from orbit, its limb across the view), `fleet` (the system’s garrison ship against the planet). Two shots of a view on the classic renderer are the same picture (∞ dB). `node scripts/gpu-parity.mjs /galaxy/tatooine --before 4ad61edb --view hub,orbit,fleet` (the before: the views’ commit, the galaxy still `'glsl'`):
+
+| view | leg | backend | dB | % off |
+| --- | --- | --- | --- | --- |
+| hub | webgl | nodes-webgl | 53.71 | 0.00 |
+| orbit | webgl | nodes-webgl | 53.98 | 0.00 |
+| fleet | webgl | nodes-webgl | 53.41 | 0.00 |
+| all | webgpu | | | not run: the container has no WebGPU device (“a fallback adapter: no GPU under WebGPU”); the owner’s machines |
+
+### The probe
+
+`VIEW=960x600@1 GPU=webgl QUALITY=<low|high> node scripts/perf-probe.mjs galaxy` (the default 1470 × 956 at 2× is all SwiftShader’s fill at under a frame a second, so the window is smaller), classic from the views’ commit and the flip back to back, the play phase’s row (main thread ms: median and worst 1 %), with both fixes below in:
+
+| quality | run | ready s | late pipelines | main median | worst 1 % | fly main | KB uploaded a frame |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Low | classic | 56.2 | 0 | 501 | 1004 | 437 | 11 |
+| Low | nodes-webgl | 62.7 | 0 | **349** | **694** | 352 | 56 |
+| High | classic #1 | 66.4 | 0 | 791 | 1548 | 726 | 9 |
+| High | nodes-webgl #1 | 100.7 | 0 | 1045 | 2255 | 1040 | 80 |
+| High | classic #2 | 64.3 | 0 | 782 | 1608 | 781 | 16 |
+| High | nodes-webgl #2 | 84.5 | 0 | 1036 | 2306 | 1014 | 75 |
+| either | webgpu | | | | | | not run: the owner’s machines |
+
+**Low: the node renderer is faster** (median 501 → 349 ms, worst 1 % 1004 → 694). **High: it is slower, about a third**, and the gate (no slower, both levels) **does not hold in the container**. What was found:
+
+- In the container the main thread’s time at High is SwiftShader’s: the fly phase’s profile is inside GL calls waiting on the graphics process (`drawArrays`, `bufferSubData`, `clearBufferfi`); the galaxy’s own JavaScript is about 20 ms a frame. The whole frame measured with the queue drained: about 1.43 s against 1.17 s, nearly all of it the scene pass (1,150 against 850 ms); the post costs the same (~290 ms).
+- Each part hidden in turn: the planet saves 440 ms on nodes against 392 on classic, the sky sphere 119 against 94, the stars 124 against 17, the ship about the same. The stars were 12,000 instanced quads where the GLSL drew points: **fixed**, a star is one triangle round its square (1,103 → 1,021 ms; `galaxy:sky` parity unchanged, 49.5 to 51.3 dB). The planet’s and the sky’s extra cost is their node programs’ (the planet’s about 42 KB of fragment shader; WGSL’s rules make it sample its scans outside its branches, where the GLSL skipped them), spread across the pass with no one draw to name.
+- **The late pipeline: fixed** (the engine trails, linked in play; see above). Late pipelines 1 → 0, every program made in load.
+- The ~8 MB a phase of the first runs was a burst of frames that never drew (the main thread running ahead of a backlogged graphics process while a link was pending), gone with the late pipeline, and the probe adding a ranged `bufferSubData`’s whole source array; what is uploaded a frame is about 61 KB, most of it three’s instance matrices sent whole as a uniform buffer.
+- Ready is 20 to 35 s later than classic’s: SwiftShader links the planet’s large program slowly, and 68 programs are made up front where classic linked some in play.
+
+What is left for the High gate is the owner’s call (below in the pull request): a software rasteriser’s fill is not a chip’s, the WebGPU rows are the owner’s machines’, and the planet’s program is the one to make cheaper if a real chip shows the same third.

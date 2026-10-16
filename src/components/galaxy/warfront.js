@@ -77,7 +77,7 @@ import { createBattle } from '../universe/battle';
 import { createDirector } from '../universe/battleDirector';
 import { difficulty, statsOf } from '../universe/battleDifficulty';
 import { TYPES } from '../universe/battleObjectives';
-import { createBattleScene } from '../universe/battleScene';
+import { createBattleScene } from '../universe/battleSceneNodes';
 import { createCarry } from '../universe/earnRules';
 import { createTally } from '../universe/tally';
 import { holdFighters, stepBattle } from '../universe/battlePowers';

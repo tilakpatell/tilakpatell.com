@@ -23,7 +23,7 @@
 
 import * as THREE from 'three';
 import { sweptHit } from '../../universe/targeting';
-import { buildTunnel, frameOf, keepIn } from '../tunnel';
+import { buildTunnel, frameOf, keepIn } from '../nodes/tunnel';
 
 const ZERO = { x: 0, y: 0, z: 0 };
 const OPEN = '#ffb347';

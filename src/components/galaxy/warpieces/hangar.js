@@ -9,7 +9,7 @@
 //
 // createHangars(ctx) → { update(dt, t, live), hit, targets, markers(live), dispose() }
 
-import { tunnelPath } from '../tunnel';
+import { tunnelPath } from '../nodes/tunnel';
 import { createRun } from './run';
 import { GCW } from '../gcw';
 

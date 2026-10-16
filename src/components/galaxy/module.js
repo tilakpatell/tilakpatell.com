@@ -10,8 +10,23 @@
 
 import { fromScene } from '../../runtime/module';
 
-export default fromScene('galaxy', (canvas, ctx) => import('./scene').then((m) => m.create(canvas, ctx)), {
+const galaxy = fromScene('galaxy', (canvas, ctx) => import('./scene').then((m) => m.create(canvas, ctx)), {
+  shading: 'nodes', // (everything it reaches is TSL: the twins, nodes/ and the *Nodes.js beside what it borrows; the node renderer, on WebGPU or WebGL 2)
   mb: 19, // (WORLD_MB['/galaxy']: the galaxy and its worlds' surfaces)
   ratio: 1.5,
   sharpness: 'own', // (the pace's steps are the post's: lowerQuality)
 });
+
+// (development: the scene's named views, for scripts/gpu-parity.mjs, are the
+// world's, where the script asks for them, as Earth's are; fromScene is the
+// runtime's and passes on only what every scene has, so they're added here)
+export default import.meta.env.DEV
+  ? {
+      ...galaxy,
+      async create(rt, props) {
+        const world = await galaxy.create(rt, props);
+        world.view = (name) => world.scene.view(name);
+        return world;
+      },
+    }
+  : galaxy;

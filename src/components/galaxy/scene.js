@@ -70,22 +70,24 @@ import { createFeel, feelGroups } from '../../lib/three/feel';
 import { HITSTOP, MAP_FEEL, atLeast, deadZone, knockForce } from './mapFeel';
 import { local as remembered } from '../../lib/hooks';
 import { plan as cockpitPlan } from '../cockpit/timeline';
-import { freeKit } from '../cockpit/kit';
+import { freeKit } from '../cockpit/kitNodes';
 import { audioContext } from '../../lib/audio';
-import { clamp01, disposeTree, precompile, precompilePasses, singlePass } from '../../lib/three/renderer';
-import { prepareScene } from '../../lib/three/gpuWork';
+import { clamp01, disposeTree, singlePass } from '../../lib/three/renderer';
+import { twinScene } from '../../lib/three/hookNodes';
+import { PMREMGenerator } from 'three/webgpu';
+import { revealAll, warmDraw } from '../../lib/three/gpuWork';
 import { settle as settleWithin } from '../../lib/settle';
 import { device } from '../../lib/device';
 import { dropTransmission } from '../../lib/three/glass';
-import { gltfStats } from '../../lib/three/gltfCache';
+import { cloneScene, gltfStats, loadGLTF } from '../../lib/three/gltfCache';
 import { STEPS } from '../../lib/three/pace';
 import { FOV } from '../universe/flight';
-import { createPost } from '../universe/post';
-import { GLOW, glowAt } from '../universe/battleFx';
+import { createPost } from './nodes/post';
+import { GLOW, glowAt } from '../universe/battleFxNodes';
 import { bloomGroups } from '../../lib/three/bloom';
 import { LOOK } from './look';
 import { followRatio } from './drawnAt';
-import { houseOn } from '../../lib/three/house';
+import { houseOn } from '../../lib/three/houseNodes';
 import { SHIP, TUNE, autopilot, forward, spawn, step } from '../universe/ship';
 import { REAIM_MS, parkBehind, pilotSpace, reached } from '../universe/pilotGoal';
 import { createHunters } from '../universe/hunters';
@@ -95,28 +97,27 @@ import { hullContact, probeSphere } from '../../lib/combat/hulls';
 import { capitalPose } from '../../lib/combat/pose';
 import { shipVelocity } from '../universe/hunterRules';
 import { createFleet } from '../universe/glbFleet';
-import { createSetPieces } from '../universe/setpieces';
-import { createCrash } from '../universe/crash';
-import { createDust } from '../universe/belt';
-import { createTrail } from '../universe/trail';
-import { ENGINES, SHIP_MODELS, buildShip, BUILT } from '../universe/shipModels';
-import { loadModel } from '../universe/planets';
+import { createSetPieces } from '../universe/setpiecesNodes';
+import { createCrash } from '../universe/crashNodes';
+import { createDust } from '../universe/beltNodes';
+import { createTrail } from '../universe/trailNodes';
+import { ENGINES, SHIP_MODELS, buildShip, BUILT } from '../universe/shipModelsNodes';
 import { lockSound, shieldSound, shipEngine } from '../universe/sounds';
 import { AIM, aimAngles, assist, assistAmount, dirTo, edgeOf, intercept, nose, onScreen, track, trackNudge } from '../universe/targeting';
 import { DEFAULTS as CONTROL_DEFAULTS, STICK, dragSteers, keyAxes, keyFlies, stickInput } from '../universe/controls';
-import { SIZE as PILOT_SIZE, createPilots } from '../universe/online/pilots';
+import { SIZE as PILOT_SIZE, createPilots } from '../universe/online/pilotsNodes';
 import { GUARD } from '../universe/online/protocol';
 import { paintById } from '../universe/paint';
 import { FASTEST, STOCK_LOADOUT, readLoadout, statsOf } from '../universe/outfit';
 import { readBuildWire, readTune, tuneKey, writeBuild } from '../universe/shipyard/build';
 import { SHIP_INFO, buildGalaxyShip } from './fleet';
 import { ARRIVAL, HUNTER_GLB, createModels } from './models';
-import { createSky } from './sky';
+import { createSky } from './nodes/sky';
 import { createSpeedLines } from './speedLines';
 import { T as JUMP_T } from '../hyperspace3d/timeline';
 import { DIVE, LAUNCH_KEY, diveAt, planDive } from './travel';
 import { INTERDICTION, createInterdiction, cutAt, dropPoint, holdLifts, inWell, interdictorPlace } from './interdiction';
-import { createInterdictor } from './interdictor';
+import { createInterdictor } from './nodes/interdictor';
 import { createWarFront } from './warfront';
 import { createGalaxyPowers } from './powers';
 import { createCluster } from './cluster';
@@ -129,13 +130,13 @@ import { effectsFor } from './warEffects';
 import { CABS } from './cabs';
 import { warNow } from './warState';
 import { createWingmen } from '../universe/wingmen';
-import { createBolts, createFlashes } from './fx';
-import { buildSystem } from './world';
+import { createBolts, createFlashes } from './nodes/fx';
+import { buildSystem } from './nodes/world';
 import { AHEAD, FACTIONS, KINDS, NAMES } from './hunted';
 import { createPayLedger, hunterEarn } from '../universe/earnRules';
 import { createRoam } from './roam';
 import { pick as pickFaction } from '../universe/sides';
-import { createSkyStreaks } from './skyStreaks';
+import { createSkyStreaks } from './nodes/skyStreaks';
 import { laneLinks } from './skyTraffic';
 import { FAR, PULSE, aligned, atGoal, makeSpace, parkBy, steerToward } from './space';
 import { createFinds } from './places';
@@ -199,13 +200,18 @@ function systemEnvironment(renderer, sys) {
   add(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({ color: '#0c1220', side: THREE.BackSide }));
   sys.suns.forEach((s, i) => add(new THREE.SphereGeometry(i ? 1.1 : 1.5, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(s.color).multiplyScalar(i ? 5 : 8) }), new THREE.Vector3(...s.dir).normalize().multiplyScalar(7)));
   add(new THREE.SphereGeometry(2.4, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.3, 0.38, 0.9) }), new THREE.Vector3(...s3(sys.suns[0].dir)).multiplyScalar(-7));
-  const pmrem = new THREE.PMREMGenerator(renderer);
+  const pmrem = new PMREMGenerator(renderer);
   const rt = pmrem.fromScene(env, 0.02);
   pmrem.dispose();
   for (const x of made) x.dispose();
   return rt;
 }
 const s3 = (d) => [d[0], -d[1] * 0.5, d[2]];
+
+// One model, or null if it doesn't load: a copy of the page's one parse of it
+// (universe/planets.js's loadModel, written here: that file holds the map's
+// GLSL, and this is all the galaxy took from it)
+const loadModel = (url) => loadGLTF(url).then((g) => g && cloneScene(g));
 
 // Just taken off from a system's planet (the surface page leaves its id in
 // the session as it goes): just off the planet on its sunny side, nose
@@ -254,9 +260,13 @@ export async function create(canvas, ctx) {
   const post = createPost(renderer, scene, camera, { small, bloom: LOOK.bloom });
   // (the house look, below, on whatever's warmed: patched before it's compiled)
   let house = null;
+  // (on the node renderer: a classic material with a hook on it swapped for
+  // the twin that holds the hook, lib/three/hookNodes, then its programs made
+  // through the runtime's compileAsync, as the surface warms)
   const warm = (root, cam = camera, target = scene) => {
     house?.adopt(root);
-    return precompile(renderer, singlePass(root), cam, target, post.on ? post.composer.readBuffer : undefined);
+    twinScene(root);
+    return gfx.compile ? Promise.resolve(gfx.compile(singlePass(root), cam, target)).catch(() => {}) : Promise.resolve();
   };
 
   // light: each sun from its way, and a little ambient
@@ -638,7 +648,7 @@ export async function create(canvas, ctx) {
         });
     } else if (kind === 'cruiser') {
       const model = state.model;
-      import('../rickmorty/cruiser3d')
+      import('../rickmorty/cruiser3dNodes')
         .then((m) => m.buildCruiser({ ink: BUILT / 2.7 }))
         .then((c) => {
           if (!c) return;
@@ -684,11 +694,11 @@ export async function create(canvas, ctx) {
       const mod = await CABS[kind]();
       if (disposed || cabWanted !== kind) return;
       if (!roomEnv) {
-        const pm = new THREE.PMREMGenerator(renderer);
+        const pm = new PMREMGenerator(renderer);
         roomEnv = pm.fromScene(new RoomEnvironment(), 0.04).texture;
         pm.dispose();
       }
-      const pmrem = new THREE.PMREMGenerator(renderer);
+      const pmrem = new PMREMGenerator(renderer);
       const built = await mod.build({ renderer, pmrem, rich: tier === 'high' && !coarse, reduced, coarse, say: () => {} });
       pmrem.dispose();
       if (disposed || cabWanted !== kind) {
@@ -2198,6 +2208,9 @@ export async function create(canvas, ctx) {
   const toShip = new THREE.Vector3();
   let first = true;
   let lastNow = 0;
+  // (development: the times a named view holds the scene at, and the ship it
+  // picked when the page had none; null, as it always is in production: view(), below)
+  let still = null;
   function render(ms, now) {
     if (import.meta.env.DEV) {
       // (the gap between this frame and the last, as the page saw it: a tab that was hidden shows as one long frame)
@@ -2214,9 +2227,11 @@ export async function create(canvas, ctx) {
       state.world?.setDetail(detail);
     }
     // (the frame as the game runs it: slowed through a hitstop)
-    const dt = feel.step(ms / 1000);
-    const t = reduced ? 0 : (now - t0) / 1000;
-    const wt = wall();
+    // (held by a named view, development's: no time passes, and the clocks read what it set)
+    const held = import.meta.env.DEV ? still : null;
+    const dt = held ? 0 : feel.step(ms / 1000);
+    const t = held ? held.t : reduced ? 0 : (now - t0) / 1000;
+    const wt = held ? held.wt : wall();
     if (!flying() && props.ship) setShip(props.ship);
     if (!state.ship && state.kind && state.sys) {
       // a new pilot: out of hyperspace into the system you asked for, or,
@@ -2327,7 +2342,8 @@ export async function create(canvas, ctx) {
     sky.focus(state.jump?.phase === 'align' ? state.jump.to.id : (state.aim?.id ?? null));
     sky.update(camera, t);
     if (skyStreaks) {
-      skyStreaks.group.visible = !inTunnel && !state.enclosed;
+      // (and not under a held view: where the lanes' ships are is a dice roll, not a clock's)
+      skyStreaks.group.visible = !inTunnel && !state.enclosed && !(import.meta.env.DEV && still);
       skyStreaks.update(dt);
     }
     models.update(t);
@@ -2664,7 +2680,7 @@ export async function create(canvas, ctx) {
     }
   }
   scene.add(spares);
-  const ready = Promise.all([built, dressed, warm(scene), post.composer ? precompilePasses(renderer, post.composer, camera) : null]).then(() => {
+  const ready = Promise.all([built, dressed, warm(scene)]).then(() => {
     scene.remove(spares);
     if (disposed) return;
     for (const [k, model] of stock) fleet.stock(k, model);
@@ -2739,6 +2755,97 @@ export async function create(canvas, ctx) {
     window.__gltfStats = gltfStats; // { requests, parses }: the models asked for, and the files fetched and parsed for them
   }
 
+  // (development: a named view for scripts/gpu-parity.mjs, as Earth's: the
+  // ship put somewhere fixed and stopped, the camera behind it in the chase
+  // seat and there at once, and the scene held still, so two renders of it
+  // can be compared. Held means no time passes (render, above) and the
+  // clocks read fixed times, so the planet, the moons and the set pieces
+  // stand where those put them; and what's down to a dice roll rather than
+  // a clock is let go: the hunters and the escort sent off, the shots in
+  // flight landed and their flashes out, the lanes' traffic hidden.
+  // 'hub', the system as it opens: at its arrival spot (the middle of its
+  // spread), looking in at the planet; 'orbit', the planet from close in,
+  // over its day side, filling the right of the view with its limb across
+  // the middle; 'fleet', just off the ships the system's holder keeps in
+  // orbit (or the war's battle's, or a set piece's capital), the planet
+  // behind them. The script picks no ship, so with none an X-wing, its
+  // model mounted here as soon as it's in: the scene's own mounts it after
+  // a warm-up that runs on frames, which the script's stopped clock doesn't
+  // give it before the shot. The promise is kept once that model's in.)
+  const VIEWS = ['hub', 'orbit', 'fleet'];
+  const holdView = import.meta.env.DEV
+    ? (name) => {
+        if (!VIEWS.includes(name)) throw new Error(`no view ${name}`);
+        const sys = state.sys;
+        const r = sys.body?.r ?? 40;
+        let mounted = Promise.resolve();
+        if (!state.kind) {
+          setShip('xwing');
+          const model = state.model;
+          mounted = loadModel(SHIP_MODELS.xwing).then((m) => {
+            if (!m || disposed || state.model !== model) return;
+            dropTransmission(m);
+            model.dress?.(m);
+            // (and the scene's own copy, when its warm-up's done, gives way to it)
+            if (model.mount(m)) model.mount = () => false;
+            else disposeTree(m);
+          });
+        }
+        still = { t: 60, wt: Math.floor(wall() / 60) * 60, ship: state.kind };
+        let pose;
+        if (name === 'hub') pose = arrival(sys, null, () => 0.5);
+        else if (name === 'orbit') {
+          // half as high again as the planet's radius, off its sunward side,
+          // and turned so its middle sits to the right of the nose
+          const [sx, , sz] = sys.suns[0].dir;
+          const a = Math.atan2(sz, sx) + 0.6;
+          const d = r * 1.5;
+          const x = Math.cos(a) * d;
+          const z = Math.sin(a) * d;
+          pose = { x, y: r * 0.3, z, heading: Math.atan2(x, z) + 0.45 };
+        } else {
+          // the holder's ships in orbit, else the war's capitals, else the biggest thing that isn't a planet or a moon
+          const at = state.world.garrison[0]?.at ?? war?.solids?.[0]?.at ?? [...state.world.solids].filter((o) => o.id !== 'planet' && !o.id.startsWith('moon') && !o.id.startsWith('place')).sort((p, q) => q.r - p.r)[0]?.at ?? [r * 2, 0, 0];
+          // (ten out from it and a little to one side, the nose turned off it so the ship's not in front of it)
+          const out = Math.hypot(at[0], at[2]) || 1;
+          const [ux, uz] = [at[0] / out, at[2] / out];
+          const x = at[0] + ux * 10 - uz * 3;
+          const z = at[2] + uz * 10 + ux * 3;
+          pose = { x, y: at[1] + 2, z, heading: Math.atan2(x - at[0], z - at[2]) - 0.4 };
+        }
+        state.ship = { ...spawn(null, pose), pitch: 0, speed: 0 };
+        Object.assign(state, { jump: null, crash: null, dive: null, auto: null, aim: null, lock: null, held: null, view: 'chase', cabK: 0, fovBase: FOV, streak: 0, kick: 0, shake: 0, hurt: 0, flare: 1, eclipse: 1 });
+        state.bias.fill(0);
+        camQOn = false;
+        blendTo.k = 1;
+        dustAmount = 0.35; // (where a ship at rest has it: the frame's easing towards it is held too)
+        hunters?.clear();
+        wingmen?.clear();
+        pickups.clear();
+        later.length = 0;
+        interdictor?.hide();
+        for (const pl of plumes) pl.trail.clear();
+        bolts.update(1e3);
+        flashes.update(1e3);
+        post.flare(1);
+        ctx.invalidate();
+        // and everything drawn once, whole, before the promise is kept: the
+        // frame guard holds back what's new to the chip (the ship's model,
+        // a close-up's maps) till frames have readied it, which the stopped
+        // clock doesn't give; a warm draw is drawn whole, and its fence is
+        // waited on through messages, which that clock doesn't stop
+        const soon = () =>
+          new Promise((go) => {
+            const c = new MessageChannel();
+            c.port1.onmessage = () => (c.port1.close(), go());
+            c.port2.postMessage(null);
+          });
+        return Promise.all([ready, mounted])
+          .then(() => !disposed && warmDraw(renderer, () => post.render(64, 64), [scene], { frame: soon }))
+          .then(() => ctx.invalidate());
+      }
+    : null;
+
   return {
     ready,
     // everything sent to the graphics chip before the galaxy's shown (the
@@ -2749,7 +2856,32 @@ export async function create(canvas, ctx) {
       onProgress?.(0, 'load');
       await settleWithin(ready, 20000);
       if (!alive() || disposed) return;
-      await prepareScene({ renderer, roots: [scene], scene, camera, target: post.target, render: () => post.render(64, 64), onProgress, alive: () => alive() && !disposed });
+      // (the node renderer's, as the surface prepares: the hooked materials
+      // swapped for their twins, every program made through compileAsync,
+      // then one small draw through the post, so its passes are made too;
+      // lib/three/gpuWork's slices are the classic renderer's)
+      twinScene(scene);
+      onProgress?.(0.35, 'shaders');
+      if (gfx.compile) {
+        // (hidden things too and nothing culled, as the classic warm draw
+        // has them: compileAsync makes only what the camera sees, so the
+        // engines' trails, hidden till the ship first moves, were linked in
+        // the frame they first showed in, seconds of a hitch on a software
+        // GL; three makes every pipeline before compileAsync's first wait,
+        // so all is put back as it was straight after the call)
+        const shown = revealAll(scene);
+        let made;
+        try {
+          made = Promise.resolve(gfx.compile(scene, camera, scene));
+        } finally {
+          shown();
+        }
+        await settleWithin(made.catch(() => {}), 600000);
+      }
+      if (!alive() || disposed) return;
+      onProgress?.(0.8, 'first draw');
+      post.render(64, 64);
+      onProgress?.(1, 'first draw');
     },
     // the war's battle here as warfront.js has it (WarHud.jsx, BattleEnd.jsx), or null
     warInfo: () => war?.info ?? null,
@@ -2762,14 +2894,17 @@ export async function create(canvas, ctx) {
       measure();
     },
     render,
+    ...(holdView ? { view: holdView } : {}),
     update(next) {
       props = next;
-      if ((next.ship ?? null) !== state.kind) {
+      // (the ship a held view picked stays while the page has none: development's)
+      const ship = next.ship ?? ((import.meta.env.DEV && still?.ship) || null);
+      if (ship !== state.kind) {
         state.loadout = readLoadout(next.loadout ?? STOCK_LOADOUT); // (a new ship comes fitted as it was left)
         state.build = sameBuild(next.build) ? state.build : readBuildWire(next.build ? writeBuild(next.build) : null); // (and on the hull it was left on)
         state.tune = readTune(next.tune); // (and tuned as it was)
       }
-      setShip(next.ship ?? null);
+      setShip(ship);
       setBuild(next.build ?? null);
       setLoadout(next.loadout);
       setTune(next.tune);
