@@ -330,9 +330,10 @@ describe('aboard the Death Star, drawing', () => {
   it('draws with the frame’s renderer through bloom on a high tier', async () => {
     const { rt, world, scene } = await make({ side: 'imperial' });
     expect(rt.gfx.post).toHaveBeenCalledWith([
-      { kind: 'render', scene: scene.scene, camera: scene.camera },
+      // (no multisampling and the composer's glow: what the classic backend's EffectComposer and UnrealBloomPass drew)
+      { kind: 'render', scene: scene.scene, camera: scene.camera, samples: 0 },
       // (over the lamp-lit walls and floor, which reach about 2 in linear light: only the light strips and grids glow)
-      { kind: 'bloom', strength: 0.6, radius: 0.4, threshold: 2.2 },
+      { kind: 'bloom', strength: 0.6, radius: 0.4, threshold: 2.2, composer: true },
       { kind: 'output' },
     ]);
     world.step(1 / 60, snap());

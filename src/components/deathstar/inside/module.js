@@ -150,9 +150,12 @@ export default {
       post?.dispose();
       post = null;
       if (!bloom || !rt.gfx.post || !view) return;
+      // (the scene with no multisampling and the composer's glow tripled:
+      // what the classic backend's EffectComposer and UnrealBloomPass drew,
+      // runtime/webgpu.js; four samples would draw four times the pixels)
       post = rt.gfx.post([
-        { kind: 'render', scene: view.scene, camera: view.camera },
-        { kind: 'bloom', ...BLOOM },
+        { kind: 'render', scene: view.scene, camera: view.camera, samples: 0 },
+        { kind: 'bloom', ...BLOOM, composer: true },
         { kind: 'output' },
       ]);
       post.composer?.setPixelRatio?.(renderer.getPixelRatio?.() ?? 1);
