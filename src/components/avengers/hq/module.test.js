@@ -8,7 +8,7 @@ import { STEPS } from '../../../lib/three/pace';
 const fakeRt = ({ renderer = {}, rect = { width: 800, height: 450 } } = {}) => {
   const events = [];
   return {
-    gfx: { renderer, lost: false },
+    gfx: { renderer, lost: false, size: { w: 1, h: 1 }, setSize(w, h) { this.size = { w: Math.round(w), h: Math.round(h) }; } },
     host: { getBoundingClientRect: () => rect },
     events: { emit: (type, data) => events.push({ type, ...data }) },
     emitted: events,
@@ -72,8 +72,11 @@ describe('an HQ game as a world module', () => {
 
   it('warms a game’s shaders, or prepares a world in full, at its box’s size first', async () => {
     const warm = fakeView();
-    const w1 = await hqModule({ id: 'a', route: '/avengers', load: async () => () => warm }).create(fakeRt(), {});
+    const rt1 = fakeRt();
+    const w1 = await hqModule({ id: 'a', route: '/avengers', load: async () => () => warm }).create(rt1, {});
     await w1.prepare(() => {}, { alive: () => true });
+    // (the canvas too: sized before the prepare's work, not after it)
+    expect(rt1.gfx.size).toEqual({ w: 800, h: 450 });
     expect(warm.resize).toHaveBeenCalledWith(800, 450);
     expect(warm.engine.precompile).toHaveBeenCalled();
     expect(warm.engine.prepare).not.toHaveBeenCalled();

@@ -126,9 +126,17 @@ export function hqModule({ id, route, label, load, prepare = 'warm', keep = fals
       if (!again) {
         world.prepare = async (onProgress, opts) => {
           const alive = () => opts?.alive?.() !== false;
-          // (at the box's size first: the chain's buffers as they'll be drawn)
+          // At the box's size first, the canvas and the chain's buffers as
+          // they'll be drawn: the runtime sizes the canvas as it places the
+          // world, after this, to the same size (then a change of nothing),
+          // and a canvas resized after the prepare's work waits for all of
+          // it on the chip (8 s in software, the compound's first frame
+          // that much later than the engine's, which sized it first)
           const r = rt.host?.getBoundingClientRect?.();
-          if (r?.width && r?.height) view.resize(r.width, r.height);
+          if (r?.width && r?.height) {
+            rt.gfx.setSize?.(r.width, r.height);
+            view.resize(rt.gfx.size?.w ?? r.width, rt.gfx.size?.h ?? r.height);
+          }
           // the page's own setting up, before the first shader is linked
           await props.setup?.current?.(view);
           for (const step of [].concat(prepare)) {
