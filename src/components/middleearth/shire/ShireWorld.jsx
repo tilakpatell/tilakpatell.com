@@ -205,8 +205,10 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
-    Promise.all([import('./scene'), engine()])
-      .then(([{ createShireWorld }]) => {
+    // (its code first, then the world: made in the order the code came, as before)
+    import('./scene')
+      .then((m) => engine().then(() => m))
+      .then(({ createShireWorld }) => {
         if (dead || !canvas.current) return null;
         // (with motion turned down, the leaves lie as they fell)
         return createShireWorld(canvas.current, { onLost: () => !dead && setGl('lost'), reduced: prefersReducedMotion() });

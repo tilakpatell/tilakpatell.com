@@ -141,8 +141,10 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
-    Promise.all([import('./scene'), engine()])
-      .then(([{ createOrthancWorld }]) => {
+    // (its code first, then the world: made in the order the code came, as before)
+    import('./scene')
+      .then((m) => engine().then(() => m))
+      .then(({ createOrthancWorld }) => {
         if (dead || !canvas.current) return null;
         return createOrthancWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })

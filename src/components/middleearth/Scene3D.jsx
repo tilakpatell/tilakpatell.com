@@ -45,8 +45,10 @@ export default function Scene3D({ name, load, read, api, soft = false, onState }
       if (r && r.width > 0) scene.current?.resize(r.width, r.height);
     };
     setStatus('loading');
-    Promise.all([load(), engine()])
-      .then(([create]) => {
+    // (its code first, then the world: made in the order the code came, as before)
+    load()
+      .then((create) => engine().then(() => create))
+      .then((create) => {
         if (dead || !canvas.current) return;
         try {
           scene.current = create(canvas.current, { soft, reduced: prefersReducedMotion(), onLost: () => fail('lost') });

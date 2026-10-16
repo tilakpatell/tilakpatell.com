@@ -116,8 +116,10 @@ function Kitchen({ level, live, invite }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
-    Promise.all([import('./scene'), engine()])
-      .then(([{ createRushScene }]) => {
+    // (its code first, then the world: made in the order the code came, as before)
+    import('./scene')
+      .then((m) => engine().then(() => m))
+      .then(({ createRushScene }) => {
         if (dead || !canvas.current) return;
         api.current = createRushScene(canvas.current, level, { onLost: () => !dead && setGl('failed') });
         if (import.meta.env.DEV) window.__RUSH__ = { api: api.current, sim: sim.current }; // for the QA scripts

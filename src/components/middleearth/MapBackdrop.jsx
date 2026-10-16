@@ -324,7 +324,8 @@ export default function MapBackdrop({ spot = null, zoom = null, hover = null, mo
       if (!me) kick.current();
     });
     if (gl) {
-      Promise.all([import('./MapBackdrop3D'), engine()])
+      import('./MapBackdrop3D')
+        .then((m) => engine().then((me) => [m, me]))
         .then(async ([{ createMapBackdrop }, me]) => {
           await mapFont();
           // only now, and only if still wanted

@@ -160,8 +160,10 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
-    Promise.all([import('./scene'), engine()])
-      .then(([{ createAmonHenWorld }]) => {
+    // (its code first, then the world: made in the order the code came, as before)
+    import('./scene')
+      .then((m) => engine().then(() => m))
+      .then(({ createAmonHenWorld }) => {
         if (dead || !canvas.current) return null;
         return createAmonHenWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })

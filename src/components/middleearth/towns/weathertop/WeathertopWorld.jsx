@@ -189,8 +189,10 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
-    Promise.all([import('./scene'), engine()])
-      .then(([{ createWeathertopWorld }]) => {
+    // (its code first, then the world: made in the order the code came, as before)
+    import('./scene')
+      .then((m) => engine().then(() => m))
+      .then(({ createWeathertopWorld }) => {
         if (dead || !canvas.current) return null;
         return createWeathertopWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
       })
