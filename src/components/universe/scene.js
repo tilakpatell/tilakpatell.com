@@ -105,7 +105,6 @@ import { settle as settleWithin } from '../../lib/settle';
 import { device } from '../../lib/device';
 import { stepAt } from './qualityStep';
 import { borrow } from './borrow';
-import { followRatio } from '../galaxy/drawnAt';
 import { CHASE, DIVE_MS, FOV, chaseDist, cover, cameraFrom, focusPose, overviewPose, poseAt, startFlight, worldPos } from './flight';
 import { BELT, BODIES, ORDER, POSITIONS, REACH, RIM, RING, SECTORS, SECTOR_OF, SUN, inExpanse, mapSectorOf, sectorOf } from './layout';
 import { HOME_SPREAD } from './scale';
@@ -651,8 +650,18 @@ export async function create(canvas, ctx) {
   const sky = createSky({ small, level: device().detail, renderer, beacons: false });
   sky.setSystem({ ...SYSTEMS.find((s) => s.id === 'kashyyyk'), suns: [] });
   // (its stars sized in the pixels the post draws at, which the quality
-  // softens over a canvas that keeps its size: galaxy/drawnAt.js)
-  const followDrawn = followRatio(post, (r) => sky.setRatio(r));
+  // softens over a canvas that keeps its size; told again when that moves:
+  // the galaxy's drawnAt.js does the same, kept here rather than reached
+  // into, a world's insides being its own)
+  let drawnWas = null;
+  const followDrawn = () => {
+    const r = post.ratio;
+    if (r !== drawnWas) {
+      drawnWas = r;
+      sky.setRatio(r);
+    }
+    return r;
+  };
   followDrawn();
   map.add(sky.group);
   sky.prepare(renderer).then(() => sky.bake(renderer));
