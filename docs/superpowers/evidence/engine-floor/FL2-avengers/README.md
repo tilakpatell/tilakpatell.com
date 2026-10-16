@@ -53,16 +53,45 @@ The shots: `shots/<game>.webp` (the after, 960 × 600; the full PNGs are not com
 
 ## Checks
 
+- `scripts/hq-world-check.mjs` (the compound’s nine named shots) and `scripts/inv-world-check.mjs` (the city’s views and every mission run to its end): both pass with no errors on the branch. `hq-world-check.mjs`’s HUD-less shots now keep `.cw-canvas` (the box the runtime’s canvas goes in) where they kept the bare canvas.
+
 - `npm run lint`: clean.
-- `npm test`: 1,442 files pass. Two failures are timing: `src/components/galaxy/surface/missions/blast.test.js` passes alone, and `src/lib/combat/hulls.test.js`’s 10,000-segment test (the hand-off’s known one) fails alone at 75 ms against 50 ms while the browser runs alongside.
+- `npm test`: after merging main, 1,514 files pass, none failing. Before the merge, two timing tests had failed with the browser running alongside, and passed alone or on the next run.
 - `npm run build`: green.
-- `node scripts/health.mjs --check --skip build`: within budget. `glsl-sites` 619 → 607 and `boundary-breaks` 479 → 477.
+- `node scripts/health.mjs --check --skip build`: within budget, after merging main. `renderers` is 15 (budget 16), `glsl-sites` 607 (budget 619), `boundary-breaks` 487 (budget 489; 479 → 477 before main’s own additions).
 - Renderer constructors outside `src/runtime/`: 16 → 15. `new EffectComposer` sites: 12 → 11. The HQ pages’ `useFrameLoop` loops: 13 → 0.
 - `src/runtime/shading.test.js`: green (the modules are `'glsl'`).
 
 ## The probe
 
-`scripts/perf-probe.mjs avengers` (the default 1470 × 956 at 2×) on main’s dev server and the branch’s, in the container: PERF_TABLE
+`scripts/perf-probe.mjs avengers` (the default 1470 × 956 at 2×), main’s dev server against the branch’s, three runs a side and level, in the container. The phase is `move`: the compound walked once it’s up.
+
+| quality | side | main-thread ms a frame | p50 ms | draws | worst 1 % ms |
+| --- | --- | --- | --- | --- | --- |
+| low | main | 6.1, 6.8, 6.6 | 6.6, 8.6, 7.8 | 189, 188, 190 | 37,010, 39,348, 38,409 |
+| low | branch | 6.4, 6.4, 6.3 | 7.8, 8.0, 7.8 | 192, 192, 192 | 36,817, 37,951, 39,167 |
+| high | main | 7.7, 12.6, 10.1 | 10.8, 22.4, 13.6 | 354, 351, 359 | 225,195, 228,431, 229,636 |
+| high | branch | 8.3, 9.4, 6.6 | 9.7, 10.2, 8.7 | 402, 364, 394 | 220,440, 229,565, 226,990 |
+
+Once it’s up it is no slower: main-thread time a frame is 6.5 against 6.4 ms at low and 10.1 against 8.1 ms at high. The worst 1 % on both sides is one software frame of tens of seconds, the same on each.
+
+**Its first frame is later.** Time to the first frame, on the production build (`vite build`, `vite preview`), measured by when frames reach the canvas, four runs each at low:
+
+| | main | branch |
+| --- | --- | --- |
+| the prepare’s warm draw | 16.7, 16.6, 16.8, 17.6 s | 18.2, 17.7, 19.8, 20.4 s |
+| the first frame after it | 29.4, 23.5, 22.9, 25.0 s | 27.6, 26.7, 29.5, 31.8 s |
+
+That is about 2 s later to the warm draw and 2–4 s later to the first frame. Two causes were found and fixed on the way:
+
+- The runtime sized the canvas only once it placed the world, after the prepare. In software that resize waited 8.2 s on all of the prepare’s work. The module now sizes the canvas before preparing, as the engine did (0.4 s).
+- `useLive` waited 240 ms of quiet scrolling even with no view live.
+
+What is left sits between the mount and the module’s `create`. On the dev server the runtime’s backend took 2.3 s to come up there (its modules loading). In production the branch loads 13 more scripts (+40 kB compressed; no WebGPU chunk) and the scene’s chunks start about 170 ms later. The rest was not pinned down here. The owner’s machines say whether it shows on a real chip.
+
+Once up, the branch also draws more often in software (its frames reached the canvas about 1.5 s apart against main’s about 9 s), because the runtime’s governor softens the canvas where main’s watchdog stepped its tiers.
+
+The city (`/invincible`) has no probe journey. The one tried here waited for the city’s canvas and then measured the page (one draw, ready in 1.6 s on both sides), so it was taken out. The city’s check (`scripts/inv-world-check.mjs`) runs every mission to its end on the branch, with no page errors.
 
 ## Not done here
 
