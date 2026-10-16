@@ -17,8 +17,8 @@ const fakeRt = () => {
 };
 
 describe('the universe map as a world module', () => {
-  it('a glsl module, as heavy as the worlds list says, capped at 1.5× and softened through its own post', () => {
-    expect(universe).toMatchObject({ id: 'universe', shading: 'glsl', mb: WORLD_MB['/universe'], ratio: 1.5, sharpness: 'own' });
+  it('a glsl module, as heavy as the worlds list says, capped at 1.5×, softened through its own post and calibrated by itself', () => {
+    expect(universe).toMatchObject({ id: 'universe', shading: 'glsl', mb: WORLD_MB['/universe'], ratio: 1.5, sharpness: 'own', calibrate: false });
   });
 
   it("makes its scene on the runtime's canvas, with the runtime to hand and the page's props", async () => {

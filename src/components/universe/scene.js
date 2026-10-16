@@ -100,6 +100,7 @@ import { audioContext } from '../../lib/audio';
 import { takeArrival } from '../../lib/arrival';
 import { clamp01, disposeTree, easeOut, precompile, precompilePasses, singlePass, uploadTextures } from '../../lib/three/renderer';
 import { prepareScene, uploadSlices } from '../../lib/three/gpuWork';
+import { calibrate, calibrationKey, recall, remember } from '../../lib/three/calibrate';
 import { prepFrame } from './prepFrame';
 import { settle as settleWithin } from '../../lib/settle';
 import { device } from '../../lib/device';
@@ -5887,9 +5888,6 @@ export async function create(canvas, ctx) {
   // apart under the intro (./prepFrame.js). The draw is small: the passes'
   // buffers 64 across and one pixel of the canvas; it's what's sent that
   // counts, not the picture, and the first real frame sizes them back up.
-  // How sharp this machine can afford it is the runtime's to find after
-  // (its tune(), lib/three/calibrate, kept under the same key as the map's
-  // own calibration was, so a visitor's answer carries over).
   const prepare = async (onProgress, { alive = () => true } = {}) => {
     onProgress?.(0, 'load');
     // (the models of the planets near where the map opens: the rest come as
@@ -5908,6 +5906,26 @@ export async function create(canvas, ctx) {
       frame: () => prepFrame(),
       alive: () => alive() && !disposed,
     });
+    if (!alive() || disposed) return;
+    // how sharp this machine can afford it, found now rather than see-sawed
+    // into while flying (lib/three/calibrate): the runtime's quality level
+    // from here, its ceiling (module.js's `calibrate: false`: the runtime's
+    // own walk times a whole world's frame, the map's sky and moves with
+    // its passes, which in software fits the budget at no step and walked
+    // all five behind the loading screen, 61 s to the map against main's 14;
+    // the map times its passes, as it always has, a frame or, under the
+    // intro, an idle moment apart)
+    onProgress?.(0.97, 'tune');
+    const key = calibrationKey(renderer, 'universe', size.w, size.h);
+    const kept = recall(key);
+    const setLevel = (l) => {
+      ctx.rt.quality?.setLevel?.(l);
+      paceTo(l);
+    };
+    const level = await calibrate({ renderer, draw: () => borrowed.during(() => post.render(size.w, size.h)), setLevel, start: kept ?? 0, frames: kept != null ? 4 : 12, frame: () => prepFrame(), alive: () => alive() && !disposed });
+    if (!alive() || disposed) return;
+    setLevel(level);
+    remember(key, level);
   };
 
   return {
