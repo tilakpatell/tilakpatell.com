@@ -11,7 +11,7 @@
 // stand-in, so a model that won't load never leaves a hole.
 
 import * as THREE from 'three';
-import { hot } from '../../../lib/stage3d';
+import { hot } from '../stage';
 import { LIMO, PEOPLE, present } from './rules';
 import { newFedShip } from './ship';
 import { fitModel, mergeParts, at } from './kit';
