@@ -162,6 +162,14 @@ async function shoot() {
       // stream of its own: the after build has the runtime and the before
       // hasn't, and a scene built after it took its embers' places from
       // further down the one stream)
+      // No sound, either side (as FL2 Rick and Morty's still): a sound's
+      // noise is made from Math.random, a sample at a time (Moria's air:
+      // 88,200 of them), and whether a town's air is made before the shot
+      // scrolls to its kitchen is a race a frame wide, so with sound on, the
+      // lava's strokes were drawn from further down the stream on one side.
+      // (lib/audio has no context then, and every sound is a no-op.)
+      delete window.AudioContext;
+      delete window.webkitAudioContext;
       const own = { s: 0x7a11 };
       const ids = { s: 0x1d5 };
       const runtime = /\/assets\/(runtime|browser|views|module)-[\w-]+\.js/;
@@ -321,13 +329,15 @@ async function shoot() {
       // differed from shot to shot; asked of every guard made since)
       const whole = () => page.evaluate(() => window.__tpGuardOff?.());
       let ok = false;
-      for (let i = 0; i < 3000 && !ok; i++) {
+      let loading = 0;
+      for (; loading < 3000 && !ok; loading++) {
         await whole();
         await step(16);
         await quiet();
         ok = await ready();
       }
       if (!ok) note = ' (never drew)';
+      else note = ` (drew at frame ${loading})`;
       if (probe) note += ` at ready: ${JSON.stringify(await page.evaluate(probe).catch((e) => String(e.message)))}`;
       // what's still loading comes in on a stopped clock, before the frames counted
       await quiet();
