@@ -85,7 +85,7 @@ export function buildingAt(avenue, side, z) {
 }
 
 // Peter's backpacks: one every so often, somewhere he can reach mid-swing.
-export function buildPacks(seed = 5) {
+function buildPacks(seed = 5) {
   const r = rng(seed);
   const out = [];
   for (let d = 110; d < SCHOOL - 40; d += PACK.every * (0.8 + r() * 0.5)) out.push({ id: out.length, p: [(r() - 0.5) * 12, 9 + r() * 16, -d], got: false });
@@ -93,7 +93,7 @@ export function buildPacks(seed = 5) {
 }
 
 // The traffic: lanes in both directions, the cars in each spaced out.
-export function buildCars(seed = 3) {
+function buildCars(seed = 3) {
   const r = rng(seed);
   const out = [];
   const lanes = [-6.2, -2.2, 2.2, 6.2];

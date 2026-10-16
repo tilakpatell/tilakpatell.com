@@ -18,8 +18,10 @@
 // trigger), 'ability' { slot } held or { tap } pressed, 'roll', 'kit' (what
 // fx/kit.js draws and the player's gun: scripts/bf2017-abilities-check.mjs),
 // 'gpu', 'ragdolls' (how many bodies fall, lie and wait: figures/ragdolls.js),
-// 'bots' (each living bot's side, mode, target, whether it fires, its order's key (`post2`), and for a round's bot the enemy whose line it watches and whether that line is clear),
-// 'nav' (the battle's navgrid, for a check), 'place' [x, z, y?] (the player's soldier stood there, on the sim's ground without a y: a check's walk of the map), 'where' (the player's place, and whether its body walks the level's shapes), 'walkersHome' (each escort's walker at its route's end: a check's way into stage 2),
+// 'rows' on (the far soldiers as rows, or every soldier a figure, on a page
+// opened with ?rows=on; it answers with how many are which: figures/figures.js),
+// 'bots' (each living bot's side, mode, target, whether it fires, its order's key (`post2`), its yaw, health, whether it interacts and the enemies it believes in (`+` seen), and for a round's bot the enemy whose line it watches and whether that line is clear),
+// 'nav' (the battle's navgrid, for a check), 'doors' (the mode part's doors and gates: each one's open fraction, and what its scene draws), 'place' [x, z, y?] (the player's soldier stood there, on the sim's ground without a y: a check's walk of the map), 'where' (the player's place, and whether its body walks the level's shapes), 'walkersHome' (each escort's walker at its route's end: a check's way into stage 2), 'captured' (each capture point of the stage at a full meter: a check's way into stage 3), 'objectives' (the stage's objectives as the mode has them: a charge's keypad, hold, fuse and holder),
 // 'instantActionSchema' (a promise of the setup screen's options),
 // 'instantAction' options (a promise of { ok, props } to mount the round with:
 // create's `instantAction`, lib/battlefront/instantAction.js) and 'round'
@@ -52,6 +54,7 @@ import { createCameraRig } from './cameraRig.js';
 import { recoilOf } from '../../lib/battlefront/weapons.js';
 import { appearanceOf, characterOfOffer, picksOf, readStore } from '../../lib/bf2017/collection.js';
 import { KINDS, SIDE_OF_TEAM, createFigures, figureCuts, preloadBody } from './figures/figures.js';
+import { wantsRows, zoomOf } from './figures/band.js';
 import { RAGDOLLS, createRagdolls } from './figures/ragdolls.js';
 import { createBolts } from './fx/bolts.js';
 import { createKitFx } from './fx/kit.js';
@@ -60,12 +63,17 @@ import { createInput } from './input.js';
 import { createLevel } from './map/level.js';
 import { armCaster, createPartsCollision, wantsEngine } from './map/collision.js';
 import { createWalker } from './map/walk.js';
+import { arrive as arriveRoute, createDoors, destroy as destroyVehicle, stepDoors } from './map/doors.js';
+import { createDoorsScene } from './map/doorsScene.js';
+import { sideOf } from '../../lib/battlefront/modes/galacticAssault.js';
 import { holesOf } from '../../lib/land/holes.js';
 import SOLDIER_BODY from '../../data/bf2017/physics/soldier.json';
 import { PLAYER_ID, STEP, addPlayer, botsAt, createBattle, deploy, grant, roundBattle, spawnFor, step, view } from './battle.js';
 import { entryFor } from './weather.js';
 import { levelLightOf } from './baseLight.js';
 import { guardOf } from '../../lib/three/pipelineGuard.js';
+import { createFigureRows } from '../../lib/three/figureRows/rows.js';
+import { loadThree } from '../../lib/three/light/three.js';
 import { ADAPT_S, arrivalExposure, stopsFrom } from './waiting.js';
 import { createSoundPlayer } from './sound/player.js';
 import { PRELOAD, createDirector } from './sound/director.js';
@@ -149,7 +157,8 @@ export default {
     // off, for a check that measures what the snow costs; `detail` is the
     // quality level in force, 'ultra' on a strong card where the tier is
     // 'high': the ground's 1 m patch and its map sizes read it)
-    const level = createLevel({ scene, tier, detail: device().detail, texTier: textureTier(tier, rt.video), renderer, world: levelName, gpuScene, snow: flags?.get('ground') !== 'flat', ...(flags?.get('inside') === 'off' ? { inside: null } : {}) /* (?inside=off: the level without its interior pack, a check's measure of what Echo Base costs) */, onCell: (k, b, band, part) => {
+    // (`mode`: the mode's own part of the level where it has one, Hoth's Galactic Assault: map/level.js's MODES)
+    const level = createLevel({ scene, tier, detail: device().detail, texTier: textureTier(tier, rt.video), renderer, world: levelName, mode, gpuScene, snow: flags?.get('ground') !== 'flat', ...(flags?.get('inside') === 'off' ? { inside: null } : {}) /* (?inside=off: the level without its interior pack, a check's measure of what Echo Base costs) */, onCell: (k, b, band, part) => {
         streamed.set(`${part}|${k}`, [k, b, band, part]);
         collision?.add(k, b, band, part);
       },
@@ -162,8 +171,14 @@ export default {
     const ragdolls = createRagdolls({ book: import('../../data/bf2017/physics/ragdoll.json').then((m) => m.default), floorAt: (x, z) => level.heightAt(x, z), max: RAGDOLLS[tier] ?? RAGDOLLS.mid });
     // (each body's cut by its distance, the game's LOD0 near on a level that upgrades: figures.js)
     const cuts = figureCuts({ level: device().detail, lowData: Boolean(device().saveData) });
+    // (with ?rows=on in the address, a soldier past the band's distance, 91 m at ultra, is a row of an
+    // instanced draw, not a figure: the site's own economy, lib/three/figureRows, figures/band.js. Off for
+    // every visitor, and always off on a backend that is not WebGPU (band.js's wantsRows), until the
+    // owner's GPU has shown a row is the figure's picture with the post chain on and what it saves at 24 a
+    // side: docs/superpowers/evidence/far-soldiers-rows, which also says what is not shown)
+    const rows = wantsRows(flags, renderer) ? createFigureRows({ scene, renderer, tsl: (await loadThree()).tsl }) : null;
     // (?skin=whole in the address: every part on the file's whole rig, for a check that measures what the cut skins save)
-    const figures = createFigures({ scene, ragdolls, cuts, prune: flags?.get('skin') !== 'whole' });
+    const figures = createFigures({ scene, ragdolls, cuts, prune: flags?.get('skin') !== 'whole', rows });
     // (the player's side's near body fetched behind the waiting screen, so the first deploy is already on it)
     preloadBody(KINDS[SIDE_OF_TEAM[PLAYER_TEAM]], cuts);
     const bolts = createBolts(scene);
@@ -186,7 +201,7 @@ export default {
       await preload();
       physics = await createPhysics();
       // (the outside's and its interior's, Hoth's Echo Base: map/level.js's inner)
-      collision = createPartsCollision({ parts: { outside: { pack: level.pack, loadBin: level.loadBin }, inside: level.inner }, physics, tier });
+      collision = createPartsCollision({ parts: { outside: { pack: level.pack, loadBin: level.loadBin }, inside: level.inner, mode: level.modePart }, physics, tier });
       // (the ground's own holes left out of its collider: the hangar mouths and the trench tunnels, lib/land/holes.js)
       collision.setTerrain((px, pz) => level.packHeightAt(px, pz) ?? 0, { holes: holesOf(level.pack.terrain) });
       for (const a of streamed.values()) collision.add(...a);
@@ -199,6 +214,11 @@ export default {
     // (the level's own navmesh, its NavPower polygons: the bots' floors one over another, battle.js's NAVMESH_OF;
     // their feet on the level's shapes where the engine has them round the player)
     const navmesh = navBytes ? { bytes: new Uint8Array(navBytes), floor: (x, y, z) => collision?.floor(x, y, z) ?? null } : null;
+    // (the mode part's doors, gates and state props: map/doors.js's rule, map/doorsScene.js's things, a round's own state)
+    const part = level.modePart;
+    const doorsFor = (m) => (part?.mode && m === 'galacticAssault' ? createDoors(part.mode, { origin: part.pack.origin }) : null);
+    let doors = doorsFor(mode);
+    const doorsScene = part?.mode ? createDoorsScene({ part, physics }) : null;
     // (an Instant Action round, the setup screen's choices: lib/battlefront/instantAction.js reads the
     // server's rows for them, and the sim takes the round at its making: sim.js's roundIn)
     // (the machine's share of a round's bots, by its quality level: every bot is a body drawn and a mind stepped)
@@ -387,6 +407,7 @@ export default {
       me = addPlayer(sim, { team });
       director = createDirector({ player: sound, me: PLAYER_ID, team });
       castArm = armCaster({ heightAt: (x, z) => level.heightAt(x, z), collision, nav: sim.nav });
+      doors = doorsFor(battleMode);
       park = parkOf();
       picked = null;
       mate = null;
@@ -468,7 +489,9 @@ export default {
         const kicked = rig.offset();
         read.yaw += kicked.yaw;
         read.pitch += kicked.pitch;
-        const v = view(sim);
+        // (the frame's lean view: the HUD's snapshot alone makes the deploy
+        // screen's rows, the squad's and the scoreboard, battle.js's view)
+        const v = view(sim, { lean: true });
         input.swallow(v.deploy.open);
         // (the first deploy is the waiting screen's, through the wipe: the input's Enter waits for it)
         const deploying = v.deploy.open && read.deploy && !parked;
@@ -505,8 +528,20 @@ export default {
         // no step and no deploy draws the view it began with: the view is
         // one object refilled, and building it three times a frame was the
         // world's own main-thread cost)
-        const after = stepped > 0 || deploying ? view(sim) : v;
+        const after = stepped > 0 || deploying ? view(sim, { lean: true }) : v;
         if (stepped > 0) director.update(after, heard, stepped, { waiting: parked });
+        // (the doors moved before the world steps: a leaf's body goes where it is drawn; the
+        // gates' run is lib/battlefront/gates.js's, through Galactic Assault's view where the
+        // sim has them: until then shut)
+        if (doors) {
+          const ga = sim.sim.ga ?? null;
+          const soldiers = [];
+          for (const e of sim.sim.entities.values()) if (e.kind === 'soldier' && e.alive) soldiers.push({ at: e.at, team: e.team, side: ga ? sideOf(ga, e.team) : null, alive: true });
+          // (the frame's own view's: built once already)
+          const gates = after.mode?.gates ?? {};
+          stepDoors(doors, dt, { soldiers, ga, gates });
+          doorsScene?.update(doors);
+        }
         // (a soldier held in the air for want of a floor gets the frame's time for the shapes under it)
         collision?.update(walker?.held ? 16 : 4, body()?.at ?? null);
         walker?.step();
@@ -535,7 +570,8 @@ export default {
         }
         if (pose) rig.set(pose);
         rig.update(dt);
-        figures.update(drawn.entities, dt, Math.min(1, acc / STEP), camera.position);
+        // (the rows' band by the camera's own field of view, as the rig has just set it: one at the game's 55°)
+        figures.update(drawn.entities, dt, Math.min(1, acc / STEP), camera.position, zoomOf(camera.fov));
         ragdolls.update(dt);
         clock += dt;
         // (each bolt leaves its owner's gun: fx/bolts.js)
@@ -557,6 +593,8 @@ export default {
       draw({ renderer: r }) {
         level.beforeRender(camera);
         scene.updateMatrixWorld();
+        // (the far soldiers' rows, from the bones as that walk left them)
+        figures.place(camera);
         if (post) post.render();
         else r.render(scene, camera);
         level.afterRender();
@@ -637,10 +675,16 @@ export default {
             return beginRound(arg ?? {});
           case 'bots':
             // (the bots as the sim has them, for a check: each one's side, what it is doing, whom it is after, whether it is firing)
-            return [...sim.sim.entities.values()].filter((e) => e.bot && e.kind === 'soldier' && e.alive).map((e) => ({ id: e.id, team: e.team, mode: e.brain?.intent?.mode ?? null, target: e.brain?.target ?? null, firing: e.gun ? sim.sim.time - e.gun.lastShot < 0.2 : false, at: e.at.map((n) => Math.round(n)), watching: e.brain?.apCandidate ?? null, order: e.brain?.task?.key ?? null, lineClear: e.brain?.apLof ? e.brain.apLof.clearSince !== null : null, way: e.brain?.path ? { n: e.brain.path.length, wp: e.brain.wp, goal: e.brain.intent?.goal?.map((n) => Math.round(n)) ?? null, stuck: Math.round((e.brain.stuck ?? 0) * 10) / 10 } : null }));
+            return [...sim.sim.entities.values()].filter((e) => e.bot && e.kind === 'soldier' && e.alive).map((e) => ({ id: e.id, team: e.team, mode: e.brain?.intent?.mode ?? null, target: e.brain?.target ?? null, firing: e.gun ? sim.sim.time - e.gun.lastShot < 0.2 : false, at: e.at.map((n) => Math.round(n)), watching: e.brain?.apCandidate ?? null, order: e.brain?.task?.key ?? null, lineClear: e.brain?.apLof ? e.brain.apLof.clearSince !== null : null, yaw: Math.round((e.yaw ?? 0) * 100) / 100, hp: Math.round(e.hp ?? 0), interact: !!e.interact, believes: Object.values(e.brain?.me?.beliefs ?? {}).filter((b) => b.hostile).map((b) => `${b.id}${b.visible ? '+' : ''}`), way: e.brain?.path ? { n: e.brain.path.length, wp: e.brain.wp, goal: e.brain.intent?.goal?.map((n) => Math.round(n)) ?? null, stuck: Math.round((e.brain.stuck ?? 0) * 10) / 10 } : null }));
           case 'nav':
             // (the battle's navgrid itself, for a check of a way over it; its navmesh by name only)
             return { ...sim.nav, mesh: sim.nav.mesh ? { name: sim.nav.mesh.name, polys: sim.nav.mesh.polyCount, links: sim.nav.mesh.links.length } : null };
+          case 'doors':
+            // (a check's read of the mode part: each door's and gate's open fraction, the scene's counts;
+            // { arrive: path } a walker home by its route, { destroyed: [spawner ids] } their vehicles down, as the game's events)
+            if (doors && arg?.arrive) arriveRoute(doors, arg.arrive);
+            if (doors && arg?.destroyed) for (const id of arg.destroyed) destroyVehicle(doors, id);
+            return doors ? { doors: Object.fromEntries([...doors.doors, ...doors.gates].map((d) => [d.def.id, Math.round(d.ip.value * 1000) / 1000])), stage: doors.stage, scene: doorsScene?.stats() ?? null } : null;
           case 'walkersHome': {
             // (a check's way into stage 2: each escort's walker at the end of its route, so its gate unlocks)
             const ga = sim.sim.ga;
@@ -648,6 +692,20 @@ export default {
             const homed = ga.objectives.filter((o) => o.type === 'escort' && o.walker?.alive);
             for (const o of homed) o.walker.dist = o.walker.length;
             return { ok: true, walkers: homed.length };
+          }
+          case 'captured': {
+            // (a check's way into the next stage: each capture point of the stage the attackers' at a full meter)
+            const ga = sim.sim.ga;
+            if (!ga?.objectives) return { ok: false, why: 'no Galactic Assault' };
+            const points = ga.objectives.filter((o) => o.type === 'capture');
+            for (const o of points) o.meter = 1;
+            return { ok: true, points: points.length, stage: ga.stage };
+          }
+          case 'objectives': {
+            // (a check's read of the stage's objectives as the mode has them: a charge's keypad, hold, fuse and holder)
+            const ga = sim.sim.ga;
+            if (!ga?.objectives) return { ok: false, why: 'no Galactic Assault' };
+            return { ok: true, stage: ga.stage, phase: ga.phase, result: ga.result, objectives: ga.objectives.map((o) => ({ type: o.type, name: o.name, id: o.def?.prefab ?? null, at: o.at, keypad: o.charge?.keypad?.at ?? null, done: o.done, armed: o.armed ?? null, wait: o.wait ?? null, progress: o.progress ?? null, defuse: o.defuse ?? null, fuse: o.fuse ?? null, paused: o.paused ?? null, holder: o.holder ?? null, by: o.by ?? null, meter: o.meter ?? null, inside: o.inside ?? null })) };
           }
           case 'where': {
             // (a check's read of the player: the place, and whether the body on the level's shapes moves it)
@@ -668,6 +726,10 @@ export default {
             return rt.gfx.backend;
           case 'ragdolls':
             return ragdolls.count();
+          case 'rows':
+            // (a check's switch, and what is a row now: ok is whether this page draws rows at all)
+            if (arg !== undefined) figures.setRows(Boolean(arg));
+            return { ok: Boolean(rows), ...figures.stats(), drawn: rows?.stats() ?? null };
           default:
             return { ok: false, why: `no action ${action}` };
         }
@@ -699,7 +761,9 @@ export default {
         bolts.dispose();
         kitFx.dispose();
         figures.dispose();
+        rows?.dispose();
         ragdolls.dispose();
+        doorsScene?.dispose();
         level.dispose();
         walker?.dispose();
         collision?.dispose();
@@ -707,9 +771,9 @@ export default {
         if (typeof window !== 'undefined' && window.__battlefront?.world === world) delete window.__battlefront;
       },
     };
-    // (`light` and `chain`: the light stack's parts and the chain as drawn, for a check in the browser)
+    // (`light` and `chain`: the light stack's parts and the chain as drawn, for a check in the browser; `figures`: the soldiers' own, for a check that times them)
     // (`sounds`: the player's counter by name and kind, the duck and the stem in force, the HDR window, for scripts/bf2017-sound-check.mjs)
-    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, sounds: () => ({ ...sound.stats(), duck: sound.duckKind, music: sound.musicName, window: { ...director.state.window }, suppressed: director.state.suppressed, listener: director.state.listener }), get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
+    if (typeof window !== 'undefined') window.__battlefront = { world, view: snapshot, do: (a, x) => world.do(a, x), light, level, figures, sounds: () => ({ ...sound.stats(), duck: sound.duckKind, music: sound.musicName, window: { ...director.state.window }, suppressed: director.state.suppressed, listener: director.state.listener }), get chain() { return post?.passes ?? null; }, get paceLevel() { return paceLevel; } };
     madeAt = now();
     return world;
   },

@@ -25,7 +25,7 @@ const run = (script, args) => {
   return execFileSync(process.execPath, [join(ROOT, 'scripts', script), ...args], { cwd: ROOT, encoding: 'utf8', env: { ...process.env, NODE_USE_ENV_PROXY: process.env.NODE_USE_ENV_PROXY ?? '1' }, stdio: ['ignore', 'pipe', 'inherit'] });
 };
 // what the import's CREW row says, with the own rig's names in
-export const crewRow = (rig, printed) => {
+const crewRow = (rig, printed) => {
   const m = printed.match(/^\s+\w+: \{ (.*) \},$/m);
   return m ? `  ${FAUNA[rig].body}: { ${m[1].replace("rig: 'walrus'", `rig: 'own', ownRig: '${rig}'`)} },` : null;
 };

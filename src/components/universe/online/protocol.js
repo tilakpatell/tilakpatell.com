@@ -427,7 +427,7 @@ export const WALK_MS = 100;
 const RIDES_SEEN = ['landspeeder', 'speederbike', 'tauntaun', 'kaadu', 'bantha']; // galaxy/surface/rides.js's
 const r2 = (v) => Math.round((v || 0) * 100) / 100;
 // (the gun up, 0…1, then the arms: an older reader stops at the speed)
-export const ARMS_GUNS = ['blaster', 'laser', 'portal', 'revolver', 'pistol', 'bowcaster', 'rifle', 'coppistol', 'saber', 'a280', 'dlt19', 'ee3', 'westar', 'shotgun', 'sniper', 'smg']; // universe/gunplay.js's GUNS
+const ARMS_GUNS = ['blaster', 'laser', 'portal', 'revolver', 'pistol', 'bowcaster', 'rifle', 'coppistol', 'saber', 'a280', 'dlt19', 'ee3', 'westar', 'shotgun', 'sniper', 'smg']; // universe/gunplay.js's GUNS
 const STANCES_SEEN = STANCE_IDS;
 const strokeOf = (s) => (typeof s === 'string' && s.length <= 32 && /^sword(\.[a-z]+)+$/.test(s) ? s : null);
 const writeArms = (a) => {

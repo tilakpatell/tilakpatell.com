@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { runCli, step } from './bf2017-desk.mjs';
 
 export const OUT = 'src/data/bf2017/shaderParams.json';
-export const probeFile = (d) => join(d.mapsWork, 'shaderdepots.jsonl');
+const probeFile = (d) => join(d.mapsWork, 'shaderdepots.jsonl');
 
 // A probe row's shape: { ok, blocks, params, keys } (keys: the row's own,
 // and its first block's and first parameter's, when they are not the reader's).

@@ -47,7 +47,7 @@ export const unreadScores = new Set();
 // The farthest a query looks, whatever its radius (Attack_PvE's 70 m), by hand: the brain's budget.
 export const MAX_SEARCH = 40;
 // The cover-filter mask the records mark "[+] Protected Covers Additional Score": a full-height slot.
-export const PROTECTED = 3801088;
+const PROTECTED = 3801088;
 // Nearer than this to where an angle is measured from, a slot has no angle (metres).
 const HERE = 0.5;
 // A RuntimeFilter whose low 20 bits are set names a cover shape (left, right, top blocked).

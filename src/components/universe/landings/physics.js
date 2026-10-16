@@ -71,7 +71,7 @@ function unit(u) {
 
 // the floor round the landing as a heightfield: a ball's contact rocks a
 // box for ever (never asleep, turning); this cap lets it settle
-export const FLOOR_CAP = { n: 129, size: 256, sink: 0.05 };
+const FLOOR_CAP = { n: 129, size: 256, sink: 0.05 };
 export function capHeights(Rm, { n = FLOOR_CAP.n, size = FLOOR_CAP.size } = {}) {
   const h = new Float32Array(n * n);
   for (let ix = 0; ix < n; ix++)

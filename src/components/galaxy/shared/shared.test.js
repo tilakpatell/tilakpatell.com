@@ -13,7 +13,7 @@ const FACE = [
   [ground, ['SITES', 'makeHeight', 'siteOf']],
   [fight, ['sensesFor', 'startBurst', 'stepBurst', 'strafeStep']],
   [weather, ['createWeather', 'strikeAt']],
-  [level, ['createLevelLoader', 'createLevelPhysics', 'createLevelScene', 'createLevelStream', 'imageLayerOf', 'packBytes', 'packUrl', 'tierTexture', 'wantsEngine', 'wanted']],
+  [level, ['createLevelLoader', 'createLevelPhysics', 'createLevelScene', 'createLevelStream', 'imageLayerOf', 'instancesOf', 'packBytes', 'packUrl', 'tierTexture', 'wantsEngine', 'wanted']],
   [stage, ['HeroStage', 'stageFor']],
 ];
 

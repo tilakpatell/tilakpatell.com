@@ -323,7 +323,7 @@ export const SCREEN_GLOB = /^UI\/(Frontend\/Screens\/.+|LoadingScreens\/MPLoadLe
 // The words the site's front end says that no tree names (the trees fill
 // them at run time): the Play screen's tiles, press-start, the outcome and
 // the death screen's lines, the map list's title.
-export const FRONT_END_KEYS = ['ID_PLAY_SCR_MULTIPLAYER', 'ID_PLAY_SCR_CAMPAIGN', 'ID_PLAY_SCR_SKIRMISH', 'ID_PLAY_SCR_MULTIPLAYER_PLAY', '#19A64FB1', '#615832FF', '#8A053560', '#36B45EAB', '#48A7E354', '#05A0B377', '#73CD3EA7', '#C726953C', '#DFBEEAD5'];
+const FRONT_END_KEYS = ['ID_PLAY_SCR_MULTIPLAYER', 'ID_PLAY_SCR_CAMPAIGN', 'ID_PLAY_SCR_SKIRMISH', 'ID_PLAY_SCR_MULTIPLAYER_PLAY', '#19A64FB1', '#615832FF', '#8A053560', '#36B45EAB', '#48A7E354', '#05A0B377', '#73CD3EA7', '#C726953C', '#DFBEEAD5'];
 
 export function screensOf(root, { names, strings = null, depth = 6 } = {}) {
   const ctx = {

@@ -15,7 +15,7 @@ import { newEve, stepEve } from './companions';
 import { near } from './map';
 import { seeded } from '../../../lib/seeded';
 
-export const CIVS = ['civA', 'civB', 'civC'];
+const CIVS = ['civA', 'civB', 'civC'];
 
 const NAMES = { debbie: 'Mom', cecil: 'Cecil', eve: 'Atom Eve', omni: 'Dad', manager: 'Burger Mart manager', student: 'A classmate', fan: 'Someone from the city' };
 

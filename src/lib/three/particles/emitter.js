@@ -96,7 +96,7 @@ const dirW = [0, 0, 0];
 // scaled per axis, about its centre; then the emitter's offset in its
 // effect. The direction: a box of vectors drawn as they are (the speed
 // scales them), or a cone round `dir` from `from` to `spread` degrees.
-export function spawnParticle(pool, slot, serial, o, owners) {
+function spawnParticle(pool, slot, serial, o, owners) {
   const { em, seed } = pool;
   const pos = em.spawn?.position;
   const off = em.offset ?? ZERO;

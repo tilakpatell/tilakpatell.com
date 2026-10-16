@@ -142,7 +142,7 @@ export function pounce(c) {
 
 // ── The lights ──
 // Linger near one of the candle-lights in the pools and it draws you in.
-export const LURE = { r: 2.6, rise: 0.45, fall: 0.8, moving: 0.4, still: 1.4 };
+const LURE = { r: 2.6, rise: 0.45, fall: 0.8, moving: 0.4, still: 1.4 };
 export const newLure = () => ({ k: 0, near: -1, state: 'on' });
 // One step. `lights` is [[x, z], …]. Events: 'near' as you come by one,
 // 'drawn' when it has you.

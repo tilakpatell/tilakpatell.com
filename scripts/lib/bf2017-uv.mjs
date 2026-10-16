@@ -27,7 +27,7 @@ export function uvArea(uv, index) {
 // (the second set only where it is a real unwrap, under two squares, and
 // tighter than the first: a degenerate one, a tiling one, or one no tighter
 // keeps the drop's own binding)
-export const UNWRAP = { least: 0.05, most: 2 };
+const UNWRAP = { least: 0.05, most: 2 };
 export function atlasSet(area0, area1) {
   if (!(area1 > UNWRAP.least && area1 <= UNWRAP.most)) return 0;
   return area1 < area0 * 0.9 ? 1 : 0;

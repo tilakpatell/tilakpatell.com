@@ -27,7 +27,7 @@ import { bountyTier } from './wanted';
 
 export const WITNESS = { law: 45, civil: 35, gone: 56 }; // how near the law sees what you do; the ordinary ships; and how far a witness must be left behind
 export const COP_SIGHT = 60; // how near one of theirs must be to see you
-export const SPOTTED_FOR = 1.5; // seconds a patrol going past counts as seeing you
+const SPOTTED_FOR = 1.5; // seconds a patrol going past counts as seeing you
 export const BOUNTY_EVERY = [0, 210, 140, 100]; // seconds between bounty hunters, by bountyTier
 // the deeds (standing.js's, as the scene notes them) that are crimes, and
 // which of them the law always sees (it's their own ship, or their scan)

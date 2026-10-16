@@ -10,6 +10,8 @@ src/data  ←  src/lib  ←  src/lib/three  ←  src/runtime  ←  src/component
 
 An arrow points from a module at who may import it. `src/lib` knows no React and no page. `src/lib/three` knows Three.js and nothing about any world. `src/runtime` is the world runtime. `src/data` is imported by anyone and imports nothing but other data.
 
+A renderer, a loop and a post chain are the runtime’s alone. `src/runtime` makes the one renderer (the node renderer, WebGPU first and WebGL 2 under it), asks the browser for frames and steps every world inside them; a world hands it a scene and a step. The measure counts what is left to port: `renderers`, each `new WebGLRenderer(` or `new WebGPURenderer(` in code outside `src/runtime/`, and `loops`, each file that calls `requestAnimationFrame(` outside `src/runtime/`, `src/lib/three/loop.js` and `src/lib/shownLoop.js` (tests left out of both). Each is budgeted and only falls (the engine floor’s design, §4.6).
+
 ## Worlds are islands
 
 A world (`src/components/<world>/`) imports from `src/lib`, `src/runtime`, `src/data`, its own files, and another world only through that world's `index.js` or `shared/` folder. Something two worlds need moves down to `src/lib` or `src/runtime`. A world that reaches into another world's props can't be split, lazy-loaded or deleted on its own. The galaxy and the universe lend through `src/components/galaxy/shared/` and `src/components/universe/shared/` (re-exports, a test pinning each face's names). A world the site may drop keeps every row outside its folders that names it marked, and a tested remover that knows them all: the planet flight is the example (`scripts/flight-island.mjs`).
@@ -40,6 +42,12 @@ A game's rules live in a pure `rules.js` with tests; a scene file composes and d
 ## A dependency has a page
 
 Every package in `package.json` has a row in `docs/stack/README.md` and a page under `docs/stack/` made from `_template.md`, written before the package is first imported. The measure’s `stack-pages` counts the packages with no row and is budgeted at 0, so a new dependency fails CI until it has one. `node scripts/stack-census.mjs --write` rewrites the index’s counts; `docs/stack/stack.test.js` fails when a page names a file that no longer exists.
+
+A record a world reads is a slice. A `.json` imported statically becomes an object literal in the chunk, which every visitor’s engine parses as JavaScript before the first frame. `client-json-kb` sums the kilobytes of each record over 64 KB a file under `src/` imports so (tests and scripts left out). A big record is sliced at build to the keys its readers read (`scripts/library-slice.mjs`’s shape) or fetched with `?url` and parsed by the browser’s JSON parser.
+
+## Evidence is pictures on the bucket
+
+A binary over 1 MB under `docs/` goes to the bucket by hash through `scripts/assets-publish.mjs` and is linked from the lane’s evidence README, never committed: every clone carries a committed one forever. `doc-binaries` counts the committed files over 1 MB under `docs/` (git’s tree at `HEAD`, so an untracked or edited file in a checkout never moves it); it is budgeted at the count on the day it landed and may only fall.
 
 ## A repair changes no pixel
 

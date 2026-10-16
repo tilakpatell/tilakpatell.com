@@ -25,7 +25,7 @@ import { DECAL_ORDER, buildProjected, groupByTexture, loadDecalThree } from './p
 import { volumeBatch, volumeMaterial, volumeOk } from './volume.js';
 
 // the tiers that draw decals (low keeps the GLB's surfaces only)
-export const DECAL_TIERS = ['mid', 'high', 'ultra'];
+const DECAL_TIERS = ['mid', 'high', 'ultra'];
 // the projected decals' polygon offset, factor and units: pulled toward the
 // camera past the surface they were cut from (Review Focus 5)
 export const POLYGON_OFFSET = -4;

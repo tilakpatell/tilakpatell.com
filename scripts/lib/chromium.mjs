@@ -24,8 +24,8 @@ import { existsSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 
 export const WIN_BROWSERS = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', 'C:/Program Files/Microsoft/Edge/Application/msedge.exe'];
-export const MAC_PLAYWRIGHT = `${homedir()}/Library/Caches/ms-playwright/chromium-1243/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing`;
-export const LINUX_BROWSERS = '/opt/pw-browsers';
+const MAC_PLAYWRIGHT = `${homedir()}/Library/Caches/ms-playwright/chromium-1243/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing`;
+const LINUX_BROWSERS = '/opt/pw-browsers';
 
 export function findChromium({ env = process.env, platform = process.platform, exists = existsSync, list = listDir } = {}) {
   if (env.CHROMIUM) return env.CHROMIUM;
