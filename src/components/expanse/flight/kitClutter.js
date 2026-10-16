@@ -16,7 +16,7 @@
 //     ([full, LOD1, puff]) }, dispose() }
 //   rows: the worker's [x, y, z, yaw, scale, kindIndex] each
 
-import { createPool, loadKit } from '../../../lib/three/kit';
+import { createPool, loadKit } from '../../../lib/three/kitNodes';
 import { CLUTTER_KINDS } from '../../../lib/land/flight/leafMesh';
 import { clutterKitOf } from '../../../lib/land/flight/landmarkTables';
 
@@ -26,7 +26,7 @@ import { clutterKitOf } from '../../../lib/land/flight/landmarkTables';
 const BANDS = [150, 900];
 const CAP = 256; // a pool's instances to start (it grows)
 
-export function createKitClutter(root, { spec, tier = 'mid', load = loadKit, makePool = createPool } = {}) {
+export function createKitClutter(root, { spec, tier = 'mid', load = loadKit, makePool = createPool, house = null } = {}) {
   const table = tier === 'low' ? {} : clutterKitOf(spec);
   const kits = new Map(); // pack → kit
   const kinds = new Map(); // kind index → { pool, size, ready }
@@ -38,7 +38,9 @@ export function createKitClutter(root, { spec, tier = 'mid', load = loadKit, mak
   for (const [kind, row] of Object.entries(table)) {
     const index = CLUTTER_KINDS.indexOf(kind);
     if (index < 0) continue;
-    if (!kits.has(row.kit)) kits.set(row.kit, load(row.kit, {}));
+    // (in the house's look from the start: the node renderer has no frame
+    // guard to put it on as a pool first draws, lib/three/houseNodes)
+    if (!kits.has(row.kit)) kits.set(row.kit, load(row.kit, house ? { house } : {}));
     const kit = kits.get(row.kit);
     const entry = { pool: null, size: row.size, ready: false };
     kinds.set(index, entry);
