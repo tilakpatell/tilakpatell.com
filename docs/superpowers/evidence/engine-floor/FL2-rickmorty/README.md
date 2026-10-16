@@ -19,20 +19,31 @@ Every file under `world/` and `citadel/` takes `hot`, `canvasTexture` and `dispo
 
 ## The pixel gate
 
-Two of `scripts/autopilot-check.mjs`’s shots of the same build never match (a live page after eight seconds of wall time, then a lossy WebP), so the gate is shot with `tools/still.mjs`:
+Two of `scripts/autopilot-check.mjs`’s shots of the same build never match (a live page after eight seconds of wall time, then a lossy WebP), so the gate is shot with `tools/still.mjs`, on each build’s `vite preview`:
 
-- time runs while the page loads (C-137’s fetch is paced by the clock: held still, it held at 0 %) and stands still from the moment the last loading veil is done, seen in the page itself; then the script steps the frames, 16 ms each, 150 of them, the timers on real time;
+- time runs while the page loads (C-137’s fetch is paced by the clock: held still, it held at 0 %) and stands still from the moment the last loading veil is done, seen in the page itself, where the stepping starts too: from there the script steps the frames, 16 ms each, 150 of them, and a frame the browser was asked for before and gave after is moved on to them;
 - `Math.random` seeded, and seeded again when the stepping starts;
-- CSS animations and transitions off;
-- the grade’s grain clock (the one program with both `uTime` and `uGrain`) held to the stepped time: it counts 16 ms for every frame loop begun again while the page loads, and how many there are is the machine’s;
-- the Citadel shot as a returning visitor (`tp-citadel-at` set to the start): a first visit opens with a portal’s sparks, thrown at random while the page is still loading;
-- 960 × 600 (the same both sides; quicker in software), PNG, `tools/diff.mjs` counting every pixel that differs, no tolerance.
+- no sound either side (a sound’s noise is drawn from `Math.random` a sample at a time, the Citadel’s hum tens of thousands of them, and when it’s made against a frame’s sparks is a promise’s timing);
+- no CSS animation or transition;
+- the grade’s grain (the one program with both `uTime` and `uGrain`) held at 0;
+- the Citadel shot as a returning visitor (`tp-citadel-at` at the start): a first visit opens with a portal’s sparks;
+- 960 × 600, PNG, `tools/diff.mjs` counting every pixel that differs, no tolerance.
 
-Main against main still differs now and then: a shader whose clock is the frames it was drawn (the Citadel’s portal column, Morty’s walk) runs a frame out when a frame loop begins again during the loading. So each route is shot twice on main and twice on the branch, and the gate is that every shot of the branch is the same as a shot of main, to the pixel.
+Main against `origin/main` at `1467c2b5`, built; the branch at its head, built; two shots each:
 
-GATES_TABLE
+| route | main × main | branch × branch | main × branch |
+| --- | --- | --- | --- |
+| `/c-137/citadel` (against main with the curve’s font wait, below) | 0 | 0 | 0, 0 |
+| `/c-137` | 2,464 | 3,155 | 0 (b2 × a2), 2,436 (b1 × a1) |
+| `/c-137/pluto` | 0 | 0 | 0, 0 |
 
-`shots/` keeps one picture a route (the before and the after are the same file’s pixels).
+On `/c-137` the only pixels that differ between any two shots, main’s or the branch’s, are a visitor walking in at the left edge of the street, whose figure is in the picture from the frame its model has come down (`world/visitors.js`), and the pair that agrees on it agrees on every pixel.
+
+**One repair changes pixels, and it is said here.** The Central Finite Curve’s band over the concourse (`citadel/curve.js`) is painted with its words in Orbitron, the face the Citadel’s page loads for itself, and whether the face had arrived when the band was painted was a race: on main it lost in the shot (the band’s words in the fallback face), on the runtime’s path it won. The scene now waits for the face (three seconds at most) before it paints (`citadel/scene.js`), so the band is in the face it asks for. Main with that one wait added (its own build, `wt-main` plus the three lines) against the branch is 0 pixels, so the move changes nothing; the wait alone against main is 90,964 pixels, the band’s letters and their glow (`shots/citadel-main-without-the-font-wait.webp` against `shots/citadel.webp`).
+
+How it was found (the probes stay in the tool): the scene’s clocks read from their uniforms, equal; the random numbers drawn, equal once sound was off; the renderers’ state through three’s devtools hook, the same; the scene’s groups hidden in halves on both sides (`--tweak`, on the dev servers, where `window.__CITADEL__` reaches the scene) until the one left, the band, and its painted texture read back: two faces.
+
+`shots/` keeps one picture a route.
 
 ## The probe
 
@@ -44,7 +55,10 @@ The WebGPU rows are the owner’s machines’ and are left empty; these worlds a
 
 ## Checks
 
-CHECKS
+- `npm run lint`: clean.
+- `npm test`: 16,135 passed, 6 skipped, 2 failed under the load of the stills running beside it (`scripts/lib/bf2017-hulls.test.mjs`’s capital budget and `middleearth/towns/moria/layout.test.js`’s fork, at 5.2 s); both pass alone (56 of 56). The Rick and Morty and runtime suites: 1,074 passed.
+- `npm run build`: built.
+- `node scripts/health.mjs --check --skip build`: every metric in budget but `boundary-breaks`, 489 over 481, and `origin/main` at `1467c2b5` is at 489 too (`lib/land` reaching into `galaxy/surface`); this branch adds none and removes none. `renderers` 16 and `loops` 58, as on main: the renderer the two worlds made was `lib/stage3d.js`’s one site, which Middle-earth, the Caribbean, the music room, Cybertron, Albuquerque and Rick and Morty’s three places still make, and their loop was `lib/hooks`’ `useFrameLoop`, which the measure doesn’t count; the four Rick and Morty sites it counts (`GalaxyBackdrop.jsx`, `cruiser3d.js`, `wardrobe/preview.js`, and `lib/stage3d.js` through the places) go with the second pull request.
 
 ## Known, carried on
 
