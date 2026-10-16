@@ -213,17 +213,41 @@ async function shoot() {
     // clock is stepped: what a load sets going, a scene made, its first
     // frame asked for, then happens in the gap after it, and a frame never
     // lands before or after a load by the luck of the moment it arrived)
+    // (and handed over in one order, the address's, one at a time, so two
+    // builds that asked for the same files at another moment have them
+    // arrive in the same order: a figure's model came in before the
+    // kitchen's first frame in one build and after it in the other)
     let stepping = false;
+    const waiting = [];
+    let fetching = 0; // (asked of the server, not back yet)
     await page.route('**/*', async (route) => {
       let response;
+      fetching += 1;
       try {
         response = await route.fetch();
       } catch {
         return route.abort().catch(() => {});
+      } finally {
+        fetching -= 1;
       }
-      while (stepping) await sleep(5);
-      await route.fulfill({ response }).catch(() => {});
+      await new Promise((release) => waiting.push({ url: route.request().url(), release: () => route.fulfill({ response }).catch(() => {}).then(release) }));
     });
+    const handOver = async () => {
+      while (waiting.length) {
+        // (everything asked for back from the server first, then all of it in order)
+        for (let t = 0; fetching > 0 && t < 10000; t += 10) await sleep(10);
+        await sleep(30);
+        const round = waiting.splice(0).sort((x, y) => (x.url < y.url ? -1 : x.url > y.url ? 1 : 0));
+        for (const w of round) {
+          if (stepping) {
+            waiting.unshift(w);
+            break;
+          }
+          await w.release();
+          await sleep(10);
+        }
+      }
+    };
     const step = async (ms) => {
       stepping = true;
       try {
@@ -240,8 +264,9 @@ async function shoot() {
     const quiet = async () => {
       let still = 0;
       for (let t = 0; t < 30000 && still < quietMs; t += 50) {
+        await handOver();
         await sleep(50);
-        still = inflight > 0 ? 0 : still + 50;
+        still = inflight > 0 || waiting.length ? 0 : still + 50;
       }
     };
     const errors = [];
