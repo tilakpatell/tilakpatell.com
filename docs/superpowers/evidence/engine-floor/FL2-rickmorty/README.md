@@ -47,11 +47,18 @@ How it was found (the probes stay in the tool): the scene’s clocks read from t
 
 ## The probe
 
-`scripts/perf-probe.mjs c137` against each build’s `vite preview`, `VIEW=960x600@1` (the default 1470 × 956 at 2 timed out on main in software at 300 s), the container’s SwiftShader:
+`scripts/perf-probe.mjs c137` waits 300 s for the world, and in the container’s software renderer C-137 takes about 200 s to come up before the probe’s own counting slows it past that: it timed out on main as on this branch, at Low and High, against a dev server at 1470 × 956 at 2 and against each build’s `vite preview` at 960 × 600 at 1 (`VIEW=960x600@1`). So the frame times are `tools/frames.mjs`’s: the route on each build’s `vite preview`, 960 × 600 at 1, the world’s box waited for (`[data-on]`), three seconds, then W held (Morty walks, the camera follows) for 20 or 40 s, every frame’s interval and the main thread’s long tasks counted (at Low the site asks, in software, before it loads a world, and the probe answers “Open without installing” either side). SwiftShader, so a frame is seconds:
 
-PROBE_TABLE
+| route | quality | build | frames | p50 ms | p99 ms | long tasks |
+| --- | --- | --- | --- | --- | --- | --- |
+| `/c-137` | Low | main | 36 | 566.7 | 833.3 | 0 |
+| `/c-137` | Low | branch | 34 | 600.1 | 866.6 | 0 |
+| `/c-137` | High | main | 14 / 26 / 19 | 1,566.6 / 1,616.7 / 1,766.7 | 1,799.9 / 3,699.8 / 11,966.2 | 0 / 0 / 1 (13.8 s) |
+| `/c-137` | High | branch | 8 / 19 / 24 | 1,633.4 / 1,649.9 / 1,733.3 | 11,616.1 / 12,332.8 / 2,149.9 | 1 (13.4 s) / 1 (14.1 s) / 0 |
+| `/c-137/citadel` | High | main | 7 | 2,699.9 | 3,016.5 | 0 |
+| `/c-137/citadel` | High | branch | 8 | 2,733.3 | 2,966.5 | 0 |
 
-The WebGPU rows are the owner’s machines’ and are left empty; these worlds are `'glsl'` until FL3.
+The medians are within each other’s spread. The one long stall of about 12 s at High comes on main (its third run) and on this branch (its first and second) alike, a shader or a picture the software renderer meets mid-walk; it isn’t the move’s. These rows say “no slower in software” and no more: the real ones are the owner’s machines’ (the WebGPU rows stay empty; these worlds are `'glsl'` until FL3).
 
 ## Checks
 
