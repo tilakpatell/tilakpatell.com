@@ -2,13 +2,14 @@
 // A still of a route that comes out the same every time it is shot, so a
 // before and an after can be compared pixel for pixel: autopilot-check's
 // shots are a live page after eight seconds of wall time, through a lossy
-// WebP, and two of them of the same build never match. Here time stands
-// still while the page loads (performance.now, Date and the frames'
-// timestamps held; the timers on real time so the loading ends), then the
+// WebP, and two of them of the same build never match. Here time runs
+// while the page loads and stands still the moment its loading veils are
+// done (performance.now, Date and the frames' timestamps held), then the
 // script steps the frames itself, 16 ms each, the same number every run,
 // with Math.random seeded. The picture is the PNG. (Playwright's own clock
 // was tried first: how many of its frames the loading took varied from run
-// to run, and so did the picture.)
+// to run, and so did the picture; time held still through the loading
+// held C-137's fetch, which is paced by the clock, at 0 %.)
 //
 //   node still.mjs --dist dist --routes /c-137,/c-137/citadel --out dir
 //     [--frames 480] [--phone] [--quality high|mid|low] [--tag before]
@@ -87,31 +88,45 @@ try {
         t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
       };
-      // Time stands still while the page loads (performance.now, Date and
-      // the frames' timestamps held at one moment, the timers running on
-      // real time so the loading finishes), so however long it takes, the
-      // worlds see none of it pass; then the script steps the frames itself,
-      // 16 ms each, the same number every run.
-      let vt = 1000;
+      // Time runs while the page loads (a loader may wait on it: C-137's
+      // fetch is paced by the clock) and stands still from the moment the
+      // last loading veil is done (seen in the page itself, before the next
+      // frame): a world ticks only once it's shown, so however long the
+      // loading took, it sees none of it. Then the script steps the frames
+      // itself, 16 ms each, the same number every run.
+      const realNow = performance.now.bind(performance);
+      let frozen = null;
+      const STILL_AT = 1e7; // (ms: later than any loading)
+      const now = () => (frozen === null ? realNow() : frozen);
+      let vt = 0;
+      Object.defineProperty(window, '__vt', { get: () => now() });
       const EPOCH = Date.UTC(2026, 9, 15, 12);
       const RealDate = Date;
-      performance.now = () => vt;
+      performance.now = now;
       Date = class extends RealDate {
         constructor(...x) {
           if (x.length) super(...x);
-          else super(EPOCH + vt);
+          else super(EPOCH + now());
         }
         static now() {
-          return EPOCH + vt;
+          return EPOCH + now();
         }
       };
+      const veils = () => document.querySelectorAll('.loading-veil').length > 0 && !document.querySelector('.loading-veil:not(.is-done)');
+      new MutationObserver((_, o) => {
+        if (frozen === null && veils()) {
+          frozen = STILL_AT;
+          vt = STILL_AT;
+          o.disconnect();
+        }
+      }).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
       const realRaf = window.requestAnimationFrame.bind(window);
       const realCancel = window.cancelAnimationFrame.bind(window);
       let stepping = false;
       let queue = new Map();
       let id = 1e6;
       window.requestAnimationFrame = (fn) => {
-        if (!stepping) return realRaf(() => fn(vt));
+        if (!stepping) return realRaf(() => fn(now()));
         const n = ++id;
         queue.set(n, fn);
         return n;
@@ -134,7 +149,7 @@ try {
           return at;
         };
         Gl.prototype.uniform1f = function (at, v) {
-          return set1.call(this, at, at && grainAt.has(at) ? vt / 1000 : v);
+          return set1.call(this, at, at && grainAt.has(at) ? now() / 1000 : v);
         };
       }
       // (and no CSS animation or transition, before or after: theirs run on
@@ -147,11 +162,13 @@ try {
       else new MutationObserver((_, o) => document.documentElement && (o.disconnect(), add())).observe(document, { childList: true });
       window.__still = {
         start() {
+          if (frozen === null) frozen = vt = STILL_AT;
           stepping = true;
           seed(0x2545f491);
         },
         frame() {
           vt += 16;
+          frozen = vt;
           const run = queue;
           queue = new Map();
           for (const fn of run.values()) fn(vt);
