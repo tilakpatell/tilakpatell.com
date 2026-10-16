@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useStage, useStageFrame } from '../../avengers/shared/runtime';
+import { register, useStage, useStageFrame } from '../../avengers/shared/runtime';
 import gameModule from './module';
 import { use3D } from '../../../lib/gpu';
 import { capturePointer } from '../../../lib/pointer';
@@ -75,6 +75,16 @@ export default function Viewer() {
 
   const tick = useCallback((dtMs) => stage.view.current?.render(Math.min(0.05, dtMs / 1000)), [stage.view]);
   useStageFrame(stage, tick, stage.status === 'on' && stage.visible);
+  // (for the browser checks, in development: its view, as each HQ game's)
+  useEffect(
+    () =>
+      register('viewer', {
+        get view() {
+          return stage.view.current;
+        },
+      }),
+    [stage.view],
+  );
 
   const onPointerDown = (e) => {
     capturePointer(e);

@@ -87,7 +87,7 @@ const TARGETS = [
   { id: 'titan', route: '/avengers', scroll: '#thanos', engine: 'window.__HQ__?.titan?.view?.engine' },
   { id: 'invworld', route: '/invincible', engine: 'window.__INVWORLD__?.api?.engine' },
   { id: 'thinkmark', route: '/invincible', scroll: '#inv-game', engine: 'window.__HQ__?.thinkmark?.view?.engine' },
-  { id: 'viewer', route: '/invincible', scroll: '#inv-cast', engine: null, canvas: '#inv-cast canvas', ready: '#inv-cast .hq-canvas[data-on]' },
+  { id: 'viewer', route: '/invincible', scroll: '#inv-cast', engine: 'window.__HQ__?.viewer?.view?.engine' },
 ];
 const only = typeof args.only === 'string' ? args.only.split(',') : null;
 const targets = TARGETS.filter((t) => !only || only.includes(t.id));
