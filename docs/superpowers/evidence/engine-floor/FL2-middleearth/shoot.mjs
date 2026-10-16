@@ -249,6 +249,8 @@ async function shoot() {
       }
     };
     const step = async (ms) => {
+      // (not while a round of answers is being handed over)
+      while (pumping) await sleep(5);
       stepping = true;
       try {
         await page.clock.runFor(ms);
@@ -261,10 +263,17 @@ async function shoot() {
     page.on('request', () => inflight++);
     page.on('requestfinished', () => inflight--);
     page.on('requestfailed', () => inflight--);
+    // (the answers handed over whenever the clock isn't being stepped: the
+    // page's own load waits on them too)
+    let pumping = false;
+    const pump = setInterval(() => {
+      if (pumping || stepping || !waiting.length) return;
+      pumping = true;
+      handOver().finally(() => (pumping = false));
+    }, 20);
     const quiet = async () => {
       let still = 0;
       for (let t = 0; t < 30000 && still < quietMs; t += 50) {
-        await handOver();
         await sleep(50);
         still = inflight > 0 || waiting.length ? 0 : still + 50;
       }
@@ -331,6 +340,7 @@ async function shoot() {
     } catch (e) {
       note = ` failed: ${String(e.message).split('\n')[0]}`;
     }
+    clearInterval(pump);
     console.log(`${shot.id.padEnd(20)} ${((Date.now() - started) / 1000).toFixed(0)}s${note}${errors.length ? ` errors: ${errors.slice(0, 2).join(' | ')}` : ''}`);
     await ctx.close();
   }
