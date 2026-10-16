@@ -16,7 +16,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { Fn, OnBeforeFrameUpdate, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, clamp, cross, dot, exp, float, floor, fract, instancedDynamicBufferAttribute, length, max, mix, modelViewMatrix, modelWorldMatrix, normalGeometry, normalize, positionGeometry, pow, select, smoothstep, step, texture, uniform, uv, varyingProperty, vec2, vec3, vec4, viewportSize } from 'three/tsl';
+import { Fn, attribute, cameraPosition, cameraProjectionMatrix, cameraViewMatrix, clamp, cross, dot, exp, float, floor, fract, length, max, mix, modelViewMatrix, modelWorldMatrix, normalGeometry, normalize, positionGeometry, pow, select, smoothstep, step, texture, uniform, uv, varyingProperty, vec2, vec3, vec4, viewportSize } from 'three/tsl';
 import { asNode, instanceMatrixOf, wrap } from '../../../../../lib/three/hookNodes';
 
 // GLSL’s smoothstep with its edges reversed (1 at a, down to 0 at b), as nodes
@@ -57,24 +57,6 @@ const farMaterial = (u, params = {}) => {
   m.uniforms = { uOrigin: u.uOrigin };
   return m;
 };
-
-// The instance’s colour in the vertex stage (GLSL’s instanceColor), kept in
-// step with the mesh’s own as three’s instancing keeps it: a buffer of its
-// own over the same array, its version followed each frame.
-const colourBuffers = new WeakMap();
-function instanceColourOf(builder) {
-  const colours = builder?.object?.instanceColor;
-  if (!colours) return vec3(1);
-  let ib = colourBuffers.get(colours);
-  if (!ib) {
-    ib = new THREE.InstancedInterleavedBuffer(colours.array, 3, 1);
-    colourBuffers.set(colours, ib);
-  }
-  OnBeforeFrameUpdate(() => {
-    if (ib.version !== colours.version) ib.version = colours.version;
-  });
-  return vec3(instancedDynamicBufferAttribute(ib, 'vec3', 3, 0));
-}
 
 export const skyUniforms = (sun, colour) => ({ uOrigin: uniform(new THREE.Vector3()), uSun: uniform(sun.clone()), uSunColour: uniform(new THREE.Color(...colour)) });
 
@@ -230,17 +212,21 @@ export function haloMaterial(u, { air, r }) {
 export function flashMaterial() {
   const m = new MeshBasicNodeMaterial({ lights: false, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, fog: false });
   const vUv = varyingProperty('vec2', 'vFlashUv');
-  const vC = varyingProperty('vec3', 'vFlashColour');
   m.vertexNode = Fn((builder) => {
     vUv.assign(positionGeometry.xy);
-    vC.assign(instanceColourOf(builder));
     const im = instanceMatrixOf(builder);
     const mv = modelViewMatrix.mul(im ? im.mul(vec4(0, 0, 0, 1)) : vec4(0, 0, 0, 1));
     const k = im ? length(im.element(0).xyz) : 1;
     return cameraProjectionMatrix.mul(vec4(mv.xy.add(positionGeometry.xy.mul(k)), mv.z, mv.w));
   })();
   const d = dot(vUv, vUv);
-  m.colorNode = vC.mul(exp(d.mul(-9)).add(exp(d.mul(-2.5)).mul(0.25))).mul(smoothstep(0.7, 1, d).oneMinus());
+  // (each flash's own colour, the GLSL's instanceColor, is three's to put
+  // on: a node material multiplies its colour by an instanced mesh's
+  // instanceColor itself, so the twin multiplying by it too drew every
+  // flash in its colour squared, 16.8 dB off the GLSL's. And a vec3: a bare
+  // float would be the colour's alpha as well, and the additive blend would
+  // weigh the glow by itself)
+  m.colorNode = vec3(exp(d.mul(-9)).add(exp(d.mul(-2.5)).mul(0.25)).mul(smoothstep(0.7, 1, d).oneMinus()));
   m.uniforms = {};
   return m;
 }
