@@ -12,8 +12,10 @@
 // tick (useTick, ./tick.js), run by this world's step in the runtime's
 // loop, with the milliseconds since its own last frame as lib/hooks'
 // useFrameLoop gave them (16 for its first). A tick that names its canvas
-// runs with its view's renderer state on (views.enter), and the lead's runs
-// last. A tick that returns false stops until it's started again. The
+// runs with its view's renderer state on (views.enter); the ticks run in the
+// order they were started, as requestAnimationFrame's callbacks did (the
+// lead view's draw is held to the frame's end by the views instead). A tick
+// that returns false stops until it's started again. The
 // stages (./stage.js) draw through their views; their quality steps are
 // the runtime's governor's (lowerQuality), in the old watchdog's order.
 //
@@ -106,6 +108,9 @@ export function makeWorld(rt, { createViews, doc = typeof document !== 'undefine
           if (t.on || disposed) return;
           t.on = true;
           t.last = last;
+          // (to the back of the queue, as a frame asked for again was)
+          ticks.delete(t);
+          ticks.add(t);
           rt.invalidate?.();
         },
         stop() {
@@ -134,9 +139,9 @@ export function makeWorld(rt, { createViews, doc = typeof document !== 'undefine
       if (disposed) return;
       if (up !== world && !refused) publish(world);
       views.frame();
-      // (the lead's last: what the others leave in the canvas's corner is
-      // drawn over before it's shown; a stable sort keeps the rest in order)
-      const due = [...ticks].filter((t) => t.on).sort((a, b) => views.order(a.el) - views.order(b.el));
+      // (in the order they were started, as requestAnimationFrame ran its
+      // callbacks: what each takes from Math.random comes in the same turn)
+      const due = [...ticks].filter((t) => t.on);
       for (const t of due) {
         // (one handed over this very frame has had it)
         if (!t.on || t.last === now) continue;

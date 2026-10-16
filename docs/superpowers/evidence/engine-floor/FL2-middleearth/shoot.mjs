@@ -19,7 +19,7 @@
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
-import { mkdir, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { freePort } from '../../../../../scripts/lib/noise.mjs';
 
@@ -40,7 +40,12 @@ const ticked = (g) => `Boolean(window.${g}?.sim?.t > 0)`;
 const RUSH = new Set(['shire', 'bree', 'weathertop', 'rivendell', 'moria', 'lorien', 'amon-hen', 'dead-marshes', 'cirith-ungol', 'mordor']);
 export const SHOTS = [
   { id: 'hub', route: '/middle-earth', part: null, canvas: null },
-  ...PLACES.map((p) => ({ id: p, route: `/middle-earth/${p}`, part: null, canvas: '.shire-world .shire-canvas', ticked: ticked(GLOBAL[p]) })),
+  // (a town's shot is judged inside its stage: the map behind the page's
+  // edges is still easing there, from when the page loaded, and the world
+  // up a frame later than the stages were made puts it a frame further on;
+  // the map itself is judged where it has come to rest, the hub's shot and
+  // the parts')
+  ...PLACES.map((p) => ({ id: p, route: `/middle-earth/${p}`, part: null, canvas: '.shire-world .shire-canvas', ticked: ticked(GLOBAL[p]), box: '.shire-world .shire-stage' })),
   // (the kitchens at Low: a part waits on the map behind it, about 200
   // frames, and a kitchen at High is seven seconds a frame in software)
   ...PLACES.filter((p) => RUSH.has(p)).map((p) => ({ id: `${p}-rush`, route: `/middle-earth/${p}`, part: '.rush', canvas: '.rush .shire-canvas', ticked: ticked('__RUSH__'), quality: 'low' })),
@@ -65,10 +70,19 @@ async function compare(a, b) {
       bad++;
       continue;
     }
+    // (a shot that names its box is judged inside it: the box as shot before)
+    const side = [a, b].map((d) => join(d, n.replace(/\.png$/, '.json'))).find(existsSync);
+    const box = side ? JSON.parse(await readFile(side, 'utf8')).box : null;
+    const W = x.info.width;
+    const [x0, y0, x1, y1] = box ? [Math.max(0, box.x), Math.max(0, box.y), Math.min(W, box.x + box.w), Math.min(x.info.height, box.y + box.h)] : [0, 0, W, x.info.height];
     let off = 0;
-    for (let i = 0; i < x.data.length; i += 4) if (x.data[i] !== y.data[i] || x.data[i + 1] !== y.data[i + 1] || x.data[i + 2] !== y.data[i + 2]) off++;
+    for (let py = y0; py < y1; py++)
+      for (let px = x0; px < x1; px++) {
+        const i = (py * W + px) * 4;
+        if (x.data[i] !== y.data[i] || x.data[i + 1] !== y.data[i + 1] || x.data[i + 2] !== y.data[i + 2]) off++;
+      }
     if (off) bad++;
-    console.log(`${n.padEnd(28)} ${off} pixels differ`);
+    console.log(`${n.padEnd(28)} ${off} pixels differ${box ? ` (in its stage, ${x1 - x0} × ${y1 - y0})` : ''}`);
   }
   console.log(bad ? `${bad} of ${names.length} differ` : `all ${names.length} identical`);
   process.exit(bad ? 1 : 0);
@@ -210,6 +224,13 @@ async function shoot() {
       const cdp = await ctx.newCDPSession(page);
       const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' });
       await writeFile(join(out, `${shot.id}.png`), Buffer.from(data, 'base64'));
+      if (shot.box) {
+        const box = await page.evaluate((sel) => {
+          const r = document.querySelector(sel)?.getBoundingClientRect();
+          return r ? { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) } : null;
+        }, shot.box);
+        await writeFile(join(out, `${shot.id}.json`), JSON.stringify({ box }));
+      }
     } catch (e) {
       note = ` failed: ${String(e.message).split('\n')[0]}`;
     }

@@ -6,14 +6,11 @@ import middleEarth, { askAgain, engine, engineNow, makeWorld, refuse } from './m
 // a stand-in for runtime/views.js: what the world asks of it, recorded
 const fakeViews = () => {
   const calls = [];
-  let lead = null;
   return {
     calls,
-    setLead: (el) => (lead = el),
     frame: () => calls.push('frame'),
     flush: () => calls.push('flush'),
     enter: (el) => calls.push(['enter', el]),
-    order: (el) => (el && el === lead ? 1 : 0),
     resize: () => calls.push('resize'),
     dispose: vi.fn(),
   };
@@ -70,21 +67,27 @@ describe('the Middle-earth module', () => {
     expect(world.wants()).toBe(false);
   });
 
-  it('runs the lead view’s tick last, each with its view’s renderer state on, then flushes', () => {
+  it('runs the ticks in the order they were started, a restarted one at the back, each with its view’s state on, then flushes', () => {
     const { world, views } = make();
     const order = [];
     const a = { id: 'a' };
     const b = { id: 'b' };
-    views.setLead(a);
-    world.tick(() => order.push('a'), { el: a }).start();
+    const ta = world.tick(() => order.push('a'), { el: a });
+    ta.start();
     world.tick(() => order.push('b'), { el: b }).start();
     world.tick(() => order.push('none')).start();
     world.step(0.016, {}, 16);
     world.draw({ dt: 0.016, now: 16 });
-    expect(order).toEqual(['b', 'none', 'a']);
+    expect(order).toEqual(['a', 'b', 'none']);
     expect(views.calls[0]).toBe('frame');
     expect(views.calls).toContainEqual(['enter', b]);
     expect(views.calls.at(-1)).toBe('flush');
+    // (stopped and asked for again: behind the others, as a new frame request was)
+    ta.stop();
+    ta.start();
+    order.length = 0;
+    world.step(0.016, {}, 32);
+    expect(order).toEqual(['b', 'none', 'a']);
   });
 
   it('runs a tick handed over from a frame loop of its own no sooner than its next frame, its ms as that loop’s', () => {

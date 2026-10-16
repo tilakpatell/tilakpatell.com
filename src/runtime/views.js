@@ -16,10 +16,15 @@
 // - Any other view that draws this frame draws into the same corner and is
 //   copied out, in the same task, onto its own canvas as a 2D picture: what
 //   that canvas showed when it had a context of its own.
-// - The lead draws last (`order`: the world runs the lead's frame after the
-//   others'), and a lead that didn't draw this frame after another view did
-//   is drawn again from its last draw at flush(), so what the others left
-//   in the corner is never shown.
+// - The lead draws last: its draw is held until flush(), at the frame's
+//   end, after every other view's (the pictures' own frame work runs in the
+//   order it always did, so what they take from Math.random in it, a
+//   splash of rain, is what it was); a lead that didn't draw this frame,
+//   when another view did or it took the canvas this frame, is drawn again
+//   from its last draw, so what the others left in the corner is never
+//   shown. (A view's first frame is never the lead's: one that has drawn
+//   before leads, so a first frame drawn whole, behind the frame guard's
+//   warm-up, is drawn when it's asked.)
 // - A view that stops leading keeps its last frame: drawn once more and
 //   copied out before the canvas leaves it, as a canvas left alone kept it.
 //
@@ -32,7 +37,7 @@
 // it is the size it was).
 //
 // createViews(gfx, { observe }) → { add(el, { ratio, state }) → view,
-//   enter(el), of(el), order(el), frame(), flush(), resize(), lead, dispose() }
+//   enter(el), of(el), frame(), flush(), resize(), lead, dispose() }
 // view: { el, resize(w, h), setRatio(r), draw(fn), size, ratio, buffer,
 //   leading, dispose() } (`draw(fn)`: fn draws the view's frame, the
 //   renderer set for it; `size`: CSS pixels; `buffer`: its pixels in the
@@ -97,7 +102,7 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
   const runtimeState = readState(renderer);
   let lead = null;
   let owner = null; // the view whose state is on the renderer
-  let dirty = false; // another view drew in the corner after the lead this frame
+  let held = false; // the lead's draw this frame, run at flush()
   let switched = false; // the lead changed at this frame's start
   let disposed = false;
   const realSize = renderer.getDrawingBufferSize;
@@ -344,12 +349,12 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
           fit();
           v.drew = true;
           v.last = fn;
-          within(v, fn);
-          if (lead === v) dirty = false;
-          else {
-            copy(v);
-            if (lead) dirty = true;
+          if (lead === v) {
+            held = true;
+            return;
           }
+          within(v, fn);
+          copy(v);
         },
         dispose() {
           stopObserving();
@@ -374,8 +379,6 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
       for (const v of views.values()) v.fit();
       if (lead) place(lead);
     },
-    // which runs last this frame: the lead (the world orders its frame's work by it)
-    order: (el) => (lead && lead.el === el ? 1 : 0),
     // a frame begins: the lead is the view that drew the most of the screen
     // last frame (or still holds it)
     frame() {
@@ -388,13 +391,16 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
         else place(lead);
       }
       for (const v of views.values()) v.drew = false;
-      dirty = false;
+      held = false;
     },
     // the frame's end: the lead drawn again if another view drew over it, or
     // if it took the canvas this frame and didn't draw in it
     flush() {
-      if ((dirty || (switched && !lead?.drew)) && lead?.last) within(lead, lead.last);
-      dirty = false;
+      // (another view drew this frame, so the corner holds its picture, or
+      // the lead's own draw is held, or it took the canvas this frame)
+      const others = [...views.values()].some((v) => v !== lead && v.drew);
+      if (lead?.last && (held || others || switched)) within(lead, lead.last);
+      held = false;
       switched = false;
     },
     dispose() {
