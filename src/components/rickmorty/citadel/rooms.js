@@ -9,7 +9,7 @@ import * as THREE from 'three';
 import { toon, toonify } from '../portal/toon';
 import { fluidMaterial } from './fluid';
 import { makeCanvas } from '../../../lib/paint';
-import { hot } from '../../../lib/stage3d';
+import { hot } from '../stage';
 
 export const ROOMS = { factory: new THREE.Vector3(0, -60, 0), council: new THREE.Vector3(80, -60, 0) };
 // the Council's three chairs, in an arc before the tank, facing the stand

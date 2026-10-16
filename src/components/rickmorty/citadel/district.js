@@ -22,7 +22,7 @@ import { toon } from '../portal/toon';
 import { createMeshyCast } from '../portal/meshyCast';
 import { bake } from '../../middleearth/towns/bake';
 import { makeCanvas } from '../../../lib/paint';
-import { hot } from '../../../lib/stage3d';
+import { hot } from '../stage';
 import { detailLevel, seg, texScale } from '../../../lib/detail';
 import { SKY_FRAG, paintWindowGlow, paintWindows, rng } from './city';
 import { BINS, BLOCKS, CLUB_DOOR, CRUISER, FACTORY_BACK, FRONT, HIDES, LAMPS, LIFT, MART_DOOR, MORTYTOWN, ORIGIN, ROAD } from './mortytown';
