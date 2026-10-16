@@ -13,14 +13,14 @@ Lane FL2 of the engine floor (`docs/superpowers/plans/2026-10-15-engine-floor-la
 
 `scripts/autopilot-check.mjs`’s shots (a wall-clock settle, lossy WebP) and `scripts/gpu-parity.mjs` (which waits for `window.__RUNTIME__`, which main’s map never has) cannot say “the same pixels”: two runs of main itself, shot that way, differ in 39 % of their pixels. `../tools/shoot-same.mjs` shoots both floors the same way: a page clock pinned at 2026-10-08T12:00:00Z and stopped, `Math.random` seeded and reseeded before the frames that are shot, the page’s time moved to one moment, the same 120 frames, a frame asked for on both (`tp:uncover`), the GPU timer hidden so main’s own calibration lands on the sharpest step as the runtime’s `?calibrate=off` does, reduced motion on (the map’s time held at 0: moving, its clock starts when it is made, which the two floors reach at different moments), after a pose (and with `--settle-frames`, before a route) frames till what loads a slice a frame is in, a lossless PNG, every differing pixel counted.
 
-Main at `f97079c7` against the branch at `b0fb8b53`, 1280 × 800 (phone: 390 × 844, touch), each shot from a fresh page:
+Main at `1467c2b5` against the branch at `e6be51ca` (each shot again after main moved on; the same counts at `f97079c7` against `b0fb8b53`), 1280 × 800 (phone: 390 × 844, touch), each route with `--settle-frames`, from a fresh page:
 
 | shot | differing pixels |
 | --- | --- |
 | `/` | 0 |
 | `/universe/marvel` | 0 |
 | `/universe/rickmorty` | 0 |
-| `/universe/starwars` (`--settle-frames`; main against main 0, the branch against itself 0) | 0 |
+| `/universe/starwars` (main against main 0, the branch against itself 0) | 0 |
 | `/` phone | 0 |
 | `/universe/marvel` phone | 0 |
 | `/universe/rickmorty` phone | 0 |
