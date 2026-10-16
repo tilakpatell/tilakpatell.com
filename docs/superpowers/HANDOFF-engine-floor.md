@@ -20,7 +20,7 @@ The owner’s word (2026-10-15): remove the bloat, every world on WebGPU, everyt
 | FL2 the universe map | onto the runtime | `…-laneFL2-onto-the-runtime.md` | now, from `claude/perf-p2-universe` | `session_01Y1FH7HN9EUkZMaSmhse4xt` (Opus 5.5, 19:29 UTC; goes on to FL3) | `claude/engine-floor-fl2-universe` | | |
 | FL2 Middle-earth | onto the runtime | the same | now | `session_01G8eoBfhJotc8EawZtkbnVz` (Opus 5.5, 19:29 UTC; goes on to FL3) | `claude/engine-floor-fl2-middleearth` | | |
 | FL2 Rick and Morty | onto the runtime | the same | now | `session_018hxbif6MyBRqJUTqE5XcJb` (Opus 5.5, 19:29 UTC; goes on to FL3) | `claude/engine-floor-fl2-rickmorty` | | |
-| FL2 the Avengers and Invincible | onto the runtime | the same | now | `session_01QLcK8M8uWdzhGedUeC9Uhe` (Opus 5.5, 19:29 UTC; goes on to FL3) | `claude/engine-floor-fl2-avengers` | | |
+| FL2 the Avengers and Invincible | onto the runtime | the same | now | `session_01QLcK8M8uWdzhGedUeC9Uhe` (Opus 5.5, 19:29 UTC; goes on to FL3) | `claude/engine-floor-fl2-avengers` | #1021 | the thirteen HQ games are `'glsl'` modules on the runtime, `hq/engine.js` deleted; shots 0 px against main (the compound’s 2 px are main’s own run-to-run noise, main’s cast viewer is blank: its canvas was never sized); no slower once up, first frame 2–4 s later in software; WebGPU rows the owner’s (`evidence/engine-floor/FL2-avengers/`) |
 | FL2 Cybertron | onto the runtime | the same | after the four above | | `claude/engine-floor-fl2-cybertron` | | |
 | FL2 Scranton and Albuquerque | onto the runtime | the same | after the four above | | `claude/engine-floor-fl2-office` | | |
 | FL2 the Death Star | onto the runtime | the same | after the four above | | `claude/engine-floor-fl2-deathstar` | | |
