@@ -249,8 +249,10 @@ function three(scene, spec, tier, palette, kitsOf, house) {
   const q = [0, 0, 0, 1];
 
   // (the leaves one object, ./leafBatch.js: the node renderer pays its
-  // per-object cost once for the whole ground)
-  const leaves = createLeafBatch(material, { slots: 128, parent: root });
+  // per-object cost once for the whole ground; 192 slots hold the 149 to
+  // 160 leaves Hoth's start keeps at High, so the batch is not made again
+  // mid-flight, a frame's whole-ground copy, on the tiers that stream most)
+  const leaves = createLeafBatch(material, { slots: 192, parent: root });
   return {
     root,
     live: () => leaves.live(),

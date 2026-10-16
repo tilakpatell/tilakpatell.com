@@ -22,7 +22,8 @@ const SKY_R = 40000; // m: as scene.js's
 // direction is the vertex's, carried to the pixel unnormalised, as the GLSL
 // dome's varying is; its colour goes out with no tone mapping, as the GLSL
 // one has no tone-mapping chunk (the node renderer tone-maps the whole
-// frame, so the colour is untoned first: lib/three/untoneNodes)
+// frame, so the colour is untoned first: lib/three/untoneNodes; the flight
+// draws straight to the renderer's output, which that needs)
 export function skyDome(low, high) {
   const uLow = uniform(new THREE.Color(low));
   const uHigh = uniform(new THREE.Color(high));

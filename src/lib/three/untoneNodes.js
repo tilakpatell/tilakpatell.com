@@ -48,9 +48,9 @@ const unNeutral = Fn(([toned, exposure]) => {
 
 // (the renderer's tone mapping read as the material is built: a world sets
 // it before its first frame, as houseOn does, and a later change is not
-// heard. The render target is not asked: the renderer draws a frame into
-// targets of its own and the runtime's (its framebuffer, the resolution
-// controller's) and tone-maps on the way out, so a material drawn into a
-// target that never reaches the screen tone-mapped would come out darker;
-// no twin that uses this draws into one)
+// heard. The render target is not asked: three tone-maps where it draws
+// to its output (its own framebuffer target included), and a world's post
+// chain tone-maps in its display pass (lib/three/light/passes.js), so a
+// material that uses this must reach the screen through one of the two; drawn
+// into a target that neither tone-maps, it comes out darker)
 export const untoned = (colour) => Fn((builder) => (builder.renderer?.toneMapping === NeutralToneMapping ? unNeutral(colour, toneMappingExposure) : colour))();
