@@ -30,13 +30,34 @@ Session `session_01G8eoBfhJotc8EawZtkbnVz`, branch `claude/engine-floor-fl2-midd
 - a town counted from its first frame (`sim.t > 0`), shot after 12 frames, judged inside its stage’s box (the map behind the page’s edges is still easing from the page’s load there); a part (the kitchens at Low, the bridge, Gorgoroth, the Ring) after 240 frames, the whole page;
 - 1440 × 900, PNG, every pixel counted, no tolerance.
 
-Main at `a559e190` and the branch at its head, two runs each:
+Main at `a559e190` and the branch at `be9fc1bc`, both built, shot twice. Pixels that differ (a town inside its stage, 1440 × 740; a part, the whole page); a second run only for the shots whose first pair differed:
 
-TABLE
+| shot | main × main | branch × branch | main × branch, best | main × branch, all pairs |
+| --- | --- | --- | --- | --- |
+| hub, shire’s, bree’s, weathertop’s, amon-hen’s, lorien’s, dead-marshes’ and mordor’s kitchens; rivendell, moria, amon-hen, mordor, orthanc, minas-tirith, edoras | | | **0** | 0 (14 shots) |
+| cirith-ungol’s kitchen | 0 | 8,101 | **0** | 8,101 / 0 / 8,101 / 0 |
+| dead-marshes | 0 | 432 | **0** | 432 / 0 / 432 / 0 |
+| lorien | 0 | 0 | 29,511 | 29,511 × 4 |
+| cirith-ungol | 0 | 5,456 | 5,322 | 5,364 / 5,322 / 5,364 / 5,322 |
+| rivendell’s kitchen | 0 | 669 | 838 | 838 / 1,105 / 838 / 1,105 |
+| moria’s kitchen | 0 | 0 | 3 | 3 × 4 |
+| moria-bridge | 0 | 0 | 2 | 2 × 4 |
+| mordor-gorgoroth | 0 | 0 | 2 | 2 × 4 |
+| mordor-ring | | | 2 | 2 |
+| bree | 109 | 76 | 23 | 23 / 82 / 103 / 96 |
+| shire | 453 | 459 | 27 | 454 / 82 / 27 / 458 |
+| weathertop | 85 | 101 | 18 | 86 / 120 / 18 / 102 |
+| shire’s kitchen | 257,132 | 256,532 | 256,532 | 260,753 / 260,089 / 260,609 / 258,313 |
 
-A shot is the same when one of the branch’s matches one of main’s pixel for pixel. Two runs of the same build don’t always match each other: where they don’t, it is the same few things on both sides (a character whose model arrived a frame sooner, its pose a frame on; the Ring, turned by `performance.now()`), and the pair that agrees on them agrees on every pixel.
+16 of 27 are the same pixel for pixel.
 
-**One difference is the move’s, and it is said here.** RESIDUALS
+A shot is the same when one of the branch’s matches one of main’s. Where two runs of one build differ, it is on both sides alike: bree, the Shire and Weathertop by tens to hundreds of pixels at their figures’ edges, the Shire’s kitchen by a quarter of a million in the town above it (its frame from the loading, never ticked: out of view), and no pair of main’s own agrees on them either.
+
+**The differences that are the move’s, and why.** None is a picture drawn otherwise; each is said here, not tolerated.
+
+- *A figure’s seed.* `cast3d.js`’s `upgrade` gives each figure its clocks from a page-wide count (`upgrades++`: “two of one figure … never breathe or step together”), so the order two scenes on the page are built in sets every figure’s idle. That order is which scene’s code arrives first. The branch’s town code no longer imports the passes (the runtime’s chunk has them), so in Lothlórien the town is built before the kitchen, where on main the kitchen came first; in Cirith Ungol, the same race, moved by main’s own sweep merged in (the branch before the merge was 0 there). With the count taken out of the seed on both sides (`upgrades++, 0`, a build of each, not committed), Lothlórien and Cirith Ungol are 0 pixels, main against the branch. The fix that would end it is the seed’s (a figure’s own, not the page’s order), and it changes main’s pictures: not this lane’s.
+- *An edge over a copy.* Moria’s kitchen (3 pixels, each 1 off), the bridge, Gorgoroth and the Ring (2 pixels each: the corner of the page’s badge at the bottom left, at (7, 889) and (7, 894)): a CSS edge antialiased, or a backdrop blurred, over a picture that is a 2D canvas (a view copied, `drawImage`) where it was a WebGL canvas. The picture under them is the same pixel for pixel; the compositor blends its edge with it otherwise.
+- *Rivendell’s kitchen*, 669 to 1,105 pixels in the top 30 rows: Rivendell’s town above the kitchen, out of view (its loop never runs there), showing a frame from its loading; with the seeds’ count taken out it is still 764. Not traced further: the loading’s frames come one sooner on the branch (the kitchen draws at frame 20 where main’s drew at 21), and which of the town’s loading frames is the last it showed is that race.
 
 ## The pace
 
