@@ -26,7 +26,17 @@ vi.mock('three/webgpu', () => ({
       made.push(this);
     }
   },
+  // (the plain chain's graph: only whether it is let go is looked at)
+  PostProcessing: class {
+    constructor(renderer) {
+      this.renderer = renderer;
+      this.render = vi.fn();
+      this.dispose = vi.fn();
+      posts.push(this);
+    }
+  },
 }));
+const posts = [];
 vi.mock('../lib/settle', () => ({ settle: (p) => p }));
 // the game light's chain is lib/three/light/passes.js's to build (its own test builds every kind)
 const built = [];
@@ -38,7 +48,7 @@ vi.mock('../lib/three/light/passes.js', () => ({
   }),
 }));
 
-const { adapterLimits, buildPostProcessing, createWebGPU, isFallback, RAISED_LIMITS } = await import('./webgpu');
+const { adapterLimits, buildPostProcessing, composerGlow, createWebGPU, isFallback, RAISED_LIMITS } = await import('./webgpu');
 const { mipBias, setMipState } = await import('../lib/three/mipBias');
 
 const fakeCanvas = () => ({ addEventListener: vi.fn(), removeEventListener: vi.fn() });
@@ -180,6 +190,26 @@ describe('buildPostProcessing', () => {
     post.dispose();
     expect(chain.dispose).toHaveBeenCalled();
   });
+  it('draws the scene at the samples its render pass asks for, the renderer’s when it asks none', async () => {
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera();
+    const asks = buildPostProcessing({}, [{ kind: 'render', scene, camera, samples: 0 }, { kind: 'output' }]);
+    await asks.ready;
+    expect(posts.at(-1).outputNode.passNode.options).toEqual({ samples: 0 });
+    asks.dispose();
+    const plain = buildPostProcessing({}, [{ kind: 'render', scene, camera }, { kind: 'output' }]);
+    await plain.ready;
+    expect(posts.at(-1).outputNode.passNode.options.samples).toBeUndefined();
+    plain.dispose();
+  });
+  it('lets go of a plain chain let go before it was built, once it is', async () => {
+    const chain = buildPostProcessing({}, [{ kind: 'render', scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera() }, { kind: 'output' }]);
+    chain.dispose();
+    await chain.ready;
+    expect(posts.at(-1).dispose).toHaveBeenCalled();
+    chain.render();
+    expect(posts.at(-1).render).not.toHaveBeenCalled();
+  });
   it('says whether the chain is temporal, for the mip bias at native (lane N2)', async () => {
     setMipState({ scale: 1, classic: false });
     // (each built before it is let go: a chain's import left resolving past
@@ -192,6 +222,14 @@ describe('buildPostProcessing', () => {
     expect(mipBias()).toBe(0);
     await smaa.ready;
     smaa.dispose();
+  });
+  it('adds the bloom the WebGL backend’s UnrealBloomPass adds: 3 × the glow, its brightest channel on the alpha', () => {
+    // (numbers standing in for nodes: the arithmetic is the point, the
+    // picture is twin-parity's mario64:look)
+    const rgb = (r, g, b) => ({ r, g, b, mul: (k) => rgb(r * k, g * k, b * k), list: [r, g, b] });
+    const tsl = { max: Math.max, vec4: (v, a) => [...v.list, a] };
+    const out = composerGlow(tsl, { rgb: rgb(0.1, 0.4, 0.2) });
+    expect(out.map((v) => +v.toFixed(6))).toEqual([0.3, 1.2, 0.6, 1.2]);
   });
 });
 

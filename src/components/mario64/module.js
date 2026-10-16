@@ -10,11 +10,12 @@
 // The world adds: press(button, down), stick(x, y), zoom(), start(),
 // advance(), back(), pause(on), exitCourse(), setLook(look), setSound(on),
 // erase(), and `game`
-// for the browser checks.
+// for the browser checks; in development, view(name) and settled() for
+// scripts/gpu-parity.mjs.
 
 import * as THREE from 'three';
 import { COURSES } from './courses/index';
-import { drain, enterArea, enterCourse, exitCourse, newGame, tick } from './rules/game';
+import { drain, enterArea, enterCourse, exitCourse, newGame, stepGame, tick } from './rules/game';
 import { SAVE, SAVE_VERSION, blank, clean, starTotal } from './rules/save';
 import { ZOOMS } from './rules/camera';
 import { createScene } from './scene';
@@ -60,7 +61,7 @@ function soundOf(e) {
 
 export default {
   id: 'mario64',
-  shading: 'glsl',
+  shading: 'nodes', // (everything it reaches is TSL: ./nodes.js, and the runtime's chain through ./looks.js; the node renderer, on WebGPU or WebGL 2)
   mb: 7,
   label: 'Super Mario 64, a fan tribute: Mario at Peach’s castle',
   async create(rt, props = {}) {
@@ -74,13 +75,14 @@ export default {
     rt.saves?.register({ key: SAVE, version: SAVE_VERSION, migrate: (old) => clean(old) });
     const save = clean(rt.saves?.get(SAVE, null) ?? blank());
     const small = Boolean(props.small) || rt.quality?.tier === 'low';
-    const scene = createScene(renderer, { small });
+    const scene = createScene(renderer, { small, post: rt.gfx.post });
     scene.setLook(save.look);
     const g = newGame({ save });
     await scene.setArea(g.areaId);
     let shown = g.areaId;
     let loading = false;
     let gone = false; // (disposed: what's still on its way is dropped)
+    let held = false; // (a parity view's: world.view, development's)
 
     rt.input.bind(KEYS);
     const touch = { x: 0, y: 0, held: new Set(), pressed: new Set() };
@@ -198,6 +200,8 @@ export default {
 
     const world = {
       game: g,
+      // (the look's chain built before the first frame: runtime.js waits for it)
+      ready: scene.ready,
       scene,
       tune: () => [
         { name: 'camera', items: [zoom(0, 'near'), zoom(1, 'middle'), zoom(2, 'far')] },
@@ -215,6 +219,8 @@ export default {
         scene.resize(w, h);
       },
       step(dt, snap) {
+        // (a parity view holds the game where it put it: development's)
+        if (held) return;
         const inp = inputOf(snap);
         if (inp.pause && (g.mode === 'play' || g.mode === 'pause')) {
           g.mode = g.mode === 'pause' ? 'play' : 'pause';
@@ -327,6 +333,50 @@ export default {
         renderer.shadowMap.type = was.type;
       },
     };
+    // (development: named views for scripts/gpu-parity.mjs, each an area as
+    // the rules open it, Mario at one of its entries, then two seconds of
+    // the rules from a clock put back to nothing, nothing pressed and every
+    // step drawn, so he stands on his floor at rest with the camera settled
+    // behind him on every leg; then the game held still, so two renders can
+    // be compared. 'grounds': the castle’s lawn from the start; 'castle':
+    // the hall inside; 'bobomb': the ridge from where the course starts.
+    // settled(): the area drawn is the one the rules are in.)
+    if (import.meta.env.DEV) {
+      const VIEWS = { grounds: { area: 'grounds', entry: 'start' }, castle: { area: 'castle', entry: 'main' }, bobomb: { course: 'bobomb' } };
+      const STILL = { sx: 0, sy: 0 };
+      world.view = async (name) => {
+        const v = VIEWS[name];
+        if (!v) throw new Error(`no view ${name}`);
+        held = false;
+        loading = true;
+        if (v.course) enterCourse(g, v.course);
+        else enterArea(g, v.area, v.entry);
+        g.mode = 'play';
+        g.dialogs = [];
+        // (an area that fails to load leaves the game free, as step()'s does)
+        await scene.setArea(g.areaId).catch((e) => {
+          loading = false;
+          throw e;
+        });
+        if (gone) return;
+        shown = g.areaId;
+        g.t = 0;
+        g.acc = 0;
+        for (let i = 0; i < 60; i++) {
+          stepGame(g, STILL);
+          g.alpha = 1;
+          scene.sync(g, 1);
+        }
+        drain(g); // (its sounds and puffs not played: the picture is the point)
+        loading = false;
+        held = true;
+        // (the page told, as a step would: the title card down, the game on)
+        const ui = uiState();
+        lastUi = JSON.stringify(ui);
+        tell('ui', ui);
+      };
+      world.settled = () => !loading && shown === g.areaId;
+    }
     return world;
   },
 };
