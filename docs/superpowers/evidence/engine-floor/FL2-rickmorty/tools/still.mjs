@@ -115,8 +115,9 @@ try {
       const veils = () => document.querySelectorAll('.loading-veil').length > 0 && !document.querySelector('.loading-veil:not(.is-done)');
       new MutationObserver((_, o) => {
         if (frozen === null && veils()) {
-          frozen = STILL_AT;
-          vt = STILL_AT;
+          // (and the stepping starts here, not when the script next looks:
+          // a frame the browser gave in between ran on its own time)
+          window.__still.start();
           o.disconnect();
         }
       }).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
@@ -162,6 +163,7 @@ try {
       else new MutationObserver((_, o) => document.documentElement && (o.disconnect(), add())).observe(document, { childList: true });
       window.__still = {
         start() {
+          if (stepping) return;
           if (frozen === null) frozen = vt = STILL_AT;
           stepping = true;
           seed(0x2545f491);
