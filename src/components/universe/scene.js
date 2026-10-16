@@ -5888,6 +5888,7 @@ export async function create(canvas, ctx) {
   // apart under the intro (./prepFrame.js). The draw is small: the passes'
   // buffers 64 across and one pixel of the canvas; it's what's sent that
   // counts, not the picture, and the first real frame sizes them back up.
+  let calibrated = null; // (the level the prepare found, till the first frame has it)
   const prepare = async (onProgress, { alive = () => true } = {}) => {
     onProgress?.(0, 'load');
     // (the models of the planets near where the map opens: the rest come as
@@ -5916,6 +5917,17 @@ export async function create(canvas, ctx) {
     // the map times its passes, as it always has, a frame or, under the
     // intro, an idle moment apart)
     onProgress?.(0.97, 'tune');
+    // (timed at the size it will be drawn at: the runtime sizes the canvas
+    // after the world is made, where useScene had sized it before its
+    // prepare; its box, or the window while the box isn't laid out yet)
+    const box = (ctx.rt.host ?? ctx.el)?.getBoundingClientRect?.();
+    if (box?.width > 0 && box?.height > 0) {
+      size.w = box.width;
+      size.h = box.height;
+    } else if (typeof window !== 'undefined' && size.w <= 1) {
+      size.w = window.innerWidth;
+      size.h = window.innerHeight;
+    }
     const key = calibrationKey(renderer, 'universe', size.w, size.h);
     const kept = recall(key);
     const setLevel = (l) => {
@@ -5926,6 +5938,7 @@ export async function create(canvas, ctx) {
     if (!alive() || disposed) return;
     setLevel(level);
     remember(key, level);
+    calibrated = level;
   };
 
   return {
@@ -5940,7 +5953,18 @@ export async function create(canvas, ctx) {
       watchPanel();
     },
     // (the map's settings on the shared renderer only while it draws: ./borrow.js)
-    render: (ms, now) => borrowed.during(() => render(ms, now)),
+    render: (ms, now) => {
+      // (made at a handover, the runtime starts the map's quality afresh
+      // after its prepare: the calibrated ceiling put back at its first frame)
+      if (calibrated !== null) {
+        if (ctx.rt.quality && ctx.rt.quality.level !== calibrated) {
+          ctx.rt.quality.setLevel?.(calibrated);
+          paceTo(calibrated);
+        }
+        calibrated = null;
+      }
+      return borrowed.during(() => render(ms, now));
+    },
     // sent before it's seen (above); not on a low tier (software WebGL, a
     // budget phone), where the graphics chip's work is the processor's and
     // its memory is short: things go up as they're first seen there, as before
