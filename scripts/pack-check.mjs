@@ -12,7 +12,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-export const PREFIXES = ['/models/', '/textures/', '/audio/', '/hdri/', '/hq/', '/cc0/', '/mc/', '/n64/', '/games/', '/eagler/', '/albuquerque/', '/kit/'];
+const PREFIXES = ['/models/', '/textures/', '/audio/', '/hdri/', '/hq/', '/cc0/', '/mc/', '/n64/', '/games/', '/eagler/', '/albuquerque/', '/kit/'];
 const CODE = new Set(['.js', '.jsx', '.mjs', '.ts', '.tsx']);
 const QUOTED = /(['"`])(\/[a-z0-9-]+\/(?:(?!\1)[^\n])*?)\1/gi;
 

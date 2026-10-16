@@ -36,7 +36,7 @@ export function setRoom(v) {
 // ── Recording ──────────────────────────────────────────────────────────────
 // Everything the room plays, as it's heard (room and all), recorded in the
 // browser and handed back as a file. Returns null where the browser can't.
-export const canRecord = () => typeof window !== 'undefined' && typeof window.MediaRecorder === 'function';
+const canRecord = () => typeof window !== 'undefined' && typeof window.MediaRecorder === 'function';
 
 export function recordRoom(ac) {
   if (!canRecord() || !ac?.createMediaStreamDestination) return null;

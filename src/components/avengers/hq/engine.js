@@ -33,7 +33,7 @@ const ORDER = ['high', 'medium', 'low'];
 // level, which is the visitor's pick, or Auto by the chip and the renderer
 // tier's hold, not the device's class alone, which ignored both)
 export const tierOfDetail = (detail) => ({ ultra: 'high', high: 'high', mid: 'medium', low: 'low' })[detail] ?? 'medium';
-export function startTier() {
+function startTier() {
   if (typeof window === 'undefined') return 'high';
   return tierOfDetail(device().detail);
 }

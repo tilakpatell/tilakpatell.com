@@ -14,14 +14,13 @@ import GameScreen from './GameScreen.jsx';
 // the way in's readiness, waiting.js) is said for a screen reader alone. It stands on the way
 // in until the level is ready (the page plays the loading cue under it,
 // BattlefrontWorld.jsx), and comes up again as a veil over a battle whose
-// level has fallen behind. `onBack`, on the way in, is the way out of it
+// level has fallen behind, saying what it waits on there too. `onBack`, on the way in, is the way out of it
 // (Escape): the menu it came from, or the world that sent the player.
-export default function Loading({ mode = 'galacticAssault', level = 'hoth', progress = 0, waiting = null, onBack = null }) {
+export default function Loading({ mode = 'galacticAssault', level = 'hoth', waiting = null, onBack = null }) {
   const [seed] = useState(() => Math.floor(Math.random() * 1e6));
   const l = loading(mode, level, { seed });
   const tree = useTree('LoadingScreenWrapperWidget', { hintbody: l.hint ?? '' });
   const lv = levelFor(level) ?? info('level', level);
-  const per = Math.round(Math.max(0, Math.min(1, progress)) * 100);
   const planet = info('planet', lv?.planet)?.title ?? null;
   // (Supremacy on this world is Instant Action's own mode, Mode8, and the game's words on its loading screen are that
   // tile's, ID_M_SCR_MODE8_DESC: the mode's own description record is Supremacy's, of capital ships)
@@ -37,7 +36,7 @@ export default function Loading({ mode = 'galacticAssault', level = 'hoth', prog
       </div>
       <span className="bf-loading-mark" aria-hidden="true" />
       <p className="sr-only" role="status">
-        {waiting ?? `${word('#DFBEEAD5')} ${per}`}
+        {waiting ?? word('#DFBEEAD5')}
       </p>
     </GameScreen>
   );

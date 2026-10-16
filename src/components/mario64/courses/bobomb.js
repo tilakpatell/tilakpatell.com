@@ -22,11 +22,11 @@ const HALF = 350; // half the path's width
 export const TOP = 2400;
 const TURNS = 2;
 const PSI = TURNS * TAU;
-export const SUMMIT_R = 900;
+const SUMMIT_R = 900;
 const EDGE = 500; // the steep rocky slope up from each turn to the next
 
-export const spiralR = (psi) => R0 + ((R1 - R0) * psi) / PSI;
-export const spiralH = (psi) => (TOP * psi) / PSI;
+const spiralR = (psi) => R0 + ((R1 - R0) * psi) / PSI;
+const spiralH = (psi) => (TOP * psi) / PSI;
 export const spiralAt = (psi, off = 0) => {
   const r = spiralR(psi) + off;
   return { x: MOUNT.x + Math.sin(psi) * r, y: spiralH(psi), z: MOUNT.z + Math.cos(psi) * r };
@@ -134,7 +134,7 @@ export const REDS = [
   { x: -2600, z: 4500 },
   { x: TOWER.x, y: TOWER.top, z: TOWER.z },
 ];
-export const RED_STAR = { index: 1, x: PILLARS[4].x, y: PILLARS[4].top, z: PILLARS[4].z };
+const RED_STAR = { index: 1, x: PILLARS[4].x, y: PILLARS[4].top, z: PILLARS[4].z };
 export { PILLARS, TOWER, POST, GATE };
 
 const coinsOnPath = [];

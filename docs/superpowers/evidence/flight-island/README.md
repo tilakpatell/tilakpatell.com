@@ -1,6 +1,6 @@
 # The flight’s removal, proved once
 
-Date: 2026-10-10. Lane J of `docs/superpowers/HANDOFF-planet-flight.md`; the design is `docs/superpowers/specs/2026-10-10-planet-flight-removable-island-design.md`.
+Date: 2026-10-10. Lane J of `docs/superpowers/HANDOFF-galaxy.md`; the design is `docs/superpowers/specs/2026-10-10-planet-flight-removable-island-design.md`.
 
 On a scratch branch from the lane’s head (`7452fa94`), in a worktree of its own after `npm ci`, `node scripts/flight-island.mjs --remove` ran, then the gates. Nothing of the scratch branch was pushed; it was deleted after.
 

@@ -45,9 +45,9 @@ const PLAN = {
 const BOARD = { x: CX + 3.4, z: A.z0, w: 2.3, h: 1.45, y: 1.12 }; // the high-score board, on the rail right of Roy
 const NEON = { magenta: 0xff3fd0, pink: 0xff7ad9, teal: 0x2ff5e0, gold: 0xffc23a, purple: 0xa45bff, lime: 0x9dff5a, blue: 0x4f8bff, orange: 0xff8a2a };
 // dark, purple and neon-lit: little sun, a violet sky light, a deep haze far off
-export const ARCADE_LIGHT = { sun: [0xffa8e6, 0.6], hemi: [0xa08cff, 0x3a1d5c, 1.6], fog: [0x1c0e3a, 32, 130], background: 0x07041a };
+const ARCADE_LIGHT = { sun: [0xffa8e6, 0.6], hemi: [0xa08cff, 0x3a1d5c, 1.6], fog: [0x1c0e3a, 32, 130], background: 0x07041a };
 // the made-up games on the walkway's three cabinets (their toasts are the component's)
-export const CABINET_GAMES = { cabinet1: 'SPACE MORTYBALL', cabinet2: 'PLUMBUS SMASH', cabinet3: 'CRONENBERG CRUSH' };
+const CABINET_GAMES = { cabinet1: 'SPACE MORTYBALL', cabinet2: 'PLUMBUS SMASH', cabinet3: 'CRONENBERG CRUSH' };
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const CYL = new THREE.CylinderGeometry(0.5, 0.5, 1, 20);

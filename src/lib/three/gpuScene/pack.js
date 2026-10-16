@@ -25,7 +25,6 @@
 import { readInstances } from '../../level/instances.js';
 
 export const ROW_U32 = 8;
-export const ROW_BYTES = ROW_U32 * 4;
 export const FLAG = Object.freeze({ live: 1, mirrored: 2, horizon: 4 });
 
 const f32 = new Float32Array(1);

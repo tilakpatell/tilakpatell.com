@@ -56,7 +56,7 @@ import { trailPoint } from './emitter.js';
 import { loadThree } from '../light/three.js';
 import { holdOut } from '../light/velocity.js';
 
-export function curveNode(tsl, c, t, r) {
+function curveNode(tsl, c, t, r) {
   const { float, uniformArray, clamp, floor, min } = tsl;
   if (typeof c === 'number') return float(c);
   if (c?.poly) {

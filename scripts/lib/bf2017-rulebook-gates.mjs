@@ -44,7 +44,6 @@ const s32 = (h) => h | 0;
 const r3 = (v) => Math.round(v * 10000) / 10000;
 export const GATE_ENABLED = -1960580174;
 export const GATE_PANEL = [1485282277, 1485282278];
-export const GATE_OPENED = -1157191321;
 export const ROUTE_DONE = 1762125924;
 export const LEAVES_ENABLED = -1756439259;
 const SPLIT_OUT = -137490305;

@@ -43,7 +43,7 @@ import { softRange } from '../../src/lib/three/ground/masks.js';
 export const QUALITY = { low: 'Low', mid: 'Medium', high: 'High', ultra: 'Ultra' };
 // a layer's texture is taken only when its bit and the texture go together
 // in at least this share of the combinations (1 = always together)
-export const SURFACE_SCORE = 0.5;
+const SURFACE_SCORE = 0.5;
 // the soft edges of a rule's ranges, as Q2's FEATHER: degrees, metres, and
 // shares of the canopy and the play area
 export const FEATHER = { slope: 4, height: 0.75, canopy: 0.1, play: 0.1 };
@@ -57,7 +57,7 @@ export const PLAY = { radius: 48, full: 0.004 };
 // the pack's fill beyond the painted ground runs as straight streaks (the
 // level script's fillEmpty copies the nearest painted texel along a row,
 // a column or a diagonal): a run this long of one exact value is fill
-export const FILL_RUN = 4;
+const FILL_RUN = 4;
 
 const short = (name) => String(name).split('/').pop();
 // a texture's name without its channel suffix (_NOH, _CS, _H, _N, _RGB…)

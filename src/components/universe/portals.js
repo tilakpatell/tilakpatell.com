@@ -24,7 +24,6 @@ import { sectorOf } from './layout';
 export const PORTALS = WONDERS.filter((w) => w.kind === 'portal');
 const BY_ID = new Map(PORTALS.map((p) => [p.id, p]));
 export const portalById = (id) => BY_ID.get(id) ?? null;
-export const isPortal = (id) => BY_ID.has(id);
 
 // how far from the far end's middle the ship comes out, in its radii
 export const OUT = 3;

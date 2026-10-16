@@ -122,15 +122,6 @@ export function frets(ragaId, { set, all, custom } = {}) {
   return out;
 }
 
-// The tarab are tuned to the raga's notes, eleven of them from Sa up.
-export function tarabRatios(ragaId) {
-  const raga = ragaOf(ragaId);
-  const notes = [...raga.notes].map((s) => swaraIn(raga, s));
-  const out = [];
-  for (let oct = 1; out.length < 11; oct *= 2) for (const r of notes) if (out.length < 11) out.push(r * oct);
-  return out;
-}
-
 // ── The shared tuning ──────────────────────────────────────────────────────
 const KEY = 'tp-music';
 // the chikari: filling the rests by itself, following the music or at a set speed (strokes a minute), and how hard

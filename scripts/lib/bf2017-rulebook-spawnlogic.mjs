@@ -11,7 +11,15 @@
 // example (Hoth: eight walker steps in stage 1, the gates and the hangar
 // points in stage 2, the fuel charges in stage 3).
 //
-//   spawnLogic(root, dir, sub) → { nodes, inputs, events, enables, trackers, far, unsupported, _source } | null
+//   spawnLogic(root, dir, sub, { targets }?) → { nodes, inputs, events, enables, fires?, trackers, far, unsupported, _source } | null
+//   (targets: what the graph is read back from instead of the spawn records' Enabled, for a
+//    mode part (scripts/bf2017-level-mode.mjs): '<layer>:<index>' a placement's Enabled,
+//    { id, field } another field of it (enables['<id>.<field>']), { id, event } an event
+//    into it (fires['<id>.<event>']: the outputs that fire it). Read so, a
+//    WaypointTriggerEntityData is a node of its own, `waypoint` (its path and the waypoint
+//    it names, fired by the page as a walker passes it), a FollowWaypointsEntityData a
+//    `route` (its path, fired when the walker on it reaches its end) and a
+//    SyncedBoolEntityData a `synced` bool (its In passed through until an event sets it))
 //   (far: the spawn points the mode prefab links as its far list, the starfighters', which a soldier never takes)
 //
 // The graph's ids are the map rulebook's own (`<layer>:<object index>`);
@@ -127,21 +135,33 @@ export function graphOf(root, dir, sub) {
   return { subName, byGuid, assets, pin, evin, links };
 }
 
-export function spawnLogic(root, dir, sub) {
+export function spawnLogic(root, dir, sub, { targets = null } = {}) {
   const graph = graphOf(root, dir, sub);
   if (!graph) return null;
   const { subName, byGuid, assets, pin, evin, links } = graph;
 
-  // the spawn records of the mode's layers that something switches
+  // the spawn records of the mode's layers that something switches (or the placements asked for)
   const prefix = `${sub}_`.toLowerCase();
-  const records = [...byGuid.values()].filter((e) => SPAWNS.has(e.o.$type) && e.layer.toLowerCase().startsWith(prefix) && !IGNORED.test(e.layer));
+  const asked = targets ? targets.map((t) => (typeof t === 'string' ? { id: t, field: H('Enabled'), key: t } : t)) : null;
+  const askedIds = asked ? new Set(asked.map((t) => t.id)) : null;
+  const records = [...byGuid.values()].filter((e) => (asked ? askedIds.has(e.id) : SPAWNS.has(e.o.$type) && e.layer.toLowerCase().startsWith(prefix)) && !IGNORED.test(e.layer));
   const enables = {};
+  const fires = {};
   const want = [];
   for (const r of records) {
-    const into = (pin.get(r.id) ?? []).find((p) => s32(p.field) === H('Enabled'));
-    if (!into) continue;
-    enables[r.id] = `${into.src.id}.${fieldName(into.srcField)}`;
-    want.push(into.src);
+    for (const t of asked ? asked.filter((x) => x.id === r.id) : [{ field: H('Enabled'), key: r.id }]) {
+      if (t.event != null) {
+        const ins = (evin.get(r.id) ?? []).filter((v) => s32(v.event) === s32(t.event) && !IGNORED.test(v.src.layer));
+        if (!ins.length) continue;
+        fires[`${r.id}.${fieldName(t.event)}`] = ins.map((v) => `${v.src.id}.${outEvent(v.src, v.srcEvent)}`);
+        want.push(...ins.map((v) => v.src));
+        continue;
+      }
+      const into = (pin.get(r.id) ?? []).find((p) => s32(p.field) === s32(t.field));
+      if (!into) continue;
+      enables[t.key ?? `${r.id}.${fieldName(t.field)}`] = `${into.src.id}.${fieldName(into.srcField)}`;
+      want.push(into.src);
+    }
   }
   if (!want.length) return null;
 
@@ -165,7 +185,7 @@ export function spawnLogic(root, dir, sub) {
     const e = stack.pop();
     if (seen.has(e.id)) continue;
     seen.add(e.id);
-    const kind = KINDS[e.o.$type];
+    const kind = (asked && PART_KINDS[e.o.$type]) || KINDS[e.o.$type];
     if (IGNORED.test(e.layer) || IGNORED.test(e.o.$type) || IGNORED.test(e.o.Blueprint?.$asset ?? '')) {
       nodes[e.id] = { type: 'ignored', record: e.o.$type };
       continue;
@@ -177,6 +197,10 @@ export function spawnLogic(root, dir, sub) {
     }
     if (kind === 'prefab') {
       nodes[e.id] ??= nodeOf(kind, e, links);
+      continue;
+    }
+    if (kind === 'waypoint' || kind === 'route') {
+      nodes[e.id] = kind === 'waypoint' ? waypointOf(e, links, assets) : routeOf(e, links);
       continue;
     }
     nodes[e.id] = nodeOf(kind, e, links);
@@ -204,7 +228,31 @@ export function spawnLogic(root, dir, sub) {
     for (const l of links.get(e.id) ?? []) if (s32(l.from) === FAR_SPAWNS && !far.includes(l.t.id)) far.push(l.t.id);
   }
   far.sort();
-  return { nodes, inputs, events, enables, trackers, far, unsupported: [...unsupported].sort(), _source: `${subName}#PropertyConnections+EventConnections+LinkConnections (back from each spawn record's Enabled)` };
+  return { nodes, inputs, events, enables, ...(asked ? { fires } : {}), trackers, far, unsupported: [...unsupported].sort(), _source: `${subName}#PropertyConnections+EventConnections+LinkConnections (back from ${asked ? 'each field and event asked for' : "each spawn record's Enabled"})` };
+}
+
+// the record types a mode part's reading adds (spawnLogic's `targets`)
+const PART_KINDS = { WaypointTriggerEntityData: 'waypoint', FollowWaypointsEntityData: 'route', SyncedBoolEntityData: 'synced' };
+
+// a FollowWaypointsEntityData: the path its link names; its out event the one the graph listens to
+const ROUTE_DONE = 1762125924;
+function routeOf(e, links) {
+  const path = (links.get(e.id) ?? []).find((l) => s32(l.field) === 0 && l.t.o.$type === 'AIWaypointsShapeData');
+  return { type: 'route', path: path?.t.id ?? null, out: fieldName(ROUTE_DONE) };
+}
+
+// a WaypointTriggerEntityData: the path and the waypoint its link names (the
+// VehicleWaypointData's SchematicsNameHash, as the escort tracker's), its out event
+// the one the graph listens to (fired by the page as a walker passes the waypoint)
+const WAYPOINT_OUT = 914475960;
+function waypointOf(e, links, assets) {
+  for (const { t: path, field } of links.get(e.id) ?? []) {
+    if (path.o.$type !== 'AIWaypointsShapeData') continue;
+    const objects = assets.get(path.layer)?.objects ?? [];
+    const at = (path.o.Waypoints ?? []).findIndex((r) => r && s32(objects[r.$ref]?.SchematicsNameHash ?? NaN) === s32(field));
+    return { type: 'waypoint', path: path.id, at, out: fieldName(WAYPOINT_OUT) };
+  }
+  return { type: 'waypoint', path: null, at: -1, out: fieldName(WAYPOINT_OUT) };
 }
 
 // a node's own settings, as the page runs it
@@ -217,6 +265,7 @@ function nodeOf(kind, e, links) {
     case 'not':
       return { type: kind, value: Boolean(o.In) };
     case 'bool':
+    case 'synced':
       return { type: kind, value: Boolean(o.DefaultValue) };
     case 'splitter':
       return { type: kind, once: Boolean(o.RunOnce) };

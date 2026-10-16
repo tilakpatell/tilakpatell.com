@@ -51,7 +51,7 @@ const ENV_SIZE = 64; // px: a face of the environment's cube
 export const ZENITH_SHARE = 0.23;
 // the view's height (sin of its elevation) over which the panorama fades in
 // over the model: from the horizon to 2.9° up
-export const PANORAMA_FADE = [0, 0.05];
+const PANORAMA_FADE = [0, 0.05];
 // where the two are matched: the fade's middle (1.4°)
 export const PANORAMA_MEET = 0.025;
 const MEET_TAPS = 32; // azimuths averaged round the horizon

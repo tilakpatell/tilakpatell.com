@@ -28,7 +28,7 @@ import { createBolts as boltPool } from '../../../../lib/combat/bolt';
 import { cadenceOf } from './troops';
 
 export const NEAR = 2; // metres: a bolt this near a body suppresses it
-export const SPREAD_MAX = 0.1; // radians of aim error past which a far shot hits one time in ten
+const SPREAD_MAX = 0.1; // radians of aim error past which a far shot hits one time in ten
 const SPLIT = 6; // halvings to find where along a step a wall stopped a bolt
 
 export function bodyOf(o) {

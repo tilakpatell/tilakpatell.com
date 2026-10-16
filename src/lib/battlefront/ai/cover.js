@@ -49,7 +49,7 @@ export const SIDE = 1;
 // styles. The Empire's own (`Attack_Empire_Stormtrooper`, `Hide_Empire_…`)
 // are in the older numbered-curve form this scorer does not read, so both
 // sides use the Rebel soldier's.
-export const BRANCHES = { attack: 'Attack_Rebel_Soldier', hide: 'Hide', flee: 'Flee', protective: 'Protective' };
+const BRANCHES = { attack: 'Attack_Rebel_Soldier', hide: 'Hide', flee: 'Flee', protective: 'Protective' };
 export const queryFor = (ai, branch) => ai.cover.queries[BRANCHES[branch] ?? branch] ?? null;
 
 // piecewise linear through the term's points (repeated x make a step); flat past the ends

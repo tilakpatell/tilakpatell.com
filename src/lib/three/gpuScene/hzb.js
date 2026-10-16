@@ -21,7 +21,7 @@
 //   the levels through uniforms and texture nodes swapped in place, so it is never built again),
 //   occludedNode(rect: vec4, near: float) → bool (the test in TSL, for cull.js), dispose() }
 
-export const MAX_LEVELS = 12;
+const MAX_LEVELS = 12;
 
 export function hzbSizes(w, h) {
   const out = [];

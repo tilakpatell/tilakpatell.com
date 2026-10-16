@@ -67,7 +67,7 @@ export const which = () => (process.env.GEN3D_JUDGE === 'fake' ? 'fake' : claude
 // is given in turn across calls, even across processes, the last one held.
 // Every call is written to calls.json beside the script, so a test can say
 // how often the judge was asked and about what.
-export function askFake(prompt, images) {
+function askFake(prompt, images) {
   const file = process.env.GEN3D_JUDGE_SCRIPT;
   if (!file) throw new Error('GEN3D_JUDGE=fake needs GEN3D_JUDGE_SCRIPT');
   const script = JSON.parse(readFileSync(file, 'utf8'));
@@ -153,7 +153,7 @@ export function parseJson(text) {
   return JSON.parse(m[0]);
 }
 
-export const askJson = async (prompt, images, opts) => parseJson(await ask(prompt, images, opts));
+const askJson = async (prompt, images, opts) => parseJson(await ask(prompt, images, opts));
 
 export const SCALE = 'Score 10 only for a faithful, canonical likeness a fan would accept at once; 7 for right overall with small errors; 4 for the right kind of thing but wrong in shape or parts; 1 for something else.';
 

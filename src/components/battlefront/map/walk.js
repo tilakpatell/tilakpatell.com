@@ -9,22 +9,25 @@
 // over Echo Base, 56 m above the hangar's floor, with the trench tunnels
 // and the base's floors not there at all.
 //
-// The sim's speed is kept (soldier.js's speedOf: the pose, the sprint, the
-// stack's modifiers); the controller decides where that goes: along a wall,
-// up a step or a slope it may climb, down to the ground under it. A place
-// written to the soldier by someone else (a spawn, the door's `place`) is a
+// The sim's speed is kept (soldier.js's speedAlong: the pose, the sprint, the
+// stack's modifiers, a hero's drive for the way it goes), or the pace a
+// hero's rush or a shove asks; the controller decides where that goes: along
+// a wall, up a step or a slope it may climb, down to the ground under it. A
+// hero's jump rises and falls on its own arc (heroKit.js), the body carried
+// along it, and the ground it comes down on is the body's. A place written
+// to the soldier by someone else (a spawn, the door's `place`) is a
 // teleport. Until the engine has shapes round the soldier, and for good
 // without an engine, the nav's step moves it, as before.
 //
 //   createWalker({ physics, pack, row, at = [0, 0, 0], ground(x, z) → the terrain's height }) → {
-//     mover(s, dir, dt, nav) → metres moved   (sim.js's signature for move)
+//     mover(s, dir, dt, nav, pace) → metres moved   (sim.js's signature for move; pace: m/s, a rush's or a shove's)
 //     step() (the world stepped once a frame: what the stream added becomes solid to the next move),
 //     held (true while it waits in the air for something under it), ready(), dispose() }
 //   toPackFrame(pack, [x, y, z]) / fromPackFrame(pack, [x, y, z])   (pure)
 
 import { createCharacter } from '../../../lib/physics/character.js';
 import { controllerOptions } from '../../../lib/physics/soldier.js';
-import { move, speedOf } from '../../../lib/battlefront/soldier.js';
+import { move, speedAlong } from '../../../lib/battlefront/soldier.js';
 
 // m: a place written to the soldier further than this from where the body left it is a teleport
 const MOVED = 0.05;
@@ -59,14 +62,15 @@ export function createWalker({ physics, pack, row, at = [0, 0, 0], ground = null
   const rb = ch.body.body;
   const { RAPIER, world } = physics;
   const down = new RAPIER.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: -1, z: 0 });
-  // (anything under the body to land on: a shape or the ground's heightfield)
-  const below = () => {
+  // (anything under the body to land on: a shape or the ground's heightfield; how far under its middle)
+  const under = () => {
     const t = rb.translation();
     down.origin.x = t.x;
     down.origin.y = t.y;
     down.origin.z = t.z;
-    return world.castRay(down, VOID, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, rb) !== null;
+    return world.castRay(down, VOID, true, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, rb)?.timeOfImpact ?? null;
   };
+  const below = () => under() !== null;
   let wrote = null; // the soldier's place as this body last wrote it
   let footing = null; // where it last stood on something: a fall through the streamed shapes comes back here
   let held = false;
@@ -84,9 +88,11 @@ export function createWalker({ physics, pack, row, at = [0, 0, 0], ground = null
     },
     ready: () => true,
     step: () => world.step(),
-    mover(sol, dir, dt, nav) {
+    mover(sol, dir, dt, nav, pace = null) {
       if (!sol.alive) return move(sol, dir, dt, nav);
-      if (!wrote || Math.hypot(sol.at[0] - wrote[0], sol.at[1] - wrote[1], sol.at[2] - wrote[2]) > MOVED) {
+      // (a hero up on its jump: the height is its arc's, not a place written)
+      const air = sol.hero?.air ?? null;
+      if (!wrote || Math.hypot(sol.at[0] - wrote[0], air ? 0 : sol.at[1] - wrote[1], sol.at[2] - wrote[2]) > MOVED) {
         place(sol.at);
         wrote = sol.at.slice();
         footing = null;
@@ -100,9 +106,12 @@ export function createWalker({ physics, pack, row, at = [0, 0, 0], ground = null
         return 0;
       }
       const len = Math.hypot(dir[0], dir[1]);
-      const speed = len > 1e-9 ? speedOf(sol) : 0;
+      const speed = len > 1e-9 ? (pace ?? speedAlong(sol, dir)) : 0;
       const wx = len > 1e-9 ? (dir[0] / len) * speed : 0;
       const wz = len > 1e-9 ? (dir[1] / len) * speed : 0;
+      // (the arc's rise or fall since the body last moved, net of the controller's own fall this step: a
+      // ceiling stops it, a floor lands it)
+      if (air) ch.jump((sol.at[1] - wrote[1]) / dt + opts.gravity * dt);
       // (the wish in the pack's frame: turned by its yaw as toPackFrame turns a place)
       ch.move({ vel: { x: wx * c + wz * s, z: -wx * s + wz * c }, face: null }, dt);
       // (the body taken where the controller said at once, so a second move in the same frame starts
@@ -125,6 +134,11 @@ export function createWalker({ physics, pack, row, at = [0, 0, 0], ground = null
       sol.at[2] = feet[2];
       sol.moving = moved > 1e-4;
       sol.grounded = ch.grounded;
+      // (the ground the jump comes down on: the body's, under it or the one it stands on)
+      if (air) {
+        const gap = ch.grounded ? null : under();
+        air.floor = gap === null ? (ch.grounded ? feet[1] : air.floor) : feet[1] - (gap - lift);
+      }
       wrote = sol.at.slice();
       return moved;
     },

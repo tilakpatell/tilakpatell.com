@@ -159,7 +159,7 @@ export function wineGlass(R) {
 
 // Rick's hip flask: a curved silver flask with its cap, held round its
 // middle, out only while he drinks
-export function hipFlask(R) {
+function hipFlask(R) {
   const g = new THREE.Group();
   const m = R.kit.mats;
   const body = new THREE.Mesh(R.own(new THREE.CylinderGeometry(0.055, 0.055, 0.12, 16, 1).scale(1, 1, 0.38)), m.metal);

@@ -4,7 +4,6 @@
 // panels, the parking bays). Metres throughout: a plan unit is four metres.
 
 import * as THREE from 'three';
-import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PartBuilder, canvasTexture, lathe, rbox } from '../hq/kit/shapes';
 
 export const U = 4; // metres to a plan unit
@@ -372,103 +371,6 @@ export function apronMarks([x0, y0, x1, y1], px = 1024) {
 }
 
 // ── trees ──
-
-// A broadleaf canopy: a lumpy ball, darker underneath (vertex colours carry
-// the shade), on a short trunk; 1 m across, its base at y = 0.
-export function canopyGeometry(seed = 1, detail = 2) {
-  // welded, so the crown is shaded smooth rather than in facets
-  const g = mergeVertices(new THREE.IcosahedronGeometry(0.5, detail + 1).deleteAttribute('normal').deleteAttribute('uv'));
-  const p = g.attributes.position;
-  const v = new THREE.Vector3();
-  const col = new Float32Array(p.count * 3);
-  const uv = new Float32Array(p.count * 2);
-  const n3 = (x, y, z) => Math.sin(x * 3.1 + seed) * Math.sin(y * 2.7 + seed * 1.7) * Math.sin(z * 3.3 + seed * 0.6);
-  for (let i = 0; i < p.count; i++) {
-    v.fromBufferAttribute(p, i);
-    const d = v.clone().normalize();
-    // big lumps (the boughs) and small ones (clumps of leaves)
-    const lump = 1 + 0.2 * n3(d.x * 2.2, d.y * 2.2, d.z * 2.2) + 0.09 * n3(d.x * 6, d.y * 6, d.z * 6) + 0.04 * n3(d.x * 13, d.y * 13, d.z * 13);
-    v.multiplyScalar(lump);
-    v.y = v.y * 0.8 + 0.5;
-    p.setXYZ(i, v.x, v.y, v.z);
-    // shade: dark low down and in the hollows, light on top; a little patchy
-    const hollow = Math.max(0, 1.04 - lump) * 2.2;
-    const k = (0.42 + 0.58 * Math.min(1, Math.max(0, (v.y - 0.1) / 0.85))) * (1 - hollow) * (0.92 + 0.08 * n3(d.x * 9, d.y * 9, d.z * 9));
-    col[i * 3] = k * 0.98;
-    col[i * 3 + 1] = k;
-    col[i * 3 + 2] = k * 0.95;
-    uv[i * 2] = 0.5 + Math.atan2(d.z, d.x) / (Math.PI * 2);
-    uv[i * 2 + 1] = 0.5 + Math.asin(Math.max(-1, Math.min(1, d.y))) / Math.PI;
-  }
-  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
-  g.computeVertexNormals();
-  return g;
-}
-
-// A conifer: three tiers of cones, darker below; 1 m across at the bottom.
-export function coniferGeometry() {
-  const pos = [];
-  const col = [];
-  const uv = [];
-  const idx = [];
-  // tiers of drooping, star-edged skirts, narrowing up to the tip
-  const tiers = 5;
-  const seg = 14;
-  for (let t = 0; t < tiers; t++) {
-    const base = 0.08 + t * 0.3;
-    const top = base + 0.55;
-    const r = 0.5 * (1 - t / (tiers + 0.6));
-    const at = pos.length / 3;
-    pos.push(0, top, 0);
-    col.push(1, 1, 1);
-    uv.push(0.5, 1);
-    for (let i = 0; i <= seg; i++) {
-      const a = (i / seg) * Math.PI * 2;
-      const rr = r * (i % 2 ? 0.78 : 1); // the edge goes in and out: boughs
-      pos.push(Math.cos(a) * rr, base + (i % 2 ? 0.05 : 0), Math.sin(a) * rr);
-      const k = 0.5 + 0.12 * t;
-      col.push(k, k, k);
-      uv.push(i / seg, 0);
-    }
-    for (let i = 0; i < seg; i++) idx.push(at, at + 2 + i, at + 1 + i);
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-  g.setIndex(idx);
-  g.computeVertexNormals();
-  return g;
-}
-
-// Foliage relief: clumps of leaves as a normal map.
-export function leafNormal(seed = 5) {
-  let s = seed;
-  const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-  return canvasTexture(
-    256,
-    256,
-    (x, w, h) => {
-      x.fillStyle = 'rgb(128,128,255)';
-      x.fillRect(0, 0, w, h);
-      for (let i = 0; i < 900; i++) {
-        const cx = r() * w;
-        const cy = r() * h;
-        const rad = 3 + r() * 6;
-        const g = x.createRadialGradient(cx - rad * 0.3, cy - rad * 0.3, 0, cx, cy, rad);
-        g.addColorStop(0, 'rgba(170,170,255,0.9)');
-        g.addColorStop(0.6, 'rgba(128,128,255,0.4)');
-        g.addColorStop(1, 'rgba(90,90,220,0.0)');
-        x.fillStyle = g;
-        x.beginPath();
-        x.arc(cx, cy, rad, 0, Math.PI * 2);
-        x.fill();
-      }
-    },
-    { srgb: false, repeat: [1, 1] },
-  );
-}
 
 // ── the Quinjet ──
 

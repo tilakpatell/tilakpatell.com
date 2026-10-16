@@ -134,7 +134,7 @@ export const HEAVY = { from: 25, stop: 70 };
 // a landing's squat: set at once by the speed it hit at (× per, to max),
 // rung back on a spring (the plan's k 120, c 8); a step down under `from`
 // m/s is nothing
-export const SQUAT = { per: 0.025, max: 0.3, from: 3 };
+const SQUAT = { per: 0.025, max: 0.3, from: 3 };
 
 export function playerAct({ crouch = false, sit = false, moving = false, aim = false, gun = null, blade = null, shotAgo = Infinity, swungAgo = Infinity } = {}) {
   if (sit) return { base: 'sit.idle', upper: null };

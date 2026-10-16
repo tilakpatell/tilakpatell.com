@@ -110,7 +110,7 @@ async function detail(buffer, size, { keep, mean }) {
 // returns the kind written
 const XL = 8192;
 const XL_MAX = 48 * 1024 * 1024;
-export async function xlMap(img, dir, file, role) {
+async function xlMap(img, dir, file, role) {
   const { encodeImage, gpuBytes, verdict } = await import('./ktx2.mjs');
   const png = await img.png().toBuffer();
   const webp = await sharp(png, { limitInputPixels: false }).webp({ quality: 84, effort: 4 }).toBuffer();

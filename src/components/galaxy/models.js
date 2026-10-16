@@ -146,6 +146,24 @@ export const LIGHT_CUTS = {
 };
 const LIGHT_DETAILS = new Set(['low', 'mid']);
 
+// The game's other fighters at their plain cut on a desktop (high and ultra):
+// lane V's surface files, the game's LOD0 with its 1,024 maps
+// (surface/catalog/bf2017-vehicles.js's rows: the TIE fighter's 57,264
+// triangles, the Y-wing's 58,416), where the fleet's file of each
+// (`<kind>.glb`, scripts/bf2017-fleet.mjs: the same model's light cut, under
+// 7,000 triangles with maps at 512 and 256) stays the phone's and the
+// laptop's and every tier's far copy. That light cut on every tier is why
+// the war's fighters read soft beside the game's (the space fidelity design,
+// 2026-10-15). A surface file faces +z as it comes (the catalog's `yaw: 0`),
+// so its nose is 0 whatever the fleet row's turn; the fleet file was written
+// turned back by that row's nose, so both draw the same way round.
+// `_source`: src/data/galaxyAssets.json (the surface files' bytes: the TIE
+// fighter's 2,152 KB against the fleet's 669; the Y-wing's 3,692 against
+// 1,476) and the catalog's `tex: 1024`.
+export const HIGH_CUTS = Object.fromEntries(
+  Object.entries({ tie: 'tiefighter', tiebomber: 'tiebomber', tieadvanced: 'tieadvanced', awing: 'awing', ywing: 'ywing', uwing: 'uwing', n1: 'n1fighter', arc170: 'arc170', vulture: 'vulture', trifighter: 'trifighter', cloudcar: 'cloudcar', vwing: 'vwing', hyena: 'hyena', xwing65: 'xwing' }).map(([kind, file]) => [kind, { url: `/models/galaxy/surface/${file}.glb`, nose: 0 }]),
+);
+
 // The Nebulon-B's close-up cut: the game's own frigate at its first LOD
 // (16,029 triangles, `_source`: lab/assets/bf2017/web/models.jsonl) with its
 // engine and its lights and 1,024 maps (scripts/bf2017-fleet.mjs's hq/nebulon
@@ -164,9 +182,16 @@ export const HQ = {
 // bf2017-fleet.mjs's `ultra` rows): each capital at its own cap by its length
 // (the Star Destroyer's 1,600 m the whole 60,000 triangles, a corvette's no
 // less than 8,000; `_source`: bf2017-space.mjs's capOf) with every map at the
-// game's own 1,024, loaded only on the strongest graphics (ultra), in the
-// bucket (scripts/assets-publish.mjs). The same hulls as the fleet's cuts, so
-// each keeps its far-off copy.
+// game's own 1,024, in the bucket (scripts/assets-publish.mjs), loaded on a
+// desktop (high and ultra) since the space fidelity design (2026-10-15): the
+// fleet's cut carries its maps at 256 and 128 (bf2017-space.mjs's FLEET_CUT),
+// a texel to several metres of a Star Destroyer, which is why the war's
+// capitals read blurred close up; a phone and a laptop keep that cut. The
+// same hulls as the fleet's cuts, so each keeps its far-off copy. (What a
+// desktop pays: the Star Destroyer's 21.6 MB, about 160 MB of graphics
+// memory at 1,024, by lib/glbTextures' count: the design names the lighter
+// `high` cut, 1,024 colour and 512 data maps at the fleet's triangles, as the
+// owner's next desktop run.)
 export const ULTRA = {
   destroyer: '/models/galaxy/destroyer.ultra.glb',
   moncal: '/models/galaxy/moncal.ultra.glb',
@@ -191,7 +216,9 @@ export const withHq = (models, detail) =>
     ? {
         ...models,
         ...Object.fromEntries(Object.entries(HQ).filter(([k]) => models[k]).map(([k, d]) => [k, { url: d.url, nose: d.nose, hq: true }])),
-        ...(detail === 'ultra' ? { ...over(models, HD_MAPS), ...over(models, ULTRA) } : {}),
+        ...Object.fromEntries(Object.entries(HIGH_CUTS).filter(([k]) => models[k]).map(([k, d]) => [k, { ...models[k], url: d.url, nose: d.nose }])),
+        ...over(models, ULTRA),
+        ...(detail === 'ultra' ? over(models, HD_MAPS) : {}),
       }
     : LIGHT_DETAILS.has(detail)
       ? { ...models, ...over(models, LIGHT_CUTS) }

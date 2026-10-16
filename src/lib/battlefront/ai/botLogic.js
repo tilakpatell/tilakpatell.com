@@ -50,12 +50,12 @@ export const PRIORITIES = { 1: [0, 1, 2], 2: [3, 4, 2] };
 // Capture progress past this, toward the side, is progress (the graph's compare).
 export const PROGRESS = 0.2;
 // The enemy on a post: on after this long of it being captured, off this long after (the graph's delays), s.
-export const ENEMIES_ON = 2;
-export const ENEMIES_OFF = 5;
+const ENEMIES_ON = 2;
+const ENEMIES_OFF = 5;
 // The orphans' call: after the first spawn, after a capture, and its cool-down (the graph's stopwatches and gate), s.
-export const ORPHANS_FIRST = 0.5;
-export const AFTER_CAPTURE = 1;
-export const CAPTURE_COOL_DOWN = 20;
+const ORPHANS_FIRST = 0.5;
+const AFTER_CAPTURE = 1;
+const CAPTURE_COOL_DOWN = 20;
 // How near its post a bot is sent: every level's CapturePoint<slot>_Radius but one (Kamino's E, 2 m), m.
 export const POST_RADIUS = 8;
 const SLOTS = 5;

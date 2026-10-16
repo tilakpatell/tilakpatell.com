@@ -9,7 +9,7 @@ import { angleDiff } from './vec';
 
 export const HEIGHT = 160;
 export const MAX_HEALTH = 8;
-export const GRAV = 4;
+const GRAV = 4;
 export const TERMINAL = 75;
 
 export function setAction(m, name, arg = 0) {
@@ -151,7 +151,7 @@ function airQuarter(m, w, p, ledge) {
 }
 
 // Gravity, by kind: 'normal', 'long' (the long jump's floatier arc), 'none'.
-export function applyGravity(m, kind = 'normal', aHeld = true) {
+function applyGravity(m, kind = 'normal', aHeld = true) {
   if (kind === 'none') return;
   if (m.cutJump && !aHeld && m.vel.y > 20) {
     m.vel.y *= 0.25;

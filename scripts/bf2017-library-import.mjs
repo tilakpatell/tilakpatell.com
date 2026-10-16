@@ -61,10 +61,10 @@ export function namesFrom(args, rows) {
     .filter(Boolean);
 }
 
-export function readUsed(file = USED) {
+function readUsed(file = USED) {
   return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
 }
-export function writeUsed(used, file = USED) {
+function writeUsed(used, file = USED) {
   const sorted = Object.fromEntries(Object.keys(used).sort().map((k) => [k, used[k]]));
   writeFileSync(file, `${JSON.stringify(sorted, null, 1)}\n`);
 }

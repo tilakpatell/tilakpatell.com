@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadRulebook, mapOf, stagesOf, volumeOf } from '../rulebook.js';
-import { STAGE_PAUSE, STAGE_SETUP, TICKETS_START, TICKETS_TOP_UP, canRespawn, createAssault, force, onEvent, spawnSets, tick, view } from './galacticAssault.js';
+import { STAGE_PAUSE, STAGE_SETUP, TICKETS_START, TICKETS_TOP_UP, canRespawn, createAssault, force, onEvent, sounds, spawnSets, tick, view } from './galacticAssault.js';
 import { BOMBING_RUN, UPLINK_RANGE, centroid } from './objectives.js';
 
 const rb = loadRulebook();
@@ -108,6 +108,31 @@ describe('Galactic Assault', () => {
     }
     expect(seen).toEqual([TICKETS_START - 10, TICKETS_START - 10 + TICKETS_TOP_UP, TICKETS_START - 10 + 2 * TICKETS_TOP_UP]);
     expect(ga.result).toMatchObject({ winner: 2, why: 'objectives', stage: 2 });
+  });
+
+  it('sounds a fuel charge’s keypad while one holds it, from the one holding it', () => {
+    const ga = createAssault({ rulebook: rb });
+    live(ga);
+    for (let s = 0; s < 2; s++) {
+      force(ga);
+      run(ga, 0.05 + STAGE_PAUSE + 0.05);
+    }
+    expect(view(ga).stage.id).toBe('escape');
+    const depot = ga.objectives.find((o) => o.def?.prefab === 'FantasyBattle_Logic:131');
+    const [x, y, z] = depot.charge.keypad.at;
+    const at = (id, side) => ({ soldiers: [{ id, side, at: [x + 1, y - 1.58, z], alive: true, interact: true }], alive: { attack: 1, defend: 1 } });
+    // (the keypad comes on 5 s into the stage; nobody holds it: no sound)
+    run(ga, 5.05);
+    expect(sounds(ga)).toEqual([]);
+    tick(ga, 0.05, at('a1', 'attack'));
+    expect(sounds(ga)).toEqual([{ type: 'keypad', at: { x, y, z }, from: 'a1', radius: 31.4035 }]);
+    run(ga, 2.2, at('a1', 'attack'));
+    expect(depot.armed).toBe(true);
+    // (armed: the attacker's hold is no longer one; a defender's is)
+    tick(ga, 0.05, at('a1', 'attack'));
+    expect(sounds(ga)).toEqual([]);
+    tick(ga, 0.05, at('d1', 'defend'));
+    expect(sounds(ga).map((n) => n.from)).toEqual(['d1']);
   });
 
   it('builds every objective the stage file names from the map', () => {

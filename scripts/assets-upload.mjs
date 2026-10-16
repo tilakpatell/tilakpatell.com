@@ -33,7 +33,7 @@ export const BUCKET = 'site-assets';
 export const REMOTE = ['hq/models', 'hq/tex', 'cc0/galaxy', 'models/gen3d', 'kit', 'textures/galaxy/bf2017', 'textures/galaxy/sky', 'textures/galaxy/planets'];
 // (each one whole in itself: a .gltf's sidecars would not sit beside it under one hash)
 export const KINDS = { '.glb': 'model/gltf-binary', '.ktx2': 'image/ktx2', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.hdr': 'image/vnd.radiance', '.exr': 'image/x-exr' };
-export const MIN_BYTES = 64 * 1024;
+const MIN_BYTES = 64 * 1024;
 export const MANIFEST = 'src/data/assets-manifest.json';
 const YEAR = '31536000';
 

@@ -467,7 +467,7 @@ export function doorway(R, a, b, { thick = 0.24, color = 0xf1e6c8, trim = 0xf6f2
 // spring line, centred: the wall from it up to `fill` metres, or a band
 // `ring` wide round it. `rx` is its half-width and `ry` its rise.
 const arches = new Map();
-export function archGeo(rx, ry, { ring = 0, fill = 0 } = {}) {
+function archGeo(rx, ry, { ring = 0, fill = 0 } = {}) {
   const key = `${rx.toFixed(3)},${ry.toFixed(3)},${ring.toFixed(3)},${fill.toFixed(3)}`;
   if (arches.has(key)) return arches.get(key);
   const s = new THREE.Shape();

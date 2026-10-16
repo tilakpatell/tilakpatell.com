@@ -83,8 +83,6 @@ const LOOKS = {
   },
 };
 
-export const planetLooks = Object.keys(LOOKS);
-
 export function paintPlanet(id, { w = 1024, h = 512 } = {}) {
   const L = LOOKS[id] ?? LOOKS.alderaan;
   const n = noise3(L.seed);

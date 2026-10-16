@@ -105,6 +105,17 @@ describe('a figure on the game’s skeleton', () => {
     expect(richClips('high') && richClips('ultra')).toBe(true);
   });
 
+  it('loads a body’s own pack alone when it is whole: a guest’s, sized to its body', () => {
+    // (scripts/guest-clips.mjs: the humanoid's, the pistol stance's and a host
+    // hero's clips in one, their positions refit; the game's own packs carry
+    // the 1.77 m man's and must never be laid over it)
+    const whole = '/models/guests/clips-rick.glb';
+    expect(packUrls(null, { whole })).toEqual([whole]);
+    expect(packUrls('han', { whole })).toEqual([whole]);
+    expect(packUrls(null, { whole, extras: false })).toEqual([whole]);
+    expect(packUrls(null, { whole: null })).toEqual(packUrls());
+  });
+
   it('loads the game’s full maps at ultra, the plain figure at high, the light one at low and mid', () => {
     expect(cutFor('/models/galaxy/crew/luke.glb', 'high')).toBe('/models/galaxy/crew/luke.glb');
     expect(cutFor('/models/galaxy/crew/luke.glb', 'ultra')).toBe('/models/galaxy/crew/luke.ultra.glb');
