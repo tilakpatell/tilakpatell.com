@@ -32,9 +32,9 @@ import { kill, sleep } from './lib.mjs';
 import { runCli, step, today } from './bf2017-desk.mjs';
 
 export const LEGS = { d3d11: { angle: 'd3d11', gpu: null }, webgpu: { angle: 'd3d11', gpu: 'webgpu' } };
-export const FRAME_MS = 16.7; // the design's ultra gate: a frame's p95 at 2,560 × 1,440
+const FRAME_MS = 16.7; // the design's ultra gate: a frame's p95 at 2,560 × 1,440
 export const PORT = 5188;
-export const GATE_DIR = 'docs/superpowers/evidence/bf2017-picture/gate';
+const GATE_DIR = 'docs/superpowers/evidence/bf2017-picture/gate';
 
 // The Star Wars worlds: every surface the high baseline measures (17 on 2026-10-11).
 export const worldsOf = (root) => JSON.parse(readFileSync(join(root, 'lab/baseline/surface-high.json'), 'utf8')).map((r) => r.id);

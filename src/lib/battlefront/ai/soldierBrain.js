@@ -31,6 +31,7 @@ import { pick } from '../../ai/utility.js';
 import { createSenses } from '../../ai/perception.js';
 import { lead } from '../../combat/aim.js';
 import { findPath, heightAt, walkable, cellAt, nearestWalkable } from '../nav.js';
+import { meshNearest, meshPath } from '../meshNav.js';
 import { fieldTo, legAlong } from '../navField.js';
 import { chestOf, move } from '../soldier.js';
 import { kickAim } from '../weapons.js';
@@ -41,29 +42,33 @@ import { queryFor as gameQuery, runQuery } from './coverQuery.js';
 import { skirmishRole, pressAbility } from './skirmish.js';
 import { AHEAD, FACING, TARGET, aimPoint, burstStep, createAim, createBurst, createEvasion, createLof, crouched, groundOk, lofStep, mayFire, noiseOf, strafeSide, takeRoll, viewMiss, viewPoint, viewStep, weaponClass } from './autoPlayer.js';
 
+// a walkable spot near a place: on the level's navmesh at the soldier's height where the battle has
+// one (the floor it is on, not the one over it: meshNav.js), else the navgrid's
+const spotNear = (nav, x, z, r, y) => (nav?.mesh ? meshNearest(nav, x, z, r, y) : null) ?? nearestWalkable(nav, x, z, r);
+
 // The class a soldier plays → the game's AI template for it.
 export const ROLES = { assault: 'rifleman', heavy: 'heavy', officer: 'officer', specialist: 'sniper' };
 // A weapon family → the AI weapon row (aim box, preferred range) and the firing patterns' weapon.
-export const AI_WEAPONS = { rifle: 'AI_Rifle', heavy: 'AI_Heavy', pistol: 'AI_Pistol_Officer', sniper: 'AI_Sniper', hero: 'AI_Rifle', special: 'AI_Rifle' };
-export const PATTERN_WEAPONS = { rifle: 'AssaultRifle', heavy: 'MachineGun', pistol: 'Pistol', sniper: 'SniperRifle', hero: 'AssaultRifle', special: 'AssaultRifle' };
+const AI_WEAPONS = { rifle: 'AI_Rifle', heavy: 'AI_Heavy', pistol: 'AI_Pistol_Officer', sniper: 'AI_Sniper', hero: 'AI_Rifle', special: 'AI_Rifle' };
+const PATTERN_WEAPONS = { rifle: 'AssaultRifle', heavy: 'MachineGun', pistol: 'Pistol', sniper: 'SniperRifle', hero: 'AssaultRifle', special: 'AssaultRifle' };
 
 // Knobs the data does not hold, each the game's by observation:
 export const SIGHT = 100; // metres a bot sees (the templates' sensing areas are single-player only)
 export const CONE = 0.25; // the cosine of a bot's half view angle (about 75° either side)
-export const HEARING = 40; // metres a shot is heard
+const HEARING = 40; // metres a shot is heard
 export const AIM_SETTLE = 2; // seconds on one target for the aim box to shrink from its max to its min
 export const REPLAN = 1.5; // seconds a path is kept before it is planned again
 export const HIDE_HEALTH = 0.4; // the share of health under which a bot hides
-export const SUPPRESSED = 1; // the suppression a bot hides at (near misses fill it by the shooter's SuppressionValue)
+const SUPPRESSED = 1; // the suppression a bot hides at (near misses fill it by the shooter's SuppressionValue)
 export const STRAFE = 4; // metres a bot attacking in the open steps aside
-export const WANDER = 30; // metres round the objective a bot with nothing to do searches
+const WANDER = 30; // metres round the objective a bot with nothing to do searches
 const NEAR_GOAL = 0.8;
 // A bot with a task this far outside its radius goes there rather than
 // fight, unless the enemy is inside FIGHT_AWAY; it interacts only with no
 // enemy believed inside INTERACT_CLEAR (the commander's rule). By hand.
-export const TASK_SLACK = 10;
-export const FIGHT_AWAY = 20;
-export const INTERACT_CLEAR = 10;
+const TASK_SLACK = 10;
+const FIGHT_AWAY = 20;
+const INTERACT_CLEAR = 10;
 // A goal further than this is walked to by legs of LEG metres, each its own
 // search, so a long walk across a Galactic Assault map never floods A*. By hand.
 export const FAR = 80;
@@ -232,7 +237,7 @@ const OPTIONS = [
 ];
 
 // a point `by` metres from `from` away from `threat`, leaning toward the squad's centre
-function fallBack(nav, from, threat, centre, by = 8) {
+function fallBack(nav, from, threat, centre, by = 8, y = null) {
   let ax = from[0] - threat[0];
   let az = from[1] - threat[1];
   const L = Math.hypot(ax, az) || 1;
@@ -250,7 +255,7 @@ function fallBack(nav, from, threat, centre, by = 8) {
   }
   const M = Math.hypot(ax, az) || 1;
   const goal = [from[0] + (ax / M) * by, from[1] + (az / M) * by];
-  return (nav && nearestWalkable(nav, goal[0], goal[1], 6)) ?? goal;
+  return (nav && spotNear(nav, goal[0], goal[1], 6, y)) ?? goal;
 }
 
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -350,7 +355,7 @@ function thinkAutoPlayer(brain, world, now) {
         if (!brain.wander || brain.wanderFor !== task || d2(me, brain.wander) < 2 || d2(brain.wander, task.at) > task.radius + 1) {
           const a = brain.rand() * Math.PI * 2;
           const r = brain.rand() * task.radius;
-          brain.wander = (world.nav && nearestWalkable(world.nav, task.at[0] + Math.cos(a) * r, task.at[1] + Math.sin(a) * r, 6)) ?? task.spot ?? task.at;
+          brain.wander = (world.nav && spotNear(world.nav, task.at[0] + Math.cos(a) * r, task.at[1] + Math.sin(a) * r, 6, s.at[1])) ?? task.spot ?? task.at;
           brain.wanderFor = task;
         }
         intent.goal = brain.wander;
@@ -412,7 +417,7 @@ export function think(brain, world, now) {
   }
   if (mode === 'flee') {
     const slot = findCover('flee');
-    intent.goal = slot ? flat(slot.at) : fallBack(world.nav, me, tgt, world.squad?.centre, 15);
+    intent.goal = slot ? flat(slot.at) : fallBack(world.nav, me, tgt, world.squad?.centre, 15, s.at[1]);
     intent.sprint = true;
     intent.fire = false;
     // (fled into the cover its query chose: it hides there)
@@ -425,7 +430,7 @@ export function think(brain, world, now) {
   } else if (mode === 'hide') {
     const keep = brain.cover && world.taken?.get(brain.cover) === s.id;
     const slot = keep ? brain.cover : findCover('hide');
-    intent.goal = slot ? flat(slot.at) : fallBack(world.nav, me, tgt, world.squad?.centre);
+    intent.goal = slot ? flat(slot.at) : fallBack(world.nav, me, tgt, world.squad?.centre, 8, s.at[1]);
     intent.stance = 'crouch';
     intent.fire = false;
     brain.cover = slot ?? null;
@@ -479,7 +484,7 @@ export function think(brain, world, now) {
       if (!brain.wander || brain.wanderFor !== task || d2(me, brain.wander) < 2 || d2(brain.wander, task.at) > task.radius + 1) {
         const a = brain.rand() * Math.PI * 2;
         const r = brain.rand() * task.radius;
-        brain.wander = (world.nav && nearestWalkable(world.nav, task.at[0] + Math.cos(a) * r, task.at[1] + Math.sin(a) * r, 6)) ?? task.spot ?? task.at;
+        brain.wander = (world.nav && spotNear(world.nav, task.at[0] + Math.cos(a) * r, task.at[1] + Math.sin(a) * r, 6, s.at[1])) ?? task.spot ?? task.at;
         brain.wanderFor = task;
       }
       intent.goal = brain.wander;
@@ -494,7 +499,7 @@ export function think(brain, world, now) {
         const base = d2(me, world.objective) > WANDER ? world.objective : me;
         const a = brain.rand() * Math.PI * 2;
         const r = 8 + brain.rand() * WANDER;
-        brain.wander = (world.nav && nearestWalkable(world.nav, base[0] + Math.cos(a) * r, base[1] + Math.sin(a) * r, 8)) ?? world.objective;
+        brain.wander = (world.nav && spotNear(world.nav, base[0] + Math.cos(a) * r, base[1] + Math.sin(a) * r, 8, s.at[1])) ?? world.objective;
       }
       intent.goal = brain.wander;
     }
@@ -535,14 +540,18 @@ function plan(brain, world, s, goal, now) {
   const t = world.task;
   const sent = t?.stays && d2(goal, t.at) <= (t.radius ?? 0) + 2 && d2(from, t.at) > (t.radius ?? 0) + SENT_NEAR ? t.at : null;
   let path = null;
-  if (sent) {
+  // (the level's own navmesh where the battle has one: its way, the floors one over another told apart; no
+  // way on it, the base shut behind its gates, is a straight leg that the mesh's walls stop)
+  const meshed = world.nav?.mesh ? meshPath(world.nav, from, goal, { fromY: s.at[1] }) : undefined;
+  if (meshed) path = meshed;
+  if (meshed === undefined && sent) {
     const f = fieldTo(world.nav, sent);
     path = f ? legAlong(world.nav, f, from, LEG) : null;
     if (path && path.length < 2) path = null;
   }
-  if (!path && d <= FAR) path = findPath(world.nav, from, goal, { blocked, max: SEARCH_CELLS });
+  if (meshed === undefined && !path && d <= FAR) path = findPath(world.nav, from, goal, { blocked, max: SEARCH_CELLS });
   // too far for one search, or walled off for now, and no field's way: a leg in a line toward it
-  if (!path) {
+  if (meshed === undefined && !path) {
     const k = Math.min(1, LEG / (d || 1));
     const mid = nearestWalkable(world.nav, from[0] + (goal[0] - from[0]) * k, from[1] + (goal[1] - from[1]) * k, 8);
     path = mid ? findPath(world.nav, from, mid, { blocked, max: SEARCH_CELLS }) : null;
@@ -574,8 +583,10 @@ function navigate(brain, world, s, goal, dt, now) {
       brain.avoidUntil = now + AVOID;
     }
     const a = brain.rand() * Math.PI * 2;
-    const spot = nearestWalkable(world.nav, s.at[0] + Math.cos(a) * 6, s.at[2] + Math.sin(a) * 6, 6);
-    if (spot && walkable(world.nav, spot[0], spot[1])) brain.path = findPath(world.nav, flat(s.at), spot, { blocked: brain.avoid }) ?? [flat(s.at), spot];
+    const spot = spotNear(world.nav, s.at[0] + Math.cos(a) * 6, s.at[2] + Math.sin(a) * 6, 6, s.at[1]);
+    const way = world.nav?.mesh && spot ? meshPath(world.nav, flat(s.at), spot, { fromY: s.at[1] }) : undefined;
+    if (way) brain.path = way;
+    else if (spot && walkable(world.nav, spot[0], spot[1])) brain.path = findPath(world.nav, flat(s.at), spot, { blocked: brain.avoid }) ?? [flat(s.at), spot];
     brain.wp = 1;
     brain.pathGoal = goal;
     brain.pathAt = now;

@@ -84,7 +84,7 @@ async function fetchTo(env, bucketPath) {
 }
 
 // the hero's clips the manifest lists: its combat set, and its idle
-export function heroClips(manifest, hero) {
+function heroClips(manifest, hero) {
   const p = PREFIX[hero];
   const re = new RegExp(`^(A_${p}_|L_${p}_Stand_Idle_01$)`);
   return [...manifest.values()].filter((e) => re.test(e.name) && !e.additive && !isSequel(e.name) && [...SKELETONS, OWN[hero]].includes((e.skeleton ?? '').split('/').pop()) && KINDS.has(classify(e.name).kind));

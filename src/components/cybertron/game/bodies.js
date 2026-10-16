@@ -414,7 +414,7 @@ export function gesture(name, t = 0, { style = null, seed = 0, dir = null, hold 
 
 // lib/ai/react.js's table, for robots: what each answers with (its clip is
 // a gesture's name here; `kind` in the context picks whose)
-export const CYBER_REACTIONS = {
+const CYBER_REACTIONS = {
   greet: { cooldown: 30, chance: 0.9, react: (ctx) => (GREET[ctx.kind] === null ? null : { clip: GREET[ctx.kind] ?? 'wave', layer: 'upper', hold: false, look: ctx.target ?? null }) },
   say: { react: (ctx) => ({ clip: 'talk', layer: 'upper', hold: ctx.hold ?? 3, look: ctx.target ?? null }) },
   hit: { cooldown: 0.35, react: () => ({ clip: 'stagger', layer: 'upper', hold: false, look: null }) },

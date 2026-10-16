@@ -9,27 +9,38 @@ import { CHANNELS } from './toys';
 // a line from the show's improvised ads and shows (./toys.js), said once the
 // static clears, in its speaker's voice where it's been made.
 
-function Static({ on }) {
-  const ref = useRef(null);
-  useEffect(() => {
-    if (!on) return undefined;
-    const c = ref.current;
+// The static between channels: a picture of noise made once for the page
+// and jumped about by CSS while the set fuzzes (rickmorty.css's
+// rm-static-jump), where a fresh putImageData of random greys on every frame
+// kept the main thread busy for a picture nobody could tell from this one
+// (the performance lanes' P8). 80 by 60, tiled twice across the screen:
+// the 160 by 120 the set's static always was, its grain as chunky.
+let noise = null;
+function noiseUrl() {
+  if (noise !== null) return noise;
+  noise = '';
+  try {
+    const c = document.createElement('canvas');
+    c.width = 80;
+    c.height = 60;
     const x = c.getContext('2d');
     const img = x.createImageData(c.width, c.height);
-    let raf = 0;
-    const draw = () => {
-      for (let i = 0; i < img.data.length; i += 4) {
-        const v = (Math.random() * 255) | 0;
-        img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
-        img.data[i + 3] = 255;
-      }
-      x.putImageData(img, 0, 0);
-      raf = requestAnimationFrame(draw);
-    };
-    draw();
-    return () => cancelAnimationFrame(raf);
-  }, [on]);
-  return <canvas ref={ref} width="160" height="120" className="rm-static" data-on={on || undefined} aria-hidden="true" />;
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = (Math.random() * 255) | 0;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+      img.data[i + 3] = 255;
+    }
+    x.putImageData(img, 0, 0);
+    noise = c.toDataURL('image/png');
+  } catch {
+    /* no 2D canvas: the set flips without its fuzz */
+  }
+  return noise;
+}
+
+function Static({ on }) {
+  const url = on ? noiseUrl() : '';
+  return <span className="rm-static" data-on={on || undefined} aria-hidden="true" style={url ? { backgroundImage: `url(${url})` } : undefined} />;
 }
 
 function Scene({ id }) {

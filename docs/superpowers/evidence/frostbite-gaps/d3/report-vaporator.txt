@@ -1,6 +1,0 @@
-file	texture	role	size	bytes now	bytes ktx2	GPU now	GPU ktx2	PSNR	verdict
-vaporator.ultra.glb	texture 0	color	1024×1024	111 KB	894 KB	5.3 MB	1.3 MB	41.5 dB	keep
-vaporator.ultra.glb	texture 1	arm	1024×1024	128 KB	793 KB	5.3 MB	1.3 MB	40.6 dB	keep
-vaporator.ultra.glb	texture 2	normal	1024×1024	41 KB	365 KB	5.3 MB	1.3 MB	44.5 dB	keep
-
-3 textures: download 281 KB → 2053 KB (×7.31), GPU 16.0 MB → 4.0 MB

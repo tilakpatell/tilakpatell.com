@@ -765,7 +765,7 @@ function billPony(K) {
 
 // The people of Bree and the hobbits on the road, as toy figures; a
 // carrot for the man with the carrot.
-export const BREE_LOOKS = {
+const BREE_LOOKS = {
   frodo: { ...LOOKS.frodo, pack: true },
   sam: { ...LOOKS.sam, pack: true },
   merry: LOOKS.merry,

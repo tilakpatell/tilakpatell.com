@@ -57,6 +57,8 @@ export const ISLAND = {
     'scripts/health.mjs',
     'scripts/online-check.mjs',
     'scripts/perf-probe.mjs',
+    'scripts/lib/perf-routes.mjs',
+    'scripts/lib/perf-routes.test.mjs',
     'scripts/stack-census.mjs',
     'scripts/supabase-check.mjs',
     'src/App.jsx',
@@ -168,7 +170,7 @@ export function markedSpans(lines, marker = ISLAND.marker) {
 
 // a begin with no end, or an end with no begin: a block that would run to
 // the file's end, or a row the remover would not drop. check() fails on each
-export function brokenMarks(lines, marker = ISLAND.marker) {
+function brokenMarks(lines, marker = ISLAND.marker) {
   const { begin, end } = markers(marker);
   const out = [];
   let open = -1;

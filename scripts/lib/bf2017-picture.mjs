@@ -78,7 +78,7 @@ export function rowMean(rgba, w, y) {
 // KTX2, nothing clamped), when the desktop has made it: `has(sitePath)` says
 // whether public/<path> is there or published. → { url (the stem: add
 // `.<width>.ktx2`), widths, format } | null
-export const HDR_DIR = 'textures/galaxy/bf2017/hdr';
+const HDR_DIR = 'textures/galaxy/bf2017/hdr';
 export function hdrOf(name, has) {
   const slug = name.split('/').pop().toLowerCase();
   const widths = [4096, 2048, 1024, 512, 256].filter((w) => has(`${HDR_DIR}/${slug}.${w}.ktx2`));

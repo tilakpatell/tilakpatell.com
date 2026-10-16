@@ -21,13 +21,13 @@ export const TILE = 16;
 // the square root of its size (REACH_SIZE). Named: the game's scatter view
 // distance is in a render setting the export does not carry.
 export const REACH = { low: 18, mid: 28, high: 40, ultra: 56 };
-export const REACH_SIZE = { min: 0.5, max: 6 };
+const REACH_SIZE = { min: 0.5, max: 6 };
 // the most instances the ring holds on each tier (the frame's budget for the
 // scatter: under 2 ms at ultra on the owner's laptop is the plan's gate); a
 // ring over it thins every type alike, never drops one
 export const DENSITY_CAP = { low: 3000, mid: 9000, high: 24000, ultra: 48000 };
 // the game's dissolve range on a type that does not say (DissolveRangeRatio)
-export const DISSOLVE = 0.4;
+const DISSOLVE = 0.4;
 
 export function mulberry32(seed) {
   let a = seed >>> 0;

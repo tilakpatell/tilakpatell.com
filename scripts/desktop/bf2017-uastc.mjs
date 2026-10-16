@@ -28,7 +28,7 @@ import { jsonLines, keyState, runCli, step, textureIndexFile } from './bf2017-de
 
 export const LEVELS = 'public/models/galaxy/bf2017/levels';
 export const SIZE = 2048;
-export const MIN_GAIN = 3; // dB: the surfaces design's Q5, "if UASTC colour is over 3 dB better"
+const MIN_GAIN = 3; // dB: the surfaces design's Q5, "if UASTC colour is over 3 dB better"
 
 export const isColour = (slug) => /_cs?$/.test(slug) && !slug.includes('__');
 

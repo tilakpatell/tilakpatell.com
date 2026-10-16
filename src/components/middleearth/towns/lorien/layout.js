@@ -132,7 +132,7 @@ export function woodHeight(x, z) {
 }
 // The bank round the Mirror (without its little bumps): what you walk on
 // there, over the level ground.
-export function mirrorBank(x, z) {
+function mirrorBank(x, z) {
   const rho = Math.hypot(x - MIRROR.x, z - MIRROR.z);
   if (rho <= MIRROR.floor || rho >= MIRROR.foot) return 0;
   return rho <= MIRROR.crest ? MIRROR.rim * smooth(MIRROR.floor, MIRROR.crest, rho) : MIRROR.rim * (1 - smooth(MIRROR.crest, MIRROR.foot, rho));

@@ -2,6 +2,9 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { BATTLE, WIDTH, createBattle, inSights, perSide, turnToward } from './battle';
 import { FIGHTERS, WARS } from './wars';
+import { hullOf, segmentHit } from '../../lib/combat/hulls';
+import { set } from './battleKit';
+import { capitalPose } from '../../lib/combat/pose';
 
 // a seeded random, so every run of a battle is the same
 const seeded = (seed = 7) => {
@@ -621,5 +624,120 @@ describe('a ram on one of the other side’s fighters', () => {
     expect(b.strike(mine.id, 1)).toBeNull();
     enemy.alive = false;
     expect(b.strike(enemy.id, 1)).toBeNull();
+  });
+});
+
+describe('the hulls (the galaxy’s hulls design: a bolt meets a ship on its shapes)', () => {
+  const hullBin = (name) => {
+    const b = readFileSync(new URL(`../../../scripts/fixtures/bf2017/physics/${name}-hull.bin`, import.meta.url));
+    return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
+  };
+  const HULLS = { destroyer: hullOf(hullBin('destroyer')), xwing: hullOf(hullBin('xwing')) };
+  const hulls = { get: (kind) => HULLS[kind] ?? null };
+  // a point in a capital's own frame (shares of its length: right, up, forward), where it's drawn (its bob included)
+  const on = (cap, [r, u, f]) => {
+    const { at0 } = capitalPose(cap, 0, false);
+    return { x: at0[0] + (cap.right.x * r + cap.up.x * u + cap.fwd.x * f) * cap.size, y: at0[1] + (cap.right.y * r + cap.up.y * u + cap.fwd.y * f) * cap.size, z: at0[2] + (cap.right.z * r + cap.up.z * u + cap.fwd.z * f) * cap.size };
+  };
+
+  it('a bolt at a Star Destroyer’s wing edge meets its hull, where the spheres missed', () => {
+    const b = make({ hulls });
+    b.setYou(0);
+    const sd = b.capitals.find((c) => c.team === 1 && c.kind === 'destroyer');
+    expect(sd).toBeTruthy();
+    // the wing, a quarter of its length out from the centre line, astern: nothing of the spheres' chain reaches it
+    // (a bolt straight down through it: the wing's plane sits under the box's middle, the tower raising it)
+    const down = (bt, p) => bt.hit({ x: p.x, y: p.y + 3, z: p.z }, { x: p.x, y: p.y - 3, z: p.z }, 0);
+    const spheres = make();
+    spheres.setYou(0);
+    const sd2 = spheres.capitals.find((c) => c.team === 1 && c.kind === 'destroyer');
+    expect(down(spheres, on(sd2, [0.25, 0, -0.35]))).toBeNull();
+    const hit = down(b, on(sd, [0.25, 0, -0.35]));
+    expect(hit).toMatchObject({ id: sd.id, shield: true }); // (the defender's flagship, its shield up in phase 1: the hull decided where)
+    expect(hit.part).toBeGreaterThanOrEqual(0);
+    expect(hit.property).toBe(132); // (the Star Destroyer's hull material: damage.json's parts)
+    // and the space beside the wing is still open
+    expect(down(b, on(sd, [0.5, 0, -0.35]))).toBeNull();
+  });
+
+  it('a bolt over an X-wing’s back misses it where its sphere would have hit, and one through its hull hits', () => {
+    const b = make({ hulls });
+    b.setYou(1);
+    const f = b.fighters.find((o) => o.team === 0 && o.kind === 'xwing' && o.alive);
+    expect(f).toBeTruthy();
+    // level flight, so the hull's frame is the world's
+    Object.assign(f.fwd, { x: 0, y: 0, z: 1 });
+    f.bank = 0;
+    f.vel.x = f.vel.y = f.vel.z = 0;
+    b.update(0, null); // (seen = pos)
+    const over = f.size * 0.2; // (above its box, 0.095 of its length tall, and inside its 0.35 sphere)
+    const across = (y) => b.hit({ x: f.seen.x - 1, y: f.seen.y + y, z: f.seen.z }, { x: f.seen.x + 1, y: f.seen.y + y, z: f.seen.z }, 0);
+    expect(across(over)).toBeNull();
+    const hit = across(0);
+    expect(hit).toMatchObject({ id: f.id, kind: 'xwing' });
+    expect(hit.property).toBe(68); // (the X-wing's parts' material pair)
+    expect(hit.at.y).toBeCloseTo(f.seen.y, 3);
+  });
+
+  it('a ship whose kind has no hull is still hit as its sphere', () => {
+    const b = make({ hulls: { get: () => null } });
+    b.setYou(1);
+    const f = b.fighters.find((o) => o.team === 0 && o.kind === 'xwing' && o.alive);
+    Object.assign(f.fwd, { x: 0, y: 0, z: 1 });
+    f.vel.x = f.vel.y = f.vel.z = 0;
+    b.update(0, null);
+    const over = f.size * 0.2;
+    expect(b.hit({ x: f.seen.x - 1, y: f.seen.y + over, z: f.seen.z }, { x: f.seen.x + 1, y: f.seen.y + over, z: f.seen.z }, 0)).toMatchObject({ id: f.id });
+  });
+
+  it('the AI’s bolts meet a fighter on its hull too', () => {
+    const b = make({ hulls });
+    const f = b.fighters.find((o) => o.team === 0 && o.kind === 'xwing' && o.alive);
+    Object.assign(f.fwd, { x: 0, y: 0, z: 1 });
+    f.bank = 0;
+    const hp = f.hp;
+    // a bolt of the other side's over its back, this step: it flies on
+    const over = f.size * 0.2;
+    const bolt = b.fire(1, { x: f.pos.x - 1, y: f.pos.y + over, z: f.pos.z }, { x: 1, y: 0, z: 0 }, 'laser');
+    // (the fighter held still for the step, so the bolt's path and the hull's frame are known)
+    f.speed = 0;
+    f.vel.x = f.vel.y = f.vel.z = 0;
+    const turn = f.type.turn;
+    f.type = { ...f.type, turn: 0 };
+    b.update(1 / 30, null);
+    f.type = { ...f.type, turn };
+    expect(bolt.on).toBe(true);
+    expect(f.hp).toBe(hp);
+  });
+
+  it('a fighter flying through a Star Destroyer’s wing is put back out of it by the step, not left to fly through', () => {
+    const b = make({ hulls });
+    const sd = b.capitals.find((c) => c.team === 1 && c.kind === 'destroyer');
+    const f = b.fighters.find((o) => o.team === 0 && o.kind === 'xwing' && o.alive);
+    const pose = capitalPose(sd, 0, false);
+    // the wing's upper face, a quarter of the length out, astern
+    const p = on(sd, [0.25, 0, -0.35]);
+    const top = segmentHit(HULLS.destroyer, pose, [p.x, p.y + 3, p.z], [p.x, p.y - 3, p.z]).point[1];
+    // the fighter just over it, diving straight at it at its speed: a step's way (0.67) is through the plate
+    Object.assign(f.pos, { x: p.x, y: top + 0.3, z: p.z });
+    Object.assign(f.prev, f.pos);
+    Object.assign(f.fwd, { x: 0, y: -1, z: 0 });
+    f.bank = 0;
+    f.speed = 20;
+    set(f.vel, 0, -20, 0);
+    f.type = { ...f.type, turn: 0, speed: 20 };
+    const without = make();
+    const g = without.fighters.find((o) => o.team === 0 && o.kind === 'xwing' && o.alive);
+    Object.assign(g.pos, f.pos);
+    Object.assign(g.prev, f.pos);
+    Object.assign(g.fwd, f.fwd);
+    g.speed = 20;
+    set(g.vel, 0, -20, 0);
+    g.type = { ...g.type, turn: 0, speed: 20 };
+    without.update(1 / 30, null);
+    b.update(1 / 30, null);
+    expect(g.pos.y).toBeLessThan(top - 0.2); // (through it, on the spheres)
+    expect(f.pos.y).toBeGreaterThan(top - 0.01); // (held on the wing's face)
+    expect(f.fwd.y).toBeGreaterThan(-1); // (its nose eased along the face)
   });
 });

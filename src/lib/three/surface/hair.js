@@ -21,25 +21,25 @@ import { createGameMaterial, createSunUniforms, fromGlb, REFLECTANCE_TO_SPECULAR
 // Melanin's absorption per unit concentration (Chiang, Bitterli, Tappan and
 // Burley 2016, "A Practical and Controllable Hair and Fur Model for
 // Production Path Tracing", eq. 9's coefficients)
-export const EUMELANIN = [0.419, 0.697, 1.37];
-export const PHEOMELANIN = [0.187, 0.4, 1.05];
+const EUMELANIN = [0.419, 0.697, 1.37];
+const PHEOMELANIN = [0.187, 0.4, 1.05];
 // MelaninXY 1 as a concentration (the top of Chiang's 0–8 range)
-export const MELANIN_MAX = 8;
+const MELANIN_MAX = 8;
 // the path through a strand the colour is read at (one radius of a unit fibre)
-export const MELANIN_PATH = 0.5;
+const MELANIN_PATH = 0.5;
 // Kajiya-Kay: the lobes' shifts along the normal and the secondary's share
 // of the primary's exponent (Scheuermann 2004, "Hair Rendering and Shading")
-export const PRIMARY_SHIFT = 0.1;
-export const SECONDARY_SHIFT = -0.1;
-export const SECONDARY_SHARPNESS = 0.25;
+const PRIMARY_SHIFT = 0.1;
+const SECONDARY_SHIFT = -0.1;
+const SECONDARY_SHARPNESS = 0.25;
 // the strands' gloss when the record says no Smoothness (the presets' 0.6)
-export const HAIR_SMOOTHNESS = 0.6;
+const HAIR_SMOOTHNESS = 0.6;
 // the lobes' weight against the sun (a site number: the record has none)
-export const HAIR_SPECULAR = 0.35;
+const HAIR_SPECULAR = 0.35;
 // skin's scattering tint (red travels furthest: the record's skin profile
 // radii are not in the dump) and the wrap of the diffuse
-export const SCATTER_TINT = [1, 0.4, 0.25];
-export const SCATTER_WRAP = 0.5;
+const SCATTER_TINT = [1, 0.4, 0.25];
+const SCATTER_WRAP = 0.5;
 
 export function melaninColor(eu, pheo) {
   return [0, 1, 2].map((c) => Math.exp(-(eu * MELANIN_MAX * EUMELANIN[c] + pheo * MELANIN_MAX * PHEOMELANIN[c]) * MELANIN_PATH));

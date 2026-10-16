@@ -23,8 +23,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 // not buildings or vehicles: the groups of crates and of people, and the
 // scattered ground cover (named: nothing in an entry says "a tree")
-export const NOT_BUILT = new Set(['common', 'fill', 'people', 'battlefront']);
-export const GROUND_COVER = new Set(['palm', 'sorganfern', 'sorganfir', 'sorganbirch', 'glassshard', 'lavarock', 'dagoroots', 'dagocypress', 'dagoroot', 'mushroom', 'reed']);
+const NOT_BUILT = new Set(['common', 'fill', 'people', 'battlefront']);
+const GROUND_COVER = new Set(['palm', 'sorganfern', 'sorganfir', 'sorganbirch', 'glassshard', 'lavarock', 'dagoroots', 'dagocypress', 'dagoroot', 'mushroom', 'reed']);
 export const isBuiltKind = (kind, entry) => Boolean(entry) && !NOT_BUILT.has(entry.group) && !GROUND_COVER.has(kind);
 
 // The picks: every world's landmark first (its most-placed hero kind), then
@@ -53,7 +53,7 @@ export function pick(counts, models, { n = 20 } = {}) {
 // A kind whose Meshy task is kept under another name where no lane has it
 // under its own (the great wroshyr was lifted out of the picture of
 // Kachirho, and its plain task is Kachirho's; its ultra remake is its own)
-export const TASK_NAMES = { wroshyrgreat: 'kachirho' };
+const TASK_NAMES = { wroshyrgreat: 'kachirho' };
 
 // Where a kind's plain model came from: Meshy (made.js's `made: 'meshy'`,
 // through one of the lanes, named by the tasks file that holds its task),
@@ -95,10 +95,10 @@ export function commandFor(kind, { source, lane, group, task = kind }) {
 // (in the order scripts/meshy-galaxy-buildings.mjs takes them over, the
 // ultra lane's remakes last)
 const LANES = ['meshy-galaxy-buildings', 'meshy-galaxy-buildings-fill', 'meshy-galaxy-buildings-back', 'meshy-galaxy-buildings-bases', 'meshy-galaxy-three', 'meshy-galaxy-library', 'meshy-galaxy-ultra'];
-export const LANE_ENV = { 'scripts/meshy-galaxy-ultra-tasks.json': 'MESHY_REVIEW=lab/meshy/ultra' };
+const LANE_ENV = { 'scripts/meshy-galaxy-ultra-tasks.json': 'MESHY_REVIEW=lab/meshy/ultra' };
 
 // which Meshy tasks file holds each kind's task
-export const lanesIn = (dir = join(ROOT, 'scripts')) => Object.fromEntries(LANES.map((f) => [`scripts/${f}-tasks.json`, existsSync(join(dir, `${f}-tasks.json`)) ? Object.keys(JSON.parse(readFileSync(join(dir, `${f}-tasks.json`), 'utf8'))) : []]));
+const lanesIn = (dir = join(ROOT, 'scripts')) => Object.fromEntries(LANES.map((f) => [`scripts/${f}-tasks.json`, existsSync(join(dir, `${f}-tasks.json`)) ? Object.keys(JSON.parse(readFileSync(join(dir, `${f}-tasks.json`), 'utf8'))) : []]));
 
 // the Meshy lanes' specs (each lane module's BUILDINGS; the first lane's are
 // in the script itself, so Theed's halls are read off it), for a Meshy

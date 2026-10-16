@@ -110,16 +110,16 @@ export const ROOF_LIGHTS = [0, 1, 2].map((k) => [
   [84.2, 74.1 + k * 5],
 ]);
 // the plant rooms on the main building's roof and the glass wing's
-export const PROW_PLANT = [
+const PROW_PLANT = [
   [48, 23],
   [55, 27],
 ].map(([x, y]) => planBox(x, y, x + 3, y + 2.4));
-export const WING_PLANT = [0.25, 0.5, 0.75].map((k) => {
+const WING_PLANT = [0.25, 0.5, 0.75].map((k) => {
   const [x, y] = arcPt((CRES.rIn + CRES.rOut) / 2, CRES.a0 + (CRES.a1 - CRES.a0) * k);
   return planBox(x - 1.6, y - 1.2, x + 1.6, y + 1.2);
 });
 // the hangar roof's solar panels, in two rows of five
-export const SOLAR = [0, 1, 2, 3, 4].flatMap((i) => [9.5, 18.9].map((x0) => planBox(x0, 19 + i * 6.6, x0 + 7.6, 19 + i * 6.6 + 4.8)));
+const SOLAR = [0, 1, 2, 3, 4].flatMap((i) => [9.5, 18.9].map((x0) => planBox(x0, 19 + i * 6.6, x0 + 7.6, 19 + i * 6.6 + 4.8)));
 // plant on the training center's roof and the lab's, and the main building's comms mast
 export const ROOF_PLANT = [
   { id: 'hvac-0', foot: planBox(102, 29, 105, 31), y0: 7 * V, h: 7 * V + 2.4 },
@@ -129,7 +129,7 @@ export const ROOF_PLANT = [
 ];
 export const COMMS = { x: 57, y: 21, h: 6.5 }; // on the plan; the mast's height over the roof
 // what's up off the ground: the bridge, and what stands on the roofs
-export const OVERHEAD = [
+const OVERHEAD = [
   building('bridge', BRIDGE, 7 * V, 4.6 * V),
   building('clerestory', CLERESTORY, 8.4 * V, 7 * V),
   ...ROOF_LIGHTS.map((f, i) => building(`rooflight-${i}`, f, 7.2 * V, 6 * V)),
@@ -142,8 +142,6 @@ export const OVERHEAD = [
 // everything solid, on the ground and off it
 export const SOLIDS = [...BUILDINGS, ...OVERHEAD];
 export const solidById = (id) => SOLIDS.find((s) => s.id === id) ?? null;
-// the bridge itself, for the drawing and the camera: overhead from 4.6 to 7 units
-export const BRIDGE_SPAN = { y0: 4.6 * V, y1: 7 * V };
 
 // ── things on the lawn: the parked Quinjet, the cars, the trees down the drives ──
 
@@ -1771,7 +1769,7 @@ export const ANCHORS = [
 ];
 
 // Whether a web from (x0, y0, z0) to (x1, y1, z1) is clear of the buildings.
-export function clearLine(x0, y0, z0, x1, y1, z1) {
+function clearLine(x0, y0, z0, x1, y1, z1) {
   for (let i = 1; i < 8; i++) {
     const t = i / 8;
     const x = x0 + (x1 - x0) * t;
@@ -2042,7 +2040,6 @@ export const PACKS = [
   packAt('stalls', roofAt('stalls', -12, 66), 'The roof of the range’s stalls', 'A Sokovia Accords pamphlet', 'I was going to read it on the plane. Then there was an airport.'),
   packAt('flag', [FLAGS[1].x, FLAG_H + 0.5, FLAGS[1].z], 'The top of the middle flagpole', 'MJ’s drawing of me in a crisis', 'She says it’s not a compliment. I’m keeping it anyway.'),
 ];
-export const packById = (id) => PACKS.find((p) => p.id === id) ?? null;
 // The backpack within reach of someone whose feet are at (x, y, z) that isn't
 // among `found` (ids), nearest first; null if none.
 export function nearPack(x, y, z, found = []) {

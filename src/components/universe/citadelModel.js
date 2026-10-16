@@ -12,7 +12,7 @@
 import * as THREE from 'three';
 import { cloneScene, loadGLTF } from '../../lib/three/gltfCache';
 
-export const CITADEL_MODEL = '/models/c137/rm/citadel-exterior.glb';
+const CITADEL_MODEL = '/models/c137/rm/citadel-exterior.glb';
 
 export function citadelModel(group, k, owned = []) {
   return loadGLTF(CITADEL_MODEL)

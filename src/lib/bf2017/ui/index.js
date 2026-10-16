@@ -25,7 +25,7 @@
 // world's, not every page's)
 // bitmap(name) → url | null; portrait(who) → url | null
 
-import UI from '../../../data/bf2017/ui.json';
+import UI from 'virtual:bf2017-ui';
 import BITMAPS from '../../../data/bf2017/bitmaps.json';
 import { STRINGS } from '../strings';
 

@@ -130,7 +130,7 @@ export function planMarkdown(job, { dry, items, checks, notes = [], columns }) {
   return lines.join('\n');
 }
 
-export const writeJson = (file, data) => {
+const writeJson = (file, data) => {
   mkdirSync(resolve(file, '..'), { recursive: true });
   writeFileSync(file, `${JSON.stringify(data, null, 1)}\n`);
 };

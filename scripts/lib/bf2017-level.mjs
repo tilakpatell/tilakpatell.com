@@ -37,7 +37,7 @@ import { cellsOf } from './level-cells.mjs';
 export { enlightenRows, farShadowRow } from './bf2017-level-light.mjs';
 
 export const TIERS = ['low', 'mid', 'high', 'ultra'];
-export const KMIN = { low: 20, mid: 30, high: 40, ultra: 60 };
+const KMIN = { low: 20, mid: 30, high: 40, ultra: 60 };
 const Q = 32767;
 const last = (path) => String(path).split('/').pop().toLowerCase();
 
@@ -89,7 +89,7 @@ export const NEVER = /enlighten|fx\/meshes\/lighting|despawn|leftover|_destructi
 // not have, so drawn they stand as solid slabs. Keyed by the mesh's file
 // as the maps name it, lower case, without .glb.
 //   PROXY_SHADER, proxyMeshes(lines) → Map(mesh → 'shadow proxy' | 'virtual texture only')
-export const PROXY_SHADER = /shadowmesh|virtualtextureonly/i;
+const PROXY_SHADER = /shadowmesh|virtualtextureonly/i;
 export function proxyMeshes(lines) {
   const out = new Map();
   for (const line of lines) {
@@ -186,7 +186,7 @@ export function seenWeight(mesh) {
 // a crate, a rock, or a building (Cloud City's backdrop towers).
 // (the deck's band: a piece whose top is between a stair's foot below the
 // deck and a storey or three above it is one you may stand on)
-export const DECK_BAND = [-1.5, 12];
+const DECK_BAND = [-1.5, 12];
 
 export function standsOn(mesh) {
   const [x0, y0, z0, x1, y1, z1] = mesh.bounds;

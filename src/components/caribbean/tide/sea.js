@@ -82,7 +82,7 @@ export const WAVES_GLSL = `
 
 // Where a direction lands in the sky picture, and its light. The picture is
 // the sky from straight up down to 11.25° below the horizon.
-export const SKY_GLSL = `
+const SKY_GLSL = `
   uniform sampler2D uSky;
   uniform float uSkyScale;
   uniform float uSkyGain;

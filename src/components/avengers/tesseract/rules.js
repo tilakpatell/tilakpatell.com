@@ -289,7 +289,7 @@ export function setInput(g, { thrust = 0, tilt = 0 } = {}) {
 export const pitchOf = (J) => J.angle * JET.pitch;
 
 // Where the jet's points are now: [x, y, isWheel].
-export function jetPoints(J) {
+function jetPoints(J) {
   const p = pitchOf(J);
   const c = Math.cos(p);
   const s = Math.sin(p);
@@ -301,7 +301,7 @@ export function jetPoints(J) {
 }
 export const hookAt = (J) => [J.x - JET.hook * Math.sin(pitchOf(J)), J.y - JET.hook * Math.cos(pitchOf(J))];
 export const ringAt = (C) => [C.x, C.y + CASE.h + CASE.sling];
-export const caseBox = (C) => ({ x0: C.x - CASE.w / 2, x1: C.x + CASE.w / 2, y0: C.y, y1: C.y + CASE.h });
+const caseBox = (C) => ({ x0: C.x - CASE.w / 2, x1: C.x + CASE.w / 2, y0: C.y, y1: C.y + CASE.h });
 
 // keep the cable no longer than it is, moving each end by its share
 function cable(g) {

@@ -170,7 +170,7 @@ export const inEra = (name) =>
     .split('/')
     .some((seg) => ERA.includes(seg.replace(/^_/, '')));
 
-export const isPlaceable = (name) => PLACEABLE.some((p) => name.startsWith(p)) && !SCAFFOLD.test(name) && inEra(name);
+const isPlaceable = (name) => PLACEABLE.some((p) => name.startsWith(p)) && !SCAFFOLD.test(name) && inEra(name);
 
 export function indexRows(manifest, { tags = {} } = {}) {
   const rows = [];

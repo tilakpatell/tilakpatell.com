@@ -29,7 +29,7 @@ import { forwardOf } from './flightRules';
 
 export const LIFE_RADIUS = 2; // cells
 export const LIFE_MS = { low: 1, mid: 2, high: 3, ultra: 4 }; // a frame, for the brains
-export const AWAKE = 2500; // m: further off, nobody thinks
+const AWAKE = 2500; // m: further off, nobody thinks
 export const FAIR = 5; // frames an awake actor may wait for its turn, at most
 const RESAMPLE = 2; // m a body walks before the ground under it is asked again
 const MAX_DAMAGE = 30; // a hit's (the spec's clamp)

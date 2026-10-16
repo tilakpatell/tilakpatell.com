@@ -39,7 +39,7 @@ export const BANDS = [
   { upTo: 1.2, price: 1250 },
   { upTo: Infinity, price: 1500 },
 ];
-export const PAINT_PRICE = 150;
+const PAINT_PRICE = 150;
 const PLANT_SHARE = 600 / 1600; // a megawatt more plant than the stock hull's is worth 600, as a share
 const bandOf = (share) => BANDS.find((b) => share <= b.upTo).price;
 

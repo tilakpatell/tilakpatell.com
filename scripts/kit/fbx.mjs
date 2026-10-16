@@ -124,7 +124,7 @@ async function devServer(log) {
   return { base, stop };
 }
 
-export async function convertPack(pack, { log = console.log } = {}) {
+async function convertPack(pack, { log = console.log } = {}) {
   const src = join(ROOT, 'lab', 'assets', pack, 'FBX');
   if (!existsSync(src)) throw new Error(`no ${src}: fetch the pack first (node scripts/assets-fetch.mjs ${pack})`);
   const fbx = readdirSync(src).filter((f) => extname(f).toLowerCase() === '.fbx').sort();

@@ -109,7 +109,7 @@ export function makeProbe(renderer, group, at, { lamps = [], size = 128, near = 
   };
 }
 
-export function applyProbe(group, envMap) {
+function applyProbe(group, envMap) {
   const copies = new Map();
   const swapped = [];
   group.traverse((o) => {

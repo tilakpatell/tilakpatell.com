@@ -18,7 +18,7 @@ export const SHEET_CAP = 256 * 1024; // a sheet's file
 export const SET_CAP = 6 * 1024 * 1024; // the sheets a level needs, at one tier
 export const SHEET_SIZE = { ultra: 2048, high: 1024, mid: 512, low: 512 };
 
-export const sheetStem = (texture) =>
+const sheetStem = (texture) =>
   String(texture)
     .split('/')
     .pop()

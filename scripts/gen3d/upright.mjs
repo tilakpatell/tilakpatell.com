@@ -13,7 +13,7 @@ import { resolve } from 'node:path';
 import { io } from './web.mjs';
 
 // a turn of `deg` about X, column-major: +90 takes +Z to +Y (and +Y to −Z… so a face to the sky looks forward, +Z)
-export function aboutX(deg) {
+function aboutX(deg) {
   const a = (deg * Math.PI) / 180;
   const [c, s] = [Math.cos(a), Math.sin(a)];
   return [1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, 0, 0, 1].map((v) => (Math.abs(v) < 1e-12 ? 0 : v));

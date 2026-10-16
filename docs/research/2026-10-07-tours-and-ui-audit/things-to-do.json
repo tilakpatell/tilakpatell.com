@@ -65,7 +65,7 @@
   "oneLine": "A spotlight tour of the shell, one per view (ten and nine stops on a laptop); offered on a first arrival. Finishing it unlocks \"Shown around\".",
   "howTo": "Open ⌘K and pick \"Take the tour of the site\", or type tour in the terminal.",
   "timeToTry": 60,
-  "evidence": "docs/superpowers/HANDOFF-site-tour.md:5-9; src/components/tour/steps.js:1-6; src/lib/tour.js:12"
+  "evidence": "docs/superpowers/HANDOFF-universe.md:5-9; src/components/tour/steps.js:1-6; src/lib/tour.js:12"
  },
  {
   "group": "The shell",
@@ -82,7 +82,7 @@
   "oneLine": "The first time you arrive in a world, five cards say what the place is, how to move, how to do things, what to go for. Seventeen briefs in all.",
   "howTo": "Open any world for the first time, or pick \"Show me the basics\" in the guide.",
   "timeToTry": 30,
-  "evidence": "docs/superpowers/HANDOFF-site-tour.md:11-13; src/components/tour/briefs.js"
+  "evidence": "docs/superpowers/HANDOFF-universe.md:11-13; src/components/tour/briefs.js"
  },
  {
   "group": "The shell",
@@ -1459,7 +1459,7 @@
   "oneLine": "Fly the crew's own ship, or a garage build of your own: a hull (Dart, Saucer, Hauler, Needle), cockpit, wings, engines, tail and extras snapped onto sockets, rolled from a seed the way No Man's Sky does, or picked by hand; a code (GB-021301.k3) passes it on.",
   "howTo": "Press H, open the Build tab, press Roll.",
   "timeToTry": 30,
-  "evidence": "src/components/universe/Hangar.jsx:22-25; README.md:197; docs/superpowers/HANDOFF-shipyard-and-wardrobe.md:8"
+  "evidence": "src/components/universe/Hangar.jsx:22-25; README.md:197; docs/superpowers/HANDOFF-universe.md:8"
  },
  {
   "group": "The universe map",
@@ -1629,7 +1629,7 @@
   "oneLine": "Beside the Rick and Morty planet hangs a green portal: fly into it and you come out in a sector of its own with the Citadel of Ricks at its heart, eight worlds from the show, a green-tinged sun and the Central Finite Curve round its edge. The Citadel's own portal takes you home.",
   "howTo": "Open /universe/rmportal and fly into it (or pick any sector place on the nav map).",
   "timeToTry": 40,
-  "evidence": "README.md:206; src/components/universe/deep.js:106-113; docs/superpowers/HANDOFF-rm-sector.md:9-40"
+  "evidence": "README.md:206; src/components/universe/deep.js:106-113; docs/superpowers/HANDOFF-worlds.md:9-40"
  },
  {
   "group": "The universe map",
@@ -1646,7 +1646,7 @@
   "oneLine": "Gazorpazorp, Planet Squanch, Bird World, Gear World, Pluto, Snake Planet, Nuptia 4 and the Immortality Field Resort, each landed on like a planet, with a portal on the ground back to C-137 dialled to that world.",
   "howTo": "Open /universe/squanch (or any moon id) and fly down into it.",
   "timeToTry": 60,
-  "evidence": "src/components/universe/universes.js:264-421; docs/superpowers/HANDOFF-rm-phase6.md:(Task 6.5)"
+  "evidence": "src/components/universe/universes.js:264-421; docs/superpowers/HANDOFF-worlds.md:(Task 6.5)"
  },
  {
   "group": "The universe map",
@@ -1714,7 +1714,7 @@
   "oneLine": "Someone calls for help with pirates on their tail, a convoy goes by, a comet crosses, a star flares and rattles the ship, a rift opens (fly in and it drops you elsewhere: \"Through the rift\"), purrgil or a Cromulon swim past, rocks cross your path.",
   "howTo": "Cruise in deep space and answer what comes; fly into a rift.",
   "timeToTry": 180,
-  "evidence": "README.md:208; src/components/guide/pages.js:114; src/components/Achievements.jsx:128; docs/superpowers/HANDOFF-universe-expansion.md:7"
+  "evidence": "README.md:208; src/components/guide/pages.js:114; src/components/Achievements.jsx:128; docs/superpowers/HANDOFF-universe.md:7"
  },
  {
   "group": "The universe map",
@@ -1748,7 +1748,7 @@
   "oneLine": "Shoot freighters and the ordinary ships run and merchants shun you; cross the law and every scan finds you wanted; save people and they call you a hero.",
   "howTo": "Shoot a freighter, or rescue one, and listen to the comms.",
   "timeToTry": 120,
-  "evidence": "README.md:208; docs/superpowers/HANDOFF-npc-intelligence.md:9"
+  "evidence": "README.md:208; docs/superpowers/HANDOFF-runtime.md:9"
  },
  {
   "group": "The universe map",
@@ -1765,7 +1765,7 @@
   "oneLine": "Each crew's universe has a war with fronts at real places: the Federation's battleship and the Council's dreadnought, Gus's superlab barge and Don Eladio's hacienda; the nav map shows the front and the trip to it; you are put in on your crew's side.",
   "howTo": "Press M and pick the war's front.",
   "timeToTry": 400,
-  "evidence": "docs/superpowers/HANDOFF-fleet-war.md:5-58; src/components/universe/battle.js"
+  "evidence": "docs/superpowers/HANDOFF-galaxy.md:5-58; src/components/universe/battle.js"
  },
  {
   "group": "The universe map",
@@ -1850,7 +1850,7 @@
   "oneLine": "The stick, getting about, landing and trouble, and the panel's ?, shown once the first time a ship is under you.",
   "howTo": "Pick a ship for the first time.",
   "timeToTry": 30,
-  "evidence": "docs/superpowers/HANDOFF-site-tour.md:13"
+  "evidence": "docs/superpowers/HANDOFF-universe.md:13"
  },
  {
   "group": "A galaxy far, far away",
@@ -1935,7 +1935,7 @@
   "oneLine": "The Clone Wars, the Galactic Civil War and the Remnant War at once on the same map, Helldivers-style, by everyone online; fronts move along the trade routes, the Hutts raid, whoever holds a system decides who hunts you there; commanders call you by rank. Five achievements (Sworn, Liberator, Major order, Turncoat, Top brass).",
   "howTo": "Press M, open the war tab, pick a war and swear to a side; fight the battle nearest you.",
   "timeToTry": 300,
-  "evidence": "README.md:247; src/components/galaxy/WarCard.jsx; docs/superpowers/HANDOFF-fleet-war.md:(Revision 3); src/components/Achievements.jsx:217-221"
+  "evidence": "README.md:247; src/components/galaxy/WarCard.jsx; docs/superpowers/HANDOFF-galaxy.md:(Revision 3); src/components/Achievements.jsx:217-221"
  },
  {
   "group": "A galaxy far, far away",
@@ -1952,7 +1952,7 @@
   "oneLine": "Each system fights its own kind of battle (siege, evacuation, interdiction, blockade, ambush): the shield generator holds the Death Star's shield up, the superlaser fires on Rebel cruisers, the Executor dives into the station, the ion cannon disables Star Destroyers, the Hammerhead rams the Shield Gate, hangar runs into a reactor.",
   "howTo": "Arrive at a system where a battle is on (the holotable says) and lock onto the objective.",
   "timeToTry": 400,
-  "evidence": "docs/superpowers/HANDOFF-fleet-war.md:(PR G, Revision 3); src/components/galaxy/battles.js"
+  "evidence": "docs/superpowers/HANDOFF-galaxy.md:(PR G, Revision 3); src/components/galaxy/battles.js"
  },
  {
   "group": "A galaxy far, far away",
@@ -1969,7 +1969,7 @@
   "oneLine": "The galaxy has its own hunters (the navy, Fett, IG-88, Bossk, Dengar, Weequay pirates, Hondo) and who holds a system decides who flies escort.",
   "howTo": "Fly about a system and shoot something.",
   "timeToTry": 120,
-  "evidence": "docs/superpowers/HANDOFF-galaxy-roam.md:14-16"
+  "evidence": "docs/superpowers/HANDOFF-galaxy.md:14-16"
  },
  {
   "group": "A galaxy far, far away",
@@ -2105,7 +2105,7 @@
   "oneLine": "Coruscant (the Temple and its Archives, the Senate, Dex's diner, the Outlander club), Yavin 4 (the Great Temple's hangar, war room and throne room: the briefing, the scramble, the medal ceremony) and Bespin (Cloud City's platforms, the dining room, the carbon-freezing chamber, the reactor gantry): people with wants who say different things by who holds the world.",
   "howTo": "Open /galaxy/yavin/surface and walk into the Great Temple.",
   "timeToTry": 300,
-  "evidence": "README.md:228; docs/superpowers/HANDOFF-galaxy-surfaces.md:161-165; src/components/galaxy/surface/sites/coruscant.js; yavin.js; bespin.js; src/components/Achievements.jsx:229-235"
+  "evidence": "README.md:228; docs/superpowers/HANDOFF-galaxy.md:161-165; src/components/galaxy/surface/sites/coruscant.js; yavin.js; bespin.js; src/components/Achievements.jsx:229-235"
  },
  {
   "group": "A galaxy far, far away",
@@ -2122,7 +2122,7 @@
   "oneLine": "Two armies and the command posts between them, you one soldier among them; squads flank, take cover and come back in waves; pick a side and a post, hold a post with more of yours than theirs and it turns, take every post of the phase and the next begins. Hoth, Geonosis, Scarif, Endor, Yavin 4, Cloud City, Coruscant.",
   "howTo": "Open /galaxy/hoth/surface?mission=assault, pick a side and deploy.",
   "timeToTry": 600,
-  "evidence": "docs/superpowers/HANDOFF-galactic-assault.md:5-16,30-36; src/components/galaxy/surface/missions/assault.js; src/components/guide/pages.js:174; src/components/Achievements.jsx:238"
+  "evidence": "docs/superpowers/HANDOFF-battlefront.md:5-16,30-36; src/components/galaxy/surface/missions/assault.js; src/components/guide/pages.js:174; src/components/Achievements.jsx:238"
  },
  {
   "group": "A galaxy far, far away",
@@ -3093,7 +3093,7 @@
   "oneLine": "Walk, drive and fight through Iacon in the Aligned continuity's models; transform into the truck any time (Q); 35 CC-BY Sketchfab models; mouse and keys, a gamepad, or touch sticks on a phone where the world takes the whole screen.",
   "howTo": "Open /cybertron; W A S D, Q to transform, F to fire.",
   "timeToTry": 120,
-  "evidence": "README.md:326; docs/superpowers/HANDOFF-cybertron-world.md:21-30",
+  "evidence": "README.md:326; docs/superpowers/HANDOFF-worlds.md:21-30",
   "prerequisites": "WebGL; downloads ~36 MB (a phone asks first)"
  },
  {
@@ -3110,7 +3110,7 @@
   "oneLine": "Hold Iacon's gate with Grimlock against three waves of Decepticons (Barricade rams in the last).",
   "howTo": "In the world, walk to the mission giver's beacon and take it on.",
   "timeToTry": 240,
-  "evidence": "src/components/cybertron/game/areas/iacon.js:181-184; docs/superpowers/HANDOFF-cybertron-world.md:21-100",
+  "evidence": "src/components/cybertron/game/areas/iacon.js:181-184; docs/superpowers/HANDOFF-worlds.md:21-100",
   "prerequisites": "inside the Cybertron world"
  },
  {
@@ -3127,7 +3127,7 @@
   "oneLine": "Fuel the Ark: eight cubes of energon across Iacon against the clock, for Bumblebee.",
   "howTo": "In the world, walk to the mission giver's beacon and take it on.",
   "timeToTry": 240,
-  "evidence": "src/components/cybertron/game/areas/iacon.js:195-198; docs/superpowers/HANDOFF-cybertron-world.md:21-100",
+  "evidence": "src/components/cybertron/game/areas/iacon.js:195-198; docs/superpowers/HANDOFF-worlds.md:21-100",
   "prerequisites": "inside the Cybertron world"
  },
  {
@@ -3144,7 +3144,7 @@
   "oneLine": "Drive Jetfire's beacons and Metroplex wakes on the skyline.",
   "howTo": "In the world, walk to the mission giver's beacon and take it on.",
   "timeToTry": 240,
-  "evidence": "src/components/cybertron/game/areas/iacon.js:206-209; docs/superpowers/HANDOFF-cybertron-world.md:21-100",
+  "evidence": "src/components/cybertron/game/areas/iacon.js:206-209; docs/superpowers/HANDOFF-worlds.md:21-100",
   "prerequisites": "inside the Cybertron world"
  },
  {
@@ -3161,7 +3161,7 @@
   "oneLine": "Defend the space-bridge pad from Megatron, who turns into his tank and charges.",
   "howTo": "In the world, walk to the mission giver's beacon and take it on.",
   "timeToTry": 240,
-  "evidence": "src/components/cybertron/game/areas/iacon.js:218-222; docs/superpowers/HANDOFF-cybertron-world.md:21-100",
+  "evidence": "src/components/cybertron/game/areas/iacon.js:218-222; docs/superpowers/HANDOFF-worlds.md:21-100",
   "prerequisites": "inside the Cybertron world"
  },
  {
@@ -3178,7 +3178,7 @@
   "oneLine": "Take the Matrix of Leadership back from Shockwave in the Hall of Records.",
   "howTo": "In the world, walk to the mission giver's beacon and take it on.",
   "timeToTry": 240,
-  "evidence": "src/components/cybertron/game/areas/iacon.js:232-236; docs/superpowers/HANDOFF-cybertron-world.md:21-100",
+  "evidence": "src/components/cybertron/game/areas/iacon.js:232-236; docs/superpowers/HANDOFF-worlds.md:21-100",
   "prerequisites": "inside the Cybertron world"
  },
  {
@@ -3195,7 +3195,7 @@
   "oneLine": "Through the bridge: report to Ratchet, Bulkhead, Arcee and Bumblebee at the Autobot base.",
   "howTo": "In the world, walk to the mission giver's beacon and take it on.",
   "timeToTry": 240,
-  "evidence": "src/components/cybertron/game/areas/base.js:89-92; docs/superpowers/HANDOFF-cybertron-world.md:21-100",
+  "evidence": "src/components/cybertron/game/areas/base.js:89-92; docs/superpowers/HANDOFF-worlds.md:21-100",
   "prerequisites": "inside the Cybertron world"
  },
  {
@@ -3212,7 +3212,7 @@
   "oneLine": "Through the ground bridge to the desert outside Jasper: clear the Vehicons out of their energon mine.",
   "howTo": "In the world, walk to the mission giver's beacon and take it on.",
   "timeToTry": 240,
-  "evidence": "src/components/cybertron/game/areas/base.js:102-107; docs/superpowers/HANDOFF-cybertron-world.md:21-100",
+  "evidence": "src/components/cybertron/game/areas/base.js:102-107; docs/superpowers/HANDOFF-worlds.md:21-100",
   "prerequisites": "inside the Cybertron world"
  },
  {
@@ -3229,7 +3229,7 @@
   "oneLine": "Dig Arcee's Iacon relic out of the Nevada desert before the Decepticons.",
   "howTo": "In the world, walk to the mission giver's beacon and take it on.",
   "timeToTry": 240,
-  "evidence": "src/components/cybertron/game/areas/base.js:120-125; docs/superpowers/HANDOFF-cybertron-world.md:21-100",
+  "evidence": "src/components/cybertron/game/areas/base.js:120-125; docs/superpowers/HANDOFF-worlds.md:21-100",
   "prerequisites": "inside the Cybertron world"
  },
  {
@@ -3246,7 +3246,7 @@
   "oneLine": "As Megatron: win three rounds in the pits of Kaon.",
   "howTo": "In the world, walk to the mission giver's beacon and take it on (pick the Decepticon side on the start screen).",
   "timeToTry": 240,
-  "evidence": "src/components/cybertron/game/areas/kaon.js:167-170; docs/superpowers/HANDOFF-cybertron-world.md:21-100",
+  "evidence": "src/components/cybertron/game/areas/kaon.js:167-170; docs/superpowers/HANDOFF-worlds.md:21-100",
   "prerequisites": "inside the Cybertron world"
  },
  {
@@ -3263,7 +3263,7 @@
   "oneLine": "As Megatron: bring Shockwave eight dark energon before it burns away.",
   "howTo": "In the world, walk to the mission giver's beacon and take it on (pick the Decepticon side on the start screen).",
   "timeToTry": 240,
-  "evidence": "src/components/cybertron/game/areas/kaon.js:181-184; docs/superpowers/HANDOFF-cybertron-world.md:21-100",
+  "evidence": "src/components/cybertron/game/areas/kaon.js:181-184; docs/superpowers/HANDOFF-worlds.md:21-100",
   "prerequisites": "inside the Cybertron world"
  },
  {
@@ -3280,7 +3280,7 @@
   "oneLine": "As Megatron: run down the Autobots in the tank.",
   "howTo": "In the world, walk to the mission giver's beacon and take it on (pick the Decepticon side on the start screen).",
   "timeToTry": 240,
-  "evidence": "src/components/cybertron/game/areas/kaon.js:192-195; docs/superpowers/HANDOFF-cybertron-world.md:21-100",
+  "evidence": "src/components/cybertron/game/areas/kaon.js:192-195; docs/superpowers/HANDOFF-worlds.md:21-100",
   "prerequisites": "inside the Cybertron world"
  },
  {
@@ -3297,7 +3297,7 @@
   "oneLine": "As Megatron: defeat Zeta Prime at the gates of Kaon.",
   "howTo": "In the world, walk to the mission giver's beacon and take it on (pick the Decepticon side on the start screen).",
   "timeToTry": 240,
-  "evidence": "src/components/cybertron/game/areas/kaon.js:205-209; docs/superpowers/HANDOFF-cybertron-world.md:21-100",
+  "evidence": "src/components/cybertron/game/areas/kaon.js:205-209; docs/superpowers/HANDOFF-worlds.md:21-100",
   "prerequisites": "inside the Cybertron world"
  },
  {
@@ -3427,7 +3427,7 @@
   "oneLine": "Walk the compound in 3D or swing across it the way Insomniac's games do: hold jump in the air to web a roof edge, let go on the upswing, zip with Shift, run up walls; each building opens its game, each game wins an Infinity Stone.",
   "howTo": "Open /avengers; hold Space in the air to swing.",
   "timeToTry": 120,
-  "evidence": "README.md:327; docs/superpowers/HANDOFF-avengers-hq.md:5-9; src/components/guide/pages.js:288-312",
+  "evidence": "README.md:327; docs/superpowers/HANDOFF-worlds.md:5-9; src/components/guide/pages.js:288-312",
   "prerequisites": "WebGL; downloads ~11 MB"
  },
  {
@@ -3444,7 +3444,7 @@
   "oneLine": "Rings round the compound; the best lap is recorded and raced as a hologram. \"Rings round the compound\".",
   "howTo": "Swing through the first ring; the HUD takes it from there.",
   "timeToTry": 60,
-  "evidence": "docs/superpowers/HANDOFF-avengers-hq.md:9,24; src/components/Achievements.jsx:192"
+  "evidence": "docs/superpowers/HANDOFF-worlds.md:9,24; src/components/Achievements.jsx:192"
  },
  {
   "group": "Avengers HQ",
@@ -3460,7 +3460,7 @@
   "oneLine": "Twelve backpacks webbed up on the roofs, up a mast and a flagpole, on and under the bridge, each with something of his in it.",
   "howTo": "Look for the glowing packs from the lawn and swing to them.",
   "timeToTry": 300,
-  "evidence": "docs/superpowers/HANDOFF-avengers-hq.md:19; src/components/Achievements.jsx:193"
+  "evidence": "docs/superpowers/HANDOFF-worlds.md:19; src/components/Achievements.jsx:193"
  },
  {
   "group": "Avengers HQ",
@@ -3476,7 +3476,7 @@
   "oneLine": "Flips and twists in the air for style points that bank when you land and are lost if you land mid-flip; 2,000 in one flight is \"Showing off\".",
   "howTo": "Let go of a swing high and press T.",
   "timeToTry": 60,
-  "evidence": "docs/superpowers/HANDOFF-avengers-hq.md:21; src/components/Achievements.jsx:195"
+  "evidence": "docs/superpowers/HANDOFF-worlds.md:21; src/components/Achievements.jsx:195"
  },
  {
   "group": "Avengers HQ",
@@ -3492,7 +3492,7 @@
   "oneLine": "E at the plinth by Tony's workshop door; fly it on its repulsors, Space up, Shift down, E to step out anywhere. \"Suit up\".",
   "howTo": "Walk to the workshop door and press E at the armour.",
   "timeToTry": 40,
-  "evidence": "docs/superpowers/HANDOFF-avengers-hq.md:22; src/components/guide/pages.js:299; src/components/Achievements.jsx:194"
+  "evidence": "docs/superpowers/HANDOFF-worlds.md:22; src/components/guide/pages.js:299; src/components/Achievements.jsx:194"
  },
  {
   "group": "Avengers HQ",
@@ -3508,7 +3508,7 @@
   "oneLine": "Time stops, the camera goes anywhere round him, a lens and a picture to save.",
   "howTo": "Press P in the compound and Save.",
   "timeToTry": 20,
-  "evidence": "docs/superpowers/HANDOFF-avengers-hq.md:25"
+  "evidence": "docs/superpowers/HANDOFF-worlds.md:25"
  },
  {
   "group": "Avengers HQ",
@@ -3725,7 +3725,7 @@
   "oneLine": "A city on a street grid with traffic, lights and stop signs; the Aztek slides if you ask it to (Space is the handbrake: handbrake turns, drifts, a J-turn out of reverse); places open up as Walt's career grows, each with its own game.",
   "howTo": "Open /albuquerque; W A S D drive, hold Space into a turn.",
   "timeToTry": 120,
-  "evidence": "README.md:328; docs/superpowers/HANDOFF-abq-city-and-invincible-planet.md:7-27; src/components/guide/pages.js:348-372",
+  "evidence": "README.md:328; docs/superpowers/HANDOFF-worlds.md:7-27; src/components/guide/pages.js:348-372",
   "prerequisites": "WebGL; downloads ~20 MB"
  },
  {
@@ -3903,7 +3903,7 @@
   "oneLine": "Walk the office in 3D from the lift to the annex, with every desk dressed and every coworker greeting you; get through a week in seven jobs and win a Dundie.",
   "howTo": "Open /scranton; W A S D walk, E does the prompt, M lists the jobs.",
   "timeToTry": 120,
-  "evidence": "README.md:329; docs/superpowers/HANDOFF-office-world.md:11-34; src/components/guide/pages.js:314-324",
+  "evidence": "README.md:329; docs/superpowers/HANDOFF-worlds.md:11-34; src/components/guide/pages.js:314-324",
   "prerequisites": "WebGL; downloads ~5 MB"
  },
  {
@@ -3920,7 +3920,7 @@
   "oneLine": "Five callers describe who they want; put each through to the right desk.",
   "howTo": "In the office, press M and go to the job's spot; E starts it.",
   "timeToTry": 90,
-  "evidence": "docs/superpowers/HANDOFF-office-world.md:25-34; src/components/Achievements.jsx:245",
+  "evidence": "docs/superpowers/HANDOFF-worlds.md:25-34; src/components/Achievements.jsx:245",
   "prerequisites": "inside the office"
  },
  {
@@ -3937,7 +3937,7 @@
   "oneLine": "Take the Jell-O from the fridge, set it at Dwight's desk while he is in the men's room.",
   "howTo": "In the office, press M and go to the job's spot; E starts it.",
   "timeToTry": 90,
-  "evidence": "docs/superpowers/HANDOFF-office-world.md:25-34; src/components/Achievements.jsx:246",
+  "evidence": "docs/superpowers/HANDOFF-worlds.md:25-34; src/components/Achievements.jsx:246",
   "prerequisites": "inside the office"
  },
  {
@@ -3954,7 +3954,7 @@
   "oneLine": "From the lift to the kitchen without spilling a drop (a slosh meter).",
   "howTo": "In the office, press M and go to the job's spot; E starts it.",
   "timeToTry": 90,
-  "evidence": "docs/superpowers/HANDOFF-office-world.md:25-34; src/components/Achievements.jsx:247",
+  "evidence": "docs/superpowers/HANDOFF-worlds.md:25-34; src/components/Achievements.jsx:247",
   "prerequisites": "inside the office"
  },
  {
@@ -3971,7 +3971,7 @@
   "oneLine": "Drag up from the paper to throw; ten balls a round, the bin moves, the fan comes on.",
   "howTo": "In the office, press M and go to the job's spot; E starts it.",
   "timeToTry": 90,
-  "evidence": "docs/superpowers/HANDOFF-office-world.md:25-34; src/components/Achievements.jsx:248",
+  "evidence": "docs/superpowers/HANDOFF-worlds.md:25-34; src/components/Achievements.jsx:248",
   "prerequisites": "inside the office"
  },
  {
@@ -3988,7 +3988,7 @@
   "oneLine": "Half about me, half about the branch: F says fact, X says false.",
   "howTo": "In the office, press M and go to the job's spot; E starts it.",
   "timeToTry": 90,
-  "evidence": "docs/superpowers/HANDOFF-office-world.md:25-34; src/components/Achievements.jsx:249",
+  "evidence": "docs/superpowers/HANDOFF-worlds.md:25-34; src/components/Achievements.jsx:249",
   "prerequisites": "inside the office"
  },
  {
@@ -4005,7 +4005,7 @@
   "oneLine": "Fire in the bin, the alarm, eight coworkers in panic lanes: reach the stairwell in 38 s.",
   "howTo": "In the office, press M and go to the job's spot; E starts it.",
   "timeToTry": 90,
-  "evidence": "docs/superpowers/HANDOFF-office-world.md:25-34; src/components/Achievements.jsx:250",
+  "evidence": "docs/superpowers/HANDOFF-worlds.md:25-34; src/components/Achievements.jsx:250",
   "prerequisites": "inside the office; after the Jell-O and the chili"
  },
  {
@@ -4022,7 +4022,7 @@
   "oneLine": "Down the stairwell to the warehouse: three free throws out of five.",
   "howTo": "In the office, press M and go to the job's spot; E starts it.",
   "timeToTry": 90,
-  "evidence": "docs/superpowers/HANDOFF-office-world.md:25-34; src/components/Achievements.jsx:251",
+  "evidence": "docs/superpowers/HANDOFF-worlds.md:25-34; src/components/Achievements.jsx:251",
   "prerequisites": "inside the office"
  },
  {
@@ -4039,7 +4039,7 @@
   "oneLine": "After all the rest: Michael's office, a Dundie for Jim, applause.",
   "howTo": "In the office, press M and go to the job's spot; E starts it.",
   "timeToTry": 90,
-  "evidence": "docs/superpowers/HANDOFF-office-world.md:25-34; src/components/Achievements.jsx:252",
+  "evidence": "docs/superpowers/HANDOFF-worlds.md:25-34; src/components/Achievements.jsx:252",
   "prerequisites": "inside the office; after every other job"
  },
  {
@@ -4266,7 +4266,7 @@
   "oneLine": "Rick C-137, Tiny Rick or a Citadel Rick, Evil or Cop Morty, coats, shirts, trousers and hair in the show's colours, a hat, shades or goggles, the portal gun in hand; worn everywhere and seen online.",
   "howTo": "Press C in the world.",
   "timeToTry": 30,
-  "evidence": "README.md:330; docs/superpowers/HANDOFF-shipyard-and-wardrobe.md:11"
+  "evidence": "README.md:330; docs/superpowers/HANDOFF-universe.md:11"
  },
  {
   "group": "Dimension C-137",
@@ -4753,7 +4753,7 @@
   "oneLine": "The real client compiled to JavaScript, its files sealed with the password (AES-GCM from PBKDF2) and opened in the browser in a walled-off frame; worlds saved on the device, shared worlds to import, Open to LAN through Eaglercraft's relays.",
   "howTo": "Open /dot-matrix/minecraft and enter the password.",
   "timeToTry": 300,
-  "evidence": "README.md:334; docs/superpowers/HANDOFF-eaglercraft.md:5-21; src/components/eagler/crypt.js",
+  "evidence": "README.md:334; docs/superpowers/HANDOFF-worlds.md:5-21; src/components/eagler/crypt.js",
   "prerequisites": "the private password; a 23 MB download"
  },
  {
@@ -4770,7 +4770,7 @@
   "oneLine": "An endless seeded world of one-metre blocks (nine biomes, the sea at 63) generated and meshed in a worker with the game's corner shading; walk, sprint, sneak, jump, swim at 20 ticks a second; dig, build, craft (2×2 and 3×3), a 20-minute day, torches, a bed, caves, ores, flowing water and lava, a furnace, a chest, hunger and death; saved on the device. Textures used with Mojang's permission.",
   "howTo": "Open /dot-matrix/minecraft without the password; click the world, dig a tree.",
   "timeToTry": 300,
-  "evidence": "docs/superpowers/HANDOFF-minecraft-world.md:5-13; src/components/guide/pages.js:476-506",
+  "evidence": "docs/superpowers/HANDOFF-worlds.md:5-13; src/components/guide/pages.js:476-506",
   "prerequisites": "WebGL; ~2 MB"
  },
  {
@@ -4982,7 +4982,7 @@
   "oneLine": "Six kilometres of downtown, river, suburbs and coast; through the sound barrier (a boom past 430 km/h), into the ground hard enough to crack it, bouncing off towers, and up out of the air into space. The first visit drops Mark in under the title card.",
   "howTo": "Open /invincible; W A S D fly, Space up, Shift flat out, C down.",
   "timeToTry": 120,
-  "evidence": "README.md:336; docs/superpowers/HANDOFF-invincible-world.md:5-25; src/components/guide/pages.js:224-252",
+  "evidence": "README.md:336; docs/superpowers/HANDOFF-worlds.md:5-25; src/components/guide/pages.js:224-252",
   "prerequisites": "WebGL; downloads ~4 MB"
  },
  {

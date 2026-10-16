@@ -26,7 +26,7 @@ export async function pixels(url) {
 }
 
 // a strip as a texture array; its pixels kept too (the icons are cut from them)
-export async function loadArray(file, count) {
+async function loadArray(file, count) {
   const strip = await pixels(`${MC}${file}`);
   const { width, height, data } = strip;
   const layers = height / width;

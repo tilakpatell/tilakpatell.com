@@ -29,8 +29,6 @@ export function loadHd() {
   return pending;
 }
 
-export const hdReady = (kind) => loaded.has(kind);
-
 export function hdCopy(kind, { own = false } = {}) {
   const t = loaded.get(kind);
   if (!t) return null;

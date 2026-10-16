@@ -31,7 +31,7 @@ import { isGoal } from './ship';
 import { WONDERS, reachOf } from './deep';
 import { starAhead } from '../galaxy/systems';
 
-export const AIM_CONE = 0.06; // radians either side of the nose
+const AIM_CONE = 0.06; // radians either side of the nose
 const STICK = 0.012; // how much nearer another must be to take the aim
 export const JUMP = { align: 4.5, aligned: 0.996 };
 export const NAME_CONE = 0.14; // radians (8°): a far star's name shows this near the nose

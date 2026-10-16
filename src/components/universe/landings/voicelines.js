@@ -9,7 +9,7 @@ import { LANDINGS } from './landings';
 import { spoken } from '../../../lib/voiced';
 
 // a figure's name -> the voice their line is made in
-export const FIGURE_VOICES = {
+const FIGURE_VOICES = {
   Gandalf: 'gandalf',
   Sam: 'sam',
   Saul: 'saul',

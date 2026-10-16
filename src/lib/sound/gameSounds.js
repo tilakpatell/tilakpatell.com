@@ -22,7 +22,7 @@
 //   (`has(file)`), else null: the site's own plays
 // lineFor(voice, situation, has, table) → the same for a line
 
-export const GAME_DIR = '/audio/galaxy/bf2017';
+const GAME_DIR = '/audio/galaxy/bf2017';
 
 // the situations a hero or a trooper says something in, the game's set
 export const SITUATIONS = ['spawn', 'taunt', 'kill', 'hurt', 'defeat', 'ability'];

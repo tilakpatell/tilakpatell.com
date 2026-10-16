@@ -307,7 +307,7 @@ const king = {
 
 // ─── The Chain Chomp, its post and the gate ────────────────────────────────
 const CHAIN = 900;
-export const CHOMP_TELL = 14; // frames it rears back before it lunges
+const CHOMP_TELL = 14; // frames it rears back before it lunges
 const post = {
   r: 0,
   h: 0,
