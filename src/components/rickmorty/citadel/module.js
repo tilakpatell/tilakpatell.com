@@ -41,6 +41,7 @@ export default {
       throw err;
     });
     const { stage } = api;
+    stage.giveBack(); // (built: the renderer is the runtime's again until the stage's next call)
     const page = pageFrame(stage, frame);
     return {
       api,

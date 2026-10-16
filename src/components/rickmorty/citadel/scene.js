@@ -513,9 +513,9 @@ export async function createCitadelWorld(rt, { looks = null, track = null } = {}
   // the house look: one shadow colour from the dome's light; the city keeps its own haze
   // (the stage starts at the house's exposure already: lifting it again would wash the city out)
   // (set on the renderer the stage's way, and kept as the stage's: ../stage)
-  stage.hold();
+  const was = stage.hold();
   house = houseOn({ renderer, scene, sun: key, hemi, keepExposure: true, look: { fog: false } });
-  stage.giveBack();
+  if (was) stage.giveBack();
   await stage.precompile();
 
   return {

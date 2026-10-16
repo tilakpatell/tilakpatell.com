@@ -14,11 +14,12 @@
 // The renderer is shared: whatever the stage sets on it (the tone mapping,
 // the exposure, shadows, `info.autoReset`, the clear colour) is set as each
 // of its calls starts and given back as it ends (`hold`, `giveBack`), so a
-// world handed over from, still drawing while this one's built, or the
-// runtime's own cover, finds it as it left it. A scene that sets something
-// on the renderer itself (houseOn's tone mapping) does it between hold and
-// giveBack, and the stage keeps it as its own. `track` (an array) is told
-// of the stage as it's made, so a build that fails can dispose it.
+// world handed over to, or the runtime's own cover, finds it as it left
+// it. The stage is held from its making through the scene's build (its
+// builders draw: an environment, a bake) until the module gives it back;
+// what a scene sets on the renderer meanwhile (houseOn's tone mapping) is
+// kept as the stage's. `track` (an array) is told of the stage as it's
+// made, so a build that fails can dispose it, and the renderer go back.
 //
 // createStage(rt, { soft, bloom, exposure, shadows, fov, near, far, autoReset, title, track }) →
 //   { renderer, scene, camera, composer, prepare, bloomPass, grade, resize,
@@ -181,7 +182,11 @@ export function createStage(rt, { soft = false, bloom = BLOOM, exposure = LOOK.e
     state.write(held);
     held = null;
   };
-  state.write(theirs); // (the runtime's again until the stage's first call)
+  // (held through the build, till the module gives it back: a scene's
+  // builders draw as they go, an environment, a bake, and drew with
+  // lib/stage3d's renderer as the stage had set it; with the runtime's
+  // tone mapping instead, the picture came out a level off all over)
+  held = theirs;
 
   const full = stageRatio({ soft });
   const scene = new THREE.Scene();

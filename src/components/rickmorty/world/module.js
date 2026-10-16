@@ -55,9 +55,13 @@ export function rmWorldModule(planet = null) {
       });
       const { stage } = api;
       // a planet: built before Morty's put in it, and its portal swirling open behind him
-      if (planet) {
-        if (!api.hasArea(planet.area)) await api.ensureArea(planet.area).catch(() => {});
-        if (!api.lost) api.fx('portal', { at: planet.back });
+      try {
+        if (planet) {
+          if (!api.hasArea(planet.area)) await api.ensureArea(planet.area).catch(() => {});
+          if (!api.lost) api.fx('portal', { at: planet.back });
+        }
+      } finally {
+        stage.giveBack(); // (built: the renderer is the runtime's again until the stage's next call)
       }
       const page = pageFrame(stage, frame);
       return {
