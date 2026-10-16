@@ -25,6 +25,7 @@
 // when there is none (no 3D, or the world failed), refuse() tells them, and
 // they show their drawings as they did when WebGL couldn't be had.
 
+import { gpu } from '../../lib/gpu';
 import { WORLD_MB } from '../worlds/worlds';
 
 let up = null;
@@ -206,6 +207,12 @@ export default {
   // (no calibration walk: the stages started at their sharpest and only
   // stepped down when frames ran long, which the governor still does)
   calibrate: false,
+  // (the canvas multisampled as the pictures' own were: the stages' had
+  // none, and in software (gpu().software) one draws straight to the
+  // canvas; the map's had it, and it's drawn in WebGL only off software)
+  get antialias() {
+    return !gpu().software;
+  },
   async create(rt) {
     const { createViews } = await import('../../runtime/views');
     const world = makeWorld(rt, { createViews });
