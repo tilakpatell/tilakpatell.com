@@ -46,4 +46,18 @@ Open, in `src/runtime/` (lane P4’s until #993 merges, then FL4’s): the canva
 
 ## The probe
 
-PENDING
+`scripts/perf-probe.mjs universe`, main at `1467c2b5` and the branch at `c75a0806`, each on its own Vite, alternating (`before, after, before, after`), the probe’s default window (1470 × 956 at 2), in the container’s SwiftShader. The universe journey now times the map from when it is on screen (`data-gl="on"`, which useScene and useWorld both set): timed from the ship, as it was, the branch was measured behind its loading screen while the runtime’s own calibration walked five steps.
+
+The software renderer links some of the map’s shaders in seconds, sometimes minutes, inside a frame (`getProgramParameter` 13 s to 217 s in these runs, on either side): the worst 1 % and the frame rate are those stalls, run to run, not the map. The main thread a frame (the probe’s `main`) and the time to the map are what compare.
+
+| quality | ref | ready s | main ms a frame, flying | p50 ms | worst 1 % ms | draws |
+| --- | --- | --- | --- | --- | --- | --- |
+| Low | main, run 1 | 47.1 | 9.9 | 13.4 | 17,364 | 56 |
+| Low | main, run 2 | 45.6 | 8.6 | 13.0 | 23,454 | 25 |
+| Low | branch, run 1 | 46.2 | 6.0 | 7.5 | 45,405 | 23 |
+| Low | branch, run 2 | 42.8 | 10.1 | 16.4 | 13,290 | 46 |
+HIGHROWS
+
+Time to the map on screen at Low, by a probe of `data-gl` every five seconds (`quality=low`, no `calibrate=off`): main 14 s; the branch 61 s before the map calibrated itself again (the runtime’s `tune()` timed a whole world frame, which in software fits the budget at no step, and walked all five), 13 s after.
+
+The WebGPU rows are the owner’s machines’: this container has no WebGPU device, and a `'glsl'` module draws on the classic renderer whatever is asked. Left empty, not estimated.
