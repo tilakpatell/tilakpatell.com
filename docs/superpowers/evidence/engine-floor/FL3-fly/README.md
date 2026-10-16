@@ -67,7 +67,36 @@ The addendum’s rule: no slower on `nodes-webgl` than on `webgl` (the classic r
 
 ### After
 
-FRAME_TABLES
+`tools/gl-ab.sh` at `view('start')`, 480 × 300, the classic side the before-ref (`fl3-before`, `'glsl'`), the node side this branch at `cea93d89` (`nodes-webgl`). Per render (the sky dome counts the renders: the runtime’s cadence may draw every other rAF). “JS, sampled” is the CPU profile’s self time with the GL calls’ natives left out; “JS, wall” is the rAF callbacks’ time less the GL calls’ (it still holds every wait the page does on SwiftShader that is not a GL call’s).
+
+| Low, 6 rounds each (median) | classic | nodes | |
+| --- | --- | --- | --- |
+| draws | 167.5 (107 to 217 run to run; the node side’s count holds still) | **71** (70 to 71) | |
+| GL calls | 740.5 (418 to 944) | **572.5** (570 to 577) | fewer |
+| JS, sampled | 2.06 ms (1.29 to 2.93) | **1.71 ms** (1.34 to 2.77) | less |
+| JS, wall | 3.56 ms (2.11 to 5.06) | 3.91 ms (2.23 to 15.02) | within the spread, one outlier |
+
+| High | classic (2 runs) | nodes (1 run) | |
+| --- | --- | --- | --- |
+| draws | 190, 123 | 65 | |
+| GL calls | 833, 484 | 505 | |
+| JS, sampled | 2.75, 2.56 ms | 2.46 ms | |
+| JS, wall | 5.11, 4.64 ms | 5.47 ms | |
+
+At High the ground takes ten minutes or more to come to rest in software on the node side (149 leaves; four further runs, two each side, gave no row within their 33 minutes each), so it has one run. Every row is one machine’s software GL: what it shows is the shape (the node renderer asks the driver for less than the classic one now, and spends no more JavaScript doing it), not the frame time.
+
+The probe’s own table, the same window, one round each (`tools/ab.sh` with `VIEW=480x300@1`; the play phase):
+
+| | ready s | fps | p50 ms | worst 1 % ms | main ms | draws | buffer MB |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Low, classic | 26.2 | 9.5 | 4.3 | 5,156 | 3.1 | 152 | 16 |
+| Low, nodes | 35.9 | 7.4 | 8.1 | 7,295 | 6.3 | 71 | (3,006: see below) |
+| High, classic | 26.6 | 1.0 | 5.5 | 34,145 | 3.9 | 127 | 17 |
+| High, nodes | 66.9 | 0.3 | 21.5 | 91,659 | 16.2 | 64 | (8,887: see below) |
+
+These do not judge the gate: the probe’s main-thread milliseconds here are mostly the page waiting on SwiftShader’s GPU process (its calls block once the command buffer is full, and the node side keeps it fuller by drawing every rAF where the classic side’s cadence draws every other), its worst 1 % are multi-second software stalls on both sides, and its buffer megabytes count a ranged `bufferSubData` as the whole source array (`scripts/perf-probe.mjs:218` adds `a[2].byteLength`, not the range: the leaf batch writes one leaf’s range, about 0.2 MB, into a 14 MB array). That line is lane P0’s file; it is noted here, not changed.
+
+**The gate is not shown in the container.** The rows that decide it, `QUALITY=low|high GPU=webgl node scripts/perf-probe.mjs fly` on the before-ref and on this branch, interleaved, are the owner’s laptop’s and desktop’s, as the `webgpu` rows are. Until they are run the pull request stays open.
 
 ## The checks
 
