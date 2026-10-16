@@ -56,7 +56,10 @@ The software renderer links some of the map’s shaders in seconds, sometimes mi
 | Low | main, run 2 | 45.6 | 8.6 | 13.0 | 23,454 | 25 |
 | Low | branch, run 1 | 46.2 | 6.0 | 7.5 | 45,405 | 23 |
 | Low | branch, run 2 | 42.8 | 10.1 | 16.4 | 13,290 | 46 |
-HIGHROWS
+| High | main, run 1 | 128.2 | 7.4 | 10.3 | 126,506 | 44 |
+| High | main, run 2 | 125.1 | 2,613.4 | 2,626.1 | 10,148 | 40 |
+| High | branch, run 1 | 112.2 | 4.2 | 6.1 | 2,258 | 37 |
+| High | branch, run 2 | 108.0 | 881.2 | 891.7 | 1,591 | 38 |
 
 Time to the map on screen at Low, by a probe of `data-gl` every five seconds (`quality=low`, no `calibrate=off`): main 14 s; the branch 61 s before the map calibrated itself again (the runtime’s `tune()` timed a whole world frame, which in software fits the budget at no step, and walked all five), 13 s after.
 
