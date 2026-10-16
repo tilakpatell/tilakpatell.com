@@ -335,8 +335,14 @@ export default {
     // flight can be compared; and settled(): the ground under it all in)
     if (import.meta.env.DEV) {
       world.view = (name) => {
-        if (name !== 'start') throw new Error(`no view ${name}`);
-        ship = { ...spawnOf(spec, groundAt), speed: 0 };
+        // ('poi': parked 900 m south of the first place, 250 m over the
+        // ground, nose north: its buildings close)
+        const poi = spec.pois?.[0];
+        if (name === 'poi' && poi) {
+          const [x, z] = [poi.at[0], poi.at[1] + 900];
+          ship = { ...spawnOf(spec, groundAt), x, z, y: groundAt(x, z) + 250, speed: 0 };
+        } else if (name === 'start') ship = { ...spawnOf(spec, groundAt), speed: 0 };
+        else throw new Error(`no view ${name}`);
         held = true;
         view.place(ship, rt.origin?.at ?? [0, 0, 0], 0);
       };
