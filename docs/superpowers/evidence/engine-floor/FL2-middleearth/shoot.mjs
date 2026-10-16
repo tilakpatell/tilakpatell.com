@@ -175,6 +175,17 @@ async function shoot() {
         return split && runtime.test(new Error().stack) ? next(own) : next(main);
       };
       window.__traceRandom = localStorage.getItem('tp-trace-random') === '1';
+      if (window.__traceRandom) {
+        const realFetch = window.fetch;
+        window.fetch = (input, init) => {
+          const url = String(input?.url ?? input).replace(/^.*\/\/[^/]+/, '');
+          window.__randoms.push(`${Math.round(performance.now())} FETCH ${url}`);
+          return realFetch(input, init).then((r) => {
+            window.__randoms.push(`${Math.round(performance.now())} FETCHED ${url}`);
+            return r;
+          });
+        };
+      }
     }, [shot.quality ?? quality, split]);
     // (the page's CSS animations and transitions run on real time: none)
     await ctx.addInitScript(() => {

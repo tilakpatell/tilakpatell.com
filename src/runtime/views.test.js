@@ -313,7 +313,9 @@ describe('createViews', () => {
     // (alone: its own 922 rows, as its own canvas had)
     expect(vt.buffer).toEqual([1800, 922]);
     expect([canvas.width, canvas.height]).toEqual([1800, 922]);
-    expect(canvas.style.height).toBe('738px');
+    // (laid out by the page's CSS, as its own canvas was: nothing sized by hand)
+    expect(canvas.style.height).toBe('');
+    expect(canvas.style.clipPath).toBe('');
     // (the map drawing too: room for its 1,125 rows, a multiple of 461 for the town's box)
     vt.draw(() => {});
     vm.draw(() => {});

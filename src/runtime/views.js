@@ -124,16 +124,23 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
   const place = (v) => {
     const { w, h } = v.size;
     const [bw, bh] = v.buffer;
+    const st = canvas.style;
+    // (out of the flow before anything of the view's place is read: in it,
+    // the canvas pushed the view down by its own height)
+    st.position = 'absolute';
+    st.visibility = '';
+    st.pointerEvents = 'none';
+    // the buffer is the view's own: the canvas is laid out as its own canvas
+    // was, by the page's CSS for it (its classes), however fractional its box
+    if (canvas.width === bw && canvas.height === bh) {
+      for (const k of ['left', 'top', 'right', 'bottom', 'width', 'height', 'clipPath']) st[k] = '';
+      return;
+    }
     const sx = w / bw;
     const sy = h / bh;
     const W = canvas.width * sx;
     const H = canvas.height * sy;
-    // (out of the flow before the view's place is read: in it, the canvas
-    // pushed the view down by its own height)
-    canvas.style.position = 'absolute';
-    Object.assign(canvas.style, {
-      visibility: '',
-      position: 'absolute',
+    Object.assign(st, {
       left: `${v.el.offsetLeft ?? 0}px`,
       top: `${(v.el.offsetTop ?? 0) + h - H}px`,
       right: 'auto',
@@ -141,9 +148,9 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
       width: `${W}px`,
       height: `${H}px`,
       clipPath: `inset(${H - h}px ${W - w}px 0px 0px)`,
-      pointerEvents: 'none',
     });
   };
+
   // the canvas dressed as `v`'s own and laid under it
   const dress = (v) => {
     const el = v.el;
