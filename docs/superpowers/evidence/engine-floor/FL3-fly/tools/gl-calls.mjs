@@ -9,26 +9,45 @@
 //
 //   node docs/superpowers/evidence/engine-floor/FL3-fly/tools/gl-calls.mjs [planet]
 //   (run from a checkout's root; QUALITY=low|high, PORT=5298, FRAMES=60)
-import { pathToFileURL } from 'node:url';
-import { resolve } from 'node:path';
-const { chromium } = await import(pathToFileURL(resolve('node_modules/playwright-core/index.mjs')).href);
-const { findChromium, launchArgs, angleFor } = await import(pathToFileURL(resolve('scripts/lib/chromium.mjs')).href);
-const { createServer } = await import(pathToFileURL(resolve('node_modules/vite/dist/node/index.js')).href);
+import { pathToFileURL } from "node:url";
+import { resolve } from "node:path";
+const { chromium } = await import(
+  pathToFileURL(resolve("node_modules/playwright-core/index.mjs")).href
+);
+const { findChromium, launchArgs, angleFor } = await import(
+  pathToFileURL(resolve("scripts/lib/chromium.mjs")).href
+);
+const { createServer } = await import(
+  pathToFileURL(resolve("node_modules/vite/dist/node/index.js")).href
+);
 const PORT = Number(process.env.PORT ?? 5298);
 const FRAMES = Number(process.env.FRAMES ?? 60);
-const server = await createServer({ root: resolve('.'), server: { host: '127.0.0.1', port: PORT, strictPort: true, hmr: false, watch: null }, logLevel: 'error' });
+const server = await createServer({
+  root: resolve("."),
+  server: {
+    host: "127.0.0.1",
+    port: PORT,
+    strictPort: true,
+    hmr: false,
+    watch: null,
+  },
+  logLevel: "error",
+});
 await server.listen();
-const browser = await chromium.launch({ executablePath: findChromium(), args: launchArgs({ angle: angleFor(), webgpu: false, uncapped: true }) });
+const browser = await chromium.launch({
+  executablePath: findChromium(),
+  args: launchArgs({ angle: angleFor(), webgpu: false, uncapped: true }),
+});
 try {
-  const [vw, vh] = (process.env.VIEW ?? '480x300').split('x').map(Number);
+  const [vw, vh] = (process.env.VIEW ?? "480x300").split("x").map(Number);
   const ctx = await browser.newContext({ viewport: { width: vw, height: vh } });
   await ctx.addInitScript(() => {
     const set = (k, v) => window.localStorage.setItem(k, v);
-    set('tp-intro', '1');
-    set('tp-sound', 'off');
-    set('tp-worlds', JSON.stringify('load'));
-    set('tp-software', JSON.stringify('on'));
-    set('tp-tour', 'skipped');
+    set("tp-intro", "1");
+    set("tp-sound", "off");
+    set("tp-worlds", JSON.stringify("load"));
+    set("tp-software", JSON.stringify("on"));
+    set("tp-tour", "skipped");
     window.__tpNoShaderChecks = true;
     // every WebGL 2 method counted and timed, between two marks
     const calls = new Map();
@@ -37,10 +56,12 @@ try {
     const proto = WebGL2RenderingContext.prototype;
     for (const k of Object.getOwnPropertyNames(proto)) {
       const d = Object.getOwnPropertyDescriptor(proto, k);
-      if (typeof d.value !== 'function') continue;
+      if (typeof d.value !== "function") continue;
       const f = d.value;
       proto[k] = function (...a) {
-        if (k.startsWith('draw') && window.__glCur) window.__glDraws[window.__glCur] = (window.__glDraws[window.__glCur] ?? 0) + 1;
+        if (k.startsWith("draw") && window.__glCur)
+          window.__glDraws[window.__glCur] =
+            (window.__glDraws[window.__glCur] ?? 0) + 1;
         if (!on) return f.apply(this, a);
         const t0 = performance.now();
         try {
@@ -75,18 +96,52 @@ try {
     };
   });
   const page = await ctx.newPage();
-  await page.goto(`http://127.0.0.1:${PORT}/?quality=${process.env.QUALITY ?? 'low'}&gpu=webgl#/fly/${process.argv[2] ?? 'hoth'}`, { waitUntil: 'domcontentloaded', timeout: 240000 });
-  await page.waitForFunction(() => window.__FLIGHT__ && window.__RUNTIME__?.status === 'on', null, { timeout: 240000 });
-  await page.evaluate(() => window.__RUNTIME__.current.world.view('start'));
-  await page.waitForFunction(() => window.__RUNTIME__.current.world.settled(), null, { timeout: 240000, polling: 500 });
+  // (the page's errors, said once each)
+  const said = new Set();
+  const say = (t) => !said.has(t) && said.add(t) && console.error('page:', t.slice(0, 600));
+  page.on('pageerror', (e) => say(String(e.stack ?? e)));
+  page.on('console', (m) => (m.type() === 'error' || m.type() === 'warning') && say(m.text()));
+  await page.goto(
+    `http://127.0.0.1:${PORT}/?quality=${process.env.QUALITY ?? "low"}&gpu=webgl#/fly/${process.argv[2] ?? "hoth"}`,
+    { waitUntil: "domcontentloaded", timeout: 240000 },
+  );
+  await page.waitForFunction(
+    () => window.__FLIGHT__ && window.__RUNTIME__?.status === "on",
+    null,
+    { timeout: 240000 },
+  );
+  await page.evaluate(() => window.__RUNTIME__.current.world.view("start"));
+  // (a ground that never settles says how it stands, every 20 s, then stops)
+  const watch = setInterval(
+    () =>
+      page
+        .evaluate(() =>
+          JSON.stringify({
+            ...window.__FLIGHT__.stats(),
+            level: window.__RUNTIME__.quality,
+          }),
+        )
+        .then((s) => console.error("ground", s))
+        .catch(() => {}),
+    20000,
+  );
+  try {
+    await page.waitForFunction(
+      () => window.__RUNTIME__.current.world.settled(),
+      null,
+      { timeout: Number(process.env.SETTLE ?? 240000), polling: 500 },
+    );
+  } finally {
+    clearInterval(watch);
+  }
   await page.waitForTimeout(6000);
   // (PROFILE=1: the JavaScript's self time over the frames counted, by
   // function, the GL calls' own natives left out)
   const cdp = process.env.PROFILE ? await ctx.newCDPSession(page) : null;
   if (cdp) {
-    await cdp.send('Profiler.enable');
-    await cdp.send('Profiler.setSamplingInterval', { interval: 200 });
-    await cdp.send('Profiler.start');
+    await cdp.send("Profiler.enable");
+    await cdp.send("Profiler.setSamplingInterval", { interval: 200 });
+    await cdp.send("Profiler.start");
   }
   // (frames counted by the page's own rAF, so a slow frame is still one frame)
   const out = await page.evaluate(
@@ -94,7 +149,9 @@ try {
       new Promise((done) => {
         // (renders, not rAF frames: the runtime's cadence may draw every
         // other one; the sky dome draws once a render)
-        const dome = window.__FLIGHT__.scene.children.find((o) => o.isMesh && o.renderOrder === -1);
+        const dome = window.__FLIGHT__.scene.children.find(
+          (o) => o.isMesh && o.renderOrder === -1,
+        );
         window.__renders = 0;
         const was = dome.onBeforeRender;
         dome.onBeforeRender = function (...a) {
@@ -103,7 +160,10 @@ try {
         };
         window.__gl.start();
         let k = 0;
-        const tick = () => (++k >= n ? done({ ...window.__gl.stop(), renders: window.__renders }) : requestAnimationFrame(tick));
+        const tick = () =>
+          ++k >= n
+            ? done({ ...window.__gl.stop(), renders: window.__renders })
+            : requestAnimationFrame(tick);
         requestAnimationFrame(tick);
       }),
     FRAMES,
@@ -114,7 +174,9 @@ try {
     console.log(
       JSON.stringify(
         await page.evaluate(() => {
-          const b = window.__FLIGHT__.scene.getObjectByName('flight-ground-leaves');
+          const b = window.__FLIGHT__.scene.getObjectByName(
+            "flight-ground-leaves",
+          );
           if (!b) return { batch: null };
           const m = new b.matrixWorld.constructor();
           b.geometry.computeBoundingBox();
@@ -124,13 +186,31 @@ try {
             if (!b.getVisibleAt(i)) continue;
             b.getMatrixAt(i, m);
             b.getBoundingBoxAt(b.getGeometryIdAt(i), box);
-            shown.push({ i, g: b.getGeometryIdAt(i), x: m.elements[12], z: m.elements[14], w: box.max.x - box.min.x });
+            shown.push({
+              i,
+              g: b.getGeometryIdAt(i),
+              x: m.elements[12],
+              z: m.elements[14],
+              w: box.max.x - box.min.x,
+            });
           }
           const overlaps = [];
           for (const a of shown)
             for (const c of shown)
-              if (a.i < c.i && a.x < c.x + c.w - 1 && c.x < a.x + a.w - 1 && a.z < c.z + c.w - 1 && c.z < a.z + a.w - 1) overlaps.push([a, c]);
-          return { shown: shown.length, stats: window.__FLIGHT__.stats(), overlaps: overlaps.slice(0, 6), n: overlaps.length };
+              if (
+                a.i < c.i &&
+                a.x < c.x + c.w - 1 &&
+                c.x < a.x + a.w - 1 &&
+                a.z < c.z + c.w - 1 &&
+                c.z < a.z + a.w - 1
+              )
+                overlaps.push([a, c]);
+          return {
+            shown: shown.length,
+            stats: window.__FLIGHT__.stats(),
+            overlaps: overlaps.slice(0, 6),
+            n: overlaps.length,
+          };
         }),
       ),
     );
@@ -138,17 +218,22 @@ try {
   if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
   let hot = null;
   if (cdp) {
-    const { profile } = await cdp.send('Profiler.stop');
+    const { profile } = await cdp.send("Profiler.stop");
     const self = new Map();
     const dt = new Map();
-    profile.samples.forEach((id, i) => dt.set(id, (dt.get(id) ?? 0) + (profile.timeDeltas[i] ?? 0)));
+    profile.samples.forEach((id, i) =>
+      dt.set(id, (dt.get(id) ?? 0) + (profile.timeDeltas[i] ?? 0)),
+    );
     for (const n of profile.nodes) {
       const { functionName: f, url, lineNumber } = n.callFrame;
-      if (!url || f === '(program)' || f === '(idle)') continue;
-      const key = `${f || '(anon)'}@${url.split('/').pop().split('?')[0]}:${lineNumber + 1}`;
+      if (!url || f === "(program)" || f === "(idle)") continue;
+      const key = `${f || "(anon)"}@${url.split("/").pop().split("?")[0]}:${lineNumber + 1}`;
       self.set(key, (self.get(key) ?? 0) + (dt.get(n.id) ?? 0) / 1000);
     }
-    hot = [...self.entries()].sort((a, b) => b[1] - a[1]).slice(0, 25).map(([k, ms]) => [k, +(ms / FRAMES).toFixed(3)]);
+    hot = [...self.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 25)
+      .map(([k, ms]) => [k, +(ms / FRAMES).toFixed(3)]);
   }
   const backend = await page.evaluate(() => window.__RUNTIME__.gfx?.backend);
   // (which objects draw: each mesh's onBeforeRender counted over 10 frames,
@@ -162,8 +247,9 @@ try {
             window.__glDraws = {};
             for (const top of scene.children)
               top.traverse((o) => {
-                if (!o.isMesh && !o.isPoints && !o.isLine && !o.isSprite) return;
-                const key = `${top.name || top.type}/${o.isInstancedMesh ? 'inst' : 'mesh'}${o.material?.transparent ? '/t' : ''}`;
+                if (!o.isMesh && !o.isPoints && !o.isLine && !o.isSprite)
+                  return;
+                const key = `${top.name || top.type}/${o.isInstancedMesh ? "inst" : "mesh"}${o.material?.transparent ? "/t" : ""}`;
                 const was = o.onBeforeRender;
                 o.onBeforeRender = function (...a) {
                   by[key] = (by[key] ?? 0) + 1;
@@ -177,7 +263,20 @@ try {
                 };
               });
             let k = 0;
-            const tick = () => (++k >= 10 ? done({ objects: Object.fromEntries(Object.entries(by).map(([n, v]) => [n, v / 10])), glDraws: Object.fromEntries(Object.entries(window.__glDraws).map(([n, v]) => [n, v / 10])) }) : requestAnimationFrame(tick));
+            const tick = () =>
+              ++k >= 10
+                ? done({
+                    objects: Object.fromEntries(
+                      Object.entries(by).map(([n, v]) => [n, v / 10]),
+                    ),
+                    glDraws: Object.fromEntries(
+                      Object.entries(window.__glDraws).map(([n, v]) => [
+                        n,
+                        v / 10,
+                      ]),
+                    ),
+                  })
+                : requestAnimationFrame(tick);
             requestAnimationFrame(tick);
           }),
       )
@@ -187,8 +286,24 @@ try {
     .map(([k, v]) => [k, v / R])
     .sort((a, b) => b[1] - a[1]);
   const total = per.reduce((s, [, v]) => s + v, 0);
-  const draws = per.filter(([k]) => k.startsWith('draw')).reduce((s, [, v]) => s + v, 0);
-  console.log(JSON.stringify({ backend, frames: FRAMES, renders: out.renders, callsPerRender: Math.round(total), drawsPerRender: Math.round(draws), callsPerDraw: +(total / draws).toFixed(2), jsMsPerRender: +((out.rafMs - out.glMs) / R).toFixed(2), glMsPerRender: +(out.glMs / R).toFixed(2), top: per.slice(0, 16).map(([k, v]) => [k, +v.toFixed(1)]), drawn, hot }));
+  const draws = per
+    .filter(([k]) => k.startsWith("draw"))
+    .reduce((s, [, v]) => s + v, 0);
+  console.log(
+    JSON.stringify({
+      backend,
+      frames: FRAMES,
+      renders: out.renders,
+      callsPerRender: Math.round(total),
+      drawsPerRender: Math.round(draws),
+      callsPerDraw: +(total / draws).toFixed(2),
+      jsMsPerRender: +((out.rafMs - out.glMs) / R).toFixed(2),
+      glMsPerRender: +(out.glMs / R).toFixed(2),
+      top: per.slice(0, 16).map(([k, v]) => [k, +v.toFixed(1)]),
+      drawn,
+      hot,
+    }),
+  );
 } finally {
   await browser.close();
   await server.close();
