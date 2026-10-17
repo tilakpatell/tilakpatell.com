@@ -427,39 +427,58 @@ describe('createViews', () => {
     expect(later).toHaveBeenCalledOnce();
   });
 
-  it('makes an opaque view’s alpha one after it draws, the GL state as it was', () => {
+  it('makes an opaque view’s alpha one after it draws, the GL state handed back through three’s, never asked of GL', () => {
     const { views, box, renderer } = setup();
     const calls = [];
     let mask = [true, true, true, true];
-    let clear = [0.1, 0.2, 0.3, 0];
+    let glClear = [0.1, 0.2, 0.3, 0];
+    let scissor = true;
     renderer.getContext = () => ({
-      COLOR_WRITEMASK: 1,
-      COLOR_CLEAR_VALUE: 2,
-      SCISSOR_TEST: 3,
       COLOR_BUFFER_BIT: 4,
-      getParameter: (k) => (k === 1 ? [...mask] : [...clear]),
-      isEnabled: () => false,
+      // (a query waits on the graphics chip to finish all it was given: never)
+      getParameter: () => {
+        throw new Error('asked GL');
+      },
+      isEnabled: () => {
+        throw new Error('asked GL');
+      },
       colorMask: (...m) => {
         mask = m;
-        calls.push(['mask', ...m]);
       },
       clearColor: (...c) => {
-        clear = c;
-        calls.push(['clearColor', ...c]);
+        glClear = c;
       },
-      clear: (b) => calls.push(['clear', b, ...mask, ...clear]),
+      clear: (b) => calls.push(['clear', b, scissor, ...mask, ...glClear]),
     });
+    renderer.getScissorTest = () => true;
+    renderer.state = {
+      setScissorTest: (on) => (scissor = on),
+      buffers: {
+        color: {
+          reset: () => calls.push('reset'),
+          setMask: (on) => (mask = [on, on, on, on]),
+        },
+      },
+    };
+    renderer.setClearColor(0x336699, 0.5);
+    renderer.setClearColor = (c, a) => {
+      glClear = [c.r, c.g, c.b, a];
+    };
     const a = box();
     const b = box();
     const va = views.add(a.el, { opaque: true });
     const vb = views.add(b.el);
     va.resize(100, 100);
     vb.resize(100, 100);
+    calls.length = 0;
     va.draw(() => {});
-    // (alpha alone, cleared to one)
-    expect(calls).toContainEqual(['clear', 4, false, false, false, true, 0, 0, 0, 1]);
+    // (alpha alone, cleared to one, the scissor off)
+    expect(calls).toContainEqual(['clear', 4, false, false, false, false, true, 0, 0, 0, 1]);
+    // (then three's state: its cache forgotten, the mask, the clear colour and the scissor its own again)
+    expect(calls).toContain('reset');
     expect(mask).toEqual([true, true, true, true]);
-    expect(clear).toEqual([0.1, 0.2, 0.3, 0]);
+    expect(glClear).toEqual([0x33 / 255, 0x66 / 255, 0x99 / 255, 0.5]);
+    expect(scissor).toBe(true);
     calls.length = 0;
     vb.draw(() => {});
     expect(calls).toEqual([]);

@@ -213,21 +213,26 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
   };
   // (a view whose own canvas had no alpha comes out opaque, as that one
   // did: drawn straight to the canvas, what blends leaves alpha under one
-  // where the page's background showed through; the GL state put back as
-  // it was, so three's cache of it holds)
+  // where the page's background showed through. Nothing is asked of GL: a
+  // query (getParameter, isEnabled) waits for the graphics chip to finish
+  // all it was given, and asked every frame it held Moria's frame up by a
+  // tenth in software. The state is three's, handed back through three:
+  // its cache of the mask and the clear colour forgotten and set again as
+  // the renderer has them, the scissor as the renderer has it)
+  const solidColor = rgb();
   const solid = () => {
     const gl = renderer.getContext?.();
-    if (!gl?.colorMask) return;
-    const mask = gl.getParameter(gl.COLOR_WRITEMASK);
-    const clear = gl.getParameter(gl.COLOR_CLEAR_VALUE);
-    const scissor = gl.isEnabled(gl.SCISSOR_TEST);
-    if (scissor) gl.disable(gl.SCISSOR_TEST);
+    const color = renderer.state?.buffers?.color;
+    if (!gl?.colorMask || !color) return;
+    const scissor = Boolean(renderer.getScissorTest?.());
+    if (scissor) renderer.state.setScissorTest(false);
     gl.colorMask(false, false, false, true);
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.colorMask(mask[0], mask[1], mask[2], mask[3]);
-    gl.clearColor(clear[0], clear[1], clear[2], clear[3]);
-    if (scissor) gl.enable(gl.SCISSOR_TEST);
+    color.reset();
+    color.setMask(true);
+    renderer.setClearColor(renderer.getClearColor(solidColor), renderer.getClearAlpha());
+    if (scissor) renderer.state.setScissorTest(true);
   };
   // what's in the corner, onto the view's own canvas
   const copy = (v) => {
