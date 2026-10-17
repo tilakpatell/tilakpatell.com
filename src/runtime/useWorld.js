@@ -29,10 +29,11 @@
 // a town's stage, the kitchen, the bridge, the Ring) mounts one module, in
 // the box the size of the largest (the map's, fixed to the window), and
 // its world draws each picture as a view of the one canvas (./views.js):
-// the busiest view has the canvas, the others a copy of what was drawn for
-// them. A second useWorld on the same page would take the runtime from the
-// first (a mount lets go of the world that was up), and a second renderer
-// is a second context: neither is how a page shows two pictures.
+// the view on screen drawing the biggest buffer has the canvas, the others
+// a copy of what was drawn for them. A second useWorld on the same page
+// would take the runtime from the first (a mount lets go of the world that
+// was up), and a second renderer is a second context: neither is how a
+// page shows two pictures.
 // (The universe map's shipyard showroom, a ship on a turntable over the
 // map held still behind it, is such a picture: a view of the map's world,
 // and of the galaxy's where the yard opens there, once the views are on
