@@ -134,7 +134,7 @@ describe('createViews', () => {
     expect(a.el.drawn).toContainEqual(['copy', 0, canvas.height - 200, 400, 200, 0, 0, 400, 200]);
   });
 
-  it('moves the canvas under the view that drew the most of the screen, dressed as it and clipped to its size', () => {
+  it('moves the canvas under the view that drew the biggest buffer, dressed as it and clipped to its size', () => {
     const { views, box, canvas } = setup();
     const a = box();
     const b = box();
@@ -160,6 +160,27 @@ describe('createViews', () => {
     a.el.drawn.length = 0;
     va.draw(() => {});
     expect(a.el.drawn.filter((d) => d[0] === 'copy')).toHaveLength(0);
+  });
+
+  it('gives the canvas to the view whose copy would cost the most: its buffer, not its share of the screen', () => {
+    const { views, box, gfx } = setup();
+    gfx.ratio = 2;
+    const a = box();
+    const b = box();
+    const va = views.add(a.el, { ratio: 1 });
+    const vb = views.add(b.el, { ratio: 2 });
+    va.resize(400, 200);
+    vb.resize(300, 100);
+    // (a shows more of the screen; b's buffer is the bigger, 600 × 200)
+    a.show(80000);
+    b.show(30000);
+    for (let i = 0; i < 3; i++) {
+      views.frame();
+      va.draw(() => {});
+      vb.draw(() => {});
+      views.flush();
+    }
+    expect(views.lead).toBe(vb);
   });
 
   it('draws the lead again at the frame’s end when another view drew over it after', () => {

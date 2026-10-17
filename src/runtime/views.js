@@ -4,7 +4,8 @@
 // Ring further down, each in its own section). A WebGL context draws on one
 // canvas only, so the boxes take turns at it:
 //
-// - The lead, the view drawing the most of the screen lately, has the
+// - The lead, the view on screen whose drawing has lately been the biggest
+//   (its buffer's pixels, what a copy of it would cost), has the
 //   canvas itself: moved in under the view's own canvas (`el`, the one the
 //   page laid out and listens on), wearing its classes and data- attributes
 //   (so the page's CSS and its data-on fade reach it) and clipped to the
@@ -241,7 +242,7 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
   };
   const blank = (v) => v.el.getContext?.('2d')?.clearRect(0, 0, v.el.width, v.el.height);
 
-  // (the lead: the most of the screen drawn a frame, lately: an average
+  // (the lead: the biggest buffer drawn a frame on screen, lately: an average
   // over about ten frames, and a margin to take it from the one that has it,
   // so the map drawn every other frame under a town, or two boxes drawing
   // the same, don't take turns at the canvas)
@@ -308,9 +309,19 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
     }
   };
 
+  // (what a view's copy costs: its whole buffer, read out and drawn again,
+  // each frame it draws, wherever it is on the screen; so the canvas goes to
+  // the view whose buffer it would cost most to copy. By its share of the
+  // screen instead, Moria's map, the window's size, led, and the town over
+  // it, drawn at 1.75, was copied every frame: a tenth slower in software)
+  const cost = (v) => {
+    if (!v.drew || !(v.pixels > 0)) return 0;
+    const [w, h] = v.buffer;
+    return w * h;
+  };
   const pick = () => {
     for (const v of views.values()) {
-      v.score += ((v.drew ? v.pixels : 0) - v.score) * SCORE;
+      v.score += (cost(v) - v.score) * SCORE;
       v.idle = v.drew ? 0 : v.idle + 1;
     }
     // (a lead that has stopped drawing lets go after a while, its last frame
@@ -457,8 +468,8 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
       for (const v of views.values()) v.fit();
       if (lead) place(lead);
     },
-    // a frame begins: the lead is the view that drew the most of the screen
-    // last frame (or still holds it)
+    // a frame begins: the lead is the view whose drawing on screen has been
+    // the biggest lately (or still holds it)
     frame() {
       switched = false;
       setLead(pick());

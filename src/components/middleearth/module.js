@@ -3,10 +3,10 @@
 // behind it, a town's stage, the kitchen under the town, the bridge in
 // Moria, Gorgoroth and the Ring in Mordor), each in its own box, laid out
 // and listened to by its own component as before; each is a view of the
-// runtime's canvas (runtime/views.js): the one drawing the most of the
-// screen has the canvas, the others a copy of what was drawn for them. The
-// world's host is the map's box (fixed, the size of the window), so the
-// buffer is the window's size and every view fits inside it.
+// runtime's canvas (runtime/views.js): the one on screen drawing the
+// biggest buffer has the canvas, the others a copy of what was drawn for
+// them. The world's host is the map's box (fixed, the size of the window),
+// where the canvas waits while no view leads.
 //
 // The components keep their frames as they wrote them: a frame loop is a
 // tick (useTick, ./tick.js), run by this world's step in the runtime's

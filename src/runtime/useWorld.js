@@ -25,7 +25,7 @@
 // a town's stage, the kitchen, the bridge, the Ring) mounts one module, in
 // the box the size of the largest (the map's, fixed to the window), and
 // its world draws each picture as a view of the one canvas (./views.js):
-// the busiest view has the canvas, the others a copy of what was drawn for
+// the view drawing the biggest buffer has the canvas, the others a copy of what was drawn for
 // them. A second useWorld on the same page would take the runtime from the
 // first (a mount lets go of the world that was up), and a second renderer
 // is a second context: neither is how a page shows two pictures.
