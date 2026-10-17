@@ -61,7 +61,31 @@ A shot is the same when one of the branch’s matches one of main’s. Where two
 
 ## The pace
 
-PACE
+`pace.mjs`: each build’s production `vite preview` (`P-main` at `a559e190`, the branch at `e7cced39`), 1440 × 900, the place loaded, scrolled to, settled 8 s, then a window of real time: the page’s frame intervals (a `requestAnimationFrame` loop of the probe’s own) and the main thread’s time a frame (CDP’s task duration over the window). The two builds alternate, two runs each. SwiftShader: a town at High is seconds a frame, so these say “no slower in software” and no more.
+
+The towns at High, a 40 s window:
+
+| place | main, p50 (ms) | branch, p50 (ms) | main, frames | branch, frames |
+| --- | --- | --- | --- | --- |
+| Moria | 2,099.9 / 2,033.2 | 2,100.0 / 2,099.8 | 16 / 19 | 18 / 15 |
+| the Shire | 4,099.9 / 4,366.5 | 2,549.9 / 1,549.9 | 8 / 8 | 14 / 21 |
+| Bree | 16,666.0 / 9,583.0 | 8,383.1 / 6,966.3 | 4 / 6 | 5 / 7 |
+
+Low, a 12 s window:
+
+| place | main, p50 (ms) | branch, p50 (ms) | main, frames | branch, frames |
+| --- | --- | --- | --- | --- |
+| the map (`/middle-earth`) | 33.3 / 33.3 | 33.2 / 33.3 | 461 / 466 | 476 / 456 |
+| Bree | 1,999.9 / 1,933.3 | 1,183.2 / 2,383.3 | 7 / 7 | 9 / 5 |
+| the Shire | 983.4 / 966.7 | 683.4 / 699.9 | 12 / 12 | 18 / 18 |
+| Moria | 516.5 / 499.9 | 533.3 / 500.0 | 22 / 23 | 22 / 24 |
+| Bree’s kitchen | 1,350.0 / 1,400.0 | 1,516.7 / 1,400.0 | 10 / 8 | 7 / 10 |
+| the bridge | 616.6 / 583.3 | 266.7 / 283.3 | 20 / 20 | 43 / 42 |
+| the Ring | 383.3 / 400.0 | 166.7 / 166.7 | 30 / 30 | 70 / 68 |
+
+High, a 12 s window: the map 33.3 either side; the bridge 1,666.6 / 1,599.8 on main, 316.7 / 300.0 on the branch; the Ring 1,333.3 / 1,200.0 on main, 183.3 / 166.7 on the branch. The towns and Bree’s kitchen draw two to six frames in 12 s at High, too few to say anything (their 40 s rows are above).
+
+Two things were found by this gate and mended before these numbers: the canvas went to the view with the most of the screen, so on Moria’s page the map (the window’s size) led and the town over it, drawn at 1.75, was copied every frame; and an opaque view was made opaque by asking GL its colour mask and clear colour back (`getParameter`), which waits for the graphics chip to finish all it was given (a profile of Moria’s page: 15.2 s of 15.7 s in it). Before the two, Moria was a tenth slower than main at both levels; the canvas now goes to the view whose copy would cost the most, and nothing is asked of GL. The bridge and the Ring each had a context of their own beside the map’s on main, and draw two to seven times as often on the branch; why, beyond that, wasn’t measured.
 
 The WebGPU rows are the owner’s machines’ (the laptop’s Radeon 740M and the desktop’s RTX 5090) and are left empty: Middle-earth is `'glsl'` until FL3.
 
