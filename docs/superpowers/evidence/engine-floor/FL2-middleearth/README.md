@@ -91,7 +91,10 @@ The WebGPU rows are the owner’s machines’ (the laptop’s Radeon 740M and th
 
 ## Checks
 
-CHECKS
+- `npm run lint`: clean.
+- `npm test`: 16,164 passed, 6 skipped, 3 failed under the load of the shots running beside it (`scripts/assets-upload.test.mjs`’s secret scan, `scripts/motion/bvh-map.test.mjs`’s forward kinematics, `rickmorty/portal/rules.test.js`’s whole game a level); all three pass alone (63 of 63). The runtime’s and Middle-earth’s suites: 1,111 passed.
+- `npm run build`: built.
+- `node scripts/health.mjs --check --skip build`: every metric in budget. `renderers` 15, one fewer than main (the map’s own); `glsl-sites` 619 and `lint-disables` 54, as main; `loops` 58, as main (the components’ `useFrameLoop` was never counted, `lib/stage3d.js`’s site stays for its other users).
 
 ## Known, carried on
 
