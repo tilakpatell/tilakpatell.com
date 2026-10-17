@@ -68,9 +68,11 @@
 //   everyone's sky: yours go out to the others (net.pack), theirs are
 //   drawn here and can be shot at, the hit told to whoever they're after.
 //
-// A scene module for lib/three/useScene: create(canvas, ctx) returns
-// { resize, render, update, setVisible, lowerQuality, hover, dive, escape,
-//   whole, boost, climb, fire, dispose }.
+// A scene module, a world on the world runtime through ./module.js: create(
+// canvas, ctx) draws with the runtime’s renderer (ctx.rt.gfx: the runtime
+// sizes it, paces it and tells it the quality level, lowerQuality(level))
+// and returns { ready, prepare, resize, render, update, setVisible,
+//   lowerQuality, hover, dive, escape, whole, boost, climb, fire, dispose }.
 // Props: selected (an id or null), ship (a crew id or null), loadout (what's
 // fitted to it in the hangar: outfit.js's paint job and parts, which it
 // wears and flies on), controls (the
@@ -96,12 +98,14 @@ import { plan as cockpitPlan } from '../cockpit/timeline';
 import { freeKit } from '../cockpit/kit';
 import { audioContext } from '../../lib/audio';
 import { takeArrival } from '../../lib/arrival';
-import { clamp01, createRenderer, disposeTree, easeOut, precompile, precompilePasses, singlePass, uploadTextures } from '../../lib/three/renderer';
+import { clamp01, disposeTree, easeOut, precompile, precompilePasses, singlePass, uploadTextures } from '../../lib/three/renderer';
 import { prepareScene, uploadSlices } from '../../lib/three/gpuWork';
 import { calibrate, calibrationKey, recall, remember } from '../../lib/three/calibrate';
+import { prepFrame } from './prepFrame';
 import { settle as settleWithin } from '../../lib/settle';
 import { device } from '../../lib/device';
-import { createPace } from '../../lib/three/pace';
+import { stepAt } from './qualityStep';
+import { borrow } from './borrow';
 import { CHASE, DIVE_MS, FOV, chaseDist, cover, cameraFrom, focusPose, overviewPose, poseAt, startFlight, worldPos } from './flight';
 import { BELT, BODIES, ORDER, POSITIONS, REACH, RIM, RING, SECTORS, SECTOR_OF, SUN, inExpanse, mapSectorOf, sectorOf } from './layout';
 import { HOME_SPREAD } from './scale';
@@ -475,13 +479,13 @@ export async function create(canvas, ctx) {
   let props = ctx;
   let disposed = false;
 
-  // (at most 1.5 device pixels to a CSS one: the whole sky, bloom and all,
-  // filling a retina screen at 2 is more than most graphics chips draw
-  // smoothly while flying, and the names and the HUD are crisp DOM anyway;
-  // and no antialiasing on the canvas: the post's target has its own, post.js)
-  const gl = createRenderer(canvas, { ratio: 1.5, antialias: false, onLost: ctx.onLost, onSlow: ctx.onSlow, guard: { invalidate: ctx.invalidate } });
-  const { renderer } = gl;
-  renderer.info.autoReset = false;
+  // the runtime’s renderer, at most 1.5 device pixels to a CSS one (module.js:
+  // the whole sky, bloom and all, at a retina 2 is more than most graphics
+  // chips draw smoothly while flying, and the names and the HUD are crisp
+  // DOM anyway), its size and sharpness the runtime’s; what the map sets on
+  // it is set only while it draws, or goes back when it goes (./borrow.js)
+  const { renderer } = ctx.rt.gfx;
+  const borrowed = borrow(renderer);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.08, 45000); // (out to the far side of deep space; the near plane follows the view, place())
   scene.add(camera); // it carries the streaks
@@ -630,7 +634,9 @@ export async function create(canvas, ctx) {
   // what metal reflects, and the passes after the scene (post.js)
   let env = spaceEnvironment(renderer, T['sky-glow']);
   scene.environment = env.texture;
-  const post = createPost(renderer, scene, camera, { small });
+  // (multisampled as at the map's own 1.5 at most, module.js: made at a
+  // handover, the renderer is still at the last world's ratio)
+  const post = createPost(renderer, scene, camera, { small, ratio: Math.min(renderer.getPixelRatio(), 1.5) });
   // the map's lens (post.js; the galaxy keeps its picture): a floor under
   // the sky, a little more contrast, and the corners soft but on a low tier
   post.setToe(...MAP_LENS.toe);
@@ -644,7 +650,20 @@ export async function create(canvas, ctx) {
   // with the camera, baked once into a cube
   const sky = createSky({ small, level: device().detail, renderer, beacons: false });
   sky.setSystem({ ...SYSTEMS.find((s) => s.id === 'kashyyyk'), suns: [] });
-  sky.setRatio(gl.ratio);
+  // (its stars sized in the pixels the post draws at, which the quality
+  // softens over a canvas that keeps its size; told again when that moves:
+  // the galaxy's drawnAt.js does the same, kept here rather than reached
+  // into, a world's insides being its own)
+  let drawnWas = null;
+  const followDrawn = () => {
+    const r = post.ratio;
+    if (r !== drawnWas) {
+      drawnWas = r;
+      sky.setRatio(r);
+    }
+    return r;
+  };
+  followDrawn();
   map.add(sky.group);
   sky.prepare(renderer).then(() => sky.bake(renderer));
 
@@ -1253,9 +1272,10 @@ export async function create(canvas, ctx) {
   // The open part of the canvas: the panel covers the right side on a
   // desktop and the bottom on a phone (or, put away, a corner or a slim
   // bar), the nav the top.
-  const panelEl = () => ctx.el.closest('.universe-page')?.querySelector('.universe-panel');
+  // (the box it’s in now: the runtime’s host, which a page adopting the map moves)
+  const panelEl = () => (ctx.rt.host ?? ctx.el).closest('.universe-page')?.querySelector('.universe-panel');
   const measure = () => {
-    const box = ctx.el.getBoundingClientRect();
+    const box = (ctx.rt.host ?? ctx.el).getBoundingClientRect();
     const panel = panelEl()?.getBoundingClientRect();
     const nav = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 68;
     let side = 0;
@@ -2722,18 +2742,21 @@ export async function create(canvas, ctx) {
 
   // the weapon readout (its name, the heavy rounds left, the next one
   // filling) and the Citadel's state while you're near it; written only
-  // when something in them changes
-  let armsSig = '';
-  let siegeSig = '';
+  // when something in them changes, which is told by their numbers (each
+  // frame's string to compare was garbage at 60 a second)
+  const armsWas = { on: false, index: -1, id: '', ammo: -1, max: -1, fill: -1 };
+  const siegeWas = { show: false, phase: '', n: -1, kind: null };
   const placeArms = () => {
     const el = props.arms?.current;
     if (el) {
       // (not till the guns are first used: the first minute has enough on it)
-      const on = state.armed && flying() && !onFoot() && state.view !== 'map' && !state.crash && !props.frozen;
+      const on = Boolean(state.armed && flying() && !onFoot() && state.view !== 'map' && !state.crash && !props.frozen);
       const arm = arms();
-      const sig = on ? `${arm.index}|${arm.id}|${arm.ammo}/${arm.ammoMax}|${Math.floor(arm.filling * 10)}` : '';
-      if (sig !== armsSig) {
-        armsSig = sig;
+      const fill = on ? Math.floor(arm.filling * 10) : -1;
+      const was = armsWas;
+      if (on !== was.on || (on && (arm.index !== was.index || arm.id !== was.id || arm.ammo !== was.ammo || arm.ammoMax !== was.max || fill !== was.fill))) {
+        was.on = on;
+        if (on) Object.assign(was, { index: arm.index, id: arm.id, ammo: arm.ammo, max: arm.ammoMax, fill });
         el.toggleAttribute('data-on', on);
         if (on) {
           el.dataset.weapon = arm.id;
@@ -2752,21 +2775,21 @@ export async function create(canvas, ctx) {
     if (!sl || !citadelGeo) return;
     const s = state.ship;
     const d = s ? apart(s.x, s.y, s.z, citadelMid.x, citadelMid.y, citadelMid.z) : Infinity;
-    const show = flying() && !onFoot() && !props.frozen && (d < 900 || (siegeSt.down && d < 3000));
-    let text = '';
-    if (show) {
-      if (siegeSt.down) {
-        const sec = Math.ceil(siegeSt.rebuildIn / 1000);
-        text = `Destroyed · the Ricks rebuild it in ${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
-      } else if (siegeSt.shield) text = `Shield up · ${siegeSt.gensLeft} of ${GENS} generators running · knock them out`;
-      else text = `Shield down · core ${Math.max(1, Math.round(siegeSt.core * 100))}% · ${arsenalOf(state.kind).names[2].toLowerCase()} only (3)`;
-    }
-    const sig = show ? text : '';
-    if (sig === siegeSig) return;
-    siegeSig = sig;
+    const show = Boolean(flying() && !onFoot() && !props.frozen && (d < 900 || (siegeSt.down && d < 3000)));
+    // (the line's one number in each phase: the seconds to the rebuild, the
+    // generators left, the core's percent, and the ship whose heavy rounds it names)
+    const phase = siegeSt.down ? 'down' : siegeSt.shield ? 'shield' : 'core';
+    const n = phase === 'down' ? Math.ceil(siegeSt.rebuildIn / 1000) : phase === 'shield' ? siegeSt.gensLeft : Math.max(1, Math.round(siegeSt.core * 100));
+    const kind = phase === 'core' ? state.kind : null;
+    if (show === siegeWas.show && (!show || (phase === siegeWas.phase && n === siegeWas.n && kind === siegeWas.kind))) return;
+    Object.assign(siegeWas, { show, phase, n, kind });
     sl.toggleAttribute('data-on', show);
     if (!show) return;
-    sl.dataset.phase = siegeSt.down ? 'down' : siegeSt.shield ? 'shield' : 'core';
+    let text;
+    if (phase === 'down') text = `Destroyed · the Ricks rebuild it in ${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
+    else if (phase === 'shield') text = `Shield up · ${n} of ${GENS} generators running · knock them out`;
+    else text = `Shield down · core ${n}% · ${arsenalOf(kind).names[2].toLowerCase()} only (3)`;
+    sl.dataset.phase = phase;
     const line = sl.querySelector('.universe-siege-state');
     if (line) line.textContent = text;
   };
@@ -3537,16 +3560,20 @@ export async function create(canvas, ctx) {
   let shieldOn = false;
   // the law's strip (UniverseMap's): its stars, what it's doing (wanted, a
   // witness's report on its way, searching, or just the bounty), the bounty
-  let wantedKey = '';
+  // (written when its numbers move: the word's kind and its seconds, not a
+  // string made each frame to compare)
+  const wantedWas = { on: null, stars: -1, word: '', secs: -1, bounty: -1 };
   const placeWanted = () => {
     const el = props.wanted?.current;
     if (!el) return;
     const r = wanted.report;
-    const on = flying() && !onFoot() && state.view !== 'map' && !state.crash && !props.frozen && (wanted.stars > 0 || wanted.bounty > 0 || Boolean(r));
-    const word = wanted.stars ? (wanted.phase === 'search' ? `Searching ${Math.ceil(wanted.searchLeft)}s` : 'Wanted') : r ? `Witness ${Math.ceil(r.left)}s` : 'Bounty';
-    const key = `${on}|${wanted.stars}|${word}|${wanted.bounty}`;
-    if (key === wantedKey) return;
-    wantedKey = key;
+    const on = Boolean(flying() && !onFoot() && state.view !== 'map' && !state.crash && !props.frozen && (wanted.stars > 0 || wanted.bounty > 0 || Boolean(r)));
+    const kind = wanted.stars ? (wanted.phase === 'search' ? 'search' : 'wanted') : r ? 'witness' : 'bounty';
+    const secs = kind === 'search' ? Math.ceil(wanted.searchLeft) : kind === 'witness' ? Math.ceil(r.left) : 0;
+    const was = wantedWas;
+    if (on === was.on && wanted.stars === was.stars && kind === was.word && secs === was.secs && wanted.bounty === was.bounty) return;
+    Object.assign(was, { on, stars: wanted.stars, word: kind, secs, bounty: wanted.bounty });
+    const word = kind === 'search' ? `Searching ${secs}s` : kind === 'wanted' ? 'Wanted' : kind === 'witness' ? `Witness ${secs}s` : 'Bounty';
     el.toggleAttribute('data-on', on);
     el.toggleAttribute('data-search', wanted.phase === 'search');
     el.querySelectorAll('.universe-wanted-stars i').forEach((star, i) => star.toggleAttribute('data-lit', i < wanted.stars));
@@ -4799,9 +4826,9 @@ export async function create(canvas, ctx) {
   // ── Frames ──
   const still = () => reduced || state.low;
   let last = 0;
-  // drawn less sharp, at once, while frames come late (a fight, a boost),
-  // and sharp again once they don't (lib/three/pace)
-  const pace = createPace();
+  // (a dive’s pose, written over each frame of it rather than made anew)
+  const divePose = { target: [0, 0, 0], dist: 1, pitch: 0 };
+  const diveTo = [0, 0, 0];
 
   // The finish (post.js): grain and the edges' aberration with the boost's
   // rush and a hit; the glare in the lens (lib/three/flare) of the two stars
@@ -4950,20 +4977,20 @@ export async function create(canvas, ctx) {
     state.model?.rim({ colour: fill.color, dir: lightNow.fill, key: key.color });
   };
 
-  // the pace's step on everything that follows it
-  const paceTo = () => {
-    post.sharpness = pace.scale;
-    post.setLevel(pace.level);
-    blasts.setMode(pace.level >= 2 || tier === 'low' || state.low ? 'pop' : 'full');
+  // the runtime’s quality level on everything that follows it (./qualityStep.js)
+  const paceTo = (level) => {
+    const at = stepAt(level, { tier, low: state.low });
+    post.sharpness = at.sharpness;
+    post.setLevel(at.step);
+    blasts.setMode(at.blasts);
     // (the rocks' relief flat from the pace's step 3, and back: lib/three/rock)
-    ROCK_RELIEF.value = pace.level >= 3 ? 0 : 1;
+    ROCK_RELIEF.value = at.relief;
     // (the planets' ground detail goes at the pace's step 2, their real air for
     // the old halo and their clouds' shadows at 3, and they come back)
-    for (const p of planets) p.setLevel(pace.level);
+    for (const p of planets) p.setLevel(at.step);
+    return at;
   };
   function render(ms, now) {
-    gl.watch(now);
-    if (pace.frame(now) !== null) paceTo();
     const dt = ms / 1000;
     const t = reduced ? 0 : state.low ? state.tLow : (now - t0) / 1000;
     // (the Twins' suns going round each other: their solids where they're drawn, deep.js)
@@ -5040,13 +5067,12 @@ export async function create(canvas, ctx) {
       const d = state.dive;
       const k = clamp01((now - d.start) / DIVE_MS);
       const e = k * k * k;
-      const to = worldPos(d.id, state.yaw);
+      const to = worldPos(d.id, state.yaw, diveTo);
       const end = byId(d.id).size * 1.05;
-      pose = {
-        target: d.from.target.map((x, i) => x + (to[i] - x) * Math.min(1, e * 1.5)),
-        dist: Math.exp(Math.log(d.from.dist) + (Math.log(end) - Math.log(d.from.dist)) * e),
-        pitch: d.from.pitch,
-      };
+      pose = divePose;
+      for (let i = 0; i < 3; i++) pose.target[i] = d.from.target[i] + (to[i] - d.from.target[i]) * Math.min(1, e * 1.5);
+      pose.dist = Math.exp(Math.log(d.from.dist) + (Math.log(end) - Math.log(d.from.dist)) * e);
+      pose.pitch = d.from.pitch;
       // the ship goes in first
       if (state.model) {
         const [px, py, pz] = POSITIONS[d.id];
@@ -5191,7 +5217,7 @@ export async function create(canvas, ctx) {
     const launching = moveMissiles(dt);
     if (armory) armory.update(dt);
     sun.update(t, camera);
-    sky.setRatio(gl.ratio); // (the watchdog may have changed it)
+    const drawnAt = followDrawn(); // (the pixels the post draws at, the sky's points sized by them: the quality may have softened them)
     // each place's own motion (a station's lights, particles, its screen)
     // only while it's in view and more than a speck
     viewFrustum.setFromProjectionMatrix(viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
@@ -5273,7 +5299,7 @@ export async function create(canvas, ctx) {
     sky.group.position.copy(camLocal);
     const dustWant = !reduced && flying() && !onFoot() && state.view !== 'map' ? 0.35 + 0.65 * clamp01(Math.abs(state.ship.speed) / SHIP.cruise) : 0;
     dustAmount += (dustWant - dustAmount) * clamp01(dt * 3);
-    dust.update(camLocal, dustAmount, gl.ratio);
+    dust.update(camLocal, dustAmount, drawnAt);
     belt.update(t);
     rim.update(t);
     rim.group.visible = Math.hypot(camLocal.x, camLocal.z) > RIM.inner * 0.6; // (from deep inside the map its rocks are under a pixel: not drawn)
@@ -5282,7 +5308,7 @@ export async function create(canvas, ctx) {
     if (showCab) cabFrame(dt, t);
     post.overlay(showCab ? cabScene : null, camIn);
     // (the engines placed once everything has moved: three pixels at least in the frame as drawn)
-    engines.update(t, camera, size.h * post.ratio);
+    engines.update(t, camera, size.h * drawnAt);
     finish(dt);
     renderer.info.reset(); // counted over the whole frame, post passes and all
     drawn(() => post.render(size.w, size.h));
@@ -5790,7 +5816,7 @@ export async function create(canvas, ctx) {
       triangles: renderer.info.render.triangles,
       geometries: renderer.info.memory.geometries,
       textures: renderer.info.memory.textures,
-      ratio: gl.ratio,
+      ratio: renderer.getPixelRatio(),
       sharpness: post.sharpness,
       ship: state.ship && { ...state.ship },
       at: state.at,
@@ -5855,13 +5881,15 @@ export async function create(canvas, ctx) {
   }
 
   // Everything sent to the graphics chip before the map is first seen
-  // (lib/useScene runs it, behind the intro or behind the map's loading
+  // (the runtime runs it, behind the intro or behind the map's loading
   // screen): the planets' models waited for, then every picture, every
   // shader (hidden things too) and one draw of it all, passes and all, a
-  // slice at a time (lib/three/gpuWork). The draw is small: the passes'
+  // slice at a time (lib/three/gpuWork), a frame apart, or an idle moment
+  // apart under the intro (./prepFrame.js). The draw is small: the passes'
   // buffers 64 across and one pixel of the canvas; it's what's sent that
   // counts, not the picture, and the first real frame sizes them back up.
-  const prepare = async (onProgress, { alive = () => true, frame } = {}) => {
+  let calibrated = null; // (the level the prepare found, till the first frame has it)
+  const prepare = async (onProgress, { alive = () => true } = {}) => {
     onProgress?.(0, 'load');
     // (the models of the planets near where the map opens: the rest come as
     // each comes near, nearby.js)
@@ -5873,39 +5901,70 @@ export async function create(canvas, ctx) {
       scene,
       camera,
       target: post.target,
-      render: () => post.render(64, 64),
+      render: () => borrowed.during(() => post.render(64, 64)),
       onProgress,
-      frame,
+      // (gpuWork chains frame().then(frame): what one resolves with is never an option of the next)
+      frame: () => prepFrame(),
       alive: () => alive() && !disposed,
     });
     if (!alive() || disposed) return;
     // how sharp this machine can afford it, found now rather than see-sawed
-    // into while flying (lib/three/calibrate): the pace's ceiling from here
+    // into while flying (lib/three/calibrate): the runtime's quality level
+    // from here, its ceiling (module.js's `calibrate: false`: the runtime's
+    // own walk times a whole world's frame, the map's sky and moves with
+    // its passes, which in software fits the budget at no step and walked
+    // all five behind the loading screen, 61 s to the map against main's 14;
+    // the map times its passes, as it always has, a frame or, under the
+    // intro, an idle moment apart)
     onProgress?.(0.97, 'tune');
+    // (timed at the size it will be drawn at: the runtime sizes the canvas
+    // after the world is made, where useScene had sized it before its
+    // prepare; its box, or the window while the box isn't laid out yet)
+    const box = (ctx.rt.host ?? ctx.el)?.getBoundingClientRect?.();
+    if (box?.width > 0 && box?.height > 0) {
+      size.w = box.width;
+      size.h = box.height;
+    } else if (typeof window !== 'undefined' && size.w <= 1) {
+      size.w = window.innerWidth;
+      size.h = window.innerHeight;
+    }
     const key = calibrationKey(renderer, 'universe', size.w, size.h);
     const kept = recall(key);
     const setLevel = (l) => {
-      pace.set(l);
-      paceTo();
+      ctx.rt.quality?.setLevel?.(l);
+      paceTo(l);
     };
-    const level = await calibrate({ renderer, draw: () => post.render(size.w, size.h), setLevel, start: kept ?? 0, frames: kept != null ? 4 : 12, frame, alive: () => alive() && !disposed });
+    const level = await calibrate({ renderer, draw: () => borrowed.during(() => post.render(size.w, size.h)), setLevel, start: kept ?? 0, frames: kept != null ? 4 : 12, frame: () => prepFrame(), alive: () => alive() && !disposed });
     if (!alive() || disposed) return;
     setLevel(level);
     remember(key, level);
+    calibrated = level;
   };
 
   return {
     // every shader made (the page waits for it before the first frame)
     ready,
+    // (the canvas is sized already: the runtime's, before it tells the map)
     resize(w, h) {
       size.w = Math.max(1, w);
       size.h = Math.max(1, h);
-      gl.setSize(size.w, size.h);
-      sky.setRatio(gl.ratio);
+      followDrawn();
       measure();
       watchPanel();
     },
-    render,
+    // (the map's settings on the shared renderer only while it draws: ./borrow.js)
+    render: (ms, now) => {
+      // (made at a handover, the runtime starts the map's quality afresh
+      // after its prepare: the calibrated ceiling put back at its first frame)
+      if (calibrated !== null) {
+        if (ctx.rt.quality && ctx.rt.quality.level !== calibrated) {
+          ctx.rt.quality.setLevel?.(calibrated);
+          paceTo(calibrated);
+        }
+        calibrated = null;
+      }
+      return borrowed.during(() => render(ms, now));
+    },
     // sent before it's seen (above); not on a low tier (software WebGL, a
     // budget phone), where the graphics chip's work is the processor's and
     // its memory is short: things go up as they're first seen there, as before
@@ -5940,11 +5999,19 @@ export async function create(canvas, ctx) {
       state.shown = on;
       if (!on) engine?.set({ speed: 0, on: false });
     },
-    lowerQuality() {
-      state.tLow = (performance.now() - t0) / 1000;
-      state.low = true;
-      post.off();
-      blasts.setMode('pop');
+    // the runtime's quality level (module.js's `sharpness: 'own'`): drawn
+    // softer through the post a step at a time, over a canvas that keeps
+    // its size (./qualityStep.js); one past the last step, the floor, the
+    // passes go and the map stills, as its watchdog's onSlow had it (once:
+    // the floor is the runtime's to reach once a world)
+    lowerQuality(level) {
+      const at = paceTo(level);
+      followDrawn();
+      if (at.floor && !state.low) {
+        state.tLow = (performance.now() - t0) / 1000;
+        state.low = true;
+        post.off();
+      }
       ctx.invalidate();
     },
     // a name under the pointer lights its planet too
@@ -6132,6 +6199,8 @@ export async function create(canvas, ctx) {
       sectorFleet.dispose();
       for (const tr of trenches) tr.dispose();
       phone.dispose();
+      // (its cube's target: on the runtime's renderer, which outlives the map)
+      sky.dispose();
       novae.dispose();
       burst.clear();
       burst.dispose();
@@ -6141,7 +6210,17 @@ export async function create(canvas, ctx) {
       disposeTree(scene);
       post.dispose();
       env.dispose();
-      gl.dispose();
+      // (the renderer and its canvas are the runtime's: put as they were once
+      // the map has gone, unless the next world has them by then. A handover
+      // makes the next world before it lets the map go, and places it in the
+      // same task, so its settings are on them already and stay)
+      const rt = ctx.rt;
+      setTimeout(() => {
+        if (rt.current || rt.loading) return;
+        borrowed.giveBack();
+        canvas.removeAttribute('aria-hidden');
+        canvas.style.cursor = '';
+      }, 0);
     },
   };
 }

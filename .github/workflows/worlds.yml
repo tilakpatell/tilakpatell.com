@@ -1,0 +1,95 @@
+name: Worlds
+
+# The Star Wars worlds on the node renderer: each surface booted at high in
+# software GL (SwiftShader has no WebGPU, so it is the node renderer over
+# WebGL 2, 'nodes-webgl') and held to its row of the budget table and its
+# baseline (scripts/galaxy-check.mjs BUDGET=1). A job a world, as a world
+# with a level pack takes minutes to come up in software. The gate is that
+# each world comes up and says no error (scripts/lib/noise.mjs's noise
+# aside); the rows are reported, not held (BUDGET_REPORT=1): a frame through
+# the node renderer's whole chain takes minutes on a runner's software GL and
+# its cascades cannot be counted there, so the frame numbers are the owner's
+# laptop run's (docs/superpowers/evidence/bf2017-picture/t2/README.md).
+#
+# Nightly and by hand, all seventeen; on a pull request, ci.yml's worlds job
+# runs the same steps on three (a job of CI's own, so the guard that every CI
+# job is on GitHub's runners, scripts/ai-e2e/agent/workflows.test.mjs, reads
+# it; keep the two alike). The seventeen took CI past twenty minutes on lane
+# T2's first runs (Tatooine 53 minutes, Naboo 70, Scarif and Kamino cut off at
+# 150), which is the 2026-10-11 node-renderer decision's own line for moving
+# them to a nightly run with the pull request's gate on three worlds.
+on:
+  schedule:
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+    inputs:
+      worlds:
+        description: 'The worlds, a JSON list (all seventeen by default)'
+        type: string
+        default: '["hoth","endor","yavin","bespin","dagobah","mustafar","coruscant","naboo","kashyyyk","kamino","geonosis","scarif","nevarro","mandalore","lothal","sorgan","tatooine"]'
+
+permissions:
+  contents: read
+
+jobs:
+  worlds:
+    name: Worlds on the node renderer (${{ matrix.world }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        # (a world a job: a frame of a whole level takes 5 to 50 s in software
+        # GL, so eight worlds in one 150-minute job never all came round, on
+        # 6e46fde0 shard 1 measured seven and shard 2 three before the limit,
+        # Geonosis alone 57 minutes; one each, a slow world keeps no other
+        # from being measured. Tatooine's has its own reason too: since its
+        # pack (#910) nearly every one of its materials compiles its own
+        # program, 369 for 379 against Hoth's 141 for 564, each a synchronous
+        # link in SwiftShader. A scheduled run has no inputs: all seventeen)
+        world: ${{ fromJSON(inputs.worlds || '["hoth","endor","yavin","bespin","dagobah","mustafar","coruscant","naboo","kashyyyk","kamino","geonosis","scarif","nevarro","mandalore","lothal","sorgan","tatooine"]') }}
+      # (DRAW_WAIT, 50 minutes: a world is prepared out of sight before it
+      # shows, a slice of its pictures and shaders a frame, and a frame of
+      # Tatooine's whole level takes 15 to 20 s here; its warm-up took most
+      # of a 54-minute run on 2026-10-11 against the 10-minute default.
+      # A ceiling, not a wait: a world that comes up sooner goes on)
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright-core install --with-deps chromium
+
+      # the dev server with the public bucket (a variable, not a secret) as
+      # the asset base, as the deploy builds it, and a wait till it answers.
+      # (bound to 127.0.0.1, where galaxy-check asks: on the runner
+      # `localhost` answers on ::1 alone, and the check found nothing there)
+      - run: |
+          npx vite --host 127.0.0.1 --port 5188 > vite.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:5188/ > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat vite.log
+          exit 1
+        env:
+          VITE_ASSET_BASE: ${{ vars.ASSET_BASE }}
+
+      - shell: bash
+        run: |
+          CHROME="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" BUDGET=1 BUDGET_REPORT=1 QUALITY=high VIEW=640x360 SHOT_WAIT=900000 PHASE_WAIT=900000 DRAW_WAIT=3000000 OUT=worlds node scripts/galaxy-check.mjs surface ${{ matrix.world }} 2>&1 | tee worlds-check.log
+          exit ${PIPESTATUS[0]}
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: worlds-${{ matrix.world }}
+          path: |
+            worlds/
+            worlds-check.log
+            vite.log
+          if-no-files-found: ignore

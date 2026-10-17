@@ -7,7 +7,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { hot } from '../hq/engine';
+import { hot } from '../hq/stage';
 import { pbr } from '../hq/assets';
 import { PartBuilder, canvasTexture, placed, rbox } from '../hq/kit/shapes';
 import { cell, opaque, solid } from './rules';

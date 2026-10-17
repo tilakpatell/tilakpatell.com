@@ -5,7 +5,7 @@
 // flying cars, dust and fire; the HUD is drawn by the page on top.
 
 import * as THREE from 'three';
-import { createEngine, hot } from '../hq/engine';
+import { createStage, hot } from '../hq/stage';
 import { loadModel, pbr, preload } from '../hq/assets';
 import { buildHumanoid, poseHumanoid } from '../hq/kit/humanoid';
 import { instanced } from '../hq/kit/instanced';
@@ -63,9 +63,9 @@ async function modelParts(name, scale = 1) {
   return { geos, mats, empty: i === 0 };
 }
 
-export async function create(canvas, { onLost, onSlow, meshy } = {}) {
+export async function create(rt, { onSlow, meshy } = {}) {
   const calm = prefersReducedMotion();
-  const engine = createEngine(canvas, { exposure: 1.0, fov: FOV, near: 0.1, far: 1600, bloom: { strength: 0.6, radius: 0.5, threshold: 0.92 }, onLost, onSlow });
+  const engine = createStage(rt, { exposure: 1.0, fov: FOV, near: 0.1, far: 1600, bloom: { strength: 0.6, radius: 0.5, threshold: 0.92 }, onSlow });
   const { scene, camera } = engine;
   const small = engine.small;
   const FAR = small ? 260 : 400; // how far ahead the city is built
@@ -287,7 +287,7 @@ export async function create(canvas, { onLost, onSlow, meshy } = {}) {
 
   const vfx = createVfx(scene, { calm, ground: 0.02, maxSparks: 1400, maxPuffs: 320, debrisMaterial: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, metalness: 0.2 }) });
   const feel = createFeel({ seed: 5, calm, baseFov: FOV, offset: 0.14 });
-  // ?debug: the feel's numbers on the one panel (hq/engine's tune)
+  // ?debug: the feel's numbers on the one panel (hq/stage's tune)
   engine.tune(feelGroups(feel), 'smash');
 
   // ── per frame ──

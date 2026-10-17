@@ -4,8 +4,8 @@
 //
 // The order (the design, "The light", post.js): render → ssgi (and its
 // denoise) → ao → ssr → volumes → fog → bloom → godrays → lensflare →
-// dof → motionBlur → tonemap → lut → traa | smaa → upscale → sharpen →
-// output. A chain given out of order is put in it. The
+// dof → motionBlur → grade → tonemap → lut → traa | smaa → upscale →
+// sharpen → output. A chain given out of order is put in it. The
 // volumes (volumetrics.js) come before the bloom so they are tone-mapped
 // and bloomed with the scene (the fidelity design, lane V).
 //
@@ -94,9 +94,9 @@ import { flareElements, lensflareParams } from './flare.js';
 import { FOG_STEPS, fogMedia } from './fog.js';
 import { bloomTints } from './grade.js';
 
-export const ORDER = ['render', 'ssgi', 'denoise', 'ao', 'ssr', 'volumes', 'fog', 'bloom', 'godrays', 'lensflare', 'dof', 'motionBlur', 'tonemap', 'lut', 'traa', 'smaa', 'upscale', 'sharpen', 'output'];
+export const ORDER = ['render', 'ssgi', 'denoise', 'ao', 'ssr', 'volumes', 'fog', 'bloom', 'godrays', 'lensflare', 'dof', 'motionBlur', 'grade', 'tonemap', 'lut', 'traa', 'smaa', 'upscale', 'sharpen', 'output'];
 // the kinds only the node renderer builds
-export const NODE_PASSES = new Set(['ssgi', 'denoise', 'ao', 'ssr', 'volumes', 'fog', 'godrays', 'lensflare', 'dof', 'motionBlur', 'tonemap', 'lut', 'traa', 'smaa', 'upscale', 'sharpen']);
+export const NODE_PASSES = new Set(['ssgi', 'denoise', 'ao', 'ssr', 'volumes', 'fog', 'godrays', 'lensflare', 'dof', 'motionBlur', 'grade', 'tonemap', 'lut', 'traa', 'smaa', 'upscale', 'sharpen']);
 // What each backend cannot build. On 'nodes-webgl' the lit fixture
 // (scripts/light-fixture.mjs, pass by pass) drew SSR as white smears below
 // every pillar and TRAA as a flat grey frame, so both are left out there
@@ -230,6 +230,9 @@ export function arrange(passes) {
   out = out.filter((p) => p.kind !== 'fog' || p.media?.active);
   out = out.filter((p) => p.kind !== 'motionBlur' || p.scale > 0);
   out = out.filter((p) => p.kind !== 'dof' || p.focus > 0);
+  // (a world's own grade is the tone map, the encoding and the grade at once)
+  if (out.some((p) => p.kind === 'grade')) out = out.filter((p) => p.kind !== 'tonemap' && p.kind !== 'lut');
+  out = out.filter((p) => p.kind !== 'grade' || typeof p.node === 'function');
   const ssgi = out.find((p) => p.kind === 'ssgi');
   if (ssgi) {
     const temporal = has(out, 'traa');

@@ -3,7 +3,7 @@
 // events into light, sparks and smoke; the HUD is drawn by the page on top.
 
 import * as THREE from 'three';
-import { createEngine, hot } from '../hq/engine';
+import { createStage, hot } from '../hq/stage';
 import { pbr, preload } from '../hq/assets';
 import { buildCompound, buildGround, fbm, scatter, trees } from '../hq/kit/world';
 import { buildHumanoid, poseHumanoid } from '../hq/kit/humanoid';
@@ -81,9 +81,9 @@ function boardTexture(text) {
   });
 }
 
-export async function create(canvas, { onLost, onSlow } = {}) {
+export async function create(rt, { onSlow } = {}) {
   const calm = prefersReducedMotion();
-  const engine = createEngine(canvas, { exposure: 1.05, fov: 62, near: 0.05, far: 900, bloom: { strength: 0.65, radius: 0.45, threshold: 0.95 }, onLost, onSlow });
+  const engine = createStage(rt, { exposure: 1.05, fov: 62, near: 0.05, far: 900, bloom: { strength: 0.65, radius: 0.45, threshold: 0.95 }, onSlow });
   const { scene, camera } = engine;
   const small = engine.small;
 
@@ -386,7 +386,7 @@ export async function create(canvas, { onLost, onSlow } = {}) {
     timers.add(id);
   };
   const feel = createFeel({ seed: 5, calm, baseFov: 62 });
-  // ?debug: the feel's numbers on the one panel (hq/engine's tune)
+  // ?debug: the feel's numbers on the one panel (hq/stage's tune)
   engine.tune(feelGroups(feel), 'repulsor');
 
   // ── per frame ──

@@ -26,6 +26,7 @@ import { CAPPING, lossHolds, lostTwice, noteLoss, TIER_KEY } from '../lib/gpuPro
 import { gpu } from '../lib/gpu';
 import { read as readVideo, resolve as resolveVideo } from '../lib/video';
 import { installer } from './install';
+import { setCurrentRuntime } from './current';
 import './runtime.css';
 
 // lib/video.js's values as this device may draw them (its detail the ceiling)
@@ -41,7 +42,10 @@ export { createDebug } from './debug';
 
 const GPU_KEY = 'tp-gpu';
 const browser = () => import('./browser');
-const covered = () => typeof document !== 'undefined' && 'covered' in document.documentElement.dataset;
+// (the intro's cover, html[data-covered], or a tour's card in the middle,
+// html[data-tour-still]: nothing lit to watch, so the world under it holds
+// still, as lib/three/useScene's scenes did; each sends tp:uncover as it goes)
+const covered = () => typeof document !== 'undefined' && ('covered' in document.documentElement.dataset || 'tourStill' in document.documentElement.dataset);
 
 let instance = null;
 
@@ -137,6 +141,7 @@ export function runtime() {
   });
   // a world's install (install.js): the same one the gate and /worlds use
   instance.install = installer();
+  setCurrentRuntime(instance);
   if (win) {
     const wake = () => instance.invalidate();
     document.addEventListener('visibilitychange', wake);

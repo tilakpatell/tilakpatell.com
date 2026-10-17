@@ -67,6 +67,9 @@
 :where(.hud-menu-list > :is(button, a):hover, .hud-menu-list > :is(button, a):focus-visible):not(hud-none) { background: color-mix(in srgb, var(--hud-accent) 18%, transparent); outline: none; }
 :where(.hud-menu-list b):not(hud-none) { color: var(--hud-accent); }
 :where(.hud-menu-list [data-on]):not(hud-none) { cursor: default; }
+/* what the picture is drawn with: a note, not a button (dimmed by colour, as the house dims) */
+:where(.hud-menu-list > .hud-menu-note):not(hud-none) { margin: 0.2rem 0 0; padding-top: 0.6rem; border-top: var(--hud-border); font-weight: 500; cursor: default; max-width: 16rem; }
+:where(.hud-menu-note span):not(hud-none) { display: block; margin-top: 0.25rem; color: var(--hud-muted); font: 500 0.75rem/1.35 var(--hud-face); }
 
 /* the objective line: under the title, on glass */
 :where(.hud-objective):not(hud-none) { justify-self: start; margin: 0; padding: 0.5rem 0.8rem; border: var(--hud-border); border-radius: var(--hud-radius); background: var(--hud-glass); color: var(--hud-ink); font: 500 clamp(0.8rem, 0.75rem + 0.25vw, 0.95rem)/1.4 var(--hud-face); }

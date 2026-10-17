@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { createLevel, levelGround, levelPlaced, packOf, partOf, sunOf } from './index';
+import { countedBytes, createLevel, levelGround, levelPlaced, packBytes, packOf, partOf, sunOf } from './index';
 
 describe('the level’s entry', () => {
   it('leaves a ground without an image layer as it is (every world today)', async () => {
@@ -52,5 +52,35 @@ describe('sunOf', () => {
     const s = sunOf(scene);
     expect(s.direction.map((v) => Number(v.toFixed(4)))).toEqual([0, 0.7071, 0.7071]);
     expect(s.color.map((v) => Number(v.toFixed(3)))).toEqual([1, Number(new THREE.Color(0xff8000).g.toFixed(3)), 0]);
+  });
+});
+
+describe('packBytes', () => {
+  const answer = (status, type) => ({ ok: status < 400, status, headers: new Headers({ 'content-type': type }), arrayBuffer: async () => new ArrayBuffer(8) });
+  it('gives a file’s bytes', async () => {
+    expect((await packBytes(answer(200, 'application/octet-stream'), 'cells/0_0.bin')).byteLength).toBe(8);
+  });
+  it('throws a 404, and a page in a file’s place (a dev server’s index.html for a cell’s bin it lacks)', () => {
+    expect(() => packBytes(answer(404, 'text/plain'), 'cells/0_0.bin')).toThrow(/404/);
+    expect(() => packBytes(answer(200, 'text/html; charset=utf-8'), 'cells/0_0.bin')).toThrow(/page/);
+  });
+});
+
+describe('countedBytes', () => {
+  it('counts the pack files that failed and says the first, so a hollow level is never a pass', async () => {
+    const said = [];
+    let live = true;
+    const load = countedBytes((p) => (p.startsWith('ok') ? Promise.resolve(p) : Promise.reject(new Error('404'))), { live: () => live, onFirst: (p) => said.push(p) });
+    expect(await load('ok.bin')).toBe('ok.bin');
+    await expect(load('cells/0_0.bin')).rejects.toThrow('404');
+    await expect(load('cells/0_1.bin')).rejects.toThrow('404');
+    expect(load.skipped()).toBe(2);
+    expect(said).toEqual(['cells/0_0.bin']);
+    // (an abort, or a failure after the level is gone, is no hole in it)
+    const abort = Object.assign(new Error('aborted'), { name: 'AbortError' });
+    await expect(countedBytes(() => Promise.reject(abort))('x')).rejects.toBe(abort);
+    live = false;
+    await expect(load('cells/0_2.bin')).rejects.toThrow('404');
+    expect(load.skipped()).toBe(2);
   });
 });

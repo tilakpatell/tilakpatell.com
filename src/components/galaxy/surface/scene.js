@@ -53,44 +53,30 @@ import { PLACES } from '../battleLines';
 import { systemById } from '../systems';
 import { readBuildWire, writeBuild } from '../../universe/shipyard/build';
 import * as THREE from 'three';
-import { PMREMGenerator } from 'three/webgpu';
-import { disposeTree, singlePass } from '../../../lib/three/renderer';
+import { disposeTree } from '../../../lib/three/renderer';
+import { looks } from './looks';
 import { nextFrame as breathe } from '../../../lib/three/gpuWork';
-import { twinScene } from '../../../lib/three/hookNodes';
 import { STEPS } from '../../../lib/three/pace';
 import { settle as settleWithin } from '../../../lib/settle';
 import { dropTransmission } from '../../../lib/three/glass';
 import { device } from '../../../lib/device';
 import { detailLevel } from '../../../lib/detail';
-import { createPost } from './nodes/post';
-import { SHIP_MODELS, buildShip, LENGTH } from '../../universe/shipModelsNodes';
 import { cloneScene, loadGLTF } from '../../../lib/three/gltfCache';
 import { paintById } from '../../universe/paint';
 import { readLoadout, STOCK_LOADOUT } from '../../universe/outfit';
 import { flybySound, gadgetSound, gunSound, impactSound, popSound, portalSound, shipEngine } from '../../universe/sounds';
-import { PARTY, loadPartyFigure } from './nodes/figures';
 import { bodiesFor, firstBody } from './standIn';
 import { GUNS, createGunplay } from '../../universe/gunplay';
-import { createGameFx } from '../../../lib/three/fx/gameFxNodes';
 import { createGunFx } from '../../universe/gunfx';
 import { spring } from '../../../lib/three/ik';
 import { METRE } from '../../universe/foot';
-import { createMeshyCast } from '../../rickmorty/portal/meshyCastNodes';
-import { withWardrobe } from '../../rickmorty/wardrobe/wearNodes';
 import { buildGalaxyShip } from '../fleet';
 import { audioContext } from '../../../lib/audio';
 import { SURFACE_MODELS } from './catalog';
 import { heightGrid, makeHeight } from './terrain';
 import { createMarks, groundMaterial, groundMesh } from './ground';
-import { createSky } from './nodes/sky';
-import { wearScanSet } from '../../../lib/three/scansNodes';
-import { createSkyFog } from './nodes/skyfog';
-import { createWater } from './nodes/water';
 import { lavaFilm } from './lavaFilm';
 import { floatPose } from './floats';
-import { createWeather } from './nodes/weather';
-import { createKit } from './nodes/kit';
-import { createHouse } from '../../../lib/three/houseNodes';
 import { adoptLater, exposureOf, groundPieces, lookOf } from './look';
 import { surfaceTuning, siteCode } from './tune';
 import { debugOn, debugPanel } from '../../../lib/debugPanel';
@@ -101,13 +87,8 @@ import { downAt } from './respawn';
 import { createSquash } from './squash';
 import { createKnocks, loosePlaces } from './knocks';
 import { wireImpacts } from '../../../lib/three/impacts';
-import { createDust } from '../../../lib/three/dustNodes';
-import { createGrass } from '../../../lib/three/grassNodes';
 import { amountsFor } from './amounts';
-import { createWind } from '../../../lib/three/windNodes';
-import { createGroundMap } from '../../../lib/three/groundmapNodes';
 import { groundPainter, mapAreaOf } from './groundPaint';
-import { floorShadow } from '../../../lib/three/groundingNodes';
 import { PROPS as GALAXY_PROPS, SCATTER as GALAXY_SCATTER } from './props';
 import { createPlacer } from './placer';
 import { createLevel, levelBusy, levelGround, levelPlaced } from './level';
@@ -149,17 +130,18 @@ import { createAssaultMission } from './missions/assaultScene';
 import { createHvvMission } from './missions/hvvScene';
 import { createBlastMission } from './missions/blastScene';
 import { RULES as ASSAULT } from './missions/assault';
-import { groundWorld } from '../../../lib/three/groundworkNodes';
 import { garrisonLife, garrisonProbe } from './garrison';
 import { createGround, landingFor } from './ground/index';
 import { standable } from './sites/validity';
 import { floraTint } from './flora';
 import { footprintOf, impactOf, loadMaterials, tagOf } from '../../../lib/physics/materials';
 import { landingLook, printOf } from './impactLook';
-import { gameSite } from '../../../lib/three/gameLight';
+import { ONE_EXPOSURE, gameSite } from '../../../lib/three/gameLight';
 import { gameLightOf } from '../../../data/bf2017/light/index';
 import { createGameLit } from './gameLit';
 import { createPlayerBody } from './playerBody';
+import { createSitePhysics } from './sitePhysics';
+import { PICTURES, pictureFor } from './nodes/picture';
 import { segmentRay } from '../../../lib/physics/blast';
 import CAMERAS from '../../../data/bf2017/cameras.json';
 import { createSoldierMemo, soldierPose } from '../../../lib/three/camera/soldier';
@@ -221,6 +203,9 @@ const WHEEL_PX = 90; // the pointer this far from where it was when the wheel op
 
 export async function create(canvas, ctx) {
   const { reduced, rt } = ctx;
+  // (what it draws with: the twins and the game's light, ./looks/nodes.js)
+  const L = looks();
+  const { createPost, SHIP_MODELS, buildShip, LENGTH, PARTY, loadPartyFigure, createGameFx, createMeshyCast, withWardrobe, createSky, wearScanSet, createSkyFog, createWater, createWeather, createKit, createHouse, createDust, createGrass, createWind, createGroundMap, floorShadow, groundWorld, PMREMGenerator } = L;
   let props = ctx;
   let disposed = false;
   // every file this world asks for belongs to it (lib/assetLoad): leaving
@@ -244,7 +229,13 @@ export async function create(canvas, ctx) {
   // the before shots)
   const gameOff = import.meta.env.DEV && /[?&]gamelight=off\b/.test(window.location.search);
   const gameLight = gameOff || mission?.site?.sky || mission?.site?.light ? null : gameLightOf(own);
-  const site = gameSite(own, gameLight, 'clear');
+  // (one exposure for the sun, the sky and the lamps where the world draws in
+  // its record's picture: the record's lux and nits over
+  // the camera's k, as the stack lights the painted sky and the lamps
+  // (calibrate.js) and the Battlefront world its Hoth; elsewhere lane G's
+  // fitted rate, gameLight.js's)
+  const rate = gameLight && PICTURES[own.gameLight] ? ONE_EXPOSURE : undefined;
+  const site = gameSite(own, gameLight, 'clear', rate);
   // the models kinds are looked up in: the galaxy's, with a page's own book
   // laid over it (the Rick and Morty planets'), never written into it
   const models = ctx.models ? { ...SURFACE_MODELS, ...ctx.models } : SURFACE_MODELS;
@@ -267,7 +258,8 @@ export async function create(canvas, ctx) {
   const camera = new THREE.PerspectiveCamera(60, 1, 0.12, 16000);
   scene.add(camera);
   canvas.setAttribute('aria-hidden', 'true');
-  const post = createPost(renderer, scene, camera, { small });
+  // (the game's chain for the level, nodes/chain.js)
+  const post = createPost(renderer, scene, camera, { small, tier: level, backend: rt.gfx.backend });
   // the house look (lib/three/house: shade is a colour, never grey) over
   // everything lit, from the site's look (look.js); the fog stays the
   // surface's own (skyfog.js: the dome's very colour), so the house leaves
@@ -282,14 +274,11 @@ export async function create(canvas, ctx) {
   post.exposure(exposureOf(site));
   // (fogged in the sky's colour and in the look before its shaders are
   // made, so they're made once)
-  // (on the node renderer: a classic material with a hook on it swapped for
-  // the twin that holds the hook, lib/three/hookNodes, then the programs
-  // made through the runtime's compileAsync)
+  // (the programs made the renderer's way: the looks' compile)
   const warm = (root) => {
     skyFog.scene(root);
     adoptLater(house, root);
-    twinScene(root);
-    return rt.gfx.compile ? Promise.resolve(rt.gfx.compile(singlePass(root), camera, scene)).catch(() => {}) : Promise.resolve();
+    return L.compile(root, { renderer, rt, camera, scene, post });
   };
 
   const sky = createSky(site, { clouds: amounts.clouds });
@@ -316,6 +305,29 @@ export async function create(canvas, ctx) {
     sun.shadow.normalBias = 0.05;
   }
   scene.add(sun, sun.target);
+  // the game's light under it, at every level (nodes/stack.js: the sun's
+  // cascades, contact shadows, the level's volumes, the chain's record).
+  // Awaited before the first draw.
+  let stack = null;
+  // (the world's picture: a page's, the site's, or the game's own where the
+  // world is under its light and the site has its records, nodes/picture.js;
+  // a site's `picture` that only names its file, lane P's, is read there)
+  const sitePicture = site.picture && typeof site.picture === 'object' ? site.picture : null;
+  const picture = ctx.picture ?? sitePicture ?? (gameLight ? pictureFor(own.gameLight).catch(() => null) : null);
+  // (the pack's volumes.json where it has one: Endor's has none, and a fetch
+  // the stack awaits only later must not reject unheard meanwhile)
+  const volumes = site.level ? Promise.resolve(L.levelJson(site.level, 'volumes.json')).catch(() => null) : null;
+  const stacking = L.createStack({ scene, renderer, camera, sun, site, tier: level, post, picture, volumes, dome: sky.mesh, skyFog })
+    .then((made) => {
+      if (disposed) return made?.dispose();
+      stack = made;
+      // (the stack draws the sun's shadow wherever the level does: a phone's too)
+      if (stack?.parts.cascades) renderer.shadowMap.enabled = true;
+      for (const p of people) stack?.track(p.holder);
+    })
+    .catch((e) => {
+      if (import.meta.env.DEV) console.warn('surface light stack failed', e);
+    });
   // the shadow camera's right and up (it looks down the sun's way, up as three
   // turns it), for its focus to be snapped to whole texels along them (shadow.js)
   const SHADOW = { extent: 42, map: 2048 };
@@ -350,7 +362,7 @@ export async function create(canvas, ctx) {
   scene.environmentIntensity = 0.4;
   // the level's probe for it once it lands, its grade (high and ultra) and
   // its weathers, where the game lights this world
-  const gameLit = createGameLit({ light: gameLight, scene, sun, hemi, sky, house, post: post.on ? post : null, renderer, grade: !small && (level === 'high' || level === 'ultra'), fogFloor: own.fog?.density ?? 0, reframe });
+  const gameLit = createGameLit({ light: gameLight, scene, sun, hemi, sky, house, post: post.on ? post : null, renderer, grade: !small && (level === 'high' || level === 'ultra'), fogFloor: own.fog?.density ?? 0, rate, reframe });
 
   // (a frame's breath between the build's big steps: it's made behind the
   // dive, which goes on drawing meanwhile, and one long task stopped it)
@@ -479,6 +491,8 @@ export async function create(canvas, ctx) {
       levelEngine = physics;
       takeEngine?.(physics);
     },
+    // (its terrain layers on the surface's ground, lane Q2: the node renderer's)
+    ground: site.noGround ? null : ground,
     // (the map's placed lights rank by the camera; its probes go to the game light)
     camera,
     light: gameLight,
@@ -545,7 +559,7 @@ export async function create(canvas, ctx) {
     } else gadgetSound(how, ev);
   };
   // (a walker or droideka falling goes up in lane F's blast: gameFx, made just below, by then)
-  const activity = createActivity({ parent: scene, world, warm, kit, color: site.accent, onShow: showSound, blast: (at, cls) => gameFx.explode(at, cls) });
+  const activity = createActivity({ parent: scene, world, warm, kit, color: site.accent, onShow: showSound, blast: (at, cls) => gameFx.explode(at, cls), tier });
   // (a battle fills the air with bolts: room for them)
   const blaster = createBlaster({ parent: scene, world, pool: BATTLES.has(mission?.kind) ? 72 : undefined });
   // the ground war: who holds which turf, and its soldiers, made round you as you go (ground/)
@@ -743,7 +757,7 @@ export async function create(canvas, ctx) {
       })
       .catch(() => {});
   } else if (shipKind === 'cruiser') {
-    import('../../rickmorty/cruiser3dNodes')
+    L.loadCruiser()
       .then((mod) => mod.buildCruiser({ ink: 0.36 / 2.7 }))
       .then((c) => {
         if (!c) return;
@@ -942,8 +956,9 @@ export async function create(canvas, ctx) {
   let strode = 0;
   // ── The 2017 soldier's body (playerBody.js) ──
   // A level whose shapes are in a physics engine (lane P0's stream) hands it
-  // over through the handle's usePhysics; until then, and on a world with no
-  // level pack, a phone or a low tier, you walk on walker.js as ever.
+  // over through the handle's usePhysics; every other world makes its own
+  // from what it is walked on (sitePhysics.js, below). Until the engine is
+  // in, or for good if WebAssembly cannot start, you walk on walker.js.
   let body = null;
   let bodyPhysics = null;
   let bodyDrives = true;
@@ -980,6 +995,27 @@ export async function create(canvas, ctx) {
     attachPhysics(physics);
   };
   if (levelEngine) takeEngine(levelEngine);
+  // ── Rapier on every world (sitePhysics.js) ──
+  // A world without the game's own shapes (no level pack) gets a Rapier
+  // world of the ground as drawn and the solids and floors it is walked on,
+  // in a ring of cells round you, at the level's gravity (level/index.js's)
+  let sitePhys = null;
+  if (!site.level)
+    import('../../../lib/physics/world.js')
+      .then(async ({ createPhysics, preload }) => {
+        // (the world's material grid with it, where the game has one: its colliders' tags, friction and bounce)
+        const [book] = await Promise.all([loadMaterials(site.materials?.level).catch(() => null), preload()]);
+        return { physics: await createPhysics({ gravity: -15.5 }), book };
+      })
+      .then(({ physics, book }) => {
+        if (disposed) return physics.dispose();
+        sitePhys = { physics, cells: createSitePhysics({ physics, world, materials: site.materials ?? null, book }) };
+        sitePhys.cells.update([landAt[0], landAt[1]]);
+        takeEngine(physics);
+      })
+      .catch((e) => {
+        if (import.meta.env.DEV) console.warn('surface physics failed: the walker stays', e);
+      });
   const bodyFor = (st) => {
     body?.dispose();
     return createPlayerBody({ physics: bodyPhysics, state: st, row: soldierBook.rows[soldierBook.default], world, drive: bodyDrives });
@@ -3208,6 +3244,30 @@ export async function create(canvas, ctx) {
     return shown && !disposed;
   }
 
+  // What the level streams in after the warm-up (its cells' meshes, as you
+  // walk) has its programs made before it is drawn, not in the frame that
+  // first draws it: on the node renderer over WebGL 2 lane T's walk linked
+  // 82 programs mid-move, the worst frame 1.5 s (evidence/galaxy-engine/T/
+  // flip). Looked at every WARM_EVERY s; a change in the level's draws
+  // sends its root through the warm-up (compileAsync).
+  const WARM_EVERY = 1.5; // s
+  let warmClock = 0;
+  let warmedDraws = -1;
+  let warming = false;
+  function warmStreamed(dt) {
+    warmClock += dt;
+    if (warmClock < WARM_EVERY || warming || !gameLevel) return;
+    warmClock = 0;
+    const draws = gameLevel.stats().calls;
+    const root = draws !== warmedDraws ? scene.getObjectByName('level') : null;
+    if (!root) return;
+    warmedDraws = draws;
+    warming = true;
+    warm(root)
+      .catch(() => {})
+      .finally(() => (warming = false));
+  }
+
   // the world moving on by dt seconds
   function tick(dt) {
     // a hit holds the frame a moment: time runs slow through it
@@ -3217,6 +3277,10 @@ export async function create(canvas, ctx) {
     }
     state.t += dt;
     gameLit?.step(dt);
+    stack?.update(dt, camera);
+    gameLevel?.step(dt);
+    if (sitePhys) sitePhys.cells.update([me().st.x, me().st.z]);
+    warmStreamed(dt);
     // the jump's clock: whether you stood (or your ride did) as this step began
     state.jumpPress.ground(state.phase === 'ride' ? Boolean(state.riding?.state.grounded) : state.phase === 'walk' && me().st.grounded, dt);
     const t = state.t;
@@ -3593,7 +3657,7 @@ export async function create(canvas, ctx) {
     });
   if (import.meta.env.DEV)
     window.__surfaceScene = {
-      physics: () => gameLevel?.stats().physics ?? null,
+      physics: () => gameLevel?.stats().physics ?? (sitePhys ? { site: true, ...sitePhys.cells.stats() } : null),
       engine: () => gameLevel?.physics() ?? null, // (the level's Rapier world: the QA scripts' rays)
       scene,
       post,
@@ -3624,6 +3688,11 @@ export async function create(canvas, ctx) {
         get ground() {
           return lit;
         },
+        // (the node renderer's sun casts through its cascades: no floor to bake)
+        get cascaded() {
+          return Boolean(stack?.parts.cascades);
+        },
+        stack: () => stack,
       },
     };
 
@@ -3637,8 +3706,10 @@ export async function create(canvas, ctx) {
   const ready = (async () => {
     // (the props' scanned surfaces on before their shaders are made, so
     // they're made once)
-    await Promise.all([placer.ready.catch(() => {}), kit.ready.catch(() => {})]);
-    if (!disposed && !site.noGround) {
+    await Promise.all([placer.ready.catch(() => {}), kit.ready.catch(() => {}), stacking]);
+    // (the floor's baked light where the sun has no cascades, low's: from
+    // mid up the sun casts through its cascades, nodes/stack.js)
+    if (!disposed && !site.noGround && !stack?.parts.cascades) {
       const R = 170;
       lit = groundWorld({
         renderer,
@@ -3718,15 +3789,9 @@ export async function create(canvas, ctx) {
         await within(lit.bake(), 20000);
         if (!on()) return;
       }
-      // (the node renderer's: every program made, compileAsync, then one
-      // small draw through the post, so its passes are made too)
-      twinScene(scene);
-      onProgress?.(0.35, 'shaders');
-      if (rt.gfx.compile) await within(rt.gfx.compile(scene, camera, scene), 600000);
-      if (!on()) return;
-      onProgress?.(0.8, 'first draw');
-      post.render(64, 64);
-      onProgress?.(1, 'first draw');
+      // (every program made and one draw through the post, the renderer's
+      // way: the looks' prepareGpu)
+      await L.prepareGpu({ renderer, rt, scene, camera, post, within, on, onProgress });
     } finally {
       clearInterval(telling);
       offSkip?.();
@@ -4074,6 +4139,11 @@ export async function create(canvas, ctx) {
       body = null;
       lit?.dispose();
       gameLit?.dispose();
+      stack?.dispose();
+      // (the site's engine after the body that stood in it)
+      sitePhys?.cells.dispose();
+      sitePhys?.physics.dispose();
+      sitePhys = null;
       knocks?.dispose();
       knockHits.dispose();
       scene.remove(knockDust.mesh);

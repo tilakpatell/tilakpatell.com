@@ -7,7 +7,7 @@
 
 import * as THREE from 'three';
 import { PartBuilder, canvasTexture } from '../../avengers/hq/kit/shapes';
-import { hot } from '../../avengers/hq/engine';
+import { hot } from '../../avengers/hq/stage';
 
 export const JET = { y: 1400, rx: 2600, rz: 2100, speed: 235 }; // (inside the world's edge, so he can catch it)
 

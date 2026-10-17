@@ -94,4 +94,4 @@ The Battlefront world is the 2017 game’s modes played on the site from the gam
 - #1001 `claude/hoth-ga-doors`: the base doors, gates and mode walls.
 - #1000 `claude/hoth-base-light`: Echo Base’s interior light.
 - #984 `claude/bf-landing-leftovers`: the old surface address out of the links.
-- Drafts: #982 `bf-soldier-rows`, #975 `bf-guest-rig`, #970 `bf-bots-line-of-fire`, #968 `spec-gpu-site-guest-heroes`, #912 `bf2017-t2-flip`.
+- Drafts: #982 `bf-soldier-rows`, #975 `bf-guest-rig`, #970 `bf-bots-line-of-fire`, #968 `spec-gpu-site-guest-heroes`.

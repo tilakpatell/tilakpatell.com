@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import HQFrame from '../hq/HQFrame';
-import { register, useStage } from '../hq/useStage';
+import { register, useStage, useStageFrame } from '../hq/useStage';
+import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
 import { use3D } from '../../../lib/gpu';
-import { local, prefersReducedMotion, useFrameLoop } from '../../../lib/hooks';
+import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
 import { useSays } from '../hq/useSays';
@@ -14,7 +15,6 @@ import { LINES, SAYS, SPOKEN } from './lines';
 import './repulsor.css';
 import '../../../styles/lazy/avengers.css';
 
-const load = () => import('./scene');
 const sfx = () => import('../../../lib/sfx');
 const play = (name) => sfx().then((s) => s[name]?.());
 const buzz = (ms) => {
@@ -60,7 +60,7 @@ function urgent(s) {
 
 export default function RepulsorRange({ fallback }) {
   const three = use3D();
-  const stage = useStage(load, { enabled: three.on, id: 'repulsor', forced: three.mode === 'on' });
+  const stage = useStage(gameModule, { enabled: three.on, id: 'repulsor', forced: three.mode === 'on' });
   const { unlock } = useAchievements();
   const game = useRef(newRange({ seed: 1 }));
   const hud = useRef(null);
@@ -266,7 +266,7 @@ export default function RepulsorRange({ fallback }) {
     },
     [handle, paused, stage.view],
   );
-  useFrameLoop(tick, stage.status === 'on' && stage.visible);
+  useStageFrame(stage, tick, stage.status === 'on' && stage.visible);
 
   // stop firing when the window loses focus or the game scrolls away
   useEffect(() => {

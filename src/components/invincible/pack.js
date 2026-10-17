@@ -5,11 +5,14 @@ export const PACK = {
   src: [
     'src/components/invincible',
     'src/pages/Invincible.jsx',
-    'src/components/avengers/hq/engine.js',
+    'src/components/avengers/hq/stage.js',
+    'src/components/avengers/hq/tiers.js',
+    'src/components/avengers/hq/module.js',
     'src/components/avengers/hq/feel.js',
     'src/components/avengers/hq/vfx.js',
     'src/components/avengers/hq/HQFrame.jsx',
     'src/components/avengers/hq/useStage.js',
+    'src/components/avengers/shared/runtime.js',
     'src/components/avengers/hq/kit/shapes.js',
     'src/components/avengers/hq/kit/humanoid.js',
   ], // where its source is (files or folders, repo-relative): pack-check scans these

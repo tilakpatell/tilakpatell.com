@@ -6,7 +6,7 @@
 // the Tesseract's beam going up into the portal.
 
 import * as THREE from 'three';
-import { hot } from '../hq/engine';
+import { hot } from '../hq/stage';
 import { pbr } from '../hq/assets';
 import { rng } from '../hq/rng';
 import { PartBuilder, canvasTexture, rbox, taper } from '../hq/kit/shapes';

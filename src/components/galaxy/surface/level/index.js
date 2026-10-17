@@ -10,11 +10,19 @@
 //   partOf(world, file, empty) → Promise<the part's JSON, or empty>
 //   levelPlaced(site) → Promise<{ life, rides, things }> (the map's actors and vehicles)
 //   levelBusy(site) → Promise<Set of cell keys the level fills>
-//   createLevel({ scene, site, tier, renderer, walk, camera, light, onProbe, small, heightAt, onPhysics, texTier })
-//     → null | { update(position), ready(), paused(), progress(), stats(), physics(), dispose() }
+//   createLevel({ scene, site, tier, renderer, walk, camera, light, onProbe, small, heightAt, onPhysics, ground, texTier })
+//     → null | { update(position), step(dt), ready(), paused(), progress(), stats(), physics(), dispose() }
+//     (stats().skipped: the pack files that failed to load, the first said as an error)
 //     (camera: the placed lights rank by it; light: the world's record, for their scale;
-//     onProbe: the reflection volume you stand in, for gameLit.js)
-//     (a pack with the game's shapes, off a phone and the low tier
+//     onProbe: the reflection volume you stand in, for gameLit.js; ground: the
+//     surface's ground mesh, which a pack with a ground.json draws in the
+//     game's terrain layers on the node renderer, lane Q2)
+//   packJson(world, path) → Promise<object>: a JSON file beside the pack
+//   countedBytes(load, { live, onFirst }) → load counting its failures
+//     (load.skipped()), the first handed to onFirst(path, error)
+//   packBytes(response, url) → Promise<ArrayBuffer>: a pack file's bytes, a
+//     404 or a page in its place (a dev server's index.html) thrown
+//     (a pack with the game's shapes, on every tier and on a phone
 //     (levelPhysics.js's wantsEngine): a Rapier world of its own, the cells'
 //     shapes streamed into it beside the walk world's boxes, the ground under
 //     them a heightfield from heightAt; onPhysics(engine) once it's up: the
@@ -28,11 +36,13 @@
 // with the game's own surface shader (src/lib/three/surface/); the classic
 // renderer, or a pack without one, keeps the GLB's materials. A pack with a
 // variations.json (lane colour) draws each varied mesh in the game's
-// variation for this level. Their sun (a
+// variation for this level, and wears its weathering (weather.json, lane
+// Q4: snow, sand or rain over the materials whose recipe takes it, grown
+// over its record's seconds; step(dt) runs its clock). Their sun (a
 // leaf's translucency, hair's lobes, a head's scattering) follows the
 // scene's first directional light.
 
-import { withFallback } from '../../../../lib/assetBase.js';
+import { assetUrl, withFallback } from '../../../../lib/assetBase.js';
 import { playWorld } from '../../../../lib/sw.js';
 import { imageLayerFrom } from '../../../../lib/land/layers.js';
 import { decodePng16Off as decodePng16 } from '../../../../lib/level/png16Off.js'; // (off the main thread: png16Off.js)
@@ -51,16 +61,32 @@ import { seenAt } from '../../../../lib/level/lod.js';
 // (No abort signal on the request: assetBase reads any failure as the bucket
 // down for the visit, so a cancelled fetch is let finish and its answer
 // dropped by the stream; lane S's pool brings real aborts.)
-// (packBytes: the Battlefront world's level takes the same fetcher through
+// A page in a file's place is no file: a dev server (and a host's fallback
+// route) answers a path it lacks, a cell's bin left in the bucket, with its
+// index.html, which read as a cell's records lays boxes kilometres wide.
+export function packBytes(r, u) {
+  if (!r.ok) throw new Error(`${r.status} ${u}`);
+  if (/text\/html/i.test(r.headers?.get?.('content-type') ?? '')) throw new Error(`not a pack file (a page) ${u}`);
+  return r.arrayBuffer();
+}
+// A loader that counts its failures (an abort, or one after the level is
+// gone, not counted) and says the first: → load, with load.skipped()
+export function countedBytes(load, { live = () => true, onFirst = () => {} } = {}) {
+  let skipped = 0;
+  const counted = (path) =>
+    load(path).catch((e) => {
+      if (e?.name !== 'AbortError' && live() && !skipped++) onFirst(path, e);
+      throw e;
+    });
+  counted.skipped = () => skipped;
+  return counted;
+}
+// (bytesOf: the Battlefront world's level takes the same fetcher through
 // the galaxy's face, galaxy/shared/level.js, so its meshes and cells come
 // from the bucket as the galaxy's do, the site's copy when it cannot)
-export const bytesOf = (world) => (path) =>
-  withFallback((u) =>
-    fetch(u).then((r) => {
-      if (!r.ok) throw new Error(`${r.status} ${u}`);
-      return r.arrayBuffer();
-    }),
-  )(packUrl(world, path));
+export const bytesOf = (world) => (path) => withFallback((u) => fetch(u).then((r) => packBytes(r, u)))(packUrl(world, path));
+
+export const packJson = (world, path) => bytesOf(world)(path).then((b) => JSON.parse(new TextDecoder().decode(b)));
 
 const packs = new Map(); // world → Promise<level.json>
 export const packOf = (world) => {
@@ -194,23 +220,34 @@ function findSun(scene) {
 async function gameMaterials(world, pack, renderer, tier, scene) {
   // (low draws the GLB as it is: nothing to swap or fetch)
   if (!renderer?.isWebGPURenderer || tier === 'low') return { recipes: null, materialFor: null };
-  const [recipes, variations, { loadSurfaceMaterial }, { TIER_MAPS, createSunUniforms }, { loadThree }] = await Promise.all([
+  const [recipes, variations, weather, { loadSurfaceMaterial }, { TIER_MAPS, createSunUniforms }, { loadThree }, { overlaysFor, weatherClock }] = await Promise.all([
     recipesFor(world, pack),
     variationsFor(world, pack),
+    packJson(world, 'weather.json').catch(() => null),
     import('../../../../lib/three/surface/hair.js'),
     import('../../../../lib/three/surface/gameMaterial.js'),
     import('../../../../lib/three/light/three.js'),
+    import('../../../../lib/three/surface/weather.js'),
   ]);
   if (!recipes) return { recipes: null, materialFor: null };
   const [make, three] = await Promise.all([loadSurfaceMaterial(), loadThree()]);
   const sun = createSunUniforms(three, sunOf(scene) ?? {});
-  return { recipes, variations, sun, materialFor: (recipe, maps) => make(recipe, maps, { tier, sun }), mapKeys: TIER_MAPS[tier] ?? null };
+  // (the level's weathering, its own kind: one set of contributors every material shares, one clock)
+  const overlays = weather ? overlaysFor(weather, undefined, three) : [];
+  const clock = overlays.length ? weatherClock(overlays) : null;
+  return { recipes, variations, sun, clock, materialFor: (recipe, maps) => make(recipe, maps, { tier, sun, overlays }), mapKeys: TIER_MAPS[tier] ?? null };
 }
 
-export function createLevel({ scene, site, tier, renderer = null, walk = null, camera = null, light = null, onProbe = null, small = false, heightAt = null, onPhysics = null, texTier = null }) {
+export function createLevel({ scene, site, tier, renderer = null, walk = null, camera = null, light = null, onProbe = null, small = false, heightAt = null, onPhysics = null, ground = null, texTier = null }) {
   if (!site?.level) return null;
   const world = site.level;
-  const fetchBytes = bytesOf(world);
+  // (a pack file that fails, the bucket slow or a page in its place, leaves
+  // the level incomplete: counted in stats().skipped, and said once as an
+  // error, so a check never passes a hollow world)
+  const fetchBytes = countedBytes(bytesOf(world), {
+    live: () => !gone,
+    onFirst: (path, e) => console.error(`the ${world} level is incomplete: ${path} did not load (${e?.message ?? e})`),
+  });
   let level = null;
   let stream = null;
   let loader = null;
@@ -219,6 +256,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
   let lights = null;
   let probes = null;
   let sun = null; // the game materials' shared sun, when they draw
+  let clock = null; // their weathering's clock
   let sunLight = null;
   const colliders = walk ? createColliders(walk, tier, { loadBin: fetchBytes }) : null;
   // the engine's side: its world, the cells' bodies, and the cells the
@@ -304,9 +342,12 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       startEngine(pack).catch((e) => {
         if (import.meta.env?.DEV) console.warn('level physics failed', world, e);
       });
-      const { recipes, variations = null, materialFor, mapKeys, sun: shared = null } = await gameMaterials(world, pack, renderer, tier, scene).catch(() => ({ recipes: null, materialFor: null }));
+      const { recipes, variations = null, materialFor, mapKeys, sun: shared = null, clock: weathering = null } = await gameMaterials(world, pack, renderer, tier, scene).catch(() => ({ recipes: null, materialFor: null }));
       sun = shared;
+      clock = weathering;
       if (gone) return;
+      // (the ground in the game's layers where the pack has them: the node renderer's, lane Q2)
+      const layered = ground && renderer?.isWebGPURenderer ? { mesh: ground, renderer, fetchBytes, urlOf: (path) => assetUrl(packUrl(world, path)), entry: null } : null;
       // (lane N4) the stream first: every file the loader wants goes through
       // its queue, ranked; the coarse grid's cells and atlases come first.
       // The far list is the whole arena's table; the cells round you bring
@@ -331,7 +372,10 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       // (a map's finer row is bound once a GLB that wears it stands in a cell
       // shown: one landing for a cell left behind waits, not uploaded)
       loader = createLevelLoader({ world, tier, renderer, fetchBytes: (path, hint) => stream.fetch(path, hint), sizes: pack.tex, recipes, materialFor, mapKeys, variations, texTier, wanted: (path, glbs) => !glbs.size || [...glbs].some((g) => stream.shows(g)) });
-      level = createLevelScene({ scene, pack, loadGltf: loader.load, tier });
+      // (lane U's batches on the node renderer: a BatchedMesh culls each
+      // instance against each camera, the sun's cascades' too, where an
+      // InstancedMesh is drawn whole into every cascade it touches)
+      level = createLevelScene({ scene, pack, loadGltf: loader.load, tier, ground: layered, batch: Boolean(renderer?.isWebGPURenderer) });
       if (last) {
         stream.update(last, tier);
         level.update(last);
@@ -371,6 +415,10 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
       if (camera) lights?.update(camera);
       probes?.update([position[0], camera?.position.y ?? 1.6, position[1]]);
     },
+    // the weathering's clock (lane Q4's accumulation), each frame
+    step(dt) {
+      clock?.update(dt);
+    },
     ready: () => stream?.ready() ?? false,
     // (lane N4: past the tier's visitMB the finer rows and LODs wait)
     paused: () => stream?.status().paused ?? false,
@@ -378,7 +426,7 @@ export function createLevel({ scene, site, tier, renderer = null, walk = null, c
     // (stream: lane N4's phase, bytes, boot and pause; coarse: the horizon grid's cells and cards;
     // maps: the pack's maps asked, loaded and failed, and why the first
     // failed, levelGltf.js's counts: a level drawn white says why here)
-    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), lights: lights?.lit() ?? 0, probe: probes?.current()?.id ?? null, physics: bodies?.stats() ?? null, stream: stream?.status() ?? null, coarse: coarse?.stats() ?? null, maps: loader?.counts() ?? { asked: 0, loaded: 0, failed: 0, why: null } }),
+    stats: () => ({ ...(level?.stats() ?? { tris: 0, calls: 0, instances: 0 }), skipped: fetchBytes.skipped(), lights: lights?.lit() ?? 0, probe: probes?.current()?.id ?? null, physics: bodies?.stats() ?? null, stream: stream?.status() ?? null, coarse: coarse?.stats() ?? null, maps: loader?.counts() ?? { asked: 0, loaded: 0, failed: 0, why: null } }),
     // the level's engine, once it's up (null on a phone, the low tier, a pack without shapes)
     physics: () => engine,
     dispose() {

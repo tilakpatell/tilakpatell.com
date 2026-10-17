@@ -7,7 +7,7 @@
 // embankments. Lit windows and spire beacons at night.
 
 import * as THREE from 'three';
-import { hot } from '../../avengers/hq/engine';
+import { hot } from '../../avengers/hq/stage';
 import { SKIN, WINDOWS, towerField, towerMaterial } from './facade';
 import { BRIDGES, COAST, BEACH, RIVER, groundAt, rng } from './map';
 import { LAND } from './ground';

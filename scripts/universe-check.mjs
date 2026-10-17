@@ -162,9 +162,9 @@ for (const tier of tiers) {
     try {
       await page.goto(`${base}/?quality=${tier}#/universe`, { waitUntil: 'domcontentloaded', timeout: 180000 });
       await page.waitForFunction(() => typeof window.__universe === 'function' && window.__universe().ship && window.__universeDebug?.state?.model, null, { timeout: 300000, polling: 250 });
-      // and its box drawn: the hook (lib/three/useScene) marks it data-gl="on"
-      // at its own first frame, and until then index.css holds the canvas at
-      // opacity 0 behind the loading veil. The scene is made (and the pose
+      // and its box drawn: the hook (runtime/useWorld) marks it data-gl="on"
+      // at its own first frame, and until then the runtime holds the canvas at
+      // opacity 0 behind the loading veil (runtime.css's data-fresh). The scene is made (and the pose
       // draws) a minute or more before that in software, so the shot taken
       // then was a clear canvas over a white page: one colour, at every pose.
       await page.waitForFunction(() => window.__universeDebug.renderer.domElement.parentElement?.dataset.gl === 'on', null, { timeout: 600000, polling: 500 });

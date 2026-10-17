@@ -5,7 +5,7 @@
 // Thanos on the plateau, turning to dust.
 
 import * as THREE from 'three';
-import { createEngine } from '../hq/engine';
+import { createStage } from '../hq/stage';
 import { pbr, preload } from '../hq/assets';
 import { buildGround, fbm } from '../hq/kit/world';
 import { buildHumanoid, poseHumanoid } from '../hq/kit/humanoid';
@@ -63,8 +63,8 @@ function dusty(mat, dustU) {
   return mat;
 }
 
-export async function create(canvas, { onLost, onSlow, calm = false, meshy } = {}) {
-  const engine = createEngine(canvas, { exposure: 0.92, fov: FOV, near: 0.05, far: 3000, bloom: { strength: 0.55, radius: 0.45, threshold: 1.6 }, onLost, onSlow });
+export async function create(rt, { onSlow, calm = false, meshy } = {}) {
+  const engine = createStage(rt, { exposure: 0.92, fov: FOV, near: 0.05, far: 3000, bloom: { strength: 0.55, radius: 0.45, threshold: 1.6 }, onSlow });
   const { scene, camera, hemi } = engine;
   const small = engine.small;
   await preload({ sets: ['rock', 'leather', 'carbon', 'concrete-worn'], skies: ['dusk'], small, backgrounds: false, renderer: engine.renderer });
@@ -218,7 +218,7 @@ export async function create(canvas, { onLost, onSlow, calm = false, meshy } = {
   const vfx = createVfx(scene, { calm, maxSparks: 900, maxPuffs: 320, maxDebris: 40 });
   const zap = lightningPool(scene, 8);
   const feel = createFeel({ seed: 9, calm, baseFov: FOV, offset: 0.05 });
-  // ?debug: the feel's numbers on the one panel (hq/engine's tune)
+  // ?debug: the feel's numbers on the one panel (hq/stage's tune)
   engine.tune(feelGroups(feel), 'titan');
 
   // dust in the air, drifting

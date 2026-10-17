@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GAME_TO_SITE, PROBE_TO_SITE, SKY_TO_SITE, exposureOf, gameSite, hexOf, lutShape, siteLightFrom, sunFromProbe, weatherEntry } from './gameLight';
+import { GAME_TO_SITE, ONE_EXPOSURE, PROBE_TO_SITE, SKY_TO_SITE, exposureOf, gameSite, hexOf, lutShape, siteLightFrom, sunFromProbe, weatherEntry } from './gameLight';
 import hoth from '../../data/bf2017/light/hoth.json';
 
 // Hoth's sunny weather through the two constants: pinned, so a drift in the
@@ -184,5 +184,26 @@ describe('a site under the game’s light', () => {
     expect(s.gameLit).toEqual(HOTH_SUNNY);
     // (the site handed in is not changed)
     expect(site.sky.zenith).toBe('#6f98c8');
+  });
+});
+
+// (one exposure for the sun, the sky and the lamps, calibrate.js's: the
+// record's lux and nits over the camera's k, as the node stack lights the
+// painted sky and the lamps; where a world draws in its record's picture its
+// sun and fill take the same rate, not lane G's fitted one)
+describe('the records at one exposure', () => {
+  it('gives Hoth’s sunny sun its lux over the camera’s k, the Battlefront world’s 9.21', () => {
+    const d = siteLightFrom(hoth.weathers.sunny, ONE_EXPOSURE);
+    expect(d.light.sun).toBeCloseTo(9.21, 2);
+    // (lane G's rate stands where it is not asked for)
+    expect(siteLightFrom(hoth.weathers.sunny).light.sun).toBe(HOTH_SUNNY.light.sun);
+    // (the fill and the sky's level by the same rate, a share of the fitted one)
+    expect(d.light.ambient / HOTH_SUNNY.light.ambient).toBeCloseTo(1 / (1.2 * SKY_TO_SITE), 1);
+  });
+
+  it('a site laid under it takes it', () => {
+    const site = { id: 'hoth', gameLight: 'hoth', sky: {}, fog: {}, light: { sun: 2.6 } };
+    expect(gameSite(site, hoth, 'clear', ONE_EXPOSURE).light.sun).toBeCloseTo(9.21, 2);
+    expect(gameSite(site, hoth, 'clear').light.sun).toBe(HOTH_SUNNY.light.sun);
   });
 });

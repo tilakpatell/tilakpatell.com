@@ -8,7 +8,7 @@
 // rules (./rules.js) say what happens; this draws it.
 
 import * as THREE from 'three';
-import { createEngine, hot } from '../hq/engine';
+import { createStage, hot } from '../hq/stage';
 import { createVfx } from '../hq/vfx';
 import { createFeel, feelGroups } from '../hq/feel';
 import { instanced } from '../hq/kit/instanced';
@@ -51,9 +51,9 @@ function roadTexture() {
   }, { repeat: [1, AVENUE.length / AVENUE.block] });
 }
 
-export async function create(canvas, { onLost, onSlow } = {}) {
+export async function create(rt, { onSlow } = {}) {
   const calm = prefersReducedMotion();
-  const engine = createEngine(canvas, { exposure: 1, fov: FOV, near: 0.1, far: 1400, bloom: { strength: 0.45, radius: 0.4, threshold: 0.95 }, onLost, onSlow });
+  const engine = createStage(rt, { exposure: 1, fov: FOV, near: 0.1, far: 1400, bloom: { strength: 0.45, radius: 0.4, threshold: 0.95 }, onSlow });
   const { scene, camera } = engine;
   const small = engine.small;
   await engine.setSky('noon', { rotate: 2.6, envIntensity: 0.9, bgIntensity: 1, sunIntensity: 3, fill: 0.22, fog: { density: small ? 0.0032 : 0.0024 } });
@@ -150,7 +150,7 @@ export async function create(canvas, { onLost, onSlow } = {}) {
   scene.add(web);
   const vfx = createVfx(scene, { calm, maxSparks: small ? 300 : 600, maxPuffs: small ? 80 : 140, maxDebris: 40 });
   const feel = createFeel({ calm, baseFov: FOV, offset: 0.2 });
-  // ?debug: the feel's numbers on the one panel (hq/engine's tune)
+  // ?debug: the feel's numbers on the one panel (hq/stage's tune)
   engine.tune(feelGroups(feel), 'thwip');
 
   const Y = new THREE.Vector3(0, 1, 0);

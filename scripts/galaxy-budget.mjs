@@ -62,3 +62,23 @@ export const overBy = (r, l) =>
     r.glbMB > l.mb && `models ${r.glbMB} MB > ${l.mb}`,
     r.p95 > l.frame && `frame p95 ${r.p95} ms > ${l.frame.toFixed(1)}`,
   ].filter(Boolean);
+
+// How bright a world's shot came out: each channel's mean, 0 to 1, and the
+// share of its pixels clipped white (every channel at 250 or more), from its
+// raw pixels (`channels` a pixel: 3 or 4). Reported beside the shot, not
+// held: the cloud cannot fetch a job's pictures, so the log carries this
+// much of one (a world drawn white, or a stop dark, says so here).
+export function shotLevels(px, channels) {
+  const n = Math.floor((px?.length ?? 0) / channels);
+  if (!n) return null;
+  const sum = [0, 0, 0];
+  let white = 0;
+  for (let i = 0; i < n; i++) {
+    const o = i * channels;
+    sum[0] += px[o];
+    sum[1] += px[o + 1];
+    sum[2] += px[o + 2];
+    if (px[o] >= 250 && px[o + 1] >= 250 && px[o + 2] >= 250) white++;
+  }
+  return { mean: sum.map((s) => s / n / 255), white: white / n };
+}

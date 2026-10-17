@@ -12,7 +12,7 @@
 // - the flashes when they come through, fire and are hit.
 
 import * as THREE from 'three';
-import { hot } from '../../avengers/hq/engine';
+import { hot } from '../../avengers/hq/stage';
 import { buildHumanoid, poseHumanoid } from '../../avengers/hq/kit/humanoid';
 import { POSES, figure } from '../../../lib/three/rig';
 import { CAST } from '../cast';

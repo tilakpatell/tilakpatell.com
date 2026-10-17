@@ -147,3 +147,12 @@ describe('the chase camera', () => {
     expect(shipWidthOf({ length: 1, fov: 90, dist: 1, aspect: 1 })).toBeCloseTo(0.5, 9);
   });
 });
+
+describe('a universe’s centre, written in place', () => {
+  it('the same numbers into the array it’s given, and that array back', () => {
+    const out = [9, 9, 9];
+    expect(worldPos('marvel', 0.7, out)).toBe(out);
+    expect(out).toEqual(worldPos('marvel', 0.7));
+    expect(worldPos('marvel', 0.7)).not.toBe(worldPos('marvel', 0.7));
+  });
+});

@@ -14,7 +14,8 @@
 // 12 m of it: saberLight.js)
 
 import * as THREE from 'three';
-import { PARTY, loadPartyFigure } from './nodes/figures';
+import { PARTY } from './nodes/figures';
+import { looks as surfaceLooks } from './looks';
 import { HEROES, heroSpec } from '../heroes';
 import { readLooks } from '../../rickmorty/wardrobe/looks';
 import { METRE } from '../../universe/foot';
@@ -76,7 +77,7 @@ export function createPeers({ parent, placer, getCast, rides: RIDES = GALAXY_RID
       (async () => {
         const own = CREW_MODELS[who] ? await modelFigure(CREW_MODELS[who]).catch(() => null) : null;
         if (!own && spec.src.meshy) await getCast()?.load(null, [spec.src.meshy]).catch(() => {});
-        const fig = own ?? (await loadPartyFigure(spec, getCast(), looks ?? readLooks(null)).catch(() => null));
+        const fig = own ?? (await surfaceLooks().loadPartyFigure(spec, getCast(), looks ?? readLooks(null)).catch(() => null));
         if (!fig || dead || !holder.parent) return;
         const inner = new THREE.Group();
         if (!own) inner.scale.setScalar(1 / METRE);

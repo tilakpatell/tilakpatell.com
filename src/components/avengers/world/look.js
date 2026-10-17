@@ -1,6 +1,6 @@
 // The compound’s look (components/worlds/looks.js): scanned, the HQ
 // engine’s physically based materials, scanned ground and glTF figures,
-// under the house look (Neutral through houseOn, ../hq/engine.js).
+// under the house look (Neutral through houseOn, ../hq/stage.js).
 //
 // The bloom is its own and over white: a threshold of 1.55 with a soft knee
 // of 0.9, so a sunlit glass wing doesn’t flare and only the lamps, the

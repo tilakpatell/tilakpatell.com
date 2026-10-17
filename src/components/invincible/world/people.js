@@ -12,7 +12,7 @@
 import * as THREE from 'three';
 import { buildHumanoid } from '../../avengers/hq/kit/humanoid';
 import { limb, rbox, taper } from '../../avengers/hq/kit/shapes';
-import { hot } from '../../avengers/hq/engine';
+import { hot } from '../../avengers/hq/stage';
 import { POSES, figure, loadFigure } from '../../../lib/three/rig';
 import { CAST, asset } from '../cast';
 

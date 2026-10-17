@@ -1,7 +1,8 @@
 import './hq.css';
 import '../../../styles/lazy/avengers.css';
 
-// The frame each HQ game sits in: the 3D screen, or (with no graphics chip, 3D
+// The frame each HQ game sits in: the 3D screen (the runtime's canvas goes
+// in its first box, inside the screen's border: hq/useStage), or (with no graphics chip, 3D
 // switched off, or a 3D view that failed) the building's old activity, plus
 // the switch and a line saying why.
 
@@ -14,7 +15,7 @@ export default function HQFrame({ stage, three, fallback, children, label, scree
         fallback
       ) : (
         <div className="hq-screen" role="group" aria-label={label} tabIndex={0} {...screenProps}>
-          <canvas ref={stage.canvas} className="hq-canvas" data-on={stage.status === 'on' || undefined} aria-hidden="true" />
+          <div ref={stage.host} className="hq-canvas" data-on={stage.status === 'on' || undefined} aria-hidden="true" />
           {stage.status !== 'on' && (
             <div className="hq-loading" aria-hidden="true">
               <span className="hq-loading-ring" />

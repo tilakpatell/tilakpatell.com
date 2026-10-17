@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import impulses from '../../../data/bf2017/physics/impulses.json';
+import impulses from '../../data/bf2017/physics/impulses.json';
 import { PART_BONES, admit, boneForHit, expired, impulseOf } from './fall.js';
 
 // a standing trooper's bones, as the ragdoll's points ({ x, y, z })

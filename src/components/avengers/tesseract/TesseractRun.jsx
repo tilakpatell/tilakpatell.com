@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import HQFrame from '../hq/HQFrame';
-import { register, useStage } from '../hq/useStage';
+import { register, useStage, useStageFrame } from '../hq/useStage';
+import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
 import { use3D } from '../../../lib/gpu';
-import { local, prefersReducedMotion, useFrameLoop } from '../../../lib/hooks';
+import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
 import { useSays } from '../hq/useSays';
@@ -15,7 +16,6 @@ import { BRIEF, SAYS, SPOKEN } from './lines';
 import './tesseract.css';
 import '../../../styles/lazy/avengers.css';
 
-const load = () => import('./scene');
 const sfx = () => import('../../../lib/sfx');
 const play = (name) => sfx().then((s) => s[name]?.());
 const buzz = (ms) => {
@@ -65,7 +65,7 @@ function loadProgress() {
 
 export default function TesseractRun({ fallback, onPortal }) {
   const three = use3D();
-  const stage = useStage(load, { enabled: three.on, id: 'tesseract', forced: three.mode === 'on' });
+  const stage = useStage(gameModule, { enabled: three.on, id: 'tesseract', forced: three.mode === 'on' });
   const { unlock } = useAchievements();
   const [progress, setProgress] = useState(loadProgress);
   const [leg, setLeg] = useState(() => loadProgress().reached);
@@ -249,7 +249,7 @@ export default function TesseractRun({ fallback, onPortal }) {
     },
     [applyInput, handle, paused, stage.view],
   );
-  useFrameLoop(tick, stage.status === 'on' && stage.visible);
+  useStageFrame(stage, tick, stage.status === 'on' && stage.visible);
 
   // nothing stays held when the window loses focus; pause when scrolled away
   useEffect(() => {

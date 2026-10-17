@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { writeInstances } from '../../../../lib/level/instances';
-import { createLevelScene } from './levelScene';
+import { SHADOW_REACH, createLevelScene } from './levelScene';
 
 // a rock (r 1, three LODs), a crate mirrored (r 0.5), a hangar piece (r 20);
 // the instance table holds two rocks, the crate and the hangar
@@ -51,6 +51,26 @@ describe('createLevelScene', () => {
     // the hangar at 100 m (r 20): LOD1 is its first shipped, 100 / 20 = 5, past two doublings: LOD2
     expect(by).toEqual({ 'r0.glb': 1, 'r2.glb': 1, 'c1.glb': 1, 'h2.glb': 1 });
     expect(level.stats()).toEqual({ tris: 8, calls: 4, instances: 4 });
+    level.dispose();
+  });
+
+  it('casts into the sun’s cascades only what has something within SHADOW_REACH', async () => {
+    const scene = new THREE.Scene();
+    const level = createLevelScene({ scene, pack, loadGltf, tier: 'high' });
+    level.setTable(table);
+    level.update([0, 0]);
+    await settle();
+    expect(drawn(scene).every((m) => m.castShadow)).toBe(true);
+    // 400 m off: the hangar (r 20, 412 m) is still drawn, but too far to cast
+    level.update([0, 400]);
+    await settle();
+    const hangar = drawn(scene).find((m) => m.userData.glb.startsWith('h'));
+    expect(hangar).toBeTruthy();
+    expect(412 - 20).toBeGreaterThan(SHADOW_REACH);
+    expect(hangar.castShadow).toBe(false);
+    level.update([0, 0]);
+    await settle();
+    expect(drawn(scene).find((m) => m.userData.glb.startsWith('h')).castShadow).toBe(true);
     level.dispose();
   });
 

@@ -3,7 +3,7 @@
 // clay pigeons and practice drones, and wind flags.
 
 import * as THREE from 'three';
-import { hot } from '../hq/engine';
+import { hot } from '../hq/stage';
 import { PartBuilder, canvasTexture, lathe, rbox } from '../hq/kit/shapes';
 import { RINGS } from './rules';
 

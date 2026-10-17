@@ -10,7 +10,7 @@
 // from over its shoulder, so he's never a dark shape on a dark street.
 
 import * as THREE from 'three';
-import { createEngine } from '../../avengers/hq/engine';
+import { createStage } from '../../avengers/hq/stage';
 import { createFeel, feelGroups } from '../../avengers/hq/feel';
 import { createSpring, springGroups } from '../../../lib/spring';
 import { POSES, figure, loadFigure } from '../../../lib/three/rig';
@@ -293,8 +293,8 @@ function createCourse(scene) {
   };
 }
 
-export async function createInvWorld(canvas, { onLost, onSlow, calm = false } = {}) {
-  const engine = createEngine(canvas, { exposure: 1, fov: FOV, near: 0.3, far: 26000, bloom: ART.bloom, onLost, onSlow });
+export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
+  const engine = createStage(rt, { exposure: 1, fov: FOV, near: 0.3, far: 26000, bloom: ART.bloom, onSlow });
   const { scene, camera } = engine;
   const small = engine.small;
   const world = buildWorld();
@@ -467,7 +467,7 @@ export async function createInvWorld(canvas, { onLost, onSlow, calm = false } = 
       spaceLook();
       return;
     }
-    engine.renderer.toneMappingExposure = L.exposure;
+    engine.exposure = L.exposure;
     ground.setNight(L.night);
     city.setNight(L.night);
     landmarks.setNight(L.night);

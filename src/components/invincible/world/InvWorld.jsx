@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { audioContext } from '../../../lib/audio';
 import { use3D } from '../../../lib/gpu';
-import { local, prefersReducedMotion, useFrameLoop, useInView, useMediaQuery } from '../../../lib/hooks';
-import { settle } from '../../../lib/settle';
+import { local, prefersReducedMotion, useInView, useMediaQuery } from '../../../lib/hooks';
 import { useVoiced } from '../../../lib/useVoiced';
 import { sayVoiced } from '../../../lib/voiced';
 import { readPad, typing } from '../../games/pad';
@@ -26,7 +25,8 @@ import { toggleGuide } from '../../../lib/palette';
 import { COMPASS, fitCanvas, layoutCompass, objectiveText, titleMode } from '../../../runtime/hud';
 import './world.css';
 import LoadingVeil from '../../worlds/LoadingVeil';
-import { throttled } from '../../worlds/loadingSteps';
+import { useStage, useStageFrame } from '../../avengers/shared/runtime';
+import city from './module';
 
 // The Graysons' city, the world: fly about it as Invincible. The rules are
 // in ./flight.js and ./map.js, the drawing in ./scene.js; this is the
@@ -152,12 +152,10 @@ export default function InvWorld({ thinkMark = null }) {
 }
 
 function World({ gl, setGl, thinkMark }) {
-  const [prep, setPrep] = useState({ value: 0, step: 'load' }); // (how far it's got sending itself to the graphics chip)
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   // other players online here, as holograms (middleearth/towns/useTravellers)
   const trav = useTravellers('invincible', gl === 'on', ROOM);
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.2 });
-  const canvas = useRef(null);
   const mapRef = useRef(null);
   const api = useRef(null);
   const sim = useRef(null);
@@ -233,68 +231,72 @@ function World({ gl, setGl, thinkMark }) {
     syncTime();
   }, [time, syncTime]);
 
-  // the world: made once
+  // the world: made once and kept while the page's game or viewer is the
+  // live 3D view (./module.js keeps it), drawn by the runtime when it's the
+  // page's live view (avengers/hq/useStage). What the page sets up before
+  // its first shader is linked: the feel's numbers for ?debug, where he
+  // starts, the time of day, and the QA scripts' handle.
+  const setUp = useRef(null);
+  setUp.current = async (a) => {
+    api.current = a;
+    // ?debug: the feel's numbers, the hits' law and the jump's press on the one panel
+    a.tune([...impactGroups(hits.rules), ...pressGroups(sim.current.press)]);
+    // (once: a scene made again, by a hot reload, takes over where he is)
+    if (!sim.current.world) placeHero(sim.current, a.world);
+    sim.current.world = a.world;
+    fitHud(hud.current, mapRef.current);
+    await syncTime();
+    if (import.meta.env.DEV) {
+      // (the QA scripts' handle: the scene's api, but its setTime is the
+      // HUD's, through the one clock, and resolves once the scene has it)
+      const hook = Object.create(a);
+      hook.setTime = (name) => {
+        timeRef.current = TIMES.includes(name) ? name : 'noon';
+        setTimeName(timeRef.current);
+        return syncTime();
+      };
+      // (and the villains, for the QA shots: a kind, how many, where)
+      hook.spawn = (kind, n = 1, at) => {
+        sim.current.foes = spawnFoes(sim.current.foes, kind, n, at);
+      };
+      // (and the missions: start one, feed one an event, read the season's progress)
+      hook.mission = (id) => missionApi.current.start?.(id);
+      hook.feed = (ev) => missionApi.current.feed?.(ev);
+      hook.story = () => sim.current.story;
+      window.__INVWORLD__ = { api: hook, sim: sim.current };
+    }
+  };
+  const options = useMemo(() => ({ calm: prefersReducedMotion() }), []);
+  const stage = useStage(city, { enabled: true, id: 'inv-world', forced: true, options, props: { setup: setUp } });
+  const prep = stage.progress; // (how far it's got sending itself to the graphics chip)
+  // (the box: in view for the keys, and the page's live view by its share of the screen)
+  const stageBox = useCallback(
+    (el) => {
+      box.current = el;
+      stage.wrap.current = el;
+    },
+    [box, stage.wrap],
+  );
+  // its state for the page: loading until it's first on, and on from then
+  // on while it's off the runtime, as the world made once always was; down
+  // as it fails
   useEffect(() => {
-    let dead = false;
+    if (stage.status === 'on') setGl('on');
+    else if (stage.status === 'failed' || stage.status === 'lost') setGl(stage.status);
+  }, [stage.status, setGl]);
+  useEffect(() => {
+    if (stage.status !== 'on') return;
+    api.current = stage.view.current;
+    syncTime(); // (a time picked while it was kept off the runtime)
+  }, [stage.status, stage.view, syncTime]);
+  useEffect(() => {
+    city.keep(true);
     const H = hud.current;
-    // the canvas, and the HUD's own canvases, at the size they're shown and
-    // the screen's density
-    const fit = () => {
-      fitHud(H, mapRef.current);
-      const c = canvas.current;
-      if (!c || !api.current) return;
-      const r = c.getBoundingClientRect();
-      api.current.resize(Math.round(r.width), Math.round(r.height));
-    };
-    import('./scene')
-      .then(({ createInvWorld }) => (dead || !canvas.current ? null : createInvWorld(canvas.current, { onLost: () => !dead && setGl('lost'), calm: prefersReducedMotion() })))
-      .then(async (a) => {
-        if (!a) return;
-        if (dead) {
-          a.dispose();
-          return;
-        }
-        api.current = a;
-        // ?debug: the feel's numbers, the hits' law and the jump's press on the one panel
-        a.tune([...impactGroups(hits.rules), ...pressGroups(sim.current.press)]);
-        // (once: a scene made again, by a hot reload, takes over where he is)
-        if (!sim.current.world) placeHero(sim.current, a.world);
-        sim.current.world = a.world;
-        fit();
-        await syncTime();
-        await settle(a.engine.precompile(), 4000);
-        if (dead || a.lost) return;
-        if (import.meta.env.DEV) {
-          // (the QA scripts' handle: the scene's api, but its setTime is the
-          // HUD's, through the one clock, and resolves once the scene has it)
-          const hook = Object.create(a);
-          hook.setTime = (name) => {
-            timeRef.current = TIMES.includes(name) ? name : 'noon';
-            setTimeName(timeRef.current);
-            return syncTime();
-          };
-          // (and the villains, for the QA shots: a kind, how many, where)
-          hook.spawn = (kind, n = 1, at) => {
-            sim.current.foes = spawnFoes(sim.current.foes, kind, n, at);
-          };
-          // (and the missions: start one, feed one an event, read the season's progress)
-          hook.mission = (id) => missionApi.current.start?.(id);
-          hook.feed = (ev) => missionApi.current.feed?.(ev);
-          hook.story = () => sim.current.story;
-          window.__INVWORLD__ = { api: hook, sim: sim.current };
-        }
-        // everything on the graphics chip before it's shown, behind the loading screen
-        await a.engine?.prepare?.(throttled(setPrep), { alive: () => !dead });
-        if (dead) return;
-        setGl('on');
-      })
-      .catch((e) => {
-        if (import.meta.env.DEV) console.error(e);
-        if (!dead) setGl('failed');
-      });
+    // the HUD's own canvases, at the size they're shown and the screen's density
+    const fit = () => fitHud(H, mapRef.current);
     // a new size, of the stage or of anything the compass has to keep clear of
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null;
-    for (const el of [canvas.current, H.compass, mapRef.current, H.tools, ...(H.brand?.children ?? [])]) if (el) ro?.observe(el);
+    for (const el of [box.current, H.compass, mapRef.current, H.tools, ...(H.brand?.children ?? [])]) if (el) ro?.observe(el);
     // a new screen density alone (the window moved to another monitor, the
     // page zoomed) isn't a new size the observer sees
     let dpr = null;
@@ -307,7 +309,6 @@ function World({ gl, setGl, thinkMark }) {
     onDpr();
     const s = sim.current;
     return () => {
-      dead = true;
       ro?.disconnect();
       dpr?.removeEventListener?.('change', onDpr);
       // (where he's standing, for next time: only once he's been placed, and
@@ -317,13 +318,13 @@ function World({ gl, setGl, thinkMark }) {
       if (s.world && s.h.zone !== 'space' && s.h.mode === 'ground' && Number.isFinite(keep.face) && isSafeStart(s.world, keep)) local.set(AT, keep);
       wind.current?.stop();
       wind.current = null;
-      api.current?.dispose();
       api.current = null;
+      city.keep(false);
       if (import.meta.env.DEV && window.__INVWORLD__?.sim === s) delete window.__INVWORLD__;
     };
-  }, [setGl, syncTime]);
+  }, [box]);
 
-  const live = gl === 'on' && inView;
+  const live = stage.status === 'on' && inView;
   const cycleTime = useCallback(() => setTimeName((t) => TIMES[(TIMES.indexOf(t) + 1) % TIMES.length]), []);
   const startSound = useCallback(() => {
     audioContext();
@@ -625,7 +626,7 @@ function World({ gl, setGl, thinkMark }) {
 
   // looking round: drag on the canvas
   const onPointerDown = (e) => {
-    if (e.pointerType === 'touch' && e.clientX < (canvas.current?.getBoundingClientRect().left ?? 0) + (canvas.current?.clientWidth ?? 0) * 0.4) return; // the left of a phone's screen is the stick
+    if (e.pointerType === 'touch' && e.clientX < (stage.host.current?.getBoundingClientRect().left ?? 0) + (stage.host.current?.clientWidth ?? 0) * 0.4) return; // the left of a phone's screen is the stick
     startSound();
     drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, at: performance.now() };
     e.currentTarget.setPointerCapture?.(e.pointerId);
@@ -650,7 +651,8 @@ function World({ gl, setGl, thinkMark }) {
   };
 
   // ── every frame ──
-  useFrameLoop((ms) => {
+  // ── every frame ── (the runtime's loop, through the world's draw)
+  const tick = (ms) => {
     const a = api.current;
     const s = sim.current;
     if (!a || a.lost || !s.world) return;
@@ -1042,7 +1044,8 @@ function World({ gl, setGl, thinkMark }) {
     }
     // (the city's hum is the city's: not over the Moon)
     wind.current?.set({ speed, alt: inSpace ? Infinity : alt });
-  }, live);
+  };
+  useStageFrame(stage, tick, live);
 
   // the thumbs, on a phone (the kit's Stick: one finger at a time, read from
   // where it went down), and the buttons held for as long as they're pressed
@@ -1058,8 +1061,8 @@ function World({ gl, setGl, thinkMark }) {
   const punch = () => (startSound(), (sim.current.punch = true));
 
   return (
-    <div className="iw-stage" ref={box} data-zone={zone} data-shutter={shutter ? '1' : undefined}>
-      <canvas ref={canvas} className="iw-canvas" data-on={gl === 'on' || undefined} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onContextMenu={(e) => e.preventDefault()} aria-label="The city, from the air. Fly with W, A, S and D; Space to go up, C to go down, Shift to go flat out." />
+    <div className="iw-stage" ref={stageBox} data-zone={zone} data-shutter={shutter ? '1' : undefined}>
+      <div ref={stage.host} className="iw-canvas" data-on={stage.status === 'on' || undefined} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onContextMenu={(e) => e.preventDefault()} aria-label="The city, from the air. Fly with W, A, S and D; Space to go up, C to go down, Shift to go flat out." />
       <div className="iw-lines" ref={(el) => (hud.current.lines = el)} aria-hidden="true" />
       {flash && <div className="iw-flash" data-kind={flash.kind} key={flash.key} aria-hidden="true" onAnimationEnd={() => setFlash(null)} />}
       {card && gl === 'on' && (

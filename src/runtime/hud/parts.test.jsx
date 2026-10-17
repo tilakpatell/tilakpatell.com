@@ -7,7 +7,8 @@ import PlayersChip from './PlayersChip';
 import QuestList from './QuestList';
 import Toast from './Toast';
 import MiniMap from './MiniMap';
-import { VoicesItem } from './Menu';
+import { RendererLine, VoicesItem } from './Menu';
+import { rendererReport } from '../backend';
 
 const text = (el) => renderToStaticMarkup(el).replace(/<[^>]+>/g, '');
 
@@ -102,5 +103,21 @@ describe('the minimap', () => {
     expect(html).toContain('<canvas aria-hidden="true"></canvas>');
     expect(html).not.toContain('<kbd');
     expect(html).toMatch(/hud-minimap-caption"><\/p><p>under<\/p>/);
+  });
+});
+
+describe('the Menu’s renderer line', () => {
+  it('says the picture is the best on WebGPU, and why not and what to do otherwise', () => {
+    const best = renderToStaticMarkup(<RendererLine report={rendererReport({ backend: 'webgpu' })} />);
+    expect(best).toContain('Picture: <b>WebGPU</b> · the best');
+    expect(best).toContain('data-best');
+    const slower = renderToStaticMarkup(<RendererLine report={rendererReport({ backend: 'nodes-webgl', gpu: false })} />);
+    expect(slower).toContain('WebGL 2, node renderer');
+    expect(slower).toContain('Chrome, Edge or Safari 26');
+    expect(slower).not.toContain('the best');
+  });
+
+  it('says nothing with no world up', () => {
+    expect(renderToStaticMarkup(<RendererLine />)).toBe('');
   });
 });

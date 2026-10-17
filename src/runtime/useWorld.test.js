@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adoptable, madeFor, recoverNow, sameProps } from './useWorld';
+import { adoptable, madeFor, recoverNow, sameProps, watchNear } from './useWorld';
 
 // A page mounting a module finds a world of that module already on the
 // runtime: one handed over to it (adopt it), or one made for something else
@@ -39,6 +39,63 @@ describe('when a page mounts its world again after a loss', () => {
     expect(recoverNow({ status: 'lost', recoverable: false, tried: false, mine: true })).toBe(false);
     expect(recoverNow({ status: 'failed', recoverable: true, tried: false, mine: true })).toBe(false);
     expect(recoverNow({ status: 'on', recoverable: true, tried: false, mine: true })).toBe(false);
+  });
+});
+
+// A page with its world below the fold (`near`): the world is made once its
+// box comes within the margin of the viewport, as lib/three/useScene's
+// scenes were, and stays made; with no margin, or no IntersectionObserver
+// to ask, at once.
+describe('a world made when its box comes near', () => {
+  const fakeIO = () => {
+    const made = [];
+    class IO {
+      constructor(fn, opts) {
+        this.fn = fn;
+        this.opts = opts;
+        this.off = false;
+        made.push(this);
+      }
+      observe(el) {
+        this.el = el;
+      }
+      disconnect() {
+        this.off = true;
+      }
+    }
+    return { IO, made };
+  };
+  it('no margin: near at once, nothing watched', () => {
+    const { IO, made } = fakeIO();
+    const seen = [];
+    watchNear({}, null, () => seen.push(true), { IO });
+    expect(seen).toEqual([true]);
+    expect(made).toEqual([]);
+  });
+  it('no IntersectionObserver: near at once', () => {
+    const seen = [];
+    watchNear({}, '0px', () => seen.push(true), { IO: undefined });
+    expect(seen).toEqual([true]);
+  });
+  it('a margin: near the first time the box is within it, then no longer watched', () => {
+    const { IO, made } = fakeIO();
+    const el = {};
+    const seen = [];
+    watchNear(el, '100% 0px', () => seen.push(true), { IO });
+    expect(made[0].opts).toEqual({ rootMargin: '100% 0px' });
+    expect(made[0].el).toBe(el);
+    made[0].fn([{ isIntersecting: false }]);
+    expect(seen).toEqual([]);
+    made[0].fn([{ isIntersecting: true }]);
+    expect(seen).toEqual([true]);
+    expect(made[0].off).toBe(true);
+  });
+  it('let go before it came near: nothing said', () => {
+    const { IO, made } = fakeIO();
+    const seen = [];
+    const stop = watchNear({}, '0px', () => seen.push(true), { IO });
+    stop();
+    expect(made[0].off).toBe(true);
   });
 });
 

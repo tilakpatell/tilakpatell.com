@@ -4,7 +4,9 @@ name: CI
 # (.claude/skills/autopilot) waits for this check before it merges, and a
 # red check stops any merge from deploying something broken (deploy.yml runs
 # the same steps again on main before it publishes). Beside it, the AI's
-# tests, and the multiplayer's two-browser check (evidence, not a gate).
+# tests, the multiplayer's two-browser check (evidence, not a gate), and
+# three of the Star Wars worlds booted on the node renderer (a gate: each
+# world up, no error; the rows reported; all seventeen nightly, worlds.yml).
 on:
   pull_request:
     branches: [main]
@@ -48,6 +50,64 @@ jobs:
       # the codebase's health against docs/health/budgets.json: a number over
       # its budget is a red check, the same as a failing test (docs/health)
       - run: node scripts/health.mjs --check --skip build
+
+  # The Star Wars worlds on the node renderer, as worlds.yml boots them (its
+  # header says how and why): on a pull request three of the seventeen, a
+  # gate (each world up, no error; the rows reported): three without a pack,
+  # on the site's Rapier ground (surface/sitePhysics.js), Mustafar with its
+  # lava. All seventeen run nightly and by hand (worlds.yml), as the
+  # seventeen took CI past twenty minutes; the worlds with a level pack are
+  # the slow ones (Hoth did not come up in 150 minutes on 2026-10-15, its
+  # ground now the game's nine layers), so they are the nightly's. The
+  # steps are worlds.yml's: keep the two alike.
+  worlds:
+    name: Worlds on the node renderer (${{ matrix.world }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        world: [dagobah, coruscant, mustafar]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright-core install --with-deps chromium
+
+      # the dev server with the public bucket (a variable, not a secret) as
+      # the asset base, as the deploy builds it, and a wait till it answers.
+      # (bound to 127.0.0.1, where galaxy-check asks: on the runner
+      # `localhost` answers on ::1 alone, and the check found nothing there)
+      - run: |
+          npx vite --host 127.0.0.1 --port 5188 > vite.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:5188/ > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat vite.log
+          exit 1
+        env:
+          VITE_ASSET_BASE: ${{ vars.ASSET_BASE }}
+
+      - shell: bash
+        run: |
+          CHROME="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" BUDGET=1 BUDGET_REPORT=1 QUALITY=high VIEW=640x360 SHOT_WAIT=900000 PHASE_WAIT=900000 DRAW_WAIT=3000000 OUT=worlds node scripts/galaxy-check.mjs surface ${{ matrix.world }} 2>&1 | tee worlds-check.log
+          exit ${PIPESTATUS[0]}
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: worlds-${{ matrix.world }}
+          path: |
+            worlds/
+            worlds-check.log
+            vite.log
+          if-no-files-found: ignore
 
   # The AI and the models (scripts/ai-e2e/README.md): the pipelines with
   # fake engines, the shipped assets, the brains, the agent's guards. A job

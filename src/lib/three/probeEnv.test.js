@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createProbeEnv } from './probeEnv';
+import { createProbeEnv, faceUrl } from './probeEnv';
 
 function fakes() {
   const made = [];
@@ -61,5 +61,16 @@ describe('a probe asked for again while another is on its way', () => {
     expect(await inside).toBeNull();
     expect(probes.current()).toBe(f.made[0]);
     expect(f.made[1].dispose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('faceUrl', () => {
+  const answer = (status, type) => async () => ({ ok: status < 400, status, headers: new Headers({ 'content-type': type }), arrayBuffer: async () => new ArrayBuffer(4) });
+  it('gives a face’s bytes as a URL the loader reads', async () => {
+    expect(await faceUrl('/probes/a.px.hdr', answer(200, 'application/octet-stream'))).toMatch(/^blob:/);
+  });
+  it('fails on a 404 and on a page in a face’s place, a load that failed rather than a bad HDR', async () => {
+    await expect(faceUrl('/probes/a.px.hdr', answer(404, 'text/plain'))).rejects.toThrow(/404/);
+    await expect(faceUrl('/probes/a.px.hdr', answer(200, 'text/html'))).rejects.toThrow(/page/);
   });
 });
