@@ -30,34 +30,47 @@ Session `session_01G8eoBfhJotc8EawZtkbnVz`, branch `claude/engine-floor-fl2-midd
 - a town counted from its first frame (`sim.t > 0`), shot after 12 frames, judged inside its stage’s box (the map behind the page’s edges is still easing from the page’s load there); a part (the kitchens at Low, the bridge, Gorgoroth, the Ring) after 240 frames, the whole page;
 - 1440 × 900, PNG, every pixel counted, no tolerance.
 
-Main at `a559e190` and the branch at `be9fc1bc`, both built, shot twice. Pixels that differ (a town inside its stage, 1440 × 740; a part, the whole page); a second run only for the shots whose first pair differed:
+Main at `a559e190`, shot five times over the two days (twice with the final tool, `FM1`, `FM2`; three times before sound was off, `B1` to `B3`), and the branch’s final build (`e7cced39`: the merge after it changes nothing Middle-earth draws through but one line of the runtime’s loop), shot twice. Pixels that differ (a town inside its stage, 1440 × 740; a part, the whole page):
 
-| shot | main × main | branch × branch | main × branch, best | main × branch, all pairs |
-| --- | --- | --- | --- | --- |
-| hub, shire’s, bree’s, weathertop’s, amon-hen’s, lorien’s, dead-marshes’ and mordor’s kitchens; rivendell, moria, amon-hen, mordor, orthanc, minas-tirith, edoras | | | **0** | 0 (14 shots) |
-| cirith-ungol’s kitchen | 0 | 8,101 | **0** | 8,101 / 0 / 8,101 / 0 |
-| dead-marshes | 0 | 432 | **0** | 432 / 0 / 432 / 0 |
-| lorien | 0 | 0 | 29,511 | 29,511 × 4 |
-| cirith-ungol | 0 | 5,456 | 5,322 | 5,364 / 5,322 / 5,364 / 5,322 |
-| rivendell’s kitchen | 0 | 669 | 838 | 838 / 1,105 / 838 / 1,105 |
-| moria’s kitchen | 0 | 0 | 3 | 3 × 4 |
-| moria-bridge | 0 | 0 | 2 | 2 × 4 |
-| mordor-gorgoroth | 0 | 0 | 2 | 2 × 4 |
-| mordor-ring | | | 2 | 2 |
-| bree | 109 | 76 | 23 | 23 / 82 / 103 / 96 |
-| shire | 453 | 459 | 27 | 454 / 82 / 27 / 458 |
-| weathertop | 85 | 101 | 18 | 86 / 120 / 18 / 102 |
-| shire’s kitchen | 257,132 | 256,532 | 256,532 | 260,753 / 260,089 / 260,609 / 258,313 |
+| shot | the branch against main, the closest of main’s shots | main against itself, the furthest two of its shots |
+| --- | --- | --- |
+| the map (`/middle-earth`) | **0** | 0 |
+| Bree’s kitchen | **0** | 0 |
+| Weathertop’s kitchen | **0** | 0 |
+| Edoras | **0** | 0 |
+| Minas Tirith | **0** | 0 |
+| Mordor | **0** | 0 |
+| Moria | **0** | 0 |
+| Orthanc | **0** | 0 |
+| Gorgoroth | **0** | 0 |
+| Amon Hen | **0** | 49,939 |
+| Amon Hen’s kitchen | **0** | 4,951 |
+| Rivendell | **0** | 181,973 |
+| the Dead Marshes | **0** | 432 |
+| the Dead Marshes’ kitchen | **0** | 235,668 |
+| Mordor’s kitchen | **0** | 948 |
+| Moria’s kitchen | 3 | 77,136 |
+| the bridge | 2 | 6,515 |
+| Lothlórien | 29,511 | 0 |
+| Cirith Ungol | 5,322 | 0 |
+| Cirith Ungol’s kitchen | 362 | 8,402 |
+| Lothlórien’s kitchen | 404 | 6,017 |
+| Rivendell’s kitchen | 657 | 7,084 |
+| the Ring | 787 | 2,798 |
+| Bree | 72 | 738 |
+| the Shire | 67 | 456 |
+| Weathertop | 87 | 156 |
+| the Shire’s kitchen | 256,040 | 257,760 |
 
-16 of 27 are the same pixel for pixel.
+15 of 27 are the same pixel for pixel as one of main’s.
 
-A shot is the same when one of the branch’s matches one of main’s. Where two runs of one build differ, it is on both sides alike: bree, the Shire and Weathertop by tens to hundreds of pixels at their figures’ edges, the Shire’s kitchen by a quarter of a million in the town above it (its frame from the loading, never ticked: out of view), and no pair of main’s own agrees on them either.
+Where main’s own shots differ from each other, the branch’s land among them: the kitchens of Cirith Ungol, Lothlórien and Rivendell and the Ring by hundreds of pixels (a town above a kitchen, out of view, shows a frame from its loading; the Ring turns by `performance.now()`), Bree, the Shire and Weathertop by tens at their figures’ edges, and the Shire’s kitchen by a quarter of a million in the town above it, where main’s furthest two shots differ by more.
 
 **The differences that are the move’s, and why.** None is a picture drawn otherwise; each is said here, not tolerated.
 
 - *A figure’s seed.* `cast3d.js`’s `upgrade` gives each figure its clocks from a page-wide count (`upgrades++`: “two of one figure … never breathe or step together”), so the order two scenes on the page are built in sets every figure’s idle. That order is which scene’s code arrives first. The branch’s town code no longer imports the passes (the runtime’s chunk has them), so in Lothlórien the town is built before the kitchen, where on main the kitchen came first; in Cirith Ungol, the same race, moved by main’s own sweep merged in (the branch before the merge was 0 there). With the count taken out of the seed on both sides (`upgrades++, 0`, a build of each, not committed), Lothlórien and Cirith Ungol are 0 pixels, main against the branch. The fix that would end it is the seed’s (a figure’s own, not the page’s order), and it changes main’s pictures: not this lane’s.
-- *An edge over a copy.* Moria’s kitchen (3 pixels, each 1 off), the bridge, Gorgoroth and the Ring (2 pixels each: the corner of the page’s badge at the bottom left, at (7, 889) and (7, 894)): a CSS edge antialiased, or a backdrop blurred, over a picture that is a 2D canvas (a view copied, `drawImage`) where it was a WebGL canvas. The picture under them is the same pixel for pixel; the compositor blends its edge with it otherwise.
-- *Rivendell’s kitchen*, 669 to 1,105 pixels in the top 30 rows: Rivendell’s town above the kitchen, out of view (its loop never runs there), showing a frame from its loading; with the seeds’ count taken out it is still 764. Not traced further: the loading’s frames come one sooner on the branch (the kitchen draws at frame 20 where main’s drew at 21), and which of the town’s loading frames is the last it showed is that race.
+- *An edge over a copy.* Moria’s kitchen (3 pixels, each 1 off) and the bridge (2 pixels: the corner of the page’s badge at the bottom left, at (7, 889) and (7, 894); Gorgoroth and the Ring had the same two before the canvas went to the costliest view, and are 0 there now): a CSS edge antialiased, or a backdrop blurred, over a picture that is a 2D canvas (a view copied, `drawImage`) where it was a WebGL canvas. The picture under them is the same pixel for pixel; the compositor blends its edge with it otherwise.
+- *Rivendell’s kitchen* (657 pixels from the nearest of main’s, in the top 30 rows) is the loading race the paragraph above names, not traced further: with the seeds’ count taken out it is still 764, and the loading’s frames come one sooner on the branch (the kitchen draws at frame 20 where main’s drew at 21).
 
 ## The pace
 
