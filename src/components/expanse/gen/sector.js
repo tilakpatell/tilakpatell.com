@@ -19,9 +19,12 @@
 //     is round its orbit at t = 0), orbit, moons, rings, seed }
 //   a wonder: { id: 'E:sx,sz:w<k>', kind, name, at, size, seed }
 //   a beacon: { id: 'beacon:E:sx,sz:<side>', at (the point), side }
+// beaconsOf(sx, sz, seed, sy = 0) → { n, e, s, w }: makeSector's beacons on the middle layer, the
+//   same rule at the sector's height elsewhere
 // neighbours(sx, sz) → [[sx, sz]…] the four edge neighbours, n e s w
 // facing(a, b) → the side of a ([sx, sz]) that faces b, an edge neighbour
 
+import { sectorKey } from "../../../lib/space/address.js";
 import { MAP_RADIUS, SECTORS, SECTOR_RADIUS } from "../../universe/layout";
 import { REGIONS } from "../../universe/regions";
 import { SECTOR, sectorId } from "./grid";
@@ -79,11 +82,14 @@ function keepOuts(sx, sz) {
   ];
 }
 
-function beaconsOf(sx, sz, seed) {
+// (sy lifts the generic rule to a sector's own height; the home beacons are
+// only the middle layer's 0,0)
+export function beaconsOf(sx, sz, seed, sy = 0) {
   const [cx, cz] = [sx * SECTOR, sz * SECTOR];
-  const id = sectorId(sx, sz);
+  const cy = sy * SECTOR;
+  const id = sectorKey(sx, sy, sz);
   const make = (side, at) => ({ id: `beacon:${id}:${side}`, at, side });
-  if (!sx && !sz)
+  if (!sx && !sz && !sy)
     return Object.fromEntries(
       Object.entries(HOME_ANGLES).map(([side, a]) => [
         side,
@@ -92,7 +98,7 @@ function beaconsOf(sx, sz, seed) {
     );
   const rng = rngOf(hash64(seed, "beacons"));
   const off = () => range(rng, -3000, 3000);
-  const y = () => range(rng, -200, 200);
+  const y = () => cy + range(rng, -200, 200);
   return {
     n: make("n", [cx + off(), y(), cz - EDGE]),
     e: make("e", [cx + EDGE, y(), cz + off()]),
