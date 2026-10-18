@@ -6,12 +6,14 @@
 // every window lit. Fireflies and falling leaves, and now and then one of
 // Gandalf’s fireworks, or the dragon. Mordor: smoke over a sky burning red
 // behind Mount Doom at the left, its lava seams pulsing; ridges stepping
-// down to an ash plain; Barad-dûr at the right, the Eye between its horns,
-// which follows the pointer and every so often sweeps its beam across.
-// Embers rise and ash comes down. A click on empty page is a firework’s
-// sparkle (in Mordor, embers).
+// down to an ash plain; Barad-dûr at the right, a model in three dimensions
+// (scenes/baradDurView.js) standing in the reek behind the near ridge, the
+// Eye between its horns, which follows the pointer and every so often
+// sweeps its beam across. Embers rise and ash comes down. A click on empty
+// page is a firework’s sparkle (in Mordor, embers).
 
 import { ambience, backdrop, bursts, field, pick, rand, rgb, silhouette } from '../kit';
+import { baradDurView } from './baradDurView';
 
 // Where the big shapes stand, as shares of the screen: out at the sides,
 // where the page’s mask lets the background show, the middle left quiet
@@ -20,11 +22,13 @@ const SUN_X = 0.15;
 const TREE_X = 0.22;
 const HILL_X = 0.86;
 const DOOM_X = 0.19;
-const TOWER_X = 0.87;
-const EYE_Y = 0.78;
-// a phone’s text runs edge to edge (ambience.css): the tower keeps to the
-// margin at the right
-const towerX = (w) => w * (w < 768 ? 0.95 : TOWER_X);
+// (Barad-dûr stands at the right: scenes/baradDurView.js places it)
+// Mordor’s near pass covers the screen’s lower right only: the reek, the
+// near ridge and the plain never reach higher, and left of NEAR_LEFT (where
+// the tower never stands, and the words’ mist begins) the far pass draws
+// them itself, so the mist fades the whole land there as one
+const NEAR_TOP = 0.42;
+const NEAR_LEFT = 0.64;
 
 const LANDS = /* glsl */ `
 varying vec2 vUv;
@@ -42,15 +46,15 @@ uniform vec3 uLand2;
 uniform vec3 uLand3;
 uniform vec3 uLand4;
 uniform vec3 uDark;      // hedges and the Party Tree; Mount Doom
-uniform vec3 uDoor;      // the round door; Barad-dûr
+uniform vec3 uDoor;      // the round door
 uniform vec3 uStone;     // the door’s frame and the chimney; Mordor’s blood red
-uniform vec3 uBrass;     // the knob and the door’s rim; the Eye’s iris
+uniform vec3 uBrass;     // the knob and the door’s rim
 uniform vec3 uLamp;      // a lit window; the lava
 uniform vec3 uSmoke;
 uniform float uLit;      // the window at the door, 0..1
 uniform vec2 uEye;       // where the Eye is, px from the bottom left
-uniform vec2 uLook;      // where it looks, -1..1
 uniform vec2 uBeam;      // its beam: angle, strength
+uniform float uLayer;    // Mordor: 0 the far pass, 1 the near one
 float hash(float x) { return fract(sin(x * 127.1) * 43758.5453); }
 float hash2(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 float vnoise(float x) { float i = floor(x), f = fract(x); return mix(hash(i), hash(i + 1.0), f * f * (3.0 - 2.0 * f)); }
@@ -255,7 +259,7 @@ vec4 shire(vec2 px, float s, float look) {
   return c;
 }
 
-vec4 mordor(vec2 px, float s, float look) {
+vec4 mordorFar(vec2 px, float s, float look) {
   float W = uRes.x, H = uRes.y;
   float night = uNight;
   vec4 c = vec4(0.0);
@@ -272,6 +276,11 @@ vec4 mordor(vec2 px, float s, float look) {
   // dark, grey overhead and lit red from beneath lower down
   sky = mix(sky * (1.0 - 0.25 * night * (1.0 - cloud)), mix(uSmoke, mix(uStone, uLamp, 0.4), hot * hot * mix(0.3, 0.8, night)), cloud * mix(0.55, 0.8, night));
   over(c, sky, clamp(mix(0.3, 0.7, smoothstep(H * 0.95, H * 0.3, px.y)) * (0.7 + 0.45 * cloud) + hot * 0.2, 0.0, 0.95));
+
+  // the Eye’s light on the reek about Barad-dûr’s crown, so the tower
+  // (drawn over it) stands black against the smoke it lights
+  float lit = exp(-length((px - uEye) / vec2(1.0, 1.7)) / (190.0 * s));
+  over(c, mix(uStone, uLamp, 0.3 + 0.5 * lit), lit * (0.3 + 0.7 * cloud) * mix(0.18, 0.5, night));
 
   // the far ranges, paler for the smoke between
   float r0 = ridge(px.x + look * 0.15, H * 0.165, H * 0.085, 0.0021, 0.4);
@@ -325,77 +334,6 @@ vec4 mordor(vec2 px, float s, float look) {
     over(c, mix(uSmoke, mix(uLamp, uStone, 0.4), exp(-py / (70.0 * s)) * mix(0.4, 0.9, night)), plume * mix(0.55, 0.85, night));
   }
 
-  // Barad-dûr: tiers each narrower than the one below, every one capped
-  // with a ledge of spikes, blades of buttress round its foot, and two
-  // horns curving in round the Eye at the top
-  float tu = px.x - uEye.x;
-  float au = abs(tu);
-  float y0 = H * 0.04;
-  float top = uEye.y - 42.0 * s;
-  float d = 1e3;
-  // 0 on a horn’s outer face, which the Eye’s fire doesn’t reach
-  float inner = 1.0;
-  float th = (top - y0) / 5.0;
-  if (au < 120.0 * s && px.y < uEye.y + 52.0 * s) {
-    float f = clamp((px.y - y0) / (top - y0), 0.0, 0.9999);
-    float tier = floor(f * 5.0);
-    float tf = f * 5.0 - tier;
-    float ly = tf * th;
-    float w0 = mix(64.0, 14.0, pow(tier / 4.0, 0.8)) * s;
-    float hw = w0 * (1.0 - 0.08 * tf);
-    // the ledge, jutting out at the tier’s top
-    float ledge = step(th - 9.0 * s, ly);
-    d = max(au - hw - 8.0 * s * ledge, px.y - top);
-    // spikes along the ledge below, a taller one at its corner
-    float wl = mix(64.0, 14.0, pow(max(tier - 1.0, 0.0) / 4.0, 0.8)) * s * 0.92 + 8.0 * s;
-    float spike = (1.0 - abs(fract((au - hw) / (5.0 * s)) - 0.5) * 2.0) * 6.0 * s;
-    spike = max(spike, smoothstep(4.0 * s, 0.0, abs(au - wl + 2.5 * s)) * 18.0 * s) * step(0.5, tier);
-    d = min(d, max(max(ly - spike, hw - au), au - wl));
-    // the foot: blades of buttress standing out from the wall, pointed
-    float b1 = w0 + 6.0 * s;
-    float b2 = w0 + 24.0 * s;
-    if (tier < 1.5) d = min(d, max(b1 - au, au - b1 - 12.0 * s * max(0.0, 1.0 - ly / (th * 0.75))));
-    if (tier < 0.5) d = min(d, max(b2 - au, au - b2 - 11.0 * s * max(0.0, 1.0 - ly / (th * 0.45))));
-    // the horns, hooking in at the tips but never meeting over the Eye
-    float hy = px.y - top;
-    float tipH = 90.0 * s;
-    if (hy > -2.0 && hy < tipH) {
-      float hf = clamp(hy / tipH, 0.0, 1.0);
-      float hcen = (15.0 + 20.0 * sin(hf * 2.5) - 19.0 * hf * hf) * s;
-      float horn = abs(au - hcen) - (7.5 * pow(1.0 - hf, 0.9) + 0.4) * s;
-      if (horn < d) inner = step(au, hcen);
-      d = min(d, horn);
-    }
-  }
-  // iron, its edges facing Doom and the Eye catching their fire
-  float eg = exp(-length(px - uEye) / (34.0 * s));
-  vec3 iron = uDoor * (0.92 + 0.08 * step(0.5, fract(tu / (7.0 * s))));
-  iron = mix(iron, uStone, smoothstep(2.0 * s, 0.0, -d) * step(tu, 0.0) * 0.55 * night);
-  iron = mix(iron, uLamp, smoothstep(3.0 * s, 0.0, -d) * eg * 1.4 * inner);
-  over(c, iron, fill(d));
-  // a few windows burning in the dark
-  vec2 wc = floor(vec2(tu / (9.0 * s), px.y / (26.0 * s)));
-  float wh = hash2(wc + 3.0);
-  vec2 wq = vec2(fract(tu / (9.0 * s)), fract(px.y / (26.0 * s)));
-  over(c, uLamp, night * step(0.93, wh) * step(px.y, top) * fill(d + 6.0 * s) * fill((max(abs(wq.x - 0.5) * 9.0 - 1.0, abs(wq.y - 0.5) * 26.0 - 3.0)) * s) * 0.7);
-
-  // the Eye: an almond of fire, flames licking from its lids, a white-hot
-  // heart and a slit pupil that follows the pointer
-  vec2 ep = (px - uEye) / s;
-  float r = length(ep / vec2(24.0, 10.5));
-  if (r < 6.0) {
-    float ang = atan(ep.y, ep.x);
-    float fl = noise(vec2(ang * 2.4 + 3.0, uTime * 1.6 - r * 1.3));
-    over(c, uLamp, exp(-r * 1.2) * 0.55);
-    over(c, mix(uBrass, uLamp, smoothstep(1.0, 1.9, r)), smoothstep(1.0 + 0.85 * fl * (0.5 + 0.7 * abs(cos(ang))), 0.95, r) * 0.9);
-    vec2 e = ep / vec2(21.0, 9.0);
-    float inEye = fill((abs(e.y) - (1.0 - e.x * e.x)) * 8.0 * s);
-    float ir = length(e);
-    vec3 iris = mix(mix(uSun, uBrass, smoothstep(0.05, 0.55, ir)), uStone, smoothstep(0.55, 1.05, ir));
-    over(c, iris * (0.86 + 0.14 * sin(atan(e.y, e.x) * 24.0 + uTime * 0.6)), inEye);
-    vec2 pp = (ep - uLook * vec2(8.0, 2.4)) / vec2(2.3, 8.0);
-    over(c, vec3(0.03, 0.02, 0.016), fill((length(pp) - 1.0) * 2.5 * s) * inEye);
-  }
   // its beam
   if (uBeam.y > 0.0) {
     vec2 v = px - uEye;
@@ -403,7 +341,22 @@ vec4 mordor(vec2 px, float s, float look) {
     over(c, uLamp, smoothstep(0.07, 0.0, off) * smoothstep(40.0 * s, 140.0 * s, length(v)) * uBeam.y * 0.45);
   }
 
-  // the near ridge, the ash plain, and rocks like teeth along the foot
+  return c;
+}
+
+// The near pass, drawn after Barad-dûr (scenes/baradDurView.js), so its
+// foot stands behind the near ridge and the reek: the plain’s haze, the
+// near ridge, the ash plain, and rocks like teeth along the foot.
+vec4 mordorNear(vec2 px, float s, float look) {
+  float H = uRes.y;
+  float night = uNight;
+  vec4 c = vec4(0.0);
+  // the reek over the plain: by day an ash mist, by night a smoke lit red
+  // from the fires below; it rolls slowly and thins as it rises
+  float low = smoothstep(H * 0.4, H * 0.03, px.y);
+  float roll = noise(vec2(px.x / (260.0 * s) + uTime * 0.018, px.y / (70.0 * s) - uTime * 0.006));
+  vec3 reek = mix(uSky, mix(uSmoke, uLamp, 0.3 * low), night);
+  over(c, reek, low * low * (0.5 + 0.5 * roll) * mix(0.62, 0.5, night));
   float r2 = ridge(px.x + look * 0.55, H * 0.058, H * 0.05, 0.0042, 5.3);
   over(c, uLand2, fill(px.y - r2) * 0.97);
   float pl = H * 0.045 + (vnoise(px.x * 0.01) - 0.5) * 3.0 * s;
@@ -422,7 +375,14 @@ void main() {
   float look = (uPointer.x / uRes.x) * uPointer.z * 40.0;
   vec4 c;
   if (uMordor < 0.5) c = shire(px, s, look);
-  else c = mordor(px, s, look);
+  else if (uLayer > 0.5) c = mordorNear(px, s, look);
+  else {
+    c = mordorFar(px, s, look);
+    if (vUv.x < ${NEAR_LEFT.toFixed(2)}) {
+      vec4 n = mordorNear(px, s, look);
+      c = n + c * (1.0 - n.a);
+    }
+  }
   // a grain of noise, so the long soft gradients don’t band
   float a = clamp(c.a + (hash2(px) - 0.5) / 110.0 * step(0.01, c.a), 0.0, 1.0);
   // a mist over the land behind the page’s words, left of the middle and
@@ -468,9 +428,25 @@ export function create(canvas, ctx) {
       ...colours,
       uLit: { value: 0 },
       uEye: { value: new THREE.Vector2() },
-      uLook: { value: new THREE.Vector2() },
       uBeam: { value: new THREE.Vector2() },
+      uLayer: { value: 0 },
     });
+    // Mordor’s near pass: the same shader and uniforms (one program), its
+    // own layer, on the screen’s lower right, drawn after the tower so the
+    // near ridge stands in front of its foot
+    const nearMat = lands.mesh.material.clone();
+    nearMat.uniforms = { ...lands.uniforms, uLayer: { value: 1 } };
+    const nearGeo = new THREE.BufferGeometry();
+    const top = -1 + 2 * NEAR_TOP;
+    const left = -1 + 2 * NEAR_LEFT;
+    nearGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([left, -1, 0, 1, -1, 0, 1, top, 0, left, -1, 0, 1, top, 0, left, top, 0]), 3));
+    const near = new THREE.Mesh(nearGeo, nearMat);
+    near.frustumCulled = false;
+    near.renderOrder = -5;
+    k.scene.add(near);
+    // Barad-dûr, its Eye and their lights, between the two passes
+    const tower = baradDurView(k);
+    const look = new THREE.Vector2();
     // the Shire’s fireflies and leaves; Mordor’s embers and ash
     const flies = field(k, { count: 60, shape: 'dot', dir: [0.2, 0.3], speed: [4, 12], size: [3, 7], sway: 30, twinkle: 0.9, repel: 50, parallax: 0.05 });
     const leaves = field(k, { count: 26, shape: 'leaf', dir: [0.4, -1], speed: [14, 28], size: [9, 15], sway: 50, spin: 1.2, repel: 60, parallax: 0.1 });
@@ -485,6 +461,8 @@ export function create(canvas, ctx) {
     let mordor = k.theme === 'mordor';
     const apply = () => {
       lands.uniforms.uMordor.value = mordor ? 1 : 0;
+      near.visible = mordor;
+      tower.visible = mordor;
       flies.points.visible = leaves.points.visible = !mordor;
       embers.points.visible = ash.points.visible = mordor;
     };
@@ -542,16 +520,16 @@ export function create(canvas, ctx) {
         } else {
           // the Eye atop Barad-dûr at the right: it looks at the pointer,
           // and sweeps its beam across the page now and then
-          lands.uniforms.uEye.value.set(towerX(k.size.w), k.size.h * EYE_Y);
-          const ex = -k.size.w / 2 + towerX(k.size.w);
-          const ey = -k.size.h / 2 + k.size.h * EYE_Y;
+          const ex = tower.eye.x;
+          const ey = tower.eye.y;
           const dx = k.pointer.x - ex;
           const dy = k.pointer.y - ey;
           const d = Math.hypot(dx, dy) || 1;
           const want = k.pointer.near > 0.1 ? [dx / d, dy / d] : [-0.6 + Math.sin(t * 0.4) * 0.4, -0.2];
-          const look = lands.uniforms.uLook.value;
           look.x += (want[0] - look.x) * Math.min(1, dt * 3);
           look.y += (want[1] - look.y) * Math.min(1, dt * 3);
+          tower.step(dt, t, look, (k.pointer.x / k.size.w) * k.pointer.near);
+          lands.uniforms.uEye.value.set(tower.eye.x + k.size.w / 2, tower.eye.y + k.size.h / 2);
           if (!beam.on) {
             beam.wait -= dt;
             lands.uniforms.uBeam.value.y = 0;
@@ -573,11 +551,15 @@ export function create(canvas, ctx) {
           sparks.step(0.35);
         }
       },
+      resize(w, h) {
+        tower.place(w, h);
+      },
       recolor(c) {
         const dark = c.dark;
         const u = lands.uniforms;
         for (const [name, hex] of Object.entries(PALETTES[mordor ? 'mordor' : 'shire'][dark ? 'dark' : 'light'])) u[name].value.setHex(hex, THREE.LinearSRGBColorSpace);
         u.uNight.value = dark ? 1 : 0;
+        tower.recolor(dark);
         flies.colors(dark ? [255, 230, 120] : [214, 168, 40], dark ? [190, 255, 140] : [140, 170, 60]);
         flies.glow(dark);
         leaves.colors(dark ? [90, 130, 50] : [110, 150, 60], dark ? [170, 130, 50] : [196, 150, 60]);
@@ -595,10 +577,14 @@ export function create(canvas, ctx) {
         apply();
         this.recolor(k.colors);
       },
+      dispose() {
+        tower.dispose();
+      },
       burst(x, y) {
         if (mordor) sparks.emit(x, y, { count: 24, speed: [60, 200], colors: [[255, 120, 30], [255, 210, 90]], gravity: 120, size: 8 });
         else sparks.emit(x, y, { count: 36, speed: [80, 240], colors: [pick(COLORS), [255, 255, 255]], gravity: -90, size: 9 });
       },
     };
-  });
+    // (the tower’s spikes and horns want their edges smoothed)
+  }, { antialias: true });
 }
