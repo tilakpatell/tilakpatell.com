@@ -201,16 +201,24 @@ taking plain values only:
 
 ### 1.2 One layout
 
-On every flight HUD:
+The galaxy's flight cluster (`galaxy/FlightCluster.jsx`) is the best-built
+flight HUD on the site, so it becomes the standard *(the session's call)*.
+It sits bottom centre, in the band between the corner buttons and the
+panel, as one row of glass blocks:
 
-- shields bottom left
-- arms bottom right
-- powers above the arms
-- the reticle and lock in the middle, as they are
+- the world's own blocks first (the galaxy's radar)
+- then the vitals
+- the arms
+- the world's own after (the galaxy's target)
+- the powers last
 
-On a phone, the kit's TouchButtons go in the same column: one 76 px fire,
-and 64 px weapon and power buttons. The rows are laid out by
-`layoutRows`, never summed by hand.
+The reticle and lock stay in the middle, as they are. The kit holds the
+row (`Cluster`) and the three parts. A world only fills in its own blocks
+and its skin.
+
+On a phone the row keeps to the vitals and the world's first block, and
+the power tiles become round buttons beside Fire and View (as the galaxy
+has them now). The kit's TouchButtons hold fire and the weapon.
 
 ### 1.3 Who moves onto it
 
