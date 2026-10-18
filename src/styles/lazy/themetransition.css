@@ -52,10 +52,211 @@
 .tt-wipe { position: absolute; inset: 0; background: var(--c); animation: tt-wipe var(--tt-len) cubic-bezier(0.7, 0, 0.2, 1) both; }
 .tt-wipe ~ .tt-words { text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35); }
 
-/* the One Ring, its inscription burning */
-.tt[data-kind='ring'] { background: radial-gradient(ellipse at 50% 40%, rgba(60, 22, 4, 0.92), rgba(6, 4, 3, 0.95) 70%); }
-.tt-ring-svg { display: block; width: min(300px, 70vw); height: auto; margin: 0 auto 1rem; overflow: visible; animation: tt-face var(--tt-len) ease both; }
-.tt-ring-text { font-family: 'Cinzel', 'Times New Roman', serif; font-size: 13px; letter-spacing: 1.5px; fill: #ffb347; opacity: 0; animation: tt-burn var(--tt-len) ease both; }
-@keyframes tt-burn { 0%, 20% { opacity: 0; filter: none; } 40%, 80% { opacity: 1; filter: drop-shadow(0 0 4px #ff7a1a) drop-shadow(0 0 10px #ff4d00); } 100% { opacity: 0; } }
+/* Middle-earth: each scene brings its own dark, centred on what it draws (a
+   reaching inset, under the words), so the page can show through it at the end. */
+.tt[data-kind='door'] { --tt-ground: radial-gradient(circle at 50% 45%, rgba(66, 46, 22, 0.94), rgba(20, 14, 8, 0.97) 70%); background: var(--tt-ground); }
+.tt[data-kind='eye'] { --tt-ground: radial-gradient(ellipse at 50% 45%, rgba(58, 18, 6, 0.94), rgba(8, 5, 4, 0.97) 70%); background: var(--tt-ground); }
+.tt[data-kind='door']:not([data-reduced]),
+.tt[data-kind='eye']:not([data-reduced]) { background: none; animation-name: tt-arrive; }
+.tt[data-kind='door'] .tt-words,
+.tt[data-kind='eye'] .tt-words { animation: none; }
+.tt[data-kind='door']:not([data-reduced]) .tt-words > :is(blockquote, figcaption),
+.tt[data-kind='eye']:not([data-reduced]) .tt-words > :is(blockquote, figcaption) { animation: tt-say var(--tt-len) ease both; }
+/* Reduced motion, the system’s or the one chosen in the settings: the house cuts
+   every animation short, which would leave these on their last, faded frame; so
+   the plain dark and the words just show, for as long as they’re up. */
+.tt[data-kind='door'][data-reduced],
+.tt[data-kind='eye'][data-reduced],
+html[data-motion='reduced'] .tt[data-kind='door'],
+html[data-motion='reduced'] .tt[data-kind='eye'] { background: var(--tt-ground); animation: none !important; }
+html[data-motion='reduced'] :is(.tt-door, .tt-eye) { display: none; }
+html[data-motion='reduced'] .tt:is([data-kind='door'], [data-kind='eye']) .tt-words > * { animation: none !important; }
+@keyframes tt-arrive { 0% { opacity: 0; } 6%, 96% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes tt-say { 0%, 21% { opacity: 0; transform: translateY(8px); } 31%, 78% { opacity: 1; transform: none; } 84%, 100% { opacity: 0; } }
+/* the words in each colour’s own face (loaded with the colours; the fallbacks stand alone) */
+.tt[data-kind='door'] blockquote { font-family: 'Almendra', 'Cinzel', Georgia, serif; font-stretch: normal; font-size: clamp(1.45rem, 0.9rem + 2.3vw, 2.5rem); line-height: 1.14; letter-spacing: 0; color: #f3ecd4; text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7); }
+.tt[data-kind='door'] figcaption { margin-top: 0.8rem; font-family: 'Cinzel', Georgia, serif; font-weight: 600; font-size: 0.9rem; letter-spacing: 0.24em; text-transform: uppercase; color: #e2be5c; opacity: 1; }
+.tt[data-kind='eye'] blockquote { font-family: 'Grenze', Georgia, serif; font-weight: 600; font-stretch: normal; font-size: clamp(1.6rem, 1rem + 2.8vw, 3rem); letter-spacing: 0.01em; color: #f0e8df; text-shadow: 0 0 1px #ffb347, 0 -2px 12px rgba(255, 122, 26, 0.45), 0 -6px 28px rgba(210, 66, 26, 0.3); }
+.tt[data-kind='eye'] figcaption { margin-top: 0.7rem; font-family: 'Grenze', Georgia, serif; font-size: 0.95rem; letter-spacing: 0.22em; text-transform: uppercase; color: #ff8c3f; opacity: 1; }
+
+/* the Shire: the round door, from the hall; golden hour beyond it, or a lantern-lit night */
+.tt-door {
+  --door: min(76vw, 56vh, 500px);
+  --sky-a: #fff6d8; --sky-b: #ffe7a8; --sky-c: #f6dfa0; --sky-d: #e9b872;
+  --hill-0: #d8c9a0; --hill-1: #cbd39a; --hill-2: #a9c27a; --hill-3: #6e9a3e; --hill-4: #5e8a35; --hedge: #57852f; --pine: #4b682d; --pine-lit: #6b8a43; --stone: #b8a27a;
+  --smoke: #a8a08c; --lamp: #ffe7a8; --round: #e2b548; --spill: rgba(255, 210, 132, 0.34); --ray: rgba(255, 232, 176, 0.05);
+  position: relative; width: var(--door); aspect-ratio: 1; margin: 0 auto 1.4rem; animation: tt-door-dolly var(--tt-len) both;
+}
+html[data-mode='dark'] .tt-door {
+  --sky-a: #6a4526; --sky-b: #3d2c24; --sky-c: #1e2538; --sky-d: #121829;
+  --hill-0: #2a2f40; --hill-1: #26321f; --hill-2: #1c2919; --hill-3: #142013; --hill-4: #0e170d; --hedge: #0f1a0f; --pine: #0d150c; --pine-lit: #131f12; --stone: #3a3a2c;
+  --smoke: #7f8c7c; --lamp: #ffc96b; --round: #ffc96b; --spill: rgba(245, 170, 80, 0.16); --ray: rgba(245, 186, 96, 0.025);
+}
+/* the hall’s panelling and its floor, with the doorway cut out of them */
+.tt-door-hall {
+  --floor: calc(50% + var(--door) * 0.47);
+  position: absolute; inset: -160vmax; z-index: -1;
+  background:
+    linear-gradient(transparent calc(var(--floor) - 2px), rgba(255, 214, 150, 0.08) calc(var(--floor) - 2px) var(--floor), rgba(8, 5, 2, 0.6) var(--floor), rgba(8, 5, 2, 0.82) calc(var(--floor) + var(--door) * 0.8)),
+    radial-gradient(circle, transparent calc(var(--door) * 0.5), rgba(0, 0, 0, 0.55) calc(var(--door) * 1.6)),
+    radial-gradient(circle at calc(50% - var(--door) * 0.8) calc(50% - var(--door) * 0.7), rgba(255, 196, 120, 0.07), transparent calc(var(--door) * 0.9)),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.3) 0 2px, transparent 2px calc(var(--door) * 0.2)),
+    repeating-linear-gradient(90deg, rgba(255, 214, 150, 0.03) 0 7px, transparent 7px 19px, rgba(0, 0, 0, 0.06) 19px 23px, transparent 23px 41px),
+    #24190e;
+  mask: radial-gradient(circle, transparent calc(var(--door) * 0.445), #000 calc(var(--door) * 0.45));
+}
+html[data-mode='dark'] .tt-door-hall { background-color: #170f08; }
+/* the light it lets into the hall: a glow on the panelling, a pool on the floor, a few faint shafts */
+.tt-door-spill {
+  position: absolute; inset: -100%; z-index: -1; opacity: 0; animation: tt-door-spill var(--tt-len) ease both;
+  background: radial-gradient(ellipse calc(var(--door) * 0.7) calc(var(--door) * 0.15) at 50% calc(50% + var(--door) * 0.6), var(--spill), transparent), radial-gradient(circle, var(--spill) calc(var(--door) * 0.46), transparent calc(var(--door) * 1.15)), repeating-conic-gradient(from 3deg, var(--ray) 0 3deg, transparent 3deg 11deg, var(--ray) 11deg 17deg, transparent 17deg 29deg);
+  mask: radial-gradient(circle, #000 calc(var(--door) * 0.5), transparent calc(var(--door) * 1.5));
+}
+/* the doorway: what is beyond, and the leaf as it swings away into it */
+.tt-door-way { position: absolute; inset: 6%; clip-path: circle(50%); perspective: calc(var(--door) * 2.4); animation: tt-door-through var(--tt-len) both; }
+.tt-door-beyond, .tt-door-leaf { position: absolute; inset: 0; }
+.tt-door-beyond { width: 100%; height: 100%; }
+.tt-sky-a { stop-color: var(--sky-a); }
+.tt-sky-b { stop-color: var(--sky-b); }
+.tt-sky-c { stop-color: var(--sky-c); }
+.tt-sky-d { stop-color: var(--sky-d); }
+.tt-door-sun { fill: #fff8e1; }
+.tt-door-sun path { fill: #fff3cc; opacity: 0.22; }
+.tt-door-halo { fill: #fff3cc; opacity: 0.45; }
+.tt-door-night, .tt-door-string, .tt-door-lantern, .tt-door-glow { display: none; }
+.tt-hill { animation: tt-door-rise var(--tt-len) cubic-bezier(0.2, 0.7, 0.3, 1) calc(var(--i) * 70ms) both; }
+.tt-hill-0 { fill: var(--hill-0); }
+.tt-hill-1 { fill: var(--hill-1); }
+.tt-hill-2 { fill: var(--hill-2); }
+.tt-hill-3 { fill: var(--hill-3); }
+.tt-hill-4 { fill: var(--hill-4); }
+.tt-door-pine { fill: var(--pine); }
+.tt-door-pine-lit { fill: var(--pine-lit); }
+.tt-door-trunk { fill: #4a3524; }
+.tt-door-stone { fill: none; stroke: var(--stone); stroke-width: 2; }
+.tt-door-handle { fill: #5a3d1f; }
+.tt-door-flowers circle { fill: #d9534f; }
+.tt-door-flowers circle:nth-child(3n) { fill: #f2c14e; }
+.tt-door-flowers circle:nth-child(4n) { fill: #8e6bbf; }
+.tt-door-flowers circle:nth-child(5n) { fill: #f5e3a1; }
+.tt-door-hedge { fill: none; stroke: var(--hedge); stroke-width: 3.8; stroke-linecap: round; stroke-dasharray: 0 3.1; }
+.tt-door-road { fill: none; stroke: #8c6a40; stroke-opacity: 0.6; stroke-width: 1.3; stroke-dasharray: 3 2.4; }
+.tt-door-chimney { fill: #5b4330; }
+.tt-door-hole { fill: var(--round); stroke: #6f4a2b; stroke-width: 1.4; }
+.tt-door-window { fill: var(--lamp); stroke: #6f4a2b; stroke-width: 0.9; }
+.tt-door-mullion { stroke: #6f4a2b; stroke-width: 0.7; }
+.tt-door-smoke { fill: none; stroke: var(--smoke); stroke-width: 1.5; stroke-linecap: round; stroke-opacity: 0.55; stroke-dasharray: 1; stroke-dashoffset: 1; animation: tt-door-smoke var(--tt-len) ease-out both; }
+html[data-mode='dark'] .tt-door-sun { display: none; }
+html[data-mode='dark'] :is(.tt-door-night, .tt-door-string, .tt-door-lantern, .tt-door-glow) { display: inline; }
+html[data-mode='dark'] .tt-door-night { fill: #ede3c4; }
+html[data-mode='dark'] .tt-door-night circle { fill: #f3ecd4; opacity: 0.8; }
+html[data-mode='dark'] .tt-door-road { stroke: #3a3324; }
+html[data-mode='dark'] .tt-door-flowers { display: none; }
+/* by night the hall is lamplit and the green door dimmer */
+html[data-mode='dark'] .tt-door-leaf::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: rgba(6, 8, 14, 0.24); }
+.tt-door-string { fill: none; stroke: #3a2a1c; stroke-width: 0.4; }
+.tt-door-lantern { fill: #f2c14e; stroke: rgba(242, 193, 78, 0.3); stroke-width: 2.6; }
+.tt-door-lantern:nth-of-type(3n) { fill: #e07a4f; }
+.tt-door-lantern:nth-of-type(3n + 1) { fill: #f5e3a1; }
+.tt-door-glow { fill: #ffc96b; opacity: 0.22; }
+/* the leaf: green planks, iron straps, the brass knob dead centre */
+.tt-door-leaf { transform-origin: 0 50%; animation: tt-door-swing var(--tt-len) both; }
+.tt-door-leaf svg { display: block; width: 100%; height: 100%; }
+.tt-door-grain { fill: none; stroke: #4f7f45; stroke-width: 0.8; opacity: 0.35; }
+.tt-door-seams { stroke: #1b331a; stroke-width: 1.6; }
+.tt-door-bevel { fill: none; stroke: #1d381c; stroke-width: 7; opacity: 0.5; }
+.tt-door-hinge { fill: #26211d; stroke: #4a423b; stroke-width: 0.6; }
+.tt-door-nail { fill: #6a6058; }
+.tt-door-plate { fill: #6e5219; stroke: #c9a227; stroke-width: 1.4; }
+.tt-door-glint { animation: tt-door-glint var(--tt-len) ease-in-out both; }
+.tt-door-spark { fill: #fffbe9; transform-box: fill-box; transform-origin: center; animation: tt-door-spark var(--tt-len) ease-out both; }
+.tt-door-shade { position: absolute; inset: 0; border-radius: 50%; background: linear-gradient(90deg, rgba(10, 6, 2, 0.25), rgba(10, 6, 2, 0.88)); opacity: 0; animation: tt-door-shade var(--tt-len) both; }
+.tt-door-frame { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5)); }
+.tt-door-timber { fill: none; stroke: url(#tt-door-oak); stroke-width: 12; }
+.tt-door-edge { fill: none; stroke: #120b05; stroke-width: 1; }
+.tt-door-joints { stroke: #1c1209; stroke-width: 1.1; }
+.tt-door-lip { fill: none; stroke: #6b4a2a; stroke-width: 1.6; }
+/* the frame’s inner edge catching the light (drawn apart from the SVG, so lighting it repaints nothing) */
+.tt-door-lit { position: absolute; inset: 5.6%; border-radius: 50%; box-shadow: 0 0 0 1.5px #ffd98a, 0 0 16px 2px rgba(255, 217, 138, 0.5), inset 0 0 14px 2px rgba(255, 217, 138, 0.35); opacity: 0; animation: tt-door-spill var(--tt-len) ease both; }
+/* dust in the sunbeams; fireflies by night */
+.tt-door-mote { position: absolute; left: calc(50% + var(--x) * 100%); top: calc(50% + var(--y) * 100%); width: 3px; height: 3px; border-radius: 50%; background: #fff3cc; box-shadow: 0 0 6px 1px rgba(255, 226, 150, 0.8); opacity: 0; animation: tt-door-mote var(--tt-len) ease-in-out calc(var(--i) * 60ms) both; }
+html[data-mode='dark'] .tt-door-mote { background: #f1f5a8; box-shadow: 0 0 8px 2px rgba(214, 236, 120, 0.6); }
+@keyframes tt-door-dolly { 0%, 77% { transform: none; animation-timing-function: cubic-bezier(0.55, 0, 0.95, 0.4); } 100% { transform: scale(7); } }
+@keyframes tt-door-through { 0%, 80% { opacity: 1; } 93%, 100% { opacity: 0; } }
+@keyframes tt-door-spill { 0%, 19% { opacity: 0; } 45%, 80% { opacity: 1; } 92%, 100% { opacity: 0; } }
+@keyframes tt-door-rise { 0%, 30% { opacity: 0; transform: translateY(26px); } 52%, 100% { opacity: 1; transform: none; } }
+@keyframes tt-door-smoke { 0%, 50% { stroke-dashoffset: 1; } 82%, 100% { stroke-dashoffset: 0; } }
+@keyframes tt-door-glint { 0%, 8% { transform: translateX(-16px) skewX(-20deg); } 17%, 100% { transform: translateX(16px) skewX(-20deg); } }
+@keyframes tt-door-spark { 0%, 11% { transform: scale(0) rotate(0deg); } 14% { transform: scale(1.3) rotate(45deg); } 19%, 100% { transform: scale(0) rotate(90deg); } }
+/* the latch gives, a breath, and the leaf swings in */
+@keyframes tt-door-swing { 0%, 18% { transform: rotateY(0deg); animation-timing-function: ease-out; } 21% { transform: rotateY(5deg); } 23% { transform: rotateY(4deg); animation-timing-function: cubic-bezier(0.5, 0, 0.25, 1); } 47%, 100% { transform: rotateY(86deg); } }
+@keyframes tt-door-shade { 0%, 18% { opacity: 0; } 47%, 100% { opacity: 1; } }
+@keyframes tt-door-mote { 0%, 36% { opacity: 0; transform: none; } 56% { opacity: 0.9; } 80% { opacity: 0.7; } 100% { opacity: 0; transform: translate(10px, -26px); } }
+
+/* Mordor: the Eye; its slit opens on the page (a registered length, so it moves) */
+@property --tt-slit { syntax: '<length>'; inherits: false; initial-value: 0px; }
+.tt-eye { --eye: min(92vw, 62vh, 470px); --smoke: rgba(132, 118, 106, 0.2); position: relative; width: var(--eye); aspect-ratio: 1; margin: -1.5rem auto 0.2rem; }
+.tt-eye-dark {
+  position: absolute; inset: -160vmax; z-index: -1; animation: tt-eye-slit var(--tt-len) both;
+  background:
+    radial-gradient(var(--tt-slit) 100vmax at 50% 50%, transparent 97%, #ffd27a 98.6%, #ff6a1a 100.5%, rgba(168, 35, 14, 0.55) 103%, transparent 110%),
+    radial-gradient(circle at 50% 50%, rgba(110, 32, 12, 0.5), transparent calc(var(--eye) * 0.85)),
+    radial-gradient(60vmax 20vmax at calc(50% - 34vmax) calc(50% - 18vmax), var(--smoke), transparent),
+    radial-gradient(54vmax 16vmax at calc(50% + 36vmax) calc(50% + 6vmax), var(--smoke), transparent),
+    radial-gradient(70vmax 18vmax at calc(50% + 8vmax) calc(50% - 40vmax), var(--smoke), transparent),
+    radial-gradient(130vmax 34vmax at 50% calc(50% + 62vh), rgba(210, 66, 26, 0.2), transparent),
+    #15110f;
+  mask: radial-gradient(var(--tt-slit) 100vmax at 50% 50%, transparent 98%, #000 99%);
+}
+/* (a greyer dark in the light, the smoke over Gorgoroth; under the Eye, black) */
+html[data-mode='dark'] .tt-eye { --smoke: rgba(64, 30, 22, 0.32); }
+html[data-mode='dark'] .tt-eye-dark { background-color: #080504; }
+.tt-eye-glow { position: absolute; left: 8%; right: 8%; top: 30%; bottom: 30%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 138, 30, 0.6), rgba(210, 66, 26, 0.28) 55%, transparent); opacity: 0; animation: tt-eye-glow var(--tt-len) both; }
+.tt-eye-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.tt-eye-ring { fill: none; stroke: #5a1a0c; stroke-width: 0.7; transform-box: fill-box; transform-origin: center; animation: tt-eye-ring var(--tt-len) both, tt-eye-turn var(--tt-len) linear both; }
+.tt-eye-spark { stroke: #ffd27a; stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 7 93; opacity: 0; animation: tt-eye-spark calc(var(--tt-len) * 0.23) linear calc(var(--tt-len) * 0.46) both; }
+/* each letter catches as the spark passes it, and cools */
+.tt-glyph, .tt-glyph-heat { fill: none; stroke-linecap: round; stroke-linejoin: round; animation: tt-heat calc(var(--tt-len) * 0.32) ease-out calc(var(--tt-len) * 0.47 + var(--tt-len) * var(--i) * 0.019) both; }
+.tt-glyph { stroke-width: 1.5; }
+.tt-glyph-heat { stroke-width: 4.5; animation-name: tt-heat-glow; }
+.tt-flame { fill: url(#tt-eye-flame); transform-box: fill-box; transform-origin: 50% 100%; animation: tt-flame var(--tt-len) cubic-bezier(0.2, 0.7, 0.3, 1) calc(var(--i) * 4ms) both, tt-flick 0.26s ease-in-out calc(var(--i) * -53ms) infinite alternate; }
+.tt-eye-ring + .tt-eye-flames .tt-flame { fill: url(#tt-eye-ember); }
+.tt-eye-iris { stroke: #ffb347; stroke-opacity: 0.7; stroke-width: 0.6; }
+.tt-eye-ball { transform-box: fill-box; transform-origin: center; animation: tt-eye-ball var(--tt-len) both; }
+.tt-eye-fibres { fill: none; stroke-linecap: round; transform-box: fill-box; transform-origin: center; animation: tt-eye-turn var(--tt-len) linear both; }
+.tt-eye-fibres path:first-child { stroke: #ffd27a; stroke-width: 0.6; opacity: 0.45; }
+.tt-eye-fibres path:last-child { stroke: #7a1c0a; stroke-width: 0.9; opacity: 0.4; }
+.tt-eye-pupil { fill: #080504; stroke: #4e170b; stroke-width: 1.2; transform-box: fill-box; transform-origin: center; animation: tt-eye-pupil var(--tt-len) both; }
+.tt-eye-seam { position: absolute; left: 25%; right: 25%; top: 50%; height: 2px; margin-top: -1px; border-radius: 2px; background: linear-gradient(90deg, transparent, #ff8a1e 18%, #fff0bf 50%, #ff8a1e 82%, transparent); box-shadow: 0 0 6px 1px rgba(255, 138, 30, 0.9), 0 0 22px 4px rgba(210, 66, 26, 0.5); animation: tt-eye-seam var(--tt-len) both; }
+/* ash falling in the light; embers rising in the dark */
+.tt-eye-mote { position: absolute; left: calc(50% + var(--x) * 1vw); top: 50%; width: 5px; height: 4px; border-radius: 1px 3px; background: #a39a90; opacity: 0; animation: tt-ash calc(var(--tt-len) * 0.7) linear calc(var(--tt-len) * 0.1 + var(--i) * 70ms) both; }
+html[data-mode='dark'] .tt-eye-mote { width: 3px; height: 3px; border-radius: 50%; background: #ffb347; box-shadow: 0 0 6px 1px rgba(255, 122, 26, 0.85); animation-name: tt-ember; }
+@keyframes tt-eye-slit { 0%, 87% { --tt-slit: 0px; animation-timing-function: cubic-bezier(0.6, 0, 0.8, 0.5); } 100% { --tt-slit: 100vmax; } }
+@keyframes tt-eye-seam {
+  0% { opacity: 1; transform: rotate(0deg) scaleX(0); animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1); }
+  17%, 23% { opacity: 1; transform: rotate(0deg) scaleX(1); }
+  31%, 77% { opacity: 0; transform: rotate(0deg) scaleX(1); }
+  80% { opacity: 1; transform: rotate(0deg) scaleX(1); animation-timing-function: cubic-bezier(0.5, 0, 0.2, 1); }
+  87% { opacity: 1; transform: rotate(90deg) scaleX(3.6); }
+  91%, 100% { opacity: 0; transform: rotate(90deg) scaleX(3.6); }
+}
+@keyframes tt-eye-ball {
+  0%, 21% { opacity: 0; transform: scale(1, 0.02); }
+  22% { opacity: 1; transform: scale(1, 0.02); animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1); }
+  47%, 76% { opacity: 1; transform: scale(1, 1); animation-timing-function: cubic-bezier(0.7, 0, 1, 0.5); }
+  80% { opacity: 1; transform: scale(1, 0.02); }
+  81%, 100% { opacity: 0; transform: scale(1, 0.02); }
+}
+@keyframes tt-eye-glow { 0%, 22% { opacity: 0; } 47%, 74% { opacity: 1; } 82%, 100% { opacity: 0; } }
+@keyframes tt-eye-pupil { 0%, 50% { transform: scaleX(1); animation-timing-function: cubic-bezier(0.5, 0, 0.2, 1); } 70%, 100% { transform: scaleX(0.22); } }
+@keyframes tt-eye-turn { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+@keyframes tt-eye-ring { 0%, 24% { opacity: 0; } 40%, 77% { opacity: 1; } 85%, 100% { opacity: 0; } }
+@keyframes tt-flame { 0%, 27% { transform: scale(0.3, 0); } 46%, 72% { transform: scale(1); } 77%, 100% { transform: scale(0.3, 0); } }
+@keyframes tt-eye-spark { 0% { opacity: 0; stroke-dashoffset: 3.5; } 8%, 90% { opacity: 1; } 100% { opacity: 0; stroke-dashoffset: -96.5; } }
+@keyframes tt-flick { to { fill-opacity: 0.6; } }
+@keyframes tt-heat { 0% { stroke: #5a1a0c; } 22% { stroke: #ffd27a; } 45% { stroke: #ff8a1e; } 100% { stroke: #7a2410; } }
+@keyframes tt-heat-glow { 0% { stroke: #ff6a1a; opacity: 0; } 22% { opacity: 0.55; } 100% { stroke: #ff6a1a; opacity: 0.08; } }
+@keyframes tt-ash { 0% { opacity: 0; transform: translate(0, -35vh) rotate(0deg); } 15%, 85% { opacity: 0.85; } 100% { opacity: 0; transform: translate(4vw, 45vh) rotate(260deg); } }
+@keyframes tt-ember { 0% { opacity: 0; transform: translate(0, 45vh); } 15% { opacity: 1; } 85% { opacity: 0.8; } 100% { opacity: 0; transform: translate(-3vw, -35vh); } }
 .tt-portal { position: absolute; top: 50%; left: 50%; width: min(92vw, 620px); aspect-ratio: 1; translate: -50% -52%; animation: tt-portal var(--tt-len) cubic-bezier(0.2, 0.9, 0.3, 1.1) both; }
 .tt[data-kind='portal'] .tt-words { text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6), 0 0 22px rgba(0, 0, 0, 0.85); }

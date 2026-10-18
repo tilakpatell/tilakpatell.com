@@ -34,8 +34,8 @@ const SCENES = {
   pearl: { kind: 'ripple', color: '#f2c45a', ...THEME_QUOTES.pearl, clip: ['pirates', 6] },
   dutchman: { kind: 'ripple', color: '#5df2c0', quote: 'Do you fear death?', by: 'Davy Jones', clip: ['pirates', 6], line: 'fearDeath' },
   raga: { kind: 'ripple', color: '#e8871e', quote: 'Sa. Where every raga begins and ends.', by: 'Raga', sound: null },
-  shire: { kind: 'ring', color: '#e8b44c', ...THEME_QUOTES.shire, clip: ['lotr', 7] },
-  mordor: { kind: 'ring', color: '#ff6a1a', quote: 'One Ring to rule them all.', by: 'J.R.R. Tolkien', clip: ['lotr', 7], line: 'oneRing' },
+  shire: { kind: 'door', color: '#e8b44c', ...THEME_QUOTES.shire, clip: ['lotr', 7] },
+  mordor: { kind: 'eye', color: '#ff6a1a', quote: 'One Ring to rule them all.', by: 'J.R.R. Tolkien', clip: ['lotr', 7], line: 'oneRing' },
   optimus: { kind: 'transform', color: '#c8102e', quote: 'Autobots, roll out!', by: 'Optimus Prime', sound: (s) => s.transform(), clip: ['transform'], line: 'autobotsRollOut' },
   megatron: { kind: 'transform', color: '#8b5cf6', ...THEME_QUOTES.megatron, sound: (s) => s.transform(), clip: ['transform'] },
   bumblebee: { kind: 'transform', color: '#f7c600', quote: 'Bumblebee, ready to roll.', by: 'Bumblebee', sound: (s) => s.transform(), clip: ['transform'] },
@@ -47,7 +47,7 @@ const SCENES = {
   beth: { kind: 'portal', color: '#8e2b48', ...PORTAL_QUOTES.beth, cue: 'portalOpen' },
 };
 
-const LENGTH = { saber: 1700, hud: 1700, pixels: 1500, tiles: 1700, memo: 1800, ripple: 1800, transform: 1800, ring: 2400, portal: 1800, wipe: 1300 };
+const LENGTH = { saber: 1700, hud: 1700, pixels: 1500, tiles: 1700, memo: 1800, ripple: 1800, transform: 1800, door: 2400, eye: 2400, portal: 1800, wipe: 1300 };
 
 function Scene({ kind, color }) {
   if (kind === 'saber')
@@ -102,27 +102,283 @@ function Scene({ kind, color }) {
   return null;
 }
 
-// The One Ring with its inscription in fire, written around it.
-function OneRing() {
+// The Shire: the round door at Bag End, seen from the hall. It swings in on its
+// left hinge onto the Hill at golden hour (a lantern-lit night in the dark),
+// and we walk through it: the doorway grows until the page is all there is.
+// Everything is drawn on a 200-unit square about the door’s middle.
+const PLANK = 200 / 9;
+// the frame’s twelve timbers, jointed round the doorway
+const JOINTS = Array.from({ length: 12 }, (_, i) => {
+  const [c, s] = [Math.cos((i / 12) * Math.PI * 2 + 0.26), Math.sin((i / 12) * Math.PI * 2 + 0.26)];
+  return `M${(88 * c).toFixed(1)} ${(88 * s).toFixed(1)} L${(100 * c).toFixed(1)} ${(100 * s).toFixed(1)}`;
+}).join(' ');
+const HEDGE = 'M-100 61 C-78 51 -52 49 -26 55 C0 61 30 65 60 59 C78 55 92 55 100 57';
+// the pine, a tier at a time from the ground up: each whole, then its sunlit (left) half
+const PINE = [
+  ['M38 32 Q45 30 52 18 Q59 30 66 32 Q62 34 59 32.6 Q56 34.4 52 33 Q48 34.4 45 32.6 Q42 34 38 32 Z', 'M38 32 Q45 30 52 18 L52 33 Q48 34.4 45 32.6 Q42 34 38 32 Z'],
+  ['M41 25 Q47 23 52 11 Q57 23 63 25 Q60 26.6 57 25.4 Q54.5 27 52 25.8 Q49.5 27 47 25.4 Q44 26.6 41 25 Z', 'M41 25 Q47 23 52 11 L52 25.8 Q49.5 27 47 25.4 Q44 26.6 41 25 Z'],
+  ['M44 18 Q49 16 52 5 Q55 16 60 18 Q57.5 19.4 55 18.4 Q53 20 52 19 Q51 20 49 18.4 Q46.5 19.4 44 18 Z', 'M44 18 Q49 16 52 5 L52 19 Q51 20 49 18.4 Q46.5 19.4 44 18 Z'],
+  ['M47 11 Q50.5 9 52 -1 Q53.5 9 57 11 Q54.5 12.4 52 11.6 Q49.5 12.4 47 11 Z', 'M47 11 Q50.5 9 52 -1 L52 11.6 Q49.5 12.4 47 11 Z'],
+];
+
+function RoundDoor() {
   return (
-    <svg viewBox="-160 -90 320 180" className="tt-ring-svg" aria-hidden="true">
-      <defs>
-        <linearGradient id="tt-gold" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#fff1b8" />
-          <stop offset="0.35" stopColor="#e8b44c" />
-          <stop offset="0.7" stopColor="#a8741f" />
-          <stop offset="1" stopColor="#f6d27a" />
-        </linearGradient>
-        <path id="tt-ring-path" d="M -128 0 A 128 62 0 1 1 128 0 A 128 62 0 1 1 -128 0" />
-      </defs>
-      <ellipse cx="0" cy="0" rx="128" ry="62" fill="none" stroke="url(#tt-gold)" strokeWidth="16" />
-      <ellipse cx="0" cy="-3" rx="122" ry="56" fill="none" stroke="#fff6d6" strokeWidth="1.4" opacity="0.6" />
-      <text className="tt-ring-text">
-        <textPath href="#tt-ring-path" startOffset="2%">
-          Ash nazg durbatulûk · ash nazg gimbatul · ash nazg thrakatulûk · agh burzum-ishi krimpatul
-        </textPath>
-      </text>
-    </svg>
+    <div className="tt-door" aria-hidden="true">
+      <span className="tt-door-hall" />
+      <span className="tt-door-spill" />
+      <div className="tt-door-way">
+        <svg className="tt-door-beyond" viewBox="-100 -100 200 200">
+          <defs>
+            <radialGradient id="tt-door-sky" cx="-28" cy="22" r="150" gradientUnits="userSpaceOnUse">
+              {[0, 0.16, 0.45, 1].map((at, i) => (
+                <stop key={at} offset={at} className={`tt-sky-${'abcd'[i]}`} />
+              ))}
+            </radialGradient>
+          </defs>
+          <rect x="-100" y="-100" width="200" height="200" fill="url(#tt-door-sky)" />
+          <g className="tt-door-sun">
+            <path d="M-28 20 L-96 -40 L-88 -48 Z M-28 20 L-50 -96 L-38 -98 Z M-28 20 L6 -96 L18 -92 Z M-28 20 L60 -60 L68 -50 Z M-28 20 L100 -8 L100 6 Z" />
+            <circle cx="-28" cy="20" r="26" className="tt-door-halo" />
+            <circle cx="-28" cy="20" r="11" />
+          </g>
+          <g className="tt-door-night">
+            <path d="M40 -64 A12 12 0 1 0 52 -48 A9.5 9.5 0 1 1 40 -64 Z" />
+            {[[-62, -58], [-40, -76], [-14, -62], [8, -82], [-74, -30], [70, -24], [24, -40], [-50, -14], [84, -56], [-6, -30]].map(([x, y], i) => (
+              <circle key={i} cx={x} cy={y} r={i % 3 ? 0.9 : 1.3} />
+            ))}
+          </g>
+          <path className="tt-hill tt-hill-0" style={{ '--i': 0 }} d="M-100 24 L-82 14 L-70 19 L-56 6 L-44 16 L-30 10 L-14 20 L0 12 L14 18 L30 4 L44 15 L58 9 L72 18 L86 11 L100 20 L100 100 L-100 100 Z" />
+          <path className="tt-hill tt-hill-1" style={{ '--i': 1 }} d="M-100 30 C-70 22 -40 24 -18 30 C6 36 40 26 66 24 C82 23 92 26 100 28 L100 100 L-100 100 Z" />
+          <g className="tt-hill tt-hill-2" style={{ '--i': 2 }}>
+            <path d="M-100 46 C-74 36 -42 38 -10 44 C18 49 40 36 64 34 C82 33 94 38 100 40 L100 100 L-100 100 Z" />
+            <path className="tt-door-trunk" d="M51.2 36 L51.6 24 L52.8 24 L53.2 36 Z" />
+            {PINE.flatMap(([whole, lit], i) => [<path key={`w${i}`} className="tt-door-pine" d={whole} />, <path key={`l${i}`} className="tt-door-pine-lit" d={lit} />])}
+            <path className="tt-door-string" d="M37 25 Q52 37 67 25" />
+            {[0.1, 0.24, 0.38, 0.5, 0.62, 0.76, 0.9].map((t) => (
+              <circle key={t} className="tt-door-lantern" cx={37 + 30 * t} cy={25 + 24 * t * (1 - t)} r="1.3" />
+            ))}
+          </g>
+          <g className="tt-hill tt-hill-3" style={{ '--i': 3 }}>
+            <path d="M-100 62 C-78 52 -52 50 -26 56 C0 62 30 66 60 60 C78 56 92 56 100 58 L100 100 L-100 100 Z" />
+            <path className="tt-door-hedge" d={HEDGE} />
+            <path className="tt-door-road" d="M-40 77 C-36 84 -22 88 -14 100" />
+            <rect className="tt-door-chimney" x="-47.2" y="50" width="2.6" height="7" />
+            <circle className="tt-door-glow" cx="-40" cy="70" r="13" />
+            <circle className="tt-door-glow" cx="-27" cy="68.5" r="7" />
+            <circle className="tt-door-stone" cx="-40" cy="70" r="8.2" />
+            <circle className="tt-door-hole" cx="-40" cy="70" r="6.5" />
+            <circle className="tt-door-handle" cx="-40" cy="70" r="0.9" />
+            <circle className="tt-door-window" cx="-27" cy="68.5" r="3" />
+            <path className="tt-door-mullion" d="M-27 65.5 V71.5 M-30 68.5 H-24" />
+          </g>
+          <g className="tt-hill tt-hill-4" style={{ '--i': 4 }}>
+            <path d="M-100 84 C-60 78 -20 86 20 82 C50 79 80 84 100 80 L100 100 L-100 100 Z" />
+            <g className="tt-door-flowers">
+              {[[-62, 88], [-55, 92], [-30, 90], [-22, 95], [-8, 89], [6, 93], [14, 88], [28, 91], [40, 86], [47, 94], [60, 89], [70, 92], [-44, 96], [33, 97]].map(([x, y], i) => (
+                <circle key={i} cx={x} cy={y} r={i % 3 ? 1.1 : 1.5} />
+              ))}
+            </g>
+          </g>
+          <path className="tt-door-smoke" pathLength="1" d="M-45.9 49 C-50 42 -42 36 -46 28 C-50 20 -42 14 -47 4 C-51 -4 -44 -10 -48 -20" />
+        </svg>
+        <div className="tt-door-leaf">
+          <svg viewBox="-100 -100 200 200">
+            <defs>
+              <clipPath id="tt-door-round">
+                <circle r="100" />
+              </clipPath>
+              <clipPath id="tt-door-knob">
+                <circle r="8.5" />
+              </clipPath>
+              <linearGradient id="tt-door-sheen">
+                <stop offset="0" stopColor="#000000" stopOpacity="0.22" />
+                <stop offset="0.45" stopColor="#ffffff" stopOpacity="0.07" />
+                <stop offset="1" stopColor="#000000" stopOpacity="0.14" />
+              </linearGradient>
+              <pattern id="tt-door-boards" x="-100" y="-100" width={PLANK} height="200" patternUnits="userSpaceOnUse">
+                <rect width={PLANK} height="200" fill="url(#tt-door-sheen)" />
+              </pattern>
+              <radialGradient id="tt-door-lamp" cx="0.22" cy="0.18" r="0.8">
+                <stop offset="0" stopColor="#ffd696" stopOpacity="0.2" />
+                <stop offset="1" stopColor="#ffd696" stopOpacity="0" />
+              </radialGradient>
+              <radialGradient id="tt-door-sunk" r="0.5">
+                <stop offset="0.6" stopColor="#000000" stopOpacity="0" />
+                <stop offset="1" stopColor="#000000" stopOpacity="0.55" />
+              </radialGradient>
+              <radialGradient id="tt-door-brass" cx="0.34" cy="0.3" r="0.75">
+                <stop offset="0" stopColor="#fff4cc" />
+                <stop offset="0.3" stopColor="#ecc95e" />
+                <stop offset="0.72" stopColor="#b98f22" />
+                <stop offset="1" stopColor="#5e4412" />
+              </radialGradient>
+              <linearGradient id="tt-door-sweep">
+                <stop offset="0" stopColor="#fffbe9" stopOpacity="0" />
+                <stop offset="0.5" stopColor="#fffbe9" stopOpacity="0.95" />
+                <stop offset="1" stopColor="#fffbe9" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <g clipPath="url(#tt-door-round)">
+              {Array.from({ length: 9 }, (_, i) => (
+                <rect key={i} x={-100 + i * PLANK} y="-100" width={PLANK} height="200" fill={['#2f5a2e', '#376536', '#325f30'][i % 3]} />
+              ))}
+              <rect x="-100" y="-100" width="200" height="200" fill="url(#tt-door-boards)" />
+              <path className="tt-door-grain" d={Array.from({ length: 9 }, (_, i) => `M${-100 + (i + 0.36) * PLANK} -100 c2 34 -2 62 0 96 s2 64 -1 104 M${-100 + (i + 0.72) * PLANK} -100 c-1.5 40 1.5 70 0 110 s-2 50 1 90`).join(' ')} />
+              <path className="tt-door-seams" d={Array.from({ length: 8 }, (_, i) => `M${-100 + (i + 1) * PLANK} -100 V100`).join(' ')} />
+              <rect x="-100" y="-100" width="200" height="200" fill="url(#tt-door-lamp)" />
+              <circle r="100" fill="url(#tt-door-sunk)" />
+              <circle r="96.5" className="tt-door-bevel" />
+              <path className="tt-door-hinge" d="M-104 -54.5 L-40 -53 C-34 -53 -31 -55.5 -27 -55.5 C-23 -55.5 -21 -52.5 -21 -50 C-21 -47.5 -23 -44.5 -27 -44.5 C-31 -44.5 -34 -47 -40 -47 L-104 -45.5 Z M-104 54.5 L-40 53 C-34 53 -31 55.5 -27 55.5 C-23 55.5 -21 52.5 -21 50 C-21 47.5 -23 44.5 -27 44.5 C-31 44.5 -34 47 -40 47 L-104 45.5 Z" />
+              {[-88, -66, -44, -27].flatMap((x) => [-50, 50].map((y) => <circle key={`${x}${y}`} className="tt-door-nail" cx={x} cy={y} r="1.5" />))}
+            </g>
+            <circle r="14" className="tt-door-plate" />
+            <circle r="8.5" fill="url(#tt-door-brass)" />
+            <g clipPath="url(#tt-door-knob)">
+              <rect className="tt-door-glint" x="-4" y="-10" width="8" height="20" fill="url(#tt-door-sweep)" />
+            </g>
+            <path className="tt-door-spark" d="M-3 -12 L-1.9 -5.1 L5 -4 L-1.9 -2.9 L-3 4 L-4.1 -2.9 L-11 -4 L-4.1 -5.1 Z" />
+          </svg>
+          <span className="tt-door-shade" />
+        </div>
+      </div>
+      <svg className="tt-door-frame" viewBox="-100 -100 200 200">
+        <defs>
+          <linearGradient id="tt-door-oak" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#5e3f22" />
+            <stop offset="0.5" stopColor="#3d2815" />
+            <stop offset="1" stopColor="#24170b" />
+          </linearGradient>
+        </defs>
+        <circle r="94" className="tt-door-timber" />
+        <path className="tt-door-joints" d={JOINTS} />
+        <circle r="99.6" className="tt-door-edge" />
+        <circle r="88.4" className="tt-door-lip" />
+      </svg>
+      <span className="tt-door-lit" />
+      {[[-0.62, -0.12], [0.58, -0.34], [0.66, 0.22], [-0.48, -0.46], [0.36, -0.58], [-0.7, 0.24], [0.5, 0.44], [-0.4, 0.5]].map(([x, y], i) => (
+        <span key={i} className="tt-door-mote" style={{ '--x': x, '--y': y, '--i': i }} />
+      ))}
+    </div>
+  );
+}
+
+// Mordor: the Eye. A seam of fire in the dark parts into the Eye, its pupil
+// narrows on you, a ring of fire-letters heats once around it (our own
+// letters: not Tengwar, not the Ring’s verse), and the Eye shuts; its seam
+// stands upright and opens, like the pupil, onto the page.
+const ALMOND = 'M-50 0 C-28 -26 28 -26 50 0 C28 26 -28 26 -50 0 Z';
+const GLYPHS = [
+  'M-4 5 C-4 -1 1 -2 1 -7 C3 -3 4 1 0 6',
+  'M-4 -4 C-1 -7 3 -6 2 -2 C1 2 -3 2 -3 6 C-1 7 2 6 4 4',
+  'M-1 -7 C-5 -3 -4 3 0 3 C3 3 4 0 2 -2 M0 3 C0 5 1 6 3 7',
+  'M-4 6 C-3 2 -1 -1 3 -2 M-1 -1 C-2 -4 0 -7 3 -6',
+  'M3 -7 C-1 -5 -3 -2 -1 1 C1 4 3 4 2 7 M-4 3 L-2 4',
+  'M-4 -1 C-2 -5 2 -5 4 -2 M0 -3 C0 1 -2 4 -4 6 M1 3 C2 5 3 6 4 6',
+  'M-3 7 C-3 2 -1 -2 -3 -7 M-2 -2 C1 -3 4 -1 3 2 C2 4 0 3 0 1',
+  'M-4 -6 C0 -6 2 -3 0 0 C-2 3 0 6 4 6',
+  'M4 -6 C0 -7 -4 -5 -3 -1 C-2 2 2 2 2 -1 M-3 -1 C-4 3 -3 6 -1 7 M1 5 L4 7',
+  'M-3 -7 C-3 -2 0 0 3 -1 M3 -1 C1 2 -1 5 -1 7 M-4 4 C-3 3 -2 3 -1 4',
+  'M-2 -7 C3 -6 4 -2 0 0 C-4 2 -3 6 2 7 M-4 -3 L-2 -2',
+  'M-4 2 C-2 -2 2 -2 4 2 M0 -1 C0 -4 1 -6 3 -7 M-2 4 C-1 6 1 6 2 4',
+];
+// A seeded scatter, so the Eye is drawn the same every time.
+const seeded = (i) => {
+  const x = Math.sin(i * 12.9898 + 4.1) * 43758.5453;
+  return x - Math.floor(x);
+};
+// The iris’s fibres, spokes of uneven length out from the pupil (the almond clips them).
+const FIBRES = (odd) =>
+  Array.from({ length: 34 }, (_, i) => {
+    const a = ((i * 2 + odd + seeded(i + odd * 50) * 0.9) / 68) * Math.PI * 2;
+    const [r0, r1] = [5 + seeded(i + 90) * 8, 22 + seeded(i + 130 + odd) * 32];
+    return `M${(r0 * Math.cos(a)).toFixed(1)} ${(r0 * Math.sin(a)).toFixed(1)} L${(r1 * Math.cos(a)).toFixed(1)} ${(r1 * Math.sin(a)).toFixed(1)}`;
+  }).join(' ');
+// Tongues of fire from the rim, each drawn pointing up from its base and
+// turned outward, longer above (fire rises). Two ranks: long dark flames
+// behind, short hot ones before.
+const flames = (count, seed, [lo, hi], wide, reach) =>
+  Array.from({ length: count }, (_, i) => {
+    const r = (k) => seeded(seed + i * 7 + k);
+    const a = ((i + r(1) * 0.8) / count) * Math.PI * 2;
+    const [c, s] = [Math.cos(a), Math.sin(a)];
+    const n = Math.hypot(c / 46, s / 17);
+    const turn = (Math.atan2(c / 46 / n, 0.5 - s / 17 / n) * 180) / Math.PI;
+    const len = (lo + hi * Math.abs(s)) * (s < 0 ? reach : 0.62) * (0.55 + 0.9 * r(2));
+    const w = wide * (0.6 + 0.8 * r(3));
+    const b = (r(4) - 0.5) * len * 0.55;
+    const f = (v) => v.toFixed(1);
+    return {
+      at: `translate(${f(46 * c)} ${f(17 * s)}) rotate(${f(turn)})`,
+      d: `M${f(-w)} 0 C${f(-w)} ${f(-len * 0.45)} ${f(b - w * 0.2)} ${f(-len * 0.6)} ${f(b)} ${f(-len)} C${f(b + w * 0.6)} ${f(-len * 0.55)} ${f(w)} ${f(-len * 0.4)} ${f(w)} 0 Z`,
+    };
+  });
+const FLAMES = [flames(18, 3, [12, 22], 4.2, 1.5), flames(26, 41, [6, 13], 2.6, 1.35)];
+
+function TheEye() {
+  return (
+    <div className="tt-eye" aria-hidden="true">
+      <span className="tt-eye-dark" />
+      <span className="tt-eye-glow" />
+      <svg className="tt-eye-svg" viewBox="-100 -100 200 200">
+        <defs>
+          <radialGradient id="tt-eye-iris" cx="0" cy="0" r="52" gradientUnits="userSpaceOnUse" gradientTransform="scale(1 0.62)">
+            <stop offset="0" stopColor="#fff4c8" />
+            <stop offset="0.16" stopColor="#ffe9a3" />
+            <stop offset="0.45" stopColor="#ff7a1a" />
+            <stop offset="0.8" stopColor="#a8230e" />
+            <stop offset="1" stopColor="#4e170b" />
+          </radialGradient>
+          <linearGradient id="tt-eye-ember" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="#ff8a1e" />
+            <stop offset="0.5" stopColor="#c2381a" />
+            <stop offset="1" stopColor="#7a1c0a" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="tt-eye-flame" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="#ffd27a" />
+            <stop offset="0.4" stopColor="#ff8a1e" />
+            <stop offset="0.85" stopColor="#d2421a" />
+            <stop offset="1" stopColor="#a8230e" stopOpacity="0" />
+          </linearGradient>
+          <clipPath id="tt-eye-lids">
+            <path d={ALMOND} />
+          </clipPath>
+        </defs>
+        <g className="tt-eye-ring">
+          <circle r="74" />
+          <circle r="94" />
+          <circle className="tt-eye-spark" r="84" pathLength="100" transform="rotate(-90)" />
+          {GLYPHS.map((d, i) => (
+            <g key={i} transform={`rotate(${i * 30}) translate(0 -84)`}>
+              <path className="tt-glyph-heat" d={d} style={{ '--i': i }} />
+              <path className="tt-glyph" d={d} style={{ '--i': i }} />
+            </g>
+          ))}
+        </g>
+        {FLAMES.map((rank, k) => (
+          <g key={k} className="tt-eye-flames">
+            {rank.map(({ at, d }, i) => (
+              <g key={i} transform={at}>
+                <path className="tt-flame" d={d} style={{ '--i': i }} />
+              </g>
+            ))}
+          </g>
+        ))}
+        <g className="tt-eye-ball">
+          <path className="tt-eye-iris" d={ALMOND} fill="url(#tt-eye-iris)" />
+          <g clipPath="url(#tt-eye-lids)">
+            <g className="tt-eye-fibres">
+              <path d={FIBRES(0)} />
+              <path d={FIBRES(1)} />
+            </g>
+          </g>
+          <path className="tt-eye-pupil" d="M0 -19 C8 -8 8 8 0 19 C-8 8 -8 -8 0 -19 Z" />
+        </g>
+      </svg>
+      <span className="tt-eye-seam" />
+      {Array.from({ length: 14 }, (_, i) => (
+        <span key={i} className="tt-eye-mote" style={{ '--x': ((i * 37) % 100) - 50, '--i': i }} />
+      ))}
+    </div>
   );
 }
 
@@ -159,7 +415,9 @@ function Badge({ kind, color, autobot }) {
       </b>
     );
   if (kind === 'transform') return autobot ? <AutobotMark className="tt-insignia" /> : <DecepticonMark className="tt-insignia tt-insignia-dc" />;
-  if (kind === 'ring') return <OneRing />;
+  // (the door and the Eye bring their own dark, centred on them, so the page can show through them at the end)
+  if (kind === 'door') return <RoundDoor />;
+  if (kind === 'eye') return <TheEye />;
   return null;
 }
 
