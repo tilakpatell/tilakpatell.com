@@ -341,7 +341,10 @@ async function player() {
           if (step() > i || step() < 0) return true;
           const d = api.debug.dad();
           const flying = len(d.v) > 5;
-          if (flying) steer(add(add(d.p, d.v, 1.2), [0, 60, 0]), 15, { pass: true });
+          // (flying, he does 60 m/s to Mark's cruise of 40: the mark is 100 m
+          // ahead of him and 120 m up, far enough that the steer boosts, near
+          // enough that Mark is never 200 m from him)
+          if (flying) steer(add(add(d.p, d.v.map((c) => (c / (len(d.v) || 1)) * 100)), [0, 120, 0]), 15, { pass: true });
           else steer(add(d.p, [0, 6, 0]), 3);
           return false;
         }, 240000);
