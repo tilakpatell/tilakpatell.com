@@ -64,10 +64,14 @@ const PLACES = {
 export const placeOf = (id) => PLACES[id] ?? null;
 
 // the way back from the Moon: three gates, a gentle curve to the top of
-// the city's air (space's frame)
+// the city's air (space's frame). Each, and the line between each, stays
+// over the height where he'd fall back into the city's air: the middle one
+// is 30 km up, a third of the way round from over the city toward the Moon
+// (it was once inside the Earth, and the race couldn't be won).
+const MOON_WAY = [MOON.c[0], 0, MOON.c[2]].map((v) => v / Math.hypot(MOON.c[0], MOON.c[2]));
 const HOME_GATES = [
   MOON.c.map((v) => v * 0.68),
-  MOON.c.map((v, i) => v * 0.34 + [0, SPACE.RE * 0.25, 0][i]),
+  [MOON_WAY[0] * 0.5 * (SPACE.RE + 30000), Math.cos(Math.PI / 6) * (SPACE.RE + 30000), MOON_WAY[2] * 0.5 * (SPACE.RE + 30000)],
   [0, SPACE.RE + 12000, 0],
 ];
 // Eve's race round downtown, a loop of eight

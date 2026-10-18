@@ -63,12 +63,20 @@ async function player() {
   // and a line to the check script's log as the mission moves on ──
   let job = null;
   let seen = '';
+  let said = 0;
   const t0 = performance.now();
   const frame = () => {
     const now = sim.mission ? `${sim.mission.id} step ${sim.mission.step}, ${sim.mission.count} counted` : 'no mission';
+    const wall = (performance.now() - t0) / 1000;
     if (now !== seen) {
       seen = now;
-      console.log(`[play] ${now} (${((performance.now() - t0) / 1000).toFixed(0)} s)`);
+      console.log(`[play] ${now} (${wall.toFixed(0)} s)`);
+    }
+    // (and where he is now and then, for reading a run that stalls)
+    if (wall - said > 15) {
+      said = wall;
+      const h = sim.h;
+      console.log(`[play]   ${h.zone ?? 'city'} ${h.mode} at [${h.p.map((v) => Math.round(v))}] ${Math.round(len(h.v))} m/s, keys ${[...sim.keys].join('+') || 'none'}`);
     }
     if (job) {
       try {
@@ -186,6 +194,12 @@ async function player() {
     api.mission(id);
     sim.swing = null; // (the title card's swing round him: he's steered)
   };
+  // Cecil's episodes are his to give, at the GDA: there first, as a player would be
+  const fromCecil = async (id) => {
+    const door = M.placeOf('gda').door;
+    await travel([door[0], 6, door[2] + 10], 10);
+    start(id);
+  };
 
   // ── the season, an episode at a time ──
   const EPISODES = {
@@ -203,27 +217,29 @@ async function player() {
     },
     // the bank, a slam in front of the getaway truck, the twins down
     async ep2() {
-      start('ep2');
+      await fromCecil('ep2');
       await travel([50, 8, 0], 8, { done: () => step() >= 1 });
       await until(() => Boolean(sim.getaway));
-      for (let tries = 0; tries < 8 && step() === 1; tries++) {
-        // over the street ahead of it, then straight down as it comes
+      // after it, low, to a point just ahead of it; there, straight down (a
+      // slam from 10 m is past the 18 m/s a slam wants), and again if it missed
+      let diving = false;
+      await every(() => {
+        if (step() !== 1) return true;
         const g = sim.getaway;
-        const dir = [Math.sin(g.yaw), 0, Math.cos(g.yaw)];
-        const spot = add(g.p, dir, 70);
-        await go([spot[0], spot[1] + 30, spot[2]], 4, { ms: 30000 });
-        await until(() => {
-          const q = sim.getaway.p;
-          return Math.hypot(q[0] - spot[0], q[2] - spot[2]) < 26 || step() !== 1;
-        }, 8000);
-        await every(() => {
-          if (sim.h.mode === 'ground') return true;
+        if (sim.h.mode === 'ground') {
+          diving = false;
+          hold('up');
+          return false;
+        }
+        const lead = add(add(g.p, [Math.sin(g.yaw), 0, Math.cos(g.yaw)], 14), [0, 10, 0]);
+        if (diving || len(sub(lead, sim.h.p)) < 6) {
+          diving = true;
           sim.pitch = -1.55;
           sim.dragAt = 1e12;
           hold('fwd', 'boost');
-          return false;
-        }, 20000);
-      }
+        } else steer(lead, 6, { pass: true });
+        return false;
+      }, 300000);
       await every(() => {
         if (step() < 0) return true;
         if (!fight((e) => e.kind === 'mauler')) steer(add(sim.getaway?.p ?? sim.h.p, [0, 3, 0]), 6);
@@ -232,7 +248,7 @@ async function player() {
     },
     // the school: its students caught off the roof (and set down), Doc Seismic beaten
     async ep3() {
-      start('ep3');
+      await fromCecil('ep3');
       await travel([-2610, 20, -380], 10, { done: () => step() >= 1 });
       await every(() => {
         if (step() < 0) return true;
@@ -249,7 +265,7 @@ async function player() {
     },
     // up through the top of the sky to the Moon, by Allen; E to talk; three gates home
     async ep4() {
-      start('ep4');
+      await fromCecil('ep4');
       const moon = O.BODIES.find((b) => b.id === 'moon');
       const toEarth = moon.c.map((v) => -v / len(moon.c));
       await every(() => {
@@ -261,6 +277,8 @@ async function player() {
         return false;
       }, 240000);
       sim.speedup = 1; // (a gate is a sphere judged a frame at a time)
+      // well clear of the air first: a straight line from the top of the sky to the Moon dips back into it
+      await go([0, O.SPACE.RE + 40000, 0], 3000, { done: () => len(sim.h.p) - O.SPACE.RE > 35000 || !inSpace() });
       // down on the Moon just under where Allen waits
       const under = add(moon.c, toEarth, moon.r - 50);
       await every(() => {
@@ -277,7 +295,7 @@ async function player() {
     },
     // two waves at the portal over the river, then through it flat out
     async ep5() {
-      start('ep5');
+      await fromCecil('ep5');
       await travel([1000, 150, -420], 25);
       await every(() => {
         if (step() >= 2 || step() < 0) return true;
@@ -297,7 +315,7 @@ async function player() {
     },
     // the hangar held for ninety seconds, then every clone down
     async ep6() {
-      start('ep6');
+      await fromCecil('ep6');
       const door = M.placeOf('hangar').door;
       const guard = [door[0], 2, door[2] + 18];
       await travel(guard, 6);

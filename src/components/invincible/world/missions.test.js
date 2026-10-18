@@ -4,6 +4,7 @@ import { KINDS, PORTAL } from './foes';
 import { CITY, buildWorld, near } from './map';
 import { MISSIONS, PHOTO_SPOTS, RADIO, RADIO_CALLS, STORY, feedMission, keepStory, loadStory, markerOf, missionOf, newRadio, nextRadioCall, nextStory, placeOf, startMission, stepOf } from './missions';
 import { RINGS } from './quests';
+import { SPACE } from './orbit';
 
 const W = buildWorld();
 const inside = (b, p, pad = 0) => p[0] > b.x0 - pad && p[0] < b.x1 + pad && p[2] > b.z0 - pad && p[2] < b.z1 + pad && p[1] > b.y0 - pad && p[1] < b.y1 + pad;
@@ -172,6 +173,14 @@ describe('each episode, end to end', () => {
     expect(r.p.done).toBe(true);
     const late = feed(feed(startMission('ep4'), [{ type: 'land', body: 'moon' }, { type: 'talk', npc: 'allen' }]).p, ticks(151));
     expect(late.p.fail).toBe('time');
+  });
+  it('ep4’s race home stays out of the air: every gate, and the straight line between each', () => {
+    // (under SPACE.reentry he's back in the city's air, where space's gates can't be flown through)
+    const gates = missionOf('ep4').steps[2].gates;
+    const over = (p) => Math.hypot(...p) - SPACE.RE;
+    const lowest = (a, b) => Math.min(...Array.from({ length: 101 }, (_, k) => over(a.map((v, i) => v + (b[i] - v) * (k / 100)))));
+    for (const g of gates) expect(over(g)).toBeGreaterThan(SPACE.reentry);
+    for (let i = 1; i < gates.length; i++) expect(lowest(gates[i - 1], gates[i])).toBeGreaterThan(SPACE.reentry);
   });
   it('ep5: two waves of Flaxans, then through the portal faster than 120 m/s', () => {
     expect(stepOf(startMission('ep5')).spawn).toEqual([['flaxan', 12, PORTAL.p]]);
