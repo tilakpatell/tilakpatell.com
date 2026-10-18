@@ -145,5 +145,14 @@ describe('the spread', () => {
     expect(sectorById('main')).toBe(SECTORS.main);
     expect(sectorById('nowhere')).toBeNull();
   });
+
+  it('keys sectors in 3D: layers above and below, and the pocket a ball', () => {
+    expect(sectorOf(0, 70000, 0)).toBe('E:0,0,1');
+    expect(sectorOf(0, 50000, 0)).toBe('main');
+    expect(sectorOf(0, 5000, -66000)).toBe('rickmorty');
+    expect(sectorOf(0, 6500, -66000)).toBe('E:0,-1');
+    expect(sectorOf(4500, 4500, -66000)).toBe('E:0,-1');
+    expect(sectorById('E:1,-2,3').origin).toEqual([120000, 360000, -240000]);
+  });
 });
 
