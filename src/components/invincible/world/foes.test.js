@@ -390,3 +390,22 @@ describe('a block', () => {
     expect(hits.some((e) => e.counter)).toBe(true);
   });
 });
+
+describe('Omni-Man (episode 8)', () => {
+  const sky = (p) => ({ p: [...p], v: [0, 0, 0], mode: 'air' });
+  it('circles him, charges every few seconds, hurts him and drives him off along the charge, and is never knocked out', () => {
+    const f = spawnFoes(newFoes(), 'omniman', 1, [50, 60, 0]);
+    expect(f.foes[0].state).toBe('circle');
+    const h = sky([50, 60, 0]);
+    const { f: f2, ev } = run(f, h, 8, { punch: false, look: [0, 0, -1] }, 0.05);
+    const driven = ev.filter((e) => e.type === 'driven');
+    expect(driven.length).toBeGreaterThanOrEqual(1);
+    const hurt = ev.find((e) => e.type === 'hurt' && e.by === 'omniman');
+    expect(FIGHT.hp - hurt.hp).toBeCloseTo(KINDS.omniman.hurt);
+    // a blow on him is a hit, never a knock-out
+    const punched = run(f2, { ...h, p: [...f2.foes[0].p] }, 1, (s) => ({ punch: s < 0.05, look: [0, 0, -1], fists: 2 }), 0.05);
+    expect(punched.ev.some((e) => e.type === 'hit' && e.kind === 'omniman')).toBe(true);
+    expect(punched.ev.some((e) => e.type === 'ko')).toBe(false);
+    expect(punched.f.foes[0].state).toBe('stagger');
+  });
+});

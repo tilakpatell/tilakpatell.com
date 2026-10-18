@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FLY, JUMP, jumpPress, newHero, onWater, speedOf, stepHero } from './flight';
+import { FLY, JUMP, jumpPress, newHero, onWater, speedOf, stepHero, launch } from './flight';
 import { BRIDGES, RIVER, SPAWN, WATER_Y, WORLD, buildWorld, groundAt } from './map';
 
 const W = buildWorld();
@@ -269,5 +269,22 @@ describe('R lets go of the water', () => {
   it('does nothing away from the water', () => {
     const { ev } = fly(airborne(), (_, s) => ({ ...still, free: s === 0 }), 0.2);
     expect(ev.filter((e) => e.type === 'takeoff')).toHaveLength(0);
+  });
+});
+
+describe('launched', () => {
+  it('is a projectile with no say in it for the hold, then his again', () => {
+    const W2 = buildWorld();
+    let h = launch(newHero({ x: -2044, y: 30, z: 254, face: 0 }), [0, 0.1, 1], 200);
+    expect(h.mode).toBe('air');
+    expect(Math.hypot(...h.v)).toBeCloseTo(200);
+    const pull = { fwd: -1, side: 0, up: 0, down: 0, boost: true, run: false, jump: false, look: [0, 0, 1] }; // (the keys say back: -z)
+    h = stepHero(h, pull, 0.5, W2);
+    // (half a second in: still going the way he was sent, not the way the keys say)
+    expect(h.v[2]).toBeGreaterThan(50);
+    expect(h.launched).toBeCloseTo(0.7);
+    for (let t = 0; t < 2; t += 0.05) h = stepHero(h, pull, 0.05, W2);
+    expect(h.launched).toBe(0);
+    expect(h.v[2]).toBeLessThan(0); // (the keys again: back the other way)
   });
 });

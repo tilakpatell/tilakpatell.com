@@ -18,7 +18,7 @@ import { CAST, asset } from '../cast';
 import { createChallenges } from './challenges';
 import { DAD, newDad, stepDad } from './companions';
 import { buildCity } from './city';
-import { standing } from './foes';
+import { anyOf, standing } from './foes';
 import { createVillains } from './villains';
 import { createFlightFx } from './fx';
 import { buildGround } from './ground';
@@ -184,7 +184,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   const challenges = createChallenges(scene, world, fx.vfx);
   // what a broken tower leaves (./ruins.js; ./demolish.js says how broken)
   const ruins = createRuins(scene, { level: small ? 'low' : 'high' });
-  const villains = createVillains(scene, fx.vfx, { calm, templates: { mauler: people.mauler, seismic: people.seismic }, rim: LOOK.noon.rim });
+  const villains = createVillains(scene, fx.vfx, { calm, templates: { mauler: people.mauler, seismic: people.seismic, omniman: omniT }, rim: LOOK.noon.rim });
   // the missions' things (./missions.js, run by InvWorld.jsx): the bank on
   // its block, the getaway truck on the grid, the marker over the step's target
   const props = await loadProps(scene, world, { rim: LOOK.noon.rim });
@@ -590,7 +590,8 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
         feel.trauma(0.6);
         feel.punch(8);
         scare.push({ x: e.at[0], z: e.at[2], r: 60 });
-      } else if (e.type === 'rubble') {
+      } else if (e.type === 'contrail') fx.vfx.trail(new THREE.Vector3(...e.at), { size: 4, life: 2.5, color: 0xffffff, to: 0x9fc8ff, a: 0.8 });
+      else if (e.type === 'rubble') {
         // a face hit hard enough to mark it (./demolish.js): chunks and dust off it
         const at = new THREE.Vector3(...e.at);
         fx.vfx.debris(at, { count: Math.round(10 + e.delta * 60), speed: 9 + e.delta * 18, size: 0.3 + e.delta * 0.5, dir: new THREE.Vector3(...(e.n ?? [0, 1, 0])), spread: 0.9, color: 0x8e8a82 });
@@ -701,6 +702,8 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
         dad = r.dad;
         sim.companion.push(...r.ev);
       }
+      // (episode 8: while he is the foe, the villains draw him; after it, he is gone)
+      omni.holder.visible = !sim.dadGone && !(sim.foes && anyOf(sim.foes, 'omniman'));
       const onPorch = dad.state === 'home' && Math.hypot(dad.p[0] - dad.porch[0], dad.p[1] - dad.porch[1], dad.p[2] - dad.porch[2]) < 1;
       const going = Math.hypot(dad.v[0], dad.v[2]);
       if (onPorch) dadYaw = porchYaw;

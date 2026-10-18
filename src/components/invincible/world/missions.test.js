@@ -28,8 +28,8 @@ const caught = () => ({ type: 'caught', source: 'mission' });
 const ko = (kind, n, from = 0) => Array.from({ length: n }, (_, i) => ({ type: 'ko', kind, id: from + i }));
 
 describe('the season', () => {
-  it('has seven episodes in order, each with its people and its villains in the cast', () => {
-    expect(STORY).toEqual(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7']);
+  it('has eight episodes in order, each with its people and its villains in the cast', () => {
+    expect(STORY).toEqual(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7', 'ep8']);
     for (const m of MISSIONS) {
       expect(m.giver in CAST, `${m.id}'s giver`).toBe(true);
       if (m.start?.npc) expect(m.start.npc in CAST).toBe(true);
@@ -331,5 +331,47 @@ describe('the radio', () => {
     expect(r.p.done).toBe(false);
     r = feed(r.p, [at([q.p[0] + 5, q.p[1], q.p[2]], { face: q.face + 0.2 }), { type: 'use', id: 'photo' }]);
     expect(r.p.done).toBe(true);
+  });
+});
+
+describe('episode 8, Where I Really Come From', () => {
+  const ep8 = () => startMission('ep8');
+  it('waits for the whole season, from Dad at home at dusk or night', () => {
+    const m = missionOf('ep8');
+    expect(m.start).toEqual({ npc: 'omni', place: 'home', time: ['dusk', 'night'], after: ['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7'] });
+    expect(m.achievement).toBe('truth');
+    expect(nextStory(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7'])).toBe('ep8');
+  });
+  it('goes porch, the hit, three blows, the plaza, the sky; the world says when the hit and the sky are over', () => {
+    let r = feed(ep8(), [{ type: 'use', id: 'panels' }]);
+    expect(r.p.step).toBe(1);
+    r = feed(r.p, [{ type: 'sky' }]); // (the wrong event: nothing)
+    expect(r.p.step).toBe(1);
+    r = feed(r.p, [{ type: 'recover' }]);
+    expect(r.p.step).toBe(2);
+    r = feed(r.p, [{ type: 'hit', kind: 'mauler', id: 1 }, { type: 'hit', kind: 'omniman', id: 7 }, { type: 'hit', kind: 'omniman', id: 7 }]);
+    expect(r.p.count).toBe(2);
+    expect(r.out.filter((o) => o.type === 'driven')).toHaveLength(2);
+    r = feed(r.p, [{ type: 'hit', kind: 'omniman', id: 7 }]);
+    expect(r.p.step).toBe(3);
+  });
+  it('the plaza shakes a faller down every so often, and ends on its time without failing', () => {
+    let r = feed(ep8(), [{ type: 'use', id: 'panels' }, { type: 'recover' }, ...Array.from({ length: 3 }, () => ({ type: 'hit', kind: 'omniman', id: 7 }))]);
+    expect(r.p.step).toBe(3);
+    r = feed(r.p, ticks(3));
+    expect(r.out.some((o) => o.type === 'shake')).toBe(true);
+    r = feed(r.p, Array.from({ length: 5 }, () => ({ type: 'caught', source: 'mission' })));
+    expect(r.p.count).toBe(5);
+    r = feed(r.p, ticks(61));
+    expect(r.p.fail).toBeNull();
+    expect(r.p.step).toBe(4);
+    r = feed(r.p, [{ type: 'sky' }]);
+    expect(r.p.done).toBe(true);
+    expect(r.out.find((o) => o.type === 'done').achievement).toBe('truth');
+  });
+  it('twelve caught ends the plaza early', () => {
+    let r = feed(ep8(), [{ type: 'use', id: 'panels' }, { type: 'recover' }, ...Array.from({ length: 3 }, () => ({ type: 'hit', kind: 'omniman', id: 7 }))]);
+    r = feed(r.p, Array.from({ length: 12 }, () => ({ type: 'caught', source: 'mission' })));
+    expect(r.p.step).toBe(4);
   });
 });

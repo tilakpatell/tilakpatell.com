@@ -293,6 +293,15 @@ function land(h, type) {
   h.v = [0, 0, 0];
 }
 
+// Hit, and sent flying: a projectile at `speed` along `dir` with no say in
+// it for `hold` seconds (episode 8's first blow, ./missions.js); the walls
+// and the water stop him as they do, and the hit's events say what he hit.
+export function launch(hero, dir, speed, hold = 1.2) {
+  const l = Math.hypot(dir[0], dir[1], dir[2]) || 1;
+  const d = [dir[0] / l, dir[1] / l, dir[2] / l];
+  return { ...hero, mode: 'air', crouch: 0, lift: 0, dir: d, spd: speed, v: [d[0] * speed, d[1] * speed, d[2] * speed], launched: hold, stun: 0 };
+}
+
 // up off the ground (or the water, or out of a fall off an edge just now)
 function takeoff(h, input) {
   const [mx, , mz] = wish(input, false);
@@ -361,6 +370,11 @@ export function stepHero(hero, input, dt, world, mult = null) {
   const n = Math.max(1, Math.ceil(dt / STEP - 1e-9));
   const sub = dt / n;
   const press = pressOf(input);
+  // launched (launch): no say in it while it lasts: the keys read as nothing held
+  if (h.launched > 0) {
+    h.launched = Math.max(0, h.launched - dt);
+    input = { ...input, fwd: 0, side: 0, up: 0, down: 0, boost: false, run: false, jump: false, free: false, press: null };
+  }
   // R: off the water, as if from the ground (else he hangs there until up or forward)
   if (input.free && onWater(h, world)) takeoff(h, input);
   for (let i = 0; i < n; i++) {

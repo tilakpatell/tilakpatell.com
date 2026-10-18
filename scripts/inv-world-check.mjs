@@ -53,6 +53,9 @@ const SHOTS = {
   // the brawl (./brawl.js): a Mauler in his hands over downtown (['spawn'] calls the villains, ['held', i] puts the i-th in his hands)
   // the city that breaks (./demolish.js): the three towers nearest the plaza's east with their tops gone, at dusk (['ruin', [x, z], n, d] hits them through the hook)
   ruins: { drive: [['go', [110, 230, 175], Math.PI, 'air'], ['ruin', [110, 60], 3, 0.8], ['wait', 800]], time: 'dusk', pitch: -0.95 }, // (from high over them, looking down: the tops gone show best from above)
+  // episode 8 (./missions.js): Dad on the porch at dusk as it starts; the sky at 8 km at night, Dad beside him (the world steps the beats; ['feed'] moves the rules)
+  ep8porch: { mission: 'ep8', drive: [['go', [-2050.2, 0, 251], Math.PI, 'ground'], ['wait', 1200]], time: 'dusk', pitch: 0.12 },
+  ep8sky: { mission: 'ep8', drive: [['feed', { type: 'use', id: 'panels' }], ['feed', { type: 'recover' }], ...Array.from({ length: 3 }, () => ['feed', { type: 'hit', kind: 'omniman', id: 7 }]), ['ticks', 61], ['wait', 300], ['go', [0, 8000, -400], 0, 'air'], ['wait', 2500]], time: 'night', pitch: -0.5 },
   // who you fly as (./heroes.js; ['hero', id] swaps through the hook, earned or not)
   heroEve: { drive: [['hero', 'eve'], ['go', [40, 18, 200], Math.PI, 'air'], ['wait', 600]], pitch: -0.22 },
   heroOmni: { drive: [['hero', 'omniman'], ['go', [40, 18, 200], Math.PI, 'air'], ['wait', 600]], pitch: -0.22 },

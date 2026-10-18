@@ -10,7 +10,7 @@ import { getawayAt, newGetaway, stopGetaway } from './getaway';
 import { createHits } from './hits';
 import { WHAT, clock } from './hudFrame';
 import { QUESTS, STORY } from './keep';
-import { RINGS_DONE } from './lines';
+import { DAD_DRIVEN, RINGS_DONE } from './lines';
 import { keepStory, missionOf, nextStory, placeOf as missionPlace } from './missions';
 import { CARDS, keepQuests } from './quests';
 
@@ -25,14 +25,14 @@ export const sound = (name, ...args) => import('./sounds').then((m) => m[name]?.
 const HANGAR = missionPlace('hangar');
 
 // what a step (or its end) asks for
-export function applyOuts(outs, { s, say, speak, unlock, clear, openCard, closeCard, shakeOff }) {
+export function applyOuts(outs, { s, say, speak, unlock, clear, openCard, closeCard, shakeOff, beat = null, found = null }) {
   for (const o of outs) {
     if (o.type === 'step') {
       // a step with a car: the getaway pulls out; the step after one: it's stopped where it is
       if (o.car) s.getaway = newGetaway({ from: o.car.from ?? [s.h.p[0], 0, s.h.p[2]], speed: o.car.speed, seed: 3 + o.i, away: s.h.p });
       else if (s.getaway && !s.getaway.stopped) s.getaway = stopGetaway(s.getaway);
       if (o.spawn) {
-        for (const [kind, n, at] of o.spawn) s.foes = spawnFoes(s.foes, kind, n, at?.car ? (getawayAt(s.getaway) ?? [s.h.p[0], 0, s.h.p[2]]) : at);
+        for (const [kind, n, at] of o.spawn) s.foes = spawnFoes(s.foes, kind, n, at?.car ? (getawayAt(s.getaway) ?? [s.h.p[0], 0, s.h.p[2]]) : at === 'hero' ? [s.h.p[0], s.h.p[1], s.h.p[2]] : at);
         s.missionFoes = true;
         s.invaded = true; // (the clock's own invasion stays out of it)
         sfx('alarm');
@@ -52,7 +52,10 @@ export function applyOuts(outs, { s, say, speak, unlock, clear, openCard, closeC
         sfx('ding');
         say(o.text, 2600);
       }
+      // (episode 8's beats are the world's: the launch, the tower, the sky)
+      if (s.mission?.id === 'ep8') beat?.(o.i);
     } else if (o.type === 'shake') shakeOff(missionOf(s.mission?.id)?.steps[s.mission.step]);
+    else if (o.type === 'driven') say(DAD_DRIVEN[Math.min(DAD_DRIVEN.length - 1, o.n - 1)], 2400);
     else if (o.type === 'count') sfx('coin');
     else if (o.type === 'hp') sfx('warn');
     else if (o.type === 'done') {
@@ -63,6 +66,12 @@ export function applyOuts(outs, { s, say, speak, unlock, clear, openCard, closeC
       const best = s.story.best[id] ?? null;
       s.story = keepStory(s.story, id, o.time);
       local.set(STORY, s.story);
+      // (the last episode's card is found by playing it)
+      if (id === 'ep8' && !s.quests.cards.includes(8)) {
+        s.quests = { ...s.quests, cards: [...s.quests.cards, 8] };
+        local.set(QUESTS, keepQuests(s.quests));
+        found?.(s.quests.cards.length);
+      }
       speak(m.done);
       if (s.getaway) s.getaway = stopGetaway(s.getaway);
       s.wave = null;
@@ -125,6 +134,7 @@ export function onQuestEvent(e, { s, say, feed, unlock, setFound }) {
 
 // the villains' blows, and his on them
 export function onFoeEvent(e, { s, say, feed, unlock, shakeOff }) {
+  if (e.type === 'hit') feed({ type: 'hit', kind: e.kind ?? 'flaxan', id: e.id }); // (a blow landed: episode 8 counts them)
   if (e.type === 'punch') {
     s.punchT = 0.25;
     sfx('zip');

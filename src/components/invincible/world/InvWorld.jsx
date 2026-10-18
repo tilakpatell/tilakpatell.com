@@ -8,11 +8,11 @@ import { readPad } from '../../games/pad';
 import { useAchievements } from '../../Achievements';
 import { useTravellers } from '../../middleearth/towns/useTravellers';
 import { newFoes, spawnFoes, startInvasion, stepFoes } from './foes';
-import { jumpPress, newHero, stepHero } from './flight';
+import { jumpPress, launch, newHero, stepHero } from './flight';
 import { impactGroups } from '../../../lib/impact';
 import { pressGroups } from '../../../lib/press';
 import { getawayAt, stepGetaway } from './getaway';
-import { CALLS } from './lines';
+import { CALLS, DEBBIE_AFTER, PANELS } from './lines';
 import { RADIO, RADIO_CALLS, feedMission, missionOf, newRadio, nextRadioCall, nextStory, placeOf as missionPlace, startMission as beginMission, stepOf } from './missions';
 import { intoSpace, outOfSpace, stepSpace } from './orbit';
 import { CARDS, stepQuests } from './quests';
@@ -20,6 +20,7 @@ import { SPAWN, groundAt, isSafeStart, near as boxesNear } from './map';
 import { VOICE } from './voicelines';
 import InvHud from './InvHud';
 import MissionCard from './MissionCard';
+import Panels from './Panels';
 import { titleMode } from '../../../runtime/hud';
 import './world.css';
 import LoadingVeil from '../../worlds/LoadingVeil';
@@ -91,6 +92,8 @@ function World({ gl, setGl, thinkMark }) {
   const [mcard, setMcard] = useState(null);
   // the radio's call, on the HUD's line until it's taken or dropped; the shutter, for a photo
   const [radio, setRadio] = useState(null);
+  // episode 8's panels (./Panels.jsx): the strip the sim holds, as React sees it
+  const [panels, setPanels] = useState(null);
   const [shutter, setShutter] = useState(null);
   const cardRef = useRef(null);
   cardRef.current = mcard;
@@ -103,7 +106,7 @@ function World({ gl, setGl, thinkMark }) {
   if (!sim.current) {
     // (he's put on the lawn for now: where he really starts waits on the
     // world, which the scene makes, and nothing moves before it's there)
-    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null, ruins: keptRuins(), hero: heroOf(MARK_ID), power: newPower(), heroBack: null, touchPower: false, brawl: newBrawl(), pound: false, dive: false, touchPunch: false, mouseDown: false };
+    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null, ruins: keptRuins(), dadGone: keptStory().done.includes('ep8'), panels: null, sky: null, launchWatch: false, hero: heroOf(MARK_ID), power: newPower(), heroBack: null, touchPower: false, brawl: newBrawl(), pound: false, dive: false, touchPunch: false, mouseDown: false };
   }
 
   // the hero: the sim's numbers, the scene's figure, and kept for next time
@@ -317,15 +320,147 @@ function World({ gl, setGl, thinkMark }) {
     (step) => {
       const s = sim.current;
       if (!s.mission || !step?.shake || s.mission.count >= step.n || s.quests.rescue) return;
-      s.quests = { ...s.quests, rescue: { kind: 'fall', p: [ROOF[0] - 30 + s.mission.count * 20, ROOF[1], ROOF[2] + 19.6], v: [0, 0, 0], out: [0, 0, 1], t: 0, phase: 'warn', carried: false, spin: 0, source: 'mission' } };
+      // (the school's roof edge, warned first; or, for a point that is no roof, falling from 40 m over it at once: episode 8's plaza)
+      const roof = !Array.isArray(step.shake) || (step.shake[0] === ROOF[0] && step.shake[2] === ROOF[2]);
+      const at = roof ? ROOF : step.shake;
+      const k = s.mission.count;
+      s.quests = { ...s.quests, rescue: roof ? { kind: 'fall', p: [at[0] - 30 + k * 20, at[1], at[2] + 19.6], v: [0, 0, 0], out: [0, 0, 1], t: 0, phase: 'warn', carried: false, spin: 0, source: 'mission' } : { kind: 'fall', p: [at[0] + Math.cos(k * 2.4) * 14, at[1] + 40, at[2] + Math.sin(k * 2.4) * 14], v: [0, -4, 0], out: [0, 0, 0], t: 0, phase: 'fall', carried: false, spin: 0, source: 'mission' } };
       s.missionFaller = true;
       sfx('warn');
-      say('A student, on the roof’s edge. Get under them.', 3200);
+      say(roof ? 'A student, on the roof’s edge. Get under them.' : 'Someone’s falling with it. Get under them.', 3200);
     },
     [say],
   );
+  // the city that breaks (./demolish.js): a face hit hard enough is marked,
+  // drawn so, and the chunks come off it; the first tower to lose its top is said
+  const hitRuin = useCallback((key, force, at, n = null) => {
+    const s = sim.current;
+    const a = api.current;
+    if (!key || !force || !a) return;
+    const r = hitTower(s.ruins, key, force);
+    if (!r.delta) return;
+    s.ruins = r.ruins;
+    a.setDamage(key, r.d);
+    s.events.push({ type: 'rubble', at, n, delta: r.delta, stage: r.stage });
+    sfx(r.stage === 3 ? 'crumble' : 'thunk');
+    if (r.stage === 3 && !s.ruinSaid) {
+      s.ruinSaid = true;
+      say('That one’s top is gone. Cecil’s crews will be a day on it.', 3600);
+    }
+  }, [say]);
+  // the box a point is in, by its collider, for a car come down against a face
+  const ruinAt = (p) => {
+    const s = sim.current;
+    for (const b of boxesNear(s.world, p[0], p[2], 3)) if (p[0] > b.x0 - 1.5 && p[0] < b.x1 + 1.5 && p[2] > b.z0 - 1.5 && p[2] < b.z1 + 1.5 && p[1] < b.y1 && p[1] > (b.y0 ?? 0) - 1) return keyOf(b);
+    return null;
+  };
+
+  // the towers and houses within r of a point, for a power (./powers.js): by their colliders
+  const towersNear = (world, p, r) => {
+    const seen = new Set();
+    const out = [];
+    for (const b of boxesNear(world, p[0], p[2], r)) {
+      const key = keyOf(b);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push({ key, x: (b.x0 + b.x1) / 2, z: (b.z0 + b.z1) / 2, w: b.x1 - b.x0, d: b.z1 - b.z0, h: b.y1 });
+    }
+    return out;
+  };
+
+  // episode 8's panels: a strip the sim holds, advanced on E or every 4 s, `done` as it ends
+  const openPanels = useCallback((lines, done) => {
+    sim.current.panels = { lines, i: 0, t: 0, done };
+    setPanels({ lines, i: 0 });
+  }, []);
+  const advancePanels = useCallback(() => {
+    const s = sim.current;
+    const pz = s.panels;
+    if (!pz) return;
+    pz.i += 1;
+    pz.t = 0;
+    if (pz.i >= pz.lines.length) {
+      s.panels = null;
+      setPanels(null);
+      pz.done?.();
+    } else setPanels({ lines: pz.lines, i: pz.i });
+  }, []);
+  // episode 8's beats (./missions.js), as its steps begin: the porch's panels, the
+  // hit down the street, Dad as the foe, the tower's top on the plaza, the sky
+  const ep8Beat = useCallback(
+    (i) => {
+      const s = sim.current;
+      if (i === 0) openPanels(PANELS.porch, () => missionApi.current.feed?.({ type: 'use', id: 'panels' }));
+      else if (i === 1) {
+        // hit: a projectile down the street, east, into the river
+        const river = missionPlace('river').p;
+        const d = [river[0] - s.h.p[0], 0, river[2] - s.h.p[2]];
+        const l = Math.hypot(d[0], d[2]) || 1;
+        s.h = launch(s.h, [d[0] / l, 0.12, d[2] / l], 300, 1.2);
+        s.launchWatch = true;
+        sfx('boom');
+      } else if (i === 3) {
+        // the top of the tallest tower near the plaza comes down on it
+        const plaza = missionPlace('plaza').p;
+        const b = [...s.world.buildings].filter((q) => q.h >= 60).sort((p, q) => Math.hypot(p.x - plaza[0], p.z - plaza[2]) - Math.hypot(q.x - plaza[0], q.z - plaza[2]))[0];
+        if (b) hitRuin(`b:${b.id}`, 1, [b.x, b.h, b.z], [0, 1, 0]);
+        s.foes = newFoes();
+        s.missionFoes = false;
+        say('He’s thrown the top of it at the plaza. Get under them.', 3200);
+      } else if (i === 4) {
+        s.foes = newFoes();
+        s.missionFoes = false;
+        s.sky = { phase: 'up', t: 0 };
+      }
+    },
+    [openPanels, say, hitRuin],
+  );
+  // the sky, a frame at a time: up to 8 km with Dad beside him, the panels, Dad gone
+  // straight up, Mark falling, and the world catching him at the GDA's pad
+  const stepSky = (s, dt) => {
+    const a = api.current;
+    const sky = s.sky;
+    if (!sky || !a) return;
+    sky.t += dt;
+    const h = s.h;
+    if (sky.phase === 'up') {
+      if (h.p[1] < 8000) s.h = launch(s.h, [0, 1, 0], 220, 0.4);
+      else {
+        sky.phase = 'talk';
+        s.h = { ...s.h, v: [0, 0, 0], spd: 0, launched: 0 };
+        openPanels(PANELS.sky, () => {
+          sky.phase = 'gone';
+          sky.t = 0;
+          say(PANELS.sky[2][1], 3600, 'mark');
+        });
+      }
+      a.debug.dad([h.p[0] + 3, h.p[1] + 1, h.p[2] + 2], [0, 1, 0]);
+    } else if (sky.phase === 'talk') {
+      s.h = { ...s.h, v: [0, 0, 0], spd: 0 };
+      a.debug.dad([h.p[0] + 3, h.p[1] + 1, h.p[2] + 2], [0, 0, 1]);
+    } else if (sky.phase === 'gone') {
+      const d = a.debug.dad();
+      a.debug.dad([d.p[0], d.p[1] + 6000 * dt, d.p[2]], [0, 1, 0]);
+      if (s.frame % 2 === 0) s.events.push({ type: 'contrail', at: [...d.p] });
+      s.h = { ...s.h, v: [0, 0, 0], spd: 0 };
+      if (sky.t > 3) {
+        sky.phase = 'fall';
+        sky.t = 0;
+        s.dadGone = true;
+        s.h = launch(s.h, [0, -1, 0], 120, 5);
+        say('He’s gone.', 2400);
+      }
+    } else if (sky.phase === 'fall' && sky.t > 3) {
+      const pad = missionPlace('pad').p;
+      s.h = newHero({ x: pad[0], y: groundAt(pad[0], pad[2]), z: pad[2], face: 0 });
+      s.sky = null;
+      a.debug.dad([pad[0], 9000, pad[2]], [0, 1, 0]);
+      missionApi.current.feed?.({ type: 'sky' });
+    }
+  };
+
   // what a step (or its end) asks for (./events.js)
-  const setup = useCallback((outs) => applyOuts(outs, { s: sim.current, say, speak, unlock, clear, openCard, closeCard, shakeOff }), [say, speak, unlock, clear, openCard, closeCard, shakeOff]);
+  const setup = useCallback((outs) => applyOuts(outs, { s: sim.current, say, speak, unlock, clear, openCard, closeCard, shakeOff, beat: ep8Beat, found: setFound }), [say, speak, unlock, clear, openCard, closeCard, shakeOff, ep8Beat]);
   const feed = useCallback(
     (ev) => {
       const s = sim.current;
@@ -410,6 +545,11 @@ function World({ gl, setGl, thinkMark }) {
 
   const act = useCallback(() => {
     const s = sim.current;
+    // a panel up: the next one
+    if (s.panels) {
+      advancePanels();
+      return;
+    }
     // in a photo's spot: the picture
     if (snap()) return;
     // next to Dad: his episodes (the first; the last, from the porch at dusk
@@ -422,6 +562,10 @@ function World({ gl, setGl, thinkMark }) {
       }
       if (!s.mission && next === 'ep7' && timeRef.current !== 'noon') {
         startMission('ep7');
+        return;
+      }
+      if (!s.mission && next === 'ep8' && timeRef.current !== 'noon') {
+        startMission('ep8');
         return;
       }
       feed({ type: 'talk', npc: 'omni' });
@@ -452,7 +596,7 @@ function World({ gl, setGl, thinkMark }) {
     }
     sfx('ding');
     say(`${p.name}: ${p.line}`, 3200);
-  }, [say, feed, startMission, openCard, snap]);
+  }, [say, feed, startMission, openCard, snap, advancePanels]);
 
   // Everything held, let go: the keys, the stick, the touch buttons and a
   // drag. A blur or a hidden tab (another app, a call) can swallow the
@@ -465,43 +609,6 @@ function World({ gl, setGl, thinkMark }) {
     s.touchUp = s.touchDown = s.touchBoost = false;
     drag.current = null;
   }, []);
-
-  // the city that breaks (./demolish.js): a face hit hard enough is marked,
-  // drawn so, and the chunks come off it; the first tower to lose its top is said
-  const hitRuin = (key, force, at, n = null) => {
-    const s = sim.current;
-    const a = api.current;
-    if (!key || !force || !a) return;
-    const r = hitTower(s.ruins, key, force);
-    if (!r.delta) return;
-    s.ruins = r.ruins;
-    a.setDamage(key, r.d);
-    s.events.push({ type: 'rubble', at, n, delta: r.delta, stage: r.stage });
-    sfx(r.stage === 3 ? 'crumble' : 'thunk');
-    if (r.stage === 3 && !s.ruinSaid) {
-      s.ruinSaid = true;
-      say('That one’s top is gone. Cecil’s crews will be a day on it.', 3600);
-    }
-  };
-  // the box a point is in, by its collider, for a car come down against a face
-  const ruinAt = (p) => {
-    const s = sim.current;
-    for (const b of boxesNear(s.world, p[0], p[2], 3)) if (p[0] > b.x0 - 1.5 && p[0] < b.x1 + 1.5 && p[2] > b.z0 - 1.5 && p[2] < b.z1 + 1.5 && p[1] < b.y1 && p[1] > (b.y0 ?? 0) - 1) return keyOf(b);
-    return null;
-  };
-
-  // the towers and houses within r of a point, for a power (./powers.js): by their colliders
-  const towersNear = (world, p, r) => {
-    const seen = new Set();
-    const out = [];
-    for (const b of boxesNear(world, p[0], p[2], r)) {
-      const key = keyOf(b);
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      out.push({ key, x: (b.x0 + b.x1) / 2, z: (b.z0 + b.z1) / 2, w: b.x1 - b.x0, d: b.z1 - b.z0, h: b.y1 });
-    }
-    return out;
-  };
 
   // the keys (./input.js)
   useEffect(() => {
@@ -680,6 +787,17 @@ function World({ gl, setGl, thinkMark }) {
         onPowerEvent(e, { s, say });
       }
     }
+    // episode 8: the hit's end (up out of the river), the sky, the panels' clock
+    if (s.launchWatch && s.h.launched === 0) {
+      s.launchWatch = false;
+      feed({ type: 'recover' });
+      say('Up. He’s not done.', 2400);
+    }
+    if (s.sky) stepSky(s, dt);
+    if (s.panels) {
+      s.panels.t += dt;
+      if (s.panels.t > 4) advancePanels();
+    }
     // (a mission over: the hero flown as before comes back)
     if (!s.mission && s.heroBack) {
       const back = s.heroBack;
@@ -766,7 +884,9 @@ function World({ gl, setGl, thinkMark }) {
     if (s.frame % 4 === 0 && mapRef.current && H.mapBox && !inSpace) drawMap(mapRef.current, H.mapBox, h, s.yaw, alt, s.world, s.marks);
     // who's talking to him: a bubble over the nearest, a new line every few seconds
     if (s.frame % 3 === 0) {
-      const t = a.talkers(h)[0] ?? null;
+      const t0 = s.panels ? null : (a.talkers(h)[0] ?? null); // (a panel up: no bubble over it)
+      // (after episode 8, Mom has other things to say)
+      const t = t0 && s.dadGone && (t0.id === 'debbie' || t0.role === 'debbie') ? { ...t0, lines: DEBBIE_AFTER } : t0;
       const said = s.said ?? (s.said = {});
       if (t?.id !== s.talking?.id) {
         s.talking = t;
@@ -832,6 +952,7 @@ function World({ gl, setGl, thinkMark }) {
         </div>
       )}
       <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Over the city" />
+      <Panels strip={panels} />
       <MissionCard card={mcard} story={sim.current.story} onClose={closeCard} onAgain={() => startMission(mcard?.id)} onStart={startMission} onAbandon={abandon} />
 
       <InvHud hud={hud} mapRef={mapRef} time={time} heroId={heroId} heroes={heroes} pickHero={pickHero} power={Boolean(sim.current.hero.power)} cycleTime={cycleTime} chip={chip} trav={trav} found={found} cards={CARDS.length} near={near} act={act} toast={toast} radio={radio} take={take} touch={touch} onStick={onStick} startSound={startSound} hold={hold} />

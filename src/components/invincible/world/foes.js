@@ -66,6 +66,12 @@ export const KINDS = {
   // off or `up` m over the ground)
   mauler: { h: 2.6, hits: 3, run: 8, reach: 3, every: 1.4, windup: 0.4, swing: 18, knock: 10, low: 6, far: 60, grab: 30, car: 35, carHurt: 22, throwEvery: 4, hold: 0.6, stagger: 0.8, away: 60, up: 30 },
   seismic: { h: 1.8, hits: 5, over: 20, circle: 30, quake: 6, ring: 30, ringTo: 160, blast: 40, blastHurt: 14, knock: 15, blastEvery: 3, stagger: 0.8 },
+  // Omni-Man (episode 8): never knocked out (the episode counts blows on him, ./missions.js);
+  // circles Mark `circle` m off and `over` up, and every `every` s charges him at `charge` m/s:
+  // a blow of `hurt`, and Mark driven off along the charge at `drive` m/s (a wall stops him,
+  // and marks it: ./demolish.js); staggered by a blow for `stagger`
+  // (and after a charge lands he hangs there `recover` s, open to a blow: the show's rhythm, a hit and a word)
+  omniman: { h: 1.95, hits: 1e9, circle: 40, over: 12, every: 5, charge: 320, hurt: 25, drive: 150, reach: 3, stagger: 1.2, speed: 30, recover: 1.6 },
 };
 const FLAXANS = new Set(['flaxan', 'flaxanElite']);
 const kindOf = (e) => e.kind ?? 'flaxan';
@@ -92,6 +98,8 @@ export function spawnFoes(prev, kind, n, at = PORTAL.p) {
       const x = at[0] + (n > 1 ? Math.cos(a) * 4 : 0);
       const z = at[2] + (n > 1 ? Math.sin(a) * 4 : 0);
       Object.assign(e, { state: 'approach', p: [x, groundAt(x, z), z], cool: 1 + r(), throwCool: 1 + r() * 2 });
+    } else if (kind === 'omniman') {
+      Object.assign(e, { state: 'circle', p: [at[0], (at[1] ?? 0) + KINDS.omniman.over, at[2]], cool: 2, phase: r() * Math.PI * 2 });
     } else if (kind === 'seismic') {
       const home = [at[0], groundAt(at[0], at[2]), at[2]];
       Object.assign(e, { state: 'drift', home, p: [home[0] + Math.cos(e.phase) * K.circle, home[1] + K.over, home[2] + Math.sin(e.phase) * K.circle], cool: K.quake, blast: K.blastEvery });
@@ -402,6 +410,40 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
           e.p[2] += (flat[2] / fd) * go;
           e.p[1] = groundAt(e.p[0], e.p[2]);
         }
+      }
+    } else if (k === 'omniman' && live(e)) {
+      const K = KINDS.omniman;
+      const toMark = sub(chest, mid(e));
+      const d = len(toMark);
+      e.yaw = Math.atan2(toMark[0], toMark[2]);
+      if (e.state === 'stagger') {
+        e.t -= dt;
+        e.v = [0, 0, 0];
+        if (e.t <= 0) e.state = 'circle';
+      } else if (e.state === 'charge') {
+        // straight at him; the blow where he reaches him, and off Mark goes
+        const u = unit(toMark);
+        e.v = u.map((c) => c * K.charge);
+        for (const a of [0, 1, 2]) e.p[a] += e.v[a] * dt;
+        e.t -= dt;
+        if (d <= K.reach + K.charge * dt) {
+          hurt(K.hurt, chest, { by: 'omniman' });
+          push = [u[0] * K.drive, Math.max(2, u[1] * K.drive), u[2] * K.drive];
+          stun = Math.max(stun, 0.4);
+          ev.push({ type: 'driven', id: e.id, at: mid(e), dir: u });
+          Object.assign(e, { state: 'stagger', t: K.recover, cool: K.every });
+        } else if (e.t <= 0) Object.assign(e, { state: 'circle', cool: K.every });
+      } else {
+        // round him, a little over him, and a charge every so often
+        e.phase += dt * 0.5;
+        const want = [chest[0] + Math.cos(e.phase) * K.circle, chest[1] + K.over, chest[2] + Math.sin(e.phase) * K.circle];
+        const dw = sub(want, e.p);
+        const go = unit(dw).map((x) => x * Math.min(K.speed, len(dw) * 1.5));
+        const kk = 1 - Math.exp(-2 * dt);
+        for (const a of [0, 1, 2]) e.v[a] += (go[a] - e.v[a]) * kk;
+        for (const a of [0, 1, 2]) e.p[a] += e.v[a] * dt;
+        e.cool -= dt;
+        if (e.cool <= 0 && d < 400) Object.assign(e, { state: 'charge', t: 3 });
       }
     } else if (k === 'seismic' && live(e)) {
       const K = KINDS.seismic;
