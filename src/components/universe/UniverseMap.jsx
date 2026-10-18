@@ -13,6 +13,7 @@ import GuideCue from '../guide/GuideCue';
 import { askBrief } from '../tour/brief';
 import LoadingVeil from '../worlds/LoadingVeil';
 import { RiShieldLine } from 'react-icons/ri';
+import PowerBar from './PowerBar';
 import { Arms, Cluster, Prompt, Reticle, Vitals } from '../../runtime/hud';
 import { PROMPT as LOOK_PROMPT } from '../../runtime/look';
 
@@ -44,6 +45,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
   const stick = useRef(null);
   const alt = useRef(null);
   const cluster = useRef(null); // the flight cluster: shields and arms in a ship, health on foot (the HUD kit's: clusterView.js)
+  const powers = useRef(null); // the crew's two powers' tiles in it (PowerBar.jsx; the scene writes them: powers.js)
   const wantedEl = useRef(null); // (the law's stars and the bounty on you: wanted.js)
   const { economy } = useEconomy({ ask: false }); // (the wallet a bounty's paid off from)
   const hud = useRef(null);
@@ -101,6 +103,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
       stick,
       alt,
       cluster,
+      powers,
       wanted: wantedEl,
       wallet: economy,
       hud,
@@ -299,6 +302,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
               <Cluster rootRef={cluster} className="universe-cluster" label={onFoot ? 'On foot' : 'Flight'}>
                 <Vitals label={onFoot ? 'Health' : 'Shields'} icon={<RiShieldLine aria-hidden="true" />} />
                 <Arms keys />
+                {!onFoot && <PowerBar ship={ship} reduced={reduced} barRef={powers} onPress={(slot) => view.current?.power?.(slot)} placement="cluster" />}
               </Cluster>
               <div ref={wantedEl} className="universe-wanted" aria-hidden="true">
                 <span className="universe-wanted-stars">
