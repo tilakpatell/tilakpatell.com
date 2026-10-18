@@ -166,7 +166,7 @@ function collide(h, prev, world) {
     h.p[2] += n[2] * depth;
     const into = -(h.v[0] * n[0] + h.v[2] * n[2]);
     if (into > 0) {
-      if (!hit || into > hit.into) hit = { n, into, at: [h.p[0], h.p[1] + H / 2, h.p[2]] };
+      if (!hit || into > hit.into) hit = { n, into, at: [h.p[0], h.p[1] + H / 2, h.p[2]], box: b };
       h.v[0] += n[0] * into;
       h.v[2] += n[2] * into;
     }
@@ -218,7 +218,8 @@ function stepAir(h, input, dt, world) {
       // a crash: thrown back off it (what was along the wall half gone), and a moment to get his bearings
       for (const a of [0, 1, 2]) h.v[a] = h.v[a] * 0.5 + hit.n[a] * hit.into * FLY.bounce;
       h.stun = FLY.stun;
-      h.ev.push({ type: 'impact', speed: hit.into, at: hit.at, n: hit.n });
+      // (whose wall: a tower's building id or a house's index, for ./demolish.js)
+      h.ev.push({ type: 'impact', speed: hit.into, at: hit.at, n: hit.n, building: hit.box.building ?? null, house: hit.box.house ?? null });
     }
     h.spd = len(h.v[0], h.v[1], h.v[2]);
     if (h.spd > 1e-6) h.dir = [h.v[0] / h.spd, h.v[1] / h.spd, h.v[2] / h.spd];

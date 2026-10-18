@@ -16,7 +16,7 @@ import { CALLS } from './lines';
 import { RADIO, RADIO_CALLS, feedMission, missionOf, newRadio, nextRadioCall, nextStory, placeOf as missionPlace, startMission as beginMission, stepOf } from './missions';
 import { intoSpace, outOfSpace, stepSpace } from './orbit';
 import { CARDS, stepQuests } from './quests';
-import { SPAWN, groundAt, isSafeStart } from './map';
+import { SPAWN, groundAt, isSafeStart, near as boxesNear } from './map';
 import { VOICE } from './voicelines';
 import InvHud from './InvHud';
 import MissionCard from './MissionCard';
@@ -31,7 +31,8 @@ import { newBrawl, stepBrawl } from './brawl';
 import { drawMap, fitHud } from './hudCanvas';
 import { writeHud } from './hudFrame';
 import { bindKeys, pointerHandlers } from './input';
-import { AT, TIME, TIMES, keptQuests, keptStory, keptTime, placeHero } from './keep';
+import { AT, RUINSKEY, TIME, TIMES, keptQuests, keptRuins, keptStory, keptTime, placeHero } from './keep';
+import { forceOf, hitTower, keyOf, serialise as keepRuins } from './demolish';
 import { ROOM, nearest, over, placeOf, seenAs } from './online';
 
 // The Graysons' city, the world: fly about it as Invincible. The rules are
@@ -98,7 +99,7 @@ function World({ gl, setGl, thinkMark }) {
   if (!sim.current) {
     // (he's put on the lawn for now: where he really starts waits on the
     // world, which the scene makes, and nothing moves before it's there)
-    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null, brawl: newBrawl(), pound: false, dive: false, touchPunch: false, mouseDown: false };
+    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null, ruins: keptRuins(), brawl: newBrawl(), pound: false, dive: false, touchPunch: false, mouseDown: false };
   }
 
   // (`who`, for a line someone says: in their own voice where it's been made;
@@ -152,6 +153,8 @@ function World({ gl, setGl, thinkMark }) {
     if (!sim.current.world) placeHero(sim.current, a.world);
     sim.current.world = a.world;
     fitHud(hud.current, mapRef.current);
+    // the city as it was left: every mark drawn, scaffolding where the crews are (./demolish.js)
+    for (const [k, d] of sim.current.ruins.damage) a.setDamage(k, d, sim.current.ruins.mending.has(k));
     await syncTime();
     if (import.meta.env.DEV) {
       // (the QA scripts' handle: the scene's api, but its setTime is the
@@ -170,6 +173,11 @@ function World({ gl, setGl, thinkMark }) {
       hook.mission = (id) => missionApi.current.start?.(id);
       hook.feed = (ev) => missionApi.current.feed?.(ev);
       hook.story = () => sim.current.story;
+      // (and the city's damage: the n buildings nearest [x, z], hit for d)
+      hook.ruin = ([x, z], n = 3, d = 0.8) => {
+        const bs = [...sim.current.world.buildings].sort((p, q) => Math.hypot(p.x - x, p.z - z) - Math.hypot(q.x - x, q.z - z)).slice(0, n);
+        for (const b of bs) hitRuin(`b:${b.id}`, d, [b.x, b.h / 2, b.z], [0, 1, 0]);
+      };
       window.__INVWORLD__ = { api: hook, sim: sim.current };
     }
   };
@@ -223,6 +231,7 @@ function World({ gl, setGl, thinkMark }) {
       // down never overwrites one it wouldn't)
       const keep = { x: s.h.p[0], y: s.h.p[1], z: s.h.p[2], face: s.h.face };
       if (s.world && s.h.zone !== 'space' && s.h.mode === 'ground' && Number.isFinite(keep.face) && isSafeStart(s.world, keep)) local.set(AT, keep);
+      if (s.ruins.damage.size || local.get(RUINSKEY, null)) local.set(RUINSKEY, keepRuins(s.ruins));
       wind.current?.stop();
       wind.current = null;
       api.current = null;
@@ -433,6 +442,30 @@ function World({ gl, setGl, thinkMark }) {
     drag.current = null;
   }, []);
 
+  // the city that breaks (./demolish.js): a face hit hard enough is marked,
+  // drawn so, and the chunks come off it; the first tower to lose its top is said
+  const hitRuin = (key, force, at, n = null) => {
+    const s = sim.current;
+    const a = api.current;
+    if (!key || !force || !a) return;
+    const r = hitTower(s.ruins, key, force);
+    if (!r.delta) return;
+    s.ruins = r.ruins;
+    a.setDamage(key, r.d);
+    s.events.push({ type: 'rubble', at, n, delta: r.delta, stage: r.stage });
+    sfx(r.stage === 3 ? 'crumble' : 'thunk');
+    if (r.stage === 3 && !s.ruinSaid) {
+      s.ruinSaid = true;
+      say('That one’s top is gone. Cecil’s crews will be a day on it.', 3600);
+    }
+  };
+  // the box a point is in, by its collider, for a car come down against a face
+  const ruinAt = (p) => {
+    const s = sim.current;
+    for (const b of boxesNear(s.world, p[0], p[2], 3)) if (p[0] > b.x0 - 1.5 && p[0] < b.x1 + 1.5 && p[2] > b.z0 - 1.5 && p[2] < b.z1 + 1.5 && p[1] < b.y1 && p[1] > (b.y0 ?? 0) - 1) return keyOf(b);
+    return null;
+  };
+
   // the keys (./input.js)
   useEffect(() => {
     if (!live) return undefined;
@@ -570,6 +603,7 @@ function World({ gl, setGl, thinkMark }) {
     if (!inSpace) {
       const landed = h.ev.find((e) => e.type === 'land' || e.type === 'slam' || e.type === 'impact') ?? null;
       const punchHeld = k.has('punch') || s.touchPunch || s.mouseDown || Boolean(pad?.x);
+      const heldBefore = Boolean(s.brawl.held);
       const rb = stepBrawl(s.brawl, s.foes, s.h, { punchHeld, look, dive: s.dive && h.mode === 'air', block: boost && h.mode === 'ground', pound: s.pound, landed }, dt, { cars: s.cars ?? [] });
       s.brawl = rb.b;
       s.foes = rb.foes;
@@ -585,6 +619,9 @@ function World({ gl, setGl, thinkMark }) {
         s.events.push(e);
         onBrawlEvent(e, { s, say });
       }
+      // the walls: Mark into one flat out, or with something in hand; a thrown car come down against one
+      for (const e of h.ev) if (e.type === 'impact') hitRuin(keyOf(e), forceOf(e, { held: heldBefore }), e.at, e.n);
+      for (const e of s.events) if ((e.type === 'carDown' || e.type === 'carHit') && e.at) hitRuin(ruinAt(e.at), forceOf(e), e.at);
     }
     s.pound = false;
     s.dive = false;

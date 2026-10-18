@@ -5,12 +5,14 @@ import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { newHero } from './flight';
 import { loadStory } from './missions';
 import { newQuests } from './quests';
+import { parse as parseRuins, repair } from './demolish';
 import { SPAWN, isSafeStart } from './map';
 
 export const AT = 'tp-inv-world-at';
 export const TIME = 'tp-inv-world-time';
 export const QUESTS = 'tp-inv-world-quests';
 export const STORY = 'tp-inv-world-story';
+export const RUINSKEY = 'tp-inv-world-ruins';
 export const TIMES = ['noon', 'dusk', 'night'];
 
 // What was kept from last time, read so that nothing kept can break the
@@ -29,6 +31,8 @@ export function keptQuests() {
   }
 }
 export const keptStory = () => loadStory(local.get(STORY, null));
+// the city's damage, as it was left, mended by the whole days since (./demolish.js)
+export const keptRuins = (now = Date.now()) => repair(parseRuins(local.get(RUINSKEY, null), now), now);
 
 // Where he starts, once there's a world to check it against: where he was
 // left standing, if that's still open ground (map.js's isSafeStart: not in
