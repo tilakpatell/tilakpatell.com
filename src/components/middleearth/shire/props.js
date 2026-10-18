@@ -20,6 +20,7 @@ import { canvasTexture, hot } from '../../../lib/stage3d';
 import { clamp01, fbm, makeCanvas, makeNoise, mix, normalFromField, paintPixels, ramp, smooth } from '../../../lib/paint';
 import { stoneTextures } from '../kit';
 import { STANCE, TROT, WALK, createStride, createTracker, ease, gaitOffsets, legSwing } from '../creatures';
+import { flowerTint } from './propsShaders';
 
 const TAU = Math.PI * 2;
 const UP = new THREE.Vector3(0, 1, 0);
@@ -3295,20 +3296,7 @@ export function createShireKit(renderer) {
   // the flowers' heads take an instance's colour, their stems don't: the
   // geometry's `tint` (1 on the petals) says how much
   mats.flower.userData.tint = true;
-  mats.flower.onBeforeCompile = (s) => {
-    s.vertexShader = s.vertexShader.replace('#include <color_pars_vertex>', '#include <color_pars_vertex>\nattribute float tint;').replace(
-      '#include <color_vertex>',
-      `#if defined( USE_COLOR ) || defined( USE_COLOR_ALPHA ) || defined( USE_INSTANCING_COLOR )
-        vColor = vec4( 1.0 );
-      #endif
-      #if defined( USE_COLOR ) || defined( USE_COLOR_ALPHA )
-        vColor.rgb *= color.rgb;
-      #endif
-      #ifdef USE_INSTANCING_COLOR
-        vColor.rgb *= mix( vec3( 1.0 ), instanceColor.rgb, tint );
-      #endif`,
-    );
-  };
+  flowerTint(mats.flower);
   const paints = new Map();
   const paint = (hex) => {
     if (!paints.has(hex)) paints.set(hex, M({ map: tex.planks, normalMap: tex.planksN, color: hex, roughness: 0.75 }));
