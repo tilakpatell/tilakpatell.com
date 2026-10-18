@@ -28,6 +28,7 @@ export const GUIDES = {
   '/invincible': { title: 'Invincible', nudge: true },
   '/middle-earth': { title: 'Middle-earth' },
   '/middle-earth/place': { title: 'A stop on the road', nudge: true },
+  '/middle-earth/road': { title: 'The Road', nudge: true },
   '/avengers': { title: 'Avengers HQ', nudge: true },
   '/scranton': { title: 'Scranton', nudge: true },
   '/cybertron': { title: 'Cybertron', nudge: true },
@@ -54,6 +55,7 @@ const RULES = [
   [/^\/galaxy\/[^/]+$/, '/galaxy'],
   [/^\/fly\/[^/]+$/, '/fly'], // planet flight
   [/^\/battlefront\/[^/]+(\/[^/]+)?$/, '/battlefront'],
+  [/^\/middle-earth\/road$/, '/middle-earth/road'], // (the Road is a ride of its own, not a place on it)
   [/^\/middle-earth\/[^/]+$/, '/middle-earth/place'],
   [/^\/c-137\/(?!citadel$)[a-z0-9-]+$/, '/c-137/planet'],
 ];

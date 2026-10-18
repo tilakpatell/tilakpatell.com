@@ -392,6 +392,34 @@ export const BRIEFS = {
     },
     help('Middle-earth'),
   ],
+  '/middle-earth/road': [
+    {
+      id: 'hello',
+      title: 'The Road',
+      text: ABOUT['/middle-earth/road'],
+    },
+    {
+      id: 'walk',
+      title: 'Walking',
+      text: 'Hold W to walk on, Shift to run, S to step back.',
+      keys: [['W', 'Walk on'], ['Shift', 'Run'], ['S', 'Step back']],
+      touch: [['Walk', 'Hold to walk on'], ['Run', 'Hold to run']],
+    },
+    {
+      id: 'look',
+      title: 'Looking',
+      text: 'Drag to look about; let go and the view comes back to the road.',
+      keys: [['Drag', 'Look about']],
+      touch: [['Drag', 'Look about']],
+    },
+    {
+      id: 'auto',
+      title: 'The road walks itself',
+      text: 'Leave the keys and it walks on at a walk, stopping where something happens. Space turns it off and on.',
+      keys: [['Space', 'Let the road walk']],
+    },
+    help('the Road'),
+  ],
   '/middle-earth/place': [
     {
       id: 'hello',
