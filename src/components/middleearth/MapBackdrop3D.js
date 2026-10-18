@@ -51,7 +51,7 @@ export function createMapBackdrop(canvas, { onLost, me } = {}) {
 
   const map = new THREE.CanvasTexture(paintMap(2048));
   map.colorSpace = THREE.SRGBColorSpace;
-  map.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  map.anisotropy = Math.min(8, renderer.capabilities?.getMaxAnisotropy?.() ?? renderer.getMaxAnisotropy?.() ?? 1);
   const relief = new THREE.CanvasTexture(normalCanvas(paintRelief(1024), 5));
   relief.anisotropy = map.anisotropy;
   const W = SHEET.w / SCALE;
