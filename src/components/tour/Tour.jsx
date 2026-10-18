@@ -116,6 +116,7 @@ export default function Tour({ list, chapters, start, kind = 'tour', pathname, o
   const [pos, setPos] = useState(null); // the card's { side, top, left }
   const [over, setOver] = useState(false); // the guide or the palette open over a release stop
   const card = useRef(null);
+  const body = useRef(null); // the card's words, which scroll on a short window
   const next = useRef(null);
   const ids = useId();
   const here = useRef(pathname);
@@ -266,6 +267,11 @@ export default function Tour({ list, chapters, start, kind = 'tour', pathname, o
     };
   }, [step, ch]);
 
+  // each stop's words from their top (the scroller is one element for the run)
+  useLayoutEffect(() => {
+    if (body.current) body.current.scrollTop = 0;
+  }, [step, waiting]);
+
   // where it's got to, each stop
   useEffect(() => {
     if (crosses && step && !late) live.current.onProgress(live.current.chapter, step);
@@ -296,7 +302,9 @@ export default function Tour({ list, chapters, start, kind = 'tour', pathname, o
   // The keys, before the page's own (captured, and stopped there): the
   // arrows, Enter and Escape drive the tour, Tab stays in the card, and no
   // other key gets through to the page under it; but at a release stop its
-  // keys go through, and every key while what they opened is up.
+  // keys go through, and every key while what they opened is up. Up, Down,
+  // Page Up and Page Down scroll the card's words when a short window has
+  // made them scroll (focus is on Next, below them).
   useEffect(() => {
     const onKey = (e) => {
       const free = act.current.release;
@@ -318,6 +326,12 @@ export default function Tour({ list, chapters, start, kind = 'tour', pathname, o
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         act.current.back();
+      } else if (/^(Arrow(Up|Down)|Page(Up|Down))$/.test(e.key)) {
+        const b = body.current;
+        if (!b || b.scrollHeight <= b.clientHeight) return;
+        e.preventDefault();
+        const by = e.key.startsWith('Page') ? b.clientHeight - 40 : 40;
+        b.scrollBy({ top: e.key.endsWith('Up') ? -by : by, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
       }
     };
     window.addEventListener('keydown', onKey, true);
@@ -427,7 +441,7 @@ export default function Tour({ list, chapters, start, kind = 'tour', pathname, o
         style={pos ? { top: pos.top, left: pos.left } : { visibility: 'hidden' }}
       >
         {/* (the words scroll on a window too short for them; the buttons below never do) */}
-        <div className="tour-body">
+        <div ref={body} className="tour-body">
           <p className="tour-count">
             {count}
             {ticked && (

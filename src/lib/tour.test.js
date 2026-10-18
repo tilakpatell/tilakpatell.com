@@ -418,6 +418,6 @@ describe('whether you’re on a chapter’s page', () => {
 describe('how long each tour takes', () => {
   it('says it the same everywhere: minutes for the offer, words for the guide and the palette', () => {
     expect(Object.keys(TOUR_MINUTES)).toEqual(AUDIENCES);
-    expect(TOUR_TIMES).toEqual({ recruiter: 'About 5 minutes', player: 'About 8 minutes', mixed: 'About 12 minutes' });
+    expect(TOUR_TIMES).toEqual({ recruiter: 'About 5 minutes', player: 'About 10 minutes', mixed: 'About 12 minutes' });
   });
 });

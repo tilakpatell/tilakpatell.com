@@ -21,6 +21,7 @@
   flex-direction: column;
   width: min(360px, calc(100vw - 32px));
   max-height: calc(100dvh - 32px);
+  overflow: hidden; /* (the body's scrollbar kept inside the rounded corners) */
   background: var(--surface);
   color: var(--text);
   box-shadow: var(--shadow-dialog);
@@ -30,8 +31,8 @@
 /* over the map: the panel's own ink, solid (it may sit over the panel, and
    even 5% of the panel's white title shows through on that near-black) */
 .tour-card[data-map] { border-color: var(--border-strong); background: rgb(6 8 16); }
-.tour-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1.15rem 1.2rem 0; }
-.tour-foot { flex: none; padding: 0.9rem 1.2rem 1rem; }
+.tour-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1.15rem 1.2rem 6px; } /* (6 px: the last action's focus ring, inside the scroller) */
+.tour-foot { flex: none; padding: calc(0.9rem - 6px) 1.2rem 1rem; }
 .tour-count { color: var(--muted); font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; }
 .tour-title { margin-top: 0.4rem; font-size: 1.125rem; font-stretch: 112%; font-weight: 650; line-height: 1.3; }
 .tour-text { margin-top: 0.45rem; color: var(--text-body); font-size: var(--fs-sm); line-height: 1.55; }

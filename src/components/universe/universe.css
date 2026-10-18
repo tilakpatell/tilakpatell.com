@@ -1437,7 +1437,8 @@ body:has(.universe-panel) .guide-btn { display: none; }
   background: radial-gradient(ellipse at 40% 50%, rgb(3 4 10 / 0.45), rgb(3 4 10 / 0.8));
   animation: start-in var(--t-slow) var(--ease-out) both;
 }
-@media (min-width: 1024px) { .start-choice { padding-right: calc(var(--panel-w) + 36px); } }
+/* (from the width the panel stops being the phone's sheet: beside it, never on it) */
+@media (min-width: 768px) { .start-choice { padding-right: calc(var(--panel-w) + 36px); } }
 .start-card {
   width: min(600px, 100%);
   margin: auto;
@@ -1474,9 +1475,12 @@ body:has(.universe-panel) .guide-btn { display: none; }
 .start-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; margin-top: 1.1rem; }
 .start-remember { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 36px; color: var(--text-body); font-size: var(--fs-xs); cursor: pointer; }
 .start-remember input { width: 16px; height: 16px; accent-color: var(--accent-text); }
+@media (pointer: coarse) { .start-remember { min-height: 44px; } }
 .start-note { color: var(--muted); font-size: var(--fs-xs); line-height: 1.5; }
 @keyframes start-in { from { opacity: 0; } }
-@media (max-width: 520px) {
+/* a phone, or the narrow room beside the panel on a small tablet: the two
+   ways one above the other, the icon at the side */
+@media (max-width: 520px), (min-width: 768px) and (max-width: 1023px) {
   .start-options { grid-template-columns: 1fr; }
   .start-option { grid-template-columns: auto 1fr; column-gap: 0.85rem; }
   .start-option-icon { grid-row: span 2; margin: 0.1rem 0 0; }

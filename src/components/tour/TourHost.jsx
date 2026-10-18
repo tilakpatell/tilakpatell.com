@@ -4,7 +4,7 @@ import { IconGo, IconTour } from '../icons';
 import { CloseButton } from '../ui';
 import { useAchievements } from '../Achievements';
 import { local, storage } from '../../lib/hooks';
-import { TOUR_EVENT, TOUR_KEY, TOUR_MINUTES, TOUR_NAMES, TOUR_TIMES, isLightRoute, offerHere, openTour, parseTourLink, readProgress, samePage, startAt, tourFor, unfinished, writeProgress } from '../../lib/tour';
+import { TOUR_EVENT, TOUR_KEY, TOUR_MINUTES, TOUR_NAMES, isLightRoute, offerHere, openTour, parseTourLink, readProgress, samePage, startAt, tourFor, unfinished, writeProgress } from '../../lib/tour';
 import { planOf } from './plan';
 import { BRIEF_EVENT, BRIEF_KEY, briefHere, briefKeyFor, sawBrief } from './brief';
 import { guideKeyFor } from '../guide/routes';
@@ -361,7 +361,8 @@ export default function TourHost() {
                 type="button"
                 className="tour-offer-pick"
                 data-main={p.main ? '' : undefined}
-                aria-label={`${TOUR_NAMES[p.audience]}, ${TOUR_TIMES[p.audience].toLowerCase()}`}
+                // (the name starts with the words on it: "To hire, 5 min: the hiring tour")
+                aria-label={`${p.label}, ${TOUR_MINUTES[p.audience]} min: ${lower(TOUR_NAMES[p.audience])}`}
                 onClick={start(p.audience)}
               >
                 <span className="tour-offer-pick-label">{p.label}</span>
@@ -376,25 +377,30 @@ export default function TourHost() {
           <div className="tour-offer-head">
             <IconTour className="tour-offer-icon" aria-hidden="true" />
             <p className="tour-offer-title">Carry on {lower(TOUR_NAMES[nudge.audience])}</p>
-            <CloseButton
-              label={nudge.after === 'excursion' ? 'Stop' : 'Not now'}
-              className="tour-offer-x"
-              onClick={() => {
-                setNudge(null);
-                // Stop, after an excursion, means stop: no note again
-                if (nudge.after === 'excursion')
-                  remember({
-                    audience: undefined,
-                    chapter: undefined,
-                    stop: undefined,
-                  });
-              }}
-            />
+            {/* (the × only puts the note away: the guide still offers to carry on) */}
+            <CloseButton label="Not now" className="tour-offer-x" onClick={() => setNudge(null)} />
           </div>
           <div className="tour-offer-row">
             <p className="tour-offer-text">
               Chapter {nudge.n} of {nudge.of}
             </p>
+            {nudge.after === 'excursion' && (
+              <button
+                type="button"
+                className="tour-offer-later"
+                onClick={() => {
+                  setNudge(null);
+                  // Stop, after an excursion, means stop: no note again
+                  remember({
+                    audience: undefined,
+                    chapter: undefined,
+                    stop: undefined,
+                  });
+                }}
+              >
+                Stop
+              </button>
+            )}
             <button
               type="button"
               className="btn btn-primary btn-sm"

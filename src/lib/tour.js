@@ -12,9 +12,10 @@ import { isMapPath } from './view';
 export const TOUR_KEY = 'tp-tour'; // what readProgress reads; unset until the offer's made
 export const TOUR_EVENT = 'tp:tour';
 export const AUDIENCES = ['recruiter', 'player', 'mixed'];
-// what each is called wherever it's offered, and how long it takes (spec 3.1)
+// what each is called wherever it's offered, and how long it takes (spec 3.1;
+// the minutes are steps.test.js's reading times rounded: 268, 596 and 725 s)
 export const TOUR_NAMES = { recruiter: 'The hiring tour', player: 'The player’s tour', mixed: 'The whole tour' };
-export const TOUR_MINUTES = { recruiter: 5, player: 8, mixed: 12 };
+export const TOUR_MINUTES = { recruiter: 5, player: 10, mixed: 12 };
 export const TOUR_TIMES = Object.fromEntries(AUDIENCES.map((a) => [a, `About ${TOUR_MINUTES[a]} minutes`]));
 
 // Starts a tour from anywhere: ⌘K, the guide, the terminal, the offer, the

@@ -19,7 +19,7 @@ import { VISITED_KEY, addVisited } from './lib/visited';
 import { isPaletteKey } from './lib/palette';
 import { guideKeyFor } from './components/guide/routes';
 import { introPlaying } from './lib/stale';
-import { saveStart } from './lib/view';
+import { isMapPath, saveStart } from './lib/view';
 import { jumpStyle } from './components/jumps/styles';
 import WorldGate from './components/worlds/WorldGate';
 import Ambience from './components/ambience/Ambience';
@@ -252,7 +252,9 @@ function IntroJump() {
           onSkip={(where) => {
             saveStart(where);
             setStage(null);
-            if (where === 'home') navigate('/home');
+            // (the front door may have sent a kept pick on to /home under the welcome)
+            if (where === 'home') navigate('/home', { replace: true });
+            else if (!isMapPath(pathname)) navigate('/', { replace: true });
             // (the page under it has the focus next, as the launch would give it)
             requestAnimationFrame(() => document.getElementById('main')?.focus({ preventScroll: true }));
           }}

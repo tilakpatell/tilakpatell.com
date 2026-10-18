@@ -1,9 +1,10 @@
 /* The tour's offer on a first arrival, and the note offering to carry one on
    (TourHost.jsx): the house .notice, bottom left, clear of the guide's button
    and the universe panel (right); at the top on a phone, clear of the
-   panel's sheet and the buttons along the bottom, and on a window too short
-   for it over the map's corner buttons. Over the map it wears the map's dark
-   glass (.dark-scope, and the panel's own fill). */
+   panel's sheet and the buttons along the bottom, and on the map only when
+   the window is too short for it over the corner buttons (up top on the map
+   it covers the crew's line: guide/routes.js). Over the map it wears the
+   map's dark glass (.dark-scope, and the panel's own fill). */
 .tour-offer {
   position: fixed;
   left: 16px;
@@ -45,16 +46,29 @@
 .tour-offer-pick[data-main]:hover { background: color-mix(in srgb, var(--btn-bg) 88%, #000); }
 .tour-offer-pick-label { font-size: var(--fs-sm); font-weight: 650; line-height: 1.25; }
 .tour-offer-pick-time { color: var(--muted); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
-.tour-offer-pick[data-main] .tour-offer-pick-time { color: inherit; opacity: 0.8; } /* (0.8 on the button's own ink: still 4.5:1 on its fill) */
+.tour-offer-pick[data-main] .tour-offer-pick-time { color: inherit; }
 
-/* the carry-on note: where it got to, and the button, on one line */
-.tour-offer-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 0.75rem; margin-top: 0.5rem; padding-left: calc(1.25rem + 0.6rem); }
+/* the carry-on note: where it got to, then its buttons, on one line */
+.tour-offer-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; margin-top: 0.5rem; padding-left: calc(1.25rem + 0.6rem); }
+.tour-offer-row > .tour-offer-text { margin-right: auto; }
+/* Stop, after an excursion: quieter than Carry on, as the tour's own Skip is */
+.tour-offer-later { min-height: 36px; padding: 0 0.25rem; color: var(--muted); font-size: var(--fs-sm); }
+.tour-offer-later:hover { color: var(--text); text-decoration: underline; }
+.tour-offer-later:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+@media (pointer: coarse) { .tour-offer-later { min-height: 44px; } }
 
 @keyframes tour-offer-in { from { opacity: 0; transform: translateY(8px); } }
-/* (on the map, above its own corner buttons: the nav map's and multiplayer) */
+/* (on the map, above its own corner buttons: the nav map's and multiplayer;
+   and narrower than the room left of the panel on a small tablet) */
 body:has(.universe-page) .tour-offer { bottom: calc(128px + env(safe-area-inset-bottom)); }
-@media (max-width: 767px), (max-height: 480px) {
+@media (min-width: 768px) { body:has(.universe-page:not([data-tucked])) .tour-offer { width: min(360px, calc(100vw - 440px)); } }
+@media (max-width: 767px) {
   .tour-offer, body:has(.universe-page) .tour-offer { top: calc(var(--nav-h) + 8px); bottom: auto; }
+}
+/* (a map window too short for it over the corner buttons: about 128 + its own
+   height + the nav, a laptop at 200%) */
+@media (min-width: 768px) and (max-height: 380px) {
+  body:has(.universe-page) .tour-offer { top: calc(var(--nav-h) + 8px); bottom: auto; }
 }
 html[data-menu] .tour-offer { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .tour-offer { animation: none; } }

@@ -13,7 +13,13 @@ const OPTIONS = [
 export default function StartChoice({ onPick }) {
   const [remember, setRemember] = useState(true);
   const first = useRef(null);
-  useEffect(() => first.current?.focus({ preventScroll: true }), []);
+  useEffect(() => {
+    first.current?.focus({ preventScroll: true });
+    // (the tile that had the focus goes with it: the page has it next, as after the welcome)
+    return () => {
+      if (document.activeElement === document.body) document.getElementById('main')?.focus({ preventScroll: true });
+    };
+  }, []);
   return (
     <div className="start-choice" role="dialog" aria-modal="true" aria-labelledby="start-title">
       <div className="start-card">

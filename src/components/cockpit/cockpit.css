@@ -274,7 +274,9 @@
 
 .welcome-buttons { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: clamp(1.25rem, 4.5vh, 2.5rem); }
 .welcome-alt { margin-top: clamp(0.75rem, 2vh, 1.1rem); color: var(--muted); font-size: var(--fs-sm); }
-.welcome-alt .link { color: var(--text); font-weight: 600; }
+.welcome-alt .link { position: relative; color: var(--text); font-weight: 600; }
+/* a thumb gets 44 px round the one-line link, as the house's controls do */
+@media (pointer: coarse) { .welcome-alt .link::after { content: ''; position: absolute; inset: -12px -6px; } }
 .welcome :focus-visible { outline: 2px solid var(--saber); outline-offset: 3px; }
 
 /* whose worlds these are: the foot of the window, quiet, read by whoever
@@ -289,7 +291,8 @@
 }
 
 /* a phone, or a narrow window: the sun rises at the foot instead, the route's
-   notes go (the line above says it) and the buttons take the width */
+   notes go (the sentence above keeps the sound; the cockpit shows its own
+   keys) and the buttons take the width */
 @media (max-width: 640px) {
   .welcome-sun { top: auto; right: 50%; bottom: -52vmax; translate: 50% 0; }
   .welcome-sun::after { box-shadow: inset 0 2px 0 color-mix(in srgb, var(--saber) 55%, transparent), inset 0 14px 40px -18px color-mix(in srgb, var(--saber) 70%, transparent); }
@@ -304,10 +307,21 @@
   .welcome-route-text { display: none; }
   .welcome-route li { padding-top: 0.75rem; }
 }
-/* very short (a laptop at 200%, a phone on its side): the route goes too */
+/* very short (a laptop at 200%, a phone on its side): the route goes too,
+   and the buttons sit side by side where they fit */
 @media (max-height: 420px) {
   .welcome-route { display: none; }
   .welcome-text { font-size: var(--fs-md); }
+  .welcome-buttons .btn { flex: 0 1 auto; }
+}
+/* the shortest (a laptop at 250% or more): the title on one line and the
+   sentence gone, so the ways in stay in the first screenful down to about
+   300 px; under that the column scrolls from its top */
+@media (max-height: 300px) {
+  .welcome-main { padding-block: 4px; }
+  .welcome-title { max-width: none; font-size: clamp(1.25rem, 9vh, 2.2rem); }
+  .welcome-text { display: none; }
+  .welcome-buttons { margin-top: 0.75rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

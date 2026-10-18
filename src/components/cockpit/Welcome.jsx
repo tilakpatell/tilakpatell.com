@@ -16,11 +16,13 @@ import './cockpit.css';
 //
 // It fits the window whatever its size or zoom: the title and the gaps
 // follow the height as well as the width, the route's notes go on a short
-// window and the whole route on a very short one, and anything still too
-// tall scrolls from its top (cockpit.css's safe centring) with the buttons
-// in the first screenful.
+// window, the whole route on a very short one and the sentence under the
+// title on the shortest, and anything still too tall scrolls from its top
+// (cockpit.css's safe centring). The buttons are in the first screenful
+// down to about 300 px of height (a laptop at 250%); under that, a scroll.
+// It's a modal dialog: the page behind it is inert while it's up.
 const ROUTE = [
-  { title: 'Opening crawl', text: 'Half a minute, best with sound on' },
+  { title: 'Opening crawl', text: 'Half a minute, Star Wars style' },
   {
     title: 'A cockpit',
     text: (
@@ -53,9 +55,14 @@ export default function Welcome({ onStart, onSkip }) {
     const html = document.documentElement;
     const overflow = html.style.overflow;
     html.style.overflow = 'hidden';
+    // (it's portalled outside #root: the app behind takes no focus, clicks or reading while it's up)
+    const root = document.getElementById('root');
+    const was = root?.inert;
+    if (root) root.inert = true;
     return () => {
       window.removeEventListener('keydown', onKey);
       html.style.overflow = overflow;
+      if (root) root.inert = Boolean(was);
     };
   }, []);
 
@@ -76,7 +83,7 @@ export default function Welcome({ onStart, onSkip }) {
           A portfolio you can fly through
         </h1>
         <p id="welcome-text" className="welcome-text">
-          I’m a technical program manager and software engineer. My site opens with a one-minute intro; skip any part of it.
+          I’m a technical program manager and software engineer. My site opens with a one-minute intro, best with sound on; skip any part of it.
         </p>
 
         <ol className="welcome-route">
