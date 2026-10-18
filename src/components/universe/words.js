@@ -37,3 +37,17 @@ export const jumpState = (ready, wait) => (ready ? 'Jump: ready' : `Jump: chargi
 
 // No ship yet: the one way to say how to get one.
 export const PICK_A_SHIP = 'Pick a ship to fly out to it.';
+
+// The chart's tools and readouts (the nav map and the mini-map). Named
+// CHART_WORDS because chart/projection.js already exports CHART.
+export const CHART_WORDS = {
+  zoomIn: 'Zoom in',
+  zoomOut: 'Zoom out',
+  toShip: 'Back to the ship',
+  flat: 'Look straight down',
+  fit: 'Show everything',
+  sector: ([sx, sy, sz]) => `Sector ${[sx, sy, sz].map((n) => String(n).replace('-', '−')).join(', ')}`,
+  height: (far, side) => (side === 0 ? 'Level with the disc' : `${far} ${side > 0 ? 'above' : 'below'} the disc`),
+  // The keys line is drawn as <kbd>+</kbd> <kbd>−</kbd> {zoom}, <kbd>0</kbd> {back}.
+  keys: { zoom: 'zoom in and out', back: 'back to the ship' },
+};
