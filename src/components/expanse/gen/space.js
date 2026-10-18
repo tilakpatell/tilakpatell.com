@@ -11,7 +11,8 @@
 //   beacons (today's on the middle layer, the same rule at the sector's height elsewhere),
 //   legacy: { systems, wonders } (where the appended part begins) }
 // placeOf(universe, id) → { kind: 'system' | 'planet' | 'moon' | 'wonder' | 'thing' | 'extra', row, sector } | null
-//   (keeps the last 8 sectors it built)
+//   (keeps the last 8 sectors it built: its rows are shared with that cache, so treat them as
+//   read-only; a cache miss builds a whole sector synchronously)
 
 import { parseSpaceId, sectorCentre, sectorKey } from '../../../lib/space/address.js';
 import { clearOfKeepOuts, keepOutsNear } from './keepOuts';
@@ -21,7 +22,9 @@ import { addBodies, localFactions, systemAt } from './systems';
 import { factionBand } from './tables';
 import { SECTOR_EXTRAS, THING_BASE, thingRow, thingsOf } from './things';
 
-const CUBE = 58000; // appended systems stay this far from the middle, each way
+// Appended systems stay this far from the middle, each way. Legacy systems sit at least 2,000
+// inside a sector face, so 4,000 more keeps the spec's 6,000 gap across a face (60,000 - 4,000).
+const CUBE_HALF = 56000;
 const GAP = 6000; // between systems, in 3D
 const NEAR = 3000; // between a system and a wonder or beacon
 const TRIES = 60; // darts a system
@@ -89,9 +92,9 @@ function appendSystems(sector, outs) {
     let at = null;
     for (let t = 0; t < TRIES && !at; t++) {
       const p = [
-        origin[0] + range(rng, -CUBE, CUBE),
-        origin[1] + range(rng, -CUBE, CUBE),
-        origin[2] + range(rng, -CUBE, CUBE),
+        origin[0] + range(rng, -CUBE_HALF, CUBE_HALF),
+        origin[1] + range(rng, -CUBE_HALF, CUBE_HALF),
+        origin[2] + range(rng, -CUBE_HALF, CUBE_HALF),
       ];
       if (!grid.clear(p) || fixed.some((f) => near(p, f, NEAR))) continue;
       if (outs.length) {
@@ -125,7 +128,7 @@ export function fullSector(universe, sx, sy, sz, { things = true } = {}) {
   const outs = keepOutsNear(sx, sy, sz);
   appendSystems(sector, outs);
   if (things) {
-    const made = thingsOf({ sx, sy, sz, origin, seed, systems: sector.systems, outs }, SECTOR_EXTRAS);
+    const made = thingsOf({ sx, sy, sz, origin, seed, systems: sector.systems, wonders: sector.wonders, outs }, SECTOR_EXTRAS);
     sector.things = made.things;
     sector.extras = made.extras;
   } else {

@@ -9,13 +9,20 @@
 //   (place may return a new [x, y, z] in absolute space or null to drop the site; it runs before the clearance checks)
 // SECTOR_EXTRAS: whole-sector lists { list, base, max, make(ctx) → [{ kind, at, size, ... }] }
 // thingsOf(ctx, extras = SECTOR_EXTRAS, kinds = THING_KINDS) → { things: ThingSet, extras: { [list]: Row[] } }
-//   ctx is { sx, sy, sz, origin, seed, systems, outs }
+//   ctx is { sx, sy, sz, origin, seed, systems, outs, wonders? } (wonders: the legacy ones; absent means none).
+//   A ctx is treated as immutable: the per-ctx cache snapshots its systems and wonders.
+//   A wonder's size is its radius (tables.js WONDERS says so; scene/sectors.js draws a nebula as a cloud of
+//   about that size and the others as a ball of size * 0.15 to 0.5, so the table radius is the safe reach).
+//   Every wonder but a nebula (a soft cloud a rock can sit in) keeps lattice things its size plus the thing's away.
 //   ThingSet is { count, slot: Uint16Array, kind: Uint8Array (index into kinds), at: Float32Array (xyz from the origin), size: Float32Array }
 // thingInCell(ctx, slot, kinds = THING_KINDS) → { kind (index), at (from the origin), size } | null
 //   (cells run in slot order ix + 20 * (iy + 20 * iz), centre = origin - 57000 + 6000 * (ix, iy, iz))
 // thingSeed(sectorSeed, n) → bigint
 // thingRow(sector, i) → { id, n, kind (name), at (absolute), size, seed, name }
 //   (sector carries { sx, sy, sz, origin, seed, things })
+// An extras row's make() output must be plain data (numbers, strings, arrays, plain objects), because
+// sectors cross to a worker later. Extras rows must have base >= 3 (w0-w2 are the middle layer's wonders)
+// and not overlap each other's [base, base + max).
 
 import { SECTOR, spaceId } from '../../../lib/space/address.js';
 import { clearOfKeepOuts } from './keepOuts';
@@ -87,7 +94,11 @@ function prepare(ctx, kinds) {
           else grid.set(k, [row]);
         }
   }
+  const wonders = (ctx.wonders ?? [])
+    .filter((w) => w.kind !== 'nebula')
+    .map((w) => ({ at: w.at, r: w.size }));
   p = {
+    wonders,
     h0: Number(seed & 0xffffffffn) | 0,
     h1: Number((seed >> 32n) & 0xffffffffn) | 0,
     total: kinds.reduce((t, k) => t + k.weight, 0),
@@ -139,6 +150,13 @@ function cell(ctx, p, kinds, slot) {
       if (dx * dx + dy * dy + dz * dz < min * min) return null;
     }
   }
+  for (const w of p.wonders) {
+    const dx = at[0] - w.at[0];
+    const dy = at[1] - w.at[1];
+    const dz = at[2] - w.at[2];
+    const min = w.r + size;
+    if (dx * dx + dy * dy + dz * dz < min * min) return null;
+  }
   return {
     kind: ki,
     at: [at[0] - ctx.origin[0], at[1] - ctx.origin[1], at[2] - ctx.origin[2]],
@@ -174,7 +192,12 @@ export function thingsOf(ctx, extras = SECTOR_EXTRAS, kinds = THING_KINDS) {
     size: size.slice(0, count),
   };
   const lists = {};
+  const ranges = [];
   for (const e of extras) {
+    if (e.base < 3) throw new Error(`extra ${e.list} starts inside the middle layer's wonder ids`);
+    for (const [list, lo, hi] of ranges)
+      if (e.base < hi && lo < e.base + e.max) throw new Error(`extras ${list} and ${e.list} share ids`);
+    ranges.push([e.list, e.base, e.base + e.max]);
     if (e.base + e.max > THING_BASE) throw new Error(`extra ${e.list} reaches into the lattice's ids`);
     lists[e.list] = e
       .make(ctx)
