@@ -419,6 +419,8 @@
 .holomap-unknown-name { fill: rgb(191 234 255 / 0.45); }
 /* (dim: the war's own lanes, warmap.css, go over them) */
 .holomap-lane { fill: none; stroke: rgb(255 210 120 / 0.18); stroke-width: calc(0.045 * var(--u)); stroke-linejoin: round; }
+/* (the lesser routes, spurs.js: thinner, dashed) */
+.holomap-spur { fill: none; stroke: rgb(255 210 120 / 0.14); stroke-width: calc(0.03 * var(--u)); stroke-dasharray: calc(0.14 * var(--u)) calc(0.08 * var(--u)); stroke-linejoin: round; }
 .holomap-course { fill: none; stroke: #fff; stroke-linejoin: round; stroke-width: calc(0.085 * var(--u)); stroke-dasharray: calc(0.18 * var(--u)) calc(0.12 * var(--u)); animation: holomap-dash 1s linear infinite; }
 @keyframes holomap-dash { to { stroke-dashoffset: calc(-0.6 * var(--u)); } }
 .holomap-course-glow { fill: none; stroke: var(--accent); stroke-width: calc(0.32 * var(--u)); stroke-opacity: 0.28; stroke-linejoin: round; filter: blur(calc(0.06 * var(--u))); }
@@ -462,6 +464,15 @@
 }
 /* a world the game's front end drew a globe of, or one rendered from its skin (globes.js): that globe for its dot, ringed faintly in its colour */
 .holomap-dot[data-globe] { inset: -2px; background: var(--globe) center / contain no-repeat; box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent); }
+/* a charted world (charted/index.js): a smaller dot, 8 px (labelPlace.js's SMALL_DOT), its own size again once picked or where you
+   are; its name only where labelPlace.js found it room (data-quiet: none), and the whole of it tucked away where another's name
+   covers its dot (data-place none) till the map's zoomed in enough to part them */
+.holomap-systems > li[data-charted] .holomap-system:not([aria-pressed='true'], [aria-current='location']) .holomap-dot { inset: 3px; background: radial-gradient(circle, var(--c) 0 1.6px, color-mix(in srgb, var(--c) 35%, transparent) 2.4px, transparent 4px); }
+/* a landmark's name (landmarks.js), placed round its middle as a system's is round its dot, in the same box; it takes no press */
+.holomap-landmarks { pointer-events: none; }
+.holomap-landmark { position: absolute; left: 0; top: 0; display: block; width: 14px; height: 14px; translate: -50% -50%; color: #a9c6d8; font-size: 0.78rem; font-style: italic; white-space: nowrap; }
+.holomap-systems > li[data-quiet] .holomap-name,
+.holomap-systems > li[data-place='none'] { visibility: hidden; }
 /* a name sits in the place round its dot that HoloMap.jsx gave it, to the pixel (labelPlace.js's boxAt: right by default; a
    corner's box is 5.4 px, CORNER, off the dot's middle each way; above or below it can hang from the dot's left or right
    edge, data-hang s or e, where the dot has neighbours: data-place is then its b or t). The names are placed by their boxes, so
@@ -544,7 +555,8 @@
   .holomap-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); container-type: normal; }
   .holomap-map { width: 100%; max-height: none; }
   .holomap-side { max-height: 40svh; }
-  .holomap-system { font-size: 0.7rem; }
+  .holomap-system,
+  .holomap-landmark { font-size: 0.7rem; }
   .holomap-filmpick[open] .holomap-films { grid-template-columns: repeat(2, minmax(0, auto)); }
 }
 

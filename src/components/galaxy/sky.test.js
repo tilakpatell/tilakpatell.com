@@ -105,7 +105,9 @@ describe('the bake', () => {
 });
 
 // the sky as it was before its fidelity went up (__fixtures__/sky.json: the
-// bake's uniforms, and a hash of the first 4,200 stars, rounded)
+// bake's uniforms, and a hash of the first 4,200 stars, rounded); Hoth's and Tatooine's third nebula
+// has since become the atlas's own nearest one (landmarks.js: the Ivax
+// Nebula and the Kaliida Nebula), and the fixture's with it
 const r4 = (v) => Math.round(v * 1e4) / 1e4;
 const r2 = (v) => Math.round(v * 100) / 100;
 const fnv = (s) => {
@@ -146,7 +148,8 @@ describe('its fidelity', () => {
 
   it('looks as it did: the same bake, and the same first 4,200 stars', () => {
     for (const [id, want] of Object.entries(FIXTURE)) {
-      const sky = createSky({ level: 'high' });
+      // (a borrowed sky is made as its borrowers make it, the universe map and the Rick and Morty page: beacons off)
+      const sky = createSky({ level: 'high', beacons: id !== 'kashyyyk-borrowed' });
       sky.setSystem(SYSTEM_OF[id]());
       const r = fakeRenderer();
       let scene = null;

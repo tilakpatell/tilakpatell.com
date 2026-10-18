@@ -45,20 +45,26 @@ export const NAME_LEFT = new Set(['mustafar', 'hoth', 'geonosis', 'nevarro', 'ma
 // what a system takes up on the map, roughly, in grid squares (a desktop's;
 // on a phone a name's a little longer for the squares, so this errs short):
 // its dot and ring, and its name, from just off the dot, so wide a letter
+// (a charted world's dot is smaller, and its name, which gives way to
+// everything else's, labelPlace.js's `optional`, isn't counted)
 const DOT = 0.45;
+const SMALL_DOT = 0.2; // (its 4 px is 0.12 of a square on a desktop's map, 0.23 on a phone's)
 const NAME = { off: 0.4, per: 0.24, half: 0.25 };
 const MARKS = SYSTEMS.map((s) => {
   const [x, z] = s.pos;
   const len = NAME.off + NAME.per * s.name.length;
-  return { id: s.id, dot: s.pos, name: NAME_LEFT.has(s.id) ? [x - len, x - NAME.off, z] : [x + NAME.off, x + len, z] };
+  if (s.charted) return { id: s.id, dot: s.pos, r: SMALL_DOT, name: null };
+  return { id: s.id, dot: s.pos, r: DOT, name: NAME_LEFT.has(s.id) ? [x - len, x - NAME.off, z] : [x + NAME.off, x + len, z] };
 });
 
 export function roomOf([x, z], except = []) {
   let room = Infinity;
   for (const m of MARKS) {
-    const [x0, x1, nz] = m.name;
-    room = Math.min(room, Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(Math.abs(z - nz) - NAME.half, 0)));
-    if (!except.includes(m.id)) room = Math.min(room, Math.hypot(x - m.dot[0], z - m.dot[1]) - DOT);
+    if (m.name) {
+      const [x0, x1, nz] = m.name;
+      room = Math.min(room, Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(Math.abs(z - nz) - NAME.half, 0)));
+    }
+    if (!except.includes(m.id)) room = Math.min(room, Math.hypot(x - m.dot[0], z - m.dot[1]) - m.r);
   }
   return room;
 }
