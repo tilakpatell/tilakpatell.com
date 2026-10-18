@@ -104,6 +104,15 @@ describe('Eve', () => {
     expect(ev.find((e) => e.type === 'eveHit').foe).toBe(0);
   });
 
+  it('says a word as she goes for a foe, if he’s near enough to hear it', () => {
+    const e0 = newEve(LOOP);
+    const foe = [e0.p[0] + 300, e0.p[1], e0.p[2]];
+    const near = runEve(e0, 1, sense({ foes: [foe], hero: [e0.p[0] - 50, e0.p[1], e0.p[2]] }));
+    expect(near.ev.filter((e) => e.type === 'line' && COMPANION.eveFight.includes(e.text))).toHaveLength(1);
+    const far = runEve(e0, 1, sense({ foes: [foe] }));
+    expect(far.ev.some((e) => e.type === 'line')).toBe(false);
+  });
+
   it('stops to talk when he presses E beside her, then waits', () => {
     const e0 = newEve(LOOP);
     const hero = [e0.p[0] + 3, e0.p[1], e0.p[2]];
@@ -163,6 +172,18 @@ describe('Dad', () => {
     const { dad } = runDad(newDad({ porch }), 90, sense({ time: 'dusk' }));
     expect(dad.state).toBe('home');
     expect(d3(dad.p, porch)).toBeLessThan(1);
+  });
+
+  it('has a word for him when he comes up to the porch, once a visit', () => {
+    const porch = [-2040, 0.3, 250];
+    let r = runDad(newDad({ porch }), 90, sense({ time: 'dusk' }));
+    expect(r.ev.some((e) => e.type === 'line')).toBe(false);
+    const by = sense({ time: 'dusk', hero: [porch[0] + 4, 0, porch[2] + 3] });
+    r = runDad(r.dad, 10, by);
+    const homeLines = (ev) => ev.filter((e) => e.type === 'line' && e.who === 'omni' && COMPANION.dadHome.includes(e.text));
+    expect(homeLines(r.ev)).toHaveLength(1);
+    r = runDad(runDad(r.dad, 2, sense({ time: 'dusk' })).dad, 2, by);
+    expect(homeLines(r.ev)).toHaveLength(1);
   });
 
   it('leads the spar through his points, waiting at each until Mark is within 20 m', () => {

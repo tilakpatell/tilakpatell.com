@@ -8,14 +8,20 @@
 // straight where they're going). Headless Chrome draws in software, slowly.
 // --metrics prints, after each shot, `name band=… mark=…` (see measure);
 // BOX=1 with it also writes inv-<name>.box.png, the box and ring drawn on.
+// --play ep1,ep2,… (or --play all) plays those episodes through by moving
+// Mark (./inv-world-play.mjs) and fails unless each is done; with --play
+// only the shots named are taken.
 import { chromium } from 'playwright-core';
 import sharp from 'sharp';
+import { installPlayer, play } from './inv-world-play.mjs';
 
 const out = process.env.OUT ?? '.';
 const W = Number(process.env.W ?? 960);
 const H = Number(process.env.H ?? 540);
 const Q = process.env.Q ?? 'low';
-const URL = `http://localhost:5173/?quality=${Q}#/invincible`;
+// (BASE: another dev server than the default one, e.g. a worktree's own port)
+const BASE = process.env.BASE ?? 'http://localhost:5173';
+const URL = `${BASE}/?quality=${Q}#/invincible`;
 const chrome = process.env.CHROME ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const browser = await chromium.launch({ executablePath: chrome, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const errors = [];
@@ -33,6 +39,8 @@ await ctx.addInitScript(([q, intro]) => {
 const page = await ctx.newPage();
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+// (--play's driver says how far it's got)
+page.on('console', (m) => m.text().startsWith('[play]') && console.log(m.text()));
 const t0 = Date.now();
 await page.goto(URL, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => window.__INVWORLD__?.api && document.querySelector('.iw-canvas[data-on]'), null, { timeout: 240000 });
@@ -101,7 +109,10 @@ const SHOTS = {
 };
 const args = process.argv.slice(2);
 const metrics = args.includes('--metrics');
-const want = args.filter((a) => !a.startsWith('--'));
+const at = args.indexOf('--play');
+const SEASON = ['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7'];
+const plays = at < 0 ? [] : !args[at + 1] || args[at + 1].startsWith('--') || args[at + 1] === 'all' ? SEASON : args[at + 1].split(',');
+const want = args.filter((a, i) => !a.startsWith('--') && !(at >= 0 && i === at + 1));
 
 // How a shot reads, from the screenshot itself and on the canvas only (the
 // site's header is above it; the HUD over it is counted, as a player sees it):
@@ -203,7 +214,7 @@ await page.evaluate(() => {
 });
 await page.waitForTimeout(3000); // (a few frames first, so everyone's somewhere)
 for (const [name, s] of Object.entries(SHOTS)) {
-  if (want.length && !want.includes(name)) continue;
+  if ((want.length || plays.length) && !want.includes(name)) continue;
   await page.evaluate(async (s) => {
     const { api, sim } = window.__INVWORLD__;
     sim.snap = true;
@@ -377,5 +388,17 @@ for (const [name, s] of Object.entries(SHOTS)) {
     if (process.env.BOX) await boxed(png, `${out}/inv-${name}.box.png`, at);
   }
 }
+// the season, played (./inv-world-play.mjs): each episode moved through by Mark, then judged by the story kept
+let failed = 0;
+if (plays.length) {
+  await installPlayer(page);
+  for (const ep of plays) {
+    const r = await play(page, ep);
+    if (!r.done) failed++;
+    console.log(`play ${ep}`, r.done ? `done in ${r.best?.toFixed(1)} s of game, ${r.wall.toFixed(0)} s here` : `NOT done (${r.why ?? 'stopped'}${r.left ? `, step ${r.left.step}, ${r.left.count} counted` : ''}) after ${r.wall.toFixed(0)} s`);
+    if (process.env.PLAYSHOTS) await page.screenshot({ path: `${out}/play-${ep}.png` });
+  }
+}
 console.log(errors.length ? `errors:\n${errors.slice(0, 12).join('\n')}` : 'no page errors');
 await browser.close();
+if (failed || (plays.length && errors.length)) process.exit(1);
