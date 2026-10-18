@@ -23,6 +23,9 @@
 //   CREW_POWERS / powersOf(crew)   { primary, ultimate } ids, or null
 //   CHARGE                 what fills the big one (0…1)
 //   createPowers(crew, { charge, cool, picks, fx }) → state, or null for no crew
+//   retune(st, { fx, picks }) → { cut } the same crew's new skills or pair, in place:
+//                          what's on runs on; a slot given another power takes it
+//                          (ending one that was on: `cut`, for the player to stop)
 //   press(st, slot)        → { ok, id } or { ok: false, why }
 //   step(st, dt, { flying }) → events ({ type: 'end' | 'ready', slot, id })
 //   gain(st, what, n, key) the big one charged (never while it's on); → true the moment it fills
@@ -107,17 +110,44 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 // hangar/skills's: powerCool and powerDur on every power's lengths, charge on
 // what fills the big one, pickup on a pickup's share)
 const num = (v) => (Number.isFinite(v) && v > 0 ? v : 1);
+const kOf = (fx) => ({ cool: num(fx?.powerCool), dur: num(fx?.powerDur), charge: num(fx?.charge), pickup: num(fx?.pickup) });
 export function createPowers(crew, { charge = 0, cool = 0, picks = null, fx = null } = {}) {
   const own = powersOf(crew) && (picks?.primary && picks?.ultimate ? picks : powersOf(crew));
   if (!own) return null;
   const c = clamp(Number.isFinite(charge) ? charge : 0, 0, 1);
   const wait = clamp(Number.isFinite(cool) ? cool : 0, 0, POWERS[own.primary].cool);
-  const k = { cool: num(fx?.powerCool), dur: num(fx?.powerDur), charge: num(fx?.charge), pickup: num(fx?.pickup) };
+  const k = kOf(fx);
   return { crew, k, primary: { id: own.primary, phase: wait > 0 ? 'cooling' : 'ready', left: wait }, ultimate: { id: own.ultimate, phase: c >= 1 ? 'ready' : 'charging', charge: c, left: 0 } };
 }
 // a power's lengths with the skills on them (a state with none: the cards')
 const durOf = (st, id) => POWERS[id].dur * (st?.k?.dur ?? 1);
 const coolOf = (st, id) => POWERS[id].cool * (st?.k?.cool ?? 1);
+
+export function retune(st, { fx = null, picks = null } = {}) {
+  if (!st) return { cut: false };
+  st.k = kOf(fx);
+  let cut = false;
+  for (const slot of SLOTS) {
+    const id = picks?.[slot];
+    const s = st[slot];
+    if (!POWERS[id] || POWERS[id].slot !== slot || id === s.id) continue;
+    const on = s.phase === 'active';
+    s.id = id;
+    if (!on) {
+      if (s.phase === 'cooling') s.left = Math.min(s.left, coolOf(st, id));
+      continue;
+    }
+    cut = true;
+    if (slot === 'primary') {
+      s.phase = 'cooling';
+      s.left = coolOf(st, id);
+    } else {
+      s.phase = 'charging';
+      s.left = 0;
+    }
+  }
+  return { cut };
+}
 
 // a press of G or X: on, if it's ready (the big one's charge spent)
 export function press(st, slot) {

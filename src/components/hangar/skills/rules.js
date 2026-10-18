@@ -12,6 +12,8 @@
 //   keyMet(key, achievements) → boolean
 //   canTake(nodes, id, { earned, achievements }) → { ok, why: null | 'unknown' | 'taken' | 'soon' | 'parent' | 'key' | 'points' }
 //   readSkills(raw, { earned, achievements }) → the ids kept, in the order taken
+//   withTaken(saved, id) → the save with a node taken on its end (the save as it
+//     was, not as read now: what the points can't hold today waits for them)
 //   effectsOf(nodes) → fx (adders 0 and multipliers 1 where nothing's taken; carry: the crews' powers any ship may carry)
 //   canCarry(fx, crew, powersCrew) → boolean
 //   resetCost(resets) → credits
@@ -66,6 +68,11 @@ export function readSkills(raw, ctx) {
   for (const id of asked) if (typeof id === 'string' && canTake(kept, id, ctx).ok) kept.push(id);
   return kept;
 }
+
+export const withTaken = (saved, id) => {
+  const list = Array.isArray(saved) ? saved : [];
+  return list.includes(id) ? list : [...list, id];
+};
 
 export function effectsOf(nodes) {
   const fx = { carry: [] };

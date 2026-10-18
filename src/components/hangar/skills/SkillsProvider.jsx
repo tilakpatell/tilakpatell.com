@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAchievements } from '../../Achievements';
 import { useEconomy } from '../../universe/shared/wallet';
 import { localSaves } from '../../../runtime/local';
-import { canTake, effectsOf, legendRank, pointsOf, readSkills, resetCost } from './rules';
+import { canTake, effectsOf, legendRank, pointsOf, readSkills, resetCost, withTaken } from './rules';
 import { NODES } from './tree';
 import { MAX, SkillsContext } from './useSkills';
 import { POWERS_KEY, POWERS_VERSION, readPicks, setPick } from './powerPicks';
@@ -66,19 +66,24 @@ export default function SkillsProvider({ children }) {
     return { nodes, ctx, points, xp, fx: effectsOf(nodes) };
   }, [level, xp, unlocked, saved.nodes]);
 
+  // (taken onto the save as it was, and only once the wallet's in: before
+  // it, the levels' points aren't counted yet, and a save written then would
+  // keep only what the achievements alone pay for)
   const take = useCallback(
     (id) => {
+      if (!economy) return { ok: false, why: 'loading' };
       const r = canTake(tree.nodes, id, tree.ctx);
       if (!r.ok) return r;
-      const nodes = [...tree.nodes, id];
+      const nodes = withTaken(saved.nodes, id);
       setSaved((s) => ({ ...s, nodes }));
       write({ nodes, resets: saved.resets });
       return r;
     },
-    [tree, saved.resets],
+    [economy, tree, saved.nodes, saved.resets],
   );
   const cost = resetCost(saved.resets);
   const reset = useCallback(() => {
+    if (!economy) return { ok: false, why: 'loading' };
     if (!tree.nodes.length) return { ok: false, why: 'empty' };
     if (cost > 0 && !economy?.spend(cost)) return { ok: false, why: 'credits' };
     const resets = saved.resets + 1;

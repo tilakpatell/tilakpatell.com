@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHARGE, CREW_POWERS, KEPT_KEY, POWERS, POWER_KEYS, aimHelp, beamOf, blastPunch, cancel, chargeFor, clearOfSolids, createPowers, crossesShell, finish, firstAlong, gain, hasten, isObjective, jinkStep, mods, pickTargets, portalExit, picksFor, powersOf, press, pullStep, readCooling, readKept, shotAt, step, turretPick, view, writeKept } from './shipPowers';
+import { CHARGE, CREW_POWERS, KEPT_KEY, POWERS, POWER_KEYS, aimHelp, beamOf, blastPunch, cancel, chargeFor, clearOfSolids, createPowers, crossesShell, finish, firstAlong, gain, hasten, isObjective, jinkStep, mods, pickTargets, portalExit, picksFor, powersOf, press, pullStep, readCooling, readKept, retune, shotAt, step, turretPick, view, writeKept } from './shipPowers';
 import { CREWS } from './crews';
 import { spawn, step as fly } from './ship';
 import { makeSpace } from '../galaxy/space';
@@ -493,5 +493,32 @@ describe('the powers with the skill tree’s (hangar/skills’ fx)', () => {
     const st = createPowers('xwing');
     press(st, 'primary');
     expect(st.primary.left).toBe(POWERS.focus.dur);
+  });
+});
+
+describe('the powers retuned for the same crew (new skills or picks in the Hangar)', () => {
+  it('keeps a power that’s on running, its new lengths for after', () => {
+    const st = createPowers('xwing');
+    press(st, 'primary');
+    step(st, 1);
+    const left = st.primary.left;
+    expect(retune(st, { fx: { powerCool: 0.5 } }).cut).toBe(false);
+    expect(st.primary.phase).toBe('active');
+    expect(st.primary.left).toBeCloseTo(left);
+    step(st, left + 0.01);
+    expect(st.primary.left).toBeCloseTo(POWERS.focus.cool * 0.5, 1);
+  });
+  it('keeps the big one’s charge, and puts the new pick in an idle slot', () => {
+    const st = createPowers('xwing', { charge: 0.4 });
+    expect(retune(st, { picks: { primary: 'portal', ultimate: 'salvo' } }).cut).toBe(false);
+    expect(st.primary).toMatchObject({ id: 'portal', phase: 'ready' });
+    expect(st.ultimate.charge).toBeCloseTo(0.4);
+  });
+  it('ends a power that’s on when its slot is given another, cooling as the new one does', () => {
+    const st = createPowers('xwing');
+    press(st, 'primary');
+    expect(retune(st, { picks: { primary: 'portal', ultimate: 'salvo' } }).cut).toBe(true);
+    expect(st.primary).toMatchObject({ id: 'portal', phase: 'cooling' });
+    expect(st.primary.left).toBeCloseTo(POWERS.portal.cool);
   });
 });

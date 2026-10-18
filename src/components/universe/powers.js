@@ -47,7 +47,7 @@
 // put there, the camera with it.
 
 import * as THREE from 'three';
-import { KEPT_KEY, POWERS, aimHelp, beamOf, blastPunch, cancel as cancelAll, clearOfSolids, createPowers, crossesShell, finish, firstAlong, gain as charge, hasten, isObjective, isOn, jinkStep, mods as modsOf, pickTargets, portalExit, press as pressSlot, readCooling, readKept, shotAt, step, turretPick, view as viewOf, writeKept } from './shipPowers';
+import { KEPT_KEY, POWERS, aimHelp, beamOf, blastPunch, cancel as cancelAll, clearOfSolids, createPowers, crossesShell, finish, firstAlong, gain as charge, hasten, isObjective, isOn, jinkStep, mods as modsOf, pickTargets, portalExit, press as pressSlot, readCooling, readKept, retune, shotAt, step, turretPick, view as viewOf, writeKept } from './shipPowers';
 import { createPowerFx } from './powerFx';
 import { steer } from './weapons';
 import { assist, dirTo, intercept, nose } from './targeting';
@@ -406,19 +406,25 @@ export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flash
   return {
     // the crew flying, with the skill tree's effects and the pair it carries
     // (hangar/skills's fx and shipPowers.js's picksFor): a crew change starts
-    // from nothing; new skills or picks for the same crew keep its charge and
-    // its cooldown
+    // from nothing; new skills or picks for the same crew are taken in place
+    // (shipPowers.js's retune: what's on runs on, the charge and the cooldown
+    // kept; only a power that's on whose slot is given another ends)
     setCrew(kind, { fx: skillFx = null, picks = null } = {}) {
       const sig = JSON.stringify([kind ?? null, skillFx, picks]);
       if (sig === crewSig) return;
       const same = (st?.crew ?? null) === (kind ?? null);
       crewSig = sig;
-      if (same) this.keep();
+      big = Number.isFinite(skillFx?.bigPunch) && skillFx.bigPunch > 0 ? skillFx.bigPunch : 1;
+      if (same && st) {
+        if (retune(st, { fx: skillFx, picks }).cut) clearRun();
+        m = modsOf(st);
+        this.keep();
+        return;
+      }
       denied = null;
       clearRun();
       const kept = session.get();
       st = fx && kind ? createPowers(kind, { charge: readKept(kept, kind), cool: readCooling(kept, kind, Date.now()), fx: skillFx, picks }) : null;
-      big = Number.isFinite(skillFx?.bigPunch) && skillFx.bigPunch > 0 ? skillFx.bigPunch : 1;
       m = modsOf(st);
       this.keep(); // (another crew's charge gone at once: a crew change starts from nothing, and stays so if you change back)
     },

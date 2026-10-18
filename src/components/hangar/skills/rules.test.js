@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENTS } from '../../Achievements';
 import { BATTLEFRONT, BRANCHES, KEYS, NODES } from './tree';
-import { canCarry, canTake, effectsOf, keyMet, legendRank, maxPoints, pointsOf, readSkills, resetCost, treeCost } from './rules';
+import { canCarry, canTake, effectsOf, keyMet, legendRank, maxPoints, pointsOf, readSkills, resetCost, treeCost, withTaken } from './rules';
 
 const all = Object.keys(ACHIEVEMENTS);
 const countable = all.filter((id) => !BATTLEFRONT.includes(id)).length;
@@ -101,5 +101,18 @@ describe('what they do', () => {
     expect(resetCost(0)).toBe(0);
     expect(resetCost(1)).toBe(500);
     expect(resetCost(7)).toBe(500);
+  });
+});
+
+describe('a node taken, as the save keeps it', () => {
+  it('goes on the end of the save as it was, so a dip in the points loses nothing for good', () => {
+    const next = withTaken(['afterburn', 'deflectors'], 'trigger');
+    expect(next).toEqual(['afterburn', 'deflectors', 'trigger']);
+    expect(withTaken(next, 'afterburn')).toBe(next);
+    expect(readSkills({ nodes: next }, { earned: 2, achievements: [] })).toEqual(['afterburn', 'trigger']);
+    expect(readSkills({ nodes: next }, { earned: 4, achievements: [] })).toEqual(next);
+  });
+  it('reads a broken save as nothing taken yet', () => {
+    expect(withTaken(null, 'trim')).toEqual(['trim']);
   });
 });
