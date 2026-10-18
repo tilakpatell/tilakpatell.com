@@ -76,7 +76,7 @@ async function player() {
     if (wall - said > 15) {
       said = wall;
       const h = sim.h;
-      console.log(`[play]   ${h.zone ?? 'city'} ${h.mode} at [${h.p.map((v) => Math.round(v))}] ${Math.round(len(h.v))} m/s, keys ${[...sim.keys].join('+') || 'none'}`);
+      console.log(`[play]   ${h.zone ?? 'city'} ${h.mode} at [${h.p.map((v) => Math.round(v))}] ${Math.round(len(h.v))} m/s, keys ${[...sim.keys].join('+') || 'none'}; dad ${api.debug.dad().state} at [${api.debug.dad().p.map(Math.round)}]`);
     }
     if (job) {
       try {
@@ -333,12 +333,16 @@ async function player() {
       start('ep7');
       const pts = sim.mission.spar;
       for (let i = 0; i < pts.length; i++) {
-        // with him all the way, over his head (he flies through towers; the
-        // episode wants Mark within 200 m), and down to each point once he's there
+        // with him all the way (he flies through towers; the episode wants Mark
+        // within 200 m): close over his head while he waits at a point, since he
+        // moves on to the next only with Mark within 20 m of him (companions.js
+        // DAD.sparR), and well above him while he flies
         await every(() => {
           if (step() > i || step() < 0) return true;
-          if (len(sub(dad(), pts[i])) < 30) steer(pts[i], 8);
-          else steer(add(add(dad(), api.debug.dad().v, 1.2), [0, 120, 0]), 15);
+          const d = api.debug.dad();
+          const flying = len(d.v) > 5;
+          if (flying) steer(add(add(d.p, d.v, 1.2), [0, 60, 0]), 15, { pass: true });
+          else steer(add(d.p, [0, 6, 0]), 3);
           return false;
         }, 240000);
       }
