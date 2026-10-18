@@ -85,3 +85,27 @@
 @media (pointer: coarse) {
   .hangar-chips .hangar-swatch { width: 44px; min-height: 44px; }
 }
+
+/* the Arms: the ship's three lines, a row each */
+.hangar-lines { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.hangar-lines li { display: grid; grid-template-columns: 9rem minmax(0, 1fr) auto; grid-template-areas: 'key name go' 'key does go'; align-items: center; gap: 0.15rem 0.9rem; padding: 0.7rem 0.9rem; border: 1px solid var(--yard-line); border-radius: 12px; background: var(--yard-pane); }
+.hangar-line-key { grid-area: key; color: var(--muted); font-size: 0.8rem; }
+.hangar-line-name { grid-area: name; font-size: 0.95rem; }
+.hangar-lines li[data-line='secondary'] .hangar-line-name { color: #9fd8ff; }
+.hangar-lines li[data-line='ordnance'] .hangar-line-name { color: #ffc070; }
+.hangar-line-does { grid-area: does; color: var(--muted); font-size: 0.8rem; }
+.hangar-lines button { grid-area: go; min-height: 36px; padding: 0 0.8rem; border: 1px solid var(--yard-line); border-radius: 999px; color: var(--text); font-size: 0.78rem; }
+@media (pointer: coarse) {
+  .hangar-lines button { min-height: 44px; }
+}
+@media (max-width: 719px) {
+  .hangar-lines li { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'key' 'name' 'does' 'go'; }
+  .hangar-lines button { justify-self: start; }
+}
+/* the Powers: the crew's two, a card each, the mark in the crew's colour */
+.hangar-powers { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+.hangar-power { display: flex; gap: 0.9rem; padding: 1rem; border: 1px solid var(--yard-line); border-radius: 12px; background: var(--yard-pane); }
+.hangar-power-icon { flex: none; color: var(--engine, #e8eefc); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--engine, #e8eefc) 50%, transparent)); }
+.hangar-power h3 { display: flex; align-items: center; gap: 0.45rem; }
+.hangar-power b { display: block; margin-bottom: 0.25rem; font-size: 1rem; }
+.hangar-power p { margin: 0 0 0.4rem; font-size: 0.86rem; }
