@@ -14,6 +14,7 @@
 - One feel: `specs/2026-10-08-one-feel-site-wide-design.md`, `specs/2026-10-08-game-feel-design.md` (its audit is `docs/research/2026-10-08-game-feel-audit.md`).
 - Decisions about the map’s ships: `docs/decisions/2026-10-09-ship-contact.md`, `docs/decisions/2026-10-09-ram-knocks-and-the-wire.md`.
 - The UI rules, written down: `docs/health/RULES.md`, “UI”.
+- The endless universe (one seamless 3D space, things and events, nebulae fixed in the world, landable generated planets, the dynamic map): `specs/2026-10-18-endless-universe-design.md`; its plans are `plans/2026-10-18-endless-universe*.md`.
 
 ## Landed
 
