@@ -1,73 +1,38 @@
 // Middle-earth's map, as data: what the drawn map (./Map.jsx) and the painted
 // one behind the page (./mapPaint.js) both draw from. Everything is placed on
-// an 800×560 sheet.
+// an 800×560 sheet, projected from Tolkien's geography (./sheet.js reads
+// ./geography.js); the helpers here turn it into peaks and trees.
 
-export const SHEET = { w: 800, h: 560 };
+export { SHEET, PLACES, REGIONS, SEAS, RIVERS, RANGES, FORESTS, MARSHES, LAKES, ROADS, nameAt, stopNameAt } from './sheet';
 
-export const PLACES = [
-  ['The Grey Havens', 92, 200],
-  ['Isengard', 378, 362],
-  ['Edoras', 418, 410],
-  ['Helm’s Deep', 380, 398],
-  ['Minas Tirith', 520, 444],
-  ['Osgiliath', 548, 436],
-  ['Barad-dûr', 712, 392],
-  ['Erebor', 590, 62],
-  ['Dol Guldur', 520, 252],
-];
-
-export const REGIONS = [
-  ['ERIADOR', 230, 120],
-  ['THE SHIRE', 168, 222],
-  ['RHOVANION', 620, 170],
-  ['ROHAN', 452, 384],
-  ['GONDOR', 470, 492],
-  ['MORDOR', 680, 470],
-];
-
-// the sea to the west and the bay in the south
-export const SEAS = ['M0 0 H118 C108 78 66 118 98 170 C128 218 58 262 80 330 C100 398 40 462 62 560 H0 Z', 'M350 560 C372 524 424 504 468 520 C498 532 516 560 516 560 Z'];
-
-// the Anduin from the north to the sea, the Brandywine, the Isen: [path, thin]
-export const RIVERS = [
-  ['M470 50 C478 110 462 180 472 240 C482 290 476 330 488 360 C500 400 476 440 470 470 C462 500 444 512 430 524', false],
-  ['M210 120 C216 170 206 214 222 250 C232 280 218 320 228 360', true],
-  ['M372 360 C366 392 360 420 342 452', true],
-];
-
-// the Misty Mountains, the White Mountains, the Grey Mountains, and Mordor's
-// walls: [x0, y0, x1, y1, dark]
-export const RANGES = [
-  [372, 52, 396, 334, false],
-  [334, 432, 512, 432, false],
-  [400, 36, 566, 36, false],
-  [586, 362, 772, 362, true],
-  [578, 384, 578, 520, true],
-  [586, 520, 770, 520, true],
-];
-
-// the Old Forest, Lothlórien, Fangorn, Mirkwood: [cx, cy, rx, ry, seed, count, kind]
-export const FORESTS = [
-  [282, 222, 18, 12, 7, 18, ''],
-  [440, 282, 20, 16, 11, 26, 'gold'],
-  [412, 334, 22, 14, 13, 26, ''],
-  [540, 160, 52, 92, 17, 120, 'dark'],
-];
-
-// the little peaks along a line: [x, y, size]
-export function peaks(x0, y0, x1, y1, every = 13, size = 9) {
-  const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / every));
-  return Array.from({ length: n + 1 }, (_, i) => [x0 + ((x1 - x0) * i) / n + (i % 2 ? 3 : -3), y0 + ((y1 - y0) * i) / n, size]);
+// The little peaks along a range: [x, y, size]. A range is a polyline
+// [[x, y], …]; the old straight form (x0, y0, x1, y1) is a one-segment
+// polyline. Each segment is spaced as a straight range always was, and a
+// joint is not doubled.
+export function peaks(points, ...rest) {
+  if (typeof points === 'number') {
+    const [y0, x1, y1, ...more] = rest;
+    return peaks([[points, y0], [x1, y1]], ...more);
+  }
+  const [every = 13, size = 9] = rest;
+  const out = [];
+  for (let s = 1; s < points.length; s++) {
+    const [x0, y0] = points[s - 1];
+    const [x1, y1] = points[s];
+    const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / every));
+    for (let i = s === 1 ? 0 : 1; i <= n; i++) out.push([x0 + ((x1 - x0) * i) / n + (out.length % 2 ? 3 : -3), y0 + ((y1 - y0) * i) / n, size]);
+  }
+  return out;
 }
 
-// a run of little peaks along a line, as a path
-export function range(x0, y0, x1, y1, every = 13, size = 9) {
-  return peaks(x0, y0, x1, y1, every, size)
-    .map(([x, y]) => `M${x - size / 2} ${y + size / 3} L${x} ${y - size / 2} L${x + size / 2} ${y + size / 3} `)
-    .join('');
+// a run of little peaks along a range, as a path
+export function range(points, ...rest) {
+  const all = peaks(points, ...rest);
+  const size = all[0]?.[2] ?? 9;
+  return all.map(([x, y]) => `M${x - size / 2} ${y + size / 3} L${x} ${y - size / 2} L${x + size / 2} ${y + size / 3} `).join('');
 }
 
-// a patch of trees: [x, y, r]
+// a patch of trees in an ellipse: [x, y, r]
 export function wood(cx, cy, rx, ry, seed, count = 40) {
   let s = seed;
   const r = () => {
@@ -79,4 +44,47 @@ export function wood(cx, cy, rx, ry, seed, count = 40) {
     const d = Math.sqrt(r());
     return [cx + Math.cos(a) * rx * d, cy + Math.sin(a) * ry * d, 3 + r() * 2.5];
   });
+}
+
+const inside = (pts, x, y) => {
+  let hit = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const [xi, yi] = pts[i];
+    const [xj, yj] = pts[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
+  }
+  return hit;
+};
+
+// the trees of a forest (./sheet.js's FORESTS): an ellipse { at, rx, ry } as
+// wood() places them, or a polygon { points } filled the same way, each tree
+// drawn from the same seeded run so the wood is the same on every painter
+export function trees(shape, seed, count) {
+  if (!shape.points) return wood(shape.at[0], shape.at[1], shape.rx, shape.ry, seed, count);
+  const xs = shape.points.map((p) => p[0]);
+  const ys = shape.points.map((p) => p[1]);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  let s = seed;
+  const r = () => {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+  const out = [];
+  for (let tries = 0; out.length < count && tries < count * 20; tries++) {
+    const x = x0 + r() * (x1 - x0);
+    const y = y0 + r() * (y1 - y0);
+    const size = 3 + r() * 2.5;
+    if (inside(shape.points, x, y)) out.push([x, y, size]);
+  }
+  return out;
+}
+
+// a marsh's hatching: short level strokes across its ellipse, [x0, y, x1]
+export function hatch({ at, rx, ry }) {
+  const out = [];
+  for (let y = -ry + 1.5; y < ry; y += 2.6) {
+    const half = rx * Math.sqrt(1 - (y / ry) ** 2);
+    for (let x = -half + (((y * 3.7) % 3) + 3) % 3; x < half - 2.6; x += 5) out.push([at[0] + x, at[1] + y, at[0] + x + 2.6]);
+  }
+  return out;
 }

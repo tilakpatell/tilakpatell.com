@@ -240,7 +240,7 @@ export const LABELS = [
   { name: 'RHOVANION', east: 760, south: -20 },
   { name: 'ROHAN', east: 470, south: 500 },
   { name: 'GONDOR', east: 520, south: 680 },
-  { name: 'MORDOR', east: 960, south: 600 },
+  { name: 'MORDOR', east: 980, south: 620 },
   { name: 'RHÛN', east: 1100, south: 0 },
   { name: 'HARAD', east: 880, south: 760 },
 ];
