@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COMPASS, DETAIL_PAUSED, GUIDE_RESERVE, detailToast, MINIMAP, STICK, far, layoutCompass, layoutRows, markerSize, minimapSize, objectiveText, othersText, padFor, promptText, stackUnder, stickRead, titleMode } from './hud';
+import { COMPASS, DETAIL_PAUSED, GUIDE_RESERVE, LETTERBOX, detailToast, letterbox, MINIMAP, STICK, far, layoutCompass, layoutRows, markerSize, minimapSize, objectiveText, othersText, padFor, promptText, stackUnder, stickRead, titleMode } from './hud';
 
 const W = 420;
 // a mark at x px along the strip (bearing back from x)
@@ -173,5 +173,20 @@ describe('detailToast (lane N4)', () => {
     expect(detailToast(true, true)).toBeNull();
     expect(detailToast(true, false)).toBeNull();
     expect(DETAIL_PAUSED.text).toMatch(/^Detail paused by the data budget; a higher quality level raises it\.$/);
+  });
+});
+
+describe('the letterbox', () => {
+  it('comes in while a scene holds, on a landscape screen', () => {
+    expect(letterbox({ holding: true, portrait: false, reduced: false })).toBe(true);
+    expect(letterbox({ holding: false, portrait: false, reduced: false })).toBe(false);
+  });
+  it('never on a phone held upright, under reduced motion or when turned off', () => {
+    expect(letterbox({ holding: true, portrait: true, reduced: false })).toBe(false);
+    expect(letterbox({ holding: true, portrait: false, reduced: true })).toBe(false);
+    expect(letterbox({ holding: true, portrait: false, reduced: false, off: true })).toBe(false);
+  });
+  it('each bar is 7 % of the height, under the prompt’s reserve', () => {
+    expect(LETTERBOX.bar).toBe(0.07);
   });
 });

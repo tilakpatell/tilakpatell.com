@@ -127,8 +127,21 @@
   :where(.hud-bubble > div):not(hud-none) { max-width: 13rem; font-size: 0.8rem; }
 }
 
+/* the letterbox (./Letterbox.jsx): black bars top and bottom while a scene
+   holds, each --hud-bar of the height (hud.js's LETTERBOX), in over
+   --hud-bar-in; the box itself isn't positioned, so the bars hang from the
+   world's stage or its HUD. `data-off` folds them away again. */
+:where(.hud-letterbox):not(hud-none)::before,
+:where(.hud-letterbox):not(hud-none)::after { content: ''; position: absolute; left: 0; right: 0; height: var(--hud-bar, 7%); background: #000; z-index: 3; animation: hud-bars var(--hud-bar-in, 0.6s) ease-out both; transition: transform var(--hud-bar-in, 0.6s) ease-out; pointer-events: none; }
+:where(.hud-letterbox):not(hud-none)::before { top: 0; }
+:where(.hud-letterbox):not(hud-none)::after { bottom: 0; }
+:where(.hud-letterbox[data-off]):not(hud-none)::before,
+:where(.hud-letterbox[data-off]):not(hud-none)::after { transform: scaleY(0); }
+@keyframes hud-bars { from { transform: scaleY(0); } }
+
 @media (prefers-reduced-motion: reduce) {
-  :where(.hud-toast) { animation: none; }
+  :where(.hud-toast):not(hud-none) { animation: none; }
+  :where(.hud-letterbox):not(hud-none)::before, :where(.hud-letterbox):not(hud-none)::after { animation: none; transition: none; }
 }
 
 /* a minimap (./MiniMap.jsx): a disc on glass under the top row on the right,

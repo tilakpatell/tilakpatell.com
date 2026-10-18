@@ -1,0 +1,72 @@
+/* The Road through Middle-earth (pages/TheRoad.jsx): the stage under the
+   nav, as the other worlds’ stages, and the Road’s skin of the HUD kit. */
+.road-stage {
+  --road-ink: #f3ead6;
+  --road-veil: rgb(18 16 12 / 0.8);
+  position: relative;
+  height: calc(100svh - var(--nav-h, 64px));
+  overflow: hidden;
+  background: #1b1a17;
+  user-select: none;
+}
+.road-stage .world-canvas { position: absolute; inset: 0; touch-action: none; }
+.road-loading { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: var(--road-ink); font-size: var(--fs-sm); }
+
+/* the HUD’s skin (runtime/hud): warm parchment ink on dark glass, Cinzel
+   for the titles, as Middle-earth’s pages carve them */
+.road-hud {
+  --hud-ink: var(--road-ink);
+  --hud-muted: #d9cdb0;
+  --hud-glass: var(--road-veil);
+  --hud-glass-hi: rgb(18 16 12 / 0.9);
+  --hud-accent: #d8b25a;
+  --hud-title-face: 'Cinzel', Georgia, serif;
+  --road-dot: 44px; /* a stage’s button: the house’s touch size */
+}
+.road-brand { display: grid; gap: 0.1rem; margin: 0; padding: 0.45rem 0.8rem; border-radius: var(--hud-radius); background: var(--hud-glass); color: var(--hud-ink); }
+.road-brand-eyebrow { font: 600 0.72rem/1.1 var(--hud-title-face); letter-spacing: 0.14em; text-transform: uppercase; color: var(--hud-muted); }
+.road-brand-name { font: 700 var(--fs-sm)/1.2 var(--hud-title-face); }
+
+/* the foot: the prompt over the ribbon, the ribbon the width of the stage */
+.road-foot { display: grid; gap: 0.6rem; justify-items: start; width: 100%; pointer-events: none; }
+.road-foot > * { pointer-events: auto; }
+.road-thumbs { display: flex; align-items: flex-end; gap: 0.75rem; margin-left: auto; pointer-events: auto; }
+.road-stage[data-holding] .road-foot { opacity: 0; pointer-events: none; transition: opacity var(--t-slow); }
+
+/* the ribbon: sixteen dots on an inked line, the walkers’ mark between them */
+.road-ribbon { position: relative; width: 100%; height: calc(var(--road-dot) + 2.6rem); padding: 0 calc(var(--road-dot) / 2); border-radius: var(--hud-radius); background: var(--hud-glass); color: var(--hud-ink); }
+.road-ribbon-line { position: absolute; left: calc(var(--road-dot) / 2 + 0.5rem); right: calc(var(--road-dot) / 2 + 0.5rem); top: calc(var(--road-dot) / 2 + 0.25rem); height: 2px; background: linear-gradient(90deg, var(--hud-accent), var(--hud-muted)); opacity: 0.8; }
+.road-ribbon-mark { position: absolute; top: calc(var(--road-dot) / 2 + 0.25rem); left: calc(var(--road-dot) / 2 + 0.5rem + (100% - var(--road-dot) - 1rem) * var(--at, 0)); width: 14px; height: 14px; margin: -6px 0 0 -7px; border-radius: 50%; background: #ffd27a; box-shadow: 0 0 0 3px rgb(255 210 122 / 0.3), 0 0 12px rgb(255 190 90 / 0.8); transition: left 0.25s linear; }
+.road-ribbon-stops { position: absolute; inset: 0.25rem calc(var(--road-dot) / 2 + 0.5rem) 0; margin: 0; padding: 0; list-style: none; }
+.road-ribbon-stop { position: absolute; left: calc(100% * var(--i)); top: 0; display: grid; justify-items: center; transform: translateX(-50%); }
+.road-ribbon-dot { position: relative; width: var(--road-dot); height: var(--road-dot); border-radius: 50%; background: transparent; cursor: pointer; }
+.road-ribbon-dot::after { content: ''; position: absolute; inset: 50%; width: 10px; height: 10px; margin: -5px; border: 2px solid var(--hud-muted); border-radius: 50%; background: rgb(18 16 12); transition: transform var(--t-fast), background-color var(--t-fast); }
+.road-ribbon-dot[data-passed]::after { border-color: var(--hud-accent); background: var(--hud-accent); }
+.road-ribbon-dot[aria-current='step']::after { transform: scale(1.35); border-color: #ffd27a; }
+.road-ribbon-dot:hover::after, .road-ribbon-dot:focus-visible::after { transform: scale(1.4); }
+.road-ribbon-dot:focus-visible { outline: 2px solid var(--hud-accent); outline-offset: -4px; }
+.road-ribbon-name { display: none; margin-top: -0.35rem; white-space: nowrap; text-align: center; font: 600 0.78rem/1.15 var(--hud-title-face); pointer-events: none; }
+.road-ribbon-name[data-current], .road-ribbon-stop:hover .road-ribbon-name, .road-ribbon-dot:focus-visible + .road-ribbon-name { display: grid; }
+.road-ribbon-stop:hover .road-ribbon-name:not([data-current]), .road-ribbon-dot:focus-visible + .road-ribbon-name:not([data-current]) { position: absolute; top: calc(var(--road-dot) - 0.35rem); z-index: 1; }
+.road-ribbon:has(.road-ribbon-stop:hover) .road-ribbon-name[data-current]:not(:hover) { visibility: hidden; }
+.road-ribbon-date { font: 400 0.7rem/1.2 var(--hud-face); color: var(--hud-muted); }
+/* (the first and last names hang inward, so they never run off the glass) */
+.road-ribbon-stop:first-child .road-ribbon-name { justify-items: start; transform: translateX(calc(50% - var(--road-dot) / 2)); }
+.road-ribbon-stop:last-child .road-ribbon-name { justify-items: end; transform: translateX(calc(var(--road-dot) / 2 - 50%)); }
+
+/* a stage’s title card, bottom left over the foot, and a lore card in its place */
+.road-title, .road-lore { position: absolute; left: var(--hud-pad-l); bottom: calc(var(--hud-foot) + var(--road-dot) + 6.5rem); z-index: 2; max-width: min(30rem, calc(100% - 2 * var(--hud-pad))); padding: 0.9rem 1.1rem; border-radius: var(--hud-radius); background: var(--hud-glass); color: var(--hud-ink); animation: road-card var(--t-slow) ease-out both; pointer-events: none; }
+.road-title-name { margin: 0; color: inherit; font: 700 var(--fs-display-3)/1.05 var(--hud-title-face); letter-spacing: 0.02em; }
+.road-title-date { margin: 0.3rem 0 0; font-size: var(--fs-xs); color: var(--hud-muted); }
+.road-title-hint { margin: 0.6rem 0 0; font-size: var(--fs-sm); }
+.road-lore-head { margin: 0 0 0.35rem; font: 600 var(--fs-xs)/1.2 var(--hud-title-face); letter-spacing: 0.06em; color: var(--hud-muted); }
+.road-lore-text { margin: 0; font-size: var(--fs-sm); line-height: 1.5; }
+@keyframes road-card { from { opacity: 0; transform: translateY(6px); } }
+
+/* coming back: carry on, or start again */
+.road-resume { position: absolute; left: 50%; top: 45%; z-index: 6; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; padding: 1rem; border-radius: var(--hud-radius); background: var(--hud-glass-hi); transform: translate(-50%, -50%); pointer-events: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  .road-title, .road-lore { animation: none; }
+  .road-ribbon-mark { transition: none; }
+}
