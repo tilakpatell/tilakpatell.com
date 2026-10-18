@@ -1,7 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { DAMAGE_MAX } from './online/protocol';
 import { STOCK_LOADOUT } from './outfit';
-import { ARSENAL, LINES, WEAPONS, byCode, createArmory, fan, steer } from './weapons';
+import { ARSENAL, LINES, WEAPONS, armsView, byCode, createArmory, fan, steer } from './weapons';
+
+describe('the armoury, as the HUD shows it', () => {
+  it('names the line picked, with the ordnance rack whichever it is (it’s the one count of the rounds)', () => {
+    const a = createArmory('xwing');
+    expect(armsView(a)).toEqual({ name: 'Laser cannons', line: 'primary', index: 0, ammo: 4, max: 4, filling: 0 });
+    a.select(2);
+    expect(armsView(a)).toMatchObject({ name: 'Proton torpedoes', line: 'ordnance', index: 2, ammo: 4, max: 4 });
+  });
+  it('fills the record it’s handed', () => {
+    const a = createArmory('falcon');
+    const out = armsView(a);
+    a.select(1);
+    expect(armsView(a, out)).toBe(out);
+    expect(out.name).toBe('Flak burst');
+  });
+});
 
 describe('weapons', () => {
   it('every ship names all three lines', () => {

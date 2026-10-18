@@ -130,6 +130,20 @@ export function createArmory(kind, loadout = STOCK_LOADOUT) {
   };
 }
 
+// What the HUD kit's arms block shows of an armoury (runtime/hud/cluster.js's
+// ArmsView): the line picked, its name, and the ordnance rack, whichever
+// line is picked (it's the one count of the rounds left). Fills `out`, so a
+// frame loop makes nothing.
+export function armsView(a, out = { name: '', line: 'primary', index: 0, ammo: 0, max: 0, filling: 0 }) {
+  out.name = a.name;
+  out.line = a.line;
+  out.index = a.index;
+  out.ammo = a.ammo;
+  out.max = a.ammoMax;
+  out.filling = a.filling;
+  return out;
+}
+
 // the directions of a fan of `count` shots about `dir` (a unit [x, y, z]),
 // `cone` radians apart, spread across the view (side to side, one a little
 // high and one low so it reads as a fan, not a line). jitter: −1…1 per shot.

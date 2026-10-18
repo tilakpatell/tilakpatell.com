@@ -11,7 +11,7 @@ export default function Arms({ className = '', keys = false }) {
         <b className="hud-arms-name" />
         {keys && (
           <span className="hud-keys">
-            <kbd className="hud-cap">R</kbd> or <kbd className="hud-cap">1 2 3</kbd>
+            <kbd className="hud-cap">R</kbd> or <kbd className="hud-cap">1</kbd> <kbd className="hud-cap">2</kbd> <kbd className="hud-cap">3</kbd>
           </span>
         )}
       </div>

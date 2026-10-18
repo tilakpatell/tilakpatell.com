@@ -195,6 +195,8 @@ import { createCitadelSiege } from './citadelSiege';
 import { GUARD, STALE_MS } from './online/protocol';
 import { createLook } from '../../runtime/look';
 import { reticleState } from '../../runtime/hud/reticle';
+import { createFlightCluster } from '../../runtime/hud/cluster.js';
+import { clusterView } from './clusterView';
 import { coneFor } from '../../lib/combat/aim';
 import { flownInto, wayIn, worldName } from './landings/wayin';
 import { figureVoice } from './landings/voicelines';
@@ -2300,7 +2302,7 @@ export async function create(canvas, ctx) {
   // setting allows); held, the guns keep firing at the ship's own pace,
   // each weapon at its own multiple of it
   const fire = () => {
-    state.armed = true; // (the weapon readout shows from the first shot: placeArms)
+    state.armed = true; // (the weapon readout shows from the first shot: clusterView.js)
     const s = state.ship;
     const now = performance.now();
     const g = state.stats;
@@ -2740,37 +2742,11 @@ export async function create(canvas, ctx) {
     return any;
   };
 
-  // the weapon readout (its name, the heavy rounds left, the next one
-  // filling) and the Citadel's state while you're near it; written only
-  // when something in them changes, which is told by their numbers (each
-  // frame's string to compare was garbage at 60 a second)
-  const armsWas = { on: false, index: -1, id: '', ammo: -1, max: -1, fill: -1 };
+  // the Citadel's state while you're near it; written only when something
+  // in it changes, which is told by its numbers (each frame's string to
+  // compare was garbage at 60 a second)
   const siegeWas = { show: false, phase: '', n: -1, kind: null };
-  const placeArms = () => {
-    const el = props.arms?.current;
-    if (el) {
-      // (not till the guns are first used: the first minute has enough on it)
-      const on = Boolean(state.armed && flying() && !onFoot() && state.view !== 'map' && !state.crash && !props.frozen);
-      const arm = arms();
-      const fill = on ? Math.floor(arm.filling * 10) : -1;
-      const was = armsWas;
-      if (on !== was.on || (on && (arm.index !== was.index || arm.id !== was.id || arm.ammo !== was.ammo || arm.ammoMax !== was.max || fill !== was.fill))) {
-        was.on = on;
-        if (on) Object.assign(was, { index: arm.index, id: arm.id, ammo: arm.ammo, max: arm.ammoMax, fill });
-        el.toggleAttribute('data-on', on);
-        if (on) {
-          el.dataset.weapon = arm.id;
-          el.dataset.line = arm.line;
-          const name = el.querySelector('.universe-arms-name');
-          if (name) name.textContent = arm.name;
-          el.querySelectorAll('.universe-arms-pip').forEach((pip, i) => {
-            pip.hidden = i >= arm.ammoMax; // (as many as the fitted rack holds)
-            pip.toggleAttribute('data-full', i < arm.ammo);
-            pip.style.setProperty('--fill', i === arm.ammo ? arm.filling.toFixed(2) : '0');
-          });
-        }
-      }
-    }
+  const placeSiege = () => {
     const sl = props.siege?.current;
     if (!sl || !citadelGeo) return;
     const s = state.ship;
@@ -3556,8 +3532,12 @@ export async function create(canvas, ctx) {
     post.lens((lensAt.x + 1) / 2, (lensAt.y + 1) / 2, r, { front, twist, black: edge });
   };
 
-  // the shields bar: shown while there's trouble about or they're down at all
-  let shieldOn = false;
+  // the flight cluster (the HUD kit's, as the galaxy has it): the shields in
+  // a ship and the line picked, your health on foot (clusterView.js says
+  // when each shows); the records are filled each frame, nothing made
+  const clusterWriter = createFlightCluster();
+  const clusterNow = { flying: false, onFoot: false, view: '', crash: false, dive: false, frozen: false, armed: false, shield: 100, footInfo: null, armory: null };
+  const clusterOut = clusterView(clusterNow);
   // the law's strip (UniverseMap's): its stars, what it's doing (wanted, a
   // witness's report on its way, searching, or just the bounty), the bounty
   // (written when its numbers move: the word's kind and its seconds, not a
@@ -3582,20 +3562,22 @@ export async function create(canvas, ctx) {
     if (w) w.textContent = word;
     if (b) b.textContent = wanted.bounty ? `${wanted.bounty} ¢` : '';
   };
-  const placeShield = () => {
-    const el = props.shield?.current;
+  const placeCluster = () => {
+    const el = props.cluster?.current;
     if (!el) return;
     // (on foot, it's your health: while there's trouble about or you're hurt)
-    const info = onFoot() && foot.phase === 'walk' ? foot.info() : null;
-    const on = info ? Boolean(info.troops.length || info.health < 0.995) && !props.frozen : flying() && !onFoot() && state.view !== 'map' && !state.crash && !state.dive && !props.frozen && Boolean(hunters?.active || state.shield < 99.5);
-    if (on !== shieldOn) {
-      shieldOn = on;
-      el.toggleAttribute('data-on', on);
-    }
-    if (!on) return;
-    const k = info ? info.health : state.shield / 100;
-    el.style.setProperty('--shield', k.toFixed(3));
-    el.toggleAttribute('data-low', k < 0.35);
+    const c = clusterNow;
+    c.flying = flying();
+    c.onFoot = onFoot();
+    c.view = state.view;
+    c.crash = state.crash;
+    c.dive = state.dive;
+    c.frozen = props.frozen;
+    c.armed = state.armed;
+    c.shield = state.shield;
+    c.footInfo = c.onFoot && foot.phase === 'walk' ? foot.info() : null;
+    c.armory = c.armed ? arms() : null;
+    clusterWriter.place(el, clusterView(c, clusterOut));
   };
 
   // friends in a long fight (wingmen.js): once a hunt has dragged on, or
@@ -4002,7 +3984,7 @@ export async function create(canvas, ctx) {
       staticOn = state.static > 0;
       props.hud?.current?.toggleAttribute('data-static', staticOn);
     }
-    placeShield();
+    placeCluster();
     placeWanted();
     return busy || Boolean(hunters?.count) || later.length > 0;
   };
@@ -5284,7 +5266,7 @@ export async function create(canvas, ctx) {
       siegeSent = wallMs;
       siegeOwed = false;
     }
-    placeArms();
+    placeSiege();
     phone.update(t, camera);
     // the fall into the Maw: the ship's trail and glow, and its last light
     if (infall) {
