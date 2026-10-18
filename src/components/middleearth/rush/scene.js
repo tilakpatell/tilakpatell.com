@@ -10,7 +10,7 @@
 // me (your slot, or null), t }.
 
 import * as THREE from 'three';
-import { createStage, disposeTree, hot } from '../../../lib/stage3d';
+import { createStage, disposeTree, hot } from '../stage';
 import { houseOn } from '../../../lib/three/house';
 import { pose } from '../mapFigures';
 import { makePerson } from '../shire/people';

@@ -102,6 +102,7 @@ import { clamp01, disposeTree, easeOut, precompile, precompilePasses, singlePass
 import { prepareScene, uploadSlices } from '../../lib/three/gpuWork';
 import { calibrate, calibrationKey, recall, remember } from '../../lib/three/calibrate';
 import { prepFrame } from './prepFrame';
+import { foreground } from '../../lib/foreground';
 import { settle as settleWithin } from '../../lib/settle';
 import { device } from '../../lib/device';
 import { stepAt } from './qualityStep';
@@ -665,7 +666,12 @@ export async function create(canvas, ctx) {
   };
   followDrawn();
   map.add(sky.group);
-  sky.prepare(renderer).then(() => sky.bake(renderer));
+  // (the bake is the sky drawn six times over, one long job on the chip:
+  // under the intro, in an idle moment and never in the cockpit's launch,
+  // as the map's other making is; ./prepFrame.js)
+  sky.prepare(renderer)
+    .then(() => prepFrame())
+    .then(() => sky.bake(renderer));
 
   // deep space, out past the home system: its wonders, and the trench run
   // round the Death Star's middle
@@ -5934,10 +5940,27 @@ export async function create(canvas, ctx) {
       ctx.rt.quality?.setLevel?.(l);
       paceTo(l);
     };
-    const level = await calibrate({ renderer, draw: () => borrowed.during(() => post.render(size.w, size.h)), setLevel, start: kept ?? 0, frames: kept != null ? 4 : 12, frame: () => prepFrame(), alive: () => alive() && !disposed });
+    // (timed while the cockpit drew over the map, the chip's time was the
+    // cockpit's too: the level found is used now but not kept, so the next
+    // visit times the map on its own, and it's found in a few frames a step
+    // rather than a dozen, each one a whole frame of the map on the chip the
+    // cockpit is drawing with; lib/foreground)
+    let shared = Boolean(foreground());
+    const level = await calibrate({
+      renderer,
+      draw: () => borrowed.during(() => post.render(size.w, size.h)),
+      setLevel,
+      start: kept ?? 0,
+      frames: kept != null ? 4 : shared ? 3 : 12,
+      frame: () => {
+        shared ||= Boolean(foreground());
+        return prepFrame();
+      },
+      alive: () => alive() && !disposed,
+    });
     if (!alive() || disposed) return;
     setLevel(level);
-    remember(key, level);
+    if (!(shared || foreground())) remember(key, level);
     calibrated = level;
   };
 

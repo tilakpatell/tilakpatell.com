@@ -8,7 +8,10 @@
 // universeOf(word = UNIVERSE_SEED) → bigint
 // sectorSeed(universe, sx, sz), systemSeed(sectorSeed, i), planetSeed(systemSeed, j) → bigint
 // rngOf(seed) → () => number in [0, 1) (splitmix64)
+// sectorSeedOf(universe, sx, sy, sz) → bigint: sectorSeed on the middle layer (sy 0), its own above and below
+// moonSeed(planetSeed, k) → bigint
 // range(rng, a, b) → [a, b); int(rng, a, b) → a..b inclusive; pick(rng, list)
+// weighted(rng, list, w = (x) => x.weight) → one of list, by weight
 
 export const UNIVERSE_SEED = "tilakverse";
 
@@ -31,6 +34,10 @@ export const sectorSeed = (universe, sx, sz) =>
   hash64(universe, "sector", sx, sz);
 export const systemSeed = (sector, i) => hash64(sector, "system", i);
 export const planetSeed = (system, j) => hash64(system, "planet", j);
+export const moonSeed = (planet, k) => hash64(planet, "moon", k);
+// (the middle layer keeps the seeds it always had)
+export const sectorSeedOf = (universe, sx, sy, sz) =>
+  sy === 0 ? sectorSeed(universe, sx, sz) : hash64(universe, "sector", sx, sz, sy);
 
 export function rngOf(seed) {
   let state = BigInt(seed) & MASK;
@@ -47,3 +54,8 @@ export function rngOf(seed) {
 export const range = (rng, a, b) => a + rng() * (b - a);
 export const int = (rng, a, b) => a + Math.floor(rng() * (b - a + 1));
 export const pick = (rng, list) => list[Math.floor(rng() * list.length)];
+export const weighted = (rng, list, w = (x) => x.weight) => {
+  let r = rng() * list.reduce((s, x) => s + w(x), 0);
+  for (const x of list) if ((r -= w(x)) <= 0) return x;
+  return list[list.length - 1];
+};

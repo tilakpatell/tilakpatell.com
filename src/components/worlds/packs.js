@@ -16,6 +16,7 @@ import { PACK as galaxy } from '../galaxy/pack.js';
 import { PACK as deathstar } from '../deathstar/pack.js';
 import { PACK as deathstarInside } from '../deathstar/inside/pack.js';
 import { PACK as middleEarth } from '../middleearth/pack.js';
+import { PACK as road } from '../middleearth/road/pack.js';
 import { PACK as music } from '../music/pack.js';
 import { PACK as dotMatrix } from '../dotmatrix/pack.js';
 import { PACK as mario64 } from '../mario64/pack.js';
@@ -25,7 +26,7 @@ import { PACK as fly } from '../expanse/flight/pack.js'; // planet flight (scrip
 
 export const PACKS = Object.fromEntries(
   [
-    ...[caribbean, invincible, cybertron, avengers, c137, albuquerque, scranton, galaxy, deathstar, deathstarInside, middleEarth, music, dotMatrix, mario64, earth, minecraft],
+    ...[caribbean, invincible, cybertron, avengers, c137, albuquerque, scranton, galaxy, deathstar, deathstarInside, middleEarth, road, music, dotMatrix, mario64, earth, minecraft],
     fly, // planet flight
   ].map((p) => [p.id, p]),
 );

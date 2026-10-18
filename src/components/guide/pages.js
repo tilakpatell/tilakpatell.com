@@ -419,6 +419,31 @@ export const PAGES = {
       ['The Ring', 'Hold it to the fire to read it, put it on (Esc takes it off), or cast it in.'],
     ],
   },
+  '/middle-earth/road': {
+    about: ABOUT['/middle-earth/road'],
+    keys: [
+      {
+        label: 'On the Road',
+        rows: [
+          ['W / ↑', 'Walk on'],
+          ['S / ↓', 'Step back'],
+          ['Shift', 'Run'],
+          ['Space', 'Let the road walk itself, or stop it'],
+          ['Drag', 'Look about'],
+          ['Enter', 'Next (with reduced motion), or carry on'],
+          ['1 … 9, 0', 'The first ten stages'],
+          ['L', 'The last lore card again'],
+          ['Esc', 'The Menu'],
+        ],
+      },
+    ],
+    touch: [{ label: 'On the Road', rows: [['Walk', 'Hold to walk on'], ['Run', 'Hold to run'], ['Drag', 'Look about'], ['A dot', 'Go to that stage']] }],
+    tips: [
+      ['The road walks itself', 'Leave the keys and it walks on, stopping where something happens. Space turns it off and on.'],
+      ['The stages', 'Each dot along the foot is a stage: press one to go there. A long press or a right click on one you’ve passed opens its lore.'],
+      ['Coming back', 'It keeps your place. Come back and it offers to carry on from where you were.'],
+    ],
+  },
   '/middle-earth/place': {
     about: ABOUT['/middle-earth/place'],
     keys: [
