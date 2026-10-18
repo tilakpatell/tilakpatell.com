@@ -40,6 +40,12 @@
 .tt-ripple { position: absolute; top: 50%; left: 50%; display: grid; place-items: center; width: 0; height: 0; translate: 0 -40px; }
 .tt-ripple span { position: absolute; width: 160px; height: 160px; border: 2px solid var(--c); border-radius: 999px; opacity: 0; animation: tt-ripple 1.6s var(--ease-smooth) calc(var(--i) * 220ms) both; }
 .tt-sa { display: block; margin-bottom: 0.75rem; font-size: clamp(3.5rem, 2rem + 6vw, 5.5rem); line-height: 1; font-weight: 600; animation: tt-words var(--tt-len) ease both; }
+/* the Caribbean: a ship’s wheel, brought about as the colours land */
+.tt-helm { display: block; width: clamp(5.5rem, 4rem + 6vw, 7.5rem); height: auto; margin: 0 auto 0.9rem; overflow: visible; fill: none; stroke: var(--c); stroke-width: 4.5; stroke-linecap: round; animation: tt-words var(--tt-len) ease both, tt-helm var(--tt-len) cubic-bezier(0.3, 0.7, 0.2, 1) both; }
+.tt-helm rect { fill: var(--c); stroke: none; }
+.tt-helm-rim { stroke-width: 6; }
+.tt-helm-hub { fill: var(--c); }
+@keyframes tt-helm { from { rotate: -120deg; } 60%, to { rotate: 0deg; } }
 .tt-plates { position: absolute; inset: 0; display: grid; grid-template-rows: repeat(8, 1fr); }
 .tt-plates span { background: linear-gradient(90deg, #2a2e36, #4a505b 40%, #2a2e36); border-bottom: 1px solid rgba(255, 255, 255, 0.06); clip-path: polygon(18px 0, 100% 0, calc(100% - 18px) 100%, 0 100%); animation: tt-plate var(--tt-len) cubic-bezier(0.7, 0, 0.2, 1) calc(var(--i) * 45ms) both; }
 .tt-plates span:nth-child(odd) { animation-name: tt-plate-r; }

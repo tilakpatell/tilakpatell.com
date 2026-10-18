@@ -43,7 +43,7 @@ export const THEMES = {
   summer: { id: 'summer', label: 'Summer', company: 'Summer Smith', swatch: '#E2557F', fan: true },
   beth: { id: 'beth', label: 'Beth', company: 'Beth Smith', swatch: '#8E2B48', fan: true },
   // the visitor's own colour (see theme/custom.js); its swatch follows their pick
-  custom: { id: 'custom', label: 'Yours', company: 'Your color', swatch: 'var(--custom-accent, #7c3aed)' },
+  custom: { id: 'custom', label: 'Yours', company: 'Your colour', swatch: 'var(--custom-accent, #7c3aed)' },
 };
 
 // Fan themes and the achievement that unlocks each. The hint shows on the
