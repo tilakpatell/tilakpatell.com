@@ -1,15 +1,16 @@
+import { Powers } from '../../runtime/hud';
 import { POWERS, POWER_KEYS, powersOf } from './shipPowers';
 import './powers.css';
 
-// The ship's two powers (shipPowers.js) on the HUD: a tile each with its
-// icon, its short name and its key, and a ring round it that runs down
-// while it's on and fills as it cools down or the big one charges, with the
-// seconds (or the charge) in its corner. The scene writes the phase, the
-// ring and the seconds as they change (galaxy/powers.js's place); a tap or
-// a click uses it, as G and X do. In the flight cluster (`placement`, on a
-// desktop) a word under each says where it stands, and why a press was
-// refused. Nothing with motion reduced (there's nothing to use them on then)
-// or without a ship.
+// The ship's two powers (shipPowers.js) on the HUD: the kit's Powers
+// (runtime/hud/Powers.jsx: a tile each with its icon, its short name and
+// its key, and a ring that runs down while it's on and fills as it cools
+// down or the big one charges), handed each crew's cards and the mark this
+// file draws for each. The scene writes the phase, the ring and the seconds
+// as they change (galaxy/powers.js's place); a tap or a click uses it, as G
+// and X do. In the flight cluster (`placement`, on a desktop) a word under
+// each says where it stands, and why a press was refused. Nothing with
+// motion reduced (there's nothing to use them on then) or without a ship.
 
 const SLOTS = ['primary', 'ultimate'];
 
@@ -62,39 +63,9 @@ const ICONS = {
 export default function PowerBar({ ship, reduced, barRef, onPress, placement = null }) {
   const own = powersOf(ship);
   if (reduced || !own) return null;
-  return (
-    <div ref={barRef} className="ship-powers" data-ship={ship} data-place={placement || undefined} role="group" aria-label="Ship powers">
-      {SLOTS.map((slot) => {
-        const id = own[slot];
-        const p = POWERS[id];
-        const key = POWER_KEYS[slot].toUpperCase();
-        return (
-          <button
-            key={slot}
-            type="button"
-            className="ship-power"
-            data-slot={slot}
-            data-power={id}
-            data-phase={slot === 'primary' ? 'ready' : 'charging'}
-            aria-label={`${p.name} (${key})`}
-            title={`${p.name}: ${p.about}`}
-            // (a press at once, as the Fire button does; a click from the keyboard, Enter or Space, too)
-            onPointerDown={(e) => (e.preventDefault(), onPress?.(slot))}
-            onClick={(e) => e.detail === 0 && onPress?.(slot)}
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            <svg className="ship-power-icon" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              {ICONS[id]}
-            </svg>
-            <span className="ship-power-name">{p.short}</span>
-            <span className="ship-power-state" aria-hidden="true" />
-            <span className="ship-power-key">
-              <kbd className="hud-cap">{key}</kbd>
-            </span>
-            <small aria-hidden="true" />
-          </button>
-        );
-      })}
-    </div>
-  );
+  const slots = SLOTS.map((slot) => {
+    const p = POWERS[own[slot]];
+    return { slot, id: own[slot], name: p.name, short: p.short, about: p.about, key: POWER_KEYS[slot].toUpperCase(), icon: ICONS[own[slot]] };
+  });
+  return <Powers slots={slots} barRef={barRef} onPress={onPress} placement={placement} data={{ ship }} />;
 }

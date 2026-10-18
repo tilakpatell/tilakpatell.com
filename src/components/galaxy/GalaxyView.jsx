@@ -115,7 +115,7 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
     const root = cluster.current;
     const map = root?.parentElement;
     if (!root || !map || typeof ResizeObserver !== 'function') return undefined;
-    const row = root.querySelector('.fc-row');
+    const row = root.querySelector('.hud-cluster-row');
     const fit = () => {
       const h = row.offsetHeight + (buffs.current?.offsetHeight ? buffs.current.offsetHeight + 6 : 0);
       map.style.setProperty('--fc-h', `${h}px`);

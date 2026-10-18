@@ -1,48 +1,17 @@
-/* The flight cluster (FlightCluster.jsx): bottom centre of the space left of
-   the panel, over the 3D, clear of the corner's buttons (the flight settings'
-   and the multiplayer pill, 176px) and of the panel (24px). Its blocks are
-   glass at 0.8 (text over 3D reads on it), nothing in it is under 0.7rem, and
-   the scene writes its numbers (cluster.js, radarDraw.js). The crew's power
-   tiles are in it (powers.css's data-place="cluster"); on a touch screen they
-   stay round buttons beside Fire and View, and the cluster keeps to the left
-   column, clear of them. */
+/* The flight cluster (FlightCluster.jsx): the HUD kit's (runtime/hud/
+   cluster.css: the row, the glass, the deflectors, the arms and the power
+   tiles, the same in every world that flies a ship), placed bottom centre of
+   the space left of the panel, clear of the corner's buttons (the flight
+   settings' and the multiplayer pill, 176px) and of the panel (24px). This is
+   the galaxy's own blocks in it: the radar, the speed and the kills, the
+   target and the pickups' chips. On a touch screen the power tiles stay round
+   buttons beside Fire and View, and the cluster keeps to the left column,
+   clear of them. */
 .galaxy-page {
   --fc-left: 176px;
   --fc-right: calc(var(--panel-w, 0px) + 24px);
-}
-.fc {
-  --fc-glass: rgb(3 6 14 / 0.8);
-  --fc-line: rgb(127 214 255 / 0.28);
-  position: absolute;
-  z-index: 2;
-  left: var(--fc-left);
-  right: var(--fc-right);
-  bottom: calc(var(--hud-pad-b, 12px) + 10px);
-  display: grid;
-  justify-items: center;
-  gap: 6px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s;
-  color: #e8f4ff;
-  font-family: var(--font-mono);
-}
-.fc[data-on] { opacity: 1; }
-.fc-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center; max-width: 100%; gap: 8px; }
-.fc-glass { display: grid; gap: 4px; min-width: 170px; padding: 8px 10px; border: 1px solid var(--fc-line); border-radius: 12px; background: var(--fc-glass); }
-.fc-line { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.fc-label { color: rgb(217 243 255 / 0.85); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; }
-.fc b { font-size: 0.82rem; font-variant-numeric: tabular-nums; }
-.fc-bar { position: relative; display: block; height: 6px; overflow: hidden; border-radius: 4px; background: rgb(255 255 255 / 0.1); }
-.fc-bar > span { position: absolute; inset: 0; transform-origin: left; scale: var(--v, 0) 1; transition: scale 0.15s; }
-.fc-shield > span { background: linear-gradient(90deg, #4fd2ff, #9ef3ff); box-shadow: 0 0 8px rgb(120 220 255 / 0.6); }
-.fc-shield[data-low] > span { background: linear-gradient(90deg, #ff4a3d, #ff9a5c); }
-@media (prefers-reduced-motion: no-preference) {
-  .fc-shield[data-low] > span { animation: fc-blink 0.6s steps(2) infinite; }
-}
-@keyframes fc-blink { 50% { opacity: 0.45; } }
-@media (prefers-reduced-motion: reduce) {
-  .fc, .fc-bar > span { transition: none; }
+  --hud-cluster-left: var(--fc-left);
+  --hud-cluster-right: var(--fc-right);
 }
 .fc-speed > span { background: linear-gradient(90deg, #ffd36a, #fff2c4); }
 .fc-speed[data-boost] > span { background: linear-gradient(90deg, #ff9a3d, #ffe08a); box-shadow: 0 0 10px rgb(255 170 60 / 0.7); }
@@ -50,17 +19,15 @@
 .fc-target-name { overflow: hidden; max-width: 200px; text-overflow: ellipsis; white-space: nowrap; }
 .fc-target-hp > span { background: linear-gradient(90deg, #ff5a4a, #ffb08a); }
 .fc-target-hp:not([data-on]) { visibility: hidden; }
-.fc-keys { color: rgb(217 243 255 / 0.85); font-size: 0.7rem; }
 /* (no target: the label, and the way to get one) */
-.fc-target:not([data-on]) > :not(.fc-none):not(.fc-label) { display: none; }
+.fc-target:not([data-on]) > :not(.fc-none):not(.hud-label) { display: none; }
 .fc-target[data-on] .fc-none { display: none; }
 .fc-none { color: rgb(217 243 255 / 0.85); font-size: 0.74rem; }
-.fc-shield-icon { display: none; }
 /* the speed line's mark: the game's own speed-bar icon (GameIcon), in the cluster's ink, the line's height, one item with the
    number so the line's space-between keeps the number at the start and the kills at the end */
 .fc-speed-lead { display: inline-flex; align-items: center; gap: 4px; }
 .fc-speed-icon { flex: none; width: 12px; height: 12px; fill: currentColor; color: #9ef3ff; }
-.fc-radar { width: 132px; height: 132px; border: 1px solid var(--fc-line); border-radius: 50%; background: radial-gradient(circle, rgb(10 30 50 / 0.82), rgb(3 6 14 / 0.86)); }
+.fc-radar { width: 132px; height: 132px; border: 1px solid rgb(127 214 255 / 0.28); border-radius: 50%; background: radial-gradient(circle, rgb(10 30 50 / 0.82), rgb(3 6 14 / 0.86)); }
 /* the pickups' effects, a chip each over the row (cluster.js's buffs): the bar along its foot is the time left, or the bubble's points */
 .fc-buffs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 .fc-buffs:empty { display: none; }
@@ -101,17 +68,14 @@
   box-shadow: 0 0 14px rgb(255 255 255 / 0.8);
 }
 
-/* a laptop's width: the blocks a little narrower, to fit the space left of the panel */
+/* a laptop's width: the blocks a little narrower, to fit the space left of the panel (the kit narrows its glass) */
 @media (max-width: 1320px) {
-  .fc-glass { min-width: 150px; }
   .fc-target { min-width: 170px; }
   .fc-radar { width: 112px; height: 112px; }
 }
 @media (max-height: 700px), (max-width: 1100px) {
-  .fc-glass { min-width: 140px; padding: 6px 8px; }
   .fc-target { min-width: 170px; }
   .fc-radar { width: 104px; height: 104px; }
-  .fc-keys { display: none; }
 }
 /* (a narrow window with the panel open: no room for the target as well; the lock's own mark over the 3D says it) */
 @media (min-width: 768px) and (max-width: 1100px) {
@@ -129,18 +93,12 @@
    no room for the rest (speed, kills, the target: the lock's own mark over
    the 3D names it). Under the comms when they speak, over the rest. */
 @media (pointer: coarse), (max-width: 767px) {
-  .fc { inset: 0; z-index: 1; display: block; }
-  .fc-row { display: contents; }
-  .fc-target, .fc-speed, .fc-sub, .fc-ship .fc-label { display: none; }
-  .fc-radar, .fc-ship { position: absolute; }
-  .fc-radar { left: calc(var(--hud-edge, 12px) + 54px); bottom: 66px; width: 76px; height: 76px; }
-  .fc-ship { left: var(--hud-edge, 12px); bottom: 118px; width: 48px; min-width: 0; padding: 5px 6px; gap: 3px; }
-  .fc-shield-icon { display: block; width: 14px; height: 14px; flex: none; color: #9ef3ff; }
-  .fc-ship .fc-line { flex-direction: column; justify-content: center; gap: 1px; align-items: center; }
+  /* (the kit makes the cluster the map's box and puts the deflectors in the left column; the radar goes beside them) */
+  .fc-target, .fc-speed, .fc-sub { display: none; }
+  .fc-radar { position: absolute; left: calc(var(--hud-edge, 12px) + 54px); bottom: 66px; width: 76px; height: 76px; }
 }
 @media (max-width: 767px) {
   .fc-radar { bottom: calc(var(--sheet-h, 0px) + 66px); }
-  .fc-ship { bottom: calc(var(--sheet-h, 0px) + 118px); }
 }
 /* (a phone too short for the left column under the war's lines: above them) */
 @media (max-width: 767px) and (max-height: 779px) {

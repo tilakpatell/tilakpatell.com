@@ -74,8 +74,8 @@ if (mode === 'layout') {
     const { ctx, page, errors, G, waitGame } = await open('xwing', viewport);
     await waitGame(0.5);
     const r = await G(() => {
-      const bar = document.querySelector('.ship-powers');
-      const tiles = [...document.querySelectorAll('.ship-power')];
+      const bar = document.querySelector('.hud-powers');
+      const tiles = [...document.querySelectorAll('.hud-power')];
       const meets = [];
       for (const e of document.querySelectorAll('body *')) {
         if (bar.contains(e) || e.contains(bar)) continue;

@@ -125,6 +125,7 @@ import { createPickupFx } from './pickupFx';
 import { createRadar } from './radar';
 import { drawRadar } from './radarDraw';
 import { chargeFor } from '../universe/shipPowers';
+import { arsenalOf } from '../universe/shared/flying';
 import { effectsFor } from './warEffects';
 import { CABS } from './cabs';
 import { warNow } from './warState';
@@ -1905,7 +1906,10 @@ export async function create(canvas, ctx) {
   const range = (d) => (d < 10 ? d.toFixed(1) : Math.round(d).toString());
   // (the one record and the one lock it carries, filled each frame: cluster.js compares what's in them)
   const clusterLock = { name: '', dist: 0, hp: null };
-  const clusterNow = { on: false, shield: 100, low: false, speed: 0, top: 1, boosting: false, kills: 0, lock: null };
+  const clusterNow = { on: false, shield: 100, low: false, speed: 0, top: 1, boosting: false, kills: 0, lock: null, arms: null };
+  // (the arms the cluster shows: the crew's primary, the only line fired here for now; one record a crew, made when first flown)
+  const primaries = {};
+  const primaryArms = (kind) => (primaries[kind] ??= { name: arsenalOf(kind).names[0], line: 'primary', index: 0, ammo: 0, max: 0, filling: 0 });
   const placeShield = () => {
     const root = props.cluster?.current;
     if (!root) return;
@@ -1925,6 +1929,7 @@ export async function create(canvas, ctx) {
       clusterLock.hp = (t.hpMax ?? 1) > 1 ? t.hp / t.hpMax : null;
     }
     v.lock = t ? clusterLock : null;
+    v.arms = state.kind ? primaryArms(state.kind) : null;
     cluster.place(root, v);
     cluster.buffs(props.buffs?.current ?? null, v.on ? buffsNow() : NO_BUFFS);
   };

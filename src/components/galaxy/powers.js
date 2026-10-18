@@ -542,7 +542,7 @@ export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flash
       if (root !== bar.root) {
         const q = (slot) => root?.querySelector(`[data-slot="${slot}"]`) ?? null;
         const part = (slot, sel) => q(slot)?.querySelector(sel) ?? null;
-        bar = { root, on: null, slots: Object.fromEntries(SLOTS.map((slot) => [slot, q(slot)])), small: Object.fromEntries(SLOTS.map((slot) => [slot, part(slot, 'small')])), state: Object.fromEntries(SLOTS.map((slot) => [slot, part(slot, '.ship-power-state')])), sig: {} };
+        bar = { root, on: null, slots: Object.fromEntries(SLOTS.map((slot) => [slot, q(slot)])), small: Object.fromEntries(SLOTS.map((slot) => [slot, part(slot, 'small')])), state: Object.fromEntries(SLOTS.map((slot) => [slot, part(slot, '.hud-power-state')])), sig: {} };
       }
       if (!root) return;
       const shown = Boolean(on && st);
