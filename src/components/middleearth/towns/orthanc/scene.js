@@ -30,6 +30,7 @@ import { makeFolk } from '../bree/props';
 import { createGhosts } from '../ghosts';
 import { makeRain } from '../rain';
 import { createOrthancKit, insideTop } from './props';
+import { manyColoursRobe } from './sceneShaders';
 import { DUEL_AT, HOST, LEAF, LECTERN, MOTH_AT, PALANTIR, PITS, PIN, PIN_IN, RING, SARUMAN_AT, STAIR, STAIR_LEN, TOWER_H, clearView, indoors, stairAngle, stairAt, stairFace } from './layout';
 import { attend, castDo, castPlay, releaseCast, tickCast } from '../../cast3d';
 import { byFrame, createShake } from '../../feel';
@@ -338,22 +339,9 @@ export function createOrthancWorld(canvas, { onLost } = {}) {
   saruman.group.traverse((o) => {
     if (o.isMesh && o.material?.color && o.material.color.equals(ROBE)) robes.push([o, o.material]);
   });
-  const manyColours = new THREE.MeshPhysicalMaterial({ color: 0xf4f0ff, roughness: 0.32, metalness: 0.15, iridescence: 1, iridescenceIOR: 1.9, iridescenceThicknessRange: [160, 900], sheen: 0.6, sheenColor: new THREE.Color(0xffd8f0), envMap: kit.tex.hallEnv, envMapIntensity: 2.4 });
   // bands of every colour down the robe, moving, and turning with the angle
   const robeTime = { value: 0 };
-  manyColours.onBeforeCompile = (sh) => {
-    sh.uniforms.uRobeTime = robeTime;
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vRobe;').replace('#include <project_vertex>', '#include <project_vertex>\nvRobe = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uRobeTime;\nvarying vec3 vRobe;\nvec3 robeHue(float h) { return clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0); }')
-      .replace(
-        '#include <color_fragment>',
-        `#include <color_fragment>
-        float robeAngle = 1.0 - abs(dot(normalize(vViewPosition), normalize(vNormal)));
-        diffuseColor.rgb *= mix(vec3(1.0), robeHue(fract(vRobe.y * 1.3 + robeAngle * 0.9 + uRobeTime * 0.2)), 0.6);`,
-      );
-  };
-  manyColours.customProgramCacheKey = () => 'orthanc-many-colours';
+  const manyColours = manyColoursRobe(new THREE.MeshPhysicalMaterial({ color: 0xf4f0ff, roughness: 0.32, metalness: 0.15, iridescence: 1, iridescenceIOR: 1.9, iridescenceThicknessRange: [160, 900], sheen: 0.6, sheenColor: new THREE.Color(0xffd8f0), envMap: kit.tex.hallEnv, envMapIntensity: 2.4 }), robeTime);
   const ghosts = createGhosts({ make: () => makePerson('gandalf'), tag: 0.42 });
   zones.hall.add(ghosts.group);
 
