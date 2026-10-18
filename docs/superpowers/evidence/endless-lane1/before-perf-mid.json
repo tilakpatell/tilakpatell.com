@@ -1,0 +1,502 @@
+{
+ "view": {
+  "vw": 1470,
+  "vh": 956,
+  "vdpr": 2
+ },
+ "machine": "",
+ "quality": "mid",
+ "gpu": "default",
+ "report": {
+  "universe": {
+   "route": "/universe",
+   "machine": "",
+   "quality": "mid",
+   "backend": "default",
+   "drawnOn": "webgl",
+   "rows": [
+    {
+     "phase": "load",
+     "secs": 62,
+     "frames": 41572,
+     "fps": 684.8,
+     "p50": 0.3,
+     "p95": 1,
+     "stdev": 5.9,
+     "p99": 31.6,
+     "w1": 41.9,
+     "max": 2260,
+     "over50": 15,
+     "over100": 9,
+     "main": 0,
+     "gpu": null,
+     "loafs": 19,
+     "block": 3573,
+     "links": 178,
+     "pipes": 0,
+     "progs": 167,
+     "mid": 0,
+     "texMB": 289.1,
+     "bufMB": 20.3,
+     "draws": 0,
+     "ktris": 0,
+     "sizes": 2,
+     "worst": [
+      {
+       "ms": 2260,
+       "links": 19,
+       "tex": 13,
+       "texMB": 32.6,
+       "bufMB": 0.1,
+       "glMs": 944,
+       "drawMs": 0,
+       "slow": "getProgramParameter 21ms ",
+       "scripts": [
+        {
+         "ms": 2210,
+         "fn": "Promise.resolve",
+         "url": "src/lib/three/textures.js",
+         "at": 8486
+        }
+       ]
+      },
+      {
+       "ms": 538,
+       "links": 0,
+       "tex": 2,
+       "texMB": 2.5,
+       "bufMB": 0,
+       "glMs": 1,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 523,
+         "fn": "FrameRequestCallback",
+         "url": "",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 264,
+       "links": 1,
+       "tex": 31,
+       "texMB": 18.2,
+       "bufMB": 20,
+       "glMs": 166,
+       "drawMs": 0,
+       "slow": "getProgramParameter 131ms ",
+       "scripts": [
+        {
+         "ms": 257,
+         "fn": "FrameRequestCallback",
+         "url": "",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 210,
+       "links": 16,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 30,
+         "fn": "FrameRequestCallback",
+         "url": "",
+         "at": -1
+        },
+        {
+         "ms": 142,
+         "fn": "FrameRequestCallback",
+         "url": "",
+         "at": -1
+        },
+        {
+         "ms": 34,
+         "fn": "FrameRequestCallback",
+         "url": "",
+         "at": -1
+        }
+       ]
+      },
+      {
+       "ms": 167,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": [
+        {
+         "ms": 139,
+         "fn": "http://127.0.0.1:5294/src/main.jsx",
+         "url": "src/main.jsx",
+         "at": 0
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "phase": "settle",
+     "secs": 4,
+     "frames": 2547,
+     "fps": 631.6,
+     "p50": 1.4,
+     "p95": 2.7,
+     "stdev": 1.1,
+     "p99": 5.4,
+     "w1": 9.3,
+     "max": 24,
+     "over50": 0,
+     "over100": 0,
+     "main": 1,
+     "gpu": null,
+     "loafs": 0,
+     "block": 0,
+     "links": 5,
+     "pipes": 0,
+     "progs": 167,
+     "mid": 0,
+     "texMB": 6.7,
+     "bufMB": 54.2,
+     "draws": 49,
+     "ktris": 74,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 24,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 22,
+       "links": 5,
+       "tex": 2,
+       "texMB": 6,
+       "bufMB": 0.1,
+       "glMs": 8,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 21,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 20,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 13,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    },
+    {
+     "phase": "idle",
+     "secs": 6,
+     "frames": 5616,
+     "fps": 934.5,
+     "p50": 1,
+     "p95": 1.5,
+     "stdev": 0.3,
+     "p99": 2.1,
+     "w1": 2.7,
+     "max": 9,
+     "over50": 0,
+     "over100": 0,
+     "main": 0.9,
+     "gpu": null,
+     "loafs": 0,
+     "block": 0,
+     "links": 0,
+     "pipes": 0,
+     "progs": 167,
+     "mid": 0,
+     "texMB": 0,
+     "bufMB": 119,
+     "draws": 52,
+     "ktris": 76,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 9,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 8,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 5,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 4,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 4,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    },
+    {
+     "phase": "fly",
+     "secs": 9.2,
+     "frames": 6701,
+     "fps": 727.2,
+     "p50": 1.2,
+     "p95": 2.1,
+     "stdev": 0.8,
+     "p99": 5,
+     "w1": 7.3,
+     "max": 17,
+     "over50": 0,
+     "over100": 0,
+     "main": 1,
+     "gpu": null,
+     "loafs": 0,
+     "block": 0,
+     "links": 0,
+     "pipes": 0,
+     "progs": 167,
+     "mid": 0,
+     "texMB": 2.3,
+     "bufMB": 171.6,
+     "draws": 52,
+     "ktris": 86,
+     "sizes": 0,
+     "worst": [
+      {
+       "ms": 17,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 12,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 12,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 12,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      },
+      {
+       "ms": 11,
+       "links": 0,
+       "tex": 0,
+       "texMB": 0,
+       "bufMB": 0,
+       "glMs": 0,
+       "drawMs": 0,
+       "slow": "",
+       "scripts": []
+      }
+     ]
+    }
+   ],
+   "play": {
+    "phase": "play",
+    "secs": 15.2,
+    "frames": 12317,
+    "fps": 809.1,
+    "p50": 1.1,
+    "p95": 1.9,
+    "stdev": 0.6,
+    "p99": 3,
+    "w1": 5.8,
+    "max": 17,
+    "over50": 0,
+    "over100": 0,
+    "main": 0.9,
+    "gpu": null,
+    "loafs": 0,
+    "block": 0,
+    "links": 0,
+    "pipes": 0,
+    "progs": 167,
+    "mid": 0,
+    "texMB": 2.3,
+    "bufMB": 290.7,
+    "draws": 52,
+    "ktris": 81,
+    "sizes": 0,
+    "worst": [
+     {
+      "ms": 17,
+      "links": 0,
+      "tex": 0,
+      "texMB": 0,
+      "bufMB": 0,
+      "glMs": 0,
+      "drawMs": 0,
+      "slow": "",
+      "scripts": []
+     },
+     {
+      "ms": 12,
+      "links": 0,
+      "tex": 0,
+      "texMB": 0,
+      "bufMB": 0,
+      "glMs": 0,
+      "drawMs": 0,
+      "slow": "",
+      "scripts": []
+     },
+     {
+      "ms": 12,
+      "links": 0,
+      "tex": 0,
+      "texMB": 0,
+      "bufMB": 0,
+      "glMs": 0,
+      "drawMs": 0,
+      "slow": "",
+      "scripts": []
+     },
+     {
+      "ms": 12,
+      "links": 0,
+      "tex": 0,
+      "texMB": 0,
+      "bufMB": 0,
+      "glMs": 0,
+      "drawMs": 0,
+      "slow": "",
+      "scripts": []
+     },
+     {
+      "ms": 11,
+      "links": 0,
+      "tex": 0,
+      "texMB": 0,
+      "bufMB": 0,
+      "glMs": 0,
+      "drawMs": 0,
+      "slow": "",
+      "scripts": []
+     }
+    ]
+   },
+   "late": 0,
+   "errors": [],
+   "failed": null,
+   "secs": 88,
+   "readyS": 61.9,
+   "heapMB": 188,
+   "slips": {
+    "[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial \"PMREM.Background\" on Mesh": 3,
+    "[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh": 6,
+    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"SphericalGaussianBlur\" on Mesh": 3,
+    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"PMREMGGXConvolution\" on Mesh": 3,
+    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial on Mesh": 1,
+    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"unspecified\" on Mesh": 1
+   }
+  }
+ }
+}

@@ -1,0 +1,462 @@
+{
+  "tier": "high",
+  "viewport": [
+    1280,
+    720
+  ],
+  "poses": {
+    "overview": {
+      "calls": 99,
+      "triangles": 571083,
+      "shipPx": {
+        "w": 0,
+        "h": 0,
+        "box": [
+          434,
+          601,
+          434,
+          602
+        ]
+      },
+      "frameMs": 303.8,
+      "frameMsMedian": 306.7,
+      "memory": {
+        "geometries": 362,
+        "textures": 139
+      },
+      "metrics": {
+        "colorBuckets": 136,
+        "colorEntropyBits": 2.95,
+        "edgeDensity": 0.066,
+        "luminance": {
+          "mean": 22.8,
+          "p5": 4.9,
+          "p95": 73.8,
+          "contrast": 68.8
+        },
+        "dominantColorShare": 0.293
+      },
+      "errors": []
+    },
+    "falcon-sun": {
+      "calls": 83,
+      "triangles": 561609,
+      "shipPx": {
+        "w": 297,
+        "h": 146,
+        "box": [
+          274,
+          318,
+          571,
+          464
+        ]
+      },
+      "frameMs": 266.9,
+      "frameMsMedian": 267.3,
+      "memory": {
+        "geometries": 358,
+        "textures": 138
+      },
+      "metrics": {
+        "colorBuckets": 297,
+        "colorEntropyBits": 6.83,
+        "edgeDensity": 0.263,
+        "luminance": {
+          "mean": 127.4,
+          "p5": 41.9,
+          "p95": 205.5,
+          "contrast": 163.6
+        },
+        "dominantColorShare": 0.033
+      },
+      "errors": []
+    },
+    "middleearth-limb": {
+      "calls": 37,
+      "triangles": 126027,
+      "shipPx": {
+        "w": 100,
+        "h": 44,
+        "box": [
+          384,
+          497,
+          485,
+          541
+        ]
+      },
+      "frameMs": 237.4,
+      "frameMsMedian": 239.4,
+      "memory": {
+        "geometries": 371,
+        "textures": 161
+      },
+      "metrics": {
+        "colorBuckets": 166,
+        "colorEntropyBits": 5.7,
+        "edgeDensity": 0.164,
+        "luminance": {
+          "mean": 70.5,
+          "p5": 21.9,
+          "p95": 146.8,
+          "contrast": 124.8
+        },
+        "dominantColorShare": 0.116
+      },
+      "errors": []
+    },
+    "rickmorty": {
+      "calls": 38,
+      "triangles": 127153,
+      "shipPx": {
+        "w": 100,
+        "h": 43,
+        "box": [
+          384,
+          492,
+          485,
+          535
+        ]
+      },
+      "frameMs": 259.9,
+      "frameMsMedian": 261.6,
+      "memory": {
+        "geometries": 361,
+        "textures": 141
+      },
+      "metrics": {
+        "colorBuckets": 499,
+        "colorEntropyBits": 5.8,
+        "edgeDensity": 0.193,
+        "luminance": {
+          "mean": 73.6,
+          "p5": 19.3,
+          "p95": 168,
+          "contrast": 148.7
+        },
+        "dominantColorShare": 0.105
+      },
+      "errors": []
+    },
+    "gaming": {
+      "calls": 41,
+      "triangles": 107073,
+      "shipPx": {
+        "w": 100,
+        "h": 43,
+        "box": [
+          384,
+          491,
+          485,
+          533
+        ]
+      },
+      "frameMs": 180.5,
+      "frameMsMedian": 184.2,
+      "memory": {
+        "geometries": 362,
+        "textures": 141
+      },
+      "metrics": {
+        "colorBuckets": 220,
+        "colorEntropyBits": 4.96,
+        "edgeDensity": 0.149,
+        "luminance": {
+          "mean": 76.7,
+          "p5": 27.2,
+          "p95": 147.8,
+          "contrast": 120.6
+        },
+        "dominantColorShare": 0.084
+      },
+      "errors": []
+    },
+    "caribbean": {
+      "calls": 41,
+      "triangles": 175787,
+      "shipPx": {
+        "w": 100,
+        "h": 44,
+        "box": [
+          384,
+          502,
+          485,
+          546
+        ]
+      },
+      "frameMs": 243.1,
+      "frameMsMedian": 199.6,
+      "memory": {
+        "geometries": 360,
+        "textures": 140
+      },
+      "metrics": {
+        "colorBuckets": 224,
+        "colorEntropyBits": 5.14,
+        "edgeDensity": 0.151,
+        "luminance": {
+          "mean": 56.4,
+          "p5": 16.8,
+          "p95": 105,
+          "contrast": 88.2
+        },
+        "dominantColorShare": 0.137
+      },
+      "errors": []
+    },
+    "middleearth": {
+      "calls": 37,
+      "triangles": 126027,
+      "shipPx": {
+        "w": 100,
+        "h": 44,
+        "box": [
+          384,
+          497,
+          485,
+          540
+        ]
+      },
+      "frameMs": 244.4,
+      "frameMsMedian": 203.7,
+      "memory": {
+        "geometries": 359,
+        "textures": 137
+      },
+      "metrics": {
+        "colorBuckets": 171,
+        "colorEntropyBits": 5.12,
+        "edgeDensity": 0.108,
+        "luminance": {
+          "mean": 64.6,
+          "p5": 22.9,
+          "p95": 120,
+          "contrast": 97
+        },
+        "dominantColorShare": 0.144
+      },
+      "errors": []
+    },
+    "breakingbad": {
+      "calls": 62,
+      "triangles": 120225,
+      "shipPx": {
+        "w": 100,
+        "h": 43,
+        "box": [
+          384,
+          491,
+          485,
+          534
+        ]
+      },
+      "frameMs": 272.6,
+      "frameMsMedian": 201,
+      "memory": {
+        "geometries": 360,
+        "textures": 137
+      },
+      "metrics": {
+        "colorBuckets": 257,
+        "colorEntropyBits": 5.34,
+        "edgeDensity": 0.135,
+        "luminance": {
+          "mean": 82.5,
+          "p5": 22.2,
+          "p95": 182.2,
+          "contrast": 160
+        },
+        "dominantColorShare": 0.128
+      },
+      "errors": []
+    },
+    "office": {
+      "calls": 39,
+      "triangles": 66451,
+      "shipPx": {
+        "w": 100,
+        "h": 44,
+        "box": [
+          384,
+          502,
+          485,
+          546
+        ]
+      },
+      "frameMs": 204.1,
+      "frameMsMedian": 161,
+      "memory": {
+        "geometries": 360,
+        "textures": 137
+      },
+      "metrics": {
+        "colorBuckets": 134,
+        "colorEntropyBits": 5.82,
+        "edgeDensity": 0.072,
+        "luminance": {
+          "mean": 124.9,
+          "p5": 60.8,
+          "p95": 210.8,
+          "contrast": 150
+        },
+        "dominantColorShare": 0.075
+      },
+      "errors": []
+    },
+    "belt": {
+      "calls": 30,
+      "triangles": 492595,
+      "shipPx": {
+        "w": 154,
+        "h": 84,
+        "box": [
+          358,
+          591,
+          512,
+          676
+        ]
+      },
+      "frameMs": 121.4,
+      "frameMsMedian": 186.8,
+      "memory": {
+        "geometries": 359,
+        "textures": 135
+      },
+      "metrics": {
+        "colorBuckets": 98,
+        "colorEntropyBits": 5.08,
+        "edgeDensity": 0.194,
+        "luminance": {
+          "mean": 74.2,
+          "p5": 32.3,
+          "p95": 120,
+          "contrast": 87.8
+        },
+        "dominantColorShare": 0.102
+      },
+      "errors": []
+    },
+    "maw": {
+      "calls": 0,
+      "triangles": 0,
+      "shipPx": {
+        "w": 154,
+        "h": 70,
+        "box": [
+          358,
+          518,
+          512,
+          588
+        ]
+      },
+      "frameMs": 65.3,
+      "frameMsMedian": 35.4,
+      "memory": {
+        "geometries": 358,
+        "textures": 137
+      },
+      "metrics": {
+        "colorBuckets": 186,
+        "colorEntropyBits": 4.73,
+        "edgeDensity": 0.121,
+        "luminance": {
+          "mean": 66.7,
+          "p5": 20.9,
+          "p95": 139.4,
+          "contrast": 118.5
+        },
+        "dominantColorShare": 0.13
+      },
+      "errors": []
+    },
+    "landing-middleearth": {
+      "calls": 0,
+      "triangles": 0,
+      "shipPx": null,
+      "frameMs": 197,
+      "frameMsMedian": 177.1,
+      "memory": {
+        "geometries": 526,
+        "textures": 181
+      },
+      "metrics": {
+        "colorBuckets": 184,
+        "colorEntropyBits": 5.25,
+        "edgeDensity": 0.118,
+        "luminance": {
+          "mean": 108.2,
+          "p5": 33,
+          "p95": 212.2,
+          "contrast": 179.2
+        },
+        "dominantColorShare": 0.154
+      },
+      "errors": []
+    },
+    "station": {
+      "calls": 82,
+      "triangles": 546715,
+      "shipPx": {
+        "w": 154,
+        "h": 80,
+        "box": [
+          358,
+          555,
+          512,
+          635
+        ]
+      },
+      "frameMs": 298.5,
+      "frameMsMedian": 292.1,
+      "memory": {
+        "geometries": 374,
+        "textures": 145
+      },
+      "metrics": {
+        "colorBuckets": 342,
+        "colorEntropyBits": 7.39,
+        "edgeDensity": 0.248,
+        "luminance": {
+          "mean": 151.9,
+          "p5": 73.7,
+          "p95": 225.6,
+          "contrast": 151.9
+        },
+        "dominantColorShare": 0.025
+      },
+      "errors": []
+    },
+    "far-rim": {
+      "calls": 0,
+      "triangles": 0,
+      "shipPx": {
+        "w": 155,
+        "h": 80,
+        "box": [
+          357,
+          602,
+          512,
+          683
+        ]
+      },
+      "frameMs": 53.8,
+      "frameMsMedian": 58.3,
+      "memory": {
+        "geometries": 357,
+        "textures": 134
+      },
+      "metrics": {
+        "colorBuckets": 123,
+        "colorEntropyBits": 4.84,
+        "edgeDensity": 0.041,
+        "luminance": {
+          "mean": 77.3,
+          "p5": 25.1,
+          "p95": 124.3,
+          "contrast": 99.2
+        },
+        "dominantColorShare": 0.131
+      },
+      "errors": []
+    }
+  }
+}

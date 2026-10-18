@@ -1,0 +1,42 @@
+{
+  "tier": "mid",
+  "viewport": [
+    1280,
+    720
+  ],
+  "poses": {
+    "overview": {
+      "calls": 97,
+      "triangles": 638581,
+      "shipPx": {
+        "w": 0,
+        "h": 0,
+        "box": [
+          434,
+          601,
+          434,
+          602
+        ]
+      },
+      "frameMs": 406.6,
+      "frameMsMedian": 347.2,
+      "memory": {
+        "geometries": 368,
+        "textures": 162
+      },
+      "metrics": {
+        "colorBuckets": 138,
+        "colorEntropyBits": 3.06,
+        "edgeDensity": 0.06,
+        "luminance": {
+          "mean": 27.3,
+          "p5": 7.1,
+          "p95": 79.9,
+          "contrast": 72.8
+        },
+        "dominantColorShare": 0.396
+      },
+      "errors": []
+    }
+  }
+}
