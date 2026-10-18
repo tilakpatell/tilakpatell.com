@@ -140,8 +140,8 @@
 @keyframes hud-bars { from { transform: scaleY(0); } }
 
 @media (prefers-reduced-motion: reduce) {
-  :where(.hud-toast) { animation: none; }
-  :where(.hud-letterbox)::before, :where(.hud-letterbox)::after { animation: none; transition: none; }
+  :where(.hud-toast):not(hud-none) { animation: none; }
+  :where(.hud-letterbox):not(hud-none)::before, :where(.hud-letterbox):not(hud-none)::after { animation: none; transition: none; }
 }
 
 /* a minimap (./MiniMap.jsx): a disc on glass under the top row on the right,

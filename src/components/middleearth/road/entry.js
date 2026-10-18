@@ -7,7 +7,9 @@
 //   savedAt(s, now, ridden, walked) → the save to write
 //   resume(save, now) → { s, showTitle }: a world mounted again within a
 //     minute of its last save (a lost context put back) carries on without
-//     its stage’s title card a second time
+//     its stage’s title card a second time; a ride saved at its end starts
+//     again at Bag End
+//   recent(save, now) → whether the save is that fresh
 //   shouldOffer(save) → whether to offer “Carry on from …” (past Hobbiton’s first 40 m)
 //   ridden(save) → the Road counts as ridden (two thirds of it walked, or marked so)
 //   firstVisitRides(saves, unlocked, { flag }) → whether /middle-earth sends
@@ -28,9 +30,12 @@ const RIDDEN = 2 / 3;
 export const savedAt = (s, now, wasRidden, walked = 0) => ({ v: SAVE.version, s, ridden: Boolean(wasRidden), at: now, walked });
 
 export function resume(save, now) {
-  if (!save || !Number.isFinite(save.s)) return { s: 0, showTitle: true };
+  // (none, or a ride that reached the Havens: Bag End again)
+  if (!save || !Number.isFinite(save.s) || save.s >= 1) return { s: 0, showTitle: true };
   return { s: save.s, showTitle: !(Number.isFinite(save.at) && now - save.at <= RESUME_QUIET) };
 }
+
+export const recent = (save, now) => Boolean(save && Number.isFinite(save.at) && now - save.at <= RESUME_QUIET && save.s < 1);
 
 export const shouldOffer = (save) => Boolean(save && save.s > OFFER_FROM);
 

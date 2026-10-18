@@ -20,16 +20,19 @@
 import * as THREE from 'three';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { newClock, step as stepClock } from './clock';
-import { SAVE, resume, ridden as riddenOf, savedAt, shouldOffer } from './entry';
+import { SAVE, recent, resume, ridden as riddenOf, savedAt, shouldOffer } from './entry';
 import { LOOK_LIMIT, pose, settleLook } from './director';
 import { light as lightAt } from './daylight';
 import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
-import { walker } from './cast';
+import { forgetCast, walker } from './cast';
 import { clipFor, walkers as walkersAt } from './fellowship';
 import { STAGES, stageById } from './stages/index';
 
 const TOTAL = total(STAGES);
+// (Next's step until the stages have beats: the next stage's start)
+const STARTS = STAGES.slice(1).map((st) => sOf(STAGES, st.id, 0));
+const nextStage = (s) => STARTS.find((b) => b > s + 1e-9) ?? null;
 const SAVE_EVERY = 5; // s
 const PROGRESS_EVERY = 0.25; // s
 const LOOK_SPEED = 0.004; // radians a pixel of drag
@@ -74,26 +77,35 @@ export default {
     const sky = createSky();
     scene.add(ground, sun, sun.target, hemi, sky.mesh);
 
-    rt.input?.bind?.(KEYS);
-    rt.saves?.register?.({ key: SAVE.key, version: SAVE.version });
     const reduced = Boolean(props.reduced);
+    // (Enter is the Road's only under reduced motion, where it is Next: bound
+    // otherwise, the runtime would keep it from a focused button, the resume
+    // card's and the ribbon's)
+    rt.input?.bind?.(reduced ? KEYS : Object.fromEntries(Object.entries(KEYS).filter(([k]) => k !== 'next')));
+    rt.saves?.register?.({ key: SAVE.key, version: SAVE.version });
     const saved = rt.saves?.get?.(SAVE.key, null) ?? null;
     const now = () => Date.now();
-    // where the ride starts: the address; else the save (carried on, or
-    // offered); else Bag End
-    const back = props.at ? null : resume(saved, now());
-    const offer = !props.at && back.showTitle && shouldOffer(saved);
-    let clock = newClock({ s: props.at ? sFromAddress(props.at) : (back?.s ?? 0), reduced, auto: !offer });
+    // where the ride starts: the save if it is under a minute old (a lost
+    // context put back, whatever the address said); else the address; else
+    // the save (carried on, or offered); else Bag End
+    const fresh = recent(saved, now());
+    const byAddress = Boolean(props.at) && !fresh;
+    const back = byAddress ? null : resume(saved, now());
+    const offer = !byAddress && back.showTitle && shouldOffer({ s: back.s });
+    let clock = newClock({ s: byAddress ? sFromAddress(props.at) : back.s, reduced, auto: !offer });
     let wasRidden = riddenOf(saved);
     // (the share walked, not jumped: what makes the ride ridden)
-    let walked = props.at ? 0 : (saved?.walked ?? 0);
+    let walked = byAddress || !back.s ? 0 : (saved?.walked ?? 0);
+    // (a ride opened by its address writes nothing over the visitor's own
+    // until they walk it)
+    let saving = !byAddress;
     let stageId = null;
-    let quietTitle = !props.at && (!back.showTitle || offer);
+    let quietTitle = !byAddress && (!back.showTitle || offer);
     let lastMode = '';
     let sinceSave = 0;
     let sinceProgress = PROGRESS_EVERY;
     let still = 0; // s since the last drag
-    let ended = false;
+    let ended = clock.s >= 1;
     const touch = { walk: false, run: false };
     // (what's said before the page listens is held for it, as fromScene holds
     // a scene's: the first stage's card is told on the first frame)
@@ -201,7 +213,7 @@ export default {
     };
     const save = () => {
       sinceSave = 0;
-      if (!offerOpen) rt.saves?.set?.(SAVE.key, savedAt(clock.s, now(), wasRidden, walked));
+      if (!offerOpen && saving) rt.saves?.set?.(SAVE.key, savedAt(clock.s, now(), wasRidden, walked));
     };
     let offerOpen = offer;
     const jump = (s) => {
@@ -221,6 +233,14 @@ export default {
       },
       step(dt, input) {
         const pressed = (name) => KEYS[name].some((c) => input?.pressed?.has?.(c));
+        // (while the resume card waits, nothing walks: Enter, under reduced
+        // motion, is its yes; the card's own buttons take the rest)
+        if (offerOpen) {
+          if (clock.reduced && pressed('next')) world.carryOn();
+          relight();
+          report(frame(dt), dt);
+          return;
+        }
         if (pressed('menu')) tell('menu');
         if (pressed('lore')) tell('lore');
         for (let i = 1; i <= 10; i++) if (pressed(`stage${i}`)) world.goTo(STAGES[i - 1].id);
@@ -232,9 +252,10 @@ export default {
           next: pressed('next'),
         };
         const was = clock.s;
-        clock = stepClock(clock, dt, keys, { total: TOTAL, holdAt: () => 0, nextBeat: () => null });
+        clock = stepClock(clock, dt, keys, { total: TOTAL, holdAt: () => 0, nextBeat: nextStage });
         // (Next under reduced motion is how that ride is walked, so it counts)
         walked += Math.max(0, clock.s - was);
+        if (clock.s !== was) saving = true;
         // the visitor’s look: a drag turns it, and it settles back once let go
         const drag = input?.pointer?.drag;
         if (drag && (drag.dx || drag.dy)) {
@@ -270,6 +291,7 @@ export default {
         if (name in touch) touch[name] = Boolean(down);
       },
       carryOn() {
+        if (!offerOpen) return;
         offerOpen = false;
         clock = { ...clock, auto: !clock.reduced };
         const st = stageById(stageId);
@@ -277,6 +299,7 @@ export default {
       },
       restart() {
         offerOpen = false;
+        saving = true;
         wasRidden = riddenOf(saved);
         walked = 0;
         stageId = null;
@@ -286,6 +309,7 @@ export default {
       },
       skipToEnd() {
         offerOpen = false;
+        saving = true;
         jump(1);
       },
       // (the checks’: put the ride at s and draw it there)
@@ -302,6 +326,7 @@ export default {
         ground.material.dispose();
         sky.dispose();
         for (const w of cast.values()) w.dispose();
+        forgetCast();
         if (typeof window !== 'undefined' && window.__ROAD__?.world === world) delete window.__ROAD__;
       },
     };

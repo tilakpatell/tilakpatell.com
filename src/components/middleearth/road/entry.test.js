@@ -18,6 +18,8 @@ describe('the way in: the save, the resume card, the first visit', () => {
     expect(resume({ s: 0.4, at: 1000 }, 1000 + 59_000)).toEqual({ s: 0.4, showTitle: false });
     expect(resume({ s: 0.4, at: 1000 }, 1000 + 61_000)).toEqual({ s: 0.4, showTitle: true });
     expect(resume(null, 5)).toEqual({ s: 0, showTitle: true });
+    // (a ride that reached the Havens starts again at Bag End, not at its end)
+    expect(resume({ s: 1, at: 1000 }, 2000)).toEqual({ s: 0, showTitle: true });
   });
 
   it('offers to carry on only from past Hobbiton’s first 40 m', () => {

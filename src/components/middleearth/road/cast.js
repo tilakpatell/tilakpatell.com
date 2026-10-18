@@ -10,6 +10,7 @@
 //   walker(name, { height, seed }) → { group, ready, set({ base, speed }), tick(dt), dispose }
 //     base: a looping clip in place of locomotion (sit.ground, tired, crawl…)
 //     or null; speed: metres a second over the ground, the feet paced to it
+//   forgetCast(): the templates let go, as the Road goes
 //   heightOf(name) → metres, by kind (a hobbit, a man, an elf, a dwarf, a wizard)
 
 import * as THREE from 'three';
@@ -61,6 +62,10 @@ function made(name, g, files) {
   if (!(top > 0.1)) return null;
   return { name, scene, own, up, hipsY: hips.position.y, ahead: own.walk ? heading(own.walk, up) : null, top, ground };
 }
+
+// the templates let go with the Road (the runtime's asset cache forgets the
+// files as the module goes; the next mount fetches them through it again)
+export const forgetCast = () => templates.clear();
 
 export async function loadCast(names, rt) {
   const got = await Promise.all(names.map((n) => template(n, rt).then((t) => (t ? n : null))));
@@ -127,10 +132,10 @@ export function walker(name, { height = heightOf(name), seed = 0, rt = null } = 
     },
     dispose() {
       gone = true;
+      group.removeFromParent();
       if (!st) return;
       st.anim.dispose();
       for (const m of st.materials) m.dispose();
-      group.removeFromParent();
       st = null;
     },
   };

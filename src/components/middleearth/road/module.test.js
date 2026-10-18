@@ -45,7 +45,7 @@ describe('the face’s wiring: keys, events, the save', () => {
   it('binds the Road’s keys', async () => {
     const rt = fakeRt();
     await road.create(rt, { at: null });
-    expect(rt.input.bind).toHaveBeenCalledWith(KEYS);
+    expect(rt.input.bind.mock.calls[0][0]).toMatchObject({ walk: KEYS.walk, auto: KEYS.auto });
     expect(KEYS.walk).toEqual(['KeyW', 'ArrowUp']);
     expect(KEYS.auto).toEqual(['Space']);
     expect(KEYS.stage10).toEqual(['Digit0']);
@@ -114,5 +114,69 @@ describe('the face’s wiring: keys, events, the save', () => {
     for (let i = 0; i < 400; i++) walked.step(1, snap([], ['run']));
     walked.skipToEnd();
     expect(rt3.saves.get('tp-road')).toMatchObject({ s: 1, ridden: true });
+  });
+
+  it('a finished ride, come back to, starts again rather than ending at once', async () => {
+    const rt = fakeRt();
+    rt.saves.set('tp-road', { v: 1, s: 1, ridden: true, at: 0, walked: 1 });
+    const world = await road.create(rt, { at: null });
+    world.attached();
+    world.step(1 / 60, snap());
+    expect(world.s).toBeLessThan(0.01);
+    expect(rt.emitted.some((e) => e.type === 'end' || e.type === 'resume')).toBe(false);
+  });
+
+  it('a lost context after an address puts the ride back where it was, not at the address', async () => {
+    const rt = fakeRt();
+    rt.saves.set('tp-road', { v: 1, s: sOf(STAGES, 'lorien', 30), ridden: false, at: Date.now() - 3000, walked: 0.1 });
+    const world = await road.create(rt, { at: 'moria' });
+    world.attached();
+    expect(world.s).toBe(sOf(STAGES, 'lorien', 30));
+    expect(rt.emitted.some((e) => e.type === 'stage')).toBe(false);
+  });
+
+  it('an address doesn’t write over the visitor’s ride until they walk it', async () => {
+    const rt = fakeRt();
+    const kept = { v: 1, s: sOf(STAGES, 'moria', 10), ridden: false, at: 0, walked: 0.3 };
+    rt.saves.set('tp-road', kept);
+    const world = await road.create(rt, { at: 'shire-edge' });
+    world.attached();
+    world.setAuto(false);
+    for (let i = 0; i < 10; i++) world.step(1, snap());
+    expect(rt.saves.get('tp-road')).toEqual(kept);
+    for (let i = 0; i < 6; i++) world.step(1, snap([], ['walk']));
+    expect(rt.saves.get('tp-road')).not.toEqual(kept);
+    expect(rt.saves.get('tp-road').s).toBeGreaterThan(sOf(STAGES, 'shire-edge', 0));
+  });
+
+  it('under reduced motion Next steps to the next stage while there are no beats, never to the end', async () => {
+    const rt = fakeRt();
+    const world = await road.create(rt, { at: null, reduced: true });
+    world.attached();
+    world.step(1 / 60, snap(['Enter']));
+    expect(world.s).toBeCloseTo(sOf(STAGES, 'shire-edge', 0), 9);
+    expect(rt.emitted.some((e) => e.type === 'end')).toBe(false);
+  });
+
+  it('while the resume card waits nothing walks, and under reduced motion Enter carries on', async () => {
+    const rt = fakeRt();
+    rt.saves.set('tp-road', { v: 1, s: sOf(STAGES, 'moria', 10), ridden: false, at: 0 });
+    const world = await road.create(rt, { at: null, reduced: true });
+    world.attached();
+    const was = world.s;
+    for (let i = 0; i < 5; i++) world.step(1, snap(['Space'], ['walk', 'run']));
+    expect(world.s).toBe(was);
+    world.step(1 / 60, snap(['Enter']));
+    expect(rt.emitted.find((e) => e.type === 'stage')).toMatchObject({ id: 'moria' });
+    expect(world.s).toBe(was);
+  });
+
+  it('binds Enter only under reduced motion, so a focused button takes it otherwise', async () => {
+    const rt = fakeRt();
+    await road.create(rt, { at: null });
+    expect(rt.input.bind.mock.calls[0][0].next).toBeUndefined();
+    const rt2 = fakeRt();
+    await road.create(rt2, { at: null, reduced: true });
+    expect(rt2.input.bind.mock.calls[0][0].next).toEqual(['Enter']);
   });
 });
