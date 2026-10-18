@@ -268,14 +268,22 @@ vec4 mordorFar(vec2 px, float s, float look) {
   // behind Doom, the clouds’ undersides lit by it
   float hot = smoothstep(H * 0.6, H * 0.12, px.y);
   float behind = exp(-pow((px.x - doomX) / (W * 0.18 + 170.0 * s), 2.0));
-  float smoke = fbm(vec2(px.x / (480.0 * s) + uTime * 0.011, px.y / (260.0 * s) - uTime * 0.004));
+  vec2 sp = vec2(px.x / (480.0 * s) + uTime * 0.011, px.y / (260.0 * s) - uTime * 0.004);
+  float smoke = fbm(sp);
   float cloud = smoothstep(0.36, 0.74, smoke);
+  // where the smoke thins below, it is a cloud’s underside, lit by the fires
+  float under = clamp((smoke - fbm(sp - vec2(0.0, 0.16))) * 5.0, 0.0, 1.0) * cloud;
   vec3 sky = mix(uSky, uGlow, hot);
   sky = mix(sky, mix(uGlow, uLamp, 0.6), hot * hot * behind * 0.85);
+  // and the crater’s light on the smoke over the summit, so the cone stands
+  // dark against it
+  float summit = exp(-length((px - vec2(doomX, H * 0.36)) / vec2(1.25, 1.0)) / (150.0 * s));
+  sky = mix(sky, mix(uGlow, uLamp, 0.7), summit * mix(0.25, 0.55, night));
   // by day the smoke is darker than the ash sky; by night lighter than the
   // dark, grey overhead and lit red from beneath lower down
   sky = mix(sky * (1.0 - 0.25 * night * (1.0 - cloud)), mix(uSmoke, mix(uStone, uLamp, 0.4), hot * hot * mix(0.3, 0.8, night)), cloud * mix(0.55, 0.8, night));
   over(c, sky, clamp(mix(0.3, 0.7, smoothstep(H * 0.95, H * 0.3, px.y)) * (0.7 + 0.45 * cloud) + hot * 0.2, 0.0, 0.95));
+  over(c, mix(uLamp, uSun, 0.15 * night), under * (0.25 + 0.75 * hot) * (0.5 + 0.5 * behind) * mix(0.12, 0.45, night));
 
   // the Eye’s light on the reek about Barad-dûr’s crown, so the tower
   // (drawn over it) stands black against the smoke it lights
@@ -314,9 +322,12 @@ vec4 mordorFar(vec2 px, float s, float look) {
     float halo = max(halos.x, max(halos.y, halos.z));
     // the fire in them creeping down, slowly
     float flow = 0.6 + 0.4 * sin(uTime * 0.8 - t * 5.0);
+    // ash gullies down its flanks, fanning from the summit
+    float fan = dx / max(H * 0.37 - px.y, 24.0 * s);
+    float gully = vnoise(fan * 26.0 + 3.0) * 0.6 + vnoise(fan * 61.0 + 9.0) * 0.4;
     // rock lit from the seams, then the molten cores
-    vec3 rock = mix(uDark, uLamp, halo * flow * mix(0.3, 0.6, night));
-    rock = mix(rock, mix(uLamp, uSun, 0.7 * core), smoothstep(0.15, 0.7, core) * flow);
+    vec3 rock = mix(uDark * mix(0.78, 1.22, gully), uLamp, halo * flow * mix(0.3, 0.6, night));
+    rock = mix(rock, mix(uLamp, uSun, 0.85 * core), smoothstep(0.12, 0.6, core) * (0.35 + 0.65 * flow));
     // the crater’s lip, lit from inside
     rock = mix(rock, uSun, smoothstep(3.0 * s, 0.0, dTop - px.y) * smoothstep(24.0 * s, 4.0 * s, abs(dx - 4.0 * s)) * pulse);
     over(c, rock, inDoom);
@@ -324,14 +335,17 @@ vec4 mordorFar(vec2 px, float s, float look) {
   // the crater’s glow, and its smoke rising and leaning west on the wind
   vec2 cr = vec2(doomX + 4.0 * s, H * 0.352 - 9.0 * s);
   float cg = length((px - cr) / vec2(80.0, 40.0) / s);
-  over(c, uLamp, exp(-cg * 2.0) * (0.35 + 0.25 * pulse) * mix(0.6, 1.0, night));
+  over(c, mix(uLamp, uSun, 0.25 * pulse), exp(-cg * 1.7) * (0.4 + 0.3 * pulse) * mix(0.6, 1.0, night));
   float py = px.y - cr.y;
-  float pxd = px.x - cr.x + py * 0.15 + py * py / (H * 1.6);
-  float pw = 10.0 * s + py * 0.3;
+  float pxd = px.x - cr.x + py * 0.22 + py * py / (H * 1.3);
+  float pw = 12.0 * s + py * 0.36;
   if (py > 0.0 && abs(pxd) < pw * 3.0) {
-    float n = noise(vec2(pxd / (36.0 * s) + uTime * 0.05, py / (44.0 * s) - uTime * 0.22));
-    float plume = exp(-pxd * pxd / (pw * pw)) * smoothstep(0.0, 14.0 * s, py) * smoothstep(H * 0.45, 0.0, py) * (0.45 + 0.8 * n);
-    over(c, mix(uSmoke, mix(uLamp, uStone, 0.4), exp(-py / (70.0 * s)) * mix(0.4, 0.9, night)), plume * mix(0.55, 0.85, night));
+    // billows rolling up it, the smoke thickest in their hearts
+    float n = fbm(vec2(pxd / (40.0 * s) + uTime * 0.04, py / (50.0 * s) - uTime * 0.2));
+    float plume = exp(-pxd * pxd / (pw * pw * (0.7 + 0.6 * n))) * smoothstep(0.0, 14.0 * s, py) * smoothstep(H * 0.44, 0.0, py) * smoothstep(0.2, 0.62, n + 0.18);
+    // lit from the crater beneath, and a little along its east side
+    float glowUp = exp(-py / (80.0 * s)) * mix(0.45, 0.95, night) + smoothstep(0.0, pw, -pxd) * 0.12 * night;
+    over(c, mix(uSmoke * mix(1.0, 0.8, n), mix(uLamp, uStone, 0.35), clamp(glowUp, 0.0, 1.0)), plume * mix(0.45, 0.9, night));
   }
 
   // its beam
@@ -388,7 +402,9 @@ void main() {
   // a mist over the land behind the page’s words, left of the middle and
   // low down, where the page’s mask is still strong: by day it would
   // otherwise take the muted line under them below 4.5:1 (RULES UI 6)
-  float words = smoothstep(0.02, 0.07, vUv.x) * (1.0 - smoothstep(0.5, 0.64, vUv.x)) * (1.0 - smoothstep(0.48, 0.66, vUv.y));
+  // (Mordor’s keeps to the plain, so Doom’s cone stands clear of it)
+  vec2 mistTop = mix(vec2(0.48, 0.66), vec2(0.2, 0.34), uMordor);
+  float words = smoothstep(0.02, 0.07, vUv.x) * (1.0 - smoothstep(0.5, 0.64, vUv.x)) * (1.0 - smoothstep(mistTop.x, mistTop.y, vUv.y));
   a *= 1.0 - words * mix(0.74, 0.3, uNight);
   gl_FragColor = vec4(c.rgb / max(c.a, 0.0001), a);
 }
@@ -473,6 +489,7 @@ export function create(canvas, ctx) {
     const rockets = [];
     const show = { wait: rand(3, 6), dragon: 0, t: 0 };
     const beam = { on: false, t: 0, wait: rand(4, 8), from: 0, to: 0 };
+    const erupt = { wait: rand(2, 5) };
     let litT = 0;
 
     return {
@@ -530,6 +547,16 @@ export function create(canvas, ctx) {
           look.y += (want[1] - look.y) * Math.min(1, dt * 3);
           tower.step(dt, t, look, (k.pointer.x / k.size.w) * k.pointer.near);
           lands.uniforms.uEye.value.set(tower.eye.x + k.size.w / 2, tower.eye.y + k.size.h / 2);
+          // now and then Doom throws up fire from its crater (where the
+          // shader puts it, in its unit s)
+          erupt.wait -= dt;
+          if (erupt.wait <= 0 && dt > 0) {
+            const s = Math.min(1.4, Math.max(0.5, Math.min(k.size.h / 860, k.size.w / 1100)));
+            const cx = k.size.w * (DOOM_X - 0.5) + 4 * s;
+            const cy = k.size.h * (0.352 - 0.5) - 9 * s;
+            sparks.emit(cx, cy, { count: 9, speed: [40, 120], life: [0.8, 1.5], colors: [[255, 120, 30], [255, 200, 90]], gravity: -100, size: 6, angle: [Math.PI * 0.32, Math.PI * 0.68] });
+            erupt.wait = rand(5, 11);
+          }
           if (!beam.on) {
             beam.wait -= dt;
             lands.uniforms.uBeam.value.y = 0;

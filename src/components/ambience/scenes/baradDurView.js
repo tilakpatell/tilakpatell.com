@@ -132,7 +132,7 @@ export function baradDurView(k) {
       const slim = phone ? PHONE_SLIM : 1;
       const height = (h * ((phone ? PHONE_EYE_AT : EYE_AT) - FOOT)) / eyeAt.y;
       at.h = height;
-      at.x = phone ? w / 2 - 30 : w * 0.37;
+      at.x = phone ? w / 2 - 40 : w * 0.37;
       at.y = -h / 2 + h * FOOT;
       group.scale.set(height * slim, height, height * slim);
       group.position.set(at.x, at.y, 0);
