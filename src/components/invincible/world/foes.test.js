@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIGHT, KINDS, PORTAL, brawlThings, foeAt, holding, knock, newFoes, pickTarget, portalOpen, spawnFoes, spawnUpTo, startInvasion, stepFoes } from './foes';
+import { FIGHT, KINDS, PORTAL, brawlThings, foeAt, holding, knock, walled, newFoes, pickTarget, portalOpen, spawnFoes, spawnUpTo, startInvasion, stepFoes } from './foes';
 import { buildWorld, groundAt } from './map';
 import { forceOf } from './demolish';
 
@@ -486,5 +486,44 @@ describe('what he holds', () => {
     expect(holding(out, 0)).toBe(false);
     expect(holding(f, 'car:9')).toBe(false);
     expect(holding({ ...f, cars: [{ id: 9, held: 'mark', p: [0, 0, 0], v: [0, 0, 0] }] }, 'car:9')).toBe(true);
+  });
+});
+
+describe('Thragg’s shout (./powers.js)', () => {
+  it('throws every foe and car within 40 m out from him, and none further', () => {
+    const at = [0, groundAt(0, 60), 60];
+    let f = spawnFoes(newFoes(), 'mauler', 2, at);
+    f = { ...f, foes: f.foes.map((e, i) => ({ ...e, p: [at[0] + [10, 70][i], at[1], at[2]] })), cars: [{ id: 5, p: [at[0], at[1] + 3, at[2] - 20], v: [0, 0, 0], held: 0, away: false, life: 3 }] };
+    const r = stepFoes(f, { p: at, v: [0, 0, 0], mode: 'ground' }, { ...idle, brawl: [{ kind: 'shout', at, r: 40 }] }, 1 / 30);
+    expect(r.foes.foes[0].state).toBe('thrown');
+    expect(r.foes.foes[0].v[0]).toBeGreaterThan(20);
+    expect(r.foes.foes[1].state).not.toBe('thrown');
+    expect(r.foes.cars[0]).toMatchObject({ held: null, away: true });
+    expect(r.foes.cars[0].v[2]).toBeLessThan(-20);
+  });
+});
+
+describe('Atom Eve’s walls (./powers.js’s construct)', () => {
+  // a wall 12 m wide, 8 high, across the way at z = -10, facing north
+  const wall = { at: [0, 50, -10], yaw: Math.PI, wide: 12, high: 8 };
+  it('stand across a line through them, and not past their ends or over their tops', () => {
+    expect(walled([wall], [0, 50, 0], [0, 50, -20])).toBe(true);
+    expect(walled([wall], [7, 50, 0], [7, 50, -20])).toBe(false);
+    expect(walled([wall], [0, 60, 0], [0, 60, -20])).toBe(false);
+    expect(walled([wall], [0, 50, 0], [0, 50, -5])).toBe(false);
+  });
+  it('stop a bolt and a thrown car', () => {
+    const f = { ...startInvasion(newFoes()), bolts: [{ p: [0, 50, -20], v: [0, 0, 45], life: 2, hurt: 12 }], cars: [{ id: 2, p: [1, 50, -14], v: [0, 0, 40], held: null, away: false, life: 3 }] };
+    let g = f;
+    const ev = [];
+    for (let t = 0; t < 0.4; t += 1 / 30) {
+      const r = stepFoes(g, { p: [0, 49, 0], v: [0, 0, 0], mode: 'air' }, { punch: false, look: [0, 0, -1] }, 1 / 30, { walls: [wall] });
+      g = r.foes;
+      ev.push(...r.ev);
+    }
+    expect(g.bolts).toHaveLength(0);
+    expect(g.cars).toHaveLength(0);
+    expect(ev.some((e) => e.type === 'hurt' || e.type === 'carHit')).toBe(false);
+    expect(ev.filter((e) => e.type === 'walled')).toHaveLength(2);
   });
 });

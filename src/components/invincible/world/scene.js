@@ -38,6 +38,8 @@ import { createCourse, createMarker, loadProps } from './missionScene';
 import { createOnlineGhosts } from './onlineScene';
 import { createSpaceScene } from './spaceScene';
 import { createRuins } from './ruins';
+import { createHeroScene } from './heroScene';
+import { SWINGS, TIGHT, clearOf, swing } from './cameraWalls';
 import { VILLAIN_EV, villainFeel } from './villainScene';
 import { GUARD, HOLD_UP, brawlFeel } from './brawlScene';
 
@@ -95,27 +97,6 @@ const LAND = {
   torso: { pitch: 0.55, yaw: 0.1, roll: 0 },
 };
 
-// a ray against a box: how far along (0…1) it first goes in, or 1
-function rayBox(o, d, b) {
-  let t0 = 0;
-  let t1 = 1;
-  const lo = [b.x0, b.y0, b.z0];
-  const hi = [b.x1, b.y1, b.z1];
-  for (let a = 0; a < 3; a++) {
-    if (Math.abs(d[a]) < 1e-9) {
-      if (o[a] < lo[a] || o[a] > hi[a]) return 1;
-      continue;
-    }
-    let ta = (lo[a] - o[a]) / d[a];
-    let tb = (hi[a] - o[a]) / d[a];
-    if (ta > tb) [ta, tb] = [tb, ta];
-    t0 = Math.max(t0, ta);
-    t1 = Math.min(t1, tb);
-    if (t0 > t1) return 1;
-  }
-  return t0;
-}
-
 export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   const engine = createStage(rt, { exposure: 1, fov: FOV, near: 0.3, far: 26000, bloom: ART.bloom, onSlow });
   const { scene, camera } = engine;
@@ -168,7 +149,8 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
 
   // ── the people ──
   const [markT, omniT, thraggT] = await Promise.all(['mark', 'omni', 'thragg'].map((n) => loadFigure(asset(CAST[n].file))));
-  const mark = figure(markT, CAST.mark);
+  // (Mark's figure, or the hero's he's flying as: ./heroScene.js swaps them)
+  let mark = figure(markT, CAST.mark);
   const omni = figure(omniT, CAST.omni);
   const thragg = figure(thraggT, CAST.thragg);
   for (const f of [mark, omni, thragg]) {
@@ -194,6 +176,8 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   const { space, allen, ALLEN, THRAGG, spaceTalk, look: lookOfSpace } = await createSpaceScene(engine, scene, { small, people, thragg });
 
   const fx = createFlightFx(scene, { calm, small });
+  // who he's flying as and what their powers leave (./heroScene.js)
+  const heroes = createHeroScene(scene, { mark, templates: { mark: markT, omni: omniT, thragg: thraggT, eve: people.eve }, rim: LOOK.noon.rim, vfx: fx.vfx });
   // what the fights have left of the city (./ruins.js; ./demolish.js says what)
   const ruins = createRuins(scene, world, { level: engine.tier, vfx: fx.vfx });
   const challenges = createChallenges(scene, world, fx.vfx);
@@ -351,61 +335,8 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     return { at: aimFeet.copy(from).add(aimRun).addScaledVector(up, run * Math.tan(a)), steep: run / Math.hypot(run, rise) };
   }
   const list = [];
-  // how far (0…1) along `back` from `anchor` the camera can go before a wall
-  // (`list`: the buildings round him, each kept 0.4 m off). One he's hugging
-  // is kept off only as far as leaves 0.15 m round the anchor: he hovers as
-  // near as FLY.R (0.45 m) to a face (./flight.js's collide), and from
-  // there, with a whole 0.4 m kept off, every way out but straight along
-  // the wall would end a few centimetres from him. So the camera can still
-  // go along a wall or away from it, and never nearer its face than 0.3 m.
-  function clear(anchor, back) {
-    let t = 1;
-    for (const b of list) {
-      const out = Math.hypot(Math.max(b.x0 - anchor[0], 0, anchor[0] - b.x1), Math.max(b.y0 - anchor[1], 0, anchor[1] - b.y1), Math.max(b.z0 - anchor[2], 0, anchor[2] - b.z1));
-      const m = clamp(out - 0.15, 0, 0.4);
-      t = Math.min(t, rayBox(anchor, back, { x0: b.x0 - m, x1: b.x1 + m, y0: b.y0 - m, y1: b.y1 + m, z0: b.z0 - m, z1: b.z1 + m }));
-    }
-    return t;
-  }
-  // Where it goes when a wall's right behind him (hovering against a tower,
-  // or by one on a roof): round him to one side or the other, or up over
-  // him, whichever gets furthest from him for the least turn, rather than
-  // closing in until it's inside his head. The last two go square to his
-  // back, along the wall: with his back flat to it, every other way runs
-  // into its face within a few centimetres. [turn about the up axis, rise, cost in metres]
-  const SWINGS = [
-    [0.5, 0, 0.8],
-    [-0.5, 0, 0.8],
-    [1, 0, 1.6],
-    [-1, 0, 1.6],
-    [0, 0.85, 1.4],
-    [1.5, 0, 2.6],
-    [-1.5, 0, 2.6],
-    [0, 1.4, 2.4],
-    [Math.PI / 2, 0, 3],
-    [-Math.PI / 2, 0, 3],
-  ];
-  const TIGHT = 2.6; // (metres: closer than this, the camera swings; it comes back once the line behind him is clear to 3.6)
-  const swung = [0, 0, 0];
-  function swing(back, [turn, rise], up) {
-    // (round the up axis, then lifted toward it, kept the same length)
-    const c = Math.cos(turn);
-    const s = Math.sin(turn);
-    const l = Math.hypot(...back);
-    let x = back[0] * c + back[2] * s;
-    let y = back[1];
-    let z = -back[0] * s + back[2] * c;
-    if (rise) {
-      x = x * (1 - rise * 0.6) + up.x * l * rise;
-      y = y * (1 - rise * 0.6) + up.y * l * rise;
-      z = z * (1 - rise * 0.6) + up.z * l * rise;
-    }
-    const k = l / (Math.hypot(x, y, z) || 1);
-    swung[0] = x * k;
-    swung[1] = y * k;
-    swung[2] = z * k;
-    return swung;
-  }
+  // (./cameraWalls.js: how far back it can go, and the swings round him)
+  const clear = (anchor, back) => clearOf(list, anchor, back);
   function placeCamera(h, yaw, pitch, speed, dt) {
     const fly = h.mode === 'air';
     const k = clamp(speed / 260, 0, 1);
@@ -527,7 +458,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   }
 
   // ── other players online, in their own worlds, as holograms (./onlineScene.js) ──
-  const ghosts = createOnlineGhosts({ markT, world, zone: () => zone });
+  const ghosts = createOnlineGhosts({ markT, templates: { omni: omniT, thragg: thraggT, eve: people.eve }, world, zone: () => zone });
   scene.add(ghosts.group);
 
   // ── every frame ──
@@ -588,6 +519,12 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       } else if (e.type === 'takeoff') fx.takeoff(e.at);
       else if (VILLAIN_EV.has(e.type)) traffic = villainFeel(e, { villains, feel, scare, traffic, h });
       else if (e.type === 'ruin') ruins.hit(e);
+      else if (e.type === 'linebreak') {
+        // Omni-Man's line-break (./powers.js): the glass along it, and the street under it floored
+        heroes.glass(e);
+        crowd.line = [[e.from[0], e.from[2]], [e.to[0], e.to[2]]];
+        feel.trauma(0.6);
+      }
       else if (e.type === 'land' && e.n) {
         // down on the Moon or Mars: a ring of dust thrown out round him
         const at = new THREE.Vector3(...e.at);
@@ -704,6 +641,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     ground.update(t);
     city.update(t, look?.night ?? 0);
     ruins.update(frameDt, t);
+    heroes.walls(sim.walls ?? []);
     // coming down through the air from space, fast: the air in front of him burns
     const altNow = zone === 'space' ? altitudeOf(h) : h.p[1];
     const down = zone === 'space' ? -(h.v[0] * h.p[0] + h.v[1] * h.p[1] + h.v[2] * h.p[2]) / Math.hypot(...h.p) : -h.v[1];
@@ -741,6 +679,15 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     // ?debug: the feel's numbers, and ./InvWorld.jsx's (the hits, the jump's press)
     tune: (more = []) => engine.tune([...feelGroups(feel), ...springGroups(squash, 'squash'), ...more], 'invincible'),
     setTime,
+    // who he's drawn as (./heroes.js): his figure swapped, and the one he's become out of the city
+    setHero(id) {
+      const f = heroes.get(id);
+      heroes.swap(mark, f);
+      mark = f;
+      npcs.eve.out = id !== 'eve';
+      npcs.eve.holder.visible = zone === 'city' && id !== 'eve';
+      thragg.holder.visible = id !== 'thragg';
+    },
     // a tower's damage drawn, and the ruins' rubble and scaffolding (./demolish.js's)
     setDamage: city.setDamage,
     setRuins: ruins.set,
@@ -774,13 +721,14 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       skyLight?.dispose();
       fx.dispose();
       ruins.dispose();
+      heroes.dispose();
       villains.dispose();
       props.dispose();
       marker.dispose();
       course.dispose();
       ghosts.dispose();
       for (const c of casts) c.dispose();
-      mark.dispose();
+      heroes.get('mark').dispose(); // (Mark's own: the others are heroScene's)
       omni.dispose();
       thragg.dispose();
       engine.dispose();

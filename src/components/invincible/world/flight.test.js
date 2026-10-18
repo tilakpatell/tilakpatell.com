@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CARRY, FLY, JUMP, dive, jumpPress, newHero, onWater, speedOf, stepHero } from './flight';
+import { CARRY, FLY, JUMP, ONE, dive, jumpPress, newHero, onWater, speedOf, stepHero, switchHero } from './flight';
 import { BRIDGES, RIVER, SPAWN, WATER_Y, WORLD, buildWorld, groundAt } from './map';
 
 const W = buildWorld();
@@ -291,5 +291,41 @@ describe('R lets go of the water', () => {
   it('does nothing away from the water', () => {
     const { ev } = fly(airborne(), (_, s) => ({ ...still, free: s === 0 }), 0.2);
     expect(ev.filter((e) => e.type === 'takeoff')).toHaveLength(0);
+  });
+});
+
+describe('as another hero (./heroes.js’s multipliers)', () => {
+  const W2 = buildWorld();
+  const air = () => ({ ...newHero({ x: -240, y: 300, z: -880, face: Math.PI }), mode: 'air' });
+  const go = (h, mult, t, look = [0, 0, -1]) => {
+    const ev = [];
+    for (let s = 0; s < t; s += 1 / 30) {
+      h = stepHero(h, { ...still, boost: true, look }, 1 / 30, W2, mult);
+      ev.push(...h.ev);
+    }
+    return { h, ev };
+  };
+  it('flies flat out at his own top speed, and breaks the barrier at his own speed', () => {
+    expect(speedOf(go(air(), ONE, 10).h)).toBeCloseTo(FLY.top, 0);
+    const omni = go(air(), { top: 1.6, agility: 1, boom: 90 }, 10);
+    expect(speedOf(omni.h)).toBeCloseTo(FLY.top * 1.6, 0);
+    const first = (ev) => ev.findIndex((e) => e.type === 'boom');
+    expect(first(go(air(), { top: 1.6, agility: 1, boom: 90 }, 3).ev)).toBeLessThan(first(go(air(), ONE, 3).ev));
+  });
+  it('turns quicker with more agility', () => {
+    const fast = { ...air(), v: [0, 0, -100], spd: 100, dir: [0, 0, -1] };
+    const turned = (mult) => {
+      const h = stepHero(fast, { ...still, fwd: 1, look: [1, 0, 0] }, 0.3, W2, mult);
+      return Math.atan2(h.dir[0], -h.dir[2]);
+    };
+    expect(turned({ ...ONE, agility: 1.3 })).toBeGreaterThan(turned(ONE) * 1.2);
+  });
+  it('a switch mid-flight keeps where he is and which way, his speed cut to the new top', () => {
+    const h = go(air(), ONE, 10).h;
+    const eve = switchHero(h, { top: 0.8, agility: 1.3, boom: FLY.barrier });
+    expect(eve.p).toEqual(h.p);
+    expect(eve.dir).toEqual(h.dir);
+    expect(speedOf(eve)).toBeCloseTo(FLY.top * 0.8, 6);
+    expect(switchHero(h, { top: 1.8, agility: 1, boom: FLY.barrier })).toEqual(h);
   });
 });

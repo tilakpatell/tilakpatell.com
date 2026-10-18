@@ -54,12 +54,15 @@ const r2 = (v) => Math.round(v * 100) / 100;
 // and how high, [… speed, y], with `motion`; a town that doesn't never sees
 // them. An area (a short id: letters, digits and dashes) comes after those
 // (naught for a world without motion). Last of all, from a world that
-// says them, { e: emote, m: motion }: an object, which an older reader
-// passes over (it's never a string where the area goes, nor at 5 or 6
-// unless the speed's there too).
+// says them, { e: emote, m: motion, h: hero }: an object, which an older
+// reader passes over (it's never a string where the area goes, nor at 5 or
+// 6 unless the speed's there too). `h`, a whole number under 16, is who a
+// world draws its player as (Invincible's heroes); a world that has none
+// never sends it.
 const AREA = /^[a-z0-9-]{1,24}$/i;
 const extraOf = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : null);
-export const writeStep = (h, { inside = false, ring = false, ride = false, motion = false, area = null, emote = null, move = null } = {}) => {
+const heroOf = (v) => (Number.isInteger(v) && v >= 0 && v < 16 ? v : null);
+export const writeStep = (h, { inside = false, ring = false, ride = false, motion = false, area = null, emote = null, move = null, hero = null } = {}) => {
   const step = [r2(h.x), r2(h.z), r2(h.face), (h.speed ?? 0) > 0.4 ? 1 : 0, (inside ? 1 : 0) | (ring ? 2 : 0) | (ride ? 4 : 0)];
   if (motion) step.push(Math.round((h.speed ?? 0) * 10) / 10, r2(h.y ?? 0));
   else if (area) step.push(0, 0);
@@ -67,7 +70,8 @@ export const writeStep = (h, { inside = false, ring = false, ride = false, motio
   // (what goes out checked as what comes in is)
   const e = readEmoteWire(emote);
   const m = motionPacket(move);
-  if (e || m) step.push({ ...(e ? { e: [e.id, e.age] } : {}), ...(m ? { m } : {}) });
+  const who = heroOf(hero);
+  if (e || m || who != null) step.push({ ...(e ? { e: [e.id, e.age] } : {}), ...(m ? { m } : {}), ...(who != null ? { h: who } : {}) });
   return step;
 };
 export function readStep(data, bound = 200) {
@@ -90,6 +94,7 @@ export function readStep(data, bound = 200) {
     const m = readMotion(more.m);
     if (e) step.emote = e;
     if (m) step.motion = m;
+    if (heroOf(more.h) != null) step.hero = more.h;
   }
   return step;
 }

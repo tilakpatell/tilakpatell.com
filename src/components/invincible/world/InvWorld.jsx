@@ -7,7 +7,9 @@ import { sayVoiced } from '../../../lib/voiced';
 import { useAchievements } from '../../Achievements';
 import { useTravellers } from '../../middleearth/towns/useTravellers';
 import { brawlThings, holding, newFoes, spawnFoes, startInvasion, stepFoes } from './foes';
-import { dive, jumpPress, newHero, stepHero } from './flight';
+import { dive, jumpPress, newHero, stepHero, switchHero } from './flight';
+import { HEROES, ORDER, canPlay, hero } from './heroes';
+import { newPower } from './powers';
 import { newBrawl, stepBrawl } from './brawl';
 import { impactGroups } from '../../../lib/impact';
 import { pressGroups } from '../../../lib/press';
@@ -16,7 +18,7 @@ import { CALLS } from './lines';
 import { RADIO, RADIO_CALLS, feedMission, loadStory, missionOf, newRadio, nextRadioCall, nextStory, startMission as beginMission, stepOf } from './missions';
 import { intoSpace, outOfSpace, stepSpace } from './orbit';
 import { CARDS, newQuests, stepQuests } from './quests';
-import { PLACES, SPAWN, groundAt, isSafeStart } from './map';
+import { SPAWN, groundAt, isSafeStart } from './map';
 import { VOICE } from './voicelines';
 import InvHud from './InvHud';
 import MissionCard from './MissionCard';
@@ -24,7 +26,8 @@ import './world.css';
 import LoadingVeil from '../../worlds/LoadingVeil';
 import { useStage, useStageFrame } from '../../avengers/shared/runtime';
 import city from './module';
-import { AT, CARD_MS, QUESTS, ROOF, STORY, TIME, brawlEvents, foeEvents, handleOut, heroEvents, hitTowerIn, hits, loadRuins, questEvents, sfx } from './events';
+import Cards from './InvCards';
+import { AT, CARD_MS, QUESTS, ROOF, STORY, TIME, brawlEvents, foeEvents, handleOut, heroEvents, heroLine, hitTowerIn, hits, keptHero, loadRuins, powerStep, questEvents, sfx, HERO } from './events';
 import { bindInput, pointerLook, readControls } from './input';
 import { fitHud, hudFrame } from './hudDraw';
 import { ROOM, nearest, over, placeOf, seenAs } from './online';
@@ -107,7 +110,11 @@ function World({ gl, setGl, thinkMark }) {
   const [zone, setZoneUi] = useState('city');
   const [flash, setFlash] = useState(null);
   const [card, setCard] = useState(() => !prefersReducedMotion());
-  const { unlock } = useAchievements();
+  const { unlock, unlocked } = useAchievements();
+  // who he's flying as (./heroes.js): the HUD's chip and its Menu read it
+  const [heroId, setHeroId] = useState(keptHero);
+  const got = useRef(unlocked);
+  got.current = unlocked;
   const [found, setFound] = useState(() => keptQuests().cards.length);
   // a mission's card over the city (./MissionCard.jsx), and the same for the key handler
   const [mcard, setMcard] = useState(null);
@@ -125,7 +132,7 @@ function World({ gl, setGl, thinkMark }) {
   if (!sim.current) {
     // (he's put on the lawn for now: where he really starts waits on the
     // world, which the scene makes, and nothing moves before it's there)
-    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), brawl: newBrawl(), fist: false, poundPress: false, blocked: 0, cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null };
+    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), heroId: keptHero(), power: newPower(), powerKey: false, walls: [], heroWas: null, brawl: newBrawl(), fist: false, poundPress: false, blocked: 0, cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null };
   }
 
   // (`who`, for a line someone says: in their own voice where it's been made;
@@ -180,6 +187,11 @@ function World({ gl, setGl, thinkMark }) {
     sim.current.world = a.world;
     // (the city as the fights left it, mended a quarter a day since: ./demolish.js)
     if (!sim.current.ruins) loadRuins(sim.current, a);
+    // (the hero kept, if he's still earned: else Mark)
+    if (sim.current.heroId !== 'mark') {
+      if (canPlay(sim.current.heroId, { story: sim.current.story, achievements: got.current })) a.setHero(sim.current.heroId);
+      else sim.current.heroId = 'mark';
+    }
     fitHud(hud.current, mapRef.current);
     await syncTime();
     if (import.meta.env.DEV) {
@@ -199,6 +211,8 @@ function World({ gl, setGl, thinkMark }) {
       hook.mission = (id) => missionApi.current.start?.(id);
       hook.feed = (ev) => missionApi.current.feed?.(ev);
       hook.story = () => sim.current.story;
+      // (and who he flies as, earned or not, for the QA shots)
+      hook.flyAs = (id) => flyAs(id, { force: true, quiet: true });
       // (and a tower's damage, for the QA shots: set straight to `d`)
       hook.ruin = (id, d) => {
         const b = a.world.buildings[id];
@@ -271,6 +285,31 @@ function World({ gl, setGl, thinkMark }) {
     audioContext();
     if (!wind.current) import('./sounds').then((m) => (wind.current ??= m.windSound()));
   }, []);
+
+  // Another hero taken up (./heroes.js), if he can be: where he is and how
+  // fast kept (cut to the new one's top), the figure swapped, a line said.
+  // `force` (the dev hook's, a mission's): whether or not he's earned it.
+  const flyAs = useCallback(
+    (id, { force = false, quiet = false } = {}) => {
+      const s = sim.current;
+      const a = api.current;
+      if (!a || !HEROES[id] || (!force && (s.mission || !canPlay(id, { story: s.story, achievements: got.current })))) return;
+      s.heroId = id;
+      s.h = switchHero(s.h, hero(id).flight);
+      s.power = newPower();
+      a.setHero(id);
+      setHeroId(id);
+      if (!force) local.set(HERO, id);
+      if (!quiet) heroLine(s, say, true);
+    },
+    [say],
+  );
+  // the next one he can fly as, round the Menu's list
+  const nextHero = useCallback(() => {
+    const s = sim.current;
+    const can = ORDER.filter((id) => canPlay(id, { story: s.story, achievements: got.current }));
+    flyAs(can[(can.indexOf(s.heroId) + 1) % can.length]);
+  }, [flyAs]);
 
   // the Flaxans come through over the river
   const invade = useCallback(
@@ -354,6 +393,12 @@ function World({ gl, setGl, thinkMark }) {
       }
       // (Dad's rings from the first: a lesson already under way starts again with the episode)
       if (id === 'ep1') s.quests = { ...s.quests, lesson: { ...s.quests.lesson, on: false, next: 0, t: 0 } };
+      // (the story's Mark's: another hero gives way to him for it, and comes back after)
+      if (s.heroId !== 'mark') {
+        s.heroWas = s.heroId;
+        flyAs('mark', { force: true, quiet: true });
+        say('This one is Mark’s.', 2600);
+      }
       s.mission = beginMission(id, s.t);
       // (the last episode: Dad's points, for ./companions.js to lead him through)
       if (id === 'ep7') s.mission.spar = m.steps.filter((q) => q.type === 'escort').map((q) => q.to);
@@ -365,7 +410,7 @@ function World({ gl, setGl, thinkMark }) {
       // the camera's one swing round him, with the card (none under reduced motion)
       s.swing = prefersReducedMotion() ? null : { t0: s.t, yaw0: s.yaw };
     },
-    [clear, speak, setup, openCard],
+    [clear, speak, setup, openCard, flyAs, say],
   );
   const abandon = useCallback(() => feed({ type: 'abandon' }), [feed]);
   // the radio's call taken (R, or the line itself)
@@ -503,7 +548,7 @@ function World({ gl, setGl, thinkMark }) {
     const shift = input.boost;
     if (s.brawl.guard) input.run = input.boost = false;
     input.carry = Boolean(s.brawl.carry);
-    s.h = s.h.zone === 'space' ? stepSpace(s.h, input, dt) : stepHero(s.h, input, dt, s.world);
+    s.h = s.h.zone === 'space' ? stepSpace(s.h, input, dt) : stepHero(s.h, input, dt, s.world, hero(s.heroId).flight);
     s.jump = false;
     s.free = false;
     // up through the top of the sky, or back down into it: the other world takes over
@@ -550,7 +595,9 @@ function World({ gl, setGl, thinkMark }) {
       const things = brawlThings(s.foes);
       const down = h.ev.find((e) => e.type === 'slam' || e.type === 'land');
       const wall = h.ev.find((e) => e.type === 'impact' || e.type === 'bump');
-      const br = stepBrawl(s.brawl, { fist: s.fist, punched: s.punch, up: input.jump, guard: shift, pound: s.poundPress }, { p: h.p, v: h.v, mode: h.mode, look, alt: h.p[1] - groundAt(h.p[0], h.p[2]), landed: down ? { speed: down.speed, at: down.at } : null, impact: wall ? { speed: wall.speed, at: wall.at, tower: wall.building ?? null } : null }, { things, blocked: s.blocked }, dt);
+      const br = stepBrawl(s.brawl, { fist: s.fist, punched: s.punch, up: input.jump, guard: shift, pound: s.poundPress }, { p: h.p, v: h.v, mode: h.mode, look, alt: h.p[1] - groundAt(h.p[0], h.p[2]), landed: down ? { speed: down.speed, at: down.at } : null, impact: wall ? { speed: wall.speed, at: wall.at, tower: wall.building ?? null } : null }, { things, blocked: s.blocked }, dt, hero(s.heroId));
+      // (the power he has as another hero: ./powers.js; Thragg's shout goes in with the brawl)
+      br.out.push(...powerStep(s, a, h, look, dt, say));
       s.brawl = br.b;
       const blow = br.out.find((o) => o.kind === 'punch' || o.kind === 'counter');
       const dived = br.out.find((o) => o.kind === 'dive');
@@ -561,7 +608,7 @@ function World({ gl, setGl, thinkMark }) {
       brawlEvents(s, br.out, a);
       let r = { foes: s.foes, ev: [], push: null, stun: 0 };
       for (let left = dt, first = true; left > 1e-6; left -= 0.05, first = false) {
-        const q = stepFoes(r.foes, h, { punch: first && Boolean(blow), power: blow?.power ?? 1, look, eveHit: first ? s.eveHit : null, brawl: first ? br.out : [], block: s.brawl.guard }, Math.min(0.05, left), { cars: s.cars ?? [], hangar: s.guard ?? null, city: s.world });
+        const q = stepFoes(r.foes, h, { punch: first && Boolean(blow), power: blow?.power ?? 1, look, eveHit: first ? s.eveHit : null, brawl: first ? br.out : [], block: s.brawl.guard }, Math.min(0.05, left), { cars: s.cars ?? [], hangar: s.guard ?? null, city: s.world, walls: s.walls });
         r = { foes: q.foes, ev: [...r.ev, ...q.ev], push: q.push ?? r.push, stun: Math.max(r.stun ?? 0, q.stun ?? 0) };
       }
       s.foes = r.foes;
@@ -578,6 +625,11 @@ function World({ gl, setGl, thinkMark }) {
     }
     s.punch = false;
     s.poundPress = false;
+    // a mission done or called off: back to the hero he was before it; and that hero's word now and then
+    if (!s.mission && s.heroWas) {
+      flyAs(s.heroWas, { force: true });
+      s.heroWas = null;
+    } else if (s.heroId !== 'mark' && h.mode === 'air' && Math.hypot(...h.v) > 60) heroLine(s, say);
     // a mission's wave (more of them every so often) and its car on the grid (./getaway.js)
     if (s.wave && s.wave.spawned < s.wave.of) {
       s.wave.t += dt;
@@ -597,7 +649,7 @@ function World({ gl, setGl, thinkMark }) {
     const tv = trav.ref.current;
     if (tv) {
       const [me, area] = seenAs(h, speed);
-      tv.pose(me, { area });
+      tv.pose(me, { area, hero: ORDER.indexOf(s.heroId) });
     }
     s.travellers = tv ? tv.list().map(placeOf) : null;
     // the radio (./missions.js nextRadioCall): a side call now and then, on the HUD's line for a while
@@ -714,36 +766,9 @@ function World({ gl, setGl, thinkMark }) {
       <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Over the city" />
       <MissionCard card={mcard} story={sim.current.story} onClose={closeCard} onAgain={() => startMission(mcard?.id)} onStart={startMission} onAbandon={abandon} />
 
-      <InvHud hud={hud} mapRef={mapRef} time={time} cycleTime={cycleTime} chip={chip} trav={trav} found={found} cards={CARDS.length} near={near} act={act} toast={toast} radio={radio} take={take} touch={touch} onStick={onStick} startSound={startSound} hold={hold} punch={punch} punchUp={punchUp} />
+      <InvHud hud={hud} mapRef={mapRef} time={time} cycleTime={cycleTime} chip={chip} trav={trav} found={found} cards={CARDS.length} near={near} act={act} toast={toast} radio={radio} take={take} touch={touch} onStick={onStick} startSound={startSound} hold={hold} punch={punch} punchUp={punchUp} heroName={hero(heroId).name} canSwap={ORDER.filter((id) => canPlay(id, { story: sim.current.story, achievements: unlocked })).length > 1} nextHero={nextHero} />
       {shutter && <div className="iw-shutter" key={shutter} aria-hidden="true" onAnimationEnd={() => setShutter(null)} />}
 
     </div>
   );
 }
-
-// ── without 3D: the places, as cards ──
-function Cards({ three, gl, retry }) {
-  return (
-    <div className="iw-cards shell">
-      <p className="iw-eyebrow">Invincible · the Graysons’ city</p>
-      <h2 id="iw-title" className="iw-title">
-        Fly, Mark.
-      </h2>
-      <p className="iw-cards-lead">{gl === 'lost' ? 'The graphics chip let go of the city.' : three.can ? 'The city is 3D, and 3D is off.' : 'The city is 3D, and this browser has no 3D.'} Here’s what’s down there.</p>
-      <ul className="iw-cards-list">
-        {PLACES.map((p) => (
-          <li key={p.id}>
-            <b>{p.name}</b>
-            <span>{p.line}</span>
-          </li>
-        ))}
-      </ul>
-      {(gl === 'lost' || (three.can && !three.on)) && (
-        <button type="button" className="btn btn-primary mt-6" onClick={gl === 'lost' ? retry : () => three.set('on')}>
-          {gl === 'lost' ? 'Try again' : 'Turn 3D on'}
-        </button>
-      )}
-    </div>
-  );
-}
-

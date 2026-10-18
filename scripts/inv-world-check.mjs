@@ -83,6 +83,10 @@ const SHOTS = {
   allen: { space: 'allen', back: 14 },
   mars: { space: 'mars', back: 90 },
   thragg: { space: 'thragg', back: 18 },
+  // who he flies as (./heroes.js), each on the street outside the Graysons' (the shot named `as-…`: `eve` and `thragg` were taken)
+  'as-eve': { hero: 'eve', p: [-2044, 3, 253.5], mode: 'air', yaw: 1.694, pitch: 0.05 },
+  'as-omniman': { hero: 'omniman', p: [-2044, 3, 253.5], mode: 'air', yaw: 1.694, pitch: 0.05 },
+  'as-thragg': { hero: 'thragg', p: [-2044, 3, 253.5], mode: 'air', yaw: 1.694, pitch: 0.05 },
   // the brawl (./brawl.js): a Mauler grabbed off the street (the punch key held) and carried up over downtown
   brawl: { brawl: true },
   // the city that breaks (./demolish.js): the three tallest towers ahead of him downtown broken to their stubs, at dusk
@@ -232,6 +236,8 @@ for (const [name, s] of Object.entries(SHOTS)) {
     // hook's setTime is the HUD's one clock, so the button agrees with the sky; it resolves
     // once the scene has the time)
     await api.setTime(s.time ?? 'noon');
+    // (as the hero the shot wants, Mark unless it says)
+    api.flyAs?.(s.hero ?? 'mark');
     if (s.fight) {
       // the Flaxans: start them now, wait till a few are through (not on the clock: software
       // rendering is slow, so the game's clock runs faster meanwhile), and face the portal

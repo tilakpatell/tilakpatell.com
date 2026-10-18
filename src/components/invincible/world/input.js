@@ -6,6 +6,7 @@ import { readPad, typing } from '../../games/pad';
 import { toggleGuide } from '../../../lib/palette';
 import { onWater } from './flight';
 import { CARD_MS } from './events';
+import { hero } from './heroes';
 
 // the keys, by where they are on the keyboard
 const CODES = { KeyW: 'fwd', KeyS: 'back', KeyA: 'left', KeyD: 'right', Space: 'up', KeyC: 'down', KeyZ: 'down', ShiftLeft: 'boost', ShiftRight: 'boost', ArrowLeft: 'lookL', ArrowRight: 'lookR', ArrowUp: 'lookU', ArrowDown: 'lookD' };
@@ -28,7 +29,11 @@ export function bindInput(s, h) {
       s.moved = true;
       return;
     }
-    if ((e.code === 'KeyJ' || e.code === 'KeyF') && !e.repeat) {
+    if (e.code === 'KeyF' && hero(s.heroId).power) {
+      // (as another hero, F held is the power: ./powers.js)
+      startSound();
+      s.powerKey = true;
+    } else if ((e.code === 'KeyJ' || e.code === 'KeyF') && !e.repeat) {
       // (a tap punches; held, it grabs, and let go, it throws: ./brawl.js)
       startSound();
       s.punch = true;
@@ -53,6 +58,7 @@ export function bindInput(s, h) {
   };
   const up = (e) => {
     if (e.code === 'KeyJ' || e.code === 'KeyF') s.fist = false;
+    if (e.code === 'KeyF') s.powerKey = false;
     const k = CODES[e.code];
     if (k) s.keys.delete(k);
     if (!e.shiftKey) s.keys.delete('boost');

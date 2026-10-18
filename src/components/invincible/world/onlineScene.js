@@ -5,13 +5,16 @@ import { POSES, figure } from '../../../lib/three/rig';
 import { CAST } from '../cast';
 import { createGhosts } from '../../middleearth/towns/ghosts';
 import { surfaceAt } from './flight';
+import { ORDER, hero } from './heroes';
 import { WATER_Y, groundAt } from './map';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const Y = new THREE.Vector3(0, 1, 0);
 
-// `markT`: Mark's figure's model; `zone()`: the city or space, as the scene has it now
-export function createOnlineGhosts({ markT, world, zone: zoneOf }) {
+// `markT`: Mark's figure's model (`templates`: the other heroes', by cast
+// name: a traveller flying as one is drawn as them, ./heroes.js; one this
+// doesn't know as Mark); `zone()`: the city or space, as the scene has it now
+export function createOnlineGhosts({ markT, templates = {}, world, zone: zoneOf }) {
   // ── other players online, in their own worlds, as holograms ──
   // (as the Middle-earth towns show theirs: ../../middleearth/towns/ghosts.js)
   // each a pale, shimmering Mark with his name over him: walking, hanging in
@@ -33,6 +36,26 @@ export function createOnlineGhosts({ markT, world, zone: zoneOf }) {
       return { group, top: CAST.mark.h, fig: f, gait: 0, at: null, v: new THREE.Vector3(), dispose: () => f.dispose() };
     },
     animate: (f, gt, p, gdt) => {
+      // (who they fly as: the figure changed when they change)
+      const id = ORDER[p.hero] ?? 'mark';
+      if (id !== (f.hero ?? 'mark') && (templates[hero(id).cast] || id === 'mark')) {
+        const next = figure(id === 'mark' ? markT : templates[hero(id).cast], CAST[hero(id).cast]);
+        next.snap(POSES.stand);
+        // (pale as the old one was: ghosts.js's hologram, taken off it)
+        let pale = null;
+        f.fig.holder.traverse((o) => (pale ??= o.isMesh ? o.material : null));
+        next.holder.traverse((o) => {
+          if (!o.isMesh || !pale) return;
+          o.material = pale;
+          o.castShadow = false;
+        });
+        f.fig.holder.removeFromParent();
+        f.fig.dispose();
+        f.group.add(next.holder);
+        f.fig = next;
+        f.hero = id;
+        f.dispose = () => next.dispose();
+      }
       const fig = f.fig;
       const speed = p.speed ?? 0;
       // off the ground: over the land, the water or a roof (or the Moon, or Mars)

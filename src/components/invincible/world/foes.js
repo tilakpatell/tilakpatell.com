@@ -30,7 +30,8 @@
 // cars are, for a Mauler to take one (`throw`'s `car` is its index there);
 // `hangar`: a point on the street the Maulers wreck when he's not about;
 // `city`: ./map.js's world, for a thrown car or foe that goes into a tower
-// (a `towerHit` for ./demolish.js to count).
+// (a `towerHit` for ./demolish.js to count); `walls`: Atom Eve's, which
+// stop bolts and thrown cars.
 // A step is never longer than a twentieth of a second, whatever `dt` says
 // (a tab hidden for a minute comes back as one step).
 
@@ -78,6 +79,25 @@ const live = (e) => e.state !== 'waiting' && e.state !== 'ko' && e.state !== 'do
 const free = (e) => live(e) && e.state !== 'held' && e.state !== 'thrown';
 // how high over the ground his pound's ring still reaches (the Flaxans hang low round him)
 const POUND_UP = 14;
+// Whether the move from a to b goes through one of Atom Eve's walls
+// (./powers.js's construct: { at, yaw, wide, high }, its middle at the
+// bottom of its face, standing across `yaw`'s way).
+export function walled(walls, a, b) {
+  for (const w of walls ?? []) {
+    const n = [Math.sin(w.yaw), 0, Math.cos(w.yaw)];
+    const da = (a[0] - w.at[0]) * n[0] + (a[2] - w.at[2]) * n[2];
+    const db = (b[0] - w.at[0]) * n[0] + (b[2] - w.at[2]) * n[2];
+    if ((da > 0) === (db > 0) || da === db) continue;
+    const k = da / (da - db);
+    const p = [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
+    const across = (p[0] - w.at[0]) * n[2] - (p[2] - w.at[2]) * n[0];
+    if (Math.abs(across) <= w.wide / 2 && p[1] >= w.at[1] - 1 && p[1] <= w.at[1] + (w.high ?? 8)) return true;
+  }
+  return false;
+}
+
+// Thragg's shout throws what it reaches this fast out, and this fast up
+const SHOUT = { out: 34, up: 12 };
 // thrown into a tower faster than this, a foe marks it (./demolish.js)
 const KNOCKED = 45;
 // the tower (./map.js's box of a building) a point's inside, or null
@@ -286,6 +306,16 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
     } else if (o.kind === 'diveHit') {
       if (e && free(e) && len(sub(mid(e), o.at)) < 8) blows(e, o.hits, [o.at[0], o.at[1] + 6, o.at[2]], { dive: true });
     } else if (o.kind === 'pound') f.pounds.push({ at: [...o.at], r: 0, to: o.r, speed: o.speed });
+    else if (o.kind === 'shout') {
+      // Thragg's shout (./powers.js): everything within its ring thrown out from him
+      const away = (p) => {
+        const d = [p[0] - o.at[0], 0, p[2] - o.at[2]];
+        const l = Math.hypot(d[0], d[2]) || 1;
+        return [(d[0] / l) * SHOUT.out, SHOUT.up, (d[2] / l) * SHOUT.out];
+      };
+      for (const q of f.foes) if (free(q) && len(sub(mid(q), o.at)) <= o.r) Object.assign(q, { state: 'thrown', v: away(q.p), t: 0 });
+      for (const c of f.cars) if (c.held !== 'mark' && len(sub(c.p, o.at)) <= o.r) Object.assign(c, { held: null, away: true, v: away(c.p), life: 4 });
+    }
   }
 
   // through the portal, one at a time
@@ -533,6 +563,10 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
     b.life -= dt;
     const from = [...b.p];
     for (const a of [0, 1, 2]) b.p[a] += b.v[a] * dt;
+    if (walled(world.walls, from, b.p)) {
+      ev.push({ type: 'walled', at: [...b.p] });
+      continue;
+    }
     // (along its path this step, so one meeting him head-on flat out can't pass through him)
     if (nearest(from, b.p, chest) < 1.3) {
       hurt(b.hurt ?? FIGHT.hurt, b.p);
@@ -575,6 +609,10 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
     c.life -= dt;
     if (c.away) c.v[1] -= 9.8 * dt;
     for (const a of [0, 1, 2]) c.p[a] += c.v[a] * dt;
+    if (walled(world.walls, from, c.p)) {
+      ev.push({ type: 'walled', at: [...c.p] }, { type: 'carDown', id: c.id, at: [...c.p] });
+      continue;
+    }
     // into a tower: a car's worth of damage to it, and down it comes
     const into = towerAt(world.city, c.p);
     if (into) {

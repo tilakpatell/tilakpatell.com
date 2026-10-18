@@ -36,6 +36,16 @@ export function hitTower(ruins, id, force) {
   return { ruins: { ...ruins, d }, delta: now - was, stage: stageOf(now) };
 }
 
+// some of one tower's damage taken off at once (Atom Eve's transmute), never past whole
+export function mendTower(ruins, id, amount) {
+  if (!ruins.d.has(id)) return ruins;
+  const left = ruins.d.get(id) - Math.max(0, amount);
+  const d = new Map(ruins.d);
+  if (left > 1e-9) d.set(id, left);
+  else d.delete(id);
+  return { ...ruins, d };
+}
+
 // `days` of mending (a quarter a day); `now`, when, for the next visit's count
 export function repair(ruins, days, now = ruins.at) {
   const heal = RUINS.heal * Math.max(0, Number.isFinite(days) ? days : 0);

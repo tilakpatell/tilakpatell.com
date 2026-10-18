@@ -10,10 +10,19 @@
 // gathering beats waving beats looking.
 //
 // sense: { hero: [x, y, z], heroMode, heroSpeed, slam: [x, z] | null,
-// hit: [x, z] | null, carried: [x, z] | null (a car he's carrying), fight,
-// won, time }; r: a seeded random (lib/seeded).
+// hit: [x, z] | null, carried: [x, z] | null (a car he's carrying), line:
+// [[x, z], [x, z]] | null (Omni-Man's line-break, ./powers.js: 60 m either
+// side of it floors them), fight, won, time }; r: a seeded random (lib/seeded).
 
 import { WALK } from './traffic';
+
+// the nearest point to `p` on a line-break's line, if it's within 60 m of it
+function onLine(p, [a, b]) {
+  const d = [b[0] - a[0], b[1] - a[1]];
+  const k = Math.max(0, Math.min(1, ((p[0] - a[0]) * d[0] + (p[1] - a[1]) * d[1]) / (d[0] * d[0] + d[1] * d[1] || 1)));
+  const q = [a[0] + d[0] * k, a[1] + d[1] * k];
+  return Math.hypot(p[0] - q[0], p[1] - q[1]) <= 60 ? q : null;
+}
 
 const BRAIN = { walk: 1.3, run: 4, flee: 6, fright: 40, calm: 20, cheer: 4, cheerR: 80, gatherR: 25, gather: 12, near: 6, waveR: 15, wave: 3, waveCool: 20, lookR: 30, roam: 20, roamMin: 6, mill: 4 };
 
@@ -81,7 +90,7 @@ export function stepBrain(b, sense, rawDt, r) {
   if (n.gathered && (!landed || dHero > BRAIN.lookR)) n.gathered = false;
 
   // something hit the ground near them, or a car's being carried over them: run, away from it
-  const danger = [sense.slam, sense.hit, sense.carried].find((p) => p && dist(n.at, p) < BRAIN.fright);
+  const danger = (sense.line && onLine(n.at, sense.line)) || [sense.slam, sense.hit, sense.carried].find((p) => p && dist(n.at, p) < BRAIN.fright);
   if (danger) {
     const d = dist(n.at, danger);
     const a = d > 1e-6 ? [(n.at[0] - danger[0]) / d, (n.at[1] - danger[1]) / d] : [Math.cos(r() * 6.28), Math.sin(r() * 6.28)];

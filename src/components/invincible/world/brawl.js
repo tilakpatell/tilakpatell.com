@@ -22,7 +22,8 @@
 // mark: { p (his feet), v, mode, look, alt (over the ground), landed: { speed,
 // at } | null, impact: { speed, at, tower } | null }; world: { things: [{ id,
 // kind, at (its middle), grabbable, foe }], blocked (swings he blocked last
-// step) }. A step is never longer than a twentieth of a second.
+// step) }; mult: { fists } (./heroes.js: what a blow is worth as another
+// hero). A step is never longer than a twentieth of a second.
 
 export const BRAWL = {
   punch: { cool: 0.35 },
@@ -57,7 +58,7 @@ export const canGrab = (m, thing) => Boolean(thing.grabbable) && len(sub(thing.a
 
 const nearest = (list, from) => list.reduce((a, t) => (!a || len(sub(t.at, from)) < len(sub(a.at, from)) ? t : a), null);
 
-export function stepBrawl(prev, input = {}, m, world = {}, rawDt) {
+export function stepBrawl(prev, input = {}, m, world = {}, rawDt, mult = { fists: 1 }) {
   const dt = Math.min(0.05, Math.max(0, rawDt || 0));
   const b = { ...prev };
   const out = [];
@@ -99,7 +100,7 @@ export function stepBrawl(prev, input = {}, m, world = {}, rawDt) {
   // a tap: a punch, double in the counter's window
   if (input.punched && !b.carry) {
     const counter = counterOpen(b);
-    out.push({ kind: counter ? 'counter' : 'punch', power: counter ? 2 : 1 });
+    out.push({ kind: counter ? 'counter' : 'punch', power: Math.round((mult.fists ?? 1) * (counter ? 2 : 1)) });
     if (counter) b.counter = 0;
   }
 

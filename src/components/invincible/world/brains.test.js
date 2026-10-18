@@ -48,6 +48,11 @@ describe('a passer-by', () => {
     expect(b.state).toBe('flee');
     expect(stepBrain(newBrain({ home: [0, 0], yaw: 0 }), sense({ carried: [90, 0] }), 1 / 30, seeded(1)).state).not.toBe('flee');
   });
+  it('is floored by a line-break within 60 m of its line, and not further', () => {
+    const line = [[-500, 50], [500, 50]];
+    expect(stepBrain(newBrain({ home: [0, 0], yaw: 0 }), sense({ line }), 1 / 30, seeded(1)).state).toBe('flee');
+    expect(stepBrain(newBrain({ home: [0, 0], yaw: 0 }), sense({ line: [[-500, 80], [500, 80]] }), 1 / 30, seeded(1)).state).not.toBe('flee');
+  });
   it('gathers round him when he lands 10 m off: 4–8 m from him, facing him; leaves after 12 s', () => {
     let b = newBrain({ home: [0, 0], yaw: 0 });
     const s = sense({ hero: [10, 0, 0], heroMode: 'ground' });

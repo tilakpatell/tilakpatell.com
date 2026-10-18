@@ -27,12 +27,21 @@ export const COMPANION = {
   dadSpar: ['Follow me. Keep up.', 'Again. Closer this time.', 'Faster, Mark.', 'Last one. Show me.'],
 };
 
+// What the other heroes say flying the city (./heroes.js): one as he takes
+// one up, and now and then after. Eve's first is her own line from the street.
+export const HERO_LINES = {
+  eve: ['You know you can just float, right? You don’t have to flap.', 'Somebody has to put back what you two knock down.', 'Every atom down there owes me a favour.', 'The skyline looks better from up here. Pinker.'],
+  omniman: ['They’re so slow from up here.', 'You stop hearing the city after a few centuries.', 'Mind the windows. Or don’t.', 'Mark would be faster if he listened.'],
+  thragg: ['This world is smaller than they told me.', 'Viltrum built cities like this in a week.', 'Nothing in this sky can hold me.', 'So this is the boy’s city. How quaint.'],
+};
+
 // And what's said in passing, over the HUD (./InvWorld.jsx's say): who says
 // it (one of the people above) and the line as it's shown.
 export const CALLS = {
   portal: { who: 'cecil', text: 'Cecil: “Portal over the river. Flaxans again. Go.”' },
   spar: { who: 'omni', text: '“Think, Mark!” Down the page, over the city.' },
   mimic: { who: 'omni', text: 'Dad, in your ear: “Look what they need to mimic a fraction of our power.”' },
+  linebreak: { who: 'cecil', text: 'Cecil: “Every window on the avenue. Tell me that wasn’t you.”' },
 };
 
 // What Dad says when his rings are done, quoted after the lap's time (which

@@ -18,7 +18,7 @@ const LORE = {
   on: 'Everyone else online here shows as a pale Mark: nothing passes between you but where each of you is',
 };
 
-export default function InvHud({ hud, mapRef, time, cycleTime, chip, trav, found, cards, near, act, toast, radio = null, take = null, touch, onStick, startSound, hold, punch, punchUp = null }) {
+export default function InvHud({ hud, mapRef, time, cycleTime, chip, trav, found, cards, near, act, toast, radio = null, take = null, touch, onStick, startSound, hold, punch, punchUp = null, heroName = 'Invincible', canSwap = false, nextHero = null }) {
   const set = (key) => (el) => (hud.current[key] = el);
   const { pathname } = useLocation();
   const centre = useRef(null);
@@ -46,7 +46,7 @@ export default function InvHud({ hud, mapRef, time, cycleTime, chip, trav, found
       order="thumbs-over"
       brand={
         <div className="iw-brand" ref={set('brand')} data-chip={chip || undefined}>
-          <p className="iw-eyebrow">Invincible · the Graysons’ city</p>
+          <p className="iw-eyebrow">{heroName} · the Graysons’ city</p>
           <h2 id="iw-title" className="iw-title">
             Fly, Mark.
           </h2>
@@ -62,6 +62,12 @@ export default function InvHud({ hud, mapRef, time, cycleTime, chip, trav, found
             <MenuItem onClick={cycleTime} keep>
               Time of day: <b>{TIME_NAME[time]}</b>
             </MenuItem>
+            {/* who he flies as, once there's more than Mark (./heroes.js) */}
+            {canSwap && (
+              <MenuItem onClick={nextHero} keep>
+                Fly as: <b>{heroName}</b>
+              </MenuItem>
+            )}
             <span data-on>
               Title cards found: <b>{found}</b> of {cards}
             </span>

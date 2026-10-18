@@ -5,12 +5,15 @@
 
 import { createHits } from './hits';
 import { getawayAt, newGetaway, stopGetaway } from './getaway';
-import { RINGS_DONE } from './lines';
+import { CALLS, HERO_LINES, RINGS_DONE } from './lines';
 import { local } from '../../../lib/hooks';
 import { PORTAL, spawnFoes, spawnUpTo } from './foes';
 import { keepStory, missionOf, nextStory, placeOf as missionPlace } from './missions';
 import { CARDS, keepQuests } from './quests';
-import { applyRuin, daysSince, forceOf, hitTower, parse, repair, serialise, stageOf } from './demolish';
+import { applyRuin, daysSince, forceOf, hitTower, mendTower, parse, repair, serialise, stageOf } from './demolish';
+import { HEROES, hero } from './heroes';
+import { stepPower } from './powers';
+import { dive } from './flight';
 
 export const sfx = (name) => import('../../../lib/sfx').then((s) => s[name]?.()).catch(() => null);
 // a hit's sound at the hit law's gain and pitch (./hits.js); none within its gap
@@ -25,6 +28,12 @@ export const TIME = 'tp-inv-world-time';
 export const QUESTS = 'tp-inv-world-quests';
 export const STORY = 'tp-inv-world-story';
 export const RUINS = 'tp-inv-world-ruins';
+export const HERO = 'tp-inv-world-hero';
+// the hero kept from last time (./heroes.js), or Mark for one it doesn't know
+export const keptHero = () => {
+  const id = local.get(HERO, 'mark');
+  return HEROES[id] ? id : 'mark';
+};
 // (faster than this into a wall, he marks the tower: a Viltrumite at Mach speed takes half of it)
 const CRASH = 150;
 const HANGAR = missionPlace('hangar');
@@ -201,7 +210,7 @@ export function loadRuins(s, a, now = Date.now()) {
 
 // A tower hit: its damage, drawn and cut into the world, the rubble when a
 // stage turns, the collateral counted (part 3's standing reads it), kept.
-export function hitTowerIn(s, a, id, force, at) {
+export function hitTowerIn(s, a, id, force, at, glass = false) {
   if (id == null || !s.ruins) return;
   const was = stageOf(s.ruins.d.get(id) ?? 0);
   const r = hitTower(s.ruins, id, force);
@@ -212,9 +221,62 @@ export function hitTowerIn(s, a, id, force, at) {
   a.setDamage(id, d);
   if (r.stage !== was) a.setRuins(s.ruins);
   s.collateral = (s.collateral ?? 0) + r.delta;
-  s.events.push({ type: 'ruin', id, at: [...at], stage: r.stage, delta: r.delta });
+  s.events.push({ type: 'ruin', id, at: [...at], stage: r.stage, delta: r.delta, glass });
   sfx(r.stage === 3 && was < 3 ? 'crumble' : 'crunch');
   local.set(RUINS, serialise(s.ruins));
+}
+
+// The power he has as another hero this frame (./powers.js), done: Eve's
+// wall put up or a tower mended, Omni-Man's line-break flown (each tower
+// along it marked, the street floored, Cecil's call), Thragg's shout
+// (returned, for ./foes.js to throw what it reaches). Her walls age here.
+export function powerStep(s, a, h, look, dt, say) {
+  s.walls = (s.walls ?? []).filter((w) => (w.t += dt) < w.life);
+  const P = hero(s.heroId).power;
+  if (!P || (!s.powerKey && !s.power.held)) return [];
+  const towers = [];
+  if (s.powerKey)
+    for (const b of s.world.buildings) {
+      if (Math.abs(b.x - h.p[0]) > 1500 || Math.abs(b.z - h.p[2]) > 1500) continue;
+      towers.push({ id: b.id, x: b.x, z: b.z, w: b.w, d: b.d, h: b.h + (b.top?.h ?? 0), damage: s.ruins?.d.get(b.id) ?? 0 });
+    }
+  const r = stepPower(s.power, s.heroId, { power: s.powerKey }, { p: h.p, look, mode: h.mode, v: h.v }, { towers }, dt);
+  s.power = r.p;
+  const shout = [];
+  for (const o of r.out) {
+    if (o.kind === 'construct') {
+      s.walls.push({ at: o.at, yaw: o.yaw, wide: o.wide, high: 8, life: o.life, t: 0 });
+      sfx('repulse');
+    } else if (o.kind === 'mend') {
+      s.ruins = mendTower(s.ruins, o.id, o.amount);
+      const d = s.ruins.d.get(o.id) ?? 0;
+      applyRuin(s.world, o.id, d);
+      a.setDamage(o.id, d);
+      a.setRuins(s.ruins);
+      local.set(RUINS, serialise(s.ruins));
+      sfx('ding');
+    } else if (o.kind === 'linebreak') {
+      s.h = dive(s.h, o.to, o.speed);
+      for (const id of o.towers) hitTowerIn(s, a, id, o.damage * 400, [s.world.buildings[id].x, s.world.buildings[id].h, s.world.buildings[id].z], true);
+      s.events.push({ type: 'linebreak', from: o.from, to: o.to });
+      sfx('boom');
+      setTimeout(() => say(CALLS.linebreak.text, 3600, CALLS.linebreak.who), 1800);
+    } else if (o.kind === 'shout') {
+      shout.push(o);
+      s.events.push({ type: 'brawl', kind: 'pound', at: o.at });
+      sfx('roar');
+    }
+  }
+  return shout;
+}
+
+// A line of the hero he's flying as, now and then (and as he takes one up)
+export function heroLine(s, say, now = false) {
+  const lines = HERO_LINES[s.heroId];
+  if (!lines || (!now && s.t - (s.heroSaid ?? -1e9) < 90)) return;
+  s.heroSaid = s.t;
+  s.heroLine = ((s.heroLine ?? -1) + 1) % lines.length;
+  say(lines[s.heroLine], 3600, s.heroId);
 }
 
 // What his brawl did this frame (./brawl.js's `out`): heard, by its force

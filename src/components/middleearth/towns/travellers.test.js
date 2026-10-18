@@ -221,6 +221,17 @@ describe('steps with an emote and how you move', () => {
     expect(readStep([0, 0, 0, 0, 0, { e: ['taunt', 2] }]).emote).toEqual({ id: 'taunt', age: 2 });
   });
 
+  it('carry who a world’s player is drawn as (Invincible’s hero), a small whole number, and nothing else', () => {
+    const h = { x: 1, z: 2, face: 0.5, speed: 3, y: 1 };
+    for (const more of [{}, { motion: true, area: 'sky' }]) {
+      const sent = JSON.parse(JSON.stringify(writeStep(h, { ...more, hero: 2 })));
+      expect(readStep(sent).hero).toBe(2);
+      expect(readStep(writeStep(h, more))).not.toHaveProperty('hero');
+    }
+    expect(writeStep(h, { hero: 0 })).toHaveLength(6);
+    for (const bad of [-1, 16, 1.5, '2', null]) expect(readStep([0, 0, 0, 0, 0, { h: bad }])).not.toHaveProperty('hero');
+  });
+
   it('reach the others, and go when the emote does', async () => {
     const load = fakeRelay();
     let t = 1000;

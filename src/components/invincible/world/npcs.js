@@ -109,7 +109,7 @@ export function createNpcs(scene, world, cast = {}) {
     const dt = Math.min(frameDt, 0.05);
     const ev = [];
     const hp = hero.p;
-    const sense = { hero: hp, heroMode: hero.mode, heroSpeed: Math.hypot(...hero.v), slam: crowd.slam ?? null, hit: crowd.hit ?? null, carried: crowd.carried ?? null, fight: Boolean(crowd.fight), won: Boolean(crowd.won), time: crowd.time ?? 'noon' };
+    const sense = { hero: hp, heroMode: hero.mode, heroSpeed: Math.hypot(...hero.v), slam: crowd.slam ?? null, hit: crowd.hit ?? null, carried: crowd.carried ?? null, line: crowd.line ?? null, fight: Boolean(crowd.fight), won: Boolean(crowd.won), time: crowd.time ?? 'noon' };
     for (const n of all) {
       if (n.flying) continue;
       if (n.brain) {

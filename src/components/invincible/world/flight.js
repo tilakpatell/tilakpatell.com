@@ -49,6 +49,9 @@ export const FLY = {
   step: 0.6, // what he steps up onto on foot
 };
 const STEP = 1 / 120;
+// as Mark: ./heroes.js's other rows multiply his top (and cruise) speed and
+// how quickly he turns, and say at what speed the air breaks
+export const ONE = { top: 1, agility: 1, boom: FLY.barrier };
 // carrying something, his speeds are this much of them; into a wall faster than BUMP, it's slammed
 export const CARRY = BRAWL.grab.slow;
 const BUMP = BRAWL.slam.speed;
@@ -87,8 +90,8 @@ export function newHero({ x, y, z, face = 0 }) {
   return { p: [x, y ?? groundAt(x, z), z], v: [0, 0, 0], spd: 0, dir: forwardOf(face), face, mode: 'ground', crouch: 0, stun: 0, lift: 0, boomed: false, dive: null, t: 0, ev: [] };
 }
 
-// down onto `at` at `speed`, whatever's held, until he lands (or 5 s go by)
-export const dive = (h, at, speed = BRAWL.dive.speed) => ({ ...h, mode: 'air', dive: { at: [...at], speed, t: 0 } });
+// down onto `at` at `speed`, whatever's held, until he lands or gets there (or `time` goes by)
+export const dive = (h, at, speed = BRAWL.dive.speed, time = 5) => ({ ...h, mode: 'air', dive: { at: [...at], speed, t: 0, time } });
 
 // The highest thing under (x, z) that isn't above `below`: the land, the
 // water (`water` true), a roof or a bridge.
@@ -184,10 +187,10 @@ function collide(h, prev, world) {
   return hit;
 }
 
-function stepAir(h, input, dt, world) {
+function stepAir(h, input, dt, world, mult) {
   const [mx, my, mz, f] = wish(input, true);
   const m = len(mx, my, mz);
-  const k = input.carry ? CARRY : 1;
+  const k = (input.carry ? CARRY : 1) * mult.top;
   let S = 0;
   let D = h.dir;
   if (h.dive) {
@@ -197,7 +200,8 @@ function stepAir(h, input, dt, world) {
     const l = len(d[0], d[1], d[2]) || 1;
     h.dir = [d[0] / l, d[1] / l, d[2] / l];
     h.spd = h.dive.speed;
-    if (h.dive.t > 5) h.dive = null;
+    // (there, or long enough: he flies on as he was going)
+    if (h.dive.t > (h.dive.time ?? 5) || l < Math.max(2, h.dive.speed * dt)) h.dive = null;
   } else if (h.stun > 0) {
     h.stun -= dt;
     S = 0;
@@ -217,17 +221,17 @@ function stepAir(h, input, dt, world) {
     }
     // the direction swings round, slower the faster he's going; from a hover, at once
     if (h.spd < 2) h.dir = [D[0], D[1], D[2]];
-    else if (S > 0) h.dir = turn(h.dir, D, (4 - 2.6 * Math.min(1, h.spd / FLY.top)) * dt);
+    else if (S > 0) h.dir = turn(h.dir, D, (4 - 2.6 * Math.min(1, h.spd / (FLY.top * mult.top))) * mult.agility * dt);
     if (h.spd < S) h.spd = Math.min(S, h.spd + (input.boost ? FLY.boostAccel : FLY.accel) * dt);
     else h.spd = Math.max(S, h.spd - (S === 0 ? FLY.stop : FLY.brake) * dt);
   }
   h.v = [h.dir[0] * h.spd, h.dir[1] * h.spd, h.dir[2] * h.spd];
 
   // the sound barrier
-  if (!h.boomed && h.spd > FLY.barrier) {
+  if (!h.boomed && h.spd > mult.boom) {
     h.boomed = true;
     h.ev.push({ type: 'boom', at: [...h.p], dir: [...h.dir] });
-  } else if (h.boomed && h.spd < FLY.rearm) h.boomed = false;
+  } else if (h.boomed && h.spd < mult.boom - (FLY.barrier - FLY.rearm)) h.boomed = false;
 
   const prev = [...h.p];
   h.p[0] += h.v[0] * dt;
@@ -359,8 +363,18 @@ function norm(v) {
   return [v[0] / l, v[1] / l, v[2] / l];
 }
 
-// One step of `dt` seconds (any length: it's taken in slices of 1/120 s).
-export function stepHero(hero, input, dt, world) {
+// Another hero taken up mid-flight: where he is and which way kept, his
+// speed cut to the new one's top.
+export function switchHero(h, mult = ONE) {
+  const top = FLY.top * mult.top;
+  if (h.spd <= top) return h;
+  const k = top / h.spd;
+  return { ...h, spd: top, v: h.v.map((c) => c * k) };
+}
+
+// One step of `dt` seconds (any length: it's taken in slices of 1/120 s), as
+// Mark or (`mult`) as another hero.
+export function stepHero(hero, input, dt, world, mult = ONE) {
   const h = { ...hero, p: [...hero.p], v: [...hero.v], dir: [...hero.dir], dive: hero.dive ? { ...hero.dive } : null, ev: [] };
   const n = Math.max(1, Math.ceil(dt / STEP - 1e-9));
   const sub = dt / n;
@@ -374,7 +388,7 @@ export function stepHero(hero, input, dt, world) {
     else {
       // just off an edge (coyote time): the jump he meant
       if (press.take()) takeoff(h, input);
-      stepAir(h, input, sub, world);
+      stepAir(h, input, sub, world, mult);
     }
     // the edges of the world, and the top of the sky
     const lim = WORLD.half;

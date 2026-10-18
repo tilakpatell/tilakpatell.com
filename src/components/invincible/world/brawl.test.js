@@ -104,6 +104,15 @@ describe('the block and the counter', () => {
   });
 });
 
+describe('another hero’s fists (./heroes.js)', () => {
+  it('make a punch and a counter worth more: Omni-Man’s 2 and 3, Thragg’s 2 and 4', () => {
+    const power = (fists, counter) => stepBrawl({ ...newBrawl(), counter: counter ? 0.5 : 0 }, { ...none, punched: true }, mark(), { things: [] }, 1 / 30, { fists }).out[0].power;
+    expect([power(1, false), power(1, true)]).toEqual([1, 2]);
+    expect([power(1.5, false), power(1.5, true)]).toEqual([2, 3]);
+    expect([power(2, false), power(2, true)]).toEqual([2, 4]);
+  });
+});
+
 describe('the ground pound', () => {
   const near = { things: [foe(6, [10, 1, 0])] };
   it('goes on C on the ground with a foe within 40 m, then not again for 4 s', () => {

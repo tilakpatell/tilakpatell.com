@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DAMAGE, RUINS, applyRuin, biteOf, chunksFor, forceOf, hitTower, mending, newRuins, parse, repair, serialise, stageOf } from './demolish';
+import { DAMAGE, RUINS, applyRuin, biteOf, chunksFor, forceOf, hitTower, mendTower, mending, newRuins, parse, repair, serialise, stageOf } from './demolish';
 import { buildWorld } from './map';
 
 const known = (id) => Number.isInteger(id) && id >= 0 && id < 1000;
@@ -103,5 +103,14 @@ describe('what it leaves standing', () => {
     for (const q of boxes) expect(q.y1).toBeGreaterThanOrEqual(q.y0);
     applyRuin(W, b.id, 0);
     expect(boxes.map((q) => q.y1).sort((x, y) => x - y)).toEqual([b.h, tall]);
+  });
+});
+
+describe('Atom Eve’s mending (./powers.js)', () => {
+  it('takes 0.3 off a tower’s damage at once, and no further than whole', () => {
+    const r = hitTower(newRuins(), 3, forceOf('mach')).ruins;
+    expect(mendTower(r, 3, 0.3).d.get(3)).toBeCloseTo(0.2, 9);
+    expect(mendTower(r, 3, 0.9).d.has(3)).toBe(false);
+    expect(mendTower(r, 8, 0.3)).toBe(r);
   });
 });
