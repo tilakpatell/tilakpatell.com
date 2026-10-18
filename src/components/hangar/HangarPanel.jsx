@@ -86,7 +86,8 @@ export default function HangarPanel({ open, onOpen, tab, onTab, enabled = true, 
     if (!to) return;
     e.preventDefault();
     onTab(to);
-    requestAnimationFrame(() => panel.current?.querySelector(`#${CSS.escape(`${id}-tab-${to}`)}`)?.focus({ preventScroll: true }));
+    // (every tab's button is always there: focus goes straight to it)
+    panel.current?.querySelector(`#${CSS.escape(`${id}-tab-${to}`)}`)?.focus({ preventScroll: true });
   };
 
   // (on the body: the page's route is a stacking context of its own, and the
