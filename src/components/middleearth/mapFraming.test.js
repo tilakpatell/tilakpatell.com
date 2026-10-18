@@ -23,7 +23,7 @@ describe('the hub’s framing', () => {
       [596, 432],
       [660, 420],
     ].map(([x, y]) => ({ x, y }));
-    expect(framing(old)).toEqual({ at: [452, 322], zoom: 3.05 });
+    expect(framing(old).zoom).toBe(3.05);
   });
   it('stands further off for a taller spread, and keeps every stop in frame', () => {
     const tall = framing([

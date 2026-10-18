@@ -12,11 +12,13 @@ const MARGIN = 40;
 // counts 1.6 times over against their width.
 const ZOOM_PER_UNIT = 3.05 / 554;
 const ASPECT = 1.6;
-// The page’s title stands over the sheet’s top right and its chips along
-// the foot, so the frame looks a little south-east of the bounds’ middle and
-// Mordor clears the chips: the hand-set framing, [452, 322], leant so from
-// the hand-drawn stops’ middle, [423, 304].
-export const LEAN = [29, 18];
+// The page’s title stands over the sheet’s top right and its road and
+// buttons along the foot, so the frame looks south-east of the bounds’
+// middle: east as the hand-set framing did (29 units, [452, 322] against the
+// hand-drawn stops’ [423, 304]), and further south, 70 units, so the Mountain
+// and the White City stand clear above the road’s row, the far north (under
+// the title) giving the room.
+export const LEAN = [29, 70];
 
 export function framing(stops = STOPS) {
   const xs = stops.map((s) => s.x);
