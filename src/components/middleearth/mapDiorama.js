@@ -151,7 +151,7 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
 
   // ── the ranges ──
   {
-    const clear = [placeAt('rivendell'), placeAt('hobbiton')]; // Rivendell's valley, and the Shire
+    const clear = ['rivendell', 'hobbiton', 'black-gate', 'cirith-ungol'].map(placeAt); // Rivendell's valley, the Shire, and the gaps the Gate and the pass stand in
     const rock = [];
     const dark = [];
     for (const [line, black] of RANGES) {
