@@ -17,8 +17,8 @@ import { CHART, createView, levelOf } from './projection';
 // nav map already draws a far fight in.
 const TINT = { blue: '#9fd8ff', sun: '#ffbf5e', fight: '#ff8a5c' };
 
-const ALL = ['system', 'neighbourhood', 'universe'];
-const NEAR = ['system', 'neighbourhood'];
+const ALL = Object.freeze(['system', 'neighbourhood', 'universe']);
+const NEAR = Object.freeze(['system', 'neighbourhood']);
 
 const SHAPE = { Nebula: 'cloud', 'Black hole': 'hole', Star: 'star', Portal: 'portal' };
 
@@ -70,7 +70,7 @@ export function liveMarks(now) {
   const list = (v) => (Array.isArray(v) ? v : []).filter((e) => Number.isFinite(e?.x) && Number.isFinite(e?.z));
   return [
     ...list(now.pilots).map((p) => ({ id: `pilot:${p.id}`, kind: 'pilot', name: '', at: [p.x, y, p.z], color: TINT.blue, priority: 70, levels: NEAR, shape: 'pilot', pickable: false })),
-    ...list(now.farFights).map((f) => ({ id: `fight:${f.id}`, kind: 'fight', name: f.label, at: [f.x, y, f.z], color: TINT.fight, priority: 35, levels: NEAR, shape: 'fight', pickable: false })),
+    ...list(now.farFights).map((f) => ({ id: `fight:${f.id}`, kind: 'fight', name: f.label ?? '', at: [f.x, y, f.z], color: TINT.fight, priority: 35, levels: NEAR, shape: 'fight', pickable: false })),
   ];
 }
 
