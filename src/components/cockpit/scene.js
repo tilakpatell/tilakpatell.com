@@ -611,7 +611,8 @@ export function run(canvas, opts) {
       renderer.toneMapping = v.toneMapping ?? THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = v.exposure ?? 1;
       flashColor.set(v.flash ?? '#eaf3ff');
-      whiteOut = flashColor.r + flashColor.g + flashColor.b > 1.5;
+      // (linear: the cruiser's green sums to 1.5, the RV's night to 0.01)
+      whiteOut = flashColor.r + flashColor.g + flashColor.b > 0.5;
       lens?.set({ lift: 1 });
       if (bloom) {
         bloom.strength = base.bloom = v.bloom?.[0] ?? 0.55;
