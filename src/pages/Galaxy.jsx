@@ -27,6 +27,8 @@ import { groundEffects } from '../components/galaxy/siteWar';
 import { mine, onWar, warNow } from '../components/galaxy/warState';
 import { SIDE_KEY, current as currentOath, readAllegiance, setTheatre, suggestSide, swear } from '../components/galaxy/allegiance';
 import { HERO_KEY, readHero } from '../components/galaxy/heroes';
+import { readCrewStyle } from '../components/galaxy/heroStyle';
+import { localSaves } from '../runtime/local';
 import { RANKS, rankOf } from '../components/galaxy/ranks';
 import GalaxyView from '../components/galaxy/GalaxyView';
 import GalaxyPanel from '../components/galaxy/GalaxyPanel';
@@ -332,7 +334,7 @@ export default function Galaxy() {
         timer.current = setTimeout(() => dove.current?.(), DIVE_MAX); // (a dive that never ends still lands)
       };
       runtime()
-        .handover(surfaceModule, surfaceProps(id, { ship, loadout, build, net: online.client, reduced, effects: groundEffects(id, oathKept, Date.now()) }), host, { fade: 900, held: true, after, onBuilt })
+        .handover(surfaceModule, surfaceProps(id, { ship, loadout, build, net: online.client, reduced, effects: groundEffects(id, oathKept, Date.now()), crew: readCrewStyle(localSaves(), local.get(HERO_KEY)) }), host, { fade: 900, held: true, after, onBuilt })
         .catch(() => false)
         .then(() => after)
         .then(() => {

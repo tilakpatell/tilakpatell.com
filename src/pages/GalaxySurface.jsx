@@ -33,6 +33,8 @@ import DeployPanel from '../components/galaxy/surface/DeployPanel';
 import { ABILITIES, abilitiesOf } from '../components/galaxy/surface/abilityRules';
 import { GameIcon } from '../runtime/hud';
 import { HERO_KEY, heroById, heroSpec, loadoutLine, readHero, writeHero } from '../components/galaxy/heroes';
+import { keepHeroStyle, readCrewStyle } from '../components/galaxy/heroStyle';
+import { localSaves } from '../runtime/local';
 import { standInLine } from '../components/galaxy/surface/standIn';
 import HitMarker from '../components/galaxy/surface/HitMarker';
 import { reticleLock, reticleShape } from '../components/galaxy/surface/reticleFor';
@@ -125,8 +127,8 @@ export default function GalaxySurface() {
   useDocumentTitle(site ? (mission ? `${mission.name} · ${sys.name}` : `${site.place} · ${sys.name}`) : 'A galaxy far, far away');
   const reduced = useReducedMotion();
   const [ship] = useState(() => parseShip(local.get(SHIP_KEY)) ?? 'xwing');
-  // who you play as down here (heroes.js), kept across worlds
-  const [hero, setHero] = useState(() => readHero(local.get(HERO_KEY), parseShip(local.get(SHIP_KEY)) ?? 'xwing'));
+  // who you play as down here (heroes.js), kept across worlds, in the crew's own style (the Hangar's: heroStyle.js)
+  const [hero, setHero] = useState(() => readHero(local.get(HERO_KEY), parseShip(local.get(SHIP_KEY)) ?? 'xwing', readCrewStyle(localSaves(), local.get(HERO_KEY))));
   const [picking, setPicking] = useState(false);
   // (what's on in the world: the scene says so as a pick goes on, its
   // 'hero' event; a pick whose figure wouldn't load goes back to this)
@@ -138,6 +140,7 @@ export default function GalaxySurface() {
   const pickHero = (next) => {
     setHero(next);
     local.set(HERO_KEY, writeHero(next));
+    keepHeroStyle(localSaves(), next);
     setPicking(false);
   };
   const crew = crewById(ship);
@@ -174,6 +177,7 @@ export default function GalaxySurface() {
     const { next, keep } = deployPick(offer, heroNow.current, ship);
     setHero(next);
     if (keep) local.set(HERO_KEY, writeHero(next));
+    if (keep) keepHeroStyle(localSaves(), next);
     if (keep) lastClass.current = next;
     onLoan.current = !keep;
     view.current?.input?.('deploy', postId, offer);
