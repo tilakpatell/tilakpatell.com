@@ -57,7 +57,7 @@
 :where(.hud-arms:not([data-on])):not(hud-none) { display: none; }
 :where(.hud-arms[data-line='secondary']):not(hud-none) { --hud-arms-c: #9fd8ff; }
 :where(.hud-arms[data-line='ordnance']):not(hud-none) { --hud-arms-c: #ffc070; }
-:where(.hud-arms-name):not(hud-none) { overflow: hidden; max-width: 170px; color: var(--hud-arms-c); text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+:where(.hud-arms-name):not(hud-none) { overflow: hidden; max-width: 160px; color: var(--hud-arms-c); font-size: 0.75rem; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
 :where(.hud-arms-lines, .hud-arms-rack):not(hud-none) { display: flex; gap: 4px; }
 :where(.hud-arms-line):not(hud-none) { width: 22px; height: 4px; border-radius: 2px; background: rgb(255 255 255 / 0.16); }
 :where(.hud-arms-line[data-on]):not(hud-none) { background: var(--hud-arms-c); box-shadow: 0 0 6px var(--hud-arms-c); }

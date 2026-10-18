@@ -557,7 +557,6 @@ export default function Galaxy() {
             dropped={dropped}
             onApply={applyDraft}
             onSell={sellPart}
-            hint="Secondary and ordnance fire on the universe map; here the crew’s powers take their place."
           />
         </Suspense>
       )}

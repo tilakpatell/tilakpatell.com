@@ -15,7 +15,7 @@
 }
 .fc-speed > span { background: linear-gradient(90deg, #ffd36a, #fff2c4); }
 .fc-speed[data-boost] > span { background: linear-gradient(90deg, #ff9a3d, #ffe08a); box-shadow: 0 0 10px rgb(255 170 60 / 0.7); }
-.fc-target { min-width: 190px; }
+.fc-target { min-width: 160px; } /* (mostly "No target · T": room for the arms block beside it) */
 .fc-target-name { overflow: hidden; max-width: 200px; text-overflow: ellipsis; white-space: nowrap; }
 .fc-target-hp > span { background: linear-gradient(90deg, #ff5a4a, #ffb08a); }
 .fc-target-hp:not([data-on]) { visibility: hidden; }
@@ -70,11 +70,11 @@
 
 /* a laptop's width: the blocks a little narrower, to fit the space left of the panel (the kit narrows its glass) */
 @media (max-width: 1320px) {
-  .fc-target { min-width: 170px; }
+  .fc-target { min-width: 150px; }
   .fc-radar { width: 112px; height: 112px; }
 }
 @media (max-height: 700px), (max-width: 1100px) {
-  .fc-target { min-width: 170px; }
+  .fc-target { min-width: 150px; }
   .fc-radar { width: 104px; height: 104px; }
 }
 /* a laptop with the panel open (the band left of it is 680 to 770px): the radar and the power tiles in their compact sizes and

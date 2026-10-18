@@ -123,7 +123,8 @@ import { PICKUPS, createPickups, gunsUnder } from './pickups';
 import { createPickupFx } from './pickupFx';
 import { createRadar } from './radar';
 import { drawRadar } from './radarDraw';
-import { arsenalOf, chargeFor, createGalaxyPowers } from '../universe/shared/flying';
+import { armsView, arsenalOf, chargeFor, createArmory, createGalaxyPowers, createRounds, fan } from '../universe/shared/flying';
+import { shotPunch } from './gunRules';
 import { effectsFor } from './warEffects';
 import { CABS } from './cabs';
 import { warNow } from './warState';
@@ -149,7 +150,8 @@ import { drawSpaceLevel } from './spaceLevel';
 import { createAreaLook } from './areaLook';
 import { assetUrl } from '../../lib/assetBase';
 
-const BOLTS = 16;
+const BOLTS = 40; // (a flak burst is seven bolts, with room for the next)
+const ROUNDS = 8; // the heavy rounds in flight at once (the universe map's)
 const CADENCE = { xwing: 0.12, falcon: 0.16, cruiser: 0.19, rv: 0.2 };
 const BOLT_COLOR = { falcon: '#ff4a3d', xwing: '#ff3b30', cruiser: '#9df06b', rv: '#5cc8ff' };
 const PLUME = {
@@ -332,6 +334,8 @@ export async function create(canvas, ctx) {
     scene.add(m);
     return m;
   });
+  // and the ordnance line's heavy rounds (the universe map's, rounds.js: in the crew's colour, homing on the lock)
+  const rounds = createRounds(scene, ROUNDS);
 
   const size = { w: 1, h: 1 };
   const state = {
@@ -552,6 +556,7 @@ export async function create(canvas, ctx) {
     if (!state.kind) return;
     state.model?.paint?.(coat());
     boltMat.color.fromArray(glowAt(boltMat.color.set(coat().bolt ?? BOLT_COLOR[state.kind] ?? '#ff4a3d').toArray(), GLOW.laser)); // as bright as the battle's lasers
+    rounds.setColor(arsenalOf(state.kind).heavy);
   };
   const refit = () => {
     state.stats = statsOf(state.kind, state.loadout, state.build, state.tune);
@@ -562,6 +567,7 @@ export async function create(canvas, ctx) {
     const was = state.loadout;
     if (Object.keys(next).every((k) => next[k] === was[k])) return;
     state.loadout = next;
+    armory?.refit(next);
     if (next.paint !== was.paint) dress();
     refit();
     ctx.invalidate();
@@ -925,40 +931,79 @@ export async function create(canvas, ctx) {
   };
 
   // ── The guns ──
+  // the universe's armoury (weapons.js, through shared/flying.js), as the
+  // universe map has it: the blaster, and the secondary and ordnance the
+  // loadout fits (stock: the spread and the heavy rack); R (Shift+R back) or
+  // 1 2 3 to change, or the touch screen's Weapon button. Each line fires at
+  // the ship's pace (its guns fitted, a rapid-fire pickup) times its own.
+  let armory = null;
+  const arms = () => {
+    if (!armory || armory.kind !== state.kind) armory = Object.assign(createArmory(state.kind, state.loadout), { kind: state.kind });
+    return armory;
+  };
+  const jitter = () => Math.random() * 2 - 1;
+  const shotAt = new THREE.Vector3();
+  // one bolt away, from `at` along `d` (unit): a line's life, punch and size on it
+  const spawnBolt = (at, d, speed, life, punch, damage, scale) => {
+    const b = myBolts.find((m) => !m.visible) ?? myBolts[0];
+    b.position.copy(at);
+    const { heading, pitch } = aimAngles(d);
+    b.rotation.set(pitch, heading, 0);
+    b.scale.set(scale, scale, 1 + (scale - 1) * 0.4);
+    b.userData = { life, v: [d[0] * speed, d[1] * speed, d[2] * speed], punch, damage };
+    b.visible = true;
+  };
   const fire = () => {
     const s = state.ship;
     const now = performance.now();
     const g = state.stats; // (the guns fitted in the hangar: how fast, how hard; a rapid-fire pickup quicker still, and harder where the quickest they may fire holds it back)
     gunsUnder((CADENCE[state.kind] ?? 0.18) * g.cadence, pickups.mods().delay, FASTEST, gun);
-    if (!s || props.frozen || state.crash || state.jump || now - state.lastShot < gun.gap * 1000) return;
+    if (!s || props.frozen || state.crash || state.jump) return;
+    const arm = arms();
+    if (!arm.ready(now, gun.gap)) {
+      if (arm.weapon.heavy && arm.ammo < 1 && now - (state.dryAt ?? 0) > 700) {
+        state.dryAt = now;
+        emit({ type: 'dry' });
+      }
+      return;
+    }
+    arm.fired(now);
+    const w = arm.weapon;
     state.lastShot = now;
     state.lastInput = now;
     if (state.respawnSafe) {
       state.respawnSafe = false;
       state.safeUntil = Math.min(state.safeUntil, state.clock);
     }
-    const b = myBolts.find((m) => !m.visible) ?? myBolts[0];
     const [fx, fz] = forward(s.heading);
     let dir = nose(s);
     if (state.lead && state.lead.t <= AIM.life) dir = assist(dir, dirTo(s, state.lead), powers.aim(controls()).assist); // (Force Focus's help onto the game's ships only)
-    const { heading, pitch } = aimAngles(dir);
     // from the guns fitted, their barrels in turn; or the ship's own
     const mods = state.model?.modules;
     if (mods?.muzzles.length) {
       state.barrel = ((state.barrel ?? 0) + 1) % mods.muzzles.length;
-      state.model.pivot.localToWorld(b.position.set(...mods.muzzles[state.barrel]));
+      state.model.pivot.localToWorld(shotAt.set(...mods.muzzles[state.barrel]));
       mods.fire();
     } else {
       const side = state.kind === 'xwing' ? (state.side = -state.side) * 0.12 : 0;
-      b.position.set(s.x + dir[0] * 0.16 - fz * side, s.y + dir[1] * 0.16, s.z + dir[2] * 0.16 + fx * side);
+      shotAt.set(s.x + dir[0] * 0.16 - fz * side, s.y + dir[1] * 0.16, s.z + dir[2] * 0.16 + fx * side);
     }
-    b.rotation.set(pitch, heading, 0);
-    b.scale.set(g.bolt, g.bolt, 1 + (g.bolt - 1) * 0.4);
-    const v = AIM.bolt + Math.max(0, s.speed);
-    b.userData = { life: AIM.life, v: [dir[0] * v, dir[1] * v, dir[2] * v], punch: g.punch * gun.punch };
-    b.visible = true;
-    net?.shot(b.position, b.userData.v);
-    emit({ type: 'fire' });
+    const speed = AIM.bolt * w.speed + Math.max(0, s.speed);
+    const punch = shotPunch(w, g, gun);
+    if (w.heavy) {
+      rounds.launch(shotAt, dir, speed, { life: AIM.life * w.life, punch, damage: w.damage, homing: w.homing, target: state.lockTarget });
+      state.kick = Math.max(state.kick, 0.4);
+    } else for (const d of fan(dir, w.count, w.cone, jitter)) spawnBolt(shotAt, d, speed, AIM.life * w.life, punch, w.damage, g.bolt * w.scale);
+    net?.shot(shotAt, [dir[0] * speed, dir[1] * speed, dir[2] * speed], w.code);
+    emit({ type: 'fire', weapon: arm.id });
+    ctx.invalidate();
+  };
+  // change lines: R (Shift+R back), 1 2 3, or the touch screen's button
+  const pickWeapon = (i) => {
+    const arm = arms();
+    if (i === 'next' || i === 'back') arm.cycle(i === 'back' ? -1 : 1);
+    else if (!arm.select(i)) return;
+    emit({ type: 'weapon', id: arm.id, name: arm.name });
     ctx.invalidate();
   };
   const popDir = new THREE.Vector3();
@@ -984,10 +1029,28 @@ export async function create(canvas, ctx) {
       b.position.x += d.v[0] * dt;
       b.position.y += d.v[1] * dt;
       b.position.z += d.v[2] * dt;
-      if (strike(shotFrom, b.position, d.punch ?? 1, { vel: d.v })) b.visible = false;
+      if (strike(shotFrom, b.position, d.punch ?? 1, { vel: d.v, damage: d.damage })) b.visible = false;
     }
     return any;
   };
+  // a heavy round's step (rounds.js flies it): what it meets is what a bolt
+  // would (strike: the hunters, the war's battle, another pilot), and it
+  // goes off there; out of life, it goes off where it is
+  const roundBang = (m, at, big) => {
+    m.visible = false;
+    flashes.at(at, { size: big ? 1.6 : 1, life: 0.6 });
+    if (!reduced) state.shake = Math.max(state.shake, big ? 0.6 : 0.3);
+    state.flare = Math.max(state.flare, 1.4);
+    emit({ type: 'boom', big });
+  };
+  const roundHit = (m, from, to) => {
+    const d = m.userData;
+    const r = strike(from, to, d.punch, { vel: d.v, damage: d.damage });
+    if (!r) return false;
+    roundBang(m, r.at ?? m.position, Boolean(r.down));
+    return true;
+  };
+  const roundGone = (m) => roundBang(m, m.position, false);
   // a pickup where a kill went up (pickups.js says whether), not once the jump's committed or the ship's lost
   const dropFor = (hit) => {
     if (state.crash || state.dive || state.jump) return;
@@ -1024,7 +1087,7 @@ export async function create(canvas, ctx) {
   // (its fighters, its objectives, its capital ships' hulls), then another
   // pilot or one of the hunters after them (it's theirs, so they're told):
   // a bolt's only (`pilots`), never a power's
-  const strike = (from, to, punch, { vel = null, pilots: atPilots = true, warPunch = punch, by = null } = {}) => {
+  const strike = (from, to, punch, { vel = null, pilots: atPilots = true, warPunch = punch, by = null, damage = undefined } = {}) => {
     const normal = vel ? popDir.set(-vel[0], 3, -vel[2]).normalize() : popDir.set(0, 1, 0);
     const hh = hunters?.hit(from, to, punch);
     if (hh) return scored(hh, { src: 'hunters', normal, by });
@@ -1032,11 +1095,11 @@ export async function create(canvas, ctx) {
     if (wh) return scored(wh, { src: 'war', normal, by });
     if (!atPilots) return null;
     const ph = pilots.hit(from, to, punch);
-    return ph ? pilotShot(ph, punch, normal) : null;
+    return ph ? pilotShot(ph, punch, normal, false, damage) : null;
   };
   // a hit on another pilot or one of the hunters after them (a shot's, or a
   // ram's: shipsHit), played: they're told
-  const pilotShot = (ph, punch, normal, ram = false) => {
+  const pilotShot = (ph, punch, normal, ram = false, damage = undefined) => {
     landed(ph, normal);
     state.hitMark = 1;
     if (ph.hunter) {
@@ -1050,7 +1113,7 @@ export async function create(canvas, ctx) {
         if (!reduced) state.shake = Math.max(state.shake, 0.2);
         feel.hitstop(HITSTOP.kill); // (never a power's: those don't reach the pilots)
       }
-    } else net?.hit(ph.id);
+    } else net?.hit(ph.id, damage);
     return ph;
   };
   // the ship put somewhere at once (out of a portal): the camera with it, not easing after it
@@ -1296,6 +1359,7 @@ export async function create(canvas, ctx) {
       state.ship = { ...spawn(null, a), speed: 0 };
       camQOn = false;
       state.shield = 100;
+      armory?.reload();
       state.lowSaid = false;
       // an Interdictor's hold doesn't survive a crash: it's gone when you're
       // back (and nothing's earned for getting clear that way)
@@ -1905,9 +1969,7 @@ export async function create(canvas, ctx) {
   // (the one record and the one lock it carries, filled each frame: cluster.js compares what's in them)
   const clusterLock = { name: '', dist: 0, hp: null };
   const clusterNow = { on: false, shield: 100, low: false, speed: 0, top: 1, boosting: false, kills: 0, lock: null, arms: null };
-  // (the arms the cluster shows: the crew's primary, the only line fired here for now; one record a crew, made when first flown)
-  const primaries = {};
-  const primaryArms = (kind) => (primaries[kind] ??= { name: arsenalOf(kind).names[0], line: 'primary', index: 0, ammo: 0, max: 0, filling: 0 });
+  const armsNow = { name: '', line: 'primary', index: 0, ammo: 0, max: 0, filling: 0 }; // (the record the cluster's arms are written into: armsView fills it each frame)
   const placeShield = () => {
     const root = props.cluster?.current;
     if (!root) return;
@@ -1927,7 +1989,7 @@ export async function create(canvas, ctx) {
       clusterLock.hp = (t.hpMax ?? 1) > 1 ? t.hp / t.hpMax : null;
     }
     v.lock = t ? clusterLock : null;
-    v.arms = state.kind ? primaryArms(state.kind) : null;
+    v.arms = state.kind ? armsView(arms(), armsNow) : null;
     cluster.place(root, v);
     cluster.buffs(props.buffs?.current ?? null, v.on ? buffsNow() : NO_BUFFS);
   };
@@ -2341,7 +2403,9 @@ export async function create(canvas, ctx) {
     const crashBusy = crashFx.update(dt, camera);
     const fxBusy = pops.update(dt, camera) || crashBusy;
     const adventuring = adventure(dt, t);
-    const shooting = moveBolts(dt);
+    const rounding = rounds.fly(dt, roundHit, roundGone);
+    const shooting = moveBolts(dt) || rounding;
+    armory?.update(dt);
     // the speed: dust streaming past, the picture rushing out from the ship
     const dustWant = !reduced && flying() && !inTunnel ? 0.35 + 0.65 * clamp01(Math.abs(state.ship.speed) / SHIP.cruise) : 0;
     dustAmount += (dustWant - dustAmount) * clamp01(dt * 3);
@@ -2455,6 +2519,13 @@ export async function create(canvas, ctx) {
     if (key === 'g' || key === 'x') {
       e.preventDefault();
       if (!e.repeat) power(key === 'g' ? 'primary' : 'ultimate');
+      return;
+    }
+    if (key === 'r' || key === '1' || key === '2' || key === '3') {
+      e.preventDefault();
+      if (e.repeat) return;
+      heard();
+      pickWeapon(key === 'r' ? (e.shiftKey ? 'back' : 'next') : Number(key) - 1);
       return;
     }
     if ((key === 'e' || (key === 'enter' && !onControl)) && state.at) {
@@ -2842,6 +2913,11 @@ export async function create(canvas, ctx) {
     // the crew's power ('primary', G) or the big one ('ultimate', X): whether it went
     power(slot) {
       return power(slot);
+    },
+    // the next line (the touch screen's Weapon button)
+    weapon() {
+      heard();
+      pickWeapon('next');
     },
     climb(way) {
       heard();

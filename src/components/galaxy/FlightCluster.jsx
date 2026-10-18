@@ -34,7 +34,7 @@ export default function FlightCluster({ rootRef, ship, reduced, powersRef, onPow
           <span />
         </span>
       </Vitals>
-      {/* (the primary alone here, until the galaxy fires all three lines: no keys to change it yet) */}
+      {/* (its keys are on the keys card, keyRows.js: the row has no room for them beside the radar and the target) */}
       <Arms />
       <div className="hud-glass fc-target" aria-hidden="true">
         <span className="hud-label">Target</span>

@@ -290,6 +290,10 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
               <button type="button" className="universe-view" onPointerDown={(e) => (e.preventDefault(), view.current?.seat?.())} onContextMenu={(e) => e.preventDefault()}>
                 View
               </button>
+              {/* the next line of the armoury, as the universe map's (a keyboard has R and 1 2 3) */}
+              <button type="button" className="universe-weapon" onPointerDown={(e) => (e.preventDefault(), view.current?.weapon?.())} onContextMenu={(e) => e.preventDefault()}>
+                Weapon
+              </button>
               <button type="button" className="universe-fire" onPointerDown={trigger(true)} onPointerUp={trigger(false)} onPointerCancel={trigger(false)} onPointerLeave={trigger(false)} onLostPointerCapture={trigger(false)} onContextMenu={(e) => e.preventDefault()}>
                 Fire
               </button>
