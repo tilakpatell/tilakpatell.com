@@ -188,7 +188,7 @@ import { AIM, aimAngles, assist, assistAmount, dirTo, edgeOf, intercept, nose, o
 import { DEFAULTS as CONTROL_DEFAULTS, STICK, dragSteers, keyAxes, keyFlies, stickInput } from './controls';
 import { byId } from './universes';
 import { SIZE as PILOT_SIZE, createPilots } from './online/pilots';
-import { arsenalOf, createArmory, fan, steer } from './weapons';
+import { arsenalOf, createArmory, fan } from './weapons';
 import { JAMMED, jumpState } from './words';
 import { CORE, GENS, citadelGeometry, createSiege, segmentSphere } from './siege';
 import { createCitadelSiege } from './citadelSiege';
@@ -197,6 +197,7 @@ import { createLook } from '../../runtime/look';
 import { reticleState } from '../../runtime/hud/reticle';
 import { createFlightCluster } from '../../runtime/hud/cluster.js';
 import { clusterView } from './clusterView';
+import { createRounds } from './rounds';
 import { coneFor } from '../../lib/combat/aim';
 import { flownInto, wayIn, worldName } from './landings/wayin';
 import { figureVoice } from './landings/voicelines';
@@ -851,36 +852,9 @@ export async function create(canvas, ctx) {
   if (tier === 'low') blasts.setMode('pop');
 
   // heavy rounds (weapons.js): a glowing slug with a halo and a tail of
-  // fire, homing on what the guns had locked when it went
-  const glowTex = (() => {
-    const c = document.createElement('canvas');
-    c.width = c.height = 64;
-    const g2 = c.getContext('2d');
-    const grad = g2.createRadialGradient(32, 32, 0, 32, 32, 32);
-    grad.addColorStop(0, 'rgba(255,255,255,1)');
-    grad.addColorStop(0.3, 'rgba(255,255,255,0.45)');
-    grad.addColorStop(1, 'rgba(255,255,255,0)');
-    g2.fillStyle = grad;
-    g2.fillRect(0, 0, 64, 64);
-    return new THREE.CanvasTexture(c);
-  })();
-  const missileMat = new THREE.MeshBasicMaterial({ color: '#ffb347', toneMapped: false });
-  const missileGlowMat = new THREE.SpriteMaterial({ map: glowTex, color: '#ffb347', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
-  const missileTailMat = new THREE.MeshBasicMaterial({ color: '#ffb347', transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
-  const missileGeo = new THREE.OctahedronGeometry(0.035, 0).scale(1, 1, 2.6);
-  const missileTailGeo = new THREE.ConeGeometry(0.03, 0.5, 8, 1, true).rotateX(-Math.PI / 2).translate(0, 0, 0.3); // (out behind it, along +z)
-  const missiles = Array.from({ length: MISSILES }, () => {
-    const m = new THREE.Mesh(missileGeo, missileMat);
-    const halo = new THREE.Sprite(missileGlowMat);
-    halo.scale.setScalar(0.42);
-    const tail = new THREE.Mesh(missileTailGeo, missileTailMat);
-    m.add(halo, tail);
-    m.visible = false;
-    m.rotation.order = 'YXZ';
-    m.userData = { life: 0, v: [0, 0, 0], target: null };
-    map.add(m);
-    return m;
-  });
+  // fire, homing on what the guns had locked when it went (rounds.js, the
+  // galaxy's too)
+  const rounds = createRounds(map, MISSILES);
 
   // the Citadel's siege (siege.js has the rules, citadelSiege.js draws it):
   // what's left of it is shared with everyone online, and comes back
@@ -2020,9 +1994,7 @@ export async function create(canvas, ctx) {
     state.model?.paint(coat());
     boltMat.color.set(coat().bolt ?? BOLT_COLOR[state.kind] ?? '#ff4a3d').multiplyScalar(4); // hot enough to bloom
     const heavy = arsenalOf(state.kind).heavy;
-    missileMat.color.set(heavy).multiplyScalar(3);
-    missileGlowMat.color.set(heavy).multiplyScalar(2.2);
-    missileTailMat.color.set(heavy).multiplyScalar(2);
+    rounds.setColor(heavy);
     const look = PLUME[state.kind] ?? PLUME.falcon;
     streak.setTint(plumeColor());
     for (const pl of plumes) pl.trail.setColors(plumeColor(), look.core);
@@ -2287,12 +2259,7 @@ export async function create(canvas, ctx) {
   };
   // a heavy round away, homing on whatever the guns have locked
   const launch = (at, d, speed, w, g) => {
-    const m = missiles.find((x) => !x.visible) ?? missiles[0];
-    m.position.copy(at);
-    const { heading, pitch } = aimAngles(d);
-    m.rotation.set(pitch, heading, 0);
-    m.userData = { life: AIM.life * w.life, v: [d[0] * speed, d[1] * speed, d[2] * speed], punch: (g.punch ?? 1) * w.punch, damage: w.damage, heavy: true, homing: w.homing, target: state.lockTarget, age: 0 };
-    m.visible = true;
+    rounds.launch(at, d, speed, { life: AIM.life * w.life, punch: (g.punch ?? 1) * w.punch, damage: w.damage, homing: w.homing, target: state.lockTarget });
     state.kick = Math.max(state.kick, 0.4);
   };
 
@@ -2631,8 +2598,6 @@ export async function create(canvas, ctx) {
 
   // the heavy rounds: steered onto what they were locked on to, and off
   // with a bang at the first thing they meet (or right by their target)
-  const toTarget = [0, 0, 0];
-  const missileTo = new THREE.Vector3();
   const boom = (m, point, big = false) => {
     m.visible = false;
     pops.hit({ point, normal: popDir.set(-m.userData.v[0], 3, -m.userData.v[2]).normalize(), radius: big ? 1.6 : 1 });
@@ -2640,107 +2605,76 @@ export async function create(canvas, ctx) {
     state.flare = Math.max(state.flare, 1.4);
     emit({ type: 'boom', big });
   };
-  const moveMissiles = (dt) => {
-    let any = false;
-    for (const m of missiles) {
-      if (!m.visible) continue;
-      const d = m.userData;
-      d.life -= dt;
-      d.age += dt;
-      if (d.life <= 0) {
-        boom(m, m.position.clone());
-        continue;
+  // what a round meets on its step (rounds.js flies it): the first thing
+  // in the order the bolts meet them; true when it's spent
+  const missileHit = (m, from, to) => {
+    const d = m.userData;
+    const hh = hunters?.hit(from, to, d.punch) ?? farHit(from, to, d.punch) ?? frontHit(from, to, d.punch);
+    if (hh) {
+      if (hh.down) {
+        emit({ type: 'kill', kind: hh.kind, hunter: true });
+        state.heat += 1;
+        killed(hh);
       }
-      any = true;
-      // homing, after a moment's straight run off the rails
-      const tg = d.target;
-      if (tg?.at && d.age > 0.12) {
-        toTarget[0] = tg.at.x - m.position.x;
-        toTarget[1] = tg.at.y - m.position.y;
-        toTarget[2] = tg.at.z - m.position.z;
-        const l = Math.sqrt(toTarget[0] * toTarget[0] + toTarget[1] * toTarget[1] + toTarget[2] * toTarget[2]) || 1;
-        toTarget[0] /= l;
-        toTarget[1] /= l;
-        toTarget[2] /= l;
-        steer(d.v, toTarget, d.homing, dt);
-      }
-      shotFrom.copy(m.position);
-      m.position.x += d.v[0] * dt;
-      m.position.y += d.v[1] * dt;
-      m.position.z += d.v[2] * dt;
-      const { heading, pitch } = aimAngles([d.v[0], d.v[1], d.v[2]]);
-      m.rotation.set(pitch, heading, 0);
-      // right by its target: straight into it (a step to its middle meets it)
-      // (a hunter's `at` is a plain { x, y, z }, not a Vector3: the distance
-      // worked out by hand, and the point copied into one, since what's
-      // tested against it next wants a Vector3)
-      const near = tg?.at && tg.siegePart === undefined && Math.hypot(tg.at.x - m.position.x, tg.at.y - m.position.y, tg.at.z - m.position.z) < (tg.size ?? 0.3) + 0.35;
-      const to = near ? missileTo.set(tg.at.x, tg.at.y, tg.at.z) : m.position;
-      const hh = hunters?.hit(shotFrom, to, d.punch) ?? farHit(shotFrom, to, d.punch) ?? frontHit(shotFrom, to, d.punch);
-      if (hh) {
-        if (hh.down) {
-          emit({ type: 'kill', kind: hh.kind, hunter: true });
-          state.heat += 1;
-          killed(hh);
+      state.hitMark = 1;
+      boom(m, hh.at, hh.down);
+      if (hh.down) burn(hh.at, hh.size);
+      return true;
+    }
+    const ph = pilots.hit(from, to, d.punch);
+    if (ph) {
+      state.hitMark = 1;
+      if (ph.hunter) {
+        // one of the hunters after another pilot: theirs to take down
+        net?.hunterHit(ph.id, ph.hunter, d.punch);
+        if (ph.down) {
+          emit({ type: 'kill', kind: ph.kind, hunter: true });
+          if (state.helped.once(`${ph.id}:${ph.hunter}`)) pay('hunterHelped');
         }
-        state.hitMark = 1;
-        boom(m, hh.at, hh.down);
-        if (hh.down) burn(hh.at, hh.size);
-        continue;
-      }
-      const ph = pilots.hit(shotFrom, to, d.punch);
-      if (ph) {
-        state.hitMark = 1;
-        if (ph.hunter) {
-          // one of the hunters after another pilot: theirs to take down
-          net?.hunterHit(ph.id, ph.hunter, d.punch);
-          if (ph.down) {
-            emit({ type: 'kill', kind: ph.kind, hunter: true });
-            if (state.helped.once(`${ph.id}:${ph.hunter}`)) pay('hunterHelped');
-          }
-        } else net?.hit(ph.id, d.damage);
-        boom(m, ph.at, Boolean(ph.down));
-        if (ph.down) burn(ph.at, ph.size);
-        continue;
-      }
-      if (citadelGeo) {
-        const at = siegeHit(shotFrom, m.position, d.punch, true);
-        if (at) {
-          boom(m, at.clone(), true);
-          continue;
-        }
-      }
-      const ch = capitalHit(shotFrom, to, d.punch);
-      if (ch) {
-        boom(m, ch.at, ch.down || ch.type === 'shielded');
-        continue;
-      }
-      if (remover) {
-        const at = removerHit(shotFrom, to, d.punch);
-        if (at) {
-          boom(m, at, true);
-          continue;
-        }
-      }
-      const h = traffic?.hit(shotFrom, to) ?? null;
-      if (h) {
-        if (!h.glance) {
-          emit({ type: 'kill', kind: h.kind });
-          state.heat += h.civil ? 1.5 : 1;
-          deed(h.civil ? 'killCivil' : 'killPatrol');
-        }
-        boom(m, h.at, !h.glance);
-        if (!h.glance) burn(h.at, h.size);
-      } else if (leviathans.hit(shotFrom, to)) {
-        boom(m, m.position.clone());
-        leviathanShot();
-      } else {
-        const mh = meteors.hit(shotFrom, to) ?? mines.hit(shotFrom, to);
-        if (mh) boom(m, mh.at);
+      } else net?.hit(ph.id, d.damage);
+      boom(m, ph.at, Boolean(ph.down));
+      if (ph.down) burn(ph.at, ph.size);
+      return true;
+    }
+    if (citadelGeo) {
+      const at = siegeHit(from, m.position, d.punch, true);
+      if (at) {
+        boom(m, at.clone(), true);
+        return true;
       }
     }
-    return any;
+    const ch = capitalHit(from, to, d.punch);
+    if (ch) {
+      boom(m, ch.at, ch.down || ch.type === 'shielded');
+      return true;
+    }
+    if (remover) {
+      const at = removerHit(from, to, d.punch);
+      if (at) {
+        boom(m, at, true);
+        return true;
+      }
+    }
+    const h = traffic?.hit(from, to) ?? null;
+    if (h) {
+      if (!h.glance) {
+        emit({ type: 'kill', kind: h.kind });
+        state.heat += h.civil ? 1.5 : 1;
+        deed(h.civil ? 'killCivil' : 'killPatrol');
+      }
+      boom(m, h.at, !h.glance);
+      if (!h.glance) burn(h.at, h.size);
+    } else if (leviathans.hit(from, to)) {
+      boom(m, m.position.clone());
+      leviathanShot();
+    } else {
+      const mh = meteors.hit(from, to) ?? mines.hit(from, to);
+      if (mh) boom(m, mh.at);
+    }
+    return false;
   };
+  const missileGone = (m) => boom(m, m.position.clone());
+  const moveMissiles = (dt) => rounds.fly(dt, missileHit, missileGone);
 
   // the Citadel's state while you're near it; written only when something
   // in it changes, which is told by its numbers (each frame's string to
