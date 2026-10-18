@@ -22,7 +22,7 @@ export const LANDMARKS = [
   { id: 'endorgate', name: 'The Endor Gate', kind: 'blackhole', grid: 'H-16', pos: [7.05, 15.05], r: 0.14, colors: ['#9ad0ff'], about: 'A black hole by the Endor system, out in the Moddell sector.' },
   { id: 'starcave', name: 'The StarCave Nebula', kind: 'nebula', grid: 'U-8', pos: [20.35, 7.55], r: 0.48, colors: ['#ffd68a', '#e0784e'], about: 'A cloud of dust and young stars far out on the Rim, named for the hollow at its heart.' },
   { id: 'rata', name: 'The Rata Nebula', kind: 'nebula', grid: 'E-9', pos: [4.5, 8.6], r: 0.7, colors: ['#9ae4d0', '#5a6ec4'], about: 'A great cloud in the Unknown Regions, at the edge of what the charts know.' },
-  { id: 'rishi', name: 'The Rishi Maze', kind: 'galaxy', grid: null, pos: [20.15, 17.75], r: 0.55, colors: ['#e8dcff', '#8a9ad8'], about: 'A small galaxy of its own, circling ours past the Outer Rim, near where Kamino hid from the Jedi Archives.' },
+  { id: 'rishi', name: 'The Rishi Maze', kind: 'galaxy', grid: null, pos: [16.75, 19.85], r: 0.55, colors: ['#e8dcff', '#8a9ad8'], about: 'A small galaxy of its own, circling ours past the Outer Rim; Kamino lies just south of it, where the Jedi Archives lost it.' },
 ];
 
 // A system's sky: the landmark nebula nearest it, if one's near enough to

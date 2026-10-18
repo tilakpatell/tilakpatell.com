@@ -107,7 +107,9 @@ describe('the bake', () => {
 // the sky as it was before its fidelity went up (__fixtures__/sky.json: the
 // bake's uniforms, and a hash of the first 4,200 stars, rounded); Hoth's and Tatooine's third nebula
 // has since become the atlas's own nearest one (landmarks.js: the Ivax
-// Nebula and the Kaliida Nebula), and the fixture's with it
+// Nebula and the Kaliida Nebula), and the fixture's with it; Hoth's moved
+// again when the systems' heights were picked anew for Scarif's, Lothal's
+// and Kamino's canon squares (systems.js's LIFT)
 const r4 = (v) => Math.round(v * 1e4) / 1e4;
 const r2 = (v) => Math.round(v * 100) / 100;
 const fnv = (s) => {

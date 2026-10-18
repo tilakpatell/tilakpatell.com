@@ -13,7 +13,7 @@ import { mine, onWar, warNow } from './warState';
 import { jumpTime, routeBetween, routeMid } from './routes';
 import { onView } from './mapView';
 import { LAYERS, LAYERS_KEY, LAYER_LABEL, readLayers, warForEra } from './mapLayers';
-import { SMALL_DOT, estimateWidth, hangOf, placeLabels, sideOf } from './labelPlace';
+import { HIDDEN, SMALL_DOT, estimateWidth, hangOf, placeLabels, sideOf } from './labelPlace';
 import { courseOf, findSystems, mapKeyAction, pickAction, seedPick } from './mapKeys';
 import { useMapView } from './useMapView';
 import { discOf } from './globes';
@@ -98,6 +98,10 @@ const TAU = Math.PI * 2;
 const HOVER_GAP = 14; // (the hover card's distance from its dot, screen px: galaxy.css's)
 const TAG_GUESS = { w: 130, h: 24 }; // (the course tag's size on screen before it's been measured)
 const SEEN_KEY = 'tp-gcw-seen';
+// (screen px a grid square must have for a charted world's name to be shown where it has room, and a landmark's: under the
+// first, a phone's whole map, the charted worlds are dots alone; the landmarks are named once the map's zoomed in)
+const CHARTED_NAMES_AT = 30;
+const LANDMARK_NAMES_AT = 48;
 const NO_OATH = { war: 'gcw', side: null, sworn: 0, turncoat: false }; // (the defaults of the oath props, one object each: a new one every render would draw the side panel again)
 const NO_OATHS = {};
 const readSeen = () => {
@@ -358,6 +362,8 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
   }, [pick, current]);
   const places = useMemo(() => {
     const { k, x, y } = mv.view;
+    const unit = (boxPx * k) / SIZE; // (screen px a grid square)
+    const named = unit >= CHARTED_NAMES_AT;
     // (centred on the middle, and raised its own height less a tenth: galaxy.css's translate)
     const t = mid ? { w: tagPx?.w ?? TAG_GUESS.w, h: tagPx?.h ?? TAG_GUESS.h } : null;
     const [tx, ty] = mid ? [(x + (k * mid[0]) / SIZE) * boxPx, (y + (k * mid[1]) / SIZE) * boxPx - 0.9 * t.h] : [0, 0];
@@ -368,18 +374,21 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
       const extras = (row?.major ? 14 : 0) + (row?.battle?.fighting ? 14 : 0) + (pilots[s.id] ? 20 : 0) + (s.id === current ? 32 : 0); // (the YOU tag)
       const z = sized[s.id];
       // (a charted world, unless it's where you are or the one picked: a small dot, and its name only where there's room)
-      const quiet = s.charted && prio === 0 && { optional: true, dot: SMALL_DOT };
+      const quiet = s.charted && prio === 0 && { optional: true, dot: SMALL_DOT, ...(!named && { w: 0, h: 0 }) };
       return { id: s.id, x: (x + (k * s.pos[0]) / SIZE) * boxPx, y: (y + (k * s.pos[1]) / SIZE) * boxPx, w: z ? z.w : estimateWidth(s.name, 12.5, extras), h: z ? z.h : 20, prio, ...quiet };
     });
-    // (the landmarks' names, with the regions: last of all, each only where it has room, landmarks.js; they have no dot)
-    if (layers.regions)
+    // (the landmarks' names, with the regions, zoomed in: last of all, each only where it has room, landmarks.js; they have no dot)
+    if (layers.regions && unit >= LANDMARK_NAMES_AT)
       for (const l of LANDMARKS) {
         const z = sized[`lm:${l.id}`];
         items.push({ id: `lm:${l.id}`, x: (x + (k * l.pos[0]) / SIZE) * boxPx, y: (y + (k * l.pos[1]) / SIZE) * boxPx, w: z ? z.w : estimateWidth(l.name), h: z ? z.h : 20, prio: -1, optional: true, dot: 0 });
       }
     // (a view gone wrong must not take the map down with it: every name on the right, as it was)
     if (items.some((i) => !Number.isFinite(i.x) || !Number.isFinite(i.y))) return {};
-    return placeLabels(items, { bounds: { x0: 0, y0: 0, x1: boxPx, y1: boxPx }, blocks: [...blocks, ...tagBlock] });
+    const out = placeLabels(items, { bounds: { x0: 0, y0: 0, x1: boxPx, y1: boxPx }, blocks: [...blocks, ...tagBlock] });
+    // (too small a map for the charted worlds' names: their dots alone, where they're shown at all)
+    if (!named) for (const it of items) if (it.w === 0 && out[it.id] && out[it.id] !== HIDDEN) out[it.id] = null;
+    return out;
   }, [mv.view, boxPx, war, current, pick, pilots, sized, blocks, mid, tagPx, layers.regions]);
 
   const lit = (s) => (film ? s.films.includes(film) : era === 'all' || erasOf(s).includes(era));
