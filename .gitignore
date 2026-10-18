@@ -64,6 +64,8 @@ scripts/gpu-parity/out/
 scripts/twin-parity/out/
 # (and the front door's payload, before and after: scripts/payload-check.mjs)
 !lab/payload/
+# (and the Road's measure and shots, the scripts its evidence is made by)
+!lab/road/
 
 # keys stay out (supabase/README.md)
 .env.local

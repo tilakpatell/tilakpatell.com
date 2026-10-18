@@ -10,7 +10,7 @@ Middle-earth as a journey: one continuous three.js ride from Bag End to the Grey
 
 | lane | what | plan | tasks | branch | session | pull request | state |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| R1 the spine | the module, the line, the clock, the director, the fellowship, daylight, the face, the rows, the cast, the measure | `…-the-road.md` | 1 to 10 | `claude/the-road-1-spine` | | | |
+| R1 the spine | the module, the line, the clock, the director, the fellowship, daylight, the face, the rows, the cast, the measure | `…-the-road.md` | 1 to 10 | `claude/the-road-1-spine` | 2026-10-18 | #1034 | done: tasks 1 to 10; the numbers in `evidence/the-road/README.md`; next R2 (Task 11) |
 | S the sheet | the geography, the projection, the consumers, the painter, the shots | `…-middle-earth-sheet.md` (done, removed) | 1 to 6 | `claude/middle-earth-sheet` | 2026-10-18 | #1036 | done: every task, then the map made less crowded on the owner’s word (names ranked and placed, Tolkien’s forests, the hub’s foot on two lines, the frame on the whole road); main with #1023 merged in |
 | R2 the systems | the ground, the scatter, the water, the weather, the ambience, the house and the vision, Hobbiton in full | `…-the-road.md` | 11 to 17 | `claude/the-road-2-systems` | | | |
 | R3 stages 2 to 6 | the Shire’s edge, Bree, Weathertop, the Ford, Rivendell | the same | 18 to 22 | `claude/the-road-3-eriador` | | | |
@@ -28,6 +28,18 @@ A session takes the next lane whose state allows it, runs until its budget, merg
 - **The Road imports from Middle-earth only** `chapters.js`, `road.js`, `record.js`, `hidden.js`, `creatures.js`, `castRules.js`, `ease.js`, `feel.js`, `pack.js`, `mapPaint.js`, `mapData.js`, `sheet.js`, `geography.js`. Never a town, `kit.js`, `cast3d.js`, `mapFigures.js`: their closures carry GLSL and `src/runtime/shading.test.js` would fail.
 - **`WORLD_MB['/middle-earth']` says 1** and the cast alone is 15 MB; stale, not these lanes’, noted for whoever owns the chapters.
 - **The owner’s steps** (the credit track, after R2): a Gollum figure from Meshy as the cast was made (`public/models/middleearth/cast/gollum{,-idle,-walk,-run}.glb`; `road/cast.js` prefers it when it exists); the Road’s new voiced lines run through `scripts/voices` on the desktop (`road/voicelines.js` lists them; until then they show as words); horses with their own legs only if the farm pack’s read wrong in the shots.
+
+## R1’s notes for the next lanes
+
+- The stage lengths sum to 3,280 m, not the plan’s 3,970 (a 30 s-hold ride was 34 minutes); `clock.test.js` is the ledger, and a stage task that needs more road takes it from a neighbour or shortens its holds.
+- Holds are met by crossing `nextBeat(s)` (strictly after `s`) and read by `holdAt(beat)`; until the stages have beats, the module’s `nextBeat` is the next stage’s start (Next under reduced motion steps stage by stage).
+- The save is `{ v: 1, s, ridden, at, walked }`: `walked` is the share walked by the clock, never jumped or skipped, and `ridden()` reads it (the design’s two thirds). A ride saved at the end starts again at Bag End; an address writes nothing over the save until the visitor walks.
+- Enter is bound only under reduced motion, so a focused button takes it; Space stays the Road’s.
+- The one you follow walks at the back of the file (`module.js`’s `frame`), the rest ahead in their order.
+- `cast.js`’s `walker.set({ base, speed })`: locomotion for walk and run, a base loop for anything else; the beats will want layers (`play`) added there.
+- No MiniMap and no Bubble yet: the first draws nothing until Task 20, the second has no line to say until a beat plays one.
+- On a phone the ribbon’s sixteen 44 px dots overlap (R7).
+- The container’s SwiftShader draws the Road at about one frame a second (and `/earth` at 1.6): judge frame time on the owner’s machines, draws and triangles here.
 
 ## Checks
 
