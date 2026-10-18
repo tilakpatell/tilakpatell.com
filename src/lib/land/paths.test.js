@@ -94,6 +94,9 @@ describe('distanceTo and boundsOf', () => {
   it('reads as nearestOn does, and bounds the line', () => {
     const d = distanceTo(bend);
     for (const [x, z] of [[3, 4], [40, 20], [-5, -5]]) expect(d(x, z)).toBeCloseTo(nearestOn(bend, x, z).d, 9);
+    const near = distanceTo(bend, 5);
+    expect(near(3, 4)).toBeCloseTo(d(3, 4), 9);
+    expect(near(-20, 30)).toBe(Infinity);
     const b = boundsOf(straight);
     expect(b).toEqual({ x0: 0, x1: 0, z0: 0, z1: 100 });
   });

@@ -4,7 +4,7 @@
 // in is built at once when it is not ready (an address, a jump); its
 // neighbours a few milliseconds a frame, so a seam never costs a frame.
 //
-//   createLands({ scene, house, tier, budget (ms a frame), wide (m across) }) → {
+//   createLands({ scene, house, tier, budget (ms a frame), wide (m across), scatter }) → {
 //     at(index),            the ride is in stage `index`: re-place, build, drop
 //     step(),               a frame’s slice of the building
 //     heightAt(x, z),       the ground under a point in the current frame
@@ -18,11 +18,12 @@ import * as THREE from 'three';
 import { STAGES } from './stages/index';
 import { FRAME_BACK, SEAM, landJob, run } from './terrain';
 import { groundJob } from './ground';
+import { placements, rngOf, rowsFor } from './scatter';
 import { fieldAt } from '../../../lib/land/layers.js';
 
 const RES = { low: 4, mid: 2, high: 2, ultra: 2 };
 
-export function createLands({ scene, house = null, tier = 'high', budget = 6, wide = 1024 } = {}) {
+export function createLands({ scene, house = null, tier = 'high', budget = 6, wide = 1024, scatter = null } = {}) {
   const built = new Map(); // index → { land, ground, group }
   const jobs = new Map(); // index → generator
   let current = -1;
@@ -40,7 +41,9 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
     const group = new THREE.Group();
     group.name = `road:${id}`;
     group.add(ground.mesh);
-    return { land, ground, group };
+    // what grows on it, placed once (its stage’s seed, so a stage is the same every ride)
+    const items = scatter ? placements(rowsFor(id), land, land.road, rngOf(1000 + i), { tier }) : [];
+    return { land, ground, group, items };
   }
   const finish = (i, value) => {
     const c = clocks.get(i) ?? { ms: 0, slices: 0, worst: 0 };
@@ -57,6 +60,8 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
       let z = 0;
       if (i > current) for (let k = current; k < i; k++) z += built.get(k)?.land.end ?? STAGES[k].length;
       else for (let k = i; k < current; k++) z -= built.get(k)?.land.end ?? STAGES[k].length;
+      if (b.group.position.z !== z || !b.placed) scatter?.set(STAGES[i].id, b.items, z);
+      b.placed = true;
       b.group.position.z = z;
       b.group.visible = Math.abs(i - current) <= 1;
     }
@@ -66,6 +71,7 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
     if (b) {
       scene.remove(b.group);
       b.ground.dispose();
+      scatter?.free(STAGES[i].id);
       built.delete(i);
     }
     jobs.delete(i);

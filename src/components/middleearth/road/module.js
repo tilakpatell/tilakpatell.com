@@ -25,6 +25,8 @@ import { light as lightAt } from './daylight';
 import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
 import { createLands } from './lands';
+import { createScatter } from './scatter';
+import { loadKit } from '../../../lib/three/kitNodes';
 import { createHouse } from '../../../lib/three/houseNodes';
 import { forgetCast, walker } from './cast';
 import { clipFor, walkers as walkersAt } from './fellowship';
@@ -74,7 +76,17 @@ export default {
     // the house's look on the ground (and, with the post chain, on the rest);
     // the lands: the stage you are in and its two neighbours, built and placed
     const house = createHouse();
-    const lands = createLands({ scene, house, tier });
+    // the nature kit, one a tint (a season's recolouring), in the house and the wind
+    const windTime = { value: 0 };
+    const kits = new Map();
+    const kitFor = (tint) => {
+      const key = tint ? JSON.stringify(tint) : '';
+      if (!kits.has(key)) kits.set(key, loadKit('naturemega', { house, wind: { time: windTime }, tint }));
+      return kits.get(key);
+    };
+    const scatter = createScatter({ kitFor, tier });
+    scene.add(scatter.group);
+    const lands = createLands({ scene, house, tier, scatter });
     const sun = new THREE.DirectionalLight(0xffffff, 2);
     const hemi = new THREE.HemisphereLight(0xdfe8ff, 0x5a5040, 0.6);
     const sky = createSky();
@@ -274,6 +286,8 @@ export default {
         const here = frame(dt);
         report(here, dt);
         lands.step();
+        windTime.value += dt;
+        scatter.update(camera, dt);
       },
       draw(f) {
         (f?.renderer ?? rt.gfx.renderer).render(scene, camera);
@@ -332,6 +346,8 @@ export default {
         save();
         rt.input?.unbind?.();
         lands.dispose();
+        scatter.dispose();
+        for (const k of kits.values()) k.dispose();
         sky.dispose();
         for (const w of cast.values()) w.dispose();
         forgetCast();
@@ -343,7 +359,7 @@ export default {
       // lands' building times)
       const info = () => {
         const r = rt.gfx.renderer?.info?.render ?? {};
-        return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats };
+        return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats };
       };
       window.__ROAD__ = { world, set: (s) => world.set(s), info };
     }

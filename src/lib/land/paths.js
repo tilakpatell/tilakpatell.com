@@ -12,7 +12,8 @@
 // imports it), and runs in Node and in a worker.
 //
 //   nearestOn(path, x, z) → { m, d }   (metres along, metres off)
-//   distanceTo(path) → (x, z) → metres off (the table made once, for many asks)
+//   distanceTo(path, reach = Infinity) → (x, z) → metres off (the table made once,
+//     for many asks; past a finite reach, Infinity)
 //   boundsOf(path) → { x0, x1, z0, z1 }
 //   levelAlong(raw, path, { width = 6, edge = 12 }) → (x, z) → metres
 //   cutAlong(raw, path, { depth, width = 8, bank = width / 2 }) → (x, z) → metres
@@ -125,8 +126,11 @@ export function nearestOn(path, x, z) {
   return { m, d };
 }
 
-export function distanceTo(path) {
+export function distanceTo(path, reach = Infinity) {
   const t = tableOf(path);
+  // (within a reach: only the segments near the point are asked, and a
+  // point further off than the reach reads Infinity)
+  if (Number.isFinite(reach)) return (x, z) => nearestWithin(t, x, z, reach).d;
   return (x, z) => nearestIn(t, x, z).d;
 }
 

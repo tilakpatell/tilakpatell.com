@@ -3,6 +3,8 @@ export const PACK = {
   id: '/middle-earth/road',
   pages: ['src/pages/TheRoad.jsx'], // page modules: the build adds their JS/CSS chunks
   src: ['src/components/middleearth/road', 'src/pages/TheRoad.jsx'], // where its source is (files or folders, repo-relative): pack-check scans these
-  urls: [],
+  // the nature kit’s files the stages’ tables plant (scatter.test.js holds the list to the tables)
+  urls: ['/kit/naturemega/index.json', '/kit/naturemega/bush.glb', '/kit/naturemega/commontree.glb', '/kit/naturemega/deadtree.glb', '/kit/naturemega/flower.glb', '/kit/naturemega/grass.glb', '/kit/naturemega/pine.glb', '/kit/naturemega/rock.glb'],
   globs: ['/models/middleearth/cast/*'], // the fellowship (road/cast.js: each figure and its idle, walk and run), as Middle-earth’s pack has them
+  computed: ['/kit'], // (the kit’s files are named by its manifest, not the source)
 };

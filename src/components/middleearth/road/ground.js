@@ -141,8 +141,8 @@ export function* geometryJob(land, { tier = 'high', from = land.z0, to = land.z0
   return geometry;
 }
 
-// the ground map's colours, a row of texels a step, as createGroundMap lays
-// them out (a texel's middle), then read back by createGroundMap's own loop
+// the ground map’s colours, a row of texels a step, as createGroundMap lays
+// them out (a texel’s middle), then read back by createGroundMap’s own loop
 function* paintJob(area, size, paint) {
   const px = new Float32Array(size * size * 4);
   const out = [0, 0, 0];
