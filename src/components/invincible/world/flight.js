@@ -87,8 +87,10 @@ export function newHero({ x, y, z, face = 0 }) {
   return { p: [x, y ?? groundAt(x, z), z], v: [0, 0, 0], spd: 0, dir: forwardOf(face), face, mode: 'ground', crouch: 0, stun: 0, lift: 0, boomed: false, dive: null, t: 0, ev: [] };
 }
 
-// down onto `at` at `speed`, whatever's held, until he lands (or 5 s go by)
-export const dive = (h, at, speed = BRAWL.dive.speed) => ({ ...h, mode: 'air', dive: { at: [...at], speed, t: 0 } });
+// Down onto `at` at `speed`, whatever's held, until he lands (or `time`
+// goes by). `through`: a point in the air to fly through instead, the dive
+// over once he's there (Omni-Man's line-break).
+export const dive = (h, at, speed = BRAWL.dive.speed, { time = 5, through = false } = {}) => ({ ...h, mode: 'air', dive: { at: [...at], speed, t: 0, time, through } });
 
 // The highest thing under (x, z) that isn't above `below`: the land, the
 // water (`water` true), a roof or a bridge.
@@ -197,7 +199,7 @@ function stepAir(h, input, dt, world) {
     const l = len(d[0], d[1], d[2]) || 1;
     h.dir = [d[0] / l, d[1] / l, d[2] / l];
     h.spd = h.dive.speed;
-    if (h.dive.t > 5) h.dive = null;
+    if (h.dive.t > h.dive.time || (h.dive.through && l < Math.max(2, h.dive.speed * dt))) h.dive = null;
   } else if (h.stun > 0) {
     h.stun -= dt;
     S = 0;
