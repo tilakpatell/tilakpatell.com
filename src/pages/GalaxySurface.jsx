@@ -35,6 +35,7 @@ import { GameIcon } from '../runtime/hud';
 import { HERO_KEY, heroById, heroSpec, loadoutLine, readHero, writeHero } from '../components/galaxy/heroes';
 import { keepHeroStyle, readCrewStyle } from '../components/galaxy/heroStyle';
 import { localSaves } from '../runtime/local';
+import { useSkills } from '../components/hangar/skills/useSkills';
 import { standInLine } from '../components/galaxy/surface/standIn';
 import HitMarker from '../components/galaxy/surface/HitMarker';
 import { reticleLock, reticleShape } from '../components/galaxy/surface/reticleFor';
@@ -186,6 +187,10 @@ export default function GalaxySurface() {
   // took while you were up, and the battle if you won it
   const posted = useRef(false);
   const build = useMemo(() => (ship && readHulls(local.get(HULL_KEY), CREWS.map((c) => c.id))[ship]) || null, [ship]);
+  // the skill tree's ground branch (the Hangar's), on your perks: not in the
+  // Battlefront battles, which stay as the game has them
+  const { fx: skills } = useSkills();
+  const skillFx = BATTLES.has(mission?.kind) ? null : skills;
   const tune = useMemo(() => (ship && readTunes(local.get(TUNE_KEY), CREWS.map((c) => c.id))[ship]) || null, [ship]); // (the crew's own ship, tuned: its parts must still be ones its plant runs)
   // (the hero's two abilities by id, for the game's icons on the HUD's buttons)
   const powerIds = useMemo(() => abilitiesOf(hero ? heroSpec(hero) : null), [hero]);
@@ -567,7 +572,7 @@ export default function GalaxySurface() {
       <h1 className="sr-only">
         {sys.name}: {site.place}
       </h1>
-      <SurfaceView system={id} site={site.district ? site : null} mission={mission?.id ?? null} ship={ship} hero={hero} loadout={loadout} build={build} found={found} done={done} compass={compass} net={online.client} handle={view} onEvent={onEvent} effects={effects} />
+      <SurfaceView system={id} site={site.district ? site : null} mission={mission?.id ?? null} ship={ship} hero={hero} loadout={loadout} build={build} found={found} done={done} compass={compass} net={online.client} handle={view} onEvent={onEvent} effects={effects} skillFx={skillFx} />
 
       {/* where you are, and how much of it you've found */}
       <div className="surface-where">

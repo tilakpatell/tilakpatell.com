@@ -43,6 +43,7 @@ import { createImpacts } from '../lib/impact';
 // the Hangar (the crew, the arms, the powers and the universe map's own shipyard), in its own chunk: opened with H, or C on the crew
 const HangarPanel = lazy(() => import('../components/hangar/HangarPanel'));
 import { TAB_KEY, readTab } from '../components/hangar/hangarRules';
+import { useSkills } from '../components/hangar/skills/useSkills';
 // a bump's and a crash's thud, by the hit law (lib/impact.js)
 const knockLaw = createImpacts();
 
@@ -184,6 +185,7 @@ export default function Galaxy() {
   // the ship as it's fitted, and the hull it flies: stock, or its garage build; and the Shipyard (H) that changes them, which is the
   // universe map's, with the same saves (shipyard/useShipyardPage.js)
   const { loadout, build, tune, garage, dropped, yard, setYard, applyDraft, sellPart, yardNote, live, yardSaves } = useShipyardPage({ ship, unlocked });
+  const { fx: skillFx, picks: powerPicks } = useSkills(); // (the skill tree's effects and the powers picked, the Hangar's: on the ship as its loadout is)
   // the Hangar's tab, the one last used (this browser's: hangarRules.js's TAB_KEY)
   const [hangarTab, setHangarTabState] = useState(() => readTab(local.get(TAB_KEY)));
   const setHangarTab = useCallback((t) => {
@@ -536,6 +538,8 @@ export default function Galaxy() {
         loadout={loadout}
         build={build}
         tune={tune}
+        skillFx={skillFx}
+        powerPicks={powerPicks}
         net={online.client}
         frozen={Boolean(leaving) || intro || yard}
         hangar={yard}

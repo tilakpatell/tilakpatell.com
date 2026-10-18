@@ -16,7 +16,7 @@ import './flight.css';
 // and the bar), beside the radar: the rest has no room there. The group is
 // labelled and the glass blocks hidden one by one, so the power buttons
 // stay reachable to a screen reader and a keyboard.
-export default function FlightCluster({ rootRef, ship, reduced, powersRef, onPower, radarRef, buffsRef }) {
+export default function FlightCluster({ rootRef, ship, reduced, powersRef, onPower, radarRef, buffsRef, picks = null, carry = null }) {
   return (
     <Cluster rootRef={rootRef} className="fc" label="Flight" over={<div ref={buffsRef} className="fc-buffs" aria-hidden="true" />}>
       <canvas ref={radarRef} className="fc-radar" width="264" height="264" aria-hidden="true" />
@@ -52,7 +52,7 @@ export default function FlightCluster({ rootRef, ship, reduced, powersRef, onPow
           No target · <kbd className="hud-cap">T</kbd>
         </span>
       </div>
-      <PowerBar ship={ship} reduced={reduced} barRef={powersRef} onPress={onPower} placement="cluster" />
+      <PowerBar ship={ship} reduced={reduced} barRef={powersRef} onPress={onPower} placement="cluster" picks={picks} carry={carry} />
     </Cluster>
   );
 }

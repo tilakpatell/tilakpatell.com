@@ -33,7 +33,7 @@ import KeysCard from './KeysCard';
 // While the 3D loads the box says so; without 3D, a note
 // that the galaxy needs it, and the panel and the map still work.
 
-export default function GalaxyView({ system, here, handle, ship, loadout, build = null, tune = null, net = null, frozen, onEvent, onArrive, onAt, onBoard, onCrash, onMap, oath = null, found = [], course = null, hangar = false, onHangar = null }) {
+export default function GalaxyView({ system, here, handle, ship, loadout, build = null, tune = null, net = null, frozen, onEvent, onArrive, onAt, onBoard, onCrash, onMap, oath = null, found = [], course = null, hangar = false, onHangar = null, skillFx = null, powerPicks = null }) {
   const labels = useRef({});
   const stars = useRef({});
   const [aim, setAim] = useState(null); // the star the nose is on
@@ -75,6 +75,8 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
       loadout,
       build,
       tune,
+      skillFx, // (the skill tree's effects and the powers picked: hangar/skills's, the page's)
+      powerPicks,
       controls,
       labels,
       stars,
@@ -249,7 +251,7 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
               <div ref={stick} className="universe-stick" aria-hidden="true">
                 <span />
               </div>
-              <FlightCluster rootRef={cluster} ship={ship} reduced={reduced} powersRef={powers} onPower={onPower} radarRef={radar} buffsRef={buffs} />
+              <FlightCluster rootRef={cluster} ship={ship} reduced={reduced} powersRef={powers} onPower={onPower} radarRef={radar} buffsRef={buffs} picks={powerPicks} carry={skillFx?.carry} />
               <div ref={hud} className="universe-hud" aria-hidden="true">
                 <span className="universe-reticle" />
                 <span className="universe-lock">

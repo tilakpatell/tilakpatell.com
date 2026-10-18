@@ -22,7 +22,7 @@
 //   POWERS                 by id: { crew, slot, name, short, about, cool? (s), dur (s), …its own numbers }
 //   CREW_POWERS / powersOf(crew)   { primary, ultimate } ids, or null
 //   CHARGE                 what fills the big one (0…1)
-//   createPowers(crew, { charge, cool }) → state, or null for no crew
+//   createPowers(crew, { charge, cool, picks, fx }) → state, or null for no crew
 //   press(st, slot)        → { ok, id } or { ok: false, why }
 //   step(st, dt, { flying }) → events ({ type: 'end' | 'ready', slot, id })
 //   gain(st, what, n, key) the big one charged (never while it's on); → true the moment it fills
@@ -102,14 +102,22 @@ export function picksFor(crew, picks, carry) {
 const SLOTS = ['primary', 'ultimate'];
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
-// (`cool`: seconds of the power's cooldown still to run, kept from before a landing)
-export function createPowers(crew, { charge = 0, cool = 0, picks = null } = {}) {
+// (`cool`: seconds of the power's cooldown still to run, kept from before a
+// landing; `picks`: the pair carried, picksFor's; `fx`: the skill tree's,
+// hangar/skills's: powerCool and powerDur on every power's lengths, charge on
+// what fills the big one, pickup on a pickup's share)
+const num = (v) => (Number.isFinite(v) && v > 0 ? v : 1);
+export function createPowers(crew, { charge = 0, cool = 0, picks = null, fx = null } = {}) {
   const own = powersOf(crew) && (picks?.primary && picks?.ultimate ? picks : powersOf(crew));
   if (!own) return null;
   const c = clamp(Number.isFinite(charge) ? charge : 0, 0, 1);
   const wait = clamp(Number.isFinite(cool) ? cool : 0, 0, POWERS[own.primary].cool);
-  return { crew, primary: { id: own.primary, phase: wait > 0 ? 'cooling' : 'ready', left: wait }, ultimate: { id: own.ultimate, phase: c >= 1 ? 'ready' : 'charging', charge: c, left: 0 } };
+  const k = { cool: num(fx?.powerCool), dur: num(fx?.powerDur), charge: num(fx?.charge), pickup: num(fx?.pickup) };
+  return { crew, k, primary: { id: own.primary, phase: wait > 0 ? 'cooling' : 'ready', left: wait }, ultimate: { id: own.ultimate, phase: c >= 1 ? 'ready' : 'charging', charge: c, left: 0 } };
 }
+// a power's lengths with the skills on them (a state with none: the cards')
+const durOf = (st, id) => POWERS[id].dur * (st?.k?.dur ?? 1);
+const coolOf = (st, id) => POWERS[id].cool * (st?.k?.cool ?? 1);
 
 // a press of G or X: on, if it's ready (the big one's charge spent)
 export function press(st, slot) {
@@ -117,7 +125,7 @@ export function press(st, slot) {
   if (!s) return { ok: false, why: 'none' };
   if (s.phase !== 'ready') return { ok: false, why: s.phase };
   s.phase = 'active';
-  s.left = POWERS[s.id].dur;
+  s.left = durOf(st, s.id);
   if (slot === 'ultimate') s.charge = 0;
   return { ok: true, id: s.id };
 }
@@ -127,7 +135,7 @@ const end = (st, slot, out) => {
   const s = st[slot];
   if (slot === 'primary') {
     s.phase = 'cooling';
-    s.left = POWERS[s.id].cool;
+    s.left = coolOf(st, s.id);
   } else {
     s.phase = 'charging';
     s.left = 0;
@@ -161,7 +169,7 @@ export function step(st, dt, { flying = true } = {}) {
 export function gain(st, what, n = 1, key = null) {
   const u = st?.ultimate;
   if (!u || u.phase !== 'charging') return false;
-  let add = (CHARGE[what] ?? 0) * n;
+  let add = (CHARGE[what] ?? 0) * n * (st.k?.charge ?? 1) * (what === 'pickup' ? (st.k?.pickup ?? 1) : 1);
   if (what === 'hit' && key !== null) {
     st.hits ??= new Map();
     const had = st.hits.get(key) ?? 0;
@@ -245,7 +253,7 @@ export function view(st) {
   const one = (slot) => {
     const s = st[slot];
     const p = POWERS[s.id];
-    const k = s.phase === 'active' ? 1 - s.left / p.dur : s.phase === 'cooling' ? s.left / p.cool : s.phase === 'charging' ? 1 - s.charge : 0;
+    const k = s.phase === 'active' ? 1 - s.left / durOf(st, s.id) : s.phase === 'cooling' ? s.left / coolOf(st, s.id) : s.phase === 'charging' ? 1 - s.charge : 0;
     const left = s.phase === 'active' || s.phase === 'cooling' ? Math.ceil(s.left - 1e-9) : 0;
     return { id: s.id, name: p.name, short: p.short, key: POWER_KEYS[slot].toUpperCase(), phase: s.phase, k: +clamp(k, 0, 1).toFixed(3), left, charge: slot === 'ultimate' ? s.charge : null };
   };

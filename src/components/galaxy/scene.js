@@ -123,7 +123,7 @@ import { PICKUPS, createPickups, gunsUnder } from './pickups';
 import { createPickupFx } from './pickupFx';
 import { createRadar } from './radar';
 import { drawRadar } from './radarDraw';
-import { armsView, arsenalOf, chargeFor, createArmory, createGalaxyPowers, createRounds, fan } from '../universe/shared/flying';
+import { armsView, arsenalOf, chargeFor, createArmory, createGalaxyPowers, createRounds, fan, picksFor } from '../universe/shared/flying';
 import { shotPunch } from './gunRules';
 import { effectsFor } from './warEffects';
 import { CABS } from './cabs';
@@ -393,6 +393,8 @@ export async function create(canvas, ctx) {
     build: null, // the garage build flown in place of the stock hull (universe/shipyard), or null
     tune: {}, // the crew's own ship tuned with modules ({ slot: module id }); applies while the hull is the stock one
     stats: statsOf(null, STOCK_LOADOUT), // and what it does to how it flies
+    fx: {}, // the skill tree's effects (hangar/skills's; setSkills)
+    picks: null, // and the powers picked for each crew
     lock: null,
     lockTarget: null,
     lead: null,
@@ -559,7 +561,7 @@ export async function create(canvas, ctx) {
     rounds.setColor(arsenalOf(state.kind).heavy);
   };
   const refit = () => {
-    state.stats = statsOf(state.kind, state.loadout, state.build, state.tune);
+    state.stats = statsOf(state.kind, state.loadout, state.build, state.tune, state.fx);
     if (state.kind && state.model) state.model.outfit?.(state.loadout);
   };
   const setLoadout = (raw) => {
@@ -589,7 +591,26 @@ export async function create(canvas, ctx) {
     const next = readTune(raw);
     if (tuneKey(next) === tuneKey(state.tune)) return;
     state.tune = next;
-    state.stats = statsOf(state.kind, state.loadout, state.build, state.tune);
+    state.stats = statsOf(state.kind, state.loadout, state.build, state.tune, state.fx);
+  };
+
+  // The skill tree's effects and the powers picked for each crew (the page's,
+  // hangar/skills's useSkills): the ship's numbers, its guns and its powers
+  // made again when either changes (a new loadout's way: the line picked and
+  // the rounds left carry over, and the same crew keeps its charge)
+  const skillsKey = (fx, picks) => JSON.stringify([fx ?? {}, picks ?? null]);
+  let skillsAt = skillsKey(state.fx, state.picks);
+  const crewSkills = (kind) => ({ fx: state.fx, picks: picksFor(kind, state.picks, state.fx.carry) });
+  const setSkills = (fx, picks) => {
+    if (fx === state.fx && picks === state.picks) return;
+    const key = skillsKey(fx, picks);
+    state.fx = fx ?? {};
+    state.picks = picks ?? null;
+    if (key === skillsAt) return;
+    skillsAt = key;
+    state.stats = statsOf(state.kind, state.loadout, state.build, state.tune, state.fx);
+    armory?.refit(state.loadout, state.fx);
+    powers.setCrew(state.kind, crewSkills(state.kind));
   };
 
   // (force: the same crew, built again: its garage build changed)
@@ -608,7 +629,7 @@ export async function create(canvas, ctx) {
       state.model = null;
     }
     state.kind = kind;
-    powers.setCrew(kind);
+    powers.setCrew(kind, crewSkills(kind));
     if (!same) {
       state.kills = 0; // (a new ship, a new flight)
       pickups.clear();
@@ -938,7 +959,7 @@ export async function create(canvas, ctx) {
   // the ship's pace (its guns fitted, a rapid-fire pickup) times its own.
   let armory = null;
   const arms = () => {
-    if (!armory || armory.kind !== state.kind) armory = Object.assign(createArmory(state.kind, state.loadout), { kind: state.kind });
+    if (!armory || armory.kind !== state.kind) armory = Object.assign(createArmory(state.kind, state.loadout, state.fx), { kind: state.kind });
     return armory;
   };
   const jitter = () => Math.random() * 2 - 1;
@@ -1191,7 +1212,7 @@ export async function create(canvas, ctx) {
       if (!document.hidden) shieldSound();
       return;
     }
-    state.shield = Math.max(0, state.shield - damage * state.stats.armor); // (less, with plating fitted)
+    state.shield = Math.max(0, state.shield - damage * state.stats.armor * (by ? 1 : state.stats.armorGame)); // (less, with plating fitted; and the skill tree's against the game's own)
     state.hitAt = state.clock;
     state.hurt = 1;
     if (!reduced) state.shake = Math.max(state.shake, 0.3);
@@ -2725,6 +2746,7 @@ export async function create(canvas, ctx) {
   const dressed = prepared.then(() => {
     if (!disposed) dressSystem(start);
   });
+  setSkills(props.skillFx, props.powerPicks);
   setShip(props.ship ?? null);
   setNet(props.net);
   const spares = new THREE.Group();
@@ -2847,6 +2869,7 @@ export async function create(canvas, ctx) {
       setBuild(next.build ?? null);
       setLoadout(next.loadout);
       setTune(next.tune);
+      setSkills(next.skillFx, next.powerPicks);
       setNet(next.net);
       // the page asking for another system (a link, the URL): jump there, but
       // only when it asks anew (asking.js)

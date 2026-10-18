@@ -39,7 +39,7 @@ import { PROMPT as LOOK_PROMPT } from '../../runtime/look';
 // is the one picked there, how the ship goes anywhere it's sent, and
 // `charting` says the nav map's open (the director holds off meanwhile).
 
-export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen, ship, loadout, build = null, tune = null, canFit = false, hangar = false, onHangar, net = null, onEvent, onLand, onCrash, drive = 'super', charting = false, onMap, startAt = null, universe = null }) {
+export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen, ship, loadout, build = null, tune = null, canFit = false, hangar = false, onHangar, net = null, onEvent, onLand, onCrash, drive = 'super', charting = false, onMap, startAt = null, universe = null, skillFx = null, powerPicks = null }) {
   const labels = useRef({});
   const tags = useRef(null);
   const stick = useRef(null);
@@ -98,6 +98,8 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
       loadout,
       build,
       tune,
+      skillFx, // (the skill tree's effects and the powers picked: hangar/skills's, the page's)
+      powerPicks,
       controls,
       labels,
       stick,
@@ -302,7 +304,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
               <Cluster rootRef={cluster} className="universe-cluster" label={onFoot ? 'On foot' : 'Flight'}>
                 <Vitals label={onFoot ? 'Health' : 'Shields'} icon={<RiShieldLine aria-hidden="true" />} />
                 <Arms keys />
-                {!onFoot && <PowerBar ship={ship} reduced={reduced} barRef={powers} onPress={(slot) => view.current?.power?.(slot)} placement="cluster" />}
+                {!onFoot && <PowerBar ship={ship} reduced={reduced} barRef={powers} onPress={(slot) => view.current?.power?.(slot)} placement="cluster" picks={powerPicks} carry={skillFx?.carry} />}
               </Cluster>
               <div ref={wantedEl} className="universe-wanted" aria-hidden="true">
                 <span className="universe-wanted-stars">

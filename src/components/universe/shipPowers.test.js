@@ -466,3 +466,32 @@ describe('a crew carrying another crew’s powers (the skill tree’s borrowed p
     expect(st.ultimate.id).toBe('wubba');
   });
 });
+
+describe('the powers with the skill tree’s (hangar/skills’ fx)', () => {
+  it('cools down sooner with quick recovery, and lasts longer with overdrive', () => {
+    const st = createPowers('xwing', { fx: { powerCool: 0.85, powerDur: 1.2 } });
+    press(st, 'primary');
+    expect(st.primary.left).toBeCloseTo(POWERS.focus.dur * 1.2);
+    step(st, POWERS.focus.dur * 1.2 + 0.01);
+    expect(st.primary.phase).toBe('cooling');
+    expect(st.primary.left).toBeCloseTo(POWERS.focus.cool * 0.85, 1);
+  });
+  it('charges the big one quicker, and more from a pickup with a scavenger', () => {
+    const st = createPowers('xwing', { fx: { charge: 1.2, pickup: 1.5 } });
+    gain(st, 'kill');
+    expect(st.ultimate.charge).toBeCloseTo(CHARGE.kill * 1.2);
+    gain(st, 'pickup');
+    expect(st.ultimate.charge).toBeCloseTo(CHARGE.kill * 1.2 + CHARGE.pickup * 1.2 * 1.5);
+  });
+  it('reads its ring against the lengths it has, not the cards’', () => {
+    const st = createPowers('xwing', { fx: { powerDur: 2 } });
+    press(st, 'primary');
+    step(st, POWERS.focus.dur);
+    expect(view(st).primary.k).toBeCloseTo(0.5, 2);
+  });
+  it('is as the cards have it with no skills', () => {
+    const st = createPowers('xwing');
+    press(st, 'primary');
+    expect(st.primary.left).toBe(POWERS.focus.dur);
+  });
+});

@@ -199,7 +199,7 @@ import { createFlightCluster } from '../../runtime/hud/cluster.js';
 import { clusterView } from './clusterView';
 import { createRounds } from './rounds';
 import { createGalaxyPowers } from './powers';
-import { chargeFor } from './shipPowers';
+import { chargeFor, picksFor } from './shipPowers';
 import { canPower, mixPost } from './powerSeams';
 import { createBolts, createFlashes } from '../galaxy/shared/fx';
 import { coneFor } from '../../lib/combat/aim';
@@ -805,7 +805,7 @@ export async function create(canvas, ctx) {
   // (a shot's assist cone, aim.js's: the look's mode says a mouse, a drag or a finger)
   const footCone = () => coneFor({ coarse, mode: looker.mode });
   const footCode = createLazy(
-    () => import('./footScene').then(({ createFoot }) => createFoot({ map, emit: (e) => emit(e), reduced, small, planetOf, renderer, prepare: (roots, alive) => prepareLanding(roots, alive), cone: () => footCone() })),
+    () => import('./footScene').then(({ createFoot }) => createFoot({ map, emit: (e) => emit(e), reduced, small, planetOf, renderer, prepare: (roots, alive) => prepareLanding(roots, alive), cone: () => footCone(), skills: () => state.fx })),
     (f) => f.dispose(),
   );
   const foot = standIn(footCode, { props: { phase: null, id: null, debug: null, spots: null }, methods: { begin: () => (footCode.want(), false) } });
@@ -1191,6 +1191,8 @@ export async function create(canvas, ctx) {
     build: null, // the garage build flown in place of the stock hull (shipyard/), or null
     tune: {}, // the crew's own ship tuned with modules ({ slot: module id }); applies while the hull is the stock one
     stats: statsOf(null, STOCK_LOADOUT), // and what it does
+    fx: {}, // the skill tree's effects (hangar/skills's; setSkills)
+    picks: null, // and the powers picked for each crew
     lastShot: 0,
     crash: null, // { age, id, … } while a crash plays out (startCrash)
     shake: 0,
@@ -1766,7 +1768,7 @@ export async function create(canvas, ctx) {
       if (!portalById(id)) setTimeout(() => emit({ type: 'arrived', id, done: true }), 0); // (there: the page's tour and a trip through the gate go on; after the page's own select. Through a portal, its trip ends at the far end: portalThrough)
       return true;
     }
-    const hyper = drive === 'hyper' ? hyperState({ last: state.hyperAt, now: wall(), interdicted: state.interdicted }) : null;
+    const hyper = drive === 'hyper' ? hyperState({ last: state.hyperAt, now: wall(), interdicted: state.interdicted, recharge: HYPER.recharge * (state.stats.jump ?? 1) }) : null;
     if (hyper?.ready) {
       // the jump, the galaxy's way: the ship comes round onto the place
       // first (fly(): `align`, aim.js), then spools up, the page plays the
@@ -2005,7 +2007,7 @@ export async function create(canvas, ctx) {
     for (const pl of plumes) pl.trail.setColors(plumeColor(), look.core);
   };
   const refit = () => {
-    state.stats = statsOf(state.kind, state.loadout, state.build, state.tune);
+    state.stats = statsOf(state.kind, state.loadout, state.build, state.tune, state.fx);
     if (!state.kind || !state.model) return setBoosterPlumes();
     const mods = state.model.outfit(state.loadout);
     state.barrel = 0;
@@ -2043,7 +2045,26 @@ export async function create(canvas, ctx) {
     const next = readTune(raw);
     if (tuneKey(next) === tuneKey(state.tune)) return;
     state.tune = next;
-    state.stats = statsOf(state.kind, state.loadout, state.build, state.tune);
+    state.stats = statsOf(state.kind, state.loadout, state.build, state.tune, state.fx);
+  };
+
+  // The skill tree's effects and the powers picked for each crew (the page's,
+  // hangar/skills's useSkills): the ship's numbers, its guns and its powers
+  // made again when either changes (a new loadout's way: the line picked and
+  // the rounds left carry over, and the same crew keeps its charge)
+  const skillsKey = (fx, picks) => JSON.stringify([fx ?? {}, picks ?? null]);
+  let skillsAt = skillsKey(state.fx, state.picks);
+  const crewSkills = (kind) => ({ fx: state.fx, picks: picksFor(kind, state.picks, state.fx.carry) });
+  const setSkills = (fx, picks) => {
+    if (fx === state.fx && picks === state.picks) return;
+    const key = skillsKey(fx, picks);
+    state.fx = fx ?? {};
+    state.picks = picks ?? null;
+    if (key === skillsAt) return;
+    skillsAt = key;
+    state.stats = statsOf(state.kind, state.loadout, state.build, state.tune, state.fx);
+    armory?.refit(state.loadout, state.fx);
+    powers.setCrew(state.kind, crewSkills(state.kind));
   };
 
   // (force: the same crew, built again: its garage build changed)
@@ -2071,7 +2092,7 @@ export async function create(canvas, ctx) {
     }
     const was = state.kind;
     state.kind = kind;
-    powers.setCrew(kind);
+    powers.setCrew(kind, crewSkills(kind));
     setPlumes(kind, ENGINES[kind] ?? []);
     if (!same) {
       traffic?.setCrew(crewAt(kind, mapSectorOf(state.ship?.x ?? 0, 0, state.ship?.z ?? 0)));
@@ -2293,7 +2314,7 @@ export async function create(canvas, ctx) {
   // heavy rack), R or 1 2 3 to change
   let armory = null;
   const arms = () => {
-    if (!armory || armory.kind !== state.kind) armory = Object.assign(createArmory(state.kind, state.loadout), { kind: state.kind });
+    if (!armory || armory.kind !== state.kind) armory = Object.assign(createArmory(state.kind, state.loadout, state.fx), { kind: state.kind });
     return armory;
   };
   const shotAt = new THREE.Vector3();
@@ -3087,7 +3108,7 @@ export async function create(canvas, ctx) {
     if (state.crash || !state.ship) return;
     if (!by && powers.mods.ghost) return; // (Never tell me the odds: nothing of the game's lands)
     if (by && state.clock < state.safeUntil) return;
-    state.shield = Math.max(0, state.shield - damage * state.stats.armor); // (less, with plating fitted)
+    state.shield = Math.max(0, state.shield - damage * state.stats.armor * (by ? 1 : state.stats.armorGame)); // (less, with plating fitted; and the skill tree's against the game's own)
     state.hurtNow = (state.hurtNow ?? 0) + damage; // (the director's intensity: what you've taken this frame)
     state.hitAt = state.clock;
     state.hurt = 1;
@@ -5669,6 +5690,7 @@ export async function create(canvas, ctx) {
 
   state.loadout = readLoadout(props.loadout);
   state.tune = readTune(props.tune);
+  setSkills(props.skillFx, props.powerPicks);
   setShip(props.ship ?? null);
   setNet(props.net);
   paintStates();
@@ -5967,6 +5989,7 @@ export async function create(canvas, ctx) {
       setBuild(next.build ?? null);
       setLoadout(next.loadout);
       setTune(next.tune);
+      setSkills(next.skillFx, next.powerPicks);
       setNet(next.net);
       // the page's pick, only when it changes. The router moves the address
       // in a transition, so a render that comes first (the HUD's, as the
@@ -6102,7 +6125,7 @@ export async function create(canvas, ctx) {
         foot: onFoot(),
         crashed: Boolean(state.crash),
         interdicted: state.interdicted,
-        hyper: hyperState({ last: state.hyperAt, now: wall(), interdicted: state.interdicted }),
+        hyper: hyperState({ last: state.hyperAt, now: wall(), interdicted: state.interdicted, recharge: HYPER.recharge * (state.stats.jump ?? 1) }),
         pilots: pilots.chart.map((p) => ({ id: p.id, name: p.name, x: p.x, z: p.z })),
         farFights: (state.fights ?? []).map((f) => ({ id: f.id, x: f.at[0], z: f.at[2], label: fightLabel(f.at) })), // (Fighting near …, for the nav map)
         front: front?.where() ?? null, // (the crew's war, for the nav map)

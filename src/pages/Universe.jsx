@@ -25,6 +25,7 @@ import Online from '../components/universe/online/Online';
 // the Hangar (the crew, the arms, the powers and the shipyard), in its own chunk: opened with H, or C on the crew
 const HangarPanel = lazy(() => import('../components/hangar/HangarPanel'));
 import { TAB_KEY, readTab } from '../components/hangar/hangarRules';
+import { useSkills } from '../components/hangar/skills/useSkills';
 import { useOnline } from '../components/universe/online/useOnline';
 import EarnNote from '../components/universe/EarnNote';
 import { useEarn } from '../components/universe/useEarn';
@@ -107,6 +108,7 @@ export default function Universe({ ask = false }) {
   const { unlocked, unlock } = useAchievements();
   // (the loadouts, hulls and garage builds, the Shipyard's door and what Apply and a sale do: shipyard/useShipyardPage.js, which the galaxy uses too)
   const { loadout, build, tune, garage, dropped, yard, setYard, applyDraft, sellPart, yardNote, live, yardSaves } = useShipyardPage({ ship, unlocked });
+  const { fx: skillFx, picks: powerPicks } = useSkills(); // (the skill tree's effects and the powers picked, the Hangar's: on the ship as its loadout is)
   useEffect(() => setLoadout(loadout), [setLoadout, loadout]);
   useEffect(() => tellBuild?.(build), [tellBuild, build]);
   // the Hangar's tab, the one last used (this browser's: hangarRules.js's TAB_KEY)
@@ -494,6 +496,8 @@ export default function Universe({ ask = false }) {
         loadout={loadout}
         build={build}
         tune={tune}
+        skillFx={skillFx}
+        powerPicks={powerPicks}
         canFit={Boolean(ship)}
         hangar={yard}
         onHangar={setYard}

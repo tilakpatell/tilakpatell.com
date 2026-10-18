@@ -1,5 +1,5 @@
 import { Powers } from '../../runtime/hud';
-import { POWERS, POWER_KEYS, powersOf } from './shipPowers';
+import { POWERS, POWER_KEYS, picksFor } from './shipPowers';
 import { POWER_ICONS as ICONS } from './powerIcons';
 import './powers.css';
 
@@ -12,11 +12,13 @@ import './powers.css';
 // and X do. In the flight cluster (`placement`, on a desktop) a word under
 // each says where it stands, and why a press was refused. Nothing with
 // motion reduced (there's nothing to use them on then) or without a ship.
+// The pair is the crew's own, or the ones picked for it in the Hangar
+// (`picks`, by crew; another crew's only with the skill tree's `carry`).
 
 const SLOTS = ['primary', 'ultimate'];
 
-export default function PowerBar({ ship, reduced, barRef, onPress, placement = null }) {
-  const own = powersOf(ship);
+export default function PowerBar({ ship, reduced, barRef, onPress, placement = null, picks = null, carry = null }) {
+  const own = picksFor(ship, picks, carry);
   if (reduced || !own) return null;
   const slots = SLOTS.map((slot) => {
     const p = POWERS[own[slot]];

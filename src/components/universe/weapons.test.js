@@ -146,3 +146,44 @@ describe('weapons', () => {
     expect(v[0]).toBeCloseTo(10);
   });
 });
+
+describe('the armoury with the skill tree’s guns (hangar/skills’ fx)', () => {
+  it('racks one more round with deep racks, and brings them back sooner with a fast loader', () => {
+    const a = createArmory('xwing', STOCK_LOADOUT, { ammo: 1, reload: 0.8 });
+    a.select(2);
+    expect(a.ammoMax).toBe(WEAPONS.heavy.ammo + 1);
+    expect(a.weapon.reload).toBeCloseTo(WEAPONS.heavy.reload * 0.8);
+  });
+  it('fires one more shot a burst with a wide scatter', () => {
+    const a = createArmory('xwing', STOCK_LOADOUT, { shots: 1 });
+    a.select(1);
+    expect(a.weapon.count).toBe(WEAPONS.spread.count + 1);
+  });
+  it('homes harder and flies further with smart rounds', () => {
+    const a = createArmory('xwing', STOCK_LOADOUT, { homing: 1.3, life: 1.25 });
+    a.select(2);
+    expect(a.weapon.homing).toBeCloseTo(WEAPONS.heavy.homing * 1.3);
+    expect(a.weapon.life).toBeCloseTo(WEAPONS.heavy.life * 1.25);
+  });
+  it('is the armoury as it was with no skills, the table untouched', () => {
+    const a = createArmory('xwing', STOCK_LOADOUT);
+    a.select(2);
+    expect(a.ammoMax).toBe(WEAPONS.heavy.ammo);
+    expect(a.weapon).toEqual(WEAPONS.heavy);
+    createArmory('xwing', STOCK_LOADOUT, { ammo: 3 });
+    expect(WEAPONS.heavy.ammo).toBe(4);
+  });
+  it('takes new skills on a refit, keeping the line and the rounds left, and keeps them on a new loadout', () => {
+    const a = createArmory('xwing');
+    a.select(2);
+    a.fired(0);
+    a.refit(STOCK_LOADOUT, { ammo: 2 });
+    expect(a.index).toBe(2);
+    expect(a.ammoMax).toBe(WEAPONS.heavy.ammo + 2);
+    expect(a.ammo).toBe(WEAPONS.heavy.ammo - 1);
+    a.refit({ ...STOCK_LOADOUT, ordnance: 'mk2' });
+    expect(a.ammoMax).toBe(WEAPONS.mk2.ammo + 2);
+    a.refit(STOCK_LOADOUT, {});
+    expect(a.ammoMax).toBe(WEAPONS.heavy.ammo);
+  });
+});
