@@ -11,7 +11,7 @@ describe('the way in: the save, the resume card, the first visit', () => {
   });
 
   it('a save is where the ride is, whether it was ridden, and when', () => {
-    expect(savedAt(0.5, 1000, false)).toEqual({ v: 1, s: 0.5, ridden: false, at: 1000 });
+    expect(savedAt(0.5, 1000, false, 0.25)).toEqual({ v: 1, s: 0.5, ridden: false, at: 1000, walked: 0.25 });
   });
 
   it('a lost context put back within a minute carries on with no title card again', () => {
@@ -27,10 +27,11 @@ describe('the way in: the save, the resume card, the first visit', () => {
     expect(shouldOffer({ s: 1 })).toBe(true);
   });
 
-  it('counts the Road ridden once two thirds of it are walked', () => {
+  it('counts the Road ridden once two thirds of it are walked, not jumped', () => {
     expect(ridden(null)).toBe(false);
-    expect(ridden({ s: 0.6 })).toBe(false);
-    expect(ridden({ s: 2 / 3 })).toBe(true);
+    expect(ridden({ s: 1, walked: 0.6 })).toBe(false);
+    expect(ridden({ s: 1 })).toBe(false);
+    expect(ridden({ s: 0.7, walked: 2 / 3 })).toBe(true);
     expect(ridden({ s: 0.1, ridden: true })).toBe(true);
   });
 

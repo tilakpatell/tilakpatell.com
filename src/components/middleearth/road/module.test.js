@@ -93,12 +93,26 @@ describe('the face’s wiring: keys, events, the save', () => {
     expect(rt.emitted.filter((e) => e.type === 'mode').at(-1)).toMatchObject({ auto: false });
   });
 
-  it('skipping to the end ends the ride and keeps the save', async () => {
+  it('skipping to the end ends the ride, but counts it ridden only once two thirds were walked', async () => {
     const rt = fakeRt();
     const world = await road.create(rt, { at: null });
     world.attached();
     world.skipToEnd();
     expect(rt.emitted.some((e) => e.type === 'end')).toBe(true);
-    expect(rt.saves.get('tp-road')).toMatchObject({ v: 1, s: 1, ridden: true });
+    expect(rt.saves.get('tp-road')).toMatchObject({ v: 1, s: 1, ridden: false });
+    // (jumped most of the way and walked a little is not ridden; two thirds walked is)
+    const rt2 = fakeRt();
+    const jumped = await road.create(rt2, { at: null });
+    jumped.attached();
+    jumped.set(0.6);
+    for (let i = 0; i < 40; i++) jumped.step(1, snap([], ['run']));
+    jumped.skipToEnd();
+    expect(rt2.saves.get('tp-road')).toMatchObject({ s: 1, ridden: false });
+    const rt3 = fakeRt();
+    const walked = await road.create(rt3, { at: null });
+    walked.attached();
+    for (let i = 0; i < 400; i++) walked.step(1, snap([], ['run']));
+    walked.skipToEnd();
+    expect(rt3.saves.get('tp-road')).toMatchObject({ s: 1, ridden: true });
   });
 });

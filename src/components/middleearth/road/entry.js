@@ -1,13 +1,15 @@
 // The way into the Road: the save, the resume card and the first visit.
 // Pure, beside the module and the page that use it.
 //
-//   SAVE: the store’s key and shape version; a save is { v, s, ridden, at }
-//   savedAt(s, now, ridden) → the save to write
+//   SAVE: the store’s key and shape version; a save is { v, s, ridden, at, walked }
+//     (walked: the share of the Road walked, not jumped by the ribbon or
+//     skipped, so skipping to the end doesn’t count as riding it)
+//   savedAt(s, now, ridden, walked) → the save to write
 //   resume(save, now) → { s, showTitle }: a world mounted again within a
 //     minute of its last save (a lost context put back) carries on without
 //     its stage’s title card a second time
 //   shouldOffer(save) → whether to offer “Carry on from …” (past Hobbiton’s first 40 m)
-//   ridden(save) → the Road counts as ridden (two thirds walked, or marked so)
+//   ridden(save) → the Road counts as ridden (two thirds of it walked, or marked so)
 //   firstVisitRides(saves, unlocked, { flag }) → whether /middle-earth sends
 //     this visitor down the Road first: no Middle-earth seal, no ride, not
 //     sent already this session. FIRST_VISIT_RIDES is the owner’s switch.
@@ -23,7 +25,7 @@ const RESUME_QUIET = 60_000; // ms
 const OFFER_FROM = sOf(STAGES, 'hobbiton', 40);
 const RIDDEN = 2 / 3;
 
-export const savedAt = (s, now, wasRidden) => ({ v: SAVE.version, s, ridden: Boolean(wasRidden), at: now });
+export const savedAt = (s, now, wasRidden, walked = 0) => ({ v: SAVE.version, s, ridden: Boolean(wasRidden), at: now, walked });
 
 export function resume(save, now) {
   if (!save || !Number.isFinite(save.s)) return { s: 0, showTitle: true };
@@ -32,7 +34,7 @@ export function resume(save, now) {
 
 export const shouldOffer = (save) => Boolean(save && save.s > OFFER_FROM);
 
-export const ridden = (save) => Boolean(save && (save.ridden || save.s >= RIDDEN));
+export const ridden = (save) => Boolean(save && (save.ridden || (save.walked ?? 0) >= RIDDEN));
 
 export function firstVisitRides(saves, unlocked = [], { flag = FIRST_VISIT_RIDES } = {}) {
   if (!flag) return false;

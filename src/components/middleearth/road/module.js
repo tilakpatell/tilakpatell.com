@@ -85,6 +85,8 @@ export default {
     const offer = !props.at && back.showTitle && shouldOffer(saved);
     let clock = newClock({ s: props.at ? sFromAddress(props.at) : (back?.s ?? 0), reduced, auto: !offer });
     let wasRidden = riddenOf(saved);
+    // (the share walked, not jumped: what makes the ride ridden)
+    let walked = props.at ? 0 : (saved?.walked ?? 0);
     let stageId = null;
     let quietTitle = !props.at && (!back.showTitle || offer);
     let lastMode = '';
@@ -189,7 +191,7 @@ export default {
         sinceProgress = 0;
         tell('progress', { s: clock.s, stage: here.stage, local: here.local });
       }
-      if (clock.s >= 2 / 3) wasRidden = true;
+      if (walked >= 2 / 3) wasRidden = true;
       if ((sinceSave += dt) >= SAVE_EVERY) save();
       if (clock.s >= 1 && !ended) {
         ended = true;
@@ -199,7 +201,7 @@ export default {
     };
     const save = () => {
       sinceSave = 0;
-      if (!offerOpen) rt.saves?.set?.(SAVE.key, savedAt(clock.s, now(), wasRidden));
+      if (!offerOpen) rt.saves?.set?.(SAVE.key, savedAt(clock.s, now(), wasRidden, walked));
     };
     let offerOpen = offer;
     const jump = (s) => {
@@ -229,7 +231,10 @@ export default {
           toggleAuto: pressed('auto'),
           next: pressed('next'),
         };
+        const was = clock.s;
         clock = stepClock(clock, dt, keys, { total: TOTAL, holdAt: () => 0, nextBeat: () => null });
+        // (Next under reduced motion is how that ride is walked, so it counts)
+        walked += Math.max(0, clock.s - was);
         // the visitor’s look: a drag turns it, and it settles back once let go
         const drag = input?.pointer?.drag;
         if (drag && (drag.dx || drag.dy)) {
@@ -273,6 +278,7 @@ export default {
       restart() {
         offerOpen = false;
         wasRidden = riddenOf(saved);
+        walked = 0;
         stageId = null;
         clock = newClock({ s: 0, reduced: clock.reduced });
         jump(0);
@@ -300,7 +306,12 @@ export default {
       },
     };
     if (import.meta.env.DEV && typeof window !== 'undefined') {
-      window.__ROAD__ = { world, set: (s) => world.set(s), info: () => ({ ...(rt.gfx.renderer?.info?.render ?? {}), s: clock.s }) };
+      // (info: the last frame's draws and triangles, and where the ride is)
+      const info = () => {
+        const r = rt.gfx.renderer?.info?.render ?? {};
+        return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size };
+      };
+      window.__ROAD__ = { world, set: (s) => world.set(s), info };
     }
     return world;
   },
