@@ -75,6 +75,10 @@ describe('the fog’s layers', () => {
     expect(l[2] / l[1]).toBeCloseTo(l[1] / l[0], 9);
     expect(fogLayers(NEBULA_BUDGET.high, 1e5).at(-1)).toBe(3000);
   });
+  it('has none for a cloud too small to fog the ship from inside', () => {
+    expect(fogLayers(NEBULA_BUDGET.high, 5)).toEqual([]);
+    expect(fogLayers(NEBULA_BUDGET.high, 16)).toEqual([]);
+  });
 });
 describe('a description', () => {
   it('takes the seeds generators make, and keeps them apart', () => {

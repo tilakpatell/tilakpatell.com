@@ -112,6 +112,8 @@ export function insideOf(entries, position) {
 export function fogLayers(row, r) {
   const far = Math.min(0.5 * r, FOG_FAR);
   const n = row.fog;
+  // (a cloud too small to fog the ship from inside has no layers)
+  if (far <= FOG_NEAR) return [];
   if (n <= 1) return [far];
   const ratio = (far / FOG_NEAR) ** (1 / (n - 1));
   return Array.from({ length: n }, (_, i) =>
@@ -130,7 +132,7 @@ export function youngStars(desc, n) {
     return out / 4294967296;
   };
   const gauss = () => (rand() + rand() + rand() - 1.5) / 1.5;
-  const spread = (SPREAD[desc.form] ?? SPREAD.cloud) * desc.r;
+  const spread = SPREAD[Object.hasOwn(SPREAD, desc.form) ? desc.form : 'cloud'] * desc.r;
   return Array.from({ length: n }, () => {
     const at = [gauss() * spread, gauss() * spread * 0.45, gauss() * spread];
     const bright = 0.5 + rand() ** 6 * 5;

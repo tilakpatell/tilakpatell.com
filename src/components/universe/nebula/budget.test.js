@@ -20,5 +20,6 @@ describe('the nebula tier rows', () => {
     expect(nebulaBudget('ultra')).toBe(NEBULA_BUDGET.high);
     expect(nebulaBudget('?')).toBe(NEBULA_BUDGET.mid);
     expect(nebulaBudget('low')).toBe(NEBULA_BUDGET.low);
+    expect(nebulaBudget('constructor')).toBe(NEBULA_BUDGET.mid);
   });
 });

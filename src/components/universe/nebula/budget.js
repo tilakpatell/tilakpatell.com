@@ -19,4 +19,4 @@ export const NEBULA_BUDGET = {
 // ('ultra' is lib/device's detail level, never its tier; it spends like high,
 // and a tier nobody knows spends like mid)
 export const nebulaBudget = (tier) =>
-  tier === 'ultra' ? NEBULA_BUDGET.high : NEBULA_BUDGET[tier] ?? NEBULA_BUDGET.mid;
+  tier === 'ultra' ? NEBULA_BUDGET.high : NEBULA_BUDGET[Object.hasOwn(NEBULA_BUDGET, tier) ? tier : 'mid'];
