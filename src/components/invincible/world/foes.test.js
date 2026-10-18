@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIGHT, KINDS, PORTAL, brawlThings, foeAt, knock, newFoes, pickTarget, portalOpen, spawnFoes, spawnUpTo, startInvasion, stepFoes } from './foes';
+import { FIGHT, KINDS, PORTAL, brawlThings, foeAt, holding, knock, newFoes, pickTarget, portalOpen, spawnFoes, spawnUpTo, startInvasion, stepFoes } from './foes';
 import { buildWorld, groundAt } from './map';
 import { forceOf } from './demolish';
 
@@ -473,5 +473,18 @@ describe('the towers they hit (./demolish.js counts it)', () => {
     expect(r.ev).toContainEqual(expect.objectContaining({ type: 'hit', id: 0, thrown: true }));
     const slow = { ...f, foes: f.foes.map((e) => ({ ...e, v: [30, 0, 0] })) };
     expect(stepFoes(slow, far, idle, 0.2, { city }).ev.some((e) => e.type === 'towerHit')).toBe(false);
+  });
+});
+
+describe('what he holds', () => {
+  it('is in his hands until it’s thrown, knocked out of them or gone', () => {
+    let f = spawnFoes(newFoes(), 'mauler', 1, [0, 0, 60]);
+    const h = { p: [0, groundAt(0, 63), 63], v: [0, 0, 0], mode: 'ground' };
+    f = stepFoes(f, h, { punch: false, look: [0, 0, -1], brawl: [{ kind: 'grab', target: 0 }] }, 1 / 30).foes;
+    expect(holding(f, 0)).toBe(true);
+    const out = stepFoes(f, h, { punch: false, look: [0, 0, -1], eveHit: 0 }, 1 / 30).foes;
+    expect(holding(out, 0)).toBe(false);
+    expect(holding(f, 'car:9')).toBe(false);
+    expect(holding({ ...f, cars: [{ id: 9, held: 'mark', p: [0, 0, 0], v: [0, 0, 0] }] }, 'car:9')).toBe(true);
   });
 });

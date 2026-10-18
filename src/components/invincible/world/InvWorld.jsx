@@ -6,7 +6,7 @@ import { useVoiced } from '../../../lib/useVoiced';
 import { sayVoiced } from '../../../lib/voiced';
 import { useAchievements } from '../../Achievements';
 import { useTravellers } from '../../middleearth/towns/useTravellers';
-import { brawlThings, newFoes, spawnFoes, startInvasion, stepFoes } from './foes';
+import { brawlThings, holding, newFoes, spawnFoes, startInvasion, stepFoes } from './foes';
 import { dive, jumpPress, newHero, stepHero } from './flight';
 import { newBrawl, stepBrawl } from './brawl';
 import { impactGroups } from '../../../lib/impact';
@@ -567,6 +567,8 @@ function World({ gl, setGl, thinkMark }) {
       s.foes = r.foes;
       s.eveHit = null;
       s.blocked = r.ev.filter((e) => e.type === 'blocked').length;
+      // (knocked out of his hands, or gone: he's carrying nothing)
+      if (s.brawl.carry && !holding(s.foes, s.brawl.carry.id)) s.brawl = { ...s.brawl, carry: null };
       if (r.push) {
         const l = Math.hypot(...r.push) || 1;
         s.h = { ...s.h, mode: 'air', crouch: 0, v: r.push, spd: l, dir: r.push.map((c) => c / l) };
