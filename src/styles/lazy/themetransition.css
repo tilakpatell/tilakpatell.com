@@ -53,9 +53,10 @@
 .tt-wipe ~ .tt-words { text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35); }
 
 /* Middle-earth: each scene brings its own dark, centred on what it draws (a
-   reaching inset, under the words), so the page can show through it at the end. */
-.tt[data-kind='door'] { --tt-ground: radial-gradient(circle at 50% 45%, rgba(66, 46, 22, 0.94), rgba(20, 14, 8, 0.97) 70%); background: var(--tt-ground); }
-.tt[data-kind='eye'] { --tt-ground: radial-gradient(ellipse at 50% 45%, rgba(58, 18, 6, 0.94), rgba(8, 5, 4, 0.97) 70%); background: var(--tt-ground); }
+   reaching inset, under the words), so the page can show through it at the end;
+   the overlay keeps a plain dark (--tt-ground) for when there is no scene. */
+.tt[data-kind='door'] { --tt-ground: radial-gradient(circle at 50% 45%, rgba(66, 46, 22, 0.94), rgba(20, 14, 8, 0.97) 70%); }
+.tt[data-kind='eye'] { --tt-ground: radial-gradient(ellipse at 50% 45%, rgba(58, 18, 6, 0.94), rgba(8, 5, 4, 0.97) 70%); }
 .tt[data-kind='door']:not([data-reduced]),
 .tt[data-kind='eye']:not([data-reduced]) { background: none; animation-name: tt-arrive; }
 .tt[data-kind='door'] .tt-words,
@@ -145,7 +146,8 @@ html[data-mode='dark'] .tt-door-hall { background-color: #170f08; }
 .tt-door-hole { fill: var(--round); stroke: #6f4a2b; stroke-width: 1.4; }
 .tt-door-window { fill: var(--lamp); stroke: #6f4a2b; stroke-width: 0.9; }
 .tt-door-mullion { stroke: #6f4a2b; stroke-width: 0.7; }
-.tt-door-smoke { fill: none; stroke: var(--smoke); stroke-width: 1.5; stroke-linecap: round; stroke-opacity: 0.55; stroke-dasharray: 1; stroke-dashoffset: 1; animation: tt-door-smoke var(--tt-len) ease-out both; }
+.tt-wisp { stop-color: var(--smoke); }
+.tt-door-smoke { fill: none; stroke: url(#tt-door-wisp); stroke-width: 1.7; stroke-linecap: round; stroke-opacity: 0.75; stroke-dasharray: 1; stroke-dashoffset: 1; animation: tt-door-smoke var(--tt-len) ease-out both; }
 html[data-mode='dark'] .tt-door-sun { display: none; }
 html[data-mode='dark'] :is(.tt-door-night, .tt-door-string, .tt-door-lantern, .tt-door-glow) { display: inline; }
 html[data-mode='dark'] .tt-door-night { fill: #ede3c4; }
@@ -195,7 +197,8 @@ html[data-mode='dark'] .tt-door-mote { background: #f1f5a8; box-shadow: 0 0 8px 
 
 /* Mordor: the Eye; its slit opens on the page (a registered length, so it moves) */
 @property --tt-slit { syntax: '<length>'; inherits: false; initial-value: 0px; }
-.tt-eye { --eye: min(92vw, 62vh, 470px); --smoke: rgba(132, 118, 106, 0.2); position: relative; width: var(--eye); aspect-ratio: 1; margin: -1.5rem auto 0.2rem; }
+/* (no wider than the words’ column, 100vw less its padding: wider, it would push the column off centre on a phone) */
+.tt-eye { --eye: min(100vw - 3rem, 62vh, 470px); --smoke: rgba(132, 118, 106, 0.2); position: relative; width: var(--eye); aspect-ratio: 1; margin: -1.5rem auto 0.2rem; }
 .tt-eye-dark {
   position: absolute; inset: -160vmax; z-index: -1; animation: tt-eye-slit var(--tt-len) both;
   background:
@@ -217,7 +220,7 @@ html[data-mode='dark'] .tt-eye-dark { background-color: #080504; }
 .tt-eye-spark { stroke: #ffd27a; stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 7 93; opacity: 0; animation: tt-eye-spark calc(var(--tt-len) * 0.23) linear calc(var(--tt-len) * 0.46) both; }
 /* each letter catches as the spark passes it, and cools */
 .tt-glyph, .tt-glyph-heat { fill: none; stroke-linecap: round; stroke-linejoin: round; animation: tt-heat calc(var(--tt-len) * 0.32) ease-out calc(var(--tt-len) * 0.47 + var(--tt-len) * var(--i) * 0.019) both; }
-.tt-glyph { stroke-width: 1.5; }
+.tt-glyph { stroke-width: 1.8; }
 .tt-glyph-heat { stroke-width: 4.5; animation-name: tt-heat-glow; }
 .tt-flame { fill: url(#tt-eye-flame); transform-box: fill-box; transform-origin: 50% 100%; animation: tt-flame var(--tt-len) cubic-bezier(0.2, 0.7, 0.3, 1) calc(var(--i) * 4ms) both, tt-flick 0.26s ease-in-out calc(var(--i) * -53ms) infinite alternate; }
 .tt-eye-ring + .tt-eye-flames .tt-flame { fill: url(#tt-eye-ember); }

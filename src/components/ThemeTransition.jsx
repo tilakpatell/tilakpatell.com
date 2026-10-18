@@ -134,6 +134,11 @@ function RoundDoor() {
                 <stop key={at} offset={at} className={`tt-sky-${'abcd'[i]}`} />
               ))}
             </radialGradient>
+            {/* the smoke thins as it rises */}
+            <linearGradient id="tt-door-wisp" x1="0" y1="49" x2="0" y2="-20" gradientUnits="userSpaceOnUse">
+              <stop offset="0" className="tt-wisp" />
+              <stop offset="1" className="tt-wisp" stopOpacity="0" />
+            </linearGradient>
           </defs>
           <rect x="-100" y="-100" width="200" height="200" fill="url(#tt-door-sky)" />
           <g className="tt-door-sun">
@@ -267,20 +272,31 @@ function RoundDoor() {
 // letters: not Tengwar, not the Ring’s verse), and the Eye shuts; its seam
 // stands upright and opens, like the pupil, onto the page.
 const ALMOND = 'M-50 0 C-28 -26 28 -26 50 0 C28 26 -28 26 -50 0 Z';
+// The ring’s twelve letters, none a numeral or a Latin letter at a glance (the
+// short strokes are sparks), written with a broad nib so they have a pen’s thick
+// and thin: each is drawn in a space squashed along one diagonal, its points
+// stretched to match, where the round stroke becomes a flat pen’s.
+const FLAT = 0.38;
+const NIB = `rotate(45) scale(1 ${FLAT}) rotate(-45)`;
+const nib = (d) =>
+  d.replace(/(-?[\d.]+) (-?[\d.]+)/g, (_, x, y) => {
+    const [u, v] = [(+x + +y) * Math.SQRT1_2, ((+y - +x) * Math.SQRT1_2) / FLAT];
+    return `${((u - v) * Math.SQRT1_2).toFixed(2)} ${((u + v) * Math.SQRT1_2).toFixed(2)}`;
+  });
 const GLYPHS = [
   'M-4 5 C-4 -1 1 -2 1 -7 C3 -3 4 1 0 6',
-  'M-4 -4 C-1 -7 3 -6 2 -2 C1 2 -3 2 -3 6 C-1 7 2 6 4 4',
+  'M-0.5 6 C-0.5 5.4 -0.6 3.8 -0.6 2.5 C-0.5 1.1 -0.7 -0.6 0 -2 C0.8 -3.4 3.4 -5.4 4.1 -6.1 M-3.2 -5.8 L-3.1 -5.8',
   'M-1 -7 C-5 -3 -4 3 0 3 C3 3 4 0 2 -2 M0 3 C0 5 1 6 3 7',
-  'M-4 6 C-3 2 -1 -1 3 -2 M-1 -1 C-2 -4 0 -7 3 -6',
-  'M3 -7 C-1 -5 -3 -2 -1 1 C1 4 3 4 2 7 M-4 3 L-2 4',
+  'M4.1 5.8 C4 4.4 4.2 -0.9 3.5 -2.3 C2.8 -3.7 1.1 -1.7 0 -2.5 C-1.1 -3.3 -2.5 -6.2 -3.1 -6.9 M0 -5.8 L0.1 -5.8',
   'M-4 -1 C-2 -5 2 -5 4 -2 M0 -3 C0 1 -2 4 -4 6 M1 3 C2 5 3 6 4 6',
-  'M-3 7 C-3 2 -1 -2 -3 -7 M-2 -2 C1 -3 4 -1 3 2 C2 4 0 3 0 1',
-  'M-4 -6 C0 -6 2 -3 0 0 C-2 3 0 6 4 6',
-  'M4 -6 C0 -7 -4 -5 -3 -1 C-2 2 2 2 2 -1 M-3 -1 C-4 3 -3 6 -1 7 M1 5 L4 7',
+  'M3.1 -2.3 C2.5 -3.1 0.2 -6.8 -0.3 -6.7 C-0.9 -6.6 0.4 -4 -0.1 -1.9 C-0.6 0.3 -3.4 5 -3.5 6.2 C-3.5 7.4 -0.9 5.5 -0.4 5.3',
+  'M4 6.4 C3.4 5.1 0.5 0.7 0.4 -1.5 C0.2 -3.7 3.3 -7.2 3.3 -6.6 C3.3 -5.9 1.5 2.3 0.4 2.3 C-0.8 2.3 -3.6 -5.1 -3.6 -6.6 C-3.6 -8.1 -0.3 -6.6 0.3 -6.6 M-3.2 5.4 L-3.1 5.4',
   'M-3 -7 C-3 -2 0 0 3 -1 M3 -1 C1 2 -1 5 -1 7 M-4 4 C-3 3 -2 3 -1 4',
-  'M-2 -7 C3 -6 4 -2 0 0 C-4 2 -3 6 2 7 M-4 -3 L-2 -2',
+  'M3.3 -2.5 C3.4 -3.1 4.3 -5.9 3.7 -5.8 C3.1 -5.7 0.9 -3.8 -0.2 -2 C-1.3 -0.2 -2.2 5.1 -2.7 5.1 C-3.3 5.2 -3.3 -0.6 -3.4 -1.7 M-2.9 -5.6 L-2.8 -5.6',
   'M-4 2 C-2 -2 2 -2 4 2 M0 -1 C0 -4 1 -6 3 -7 M-2 4 C-1 6 1 6 2 4',
-];
+  'M-3.3 5.8 C-2.7 4.5 0.3 0 0.3 -1.9 C0.3 -3.9 -2.7 -5.8 -3.4 -5.8 C-4.1 -5.9 -4.7 -1.9 -4 -2.1 C-3.4 -2.2 -0.3 -5.9 0.4 -6.7 M0 5.4 L0.1 5.4',
+  'M3.8 6.5 C3.1 5 0.5 -1.4 -0.2 -2.1 C-0.8 -2.8 -0.8 2.8 0 2.1 C0.7 1.4 4.1 -4.8 4.2 -6.3 C4.3 -7.8 1.2 -6.8 0.6 -6.9 M-3.2 -5.8 L-3.1 -5.8',
+].map(nib);
 // A seeded scatter, so the Eye is drawn the same every time.
 const seeded = (i) => {
   const x = Math.sin(i * 12.9898 + 4.1) * 43758.5453;
@@ -348,7 +364,7 @@ function TheEye() {
           <circle r="94" />
           <circle className="tt-eye-spark" r="84" pathLength="100" transform="rotate(-90)" />
           {GLYPHS.map((d, i) => (
-            <g key={i} transform={`rotate(${i * 30}) translate(0 -84)`}>
+            <g key={i} transform={`rotate(${i * 30}) translate(0 -84) ${NIB}`}>
               <path className="tt-glyph-heat" d={d} style={{ '--i': i }} />
               <path className="tt-glyph" d={d} style={{ '--i': i }} />
             </g>
