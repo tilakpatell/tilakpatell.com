@@ -60,7 +60,7 @@ Made by Tilak in session on 2026-10-18:
 - **Splits by the barrel recipe** (`RULES.md:21-32`): the old path becomes a barrel with the same export names, no caller changes in the same PR, before and after screenshots pixel-identical.
 - **Pure, seeded rules with tests beside them**, each under one second, no network. No test is loosened, skipped or deleted.
 - **One runtime renderer, one live 3D view a page.** No new renderers or animation loops; the HQ modules stay `'glsl'` until their FL3 port, which is the FL2 session’s.
-- **HUD from `src/runtime/hud`**: numbers through refs, keys written once in `guide/pages.js`, nothing under 0.7 rem, kit touch sizes. Open draft #1028 edits `guide/pages.js` and `runtime/hud/*`: rebase on it or coordinate before touching those files.
+- **HUD from `src/runtime/hud`**: numbers through refs, nothing under 0.7 rem, kit touch sizes. The compound’s keys are already written once in `guide/pages.js`; the HQ games keep their own key lists in this spec, and moving them to `guide/pages.js` waits for open draft #1028 (which edits `guide/pages.js` and `runtime/hud/*`) to merge. The game bar and the results card of §5 are the frame of a page game, not a world HUD: they are drawn with the shell’s parts (`.btn`, the tokens) at the kit’s touch sizes (44 px at least on a coarse pointer).
 - **Nothing a visitor has is lost.** Every `tp-hq-*` key keeps its name and shape; new fields are appended; every achievement, sound, ghost and dev hook (`__HQWORLD__`, `__HQ__`) keeps working.
 - **Copy:** British spelling, curly quotes, sentence case, no Oxford comma, the key first in prompts.
 
@@ -82,8 +82,8 @@ Made by Tilak in session on 2026-10-18:
 
   `linkOf(id)` and `placeOf(slug)`; an unknown slug gives `null` and the page replaces the address with `/avengers`.
 - `CompoundWorld` takes its open place from the route instead of from local state. Going through a door pushes `/avengers/<slug>`; Back (the button, Esc or the browser) goes back. When the game was opened from outside the page (a shared link, the palette), Back replaces with `/avengers` rather than leaving the site.
-- A cold deep link opens the game at once over a compound that loads behind it (or over the board, without 3D). The game does not wait for the compound.
-- The command palette gets one entry per game under Worlds (“Avengers HQ · Ricochet”), and the bare “Avengers HQ” entry moves out of “Easter eggs”. The to-do entries, the guide’s `/avengers` page and the tour chapter link to the building they talk about.
+- A cold deep link opens the game at once; it does not wait for the compound. The page keeps one live 3D view, so the compound is built when the game closes, behind its loading veil (without 3D, the board is there at once).
+- The command palette gets one entry per game under Worlds (“Avengers HQ · Ricochet”), and the bare “Avengers HQ” entry moves out of “Easter eggs”. The to-do entries and the tour chapter link to the building they talk about; the guide’s `/avengers` page, whose tips are plain text, gets a tip naming the building links.
 - The portal still jumps down to Titan (`Avengers.jsx:113-128`), and opens only with the Space Stone, in every mode: the Tesseract toy stops opening it for free.
 
 ## 5. The game screen
@@ -104,8 +104,9 @@ Made by Tilak in session on 2026-10-18:
 
 - **Where.** Directly under the compound, and as the first screen without 3D. It replaces the second intro (`Avengers.jsx:158-172`) and the no-3D cards view (`CompoundWorld.jsx:656-707`). Without 3D, the isometric map (`Compound.jsx`) stays at the top of the view and its pins scroll to their cards.
 - **One card a building, eight in all.** The place and the game’s name; its stone (won, half won, or “won in 3D” with “Try 3D”); the best from the key the game already writes (`tp-hq-repulsor-best`, `tp-hq-lawn-best`, `tp-hq-ricochet`, `tp-hq-trickshot-best`, `tp-hq-widow-level`, `tp-hq-smash-best`, `tp-hq-thwip-best`, `tp-hq-tesseract-best`), stars or medals where the game keeps them; Play (its link); Go there (to the door in 3D, hidden without 3D).
-- **A records strip at the top of the board.** Stones out of six, the tour’s best (`tp-hq-swing-tour`), best style (`tp-hq-style-best`), backpacks out of twelve (`tp-hq-packs`), the Avengers achievements earned (`Achievements.jsx:213-226`). Read through `runtime/saves` `register` with each key’s current name and shape.
-- **Things to do reaches 8/8.** The gate counts as done once Thwip has been won (its `spidey` achievement), and the HUD’s count and the board read the same `progress()`.
+- **A records strip at the top of the board.** Stones out of six, the tour’s best (`tp-hq-swing-tour`), best style (`tp-hq-style-best`), backpacks out of twelve (`tp-hq-packs`), the Avengers achievements earned (`Achievements.jsx:213-226`). Read through `runtime/saves`’ plain `get`, unregistered: `register` would rewrite a key as `{ v, data }`, which the games’ own reads do not expect, so these keys keep their names and shapes.
+- **Try 3D on a card** sets that game’s own 3D choice (§5) and opens it; it never changes the site’s setting.
+- **Things to do reaches 8/8** (it lands with the fixes, §9): the gate counts as done once Thwip has been won (its `spidey` achievement), its door shows no gem, and the HUD’s count and the board read the same `progress()`.
 - **The page under the board:** the world switcher, then Titan, then one “Archive” section (`<details>`, closed by default) holding the soundboard, the GIPHY scenes and the photos, then the credits last.
 
 ## 7. The heist and the finale
@@ -114,7 +115,7 @@ Made by Tilak in session on 2026-10-18:
 - **The classic page keeps the free gauntlet**: the click-to-set one on the interests card (`interests/cards.jsx`) is not touched.
 - **A heist record.** A new key, `tp-hq-heist`, registered with `runtime/saves` at version 1: `{ stones: { [id]: firstWonAt }, tries: { [game]: n } }`. `earnStone` writes the time a stone is first won; each game’s start writes a try. Old visitors who already hold stones get `firstWonAt: null` for them, and the summary says “before records began” for those.
 - **The summary over the dust.** When the earned snap plays, a text panel on glass rises over Titan’s dust: time from the first stone to the sixth, tries per game, the best score per game. Titan’s scene is unchanged.
-- **Copy fixes:** the “army” line matches the one figure on screen (`Avengers.jsx:148, 219`); the tour says the Space Stone opens the portal; a half of the Soul Stone reads as a half (`labels.js`); the no-3D lead stops promising stones for toys.
+- **Copy fixes:** the “army” line matches the one figure on screen (`Avengers.jsx:148, 219`); the tour says the Space Stone opens the portal; a half of the Soul Stone reads as whose half it is, “Clint’s half of the Soul Stone”, in the HUD list, the board and the game screen alike (`labels.js`); the no-3D lead stops promising stones for toys.
 
 ## 8. Two games in 2D
 
@@ -136,7 +137,7 @@ For visitors without 3D, or who pick “Play in 2D”. Each is an SVG view over 
 
 ## 10. Code health, first
 
-- Split `world/rules.js` and `world/scene.js` by concern under the barrel recipe: `rules.js` into the plan (`PLACES`, `CAST`, `PORTAL`, the grounds’ data), the hero step, aim and anchors, the tour and laps, progress; `scene.js` into the grounds, the buildings, the doors and gems, the cast, the effects. Same exports from the old paths, no caller changes, pixel-identical before and after shots with `scripts/hq-world-check.mjs` and `docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs`.
+- Split `world/rules.js` and `world/scene.js` by concern under the barrel recipe: `rules.js` into the plan (`PLACES`, `CAST`, `PORTAL`, the grounds’ data), the hero step, aim and anchors, the tour and laps, progress; `scene.js` into the grounds, the buildings, the doors and gems, the cast, the effects. Same exports from the old paths, no caller changes, pixel-identical before and after shots with `docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs` (it holds the clock, so it is the pixel gate); `scripts/hq-world-check.mjs` runs as the error check and for the eye.
 - Stop the HUD barrel pulling Battlefront data into the page: `CompoundHud.jsx` imports the kit parts it uses from their files, not the barrel. Measure the `/avengers` closure before and after from the build manifest. If the barrel itself should stop re-exporting `Screen`, that is a change to `runtime/hud` and goes through #1028’s owner.
 
 ## 11. Order of work
@@ -144,7 +145,7 @@ For visitors without 3D, or who pick “Play in 2D”. Each is an SVG view over 
 One PR each, merged in order, every one green:
 
 1. The splits and the HUD import (§10). No visible change.
-2. The fixes (§9).
+2. The fixes (§9, with §6’s 8/8 and §7’s copy fixes).
 3. Links and navigation (§4).
 4. The game screen (§5).
 5. The ops board, records and the page’s order (§6).
@@ -155,6 +156,7 @@ One PR each, merged in order, every one green:
 
 - **Vitest:** `links.js` both ways and unknown slugs; `progress()` reaching 8/8; the heist record’s writes and its migration from no key; the snap’s gate; a scripted player winning Ricochet room 1 and Infiltration level 1 through the 2D views’ controllers on the real rules; Thwip’s idle loss; Prime’s attacks before its death; Trick Shot’s round length and stone rate.
 - **In the browser** (`scripts/autopilot-check.mjs --before` on `main`, then `--routes /avengers,/invincible --shots` and `--phone`; `scripts/hq-world-check.mjs`; `scripts/inv-world-check.mjs` whenever `hq/` changes): every link opens its game and Back closes it; Start is in view at 1024 × 640 and 390 × 844; the per-game 3D switch leaves the compound in 3D; with 3D off, the Mind Stone is won in 2D; returning from a game shows the veil, then the compound; no console errors.
+- **Every PR from the third on** reruns `scripts/hq-links-check.mjs` (added with the links), and states the `/avengers` closure’s size from the build manifest.
 - **Before each PR is done:** `npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build`; `git checkout public/github.json` after a build; the screenshots read, and the closure’s size stated in the PR.
 
 ## 13. Not in this spec
