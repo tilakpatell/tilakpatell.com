@@ -16,6 +16,7 @@ import { LAYERS, LAYERS_KEY, LAYER_LABEL, readLayers, warForEra } from './mapLay
 import { HIDDEN, SMALL_DOT, estimateWidth, hangOf, placeLabels, sideOf } from './labelPlace';
 import { courseOf, findSystems, mapKeyAction, pickAction, seedPick } from './mapKeys';
 import { useMapView } from './useMapView';
+import { holdWheel } from './wheelHeld';
 import { discOf } from './globes';
 import { LANDMARKS } from './landmarks';
 import { local } from '../../lib/hooks';
@@ -206,6 +207,9 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
   const canvas = useRef(null);
   const box = useRef(null);
   const mv = useMapView(box);
+  // (a wheel over the map that nothing in it scrolls stops there, wheelHeld.js: the page behind stays)
+  const root = useRef(null);
+  useEffect(() => (root.current ? holdWheel(root.current) : undefined), []);
   const close = useRef(null);
   const find = useRef(null);
   const jumpBtn = useRef(null);
@@ -515,7 +519,7 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
   }, [hovered, mv.view, boxPx]);
 
   return createPortal(
-    <div className="holomap dark-scope" role="dialog" aria-modal="true" aria-labelledby="holomap-title" style={{ '--btn-bg': picked?.accent ?? '#7fd6ff', '--btn-ink': '#03040a', '--accent': picked?.accent ?? '#7fd6ff', '--accent-text': picked?.accent ?? '#7fd6ff' }}>
+    <div ref={root} className="holomap dark-scope" role="dialog" aria-modal="true" aria-labelledby="holomap-title" style={{ '--btn-bg': picked?.accent ?? '#7fd6ff', '--btn-ink': '#03040a', '--accent': picked?.accent ?? '#7fd6ff', '--accent-text': picked?.accent ?? '#7fd6ff' }}>
       <div className="holomap-frame">
         <header className="holomap-head">
           <div>

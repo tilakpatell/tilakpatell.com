@@ -217,6 +217,9 @@ describe('the liberator’s fronts and orders', () => {
     expect(orderTarget({ ...c, rates: { coruscant: 8, endor: 8 } })).toBe('coruscant');
     expect(orderTarget({ ...c, rates: { coruscant: 8, endor: 8 }, previous: 'coruscant' })).toBe('endor');
     expect(orderTarget({ ...c, rates: { coruscant: 8, endor: 8 }, holdsOut: new Set(['coruscant']) })).toBe('endor');
+    // (with only last stands left, one that moves over one that's stuck, the worthier: the GCW's Rebels
+    // once held all but the Empire's Scarif, stalled behind its shield, and the Hutts' Tatooine)
+    expect(orderTarget({ ...c, rates: { coruscant: 0.5, endor: 8 }, holdsOut: new Set(['coruscant', 'endor']) })).toBe('endor');
     expect(orderTarget({ ...c, border: [], rates: {} })).toBeNull();
   });
   it('orders the raider to take what it’s attacking, else hold its weakest system under threat', () => {
