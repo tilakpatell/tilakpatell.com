@@ -5,8 +5,8 @@
 // needs as arguments; ../../nodes/towns/doom/propsShaders.js is its twin on
 // the node renderer, the same names.
 
-import * as THREE from "three";
-import { rng } from "../../shire/props";
+import * as THREE from 'three';
+import { rng } from '../../shire/props';
 
 const TAU = Math.PI * 2;
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
@@ -46,21 +46,15 @@ export function emberish(m, U, { cap = 1, glow = null, key }) {
   if (glow) m.userData.glow = glow;
   m.onBeforeCompile = (s) => {
     s.uniforms.uFogCap = m.userData.fogCap;
-    let head = "uniform float uFogCap;\n";
+    let head = 'uniform float uFogCap;\n';
     if (glow) {
       s.uniforms.uGlow = glow;
       s.uniforms.uTime = U.uTime;
       s.uniforms.uNoise = U.uNoise;
-      s.vertexShader =
-        "attribute float heat;\nvarying float vHeat;\nvarying vec3 vHw;\n" +
-        s.vertexShader.replace(
-          "#include <project_vertex>",
-          "#include <project_vertex>\nvHeat = heat;\nvHw = (modelMatrix * vec4(transformed, 1.0)).xyz;",
-        );
-      head +=
-        "uniform float uGlow;\nuniform float uTime;\nuniform sampler2D uNoise;\nvarying float vHeat;\nvarying vec3 vHw;\n";
+      s.vertexShader = 'attribute float heat;\nvarying float vHeat;\nvarying vec3 vHw;\n' + s.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\nvHeat = heat;\nvHw = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+      head += 'uniform float uGlow;\nuniform float uTime;\nuniform sampler2D uNoise;\nvarying float vHeat;\nvarying vec3 vHw;\n';
       s.fragmentShader = s.fragmentShader.replace(
-        "#include <emissivemap_fragment>",
+        '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
         {
           float f = texture2D(uNoise, vHw.xz * 0.004 + vec2(uTime * 0.01, -uTime * 0.017)).r;
@@ -70,8 +64,7 @@ export function emberish(m, U, { cap = 1, glow = null, key }) {
         }`,
       );
     }
-    s.fragmentShader =
-      head + s.fragmentShader.replace("#include <fog_fragment>", FOG_CAP);
+    s.fragmentShader = head + s.fragmentShader.replace('#include <fog_fragment>', FOG_CAP);
   };
   m.customProgramCacheKey = () => key;
   return m;
@@ -81,10 +74,7 @@ export function emberish(m, U, { cap = 1, glow = null, key }) {
 // metres) with the white-hot rock showing in the seams between, brighter
 // where the crust has broken. RIBBON: a stream down a gully, its `aEdge` 0
 // at the middle and 1 at the banks, crusted and cooler there.
-export function lavaMaterial(
-  U,
-  { ribbon = false, swell = 0, scale = 1, heat = 1, flow = 1, cap = 1 } = {},
-) {
+export function lavaMaterial(U, { ribbon = false, swell = 0, scale = 1, heat = 1, flow = 1, cap = 1 } = {}) {
   const m = new THREE.ShaderMaterial({
     uniforms: {
       ...fogUniforms(cap),
@@ -93,7 +83,7 @@ export function lavaMaterial(
       uScale: { value: scale },
       uSwell: { value: swell },
     },
-    defines: ribbon ? { RIBBON: "" } : {},
+    defines: ribbon ? { RIBBON: '' } : {},
     fog: true,
     vertexShader: /* glsl */ `
       #include <fog_pars_vertex>
@@ -157,18 +147,7 @@ export function lavaMaterial(
 // `uRise` and swelling to `uSize`, bent over by uWind, lit red from beneath
 // while they are low (and more so in eruption). Each card is born at its
 // aEmit and lives its own time (aSeed).
-export function smokeMaterial(
-  U,
-  {
-    size = 100,
-    rise = 400,
-    spread = 120,
-    wind = [0.4, 0, -0.1],
-    cap = 1,
-    alpha = 0.6,
-    speed = 0.012,
-  } = {},
-) {
+export function smokeMaterial(U, { size = 100, rise = 400, spread = 120, wind = [0.4, 0, -0.1], cap = 1, alpha = 0.6, speed = 0.012 } = {}) {
   const m = new THREE.ShaderMaterial({
     uniforms: {
       ...fogUniforms(cap),
@@ -251,10 +230,7 @@ export function smokeMaterial(
 // Flames as soft tongues on camera-facing cards, each born at its aEmit and
 // rising, wavering, white-yellow through orange to a dull red, gone. uK how
 // much: 0 none. Added, so their order doesn't matter.
-export function flameMaterial(
-  U,
-  { size = 1, rise = 2, rate = 1, cap = 1 } = {},
-) {
+export function flameMaterial(U, { size = 1, rise = 2, rate = 1, cap = 1 } = {}) {
   const m = new THREE.ShaderMaterial({
     uniforms: {
       ...fogUniforms(cap),
@@ -395,8 +371,8 @@ export function bombCloud(material, count, at, r0, seed = 1) {
     sd.set([r(), r(), r(), r()], i * 4);
   }
   const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  g.setAttribute("aSeed", new THREE.BufferAttribute(sd, 4));
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('aSeed', new THREE.BufferAttribute(sd, 4));
   const p = new THREE.Points(g, material);
   p.frustumCulled = false;
   p.renderOrder = 7;
@@ -549,15 +525,11 @@ export function underglow(m, U, key) {
     s.uniforms.uNoise = U.uNoise;
     s.uniforms.uTime = U.uTime;
     s.vertexShader =
-      "varying vec3 vUgW;\nvarying vec3 vUgN;\n" +
-      s.vertexShader.replace(
-        "#include <project_vertex>",
-        "#include <project_vertex>\nvUgW = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvUgN = normalize(mat3(modelMatrix) * objectNormal);",
-      );
+      'varying vec3 vUgW;\nvarying vec3 vUgN;\n' + s.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\nvUgW = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvUgN = normalize(mat3(modelMatrix) * objectNormal);');
     s.fragmentShader =
-      "uniform float uFire;\nuniform float uLavaY;\nuniform float uDepth;\nuniform float uTime;\nuniform sampler2D uNoise;\nvarying vec3 vUgW;\nvarying vec3 vUgN;\n" +
+      'uniform float uFire;\nuniform float uLavaY;\nuniform float uDepth;\nuniform float uTime;\nuniform sampler2D uNoise;\nvarying vec3 vUgW;\nvarying vec3 vUgN;\n' +
       s.fragmentShader.replace(
-        "#include <emissivemap_fragment>",
+        '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
       {
         vec3 un = vUgN / max(length(vUgN), 1e-4);
@@ -662,16 +634,11 @@ export function ringMaterial(env, letters, U) {
     s.uniforms.uLetters = { value: letters };
     s.uniforms.uK = m.userData.k;
     s.uniforms.uTime = U.uTime;
-    s.vertexShader =
-      "varying vec2 vRingUv;\n" +
-      s.vertexShader.replace(
-        "#include <uv_vertex>",
-        "#include <uv_vertex>\nvRingUv = uv;",
-      );
+    s.vertexShader = 'varying vec2 vRingUv;\n' + s.vertexShader.replace('#include <uv_vertex>', '#include <uv_vertex>\nvRingUv = uv;');
     s.fragmentShader =
-      "uniform sampler2D uLetters;\nuniform float uK;\nuniform float uTime;\nvarying vec2 vRingUv;\n" +
+      'uniform sampler2D uLetters;\nuniform float uK;\nuniform float uTime;\nvarying vec2 vRingUv;\n' +
       s.fragmentShader.replace(
-        "#include <emissivemap_fragment>",
+        '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
       {
         float bv = fract(vRingUv.y + 0.5) - 0.5;
@@ -683,7 +650,7 @@ export function ringMaterial(env, letters, U) {
       }`,
       );
   };
-  m.customProgramCacheKey = () => "doom-ring";
+  m.customProgramCacheKey = () => 'doom-ring';
   return m;
 }
 
@@ -698,27 +665,13 @@ export function orcMaterial(env) {
     envMapIntensity: 0.9,
   });
   m.onBeforeCompile = (sh) => {
-    sh.vertexShader = sh.vertexShader
-      .replace(
-        "#include <common>",
-        "#include <common>\nattribute float metal;\nvarying float vMetal;",
-      )
-      .replace(
-        "#include <begin_vertex>",
-        "#include <begin_vertex>\nvMetal = metal;",
-      );
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float metal;\nvarying float vMetal;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvMetal = metal;');
     sh.fragmentShader = sh.fragmentShader
-      .replace("#include <common>", "#include <common>\nvarying float vMetal;")
-      .replace(
-        "#include <roughnessmap_fragment>",
-        "#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.38, vMetal);",
-      )
-      .replace(
-        "#include <metalnessmap_fragment>",
-        "#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.85, vMetal);",
-      );
+      .replace('#include <common>', '#include <common>\nvarying float vMetal;')
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.38, vMetal);')
+      .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.85, vMetal);');
   };
-  m.customProgramCacheKey = () => "doom-orc";
+  m.customProgramCacheKey = () => 'doom-orc';
   return m;
 }
 

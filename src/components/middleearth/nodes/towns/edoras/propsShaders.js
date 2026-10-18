@@ -4,23 +4,8 @@
 // node material, which the kit puts in the old one’s place. The wind’s
 // numbers are rounded as the GLSL wrote them (five places).
 
-import {
-  abs,
-  attribute,
-  cos,
-  float,
-  normalLocal,
-  normalize,
-  positionGeometry,
-  sin,
-  vec3,
-} from "three/tsl";
-import {
-  asNode,
-  follow,
-  instanceMatrixOf,
-  onPosition,
-} from "../../../../../lib/three/hookNodes";
+import { abs, attribute, cos, float, normalLocal, normalize, positionGeometry, sin, vec3 } from 'three/tsl';
+import { asNode, follow, instanceMatrixOf, onPosition } from '../../../../../lib/three/hookNodes';
 
 const F5 = (v) => Number(v.toFixed(5));
 const flat = (v) => vec3(F5(v.x), 0, F5(v.z));
@@ -37,7 +22,7 @@ export function windBanner(mat, U, WIND, ACROSS) {
   return onPosition(
     n,
     (p) => {
-      const aWave = attribute("aWave", "vec4");
+      const aWave = attribute('aWave', 'vec4');
       const bk = aWave.x;
       const gust = sin(uTime.mul(0.83).add(aWave.y))
         .mul(sin(uTime.mul(0.37).add(aWave.y.mul(2.1))))
@@ -70,7 +55,7 @@ export function windBanner(mat, U, WIND, ACROSS) {
         .sub(bk.mul(bk).mul(aWave.w).mul(0.07).mul(gust.negate().add(1.25)));
       return vec3(t.x, y, t.z);
     },
-    "edoras-banner",
+    'edoras-banner',
     { uTime },
   );
 }
@@ -85,18 +70,12 @@ export function windGrass(mat, U, WIND, k = 0.5) {
       const im = instanceMatrixOf(builder);
       const root = im ? im.element(3).xyz : vec3(0);
       const bend = positionGeometry.y.mul(positionGeometry.y);
-      const sway = sin(
-        uTime.mul(2.3).add(root.x.mul(0.21)).add(root.z.mul(0.13)),
-      )
+      const sway = sin(uTime.mul(2.3).add(root.x.mul(0.21)).add(root.z.mul(0.13)))
         .mul(sin(uTime.mul(0.9).add(root.x.mul(0.05))))
         .mul(0.45)
         .add(0.55);
       const gust = sway.add(0.6);
-      return vec3(
-        p.x.add(float(F5(WIND.x)).mul(bend).mul(F5(k)).mul(gust)),
-        p.y.sub(bend.mul(F5(k * 0.25)).mul(sway)),
-        p.z.add(float(F5(WIND.z)).mul(bend).mul(F5(k)).mul(gust)),
-      );
+      return vec3(p.x.add(float(F5(WIND.x)).mul(bend).mul(F5(k)).mul(gust)), p.y.sub(bend.mul(F5(k * 0.25)).mul(sway)), p.z.add(float(F5(WIND.z)).mul(bend).mul(F5(k)).mul(gust)));
     },
     `edoras-grass${k}`,
     { uTime },

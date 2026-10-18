@@ -12,20 +12,20 @@
 // screenOf(kind, id), headOf(id), resize, dispose, lost, info }.
 
 import * as THREE from 'three';
-import { createStage, disposeTree } from '../../stage';
-import { createHouse } from '../../../../lib/three/house';
-import { dress, rolesFor } from '../../../../lib/three/core';
+import { createStage, disposeTree } from '../../nodes/stage';
+import { createHouse } from '../../../../lib/three/houseNodes';
+import { dress, rolesFor } from '../../../../lib/three/coreNodes';
 import { device } from '../../../../lib/device';
 import { fbm, makeNoise, smooth } from '../../../../lib/paint';
 import { pose } from '../../mapFigures';
-import { createParticles } from '../../kit';
-import { instances } from '../../shire/ground';
+import { createParticles } from '../../nodes/kit';
+import { instances } from '../../nodes/shire/ground';
 import { LOOKS, sit } from '../../shire/people';
-import { makeAtmosphere, makeSky } from '../../shire/sky';
-import { createFx } from '../../shire/fx';
+import { makeAtmosphere, makeSky } from '../../nodes/shire/sky';
+import { createFx } from '../../nodes/shire/fx';
 import { bake, farTree } from '../bake';
-import { createGhosts } from '../ghosts';
-import { makeTerrain, makeTufts } from '../ground';
+import { createGhosts } from '../../nodes/towns/ghosts';
+import { makeTerrain, makeTufts } from '../../nodes/towns/ground';
 import { FIGURE, groundTown } from '../grounded';
 import { makeFolk } from '../bree/props';
 import { createRivendellKit } from './props';
@@ -34,7 +34,7 @@ import { attend, castDo, castPlay, followDrawn, releaseCast, tickCast } from '..
 import { byFrame, createShake } from '../../feel';
 import { BLOOMS } from '../look';
 import { houseGroups } from '../../../../lib/three/houseTuning';
-import { riverMaterial } from './sceneShaders';
+import { riverMaterial } from '../../nodes/towns/rivendell/sceneShaders';
 
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const TAU = Math.PI * 2;

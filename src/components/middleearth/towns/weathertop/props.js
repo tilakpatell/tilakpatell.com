@@ -13,11 +13,11 @@
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
-import { canvasTexture, hot } from '../../../../lib/stage3d';
+import { canvasTexture, hot } from '../../../../lib/three/stage3dNodes';
 import { clamp01, fbm, makeCanvas, makeCells, makeNoise, mix, normalFromField, paintPixels, smooth } from '../../../../lib/paint';
 import { B, ball, blob, boxUV, createShireKit, cyl, cylX, cylZ, fillColor, lanternParts, lathe, parts, rng, roundBox, tf, tube } from '../../shire/props';
 import { createStride, createTracker, footAt, legRig } from '../../creatures';
-import { churnMaterial, emberGlow, floodWaterMaterial, hairBothSides, sprayPoints } from './propsShaders';
+import { churnMaterial, emberGlow, floodWaterMaterial, hairBothSides, sprayPoints } from '../../nodes/towns/weathertop/propsShaders';
 
 const TAU = Math.PI * 2;
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);

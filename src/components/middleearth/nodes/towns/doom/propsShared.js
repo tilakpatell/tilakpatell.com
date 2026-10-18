@@ -2,19 +2,10 @@
 // the Shire’s seeded random, the kit’s shared { value }s as nodes, the fog
 // held back, a card’s place in the view, and the points’ sprites.
 
-import * as THREE from "three";
-import { MeshBasicNodeMaterial, PointsNodeMaterial } from "three/webgpu";
-import {
-  densityFogFactor,
-  mix,
-  rangeFogFactor,
-  reference,
-  renderGroup,
-  smoothstep,
-  texture,
-  vec4,
-} from "three/tsl";
-import { follow, wrap } from "../../../../../lib/three/hookNodes";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial, PointsNodeMaterial } from 'three/webgpu';
+import { densityFogFactor, mix, rangeFogFactor, reference, renderGroup, smoothstep, texture, vec4 } from 'three/tsl';
+import { follow, wrap } from '../../../../../lib/three/hookNodes';
 
 export const TAU = Math.PI * 2;
 export const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
@@ -51,21 +42,14 @@ export const sample = (node, at) => texture(node.value, at);
 export function capFog(material, cap, add, tag) {
   return wrap(
     material,
-    "setupFog",
+    'setupFog',
     (out, builder, outputNode) => {
       const f = builder.scene?.fog;
       if (!f || !builder.fogNode || !(f.isFog || f.isFogExp2)) return out;
-      const factor = f.isFogExp2
-        ? densityFogFactor(
-            reference("density", "float", f).setGroup(renderGroup),
-          )
-        : rangeFogFactor(
-            reference("near", "float", f).setGroup(renderGroup),
-            reference("far", "float", f).setGroup(renderGroup),
-          );
+      const factor = f.isFogExp2 ? densityFogFactor(reference('density', 'float', f).setGroup(renderGroup)) : rangeFogFactor(reference('near', 'float', f).setGroup(renderGroup), reference('far', 'float', f).setGroup(renderGroup));
       const k = factor.mul(cap);
       if (add) return vec4(outputNode.rgb.mul(k.oneMinus()), outputNode.a);
-      const color = reference("color", "color", f).setGroup(renderGroup);
+      const color = reference('color', 'color', f).setGroup(renderGroup);
       return vec4(mix(outputNode.rgb, color, k), outputNode.a);
     },
     tag,
@@ -74,13 +58,11 @@ export function capFog(material, cap, add, tag) {
 }
 
 // the view-space place a card or quad is drawn at, as its vertex shader put it
-export const placeAt = (material, fn, tag) =>
-  wrap(material, "setupPositionView", fn, tag);
+export const placeAt = (material, fn, tag) => wrap(material, 'setupPositionView', fn, tag);
 
 // A ShaderMaterial’s defaults on a node material: no fog unless asked, no
 // tone map (the GLSL had no such chunk).
-export const basic = (o) =>
-  new MeshBasicNodeMaterial({ fog: false, toneMapped: false, ...o });
+export const basic = (o) => new MeshBasicNodeMaterial({ fog: false, toneMapped: false, ...o });
 
 // A point’s sprite material: the place and the seed are instance
 // attributes of the cloud’s geometry (aPoint, aSeed), its size in pixels.
@@ -101,10 +83,10 @@ export function pointSprite(material, pos, seeds, count) {
   const quad = new THREE.PlaneGeometry(1, 1);
   const geo = new THREE.InstancedBufferGeometry();
   geo.index = quad.index;
-  geo.setAttribute("position", quad.getAttribute("position"));
-  geo.setAttribute("uv", quad.getAttribute("uv"));
-  geo.setAttribute("aPoint", new THREE.InstancedBufferAttribute(pos, 3));
-  geo.setAttribute("aSeed", new THREE.InstancedBufferAttribute(seeds, 4));
+  geo.setAttribute('position', quad.getAttribute('position'));
+  geo.setAttribute('uv', quad.getAttribute('uv'));
+  geo.setAttribute('aPoint', new THREE.InstancedBufferAttribute(pos, 3));
+  geo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seeds, 4));
   geo.instanceCount = count;
   const s = new THREE.Sprite(material);
   s.geometry = geo;

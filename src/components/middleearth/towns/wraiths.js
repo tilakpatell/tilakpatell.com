@@ -24,12 +24,12 @@
 // feet and faces +x.
 
 import * as THREE from 'three';
-import { canvasTexture } from '../../../lib/stage3d';
+import { canvasTexture } from '../../../lib/three/stage3dNodes';
 import { clamp01, fbm, makeCanvas, makeNoise, mix, normalFromField, paintPixels, smooth } from '../../../lib/paint';
 import { ball, cyl, lathe, parts, rng, roundBox, sector } from '../shire/props';
 import { breathe, sway } from '../../../lib/three/gait';
 import { createShot, createStride, createTracker, ease } from '../creatures';
-import { nightEnv, wraithMaterials } from './wraithsShaders';
+import { nightEnv, wraithMaterials } from '../nodes/towns/wraithsShaders';
 
 const TAU = Math.PI * 2;
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);

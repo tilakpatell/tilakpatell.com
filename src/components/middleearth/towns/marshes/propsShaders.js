@@ -2,7 +2,7 @@
 // drowned faces under the water. ../../nodes/towns/marshes/propsShaders.js
 // is their twin on the node renderer, the same names.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 const FACE_VERT = /* glsl */ `
   #include <fog_pars_vertex>

@@ -14,23 +14,23 @@
 // screenOf(kind, id), resize, dispose, lost, info }.
 
 import * as THREE from 'three';
-import { createStage, disposeTree } from '../../stage';
-import { createHouse } from '../../../../lib/three/house';
-import { dress, rolesFor } from '../../../../lib/three/core';
+import { createStage, disposeTree } from '../../nodes/stage';
+import { createHouse } from '../../../../lib/three/houseNodes';
+import { dress, rolesFor } from '../../../../lib/three/coreNodes';
 import { device } from '../../../../lib/device';
 import { fbm, makeNoise, smooth } from '../../../../lib/paint';
 import { pose } from '../../mapFigures';
-import { createParticles } from '../../kit';
-import { instances } from '../../shire/ground';
+import { createParticles } from '../../nodes/kit';
+import { instances } from '../../nodes/shire/ground';
 import { LOOKS, sit } from '../../shire/people';
-import { makeAtmosphere, makeSky } from '../../shire/sky';
-import { createFx } from '../../shire/fx';
-import { createGhosts } from '../ghosts';
-import { makeTerrain } from '../ground';
+import { makeAtmosphere, makeSky } from '../../nodes/shire/sky';
+import { createFx } from '../../nodes/shire/fx';
+import { createGhosts } from '../../nodes/towns/ghosts';
+import { makeTerrain } from '../../nodes/towns/ground';
 import { FIGURE, groundTown } from '../grounded';
 import { makeFolk } from '../bree/props';
 import { createLorienKit } from './props';
-import { waterMaterial } from './sceneShaders';
+import { waterMaterial } from '../../nodes/towns/lorien/sceneShaders';
 import { createGollum } from '../marshes/props';
 import { AMBUSH, BANK, BOARDS, BUTTS, CAST, CITY, COLLIDERS, GALADHRIM, LANDING, MALLORNS, MIRROR, PATHS, RANGE, RIVER_Y, STAIR, TABLE, TREE, WOOD, groundHeight, nearPath, streamX, woodHeight } from './layout';
 import { RIVER, aimDir, riverBend, riverWide } from './rules';

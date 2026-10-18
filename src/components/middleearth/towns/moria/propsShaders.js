@@ -4,7 +4,7 @@
 // takes what it reads (the kit's shared uniforms U, the kit K for its
 // renderer, the material it patches) and returns what ./props.js uses.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
@@ -25,12 +25,11 @@ const FOG_ADD = /* glsl */ `
 // the polish of the stone, and fading up the pillars into the dark.
 export function revealable(m, U, key) {
   m.onBeforeCompile = (s) => {
-    for (const k of ["uReveal", "uRevealAt", "uRevealCam", "uRevealColor"])
-      s.uniforms[k] = U[k];
+    for (const k of ['uReveal', 'uRevealAt', 'uRevealCam', 'uRevealColor']) s.uniforms[k] = U[k];
     s.vertexShader =
-      "varying vec3 vRvW;\nvarying vec3 vRvN;\n" +
+      'varying vec3 vRvW;\nvarying vec3 vRvN;\n' +
       s.vertexShader.replace(
-        "#include <project_vertex>",
+        '#include <project_vertex>',
         `#include <project_vertex>
       {
         vec4 rp = vec4(transformed, 1.0);
@@ -44,9 +43,9 @@ export function revealable(m, U, key) {
       }`,
       );
     s.fragmentShader =
-      "uniform float uReveal;\nuniform vec3 uRevealAt;\nuniform float uRevealCam;\nuniform vec3 uRevealColor;\nvarying vec3 vRvW;\nvarying vec3 vRvN;\n" +
+      'uniform float uReveal;\nuniform vec3 uRevealAt;\nuniform float uRevealCam;\nuniform vec3 uRevealColor;\nvarying vec3 vRvW;\nvarying vec3 vRvN;\n' +
       s.fragmentShader.replace(
-        "#include <opaque_fragment>",
+        '#include <opaque_fragment>',
         `if (uReveal > 0.001) {
         vec3 src = mix(uRevealAt, cameraPosition, uRevealCam);
         vec3 L = src - vRvW;
@@ -76,19 +75,7 @@ export function revealable(m, U, key) {
 // the colour and its blue darkens it; the normal map raises bumps and
 // creases. `extra` adds to the fragment once the normal is done (glows,
 // rims); it can read hs (the picture) and hN (the surface's own normal).
-export function hide(
-  m,
-  {
-    tex,
-    nrm,
-    scale = 1,
-    bump = 1,
-    shade = 0.3,
-    extra = "",
-    uniforms = {},
-    key,
-  },
-) {
+export function hide(m, { tex, nrm, scale = 1, bump = 1, shade = 0.3, extra = '', uniforms = {}, key }) {
   m.onBeforeCompile = (s) => {
     s.uniforms.uHideTex = { value: tex };
     s.uniforms.uHideNrm = { value: nrm };
@@ -97,36 +84,15 @@ export function hide(
     Object.assign(s.uniforms, uniforms);
     const decl = Object.keys(uniforms).map((k) => {
       const v = uniforms[k].value;
-      const t = v?.isTexture
-        ? "sampler2D"
-        : v?.isColor || v?.isVector3
-          ? "vec3"
-          : v?.isVector2
-            ? "vec2"
-            : "float";
+      const t = v?.isTexture ? 'sampler2D' : v?.isColor || v?.isVector3 ? 'vec3' : v?.isVector2 ? 'vec2' : 'float';
       return `uniform ${t} ${k};`;
     });
-    s.vertexShader =
-      "varying vec3 vHideP;\nvarying vec3 vHideN;\n" +
-      s.vertexShader.replace(
-        "#include <begin_vertex>",
-        "#include <begin_vertex>\nvHideP = position;\nvHideN = normal;",
-      );
+    s.vertexShader = 'varying vec3 vHideP;\nvarying vec3 vHideN;\n' + s.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvHideP = position;\nvHideN = normal;');
     s.fragmentShader =
-      [
-        "uniform sampler2D uHideTex;",
-        "uniform sampler2D uHideNrm;",
-        "uniform float uHideScale;",
-        "uniform float uHideBump;",
-        "uniform mat3 normalMatrix;",
-        "varying vec3 vHideP;",
-        "varying vec3 vHideN;",
-        ...decl,
-        "",
-      ].join("\n") +
+      ['uniform sampler2D uHideTex;', 'uniform sampler2D uHideNrm;', 'uniform float uHideScale;', 'uniform float uHideBump;', 'uniform mat3 normalMatrix;', 'varying vec3 vHideP;', 'varying vec3 vHideN;', ...decl, ''].join('\n') +
       s.fragmentShader
         .replace(
-          "#include <color_fragment>",
+          '#include <color_fragment>',
           `#include <color_fragment>
         vec3 hN = normalize(vHideN);
         vec3 hw = pow(abs(hN), vec3(4.0));
@@ -136,7 +102,7 @@ export function hide(
         diffuseColor.rgb *= (1.0 - ${shade.toFixed(3)} * (0.5 - hs.g) * 2.0) * (1.0 - hs.b * 0.55);`,
         )
         .replace(
-          "#include <normal_fragment_maps>",
+          '#include <normal_fragment_maps>',
           `#include <normal_fragment_maps>
         {
           vec3 tX = texture2D(uHideNrm, hp.zy).xyz * 2.0 - 1.0;
@@ -149,10 +115,7 @@ export function hide(
           normal = normalize(normal + normalMatrix * (nObj - hN));
         }`,
         )
-        .replace(
-          "#include <emissivemap_fragment>",
-          `#include <emissivemap_fragment>\n${extra}`,
-        );
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n${extra}`);
   };
   m.customProgramCacheKey = () => key;
   return m;
@@ -162,10 +125,7 @@ export function hide(
 // brightest where it comes in, fading as it falls; seen from both sides.
 export function beamMaterial(U) {
   const m = new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([
-      THREE.UniformsLib.fog,
-      { uK: { value: 1 }, uColor: { value: new THREE.Color(0.7, 0.76, 0.84) } },
-    ]),
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uK: { value: 1 }, uColor: { value: new THREE.Color(0.7, 0.76, 0.84) } }]),
     fog: true,
     transparent: true,
     depthWrite: false,
@@ -287,10 +247,7 @@ export function sunlitMaterial(U, beam) {
 // Dust turning slowly in the shaft of light, catching it.
 function dustMaterial(U, K) {
   const m = new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([
-      THREE.UniformsLib.fog,
-      { uK: { value: 1 }, uScale: { value: 600 } },
-    ]),
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uK: { value: 1 }, uScale: { value: 600 } }]),
     fog: true,
     transparent: true,
     depthWrite: false,
@@ -347,17 +304,17 @@ export function underglow(m, U, key) {
     s.uniforms.uFireColor = U.uFireColor;
     s.uniforms.uNoise = U.uNoise;
     s.vertexShader =
-      "varying vec3 vUgW;\nvarying vec3 vUgN;\n" +
+      'varying vec3 vUgW;\nvarying vec3 vUgN;\n' +
       s.vertexShader.replace(
-        "#include <project_vertex>",
+        '#include <project_vertex>',
         `#include <project_vertex>
       vUgW = (modelMatrix * vec4(transformed, 1.0)).xyz;
       vUgN = normalize(mat3(modelMatrix) * objectNormal);`,
       );
     s.fragmentShader =
-      "uniform float uFire;\nuniform vec3 uFireColor;\nuniform sampler2D uNoise;\nvarying vec3 vUgW;\nvarying vec3 vUgN;\n" +
+      'uniform float uFire;\nuniform vec3 uFireColor;\nuniform sampler2D uNoise;\nvarying vec3 vUgW;\nvarying vec3 vUgN;\n' +
       s.fragmentShader.replace(
-        "#include <emissivemap_fragment>",
+        '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
       {
         float down = max(-normalize(vUgN).y, 0.0);
@@ -481,10 +438,7 @@ export function sparkPoints(geometry, U, K) {
 // (aEmit, in its parent's frame) and rising in the world, wavering, from
 // white-yellow through orange to a dull red, gone. Bigger and faster with
 // uRage. Many at once make a fire; added, so their order doesn't matter.
-export function flameMaterial(
-  U,
-  { size = 1, rise = 2, heat = 1, rate = 1 } = {},
-) {
+export function flameMaterial(U, { size = 1, rise = 2, heat = 1, rate = 1 } = {}) {
   const m = new THREE.ShaderMaterial({
     uniforms: THREE.UniformsUtils.merge([
       THREE.UniformsLib.fog,
@@ -559,10 +513,7 @@ export function flameMaterial(
 // from beneath while they are young.
 export function smokeMaterial(U, { size = 2, rise = 6 } = {}) {
   const m = new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([
-      THREE.UniformsLib.fog,
-      { uSize: { value: size }, uRise: { value: rise } },
-    ]),
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uSize: { value: size }, uRise: { value: rise } }]),
     fog: true,
     transparent: true,
     depthWrite: false,
@@ -620,10 +571,7 @@ export function smokeMaterial(U, { size = 2, rise = 6 } = {}) {
 // along its length (uv.y), white-hot in its core and red at its edges.
 export function fireSolidMaterial(U) {
   const m = new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([
-      THREE.UniformsLib.fog,
-      { uHeat: { value: 1 } },
-    ]),
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uHeat: { value: 1 } }]),
     fog: true,
     vertexShader: `
       varying vec2 vUv;
@@ -718,10 +666,7 @@ export function wingMaterial(U) {
 // material each arm (uTime and uK its own)
 export function rippleMaterial() {
   return new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([
-      THREE.UniformsLib.fog,
-      { uTime: { value: 0 }, uK: { value: 0 } },
-    ]),
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 }, uK: { value: 0 } }]),
     fog: true,
     transparent: true,
     depthWrite: false,
@@ -764,9 +709,9 @@ export function ithildinGlow(m, U) {
     s.uniforms.uTime = U.uTime;
     s.uniforms.uNoise = U.uNoise;
     s.fragmentShader =
-      "uniform float uIthil;\nuniform float uTime;\nuniform sampler2D uNoise;\n" +
+      'uniform float uIthil;\nuniform float uTime;\nuniform sampler2D uNoise;\n' +
       s.fragmentShader.replace(
-        "#include <emissivemap_fragment>",
+        '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
       {
         float nI = texture2D(uNoise, vEmissiveMapUv * vec2(2.0, 2.8)).r;
@@ -776,7 +721,7 @@ export function ithildinGlow(m, U) {
       }`,
       );
   };
-  m.customProgramCacheKey = () => "moria-ithildin";
+  m.customProgramCacheKey = () => 'moria-ithildin';
   return m;
 }
 

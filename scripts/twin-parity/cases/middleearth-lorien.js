@@ -5,17 +5,12 @@
 // on, dusk or night), the Mirror’s with each vision part way up, a painting
 // for the Shire’s, the town’s water as the sky writes it; the wood’s fog
 // over the waters, as they take it.
-import * as THREE from "three";
-import * as PO from "../../../src/components/middleearth/towns/lorien/propsShaders.js";
-import * as PN from "../../../src/components/middleearth/nodes/towns/lorien/propsShaders.js";
-import * as SO from "../../../src/components/middleearth/towns/lorien/sceneShaders.js";
-import * as SN from "../../../src/components/middleearth/nodes/towns/lorien/sceneShaders.js";
-import {
-  fbm,
-  makeCanvas,
-  makeNoise,
-  paintPixels,
-} from "../../../src/lib/paint.js";
+import * as THREE from 'three';
+import * as PO from '../../../src/components/middleearth/towns/lorien/propsShaders.js';
+import * as PN from '../../../src/components/middleearth/nodes/towns/lorien/propsShaders.js';
+import * as SO from '../../../src/components/middleearth/towns/lorien/sceneShaders.js';
+import * as SN from '../../../src/components/middleearth/nodes/towns/lorien/sceneShaders.js';
+import { fbm, makeCanvas, makeNoise, paintPixels } from '../../../src/lib/paint.js';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
@@ -52,14 +47,8 @@ const basin =
   ({ scene, camera }) => {
     fogged(scene, night ? 0x101c34 : 0xd8c890);
     const m = P.basinWaterMaterial(kitWater(night));
-    const a = new THREE.Mesh(
-      new THREE.CircleGeometry(2.2, 40).rotateX(-Math.PI / 2),
-      m,
-    );
-    const b = new THREE.Mesh(
-      new THREE.CircleGeometry(0.9, 24).rotateX(-Math.PI / 2),
-      m,
-    );
+    const a = new THREE.Mesh(new THREE.CircleGeometry(2.2, 40).rotateX(-Math.PI / 2), m);
+    const b = new THREE.Mesh(new THREE.CircleGeometry(0.9, 24).rotateX(-Math.PI / 2), m);
     b.position.set(0.6, 0.9, -1.4);
     scene.add(a, b);
     camera.position.set(0, 2.2, 3.6);
@@ -71,12 +60,7 @@ const sheet =
   ({ scene, camera }) => {
     fogged(scene, night ? 0x101c34 : 0xd8c890);
     const m = P.fallSheetMaterial(kitWater(night));
-    scene.add(
-      new THREE.Mesh(
-        new THREE.CylinderGeometry(0.85, 1.2, 1.6, 32, 1, true),
-        m,
-      ),
-    );
+    scene.add(new THREE.Mesh(new THREE.CylinderGeometry(0.85, 1.2, 1.6, 32, 1, true), m));
     camera.position.set(0, 0.6, 3.2);
     camera.lookAt(0, 0, 0);
   };
@@ -95,12 +79,7 @@ const mirror =
       uNight: { value: night },
       uShire: { value: shirePainting() },
     };
-    scene.add(
-      new THREE.Mesh(
-        new THREE.CircleGeometry(1.25, 64).rotateX(-Math.PI / 2),
-        P.mirrorWaterMaterial(uniforms),
-      ),
-    );
+    scene.add(new THREE.Mesh(new THREE.CircleGeometry(1.25, 64).rotateX(-Math.PI / 2), P.mirrorWaterMaterial(uniforms)));
     camera.position.set(0, 2.4, 1.2);
     camera.lookAt(0, 0, 0);
   };
@@ -118,7 +97,7 @@ const glow =
       const y = p.getY(i) / 1.4;
       col.push(0.6 + 0.4 * y, 0.5 + 0.3 * Math.sin(p.getX(i) * 4), 0.2);
     }
-    geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
     const m = P.glowByColour(
       new THREE.MeshStandardMaterial({
         vertexColors: true,
@@ -149,9 +128,7 @@ const stream =
     };
     const m = S.waterMaterial(water, flow);
     m.uniforms.uTime.value = 4;
-    scene.add(
-      new THREE.Mesh(new THREE.PlaneGeometry(60, 60).rotateX(-Math.PI / 2), m),
-    );
+    scene.add(new THREE.Mesh(new THREE.PlaneGeometry(60, 60).rotateX(-Math.PI / 2), m));
     camera.position.set(0, 2, 8);
     camera.lookAt(0, 0, -6);
   };
@@ -159,20 +136,20 @@ const stream =
 const both = (f, ...a) => ({ node: f(PN, ...a), classic: f(PO, ...a) });
 
 export default {
-  "middleearth:lorien:basin": both(basin, 0),
-  "middleearth:lorien:basin:night": both(basin, 1),
-  "middleearth:lorien:fall": both(sheet, 0),
-  "middleearth:lorien:fall:night": both(sheet, 1),
-  "middleearth:lorien:mirror:still": both(mirror, 0, 0),
-  "middleearth:lorien:mirror:stars": both(mirror, 0, 0.8, 1),
-  "middleearth:lorien:mirror:eye": both(mirror, 1, 0.9),
-  "middleearth:lorien:mirror:shire": both(mirror, 2, 0.75),
-  "middleearth:lorien:glow": both(glow),
-  "middleearth:lorien:stream": {
+  'middleearth:lorien:basin': both(basin, 0),
+  'middleearth:lorien:basin:night': both(basin, 1),
+  'middleearth:lorien:fall': both(sheet, 0),
+  'middleearth:lorien:fall:night': both(sheet, 1),
+  'middleearth:lorien:mirror:still': both(mirror, 0, 0),
+  'middleearth:lorien:mirror:stars': both(mirror, 0, 0.8, 1),
+  'middleearth:lorien:mirror:eye': both(mirror, 1, 0.9),
+  'middleearth:lorien:mirror:shire': both(mirror, 2, 0.75),
+  'middleearth:lorien:glow': both(glow),
+  'middleearth:lorien:stream': {
     node: stream(SN, 0.4),
     classic: stream(SO, 0.4),
   },
-  "middleearth:lorien:river": {
+  'middleearth:lorien:river': {
     node: stream(SN, 0.9),
     classic: stream(SO, 0.9),
   },

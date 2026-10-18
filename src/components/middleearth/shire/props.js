@@ -16,11 +16,11 @@
 
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { canvasTexture, hot } from '../../../lib/stage3d';
+import { canvasTexture, hot } from '../../../lib/three/stage3dNodes';
 import { clamp01, fbm, makeCanvas, makeNoise, mix, normalFromField, paintPixels, ramp, smooth } from '../../../lib/paint';
-import { stoneTextures } from '../kit';
+import { stoneTextures } from '../nodes/kit';
 import { STANCE, TROT, WALK, createStride, createTracker, ease, gaitOffsets, legSwing } from '../creatures';
-import { flowerTint } from './propsShaders';
+import { flowerTint } from '../nodes/shire/propsShaders';
 
 const TAU = Math.PI * 2;
 const UP = new THREE.Vector3(0, 1, 0);

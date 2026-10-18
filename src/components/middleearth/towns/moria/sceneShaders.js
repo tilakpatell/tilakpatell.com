@@ -1,16 +1,13 @@
 // Moria's scene's shader: the lake's GLSL, moved here whole from ./scene.js,
 // and ../../nodes/towns/moria/sceneShaders.js its twin on the node renderer.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 // The lake: black and still, the moon on it; its sky, deep, sun and sun's
 // colour the town's water's own (`water.uniforms`, which the sky writes)
 export function lakeMaterial(water) {
   const lakeMat = new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([
-      THREE.UniformsLib.fog,
-      { uTime: { value: 0 }, uStir: { value: 0 } },
-    ]),
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 }, uStir: { value: 0 } }]),
     fog: true,
     vertexShader: `
       #include <fog_pars_vertex>
@@ -43,7 +40,6 @@ export function lakeMaterial(water) {
         #include <fog_fragment>
       }`,
   });
-  for (const k of ["uSky", "uDeep", "uSun", "uSunColor"])
-    lakeMat.uniforms[k] = water.uniforms[k];
+  for (const k of ['uSky', 'uDeep', 'uSun', 'uSunColor']) lakeMat.uniforms[k] = water.uniforms[k];
   return lakeMat;
 }

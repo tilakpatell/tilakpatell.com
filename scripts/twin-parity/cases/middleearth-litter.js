@@ -4,11 +4,11 @@
 // its own colour); and the same thrown up by a blast a moment before, the
 // leaves off the ground swinging as they fall and those near the box’s edge
 // shrunk away. The sim is seeded and stepped the same on either side.
-import * as LO from "../../../src/lib/three/flatLitter.js";
-import * as LN from "../../../src/lib/three/flatLitterNodes.js";
+import * as LO from '../../../src/lib/three/flatLitter.js';
+import * as LN from '../../../src/lib/three/flatLitterNodes.js';
 
 const SPEC = {
-  colours: ["#a39c34", "#d8a83c", "#b4622c"],
+  colours: ['#a39c34', '#d8a83c', '#b4622c'],
   density: 6,
   size: 0.45,
   shed: 0,
@@ -35,15 +35,15 @@ const leaves =
   };
 
 export default {
-  "middleearth:litter:lying": {
+  'middleearth:litter:lying': {
     node: leaves(LN),
     classic: leaves(LO),
   },
-  "middleearth:litter:close": {
+  'middleearth:litter:close': {
     node: leaves(LN, { look: [0.4, 0.9, 1.1] }),
     classic: leaves(LO, { look: [0.4, 0.9, 1.1] }),
   },
-  "middleearth:litter:blast": {
+  'middleearth:litter:blast': {
     node: leaves(LN, { blast: true, look: [0, 1.6, 4.5] }),
     classic: leaves(LO, { blast: true, look: [0, 1.6, 4.5] }),
   },

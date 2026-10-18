@@ -12,39 +12,17 @@
 //   sRGB encoding (the chain's `grade` turns the pipeline's own off), then
 //   the grade's saturation, contrast, split toning, vignette and grain.
 
-import * as THREE from "three";
-import {
-  Fn,
-  clamp,
-  dot,
-  floor,
-  fract,
-  length,
-  max,
-  mix,
-  renderOutput,
-  screenCoordinate,
-  sin,
-  smoothstep,
-  uniform,
-  uv,
-  vec2,
-  vec3,
-  vec4,
-} from "three/tsl";
-import { pixelRatio } from "../device";
-import { debugOn, debugPanel } from "../debugPanel";
-import { sharpen } from "./textures";
+import * as THREE from 'three';
+import { Fn, clamp, dot, floor, fract, length, max, mix, renderOutput, screenCoordinate, sin, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { pixelRatio } from '../device';
+import { debugOn, debugPanel } from '../debugPanel';
+import { sharpen } from './textures';
 
 // Bright colours for things that glow: above 1, so bloom picks them up.
 export const hot = (hex, k = 1) => new THREE.Color(hex).multiplyScalar(k);
 
 // A canvas as a texture, repeating, sharp at a glancing angle.
-export function canvasTexture(
-  canvas,
-  renderer,
-  { repeat = [1, 1], srgb = true, wrap = true } = {},
-) {
+export function canvasTexture(canvas, renderer, { repeat = [1, 1], srgb = true, wrap = true } = {}) {
   return sharpen(new THREE.CanvasTexture(canvas), {
     renderer,
     color: srgb ? true : undefined,
@@ -57,16 +35,10 @@ export function canvasTexture(
 export function disposeTree(root) {
   root.traverse((o) => {
     o.geometry?.dispose?.();
-    const mats = Array.isArray(o.material)
-      ? o.material
-      : o.material
-        ? [o.material]
-        : [];
+    const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
     for (const m of mats) {
       for (const v of Object.values(m)) if (v && v.isTexture) v.dispose();
-      if (m.uniforms)
-        for (const u of Object.values(m.uniforms))
-          if (u?.value?.isTexture) u.value.dispose();
+      if (m.uniforms) for (const u of Object.values(m.uniforms)) if (u?.value?.isTexture) u.value.dispose();
       m.dispose?.();
     }
     o.dispose?.(); // instanced meshes, skeletons
@@ -83,27 +55,27 @@ export function stageRatio({ soft = false, tier } = {}) {
 // read and written live (on the node chain, its uniforms' values).
 export const stageBloomGroups = (pass) => [
   {
-    name: "bloom",
+    name: 'bloom',
     items: [
       {
-        key: "threshold",
-        type: "range",
+        key: 'threshold',
+        type: 'range',
         min: 0,
         max: 2,
         get: () => pass.threshold,
         set: (v) => (pass.threshold = v),
       },
       {
-        key: "strength",
-        type: "range",
+        key: 'strength',
+        type: 'range',
         min: 0,
         max: 2,
         get: () => pass.strength,
         set: (v) => (pass.strength = v),
       },
       {
-        key: "radius",
-        type: "range",
+        key: 'radius',
+        type: 'range',
         min: 0,
         max: 1,
         get: () => pass.radius,
@@ -115,17 +87,12 @@ export const stageBloomGroups = (pass) => [
 
 // stage.tune(groups): behind ?debug, the one panel with the stage's bloom
 // first and the game's groups after, titled by the page it's on.
-export function stageTune({
-  bloomPass,
-  on = debugOn,
-  panel: makePanel = debugPanel,
-  title = () => null,
-} = {}) {
+export function stageTune({ bloomPass, on = debugOn, panel: makePanel = debugPanel, title = () => null } = {}) {
   let panel = null;
   return {
     tune(groups = []) {
       if (!on()) return;
-      const name = title() || "stage";
+      const name = title() || 'stage';
       panel ??= makePanel({ title: name });
       panel.open([...stageBloomGroups(bloomPass), ...groups], {
         title: name,
@@ -156,12 +123,7 @@ export function stageSizing({ ratio: r0 = 1, soft = false, canvas, buffers }) {
   });
   const stale = () => {
     const n = want();
-    return (
-      n.w !== made.w ||
-      n.h !== made.h ||
-      n.canvas !== made.canvas ||
-      n.buffers !== made.buffers
-    );
+    return n.w !== made.w || n.h !== made.h || n.canvas !== made.canvas || n.buffers !== made.buffers;
   };
   return {
     get size() {
@@ -219,13 +181,7 @@ export const gradeUniforms = () => ({
 // GRADE after the classic chain's OutputPass, as the node chain's `grade`
 // pass: (picture) → the display-ready colour
 export const gradeNode =
-  (
-    u,
-    {
-      toneMapping = THREE.NeutralToneMapping,
-      colorSpace = THREE.SRGBColorSpace,
-    } = {},
-  ) =>
+  (u, { toneMapping = THREE.NeutralToneMapping, colorSpace = THREE.SRGBColorSpace } = {}) =>
   (picture) =>
     Fn(() => {
       const vUv = uv();
@@ -234,26 +190,12 @@ export const gradeNode =
       const l = dot(c, vec3(0.2126, 0.7152, 0.0722));
       c.assign(max(mix(vec3(l), c, u.uSat), 0));
       c.assign(mix(c, c.mul(c).mul(c.mul(-2).add(3)), u.uContrast));
-      c.addAssign(
-        u.uShadow
-          .mul(l.oneMinus())
-          .mul(l.oneMinus())
-          .add(u.uHigh.mul(l).mul(l)),
-      );
+      c.addAssign(u.uShadow.mul(l.oneMinus()).mul(l.oneMinus()).add(u.uHigh.mul(l).mul(l)));
       const q = vUv.sub(0.5).mul(vec2(u.uAspect, 1));
-      c.mulAssign(
-        u.uVignette.mul(smoothstep(0.3, 1.05, length(q).mul(1.3))).oneMinus(),
-      );
+      c.mulAssign(u.uVignette.mul(smoothstep(0.3, 1.05, length(q).mul(1.3))).oneMinus());
       // (a grain a pixel, moving each frame: the GLSL's gl_FragCoord counts
       // from the bottom, this from the top, which a noise doesn't show)
-      const n = fract(
-        sin(
-          dot(
-            floor(screenCoordinate.xy).add(fract(u.uTime).mul(71)),
-            vec2(12.9898, 78.233),
-          ),
-        ).mul(43758.5453),
-      );
+      const n = fract(sin(dot(floor(screenCoordinate.xy).add(fract(u.uTime).mul(71)), vec2(12.9898, 78.233))).mul(43758.5453));
       c.addAssign(n.sub(0.5).mul(u.uGrain));
       return vec4(clamp(c, 0, 1), 1);
     })();

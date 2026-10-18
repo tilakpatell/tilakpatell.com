@@ -3,9 +3,9 @@
 // way into its flow; the sky dome plain and with Mordor's lit cloud and a
 // flash; fire, embers and smoke from the particle pool, emitted and stepped
 // the same (Math.random seeded for each side).
-import * as THREE from "three";
-import * as KO from "../../../src/components/middleearth/kit.js";
-import * as KN from "../../../src/components/middleearth/nodes/kit.js";
+import * as THREE from 'three';
+import * as KO from '../../../src/components/middleearth/kit.js';
+import * as KN from '../../../src/components/middleearth/nodes/kit.js';
 
 const seeded = (fn) => {
   const real = Math.random;
@@ -29,10 +29,7 @@ const lava =
       reach: 0.08,
     });
     m.uniforms.uTime.value = 12.5;
-    const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(16, 16).rotateX(-Math.PI / 2),
-      m,
-    );
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(16, 16).rotateX(-Math.PI / 2), m);
     scene.add(floor);
     camera.position.set(0, 3, 7);
     camera.lookAt(0, 0, -2);
@@ -60,18 +57,7 @@ const particles =
     scene.add(p.mesh);
     seeded(() => {
       for (let i = 0; i < 40; i++) {
-        p.emit(
-          (Math.random() - 0.5) * 3,
-          Math.random() * 0.5,
-          (Math.random() - 0.5) * 3,
-          (Math.random() - 0.5) * 0.4,
-          0.8 + Math.random(),
-          (Math.random() - 0.5) * 0.4,
-          1.5 + Math.random(),
-          0.6,
-          1.4,
-          1,
-        );
+        p.emit((Math.random() - 0.5) * 3, Math.random() * 0.5, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 0.4, 0.8 + Math.random(), (Math.random() - 0.5) * 0.4, 1.5 + Math.random(), 0.6, 1.4, 1);
         p.step(0.03);
       }
     });
@@ -80,15 +66,15 @@ const particles =
   };
 
 export default {
-  "middleearth:kit:lava": { node: lava(KN), classic: lava(KO) },
-  "middleearth:kit:sky": { node: sky(KN, false), classic: sky(KO, false) },
-  "middleearth:kit:sky:mordor": { node: sky(KN, true), classic: sky(KO, true) },
-  "middleearth:kit:fire": {
-    node: particles(KN, "FIRE", true),
-    classic: particles(KO, "FIRE", true),
+  'middleearth:kit:lava': { node: lava(KN), classic: lava(KO) },
+  'middleearth:kit:sky': { node: sky(KN, false), classic: sky(KO, false) },
+  'middleearth:kit:sky:mordor': { node: sky(KN, true), classic: sky(KO, true) },
+  'middleearth:kit:fire': {
+    node: particles(KN, 'FIRE', true),
+    classic: particles(KO, 'FIRE', true),
   },
-  "middleearth:kit:smoke": {
-    node: particles(KN, "SMOKE", false),
-    classic: particles(KO, "SMOKE", false),
+  'middleearth:kit:smoke': {
+    node: particles(KN, 'SMOKE', false),
+    classic: particles(KO, 'SMOKE', false),
   },
 };

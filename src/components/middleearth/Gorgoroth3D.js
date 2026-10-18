@@ -8,18 +8,18 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { canvasTexture, createStage, hot } from './stage';
+import { canvasTexture, createStage, hot } from './nodes/stage';
 import { createModels } from '../../lib/models';
-import { houseOn } from '../../lib/three/house';
+import { houseOn } from '../../lib/three/houseNodes';
 import { fbm, makeCanvas, makeNoise, ridge, smooth, tiled } from '../../lib/paint';
 import { rng } from '../../lib/texture';
 import { WALK } from './walk';
-import { EMBER, FIRE, SMOKE, createParticles, lavaMaterial, makeHobbit, makeOrc, skyDome, stoneTextures } from './kit';
+import { EMBER, FIRE, SMOKE, createParticles, lavaMaterial, makeHobbit, makeOrc, skyDome, stoneTextures } from './nodes/kit';
 import { castDo, releaseCast, tickCast, upgrade } from './cast3d';
 import { createShake } from './feel';
 import { BLOOMS } from './look';
 import { houseGroups } from '../../lib/three/houseTuning';
-import { beamMaterial, eyeMaterial, poolMaterial } from './gorgorothShaders';
+import { beamMaterial, eyeMaterial, poolMaterial } from './nodes/gorgorothShaders';
 
 // the drawing's x (see walk.js) to the scene's: the road runs along x
 const X = (svg) => (svg - 265) / 10;

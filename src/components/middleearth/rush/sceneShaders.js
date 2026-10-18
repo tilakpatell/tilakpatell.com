@@ -1,7 +1,7 @@
 // The rush's one shader, moved out of ./scene.js as it was (./scene.js
 // imports it), so ../nodes/rush/sceneShaders.js can be its twin.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 // A ring over a station, filling clockwise from the top.
 export function ringMaterial() {
@@ -14,8 +14,7 @@ export function ringMaterial() {
       uCol: { value: new THREE.Color() },
       uFlash: { value: 0 },
     },
-    vertexShader:
-      "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: `
       uniform float uK; uniform vec3 uCol; uniform float uFlash; varying vec2 vUv;
       void main(){

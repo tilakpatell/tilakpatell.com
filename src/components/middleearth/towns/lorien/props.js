@@ -17,12 +17,12 @@
 
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { canvasTexture, hot } from '../../../../lib/stage3d';
+import { canvasTexture, hot } from '../../../../lib/three/stage3dNodes';
 import { clamp01, fbm, makeCanvas, makeCells, makeNoise, mix, normalFromField, paintPixels, smooth } from '../../../../lib/paint';
-import { stoneTextures } from '../../kit';
+import { stoneTextures } from '../../nodes/kit';
 import { ball, blob, boxUV, createShireKit, cyl, lathe, parts, rng, roundBox, tf, tube } from '../../shire/props';
 import { sharpen } from '../../../../lib/three/textures';
-import { basinWaterMaterial, fallSheetMaterial, glowByColour, mirrorWaterMaterial } from './propsShaders';
+import { basinWaterMaterial, fallSheetMaterial, glowByColour, mirrorWaterMaterial } from '../../nodes/towns/lorien/propsShaders';
 
 const TAU = Math.PI * 2;
 const UP = new THREE.Vector3(0, 1, 0);

@@ -13,24 +13,24 @@
 // screenOf(kind, id), aimAt(x, y), resize, dispose, lost, info }.
 
 import * as THREE from 'three';
-import { createStage, disposeTree } from '../../stage';
-import { createHouse } from '../../../../lib/three/house';
-import { dress, rolesFor } from '../../../../lib/three/core';
+import { createStage, disposeTree } from '../../nodes/stage';
+import { createHouse } from '../../../../lib/three/houseNodes';
+import { dress, rolesFor } from '../../../../lib/three/coreNodes';
 import { device } from '../../../../lib/device';
 import { fbm, makeNoise, smooth } from '../../../../lib/paint';
 import { pose } from '../../mapFigures';
-import { EMBER, FIRE as FLAME, createParticles } from '../../kit';
-import { instances } from '../../shire/ground';
-import { makeAtmosphere, makeSky } from '../../shire/sky';
-import { createFx } from '../../shire/fx';
+import { EMBER, FIRE as FLAME, createParticles } from '../../nodes/kit';
+import { instances } from '../../nodes/shire/ground';
+import { makeAtmosphere, makeSky } from '../../nodes/shire/sky';
+import { createFx } from '../../nodes/shire/fx';
 import { bake } from '../bake';
-import { createGhosts } from '../ghosts';
-import { makeTerrain, makeTufts } from '../ground';
+import { createGhosts } from '../../nodes/towns/ghosts';
+import { makeTerrain, makeTufts } from '../../nodes/towns/ground';
 import { FIGURE, groundTown } from '../grounded';
 import { makeFolk } from '../bree/props';
 import { createWraithKit } from '../wraiths';
 import { createWeathertopKit } from './props';
-import { riverMaterial } from './sceneShaders';
+import { riverMaterial } from '../../nodes/towns/weathertop/sceneShaders';
 import { ARWEN_AT, BED, CAST, COLLIDERS, CRAGS, DELL, FIRE_AT, GAPS, HILL, PATCHES, PLANTS, ROCKS, RUIN, SPOTS, STAIR, STAIR_W, STAND, TREES, TROLLS, WALLS, WORLD, WOUNDED, height, pathAmount, stairNear } from './layout';
 import { BRAND, MARK_LINES, OBSTACLES, RIDE, glowOf, roadBend, roadTurn } from './rules';
 import { sharpen } from '../../../../lib/three/textures';

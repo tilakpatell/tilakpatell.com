@@ -20,11 +20,11 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { canvasTexture, hot } from '../../../../lib/stage3d';
+import { canvasTexture, hot } from '../../../../lib/three/stage3dNodes';
 import { clamp01, fbm, makeCanvas, makeCells, makeNoise, mix, normalFromField, paintPixels, ridge, smooth } from '../../../../lib/paint';
 import { boxUV, fillColor, lathe, rng, tf, tube } from '../../shire/props';
 import { BARROWS, DAIS, FLOWERS, HALL, HEARTH, HILL, HOUSES, MEDUSELD, PEAKS, PILLARS, ROAD, STAIR, STOCKADE, TABLES, TERRACE, THRONE, WATCH, groundAt, hillHeight, stretchOf } from './layout';
-import { windBanner, windGrass } from './propsShaders';
+import { windBanner, windGrass } from '../../nodes/towns/edoras/propsShaders';
 
 const TAU = Math.PI * 2;
 const UP = new THREE.Vector3(0, 1, 0);

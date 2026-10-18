@@ -6,8 +6,8 @@
 // tower’s patch is a node hook that returns the node material, which the
 // kit puts in its place.
 
-import * as THREE from "three";
-import { MeshBasicNodeMaterial } from "three/webgpu";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
 import {
   Fn,
   abs,
@@ -35,26 +35,19 @@ import {
   vec2,
   vec3,
   vec4,
-} from "three/tsl";
-import { asNode, onLight } from "../../../../../lib/three/hookNodes";
+} from 'three/tsl';
+import { asNode, onLight } from '../../../../../lib/three/hookNodes';
 
 // a falling smoothstep, as WGSL wants it: the rising one turned over
 const fall = (a, b, x) => smoothstep(b, a, x).oneMinus();
 
-const hash = Fn(
-  ([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)),
-  "float",
-);
+const hash = Fn(([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)), 'float');
 const noise = Fn(([p]) => {
   const i = floor(p);
   const f0 = fract(p);
   const f = f0.mul(f0).mul(f0.mul(-2).add(3));
-  return mix(
-    mix(hash(i), hash(i.add(vec2(1, 0))), f.x),
-    mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x),
-    f.y,
-  );
-}, "float");
+  return mix(mix(hash(i), hash(i.add(vec2(1, 0))), f.x), mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x), f.y);
+}, 'float');
 // (the GLSL’s four octaves, unrolled)
 const fbm = Fn(([p0]) => {
   let p = p0;
@@ -66,7 +59,7 @@ const fbm = Fn(([p0]) => {
     a *= 0.5;
   }
   return s;
-}, "float");
+}, 'float');
 
 // The palantír’s glass: dark, a cold sheen at its rim, and deep inside a
 // fire that wakes as you look (uWake) and, at the last, the Eye (uEye).
@@ -81,10 +74,7 @@ export function stoneMaterial() {
   const m = new MeshBasicNodeMaterial({ fog: false });
   // (normalMatrix’s normal: three’s modelNormalMatrix is the world’s, so
   // the camera’s view takes it on)
-  const vN = varying(
-    cameraViewMatrix.mul(vec4(modelNormalMatrix.mul(normalGeometry), 0)).xyz,
-    "vN",
-  );
+  const vN = varying(cameraViewMatrix.mul(vec4(modelNormalMatrix.mul(normalGeometry), 0)).xyz, 'vN');
   const n = normalize(vN);
   const v = normalize(positionView.negate());
   const facing = max(dot(n, v), 0);
@@ -92,32 +82,16 @@ export function stoneMaterial() {
   // the fire, deep down: seen best looking straight in
   const q = n.xy;
   const r = length(q);
-  const sw = fbm(
-    vec2(
-      atan(q.y, q.x).mul(1.6).add(u.uTime.mul(0.25)),
-      r.mul(5).sub(u.uTime.mul(0.6)),
-    ),
-  );
-  const fire = pow(sw, 2.2)
-    .mul(pow(facing, 1.6))
-    .mul(u.uWake.mul(2.6).add(0.18));
+  const sw = fbm(vec2(atan(q.y, q.x).mul(1.6).add(u.uTime.mul(0.25)), r.mul(5).sub(u.uTime.mul(0.6))));
+  const fire = pow(sw, 2.2).mul(pow(facing, 1.6)).mul(u.uWake.mul(2.6).add(0.18));
   // the Eye: a fiery iris round a slit, looking out at you
-  const iris = fall(0.62, 0.2, r).mul(
-    fbm(q.mul(9).add(u.uTime)).mul(0.4).add(0.6),
-  );
-  const slit = fall(
-    0.07,
-    0.02,
-    abs(q.x).div(max(0.15, abs(q.y).mul(1.4).oneMinus())),
-  ).mul(fall(0.62, 0.3, abs(q.y)));
+  const iris = fall(0.62, 0.2, r).mul(fbm(q.mul(9).add(u.uTime)).mul(0.4).add(0.6));
+  const slit = fall(0.07, 0.02, abs(q.x).div(max(0.15, abs(q.y).mul(1.4).oneMinus()))).mul(fall(0.62, 0.3, abs(q.y)));
   const col = vec3(0.006, 0.007, 0.01)
     .add(vec3(0.16, 0.18, 0.24).mul(rim))
     .add(u.uFire.mul(fire))
     .add(u.uFire.mul(3).mul(iris).mul(u.uEye).mul(slit.oneMinus()));
-  m.colorNode = vec4(
-    mix(col, vec3(0), slit.mul(u.uEye).mul(fall(0.62, 0.2, r))),
-    1,
-  );
+  m.colorNode = vec4(mix(col, vec3(0), slit.mul(u.uEye).mul(fall(0.62, 0.2, r))), 1);
   m.uniforms = uniforms;
   return m;
 }
@@ -131,10 +105,7 @@ export function glassyStone(m) {
     (light) => {
       const towerUp = normalize(cameraViewMatrix.mul(vec4(0, 1, 0, 0)).xyz);
       const towerFacing = dot(normalView, towerUp);
-      const towerRim = pow(
-        abs(dot(normalize(positionView.negate()), normalView)).oneMinus(),
-        3,
-      );
+      const towerRim = pow(abs(dot(normalize(positionView.negate()), normalView)).oneMinus(), 3);
       // (on the walls and the edges, not the tops of the steps)
       return light
         .add(
@@ -150,6 +121,6 @@ export function glassyStone(m) {
             .mul(0.9),
         );
     },
-    "orthanc-tower-stone",
+    'orthanc-tower-stone',
   );
 }

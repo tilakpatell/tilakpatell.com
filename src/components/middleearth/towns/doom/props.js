@@ -22,12 +22,12 @@
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
-import { canvasTexture, hot } from '../../../../lib/stage3d';
+import { canvasTexture, hot } from '../../../../lib/three/stage3dNodes';
 import { clamp01, fbm, makeCanvas, makeCells, makeNoise, mix, normalFromField, paintPixels, ridge, smooth } from '../../../../lib/paint';
 import { blob, boxUV, createShireKit, parts, rng, tf, tube } from '../../shire/props';
 import { gollum } from '../marshes/props';
 import { ease } from '../../creatures';
-import { beamMaterial, bombCloud, bombMaterial, emberish, eyeMaterial, flameMaterial, hazeMaterial, lavaMaterial, orcMaterial, ringMaterial, smokeMaterial, sparkMaterial, sparkPoints, underglow } from './propsShaders';
+import { beamMaterial, bombCloud, bombMaterial, emberish, eyeMaterial, flameMaterial, hazeMaterial, lavaMaterial, orcMaterial, ringMaterial, smokeMaterial, sparkMaterial, sparkPoints, underglow } from '../../nodes/towns/doom/propsShaders';
 
 const TAU = Math.PI * 2;
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);

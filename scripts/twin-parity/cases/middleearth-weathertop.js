@@ -5,11 +5,11 @@
 // the same each side), an ember’s glow dimmed by its vertex colours, hair
 // seen from behind and lit as from the front, and the river at the ford,
 // calm and in flood.
-import * as THREE from "three";
-import * as PO from "../../../src/components/middleearth/towns/weathertop/propsShaders.js";
-import * as PN from "../../../src/components/middleearth/nodes/towns/weathertop/propsShaders.js";
-import * as SO from "../../../src/components/middleearth/towns/weathertop/sceneShaders.js";
-import * as SN from "../../../src/components/middleearth/nodes/towns/weathertop/sceneShaders.js";
+import * as THREE from 'three';
+import * as PO from '../../../src/components/middleearth/towns/weathertop/propsShaders.js';
+import * as PN from '../../../src/components/middleearth/nodes/towns/weathertop/propsShaders.js';
+import * as SO from '../../../src/components/middleearth/towns/weathertop/sceneShaders.js';
+import * as SN from '../../../src/components/middleearth/nodes/towns/weathertop/sceneShaders.js';
 
 const seeded = (fn) => {
   const real = Math.random;
@@ -30,7 +30,7 @@ const flood =
     const pos = geo.attributes.position;
     const wave = new Float32Array(pos.count);
     for (let i = 0; i < pos.count; i++) wave[i] = pos.getX(i) > 0 ? 1 : 0;
-    geo.setAttribute("aWave", new THREE.BufferAttribute(wave, 1));
+    geo.setAttribute('aWave', new THREE.BufferAttribute(wave, 1));
     const m = P.floodWaterMaterial();
     m.uniforms.uTime.value = 2.3;
     m.uniforms.uWater.value = 0.4;
@@ -48,12 +48,7 @@ const churn =
     const m = P.churnMaterial();
     m.uniforms.uTime.value = 3.1;
     m.uniforms.uRise.value = 1;
-    scene.add(
-      new THREE.Mesh(
-        new THREE.PlaneGeometry(9, 8, 1, 1).rotateX(-Math.PI / 2),
-        m,
-      ),
-    );
+    scene.add(new THREE.Mesh(new THREE.PlaneGeometry(9, 8, 1, 1).rotateX(-Math.PI / 2), m));
     camera.position.set(0, 4, 4.5);
     camera.lookAt(0, 0, 0);
   };
@@ -64,19 +59,12 @@ const spray =
     const pg = new THREE.BufferGeometry();
     seeded(() => {
       const seeds = new Float32Array(N * 4).map(() => Math.random());
-      const from = new Float32Array(N * 3).map(
-        (_, i) => (Math.random() - 0.5) * (i % 3 === 1 ? 1 : 2.4),
-      );
-      const vel = new Float32Array(N * 3).map(
-        (_, i) => (i % 3 === 1 ? 1.4 : 0) + (Math.random() - 0.5) * 2.4,
-      );
-      pg.setAttribute(
-        "position",
-        new THREE.BufferAttribute(new Float32Array(N * 3), 3),
-      );
-      pg.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 4));
-      pg.setAttribute("aFrom", new THREE.BufferAttribute(from, 3));
-      pg.setAttribute("aVel", new THREE.BufferAttribute(vel, 3));
+      const from = new Float32Array(N * 3).map((_, i) => (Math.random() - 0.5) * (i % 3 === 1 ? 1 : 2.4));
+      const vel = new Float32Array(N * 3).map((_, i) => (i % 3 === 1 ? 1.4 : 0) + (Math.random() - 0.5) * 2.4);
+      pg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3));
+      pg.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 4));
+      pg.setAttribute('aFrom', new THREE.BufferAttribute(from, 3));
+      pg.setAttribute('aVel', new THREE.BufferAttribute(vel, 3));
     });
     const s = P.sprayPoints(pg);
     s.frustumCulled = false;
@@ -102,7 +90,7 @@ const ember =
       const k = 0.5 + 0.5 * Math.sin(pos.getX(i) * 4 + pos.getY(i) * 3);
       col.set([k, 0.4 + 0.6 * k, 1 - 0.7 * k], i * 3);
     }
-    geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
     const m = P.emberGlow(
       new THREE.MeshStandardMaterial({
         color: 0x140804,
@@ -128,7 +116,7 @@ const hair =
       col.set([0.8 * k, 0.75 * k, 0.7 * k], i * 3);
     }
     geo.computeVertexNormals();
-    geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
     const m = P.hairBothSides(
       new THREE.MeshStandardMaterial({
         vertexColors: true,
@@ -159,27 +147,22 @@ const river =
     const m = S.riverMaterial(water);
     m.uniforms.uTime.value = 4.2;
     m.uniforms.uFlood.value = flood;
-    scene.add(
-      new THREE.Mesh(
-        new THREE.PlaneGeometry(20, 60, 1, 1).rotateX(-Math.PI / 2),
-        m,
-      ),
-    );
+    scene.add(new THREE.Mesh(new THREE.PlaneGeometry(20, 60, 1, 1).rotateX(-Math.PI / 2), m));
     camera.position.set(0, 2.5, 6);
     camera.lookAt(0, 0, -6);
   };
 
 export default {
-  "middleearth:weathertop:flood": { node: flood(PN), classic: flood(PO) },
-  "middleearth:weathertop:churn": { node: churn(PN), classic: churn(PO) },
-  "middleearth:weathertop:spray": { node: spray(PN), classic: spray(PO) },
-  "middleearth:weathertop:ember": { node: ember(PN), classic: ember(PO) },
-  "middleearth:weathertop:hair": { node: hair(PN), classic: hair(PO) },
-  "middleearth:weathertop:river": {
+  'middleearth:weathertop:flood': { node: flood(PN), classic: flood(PO) },
+  'middleearth:weathertop:churn': { node: churn(PN), classic: churn(PO) },
+  'middleearth:weathertop:spray': { node: spray(PN), classic: spray(PO) },
+  'middleearth:weathertop:ember': { node: ember(PN), classic: ember(PO) },
+  'middleearth:weathertop:hair': { node: hair(PN), classic: hair(PO) },
+  'middleearth:weathertop:river': {
     node: river(SN, 0),
     classic: river(SO, 0),
   },
-  "middleearth:weathertop:river:flood": {
+  'middleearth:weathertop:river:flood': {
     node: river(SN, 0.7),
     classic: river(SO, 0.7),
   },

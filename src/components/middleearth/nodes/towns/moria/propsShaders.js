@@ -24,8 +24,8 @@
 //   ripple’s clone makes a fresh material: a node material’s clone shares
 //   its uniform nodes, and every arm would ring at once.
 
-import * as THREE from "three";
-import { MeshBasicNodeMaterial, PointsNodeMaterial } from "three/webgpu";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial, PointsNodeMaterial } from 'three/webgpu';
 import {
   abs,
   attribute,
@@ -70,17 +70,8 @@ import {
   vec2,
   vec3,
   vec4,
-} from "three/tsl";
-import {
-  asNode,
-  follow,
-  keyed,
-  onColor,
-  onFog,
-  onLight,
-  onNormal,
-  wrap,
-} from "../../../../../lib/three/hookNodes";
+} from 'three/tsl';
+import { asNode, follow, keyed, onColor, onFog, onLight, onNormal, wrap } from '../../../../../lib/three/hookNodes';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
@@ -96,20 +87,13 @@ const of = (holder) => {
 const fall = (a, b, x) => smoothstep(b, a, x).oneMinus();
 
 // FOG_ADD: in fog an additive glow fades to nothing
-const fogAdd = (m) => onFog(m, () => vec3(0), "moria:fog-add");
+const fogAdd = (m) => onFog(m, () => vec3(0), 'moria:fog-add');
 
 // The GLSL’s vertex: the mesh’s own position into view, nothing else moving it.
-const rawVertex = (m) =>
-  wrap(
-    m,
-    "setupPositionView",
-    () => modelViewMatrix.mul(vec4(positionGeometry, 1)).xyz,
-    "moria:raw",
-  );
+const rawVertex = (m) => wrap(m, 'setupPositionView', () => modelViewMatrix.mul(vec4(positionGeometry, 1)).xyz, 'moria:raw');
 
 // a ShaderMaterial’s defaults on a node material
-const basic = (o) =>
-  new MeshBasicNodeMaterial({ fog: false, toneMapped: false, ...o });
+const basic = (o) => new MeshBasicNodeMaterial({ fog: false, toneMapped: false, ...o });
 
 // ── hooks on the kit’s stone and hide ──
 
@@ -125,11 +109,8 @@ export function revealable(m0, U, key) {
     uRevealColor: of(U.uRevealColor),
   };
   // (the GLSL’s world position and normal, the instance’s matrix in both)
-  const vW = varying(positionWorld, "vRvW");
-  const vN = varying(
-    normalize(modelWorldMatrix.mul(vec4(normalLocal, 0)).xyz),
-    "vRvN",
-  );
+  const vW = varying(positionWorld, 'vRvW');
+  const vN = varying(normalize(modelWorldMatrix.mul(vec4(normalLocal, 0)).xyz), 'vRvN');
   return onLight(
     m,
     (light) => {
@@ -141,28 +122,12 @@ export function revealable(m0, U, key) {
       const V = normalize(cameraPosition.sub(vW));
       const reach = mix(4, 46, u.uReveal);
       const fade = exp(d.negate().div(reach));
-      const high = smoothstep(
-        u.uReveal.mul(13).add(9),
-        u.uReveal.mul(14).add(22),
-        vW.y,
-      ).oneMinus();
+      const high = smoothstep(u.uReveal.mul(13).add(9), u.uReveal.mul(14).add(22), vW.y).oneMinus();
       const lam = max(dot(N, L), 0);
       const spec = pow(max(dot(reflect(L.negate(), N), V), 0), 40);
       const sheen = pow(max(dot(N, V), 0).oneMinus(), 2.5);
-      const glow = diffuseColor.rgb
-        .mul(lam.mul(1.5).add(sheen.mul(0.6)))
-        .add(
-          vec3(spec.mul(0.35).add(sheen.mul(0.08))).mul(
-            materialRoughness.oneMinus(),
-          ),
-        );
-      return light.add(
-        select(
-          u.uReveal.greaterThan(0.001),
-          u.uRevealColor.mul(glow).mul(fade).mul(high).mul(u.uReveal),
-          vec3(0),
-        ),
-      );
+      const glow = diffuseColor.rgb.mul(lam.mul(1.5).add(sheen.mul(0.6))).add(vec3(spec.mul(0.35).add(sheen.mul(0.08))).mul(materialRoughness.oneMinus()));
+      return light.add(select(u.uReveal.greaterThan(0.001), u.uRevealColor.mul(glow).mul(fade).mul(high).mul(u.uReveal), vec3(0)));
     },
     key,
     u,
@@ -174,29 +139,21 @@ export function revealable(m0, U, key) {
 // The picture’s green shades the colour and its blue darkens it; the normal
 // map raises bumps and creases. `extra` (balrogFire’s) is a function of
 // { hs, hp, hN } returning what it adds: { shade, emissive }.
-export function hide(
-  m0,
-  { tex, nrm, scale = 1, bump = 1, shade = 0.3, extra = null, key },
-) {
+export function hide(m0, { tex, nrm, scale = 1, bump = 1, shade = 0.3, extra = null, key }) {
   const m = asNode(m0);
   const u = { uHideScale: uniform(scale), uHideBump: uniform(bump) };
   // (the vertex as it came, before the skeleton moved it)
-  const hN = normalize(varying(normalGeometry, "vHideN"));
+  const hN = normalize(varying(normalGeometry, 'vHideN'));
   const hw0 = pow(abs(hN), vec3(4));
   const hw = hw0.div(hw0.x.add(hw0.y).add(hw0.z));
-  const hp = varying(positionGeometry, "vHideP").mul(u.uHideScale);
-  const hs = texture(tex, hp.zy)
-    .mul(hw.x)
-    .add(texture(tex, hp.xz).mul(hw.y))
-    .add(texture(tex, hp.xy).mul(hw.z));
-  const more = typeof extra === "function" ? extra({ hs, hp, hN }) : {};
+  const hp = varying(positionGeometry, 'vHideP').mul(u.uHideScale);
+  const hs = texture(tex, hp.zy).mul(hw.x).add(texture(tex, hp.xz).mul(hw.y)).add(texture(tex, hp.xy).mul(hw.z));
+  const more = typeof extra === 'function' ? extra({ hs, hp, hN }) : {};
   const k = Number(shade.toFixed(3));
   onColor(
     m,
     (dc) => {
-      let rgb = dc.rgb
-        .mul(float(k).mul(float(0.5).sub(hs.g)).mul(2).oneMinus())
-        .mul(hs.b.mul(0.55).oneMinus());
+      let rgb = dc.rgb.mul(float(k).mul(float(0.5).sub(hs.g)).mul(2).oneMinus()).mul(hs.b.mul(0.55).oneMinus());
       if (more.shade) rgb = rgb.mul(more.shade);
       return rgb;
     },
@@ -213,13 +170,9 @@ export function hide(
       const tX = vec3(tX0.xy.mul(u.uHideBump).add(hN.zy), hN.x);
       const tY = vec3(tY0.xy.mul(u.uHideBump).add(hN.xz), hN.y);
       const tZ = vec3(tZ0.xy.mul(u.uHideBump).add(hN.xy), hN.z);
-      const nObj = normalize(
-        tX.zyx.mul(hw.x).add(tY.xzy.mul(hw.y)).add(tZ.xyz.mul(hw.z)),
-      );
+      const nObj = normalize(tX.zyx.mul(hw.x).add(tY.xzy.mul(hw.y)).add(tZ.xyz.mul(hw.z)));
       // (GLSL’s normalMatrix: the model’s normal matrix, then the camera’s turn)
-      const dv = cameraViewMatrix.mul(
-        vec4(modelNormalMatrix.mul(nObj.sub(hN)), 0),
-      ).xyz;
+      const dv = cameraViewMatrix.mul(vec4(modelNormalMatrix.mul(nObj.sub(hN)), 0)).xyz;
       return normalize(n.add(dv));
     },
     key,
@@ -239,45 +192,19 @@ export function balrogFire(U) {
     uniforms: { uTime: U.uTime, uRage: U.uRage, uNoise: U.uNoise },
     extra: ({ hs, hp }) => {
       const cr = smoothstep(0.4, 0.95, hs.r);
-      const f1 = texture(
-        noise,
-        hp.xy.mul(0.45).add(vec2(hp.z.mul(0.3), uTime.mul(-0.07))),
-      ).r;
-      const f2 = texture(
-        noise,
-        hp.zy.mul(0.6).add(vec2(uTime.mul(0.03), uTime.mul(-0.11))),
-      ).g;
+      const f1 = texture(noise, hp.xy.mul(0.45).add(vec2(hp.z.mul(0.3), uTime.mul(-0.07)))).r;
+      const f2 = texture(noise, hp.zy.mul(0.6).add(vec2(uTime.mul(0.03), uTime.mul(-0.11)))).g;
       const pulse = sin(uTime.mul(2.3).add(f1.mul(12)))
         .mul(0.2)
         .add(0.8);
-      const heat = cr
-        .mul(f1.mul(f2).mul(2.4).add(0.12))
-        .mul(pulse)
-        .mul(uRage.mul(0.75).add(0.55));
-      const fire0 = mix(
-        vec3(0.5, 0.06, 0.01),
-        vec3(2.2, 0.7, 0.1),
-        smoothstep(0.2, 0.8, heat),
-      );
+      const heat = cr.mul(f1.mul(f2).mul(2.4).add(0.12)).mul(pulse).mul(uRage.mul(0.75).add(0.55));
+      const fire0 = mix(vec3(0.5, 0.06, 0.01), vec3(2.2, 0.7, 0.1), smoothstep(0.2, 0.8, heat));
       const fire = mix(fire0, vec3(3.6, 2, 0.7), smoothstep(0.95, 1.4, heat));
       // (the normal as lit: the hide’s bumps in it)
-      const rim = pow(
-        max(
-          abs(dot(normalView, normalize(positionView.negate()))).oneMinus(),
-          0,
-        ),
-        3,
-      );
+      const rim = pow(max(abs(dot(normalView, normalize(positionView.negate()))).oneMinus(), 0), 3);
       return {
         shade: cr.mul(0.85).oneMinus(),
-        emissive: fire
-          .mul(heat)
-          .add(
-            vec3(0.45, 0.07, 0.01)
-              .mul(rim)
-              .mul(uRage.mul(0.5).add(0.25))
-              .mul(f1.mul(0.8).add(0.6)),
-          ),
+        emissive: fire.mul(heat).add(vec3(0.45, 0.07, 0.01).mul(rim).mul(uRage.mul(0.5).add(0.25)).mul(f1.mul(0.8).add(0.6))),
       };
     },
   };
@@ -289,17 +216,12 @@ export function underglow(m0, U, key) {
   const m = asNode(m0);
   const u = { uFire: of(U.uFire), uFireColor: of(U.uFireColor) };
   const noise = U.uNoise.value;
-  const W = varying(positionWorld, "vUgW");
-  const N = normalize(
-    varying(normalize(modelWorldMatrix.mul(vec4(normalLocal, 0)).xyz), "vUgN"),
-  );
+  const W = varying(positionWorld, 'vUgW');
+  const N = normalize(varying(normalize(modelWorldMatrix.mul(vec4(normalLocal, 0)).xyz), 'vUgN'));
   const down = max(N.y.negate(), 0);
   const deep = fall(2, -55, W.y);
   const side = abs(N.y).oneMinus();
-  const flick = texture(
-    noise,
-    W.xz.mul(0.05).add(vec2(0, W.y.mul(0.03))),
-  ).r.add(0.5);
+  const flick = texture(noise, W.xz.mul(0.05).add(vec2(0, W.y.mul(0.03)))).r.add(0.5);
   m.emissiveNode = materialEmissive.add(
     u.uFireColor
       .mul(u.uFire)
@@ -331,17 +253,13 @@ export function ithildinGlow(m0, U) {
         .mul(vec3(uv(em.channel), 1)).xy
     : uv();
   const nI = texture(noise, at.mul(vec2(2, 2.8))).r;
-  const on = smoothstep(
-    nI.sub(0.2),
-    nI.add(0.05),
-    u.uIthil.mul(1.35).sub(0.15),
-  );
+  const on = smoothstep(nI.sub(0.2), nI.add(0.05), u.uIthil.mul(1.35).sub(0.15));
   const shim = sin(u.uTime.mul(1.7).add(nI.mul(23)))
     .mul(sin(u.uTime.mul(0.6).add(nI.mul(9))))
     .mul(0.12)
     .add(0.88);
   m.emissiveNode = materialEmissive.mul(on.mul(shim).mul(u.uIthil));
-  return keyed(m, "moria-ithildin", u);
+  return keyed(m, 'moria-ithildin', u);
 }
 
 // ── the Chamber of Mazarbul’s light ──
@@ -364,11 +282,8 @@ export function beamMaterial(U) {
     blending: THREE.AdditiveBlending,
   });
   rawVertex(m);
-  const vN = varying(transformNormalToView(normalGeometry), "vN");
-  const vV = varying(
-    modelViewMatrix.mul(vec4(positionGeometry, 1)).xyz.negate(),
-    "vV",
-  );
+  const vN = varying(transformNormalToView(normalGeometry), 'vN');
+  const vV = varying(modelViewMatrix.mul(vec4(positionGeometry, 1)).xyz.negate(), 'vV');
   const vUv = uv();
   const along = vUv.y.oneMinus();
   const facing = abs(dot(normalize(vN), normalize(vV)));
@@ -411,7 +326,7 @@ export function sunlitMaterial(U, beam) {
     blending: THREE.AdditiveBlending,
   });
   rawVertex(m);
-  const vW = varying(modelWorldMatrix.mul(vec4(positionGeometry, 1)).xyz, "vW");
+  const vW = varying(modelWorldMatrix.mul(vec4(positionGeometry, 1)).xyz, 'vW');
   const d = vW.sub(u.uFrom);
   const t = dot(d, u.uDir);
   const off = length(d.sub(u.uDir.mul(t)));
@@ -442,18 +357,14 @@ export function sunlitMaterial(U, beam) {
 // instance attributes), drawn by `material`, sized in the canvas’s pixels.
 function pointSprites(geometry, material) {
   const sprite = new THREE.Sprite(material);
-  sprite.count = geometry.getAttribute("position").count;
+  sprite.count = geometry.getAttribute('position').count;
   return sprite;
 }
-const seedsOf = (geometry) =>
-  instancedBufferAttribute(
-    new THREE.InstancedBufferAttribute(geometry.getAttribute("aSeed").array, 4),
-  );
+const seedsOf = (geometry) => instancedBufferAttribute(new THREE.InstancedBufferAttribute(geometry.getAttribute('aSeed').array, 4));
 
 // gl_PointSize from the GLSL, in the canvas’s pixels (three’s sprite
 // multiplies by the DPR again), and how far the point is
-const pointSize = (k, p, near) =>
-  k.div(max(near, modelViewMatrix.mul(vec4(p, 1)).z.negate())).div(screenDPR);
+const pointSize = (k, p, near) => k.div(max(near, modelViewMatrix.mul(vec4(p, 1)).z.negate())).div(screenDPR);
 
 // Dust turning slowly in the shaft of light, catching it.
 function dustMaterial(U, K, geometry) {
@@ -472,22 +383,9 @@ function dustMaterial(U, K, geometry) {
     sizeAttenuation: false,
   });
   const aSeed = seedsOf(geometry);
-  const position = instancedBufferAttribute(
-    new THREE.InstancedBufferAttribute(
-      geometry.getAttribute("position").array,
-      3,
-    ),
-  );
+  const position = instancedBufferAttribute(new THREE.InstancedBufferAttribute(geometry.getAttribute('position').array, 3));
   const t = u.uTime.mul(aSeed.y.mul(0.06).add(0.05));
-  const p = position.add(
-    vec3(
-      sin(t.add(aSeed.x.mul(31))),
-      sin(t.mul(0.7).add(aSeed.z.mul(17))).sub(
-        fract(t.mul(0.1).add(aSeed.w)).mul(0.4),
-      ),
-      cos(t.mul(0.8).add(aSeed.w.mul(23))),
-    ).mul(0.25),
-  );
+  const p = position.add(vec3(sin(t.add(aSeed.x.mul(31))), sin(t.mul(0.7).add(aSeed.z.mul(17))).sub(fract(t.mul(0.1).add(aSeed.w)).mul(0.4)), cos(t.mul(0.8).add(aSeed.w.mul(23)))).mul(0.25));
   m.positionNode = p;
   m.sizeNode = pointSize(aSeed.z.mul(0.02).add(0.012).mul(u.uScale), p, 0.3);
   const vA = varying(
@@ -497,7 +395,7 @@ function dustMaterial(U, K, geometry) {
       .add(0.4)
       .add(0.3)
       .mul(aSeed.y),
-    "vA",
+    'vA',
   );
   const c = uv().sub(0.5);
   const a = fall(0.25, 0, dot(c, c)).mul(vA).mul(u.uK);
@@ -539,32 +437,21 @@ export function abyssMaterial(U, card) {
   });
   rawVertex(m);
   const vUv = uv();
-  const vP = varying(positionGeometry, "vP");
+  const vP = varying(positionGeometry, 'vP');
   const deep = vec3(0.55, 0.05, 0.01);
   const hotC = vec3(2.2, 0.75, 0.12);
   // the cards
   const v = vUv.y;
   const sides = smoothstep(0, 0.3, vUv.x).mul(fall(1, 0.7, vUv.x));
-  const cn = u.uNoise.sample(
-    vec2(vUv.x.mul(1.5), v.mul(0.8).sub(u.uTime.mul(0.02))),
-  ).r;
-  const cn2 = u.uNoise.sample(
-    vec2(vUv.x.mul(3).add(0.3), v.mul(1.6).sub(u.uTime.mul(0.045))),
-  ).g;
+  const cn = u.uNoise.sample(vec2(vUv.x.mul(1.5), v.mul(0.8).sub(u.uTime.mul(0.02)))).r;
+  const cn2 = u.uNoise.sample(vec2(vUv.x.mul(3).add(0.3), v.mul(1.6).sub(u.uTime.mul(0.045)))).g;
   const up = max(v.oneMinus(), 0);
-  const cardA = pow(up, 1.3)
-    .mul(sides)
-    .mul(cn.mul(cn2).mul(1.1).add(0.45))
-    .mul(0.6);
+  const cardA = pow(up, 1.3).mul(sides).mul(cn.mul(cn2).mul(1.1).add(0.45)).mul(0.6);
   const cardCol = mix(deep, hotC, pow(up, 2.2).mul(cn.add(0.5)));
   // the floor
   const d = length(vP.xy).div(40);
-  const fn = u.uNoise.sample(
-    vP.xy.mul(0.012).add(vec2(u.uTime.mul(0.004), u.uTime.mul(-0.003))),
-  ).r;
-  const fn2 = u.uNoise.sample(
-    vP.xy.mul(0.03).sub(vec2(u.uTime.mul(0.006), 0)),
-  ).b;
+  const fn = u.uNoise.sample(vP.xy.mul(0.012).add(vec2(u.uTime.mul(0.004), u.uTime.mul(-0.003)))).r;
+  const fn2 = u.uNoise.sample(vP.xy.mul(0.03).sub(vec2(u.uTime.mul(0.006), 0))).b;
   const churn = smoothstep(0.35, 0.75, fn.mul(0.6).add(fn2.mul(0.6)));
   const floorA = pow(clamp(d.oneMinus(), 0, 1), 1.2).mul(1.4);
   const floorCol = mix(deep, hotC, churn);
@@ -622,7 +509,7 @@ function sparkMaterial(U, K, geometry) {
         .mul(0.5)
         .add(0.5),
     ),
-    "vA",
+    'vA',
   );
   const c = uv().sub(0.5);
   const a = fall(0.25, 0, dot(c, c)).mul(vA).mul(u.uK);
@@ -647,17 +534,13 @@ export function sparkPoints(geometry, U, K) {
 
 // a card’s place in view, from where it was born (aEmit, in its parent’s
 // frame), how far it has risen and its offset on the card
-const card = (m, tag, at) =>
-  wrap(m, "setupPositionView", () => at(), `moria:${tag}`);
+const card = (m, tag, at) => wrap(m, 'setupPositionView', () => at(), `moria:${tag}`);
 
 // Flames as soft tongues on camera-facing cards, each born at its own point
 // (aEmit, in its parent's frame) and rising in the world, wavering, from
 // white-yellow through orange to a dull red, gone. Bigger and faster with
 // uRage. Many at once make a fire; added, so their order doesn't matter.
-export function flameMaterial(
-  U,
-  { size = 1, rise = 2, heat = 1, rate = 1 } = {},
-) {
+export function flameMaterial(U, { size = 1, rise = 2, heat = 1, rate = 1 } = {}) {
   const uniforms = {
     uSize: uniform(size),
     uRise: uniform(rise),
@@ -674,16 +557,12 @@ export function flameMaterial(
     depthWrite: false,
     blending: THREE.AdditiveBlending,
   });
-  const aEmit = attribute("aEmit", "vec3");
-  const aSeed = attribute("aSeed", "vec4");
-  const life = fract(
-    u.uTime.mul(aSeed.y.mul(0.9).add(0.6)).mul(u.uRate).add(aSeed.x),
-  );
-  card(m, "flame", () => {
+  const aEmit = attribute('aEmit', 'vec3');
+  const aSeed = attribute('aSeed', 'vec4');
+  const life = fract(u.uTime.mul(aSeed.y.mul(0.9).add(0.6)).mul(u.uRate).add(aSeed.x));
+  card(m, 'flame', () => {
     const wp = modelWorldMatrix.mul(vec4(aEmit, 1));
-    const h = u.uRise
-      .mul(aSeed.z.mul(0.8).add(0.6))
-      .mul(u.uRage.mul(0.7).add(0.8));
+    const h = u.uRise.mul(aSeed.z.mul(0.8).add(0.6)).mul(u.uRage.mul(0.7).add(0.8));
     const w = vec4(
       wp.x.add(
         sin(u.uTime.mul(2.7).add(aSeed.w.mul(40)).add(life.mul(3)))
@@ -709,31 +588,18 @@ export function flameMaterial(
       .mul(smoothstep(0, 0.12, life));
     return mv.xyz.add(vec3(positionGeometry.xy.mul(vec2(s, s.mul(1.6))), 0));
   });
-  const vUv = varying(positionGeometry.xy.add(0.5), "vUv");
-  const vLife = varying(life, "vLife");
-  const vSeed = varying(aSeed.w, "vSeed");
-  const n = u.uNoise.sample(
-    vec2(
-      vUv.x.mul(0.7).add(vSeed.mul(3.7)),
-      vUv.y.mul(0.5).sub(u.uTime.mul(1.1)).sub(vSeed),
-    ),
-  ).r;
-  const n2 = u.uNoise.sample(
-    vec2(vUv.x.mul(1.5).add(vSeed), vUv.y.mul(1.1).sub(u.uTime.mul(1.9))),
-  ).g;
+  const vUv = varying(positionGeometry.xy.add(0.5), 'vUv');
+  const vLife = varying(life, 'vLife');
+  const vSeed = varying(aSeed.w, 'vSeed');
+  const n = u.uNoise.sample(vec2(vUv.x.mul(0.7).add(vSeed.mul(3.7)), vUv.y.mul(0.5).sub(u.uTime.mul(1.1)).sub(vSeed))).r;
+  const n2 = u.uNoise.sample(vec2(vUv.x.mul(1.5).add(vSeed), vUv.y.mul(1.1).sub(u.uTime.mul(1.9)))).g;
   const w = mix(0.42, 0.05, clamp(vUv.y, 0, 1));
   const x = abs(vUv.x.sub(0.5).add(n.sub(0.5).mul(0.25).mul(vUv.y)));
   const shape = fall(w, w.mul(0.2), x.add(n2.sub(0.5).mul(0.12)))
     .mul(smoothstep(0, 0.2, vUv.y))
     .mul(fall(1, 0.5, vUv.y.add(n.sub(0.5).mul(0.4))));
-  const hot = shape
-    .mul(vLife.mul(0.85).oneMinus())
-    .mul(smoothstep(0, 0.08, vLife));
-  const col0 = mix(
-    vec3(0.7, 0.07, 0.01),
-    vec3(2.6, 0.85, 0.16),
-    smoothstep(0.08, 0.5, hot),
-  );
+  const hot = shape.mul(vLife.mul(0.85).oneMinus()).mul(smoothstep(0, 0.08, vLife));
+  const col0 = mix(vec3(0.7, 0.07, 0.01), vec3(2.6, 0.85, 0.16), smoothstep(0.08, 0.5, hot));
   m.colorNode = mix(col0, vec3(3, 1.6, 0.5), smoothstep(0.7, 1, hot));
   m.opacityNode = clamp(hot.mul(1.2), 0, 1).mul(u.uHeat);
   m.uniforms = uniforms;
@@ -752,10 +618,10 @@ export function smokeMaterial(U, { size = 2, rise = 6 } = {}) {
   };
   const u = uniforms;
   const m = basic({ fog: true, transparent: true, depthWrite: false });
-  const aEmit = attribute("aEmit", "vec3");
-  const aSeed = attribute("aSeed", "vec4");
+  const aEmit = attribute('aEmit', 'vec3');
+  const aSeed = attribute('aSeed', 'vec4');
   const life = fract(u.uTime.mul(aSeed.y.mul(0.07).add(0.08)).add(aSeed.x));
-  card(m, "smoke", () => {
+  card(m, 'smoke', () => {
     const wp = modelWorldMatrix.mul(vec4(aEmit, 1));
     const w = vec4(
       wp.x.sub(life.mul(life).mul(u.uRise).mul(0.5)),
@@ -768,34 +634,22 @@ export function smokeMaterial(U, { size = 2, rise = 6 } = {}) {
       wp.w,
     );
     const mv = cameraViewMatrix.mul(w);
-    const s = u.uSize
-      .mul(aSeed.z.mul(0.8).add(0.6))
-      .mul(life.mul(1.2).add(0.4))
-      .mul(u.uRage.mul(0.3).add(0.9));
+    const s = u.uSize.mul(aSeed.z.mul(0.8).add(0.6)).mul(life.mul(1.2).add(0.4)).mul(u.uRage.mul(0.3).add(0.9));
     const a = aSeed.w.mul(6.283).add(u.uTime.mul(0.1).mul(aSeed.z.sub(0.5)));
     const P = positionGeometry;
-    const q = vec2(
-      cos(a).mul(P.x).sub(sin(a).mul(P.y)),
-      sin(a).mul(P.x).add(cos(a).mul(P.y)),
-    );
+    const q = vec2(cos(a).mul(P.x).sub(sin(a).mul(P.y)), sin(a).mul(P.x).add(cos(a).mul(P.y)));
     return mv.xyz.add(vec3(q.mul(s), 0));
   });
-  const vUv = varying(positionGeometry.xy.add(0.5), "vUv");
-  const vLife = varying(life, "vLife");
-  const vSeed = varying(aSeed.w, "vSeed");
+  const vUv = varying(positionGeometry.xy.add(0.5), 'vUv');
+  const vLife = varying(life, 'vLife');
+  const vSeed = varying(aSeed.w, 'vSeed');
   const d = length(vUv.sub(0.5)).mul(2);
-  const n = u.uNoise.sample(
-    vUv.mul(0.8).add(vec2(vSeed.mul(5), u.uTime.mul(-0.02))),
-  ).r;
+  const n = u.uNoise.sample(vUv.mul(0.8).add(vec2(vSeed.mul(5), u.uTime.mul(-0.02)))).r;
   m.opacityNode = fall(1, 0.2, d.add(n.sub(0.5).mul(0.6)))
     .mul(smoothstep(0, 0.15, vLife))
     .mul(vLife.oneMinus())
     .mul(0.55);
-  m.colorNode = mix(
-    vec3(0.45, 0.08, 0.02),
-    vec3(0.025, 0.02, 0.02),
-    smoothstep(0, 0.35, vLife),
-  );
+  m.colorNode = mix(vec3(0.45, 0.08, 0.02), vec3(0.025, 0.02, 0.02), smoothstep(0, 0.35, vLife));
   m.uniforms = uniforms;
   return m;
 }
@@ -812,31 +666,14 @@ export function fireSolidMaterial(U) {
   const u = uniforms;
   const m = basic({ fog: true });
   rawVertex(m);
-  const vN = varying(transformNormalToView(normalGeometry), "vN");
-  const vV = varying(
-    modelViewMatrix.mul(vec4(positionGeometry, 1)).xyz.negate(),
-    "vV",
-  );
+  const vN = varying(transformNormalToView(normalGeometry), 'vN');
+  const vV = varying(modelViewMatrix.mul(vec4(positionGeometry, 1)).xyz.negate(), 'vV');
   const vUv = uv();
-  const n = u.uNoise.sample(
-    vec2(vUv.x.mul(0.5), vUv.y.mul(0.35).sub(u.uTime.mul(0.9))),
-  ).r;
-  const n2 = u.uNoise.sample(
-    vec2(vUv.x.mul(1.3).add(0.4), vUv.y.mul(0.9).sub(u.uTime.mul(1.6))),
-  ).g;
+  const n = u.uNoise.sample(vec2(vUv.x.mul(0.5), vUv.y.mul(0.35).sub(u.uTime.mul(0.9)))).r;
+  const n2 = u.uNoise.sample(vec2(vUv.x.mul(1.3).add(0.4), vUv.y.mul(0.9).sub(u.uTime.mul(1.6)))).g;
   const face = abs(dot(normalize(vN), normalize(vV)));
-  const h = n
-    .mul(n2)
-    .mul(0.9)
-    .add(0.45)
-    .add(face.mul(0.35))
-    .mul(u.uHeat)
-    .mul(u.uRage.mul(0.4).add(0.85));
-  const col0 = mix(
-    vec3(0.9, 0.12, 0.02),
-    vec3(3.2, 1.2, 0.25),
-    smoothstep(0.3, 0.8, h),
-  );
+  const h = n.mul(n2).mul(0.9).add(0.45).add(face.mul(0.35)).mul(u.uHeat).mul(u.uRage.mul(0.4).add(0.85));
+  const col0 = mix(vec3(0.9, 0.12, 0.02), vec3(3.2, 1.2, 0.25), smoothstep(0.3, 0.8, h));
   m.colorNode = mix(col0, vec3(5, 3.6, 1.8), smoothstep(0.85, 1.25, h));
   m.uniforms = uniforms;
   return m;
@@ -860,20 +697,12 @@ export function wingMaterial(U) {
   });
   rawVertex(m);
   const vUv = uv();
-  const vWing = attribute("aWing", "vec2");
+  const vWing = attribute('aWing', 'vec2');
   const edge = vWing.x;
   const heat = vWing.y;
-  const n = u.uNoise.sample(
-    vUv.mul(vec2(0.9, 0.6)).add(vec2(u.uTime.mul(-0.035), u.uTime.mul(0.02))),
-  ).r;
-  const n2 = u.uNoise.sample(
-    vUv.mul(vec2(2.2, 1.6)).add(vec2(u.uTime.mul(0.05), u.uTime.mul(-0.03))),
-  ).g;
-  const rag = fall(
-    0.95,
-    0.62,
-    edge.add(n.sub(0.5).mul(0.5)).add(n2.sub(0.5).mul(0.35)),
-  );
+  const n = u.uNoise.sample(vUv.mul(vec2(0.9, 0.6)).add(vec2(u.uTime.mul(-0.035), u.uTime.mul(0.02)))).r;
+  const n2 = u.uNoise.sample(vUv.mul(vec2(2.2, 1.6)).add(vec2(u.uTime.mul(0.05), u.uTime.mul(-0.03)))).g;
+  const rag = fall(0.95, 0.62, edge.add(n.sub(0.5).mul(0.5)).add(n2.sub(0.5).mul(0.35)));
   const hole = fall(0.86, 0.78, n2.add(n.mul(0.25)).add(edge.mul(0.1)));
   const a = rag
     .mul(mix(1, hole, 0.6))
@@ -911,7 +740,7 @@ export function rippleMaterial() {
     blending: THREE.AdditiveBlending,
   });
   rawVertex(m);
-  const d = length(varying(positionGeometry.xz, "vP"));
+  const d = length(varying(positionGeometry.xz, 'vP'));
   let rings = float(0);
   for (let i = 0; i < 3; i++) {
     const f = fract(u.uTime.mul(0.35).add(i / 3));

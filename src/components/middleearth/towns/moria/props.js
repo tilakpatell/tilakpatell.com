@@ -20,11 +20,11 @@
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
-import { canvasTexture, hot } from '../../../../lib/stage3d';
+import { canvasTexture, hot } from '../../../../lib/three/stage3dNodes';
 import { clamp01, fbm, greyFromField, makeCanvas, makeCells, makeNoise, mix, normalFromField, paintPixels, smooth } from '../../../../lib/paint';
 import { B, ball, blob, boxUV, createShireKit, cyl, lathe, parts, rng, roundBox, tf, tube } from '../../shire/props';
 import { createShot, createStride, createTracker, ease, footAt, legRig } from '../../creatures';
-import { abyssMaterial, balrogFire, beamMaterial, dustPoints, fireSolidMaterial, flameMaterial, hide, ithildinGlow, revealable, rippleMaterial, smokeMaterial, sparkPoints, sunlitMaterial, underglow, wingMaterial } from './propsShaders';
+import { abyssMaterial, balrogFire, beamMaterial, dustPoints, fireSolidMaterial, flameMaterial, hide, ithildinGlow, revealable, rippleMaterial, smokeMaterial, sparkPoints, sunlitMaterial, underglow, wingMaterial } from '../../nodes/towns/moria/propsShaders';
 
 const TAU = Math.PI * 2;
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);

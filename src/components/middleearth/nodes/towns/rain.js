@@ -10,42 +10,17 @@
 // matrix. The tone map and the output colour space are the renderer’s own,
 // as the GLSL’s chunks were; neither material ever took fog.
 
-import * as THREE from "three";
-import { LineBasicNodeMaterial, PointsNodeMaterial } from "three/webgpu";
-import {
-  attribute,
-  cameraViewMatrix,
-  clamp,
-  floor,
-  instancedBufferAttribute,
-  length,
-  normalize,
-  positionView,
-  screenDPR,
-  smoothstep,
-  step,
-  uniform,
-  uv,
-  varying,
-  vec2,
-  vec3,
-  vec4,
-} from "three/tsl";
-import { wrap } from "../../../../lib/three/hookNodes";
+import * as THREE from 'three';
+import { LineBasicNodeMaterial, PointsNodeMaterial } from 'three/webgpu';
+import { attribute, cameraViewMatrix, clamp, floor, instancedBufferAttribute, length, normalize, positionView, screenDPR, smoothstep, step, uniform, uv, varying, vec2, vec3, vec4 } from 'three/tsl';
+import { wrap } from '../../../../lib/three/hookNodes';
 
 // GLSL’s mod (floored, for the negatives too: WGSL’s % is not)
 const mod = (a, b) => a.sub(b.mul(floor(a.div(b))));
 
-export function makeRain({
-  count = 4000,
-  size = [36, 22, 36],
-  speed = 14,
-  len = 0.6,
-  splashes = 220,
-  height = () => 0,
-} = {}) {
+export function makeRain({ count = 4000, size = [36, 22, 36], speed = 14, len = 0.6, splashes = 220, height = () => 0 } = {}) {
   const group = new THREE.Group();
-  group.name = "rain";
+  group.name = 'rain';
 
   // ── the streaks ──
   const geo = new THREE.BufferGeometry();
@@ -58,12 +33,9 @@ export function makeRain({
       end[i * 2 + e] = e;
     }
   }
-  geo.setAttribute(
-    "position",
-    new THREE.BufferAttribute(new Float32Array(count * 2 * 3), 3),
-  );
-  geo.setAttribute("seed", new THREE.BufferAttribute(seed, 4));
-  geo.setAttribute("end", new THREE.BufferAttribute(end, 1));
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 2 * 3), 3));
+  geo.setAttribute('seed', new THREE.BufferAttribute(seed, 4));
+  geo.setAttribute('end', new THREE.BufferAttribute(end, 1));
   const uniforms = {
     uCam: uniform(new THREE.Vector3()),
     uTime: uniform(0),
@@ -81,36 +53,18 @@ export function makeRain({
     depthWrite: false,
     fog: false,
   });
-  const aSeed = attribute("seed", "vec4");
-  const aEnd = attribute("end", "float");
+  const aSeed = attribute('seed', 'vec4');
+  const aEnd = attribute('end', 'float');
   const pace = aSeed.w.mul(0.3).add(0.85);
-  const q = vec3(
-    aSeed.x.mul(u.uSize.x).add(u.uWind.x.mul(u.uTime).mul(pace)),
-    aSeed.y.mul(u.uSize.y).sub(u.uTime.mul(u.uSpeed).mul(pace)),
-    aSeed.z.mul(u.uSize.z).add(u.uWind.y.mul(u.uTime).mul(pace)),
-  );
-  const rel = mod(q.sub(u.uCam).add(u.uSize.mul(0.5)), u.uSize).sub(
-    u.uSize.mul(0.5),
-  );
+  const q = vec3(aSeed.x.mul(u.uSize.x).add(u.uWind.x.mul(u.uTime).mul(pace)), aSeed.y.mul(u.uSize.y).sub(u.uTime.mul(u.uSpeed).mul(pace)), aSeed.z.mul(u.uSize.z).add(u.uWind.y.mul(u.uTime).mul(pace)));
+  const rel = mod(q.sub(u.uCam).add(u.uSize.mul(0.5)), u.uSize).sub(u.uSize.mul(0.5));
   const dir = normalize(vec3(u.uWind.x, u.uSpeed.negate(), u.uWind.y));
   const wp = u.uCam.add(rel).sub(dir.mul(u.uLen).mul(pace).mul(aEnd));
   // (the GLSL’s projectionMatrix * viewMatrix * wp: in the world, whatever the group’s matrix)
-  wrap(
-    material,
-    "setupPositionView",
-    () => cameraViewMatrix.mul(vec4(wp, 1)).xyz,
-    "middleearth:rain",
-  );
+  wrap(material, 'setupPositionView', () => cameraViewMatrix.mul(vec4(wp, 1)).xyz, 'middleearth:rain');
   // thinner far off, none past how hard it’s raining
-  const fade = smoothstep(
-    u.uSize.x.mul(0.28),
-    u.uSize.x.mul(0.5),
-    length(rel.xz),
-  ).oneMinus();
-  const vAlpha = varying(
-    step(aSeed.w, u.uAmount).mul(fade).mul(aEnd.mul(0.85).add(0.15)),
-    "vAlpha",
-  );
+  const fade = smoothstep(u.uSize.x.mul(0.28), u.uSize.x.mul(0.5), length(rel.xz)).oneMinus();
+  const vAlpha = varying(step(aSeed.w, u.uAmount).mul(fade).mul(aEnd.mul(0.85).add(0.15)), 'vAlpha');
   material.colorNode = u.uColor;
   material.opacityNode = vAlpha.mul(u.uOpacity);
   material.uniforms = uniforms;
@@ -126,15 +80,9 @@ export function makeRain({
   const born = new Float32Array(n);
   const life = new Float32Array(n);
   // (one sprite a splash: its place, birth and life instance attributes)
-  const iPos = new THREE.InstancedBufferAttribute(sPos, 3).setUsage(
-    THREE.DynamicDrawUsage,
-  );
-  const iBorn = new THREE.InstancedBufferAttribute(born, 1).setUsage(
-    THREE.DynamicDrawUsage,
-  );
-  const iLife = new THREE.InstancedBufferAttribute(life, 1).setUsage(
-    THREE.DynamicDrawUsage,
-  );
+  const iPos = new THREE.InstancedBufferAttribute(sPos, 3).setUsage(THREE.DynamicDrawUsage);
+  const iBorn = new THREE.InstancedBufferAttribute(born, 1).setUsage(THREE.DynamicDrawUsage);
+  const iLife = new THREE.InstancedBufferAttribute(life, 1).setUsage(THREE.DynamicDrawUsage);
   const sUniforms = {
     uTime: uniform(0),
     uAmount: uniforms.uAmount,
@@ -149,21 +97,10 @@ export function makeRain({
     sizeAttenuation: false,
   });
   sMat.positionNode = instancedBufferAttribute(iPos);
-  const k = clamp(
-    su.uTime
-      .sub(instancedBufferAttribute(iBorn))
-      .div(instancedBufferAttribute(iLife)),
-    0,
-    1,
-  );
-  const vK = varying(k, "vK");
+  const k = clamp(su.uTime.sub(instancedBufferAttribute(iBorn)).div(instancedBufferAttribute(iLife)), 0, 1);
+  const vK = varying(k, 'vK');
   // gl_PointSize, in the canvas’s pixels (three’s sprite multiplies by the DPR again)
-  sMat.sizeNode = k
-    .mul(0.32)
-    .add(0.08)
-    .mul(su.uScale)
-    .div(positionView.z.negate())
-    .div(screenDPR);
+  sMat.sizeNode = k.mul(0.32).add(0.08).mul(su.uScale).div(positionView.z.negate()).div(screenDPR);
   const p = uv().mul(2).sub(1);
   // flattened: rings lying on the ground, seen at a slant
   const r = length(p.mul(vec2(1, 2.6)));

@@ -20,7 +20,6 @@ import { buildRoom } from './mapRoom.js';
 import { flightAt } from './mapFlight.js';
 import { prefersReducedMotion } from '../../lib/hooks';
 import { budget, device, pixelRatio } from '../../lib/device';
-import { precompile } from '../../lib/three/renderer';
 
 const SCALE = 10; // sheet units to one of the scene's
 const at = (x, y) => [(x - SHEET.w / 2) / SCALE, (y - SHEET.h / 2) / SCALE];
@@ -395,7 +394,8 @@ export function createMapBackdrop(canvas, { onLost, me } = {}) {
     // sent: the page waits for this before the first frame, so that frame
     // has the sheet in it (lib/three/frameGuard leaves out a material whose
     // pictures aren’t on the chip yet) and fades in over the flat one whole
-    ready: (me.views.enter(canvas), precompile(renderer, scene, camera)).then(() => {
+    // (compiled by the runtime's renderer, the node renderer's way)
+    ready: (me.views.enter(canvas), Promise.resolve(me.rt.gfx.compile?.(scene, camera, scene))).then(() => {
       if (lost) return;
       renderer.initTexture(map);
       renderer.initTexture(relief);

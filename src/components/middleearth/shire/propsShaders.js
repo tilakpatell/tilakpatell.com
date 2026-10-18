@@ -5,14 +5,9 @@
 // geometry's `tint` (1 on the petals) says how much
 export function flowerTint(material) {
   material.onBeforeCompile = (s) => {
-    s.vertexShader = s.vertexShader
-      .replace(
-        "#include <color_pars_vertex>",
-        "#include <color_pars_vertex>\nattribute float tint;",
-      )
-      .replace(
-        "#include <color_vertex>",
-        `#if defined( USE_COLOR ) || defined( USE_COLOR_ALPHA ) || defined( USE_INSTANCING_COLOR )
+    s.vertexShader = s.vertexShader.replace('#include <color_pars_vertex>', '#include <color_pars_vertex>\nattribute float tint;').replace(
+      '#include <color_vertex>',
+      `#if defined( USE_COLOR ) || defined( USE_COLOR_ALPHA ) || defined( USE_INSTANCING_COLOR )
         vColor = vec4( 1.0 );
       #endif
       #if defined( USE_COLOR ) || defined( USE_COLOR_ALPHA )
@@ -21,6 +16,6 @@ export function flowerTint(material) {
       #ifdef USE_INSTANCING_COLOR
         vColor.rgb *= mix( vec3( 1.0 ), instanceColor.rgb, tint );
       #endif`,
-      );
+    );
   };
 }

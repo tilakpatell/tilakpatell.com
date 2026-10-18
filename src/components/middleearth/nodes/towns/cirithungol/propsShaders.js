@@ -16,8 +16,8 @@
 //   tone mapping (their GLSL had neither chunk), the mesh’s own vertex.
 // - Each falling smoothstep is a rising one turned over (WGSL’s rules).
 
-import * as THREE from "three";
-import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
 import {
   abs,
   atan,
@@ -45,10 +45,10 @@ import {
   vec3,
   vec4,
   vertexColor,
-} from "three/tsl";
-import { follow, keyed, wrap } from "../../../../../lib/three/hookNodes";
+} from 'three/tsl';
+import { follow, keyed, wrap } from '../../../../../lib/three/hookNodes';
 
-export { hide } from "../moria/propsShaders";
+export { hide } from '../moria/propsShaders';
 
 // One uniform node a { value } of the kit’s, so every material reading it
 // shares it (and shares a program where nothing else differs).
@@ -62,17 +62,10 @@ const of = (holder) => {
 const fall = (a, b, x) => smoothstep(b, a, x).oneMinus();
 
 // The GLSL’s vertex: the mesh’s own position into view, nothing else moving it.
-const rawVertex = (m, tag) =>
-  wrap(
-    m,
-    "setupPositionView",
-    () => modelViewMatrix.mul(vec4(positionGeometry, 1)).xyz,
-    tag,
-  );
+const rawVertex = (m, tag) => wrap(m, 'setupPositionView', () => modelViewMatrix.mul(vec4(positionGeometry, 1)).xyz, tag);
 
 // a ShaderMaterial’s defaults on a node material
-const basic = (o) =>
-  new MeshBasicNodeMaterial({ fog: false, toneMapped: false, ...o });
+const basic = (o) => new MeshBasicNodeMaterial({ fog: false, toneMapped: false, ...o });
 
 // The city's stone: pale, and glowing a sickly green from within, most at
 // its edges (as if the light came through it) and in veins that crawl
@@ -91,19 +84,11 @@ export function ghostMaterial(U) {
   };
   const noise = U.uNoise.value;
   // (the vertex as it came, in the mesh’s own space)
-  const P = varying(positionGeometry, "vGhP");
+  const P = varying(positionGeometry, 'vGhP');
   const t = u.uTime;
-  const fres = abs(
-    dot(normalView, normalize(positionView.negate())),
-  ).oneMinus();
-  const n1 = texture(
-    noise,
-    P.xy.mul(0.011).add(vec2(P.z.mul(0.007), t.mul(0.004))),
-  ).r;
-  const n2 = texture(
-    noise,
-    vec2(P.x.add(P.z).mul(0.021), P.y.mul(0.005).sub(t.mul(0.012))),
-  ).g;
+  const fres = abs(dot(normalView, normalize(positionView.negate()))).oneMinus();
+  const n1 = texture(noise, P.xy.mul(0.011).add(vec2(P.z.mul(0.007), t.mul(0.004)))).r;
+  const n2 = texture(noise, vec2(P.x.add(P.z).mul(0.021), P.y.mul(0.005).sub(t.mul(0.012)))).g;
   const veins = smoothstep(0.52, 0.72, n2).mul(
     sin(t.mul(0.7).add(n1.mul(9)))
       .mul(0.4)
@@ -120,7 +105,7 @@ export function ghostMaterial(U) {
       .mul(pale.mul(0.65).add(0.45))
       .mul(foot),
   );
-  return keyed(m, "cirith-ghost", u);
+  return keyed(m, 'cirith-ghost', u);
 }
 
 // The green beam: an open column, brightest down its middle, light pouring
@@ -141,12 +126,9 @@ export function beamMaterial(U, { k = 1, core = 2.2, edge = 3.0 } = {}) {
     depthWrite: false,
     blending: THREE.AdditiveBlending,
   });
-  rawVertex(m, "cirith:beam");
-  const vN = varying(transformNormalToView(normalGeometry), "vN");
-  const vV = varying(
-    normalize(modelViewMatrix.mul(vec4(positionGeometry, 1)).xyz.negate()),
-    "vV",
-  );
+  rawVertex(m, 'cirith:beam');
+  const vN = varying(transformNormalToView(normalGeometry), 'vN');
+  const vV = varying(normalize(modelViewMatrix.mul(vec4(positionGeometry, 1)).xyz.negate()), 'vV');
   const vUv = uv();
   const t = u.uTime;
   const facing = abs(dot(normalize(vN), normalize(vV)));
@@ -156,9 +138,7 @@ export function beamMaterial(U, { k = 1, core = 2.2, edge = 3.0 } = {}) {
   const rise = fall(front, front.sub(0.05), y);
   const on = smoothstep(0, 0.1, u.uBeam);
   const n1 = u.uNoise.sample(vec2(vUv.x.mul(2), y.mul(5).sub(t.mul(0.7)))).r;
-  const n2 = u.uNoise.sample(
-    vec2(vUv.x.mul(6).add(0.37), y.mul(13).sub(t.mul(1.9))),
-  ).g;
+  const n2 = u.uNoise.sample(vec2(vUv.x.mul(6).add(0.37), y.mul(13).sub(t.mul(1.9)))).g;
   const streak = smoothstep(0.25, 0.75, n1.mul(0.6).add(n2.mul(0.6)))
     .mul(1.4)
     .add(0.45);
@@ -206,24 +186,17 @@ export function splashMaterial(U) {
     side: THREE.DoubleSide,
     blending: THREE.AdditiveBlending,
   });
-  rawVertex(m, "cirith:splash");
+  rawVertex(m, 'cirith:splash');
   const t = u.uTime;
   const q = uv().sub(0.5);
   const d = length(q).mul(2);
   const a = atan(q.y, q.x);
-  const sw = u.uNoise.sample(
-    vec2(
-      a.mul(0.4).add(d.mul(0.6)).sub(t.mul(0.03)),
-      d.mul(0.7).sub(t.mul(0.05)),
-    ),
-  ).r;
+  const sw = u.uNoise.sample(vec2(a.mul(0.4).add(d.mul(0.6)).sub(t.mul(0.03)), d.mul(0.7).sub(t.mul(0.05)))).r;
   const sw2 = u.uNoise.sample(vec2(a.mul(0.9).sub(t.mul(0.02)), d.mul(1.6))).g;
   const k = smoothstep(0.55, 1, u.uBeam);
   const glow = pow(clamp(d, 0, 1).oneMinus(), 2.4)
     .mul(1.3)
-    .add(
-      smoothstep(0.35, 0.85, sw.mul(sw2).mul(1.8)).mul(d.oneMinus()).mul(0.8),
-    )
+    .add(smoothstep(0.35, 0.85, sw.mul(sw2).mul(1.8)).mul(d.oneMinus()).mul(0.8))
     .mul(k);
   m.colorNode = vec3(0.3, 1.0, 0.45).mul(glow).mul(1.4);
   m.uniforms = uniforms;
@@ -236,13 +209,7 @@ export function shelobRim() {
     extra: ({ hs }) => {
       // (the normal as lit: the hide’s bumps in it)
       // (held at 0, so no rounding past 1 gives pow a negative)
-      const rimK = pow(
-        max(
-          abs(dot(normalView, normalize(positionView.negate()))).oneMinus(),
-          0,
-        ),
-        3,
-      );
+      const rimK = pow(max(abs(dot(normalView, normalize(positionView.negate()))).oneMinus(), 0), 3);
       return {
         emissive: vec3(0.05, 0.055, 0.065).mul(rimK).mul(hs.g.add(0.4)),
       };

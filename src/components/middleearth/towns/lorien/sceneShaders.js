@@ -2,15 +2,12 @@
 // moved here whole from ./scene.js, and ../../nodes/towns/lorien/
 // sceneShaders.js its twin on the node renderer.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 // Water: a slow ripple and the sky in it; `flow` runs it along +x.
 export function waterMaterial(water, flow = 0) {
   const m = new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([
-      THREE.UniformsLib.fog,
-      { uTime: { value: 0 }, uFlow: { value: flow } },
-    ]),
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 }, uFlow: { value: flow } }]),
     fog: true,
     vertexShader: `
       #include <fog_pars_vertex>
@@ -43,7 +40,6 @@ export function waterMaterial(water, flow = 0) {
         #include <fog_fragment>
       }`,
   });
-  for (const k of ["uSky", "uDeep", "uSun", "uSunColor"])
-    m.uniforms[k] = water.uniforms[k];
+  for (const k of ['uSky', 'uDeep', 'uSun', 'uSunColor']) m.uniforms[k] = water.uniforms[k];
   return m;
 }

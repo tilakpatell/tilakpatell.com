@@ -13,20 +13,20 @@
 // data), screenOf(kind, id), resize, dispose, lost, info }.
 
 import * as THREE from 'three';
-import { createStage, disposeTree } from '../../stage';
-import { createHouse } from '../../../../lib/three/house';
-import { dress, rolesFor } from '../../../../lib/three/core';
+import { createStage, disposeTree } from '../../nodes/stage';
+import { createHouse } from '../../../../lib/three/houseNodes';
+import { dress, rolesFor } from '../../../../lib/three/coreNodes';
 import { device } from '../../../../lib/device';
 import { fbm, makeNoise, smooth } from '../../../../lib/paint';
 import { pose } from '../../mapFigures';
-import { instances } from '../../shire/ground';
-import { makeAtmosphere, makeSky } from '../../shire/sky';
-import { createFx } from '../../shire/fx';
+import { instances } from '../../nodes/shire/ground';
+import { makeAtmosphere, makeSky } from '../../nodes/shire/sky';
+import { createFx } from '../../nodes/shire/fx';
 import { bake, farTree } from '../bake';
-import { createGhosts } from '../ghosts';
-import { makePuddles, makeTerrain, makeTufts } from '../ground';
+import { createGhosts } from '../../nodes/towns/ghosts';
+import { makePuddles, makeTerrain, makeTufts } from '../../nodes/towns/ground';
 import { FIGURE, groundTown } from '../grounded';
-import { makeRain } from '../rain';
+import { makeRain } from '../../nodes/towns/rain';
 import { createWraithKit } from '../wraiths';
 import { createBreeKit, makeFolk } from './props';
 import { NAZGUL } from './story';
@@ -62,7 +62,7 @@ import { turn } from '../../../../lib/three/gait';
 import { byFrame, createShake } from '../../feel';
 import { BLOOMS } from '../look';
 import { houseGroups } from '../../../../lib/three/houseTuning';
-import { sightMaterial } from './sceneShaders';
+import { sightMaterial } from '../../nodes/towns/bree/sceneShaders';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const faceTo = (obj, face) => {

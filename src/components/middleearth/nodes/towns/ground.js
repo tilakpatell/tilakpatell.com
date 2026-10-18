@@ -10,52 +10,12 @@
 // The puddles’ fog is the scene’s on a node material (fog: true), and the
 // tone map and output colour space the renderer’s own, as the chunks were.
 
-import * as THREE from "three";
-import {
-  MeshBasicNodeMaterial,
-  MeshLambertNodeMaterial,
-  MeshStandardNodeMaterial,
-} from "three/webgpu";
-import {
-  Fn,
-  abs,
-  attribute,
-  cameraPosition,
-  cos,
-  dot,
-  float,
-  floor,
-  fract,
-  length,
-  max,
-  mix,
-  normalize,
-  positionGeometry,
-  positionWorld,
-  pow,
-  reflect,
-  select,
-  sin,
-  smoothstep,
-  uniform,
-  varying,
-  vec2,
-  vec3,
-  vec4,
-} from "three/tsl";
-import { canvasTexture } from "../../../../lib/three/stage3dNodes";
-import {
-  fbm,
-  makeCanvas,
-  makeNoise,
-  normalFromField,
-  paintPixels,
-} from "../../../../lib/paint";
-import {
-  follow,
-  instanceMatrixOf,
-  onPosition,
-} from "../../../../lib/three/hookNodes";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial, MeshLambertNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
+import { Fn, abs, attribute, cameraPosition, cos, dot, float, floor, fract, length, max, mix, normalize, positionGeometry, positionWorld, pow, reflect, select, sin, smoothstep, uniform, varying, vec2, vec3, vec4 } from 'three/tsl';
+import { canvasTexture } from '../../../../lib/three/stage3dNodes';
+import { fbm, makeCanvas, makeNoise, normalFromField, paintPixels } from '../../../../lib/paint';
+import { follow, instanceMatrixOf, onPosition } from '../../../../lib/three/hookNodes';
 
 // A tiling detail texture and its relief: mottled earth and grass, with a
 // few pebbles and footprints of wet; `blades` streaks it like grass.
@@ -68,13 +28,8 @@ function detailTextures(renderer, { blades = 0.3, repeat = 48 } = {}) {
     const streak = fbm(n, u * 64, v * 16, { period: 64, octaves: 2 });
     const clumps = fbm(n, u * 8 + 3, v * 8, { period: 8, octaves: 3 });
     const fine = fbm(n, u * 128, v * 128, { period: 128, octaves: 1 });
-    const pebble =
-      Math.max(
-        0,
-        fbm(n, u * 40 + 9, v * 40, { period: 40, octaves: 1 }) - 0.72,
-      ) * 3;
-    const h =
-      streak * blades + clumps * (0.75 - blades) + fine * 0.15 + pebble * 0.3;
+    const pebble = Math.max(0, fbm(n, u * 40 + 9, v * 40, { period: 40, octaves: 1 }) - 0.72) * 3;
+    const h = streak * blades + clumps * (0.75 - blades) + fine * 0.15 + pebble * 0.3;
     field[y * size + x] = h;
     const k = 0.74 + h * 0.46;
     out[0] = 206 * k;
@@ -83,26 +38,17 @@ function detailTextures(renderer, { blades = 0.3, repeat = 48 } = {}) {
   });
   return {
     map: canvasTexture(c, renderer, { repeat: [repeat, repeat] }),
-    normalMap: canvasTexture(
-      normalFromField(field, size, size, 2.4),
-      renderer,
-      {
-        repeat: [repeat, repeat],
-        srgb: false,
-      },
-    ),
+    normalMap: canvasTexture(normalFromField(field, size, size, 2.4), renderer, {
+      repeat: [repeat, repeat],
+      srgb: false,
+    }),
   };
 }
 
 // The ground: a square `size` across, `seg` squares a side, raised by
 // height(x, z) and coloured by paint(x, z, h, out) (out: [r, g, b], 0…1).
-export function makeTerrain(
-  renderer,
-  { size, seg = 180, height, paint, blades, roughness = 0.94 },
-) {
-  const geo = new THREE.PlaneGeometry(size, size, seg, seg).rotateX(
-    -Math.PI / 2,
-  );
+export function makeTerrain(renderer, { size, seg = 180, height, paint, blades, roughness = 0.94 }) {
+  const geo = new THREE.PlaneGeometry(size, size, seg, seg).rotateX(-Math.PI / 2);
   const p = geo.attributes.position;
   const colours = new Float32Array(p.count * 3);
   const out = [0, 0, 0];
@@ -114,7 +60,7 @@ export function makeTerrain(
     paint(x, z, h, out);
     colours.set(out, i * 3);
   }
-  geo.setAttribute("color", new THREE.BufferAttribute(colours, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colours, 3));
   geo.computeVertexNormals();
   const tex = detailTextures(renderer, { blades });
   const material = new MeshStandardNodeMaterial({
@@ -126,7 +72,7 @@ export function makeTerrain(
   });
   const mesh = new THREE.Mesh(geo, material);
   mesh.receiveShadow = true;
-  mesh.name = "terrain";
+  mesh.name = 'terrain';
   return mesh;
 }
 
@@ -144,34 +90,14 @@ function tuftGeometry(base, tip) {
     const h = 0.28 + (b % 2) * 0.1;
     const tx = lean + Math.cos(a + 1.2) * 0.02;
     const tz = lean * 0.5 + Math.sin(a + 1.2) * 0.02;
-    pos.push(
-      -ca,
-      0,
-      -sa,
-      ca,
-      0,
-      sa,
-      tx,
-      h,
-      tz,
-      ca,
-      0,
-      sa,
-      -ca,
-      0,
-      -sa,
-      tx,
-      h,
-      tz,
-    );
-    for (let k = 0; k < 2; k++)
-      col.push(b0.r, b0.g, b0.b, b0.r, b0.g, b0.b, t0.r, t0.g, t0.b);
+    pos.push(-ca, 0, -sa, ca, 0, sa, tx, h, tz, ca, 0, sa, -ca, 0, -sa, tx, h, tz);
+    for (let k = 0; k < 2; k++) col.push(b0.r, b0.g, b0.b, b0.r, b0.g, b0.b, t0.r, t0.g, t0.b);
   }
   const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   g.setAttribute(
-    "normal",
+    'normal',
     new THREE.Float32BufferAttribute(
       new Array(pos.length).fill(0).map((_, i) => (i % 3 === 1 ? 1 : 0)),
       3,
@@ -213,19 +139,7 @@ function swaying(material, uniforms, strength = 0.12) {
 
 // `count` tufts scattered over a disc of `radius`, where growable(x, z) says,
 // in squares of the world so the ones off screen aren’t drawn.
-export function makeTufts(
-  count,
-  {
-    radius,
-    height,
-    growable,
-    seed = 99,
-    base = 0x2f4a24,
-    tip = 0x7a9a4a,
-    hue = [0.22, 0.06],
-  },
-  wind,
-) {
+export function makeTufts(count, { radius, height, growable, seed = 99, base = 0x2f4a24, tip = 0x7a9a4a, hue = [0.22, 0.06] }, wind) {
   const geo = tuftGeometry(base, tip);
   const material = new MeshLambertNodeMaterial({ vertexColors: true });
   swaying(material, wind, 0.4);
@@ -271,24 +185,15 @@ export function makeTufts(
 }
 
 // the GLSL’s hash
-const hash = Fn(
-  ([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)),
-  "float",
-);
+const hash = Fn(([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)), 'float');
 
 // Puddles: [x, z, rx, rz, turn] each, a flat pool a hair over the mud. They
 // hold the sky by the angle you see them at (more at a glance), glint with
 // the lamps near them (up to eight: setLights), and ring with rain.
 const MAX_LIGHTS = 8;
 export function makePuddles(list, height) {
-  const lightPos = Array.from(
-    { length: MAX_LIGHTS },
-    () => new THREE.Vector4(0, -100, 0, 0),
-  );
-  const lightCol = Array.from(
-    { length: MAX_LIGHTS },
-    () => new THREE.Color(0, 0, 0),
-  );
+  const lightPos = Array.from({ length: MAX_LIGHTS }, () => new THREE.Vector4(0, -100, 0, 0));
+  const lightCol = Array.from({ length: MAX_LIGHTS }, () => new THREE.Color(0, 0, 0));
   // (each lamp’s own uniform, reading the same vector the array holds)
   const posNodes = lightPos.map((l) => uniform(l));
   const colNodes = lightCol.map((c) => uniform(c));
@@ -312,15 +217,11 @@ export function makePuddles(list, height) {
     polygonOffset: true,
     polygonOffsetFactor: -2,
   });
-  const vWorld = varying(positionWorld, "vWorld");
-  const vLocal = varying(attribute("local", "vec2"), "vLocal");
+  const vWorld = varying(positionWorld, 'vWorld');
+  const vLocal = varying(attribute('local', 'vec2'), 'vLocal');
   // the edge: soft and a little ragged
   const r = length(vLocal);
-  const edge = smoothstep(
-    float(0.78).sub(hash(floor(vLocal.mul(6))).mul(0.08)),
-    1,
-    r,
-  ).oneMinus();
+  const edge = smoothstep(float(0.78).sub(hash(floor(vLocal.mul(6))).mul(0.08)), 1, r).oneMinus();
   material.maskNode = edge.greaterThan(0.01);
   material.colorNode = Fn(() => {
     // rings where drops land: cells that each ring out in turn
@@ -341,9 +242,7 @@ export function makePuddles(list, height) {
             .mul(smoothstep(0, 0.25, abs(d.sub(tt))).oneMinus()),
         );
       }
-    const n = normalize(
-      vec3(wave.mul(0.06).mul(u.uRain), 1, wave.mul(0.04).mul(u.uRain)),
-    );
+    const n = normalize(vec3(wave.mul(0.06).mul(u.uRain), 1, wave.mul(0.04).mul(u.uRain)));
     const view = normalize(cameraPosition.sub(vWorld));
     const fres = pow(max(dot(n, view), 0).oneMinus(), 3);
     const col = mix(u.uDeep, u.uSky.mul(0.4), fres.mul(0.55).add(0.12)).toVar();
@@ -357,13 +256,7 @@ export function makePuddles(list, height) {
       // a sharp image of the lamp, and a softer smear of it in the ripples
       const s = pow(c, 900).mul(2.5).add(pow(c, 90).mul(0.18));
       // (the GLSL’s `if (L.w <= 0.0) continue;`)
-      col.addAssign(
-        select(
-          L.w.greaterThan(0),
-          colNodes[i].mul(s).mul(L.w).div(dist.mul(dist).mul(0.03).add(1)),
-          vec3(0),
-        ),
-      );
+      col.addAssign(select(L.w.greaterThan(0), colNodes[i].mul(s).mul(L.w).div(dist.mul(dist).mul(0.03).add(1)), vec3(0)));
     }
     return col;
   })();
@@ -384,25 +277,20 @@ export function makePuddles(list, height) {
       const wz = z - lx * rx * Math.sin(turn) + lz * rz * Math.cos(turn);
       pos.setXYZ(i, wx, height(wx, wz) + 0.035, wz);
     }
-    g.setAttribute("local", new THREE.BufferAttribute(local, 2));
-    g.deleteAttribute("uv");
+    g.setAttribute('local', new THREE.BufferAttribute(local, 2));
+    g.deleteAttribute('uv');
     discs.push(g);
   }
   const merged = mergeDiscs(discs);
   const mesh = new THREE.Mesh(merged, material);
   mesh.renderOrder = 1;
-  mesh.name = "puddles";
+  mesh.name = 'puddles';
   // lights: [{ position: Vector3, color: Color, power }]
   const setLights = (lights) => {
     for (let i = 0; i < MAX_LIGHTS; i++) {
       const l = lights[i];
       if (l) {
-        uniforms.uLightPos.value[i].set(
-          l.position.x,
-          l.position.y,
-          l.position.z,
-          l.power ?? 1,
-        );
+        uniforms.uLightPos.value[i].set(l.position.x, l.position.y, l.position.z, l.power ?? 1);
         uniforms.uLightCol.value[i].copy(l.color);
       } else uniforms.uLightPos.value[i].w = 0;
     }
@@ -437,9 +325,9 @@ function mergeDiscs(list) {
     g.dispose();
   }
   const out = new THREE.BufferGeometry();
-  out.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  out.setAttribute("local", new THREE.BufferAttribute(local, 2));
-  out.setAttribute("normal", new THREE.BufferAttribute(normal, 3));
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  out.setAttribute('local', new THREE.BufferAttribute(local, 2));
+  out.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
   out.setIndex(new THREE.BufferAttribute(index, 1));
   out.computeBoundingSphere();
   return out;

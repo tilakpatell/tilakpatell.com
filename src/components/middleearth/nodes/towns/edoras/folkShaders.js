@@ -10,41 +10,18 @@
 // into the vertex colour (the same: a piece's rig is the same at each of
 // its triangle's corners).
 
-import * as THREE from "three";
-import { MeshLambertNodeMaterial } from "three/webgpu";
-import {
-  Fn,
-  abs,
-  attribute,
-  cos,
-  dot,
-  float,
-  fract,
-  int,
-  select,
-  sin,
-  smoothstep,
-  uniformArray,
-  varying,
-  vec2,
-  vec3,
-} from "three/tsl";
-import {
-  follow,
-  instanceMatrixOf,
-  onColor,
-  onPosition,
-} from "../../../../../lib/three/hookNodes";
+import * as THREE from 'three';
+import { MeshLambertNodeMaterial } from 'three/webgpu';
+import { Fn, abs, attribute, cos, dot, float, fract, int, select, sin, smoothstep, uniformArray, varying, vec2, vec3 } from 'three/tsl';
+import { follow, instanceMatrixOf, onColor, onPosition } from '../../../../../lib/three/hookNodes';
 
 const TAU = 6.2831853;
 
 // the uniforms the frame writes, followed; the colour tables as arrays
 function nodesOf(uniforms) {
   const u = {};
-  for (const k of ["uTime", "uRide", "uCyc", "uReach", "uFlut"])
-    u[k] = follow(uniforms[k], "float");
-  for (const k of ["uCoat", "uMane", "uCloak", "uPlume"])
-    u[k] = uniformArray(uniforms[k].value, "color");
+  for (const k of ['uTime', 'uRide', 'uCyc', 'uReach', 'uFlut']) u[k] = follow(uniforms[k], 'float');
+  for (const k of ['uCoat', 'uMane', 'uCloak', 'uPlume']) u[k] = uniformArray(uniforms[k].value, 'color');
   return u;
 }
 
@@ -54,23 +31,19 @@ const hostSeed = (builder) => {
   const im = instanceMatrixOf(builder);
   if (!im) return float(0.37);
   const at = im.element(3);
-  return fract(
-    sin(dot(vec2(at.x, at.z), vec2(12.9898, 78.233))).mul(43758.5453),
-  );
+  return fract(sin(dot(vec2(at.x, at.z), vec2(12.9898, 78.233))).mul(43758.5453));
 };
 
 const hostTurn = Fn(([p, c, a]) => {
   const q = p.sub(c);
   const cs = cos(a);
   const sn = sin(a);
-  return c.add(
-    vec2(q.x.mul(cs).sub(q.y.mul(sn)), q.x.mul(sn).add(q.y.mul(cs))),
-  );
-}, "vec2");
+  return c.add(vec2(q.x.mul(cs).sub(q.y.mul(sn)), q.x.mul(sn).add(q.y.mul(cs))));
+}, 'vec2');
 
 // RIG_MOVE: the legs gallop about their pivots, the body rocks and rises
 const rigMove = (p0, u, seed) => {
-  const rig = attribute("aRig", "vec4");
+  const rig = attribute('aRig', 'vec4');
   const cyc = u.uCyc.add(seed.mul(7));
   const ride = smoothstep(0, 0.35, u.uRide);
   const leg = hostTurn(
@@ -82,11 +55,7 @@ const rigMove = (p0, u, seed) => {
       .mul(sin(cyc.add(rig.x.sub(1)).mul(TAU))),
   );
   const xy0 = select(rig.x.greaterThan(0.5), leg, p0.xy);
-  const xy = hostTurn(
-    xy0,
-    vec2(0, 1.3),
-    ride.mul(0.07).mul(sin(cyc.add(0.2).mul(TAU))),
-  );
+  const xy = hostTurn(xy0, vec2(0, 1.3), ride.mul(0.07).mul(sin(cyc.add(0.2).mul(TAU))));
   const y = xy.y.add(
     ride.mul(
       abs(sin(cyc.add(0.1).mul(3.14159265)))
@@ -99,24 +68,12 @@ const rigMove = (p0, u, seed) => {
 
 // RIG_PAINT: the coat, the cloak, the mane and the crest, picked per Rider
 const rigPaint = (u, seed) => {
-  const p = attribute("aRig", "vec4").w.add(0.5).floor();
+  const p = attribute('aRig', 'vec4').w.add(0.5).floor();
   const c = int(fract(seed.mul(7.31)).mul(5.999));
   return select(
     p.equal(1),
     u.uCoat.element(c),
-    select(
-      p.equal(3),
-      u.uMane.element(c),
-      select(
-        p.equal(2),
-        u.uCloak.element(int(fract(seed.mul(3.71)).mul(4.999))),
-        select(
-          p.equal(4),
-          u.uPlume.element(int(fract(seed.mul(11.3)).mul(4.999))),
-          vec3(1),
-        ),
-      ),
-    ),
+    select(p.equal(3), u.uMane.element(c), select(p.equal(2), u.uCloak.element(int(fract(seed.mul(3.71)).mul(4.999))), select(p.equal(4), u.uPlume.element(int(fract(seed.mul(11.3)).mul(4.999))), vec3(1)))),
   );
 };
 
@@ -130,18 +87,8 @@ const lambert = () =>
 export function hostMaterial(uniforms) {
   const m = lambert();
   const u = nodesOf(uniforms);
-  onColor(
-    m,
-    (diffuse, builder) =>
-      diffuse.rgb.mul(varying(rigPaint(u, hostSeed(builder)), "vHostPaint")),
-    "edoras-host:paint",
-  );
-  onPosition(
-    m,
-    (p, builder) => rigMove(p, u, hostSeed(builder)),
-    "edoras-host",
-    u,
-  );
+  onColor(m, (diffuse, builder) => diffuse.rgb.mul(varying(rigPaint(u, hostSeed(builder)), 'vHostPaint')), 'edoras-host:paint');
+  onPosition(m, (p, builder) => rigMove(p, u, hostSeed(builder)), 'edoras-host', u);
   m.uniforms = u;
   return m;
 }
@@ -154,7 +101,7 @@ export function bannerMaterial(uniforms, bob) {
   onPosition(
     m,
     (p0, builder) => {
-      const k = attribute("aRig", "vec4").y;
+      const k = attribute('aRig', 'vec4').y;
       const seed = hostSeed(builder);
       const w = smoothstep(0, 0.6, u.uRide).mul(0.65).add(0.35);
       const kw = k.mul(w);
@@ -178,7 +125,7 @@ export function bannerMaterial(uniforms, bob) {
       );
       return bob ? rigMove(p, u, seed) : p;
     },
-    bob ? "edoras-banner-bob" : "edoras-banner",
+    bob ? 'edoras-banner-bob' : 'edoras-banner',
     u,
   );
   m.uniforms = u;

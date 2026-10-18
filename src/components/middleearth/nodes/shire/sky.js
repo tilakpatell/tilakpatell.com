@@ -11,33 +11,10 @@
 // smoothstep is a rising one turned over, as WGSL wants. The tone map and
 // the colour space, the GLSL's two chunks, are the renderer's own.
 
-import * as THREE from "three";
-import { MeshBasicNodeMaterial } from "three/webgpu";
-import {
-  Fn,
-  Loop,
-  cameraProjectionMatrix,
-  dot,
-  float,
-  floor,
-  fract,
-  length,
-  max,
-  mix,
-  modelViewMatrix,
-  normalize,
-  positionLocal,
-  pow,
-  select,
-  sin,
-  smoothstep,
-  uniform,
-  varying,
-  vec2,
-  vec3,
-  vec4,
-} from "three/tsl";
-import { shadowFor } from "../../../../lib/three/houseNodes";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { Fn, Loop, cameraProjectionMatrix, dot, float, floor, fract, length, max, mix, modelViewMatrix, normalize, positionLocal, pow, select, sin, smoothstep, uniform, varying, vec2, vec3, vec4 } from 'three/tsl';
+import { shadowFor } from '../../../../lib/three/houseNodes';
 
 export const MOODS = {
   day: {
@@ -104,33 +81,16 @@ export const MOODS = {
 const SHIRE_MOODS = MOODS;
 
 export { shadowFor };
-const KEYS = [
-  "top",
-  "horizon",
-  "sunColour",
-  "hemiSky",
-  "hemiGround",
-  "fog",
-  "cloudColour",
-  "water",
-  "deep",
-];
+const KEYS = ['top', 'horizon', 'sunColour', 'hemiSky', 'hemiGround', 'fog', 'cloudColour', 'water', 'deep'];
 
 // the GLSL's noise: a value noise and five octaves of it
-const hash = Fn(
-  ([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)),
-  "float",
-);
+const hash = Fn(([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)), 'float');
 const noise = Fn(([p]) => {
   const i = floor(p);
   const f0 = fract(p);
   const f = f0.mul(f0).mul(f0.mul(-2).add(3));
-  return mix(
-    mix(hash(i), hash(i.add(vec2(1, 0))), f.x),
-    mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x),
-    f.y,
-  );
-}, "float");
+  return mix(mix(hash(i), hash(i.add(vec2(1, 0))), f.x), mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x), f.y);
+}, 'float');
 const fbm = Fn(([p0]) => {
   const p = vec2(p0).toVar();
   const a = float(0.5).toVar();
@@ -141,7 +101,7 @@ const fbm = Fn(([p0]) => {
     a.mulAssign(0.5);
   });
   return s;
-}, "float");
+}, 'float');
 
 // (GLSL's smoothstep with its edges reversed, defined in WGSL)
 const fall = (a, b, x) => smoothstep(b, a, x).oneMinus();
@@ -167,11 +127,9 @@ export function makeSky(radius) {
     fog: false,
   });
   // (on the far plane: gl_Position = p.xyww)
-  const clip = cameraProjectionMatrix
-    .mul(modelViewMatrix)
-    .mul(vec4(positionLocal, 1));
+  const clip = cameraProjectionMatrix.mul(modelViewMatrix).mul(vec4(positionLocal, 1));
   material.vertexNode = vec4(clip.xy, clip.w, clip.w);
-  const vDir = varying(normalize(positionLocal), "vDir");
+  const vDir = varying(normalize(positionLocal), 'vDir');
   material.colorNode = Fn(() => {
     const d = normalize(vDir).toVar();
     const up = max(d.y, 0);
@@ -179,17 +137,9 @@ export function makeSky(radius) {
     // below the horizon: the haze the hills fade into
     col.assign(select(d.y.lessThan(0), u.uHorizon.mul(0.92), col));
     const sd = max(dot(d, normalize(u.uSunDir)), 0).toVar();
-    col.addAssign(
-      u.uSunColour
-        .mul(pow(sd, 6).mul(0.35).add(pow(sd, 64).mul(0.6)))
-        .mul(u.uMoon.oneMinus()),
-    );
+    col.addAssign(u.uSunColour.mul(pow(sd, 6).mul(0.35).add(pow(sd, 64).mul(0.6))).mul(u.uMoon.oneMinus()));
     // the sun's disc, or the moon's
-    col.addAssign(
-      u.uSunColour
-        .mul(smoothstep(0.9993, 0.9997, sd))
-        .mul(mix(6, 1.6, u.uMoon)),
-    );
+    col.addAssign(u.uSunColour.mul(smoothstep(0.9993, 0.9997, sd)).mul(mix(6, 1.6, u.uMoon)));
     // stars, twinkling, thinning towards the horizon
     const sp = d.xz.div(d.y.add(0.35)).mul(160);
     const s = hash(floor(sp));
@@ -213,25 +163,13 @@ export function makeSky(radius) {
     );
     // clouds, drifting
     const p = d.xz.div(d.y.add(0.18));
-    const c = smoothstep(
-      0.48,
-      0.78,
-      fbm(p.mul(1.3).add(vec2(u.uTime.mul(0.008), u.uTime.mul(0.003)))),
-    );
+    const c = smoothstep(0.48, 0.78, fbm(p.mul(1.3).add(vec2(u.uTime.mul(0.008), u.uTime.mul(0.003)))));
     const lit = u.uCloudColour.mul(pow(sd, 3).mul(0.5).add(0.8));
-    col.assign(
-      select(
-        u.uCloud.greaterThan(0).and(d.y.greaterThan(0)),
-        mix(col, lit, c.mul(u.uCloud).mul(smoothstep(0, 0.18, d.y))),
-        col,
-      ),
-    );
+    col.assign(select(u.uCloud.greaterThan(0).and(d.y.greaterThan(0)), mix(col, lit, c.mul(u.uCloud).mul(smoothstep(0, 0.18, d.y))), col));
     // the Eye, far off to the east, while the Ring is on
     const e = normalize(vec3(1, 0.06, 0.25));
     const ed = dot(d, e);
-    const slit = smoothstep(0.9985, 0.99985, ed).mul(
-      sin(u.uTime.mul(7)).mul(0.4).add(0.6),
-    );
+    const slit = smoothstep(0.9985, 0.99985, ed).mul(sin(u.uTime.mul(7)).mul(0.4).add(0.6));
     col.assign(
       select(
         u.uEye.greaterThan(0),
@@ -247,10 +185,7 @@ export function makeSky(radius) {
     return mix(col, vec3(l).mul(vec3(0.8, 0.85, 0.95)), u.uGrey);
   })();
   material.uniforms = uniforms;
-  const dome = new THREE.Mesh(
-    new THREE.SphereGeometry(radius, 40, 20),
-    material,
-  );
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(radius, 40, 20), material);
   dome.frustumCulled = false;
   dome.renderOrder = -10;
   return { dome, uniforms };
@@ -259,16 +194,7 @@ export function makeSky(radius) {
 // ../../shire/sky.js's, copied: the moods blended into the sky, the
 // lights, the fog and the water (a twin's water: its uniforms are nodes
 // on `material.uniforms`, written the same way).
-export function makeAtmosphere({
-  sky,
-  sun,
-  hemi,
-  fog,
-  water,
-  stage,
-  house = null,
-  moods: MOODS = SHIRE_MOODS,
-}) {
+export function makeAtmosphere({ sky, sun, hemi, fog, water, stage, house = null, moods: MOODS = SHIRE_MOODS }) {
   const mix = {};
   for (const k of KEYS) mix[k] = new THREE.Color();
   mix.shadow = new THREE.Color();
@@ -288,38 +214,33 @@ export function makeAtmosphere({
   };
   return (night, dawn) => {
     const u = sky.uniforms;
-    u.uTop.value.copy(colour("top", night, dawn));
-    u.uHorizon.value.copy(colour("horizon", night, dawn));
-    u.uSunColour.value.copy(colour("sunColour", night, dawn));
-    u.uCloudColour.value.copy(colour("cloudColour", night, dawn));
-    u.uCloud.value = num("cloud", night, dawn);
-    u.uStars.value = num("stars", night, dawn);
+    u.uTop.value.copy(colour('top', night, dawn));
+    u.uHorizon.value.copy(colour('horizon', night, dawn));
+    u.uSunColour.value.copy(colour('sunColour', night, dawn));
+    u.uCloudColour.value.copy(colour('cloudColour', night, dawn));
+    u.uCloud.value = num('cloud', night, dawn);
+    u.uStars.value = num('stars', night, dawn);
     u.uMoon.value = night * (1 - dawn);
     const a = MOODS.day.sun;
     const b = MOODS.night.sun;
-    sunDir.set(
-      a[0] + (b[0] - a[0]) * night,
-      a[1] + (b[1] - a[1]) * night,
-      a[2] + (b[2] - a[2]) * night,
-    );
+    sunDir.set(a[0] + (b[0] - a[0]) * night, a[1] + (b[1] - a[1]) * night, a[2] + (b[2] - a[2]) * night);
     if (dawn > 0) sunDir.lerp(dawnSun, dawn);
     sunDir.normalize();
     u.uSunDir.value.copy(sunDir);
-    sun.color.copy(colour("sunColour", night, dawn));
-    sun.intensity = num("sunPower", night, dawn);
-    hemi.color.copy(colour("hemiSky", night, dawn));
-    hemi.groundColor.copy(colour("hemiGround", night, dawn));
-    hemi.intensity = num("hemi", night, dawn);
-    fog.color.copy(colour("fog", night, dawn));
-    fog.near = num("fogNear", night, dawn);
-    fog.far = num("fogFar", night, dawn);
-    water.uniforms.uSky.value.copy(colour("water", night, dawn));
-    water.uniforms.uDeep.value.copy(colour("deep", night, dawn));
+    sun.color.copy(colour('sunColour', night, dawn));
+    sun.intensity = num('sunPower', night, dawn);
+    hemi.color.copy(colour('hemiSky', night, dawn));
+    hemi.groundColor.copy(colour('hemiGround', night, dawn));
+    hemi.intensity = num('hemi', night, dawn);
+    fog.color.copy(colour('fog', night, dawn));
+    fog.near = num('fogNear', night, dawn);
+    fog.far = num('fogFar', night, dawn);
+    water.uniforms.uSky.value.copy(colour('water', night, dawn));
+    water.uniforms.uDeep.value.copy(colour('deep', night, dawn));
     water.uniforms.uSun.value.copy(sunDir);
     water.uniforms.uSunColor.value.copy(sun.color);
     water.uniforms.uGlints.value = 1 - night * 0.6;
-    stage.renderer.toneMappingExposure =
-      num("exposure", night, dawn) * (house?.exposure ?? 1);
+    stage.renderer.toneMappingExposure = num('exposure', night, dawn) * (house?.exposure ?? 1);
     if (house) {
       // (each mood's own shadow, or one from its sky light)
       house.set({
@@ -347,10 +268,7 @@ export function makeAtmosphere({
 // ../../shire/sky.js's, copied: the house look following a town that
 // blends its own moods.
 const haloOf = new THREE.Color();
-export function lookFrom(
-  house,
-  { sky, sun, hemi, fog, renderer, exposure = 1 },
-) {
+export function lookFrom(house, { sky, sun, hemi, fog, renderer, exposure = 1 }) {
   const u = sky.uniforms;
   const out = sky.dome.visible !== false;
   house.set({
@@ -358,9 +276,7 @@ export function lookFrom(
     fogMix: out ? 1 : 0,
   });
   house.light({ sun, hemi });
-  haloOf
-    .copy(u.uSunColour.value)
-    .multiplyScalar(0.35 * (1 - (u.uMoon?.value ?? 0)));
+  haloOf.copy(u.uSunColour.value).multiplyScalar(0.35 * (1 - (u.uMoon?.value ?? 0)));
   house.sky({
     low: u.uHorizon.value,
     high: u.uTop.value,

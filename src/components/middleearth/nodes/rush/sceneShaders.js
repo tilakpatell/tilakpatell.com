@@ -4,21 +4,9 @@
 // land. The GLSL had no tone-mapping chunk, so neither does this
 // (toneMapped: false), and a ShaderMaterial never took fog.
 
-import * as THREE from "three";
-import { MeshBasicNodeMaterial } from "three/webgpu";
-import {
-  Discard,
-  Fn,
-  atan,
-  length,
-  mix,
-  select,
-  smoothstep,
-  step,
-  uniform,
-  uv,
-  vec3,
-} from "three/tsl";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { Discard, Fn, atan, length, mix, select, smoothstep, step, uniform, uv, vec3 } from 'three/tsl';
 
 // A ring over a station, filling clockwise from the top.
 export function ringMaterial() {
@@ -41,11 +29,7 @@ export function ringMaterial() {
     Discard(r.greaterThan(1));
     const a = atan(p.x, p.y).div(6.2831853).add(0.5);
     const back = vec3(0.08, 0.06, 0.05);
-    const col = select(
-      r.lessThan(0.6),
-      back,
-      select(a.greaterThan(u.uK.oneMinus()), u.uCol, vec3(0.22, 0.2, 0.18)),
-    );
+    const col = select(r.lessThan(0.6), back, select(a.greaterThan(u.uK.oneMinus()), u.uCol, vec3(0.22, 0.2, 0.18)));
     return mix(col, vec3(1, 0.25, 0.15), u.uFlash.mul(step(0.6, r)));
   })();
   // (the GLSL’s smoothstep(1.0, 0.92, r), its edges put in order for WGSL)

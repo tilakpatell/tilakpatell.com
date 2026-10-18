@@ -15,50 +15,17 @@
 //     → { mesh, material, sim, ground, update(dt, { focus, walkers }),
 //       blast(x, z, r, strength), info(), dispose() }
 
-import * as THREE from "three";
-import { MeshLambertNodeMaterial } from "three/webgpu";
-import {
-  Fn,
-  abs,
-  attribute,
-  clamp,
-  cos,
-  float,
-  fract,
-  instanceIndex,
-  max,
-  mix,
-  normalLocal,
-  positionGeometry,
-  pow,
-  select,
-  sin,
-  smoothstep,
-  uniform,
-  varying,
-  vec2,
-  vec3,
-} from "three/tsl";
-import { seeded } from "../seeded";
-import { faceless } from "./foliageNodes";
-import { onPosition } from "./hookNodes";
-import {
-  LEAF,
-  blastLeaves,
-  layLeaves,
-  makeLeafSim,
-  shedLeaf,
-  stepLeafSim,
-  wrapLeaves,
-} from "./leafSim";
-import { sampleNoise, windOffsetAt } from "./windNodes";
+import * as THREE from 'three';
+import { MeshLambertNodeMaterial } from 'three/webgpu';
+import { Fn, abs, attribute, clamp, cos, float, fract, instanceIndex, max, mix, normalLocal, positionGeometry, pow, select, sin, smoothstep, uniform, varying, vec2, vec3 } from 'three/tsl';
+import { seeded } from '../seeded';
+import { faceless } from './foliageNodes';
+import { onPosition } from './hookNodes';
+import { LEAF, blastLeaves, layLeaves, makeLeafSim, shedLeaf, stepLeafSim, wrapLeaves } from './leafSim';
+import { sampleNoise, windOffsetAt } from './windNodes';
 
 // (a place’s density over its box, in 32s, never fewer than 32: litter.js’s leafCount)
-export const flatLeafCount = (density, { max, half }) =>
-  Math.min(
-    max,
-    Math.max(32, Math.round((density * (2 * half) ** 2) / 32) * 32),
-  );
+export const flatLeafCount = (density, { max, half }) => Math.min(max, Math.max(32, Math.round((density * (2 * half) ** 2) / 32) * 32));
 const FAST = 8; // m/s: no walker’s quicker (a step across the world isn’t a kick)
 const MOVED = 0.01; // (metres a leaf goes before the ground under it is looked at again)
 
@@ -69,14 +36,14 @@ const leafTurn = Fn(([v, a]) => {
   const c = cos(a);
   const s = sin(a);
   return vec2(c.mul(v.x).sub(s.mul(v.y)), s.mul(v.x).add(c.mul(v.y)));
-}, "vec2");
+}, 'vec2');
 
 function leafMaterial(u) {
   const material = new MeshLambertNodeMaterial({ side: THREE.DoubleSide });
-  material.name = "leaves";
-  const aLeaf = attribute("aLeaf", "vec4"); // x, its height off the ground, z (metres), its colour
-  const aSeed = attribute("aLeafSeed", "vec4"); // its turn, its size, its two tilts
-  const aGround = attribute("aLeafGround", "float"); // the ground’s height where it is
+  material.name = 'leaves';
+  const aLeaf = attribute('aLeaf', 'vec4'); // x, its height off the ground, z (metres), its colour
+  const aSeed = attribute('aLeafSeed', 'vec4'); // its turn, its size, its two tilts
+  const aGround = attribute('aLeafGround', 'float'); // the ground’s height where it is
   const position = positionGeometry;
   onPosition(
     material,
@@ -91,54 +58,32 @@ function leafMaterial(u) {
       // toward the box’s edge (no pop as it wraps), and put where it is
       // over the ground
       const lfH = max(aLeaf.y, 0);
-      const lfT = u.uLeafClock
-        .mul(fract(float(instanceIndex).mul(0.618)).mul(2).add(2))
-        .mul(clamp(aLeaf.y.sub(LEAF.floor).mul(2), 0, 1));
+      const lfT = u.uLeafClock.mul(fract(float(instanceIndex).mul(0.618)).mul(2).add(2)).mul(clamp(aLeaf.y.sub(LEAF.floor).mul(2), 0, 1));
       const t0 = position.mul(u.uLeafLook.x.mul(aSeed.y));
       const a1 = leafTurn(t0.xy, sin(aLeaf.x.mul(3).add(lfT)).mul(lfH));
       const t1 = vec3(a1, t0.z);
-      const a2 = leafTurn(
-        t1.yz,
-        sin(aLeaf.z.mul(3).add(lfT.mul(1.3))).mul(lfH),
-      );
+      const a2 = leafTurn(t1.yz, sin(aLeaf.z.mul(3).add(lfT.mul(1.3))).mul(lfH));
       const t2 = vec3(t1.x, a2);
       const a3 = leafTurn(t2.xz, aSeed.x);
       const t3 = vec3(a3.x, t2.y, a3.y);
       const lfOff = abs(aLeaf.xz.sub(u.uLeafFocus.xy));
-      const t4 = t3.mul(
-        smoothstep(
-          u.uLeafFocus.z.mul(0.8),
-          u.uLeafFocus.z,
-          max(lfOff.x, lfOff.y),
-        ).oneMinus(),
-      );
-      return t4.add(
-        vec3(aLeaf.x, aGround.add(u.uLeafLook.y).add(aLeaf.y), aLeaf.z),
-      );
+      const t4 = t3.mul(smoothstep(u.uLeafFocus.z.mul(0.8), u.uLeafFocus.z, max(lfOff.x, lfOff.y)).oneMinus());
+      return t4.add(vec3(aLeaf.x, aGround.add(u.uLeafLook.y).add(aLeaf.y), aLeaf.z));
     },
-    "flat-leaves",
+    'flat-leaves',
     u,
   );
-  const vLeafMix = varying(aLeaf.w, "vLeafMix");
+  const vLeafMix = varying(aLeaf.w, 'vLeafMix');
   // (the quad unskewed, -0.5…0.5)
-  const vLeafUv = varying(
-    vec2(position.x.add(position.z.mul(0.3)), position.z.negate()),
-    "vLeafUv",
-  );
+  const vLeafUv = varying(vec2(position.x.add(position.z.mul(0.3)), position.z.negate()), 'vLeafUv');
   // a leaf cut out of the quad (broad toward its stalk, pointed at its tip,
   // skewed with the quad), its colour its own, a little darker at its edge
   // (litter.js’s, line for line; its pow of a lfT kept off the negatives)
   const lfT = vLeafUv.x.add(0.5);
-  const lfW = pow(max(sin(pow(max(lfT, 0), 0.8).mul(3.14159265)), 0), 0.8).mul(
-    0.46,
-  );
+  const lfW = pow(max(sin(pow(max(lfT, 0), 0.8).mul(3.14159265)), 0), 0.8).mul(0.46);
   const lfV = abs(vLeafUv.y);
   material.maskNode = lfV.lessThanEqual(lfW);
-  material.colorNode = select(
-    vLeafMix.greaterThan(1.5),
-    u.uLeafC,
-    mix(u.uLeafA, u.uLeafB, vLeafMix),
-  ).mul(mix(1, 0.78, smoothstep(lfW.mul(0.5), lfW, lfV)));
+  material.colorNode = select(vLeafMix.greaterThan(1.5), u.uLeafC, mix(u.uLeafA, u.uLeafB, vLeafMix)).mul(mix(1, 0.78, smoothstep(lfW.mul(0.5), lfW, lfV)));
   // both faces lit as the front
   faceless(material);
   material.uniforms = u;
@@ -147,18 +92,7 @@ function leafMaterial(u) {
 
 // ── the leaves ──
 
-export function createFlatLitter({
-  max = 512,
-  half = 14,
-  spec = {},
-  wind = null,
-  floorAt = () => 0,
-  crowns = [],
-  reduced = false,
-  seed = 1,
-  focus: start = { x: 0, z: 0 },
-  lift = 0.02,
-} = {}) {
+export function createFlatLitter({ max = 512, half = 14, spec = {}, wind = null, floorAt = () => 0, crowns = [], reduced = false, seed = 1, focus: start = { x: 0, z: 0 }, lift = 0.02 } = {}) {
   const sim = makeLeafSim(max);
   const ground = new Float32Array(max); // (the ground’s height under each leaf)
   const looked = new Float32Array(2 * max); // (where each leaf was when it was looked at)
@@ -172,19 +106,12 @@ export function createFlatLitter({
   quad.rotateX(-Math.PI / 2);
   const geometry = new THREE.InstancedBufferGeometry().copy(quad);
   quad.dispose();
-  const aLeaf = new THREE.InstancedBufferAttribute(sim.p, 4).setUsage(
-    THREE.DynamicDrawUsage,
-  );
-  const aGround = new THREE.InstancedBufferAttribute(ground, 1).setUsage(
-    THREE.DynamicDrawUsage,
-  );
-  geometry.setAttribute("aLeaf", aLeaf);
-  geometry.setAttribute(
-    "aLeafSeed",
-    new THREE.InstancedBufferAttribute(sim.seed, 4),
-  );
-  geometry.setAttribute("aLeafGround", aGround);
-  const [a, b, c] = spec.colours ?? ["#8a6a2e", "#c89a3c", "#b4622c"];
+  const aLeaf = new THREE.InstancedBufferAttribute(sim.p, 4).setUsage(THREE.DynamicDrawUsage);
+  const aGround = new THREE.InstancedBufferAttribute(ground, 1).setUsage(THREE.DynamicDrawUsage);
+  geometry.setAttribute('aLeaf', aLeaf);
+  geometry.setAttribute('aLeafSeed', new THREE.InstancedBufferAttribute(sim.seed, 4));
+  geometry.setAttribute('aLeafGround', aGround);
+  const [a, b, c] = spec.colours ?? ['#8a6a2e', '#c89a3c', '#b4622c'];
   const uniforms = {
     uLeafFocus: uniform(new THREE.Vector3(start.x, start.z, half)),
     uLeafLook: uniform(new THREE.Vector2(spec.size ?? 0.2, lift)),
@@ -195,7 +122,7 @@ export function createFlatLitter({
   };
   const material = leafMaterial(uniforms);
   const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = "leaves";
+  mesh.name = 'leaves';
   mesh.frustumCulled = false;
 
   const rand = seeded(seed * 7 + 3);
@@ -214,11 +141,7 @@ export function createFlatLitter({
     const u = wind.uniforms;
     const d = u.uWindDir.value;
     const t = u.uWindTime.value;
-    return sampleNoise(
-      u.uWindNoise.value.image,
-      x * LEAF.wind.frequency - d.x * t,
-      z * LEAF.wind.frequency - d.y * t,
-    );
+    return sampleNoise(u.uWindNoise.value.image, x * LEAF.wind.frequency - d.x * t, z * LEAF.wind.frequency - d.y * t);
   };
   const gust = { strength: 0, dir: [1, 0], gate };
   // the ground under every leaf that’s moved since it was last looked at
@@ -229,11 +152,7 @@ export function createFlatLitter({
     for (let i = 0; i < sim.count; i++) {
       const x = sim.p[4 * i];
       const z = sim.p[4 * i + 2];
-      if (
-        !all &&
-        Math.abs(x - looked[2 * i]) + Math.abs(z - looked[2 * i + 1]) < MOVED
-      )
-        continue;
+      if (!all && Math.abs(x - looked[2 * i]) + Math.abs(z - looked[2 * i + 1]) < MOVED) continue;
       looked[2 * i] = x;
       looked[2 * i + 1] = z;
       ground[i] = floorAt(x, z);
@@ -289,11 +208,7 @@ export function createFlatLitter({
         if (was) {
           vx = (w.x - was.x) / dt;
           vz = (w.z - was.z) / dt;
-          if (
-            Math.hypot(w.x - was.x, w.z - was.z) > 2 ||
-            !Number.isFinite(vx + vz)
-          )
-            vx = vz = 0;
+          if (Math.hypot(w.x - was.x, w.z - was.z) > 2 || !Number.isFinite(vx + vz)) vx = vz = 0;
           const sp = Math.hypot(vx, vz);
           if (sp > FAST) {
             vx *= FAST / sp;
@@ -303,9 +218,7 @@ export function createFlatLitter({
           was.z = w.z;
           was.tick = tick;
         } else seen.set(w.key, { x: w.x, z: w.z, tick });
-        const k =
-          pool[kickers.length] ??
-          (pool[kickers.length] = { x: 0, z: 0, y: 0, vx: 0, vz: 0 });
+        const k = pool[kickers.length] ?? (pool[kickers.length] = { x: 0, z: 0, y: 0, vx: 0, vz: 0 });
         k.x = w.x;
         k.z = w.z;
         k.y = w.y ?? 0;
@@ -329,21 +242,11 @@ export function createFlatLitter({
       });
       // shed from the crowns round you, more in a gust
       if (spec.shed > 0 && crowns.length) {
-        const k = wind
-          ? windOffsetAt(wind.uniforms, focus.x, focus.z, off).k
-          : 0;
-        shed +=
-          spec.shed *
-          dt *
-          (1 + (2 * Math.max(0, k)) / Math.max(0.05, gust.strength));
+        const k = wind ? windOffsetAt(wind.uniforms, focus.x, focus.z, off).k : 0;
+        shed += spec.shed * dt * (1 + (2 * Math.max(0, k)) / Math.max(0.05, gust.strength));
         if (shed >= 1) {
           near.length = 0;
-          for (const cr of crowns)
-            if (
-              Math.max(Math.abs(cr.x - focus.x), Math.abs(cr.z - focus.z)) <
-              half - cr.r
-            )
-              near.push(cr);
+          for (const cr of crowns) if (Math.max(Math.abs(cr.x - focus.x), Math.abs(cr.z - focus.z)) < half - cr.r) near.push(cr);
           if (!near.length) shed = 0;
           for (; shed >= 1 && near.length; shed -= 1)
             shedLeaf(sim, near[Math.floor(rand() * near.length)], {
@@ -360,8 +263,7 @@ export function createFlatLitter({
     // nothing with motion turned down, or out of the box
     blast(x, z, r, strength = LEAF.blast.strength) {
       if (reduced) return 0;
-      if (!(Math.max(Math.abs(x - focus.x), Math.abs(z - focus.z)) <= half + r))
-        return 0;
+      if (!(Math.max(Math.abs(x - focus.x), Math.abs(z - focus.z)) <= half + r)) return 0;
       return blastLeaves(sim, x, z, r, strength, rand);
     },
     // how many there are, in the air, asleep; where the box is

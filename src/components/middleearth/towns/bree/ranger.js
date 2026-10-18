@@ -12,7 +12,7 @@
 // head towards `watch`. `bowl` is where the pipe's light goes.
 
 import * as THREE from 'three';
-import { hot } from '../../../../lib/stage3d';
+import { hot } from '../../../../lib/three/stage3dNodes';
 import { fbm, makeCanvas, makeNoise, normalFromField, paintPixels } from '../../../../lib/paint';
 import { B, ball, lathe, parts, tube } from '../../shire/props';
 import { sharpen } from '../../../../lib/three/textures';

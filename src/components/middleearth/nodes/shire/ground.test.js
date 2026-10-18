@@ -1,16 +1,16 @@
-import { describe, expect, it } from "vitest";
-import * as THREE from "three";
-import * as glsl from "../../shire/ground";
-import * as nodes from "./ground";
+import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
+import * as glsl from '../../shire/ground';
+import * as nodes from './ground';
 
 const value = (v) => (v?.toArray ? v.toArray() : v);
 
-describe("nodes/shire/ground, the twin of the Shire’s ground", () => {
-  it("exports what the ground exports", () => {
+describe('nodes/shire/ground, the twin of the Shire’s ground', () => {
+  it('exports what the ground exports', () => {
     expect(Object.keys(nodes).sort()).toEqual(Object.keys(glsl).sort());
   });
 
-  it("paints, shapes and lays out the ground as the original does", () => {
+  it('paints, shapes and lays out the ground as the original does', () => {
     const a = [0, 0, 0];
     const b = [0, 0, 0];
     for (const [x, z] of [
@@ -25,9 +25,7 @@ describe("nodes/shire/ground, the twin of the Shire’s ground", () => {
     }
     const ga = glsl.terrainGeometry(20);
     const gn = nodes.terrainGeometry(20);
-    expect([...gn.attributes.position.array]).toEqual([
-      ...ga.attributes.position.array,
-    ]);
+    expect([...gn.attributes.position.array]).toEqual([...ga.attributes.position.array]);
     const ha = glsl.drawnHeight(ga);
     const hn = nodes.drawnHeight(gn);
     expect(hn(3.3, -7.1)).toBe(ha(3.3, -7.1));
@@ -38,26 +36,16 @@ describe("nodes/shire/ground, the twin of the Shire’s ground", () => {
     expect([...ib.instanceMatrix.array]).toEqual([...ia.instanceMatrix.array]);
   });
 
-  it("makes node water whose uniforms carry the GLSL’s names and values", () => {
+  it('makes node water whose uniforms carry the GLSL’s names and values', () => {
     const a = glsl.makeWater();
     const n = nodes.makeWater();
     const m = n.material;
     expect(m.isNodeMaterial).toBe(true);
-    const own = Object.keys(a.material.uniforms).filter((k) =>
-      k.startsWith("u"),
-    );
+    const own = Object.keys(a.material.uniforms).filter((k) => k.startsWith('u'));
     expect(Object.keys(m.uniforms).sort()).toEqual(own.sort());
-    for (const k of own)
-      expect(value(m.uniforms[k].value)).toEqual(
-        value(a.material.uniforms[k].value),
-      );
+    for (const k of own) expect(value(m.uniforms[k].value)).toEqual(value(a.material.uniforms[k].value));
     const o = a.material;
-    expect([m.fog, m.transparent, m.depthWrite, m.toneMapped]).toEqual([
-      o.fog,
-      o.transparent,
-      o.depthWrite,
-      o.toneMapped,
-    ]);
+    expect([m.fog, m.transparent, m.depthWrite, m.toneMapped]).toEqual([o.fog, o.transparent, o.depthWrite, o.toneMapped]);
     expect(n.group.children.length).toBe(a.group.children.length);
     n.group.children.forEach((c, i) => {
       expect(c.material).toBe(m);
@@ -71,7 +59,7 @@ describe("nodes/shire/ground, the twin of the Shire’s ground", () => {
     const wind = { uWind: { value: 1.5 } };
     const m = nodes.swaying(new THREE.MeshLambertMaterial(), wind, 0.4);
     expect(m.isNodeMaterial).toBe(true);
-    expect(m.customProgramCacheKey()).toContain("sway0.4");
+    expect(m.customProgramCacheKey()).toContain('sway0.4');
     const n = nodes.swaying(m, wind);
     expect(n).toBe(m); // (a node material handed in is hooked in place)
   });

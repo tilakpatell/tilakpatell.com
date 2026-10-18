@@ -22,45 +22,21 @@
 // - No frame guard: the node renderer compiles asynchronously and draws
 //   what's ready.
 
-import * as THREE from "three";
-import { budget } from "../../../lib/device";
-import { BLOOM } from "../../../lib/three/bloom";
-import { LOOK } from "../../../lib/three/house";
-import {
-  disposeTree,
-  gradeNode,
-  gradeUniforms,
-  stageRatio,
-  stageSizing,
-  stageTune,
-} from "../../../lib/three/stage3dNodes";
-import { engineNow } from "../module";
+import * as THREE from 'three';
+import { budget } from '../../../lib/device';
+import { BLOOM } from '../../../lib/three/bloom';
+import { LOOK } from '../../../lib/three/houseNodes';
+import { disposeTree, gradeNode, gradeUniforms, stageRatio, stageSizing, stageTune } from '../../../lib/three/stage3dNodes';
+import { engineNow } from '../module';
 
-export {
-  canvasTexture,
-  disposeTree,
-  hot,
-} from "../../../lib/three/stage3dNodes";
+export { canvasTexture, disposeTree, hot } from '../../../lib/three/stage3dNodes';
 
 // the ladder lib/stage3d's watchdog climbed, a rung a quality level
-export const LADDER = ["full", "ratio", "shadows", "bloom", "low"];
+export const LADDER = ['full', 'ratio', 'shadows', 'bloom', 'low'];
 
-export function createStage(
-  canvas,
-  {
-    soft = false,
-    bloom = BLOOM,
-    exposure = LOOK.exposure,
-    shadows = false,
-    fov = 60,
-    near = 0.1,
-    far = 600,
-    onLost,
-  } = {},
-) {
+export function createStage(canvas, { soft = false, bloom = BLOOM, exposure = LOOK.exposure, shadows = false, fov = 60, near = 0.1, far = 600, onLost } = {}) {
   const world = engineNow();
-  if (!world)
-    throw new Error("a Middle-earth stage needs its world up (../module.js)");
+  if (!world) throw new Error('a Middle-earth stage needs its world up (../module.js)');
   const fit = budget();
   const renderer = world.renderer;
   const gfx = world.rt.gfx;
@@ -99,23 +75,23 @@ export function createStage(
     threshold: bloom.threshold,
   };
   let useBloom = !soft;
-  let level = soft ? LADDER.indexOf("bloom") : 0;
+  let level = soft ? LADDER.indexOf('bloom') : 0;
   let post = null;
   const build = () => {
     post?.dispose();
     post = soft
       ? null
       : gfx.post([
-          { kind: "render", scene, camera },
+          { kind: 'render', scene, camera },
           {
-            kind: "bloom",
+            kind: 'bloom',
             strength: bloomPass.strength,
             radius: bloomPass.radius,
             threshold: bloomPass.threshold,
             enabled: useBloom,
           },
-          { kind: "grade", node: gradeNode(u) },
-          { kind: "output" },
+          { kind: 'grade', node: gradeNode(u) },
+          { kind: 'output' },
         ]);
   };
   build();
@@ -148,31 +124,25 @@ export function createStage(
 
   let lost = false;
   const setLevel = (name) => {
-    const rung =
-      typeof name === "number"
-        ? LADDER[Math.max(0, Math.min(LADDER.length - 1, name))]
-        : name;
+    const rung = typeof name === 'number' ? LADDER[Math.max(0, Math.min(LADDER.length - 1, name))] : name;
     level = Math.max(level, LADDER.indexOf(rung));
-    if (level >= LADDER.indexOf("ratio") && sizing.ratio > 1)
-      sizing.setRatio(1);
-    if (level >= LADDER.indexOf("shadows")) {
+    if (level >= LADDER.indexOf('ratio') && sizing.ratio > 1) sizing.setRatio(1);
+    if (level >= LADDER.indexOf('shadows')) {
       world.views.enter(canvas);
       if (renderer.shadowMap.enabled) {
         renderer.shadowMap.enabled = false;
         scene.traverse((o) => {
-          if (o.material)
-            [].concat(o.material).forEach((m) => (m.needsUpdate = true));
+          if (o.material) [].concat(o.material).forEach((m) => (m.needsUpdate = true));
         });
       }
     }
-    if (level >= LADDER.indexOf("bloom") && useBloom) {
+    if (level >= LADDER.indexOf('bloom') && useBloom) {
       useBloom = false;
       build();
     }
-    if (level >= LADDER.indexOf("low") && sizing.ratio > 0.75)
-      sizing.setRatio(0.75);
+    if (level >= LADDER.indexOf('low') && sizing.ratio > 0.75) sizing.setRatio(0.75);
   };
-  if (soft || !fit.bloom) setLevel("bloom");
+  if (soft || !fit.bloom) setLevel('bloom');
 
   let warming = 0;
   let drawn = false;
@@ -195,9 +165,7 @@ export function createStage(
 
   const tuning = stageTune({
     bloomPass,
-    title: () =>
-      canvas.closest?.("[data-route]")?.dataset.route ||
-      (typeof document !== "undefined" ? document.title : null),
+    title: () => canvas.closest?.('[data-route]')?.dataset.route || (typeof document !== 'undefined' ? document.title : null),
   });
 
   const off = world.stage({
@@ -224,11 +192,7 @@ export function createStage(
   const compile = async (root = scene) => {
     world.views.enter(canvas);
     gfx.upload?.(root);
-    await Promise.all([
-      gfx.compile?.(root, camera, scene),
-      post?.ready,
-      post?.compile?.(),
-    ]);
+    await Promise.all([gfx.compile?.(root, camera, scene), post?.ready, post?.compile?.()]);
   };
   const precompile = (root = scene) => {
     if (lost || disposed) return Promise.resolve();
@@ -241,15 +205,15 @@ export function createStage(
   const prepare = async (onProgress, { alive = () => true } = {}) => {
     const on = () => alive() && !lost && !disposed;
     if (!drawn) sizing.fit();
-    onProgress?.(0, "pictures");
+    onProgress?.(0, 'pictures');
     await compile(scene);
     if (!on()) return;
-    onProgress?.(0.9, "first draw");
+    onProgress?.(0.9, 'first draw');
     // its first frame: onto the stage's own canvas, as ../stage.js drew it
     sizing.fit();
     view.drawNow(frame);
     drawn = true;
-    onProgress?.(1, "first draw");
+    onProgress?.(1, 'first draw');
   };
 
   return {

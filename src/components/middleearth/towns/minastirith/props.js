@@ -20,10 +20,10 @@
 // brighter than 1, so the bloom takes it.
 
 import * as THREE from 'three';
-import { canvasTexture, hot } from '../../../../lib/stage3d';
+import { canvasTexture, hot } from '../../../../lib/three/stage3dNodes';
 import { clamp01, fbm, makeCanvas, makeCells, makeNoise, mix, normalFromField, paintPixels, ridge, smooth } from '../../../../lib/paint';
 import { blob, lathe, parts, rng, tube } from '../../shire/props';
-import { houseShader, roofShader, swayBanner } from './propsShaders';
+import { houseShader, roofShader, swayBanner } from '../../nodes/towns/minastirith/propsShaders';
 import {
   BEACONS,
   CHAIR,

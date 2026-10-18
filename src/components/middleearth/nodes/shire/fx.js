@@ -16,34 +16,11 @@
 //   instance attributes over the same arrays), its sizeNode the GLSL's
 //   gl_PointSize; toneMapped off, as the GLSL had no tone-mapping chunk.
 
-import * as THREE from "three";
-import { MeshBasicNodeMaterial, PointsNodeMaterial } from "three/webgpu";
-import {
-  Fn,
-  abs,
-  cos,
-  dot,
-  floor,
-  fract,
-  instancedBufferAttribute,
-  length,
-  mix,
-  normalLocal,
-  normalize,
-  positionView,
-  pow,
-  screenDPR,
-  sin,
-  smoothstep,
-  transformNormalToView,
-  uniform,
-  uv,
-  varying,
-  vec2,
-  vec3,
-} from "three/tsl";
-import { hot } from "../../../../lib/three/stage3dNodes";
-import { FIRE, createParticles } from "../kit";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial, PointsNodeMaterial } from 'three/webgpu';
+import { Fn, abs, cos, dot, floor, fract, instancedBufferAttribute, length, mix, normalLocal, normalize, positionView, pow, screenDPR, sin, smoothstep, transformNormalToView, uniform, uv, varying, vec2, vec3 } from 'three/tsl';
+import { hot } from '../../../../lib/three/stage3dNodes';
+import { FIRE, createParticles } from '../kit';
 
 // colour over a spark's life, [t, r, g, b, a]; above 1 blooms
 const RAMPS = {
@@ -89,11 +66,11 @@ const PUFF = [
   [1, 0.8, 0.8, 0.82, 0],
 ];
 export const SWATCH = {
-  gold: "#ffc94a",
-  green: "#6ee07a",
-  red: "#ff5a4a",
-  blue: "#6aa8ff",
-  white: "#f4f4ff",
+  gold: '#ffc94a',
+  green: '#6ee07a',
+  red: '#ff5a4a',
+  blue: '#6aa8ff',
+  white: '#f4f4ff',
 };
 const R = (a) => (Math.random() - 0.5) * 2 * a;
 const unit = (v) => {
@@ -105,20 +82,13 @@ const unit = (v) => {
 };
 
 // the rings' GLSL noise
-const hash = Fn(
-  ([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)),
-  "float",
-);
+const hash = Fn(([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)), 'float');
 const noise = Fn(([p]) => {
   const i = floor(p);
   const f0 = fract(p);
   const f = f0.mul(f0).mul(f0.mul(-2).add(3));
-  return mix(
-    mix(hash(i), hash(i.add(vec2(1, 0))), f.x),
-    mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x),
-    f.y,
-  );
-}, "float");
+  return mix(mix(hash(i), hash(i.add(vec2(1, 0))), f.x), mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x), f.y);
+}, 'float');
 
 // (GLSL's smoothstep with its edges reversed, defined in WGSL)
 const fall = (a, b, x) => smoothstep(b, a, x).oneMinus();
@@ -137,8 +107,8 @@ function ringMaterial() {
     depthWrite: false,
     fog: false,
   });
-  const vUv = varying(uv(), "vUv");
-  const vN = varying(normalize(transformNormalToView(normalLocal)), "vN");
+  const vUv = varying(uv(), 'vUv');
+  const vN = varying(normalize(transformNormalToView(normalLocal)), 'vN');
   const wisp = noise(vec2(vUv.x.mul(24).add(u.uTime.mul(0.6)), vUv.y.mul(4)))
     .mul(0.6)
     .add(noise(vec2(vUv.x.mul(60).sub(u.uTime), vUv.y.mul(9))).mul(0.4));
@@ -162,13 +132,7 @@ function flyMaterial(position, seed) {
     toneMapped: false,
     sizeAttenuation: false,
   });
-  material.positionNode = position.add(
-    vec3(
-      sin(u.uTime.mul(0.6).add(seed.mul(12))).mul(0.9),
-      sin(u.uTime.mul(0.9).add(seed.mul(7))).mul(0.35),
-      cos(u.uTime.mul(0.5).add(seed.mul(9))).mul(0.9),
-    ),
-  );
+  material.positionNode = position.add(vec3(sin(u.uTime.mul(0.6).add(seed.mul(12))).mul(0.9), sin(u.uTime.mul(0.9).add(seed.mul(7))).mul(0.35), cos(u.uTime.mul(0.5).add(seed.mul(9))).mul(0.9)));
   const glow = pow(
     sin(u.uTime.mul(2.2).add(seed.mul(30)))
       .mul(0.5)
@@ -177,13 +141,9 @@ function flyMaterial(position, seed) {
   )
     .mul(0.65)
     .add(0.35);
-  const vGlow = varying(glow, "vGlow");
+  const vGlow = varying(glow, 'vGlow');
   // gl_PointSize, in the drawing buffer's pixels (the sprite multiplies by the DPR again)
-  material.sizeNode = u.uSize
-    .mul(glow)
-    .div(positionView.z.negate())
-    .mul(10)
-    .div(screenDPR);
+  material.sizeNode = u.uSize.mul(glow).div(positionView.z.negate()).mul(10).div(screenDPR);
   const a = fall(0.5, 0, length(uv().sub(0.5)));
   material.colorNode = vec3(2.4, 2.6, 0.9).mul(a).mul(vGlow).mul(u.uOn);
   material.opacityNode = a.mul(u.uOn);
@@ -198,8 +158,8 @@ export function createFx(scene, { scale = 1 } = {}) {
     sparks[k] = createParticles(max(900), {
       ramp,
       additive: true,
-      gravity: k === "gold" ? -4.2 : -2.4,
-      drag: k === "gold" ? 1.4 : 1.0,
+      gravity: k === 'gold' ? -4.2 : -2.4,
+      drag: k === 'gold' ? 1.4 : 1.0,
     });
     scene.add(sparks[k].mesh);
   }
@@ -236,89 +196,38 @@ export function createFx(scene, { scale = 1 } = {}) {
   const v = new THREE.Vector3();
 
   // a firework bursting at `at`, each kind its own shape
-  const burst = (at, colour = "gold", size = 1) => {
+  const burst = (at, colour = 'gold', size = 1) => {
     const p = sparks[colour] ?? sparks.gold;
     const n = Math.round(130 * Math.min(1.6, size) * Math.max(0.5, scale));
-    if (colour === "blue") {
+    if (colour === 'blue') {
       // a ring, tilted towards you
       for (let i = 0; i < n; i++) {
         const a = (i / n) * Math.PI * 2;
         const s = (8 + R(0.4)) * size;
-        p.emit(
-          at.x,
-          at.y,
-          at.z,
-          Math.cos(a) * s,
-          Math.sin(a) * s * 0.9,
-          Math.sin(a) * s * 0.35,
-          1.5 + Math.random() * 0.4,
-          0.55 * size,
-          0.08,
-        );
+        p.emit(at.x, at.y, at.z, Math.cos(a) * s, Math.sin(a) * s * 0.9, Math.sin(a) * s * 0.35, 1.5 + Math.random() * 0.4, 0.55 * size, 0.08);
       }
-    } else if (colour === "gold") {
+    } else if (colour === 'gold') {
       // a willow: slow, heavy, hanging long
       for (let i = 0; i < n; i++) {
         unit(v).multiplyScalar((5.5 + Math.random() * 2) * size);
-        p.emit(
-          at.x,
-          at.y,
-          at.z,
-          v.x,
-          v.y + 2,
-          v.z,
-          2.4 + Math.random() * 0.8,
-          0.5 * size,
-          0.1,
-        );
+        p.emit(at.x, at.y, at.z, v.x, v.y + 2, v.z, 2.4 + Math.random() * 0.8, 0.5 * size, 0.1);
       }
-    } else if (colour === "green") {
+    } else if (colour === 'green') {
       // two shells, one inside the other
       for (let i = 0; i < n; i++) {
         unit(v).multiplyScalar((i % 2 ? 9 : 4.5) * size);
-        p.emit(
-          at.x,
-          at.y,
-          at.z,
-          v.x,
-          v.y,
-          v.z,
-          1.6 + Math.random() * 0.3,
-          0.5 * size,
-          0.06,
-        );
+        p.emit(at.x, at.y, at.z, v.x, v.y, v.z, 1.6 + Math.random() * 0.3, 0.5 * size, 0.06);
       }
-    } else if (colour === "white") {
+    } else if (colour === 'white') {
       // glitter: lots of small ones that crackle
       for (let i = 0; i < n * 1.4; i++) {
         unit(v).multiplyScalar((3 + Math.random() * 7) * size);
-        p.emit(
-          at.x,
-          at.y,
-          at.z,
-          v.x,
-          v.y,
-          v.z,
-          0.9 + Math.random() * 1.1,
-          (0.18 + Math.random() * 0.3) * size,
-          0.02,
-          0.6 + Math.random() * 0.8,
-        );
+        p.emit(at.x, at.y, at.z, v.x, v.y, v.z, 0.9 + Math.random() * 1.1, (0.18 + Math.random() * 0.3) * size, 0.02, 0.6 + Math.random() * 0.8);
       }
     } else {
       for (let i = 0; i < n; i++) {
         unit(v).multiplyScalar((7.5 + Math.random() * 1.2) * size);
-        p.emit(
-          at.x,
-          at.y,
-          at.z,
-          v.x,
-          v.y,
-          v.z,
-          1.6 + Math.random() * 0.4,
-          0.6 * size,
-          0.08,
-        );
+        p.emit(at.x, at.y, at.z, v.x, v.y, v.z, 1.6 + Math.random() * 0.4, 0.6 * size, 0.08);
       }
     }
     // and a flash at the heart of it
@@ -327,8 +236,7 @@ export function createFx(scene, { scale = 1 } = {}) {
 
   // rockets climbing: { from, to, t, flight }
   const rockets = [];
-  const rocket = (from, to, flight) =>
-    rockets.push({ from: from.clone(), to: to.clone(), t: 0, flight });
+  const rocket = (from, to, flight) => rockets.push({ from: from.clone(), to: to.clone(), t: 0, flight });
 
   // ── the dragon: a fiery serpent with wings, along a path ──
   const dragon = new THREE.Group();
@@ -347,30 +255,15 @@ export function createFx(scene, { scale = 1 } = {}) {
   const SEGS = 14;
   const segs = [];
   for (let i = 0; i < SEGS; i++) {
-    const s = new THREE.Mesh(
-      new THREE.SphereGeometry(0.46 * (1 - i / (SEGS + 4)), 10, 8),
-      dragonMat,
-    );
+    const s = new THREE.Mesh(new THREE.SphereGeometry(0.46 * (1 - i / (SEGS + 4)), 10, 8), dragonMat);
     dragon.add(s);
     segs.push(s);
   }
-  const head = new THREE.Mesh(
-    new THREE.ConeGeometry(0.55, 1.6, 8).rotateX(Math.PI / 2),
-    dragonMat,
-  );
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.6, 8).rotateX(Math.PI / 2), dragonMat);
   dragon.add(head);
   const wingGeo = new THREE.BufferGeometry();
   // a bat's wing: three fingers of fire from the shoulder, swept back
-  wingGeo.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(
-      [
-        0, 0, 0.5, 4.2, 0.9, -1.4, 1.6, 0.2, -1.2, 0, 0, 0.2, 3.4, 0.5, -2.4,
-        1.2, 0.1, -2.0, 0, 0, -0.1, 2.2, 0.2, -3.0, 0.4, 0, -2.4,
-      ],
-      3,
-    ),
-  );
+  wingGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0.5, 4.2, 0.9, -1.4, 1.6, 0.2, -1.2, 0, 0, 0.2, 3.4, 0.5, -2.4, 1.2, 0.1, -2.0, 0, 0, -0.1, 2.2, 0.2, -3.0, 0.4, 0, -2.4], 3));
   wingGeo.computeVertexNormals();
   const wings = [1, -1].map((s) => {
     const w = new THREE.Mesh(wingGeo, wingMat);
@@ -415,8 +308,7 @@ export function createFx(scene, { scale = 1 } = {}) {
       m.material.uniforms.uOpacity.value = r.opacity;
       m.material.uniforms.uTime.value = t + i * 3.1;
     });
-    for (let i = list.length; i < ringPool.length; i++)
-      ringPool[i].visible = false;
+    for (let i = list.length; i < ringPool.length; i++) ringPool[i].visible = false;
   };
 
   // ── fireflies and butterflies ──
@@ -426,15 +318,9 @@ export function createFx(scene, { scale = 1 } = {}) {
   const flySeed = new Float32Array(FLY);
   // (instance attributes, under the GLSL's names, held by a geometry of
   // their own: the sprite draws its own quad)
-  flyGeo.setAttribute(
-    "position",
-    new THREE.InstancedBufferAttribute(flyPos, 3),
-  );
-  flyGeo.setAttribute("aSeed", new THREE.InstancedBufferAttribute(flySeed, 1));
-  const flyMat = flyMaterial(
-    instancedBufferAttribute(flyGeo.attributes.position),
-    instancedBufferAttribute(flyGeo.attributes.aSeed),
-  );
+  flyGeo.setAttribute('position', new THREE.InstancedBufferAttribute(flyPos, 3));
+  flyGeo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(flySeed, 1));
+  const flyMat = flyMaterial(instancedBufferAttribute(flyGeo.attributes.position), instancedBufferAttribute(flyGeo.attributes.aSeed));
   const flies = new THREE.Sprite(flyMat);
   flies.count = FLY;
   flies.frustumCulled = false;
@@ -486,63 +372,18 @@ export function createFx(scene, { scale = 1 } = {}) {
   const one = new THREE.Vector3(1, 1, 1);
 
   // ── a quick burst of something: a pick, a thread, a bark ──
-  const pop = (at, colour = "gold", n = 24, speed = 2.5) => {
+  const pop = (at, colour = 'gold', n = 24, speed = 2.5) => {
     const p = sparks[colour] ?? sparks.gold;
     for (let i = 0; i < n * Math.max(0.5, scale); i++) {
       unit(v).multiplyScalar(speed * (0.5 + Math.random() * 0.5));
-      p.emit(
-        at.x,
-        at.y,
-        at.z,
-        v.x,
-        Math.abs(v.y) + 1,
-        v.z,
-        0.6 + Math.random() * 0.4,
-        0.14,
-        0.02,
-        0.7,
-      );
+      p.emit(at.x, at.y, at.z, v.x, Math.abs(v.y) + 1, v.z, 0.6 + Math.random() * 0.4, 0.14, 0.02, 0.7);
     }
   };
   const puff = (at, dir, n = 10) => {
-    for (let i = 0; i < n; i++)
-      puffs.emit(
-        at.x + R(0.05),
-        at.y + R(0.05),
-        at.z + R(0.05),
-        dir.x * 1.5 + R(0.3),
-        dir.y * 1.5 + R(0.2) + 0.2,
-        dir.z * 1.5 + R(0.3),
-        1.2 + Math.random() * 0.8,
-        0.18,
-        0.7,
-      );
+    for (let i = 0; i < n; i++) puffs.emit(at.x + R(0.05), at.y + R(0.05), at.z + R(0.05), dir.x * 1.5 + R(0.3), dir.y * 1.5 + R(0.2) + 0.2, dir.z * 1.5 + R(0.3), 1.2 + Math.random() * 0.8, 0.18, 0.7);
   };
-  const chimney = (at) =>
-    smoke.emit(
-      at.x + R(0.1),
-      at.y,
-      at.z + R(0.1),
-      R(0.15) + 0.25,
-      0.7 + Math.random() * 0.3,
-      R(0.15),
-      4 + Math.random() * 2,
-      0.35,
-      1.8,
-    );
-  const flame = (at, spread = 0.35) =>
-    fire.emit(
-      at.x + R(spread),
-      at.y,
-      at.z + R(spread * 0.4),
-      R(0.1),
-      0.6 + Math.random() * 0.4,
-      R(0.1),
-      0.5 + Math.random() * 0.4,
-      0.32,
-      0.08,
-      0.9,
-    );
+  const chimney = (at) => smoke.emit(at.x + R(0.1), at.y, at.z + R(0.1), R(0.15) + 0.25, 0.7 + Math.random() * 0.3, R(0.15), 4 + Math.random() * 2, 0.35, 1.8);
+  const flame = (at, spread = 0.35) => fire.emit(at.x + R(spread), at.y, at.z + R(spread * 0.4), R(0.1), 0.6 + Math.random() * 0.4, R(0.1), 0.5 + Math.random() * 0.4, 0.32, 0.08, 0.9);
 
   const pools = [...Object.values(sparks), trail, smoke, puffs, fire];
   const step = (dt, t, { night = 0, day = 1 } = {}) => {
@@ -559,19 +400,7 @@ export function createFx(scene, { scale = 1 } = {}) {
       const e2 = 1 - (1 - k) * (1 - k);
       v.lerpVectors(r.from, r.to, e2);
       v.y += Math.sin(k * Math.PI) * 0.6;
-      for (let n = 0; n < 3; n++)
-        trail.emit(
-          v.x + R(0.05),
-          v.y,
-          v.z + R(0.05),
-          R(0.4),
-          -1 - Math.random(),
-          R(0.4),
-          0.45 + Math.random() * 0.3,
-          0.16,
-          0.02,
-          0.8,
-        );
+      for (let n = 0; n < 3; n++) trail.emit(v.x + R(0.05), v.y, v.z + R(0.05), R(0.4), -1 - Math.random(), R(0.4), 0.45 + Math.random() * 0.3, 0.16, 0.02, 0.8);
       if (k >= 1) rockets.splice(i, 1);
     }
     // the dragon
@@ -594,25 +423,13 @@ export function createFx(scene, { scale = 1 } = {}) {
         w.quaternion.copy(head.quaternion);
         w.rotateZ(i === 0 ? flap : -flap);
       });
-      for (let n = 0; n < 6; n++)
-        trail.emit(
-          p.x + R(0.3),
-          p.y + R(0.3),
-          p.z + R(0.3),
-          R(1.2),
-          R(1.2),
-          R(1.2),
-          0.8 + Math.random() * 0.6,
-          0.35,
-          0.04,
-          1.2,
-        );
+      for (let n = 0; n < 6; n++) trail.emit(p.x + R(0.3), p.y + R(0.3), p.z + R(0.3), R(1.2), R(1.2), R(1.2), 0.8 + Math.random() * 0.6, 0.35, 0.04, 1.2);
       if (k >= 1) {
         D.on = false;
         dragon.visible = false;
-        burst(p, "gold", 2.2);
-        burst(p, "red", 1.6);
-        burst(p, "white", 1.4);
+        burst(p, 'gold', 2.2);
+        burst(p, 'red', 1.6);
+        burst(p, 'white', 1.4);
         D.burst?.(p);
       }
     }

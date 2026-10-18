@@ -16,10 +16,10 @@
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
-import { canvasTexture } from '../../../../lib/stage3d';
+import { canvasTexture } from '../../../../lib/three/stage3dNodes';
 import { clamp01, fbm, makeCanvas, makeCells, makeNoise, mix, normalFromField, paintPixels, smooth } from '../../../../lib/paint';
 import { B, ball, blob, boxUV, createShireKit, cyl, cylX, lathe, parts, rng, roundBox, tf, tube } from '../../shire/props';
-import { eyeMaterial, fallsMaterial, foamMaterial, mistMaterial, urukMaterial } from './propsShaders';
+import { eyeMaterial, fallsMaterial, foamMaterial, mistMaterial, urukMaterial } from '../../nodes/towns/amonhen/propsShaders';
 
 const TAU = Math.PI * 2;
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);

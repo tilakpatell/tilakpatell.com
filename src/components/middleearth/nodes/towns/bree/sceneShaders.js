@@ -5,41 +5,17 @@
 // A ShaderMaterial’s defaults kept: no fog, and no tone mapping, the GLSL
 // having no chunk for it.
 
-import * as THREE from "three";
-import { MeshBasicNodeMaterial } from "three/webgpu";
-import {
-  Fn,
-  abs,
-  atan,
-  attribute,
-  dot,
-  floor,
-  fract,
-  length,
-  mix,
-  pow,
-  sin,
-  smoothstep,
-  uniform,
-  varying,
-  vec2,
-  vec4,
-} from "three/tsl";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { Fn, abs, atan, attribute, dot, floor, fract, length, mix, pow, sin, smoothstep, uniform, varying, vec2, vec4 } from 'three/tsl';
 
-const hash = Fn(
-  ([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)),
-  "float",
-);
+const hash = Fn(([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)), 'float');
 const noise = Fn(([p]) => {
   const i = floor(p);
   const f0 = fract(p);
   const f = f0.mul(f0).mul(f0.mul(-2).add(3));
-  return mix(
-    mix(hash(i), hash(i.add(vec2(1, 0))), f.x),
-    mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x),
-    f.y,
-  );
-}, "float");
+  return mix(mix(hash(i), hash(i.add(vec2(1, 0))), f.x), mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x), f.y);
+}, 'float');
 
 // The `i`th Rider’s sight, as far and as wide as NAZGUL says; the scene
 // writes uTime and uOpacity.
@@ -60,16 +36,12 @@ export function sightMaterial(NAZGUL, i) {
     fog: false,
     toneMapped: false,
   });
-  const vP = varying(attribute("local", "vec2"), "vP");
+  const vP = varying(attribute('local', 'vec2'), 'vP');
   const r = length(vP).div(u.uSight);
   const a = abs(atan(vP.y.negate(), vP.x)).div(u.uCone);
   const edge = smoothstep(0.62, 1.12, a).oneMinus();
-  const reach = pow(smoothstep(0, 1, r).oneMinus(), 1.4).mul(
-    smoothstep(0, 0.08, r),
-  );
-  const q = vP
-    .mul(0.55)
-    .add(vec2(u.uTime.mul(0.35).add(u.uSeed), u.uTime.mul(-0.22)));
+  const reach = pow(smoothstep(0, 1, r).oneMinus(), 1.4).mul(smoothstep(0, 0.08, r));
+  const q = vP.mul(0.55).add(vec2(u.uTime.mul(0.35).add(u.uSeed), u.uTime.mul(-0.22)));
   const mist = noise(q)
     .mul(noise(q.mul(2.3).add(4.1)))
     .mul(0.45)

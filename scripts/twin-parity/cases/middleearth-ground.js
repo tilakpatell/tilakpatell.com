@@ -3,9 +3,9 @@
 // rippling in the rain, holding the sky and three lamps, in fog; the grass
 // tufts swaying a little way into the wind’s clock; and the painted ground
 // itself under its detail texture.
-import * as THREE from "three";
-import * as GO from "../../../src/components/middleearth/towns/ground.js";
-import * as GN from "../../../src/components/middleearth/nodes/towns/ground.js";
+import * as THREE from 'three';
+import * as GO from '../../../src/components/middleearth/towns/ground.js';
+import * as GN from '../../../src/components/middleearth/nodes/towns/ground.js';
 
 const height = (x, z) => 0.25 * Math.sin(x * 0.4) + 0.15 * Math.cos(z * 0.5);
 const PUDDLES = [
@@ -19,10 +19,7 @@ const puddles =
   ({ scene, camera }) => {
     scene.background.set(0x10141a);
     scene.fog = new THREE.Fog(0x10141a, 4, 18);
-    const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(20, 20, 40, 40).rotateX(-Math.PI / 2),
-      new THREE.MeshLambertMaterial({ color: 0x3a3026 }),
-    );
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20, 40, 40).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x3a3026 }));
     const p = floor.geometry.attributes.position;
     for (let i = 0; i < p.count; i++) p.setY(i, height(p.getX(i), p.getZ(i)));
     floor.geometry.computeVertexNormals();
@@ -54,18 +51,9 @@ const tufts =
   (G) =>
   ({ scene, camera }) => {
     const wind = { uWind: { value: 2.3 } };
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(12, 12).rotateX(-Math.PI / 2),
-      new THREE.MeshLambertMaterial({ color: 0x4a3a28 }),
-    );
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(12, 12).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x4a3a28 }));
     scene.add(ground);
-    scene.add(
-      G.makeTufts(
-        900,
-        { radius: 5, height: () => 0, growable: () => true, seed: 41 },
-        wind,
-      ),
-    );
+    scene.add(G.makeTufts(900, { radius: 5, height: () => 0, growable: () => true, seed: 41 }, wind));
     camera.position.set(0, 1, 2.6);
     camera.lookAt(0, 0.1, 0);
   };
@@ -89,7 +77,7 @@ const terrain =
   };
 
 export default {
-  "middleearth:ground:puddles": { node: puddles(GN), classic: puddles(GO) },
-  "middleearth:ground:tufts": { node: tufts(GN), classic: tufts(GO) },
-  "middleearth:ground:terrain": { node: terrain(GN), classic: terrain(GO) },
+  'middleearth:ground:puddles': { node: puddles(GN), classic: puddles(GO) },
+  'middleearth:ground:tufts': { node: tufts(GN), classic: tufts(GO) },
+  'middleearth:ground:terrain': { node: terrain(GN), classic: terrain(GO) },
 };

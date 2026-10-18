@@ -4,8 +4,8 @@
 // sees, and the Ring's switch. ../nodes/towns/wraithsShaders.js is the same
 // on the node renderer.
 
-import * as THREE from "three";
-import { clamp01, smooth } from "../../../lib/paint";
+import * as THREE from 'three';
+import { clamp01, smooth } from '../../../lib/paint';
 
 // What the steel sees: a dark night with a cold sky over it, a moon high on
 // one side, a warm lit window low on the other, and a long thin light for a
@@ -19,13 +19,8 @@ export function nightEnv(renderer) {
     const k = (p.getY(i) + 10) / 20;
     shade.push(0.012 + k * 0.05, 0.014 + k * 0.06, 0.02 + k * 0.09);
   }
-  walls.setAttribute("color", new THREE.Float32BufferAttribute(shade, 3));
-  room.add(
-    new THREE.Mesh(
-      walls,
-      new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide }),
-    ),
-  );
+  walls.setAttribute('color', new THREE.Float32BufferAttribute(shade, 3));
+  room.add(new THREE.Mesh(walls, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
   const glow = (hex, k, w, h, pos) => {
     const m = new THREE.Mesh(
       new THREE.PlaneGeometry(w, h),
@@ -102,40 +97,32 @@ export function wraithMaterials(U, { weave, weaveN, env }) {
     vertexColors: true,
     alphaTest: 0.5,
   });
-  cloth.name = "wraithCloth";
+  cloth.name = 'wraithCloth';
   cloth.onBeforeCompile = (s) => {
     Object.assign(s.uniforms, U);
-    s.vertexShader =
-      "uniform float uTime;\nuniform vec3 uWind;\nvarying vec2 vCloth;\nvarying float vShade;\n" +
-      s.vertexShader.replace("#include <begin_vertex>", CLOTH_VERT);
+    s.vertexShader = 'uniform float uTime;\nuniform vec3 uWind;\nvarying vec2 vCloth;\nvarying float vShade;\n' + s.vertexShader.replace('#include <begin_vertex>', CLOTH_VERT);
     s.fragmentShader = (CLOTH_FRAG_HEAD + s.fragmentShader)
       // the colour attribute is the cloth's numbers, not a colour; the
       // ragged ends are worn thin and greyer
-      .replace(
-        "#include <color_fragment>",
-        "diffuseColor.rgb *= 1.0 + 0.4 * (1.0 - smoothstep(0.0, uTear.x, vCloth.y));",
-      )
+      .replace('#include <color_fragment>', 'diffuseColor.rgb *= 1.0 + 0.4 * (1.0 - smoothstep(0.0, uTear.x, vCloth.y));')
       // torn: the mask decides; through the Ring, see-through but for the edges
       .replace(
-        "#include <alphatest_fragment>",
+        '#include <alphatest_fragment>',
         `diffuseColor.a = vCloth.y < uTear.x ? texture2D(uTorn, vec2(vCloth.x * uTear.y, vCloth.y / uTear.x)).r : 1.0;
         #include <alphatest_fragment>
         diffuseColor.a = 1.0;`,
       )
       .replace(
-        "#include <alphahash_fragment>",
+        '#include <alphahash_fragment>',
         `float fres = 1.0 - saturate(abs(dot(normalize(vNormal), normalize(vViewPosition))));
         diffuseColor.a = mix(1.0, 0.3 + 0.6 * fres * fres, uRing);
         #include <alphahash_fragment>`,
       )
       // black wool takes little gloss
-      .replace(
-        "vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;",
-        "vec3 outgoingLight = totalDiffuse + totalSpecular * 0.3 + totalEmissiveRadiance;",
-      )
+      .replace('vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;', 'vec3 outgoingLight = totalDiffuse + totalSpecular * 0.3 + totalEmissiveRadiance;')
       // a cold rim, stronger where the cloth faces the sky
       .replace(
-        "#include <emissivemap_fragment>",
+        '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
         {
           vec3 gn = normalize(vNormal);
@@ -148,7 +135,7 @@ export function wraithMaterials(U, { weave, weaveN, env }) {
       )
       // folds and the hood's dark; the inside of the cloth darker; the Ring's pale glow
       .replace(
-        "#include <opaque_fragment>",
+        '#include <opaque_fragment>',
         `float shadeK = mix(vShade, 0.3 + 0.7 * vShade, uRing);
         outgoingLight *= shadeK * (gl_FrontFacing ? 1.0 : mix(uInner, 0.8, uRing));
         {
@@ -159,7 +146,7 @@ export function wraithMaterials(U, { weave, weaveN, env }) {
         #include <opaque_fragment>`,
       );
   };
-  cloth.customProgramCacheKey = () => "wraith-cloth-1";
+  cloth.customProgramCacheKey = () => 'wraith-cloth-1';
 
   // steel: dark, a little sheen, the night in it; through the Ring, pale silver
   const silver = (m, key) => {
@@ -167,9 +154,9 @@ export function wraithMaterials(U, { weave, weaveN, env }) {
       s.uniforms.uRing = U.uRing;
       s.uniforms.uGhost = U.uGhost;
       s.fragmentShader =
-        "uniform float uRing;\nuniform vec3 uGhost;\n" +
+        'uniform float uRing;\nuniform vec3 uGhost;\n' +
         s.fragmentShader.replace(
-          "#include <opaque_fragment>",
+          '#include <opaque_fragment>',
           `{
           float fr = 1.0 - saturate(abs(dot(normal, normalize(vViewPosition))));
           vec3 pale = uGhost * (0.18 + 0.7 * fr * fr) + outgoingLight * 1.4;
@@ -189,7 +176,7 @@ export function wraithMaterials(U, { weave, weaveN, env }) {
       envMap: env,
       envMapIntensity: 1.1,
     }),
-    "wraith-steel-1",
+    'wraith-steel-1',
   );
   const blade = silver(
     new THREE.MeshStandardMaterial({
@@ -199,7 +186,7 @@ export function wraithMaterials(U, { weave, weaveN, env }) {
       envMap: env,
       envMapIntensity: 1.3,
     }),
-    "wraith-blade-1",
+    'wraith-blade-1',
   );
   // the dark inside the hood, and what the Ring shows there
   const voidMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
@@ -214,12 +201,9 @@ export function wraithMaterials(U, { weave, weaveN, env }) {
   });
   // its own pale light, dark in the sockets and hollows
   face.onBeforeCompile = (s) => {
-    s.fragmentShader = s.fragmentShader.replace(
-      "#include <emissivemap_fragment>",
-      "#include <emissivemap_fragment>\ntotalEmissiveRadiance *= vColor;",
-    );
+    s.fragmentShader = s.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance *= vColor;');
   };
-  face.customProgramCacheKey = () => "wraith-face-1";
+  face.customProgramCacheKey = () => 'wraith-face-1';
   const crown = new THREE.MeshStandardMaterial({
     color: 0xa8acb4,
     metalness: 0.8,

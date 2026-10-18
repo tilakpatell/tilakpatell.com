@@ -9,20 +9,15 @@
 export function swayBanner(mat, U) {
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uTime = U.uTime;
-    sh.vertexShader = sh.vertexShader
-      .replace(
-        "#include <common>",
-        "#include <common>\nattribute vec3 aWave;\nuniform float uTime;",
-      )
-      .replace(
-        "#include <begin_vertex>",
-        `#include <begin_vertex>
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec3 aWave;\nuniform float uTime;').replace(
+      '#include <begin_vertex>',
+      `#include <begin_vertex>
       float wk = aWave.x;
       float wv = sin(uTime * 1.9 + aWave.y + wk * 2.6) * 0.65 + sin(uTime * 3.7 + aWave.y * 1.7 + wk * 5.2) * 0.25;
       transformed += objectNormal * wv * wk * aWave.z;`,
-      );
+    );
   };
-  mat.customProgramCacheKey = () => "minas-banner";
+  mat.customProgramCacheKey = () => 'minas-banner';
   return mat;
 }
 
@@ -31,13 +26,12 @@ export function swayBanner(mat, U) {
 // shader paints the front from the atlas by the metre: bays across, storeys
 // up, a door or a window or plain wall in each by the house's own dice, and
 // lights some windows at night (the emissive map is the glass).
-const HOUSE_GLSL =
-  "float hh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }";
+const HOUSE_GLSL = 'float hh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }';
 export function houseShader(mat) {
   mat.onBeforeCompile = (sh) => {
     sh.vertexShader = sh.vertexShader
       .replace(
-        "#include <common>",
+        '#include <common>',
         `#include <common>
         attribute vec3 aOff;
         attribute float aPart;
@@ -50,7 +44,7 @@ export function houseShader(mat) {
         flat varying float vSeed;`,
       )
       .replace(
-        "#include <begin_vertex>",
+        '#include <begin_vertex>',
         `#include <begin_vertex>
         vec3 hsc = vec3(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz), length(instanceMatrix[2].xyz));
         transformed = position + aOff / hsc;
@@ -64,7 +58,7 @@ export function houseShader(mat) {
       );
     sh.fragmentShader = sh.fragmentShader
       .replace(
-        "#include <common>",
+        '#include <common>',
         `#include <common>
         varying vec3 vM;
         varying vec3 vSz;
@@ -74,7 +68,7 @@ export function houseShader(mat) {
         ${HOUSE_GLSL}`,
       )
       .replace(
-        "#include <map_fragment>",
+        '#include <map_fragment>',
         `vec3 qAn = abs(vLN);
         vec2 qFm;
         float qFw;
@@ -107,12 +101,12 @@ export function houseShader(mat) {
         diffuseColor *= texelColor;`,
       )
       .replace(
-        "#include <emissivemap_fragment>",
+        '#include <emissivemap_fragment>',
         `float qLit = step(0.6, hh(qCl * 1.7 + vec2(qSd * 0.53, 3.0))) * (qCol > 1.5 && qCol < 2.5 ? 0.0 : 1.0);
         totalEmissiveRadiance *= textureGrad(emissiveMap, qAuv, dFdx(qGd), dFdy(qGd)).r * qLit;`,
       );
   };
-  mat.customProgramCacheKey = () => "minas-house";
+  mat.customProgramCacheKey = () => 'minas-house';
   return mat;
 }
 
@@ -123,9 +117,9 @@ export function houseShader(mat) {
 export function roofShader(mat, { EAVE, RIDGE }) {
   mat.onBeforeCompile = (sh) => {
     sh.vertexShader = sh.vertexShader
-      .replace("#include <common>", "#include <common>\nattribute vec3 aOff;")
+      .replace('#include <common>', '#include <common>\nattribute vec3 aOff;')
       .replace(
-        "#include <beginnormal_vertex>",
+        '#include <beginnormal_vertex>',
         `#include <beginnormal_vertex>
         vec3 hsc = vec3(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz), length(instanceMatrix[2].xyz));
         if (abs(objectNormal.x) > 0.1 && abs(objectNormal.y) > 0.1) {
@@ -133,7 +127,7 @@ export function roofShader(mat, { EAVE, RIDGE }) {
         }`,
       )
       .replace(
-        "#include <begin_vertex>",
+        '#include <begin_vertex>',
         `#include <begin_vertex>
         transformed = position + aOff / hsc;
         vec3 rm = position * hsc + aOff;
@@ -143,6 +137,6 @@ export function roofShader(mat, { EAVE, RIDGE }) {
         #endif`,
       );
   };
-  mat.customProgramCacheKey = () => "minas-roof";
+  mat.customProgramCacheKey = () => 'minas-roof';
   return mat;
 }

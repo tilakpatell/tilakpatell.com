@@ -10,8 +10,8 @@
 // me (your slot, or null), t }.
 
 import * as THREE from 'three';
-import { createStage, disposeTree, hot } from '../stage';
-import { houseOn } from '../../../lib/three/house';
+import { createStage, disposeTree, hot } from '../nodes/stage';
+import { houseOn } from '../../../lib/three/houseNodes';
 import { pose } from '../mapFigures';
 import { makePerson } from '../shire/people';
 import { B, ball, createShireKit, parts } from '../shire/props';
@@ -25,7 +25,7 @@ import { castDo, castPlay, releaseCast, tickCast } from '../cast3d';
 import { turn as easeYaw } from '../../../lib/three/gait';
 import { RUSH_BLOOM } from './look';
 import { houseGroups } from '../../../lib/three/houseTuning';
-import { ringMaterial } from './sceneShaders';
+import { ringMaterial } from '../nodes/rush/sceneShaders';
 
 const SCALE = 0.92; // the hobbits, to the tiles
 const BIG = 1.7; // things, chunky enough to read from up here

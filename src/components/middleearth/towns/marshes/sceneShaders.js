@@ -2,16 +2,13 @@
 // whole from ./scene.js, and ../../nodes/towns/marshes/sceneShaders.js its
 // twin on the node renderer.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 // The marsh’s water: black, still, a film of scum, the sky dull in it; its
 // sky and deep the town’s water’s own (`water.uniforms`, which the sky writes)
 export function marshMaterial(water) {
   const marshMat = new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([
-      THREE.UniformsLib.fog,
-      { uTime: { value: 0 } },
-    ]),
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 } }]),
     fog: true,
     transparent: false,
     vertexShader: `
@@ -43,6 +40,6 @@ export function marshMaterial(water) {
         #include <fog_fragment>
       }`,
   });
-  for (const k of ["uSky", "uDeep"]) marshMat.uniforms[k] = water.uniforms[k];
+  for (const k of ['uSky', 'uDeep']) marshMat.uniforms[k] = water.uniforms[k];
   return marshMat;
 }

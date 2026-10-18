@@ -6,9 +6,9 @@
 // classic renderer of its own there: its night is the GLSL's, and isn't
 // drawn.) Two Nazgûl in the wind, one hunting with its sword up, by night,
 // through the Ring half on and fully on.
-import * as THREE from "three";
-import { createWraithKit } from "../../../src/components/middleearth/towns/wraiths.js";
-import * as TW from "../../../src/components/middleearth/nodes/towns/wraithsShaders.js";
+import * as THREE from 'three';
+import { createWraithKit } from '../../../src/components/middleearth/towns/wraiths.js';
+import * as TW from '../../../src/components/middleearth/nodes/towns/wraithsShaders.js';
 
 let builder = null;
 
@@ -26,17 +26,12 @@ const nazgul =
         env: TW.nightEnv(renderer),
       });
       setRing = t.setRing;
-      swap = new Map(
-        Object.keys(kit.mats).map((k) => [kit.mats[k], t.mats[k]]),
-      );
+      swap = new Map(Object.keys(kit.mats).map((k) => [kit.mats[k], t.mats[k]]));
     }
     scene.background = new THREE.Color(0x0c1018);
     sun.intensity = 1.2;
     sun.color.set(0xb8c8ff);
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(14, 14).rotateX(-Math.PI / 2),
-      new THREE.MeshStandardMaterial({ color: 0x1c2016, roughness: 0.95 }),
-    );
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(14, 14).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x1c2016, roughness: 0.95 }));
     scene.add(ground);
     const ns = [
       { seed: 1, at: [-0.7, 0, 0], face: -1.2, pose: { sniff: 0.8 } },
@@ -63,15 +58,15 @@ const nazgul =
   };
 
 export default {
-  "middleearth:wraiths:night": {
+  'middleearth:wraiths:night': {
     node: nazgul(true, 0),
     classic: nazgul(false, 0),
   },
-  "middleearth:wraiths:ring-half": {
+  'middleearth:wraiths:ring-half': {
     node: nazgul(true, 0.5),
     classic: nazgul(false, 0.5),
   },
-  "middleearth:wraiths:ring": {
+  'middleearth:wraiths:ring': {
     node: nazgul(true, 1),
     classic: nazgul(false, 1),
   },

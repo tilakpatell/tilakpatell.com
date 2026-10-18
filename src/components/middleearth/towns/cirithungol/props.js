@@ -17,12 +17,12 @@
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
-import { canvasTexture, hot } from '../../../../lib/stage3d';
+import { canvasTexture, hot } from '../../../../lib/three/stage3dNodes';
 import { clamp01, fbm, makeCanvas, makeCells, makeNoise, mix, normalFromField, paintPixels, smooth } from '../../../../lib/paint';
 import { blob, boxUV, createShireKit, parts, rng, tf, tube } from '../../shire/props';
 import { STAIRS } from './rules';
 import { createStride, createTracker, ease } from '../../creatures';
-import { beamMaterial, ghostMaterial, hide, shelobRim, splashMaterial } from './propsShaders';
+import { beamMaterial, ghostMaterial, hide, shelobRim, splashMaterial } from '../../nodes/towns/cirithungol/propsShaders';
 
 const TAU = Math.PI * 2;
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);

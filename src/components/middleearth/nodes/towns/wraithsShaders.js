@@ -13,12 +13,8 @@
 // attribute itself. The tears are the opacity three tests against
 // alphaTest, as the GLSL's own alpha was.
 
-import * as THREE from "three";
-import {
-  MeshBasicNodeMaterial,
-  MeshStandardNodeMaterial,
-  PMREMGenerator,
-} from "three/webgpu";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial, MeshStandardNodeMaterial, PMREMGenerator } from 'three/webgpu';
 import {
   abs,
   attribute,
@@ -48,14 +44,9 @@ import {
   vec2,
   vec3,
   vec4,
-} from "three/tsl";
-import { clamp01, smooth } from "../../../../lib/paint";
-import {
-  follow,
-  onLight,
-  onPosition,
-  wrap,
-} from "../../../../lib/three/hookNodes";
+} from 'three/tsl';
+import { clamp01, smooth } from '../../../../lib/paint';
+import { follow, onLight, onPosition, wrap } from '../../../../lib/three/hookNodes';
 
 // What the steel sees: a dark night with a cold sky over it, a moon high on
 // one side, a warm lit window low on the other, and a long thin light for a
@@ -69,13 +60,8 @@ export function nightEnv(renderer) {
     const k = (p.getY(i) + 10) / 20;
     shade.push(0.012 + k * 0.05, 0.014 + k * 0.06, 0.02 + k * 0.09);
   }
-  walls.setAttribute("color", new THREE.Float32BufferAttribute(shade, 3));
-  room.add(
-    new THREE.Mesh(
-      walls,
-      new MeshBasicNodeMaterial({ vertexColors: true, side: THREE.BackSide }),
-    ),
-  );
+  walls.setAttribute('color', new THREE.Float32BufferAttribute(shade, 3));
+  room.add(new THREE.Mesh(walls, new MeshBasicNodeMaterial({ vertexColors: true, side: THREE.BackSide })));
   const glow = (hex, k, w, h, pos) => {
     const m = new THREE.Mesh(
       new THREE.PlaneGeometry(w, h),
@@ -103,21 +89,20 @@ export function nightEnv(renderer) {
 }
 
 // how much a surface turns from the eye: 1 at its edge, 0 face on
-const edge = (n) =>
-  saturate(abs(dot(normalize(n), normalize(positionView)))).oneMinus();
+const edge = (n) => saturate(abs(dot(normalize(n), normalize(positionView)))).oneMinus();
 
 // The materials every Nazgûl shares, on the uniforms U the kit keeps, and
 // setRing(k) to show them through the Ring.
 export function wraithMaterials(U, { weave, weaveN, env }) {
   const n = {
-    uTime: follow(U.uTime, "float"),
+    uTime: follow(U.uTime, 'float'),
     uWind: follow(U.uWind),
     uTorn: texture(U.uTorn.value),
     uTear: follow(U.uTear),
     uRimColor: follow(U.uRimColor),
-    uRim: follow(U.uRim, "float"),
-    uInner: follow(U.uInner, "float"),
-    uRing: follow(U.uRing, "float"),
+    uRim: follow(U.uRim, 'float'),
+    uInner: follow(U.uInner, 'float'),
+    uRing: follow(U.uRing, 'float'),
     uGhost: follow(U.uGhost),
   };
 
@@ -133,12 +118,12 @@ export function wraithMaterials(U, { weave, weaveN, env }) {
     side: THREE.DoubleSide,
     alphaTest: 0.5,
   });
-  cloth.name = "wraithCloth";
+  cloth.name = 'wraithCloth';
   // (the colour attribute: r how much the wind takes it, g its shade, b its
   // phase)
-  const rig = attribute("color", "vec3");
-  const vCloth = varying(uv(), "vCloth");
-  const vShade = varying(rig.g, "vShade");
+  const rig = attribute('color', 'vec3');
+  const vCloth = varying(uv(), 'vCloth');
+  const vShade = varying(rig.g, 'vShade');
   onPosition(
     cloth,
     (p) => {
@@ -151,85 +136,50 @@ export function wraithMaterials(U, { weave, weaveN, env }) {
         .add(0.65);
       const wind = transpose(mat3(modelWorldMatrix)).mul(n.uWind);
       const across = vec3(wind.z.negate(), 0, wind.x);
-      const a = sin(
-        t
-          .mul(1.3)
-          .add(ph)
-          .add(wp.x.mul(0.6))
-          .add(wp.z.mul(0.45))
-          .add(positionGeometry.y.mul(1.9)),
-      );
-      const b = sin(
-        t
-          .mul(2.1)
-          .add(ph.mul(1.7))
-          .add(positionGeometry.y.mul(3.3))
-          .add(wp.z.mul(0.3)),
-      );
-      const blown = p.add(
-        wind
-          .mul(a.mul(0.45).add(0.55))
-          .mul(gust)
-          .add(across.mul(b).mul(0.5))
-          .mul(w),
-      );
+      const a = sin(t.mul(1.3).add(ph).add(wp.x.mul(0.6)).add(wp.z.mul(0.45)).add(positionGeometry.y.mul(1.9)));
+      const b = sin(t.mul(2.1).add(ph.mul(1.7)).add(positionGeometry.y.mul(3.3)).add(wp.z.mul(0.3)));
+      const blown = p.add(wind.mul(a.mul(0.45).add(0.55)).mul(gust).add(across.mul(b).mul(0.5)).mul(w));
       const st = uv();
       const hem = smoothstep(0, 0.5, st.y).oneMinus();
-      const f = sin(t.mul(6.1).add(st.x.mul(21)).add(ph.mul(3))).add(
-        sin(t.mul(9.3).sub(st.x.mul(37)).add(ph)).mul(0.6),
-      );
+      const f = sin(t.mul(6.1).add(st.x.mul(21)).add(ph.mul(3))).add(sin(t.mul(9.3).sub(st.x.mul(37)).add(ph)).mul(0.6));
       return blown.add(normalGeometry.mul(f.mul(hem).mul(w).mul(0.022)));
     },
-    "wraith-cloth-1",
+    'wraith-cloth-1',
     n,
   );
   // torn: the mask decides (sampled everywhere, chosen after)
-  const tear = texture(
-    U.uTorn.value,
-    vec2(vCloth.x.mul(n.uTear.y), vCloth.y.div(n.uTear.x)),
-  ).r;
+  const tear = texture(U.uTorn.value, vec2(vCloth.x.mul(n.uTear.y), vCloth.y.div(n.uTear.x))).r;
   cloth.opacityNode = select(vCloth.y.lessThan(n.uTear.x), tear, 1);
   wrap(
     cloth,
-    "setupDiffuseColor",
+    'setupDiffuseColor',
     (out, builder) => {
       // the ragged ends are worn thin and greyer
-      diffuseColor.assign(
-        vec4(
-          diffuseColor.rgb.mul(
-            smoothstep(0, n.uTear.x, vCloth.y).oneMinus().mul(0.4).add(1),
-          ),
-          diffuseColor.a,
-        ),
-      );
+      diffuseColor.assign(vec4(diffuseColor.rgb.mul(smoothstep(0, n.uTear.x, vCloth.y).oneMinus().mul(0.4).add(1)), diffuseColor.a));
       // through the Ring, see-through but for the edges
       if (!builder.isOpaque()) {
         const fres = edge(normalViewGeometry);
-        diffuseColor.a.assign(
-          mix(1, fres.mul(fres).mul(0.6).add(0.3), n.uRing),
-        );
+        diffuseColor.a.assign(mix(1, fres.mul(fres).mul(0.6).add(0.3), n.uRing));
       }
       return out;
     },
-    "wraith-cloth-1:alpha",
+    'wraith-cloth-1:alpha',
   );
   // black wool takes little gloss
   wrap(
     cloth,
-    "setupLightingModel",
+    'setupLightingModel',
     (model) => {
       if (!model) return model;
       const finish = model.finish.bind(model);
       model.finish = (builder) => {
         const L = builder.lightsNode;
-        builder.context.outgoingLight.assign(
-          L.totalDiffuseNode.add(L.totalSpecularNode.mul(0.3)),
-        );
+        builder.context.outgoingLight.assign(L.totalDiffuseNode.add(L.totalSpecularNode.mul(0.3)));
         finish(builder);
       };
       return model;
     },
-    "wraith-cloth-1:gloss",
+    'wraith-cloth-1:gloss',
   );
   // a cold rim, stronger where the cloth faces the sky
   {
@@ -238,25 +188,19 @@ export function wraithMaterials(U, { weave, weaveN, env }) {
     const upV = normalize(cameraViewMatrix.mul(vec4(0, 1, 0, 0)).xyz);
     const sky = saturate(dot(gn, upV).mul(0.5).add(0.5)).mul(0.7).add(0.3);
     const fr2 = fr.mul(fr);
-    cloth.emissiveNode = materialEmissive.add(
-      n.uRimColor.mul(fr2.mul(fr2).mul(n.uRim).mul(sky)),
-    );
+    cloth.emissiveNode = materialEmissive.add(n.uRimColor.mul(fr2.mul(fr2).mul(n.uRim).mul(sky)));
   }
   // folds and the hood's dark; the inside of the cloth darker; the Ring's pale glow
   onLight(
     cloth,
     (light) => {
       const shadeK = mix(vShade, vShade.mul(0.7).add(0.3), n.uRing);
-      const lit = light.mul(
-        shadeK.mul(select(frontFacing, 1, mix(n.uInner, 0.8, n.uRing))),
-      );
+      const lit = light.mul(shadeK.mul(select(frontFacing, 1, mix(n.uInner, 0.8, n.uRing))));
       const fr = edge(normalView);
-      const ghost = n.uGhost.mul(
-        shadeK.mul(0.22).add(0.07).add(fr.mul(fr).mul(fr).mul(0.8)),
-      );
+      const ghost = n.uGhost.mul(shadeK.mul(0.22).add(0.07).add(fr.mul(fr).mul(fr).mul(0.8)));
       return mix(lit, ghost.add(lit.mul(1.5)), n.uRing);
     },
-    "wraith-cloth-1:ring",
+    'wraith-cloth-1:ring',
   );
   cloth.uniforms = n;
 
@@ -266,9 +210,7 @@ export function wraithMaterials(U, { weave, weaveN, env }) {
       m,
       (light) => {
         const fr = edge(normalView);
-        const pale = n.uGhost
-          .mul(fr.mul(fr).mul(0.7).add(0.18))
-          .add(light.mul(1.4));
+        const pale = n.uGhost.mul(fr.mul(fr).mul(0.7).add(0.18)).add(light.mul(1.4));
         return mix(light, pale, n.uRing.mul(0.85));
       },
       key,
@@ -282,7 +224,7 @@ export function wraithMaterials(U, { weave, weaveN, env }) {
       envMap: env,
       envMapIntensity: 1.1,
     }),
-    "wraith-steel-1",
+    'wraith-steel-1',
   );
   const blade = silver(
     new MeshStandardNodeMaterial({
@@ -292,7 +234,7 @@ export function wraithMaterials(U, { weave, weaveN, env }) {
       envMap: env,
       envMapIntensity: 1.3,
     }),
-    "wraith-blade-1",
+    'wraith-blade-1',
   );
   // the dark inside the hood, and what the Ring shows there
   const voidMat = new MeshBasicNodeMaterial({ color: 0x000000 });
@@ -306,7 +248,7 @@ export function wraithMaterials(U, { weave, weaveN, env }) {
     visible: false,
   });
   // its own pale light, dark in the sockets and hollows
-  face.emissiveNode = materialEmissive.mul(attribute("color", "vec3"));
+  face.emissiveNode = materialEmissive.mul(attribute('color', 'vec3'));
   // (One original bug kept, so the two draw alike: the GLSL's
   // `totalEmissiveRadiance *= vColor` no longer compiles, three's vColor
   // being a vec4 now, so the classic face is never drawn. Its fix,

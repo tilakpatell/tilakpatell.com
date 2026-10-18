@@ -4,8 +4,8 @@
 // and the splashes ringing out on the ground about you, seen from above,
 // some just born and some fading. Math.random seeded for each side (the
 // streaks’ seeds and the splashes’ places both draw from it).
-import * as RO from "../../../src/components/middleearth/towns/rain.js";
-import * as RN from "../../../src/components/middleearth/nodes/towns/rain.js";
+import * as RO from '../../../src/components/middleearth/towns/rain.js';
+import * as RN from '../../../src/components/middleearth/nodes/towns/rain.js';
 
 const seeded = (fn) => {
   const real = Math.random;
@@ -48,13 +48,13 @@ const splashes =
   };
 
 export default {
-  "middleearth:rain:streaks": {
+  'middleearth:rain:streaks': {
     node: streaks(RN, 1),
     classic: streaks(RO, 1),
   },
-  "middleearth:rain:light": {
+  'middleearth:rain:light': {
     node: streaks(RN, 0.4),
     classic: streaks(RO, 0.4),
   },
-  "middleearth:rain:splashes": { node: splashes(RN), classic: splashes(RO) },
+  'middleearth:rain:splashes': { node: splashes(RN), classic: splashes(RO) },
 };

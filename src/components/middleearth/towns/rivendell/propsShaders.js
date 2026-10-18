@@ -3,7 +3,7 @@
 // lands, with the uniforms the three share. ../../nodes/towns/rivendell/
 // propsShaders.js is its twin on the node renderer, the same names.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 // The uniforms a waterfall’s three materials share: the scene’s fog, the
 // clock, the light on it, its deep colour, how bright, how far it falls

@@ -4,7 +4,7 @@
 // ./folk.js's (its "the host of Rohan" says what each holds).
 // ../../nodes/towns/edoras/folkShaders.js is the same on the node renderer.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 const RIG_HEAD = /* glsl */ `
 uniform float uTime;
@@ -64,17 +64,11 @@ export function hostMaterial(uniforms) {
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, uniforms);
     sh.vertexShader = sh.vertexShader
-      .replace("#include <common>", "#include <common>\n" + RIG_HEAD)
-      .replace(
-        "#include <color_vertex>",
-        "#include <color_vertex>\n" + RIG_PAINT,
-      )
-      .replace(
-        "#include <begin_vertex>",
-        "#include <begin_vertex>\n" + RIG_MOVE,
-      );
+      .replace('#include <common>', '#include <common>\n' + RIG_HEAD)
+      .replace('#include <color_vertex>', '#include <color_vertex>\n' + RIG_PAINT)
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\n' + RIG_MOVE);
   };
-  m.customProgramCacheKey = () => "edoras-host";
+  m.customProgramCacheKey = () => 'edoras-host';
   return m;
 }
 // The banner's cloth waves (aRig.y how far out from the pole); with `bob`,
@@ -87,11 +81,9 @@ export function bannerMaterial(uniforms, bob) {
   });
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, uniforms);
-    sh.vertexShader = sh.vertexShader
-      .replace("#include <common>", "#include <common>\n" + RIG_HEAD)
-      .replace(
-        "#include <begin_vertex>",
-        `#include <begin_vertex>
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\n' + RIG_HEAD).replace(
+      '#include <begin_vertex>',
+      `#include <begin_vertex>
 {
   float u = aRig.y;
   float seed = hostSeed();
@@ -100,9 +92,9 @@ export function bannerMaterial(uniforms, bob) {
   transformed.y += sin(uTime * 2.1 - u * 3.0 + seed * 3.0) * 0.05 * u * w;
   transformed.x += (cos(uTime * 3.0 - u * 4.0) * 0.04 - 0.03) * u * w;
 }
-${bob ? RIG_MOVE : ""}`,
-      );
+${bob ? RIG_MOVE : ''}`,
+    );
   };
-  m.customProgramCacheKey = () => (bob ? "edoras-banner-bob" : "edoras-banner");
+  m.customProgramCacheKey = () => (bob ? 'edoras-banner-bob' : 'edoras-banner');
   return m;
 }

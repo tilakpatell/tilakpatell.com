@@ -10,8 +10,8 @@
 // same as the chunks drew), and the lava's fog is the scene's fog on a
 // node material (fog: true).
 
-import * as THREE from "three";
-import { MeshBasicNodeMaterial } from "three/webgpu";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
 import {
   Fn,
   Loop,
@@ -39,27 +39,20 @@ import {
   vec2,
   vec3,
   vec4,
-} from "three/tsl";
-import { particlePool } from "../kitParts";
-import { wrap } from "../../../lib/three/hookNodes";
+} from 'three/tsl';
+import { particlePool } from '../kitParts';
+import { wrap } from '../../../lib/three/hookNodes';
 
-export * from "../kitParts";
+export * from '../kitParts';
 
 // ../kit.js's GLSL_NOISE: a value noise and five octaves of it
-const hash = Fn(
-  ([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)),
-  "float",
-);
+const hash = Fn(([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)), 'float');
 const noise = Fn(([p]) => {
   const i = floor(p);
   const f0 = fract(p);
   const f = f0.mul(f0).mul(f0.mul(-2).add(3));
-  return mix(
-    mix(hash(i), hash(i.add(vec2(1, 0))), f.x),
-    mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x),
-    f.y,
-  );
-}, "float");
+  return mix(mix(hash(i), hash(i.add(vec2(1, 0))), f.x), mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x), f.y);
+}, 'float');
 export const fbm = Fn(([p0]) => {
   const p = vec2(p0).toVar();
   const a = float(0.5).toVar();
@@ -70,16 +63,11 @@ export const fbm = Fn(([p0]) => {
     a.mulAssign(0.5);
   });
   return s;
-}, "float");
+}, 'float');
 
 // Molten rock, flowing slowly: a dark crust, bright in the channels, and
 // hottest round `spot` (x, z).
-export function lavaMaterial({
-  scale = 0.07,
-  heat = 1,
-  spot = [0, 0],
-  reach = 0.004,
-} = {}) {
+export function lavaMaterial({ scale = 0.07, heat = 1, spot = [0, 0], reach = 0.004 } = {}) {
   const uniforms = {
     uTime: uniform(0),
     uScale: uniform(scale),
@@ -88,7 +76,7 @@ export function lavaMaterial({
     uReach: uniform(reach),
   };
   const mat = new MeshBasicNodeMaterial({ fog: true });
-  const world = varying(positionWorld, "vWorld");
+  const world = varying(positionWorld, 'vWorld');
   const p = world.xz.mul(uniforms.uScale);
   const flow = vec2(uniforms.uTime.mul(0.02), uniforms.uTime.mul(0.012));
   const w = fbm(p.mul(1.5).add(flow));
@@ -100,32 +88,16 @@ export function lavaMaterial({
   );
   const crack = smoothstep(0.44, 0.6, n);
   const core = smoothstep(0.6, 0.78, n);
-  const col = mix(
-    mix(vec3(0.03, 0.01, 0.006), vec3(1.5, 0.3, 0.04), crack),
-    vec3(3, 1.35, 0.3),
-    core,
-  );
+  const col = mix(mix(vec3(0.03, 0.01, 0.006), vec3(1.5, 0.3, 0.04), crack), vec3(3, 1.35, 0.3), core);
   const d = world.xz.sub(uniforms.uSpot);
-  mat.colorNode = col
-    .mul(exp(dot(d, d).mul(uniforms.uReach).negate()).mul(0.95).add(0.5))
-    .mul(uniforms.uHeat);
+  mat.colorNode = col.mul(exp(dot(d, d).mul(uniforms.uReach).negate()).mul(0.95).add(0.5)).mul(uniforms.uHeat);
   mat.uniforms = uniforms;
   return mat;
 }
 
 // What is behind everything: three colours up the sky, and (for Mordor)
 // slow cloud lit from underneath towards `glow`.
-export function skyDome(
-  radius,
-  {
-    top = 0x020101,
-    horizon = 0x120704,
-    bottom = 0x7a2408,
-    cloud = 0,
-    glow = [1, 0, 0],
-    glowColor = 0xff5a14,
-  } = {},
-) {
+export function skyDome(radius, { top = 0x020101, horizon = 0x120704, bottom = 0x7a2408, cloud = 0, glow = [1, 0, 0], glowColor = 0xff5a14 } = {}) {
   const uniforms = {
     uTop: uniform(new THREE.Color(top)),
     uHorizon: uniform(new THREE.Color(horizon)),
@@ -142,14 +114,10 @@ export function skyDome(
     fog: false,
   });
   const u = uniforms;
-  const dir = varying(normalize(positionLocal), "vDir");
+  const dir = varying(normalize(positionLocal), 'vDir');
   mat.colorNode = Fn(() => {
     const d = normalize(dir);
-    const col = select(
-      d.y.greaterThan(0),
-      mix(u.uHorizon, u.uTop, pow(max(d.y, 0), 0.55)),
-      mix(u.uHorizon, u.uBottom, pow(max(d.y.negate(), 0), 0.7)),
-    ).toVar();
+    const col = select(d.y.greaterThan(0), mix(u.uHorizon, u.uTop, pow(max(d.y, 0), 0.55)), mix(u.uHorizon, u.uBottom, pow(max(d.y.negate(), 0), 0.7))).toVar();
     const p = d.xz.div(abs(d.y).add(0.22));
     const c0 = fbm(p.mul(1.4).add(vec2(u.uTime.mul(0.012), 0)));
     const c = smoothstep(
@@ -163,14 +131,8 @@ export function skyDome(
       ),
     );
     const near = pow(max(0, dot(d, u.uGlowDir)), 3);
-    const lit = mix(u.uHorizon.mul(1.6), u.uGlow, near).mul(
-      c.mul(0.65).add(0.35),
-    );
-    const cloudy = mix(
-      col,
-      lit,
-      u.uCloud.mul(smoothstep(-0.02, 0.2, d.y)).mul(c.mul(0.65).add(0.35)),
-    )
+    const lit = mix(u.uHorizon.mul(1.6), u.uGlow, near).mul(c.mul(0.65).add(0.35));
+    const cloudy = mix(col, lit, u.uCloud.mul(smoothstep(-0.02, 0.2, d.y)).mul(c.mul(0.65).add(0.35)))
       .add(u.uGlow.mul(near).mul(near).mul(0.35))
       .add(
         vec3(0.8, 0.75, 1)
@@ -198,23 +160,10 @@ const particleMaterial = ({ stretch, additive }) => {
     blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
     fog: false,
   });
-  const at = attribute("aAt", "vec4");
-  const color = attribute("aColor", "vec4");
-  wrap(
-    mat,
-    "setupPositionView",
-    () =>
-      modelViewMatrix
-        .mul(vec4(at.xyz, 1))
-        .xyz.add(
-          vec3(
-            positionGeometry.xy.mul(at.w).mul(vec2(1, uniforms.uStretch)),
-            0,
-          ),
-        ),
-    "middleearth:particles",
-  );
-  const vUv = varying(positionGeometry.xy, "vUv");
+  const at = attribute('aAt', 'vec4');
+  const color = attribute('aColor', 'vec4');
+  wrap(mat, 'setupPositionView', () => modelViewMatrix.mul(vec4(at.xyz, 1)).xyz.add(vec3(positionGeometry.xy.mul(at.w).mul(vec2(1, uniforms.uStretch)), 0)), 'middleearth:particles');
+  const vUv = varying(positionGeometry.xy, 'vUv');
   const a = smoothstep(1, 0, length(vUv).mul(2));
   mat.colorNode = color.rgb;
   mat.opacityNode = a.mul(a).mul(color.a);
@@ -222,5 +171,4 @@ const particleMaterial = ({ stretch, additive }) => {
   return mat;
 };
 
-export const createParticles = (max, opts) =>
-  particlePool(particleMaterial, max, opts);
+export const createParticles = (max, opts) => particlePool(particleMaterial, max, opts);

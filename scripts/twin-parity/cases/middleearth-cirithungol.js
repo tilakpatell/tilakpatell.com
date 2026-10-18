@@ -4,15 +4,10 @@
 // on both sides from the same arguments: the kit’s shared uniforms (a clock
 // part way on, the noise picture as the kit paints it), Minas Morgul’s
 // (the glow up, the beam climbing or full), and pictures for the hides.
-import * as THREE from "three";
-import * as PO from "../../../src/components/middleearth/towns/cirithungol/propsShaders.js";
-import * as PN from "../../../src/components/middleearth/nodes/towns/cirithungol/propsShaders.js";
-import {
-  fbm,
-  makeCanvas,
-  makeNoise,
-  paintPixels,
-} from "../../../src/lib/paint.js";
+import * as THREE from 'three';
+import * as PO from '../../../src/components/middleearth/towns/cirithungol/propsShaders.js';
+import * as PN from '../../../src/components/middleearth/nodes/towns/cirithungol/propsShaders.js';
+import { fbm, makeCanvas, makeNoise, paintPixels } from '../../../src/lib/paint.js';
 
 // a picture of three noises, one a channel, tiling
 const picture = (seeds, scales, S = 128) => {
@@ -37,8 +32,7 @@ const morgulU = (beam = 1) => ({
   uNoise: { value: picture([3, 17, 29], [4, 8, 2]) },
   uGhost: { value: new THREE.Color(0.3, 1.0, 0.46) },
 });
-const M = (o) =>
-  new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, ...o });
+const M = (o) => new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, ...o });
 
 // ── the hides ──
 
@@ -60,7 +54,7 @@ const hide =
             scale: 1.7,
             bump: 1.2,
             shade: 0.5,
-            key: "cirith-shelob",
+            key: 'cirith-shelob',
             ...P.shelobRim(),
           },
         )
@@ -70,12 +64,9 @@ const hide =
           scale: 3.2,
           bump: 0.8,
           shade: 0.4,
-          key: "cirith-orc",
+          key: 'cirith-orc',
         });
-    const knot = new THREE.Mesh(
-      new THREE.TorusKnotGeometry(1.4, 0.55, 160, 24),
-      mat,
-    );
+    const knot = new THREE.Mesh(new THREE.TorusKnotGeometry(1.4, 0.55, 160, 24), mat);
     knot.rotation.set(0.3, 0.5, 0);
     knot.scale.setScalar(1.1);
     scene.add(knot);
@@ -105,7 +96,7 @@ const ghost =
         const k = 0.6 + 0.4 * Math.sin(p.getX(i) * 0.3 + p.getY(i) * 0.2);
         c.push(k, k * 1.05, k);
       }
-      g.setAttribute("color", new THREE.Float32BufferAttribute(c, 3));
+      g.setAttribute('color', new THREE.Float32BufferAttribute(c, 3));
       return new THREE.Mesh(g, mat);
     });
     scene.add(...parts);
@@ -124,14 +115,7 @@ const beam =
       [1.0, 1.6, { k: 0.8, core: 1.7, edge: 2.6 }],
       [2.6, 4.2, { k: 0.14, core: 0.8, edge: 1.6 }],
     ]) {
-      const m = new THREE.Mesh(
-        new THREE.CylinderGeometry(r1, r0, H, 20, 1, true).translate(
-          0,
-          H / 2,
-          0,
-        ),
-        P.beamMaterial(U, o),
-      );
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, H, 20, 1, true).translate(0, H / 2, 0), P.beamMaterial(U, o));
       m.renderOrder = 7;
       scene.add(m);
     }
@@ -144,10 +128,7 @@ const splash =
   (P) =>
   ({ scene, camera }) => {
     const U = morgulU(0.9);
-    const s = new THREE.Mesh(
-      new THREE.CircleGeometry(20, 32).rotateX(Math.PI / 2),
-      P.splashMaterial(U),
-    );
+    const s = new THREE.Mesh(new THREE.CircleGeometry(20, 32).rotateX(Math.PI / 2), P.splashMaterial(U));
     s.position.y = 12;
     scene.add(s);
     scene.background = new THREE.Color(0x0a0c0e);
@@ -158,10 +139,10 @@ const splash =
 const both = (f, ...a) => ({ node: f(PN, ...a), classic: f(PO, ...a) });
 
 export default {
-  "middleearth:cirithungol:hide:orc": both(hide, false),
-  "middleearth:cirithungol:hide:shelob": both(hide, true),
-  "middleearth:cirithungol:ghost": both(ghost),
-  "middleearth:cirithungol:beam:rising": both(beam, 0.4),
-  "middleearth:cirithungol:beam:full": both(beam, 1),
-  "middleearth:cirithungol:splash": both(splash),
+  'middleearth:cirithungol:hide:orc': both(hide, false),
+  'middleearth:cirithungol:hide:shelob': both(hide, true),
+  'middleearth:cirithungol:ghost': both(ghost),
+  'middleearth:cirithungol:beam:rising': both(beam, 0.4),
+  'middleearth:cirithungol:beam:full': both(beam, 1),
+  'middleearth:cirithungol:splash': both(splash),
 };

@@ -14,8 +14,8 @@
 // material and give back its node twin (asNode): the caller uses what
 // comes back.
 
-import * as THREE from "three";
-import { MeshBasicNodeMaterial, PointsNodeMaterial } from "three/webgpu";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial, PointsNodeMaterial } from 'three/webgpu';
 import {
   Discard,
   Fn,
@@ -51,13 +51,8 @@ import {
   vec3,
   vec4,
   vertexColor,
-} from "three/tsl";
-import {
-  asNode,
-  keyed,
-  onNormal,
-  wrap,
-} from "../../../../../lib/three/hookNodes";
+} from 'three/tsl';
+import { asNode, keyed, onNormal, wrap } from '../../../../../lib/three/hookNodes';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
@@ -65,25 +60,17 @@ const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const wHash = Fn(([p0]) => {
   const p = fract(p0.mul(0.3183099).add(0.1)).mul(17);
   return fract(p.x.mul(p.y).mul(p.z).mul(p.x.add(p.y).add(p.z)));
-}, "float");
+}, 'float');
 const wNoise = Fn(([x]) => {
   const i = floor(x);
   const f0 = fract(x);
   const f = f0.mul(f0).mul(f0.mul(-2).add(3));
   return mix(
-    mix(
-      mix(wHash(i), wHash(i.add(vec3(1, 0, 0))), f.x),
-      mix(wHash(i.add(vec3(0, 1, 0))), wHash(i.add(vec3(1, 1, 0))), f.x),
-      f.y,
-    ),
-    mix(
-      mix(wHash(i.add(vec3(0, 0, 1))), wHash(i.add(vec3(1, 0, 1))), f.x),
-      mix(wHash(i.add(vec3(0, 1, 1))), wHash(i.add(vec3(1, 1, 1))), f.x),
-      f.y,
-    ),
+    mix(mix(wHash(i), wHash(i.add(vec3(1, 0, 0))), f.x), mix(wHash(i.add(vec3(0, 1, 0))), wHash(i.add(vec3(1, 1, 0))), f.x), f.y),
+    mix(mix(wHash(i.add(vec3(0, 0, 1))), wHash(i.add(vec3(1, 0, 1))), f.x), mix(wHash(i.add(vec3(0, 1, 1))), wHash(i.add(vec3(1, 1, 1))), f.x), f.y),
     f.z,
   );
-}, "float");
+}, 'float');
 const wFbm = Fn(([p0]) => {
   const p = vec3(p0).toVar();
   const s = float(0).toVar();
@@ -94,7 +81,7 @@ const wFbm = Fn(([p0]) => {
     a.mulAssign(0.5);
   });
   return s;
-}, "float");
+}, 'float');
 
 // The water a flood horse is made of: clear and dark where you look into
 // it, bright at its edges, streaked with foam that runs up it, lit by the
@@ -111,27 +98,15 @@ export function floodWaterMaterial() {
     depthWrite: false,
     fog: true,
   });
-  const aWave = attribute("aWave", "float");
+  const aWave = attribute('aWave', 'float');
   // the surface churns: pushed in and out, the bumps running upward
-  const c = wFbm(
-    positionGeometry.mul(1.6).add(vec3(0, u.uTime.mul(-1.8), u.uTime.mul(0.4))),
-  );
-  const p = positionGeometry.add(
-    normalGeometry.mul(c.sub(0.5)).mul(mix(0.1, 0.3, aWave)),
-  );
-  const vLocal = varying(positionGeometry, "vLocal");
-  const vWave = varying(aWave, "vWave");
-  const vWorld = varying(modelWorldMatrix.mul(vec4(p, 1)).xyz, "vWorld");
-  const vNormalW = varying(
-    normalize(modelWorldMatrix.mul(vec4(normalGeometry, 0)).xyz),
-    "vNormalW",
-  );
-  wrap(
-    mat,
-    "setupPositionView",
-    () => modelViewMatrix.mul(vec4(p, 1)).xyz,
-    "middleearth:flood-water",
-  );
+  const c = wFbm(positionGeometry.mul(1.6).add(vec3(0, u.uTime.mul(-1.8), u.uTime.mul(0.4))));
+  const p = positionGeometry.add(normalGeometry.mul(c.sub(0.5)).mul(mix(0.1, 0.3, aWave)));
+  const vLocal = varying(positionGeometry, 'vLocal');
+  const vWave = varying(aWave, 'vWave');
+  const vWorld = varying(modelWorldMatrix.mul(vec4(p, 1)).xyz, 'vWorld');
+  const vNormalW = varying(normalize(modelWorldMatrix.mul(vec4(normalGeometry, 0)).xyz), 'vNormalW');
+  wrap(mat, 'setupPositionView', () => modelViewMatrix.mul(vec4(p, 1)).xyz, 'middleearth:flood-water');
   const shade = Fn(() => {
     const above = vWorld.y.sub(u.uWater);
     Discard(above.lessThan(0));
@@ -140,24 +115,16 @@ export function floodWaterMaterial() {
     const facing = abs(dot(n, v));
     const fres = pow(facing.oneMinus(), 2.5);
     // foam: long streaks running up the form, and boiling patches
-    const q = vLocal
-      .mul(vec3(1.6, 0.5, 1.6))
-      .add(vec3(0, u.uTime.mul(-1.6), 0));
+    const q = vLocal.mul(vec3(1.6, 0.5, 1.6)).add(vec3(0, u.uTime.mul(-1.6), 0));
     const streak = abs(wFbm(q).mul(2).sub(1)).oneMinus();
-    const boil = wFbm(
-      vLocal.mul(3.4).add(vec3(u.uTime.mul(0.3), u.uTime.mul(-2.4), 0)),
-    );
+    const boil = wFbm(vLocal.mul(3.4).add(vec3(u.uTime.mul(0.3), u.uTime.mul(-2.4), 0)));
     const foam = smoothstep(0.8, 0.96, streak)
       .mul(0.7)
       .add(smoothstep(0.64, 0.8, boil).mul(0.5))
       .toVar();
     // the wave: white only along its curling lip, and where it meets the river
-    const lip = vWave
-      .mul(smoothstep(1.35, 1.9, vLocal.y))
-      .mul(smoothstep(-0.6, 0.4, vLocal.x));
-    foam.assign(
-      mix(foam, foam.mul(0.8).add(lip.mul(smoothstep(0.3, 0.55, boil))), vWave),
-    );
+    const lip = vWave.mul(smoothstep(1.35, 1.9, vLocal.y)).mul(smoothstep(-0.6, 0.4, vLocal.x));
+    foam.assign(mix(foam, foam.mul(0.8).add(lip.mul(smoothstep(0.3, 0.55, boil))), vWave));
     // (smoothstep(0.3, 0.0, above), falling: one less the rising)
     foam.addAssign(smoothstep(0, 0.3, above).oneMinus().mul(0.7));
     foam.assign(clamp(foam, 0, 1));
@@ -165,9 +132,7 @@ export function floodWaterMaterial() {
     const deep = vec3(0.01, 0.04, 0.07);
     const body = vec3(0.16, 0.32, 0.44).mul(lit);
     const col = mix(deep, body, fres.mul(0.75).add(0.25)).toVar();
-    col.assign(
-      mix(col, vec3(0.82, 0.9, 0.98).mul(lit.mul(0.4).add(0.65)), foam),
-    );
+    col.assign(mix(col, vec3(0.82, 0.9, 0.98).mul(lit.mul(0.4).add(0.65)), foam));
     col.addAssign(
       vec3(0.4, 0.62, 0.8)
         .mul(fres)
@@ -197,20 +162,14 @@ export function churnMaterial() {
     depthWrite: false,
     fog: true,
   });
-  const vLocal = varying(positionGeometry, "vLocal");
+  const vLocal = varying(positionGeometry, 'vLocal');
   const shade = Fn(() => {
     const p = vLocal.xz;
     const r = length(p.mul(vec2(0.55, 0.42)));
     const ang = atan(p.y, p.x);
-    const f = wFbm(
-      vec3(p.mul(1.6).add(vec2(u.uTime.mul(-1.2), 0)), u.uTime.mul(0.7)),
-    );
-    const g = wFbm(
-      vec3(ang.mul(2), r.mul(3).sub(u.uTime.mul(1.5)), u.uTime.mul(0.4)),
-    );
-    const foam = smoothstep(0.42, 0.7, f.mul(0.6).add(g.mul(0.5))).mul(
-      smoothstep(0.55, 1.35, r).oneMinus(),
-    );
+    const f = wFbm(vec3(p.mul(1.6).add(vec2(u.uTime.mul(-1.2), 0)), u.uTime.mul(0.7)));
+    const g = wFbm(vec3(ang.mul(2), r.mul(3).sub(u.uTime.mul(1.5)), u.uTime.mul(0.4)));
+    const foam = smoothstep(0.42, 0.7, f.mul(0.6).add(g.mul(0.5))).mul(smoothstep(0.55, 1.35, r).oneMinus());
     const a = foam.mul(u.uRise).mul(0.6);
     Discard(a.lessThan(0.01));
     return vec4(vec3(0.75, 0.85, 0.95).mul(foam.mul(0.4).add(0.6)), a);
@@ -238,20 +197,12 @@ export function sprayPoints(pg) {
     toneMapped: false,
     sizeAttenuation: false,
   });
-  const at = (name) =>
-    instancedBufferAttribute(
-      new THREE.InstancedBufferAttribute(
-        pg.getAttribute(name).array,
-        pg.getAttribute(name).itemSize,
-      ),
-    );
-  const aSeed = at("aSeed");
-  const aFrom = at("aFrom");
-  const aVel = at("aVel");
+  const at = (name) => instancedBufferAttribute(new THREE.InstancedBufferAttribute(pg.getAttribute(name).array, pg.getAttribute(name).itemSize));
+  const aSeed = at('aSeed');
+  const aFrom = at('aFrom');
+  const aVel = at('aVel');
   const life = fract(u.uTime.mul(aSeed.w.mul(0.5).add(0.45)).add(aSeed.x));
-  const p0 = aFrom
-    .add(aVel.mul(life).mul(aSeed.y.mul(0.8).add(0.6)))
-    .add(vec3(0, -2.6, 0).mul(life).mul(life));
+  const p0 = aFrom.add(aVel.mul(life).mul(aSeed.y.mul(0.8).add(0.6))).add(vec3(0, -2.6, 0).mul(life).mul(life));
   const p = vec3(
     p0.x,
     p0.y,
@@ -262,12 +213,12 @@ export function sprayPoints(pg) {
     ),
   );
   mat.positionNode = p;
-  const vY = varying(modelWorldMatrix.mul(vec4(p, 1)).y, "vY");
+  const vY = varying(modelWorldMatrix.mul(vec4(p, 1)).y, 'vY');
   const mvz = modelViewMatrix.mul(vec4(p, 1)).z;
   const size = mix(0.05, 0.34, life).mul(aSeed.z.add(0.45));
   // gl_PointSize, in the canvas’s pixels (three’s sprite multiplies by the DPR again)
   mat.sizeNode = size.mul(u.uScale).div(max(0.5, mvz.negate())).div(screenDPR);
-  const vFade = varying(sin(life.mul(3.14159)).mul(u.uRise), "vFade");
+  const vFade = varying(sin(life.mul(3.14159)).mul(u.uRise), 'vFade');
   mat.colorNode = vec3(0.85, 0.95, 1.05);
   mat.opacityNode = Fn(() => {
     Discard(vY.lessThan(u.uWater));
@@ -279,7 +230,7 @@ export function sprayPoints(pg) {
   })();
   mat.uniforms = u;
   const spray = new THREE.Sprite(mat);
-  spray.count = pg.getAttribute("aSeed").count;
+  spray.count = pg.getAttribute('aSeed').count;
   return spray;
 }
 
@@ -288,12 +239,12 @@ export function sprayPoints(pg) {
 export function emberGlow(m) {
   const n = asNode(m);
   if (n.vertexColors) n.emissiveNode = materialEmissive.mul(vertexColor().rgb);
-  return keyed(n, "wt-ember");
+  return keyed(n, 'wt-ember');
 }
 
 // hair in ribbons, lit by the normals it was given from either side (the
 // view normal unturned on a back face; the GLSL dropped the same flip)
 export function hairBothSides(m) {
   const n = asNode(m);
-  return onNormal(n, () => normalViewGeometry, "wt-hair");
+  return onNormal(n, () => normalViewGeometry, 'wt-hair');
 }

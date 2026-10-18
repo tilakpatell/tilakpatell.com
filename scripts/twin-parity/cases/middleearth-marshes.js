@@ -3,11 +3,11 @@
 // nodes/towns/marshes/. The black water in its fog; the drowned faces in
 // the open, and under an opaque pool, whose depth they’re tested at as if
 // higher, so they show through it.
-import * as THREE from "three";
-import * as PO from "../../../src/components/middleearth/towns/marshes/propsShaders.js";
-import * as PN from "../../../src/components/middleearth/nodes/towns/marshes/propsShaders.js";
-import * as SO from "../../../src/components/middleearth/towns/marshes/sceneShaders.js";
-import * as SN from "../../../src/components/middleearth/nodes/towns/marshes/sceneShaders.js";
+import * as THREE from 'three';
+import * as PO from '../../../src/components/middleearth/towns/marshes/propsShaders.js';
+import * as PN from '../../../src/components/middleearth/nodes/towns/marshes/propsShaders.js';
+import * as SO from '../../../src/components/middleearth/towns/marshes/sceneShaders.js';
+import * as SN from '../../../src/components/middleearth/nodes/towns/marshes/sceneShaders.js';
 
 const water =
   (S) =>
@@ -22,12 +22,7 @@ const water =
     };
     const m = S.marshMaterial(w);
     m.uniforms.uTime.value = 6;
-    scene.add(
-      new THREE.Mesh(
-        new THREE.PlaneGeometry(120, 120).rotateX(-Math.PI / 2),
-        m,
-      ),
-    );
+    scene.add(new THREE.Mesh(new THREE.PlaneGeometry(120, 120).rotateX(-Math.PI / 2), m));
     camera.position.set(0, 1.6, 6);
     camera.lookAt(0, 0, -4);
   };
@@ -41,17 +36,11 @@ const facePicture = () => {
       const u = x / S - 0.5;
       const v = y / S - 0.5;
       const oval = Math.max(0, 1 - Math.hypot(u / 0.3, v / 0.38));
-      const eye = Math.min(
-        Math.hypot(u - 0.1, v - 0.06),
-        Math.hypot(u + 0.1, v - 0.06),
-      );
+      const eye = Math.min(Math.hypot(u - 0.1, v - 0.06), Math.hypot(u + 0.1, v - 0.06));
       const mouth = Math.hypot(u / 2, v + 0.17);
       const dark = eye < 0.05 || mouth < 0.04 ? 0.25 : 1;
       const k = Math.round(220 * dark);
-      data.set(
-        [k, k, Math.round(k * 0.95), Math.round(Math.min(1, oval * 3) * 255)],
-        (y * S + x) * 4,
-      );
+      data.set([k, k, Math.round(k * 0.95), Math.round(Math.min(1, oval * 3) * 255)], (y * S + x) * 4);
     }
   const t = new THREE.DataTexture(data, S, S);
   t.magFilter = t.minFilter = THREE.LinearFilter;
@@ -70,10 +59,7 @@ const faceGeo = () => {
     const oval = Math.max(0, 1 - Math.hypot(u / 0.26, v / 0.33));
     let h = Math.sqrt(oval) * 0.06;
     h += Math.exp(-((u / 0.035) ** 2) - (v / 0.08) ** 2) * 0.02;
-    h -=
-      Math.exp(
-        -(((Math.abs(u) - 0.09) / 0.05) ** 2) - ((v - 0.03) / 0.035) ** 2,
-      ) * 0.015;
+    h -= Math.exp(-(((Math.abs(u) - 0.09) / 0.05) ** 2) - ((v - 0.03) / 0.035) ** 2) * 0.015;
     h -= Math.exp(-((u / 0.06) ** 2) - ((v + 0.19) / 0.03) ** 2) * 0.01;
     p.setZ(i, h);
   }
@@ -103,10 +89,7 @@ const faces =
       scene.add(mesh);
     });
     if (pool) {
-      const top = new THREE.Mesh(
-        new THREE.PlaneGeometry(6, 6).rotateX(-Math.PI / 2),
-        new THREE.MeshLambertMaterial({ color: 0x1a2018 }),
-      );
+      const top = new THREE.Mesh(new THREE.PlaneGeometry(6, 6).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x1a2018 }));
       top.position.y = -0.2;
       scene.add(top);
     }
@@ -117,7 +100,7 @@ const faces =
 const both = (f, P, Q, ...a) => ({ node: f(Q, ...a), classic: f(P, ...a) });
 
 export default {
-  "middleearth:marshes:water": both(water, SO, SN),
-  "middleearth:marshes:faces": both(faces, PO, PN, false),
-  "middleearth:marshes:faces:pool": both(faces, PO, PN, true),
+  'middleearth:marshes:water': both(water, SO, SN),
+  'middleearth:marshes:faces': both(faces, PO, PN, false),
+  'middleearth:marshes:faces:pool': both(faces, PO, PN, true),
 };

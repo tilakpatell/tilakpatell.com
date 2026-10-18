@@ -2,14 +2,11 @@
 // ../../nodes/towns/amonhen/sceneShaders.js can be its twin on the node
 // renderer. `water` is the scene’s: what the sky writes for water to read.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 export function lakeMaterial(water) {
   const lakeMat = new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([
-      THREE.UniformsLib.fog,
-      { uTime: { value: 0 } },
-    ]),
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 } }]),
     fog: true,
     vertexShader: `
       #include <fog_pars_vertex>
@@ -40,7 +37,6 @@ export function lakeMaterial(water) {
         #include <fog_fragment>
       }`,
   });
-  for (const k of ["uSky", "uDeep", "uSun", "uSunColor"])
-    lakeMat.uniforms[k] = water.uniforms[k];
+  for (const k of ['uSky', 'uDeep', 'uSun', 'uSunColor']) lakeMat.uniforms[k] = water.uniforms[k];
   return lakeMat;
 }

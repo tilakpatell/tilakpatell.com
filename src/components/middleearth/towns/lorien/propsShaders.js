@@ -4,7 +4,7 @@
 // names. Each takes what it reads (the uniforms, the material it patches)
 // and returns what ./props.js uses.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 const NOISE_GLSL = `
   float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
@@ -239,11 +239,8 @@ export function mirrorWaterMaterial(uniforms) {
 // colours, so a crown is luminous gold rather than lit lumps.
 export function glowByColour(m) {
   m.onBeforeCompile = (sh) => {
-    sh.fragmentShader = sh.fragmentShader.replace(
-      "#include <emissivemap_fragment>",
-      "#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance *= vColor.rgb;\n#endif",
-    );
+    sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance *= vColor.rgb;\n#endif');
   };
-  m.customProgramCacheKey = () => "lorien-glow";
+  m.customProgramCacheKey = () => 'lorien-glow';
   return m;
 }

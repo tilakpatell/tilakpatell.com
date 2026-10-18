@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest";
-import * as THREE from "three";
-import { MeshStandardNodeMaterial } from "three/webgpu";
-import * as glsl from "../../shire/propsShaders";
-import * as nodes from "./propsShaders";
+import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
+import { MeshStandardNodeMaterial } from 'three/webgpu';
+import * as glsl from '../../shire/propsShaders';
+import * as nodes from './propsShaders';
 
-describe("nodes/shire/propsShaders, the twin of the props’ GLSL", () => {
-  it("exports what the original exports", () => {
+describe('nodes/shire/propsShaders, the twin of the props’ GLSL', () => {
+  it('exports what the original exports', () => {
     expect(Object.keys(nodes).sort()).toEqual(Object.keys(glsl).sort());
   });
 
@@ -14,7 +14,7 @@ describe("nodes/shire/propsShaders, the twin of the props’ GLSL", () => {
     const m = nodes.flowerTint(classic);
     expect(m.isNodeMaterial).toBe(true);
     expect(m.vertexColors).toBe(true);
-    expect(m.customProgramCacheKey()).toContain("flowerTint");
+    expect(m.customProgramCacheKey()).toContain('flowerTint');
     // (the same twin for the same classic material, as a later swap finds it)
     expect(nodes.flowerTint(classic).isNodeMaterial).toBe(true);
   });
@@ -24,12 +24,12 @@ describe("nodes/shire/propsShaders, the twin of the props’ GLSL", () => {
     const m = new MeshStandardNodeMaterial();
     m.setupDiffuseColor = function (builder) {
       seen.push(builder.object.instanceColor);
-      return "own";
+      return 'own';
     };
     nodes.flowerTint(m);
     // (no instance colours: three's own, untouched)
     const plain = { instanceColor: null };
-    expect(m.setupDiffuseColor({ object: plain })).toBe("own");
+    expect(m.setupDiffuseColor({ object: plain })).toBe('own');
     const colours = new THREE.InstancedBufferAttribute(new Float32Array(3), 3);
     const object = { instanceColor: colours };
     try {

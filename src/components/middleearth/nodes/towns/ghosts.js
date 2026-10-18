@@ -36,27 +36,14 @@
 // motion, still walks, and walks in step with where it goes), it strikes
 // the emotes it's sent, and this draws it each frame (it's no town's).
 
-import * as THREE from "three";
-import {
-  MeshBasicNodeMaterial,
-  MeshStandardNodeMaterial,
-  SpriteNodeMaterial,
-} from "three/webgpu";
-import {
-  abs,
-  dot,
-  materialEmissive,
-  normalView,
-  normalize,
-  positionView,
-  pow,
-  vec3,
-} from "three/tsl";
-import { pose } from "../../mapFigures";
-import { makePerson } from "../../shire/people";
-import { sharpen } from "../../../../lib/three/textures";
-import { seeded } from "../../../../lib/seeded";
-import { applyEmote, heardEmote, readEmote } from "../../../../lib/emote";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial, MeshStandardNodeMaterial, SpriteNodeMaterial } from 'three/webgpu';
+import { abs, dot, materialEmissive, normalView, normalize, positionView, pow, vec3 } from 'three/tsl';
+import { pose } from '../../mapFigures';
+import { makePerson } from '../../shire/people';
+import { sharpen } from '../../../../lib/three/textures';
+import { seeded } from '../../../../lib/seeded';
+import { applyEmote, heardEmote, readEmote } from '../../../../lib/emote';
 
 // a traveller's id as a number, so each starts their stride somewhere of
 // their own (and the same somewhere every visit)
@@ -85,28 +72,26 @@ function ghostMaterial() {
   const rim = abs(dot(normalize(normalView), normalize(positionView)))
     .oneMinus()
     .max(0);
-  m.emissiveNode = materialEmissive.add(
-    vec3(0.55, 0.7, 1.0).mul(pow(rim, 2.2)).mul(1.6),
-  );
+  m.emissiveNode = materialEmissive.add(vec3(0.55, 0.7, 1.0).mul(pow(rim, 2.2)).mul(1.6));
   return m;
 }
 
 // a name, on a little card that faces the camera
 function nameTag(name, size = 0.42) {
-  const c = document.createElement("canvas");
-  const g = c.getContext("2d");
-  const font = "600 30px system-ui, sans-serif";
+  const c = document.createElement('canvas');
+  const g = c.getContext('2d');
+  const font = '600 30px system-ui, sans-serif';
   g.font = font;
   const w = Math.ceil(g.measureText(name).width) + 28;
   c.width = w;
   c.height = 44;
   g.font = font;
-  g.fillStyle = "rgba(20, 28, 52, 0.62)";
+  g.fillStyle = 'rgba(20, 28, 52, 0.62)';
   g.beginPath();
   g.roundRect(0, 0, w, 44, 12);
   g.fill();
-  g.fillStyle = "#e6eeff";
-  g.textBaseline = "middle";
+  g.fillStyle = '#e6eeff';
+  g.textBaseline = 'middle';
   g.fillText(name, 14, 23);
   const tex = new THREE.CanvasTexture(c);
   sharpen(tex);
@@ -124,16 +109,9 @@ function nameTag(name, size = 0.42) {
   return sp;
 }
 
-export function createGhosts({
-  height = () => 0,
-  make: build = () => makePerson("frodo"),
-  animate = (f, t, p) => pose(f, t, { moving: p.moving }),
-  tag: tagSize = 0.42,
-  halo: haloSize = 1,
-  snap = 8,
-} = {}) {
+export function createGhosts({ height = () => 0, make: build = () => makePerson('frodo'), animate = (f, t, p) => pose(f, t, { moving: p.moving }), tag: tagSize = 0.42, halo: haloSize = 1, snap = 8 } = {}) {
   const group = new THREE.Group();
-  group.name = "travellers";
+  group.name = 'travellers';
   const ringGeo = new THREE.RingGeometry(0.28, 0.44, 28).rotateX(-Math.PI / 2);
   const ghosts = new Map();
 
@@ -258,21 +236,12 @@ export function createGhosts({
         animate(g.f, g.clock, emote || p.emote ? { ...p, emote } : p, dt);
         const c = g.f.cast;
         if (c) {
-          if (c.ready)
-            g.shown = applyEmote(
-              { play: c.play, stop: c.stop, anim: c.body?.anim },
-              emote,
-              g.shown ?? null,
-            );
+          if (c.ready) g.shown = applyEmote({ play: c.play, stop: c.stop, anim: c.body?.anim }, emote, g.shown ?? null);
           c.tick(dt);
         }
-        const shimmer =
-          0.85 +
-          Math.sin(t * 2.6 + g.x) * 0.08 +
-          Math.sin(t * 7.1 + g.z) * 0.04;
+        const shimmer = 0.85 + Math.sin(t * 2.6 + g.x) * 0.08 + Math.sin(t * 7.1 + g.z) * 0.04;
         g.mat.opacity = 0.42 * g.fade * shimmer;
-        g.halo.material.opacity =
-          0.5 * g.fade * (0.7 + Math.sin(t * 3 + g.z) * 0.3);
+        g.halo.material.opacity = 0.5 * g.fade * (0.7 + Math.sin(t * 3 + g.z) * 0.3);
         g.tag.material.opacity = 0.95 * g.fade;
         g.root.visible = g.fade > 0.02;
       }

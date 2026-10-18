@@ -4,7 +4,7 @@
 // names. Each takes what it reads (the shared uniforms U, the material it
 // patches) and returns what ./props.js uses.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 // Detail laid on a creature's hide in its own space (no texture
 // coordinates needed): a picture and its normal map sampled from three
@@ -12,19 +12,7 @@ import * as THREE from "three";
 // the colour and its blue darkens it; the normal map raises bumps and
 // creases. `extra` adds to the fragment once the normal is done (glows,
 // rims); it can read hs (the picture) and hN (the surface's own normal).
-export function hide(
-  m,
-  {
-    tex,
-    nrm,
-    scale = 1,
-    bump = 1,
-    shade = 0.3,
-    extra = "",
-    uniforms = {},
-    key,
-  },
-) {
+export function hide(m, { tex, nrm, scale = 1, bump = 1, shade = 0.3, extra = '', uniforms = {}, key }) {
   m.onBeforeCompile = (s) => {
     s.uniforms.uHideTex = { value: tex };
     s.uniforms.uHideNrm = { value: nrm };
@@ -33,36 +21,15 @@ export function hide(
     Object.assign(s.uniforms, uniforms);
     const decl = Object.keys(uniforms).map((k) => {
       const v = uniforms[k].value;
-      const t = v?.isTexture
-        ? "sampler2D"
-        : v?.isColor || v?.isVector3
-          ? "vec3"
-          : v?.isVector2
-            ? "vec2"
-            : "float";
+      const t = v?.isTexture ? 'sampler2D' : v?.isColor || v?.isVector3 ? 'vec3' : v?.isVector2 ? 'vec2' : 'float';
       return `uniform ${t} ${k};`;
     });
-    s.vertexShader =
-      "varying vec3 vHideP;\nvarying vec3 vHideN;\n" +
-      s.vertexShader.replace(
-        "#include <begin_vertex>",
-        "#include <begin_vertex>\nvHideP = position;\nvHideN = normal;",
-      );
+    s.vertexShader = 'varying vec3 vHideP;\nvarying vec3 vHideN;\n' + s.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvHideP = position;\nvHideN = normal;');
     s.fragmentShader =
-      [
-        "uniform sampler2D uHideTex;",
-        "uniform sampler2D uHideNrm;",
-        "uniform float uHideScale;",
-        "uniform float uHideBump;",
-        "uniform mat3 normalMatrix;",
-        "varying vec3 vHideP;",
-        "varying vec3 vHideN;",
-        ...decl,
-        "",
-      ].join("\n") +
+      ['uniform sampler2D uHideTex;', 'uniform sampler2D uHideNrm;', 'uniform float uHideScale;', 'uniform float uHideBump;', 'uniform mat3 normalMatrix;', 'varying vec3 vHideP;', 'varying vec3 vHideN;', ...decl, ''].join('\n') +
       s.fragmentShader
         .replace(
-          "#include <color_fragment>",
+          '#include <color_fragment>',
           `#include <color_fragment>
         vec3 hN = normalize(vHideN);
         vec3 hw = pow(abs(hN), vec3(4.0));
@@ -72,7 +39,7 @@ export function hide(
         diffuseColor.rgb *= (1.0 - ${shade.toFixed(3)} * (0.5 - hs.g) * 2.0) * (1.0 - hs.b * 0.55);`,
         )
         .replace(
-          "#include <normal_fragment_maps>",
+          '#include <normal_fragment_maps>',
           `#include <normal_fragment_maps>
         {
           vec3 tX = texture2D(uHideNrm, hp.zy).xyz * 2.0 - 1.0;
@@ -85,10 +52,7 @@ export function hide(
           normal = normalize(normal + normalMatrix * (nObj - hN));
         }`,
         )
-        .replace(
-          "#include <emissivemap_fragment>",
-          `#include <emissivemap_fragment>\n${extra}`,
-        );
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n${extra}`);
   };
   m.customProgramCacheKey = () => key;
   return m;
@@ -109,16 +73,11 @@ export function ghostMaterial(U) {
     s.uniforms.uGlow = U.uGlow;
     s.uniforms.uNoise = U.uNoise;
     s.uniforms.uGhost = U.uGhost;
-    s.vertexShader =
-      "varying vec3 vGhP;\n" +
-      s.vertexShader.replace(
-        "#include <begin_vertex>",
-        "#include <begin_vertex>\nvGhP = position;",
-      );
+    s.vertexShader = 'varying vec3 vGhP;\n' + s.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvGhP = position;');
     s.fragmentShader =
-      "uniform float uTime;\nuniform float uGlow;\nuniform sampler2D uNoise;\nuniform vec3 uGhost;\nvarying vec3 vGhP;\n" +
+      'uniform float uTime;\nuniform float uGlow;\nuniform sampler2D uNoise;\nuniform vec3 uGhost;\nvarying vec3 vGhP;\n' +
       s.fragmentShader.replace(
-        "#include <emissivemap_fragment>",
+        '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
       {
         vec3 gV = normalize(vViewPosition);
@@ -134,7 +93,7 @@ export function ghostMaterial(U) {
       }`,
       );
   };
-  m.customProgramCacheKey = () => "cirith-ghost";
+  m.customProgramCacheKey = () => 'cirith-ghost';
   return m;
 }
 
@@ -207,8 +166,7 @@ export function splashMaterial(U) {
     depthWrite: false,
     side: THREE.DoubleSide,
     blending: THREE.AdditiveBlending,
-    vertexShader:
-      "varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: `
       uniform float uTime;
       uniform float uBeam;

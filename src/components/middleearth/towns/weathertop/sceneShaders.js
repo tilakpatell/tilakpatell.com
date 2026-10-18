@@ -2,7 +2,7 @@
 // ../../nodes/towns/weathertop/sceneShaders.js can be its twin on the node
 // renderer. `water` is the scene’s: what the sky writes for water to read.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 export function riverMaterial(water) {
   const riverMat = new THREE.ShaderMaterial({
@@ -56,7 +56,6 @@ export function riverMaterial(water) {
       }`,
   });
   // (merge copies its uniforms: the sky's water colours are shared back in)
-  for (const k of ["uSky", "uDeep", "uSun", "uSunColor"])
-    riverMat.uniforms[k] = water.uniforms[k];
+  for (const k of ['uSky', 'uDeep', 'uSun', 'uSunColor']) riverMat.uniforms[k] = water.uniforms[k];
   return riverMat;
 }

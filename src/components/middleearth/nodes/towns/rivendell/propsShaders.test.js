@@ -1,20 +1,20 @@
-import * as THREE from "three";
-import { describe, expect, it } from "vitest";
-import * as glsl from "../../../towns/rivendell/propsShaders";
-import * as nodes from "./propsShaders";
+import * as THREE from 'three';
+import { describe, expect, it } from 'vitest';
+import * as glsl from '../../../towns/rivendell/propsShaders';
+import * as nodes from './propsShaders';
 
 const valueOf = (v) => (v?.toArray ? v.toArray() : v);
 const own = (u) =>
   Object.keys(u)
-    .filter((k) => k.startsWith("u"))
+    .filter((k) => k.startsWith('u'))
     .sort();
 
-describe("nodes/towns/rivendell/propsShaders, the twin of the falls’ shaders", () => {
-  it("exports what the original exports", () => {
+describe('nodes/towns/rivendell/propsShaders, the twin of the falls’ shaders', () => {
+  it('exports what the original exports', () => {
     expect(Object.keys(nodes).sort()).toEqual(Object.keys(glsl).sort());
   });
 
-  it("shares uniform nodes under the GLSL’s names and values", () => {
+  it('shares uniform nodes under the GLSL’s names and values', () => {
     const a = glsl.waterfallUniforms();
     const n = nodes.waterfallUniforms();
     expect(Object.keys(n).sort()).toEqual(own(a));
@@ -24,15 +24,11 @@ describe("nodes/towns/rivendell/propsShaders, the twin of the falls’ shaders",
     }
   });
 
-  it("makes node materials with the GLSL’s uniforms, sharing the kit’s", () => {
+  it('makes node materials with the GLSL’s uniforms, sharing the kit’s', () => {
     const map = new THREE.Texture();
     const U = glsl.waterfallUniforms();
     const N = nodes.waterfallUniforms();
-    const make = [
-      (P, u) => P.fallMaterial(u),
-      (P, u) => P.mistMaterial(u, map),
-      (P, u) => P.foamMaterial(u, 4),
-    ];
+    const make = [(P, u) => P.fallMaterial(u), (P, u) => P.mistMaterial(u, map), (P, u) => P.foamMaterial(u, 4)];
     for (const f of make) {
       const a = f(glsl, U);
       const n = f(nodes, N);
@@ -47,17 +43,11 @@ describe("nodes/towns/rivendell/propsShaders, the twin of the falls’ shaders",
         }
       }
       // (fog as the GLSL had it, tone mapped as its chunk was)
-      expect([
-        n.transparent,
-        n.depthWrite,
-        n.side,
-        n.fog,
-        n.toneMapped,
-      ]).toEqual([a.transparent, a.depthWrite, a.side, true, true]);
+      expect([n.transparent, n.depthWrite, n.side, n.fog, n.toneMapped]).toEqual([a.transparent, a.depthWrite, a.side, true, true]);
     }
   });
 
-  it("follows a plain { value } handed in instead", () => {
+  it('follows a plain { value } handed in instead', () => {
     const U = glsl.waterfallUniforms();
     const n = nodes.fallMaterial(U);
     U.uTime.value = 7;

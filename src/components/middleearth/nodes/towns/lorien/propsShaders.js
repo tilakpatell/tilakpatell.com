@@ -19,8 +19,8 @@
 //   function is declared only in the first program it is built into, and
 //   the painting is the Mirror’s own.
 
-import * as THREE from "three";
-import { MeshBasicNodeMaterial } from "three/webgpu";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
 import {
   Fn,
   abs,
@@ -53,13 +53,8 @@ import {
   vec3,
   vec4,
   vertexColor,
-} from "three/tsl";
-import {
-  asNode,
-  follow,
-  keyed,
-  wrap,
-} from "../../../../../lib/three/hookNodes";
+} from 'three/tsl';
+import { asNode, follow, keyed, wrap } from '../../../../../lib/three/hookNodes';
 
 // One uniform node a { value } of the kit’s, so every water reading it
 // shares it.
@@ -74,15 +69,8 @@ const fall = (a, b, x) => smoothstep(b, a, x).oneMinus();
 const sq = (x) => x.mul(x);
 
 // The GLSL’s vertex: the mesh’s own position into view, nothing else moving it.
-const rawVertex = (m, tag) =>
-  wrap(
-    m,
-    "setupPositionView",
-    () => modelViewMatrix.mul(vec4(positionGeometry, 1)).xyz,
-    tag,
-  );
-const worldOf = () =>
-  varying(modelWorldMatrix.mul(vec4(positionGeometry, 1)).xyz, "vWorld");
+const rawVertex = (m, tag) => wrap(m, 'setupPositionView', () => modelViewMatrix.mul(vec4(positionGeometry, 1)).xyz, tag);
+const worldOf = () => varying(modelWorldMatrix.mul(vec4(positionGeometry, 1)).xyz, 'vWorld');
 
 // ── NOISE_GLSL ──
 
@@ -90,17 +78,13 @@ const hash = Fn(([p0]) => {
   const p1 = fract(p0.mul(vec2(123.34, 456.21)));
   const p = p1.add(dot(p1, p1.add(45.32)));
   return fract(p.x.mul(p.y));
-}, "float");
+}, 'float');
 const vnoise = Fn(([p]) => {
   const i = floor(p);
   const f0 = fract(p);
   const f = f0.mul(f0).mul(f0.mul(-2).add(3));
-  return mix(
-    mix(hash(i), hash(i.add(vec2(1, 0))), f.x),
-    mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x),
-    f.y,
-  );
-}, "float");
+  return mix(mix(hash(i), hash(i.add(vec2(1, 0))), f.x), mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x), f.y);
+}, 'float');
 const fbm2 = Fn(([p0]) => {
   let s = float(0);
   let p = p0;
@@ -111,7 +95,7 @@ const fbm2 = Fn(([p0]) => {
     a *= 0.5;
   }
   return s;
-}, "float");
+}, 'float');
 
 // Still water in a basin seen from above, for the fountains: clear and
 // green-dark where you look into it, the gold light of the wood on it at
@@ -124,7 +108,7 @@ export function basinWaterMaterial(uniforms) {
     depthWrite: false,
     fog: true,
   });
-  rawVertex(m, "lorien:basin");
+  rawVertex(m, 'lorien:basin');
   const vWorld = worldOf();
   const t = u.uTime;
   const night = u.uNight;
@@ -138,19 +122,7 @@ export function basinWaterMaterial(uniforms) {
   const n = vnoise(p.mul(6).add(vec2(t.mul(0.3), t.mul(-0.2))));
   const deep = mix(vec3(0.12, 0.2, 0.17), vec3(0.01, 0.03, 0.07), night);
   const sky = mix(vec3(1.0, 0.9, 0.62), vec3(0.32, 0.46, 0.75), night);
-  const col = mix(
-    deep,
-    sky,
-    clamp(
-      fres
-        .mul(0.65)
-        .add(0.12)
-        .add(ring.mul(0.12).mul(r.oneMinus()))
-        .add(n.sub(0.5).mul(0.12)),
-      0,
-      1,
-    ),
-  );
+  const col = mix(deep, sky, clamp(fres.mul(0.65).add(0.12).add(ring.mul(0.12).mul(r.oneMinus())).add(n.sub(0.5).mul(0.12)), 0, 1));
   m.colorNode = col.add(
     vec3(1)
       .mul(smoothstep(0.82, 0.98, ring.mul(n)))
@@ -172,25 +144,19 @@ export function fallSheetMaterial(uniforms) {
     side: THREE.DoubleSide,
     fog: true,
   });
-  rawVertex(m, "lorien:fall");
+  rawVertex(m, 'lorien:fall');
   const t = u.uTime;
   const night = u.uNight;
   const vUv = uv();
   const s = vnoise(vec2(vUv.x.mul(60), vUv.y.mul(4).add(t.mul(3))))
     .mul(0.6)
-    .add(
-      vnoise(vec2(vUv.x.mul(140).add(3), vUv.y.mul(9).add(t.mul(4.5)))).mul(
-        0.4,
-      ),
-    );
+    .add(vnoise(vec2(vUv.x.mul(140).add(3), vUv.y.mul(9).add(t.mul(4.5)))).mul(0.4));
   const white = smoothstep(0.45, 0.85, s).add(fall(0.25, 0, vUv.y).mul(0.6));
   const a = white
     .mul(0.5)
     .add(0.14)
     .mul(smoothstep(0, 0.06, vUv.y));
-  const col0 = mix(vec3(0.72, 0.84, 0.86), vec3(1.0, 0.98, 0.92), white).mul(
-    mix(1, 0.45, night),
-  );
+  const col0 = mix(vec3(0.72, 0.84, 0.86), vec3(1.0, 0.98, 0.92), white).mul(mix(1, 0.45, night));
   m.colorNode = mix(col0, col0.mul(vec3(0.7, 0.85, 1.25)), night);
   m.opacityNode = a;
   m.uniforms = u;
@@ -201,14 +167,8 @@ export function fallSheetMaterial(uniforms) {
 
 // the night sky as still water holds it, Earendil bright in the west
 const starsOf = Fn(([q, t]) => {
-  let col = mix(
-    vec3(0.05, 0.09, 0.2),
-    vec3(0.008, 0.015, 0.05),
-    smoothstep(0, 1.1, length(q)),
-  );
-  const band = exp(sq(q.y.sub(q.x.mul(0.5)).mul(2.6)).negate()).mul(
-    fbm2(q.mul(4)).mul(0.6).add(0.4),
-  );
+  let col = mix(vec3(0.05, 0.09, 0.2), vec3(0.008, 0.015, 0.05), smoothstep(0, 1.1, length(q)));
+  const band = exp(sq(q.y.sub(q.x.mul(0.5)).mul(2.6)).negate()).mul(fbm2(q.mul(4)).mul(0.6).add(0.4));
   col = col.add(vec3(0.12, 0.14, 0.24).mul(band).mul(0.6));
   for (let L = 0; L < 2; L++) {
     const g = q.mul(L === 0 ? 14 : 30);
@@ -237,7 +197,7 @@ const starsOf = Fn(([q, t]) => {
         .add(fall(0.3, 0, e).mul(0.35)),
     ),
   );
-}, "vec3");
+}, 'vec3');
 
 // the lidless Eye: an almond of fire, its iris streaked gold and red
 // raying out from a black slit, flames licking out all round it
@@ -253,11 +213,7 @@ const eyeOf = Fn(([q, t]) => {
   const fire = fall(reach, reach.sub(0.4), rr).mul(inside.oneMinus());
   const col = vec3(0.03, 0, 0)
     .add(
-      mix(
-        vec3(1.1, 0.12, 0.01),
-        vec3(2.0, 0.62, 0.08),
-        smoothstep(0.2, 0.8, f2),
-      )
+      mix(vec3(1.1, 0.12, 0.01), vec3(2.0, 0.62, 0.08), smoothstep(0.2, 0.8, f2))
         .mul(fire)
         .mul(f2.add(0.45)),
     )
@@ -271,11 +227,7 @@ const eyeOf = Fn(([q, t]) => {
         ),
     );
   const streak = fbm2(vec2(ang.mul(12), rr.mul(2).sub(t.mul(0.5))));
-  const iris0 = mix(
-    vec3(1.5, 0.3, 0.03),
-    vec3(2.4, 1.4, 0.35),
-    fall(0.3, 0, abs(q.x)),
-  ).mul(streak.mul(0.9).add(0.45));
+  const iris0 = mix(vec3(1.5, 0.3, 0.03), vec3(2.4, 1.4, 0.35), fall(0.3, 0, abs(q.x))).mul(streak.mul(0.9).add(0.45));
   const pw = max(sq(q.y.div(0.38)).oneMinus(), 0).mul(0.055);
   const pupil = fall(pw.add(0.012), pw.sub(0.006), abs(q.x));
   const iris = mix(iris0, vec3(0), pupil).add(
@@ -285,19 +237,16 @@ const eyeOf = Fn(([q, t]) => {
       .mul(step(abs(q.y), 0.36)),
   );
   return mix(col, iris, inside);
-}, "vec3");
+}, 'vec3');
 
 // the Shire burning: the painting, its fires flickering, its smoke
 // drifting (where in the painting, then what the fire does to it)
 const shireUv = Fn(([q, t]) => {
-  const w = vec2(
-    vnoise(q.mul(3).add(vec2(t.mul(0.2), 0))),
-    vnoise(q.mul(3).add(vec2(0, t.mul(0.17)))),
-  ).sub(0.5);
+  const w = vec2(vnoise(q.mul(3).add(vec2(t.mul(0.2), 0))), vnoise(q.mul(3).add(vec2(0, t.mul(0.17))))).sub(0.5);
   const at = q.mul(0.5).add(0.5).add(w.mul(0.012));
   const y = at.y.add(smoothstep(0.55, 1, at.y).mul(w.x).mul(0.02));
   return clamp(vec2(at.x, y), 0, 1);
-}, "vec2");
+}, 'vec2');
 const shireHot = Fn(([c, q, t]) => {
   const hot = smoothstep(0.15, 0.6, c.r.sub(c.b.mul(1.2)));
   return c
@@ -311,7 +260,7 @@ const shireHot = Fn(([c, q, t]) => {
         .add(1),
     )
     .mul(1.4);
-}, "vec3");
+}, 'vec3');
 
 // The Mirror's water: dark and still, a sheen of the wood's light (or the
 // night's) across it at a glancing angle, the faintest rings moving on it.
@@ -327,7 +276,7 @@ export function mirrorWaterMaterial(uniforms) {
     uShire: texture(uniforms.uShire.value),
   };
   const m = new MeshBasicNodeMaterial({ fog: true });
-  rawVertex(m, "lorien:mirror");
+  rawVertex(m, 'lorien:mirror');
   const vWorld = worldOf();
   const t = u.uTime;
   const night = u.uNight;
@@ -342,29 +291,14 @@ export function mirrorWaterMaterial(uniforms) {
     .add(0.5);
   const deep = mix(vec3(0.05, 0.07, 0.07), vec3(0.008, 0.016, 0.04), night);
   const sheen = mix(vec3(0.92, 0.86, 0.66), vec3(0.42, 0.58, 0.9), night);
-  const col0 = mix(
-    deep,
-    sheen,
-    clamp(
-      fres
-        .mul(0.75)
-        .add(0.06)
-        .add(drift.sub(0.5).mul(0.15))
-        .add(ring.mul(0.025)),
-      0,
-      1,
-    ),
-  );
+  const col0 = mix(deep, sheen, clamp(fres.mul(0.75).add(0.06).add(drift.sub(0.5).mul(0.15)).add(ring.mul(0.025)), 0, 1));
   // the vision swirls up out of the middle
   const k = clamp(u.uK, 0, 1);
   const sw = k.oneMinus().mul(4.5).mul(r.oneMinus());
   const cs = cos(sw);
   const sn = sin(sw);
   // (mat2(cs, -sn, sn, cs) * p, its columns written out)
-  const q0 = vec2(
-    cs.mul(p.x).add(sn.mul(p.y)),
-    cs.mul(p.y).sub(sn.mul(p.x)),
-  ).mul(mix(1.9, 1, k));
+  const q0 = vec2(cs.mul(p.x).add(sn.mul(p.y)), cs.mul(p.y).sub(sn.mul(p.x))).mul(mix(1.9, 1, k));
   const q = q0.add(
     vec2(vnoise(p.mul(3).add(t.mul(0.4))), vnoise(p.mul(3).sub(t.mul(0.37))))
       .sub(0.5)
@@ -374,13 +308,9 @@ export function mirrorWaterMaterial(uniforms) {
   const shire = shireHot(u.uShire.sample(shireUv(q, t)).rgb, q, t);
   // (each vision held in a variable before the select: called inside its
   // branches, the stars and the Shire drew as the bare water)
-  const stars = starsOf(q, t).toVar("stars");
-  const eye = eyeOf(q, t).toVar("eye");
-  const vis = select(
-    u.uKind.lessThan(0.5),
-    stars,
-    select(u.uKind.lessThan(1.5), eye, shire.toVar("shire")),
-  );
+  const stars = starsOf(q, t).toVar('stars');
+  const eye = eyeOf(q, t).toVar('eye');
+  const vis = select(u.uKind.lessThan(0.5), stars, select(u.uKind.lessThan(1.5), eye, shire.toVar('shire')));
   const mk = smoothstep(
     0,
     0.3,
@@ -394,9 +324,7 @@ export function mirrorWaterMaterial(uniforms) {
       ),
   );
   // darker where the water meets the silver
-  m.colorNode = mix(col0, vis, mk.mul(k)).mul(
-    mix(1, 0.55, smoothstep(0.8, 1, r)),
-  );
+  m.colorNode = mix(col0, vis, mk.mul(k)).mul(mix(1, 0.55, smoothstep(0.8, 1, r)));
   m.uniforms = u;
   return m;
 }
@@ -409,5 +337,5 @@ export function glowByColour(m0) {
   const m = asNode(m0);
   // (#ifdef USE_COLOR: the vertex colours are on)
   if (m.vertexColors) m.emissiveNode = materialEmissive.mul(vertexColor().rgb);
-  return keyed(m, "lorien-glow");
+  return keyed(m, 'lorien-glow');
 }

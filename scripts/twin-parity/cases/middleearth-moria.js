@@ -5,17 +5,12 @@
 // way on, the staff’s light out, the moon on the ithildin, the fire up, some
 // rage) and a noise picture painted as the kit paints its own; fog where
 // the shader takes it, so the additive glows’ fading is drawn too.
-import * as THREE from "three";
-import * as PO from "../../../src/components/middleearth/towns/moria/propsShaders.js";
-import * as PN from "../../../src/components/middleearth/nodes/towns/moria/propsShaders.js";
-import * as SO from "../../../src/components/middleearth/towns/moria/sceneShaders.js";
-import * as SN from "../../../src/components/middleearth/nodes/towns/moria/sceneShaders.js";
-import {
-  fbm,
-  makeCanvas,
-  makeNoise,
-  paintPixels,
-} from "../../../src/lib/paint.js";
+import * as THREE from 'three';
+import * as PO from '../../../src/components/middleearth/towns/moria/propsShaders.js';
+import * as PN from '../../../src/components/middleearth/nodes/towns/moria/propsShaders.js';
+import * as SO from '../../../src/components/middleearth/towns/moria/sceneShaders.js';
+import * as SN from '../../../src/components/middleearth/nodes/towns/moria/sceneShaders.js';
+import { fbm, makeCanvas, makeNoise, paintPixels } from '../../../src/lib/paint.js';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
@@ -60,8 +55,7 @@ const fogged = (scene, near = 3, far = 26) => {
   scene.fog = new THREE.Fog(0x0a0e18, near, far);
   scene.background = new THREE.Color(0x0a0e18);
 };
-const M = (o) =>
-  new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, ...o });
+const M = (o) => new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, ...o });
 
 // ── the hooks ──
 
@@ -76,12 +70,9 @@ const reveal =
         map: picture([5, 7, 9], [8, 8, 8]),
       }),
       U,
-      "moria-reveal",
+      'moria-reveal',
     );
-    const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(30, 30).rotateX(-Math.PI / 2),
-      mat,
-    );
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30).rotateX(-Math.PI / 2), mat);
     scene.add(floor);
     const box = new THREE.BoxGeometry(1.2, 14, 1.2).translate(0, 7, 0);
     const at = [
@@ -125,7 +116,7 @@ const hide =
           scale: 0.3,
           bump: 1.3,
           shade: 0.45,
-          key: "moria-balrog",
+          key: 'moria-balrog',
           ...P.balrogFire(U),
         })
       : P.hide(base, {
@@ -134,12 +125,9 @@ const hide =
           scale: 0.9,
           bump: 0.9,
           shade: 0.35,
-          key: "moria-troll",
+          key: 'moria-troll',
         });
-    const knot = new THREE.Mesh(
-      new THREE.TorusKnotGeometry(1.4, 0.55, 160, 24),
-      mat,
-    );
+    const knot = new THREE.Mesh(new THREE.TorusKnotGeometry(1.4, 0.55, 160, 24), mat);
     knot.rotation.set(0.3, 0.5, 0);
     knot.scale.setScalar(1.1);
     scene.add(knot);
@@ -151,17 +139,10 @@ const underglow =
   (P) =>
   ({ scene, camera, renderer }) => {
     const { U } = kit(renderer);
-    const mat = P.underglow(
-      M({ color: 0x5a6060, roughness: 0.7 }),
-      U,
-      "moria-abyss",
-    );
+    const mat = P.underglow(M({ color: 0x5a6060, roughness: 0.7 }), U, 'moria-abyss');
     // a span over the deep and a pier going down into it, seen from below
     const deck = new THREE.Mesh(new THREE.BoxGeometry(14, 0.8, 2), mat);
-    const pier = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.8, 2.2, 40, 16).translate(0, -20, 0),
-      mat,
-    );
+    const pier = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 2.2, 40, 16).translate(0, -20, 0), mat);
     pier.position.x = 3;
     scene.add(deck, pier);
     camera.position.set(-2, -9, 7);
@@ -173,10 +154,10 @@ const ithildin =
   ({ scene, camera, renderer }) => {
     const { U } = kit(renderer);
     const drawing = makeCanvas(128);
-    const g = drawing.getContext("2d");
-    g.fillStyle = "#000";
+    const g = drawing.getContext('2d');
+    g.fillStyle = '#000';
     g.fillRect(0, 0, 128, 128);
-    g.strokeStyle = "#fff";
+    g.strokeStyle = '#fff';
     g.lineWidth = 4;
     g.beginPath();
     g.arc(64, 70, 34, Math.PI, 0);
@@ -211,10 +192,7 @@ const beam =
   ({ scene, camera, renderer }) => {
     fogged(scene);
     const { U } = kit(renderer);
-    const shaft = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.7, 1.8, 9, 24, 1, true),
-      P.beamMaterial(U),
-    );
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.8, 9, 24, 1, true), P.beamMaterial(U));
     shaft.rotation.z = 0.6;
     shaft.position.set(0, 1.5, -2);
     scene.add(shaft);
@@ -232,16 +210,7 @@ const sunlit =
     const sun = P.sunlitMaterial(U, { from, dir, r0: 0.8, r1: 2.6, len: 12 });
     sun.uniforms.uBoxMin.value.set(-0.8, 0, -0.6);
     sun.uniforms.uBoxMax.value.set(0.8, 1.2, 0.6);
-    scene.add(
-      new THREE.Mesh(
-        new THREE.PlaneGeometry(14, 14).rotateX(-Math.PI / 2),
-        new THREE.MeshStandardMaterial({ color: 0x353a3a, roughness: 0.9 }),
-      ),
-      new THREE.Mesh(
-        new THREE.PlaneGeometry(14, 14).rotateX(-Math.PI / 2),
-        sun,
-      ),
-    );
+    scene.add(new THREE.Mesh(new THREE.PlaneGeometry(14, 14).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x353a3a, roughness: 0.9 })), new THREE.Mesh(new THREE.PlaneGeometry(14, 14).rotateX(-Math.PI / 2), sun));
     camera.position.set(1, 6, 7);
     camera.lookAt(0, 0, 0);
   };
@@ -260,8 +229,8 @@ const dust =
       ms.set([r(), r(), r(), r()], i * 4);
     }
     const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.BufferAttribute(mp, 3));
-    g.setAttribute("aSeed", new THREE.BufferAttribute(ms, 4));
+    g.setAttribute('position', new THREE.BufferAttribute(mp, 3));
+    g.setAttribute('aSeed', new THREE.BufferAttribute(ms, 4));
     const d = P.dustPoints(g, U, K);
     d.frustumCulled = false;
     d.renderOrder = 5;
@@ -290,10 +259,7 @@ const abyss =
       camera.position.set(0, 0, 9);
       camera.lookAt(0, 0, 0);
     } else {
-      const floor = new THREE.Mesh(
-        new THREE.PlaneGeometry(90, 90),
-        P.abyssMaterial(U, false),
-      );
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), P.abyssMaterial(U, false));
       floor.rotation.x = -Math.PI / 2;
       scene.add(floor);
       camera.position.set(0, 30, 30);
@@ -310,11 +276,8 @@ const sparks =
     const ss = new Float32Array(N * 4);
     for (let i = 0; i < N; i++) ss.set([r(), r(), r(), r()], i * 4);
     const g = new THREE.BufferGeometry();
-    g.setAttribute(
-      "position",
-      new THREE.BufferAttribute(new Float32Array(N * 3), 3),
-    );
-    g.setAttribute("aSeed", new THREE.BufferAttribute(ss, 4));
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3));
+    g.setAttribute('aSeed', new THREE.BufferAttribute(ss, 4));
     const s = P.sparkPoints(g, U, K);
     s.material.uniforms.uSpan.value.set(20, 30, 8);
     s.frustumCulled = false;
@@ -332,7 +295,7 @@ const cardCloud = (material, pts, seed = 1) => {
   const quad = new THREE.PlaneGeometry(1, 1);
   const geo = new THREE.InstancedBufferGeometry();
   geo.index = quad.index;
-  geo.setAttribute("position", quad.getAttribute("position"));
+  geo.setAttribute('position', quad.getAttribute('position'));
   const em = new Float32Array(pts.length * 3);
   const sd = new Float32Array(pts.length * 4);
   const r = rng(seed);
@@ -340,8 +303,8 @@ const cardCloud = (material, pts, seed = 1) => {
     em.set([p.x, p.y, p.z], i * 3);
     sd.set([r(), r(), r(), r()], i * 4);
   });
-  geo.setAttribute("aEmit", new THREE.InstancedBufferAttribute(em, 3));
-  geo.setAttribute("aSeed", new THREE.InstancedBufferAttribute(sd, 4));
+  geo.setAttribute('aEmit', new THREE.InstancedBufferAttribute(em, 3));
+  geo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(sd, 4));
   geo.instanceCount = pts.length;
   const mesh = new THREE.Mesh(geo, material);
   mesh.frustumCulled = false;
@@ -354,12 +317,8 @@ const fire =
     if (smoke) scene.background = new THREE.Color(0x6a5a50);
     const { U } = kit(renderer);
     const r = rng(7);
-    const pts = Array.from({ length: 60 }, () =>
-      V3((r() - 0.5) * 3, r() * 0.4, (r() - 0.5) * 1.5),
-    );
-    const mat = smoke
-      ? P.smokeMaterial(U, { size: 1.2, rise: 4 })
-      : P.flameMaterial(U, { size: 0.8, rise: 2.2, heat: 1, rate: 1 });
+    const pts = Array.from({ length: 60 }, () => V3((r() - 0.5) * 3, r() * 0.4, (r() - 0.5) * 1.5));
+    const mat = smoke ? P.smokeMaterial(U, { size: 1.2, rise: 4 }) : P.flameMaterial(U, { size: 0.8, rise: 2.2, heat: 1, rate: 1 });
     const cloud = cardCloud(mat, pts, 91);
     cloud.position.y = -1;
     scene.add(cloud);
@@ -372,10 +331,7 @@ const fireSolid =
   ({ scene, camera, renderer }) => {
     fogged(scene, 4, 20);
     const { U } = kit(renderer);
-    const blade = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.25, 0.5, 6, 24, 8),
-      P.fireSolidMaterial(U),
-    );
+    const blade = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.5, 6, 24, 8), P.fireSolidMaterial(U));
     blade.rotation.z = 0.9;
     scene.add(blade);
     camera.position.set(0, 0, 6);
@@ -389,11 +345,10 @@ const wing =
     scene.background = new THREE.Color(0x5a4a40);
     const { U } = kit(renderer);
     const g = new THREE.PlaneGeometry(6, 4, 24, 16);
-    const uvs = g.getAttribute("uv");
+    const uvs = g.getAttribute('uv');
     const wingAt = new Float32Array(uvs.count * 2);
-    for (let i = 0; i < uvs.count; i++)
-      wingAt.set([uvs.getY(i), 1 - uvs.getX(i)], i * 2);
-    g.setAttribute("aWing", new THREE.BufferAttribute(wingAt, 2));
+    for (let i = 0; i < uvs.count; i++) wingAt.set([uvs.getY(i), 1 - uvs.getX(i)], i * 2);
+    g.setAttribute('aWing', new THREE.BufferAttribute(wingAt, 2));
     const m = new THREE.Mesh(g, P.wingMaterial(U));
     m.rotation.set(-0.3, 0.4, 0);
     scene.add(m);
@@ -411,10 +366,7 @@ const ripple =
       [-1.8, 0.4],
       [2, 1.7],
     ].forEach(([x, t]) => {
-      const m = new THREE.Mesh(
-        new THREE.PlaneGeometry(6, 6).rotateX(-Math.PI / 2),
-        base.clone(),
-      );
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(6, 6).rotateX(-Math.PI / 2), base.clone());
       m.material.uniforms.uTime.value = t;
       m.material.uniforms.uK.value = 1;
       m.position.x = x;
@@ -440,9 +392,7 @@ const lake =
     const m = S.lakeMaterial(water);
     m.uniforms.uTime.value = 4;
     m.uniforms.uStir.value = 0.5;
-    scene.add(
-      new THREE.Mesh(new THREE.PlaneGeometry(80, 60).rotateX(-Math.PI / 2), m),
-    );
+    scene.add(new THREE.Mesh(new THREE.PlaneGeometry(80, 60).rotateX(-Math.PI / 2), m));
     camera.position.set(0, 2, 8);
     camera.lookAt(0, 0, -6);
   };
@@ -450,22 +400,22 @@ const lake =
 const both = (f, ...a) => ({ node: f(PN, ...a), classic: f(PO, ...a) });
 
 export default {
-  "middleearth:moria:reveal": both(reveal, false),
-  "middleearth:moria:reveal:instanced": both(reveal, true),
-  "middleearth:moria:hide:troll": both(hide, false),
-  "middleearth:moria:hide:balrog": both(hide, true),
-  "middleearth:moria:underglow": both(underglow),
-  "middleearth:moria:ithildin": both(ithildin),
-  "middleearth:moria:beam": both(beam),
-  "middleearth:moria:sunlit": both(sunlit),
-  "middleearth:moria:dust": both(dust),
-  "middleearth:moria:abyss:floor": both(abyss, false),
-  "middleearth:moria:abyss:card": both(abyss, true),
-  "middleearth:moria:sparks": both(sparks),
-  "middleearth:moria:flame": both(fire, false),
-  "middleearth:moria:smoke": both(fire, true),
-  "middleearth:moria:fireSolid": both(fireSolid),
-  "middleearth:moria:wing": both(wing),
-  "middleearth:moria:ripple": both(ripple),
-  "middleearth:moria:lake": { node: lake(SN), classic: lake(SO) },
+  'middleearth:moria:reveal': both(reveal, false),
+  'middleearth:moria:reveal:instanced': both(reveal, true),
+  'middleearth:moria:hide:troll': both(hide, false),
+  'middleearth:moria:hide:balrog': both(hide, true),
+  'middleearth:moria:underglow': both(underglow),
+  'middleearth:moria:ithildin': both(ithildin),
+  'middleearth:moria:beam': both(beam),
+  'middleearth:moria:sunlit': both(sunlit),
+  'middleearth:moria:dust': both(dust),
+  'middleearth:moria:abyss:floor': both(abyss, false),
+  'middleearth:moria:abyss:card': both(abyss, true),
+  'middleearth:moria:sparks': both(sparks),
+  'middleearth:moria:flame': both(fire, false),
+  'middleearth:moria:smoke': both(fire, true),
+  'middleearth:moria:fireSolid': both(fireSolid),
+  'middleearth:moria:wing': both(wing),
+  'middleearth:moria:ripple': both(ripple),
+  'middleearth:moria:lake': { node: lake(SN), classic: lake(SO) },
 };

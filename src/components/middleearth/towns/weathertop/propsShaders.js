@@ -3,7 +3,7 @@
 // and the hair lit from both sides), so ../../nodes/towns/weathertop/
 // propsShaders.js can be their twin on the node renderer.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
@@ -121,10 +121,7 @@ export function floodWaterMaterial() {
 // White water churning on the river round a horse's foot.
 export function churnMaterial() {
   return new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([
-      THREE.UniformsLib.fog,
-      { uTime: { value: 0 }, uRise: { value: 0 } },
-    ]),
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 }, uRise: { value: 0 } }]),
     vertexShader: `
       varying vec3 vLocal;
       #include <fog_pars_vertex>
@@ -218,26 +215,17 @@ export function sprayPoints(pg) {
 // an ember’s vertex colour dims its glow too
 export function emberGlow(m) {
   m.onBeforeCompile = (sh) => {
-    sh.fragmentShader = sh.fragmentShader.replace(
-      "#include <emissivemap_fragment>",
-      "#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance *= vColor.rgb;\n#endif",
-    );
+    sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance *= vColor.rgb;\n#endif');
   };
-  m.customProgramCacheKey = () => "wt-ember";
+  m.customProgramCacheKey = () => 'wt-ember';
   return m;
 }
 
 // hair in ribbons, lit by the normals it was given from either side
 export function hairBothSides(m) {
   m.onBeforeCompile = (sh) => {
-    sh.fragmentShader = sh.fragmentShader.replace(
-      "#include <normal_fragment_begin>",
-      THREE.ShaderChunk.normal_fragment_begin.replace(
-        "normal *= faceDirection;",
-        "",
-      ),
-    );
+    sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', THREE.ShaderChunk.normal_fragment_begin.replace('normal *= faceDirection;', ''));
   };
-  m.customProgramCacheKey = () => "wt-hair";
+  m.customProgramCacheKey = () => 'wt-hair';
   return m;
 }

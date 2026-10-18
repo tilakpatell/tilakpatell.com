@@ -10,57 +10,14 @@
 // a hook returns the node material, and the ground, the flowers and
 // whatever swaying is handed draw with that.
 
-import * as THREE from "three";
-import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
-import {
-  Fn,
-  cameraPosition,
-  cos,
-  dot,
-  float,
-  floor,
-  fract,
-  max,
-  mix,
-  normalize,
-  positionGeometry,
-  positionWorld,
-  pow,
-  reflect,
-  sin,
-  smoothstep,
-  uniform,
-  varying,
-  vec2,
-  vec3,
-  vec4,
-} from "three/tsl";
-import { canvasTexture } from "../../../../lib/three/stage3dNodes";
-import { fbm, makeNoise, normalFromField, smooth } from "../../../../lib/paint";
-import { createGroundMap } from "../../../../lib/three/groundmapNodes";
-import {
-  asNode,
-  follow,
-  instanceMatrixOf,
-  onPosition,
-} from "../../../../lib/three/hookNodes";
-import {
-  BRIDGE,
-  FIELD,
-  HOLES,
-  BAG_END,
-  INN,
-  POND,
-  ROADS,
-  STREAM,
-  WATER_Y,
-  WORLD,
-  height,
-  inWater,
-  onRoad,
-  roadAmount,
-  seeded,
-} from "../../shire/rules";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
+import { Fn, cameraPosition, cos, dot, float, floor, fract, max, mix, normalize, positionGeometry, positionWorld, pow, reflect, sin, smoothstep, uniform, varying, vec2, vec3, vec4 } from 'three/tsl';
+import { canvasTexture } from '../../../../lib/three/stage3dNodes';
+import { fbm, makeNoise, normalFromField, smooth } from '../../../../lib/paint';
+import { createGroundMap } from '../../../../lib/three/groundmapNodes';
+import { asNode, follow, instanceMatrixOf, onPosition } from '../../../../lib/three/hookNodes';
+import { BRIDGE, FIELD, HOLES, BAG_END, INN, POND, ROADS, STREAM, WATER_Y, WORLD, height, inWater, onRoad, roadAmount, seeded } from '../../shire/rules';
 
 const lerp3 = (out, a, b, t) => {
   out[0] = a[0] + (b[0] - a[0]) * t;
@@ -96,11 +53,7 @@ function grassTextures(renderer) {
       field[y * size + x] = blades * 0.55 + clumps * 0.3 + fine * 0.15;
     }
   return {
-    normalMap: canvasTexture(
-      normalFromField(field, size, size, 2.2),
-      renderer,
-      { repeat: [56, 56], srgb: false },
-    ),
+    normalMap: canvasTexture(normalFromField(field, size, size, 2.2), renderer, { repeat: [56, 56], srgb: false }),
   };
 }
 
@@ -125,23 +78,10 @@ export function groundAt(x, z, out) {
   let grass = 1;
   const patch = fbm(n, x * 0.05 + 4, z * 0.05, { octaves: 3 });
   lerp3(out, GRASS_DEEP, GRASS, smooth(-0.6, 1.6, h + (patch - 0.5) * 2));
-  lerp3(
-    out,
-    out,
-    GRASS_SUN,
-    smooth(2.5, 9, h) * 0.55 + smooth(0.62, 0.8, patch) * 0.35,
-  );
-  lerp3(
-    out,
-    out,
-    DRY,
-    smooth(0.66, 0.84, fbm(n, x * 0.09, z * 0.09 + 7, { octaves: 2 })) * 0.45,
-  );
+  lerp3(out, out, GRASS_SUN, smooth(2.5, 9, h) * 0.55 + smooth(0.62, 0.8, patch) * 0.35);
+  lerp3(out, out, DRY, smooth(0.66, 0.84, fbm(n, x * 0.09, z * 0.09 + 7, { octaves: 2 })) * 0.45);
   // Maggot's field: tilled rows running east-west
-  const inF = Math.max(
-    Math.abs(x - fieldMidX) - (FIELD.x1 - FIELD.x0) / 2,
-    Math.abs(z - fieldMidZ) - (FIELD.z1 - FIELD.z0) / 2,
-  );
+  const inF = Math.max(Math.abs(x - fieldMidX) - (FIELD.x1 - FIELD.x0) / 2, Math.abs(z - fieldMidZ) - (FIELD.z1 - FIELD.z0) / 2);
   const tilled = 1 - smooth(-0.6, 0.4, inF);
   if (tilled > 0) {
     const row = 0.5 + 0.5 * Math.sin(z * 2.4);
@@ -152,12 +92,7 @@ export function groundAt(x, z, out) {
   // the lanes and paths, worn to dirt
   const road = roadAmount(x, z);
   if (road > 0) {
-    lerp3(
-      out,
-      out,
-      DIRT,
-      road * (0.82 + fbm(n, x * 0.4, z * 0.4, { octaves: 2 }) * 0.18),
-    );
+    lerp3(out, out, DIRT, road * (0.82 + fbm(n, x * 0.4, z * 0.4, { octaves: 2 }) * 0.18));
     grass *= 1 - smooth(0.05, 0.6, road);
   }
   // round the doors: trodden; and no grass on the mounds' fronts
@@ -175,8 +110,7 @@ export function groundAt(x, z, out) {
     grass *= smooth(2, 5, inn);
   }
   // the bridge's footing
-  if (Math.abs(x - BRIDGE.x) < 2.5 && z > BRIDGE.z0 - 1 && z < BRIDGE.z1 + 1)
-    grass = 0;
+  if (Math.abs(x - BRIDGE.x) < 2.5 && z > BRIDGE.z0 - 1 && z < BRIDGE.z1 + 1) grass = 0;
   // mud at the water's edge, and the bed under it
   if (h < 0.15) lerp3(out, out, MUD, smooth(0.15, -0.3, h));
   if (h < WATER_Y) lerp3(out, out, BED, smooth(WATER_Y, -1.2, h));
@@ -205,9 +139,7 @@ export function shireGroundMap({ size = 512 } = {}) {
 // corners on the height function.
 export function terrainGeometry(seg = 200) {
   const size = WORLD.edge * 2;
-  const geo = new THREE.PlaneGeometry(size, size, seg, seg).rotateX(
-    -Math.PI / 2,
-  );
+  const geo = new THREE.PlaneGeometry(size, size, seg, seg).rotateX(-Math.PI / 2);
   const p = geo.attributes.position;
   for (let i = 0; i < p.count; i++) p.setY(i, height(p.getX(i), p.getZ(i)));
   geo.computeVertexNormals();
@@ -227,7 +159,7 @@ export function makeTerrain(renderer, { seg = 200, map } = {}) {
   });
   const mesh = new THREE.Mesh(geo, map.paint(material) ?? material);
   mesh.receiveShadow = true;
-  mesh.name = "terrain";
+  mesh.name = 'terrain';
   return mesh;
 }
 
@@ -256,9 +188,7 @@ export function drawnHeight(terrain) {
     const b = y[3 * (i + n * (j + 1)) + 1];
     const c = y[3 * (i + 1 + n * (j + 1)) + 1];
     const d = y[3 * (i + 1 + n * j) + 1];
-    return u + v <= 1
-      ? a + (d - a) * u + (b - a) * v
-      : c + (b - c) * (1 - u) + (d - c) * (1 - v);
+    return u + v <= 1 ? a + (d - a) * u + (b - a) * v : c + (b - c) * (1 - u) + (d - c) * (1 - v);
   };
 }
 
@@ -266,27 +196,20 @@ export function drawnHeight(terrain) {
 // but the pond and the stream), rippling, catching the sky and the sun.
 // the GLSL's noise, and the waves made of it (the time passed in, never a
 // uniform read from inside a shared function)
-const hash = Fn(
-  ([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)),
-  "float",
-);
+const hash = Fn(([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)), 'float');
 const noise = Fn(([p]) => {
   const i = floor(p);
   const f0 = fract(p);
   const f = f0.mul(f0).mul(f0.mul(-2).add(3));
-  return mix(
-    mix(hash(i), hash(i.add(vec2(1, 0))), f.x),
-    mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x),
-    f.y,
-  );
-}, "float");
+  return mix(mix(hash(i), hash(i.add(vec2(1, 0))), f.x), mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x), f.y);
+}, 'float');
 const waves = Fn(
   ([p, t]) =>
     noise(p.mul(0.9).add(vec2(t.mul(0.35), t.mul(0.2))))
       .mul(0.5)
       .add(noise(p.mul(2.3).sub(vec2(t.mul(0.5), t.mul(-0.3)))).mul(0.3))
       .add(noise(p.mul(5).add(t.mul(0.8))).mul(0.2)),
-  "float",
+  'float',
 );
 
 export function makeWater() {
@@ -304,18 +227,12 @@ export function makeWater() {
     transparent: true,
     depthWrite: false,
   });
-  const vWorld = varying(positionWorld, "vWorld");
+  const vWorld = varying(positionWorld, 'vWorld');
   material.colorNode = Fn(() => {
     const p = vWorld.xz;
     const e = 0.08;
     const h = waves(p, u.uTime).toVar();
-    const n = normalize(
-      vec3(
-        h.sub(waves(p.add(vec2(e, 0)), u.uTime)).mul(1.6),
-        1,
-        h.sub(waves(p.add(vec2(0, e)), u.uTime)).mul(1.6),
-      ),
-    );
+    const n = normalize(vec3(h.sub(waves(p.add(vec2(e, 0)), u.uTime)).mul(1.6), 1, h.sub(waves(p.add(vec2(0, e)), u.uTime)).mul(1.6)));
     const view = normalize(cameraPosition.sub(vWorld));
     const fres = pow(max(dot(n, view), 0).oneMinus(), 3);
     const col = mix(u.uDeep, u.uSky, fres.mul(0.65).add(0.25)).toVar();
@@ -362,7 +279,7 @@ export function swaying(material, uniforms, strength = 0.12) {
   // (to three places, as the GLSL wrote them into its source)
   const k = Number(strength.toFixed(3));
   const k2 = Number((strength * 0.6).toFixed(3));
-  const uWind = follow(uniforms.uWind, "float");
+  const uWind = follow(uniforms.uWind, 'float');
   const m = asNode(material);
   onPosition(
     m,
@@ -394,17 +311,9 @@ export function swaying(material, uniforms, strength = 0.12) {
 // the buildings, not in Maggot's tilled field.
 const growable = (x, z) => {
   if (inWater(x, z) || onRoad(x, z) || height(x, z) < 0.05) return false;
-  if (
-    x > FIELD.x0 - 0.5 &&
-    x < FIELD.x1 + 0.5 &&
-    z > FIELD.z0 - 0.5 &&
-    z < FIELD.z1 + 0.5
-  )
-    return false;
-  if (Math.abs(x - BRIDGE.x) < 2.5 && z > BRIDGE.z0 - 1 && z < BRIDGE.z1 + 1)
-    return false;
-  for (const h of [...HOLES, BAG_END])
-    if (Math.hypot(x - h.x, z - h.z) < h.r * 0.95) return false;
+  if (x > FIELD.x0 - 0.5 && x < FIELD.x1 + 0.5 && z > FIELD.z0 - 0.5 && z < FIELD.z1 + 0.5) return false;
+  if (Math.abs(x - BRIDGE.x) < 2.5 && z > BRIDGE.z0 - 1 && z < BRIDGE.z1 + 1) return false;
+  for (const h of [...HOLES, BAG_END]) if (Math.hypot(x - h.x, z - h.z) < h.r * 0.95) return false;
   return true;
 };
 
@@ -438,13 +347,10 @@ function chunker(geometry, material, size = 18) {
 }
 
 // Flowers: in the gardens before the doors, and in drifts along the verges.
-const FLOWER_COLOURS = [
-  0xf2d24a, 0xe8655a, 0xf3f0e8, 0xb07ad8, 0xf29ac2, 0xf08a3a, 0x7ab0f0,
-];
+const FLOWER_COLOURS = [0xf2d24a, 0xe8655a, 0xf3f0e8, 0xb07ad8, 0xf29ac2, 0xf08a3a, 0x7ab0f0];
 export function makeFlowers(geometry, material, count, wind) {
   // (their heads nod in the world's one wind, lib/three/wind)
-  const swayed =
-    wind.sway(material, { strength: 0.7, height: 0.4 }) ?? material;
+  const swayed = wind.sway(material, { strength: 0.7, height: 0.4 }) ?? material;
   const bins = chunker(geometry, swayed, 24);
   const rand = seeded(57);
   const m = new THREE.Matrix4();
@@ -471,13 +377,7 @@ export function makeFlowers(geometry, material, count, wind) {
     for (let i = 0; i < 46; i++) {
       const a = Math.PI * (0.1 + rand() * 0.8);
       const r = h.r * (1.02 + rand() * 0.35);
-      put(
-        h.x + Math.cos(a) * r * (rand() < 0.5 ? 1 : -1),
-        h.z + Math.sin(a) * r * 0.9,
-        rand() < 0.7
-          ? colour
-          : FLOWER_COLOURS[Math.floor(rand() * FLOWER_COLOURS.length)],
-      );
+      put(h.x + Math.cos(a) * r * (rand() < 0.5 ? 1 : -1), h.z + Math.sin(a) * r * 0.9, rand() < 0.7 ? colour : FLOWER_COLOURS[Math.floor(rand() * FLOWER_COLOURS.length)]);
     }
   }
   // drifts along the lanes
@@ -489,18 +389,8 @@ export function makeFlowers(geometry, material, count, wind) {
       if (rand() < 0.45) continue;
       const side = rand() < 0.5 ? -1 : 1;
       const off = road.w / 2 + 0.4 + rand() * 1.4;
-      const colour =
-        FLOWER_COLOURS[
-          Math.floor(
-            (Math.sin(d * 0.13 + road.a[0]) * 0.5 + 0.5) *
-              FLOWER_COLOURS.length,
-          ) % FLOWER_COLOURS.length
-        ];
-      put(
-        road.a[0] + dx * d - dz * off * side,
-        road.a[1] + dz * d + dx * off * side,
-        colour,
-      );
+      const colour = FLOWER_COLOURS[Math.floor((Math.sin(d * 0.13 + road.a[0]) * 0.5 + 0.5) * FLOWER_COLOURS.length) % FLOWER_COLOURS.length];
+      put(road.a[0] + dx * d - dz * off * side, road.a[1] + dz * d + dx * off * side, colour);
     }
   }
   // and wild ones about the fields
@@ -510,24 +400,14 @@ export function makeFlowers(geometry, material, count, wind) {
     const cx = Math.cos(a) * r;
     const cz = Math.sin(a) * r;
     const colour = FLOWER_COLOURS[Math.floor(rand() * FLOWER_COLOURS.length)];
-    for (let k = 0; k < 6; k++)
-      put(cx + (rand() - 0.5) * 3, cz + (rand() - 0.5) * 3, colour);
+    for (let k = 0; k < 6; k++) put(cx + (rand() - 0.5) * 3, cz + (rand() - 0.5) * 3, colour);
   }
   return bins.build({ receive: false });
 }
 
 // Any instanced prop: `list` of { x, z, y?, s?, sy?, turn? }.
-export function instances(
-  geometry,
-  material,
-  list,
-  { shadow = true, receive = true } = {},
-) {
-  const mesh = new THREE.InstancedMesh(
-    geometry,
-    material,
-    Math.max(1, list.length),
-  );
+export function instances(geometry, material, list, { shadow = true, receive = true } = {}) {
+  const mesh = new THREE.InstancedMesh(geometry, material, Math.max(1, list.length));
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const s = new THREE.Vector3();

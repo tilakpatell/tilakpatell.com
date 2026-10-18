@@ -14,27 +14,27 @@
 // the ground lie as they fell.
 
 import * as THREE from 'three';
-import { createStage, disposeTree } from '../stage';
+import { createStage, disposeTree } from '../nodes/stage';
 import { bake, dotTexture, farTree } from '../towns/bake';
-import { createGhosts } from '../towns/ghosts';
+import { createGhosts } from '../nodes/towns/ghosts';
 import { budget, device } from '../../../lib/device';
-import { createHouse } from '../../../lib/three/house';
-import { dress } from '../../../lib/three/core';
+import { createHouse } from '../../../lib/three/houseNodes';
+import { dress } from '../../../lib/three/coreNodes';
 import { debugOn, debugPanel } from '../../../lib/debugPanel';
 import { pose } from '../mapFigures';
 import { createShireKit } from './props';
 import { loadDoorLeaf } from './models';
-import { drawnHeight, instances, makeFlowers, makeTerrain, makeWater, shireGroundMap } from './ground';
-import { createGrass } from '../../../lib/three/grass';
-import { createWind } from '../../../lib/three/wind';
-import { createFlatLitter } from '../../../lib/three/flatLitter';
-import { floorShadow } from '../../../lib/three/grounding';
+import { drawnHeight, instances, makeFlowers, makeTerrain, makeWater, shireGroundMap } from '../nodes/shire/ground';
+import { createGrass } from '../../../lib/three/grassNodes';
+import { createWind } from '../../../lib/three/windNodes';
+import { createFlatLitter } from '../../../lib/three/flatLitterNodes';
+import { floorShadow } from '../../../lib/three/groundingNodes';
 import { FIGURE, groundTown } from '../towns/grounded';
-import { MOODS, makeAtmosphere, makeSky } from './sky';
+import { MOODS, makeAtmosphere, makeSky } from '../nodes/shire/sky';
 import { LOOK } from './look';
 import { SHIRE_CORE } from './dress';
 import { shireTuning } from './tune';
-import { createFx } from './fx';
+import { createFx } from '../nodes/shire/fx';
 import { calm, dance, makePerson, sit } from './people';
 import { INSIDE, buildInside } from './inside';
 import {

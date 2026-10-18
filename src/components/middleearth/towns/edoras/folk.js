@@ -23,7 +23,7 @@ import { castFigure } from '../../cast3d';
 import { B, ball, cyl, fillColor, lathe as latheRaw, parts, rng, roundBox, tf, tube } from '../../shire/props';
 import { createWeathertopKit, gallop } from '../weathertop/props';
 import { createStride } from '../../creatures';
-import { bannerMaterial, hostMaterial } from './folkShaders';
+import { bannerMaterial, hostMaterial } from '../../nodes/towns/edoras/folkShaders';
 
 const TAU = Math.PI * 2;
 // a lathe, its profile always run upwards so its faces face out

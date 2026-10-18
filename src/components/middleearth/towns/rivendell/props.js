@@ -15,12 +15,12 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { canvasTexture, hot } from '../../../../lib/stage3d';
+import { canvasTexture, hot } from '../../../../lib/three/stage3dNodes';
 import { clamp01, fbm, makeCanvas, makeCells, makeNoise, mix, normalFromField, paintPixels, smooth } from '../../../../lib/paint';
-import { stoneTextures } from '../../kit';
+import { stoneTextures } from '../../nodes/kit';
 import { B, ball, blob, boxUV, createShireKit, cyl, cylX, lathe, parts, rng, roundBox, tube } from '../../shire/props';
 import { sharpen } from '../../../../lib/three/textures';
-import { fallMaterial, foamMaterial, mistMaterial, waterfallUniforms } from './propsShaders';
+import { fallMaterial, foamMaterial, mistMaterial, waterfallUniforms } from '../../nodes/towns/rivendell/propsShaders';
 
 const TAU = Math.PI * 2;
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);

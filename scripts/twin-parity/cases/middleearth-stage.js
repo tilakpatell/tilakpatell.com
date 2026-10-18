@@ -5,18 +5,15 @@
 // white, the house's Neutral tone map at an exposure over 1; the grade as
 // the stages set it (one plain, one cold and dark, as Mordor's), its grain
 // at 0 (a noise a pixel, the same nowhere).
-import * as THREE from "three";
-import { RenderPipeline } from "three/webgpu";
-import { pass } from "three/tsl";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
-import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
-import { GRADE } from "../../../src/lib/stage3d.js";
-import {
-  gradeNode,
-  gradeUniforms,
-} from "../../../src/lib/three/stage3dNodes.js";
+import * as THREE from 'three';
+import { RenderPipeline } from 'three/webgpu';
+import { pass } from 'three/tsl';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { GRADE } from '../../../src/lib/stage3d.js';
+import { gradeNode, gradeUniforms } from '../../../src/lib/three/stage3dNodes.js';
 
 const LOOKS = {
   plain: {},
@@ -45,10 +42,7 @@ const fill = (scene, camera) => {
     m.position.set((i - 2) * 1.6, 0.5, 0);
     scene.add(m);
   });
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(20, 20).rotateX(-Math.PI / 2),
-    new THREE.MeshStandardMaterial({ color: 0x8a7a68, roughness: 0.9 }),
-  );
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x8a7a68, roughness: 0.9 }));
   floor.position.y = -0.3;
   scene.add(floor);
   camera.position.set(0, 2.5, 7);
@@ -81,10 +75,7 @@ const classic =
   (look) =>
   ({ scene, camera, renderer }) => {
     fill(scene, camera);
-    const composer = new EffectComposer(
-      renderer,
-      new THREE.WebGLRenderTarget(256, 256, { type: THREE.HalfFloatType }),
-    );
+    const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(256, 256, { type: THREE.HalfFloatType }));
     composer.addPass(new RenderPass(scene, camera));
     composer.addPass(new OutputPass());
     const g = new ShaderPass(GRADE);
@@ -94,9 +85,9 @@ const classic =
   };
 
 export default {
-  "middleearth:stage:grade": { node: node("plain"), classic: classic("plain") },
-  "middleearth:stage:grade:mordor": {
-    node: node("mordor"),
-    classic: classic("mordor"),
+  'middleearth:stage:grade': { node: node('plain'), classic: classic('plain') },
+  'middleearth:stage:grade:mordor': {
+    node: node('mordor'),
+    classic: classic('mordor'),
   },
 };

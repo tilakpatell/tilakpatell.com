@@ -12,7 +12,7 @@
 // material.
 
 import * as THREE from 'three';
-import { canvasTexture, hot } from '../../../../lib/stage3d';
+import { canvasTexture, hot } from '../../../../lib/three/stage3dNodes';
 import { makeCanvas, mix } from '../../../../lib/paint';
 import { STANCE, TROT, WALK, createStride, createTracker, ease, gaitOffsets, legSwing } from '../../creatures';
 import { makeToyFigure } from '../../mapFigures';

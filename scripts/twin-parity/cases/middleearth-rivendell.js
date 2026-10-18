@@ -4,12 +4,12 @@
 // both sides from the same arguments: the falls’ shared uniforms a clock
 // part way on, in the late sun’s warm light; fog where the shader takes it,
 // so its fading is drawn too.
-import * as THREE from "three";
-import * as PO from "../../../src/components/middleearth/towns/rivendell/propsShaders.js";
-import * as PN from "../../../src/components/middleearth/nodes/towns/rivendell/propsShaders.js";
-import * as SO from "../../../src/components/middleearth/towns/rivendell/sceneShaders.js";
-import * as SN from "../../../src/components/middleearth/nodes/towns/rivendell/sceneShaders.js";
-import { makeCanvas } from "../../../src/lib/paint.js";
+import * as THREE from 'three';
+import * as PO from '../../../src/components/middleearth/towns/rivendell/propsShaders.js';
+import * as PN from '../../../src/components/middleearth/nodes/towns/rivendell/propsShaders.js';
+import * as SO from '../../../src/components/middleearth/towns/rivendell/sceneShaders.js';
+import * as SN from '../../../src/components/middleearth/nodes/towns/rivendell/sceneShaders.js';
+import { makeCanvas } from '../../../src/lib/paint.js';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const rng = (seed) => {
@@ -29,11 +29,11 @@ const falls = (P, t = 3.4) => {
 // a sheet as props.js lays it: uv.x across, uv.y metres fallen, aLayer
 const sheet = (h, w, layer) => {
   const g = new THREE.PlaneGeometry(w, h, 12, 40).translate(0, h / 2, 0);
-  const p = g.getAttribute("position");
-  const uv = g.getAttribute("uv");
+  const p = g.getAttribute('position');
+  const uv = g.getAttribute('uv');
   const lay = new Float32Array(p.count).fill(layer);
   for (let i = 0; i < uv.count; i++) uv.setY(i, h - p.getY(i));
-  g.setAttribute("aLayer", new THREE.BufferAttribute(lay, 1));
+  g.setAttribute('aLayer', new THREE.BufferAttribute(lay, 1));
   return g;
 };
 const sheets =
@@ -57,10 +57,10 @@ const sheets =
 // the puff texture, a soft round alpha
 const puff = () => {
   const c = makeCanvas(64);
-  const g = c.getContext("2d");
+  const g = c.getContext('2d');
   const r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-  r.addColorStop(0, "rgba(255,255,255,1)");
-  r.addColorStop(1, "rgba(255,255,255,0)");
+  r.addColorStop(0, 'rgba(255,255,255,1)');
+  r.addColorStop(1, 'rgba(255,255,255,0)');
   g.fillStyle = r;
   g.fillRect(0, 0, 64, 64);
   return new THREE.CanvasTexture(c);
@@ -95,9 +95,9 @@ const mist =
       idx.push(b, b + 1, b + 2, b + 1, b + 3, b + 2);
     }
     const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-    g.setAttribute("corner", new THREE.Float32BufferAttribute(corner, 2));
-    g.setAttribute("seed", new THREE.Float32BufferAttribute(seed, 4));
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('corner', new THREE.Float32BufferAttribute(corner, 2));
+    g.setAttribute('seed', new THREE.Float32BufferAttribute(seed, 4));
     g.setIndex(idx);
     const m = new THREE.Mesh(g, P.mistMaterial(u, puff()));
     m.frustumCulled = false;
@@ -112,10 +112,7 @@ const foam =
     fogged(scene, 8, 40);
     const w = 3;
     const u = falls(P, 2.6);
-    const m = new THREE.Mesh(
-      new THREE.CircleGeometry(w * 1.6, 32),
-      P.foamMaterial(u, w),
-    );
+    const m = new THREE.Mesh(new THREE.CircleGeometry(w * 1.6, 32), P.foamMaterial(u, w));
     m.rotation.x = -Math.PI / 2;
     scene.add(m);
     camera.position.set(0, 5, 6);
@@ -145,11 +142,10 @@ const river =
       const z = -40 + (i / N) * 50;
       const x = Math.sin(z * 0.08) * 3;
       pos.push(x - 4, 0, z, x + 4, 0, z);
-      if (i < N)
-        idx.push(i * 2, i * 2 + 2, i * 2 + 1, i * 2 + 1, i * 2 + 2, i * 2 + 3);
+      if (i < N) idx.push(i * 2, i * 2 + 2, i * 2 + 1, i * 2 + 1, i * 2 + 2, i * 2 + 3);
     }
     const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     g.setIndex(idx);
     g.computeVertexNormals();
     scene.add(new THREE.Mesh(g, m));
@@ -160,8 +156,8 @@ const river =
 const both = (f, ...a) => ({ node: f(PN, ...a), classic: f(PO, ...a) });
 
 export default {
-  "middleearth:rivendell:falls": both(sheets),
-  "middleearth:rivendell:mist": both(mist),
-  "middleearth:rivendell:foam": both(foam),
-  "middleearth:rivendell:river": { node: river(SN), classic: river(SO) },
+  'middleearth:rivendell:falls': both(sheets),
+  'middleearth:rivendell:mist': both(mist),
+  'middleearth:rivendell:foam': both(foam),
+  'middleearth:rivendell:river': { node: river(SN), classic: river(SO) },
 };

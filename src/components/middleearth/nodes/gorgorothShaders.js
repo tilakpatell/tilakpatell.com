@@ -6,45 +6,17 @@
 // colour space are the renderer’s own, as the GLSL’s chunks were; a
 // ShaderMaterial never took fog.
 
-import * as THREE from "three";
-import { MeshBasicNodeMaterial } from "three/webgpu";
-import {
-  Fn,
-  abs,
-  dot,
-  exp,
-  floor,
-  fract,
-  length,
-  max,
-  mix,
-  normalViewGeometry,
-  normalize,
-  positionView,
-  pow,
-  sin,
-  smoothstep,
-  uniform,
-  uv,
-  varying,
-  vec2,
-  vec3,
-} from "three/tsl";
+import * as THREE from 'three';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { Fn, abs, dot, exp, floor, fract, length, max, mix, normalViewGeometry, normalize, positionView, pow, sin, smoothstep, uniform, uv, varying, vec2, vec3 } from 'three/tsl';
 
-const hash = Fn(
-  ([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)),
-  "float",
-);
+const hash = Fn(([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)), 'float');
 const noise = Fn(([p]) => {
   const i = floor(p);
   const f0 = fract(p);
   const f = f0.mul(f0).mul(f0.mul(-2).add(3));
-  return mix(
-    mix(hash(i), hash(i.add(vec2(1, 0))), f.x),
-    mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x),
-    f.y,
-  );
-}, "float");
+  return mix(mix(hash(i), hash(i.add(vec2(1, 0))), f.x), mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x), f.y);
+}, 'float');
 
 const additive = (side = THREE.FrontSide) =>
   new MeshBasicNodeMaterial({
@@ -62,11 +34,7 @@ export function eyeMaterial() {
   const p = uv().sub(0.5).mul(vec2(2, 1));
   const lick = noise(vec2(p.x.mul(5), p.y.mul(6).sub(uTime.mul(2.2))))
     .mul(0.5)
-    .add(
-      noise(vec2(p.x.mul(11).add(3), p.y.mul(12).sub(uTime.mul(3.4)))).mul(
-        0.25,
-      ),
-    );
+    .add(noise(vec2(p.x.mul(11).add(3), p.y.mul(12).sub(uTime.mul(3.4)))).mul(0.25));
   const lid = pow(max(p.x.mul(p.x).mul(1.25).oneMinus(), 0), 0.75)
     .mul(0.3)
     .mul(lick.mul(0.4).add(0.85));
@@ -96,20 +64,15 @@ export function beamMaterial() {
     uTime: uniform(0),
   };
   const mat = additive(THREE.DoubleSide);
-  const vN = varying(normalViewGeometry, "vN");
-  const vV = varying(normalize(positionView.negate()), "vV");
+  const vN = varying(normalViewGeometry, 'vN');
+  const vV = varying(normalize(positionView.negate()), 'vV');
   const vUv = uv();
   const face = pow(abs(dot(normalize(vN), normalize(vV))), 1.6);
   const along = mix(0.5, 1, vUv.y).mul(smoothstep(0, 0.06, vUv.y));
   const dust = sin(vUv.y.mul(60).sub(uniforms.uTime.mul(3)).add(vUv.x.mul(12)))
     .mul(0.18)
     .add(0.82);
-  mat.colorNode = uniforms.uColor
-    .mul(face)
-    .mul(along)
-    .mul(dust)
-    .mul(uniforms.uPower)
-    .mul(0.12);
+  mat.colorNode = uniforms.uColor.mul(face).mul(along).mul(dust).mul(uniforms.uPower).mul(0.12);
   mat.uniforms = uniforms;
   return mat;
 }

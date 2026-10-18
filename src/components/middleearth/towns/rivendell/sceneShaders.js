@@ -2,17 +2,14 @@
 // ./scene.js, and ../../nodes/towns/rivendell/sceneShaders.js its twin on
 // the node renderer.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 // The river in its gorge, flowing south, quick and white over the stones;
 // its sky, deep, sun and sun’s colour the town’s water’s own
 // (`water.uniforms`, which the sky writes)
 export function riverMaterial(water) {
   const riverMat = new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([
-      THREE.UniformsLib.fog,
-      { uTime: { value: 0 } },
-    ]),
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 } }]),
     fog: true,
     vertexShader: `
       #include <fog_pars_vertex>
@@ -45,7 +42,6 @@ export function riverMaterial(water) {
         #include <fog_fragment>
       }`,
   });
-  for (const k of ["uSky", "uDeep", "uSun", "uSunColor"])
-    riverMat.uniforms[k] = water.uniforms[k];
+  for (const k of ['uSky', 'uDeep', 'uSun', 'uSunColor']) riverMat.uniforms[k] = water.uniforms[k];
   return riverMat;
 }

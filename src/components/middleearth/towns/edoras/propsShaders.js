@@ -15,12 +15,9 @@ export function windBanner(mat, U, WIND, ACROSS) {
     const W = `vec3(${F5(WIND.x)}, 0.0, ${F5(WIND.z)})`;
     const A = `vec3(${F5(ACROSS.x)}, 0.0, ${F5(ACROSS.z)})`;
     sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute vec4 aWave;\nuniform float uTime;')
       .replace(
-        "#include <common>",
-        "#include <common>\nattribute vec4 aWave;\nuniform float uTime;",
-      )
-      .replace(
-        "#include <beginnormal_vertex>",
+        '#include <beginnormal_vertex>',
         `#include <beginnormal_vertex>
         float bk = aWave.x;
         float gust = 0.72 + 0.28 * sin(uTime * 0.83 + aWave.y) * sin(uTime * 0.37 + aWave.y * 2.1);
@@ -32,7 +29,7 @@ export function windBanner(mat, U, WIND, ACROSS) {
         objectNormal = normalize(objectNormal - ${W} * bd / aWave.w);`,
       )
       .replace(
-        "#include <begin_vertex>",
+        '#include <begin_vertex>',
         `#include <begin_vertex>
         transformed += ${A} * bw;
         transformed -= ${W} * abs(bw) * 0.4;
@@ -40,18 +37,16 @@ export function windBanner(mat, U, WIND, ACROSS) {
         transformed.y -= bk * bk * aWave.w * 0.07 * (1.25 - gust);`,
       );
   };
-  mat.customProgramCacheKey = () => "edoras-banner";
+  mat.customProgramCacheKey = () => 'edoras-banner';
   return mat;
 }
 // Grass (instanced, unturned) bends with the wind, more at the tip, gusting.
 export function windGrass(mat, U, WIND, k = 0.5) {
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uTime = U.uTime;
-    sh.vertexShader = sh.vertexShader
-      .replace("#include <common>", "#include <common>\nuniform float uTime;")
-      .replace(
-        "#include <begin_vertex>",
-        `#include <begin_vertex>
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float uTime;').replace(
+      '#include <begin_vertex>',
+      `#include <begin_vertex>
       #ifdef USE_INSTANCING
         vec3 root = instanceMatrix[3].xyz;
       #else
@@ -62,7 +57,7 @@ export function windGrass(mat, U, WIND, k = 0.5) {
       transformed.x += ${F5(WIND.x)} * bend * ${F5(k)} * (0.6 + sway);
       transformed.z += ${F5(WIND.z)} * bend * ${F5(k)} * (0.6 + sway);
       transformed.y -= bend * ${F5(k * 0.25)} * sway;`,
-      );
+    );
   };
   mat.customProgramCacheKey = () => `edoras-grass${k}`;
   return mat;

@@ -2,7 +2,7 @@
 // lights on the road), moved out of ./Gorgoroth3D.js as they were (it
 // imports them), so ./nodes/gorgorothShaders.js can be their twin.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 export function eyeMaterial() {
   return new THREE.ShaderMaterial({
@@ -14,8 +14,7 @@ export function eyeMaterial() {
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
-    vertexShader:
-      "varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: `
       uniform float uTime, uLook, uAnger;
       varying vec2 vUv;
@@ -52,7 +51,7 @@ export function beamMaterial() {
     side: THREE.DoubleSide,
     blending: THREE.AdditiveBlending,
     vertexShader:
-      "varying vec3 vN; varying vec3 vV; varying vec2 vUv; void main() { vUv = uv; vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }",
+      'varying vec3 vN; varying vec3 vV; varying vec2 vUv; void main() { vUv = uv; vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
     fragmentShader: `
       uniform vec3 uColor;
       uniform float uPower, uTime;
@@ -77,8 +76,7 @@ export function poolMaterial(uniforms) {
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
-    vertexShader:
-      "varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: `
       uniform vec3 uColor;
       uniform float uPower;

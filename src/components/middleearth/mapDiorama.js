@@ -25,14 +25,14 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { hot } from '../../lib/stage3d';
+import { hot } from '../../lib/three/stage3dNodes';
 import { makeNoise } from '../../lib/paint';
 import { FORESTS, RANGES, SHEET, peaks, wood } from './mapData';
 import { STOPS } from './road';
-import { EMBER, FIRE, SMOKE, createParticles } from './kit';
+import { EMBER, FIRE, SMOKE, createParticles } from './nodes/kit';
 import { makeGollum, makeToyFigure, makeTreebeard, pose } from './mapFigures';
 import { CAST, HOBBIT_LINES } from './mapCast';
-import { createGhosts } from './towns/ghosts';
+import { createGhosts } from './nodes/towns/ghosts';
 import { attend, castFigure, releaseCast, tickCast, upgrade } from './cast3d';
 import { turn } from '../../lib/three/gait';
 

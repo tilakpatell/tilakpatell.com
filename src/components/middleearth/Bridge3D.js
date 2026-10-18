@@ -8,15 +8,15 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { createStage, hot } from './stage';
-import { houseOn } from '../../lib/three/house';
+import { createStage, hot } from './nodes/stage';
+import { houseOn } from '../../lib/three/houseNodes';
 import { fbm, makeNoise, mix } from '../../lib/paint';
 import { DUEL } from './duel';
-import { EMBER, FIRE, LIGHT, SMOKE, createParticles, lavaMaterial, makeBalrog, makeGandalf, skyDome, stoneTextures } from './kit';
+import { EMBER, FIRE, LIGHT, SMOKE, createParticles, lavaMaterial, makeBalrog, makeGandalf, skyDome, stoneTextures } from './nodes/kit';
 import { createShake } from './feel';
 import { BLOOMS } from './look';
 import { houseGroups } from '../../lib/three/houseTuning';
-import { wardMaterial } from './bridgeShaders';
+import { wardMaterial } from './nodes/bridgeShaders';
 
 // the drawing's x (see duel.js) to the scene's
 const X = (svg) => (svg - 320) / 20;

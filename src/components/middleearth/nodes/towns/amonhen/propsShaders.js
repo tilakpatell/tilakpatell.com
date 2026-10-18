@@ -10,7 +10,7 @@
 // GLSL took are the renderer’s own on a node material (fog: true), and
 // the tone map too where the GLSL had the chunk; the Eye had neither.
 
-import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
+import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
 import {
   Fn,
   Loop,
@@ -45,8 +45,8 @@ import {
   vec2,
   vec3,
   vec4,
-} from "three/tsl";
-import { onColor, wrap } from "../../../../../lib/three/hookNodes";
+} from 'three/tsl';
+import { onColor, wrap } from '../../../../../lib/three/hookNodes';
 
 // one uniform node a { value } holder, so materials that shared a holder
 // share a node (a node passed in is kept)
@@ -60,7 +60,7 @@ const nodeOf = (h) => {
 const nodesOf = (uniforms) =>
   Object.fromEntries(
     Object.entries(uniforms)
-      .filter(([k]) => k.startsWith("u"))
+      .filter(([k]) => k.startsWith('u'))
       .map(([k, h]) => [k, nodeOf(h)]),
   );
 // GLSL’s smoothstep(a, b, x) with a > b: one less the rising one (WGSL
@@ -79,28 +79,21 @@ export function urukMaterial(paint, env) {
     envMap: env,
     envMapIntensity: 0.6,
   });
-  const metal = attribute("metal", "float");
-  const pnt = texture(paint, attribute("puv", "vec2"));
+  const metal = attribute('metal', 'float');
+  const pnt = texture(paint, attribute('puv', 'vec2'));
   m.roughnessNode = mix(materialRoughness, 0.34, metal);
   m.metalnessNode = mix(materialMetalness, 0.8, metal);
-  return onColor(m, (c) => mix(c.rgb, pnt.rgb, pnt.a), "amonhen-uruk");
+  return onColor(m, (c) => mix(c.rgb, pnt.rgb, pnt.a), 'amonhen-uruk');
 }
 
 // NOISE_GLSL
-const hash = Fn(
-  ([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)),
-  "float",
-);
+const hash = Fn(([p]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)), 'float');
 const vnoise = Fn(([p]) => {
   const i = floor(p);
   const f0 = fract(p);
   const f = f0.mul(f0).mul(f0.mul(-2).add(3));
-  return mix(
-    mix(hash(i), hash(i.add(vec2(1, 0))), f.x),
-    mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x),
-    f.y,
-  );
-}, "float");
+  return mix(mix(hash(i), hash(i.add(vec2(1, 0))), f.x), mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), f.x), f.y);
+}, 'float');
 const fbm2 = Fn(([p0]) => {
   const p = vec2(p0).toVar();
   const s = float(0).toVar();
@@ -111,7 +104,7 @@ const fbm2 = Fn(([p0]) => {
     a.mulAssign(0.5);
   });
   return s.div(0.9375);
-}, "float");
+}, 'float');
 
 // The river and the falls in one sheet: uv.y runs from -1 upstream to 0 at
 // the lip and 1 at the foot, uv.x across in tens of metres. Fogged with
@@ -126,15 +119,9 @@ export function fallsMaterial(uniforms) {
     const glass = vec3(0.34, 0.45, 0.42);
     const white = vec3(0.8, 0.83, 0.8);
     // above the lip: dark and glassy, sliding faster towards the edge
-    const s = fbm2(
-      vec2(vUv.x.mul(2), f.mul(9).sub(u.uTime.mul(f.add(1).mul(0.6).add(0.5)))),
-    );
+    const s = fbm2(vec2(vUv.x.mul(2), f.mul(9).sub(u.uTime.mul(f.add(1).mul(0.6).add(0.5)))));
     const above = mix(
-      mix(
-        deep,
-        glass,
-        smoothstep(-0.5, 0, f).mul(0.7).add(s.sub(0.5).mul(0.3)),
-      ),
+      mix(deep, glass, smoothstep(-0.5, 0, f).mul(0.7).add(s.sub(0.5).mul(0.3))),
       white,
       smoothstep(0.6, 0.8, s)
         .mul(0.25)
@@ -146,17 +133,7 @@ export function fallsMaterial(uniforms) {
     const s2 = vnoise(vec2(vUv.x.mul(21), f.mul(5).sub(fallT.mul(1.7))));
     const streak = s1.mul(0.65).add(s2.mul(0.35));
     const broken = smoothstep(0, 0.5, f);
-    const over = mix(
-      glass,
-      white,
-      clamp(
-        smoothstep(0.38, 0.72, streak)
-          .mul(broken.mul(0.55).add(0.45))
-          .add(broken.mul(0.35)),
-        0,
-        1,
-      ),
-    )
+    const over = mix(glass, white, clamp(smoothstep(0.38, 0.72, streak).mul(broken.mul(0.55).add(0.45)).add(broken.mul(0.35)), 0, 1))
       .mul(s2.mul(0.18).add(0.82))
       .mul(mix(0.78, 1, smoothstep(0, 0.12, f)));
     const below = mix(over, white, smoothstep(0.8, 1, f).mul(0.85));
@@ -178,14 +155,7 @@ export function foamMaterial(uniforms) {
   const vUv = uv();
   const n = fbm2(vec2(vUv.x.mul(3), vUv.y.mul(4).sub(u.uTime.mul(0.35))))
     .mul(0.7)
-    .add(
-      vnoise(
-        vec2(
-          vUv.x.mul(14).add(u.uTime.mul(0.2)),
-          vUv.y.mul(12).sub(u.uTime.mul(0.6)),
-        ),
-      ).mul(0.3),
-    );
+    .add(vnoise(vec2(vUv.x.mul(14).add(u.uTime.mul(0.2)), vUv.y.mul(12).sub(u.uTime.mul(0.6)))).mul(0.3));
   const a = smoothstep(0, 1, vUv.y)
     .oneMinus()
     .mul(smoothstep(0.3, 0.65, n.add(vUv.y.oneMinus().mul(0.35))))
@@ -208,8 +178,8 @@ export function mistMaterial(uniforms) {
     transparent: true,
     depthWrite: false,
   });
-  const corner = attribute("corner", "vec2");
-  const puff = attribute("puff", "vec4");
+  const corner = attribute('corner', 'vec2');
+  const puff = attribute('puff', 'vec4');
   const life = fract(u.uTime.mul(puff.z).add(puff.w));
   const p = positionGeometry.add(
     vec3(
@@ -221,25 +191,17 @@ export function mistMaterial(uniforms) {
     ),
   );
   const size = puff.y.mul(life.mul(1.2).add(0.55));
-  const vA = varying(
-    smoothstep(0, 0.18, life).mul(smoothstep(0.5, 1, life).oneMinus()),
-    "vA",
-  );
+  const vA = varying(smoothstep(0, 0.18, life).mul(smoothstep(0.5, 1, life).oneMinus()), 'vA');
   wrap(
     mat,
-    "setupPositionView",
+    'setupPositionView',
     () => {
       const mv = modelViewMatrix.mul(vec4(p, 1));
-      return vec3(
-        mv.xy.add(
-          corner.mul(size).mul(length(modelWorldMatrix.element(0).xyz)),
-        ),
-        mv.z,
-      );
+      return vec3(mv.xy.add(corner.mul(size).mul(length(modelWorldMatrix.element(0).xyz))), mv.z);
     },
-    "amonhen:mist",
+    'amonhen:mist',
   );
-  const vUv = varying(corner.mul(0.5).add(0.5), "vUv");
+  const vUv = varying(corner.mul(0.5).add(0.5), 'vUv');
   const puffTex = texture(uniforms.uPuff.value, vUv);
   mat.colorNode = vec3(0.86, 0.87, 0.84);
   mat.opacityNode = puffTex.a.mul(vA).mul(0.62);
@@ -261,22 +223,12 @@ export function eyeMaterial(uniforms) {
   });
   wrap(
     mat,
-    "setupPositionView",
+    'setupPositionView',
     () => {
       const c = modelViewMatrix.mul(vec4(0, 0, 0, 1));
-      return vec3(
-        c.xy.add(
-          positionGeometry.xy.mul(
-            vec2(
-              length(modelWorldMatrix.element(0).xyz),
-              length(modelWorldMatrix.element(1).xyz),
-            ),
-          ),
-        ),
-        c.z,
-      );
+      return vec3(c.xy.add(positionGeometry.xy.mul(vec2(length(modelWorldMatrix.element(0).xyz), length(modelWorldMatrix.element(1).xyz)))), c.z);
     },
-    "amonhen:eye",
+    'amonhen:eye',
   );
   const vUv = uv();
   const shade = Fn(() => {
@@ -306,12 +258,8 @@ export function eyeMaterial(uniforms) {
     const rp = length(p.mul(vec2(0.8, 1)));
     const a = atan(e.y, e.x);
     // flames licking out, longest upwards
-    const lick = fbm2(
-      vec2(a.mul(2.4).add(4), rp.mul(3.4).sub(t.mul(k.add(1.2)))),
-    );
-    const lick2 = vnoise(
-      vec2(a.mul(7).add(1), rp.mul(8).sub(t.mul(k.mul(1.5).add(2.5)))),
-    );
+    const lick = fbm2(vec2(a.mul(2.4).add(4), rp.mul(3.4).sub(t.mul(k.add(1.2)))));
+    const lick2 = vnoise(vec2(a.mul(7).add(1), rp.mul(8).sub(t.mul(k.mul(1.5).add(2.5)))));
     const up = max(sin(a), 0);
     const reach = k
       .mul(0.9)
@@ -325,26 +273,15 @@ export function eyeMaterial(uniforms) {
       )
       .add(1.1);
     const inside = smoothstep(0.93, 1, r).oneMinus();
-    const flame = smoothstep(0.9, reach, r)
-      .oneMinus()
-      .mul(lick2.mul(0.5).add(0.5))
-      .mul(inside.oneMinus());
+    const flame = smoothstep(0.9, reach, r).oneMinus().mul(lick2.mul(0.5).add(0.5)).mul(inside.oneMinus());
     // the iris: fibres of fire, red at the rim, white-hot at the pupil
     const px = p.x.sub(look);
     const fib = vnoise(vec2(atan(p.y, px).mul(9), r.mul(3).sub(t.mul(0.5))))
       .mul(0.6)
-      .add(
-        vnoise(vec2(atan(p.y, px).mul(26), r.mul(6).add(t.mul(0.3)))).mul(0.4),
-      );
+      .add(vnoise(vec2(atan(p.y, px).mul(26), r.mul(6).add(t.mul(0.3)))).mul(0.4));
     const near = exp(abs(px).mul(-9));
-    const iris = mix(
-      vec3(1.1, 0.16, 0.02),
-      vec3(2.3, 0.5, 0.04),
-      fall(0.98, 0.6, r),
-    ).toVar();
-    iris.assign(
-      mix(iris, vec3(2.8, 1.35, 0.2), near.mul(fall(1, 0.25, r)).mul(0.85)),
-    );
+    const iris = mix(vec3(1.1, 0.16, 0.02), vec3(2.3, 0.5, 0.04), fall(0.98, 0.6, r)).toVar();
+    iris.assign(mix(iris, vec3(2.8, 1.35, 0.2), near.mul(fall(1, 0.25, r)).mul(0.85)));
     iris.mulAssign(fib.mul(0.65).add(0.6));
     iris.assign(mix(vec3(0.35, 0.03, 0.01), iris, fall(1, 0.85, r)));
     // the pupil: a black slit, narrower as it burns fiercer (pow(y, 2.0)
@@ -356,11 +293,7 @@ export function eyeMaterial(uniforms) {
       .mul(0.04)
       .mul(sqrt(max(0, py.mul(py).oneMinus())));
     const pupil = smoothstep(w.mul(0.6), w.add(0.006), abs(px)).oneMinus();
-    const fire = mix(
-      vec3(2.2, 0.5, 0.05),
-      vec3(0.8, 0.09, 0.015),
-      smoothstep(1, reach, r),
-    );
+    const fire = mix(vec3(2.2, 0.5, 0.05), vec3(0.8, 0.09, 0.015), smoothstep(1, reach, r));
     const col = mix(fire.mul(flame), iris, inside).toVar();
     col.assign(mix(col, vec3(0.02, 0, 0), pupil.mul(inside)));
     const alpha = max(inside, clamp(flame.mul(1.4), 0, 1)).toVar();

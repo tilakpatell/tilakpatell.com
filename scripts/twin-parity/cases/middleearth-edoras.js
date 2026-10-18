@@ -3,9 +3,9 @@
 // banners streaming from their poles, built as props.js builds them, and
 // the grass bending, on an instanced field and on a lone tuft (no
 // instance, so its root is the origin). The town’s wind, as props.js has it.
-import * as THREE from "three";
-import * as PO from "../../../src/components/middleearth/towns/edoras/propsShaders.js";
-import * as PN from "../../../src/components/middleearth/nodes/towns/edoras/propsShaders.js";
+import * as THREE from 'three';
+import * as PO from '../../../src/components/middleearth/towns/edoras/propsShaders.js';
+import * as PN from '../../../src/components/middleearth/nodes/towns/edoras/propsShaders.js';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const WIND = V3(0.32, 0, -0.95).normalize();
@@ -22,10 +22,7 @@ const cloth = () => {
     for (let x = 0; x < W; x++) {
       const bar = Math.abs(y - 16) < 4 && x > 8;
       const torn = y < 3 && x % 7 < 3;
-      data.set(
-        bar ? [230, 225, 200, 255] : [30, 90, 40, torn ? 0 : 255],
-        (y * W + x) * 4,
-      );
+      data.set(bar ? [230, 225, 200, 255] : [30, 90, 40, torn ? 0 : 255], (y * W + x) * 4);
     }
   const t = new THREE.DataTexture(data, W, H);
   t.magFilter = t.minFilter = THREE.LinearFilter;
@@ -48,11 +45,7 @@ const bannerMesh = (mat, list) => {
     for (let j = 0; j <= NY; j++)
       for (let i = 0; i <= NX; i++) {
         const k = i / NX;
-        pos.push(
-          b.x + WIND.x * k * b.len + ACROSS.x * 0.02,
-          b.y - (j / NY) * b.tall,
-          b.z + WIND.z * k * b.len + ACROSS.z * 0.02,
-        );
+        pos.push(b.x + WIND.x * k * b.len + ACROSS.x * 0.02, b.y - (j / NY) * b.tall, b.z + WIND.z * k * b.len + ACROSS.z * 0.02);
         nor.push(ACROSS.x, 0, ACROSS.z);
         uv.push(k, 1 - j / NY);
         wave.push(k, b.phase, b.amp, b.len);
@@ -65,10 +58,10 @@ const bannerMesh = (mat, list) => {
       }
   }
   const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
-  g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-  g.setAttribute("aWave", new THREE.Float32BufferAttribute(wave, 4));
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute('aWave', new THREE.Float32BufferAttribute(wave, 4));
   g.setIndex(idx);
   return new THREE.Mesh(g, mat);
 };
@@ -129,52 +122,14 @@ const tuft = () => {
     const lz = Math.sin(a + 1.57) * lean;
     const m = [ox + lx * 0.35, h * 0.55, oz + lz * 0.35];
     const t = [ox + lx, h, oz + lz];
-    pos.push(
-      ox - ca,
-      0,
-      oz - sa,
-      ox + ca,
-      0,
-      oz + sa,
-      m[0] + ca * 0.6,
-      m[1],
-      m[2] + sa * 0.6,
-    );
-    pos.push(
-      ox - ca,
-      0,
-      oz - sa,
-      m[0] + ca * 0.6,
-      m[1],
-      m[2] + sa * 0.6,
-      m[0] - ca * 0.6,
-      m[1],
-      m[2] - sa * 0.6,
-    );
-    pos.push(
-      m[0] - ca * 0.6,
-      m[1],
-      m[2] - sa * 0.6,
-      m[0] + ca * 0.6,
-      m[1],
-      m[2] + sa * 0.6,
-      ...t,
-    );
-    col.push(
-      ...base,
-      ...base,
-      ...mid,
-      ...base,
-      ...mid,
-      ...mid,
-      ...mid,
-      ...mid,
-      ...tip,
-    );
+    pos.push(ox - ca, 0, oz - sa, ox + ca, 0, oz + sa, m[0] + ca * 0.6, m[1], m[2] + sa * 0.6);
+    pos.push(ox - ca, 0, oz - sa, m[0] + ca * 0.6, m[1], m[2] + sa * 0.6, m[0] - ca * 0.6, m[1], m[2] - sa * 0.6);
+    pos.push(m[0] - ca * 0.6, m[1], m[2] - sa * 0.6, m[0] + ca * 0.6, m[1], m[2] + sa * 0.6, ...t);
+    col.push(...base, ...base, ...mid, ...base, ...mid, ...mid, ...mid, ...mid, ...tip);
   }
   const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   g.computeVertexNormals();
   // (scaled up, so the bend shows at this distance)
   return g.scale(4, 4, 4);
@@ -217,7 +172,7 @@ const grass =
 const both = (f, ...a) => ({ node: f(PN, ...a), classic: f(PO, ...a) });
 
 export default {
-  "middleearth:edoras:banners": both(banners),
-  "middleearth:edoras:grass:field": both(grass, true),
-  "middleearth:edoras:grass:tuft": both(grass, false),
+  'middleearth:edoras:banners': both(banners),
+  'middleearth:edoras:grass:field': both(grass, true),
+  'middleearth:edoras:grass:tuft': both(grass, false),
 };

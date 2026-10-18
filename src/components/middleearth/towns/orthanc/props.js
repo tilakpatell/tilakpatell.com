@@ -16,13 +16,13 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { canvasTexture, hot } from '../../../../lib/stage3d';
+import { canvasTexture, hot } from '../../../../lib/three/stage3dNodes';
 import { fbm, makeCanvas, makeNoise, normalFromField, paintPixels, smooth } from '../../../../lib/paint';
 import { lathe, parts, rng, tube } from '../../shire/props';
 import { createDoomKit } from '../doom/props';
 import { ease } from '../../creatures';
 import { ARCH, BRAZIERS, CASES, CORNERS, DAIS, DOORS, HALL_H, HORNS, LEAF, LECTERN, LIB, PILLARS, PIN, STAIR, STAIR_BASE, STAIR_DOOR, STAIR_LEN, THRONE, TOWER_H, WINDOWS, stairAngle, stairAt } from './layout';
-import { glassyStone, stoneMaterial } from './propsShaders';
+import { glassyStone, stoneMaterial } from '../../nodes/towns/orthanc/propsShaders';
 
 const TAU = Math.PI * 2;
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);

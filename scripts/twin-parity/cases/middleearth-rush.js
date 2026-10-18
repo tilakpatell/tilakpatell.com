@@ -2,15 +2,12 @@
 // rush/sceneShaders.js against its twin, nodes/rush/sceneShaders.js. Four
 // rings, part filled and one flashing, over a floor they ignore the depth
 // of.
-import * as THREE from "three";
-import * as RO from "../../../src/components/middleearth/rush/sceneShaders.js";
-import * as RN from "../../../src/components/middleearth/nodes/rush/sceneShaders.js";
+import * as THREE from 'three';
+import * as RO from '../../../src/components/middleearth/rush/sceneShaders.js';
+import * as RN from '../../../src/components/middleearth/nodes/rush/sceneShaders.js';
 
 const floor = (scene, color = 0x3a3026) => {
-  const f = new THREE.Mesh(
-    new THREE.PlaneGeometry(12, 12).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({ color }),
-  );
+  const f = new THREE.Mesh(new THREE.PlaneGeometry(12, 12).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color }));
   scene.add(f);
 };
 
@@ -39,5 +36,5 @@ const rings =
   };
 
 export default {
-  "middleearth:rush:rings": { node: rings(RN), classic: rings(RO) },
+  'middleearth:rush:rings': { node: rings(RN), classic: rings(RO) },
 };

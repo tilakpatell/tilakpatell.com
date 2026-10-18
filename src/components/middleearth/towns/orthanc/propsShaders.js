@@ -2,7 +2,7 @@
 // palantír’s glass and the tower’s glassy black stone. ../../nodes/towns/
 // orthanc/propsShaders.js is their twin on the node renderer, the same names.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 // The palantír's glass: dark, a cold sheen at its rim, and deep inside a
 // fire that wakes as you look (uWake) and, at the last, the Eye (uEye).
@@ -58,25 +58,18 @@ export function stoneMaterial() {
 // storm's grey light at a slant, and the pits' fire from below, low down
 export function glassyStone(m) {
   m.onBeforeCompile = (sh) => {
-    sh.vertexShader = sh.vertexShader
-      .replace("#include <common>", "#include <common>\nvarying float vTowerY;")
-      .replace(
-        "#include <project_vertex>",
-        "#include <project_vertex>\nvTowerY = (modelMatrix * vec4(transformed, 1.0)).y;",
-      );
-    sh.fragmentShader = sh.fragmentShader
-      .replace("#include <common>", "#include <common>\nvarying float vTowerY;")
-      .replace(
-        "#include <emissivemap_fragment>",
-        `#include <emissivemap_fragment>
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vTowerY;').replace('#include <project_vertex>', '#include <project_vertex>\nvTowerY = (modelMatrix * vec4(transformed, 1.0)).y;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vTowerY;').replace(
+      '#include <emissivemap_fragment>',
+      `#include <emissivemap_fragment>
       vec3 towerUp = normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
       float towerFacing = dot(normal, towerUp);
       float towerRim = pow(1.0 - abs(dot(normalize(vViewPosition), normal)), 3.0);
       // (on the walls and the edges, not the tops of the steps)
       totalEmissiveRadiance += vec3(0.26, 0.3, 0.38) * towerRim * (0.45 + 0.55 * max(0.0, towerFacing + 0.3)) * (1.0 - smoothstep(0.55, 0.9, towerFacing));
       totalEmissiveRadiance += vec3(0.55, 0.16, 0.04) * max(0.0, -towerFacing) * exp(-vTowerY / 34.0) * 0.9;`,
-      );
+    );
   };
-  m.customProgramCacheKey = () => "orthanc-tower-stone";
+  m.customProgramCacheKey = () => 'orthanc-tower-stone';
   return m;
 }

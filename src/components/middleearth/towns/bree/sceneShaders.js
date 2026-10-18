@@ -2,7 +2,7 @@
 // ground, its GLSL moved here whole from ./scene.js, and ../../nodes/towns/
 // bree/sceneShaders.js its twin on the node renderer.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 // The `i`th Rider’s sight, as far and as wide as NAZGUL says; the scene
 // writes uTime and uOpacity.
@@ -19,8 +19,7 @@ export function sightMaterial(NAZGUL, i) {
     transparent: true,
     depthWrite: false,
     side: THREE.DoubleSide,
-    vertexShader:
-      "attribute vec2 local; varying vec2 vP; void main() { vP = local; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+    vertexShader: 'attribute vec2 local; varying vec2 vP; void main() { vP = local; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: `
           uniform vec3 uColor;
           uniform float uOpacity, uTime, uSight, uCone, uSeed;

@@ -5,9 +5,9 @@
 // own uniforms. A few dozen Riders instanced in a column, some with
 // banners, galloping a little way into their stride and standing; a lone
 // Rider (not instanced: one seed for all) and a banner on its pole, waving.
-import * as THREE from "three";
-import { createEdorasFolk } from "../../../src/components/middleearth/towns/edoras/folk.js";
-import * as TF from "../../../src/components/middleearth/nodes/towns/edoras/folkShaders.js";
+import * as THREE from 'three';
+import { createEdorasFolk } from '../../../src/components/middleearth/towns/edoras/folk.js';
+import * as TF from '../../../src/components/middleearth/nodes/towns/edoras/folkShaders.js';
 
 const host =
   (twin, { ride, lone }) =>
@@ -28,10 +28,7 @@ const host =
       };
     }
     scene.background = new THREE.Color(0x8aa4c0);
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(40, 40).rotateX(-Math.PI / 2),
-      new THREE.MeshStandardMaterial({ color: 0x6a7a44, roughness: 0.95 }),
-    );
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x6a7a44, roughness: 0.95 }));
     scene.add(ground);
     if (lone) {
       const r = new THREE.Mesh(kit.geometry, mats.host);
@@ -46,25 +43,13 @@ const host =
     } else {
       const rows = 5;
       const cols = 6;
-      const riders = new THREE.InstancedMesh(
-        kit.geometry,
-        mats.host,
-        rows * cols,
-      );
-      const banners = new THREE.InstancedMesh(
-        kit.banner.geometry,
-        mats.banner,
-        cols,
-      );
+      const riders = new THREE.InstancedMesh(kit.geometry, mats.host, rows * cols);
+      const banners = new THREE.InstancedMesh(kit.banner.geometry, mats.banner, cols);
       const m = new THREE.Matrix4();
       let b = 0;
       for (let i = 0; i < rows; i++)
         for (let j = 0; j < cols; j++) {
-          m.makeRotationY(-0.3).setPosition(
-            -j * 2.6 + (i % 2) * 0.7,
-            0,
-            i * 1.5 - 3,
-          );
+          m.makeRotationY(-0.3).setPosition(-j * 2.6 + (i % 2) * 0.7, 0, i * 1.5 - 3);
           riders.setMatrixAt(i * cols + j, m);
           if (i === 2) banners.setMatrixAt(b++, m);
         }
@@ -77,15 +62,15 @@ const host =
   };
 
 export default {
-  "middleearth:folk:host": {
+  'middleearth:folk:host': {
     node: host(true, { ride: 1, lone: false }),
     classic: host(false, { ride: 1, lone: false }),
   },
-  "middleearth:folk:host-standing": {
+  'middleearth:folk:host-standing': {
     node: host(true, { ride: 0, lone: false }),
     classic: host(false, { ride: 0, lone: false }),
   },
-  "middleearth:folk:lone": {
+  'middleearth:folk:lone': {
     node: host(true, { ride: 0.6, lone: true }),
     classic: host(false, { ride: 0.6, lone: true }),
   },

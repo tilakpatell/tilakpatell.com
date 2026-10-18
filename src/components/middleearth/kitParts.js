@@ -4,37 +4,15 @@
 // charred hide, the particles' colour ramps and their pool, and the figures
 // (a wizard, a Balrog, hobbits and orcs).
 
-import * as THREE from "three";
-import { canvasTexture, hot } from "../../lib/stage3d";
-import {
-  clamp01,
-  fbm,
-  makeCanvas,
-  makeCells,
-  makeNoise,
-  mix,
-  normalFromField,
-  paintPixels,
-  smooth,
-} from "../../lib/paint";
-import { createStride, createTracker, footAt, legRig } from "./creatures";
+import * as THREE from 'three';
+import { canvasTexture, hot } from '../../lib/three/stage3dNodes';
+import { clamp01, fbm, makeCanvas, makeCells, makeNoise, mix, normalFromField, paintPixels, smooth } from '../../lib/paint';
+import { createStride, createTracker, footAt, legRig } from './creatures';
 // ── painted textures ──
 
 // Stone: cracked along cell edges, or laid in `courses` of blocks; `joint`
 // is how deep the cracks and the joints are cut.
-export function stoneTextures(
-  renderer,
-  {
-    seed = 3,
-    size = 256,
-    dark = [40, 35, 33],
-    light = [156, 142, 130],
-    courses = 0,
-    joint = 0.4,
-    repeat = [1, 1],
-    relief = 3,
-  } = {},
-) {
+export function stoneTextures(renderer, { seed = 3, size = 256, dark = [40, 35, 33], light = [156, 142, 130], courses = 0, joint = 0.4, repeat = [1, 1], relief = 3 } = {}) {
   const n = makeNoise(seed);
   const cells = makeCells(seed + 11);
   const field = new Float32Array(size * size);
@@ -48,11 +26,7 @@ export function stoneTextures(
       const row = Math.floor(v * courses);
       const fu = (u * across + (row % 2) * 0.5) % 1;
       const fv = (v * courses) % 1;
-      seam = smooth(
-        0,
-        0.05,
-        Math.min(Math.min(fu, 1 - fu) * 2, Math.min(fv, 1 - fv)),
-      );
+      seam = smooth(0, 0.05, Math.min(Math.min(fu, 1 - fu) * 2, Math.min(fv, 1 - fv)));
       const col = Math.floor(u * across + (row % 2) * 0.5) % across;
       h = h * 0.8 + n(col * 3 + 0.5, row * 5 + 0.5) * 0.14;
     } else {
@@ -69,24 +43,17 @@ export function stoneTextures(
   });
   return {
     map: canvasTexture(c, renderer, { repeat }),
-    normalMap: canvasTexture(
-      normalFromField(field, size, size, relief),
-      renderer,
-      { repeat, srgb: false },
-    ),
+    normalMap: canvasTexture(normalFromField(field, size, size, relief), renderer, { repeat, srgb: false }),
   };
 }
 
 // A Balrog's hide: charred plates, and fire showing in the cracks between.
-function magmaTextures(
-  renderer,
-  { seed = 7, size = 256, repeat = [2, 2] } = {},
-) {
+function magmaTextures(renderer, { seed = 7, size = 256, repeat = [2, 2] } = {}) {
   const n = makeNoise(seed);
   const cells = makeCells(seed + 5);
   const field = new Float32Array(size * size);
   const glow = makeCanvas(size);
-  const gctx = glow.getContext("2d");
+  const gctx = glow.getContext('2d');
   const g = gctx.createImageData(size, size);
   const c = makeCanvas(size);
   paintPixels(c, (u, v, out, x, y) => {
@@ -94,8 +61,7 @@ function magmaTextures(
     const heat = fbm(n, u * 3, v * 3, { period: 3, octaves: 3 });
     const edge = k.f2 - k.f1;
     const plate = smooth(0, 0.16, edge);
-    const vein =
-      (1 - smooth(0, 0.012 + heat * 0.05, edge)) * smooth(0.5, 0.78, heat);
+    const vein = (1 - smooth(0, 0.012 + heat * 0.05, edge)) * smooth(0.5, 0.78, heat);
     const grain = fbm(n, u * 24, v * 24, { period: 24, octaves: 2 });
     field[y * size + x] = plate * (0.7 + grain * 0.3);
     const shade = 12 + plate * 24 + grain * 14 + k.id * 10;
@@ -112,11 +78,7 @@ function magmaTextures(
   return {
     map: canvasTexture(c, renderer, { repeat }),
     emissiveMap: canvasTexture(glow, renderer, { repeat }),
-    normalMap: canvasTexture(
-      normalFromField(field, size, size, 3.5),
-      renderer,
-      { repeat, srgb: false },
-    ),
+    normalMap: canvasTexture(normalFromField(field, size, size, 3.5), renderer, { repeat, srgb: false }),
   };
 }
 
@@ -164,32 +126,17 @@ function lut(stops, n = 48) {
 // screen). emit() adds one; step() ages, moves and redraws them. The
 // material is the renderer's kind's (makeMaterial({ stretch, additive })):
 // ./kit.js's on the classic renderer, ./nodes/kit.js's on the node one.
-export function particlePool(
-  makeMaterial,
-  max,
-  {
-    ramp = FIRE,
-    additive = true,
-    stretch = 1,
-    gravity = 0,
-    drag = 0.6,
-    swirl = 0,
-  } = {},
-) {
+export function particlePool(makeMaterial, max, { ramp = FIRE, additive = true, stretch = 1, gravity = 0, drag = 0.6, swirl = 0 } = {}) {
   const quad = new THREE.PlaneGeometry(1, 1);
   const geo = new THREE.InstancedBufferGeometry();
   geo.index = quad.index;
-  geo.setAttribute("position", quad.getAttribute("position"));
+  geo.setAttribute('position', quad.getAttribute('position'));
   const at = new Float32Array(max * 4);
   const co = new Float32Array(max * 4);
-  const aAt = new THREE.InstancedBufferAttribute(at, 4).setUsage(
-    THREE.DynamicDrawUsage,
-  );
-  const aCo = new THREE.InstancedBufferAttribute(co, 4).setUsage(
-    THREE.DynamicDrawUsage,
-  );
-  geo.setAttribute("aAt", aAt);
-  geo.setAttribute("aColor", aCo);
+  const aAt = new THREE.InstancedBufferAttribute(at, 4).setUsage(THREE.DynamicDrawUsage);
+  const aCo = new THREE.InstancedBufferAttribute(co, 4).setUsage(THREE.DynamicDrawUsage);
+  geo.setAttribute('aAt', aAt);
+  geo.setAttribute('aColor', aCo);
   geo.instanceCount = 0;
   const material = makeMaterial({ stretch, additive });
   const mesh = new THREE.Mesh(geo, material);
@@ -276,8 +223,7 @@ export function particlePool(
 
 // ── shapes ──
 
-const std = (o) =>
-  new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0, ...o });
+const std = (o) => new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0, ...o });
 const solid = (geo, mat, x = 0, y = 0, z = 0) => {
   const m = new THREE.Mesh(geo, mat);
   m.position.set(x, y, z);
@@ -296,23 +242,15 @@ const UP = new THREE.Vector3(0, 1, 0);
 function limb(a, b, r0, r1, mat, radial = 8) {
   const A = new THREE.Vector3(...a);
   const B = new THREE.Vector3(...b);
-  const m = solid(
-    new THREE.CylinderGeometry(r1, r0, A.distanceTo(B), radial),
-    mat,
-  );
+  const m = solid(new THREE.CylinderGeometry(r1, r0, A.distanceTo(B), radial), mat);
   m.position.copy(A).add(B).multiplyScalar(0.5);
   m.quaternion.setFromUnitVectors(UP, B.clone().sub(A).normalize());
   return m;
 }
 
 // A tube along a curve through `points`, thinning from r0 to r1.
-function taperedTube(
-  points,
-  { segments = 18, radial = 7, r0 = 0.2, r1 = 0.02 } = {},
-) {
-  const curve = new THREE.CatmullRomCurve3(
-    points.map((p) => new THREE.Vector3(...p)),
-  );
+function taperedTube(points, { segments = 18, radial = 7, r0 = 0.2, r1 = 0.02 } = {}) {
+  const curve = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p)));
   const g = new THREE.TubeGeometry(curve, segments, 1, radial, false);
   const pos = g.attributes.position;
   const c = new THREE.Vector3();
@@ -366,7 +304,7 @@ function membrane(W, rim, n = 7, m = 4) {
     }
   }
   const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setIndex(idx);
   g.computeVertexNormals();
   return g;
@@ -403,32 +341,12 @@ export function makeGandalf() {
   );
   body.add(solid(new THREE.SphereGeometry(0.13, 14, 10), skin, -0.02, 1.67, 0));
   body.add(solid(new THREE.SphereGeometry(0.14, 12, 10), hair, 0.045, 1.68, 0));
-  const beard = solid(
-    new THREE.ConeGeometry(0.115, 0.44, 10),
-    hair,
-    -0.11,
-    1.44,
-    0,
-  );
+  const beard = solid(new THREE.ConeGeometry(0.115, 0.44, 10), hair, -0.11, 1.44, 0);
   beard.rotation.z = Math.PI - 0.2;
   body.add(beard);
   const hat = new THREE.Group();
-  hat.add(
-    solid(
-      new THREE.CylinderGeometry(0.34, 0.37, 0.03, 20),
-      hatCloth,
-      0,
-      1.78,
-      0,
-    ),
-  );
-  const cone = solid(
-    new THREE.ConeGeometry(0.18, 0.64, 14),
-    hatCloth,
-    0.04,
-    2.08,
-    0,
-  );
+  hat.add(solid(new THREE.CylinderGeometry(0.34, 0.37, 0.03, 20), hatCloth, 0, 1.78, 0));
+  const cone = solid(new THREE.ConeGeometry(0.18, 0.64, 14), hatCloth, 0.04, 2.08, 0);
   cone.rotation.z = -0.14;
   hat.add(cone);
   body.add(hat);
@@ -438,29 +356,16 @@ export function makeGandalf() {
   const staff = new THREE.Group();
   staff.position.set(-0.42, 1.26, 0.37);
   // (a staff in a hand, gripped at its origin: lib/three/held.js's kinds)
-  staff.userData.held = { kind: "staff" };
+  staff.userData.held = { kind: 'staff' };
   const grip = new THREE.Object3D();
-  grip.name = "grip";
+  grip.name = 'grip';
   staff.add(grip);
-  staff.add(
-    solid(new THREE.CylinderGeometry(0.022, 0.03, 2.3, 7), wood, 0, -0.1, 0),
-  );
-  const gnarl = solid(
-    new THREE.TorusGeometry(0.07, 0.022, 6, 10),
-    wood,
-    0,
-    1.06,
-    0,
-  );
+  staff.add(solid(new THREE.CylinderGeometry(0.022, 0.03, 2.3, 7), wood, 0, -0.1, 0));
+  const gnarl = solid(new THREE.TorusGeometry(0.07, 0.022, 6, 10), wood, 0, 1.06, 0);
   gnarl.rotation.y = Math.PI / 2;
   staff.add(gnarl);
   const crystalMat = new THREE.MeshBasicMaterial({ color: hot(0xdfeaff, 3) });
-  staff.add(
-    new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.055, 1),
-      crystalMat,
-    ).translateY(1.06),
-  );
+  staff.add(new THREE.Mesh(new THREE.IcosahedronGeometry(0.055, 1), crystalMat).translateY(1.06));
   const light = new THREE.PointLight(0xcfe0ff, 12, 18, 2);
   light.position.y = 1.1;
   staff.add(light);
@@ -495,17 +400,13 @@ export function makeGandalf() {
 
   // raise: the staff lifted against the whip; slam: 1 as it comes down on the bridge
   const animate = ({ t, raise = 0, slam = 0, glow = 0, lean = 0 }) => {
-    const lift =
-      raise * 0.5 + Math.sin(Math.min(1, slam * 1.6) * Math.PI) * 0.55;
+    const lift = raise * 0.5 + Math.sin(Math.min(1, slam * 1.6) * Math.PI) * 0.55;
     staff.position.y = 1.26 + lift;
     staff.rotation.z = raise * 0.38 - slam * 0.1;
     body.scale.y = 1 + Math.sin(t * 1.4) * 0.006;
     body.rotation.z = -lean * 0.3;
-    light.intensity =
-      (white ? 26 : 12) + raise * 50 + glow * 160 + Math.sin(t * 7) * 0.8;
-    crystalMat.color
-      .setScalar(1)
-      .multiply(hot(0xdfeaff, 3 + raise * 3 + glow * 6));
+    light.intensity = (white ? 26 : 12) + raise * 50 + glow * 160 + Math.sin(t * 7) * 0.8;
+    crystalMat.color.setScalar(1).multiply(hot(0xdfeaff, 3 + raise * 3 + glow * 6));
   };
 
   return { group: g, staff, light, setWhite, animate };
@@ -555,9 +456,7 @@ export function makeBalrog(renderer) {
   const hips = new THREE.Group();
   hips.position.y = 3.05;
   g.add(hips);
-  hips.add(
-    solid(new THREE.SphereGeometry(0.9, 14, 10).scale(0.95, 0.8, 1.05), skin),
-  );
+  hips.add(solid(new THREE.SphereGeometry(0.9, 14, 10).scale(0.95, 0.8, 1.05), skin));
 
   const legs = [1, -1].map((s) => {
     const leg = new THREE.Group();
@@ -569,17 +468,9 @@ export function makeBalrog(renderer) {
     leg.add(shin);
     shin.add(solid(new THREE.SphereGeometry(0.38, 10, 8), skin));
     shin.add(limb([0, 0, 0], [-0.3, -1.3, 0], 0.36, 0.22, skin, 10));
-    shin.add(
-      solid(new THREE.BoxGeometry(1.0, 0.32, 0.62), skin, 0.08, -1.36, 0),
-    );
+    shin.add(solid(new THREE.BoxGeometry(1.0, 0.32, 0.62), skin, 0.08, -1.36, 0));
     for (const dz of [-0.2, 0, 0.2]) {
-      const claw = solid(
-        new THREE.ConeGeometry(0.09, 0.4, 6),
-        horn,
-        0.72,
-        -1.42,
-        dz,
-      );
+      const claw = solid(new THREE.ConeGeometry(0.09, 0.4, 6), horn, 0.72, -1.42, dz);
       claw.rotation.z = -Math.PI / 2;
       shin.add(claw);
     }
@@ -622,53 +513,20 @@ export function makeBalrog(renderer) {
   const head = new THREE.Group();
   head.position.set(0.32, 2.95, 0);
   torso.add(head);
-  head.add(
-    solid(
-      new THREE.SphereGeometry(0.56, 14, 12).scale(1.05, 0.95, 0.9),
-      skin,
-      0.15,
-      0.42,
-      0,
-    ),
-  );
-  const snout = solid(
-    new THREE.CylinderGeometry(0.2, 0.4, 0.75, 7),
-    skin,
-    0.72,
-    0.38,
-    0,
-  );
+  head.add(solid(new THREE.SphereGeometry(0.56, 14, 12).scale(1.05, 0.95, 0.9), skin, 0.15, 0.42, 0));
+  const snout = solid(new THREE.CylinderGeometry(0.2, 0.4, 0.75, 7), skin, 0.72, 0.38, 0);
   snout.rotation.z = -Math.PI / 2;
   head.add(snout);
-  const brow = solid(
-    new THREE.BoxGeometry(0.4, 0.14, 0.8),
-    skin,
-    0.52,
-    0.72,
-    0,
-  );
+  const brow = solid(new THREE.BoxGeometry(0.4, 0.14, 0.8), skin, 0.52, 0.72, 0);
   brow.rotation.z = -0.25;
   head.add(brow);
   const jaw = new THREE.Group();
   jaw.position.set(0.3, 0.18, 0);
   head.add(jaw);
-  const jawBone = solid(
-    new THREE.CylinderGeometry(0.14, 0.32, 0.72, 7),
-    skin,
-    0.38,
-    -0.08,
-    0,
-  );
+  const jawBone = solid(new THREE.CylinderGeometry(0.14, 0.32, 0.72, 7), skin, 0.38, -0.08, 0);
   jawBone.rotation.z = -Math.PI / 2;
   jaw.add(jawBone);
-  head.add(
-    new THREE.Mesh(
-      new THREE.SphereGeometry(0.2, 8, 6).scale(1.7, 0.45, 1),
-      fireMat,
-    )
-      .translateX(0.72)
-      .translateY(0.18),
-  );
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6).scale(1.7, 0.45, 1), fireMat).translateX(0.72).translateY(0.18));
   for (const s of [1, -1]) {
     head.add(
       new THREE.Mesh(new THREE.SphereGeometry(0.075, 8, 6), eyeMat)
@@ -710,13 +568,7 @@ export function makeBalrog(renderer) {
     fore.add(hand);
     hand.add(solid(new THREE.SphereGeometry(0.36, 10, 8), skin));
     for (const dz of [-0.18, 0, 0.18]) {
-      const claw = solid(
-        new THREE.ConeGeometry(0.07, 0.42, 6),
-        horn,
-        0.12,
-        -0.42,
-        dz,
-      );
+      const claw = solid(new THREE.ConeGeometry(0.07, 0.42, 6), horn, 0.12, -0.42, dz);
       claw.rotation.z = Math.PI + 0.3;
       hand.add(claw);
     }
@@ -730,10 +582,7 @@ export function makeBalrog(renderer) {
   const sword = new THREE.Group();
   sword.rotation.z = 1.35;
   armL.hand.add(sword);
-  const edge = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.03, 0.22, 3.8, 4).scale(1, 1, 0.4),
-    fireMat,
-  );
+  const edge = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.22, 3.8, 4).scale(1, 1, 0.4), fireMat);
   edge.position.y = -2.1;
   edge.rotation.z = Math.PI;
   sword.add(edge);
@@ -768,11 +617,7 @@ export function makeBalrog(renderer) {
       ),
     );
     for (const f of F) {
-      const mid = [
-        mix(W[0], f[0], 0.5) + 0.25,
-        mix(W[1], f[1], 0.5) + 0.3,
-        mix(W[2], f[2], 0.5),
-      ];
+      const mid = [mix(W[0], f[0], 0.5) + 0.25, mix(W[1], f[1], 0.5) + 0.3, mix(W[2], f[2], 0.5)];
       inner.add(
         solid(
           taperedTube([W, mid, f], {
@@ -787,13 +632,7 @@ export function makeBalrog(renderer) {
     }
     const skinMesh = solid(membrane(W, [...F, B]), web);
     inner.add(skinMesh);
-    const claw = solid(
-      new THREE.ConeGeometry(0.12, 0.7, 6),
-      horn,
-      W[0] + 0.2,
-      W[1] + 0.45,
-      W[2],
-    );
+    const claw = solid(new THREE.ConeGeometry(0.12, 0.7, 6), horn, W[0] + 0.2, W[1] + 0.45, W[2]);
     inner.add(claw);
     flame(inner, W[0], W[1] + 0.4, W[2], 9, 1.0);
     return root;
@@ -822,14 +661,7 @@ export function makeBalrog(renderer) {
   });
   const self = { steps: 0 };
   let down = [true, true];
-  const animate = ({
-    t,
-    spread = 0.4,
-    raise = 0,
-    lash = 0,
-    roar = 0,
-    flare = 1,
-  }) => {
+  const animate = ({ t, spread = 0.4, raise = 0, lash = 0, roar = 0, flare = 1 }) => {
     const m = track(t, g.position.x, g.position.z, g.rotation.y, g.scale.x);
     const st = gait.step(m.dt, m.fwd < -0.05 ? -m.speed : m.speed);
     const moving = st.amount;
@@ -840,16 +672,10 @@ export function makeBalrog(renderer) {
     // stride under the hips, the hips lower the longer it is and highest
     // with a foot beneath them
     const cx = RIG.home[0] * (1 - moving);
-    const lower =
-      RIG.sink(st.travel * moving, cx) *
-        (0.8 + 0.2 * Math.cos(2 * stride - 0.52 * Math.PI * 2)) +
-      (1 - moving) * 0.04;
+    const lower = RIG.sink(st.travel * moving, cx) * (0.8 + 0.2 * Math.cos(2 * stride - 0.52 * Math.PI * 2)) + (1 - moving) * 0.04;
     legs.forEach(({ leg, shin }, i) => {
       const f = footAt(st.cycle + (i ? 0.5 : 0), 0.52);
-      const [th, sh] = RIG.reach(
-        cx + ((f.x * st.travel) / 2) * moving,
-        RIG.home[1] + lower + f.lift * 0.55 * moving,
-      );
+      const [th, sh] = RIG.reach(cx + ((f.x * st.travel) / 2) * moving, RIG.home[1] + lower + f.lift * 0.55 * moving);
       leg.rotation.z = th;
       shin.rotation.z = sh;
       // a footfall: a foot come down
@@ -877,10 +703,8 @@ export function makeBalrog(renderer) {
       w.rotation.x = -s * (flap - 0.35 * fold + 0.1 * roar);
       w.rotation.y = -s * (0.95 * fold - 0.15 * roar);
     });
-    skin.emissiveIntensity =
-      (1.7 + Math.sin(t * 2.3) * 0.4 + roar * 2.2) * flare;
-    light.intensity =
-      (70 + Math.sin(t * 9) * 8 + Math.sin(t * 23) * 5 + roar * 120) * flare;
+    skin.emissiveIntensity = (1.7 + Math.sin(t * 2.3) * 0.4 + roar * 2.2) * flare;
+    light.intensity = (70 + Math.sin(t * 9) * 8 + Math.sin(t * 23) * 5 + roar * 120) * flare;
   };
 
   return Object.assign(self, {
@@ -918,25 +742,10 @@ export function makeHobbit({ cloak = 0x4b5a3a, pack = false } = {}) {
     ),
   );
   body.add(solid(new THREE.SphereGeometry(0.115, 12, 8), skin, 0.02, 0.9, 0));
-  const hood = solid(
-    new THREE.SphereGeometry(0.15, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.62),
-    cloth,
-    -0.03,
-    0.92,
-    0,
-  );
+  const hood = solid(new THREE.SphereGeometry(0.15, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.62), cloth, -0.03, 0.92, 0);
   hood.rotation.z = 0.5;
   body.add(hood);
-  if (pack)
-    body.add(
-      solid(
-        new THREE.BoxGeometry(0.2, 0.3, 0.3),
-        std({ color: 0x6b5338 }),
-        -0.24,
-        0.52,
-        0,
-      ),
-    );
+  if (pack) body.add(solid(new THREE.BoxGeometry(0.2, 0.3, 0.3), std({ color: 0x6b5338 }), -0.24, 0.52, 0));
   return { group: g, body, cloth };
 }
 
@@ -953,49 +762,19 @@ export function makeOrc(iron, hide) {
     g.add(leg);
     return leg;
   });
-  const torso = solid(
-    new THREE.CapsuleGeometry(0.22, 0.42, 4, 8),
-    hide,
-    0,
-    0.92,
-    0,
-  );
+  const torso = solid(new THREE.CapsuleGeometry(0.22, 0.42, 4, 8), hide, 0, 0.92, 0);
   torso.rotation.z = 0.28;
   body.add(torso);
   body.add(solid(new THREE.SphereGeometry(0.15, 10, 8), hide, -0.14, 1.28, 0));
-  const helm = solid(
-    new THREE.ConeGeometry(0.17, 0.3, 6),
-    iron,
-    -0.13,
-    1.42,
-    0,
-  );
+  const helm = solid(new THREE.ConeGeometry(0.17, 0.3, 6), iron, -0.13, 1.42, 0);
   body.add(helm);
-  const shield = solid(
-    new THREE.CylinderGeometry(0.26, 0.26, 0.04, 8),
-    iron,
-    -0.1,
-    0.92,
-    0.28,
-  );
+  const shield = solid(new THREE.CylinderGeometry(0.26, 0.26, 0.04, 8), iron, -0.1, 0.92, 0.28);
   shield.rotation.x = Math.PI / 2;
   body.add(shield);
-  const spear = solid(
-    new THREE.CylinderGeometry(0.015, 0.015, 1.9, 5),
-    hide,
-    -0.2,
-    1.1,
-    -0.26,
-  );
+  const spear = solid(new THREE.CylinderGeometry(0.015, 0.015, 1.9, 5), hide, -0.2, 1.1, -0.26);
   spear.rotation.z = 0.18;
   body.add(spear);
-  const tip = solid(
-    new THREE.ConeGeometry(0.045, 0.22, 5),
-    iron,
-    -0.39,
-    2.12,
-    -0.26,
-  );
+  const tip = solid(new THREE.ConeGeometry(0.045, 0.22, 5), iron, -0.39, 2.12, -0.26);
   tip.rotation.z = 0.18;
   body.add(tip);
   return { group: g, body, legs };

@@ -3,7 +3,7 @@
 // so ../../nodes/towns/amonhen/propsShaders.js can be their twin on the
 // node renderer.
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
 // The Uruk-hai's one material: colour in the vertices; a `metal` attribute
 // says how much of each part is black iron (smoother, metallic), and `puv`
@@ -20,33 +20,15 @@ export function urukMaterial(paint, env) {
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uPaint = { value: paint };
     sh.vertexShader = sh.vertexShader
-      .replace(
-        "#include <common>",
-        "#include <common>\nattribute float metal;\nattribute vec2 puv;\nvarying float vMetal;\nvarying vec2 vPuv;",
-      )
-      .replace(
-        "#include <begin_vertex>",
-        "#include <begin_vertex>\nvMetal = metal;\nvPuv = puv;",
-      );
+      .replace('#include <common>', '#include <common>\nattribute float metal;\nattribute vec2 puv;\nvarying float vMetal;\nvarying vec2 vPuv;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMetal = metal;\nvPuv = puv;');
     sh.fragmentShader = sh.fragmentShader
-      .replace(
-        "#include <common>",
-        "#include <common>\nuniform sampler2D uPaint;\nvarying float vMetal;\nvarying vec2 vPuv;",
-      )
-      .replace(
-        "#include <color_fragment>",
-        "#include <color_fragment>\nvec4 pnt = texture2D(uPaint, vPuv);\ndiffuseColor.rgb = mix(diffuseColor.rgb, pnt.rgb, pnt.a);",
-      )
-      .replace(
-        "#include <roughnessmap_fragment>",
-        "#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.34, vMetal);",
-      )
-      .replace(
-        "#include <metalnessmap_fragment>",
-        "#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.8, vMetal);",
-      );
+      .replace('#include <common>', '#include <common>\nuniform sampler2D uPaint;\nvarying float vMetal;\nvarying vec2 vPuv;')
+      .replace('#include <color_fragment>', '#include <color_fragment>\nvec4 pnt = texture2D(uPaint, vPuv);\ndiffuseColor.rgb = mix(diffuseColor.rgb, pnt.rgb, pnt.a);')
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.34, vMetal);')
+      .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.8, vMetal);');
   };
-  m.customProgramCacheKey = () => "amonhen-uruk";
+  m.customProgramCacheKey = () => 'amonhen-uruk';
   return m;
 }
 

@@ -4,23 +4,18 @@
 // the pond in fog; the ground painted by its map; a town's tufts swaying;
 // the flowers, tinted and nodding in the one wind; the smoke rings; the
 // fireflies; a firework and the dragon (Math.random seeded for each side).
-import * as THREE from "three";
-import * as SO from "../../../src/components/middleearth/shire/sky.js";
-import * as SN from "../../../src/components/middleearth/nodes/shire/sky.js";
-import * as GO from "../../../src/components/middleearth/shire/ground.js";
-import * as GN from "../../../src/components/middleearth/nodes/shire/ground.js";
-import * as FO from "../../../src/components/middleearth/shire/fx.js";
-import * as FN from "../../../src/components/middleearth/nodes/shire/fx.js";
-import * as PO from "../../../src/components/middleearth/shire/propsShaders.js";
-import * as PN from "../../../src/components/middleearth/nodes/shire/propsShaders.js";
-import * as WO from "../../../src/lib/three/wind.js";
-import * as WN from "../../../src/lib/three/windNodes.js";
-import {
-  BAG_END,
-  POND,
-  WATER_Y,
-  height,
-} from "../../../src/components/middleearth/shire/rules.js";
+import * as THREE from 'three';
+import * as SO from '../../../src/components/middleearth/shire/sky.js';
+import * as SN from '../../../src/components/middleearth/nodes/shire/sky.js';
+import * as GO from '../../../src/components/middleearth/shire/ground.js';
+import * as GN from '../../../src/components/middleearth/nodes/shire/ground.js';
+import * as FO from '../../../src/components/middleearth/shire/fx.js';
+import * as FN from '../../../src/components/middleearth/nodes/shire/fx.js';
+import * as PO from '../../../src/components/middleearth/shire/propsShaders.js';
+import * as PN from '../../../src/components/middleearth/nodes/shire/propsShaders.js';
+import * as WO from '../../../src/lib/three/wind.js';
+import * as WN from '../../../src/lib/three/windNodes.js';
+import { BAG_END, POND, WATER_Y, height } from '../../../src/components/middleearth/shire/rules.js';
 
 const O = { S: SO, G: GO, F: FO, P: PO, W: WO };
 const N = { S: SN, G: GN, F: FN, P: PN, W: WN };
@@ -52,11 +47,11 @@ const sky =
     const { dome, uniforms: u } = K.S.makeSky(80);
     scene.add(dome);
     u.uTime.value = 40;
-    if (kind === "day") {
+    if (kind === 'day') {
       mood(u, K.S.MOODS.day);
       camera.position.set(0, 1, 0);
       camera.lookAt(5.5, 2.2, 4.2);
-    } else if (kind === "night") {
+    } else if (kind === 'night') {
       mood(u, K.S.MOODS.night);
       u.uMoon.value = 1;
       camera.position.set(0, 1, 0);
@@ -99,9 +94,7 @@ const swaying =
     const mat = new THREE.MeshLambertMaterial({ color: 0x6a9a3a });
     const out = K.G.swaying(mat, { uWind: { value: 2.3 } }, 0.4) ?? mat;
     const list = [];
-    for (let i = 0; i < 7; i++)
-      for (let j = 0; j < 5; j++)
-        list.push({ x: (i - 3) * 0.7, z: (j - 2) * 0.7, y: 0, s: 1 });
+    for (let i = 0; i < 7; i++) for (let j = 0; j < 5; j++) list.push({ x: (i - 3) * 0.7, z: (j - 2) * 0.7, y: 0, s: 1 });
     scene.add(K.G.instances(geo, out, list));
     camera.position.set(0, 1.6, 4.5);
     camera.lookAt(0, 0.8, 0);
@@ -109,11 +102,7 @@ const swaying =
 
 // a flower: a green stem (tint 0) and a pale head (tint 1)
 const flowerGeo = () => {
-  const stem = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 5).translate(
-    0,
-    0.15,
-    0,
-  );
+  const stem = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 5).translate(0, 0.15, 0);
   const head = new THREE.SphereGeometry(0.09, 8, 6).translate(0, 0.34, 0);
   const parts = [
     [stem, 0, [0.25, 0.55, 0.2]],
@@ -133,10 +122,10 @@ const flowerGeo = () => {
     }
   }
   const geo = new THREE.BufferGeometry();
-  geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-  geo.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
-  geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
-  geo.setAttribute("tint", new THREE.Float32BufferAttribute(tint, 1));
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.setAttribute('tint', new THREE.Float32BufferAttribute(tint, 1));
   return geo;
 };
 
@@ -215,9 +204,9 @@ const fireworks =
     const fx = K.F.createFx(scene, { scale: 0.5 });
     const v = (x, y, z) => new THREE.Vector3(x, y, z);
     seeded(() => {
-      fx.burst(v(-3, 6, 0), "gold");
-      fx.burst(v(3, 7, -2), "blue");
-      fx.burst(v(0, 9, -4), "green");
+      fx.burst(v(-3, 6, 0), 'gold');
+      fx.burst(v(3, 7, -2), 'blue');
+      fx.burst(v(0, 9, -4), 'green');
       fx.startDragon([v(-8, 3, 0), v(-3, 5, 2), v(2, 4, 0), v(8, 6, -2)], 4);
       for (let i = 0; i < 20; i++) fx.step(0.03, i * 0.03, { day: 0 });
     });
@@ -228,15 +217,15 @@ const fireworks =
 const pair = (make, ...a) => ({ node: make(N, ...a), classic: make(O, ...a) });
 
 export default {
-  "middleearth:shire:sky:day": pair(sky, "day"),
-  "middleearth:shire:sky:night": pair(sky, "night"),
-  "middleearth:shire:sky:eye": pair(sky, "eye"),
-  "middleearth:shire:water": pair(water),
-  "middleearth:shire:terrain": pair(terrain),
-  "middleearth:shire:swaying": pair(swaying),
-  "middleearth:shire:flowers": pair(flowers),
-  "middleearth:shire:tint": pair(tint),
-  "middleearth:shire:rings": pair(rings),
-  "middleearth:shire:flies": pair(flies),
-  "middleearth:shire:fireworks": pair(fireworks),
+  'middleearth:shire:sky:day': pair(sky, 'day'),
+  'middleearth:shire:sky:night': pair(sky, 'night'),
+  'middleearth:shire:sky:eye': pair(sky, 'eye'),
+  'middleearth:shire:water': pair(water),
+  'middleearth:shire:terrain': pair(terrain),
+  'middleearth:shire:swaying': pair(swaying),
+  'middleearth:shire:flowers': pair(flowers),
+  'middleearth:shire:tint': pair(tint),
+  'middleearth:shire:rings': pair(rings),
+  'middleearth:shire:flies': pair(flies),
+  'middleearth:shire:fireworks': pair(fireworks),
 };
