@@ -5,6 +5,7 @@
 // their marks).
 
 export { default as ShipyardBody } from '../shipyard/ShipyardBody';
+export { useYard } from '../shipyard/useYard';
 export { useEconomy } from '../EconomyProvider';
 export { LEVELS, TITLES } from '../economy';
 export { crewById } from '../crews';

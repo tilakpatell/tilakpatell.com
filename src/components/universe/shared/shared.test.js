@@ -9,7 +9,7 @@ const FACE = [
   [online, ['STALE_MS', 'cleanName', 'createLimiter']],
   [flying, ['BUILT_KINDS', 'armsView', 'arsenalOf', 'chargeFor', 'createArmory', 'createGalaxyPowers', 'createRounds', 'fan', 'turnToward']],
   [room, ['joinAsVisitor']],
-  [hangar, ['LEVELS', 'LINES', 'POWERS', 'POWER_ICONS', 'POWER_KEYS', 'SHIP_WEAPONS', 'STOCK_LOADOUT', 'ShipyardBody', 'TITLES', 'armsView', 'arsenalOf', 'createArmory', 'crewById', 'powersOf', 'useEconomy']],
+  [hangar, ['LEVELS', 'LINES', 'POWERS', 'POWER_ICONS', 'POWER_KEYS', 'SHIP_WEAPONS', 'STOCK_LOADOUT', 'ShipyardBody', 'TITLES', 'armsView', 'arsenalOf', 'createArmory', 'crewById', 'powersOf', 'useEconomy', 'useYard']],
 ];
 
 describe('universe/shared', () => {

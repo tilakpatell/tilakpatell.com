@@ -1,0 +1,48 @@
+/* The Hangar (HangarPanel.jsx): the Shipyard's page under the nav, its
+   look (shipyard.css's .yard: the dark ground, the line, the crew's
+   --engine), with the pilot's level and credits in its head, the four tabs
+   under it, and the tab's own body filling the rest. Touch targets 44 px on
+   a coarse pointer; on a phone the head drops the xp bar and the tabs scroll
+   sideways in one row. */
+
+.hangar-panel { display: flex; flex-direction: column; width: 100%; min-height: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .hangar-panel { animation: yard-in 0.2s ease-out; }
+}
+.hangar-pilot { display: flex; align-items: center; gap: 0.6rem; color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
+.hangar-xp { position: relative; display: block; width: 120px; height: 6px; overflow: hidden; border-radius: 4px; background: rgb(255 255 255 / 0.1); }
+.hangar-xp > span { position: absolute; inset: 0; background: var(--engine, #e8eefc); transform-origin: left; scale: var(--v, 0) 1; }
+.hangar-credits { color: var(--text); font-family: var(--font-mono); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+
+.hangar-tabs { display: flex; gap: 0.25rem; padding: 0.4rem 0.75rem; overflow-x: auto; border-bottom: 1px solid var(--yard-line); scrollbar-width: none; }
+.hangar-tabs [role='tab'] { flex: none; min-height: 36px; padding: 0 1rem; border-radius: 999px; color: var(--muted); font-size: 0.82rem; }
+.hangar-tabs [role='tab']:hover { color: var(--text); background: rgb(255 255 255 / 0.05); }
+.hangar-tabs [role='tab'][aria-selected='true'] { color: var(--text); background: color-mix(in srgb, var(--engine, #e8eefc) 20%, transparent); }
+@media (pointer: coarse) {
+  .hangar-tabs [role='tab'] { min-height: 44px; }
+}
+
+.hangar-body { flex: 1; min-height: 0; overflow-y: auto; }
+.hangar-body[data-tab='shipyard'] { display: flex; overflow: hidden; }
+/* (the Shipyard's own grid, its head the Hangar's) */
+.hangar-yard { flex: 1; grid-template-rows: minmax(0, 1fr); grid-template-areas: 'cat stage bill'; }
+@media (max-width: 899px) {
+  .hangar-yard { grid-template-rows: 38vh minmax(0, 1fr) auto; grid-template-areas: 'stage' 'cat' 'bill'; }
+}
+@media (max-width: 719px) {
+  .hangar-xp { display: none; }
+  .hangar-head .yard-ship { display: none; }
+}
+
+/* a tab's own page: a column of sections, each a heading and its rows */
+.hangar-page { display: grid; gap: 1.25rem; max-width: 1100px; margin: 0 auto; padding: 1rem 1rem 2rem; }
+.hangar-page h3 { margin: 0 0 0.5rem; color: var(--muted); font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+.hangar-note { margin: 0; color: var(--muted); font-size: 0.82rem; }
+.hangar-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.hangar-chips button { min-height: 36px; padding: 0 0.8rem; border: 1px solid var(--yard-line); border-radius: 999px; color: var(--text); font-size: 0.8rem; }
+.hangar-chips button[aria-pressed='true'] { border-color: var(--engine, #e8eefc); background: color-mix(in srgb, var(--engine, #e8eefc) 18%, transparent); }
+.hangar-chips button:disabled { color: var(--muted); }
+@media (pointer: coarse) {
+  .hangar-chips button { min-height: 44px; }
+}
+.hangar .hangar-page button:focus-visible { outline: 2px solid var(--engine, #e8eefc); outline-offset: 1px; }
