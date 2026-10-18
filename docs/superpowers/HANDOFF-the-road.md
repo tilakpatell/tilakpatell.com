@@ -11,7 +11,7 @@ Middle-earth as a journey: one continuous three.js ride from Bag End to the Grey
 | lane | what | plan | tasks | branch | session | pull request | state |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | R1 the spine | the module, the line, the clock, the director, the fellowship, daylight, the face, the rows, the cast, the measure | `…-the-road.md` | 1 to 10 | `claude/the-road-1-spine` | | | |
-| S the sheet | the geography, the projection, the consumers, the painter, the shots | `…-middle-earth-sheet.md` (done, removed) | 1 to 6 | `claude/middle-earth-sheet` | 2026-10-18 | #1036 | done: every task; started before #1023 on the owner’s word, so #1023 merges main (`MapBackdrop3D.js` +4 lines, `MapBackdrop.jsx` untouched) |
+| S the sheet | the geography, the projection, the consumers, the painter, the shots | `…-middle-earth-sheet.md` (done, removed) | 1 to 6 | `claude/middle-earth-sheet` | 2026-10-18 | #1036 | done: every task, then the map made less crowded on the owner’s word (names ranked and placed, Tolkien’s forests, the hub’s foot on two lines, the frame on the whole road); main with #1023 merged in |
 | R2 the systems | the ground, the scatter, the water, the weather, the ambience, the house and the vision, Hobbiton in full | `…-the-road.md` | 11 to 17 | `claude/the-road-2-systems` | | | |
 | R3 stages 2 to 6 | the Shire’s edge, Bree, Weathertop, the Ford, Rivendell | the same | 18 to 22 | `claude/the-road-3-eriador` | | | |
 | R4 stages 7 to 10 | Caradhras and the Doors, Moria, Lothlórien, the Anduin | the same | 23 to 26 | `claude/the-road-4-mountains` | | | |
