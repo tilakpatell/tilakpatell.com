@@ -4,12 +4,25 @@
 // so the mountains stand up a little when a light crosses them.
 
 import { fbm, makeCanvas, makeNoise, paintPixels } from '../../lib/paint';
-import { FORESTS, LAKES, MARSHES, PLACES, RANGES, REGIONS, RIVERS, ROADS, SEAS, SHEET, hatch, nameAt, peaks, stopNameAt, trees } from './mapData';
+import { FORESTS, LAKES, MARSHES, RANGES, RIVERS, ROADS, SEAS, SHEET, hatch, peaks, trees } from './mapData';
+import { DOTS, NAMES } from './mapNames';
 import { placeAt } from './sheet';
 import { STOPS } from './road';
 
 const INK = '#4a3520';
+const PAPER = 'rgba(234, 219, 178, 0.88)';
 const serif = (px, weight = 600) => `${weight} ${px}px Cinzel, Georgia, serif`;
+const italic = (px) => `italic 500 ${px}px Georgia, 'Times New Roman', serif`;
+// each kind of name: its type, its ink, and the halo under it (none for the
+// faint lands and the seas, which sit on open ground by placement)
+const INKS = {
+  stop: [(px) => serif(px, 700), '#5a2414', 2.6],
+  great: [(px) => serif(px, 600), INK, 2.4],
+  minor: [(px) => serif(px, 500), 'rgba(74, 53, 32, 0.8)', 2],
+  land: [(px) => serif(px, 600), 'rgba(96, 66, 32, 0.4)', 0],
+  forest: [(px) => serif(px, 600), 'rgba(36, 54, 32, 0.85)', 0],
+  water: [italic, 'rgba(46, 74, 88, 0.72)', 0],
+};
 
 // Cinzel is the page's own font; a canvas can only write in it once it is in.
 export async function mapFont() {
@@ -105,18 +118,37 @@ export function paintMap(width = 2048) {
   for (const d of ROADS) ctx.stroke(new Path2D(d));
   ctx.setLineDash([]);
 
-  // the woods, a tree at a time
+  // The woods as Tolkien’s maps draw them: a pale wash for the ground, then
+  // close clumps of small trees, each a crown and a trunk, set from north to
+  // south so the southern eaves show their trunks; and round a forest’s own
+  // name the trees stand back, so the letters sit in a clearing.
+  const clearings = NAMES.filter((n) => n.kind === 'forest').map(({ box }) => [box[0] - 3, box[1] - 3, box[2] + 3, box[3] + 3]);
+  const cleared = (x, y) => clearings.some((b) => x > b[0] && x < b[2] && y > b[1] && y < b[3]);
   for (const [shape, seed, count, kind] of FORESTS) {
-    const fill = kind === 'gold' ? 'rgba(160, 128, 42, 0.55)' : kind === 'dark' ? 'rgba(44, 62, 40, 0.62)' : 'rgba(78, 104, 56, 0.55)';
-    for (const [x, y, r] of trees(shape, seed, count)) {
-      ctx.fillStyle = fill;
+    const [crown, wash] = kind === 'gold' ? ['rgba(172, 138, 46, 0.72)', 'rgba(190, 160, 70, 0.16)'] : kind === 'dark' ? ['rgba(46, 64, 42, 0.74)', 'rgba(52, 70, 46, 0.14)'] : ['rgba(84, 110, 60, 0.72)', 'rgba(96, 124, 70, 0.13)'];
+    ctx.fillStyle = wash;
+    ctx.beginPath();
+    if (shape.points) shape.points.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    else ctx.ellipse(shape.at[0], shape.at[1], shape.rx, shape.ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // twice as many trees as the 3D map stands, at about half the size
+    const wood = trees(shape, seed, count * 2)
+      .filter(([x, y]) => !cleared(x, y))
+      .sort((a, b) => a[1] - b[1]);
+    for (const [x, y, r0] of wood) {
+      const r = r0 * 0.5;
+      ctx.strokeStyle = 'rgba(52, 40, 24, 0.6)';
+      ctx.lineWidth = 0.45;
+      ctx.beginPath();
+      ctx.moveTo(x, y + r * 0.6);
+      ctx.lineTo(x, y + r * 1.7);
+      ctx.stroke();
+      ctx.fillStyle = crown;
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(52, 44, 26, 0.5)';
-      ctx.lineWidth = 0.5;
       ctx.beginPath();
-      ctx.arc(x, y, r, Math.PI * 0.9, Math.PI * 2.1);
+      ctx.arc(x, y, r, Math.PI * 0.85, Math.PI * 2.15);
       ctx.stroke();
     }
   }
@@ -140,46 +172,29 @@ export function paintMap(width = 2048) {
       ctx.stroke();
     }
   }
-  // Mount Doom, burning, and the dark tower
+  // Mount Doom, burning, and the dark tower: small, as they stand only 35
+  // miles apart (./geography.js), so their names find room beside them
   const [dx, dy] = placeAt('mount-doom');
   const [bx, by] = placeAt('barad-dur');
   ctx.fillStyle = '#5a2a1a';
   ctx.beginPath();
-  ctx.moveTo(dx - 16, dy + 14);
-  ctx.lineTo(dx, dy - 16);
-  ctx.lineTo(dx + 16, dy + 14);
+  ctx.moveTo(dx - 10, dy + 7);
+  ctx.lineTo(dx, dy - 11);
+  ctx.lineTo(dx + 10, dy + 7);
   ctx.closePath();
   ctx.fill();
   ctx.fillStyle = '#c2410c';
   ctx.beginPath();
-  ctx.arc(dx, dy - 17, 4, 0, Math.PI * 2);
+  ctx.arc(dx, dy - 11.5, 2.6, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = '#2a1a14';
-  ctx.fillRect(bx - 4, by - 22, 8, 26);
+  ctx.fillRect(bx - 3, by - 16, 6, 19);
   ctx.fillStyle = '#c2410c';
   ctx.beginPath();
-  ctx.ellipse(bx, by - 27, 5, 2.4, 0, 0, Math.PI * 2);
+  ctx.ellipse(bx, by - 19, 3.5, 1.7, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // the names
-  ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(96, 66, 32, 0.5)';
-  ctx.font = serif(15);
-  if ('letterSpacing' in ctx) ctx.letterSpacing = '5px';
-  for (const [t, x, y] of REGIONS) ctx.fillText(t, x, y);
-  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
-  ctx.font = serif(8.5);
-  for (const [t, x, y, side] of PLACES) {
-    ctx.fillStyle = INK;
-    ctx.beginPath();
-    ctx.arc(x, y, 2, 0, Math.PI * 2);
-    ctx.fill();
-    const [tx, ty, align] = nameAt(x, y, side);
-    ctx.textAlign = align;
-    ctx.fillText(t, tx, ty);
-  }
-
-  // the road the Ring took, in red ink
+  // the road the Ring took, in red ink, and its stops
   ctx.strokeStyle = '#8a2f1a';
   ctx.lineWidth = 1.5;
   ctx.setLineDash([5, 4]);
@@ -187,17 +202,40 @@ export function paintMap(width = 2048) {
   STOPS.forEach((s, i) => (i ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y)));
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.font = serif(9);
   for (const s of STOPS) {
     ctx.fillStyle = '#8a2f1a';
     ctx.beginPath();
     ctx.arc(s.x, s.y, 2.8, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#5a2414';
-    const [tx, ty, align] = stopNameAt(s);
-    ctx.textAlign = align;
-    ctx.fillText(s.name, tx, ty);
   }
+  // the places named, each a dot of ink on a ring of paper
+  for (const [x, y] of DOTS) {
+    ctx.fillStyle = PAPER;
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = INK;
+    ctx.beginPath();
+    ctx.arc(x, y, 1.9, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // The names, placed by ./mapNames.js, in the type of their rank; those
+  // that cross a line are set on a halo of the paper’s own colour.
+  for (const n of NAMES) {
+    const [font, fill, halo] = INKS[n.kind];
+    ctx.font = font(n.size);
+    ctx.textAlign = n.align;
+    if ('letterSpacing' in ctx) ctx.letterSpacing = `${n.spacing ?? 0}px`;
+    if (halo) {
+      ctx.strokeStyle = PAPER;
+      ctx.lineWidth = halo;
+      ctx.strokeText(n.text, n.x, n.y);
+    }
+    ctx.fillStyle = fill;
+    ctx.fillText(n.text, n.x, n.y);
+  }
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
   ctx.textAlign = 'left';
 
   // a compass rose, and whose map it is

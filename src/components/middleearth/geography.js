@@ -231,14 +231,15 @@ export const AREAS = [
 ];
 
 // The lands’ names, where each sits (E: the middle of the land the sources
-// bound, nudged off the road’s own names).
+// bound, on its open ground: Rhovanion east of Mirkwood’s eaves, Rohan
+// between Fangorn and the White Mountains, so neither is written on trees).
 export const LABELS = [
   { name: 'LINDON', east: -330, south: -120 },
   { name: 'ERIADOR', east: 180, south: -160 },
   { name: 'THE SHIRE', east: -30, south: 50 },
   { name: 'ENEDWAITH', east: 180, south: 430 },
-  { name: 'RHOVANION', east: 760, south: -20 },
-  { name: 'ROHAN', east: 470, south: 500 },
+  { name: 'RHOVANION', east: 940, south: 60 },
+  { name: 'ROHAN', east: 540, south: 545 },
   { name: 'GONDOR', east: 520, south: 680 },
   { name: 'MORDOR', east: 980, south: 620 },
   { name: 'RHÛN', east: 1100, south: 0 },

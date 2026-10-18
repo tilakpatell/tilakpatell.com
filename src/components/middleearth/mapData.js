@@ -3,7 +3,7 @@
 // an 800×560 sheet, projected from Tolkien's geography (./sheet.js reads
 // ./geography.js); the helpers here turn it into peaks and trees.
 
-export { SHEET, PLACES, REGIONS, SEAS, RIVERS, RANGES, FORESTS, MARSHES, LAKES, ROADS, nameAt, stopNameAt } from './sheet';
+export { SHEET, REGIONS, SEAS, RIVERS, RANGES, FORESTS, MARSHES, LAKES, ROADS } from './sheet';
 
 // The little peaks along a range: [x, y, size]. A range is a polyline
 // [[x, y], …]; the old straight form (x0, y0, x1, y1) is a one-segment

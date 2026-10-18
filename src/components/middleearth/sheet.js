@@ -41,41 +41,6 @@ export function pathOf(points, { closed = false, tension = 0.5 } = {}) {
   return closed ? `${d} Z` : d;
 }
 
-// The places the sheet names, and which side of its dot each name sits
-// (r right, l left, a above, b below), chosen so no two names, nor a name
-// and a stop’s, overlap (sheet.test.js holds it). The road’s stops are
-// drawn by the painters from ./road.js, so they are not here. Umbar lies
-// beyond the sheet’s foot: its dot and name stand at the edge, below
-// Harondor, pointing the way to it, as an old map names what lies off it.
-const NAMED = [
-  ['grey-havens', 'l'],
-  ['annuminas', 'l'],
-  ['fornost', 'r'],
-  ['tharbad', 'r'],
-  ['lond-daer', 'r'],
-  ['carrock', 'l'],
-  ['high-pass', 'a'],
-  ['erebor', 'r'],
-  ['dale', 'r'],
-  ['esgaroth', 'l'],
-  ['dol-guldur', 'r'],
-  ['isengard', 'l'],
-  ['helms-deep', 'l'],
-  ['edoras', 'r'],
-  ['cair-andros', 'l'],
-  ['minas-tirith', 'l'],
-  ['osgiliath', 'a'],
-  ['henneth-annun', 'r'],
-  ['minas-morgul', 'b'],
-  ['barad-dur', 'b'],
-  ['pelargir', 'r'],
-  ['dol-amroth', 'l'],
-  ['umbar', 'a'],
-];
-const edge = ([x, y]) => [Math.max(14, Math.min(SHEET.w - 14, x)), Math.max(14, Math.min(SHEET.h - 18, y))];
-// [name, x, y, side]
-export const PLACES = NAMED.map(([id, side]) => [place(id).name.replace(/^The /, ''), ...edge(placeAt(id)), side]);
-
 // [name, x, y], each land’s name at its middle
 export const REGIONS = LABELS.map((l) => [l.name, ...project(l.east, l.south)]);
 
@@ -112,13 +77,3 @@ export const FORESTS = AREAS.filter((a) => a.kind === 'forest').map((a, i) => {
 export const MARSHES = AREAS.filter((a) => a.kind === 'marsh').map(shape);
 // [{ at, rx, ry }]: Evendim, Mirrormere, Nen Hithoel, the Long Lake, Núrnen
 export const LAKES = AREAS.filter((a) => a.kind === 'lake').map(shape);
-
-// Where a place’s name is written beside its dot, by its side: [x, y, align]
-// at the 8.5-unit size the painters write names in.
-export const nameAt = (x, y, side = 'r') => (side === 'l' ? [x - 5, y + 3, 'right'] : side === 'a' ? [x, y - 5, 'center'] : side === 'b' ? [x, y + 11, 'center'] : [x + 5, y + 3, 'left']);
-
-// Where a stop’s name is written: above and to the right of its pin, but
-// for Cirith Ungol, whose name would run into Mount Doom’s, and the Dead
-// Marshes, whose would sit on the Black Gate’s, written to the left.
-const STOP_LEFT = new Set(['cirith-ungol', 'dead-marshes']);
-export const stopNameAt = (s) => (STOP_LEFT.has(s.id) ? [s.x - 6, s.y - 5, 'right'] : [s.x + 6, s.y - 5, 'left']);

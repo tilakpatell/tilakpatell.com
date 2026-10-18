@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { FORESTS, LAKES, MARSHES, PLACES, RANGES, REGIONS, RIVERS, ROADS, SEAS, hatch, nameAt, range, stopNameAt, trees } from './mapData';
+import { FORESTS, LAKES, MARSHES, RANGES, RIVERS, ROADS, SEAS, hatch, range, trees } from './mapData';
+import { DOTS, NAMES } from './mapNames';
 import { placeAt } from './sheet';
 import { STOPS } from './road';
 import '../../styles/lazy/middleearth.css';
@@ -12,6 +13,21 @@ import '../../styles/lazy/middleearth.css';
 const [doomX, doomY] = placeAt('mount-doom');
 const [towerX, towerY] = placeAt('barad-dur');
 const ANCHOR = { left: 'start', right: 'end', center: 'middle' };
+// each kind of name in the type ./mapPaint.js sets it in (./mapNames.js
+// placed it for that type), on a halo of the parchment where it has one
+const CINZEL = 'Cinzel, Georgia, serif';
+const TYPE = {
+  stop: { fontFamily: CINZEL, fontWeight: 700, fill: '#5a2414', halo: 2.6 },
+  great: { fontFamily: CINZEL, fontWeight: 600, fill: '#4a3520', halo: 2.4 },
+  minor: { fontFamily: CINZEL, fontWeight: 500, fill: '#4a3520', opacity: 0.85, halo: 2 },
+  land: { fontFamily: CINZEL, fontWeight: 600, fill: '#7a6440', opacity: 0.6 },
+  forest: { fontFamily: CINZEL, fontWeight: 600, fill: '#243620', opacity: 0.85 },
+  water: { fontFamily: 'Georgia, serif', fontStyle: 'italic', fill: '#2e4a58', opacity: 0.75 },
+};
+const nameStyle = (n) => {
+  const { halo, ...type } = TYPE[n.kind];
+  return { ...type, fontSize: n.size, letterSpacing: n.spacing || 0, ...(halo && { stroke: '#f2e6c6', strokeWidth: halo, paintOrder: 'stroke', strokeLinejoin: 'round' }) };
+};
 
 export default function MiddleEarthMap({ step }) {
   const reveal = useRef(null);
@@ -70,37 +86,24 @@ export default function MiddleEarthMap({ step }) {
       <circle cx={doomX} cy={doomY - 14} r="5" className="map-fire" />
       <path d={`M${towerX - 4} ${towerY + 4} V${towerY - 20} l4 -6 l4 6 V${towerY + 4} Z`} fill="#2a1a14" />
       <circle cx={towerX} cy={towerY - 28} r="3.4" className="map-fire" />
-      {/* labels */}
-      {REGIONS.map(([t, x, y]) => (
-        <text key={t} x={x} y={y} className="map-region">
-          {t}
-        </text>
+      {/* the places named, each a dot */}
+      {DOTS.map(([x, y]) => (
+        <circle key={`${x} ${y}`} cx={x} cy={y} r="2.2" className="map-dot" />
       ))}
-      {PLACES.map(([t, x, y, side]) => {
-        const [tx, ty, align] = nameAt(x, y, side);
-        return (
-          <g key={t}>
-            <circle cx={x} cy={y} r="2.6" className="map-dot" />
-            <text x={tx} y={ty} textAnchor={ANCHOR[align]} className="map-place">
-              {t}
-            </text>
-          </g>
-        );
-      })}
       {/* the road: faint all the way, inked as far as the story has got */}
       <path d={road} className="map-road map-road-faint" />
       <path d={road} className="map-road" mask="url(#map-road)" />
-      {STOPS.map((s, i) => {
-        const [tx, ty, align] = stopNameAt(s);
-        return (
-          <g key={s.id} className="map-stop" data-reached={i <= step || undefined}>
-            <circle cx={s.x} cy={s.y} r="4.2" />
-            <text x={tx} y={ty} textAnchor={ANCHOR[align]} className="map-place map-place-stop">
-              {s.name}
-            </text>
-          </g>
-        );
-      })}
+      {STOPS.map((s, i) => (
+        <g key={s.id} className="map-stop" data-reached={i <= step || undefined}>
+          <circle cx={s.x} cy={s.y} r="4.2" />
+        </g>
+      ))}
+      {/* every name, placed by ./mapNames.js */}
+      {NAMES.map((n) => (
+        <text key={n.id} x={n.x} y={n.y} textAnchor={ANCHOR[n.align]} style={nameStyle(n)}>
+          {n.text}
+        </text>
+      ))}
       <g className="map-walker" style={{ transform: `translate(${at.x}px, ${at.y}px)` }}>
         <circle r="9" fill="#b8860b" opacity="0.25" />
         <circle r="5" fill="#8a5a12" stroke="#fff7dc" strokeWidth="1.5" />

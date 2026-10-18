@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { place } from './geography';
 import { STOPS } from './road';
-import { FORESTS, LAKES, MARSHES, PLACES, RANGES, REGIONS, RIVERS, ROADS, SEAS, SHEET, lineAt, nameAt, pathOf, stopNameAt, placeAt, project, roadFraction, unproject } from './sheet';
+import { FORESTS, LAKES, MARSHES, RANGES, REGIONS, RIVERS, ROADS, SEAS, SHEET, lineAt, pathOf, placeAt, project, roadFraction, unproject } from './sheet';
 
 // The relations the research note’s §5 lists as wrong on the hand-drawn
 // sheet, each held here (docs/research/2026-10-18-middle-earth-map-geography.md).
@@ -60,17 +60,9 @@ describe('the projection', () => {
 });
 
 describe('the derived sheet', () => {
-  it('keeps every named place, land and lake on the sheet', () => {
-    for (const [name, x, y, side] of PLACES) {
-      expect(on([x, y]), name).toBe(true);
-      expect(['l', 'r', 'a', 'b'], name).toContain(side);
-    }
+  it('keeps every land and lake on the sheet', () => {
     for (const [name, x, y] of REGIONS) expect(on([x, y]), name).toBe(true);
     for (const l of [...LAKES, ...MARSHES]) expect(on(l.at)).toBe(true);
-  });
-  it('names the places the design asks for', () => {
-    const names = PLACES.map((p) => p[0]);
-    for (const n of ['Fornost', 'Annúminas', 'Tharbad', 'Lond Daer', 'Dol Amroth', 'Pelargir', 'Cair Andros', 'Dale', 'Esgaroth', 'Carrock', 'High Pass', 'Helm’s Deep', 'Minas Morgul', 'Henneth Annûn', 'Umbar', 'Grey Havens', 'Isengard', 'Edoras', 'Minas Tirith', 'Osgiliath', 'Barad-dûr', 'Erebor', 'Dol Guldur']) expect(names).toContain(n);
   });
   it('closes each sea on the sheet’s edge, so the painter fills water and not land', () => {
     expect(SEAS).toHaveLength(2);
@@ -233,33 +225,5 @@ describe('the relations made true (the note’s §5)', () => {
   });
   it('stands every stop of the road on its place', () => {
     for (const s of STOPS) expect([s.x, s.y], s.id).toEqual(placeAt(s.id));
-  });
-});
-
-describe('the names on the sheet', () => {
-  // a name’s box in sheet units at the painters’ sizes (Cinzel runs about
-  // 0.66 of its size a letter, its capitals 0.7 of it tall): places at 8.5,
-  // stops at 9, lands at 15 with 5 of spacing
-  const box = (x, y, w, h, align) => {
-    const x0 = align === 'right' ? x - w : align === 'center' ? x - w / 2 : x;
-    return [x0, y - h, x0 + w, y];
-  };
-  // with a unit and a half of air between two names, or they read as one
-  const overlap = (a, b) => a[0] < b[2] + 1.5 && b[0] < a[2] + 1.5 && a[1] < b[3] + 1.5 && b[1] < a[3] + 1.5;
-  const boxes = [
-    ...PLACES.map(([t, x, y, side]) => {
-      const [tx, ty, align] = nameAt(x, y, side);
-      return [t, box(tx, ty, t.length * 5.6, 6, align)];
-    }),
-    ...STOPS.map((s) => {
-      const [tx, ty, align] = stopNameAt(s);
-      return [s.name, box(tx, ty, s.name.length * 5.9, 6.5, align)];
-    }),
-    ...REGIONS.map(([t, x, y]) => [t, box(x, y, t.length * 15, 11, 'center')]),
-  ];
-  it('lets no two names pile on one another', () => {
-    const piles = [];
-    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) if (overlap(boxes[i][1], boxes[j][1])) piles.push(`${boxes[i][0]} / ${boxes[j][0]}`);
-    expect(piles).toEqual([]);
   });
 });
