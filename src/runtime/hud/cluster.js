@@ -26,6 +26,12 @@ const fill = (el, v) => el.style.setProperty('--fill', (v / 100).toFixed(2));
 const ON = flag('data-on');
 const LOW = flag('data-low');
 const FULL = flag('data-full');
+// (each line's and pip's keys in the cache, made once: a frame makes no strings)
+const LINE_KEYS = ['l0', 'l1', 'l2'];
+const keysOf = (p) => Array.from({ length: PIPS }, (_, i) => `${p}${i}`);
+const PIP_HIDE = keysOf('ph');
+const PIP_FULL = keysOf('pf');
+const PIP_FILL = keysOf('pg');
 
 export function createFlightCluster() {
   let els = { root: null };
@@ -58,15 +64,16 @@ export function createFlightCluster() {
       if (!a) return;
       put(els.arms, 'line', a.line, line);
       put(els.name, 'name', a.name, text);
-      els.lines.forEach((l, i) => put(l, `l${i}`, i === a.index, ON));
+      for (let i = 0; i < els.lines.length && i < LINE_KEYS.length; i++) put(els.lines[i], LINE_KEYS[i], i === a.index, ON);
       const max = Math.max(0, Math.floor(a.max));
       const ammo = Math.max(0, Math.floor(a.ammo));
       const filling = ammo < max ? Math.round(Math.max(0, Math.min(1, a.filling)) * 100) : 0;
-      els.pips.forEach((pip, i) => {
-        put(pip, `ph${i}`, i >= max, hide);
-        put(pip, `pf${i}`, i < ammo, FULL);
-        put(pip, `pg${i}`, i === ammo ? filling : 0, fill);
-      });
+      for (let i = 0; i < els.pips.length && i < PIPS; i++) {
+        const pip = els.pips[i];
+        put(pip, PIP_HIDE[i], i >= max, hide);
+        put(pip, PIP_FULL[i], i < ammo, FULL);
+        put(pip, PIP_FILL[i], i === ammo ? filling : 0, fill);
+      }
     },
   };
 }

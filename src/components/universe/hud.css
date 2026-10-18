@@ -73,6 +73,8 @@
   .universe-page:not(.galaxy-page) .universe-prompt { bottom: max(72px, calc(var(--hud-pad-b, 12px) + 20px + var(--hud-cluster-h, 0px))); }
   .universe-page:not(.galaxy-page) .universe-wayin { bottom: max(116px, calc(var(--hud-pad-b, 12px) + 64px + var(--hud-cluster-h, 0px))); }
   .universe-page:not(.galaxy-page) .universe-jump { bottom: max(150px, calc(var(--hud-pad-b, 12px) + 98px + var(--hud-cluster-h, 0px))); }
+  /* (the first-flight line and the keys on foot share its band: over it too) */
+  .universe-page:not(.galaxy-page) .universe-hint { bottom: max(24px, calc(var(--hud-pad-b, 12px) + 20px + var(--hud-cluster-h, 0px))); }
 }
 
 /* A sentence over the map: the first-flight hint, a multiplayer note. */

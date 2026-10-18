@@ -77,8 +77,17 @@
   .fc-target { min-width: 170px; }
   .fc-radar { width: 104px; height: 104px; }
 }
-/* (a narrow window with the panel open: no room for the target as well; the lock's own mark over the 3D says it) */
-@media (min-width: 768px) and (max-width: 1100px) {
+/* a laptop with the panel open (the band left of it is 680 to 770px): the radar and the power tiles in their compact sizes and
+   the target narrower, so the row keeps to one row with the arms block in it */
+@media (pointer: fine) and (min-width: 768px) and (max-width: 1400px) {
+  .galaxy-page:not([data-tucked]) .fc-radar { width: 96px; height: 96px; }
+  .galaxy-page:not([data-tucked]) .fc-target { min-width: 150px; }
+  .galaxy-page:not([data-tucked]) .hud-powers[data-place='cluster'] .hud-power { width: 64px; height: 52px; }
+  .galaxy-page:not([data-tucked]) .hud-powers[data-place='cluster'] .hud-power-name { display: none; }
+}
+/* (a narrow window with the panel open, up to a small laptop's 1280: no room for the target as well as the arms; the lock's own
+   mark over the 3D says it) */
+@media (min-width: 768px) and (max-width: 1300px) {
   .galaxy-page:not([data-tucked]) .fc-target { display: none; }
 }
 
