@@ -46,3 +46,42 @@
   .hangar-chips button { min-height: 44px; }
 }
 .hangar .hangar-page button:focus-visible { outline: 2px solid var(--engine, #e8eefc); outline-offset: 1px; }
+
+/* the Crew: the Wardrobe's turntable and controls for the cruiser's and
+   the RV's (its inked look, its tokens here since the dialog's root isn't),
+   and a card with chips for the galaxy's four */
+.hangar-crew {
+  --wd-ink: #1b1424;
+  --wd-green: #97ce4c;
+  --wd-lime: #c9ff5a;
+  --wd-glass: rgba(27, 20, 36, 0.94);
+  --wd-paper: #fdfbf5;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  height: 100%;
+  min-height: 0;
+  background: var(--wd-glass);
+  color: #fff;
+}
+.hangar-crew .rm-wardrobe-controls { overflow-y: auto; }
+.hangar-crew[data-cast='breakingbad'] { --wd-green: #5fc8ef; --wd-lime: #f0d43a; }
+.hangar-crew[data-cast='breakingbad'] .rm-wardrobe-stage { background: radial-gradient(circle at 50% 42%, #ffe9bd 0%, #efb766 32%, #8a4f2a 70%, #2a160c 100%); }
+.hangar-crew[data-cast='breakingbad'] .rm-wardrobe-swatch-own { background: conic-gradient(#f0d43a 0 25%, #a24a26 0 50%, #b9a37c 0 75%, #1f1e22 0); }
+@media (max-width: 719px) {
+  .hangar-crew { grid-template-columns: minmax(0, 1fr); grid-template-rows: 40vh auto; height: auto; }
+  .hangar-crew .rm-wardrobe-stage { border-right: 0; }
+}
+.hangar-card { --blade: var(--engine, #e8eefc); padding: 1rem; border: 1px solid var(--yard-line); border-radius: 12px; background: var(--yard-pane); }
+.hangar-card h3 { margin: 0 0 0.35rem; color: var(--text); font-family: inherit; font-size: 1.15rem; letter-spacing: 0; text-transform: none; }
+.hangar-card-line { margin: 0 0 0.75rem; color: var(--muted); font-size: 0.86rem; }
+.hangar-card dl { display: grid; gap: 0.35rem; margin: 0; }
+.hangar-card dl > div { display: flex; gap: 0.75rem; }
+.hangar-card dt { min-width: 7rem; color: var(--muted); font-size: 0.8rem; }
+.hangar-card dd { margin: 0; font-size: 0.86rem; }
+.hangar-blade { display: inline-block; width: 1.6rem; height: 0.3rem; border-radius: 2px; vertical-align: middle; background: var(--blade); box-shadow: 0 0 8px var(--blade); }
+.hangar-swatches { gap: 0.5rem; margin-bottom: 0.5rem; }
+.hangar-chips .hangar-swatch { width: 36px; min-height: 36px; padding: 0; border: 2px solid var(--yard-line); border-radius: 50%; background: var(--swatch); }
+.hangar-chips .hangar-swatch[aria-pressed='true'] { border-color: #fff; box-shadow: 0 0 0 2px var(--swatch); }
+@media (pointer: coarse) {
+  .hangar-chips .hangar-swatch { width: 44px; min-height: 44px; }
+}
