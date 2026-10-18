@@ -14,7 +14,8 @@ export const TOUR_EVENT = 'tp:tour';
 export const AUDIENCES = ['recruiter', 'player', 'mixed'];
 // what each is called wherever it's offered, and how long it takes (spec 3.1)
 export const TOUR_NAMES = { recruiter: 'The hiring tour', player: 'The player’s tour', mixed: 'The whole tour' };
-export const TOUR_TIMES = { recruiter: 'About 5 minutes', player: 'About 8 minutes', mixed: 'About 12 minutes' };
+export const TOUR_MINUTES = { recruiter: 5, player: 8, mixed: 12 };
+export const TOUR_TIMES = Object.fromEntries(AUDIENCES.map((a) => [a, `About ${TOUR_MINUTES[a]} minutes`]));
 
 // Starts a tour from anywhere: ⌘K, the guide, the terminal, the offer, the
 // checklist. With no detail, the tour of the view you're in, as before; with

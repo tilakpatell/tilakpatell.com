@@ -1,18 +1,38 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { RiArrowRightLine, RiPlayFill, RiVolumeUpLine } from 'react-icons/ri';
+import { RiPlayFill } from 'react-icons/ri';
+import { IconGo } from '../icons';
 import { audioContext } from '../../lib/audio';
 import './cockpit.css';
 
-// The first thing a first visit sees: what this site is, what the intro
-// does (the crawl, a cockpit, then your way in), how to drive it, and that
-// the worlds it borrows belong to their owners. Start begins the intro (and,
-// being a click, lets its music play from the first note); Skip goes straight
-// to the front door's choice. Escape skips too.
-const BEATS = [
-  { title: 'An opening crawl', text: 'About half a minute, Star Wars style. Skip it whenever you like.' },
-  { title: 'A cockpit', text: 'You sit in the Millennium Falcon, an X-wing, Rick’s space cruiser or Walt and Jesse’s RV. Look around, pick a ride, then launch.' },
-  { title: 'Your way in', text: 'The launch drops you into my site laid out as a universe. Fly a ship to my experience, projects and résumé, or go straight to the plain home page.' },
+// The first thing a first visit sees, and the only thing it's asked: a title
+// card over the stars saying whose site this is and what the intro does (the
+// crawl, a cockpit, then the universe), with the three ways in. Start begins
+// the intro (and, being a click, lets its music play from the first note);
+// Skip goes straight to the universe, and the line under it to the classic
+// site. Whichever is picked is the front door's choice too (lib/view's
+// saveStart, in App), so the universe doesn't ask again over the map. Escape
+// skips to the universe.
+//
+// It fits the window whatever its size or zoom: the title and the gaps
+// follow the height as well as the width, the route's notes go on a short
+// window and the whole route on a very short one, and anything still too
+// tall scrolls from its top (cockpit.css's safe centring) with the buttons
+// in the first screenful.
+const ROUTE = [
+  { title: 'Opening crawl', text: 'Half a minute, best with sound on' },
+  {
+    title: 'A cockpit',
+    text: (
+      <>
+        <span className="welcome-on-fine">
+          Pick a ride, <kbd className="kbd" data-size="sm">Space</kbd> to launch
+        </span>
+        <span className="welcome-on-touch">Pick a ride, then launch</span>
+      </>
+    ),
+  },
+  { title: 'The universe', text: 'Fly a ship to my pages and worlds' },
 ];
 
 export default function Welcome({ onStart, onSkip }) {
@@ -27,7 +47,7 @@ export default function Welcome({ onStart, onSkip }) {
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
       e.preventDefault();
-      cbs.current.onSkip();
+      cbs.current.onSkip('universe');
     };
     window.addEventListener('keydown', onKey);
     const html = document.documentElement;
@@ -46,54 +66,47 @@ export default function Welcome({ onStart, onSkip }) {
 
   return createPortal(
     <div className="welcome dark-scope" role="dialog" aria-modal="true" aria-labelledby="welcome-title" aria-describedby="welcome-text">
-      <div className="ds-stars absolute inset-0" aria-hidden="true" />
-      <div className="welcome-card">
-        <p className="welcome-eyebrow">Before you board</p>
+      <div className="welcome-sky" aria-hidden="true">
+        <div className="ds-stars absolute inset-0" />
+        <div className="welcome-sun" />
+      </div>
+      <div className="welcome-main">
+        <p className="welcome-name">Tilak Patel</p>
         <h1 id="welcome-title" className="welcome-title">
           A portfolio you can fly through
         </h1>
         <p id="welcome-text" className="welcome-text">
-          I’m Tilak Patel, a technical program manager and software engineer. My site opens with a short intro, about a minute end to end. Here’s what happens.
+          I’m a technical program manager and software engineer. My site opens with a one-minute intro; skip any part of it.
         </p>
 
-        <ol className="welcome-beats">
-          {BEATS.map((b) => (
-            <li key={b.title}>
-              <span className="welcome-beat-title">{b.title}</span>
-              <span className="welcome-beat-text">{b.text}</span>
+        <ol className="welcome-route">
+          {ROUTE.map((r) => (
+            <li key={r.title}>
+              <span className="welcome-route-title">{r.title}</span>
+              <span className="welcome-route-text">{r.text}</span>
             </li>
           ))}
         </ol>
 
-        <div className="welcome-keys">
-          <span className="welcome-on-fine">
-            <kbd>Mouse</kbd> to look
-          </span>
-          <span className="welcome-on-fine">
-            <kbd>Space</kbd> to launch
-          </span>
-          <span className="welcome-on-fine">
-            <kbd>Esc</kbd> to skip
-          </span>
-          <span className="welcome-on-touch">Drag to look around</span>
-          <span className="welcome-sound">
-            <RiVolumeUpLine aria-hidden="true" /> Best with sound on
-          </span>
-        </div>
-
         <div className="welcome-buttons">
-          <button ref={start} type="button" className="btn btn-primary" onClick={begin}>
+          <button ref={start} type="button" className="btn btn-primary btn-lg" onClick={begin}>
             <RiPlayFill className="h-4 w-4" aria-hidden="true" /> Start the intro
           </button>
-          <button type="button" className="btn btn-ghost" onClick={onSkip}>
-            Skip the intro <RiArrowRightLine className="h-4 w-4" aria-hidden="true" />
+          <button type="button" className="btn btn-ghost btn-lg" onClick={() => onSkip('universe')}>
+            Skip to the universe <IconGo className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
-
-        <p className="welcome-fine">
-          A fan-made tribute. Star Wars, Rick and Morty, Breaking Bad, Marvel, The Lord of the Rings, Transformers and The Office belong to their creators and studios. This is a personal, non-commercial portfolio, not affiliated with or endorsed by any of them. The characters are 3D models made for this site with Meshy AI; the audio clips are short excerpts.
+        <p className="welcome-alt">
+          Rather read than fly?{' '}
+          <button type="button" className="link" onClick={() => onSkip('home')}>
+            Go to the classic site
+          </button>
         </p>
       </div>
+
+      <p className="welcome-fine">
+        A fan-made tribute. Star Wars, Rick and Morty, Breaking Bad, Marvel, The Lord of the Rings, Transformers and The Office belong to their creators and studios. This is a personal, non-commercial portfolio, not affiliated with or endorsed by any of them. The characters are 3D models made for this site with Meshy AI; the audio clips are short excerpts.
+      </p>
     </div>,
     document.body,
   );

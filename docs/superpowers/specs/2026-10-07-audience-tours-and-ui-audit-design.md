@@ -71,7 +71,7 @@ Finishing an audience tour unlocks `tour` (as today) and a new achievement per a
 
 ### 3.5 Entry points
 
-- **The first-arrival offer** (`TourHost.jsx`): "New here? Here to hire, here to play, or both?" with three buttons (Hire, Play, Both) and "Not now". Same timing and gates as today. On a phone the three buttons wrap.
+- **The first-arrival offer** (`TourHost.jsx`): "New here? I’ll show you round" and "Here to hire, to play or both?", with three buttons side by side (To hire, To play, Both), each with its length from `TOUR_MINUTES`, and an × for "Not now". Same timing and gates as today. (Revised 2026-10-18: `docs/decisions/2026-10-18-one-question-on-arrival.md`.)
 - **⌘K**: "Take the recruiter's tour", "Take the player's tour", "Take the whole tour", in the Actions group, replacing the one item.
 - **The guide's "The site" tab** (`GuidePanel.jsx`): the three tours as buttons, the chapters of each listed under a disclosure so any chapter can be taken alone, and "Carry on…" when one is unfinished.
 - **The terminal**: `tour` (as today), `tour recruiter`, `tour player`, `tour all`; `help` lists them.

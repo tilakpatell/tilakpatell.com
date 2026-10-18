@@ -37,12 +37,12 @@ export const HELLO = {
   player: {
     id: 'tour-hello',
     title: 'The player’s tour',
-    text: 'Ten minutes: the ship, the galaxy, a walk through eight worlds, the games and playing together. Esc stops it; it remembers where you were.',
+    text: 'Eight minutes: the ship, the galaxy, a walk through eight worlds, the games and playing together. Esc stops it; it remembers where you were.',
   },
   mixed: {
     id: 'tour-hello',
     title: 'The whole tour',
-    text: 'A quarter of an hour, the work and the worlds: the hiring tour with the player’s folded in. Esc stops it; it remembers where you were.',
+    text: 'Twelve minutes, the work and the worlds: the hiring tour with the player’s folded in. Esc stops it; it remembers where you were.',
   },
 };
 

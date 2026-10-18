@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   AUDIENCES,
   SHELL_STOPS,
+  TOUR_MINUTES,
+  TOUR_TIMES,
   WAIT_MS,
   chapterReady,
   clearOf,
@@ -410,5 +412,12 @@ describe('whether you’re on a chapter’s page', () => {
     expect(samePage('/universe/marvel', '/universe')).toBe(false);
     expect(samePage('/terminal', '/home')).toBe(false);
     expect(samePage('/home', '/changes')).toBe(false);
+  });
+});
+
+describe('how long each tour takes', () => {
+  it('says it the same everywhere: minutes for the offer, words for the guide and the palette', () => {
+    expect(Object.keys(TOUR_MINUTES)).toEqual(AUDIENCES);
+    expect(TOUR_TIMES).toEqual({ recruiter: 'About 5 minutes', player: 'About 8 minutes', mixed: 'About 12 minutes' });
   });
 });

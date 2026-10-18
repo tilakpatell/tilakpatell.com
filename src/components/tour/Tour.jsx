@@ -11,6 +11,7 @@ import { chapterReady, clearOf, litBox, placeCard, resolveChapter, resolveSteps,
 import { isPaletteKey, shortcutLabel } from '../../lib/palette';
 import { local, prefersReducedMotion } from '../../lib/hooks';
 import { VISITED_KEY, storedKey } from '../../lib/visited';
+import { isMapPath } from '../../lib/view';
 import { WORLD_MB } from '../worlds/worlds';
 import './tour.css';
 
@@ -37,6 +38,9 @@ import './tour.css';
 // try them.
 
 const PAD = 6; // round the lit box's target
+// more than this many chapters or stops (the whole tour has twenty-odd) and
+// the row of dots is a slim bar instead
+const MAX_DOTS = 12;
 
 // a target counts if it's showing: not busy loading, not faded out
 const showing = (el) => {
@@ -132,6 +136,8 @@ export default function Tour({ list, chapters, start, kind = 'tour', pathname, o
   // what a stop's words may turn on: this device's palette key, a touch
   // screen, the ship you fly, what a place downloads
   const ctx = { key: shortcutLabel(), touch, ship: local.get('tp-universe-ship', null), mb: WORLD_MB };
+  // (over the map the card wears the map's dark glass, as the panel it points at does)
+  const onMap = isMapPath(pathname);
   const release = Boolean(step?.release?.length) && !waiting;
   // html[data-touring]: 'release' only where ? goes through (the guide takes ? on that word alone), 'keys' where only the palette's does
   const touringAs = !release ? '' : step.release.includes('?') ? 'release' : 'keys';
@@ -411,7 +417,8 @@ export default function Tour({ list, chapters, start, kind = 'tour', pathname, o
       {box && <div className="tour-spot" aria-hidden="true" style={box} />}
       <div
         ref={card}
-        className="tour-card card"
+        className={`tour-card card${onMap ? ' dark-scope' : ''}`}
+        data-map={onMap ? '' : undefined}
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${ids}-title`}
@@ -419,68 +426,79 @@ export default function Tour({ list, chapters, start, kind = 'tour', pathname, o
         data-side={pos?.side}
         style={pos ? { top: pos.top, left: pos.left } : { visibility: 'hidden' }}
       >
-        <p className="tour-count">
-          {count}
-          {ticked && (
-            <span className="tour-ticked">
-              {' '}
-              · <RiCheckLine className="inline h-3.5 w-3.5" aria-hidden="true" /> Done
-            </span>
-          )}
-        </p>
-        <h2 id={`${ids}-title`} className="tour-title">
-          {title}
-        </h2>
-        <p id={`${ids}-text`} className="tour-text">
-          {text}
-        </p>
-        {notice && <p className="tour-notice">{notice}</p>}
-        {rows && <KeyTable rows={rows} className="guide-keys tour-keys" />}
-        {actions.length > 0 && (
-          <div className="tour-actions">
-            {actions.map((a) => {
-              // (a label may say a size: a function of ctx, as a stop's text may be)
-              const label = typeof a.label === 'function' ? a.label(ctx) : a.label;
-              const cls = `btn ${a.primary ? 'btn-primary' : 'btn-ghost'} btn-sm`;
-              return a.href ? (
-                <a key={label} className={cls} href={a.href} download={a.download || undefined} target={a.download ? undefined : '_blank'} rel={a.download ? undefined : 'noopener noreferrer'}>
-                  {label}
-                </a>
-              ) : (
-                <button key={label} type="button" className={cls} onClick={() => onAction(a, { last })}>
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-        <ol className="tour-dots" aria-hidden="true">
-          {dots.map((d) => (
-            <li key={d.key} data-on={d.n === dot ? '' : undefined} data-past={d.n < dot ? '' : undefined} />
-          ))}
-        </ol>
-        <div className="tour-buttons">
-          {!last && (
-            <button type="button" className="tour-skip" onClick={() => finish('skipped')}>
-              {words.skip}
-            </button>
-          )}
-          {(s > 0 || (crosses && want.c > 0)) && (
-            <button type="button" className="btn btn-ghost btn-sm" onClick={back} aria-label="Back" disabled={waiting}>
-              <RiArrowLeftLine className="h-4 w-4" aria-hidden="true" />
-            </button>
-          )}
-          <button ref={next} type="button" className="btn btn-primary btn-sm" onClick={forward} disabled={waiting}>
-            {last ? (
-              <>
-                <RiCheckLine className="h-4 w-4" aria-hidden="true" /> {words.done}
-              </>
-            ) : (
-              <>
-                Next <RiArrowRightLine className="h-4 w-4" aria-hidden="true" />
-              </>
+        {/* (the words scroll on a window too short for them; the buttons below never do) */}
+        <div className="tour-body">
+          <p className="tour-count">
+            {count}
+            {ticked && (
+              <span className="tour-ticked">
+                {' '}
+                · <RiCheckLine className="inline h-3.5 w-3.5" aria-hidden="true" /> Done
+              </span>
             )}
-          </button>
+          </p>
+          <h2 id={`${ids}-title`} className="tour-title">
+            {title}
+          </h2>
+          <p id={`${ids}-text`} className="tour-text">
+            {text}
+          </p>
+          {notice && <p className="tour-notice">{notice}</p>}
+          {rows && <KeyTable rows={rows} className="guide-keys tour-keys" />}
+          {actions.length > 0 && (
+            <div className="tour-actions">
+              {actions.map((a) => {
+                // (a label may say a size: a function of ctx, as a stop's text may be)
+                const label = typeof a.label === 'function' ? a.label(ctx) : a.label;
+                const cls = `btn ${a.primary ? 'btn-primary' : 'btn-ghost'} btn-sm`;
+                return a.href ? (
+                  <a key={label} className={cls} href={a.href} download={a.download || undefined} target={a.download ? undefined : '_blank'} rel={a.download ? undefined : 'noopener noreferrer'}>
+                    {label}
+                  </a>
+                ) : (
+                  <button key={label} type="button" className={cls} onClick={() => onAction(a, { last })}>
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <div className="tour-foot">
+          {dots.length > MAX_DOTS ? (
+            <div className="tour-progress" aria-hidden="true">
+              <span style={{ transform: `scaleX(${(dot + 1) / dots.length})` }} />
+            </div>
+          ) : (
+            <ol className="tour-dots" aria-hidden="true">
+              {dots.map((d) => (
+                <li key={d.key} data-on={d.n === dot ? '' : undefined} data-past={d.n < dot ? '' : undefined} />
+              ))}
+            </ol>
+          )}
+          <div className="tour-buttons">
+            {!last && (
+              <button type="button" className="tour-skip" onClick={() => finish('skipped')}>
+                {words.skip}
+              </button>
+            )}
+            {(s > 0 || (crosses && want.c > 0)) && (
+              <button type="button" className="btn btn-ghost btn-sm" onClick={back} aria-label="Back" disabled={waiting}>
+                <RiArrowLeftLine className="h-4 w-4" aria-hidden="true" />
+              </button>
+            )}
+            <button ref={next} type="button" className="btn btn-primary btn-sm" onClick={forward} disabled={waiting}>
+              {last ? (
+                <>
+                  <RiCheckLine className="h-4 w-4" aria-hidden="true" /> {words.done}
+                </>
+              ) : (
+                <>
+                  Next <RiArrowRightLine className="h-4 w-4" aria-hidden="true" />
+                </>
+              )}
+            </button>
+          </div>
         </div>
         {/* each stop said aloud as it comes (focus stays on Next); the wait once */}
         <p className="sr-only" aria-live="polite">
