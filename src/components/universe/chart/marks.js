@@ -78,9 +78,17 @@ export function liveMarks(now) {
 // through, and an unbounded edge can't make the chart unbounded.
 const within = (r) => (Number.isNaN(r) ? CHART.range.open : Math.min(CHART.range.max, Math.max(CHART.range.min, r)));
 
+// The rim of what each preset frames (never past its own range): the home
+// system and the Curve; the universe's is its range.
+const RIM = { home: HOME_RADIUS, rickmorty: SECTORS.rickmorty.edge };
+
+// The chart's plane is the ship's height, so from far above or below the
+// disc a preset's range reaches down or up to its region's rim.
 export function presetView(id, ship) {
   const v = CHART_VIEWS[id];
-  return createView({ focus: [v.origin[0], ship?.y ?? 0, v.origin[2]], range: within(v.r), follow: false });
+  const y = ship?.y ?? 0;
+  const rim = Math.hypot(Math.min(RIM[id] ?? v.r, v.r), y - v.origin[1]);
+  return createView({ focus: [v.origin[0], y, v.origin[2]], range: within(Math.max(v.r, rim)), follow: false });
 }
 
 // Which part of space the chart is looking at.

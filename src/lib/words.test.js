@@ -22,6 +22,7 @@ const FILES = [
   ...['Home', 'Experience', 'Projects', 'Resume', 'Contact', 'Travel', 'Changes', 'Terminal'].map((p) => `pages/${p}.jsx`),
   ...['UniversePanel', 'UniverseMap', 'NavMap', 'Hangar', 'FlightSettings', 'StartChoice'].map((f) => `components/universe/${f}.jsx`),
   ...list('components/universe/online/', /\.jsx$/),
+  ...list('components/universe/chart/', /\.jsx$/),
   'components/universe/nav.js',
   'components/universe/scene.js',
 ];

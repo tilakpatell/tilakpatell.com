@@ -14,4 +14,8 @@ describe('the chart’s tools', () => {
     expect(button(html, W.flat)).not.toContain('aria-disabled');
     expect(button(html, W.fit)).toBeNull();
   });
+  it('names its group for a screen reader when given a label', () => {
+    expect(renderToStaticMarkup(<ChartTools label={W.tools} onZoomIn={f} />)).toContain(`role="group" aria-label="${W.tools}"`);
+    expect(renderToStaticMarkup(<ChartTools onZoomIn={f} />)).not.toContain('aria-label="undefined"');
+  });
 });

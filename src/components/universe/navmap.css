@@ -100,18 +100,56 @@
 .navmap-search:focus-within { border-color: #9fd8ff; }
 
 .navmap-body { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1rem; min-height: 0; container-type: size; }
+/* the chart's circle and, under it, its bar. The circle leaves 3.25rem of
+   the body's height to the bar (a 44 px tool on a touch screen, and the
+   gap), so the two fit; the bar may run wider than the circle, up to the
+   column, so its readout has room on a short, wide screen (a phone on its side) */
+.navmap-stage {
+  --circle: min(100%, calc(100cqh - 3.25rem));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: center;
+  min-width: 0;
+}
+@supports not (width: 1cqh) {
+  .navmap-stage { --circle: min(100%, calc(64vh - 3.25rem)); }
+}
 .navmap-chart {
   position: relative;
-  align-self: center;
-  justify-self: center;
-  width: min(100%, 100cqh);
+  width: var(--circle);
   aspect-ratio: 1;
   border-radius: 50%;
   overflow: hidden;
   box-shadow: 0 0 0 1px rgb(159 216 255 / 0.18), 0 0 40px rgb(80 150 255 / 0.1);
+  touch-action: none; /* (the chart's own hands: a drag pans, two fingers pinch, turn and tilt) */
+  user-select: none;
+  cursor: grab;
 }
-@supports not (width: 1cqh) {
-  .navmap-chart { width: min(100%, 64vh); }
+.navmap-chart:active { cursor: grabbing; }
+/* (30rem: a readout's two lines beside the tools) */
+.navmap-bar { display: flex; align-items: center; gap: 0.5rem; width: min(100%, max(var(--circle), 30rem)); }
+.navmap-readout {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid rgb(159 216 255 / 0.18);
+  border-radius: 10px;
+  background: rgb(3 6 16 / 0.8);
+  color: #cfe9ff;
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+.navmap-tools { display: flex; flex: none; gap: 0.3rem; margin-left: auto; }
+.navmap-tools .navmap-tool { justify-content: center; width: 36px; height: 36px; padding: 0; font-size: 1rem; }
+.navmap-tools .navmap-tool svg { width: 18px; height: 18px; }
+.navmap-tool[aria-disabled='true'] { color: var(--muted); cursor: default; }
+.navmap-tool[aria-disabled='true']:hover { background: none; }
+@media (pointer: coarse) {
+  .navmap-tools .navmap-tool { width: 44px; height: 44px; }
 }
 .navmap-canvas,
 .navmap-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -124,9 +162,13 @@
   background: repeating-linear-gradient(0deg, rgb(159 216 255 / 0.03) 0 1px, transparent 1px 3px);
 }
 .navmap-ring { fill: none; stroke: rgb(159 216 255 / 0.08); stroke-width: 1; }
-.navmap-edge { fill: none; stroke: rgb(159 216 255 / 0.35); stroke-width: 1.5; stroke-dasharray: 3 6; }
-.navmap-home-ring { fill: rgb(255 200 120 / 0.06); stroke: rgb(255 210 140 / 0.45); stroke-width: 1; }
-.navmap-belt { fill: none; stroke: rgb(170 160 140 / 0.22); stroke-dasharray: 1 4; }
+.navmap-sector { fill: none; stroke: rgb(159 216 255 / 0.12); stroke-width: 1; stroke-dasharray: 6 6; }
+.navmap-region { fill: none; }
+.navmap-region[data-region='curve'] { stroke: rgb(159 216 255 / 0.35); stroke-width: 1.5; stroke-dasharray: 3 6; }
+.navmap-region[data-region='home'] { fill: rgb(255 200 120 / 0.06); stroke: rgb(255 210 140 / 0.45); stroke-width: 1; }
+.navmap-region[data-region='belt'] { stroke: rgb(170 160 140 / 0.22); stroke-dasharray: 1 4; }
+.navmap-stem { stroke: rgb(159 216 255 / 0.45); stroke-width: 1; }
+.navmap-stem[data-dir='down'] { stroke-dasharray: 2 3; }
 .navmap-pull { fill: rgb(255 140 60 / 0.06); stroke: rgb(255 176 112 / 0.4); stroke-width: 1; stroke-dasharray: 2 4; }
 .navmap-system { fill: currentColor; fill-opacity: 0.08; stroke: currentColor; stroke-opacity: 0.35; stroke-width: 1; }
 .navmap-portal { fill: currentColor; fill-opacity: 0.18; stroke: currentColor; stroke-opacity: 0.9; stroke-width: 2.5; stroke-dasharray: 5 3; }
@@ -168,14 +210,18 @@
   border-radius: 50%;
   background: radial-gradient(circle, var(--c) 0 3.5px, color-mix(in srgb, var(--c) 30%, transparent) 4.5px, transparent 8px);
 }
-.navmap-places > li[data-kind='world'] .navmap-dot { background: radial-gradient(circle, var(--c) 0 4.5px, color-mix(in srgb, var(--c) 35%, transparent) 5.5px, transparent 8px); }
+.navmap-places > li[data-quiet] .navmap-name { display: none; } /* (no room for its name: the dot alone, and its button keeps the name for a screen reader) */
+.navmap-places > li:is([data-kind='world'], [data-kind='moon']) .navmap-dot { background: radial-gradient(circle, var(--c) 0 4.5px, color-mix(in srgb, var(--c) 35%, transparent) 5.5px, transparent 8px); }
 .navmap-place[aria-current='location'] .navmap-dot { box-shadow: 0 0 0 2px #fff; animation: navmap-here 1.6s ease-in-out infinite; }
 @keyframes navmap-here { 50% { box-shadow: 0 0 0 5px rgb(255 255 255 / 0.25); } }
 .navmap-place[aria-pressed='true'] { background: rgb(3 6 16 / 0.85); box-shadow: 0 0 0 1px var(--c); color: #fff; }
 .navmap-place:hover .navmap-name { color: var(--c); }
 .navmap-name { text-shadow: 0 0 6px #000, 0 0 2px #000; }
-.navmap-places > li[data-kind='home'] .navmap-place { translate: -50% 4px; padding: 0.1rem 0.45rem; color: #ffd9a0; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; }
-.navmap-places > li[data-kind='home'] .navmap-place:hover { background: rgb(255 200 120 / 0.12); }
+/* a region's name (the home system, the Curve): the button to its preset */
+.navmap-places > li[data-kind='region'] .navmap-place { padding: 0.1rem 0.45rem; color: #cfe9ff; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.navmap-places > li[data-kind='region'] .navmap-place:hover { background: rgb(159 216 255 / 0.12); }
+.navmap-places > li[data-kind='region'] .navmap-homebtn { color: #ffd9a0; }
+.navmap-places > li[data-kind='region'] .navmap-homebtn:hover { background: rgb(255 200 120 / 0.12); }
 .navmap-out {
   position: absolute;
   left: 50%;
@@ -282,9 +328,10 @@
   .navmap-drive { min-height: 62px; padding: 0.4rem 0.2rem; }
   .navmap-place-name { font-size: 1.2rem; }
   .navmap-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); container-type: normal; gap: 0.6rem; }
-  .navmap-chart { width: min(100%, 42svh); }
+  .navmap-stage { --circle: min(100%, 42svh); }
   .navmap-place { font-size: 0.6rem; }
   .navmap-places > li[data-kind='wonder'] .navmap-name { display: none; } /* (the list has them by name) */
+  .navmap-chart { --wonder-names: 0; } /* (the rule above, for NavChart.jsx: those names keep no room from the others') */
   .navmap-places > li[data-kind='wonder'] .navmap-place[aria-pressed='true'] .navmap-name { display: inline; }
   .navmap-keys { display: none; }
 }

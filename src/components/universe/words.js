@@ -46,6 +46,7 @@ export const CHART_WORDS = {
   toShip: 'Back to the ship',
   flat: 'Look straight down',
   fit: 'Show everything',
+  tools: 'Chart tools', // the tools' group, for a screen reader
   sector: ([sx, sy, sz]) => `Sector ${[sx, sy, sz].map((n) => String(n).replace('-', '−')).join(', ')}`,
   height: (far, side) => (side === 0 ? 'Level with the disc' : `${far} ${side > 0 ? 'above' : 'below'} the disc`),
   // The keys line is drawn as <kbd>+</kbd> <kbd>−</kbd> {zoom}, <kbd>0</kbd> {back}.

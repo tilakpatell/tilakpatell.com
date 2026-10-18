@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHART_VIEWS, DESTINATIONS } from '../nav';
 import { MOONS } from '../universes';
 import { SECTORS } from '../layout';
-import { CHART, levelOf } from './projection';
+import { CHART, levelOf, project } from './projection';
 import { HAND_MARKS, liveMarks, markById, openView, presetOf, presetView } from './marks';
 
 const places = DESTINATIONS.filter((d) => d.kind !== 'system');
@@ -40,6 +40,13 @@ describe('the chart’s marks', () => {
     const home = presetView('home', { x: 5, y: 77, z: 5 });
     expect(home).toMatchObject({ focus: [0, 77, 0], range: CHART_VIEWS.home.r, follow: false });
     expect([presetOf(home), levelOf(home.range)]).toEqual(['home', 'system']);
+  });
+  it('frames a preset’s region from the ship’s height: far above or below the disc, the home system is still in range', () => {
+    for (const y of [-505, 1053, 4000]) {
+      const v = presetView('home', { x: 5000, y, z: 3000 });
+      expect([presetOf(v), levelOf(v.range)], String(y)).toEqual(['home', 'system']);
+      for (const m of HAND_MARKS.filter((k) => k.kind === 'station' || k.id === 'chart:sun')) expect(project(v, m.at).inside, `${m.id} from ${y}`).toBe(true);
+    }
   });
 });
 

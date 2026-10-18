@@ -105,6 +105,7 @@ export const PAGES = {
     keys: [
       { label: 'Flying', rows: [...fly(WEAPONS), ['hold S', 'Drop out of a lane'], ['hold W', 'Carry on through a junction'], ['M', 'The nav map: pick a place and a drive'], ['J', 'Jump to the place picked'], ['E / Enter', 'Land or dock where you are'], ['H', 'The hangar: paint and parts'], ['O', 'Flight settings'], ['Esc', 'Back out to the whole universe']] },
       { label: 'On foot', rows: [['W A S D', 'Walk'], ['Q E', 'Step sideways'], ['Shift', 'Run'], ['Space', 'Jump'], ['Click, then the mouse', 'Look round (Esc lets go)'], ['F / Click', 'Fire'], ['X', 'Play the other one of your crew'], ['B', 'Rick’s next gadget: the portal gun, the freeze ray, the shrink ray'], ['V', 'Out of their eyes'], ['G', 'Through a door, or back into the ship'], ['Enter', 'Into the planet’s page']] },
+      { label: 'On the nav map', rows: [['+ − 0', 'Zoom in, out, back to the ship'], ['Drag', 'Move the chart'], ['Shift and drag', 'Tilt and turn it; Look straight down puts it back']] },
     ],
     touch: [
       {
@@ -112,6 +113,7 @@ export const PAGES = {
           ['Drag', 'Fly, anywhere on the map'],
           ['↑ ↓', 'Hold to pull the nose up and down'],
           ['Tap', 'A planet, station or wonder to fly there; a hunter to lock on'],
+          ['Two fingers on the nav map', 'Pinch to zoom; turn or slide them to turn and tilt it'],
         ],
       },
       { label: 'The buttons', rows: [['Boost', 'Hold to go fast'], ['Fire', 'Shoot'], ['View', 'The cockpit'], ['Hangar', 'Paint and parts (the wrench)'], ['Flight settings', 'How it all feels (the sliders)']] },
