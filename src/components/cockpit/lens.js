@@ -64,6 +64,7 @@ uniform vec4 uSun;
 uniform vec3 uSunColor;
 uniform float uFlare;
 uniform float uDirt;
+uniform float uLift;
 
 #include <tonemapping_pars_fragment>
 #include <colorspace_pars_fragment>
@@ -143,7 +144,8 @@ ${
   // the smudges on the glass, catching it
   col += texture2D(tDirt, uv).r * lit * uDirt * outside(uv);
 
-  gl_FragColor = vec4(col, 1.0);
+  // (the white-out's push, ahead of the tone mapping, or in place of it)
+  gl_FragColor = vec4(col * uLift, 1.0);
 
   #ifdef LINEAR_TONE_MAPPING
     gl_FragColor.rgb = LinearToneMapping(gl_FragColor.rgb);
@@ -249,6 +251,7 @@ export function lensPass(lens, { dirt = true } = {}) {
     uSunColor: { value: new THREE.Color(1, 1, 1) },
     uFlare: { value: lens.flare },
     uDirt: { value: lens.dirt > 0 ? 1 : 0 },
+    uLift: { value: 1 },
   });
   pass.material.fragmentShader = frag(lens);
   pass.material.name = 'CockpitLens';
@@ -264,8 +267,9 @@ export function lensPass(lens, { dirt = true } = {}) {
     // told apart, so no speed blur and no sun's frame); focus: where you're
     // flying, on the screen (0…1, null when it's behind you); sun: { at:
     // [x, y] on the screen, k, size } or null; glow: [r, g, b], what the
-    // whole glass catches
-    set({ depth, time, focus, streak, aberration, glow, sun, sunColor }) {
+    // whole glass catches; lift: the picture's light pushed up (1 as drawn)
+    set({ depth, time, focus, streak, aberration, glow, sun, sunColor, lift }) {
+      if (lift != null) u.uLift.value = lift;
       if (depth !== undefined) u.tDepth.value = depth ?? none;
       if (time != null) u.uTime.value = time;
       if (focus !== undefined) {

@@ -300,8 +300,10 @@ export function run(canvas, opts) {
   const flashColor = new THREE.Color();
   const shake = new THREE.Vector2();
   let drawn = 0; // frames drawn, for the shadows' pace
-  const base = { exposure: 1, bloom: 0.55 }; // the vehicle's own, for the white-out
-  let casters = []; // the vehicle's lights that throw shadows
+  const base = { bloom: 0.55 }; // the vehicle's own, for the white-out
+  let whiteOut = true; // (its flash a light one: the RV's is the night)
+  let casters = []; // the vehicle's lights that throw shadows: { light, want }
+  let boarded = false; // sat down: drawn, warmed, faded in
   const veilWas = { background: '', opacity: '' };
   const setVeil = (background, opacity) => {
     if (veilWas.background !== background) veil.style.background = veilWas.background = background;
@@ -332,7 +334,7 @@ export function run(canvas, opts) {
   // (lib/three/renderer's revealAll).
   const warm = () => {
     const undo = revealAll(inside, outside);
-    for (const c of casters) c.shadow.needsUpdate = true;
+    for (const c of casters) c.light.shadow.needsUpdate = true;
     try {
       draw();
     } catch (err) {
@@ -417,17 +419,24 @@ export function run(canvas, opts) {
         v.resize?.(view.x, view.y, gl.ratio);
       }
       if (lens) aimLens(throttle, L.on ? flashAt(L.plan, L.t) : 0, now);
-      // the white-out: as the flash rises the picture's light runs over (its
-      // exposure and its bloom pushed up), so the jump burns into the white
-      // rather than a veil fading over it
-      if (composer && L.on) {
+      // the white-out: as a light flash rises the picture's light runs over
+      // (pushed up in the lens, its bloom too), so the jump burns into the
+      // white rather than a veil fading over it; the RV's goes to night
+      if (lens && L.on && whiteOut) {
         const f = flashAt(L.plan, L.t);
-        renderer.toneMappingExposure = base.exposure * (1 + 2.5 * f * f);
+        lens.set({ lift: 1 + 2.5 * f * f });
         if (bloom) bloom.strength = base.bloom * (1 + 2.5 * f);
       }
-      // the shadows at the vehicle's pace (SHADOWS)
+      // The shadows at the vehicle's pace (SHADOWS), where the vehicle wants
+      // them at all: one that turns a light's shadow off itself (the RV's,
+      // once its sun is down) is left off, its wish put back after the draw.
       const every = (SHADOWS[vid] ?? [1, 1])[L.on ? 1 : 0];
-      if (every && drawn % every === 0) for (const c of casters) c.shadow.needsUpdate = true;
+      const due = every > 0 && drawn % every === 0;
+      for (const c of casters) {
+        c.want = c.light.shadow.autoUpdate;
+        c.light.shadow.autoUpdate = false;
+        if (c.want && due) c.light.shadow.needsUpdate = true;
+      }
       drawn += 1;
       // (not during a launch: better a model that pops in than a held frame)
       if (late && !L.on) {
@@ -455,6 +464,7 @@ export function run(canvas, opts) {
         stats.calls = renderer.info.render.calls;
         stats.triangles = renderer.info.render.triangles;
       } else draw();
+      for (const c of casters) c.light.shadow.autoUpdate = c.want;
       if (!firstDrawn) {
         firstDrawn = true;
         cb.onFirstFrame?.();
@@ -463,7 +473,9 @@ export function run(canvas, opts) {
       // through the launch
       if (!L.on) {
         const beat = loop.beat;
-        const rung = beat ? Math.max(1, Math.round(1000 / 60 / beat)) : 1;
+        // (the most beats a frame that still makes 60 or more: 2 at 120 Hz and
+        // 144, 1 at 90 and 100; a hair over, for a beat read a little short)
+        const rung = beat ? Math.max(1, Math.floor(1000 / 60 / beat + 0.1)) : 1;
         const want = gpuMs.length >= 3 && median(gpuMs) < HEADROOM * (beat ?? 1000 / 60) ? 1 : rung;
         if (loop.cadence !== want) loop.setCadence(want);
       }
@@ -506,7 +518,7 @@ export function run(canvas, opts) {
   document.addEventListener('visibilitychange', onVis);
 
   // ── building a vehicle ──
-  const dropVehicle = () => {
+  const dropVehicle = ({ kit = true } = {}) => {
     if (!v) return;
     sound?.stop();
     sound = null;
@@ -522,7 +534,7 @@ export function run(canvas, opts) {
       inside.environment?.dispose?.();
       inside.environment = roomEnv;
     }
-    freeKit();
+    if (kit) freeKit();
     v = null;
   };
 
@@ -552,6 +564,7 @@ export function run(canvas, opts) {
     if (id === vid && (v || building)) return;
     vid = id;
     const mine = (building = {});
+    boarded = false;
     fadeTo = 1;
     kick();
     // let the black come down before the old one goes
@@ -577,7 +590,10 @@ export function run(canvas, opts) {
         inside.environmentIntensity = v.envIntensity ?? 0.35;
       } else inside.environmentIntensity = v.envIntensity ?? 0.35;
       renderer.toneMapping = v.toneMapping ?? THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = base.exposure = v.exposure ?? 1;
+      renderer.toneMappingExposure = v.exposure ?? 1;
+      flashColor.set(v.flash ?? '#eaf3ff');
+      whiteOut = flashColor.r + flashColor.g + flashColor.b > 1.5;
+      lens?.set({ lift: 1 });
       if (bloom) {
         bloom.strength = base.bloom = v.bloom?.[0] ?? 0.55;
         bloom.radius = v.bloom?.[1] ?? 0.42;
@@ -592,30 +608,33 @@ export function run(canvas, opts) {
       look.sat = clock;
       L.plan = planOf(id);
       fit();
+      // (not drawn till it's ready: `warming` holds the frames off it)
+      warming = built;
+      const current = () => building === null && !stopped && v === built;
       // the nebula worked out once, into a cube, behind the black (./bake.js)
-      sky = bakeSkies(renderer, outside, { size: row.sky });
+      sky = await bakeSkies(renderer, outside, { size: row.sky, compile: (dome, eye, target) => precompile(renderer, dome, eye, outside, target) });
+      if (!current()) {
+        sky?.dispose();
+        sky = null;
+        return;
+      }
       // the lights that throw shadows, drawn again at the vehicle's pace (SHADOWS)
       casters = [];
       for (const root of [inside, outside])
         root.traverse((o) => {
-          if (!o.isLight || !o.castShadow || !o.shadow) return;
-          o.shadow.autoUpdate = false;
-          o.shadow.needsUpdate = true;
-          casters.push(o);
+          if (o.isLight && o.castShadow && o.shadow) casters.push({ light: o, want: true });
         });
-      // (not drawn till it's ready: `warming` holds the frames off it)
-      warming = built;
       // its pictures to the chip a slice at a time, behind the black, rather
       // than every one in the warm draw's single frame
-      await uploadSlices(renderer, [...texturesUnder(inside), ...texturesUnder(outside)]);
-      if (building !== null || stopped || v !== built) return;
+      await uploadSlices(renderer, [...texturesUnder(inside), ...texturesUnder(outside)], { alive: current });
+      if (!current()) return;
       // compile everything now, behind the black, so the first look doesn't
       // stall: the GPU links in the background while the frames hold off
       // drawing it (lib/three/renderer's precompile)
       const into = composer ? composer.readBuffer : null;
       await Promise.all([precompile(renderer, outside, camOut, outside, into), precompile(renderer, inside, camIn, inside, into), composer ? precompilePasses(renderer, composer, camIn) : null]);
       if (warming === built) warming = null;
-      if (stopped || v !== built) return;
+      if (!current()) return;
       // still behind the black: draw it all once, then black again, and wait
       // for the chip to have finished it, so the first frames of the fade
       // in don't queue behind it
@@ -624,9 +643,10 @@ export function run(canvas, opts) {
       renderer.setRenderTarget(null);
       renderer.clear();
       await fence(renderer);
-      if (stopped || v !== built) return;
+      if (!current()) return;
       sound = cockpitSound(id);
       fadeTo = 0;
+      boarded = true;
       cb.onBoarded?.(id);
       kick();
     } catch (err) {
@@ -647,8 +667,10 @@ export function run(canvas, opts) {
     return ray.intersectObjects(v.triggers, true).length > 0;
   };
 
+  // (not before it's sat down: a launch of a vehicle still being readied would
+  // go undrawn and unheard)
   function go() {
-    if (L.on || !v) return false;
+    if (L.on || !v || !boarded) return false;
     L.on = true;
     // (until the flash, what the page underneath makes waits: lib/foreground)
     launchHold = inFront('launch');
@@ -671,11 +693,14 @@ export function run(canvas, opts) {
     document.removeEventListener('visibilitychange', onVis);
     sound?.stop();
     sound = null;
+    // (the kit's painted pictures now: they're the module's, and a cockpit
+    // opened again before the quiet moment below has its own among them)
+    freeKit();
     // the rest in a quiet moment: freeing every mesh, material and picture
     // one by one takes frames' worth of time, and the launch's end is the
     // first moment the visitor flies the map
     const free = () => {
-      dropVehicle();
+      dropVehicle({ kit: false });
       roomEnv.dispose();
       pmrem.dispose();
       composer?.dispose();
@@ -689,16 +714,18 @@ export function run(canvas, opts) {
   return {
     pick,
     go,
-    // on to just before the flash
+    // on to just before the flash; false where there's nothing to skip on
+    // to yet (not sat down)
     skip() {
       if (!L.on) {
-        if (!go()) return;
+        if (!go()) return false;
       }
       const to = skipTo(L.plan, L.t);
       if (to > L.t) {
         sound?.skip?.(L.plan, to);
         L.t = to;
       }
+      return true;
     },
     get launching() {
       return L.on;

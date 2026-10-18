@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useLocation } from 'react-router-dom';
 import { RiArrowRightLine } from 'react-icons/ri';
 import { local, useReducedMotion } from '../../lib/hooks';
 import { playFile } from '../../lib/clips';
@@ -8,6 +9,7 @@ import { preloadVoiced, voicedSrc } from '../../lib/voiced';
 import { SHIP_KEY, parseShip } from '../universe/crews';
 import { audioContext } from '../../lib/audio';
 import { noteArrival } from '../../lib/arrival';
+import { isMapPath } from '../../lib/view';
 import Hyperspace from '../Hyperspace';
 import Face from '../universe/Faces';
 import { VEHICLES, firstVehicle, stepVehicle, vehicleById } from './vehicles';
@@ -22,7 +24,8 @@ const KEY = 'tp-cockpit'; // the last one you sat in
 // The page underneath uncovered (App covers it under the intro with
 // html[data-covered], which holds its scenes still, and lets it go at the
 // flash; 'tp:uncover' wakes them), a moment early: App's own at the flash
-// then finds it done.
+// then finds it done. Only the map: a replay from another page goes to the
+// map at the flash, and that page's scenes would only wake to be torn down.
 const reveal = () => {
   const el = document.documentElement;
   if (!('covered' in el.dataset)) return;
@@ -59,6 +62,8 @@ export default function Cockpit({ start, onPeak, onDone }) {
   const v = vehicleById(id);
   const idNow = useRef(id);
   idNow.current = id;
+  const onMap = useRef(false);
+  onMap.current = isMapPath(useLocation().pathname);
   // the flash: into the universe, in this vehicle's ship
   const peak = useCallback(() => {
     const vehicle = vehicleById(idNow.current);
@@ -132,7 +137,7 @@ export default function Cockpit({ start, onPeak, onDone }) {
         onBoarded: (got) => setBoarded(got),
         onFirstFrame: () => delete document.documentElement.dataset.intro,
         onLine: say,
-        onReveal: reveal,
+        onReveal: () => onMap.current && reveal(),
         onPeak: peak,
         onDone: () => cbs.current.onDone?.(),
         onFail: () => setFallback(true),
@@ -210,11 +215,21 @@ export default function Cockpit({ start, onPeak, onDone }) {
       cbs.current.onDone?.();
       return;
     }
-    if (!c.launching) {
+    if (c.launching) {
+      c.skip();
+      return;
+    }
+    if (c.skip()) {
       local.set(KEY, id);
       setLaunching(true);
+      return;
     }
-    c.skip();
+    // not sat down yet (still boarding): straight out, as with no cockpit at
+    // all, and the first visit's cover off with it
+    delete document.documentElement.dataset.intro;
+    if (onMap.current) reveal();
+    peak();
+    cbs.current.onDone?.();
   }, [id, peak]);
 
   const pick = (to) => {
