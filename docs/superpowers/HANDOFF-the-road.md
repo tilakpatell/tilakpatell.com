@@ -10,7 +10,7 @@ Middle-earth as a journey: one continuous three.js ride from Bag End to the Grey
 
 | lane | what | plan | tasks | branch | session | pull request | state |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| R1 the spine | the module, the line, the clock, the director, the fellowship, daylight, the face, the rows, the cast, the measure | `…-the-road.md` | 1 to 10 | `claude/the-road-1-spine` | 2026-10-18 | PR_NUMBER | done: tasks 1 to 10; the numbers in `evidence/the-road/README.md`; next R2 (Task 11) |
+| R1 the spine | the module, the line, the clock, the director, the fellowship, daylight, the face, the rows, the cast, the measure | `…-the-road.md` | 1 to 10 | `claude/the-road-1-spine` | 2026-10-18 | #1034 | done: tasks 1 to 10; the numbers in `evidence/the-road/README.md`; next R2 (Task 11) |
 | S the sheet | the geography, the projection, the consumers, the painter, the shots | `…-middle-earth-sheet.md` | 1 to 6 | `claude/middle-earth-sheet` | | | after #1023 merges |
 | R2 the systems | the ground, the scatter, the water, the weather, the ambience, the house and the vision, Hobbiton in full | `…-the-road.md` | 11 to 17 | `claude/the-road-2-systems` | | | |
 | R3 stages 2 to 6 | the Shire’s edge, Bree, Weathertop, the Ford, Rivendell | the same | 18 to 22 | `claude/the-road-3-eriador` | | | |
