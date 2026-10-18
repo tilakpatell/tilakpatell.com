@@ -8,12 +8,12 @@ export const ZOOM_STEP = 1.5; // (a button's or a key's zoom, the galaxy's)
 export const ORBIT = { yaw: Math.PI, pitch: Math.PI / 2 }; // (radians for a drag across the whole box)
 
 const LINE = { 0: 1, 1: 16, 2: 120 }; // (a wheel's delta in px, lines or pages: Firefox's wheel is in lines)
-const KEYS = { '+': 'zoomIn', '=': 'zoomIn', '-': 'zoomOut', _: 'zoomOut', 0: 'back' };
+const KEYS = new Map([['+', 'zoomIn'], ['=', 'zoomIn'], ['-', 'zoomOut'], ['_', 'zoomOut'], ['0', 'back']]);
 const num = (n) => (Number.isFinite(n) ? n : 0);
 
 export function chartKey({ key, meta, ctrl, alt }, { typing = false } = {}) {
   if (typing || meta || ctrl || alt) return null;
-  return KEYS[key] ?? null;
+  return KEYS.get(key) ?? null;
 }
 
 export function wheelFactor(deltaY, deltaMode) {

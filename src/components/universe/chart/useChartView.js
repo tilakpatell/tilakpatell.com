@@ -39,6 +39,8 @@ export function useChartView(boxRef, { open, ship = null, frame, orbit = true })
       e.preventDefault();
       const f = wheelFactor(e.deltaY, e.deltaMode);
       if (f === 1) return;
+      // (a zoom mid-drag re-anchors the pan on the zoomed view, so the hand and the map stay together)
+      if (pan.current) pan.current = { anchor: zoomBy(viewRef.current, f), total: [0, 0] };
       setView((v) => zoomBy(v, f));
     };
     el.addEventListener('wheel', onWheel, { passive: false });
@@ -58,7 +60,9 @@ export function useChartView(boxRef, { open, ship = null, frame, orbit = true })
       if (!pan.current) pan.current = { anchor: viewRef.current, total: [0, 0] };
       const p = pan.current;
       p.total = [p.total[0] + m.pan[0], p.total[1] + m.pan[1]];
-      setView(panFrom(p.anchor, p.total, fr));
+      // (only the pan's x and z are laid onto the latest view: a zoom or the ship's height changed meanwhile stays)
+      const [x, , z] = panFrom(p.anchor, p.total, fr).focus;
+      setView((v) => ({ ...v, focus: [x, v.focus[1], z], follow: false }));
     } else {
       setView((v) => gestureStep(v, m, fr, { orbit: canOrbit }));
     }
@@ -66,7 +70,7 @@ export function useChartView(boxRef, { open, ship = null, frame, orbit = true })
   const handlers = {
     onPointerDown: (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      if (gesture.current.active) pan.current = null; // (a second finger ends the drag's pan)
+      pan.current = null; // (a second finger ends the drag's pan; a press after an up the box never saw starts clean)
       gesture.current.down(e.pointerId, e.clientX, e.clientY, rect(), { orbit: live.current.orbit && e.shiftKey });
     },
     onPointerMove: (e) => {

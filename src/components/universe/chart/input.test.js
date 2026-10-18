@@ -8,6 +8,7 @@ describe('the chart’s hands and keys', () => {
     expect(chartKey({ key: '-' }, { typing: true })).toBeNull();
     expect(chartKey({ key: '0' }, { typing: true })).toBeNull();
     expect(chartKey({ key: '+', ctrl: true })).toBeNull();
+    expect(chartKey({ key: 'constructor' })).toBeNull();
   });
   it('turns a wheel into a zoom, lines and floods and NaN included', () => {
     expect(wheelFactor(-100, 0)).toBeGreaterThan(1);
