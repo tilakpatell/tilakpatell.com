@@ -81,7 +81,7 @@
 .hangar-blade { display: inline-block; width: 1.6rem; height: 0.3rem; border-radius: 2px; vertical-align: middle; background: var(--blade); box-shadow: 0 0 8px var(--blade); }
 .hangar-swatches { gap: 0.5rem; margin-bottom: 0.5rem; }
 .hangar-chips .hangar-swatch { width: 36px; min-height: 36px; padding: 0; border: 2px solid var(--yard-line); border-radius: 50%; background: var(--swatch); }
-.hangar-chips .hangar-swatch[aria-pressed='true'] { border-color: #fff; box-shadow: 0 0 0 2px var(--swatch); }
+.hangar-chips .hangar-swatch[aria-pressed='true'] { border-color: #fff; background: var(--swatch); box-shadow: 0 0 0 2px var(--swatch); }
 @media (pointer: coarse) {
   .hangar-chips .hangar-swatch { width: 44px; min-height: 44px; }
 }

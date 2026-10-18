@@ -35,14 +35,28 @@ export default function ShipyardBody({ ship, shipName = '', live, lastBuild = nu
   const { economy } = useEconomy();
   const reduced = useMemo(() => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches, []);
   const { draft, checked, changes, looking, setLooking } = yard;
+  // (what the showroom shows, for it to show the moment it's made)
+  const latest = useRef(null);
+  latest.current = { show: ship ? { kind: ship, build: draft.build, loadout: draft.loadout } : null, focus: looking?.slot ?? slot };
 
-  // the showroom: made with the body, gone with it
+  // the showroom: made with the body, gone with it. Made a moment after
+  // the body mounts, not as it does: a mount that's undone at once (React's
+  // checks in development do it) would have released the canvas's context
+  // before the next one could draw on it
   useEffect(() => {
     if (!canvas.current) return undefined;
-    const r = createShowroom(canvas.current, { reduced });
-    room.current = r;
-    setStill(!r);
+    let gone = false;
+    let r = null;
+    queueMicrotask(() => {
+      if (gone || !canvas.current) return;
+      r = createShowroom(canvas.current, { reduced });
+      room.current = r;
+      setStill(!r);
+      if (r && latest.current.show) r.show(latest.current.show);
+      r?.focus(latest.current.focus);
+    });
     return () => {
+      gone = true;
       r?.dispose();
       room.current = null;
     };

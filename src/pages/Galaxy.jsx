@@ -40,8 +40,9 @@ import '../components/galaxy/galaxy.css';
 import { thud } from '../lib/sfx';
 import { createImpacts } from '../lib/impact';
 
-// the Shipyard (the universe map's own), in its own chunk: opened with H
-const Shipyard = lazy(() => import('../components/universe/shipyard/Shipyard'));
+// the Hangar (the crew, the arms, the powers and the universe map's own shipyard), in its own chunk: opened with H, or C on the crew
+const HangarPanel = lazy(() => import('../components/hangar/HangarPanel'));
+import { TAB_KEY, readTab } from '../components/hangar/hangarRules';
 // a bump's and a crash's thud, by the hit law (lib/impact.js)
 const knockLaw = createImpacts();
 
@@ -183,6 +184,12 @@ export default function Galaxy() {
   // the ship as it's fitted, and the hull it flies: stock, or its garage build; and the Shipyard (H) that changes them, which is the
   // universe map's, with the same saves (shipyard/useShipyardPage.js)
   const { loadout, build, tune, garage, dropped, yard, setYard, applyDraft, sellPart, yardNote, live, yardSaves } = useShipyardPage({ ship, unlocked });
+  // the Hangar's tab, the one last used (this browser's: hangarRules.js's TAB_KEY)
+  const [hangarTab, setHangarTabState] = useState(() => readTab(local.get(TAB_KEY)));
+  const setHangarTab = useCallback((t) => {
+    setHangarTabState(t);
+    local.set(TAB_KEY, t);
+  }, []);
   useEffect(() => setLoadout(loadout), [setLoadout, loadout]);
   useEffect(() => tellBuild?.(build), [tellBuild, build]);
   const [at, setAt] = useState(null); // what in the system you're at (its planet, the Death Star…)
@@ -547,9 +554,11 @@ export default function Galaxy() {
       <EarnNote note={yardNote ?? earned} />
       {ship && !leaving && (
         <Suspense fallback={null}>
-          <Shipyard
+          <HangarPanel
             open={yard}
             onOpen={openYard}
+            tab={hangarTab}
+            onTab={setHangarTab}
             enabled={yard || (!mapOpen && !jumping && !intro)}
             ship={ship}
             shipName={crew?.ship ?? ''}

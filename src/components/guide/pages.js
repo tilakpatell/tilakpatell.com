@@ -102,7 +102,7 @@ export const PAGES = {
   '/universe': {
     about: ABOUT['/universe'],
     keys: [
-      { label: 'Flying', rows: [...fly(), ['hold S', 'Drop out of a lane'], ['hold W', 'Carry on through a junction'], ['M', 'The nav map: pick a place and a drive'], ['J', 'Jump to the place picked'], ['E / Enter', 'Land or dock where you are'], ['H', 'The hangar: paint and parts'], ['O', 'Flight settings'], ['Esc', 'Back out to the whole universe']] },
+      { label: 'Flying', rows: [...fly(), ['hold S', 'Drop out of a lane'], ['hold W', 'Carry on through a junction'], ['M', 'The nav map: pick a place and a drive'], ['J', 'Jump to the place picked'], ['E / Enter', 'Land or dock where you are'], ['H', 'The Hangar: crew, arms, powers and the shipyard'], ['C', 'The Hangar, on your crew'], ['O', 'Flight settings'], ['Esc', 'Back out to the whole universe']] },
       { label: 'On foot', rows: [['W A S D', 'Walk'], ['Q E', 'Step sideways'], ['Shift', 'Run'], ['Space', 'Jump'], ['Click, then the mouse', 'Look round (Esc lets go)'], ['F / Click', 'Fire'], ['X', 'Play the other one of your crew'], ['B', 'Rick’s next gadget: the portal gun, the freeze ray, the shrink ray'], ['V', 'Out of their eyes'], ['G', 'Through a door, or back into the ship'], ['Enter', 'Into the planet’s page']] },
     ],
     touch: [
@@ -130,7 +130,7 @@ export const PAGES = {
   },
   '/galaxy': {
     about: ABOUT['/galaxy'],
-    keys: [{ label: 'Flying', rows: [...fly(), ['M', 'The galaxy map: plot a course'], ['J', 'Jump to lightspeed, to the star on your nose, or else to the course you plotted'], ['E / Enter', 'Land on the planet (or board the Death Star)'], ['H', 'The shipyard: build, paint and parts'], ['O', 'Flight settings']] }, { label: 'On the galaxy map', rows: [['M / Esc', 'Close the galaxy map'], ['/', 'Find a system'], ['J', 'Jump to the course you plotted'], ['+ − 0', 'Zoom in, out, the whole galaxy; drag to pan']] }],
+    keys: [{ label: 'Flying', rows: [...fly(), ['M', 'The galaxy map: plot a course'], ['J', 'Jump to lightspeed, to the star on your nose, or else to the course you plotted'], ['E / Enter', 'Land on the planet (or board the Death Star)'], ['H', 'The Hangar: crew, arms, powers and the shipyard'], ['C', 'The Hangar, on your crew'], ['O', 'Flight settings']] }, { label: 'On the galaxy map', rows: [['M / Esc', 'Close the galaxy map'], ['/', 'Find a system'], ['J', 'Jump to the course you plotted'], ['+ − 0', 'Zoom in, out, the whole galaxy; drag to pan']] }],
     touch: [{ rows: [['Drag', 'Fly'], ['Tap', 'A star’s name to plot a course'], ['Jump', 'Lightspeed, to the star on your nose'], ['Weapon', 'The next of your three guns'], ['Power', 'Your crew’s power'], ['Big one', 'Once your kills have charged it'], ['Shipyard', 'Open the shipyard in the panel: build, paint and parts']] }],
     tips: [
       ['Jumping', 'Turn the nose toward a star and its name comes up; press J, or fly out of the system toward it. A course plotted on the galaxy map (M) stays on your flight HUD, and J with the nose on no star jumps to it. The map filters by era or film, and its layers switch off what you don’t need.'],

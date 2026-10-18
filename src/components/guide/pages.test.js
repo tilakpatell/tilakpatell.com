@@ -125,6 +125,15 @@ describe('what the guide says', () => {
     expect(JSON.stringify(PAGES['/galaxy'])).not.toMatch(/universe map only/);
   });
 
+  it('says H opens the Hangar and C its crew, on both maps', () => {
+    for (const page of ['/universe', '/galaxy']) {
+      const flying = PAGES[page].keys.find((g) => g.label === 'Flying').rows;
+      const does = (k) => flying.find(([keys]) => keys === k)?.[1] ?? '';
+      expect(does('H')).toMatch(/^The Hangar/);
+      expect(does('C')).toMatch(/Hangar.*crew/);
+    }
+  });
+
   it('has the site’s own shortcuts and tips', () => {
     expect(SHORTCUTS.map(([k]) => k)).toContain('?');
     expect(SITE.length).toBeGreaterThan(3);
