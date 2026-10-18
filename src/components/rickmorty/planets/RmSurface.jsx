@@ -6,7 +6,6 @@ import AssaultHud from '../../galaxy/surface/AssaultHud';
 import { voiceFor } from '../../galaxy/surface/voicelines';
 import { useOnline } from '../../universe/online/useOnline';
 import { wayOut } from '../../worlds/worlds';
-import { toggleGuide } from '../../../lib/palette';
 import { Bubble, Exit, Hud, Menu, Objective, Prompt, QuestList, Toast, othersText } from '../../../runtime/hud';
 import { ACCENT, planetMission, planetSite } from '.';
 import { readBests, readDone, readFound, writeBest, writeDone, writeFound } from './saves';
@@ -43,7 +42,8 @@ const CLIMB = 700; // ms after the cruiser's away before the page goes back to s
 // E does, who's talking, the things to do on M, the mission's own HUD and
 // the way back to space. None of the galaxy's war: no heroes, sides or
 // ranks. Saves are the planets' own (./saves.js).
-export default function RmSurface({ id, onLeave }) {
+// (`frozen`: the page's Hangar is open over it; `onHangar(tab?)` opens it)
+export default function RmSurface({ id, onLeave, frozen = false, onHangar = null }) {
   const { pathname } = useLocation();
   const [params] = useSearchParams();
   const site = useMemo(() => planetSite(id), [id]);
@@ -163,14 +163,14 @@ export default function RmSurface({ id, onLeave }) {
     [site, id, mission, leave, later, say, earn],
   );
 
-  // M for the things to do, H for the controls (the site's guide), Esc to
-  // shut the list, or else back to the cruiser and up
+  // M for the things to do, Esc to shut the list, or else back to the cruiser
+  // and up (H is the Hangar's, and the controls are the site's guide, on ?)
   useEffect(() => {
     const onKey = (e) => {
       const tag = e.target?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (frozen) return;
       if (e.key === 'm' || e.key === 'M') setList((l) => !l);
-      else if (e.key === 'h' || e.key === 'H') toggleGuide();
       else if (e.key === 'Escape') {
         if (list) setList(false);
         else takeOff();
@@ -178,7 +178,7 @@ export default function RmSurface({ id, onLeave }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [list, takeOff]);
+  }, [list, takeOff, frozen]);
 
   if (!site) return null;
   const place = site.places.find((p) => p.id === here);
@@ -193,7 +193,7 @@ export default function RmSurface({ id, onLeave }) {
       <h1 className="sr-only">
         {site.name}: {site.place}
       </h1>
-      <SurfaceView site={site} missionSpec={mission} {...KIT} ship="cruiser" loadout={null} found={found} done={done} compass={compass} net={online?.client ?? null} handle={view} onEvent={onEvent} />
+      <SurfaceView site={site} missionSpec={mission} {...KIT} ship="cruiser" loadout={null} found={found} done={done} compass={compass} net={online?.client ?? null} handle={view} onEvent={onEvent} frozen={frozen} />
 
       {/* the compass: the way to each place, the quest and the cruiser (the scene slides each mark by its data-id) */}
       <div className="surface-compass" ref={compass} aria-hidden="true">
@@ -233,6 +233,11 @@ export default function RmSurface({ id, onLeave }) {
         tools={
           <>
             <Exit label="Back to space" onLeave={takeOff} className="btn btn-ghost btn-sm rm-exit" />
+            {onHangar && (
+              <button type="button" className="btn btn-ghost btn-sm rm-exit rm-hangar-btn" onClick={() => onHangar()} aria-haspopup="dialog" aria-keyshortcuts="H" title="Hangar: the crew’s looks, and the cruiser’s arms, powers, skills and shipyard (H)">
+                Hangar
+              </button>
+            )}
             <Menu className="rm-menu" todo={site.quests.length ? { onOpen: () => setList(true), done: done.length, total: site.quests.length } : null} players={online ? { available: true, on: Boolean(online.on), count: others, onJoin: null } : null} way={wayOut(pathname)} />
           </>
         }

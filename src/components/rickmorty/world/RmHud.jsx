@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import RmEarnNote from '../RmEarnNote';
 import { Link as RouterLink } from 'react-router-dom';
-import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiEmotionLaughLine, RiListCheck2, RiShirtLine, RiTyphoonLine } from 'react-icons/ri';
+import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiEmotionLaughLine, RiListCheck2, RiShirtLine, RiToolsLine, RiTyphoonLine } from 'react-icons/ri';
 import { EMOTES, wheelAngle } from '../../../lib/emote';
 import { Prompt, Reticle, Stick, TouchButton, reticleState } from '../../../runtime/hud';
 import { PROMPT as LOOK_PROMPT } from '../../../runtime/look';
@@ -89,6 +89,7 @@ export default function RmHud({
   onLock,
   closeList,
   earned = null,
+  onHangar = null,
 }) {
   // Where the top row ends (the taller of the title's column and the map's),
   // measured, for what hangs under it on a phone (./world.css --rm-under):
@@ -200,11 +201,19 @@ export default function RmHud({
             </b>
             {!touch && <kbd>M</kbd>}
           </button>
-          <button type="button" className="rm-chip" onClick={onWardrobe} aria-haspopup="dialog" aria-label="Wardrobe: how Morty and Rick look">
-            <RiShirtLine aria-hidden="true" />
-            <span>Wardrobe</span>
-            {!touch && <kbd>C</kbd>}
-          </button>
+          {onHangar ? (
+            <button type="button" className="rm-chip rm-hangar-btn" onClick={onHangar} aria-haspopup="dialog" aria-label="Hangar: the crew’s looks, and the cruiser’s arms, powers, skills and shipyard" aria-keyshortcuts="H">
+              <RiToolsLine aria-hidden="true" />
+              <span>Hangar</span>
+              {!touch && <kbd>H</kbd>}
+            </button>
+          ) : (
+            <button type="button" className="rm-chip" onClick={onWardrobe} aria-haspopup="dialog" aria-label="Wardrobe: how Morty and Rick look">
+              <RiShirtLine aria-hidden="true" />
+              <span>Wardrobe</span>
+              {!touch && <kbd>C</kbd>}
+            </button>
+          )}
           {!planet && !game && !duel && !hud.flying && (
             <button type="button" className="rm-chip" onClick={openDial} aria-haspopup="dialog" aria-label="Portal gun: pick where Rick’s garage portal goes">
               <RiTyphoonLine aria-hidden="true" />

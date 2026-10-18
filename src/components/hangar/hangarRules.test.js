@@ -40,6 +40,11 @@ describe('the Hangar', () => {
     expect(wantsKey(key('h', { ctrlKey: true }), calm)).toBe(false);
     expect(wantsKey(key('x'), calm)).toBe(false);
   });
+  it('leaves C to a world whose foot has it, and still hears H there', () => {
+    expect(wantsKey(key('c'), { ...calm, crewKey: false })).toBe(false);
+    expect(wantsKey(key('h'), { ...calm, crewKey: false })).toBe(true);
+    expect(wantsKey(key('c'), { ...calm, crewKey: false, open: true })).toBe(false);
+  });
   it('heads it with the level, the way to the next and the credits', () => {
     expect(headOf({ xp: 200, credits: 1234, level: 3, title: 'Pilot' })).toEqual({ level: 3, title: 'Pilot', xp: 200, toNext: (200 - 150) / (350 - 150), credits: 1234, legend: null, points: null });
     expect(headOf({ xp: 99999, credits: 0, level: 11, title: 'Legend' }).toNext).toBe(1);

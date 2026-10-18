@@ -239,7 +239,6 @@ const crowdOf = (run) => {
 const PITCH = 0.17; // the walking camera's lift, as the scene has it
 const FADE_MS = 260;
 const CLIMB_MS = 480; // down the hatch or up the ladder: a slower fade
-const FLY_KEYS = { KeyR: 'rise', KeyF: 'sink', KeyC: 'sink' };
 const clamp1 = (v) => Math.max(-1, Math.min(1, v));
 const roomAt = (area, x, z) => PLAN.find((r) => r.area === area && x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1)?.name ?? null;
 // (at a planet's way in, out of its portal: the camera off to one side, as go() has it)
@@ -296,7 +295,9 @@ const newSim = (at = START, portal = false) => ({
 
 // `start`: a planet of the universe map's Rick and Morty sector, played on its
 // own (./planetMode.js), its portal home calling `onLeave`; else C-137
-export default function RmWorld({ start = null, onLeave = null }) {
+// (`frozen`: the page's Hangar is open over it; `onHangar(tab?)`: the page
+// opens its Hangar, which then has the C key and the chip that was the Wardrobe's)
+export default function RmWorld({ start = null, onLeave = null, frozen = false, onHangar = null }) {
   const planet = useMemo(() => planetOf(start), [start]);
   const three = use3D();
   const { unlock } = useAchievements();
@@ -406,7 +407,7 @@ export default function RmWorld({ start = null, onLeave = null }) {
   return (
     <section className="rm-world" aria-labelledby="rm-world-title" data-mode={world ? '3d' : 'cards'}>
       {world ? (
-        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} />
+        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} />
       ) : (
         <Cards done={done} openPlace={openPlace} three={three} gl={gl} toast={toast} retry={() => setGl('loading')} planet={planet} />
       )}
@@ -421,7 +422,7 @@ export default function RmWorld({ start = null, onLeave = null }) {
 // hence the reach)
 const ROOM = { bound: boundOf(AREAS), motion: true };
 
-function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned }) {
+function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned, frozen, onHangar }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const touchRef = useRef(touch);
   touchRef.current = touch;
@@ -1176,15 +1177,17 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
 
   // keys and the frame loop only while the world's on screen and nothing's
   // open over it (closing the effect lets go of every key held)
-  const live = gl === 'on' && inView && !open;
+  const live = gl === 'on' && inView && !open && !frozen;
+  const hasHangar = Boolean(onHangar);
   useEffect(() => {
     if (!live) return undefined;
     const s = sim.current;
     const down = (e) => {
       if (typing(e.target) || wardrobeRef.current) return; // (the wardrobe's open over him: he stands still)
       const onButton = e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement;
-      // C: the wardrobe, on foot (flying, it's the cruiser's way down)
-      if (e.code === 'KeyC' && !s.flying && !e.metaKey && !e.ctrlKey && !e.altKey && !e.repeat) {
+      // C: the wardrobe, on foot, where the page has no Hangar (where it has, C is
+      // the Hangar's, on the crew: HangarPanel.jsx hears it)
+      if (e.code === 'KeyC' && !hasHangar && !s.flying && !e.metaKey && !e.ctrlKey && !e.altKey && !e.repeat) {
         e.preventDefault();
         s.keys.clear();
         setWardrobe(true);
@@ -1242,10 +1245,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         }
       }
       const m = keyDown(s.keys, e);
-      const f = e.metaKey || e.ctrlKey || e.altKey ? null : FLY_KEYS[e.code];
-      if (f) s.keys.add(f);
-      if (m || f) {
-        // (Space is the cruiser's climb; walking, Morty's jump)
+      if (m) {
+        // (Space is the cruiser's climb and Shift its way down; walking, Morty's jump and run)
         if (m !== 'run' && !(m === 'space' && onButton)) e.preventDefault();
         if (m === 'space' && !onButton && !s.flying && !e.repeat) {
           s.jump = true;
@@ -1266,7 +1267,6 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     const up = (e) => {
       if (e.code === 'KeyB') strike(wheel.current.up(s.t));
       keyUp(s.keys, e);
-      if (FLY_KEYS[e.code]) s.keys.delete(FLY_KEYS[e.code]);
     };
     const blur = () => {
       s.keys.clear();
@@ -1290,7 +1290,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       wheel.current.cancel();
       s.keys.clear();
     };
-  }, [live, closeList, strike, planet, toggleLock, canvas]);
+  }, [live, closeList, strike, planet, toggleLock, canvas, hasHangar]);
 
   // ── every frame (the runtime's: the module's draw runs it while live) ──
   const tick = (ms) => {
@@ -1759,6 +1759,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         stopRickall={stopRickall}
         onToggleList={() => setList((v) => !v)}
         onWardrobe={() => setWardrobe(true)}
+        onHangar={onHangar ? () => onHangar() : null}
         closeWardrobe={closeWardrobe}
         setLook={setLook}
         openDial={openDial}

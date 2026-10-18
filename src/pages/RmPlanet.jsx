@@ -4,6 +4,10 @@ import RmWorld from '../components/rickmorty/world/RmWorld';
 import { planetPage } from '../components/rickmorty/world/planetMode';
 import { isBigPlanet } from '../components/rickmorty/world/dimensions/destinations';
 import WorldSwitcher from '../components/worlds/WorldSwitcher';
+import RmEarnNote from '../components/rickmorty/RmEarnNote';
+import HangarAboard from '../components/hangar/HangarAboard';
+import { useHangarAboard } from '../components/hangar/useHangarAboard';
+import { crewById } from '../components/universe/crews';
 import { useDocumentTitle } from '../lib/hooks';
 
 // (a big planet is the galaxy's surface engine: its code comes only for one)
@@ -22,6 +26,9 @@ export default function RmPlanet() {
   const page = planetPage(planet);
   useDocumentTitle(page?.name ?? 'Dimension C-137');
   const navigate = useNavigate();
+  // the Hangar, its door the world's own (the chip on a small planet, the
+  // button on a big one); on a big one C is the foot's block, so only H opens it
+  const aboard = useHangarAboard('cruiser');
   const space = page?.space;
   // (out to space in the planet's place in the history, so Back from the map doesn't land him on it again)
   const leave = useCallback(() => navigate(space, { replace: true }), [navigate, space]);
@@ -32,11 +39,13 @@ export default function RmPlanet() {
       <h1 className="sr-only">{page.name}</h1>
       {big ? (
         <Suspense fallback={null}>
-          <RmSurface id={page.id} onLeave={leave} />
+          <RmSurface id={page.id} onLeave={leave} frozen={aboard.yard.yard} onHangar={aboard.open} />
         </Suspense>
       ) : (
-        <RmWorld start={page.id} onLeave={leave} />
+        <RmWorld start={page.id} onLeave={leave} frozen={aboard.yard.yard} onHangar={aboard.open} />
       )}
+      <HangarAboard yard={aboard.yard} tab={aboard.tab} onTab={aboard.setTab} shipName={crewById('cruiser')?.ship ?? ''} doorAt=".rm-hangar-btn" crewKey={!big} />
+      <RmEarnNote note={aboard.yard.yardNote} />
       <section className="shell relative z-10 py-10 md:py-14" aria-label={`About ${page.name}`}>
         <p className="eyebrow">The Rick and Morty sector</p>
         <p className="lead mt-3 max-w-[62ch]">

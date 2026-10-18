@@ -23,12 +23,15 @@ import './hangar.css';
 // its points free in the head too) and the Shipyard (its body, ShipyardBody.jsx, the draft
 // held here so it's kept while the Hangar's shut). H opens it on the tab
 // last used and shuts it; C opens it on the crew; Escape shuts it; the
-// arrow keys go along the tabs. The design:
+// arrow keys go along the tabs. A page whose door is its own (Rick and
+// Morty's chips) names it (`doorAt`: H and C are heard while it's there),
+// and a world whose foot has C (a big planet's block) leaves it (`crewKey`).
+// The design:
 // docs/superpowers/specs/2026-10-18-one-arsenal-and-hangar-design.md, Part 3.
 
 const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export default function HangarPanel({ open, onOpen, tab, onTab, enabled = true, ship, shipName = '', live, lastBuild = null, saves, dropped = null, onApply, onSell, returnTo = '.universe-hangar-btn', hint = null }) {
+export default function HangarPanel({ open, onOpen, tab, onTab, enabled = true, ship, shipName = '', live, lastBuild = null, saves, dropped = null, onApply, onSell, doorAt = '.universe-hangar-btn', returnTo = doorAt, crewKey = true, hint = null }) {
   const id = useId();
   const panel = useRef(null);
   const [slot, setSlot] = useState('paint');
@@ -52,7 +55,7 @@ export default function HangarPanel({ open, onOpen, tab, onTab, enabled = true, 
       }
       const other = document.querySelector('[aria-modal="true"]');
       const otherDialog = Boolean(other && !panel.current?.contains(other));
-      if (wantsKey(e, { open, typing, otherDialog, door: Boolean(document.querySelector('.universe-hangar-btn')) })) {
+      if (wantsKey(e, { open, typing, otherDialog, door: Boolean(document.querySelector(doorAt)), crewKey })) {
         e.preventDefault();
         const want = tabForKey(e.key, tab);
         if (open && want === tab) onOpen(false);
@@ -72,7 +75,7 @@ export default function HangarPanel({ open, onOpen, tab, onTab, enabled = true, 
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [enabled, open, onOpen, tab, onTab]);
+  }, [enabled, open, onOpen, tab, onTab, doorAt, crewKey]);
 
   // focus in on opening (the tab it's on), and back where it was (or the corner button) after
   useEffect(() => {
