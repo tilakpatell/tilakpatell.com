@@ -425,6 +425,11 @@ void main() {
   else c = mordor(px, s, look);
   // a grain of noise, so the long soft gradients don’t band
   float a = clamp(c.a + (hash2(px) - 0.5) / 110.0 * step(0.01, c.a), 0.0, 1.0);
+  // a mist over the land behind the page’s words, left of the middle and
+  // low down, where the page’s mask is still strong: by day it would
+  // otherwise take the muted line under them below 4.5:1 (RULES UI 6)
+  float words = smoothstep(0.02, 0.07, vUv.x) * (1.0 - smoothstep(0.5, 0.64, vUv.x)) * (1.0 - smoothstep(0.48, 0.66, vUv.y));
+  a *= 1.0 - words * mix(0.74, 0.3, uNight);
   gl_FragColor = vec4(c.rgb / max(c.a, 0.0001), a);
 }
 `;
