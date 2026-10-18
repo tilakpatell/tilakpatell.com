@@ -11,24 +11,39 @@
   pointer-events: none;
   transition: top 0.3s var(--ease-smooth), left 0.3s var(--ease-smooth), width 0.3s var(--ease-smooth), height 0.3s var(--ease-smooth);
 }
+/* The card: never taller than the window (a laptop at 150% is 646 high, at
+   200% 360), its words scrolling in .tour-body and its buttons always in
+   .tour-foot, so Next is in reach at any zoom. placeCard keeps it on screen
+   from its measured height, which is this capped one. */
 .tour-card {
   position: fixed;
-  width: min(340px, calc(100vw - 32px));
-  padding: 1.1rem 1.15rem 1rem;
+  display: flex;
+  flex-direction: column;
+  width: min(360px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: hidden; /* (the body's scrollbar kept inside the rounded corners) */
   background: var(--surface);
   color: var(--text);
-  box-shadow: 0 24px 50px -20px rgb(0 0 0 / 0.55);
-  transition: top 0.3s var(--ease-smooth), left 0.3s var(--ease-smooth);
-  animation: tour-in 0.25s var(--ease-smooth) both;
+  box-shadow: var(--shadow-dialog);
+  transition: top var(--t-slow) var(--ease-smooth), left var(--t-slow) var(--ease-smooth);
+  animation: tour-in var(--t-base) var(--ease-out) both;
 }
+/* over the map: the panel's own ink, solid (it may sit over the panel, and
+   even 5% of the panel's white title shows through on that near-black) */
+.tour-card[data-map] { border-color: var(--border-strong); background: rgb(6 8 16); }
+.tour-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1.15rem 1.2rem 6px; } /* (6 px: the last action's focus ring, inside the scroller) */
+.tour-foot { flex: none; padding: calc(0.9rem - 6px) 1.2rem 1rem; }
 .tour-count { color: var(--muted); font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; }
-.tour-title { margin-top: 0.35rem; font-size: 1.1rem; font-weight: 600; line-height: 1.3; }
-.tour-text { margin-top: 0.45rem; color: var(--text); font-size: 0.875rem; line-height: 1.55; opacity: 0.88; }
-.tour-dots { display: flex; gap: 5px; margin: 0.9rem 0 0; padding: 0; list-style: none; }
+.tour-title { margin-top: 0.4rem; font-size: 1.125rem; font-stretch: 112%; font-weight: 650; line-height: 1.3; }
+.tour-text { margin-top: 0.45rem; color: var(--text-body); font-size: var(--fs-sm); line-height: 1.55; }
+.tour-dots { display: flex; gap: 5px; margin: 0; padding: 0; list-style: none; }
 .tour-dots li { width: 6px; height: 6px; border-radius: 999px; background: var(--border-strong); transition: width 0.2s ease, background 0.2s ease; }
 .tour-dots li[data-past] { background: color-mix(in srgb, var(--accent) 55%, var(--border-strong)); }
 .tour-dots li[data-on] { width: 18px; background: var(--accent); }
-.tour-buttons { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; margin-top: 0.9rem; }
+/* a long tour's progress: one slim line, filled as far as it's got */
+.tour-progress { height: 3px; overflow: hidden; border-radius: 999px; background: var(--border); }
+.tour-progress > span { display: block; height: 100%; border-radius: inherit; background: var(--accent); transform-origin: left; transition: transform var(--t-slow) var(--ease-smooth); }
+.tour-buttons { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; margin-top: 0.85rem; }
 .tour-skip { margin-right: auto; padding: 0.4rem 0.1rem; color: var(--muted); font-size: 0.8125rem; }
 .tour-skip:hover { color: var(--text); text-decoration: underline; }
 .tour-card :focus-visible { outline: 2px solid var(--accent-text, var(--accent)); outline-offset: 2px; }
@@ -36,7 +51,7 @@
    wider for its keys */
 .tour[data-kind='brief'] .tour-veil { background: rgb(2 6 14 / 0.45); }
 .tour[data-kind='brief'] .tour-spot { box-shadow: 0 0 0 2px var(--accent), 0 0 0 200vmax rgb(2 6 14 / 0.45); }
-.tour[data-kind='brief'] .tour-card { width: min(390px, calc(100vw - 32px)); }
+.tour[data-kind='brief'] .tour-card { width: min(400px, calc(100vw - 32px)); }
 .tour-keys { margin-top: 0.7rem; font-size: 0.8125rem; }
 .tour-keys th { width: 46%; padding: 0.35rem 0.6rem 0.35rem 0; }
 .tour-keys td { padding: 0.4rem 0; }
@@ -65,7 +80,7 @@ html[data-touring] .site-nav[data-hidden='true'] { transform: none; }
 html[data-touring] .guide-btn[data-tucked] { transform: none; opacity: 1; }
 
 @media (prefers-reduced-motion: reduce) {
-  .tour-spot, .tour-card, .tour-dots li { transition: none; }
+  .tour-spot, .tour-card, .tour-dots li, .tour-progress > span { transition: none; }
   .tour-card { animation: none; }
 }
 @media print { .tour { display: none !important; } }

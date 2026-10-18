@@ -19,6 +19,7 @@ import { VISITED_KEY, addVisited } from './lib/visited';
 import { isPaletteKey } from './lib/palette';
 import { guideKeyFor } from './components/guide/routes';
 import { introPlaying } from './lib/stale';
+import { isMapPath, saveStart } from './lib/view';
 import { jumpStyle } from './components/jumps/styles';
 import WorldGate from './components/worlds/WorldGate';
 import Ambience from './components/ambience/Ambience';
@@ -175,8 +176,11 @@ function Lightspeed() {
 }
 
 // A first visit to the site opens on a welcome (what the site is, what the
-// intro does, and whose worlds these are; Skip goes straight to the front
-// door), then the crawl, then puts you in a cockpit
+// intro does, and whose worlds these are), the visit's one question: start
+// the intro, skip to the universe or go to the classic site. The answer is
+// the front door's choice too, kept (lib/view's saveStart), so the universe
+// doesn't ask it again over the map. Start plays the crawl, then puts you in
+// a cockpit
 // (the Falcon first; the X-wing, Rick's cruiser and the RV a click away),
 // and the launch comes out at the front door's choice over the universe
 // map, where everything is laid out as places to fly to. The inline script
@@ -242,11 +246,18 @@ function IntroJump() {
     return (
       <Suspense fallback={null}>
         <Welcome
-          onStart={() => setStage('crawl')}
-          onSkip={() => {
+          onStart={() => {
+            saveStart('universe');
+            setStage('crawl');
+          }}
+          onSkip={(where) => {
+            saveStart(where);
             setStage(null);
-            // to the front door's choice, as the launch would have come out
-            requestAnimationFrame(() => document.querySelector('.start-choice button')?.focus({ preventScroll: true }));
+            // (the front door may have sent a kept pick on to /home under the welcome)
+            if (where === 'home') navigate('/home', { replace: true });
+            else if (!isMapPath(pathname)) navigate('/', { replace: true });
+            // (the page under it has the focus next, as the launch would give it)
+            requestAnimationFrame(() => document.getElementById('main')?.focus({ preventScroll: true }));
           }}
         />
       </Suspense>

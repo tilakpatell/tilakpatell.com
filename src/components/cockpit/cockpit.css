@@ -188,61 +188,142 @@
   .cockpit-line-in { animation: none; }
 }
 
-/* The welcome before a first visit's intro (Welcome.jsx): what the site is,
-   what the intro does, the keys, and whose worlds these are. Over the same
-   starfield as the crawl that follows, above everything. */
+/* The welcome before a first visit's intro (Welcome.jsx): a title card over
+   the starfield the crawl opens on, a planet's edge lit by the sun the map
+   has at its middle, and the three ways in. Above everything.
+
+   It fits any window and any zoom. The main block is centred with auto
+   margins in a column that scrolls, so a block taller than the window
+   starts at its top instead of being cut off above it; the sizes follow the
+   height as well as the width (a laptop at 125% is 1093 by 525); and the
+   short-window rules below take out what can go, the route's notes, then
+   the route. */
 .welcome {
   position: fixed;
-  z-index: 96;
+  z-index: calc(var(--z-cover) + 6); /* over the first-visit cover (index.html, 94) */
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
-  padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  overscroll-behavior: contain;
+  padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
   background: #04050a;
   color: var(--text);
 }
-.welcome-card {
+.welcome-sky { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
+/* the sun behind a planet's edge, off to the right: a glow, and a dark disc
+   over most of it whose rim the glow lights (the theme's saber, as the map's
+   accent is) */
+.welcome-sun {
+  position: absolute;
+  top: 54%;
+  right: -34vmax;
+  width: 78vmax;
+  aspect-ratio: 1;
+  translate: 0 -50%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--saber) 34%, transparent), color-mix(in srgb, var(--saber) 12%, transparent) 62%, transparent);
+  animation: welcome-sun 2.4s var(--ease-out) both;
+}
+.welcome-sun::after {
+  content: '';
+  position: absolute;
+  inset: 15%;
+  border-radius: 50%;
+  background: #04050a;
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--saber) 55%, transparent), inset 14px 0 40px -18px color-mix(in srgb, var(--saber) 70%, transparent);
+}
+@keyframes welcome-sun { from { opacity: 0; transform: translateX(6vmax); } }
+
+.welcome-main {
   position: relative;
-  width: min(600px, 100%);
-  padding: clamp(1.4rem, 3.4vw, 2.2rem);
-  border: 1px solid var(--border);
-  border-radius: var(--r-card);
-  background: rgb(8 10 18 / 0.84);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 30px 80px rgb(0 0 0 / 0.5);
-  animation: welcome-in 0.6s var(--ease-out) both;
+  width: min(1080px, 100%);
+  margin: auto;
+  padding: clamp(8px, 5vh, 56px) clamp(0px, 4vw, 48px);
 }
-@keyframes welcome-in { from { opacity: 0; transform: translateY(10px); } }
-.welcome-eyebrow { color: var(--muted); font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; }
-.welcome-title { margin-top: 0.5rem; font-size: clamp(1.55rem, 3.6vw, 2.2rem); font-weight: 650; letter-spacing: -0.015em; line-height: 1.15; }
-.welcome-text { max-width: 60ch; margin-top: 0.8rem; color: var(--muted); font-size: 0.97rem; line-height: 1.6; }
+/* each part rises in, one after another, as a title card's lines would */
+.welcome-main > * { animation: welcome-rise 0.7s var(--ease-out) both; }
+.welcome-main > :nth-child(2) { animation-delay: 70ms; }
+.welcome-main > :nth-child(3) { animation-delay: 140ms; }
+.welcome-main > :nth-child(4) { animation-delay: 210ms; }
+.welcome-main > :nth-child(5) { animation-delay: 280ms; }
+.welcome-main > :nth-child(6) { animation-delay: 330ms; }
+@keyframes welcome-rise { from { opacity: 0; transform: translateY(12px); } }
 
-.welcome-beats { display: grid; gap: 0.85rem; margin-top: 1.3rem; padding-left: 0.95rem; border-left: 2px solid var(--border); list-style: none; }
-.welcome-beats li { display: grid; gap: 0.15rem; }
-.welcome-beat-title { font-size: 0.95rem; font-weight: 650; }
-.welcome-beat-text { color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
-
-.welcome-keys { display: flex; flex-wrap: wrap; gap: 0.5rem 1.1rem; margin-top: 1.3rem; color: var(--muted); font-size: 0.82rem; }
-.welcome-keys > span { display: inline-flex; align-items: center; gap: 0.35rem; }
-.welcome-keys kbd { padding: 2px 7px; border: 1px solid var(--border-strong, var(--border)); border-radius: 6px; background: rgb(255 255 255 / 0.04); color: var(--text); font-family: var(--font-mono); font-size: 0.72rem; }
-.welcome-sound svg { width: 1rem; height: 1rem; }
-
-.welcome-buttons { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.5rem; }
-.welcome-fine { max-width: 68ch; margin-top: 1.4rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.74rem; line-height: 1.55; }
-
-@media (max-width: 520px) {
-  .welcome { place-items: start center; }
-  .welcome-buttons .btn { flex: 1 1 100%; }
-  .welcome-keys { gap: 0.45rem 0.9rem; }
+.welcome-name { display: flex; align-items: center; gap: 0.65rem; color: var(--text-body); font-size: var(--fs-sm); font-weight: 600; letter-spacing: 0.01em; }
+.welcome-name::before { content: ''; width: 22px; height: 2px; border-radius: 2px; background: var(--saber); }
+.welcome-title {
+  max-width: 12ch;
+  margin-top: clamp(0.5rem, 2.2vh, 1.1rem);
+  font-size: clamp(2.2rem, min(7vw, 10.5vh), 5.2rem);
+  font-stretch: 125%;
+  font-weight: 680;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  text-wrap: balance;
 }
-.welcome-keys > .welcome-on-touch { display: none; }
+.welcome-text { max-width: 48ch; margin-top: clamp(0.75rem, 2.6vh, 1.4rem); color: var(--text-body); font-size: var(--fs-lead); line-height: 1.55; }
+
+/* the intro's three parts, a hairline with a mark at each */
+.welcome-route { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 640px; margin-top: clamp(1rem, 4vh, 2.25rem); list-style: none; }
+.welcome-route li { position: relative; display: grid; align-content: start; gap: 0.2rem; padding: 1rem 1.25rem 0 0; border-top: 1px solid var(--border-strong); }
+.welcome-route li::before { content: ''; position: absolute; top: -4px; left: 0; width: 7px; height: 7px; border-radius: 50%; background: #04050a; box-shadow: 0 0 0 1.5px var(--border-strong); }
+.welcome-route li:first-child::before { background: var(--saber); box-shadow: 0 0 0 4px color-mix(in srgb, var(--saber) 22%, transparent); }
+.welcome-route-title { color: var(--text); font-size: var(--fs-md); font-weight: 650; }
+.welcome-route-text { color: var(--muted); font-size: var(--fs-xs); line-height: 1.45; }
+
+.welcome-buttons { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: clamp(1.25rem, 4.5vh, 2.5rem); }
+.welcome-alt { margin-top: clamp(0.75rem, 2vh, 1.1rem); color: var(--muted); font-size: var(--fs-sm); }
+.welcome-alt .link { position: relative; color: var(--text); font-weight: 600; }
+/* a thumb gets 44 px round the one-line link, as the house's controls do */
+@media (pointer: coarse) { .welcome-alt .link::after { content: ''; position: absolute; inset: -12px -6px; } }
+.welcome :focus-visible { outline: 2px solid var(--saber); outline-offset: 3px; }
+
+/* whose worlds these are: the foot of the window, quiet, read by whoever
+   wants it (and by a screen reader in its place after the buttons) */
+.welcome-fine { --pad: clamp(0px, 4vw, 48px); position: relative; width: calc(min(1080px, 100%) - 2 * var(--pad)); margin: 0 auto; padding-top: 0.9rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.75rem; line-height: 1.55; animation: welcome-rise 0.7s 420ms var(--ease-out) both; } /* (0.75 rem: under the shell's floor on purpose, the small print it is) */
+
+.welcome-on-touch { display: none; }
 @media (pointer: coarse) {
   /* no mouse or keyboard: the look is a drag, and there's a button for the rest */
-  .welcome-keys > .welcome-on-fine { display: none; }
-  .welcome-keys > .welcome-on-touch { display: inline-flex; }
+  .welcome-on-fine { display: none; }
+  .welcome-on-touch { display: inline; }
 }
+
+/* a phone, or a narrow window: the sun rises at the foot instead, the route's
+   notes go (the sentence above keeps the sound; the cockpit shows its own
+   keys) and the buttons take the width */
+@media (max-width: 640px) {
+  .welcome-sun { top: auto; right: 50%; bottom: -52vmax; translate: 50% 0; }
+  .welcome-sun::after { box-shadow: inset 0 2px 0 color-mix(in srgb, var(--saber) 55%, transparent), inset 0 14px 40px -18px color-mix(in srgb, var(--saber) 70%, transparent); }
+  .welcome-route li { padding-right: 0.75rem; }
+  .welcome-route-title { font-size: var(--fs-sm); }
+  .welcome-route-text { display: none; }
+  .welcome-buttons .btn { flex: 1 1 100%; }
+  .welcome-alt { text-align: center; }
+}
+/* a short window (a laptop at 125% or 150%): tighter, and the notes go */
+@media (max-height: 600px) {
+  .welcome-route-text { display: none; }
+  .welcome-route li { padding-top: 0.75rem; }
+}
+/* very short (a laptop at 200%, a phone on its side): the route goes too,
+   and the buttons sit side by side where they fit */
+@media (max-height: 420px) {
+  .welcome-route { display: none; }
+  .welcome-text { font-size: var(--fs-md); }
+  .welcome-buttons .btn { flex: 0 1 auto; }
+}
+/* the shortest (a laptop at 250% or more): the title on one line and the
+   sentence gone, so the ways in stay in the first screenful down to about
+   300 px; under that the column scrolls from its top */
+@media (max-height: 300px) {
+  .welcome-main { padding-block: 4px; }
+  .welcome-title { max-width: none; font-size: clamp(1.25rem, 9vh, 2.2rem); }
+  .welcome-text { display: none; }
+  .welcome-buttons { margin-top: 0.75rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .welcome-card { animation: none; }
+  .welcome-sun, .welcome-main > *, .welcome-fine { animation: none; }
 }
