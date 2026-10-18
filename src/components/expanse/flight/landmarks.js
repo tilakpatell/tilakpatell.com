@@ -21,7 +21,7 @@
 //     false }], dropped }
 
 import { makeHeight, siteOf } from '../../galaxy/shared/ground';
-import { DROP_Y, LANDMARKS, LANDMARK_MAX, SITE_PLACES } from '../../../lib/land/flight/landmarkTables';
+import { DROP_Y, LANDMARK_MAX, SITE_PLACES, landmarkRowsOf } from '../../../lib/land/flight/landmarkTables';
 
 // the site's air, not its places': drawn by the walkable site round you, never from a ship
 const AIR = new Set(['lightshafts', 'ds2sky', 'ds1sky']);
@@ -143,6 +143,6 @@ export function placementsFor(spec, poi, { heightAt, site = null } = {}) {
   const m = mapOf(spec, poi);
   const data = site ? { site, height: site.noGround ? () => 0 : makeHeight(flightGround(site.ground)) } : m ? siteData(m.site) : null;
   if (m && data) return fromSite(data, m, poi, heightAt);
-  const rows = LANDMARKS[spec?.id]?.[poi?.id];
+  const rows = landmarkRowsOf(spec, poi);
   return rows ? fromTable(rows, poi, heightAt) : { list: [], dropped: 0 };
 }

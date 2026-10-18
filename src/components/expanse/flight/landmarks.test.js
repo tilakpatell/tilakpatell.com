@@ -100,4 +100,10 @@ describe('placementsFor', () => {
     const { heightAt } = planetField(spec);
     expect(placementsFor(spec, spec.pois[0], { heightAt })).toEqual(placementsFor(spec, spec.pois[0], { heightAt }));
   });
+
+  it('stands a generated POI from its kind’s list', () => {
+    const poi = { id: 'poi-0', kind: 'outpost', at: [100, 200], r: 80 };
+    const { list } = placementsFor({ id: 'e:3,-2:1:0', type: 'rock' }, poi, { heightAt: () => 5 });
+    expect(list.length).toBeGreaterThanOrEqual(3);
+  });
 });

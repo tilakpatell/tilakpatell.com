@@ -366,14 +366,17 @@ const FAUNA = { ice: 'tauntaun', desert: 'bantha', forest: 'nerf', ocean: 'seabi
 const PATROL = { empire: 'tie', federation: 'gunship', dea: 'deachopper' };
 const TRAFFIC = { empire: ['shuttle', 'transport'], federation: ['hauler', 'saucer'], dea: ['deachopper', 'freighter'] };
 
-export function expanseLife(type, biomes, system) {
+// a generated planet's own fauna (its spec's, planetSpec's `fauna`) stands in for the type's row
+const PLAN_MODEL = { beast: 'grazer', flyer: 'skimmer', walker: 'strider' };
+
+export function expanseLife(type, biomes, system, fauna = null) {
   // gas and ringed giants have no ground, so nothing lives on them
   if (type === 'gas' || type === 'ringed' || !system) return NONE;
   const held = system.faction?.id && system.faction.id !== 'independent';
-  const fauna = FAUNA[type];
-  if (!held && !fauna && system.hazard !== 'pirates') return NONE;
+  const wild = fauna ? (fauna.density > 0 && fauna.plans?.length ? fauna : null) : FAUNA[type];
+  if (!held && !wild && system.hazard !== 'pirates') return NONE;
   const ids = biomes.map((b) => b.id);
-  const kinds = { default: fauna ? 'wild' : 'dead' };
+  const kinds = { default: wild ? 'wild' : 'dead' };
   if (held) kinds[ids[0]] = 'settled';
   if (system.hazard === 'pirates') kinds[ids[ids.length - 1]] = 'hostile';
   const out = { kinds, air: [], ground: [] };
@@ -388,8 +391,11 @@ export function expanseLife(type, biomes, system) {
     out.air.push(air('gunboat', 0.04, [120, 300], 170, 'patrol', { kind: 'hostile', scramble: { r: 2500, n: 2 }, hostile: fights(700, 3, 6) }));
     out.ground.push(gnd('pirate', 'hostile', 0.1, [3, 5], { model: 'mercenary', kind: 'hostile', hostile: fights(240) }));
   }
-  if (fauna === 'seabird') out.ground.push(gnd('seabird', 'flock', 0.3, [4, 8], { body: 'flyer', tint: '#e8e8e0', alt: [6, 50] }));
-  else if (fauna) out.ground.push(gnd(fauna, 'herd', 0.3, [4, 8], { spread: 35, kind: 'wild' }));
+  if (fauna) {
+    for (const { body, role, tint, group } of wild?.plans ?? [])
+      out.ground.push(gnd(PLAN_MODEL[body], role, 0.3 * fauna.density, group, { body, tint, kind: 'wild', ...(body === 'flyer' ? { alt: [6, 50] } : {}) }));
+  } else if (wild === 'seabird') out.ground.push(gnd('seabird', 'flock', 0.3, [4, 8], { body: 'flyer', tint: '#e8e8e0', alt: [6, 50] }));
+  else if (wild) out.ground.push(gnd(wild, 'herd', 0.3, [4, 8], { spread: 35, kind: 'wild' }));
   return out;
 }
 
@@ -401,7 +407,7 @@ export const systemOf = (planetId, { expanse = null } = {}) =>
 export function lifeFor(spec, { expanse = null } = {}) {
   if (!spec?.id) return NONE;
   const named = LIFE[spec.id];
-  const life = named ?? (canonicalId(spec.id) ? expanseLife(spec.type, spec.biomes ?? [], systemOf(spec.id, { expanse })) : NONE);
+  const life = named ?? (canonicalId(spec.id) ? expanseLife(spec.type, spec.biomes ?? [], systemOf(spec.id, { expanse }), spec.fauna ?? null) : NONE);
   return { kinds: life.kinds, air: life.air, ground: life.ground };
 }
 

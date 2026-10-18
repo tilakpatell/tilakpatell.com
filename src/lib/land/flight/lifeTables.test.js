@@ -111,4 +111,22 @@ describe('lifeTables', () => {
     expect(DENSITY.low).toBe(0.5);
     expect(DENSITY.mid).toBe(1);
   });
+
+  it('lets a generated planet’s fauna walk it, scaled by its density', () => {
+    const biomes = [{ id: 'a' }, { id: 'b' }];
+    const plans = [{ body: 'beast', role: 'herd', tint: '#806040', group: [4, 8] }, { body: 'flyer', role: 'flock', tint: '#c0c0c0', group: [4, 8] }];
+    const life = expanseLife('forest', biomes, { faction: null, traffic: 0, hazard: null }, { density: 1, plans });
+    expect(life.ground).toHaveLength(2);
+    expect(life.ground.map((r) => r.model)).toEqual(['figure', 'figure']);
+    expect(life.ground.map((r) => r.perKm2)).toEqual([0.3, 0.3]);
+    expect(life.ground.map((r) => r.body)).toEqual(['beast', 'flyer']);
+    expect(life.ground[0].alt).toBeUndefined();
+    expect(life.ground[1].alt).toEqual([6, 50]);
+  });
+
+  it('has no wild rows with no fauna', () => {
+    const plans = [{ body: 'beast', role: 'herd', tint: '#806040', group: [4, 8] }];
+    const life = expanseLife('forest', [{ id: 'a' }], { faction: null, traffic: 0, hazard: null }, { density: 0, plans });
+    expect(life.ground.some((r) => r.kind === 'wild')).toBe(false);
+  });
 });

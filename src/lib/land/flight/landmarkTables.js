@@ -22,7 +22,10 @@
 //   CLUTTER_KIT[type], CLUTTER_KIT_OF[planetId] → { [kind]: { kit, name, size } }
 //     (size: the model's scale for a row of scale 1, so it stands as tall
 //     as the code-built shape it replaces)
-//   clutterKitOf(spec) → that planet's, its own over its type's
+//   clutterKitOf(spec) → that planet's, its own over its type's, then its
+//     flora's tree and its exotic's
+//   POI_KITS[kind], FLORA_TRUNKS, EXOTIC_KIT, landmarkRowsOf(spec, poi): a
+//     generated planet's places, trees and exotic clutter
 
 export const LANDMARK_NEAR = 6000; // m: a landmark is drawn within this of its POI
 export const LANDMARK_FREE = 1.3; // …and freed past this many times it
@@ -194,6 +197,34 @@ export const LANDMARKS = {
   },
 };
 
+// ── a generated planet's places, trees and exotic clutter, from its variety ──
+// (a POI's `kind` picks its list)
+export const POI_KITS = {
+  ruins: [one('ruins'), one('stonehead', [30, 10], 2.4), one('ruins', [-40, 22], 0.7), one('stonehead', [-12, -34], 0.9, 0.7)],
+  wreck: [{ ...one(k('Spaceship_RaeTheRedPanda'), [0, 0], 0.6, 4), pitch: 0.35, roll: -0.5 }, one('crates', [18, 6], 0.4), one('barrel', [-14, 10]), one('fire', [8, -14])],
+  outpost: base(36),
+  monolith: [one(k('MetalSupport'), [0, 0], 0, 9), ...ring(k('Rock_Large_1'), 5, 26, 1.2)],
+  signal: [one(k('Roof_Radar'), [0, 0], 0, 5), one(k('Roof_Antenna'), [12, 4], 0.5, 5), one(k('SolarPanel_Ground'), [-14, 6], 0.4, 3), ...ring('lamp', 3, 20)],
+};
+
+// the green trees the tables already use, one for each quarter of a flora's `pick`
+export const FLORA_TRUNKS = [
+  { ...k('GiantPine_2', 'naturemega'), size: 4.6 },
+  { ...k('GiantPine_4', 'naturemega'), size: 4.8 },
+  { ...k('GiantPine_5', 'naturemega'), size: 5 },
+  { ...k('CommonTree_3', 'naturemega'), size: 5 },
+];
+
+// an exotic world's clutter (not green, on purpose; crystal is code-built)
+export const EXOTIC_KIT = {
+  glowing: { trunk: { ...k('Tree_Light_1'), size: 3 } },
+  floating: { trunk: { ...k('Tree_Floating_1'), size: 3 } },
+  spires: { spire: { ...k('Tree_Spikes_2'), size: 1.4 } },
+  crystal: {},
+};
+
+export const landmarkRowsOf = (spec, poi) => LANDMARKS[spec?.id]?.[poi?.id] ?? POI_KITS[poi?.kind];
+
 // Each kind's kit model where the planet type has one; a kind left out
 // keeps its code-built shape (Hoth's ice spires, the snowspeeder debris, a
 // city's towers). Sizes put a row of scale 1 at about the code shape's size
@@ -220,5 +251,7 @@ export const CLUTTER_KIT_OF = {
 };
 
 export function clutterKitOf(spec) {
-  return { ...(CLUTTER_KIT[spec?.type] ?? {}), ...(CLUTTER_KIT_OF[spec?.id] ?? {}) };
+  const fam = spec?.flora?.family;
+  const tree = fam === 'forest' || fam === 'temperate' ? { trunk: FLORA_TRUNKS[Math.min(3, Math.floor((spec.flora.pick ?? 0) * 4))] } : {};
+  return { ...(CLUTTER_KIT[spec?.type] ?? {}), ...(CLUTTER_KIT_OF[spec?.id] ?? {}), ...tree, ...(EXOTIC_KIT[spec?.exotic] ?? {}) };
 }
