@@ -18,12 +18,12 @@ const FACE = [
   [level, ['createLevelLoader', 'createLevelPhysics', 'createLevelScene', 'createLevelStream', 'imageLayerOf', 'instancesOf', 'packBytes', 'packUrl', 'tierTexture', 'wantsEngine', 'wanted']],
   [stage, ['HeroStage', 'stageFor']],
   [fx, ['LASER', 'createBolts', 'createFlashes']],
-  [arms, ['HAND_WEAPONS', 'HILTS', 'PICKABLE', 'SABER_COLORS', 'heroById', 'skinsOf']],
+  [arms, ['HAND_WEAPONS', 'HERO_KEY', 'HILTS', 'PICKABLE', 'SABER_COLORS', 'heroById', 'readCrewStyle', 'skinsOf']],
 ];
 
 describe('galaxy/shared', () => {
   it.each(FACE.map(([mod, names], i) => [i, mod, names]))('face %i lends exactly its names', (_, mod, names) => {
     expect(Object.keys(mod).sort()).toEqual([...names].sort());
-    for (const n of names) expect(['function', 'object']).toContain(typeof mod[n]);
+    for (const n of names) expect(['function', 'object', 'string']).toContain(typeof mod[n]);
   });
 });

@@ -84,13 +84,27 @@ export const POWERS = {
 };
 export const CREW_POWERS = { xwing: { primary: 'focus', ultimate: 'salvo' }, falcon: { primary: 'odds', ultimate: 'quad' }, cruiser: { primary: 'portal', ultimate: 'wubba' }, rv: { primary: 'magnets', ultimate: 'heisenberg' } };
 export const powersOf = (crew) => CREW_POWERS[crew] ?? null;
+// The pair a crew carries: its own, or another crew's card in the same slot
+// where the skill tree lets it (`carry`: the crews whose powers any ship may
+// carry, hangar/skills's borrowed pairs). `picks` is what's been chosen, by
+// crew ({ [crew]: { primary, ultimate } }); anything not allowed is the own.
+export function picksFor(crew, picks, carry) {
+  const own = powersOf(crew);
+  if (!own) return null;
+  const asked = picks?.[crew] ?? {};
+  const ok = (slot) => {
+    const p = POWERS[asked[slot]];
+    return Boolean(p) && p.slot === slot && (p.crew === crew || (Array.isArray(carry) && carry.includes(p.crew)));
+  };
+  return { primary: ok('primary') ? asked.primary : own.primary, ultimate: ok('ultimate') ? asked.ultimate : own.ultimate };
+}
 
 const SLOTS = ['primary', 'ultimate'];
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
 // (`cool`: seconds of the power's cooldown still to run, kept from before a landing)
-export function createPowers(crew, { charge = 0, cool = 0 } = {}) {
-  const own = powersOf(crew);
+export function createPowers(crew, { charge = 0, cool = 0, picks = null } = {}) {
+  const own = powersOf(crew) && (picks?.primary && picks?.ultimate ? picks : powersOf(crew));
   if (!own) return null;
   const c = clamp(Number.isFinite(charge) ? charge : 0, 0, 1);
   const wait = clamp(Number.isFinite(cool) ? cool : 0, 0, POWERS[own.primary].cool);

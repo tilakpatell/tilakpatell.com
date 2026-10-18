@@ -1,5 +1,14 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { TABS, TAB_LABEL, headOf, readTab, tabForKey, wantsKey } from './hangarRules';
+import { TABS, TAB_LABEL, readTab, tabForKey, wantsKey } from './hangarRules';
+import { headOf } from './hangarHead';
+
+describe('the rules the pages load before the Hangar', () => {
+  it('import nothing, so the Hangar’s own chunk stays its own', () => {
+    const src = readFileSync(new URL('./hangarRules.js', import.meta.url), 'utf8');
+    expect(src).not.toMatch(/^import /m);
+  });
+});
 
 const key = (k, mods = {}) => ({ key: k, metaKey: false, ctrlKey: false, altKey: false, ...mods });
 const calm = { open: false, typing: false, otherDialog: false, door: true };

@@ -3,13 +3,15 @@ import * as online from './online';
 import * as flying from './flying';
 import * as room from './room';
 import * as hangar from './hangar';
+import * as wallet from './wallet';
 
 // The universe's face: exactly these names and nothing else
 const FACE = [
   [online, ['STALE_MS', 'cleanName', 'createLimiter']],
   [flying, ['BUILT_KINDS', 'armsView', 'arsenalOf', 'chargeFor', 'createArmory', 'createGalaxyPowers', 'createRounds', 'fan', 'turnToward']],
   [room, ['joinAsVisitor']],
-  [hangar, ['LEVELS', 'LINES', 'POWERS', 'POWER_ICONS', 'POWER_KEYS', 'SHIP_WEAPONS', 'STOCK_LOADOUT', 'ShipyardBody', 'TITLES', 'armsView', 'arsenalOf', 'createArmory', 'crewById', 'powersOf', 'useEconomy', 'useYard']],
+  [hangar, ['LINES', 'POWERS', 'POWER_ICONS', 'POWER_KEYS', 'SHIP_WEAPONS', 'STOCK_LOADOUT', 'ShipyardBody', 'armsView', 'arsenalOf', 'createArmory', 'crewById', 'picksFor', 'powersOf', 'useYard']],
+  [wallet, ['LEVELS', 'TITLES', 'useEconomy']],
 ];
 
 describe('universe/shared', () => {

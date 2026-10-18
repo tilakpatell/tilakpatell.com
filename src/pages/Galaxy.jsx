@@ -587,7 +587,14 @@ export default function Galaxy() {
         at={at}
         ship={ship}
         onShip={pickShip}
-        onHangar={ship && !jumping ? () => openYard(true) : null}
+        onHangar={
+          ship && !jumping
+            ? () => {
+                setHangarTab('shipyard'); // (the panel's link says the shipyard: the Hangar opens on it)
+                openYard(true);
+              }
+            : null
+        }
         onMap={() => setMapOpen(true)}
         onGo={(id) => view.current.goTo(id)}
         onLeave={() => leave('/universe/starwars', { jump: true })}

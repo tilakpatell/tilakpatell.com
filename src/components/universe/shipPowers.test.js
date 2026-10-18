@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHARGE, CREW_POWERS, KEPT_KEY, POWERS, POWER_KEYS, aimHelp, beamOf, blastPunch, cancel, chargeFor, clearOfSolids, createPowers, crossesShell, finish, firstAlong, gain, hasten, isObjective, jinkStep, mods, pickTargets, portalExit, powersOf, press, pullStep, readCooling, readKept, shotAt, step, turretPick, view, writeKept } from './shipPowers';
+import { CHARGE, CREW_POWERS, KEPT_KEY, POWERS, POWER_KEYS, aimHelp, beamOf, blastPunch, cancel, chargeFor, clearOfSolids, createPowers, crossesShell, finish, firstAlong, gain, hasten, isObjective, jinkStep, mods, pickTargets, portalExit, picksFor, powersOf, press, pullStep, readCooling, readKept, shotAt, step, turretPick, view, writeKept } from './shipPowers';
 import { CREWS } from './crews';
 import { spawn, step as fly } from './ship';
 import { makeSpace } from '../galaxy/space';
@@ -446,5 +446,23 @@ describe('the crews’ ship powers', () => {
     for (const bad of [null, '', '{bad', '[]', '3', JSON.stringify({ crew: 'xwing', charge: 'lots' }), JSON.stringify({ crew: 'nope', charge: 1 })]) expect(readKept(bad, bad?.includes('nope') ? 'nope' : 'xwing'), String(bad)).toBe(0);
     expect(readKept(JSON.stringify({ crew: 'rv', charge: 7 }), 'rv')).toBe(1);
     expect(writeKept(null)).toBeNull();
+  });
+});
+
+describe('a crew carrying another crew’s powers (the skill tree’s borrowed pairs)', () => {
+  it('carries its own pair by default', () => {
+    expect(picksFor('xwing', {}, [])).toEqual({ primary: 'focus', ultimate: 'salvo' });
+    expect(picksFor('xwing', null, null)).toEqual({ primary: 'focus', ultimate: 'salvo' });
+  });
+  it('carries a borrowed one only where it may, and only in its own slot', () => {
+    expect(picksFor('xwing', { xwing: { primary: 'portal' } }, [])).toEqual({ primary: 'focus', ultimate: 'salvo' });
+    expect(picksFor('xwing', { xwing: { primary: 'portal' } }, ['cruiser'])).toEqual({ primary: 'portal', ultimate: 'salvo' });
+    expect(picksFor('xwing', { xwing: { ultimate: 'portal' } }, ['cruiser'])).toEqual({ primary: 'focus', ultimate: 'salvo' });
+    expect(picksFor('xwing', { xwing: { primary: 'nope' } }, ['cruiser'])).toEqual({ primary: 'focus', ultimate: 'salvo' });
+  });
+  it('plays the picks it’s handed', () => {
+    const st = createPowers('xwing', { picks: { primary: 'portal', ultimate: 'wubba' } });
+    expect(st.primary.id).toBe('portal');
+    expect(st.ultimate.id).toBe('wubba');
   });
 });
