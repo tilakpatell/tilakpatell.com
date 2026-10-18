@@ -31,12 +31,15 @@
 // up at its sharpest level with the seam's wrap (no line where it joins). It
 // loads after the system's first bake, and the sky is baked again with it.
 //
-// createSky({ small, renderer, beacons }) → { group, setSystem(system), bake(renderer),
+// createSky({ small, renderer, beacons, clouds }) → { group, setSystem(system), bake(renderer),
 //   prepare(renderer) → Promise, update(camera, t), focus(id), beacons, sunDirs,
 //   setRatio(r), dispose() };
 //   setSystem then bake (with the renderer it was made with, unless given
 //   another); beacons: [{ id, dir }] (unit vectors), the other systems' stars
-//   (drawn unless `beacons: false`, for a sky borrowed where there's no jumping)
+//   (drawn unless `beacons: false`, for a sky borrowed where there's no jumping);
+//   `clouds: false` bakes the sky without its nebulae, for a universe that draws
+//   them as objects in the world: they're still worked out (the stars after them
+//   land where they always did) but glow black, so the bake's term is exactly 0
 
 import * as THREE from 'three';
 import { precompile } from '../../lib/three/renderer';
@@ -367,7 +370,7 @@ export const bakeSize = ({ small = false, level = null } = {}) => (small ? 512 :
 const STAR_COUNT = { ultra: 12000, high: 12000, mid: 7000, low: 3000 };
 export const starCount = ({ small = false, level = null } = {}) => (small ? 3000 : (STAR_COUNT[level] ?? TODAY));
 
-export function createSky({ small = false, level = null, renderer = null, beacons: showBeacons = true } = {}) {
+export function createSky({ small = false, level = null, renderer = null, beacons: showBeacons = true, clouds = true } = {}) {
   const group = new THREE.Group();
   group.renderOrder = -20;
   const made = [];
@@ -504,7 +507,7 @@ export function createSky({ small = false, level = null, renderer = null, beacon
       u.uSeed.value = rand() * 40;
       nebulaeFrom(sys, rand).forEach((nb, i) => {
         u.uNebDir.value[i].set(...nb.dir);
-        u.uNebCol.value[i].set(nb.color);
+        u.uNebCol.value[i].set(clouds ? nb.color : 0x000000);
         u.uNebShape.value[i].set(nb.size, nb.warp);
       });
       // the stars: half anywhere, the rest along the band, thickest toward the core
