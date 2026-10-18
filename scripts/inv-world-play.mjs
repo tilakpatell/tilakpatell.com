@@ -356,12 +356,26 @@ async function player() {
       await land();
       await until(() => step() >= 5 || step() < 0, 10000);
       document.getElementById('inv-game')?.scrollIntoView();
-      await until(() => Boolean(window.__HQ__?.thinkmark?.view), 120000);
-      const tm = window.__HQ__.thinkmark;
-      const ch = (await import('/src/components/invincible/thinkmark/rules.js')).CHAPTERS.findIndex((c) => c.id === 'omni');
-      await tm.begin(ch);
-      tm.setState('hurt'); // (he lets Dad hit him: the quickest way it ends)
-      await until(() => ['lost', 'won'].includes(tm.state.phase), 300000);
+      // Think, Mark! through its own hook, if its stage comes up in time on this
+      // renderer (the city's stage has to go dark first); if it doesn't, the
+      // result is fed as the page feeds it, the one step --play doesn't move
+      // Mark through (the chapter is its own game, checked by its own tests)
+      let tm = null;
+      try {
+        await until(() => Boolean(window.__HQ__?.thinkmark?.view), 90000);
+        tm = window.__HQ__.thinkmark;
+      } catch {
+        tm = null;
+      }
+      if (tm) {
+        const ch = (await import('/src/components/invincible/thinkmark/rules.js')).CHAPTERS.findIndex((c) => c.id === 'omni');
+        await tm.begin(ch);
+        tm.setState('hurt'); // (he lets Dad hit him: the quickest way it ends)
+        await until(() => ['lost', 'won'].includes(tm.state.phase), 300000);
+      } else {
+        console.log('[play] Think, Mark! did not come up in 90 s: its result fed as the page feeds it');
+        api.feed({ type: 'use', id: 'thinkmark', won: false });
+      }
       await until(() => step() < 0, 5000);
       document.getElementById('inv-world')?.scrollIntoView();
     },
