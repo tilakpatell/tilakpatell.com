@@ -4,6 +4,7 @@ import { settle } from '../../lib/settle';
 import { prefersReducedMotion } from '../../lib/hooks';
 import { opened } from './opening';
 import { SHEET } from './mapData';
+import { framing } from './mapFraming';
 import { FLIGHT_MS, TITLE } from './mapFlight.js';
 import { waitOf } from './mapCover.js';
 import { mapFont, paintMap } from './mapPaint.js';
@@ -77,7 +78,7 @@ function createFlat(canvas, sheet) {
     setView({ at = null, zoom = null, alive = false }) {
       // `zoom` is the 3D camera's height (smaller is closer): turn it round
       base.z = zoom != null ? 2.75 / zoom : at ? 2.6 : 1.08;
-      [base.x, base.y] = at || [SHEET.w / 2, SHEET.h / 2];
+      [base.x, base.y] = at || framing().at; // (the hub framed as the 3D map frames it, ./mapFraming.js)
       hub = !at && alive;
       apply();
     },

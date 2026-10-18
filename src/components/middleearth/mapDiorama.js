@@ -27,7 +27,8 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { hot } from '../../lib/stage3d';
 import { makeNoise } from '../../lib/paint';
-import { FORESTS, RANGES, SHEET, peaks, wood } from './mapData';
+import { FORESTS, RANGES, SHEET, peaks, trees } from './mapData';
+import { placeAt } from './sheet';
 import { STOPS } from './road';
 import { EMBER, FIRE, SMOKE, createParticles } from './kit';
 import { makeGollum, makeToyFigure, makeTreebeard, pose } from './mapFigures';
@@ -39,6 +40,15 @@ import { turn } from '../../lib/three/gait';
 const SCALE = 10;
 const P = (sx, sy) => [(sx - SHEET.w / 2) / SCALE, (sy - SHEET.h / 2) / SCALE];
 const R = (a) => (Math.random() - 0.5) * 2 * a;
+// a place on the sheet (./sheet.js), nudged where its toy stands beside it
+const beside = (id, dx, dy) => {
+  const [x, y] = placeAt(id);
+  return [x + dx, y + dy];
+};
+// Mount Doom stands 35 miles from Barad-dûr and 47 from Cirith Ungol
+// (./geography.js), 18 and 24 sheet units: its toy cone, 33 units across its
+// foot, would bury both, so it stands at a little over half its size
+const DOOM_SIZE = 0.55;
 const mat = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.82, flatShading: true, ...o });
 const glow = (color, k) => new THREE.MeshBasicMaterial({ color: hot(color, k), toneMapped: true });
 
@@ -77,7 +87,7 @@ function instanced(scene, geo, material, list, { shadow = true } = {}) {
 
 // ── the road, as a path the hobbits can walk ──
 // where they stand at each stop: in front of its landmark, not inside it
-const STAND = { hobbiton: [-1.8, 1.5], bree: [0, 1.4], weathertop: [0, 2], rivendell: [0.8, 2.7], moria: [0, 2.3], lorien: [0.4, 1.9], 'black-gate': [0, 1.3], 'mount-doom': [-3.9, 1.1] };
+const STAND = { hobbiton: [-1.8, 1.5], bree: [0, 1.4], weathertop: [0, 2], rivendell: [0.8, 2.7], moria: [0, 2.3], lorien: [0.4, 1.9], 'black-gate': [0, 1.3], 'mount-doom': [-3.9 * DOOM_SIZE, 1.1] };
 const ROAD = STOPS.map((s) => {
   const [x, z] = P(s.x, s.y);
   const [dx, dz] = STAND[s.id] || [0, 0];
@@ -141,14 +151,11 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
 
   // ── the ranges ──
   {
-    const clear = [
-      [388, 176],
-      [186, 196],
-    ]; // Rivendell's valley, and the Shire
+    const clear = ['rivendell', 'hobbiton', 'black-gate', 'cirith-ungol'].map(placeAt); // Rivendell's valley, the Shire, and the gaps the Gate and the pass stand in
     const rock = [];
     const dark = [];
-    for (const [x0, y0, x1, y1, black] of RANGES) {
-      for (const [sx, sy] of peaks(x0, y0, x1, y1, 12)) {
+    for (const [line, black] of RANGES) {
+      for (const [sx, sy] of peaks(line, 12)) {
         if (near(sx, sy, clear, 15)) continue;
         const [x, z] = P(sx + R(3), sy + R(2));
         const s = 0.75 + n(sx * 0.1, sy * 0.1) * 0.75;
@@ -168,8 +175,8 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
     const leafy = [];
     const gold = [];
     const darkw = [];
-    for (const [cx, cy, rx, ry, seed, count, kind] of FORESTS) {
-      for (const [sx, sy, r] of wood(cx, cy, rx, ry, seed, count)) {
+    for (const [shape, seed, count, kind] of FORESTS) {
+      for (const [sx, sy, r] of trees(shape, seed, count)) {
         const [x, z] = P(sx, sy);
         const s = (kind === 'gold' ? 0.17 : kind === 'dark' ? 0.13 : 0.17) * r * (0.9 + Math.random() * 0.3);
         (kind === 'gold' ? gold : kind === 'dark' ? darkw : leafy).push([x, 0, z, s, Math.random() * 6]);
@@ -200,7 +207,7 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
 
   // Hobbiton: hills with round doors, the Party Tree
   {
-    const g = at(world, 186, 196);
+    const g = at(world, ...placeAt('hobbiton'));
     for (const [x, z, r, door] of [
       [-1.4, -0.9, 1.3, 0x2f7a3e],
       [0.9, -1.3, 1.1, 0xe0a92e],
@@ -218,7 +225,7 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
   }
   // Bree: the Prancing Pony
   {
-    const g = at(world, 262, 200);
+    const g = at(world, ...placeAt('bree'));
     put(g, new THREE.BoxGeometry(1.5, 0.8, 1), mat(0xe9dcc0), 0, 0.4, 0);
     const r = put(g, new THREE.ConeGeometry(1.15, 0.7, 4), roof, 0, 1.15, 0);
     r.rotation.y = Math.PI / 4;
@@ -227,7 +234,7 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
   }
   // Weathertop: a hill and a broken ring of stones
   {
-    const g = at(world, 312, 192);
+    const g = at(world, ...placeAt('weathertop'));
     const hill = put(g, new THREE.ConeGeometry(1.6, 1.3, 9), mat(0x8a9a5a), 0, 0.65, 0);
     hill.scale.y = 1;
     for (let i = 0; i < 8; i++) {
@@ -239,7 +246,7 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
   // Rivendell: slender towers in a green valley, a waterfall, warm lights
   const falls = [];
   {
-    const g = at(world, 392, 178);
+    const g = at(world, ...beside('rivendell', 4, 2));
     put(g, new THREE.CylinderGeometry(2.1, 2.4, 0.18, 18), mat(0x5f9a4a), 0, 0.09, 0);
     for (const [x, z, h] of [
       [0, 0, 2.1],
@@ -264,7 +271,7 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
   // Moria: the West-gate in a great peak, its lines glowing faintly
   let moriaGlow;
   {
-    const g = at(world, 380, 262);
+    const g = at(world, ...beside('moria', -2, 4));
     put(g, new THREE.ConeGeometry(1.9, 3.4, 6), mat(0x8a8274), 0, 1.7, -0.6);
     put(g, new THREE.ConeGeometry(0.85, 0.9, 6), mat(0xf6f3ea), 0, 3.0, -0.6, { shadow: false });
     const arch = new THREE.Shape();
@@ -279,7 +286,7 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
   }
   // Lothlórien: one great mallorn among the gold, and lights drifting in the boughs
   {
-    const g = at(world, 440, 286);
+    const g = at(world, ...beside('lorien', 2, 4));
     put(g, new THREE.CylinderGeometry(0.22, 0.34, 2.6, 8), mat(0xd9d0bc), 0, 1.3, 0);
     put(g, new THREE.IcosahedronGeometry(1.25, 1), mat(0xf2c64a), 0, 2.9, 0);
     put(g, new THREE.CylinderGeometry(0.9, 0.9, 0.08, 14), mat(0xe9dcc0), 0, 2.1, 0); // a flet
@@ -289,7 +296,7 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
   const orthanc = new THREE.Group();
   orthanc.userData.who = 'orthanc';
   {
-    const g = at(world, 378, 362);
+    const g = at(world, ...placeAt('isengard'));
     const ring = put(g, new THREE.TorusGeometry(1.3, 0.14, 6, 24), mat(0x4a4642), 0, 0.12, 0);
     ring.rotation.x = Math.PI / 2;
     g.add(orthanc);
@@ -311,7 +318,7 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
   // ./hidden.js).
   let edoras;
   {
-    const g = at(world, 418, 410);
+    const g = at(world, ...placeAt('edoras'));
     g.userData.who = 'edoras';
     edoras = g;
     // a little wider than the hill, and never drawn, so a click near it counts
@@ -331,7 +338,7 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
   let banner;
   let minasTirith;
   {
-    const g = at(world, 520, 444);
+    const g = at(world, ...placeAt('minas-tirith'));
     g.userData.who = 'minas-tirith';
     minasTirith = g;
     // a little wider than the city, and never drawn, so a click near it counts
@@ -366,7 +373,7 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
   }
   // the Black Gate
   {
-    const g = at(world, 604, 368);
+    const g = at(world, ...placeAt('black-gate'));
     for (const x of [-0.9, 0.9]) {
       put(g, new THREE.BoxGeometry(0.6, 2.2, 0.6), black, x, 1.1, 0);
       put(g, new THREE.ConeGeometry(0.42, 0.6, 4), black, x, 2.5, 0).rotation.y = Math.PI / 4;
@@ -377,7 +384,7 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
   let eye;
   let beam;
   {
-    const g = at(world, 712, 392);
+    const g = at(world, ...placeAt('barad-dur'));
     put(g, new THREE.CylinderGeometry(0.75, 1.3, 1.2, 6), black, 0, 0.6, 0);
     put(g, new THREE.CylinderGeometry(0.45, 0.75, 2.6, 6), black, 0, 2.5, 0);
     put(g, new THREE.CylinderGeometry(0.3, 0.45, 1.6, 6), black, 0, 4.6, 0);
@@ -427,12 +434,13 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
   }
 
   // Mount Doom: the cone, its crater, rivers of fire, and the eruptions
-  const doomAt = P(660, 420);
-  const DOOM = new THREE.Vector3(doomAt[0], 3.3, doomAt[1]);
+  const doomAt = P(...placeAt('mount-doom'));
+  const DOOM = new THREE.Vector3(doomAt[0], 3.3 * DOOM_SIZE, doomAt[1]);
   const doomLight = new THREE.PointLight(0xff5a1a, 60, 26, 1.6);
   let lavaMat;
   {
-    const g = at(world, 660, 420);
+    const g = at(world, ...placeAt('mount-doom'));
+    g.scale.setScalar(DOOM_SIZE);
     const prof = [
       [3.3, 0],
       [2.7, 0.5],
@@ -705,7 +713,7 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
 
     // the Nazgûl
     const a = t * 0.32;
-    const [bx, bz] = P(700, 400);
+    const [bx, bz] = P(...beside('barad-dur', -9, 3));
     nazgul.position.set(bx + Math.cos(a) * 7, 7.5 + Math.sin(t * 0.9) * 0.4, bz + Math.sin(a) * 5);
     nazgul.rotation.set(0, -a - Math.PI / 2, Math.sin(t * 0.9) * 0.15 + 0.25);
     for (const w of wings) w.pivot.rotation.x = Math.sin(t * 4.2) * 0.5 * w.s;
@@ -730,11 +738,11 @@ export function buildDiorama(scene, { soft = false, reduced = false, models = tr
       }
       // the marsh candles, and Lórien's lights
       if (Math.random() < dt * 5) {
-        const [mx, mz] = P(562 + R(20), 342 + R(10));
+        const [mx, mz] = P(placeAt('dead-marshes')[0] + R(20), placeAt('dead-marshes')[1] + R(10));
         wisps.emit(mx, 0.3, mz, 0, 0.2, 0, 2.5, 0.25, 0.1, 1);
       }
       if (Math.random() < dt * 9) {
-        const [lx, lz] = P(440 + R(22), 286 + R(16));
+        const [lx, lz] = P(beside('lorien', 2, 4)[0] + R(22), beside('lorien', 2, 4)[1] + R(16));
         motes.emit(lx, 1.5 + Math.random() * 1.6, lz, 0, 0.15, 0, 3, 0.16, 0.05, 1);
       }
     }
