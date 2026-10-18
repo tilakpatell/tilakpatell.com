@@ -11,6 +11,7 @@ From the conversation that followed:
 - **The first minute:** "Something gargantuan or make it really cool or we spawn next to one of the worlds and make it unique."
 - **New places, land or look:** "I think both is good (if you can make the worlds unique and stuff with the infinite world generation and other libraries)."
 - **The bar:** "As long as the map is dynamic and we can go to places in the universe and everything works and seems populated then I don't care."
+- **On the first draft:** "I don't like how it's like a ceiling or whatever. Also it needs more than just planets but events and like things in space too etc." So space has no ceiling or floor anywhere, and sections B and C are a catalogue of things and events, not only planets.
 
 The rest of this document is the architect's reading of those words against the code. Everything marked **(my call)** was decided here, not by the owner, and can be overruled.
 
@@ -18,30 +19,38 @@ The rest of this document is the architect's reading of those words against the 
 
 Each of these is checked, by a test or in a browser, before the lane that owns it is done.
 
-1. **No end, no edge.** From anywhere you can fly across the disc in any direction for as long as you like, and up or down out of it where it thins (section A). There is no rim, no empty band, no wall of things popping in, and no seam between the hand-made core and the generated space.
-2. **It seems populated** (numbers are my call, pinned by a test so a lane can tune them):
-   - From any point, at least three places are within 9,000 units. That is 30 seconds on the pulse drive.
-   - The nearest named place is never more than 6,000 units away.
+1. **No end, no edge, no ceiling.** From anywhere you can fly in any direction, up and down included, for as long as you like.
+   - No ceiling, floor or turn-back anywhere, the hand-made core included.
+   - No rim, no empty band, no wall of things popping in.
+   - No seam between the hand-made core and the generated space.
+2. **It seems populated, in every direction** (numbers are my call, pinned by a test so a lane can tune them):
+   - From any point in 3D, at least three things are within 9,000 units. That is 30 seconds on the pulse drive.
+   - The nearest named thing is never more than 6,000 units away.
    - Something moves within 20 seconds of flying anywhere: traffic, a fight, wildlife or an event.
-3. **Every place you see, you can go to.** It has a name, you can pick it, the map lists it, and travel takes you there. You can't fly through a solid body.
-4. **Nebulae stay put.**
+3. **More than planets.**
+   - At least 20 kinds of thing in space (section B's catalogue).
+   - At least 15 kinds of event (section C's), the director's existing ones included.
+   - In 10 minutes of free flight anywhere, a pilot meets at least three different events.
+   - Each thing and each event can be forced by a dev hook, so the check can see every one.
+4. **Every place you see, you can go to.** It has a name, you can pick it, the map lists it, and travel takes you there. You can't fly through a solid body.
+5. **Nebulae stay put.**
    - Fly 5,000 units sideways and a nebula shifts on screen by the parallax its distance gives.
    - Roll the ship and it rolls with the stars.
    - Fly towards it and it grows; fly into it and you are in its fog.
    - The same holds for every far object: gargantuans, wonders and generated nebulae.
-5. **Generated planets are unique, and you can land on them.**
+6. **Generated planets are unique, and you can land on them.**
    - Fly down to any rocky generated planet, land, step out, walk around, get back in and take off.
    - Taking off leaves you in orbit of that same planet.
    - Two neighbouring planets never look alike.
    - What you see from orbit matches what you walk on.
-6. **The map is dynamic.**
+7. **The map is dynamic.**
    - It is centred on your ship, wherever you are.
    - It zooms from a single system out to everything you know.
    - It shows generated places and travels to any of them.
    - The no-3D mini-map uses the same projection and the same data.
-7. **The first minute is a "wow".** A new visitor with a ship spawns beside one of the site's worlds, with something gargantuan in view and traffic moving through.
-8. **Nothing is lost.** Every route, key, save, sound, achievement, dev hook and test that works today works afterwards (HANDOFF-universe's owner's rules).
-9. **Phones still fly.** The `low` and `mid` tiers hold their frame rate, with less built, not a broken scene.
+8. **The first minute is a "wow".** A new visitor with a ship spawns beside one of the site's worlds, with something gargantuan in view and traffic moving through.
+9. **Nothing is lost.** Every route, key, save, sound, achievement, dev hook and test that works today works afterwards (HANDOFF-universe's owner's rules).
+10. **Phones still fly.** The `low` and `mid` tiers hold their frame rate, with less built, not a broken scene.
 
 ## Where it is today
 
@@ -106,6 +115,7 @@ Read from `main` at `ba818787` by two surveys in this session.
     - life, landmarks and a map
   - It has no walking, and nothing in the universe links to it.
   - Its design (`2026-10-10-planet-flight-removable-island-design.md`) kept it removable in one move.
+- **Ceilings.** The ship is turned back at ±100 in the home system and ±1,400 in deep space (`ship.js`, `deep.js`'s `ceilingAt`). The generator keeps systems within y ±500. The online protocol clamps other pilots' heights to ±1,300 (`readPose`).
 - **Spawn and saves.**
   - A pilot with a ship starts at a random entry of `STARTS` (`ship.js:321-368`), and returning pilots do too: no position is saved.
   - Saves are small keys over `localStorage` (`rt.saves`) and IndexedDB through `runtime/store.js`.
@@ -121,16 +131,24 @@ Read from `main` at `ba818787` by two surveys in this session.
 
 ### A. One space
 
-**One address for everywhere.**
-- A place's address is its sector `(sx, sz)` plus a position inside it.
-- The hand-made core is sector `0,0`, as the infinite-worlds design decided.
-- Ids keep the generator's form, read in either case:
+**One address for everywhere, in three dimensions (my call).**
+- Space is fully 3D, with no ceiling, floor or disc. A place's address is its sector `(sx, sy, sz)` plus a position inside it.
+- Sectors are cubes 120,000 units on a side: today's horizontal size. The hand-made core is in sector `0,0,0`.
+- Ids keep the generator's form, read in either case. Today's form `e:sx,sz:…` means `sy = 0`, and it stays valid for good: the planet flight's ids, the 13 seeded planets' ids and the online `E:` poses all keep working. A sector above or below the middle layer writes its height third, `e:sx,sz,sy:…`.
   - `e:sx,sz:i` for a system
   - `e:sx,sz:i:j` for a planet
   - `e:sx,sz:i:j:k` for a moon
-  - `e:sx,sz:w<n>` for a wonder, gargantuan or point of interest
+  - `e:sx,sz:w<n>` for a wonder, gargantuan or thing in space
+- **Generation is additive.**
+  - For the middle layer, everything `makeSector` gives today keeps its index, type and seed: every system, planet and wonder. An id that resolves today resolves to the same thing afterwards.
+  - New content is appended after it, at new indices.
+  - A test pins a fingerprint of today's output for 25 sectors, the 13 seeded planets' sectors among them.
+- A sector's content may be generated in sub-cells on demand rather than all at once. That is the lane's choice, as long as the result is the same whichever order the cells are asked for.
 
-  The planet flight already reads the planet form.
+**No ceilings anywhere.**
+- `ship.js`'s and `deep.js`'s ceilings and floors stop turning the ship back, in the home system and the core as well. Where code uses `ceilingAt` to place things (`clearToStart`, the director, the camera), it stays as a placement guide only.
+- The hand-made places stay where they are, in their plane. Generated space fills above and below the core too, kept off by the keep-outs, which are spheres.
+- The online protocol's height clamp (`readPose`, ±1,300) goes. A pose carries `sy` and a height relative to its sector, as it carries x and z.
 
 **State in doubles, drawing camera-relative, every frame (my call).**
 - The ship, the camera target and every place keep absolute positions as JavaScript numbers. These are doubles, which hold millimetres beyond 10^12 units.
@@ -139,73 +157,133 @@ Read from `main` at `ba818787` by two surveys in this session.
 - `rt.origin` stays for the worlds that use it.
 - A shader that needs a world position gets it camera-relative. The test pins that a body at 10^9 units draws within a pixel of where it should.
 
-**A disc, not a slab, and not a cube (my call).**
-- The universe is shaped like a galaxy: a disc. Sectors stay two-dimensional `(sx, sz)`, as the generator, the online protocol, the planet flight's ids and the map already are.
-- The generated content's thickness grows from today's y ±500 to about ±4,000, with density falling off with height.
-- The core keeps its own ceilings (±100 in the home system, ±1,400 in deep space; `ship.js`, `deep.js`). They are the owner's earlier choice, and they keep the portfolio's places in one plane.
-- In generated space there is no ceiling: you can fly up out of the disc, where it thins to the odd rogue body and then to open sky.
-- Gargantuans may stand far taller than the disc.
-- The online protocol's height clamp (`readPose`, ±1,300) widens to match.
-
 **Generated everywhere, the core included.**
-- The generator covers sector `0,0` as well. Inside the core it keeps out of a radius round each hand-made place:
+- The generator covers sector `0,0,0` as well. Inside the core it keeps out of a sphere round each hand-made place:
   - the home system: 8,000 (my call; the portfolio's stations stay clear and readable)
   - each fandom planet and wonder: 3 × its reach
   - the Rick and Morty pocket: as today
 - The `MAP_RADIUS + 4,000` keep-out and the wake/sleep rim go.
-- Generated content inside the core is lighter (my call): systems, fields and derelicts, but no gargantuans within 20,000 of home.
+- Generated content inside the core is lighter (my call): systems, fields, derelicts and the smaller things, but no gargantuan within 20,000 of home except the arrival's (section C).
 
 **Built round the ship, off the main thread, a little a frame.**
-- `chunkGrid.js` asks for the 3 × 3 sectors round the ship, nearest and ahead first.
+- The chunk grid asks for the 3 × 3 × 3 sectors round the ship, nearest and ahead first. `chunkGrid.js` gains a third axis, or a 3D twin beside it.
 - `makeSector` runs in the worker pool, never on the main thread.
 - The starfield's 40 synchronous calls become requests to the pool.
 - Uploads go through `gpuWork`.
-- Systems are built in levels of detail by distance:
+- Systems and things are built in levels of detail by distance:
 
 | Distance | What's drawn |
 |---|---|
-| Within the system's own reach | Everything: the star and its light, planets on their orbits, moons, rings, belts, stations, traffic |
-| Within the far plane | The star as a lit sphere, planets as impostors |
-| In the 3 × 3 | A speck in the star's colour, with its true brightness falloff |
-| Beyond the 3 × 3 | The density starfield already drawn sectors out |
+| Within a system's own reach | Everything: the star and its light, planets on their orbits, moons, rings, belts, stations, traffic |
+| Within the far plane | The star as a lit sphere, planets and things as impostors |
+| In the 3 × 3 × 3 | A speck in the star's colour, with its true brightness falloff; gargantuans as impostors |
+| Beyond | The density starfield, drawn sectors out in every direction |
 
 - A change of level fades, never pops. The far plane may grow if the depth test says it can (logarithmic depth is a lane 2 decision, measured).
-- How many systems are fully built at once is per tier (section H).
+- How much is fully built at once is per tier (section H).
 
 **Orbits move.**
-- A generated planet's position is a pure function of its seed and the shared clock, `orbitAt(planet, t)`, so every pilot sees it in the same place.
+- A generated planet's position is a pure function of its seed and the shared clock, `orbitAt(planet, t)`, so every pilot sees it in the same place. Comets and drifting things work the same way.
 - Moons and rings are drawn.
 - Generated bodies join the solids, so you can't fly through them.
 
-### B. Populated
+### B. Things in space
 
-**Density targets.** The targets in "What done looks like" are measured in a pure test over 1,000 seeded sample points across 25 sectors. The generator is tuned until they hold. As a first estimate (my call):
-- about 50 to 90 systems a sector, with the 6,000 minimum gap kept
-- points of interest between systems, so the space between stars isn't empty:
-  - derelicts
-  - asteroid fields
-  - comets
-  - beacons
-  - nebula pockets
-  - rogue planets
-  - a fleet at anchor
+Space is full of more than planets.
+- Every kind below is generated from the sector's seed, original in design (the owner's rule: new props, nothing copied), and drawn instanced or as impostors in numbers.
+- Every one has a name, a card and a parking spot, and shows on the map.
+- Some have an action. Each action uses what the site already has:
+  - credits through the universe's existing earning (`useEarn`, `economy.js`)
+  - standing through `tp:universe-standing`
+  - fights through the guns, hunters and law
+  - docking through the hangar and shop
 
-**Places with life.** Each system's `traffic`, `faction` and `hazard`, already generated, now drive what's there:
-- **Traffic** (`traffic.js`) spawns round the ship from the nearest system's density and faction, not only near hand-made places.
-- **The director's events** (`director.js`) gain generated zones, so a convoy, a meteor stream, a leviathan or an eclipse can happen out there.
+There is no new economy.
+
+**The catalogue: at least 20 kinds** (my list; the lane may swap a kind for a better one but keeps the count).
+
+| # | Kind | Action |
+|---|---|---|
+| 1 | Star systems of every class: red dwarf, yellow, blue giant, white dwarf, neutron star, binary and trinary | Park |
+| 2 | Rogue planets, alone between stars | Land, if rocky |
+| 3 | Comets on long orbits, tails pointing from their star | Fly the tail |
+| 4 | Asteroid and ice-shard fields | Shoot a rock for ore, sold for credits |
+| 5 | Nebula pockets (section D) | Fly in |
+| 6 | Pulsars and magnetars, beams sweeping | A beam hit scrambles the HUD |
+| 7 | Supernova remnants: glowing shells | Fly through |
+| 8 | Forming stars in dust discs | Park |
+| 9 | Ion storms: moving volumes | Drains shields while inside |
+| 10 | Wormholes | Enter: thrown to a far sector, one way; the map marks where you came from |
+| 11 | Stations and trade posts | Dock: hangar and shop |
+| 12 | Abandoned stations and outposts | Salvage |
+| 13 | Derelict ships and wrecks | Salvage; sometimes a trap (an event) |
+| 14 | Debris fields of old battles | Salvage |
+| 15 | Freighters, capital ships and fleets at anchor, with their faction | Hail; a hostile one fights |
+| 16 | Mining rigs on asteroids, with their traffic | Park |
+| 17 | Beacons and distress signals | Follow: leads to an event |
+| 18 | Satellites and relay arrays | Scan |
+| 19 | Ancient monoliths and relics | Scan: a line of lore and credits, once each |
+| 20 | Shipyards mid-build: scaffolds, cranes, hulls | Park |
+| 21 | Space leviathans and their herds (`leviathans.js` exists) | Watch |
+| 22 | Drifting swarms and glowing jellyfish in nebulae | Watch |
+| 23 | Gargantuans (section C) | Park |
+
+**Density targets.** The targets in "What done looks like" are measured in a pure test over 1,000 seeded sample points across 27 sectors in 3D. The generator is tuned until they hold.
+- As a first estimate (my call): a few hundred systems and over a thousand smaller things a sector, with the systems' 6,000 minimum gap kept.
+- Things cluster round systems, but never so tightly that the space between is empty.
+
+**Places with life.** Each system's `traffic`, `faction` and `hazard`, already generated, drive who is there:
+- **Traffic** (`traffic.js`) spawns round the ship from the nearest system's density and faction, not only near hand-made places. It flies between stations, rigs, shipyards and fleets.
 - **Hunters and the law** read the system's faction.
-- **Far fights** (`farFights.js`) are placed in generated sectors too.
-- **Stations.** About one system in three has a station (my call). You can park at a station, it has its own traffic in and out, and docking opens the existing hangar and shop. There is no new economy.
+- **Far fights** (`farFights.js`) are placed in generated sectors too, in every direction.
+- **Stations.** About one system in three has one (my call).
 
-### C. Gargantuans and the first minute
+### C. Events, gargantuans and the first minute
 
-**Gargantuans** are a new class of place, at most one a sector and at least one in every 3 × 3 (my call). Each is 20 to 200 times a planet's size and visible from across a sector. The kinds, a first list for the lane to choose from and add to:
+**Events: at least 15 kinds, everywhere.**
+- The director (`director.js`) gains generated zones (which system or thing an event can happen at), so every event can happen anywhere, not only in the core.
+- The existing events all work out there:
+  - the flare
+  - the meteor stream
+  - leviathans
+  - the minefield
+  - the escort
+  - the eclipse
+  - the rift
+  - the convoy (given a column of its own, as `HANDOFF-universe.md` asks)
+  - bounties
+  - far fights
+- New ones (my list; the lane may swap any for a better one but keeps the count):
+
+| # | Event | What happens |
+|---|---|---|
+| 1 | Pirate ambush | Pulled out of a jump into a fight |
+| 2 | Distress call | A stranded ship to reach and defend; a reward |
+| 3 | A battle you can join | Two factions fighting; pick a side; standing moves |
+| 4 | A derelict wakes | It powers up and turns its guns on you |
+| 5 | A wormhole opens | It stays open for a minute; dive in or not |
+| 6 | Comet fly-by | A close pass with a shower of ice |
+| 7 | Ion storm front | It sweeps across your path |
+| 8 | Supernova | Rare: seen from afar, its shell spreading over minutes |
+| 9 | A trader hails you | The existing merchant NPC, wired to a station's shop |
+| 10 | Leviathan migration | A herd crossing, gargantuan-sized |
+| 11 | Tidal pull | Near a black hole, debris and ships dragged in |
+| 12 | Treasure signal | A beacon that leads to a cache |
+| 13 | Smuggler chase | The law after a runner; help either side |
+
+**Event pacing:**
+- In 10 minutes of free flight a pilot meets at least three different events.
+- Two big events never land on top of each other.
+- The arrival's first minute gets a gentle one (traffic, a trader), never an ambush.
+- Every event can be forced with `__universeDebug.happen(kind)`, as today's can.
+
+**Gargantuans** are a new class of place: at most one a sector, and at least one in every 3 × 3 × 3 (my call), so one is always somewhere in view. Each is 20 to 200 times a planet's size and visible from across a sector. The kinds, a first list for the lane to choose from and add to:
 - a black hole with an accretion disc and lensing
 - a ringworld or megastructure arc
 - a colossal derelict hulk
 - a gas supergiant with a storm you can see from far off
 - a star wrapped in a Dyson swarm
-- a migration of space leviathans (`leviathans.js` exists)
+- a migration of space leviathans
 
 How they behave:
 - Like nebulae, a gargantuan never rides the camera. It is a world-space object with its true angular size at every distance, an impostor far off, a mesh near.
@@ -215,8 +293,9 @@ How they behave:
 **The first minute.**
 - **A new visitor with a ship** (`startAt` with no saved position) gets an arrival:
   - parked on the day side of one of three or four chosen fandom worlds, near enough that it fills a good part of the frame
-  - the core's own gargantuan, placed by hand, behind it
+  - a gargantuan placed by hand behind it, far enough out (beyond 20,000) to sit on the sky, big enough to own it
   - generated traffic crossing between
+  - a gentle event
   - one line naming where they are
 - `startAt`'s other starts stay for the arrival's fallback.
 - **A returning pilot** resumes where they left off (section G). The map's Home takes them back to the core.
@@ -292,7 +371,7 @@ How they behave:
 3. **Hand-off.** Behind the cloud, the route changes to `/fly/e:sx,sz:i:j`, carrying the spot you dove at.
 4. **Arrival.** The planet flight starts low over that spot with the ship descending.
 5. **Touchdown and walking.** You land on ground flat enough to take you, then step out on foot. Walking on the flight's streamed ground is new. The lane reuses the universe's walker, camera and HUD (`footScene.js`'s parts), not a new one, with the height from the flight's field.
-6. **Take-off.** Back in the ship, take off and climb past the flight's ceiling (or press Take off). The route returns to `/universe/e:sx,sz:i:j`, parked in orbit of that planet, facing it.
+6. **Take-off.** Back in the ship, take off and climb out of the planet's air (or press Take off). The route returns to `/universe/e:sx,sz:i:j`, parked in orbit of that planet, facing it.
 
 What doesn't land:
 - Gas giants: their cloud tops turn you back with a line saying why.
@@ -308,13 +387,15 @@ What doesn't land:
 - a radial scale that keeps near detail and far places on one chart (the 0.375-power family, re-centred)
 - continuous zoom by scroll, pinch and the keys
 - pan by dragging, with a button to re-centre on the ship
+- **3D, not flat.** The chart looks down by default, and every mark stands on a stem showing how far above or below the ship it is. Dragging with a modifier (or two fingers) tilts and turns the chart into a 3D view; one button puts it back.
+- The ship's height and the sector `(sx, sy, sz)` are always on the chart.
 
 **Levels by zoom:**
 
 | Level | What's shown |
 |---|---|
 | System | The star, planets, moons, stations, belts, traffic |
-| Neighbourhood | The 3 × 3: systems, points of interest, gargantuans, nebulae, fights, other pilots |
+| Neighbourhood | The 3 × 3 × 3: systems, things in space, gargantuans, nebulae, fights, events in progress, other pilots |
 | Universe | The core's places, sector outlines, every system the pilot has visited or seen named, the gargantuans, Home |
 
 Labels thin out by priority so the chart never turns to mush.
@@ -330,7 +411,7 @@ Labels thin out by priority so the chart never turns to mush.
 - The jump goes to anything on the map, as today. Its recharge and its interdiction stay.
 
 **Always honest.**
-- The ship's marker is on the chart wherever you are.
+- The ship's marker is on the chart wherever you are, at any height.
 - Other pilots are drawn at their sector positions.
 - Nothing on the map is a place you can't go to.
 - The no-3D `MiniMap.jsx` uses the projection and data above. It shows the wonders and the moons, and drops the orbit rings that match nothing.
@@ -355,6 +436,8 @@ Both are new; nothing existing changes shape.
 - impostor and speck counts
 - nebula resolution and steps
 - traffic groups
+- things in space drawn, by kind
+- events at once
 - gargantuan detail
 - the size of the planet maps
 - how many sectors' starfield are drawn
@@ -370,6 +453,8 @@ The quality steps (`lowerQuality`) lower these further.
 - inside a nebula
 - at a gargantuan
 - at the rim's old line
+- 50,000 units straight above the core
+- in an asteroid field, and at a station with its traffic
 - on a generated planet's ground
 
 **Frame time:**
@@ -380,7 +465,7 @@ The quality steps (`lowerQuality`) lower these further.
 
 ## Goals, non-goals, anti-goals
 
-**Goals:** the nine items under "What done looks like".
+**Goals:** the ten items under "What done looks like".
 
 **Not in this design:**
 - The Star Wars galaxy (`/galaxy`) and its sky.
@@ -391,10 +476,12 @@ The quality steps (`lowerQuality`) lower these further.
 - Naming planets.
 - A new economy.
 - New NPC conversations.
-- Battles and the fleet war past the core: they stay where they are.
+- The fleet war (`tp-gcw`) past the core: it stays where it is. The generated battles of section C are events, not the war.
 
 **Failures even if it technically works:**
 - A visible edge, a seam, an empty band, or a wall of pop-in.
+- Any ceiling, floor or invisible wall that turns the ship back.
+- Space that is only planets: no things to find between them, no events.
 - Anything far off that rides the camera or stays upright when the ship rolls.
 - A generated planet that reads as a recoloured copy of its neighbour, or a ground that doesn't match the planet seen from orbit.
 - Landing somewhere other than the spot you dove at, or on a flat featureless plane.
@@ -420,22 +507,27 @@ The quality steps (`lowerQuality`) lower these further.
 
 ## Lanes
 
-Six lanes, each one pull request from one session (a lane too big for one PR splits into numbered PRs inside its lane). Three waves.
+Ten lanes, each one pull request from one session (a lane too big for one PR splits into numbered PRs inside its lane). Three waves.
 
 | Lane | What | Owns | Depends on | Wave |
 |---|---|---|---|---|
 | 1 | **Nebulae and the sky** (section D) | `galaxy/sky.js`'s new option, `landmarks.js`, a new `universe/nebula/`, the nebula parts of `deepspace.js` and `expanse/scene/sectors.js` | none | 1 |
-| 2 | **One space** (section A): the address, camera-relative drawing always, generation over the core with keep-outs, the rim gone, worker generation, levels of detail, moving orbits, moons, rings, solids | `expanse/gen/*`, `expanse/scene/*`, `drawn()`, `runtime/` additions | none | 1 |
+| 2 | **One space** (section A): the 3D address and ids, additive generation and its fingerprint test, no ceilings, camera-relative drawing always, generation over the core with keep-outs, the rim gone, worker generation, the 3 × 3 × 3 grid, levels of detail, moving orbits, moons, rings, solids, the online height clamp | `expanse/gen/*`, `expanse/scene/*`, `chunkGrid.js`'s third axis, `drawn()`, the ceilings in `ship.js` and `deep.js`, `online/protocol.js`'s pose | none | 1 |
 | 5a | **Unique planets, pure half** (section E): `planetSpecOf`'s variety, the field on the sphere and the chart for non-roster planets, moons' type and seed, the orbit-map bake in a worker, the sibling-distance test and a contact sheet | `lib/land/flight/*`, a new bake module | none | 1 |
-| 6a | **The map, first half** (section F): the projection, zoom, pan, levels, the ship marker always, MiniMap unified, `navmap-check` fixed, phone layout | `nav.js`'s projection, a new projection module, `NavMap.jsx`, `MiniMap.jsx`, `navmap.css` | none | 1 |
-| 3 | **Places you can go**: `e:` destinations in `nav.js`, picking, labels and cards for generated places, park, jump and autopilot to them, stations you can dock at | `nav.js` resolver, `ship.js` goals, the scene's picking and travel wiring | 2 | 2 |
-| 4 | **Populated** (sections B, C, G): density tuning and points of interest, traffic, director, hunters and far fights in generated space, gargantuans, the arrival, the saved position, the known-places table | `traffic.js`, `director.js`, `hunters.js`, `farFights.js`, a new `gargantuans/`, `ship.js`'s `startAt`, saves | 2, 3 | 2 |
+| 6a | **The map, first half** (section F): the projection in 3D with stems and tilt, zoom, pan, levels, the ship marker always, MiniMap unified, `navmap-check` fixed, phone layout | a new projection module, `NavMap.jsx`, `MiniMap.jsx`, `navmap.css` | none | 1 |
+| 3 | **Places you can go**: `e:` destinations in `nav.js`, picking, labels and cards for generated places and things, park, jump and autopilot to them, docking at stations | `nav.js` resolver, `ship.js` goals, the scene's picking and travel wiring | 2 | 2 |
+| 4a | **Things in space and gargantuans** (section B's catalogue, section C's gargantuans): the generator's kinds and density, their drawing, their actions, the gargantuans | the generator's tables, a new `universe/things/` and `universe/gargantuans/` | 2, 3 | 2 |
+| 4b | **Events and life** (section B's life, section C's events): the director's generated zones, the existing events everywhere, the 13 new ones, pacing, traffic, hunters, law and far fights in generated space | `director.js` and its event files, `traffic.js`, `hunters.js`, `farFights.js`, a new `universe/events/` | 2, 3 | 2 |
+| 4c | **The first minute and saves** (section C's arrival, section G): the arrival gargantuan's place, the arrival, the saved position, the known-places table | `ship.js`'s `startAt`, saves | 4a | 3 |
 | 5b | **Landing and walking** (section E): the orbit shader wearing the baked map, the entry, the hand-off to `/fly`, on foot on the streamed ground, take-off back to orbit | `galaxy/bodies.js` option, `entry.js`, the flight's module and a walker on its ground, `lib/view.js`'s return path | 3, 5a | 3 |
-| 6b | **The map, second half**: generated places, visited and named, search, long-trip times, other pilots everywhere | `NavMap.jsx`, `nav.js` | 3, 6a | 3 |
+| 6b | **The map, second half**: generated places and things, events in progress, visited and named, search, long-trip times, other pilots everywhere | `NavMap.jsx`, `nav.js` | 3, 6a | 3 |
 
-**Running it.** Wave 1 is four sessions started together. Wave 2 starts when lane 2 merges. Wave 3 when lane 3 merges.
+**Running it.**
+- Wave 1 is four sessions started together: 1, 2, 5a, 6a.
+- Wave 2 starts when lane 2 merges: 3 first, then 4a and 4b together once 3's resolver is in.
+- Wave 3 starts when lane 3 merges: 5b and 6b, then 4c after 4a.
 
-**Shared files.** Lanes 2, 3 and 4 all wire into `scene.js`. Each touches only its own section, and they merge in the order 2, 3, 4. A lane that needs another's unmerged work says so in its PR and waits; it doesn't copy the work.
+**Shared files.** Lanes 2, 3, 4a, 4b and 4c all wire into `scene.js`. Each touches only its own section, and they merge in the order 2, 3, 4a, 4b, 4c. A lane that needs another's unmerged work says so in its PR and waits; it doesn't copy the work.
 
 ## Testing
 
@@ -443,7 +535,11 @@ Six lanes, each one pull request from one session (a lane too big for one PR spl
 - the address and id parsing
 - `orbitAt`
 - the keep-outs (no generated system inside any hand-made place's keep-out)
-- the density targets
+- the density targets, in 3D
+- the fingerprint of today's generator output (additive generation)
+- no ceiling: a pure flight of 100,000 units straight up from home is never turned back
+- the catalogue: every kind of thing appears within a set number of sectors
+- the director's pacing: over 10 simulated minutes from 100 seeded starts, at least three different events each time, never two big ones together
 - the sibling-distance and variety tests for planets
 - the projection and its zoom levels
 - the `e:` resolver
@@ -457,8 +553,12 @@ Six lanes, each one pull request from one session (a lane too big for one PR spl
 4. enters a generated system
 5. flies into a nebula
 6. reaches a gargantuan
-7. lands on a generated planet
-8. returns
+7. climbs 50,000 units straight up
+8. lands on a generated planet
+9. returns
+
+Then it forces every kind of thing and every event once with the dev hooks and shoots each one.
+
 
 and it records along the way:
 - pop-ins: anything that appears over 4 px in one frame
@@ -481,15 +581,17 @@ and it records along the way:
 
 1. Absolute positions in doubles with camera-relative drawing, instead of the earlier plan's `rt.origin` rebasing.
 2. The generator fills the core too, kept 8,000 off home and three reaches off every hand-made place.
-3. The density numbers: three places within 9,000, the nearest within 6,000, about 50 to 90 systems a sector.
-4. Gargantuans at most one a sector and at least one in every 3 × 3, none within 20,000 of home; a new hand-placed one for the arrival, the Maw left as it is.
+3. The density numbers: three things within 9,000, the nearest within 6,000, in 3D; a few hundred systems and over a thousand smaller things a sector.
+4. Gargantuans: at most one a sector and at least one in every 3 × 3 × 3, none within 20,000 of home except the arrival's; a new hand-placed one for the arrival; the Maw left as it is.
 5. One system in three has a station; docking opens the existing hangar and shop.
 6. Landing hands off to the planet flight behind an entry cloud, rather than a seamless descent in one scene. That makes the planet flight a part the universe relies on.
 7. Orbit and ground share one baked map per planet, made in a worker and never stored.
 8. Returning pilots resume where they were.
 9. `scene.js` doesn't grow; new work lives in new modules.
 10. Pocket universes need not land.
-11. The universe is a disc. Generated space is about ±4,000 thick and thins with height, with no ceiling out there. The core keeps its ceilings.
+11. Space is fully 3D. Sectors are 120,000 cubes, and today's ids mean the middle layer. There is no ceiling anywhere, the core included, and generation is additive so every existing id still resolves.
 12. Generated planets are round: their ground is a field on the sphere, and the flight flies a chart round the landing spot. Ground radius is about 15 to 60 km. The 50 roster planets keep their plane ground untouched.
 13. Building stays on the 50 seeded planets only. New points of interest never touch the 13 seeded Expanse planets.
 14. Moons get a type and a seed, and can be landed on.
+15. The catalogue of 23 kinds of thing and 13 new events is my list. A lane may swap an entry for a better one but keeps the counts (at least 20 and 15).
+16. Actions on things (salvage, ore, scans) pay through the existing earning, with no new economy.
