@@ -111,7 +111,7 @@ The big shapes stay at the outer thirds of the screen, where the page’s mask l
 ### 9. Chapter pages and a test
 
 - `src/theme/themes.js` gains `routeTheme(pathname)`: an exact match first, then the longest prefix, so `/middle-earth/bree` wears the Shire and `/middle-earth/mordor` Mordor. `ThemeProvider` calls it. (`src/pages/MiddleEarth.jsx` is untouched; PR #1023 holds it.)
-- `src/theme/themes.test.js` tests `routeTheme`, and holds every Middle-earth token pair to the contrast floor in both modes, reading the sheet and resolving the house dark block as the cascade does.
+- `src/theme/themes.test.js` tests `routeTheme`; `src/styles/middleearth-themes.test.js` holds every Middle-earth token pair to the contrast floor in both modes, reading the sheet and resolving the house dark block as the cascade does.
 
 ### 10. Small mends that come with it
 
