@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DAMAGE_MAX } from './online/protocol';
+import { WEAPONS as TABLE } from '../../lib/arms/ship';
 import { STOCK_LOADOUT } from './outfit';
 import { ARSENAL, LINES, WEAPONS, armsView, byCode, createArmory, fan, steer } from './weapons';
 
@@ -20,6 +21,9 @@ describe('the armoury, as the HUD shows it', () => {
 });
 
 describe('weapons', () => {
+  it('reads the one table every world flies by (lib/arms/ship.js)', () => {
+    expect(WEAPONS).toBe(TABLE);
+  });
   it('every ship names all three lines', () => {
     for (const a of Object.values(ARSENAL)) expect(a.names).toHaveLength(LINES.length);
   });
