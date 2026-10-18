@@ -25,6 +25,8 @@ import { LOOK_LIMIT, pose, settleLook } from './director';
 import { light as lightAt } from './daylight';
 import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
+import { walker } from './cast';
+import { clipFor, walkers as walkersAt } from './fellowship';
 import { STAGES, stageById } from './stages/index';
 
 const TOTAL = total(STAGES);
@@ -32,6 +34,8 @@ const SAVE_EVERY = 5; // s
 const PROGRESS_EVERY = 0.25; // s
 const LOOK_SPEED = 0.004; // radians a pixel of drag
 const LOOK_REST = 0.25; // s after a drag before the look settles back
+const FILE = 1.6; // m between walkers in the line
+const ABREAST = 0.45; // m either side of the lane’s middle
 
 export const KEYS = {
   walk: ['KeyW', 'ArrowUp'],
@@ -97,6 +101,29 @@ export default {
       else rt.events?.emit?.(type, data);
     };
     const look = { yaw: 0, pitch: 0 };
+    // who walks with you: made as they join, gone as they leave
+    const cast = new Map(); // id → walker
+    let castKey = '';
+    let seeds = 0;
+    const company = () => {
+      const line = walkersAt(STAGES, clock.s);
+      const key = line.map((w) => w.id).join(',');
+      if (key !== castKey) {
+        castKey = key;
+        for (const [id, w] of cast) {
+          if (line.some((x) => x.id === id)) continue;
+          w.dispose();
+          cast.delete(id);
+        }
+        for (const { id } of line) {
+          if (cast.has(id)) continue;
+          const w = walker(id, { rt, seed: ++seeds });
+          cast.set(id, w);
+          scene.add(w.group);
+        }
+      }
+      return line;
+    };
     const sunDir = new THREE.Vector3();
 
     // the light for where the ride is: the sky, the sun, the fog
@@ -116,7 +143,21 @@ export default {
     // the camera on the director’s rig, following the lead along the stage
     const frame = (dt = 0) => {
       const here = lineAt(STAGES, clock.s);
-      const p = pose({ rig: 'follow', params: {}, lead: { at: [0, 0, here.local], heading: 0 }, tangent: [0, 0, 1], metres: here.local, look, mode: 'walk', reduced: clock.reduced, heightAt: () => 0, t: 0 });
+      const line = company();
+      const mode = stageById(here.stage).mode;
+      // the one you follow (Frodo while he walks with you) at the back of the
+      // file, the rest ahead of him in their order, so none comes between
+      // him and the camera
+      const lead = Math.max(0, line.findIndex((w) => w.id === 'frodo'));
+      const ahead = line.filter((_, i) => i !== lead);
+      for (const w of line) {
+        const fig = cast.get(w.id);
+        const rank = w.order === lead ? 0 : ahead.length - ahead.indexOf(w);
+        fig.group.position.set(rank % 2 ? ABREAST : -ABREAST, 0, here.local + rank * FILE);
+        fig.set({ base: clipFor(w.state, mode, w.id), speed: clock.speed });
+        fig.tick(dt);
+      }
+      const p = pose({ rig: 'follow', params: {}, lead: { at: [-ABREAST, 0, here.local], heading: 0 }, tangent: [0, 0, 1], metres: here.local, look, mode: 'walk', reduced: clock.reduced, heightAt: () => 0, t: 0 });
       camera.position.set(...p.at);
       camera.lookAt(...p.lookAt);
       if (camera.fov !== p.fov) {
@@ -254,6 +295,7 @@ export default {
         ground.geometry.dispose();
         ground.material.dispose();
         sky.dispose();
+        for (const w of cast.values()) w.dispose();
         if (typeof window !== 'undefined' && window.__ROAD__?.world === world) delete window.__ROAD__;
       },
     };
