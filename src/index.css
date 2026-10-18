@@ -396,6 +396,10 @@ html[data-mode='dark'][data-theme='devspace'] { --surface: #070c14; --surface-2:
   color: var(--text-body);
   color-scheme: dark;
 }
+/* Bose's light saber is its "bass" black, which the dark scope would make its
+   accent and its buttons on near-black: there, as in Bose's own dark mode,
+   white buttons and the cool grey (a planet's inline accent still wins) */
+html:not([data-mode='dark'])[data-theme='bose'] .dark-scope { --accent: #ffffff; --accent-text: #ffffff; --btn-bg: #ffffff; --btn-ink: #131317; --saber: #b4bec7; }
 
 /* A theme change is one restyle: no colour transitions while it happens */
 .theme-switching *, .theme-switching *::before, .theme-switching *::after { transition: none !important; }
