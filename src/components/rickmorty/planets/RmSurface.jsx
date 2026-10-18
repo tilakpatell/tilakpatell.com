@@ -42,8 +42,10 @@ const CLIMB = 700; // ms after the cruiser's away before the page goes back to s
 // E does, who's talking, the things to do on M, the mission's own HUD and
 // the way back to space. None of the galaxy's war: no heroes, sides or
 // ranks. Saves are the planets' own (./saves.js).
-// (`frozen`: the page's Hangar is open over it; `onHangar(tab?)` opens it)
-export default function RmSurface({ id, onLeave, frozen = false, onHangar = null }) {
+// (`frozen`: the page's Hangar is open over it; `onHangar(tab?)` opens it;
+// `skillFx`: the skill tree's, on the crew's perks on foot, as the galaxy's
+// worlds have it, but not in a battle)
+export default function RmSurface({ id, onLeave, frozen = false, onHangar = null, skillFx = null }) {
   const { pathname } = useLocation();
   const [params] = useSearchParams();
   const site = useMemo(() => planetSite(id), [id]);
@@ -193,7 +195,7 @@ export default function RmSurface({ id, onLeave, frozen = false, onHangar = null
       <h1 className="sr-only">
         {site.name}: {site.place}
       </h1>
-      <SurfaceView site={site} missionSpec={mission} {...KIT} ship="cruiser" loadout={null} found={found} done={done} compass={compass} net={online?.client ?? null} handle={view} onEvent={onEvent} frozen={frozen} />
+      <SurfaceView site={site} missionSpec={mission} {...KIT} ship="cruiser" loadout={null} found={found} done={done} compass={compass} net={online?.client ?? null} handle={view} onEvent={onEvent} frozen={frozen} skillFx={mission?.kind === 'assault' ? null : skillFx} />
 
       {/* the compass: the way to each place, the quest and the cruiser (the scene slides each mark by its data-id) */}
       <div className="surface-compass" ref={compass} aria-hidden="true">

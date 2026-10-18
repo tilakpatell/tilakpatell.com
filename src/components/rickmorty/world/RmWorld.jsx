@@ -20,6 +20,7 @@ import {
   ARCADE,
   AREAS,
   CRUISER,
+  cruiserOf,
   DINER,
   DRIVEWAY,
   FRONT_WALK,
@@ -296,8 +297,10 @@ const newSim = (at = START, portal = false) => ({
 // `start`: a planet of the universe map's Rick and Morty sector, played on its
 // own (./planetMode.js), its portal home calling `onLeave`; else C-137
 // (`frozen`: the page's Hangar is open over it; `onHangar(tab?)`: the page
-// opens its Hangar, which then has the C key and the chip that was the Wardrobe's)
-export default function RmWorld({ start = null, onLeave = null, frozen = false, onHangar = null }) {
+// opens its Hangar, which then has the C key and the chip that was the
+// Wardrobe's; `cruiser`: the ship's numbers as fitted and skilled, the
+// universe's statsOf, for the street's cruiser to fly on: rules.js's cruiserOf)
+export default function RmWorld({ start = null, onLeave = null, frozen = false, onHangar = null, cruiser = null }) {
   const planet = useMemo(() => planetOf(start), [start]);
   const three = use3D();
   const { unlock } = useAchievements();
@@ -407,7 +410,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   return (
     <section className="rm-world" aria-labelledby="rm-world-title" data-mode={world ? '3d' : 'cards'}>
       {world ? (
-        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} />
+        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} cruiser={cruiser} />
       ) : (
         <Cards done={done} openPlace={openPlace} three={three} gl={gl} toast={toast} retry={() => setGl('loading')} planet={planet} />
       )}
@@ -422,7 +425,11 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
 // hence the reach)
 const ROOM = { bound: boundOf(AREAS), motion: true };
 
-function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned, frozen, onHangar }) {
+function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned, frozen, onHangar, cruiser }) {
+  // (the cruiser's numbers, read by the frame loop)
+  const fitted = useMemo(() => cruiserOf(cruiser), [cruiser]);
+  const fittedRef = useRef(fitted);
+  fittedRef.current = fitted;
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const touchRef = useRef(touch);
   touchRef.current = touch;
@@ -1334,7 +1341,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         lift += (pad.rb ? 1 : 0) - (pad.lb ? 1 : 0) - pad.ry;
       }
       if (s.landing) throttle = steer = lift = 0;
-      s.c = stepCruiser(s.c, { throttle: clamp1(throttle), steer: clamp1(steer), lift: clamp1(lift) }, dt);
+      s.c = stepCruiser(s.c, { throttle: clamp1(throttle), steer: clamp1(steer), lift: clamp1(lift) }, dt, fittedRef.current);
       // a bump (the edge, a roof, the ground) knocks as hard as the speed it
       // took, by the hit law, with its shake; a set-down sinks onto its
       // hover height on purpose and isn't one
@@ -1363,7 +1370,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           s.tookOff = true;
           shipTalk('takeoff');
         }
-        s.fastT = Math.abs(s.c.speed) > CRUISER.top * 0.85 ? s.fastT + dt : 0;
+        s.fastT = Math.abs(s.c.speed) > fittedRef.current.top * 0.85 ? s.fastT + dt : 0;
         if (s.fastT > 1.2) shipTalk('fast');
         if (s.c.y > CRUISER.ceiling - 0.5) shipTalk('ceiling');
         if (onTail(s.fed, s.c)) shipTalk('tail');

@@ -39,10 +39,10 @@ export default function RmPlanet() {
       <h1 className="sr-only">{page.name}</h1>
       {big ? (
         <Suspense fallback={null}>
-          <RmSurface id={page.id} onLeave={leave} frozen={aboard.yard.yard} onHangar={aboard.open} />
+          <RmSurface id={page.id} onLeave={leave} frozen={aboard.yard.yard} onHangar={aboard.open} skillFx={aboard.fx} />
         </Suspense>
       ) : (
-        <RmWorld start={page.id} onLeave={leave} frozen={aboard.yard.yard} onHangar={aboard.open} />
+        <RmWorld start={page.id} onLeave={leave} frozen={aboard.yard.yard} onHangar={aboard.open} cruiser={aboard.stats} />
       )}
       <HangarAboard yard={aboard.yard} tab={aboard.tab} onTab={aboard.setTab} shipName={crewById('cruiser')?.ship ?? ''} doorAt=".rm-hangar-btn" crewKey={!big} />
       <RmEarnNote note={aboard.yard.yardNote} />
