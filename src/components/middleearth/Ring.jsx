@@ -88,8 +88,8 @@ function Worn({ onRemove }) {
 }
 
 const INSCRIPTION = 'Ash nazg durbatulûk · ash nazg gimbatul · ash nazg thrakatulûk · agh burzum-ishi krimpatul ·';
-// The inscription runs once round the band, from the ring's left back to it:
-// told the band's length (less its start, which is nought) it fits the whole
+// The inscription runs once round the band, from the ring’s left back to it:
+// told the band’s length (less its start, which is nought) it fits the whole
 // line, where at its own width the last words fell off the end.
 const BAND = [112, 50];
 const BAND_PATH = `M ${-BAND[0]} 0 A ${BAND[0]} ${BAND[1]} 0 1 1 ${BAND[0]} 0 A ${BAND[0]} ${BAND[1]} 0 1 1 ${-BAND[0]} 0`;

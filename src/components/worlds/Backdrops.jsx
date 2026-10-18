@@ -1,5 +1,5 @@
 import '../../styles/lazy/worlds.css';
-// Background art for the fan worlds, drawn in SVG so it takes each theme's
+// Background art for the fan worlds, drawn in SVG so it takes each theme’s
 // colours and costs nothing to load: Middle-earth (the Shire at golden hour or
 // on a summer night, Mordor under ash or under fire) and the skyline of Cybertron.
 
@@ -47,6 +47,30 @@ function Glow({ id, color, o = 1 }) {
     </radialGradient>
   );
 }
+// The page’s own colour laid over the land behind the hero’s words, from its
+// buttons down: a mist thick enough that the muted line under the buttons
+// (which falls in x 120–610, y 160–300 at every width) still reads at 4.5:1,
+// thinning out before the Hill, Doom and the tower, and leaving the sky and the
+// far land whole. The dark needs less of it (worlds.css).
+function Wash({ id }) {
+  return (
+    <>
+      <linearGradient id={`${id}-x`} x1="0" y1="0" x2="820" y2="0" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stopColor="var(--bg)" stopOpacity="0.92" />
+        <stop offset="0.74" stopColor="var(--bg)" stopOpacity="0.82" />
+        <stop offset="1" stopColor="var(--bg)" stopOpacity="0" />
+      </linearGradient>
+      <linearGradient id={`${id}-y`} x1="0" y1="140" x2="0" y2="180" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stopColor="white" stopOpacity="0" />
+        <stop offset="1" stopColor="white" />
+      </linearGradient>
+      <mask id={`${id}-top`}>
+        <rect y="140" width="820" height="220" fill={`url(#${id}-y)`} />
+      </mask>
+      <rect y="140" width="820" height="220" fill={`url(#${id}-x)`} mask={`url(#${id}-top)`} className="me-wash" />
+    </>
+  );
+}
 
 // A round door: a stone ring, planks clipped to a circle, a strap hinge and a
 // brass knob dead centre.
@@ -75,7 +99,7 @@ function RoundDoor({ x, y, id }) {
   );
 }
 
-// A chimney's thread of smoke, leaning east as it thins; its dashes drift up
+// A chimney’s thread of smoke, leaning east as it thins; its dashes drift up
 // (and hold still under reduced motion).
 function Smoke({ id, x, y, h, w = 2 }) {
   const d = `M${x} ${y} c-5 ${f1(-h * 0.2)} 6 ${f1(-h * 0.3)} 2 ${f1(-h * 0.5)} s-3 ${f1(-h * 0.32)} 13 ${f1(-h * 0.5)}`;
@@ -96,8 +120,8 @@ function Smoke({ id, x, y, h, w = 2 }) {
 // The Shire: the low sun (or the moon) over the downs, the Party Tree by its
 // pond with the bridge and the mill, hedged hills with small round doors, and
 // the Hill with its oak, its door, its window and its garden. The Hill stands
-// between the hero's words and its photo, inside the slice a phone keeps
-// (x 300–1140); the land behind the words is hazed toward the page.
+// between the hero’s words and its photo, inside the slice a phone keeps
+// (x 300–1140); the land behind the words is misted toward the page.
 function Shire() {
   const rand = rng(1937);
   const far = swell(184, [[5, 520, 0.4], [3, 230, 2.1]]);
@@ -106,24 +130,25 @@ function Shire() {
   const mid = (x) => rolling(x) + 16 * Math.exp(-(((x - 1220) / 130) ** 2));
   const near = swell(226, [[6, 400, 2.4], [3, 170, 1.1]]);
   const ground = swell(258, [[3, 640, 0.9]]);
-  const hill = (x) => ground(x) - 110 * Math.exp(-(((x - 860) / 158) ** 2));
+  const hill = (x) => ground(x) - 110 * Math.exp(-(((x - 822) / 158) ** 2));
   const tree = far(1150);
   const stars = Array.from({ length: 18 }, () => [300 + rand() * 1120, 20 + rand() * 120, 0.7 + rand() * 0.6]);
   const bed = (cx, cy, w, h, n) => Array.from({ length: n }, () => [cx + (rand() - 0.5) * w, cy + rand() * h, 1.1 + rand() * 1.1]);
   const flowers = [
-    ...bed(816, 238, 40, 9, 12), ...bed(910, 236, 52, 10, 13),
-    ...bed(778, ground(778) + 4, 128, 6, 16), ...bed(944, ground(944) + 4, 124, 6, 16),
+    ...bed(778, 238, 40, 9, 12), ...bed(872, 236, 52, 10, 13),
+    ...bed(740, ground(740) + 4, 128, 6, 16), ...bed(906, ground(906) + 4, 124, 6, 16),
     ...bed(598, near(598) + 13, 18, 4, 5), ...bed(1124, near(1124) + 13, 18, 4, 5), ...bed(1204, near(1204) + 13, 18, 4, 5),
-  ].filter(([x, y]) => !(x > 848 && x < 876 && y > 236));
-  const windows = Array.from({ length: 12 }, () => {
-    const x = 320 + rand() * 1000;
+  ].filter(([x, y]) => !(x > 810 && x < 838 && y > 236));
+  // lit windows only east of the Hill: behind the words a lamp would sit in a letter
+  const windows = Array.from({ length: 10 }, () => {
+    const x = 1040 + rand() * 380;
     return [x, (rand() > 0.5 ? near(x) : mid(x)) + 5 + rand() * 6, 1.3 + rand() * 0.8];
-  }).filter(([x]) => x < 680 || x > 1050);
+  });
   const doors = [[586, near], [1112, near], [1192, near], [1296, mid]];
   const lanterns = Array.from({ length: 9 }, (_, i) => [1128 + i * 5.5, tree - 33 + Math.sin((i / 8) * Math.PI) * 7, 1.3]);
   const posts = [];
-  for (let x = 714; x <= 1008; x += 6.5) if (x < 845 || x > 879) posts.push(f1(x));
-  const rail = (dy) => `M712 ${f1(ground(712) + dy)} L846 ${f1(ground(846) + dy)} M878 ${f1(ground(878) + dy)} L1010 ${f1(ground(1010) + dy)}`;
+  for (let x = 676; x <= 970; x += 6.5) if (x < 807 || x > 841) posts.push(f1(x));
+  const rail = (dy) => `M674 ${f1(ground(674) + dy)} L808 ${f1(ground(808) + dy)} M840 ${f1(ground(840) + dy)} L972 ${f1(ground(972) + dy)}`;
   return (
     <>
       <defs>
@@ -135,9 +160,8 @@ function Shire() {
         <Glow id="me-shire-sun" color="var(--me-glow)" o={0.95} />
         <Glow id="me-shire-lamp" color="var(--me-pane)" o={0.6} />
         <Glow id="me-shire-halo" color="var(--me-moon)" o={0.22} />
-        <Glow id="me-shire-haze" color="var(--bg)" o={0.55} />
-        {/* moonlight along the Hill's crest, gone before it meets the land */}
-        <linearGradient id="me-shire-rim" x1="600" y1="0" x2="1120" y2="0" gradientUnits="userSpaceOnUse">
+        {/* moonlight along the Hill’s crest, gone before it meets the land */}
+        <linearGradient id="me-shire-rim" x1="562" y1="0" x2="1082" y2="0" gradientUnits="userSpaceOnUse">
           <stop offset="0" stopColor="var(--me-rim)" stopOpacity="0" />
           <stop offset="0.25" stopColor="var(--me-rim)" />
           <stop offset="0.75" stopColor="var(--me-rim)" />
@@ -214,46 +238,46 @@ function Shire() {
       <Smoke id="me-shire-smoke-a" x={1121} y={f1(near(1121) - 6)} h={62} w={1.6} />
       <path d={dots(windows)} fill="var(--me-pane)" className="me-night" />
       {/* the Hill: its oak, its chimney, its door and its round window */}
-      <path d={land(hill, 500, 1220)} fill="url(#me-shire-hill)" />
-      <path d={line(hill, 600, 1120)} fill="none" stroke="url(#me-shire-rim)" strokeWidth="1" />
-      <path d={`M884 ${f1(hill(884) + 3)} v-24 M884 ${f1(hill(884) - 9)} l-11 -10 M884 ${f1(hill(884) - 13)} l12 -9`} stroke="var(--me-trunk)" strokeWidth="3.4" strokeLinecap="round" />
-      <path d={dots([[853, 128, 15], [871, 116, 19], [895, 112, 19], [916, 124, 15], [864, 137, 14], [887, 131, 19], [911, 138, 12]])} fill="var(--me-oak)" />
-      <path d={dots([[851, 124, 8], [868, 111, 10], [890, 106, 9]])} fill="var(--me-oak-hi)" />
-      <rect x="818" y={f1(hill(822) - 12)} width="9" height="16" fill="var(--me-stone)" />
-      <rect x="816" y={f1(hill(822) - 14)} width="13" height="3" fill="var(--me-tick)" />
-      <Smoke id="me-shire-smoke-b" x={822} y={f1(hill(822) - 16)} h={84} />
+      <path d={land(hill, 462, 1182)} fill="url(#me-shire-hill)" />
+      <path d={line(hill, 562, 1082)} fill="none" stroke="url(#me-shire-rim)" strokeWidth="1" />
+      <path d={`M846 ${f1(hill(846) + 3)} v-24 M846 ${f1(hill(846) - 9)} l-11 -10 M846 ${f1(hill(846) - 13)} l12 -9`} stroke="var(--me-trunk)" strokeWidth="3.4" strokeLinecap="round" />
+      <path d={dots([[815, 128, 15], [833, 116, 19], [857, 112, 19], [878, 124, 15], [826, 137, 14], [849, 131, 19], [873, 138, 12]])} fill="var(--me-oak)" />
+      <path d={dots([[813, 124, 8], [830, 111, 10], [852, 106, 9]])} fill="var(--me-oak-hi)" />
+      <rect x="780" y={f1(hill(784) - 12)} width="9" height="16" fill="var(--me-stone)" />
+      <rect x="778" y={f1(hill(784) - 14)} width="13" height="3" fill="var(--me-tick)" />
+      <Smoke id="me-shire-smoke-b" x={784} y={f1(hill(784) - 16)} h={84} />
       <g className="me-night">
-        <circle cx="861" cy="214" r="54" fill="url(#me-shire-lamp)" />
-        <circle cx="912" cy="204" r="34" fill="url(#me-shire-lamp)" />
-        <circle cx="826" cy="216" r="24" fill="url(#me-shire-lamp)" />
+        <circle cx="823" cy="214" r="54" fill="url(#me-shire-lamp)" />
+        <circle cx="874" cy="204" r="34" fill="url(#me-shire-lamp)" />
+        <circle cx="788" cy="216" r="24" fill="url(#me-shire-lamp)" />
       </g>
-      <RoundDoor x={861} y={212} id="me-shire-door" />
-      <g transform="translate(912 204)">
+      <RoundDoor x={823} y={212} id="me-shire-door" />
+      <g transform="translate(874 204)">
         <circle r="10" fill="var(--me-frame)" />
         <circle r="7.6" fill="var(--me-pane)" />
         <path d="M-7.6 0 H7.6 M0 -7.6 V7.6" stroke="var(--me-frame)" strokeWidth="1.4" />
       </g>
       {/* the lamp on its post beside the step */}
-      <path d="M826 246 V221 M823 221 h6" stroke="var(--me-iron)" strokeWidth="1.4" />
-      <path d="M823.4 220 V213 L826 211 L828.6 213 V220 Z" fill="var(--me-lamp)" stroke="var(--me-iron)" strokeWidth="0.8" />
+      <path d="M788 246 V221 M785 221 h6" stroke="var(--me-iron)" strokeWidth="1.4" />
+      <path d="M785.4 220 V213 L788 211 L790.6 213 V220 Z" fill="var(--me-lamp)" stroke="var(--me-iron)" strokeWidth="0.8" />
       <path d={land(ground)} fill="url(#me-shire-ground)" />
       {/* the road from the step, down through the gate and away */}
-      <path d="M861 246 C858 256 852 264 868 274 S960 296 1004 360" fill="none" stroke="var(--me-road)" strokeWidth="2.2" strokeDasharray="6 5" opacity="0.65" />
+      <path d="M823 246 C820 256 814 264 830 274 S922 296 966 360" fill="none" stroke="var(--me-road)" strokeWidth="2.2" strokeDasharray="6 5" opacity="0.65" />
       {/* the garden: its picket fence, the gate left open, and the flowers */}
       <path d={rail(-3) + rail(-7.5)} stroke="var(--me-fence)" strokeWidth="1" />
       <path d={posts.map((x) => `M${x} ${f1(ground(x) + 1)} V${f1(ground(x) - 9)} l1.1 -2.2 l1.1 2.2 V${f1(ground(x) + 1)} Z`).join('')} fill="var(--me-fence)" />
-      <path d={`M846 ${f1(ground(846) + 1)} v-13 h2.2 v13 Z M876 ${f1(ground(876) + 1)} v-13 h2.2 v13 Z`} fill="var(--me-fence)" />
+      <path d={`M808 ${f1(ground(808) + 1)} v-13 h2.2 v13 Z M838 ${f1(ground(838) + 1)} v-13 h2.2 v13 Z`} fill="var(--me-fence)" />
       <g className="me-day">
         {[1, 2, 3].map((k) => (
           <path key={k} d={dots(flowers.filter((_, i) => i % 3 === k - 1))} fill={`var(--me-flower-${k})`} />
         ))}
       </g>
       <g className="me-night">
-        {[[760, 228], [1004, 236], [948, 214], [690, 246], [1068, 252], [800, 262]].map(([x, y], i) => (
+        {[[722, 228], [966, 236], [910, 214], [652, 246], [1030, 252], [762, 262]].map(([x, y], i) => (
           <circle key={x} cx={x} cy={y} r="1.5" fill="var(--me-firefly)" className="me-twinkle" style={{ animationDelay: `${-i * 1.3}s`, animationDuration: '5s' }} />
         ))}
       </g>
-      <ellipse cx="260" cy="262" rx="560" ry="100" fill="url(#me-shire-haze)" />
+      <Wash id="me-shire-wash" />
     </>
   );
 }
@@ -293,19 +317,21 @@ function tower(cx, base) {
   return `M${half.join(' L')} L${right.join(' L')} Z ${fins.join(' ')} ${horns}`;
 }
 
-// The Black Gate: a wall spiked along the top, a tower at each end, and the
-// two iron leaves of the gate between them, riveted.
+// The Black Gate: a wall spiked along the top, a tower at each end (battered,
+// corbelled and crowned with thorns, not roofed like a castle in a story
+// book), and the two iron leaves of the gate between them, riveted.
 function gate(x0, top) {
   let wall = `M${x0} 268 V${top}`;
   for (let x = x0; x < 1446; x += 9) wall += ` l4.5 -6 l4.5 6`;
   wall += ' V268 Z';
-  const keep = (cx, t) => `M${cx - 20} 268 V${t + 22} h-4 l4 -8 V${t + 6} L${cx} ${t - 16} L${cx + 20} ${t + 6} V${t + 14} l4 8 h-4 V268 Z`;
+  const keep = (cx, t) =>
+    `M${cx - 22} 268 L${cx - 15} ${t + 14} L${cx - 19} ${t + 8} V${t} L${cx - 17} ${t - 14} L${cx - 12} ${t} H${cx - 4} L${cx} ${t - 22} L${cx + 4} ${t} H${cx + 12} L${cx + 17} ${t - 14} L${cx + 19} ${t} V${t + 8} L${cx + 15} ${t + 14} L${cx + 22} 268 Z`;
   return `${wall} ${keep(x0 + 24, top - 46)} ${keep(1416, top - 42)}`;
 }
 
 // Mordor: the sky glowing behind Mount Doom, its smoke trailing east,
 // Barad-dûr and the Eye beside it, the ash plain, the Black Gate and the rocks
-// in front. Doom and the tower stand between the hero's words and its photo.
+// in front. Doom and the tower stand between the hero’s words and its photo.
 function Mordor() {
   const rand = rng(1066);
   const plain = swell(258, [[2, 560, 0.6]]);
@@ -328,7 +354,6 @@ function Mordor() {
         <Glow id="me-mordor-eyeglow" color="var(--me-fire)" o={0.34} />
         <Glow id="me-mordor-smoke" color="var(--me-smoke)" o={0.9} />
         <Glow id="me-mordor-smoke-lit" color="var(--me-smoke-lit)" o={0.8} />
-        <Glow id="me-mordor-haze" color="var(--bg)" o={0.55} />
         <radialGradient id="me-mordor-iris">
           <stop offset="0" stopColor="var(--me-iris-0)" />
           <stop offset="0.5" stopColor="var(--me-iris-1)" />
@@ -372,15 +397,15 @@ function Mordor() {
         ))}
       </g>
       {/* Barad-dûr, and the Eye between its horns */}
-      <path d={tower(880, 262)} fill="var(--me-tower)" stroke="var(--me-rim)" strokeWidth="1.6" paintOrder="stroke" />
-      <path d="M871 220 v7 M889 220 v7 M880 198 v6 M875 178 v5 M885 178 v5 M880 160 v4" stroke="var(--me-window)" strokeWidth="1.5" />
-      <Eye x={880} y={127} rand={rand} />
+      <path d={tower(858, 262)} fill="var(--me-tower)" stroke="var(--me-rim)" strokeWidth="1.6" paintOrder="stroke" />
+      <path d="M849 220 v7 M867 220 v7 M858 198 v6 M853 178 v5 M863 178 v5 M858 160 v4" stroke="var(--me-window)" strokeWidth="1.5" />
+      <Eye x={858} y={127} rand={rand} />
       <path d={land(plain)} fill="url(#me-mordor-plain)" />
       <path d={gate(1176, 214)} fill="var(--me-gate)" stroke="var(--me-rim)" strokeWidth="1.2" paintOrder="stroke" />
       <path d="M1268 268 V222 H1311 V268 Z M1313 268 V222 H1356 V268 Z" fill="var(--me-gate-hi)" />
       <path d={dots(leaves)} fill="var(--me-rivet)" />
       <path d={crags(rand, 340, 40, 0.68)} fill="var(--me-teeth)" />
-      <ellipse cx="260" cy="262" rx="560" ry="100" fill="url(#me-mordor-haze)" />
+      <Wash id="me-mordor-wash" />
       {motes.map(([x, y, r, t, d]) => (
         <circle key={x} cx={f1(x)} cy={f1(y)} r={f1(r)} fill="var(--me-mote)" className="me-mote" style={{ animationDuration: `${f1(t)}s`, animationDelay: `${-f1(d)}s` }} />
       ))}

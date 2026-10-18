@@ -1,6 +1,6 @@
 /* Split out of styles/extras.css so it loads with the components that use it
    (each imports it), not with every page. */
-/* Middle-earth's drawn backdrop (worlds/Backdrops.jsx). The Shire at golden
+/* Middle-earth’s drawn backdrop (worlds/Backdrops.jsx). The Shire at golden
    hour, warm and lighter with distance, and on a summer night under the moon;
    Mordor under ash, and under fire with a blue-black sky. */
 .backdrop-me[data-variant='shire'] {
@@ -28,7 +28,7 @@ html[data-mode='dark'] .backdrop-me[data-variant='shire'] {
   --me-sky-top: rgb(207 199 188 / 0.85); --me-sky-mid: #d6b8a0; --me-sky-low: #d9a27a; --me-glow: #c8763e; --me-heat: #e08a50;
   --me-ridge-far: #a39a8f; --me-ridge: #8f857b; --me-doom: #5e5650; --me-doom-hi: #7a7068; --me-crater: #ff8a1e;
   --me-lava-0: #ffb347; --me-lava-1: #ff7a1a; --me-lava-2: #d2421a; --me-seam-glow: 0.15;
-  --me-smoke: rgb(120 112 104 / 0.5); --me-smoke-lit: transparent;
+  --me-smoke: rgb(154 147 138 / 0.32); --me-smoke-lit: transparent;
   --me-tower: #2a2624; --me-rim: transparent; --me-window: transparent; --me-slit: #080504; --me-lash: rgb(255 122 26 / 0.45); --me-fire: #ff7a1a;
   --me-iris-0: #ffb347; --me-iris-1: #ff7a1a; --me-iris-2: #a8230e;
   --me-plain-hi: #bdb5aa; --me-plain: #ada498; --me-gate: #3a3431; --me-gate-hi: #4a423e; --me-rivet: #5c5450; --me-teeth: #2a2624; --me-mote: #6b655e;
@@ -42,7 +42,7 @@ html[data-mode='dark'] .backdrop-me[data-variant='mordor'] {
   --me-iris-0: #ffe9a3; --me-iris-1: #ff7a1a; --me-iris-2: #a8230e;
   --me-plain-hi: #1c1613; --me-plain: #15110f; --me-gate: #0f0c0b; --me-gate-hi: #171210; --me-rivet: #2e2724; --me-teeth: #080605; --me-mote: #ffb347;
 }
-/* a wide screen's hero crops the sky off the top of the drawing, so it fades in
+/* a wide screen’s hero crops the sky off the top of the drawing, so it fades in
    there as well as out at the foot (the foot as home.css fades every skyline) */
 .hero-backdrop.backdrop-me {
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 24px, #000 55%, transparent 100%);
@@ -51,9 +51,13 @@ html[data-mode='dark'] .backdrop-me[data-variant='mordor'] {
 .backdrop-me .me-night, html[data-mode='dark'] .backdrop-me .me-day { display: none; }
 html[data-mode='dark'] .backdrop-me .me-night { display: inline; }
 html[data-mode='dark'] .backdrop-me .me-burrows { opacity: 0.4; }
+/* light text on the night needs less of the page’s colour over the land */
+html[data-mode='dark'] .backdrop-me .me-wash { opacity: 0.6; }
 .me-smoke { stroke-dasharray: 9 7; animation: me-smoke 6s linear infinite; }
 .me-twinkle { animation: me-twinkle 8s ease-in-out infinite; }
-.me-eye { transform-box: fill-box; transform-origin: center; animation: me-eye 6s ease-in-out infinite; }
+/* the Eye holds still by day and pulses by night */
+.me-eye { transform-box: fill-box; transform-origin: center; }
+html[data-mode='dark'] .me-eye { animation: me-eye 6s ease-in-out infinite; }
 .me-lava { animation: me-flicker 3s ease-in-out infinite; }
 .me-cloud { animation: me-drift 30s ease-in-out infinite alternate; }
 /* ash falls by day; by night the motes are embers, and rise */
@@ -70,7 +74,7 @@ html[data-mode='dark'] .me-mote { animation-name: me-rise; }
 html[data-mode='dark'] .backdrop-cy[data-faction='autobot'] { --cy-light: #4fd8ff; --cy-far: #121a26; --cy-mid: #0e151f; --cy-near: #0a0f16; }
 html[data-mode='dark'] .backdrop-cy[data-faction='decepticon'] { --cy-light: #b48cff; --cy-far: #171326; --cy-mid: #120f1f; --cy-near: #0c0a15; }
 .cy-blink { animation: cy-blink 2.8s steps(2, jump-none) infinite; }
-@media (prefers-reduced-motion: reduce) { .me-smoke, .me-twinkle, .me-eye, .me-lava, .me-cloud, .cy-blink { animation: none; } .backdrop-me .me-mote { display: none; } }
+@media (prefers-reduced-motion: reduce) { .me-smoke, .me-twinkle, html[data-mode='dark'] .me-eye, .me-lava, .me-cloud, .cy-blink { animation: none; } .backdrop-me .me-mote { display: none; } }
 .world-switcher { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
 .world-switcher-label { margin-right: 0.3rem; font: 600 0.72rem/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 .world-photos { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr); }

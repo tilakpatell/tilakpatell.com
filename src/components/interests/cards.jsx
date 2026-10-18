@@ -95,7 +95,7 @@ function StarWars() {
 }
 
 const RING_WORDS = 'Ash nazg durbatulûk · ash nazg gimbatul · ash nazg thrakatulûk · agh burzum-ishi krimpatul ·';
-// once round the band from its left: told the band's length, the whole line fits
+// once round the band from its left: told the band’s length, the whole line fits
 const RING_BAND = [104, 46];
 const RING_PATH = `M ${-RING_BAND[0]} 0 A ${RING_BAND[0]} ${RING_BAND[1]} 0 1 1 ${RING_BAND[0]} 0 A ${RING_BAND[0]} ${RING_BAND[1]} 0 1 1 ${-RING_BAND[0]} 0`;
 const RING_LENGTH = ellipseLength(...RING_BAND).toFixed(1);
