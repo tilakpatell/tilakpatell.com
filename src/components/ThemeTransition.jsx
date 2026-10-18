@@ -398,8 +398,25 @@ function TheEye() {
   );
 }
 
+// A ship’s wheel: a rim and a hub, and eight spokes run out past the rim to
+// their handles.
+function Helm({ color }) {
+  return (
+    <svg viewBox="-60 -60 120 120" className="tt-helm" aria-hidden="true" style={{ '--c': color }}>
+      {Array.from({ length: 8 }, (_, i) => (
+        <g key={i} transform={`rotate(${i * 45})`}>
+          <line x1="0" y1="-12" x2="0" y2="-46" />
+          <rect x="-3.2" y="-58" width="6.4" height="12" rx="3.2" />
+        </g>
+      ))}
+      <circle r="34" className="tt-helm-rim" />
+      <circle r="12" className="tt-helm-hub" />
+    </svg>
+  );
+}
+
 // What sits just above the words, in the flow, so it never covers them.
-function Badge({ kind, color, autobot }) {
+function Badge({ kind, color, autobot, id }) {
   if (kind === 'tiles')
     return (
       <div className="tt-tiles" aria-hidden="true">
@@ -424,12 +441,14 @@ function Badge({ kind, color, autobot }) {
         <span className="tt-stamp">Approved</span>
       </div>
     );
-  if (kind === 'ripple')
+  // the raga’s Sa; for the Caribbean, a ship’s wheel coming about
+  if (kind === 'ripple' && id === 'raga')
     return (
       <b className="tt-sa" lang="hi" aria-hidden="true" style={{ color }}>
         सा
       </b>
     );
+  if (kind === 'ripple') return <Helm color={color} />;
   if (kind === 'transform') return autobot ? <AutobotMark className="tt-insignia" /> : <DecepticonMark className="tt-insignia tt-insignia-dc" />;
   // (the door and the Eye bring their own dark, centred on them, so the page can show through them at the end)
   if (kind === 'door') return <RoundDoor />;
@@ -479,7 +498,7 @@ export default function ThemeTransition({ id, onDone }) {
     <div className="tt" data-kind={scene.kind} data-id={id} data-reduced={reduced || undefined} onPointerDown={() => done.current()} style={{ '--tt-len': `${reduced ? 1100 : LENGTH[scene.kind]}ms` }}>
       {!reduced && <Scene kind={scene.kind} color={scene.color} />}
       <figure className="tt-words" role="status">
-        {!reduced && <Badge kind={scene.kind} color={scene.color} autobot={AUTOBOTS.has(id)} />}
+        {!reduced && <Badge kind={scene.kind} color={scene.color} autobot={AUTOBOTS.has(id)} id={id} />}
         <blockquote>{scene.quote}</blockquote>
         {scene.by && <figcaption>{scene.by}</figcaption>}
       </figure>
