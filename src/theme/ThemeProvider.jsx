@@ -14,23 +14,10 @@ const newsCycle = both(
   () => import('@fontsource/news-cycle/400.css'),
   () => import('@fontsource/news-cycle/700.css'),
 );
-// (the map pages cut their own titles in Cinzel 700 and Cinzel Decorative,
-// styles/lazy/middleearth.css, under either Middle-earth colour)
-const mapFaces = both(
+const cinzel = both(
+  () => import('@fontsource/cinzel/600.css'),
   () => import('@fontsource/cinzel/700.css'),
   () => import('@fontsource/cinzel-decorative/700.css'),
-);
-const shire = both(
-  () => import('@fontsource/almendra/700.css'),
-  () => import('@fontsource/eb-garamond/400-italic.css'),
-  () => import('@fontsource/cinzel/600.css'),
-  mapFaces,
-);
-const mordor = both(
-  () => import('@fontsource/grenze-gotisch/800.css'),
-  () => import('@fontsource/grenze/400.css'),
-  () => import('@fontsource/grenze/600.css'),
-  mapFaces,
 );
 const pirate = () => import('../components/caribbean/fonts.css');
 const orbitron = both(
@@ -50,8 +37,8 @@ const THEME_FONTS = {
   tortuga: pirate,
   pearl: pirate,
   dutchman: pirate,
-  shire,
-  mordor,
+  shire: cinzel,
+  mordor: cinzel,
   optimus: orbitron,
   megatron: orbitron,
   bumblebee: orbitron,

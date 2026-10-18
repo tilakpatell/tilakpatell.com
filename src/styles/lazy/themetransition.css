@@ -75,10 +75,10 @@ html[data-motion='reduced'] .tt:is([data-kind='door'], [data-kind='eye']) .tt-wo
 @keyframes tt-arrive { 0% { opacity: 0; } 6%, 96% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes tt-say { 0%, 21% { opacity: 0; transform: translateY(8px); } 31%, 78% { opacity: 1; transform: none; } 84%, 100% { opacity: 0; } }
 /* the words in each colour’s own face (loaded with the colours; the fallbacks stand alone) */
-.tt[data-kind='door'] blockquote { font-family: 'Almendra', 'Cinzel', Georgia, serif; font-stretch: normal; font-size: clamp(1.45rem, 0.9rem + 2.3vw, 2.5rem); line-height: 1.14; letter-spacing: 0; color: #f3ecd4; text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7); }
+.tt[data-kind='door'] blockquote { font-family: 'Cinzel', Georgia, serif; font-weight: 600; font-stretch: normal; font-size: clamp(1.45rem, 0.9rem + 2.3vw, 2.5rem); line-height: 1.14; letter-spacing: 0; color: #f3ecd4; text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7); }
 .tt[data-kind='door'] figcaption { margin-top: 0.8rem; font-family: 'Cinzel', Georgia, serif; font-weight: 600; font-size: 0.9rem; letter-spacing: 0.24em; text-transform: uppercase; color: #e2be5c; opacity: 1; }
-.tt[data-kind='eye'] blockquote { font-family: 'Grenze', Georgia, serif; font-weight: 600; font-stretch: normal; font-size: clamp(1.6rem, 1rem + 2.8vw, 3rem); letter-spacing: 0.01em; color: #f0e8df; text-shadow: 0 0 1px #ffb347, 0 -2px 12px rgba(255, 122, 26, 0.45), 0 -6px 28px rgba(210, 66, 26, 0.3); }
-.tt[data-kind='eye'] figcaption { margin-top: 0.7rem; font-family: 'Grenze', Georgia, serif; font-size: 0.95rem; letter-spacing: 0.22em; text-transform: uppercase; color: #ff8c3f; opacity: 1; }
+.tt[data-kind='eye'] blockquote { font-family: 'Cinzel', Georgia, serif; font-weight: 600; font-stretch: normal; font-size: clamp(1.6rem, 1rem + 2.8vw, 3rem); letter-spacing: 0.01em; color: #f0e8df; text-shadow: 0 0 1px #ffb347, 0 -2px 12px rgba(255, 122, 26, 0.45), 0 -6px 28px rgba(210, 66, 26, 0.3); }
+.tt[data-kind='eye'] figcaption { margin-top: 0.7rem; font-family: 'Cinzel', Georgia, serif; font-size: 0.95rem; letter-spacing: 0.22em; text-transform: uppercase; color: #ff8c3f; opacity: 1; }
 
 /* the Shire: the round door, from the hall; golden hour beyond it, or a lantern-lit night */
 .tt-door {

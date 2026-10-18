@@ -346,7 +346,7 @@ Each planet on the map that has a world gets a page of its own, with its own art
 
 ## Credits
 
-This site stands on a lot of other people's work, and I'm grateful for all of it. **[CREDITS.md](CREDITS.md) lists every one**: <!-- counts:start -->261 3D models by 137 artists, 179 free scans, skies and kit pieces, 61 photos and 16 open fonts<!-- counts:end -->, each with its author, licence and where it's used. Each is credited on the page that uses it too.
+This site stands on a lot of other people's work, and I'm grateful for all of it. **[CREDITS.md](CREDITS.md) lists every one**: <!-- counts:start -->261 3D models by 137 artists, 179 free scans, skies and kit pieces, 61 photos and 12 open fonts<!-- counts:end -->, each with its author, licence and where it's used. Each is credited on the page that uses it too.
 
 **Thank you to the 3D artists** whose Sketchfab models fly, walk and stand about in the worlds:
 

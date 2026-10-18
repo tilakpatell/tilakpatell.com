@@ -533,7 +533,7 @@ The Travel page and the backdrops behind some of the pages use these, each credi
 
 ## Fonts
 
-Almendra, Archivo, Bebas Neue, Cinzel, Cinzel Decorative, Courier Prime, EB Garamond, Grenze, Grenze Gotisch, JetBrains Mono, Luckiest Guy, News Cycle, Noto Sans Runic, Orbitron, Press Start 2P, Yatra One: open fonts (SIL Open Font License), through [Fontsource](https://fontsource.org). Aurebesh is by [SilvinoR](https://github.com/silvinor) (SIL OFL), in [`public/fonts/aurebesh`](public/fonts/aurebesh/OFL.md); the other faces in [`public/fonts`](public/fonts) carry their own licences beside them.
+Archivo, Bebas Neue, Cinzel, Cinzel Decorative, Courier Prime, JetBrains Mono, Luckiest Guy, News Cycle, Noto Sans Runic, Orbitron, Press Start 2P, Yatra One: open fonts (SIL Open Font License), through [Fontsource](https://fontsource.org). Aurebesh is by [SilvinoR](https://github.com/silvinor) (SIL OFL), in [`public/fonts/aurebesh`](public/fonts/aurebesh/OFL.md); the other faces in [`public/fonts`](public/fonts) carry their own licences beside them.
 
 ## Data and imagery
 

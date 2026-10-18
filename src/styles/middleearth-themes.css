@@ -111,21 +111,13 @@ html:is([data-theme='shire'], [data-theme='mordor'])[data-mode]:not([data-ambien
 html[data-mode='dark'][data-theme='mordor'] footer:has(.footer-links) { background-image: radial-gradient(70% 110% at 50% 100%, rgb(210 66 26 / 0.14), transparent 70%); }
 
 /* ─── Type ───────────────────────────────────────────────────────────────── */
-/* The Shire writes its headings in a hobbit’s hand (Almendra, a broad-nib
-   bookhand), labels its places in the red Roman capitals of the maps (Cinzel)
-   and sets its leads like the book it is (EB Garamond). Mordor’s headings are
-   forged blackletter (Grenze Gotisch, never below a title) and its words
-   around them Grenze. Body text stays Archivo. The inks carry no weight of
-   their own (:where), so a page’s own heading ink (the map’s, on the hub)
-   still wins. */
-[data-theme='shire'] :is(.display, .title) { font-family: 'Almendra', 'Cinzel', Georgia, serif; font-stretch: normal; font-weight: 700; letter-spacing: 0; }
-[data-theme='shire'] .display { line-height: 1.02; }
-[data-theme='shire'] .eyebrow { font-family: 'Cinzel', Georgia, serif; font-weight: 600; letter-spacing: 0.16em; }
-[data-theme='shire'] .lead { font-family: 'EB Garamond', Georgia, serif; font-style: italic; font-weight: 400; font-size-adjust: 0.46; }
-[data-theme='mordor'] :is(.display, .title) { font-family: 'Grenze Gotisch', 'Grenze', Georgia, serif; font-stretch: normal; font-weight: 800; letter-spacing: 0.01em; }
-[data-theme='mordor'] .display { line-height: 0.98; }
-[data-theme='mordor'] .eyebrow { font-family: 'Grenze', Georgia, serif; font-weight: 600; letter-spacing: 0.18em; }
-[data-theme='mordor'] .lead { font-family: 'Grenze', Georgia, serif; font-weight: 400; }
+/* Cinzel, as carved: Cinzel Decorative for the page titles, Cinzel for the
+   rest of the headings and for the eyebrows, the Roman capitals of the maps.
+   Body text stays Archivo. The inks carry no weight of their own (:where),
+   so a page’s own heading ink (the map’s, on the hub) still wins. */
+:is([data-theme='shire'], [data-theme='mordor']) .display { font-family: 'Cinzel Decorative', 'Cinzel', Georgia, serif; font-stretch: normal; font-weight: 700; letter-spacing: 0; line-height: 1.04; }
+:is([data-theme='shire'], [data-theme='mordor']) .title { font-family: 'Cinzel', Georgia, serif; font-stretch: normal; font-weight: 700; letter-spacing: 0.01em; }
+:is([data-theme='shire'], [data-theme='mordor']) .eyebrow { font-family: 'Cinzel', Georgia, serif; font-weight: 600; letter-spacing: 0.14em; }
 :where([data-theme='shire'], [data-theme='mordor']) .display { color: var(--me-display); }
 :where([data-theme='shire'], [data-theme='mordor']) .eyebrow { color: var(--me-eyebrow); }
 /* Mordor’s eyebrow opens on a seal, unless it opens on a mark of its own
@@ -142,9 +134,9 @@ html[data-mode='dark'][data-theme='mordor'] footer:has(.footer-links) { backgrou
 @media screen and (forced-colors: none) {
   @supports ((-webkit-background-clip: text) or (background-clip: text)) {
     html[data-mode='dark'][data-theme='shire'] :is(h1, [data-page-title]).display:not(.me-hub-title, :where(.dark-scope, .on-photo) *) {
-      /* (one band a line: 1.02em is the line height above, which every
+      /* (one band a line: 1.04em is the line height above, which every
          browser that clips to text can read, where 1lh is newer) */
-      background: linear-gradient(180deg, #f6de97 0 38%, #e2be5c 47%, #b38a2a 55%, #e8c766 72%, #f1d58a 100%) 0 0 / 100% 1.02em;
+      background: linear-gradient(180deg, #f6de97 0 38%, #e2be5c 47%, #b38a2a 55%, #e8c766 72%, #f1d58a 100%) 0 0 / 100% 1.04em;
       -webkit-background-clip: text; background-clip: text; color: transparent;
     }
   }

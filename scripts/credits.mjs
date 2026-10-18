@@ -115,7 +115,7 @@ const photos = Object.values(PHOTOS)
 
 // ── fonts ──
 const pkg = await json('package.json');
-const FONT_NAMES = { 'almendra': 'Almendra', 'archivo': 'Archivo', 'bebas-neue': 'Bebas Neue', 'cinzel': 'Cinzel', 'cinzel-decorative': 'Cinzel Decorative', 'courier-prime': 'Courier Prime', 'eb-garamond': 'EB Garamond', 'grenze': 'Grenze', 'grenze-gotisch': 'Grenze Gotisch', 'jetbrains-mono': 'JetBrains Mono', 'luckiest-guy': 'Luckiest Guy', 'news-cycle': 'News Cycle', 'orbitron': 'Orbitron', 'press-start-2p': 'Press Start 2P', 'yatra-one': 'Yatra One', 'noto-sans-runic': 'Noto Sans Runic' };
+const FONT_NAMES = { 'archivo': 'Archivo', 'bebas-neue': 'Bebas Neue', 'cinzel': 'Cinzel', 'cinzel-decorative': 'Cinzel Decorative', 'courier-prime': 'Courier Prime', 'jetbrains-mono': 'JetBrains Mono', 'luckiest-guy': 'Luckiest Guy', 'news-cycle': 'News Cycle', 'orbitron': 'Orbitron', 'press-start-2p': 'Press Start 2P', 'yatra-one': 'Yatra One', 'noto-sans-runic': 'Noto Sans Runic' };
 const fonts = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies })
   .filter((d) => d.startsWith('@fontsource'))
   .map((d) => d.replace(/^@fontsource(-variable)?\//, ''))
