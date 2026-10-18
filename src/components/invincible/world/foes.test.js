@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIGHT, KINDS, PORTAL, foeAt, knock, newFoes, pickTarget, portalOpen, spawnFoes, spawnUpTo, startInvasion, stepFoes } from './foes';
+import { FIGHT, KINDS, PORTAL, brawlThings, foeAt, knock, newFoes, pickTarget, portalOpen, spawnFoes, spawnUpTo, startInvasion, stepFoes } from './foes';
 import { groundAt } from './map';
 
 const hero = (p, v = [0, 0, 0]) => ({ p: [...p], v: [...v], mode: 'air' });
@@ -356,5 +356,99 @@ describe('the villains', () => {
     expect(f.foes.filter((e) => e.kind === 'mauler')).toHaveLength(6);
     expect(spawnUpTo(f, 'mauler', 6, AT).foes).toHaveLength(6);
     expect(spawnUpTo(f, 'mauler', 3, AT)).toBe(f);
+  });
+  // ── the brawl (./brawl.js's outs, done to them) ──
+  const brawl = (outs, extra = {}) => ({ ...idle, brawl: outs, ...extra });
+  it('a foe grabbed rides in his hands and does nothing; thrown, it flies and lands for a hit', () => {
+    let f = only('mauler', { cool: 0 });
+    const h = onGround(0, 3);
+    let r = stepFoes(f, h, brawl([{ kind: 'grab', target: 0 }]), 1 / 30);
+    expect(r.foes.foes[0].state).toBe('held');
+    // carried up and away: it comes with him, and never swings
+    const up = { p: [AT[0], G + 40, AT[2] + 3], v: [0, 0, -20], mode: 'air' };
+    const carried = run(r.foes, up, 2, { ...idle, look: [0, 0, -1] });
+    const e = carried.f.foes[0];
+    expect(Math.hypot(e.p[0] - up.p[0], e.p[2] - (up.p[2] - 1.6))).toBeLessThan(0.5);
+    expect(carried.ev.some((q) => q.type === 'swing' || q.type === 'hurt')).toBe(false);
+    // let go: away it goes, down, and the landing is a blow (a Mauler staggers)
+    r = stepFoes(carried.f, up, brawl([{ kind: 'throw', target: 0, v: [0, 0, -50] }]), 1 / 30);
+    expect(r.foes.foes[0].state).toBe('thrown');
+    const flight = run(r.foes, up, 4);
+    expect(flight.ev).toContainEqual(expect.objectContaining({ type: 'hit', id: 0, thrown: true }));
+    expect(flight.f.foes[0].p[2]).toBeLessThan(AT[2] - 40);
+  });
+  it('a slam is two hits on what he carried; a dive its hits on whoever it lands on', () => {
+    let f = only('mauler', { cool: 99 });
+    f = stepFoes(f, onGround(0, 3), brawl([{ kind: 'grab', target: 0 }]), 1 / 30).foes;
+    let r = stepFoes(f, onGround(0, 3), brawl([{ kind: 'slam', target: 0, hits: 2, at: [AT[0], G, AT[2]] }]), 1 / 30);
+    expect(r.foes.foes[0].hits).toBe(2);
+    expect(r.foes.foes[0].state).not.toBe('held');
+    const g = only('mauler', { cool: 99 });
+    r = stepFoes(g, far, brawl([{ kind: 'diveHit', target: 0, hits: 3, at: [AT[0] + 2, G, AT[2]] }]), 1 / 30);
+    expect(r.ev).toContainEqual(expect.objectContaining({ type: 'ko', id: 0, kind: 'mauler' }));
+    // (one that's left the spot by the time he lands isn't hit)
+    r = stepFoes(only('mauler', { cool: 99 }), far, brawl([{ kind: 'diveHit', target: 0, hits: 3, at: [AT[0] + 30, G, AT[2]] }]), 1 / 30);
+    expect(r.ev.some((q) => q.type === 'hit' || q.type === 'ko')).toBe(false);
+  });
+  it('a counter punch counts double', () => {
+    const r = stepFoes(only('mauler', { cool: 99 }), onGround(0, 2), { punch: true, power: 2, look: [0, 0, -1] }, 1 / 30);
+    expect(r.foes.foes[0].hits).toBe(2);
+  });
+  it('a block halves a swing, staggers the Mauler for 0.8 s and says so', () => {
+    const f = only('mauler', { cool: 0 });
+    const { ev, f: after } = run(f, onGround(0, 2), 0.5, { ...idle, block: true });
+    expect(ev.find((e) => e.type === 'hurt').hp).toBe(100 - 9);
+    expect(ev).toContainEqual(expect.objectContaining({ type: 'blocked', id: 0 }));
+    expect(after.foes[0].state).toBe('stagger');
+    expect(ev.some((e) => e.type === 'swing' && e.hit)).toBe(true);
+  });
+  it('a ground pound floors the Flaxans within 40 m and staggers the Maulers', () => {
+    const at = [AT[0], G, AT[2]];
+    let f = spawnFoes(newFoes(), 'flaxan', 3);
+    f = { ...f, foes: f.foes.map((e, i) => ({ ...e, state: 'fight', cool: 99, p: [at[0] + [10, 30, 200][i], at[1] + 2, at[2]], v: [0, 0, 0] })) };
+    f = spawnFoes(f, 'mauler', 1, [at[0], 0, at[2] - 20]);
+    f = { ...f, foes: f.foes.map((e) => (e.kind === 'mauler' ? { ...e, cool: 99, throwCool: 99 } : e)) };
+    const hero = { p: [...at], v: [0, 0, 0], mode: 'ground' };
+    let r = stepFoes(f, hero, brawl([{ kind: 'pound', at, r: 40, speed: 20 }]), 1 / 30);
+    const ev = [...r.ev];
+    for (let s = 0; s < 2.5; s += 1 / 30) {
+      r = stepFoes(r.foes, hero, idle, 1 / 30);
+      ev.push(...r.ev);
+    }
+    const kod = ev.filter((e) => e.type === 'ko').map((e) => e.id).sort();
+    expect(kod).toEqual([0, 1]);
+    expect(ev).toContainEqual(expect.objectContaining({ type: 'pounded', id: 3, kind: 'mauler' }));
+    expect(ev.some((e) => e.type === 'floored')).toBe(false); // (his own ring never floors him)
+  });
+  it('a car thrown at him can be caught out of the air and thrown back', () => {
+    const f = only('mauler', { throwCool: 0, cool: 99 });
+    const h = onGround(0, 30, 10);
+    let g = f;
+    let caught = false;
+    for (let s = 0; s < 3 && !caught; s += 1 / 30) {
+      const c = g.cars.find((q) => q.held == null && Math.hypot(q.p[0] - h.p[0], q.p[1] - h.p[1] - 1, q.p[2] - h.p[2]) < 4.5);
+      const r = stepFoes(g, h, c ? brawl([{ kind: 'grab', target: `car:${c.id}` }]) : idle, 1 / 30);
+      g = r.foes;
+      expect(r.ev.some((e) => e.type === 'carHit')).toBe(false);
+      caught = Boolean(c);
+    }
+    expect(caught).toBe(true);
+    expect(g.cars[0].held).toBe('mark');
+    const r = stepFoes(g, h, brawl([{ kind: 'throw', target: `car:${g.cars[0].id}`, v: [0, 0, -40] }]), 1 / 30);
+    expect(r.foes.cars[0]).toMatchObject({ held: null, away: true });
+  });
+});
+
+describe('what his brawl can reach', () => {
+  it('the ones standing by their middles, Doc Seismic not to be held, and the cars loose in the air', () => {
+    let f = spawnFoes(newFoes(), 'mauler', 1, [0, 0, 60]);
+    f = spawnFoes(f, 'seismic', 1, [0, 0, 60]);
+    f = { ...f, cars: [{ id: 3, p: [1, 9, 60], v: [0, 0, 0], held: null, away: false, life: 2 }, { id: 4, p: [1, 9, 60], v: [0, 0, 0], held: 0, away: false, life: 2 }] };
+    const things = brawlThings(f);
+    expect(things.find((t) => t.id === 0)).toMatchObject({ kind: 'mauler', grabbable: true, foe: true, at: [f.foes[0].p[0], f.foes[0].p[1] + 1.3, f.foes[0].p[2]] });
+    expect(things.find((t) => t.id === 1)).toMatchObject({ kind: 'seismic', grabbable: false, foe: true });
+    expect(things.find((t) => t.id === 'car:3')).toMatchObject({ kind: 'car', grabbable: true, foe: false });
+    expect(things.some((t) => t.id === 'car:4')).toBe(false); // (a Mauler's still holding that one)
+    expect(brawlThings(newFoes())).toEqual([]);
   });
 });

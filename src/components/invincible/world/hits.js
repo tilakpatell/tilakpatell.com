@@ -7,7 +7,7 @@
 // (lib/sfx.js’s play(name, { gain, pitch })).
 //
 //   createHits({ now, random }) → { voice(key, force) → { gain, pitch } | null,
-//     foeForce(kind), rules }
+//     foeForce(kind), moveForce(out), rules }
 
 import { createImpacts } from '../../../lib/impact';
 
@@ -18,6 +18,9 @@ const QUIET_UNDER = 0;
 const LAW = { threshold: QUIET_UNDER, full: 200, gap: 0.06 };
 // a villain’s punch has no speed: their size stands for it
 const FOES = { flaxan: 60, seismic: 90, mauler: 130 };
+// his brawl's moves (./brawl.js's outs): a slam's and a dive's force is how
+// fast he came down (their `force`); the rest by what they are
+const MOVES = { punch: 70, counter: 150, grab: 40, throw: 110, pound: 120 };
 
 export function createHits({ now, random } = {}) {
   const rules = createImpacts({ ...LAW, now, random });
@@ -28,5 +31,6 @@ export function createHits({ now, random } = {}) {
       return r ? { gain: FLOOR + (1 - FLOOR) * r.gain, pitch: r.pitch } : null;
     },
     foeForce: (kind) => FOES[kind] ?? FOES.flaxan,
+    moveForce: (o) => o.force ?? MOVES[o.kind] ?? 0,
   };
 }

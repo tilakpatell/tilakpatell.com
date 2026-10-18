@@ -83,6 +83,8 @@ const SHOTS = {
   allen: { space: 'allen', back: 14 },
   mars: { space: 'mars', back: 90 },
   thragg: { space: 'thragg', back: 18 },
+  // the brawl (./brawl.js): a Mauler grabbed off the street (the punch key held) and carried up over downtown
+  brawl: { brawl: true },
   dusk: { p: [-300, 160, 700], mode: 'air', yaw: Math.PI * 0.9, pitch: -0.1, time: 'dusk' },
   night: { p: [-300, 160, 700], mode: 'air', yaw: Math.PI * 0.9, pitch: -0.1, time: 'night' },
   // The missions (./missions.js), each started through the dev hook (`api.mission`) and driven
@@ -240,6 +242,20 @@ for (const [name, s] of Object.entries(SHOTS)) {
       sim.yaw = Math.PI / 2 - 0.15;
       sim.pitch = 0.12;
       sim.dragAt = 1e9;
+    } else if (s.brawl) {
+      // a Mauler on the street, Mark beside it with the punch key held until it's in his hands
+      api.spawn('mauler', 1, [40, 0, 120]);
+      const e = sim.foes.foes.at(-1);
+      sim.h = { ...sim.h, p: [e.p[0], e.p[1], e.p[2] + 2.4], v: [0, 0, 0], spd: 0, mode: 'ground', crouch: 0, stun: 0, face: Math.PI };
+      sim.yaw = Math.PI;
+      sim.pitch = -0.05;
+      sim.dragAt = 1e9;
+      sim.fist = true;
+      for (let i = 0; i < 60 && !sim.brawl?.carry; i++) await new Promise((r) => setTimeout(r, 250));
+      // and up over downtown with it (still held: the key's not let go)
+      sim.h = { ...sim.h, p: [-300, 140, 600], v: [0, 0, 0], spd: 0, mode: 'air', face: Math.PI * 0.9 };
+      sim.yaw = Math.PI * 0.9;
+      sim.pitch = -0.12;
     } else if (s.mission) {
       await window.__INV_DRIVE__(s.mission, s.drive, s, true);
     } else if (s.space) {

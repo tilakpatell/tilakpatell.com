@@ -10,7 +10,8 @@
 // gathering beats waving beats looking.
 //
 // sense: { hero: [x, y, z], heroMode, heroSpeed, slam: [x, z] | null,
-// hit: [x, z] | null, fight, won, time }; r: a seeded random (lib/seeded).
+// hit: [x, z] | null, carried: [x, z] | null (a car he's carrying), fight,
+// won, time }; r: a seeded random (lib/seeded).
 
 import { WALK } from './traffic';
 
@@ -79,8 +80,8 @@ export function stepBrain(b, sense, rawDt, r) {
   // he's gone: the next time he lands near, they come again
   if (n.gathered && (!landed || dHero > BRAIN.lookR)) n.gathered = false;
 
-  // something hit the ground near them: run, away from it
-  const danger = [sense.slam, sense.hit].find((p) => p && dist(n.at, p) < BRAIN.fright);
+  // something hit the ground near them, or a car's being carried over them: run, away from it
+  const danger = [sense.slam, sense.hit, sense.carried].find((p) => p && dist(n.at, p) < BRAIN.fright);
   if (danger) {
     const d = dist(n.at, danger);
     const a = d > 1e-6 ? [(n.at[0] - danger[0]) / d, (n.at[1] - danger[1]) / d] : [Math.cos(r() * 6.28), Math.sin(r() * 6.28)];

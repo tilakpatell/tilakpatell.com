@@ -22,13 +22,17 @@ export function bindInput(s, h) {
       e.preventDefault();
       startSound();
       if (k === 'up' && !e.repeat) s.jump = true;
+      // (C pressed on the ground, foes about: his ground pound, ./brawl.js)
+      if (k === 'down' && !e.repeat) s.poundPress = true;
       s.keys.add(k);
       s.moved = true;
       return;
     }
     if ((e.code === 'KeyJ' || e.code === 'KeyF') && !e.repeat) {
+      // (a tap punches; held, it grabs, and let go, it throws: ./brawl.js)
       startSound();
       s.punch = true;
+      s.fist = true;
     } else if (e.code === 'KeyE' || e.key === 'Enter') {
       if (!(e.target instanceof HTMLButtonElement)) act();
     } else if (e.code === 'KeyT') cycleTime();
@@ -48,6 +52,7 @@ export function bindInput(s, h) {
     }
   };
   const up = (e) => {
+    if (e.code === 'KeyJ' || e.code === 'KeyF') s.fist = false;
     const k = CODES[e.code];
     if (k) s.keys.delete(k);
     if (!e.shiftKey) s.keys.delete('boost');
@@ -73,6 +78,8 @@ export function pointerLook({ sim, drag, host, startSound }) {
   const onPointerDown = (e) => {
     if (e.pointerType === 'touch' && e.clientX < (host.current?.getBoundingClientRect().left ?? 0) + (host.current?.clientWidth ?? 0) * 0.4) return; // the left of a phone's screen is the stick
     startSound();
+    // (the mouse's button held is the punch key held: a grab, ./brawl.js)
+    if (e.pointerType === 'mouse' && e.button === 0) sim.current.fist = true;
     drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, at: performance.now() };
     e.currentTarget.setPointerCapture?.(e.pointerId);
   };
@@ -89,6 +96,7 @@ export function pointerLook({ sim, drag, host, startSound }) {
   };
   const onPointerUp = (e) => {
     const d = drag.current;
+    if (e.pointerType === 'mouse') sim.current.fist = false;
     if (d?.id !== e.pointerId) return;
     // a click (not a drag) with the mouse: a punch
     if (e.pointerType === 'mouse' && e.button === 0 && performance.now() - d.at < 260 && Math.hypot(e.clientX - d.x0, e.clientY - d.y0) < 6) sim.current.punch = true;

@@ -14,9 +14,13 @@
 // Input: { fwd, side (−1…1, from the camera), up, down (0…1), boost, run,
 // jump (this step only), look: the camera's forward, a unit vector, press
 // (a jumpPress(): the jump pressed a moment early or late still lands, and
-// `jump` is read through it), free (this step only: R, let go of the water) }.
+// `jump` is read through it), free (this step only: R, let go of the water),
+// carry (he's holding something: ./brawl.js's grab, at CARRY of his speeds,
+// and a wall met over BUMP m/s is a `bump`) }. dive(hero, at) sends him down
+// onto a point at 90 m/s whatever's held, until he lands (./brawl.js's dive).
 
 import { createPress } from '../../../lib/press';
+import { BRAWL } from './brawl';
 import { WATER_Y, WORLD, groundAt, near } from './map';
 
 export const FLY = {
@@ -45,6 +49,9 @@ export const FLY = {
   step: 0.6, // what he steps up onto on foot
 };
 const STEP = 1 / 120;
+// carrying something, his speeds are this much of them; into a wall faster than BUMP, it's slammed
+export const CARRY = BRAWL.grab.slow;
+const BUMP = BRAWL.slam.speed;
 
 // The jump’s press (lib/press.js): pressed up to `buffer` before he can go
 // (still in the air, or getting up from a slam) it goes when he can; up to
@@ -77,8 +84,11 @@ export const speedOf = (h) => len(h.v[0], h.v[1], h.v[2]);
 export const forwardOf = (yaw) => [Math.sin(yaw), 0, Math.cos(yaw)];
 
 export function newHero({ x, y, z, face = 0 }) {
-  return { p: [x, y ?? groundAt(x, z), z], v: [0, 0, 0], spd: 0, dir: forwardOf(face), face, mode: 'ground', crouch: 0, stun: 0, lift: 0, boomed: false, t: 0, ev: [] };
+  return { p: [x, y ?? groundAt(x, z), z], v: [0, 0, 0], spd: 0, dir: forwardOf(face), face, mode: 'ground', crouch: 0, stun: 0, lift: 0, boomed: false, dive: null, t: 0, ev: [] };
 }
+
+// down onto `at` at `speed`, whatever's held, until he lands (or 5 s go by)
+export const dive = (h, at, speed = BRAWL.dive.speed) => ({ ...h, mode: 'air', dive: { at: [...at], speed, t: 0 } });
 
 // The highest thing under (x, z) that isn't above `below`: the land, the
 // water (`water` true), a roof or a bridge.
@@ -166,7 +176,7 @@ function collide(h, prev, world) {
     h.p[2] += n[2] * depth;
     const into = -(h.v[0] * n[0] + h.v[2] * n[2]);
     if (into > 0) {
-      if (!hit || into > hit.into) hit = { n, into, at: [h.p[0], h.p[1] + H / 2, h.p[2]] };
+      if (!hit || into > hit.into) hit = { n, into, at: [h.p[0], h.p[1] + H / 2, h.p[2]], building: b.building ?? null, house: b.house ?? null };
       h.v[0] += n[0] * into;
       h.v[2] += n[2] * into;
     }
@@ -177,29 +187,40 @@ function collide(h, prev, world) {
 function stepAir(h, input, dt, world) {
   const [mx, my, mz, f] = wish(input, true);
   const m = len(mx, my, mz);
+  const k = input.carry ? CARRY : 1;
   let S = 0;
   let D = h.dir;
-  if (h.stun > 0) {
+  if (h.dive) {
+    // a dive: straight at the point, at its speed, nothing held counts
+    h.dive.t += dt;
+    const d = [h.dive.at[0] - h.p[0], h.dive.at[1] - h.p[1], h.dive.at[2] - h.p[2]];
+    const l = len(d[0], d[1], d[2]) || 1;
+    h.dir = [d[0] / l, d[1] / l, d[2] / l];
+    h.spd = h.dive.speed;
+    if (h.dive.t > 5) h.dive = null;
+  } else if (h.stun > 0) {
     h.stun -= dt;
     S = 0;
   } else if (input.boost) {
     D = m > 0.05 ? [mx / m, my / m, mz / m] : f;
-    S = FLY.top;
+    S = FLY.top * k;
   } else if (m > 0.05) {
     D = [mx / m, my / m, mz / m];
     const flat = Math.hypot(mx, mz);
-    S = flat < 0.05 ? (my > 0 ? FLY.climb : FLY.descend) * Math.min(1, m) : FLY.cruise * Math.min(1, m);
+    S = flat < 0.05 ? (my > 0 ? FLY.climb : FLY.descend) * Math.min(1, m) : FLY.cruise * k * Math.min(1, m);
   }
-  // just off the ground: the jump carries him up before he settles into a hover
-  if (h.lift > 0) {
-    h.lift -= dt;
-    if (S === 0) S = h.spd;
+  if (!h.dive) {
+    // just off the ground: the jump carries him up before he settles into a hover
+    if (h.lift > 0) {
+      h.lift -= dt;
+      if (S === 0) S = h.spd;
+    }
+    // the direction swings round, slower the faster he's going; from a hover, at once
+    if (h.spd < 2) h.dir = [D[0], D[1], D[2]];
+    else if (S > 0) h.dir = turn(h.dir, D, (4 - 2.6 * Math.min(1, h.spd / FLY.top)) * dt);
+    if (h.spd < S) h.spd = Math.min(S, h.spd + (input.boost ? FLY.boostAccel : FLY.accel) * dt);
+    else h.spd = Math.max(S, h.spd - (S === 0 ? FLY.stop : FLY.brake) * dt);
   }
-  // the direction swings round, slower the faster he's going; from a hover, at once
-  if (h.spd < 2) h.dir = [D[0], D[1], D[2]];
-  else if (S > 0) h.dir = turn(h.dir, D, (4 - 2.6 * Math.min(1, h.spd / FLY.top)) * dt);
-  if (h.spd < S) h.spd = Math.min(S, h.spd + (input.boost ? FLY.boostAccel : FLY.accel) * dt);
-  else h.spd = Math.max(S, h.spd - (S === 0 ? FLY.stop : FLY.brake) * dt);
   h.v = [h.dir[0] * h.spd, h.dir[1] * h.spd, h.dir[2] * h.spd];
 
   // the sound barrier
@@ -218,8 +239,9 @@ function stepAir(h, input, dt, world) {
       // a crash: thrown back off it (what was along the wall half gone), and a moment to get his bearings
       for (const a of [0, 1, 2]) h.v[a] = h.v[a] * 0.5 + hit.n[a] * hit.into * FLY.bounce;
       h.stun = FLY.stun;
-      h.ev.push({ type: 'impact', speed: hit.into, at: hit.at, n: hit.n });
-    }
+      h.dive = null;
+      h.ev.push({ type: 'impact', speed: hit.into, at: hit.at, n: hit.n, building: hit.building, house: hit.house });
+    } else if (input.carry && hit.into > BUMP) h.ev.push({ type: 'bump', speed: hit.into, at: hit.at, n: hit.n, building: hit.building, house: hit.house });
     h.spd = len(h.v[0], h.v[1], h.v[2]);
     if (h.spd > 1e-6) h.dir = [h.v[0] / h.spd, h.v[1] / h.spd, h.v[2] / h.spd];
   }
@@ -261,6 +283,7 @@ function flatten(d, face) {
 // He can't stand on the water, so where he'd land or crack the street he
 // stops dead at its surface instead, hanging there: no crater, a splash.
 function splash(h) {
+  h.dive = null;
   h.ev.push({ type: 'splash', at: [...h.p], speed: h.spd });
   h.spd = 0;
   h.v = [0, 0, 0];
@@ -268,6 +291,7 @@ function splash(h) {
 }
 
 function land(h, type) {
+  h.dive = null;
   h.ev.push({ type, at: [...h.p], speed: h.spd });
   h.mode = 'ground';
   h.crouch = type === 'slam' ? FLY.crouch : 0;
@@ -337,7 +361,7 @@ function norm(v) {
 
 // One step of `dt` seconds (any length: it's taken in slices of 1/120 s).
 export function stepHero(hero, input, dt, world) {
-  const h = { ...hero, p: [...hero.p], v: [...hero.v], dir: [...hero.dir], ev: [] };
+  const h = { ...hero, p: [...hero.p], v: [...hero.v], dir: [...hero.dir], dive: hero.dive ? { ...hero.dive } : null, ev: [] };
   const n = Math.max(1, Math.ceil(dt / STEP - 1e-9));
   const sub = dt / n;
   const press = pressOf(input);

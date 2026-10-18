@@ -31,3 +31,14 @@ describe('his hits, by force (lib/impact.js’s law)', () => {
     expect(createHits(at(0)).voice('slam', NaN)).toBeNull();
   });
 });
+
+describe('the brawl’s moves', () => {
+  it('have forces: a counter harder than a punch, a slam and a dive by how fast they land', () => {
+    const h = createHits({ now: () => 0, random: () => 0.5 });
+    expect(h.moveForce({ kind: 'counter' })).toBeGreaterThan(h.moveForce({ kind: 'punch' }));
+    expect(h.moveForce({ kind: 'slam', force: 75 })).toBe(75);
+    expect(h.moveForce({ kind: 'diveHit', force: 90 })).toBe(90);
+    expect(h.moveForce({ kind: 'pound' })).toBeGreaterThan(0);
+    expect(h.moveForce({ kind: 'nothing' })).toBe(0);
+  });
+});

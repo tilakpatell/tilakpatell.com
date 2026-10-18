@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FLY, JUMP, jumpPress, newHero, onWater, speedOf, stepHero } from './flight';
+import { CARRY, FLY, JUMP, dive, jumpPress, newHero, onWater, speedOf, stepHero } from './flight';
 import { BRIDGES, RIVER, SPAWN, WATER_Y, WORLD, buildWorld, groundAt } from './map';
 
 const W = buildWorld();
@@ -81,6 +81,28 @@ describe('hitting things', () => {
     const { h, ev } = fly(west(200), { ...still, boost: true, look: [1, 0, 0] }, 1);
     expect(h.p[0]).toBeLessThan(tower.x - tower.w / 2);
     expect(ev.filter((e) => e.type === 'impact')).toHaveLength(1);
+  });
+  it('names the tower a crash is into', () => {
+    const { ev } = fly(west(200), { ...still, boost: true, look: [1, 0, 0] }, 1);
+    expect(ev.find((e) => e.type === 'impact').building).toBe(tower.id);
+  });
+  it('carrying, he flies at 0.7 of his speeds, and a wall met over 40 m/s is a bump', () => {
+    const flat = fly(airborne(), { ...still, boost: true, look: [0, 0, -1] }, 12, 1 / 30).h;
+    const laden = fly(airborne(), { ...still, boost: true, carry: true, look: [0, 0, -1] }, 12, 1 / 30);
+    expect(speedOf(flat)).toBeCloseTo(FLY.top, 0);
+    expect(speedOf(laden.h)).toBeCloseTo(FLY.top * CARRY, 0);
+    const { ev } = fly(west(50), { ...still, fwd: 1, carry: true, look: [1, 0, 0] }, 2);
+    expect(ev.find((e) => e.type === 'bump')).toMatchObject({ building: tower.id });
+    expect(fly(west(50), { ...still, fwd: 1, look: [1, 0, 0] }, 2).ev.some((e) => e.type === 'bump')).toBe(false);
+  });
+  it('dives at 90 m/s onto a point, whatever is held, and lands on it with a slam', () => {
+    const start = { ...newHero({ x: -240, y: 150, z: -880, face: 0 }), mode: 'air' };
+    const at = [-230, groundAt(-230, -890), -890];
+    const { h, ev } = fly(dive(start, at, 90), { ...still, up: 1, fwd: 1, look: [0, 0, 1] }, 3);
+    expect(h.mode).toBe('ground');
+    expect(Math.hypot(h.p[0] - at[0], h.p[2] - at[2])).toBeLessThan(2);
+    expect(ev.find((e) => e.type === 'slam').speed).toBeCloseTo(90, 0);
+    expect(h.dive).toBe(null);
   });
   it('never goes under the ground, even diving flat out', () => {
     const start = { ...newHero({ x: -240, y: 400, z: -880, face: 0 }), mode: 'air' };

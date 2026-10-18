@@ -179,6 +179,21 @@ export function foeEvents(s, events, c) {
   }
 }
 
+// What his brawl did this frame (./brawl.js's `out`): heard, by its force
+// (./hits.js), and passed on for the scene to draw (a crater, the throw, the
+// ring of a ground pound, the counter's flash).
+export function brawlEvents(s, outs) {
+  for (const o of outs) {
+    if (o.kind === 'punch') continue; // (./foes.js says whether one lands)
+    s.events.push({ ...o, type: 'brawl', at: o.at ?? [s.h.p[0], s.h.p[1] + 1, s.h.p[2]] });
+    const force = hits.moveForce(o);
+    if (o.kind === 'grab') sfx('thunk');
+    else if (o.kind === 'throw') sfx('zip');
+    else if (o.kind === 'dive') sfx('flyby');
+    else sfxHit(o.kind === 'pound' || force > 80 ? 'crumble' : 'thunk', o.kind, force);
+  }
+}
+
 // What flying did this frame (./flight.js's `ev`): the landing fed to the
 // mission, the boom, the slam, the splash and the Moon.
 export function heroEvents(s, events, c) {

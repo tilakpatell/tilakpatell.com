@@ -38,6 +38,7 @@ import { createCourse, createMarker, loadProps } from './missionScene';
 import { createOnlineGhosts } from './onlineScene';
 import { createSpaceScene } from './spaceScene';
 import { VILLAIN_EV, villainFeel } from './villainScene';
+import { GUARD, HOLD_UP, brawlFeel } from './brawlScene';
 
 const FOV = 64;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -545,10 +546,12 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     crowd.talk = Boolean(sim.talkEve);
     sim.talkEve = false;
     crowd.foes = sim.foes ? standing(sim.foes).map((e) => ({ id: e.id, p: e.p })) : [];
+    // (a car he's carrying over their heads: they run from it as from one thrown)
+    crowd.carried = sim.brawl?.carry?.kind === 'car' ? [h.p[0], h.p[2]] : null;
     // what Eve and Dad say and do this frame, for ./InvWorld.jsx
     sim.companion ??= [];
     for (const e of sim.events) {
-      if ((e.type === 'slam' || e.type === 'impact' || e.type === 'boom') && !crowd.slam) crowd.slam = [e.at[0], e.at[2]];
+      if ((e.type === 'slam' || e.type === 'impact' || e.type === 'boom' || (e.type === 'brawl' && ['slam', 'diveHit', 'pound'].includes(e.kind))) && !crowd.slam) crowd.slam = [e.at[0], e.at[2]];
       else if ((e.type === 'ko' || e.type === 'down') && !crowd.hit) crowd.hit = [e.at[0], e.at[2]];
       else if (e.type === 'won') crowd.won = true;
       // (a fight near the road: the cars back away from it)
@@ -557,7 +560,8 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       else if (e.type === 'splash' && e.speed > 40) scare.push({ x: e.at[0], z: e.at[2], r: 15 + e.speed * 0.15 });
       else if (e.type === 'impact') scare.push({ x: e.at[0], z: e.at[2], r: 35 });
       else if (e.type === 'boom' && e.at[1] - groundAt(e.at[0], e.at[2]) < 90) scare.push({ x: e.at[0], z: e.at[2], r: 60 });
-      if (e.type === 'boom') {
+      if (e.type === 'brawl') brawlFeel(e, { fx, feel, scare });
+      else if (e.type === 'boom') {
         fx.boom(e.at, e.dir);
         feel.trauma(0.45);
         feel.punch(6);
@@ -608,6 +612,8 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       stride += flat * frameDt * 1.55;
       carry(mark, h.p, h.face, [0, 0, 0], dt, { lean: 0, lift: h.crouch > 0 ? -mark.hipHeight * 0.42 : 0 });
       if (h.crouch > 0) mark.pose(LAND, dt, 18);
+      else if (sim.brawl?.guard) mark.act('hit', { speed: 0, fade: 0.1 }) || mark.pose({ ...POSES.stand, ...GUARD }, dt, 20);
+      else if (sim.brawl?.carry) mark.pose({ ...POSES.stand, ...HOLD_UP }, dt, 16);
       else if (sim.punchT > 0) mark.pose(POSES.punch([0, 0.1, 1]), dt, 30);
       else if (flat > 4.5) mark.act('run', { speed: clamp(flat / 5.5, 0.7, 1.6) }) || mark.pose(POSES.stride(stride, 1, clamp((flat - 4) / 5, 0, 1)), dt, 14);
       else if (flat > 0.3) mark.act('walk', { speed: clamp(flat / 1.4, 0.6, 2.2) }) || mark.pose(POSES.stride(stride, clamp(flat / 2, 0, 1), 0), dt, 14);
@@ -619,8 +625,11 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       // flat out, the fly clip lies along his flight itself
       const fast = clamp((Math.hypot(...h.v) - 8) / 30, 0, 1) > 0.45 && mark.clips.includes('fly');
       const k = carry(mark, h.p, h.face, h.v, dt, { lean: 1, ahead: fast });
-      // a punch thrown hanging in the air (flat out, the fly pose's fist is already ahead)
-      if (sim.punchT > 0 && !fast) mark.pose(POSES.punch([0, 0.1, 1]), dt, 30);
+      // a punch thrown hanging in the air (flat out, the fly pose's fist is already ahead);
+      // carrying, his arms up over his head; diving, a streak behind him
+      if (h.dive && !calm) fx.vfx.trail(new THREE.Vector3(h.p[0], h.p[1] + 1, h.p[2]), { size: 1.8, life: 0.35, color: 0xfff2b0, to: 0x4a90ff, a: 0.8 });
+      if (sim.brawl?.carry) mark.pose({ ...POSES.hover(t), ...HOLD_UP }, dt, 16);
+      else if (sim.punchT > 0 && !fast) mark.pose(POSES.punch([0, 0.1, 1]), dt, 30);
       else if (k > 0.45) mark.act('fly', { fade: 0.4 }) || mark.pose(POSES.fly(), dt, 9);
       else mark.act('hover', { fade: 0.4 }) || mark.pose(POSES.hover(t), dt, 9);
     }

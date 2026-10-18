@@ -370,6 +370,10 @@ export const PAGES = {
           ['Shift', 'Flat out: past about 430 km/h the air breaks with a boom'],
           ['Drag / ← ↑ ↓ →', 'Look round'],
           ['J / F / Click', 'Punch (a little way off, he lunges)'],
+          ['Hold J / F', 'Grab a foe or a car; let go to throw it, or fly it hard into the ground'],
+          ['Space over a foe', 'From 30 m up: dive onto it (the higher, the harder)'],
+          ['Shift facing a foe', 'On the ground: block, then punch back double'],
+          ['C on the ground', 'Ground pound: floors Flaxans, staggers Maulers'],
           ['E', 'Go in at a place (Cecil, at the GDA, has a job)'],
           ['T', 'The time of day'],
           ['R', 'Take the radio’s call (a chase, a photo, Eve’s race)'],
@@ -392,7 +396,7 @@ export const PAGES = {
       },
     ],
     touch: [
-      { label: 'The city', rows: [['Stick', 'Fly (on the left)'], ['Up', 'Up'], ['Down', 'Down'], ['Boost', 'Flat out'], ['Punch', 'Punch']] },
+      { label: 'The city', rows: [['Stick', 'Fly (on the left)'], ['Up', 'Up'], ['Down', 'Down'], ['Boost', 'Flat out'], ['Punch', 'Punch; hold to grab, let go to throw']] },
       { label: 'Think, Mark!', rows: [['Stick', 'Left of the screen steers'], ['Drag', 'Right of the screen looks'], ['Tap', 'Punch'], ['Dodge', 'Dodge']] },
     ],
     tips: [

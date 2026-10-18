@@ -16,10 +16,15 @@
 // A punch (with a lunge at whoever's a little way off in front of him) or
 // flying into one fast hits it; enough hits knock it out. Their blows knock
 // him about, and enough of them put him down on the street for a moment.
+// His brawl (./brawl.js) does more, and this does it to them: one grabbed
+// rides in his hands; thrown, it flies and lands for a blow; slammed, two;
+// dived on, the dive's; a counter punch is two; his block halves what
+// lands and staggers a Mauler whose swing meets it; his ground pound's ring
+// floors the Flaxans and staggers the Maulers it passes.
 // Nothing happens until something starts it (Cecil, a mission, or the
 // city's clock for the Flaxans).
 //
-// stepFoes(state, hero, { punch, look, eveHit }, dt, { cars, hangar }) →
+// stepFoes(state, hero, { punch, power, look, eveHit, brawl, block }, dt, { cars, hangar }) →
 // { foes: state, ev, push, stun }: `push` a velocity to give him (a lunge,
 // a knock), `stun` a moment without control. `cars`: where the traffic's
 // cars are, for a Mauler to take one (`throw`'s `car` is its index there);
@@ -27,6 +32,7 @@
 // A step is never longer than a twentieth of a second, whatever `dt` says
 // (a tab hidden for a minute comes back as one step).
 
+import { BRAWL } from './brawl';
 import { FLY } from './flight';
 import { WATER_Y, groundAt, rng } from './map';
 
@@ -65,9 +71,15 @@ export const KINDS = {
 const FLAXANS = new Set(['flaxan', 'flaxanElite']);
 const kindOf = (e) => e.kind ?? 'flaxan';
 const live = (e) => e.state !== 'waiting' && e.state !== 'ko' && e.state !== 'down';
+// standing and his to hit: not in his hands, nor flying from them
+const free = (e) => live(e) && e.state !== 'held' && e.state !== 'thrown';
+// how high over the ground his pound's ring still reaches (the Flaxans hang low round him)
+const POUND_UP = 14;
+// where one he carries is: its middle a little ahead of his chest, the way he looks
+const carried = (chest, look) => [chest[0] + look[0] * 1.6, chest[1] + look[1] * 1.6 + 0.4, chest[2] + look[2] * 1.6];
 
 export function newFoes(seed = 77) {
-  return { on: false, t: 0, seed, foes: [], next: 0, gate: 0, spawned: 0, bolts: [], cars: [], carN: 0, rings: [], hp: FIGHT.hp, cool: 0, lunge: null, won: 0 };
+  return { on: false, t: 0, seed, foes: [], next: 0, gate: 0, spawned: 0, bolts: [], cars: [], carN: 0, rings: [], pounds: [], hp: FIGHT.hp, cool: 0, lunge: null, won: 0 };
 }
 
 // `n` more of a kind: Flaxans wait at the portal and come through it one at
@@ -114,7 +126,7 @@ export function pickTarget(e, hero, hangar) {
 
 // the Flaxans' invasion: a dozen through the portal
 export function startInvasion(f) {
-  return spawnFoes({ ...f, t: 0, foes: [], next: 0, spawned: 0, bolts: [], cars: [], rings: [], hp: FIGHT.hp, cool: 0, lunge: null }, 'flaxan', FIGHT.count);
+  return spawnFoes({ ...f, t: 0, foes: [], next: 0, spawned: 0, bolts: [], cars: [], rings: [], pounds: [], hp: FIGHT.hp, cool: 0, lunge: null }, 'flaxan', FIGHT.count);
 }
 
 // the portal's open while there are Flaxans to come through it or still fighting
@@ -123,6 +135,15 @@ export const portalOpen = (f) => Boolean(f.on && f.foes.some((e) => FLAXANS.has(
 export const foeAt = (f) => (f.on ? f.foes.filter(live).map(mid) : []);
 // the ones still standing themselves (Eve and the crowd want who, not just where)
 export const standing = (f) => (f.on ? f.foes.filter(live) : []);
+// what his brawl (./brawl.js) can reach: the ones standing, by their middles
+// (Doc Seismic hangs in the air: he can be dived on, not held), and the cars
+// loose in the air or in his own hands
+export function brawlThings(f) {
+  if (!f.on) return [];
+  const out = f.foes.filter(live).map((e) => ({ id: e.id, kind: kindOf(e), at: mid(e), grabbable: kindOf(e) !== 'seismic', foe: true }));
+  for (const c of f.cars ?? []) if (c.held == null || c.held === 'mark') out.push({ id: `car:${c.id}`, kind: 'car', at: [...c.p], grabbable: true, foe: false });
+  return out;
+}
 // whether a kind is still standing
 export const anyOf = (f, kind) => Boolean(f.on && f.foes.some((e) => kindOf(e) === kind && live(e)));
 
@@ -200,6 +221,7 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
     bolts: prev.bolts.map((b) => ({ ...b, p: [...b.p] })),
     cars: (prev.cars ?? []).map((c) => ({ ...c, p: [...c.p], v: [...c.v] })),
     rings: (prev.rings ?? []).map((q) => ({ ...q })),
+    pounds: (prev.pounds ?? []).map((q) => ({ ...q })),
   };
   const r = rng(f.seed + Math.floor(f.t * 10));
   f.t += dt;
@@ -212,10 +234,43 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
   const byId = (id) => f.foes.find((q) => q.id === id);
   let push = null;
   let stun = 0;
+  // (his block halves whatever lands)
   const hurt = (n, at, extra = {}) => {
-    f.hp -= n;
+    f.hp -= n * (input.block ? BRAWL.block.cut : 1);
     ev.push({ type: 'hurt', at: [...at], hp: f.hp, ...extra });
   };
+  const look = unit(input.look ?? [0, 0, -1]);
+  // the foe a brawl's out names (a number), or the car ('car:<id>')
+  const carOf = (target) => (typeof target === 'string' && target.startsWith('car:') ? f.cars.find((c) => `car:${c.id}` === target) : null);
+  // again and again, while it's standing
+  const blows = (e, n, from, extra) => {
+    for (let i = 0; i < n && live(e); i++) hitFoe(e, from, ev, extra);
+  };
+  const upright = (e) => (e.state = FLAXANS.has(kindOf(e)) ? 'fight' : kindOf(e) === 'seismic' ? 'drift' : 'approach');
+
+  // what his brawl did this step (./brawl.js)
+  for (const o of input.brawl ?? []) {
+    const e = typeof o.target === 'number' ? byId(o.target) : null;
+    const car = carOf(o.target);
+    if (o.kind === 'grab') {
+      if (e && free(e)) Object.assign(e, { state: 'held', v: [0, 0, 0] });
+      else if (car) Object.assign(car, { held: 'mark', away: false, life: 1e9 });
+    } else if (o.kind === 'throw') {
+      if (e?.state === 'held') Object.assign(e, { state: 'thrown', v: [...o.v], t: 0 });
+      else if (car?.held === 'mark') Object.assign(car, { held: null, away: true, v: [...o.v], life: 4 });
+    } else if (o.kind === 'slam') {
+      if (e?.state === 'held') {
+        upright(e);
+        blows(e, o.hits, [o.at[0], o.at[1] + 3, o.at[2]], { slam: true });
+      } else if (car?.held === 'mark') {
+        car.life = 0;
+        car.held = null;
+        car.away = true;
+      }
+    } else if (o.kind === 'diveHit') {
+      if (e && free(e) && len(sub(mid(e), o.at)) < 8) blows(e, o.hits, [o.at[0], o.at[1] + 6, o.at[2]], { dive: true });
+    } else if (o.kind === 'pound') f.pounds.push({ at: [...o.at], r: 0, to: o.r, speed: o.speed });
+  }
 
   // through the portal, one at a time
   f.gate = (f.gate ?? 0) - dt;
@@ -247,7 +302,6 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
   if (input.punch && f.cool <= 0) {
     f.cool = 0.35;
     ev.push({ type: 'punch' });
-    const look = unit(input.look ?? [0, 0, -1]);
     const car = f.cars.find((c) => c.held == null && !c.away && len(sub(c.p, chest)) <= FIGHT.reach + 1.5);
     if (car) {
       Object.assign(car, { away: true, v: look.map((c) => c * KINDS.mauler.car * 1.3), life: 3 });
@@ -255,7 +309,7 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
     } else {
       let best = null;
       for (const e of f.foes) {
-        if (!live(e)) continue;
+        if (!free(e)) continue;
         const d = sub(mid(e), chest);
         const dl = len(d);
         if (dl > FIGHT.lunge) continue;
@@ -263,10 +317,11 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
         if (dl > FIGHT.reach && cos < 0.64) continue;
         if (!best || dl < best.dl) best = { e, dl, d };
       }
-      if (best && best.dl <= FIGHT.reach) hitFoe(best.e, chest, ev, { punched: true });
+      // (a counter is two)
+      if (best && best.dl <= FIGHT.reach) blows(best.e, input.power ?? 1, chest, { punched: true });
       else if (best) {
         push = unit(best.d).map((c) => c * FIGHT.lungeSpeed);
-        f.lunge = { id: best.e.id, t: 0.4 };
+        f.lunge = { id: best.e.id, t: 0.4, power: input.power ?? 1 };
         ev.push({ type: 'lunge', id: best.e.id });
       }
     }
@@ -274,17 +329,40 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
   if (f.lunge) {
     f.lunge.t -= dt;
     const e = byId(f.lunge.id);
-    if (e && live(e) && len(sub(mid(e), chest)) <= FIGHT.reach) {
-      hitFoe(e, chest, ev, { punched: true });
+    if (e && free(e) && len(sub(mid(e), chest)) <= FIGHT.reach) {
+      blows(e, f.lunge.power ?? 1, chest, { punched: true });
       f.lunge = null;
-    } else if (!e || !live(e) || f.lunge.t <= 0) f.lunge = null;
+    } else if (!e || !free(e) || f.lunge.t <= 0) f.lunge = null;
   }
 
   const toHero = len(sub(PORTAL.p, chest));
   for (const e of f.foes) {
     const k = kindOf(e);
+    if (e.state === 'held') {
+      // in his hands, the way he looks; and its feet below that, for the heavy ones
+      const at = carried(chest, look);
+      const up = mid(e)[1] - e.p[1];
+      e.p = [at[0], at[1] - up, at[2]];
+      e.v = [...hero.v];
+      continue;
+    }
+    if (e.state === 'thrown') {
+      // out of his hands: an arc, and a blow where it comes down
+      e.t += dt;
+      e.v[1] -= 9.8 * dt;
+      for (const a of [0, 1, 2]) e.p[a] += e.v[a] * dt;
+      const floor = Math.max(groundAt(e.p[0], e.p[2]), WATER_Y);
+      if (e.p[1] <= floor || e.t > 4) {
+        e.p[1] = Math.max(e.p[1], floor);
+        const from = sub(e.p, e.v);
+        e.v = [0, 0, 0];
+        upright(e);
+        hitFoe(e, from, ev, { thrown: true });
+      }
+      continue;
+    }
     // flying into one fast (a stagger's a moment's grace: one pass, one blow)
-    if (live(e) && e.state !== 'stagger' && heroSpeed > FIGHT.ram && nearest(was, chest, mid(e)) < (k === 'mauler' ? 3 : 2.8)) {
+    if (free(e) && e.state !== 'stagger' && heroSpeed > FIGHT.ram && nearest(was, chest, mid(e)) < (k === 'mauler' ? 3 : 2.8)) {
       if (k === 'seismic') hitFoe(e, chest, ev, { rammed: true });
       else knockOut(e, chest, ev, { rammed: true });
       continue;
@@ -336,6 +414,12 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
             ev.push({ type: 'swing', id: e.id, at: mid(e), hit });
             if (hit) {
               hurt(K.swing, chest, { by: 'mauler' });
+              if (input.block) {
+                // met by his block: it's the Mauler that's off balance (./brawl.js opens a counter)
+                Object.assign(e, { state: 'stagger', t: BRAWL.block.stagger });
+                ev.push({ type: 'blocked', id: e.id, at: mid(e) });
+                continue;
+              }
               const out = unit([flat[0], 0, flat[2]]);
               push = [out[0] * knock(K.knock), 4, out[2] * knock(K.knock)];
               stun = Math.max(stun, 0.3);
@@ -439,6 +523,14 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
   // the cars: held up, then thrown straight at him; punched back, they fall
   const flying = [];
   for (const c of f.cars) {
+    if (c.held === 'mark') {
+      // in his hands, over his head
+      c.p = carried(chest, look);
+      c.p[1] += 0.8;
+      c.v = [...hero.v];
+      flying.push(c);
+      continue;
+    }
     if (c.held != null) {
       const m = byId(c.held);
       if (m && live(m) && m.state !== 'stagger') {
@@ -498,6 +590,28 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
   }
   f.rings = rings;
 
+  // his ground pound: a ring out along the ground, flooring the Flaxans it
+  // passes and staggering the Maulers (Doc Seismic is over it)
+  const pounds = [];
+  for (const q of f.pounds) {
+    q.r = Math.min(q.to, q.r + q.speed * dt);
+    q.hit = [...(q.hit ?? [])];
+    for (const e of f.foes) {
+      if (!free(e) || kindOf(e) === 'seismic' || q.hit.includes(e.id)) continue;
+      // (each once, the moment the ring's past it: the Flaxans fly faster than it spreads)
+      const d = Math.hypot(e.p[0] - q.at[0], e.p[2] - q.at[2]);
+      if (d > q.r || e.p[1] - q.at[1] > POUND_UP) continue;
+      q.hit.push(e.id);
+      if (FLAXANS.has(kindOf(e))) knockOut(e, [q.at[0], q.at[1] - 2, q.at[2]], ev, { pounded: true });
+      else {
+        Object.assign(e, { state: 'stagger', t: BRAWL.block.stagger });
+        ev.push({ type: 'pounded', id: e.id, kind: kindOf(e), at: mid(e) });
+      }
+    }
+    if (q.r < q.to) pounds.push(q);
+  }
+  f.pounds = pounds;
+
   if (f.hp <= 0) {
     // down on the street for a moment, and back up
     f.hp = FIGHT.hp;
@@ -514,6 +628,7 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
     f.bolts = [];
     f.cars = [];
     f.rings = [];
+    f.pounds = [];
     ev.push({ type: 'clear', time: f.t });
     if (flax) ev.push({ type: 'won', count: f.won, time: f.t });
   }

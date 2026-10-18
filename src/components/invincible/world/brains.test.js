@@ -42,6 +42,12 @@ describe('a passer-by', () => {
     expect(b.fear).toBeGreaterThan(0);
   });
 
+  it('runs from a car he carries over them, as from one thrown', () => {
+    let b = newBrain({ home: [0, 0], yaw: 0 });
+    b = stepBrain(b, sense({ carried: [20, 0] }), 1 / 30, seeded(1));
+    expect(b.state).toBe('flee');
+    expect(stepBrain(newBrain({ home: [0, 0], yaw: 0 }), sense({ carried: [90, 0] }), 1 / 30, seeded(1)).state).not.toBe('flee');
+  });
   it('gathers round him when he lands 10 m off: 4–8 m from him, facing him; leaves after 12 s', () => {
     let b = newBrain({ home: [0, 0], yaw: 0 });
     const s = sense({ hero: [10, 0, 0], heroMode: 'ground' });

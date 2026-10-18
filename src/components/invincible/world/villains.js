@@ -22,6 +22,9 @@ import { castMaterial } from './people';
 
 const FLAX = 0xd04dff;
 const QUAKE = 0xc9a46a; // (the dust of the school's quad)
+// the rings' colours: the quake's dust, lit; Mark's own blue for his ground pound
+const QUAKE_HOT = hot(QUAKE, 1.4);
+const POUND = hot(0x3f8cff, 1.6);
 const V = (a) => new THREE.Vector3(a[0], a[1], a[2]);
 const UP = new THREE.Vector3(0, 1, 0);
 
@@ -162,7 +165,8 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
     const f = v.f;
     const moving = Math.hypot(e.v[0], e.v[2]) > 1;
     if (e.kind === 'mauler') {
-      const clip = { swing: 'swing', throw: 'throw', stagger: 'hit', ko: 'down', down: 'down' }[e.state] ?? (moving ? 'charge' : 'idle');
+      // (in his hands, or thrown from them: the hit clip, held)
+      const clip = { swing: 'swing', throw: 'throw', stagger: 'hit', held: 'hit', thrown: 'hit', ko: 'down', down: 'down' }[e.state] ?? (moving ? 'charge' : 'idle');
       const once = clip !== 'idle' && clip !== 'charge';
       if (!f.act(clip, { once, fade: 0.15 })) f.pose(moving ? POSES.stride(t * 1.6, 1, 1) : e.state === 'swing' ? POSES.punch([0, 0.2, 1]) : POSES.stand, dt, 14);
     } else {
@@ -232,7 +236,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
           act(v, { ...e, kind, quakeT: l?.quake ?? 0, blastT: l?.blast ?? 0 }, dt, t);
         } else if (kind === 'flaxan' || kind === 'flaxanElite' || v.kit) {
           v.holder.position.set(e.p[0], e.p[1] + (v.kit ? KINDS[kind].h * 0.53 : 0), e.p[2]);
-          if (e.state === 'ko') {
+          if (e.state === 'ko' || e.state === 'thrown') {
             v.spin += dt * 9;
             v.holder.rotation.set(v.spin, v.spin * 0.6, 0);
             poseHumanoid(v.h, { t, mode: 'hover', flinch: 1 });
@@ -269,15 +273,19 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
       });
       for (let i = list.length; i < cars.length; i++) cars[i].visible = false;
 
-      // the quake rings, and the dust they throw up
-      const qs = f.rings ?? [];
+      // a thrown one's trail through the air
+      if (!calm) for (const e of f.foes) if (e.state === 'thrown') vfx.trail(V([e.p[0], e.p[1] + 1, e.p[2]]), { size: 1.6, life: 0.4, color: 0xd8d0c0, to: 0x707070, a: 0.5 });
+
+      // the quake rings, and the dust they throw up (and after them his ground pound's, in his blue)
+      const qs = [...(f.rings ?? []), ...(f.pounds ?? []).map((q) => ({ ...q, pound: true }))];
       dust += dt;
       qs.forEach((q, i) => {
         const m = ringOf(i);
         m.visible = true;
         m.position.set(q.at[0], q.at[1] + 0.25, q.at[2]);
         m.scale.setScalar(Math.max(0.1, q.r));
-        m.material.opacity = 0.85 * (1 - q.r / KINDS.seismic.ringTo);
+        m.material.opacity = 0.85 * (1 - q.r / (q.pound ? q.to : KINDS.seismic.ringTo));
+        m.material.color.set(q.pound ? POUND : QUAKE_HOT);
       });
       if (!calm && dust > 0.12 && qs.length) {
         dust = 0;

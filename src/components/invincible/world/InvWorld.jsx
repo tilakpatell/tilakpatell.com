@@ -6,8 +6,9 @@ import { useVoiced } from '../../../lib/useVoiced';
 import { sayVoiced } from '../../../lib/voiced';
 import { useAchievements } from '../../Achievements';
 import { useTravellers } from '../../middleearth/towns/useTravellers';
-import { newFoes, spawnFoes, startInvasion, stepFoes } from './foes';
-import { jumpPress, newHero, stepHero } from './flight';
+import { brawlThings, newFoes, spawnFoes, startInvasion, stepFoes } from './foes';
+import { dive, jumpPress, newHero, stepHero } from './flight';
+import { newBrawl, stepBrawl } from './brawl';
 import { impactGroups } from '../../../lib/impact';
 import { pressGroups } from '../../../lib/press';
 import { getawayAt, stepGetaway } from './getaway';
@@ -23,7 +24,7 @@ import './world.css';
 import LoadingVeil from '../../worlds/LoadingVeil';
 import { useStage, useStageFrame } from '../../avengers/shared/runtime';
 import city from './module';
-import { AT, CARD_MS, QUESTS, ROOF, STORY, TIME, foeEvents, handleOut, heroEvents, hits, questEvents, sfx } from './events';
+import { AT, CARD_MS, QUESTS, ROOF, STORY, TIME, brawlEvents, foeEvents, handleOut, heroEvents, hits, questEvents, sfx } from './events';
 import { bindInput, pointerLook, readControls } from './input';
 import { fitHud, hudFrame } from './hudDraw';
 import { ROOM, nearest, over, placeOf, seenAs } from './online';
@@ -124,7 +125,7 @@ function World({ gl, setGl, thinkMark }) {
   if (!sim.current) {
     // (he's put on the lawn for now: where he really starts waits on the
     // world, which the scene makes, and nothing moves before it's there)
-    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null };
+    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), brawl: newBrawl(), fist: false, poundPress: false, blocked: 0, cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null };
   }
 
   // (`who`, for a line someone says: in their own voice where it's been made;
@@ -454,6 +455,7 @@ function World({ gl, setGl, thinkMark }) {
   const release = useCallback(() => {
     const s = sim.current;
     s.keys.clear();
+    s.fist = false;
     s.stick = { x: 0, y: 0 };
     s.touchUp = s.touchDown = s.touchBoost = false;
     drag.current = null;
@@ -490,6 +492,10 @@ function World({ gl, setGl, thinkMark }) {
     const dt = real * a.timeScale(real);
     s.t += dt;
     const { input, look } = readControls(s, dt, { act, cycleTime });
+    // (Shift is his block on the ground facing a foe, not a run; carrying, he's slower: ./brawl.js)
+    const shift = input.boost;
+    if (s.brawl.guard) input.run = input.boost = false;
+    input.carry = Boolean(s.brawl.carry);
     s.h = s.h.zone === 'space' ? stepSpace(s.h, input, dt) : stepHero(s.h, input, dt, s.world);
     s.jump = false;
     s.free = false;
@@ -533,13 +539,27 @@ function World({ gl, setGl, thinkMark }) {
       // (in the rules' own steps: stepFoes takes at most 0.05 s a step, so the
       // dev clock's speed-up runs it several times; the punch counts once. The
       // scene says where the traffic's cars are while a Mauler's about)
+      // his brawl (./brawl.js): a tap, a hold, a throw, a slam, a dive, his block, a pound
+      const things = brawlThings(s.foes);
+      const down = h.ev.find((e) => e.type === 'slam' || e.type === 'land');
+      const wall = h.ev.find((e) => e.type === 'impact' || e.type === 'bump');
+      const br = stepBrawl(s.brawl, { fist: s.fist, punched: s.punch, up: input.jump, guard: shift, pound: s.poundPress }, { p: h.p, v: h.v, mode: h.mode, look, alt: h.p[1] - groundAt(h.p[0], h.p[2]), landed: down ? { speed: down.speed, at: down.at } : null, impact: wall ? { speed: wall.speed, at: wall.at, tower: wall.building ?? null } : null }, { things, blocked: s.blocked }, dt);
+      s.brawl = br.b;
+      const blow = br.out.find((o) => o.kind === 'punch' || o.kind === 'counter');
+      const dived = br.out.find((o) => o.kind === 'dive');
+      if (dived) s.h = dive(s.h, dived.at);
+      // (a dive comes down on where its foe is now, not where it was)
+      const prey = s.brawl.dive && s.h.dive ? things.find((q) => q.id === s.brawl.dive.target) : null;
+      if (prey) s.h.dive.at = prey.at;
+      brawlEvents(s, br.out);
       let r = { foes: s.foes, ev: [], push: null, stun: 0 };
       for (let left = dt, first = true; left > 1e-6; left -= 0.05, first = false) {
-        const q = stepFoes(r.foes, h, { punch: first && s.punch, look, eveHit: first ? s.eveHit : null }, Math.min(0.05, left), { cars: s.cars ?? [], hangar: s.guard ?? null });
+        const q = stepFoes(r.foes, h, { punch: first && Boolean(blow), power: blow?.power ?? 1, look, eveHit: first ? s.eveHit : null, brawl: first ? br.out : [], block: s.brawl.guard }, Math.min(0.05, left), { cars: s.cars ?? [], hangar: s.guard ?? null });
         r = { foes: q.foes, ev: [...r.ev, ...q.ev], push: q.push ?? r.push, stun: Math.max(r.stun ?? 0, q.stun ?? 0) };
       }
       s.foes = r.foes;
       s.eveHit = null;
+      s.blocked = r.ev.filter((e) => e.type === 'blocked').length;
       if (r.push) {
         const l = Math.hypot(...r.push) || 1;
         s.h = { ...s.h, mode: 'air', crouch: 0, v: r.push, spd: l, dir: r.push.map((c) => c / l) };
@@ -548,6 +568,7 @@ function World({ gl, setGl, thinkMark }) {
       foeEvents(s, r.ev, { say, feed, unlock, shakeOff });
     }
     s.punch = false;
+    s.poundPress = false;
     // a mission's wave (more of them every so often) and its car on the grid (./getaway.js)
     if (s.wave && s.wave.spawned < s.wave.of) {
       s.wave.t += dt;
@@ -659,7 +680,9 @@ function World({ gl, setGl, thinkMark }) {
     },
     onRelease: () => (sim.current[key] = false),
   });
-  const punch = () => (startSound(), (sim.current.punch = true));
+  // (the punch button held is the punch key held: a grab, and let go, a throw)
+  const punch = () => (startSound(), (sim.current.punch = true), (sim.current.fist = true));
+  const punchUp = () => (sim.current.fist = false);
 
   return (
     <div className="iw-stage" ref={stageBox} data-zone={zone} data-shutter={shutter ? '1' : undefined}>
@@ -682,7 +705,7 @@ function World({ gl, setGl, thinkMark }) {
       <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Over the city" />
       <MissionCard card={mcard} story={sim.current.story} onClose={closeCard} onAgain={() => startMission(mcard?.id)} onStart={startMission} onAbandon={abandon} />
 
-      <InvHud hud={hud} mapRef={mapRef} time={time} cycleTime={cycleTime} chip={chip} trav={trav} found={found} cards={CARDS.length} near={near} act={act} toast={toast} radio={radio} take={take} touch={touch} onStick={onStick} startSound={startSound} hold={hold} punch={punch} />
+      <InvHud hud={hud} mapRef={mapRef} time={time} cycleTime={cycleTime} chip={chip} trav={trav} found={found} cards={CARDS.length} near={near} act={act} toast={toast} radio={radio} take={take} touch={touch} onStick={onStick} startSound={startSound} hold={hold} punch={punch} punchUp={punchUp} />
       {shutter && <div className="iw-shutter" key={shutter} aria-hidden="true" onAnimationEnd={() => setShutter(null)} />}
 
     </div>
