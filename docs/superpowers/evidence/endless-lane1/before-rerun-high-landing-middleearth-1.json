@@ -1,0 +1,33 @@
+{
+  "tier": "high",
+  "viewport": [
+    1280,
+    720
+  ],
+  "poses": {
+    "landing-middleearth": {
+      "calls": 60,
+      "triangles": 158146,
+      "shipPx": null,
+      "frameMs": 897.5,
+      "frameMsMedian": 911.4,
+      "memory": {
+        "geometries": 409,
+        "textures": 156
+      },
+      "metrics": {
+        "colorBuckets": 121,
+        "colorEntropyBits": 4.81,
+        "edgeDensity": 0.058,
+        "luminance": {
+          "mean": 126.9,
+          "p5": 86.8,
+          "p95": 207.5,
+          "contrast": 120.7
+        },
+        "dominantColorShare": 0.174
+      },
+      "errors": []
+    }
+  }
+}

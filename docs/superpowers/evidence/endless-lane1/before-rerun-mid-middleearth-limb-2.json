@@ -1,0 +1,42 @@
+{
+  "tier": "mid",
+  "viewport": [
+    1280,
+    720
+  ],
+  "poses": {
+    "middleearth-limb": {
+      "calls": 43,
+      "triangles": 68469,
+      "shipPx": {
+        "w": 100,
+        "h": 44,
+        "box": [
+          384,
+          496,
+          485,
+          540
+        ]
+      },
+      "frameMs": 86.1,
+      "frameMsMedian": 80.4,
+      "memory": {
+        "geometries": 361,
+        "textures": 139
+      },
+      "metrics": {
+        "colorBuckets": 199,
+        "colorEntropyBits": 5.86,
+        "edgeDensity": 0.123,
+        "luminance": {
+          "mean": 71.9,
+          "p5": 22.2,
+          "p95": 141.4,
+          "contrast": 119.2
+        },
+        "dominantColorShare": 0.077
+      },
+      "errors": []
+    }
+  }
+}
