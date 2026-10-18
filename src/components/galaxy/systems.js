@@ -35,6 +35,7 @@
 
 import { fitSystem } from './fit.js'; // (with its extension: the prerender reads this file in Node)
 import { GAME_MENU } from './gameLevels.js'; // (with its extension, as above)
+import { CHARTED, CHARTED_LIFT } from './charted/index.js'; // (with its extension, as above)
 
 export const FILMS = {
   tpm: { title: 'The Phantom Menace', episode: 'I', year: -32, era: 'republic' },
@@ -1213,7 +1214,8 @@ const AS_SET = [
     },
   },
 ];
-export const SYSTEMS = AS_SET.map(fitSystem);
+// (and after the films' own, the charted worlds: charted/index.js)
+export const SYSTEMS = [...AS_SET, ...CHARTED].map(fitSystem);
 
 // The 2017 game's Heroes vs Villains and Blast on each world whose level has
 // their grounds (surface/missions/arenas.js's GROUNDS; their rows are
@@ -1286,33 +1288,35 @@ export function bearing(from, to) {
 // How far above or below the galaxy's plane each system sits, in grid
 // squares: the disc's thickness, stretched a little, and the heights picked
 // so that from every system no two others' stars sit closer than about two
-// and a half degrees in its sky (systems.test.js), so pointing at one is
-// pointing at that one.
+// and a third degrees in its sky (systems.test.js), so pointing at one is
+// pointing at that one. (Picked again, all together, when the charted
+// worlds came: twice the systems, and a search over every height at once.)
 const LIFT = {
-  tatooine: 0.65,
-  hoth: -0.8,
-  endor: -0.55,
-  yavin: 0.6,
-  alderaan: 0.65,
-  bespin: 0.1,
-  dagobah: -0.25,
-  mustafar: 0.8,
-  coruscant: 0,
-  naboo: -0.3,
-  kashyyyk: -0.65,
-  kamino: 0.3,
-  geonosis: -0.7,
-  scarif: 0,
-  nevarro: 0.9,
-  mandalore: 0.7,
-  lothal: 0.25,
-  sorgan: 0.2,
-  felucia: 0,
-  kessel: -0.6,
-  sullust: 0.75,
-  pillio: 0.3,
-  vardos: -0.45,
-  fondor: -0.9,
+  tatooine: 0.98,
+  hoth: -0.98,
+  endor: -0.85,
+  yavin: 0.98,
+  alderaan: 0.98,
+  bespin: -0.51,
+  dagobah: -0.29,
+  mustafar: 0.91,
+  coruscant: -0.98,
+  naboo: -0.98,
+  kashyyyk: -0.75,
+  kamino: -0.05,
+  geonosis: -0.69,
+  scarif: 0.65,
+  nevarro: 0.98,
+  mandalore: -0.2,
+  lothal: -0.21,
+  sorgan: 0.77,
+  felucia: 0.85,
+  kessel: -0.87,
+  sullust: 0.53,
+  pillio: 0.37,
+  vardos: -0.38,
+  fondor: -0.98,
+  ...CHARTED_LIFT,
 };
 export const liftOf = (s) => LIFT[s.id] ?? 0;
 
