@@ -14,12 +14,20 @@
 //
 // Pure: runs in Node and in the flight's terrain worker.
 //
+// A round spec (spec.round) is flown as a plane too: (x, z) are metres along
+// the sphere from the landing spot, read through the exponential-map chart
+// (sphere.js) into sphereField, built once. No step, pits or POI levelling
+// here: the orbit map reads the same numbers bit for bit.
+//
 //   planetField(spec) → { heightAt(x, z) → metres, biomeAt(x, z) → index of the heaviest }
+//   fieldKey(spec) → string: what tells two cached fields apart (id, plus the spot on a round planet)
 
 import { fieldAt } from '../layers.js';
 import { flatten } from '../flats.js';
 import { biomeWeights } from './biomes.js';
 import { noiseFor } from './fnl.js';
+import { chartOf } from './sphere.js';
+import { sphereField } from './sphereField.js';
 
 function stackOf(spec, b, i) {
   const seed = spec.seed + i * 101;
@@ -32,7 +40,19 @@ function stackOf(spec, b, i) {
   };
 }
 
+export function fieldKey(spec) {
+  return spec.round ? `${spec.id}@${spec.round.at.join(',')}` : spec.id;
+}
+
 export function planetField(spec) {
+  if (spec.round) {
+    const chart = chartOf(spec.round.at, spec.round.radius);
+    const sphere = sphereField(spec);
+    return {
+      heightAt: (x, z) => sphere.heightAt(chart.toDir(x, z)),
+      biomeAt: (x, z) => sphere.biomeAt(chart.toDir(x, z)),
+    };
+  }
   const stacks = spec.biomes.map((b, i) => stackOf(spec, b, i));
   const raw = (x, z) => {
     const w = biomeWeights(spec, x, z);
