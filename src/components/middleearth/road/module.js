@@ -14,7 +14,7 @@
 // save past the first stage is there to carry on from (the ride waits for
 // the answer), 'menu' {} and 'lore' {} on their keys, 'end' {} at the Havens.
 // The world adds: goTo(stageId), setAuto(on), press(name, down) (the touch
-// buttons), carryOn(), restart(), skipToEnd(); and set(s), `s` for the checks.
+// buttons), carryOn(), restart(), skipToEnd(); and set(s), `s`, `scene` for the checks.
 // In development, window.__ROAD__ = { set(s), info(), world }.
 
 import * as THREE from 'three';
@@ -271,6 +271,7 @@ export default {
         (f?.renderer ?? rt.gfx.renderer).render(scene, camera);
       },
       wants: () => true,
+      scene,
       anchor: () => camera.position.toArray(),
       lowerQuality() {},
       update() {},
