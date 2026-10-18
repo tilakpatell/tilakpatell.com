@@ -19,7 +19,7 @@ export async function installPlayer(page) {
 }
 
 // One episode, start to finish; resolves with what the season kept.
-export async function play(page, ep, { budget = 12 * 60 * 1000 } = {}) {
+export async function play(page, ep, { budget = 30 * 60 * 1000 } = {}) {
   return page.evaluate(({ ep, budget }) => window.__INV_PLAY__.run(ep, budget), { ep, budget });
 }
 
