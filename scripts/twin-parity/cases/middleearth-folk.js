@@ -1,12 +1,13 @@
 // The host of Rohan: ../../../src/components/middleearth/towns/edoras/
 // folkShaders.js against its twin, nodes/towns/edoras/folkShaders.js. The
-// kit (folk.js) builds the host on both sides; on the node side its host,
-// banner and flag materials are swapped for the twin's, made on the kit's
-// own uniforms. A few dozen Riders instanced in a column, some with
+// kit (folk.js) builds the host on both sides; on each side its host,
+// banner and flag materials are that side's, made on the kit's own
+// uniforms. A few dozen Riders instanced in a column, some with
 // banners, galloping a little way into their stride and standing; a lone
 // Rider (not instanced: one seed for all) and a banner on its pole, waving.
 import * as THREE from 'three';
 import { createEdorasFolk } from '../../../src/components/middleearth/towns/edoras/folk.js';
+import * as GF from '../../../src/components/middleearth/towns/edoras/folkShaders.js';
 import * as TF from '../../../src/components/middleearth/nodes/towns/edoras/folkShaders.js';
 
 const host =
@@ -14,19 +15,15 @@ const host =
   ({ scene, camera, renderer }) => {
     const folk = createEdorasFolk(renderer);
     const kit = folk.host();
-    let mats = {
-      host: kit.material,
-      banner: kit.banner.material,
-      flag: folk.mats.flag,
+    // (each side's materials made on the kit's own uniforms: since the flip
+    // the kit itself makes the twin's)
+    const u = kit.material.userData.uniforms;
+    const S = twin ? TF : GF;
+    const mats = {
+      host: S.hostMaterial(u),
+      banner: S.bannerMaterial(u, true),
+      flag: S.bannerMaterial(u, false),
     };
-    if (twin) {
-      const u = kit.material.userData.uniforms;
-      mats = {
-        host: TF.hostMaterial(u),
-        banner: TF.bannerMaterial(u, true),
-        flag: TF.bannerMaterial(u, false),
-      };
-    }
     scene.background = new THREE.Color(0x8aa4c0);
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x6a7a44, roughness: 0.95 }));
     scene.add(ground);

@@ -58,6 +58,19 @@ describe('a Middle-earth stage on the node renderer', () => {
     expect(w.drawn).toEqual(['draw']);
   });
 
+  it('glows as UnrealBloomPass did: its strength three times over, the panel’s writes reaching the chain', () => {
+    const w = (world.current = fakeWorld());
+    const s = createStage({}, { soft: false, bloom: { strength: 0.25, radius: 0.4, threshold: 1 } });
+    expect(w.built[0].passes[1].strength).toBeCloseTo(0.75);
+    const bloom = { strength: { value: 0.75 }, radius: { value: 0.4 }, threshold: { value: 1 } };
+    w.built[0].parts = { bloom };
+    s.bloomPass.strength = 0.5;
+    s.bloomPass.radius = 0.6;
+    expect(s.bloomPass.strength).toBe(0.5);
+    expect(bloom.strength.value).toBeCloseTo(1.5);
+    expect(bloom.radius.value).toBe(0.6);
+  });
+
   it('draws a soft stage straight to its view, and takes the bloom out on its rung', () => {
     const w = (world.current = fakeWorld());
     const soft = createStage({}, { soft: true });

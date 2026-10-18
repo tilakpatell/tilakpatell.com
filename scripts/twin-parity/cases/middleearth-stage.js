@@ -7,7 +7,10 @@
 // at 0 (a noise a pixel, the same nowhere).
 import * as THREE from 'three';
 import { RenderPipeline } from 'three/webgpu';
-import { pass } from 'three/tsl';
+import { convertToTexture as convert, pass } from 'three/tsl';
+import { bloom } from 'three/addons/tsl/display/BloomNode.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { BLOOM } from '../../../src/lib/three/bloom.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
@@ -26,7 +29,12 @@ const LOOKS = {
   },
 };
 
-const fill = (scene, camera) => {
+const fill = (scene, camera, glow = false) => {
+  if (glow) {
+    const w = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 2.2), new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 3.2, 2) }));
+    w.position.set(2.2, 1.6, -1);
+    scene.add(w);
+  }
   scene.background = new THREE.Color(0x101820);
   const colours = [0x202020, 0x7a2408, 0x3a7a2c, 0x5c86c8, 0xf0e0c0];
   colours.forEach((c, i) => {
@@ -61,33 +69,41 @@ const tone = (r) => {
 };
 
 const node =
-  (look) =>
+  (look, glow = false, bloomOn = glow) =>
   ({ scene, camera, renderer }) => {
-    fill(scene, camera);
+    fill(scene, camera, glow);
     const u = gradeUniforms();
     set(u, LOOKS[look], (x) => x.value);
     const pipeline = new RenderPipeline(renderer);
     pipeline.outputColorTransform = false;
-    pipeline.outputNode = gradeNode(u)(pass(scene, camera).getTextureNode());
+    const picture = pass(scene, camera).getTextureNode();
+    // (three times the strength, as the stage hands it over: UnrealBloomPass glows 3 × its own)
+    const lit = bloomOn ? picture.add(bloom(picture, BLOOM.strength * 3, BLOOM.radius, BLOOM.threshold)) : picture;
+    pipeline.outputNode = gradeNode(u)(convert(lit));
     return { render: () => (tone(renderer), pipeline.render()) };
   };
 const classic =
-  (look) =>
+  (look, glow = false, bloomOn = glow) =>
   ({ scene, camera, renderer }) => {
-    fill(scene, camera);
+    fill(scene, camera, glow);
     const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(256, 256, { type: THREE.HalfFloatType }));
     composer.addPass(new RenderPass(scene, camera));
+    const b = bloomOn ? new UnrealBloomPass(new THREE.Vector2(128, 128), BLOOM.strength, BLOOM.radius, BLOOM.threshold) : null;
+    if (b) composer.addPass(b);
     composer.addPass(new OutputPass());
     const g = new ShaderPass(GRADE);
     set(g.uniforms, LOOKS[look], (x) => x.value);
     composer.addPass(g);
+    // (sized as a stage sizes it: the picture's, the bloom at half)
+    composer.setSize(256, 256);
+    b?.resolution.set(128, 128);
     return { render: () => (tone(renderer), composer.render()) };
   };
 
 export default {
   'middleearth:stage:grade': { node: node('plain'), classic: classic('plain') },
-  'middleearth:stage:grade:mordor': {
-    node: node('mordor'),
-    classic: classic('mordor'),
-  },
+  'middleearth:stage:grade:mordor': { node: node('mordor'), classic: classic('mordor') },
+  // (a lit window over white, as Rivendell’s: the house bloom on each side)
+  'middleearth:stage:bloom': { node: node('plain', true), classic: classic('plain', true) },
+  'middleearth:stage:bright': { node: node('plain', true, false), classic: classic('plain', true, false) },
 };

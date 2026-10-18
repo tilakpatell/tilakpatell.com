@@ -97,6 +97,10 @@ export function buildLitPost(renderer, passes) {
     get passes() {
       return passes;
     },
+    // (the built chain's parts, its bloom for a world's own controls: none till ready)
+    get parts() {
+      return chain?.parts ?? null;
+    },
     render: () => chain?.pipeline.render(),
     setSize: () => {},
     compile: () => settle(ready, 4000),

@@ -14,6 +14,10 @@
 //   pass reads the renderer's drawing-buffer size, which the view says), so
 //   the stage's sharpness (`scale`) is the view's ratio, the canvas's and
 //   the buffers' at once.
+// - UnrealBloomPass's composite glows three times its strength (three's
+//   UnrealBloomPass.js, `3.0 * bloomStrength`), three's TSL bloom the
+//   strength alone, so the strength is handed over three times over (the
+//   galaxy surface's UNREAL, the same three).
 // - The bloom's rung builds the chain again without it (the node chain is
 //   built once, its passes fixed).
 // - The shaders are compiled and the pictures uploaded by the runtime's
@@ -30,6 +34,9 @@ import { disposeTree, gradeNode, gradeUniforms, stageRatio, stageSizing, stageTu
 import { engineNow } from '../module';
 
 export { canvasTexture, disposeTree, hot } from '../../../lib/three/stage3dNodes';
+
+// (UnrealBloomPass's three to the TSL bloom's one: the header's)
+const UNREAL = 3;
 
 // the ladder lib/stage3d's watchdog climbed, a rung a quality level
 export const LADDER = ['full', 'ratio', 'shadows', 'bloom', 'low'];
@@ -69,11 +76,22 @@ export function createStage(canvas, { soft = false, bloom = BLOOM, exposure = LO
 
   // the scene, then bloom, then the tone map and the grade: the node chain
   const u = gradeUniforms();
-  const bloomPass = {
-    strength: bloom.strength,
-    radius: bloom.radius,
-    threshold: bloom.threshold,
-  };
+  // (the classic numbers, written through to the chain's bloom when it is
+  // built: the tuning panel's sliders move the glow as they did)
+  const numbers = { strength: bloom.strength, radius: bloom.radius, threshold: bloom.threshold };
+  const live = () => post?.parts?.bloom ?? null;
+  const bloomPass = {};
+  for (const k of Object.keys(numbers)) {
+    Object.defineProperty(bloomPass, k, {
+      enumerable: true,
+      get: () => numbers[k],
+      set: (v) => {
+        numbers[k] = v;
+        const b = live();
+        if (b) b[k].value = k === 'strength' ? v * UNREAL : v;
+      },
+    });
+  }
   let useBloom = !soft;
   let level = soft ? LADDER.indexOf('bloom') : 0;
   let post = null;
@@ -85,7 +103,7 @@ export function createStage(canvas, { soft = false, bloom = BLOOM, exposure = LO
           { kind: 'render', scene, camera },
           {
             kind: 'bloom',
-            strength: bloomPass.strength,
+            strength: bloomPass.strength * UNREAL,
             radius: bloomPass.radius,
             threshold: bloomPass.threshold,
             enabled: useBloom,

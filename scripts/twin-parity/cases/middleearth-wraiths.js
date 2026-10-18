@@ -1,32 +1,36 @@
 // The Nazgûl: ../../../src/components/middleearth/towns/wraithsShaders.js
 // against its twin, nodes/towns/wraithsShaders.js. The kit (wraiths.js)
-// builds the same Nazgûl on both sides; on the node side its materials are
-// swapped for the twin's, made on the kit's own uniforms, and the night the
-// steel sees prefiltered by the node renderer. (The kit is built on a
-// classic renderer of its own there: its night is the GLSL's, and isn't
-// drawn.) Two Nazgûl in the wind, one hunting with its sword up, by night,
-// through the Ring half on and fully on.
+// builds the same Nazgûl on both sides, its materials the twin's since the
+// flip; on the classic side they are swapped for the GLSL's, made on the
+// kit's own uniforms, and the night the steel sees prefiltered by the
+// classic renderer. (The kit is built on a node renderer of its own there:
+// its night is the twin's, and isn't drawn.) Two Nazgûl in the wind, one
+// hunting with its sword up, by night, through the Ring half on and fully on.
 import * as THREE from 'three';
+import { WebGPURenderer } from 'three/webgpu';
 import { createWraithKit } from '../../../src/components/middleearth/towns/wraiths.js';
-import * as TW from '../../../src/components/middleearth/nodes/towns/wraithsShaders.js';
+import * as GW from '../../../src/components/middleearth/towns/wraithsShaders.js';
 
 let builder = null;
 
 const nazgul =
   (twin, ring) =>
-  ({ scene, camera, renderer, sun }) => {
-    builder ??= twin ? new THREE.WebGLRenderer() : null;
-    const kit = createWraithKit(twin ? builder : renderer);
+  async ({ scene, camera, renderer, sun }) => {
+    if (!twin && !builder) {
+      builder = new WebGPURenderer({ canvas: document.createElement('canvas'), forceWebGL: true });
+      await builder.init();
+    }
+    const kit = createWraithKit(twin ? renderer : builder);
     let setRing = kit.setRing;
     let swap = null;
-    if (twin) {
-      const t = TW.wraithMaterials(kit.uniforms, {
+    if (!twin) {
+      const g = GW.wraithMaterials(kit.uniforms, {
         weave: kit.mats.cloth.map,
         weaveN: kit.mats.cloth.normalMap,
-        env: TW.nightEnv(renderer),
+        env: GW.nightEnv(renderer),
       });
-      setRing = t.setRing;
-      swap = new Map(Object.keys(kit.mats).map((k) => [kit.mats[k], t.mats[k]]));
+      setRing = g.setRing;
+      swap = new Map(Object.keys(kit.mats).map((k) => [kit.mats[k], g.mats[k]]));
     }
     scene.background = new THREE.Color(0x0c1018);
     sun.intensity = 1.2;

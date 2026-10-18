@@ -32,7 +32,7 @@ vi.mock('../lib/settle', () => ({ settle: (p) => p }));
 const built = [];
 vi.mock('../lib/three/light/passes.js', () => ({
   buildChain: vi.fn(async (renderer, passes) => {
-    const chain = { pipeline: { render: vi.fn() }, dispose: vi.fn(), passes };
+    const chain = { pipeline: { render: vi.fn() }, dispose: vi.fn(), passes, parts: { scenePass: null, bloom: null } };
     built.push(chain);
     return chain;
   }),
@@ -175,6 +175,7 @@ describe('buildPostProcessing', () => {
     await post.ready;
     const chain = built.at(-1);
     expect(chain.passes).toBe(passes);
+    expect(post.parts).toBe(chain.parts);
     post.render();
     expect(chain.pipeline.render).toHaveBeenCalledTimes(1);
     post.dispose();
