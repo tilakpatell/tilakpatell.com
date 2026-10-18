@@ -15,6 +15,8 @@
 // mesh or two however many joints it has.
 
 import * as THREE from 'three';
+// (the node renderer's: the classic one's passes are GLSL)
+import { PMREMGenerator } from 'three/webgpu';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
 import { canvasTexture, hot } from '../../../../lib/three/stage3dNodes';
@@ -530,7 +532,7 @@ function envFrom(renderer, low, high, lamps) {
     m.lookAt(0, 0, 0);
     room.add(m);
   }
-  const pmrem = new THREE.PMREMGenerator(renderer);
+  const pmrem = new PMREMGenerator(renderer);
   const env = pmrem.fromScene(room, 0.04).texture;
   pmrem.dispose();
   room.traverse((o) => {

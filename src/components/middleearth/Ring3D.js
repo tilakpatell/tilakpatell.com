@@ -11,6 +11,8 @@
 // a small lit room rendered once into an environment map.
 
 import * as THREE from 'three';
+// (the node renderer's: the classic one's passes are GLSL)
+import { PMREMGenerator } from 'three/webgpu';
 import { createStage, canvasTexture, hot } from './nodes/stage';
 import { sharpen } from '../../lib/three/textures';
 import { fbm, makeCanvas, makeNoise } from '../../lib/paint';
@@ -130,7 +132,7 @@ function environment(renderer) {
   glow(0xffb36b, 1.2, 10, 1.6, [0, 2.5, -9], [0, 0, 0]); // a warm strip behind
   glow(0xfff1dc, 3.5, 6, 3, [5, -1, 8], [0, 0, 0]); // a fill, low front right
   glow(0xffe2b8, 2.5, 6, 3, [-6, -2, 7], [0, 0, 0]); // and low front left
-  const pmrem = new THREE.PMREMGenerator(renderer);
+  const pmrem = new PMREMGenerator(renderer);
   const env = pmrem.fromScene(room, 0.02).texture;
   pmrem.dispose();
   room.traverse((o) => {

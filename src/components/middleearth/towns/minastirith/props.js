@@ -20,6 +20,8 @@
 // brighter than 1, so the bloom takes it.
 
 import * as THREE from 'three';
+// (the node renderer's: the classic one's passes are GLSL)
+import { PMREMGenerator } from 'three/webgpu';
 import { canvasTexture, hot } from '../../../../lib/three/stage3dNodes';
 import { clamp01, fbm, makeCanvas, makeCells, makeNoise, mix, normalFromField, paintPixels, ridge, smooth } from '../../../../lib/paint';
 import { blob, lathe, parts, rng, tube } from '../../shire/props';
@@ -977,7 +979,7 @@ function envRoom(renderer, low, high, lamps) {
     m.lookAt(0, 0, 0);
     room.add(m);
   }
-  const pmrem = new THREE.PMREMGenerator(renderer);
+  const pmrem = new PMREMGenerator(renderer);
   const env = pmrem.fromScene(room, 0.04).texture;
   pmrem.dispose();
   room.traverse((o) => {
