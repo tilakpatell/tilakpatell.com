@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { biomeWeights } from './biomes';
+import { biomeWeights, climateOf, weightsAt } from './biomes';
 import { planetSpecOf } from './planetSpec';
 
 describe('biomeWeights', () => {
@@ -26,5 +26,13 @@ describe('biomeWeights', () => {
       seen.add(w.indexOf(Math.max(...w)));
     }
     expect(seen.size).toBe(hoth.biomes.length);
+  });
+
+  it('weightsAt is biomeWeights given the climate', () => {
+    for (let i = 0; i < 20; i++) {
+      const x = Math.sin(i * 12.9898) * 40000;
+      const z = Math.cos(i * 78.233) * 40000;
+      expect(biomeWeights(hoth, x, z)).toEqual(weightsAt(hoth.biomes, ...climateOf(hoth)(x, z)));
+    }
   });
 });

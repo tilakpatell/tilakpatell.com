@@ -3,9 +3,17 @@
 // uniform on the unit sphere (Archimedes: equal heights of a sphere's band
 // hold equal areas).
 //
+// roundSpec is a round planet's spec put together by hand, before anything
+// generates one: what sphereField reads, with one POI. Its `sea` and `peaks`
+// are the middle of the character's ranges unless asked.
+//
 //   randomDirs(n, seed) → n unit [x, y, z] arrays
+//   roundSpec({ type = 'rock', kind = 'craters', seed = 7, radius = 20000, sea, peaks }) → spec
 
 import { seeded } from '../../../seeded.js';
+import { TERRAIN } from '../characters.js';
+import { roundBiomes } from '../planetTables.js';
+import { dirOfLatLon } from '../sphere.js';
 
 export function randomDirs(n, seed) {
   const r = seeded(seed);
@@ -15,4 +23,20 @@ export function randomDirs(n, seed) {
     const s = Math.sqrt(1 - z * z);
     return [s * Math.cos(a), s * Math.sin(a), z];
   });
+}
+
+const mid = ([a, b]) => (a + b) / 2;
+
+export function roundSpec({ type = 'rock', kind = 'craters', seed = 7, radius = 20000, sea, peaks } = {}) {
+  return {
+    id: `round-${type}-${kind}-${seed}`,
+    seed,
+    type,
+    biomes: roundBiomes(type),
+    character: { kind, sea: sea ?? mid(TERRAIN[kind].sea), peaks: peaks ?? mid(TERRAIN[kind].peaks) },
+    round: { radius, at: dirOfLatLon(0, 0) },
+    water: type === 'ocean' || type === 'forest' ? { kind: 'sea', level: 0 } : null,
+    // (its `at` is the chart's business, and sphereField doesn't read it)
+    pois: [{ id: 'poi-0', name: 'Ruins', kind: 'ruins', dir: dirOfLatLon(5, 10), at: [0, 0], r: 120, edge: 100 }],
+  };
 }

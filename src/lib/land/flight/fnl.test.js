@@ -59,6 +59,32 @@ describe('noise3For', () => {
     }
   });
 
+  // 1.1.1's 3D OpenSimplex2 picks one of two lattice points where both are in
+  // reach, and its transform makes every octave tie at once on six planes
+  // through the origin: a generated planet's ground stepped up to 13 m along
+  // six great circles. Points a millimetre either side of each plane, round
+  // a 20 km circle in it, at a ground layer's frequency.
+  it('is continuous across the planes where 3D OpenSimplex2 stepped', () => {
+    const n = noise3For(7, { frequency: 1 / 1600, octaves: 5 });
+    const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    const len = (v) => Math.hypot(v[0], v[1], v[2]);
+    for (const plane of [[1, -1, 0], [1, 0, -1], [0, 1, -1], [1, 1, 4], [1, 4, 1], [4, 1, 1]]) {
+      const nrm = plane.map((c) => c / len(plane));
+      const u0 = cross(nrm, Math.abs(nrm[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]);
+      const u = u0.map((c) => c / len(u0));
+      const w = cross(nrm, u);
+      let worst = 0;
+      for (let k = 0; k < 500; k++) {
+        const t = (k / 500) * 2 * Math.PI;
+        const p = [0, 1, 2].map((c) => (u[c] * Math.cos(t) + w[c] * Math.sin(t)) * 20000);
+        const a = p.map((c, i) => c + nrm[i] * 0.0005);
+        const b = p.map((c, i) => c - nrm[i] * 0.0005);
+        worst = Math.max(worst, Math.abs(n(a[0], a[1], a[2]) - n(b[0], b[1], b[2])));
+      }
+      expect(worst, `across the plane ⟂ [${plane}]`).toBeLessThan(1e-3);
+    }
+  });
+
   it('warps in 3D', () => {
     // not (100, 100, 100): a lattice point of the noise and of the warp's
     // own, where OpenSimplex2 reads 0 warped or not

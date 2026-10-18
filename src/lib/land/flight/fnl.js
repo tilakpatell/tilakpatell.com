@@ -8,7 +8,7 @@
 // Pure: runs in Node and in the flight's terrain worker.
 //
 //   noiseFor(seed, { type, frequency, octaves, lacunarity, gain, fractal, warp }) → (x, z) → −1…1
-//   noise3For(seed, the same options) → (x, y, z) → −1…1
+//   noise3For(seed, the same options) → (x, y, z) → −1…1   ('simplex' is OpenSimplex2S in 3D)
 //   cells3For(seed, { frequency, jitter = 1 }) → (x, y, z) → distance to the nearest cell point, ≥ 0
 //   fold(seed: bigint | number) → int32
 
@@ -28,10 +28,16 @@ const FRACTALS = {
   pingpong: FastNoiseLite.FractalType.PingPong,
   none: FastNoiseLite.FractalType.None,
 };
+// In 3D, 'simplex' is OpenSimplex2S. 1.1.1's 3D OpenSimplex2 adds one of two
+// lattice points where both are in reach, so its value steps where the pick
+// flips, and its transform makes every octave flip at once on six planes
+// through the origin: a generated planet's ground stepped up to 13 m along
+// six great circles. 2D keeps OpenSimplex2, which the roster is drawn with.
+const TYPES3 = { ...TYPES, simplex: FastNoiseLite.NoiseType.OpenSimplex2S };
 
-const make = (seed, type, frequency, fractal, octaves, lacunarity, gain) => {
+const make = (seed, type, frequency, fractal, octaves, lacunarity, gain, types = TYPES) => {
   const n = new FastNoiseLite(seed);
-  n.SetNoiseType(TYPES[type]);
+  n.SetNoiseType(types[type]);
   n.SetFrequency(frequency);
   n.SetFractalType(FRACTALS[fractal]);
   n.SetFractalOctaves(octaves);
@@ -57,11 +63,11 @@ export function noiseFor(seed, { type = 'simplex', frequency = 0.01, octaves = 4
 // three. The 3D warp is noiseFor's made the same way, a third noise for y.
 export function noise3For(seed, { type = 'simplex', frequency = 0.01, octaves = 4, lacunarity = 2, gain = 0.5, fractal = 'fbm', warp = 0 } = {}) {
   const s = fold(seed);
-  const n = make(s, type, frequency, fractal, octaves, lacunarity, gain);
+  const n = make(s, type, frequency, fractal, octaves, lacunarity, gain, TYPES3);
   if (!warp) return (x, y, z) => n.GetNoise(x, y, z);
-  const wx = make(s ^ 0x5bd1e995, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5);
-  const wy = make(s ^ 0x165667b1, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5);
-  const wz = make(s ^ 0x27d4eb2f, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5);
+  const wx = make(s ^ 0x5bd1e995, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5, TYPES3);
+  const wy = make(s ^ 0x165667b1, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5, TYPES3);
+  const wz = make(s ^ 0x27d4eb2f, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5, TYPES3);
   return (x, y, z) => n.GetNoise(x + wx.GetNoise(x, y, z) * warp, y + wy.GetNoise(x, y, z) * warp, z + wz.GetNoise(x, y, z) * warp);
 }
 
