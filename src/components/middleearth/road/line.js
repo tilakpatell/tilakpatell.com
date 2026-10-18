@@ -8,6 +8,7 @@
 //   sOf(stages, id, local = 0) → s
 //   roadOf(points, step = 1) → { length, pointAt(m) → { x, y, z, tangent } }
 //   endOf(road) → { at: [x, y, z], heading }          (heading: yaw from +z)
+//   markAt(stages, s) → 0…1: the walkers’ mark on the ribbon, between its evenly spaced dots
 //
 // Stages are chained end to start with OVERLAP metres of the next built
 // past the seam, so a seam is never in view.
@@ -81,4 +82,10 @@ export function roadOf(points, step = 1) {
 export function endOf(road) {
   const e = road.pointAt(road.length);
   return { at: [e.x, e.y, e.z], heading: Math.atan2(e.tangent[0], e.tangent[2]) };
+}
+
+export function markAt(stages, s) {
+  const here = at(stages, s);
+  const len = stages[here.index].length;
+  return Math.min(1, (here.index + Math.min(1, here.local / len)) / (stages.length - 1));
 }
