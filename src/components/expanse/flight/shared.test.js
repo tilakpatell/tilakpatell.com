@@ -248,3 +248,33 @@ describe('the other pilots', () => {
     expect(w.online.left).toBe(true);
   });
 });
+
+describe('a world nothing may be built on', () => {
+  const generated = { id: 'e:3,-2:0:1', pois: [], buildable: false };
+
+  it('says so, and places nothing, kept or not', async () => {
+    const w = world({ spec: generated });
+    await flush();
+    w.shared.step(0.016, low(), snap(['KeyB']));
+    await flush();
+    expect(w.loader.placed).toHaveLength(0);
+    expect(w.toasts()).toEqual(['Nothing can be built on this world.']);
+    expect(w.draw.structures.size).toBe(0);
+  });
+
+  it('never reaches the durable world: no loader, nothing held', async () => {
+    const w = world({ spec: generated });
+    await flush();
+    w.shared.step(0.016, low(), snap());
+    expect(w.loader.updates).toBe(0);
+    expect(w.shared.prompt(low())).toMatchObject({ build: false, unbuild: false, kept: false });
+    expect(w.shared.built()).toEqual([]);
+  });
+
+  it('keeps the room: shots still go out', async () => {
+    const w = world({ spec: generated });
+    await flush();
+    w.shared.step(0.016, low(), snap([], ['fire']));
+    expect(w.online.sent.some(([t]) => t === 'shot')).toBe(true);
+  });
+});

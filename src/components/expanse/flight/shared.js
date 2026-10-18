@@ -60,7 +60,11 @@ export function createSharedWorld({
   signIn = durableSignIn,
 }) {
   const planetId = spec.id;
-  const db = durable === undefined ? (devDurable() ?? durableClient()) : durable;
+  // (building is for the 50 roster planets alone: on any other world there is
+  // no database client at all, so no sign-in and no read or write, and the
+  // room carries on as before. A spec with no `buildable` key is as it was.)
+  const readOnly = spec.buildable === false;
+  const db = readOnly ? null : durable === undefined ? (devDurable() ?? durableClient()) : durable;
   const loader = db ? makeLoader({ client: db, planetId }) : null;
   const local = new Map(); // id → entity: this visit's own, with no durable layer
   const structures = makeStructures(parent, palette);
@@ -130,6 +134,8 @@ export function createSharedWorld({
 
   async function build(ship) {
     if (busy) return;
+    // (not even a turret of this visit's own)
+    if (readOnly) return toast('Nothing can be built on this world.');
     const ground = groundAt(ship.x, ship.z);
     // (a soft world's ground is cloud: the flight flies through it, nothing stands on it)
     if (spec.soft) return toast('Nothing stands on a cloud deck.');
@@ -218,7 +224,7 @@ export function createSharedWorld({
   // what the HUD shows: the prompt (B, or X by one of yours), the shield, who's near
   function prompt(ship) {
     const can = canBuild(ship, groundAt(ship.x, ship.z), spec.pois);
-    return { build: can.ok && !spec.soft, unbuild: Boolean(nearestOwn(all(), ship, owner)), shield: Math.round(shield), others: online?.peers().length ?? 0, kept: Boolean(db) };
+    return { build: can.ok && !spec.soft && !readOnly, unbuild: Boolean(nearestOwn(all(), ship, owner)), shield: Math.round(shield), others: online?.peers().length ?? 0, kept: Boolean(db) };
   }
 
   return {
