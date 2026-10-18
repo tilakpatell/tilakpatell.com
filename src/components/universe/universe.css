@@ -4,7 +4,28 @@
 /* The flat map: Home's teaser and the 3D-off map */
 .minimap { position: relative; width: 100%; aspect-ratio: 2 / 1; }
 .minimap-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.minimap-orbit { fill: none; stroke: var(--border); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.minimap-stem { stroke: rgb(159 216 255 / 0.45); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.minimap-stem[data-dir='down'] { stroke-dasharray: 2 3; }
+.minimap-ship { fill: #fff; filter: drop-shadow(0 0 3px #9fd8ff); }
+/* the wonders and moons are dots like the rest, a little quieter than the worlds */
+.minimap-planet[data-kind='wonder'] { opacity: 0.8; }
+.minimap-item[data-quiet] .minimap-name { display: none; }
+.minimap[data-interactive] { touch-action: none; }
+.minimap-tools {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgb(3 4 10 / 0.82); /* glass over the map, past the 0.78 floor for text */
+}
+.minimap-tools .chip { justify-content: center; width: 36px; height: 36px; min-height: 0; padding: 0; font-size: 1rem; }
+.minimap-tools .chip svg { width: 18px; height: 18px; }
+@media (pointer: coarse) {
+  .minimap-tools .chip { width: 44px; height: 44px; }
+}
 .minimap-labels { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
 .minimap-item { position: absolute; width: 0; height: 0; }
 .minimap-hit {

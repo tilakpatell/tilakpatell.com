@@ -20,7 +20,7 @@ const FILES = [
   ...list('components/tour/', /\.jsx?$/),
   ...list('components/feed/', /\.jsx$/),
   ...['Home', 'Experience', 'Projects', 'Resume', 'Contact', 'Travel', 'Changes', 'Terminal'].map((p) => `pages/${p}.jsx`),
-  ...['UniversePanel', 'UniverseMap', 'NavMap', 'Hangar', 'FlightSettings', 'StartChoice'].map((f) => `components/universe/${f}.jsx`),
+  ...['UniversePanel', 'UniverseMap', 'MiniMap', 'NavMap', 'Hangar', 'FlightSettings', 'StartChoice'].map((f) => `components/universe/${f}.jsx`),
   ...list('components/universe/online/', /\.jsx$/),
   ...list('components/universe/chart/', /\.jsx$/),
   'components/universe/nav.js',

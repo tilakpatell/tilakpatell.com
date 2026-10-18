@@ -456,7 +456,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
         </>
       ) : (
         <div className="universe-flat">
-          <MiniMap selected={selected} onSelect={onSelect} />
+          <MiniMap selected={selected} onSelect={onSelect} interactive />
         </div>
       )}
     </WorldHost>
