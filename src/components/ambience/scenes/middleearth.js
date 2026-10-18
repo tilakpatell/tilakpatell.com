@@ -202,8 +202,11 @@ vec4 shire(vec2 px, float s, float look) {
   // the Hill: the nearest down rises at the right
   float x4 = px.x + look;
   float hillX = W * ${HILL_X.toFixed(2)};
-  float t4 = downs(x4, H * 0.04, H * 0.016, 0.003, 9.5) + 92.0 * s * exp(-pow((x4 - hillX) / (155.0 * s), 2.0));
-  float t4b = downs(x4 + 3.0, H * 0.04, H * 0.016, 0.003, 9.5) + 92.0 * s * exp(-pow((x4 + 3.0 - hillX) / (155.0 * s), 2.0));
+  // (squared by hand: pow() of a negative number is undefined in GLSL)
+  float hq = (x4 - hillX) / (155.0 * s);
+  float hqb = (x4 + 3.0 - hillX) / (155.0 * s);
+  float t4 = downs(x4, H * 0.04, H * 0.016, 0.003, 9.5) + 92.0 * s * exp(-hq * hq);
+  float t4b = downs(x4 + 3.0, H * 0.04, H * 0.016, 0.003, 9.5) + 92.0 * s * exp(-hqb * hqb);
   down(c, px, t4, (t4b - t4) / 3.0 * sx, uLand4, rim, s);
   float R = 19.0 * s;
   vec2 dp = vec2(x4 - hillX + 26.0 * s, px.y - 40.0 * s);
@@ -267,7 +270,8 @@ vec4 mordorFar(vec2 px, float s, float look) {
   // the sky: smoke rolling slowly over, burning low down, most of all
   // behind Doom, the clouds’ undersides lit by it
   float hot = smoothstep(H * 0.6, H * 0.12, px.y);
-  float behind = exp(-pow((px.x - doomX) / (W * 0.18 + 170.0 * s), 2.0));
+  float bq = (px.x - doomX) / (W * 0.18 + 170.0 * s);
+  float behind = exp(-bq * bq);
   vec2 sp = vec2(px.x / (480.0 * s) + uTime * 0.011, px.y / (260.0 * s) - uTime * 0.004);
   float smoke = fbm(sp);
   float cloud = smoothstep(0.36, 0.74, smoke);
@@ -601,6 +605,13 @@ export function create(canvas, ctx) {
       },
       retheme(theme) {
         mordor = theme === 'mordor';
+        // the Shire’s fireworks and dragon are only moved while it is on: put
+        // them away, so none hangs over Mordor (or a still frame’s firework
+        // over the Eye), and let the Shire’s still frame open its own again
+        dragon.visible = false;
+        rockets.length = 0;
+        sparks.step(10);
+        this.stilled = false;
         apply();
         this.recolor(k.colors);
       },

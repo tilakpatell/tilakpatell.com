@@ -64,6 +64,7 @@ html[data-mode='dark'][data-theme='mordor'] {
 html[data-mode='dark'][data-theme='shire'] {
   --me-display: #e8c766; --me-eyebrow: #e39c7e; --me-hedge: #3e5634; --me-brass: rgb(255 238 186 / 0.75); --me-sill: #7e5e1c;
   --me-card-shadow: inset 0 1px 0 rgb(243 236 212 / 0.05);
+  --shadow-card: var(--me-card-shadow);
   --me-card-lift: inset 0 1px 0 rgb(243 236 212 / 0.07), 0 18px 40px -24px rgb(0 0 0 / 0.8);
   --me-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .92 0 0 0 0 .83 0 0 0 2 -.5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.07'/%3E%3C/svg%3E");
   --me-wash: radial-gradient(70rem 40rem at 0 0, rgb(245 200 102 / 0.07), transparent 70%), linear-gradient(90deg, rgb(0 0 0 / 0.3), transparent 14% 86%, rgb(0 0 0 / 0.3));
@@ -87,6 +88,7 @@ html[data-mode='dark'][data-theme='mordor'] {
   --me-display: #f0e8df; --me-seal: #ff7a1a; --me-iron: #302926; --me-iron-hi: #463b37; --me-rivet: #7a6c63;
   --me-strap: #4d403a; --me-strap-hot: #d2421a;
   --me-card-shadow: 0 0 #0000;
+  --shadow-card: var(--me-card-shadow);
   --me-card-lift: 0 -1px 12px -4px rgb(255 122 26 / 0.35);
   --me-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .78 0 0 0 0 .72 0 0 0 0 .66 0 0 0 2.4 -.75'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.08'/%3E%3C/svg%3E");
   --me-wash: radial-gradient(80% 30rem at 50% 100%, rgb(210 66 26 / 0.13), transparent 70%), linear-gradient(90deg, rgb(0 0 0 / 0.35), transparent 14% 86%, rgb(0 0 0 / 0.35));
@@ -94,7 +96,7 @@ html[data-mode='dark'][data-theme='mordor'] {
   --sting-light: drop-shadow(0 0 3px #9ad2ff);
   --sting-glow: 0 0 2px 1px #9ad2ff, 0 0 9px 2px rgb(47 134 255 / 0.75);
 }
-:where([data-theme='shire'], [data-theme='mordor']) :is(.dark-scope, .on-photo) { --me-display: var(--text); --me-eyebrow: var(--muted); }
+:where([data-theme='shire'], [data-theme='mordor']) :is(.dark-scope, .on-photo, .space-scope) { --me-display: var(--text); --me-eyebrow: var(--muted); --me-seal: var(--accent-text); }
 
 /* ─── Paper and ash ──────────────────────────────────────────────────────── */
 /* The grain and the light at the edges are the page’s own background: on
@@ -133,15 +135,15 @@ html[data-mode='dark'][data-theme='mordor'] footer:has(.footer-links) { backgrou
    hub’s map title keep their own. */
 @media screen and (forced-colors: none) {
   @supports ((-webkit-background-clip: text) or (background-clip: text)) {
-    html[data-mode='dark'][data-theme='shire'] :is(h1, [data-page-title]).display:not(.me-hub-title, :where(.dark-scope, .on-photo) *) {
+    html[data-mode='dark'][data-theme='shire'] :is(h1, [data-page-title]).display:not(.me-hub-title, :where(.dark-scope, .on-photo, .space-scope) *) {
       /* (one band a line: 1.04em is the line height above, which every
          browser that clips to text can read, where 1lh is newer) */
       background: linear-gradient(180deg, #f6de97 0 38%, #e2be5c 47%, #b38a2a 55%, #e8c766 72%, #f1d58a 100%) 0 0 / 100% 1.04em;
-      -webkit-background-clip: text; background-clip: text; color: transparent;
+      -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none;
     }
   }
 }
-html[data-mode='dark'][data-theme='mordor'] :is(h1, [data-page-title]).display:not(.me-hub-title, :where(.dark-scope, .on-photo) *) {
+html[data-mode='dark'][data-theme='mordor'] :is(h1, [data-page-title]).display:not(.me-hub-title, :where(.dark-scope, .on-photo, .space-scope) *) {
   text-shadow: 0 1px 0 rgb(255 179 71 / 0.4), 0 5px 16px rgb(255 106 26 / 0.38), 0 12px 38px rgb(210 66 26 / 0.3);
 }
 
@@ -153,12 +155,10 @@ html[data-mode='dark'][data-theme='mordor'] :is(h1, [data-page-title]).display:n
    the frame or the strap in half; nothing moves, and a click goes through.
    (A pressed card is matched from <html>, so the house’s own dark hover
    doesn’t win.) */
-:is([data-theme='shire'], [data-theme='mordor']) .card::after { content: ''; position: absolute; pointer-events: none; transition: border-color 0.2s ease, background-color 0.2s ease; }
-[data-theme='shire'] .card { box-shadow: var(--me-card-shadow); }
+:is([data-theme='shire'], [data-theme='mordor']) .card:not(.overflow-y-auto, .overflow-auto)::after { content: ''; position: absolute; pointer-events: none; transition: border-color 0.2s ease, background-color 0.2s ease; }
 [data-theme='shire'] .card::after { inset: 4px; border: 1px solid color-mix(in srgb, var(--border) 65%, var(--border-strong)); border-radius: calc(var(--r-card) - 5px); }
 html[data-theme='shire'] :is(a.card, button.card, .card-hover, .card-lift):is(:hover, :focus-visible) { box-shadow: var(--me-card-lift); }
 html[data-theme='shire'] :is(a.card, button.card, .card-hover, .card-lift):is(:hover, :focus-visible)::after { border-color: color-mix(in srgb, var(--border-strong) 55%, var(--border)); }
-[data-theme='mordor'] .card { box-shadow: var(--me-card-shadow); }
 [data-theme='mordor'] .card::after { inset: 0 0 auto; height: 3px; border-radius: 1px 1px 0 0; background: var(--me-strap); }
 html[data-theme='mordor'] :is(a.card, button.card, .card-hover, .card-lift):is(:hover, :focus-visible) { box-shadow: var(--me-card-lift); }
 html[data-theme='mordor'] :is(a.card, button.card, .card-hover, .card-lift):is(:hover, :focus-visible)::after { background: var(--me-strap-hot); }
@@ -173,7 +173,7 @@ html[data-theme='mordor'] :is(a.card, button.card, .card-hover, .card-lift):is(:
 [data-theme='mordor'] .btn-primary { box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.08); }
 /* (a forge brightens as it glows, where the house’s hover darkens: the label
    still reads at 9.6:1) */
-html[data-mode='dark'][data-theme='mordor'] .btn-primary:hover { background: #ffa04a; box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.22), 0 0 0 1px #ffb347, 0 8px 22px -10px rgb(255 122 26 / 0.7); }
+html[data-mode='dark'][data-theme='mordor'] .btn-primary:hover { background: color-mix(in srgb, var(--btn-bg) 72%, #fff); box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.22), 0 0 0 1px #ffb347, 0 8px 22px -10px rgb(255 122 26 / 0.7); }
 
 /* A rule between sections: a hedgerow in the Shire, an iron strap and its
    rivets in Mordor */
