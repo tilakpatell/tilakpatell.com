@@ -8,20 +8,22 @@ A single-file noise library (OpenSimplex2, cellular, Perlin, value; fBm, ridged 
 
 ## Where it is used
 
-The census row is in [README.md](README.md): one file imports it, `src/lib/land/flight/fnl.js`, and the rest of the flight reaches it through that file's `noiseFor`:
+The census row is in [README.md](README.md): one file imports it, `src/lib/land/flight/fnl.js`, and the rest of the flight reaches it through that file's `noiseFor`, `noise3For` and `cells3For`:
 
 - `biomes.js` beside it: the two climate fields the biome weights come from.
 - `field.js` beside it: a planet's height.
+- `characters.js` beside it: the eight terrain characters a generated planet's round ground is made from, in 3D noise of a direction on its sphere.
+- `sphereField.js` beside it: a generated planet's whole ground, built on `characters.js`.
 
 ## How the site uses it
 
 - **One function a use.** `noiseFor(seed, opts)` builds a configured instance and returns `(x, z) → −1…1`; nothing else names the class.
 - **Seeds are 32-bit.** `fold(seed)` folds a planet's bigint (the Expanse's `seed.js`) to an int32: its low 32 bits xor its high 32.
 - **The warp is the wrapper's own**: two more noises at half the frequency push `(x, z)` by up to `warp` metres (below, Gotchas).
+- **3D for the round planets.** A roster planet is a plane and keeps its 2D ground; a generated planet's ground is a function of a point on its sphere, so `noise3For(seed, opts)` takes `noiseFor`'s options and returns `(x, y, z) → −1…1`, and `cells3For(seed, { frequency, jitter })` returns the Euclidean distance to the nearest cell point, from 0 up (the craters).
 
 ## What the site does not use, and why
 
-- **3D noise**: a planet is a plane (the spec's decision 1).
 - **`DomainWrap`** and the domain-warp fractal types: see Gotchas.
 - **The galaxy's surfaces and the planets' land** keep `src/components/galaxy/surface/noise.js`'s value noise; moving them would change their pixels.
 
@@ -38,3 +40,5 @@ The census row is in [README.md](README.md): one file imports it, `src/lib/land/
 
 - In 1.1.1, `DomainWrap(coord)` warps only when `coord` is an instance of the package's `Vector2` class, which it does not export; a plain `{ x, y }` comes back unchanged with no error (found while writing `src/lib/land/flight/fnl.js`; its test “warps the domain” would fail with the class's warp).
 - `GetNoise(x, y)` scales by the frequency itself; pass metres, not metres times the frequency.
+- `GetNoise` picks 2D or 3D by how many arguments it is given, so a 3D call passes all three even when one is 0. The 3D warp is three noises, one an axis, as the 2D warp is two (`noise3For` in `src/lib/land/flight/fnl.js`).
+- OpenSimplex2 reads exactly 0 on its lattice points. At frequency 0.01, (100, 100, 100) is one for the noise and for the warp's half-frequency noises too, so warped and unwarped both read 0 there; `fnl.test.js`'s “warps in 3D” samples (100, 37, −80).
