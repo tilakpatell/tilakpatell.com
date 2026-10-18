@@ -1,7 +1,7 @@
 /* The Hangar (HangarPanel.jsx): the Shipyard's page under the nav, its
    look (shipyard.css's .yard: the dark ground, the line, the crew's
-   --engine), with the pilot's level and credits in its head, the four tabs
-   under it, and the tab's own body filling the rest. Touch targets 44 px on
+   --engine), with the pilot's level, credits and skill points in its head,
+   the five tabs under it, and the tab's own body filling the rest. Touch targets 44 px on
    a coarse pointer; on a phone the head drops the xp bar and the tabs scroll
    sideways in one row. */
 
@@ -13,6 +13,12 @@
 .hangar-xp { position: relative; display: block; width: 120px; height: 6px; overflow: hidden; border-radius: 4px; background: rgb(255 255 255 / 0.1); }
 .hangar-xp > span { position: absolute; inset: 0; background: var(--engine, #e8eefc); transform-origin: left; scale: var(--v, 0) 1; }
 .hangar-credits { color: var(--text); font-family: var(--font-mono); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+/* (the skill points free: a way to the Skills tab, lit while there are some) */
+.hangar-points { min-height: 30px; padding: 0 0.7rem; border: 1px solid var(--yard-line); border-radius: 999px; color: var(--muted); font-family: var(--font-mono); font-size: 0.76rem; }
+.hangar-points[data-free] { border-color: var(--engine, #e8eefc); color: var(--text); background: color-mix(in srgb, var(--engine, #e8eefc) 16%, transparent); }
+@media (pointer: coarse) {
+  .hangar-points { min-height: 44px; }
+}
 
 .hangar-tabs { display: flex; gap: 0.25rem; padding: 0.4rem 0.75rem; overflow-x: auto; border-bottom: 1px solid var(--yard-line); scrollbar-width: none; }
 .hangar-tabs [role='tab'] { flex: none; min-height: 36px; padding: 0 1rem; border-radius: 999px; color: var(--muted); font-size: 0.82rem; }
@@ -109,3 +115,44 @@
 .hangar-power h3 { display: flex; align-items: center; gap: 0.45rem; }
 .hangar-power b { display: block; margin-bottom: 0.25rem; font-size: 1rem; }
 .hangar-power p { margin: 0 0 0.4rem; font-size: 0.86rem; }
+
+.hangar-power-picks { margin-top: 0.6rem; }
+.hangar-lock { color: var(--muted); font-size: 0.72rem; }
+
+/* the Skills: the points free over the tree, a column a branch and a row
+   of nodes a step down it, the reset at the foot; two columns on a narrow
+   window, stacked on a phone. A node's state is its look: taken (lit in the
+   crew's colour), open to take (bright), anything else dim, the unique
+   weapons' to come dashed. */
+.hangar-skills-head { display: grid; gap: 0.25rem; }
+.hangar-skills-free { margin: 0; font-size: 0.95rem; }
+.hangar-skills-free b { font-family: var(--font-mono); font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.hangar-tree { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
+.hangar-branch ol { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.hangar-row { display: grid; gap: 0.4rem; }
+.hangar-row + .hangar-row { padding-top: 0.5rem; border-top: 1px dashed var(--yard-line); }
+.hangar-node { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'name cost' 'line line' 'says says'; gap: 0.15rem 0.5rem; width: 100%; min-height: 44px; padding: 0.55rem 0.7rem; border: 1px solid var(--yard-line); border-radius: 10px; color: var(--muted); background: var(--yard-pane); text-align: left; }
+.hangar-node-name { grid-area: name; color: var(--text); font-size: 0.86rem; font-weight: 600; }
+.hangar-node-cost { grid-area: cost; font-family: var(--font-mono); font-size: 0.7rem; }
+.hangar-node-line { grid-area: line; font-size: 0.76rem; }
+.hangar-node-says { grid-area: says; font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.hangar-node[data-state='open'] { border-color: color-mix(in srgb, var(--engine, #e8eefc) 60%, var(--yard-line)); color: var(--text); cursor: pointer; }
+.hangar-node[data-state='open']:hover { background: color-mix(in srgb, var(--engine, #e8eefc) 10%, var(--yard-pane)); }
+.hangar-node[data-state='open'] .hangar-node-says { color: var(--engine, #e8eefc); }
+.hangar-node[data-state='taken'] { border-color: var(--engine, #e8eefc); color: var(--text); background: color-mix(in srgb, var(--engine, #e8eefc) 20%, var(--yard-pane)); }
+.hangar-node[data-state='parent'],
+.hangar-node[data-state='key'],
+.hangar-node[data-state='points'] { opacity: 0.72; cursor: default; }
+.hangar-node[data-state='soon'] { border-style: dashed; opacity: 0.6; cursor: default; }
+.hangar-skills-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.hangar-reset { min-height: 36px; padding: 0 1rem; border: 1px solid var(--yard-line); border-radius: 999px; color: var(--text); font-size: 0.8rem; }
+.hangar-reset:disabled { color: var(--muted); }
+@media (pointer: coarse) {
+  .hangar-reset { min-height: 44px; }
+}
+@media (max-width: 1099px) {
+  .hangar-tree { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 599px) {
+  .hangar-tree { grid-template-columns: minmax(0, 1fr); }
+}

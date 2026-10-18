@@ -11,8 +11,8 @@
 //   tabForKey(key, last) → a tab, or null for a key that isn't the Hangar's
 //   wantsKey(e, { open, typing, otherDialog, door }) → boolean
 
-export const TABS = ['crew', 'arms', 'powers', 'shipyard'];
-export const TAB_LABEL = { crew: 'Crew', arms: 'Arms', powers: 'Powers', shipyard: 'Shipyard' };
+export const TABS = ['crew', 'arms', 'powers', 'skills', 'shipyard'];
+export const TAB_LABEL = { crew: 'Crew', arms: 'Arms', powers: 'Powers', skills: 'Skills', shipyard: 'Shipyard' };
 export const TAB_KEY = 'tp-hangar-tab'; // (the visitor's own convenience: the tab last used, in this browser)
 
 export const readTab = (raw) => (TABS.includes(raw) ? raw : 'shipyard');

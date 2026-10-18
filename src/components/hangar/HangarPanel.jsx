@@ -9,6 +9,8 @@ import { headOf } from './hangarHead';
 import CrewTab from './CrewTab';
 import ArmsTab from './ArmsTab';
 import PowersTab from './PowersTab';
+import SkillsTab from './SkillsTab';
+import { useSkills } from './skills/useSkills';
 import './hangar.css';
 
 // The Hangar: one place for everything about the ship and its crew, filling
@@ -17,7 +19,8 @@ import './hangar.css';
 // next, the credits. Its tabs: the Crew (how they look: the Wardrobe for
 // Rick, Morty, Walt and Jesse, outfits and blades for the galaxy's four),
 // the Arms (the ship's three lines, each one's gun in the hand), the Powers
-// (the crew's two) and the Shipyard (its body, ShipyardBody.jsx, the draft
+// (the two it carries, and the others it may), the Skills (the skill tree,
+// its points free in the head too) and the Shipyard (its body, ShipyardBody.jsx, the draft
 // held here so it's kept while the Hangar's shut). H opens it on the tab
 // last used and shuts it; C opens it on the crew; Escape shuts it; the
 // arrow keys go along the tabs. The design:
@@ -31,6 +34,7 @@ export default function HangarPanel({ open, onOpen, tab, onTab, enabled = true, 
   const [slot, setSlot] = useState('paint');
   const { unlocked } = useAchievements();
   const { economy, version } = useEconomy();
+  const { points } = useSkills();
   const yard = useYard({ live, kind: ship, unlocked, economy, version, onApply });
 
   // H and C, Escape and Tab: the shipyard's rules, hangarRules.js's
@@ -80,7 +84,8 @@ export default function HangarPanel({ open, onOpen, tab, onTab, enabled = true, 
 
   if (!open || !ship) return null;
 
-  const head = headOf(economy?.record());
+  const head = headOf(economy?.record(), points);
+  const level = head.legend ? `Level ${head.level} · ${head.title} rank ${head.legend}` : `Level ${head.level} · ${head.title}`;
   // the arrow keys along the tabs (Home and End to the ends), focus going with them
   const onTabKey = (e) => {
     const i = TABS.indexOf(tab);
@@ -100,14 +105,19 @@ export default function HangarPanel({ open, onOpen, tab, onTab, enabled = true, 
         <header className="yard-head hangar-head">
           <h2 id={`${id}-title`}>Hangar</h2>
           <p className="yard-ship">{shipName}</p>
-          <div className="hangar-pilot" aria-label={`Level ${head.level}, ${head.title}; ${head.credits.toLocaleString('en-GB')} credits`}>
-            <span className="hangar-level">
-              Level {head.level} · {head.title}
-            </span>
+          <div className="hangar-pilot">
+            <span className="hangar-level">{level}</span>
             <span className="hangar-xp" aria-hidden="true">
               <span style={{ '--v': head.toNext }} />
             </span>
-            <b className="hangar-credits">{head.credits.toLocaleString('en-GB')} ¢</b>
+            <b className="hangar-credits" aria-label={`${head.credits.toLocaleString('en-GB')} credits`}>
+              {head.credits.toLocaleString('en-GB')} ¢
+            </b>
+            {head.points && (
+              <button type="button" className="hangar-points" data-free={head.points.free > 0 ? '' : undefined} onClick={() => onTab('skills')}>
+                {head.points.free} {head.points.free === 1 ? 'point' : 'points'}
+              </button>
+            )}
           </div>
           <button type="button" className="universe-settings-close" aria-label="Close the hangar" onClick={() => onOpen(false)}>
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
@@ -135,6 +145,7 @@ export default function HangarPanel({ open, onOpen, tab, onTab, enabled = true, 
             />
           )}
           {tab === 'powers' && <PowersTab ship={ship} />}
+          {tab === 'skills' && <SkillsTab />}
           {tab === 'shipyard' && (
             <div className="yard-panel hangar-yard">
               <ShipyardBody ship={ship} shipName={shipName} live={live} lastBuild={lastBuild} saves={saves} dropped={dropped} onSell={onSell} hint={hint} yard={yard} slot={slot} onSlot={setSlot} onApplied={() => onOpen(false)} onCrew={() => onTab('crew')} />

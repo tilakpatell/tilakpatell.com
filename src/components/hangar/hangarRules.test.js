@@ -14,12 +14,13 @@ const key = (k, mods = {}) => ({ key: k, metaKey: false, ctrlKey: false, altKey:
 const calm = { open: false, typing: false, otherDialog: false, door: true };
 
 describe('the Hangar', () => {
-  it('has the four tabs, each with its name', () => {
-    expect(TABS).toEqual(['crew', 'arms', 'powers', 'shipyard']);
+  it('has the five tabs, the skills between the powers and the shipyard, each with its name', () => {
+    expect(TABS).toEqual(['crew', 'arms', 'powers', 'skills', 'shipyard']);
     for (const t of TABS) expect(typeof TAB_LABEL[t]).toBe('string');
   });
   it('opens on the tab last used, or the shipyard', () => {
     expect(readTab('arms')).toBe('arms');
+    expect(readTab('skills')).toBe('skills');
     expect(readTab('nope')).toBe('shipyard');
     expect(readTab(null)).toBe('shipyard');
   });
@@ -40,8 +41,14 @@ describe('the Hangar', () => {
     expect(wantsKey(key('x'), calm)).toBe(false);
   });
   it('heads it with the level, the way to the next and the credits', () => {
-    expect(headOf({ xp: 200, credits: 1234, level: 3, title: 'Pilot' })).toEqual({ level: 3, title: 'Pilot', xp: 200, toNext: (200 - 150) / (350 - 150), credits: 1234, legend: null });
+    expect(headOf({ xp: 200, credits: 1234, level: 3, title: 'Pilot' })).toEqual({ level: 3, title: 'Pilot', xp: 200, toNext: (200 - 150) / (350 - 150), credits: 1234, legend: null, points: null });
     expect(headOf({ xp: 99999, credits: 0, level: 11, title: 'Legend' }).toNext).toBe(1);
-    expect(headOf(null)).toEqual({ level: 1, title: 'Rookie', xp: 0, toNext: 0, credits: 0, legend: null });
+    expect(headOf(null)).toEqual({ level: 1, title: 'Rookie', xp: 0, toNext: 0, credits: 0, legend: null, points: null });
+  });
+  it('heads it with the points free, and a Legend rank past the last level', () => {
+    const head = headOf({ xp: 17500, credits: 0, level: 11, title: 'Legend' }, { earned: 22, spent: 19, free: 3, max: 70, legend: 2 });
+    expect(head.legend).toBe(2);
+    expect(head.points).toEqual({ free: 3, earned: 22, max: 70 });
+    expect(headOf({ xp: 200, level: 3 }, { earned: 2, spent: 0, free: 2, max: 70, legend: 0 }).legend).toBe(null);
   });
 });
