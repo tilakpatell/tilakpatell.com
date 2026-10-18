@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FIT, centreOn, frameUnits, panBy, zoomAt } from './mapView';
-import { createGesture } from './gesture';
+import { createGesture } from '../../lib/gesture';
 
-// The galaxy map's view (mapView.js) and the hands on it (gesture.js): the
+// The galaxy map's view (mapView.js) and the hands on it (src/lib/gesture.js, shared with the universe chart): the
 // wheel or a trackpad zooms about the pointer, a drag pans, two fingers
 // pinch, and the page's buttons and keys zoom about the middle.
 const STEP = 1.5; // (a button's or a key's zoom)
