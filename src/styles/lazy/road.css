@@ -1,0 +1,13 @@
+/* The Road through Middle-earth (pages/TheRoad.jsx): the stage under the
+   nav, as the other worlds’ stages, and the Road’s skin of the HUD kit. */
+.road-stage {
+  --road-ink: #f3ead6;
+  --road-veil: rgb(18 16 12 / 0.8);
+  position: relative;
+  height: calc(100svh - var(--nav-h, 64px));
+  overflow: hidden;
+  background: #1b1a17;
+  user-select: none;
+}
+.road-stage .world-canvas { position: absolute; inset: 0; touch-action: none; }
+.road-loading { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: var(--road-ink); font-size: var(--fs-sm); }
