@@ -42,9 +42,12 @@ describe('the cockpit at each quality level', () => {
     // a 4K one at 1.5: held to 8.3 million pixels
     const r = ratioFor(ultra, 3840, 2160, 1.5);
     expect(3840 * r * 2160 * r).toBeLessThanOrEqual(8.3e6 + 1);
-    // a small window is never drawn under half a pixel to the pixel, nor over the row's
+    // never over the row's, nor under a pixel to the pixel (a 1440p screen at low)
     expect(ratioFor(LEVELS.low, 200, 100, 3)).toBe(1);
-    expect(ratioFor(LEVELS.low, 1e5, 1e5, 1)).toBe(0.5);
+    expect(ratioFor(LEVELS.low, 2560, 1440, 1)).toBe(1);
+    expect(ratioFor(LEVELS.ultra, 1e5, 1e5, 2)).toBe(1);
+    // (unless the device itself draws under one)
+    expect(ratioFor(LEVELS.low, 2560, 1440, 0.75)).toBe(0.75);
   });
 
   it('softens a bigger shadow map over more of its texels, so the edge is as wide', () => {

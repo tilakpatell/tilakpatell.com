@@ -180,9 +180,6 @@ export function run(canvas, opts) {
     size.w = w;
     size.h = h;
     gl.setSize(w, h);
-    // (a window grown past the level's pixels draws softer, not more of them)
-    const cap = ratioFor(row, w, h, maxRatio(row.ratio));
-    if (gl.ratio > cap + 1e-3) gl.setRatio(cap);
     sizePost();
     v?.resize?.(view.x, view.y, gl.ratio);
     frameLens();
@@ -191,6 +188,10 @@ export function run(canvas, opts) {
   // resize, and when the watchdog has softened it (else the chain went on
   // drawing every pass at the old size and the canvas alone got smaller)
   function sizePost() {
+    // (a window grown past the level's pixels draws softer, not more of
+    // them; and so does a watchdog that would step back over them)
+    const cap = ratioFor(row, size.w, size.h, maxRatio(row.ratio));
+    if (gl.ratio > cap + 1e-3) gl.setRatio(cap);
     renderer.getDrawingBufferSize(view);
     drawnRatio = gl.ratio;
     if (!composer) return;
@@ -348,7 +349,9 @@ export function run(canvas, opts) {
   const step = (now) => {
     if (failed || stopped || gl.lost) return false;
     if (document.hidden) return false;
-    if (resized && !L.on) {
+    // (in a launch only for a new shape, a phone turned or the screen
+    // filled: a stretched picture through the RV's long one is worse)
+    if (resized && (!L.on || Math.abs(window.innerWidth / window.innerHeight / (size.w / size.h) - 1) > 0.15)) {
       resized = false;
       fit();
     }
@@ -443,10 +446,12 @@ export function run(canvas, opts) {
         late = false;
         warm();
       }
-      // Past the flash nothing more is drawn: the last frame is under the
-      // white and fading (clearOut), and the map underneath has the chip.
+      // Past a light flash nothing more is drawn: the last frame is burnt
+      // into the white and fading (clearOut), and the map underneath has the
+      // chip. Where nothing burnt it (one pass, or the RV's night) it goes
+      // on moving as it fades.
       // Sat, now and then a frame is timed on the chip (TRAILS_MS).
-      if (L.peaked) {
+      if (L.peaked && lens && whiteOut) {
         /* the last frame stands */
       } else if (timer && !L.on && !timing && fade < 0.01 && drawn % 20 === 0) {
         timing = true;

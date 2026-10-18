@@ -109,7 +109,11 @@ ${
       trail += max(texture2D(tDiffuse, p).rgb - 0.55, 0.0) * w;
       weight += w;
     }
-    col += trail / max(weight, 1.0) * 1.6;
+    // (only what the trail brings that the pixel hasn't already: a bright
+    // field, a sky band or a planet's face, isn't lifted by its own light;
+    // and it comes in with the streak, not all at once)
+    vec3 own = max(col - 0.55, 0.0);
+    col += max(trail / max(weight, 1.0) - own, 0.0) * 1.6 * smoothstep(0.002, 0.03, uStreak);
   }
 `
     : ''

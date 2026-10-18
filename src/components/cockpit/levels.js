@@ -42,11 +42,12 @@ export function levelOf({ detail = 'high', ok = true, coarse = false } = {}) {
 }
 
 // The ratio to draw a w × h window at: the row's, under the device's, and
-// no more than the row's pixels.
+// no more than the row's pixels, but never under a pixel to the pixel (a
+// big screen at low draws its own pixels, as it always has, not fewer)
 export function ratioFor(row, w, h, device = row.ratio) {
   const cap = Math.min(row.ratio, device);
   const fit = Math.sqrt((row.pixels * 1e6) / Math.max(1, w * h));
-  return Math.max(0.5, Math.min(cap, fit));
+  return Math.max(Math.min(1, cap), Math.min(cap, fit));
 }
 
 // A shadow map's softening in its own texels, so the edge is as wide at
