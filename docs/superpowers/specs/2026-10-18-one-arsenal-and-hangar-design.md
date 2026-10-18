@@ -301,9 +301,11 @@ hunters, bolts and flashes. Its only galaxy import is `LASER` from
 - The charge and cooldown are already kept in the session across a
   landing (`KEPT_KEY`), so they carry between the map and the galaxy.
 
-Siege note: on the universe map, a power's hit on the Citadel's core is
-cut as a battle objective's is (`sub`). Ordnance stays the only thing that
-takes the core down, as `siege.js` says today.
+Siege note: on the universe map a power's strike tries the hunters, the
+skirmishes and the front, and nothing else, so it never touches the
+Citadel. Ordnance stays the only thing that takes the core down, as
+`siege.js` says today. Nor does a power ever touch traffic or another
+pilot. *(The session's call, from pull request 2's plan.)*
 
 ## Part 3: The Hangar
 
