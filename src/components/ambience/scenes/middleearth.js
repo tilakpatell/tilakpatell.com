@@ -24,7 +24,7 @@ const TOWER_X = 0.87;
 const EYE_Y = 0.78;
 // a phone’s text runs edge to edge (ambience.css): the tower keeps to the
 // margin at the right
-const towerX = (w) => w * (w < 768 ? 0.92 : TOWER_X);
+const towerX = (w) => w * (w < 768 ? 0.95 : TOWER_X);
 
 const LANDS = /* glsl */ `
 varying vec2 vUv;
@@ -115,7 +115,7 @@ vec4 shire(vec2 px, float s, float look) {
   float sd = length(px - sun);
   over(c, uGlow, day * (exp(-sd / (260.0 * s)) * 0.45 + exp(-sd / (80.0 * s)) * 0.45));
   over(c, uSun, day * exp(-sd / (30.0 * s)) * 0.7);
-  over(c, mix(uSun, vec3(1.0, 0.98, 0.92), 0.7), day * fill(sd - 23.0 * s));
+  over(c, mix(uSun, vec3(1.0, 0.98, 0.92), 0.5), day * fill(sd - 23.0 * s));
   // the moon, a crescent at the top right, and a few stars
   vec2 moon = vec2(W * 0.86, H * 0.84);
   float md = length(px - moon);
@@ -145,10 +145,11 @@ vec4 shire(vec2 px, float s, float look) {
     float td = partyTree(tp, s);
     // dark against the sun, its edge lit
     over(c, mix(mix(uDark, uLand1, 0.25 * day), rim, smoothstep(-2.5 * s, 0.0, td) * 0.5 * day), fill(td));
-    // at night, lanterns strung through it: there’s a party on
+    // at night, lanterns strung from its trunk out to the boughs’ ends,
+    // the strings sagging between: there’s a party on
     vec2 lp = tp / s;
     float li = clamp(floor(lp.x / 6.0 + 0.5), -4.0, 4.0);
-    vec2 lan = vec2(li * 6.0, 14.0 + 5.0 * pow(li / 4.0, 2.0));
+    vec2 lan = vec2(li * 6.0, 12.5 - 6.0 * sin(3.14159 * abs(li) / 4.0));
     float ld = length(lp - lan);
     over(c, mix(uLamp, uBrass, step(0.5, fract(li * 0.5))), uNight * (fill((ld - 1.3) * s) + exp(-ld / 2.5) * 0.35));
   }
@@ -189,8 +190,9 @@ vec4 shire(vec2 px, float s, float look) {
     vec2 hp = vec2(x3 - hx, px.y - downs(hx, H * 0.096, H * 0.026, 0.0036, 7.0) + 14.0 * s);
     float hd = length(hp);
     over(c, uLamp, uNight * exp(-hd / (8.0 * s)) * 0.5);
-    over(c, mix(uStone, uLamp, uNight), fill(hd - 4.6 * s));
-    over(c, mix(hh > 0.72 ? uBrass : uDoor, uLamp, uNight), fill(hd - 3.5 * s));
+    over(c, mix(uStone, uLamp, uNight), fill(hd - 6.0 * s));
+    over(c, mix(hh > 0.72 ? uBrass : uDoor, uLamp, uNight), fill(hd - 4.6 * s));
+    over(c, hh > 0.72 ? uStone : uBrass, day * fill(hd - 1.1 * s));
   }
 
   // the Hill: the nearest down rises at the right
@@ -286,12 +288,17 @@ vec4 mordor(vec2 px, float s, float look) {
   float pulse = 0.65 + 0.35 * sin(uTime * 0.7);
   float inDoom = fill(px.y - dTop);
   if (inDoom > 0.0) {
-    // three seams wandering down from the crater, the long one west, each
-    // broken here and there and fading out where it ends
+    // three seams spilling from the crater, the long one west: each keeps
+    // to its share of the slope’s width, so it runs down the mountain and
+    // never off its edge, broken once or twice and fading where it ends
     float t = clamp((H * 0.34 - px.y) / (H * 0.28), 0.0, 1.0);
     float w = (1.3 + 1.9 * (1.0 - t)) * s;
-    vec3 e = abs(vec3(dx) - vec3(-5.0 - t * 125.0 + sin(t * 8.0) * 10.0, 10.0 + t * 70.0 + sin(t * 6.0 + 2.0) * 8.0, -2.0 - t * 42.0 + sin(t * 11.0 + 1.0) * 6.0) * s - (vec3(vnoise(t * 14.0), vnoise(t * 14.0 + 7.0), vnoise(t * 14.0 + 13.0)) - 0.5) * 7.0 * s) / w;
-    vec3 on = smoothstep(vec3(1.05, 0.7, 0.45), vec3(0.85, 0.5, 0.3), vec3(t)) * smoothstep(0.2, 0.5, vec3(vnoise(t * 8.0), vnoise(t * 8.0 + 4.0), vnoise(t * 8.0 + 9.0)));
+    float up = max(px.y - H * 0.06, 0.0);
+    float wCone = 1.0 - pow(min(up / (H * 0.3), 1.0), 0.83);
+    float wBase = 1.0 - pow(min(up / (H * 0.15), 1.0), 0.71);
+    vec3 side = vec3(-max(150.0 * wCone, 340.0 * wBase), max(185.0 * wCone, 420.0 * wBase), -max(150.0 * wCone, 340.0 * wBase)) * s;
+    vec3 e = abs(vec3(dx) - side * vec3(0.42, 0.4, 0.1) - (sin(t * vec3(9.0, 7.0, 11.0) + vec3(0.0, 2.0, 1.0)) * 6.0 * t + (vec3(vnoise(t * 14.0), vnoise(t * 14.0 + 7.0), vnoise(t * 14.0 + 13.0)) - 0.5) * 5.0) * s) / w;
+    vec3 on = smoothstep(vec3(1.0, 0.7, 0.45), vec3(0.85, 0.5, 0.3), vec3(t)) * smoothstep(0.08, 0.3, vec3(vnoise(t * 6.0 + 2.0), vnoise(t * 6.0 + 4.0), vnoise(t * 6.0 + 9.0)));
     vec3 cores = exp(-e * e) * on;
     vec3 halos = exp(-e * 0.7) * on;
     float core = max(cores.x, max(cores.y, cores.z));
@@ -326,6 +333,8 @@ vec4 mordor(vec2 px, float s, float look) {
   float y0 = H * 0.04;
   float top = uEye.y - 42.0 * s;
   float d = 1e3;
+  // 0 on a horn’s outer face, which the Eye’s fire doesn’t reach
+  float inner = 1.0;
   float th = (top - y0) / 5.0;
   if (au < 120.0 * s && px.y < uEye.y + 52.0 * s) {
     float f = clamp((px.y - y0) / (top - y0), 0.0, 0.9999);
@@ -347,20 +356,22 @@ vec4 mordor(vec2 px, float s, float look) {
     float b2 = w0 + 24.0 * s;
     if (tier < 1.5) d = min(d, max(b1 - au, au - b1 - 12.0 * s * max(0.0, 1.0 - ly / (th * 0.75))));
     if (tier < 0.5) d = min(d, max(b2 - au, au - b2 - 11.0 * s * max(0.0, 1.0 - ly / (th * 0.45))));
-    // the horns
+    // the horns, hooking in at the tips but never meeting over the Eye
     float hy = px.y - top;
     float tipH = 90.0 * s;
     if (hy > -2.0 && hy < tipH) {
       float hf = clamp(hy / tipH, 0.0, 1.0);
-      float hcen = (16.0 + 18.0 * sin(hf * 2.6) - 24.0 * hf * hf) * s;
-      d = min(d, abs(au - hcen) - (7.5 * pow(1.0 - hf, 0.9) + 0.4) * s);
+      float hcen = (15.0 + 20.0 * sin(hf * 2.5) - 19.0 * hf * hf) * s;
+      float horn = abs(au - hcen) - (7.5 * pow(1.0 - hf, 0.9) + 0.4) * s;
+      if (horn < d) inner = step(au, hcen);
+      d = min(d, horn);
     }
   }
   // iron, its edges facing Doom and the Eye catching their fire
   float eg = exp(-length(px - uEye) / (34.0 * s));
   vec3 iron = uDoor * (0.92 + 0.08 * step(0.5, fract(tu / (7.0 * s))));
   iron = mix(iron, uStone, smoothstep(2.0 * s, 0.0, -d) * step(tu, 0.0) * 0.55 * night);
-  iron = mix(iron, uLamp, smoothstep(3.0 * s, 0.0, -d) * eg * 1.4);
+  iron = mix(iron, uLamp, smoothstep(3.0 * s, 0.0, -d) * eg * 1.4 * inner);
   over(c, iron, fill(d));
   // a few windows burning in the dark
   vec2 wc = floor(vec2(tu / (9.0 * s), px.y / (26.0 * s)));
@@ -396,10 +407,7 @@ vec4 mordor(vec2 px, float s, float look) {
   float r2 = ridge(px.x + look * 0.55, H * 0.058, H * 0.05, 0.0042, 5.3);
   over(c, uLand2, fill(px.y - r2) * 0.97);
   float pl = H * 0.045 + (vnoise(px.x * 0.01) - 0.5) * 3.0 * s;
-  vec3 plain = uLand3 * (0.9 + 0.14 * noise(px * vec2(0.035, 0.11))) * mix(0.8, 1.05, smoothstep(0.0, pl, px.y));
-  // by night, fissures in it glowing faintly (none in the middle)
-  float fissure = smoothstep(0.025, 0.0, abs(noise(px * vec2(0.012, 0.05) + 3.0) - 0.5)) * step(0.2, abs(vUv.x - 0.5));
-  over(c, mix(plain, uLamp, fissure * night * 0.6), fill(px.y - pl));
+  over(c, uLand3 * (0.9 + 0.14 * noise(px * vec2(0.035, 0.11))) * mix(0.8, 1.05, smoothstep(0.0, pl, px.y)), fill(px.y - pl));
   float x5 = px.x + look * 1.1;
   float teeth = mix(2.0 * s, ridge(x5, 4.0 * s, 34.0 * s, 0.009, 8.1), smoothstep(0.35, 0.55, vnoise(x5 * 0.0035 + 2.0)));
   over(c, uLand4, fill(px.y - teeth));
