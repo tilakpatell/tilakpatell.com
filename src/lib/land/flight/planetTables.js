@@ -19,6 +19,7 @@
 //   WORLDS → worlds, in the roster's order (galaxy, sector, fandom)
 //   TYPE_BIOMES[type] → an Expanse planet's biomes; TYPE_LOOK[type] → { palette, clutter, soft }
 //   PLANE_CLIMATE → the plane ground's climate noise
+//   WATER_LOOKS[kind] → { color, roughness, opacity, glow? }: a water sheet's look by its kind
 //   SEEDED_EXPANSE → the thirteen seeded Expanse planets, [id, type], in the roster's order
 //   MOON_FAMILY, familyOf(type) → a moon's type as its family's (rocky is rock, icy is ice)
 //   ROUND_ROUGH[family][biomeId] → its hills' multiplier on a round planet
@@ -127,6 +128,15 @@ export const SITE_WATER = {
   scarif: { kind: 'sea', level: -0.92 },
   bespin: { kind: 'clouds', level: -380 },
   nevarro: { kind: 'lava', level: -3 },
+};
+
+// a water sheet's look by its kind (expanse/flight/water.js draws it; a
+// generated planet's own colour, water.colour, stands in for `color`)
+export const WATER_LOOKS = {
+  sea: { color: '#1f5a6e', roughness: 0.12, opacity: 0.86 },
+  lake: { color: '#2a4f5a', roughness: 0.16, opacity: 0.9 },
+  swamp: { color: '#2e3322', roughness: 0.35, opacity: 0.95 },
+  lava: { color: '#3a0c02', roughness: 0.6, opacity: 1, glow: '#ff4a0a' },
 };
 
 // a world's ground look for lib/three/groundLook.js: a scan (public/cc0/galaxy/'s role) under its palette

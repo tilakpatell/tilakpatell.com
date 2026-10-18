@@ -5,6 +5,8 @@
 // POIs, pits, palette, clutter, and `step` or `soft` where it has them),
 // then 13 of the Expanse's generated planets, each through its type's stacks
 // (TYPE_BIOMES, the galaxy's worlds as templates), its own seed and no POIs.
+// Every other Expanse planet and moon is built from its own variety
+// (generated.js): round where it can be landed on, a cloud deck where not.
 // The Expanse is given, as rows (expanse/flight/planets.js makes them from
 // the generator): lib knows no page, and the flight can go without the
 // Expanse noticing.
@@ -29,8 +31,8 @@
 import { fold } from './fnl.js';
 import { canonicalId, expanseLookup } from './expanse.js';
 import { hash64 } from './hash.js';
+import { generatedSpecOf } from './generated.js';
 import { PLANE_CLIMATE, SEEDED_EXPANSE, TYPE_BIOMES, TYPE_LOOK, WORLDS, expand, familyOf } from './planetTables.js';
-import { parseSpaceId } from '../../space/address.js';
 
 // The ground's version, for what's built on it (the shared world's
 // terrain_version): bumped by hand whenever this file or ./planetTables.js
@@ -43,7 +45,7 @@ export const TERRAIN_VERSION = 2;
 export { TYPE_BIOMES };
 
 // what a spec has beside the old seventeen: the fifty carry these values, and
-// a generated planet or moon overrides kind, parent and buildable
+// a generated planet or moon its own (generated.js)
 export const ROSTER_EXTRA = { kind: 'planet', parent: null, buildable: true, round: null, character: null, sky: null, weather: null, flora: null, fauna: null, exotic: null };
 
 const SEEDED = new Set(SEEDED_EXPANSE.map(([id]) => id));
@@ -59,7 +61,7 @@ export const planetsOf = (expanse = []) => [
   ...expanse.map((r) => ({ id: r.id, name: r.name, type: r.type, seed: expanseSeed(r) })),
 ];
 
-const specOf = ({ id, name, type, seed }, w, extra = ROSTER_EXTRA) => ({
+const specOf = ({ id, name, type, seed }, w) => ({
   id,
   name,
   seed,
@@ -77,7 +79,7 @@ const specOf = ({ id, name, type, seed }, w, extra = ROSTER_EXTRA) => ({
   fog: w.fog ?? null,
   landmarks: w.landmarks ?? [],
   hero: w.hero ?? null,
-  ...extra,
+  ...ROSTER_EXTRA,
 });
 
 const templateOf = (type) => {
@@ -98,7 +100,6 @@ export function planetSpecOf(planetId, { expanse = null } = {}) {
   if (SEEDED.has(id)) return TYPE_BIOMES[p.type] ? specOf({ id, name: p.name, type: p.type, seed: expanseSeed(p) }, templateOf(p.type)) : null;
   const family = familyOf(p.type);
   if (!TYPE_BIOMES[family]) return null;
-  const moon = parseSpaceId(id).moon !== undefined;
-  const extra = { ...ROSTER_EXTRA, kind: moon ? 'moon' : 'planet', parent: moon ? (p.parent ?? null) : null, buildable: false };
-  return specOf({ id, name: p.name, type: family, seed: expanseSeed(p) }, templateOf(family), extra);
+  // (the id as it was asked for, canonical, whatever the lookup's row says)
+  return generatedSpecOf(p.id === id ? p : { ...p, id }, family);
 }
