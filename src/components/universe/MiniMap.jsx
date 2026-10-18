@@ -16,7 +16,9 @@ import './universe.css';
 // place, wonder and moon sits where the nav map puts it. It's Home's teaser
 // (`kind="fandom"`: just the worlds, each dot a link into the map) and the
 // map itself when 3D is off (every place, each a button in one focus group:
-// the arrow keys step through them, Home and End jump to the ends).
+// the arrow keys step through the places drawn, Home and End jump to the ends:
+// at the opening view that is every place shown, but once zoomed in a place off
+// the chart is not drawn and has no button to focus).
 //
 // Props:
 //   selected, onSelect(id)   the place picked, and the pick

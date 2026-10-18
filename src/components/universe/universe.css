@@ -11,6 +11,8 @@
 .minimap-planet[data-kind='wonder'] { opacity: 0.8; }
 .minimap-item[data-quiet] .minimap-name { display: none; }
 .minimap[data-interactive] { touch-action: none; }
+/* zoomed in, the belt's band and the stems run past the box: clip them (the teaser keeps its overflow) */
+.minimap[data-interactive] .minimap-svg { overflow: hidden; }
 .minimap-tools {
   position: absolute;
   right: 6px;
