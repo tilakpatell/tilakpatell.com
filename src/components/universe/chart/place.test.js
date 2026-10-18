@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CHART, FRAMES, createView, levelOf } from './projection';
-import { fitRange, miniView, placeMarks, placeShip, reveal, ringOn, sectorGrid } from './place';
+import { fitRange, labelSize, miniView, placeMarks, placeShip, reveal, ringOn, sectorGrid } from './place';
+import { boxOf } from './declutter';
 
 const ALL = ['system', 'neighbourhood', 'universe'];
 const M = (id, at, more = {}) => ({ id, kind: 'world', name: id.toUpperCase(), at, priority: 50, color: '#fff', levels: ALL, ...more });
@@ -48,6 +49,25 @@ describe('placing marks', () => {
   it('fits the mini-map’s range round what it shows, at its old tilt', () => {
     expect(fitRange([0, 0, 0], marks.slice(0, 2))).toBeCloseTo(2100);
     expect(miniView(marks.slice(0, 2))).toMatchObject({ focus: [0, 0, 0], pitch: CHART.miniPitch, follow: false });
+  });
+  it('keeps a round frame’s names inside the circle it is clipped to, a pinned pick’s too', () => {
+    // (the frame's box is clipped round: its inscribed circle, radius w / 2 about the middle)
+    const inCircle = (p, fontPx = 11) => {
+      const [w, h] = labelSize(p.mark.name, fontPx);
+      const b = boxOf(p.side, { x: p.x, y: p.y, w, h });
+      return [[b.x0, b.y0], [b.x1, b.y0], [b.x0, b.y1], [b.x1, b.y1]].every(([x, y]) => Math.hypot(x - 500, y - 500) <= 500);
+    };
+    const d = 0.99 * 120000 * Math.SQRT1_2; // (up and right, near the rim: its right-hand name fits the square, not the circle)
+    const diag = placeMarks(view, [M('diag', [d, 0, -d])], FRAMES.nav)[0];
+    expect(diag.side).not.toBeNull();
+    expect(inCircle(diag)).toBe(true);
+    const pinned = placeMarks(view, [M('pick', [9e6, 0, -9e6])], FRAMES.nav, { keep: ['pick'] })[0];
+    expect(pinned.edge).toBe(true);
+    expect(pinned.side).not.toBeNull();
+    expect(inCircle(pinned)).toBe(true);
+    // (the mini-map's box frame keeps its square bounds: a name in its corner still fits)
+    const mini = placeMarks(createView({ range: 120000 }), [M('corner', [0.99 * 120000 * 0.8, 0, -0.99 * 120000 * 0.45])], FRAMES.mini, { levels: false, sides: ['under'] });
+    expect(mini.every((p) => p.side === 'under' || p.edge)).toBe(true);
   });
   it('outlines the sectors round the focus, and rings a centre', () => {
     const grid = sectorGrid(createView({ range: 400000 }), 1);

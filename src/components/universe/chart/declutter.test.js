@@ -20,6 +20,13 @@ describe('declutter', () => {
   it('keeps a name off another place’s dot', () => {
     expect(declutter([L('a', 500, 500, 1)], { bounds, dots: [{ x: 560, y: 500 }] }).get('a')).toBe('left');
   });
+  it('keeps names inside round bounds: a corner that fits the square but not the circle turns the name', () => {
+    const round = { cx: 500, cy: 500, r: 500 };
+    // (up and right of the middle, near the rim: the right-hand box's far corner is past the circle)
+    expect(declutter([L('d', 830, 170, 1, 50)], { bounds }).get('d')).toBe('right');
+    expect(declutter([L('d', 830, 170, 1, 50)], { bounds: round }).get('d')).toBe('left');
+    expect(declutter([L('out', 995, 500, 1)], { bounds: round }).get('out')).toBeNull();
+  });
   it('can be held to one side, as the mini-map’s names hang under their dots', () => {
     const s = declutter([L('a', 300, 150, 2), L('b', 302, 150, 1)], { bounds, sides: ['under'] });
     expect([s.get('a'), s.get('b')]).toEqual(['under', null]);

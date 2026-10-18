@@ -79,7 +79,12 @@ export function placeMarks(view, marks, frame, opts = {}) {
     ...placed.map((p) => ({ x: p.x * scale, y: p.y * scale })),
     ...avoid.map((a) => ({ x: a.x * scale, y: a.y * scale })),
   ];
-  const bounds = { x0: 0, y0: 0, x1: frame.w * scale, y1: frame.h * scale };
+  // (a round frame is drawn clipped to its box's inscribed circle, wider than
+  // its chart radius r: a name inside that circle is never cut)
+  const bounds =
+    frame.shape === 'circle'
+      ? { cx: frame.cx * scale, cy: frame.cy * scale, r: (Math.min(frame.w, frame.h) / 2) * scale }
+      : { x0: 0, y0: 0, x1: frame.w * scale, y1: frame.h * scale };
   const sidesOf = declutter(labels, { bounds, dots, ...(sides ? { sides } : {}) });
   for (const p of placed) p.side = sidesOf.get(p.id) ?? null;
   return placed;

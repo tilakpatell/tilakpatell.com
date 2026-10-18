@@ -9,7 +9,7 @@ import { CHART_WORDS, FLY_PAST, JAMMED, NAV, PICK_A_SHIP, jumpState } from './wo
 import NavChart from './chart/NavChart';
 import { chartKey } from './chart/input';
 import { HAND_MARKS, liveMarks, markById, openView, presetOf, presetView } from './chart/marks';
-import { FRAMES } from './chart/projection';
+import { FRAMES, track } from './chart/projection';
 import { useChartView } from './chart/useChartView';
 import './navmap.css';
 
@@ -53,6 +53,9 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
   const box = useRef(null);
   const [open] = useState(() => openView(now?.ship)); // (read once, on mount)
   const chart = useChartView(box, { open, ship: now?.ship ?? null, frame: FRAMES.nav });
+  // (the view as it is with the ship where it is now: the hook's own track comes a
+  // commit later, and drawn meanwhile a followed ship would sit off the middle)
+  const view = useMemo(() => (now?.ship ? track(chart.view, now.ship) : chart.view), [chart.view, now?.ship]);
   const [kind, setKind] = useState('all');
   const [query, setQuery] = useState('');
   // (what the page has picked, unless that's where the ship is already)
@@ -166,12 +169,12 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
   const course = picked && !at(picked.id) ? picked : goingTo;
   // the course is drawn to where the trip goes first: the place (its gate, for a star system), or the portal on the way
   const courseTo = course && now?.ship ? destinationById(legOf(now.ship, course.id))?.at : null;
-  const preset = presetOf(chart.view);
+  const preset = presetOf(view);
   const toAll = () => chart.setView(presetView('all', now?.ship));
   // the way back out of the home system or the Curve (in the Curve with a ship: back through the portal)
   const homeward = canFly && shipSector === 'rickmorty';
   const out = preset === 'home' ? { label: NAV.out, onClick: toAll } : preset === 'rickmorty' ? (homeward ? { label: 'Back through the portal', onClick: () => onTravel('rmportal-back', drive) } : { label: NAV.out, onClick: toAll }) : null;
-  const pitched = chart.view.pitch > 0 || chart.view.yaw !== 0;
+  const pitched = view.pitch > 0 || view.yaw !== 0;
 
   const verb = (d) => {
     if (!d) return '';
@@ -258,7 +261,7 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
 
         <div className="navmap-body">
           <NavChart
-            view={chart.view}
+            view={view}
             marks={marks}
             ship={now?.ship ?? null}
             course={courseTo ? { to: courseTo, drive: goingTo && course === goingTo ? now.going.drive : 'plot' } : null}
@@ -273,7 +276,7 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
             onGo={go}
             onRegion={(id) => chart.setView(presetView(id, now?.ship))}
             out={out}
-            tools={{ onZoomIn: chart.zoomIn, onZoomOut: chart.zoomOut, onShip: flying ? chart.back : null, atShip: chart.view.follow, onFlat: chart.flatten, flat: !pitched }}
+            tools={{ onZoomIn: chart.zoomIn, onZoomOut: chart.zoomOut, onShip: flying ? chart.back : null, atShip: view.follow, onFlat: chart.flatten, flat: !pitched }}
             readout={readoutOf(now?.ship)}
             handlers={chart.handlers}
             boxRef={box}

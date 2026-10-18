@@ -12,7 +12,9 @@
 // whatever order the labels arrive in. Priority may be Infinity. Each label
 // takes the first side whose box lies inside bounds and meets no kept name and
 // no dot; if none does it gets null (dot only). Every label has an entry.
-// Boxes that only touch edge to edge do not meet.
+// Boxes that only touch edge to edge do not meet. Bounds are a box
+// { x0, y0, x1, y1 } or, for a round chart, a circle { cx, cy, r }: a name's
+// box is inside it when all four corners are.
 
 export const SIDES = ['right', 'left', 'under'];
 
@@ -29,7 +31,11 @@ export function boxOf(side, { x, y, w, h }) {
 
 const meets = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
 
-const inside = (b, bounds) => b.x0 >= bounds.x0 && b.y0 >= bounds.y0 && b.x1 <= bounds.x1 && b.y1 <= bounds.y1;
+function inside(b, bounds) {
+  if (bounds.r === undefined) return b.x0 >= bounds.x0 && b.y0 >= bounds.y0 && b.x1 <= bounds.x1 && b.y1 <= bounds.y1;
+  const corner = (x, y) => Math.hypot(x - bounds.cx, y - bounds.cy) <= bounds.r;
+  return corner(b.x0, b.y0) && corner(b.x1, b.y0) && corner(b.x0, b.y1) && corner(b.x1, b.y1);
+}
 
 // Highest first. Compared, never subtracted: Infinity - Infinity is NaN.
 function byPriority(a, b) {

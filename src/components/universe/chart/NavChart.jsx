@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { RiArrowLeftLine } from 'react-icons/ri';
 import { BELT } from '../layout';
 import { destinationById } from '../nav';
@@ -155,7 +155,8 @@ export default function NavChart({
     if (!c || !box) return undefined;
     const measure = () => {
       paintStars(c);
-      const name = box.querySelector('.navmap-name');
+      // (a place's own name: a region's, a fight's or the front's runs smaller; only a place's button has an aria-label)
+      const name = box.querySelector('.navmap-place[aria-label] .navmap-name');
       const fontPx = name ? parseFloat(window.getComputedStyle(name).fontSize) : NaN;
       const scale = box.clientWidth / V;
       const wonders = window.getComputedStyle(box).getPropertyValue('--wonder-names').trim() !== '0';
@@ -170,19 +171,59 @@ export default function NavChart({
     return () => ro?.disconnect();
   }, []);
 
+  // Everything below is worked out again only when what it's drawn from
+  // changes (the view, the marks, the pick, the measure), not when the side
+  // panel re-renders.
   const level = levelOf(view.range);
   const pitched = view.pitch > 0 || view.yaw !== 0;
-  const shipAt = ship ? placeShip(view, ship, F) : null;
+  const shipAt = useMemo(() => (ship ? placeShip(view, ship, F) : null), [view, ship]);
   // (the front's button stays on the chart, at its rim when the front is further than the chart reaches)
-  const frontAt = front ? onFrame(view, front.at, true) : null;
-  // the place picked stays on, named (a star system: its gate)
-  const keep = pick ? [pick, destinationById(pick)?.via].filter(Boolean) : [];
-  // (where the wonders' names are hidden, bar the one picked, they hold no room from the others')
-  const labelled = fit.wonders ? marks : marks.map((m) => (m.kind === 'wonder' && !keep.includes(m.id) ? { ...m, name: '' } : m));
-  const names = new Map(marks.map((m) => [m.id, m.name]));
-  const placed = placeMarks(view, labelled, F, { level, keep, fontPx: fit.fontPx, scale: fit.scale, avoid: [shipAt, frontAt].filter(Boolean) });
-  const glyphs = placed.filter((p) => GLYPHS.has(p.mark.shape)).sort((a, b) => a.depth - b.depth); // (far first)
+  const frontAt = useMemo(() => (front ? onFrame(view, front.at, true) : null), [view, front]);
+  const names = useMemo(() => new Map(marks.map((m) => [m.id, m.name])), [marks]);
+  const placed = useMemo(() => {
+    // the place picked stays on, named (a star system: its gate)
+    const keep = pick ? [pick, destinationById(pick)?.via].filter(Boolean) : [];
+    // (where the wonders' names are hidden, bar the one picked, they hold no room from the others')
+    const labelled = fit.wonders ? marks : marks.map((m) => (m.kind === 'wonder' && !keep.includes(m.id) ? { ...m, name: '' } : m));
+    return placeMarks(view, labelled, F, { level: levelOf(view.range), keep, fontPx: fit.fontPx, scale: fit.scale, avoid: [shipAt, frontAt].filter(Boolean) });
+  }, [view, marks, pick, fit, shipAt, frontAt]);
+  const glyphs = useMemo(() => placed.filter((p) => GLYPHS.has(p.mark.shape)).sort((a, b) => a.depth - b.depth), [placed]); // (far first)
   const courseTo = shipAt && course ? onFrame(view, course.to, true) : null;
+
+  // the rings, the sectors and the regions: the view's alone
+  const backdrop = useMemo(() => {
+    const at = levelOf(view.range);
+    return (
+      <>
+        {/* range rings round the focus, at powers of ten */}
+        {ringsFor(view.range).map((d) => {
+          const rx = warp([d, 0, 0], view.range)[0] * F.r;
+          return <ellipse key={d} cx={F.cx} cy={F.cy} rx={n2(rx)} ry={n2(rx * Math.cos(view.pitch))} className="navmap-ring" />;
+        })}
+        {/* the sectors round the focus */}
+        {at !== 'system' && sectorGrid(view, at === 'universe' ? 2 : 1).map((s) => <polyline key={s.key} points={points(s.points)} className="navmap-sector" />)}
+        {/* the home system, the belt and the Curve */}
+        {REGIONS.filter((g) => g.levels.includes(at) && reaches(view, g)).map((g) => (
+          <polyline key={g.id} points={points(ringOn(view, g.centre, g.radius))} className="navmap-region" data-region={g.id} strokeWidth={g.id === 'belt' ? beltWidth(view, g.centre) : undefined} />
+        ))}
+      </>
+    );
+  }, [view]);
+  // the crew's war (front.js): its sectors in a line, each in the colour of the side
+  // that holds it, and the front where they meet, a battle going on there
+  const war = useMemo(() => {
+    if (!front) return null;
+    const at = front.sectors.map((sec) => onFrame(view, sec.at));
+    return (
+      <g className="navmap-war">
+        <polyline points={at.map((q) => `${n2(q.x)},${n2(q.y)}`).join(' ')} className="navmap-war-line" />
+        {front.sectors.map((sec, i) => (
+          <circle key={sec.id} cx={n2(at[i].x)} cy={n2(at[i].y)} r={i === front.contested ? 7 : 4.5} fill={front.colours[sec.owner]} className="navmap-war-sector" />
+        ))}
+        <circle cx={n2(frontAt.x)} cy={n2(frontAt.y)} r="14" className="navmap-war-front" />
+      </g>
+    );
+  }, [view, front, frontAt]);
 
   const dimmed = (id) => Boolean(dim?.has(id));
   const spot = (x, y) => ({ left: pc(x, F.w), top: pc(y, F.h) });
@@ -255,17 +296,7 @@ export default function NavChart({
               <stop offset="1" stopColor="#ff8a3d" stopOpacity="0" />
             </radialGradient>
           </defs>
-          {/* range rings round the focus, at powers of ten */}
-          {ringsFor(view.range).map((d) => {
-            const rx = warp([d, 0, 0], view.range)[0] * F.r;
-            return <ellipse key={d} cx={F.cx} cy={F.cy} rx={n2(rx)} ry={n2(rx * Math.cos(view.pitch))} className="navmap-ring" />;
-          })}
-          {/* the sectors round the focus */}
-          {level !== 'system' && sectorGrid(view, level === 'universe' ? 2 : 1).map((s) => <polyline key={s.key} points={points(s.points)} className="navmap-sector" />)}
-          {/* the home system, the belt and the Curve */}
-          {REGIONS.filter((g) => g.levels.includes(level) && reaches(view, g)).map((g) => (
-            <polyline key={g.id} points={points(ringOn(view, g.centre, g.radius))} className="navmap-region" data-region={g.id} strokeWidth={g.id === 'belt' ? beltWidth(view, g.centre) : undefined} />
-          ))}
+          {backdrop}
           {/* every mark's stem, from level with the ship up or down to it */}
           {placed.map((p) =>
             Math.hypot(p.x - p.footX, p.y - p.footY) >= STEM_MIN ? (
@@ -276,18 +307,7 @@ export default function NavChart({
           {glyphs.map((p) => (
             <Glyph key={p.id} p={p} dim={dimmed(p.id)} />
           ))}
-          {/* the crew's war (front.js): its sectors in a line, each in the colour of the side
-              that holds it, and the front where they meet, a battle going on there */}
-          {front && (
-            <g className="navmap-war">
-              <polyline points={points(front.sectors.map((sec) => [project(view, sec.at).u, project(view, sec.at).v]))} className="navmap-war-line" />
-              {front.sectors.map((sec, i) => {
-                const q = onFrame(view, sec.at);
-                return <circle key={sec.id} cx={n2(q.x)} cy={n2(q.y)} r={i === front.contested ? 7 : 4.5} fill={front.colours[sec.owner]} className="navmap-war-sector" />;
-              })}
-              <circle cx={n2(frontAt.x)} cy={n2(frontAt.y)} r="14" className="navmap-war-front" />
-            </g>
-          )}
+          {war}
           {/* the course: where it's going (and how), or to the place picked */}
           {courseTo && <line x1={n2(shipAt.x)} y1={n2(shipAt.y)} x2={n2(courseTo.x)} y2={n2(courseTo.y)} className="navmap-course" data-drive={course.drive} />}
           {/* the other pilots online, and someone's fight out in deep space (farFights.js), seen from afar */}
