@@ -2,10 +2,13 @@ import { memo } from 'react';
 import { Territory, WarLines } from './WarLayers';
 import { LETTER_SPACING, REGION_FONT, regionAngle, regionNamesShown, unknownNameX } from './regionNames';
 import { CORE, GRID, LANES, REGIONS, UNKNOWN, edgeAt } from './systems';
+import { LANDMARKS } from './landmarks';
+import { SPURS } from './spurs';
 
 // The galaxy map's SVG (HoloMap.jsx), in the stage that zooms and pans: the
 // grid, the war's territory, the regions' rings and names and the Unknown
-// Regions, the hyperspace lanes, the war's lines and the course. It only
+// Regions and the landmarks between the systems, the hyperspace lanes (the
+// great and the lesser), the war's lines and the course. It only
 // changes with the layers, the war, the course and the zoom (the regions'
 // names are set in screen pixels), so it's a memo: a pan, which moves the
 // stage and nothing in here, doesn't draw it again. The rings and the
@@ -38,6 +41,46 @@ const UNKNOWN_D = (() => {
 })();
 
 const LANE_POINTS = LANES.map((l) => [l.id, l.name, l.pts.map((p) => p.join(',')).join(' ')]);
+// (and the lesser routes, spurs.js's: drawn thinner)
+const SPUR_POINTS = SPURS.map((l) => [l.id, l.name, l.pts.map((p) => p.join(',')).join(' ')]);
+
+// the landmarks (landmarks.js), drawn once: a nebula two clouds of its colours, a black hole a dark heart in the glow of what
+// falls into it, the Rishi Maze a small spiral; each turned by its id, so no two lie the same way
+const turn = (id) => [...id].reduce((t, c) => (t * 31 + c.charCodeAt(0)) % 360, 7);
+const f = (v) => +v.toFixed(3);
+const LANDMARK_ART = LANDMARKS.map((l) => {
+  const [x, z] = l.pos;
+  const g = `holomap-lm-${l.id}`;
+  const a = turn(l.id);
+  if (l.kind === 'blackhole')
+    return (
+      <g key={l.id} transform={`rotate(${a} ${x} ${z})`}>
+        <circle cx={x} cy={z} r={f(l.r * 3)} fill={`url(#${g})`} />
+        <ellipse cx={x} cy={z} rx={f(l.r * 2)} ry={f(l.r * 0.55)} fill="none" stroke={l.colors[0]} strokeOpacity="0.75" strokeWidth={f(l.r * 0.28)} />
+        <circle cx={x} cy={z} r={f(l.r * 0.7)} fill="#000" />
+      </g>
+    );
+  if (l.kind === 'galaxy')
+    return (
+      <g key={l.id} transform={`rotate(${a} ${x} ${z})`}>
+        <ellipse cx={x} cy={z} rx={l.r} ry={f(l.r * 0.42)} fill={`url(#${g})`} />
+        <path d={`M${f(x - l.r * 0.85)} ${f(z)} Q${f(x - l.r * 0.2)} ${f(z - l.r * 0.5)} ${x} ${z} T${f(x + l.r * 0.85)} ${f(z)}`} fill="none" stroke={l.colors[0]} strokeOpacity="0.45" strokeWidth={f(l.r * 0.06)} />
+      </g>
+    );
+  return (
+    <g key={l.id} transform={`rotate(${a} ${x} ${z})`}>
+      <ellipse cx={x} cy={z} rx={l.r} ry={f(l.r * 0.68)} fill={`url(#${g})`} />
+      <ellipse cx={f(x + l.r * 0.35)} cy={f(z - l.r * 0.2)} rx={f(l.r * 0.55)} ry={f(l.r * 0.4)} fill={`url(#${g})`} opacity="0.8" />
+    </g>
+  );
+});
+const LANDMARK_DEFS = LANDMARKS.map((l) => (
+  <radialGradient key={l.id} id={`holomap-lm-${l.id}`}>
+    <stop offset="0" stopColor={l.colors[0]} stopOpacity={l.kind === 'blackhole' ? 0.5 : 0.42} />
+    <stop offset="0.55" stopColor={l.colors[1] ?? l.colors[0]} stopOpacity={l.kind === 'blackhole' ? 0.12 : 0.2} />
+    <stop offset="1" stopColor={l.colors[1] ?? l.colors[0]} stopOpacity="0" />
+  </radialGradient>
+));
 
 const MapSvg = memo(function MapSvg({ layers, war, ops, route, unitPx }) {
   const regionFont = REGION_FONT / unitPx; // (11.5 px on screen at any zoom)
@@ -56,13 +99,15 @@ const MapSvg = memo(function MapSvg({ layers, war, ops, route, unitPx }) {
         ))}
       {/* the war's territory */}
       {layers.territory && <Territory table={war} />}
-      {/* the regions: their rings and names, and the Unknown Regions */}
+      {/* the regions: their rings and names, and the Unknown Regions; and what lies between the systems (their names are HoloMap.jsx's) */}
       {layers.regions && (
         <>
           <path d={UNKNOWN_D} className="holomap-unknown" />
           {RINGS.map(([id, d]) => (
             <path key={id} d={d} className="holomap-region" data-id={id} />
           ))}
+          <defs>{LANDMARK_DEFS}</defs>
+          <g className="holomap-landmarks-art">{LANDMARK_ART}</g>
           {REGIONS.map((r, i) => {
             if (!regionShown.has(r.id)) return null;
             const a = regionAngle(i);
@@ -82,6 +127,12 @@ const MapSvg = memo(function MapSvg({ layers, war, ops, route, unitPx }) {
         </>
       )}
       {/* the routes */}
+      {layers.lanes &&
+        SPUR_POINTS.map(([id, name, points]) => (
+          <polyline key={id} points={points} className="holomap-spur">
+            <title>{name}</title>
+          </polyline>
+        ))}
       {layers.lanes &&
         LANE_POINTS.map(([id, name, points]) => (
           <polyline key={id} points={points} className="holomap-lane">
