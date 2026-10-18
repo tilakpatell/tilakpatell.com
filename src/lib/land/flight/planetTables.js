@@ -18,6 +18,9 @@
 //
 //   WORLDS → worlds, in the roster's order (galaxy, sector, fandom)
 //   TYPE_BIOMES[type] → an Expanse planet's biomes; TYPE_LOOK[type] → { palette, clutter, soft }
+//   PLANE_CLIMATE → the plane ground's climate noise
+//   SEEDED_EXPANSE → the thirteen seeded Expanse planets, [id, type], in the roster's order
+//   MOON_FAMILY, familyOf(type) → a moon's type as its family's (rocky is rock, icy is ice)
 //   ROUND_ROUGH[family][biomeId] → its hills' multiplier on a round planet
 //   roundBiomes(family) → [{ id, at, reach, base, rough, relief: [] }] (throws for gas and ringed)
 //   expand(biomes, seed) → biomes with each scatter made island layers
@@ -663,3 +666,27 @@ export function expand(biomes, seed) {
     return out;
   });
 }
+
+// the climate noise of the plane ground (a planet's flat map)
+export const PLANE_CLIMATE = { frequency: 0.00025, warp: 400 };
+
+// the roster's last thirteen: the Expanse planets that are flown and built on
+export const SEEDED_EXPANSE = [
+  ['e:1,0:0:0', 'gas'],
+  ['e:1,0:0:1', 'forest'],
+  ['e:1,0:0:2', 'lava'],
+  ['e:1,0:0:3', 'ice'],
+  ['e:1,0:0:4', 'rock'],
+  ['e:1,0:0:5', 'ice'],
+  ['e:1,0:0:6', 'desert'],
+  ['e:1,0:1:0', 'desert'],
+  ['e:1,0:1:1', 'ocean'],
+  ['e:1,0:1:2', 'rock'],
+  ['e:1,0:2:0', 'gas'],
+  ['e:1,0:2:1', 'ocean'],
+  ['e:1,0:2:2', 'rock'],
+];
+
+// a moon is rocky or icy; the ground tables are keyed by family
+export const MOON_FAMILY = { rocky: 'rock', icy: 'ice' };
+export const familyOf = (type) => MOON_FAMILY[type] ?? type;

@@ -7,6 +7,7 @@
 // generates one: what sphereField reads, with one POI. Its `sea` and `peaks`
 // are the middle of the character's ranges unless asked.
 //
+//   MOONS → two moon rows of 'e:3,-2:1:0' as the generator will give them (rocky, then icy)
 //   randomDirs(n, seed) → n unit [x, y, z] arrays
 //   roundSpec({ type = 'rock', kind = 'craters', seed = 7, radius = 20000, sea, peaks }) → spec
 
@@ -40,3 +41,9 @@ export function roundSpec({ type = 'rock', kind = 'craters', seed = 7, radius = 
     pois: [{ id: 'poi-0', name: 'Ruins', kind: 'ruins', dir: dirOfLatLon(5, 10), at: [0, 0], r: 120, edge: 100 }],
   };
 }
+
+const SYSTEM = { faction: null, traffic: 0.2, hazard: null };
+export const MOONS = [
+  { id: 'e:3,-2:1:0:0', name: 'Ostra I', type: 'rocky', seed: '12345', system: SYSTEM, parent: 'e:3,-2:1:0' },
+  { id: 'e:3,-2:1:0:1', name: 'Ostra II', type: 'icy', seed: '67890', system: SYSTEM, parent: 'e:3,-2:1:0' },
+];

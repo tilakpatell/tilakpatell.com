@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { PLANETS, lifeFor, planetSpecOf } from './fixtures/expanse.js';
-import { DENSITY, KINDS, LIFE, expanseLife, isDead, kindAt } from './lifeTables';
+import { MOONS } from './fixtures/generated';
+import { planetSpecOf as specWith } from './planetSpec';
+import { DENSITY, KINDS, LIFE, expanseLife, isDead, kindAt, systemOf } from './lifeTables';
 
 const BODIES = ['beast', 'person', 'flyer', 'walker', 'speeder', 'drone', 'craft'];
 // the roster's named worlds (docs/research/2026-10-09-planet-geographies.md, “The roster”)
@@ -11,6 +13,12 @@ const DENY = /\b(first order|kylo|rey|finn|poe dameron|bb-?8|starkiller|jakku|cr
 const rowsOf = (life) => [...life.air, ...life.ground];
 
 describe('lifeTables', () => {
+  it('finds a moon’s system on its row', () => {
+    expect(systemOf(MOONS[0].id, { expanse: MOONS })).toEqual(MOONS[0].system);
+    const life = lifeFor(specWith(MOONS[0].id, { expanse: MOONS }), { expanse: MOONS });
+    expect(Array.isArray(life.air) && Array.isArray(life.ground)).toBe(true);
+  });
+
   it('has a row or the rule for every flown planet, and a row for every named world', () => {
     expect(PLANETS.length).toBe(50);
     for (const p of PLANETS) {

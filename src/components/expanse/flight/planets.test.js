@@ -8,7 +8,7 @@ import { UNIVERSE, hash64 } from '../gen/seed.js';
 import { FIGURES, GALAXY_KINDS, SURFACE_MODELS } from '../../galaxy/shared/models';
 import { SITES } from '../../galaxy/shared/ground';
 import { BUILT_KINDS } from '../../universe/shared/flying';
-import { EXPANSE, PLANETS, expanseRow, lifeOf, planetSpecOf } from './planets';
+import { EXPANSE, PLANETS, expanseRow, lifeOf, moonRowOf, planetSpecOf } from './planets';
 
 const GALAXY = 'tatooine hoth endor yavin bespin dagobah mustafar coruscant naboo kashyyyk kamino geonosis scarif nevarro mandalore lothal sorgan'.split(' ');
 const SECTOR = 'gazorpazorp squanch birdworld gearworld pluto snakeplanet nuptia resort cronenberg purge'.split(' ');
@@ -40,6 +40,21 @@ describe('the flight’s planets, composed', () => {
     expect(planetSpecOf(far.id)?.id).toBe(far.id.toLowerCase());
     expect(planetSpecOf('e:1,0:99:0')).toBeNull();
     expect(expanseRow('hoth')).toBeNull();
+  });
+
+  it('carries the universe radius, moons and rings on a row', () => {
+    const far = makeSector(UNIVERSE, 3, -2).systems.flatMap((s) => s.planets).find((p) => p.type === 'ice' || p.type === 'desert' || p.type === 'forest');
+    expect(expanseRow(far.id)).toMatchObject({ radius: far.radius, moons: far.moons, rings: Boolean(far.rings) });
+  });
+
+  it('reads a moon from the generator’s moon rows', () => {
+    const system = { faction: null, traffic: 0.2, hazard: null };
+    expect(moonRowOf({ id: 'E:3,-2:1:0', moonList: [{ name: 'Ostra', type: 'rocky', seed: 12345n }] }, system, 0)).toEqual({ id: 'e:3,-2:1:0:0', name: 'Ostra', type: 'rocky', seed: '12345', system, parent: 'e:3,-2:1:0' });
+  });
+
+  it('reads a planet id with its height written', () => {
+    expect(expanseRow('E:1,0,0:0:1')).toEqual(expanseRow('e:1,0:0:1'));
+    expect(expanseRow('e:1,0:0:1')).not.toBeNull();
   });
 
   it('reads an Expanse planet’s life from its system', () => {

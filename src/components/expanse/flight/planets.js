@@ -4,6 +4,7 @@
 // the flight can be lifted out without the Expanse noticing.
 //
 //   EXPANSE → the thirteen Expanse rows the roster flies, in sector order
+//   moonRowOf(p, s, k) → a moon's row from the planet's moonList, or null
 //   expanseRow(id) → any Expanse planet's row, or null (a typed /fly/e:… URL
 //     reaches past the thirteen, as it always has)
 //   PLANETS → the fifty, { id, name, type, seed }
@@ -11,6 +12,8 @@
 //   lifeOf(spec) → what lives on it
 //   occurrencesOf(spec), eventsOf(spec) → what is there to find, and what happens
 
+import { canonicalId } from '../../../lib/land/flight/expanse';
+import { parseSpaceId } from '../../../lib/space/address';
 import { makeSector } from '../gen/sector.js';
 import { UNIVERSE } from '../gen/seed.js';
 import { planetSpecOf as specWith, planetsOf } from '../../../lib/land/flight/planetSpec';
@@ -21,24 +24,39 @@ import { eventsFor } from '../../../lib/land/flight/eventTables';
 const EXPANSE_COUNT = 13;
 // the order the roster takes them in: sectors round home
 const SECTORS = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1]];
-const EXPANSE_ID = /^e:(-?\d+),(-?\d+):(\d+):(\d+)$/i;
 
 // a planet and its system as plain data: what the tables read, and no more
+const systemOf = (s) => ({ faction: s.faction ? { id: s.faction.id } : null, traffic: s.traffic, hazard: s.hazard ?? null });
 const rowOf = (p, s) => ({
   id: p.id.toLowerCase(),
   name: p.name,
   type: p.type,
   seed: String(p.seed),
-  system: { faction: s.faction ? { id: s.faction.id } : null, traffic: s.traffic, hazard: s.hazard ?? null },
+  radius: p.radius,
+  moons: typeof p.moons === 'number' ? p.moons : (p.moons?.length ?? 0),
+  rings: Boolean(p.rings),
+  system: systemOf(s),
 });
 
-export function expanseRow(id) {
-  const m = String(id).match(EXPANSE_ID);
+// a moon from the generator's moon rows (lane 2: `moonList` on the planet)
+export function moonRowOf(p, s, k) {
+  const m = p.moonList?.[k];
   if (!m) return null;
-  const [sx, sz, i, j] = m.slice(1).map(Number);
-  const s = makeSector(UNIVERSE, sx, sz).systems[i];
-  const p = s?.planets[j];
-  return p ? rowOf(p, s) : null;
+  const parent = p.id.toLowerCase();
+  const row = { id: `${parent}:${k}`, name: m.name, type: m.type, seed: String(m.seed), system: systemOf(s), parent };
+  if (m.radius !== undefined) row.radius = m.radius;
+  return row;
+}
+
+export function expanseRow(id) {
+  const c = canonicalId(id);
+  const a = c && parseSpaceId(c);
+  // (the other layers are the 3D generator's)
+  if (!a || a.sy !== 0) return null;
+  const s = makeSector(UNIVERSE, a.sx, a.sz).systems[a.system];
+  const p = s?.planets[a.planet];
+  if (!p) return null;
+  return a.moon === undefined ? rowOf(p, s) : moonRowOf(p, s, a.moon);
 }
 
 function expanseRows() {
