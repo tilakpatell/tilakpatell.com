@@ -52,7 +52,8 @@
 }
 
 /* the arms: the line's name in its colour, the three lines' marks, the rack */
-:where(.hud-arms):not(hud-none) { --hud-arms-c: var(--hud-cluster-ink, #e8f4ff); }
+/* (as wide as its name, not a glass block's least: the row has the vitals, the powers and a world's own blocks to fit beside it) */
+:where(.hud-arms):not(hud-none) { --hud-arms-c: var(--hud-cluster-ink, #e8f4ff); min-width: 0; }
 :where(.hud-arms:not([data-on])):not(hud-none) { display: none; }
 :where(.hud-arms[data-line='secondary']):not(hud-none) { --hud-arms-c: #9fd8ff; }
 :where(.hud-arms[data-line='ordnance']):not(hud-none) { --hud-arms-c: #ffc070; }
