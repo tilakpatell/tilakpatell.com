@@ -8,6 +8,7 @@ import { framing } from './mapFraming';
 import { FLIGHT_MS, TITLE } from './mapFlight.js';
 import { waitOf } from './mapCover.js';
 import { mapFont, paintMap } from './mapPaint.js';
+import { engine, watch } from './module';
 import '../../styles/lazy/middleearth.css';
 
 // The map of Middle-earth behind the whole page. The painted sheet is drawn
@@ -27,7 +28,10 @@ import '../../styles/lazy/middleearth.css';
 // so the hub can move its markers with the camera. `covers` is a selector for
 // what the page lays opaque over the map, across its width (a chapter's town
 // on its stage): while it hides most of the screen, the WebGL map is drawn
-// less often (./mapCover.js).
+// less often (./mapCover.js). `host` is the ref for the box the page's
+// world draws in (Middle-earth's, ./module.js): the map's, the window's size.
+// Its frames are the world's, once it's up (and the flat sheet's own,
+// requestAnimationFrame's, until then or without it).
 
 // how long the opening holds, without a flight, for someone who has asked
 // for less motion (without a graphics chip it lasts the title’s time)
@@ -147,7 +151,7 @@ const forced = () => {
   }
 };
 
-export default function MapBackdrop({ spot = null, zoom = null, hover = null, mordor = false, dark = false, hub = false, opening = false, covers = null, onOpened, api: outer, onFrame }) {
+export default function MapBackdrop({ spot = null, zoom = null, hover = null, mordor = false, dark = false, hub = false, opening = false, covers = null, onOpened, api: outer, onFrame, host = null }) {
   const three = use3D();
   const gl = three.on && (!three.info.software || forced());
   const flatCanvas = useRef(null);
@@ -231,12 +235,32 @@ export default function MapBackdrop({ spot = null, zoom = null, hover = null, mo
       }
       return waitOf(c.clientHeight, spans);
     };
-    // draw while the camera is on its way, then stop until something changes
+    // draw while the camera is on its way, then stop until something changes:
+    // the world's tick once it's up (its ms as these were), else a frame of
+    // its own
+    let tick = null;
+    let world = null; // the world, up: its tick takes over at this loop's next frame
+    let kicked = false; // (asked for again during the frame drawing)
     const loop = (now) => {
       raf = 0;
       if (dead) return;
       const ms = last ? Math.min(50, now - last) : 16;
       last = now;
+      const more = frameOf(ms, now);
+      // (handed over between two of its frames, so none is lost or doubled)
+      if (world && !tick) {
+        tick = world.tick(onTick, { el: glCanvas.current });
+        if (more || raf) {
+          cancelAnimationFrame(raf);
+          raf = 0;
+          tick.start(more ? now : 0);
+        }
+        return;
+      }
+      if (!more) last = 0;
+      else if (!raf) raf = requestAnimationFrame(loop); // (unless something in the frame kicked already)
+    };
+    const frameOf = (ms, now) => {
       const s = state.current;
       // the flat sheet draws until the WebGL map is over it, and in the frame
       // it comes on too, so the WebGL fades in over the sheet
@@ -260,14 +284,20 @@ export default function MapBackdrop({ spot = null, zoom = null, hover = null, mo
           }
         }
       }
-      if (drew) {
-        frame.current?.();
-        if (!raf) raf = requestAnimationFrame(loop); // (unless something in the frame kicked already)
-      } else last = 0;
+      if (drew) frame.current?.();
+      return drew;
+    };
+    const onTick = (ms, now) => {
+      kicked = false;
+      if (dead) return false;
+      return frameOf(ms, now) || kicked;
     };
     kick.current = () => {
       view();
-      if (!raf && !document.hidden) raf = requestAnimationFrame(loop);
+      if (tick) {
+        kicked = true;
+        tick.start();
+      } else if (!raf && !document.hidden) raf = requestAnimationFrame(loop);
     };
     const fit = () => {
       size();
@@ -283,13 +313,25 @@ export default function MapBackdrop({ spot = null, zoom = null, hover = null, mo
       setOn(false);
       fit();
     };
+    // (the world's frames from when it's up, the flat sheet's own until
+    // then, and again if it goes)
+    const unwatch = watch((me) => {
+      if (dead || me === world) return;
+      tick?.dispose();
+      tick = null;
+      world = me;
+      // (between frames: at rest, the world's from now; else at the next)
+      if (me && !raf) tick = me.tick(onTick, { el: glCanvas.current });
+      if (!me) kick.current();
+    });
     if (gl) {
       import('./MapBackdrop3D')
-        .then(async ({ createMapBackdrop }) => {
+        .then((m) => engine().then((me) => [m, me]))
+        .then(async ([{ createMapBackdrop }, me]) => {
           await mapFont();
-          // only now, and only if still wanted: a canvas has one context to give
+          // only now, and only if still wanted
           if (dead || !glCanvas.current) return;
-          const a = createMapBackdrop(glCanvas.current, { onLost: () => !dead && lose() });
+          const a = createMapBackdrop(glCanvas.current, { me, onLost: () => !dead && lose() });
           // its shaders link in the background (the flat sheet meanwhile),
           // so its first frame doesn't stop the page
           await settle(a.ready);
@@ -307,6 +349,8 @@ export default function MapBackdrop({ spot = null, zoom = null, hover = null, mo
     return () => {
       dead = true;
       cancelAnimationFrame(raf);
+      unwatch();
+      tick?.dispose();
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('resize', fit);
       document.removeEventListener('visibilitychange', kick.current);
@@ -352,7 +396,7 @@ export default function MapBackdrop({ spot = null, zoom = null, hover = null, mo
   }, [opening, up, hold]);
 
   return (
-    <div className="me-atlas" data-hub={hub || undefined} data-opening={opening || undefined} aria-hidden="true">
+    <div ref={host} className="me-atlas" data-hub={hub || undefined} data-opening={opening || undefined} aria-hidden="true">
       <canvas ref={flatCanvas} data-layer="flat" />
       {gl && <canvas ref={glCanvas} data-layer="gl" data-on={on || undefined} />}
       {opening && (
