@@ -130,7 +130,9 @@ async function player() {
     if (v < 3 && sim.keys.has('fwd') && !inSpace()) {
       stuck ??= performance.now();
       if (performance.now() - stuck > 1200) {
-        hold('fwd', 'up');
+        // (straight up, flat out: a forward push into the wall would hold him there)
+        sim.pitch = 0.2;
+        hold('up', 'boost');
         return false;
       }
     } else stuck = null;
