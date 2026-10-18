@@ -256,7 +256,7 @@ export function powerStep(s, a, h, look, dt, say) {
       local.set(RUINS, serialise(s.ruins));
       sfx('ding');
     } else if (o.kind === 'linebreak') {
-      s.h = dive(s.h, o.to, o.speed);
+      s.h = dive(s.h, o.to, o.speed, { time: o.time, through: true });
       for (const id of o.towers) hitTowerIn(s, a, id, o.damage * 400, [s.world.buildings[id].x, s.world.buildings[id].h, s.world.buildings[id].z], true);
       s.events.push({ type: 'linebreak', from: o.from, to: o.to });
       sfx('boom');

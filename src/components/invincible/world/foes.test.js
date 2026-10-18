@@ -404,7 +404,8 @@ describe('the villains', () => {
     expect(ev.some((e) => e.type === 'swing' && e.hit)).toBe(true);
   });
   it('a ground pound floors the Flaxans within 40 m and staggers the Maulers', () => {
-    const at = [AT[0], G, AT[2]];
+    // (on the river's bank, within reach of the portal: the Flaxans round him, not flying home)
+    const at = [1000, groundAt(1000, -420), -420];
     let f = spawnFoes(newFoes(), 'flaxan', 3);
     f = { ...f, foes: f.foes.map((e, i) => ({ ...e, state: 'fight', cool: 99, p: [at[0] + [10, 30, 200][i], at[1] + 2, at[2]], v: [0, 0, 0] })) };
     f = spawnFoes(f, 'mauler', 1, [at[0], 0, at[2] - 20]);
@@ -460,19 +461,21 @@ describe('the towers they hit (./demolish.js counts it)', () => {
   const face = [tower.x - tower.w / 2, 20, tower.z];
   it('a car thrown into a tower hits it with a car’s force, and comes down', () => {
     let f = spawnFoes(newFoes(), 'mauler', 1, [face[0] - 200, 0, face[2]]);
-    f = { ...f, foes: f.foes.map((e) => ({ ...e, cool: 99, throwCool: 99 })), cars: [{ id: 0, p: [face[0] - 6, 20, face[2]], v: [60, 0, 0], held: null, away: true, life: 4 }] };
-    const r = stepFoes(f, far, idle, 0.2, { city });
+    f = { ...f, foes: f.foes.map((e) => ({ ...e, cool: 99, throwCool: 99 })), cars: [{ id: 0, p: [face[0] - 2, 20, face[2]], v: [60, 0, 0], held: null, away: true, life: 4 }] };
+    const r = stepFoes(f, far, idle, 1 / 20, { city });
     expect(r.ev).toContainEqual(expect.objectContaining({ type: 'towerHit', building: tower.id, force: forceOf('car') }));
     expect(r.foes.cars).toHaveLength(0);
   });
   it('a foe thrown into one over 45 m/s hits it too, and takes the blow', () => {
     let f = spawnFoes(newFoes(), 'mauler', 1, [face[0] - 200, 0, face[2]]);
-    f = { ...f, foes: f.foes.map((e) => ({ ...e, state: 'thrown', t: 0, p: [face[0] - 4, 20, face[2]], v: [60, 0, 0] })) };
-    const r = stepFoes(f, far, idle, 0.2, { city });
-    expect(r.ev).toContainEqual(expect.objectContaining({ type: 'towerHit', building: tower.id, force: 60 }));
+    f = { ...f, foes: f.foes.map((e) => ({ ...e, state: 'thrown', t: 0, p: [face[0] - 2, 20, face[2]], v: [60, 0, 0] })) };
+    const r = stepFoes(f, far, idle, 1 / 20, { city });
+    const hit = r.ev.find((e) => e.type === 'towerHit');
+    expect(hit.building).toBe(tower.id);
+    expect(hit.force).toBeCloseTo(60, 1); // (its speed: a step's gravity in it too)
     expect(r.ev).toContainEqual(expect.objectContaining({ type: 'hit', id: 0, thrown: true }));
     const slow = { ...f, foes: f.foes.map((e) => ({ ...e, v: [30, 0, 0] })) };
-    expect(stepFoes(slow, far, idle, 0.2, { city }).ev.some((e) => e.type === 'towerHit')).toBe(false);
+    expect(stepFoes(slow, far, idle, 1 / 20, { city }).ev.some((e) => e.type === 'towerHit')).toBe(false);
   });
 });
 

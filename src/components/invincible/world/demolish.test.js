@@ -99,7 +99,8 @@ describe('what it leaves standing', () => {
     const tall = b.h + b.top.h;
     applyRuin(W, b.id, 0.8);
     const stands = tall * (1 - biteOf(0.8));
-    expect(Math.max(...boxes.map((q) => q.y1))).toBeCloseTo(stands, 6);
+    // (what stands: the top of the boxes left with any height; the top's own box is cut to nothing at its base)
+    expect(Math.max(...boxes.filter((q) => q.y1 > q.y0).map((q) => q.y1))).toBeCloseTo(stands, 6);
     for (const q of boxes) expect(q.y1).toBeGreaterThanOrEqual(q.y0);
     applyRuin(W, b.id, 0);
     expect(boxes.map((q) => q.y1).sort((x, y) => x - y)).toEqual([b.h, tall]);
