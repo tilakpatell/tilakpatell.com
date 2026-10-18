@@ -117,7 +117,7 @@
 }
 /* (the first-flight line goes over the cluster, not under it) */
 @media (max-width: 767px) and (min-height: 780px) {
-  .galaxy-page .universe-hint { bottom: calc(var(--sheet-h, 0px) + 190px); }
+  .galaxy-page .universe-hint { bottom: calc(var(--sheet-h, 0px) + 226px); } /* (over the power tiles too) */
 }
 
 /* The flying keys (KeysCard.jsx): over the cluster, in the middle of the open

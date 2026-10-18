@@ -197,8 +197,8 @@
   :where(.hud-power-key, .hud-power-name):not(hud-none) { display: none; }
   :where(.hud-power small):not(hud-none) { right: 50%; top: auto; bottom: -15px; translate: 50% 0; font-size: 0.7rem; text-shadow: 0 1px 4px rgb(0 0 0 / 0.9); }
 }
-/* a phone: over the sheet, left of the climbs, above Fire and View */
+/* a phone: over the sheet, left of the climbs, above Fire, View and the Weapon button (each world flying a ship has one, over Fire) */
 @media (max-width: 767px) {
-  :where(.hud-powers):not(hud-none) { left: auto; top: auto; right: 104px; bottom: calc(var(--sheet-h, 0px) + 100px); flex-direction: row-reverse; }
+  :where(.hud-powers):not(hud-none) { left: auto; top: auto; right: 104px; bottom: calc(var(--sheet-h, 0px) + 162px); flex-direction: row-reverse; }
   :where(.hud-power):not(hud-none) { width: 54px; height: 54px; }
 }

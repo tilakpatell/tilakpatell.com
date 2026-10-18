@@ -1305,7 +1305,7 @@ body:has(.universe-panel) .guide-btn { display: none; }
   /* above the whole cluster of buttons (the weapon one reaches 150px over
      the sheet, the settings and hangar ones 110px), and clear of the climb
      and dive buttons on the right: at 92px it sat over the weapon button */
-  .universe-hint { left: var(--hud-edge); right: 90px; bottom: calc(var(--sheet-h) + 160px); max-width: none; translate: none; padding: 0.4rem 0.7rem; border-radius: 12px; white-space: normal; font-size: 0.78rem; line-height: 1.4; }
+  .universe-hint { left: var(--hud-edge); right: 90px; bottom: calc(var(--sheet-h) + 226px); /* (over the power tiles, which are over the Weapon button) */ max-width: none; translate: none; padding: 0.4rem 0.7rem; border-radius: 12px; white-space: normal; font-size: 0.78rem; line-height: 1.4; }
   /* on foot, above the way in (s+156) rather than on it */
   .universe-hint:not(.universe-hint-fly) { bottom: calc(var(--sheet-h) + 212px); }
   .universe-settings-btn { left: var(--hud-edge); bottom: calc(var(--sheet-h) + 66px); }
