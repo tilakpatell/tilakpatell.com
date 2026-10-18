@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { FORESTS, PLACES, RANGES, REGIONS, RIVERS, SEAS, range, wood } from './mapData';
+import { FORESTS, LAKES, MARSHES, PLACES, RANGES, REGIONS, RIVERS, ROADS, SEAS, hatch, nameAt, range, stopNameAt, trees } from './mapData';
+import { placeAt } from './sheet';
 import { STOPS } from './road';
 import '../../styles/lazy/middleearth.css';
 
@@ -7,6 +8,10 @@ import '../../styles/lazy/middleearth.css';
 // the Anduin, the forests and the mountains around Mordor, with the road the
 // Ring took from Hobbiton to Mount Doom. `step` reveals the road up to that stop.
 
+
+const [doomX, doomY] = placeAt('mount-doom');
+const [towerX, towerY] = placeAt('barad-dur');
+const ANCHOR = { left: 'start', right: 'end', center: 'middle' };
 
 export default function MiddleEarthMap({ step }) {
   const reveal = useRef(null);
@@ -31,56 +36,71 @@ export default function MiddleEarthMap({ step }) {
         </mask>
       </defs>
       <rect width="800" height="560" fill="#f2e6c6" />
-      {/* the sea to the west and the bay in the south */}
+      {/* the sea to the west and the bay in the south, the Sea of Rhûn in the east, and the lakes */}
       {SEAS.map((d) => (
         <path key={d} d={d} className="map-sea" />
       ))}
-      {/* forests: the Old Forest, Lothlórien, Fangorn, Mirkwood */}
-      {FORESTS.map(([cx, cy, rx, ry, seed, count, kind]) => (
+      {LAKES.map(({ at, rx, ry }) => (
+        <ellipse key={`${at}`} cx={at[0]} cy={at[1]} rx={Math.max(1.5, rx)} ry={Math.max(1.2, ry)} className="map-sea" />
+      ))}
+      {/* the marshes, hatched */}
+      <path d={MARSHES.flatMap(hatch).map(([x0, y, x1]) => `M${x0} ${y} H${x1}`).join('')} stroke="#4a3520" strokeOpacity="0.35" strokeWidth="0.6" />
+      {/* the other roads, faint */}
+      {ROADS.map((d) => (
+        <path key={d} d={d} fill="none" stroke="#4a3520" strokeOpacity="0.25" strokeDasharray="1.5 3" />
+      ))}
+      {/* forests: the Old Forest, the Trollshaws, Eregion, Lothlórien, Fangorn, Mirkwood and Gondor's woods */}
+      {FORESTS.map(([shape, seed, count, kind]) => (
         <g key={seed} className={kind ? `map-tree map-tree-${kind}` : 'map-tree'}>
-          {wood(cx, cy, rx, ry, seed, count).map(([x, y, r], i) => (
+          {trees(shape, seed, count).map(([x, y, r], i) => (
             <circle key={i} cx={x} cy={y} r={r} />
           ))}
         </g>
       ))}
-      {/* rivers: the Anduin from the north to the sea, the Brandywine, the Isen */}
+      {/* rivers: the Anduin from the north to the sea, the Brandywine, the Isen and the rest */}
       {RIVERS.map(([d, thin]) => (
         <path key={d} d={d} className={thin ? 'map-river map-river-thin' : 'map-river'} />
       ))}
       {/* mountains: the Misty Mountains, the White Mountains, the Grey Mountains, and Mordor's walls */}
-      {RANGES.map(([x0, y0, x1, y1, dark]) => (
-        <path key={`${x0} ${y0}`} d={range(x0, y0, x1, y1)} className={dark ? 'map-peaks map-peaks-dark' : 'map-peaks'} />
+      {RANGES.map(([line, dark]) => (
+        <path key={`${line[0]}`} d={range(line)} className={dark ? 'map-peaks map-peaks-dark' : 'map-peaks'} />
       ))}
       {/* Mount Doom, burning, and the dark tower */}
-      <path d="M646 432 L660 406 L674 432 Z" fill="#5a2a1a" stroke="#3a1a10" />
-      <circle cx="660" cy="406" r="5" className="map-fire" />
-      <path d="M708 396 V372 l4 -6 l4 6 V396 Z" fill="#2a1a14" />
-      <circle cx="712" cy="364" r="3.4" className="map-fire" />
+      <path d={`M${doomX - 14} ${doomY + 12} L${doomX} ${doomY - 14} L${doomX + 14} ${doomY + 12} Z`} fill="#5a2a1a" stroke="#3a1a10" />
+      <circle cx={doomX} cy={doomY - 14} r="5" className="map-fire" />
+      <path d={`M${towerX - 4} ${towerY + 4} V${towerY - 20} l4 -6 l4 6 V${towerY + 4} Z`} fill="#2a1a14" />
+      <circle cx={towerX} cy={towerY - 28} r="3.4" className="map-fire" />
       {/* labels */}
       {REGIONS.map(([t, x, y]) => (
         <text key={t} x={x} y={y} className="map-region">
           {t}
         </text>
       ))}
-      {PLACES.map(([t, x, y]) => (
-        <g key={t}>
-          <circle cx={x} cy={y} r="2.6" className="map-dot" />
-          <text x={x + 6} y={y + 3} className="map-place">
-            {t}
-          </text>
-        </g>
-      ))}
+      {PLACES.map(([t, x, y, side]) => {
+        const [tx, ty, align] = nameAt(x, y, side);
+        return (
+          <g key={t}>
+            <circle cx={x} cy={y} r="2.6" className="map-dot" />
+            <text x={tx} y={ty} textAnchor={ANCHOR[align]} className="map-place">
+              {t}
+            </text>
+          </g>
+        );
+      })}
       {/* the road: faint all the way, inked as far as the story has got */}
       <path d={road} className="map-road map-road-faint" />
       <path d={road} className="map-road" mask="url(#map-road)" />
-      {STOPS.map((s, i) => (
-        <g key={s.id} className="map-stop" data-reached={i <= step || undefined}>
-          <circle cx={s.x} cy={s.y} r="4.2" />
-          <text x={s.x + 7} y={s.y - 6} className="map-place map-place-stop">
-            {s.name}
-          </text>
-        </g>
-      ))}
+      {STOPS.map((s, i) => {
+        const [tx, ty, align] = stopNameAt(s);
+        return (
+          <g key={s.id} className="map-stop" data-reached={i <= step || undefined}>
+            <circle cx={s.x} cy={s.y} r="4.2" />
+            <text x={tx} y={ty} textAnchor={ANCHOR[align]} className="map-place map-place-stop">
+              {s.name}
+            </text>
+          </g>
+        );
+      })}
       <g className="map-walker" style={{ transform: `translate(${at.x}px, ${at.y}px)` }}>
         <circle r="9" fill="#b8860b" opacity="0.25" />
         <circle r="5" fill="#8a5a12" stroke="#fff7dc" strokeWidth="1.5" />

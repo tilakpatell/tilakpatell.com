@@ -4,7 +4,8 @@
 // so the mountains stand up a little when a light crosses them.
 
 import { fbm, makeCanvas, makeNoise, paintPixels } from '../../lib/paint';
-import { FORESTS, PLACES, RANGES, REGIONS, RIVERS, SEAS, SHEET, peaks, wood } from './mapData';
+import { FORESTS, LAKES, MARSHES, PLACES, RANGES, REGIONS, RIVERS, ROADS, SEAS, SHEET, hatch, nameAt, peaks, stopNameAt, trees } from './mapData';
+import { placeAt } from './sheet';
 import { STOPS } from './road';
 
 const INK = '#4a3520';
@@ -68,16 +69,46 @@ export function paintMap(width = 2048) {
     ctx.stroke(sea);
   }
 
+  // the lakes, Evendim to Núrnen, as still water with a shore
+  for (const { at, rx, ry } of LAKES) {
+    ctx.beginPath();
+    ctx.ellipse(at[0], at[1], Math.max(1.5, rx), Math.max(1.2, ry), 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(88, 118, 124, 0.38)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(74, 53, 32, 0.6)';
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
+  }
+
+  // the marshes, hatched as old maps hatch them: short level strokes of ink
+  ctx.strokeStyle = 'rgba(74, 53, 32, 0.35)';
+  ctx.lineWidth = 0.6;
+  ctx.beginPath();
+  for (const m of MARSHES) {
+    for (const [x0, y, x1] of hatch(m)) {
+      ctx.moveTo(x0, y);
+      ctx.lineTo(x1, y);
+    }
+  }
+  ctx.stroke();
+
   for (const [d, thin] of RIVERS) {
     ctx.strokeStyle = 'rgba(62, 92, 112, 0.8)';
     ctx.lineWidth = thin ? 1.2 : 2;
     ctx.stroke(new Path2D(d));
   }
 
+  // the other roads, faint and dotted under the Ring's
+  ctx.strokeStyle = 'rgba(74, 53, 32, 0.25)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([1.5, 3]);
+  for (const d of ROADS) ctx.stroke(new Path2D(d));
+  ctx.setLineDash([]);
+
   // the woods, a tree at a time
-  for (const [cx, cy, rx, ry, seed, count, kind] of FORESTS) {
+  for (const [shape, seed, count, kind] of FORESTS) {
     const fill = kind === 'gold' ? 'rgba(160, 128, 42, 0.55)' : kind === 'dark' ? 'rgba(44, 62, 40, 0.62)' : 'rgba(78, 104, 56, 0.55)';
-    for (const [x, y, r] of wood(cx, cy, rx, ry, seed, count)) {
+    for (const [x, y, r] of trees(shape, seed, count)) {
       ctx.fillStyle = fill;
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
@@ -91,8 +122,8 @@ export function paintMap(width = 2048) {
   }
 
   // the mountains: each peak inked, its eastern side in shadow
-  for (const [x0, y0, x1, y1, dark] of RANGES) {
-    for (const [x, y, s] of peaks(x0, y0, x1, y1, 11, 12)) {
+  for (const [line, dark] of RANGES) {
+    for (const [x, y, s] of peaks(line, 11, 12)) {
       ctx.fillStyle = dark ? 'rgba(58, 34, 26, 0.6)' : 'rgba(104, 84, 58, 0.45)';
       ctx.beginPath();
       ctx.moveTo(x, y - s / 2);
@@ -110,22 +141,24 @@ export function paintMap(width = 2048) {
     }
   }
   // Mount Doom, burning, and the dark tower
+  const [dx, dy] = placeAt('mount-doom');
+  const [bx, by] = placeAt('barad-dur');
   ctx.fillStyle = '#5a2a1a';
   ctx.beginPath();
-  ctx.moveTo(644, 434);
-  ctx.lineTo(660, 404);
-  ctx.lineTo(676, 434);
+  ctx.moveTo(dx - 16, dy + 14);
+  ctx.lineTo(dx, dy - 16);
+  ctx.lineTo(dx + 16, dy + 14);
   ctx.closePath();
   ctx.fill();
   ctx.fillStyle = '#c2410c';
   ctx.beginPath();
-  ctx.arc(660, 403, 4, 0, Math.PI * 2);
+  ctx.arc(dx, dy - 17, 4, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = '#2a1a14';
-  ctx.fillRect(708, 370, 8, 26);
+  ctx.fillRect(bx - 4, by - 22, 8, 26);
   ctx.fillStyle = '#c2410c';
   ctx.beginPath();
-  ctx.ellipse(712, 365, 5, 2.4, 0, 0, Math.PI * 2);
+  ctx.ellipse(bx, by - 27, 5, 2.4, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // the names
@@ -135,14 +168,15 @@ export function paintMap(width = 2048) {
   if ('letterSpacing' in ctx) ctx.letterSpacing = '5px';
   for (const [t, x, y] of REGIONS) ctx.fillText(t, x, y);
   if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
-  ctx.textAlign = 'left';
   ctx.font = serif(8.5);
-  for (const [t, x, y] of PLACES) {
+  for (const [t, x, y, side] of PLACES) {
     ctx.fillStyle = INK;
     ctx.beginPath();
     ctx.arc(x, y, 2, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillText(t, x + 5, y + 3);
+    const [tx, ty, align] = nameAt(x, y, side);
+    ctx.textAlign = align;
+    ctx.fillText(t, tx, ty);
   }
 
   // the road the Ring took, in red ink
@@ -160,8 +194,11 @@ export function paintMap(width = 2048) {
     ctx.arc(s.x, s.y, 2.8, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#5a2414';
-    ctx.fillText(s.name, s.x + 6, s.y - 5);
+    const [tx, ty, align] = stopNameAt(s);
+    ctx.textAlign = align;
+    ctx.fillText(s.name, tx, ty);
   }
+  ctx.textAlign = 'left';
 
   // a compass rose, and whose map it is
   ctx.save();
@@ -227,8 +264,9 @@ export function paintRelief(width = 1024) {
     ctx.fillStyle = g;
     ctx.fillRect(x - r, y - r, r * 2, r * 2);
   };
-  for (const [x0, y0, x1, y1] of RANGES) for (const [x, y] of peaks(x0, y0, x1, y1, 11, 12)) hill(x, y, 11, 0.85);
-  hill(660, 418, 20, 1);
+  for (const [line] of RANGES) for (const [x, y] of peaks(line, 11, 12)) hill(x, y, 11, 0.85);
+  const [dx, dy] = placeAt('mount-doom');
+  hill(dx, dy - 2, 20, 1);
   return c;
 }
 
