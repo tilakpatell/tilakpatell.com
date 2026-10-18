@@ -81,6 +81,7 @@ import { lineHold } from './living';
 import LoadingVeil from '../../worlds/LoadingVeil';
 import { rmWorldModule } from './module';
 import { createLook } from '../../../runtime/look';
+import { createFlightCluster } from '../../../runtime/hud';
 import { FRICTION, coneFor } from '../../../lib/combat/aim';
 import { createLockOn } from '../../../lib/combat/lockOn';
 import { stepRmLockOn } from './rmLockOn';
@@ -241,6 +242,12 @@ const PITCH = 0.17; // the walking camera's lift, as the scene has it
 const FADE_MS = 260;
 const CLIMB_MS = 480; // down the hatch or up the ladder: a slower fade
 const clamp1 = (v) => Math.max(-1, Math.min(1, v));
+// what's said of the street's fight
+const FIGHT_SAYS = {
+  provoked: 'You shot a Federation patrol, Morty. Now it’s shooting back.',
+  down: 'Patrol down. Another one’ll be round in a minute.',
+  grounded: 'The deflectors are gone: the engines are out for ten seconds.',
+};
 const roomAt = (area, x, z) => PLAN.find((r) => r.area === area && x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1)?.name ?? null;
 // (at a planet's way in, out of its portal: the camera off to one side, as go() has it)
 const newSim = (at = START, portal = false) => ({
@@ -299,8 +306,9 @@ const newSim = (at = START, portal = false) => ({
 // (`frozen`: the page's Hangar is open over it; `onHangar(tab?)`: the page
 // opens its Hangar, which then has the C key and the chip that was the
 // Wardrobe's; `cruiser`: the ship's numbers as fitted and skilled, the
-// universe's statsOf, for the street's cruiser to fly on: rules.js's cruiserOf)
-export default function RmWorld({ start = null, onLeave = null, frozen = false, onHangar = null, cruiser = null }) {
+// universe's statsOf, for the street's cruiser to fly on: rules.js's cruiserOf;
+// `loadout` and `skillFx`: what its guns are, for the street's fight)
+export default function RmWorld({ start = null, onLeave = null, frozen = false, onHangar = null, cruiser = null, loadout = null, skillFx = null }) {
   const planet = useMemo(() => planetOf(start), [start]);
   const three = use3D();
   const { unlock } = useAchievements();
@@ -410,7 +418,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   return (
     <section className="rm-world" aria-labelledby="rm-world-title" data-mode={world ? '3d' : 'cards'}>
       {world ? (
-        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} cruiser={cruiser} />
+        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} cruiser={cruiser} loadout={loadout} skillFx={skillFx} />
       ) : (
         <Cards done={done} openPlace={openPlace} three={three} gl={gl} toast={toast} retry={() => setGl('loading')} planet={planet} />
       )}
@@ -425,11 +433,31 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
 // hence the reach)
 const ROOM = { bound: boundOf(AREAS), motion: true };
 
-function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned, frozen, onHangar, cruiser }) {
+function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned, frozen, onHangar, cruiser, loadout, skillFx }) {
   // (the cruiser's numbers, read by the frame loop)
   const fitted = useMemo(() => cruiserOf(cruiser), [cruiser]);
   const fittedRef = useRef(fitted);
   fittedRef.current = fitted;
+  // the street's fight (./streetFight.js: the cruiser's guns, the patrol's
+  // laser, the deflectors), its code fetched once the street's up, and the
+  // flight cluster the frame loop writes (the HUD kit's: RmHud.jsx's)
+  const fightRef = useRef(null);
+  const clusterRef = useRef(null);
+  const [cluster] = useState(createFlightCluster);
+  const [vitals] = useState(() => ({ value: 100, max: 100, low: false }));
+  const armsFor = useRef({ loadout, skillFx });
+  armsFor.current = { loadout, skillFx };
+  useEffect(() => {
+    if (gl !== 'on' || planet || fightRef.current) return undefined;
+    let gone = false;
+    import('./streetFight').then((m) => {
+      if (!gone && !fightRef.current) fightRef.current = m.createStreetFight({ loadout: armsFor.current.loadout, fx: armsFor.current.skillFx });
+    });
+    return () => {
+      gone = true;
+    };
+  }, [gl, planet]);
+  useEffect(() => fightRef.current?.refit(loadout, skillFx), [loadout, skillFx]);
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const touchRef = useRef(touch);
   touchRef.current = touch;
@@ -830,6 +858,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     },
     [api, complete, unlock, later, stopRickall, planet, onLeave],
   );
+  const boardRef = useRef(null);
   const board = useCallback(() => {
     const s = sim.current;
     s.flying = true;
@@ -1025,6 +1054,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     },
     [api, say, complete, later, loadShots],
   );
+  boardRef.current = board;
   // Morty's shot in a duel (F): a bolt at the hunter if he's in the cone
   // (the place says where), else along his facing; the arena's walls stop
   // it, and landDuel hears what it did if it gets to him
@@ -1105,6 +1135,9 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         act: () => fns.current.act(),
         complete,
         warp,
+        // into the cruiser, and the street's fight (./streetFight.js)
+        board: () => boardRef.current(),
+        fight: () => fightRef.current,
         // the portal gun's dial, set as the stand in the garage sets it
         dial(id) {
           writeDial(id);
@@ -1251,6 +1284,18 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           return;
         }
       }
+      // in the cruiser: F fires (held, it keeps firing), R and Shift+R go along
+      // the lines, 1 2 3 pick one (./streetFight.js)
+      if (s.flying && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const line = /^Digit[1-3]$/.test(e.code) ? Number(e.code.slice(5)) - 1 : -1;
+        if (e.code === 'KeyF' || e.code === 'KeyR' || line >= 0) {
+          e.preventDefault();
+          if (e.code === 'KeyF') s.firing = true;
+          else if (!e.repeat && e.code === 'KeyR') fightRef.current?.cycle(e.shiftKey ? -1 : 1);
+          else if (!e.repeat) fightRef.current?.pick(line);
+          return;
+        }
+      }
       const m = keyDown(s.keys, e);
       if (m) {
         // (Space is the cruiser's climb and Shift its way down; walking, Morty's jump and run)
@@ -1274,9 +1319,11 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     const up = (e) => {
       if (e.code === 'KeyB') strike(wheel.current.up(s.t));
       keyUp(s.keys, e);
+      if (e.code === 'KeyF') s.firing = false;
     };
     const blur = () => {
       s.keys.clear();
+      s.firing = false;
       wheel.current.cancel();
     };
     // the mouse, while the wheel's open: which one it's over (from the middle of the view)
@@ -1341,6 +1388,11 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         lift += (pad.rb ? 1 : 0) - (pad.lb ? 1 : 0) - pad.ry;
       }
       if (s.landing) throttle = steer = lift = 0;
+      // (the deflectors gone: its engines out a while, and it sinks)
+      if (fightRef.current?.grounded(s.t)) {
+        throttle = steer = 0;
+        lift = -1;
+      }
       s.c = stepCruiser(s.c, { throttle: clamp1(throttle), steer: clamp1(steer), lift: clamp1(lift) }, dt, fittedRef.current);
       // a bump (the edge, a roof, the ground) knocks as hard as the speed it
       // took, by the hit law, with its shake; a set-down sinks onto its
@@ -1443,7 +1495,26 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     s.view.link = s.near?.kind === 'link' ? s.near.id : null;
     s.view.hotspot = s.near?.kind === 'spot' ? s.near.id : null;
     // the Federation's patrol ship, round its loop or on the cruiser's tail
-    s.fed = stepFedShip(s.fed, s.c, s.flying, dt);
+    s.fed = stepFedShip(s.fed, s.c, s.flying, dt, fightRef.current?.ring() ?? null);
+    // the fight over the street: the cruiser's guns (held F), the patrol's
+    // laser, the deflectors, and the cluster that shows them
+    const fight = planet ? null : fightRef.current;
+    let fightHits = null;
+    if (fight) {
+      if (s.firing && s.flying) fight.fire(s.t, s.c, s.fed, cruiser?.cadence ?? 1);
+      for (const e of fight.step(dt, s.t, { cruiser: s.c, at: s.fed, flying: s.flying, stats: cruiser })) {
+        if (e.type === 'hit') (fightHits ??= []).push(e.at);
+        else if (e.type === 'down') {
+          earn('patrol');
+          say({ kind: 'say', who: 'Rick', text: FIGHT_SAYS.down });
+        } else if (e.type === 'provoked') say({ kind: 'say', who: 'Rick', text: FIGHT_SAYS.provoked });
+        else if (e.type === 'grounded') say({ kind: 'note', bad: true, text: FIGHT_SAYS.grounded });
+      }
+      s.fed.down = fight.patrol.mode === 'down';
+      vitals.value = fight.shield;
+      vitals.low = fight.shield < 25;
+      cluster.place(clusterRef.current, { on: s.flying, vitals, arms: fight.view() });
+    }
     // the clock of a place left in a hurry, for the HUD (whole seconds, so it rarely redraws)
     const left = s.escape && s.area === s.escape.area ? Math.max(0, Math.ceil(s.escape.s - (s.t - s.escape.at))) : null;
     if (left !== clockRef.current) {
@@ -1533,8 +1604,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           // (Morty's word to someone, while it plays, in the area he said it in; his emote)
           talk: s.talk && s.talk.area === s.area && s.t - s.talk.at < s.talk.hold ? s.talk : null,
           emote: readEmote(s, s.t),
-          bolts: sh ? sh.shots.live() : null,
-          boltHits,
+          bolts: s.flying && fight ? fight.live() : sh ? sh.shots.live() : null,
+          boltHits: fightHits ?? boltHits,
         },
         ms,
       );
@@ -1767,6 +1838,11 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         onToggleList={() => setList((v) => !v)}
         onWardrobe={() => setWardrobe(true)}
         onHangar={onHangar ? () => onHangar() : null}
+        clusterRef={clusterRef}
+        onShipFire={(on) => {
+          sim.current.firing = on;
+        }}
+        onWeapon={() => fightRef.current?.cycle(1)}
         closeWardrobe={closeWardrobe}
         setLook={setLook}
         openDial={openDial}

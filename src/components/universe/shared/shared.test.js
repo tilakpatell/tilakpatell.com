@@ -8,7 +8,7 @@ import * as wallet from './wallet';
 // The universe's face: exactly these names and nothing else
 const FACE = [
   [online, ['STALE_MS', 'cleanName', 'createLimiter']],
-  [flying, ['BUILT_KINDS', 'armsView', 'arsenalOf', 'chargeFor', 'createArmory', 'createGalaxyPowers', 'createRounds', 'fan', 'picksFor', 'turnToward']],
+  [flying, ['BUILT_KINDS', 'armsView', 'arsenalOf', 'chargeFor', 'createArmory', 'createGalaxyPowers', 'createRounds', 'fan', 'picksFor', 'steer', 'turnToward']],
   [room, ['joinAsVisitor']],
   [hangar, ['LINES', 'POWERS', 'POWER_ICONS', 'POWER_KEYS', 'SHIP_WEAPONS', 'STOCK_LOADOUT', 'ShipyardBody', 'armsView', 'arsenalOf', 'createArmory', 'crewById', 'picksFor', 'powersOf', 'useYard']],
   [wallet, ['EARN', 'LEVELS', 'TITLES', 'createPayLedger', 'useEarn', 'useEconomy']],

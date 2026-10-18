@@ -115,7 +115,7 @@ export default function RickMorty() {
   return (
     <div className="relative rm-page">
       <GalaxyBackdrop />
-      <RmWorld frozen={aboard.yard.yard} onHangar={aboard.open} cruiser={aboard.stats} />
+      <RmWorld frozen={aboard.yard.yard} onHangar={aboard.open} cruiser={aboard.stats} loadout={aboard.yard.loadout} skillFx={aboard.fx} />
       <HangarAboard yard={aboard.yard} tab={aboard.tab} onTab={aboard.setTab} shipName={CRUISER} doorAt=".rm-hangar-btn" />
       <RmEarnNote note={aboard.yard.yardNote} />
       <CruiserFlight />

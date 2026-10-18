@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import RmEarnNote from '../RmEarnNote';
 import { Link as RouterLink } from 'react-router-dom';
-import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiEmotionLaughLine, RiListCheck2, RiShirtLine, RiToolsLine, RiTyphoonLine } from 'react-icons/ri';
+import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiEmotionLaughLine, RiListCheck2, RiShieldLine, RiShirtLine, RiToolsLine, RiTyphoonLine } from 'react-icons/ri';
 import { EMOTES, wheelAngle } from '../../../lib/emote';
-import { Prompt, Reticle, Stick, TouchButton, reticleState } from '../../../runtime/hud';
+import { Arms, Cluster, Prompt, Reticle, Stick, TouchButton, Vitals, reticleState } from '../../../runtime/hud';
 import { PROMPT as LOOK_PROMPT } from '../../../runtime/look';
 import GuideCue from '../../guide/GuideCue';
 import Wardrobe from '../wardrobe/Wardrobe';
@@ -90,6 +90,9 @@ export default function RmHud({
   closeList,
   earned = null,
   onHangar = null,
+  clusterRef = null,
+  onShipFire = null,
+  onWeapon = null,
 }) {
   // Where the top row ends (the taller of the title's column and the map's),
   // measured, for what hangs under it on a phone (./world.css --rm-under):
@@ -331,12 +334,25 @@ export default function RmHud({
               <span>
                 <kbd>Shift</kbd> down
               </span>
+              <span>
+                <kbd>F</kbd> fire
+              </span>
+              <span>
+                <kbd>R</kbd> weapon
+              </span>
               <span>Slow down over open ground, then E to land</span>
             </>
           )}
         </p>
       )}
 
+      {/* in the cruiser: its deflectors and its guns, the HUD kit's cluster in the show's ink (the frame loop writes it) */}
+      {clusterRef && (
+        <Cluster rootRef={clusterRef} className="rm-cluster" label="The cruiser">
+          <Vitals label="Deflectors" icon={<RiShieldLine aria-hidden="true" />} className="rm-cluster-vitals" />
+          <Arms className="rm-cluster-arms" keys={!touch} />
+        </Cluster>
+      )}
       <div className="rm-hud rm-hud-bottom">
         {touch ? (
           <>
@@ -390,6 +406,33 @@ export default function RmHud({
                   <TouchButton aria-label="Drop" onPress={() => onLift(-1)} onRelease={() => onLift(0)}>
                     <RiArrowDownLine aria-hidden="true" />
                   </TouchButton>
+                  {/* the cruiser's guns: held, they keep firing; the next line on its own button */}
+                  {onShipFire && (
+                    <TouchButton
+                      className="rm-fire"
+                      aria-label="Fire"
+                      onPress={(e) => {
+                        e.preventDefault();
+                        onShipFire(true);
+                      }}
+                      onRelease={() => onShipFire(false)}
+                    >
+                      ✦
+                    </TouchButton>
+                  )}
+                  {onWeapon && (
+                    <TouchButton
+                      className="rm-lock"
+                      size={52}
+                      aria-label="Next weapon"
+                      onPress={(e) => {
+                        e.preventDefault();
+                        onWeapon();
+                      }}
+                    >
+                      Weapon
+                    </TouchButton>
+                  )}
                 </div>
               )}
               {game ? (

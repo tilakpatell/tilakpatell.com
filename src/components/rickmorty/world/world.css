@@ -482,3 +482,26 @@
 .rm-world-stage > .rm-world-canvas { position: absolute; inset: 0; }
 /* (the box fades in, as the canvas did: the runtime canvas's own fade-in would fade it twice) */
 .rm-world-stage > .rm-world-canvas > .world-canvas { transition: none; }
+
+/* the cruiser's flight cluster (the HUD kit's: RmHud.jsx), its glass in the
+   show's ink with a slime-green bar: bottom right over the guide's button on
+   a wide screen (the middle's the landing prompt's and the hint's); on a
+   touch screen or a narrow one, the kit's narrow deflectors block, over the
+   stick (the Weapon button is the arms there) */
+.rm-cluster {
+  --hud-cluster-glass: var(--rm-glass);
+  --hud-cluster-line: var(--rm-ink);
+  --hud-cluster-ink: #fff;
+  --hud-cluster-label: var(--rm-lime);
+  --hud-vitals-fill: var(--rm-lime);
+  --hud-vitals-glow: rgba(201, 255, 90, 0.5); /* (the lime's own glow) */
+  z-index: 3;
+}
+.rm-cluster .hud-glass { border-width: 2px; box-shadow: 0 3px 0 var(--rm-ink); }
+@media (pointer: fine) and (min-width: 768px) {
+  .rm-cluster { left: 40%; right: 16px; bottom: 76px; justify-items: end; }
+  .rm-cluster .hud-cluster-row { justify-content: flex-end; }
+}
+@media (pointer: coarse), (max-width: 767px) {
+  .rm-cluster .hud-vitals-block { bottom: 190px; }
+}

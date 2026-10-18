@@ -521,7 +521,7 @@ export const PAGES = {
     about: ABOUT['/c-137'],
     keys: [
       { label: 'Walking', rows: [['W A S D / ← ↑ ↓ →', 'Walk'], ['Shift', 'Run'], ['Space', 'Jump'], ['Click, then the mouse', 'Look round (Esc lets go)'], ['E', 'Doors, the cruiser, the games, the portal gun on Rick’s bench'], ['P', 'The portal gun, from anywhere'], ['M', 'Things to do'], ['H', 'The Hangar: the crew’s looks, and the cruiser’s arms, powers, skills and shipyard'], ['C', 'The Hangar, on the crew']] },
-      { label: 'In the cruiser', rows: [['W A S D', 'Fly'], ['Space', 'Climb'], ['Shift', 'Drop'], ['E', 'Land (slow, over open ground)']] },
+      { label: 'In the cruiser', rows: [['W A S D', 'Fly'], ['Space', 'Climb'], ['Shift', 'Drop'], ['F', 'Fire (held, it keeps firing): the guns turn onto the Federation patrol, which fights back once it’s hit'], ['R / Shift+R', 'Next or last weapon'], ['1 2 3', 'Pick a weapon'], ['E', 'Land (slow, over open ground)']] },
       { label: 'Portal panic', rows: [['W A S D', 'Move'], ['Mouse', 'Aim: the gun fires on its own'], ['F', 'Auto-fire off (then hold the mouse to fire)'], ['Space / Shift', 'Portal-dash'], ['1 2 3', 'Take a gadget'], ['P', 'Pause']] },
       { label: 'Total Rickall', rows: [['Mouse', 'Aim (click first to hold the pointer)'], ['E', 'Remember the one in the crosshair'], ['F / Click', 'Shoot them'], ['Tab', 'Lock on: the crosshair stays on them as you move'], ['Esc', 'Stop the game']] },
       { label: 'Through the portal', rows: [['E', 'Talk, take, look, free: whatever the prompt says'], ['F', 'Fire, in a fight (Evil Rick’s lair, the Blood Dome)'], ['Tab', 'Lock on, in a fight: Morty turns to face them'], ['Run', 'From whoever’s after you: the map shows them red']] },

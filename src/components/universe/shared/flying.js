@@ -6,7 +6,7 @@
 
 export { turnToward } from '../hunterRules';
 export { BUILT_KINDS } from '../trafficModels';
-export { armsView, arsenalOf, createArmory, fan } from '../weapons';
+export { armsView, arsenalOf, createArmory, fan, steer } from '../weapons';
 export { createRounds } from '../rounds';
 export { createGalaxyPowers } from '../powers';
 export { chargeFor, picksFor } from '../shipPowers';
