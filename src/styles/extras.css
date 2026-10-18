@@ -706,21 +706,6 @@ html[data-mode='dark'][data-theme='custom'] { --btn-ink: #0b0b0b; }
 .color-input input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .color-input:focus-within { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 
-/* ─── Middle-earth themes ────────────────────────────────────────────────── */
-[data-theme='shire'] {
-  --bg: #fbfaf3; --bg-deep: #f2f0e2; --surface: #fffefa; --surface-2: #f1efe2; --border: #e2dfcd; --border-strong: #9c9478;
-  --text: #1d1c12; --text-body: #3a3826; --muted: #66624a;
-  --accent: #4f7c2a; --accent-text: #3f6a1f; --btn-bg: #3f6a1f; --btn-ink: #fffef5; --saber: #a3d977; --nav-bg: #1d1c12;
-  --route-plan: #d4d0b8; --marker: circle(50%); --r-card: 18px; --r-panel: 12px; --r-chip: 999px; --r-photo: 24px;
-}
-[data-theme='mordor'] {
-  --bg: #fcfaf9; --bg-deep: #f3eeec; --surface: #ffffff; --surface-2: #f3eeec; --border: #e3dad6; --border-strong: #9a8a84;
-  --text: #1a0f0c; --text-body: #3a2622; --muted: #6a5650;
-  --accent: #c2410c; --accent-text: #a8360a; --btn-bg: #b4320a; --btn-ink: #ffffff; --saber: #ff7a1a; --nav-bg: #1a0f0c;
-  --route-plan: #dbcdc8; --marker: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); --r-card: 2px; --r-panel: 2px; --r-btn: 2px; --r-chip: 2px; --r-photo: 2px;
-}
-.tt[data-kind='ring'] { background: radial-gradient(ellipse at 50% 40%, rgba(60, 22, 4, 0.92), rgba(6, 4, 3, 0.95) 70%); }
-
 /* You shall not pass: the page takes the staff's blow */
 html.stand-ground main { animation: stand-ground 0.9s cubic-bezier(0.3, 0.7, 0.3, 1); }
 @keyframes stand-ground { 0% { transform: none; } 8% { transform: translateY(6px) scale(0.995); } 20% { transform: translateY(-3px); } 34% { transform: translateY(2px); } 100% { transform: none; } }
@@ -757,14 +742,6 @@ html.stand-ground main { animation: stand-ground 0.9s cubic-bezier(0.3, 0.7, 0.3
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
 }
-
-/* Middle-earth: Cinzel, as carved; the Shire in gold, Mordor smouldering */
-:is([data-theme='shire'], [data-theme='mordor']) .display { font-family: 'Cinzel Decorative', 'Cinzel', Georgia, serif; font-stretch: normal; font-weight: 700; letter-spacing: 0; line-height: 1.04; }
-:is([data-theme='shire'], [data-theme='mordor']) .title { font-family: 'Cinzel', Georgia, serif; font-stretch: normal; font-weight: 700; letter-spacing: 0.01em; }
-:is([data-theme='shire'], [data-theme='mordor']) .eyebrow { font-family: 'Cinzel', Georgia, serif; font-weight: 600; letter-spacing: 0.14em; }
-[data-theme='shire'] .display { color: #2e4419; }
-html[data-mode='dark'][data-theme='shire'] .display { color: #e9dfb8; }
-[data-theme='mordor'] .display { text-shadow: 0 0 24px rgba(255, 106, 26, 0.32); }
 
 /* Stark: Marvel's tall capitals */
 [data-theme='stark'] :is(.display, .title) { font-family: 'Bebas Neue', var(--font-sans); font-stretch: normal; font-weight: 400; letter-spacing: 0.015em; line-height: 0.92; }
@@ -867,12 +844,6 @@ html[data-mode='dark'][data-theme='shire'] .display { color: #e9dfb8; }
 :root[data-world='avengers'][data-theme='stark'] .btn-ghost { background: rgba(13, 19, 28, 0.7); }
 
 /* ─── The scroll bar, per theme ──────────────────────────────────────────── */
-/* Sting: an elven blade that glows blue (orange in Mordor) */
-.saber-progress[data-kind='sting'] .hilt { width: 30px; background: linear-gradient(90deg, #3b2a1c 0 60%, #c9d1d9 60% 66%, #3b2a1c 66% 100%); border-radius: 3px 0 0 3px; }
-.saber-progress[data-kind='sting'] .hilt::after { right: -6px; top: -3px; width: 6px; height: 16px; border-radius: 3px; background: linear-gradient(#f0f3f6, #8f98a2); box-shadow: none; }
-.saber-progress[data-kind='sting'] .blade,
-html[data-mode='dark'] .saber-progress[data-kind='sting'] .blade { left: 42px; height: 4px; top: 0; border-radius: 0; background: linear-gradient(#ffffff, #b9c4cf 55%, #7d8894); clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%); box-shadow: none; filter: drop-shadow(0 0 3px #5fb6ff) drop-shadow(0 0 7px #2f86ff); }
-[data-theme='mordor'] .saber-progress[data-kind='sting'] .blade { filter: drop-shadow(0 0 3px #ff9a3c) drop-shadow(0 0 8px #ff4d00); }
 /* Dunder Mifflin: a dotted flight path and a paper airplane at its end */
 .saber-progress[data-kind='plane'] .hilt { width: 26px; height: 12px; top: -4px; border-radius: 1px; background: repeating-linear-gradient(0deg, #ffffff 0 2px, #d7dde6 2px 3px); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
 .saber-progress[data-kind='plane'] .hilt::after { display: none; }

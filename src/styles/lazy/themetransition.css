@@ -53,6 +53,7 @@
 .tt-wipe ~ .tt-words { text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35); }
 
 /* the One Ring, its inscription burning */
+.tt[data-kind='ring'] { background: radial-gradient(ellipse at 50% 40%, rgba(60, 22, 4, 0.92), rgba(6, 4, 3, 0.95) 70%); }
 .tt-ring-svg { display: block; width: min(300px, 70vw); height: auto; margin: 0 auto 1rem; overflow: visible; animation: tt-face var(--tt-len) ease both; }
 .tt-ring-text { font-family: 'Cinzel', 'Times New Roman', serif; font-size: 13px; letter-spacing: 1.5px; fill: #ffb347; opacity: 0; animation: tt-burn var(--tt-len) ease both; }
 @keyframes tt-burn { 0%, 20% { opacity: 0; filter: none; } 40%, 80% { opacity: 1; filter: drop-shadow(0 0 4px #ff7a1a) drop-shadow(0 0 10px #ff4d00); } 100% { opacity: 0; } }

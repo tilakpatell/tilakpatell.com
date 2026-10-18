@@ -31,8 +31,9 @@ export const PAGES = {
   ...group('fastnoise-lite.md', ['fastnoise-lite']), // planet flight (scripts/flight-island.mjs removes this row)
   ...group('supabase.md', ['@supabase/supabase-js']),
   ...group('fonts.md', [
-    '@fontsource-variable/archivo', '@fontsource/bebas-neue', '@fontsource/cinzel', '@fontsource/cinzel-decorative',
-    '@fontsource/courier-prime', '@fontsource/jetbrains-mono', '@fontsource/luckiest-guy', '@fontsource/news-cycle',
+    '@fontsource-variable/archivo', '@fontsource/almendra', '@fontsource/bebas-neue', '@fontsource/cinzel', '@fontsource/cinzel-decorative',
+    '@fontsource/courier-prime', '@fontsource/eb-garamond', '@fontsource/grenze', '@fontsource/grenze-gotisch',
+    '@fontsource/jetbrains-mono', '@fontsource/luckiest-guy', '@fontsource/news-cycle',
     '@fontsource/noto-sans-runic', '@fontsource/orbitron', '@fontsource/press-start-2p', '@fontsource/yatra-one',
   ]),
   ...group('build.md', [

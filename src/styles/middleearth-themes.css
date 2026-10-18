@@ -1,0 +1,217 @@
+/* ─── Middle-earth’s site colours ────────────────────────────────────────────
+   Two schemes, unlocked together by “mellon”. The Shire is a book: parchment,
+   door-green ink, the red capitals of Tolkien’s maps and one brass knob of
+   light. Mordor is iron and ash: depth from steps of grey, fire the only hue.
+   Each has a light and a dark of its own, its own type and paper, and Sting,
+   the one sword that runs through both. Here, not with the Middle-earth page,
+   so they hold on every page once picked. The colour tokens stay plain hex:
+   travel/Globe.jsx reads them raw. */
+
+[data-theme='shire'] {
+  --bg: #f5efdd; --bg-deep: #ebe1c5; --surface: #fcf9ef; --surface-2: #f0e8d2; --border: #ddd0af; --border-strong: #8c7853;
+  --text: #241a0e; --text-body: #3d2e1b; --muted: #67533a;
+  --accent: #3c6b35; --accent-text: #2f5a2e; --btn-bg: #2f5a2e; --btn-ink: #fbf4de; --saber: #f2c14e; --nav-bg: #241a0e;
+  --route-plan: #cdbe96;
+}
+html[data-mode='dark'][data-theme='shire'] {
+  --bg: #10140e; --bg-deep: #0b0e09; --surface: #171c14; --surface-2: #20271b; --border: #2e3826; --border-strong: #6a7552;
+  --text: #f3ecd4; --text-body: #d9d2b6; --muted: #a8a487;
+  --accent: #d4ae45; --accent-text: #e2be5c; --btn-bg: #d4ae45; --btn-ink: #16130a; --saber: #f5c866; --nav-bg: #0b0e09;
+  --route-plan: #36402c;
+}
+
+[data-theme='mordor'] {
+  --bg: #ece8e1; --bg-deep: #dfd9cf; --surface: #f6f4ef; --surface-2: #e4ded4; --border: #ccc4b8; --border-strong: #7d736a;
+  --text: #141110; --text-body: #2e2926; --muted: #5c5450;
+  --accent: #c2381a; --accent-text: #9e2a15; --btn-bg: #8e1b12; --btn-ink: #f6efe6; --saber: #ff7a1a; --nav-bg: #141110;
+  --route-plan: #c4bbaf;
+}
+html[data-mode='dark'][data-theme='mordor'] {
+  --bg: #100c0b; --bg-deep: #090706; --surface: #181311; --surface-2: #221b18; --border: #322825; --border-strong: #7a6c63;
+  --text: #f0e8df; --text-body: #d2c8bd; --muted: #9c9087;
+  --accent: #ff7a1a; --accent-text: #ff8c3f; --btn-bg: #ff8a1e; --btn-ink: #140c08; --saber: #ff7a1a; --nav-bg: #090706;
+  --route-plan: #3a312d;
+}
+
+/* Shapes are the colour’s, whatever the light. The Shire is soft as a
+   hobbit-hole, its route stops are leaves (a Lórien leaf) and its road is
+   dashed as on the map; Mordor is forged square, and its stops are the Eye. */
+[data-theme='shire'] {
+  --r-card: 18px; --r-panel: 14px; --r-btn: 999px; --r-chip: 999px; --r-photo: 24px;
+  --marker: inset(0 round 0 100% 0 100%); --route-dash: 6px; --route-gap: 5px;
+}
+[data-theme='mordor'] {
+  --r-card: 2px; --r-panel: 2px; --r-btn: 2px; --r-chip: 2px; --r-photo: 2px;
+  --marker: polygon(0 50%, 18% 24%, 50% 10%, 82% 24%, 100% 50%, 82% 76%, 50% 90%, 18% 76%); --route-dash: 2px; --route-gap: 4px;
+}
+
+/* The rest of each colour, by light. The heading’s ink and the eyebrow’s are
+   tokens, so a dark island and type on a photograph can take back their own
+   (below): the Shire’s green on the Death Star’s page would be 1.9:1. The
+   grain is baked once into a tile and never moves: sepia paper fibre in the
+   Shire, coarser ash in Mordor, light specks on the dark grounds. */
+[data-theme='shire'] {
+  --me-display: #2f5a2e; --me-eyebrow: #9a3024; --me-hedge: #8fa67f; --me-brass: rgb(201 162 39 / 0.7); --me-sill: #1f3d1f;
+  --me-card-shadow: 0 1px 2px rgb(74 52 32 / 0.07), 0 10px 24px -16px rgb(74 52 32 / 0.3);
+  --me-card-lift: 0 2px 4px rgb(74 52 32 / 0.08), 0 20px 40px -20px rgb(74 52 32 / 0.42);
+  --shadow-card: var(--me-card-shadow);
+  --me-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .29 0 0 0 0 .2 0 0 0 0 .12 0 0 0 2 -.5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.1'/%3E%3C/svg%3E");
+  --me-wash: linear-gradient(90deg, rgb(122 90 40 / 0.09), transparent 12% 88%, rgb(122 90 40 / 0.09)), radial-gradient(90rem 34rem at 50% 0, rgb(255 230 160 / 0.4), transparent 70%);
+  --sting-steel: linear-gradient(#ffffff, #c9d0d6 55%, #838d97);
+  --sting-light: drop-shadow(0 0 1.5px rgb(242 193 78 / 0.8)) drop-shadow(0 1px 0 rgb(61 46 27 / 0.35));
+}
+html[data-mode='dark'][data-theme='shire'] {
+  --me-display: #e8c766; --me-eyebrow: #e39c7e; --me-hedge: #3e5634; --me-brass: rgb(255 238 186 / 0.75); --me-sill: #7e5e1c;
+  --me-card-shadow: inset 0 1px 0 rgb(243 236 212 / 0.05);
+  --me-card-lift: inset 0 1px 0 rgb(243 236 212 / 0.07), 0 18px 40px -24px rgb(0 0 0 / 0.8);
+  --me-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .92 0 0 0 0 .83 0 0 0 2 -.5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.07'/%3E%3C/svg%3E");
+  --me-wash: radial-gradient(70rem 40rem at 0 0, rgb(245 200 102 / 0.07), transparent 70%), linear-gradient(90deg, rgb(0 0 0 / 0.3), transparent 14% 86%, rgb(0 0 0 / 0.3));
+  --sting-steel: linear-gradient(#e8ecef, #9aa4ae 55%, #5f6872);
+  --sting-light: drop-shadow(0 0 2px rgb(245 200 102 / 0.6));
+}
+[data-theme='mordor'] {
+  --me-display: #141110; --me-eyebrow: var(--accent-text); --me-seal: #8e1b12; --me-iron: #2e2926; --me-iron-hi: #4a423d; --me-rivet: #a1968c;
+  --me-strap: #2e2926; --me-strap-hot: #8e1b12;
+  --me-card-shadow: 0 1px 0 rgb(20 17 16 / 0.08), 0 12px 24px -18px rgb(20 17 16 / 0.35);
+  --me-card-lift: 0 1px 0 rgb(20 17 16 / 0.1), 0 16px 30px -18px rgb(20 17 16 / 0.45);
+  --shadow-card: var(--me-card-shadow);
+  --me-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2 0 0 0 0 .18 0 0 0 0 .17 0 0 0 2.4 -.75'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.12'/%3E%3C/svg%3E");
+  --me-wash: linear-gradient(90deg, rgb(60 50 44 / 0.08), transparent 14% 86%, rgb(60 50 44 / 0.08)), radial-gradient(80% 26rem at 50% 100%, rgb(107 101 94 / 0.14), transparent 70%);
+  --sting-steel: linear-gradient(#ffffff, #c9d3dd 55%, #7f8c99);
+  --sting-light: drop-shadow(0 0 2px #7cc4ff);
+  --sting-glow: 0 0 6px 1px rgb(47 134 255 / 0.7);
+}
+html[data-mode='dark'][data-theme='mordor'] {
+  --me-display: #f0e8df; --me-seal: #ff7a1a; --me-iron: #302926; --me-iron-hi: #463b37; --me-rivet: #7a6c63;
+  --me-strap: #4d403a; --me-strap-hot: #d2421a;
+  --me-card-shadow: 0 0 #0000;
+  --me-card-lift: 0 -1px 12px -4px rgb(255 122 26 / 0.35);
+  --me-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .78 0 0 0 0 .72 0 0 0 0 .66 0 0 0 2.4 -.75'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.08'/%3E%3C/svg%3E");
+  --me-wash: radial-gradient(80% 30rem at 50% 100%, rgb(210 66 26 / 0.13), transparent 70%), linear-gradient(90deg, rgb(0 0 0 / 0.35), transparent 14% 86%, rgb(0 0 0 / 0.35));
+  --sting-steel: linear-gradient(#f2f8ff, #c3d3e6 55%, #8195ad);
+  --sting-light: drop-shadow(0 0 3px #9ad2ff);
+  --sting-glow: 0 0 2px 1px #9ad2ff, 0 0 9px 2px rgb(47 134 255 / 0.75);
+}
+:where([data-theme='shire'], [data-theme='mordor']) :is(.dark-scope, .on-photo) { --me-display: var(--text); --me-eyebrow: var(--muted); }
+
+/* ─── Paper and ash ──────────────────────────────────────────────────────── */
+/* The grain and the light at the edges are the page’s own background: on
+   <html>, and on <body> too unless the live background has made <body> clear
+   to show through (ambience/motifs.css). A layer laid over the page would sit
+   above the live background and the hero’s skyline, both at z −1. ([data-mode]
+   outranks the page’s first colour, set in index.html before any sheet.) */
+html:is([data-theme='shire'], [data-theme='mordor'])[data-mode],
+html:is([data-theme='shire'], [data-theme='mordor'])[data-mode]:not([data-ambience]) body {
+  background: var(--me-grain) 0 0 / 240px 240px, var(--me-wash), var(--bg);
+}
+/* At night Mordor stands on fire: the glow at the foot of the page rises
+   through the site’s footer too, which is opaque and would stop it */
+html[data-mode='dark'][data-theme='mordor'] footer:has(.footer-links) { background-image: radial-gradient(70% 110% at 50% 100%, rgb(210 66 26 / 0.14), transparent 70%); }
+
+/* ─── Type ───────────────────────────────────────────────────────────────── */
+/* The Shire writes its headings in a hobbit’s hand (Almendra, a broad-nib
+   bookhand), labels its places in the red Roman capitals of the maps (Cinzel)
+   and sets its leads like the book it is (EB Garamond). Mordor’s headings are
+   forged blackletter (Grenze Gotisch, never below a title) and its words
+   around them Grenze. Body text stays Archivo. The inks carry no weight of
+   their own (:where), so a page’s own heading ink (the map’s, on the hub)
+   still wins. */
+[data-theme='shire'] :is(.display, .title) { font-family: 'Almendra', 'Cinzel', Georgia, serif; font-stretch: normal; font-weight: 700; letter-spacing: 0; }
+[data-theme='shire'] .display { line-height: 1.02; }
+[data-theme='shire'] .eyebrow { font-family: 'Cinzel', Georgia, serif; font-weight: 600; letter-spacing: 0.16em; }
+[data-theme='shire'] .lead { font-family: 'EB Garamond', Georgia, serif; font-style: italic; font-weight: 400; font-size-adjust: 0.46; }
+[data-theme='mordor'] :is(.display, .title) { font-family: 'Grenze Gotisch', 'Grenze', Georgia, serif; font-stretch: normal; font-weight: 800; letter-spacing: 0.01em; }
+[data-theme='mordor'] .display { line-height: 0.98; }
+[data-theme='mordor'] .eyebrow { font-family: 'Grenze', Georgia, serif; font-weight: 600; letter-spacing: 0.18em; }
+[data-theme='mordor'] .lead { font-family: 'Grenze', Georgia, serif; font-weight: 400; }
+:where([data-theme='shire'], [data-theme='mordor']) .display { color: var(--me-display); }
+:where([data-theme='shire'], [data-theme='mordor']) .eyebrow { color: var(--me-eyebrow); }
+/* Mordor’s eyebrow opens on a seal */
+[data-theme='mordor'] .eyebrow::before { content: ''; display: inline-block; width: 0.42em; height: 0.42em; margin: 0 0.75em 0.14em 0.1em; background: var(--me-seal); transform: rotate(45deg); vertical-align: middle; }
+
+/* One lit heading a page. The Shire’s title at night is brass (a band of
+   light down each line, the solid colour beneath where the browser can’t clip
+   a background to text, or the system’s colours are forced); Mordor’s at
+   night is parchment with the fire below it. A dark island, a photograph and
+   the hub’s map title keep their own. */
+@media (forced-colors: none) {
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    html[data-mode='dark'][data-theme='shire'] :is(h1, [data-page-title]).display:not(.me-hub-title, :where(.dark-scope, .on-photo) *) {
+      /* (one band a line: 1.02em is the line height above, which every
+         browser that clips to text can read, where 1lh is newer) */
+      background: linear-gradient(180deg, #f6de97 0 38%, #e2be5c 47%, #b38a2a 55%, #e8c766 72%, #f1d58a 100%) 0 0 / 100% 1.02em;
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+  }
+}
+html[data-mode='dark'][data-theme='mordor'] :is(h1, [data-page-title]).display:not(:where(.dark-scope, .on-photo) *) {
+  text-shadow: 0 1px 0 rgb(255 179 71 / 0.4), 0 5px 16px rgb(255 106 26 / 0.38), 0 12px 38px rgb(210 66 26 / 0.3);
+}
+
+/* ─── Cards, buttons and rules ───────────────────────────────────────────── */
+/* The Shire’s card is a map’s frame: a second hairline inside the edge, drawn
+   with inset shadows so nothing moves. Mordor’s is a plate with an iron strap
+   along its top, which heats when the card is one you can press. (A pressed
+   card is matched from <html>, so the house’s own dark hover doesn’t win.) */
+[data-theme='shire'] .card { box-shadow: inset 0 0 0 4px var(--surface), inset 0 0 0 5px color-mix(in srgb, var(--border) 65%, var(--border-strong)), var(--me-card-shadow); }
+[data-theme='shire'] .card-tint { box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--accent) 6%, var(--surface)), inset 0 0 0 5px color-mix(in srgb, var(--border) 65%, var(--border-strong)), var(--me-card-shadow); }
+html[data-theme='shire'] :is(a.card, .card-hover):is(:hover, :focus-visible) { box-shadow: inset 0 0 0 4px var(--surface), inset 0 0 0 5px color-mix(in srgb, var(--border-strong) 55%, var(--border)), var(--me-card-lift); }
+[data-theme='mordor'] .card { box-shadow: inset 0 3px 0 var(--me-strap), var(--me-card-shadow); }
+html[data-theme='mordor'] :is(a.card, button.card, .card-hover, .card-lift):is(:hover, :focus-visible) { box-shadow: inset 0 3px 0 var(--me-strap-hot), var(--me-card-lift); }
+
+/* The Shire’s button is the round door: green (brass by night) in a brass
+   ring, on a sill it presses into. Mordor’s is a square slab with a heavy
+   foot, and at night it glows like a forge. Never a clip-path on a button:
+   it would clip the focus ring. */
+[data-theme='shire'] .btn-primary { box-shadow: inset 0 0 0 2px var(--btn-bg), inset 0 0 0 3px var(--me-brass), 0 2px 0 var(--me-sill); }
+[data-theme='shire'] .btn-primary:hover { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--btn-bg) 88%, #000), inset 0 0 0 3px var(--me-brass), 0 2px 0 var(--me-sill); }
+[data-theme='shire'] .btn-primary:active { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--btn-bg) 88%, #000), inset 0 0 0 3px var(--me-brass), 0 1px 0 var(--me-sill); }
+[data-theme='mordor'] .btn-primary { box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.08); }
+html[data-mode='dark'][data-theme='mordor'] .btn-primary:hover { box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.22), 0 0 0 1px #ffb347, 0 8px 22px -10px rgb(255 122 26 / 0.7); }
+
+/* A rule between sections: a hedgerow in the Shire, an iron strap and its
+   rivets in Mordor */
+[data-theme='shire'] .divider {
+  height: 10px;
+  background:
+    linear-gradient(var(--me-hedge) 0 0) 0 100% / 100% 4px no-repeat,
+    radial-gradient(circle at 6px 6px, var(--me-hedge) 0 4.5px, transparent 5px) 0 0 / 12px 10px repeat-x,
+    radial-gradient(circle at 4px 6px, color-mix(in srgb, var(--me-hedge) 60%, var(--bg)) 0 3.5px, transparent 4px) 7px 1px / 9px 10px repeat-x;
+}
+[data-theme='mordor'] .divider {
+  height: 6px;
+  border-radius: 1px;
+  background: radial-gradient(circle at 45% 40%, var(--me-rivet) 0 1.5px, transparent 2px) 8px 50% / 24px 6px repeat-x, linear-gradient(var(--me-iron-hi), var(--me-iron) 55%);
+}
+
+/* ─── Sting ──────────────────────────────────────────────────────────────── */
+/* The scroll bar is Frodo’s sword in all four: a leather grip, a brass pommel
+   and curved guard, a steel blade. Only the light changes. It glows when orcs
+   are near, so in the Shire it only catches the sun (a lamp, at night); in
+   Mordor it burns elven blue, the one cool thing on the page, and breathes.
+   The steel is drawn on ::before, so the light round it isn’t clipped to the
+   point, and the breath is the opacity of a glow beneath (::after), never an
+   animated filter. */
+.saber-progress[data-kind='sting'] .hilt { left: 12px; top: -2px; width: 26px; height: 8px; border-radius: 3px 1px 1px 3px; background: repeating-linear-gradient(115deg, #4e3420 0 2px, #7a5233 2px 4px); box-shadow: inset 0 1px 0 rgb(255 225 180 / 0.2), inset 0 -1px 0 rgb(0 0 0 / 0.35); }
+.saber-progress[data-kind='sting'] .hilt::before { content: ''; position: absolute; left: -6px; top: -1px; width: 7px; height: 10px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #f6e2a0, #c9a227 55%, #7e5e1c); }
+.saber-progress[data-kind='sting'] .hilt::after { right: -5px; top: -5px; width: 6px; height: 18px; border-radius: 1px 5px 5px 1px / 1px 9px 9px 1px; background: linear-gradient(#f1d58a, #c9a227 55%, #7e5e1c); box-shadow: 0 1px 1px rgb(0 0 0 / 0.3); }
+.saber-progress[data-kind='sting'] .blade,
+html[data-mode='dark'] .saber-progress[data-kind='sting'] .blade { left: 43px; top: 0; height: 4px; border-radius: 0; background: none; box-shadow: none; filter: var(--sting-light, none); }
+.saber-progress[data-kind='sting'] .blade::before { content: ''; position: absolute; inset: 0; background: var(--sting-steel); clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%); }
+.saber-progress[data-kind='sting'] .blade::after { content: ''; position: absolute; inset: 0 5px 0 0; z-index: -1; border-radius: 0 2px 2px 0; box-shadow: var(--sting-glow, none); opacity: 0; }
+[data-theme='mordor'] .saber-progress[data-kind='sting'] .blade::after { animation: sting-breathe 2.8s ease-in-out infinite alternate; }
+@keyframes sting-breathe { from { opacity: 0.4; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { [data-theme='mordor'] .saber-progress[data-kind='sting'] .blade::after { animation: none; opacity: 0.8; } }
+
+/* ─── Forced colours ─────────────────────────────────────────────────────── */
+/* The system’s own colours: no grain (an image the browser would keep), no
+   glow; the seal and Sting in the system’s ink, which a forced background
+   would otherwise paint out */
+@media (forced-colors: active) {
+  html:is([data-theme='shire'], [data-theme='mordor'])[data-mode],
+  html:is([data-theme='shire'], [data-theme='mordor'])[data-mode]:not([data-ambience]) body { background-image: none; }
+  [data-theme='mordor'] .eyebrow::before,
+  .saber-progress[data-kind='sting'] .blade::before { forced-color-adjust: none; background: CanvasText; }
+  .saber-progress[data-kind='sting'] .blade { filter: none; }
+  .saber-progress[data-kind='sting'] .blade::after { display: none; }
+}
