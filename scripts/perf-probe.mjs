@@ -630,6 +630,20 @@ const JOURNEYS = {
   invincible: worldPage('/invincible'),
   earth: worldPage('/earth'),
   minecraft: worldPage('/dot-matrix/minecraft'),
+  // the Road (/middle-earth/road) from Moria's first metre: the world up,
+  // then 40 s of the road walking itself (the save cleared first, so no
+  // resume card holds it)
+  async road(page, mark) {
+    mark('load');
+    await page.goto(`${this.base}/${this.q}#/middle-earth/road?at=moria`, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.__ROAD__ && window.__RUNTIME__?.status === 'on', null, { timeout: 300000 });
+    mark('settle');
+    await wait(page, 4000);
+    mark('walk');
+    await page.evaluate(() => window.__ROAD__.world.setAuto(true));
+    await wait(page, 40000);
+    mark('end');
+  },
   // Minecraft walked 200 blocks each way along x and z, a block every 100 ms
   // (a sprint's pace and more), so chunks keep arriving and going
   async minecraftWalk(page, mark) {
