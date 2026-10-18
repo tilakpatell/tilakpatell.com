@@ -118,19 +118,17 @@ import { DIVE, LAUNCH_KEY, diveAt, planDive } from './travel';
 import { INTERDICTION, createInterdiction, cutAt, dropPoint, holdLifts, inWell, interdictorPlace } from './interdiction';
 import { createInterdictor } from './interdictor';
 import { createWarFront } from './warfront';
-import { createGalaxyPowers } from './powers';
 import { createCluster } from './cluster';
 import { PICKUPS, createPickups, gunsUnder } from './pickups';
 import { createPickupFx } from './pickupFx';
 import { createRadar } from './radar';
 import { drawRadar } from './radarDraw';
-import { chargeFor } from '../universe/shipPowers';
-import { arsenalOf } from '../universe/shared/flying';
+import { arsenalOf, chargeFor, createGalaxyPowers } from '../universe/shared/flying';
 import { effectsFor } from './warEffects';
 import { CABS } from './cabs';
 import { warNow } from './warState';
 import { createWingmen } from '../universe/wingmen';
-import { createBolts, createFlashes } from './fx';
+import { LASER, createBolts, createFlashes } from './fx';
 import { buildSystem } from './world';
 import { AHEAD, FACTIONS, KINDS, NAMES } from './hunted';
 import { createPayLedger, hunterEarn } from '../universe/earnRules';
@@ -426,7 +424,7 @@ export async function create(canvas, ctx) {
   const flying = () => Boolean(state.ship);
   // the crew's ship powers (powers.js), played out with the scene's own pieces
   // (made before the first frame's shaders are, so its look is made with them)
-  const powers = createGalaxyPowers({ parent: scene, reduced, hunters, war, bolts, flashes, crashFx, pops, post, state, emit, controls, strike: (...a) => strike(...a), scored: (...a) => scored(...a), teleport: (pose) => teleport(pose) });
+  const powers = createGalaxyPowers({ parent: scene, reduced, hunters, war, bolts, flashes, crashFx, pops, post, state, emit, controls, strike: (...a) => strike(...a), scored: (...a) => scored(...a), teleport: (pose) => teleport(pose), laser: LASER.rebel });
   const cluster = createCluster(); // (the flight cluster's writer: placeShield)
   // what a kill leaves behind (pickups.js: the rules, pickupFx.js: the drawing); none online, and none survive a jump, a landing or a crash
   const pickups = createPickups();

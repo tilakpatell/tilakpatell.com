@@ -6,7 +6,7 @@ import * as room from './room';
 // The universe's face: exactly these names and nothing else
 const FACE = [
   [online, ['STALE_MS', 'cleanName', 'createLimiter']],
-  [flying, ['BUILT_KINDS', 'arsenalOf', 'turnToward']],
+  [flying, ['BUILT_KINDS', 'armsView', 'arsenalOf', 'chargeFor', 'createArmory', 'createGalaxyPowers', 'createRounds', 'fan', 'turnToward']],
   [room, ['joinAsVisitor']],
 ];
 

@@ -1,7 +1,9 @@
-// The crews' ship powers in the galaxy: universe/shipPowers.js says what
-// each does and when it's on, universe/powerFx.js draws them, and this plays
-// them out in the scene (scene.js hands it its pieces and calls it at the
-// moments that matter, so the scene itself only grows by the calls).
+// The crews' ship powers in a scene that flies the universe's ships (the
+// universe map, and the galaxy through shared/flying.js): shipPowers.js says
+// what each does and when it's on, powerFx.js draws them, and this plays
+// them out in the scene (the scene hands it its pieces and calls it at the
+// moments that matter, so the scene itself only grows by the calls). A
+// scene with no war hands `war: null`.
 //
 // - Force Focus: the hunters' clock and the war's battle's at a third, the
 //   guns' help onto the lead and the nose's tracking of the lock turned up
@@ -45,13 +47,14 @@
 // put there, the camera with it.
 
 import * as THREE from 'three';
-import { KEPT_KEY, POWERS, aimHelp, beamOf, blastPunch, cancel as cancelAll, clearOfSolids, createPowers, crossesShell, finish, firstAlong, gain as charge, hasten, isObjective, isOn, jinkStep, mods as modsOf, pickTargets, portalExit, press as pressSlot, readCooling, readKept, shotAt, step, turretPick, view as viewOf, writeKept } from '../universe/shipPowers';
-import { createPowerFx } from '../universe/powerFx';
-import { steer } from '../universe/weapons';
-import { assist, dirTo, intercept, nose } from '../universe/targeting';
-import { LASER } from './fx';
+import { KEPT_KEY, POWERS, aimHelp, beamOf, blastPunch, cancel as cancelAll, clearOfSolids, createPowers, crossesShell, finish, firstAlong, gain as charge, hasten, isObjective, isOn, jinkStep, mods as modsOf, pickTargets, portalExit, press as pressSlot, readCooling, readKept, shotAt, step, turretPick, view as viewOf, writeKept } from './shipPowers';
+import { createPowerFx } from './powerFx';
+import { steer } from './weapons';
+import { assist, dirTo, intercept, nose } from './targeting';
 
 const SLOTS = ['primary', 'ultimate'];
+// Chewie's bolts off the quad guns: the Rebellion's red, hot enough to bloom (galaxy/fx.js's LASER.rebel; a scene may hand its own as `laser`)
+const REBEL_LASER = [5.8, 0.75, 0.55];
 const BIG = 3; // kills from one big one that make a big haul (the crew's line for it)
 const KEEP_EVERY = 2; // seconds between writes of the charge to the session
 const SPARKS = 0.07; // seconds between the magnet's sparks
@@ -87,7 +90,7 @@ const session = {
   },
 };
 
-export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flashes, crashFx, pops, post, state, emit, strike, scored, teleport, controls }) {
+export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flashes, crashFx, pops, post, state, emit, strike, scored, teleport, controls, laser = REBEL_LASER }) {
   // (with motion reduced there are no hunters or battles to use them on: no powers)
   const fx = reduced || !hunters ? null : createPowerFx(parent);
   let st = null;
@@ -265,7 +268,7 @@ export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flash
       const was = gen;
       const origin = { x: from.x, y: from.y, z: from.z };
       bolts.fire(from, v2, {
-        color: LASER.rebel,
+        color: laser,
         speed: P.speed,
         width: 0.045,
         length: 2.2,

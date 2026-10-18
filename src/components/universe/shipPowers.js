@@ -3,7 +3,7 @@
 // flying). Each is a card of numbers; the state machine says which is on,
 // cooling or charging, and what the scene should change while it's on. Pure
 // (no three.js), so it's tested in Node; the galaxy's scene plays them
-// (galaxy/powers.js), powerFx.js draws them and PowerBar.jsx shows them.
+// (powers.js), powerFx.js draws them and PowerBar.jsx shows them.
 //
 // - Luke and Artoo (the X-wing): Force Focus, time slowed for everyone but
 //   you and the guns finding their mark; and a torpedo salvo, four locked at
