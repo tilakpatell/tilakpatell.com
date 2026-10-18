@@ -40,8 +40,8 @@ export default function MiddleEarthMap({ step }) {
       {SEAS.map((d) => (
         <path key={d} d={d} className="map-sea" />
       ))}
-      {LAKES.map(({ at, rx, ry }) => (
-        <ellipse key={`${at}`} cx={at[0]} cy={at[1]} rx={Math.max(1.5, rx)} ry={Math.max(1.2, ry)} className="map-sea" />
+      {LAKES.map(({ at: c, rx, ry }) => (
+        <ellipse key={`${c}`} cx={c[0]} cy={c[1]} rx={Math.max(1.5, rx)} ry={Math.max(1.2, ry)} className="map-sea" />
       ))}
       {/* the marshes, hatched */}
       <path d={MARSHES.flatMap(hatch).map(([x0, y, x1]) => `M${x0} ${y} H${x1}`).join('')} stroke="#4a3520" strokeOpacity="0.35" strokeWidth="0.6" />
@@ -62,8 +62,8 @@ export default function MiddleEarthMap({ step }) {
         <path key={d} d={d} className={thin ? 'map-river map-river-thin' : 'map-river'} />
       ))}
       {/* mountains: the Misty Mountains, the White Mountains, the Grey Mountains, and Mordor's walls */}
-      {RANGES.map(([line, dark]) => (
-        <path key={`${line[0]}`} d={range(line)} className={dark ? 'map-peaks map-peaks-dark' : 'map-peaks'} />
+      {RANGES.map(([line, dark], i) => (
+        <path key={i} d={range(line)} className={dark ? 'map-peaks map-peaks-dark' : 'map-peaks'} />
       ))}
       {/* Mount Doom, burning, and the dark tower */}
       <path d={`M${doomX - 14} ${doomY + 12} L${doomX} ${doomY - 14} L${doomX + 14} ${doomY + 12} Z`} fill="#5a2a1a" stroke="#3a1a10" />
