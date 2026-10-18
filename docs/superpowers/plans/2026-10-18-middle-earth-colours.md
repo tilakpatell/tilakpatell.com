@@ -20,6 +20,11 @@
 - Copy and comments: British spelling, curly quotes (’ “ ”), the file’s voice; visitor text says “colours”, never “theme”.
 - Every animation still under `prefers-reduced-motion`; no clip-path on focusable buttons; `--r-card` stays one length.
 - Only original drawing: motifs, never traced film or book images; never the real Ring inscription in the new scenes.
+- Token values stay literal `#rrggbb` (no `color-mix()`, `oklch()`, `var()` in the token blocks): `travel/Globe.jsx:80-99` parses them raw.
+- Heading ink comes from a token (`--me-display`), reset to `var(--text)` inside `.dark-scope` and `.on-photo`, never a hard-coded colour that outranks them (a Shire green on the Death Star’s dark island is 1.9:1). Gradient-filled headings likewise drop inside those two.
+- Dark selectors keep the `html[` prefix (about 25 components use `data-mode` for other things). Never put `data-theme` on a subtree. Never override `--font-sans`.
+- The grain is the `html`/`body` background, never a pseudo-element over the page (the live background and the hero backdrop sit at z −1).
+- Under `@media (forced-colors: active)` the grain, gradient text and glows give way to plain colours.
 
 ## Review Focus
 
@@ -42,9 +47,10 @@
 - Produces: `routeTheme(pathname: string): string | undefined` exported from `src/theme/themes.js`; `ROUTE_THEMES` gains `'/middle-earth/mordor': 'mordor'`.
 
 - [ ] **Step 1: Write the failing test** `src/theme/themes.test.js`, `describe('routeTheme')`:
-  - `routeTheme('/middle-earth')` → `'shire'`; `'/middle-earth/bree'` → `'shire'`; `'/middle-earth/mordor'` → `'mordor'`; `'/caribbean'` → `'tortuga'`; `'/projects/devspace'` → `'devspace'`; `'/home'` → `undefined`; `'/middle-earthly'` → `undefined` (a prefix ends at a `/`); `''` and `undefined` → `undefined`.
+  - `routeTheme('/middle-earth')` → `'shire'`; `'/middle-earth/bree'` → `'shire'`; `'/middle-earth/mordor'` → `'mordor'`; `'/caribbean'` → `'tortuga'`; `'/home'` → `undefined`; `'/middle-earthly'` → `undefined` (a prefix ends at a `/`); `''` and `undefined` → `undefined`.
+  - No leak into other worlds: `'/c-137/citadel'` → `undefined`, `'/dot-matrix/64'` → `undefined`, `'/projects/devspace/x'` → `undefined`.
 - [ ] **Step 2: Run** `npx vitest run src/theme/themes.test.js` — FAIL, `routeTheme` is not exported.
-- [ ] **Step 3: Implement** `routeTheme`: exact key first, else the longest `ROUTE_THEMES` key `k` with `pathname.startsWith(k + '/')`.
+- [ ] **Step 3: Implement** `routeTheme`: the exact `ROUTE_THEMES` key first (it stays an exact-key object: `Cartridges.jsx`, `Projects.jsx` and `kinds.test.js` index it); else a key of a new `ROUTE_PREFIX_THEMES = { '/middle-earth': 'shire' }` with `pathname.startsWith(key + '/')`. Only Middle-earth’s chapters take a prefix.
 - [ ] **Step 4: Use it** in `ThemeProvider.jsx:100` (`routeTheme(pathname)` in place of `ROUTE_THEMES[pathname]`), and set the meta `theme-color` from the computed `--bg` of `<html>` in an effect on `[active, mode]` (read after the two-frame `theme-switching` window, i.e. in a `requestAnimationFrame`), falling back to today’s two values.
 - [ ] **Step 5: Run** `npx vitest run src/theme` — PASS.
 - [ ] **Step 6: Commit** `Route colours reach the chapter pages; the browser bar takes the page’s colour`.
@@ -63,7 +69,7 @@
 
 - [ ] **Step 1: Write the failing test** in `src/styles/middleearth-themes.test.js`, `describe('the Middle-earth colours')`: read `src/styles/middleearth-themes.css`; parse the four blocks `[data-theme='shire']`, `html[data-mode='dark'][data-theme='shire']`, `[data-theme='mordor']`, `html[data-mode='dark'][data-theme='mordor']`; for each assert every token of the spec’s table is set, and with `contrast` from `src/theme/custom.js`: `--text`, `--text-body`, `--muted`, `--accent-text` ≥ 4.5 on each of `--bg`, `--bg-deep`, `--surface`, `--surface-2`; `--btn-ink`/`--btn-bg` ≥ 4.5; `--border-strong`/`--bg` and `--accent`/`--bg` ≥ 3. Also assert the sheet has no `!important` in a `font-family` declaration (Review Focus 1).
 - [ ] **Step 2: Run** `npx vitest run src/styles/middleearth-themes.test.js` — FAIL, the sheet does not exist.
-- [ ] **Step 3: Write the sheet** from spec sections 2–5: the four token blocks; shapes (`--r-*`, `--marker`, `--route-dash`, `--route-gap`); type (`.display`, `.title`, `.eyebrow`, `.lead`), with the Shire `.display` colour under `:where([data-theme='shire']) .display` so `.me-hub-title` and `.on-photo .display` keep theirs (Review Focus 5); grain as a data-URI `--me-grain` on `html` and `body` (Review Focus 2); the vignette and the dark Mordor underglow on `html`; cards, buttons, `.divider`, `::selection`; Sting’s hilt, blade and per-colour glow (the pulse an opacity animation on `.blade::after`, off under reduced motion).
+- [ ] **Step 3: Write the sheet** from spec sections 2–5: the four token blocks; shapes (`--r-*`, `--marker`, `--route-dash`, `--route-gap`); type (`.display`, `.title`, `.eyebrow`, `.lead`), the heading ink as `--me-display` set per block and read under `:where([data-theme='shire'], [data-theme='mordor']) .display` so `.me-hub-title` and `.on-photo .display` keep theirs, with `.dark-scope, .on-photo { --me-display: var(--text) }` (Review Focus 5); grain as a data-URI `--me-grain` on `html` and `body` (Review Focus 2); the vignette and the dark Mordor underglow on `html`; cards, buttons, `.divider`, `::selection`; Sting’s hilt, blade and per-colour glow (the pulse an opacity animation on `.blade::after`, off under reduced motion).
 - [ ] **Step 4: Fonts**: `npm install @fontsource/almendra@^5.3.0 @fontsource/eb-garamond@^5.3.0 @fontsource/grenze-gotisch@^5.3.0 @fontsource/grenze@^5.3.0`; `THEME_FONTS.shire` loads Almendra 700, EB Garamond 400-italic and Cinzel 600; `THEME_FONTS.mordor` Grenze Gotisch 800 and Grenze 400 and 600; census and credits as in Global Constraints.
 - [ ] **Step 5: Move**: delete the moved blocks from `extras.css`; import the sheet in `main.jsx`; add it to `SHEETS`.
 - [ ] **Step 6: Run** `npx vitest run src/theme src/styles src/lib/words.test.js docs/stack` — PASS. Then screenshot `/#/home` in the four combinations (sessionStorage `tp-theme-pin`, localStorage `tp-mode`, `tp-start` `"home"`, `tp-intro` `1`) with `tp-ambience` `off` and look at them.
