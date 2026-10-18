@@ -49,10 +49,10 @@
 import * as THREE from 'three';
 import { KEPT_KEY, POWERS, aimHelp, beamOf, blastPunch, cancel as cancelAll, clearOfSolids, createPowers, crossesShell, finish, firstAlong, gain as charge, hasten, isObjective, isOn, jinkStep, mods as modsOf, pickTargets, portalExit, press as pressSlot, readCooling, readKept, retune, shotAt, step, turretPick, view as viewOf, writeKept } from './shipPowers';
 import { createPowerFx } from './powerFx';
+import { DENIED_FOR, createPowerTiles } from './powerTiles';
 import { steer } from './weapons';
 import { assist, dirTo, intercept, nose } from './targeting';
 
-const SLOTS = ['primary', 'ultimate'];
 // Chewie's bolts off the quad guns: the Rebellion's red, hot enough to bloom (galaxy/fx.js's LASER.rebel; a scene may hand its own as `laser`)
 const REBEL_LASER = [5.8, 0.75, 0.55];
 const BIG = 3; // kills from one big one that make a big haul (the crew's line for it)
@@ -62,10 +62,6 @@ const FOCUS_EASE = 0.25; // seconds Force Focus's look takes to come and go
 const CRYSTAL_OUT = 1.8; // how far ahead of the ship's middle Walt's crystal is thrown from
 const CRYSTAL_GROW = 0.1; // seconds it takes to grow to its size
 const NONE = Object.freeze(modsOf(null));
-const PHASE_WORDS = { ready: 'ready', active: 'on', cooling: 'cooling down', charging: 'charging' };
-// why a press was refused, in a word for the cluster's tile, kept 2 s (DENIED_FOR, in ms)
-const WHY_WORDS = { held: 'Held', solid: 'No room', shield: 'Shielded', empty: 'Nobody near', cooling: 'Cooling', charging: 'Charging', active: 'On', none: '' };
-const DENIED_FOR = 2000;
 
 const apart = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 const ahead = (s, d) => {
@@ -399,7 +395,7 @@ export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flash
     fx?.clear();
   };
 
-  let bar = { root: null };
+  const tiles = createPowerTiles(); // (the cluster's tiles: powerTiles.js)
   let denied = null; // { slot, why, until }: the last refusal, while the tile still says why
   let crewSig = null; // (the crew, skills and picks the state was made for)
   let big = 1; // the skill tree's overcharge: the big ones' punch
@@ -559,41 +555,7 @@ export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flash
     // the HUD (PowerBar.jsx's): each slot's phase, its ring (--k) and its
     // seconds, written only when they change
     place(root, on) {
-      if (root !== bar.root) {
-        const q = (slot) => root?.querySelector(`[data-slot="${slot}"]`) ?? null;
-        const part = (slot, sel) => q(slot)?.querySelector(sel) ?? null;
-        bar = { root, on: null, slots: Object.fromEntries(SLOTS.map((slot) => [slot, q(slot)])), small: Object.fromEntries(SLOTS.map((slot) => [slot, part(slot, 'small')])), state: Object.fromEntries(SLOTS.map((slot) => [slot, part(slot, '.hud-power-state')])), sig: {} };
-      }
-      if (!root) return;
-      const shown = Boolean(on && st);
-      if (shown !== bar.on) {
-        bar.on = shown;
-        root.toggleAttribute('data-on', shown);
-      }
-      if (!shown) return;
-      const v = viewOf(st);
-      for (const slot of SLOTS) {
-        const el = bar.slots[slot];
-        if (!el) continue;
-        const x = v[slot];
-        const k = Math.round(x.k * 50) / 50;
-        const text = x.phase === 'active' || x.phase === 'cooling' ? `${x.left}s` : x.phase === 'charging' ? `${Math.floor(x.charge * 100)}%` : '';
-        // (the cluster's word: a refusal's reason for a couple of seconds, else where the power stands)
-        const no = denied && denied.slot === slot && performance.now() < denied.until ? (WHY_WORDS[denied.why] ?? '') : '';
-        const words = no || (x.phase === 'active' ? `On ${x.left}s` : x.phase === 'cooling' ? `${x.left}s` : x.phase === 'charging' ? `${Math.floor(x.charge * 100)}%` : 'Ready');
-        const sig = `${x.phase}|${k}|${text}|${no}`;
-        if (bar.sig[slot] === sig) continue;
-        const phaseWas = bar.sig[slot]?.split('|')[0];
-        bar.sig[slot] = sig;
-        el.style.setProperty('--k', String(k));
-        if (bar.small[slot]) bar.small[slot].textContent = text;
-        if (bar.state[slot]) bar.state[slot].textContent = words;
-        el.toggleAttribute('data-denied', Boolean(no));
-        if (phaseWas !== x.phase) {
-          el.dataset.phase = x.phase;
-          el.setAttribute('aria-label', `${x.name} (${x.key}): ${PHASE_WORDS[x.phase]}`);
-        }
-      }
+      tiles.place(root, on, on && st ? viewOf(st) : null, denied);
     },
 
     get view() {
