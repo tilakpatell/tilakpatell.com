@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAchievements } from '../Achievements';
 import { useFun } from '../../fun/FunProvider';
 import { audioContext } from '../../lib/audio';
+import { ellipseLength } from '../../lib/ellipse';
 import { use3D } from '../../lib/gpu';
 import { useReducedMotion } from '../../lib/hooks';
 import Scene3D from './Scene3D';
@@ -87,6 +88,12 @@ function Worn({ onRemove }) {
 }
 
 const INSCRIPTION = 'Ash nazg durbatulûk · ash nazg gimbatul · ash nazg thrakatulûk · agh burzum-ishi krimpatul ·';
+// The inscription runs once round the band, from the ring's left back to it:
+// told the band's length (less its start, which is nought) it fits the whole
+// line, where at its own width the last words fell off the end.
+const BAND = [112, 50];
+const BAND_PATH = `M ${-BAND[0]} 0 A ${BAND[0]} ${BAND[1]} 0 1 1 ${BAND[0]} 0 A ${BAND[0]} ${BAND[1]} 0 1 1 ${-BAND[0]} 0`;
+const BAND_LENGTH = ellipseLength(...BAND).toFixed(1);
 
 export default function Ring() {
   const { unlock } = useAchievements();
@@ -169,7 +176,7 @@ export default function Ring() {
               <stop offset="0.75" stopColor="#8c1d04" />
               <stop offset="1" stopColor="#1a0503" stopOpacity="0" />
             </radialGradient>
-            <path id="ring-text-path" d="M -112 0 A 112 50 0 1 1 112 0 A 112 50 0 1 1 -112 0" />
+            <path id="ring-text-path" d={BAND_PATH} />
             <filter id="ring-burn" x="-20%" y="-40%" width="140%" height="180%">
               <feGaussianBlur stdDeviation="2.4" result="b" />
               <feMerge>
@@ -184,7 +191,7 @@ export default function Ring() {
             <ellipse cx="0" cy="0" rx="124" ry="58" fill="none" stroke="url(#ring-gold)" strokeWidth="18" />
             <ellipse cx="0" cy="-4" rx="118" ry="52" fill="none" stroke="#fff6d6" strokeWidth="1.4" opacity="0.6" />
             <text className="ring-letters" filter="url(#ring-burn)">
-              <textPath href="#ring-text-path" startOffset="0">
+              <textPath href="#ring-text-path" startOffset="0" textLength={BAND_LENGTH} lengthAdjust="spacingAndGlyphs">
                 {INSCRIPTION}
               </textPath>
             </text>
