@@ -28,7 +28,9 @@
 // go through a planet (it bounces off) and is turned back at the edge of
 // the map; near the ceiling or the floor (SHIP.ceiling above or below the
 // disc) the nose comes round level in time for the speed it has, and past
-// them it's eased back in.
+// them it's eased back in. That's the authored map alone (SPACE); the open
+// universe (OPEN_SPACE) has no ceiling or floor anywhere, so it flies on up
+// or down for ever, and only the Rick and Morty pocket keeps a wall, a ball.
 //
 // Between the places (deep.js) it opens up: the boost becomes a pulse drive
 // (up to SHIP.pulse, easing back as it comes up on any place, so it never
@@ -57,7 +59,7 @@
 // rate into a wall.
 
 import { DEEP, DEEP_SOLIDS, WONDERS, driveOpen, easeOpen, gapAlong, openness, reachOf, trenchBand } from './deep';
-import { BODIES, HOME_RADIUS, POSITIONS, REACH, SECTORS, SECTOR_RADIUS, SUN, sectorOf, sectorOut } from './layout';
+import { BODIES, HOME_RADIUS, POSITIONS, REACH, SECTORS, SECTOR_RADIUS, SUN, sectorById, sectorOf, sectorOut } from './layout';
 import { MAW } from './maw';
 import { NOSE, UP, axisAngle, conj, fromAngles, mul, normalize, rotate, toAngles, turnToward } from './orient';
 import { byId } from './universes';
@@ -206,20 +208,31 @@ const HOME_BODIES = [...PLANETS.filter((p) => byId(p.id).kind === 'core').map((p
 // how much of the home system's own handling there is at (x, z): 1 in it
 // and out past it till deep space's drive is open all the way, then easing
 // to 0. There the boost gets going harder, and the autopilot comes in to
-// park quicker, to match the hops between stations (step, autopilot)
-export function homeAt(x, z) {
-  const out = (Math.sqrt(x * x + z * z) - DEEP.open) / DEEP.ramp;
+// park quicker, to match the hops between stations (step, autopilot).
+// homeAt measures it level, under the authored map's ceiling; homeAt3 (the
+// open universe's, with no ceiling) as a ball round the sun, so far above
+// or below home it's open space
+function homeFrom(d) {
+  const out = (d - DEEP.open) / DEEP.ramp;
   return out <= 0 ? 1 : out >= 1 ? 0 : 1 - out * out * (3 - 2 * out);
 }
-export function driveAlong(x, y, z, f = null) {
+export function homeAt(x, z) {
+  return homeFrom(Math.sqrt(x * x + z * z));
+}
+export function homeAt3(x, z, y = 0) {
+  return homeFrom(Math.sqrt(x * x + y * y + z * z));
+}
+// (`roof`: whether the home system's ceiling and floor count; `round`: home
+// as a ball, homeAt3)
+export function driveAlong(x, y, z, f = null, { roof = true, round = false } = {}) {
   const o = driveOpen(x, y, z, f);
-  const w = homeAt(x, z);
+  const w = round ? homeAt3(x, z, y) : homeAt(x, z);
   if (w <= 0) return o;
   // (the home system's ceiling and floor count too, going toward one: it
   // can't go faster than it could come level by them; its gap is how far
   // along the way it's going it would reach it)
   const up = f ? f[1] * (y < 0 ? -1 : 1) : 1;
-  let k = up > 0.02 ? easeOpen((ceilingAt(x, z) - Math.abs(y) - 8) / up, HOME_RAMP) : 1;
+  let k = roof && up > 0.02 ? easeOpen((ceilingAt(x, z) - Math.abs(y) - 8) / up, HOME_RAMP) : 1;
   for (const b of HOME_BODIES) k = Math.min(k, easeOpen(gapAlong(x, y, z, f, b.at, b.r + b.room), HOME_RAMP));
   return Math.min(o, 1 - w * (1 - k * HOME_TOP));
 }
@@ -377,12 +390,26 @@ export function spawn(id, start = HOME_EDGE) {
 // drive, and how hard the brakes and coasting bite there; what's solid and
 // where the autopilot can go). Another map brings its own, the same shape
 // (the galaxy's star systems: galaxy/space.js), to step() and autopilot().
-export const SPACE = { edge: EDGE, ceilingAt, openness, driveAt, driveAlong, homeAt, boostAt, brakeAt, coastAt, approachAt, solids: SOLIDS, goals: GOALS };
+// `roof` is what turns it back above and below (none: it flies on up or
+// down for ever); a space with no `roof` key has its `ceilingAt` for one
+// (the galaxy's), and `ceilingAt` is also where things are placed under it
+export const SPACE = { edge: EDGE, ceilingAt, roof: ceilingAt, openness, driveAt, driveAlong, homeAt, boostAt, brakeAt, coastAt, approachAt, solids: SOLIDS, goals: GOALS };
+const roofOf = (space) => ('roof' in space ? space.roof : space.ceilingAt);
 // and the map with the Expanse past its edge (expanse/gen): nothing turns the
 // ship back at the main map's edge, it flies on out into the generated
-// sectors; the Rick and Morty sector stays a pocket, its edge a wall from
-// both sides (in through its portal, as ever)
-export const OPEN_SPACE = { ...SPACE, expanse: true };
+// sectors, and nothing above or below anywhere (home is a ball, homeAt3, and
+// its ceiling no longer closes the drive); the Rick and Morty sector stays a
+// pocket, its edge a ball and a wall from both sides (in through its
+// portal, as ever)
+const OPEN = { roof: false, round: true };
+export const OPEN_SPACE = {
+  ...SPACE,
+  expanse: true,
+  roof: null,
+  homeAt: homeAt3,
+  driveAlong: (x, y, z, f) => driveAlong(x, y, z, f, OPEN),
+  driveAt: (x, y, z) => driveAlong(x, y, z, null, OPEN),
+};
 const POCKET = SECTORS.rickmorty;
 
 // How far the ship carries on, boosting straight on, while hunters pull the
@@ -455,7 +482,7 @@ export function step(s, input, dt, solids = SOLIDS, space = SPACE) {
     // start, all of it once it's a third of the way open: a hop between two
     // stations gets going straight away. Boosters fitted push the boost, not
     // the pulse drive, which is the same for everyone)
-    accel = input.boost ? (SHIP.accel * 1.8 * (1 + space.homeAt(s.x, s.z)) * accelK + (want > boost + 1 ? SHIP.pulseAccel * Math.min(1, open * 3) : 0)) * odK : SHIP.accel * (1 + near) * accelK; // (and up to the approach quicker)
+    accel = input.boost ? (SHIP.accel * 1.8 * (1 + space.homeAt(s.x, s.z, s.y)) * accelK + (want > boost + 1 ? SHIP.pulseAccel * Math.min(1, open * 3) : 0)) * odK : SHIP.accel * (1 + near) * accelK; // (and up to the approach quicker)
   } else {
     // slowing. What the drive takes off, past what it allows the way it's
     // going (coming up on a place at pulse speed, turning toward one, held
@@ -492,26 +519,35 @@ export function step(s, input, dt, solids = SOLIDS, space = SPACE) {
   if (spin > 1e-9) q = normalize(mul(q, axisAngle([tipRate / spin, rate / spin, -rollRate / spin], spin * dt)));
 
   // turned back at the edge: the nose comes round toward the middle (of
-  // the sector it's in: layout.js's SECTORS, each with an edge of its own;
-  // the main one's is space.edge)
-  const { sec, out } = sectorOut(s.x, s.z);
-  const [ox, , oz] = sec.origin;
+  // the sector it's in, by where it is in all three: layout.js's SECTORS,
+  // each with an edge of its own; the main one's is space.edge, level, and
+  // the Rick and Morty pocket's a ball round its middle, so over or under
+  // it is out of it)
+  const sec = sectorById(sectorOf(s.x, s.y, s.z));
+  const [ox, oy, oz] = sec.origin;
+  const ball = sec.id === POCKET.id;
+  const out = Math.hypot(s.x - ox, ball ? s.y - oy : 0, s.z - oz);
   const edgeR = sec.id === 'main' ? (space.expanse ? Infinity : space.edge) : sec.edge;
   if (out > edgeR - 2) {
     const k = clamp((out - (edgeR - 2)) / 2, 0, 1);
     const f = rotate(q, NOSE);
     const level = Math.hypot(f[0], f[2]);
-    q = turnToward(q, [(-(s.x - ox) / out) * level, f[1], (-(s.z - oz) / out) * level], 2.2 * dt * k);
+    // (a ball's: straight back at its middle; a level edge's: level toward
+    // it, climbing or diving as it was)
+    const to = ball ? [-(s.x - ox) / out, -(s.y - oy) / out, -(s.z - oz) / out] : [(-(s.x - ox) / out) * level, f[1], (-(s.z - oz) / out) * level];
+    q = turnToward(q, to, 2.2 * dt * k);
   }
 
-  // the ceiling and the floor: going out toward one, the nose is never
+  // the ceiling and the floor, where the space has a roof (none: it flies
+  // on up or down for ever): going out toward one, the nose is never
   // steeper than it could still round out from by then at the speed it has
   // (so it comes round level in time), and past one it's pointed back in
+  const roof = roofOf(space);
   const y0 = s.y;
-  const ceiling = space.ceilingAt(s.x, s.z);
+  const ceiling = roof ? roof(s.x, s.z) : Infinity;
   const side = y0 < 0 ? -1 : 1;
   const room = ceiling - Math.abs(y0);
-  if (speed > 0.05) {
+  if (roof && speed > 0.05) {
     const f = rotate(q, NOSE);
     const steep = Math.asin(clamp(f[1] * side, -1, 1)); // how steeply it's going out
     const most = room <= 0 ? -0.2 : Math.acos(clamp(1 - (room * SHIP.round) / speed, -1, 1));
@@ -544,26 +580,29 @@ export function step(s, input, dt, solids = SOLIDS, space = SPACE) {
   let y = s.y + (f[1] * speed + lift) * dt;
   let z = s.z + f[2] * speed * dt;
   let v = speed;
-  const r = Math.hypot(x - ox, z - oz);
-  const ceil = space.ceilingAt(x, z);
+  const r = Math.hypot(x - ox, ball ? y - oy : 0, z - oz);
+  const ceil = roof ? roof(x, z) : Infinity;
   let edge = s.edge && (r > edgeR - 1 || Math.abs(y) > ceil - 1); // clears once well back inside
   if (r > edgeR) {
     x = ox + (x - ox) * (edgeR / r);
+    if (ball) y = oy + (y - oy) * (edgeR / r);
     z = oz + (z - oz) * (edgeR / r);
   }
   if (r > edgeR) {
     if (!edge) events.push({ type: 'edge' });
     edge = true;
   } else if (Math.abs(y) > ceil) edge = true; // (eased back from the ceiling or the floor without a word)
-  // (out in the Expanse, the Rick and Morty pocket's edge is a wall: kept
-  // off it, out along the line from its middle)
+  // (out in the Expanse, the Rick and Morty pocket's edge is a wall, a
+  // ball: kept off it, out along the line from its middle)
   if (sec.expanse) {
     const px = x - POCKET.origin[0];
+    const py = y - POCKET.origin[1];
     const pz = z - POCKET.origin[2];
-    const pr = Math.hypot(px, pz);
+    const pr = Math.hypot(px, py, pz);
     const wall = POCKET.edge + 2;
     if (pr < wall) {
       x = POCKET.origin[0] + (pr > 1e-9 ? px / pr : 1) * wall;
+      y = POCKET.origin[1] + (pr > 1e-9 ? py / pr : 0) * wall;
       z = POCKET.origin[2] + (pr > 1e-9 ? pz / pr : 0) * wall;
       if (!edge) events.push({ type: 'edge' });
       edge = true;
@@ -635,7 +674,7 @@ export function orbiting(s, current) {
 // its brakes: the brakes all the way there count (harder where the drive's
 // open, between stations as out in deep space; weaker where something holds
 // the drive down, `hold`), not just where it is now
-// (`od`, the overdrive: a number, or what it is at (x, z) on the way)
+// (`od`, the overdrive: a number, or what it is at (x, z, y) on the way)
 function stopFrom(s, park, far, space = SPACE, od = 1, hold = null) {
   const N = 8;
   const py = park.y ?? SHIP.height;
@@ -646,7 +685,7 @@ function stopFrom(s, park, far, space = SPACE, od = 1, hold = null) {
     const [x, y, z] = [park.x + (s.x - park.x) * k, py + (s.y - py) * k, park.z + (s.z - park.z) * k];
     const h = hold ? clamp(hold(x, y, z), 0, 1) : 0;
     const o = space.driveAt(x, y, z) * (1 - h);
-    const odHere = typeof od === 'function' ? od(x, z) : od;
+    const odHere = typeof od === 'function' ? od(x, z, y) : od;
     v2 += 2 * 0.7 * space.brakeAt(x, y, z, o) * (odHere > 1 ? overdriveAt(o, 1 + (odHere - 1) * (1 - h)) ** 2 : 1) * step;
   }
   return Math.sqrt(v2);
@@ -724,14 +763,16 @@ export function autopilot(s, id, park = GOALS[id] && parkAt(id, [s.x, s.z]), spa
   // system, and the stop is planned for that, not for the overdrive's brakes
   // all the way in)
   const odMax = clamp(od, 1, OVERDRIVE);
-  const odFor = space.homeAt(park.x, park.z) >= 1 ? (x, z) => 1 + (odMax - 1) * (1 - space.homeAt(x, z)) : () => odMax;
-  od = odFor(s.x, s.z);
+  const odFor = space.homeAt(park.x, park.z, park.y ?? SHIP.height) >= 1 ? (x, z, y) => 1 + (odMax - 1) * (1 - space.homeAt(x, z, y)) : () => odMax;
+  od = odFor(s.x, s.z, s.y);
   const tx = park.x - s.x;
   const tz = park.z - s.z;
   const dist = Math.sqrt(tx * tx + tz * tz);
   // up or down to the planet's height (and no lower or higher than it can
-  // go here: the home system's floor and ceiling are near)
-  const ceil = space.ceilingAt(s.x, s.z) - 2;
+  // go here, where the space has a roof: the home system's floor and
+  // ceiling are near)
+  const roof = roofOf(space);
+  const ceil = roof ? roof(s.x, s.z) - 2 : Infinity;
   const ty = clamp(park.y ?? SHIP.height, -ceil, ceil) - s.y;
   if (dist < 0.4 && Math.abs(ty) < 0.4) {
     // there: stop, level off and turn to face it (nudged up or down the last little bit)
@@ -802,9 +843,13 @@ export function autopilot(s, id, park = GOALS[id] && parkAt(id, [s.x, s.z]), spa
   }
   // the way to go: round what's in the way, and up or down to its height
   // on the way, mostly early (aiming at a point further up or down than it
-  // is), easing in
+  // is), easing in. Under a roof, no steeper than 1.2 radians; with none,
+  // nearly straight up or down (a stop far above or below is climbed to, not
+  // circled under: at 1.2, over it, its nose is never on the way, and it
+  // weaves round under it at cruise)
   const hl = Math.hypot(dx, dz) || 1;
-  const rise = clamp(Math.atan2(ty * 2.5 - (s.vy || 0) * 0.4, Math.max(dist, 1)), -1.2, 1.2);
+  const steepest = roof ? 1.2 : 1.5;
+  const rise = clamp(Math.atan2(ty * 2.5 - (s.vy || 0) * 0.4, Math.max(dist, 1)), -steepest, steepest);
   const dir = [(dx / hl) * Math.cos(rise), Math.sin(rise), (dz / hl) * Math.cos(rise)];
   const nose = rotate(fromAngles(s.heading, s.pitch || 0, s.bank || 0), NOSE);
   const off = Math.acos(clamp(nose[0] * dir[0] + nose[1] * dir[1] + nose[2] * dir[2], -1, 1));
@@ -816,7 +861,7 @@ export function autopilot(s, id, park = GOALS[id] && parkAt(id, [s.x, s.z]), spa
   // (the drive the way it's pointing: a place it's only flying past doesn't slow it)
   const open = (space.driveAlong ? space.driveAlong(s.x, s.y, s.z, nose) : space.driveAt(s.x, s.y, s.z)) * (1 - held);
   const odV = overdriveAt(open, odHeld);
-  const vmax = Math.min(stopFrom(s, park, far, space, odFor, hold), (0.9 + 1.5 * space.homeAt(s.x, s.z)) * odV * far + 0.3);
+  const vmax = Math.min(stopFrom(s, park, far, space, odFor, hold), (0.9 + 1.5 * space.homeAt(s.x, s.z, s.y)) * odV * far + 0.3);
   const brake = (off > 1.1 ? 0.15 : 1) * (danger ? 0.12 : 1);
   const limit = space.boostAt(s.x, s.y, s.z, SHIP.boost, open) * odV;
   const top = Math.min(vmax, limit) * brake;

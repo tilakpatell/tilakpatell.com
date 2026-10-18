@@ -122,7 +122,7 @@ import { createFeel, feelGroups } from '../../lib/three/feel';
 import { bloomGroups } from '../../lib/three/bloom';
 import { createImpacts, impactGroups } from '../../lib/impact';
 import { debugOn, debugPanel } from '../../lib/debugPanel';
-import { LEAN, OPEN_SPACE, PLANETS, SHIP, SOLIDS, SPACE, autopilot, crashLoud, forward, headingTo, holdReach, isGoal, isPlace, noseOf, orbiting, parkAt, spawn, startAt, step } from './ship';
+import { LEAN, OPEN_SPACE, PLANETS, SHIP, SOLIDS, autopilot, crashLoud, forward, headingTo, holdReach, isGoal, isPlace, noseOf, orbiting, parkAt, spawn, startAt, step } from './ship';
 import { HYPER, destinationById, driveById, hyperState, legOf, parkFor, riftExit, shortDistance } from './nav';
 import { REAIM_MS, parkBehind, pilotId, pilotSpace, reached } from './pilotGoal';
 import { FACTIONS, HUNTER_KINDS, NAMES, createHunters } from './hunters';
@@ -1806,7 +1806,7 @@ export async function create(canvas, ctx) {
       }
       state.auto = { id, park, od: driveById(hyper ? 'super' : drive).od };
       // (a pilot moves: where they'll be parked behind is worked out again every REAIM_MS, chasePilot)
-      if (pose) Object.assign(state.auto, { pilot: pid, name: pose.name, drive, space: pilotSpace(SPACE, pid, pose), reaimAt: performance.now() + REAIM_MS });
+      if (pose) Object.assign(state.auto, { pilot: pid, name: pose.name, drive, space: pilotSpace(OPEN_SPACE, pid, pose), reaimAt: performance.now() + REAIM_MS });
     }
     retarget(700);
     ctx.invalidate();
@@ -1830,7 +1830,7 @@ export async function create(canvas, ctx) {
     const l = Math.hypot(dx, dz) || 1;
     return { x: g.at[0] + (dx / l) * g.reach, y: g.at[1], z: g.at[2] + (dz / l) * g.reach, heading: headingTo(-dx / l, -dz / l) };
   };
-  const frontSpace = () => ({ ...SPACE, goals: { ...SPACE.goals, front: front.goal() } });
+  const frontSpace = () => ({ ...OPEN_SPACE, goals: { ...OPEN_SPACE.goals, front: front.goal() } });
   // Flying to another pilot (travel's `pilot:<id>`): there once within reach
   // of them, the HUD says who you're with; gone (offline, hidden, down on a
   // planet, blocked, off to another page) and the trip ends, the autopilot
@@ -1877,7 +1877,7 @@ export async function create(canvas, ctx) {
     }
     a.reaimAt = now + REAIM_MS;
     a.park = park;
-    a.space = pilotSpace(SPACE, a.pilot, pose);
+    a.space = pilotSpace(OPEN_SPACE, a.pilot, pose);
   };
 
   // ── The ship ──
@@ -3395,7 +3395,7 @@ export async function create(canvas, ctx) {
   // pulled the drive down, not where you are: at the pulse drive's speed
   // that's a few hundred units on)
   const travelling = (s) => openness(s.x, s.y, s.z) > 0.5 && Math.abs(s.speed) > 40;
-  const leadOf = (s) => holdReach(s, { ramp: INTERDICT_IN, solids: siegeSt.down ? SOLIDS_OPEN : SOLIDS });
+  const leadOf = (s) => holdReach(s, { ramp: INTERDICT_IN, solids: siegeSt.down ? SOLIDS_OPEN : SOLIDS, space: OPEN_SPACE });
   const happen = (id, ship) => {
     const side = sideHere();
     if (!side) return;
@@ -4311,7 +4311,7 @@ export async function create(canvas, ctx) {
       const od = state.interdicted ? 1 : (state.auto.od ?? 1);
       // (and the battle's hold on the drive, so it plans its stop for it: front.js holdAt, as it would be coming straight in)
       const hold = front ? (x, y, z) => front.holdAt(x, y, z, null) : null;
-      const a = autopilot(state.ship, state.auto.id, state.auto.park, state.auto.space ?? (state.auto.id === 'front' && front ? frontSpace() : undefined), od, hold, moving);
+      const a = autopilot(state.ship, state.auto.id, state.auto.park, state.auto.space ?? (state.auto.id === 'front' && front ? frontSpace() : OPEN_SPACE), od, hold, moving);
       input = a.input;
       if (a.done) {
         const id = state.auto.id;

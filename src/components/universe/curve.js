@@ -1,10 +1,15 @@
 // The Central Finite Curve, drawn: the Rick and Morty sector's edge
 // (layout.js's SECTORS.rickmorty), where the ship's turned back (ship.js),
-// as a faint luminous wall round the whole sector. A tall open cylinder at
-// the edge, seen from inside: a thin bright band round it at the disc's
-// height, a soft glow either side of it, and its threads (the Curve's
+// as a faint luminous wall round the whole sector. The edge is a ball, so
+// the wall is one too, seen from inside: a thin bright band round it at the
+// disc's height, a soft glow either side of it, and its threads (the Curve's
 // walled-off dimensions) short faint strands across the band, drifting
 // slowly along it. Far off it's a ring on the horizon; close, it shimmers.
+// The ball is as coarse as can be up and down: two rows, the old open
+// cylinder's 512 triangles, round the same 256 ways. The band sits on its
+// middle row, right on the edge; above and below, the rows lean in to the
+// poles, but the glow is measured by height, not by the rows, and fades out
+// within about 1,500 of the disc, so the coarse caps draw nothing anyone sees.
 // Space scenery, so shaders only. Drawn only while the camera's inside the
 // sector: from the main map it's nothing (and the far side of the portal
 // is a long way off, but not past the far plane from all of the map).
@@ -15,15 +20,20 @@ import * as THREE from 'three';
 import { SECTORS } from './layout';
 import { DEEP } from './deep';
 
-const VERT = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
+// how far up or down the wall the height runs from 0 to 1 (the old
+// cylinder's half-height, so the band and the glow are as thick as they were)
+const HALF = (DEEP.ceiling * 1.3).toFixed(1);
+
+const VERT = 'varying vec2 vUv; varying vec3 vPos; void main() { vUv = uv; vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
 const FRAG = `
 uniform float uTime;
 varying vec2 vUv;
+varying vec3 vPos;
 float hash(float n) { return fract(sin(n) * 43758.5453); }
 void main() {
-  // round the wall (u, 0…1) and up it (h, -1 at the floor, 1 at the ceiling)
+  // round the wall (u, 0…1) and up it (h, 0 at the disc, ±1 HALF above or below it)
   float u = vUv.x;
-  float h = vUv.y * 2.0 - 1.0;
+  float h = vPos.y / ${HALF};
   // the glow: faint, at the disc's height, gone well before floor and ceiling
   float glow = exp(-h * h * 9.0) * 0.06;
   // the band round its middle: a thin bright line in a soft halo
@@ -50,8 +60,7 @@ void main() {
 
 export function createCurve(parent) {
   const sec = SECTORS.rickmorty;
-  const height = DEEP.ceiling * 2.6;
-  const geo = new THREE.CylinderGeometry(sec.edge, sec.edge, height, 256, 1, true);
+  const geo = new THREE.SphereGeometry(sec.edge, 256, 2);
   const uTime = { value: 0 };
   const mat = new THREE.ShaderMaterial({
     vertexShader: VERT,
