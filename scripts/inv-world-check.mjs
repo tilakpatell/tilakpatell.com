@@ -85,6 +85,8 @@ const SHOTS = {
   thragg: { space: 'thragg', back: 18 },
   // the brawl (./brawl.js): a Mauler grabbed off the street (the punch key held) and carried up over downtown
   brawl: { brawl: true },
+  // the city that breaks (./demolish.js): the three tallest towers ahead of him downtown broken to their stubs, at dusk
+  ruins: { p: [-300, 140, 600], mode: 'air', yaw: Math.PI * 0.9, pitch: -0.12, time: 'dusk', ruins: 0.85 },
   dusk: { p: [-300, 160, 700], mode: 'air', yaw: Math.PI * 0.9, pitch: -0.1, time: 'dusk' },
   night: { p: [-300, 160, 700], mode: 'air', yaw: Math.PI * 0.9, pitch: -0.1, time: 'night' },
   // The missions (./missions.js), each started through the dev hook (`api.mission`) and driven
@@ -357,6 +359,17 @@ for (const [name, s] of Object.entries(SHOTS)) {
         sim.pitch = 0.2;
         sim.dragAt = 1e9;
       }
+    }
+    // towers broken for the shot (`ruins`: the damage), the tallest three ahead of him
+    if (s.ruins) {
+      const dir = [Math.sin(s.yaw), Math.cos(s.yaw)];
+      const ahead = api.debug.world.buildings.filter((b) => {
+        const dx = b.x - s.p[0];
+        const dz = b.z - s.p[2];
+        const along = dx * dir[0] + dz * dir[1];
+        return along > 120 && along < 450 && Math.abs(dx * dir[1] - dz * dir[0]) < 90;
+      });
+      for (const b of ahead.sort((x, y) => y.h + (y.top?.h ?? 0) - (x.h + (x.top?.h ?? 0))).slice(0, 3)) api.ruin(b.id, s.ruins);
     }
     // Dad, put where the shot wants him (./companions.js takes him on from there)
     if (s.dad === 'porch') api.debug.dad(api.debug.dad().porch);

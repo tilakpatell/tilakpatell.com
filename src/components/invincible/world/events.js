@@ -10,6 +10,7 @@ import { local } from '../../../lib/hooks';
 import { PORTAL, spawnFoes, spawnUpTo } from './foes';
 import { keepStory, missionOf, nextStory, placeOf as missionPlace } from './missions';
 import { CARDS, keepQuests } from './quests';
+import { applyRuin, daysSince, forceOf, hitTower, parse, repair, serialise, stageOf } from './demolish';
 
 export const sfx = (name) => import('../../../lib/sfx').then((s) => s[name]?.()).catch(() => null);
 // a hit's sound at the hit law's gain and pitch (./hits.js); none within its gap
@@ -23,6 +24,9 @@ export const AT = 'tp-inv-world-at';
 export const TIME = 'tp-inv-world-time';
 export const QUESTS = 'tp-inv-world-quests';
 export const STORY = 'tp-inv-world-story';
+export const RUINS = 'tp-inv-world-ruins';
+// (faster than this into a wall, he marks the tower: a Viltrumite at Mach speed takes half of it)
+const CRASH = 150;
 const HANGAR = missionPlace('hangar');
 export const ROOF = missionPlace('roof').p;
 export const CARD_MS = 2600; // the episode's title card (2.5 s, and the fade's end)
@@ -139,13 +143,14 @@ export function questEvents(s, c) {
 // What the villains did this frame (./foes.js's `ev`): sounded, said, fed
 // to the mission (a knock-out, the hangar hit, a quake under the school).
 export function foeEvents(s, events, c) {
-  const { say, feed, unlock, shakeOff } = c;
+  const { say, feed, unlock, shakeOff, api } = c;
   for (const e of events) {
     s.events.push(e);
     if (e.type === 'punch') {
       s.punchT = 0.25;
       sfx('zip');
-    } else if (e.type === 'ko') {
+    } else if (e.type === 'towerHit') hitTowerIn(s, api, e.building, e.force, e.at);
+    else if (e.type === 'ko') {
       sfxHit('blast', 'ko', hits.foeForce(e.kind));
       feed({ type: 'ko', kind: e.kind ?? 'flaxan', id: e.id });
     } else if (e.type === 'swing' && e.on === 'hangar' && s.mission && s.guard) {
@@ -179,12 +184,47 @@ export function foeEvents(s, events, c) {
   }
 }
 
+// The ruins kept (./demolish.js), mended for the days since, put up in the
+// scene and cut into the world's boxes he collides with. `a`: the scene's api.
+export function loadRuins(s, a, now = Date.now()) {
+  const known = (id) => Number.isInteger(id) && id >= 0 && id < s.world.buildings.length;
+  let r = parse(local.get(RUINS, null), known);
+  r = repair(r, daysSince(r, now), now);
+  for (const [id, d] of r.d) {
+    applyRuin(s.world, id, d);
+    a.setDamage(id, d);
+  }
+  a.setRuins(r);
+  local.set(RUINS, serialise(r));
+  s.ruins = r;
+}
+
+// A tower hit: its damage, drawn and cut into the world, the rubble when a
+// stage turns, the collateral counted (part 3's standing reads it), kept.
+export function hitTowerIn(s, a, id, force, at) {
+  if (id == null || !s.ruins) return;
+  const was = stageOf(s.ruins.d.get(id) ?? 0);
+  const r = hitTower(s.ruins, id, force);
+  if (!r.delta) return;
+  s.ruins = r.ruins;
+  const d = r.ruins.d.get(id);
+  applyRuin(s.world, id, d);
+  a.setDamage(id, d);
+  if (r.stage !== was) a.setRuins(s.ruins);
+  s.collateral = (s.collateral ?? 0) + r.delta;
+  s.events.push({ type: 'ruin', id, at: [...at], stage: r.stage, delta: r.delta });
+  sfx(r.stage === 3 && was < 3 ? 'crumble' : 'crunch');
+  local.set(RUINS, serialise(s.ruins));
+}
+
 // What his brawl did this frame (./brawl.js's `out`): heard, by its force
 // (./hits.js), and passed on for the scene to draw (a crater, the throw, the
 // ring of a ground pound, the counter's flash).
-export function brawlEvents(s, outs) {
+export function brawlEvents(s, outs, a) {
   for (const o of outs) {
     if (o.kind === 'punch') continue; // (./foes.js says whether one lands)
+    // (what he carried slammed into a tower's face: the tower takes it too)
+    if (o.kind === 'slam' && o.tower != null) hitTowerIn(s, a, o.tower, forceOf('slam'), o.at);
     s.events.push({ ...o, type: 'brawl', at: o.at ?? [s.h.p[0], s.h.p[1] + 1, s.h.p[2]] });
     const force = hits.moveForce(o);
     if (o.kind === 'grab') sfx('thunk');
@@ -197,7 +237,7 @@ export function brawlEvents(s, outs) {
 // What flying did this frame (./flight.js's `ev`): the landing fed to the
 // mission, the boom, the slam, the splash and the Moon.
 export function heroEvents(s, events, c) {
-  const { say, feed, unlock } = c;
+  const { say, feed, unlock, api } = c;
   for (const e of events) {
     s.events.push(e);
     if (e.type === 'land' || e.type === 'slam') feed({ type: 'land', speed: e.speed, p: e.at, body: e.body ?? null });
@@ -211,7 +251,10 @@ export function heroEvents(s, events, c) {
     } else if (e.type === 'slam') {
       sfxHit(e.speed > 80 ? 'crumble' : 'thunk', 'slam', e.speed);
       if (e.speed > 80) sfx('boom');
-    } else if (e.type === 'impact') sfxHit('crumble', 'impact', e.speed);
+    } else if (e.type === 'impact') {
+      sfxHit('crumble', 'impact', e.speed);
+      if (e.speed > CRASH) hitTowerIn(s, api, e.building, e.speed, e.at);
+    }
     else if (e.type === 'takeoff') sfx('zip');
     else if (e.type === 'splash') {
       // a slam's sound, lighter (water gives): spray, and a thud under it

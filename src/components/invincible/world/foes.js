@@ -24,17 +24,20 @@
 // Nothing happens until something starts it (Cecil, a mission, or the
 // city's clock for the Flaxans).
 //
-// stepFoes(state, hero, { punch, power, look, eveHit, brawl, block }, dt, { cars, hangar }) →
+// stepFoes(state, hero, { punch, power, look, eveHit, brawl, block }, dt, { cars, hangar, city }) →
 // { foes: state, ev, push, stun }: `push` a velocity to give him (a lunge,
 // a knock), `stun` a moment without control. `cars`: where the traffic's
 // cars are, for a Mauler to take one (`throw`'s `car` is its index there);
-// `hangar`: a point on the street the Maulers wreck when he's not about.
+// `hangar`: a point on the street the Maulers wreck when he's not about;
+// `city`: ./map.js's world, for a thrown car or foe that goes into a tower
+// (a `towerHit` for ./demolish.js to count).
 // A step is never longer than a twentieth of a second, whatever `dt` says
 // (a tab hidden for a minute comes back as one step).
 
 import { BRAWL } from './brawl';
 import { FLY } from './flight';
-import { WATER_Y, groundAt, rng } from './map';
+import { WATER_Y, groundAt, near, rng } from './map';
+import { forceOf } from './demolish';
 
 export const PORTAL = { p: [1150, 150, -420], r: 22, n: [-1, 0, 0] }; // over the river, facing downtown
 export const FIGHT = {
@@ -75,6 +78,15 @@ const live = (e) => e.state !== 'waiting' && e.state !== 'ko' && e.state !== 'do
 const free = (e) => live(e) && e.state !== 'held' && e.state !== 'thrown';
 // how high over the ground his pound's ring still reaches (the Flaxans hang low round him)
 const POUND_UP = 14;
+// thrown into a tower faster than this, a foe marks it (./demolish.js)
+const KNOCKED = 45;
+// the tower (./map.js's box of a building) a point's inside, or null
+const scratch = [];
+function towerAt(city, p) {
+  if (!city) return null;
+  for (const b of near(city, p[0], p[2], 0, scratch)) if (b.building != null && p[0] > b.x0 && p[0] < b.x1 && p[2] > b.z0 && p[2] < b.z1 && p[1] > b.y0 && p[1] < b.y1) return b;
+  return null;
+}
 // where one he carries is: its middle a little ahead of his chest, the way he looks
 const carried = (chest, look) => [chest[0] + look[0] * 1.6, chest[1] + look[1] * 1.6 + 0.4, chest[2] + look[2] * 1.6];
 
@@ -350,9 +362,17 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
       // out of his hands: an arc, and a blow where it comes down
       e.t += dt;
       e.v[1] -= 9.8 * dt;
+      const was = [...e.p];
       for (const a of [0, 1, 2]) e.p[a] += e.v[a] * dt;
       const floor = Math.max(groundAt(e.p[0], e.p[2]), WATER_Y);
-      if (e.p[1] <= floor || e.t > 4) {
+      // into a tower: it marks it (if hard enough), and stops there
+      const into = towerAt(world.city, mid(e));
+      if (into) {
+        const speed = len(e.v);
+        if (speed > KNOCKED) ev.push({ type: 'towerHit', building: into.building, force: speed, at: mid(e) });
+        e.p = was;
+      }
+      if (into || e.p[1] <= floor || e.t > 4) {
         e.p[1] = Math.max(e.p[1], floor);
         const from = sub(e.p, e.v);
         e.v = [0, 0, 0];
@@ -551,6 +571,13 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
     c.life -= dt;
     if (c.away) c.v[1] -= 9.8 * dt;
     for (const a of [0, 1, 2]) c.p[a] += c.v[a] * dt;
+    // into a tower: a car's worth of damage to it, and down it comes
+    const into = towerAt(world.city, c.p);
+    if (into) {
+      ev.push({ type: 'towerHit', building: into.building, force: forceOf('car'), at: [...c.p] });
+      ev.push({ type: 'carDown', id: c.id, at: [...c.p] });
+      continue;
+    }
     if (!c.away && nearest(from, c.p, chest) < 2.2) {
       hurt(KINDS.mauler.carHurt, c.p, { by: 'car' });
       ev.push({ type: 'carHit', id: c.id, at: [...c.p] });

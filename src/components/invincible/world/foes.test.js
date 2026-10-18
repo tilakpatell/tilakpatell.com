@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FIGHT, KINDS, PORTAL, brawlThings, foeAt, knock, newFoes, pickTarget, portalOpen, spawnFoes, spawnUpTo, startInvasion, stepFoes } from './foes';
-import { groundAt } from './map';
+import { buildWorld, groundAt } from './map';
+import { forceOf } from './demolish';
 
 const hero = (p, v = [0, 0, 0]) => ({ p: [...p], v: [...v], mode: 'air' });
 const idle = { punch: false, look: [0, 0, -1] };
@@ -450,5 +451,27 @@ describe('what his brawl can reach', () => {
     expect(things.find((t) => t.id === 'car:3')).toMatchObject({ kind: 'car', grabbable: true, foe: false });
     expect(things.some((t) => t.id === 'car:4')).toBe(false); // (a Mauler's still holding that one)
     expect(brawlThings(newFoes())).toEqual([]);
+  });
+});
+
+describe('the towers they hit (./demolish.js counts it)', () => {
+  const city = buildWorld();
+  const tower = city.buildings.reduce((a, b) => (b.h > a.h ? b : a));
+  const face = [tower.x - tower.w / 2, 20, tower.z];
+  it('a car thrown into a tower hits it with a car’s force, and comes down', () => {
+    let f = spawnFoes(newFoes(), 'mauler', 1, [face[0] - 200, 0, face[2]]);
+    f = { ...f, foes: f.foes.map((e) => ({ ...e, cool: 99, throwCool: 99 })), cars: [{ id: 0, p: [face[0] - 6, 20, face[2]], v: [60, 0, 0], held: null, away: true, life: 4 }] };
+    const r = stepFoes(f, far, idle, 0.2, { city });
+    expect(r.ev).toContainEqual(expect.objectContaining({ type: 'towerHit', building: tower.id, force: forceOf('car') }));
+    expect(r.foes.cars).toHaveLength(0);
+  });
+  it('a foe thrown into one over 45 m/s hits it too, and takes the blow', () => {
+    let f = spawnFoes(newFoes(), 'mauler', 1, [face[0] - 200, 0, face[2]]);
+    f = { ...f, foes: f.foes.map((e) => ({ ...e, state: 'thrown', t: 0, p: [face[0] - 4, 20, face[2]], v: [60, 0, 0] })) };
+    const r = stepFoes(f, far, idle, 0.2, { city });
+    expect(r.ev).toContainEqual(expect.objectContaining({ type: 'towerHit', building: tower.id, force: 60 }));
+    expect(r.ev).toContainEqual(expect.objectContaining({ type: 'hit', id: 0, thrown: true }));
+    const slow = { ...f, foes: f.foes.map((e) => ({ ...e, v: [30, 0, 0] })) };
+    expect(stepFoes(slow, far, idle, 0.2, { city }).ev.some((e) => e.type === 'towerHit')).toBe(false);
   });
 });

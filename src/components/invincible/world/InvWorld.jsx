@@ -24,7 +24,7 @@ import './world.css';
 import LoadingVeil from '../../worlds/LoadingVeil';
 import { useStage, useStageFrame } from '../../avengers/shared/runtime';
 import city from './module';
-import { AT, CARD_MS, QUESTS, ROOF, STORY, TIME, brawlEvents, foeEvents, handleOut, heroEvents, hits, questEvents, sfx } from './events';
+import { AT, CARD_MS, QUESTS, ROOF, STORY, TIME, brawlEvents, foeEvents, handleOut, heroEvents, hitTowerIn, hits, loadRuins, questEvents, sfx } from './events';
 import { bindInput, pointerLook, readControls } from './input';
 import { fitHud, hudFrame } from './hudDraw';
 import { ROOM, nearest, over, placeOf, seenAs } from './online';
@@ -178,6 +178,8 @@ function World({ gl, setGl, thinkMark }) {
     // (once: a scene made again, by a hot reload, takes over where he is)
     if (!sim.current.world) placeHero(sim.current, a.world);
     sim.current.world = a.world;
+    // (the city as the fights left it, mended a quarter a day since: ./demolish.js)
+    if (!sim.current.ruins) loadRuins(sim.current, a);
     fitHud(hud.current, mapRef.current);
     await syncTime();
     if (import.meta.env.DEV) {
@@ -197,6 +199,11 @@ function World({ gl, setGl, thinkMark }) {
       hook.mission = (id) => missionApi.current.start?.(id);
       hook.feed = (ev) => missionApi.current.feed?.(ev);
       hook.story = () => sim.current.story;
+      // (and a tower's damage, for the QA shots: set straight to `d`)
+      hook.ruin = (id, d) => {
+        const b = a.world.buildings[id];
+        hitTowerIn(sim.current, a, id, Math.max(0, d - (sim.current.ruins.d.get(id) ?? 0)) * 400, [b.x, b.h, b.z]);
+      };
       window.__INVWORLD__ = { api: hook, sim: sim.current };
     }
   };
@@ -551,10 +558,10 @@ function World({ gl, setGl, thinkMark }) {
       // (a dive comes down on where its foe is now, not where it was)
       const prey = s.brawl.dive && s.h.dive ? things.find((q) => q.id === s.brawl.dive.target) : null;
       if (prey) s.h.dive.at = prey.at;
-      brawlEvents(s, br.out);
+      brawlEvents(s, br.out, a);
       let r = { foes: s.foes, ev: [], push: null, stun: 0 };
       for (let left = dt, first = true; left > 1e-6; left -= 0.05, first = false) {
-        const q = stepFoes(r.foes, h, { punch: first && Boolean(blow), power: blow?.power ?? 1, look, eveHit: first ? s.eveHit : null, brawl: first ? br.out : [], block: s.brawl.guard }, Math.min(0.05, left), { cars: s.cars ?? [], hangar: s.guard ?? null });
+        const q = stepFoes(r.foes, h, { punch: first && Boolean(blow), power: blow?.power ?? 1, look, eveHit: first ? s.eveHit : null, brawl: first ? br.out : [], block: s.brawl.guard }, Math.min(0.05, left), { cars: s.cars ?? [], hangar: s.guard ?? null, city: s.world });
         r = { foes: q.foes, ev: [...r.ev, ...q.ev], push: q.push ?? r.push, stun: Math.max(r.stun ?? 0, q.stun ?? 0) };
       }
       s.foes = r.foes;
@@ -565,7 +572,7 @@ function World({ gl, setGl, thinkMark }) {
         s.h = { ...s.h, mode: 'air', crouch: 0, v: r.push, spd: l, dir: r.push.map((c) => c / l) };
       }
       if (r.stun) s.h = { ...s.h, stun: Math.max(s.h.stun ?? 0, r.stun) };
-      foeEvents(s, r.ev, { say, feed, unlock, shakeOff });
+      foeEvents(s, r.ev, { say, feed, unlock, shakeOff, api: a });
     }
     s.punch = false;
     s.poundPress = false;
@@ -582,7 +589,7 @@ function World({ gl, setGl, thinkMark }) {
       }
     }
     if (s.getaway && !s.getaway.stopped) for (let left = dt; left > 1e-6; left -= 0.05) s.getaway = stepGetaway(s.getaway, Math.min(0.05, left));
-    heroEvents(s, h.ev, { say, feed, unlock });
+    heroEvents(s, h.ev, { say, feed, unlock, api: a });
     // other players: where you are to them, and where they are (in the city,
     // or out round the same one of the Earth, the Moon and Mars)
     const tv = trav.ref.current;

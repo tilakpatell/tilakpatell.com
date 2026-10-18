@@ -37,6 +37,7 @@ import { LOOK as ART } from './look';
 import { createCourse, createMarker, loadProps } from './missionScene';
 import { createOnlineGhosts } from './onlineScene';
 import { createSpaceScene } from './spaceScene';
+import { createRuins } from './ruins';
 import { VILLAIN_EV, villainFeel } from './villainScene';
 import { GUARD, HOLD_UP, brawlFeel } from './brawlScene';
 
@@ -193,6 +194,8 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   const { space, allen, ALLEN, THRAGG, spaceTalk, look: lookOfSpace } = await createSpaceScene(engine, scene, { small, people, thragg });
 
   const fx = createFlightFx(scene, { calm, small });
+  // what the fights have left of the city (./ruins.js; ./demolish.js says what)
+  const ruins = createRuins(scene, world, { level: engine.tier, vfx: fx.vfx });
   const challenges = createChallenges(scene, world, fx.vfx);
   const villains = createVillains(scene, fx.vfx, { calm, templates: { mauler: people.mauler, seismic: people.seismic }, rim: LOOK.noon.rim });
   // the missions' things (./missions.js, run by InvWorld.jsx): the bank on
@@ -288,7 +291,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   await setTime('noon');
 
   // ── the city or space: one or the other is drawn ──
-  const cityOnly = [ground.group, city.group, landmarks.group, clouds.mesh, hazeSky.mesh, jet.group, life.group, challenges.group, villains.group, omni.holder];
+  const cityOnly = [ground.group, city.group, ruins.group, landmarks.group, clouds.mesh, hazeSky.mesh, jet.group, life.group, challenges.group, villains.group, omni.holder];
   function spaceLook() {
     lookOfSpace(spot);
   }
@@ -584,6 +587,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
         }
       } else if (e.type === 'takeoff') fx.takeoff(e.at);
       else if (VILLAIN_EV.has(e.type)) traffic = villainFeel(e, { villains, feel, scare, traffic, h });
+      else if (e.type === 'ruin') ruins.hit(e);
       else if (e.type === 'land' && e.n) {
         // down on the Moon or Mars: a ring of dust thrown out round him
         const at = new THREE.Vector3(...e.at);
@@ -699,6 +703,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     course.update(sim.gates, sim.photo, t);
     ground.update(t);
     city.update(t, look?.night ?? 0);
+    ruins.update(frameDt, t);
     // coming down through the air from space, fast: the air in front of him burns
     const altNow = zone === 'space' ? altitudeOf(h) : h.p[1];
     const down = zone === 'space' ? -(h.v[0] * h.p[0] + h.v[1] * h.p[1] + h.v[2] * h.p[2]) / Math.hypot(...h.p) : -h.v[1];
@@ -736,6 +741,9 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     // ?debug: the feel's numbers, and ./InvWorld.jsx's (the hits, the jump's press)
     tune: (more = []) => engine.tune([...feelGroups(feel), ...springGroups(squash, 'squash'), ...more], 'invincible'),
     setTime,
+    // a tower's damage drawn, and the ruins' rubble and scaffolding (./demolish.js's)
+    setDamage: city.setDamage,
+    setRuins: ruins.set,
     project,
     talkers,
     jetDistance,
@@ -765,6 +773,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     dispose() {
       skyLight?.dispose();
       fx.dispose();
+      ruins.dispose();
       villains.dispose();
       props.dispose();
       marker.dispose();

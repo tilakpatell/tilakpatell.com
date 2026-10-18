@@ -4,10 +4,13 @@
 // box whose walls the shader paints with siding, windows, a front door and
 // a garage door, under a hipped roof; the strip's shops; the trees (round
 // ones in town, pines on the hills); the bridges over the river and its
-// embankments. Lit windows and spire beacons at night.
+// embankments. Lit windows and spire beacons at night. A fight's damage
+// (./demolish.js) is drawn one tower at a time by setDamage: its damage into
+// the facade's attribute, and what's left of it standing.
 
 import * as THREE from 'three';
 import { hot } from '../../avengers/hq/stage';
+import { biteOf } from './demolish';
 import { SKIN, WINDOWS, towerField, towerMaterial } from './facade';
 import { BRIDGES, COAST, BEACH, RIVER, groundAt, rng } from './map';
 import { LAND } from './ground';
@@ -138,8 +141,11 @@ export function buildCity(world, { small = false } = {}) {
   // ── the towers ──
   const facade = towerMaterial(uniforms);
   const list = [];
+  // (each tower's instances: its body, and its top if it has one)
+  const towerAt = new Map();
   for (const b of world.buildings) {
     const style = { kind: SKIN[b.kind], tone: b.tone, seed: (b.id * 0.6180339) % 1 };
+    towerAt.set(b.id, { b, body: list.length, top: b.top ? list.length + 1 : null });
     list.push({ x: b.x, z: b.z, w: b.w, d: b.d, h: b.h, ...style });
     if (b.top) list.push({ x: b.x, y: b.h, z: b.z, w: b.top.w, d: b.top.d, h: b.top.h, ...style });
   }
@@ -311,10 +317,34 @@ export function buildCity(world, { small = false } = {}) {
     group.add(b);
   }
 
+  // one tower's damage: into the facade's attribute, and its height cut to
+  // what stands (the top gone first); only its own instances are sent again
+  const damage = towers.geometry.getAttribute('aDamage');
+  const placed = new THREE.Matrix4();
+  const stand = (i, b, y, w, h, d) => towers.setMatrixAt(i, placed.compose(P.set(b.x, y, b.z), Q.identity(), S.set(w, Math.max(1e-3, h), d)));
+  function setDamage(id, d) {
+    const t = towerAt.get(id);
+    if (!t) return;
+    const { b } = t;
+    const stands = (b.h + (b.top?.h ?? 0)) * (1 - biteOf(d));
+    stand(t.body, b, 0, b.w, Math.min(b.h, stands), b.d);
+    damage.setX(t.body, d);
+    if (t.top != null) {
+      stand(t.top, b, b.h, b.top.w, stands - b.h, b.top.d);
+      damage.setX(t.top, d);
+    }
+    const n = t.top != null ? 2 : 1;
+    damage.addUpdateRange(t.body, n);
+    damage.needsUpdate = true;
+    towers.instanceMatrix.addUpdateRange(t.body * 16, n * 16);
+    towers.instanceMatrix.needsUpdate = true;
+  }
+
   let blink = 0;
   return {
     group,
     uniforms,
+    setDamage,
     // 0 by day, 1 at night: the windows, the houses' lights
     setNight(k) {
       uniforms.uNight.value = k;

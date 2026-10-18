@@ -7,7 +7,9 @@
 // pixel, so the skyline doesn't crawl when seen from far off. The windows
 // reflect the sky by day and light up, floor by floor, at night. (Each
 // tower's numbers reach the fragments `flat`: a hash of a value that wobbles
-// across a wall, as an interpolated one can, comes out as noise.)
+// across a wall, as an interpolated one can, comes out as noise.) A fight's
+// damage (./demolish.js, one float an instance) breaks windows dark and
+// cracks the walls as it grows, and chars a broken tower's stub.)
 
 import * as THREE from 'three';
 
@@ -31,7 +33,7 @@ export function towerMaterial(uniforms) {
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uNight = uniforms.uNight;
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec4 aStyle;\nvarying vec3 vCity;\nvarying vec3 vCityN;\nflat varying vec4 vStyle;')
+      .replace('#include <common>', '#include <common>\nattribute vec4 aStyle;\nattribute float aDamage;\nvarying vec3 vCity;\nvarying vec3 vCityN;\nflat varying vec4 vStyle;\nflat varying float vDamage;')
       .replace(
         '#include <project_vertex>',
         `#include <project_vertex>
@@ -43,6 +45,7 @@ export function towerMaterial(uniforms) {
           vCity = (im * vec4(transformed, 1.0)).xyz;
           vCityN = normalize(mat3(im) * objectNormal);
           vStyle = aStyle;
+          vDamage = aDamage;
         }`,
       );
     shader.fragmentShader = shader.fragmentShader
@@ -53,6 +56,7 @@ export function towerMaterial(uniforms) {
         varying vec3 vCity;
         varying vec3 vCityN;
         flat varying vec4 vStyle;
+        flat varying float vDamage;
         float cityHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
         float box(vec2 f, vec4 r) { return step(r.x, f.x) * step(f.x, r.y) * step(r.z, f.y) * step(f.y, r.w); }
         vec3 srgb(vec3 c) { return pow(c, vec3(2.2)); }
@@ -111,8 +115,18 @@ export function towerMaterial(uniforms) {
         vec3 dayPane = glassK * mix(tint, paneTone, ${num(WINDOWS.tint)}) + (1.0 - glassK) * paneTone;
         glass = mix(glass, dayPane * (0.85 + 0.3 * pane), cityDay);
         vec3 daySky = mix(vec3(1.0), dayPane / max(dot(dayPane, vec3(0.2126, 0.7152, 0.0722)), 1e-3), ${num(WINDOWS.sky)} * glassK);
+        // a fight's damage: windows broken dark, more of them as it grows, and
+        // cracks across the walls; a broken one's stub charred on top
+        float dmg = vDamage;
+        float hurt = step(0.001, dmg);
+        float broken = hurt * step(cityHash(wid * 2.3 + seed * 3.1), dmg * 1.4);
+        glass = mix(glass, vec3(0.015), broken);
+        float crackLine = abs(fract(u * 0.043 + vCity.y * 0.067 + cityHash(vec2(seed, floor(vCity.y / 11.0)))) - 0.5);
+        float crack = hurt * (1.0 - smoothstep(0.004, 0.012 + 0.03 * dmg, crackLine)) * step(cityHash(floor(vec2(u, vCity.y) / 9.0) + seed), dmg * 1.5);
         vec3 roofC = srgb(vec3(0.36, 0.36, 0.37)) * (0.8 + 0.35 * cityHash(floor(vCity.xz * 0.4)));
+        roofC *= 1.0 - 0.75 * step(0.6, dmg);
         diffuseColor.rgb = mix(mix(wall, glass, win), roofC, roof);
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.04, 0.035, 0.03), crack * (1.0 - roof) * 0.85);
         float cityWin = win;`,
       )
       .replace(
@@ -134,7 +148,7 @@ export function towerMaterial(uniforms) {
           vec3 rv = transformDirectionByInverseViewMatrix(reflect(-normalize(vViewPosition), normal), viewMatrix);
           rv.y = abs(rv.y);
           vec3 skyIn = textureCubeUV(envMap, envMapRotation * normalize(rv), 0.2).rgb * envMapIntensity;
-          totalEmissiveRadiance += skyIn * daySky * ${num(WINDOWS.reflect)} * cityWin * cityDay;
+          totalEmissiveRadiance += skyIn * daySky * ${num(WINDOWS.reflect)} * cityWin * cityDay * (1.0 - broken);
         }
         #endif
         {
@@ -146,6 +160,7 @@ export function towerMaterial(uniforms) {
           // (where windows are under a pixel, what a wall of them comes to, as
           // by day: one window on or off a pixel at random is noise from the air)
           glow = mix(glow, vec3(0.12, 0.094, 0.07), smoothstep(0.22, 0.6, max(fw.x, fw.y)));
+          glow *= 1.0 - broken;
           totalEmissiveRadiance += glow * cityWin * uNight * ${num(WINDOWS.light)};
           totalEmissiveRadiance += street * lobby * uNight * vec3(1.0, 0.85, 0.6) * ${num(0.3 * WINDOWS.light)};
           // the crown lit from below on the tall ones
@@ -159,7 +174,8 @@ export function towerMaterial(uniforms) {
 }
 
 // Boxes as instances, one draw: [{ x, y, z, w, h, d, kind, tone, seed }],
-// each standing on its y (0 unless given).
+// each standing on its y (0 unless given); each its damage, 0 to begin with
+// (`aDamage`, written one instance at a time by ./city.js's setDamage).
 export function towerField(list, material) {
   const geo = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
   // (no bottoms: nobody sees under a building)
@@ -175,6 +191,7 @@ export function towerField(list, material) {
     style.set([b.kind, b.tone, b.seed, (b.y ?? 0) + b.h], i * 4);
   });
   geo.setAttribute('aStyle', new THREE.InstancedBufferAttribute(style, 4));
+  geo.setAttribute('aDamage', new THREE.InstancedBufferAttribute(new Float32Array(list.length), 1).setUsage(THREE.DynamicDrawUsage));
   mesh.instanceMatrix.needsUpdate = true;
   mesh.computeBoundingSphere();
   return mesh;
