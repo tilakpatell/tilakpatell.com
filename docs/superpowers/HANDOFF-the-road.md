@@ -11,19 +11,19 @@ Middle-earth as a journey: one continuous three.js ride from Bag End to the Grey
 | lane | what | plan | tasks | branch | session | pull request | state |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | R1 the spine | the module, the line, the clock, the director, the fellowship, daylight, the face, the rows, the cast, the measure | `…-the-road.md` | 1 to 10 | `claude/the-road-1-spine` | 2026-10-18 | #1034 | done: tasks 1 to 10; the numbers in `evidence/the-road/README.md`; next R2 (Task 11) |
-| S the sheet | the geography, the projection, the consumers, the painter, the shots | `…-middle-earth-sheet.md` | 1 to 6 | `claude/middle-earth-sheet` | | | after #1023 merges |
+| S the sheet | the geography, the projection, the consumers, the painter, the shots | `…-middle-earth-sheet.md` | 1 to 6 | `claude/middle-earth-sheet` | | | free: #1023 has merged |
 | R2 the systems | the ground, the scatter, the water, the weather, the ambience, the house and the vision, Hobbiton in full | `…-the-road.md` | 11 to 17 | `claude/the-road-2-systems` | | | |
 | R3 stages 2 to 6 | the Shire’s edge, Bree, Weathertop, the Ford, Rivendell | the same | 18 to 22 | `claude/the-road-3-eriador` | | | |
 | R4 stages 7 to 10 | Caradhras and the Doors, Moria, Lothlórien, the Anduin | the same | 23 to 26 | `claude/the-road-4-mountains` | | | |
 | R5 stages 11 to 14 | the Marshes and the Gate, Ithilien and the Vale, Cirith Ungol, Gorgoroth and the Mountain | the same | 27 to 30 | `claude/the-road-5-mordor` | | | |
-| R6 the end | the White City, the Havens, the desk, the hub’s first step, the journal, the achievement | the same | 31 to 33 | `claude/the-road-6-end` | | | after #1023 merges |
+| R6 the end | the White City, the Havens, the desk, the hub’s first step, the journal, the achievement | the same | 31 to 33 | `claude/the-road-6-end` | | | free: #1023 has merged |
 | R7 polish | the numbers at every stage, the phone, reduced motion, the docs, the riders online | the same | 34, 35 | `claude/the-road-7-polish` | | | |
 
 A session takes the next lane whose state allows it, runs until its budget, merges what is green, fills its row and leaves the next unchecked task for the next session. A lane that does not finish in one session is continued on the same branch by the next.
 
 ## What the other work must know
 
-- **#1023 (FL2 Middle-earth)** owns `src/components/middleearth/module.js`, `stage.js`, `tick.js`, every town’s `*World.jsx` and `scene.js`, `rush/Rush.jsx`, `shire/ShireWorld.jsx`, `src/pages/MiddleEarth.jsx`, `src/runtime/views.js` and `runtime.js` until it merges. The Road’s lanes R1 to R5 touch none of them; S and R6 start after it merges.
+- **#1023 (FL2 Middle-earth) has merged** (2026-10-18), so `src/components/middleearth/module.js`, `stage.js`, `tick.js`, the towns, `rush/Rush.jsx`, `shire/ShireWorld.jsx`, `src/pages/MiddleEarth.jsx`, `src/runtime/views.js` and `runtime.js` are free; S and R6 wait for nothing. Each lane still keeps to the files its plan’s tasks name.
 - **The Road imports from Middle-earth only** `chapters.js`, `road.js`, `record.js`, `hidden.js`, `creatures.js`, `castRules.js`, `ease.js`, `feel.js`, `pack.js`, `mapPaint.js`, `mapData.js`, `sheet.js`, `geography.js`. Never a town, `kit.js`, `cast3d.js`, `mapFigures.js`: their closures carry GLSL and `src/runtime/shading.test.js` would fail.
 - **`WORLD_MB['/middle-earth']` says 1** and the cast alone is 15 MB; stale, not these lanes’, noted for whoever owns the chapters.
 - **The owner’s steps** (the credit track, after R2): a Gollum figure from Meshy as the cast was made (`public/models/middleearth/cast/gollum{,-idle,-walk,-run}.glb`; `road/cast.js` prefers it when it exists); the Road’s new voiced lines run through `scripts/voices` on the desktop (`road/voicelines.js` lists them; until then they show as words); horses with their own legs only if the farm pack’s read wrong in the shots.
