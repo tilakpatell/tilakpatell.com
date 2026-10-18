@@ -1,7 +1,8 @@
 /* global window, document */
 // A browser check of the universe nav map (NavMap.jsx). With the dev server
 // up (npx vite --port 5173) and Chrome at $CHROME (or /opt/google/chrome):
-//   OUT=/tmp/shots node scripts/navmap-check.mjs [desktop|phone]
+//   OUT=/tmp/shots [BASE=http://localhost:5173] node scripts/navmap-check.mjs [desktop|phone|minimap|far]
+// BASE is where the dev server is. A mode alone takes just its own shots; none runs all four.
 // It opens the map, checks the labels and the go button, jumps to a wonder
 // (the ship has to be out under the site's jump, which clears the world's
 // card from the panel), tries a second jump while the hyperdrive charges,
@@ -12,7 +13,9 @@ import { chromium } from 'playwright-core';
 
 const out = process.env.OUT ?? '.';
 const only = process.argv[2];
-const URL = 'http://localhost:5173/?quality=low#/universe';
+const BASE = process.env.BASE ?? 'http://localhost:5173';
+const URL = `${BASE}/?quality=low#/universe`;
+const run = (m) => !only || only === m;
 const browser = await chromium.launch({ executablePath: process.env.CHROME ?? '/opt/google/chrome/chrome', args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
 const errors = [];
 const problems = [];
@@ -35,6 +38,7 @@ async function open(viewport, ship) {
   await page.goto(URL, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => typeof window.__universe === 'function' && window.__universe().ship, null, { timeout: 120000 });
   await page.waitForTimeout(2000);
+  await page.waitForSelector('.universe-navmap-btn', { state: 'attached', timeout: 120000 });
   return page;
 }
 const click = (page, sel, nth = 0) =>
@@ -51,7 +55,7 @@ const state = (page) => page.evaluate(() => ({ ...window.__universe(), hash: win
 const navOpen = (page) => page.waitForSelector('.navmap', { timeout: 60000 });
 const pickByName = (page, name) => page.evaluate((n) => [...document.querySelectorAll('.navmap-list button')].find((b) => b.textContent.includes(n))?.click(), name);
 
-if (only !== 'phone') {
+if (run('desktop')) {
   const page = await open({ width: 1440, height: 900 }, 'falcon');
   await click(page, '.universe-navmap-btn');
   await navOpen(page);
@@ -167,7 +171,7 @@ if (only !== 'phone') {
   await page.context().close();
 }
 
-if (only !== 'desktop') {
+if (run('phone')) {
   const page = await open({ width: 390, height: 844 }, 'xwing');
   await shot(page, '8-phone-map');
   const btn = await page.evaluate(() => {
@@ -191,6 +195,51 @@ if (only !== 'desktop') {
   await pickByName(page, 'Earth');
   await page.waitForTimeout(1500);
   await shot(page, '10-phone-picked');
+  await page.context().close();
+}
+
+if (run('minimap')) {
+  // the flat map (3D off) and the home page's teaser: no __universe here, so no open()
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  await ctx.addInitScript(() => {
+    window.localStorage.setItem('tp-3d', 'off');
+    window.localStorage.setItem('tp-intro', '1');
+  });
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => errors.push(String(e)));
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  await page.goto(URL, { waitUntil: 'domcontentloaded' });
+  const flat = await page.waitForSelector('.universe-flat .minimap', { timeout: 120000 });
+  await flat.screenshot({ path: `${out}/11-minimap-flat.png`, timeout: 120000 });
+  await page.evaluate(() => (window.location.hash = '#/home'));
+  // the section mounts only when scrolled near, so scroll down a screen at a time until it's there
+  await page.waitForFunction(
+    () => {
+      if (document.querySelector('.minimap-teaser')) return true;
+      window.scrollBy(0, window.innerHeight * 0.8);
+      return false;
+    },
+    null,
+    { timeout: 120000, polling: 'raf' },
+  );
+  const teaser = await page.waitForSelector('.minimap-teaser', { timeout: 120000 });
+  await teaser.scrollIntoViewIfNeeded();
+  await teaser.screenshot({ path: `${out}/12-minimap-teaser.png`, timeout: 120000 });
+  check(true, 'the flat mini-map and the home teaser both drew');
+  await ctx.close();
+}
+
+if (run('far')) {
+  const page = await open({ width: 1440, height: 900 }, 'falcon');
+  await page.evaluate(() => {
+    const d = window.__universeDebug.state;
+    d.ship = { ...d.ship, x: 250000, y: 1000, z: 0, speed: 0 };
+  });
+  await page.waitForFunction(() => window.__universe().ship.x > 200000, null, { timeout: 120000 });
+  await page.keyboard.press('m');
+  await navOpen(page);
+  await page.waitForFunction(() => document.querySelectorAll('.navmap-place').length > 0, null, { timeout: 60000 });
+  await shot(page, '13-far-ship');
   await page.context().close();
 }
 

@@ -1,0 +1,45 @@
+# Endless universe lane 6a: the map, evidence
+
+The nav map and the mini-maps, before and after lane 6a. The “before” pictures are `main`'s own code.
+
+- Date taken: 2026-10-18
+- `main` commit: `ddb364bf3`
+- Browser: Playwright’s Chromium, headless, software GL, `?quality=low`
+
+## Command
+
+A dev server on `main`'s code, then the check against it:
+
+```
+npx vite --port 5266 --strictPort
+BASE=http://localhost:5266 OUT=docs/superpowers/evidence/endless-universe-6a-map/before CHROME=<chromium> node scripts/navmap-check.mjs
+```
+
+A single mode (`desktop`, `phone`, `minimap` or `far`) takes just its own shots.
+
+## What fails on `main`
+
+The Citadel jump checks, whose coordinates (1755, −4660) are stale (`docs/superpowers/HANDOFF-universe.md`, “Left”). Four checks print FAIL:
+
+- the go button reads “Jump to The Citadel”
+- the ship’s out at The Citadel on the first frame past the flash
+- with the drive charging, it says so and goes at super speed
+- still on its way out to Aurelia with the selection cleared (it reads `rmportal-back`)
+
+Every other check prints ok, and there are no page errors. The Citadel shots (`3`–`6`) are not kept, since they show the broken jump.
+
+## Shots
+
+| Shot | What it shows | Before | After |
+| --- | --- | --- | --- |
+| `1-navmap` | The map open on the desktop | `before/1-navmap.png` | |
+| `2-picked` | A world picked | `before/2-picked.png` | |
+| `7-home-system` | The home system view | `before/7-home-system.png` | |
+| `8-phone-map` | The phone, before the map opens | `before/8-phone-map.png` | |
+| `9-phone-navmap` | The phone map | `before/9-phone-navmap.png` | |
+| `10-phone-picked` | The phone, a place picked | `before/10-phone-picked.png` | |
+| `11-minimap-flat` | The mini-map on the flat (3D off) page | `before/11-minimap-flat.png` | |
+| `12-minimap-teaser` | The mini-map teaser on the home page | `before/12-minimap-teaser.png` | |
+| `13-far-ship` | The map with the ship 250,000 out: on `main` the marker is missing and the panel says “No ship” | `before/13-far-ship.png` | |
+
+All are PNG and under 1 MB.
