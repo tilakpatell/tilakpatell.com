@@ -547,10 +547,11 @@ function World({ gl, setGl, thinkMark }) {
       s.brawl = br.b;
       const blow = br.out.find((o) => o.kind === 'punch' || o.kind === 'counter');
       const dived = br.out.find((o) => o.kind === 'dive');
-      if (dived) s.h = dive(s.h, dived.at);
-      // (a dive comes down on where its foe is now, not where it was)
+      // (a dive comes down on the ground where its foe is now, not where it was)
+      const under = (p) => [p[0], groundAt(p[0], p[2]), p[2]];
+      if (dived) s.h = dive(s.h, under(dived.at));
       const prey = s.brawl.dive && s.h.dive ? things.find((q) => q.id === s.brawl.dive.target) : null;
-      if (prey) s.h.dive.at = prey.at;
+      if (prey) s.h.dive.at = under(prey.at);
       brawlEvents(s, br.out);
       let r = { foes: s.foes, ev: [], push: null, stun: 0 };
       for (let left = dt, first = true; left > 1e-6; left -= 0.05, first = false) {

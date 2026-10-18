@@ -403,7 +403,8 @@ describe('the villains', () => {
     expect(ev.some((e) => e.type === 'swing' && e.hit)).toBe(true);
   });
   it('a ground pound floors the Flaxans within 40 m and staggers the Maulers', () => {
-    const at = [AT[0], G, AT[2]];
+    // (on the river's bank, within reach of the portal: the Flaxans round him, not flying home)
+    const at = [1000, groundAt(1000, -420), -420];
     let f = spawnFoes(newFoes(), 'flaxan', 3);
     f = { ...f, foes: f.foes.map((e, i) => ({ ...e, state: 'fight', cool: 99, p: [at[0] + [10, 30, 200][i], at[1] + 2, at[2]], v: [0, 0, 0] })) };
     f = spawnFoes(f, 'mauler', 1, [at[0], 0, at[2] - 20]);
