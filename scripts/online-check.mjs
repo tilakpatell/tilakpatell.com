@@ -107,17 +107,24 @@ async function visitor(name, ship = null, viewport = { width: 1280, height: 800 
 }
 
 // the number on the world's chip ("1 traveller here", "2 other Mortys here",
-// "3 listeners here"), or null: any element reading "<n> … here" outside the
+// "3 listeners here", and "· your ally" or "· 2 allies" after it once you
+// have allies there), or null: any element reading "<n> … here" outside the
 // site's online corner (whose "· 1 here" is the page's, not the world's)
-const chip = (page) =>
-  page.evaluate(() => {
+const CHIP = /^(\d+)\s*(?:other\s+)?[a-z’']+\s+here(?:\s*·\s*(your ally|\d+ all(?:y|ies)))?$/i;
+const chipText = (page) =>
+  page.evaluate((re) => {
+    const CHIP = new RegExp(re, 'i');
     for (const el of document.querySelectorAll('span, p, b, div, button')) {
       if (el.closest('.universe-online')) continue;
-      const m = /^(\d+)\s*(?:other\s+)?[a-z’']+\s+here$/i.exec(el.textContent.trim());
-      if (m) return Number(m[1]);
+      const text = el.textContent.replace(/\s+/g, ' ').trim();
+      if (CHIP.test(text)) return text;
     }
     return null;
-  });
+  }, CHIP.source);
+const chip = async (page) => {
+  const text = await chipText(page);
+  return text ? Number(CHIP.exec(text)[1]) : null;
+};
 // a world whose 3D waits to be asked for (the office's, the music room's),
 // or that puts you in it only once you start (the Caribbean's voyage, and
 // on a slow graphics chip, its "play anyway"): ask,
@@ -348,6 +355,21 @@ for (const w of universe ? [] : worlds) {
       console.log(`FAIL ${w}: page pointers over the world`);
     }
     if (out) await a.screenshot({ path: `${out}/online${w.replace(/\//g, '-')}.png` });
+    // allies in the world: Alpha asks from the roster, Bravo accepts, and
+    // Alpha's chip counts Bravo as an ally (the ghost's ring and card go
+    // green with it: towns/ghosts.js), in the first world only
+    if (w === worlds[0]) {
+      await rosterLine(a, 'Bravo');
+      await press(a.locator('.universe-online-pilot', { hasText: 'Bravo' }).first().locator('.universe-online-act', { hasText: /^Ally$/ }));
+      await rosterLine(b, 'Alpha');
+      await press(b.locator('.universe-online-pilot', { hasText: 'Alpha' }).first().locator('.universe-online-act[data-yes]'));
+      const text = await waitFor(async () => {
+        const t = await chipText(a);
+        return t && /ally/i.test(t) ? t : null;
+      }, 60000, `${w}: Alpha's chip counts Bravo as an ally`);
+      check(/your ally$|1 ally$/.test(text), `${w}: allies on the chip: ${JSON.stringify(text)}`);
+      if (out) await a.screenshot({ path: `${out}/online${w.replace(/\//g, '-')}-ally.png` });
+    }
   } catch (e) {
     failed++;
     console.log(`FAIL ${e.message}`);

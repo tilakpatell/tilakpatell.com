@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 import { audioContext } from '../../../lib/audio';
 import { useVoiced } from '../../../lib/useVoiced';
-import { Bubble as KitBubble, Exit, QuestList as KitQuestList, Stick as KitStick } from '../../../runtime/hud';
+import { Bubble as KitBubble, Exit, QuestList as KitQuestList, Stick as KitStick, alliesText } from '../../../runtime/hud';
 import { nodeVoice, personVoice } from './talk';
 import '../../../styles/lazy/middleearth.css';
 
@@ -75,8 +75,8 @@ export function Stick({ onMove }) {
   );
 }
 
-// Other travellers online in this town (./useTravellers.js): how many, or a
-// way to see them.
+// Other travellers online in this town (./useTravellers.js): how many (and
+// how many of them your allies, in the ally green), or a way to see them.
 export function Travellers({ trav }) {
   if (!trav.available) return null;
   if (!trav.on)
@@ -86,8 +86,9 @@ export function Travellers({ trav }) {
       </button>
     );
   return (
-    <span className="shire-chip town-travellers" data-on title="Everyone else online in this town shows as a pale ghost: they can’t touch your story, nor you theirs">
+    <span className="shire-chip town-travellers" data-on data-allies={trav.allies > 0 ? trav.allies : undefined} title="Everyone else online in this town shows as a pale ghost: they can’t touch your story, nor you theirs">
       <b>{trav.count}</b> {trav.count === 1 ? 'traveller' : 'travellers'} here
+      {trav.allies > 0 && <em className="town-allies"> · {alliesText(trav.allies, trav.count)}</em>}
     </span>
   );
 }

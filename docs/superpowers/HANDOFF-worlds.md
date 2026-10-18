@@ -107,7 +107,7 @@ The house look on every galaxy world (`src/lib/three/house.js`, each world’s l
 - Eve’s ghost on the line at her best time, and Allen flying the race home: the gates are drawn, nobody races.
 - The Flaxans’ portal closes as the second wave goes down, before episode 5’s last step; it should stay open until he flies through it.
 - The bank model’s own lettering reads GDA.
-- No interiors (the Graysons’ house, the GDA’s floor, Burger Mart’s counter would follow the C-137 and Office patterns); online ghosts not wired (`useTravellers` in a room of its own).
+- No interiors (the Graysons’ house, the GDA’s floor, Burger Mart’s counter would follow the C-137 and Office patterns). (Online ghosts are wired: `useTravellers('invincible')`, drawn by `scene.js`’s `createGhosts`.)
 - Phone frame rate on hardware. Levers: a distance cull on the suburb’s instanced trees and houses, the land disc’s ring step, traffic counts. `maulers`, `seismic`, `everace` and `photo` sit over the 1.5 M triangle budget on low.
 - Mark’s `mark` metric misses in the air over towers (a mean-luminance measure; a colour-difference measure would judge it better). Left as is: low-poly yard trees, the HDRI’s clouds above 7 km, the jet’s livery unseen up close.
 

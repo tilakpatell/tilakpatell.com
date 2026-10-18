@@ -4,6 +4,7 @@ import ModelCredits from '../components/ModelCredits';
 import WorldSwitcher from '../components/worlds/WorldSwitcher';
 import { use3D } from '../lib/gpu';
 import { useDocumentTitle } from '../lib/hooks';
+import { useInWorld } from '../components/universe/online/useOnline';
 
 const Mario64 = lazy(() => import('../components/mario64/Mario64'));
 const N64 = lazy(() => import('../components/n64/N64'));
@@ -18,6 +19,7 @@ export default function Mario64Page() {
   const navigate = useNavigate();
   const three = use3D();
   const [view, setView] = useState('emu'); // emu | tribute
+  useInWorld(view === 'emu' || three.on); // (the console, or the castle: no page pointers over either)
   const back = () => navigate('/dot-matrix');
   return (
     <div className="relative">

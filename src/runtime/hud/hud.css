@@ -59,6 +59,7 @@
 :where(.hud-btn):not(hud-none) { cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease; }
 :where(.hud-btn:hover):not(hud-none), :where(.hud-btn:focus-visible):not(hud-none) { background: var(--hud-glass-hi); border-color: var(--hud-accent); }
 :where(.hud-chip b):not(hud-none) { color: var(--hud-accent); font-family: var(--hud-num-face); font-variant-numeric: tabular-nums; }
+:where(.hud-players[data-allies]):not(hud-none) { border-color: rgb(141 255 173 / 0.55); } /* your allies are here: the site's ally green (universe/online/online.css) */
 
 /* the one Menu */
 :where(.hud-menu):not(hud-none) { position: relative; }

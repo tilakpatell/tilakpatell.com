@@ -126,6 +126,29 @@ describe('travellers', () => {
     b.leave();
   });
 
+  it('an ally of yours (the roster’s, by the same key) is marked in list()', async () => {
+    const load = fakeRelay();
+    const now = () => 1000;
+    const allies = new Set();
+    const a = createTravellers({ town: 'bree', name: 'Rosie', load, now });
+    const b = createTravellers({ town: 'bree', name: 'Fatty', load, now, ally: (id) => allies.has(id) });
+    await settle();
+    await settle();
+    a.pose({ x: 1, z: 2, face: 0, speed: 3 });
+    const [rosie] = b.list();
+    expect(rosie.ally).toBe(false);
+    allies.add(rosie.id);
+    expect(b.list()[0].ally).toBe(true);
+    // (a world without the site's link: no one's an ally)
+    const c = createTravellers({ town: 'bree', name: 'Nob', load, now });
+    await settle();
+    a.pose({ x: 1, z: 2, face: 0, speed: 3 }, {}, { force: true });
+    expect(c.list()[0].ally).toBe(false);
+    a.leave();
+    b.leave();
+    c.leave();
+  });
+
   it('a hidden traveller takes no place', async () => {
     const load = fakeRelay();
     const now = () => 1000;

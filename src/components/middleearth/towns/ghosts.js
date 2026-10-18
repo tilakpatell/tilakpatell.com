@@ -2,7 +2,10 @@
 // from another world, pale and shimmering, lit from the edges, with their
 // name over their head and a faint ring of light where they stand. They're
 // not in your story: nothing bumps into them and nothing sees them. One
-// wearing the Ring shows only while you wear it too.
+// wearing the Ring shows only while you wear it too. An ally of yours (the
+// row's `ally`, the roster's) wears the site's ally green on their name
+// card and their ring, so your party reads apart from strangers in every
+// world, as it does on the universe map (online/pilots.js).
 //
 // createGhosts({ height, make, animate, tag, halo, snap }) → { group,
 // update(list, t, dt, { ringOn }), dispose() }; add `group` to the town (the
@@ -46,6 +49,10 @@ function idHash(id) {
 
 const TINT = new THREE.Color(0xcfe0ff);
 const GLOW = new THREE.Color(0x6a8cff);
+export const GHOST_HALO = 0x9ab8ff; // the ring of light under a stranger
+export const ALLY_HALO = 0x8dffad; // and under an ally: the site's ally green (online.css)
+const ALLY_INK = '#8dffad';
+const ALLY_CARD = 'rgba(14, 44, 28, 0.66)';
 
 // pale, see-through, brighter at the edges (a rim of light, as the Ring's
 // world shows things)
@@ -62,8 +69,8 @@ function ghostMaterial() {
   return m;
 }
 
-// a name, on a little card that faces the camera
-function nameTag(name, size = 0.42) {
+// a name, on a little card that faces the camera (an ally's in the ally green)
+function nameTag(name, size = 0.42, ally = false) {
   const c = document.createElement('canvas');
   const g = c.getContext('2d');
   const font = '600 30px system-ui, sans-serif';
@@ -72,11 +79,11 @@ function nameTag(name, size = 0.42) {
   c.width = w;
   c.height = 44;
   g.font = font;
-  g.fillStyle = 'rgba(20, 28, 52, 0.62)';
+  g.fillStyle = ally ? ALLY_CARD : 'rgba(20, 28, 52, 0.62)';
   g.beginPath();
   g.roundRect(0, 0, w, 44, 12);
   g.fill();
-  g.fillStyle = '#e6eeff';
+  g.fillStyle = ally ? ALLY_INK : '#e6eeff';
   g.textBaseline = 'middle';
   g.fillText(name, 14, 23);
   const tex = new THREE.CanvasTexture(c);
@@ -115,16 +122,17 @@ export function createGhosts({ height = () => 0, make: build = () => makePerson(
     }
     if (f.ringMesh) f.ringMesh.visible = false;
     const root = new THREE.Group();
-    const halo = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x9ab8ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+    const ally = Boolean(p.ally);
+    const halo = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: ally ? ALLY_HALO : GHOST_HALO, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
     halo.position.y = 0.04;
     halo.scale.setScalar(haloSize);
-    const tag = nameTag(p.name, tagSize);
+    const tag = nameTag(p.name, tagSize, ally);
     tag.position.y = (f.top ?? 1.6) + tagSize * 0.85;
     root.add(f.group, halo, tag);
     group.add(root);
     // (first seen up high: there at once, not rising from the ground; `clock`
     // is their own gait's time, so two don't step in time)
-    return { f, mat, root, halo, tag, name: p.name, x: p.x, z: p.z, y: p.y ?? 0, face: p.face, fade: 0, clock: seeded(idHash(p.id))() * 10 };
+    return { f, mat, root, halo, tag, name: p.name, ally, x: p.x, z: p.z, y: p.y ?? 0, face: p.face, fade: 0, clock: seeded(idHash(p.id))() * 10 };
   };
 
   const drop = (id, g) => {
@@ -151,14 +159,18 @@ export function createGhosts({ height = () => 0, make: build = () => makePerson(
           g = make(p);
           ghosts.set(p.id, g);
         }
-        if (g.name !== p.name) {
+        // a new name, or an alliance made or ended while you're both here: a new card
+        const ally = Boolean(p.ally);
+        if (g.name !== p.name || g.ally !== ally) {
           g.root.remove(g.tag);
           g.tag.material.map.dispose();
           g.tag.material.dispose();
-          g.tag = nameTag(p.name, tagSize);
+          g.tag = nameTag(p.name, tagSize, ally);
           g.tag.position.y = (g.f.top ?? 1.6) + tagSize * 0.85;
           g.root.add(g.tag);
+          g.halo.material.color.setHex(ally ? ALLY_HALO : GHOST_HALO);
           g.name = p.name;
+          g.ally = ally;
         }
         // seen here only out of doors, and a Ring-wearer only through the Ring
         const want = !p.inside && (!p.ring || ringOn) ? 1 : 0;
