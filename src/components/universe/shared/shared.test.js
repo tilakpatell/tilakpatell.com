@@ -11,7 +11,7 @@ const FACE = [
   [flying, ['BUILT_KINDS', 'armsView', 'arsenalOf', 'chargeFor', 'createArmory', 'createGalaxyPowers', 'createRounds', 'fan', 'picksFor', 'turnToward']],
   [room, ['joinAsVisitor']],
   [hangar, ['LINES', 'POWERS', 'POWER_ICONS', 'POWER_KEYS', 'SHIP_WEAPONS', 'STOCK_LOADOUT', 'ShipyardBody', 'armsView', 'arsenalOf', 'createArmory', 'crewById', 'picksFor', 'powersOf', 'useYard']],
-  [wallet, ['LEVELS', 'TITLES', 'useEconomy']],
+  [wallet, ['EARN', 'LEVELS', 'TITLES', 'createPayLedger', 'useEarn', 'useEconomy']],
 ];
 
 describe('universe/shared', () => {
