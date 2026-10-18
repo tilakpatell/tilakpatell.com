@@ -12,6 +12,7 @@ import Hyperspace from '../Hyperspace';
 import Face from '../universe/Faces';
 import { VEHICLES, firstVehicle, stepVehicle, vehicleById } from './vehicles';
 import { cockpitPossible, cockpitScene, preloadCockpit } from './load';
+import { plan } from './timeline';
 import { artoo, sayClip } from './sounds';
 import { speak } from '../universe/sounds';
 import './cockpit.css';
@@ -68,6 +69,10 @@ export default function Cockpit({ start, onPeak, onDone }) {
       noteArrival(vehicle.arrive ?? null);
       window.dispatchEvent(new CustomEvent('tp:arrive', { detail: { ship } }));
     }
+    // (the crew's last line goes with the cockpit as the flash clears onto
+    // the map, rather than staying over it and vanishing at the end)
+    const p = plan(idNow.current);
+    root.current?.querySelector('.cockpit-hud')?.animate?.([{ opacity: 1 }, { opacity: 0 }], { duration: (p.end - p.peak) * 0.8, easing: 'ease-in-out', fill: 'forwards' });
     cbs.current.onPeak?.();
   }, []);
 
