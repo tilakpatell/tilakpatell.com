@@ -26,12 +26,14 @@ import LoadingVeil from '../../worlds/LoadingVeil';
 import { useStage, useStageFrame } from '../../avengers/shared/runtime';
 import city from './module';
 import Cards from './Cards';
-import { applyOuts, hits, onBrawlEvent, onFoeEvent, onHeroEvent, onQuestEvent, sfx } from './events';
+import { applyOuts, hits, onBrawlEvent, onFoeEvent, onHeroEvent, onPowerEvent, onQuestEvent, sfx } from './events';
 import { newBrawl, stepBrawl } from './brawl';
+import { DEFAULT as MARK_ID, ORDER, canPlay, hero as heroOf, keptHero, lockLine } from './heroes';
+import { newPower, stepPower } from './powers';
 import { drawMap, fitHud } from './hudCanvas';
 import { writeHud } from './hudFrame';
 import { bindKeys, pointerHandlers } from './input';
-import { AT, RUINSKEY, TIME, TIMES, keptQuests, keptRuins, keptStory, keptTime, placeHero } from './keep';
+import { AT, HEROKEY, RUINSKEY, TIME, TIMES, keptQuests, keptRuins, keptStory, keptTime, placeHero } from './keep';
 import { forceOf, hitTower, keyOf, serialise as keepRuins } from './demolish';
 import { ROOM, nearest, over, placeOf, seenAs } from './online';
 
@@ -81,7 +83,9 @@ function World({ gl, setGl, thinkMark }) {
   const [zone, setZoneUi] = useState('city');
   const [flash, setFlash] = useState(null);
   const [card, setCard] = useState(() => !prefersReducedMotion());
-  const { unlock } = useAchievements();
+  const { unlock, unlocked = [] } = useAchievements();
+  // who's flown as (./heroes.js): kept, and only once earned
+  const [heroId, setHeroId] = useState(() => keptHero(local.get(HEROKEY, null)));
   const [found, setFound] = useState(() => keptQuests().cards.length);
   // a mission's card over the city (./MissionCard.jsx), and the same for the key handler
   const [mcard, setMcard] = useState(null);
@@ -99,8 +103,20 @@ function World({ gl, setGl, thinkMark }) {
   if (!sim.current) {
     // (he's put on the lawn for now: where he really starts waits on the
     // world, which the scene makes, and nothing moves before it's there)
-    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null, ruins: keptRuins(), brawl: newBrawl(), pound: false, dive: false, touchPunch: false, mouseDown: false };
+    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null, ruins: keptRuins(), hero: heroOf(MARK_ID), power: newPower(), heroBack: null, touchPower: false, brawl: newBrawl(), pound: false, dive: false, touchPunch: false, mouseDown: false };
   }
+
+  // the hero: the sim's numbers, the scene's figure, and kept for next time
+  useEffect(() => {
+    sim.current.hero = heroOf(heroId);
+    local.set(HEROKEY, heroId);
+    api.current?.setHero?.(heroOf(heroId).figure);
+  }, [heroId]);
+  const pickHero = useCallback((id) => {
+    if (canPlay(id, { story: sim.current.story, unlocked })) setHeroId(id);
+  }, [unlocked]);
+  // (the story's bests change with a race: read again whenever the hero or the achievements do)
+  const heroes = useMemo(() => ORDER.map((id) => ({ id, name: heroOf(id).name, can: canPlay(id, { story: sim.current.story, unlocked }), lock: lockLine(id) })), [unlocked]);
 
   // (`who`, for a line someone says: in their own voice where it's been made;
   // `aloud`, what of it they say, if not all of it)
@@ -153,6 +169,7 @@ function World({ gl, setGl, thinkMark }) {
     if (!sim.current.world) placeHero(sim.current, a.world);
     sim.current.world = a.world;
     fitHud(hud.current, mapRef.current);
+    a.setHero?.(sim.current.hero.figure);
     // the city as it was left: every mark drawn, scaffolding where the crews are (./demolish.js)
     for (const [k, d] of sim.current.ruins.damage) a.setDamage(k, d, sim.current.ruins.mending.has(k));
     await syncTime();
@@ -173,6 +190,7 @@ function World({ gl, setGl, thinkMark }) {
       hook.mission = (id) => missionApi.current.start?.(id);
       hook.feed = (ev) => missionApi.current.feed?.(ev);
       hook.story = () => sim.current.story;
+      hook.hero = (id) => setHeroId(keptHero(id)); // (any of them, earned or not: for the shots)
       // (and the city's damage: the n buildings nearest [x, z], hit for d)
       hook.ruin = ([x, z], n = 3, d = 0.8) => {
         const bs = [...sim.current.world.buildings].sort((p, q) => Math.hypot(p.x - x, p.z - z) - Math.hypot(q.x - x, q.z - z)).slice(0, n);
@@ -329,6 +347,12 @@ function World({ gl, setGl, thinkMark }) {
       }
       // (Dad's rings from the first: a lesson already under way starts again with the episode)
       if (id === 'ep1') s.quests = { ...s.quests, lesson: { ...s.quests.lesson, on: false, next: 0, t: 0 } };
+      // (the story is Mark's: a mission is flown as him, and the hero comes back after)
+      if (s.hero.id !== MARK_ID) {
+        s.heroBack = s.hero.id;
+        setHeroId(MARK_ID);
+        say('This one is Mark’s.', 2400);
+      }
       s.mission = beginMission(id, s.t);
       // (the last episode: Dad's points, for ./companions.js to lead him through)
       if (id === 'ep7') s.mission.spar = m.steps.filter((q) => q.type === 'escort').map((q) => q.to);
@@ -340,7 +364,7 @@ function World({ gl, setGl, thinkMark }) {
       // the camera's one swing round him, with the card (none under reduced motion)
       s.swing = prefersReducedMotion() ? null : { t0: s.t, yaw0: s.yaw };
     },
-    [clear, speak, setup, openCard],
+    [clear, speak, setup, openCard, say],
   );
   const abandon = useCallback(() => feed({ type: 'abandon' }), [feed]);
   // the radio's call taken (R, or the line itself)
@@ -466,6 +490,19 @@ function World({ gl, setGl, thinkMark }) {
     return null;
   };
 
+  // the towers and houses within r of a point, for a power (./powers.js): by their colliders
+  const towersNear = (world, p, r) => {
+    const seen = new Set();
+    const out = [];
+    for (const b of boxesNear(world, p[0], p[2], r)) {
+      const key = keyOf(b);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push({ key, x: (b.x0 + b.x1) / 2, z: (b.z0 + b.z1) / 2, w: b.x1 - b.x0, d: b.z1 - b.z0, h: b.y1 });
+    }
+    return out;
+  };
+
   // the keys (./input.js)
   useEffect(() => {
     if (!live) return undefined;
@@ -538,7 +575,7 @@ function World({ gl, setGl, thinkMark }) {
       s.dragAt = s.t;
       if (s.h.mode === 'ground') s.intro = false;
     }
-    s.h = s.h.zone === 'space' ? stepSpace(s.h, input, dt) : stepHero(s.h, input, dt, s.world);
+    s.h = s.h.zone === 'space' ? stepSpace(s.h, input, dt) : stepHero(s.h, input, dt, s.world, s.hero.flight);
     s.jump = false;
     s.free = false;
     // up through the top of the sky, or back down into it: the other world takes over
@@ -583,7 +620,7 @@ function World({ gl, setGl, thinkMark }) {
       // scene says where the traffic's cars are while a Mauler's about)
       let r = { foes: s.foes, ev: [], push: null, stun: 0 };
       for (let left = dt, first = true; left > 1e-6; left -= 0.05, first = false) {
-        const q = stepFoes(r.foes, h, { punch: first && s.punch, look, eveHit: first ? s.eveHit : null, block: s.brawl.blocking }, Math.min(0.05, left), { cars: s.cars ?? [], hangar: s.guard ?? null });
+        const q = stepFoes(r.foes, h, { punch: first && s.punch, look, eveHit: first ? s.eveHit : null, block: s.brawl.blocking, fists: s.hero.fists }, Math.min(0.05, left), { cars: s.cars ?? [], hangar: s.guard ?? null });
         r = { foes: q.foes, ev: [...r.ev, ...q.ev], push: q.push ?? r.push, stun: Math.max(r.stun ?? 0, q.stun ?? 0) };
       }
       s.foes = r.foes;
@@ -604,7 +641,7 @@ function World({ gl, setGl, thinkMark }) {
       const landed = h.ev.find((e) => e.type === 'land' || e.type === 'slam' || e.type === 'impact') ?? null;
       const punchHeld = k.has('punch') || s.touchPunch || s.mouseDown || Boolean(pad?.x);
       const heldBefore = Boolean(s.brawl.held);
-      const rb = stepBrawl(s.brawl, s.foes, s.h, { punchHeld, look, dive: s.dive && h.mode === 'air', block: boost && h.mode === 'ground', pound: s.pound, landed }, dt, { cars: s.cars ?? [] });
+      const rb = stepBrawl(s.brawl, s.foes, s.h, { punchHeld, look, dive: s.dive && h.mode === 'air', block: boost && h.mode === 'ground', pound: s.pound, fists: s.hero.fists, landed }, dt, { cars: s.cars ?? [] });
       s.brawl = rb.b;
       s.foes = rb.foes;
       if (rb.push) {
@@ -625,6 +662,30 @@ function World({ gl, setGl, thinkMark }) {
     }
     s.pound = false;
     s.dive = false;
+    // the hero's power (./powers.js): G held in the air
+    if (!inSpace && s.hero.power) {
+      const rp = stepPower(s.power, s.hero, { power: k.has('power') || s.touchPower, look }, s.h, s.foes, dt, { ruins: s.ruins, towersNear: (p, r) => towersNear(s.world, p, r) });
+      s.power = rp.p;
+      s.foes = rp.foes;
+      if (rp.ruins && rp.ruins !== s.ruins) {
+        s.ruins = rp.ruins;
+        for (const e of rp.out) if ((e.type === 'lineHit' || e.type === 'mend') && e.key != null) a.setDamage(e.key, e.d);
+      }
+      if (rp.push) {
+        const l = Math.hypot(...rp.push) || 1;
+        s.h = { ...s.h, mode: 'air', crouch: 0, stun: 0, v: rp.push, spd: l, dir: rp.push.map((c) => c / l) };
+      }
+      for (const e of rp.out) {
+        s.events.push(e);
+        onPowerEvent(e, { s, say });
+      }
+    }
+    // (a mission over: the hero flown as before comes back)
+    if (!s.mission && s.heroBack) {
+      const back = s.heroBack;
+      s.heroBack = null;
+      setHeroId(back);
+    }
     // a mission's wave (more of them every so often) and its car on the grid (./getaway.js)
     if (s.wave && s.wave.spawned < s.wave.of) {
       s.wave.t += dt;
@@ -647,7 +708,7 @@ function World({ gl, setGl, thinkMark }) {
     const tv = trav.ref.current;
     if (tv) {
       const [me, area] = seenAs(h, speed);
-      tv.pose(me, { area });
+      tv.pose(me, { area, hero: s.hero.figure });
     }
     s.travellers = tv ? tv.list().map(placeOf) : null;
     // the radio (./missions.js nextRadioCall): a side call now and then, on the HUD's line for a while
@@ -746,6 +807,7 @@ function World({ gl, setGl, thinkMark }) {
       startSound();
       if (key === 'touchUp') sim.current.jump = sim.current.dive = true;
       if (key === 'touchPunch') sim.current.punch = true;
+      if (key === 'touchPower') startSound();
       sim.current[key] = true;
     },
     onRelease: () => (sim.current[key] = false),
@@ -772,7 +834,7 @@ function World({ gl, setGl, thinkMark }) {
       <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Over the city" />
       <MissionCard card={mcard} story={sim.current.story} onClose={closeCard} onAgain={() => startMission(mcard?.id)} onStart={startMission} onAbandon={abandon} />
 
-      <InvHud hud={hud} mapRef={mapRef} time={time} cycleTime={cycleTime} chip={chip} trav={trav} found={found} cards={CARDS.length} near={near} act={act} toast={toast} radio={radio} take={take} touch={touch} onStick={onStick} startSound={startSound} hold={hold} />
+      <InvHud hud={hud} mapRef={mapRef} time={time} heroId={heroId} heroes={heroes} pickHero={pickHero} power={Boolean(sim.current.hero.power)} cycleTime={cycleTime} chip={chip} trav={trav} found={found} cards={CARDS.length} near={near} act={act} toast={toast} radio={radio} take={take} touch={touch} onStick={onStick} startSound={startSound} hold={hold} />
       {shutter && <div className="iw-shutter" key={shutter} aria-hidden="true" onAnimationEnd={() => setShutter(null)} />}
 
     </div>

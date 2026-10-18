@@ -180,6 +180,23 @@ export function onBrawlEvent(e, { s, say }) {
   } else if (e.type === 'thrownLanded') sfx('crumble');
 }
 
+// a hero's power (./powers.js): Eve's wall and her mending, Omni-Man's line, Thragg's shout
+export function onPowerEvent(e, { s, say }) {
+  if (e.type === 'construct') sfx('pop');
+  else if (e.type === 'mend') {
+    sfx('ding');
+    say('Mended. Pink, for now.', 2000);
+  } else if (e.type === 'linebreak') {
+    sfx('boom');
+    if (!s.lineSaid) {
+      s.lineSaid = true;
+      say('Cecil: Break the sound barrier over downtown and I get the calls.', 3600, 'cecil', 'Break the sound barrier over downtown and I get the calls.');
+    }
+  } else if (e.type === 'lineHit') sfx('crackle');
+  else if (e.type === 'shout') sfxHit('boom', 'shout', 200);
+  else if (e.type === 'wallHit') sfx('thunk');
+}
+
 // his own flying: landings, the boom, walls, the water
 export function onHeroEvent(e, { s, say, feed, unlock }) {
   if (e.type === 'land' || e.type === 'slam') feed({ type: 'land', speed: e.speed, p: e.at, body: e.body ?? null });

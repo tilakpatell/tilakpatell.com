@@ -18,7 +18,8 @@ const LORE = {
   on: 'Everyone else online here shows as a pale Mark: nothing passes between you but where each of you is',
 };
 
-export default function InvHud({ hud, mapRef, time, cycleTime, chip, trav, found, cards, near, act, toast, radio = null, take = null, touch, onStick, startSound, hold }) {
+export default function InvHud({ hud, mapRef, time, cycleTime, chip, trav, found, cards, near, act, toast, radio = null, take = null, touch, onStick, startSound, hold, heroId = 'mark', heroes = [], pickHero = null, power = false }) {
+  const heroName = heroes.find((h) => h.id === heroId)?.name ?? 'Mark';
   const set = (key) => (el) => (hud.current[key] = el);
   const { pathname } = useLocation();
   const centre = useRef(null);
@@ -48,7 +49,7 @@ export default function InvHud({ hud, mapRef, time, cycleTime, chip, trav, found
         <div className="iw-brand" ref={set('brand')} data-chip={chip || undefined}>
           <p className="iw-eyebrow">Invincible · the Graysons’ city</p>
           <h2 id="iw-title" className="iw-title">
-            Fly, Mark.
+            Fly, {heroName === 'Mark' ? 'Mark' : heroName}.
           </h2>
         </div>
       }
@@ -68,6 +69,19 @@ export default function InvHud({ hud, mapRef, time, cycleTime, chip, trav, found
             <a href="#inv-game">
               Think, Mark!
             </a>
+            {/* who to fly as (./heroes.js): the earned ones pick, the rest say what they want */}
+            {heroes.map((h) =>
+              h.can ? (
+                <MenuItem key={h.id} onClick={() => pickHero?.(h.id)} keep>
+                  Fly as <b>{h.name}</b>
+                  {h.id === heroId ? ' · now' : ''}
+                </MenuItem>
+              ) : (
+                <span key={h.id} data-on>
+                  {h.name}: {h.lock}
+                </span>
+              ),
+            )}
           </Menu>
         </div>
       }
@@ -111,6 +125,11 @@ export default function InvHud({ hud, mapRef, time, cycleTime, chip, trav, found
             <TouchButton className="iw-boost" {...hold('touchBoost')}>
               Boost
             </TouchButton>
+            {power && (
+              <TouchButton className="iw-power" {...hold('touchPower')}>
+                Power
+              </TouchButton>
+            )}
             <TouchButton className="iw-punch" {...hold('touchPunch')}>
               Punch
             </TouchButton>

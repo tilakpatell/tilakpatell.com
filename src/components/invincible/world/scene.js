@@ -37,6 +37,7 @@ import { groundWorld } from '../../../lib/three/groundwork';
 import { LOOK as ART } from './look';
 import { createHolograms } from './holograms';
 import { createRuins } from './ruins';
+import { POWERS } from './powers';
 import { createCourse, createMarker, loadProps } from './missionProps';
 import { CAM, LAND, LOOK, SPOT, SUIT, TIMES, rayBox } from './sceneLook';
 
@@ -114,6 +115,33 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   }
   // the cast's one finish (./people.js), its rim set by the time of day
   const casts = [mark, omni, thragg].map((f) => castMaterial(f.model, { rim: LOOK.noon.rim, floor: f === mark ? SUIT.floor : null }));
+  // who's flown as (./heroes.js, by the cast row's id): Mark's figure, or
+  // another of the cast's made once when first asked for and kept; the one
+  // not flown as is hidden. Dad's and Thragg's own figures stay theirs: a
+  // player's Omni-Man or Thragg is a second one.
+  const heroFigs = { mark };
+  const heroTemplates = { mark: markT, omni: omniT, thragg: thraggT, eve: people.eve ?? null };
+  let player = mark;
+  function setHero(figId) {
+    const id = heroTemplates[figId] ? figId : 'mark';
+    if (!heroFigs[id]) {
+      const f = figure(heroTemplates[id], CAST[id]);
+      f.lean = new THREE.Quaternion();
+      f.snap(POSES.stand);
+      scene.add(f.holder);
+      casts.push(castMaterial(f.model, { rim: LOOK.noon.rim, floor: id === 'mark' ? SUIT.floor : null }));
+      heroFigs[id] = f;
+    }
+    if (heroFigs[id] === player) return;
+    player.holder.visible = false;
+    player = heroFigs[id];
+    player.holder.visible = true;
+  }
+  // Eve's wall (./powers.js): a pink slab where she put it, while it stands
+  const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(POWERS.transmute.wall, POWERS.transmute.high, 0.5).translate(0, POWERS.transmute.high / 2, 0), new THREE.MeshBasicMaterial({ color: 0xff5fd2, transparent: true, opacity: 0.55, side: THREE.DoubleSide, toneMapped: false, depthWrite: false }));
+  wallMesh.visible = false;
+  wallMesh.renderOrder = 5;
+  scene.add(wallMesh);
   // the light that follows him (SPOT; with no shadow, one more light's sum on each lit pixel)
   const spot = new THREE.SpotLight(SPOT.color, 0, SPOT.range, SPOT.angle, SPOT.penumbra, 2);
   spot.castShadow = false;
@@ -495,7 +523,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   }
 
   // ── other players online, in their own worlds, as holograms (./holograms.js) ──
-  const ghosts = createHolograms({ scene, world, markT, zoneOf: () => zone });
+  const ghosts = createHolograms({ scene, world, markT, templates: { eve: people.eve ?? null, omni: omniT, thragg: thraggT }, zoneOf: () => zone });
 
   // ── every frame ──
   let t = 0;
@@ -550,7 +578,19 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
           splashed.speed = e.speed;
         }
       } else if (e.type === 'takeoff') fx.takeoff(e.at);
-      else if (e.type === 'rubble') {
+      else if (e.type === 'construct') fx.vfx.ring(new THREE.Vector3(e.wall.p[0], e.wall.p[1] + 3, e.wall.p[2]), { color: 0xff5fd2, from: 1, to: 9, life: 0.5, normal: new THREE.Vector3(Math.sin(e.wall.face), 0, Math.cos(e.wall.face)) });
+      else if (e.type === 'mend') fx.vfx.sparks(new THREE.Vector3(...e.at), { count: 40, speed: 12, color: 0xffd0f0, to: 0xff5fd2, life: 0.8 });
+      else if (e.type === 'wallHit') fx.vfx.sparks(new THREE.Vector3(...e.at), { count: 20, speed: 10, color: 0xffffff, to: 0xff5fd2, life: 0.4 });
+      else if (e.type === 'linebreak') {
+        fx.boom(e.at, e.dir);
+        feel.trauma(0.7);
+      } else if (e.type === 'lineHit') fx.vfx.sparks(new THREE.Vector3(...e.at), { count: 36, speed: 18, color: 0xffffff, to: 0xbfe0ff, life: 0.5 });
+      else if (e.type === 'shout') {
+        fx.vfx.ring(new THREE.Vector3(e.at[0], e.at[1], e.at[2]), { color: 0xffd23a, from: 2, to: POWERS.shout.r, life: 0.6, normal: Y });
+        feel.trauma(0.6);
+        feel.punch(8);
+        scare.push({ x: e.at[0], z: e.at[2], r: 60 });
+      } else if (e.type === 'rubble') {
         // a face hit hard enough to mark it (./demolish.js): chunks and dust off it
         const at = new THREE.Vector3(...e.at);
         fx.vfx.debris(at, { count: Math.round(10 + e.delta * 60), speed: 9 + e.delta * 18, size: 0.3 + e.delta * 0.5, dir: new THREE.Vector3(...(e.n ?? [0, 1, 0])), spread: 0.9, color: 0x8e8a82 });
@@ -605,48 +645,54 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     }
     sim.events.length = 0;
 
-    // Mark
+    // the player's figure (Mark's, or the hero's: setHero)
+    const wall = sim.power?.wall ?? null;
+    wallMesh.visible = Boolean(wall);
+    if (wall) {
+      wallMesh.position.set(wall.p[0], wall.p[1], wall.p[2]);
+      wallMesh.rotation.set(0, wall.face, 0);
+    }
     if (h.mode === 'perch') {
       // standing on the Moon (or Mars): his feet on it, his head away from it
       const n = new THREE.Vector3(...h.perch.n);
-      mark.holder.position.set(...h.p).addScaledVector(n, mark.hipHeight);
-      mark.holder.quaternion.setFromUnitVectors(Y, n).multiply(new THREE.Quaternion().setFromAxisAngle(Y, h.face));
-      mark.lean.identity();
-      mark.body.quaternion.identity();
-      mark.act('idle') || mark.pose(POSES.proud(), dt, 6);
+      player.holder.position.set(...h.p).addScaledVector(n, player.hipHeight);
+      player.holder.quaternion.setFromUnitVectors(Y, n).multiply(new THREE.Quaternion().setFromAxisAngle(Y, h.face));
+      player.lean.identity();
+      player.body.quaternion.identity();
+      player.act('idle') || player.pose(POSES.proud(), dt, 6);
     } else if (h.mode === 'ground') {
       // his motion-captured clips where he has them (walking at the pace he
       // goes: the clip's own pace is about 1.4 m/s, a run's about 5.5);
       // the landing crouch and a punch are posed, aimed where they go
       const flat = Math.hypot(h.v[0], h.v[2]);
       stride += flat * frameDt * 1.55;
-      carry(mark, h.p, h.face, [0, 0, 0], dt, { lean: 0, lift: h.crouch > 0 ? -mark.hipHeight * 0.42 : 0 });
-      if (h.crouch > 0) mark.pose(LAND, dt, 18);
-      else if (sim.brawl?.held) mark.pose(POSES.punch([0, 0.35, 1]), dt, 20); // (something in hand, held out)
-      else if (sim.brawl?.blocking) mark.pose(POSES.punch([0, 1, 0.35]), dt, 20); // (fists up)
-      else if (sim.punchT > 0) mark.pose(POSES.punch([0, 0.1, 1]), dt, 30);
-      else if (flat > 4.5) mark.act('run', { speed: clamp(flat / 5.5, 0.7, 1.6) }) || mark.pose(POSES.stride(stride, 1, clamp((flat - 4) / 5, 0, 1)), dt, 14);
-      else if (flat > 0.3) mark.act('walk', { speed: clamp(flat / 1.4, 0.6, 2.2) }) || mark.pose(POSES.stride(stride, clamp(flat / 2, 0, 1), 0), dt, 14);
-      else mark.act('idle') || mark.pose(POSES.stand, dt, 8);
+      carry(player, h.p, h.face, [0, 0, 0], dt, { lean: 0, lift: h.crouch > 0 ? -player.hipHeight * 0.42 : 0 });
+      if (h.crouch > 0) player.pose(LAND, dt, 18);
+      else if (sim.brawl?.held) player.pose(POSES.punch([0, 0.35, 1]), dt, 20); // (something in hand, held out)
+      else if (sim.brawl?.blocking) player.pose(POSES.punch([0, 1, 0.35]), dt, 20); // (fists up)
+      else if (sim.punchT > 0) player.pose(POSES.punch([0, 0.1, 1]), dt, 30);
+      else if (flat > 4.5) player.act('run', { speed: clamp(flat / 5.5, 0.7, 1.6) }) || player.pose(POSES.stride(stride, 1, clamp((flat - 4) / 5, 0, 1)), dt, 14);
+      else if (flat > 0.3) player.act('walk', { speed: clamp(flat / 1.4, 0.6, 2.2) }) || player.pose(POSES.stride(stride, clamp(flat / 2, 0, 1), 0), dt, 14);
+      else player.act('idle') || player.pose(POSES.stand, dt, 8);
     } else if (h.stun > 0) {
-      carry(mark, h.p, h.face, h.v, dt, { lean: 0.4, roll: t * 9 });
-      mark.act('hit', { once: true, fade: 0.1 }) || mark.pose(POSES.hurt(), dt, 14);
+      carry(player, h.p, h.face, h.v, dt, { lean: 0.4, roll: t * 9 });
+      player.act('hit', { once: true, fade: 0.1 }) || player.pose(POSES.hurt(), dt, 14);
     } else {
       // flat out, the fly clip lies along his flight itself
-      const fast = clamp((Math.hypot(...h.v) - 8) / 30, 0, 1) > 0.45 && mark.clips.includes('fly');
-      const k = carry(mark, h.p, h.face, h.v, dt, { lean: 1, ahead: fast });
+      const fast = clamp((Math.hypot(...h.v) - 8) / 30, 0, 1) > 0.45 && player.clips.includes('fly');
+      const k = carry(player, h.p, h.face, h.v, dt, { lean: 1, ahead: fast });
       // a punch thrown hanging in the air (flat out, the fly pose's fist is already ahead)
-      if (sim.brawl?.held) mark.pose(POSES.punch([0, 0.35, 1]), dt, 20);
-      else if (sim.punchT > 0 && !fast) mark.pose(POSES.punch([0, 0.1, 1]), dt, 30);
-      else if (k > 0.45) mark.act('fly', { fade: 0.4 }) || mark.pose(POSES.fly(), dt, 9);
-      else mark.act('hover', { fade: 0.4 }) || mark.pose(POSES.hover(t), dt, 9);
+      if (sim.brawl?.held) player.pose(POSES.punch([0, 0.35, 1]), dt, 20);
+      else if (sim.punchT > 0 && !fast) player.pose(POSES.punch([0, 0.1, 1]), dt, 30);
+      else if (k > 0.45) player.act('fly', { fade: 0.4 }) || player.pose(POSES.fly(), dt, 9);
+      else player.act('hover', { fade: 0.4 }) || player.pose(POSES.hover(t), dt, 9);
     }
-    mark.tick(dt);
+    player.tick(dt);
     // (on his feet only: off them the squash is let go)
     const sq = h.mode === 'ground' ? squash.step(dt) : 0;
     if (h.mode !== 'ground') squash.reset();
-    mark.holder.scale.set(1 + sq / 2, 1 - sq, 1 + sq / 2);
-    if (sq) mark.holder.position.y -= mark.hipHeight * sq;
+    player.holder.scale.set(1 + sq / 2, 1 - sq, 1 + sq / 2);
+    if (sq) player.holder.position.y -= player.hipHeight * sq;
 
     if (zone === 'city') {
       // his father, keeping an eye on things
@@ -747,6 +793,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     talkers,
     jetDistance,
     setZone,
+    setHero,
     // a tower's or a house's damage, drawn (./demolish.js; `mending`: Cecil's crews on it)
     setDamage(key, d, mending = false) {
       if (city.setDamage(key, d)) ruins.mark(key, d, city.boxOf(key), mending);
@@ -783,6 +830,9 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       course.dispose();
       ghosts.dispose();
       for (const c of casts) c.dispose();
+      for (const f of Object.values(heroFigs)) if (f !== mark) f.dispose();
+      wallMesh.geometry.dispose();
+      wallMesh.material.dispose();
       mark.dispose();
       omni.dispose();
       thragg.dispose();

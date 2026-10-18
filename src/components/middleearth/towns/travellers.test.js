@@ -249,3 +249,13 @@ describe('steps with an emote and how you move', () => {
     b.leave();
   });
 });
+
+describe('who they fly as', () => {
+  it('rides in the trailing object as a short id, and an older reader passes it over', () => {
+    const step = writeStep({ x: 1, z: 2, face: 0, speed: 50, y: 30 }, { motion: true, area: 'city', hero: 'omniman' });
+    expect(step[step.length - 1]).toEqual({ h: 'omniman' });
+    expect(readStep(step, 4000).hero).toBe('omniman');
+    expect(readStep(writeStep({ x: 1, z: 2, face: 0 }, { hero: 'Not An Id!' }))).not.toHaveProperty('hero');
+    expect(readStep(writeStep({ x: 1, z: 2, face: 0 }))).not.toHaveProperty('hero');
+  });
+});

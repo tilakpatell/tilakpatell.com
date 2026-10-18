@@ -43,12 +43,19 @@ PLAYTIMES
 - **Not done, from the spec**: a Mauler’s swing marks nothing yet (its swings are at Mark or the hangar, never a face); Omni-Man’s line waits for Task 5.
 - **Shot** `ruins` (the three towers nearest the plaza’s east with their tops gone, at dusk; `[ruin, [x, z], n, d]` is a new driver op through `api.ruin`): from 230 m over them looking down, 88 draw calls, 1.33 M triangles on low, band 0.247, Mark’s contrast 0.070 (he is small from there: the shot is of the towers), no page errors. The shot’s `DUMP=1` also prints the kept damage with each building’s place and the tower mesh’s own `aHurt`, height and roof height per hit instance, which is how the drawing was checked: the three bases a third lower, their top pieces collapsed.
 
+### Task 5: who you fly as (2026-10-18)
+
+- **`heroes.js`** (pure, 4 tests): Mark, Atom Eve, Omni-Man and Thragg as one table: the cast row, multipliers on `FLY`’s numbers (Eve 0.8 flat out and 1.3 on the turn; Omni-Man 1.6 flat out, the boom at three quarters of the speed; Thragg 1.8), the weight of a blow (`fists`: 1, 1, 1.5, 2 of a foe’s `hits`), the power, the title. `canPlay`: Eve once her race has a best, Omni-Man by `truth` (episode 8, Task 6: locked until then), Thragg by `regent`; `keptHero` reads `tp-inv-world-hero` back as one of the four or Mark.
+- **The numbers through.** `flight.js`’s step functions read `F`, set by `stepHero`’s fifth argument from the multipliers (`flyWith`, a scaled table made once per hero; `FLY.turn` is new, a multiplier on the swing); `foes.js`’s `hitFoe` takes a weight, and the punch, the lunge and the counter carry `input.fists`; `brawl.js`’s slam, hurl and dive do too.
+- **`powers.js`** (pure, 7 tests), on G held in the air (F is the punch and the grab: a deviation, below): Eve’s **transmute** puts a pink wall 12 m wide and 6 m tall across her look, 6 m ahead, for 6 s, which takes a bolt or a thrown car out of the air where it crosses it (`wallStops`), or, looking at a damaged tower within 60 m, mends 0.3 of it at once (and sends the crews away); Omni-Man’s **line-break** is 2 s straight on at Mach 2, each tower within 60 m of the line marked 0.05 once, Cecil’s recorded line the first time; Thragg’s **shout** throws every foe and car within 40 m (the one-blow foes knocked out, the rest thrown). Cooldowns 4, 8 and 8 s.
+- **Drawn and wired.** The scene keeps one figure a hero, made from the cast when first flown as (`setHero`; a player’s Omni-Man or Thragg is a second figure, Dad’s and the Regent’s stay theirs), the wall a pink slab, the line a boom and glass off each tower, the shout a yellow ring; the holograms swap a ghost’s figure by the hero over the wire (`travellers.js` carries `h` in the trailing object an older reader passes over, 1 test). The Menu lists “Fly as” for the earned and what the rest want; the title reads “Fly, Eve.”; a Power touch button shows for a hero with one. A mission start switches to Mark (“This one is Mark’s.”) and the hero comes back after.
+- **Shots** `heroEve heroOmni heroThragg` on the spawn street (`[hero, id]` swaps through the hook, earned or not): 128 draw calls each, 1.48 M triangles on low, band 0.41, no page errors; the contrast of the figure against the street is Eve 0.294, Omni-Man 0.065, Thragg 0.044: the part-2 target of 0.18 was set for Mark’s suit, and the two dark suits at noon on a dark street sit under it (a rim for them is a Left item, with the lines).
+
 ## Left, in order
 
 The plan’s tasks 2 to 14, as written there; done for each is its boxes ticked and its pull request merged.
 
 2. The low tier’s triangle budget: `maulers` 1.64 M on low against the 1.5 M budget; `photo` 1.49 M, `seismic` 1.49 M, `street` 1.48 M and `everace` 1.32 M are under it. Measure what each thing in the `maulers` shot costs before pulling a lever.
-5. Who you fly as (`heroes.js`, `powers.js`: Eve, Omni-Man, Thragg).
 6. Episode 8, Where I Really Come From (the panels, the launch, the chase, the plaza, the sky).
 7. The Guardians of the Globe and their hall.
 8. Angstrom Levy and the dimensions.
@@ -65,11 +72,14 @@ Still open from part 2: Eve’s ghost on the line at her best time and Allen fly
 
 - `npx vitest run src/components/invincible`: the rules (205 tests in 15 files after Task 1).
 - With a dev server up (`npx vite --port 5193 --strictPort --host 127.0.0.1`), from Git Bash on Windows: `BASE=http://127.0.0.1:5193 OUT=<dir> CHROME="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" node scripts/inv-world-check.mjs [--metrics] [shot …] [--play ep1,ep2,…|all]`. On Linux the script’s default Chromium path stands and `BASE` defaults to port 5173. `PLAYSHOTS=1` with `--play` writes `play-<ep>.png` at each episode’s end.
-- Shots: `spawn street curb streetnight downtown high suburb river boost porch gda burger school plaza plazanight burgernight schoolnight eve jet clouds rings card wallback rescue fight climb orbit orbitnight moon reentry allen mars thragg dusk night brawl ruins`; the missions framed through the hook (these still use `api.feed` to finish, as framing, not as a check): `bank chase seismic maulers gdasiege photo everace`; the stubs: `eveescort dadlesson porchdusk`.
+- Shots: `spawn street curb streetnight downtown high suburb river boost porch gda burger school plaza plazanight burgernight schoolnight eve jet clouds rings card wallback rescue fight climb orbit orbitnight moon reentry allen mars thragg dusk night brawl ruins heroEve heroOmni heroThragg`; the missions framed through the hook (these still use `api.feed` to finish, as framing, not as a check): `bank chase seismic maulers gdasiege photo everace`; the stubs: `eveescort dadlesson porchdusk`.
 - `--play`: `ep1 ep2 ep3 ep4 ep5 ep6 ep7`, one run a merge for every episode a task touches.
 - Dev hook `window.__INVWORLD__ = { api, sim }`: `sim.h` the hero, `sim.yaw`/`sim.pitch` the camera, `sim.keys` what is held, `sim.punch` a punch, `sim.speedup` the dev clock, `sim.snap`, `sim.hold`; `api.setTime`, `api.zone`/`api.setZone`, `api.debug` (`npcs jet villains world bodies allen thragg dad`), `api.spawn(kind, n, at)`, `api.mission(id)`, `api.feed(event)` (framing only), `api.story()`. Think, Mark!: `window.__HQ__.thinkmark` (`state`, `view`, `begin(i)`, `setState(name)`).
 
 ## Deviations from the part-3 spec
+
+- **The power is on G, not F.** Task 3 made F (with J and a click) the punch, and held, the grab; a power on F held in the air would fight the grab whenever a foe was in reach. G is free and next to F. The guide says so.
+- **The heroes’ flying lines are not written yet**: the spec’s four lines each wait for the voices issue of Task 14, with the rest.
 
 - **Task 2’s triangle budget is not met in Task 2.** The split is a repair and changes no pixel; the budget is a change that does. On low tier the trees are already at their least (an icosahedron of 20 triangles, 60 % of the yards’), so the overage in `maulers` (1.64 M against 1.5 M; `downtown` under it at 1.34 M; `everace` and `photo` under it too, at 1.32 M and 1.49 M) is the fight’s own figures: two Maulers at 31 k each, the truck and the bank. It needs a per-object measurement before a lever is pulled, and is the first item under Left.
 

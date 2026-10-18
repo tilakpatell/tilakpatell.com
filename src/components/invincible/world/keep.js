@@ -13,6 +13,7 @@ export const TIME = 'tp-inv-world-time';
 export const QUESTS = 'tp-inv-world-quests';
 export const STORY = 'tp-inv-world-story';
 export const RUINSKEY = 'tp-inv-world-ruins';
+export const HEROKEY = 'tp-inv-world-hero';
 export const TIMES = ['noon', 'dusk', 'night'];
 
 // What was kept from last time, read so that nothing kept can break the

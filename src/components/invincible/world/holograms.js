@@ -16,7 +16,9 @@ import { WATER_Y, groundAt } from './map';
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const Y = new THREE.Vector3(0, 1, 0);
 
-export function createHolograms({ scene, world, markT, zoneOf }) {
+export function createHolograms({ scene, world, markT, templates = {}, zoneOf }) {
+  // (who a ghost flies as, ./heroes.js over the wire: the cast row's id)
+  const figFor = (id) => (id && id !== 'mark' && templates[id] ? figure(templates[id], CAST[id]) : figure(markT, CAST.mark));
   const gAt = new THREE.Vector3();
   const gUp = new THREE.Vector3();
   const gYaw = new THREE.Quaternion();
@@ -31,6 +33,16 @@ export function createHolograms({ scene, world, markT, zoneOf }) {
       return { group, top: CAST.mark.h, fig: f, gait: 0, at: null, v: new THREE.Vector3(), dispose: () => f.dispose() };
     },
     animate: (f, gt, p, gdt) => {
+      // their figure swapped once who they fly as changes
+      const want = p.hero && templates[p.hero] ? p.hero : 'mark';
+      if (want !== (f.hero ?? 'mark')) {
+        f.fig.holder.removeFromParent();
+        f.fig.dispose();
+        f.fig = figFor(want);
+        f.fig.snap(POSES.stand);
+        f.group.add(f.fig.holder);
+        f.hero = want;
+      }
       const fig = f.fig;
       const speed = p.speed ?? 0;
       // off the ground: over the land, the water or a roof (or the Moon, or Mars)

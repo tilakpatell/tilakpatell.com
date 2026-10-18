@@ -373,6 +373,7 @@ export const PAGES = {
           ['Space, over a foe', 'Dive onto them, from 30 m up or more: the higher, the harder'],
           ['Shift, on the ground', 'Block a swing; the punch after it counts double'],
           ['C, on the ground', 'Pound the street: a ring that floors the small ones and rocks the big'],
+          ['G, in the air', 'Your power, flying as Eve (a wall, or a mend), Omni-Man (the line) or Thragg (the shout); Mark has none'],
           ['E', 'Go in at a place (Cecil, at the GDA, has a job)'],
           ['T', 'The time of day'],
           ['R', 'Take the radio’s call (a chase, a photo, Eve’s race)'],
