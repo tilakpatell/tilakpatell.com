@@ -1,4 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// (the lands are lands.test.js's; the wiring here walks over a flat stand-in,
+// as building a stage's ground at every jump would take the test seconds)
+vi.mock('./lands', () => ({
+  createLands: () => ({ at() {}, step() {}, heightAt: () => 0, ready: () => true, current: null, dispose() {} }),
+}));
 import { validateModule } from '../../../runtime/module';
 import { WORLD_MB } from '../../worlds/worlds';
 import road, { KEYS, sFromAddress } from './module';

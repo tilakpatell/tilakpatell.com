@@ -18,13 +18,14 @@
 // In development, window.__ROAD__ = { set(s), info(), world }.
 
 import * as THREE from 'three';
-import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { newClock, step as stepClock } from './clock';
 import { SAVE, recent, resume, ridden as riddenOf, savedAt, shouldOffer } from './entry';
 import { LOOK_LIMIT, pose, settleLook } from './director';
 import { light as lightAt } from './daylight';
 import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
+import { createLands } from './lands';
+import { createHouse } from '../../../lib/three/houseNodes';
 import { forgetCast, walker } from './cast';
 import { clipFor, walkers as walkersAt } from './fellowship';
 import { STAGES, stageById } from './stages/index';
@@ -69,13 +70,15 @@ export default {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 3000);
     scene.fog = new THREE.FogExp2(0xc0c8d0, 0.004);
-    // (the placeholder ground: a flat stage until the stages build their own)
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 600), new MeshStandardNodeMaterial({ color: 0x7d8a6a, roughness: 1 }));
-    ground.rotation.x = -Math.PI / 2;
+    const tier = rt.quality?.tier ?? 'high';
+    // the house's look on the ground (and, with the post chain, on the rest);
+    // the lands: the stage you are in and its two neighbours, built and placed
+    const house = createHouse();
+    const lands = createLands({ scene, house, tier });
     const sun = new THREE.DirectionalLight(0xffffff, 2);
     const hemi = new THREE.HemisphereLight(0xdfe8ff, 0x5a5040, 0.6);
     const sky = createSky();
-    scene.add(ground, sun, sun.target, hemi, sky.mesh);
+    scene.add(sun, sun.target, hemi, sky.mesh);
 
     const reduced = Boolean(props.reduced);
     // (Enter is the Road's only under reduced motion, where it is Next: bound
@@ -152,11 +155,14 @@ export default {
       hemi.color.setRGB(...l.fog.colour);
       scene.fog.color.setRGB(...l.fog.colour);
       scene.fog.density = l.fog.density;
+      house.sky({ low: scene.fog.color, high: scene.fog.color, sunDir });
+      house.light({ sun, hemi });
     };
 
     // the camera on the director’s rig, following the lead along the stage
     const frame = (dt = 0) => {
       const here = lineAt(STAGES, clock.s);
+      lands.at(here.index);
       const line = company();
       const mode = stageById(here.stage).mode;
       // the one you follow (Frodo while he walks with you) at the back of the
@@ -167,18 +173,19 @@ export default {
       for (const w of line) {
         const fig = cast.get(w.id);
         const rank = w.order === lead ? 0 : ahead.length - ahead.indexOf(w);
-        fig.group.position.set(rank % 2 ? ABREAST : -ABREAST, 0, here.local + rank * FILE);
+        const x = rank % 2 ? ABREAST : -ABREAST;
+        const z = here.local + rank * FILE;
+        fig.group.position.set(x, lands.heightAt(x, z), z);
         fig.set({ base: clipFor(w.state, mode, w.id), speed: clock.speed });
         fig.tick(dt);
       }
-      const p = pose({ rig: 'follow', params: {}, lead: { at: [-ABREAST, 0, here.local], heading: 0 }, tangent: [0, 0, 1], metres: here.local, look, mode: 'walk', reduced: clock.reduced, heightAt: () => 0, t: 0 });
+      const p = pose({ rig: 'follow', params: {}, lead: { at: [-ABREAST, lands.heightAt(-ABREAST, here.local), here.local], heading: 0 }, tangent: [0, 0, 1], metres: here.local, look, mode: 'walk', reduced: clock.reduced, heightAt: lands.heightAt, t: 0 });
       camera.position.set(...p.at);
       camera.lookAt(...p.lookAt);
       if (camera.fov !== p.fov) {
         camera.fov = p.fov;
         camera.updateProjectionMatrix();
       }
-      ground.position.z = here.local;
       sun.position.copy(camera.position).addScaledVector(sunDir, 100);
       sun.target.position.copy(camera.position);
       sky.update(camera, dt);
@@ -266,6 +273,7 @@ export default {
         relight();
         const here = frame(dt);
         report(here, dt);
+        lands.step();
       },
       draw(f) {
         (f?.renderer ?? rt.gfx.renderer).render(scene, camera);
@@ -323,8 +331,7 @@ export default {
       dispose() {
         save();
         rt.input?.unbind?.();
-        ground.geometry.dispose();
-        ground.material.dispose();
+        lands.dispose();
         sky.dispose();
         for (const w of cast.values()) w.dispose();
         forgetCast();
@@ -332,10 +339,11 @@ export default {
       },
     };
     if (import.meta.env.DEV && typeof window !== 'undefined') {
-      // (info: the last frame's draws and triangles, and where the ride is)
+      // (info: the last frame's draws and triangles, where the ride is, and the
+      // lands' building times)
       const info = () => {
         const r = rt.gfx.renderer?.info?.render ?? {};
-        return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size };
+        return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats };
       };
       window.__ROAD__ = { world, set: (s) => world.set(s), info };
     }
