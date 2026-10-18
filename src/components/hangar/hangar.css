@@ -119,40 +119,126 @@
 .hangar-power-picks { margin-top: 0.6rem; }
 .hangar-lock { color: var(--muted); font-size: 0.72rem; }
 
-/* the Skills: the points free over the tree, a column a branch and a row
-   of nodes a step down it, the reset at the foot; two columns on a narrow
-   window, stacked on a phone. A node's state is its look: taken (lit in the
-   crew's colour), open to take (bright), anything else dim, the unique
-   weapons' to come dashed. */
-.hangar-skills-head { display: grid; gap: 0.25rem; }
-.hangar-skills-free { margin: 0; font-size: 0.95rem; }
-.hangar-skills-free b { font-family: var(--font-mono); font-size: 1.4rem; font-variant-numeric: tabular-nums; }
-.hangar-tree { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
-.hangar-branch ol { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
-.hangar-row { display: grid; gap: 0.4rem; }
-.hangar-row + .hangar-row { padding-top: 0.5rem; border-top: 1px dashed var(--yard-line); }
-.hangar-node { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'name cost' 'line line' 'says says'; gap: 0.15rem 0.5rem; width: 100%; min-height: 44px; padding: 0.55rem 0.7rem; border: 1px solid var(--yard-line); border-radius: 10px; color: var(--muted); background: var(--yard-pane); text-align: left; }
-.hangar-node-name { grid-area: name; color: var(--text); font-size: 0.86rem; font-weight: 600; }
-.hangar-node-cost { grid-area: cost; font-family: var(--font-mono); font-size: 0.7rem; }
-.hangar-node-line { grid-area: line; font-size: 0.76rem; }
-.hangar-node-says { grid-area: says; font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; }
-.hangar-node[data-state='open'] { border-color: color-mix(in srgb, var(--engine, #e8eefc) 60%, var(--yard-line)); color: var(--text); cursor: pointer; }
-.hangar-node[data-state='open']:hover { background: color-mix(in srgb, var(--engine, #e8eefc) 10%, var(--yard-pane)); }
-.hangar-node[data-state='open'] .hangar-node-says { color: var(--engine, #e8eefc); }
-.hangar-node[data-state='taken'] { border-color: var(--engine, #e8eefc); color: var(--text); background: color-mix(in srgb, var(--engine, #e8eefc) 20%, var(--yard-pane)); }
-.hangar-node[data-state='parent'],
-.hangar-node[data-state='key'],
-.hangar-node[data-state='points'] { opacity: 0.72; cursor: default; }
-.hangar-node[data-state='soon'] { border-style: dashed; opacity: 0.6; cursor: default; }
+/* the Skills: a circuit board a branch (SkillTree.jsx), hexagons wired row
+   to row on a faint grid, the readout beside them (below them on a narrower
+   window, and one board at a time on a phone, picked above it). A wire is
+   lit in the crew's colour along the path taken, runs dashed where it's
+   powered, and is faint where it isn't. A node: lit when taken, bright when
+   it can be taken, dim when it needs something, dashed when it's to come. */
+.hangar-skills { --skill-ink: #0a0d15; --skill-dead: rgb(255 255 255 / 0.1); --skill-live: color-mix(in srgb, var(--engine, #e8eefc) 55%, transparent); max-width: 1440px; }
+.skill-head { display: grid; gap: 0.25rem; }
+.skill-free { margin: 0; font-size: 0.95rem; }
+.skill-free b { color: var(--engine, #e8eefc); font-family: var(--font-mono); font-size: 1.5rem; font-variant-numeric: tabular-nums; text-shadow: 0 0 12px color-mix(in srgb, var(--engine, #e8eefc) 60%, transparent); }
+
+.skill-switch { display: none; gap: 0.35rem; overflow-x: auto; scrollbar-width: none; }
+.skill-switch button { flex: none; min-height: 44px; padding: 0 0.9rem; border: 1px solid var(--yard-line); clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); color: var(--muted); font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.skill-switch button[aria-pressed='true'] { border-color: var(--engine, #e8eefc); color: var(--text); background: color-mix(in srgb, var(--engine, #e8eefc) 18%, transparent); }
+
+.skill-deck { display: grid; grid-template-columns: minmax(0, 1fr) 280px; align-items: start; gap: 1.25rem; }
+.skill-boards { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; }
+.skill-board {
+  padding: 0.5rem 0.5rem 0.75rem;
+  border: 1px solid var(--yard-line);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  background:
+    linear-gradient(rgb(255 255 255 / 0.03) 1px, transparent 1px) 0 0 / 16px 16px,
+    linear-gradient(90deg, rgb(255 255 255 / 0.03) 1px, transparent 1px) 0 0 / 16px 16px,
+    rgb(6 8 14 / 0.85);
+}
+.skill-board-head { display: flex; align-items: baseline; justify-content: space-between; padding: 0.15rem 0.35rem 0.4rem; border-bottom: 1px solid var(--yard-line); font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; }
+.skill-board-tag { color: var(--engine, #e8eefc); }
+.skill-board-count { color: var(--muted); font-variant-numeric: tabular-nums; }
+.skill-board-plate { position: relative; margin: 0.25rem auto 0; }
+.skill-wires { position: absolute; inset: 0; overflow: visible; }
+.skill-wires path { fill: none; stroke: var(--skill-dead); stroke-width: 2; stroke-linecap: square; }
+.skill-wires rect { fill: var(--skill-dead); }
+.skill-wires [data-state='live'] { stroke: var(--skill-live); stroke-dasharray: 3 5; }
+.skill-wires rect[data-state='live'] { fill: var(--skill-live); }
+.skill-wires [data-state='taken'] { stroke: var(--engine, #e8eefc); filter: drop-shadow(0 0 3px var(--engine, #e8eefc)); }
+.skill-wires rect[data-state='taken'] { fill: var(--engine, #e8eefc); }
+@media (prefers-reduced-motion: no-preference) {
+  .skill-wires path[data-state='live'] { animation: skill-flow 1.4s linear infinite; }
+}
+@keyframes skill-flow {
+  to { stroke-dashoffset: -16; }
+}
+
+.skill-node { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer; translate: -50% 0; }
+.skill-hexbox { position: relative; display: grid; place-items: center; width: 48px; height: 48px; }
+.skill-hex { position: absolute; inset: 0; overflow: visible; }
+.skill-hex polygon { fill: var(--skill-ink); stroke: rgb(255 255 255 / 0.22); stroke-width: 1.5; }
+.skill-icon { position: relative; color: var(--muted); }
+.skill-cost { position: absolute; top: -5px; right: -7px; min-width: 15px; padding: 0 3px; border: 1px solid currentColor; background: var(--skill-ink); color: var(--muted); font-family: var(--font-mono); font-size: 0.6rem; line-height: 13px; text-align: center; }
+.skill-name { display: -webkit-box; overflow: hidden; color: inherit; font-size: 0.66rem; line-height: 1.2; text-align: center; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.skill-node[data-state='open'] { color: var(--text); }
+.skill-node[data-state='open'] .skill-hex polygon { stroke: var(--engine, #e8eefc); }
+.skill-node[data-state='open'] .skill-icon,
+.skill-node[data-state='open'] .skill-cost { color: var(--engine, #e8eefc); }
+.skill-node[data-state='taken'] { color: var(--text); }
+.skill-node[data-state='taken'] .skill-hex { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--engine, #e8eefc) 70%, transparent)); }
+.skill-node[data-state='taken'] .skill-hex polygon { fill: color-mix(in srgb, var(--engine, #e8eefc) 34%, var(--skill-ink)); stroke: var(--engine, #e8eefc); }
+.skill-node[data-state='taken'] .skill-icon { color: #fff; }
+.skill-node[data-state='taken'] .skill-cost { border-color: var(--engine, #e8eefc); background: var(--engine, #e8eefc); color: var(--skill-ink); }
+.skill-node:is([data-state='parent'], [data-state='key'], [data-state='points']) { opacity: 0.62; }
+.skill-node[data-state='soon'] { opacity: 0.45; }
+.skill-node[data-state='soon'] .skill-hex polygon { stroke-dasharray: 3 3; }
+/* the node picked: corner brackets round its hexagon */
+.skill-node[aria-pressed='true'] .skill-hexbox::after {
+  --c: var(--engine, #e8eefc);
+  content: '';
+  position: absolute;
+  inset: -6px;
+  background:
+    linear-gradient(var(--c), var(--c)) 0 0 / 9px 1.5px no-repeat,
+    linear-gradient(var(--c), var(--c)) 0 0 / 1.5px 9px no-repeat,
+    linear-gradient(var(--c), var(--c)) 100% 0 / 9px 1.5px no-repeat,
+    linear-gradient(var(--c), var(--c)) 100% 0 / 1.5px 9px no-repeat,
+    linear-gradient(var(--c), var(--c)) 0 100% / 9px 1.5px no-repeat,
+    linear-gradient(var(--c), var(--c)) 0 100% / 1.5px 9px no-repeat,
+    linear-gradient(var(--c), var(--c)) 100% 100% / 9px 1.5px no-repeat,
+    linear-gradient(var(--c), var(--c)) 100% 100% / 1.5px 9px no-repeat;
+}
+.skill-node[aria-pressed='true'] { opacity: 1; }
+.skill-node:hover .skill-hex polygon { stroke-width: 2.25; }
+.hangar .skill-node:focus-visible { outline: none; }
+.hangar .skill-node:focus-visible .skill-hexbox { outline: 2px solid var(--engine, #e8eefc); outline-offset: 4px; }
+
+.skill-readout {
+  position: sticky;
+  top: 0;
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid var(--yard-line);
+  border-left: 3px solid var(--engine, #e8eefc);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+  background: rgb(6 8 14 / 0.92);
+}
+.skill-readout-tag { margin: 0; color: var(--engine, #e8eefc); font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; }
+.skill-readout h3 { margin: 0; color: var(--text); font-family: inherit; font-size: 1.2rem; letter-spacing: 0; text-transform: none; }
+.skill-readout-line { margin: 0; font-size: 0.86rem; }
+.skill-readout-says { margin: 0; color: var(--muted); font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.skill-readout[data-state='open'] .skill-readout-says { color: var(--engine, #e8eefc); }
+.skill-take { min-height: 44px; margin-top: 0.35rem; padding: 0 1rem; border: 1px solid var(--engine, #e8eefc); clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); background: var(--engine, #e8eefc); color: var(--skill-ink); font-family: var(--font-mono); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.skill-take:disabled { border-color: var(--yard-line); background: transparent; color: var(--muted); }
+
 .hangar-skills-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
 .hangar-reset { min-height: 36px; padding: 0 1rem; border: 1px solid var(--yard-line); border-radius: 999px; color: var(--text); font-size: 0.8rem; }
 .hangar-reset:disabled { color: var(--muted); }
 @media (pointer: coarse) {
   .hangar-reset { min-height: 44px; }
 }
-@media (max-width: 1099px) {
-  .hangar-tree { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* narrower: the readout under the boards, held at the foot of the view */
+@media (max-width: 1439px) {
+  .skill-deck { grid-template-columns: minmax(0, 1fr); }
+  .skill-readout { top: auto; bottom: 0; z-index: 1; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 1rem; }
+  .skill-readout > :not(.skill-take) { grid-column: 1; }
+  .skill-take { grid-column: 2; grid-row: 1 / span 4; margin: 0; }
 }
-@media (max-width: 599px) {
-  .hangar-tree { grid-template-columns: minmax(0, 1fr); }
+/* a phone: one board at a time, picked above */
+@media (max-width: 719px) {
+  .skill-switch { display: flex; }
+  .skill-board:not([data-active]) { display: none; }
+  .skill-readout { grid-template-columns: minmax(0, 1fr); }
+  .skill-take { grid-column: 1; grid-row: auto; }
 }
