@@ -36,6 +36,22 @@ describe("the map's prepare, a step at a time", () => {
     expect(idle).toHaveBeenCalledTimes(1);
   });
 
+  it('waits out a launch uncovered too (the map is uncovered under the flash), and looks again after its wait', async () => {
+    let open;
+    const clear = vi.fn(() => (clear.mock.calls.length === 1 ? Promise.resolve() : new Promise((resolve) => (open = resolve))));
+    let launching = true;
+    const frame = vi.fn(() => Promise.resolve('frame'));
+    const step = prepFrame({ doc: page(), frame, idle: vi.fn(), clear, held: () => (launching ? 'launch' : null) });
+    // (a launch began while its frame was awaited: it waits again)
+    await new Promise((r) => setTimeout(r, 0));
+    expect(frame).toHaveBeenCalledTimes(1);
+    expect(clear).toHaveBeenCalledTimes(2);
+    launching = false;
+    open();
+    await expect(step).resolves.toBe('frame');
+    expect(frame).toHaveBeenCalledTimes(2);
+  });
+
   it('reads no page where there is none (Node)', () => {
     expect(coveredIn(null)).toBe(false);
     expect(coveredIn(page({ intro: '1' }))).toBe(false);

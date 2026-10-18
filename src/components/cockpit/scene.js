@@ -65,6 +65,10 @@ const SHADOWS = { xwing: [0, 0], falcon: [3, 2], rv: [2, 1] };
 // half as much again with the tunnel and the trails, would miss a 60 Hz
 // screen's beat: the lens's light trails are left off for it.
 const TRAILS_MS = 9;
+// How long before the flash what the page underneath makes is held off the
+// chip (ms): the run-up the eye is on, the whole of a short launch; not all
+// of the RV's, a map held twelve seconds might not be ready at its flash.
+const HOLD_MS = 3200;
 // On a screen faster than 60 Hz the cockpit draws on every second (or third)
 // beat, a steady 60, unless the chip's time for a frame sat is under this
 // share of a beat: a frame that fits one beat some times and two others
@@ -240,9 +244,12 @@ export function run(canvas, opts) {
   // this moment of the launch (lens.js's lensAt).
   const AHEAD = new THREE.Vector3(0, 0, -1);
   const toward = new THREE.Vector3();
-  const onScreen = (worldPoint) => {
+  // (`within`: how far past the screen's edge it may be, in its own halves;
+  // the vanishing point may be anywhere, a sun only as far as its glare shows)
+  const onScreen = (worldPoint, within = Infinity) => {
     toward.copy(worldPoint).project(camOut);
-    return toward.z < 1 && toward.z > -1 ? [toward.x * 0.5 + 0.5, toward.y * 0.5 + 0.5] : null;
+    if (!(toward.z < 1 && toward.z > -1) || Math.abs(toward.x) > within || Math.abs(toward.y) > within) return null;
+    return [toward.x * 0.5 + 0.5, toward.y * 0.5 + 0.5];
   };
   const glassGlow = [0, 0, 0];
   const tint = new THREE.Color();
@@ -259,7 +266,7 @@ export function run(canvas, opts) {
     glassGlow[1] = tint.g * at.glow;
     glassGlow[2] = tint.b * at.glow;
     const g = v.glare;
-    const sunAt = g && g.k > 0.001 ? onScreen(g.at) : null;
+    const sunAt = g && g.k > 0.001 ? onScreen(g.at, 1.2) : null;
     lens.set({
       time: now / 1000,
       focus,
@@ -371,17 +378,21 @@ export function run(canvas, opts) {
       if (!L.hold) L.t += real;
       ph = phaseAt(L.plan, L.t);
       throttle = throttleAt(L.plan, L.t);
+      // (what the page underneath makes waits from the run-up to the flash:
+      // lib/foreground; uncovered under the rise, it's drawn but makes nothing
+      // more till the white)
+      if (!launchHold && !L.peaked && L.plan.peak - L.t <= HOLD_MS) launchHold = inFront('launch');
       // the page underneath uncovered as the flash starts to rise, so the
       // map's first frame is drawn and its loading veil gone under the white
-      // rather than as it clears; the chip is its again
+      // rather than as it clears
       if (!L.revealed && (flashAt(L.plan, L.t) > 0 || L.t >= L.plan.peak)) {
         L.revealed = true;
-        launchHold?.();
-        launchHold = null;
         cb.onReveal?.();
       }
       if (!L.peaked && L.t >= L.plan.peak) {
         L.peaked = true;
+        launchHold?.();
+        launchHold = null;
         clearOut();
         cb.onPeak?.();
       }
@@ -455,9 +466,11 @@ export function run(canvas, opts) {
         /* the last frame stands */
       } else if (timer && !L.on && !timing && fade < 0.01 && drawn % 20 === 0) {
         timing = true;
+        const of = vid;
         timer.measure(draw).then((ms) => {
           timing = false;
-          if (ms == null) return;
+          // (the vehicle it timed, not one picked since)
+          if (ms == null || of !== vid) return;
           gpuMs.push(ms);
           if (gpuMs.length > 9) gpuMs.shift();
         });
@@ -570,6 +583,7 @@ export function run(canvas, opts) {
     vid = id;
     const mine = (building = {});
     boarded = false;
+    gpuMs.length = 0;
     fadeTo = 1;
     kick();
     // let the black come down before the old one goes
@@ -616,28 +630,33 @@ export function run(canvas, opts) {
       // (not drawn till it's ready: `warming` holds the frames off it)
       warming = built;
       const current = () => building === null && !stopped && v === built;
-      // the nebula worked out once, into a cube, behind the black (./bake.js)
-      sky = await bakeSkies(renderer, outside, { size: row.sky, compile: (dome, eye, target) => precompile(renderer, dome, eye, outside, target) });
-      if (!current()) {
-        sky?.dispose();
-        sky = null;
-        return;
-      }
       // the lights that throw shadows, drawn again at the vehicle's pace (SHADOWS)
       casters = [];
       for (const root of [inside, outside])
         root.traverse((o) => {
           if (o.isLight && o.castShadow && o.shadow) casters.push({ light: o, want: true });
         });
-      // its pictures to the chip a slice at a time, behind the black, rather
-      // than every one in the warm draw's single frame
-      await uploadSlices(renderer, [...texturesUnder(inside), ...texturesUnder(outside)], { alive: current });
-      if (!current()) return;
-      // compile everything now, behind the black, so the first look doesn't
-      // stall: the GPU links in the background while the frames hold off
-      // drawing it (lib/three/renderer's precompile)
+      // All behind the black, together: the nebula worked out once into a
+      // cube (./bake.js, its program made beside the rest, not before them);
+      // the pictures to the chip a slice at a time, not every one in the warm
+      // draw's single frame; and everything compiled, so the first look
+      // doesn't stall: the GPU links in the background while the frames hold
+      // off drawing it (lib/three/renderer's precompile)
       const into = composer ? composer.readBuffer : null;
-      await Promise.all([precompile(renderer, outside, camOut, outside, into), precompile(renderer, inside, camIn, inside, into), composer ? precompilePasses(renderer, composer, camIn) : null]);
+      const [baked] = await Promise.all([
+        bakeSkies(renderer, outside, { size: row.sky, compile: (dome, eye, target) => precompile(renderer, dome, eye, outside, target) }),
+        uploadSlices(renderer, [...texturesUnder(inside), ...texturesUnder(outside)], { alive: current }),
+        precompile(renderer, outside, camOut, outside, into),
+        precompile(renderer, inside, camIn, inside, into),
+        composer ? precompilePasses(renderer, composer, camIn) : null,
+      ]);
+      if (!current()) {
+        baked?.dispose();
+        return;
+      }
+      sky = baked;
+      // (and the baked dome's own, a small one)
+      if (sky) await precompile(renderer, outside, camOut, outside, into);
       if (warming === built) warming = null;
       if (!current()) return;
       // still behind the black: draw it all once, then black again, and wait
@@ -677,8 +696,6 @@ export function run(canvas, opts) {
   function go() {
     if (L.on || !v || !boarded) return false;
     L.on = true;
-    // (until the flash, what the page underneath makes waits: lib/foreground)
-    launchHold = inFront('launch');
     // (a chip already busy sat here goes without the light trails: TRAILS_MS)
     if (gpuMs.length >= 3 && median(gpuMs) > TRAILS_MS) trailsOff = true;
     L.t = reduced ? skipTo(L.plan, 0) : 0;

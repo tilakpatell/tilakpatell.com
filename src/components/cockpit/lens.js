@@ -88,9 +88,10 @@ void main() {
   vec2 c = uv - 0.5;
   float r2 = dot(c * vec2(aspect, 1.0), c * vec2(aspect, 1.0));
 
-  // the colours parted towards the edges
+  // the colours parted towards the edges (one read where they'd part by
+  // less than half a pixel: sat, most of the screen)
   vec2 shift = c * uAberr * r2 * 4.0;
-  vec3 col = vec3(texture2D(tDiffuse, uv - shift).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv + shift).b);
+  vec3 col = length(shift * uRes) > 0.5 ? vec3(texture2D(tDiffuse, uv - shift).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv + shift).b) : texture2D(tDiffuse, uv).rgb;
 ${
   taps > 0
     ? `
@@ -145,8 +146,8 @@ ${
     col += (flare + uSunColor * ghosts) * k * uFlare;
     lit += uSunColor * k * 0.9 / (1.0 + dist * dist * 30.0);
   }
-  // the smudges on the glass, catching it
-  col += texture2D(tDirt, uv).r * lit * uDirt * outside(uv);
+  // the smudges on the glass, catching it (where anything lights them)
+  if (uDirt > 0.0 && dot(lit, lit) > 1e-6) col += texture2D(tDirt, uv).r * lit * uDirt * outside(uv);
 
   // (the white-out's push, ahead of the tone mapping, or in place of it)
   gl_FragColor = vec4(col * uLift, 1.0);
