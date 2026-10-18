@@ -23,6 +23,19 @@ describe("the map's prepare, a step at a time", () => {
     }
   });
 
+  it('under the intro, waits for the cockpit’s launch to be over before its idle moment', async () => {
+    let open;
+    const clear = vi.fn(() => new Promise((resolve) => (open = resolve)));
+    const idle = vi.fn((fn) => fn());
+    const step = prepFrame({ doc: page({ covered: '' }), frame: vi.fn(), idle, clear });
+    await Promise.resolve();
+    expect(clear).toHaveBeenCalledWith('launch');
+    expect(idle).not.toHaveBeenCalled();
+    open();
+    await step;
+    expect(idle).toHaveBeenCalledTimes(1);
+  });
+
   it('reads no page where there is none (Node)', () => {
     expect(coveredIn(null)).toBe(false);
     expect(coveredIn(page({ intro: '1' }))).toBe(false);

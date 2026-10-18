@@ -18,6 +18,17 @@ import './cockpit.css';
 
 const KEY = 'tp-cockpit'; // the last one you sat in
 
+// The page underneath uncovered (App covers it under the intro with
+// html[data-covered], which holds its scenes still, and lets it go at the
+// flash; 'tp:uncover' wakes them), a moment early: App's own at the flash
+// then finds it done.
+const reveal = () => {
+  const el = document.documentElement;
+  if (!('covered' in el.dataset)) return;
+  delete el.dataset.covered;
+  window.dispatchEvent(new Event('tp:uncover'));
+};
+
 // The cockpit, full screen over everything: you in the pilot's seat (or the
 // RV's driver's), the vehicle's world out of the glass. Look about with the
 // mouse (a drag on a touch screen, or the arrow keys), switch vehicle with
@@ -25,7 +36,9 @@ const KEY = 'tp-cockpit'; // the last one you sat in
 // vehicle's own lever or wheel. The launch comes out in the universe, flying
 // the ship you launched in (remembered for the map, and told to it as
 // 'tp:arrive'): `onPeak` at the flash, `onDone` once it has cleared. Skip
-// (or Escape) goes straight there.
+// (or Escape) goes straight there. The page underneath is uncovered a moment
+// before the flash (`reveal`), so the map is drawn, its loading veil gone,
+// by the time the white clears off it.
 //
 // Where WebGL can't draw it (or it fails), the plain jump to lightspeed
 // plays instead, with the same callbacks.
@@ -114,6 +127,7 @@ export default function Cockpit({ start, onPeak, onDone }) {
         onBoarded: (got) => setBoarded(got),
         onFirstFrame: () => delete document.documentElement.dataset.intro,
         onLine: say,
+        onReveal: reveal,
         onPeak: peak,
         onDone: () => cbs.current.onDone?.(),
         onFail: () => setFallback(true),
