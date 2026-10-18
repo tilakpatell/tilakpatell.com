@@ -19,37 +19,12 @@
 // leaves a boss open for longer. Everything here is plain numbers and arrays
 // ([x, y, z], metres and seconds), stepped at a fixed rate.
 
-import { BOUND, HALF, RIVER, SKY, boxes, buildCity, clear, index, rng } from './city';
+import { HALF, RIVER, SKY, clear, rng } from './city';
+import { CHAPTERS, DIFFICULTY, LINES, MARK, QUAKE, add, bound, city, clamp, clearChapter, collide, damage, diff, dist, dot, len, lerp, norm, perfect, points, result, say, scale, strike, sub, vec } from './core';
+import { BOSSES, bossTell, stepBoss } from './bosses';
 
-export const DIFFICULTY = {
-  guardian: { label: 'Guardian', note: 'Hits hurt less, bosses telegraph longer', hurt: 0.55, boss: 0.7, windup: 1.3, regen: 1.6, ring: 1.3, iframes: 1.4, charge: 0.8 },
-  hero: { label: 'Hero', note: 'As the show has it', hurt: 1, boss: 1, windup: 1, regen: 1, ring: 1, iframes: 1, charge: 1 },
-  viltrumite: { label: 'Viltrumite', note: 'Faster, harder, and no second chances', hurt: 1.45, boss: 1.3, windup: 0.78, regen: 0.5, ring: 0.85, iframes: 0.85, charge: 1.1 },
-};
-
-export const MARK = {
-  hp: 100,
-  r: 0.9,
-  cruise: 26,
-  boost: 64,
-  turn: 4.2, // how quickly he reaches the speed he's asking for (per second)
-  boostTurn: 2.6,
-  drag: 2.8, // how quickly he stops when nothing is pressed
-  dash: { range: 62, speed: 96, time: 0.7, reach: 2.4, cooldown: 0.16 },
-  jab: { time: 0.2, speed: 34, reach: 3.6 },
-  dodge: { speed: 42, time: 0.26, iframes: 0.42, cooldown: 0.45, perfect: 0.24 },
-  hurt: 0.5,
-  mercy: 0.45, // can't be hurt again for this long after a hit
-  regenAfter: 4.5,
-  regen: 4,
-  dmg: 10,
-  combo: 2.4, // seconds a combo waits for the next hit
-};
-
-export const BOSSES = {
-  omni: { name: 'Omni-Man', hp: 520, r: 1.3, orbit: 23, speed: 34, charge: 98, windup: 0.9, recover: 1.75, slamAfter: 2, dmg: { charge: 20, slam: 16, counter: 6 }, leaveAt: 0.12 },
-  thragg: { name: 'Thragg', hp: 680, r: 1.35, orbit: 21, speed: 40, charge: 116, windup: 0.66, recover: 1.4, slamAfter: 1, double: true, dmg: { charge: 24, slam: 19, counter: 8 }, leaveAt: 0 },
-};
+// (what was here and moved, under the names it had)
+export { BOSSES, CHAPTERS, DIFFICULTY, LINES, MARK, QUAKE, bossTell, city, collide, vec };
 
 const FLAXAN = { r: 0.8, speed: 21, orbit: [15, 27], aim: 0.75, gap: [2.3, 3.8], bolt: 34, boltLife: 3, dmg: 8 };
 export const WAVES = [
@@ -60,123 +35,6 @@ export const WAVES = [
 // the Flaxans' way through, over the river, facing the city
 export const PORTAL = { p: [40, 64, 372], n: [0, 0, -1], r: 20 };
 export const RINGS = { n: 9, r: 7.5 };
-export const QUAKE = { r: 30, time: 0.6, band: 3.4 };
-
-export const CHAPTERS = [
-  { id: 'lesson', title: 'Flight lesson', kicker: 'Chapter one', sky: 'noon', blurb: 'Your father wants to see you fly. Follow him through the rings: over the river, between the towers, and over the top.', start: [0, 58, 330], yaw: Math.PI },
-  { id: 'flaxans', title: 'The Flaxans', kicker: 'Chapter two', sky: 'noon', blurb: 'A portal has opened over the river and soldiers are pouring out of it. Knock them back through. Time runs faster on their side.', start: [40, 56, 296], yaw: 0 },
-  { id: 'omni', title: 'Think, Mark!', kicker: 'Chapter three', sky: 'dusk', blurb: 'The Guardians are dead and you know who did it. Dodge his charge, then hit him while he recovers. Hit him any other time and he hits back.', start: [60, 110, 330], yaw: Math.PI },
-  { id: 'thragg', title: 'The Grand Regent', kicker: 'Chapter four', sky: 'night', blurb: 'Thragg has come for the planet that turned Nolan. He is faster than your father, and he charges twice.', start: [-60, 290, 60], yaw: Math.PI },
-];
-
-// Who says what. Most are the show's; the rest are in its voice.
-export const LINES = {
-  lessonStart: ['Omni-Man', 'Stay with me, Mark. Through the rings.'],
-  lesson3: ['Omni-Man', 'Faster. You’re flying like a tourist.'],
-  lesson6: ['Omni-Man', 'Better. Use the boost on the straights.'],
-  lessonEnd: ['Omni-Man', 'Not bad. You might be ready for what’s coming.'],
-  flaxStart: ['Mark', 'Is that a portal? Over the river?'],
-  wave2: ['Mark', 'Wait, are those the same guys? They’re older. A lot older.'],
-  wave3: ['Mark', 'Okay, now they’re ancient. And angry.'],
-  portalShut: ['Omni-Man', 'Good. Now they’ll have something to think about for a few centuries.'],
-  omniStart: ['Omni-Man', 'You need to listen to me, Mark.'],
-  omni2: ['Omni-Man', 'Look what they need to mimic a fraction of our power.'],
-  omni3: ['Omni-Man', 'Think, Mark!'],
-  omniLeave: ['Omni-Man', 'You’ll outlast every fragile, insignificant being on this planet.'],
-  omniLeave2: ['Mark', 'I’d still have you, Dad.'],
-  thraggStart: ['Thragg', 'So this is the world that turned Nolan.'],
-  thragg2: ['Thragg', 'Viltrum does not kneel. Not to a half-breed.'],
-  thragg3: ['Thragg', 'You fight like your father. He lost too.'],
-  thraggDown: ['Thragg', 'This is not over, Grayson.'],
-  block: ['Omni-Man', 'Sloppy.'],
-};
-
-// ── vectors ──
-const add = (a, b, k = 1) => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
-const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-const len = (a) => Math.hypot(a[0], a[1], a[2]);
-const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
-const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-const scale = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
-const norm = (a) => {
-  const l = len(a);
-  return l > 1e-9 ? scale(a, 1 / l) : [0, 0, 0];
-};
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const lerp = (a, b, k) => a + (b - a) * k;
-export const vec = { add, sub, len, dist, dot, scale, norm };
-
-// ── the city, built once ──
-let CITY = null;
-export function city() {
-  if (!CITY) {
-    const c = buildCity(7);
-    CITY = { ...c, idx: index(boxes(c)) };
-  }
-  return CITY;
-}
-
-// A sphere pushed out of whatever box it's in, its speed into the wall
-// taken away. Returns how fast it hit, and where, or null.
-export function collide(p, v, r) {
-  const { idx } = city();
-  let hit = null;
-  for (const b of idx.at(p[0], p[2])) {
-    const cx = clamp(p[0], b.x0, b.x1);
-    const cy = clamp(p[1], 0, b.y1);
-    const cz = clamp(p[2], b.z0, b.z1);
-    const d = [p[0] - cx, p[1] - cy, p[2] - cz];
-    const d2 = dot(d, d);
-    if (d2 >= r * r) continue;
-    let n;
-    let push;
-    if (d2 > 1e-10) {
-      const l = Math.sqrt(d2);
-      n = scale(d, 1 / l);
-      push = r - l;
-    } else {
-      // the centre is inside: out through the nearest face
-      const faces = [
-        [p[0] - b.x0, [-1, 0, 0]],
-        [b.x1 - p[0], [1, 0, 0]],
-        [b.y1 - p[1], [0, 1, 0]],
-        [p[2] - b.z0, [0, 0, -1]],
-        [b.z1 - p[2], [0, 0, 1]],
-      ].sort((x, y) => x[0] - y[0]);
-      n = faces[0][1];
-      push = faces[0][0] + r;
-    }
-    p[0] += n[0] * push;
-    p[1] += n[1] * push;
-    p[2] += n[2] * push;
-    const into = dot(v, n);
-    if (into < 0) {
-      v[0] -= n[0] * into;
-      v[1] -= n[1] * into;
-      v[2] -= n[2] * into;
-    }
-    hit = { speed: -into, at: [cx, cy, cz], n, id: b.id };
-  }
-  return hit;
-}
-
-// keep inside the world: above the street, under the ceiling, within the city
-function bound(p, v, r) {
-  if (p[1] < r + 0.3) {
-    p[1] = r + 0.3;
-    if (v[1] < 0) v[1] = 0;
-  }
-  if (p[1] > SKY) {
-    p[1] = SKY;
-    if (v[1] > 0) v[1] = 0;
-  }
-  for (const k of [0, 2]) {
-    if (Math.abs(p[k]) > BOUND) {
-      p[k] = Math.sign(p[k]) * BOUND;
-      if (v[k] * p[k] > 0) v[k] = 0;
-    }
-  }
-}
 
 // ── the rings ──
 // A course through the city, the same every time: from over the river,
@@ -284,8 +142,6 @@ export function newGame({ seed = 1, difficulty = 'hero' } = {}) {
   };
 }
 
-const diff = (g) => DIFFICULTY[g.difficulty];
-
 export function startChapter(g, i = g.chapter) {
   const ch = CHAPTERS[i];
   Object.assign(g, {
@@ -330,8 +186,6 @@ export function startChapter(g, i = g.chapter) {
   }
   return ev;
 }
-
-const say = (ev, key) => ev.push({ type: 'line', key, who: LINES[key][0], text: LINES[key][1] });
 
 // ── input ──
 // dir: where to fly, world space, length 0..1 (the page turns keys and
@@ -409,27 +263,6 @@ export function step(g, dt) {
   }
   return ev;
 }
-
-function result(g, won) {
-  return { won, chapter: g.chapter, time: g.ct, score: g.chapterScore, total: g.score, hits: g.hits, perfects: g.perfects };
-}
-
-function clearChapter(g, ev) {
-  g.phase = g.chapter === CHAPTERS.length - 1 ? 'won' : 'clear';
-  const id = CHAPTERS[g.chapter].id;
-  // a quick lesson, or a fight without much hurt, is worth more
-  const bonus = id === 'lesson' ? Math.max(0, Math.round((90 - g.ct) * 40)) : Math.round(g.mark.hp * 20);
-  g.chapterScore += bonus;
-  g.score += bonus;
-  if (!g.done.includes(g.chapter)) g.done.push(g.chapter);
-  g.result = result(g, true);
-  ev.push({ type: g.phase === 'won' ? 'won' : 'cleared', chapter: g.chapter, bonus });
-}
-
-const points = (g, n) => {
-  g.score += n;
-  g.chapterScore += n;
-};
 
 // ── Mark ──
 function stepMark(g, dt, ev) {
@@ -610,43 +443,6 @@ function impact(g, t, ev) {
   }
 }
 
-function damage(g, n, ev, by) {
-  const m = g.mark;
-  m.hp = Math.max(0, m.hp - n);
-  m.sinceHurt = 0;
-  m.combo = 0;
-  g.taken += n;
-  ev.push({ type: 'hurt', by, dmg: n, at: [...m.p] });
-}
-
-// A dodge started just before an attack reaches him, or just before it
-// goes by close (it would have hit, but for the dodge), is a perfect one.
-function perfect(g, ev, by) {
-  const m = g.mark;
-  if (g.t - m.dodgeAt > MARK.dodge.perfect + (m.iframe > 0 ? 0 : 0.12) || m.perfectAt >= m.dodgeAt) return false;
-  m.perfectAt = g.t;
-  g.perfects++;
-  points(g, 250);
-  ev.push({ type: 'perfect', by, at: [...m.p] });
-  if (g.boss && (by === 'charge' || by === 'quake')) g.boss.perfect = true;
-  return true;
-}
-
-// An attack reaching Mark. Returns whether it hurt.
-function strike(g, ev, { dmg, dir, knock, by }) {
-  const m = g.mark;
-  if (m.iframe > 0) {
-    perfect(g, ev, by);
-    return false;
-  }
-  damage(g, dmg * diff(g).hurt, ev, by);
-  m.state = 'hurt';
-  m.t = 0;
-  m.v = scale(norm(dir), knock);
-  m.iframe = MARK.mercy;
-  return true;
-}
-
 // ── chapter one: the rings ──
 function stepLesson(g, dt, ev) {
   const m = g.mark;
@@ -815,198 +611,6 @@ function stepBolts(g, dt, ev) {
     }
   }
   g.bolts = g.bolts.filter((b) => b.life > 0);
-}
-
-// ── chapters three and four: a Viltrumite ──
-function stepBoss(g, dt, ev) {
-  const b = g.boss;
-  const B = BOSSES[b.kind];
-  const D = diff(g);
-  const m = g.mark;
-  b.t += dt;
-  b.timer -= dt;
-  const toMark = sub(m.p, b.p);
-  const range = len(toMark);
-  const face = (d) => {
-    if (Math.hypot(d[0], d[2]) > 0.01) b.yaw = Math.atan2(d[0], d[2]);
-  };
-  // phases
-  const share = b.hp / b.max;
-  if (b.phase === 1 && share < 0.66) {
-    b.phase = 2;
-    say(ev, b.kind === 'omni' ? 'omni2' : 'thragg2');
-    ev.push({ type: 'phase', n: 2 });
-  } else if (b.phase === 2 && share < 0.33) {
-    b.phase = 3;
-    say(ev, b.kind === 'omni' ? 'omni3' : 'thragg3');
-    ev.push({ type: 'phase', n: 3 });
-  }
-  if (!['leave', 'down'].includes(b.state) && share <= B.leaveAt + 1e-9) {
-    if (b.kind === 'omni') {
-      b.state = 'leave';
-      say(ev, 'omniLeave');
-      ev.push({ type: 'leave' });
-    } else {
-      b.state = 'down';
-      say(ev, 'thraggDown');
-      ev.push({ type: 'down', at: [...b.p] });
-    }
-    b.t = 0;
-    b.said = false;
-  }
-  const move = (goal, speed, rate = 2.4) => {
-    const d = sub(goal, b.p);
-    const want = scale(norm(d), Math.min(speed, len(d) * 1.8));
-    b.v = add(b.v, sub(want, b.v), Math.min(1, dt * rate));
-  };
-  const windup = B.windup * D.windup * (b.phase === 3 ? 0.82 : 1);
-  switch (b.state) {
-    case 'intro':
-      move(add(m.p, [0, 6, -B.orbit]), 70, 1.5);
-      face(toMark);
-      if (b.timer <= 0) next(g, 'circle', 1.4);
-      break;
-    case 'circle': {
-      b.orbit += dt * (0.45 + b.phase * 0.08);
-      const goal = add(m.p, [Math.cos(b.orbit) * B.orbit, 4 + Math.sin(b.t * 0.7) * 3, Math.sin(b.orbit) * B.orbit]);
-      move(goal, range > 90 ? 90 : B.speed * (1 + (b.phase - 1) * 0.12));
-      face(toMark);
-      if (b.timer <= 0 && range < 110) {
-        b.attacks++;
-        // the slam from the second phase (Thragg's from the first), every third attack or so
-        if (b.phase >= B.slamAfter && b.attacks % 3 === 0) next(g, 'rise', 1.05);
-        else next(g, 'windup', windup);
-        ev.push({ type: 'windup', kind: b.state, time: b.timer });
-      }
-      break;
-    }
-    case 'windup':
-      b.v = scale(b.v, Math.exp(-5 * dt));
-      face(toMark);
-      if (b.timer <= 0) {
-        const lead = add(m.p, m.v, 0.12);
-        b.dir = norm(sub(lead, b.p));
-        b.from = [...b.p];
-        b.go = len(sub(lead, b.p)) + 28;
-        next(g, 'charge', 1.3);
-        ev.push({ type: 'charge', from: [...b.p], dir: b.dir });
-      }
-      break;
-    case 'charge': {
-      const from = b.p;
-      b.v = scale(b.dir, B.charge * D.charge * (b.phase === 3 ? 1.08 : 1));
-      b.p = add(b.p, b.v, dt);
-      face(b.dir);
-      // through anything in the way (a Viltrumite doesn't go round buildings)
-      const { idx } = city();
-      for (const box of idx.at(b.p[0], b.p[2]))
-        if (b.p[0] > box.x0 && b.p[0] < box.x1 && b.p[2] > box.z0 && b.p[2] < box.z1 && b.p[1] < box.y1 && b.through !== box) {
-          b.through = box;
-          ev.push({ type: 'smash', at: [...b.p], dir: b.dir });
-        }
-      const seg = sub(b.p, from);
-      const k = clamp(dot(sub(m.p, from), seg) / Math.max(1e-9, dot(seg, seg)), 0, 1);
-      const miss = dist(add(from, seg, k), m.p);
-      if (!b.landed && miss < b.r + m.r + 0.5) {
-        b.landed = true;
-        if (strike(g, ev, { dmg: B.dmg.charge, dir: b.dir, knock: 52, by: 'charge' })) ev.push({ type: 'slugged', at: [...m.p], dir: b.dir });
-      } else if (!b.landed && miss < 8 && k > 0 && k < 1) perfect(g, ev, 'charge');
-      if (dist(b.p, b.from) > b.go || b.timer <= 0) {
-        b.landed = false;
-        b.through = null;
-        // Thragg comes straight back, once
-        if (B.double && !b.doubled) {
-          b.doubled = true;
-          next(g, 'windup', windup * 0.45);
-          ev.push({ type: 'windup', kind: 'windup', time: b.timer });
-        } else {
-          b.doubled = false;
-          next(g, 'recover', B.recover * (b.perfect ? 1.8 : 1));
-          ev.push({ type: 'open', perfect: !!b.perfect });
-          b.perfect = false;
-        }
-      }
-      return; // (moved already)
-    }
-    case 'rise':
-      move(add(m.p, [0, 30, 0]), 70, 4);
-      face(toMark);
-      if (b.timer <= 0) {
-        b.from = [...b.p];
-        b.aim = [...m.p];
-        b.dir = norm(sub(b.aim, b.p));
-        next(g, 'dive', 1);
-        ev.push({ type: 'dive', from: [...b.p], to: [...b.aim] });
-      }
-      break;
-    case 'dive':
-      b.v = scale(b.dir, 125);
-      face(b.dir);
-      if (dist(b.p, b.aim) < 3 || dot(sub(b.aim, b.p), b.dir) < 0 || b.timer <= 0) {
-        b.p = [...b.aim];
-        b.v = [0, 0, 0];
-        g.quake = { p: [...b.aim], t: 0, hit: false };
-        ev.push({ type: 'quake', at: [...b.aim] });
-        next(g, 'recover', B.recover * 1.15);
-      }
-      break;
-    case 'recover':
-      b.v = scale(b.v, Math.exp(-3 * dt));
-      if (b.timer <= 0) {
-        next(g, 'circle', lerp(1.2, 2.4, g.rand()) / (1 + (b.phase - 1) * 0.25));
-        b.hits = 0;
-      }
-      break;
-    case 'stagger':
-      b.v = scale(b.v, Math.exp(-2.2 * dt));
-      if (b.timer <= 0) {
-        next(g, 'circle', 1);
-        b.hits = 0;
-      }
-      break;
-    case 'leave':
-      // up and away: over the city and gone
-      b.v = add(b.v, sub([b.v[0] * 0.2, 120, b.v[2] * 0.2], b.v), Math.min(1, dt * (b.t > 3 ? 1.5 : 0.3)));
-      if (b.t > 3.2 && !b.said) {
-        b.said = true;
-        say(ev, 'omniLeave2');
-      }
-      if (b.t > 6.5 && g.phase === 'play') clearChapter(g, ev);
-      break;
-    case 'down':
-      b.v[1] -= 20 * dt;
-      if (b.t > 3.5 && g.phase === 'play') clearChapter(g, ev);
-      break;
-    default:
-  }
-  b.p = add(b.p, b.v, dt);
-  if (!['leave', 'down', 'charge', 'dive'].includes(b.state)) collide(b.p, b.v, b.r);
-  if (b.state !== 'leave') bound(b.p, b.v, b.r);
-  // the shockwave from a dive, spreading
-  const q = g.quake;
-  if (q) {
-    q.t += dt;
-    const r = (q.t / QUAKE.time) * QUAKE.r;
-    const off = Math.abs(dist(m.p, q.p) - r);
-    if (!q.hit && off < QUAKE.band) {
-      q.hit = true;
-      strike(g, ev, { dmg: B.dmg.slam, dir: add(norm(sub(m.p, q.p)), [0, 0.4, 0]), knock: 34, by: 'quake' });
-    } else if (!q.hit && off < QUAKE.band + 5) perfect(g, ev, 'quake');
-    if (q.t > QUAKE.time) g.quake = null;
-  }
-}
-
-function next(g, state, timer) {
-  g.boss.state = state;
-  g.boss.t = 0;
-  g.boss.timer = timer;
-}
-
-// What a boss is up to, for the page and the scene: how far into a windup
-// (0..1), and whether he can be hit.
-export function bossTell(b) {
-  if (!b) return null;
-  return { state: b.state, open: b.state === 'recover' || b.state === 'stagger', windup: b.state === 'windup' ? clamp(b.t / (b.t + Math.max(0, b.timer)), 0, 1) : b.state === 'rise' ? clamp(b.t / (b.t + Math.max(0, b.timer)), 0, 1) : 0 };
 }
 
 // ── an autopilot (the tests play with it; the title screen shows it off) ──

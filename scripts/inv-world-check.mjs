@@ -359,6 +359,26 @@ for (const [name, s] of Object.entries(SHOTS)) {
   const png = await page.screenshot({ path: `${out}/inv-${name}.png`, timeout: 180000 });
   const info = await page.evaluate(() => window.__INVWORLD__.api.info());
   console.log(name, 'calls', info.calls, 'tris', info.triangles, 'tier', info.tier);
+  if (process.env.TRIS) {
+    // (where they come from: each shown mesh's triangles, its instances counted, by name, the heaviest first)
+    const top = await page.evaluate(() => {
+      const by = {};
+      const shown = (o) => {
+        for (let q = o; q; q = q.parent) if (!q.visible) return false;
+        return true;
+      };
+      window.__INVWORLD__.api.engine.scene.traverse((o) => {
+        if (!o.isMesh || !shown(o)) return;
+        const g = o.geometry;
+        const n = ((g.index ? g.index.count : (g.attributes.position?.count ?? 0)) / 3) * (o.isInstancedMesh ? o.count : 1);
+        let k = o.name || o.parent?.name || o.type;
+        for (let q = o.parent; q && !o.name; q = q.parent) if (q.name) { k = q.name; break; }
+        by[k] = (by[k] ?? 0) + n;
+      });
+      return Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, n]) => `${k} ${Math.round(n / 1000)}k`);
+    });
+    console.log(name, 'tris by mesh:', top.join(', '));
+  }
   if (s.mission) {
     // (where the shot found him and the step's marker, for reading the shot)
     const w = await page.evaluate(() => {
