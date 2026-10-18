@@ -60,14 +60,7 @@ Shapes belong to the colour, not the mode:
 
 ### 3. Type
 
-| | Shire | Mordor |
-| --- | --- | --- |
-| `.display` | **Almendra 700**: a broad-nib bookhand with real lowercase, the nearest open face to a hobbit’s hand. Door green `#2f5a2e`; in the dark a brass gradient (`background-clip: text`, solid `#e8c766` fallback) | **Grenze Gotisch 800**: sharp, forged blackletter. Iron ink `#141110` in light; in dark parchment `#f0e8df` lit from below by an ember shadow |
-| `.title` | Almendra 700, in `--text` | Grenze Gotisch 800, in `--text`, no glow (one hot thing a view) |
-| `.eyebrow` | Cinzel 600, 0.16em, in rubric red (`#9a3024`; dark `#e39c7e`): the red Roman capitals of Tolkien’s maps | Grenze 600, 0.18em, in `--accent-text`, opened by a small seal lozenge |
-| `.lead` | **EB Garamond italic 400**: the book the Shire is | **Grenze 400** |
-
-Body text stays Archivo. Grenze Gotisch is never used below title size. The fonts load with their colour through `THEME_FONTS`, as now; each gets its census row and its `FONT_NAMES` entry (`docs/stack/fonts.md`). Cinzel Decorative leaves the Middle-earth colours (the census keeps whatever still imports it).
+Cinzel stays, as carved: Cinzel Decorative for the page titles, Cinzel for the other headings and the eyebrows (the Roman capitals of the maps). A bookhand and a blackletter (Almendra, Grenze Gotisch) were tried and set aside on the owner’s word: the old capitals read better. The inks change: door green by day and a brass gradient at night for the Shire’s titles (`background-clip: text`, solid `#e8c766` fallback, dropped in print, forced colours and the dark islands); iron by day and parchment lit from below at night for Mordor’s. Shire eyebrows are rubric red (`#9a3024`; dark `#e39c7e`); Mordor’s open on a small seal. Body text stays Archivo.
 
 ### 4. Paper, ash and ornaments
 
@@ -97,12 +90,14 @@ Reduced motion keeps the words, as every scene does. The `ring` kind’s ember b
 
 ### 7. The live background
 
-`components/ambience/scenes/middleearth.js` keeps its contract (fields, bursts, the Eye that follows the pointer and sweeps its beam, the fireworks and the dragon), and its `LANDS` shader is redrawn:
+`components/ambience/scenes/middleearth.js` keeps its contract (fields, bursts, the Eye that follows the pointer and sweeps its beam, the fireworks and the dragon); its `LANDS` shader is redrawn, and Barad-dûr becomes a model:
 
-- **The Shire.** A low sun (a moon in the dark, and a few stars); the Misty Mountains faint and blue at the back; three or four rolling downs, lighter and yellower with distance; hedgerows along the crests; the Party Tree on a far hill; the Hill at the side with its round green door, brass knob, round window (lit at dusk, and every window lit in the dark) and a smoke thread from a chimney.
-- **Mordor.** A smoke-filled sky (slow noise), red at the horizon; jagged ridges in steps of value; Mount Doom on one side with lava seams that pulse and a glowing crater; **Barad-dûr moved off the route line** to the far side, stepped and spiked, its two horns curving in round the Eye (flame-lashed, slit pupil, its beam as now); an ash plain.
+- **The Shire.** A low sun (a moon in the dark, and a few stars); the Misty Mountains faint and blue at the back; rolling downs, lighter and yellower with distance; hedgerows along the crests; the Party Tree on a far hill; the Hill at the side with its round green door, brass knob, round window (lit at dusk, and every window lit in the dark) and a smoke thread from a chimney.
+- **Mordor.** A smoke-filled sky, red at the horizon; jagged ridges in steps of value; Mount Doom with lava seams, a glowing crater, gullies and a plume; an ash plain.
+- **Barad-dûr in three dimensions** (`scenes/baradDur.js`, `baradDurView.js`, `sauronEye.js`): one merged, faceted mesh built at start (tiers turned against each other, spike fringes, ribs, blade buttresses, needle spires, the crown’s two spurred horns), lit by the Eye’s fire, by Doom from the left and by the ash sky, its glow a small table repainted only when the mode changes; the Eye is sprites painted once, flickering by scale and opacity. It stands at the right, clear of the route line, drawn between the backdrop’s passes so the near ridge hides its foot. About 4,300 triangles and nine draw calls for the whole scene on a strong computer, 2,900 on a mid one; weak devices never load the live background.
+- **A mist over the words.** By day the land behind the page’s left column shows at a quarter of its strength (seven tenths at night), so the muted line under the hero keeps 4.5:1.
 
-The big shapes stay at the outer thirds of the screen, where the page’s mask lets the background show; the middle stays quiet for the text. No new `ShaderMaterial`: the shader is the same `backdrop()` with new GLSL, so `glsl-sites` doesn’t move.
+No new `ShaderMaterial`: the GLSL is the same `backdrop()`; the tower is standard materials, so `glsl-sites` doesn’t move.
 
 ### 8. The drawn backdrop
 
