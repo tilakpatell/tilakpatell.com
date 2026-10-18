@@ -23,8 +23,8 @@
 //
 //   twinScene(root, twins) → every classic material under root swapped for its twin
 //   asNode(material) → the node material for a classic one (three's own
-//     NodeLibrary.fromMaterial: every property copied; the same one every
-//     time it's asked), or itself
+//     NodeLibrary.fromMaterial, every property the classic one's, read
+//     through to it; the same one every time it's asked), or itself
 //   follow(holder) → a uniform node that is `holder` ({ value } read every
 //     render) or the node itself, so a caller's shared { value } still drives it
 //   wrap(material, method, fn, tag, nodes) → material; keyed(material, tag, nodes) the key alone
@@ -79,10 +79,37 @@ export function asNode(material) {
   const out = new Kind();
   // (a GLSL hook's own program key is left behind: the node material keys
   // its program by its nodes; a GLSL patch copied over does nothing here)
-  for (const key in material) if (key !== 'customProgramCacheKey') out[key] = material[key];
+  // Each of the classic one's own properties is the twin's through it, read
+  // and written: a scene goes on holding the classic material after the
+  // swap (a kit's `mats.lantern`) and sets its glow each frame, which the
+  // twin draws. Its kind, name tags and identity stay the twin's own, and
+  // its version counts both, so a needsUpdate on either reaches the twin.
+  for (const key of Object.keys(material)) {
+    if (OWN.has(key) || key.startsWith('is')) continue;
+    Object.defineProperty(out, key, {
+      enumerable: true,
+      configurable: true,
+      get: () => material[key],
+      set: (v) => {
+        material[key] = v;
+      },
+    });
+  }
+  let version = out.version;
+  Object.defineProperty(out, 'version', {
+    configurable: true,
+    get: () => version + material.version,
+    set: (v) => {
+      version = v - material.version;
+    },
+  });
   TWINS.set(material, out);
   return out;
 }
+// (a twin's own: what makes it the node material it is, and its listeners;
+// a physical material's `_iridescence` and the like, behind its getters,
+// are the classic one's)
+const OWN = new Set(['id', 'uuid', 'type', 'version', 'customProgramCacheKey', '_listeners']);
 
 // Every classic material under `root` swapped on its object for its node
 // twin (one twin a material, so a shared one stays shared: `twins` keeps

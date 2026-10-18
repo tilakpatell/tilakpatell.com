@@ -20,6 +20,23 @@ describe('a hook on the node renderer', () => {
     expect(asNode(new THREE.ShadowMaterial())).toBeInstanceOf(THREE.ShadowMaterial); // (no twin: as it was)
   });
 
+  it('draws what the scene goes on writing to the classic material it holds', () => {
+    const m = new THREE.MeshStandardMaterial({ emissive: 0xff9438, emissiveIntensity: 0.05 });
+    const n = asNode(m);
+    m.emissiveIntensity = 0.83;
+    expect(n.emissiveIntensity).toBe(0.83);
+    n.opacity = 0.5;
+    expect(m.opacity).toBe(0.5);
+    // (a change that needs a new program, flagged on either, is the twin's)
+    const v = n.version;
+    m.needsUpdate = true;
+    expect(n.version).toBe(v + 1);
+    n.needsUpdate = true;
+    expect(n.version).toBe(v + 2);
+    expect(n.type).toBe('MeshStandardNodeMaterial');
+    expect(n.uuid).not.toBe(m.uuid);
+  });
+
   it('follows a { value } the caller goes on writing, and keeps a node', () => {
     const held = { value: 2 };
     const u = follow(held);
