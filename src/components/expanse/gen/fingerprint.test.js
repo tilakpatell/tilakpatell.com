@@ -1,5 +1,5 @@
 /* global process */
-import { existsSync,readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { PRINTED, digest, plainSector } from './fixtures/fingerprint';
 import { makeSector } from './sector';

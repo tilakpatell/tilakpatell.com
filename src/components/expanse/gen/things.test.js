@@ -138,6 +138,13 @@ describe("hooks", () => {
   it("refuses an extra that reaches into the lattice's ids", () => {
     expect(() => thingsOf(ctx, [{ list: "x", base: 63, max: 2, make: () => [] }])).toThrow();
   });
+  it("refuses an extra below the middle layer's wonders, and two extras that overlap", () => {
+    expect(() => thingsOf(ctx, [{ list: "x", base: 2, max: 2, make: () => [] }])).toThrow(/middle layer/);
+    const a = { list: "a", base: 10, max: 5, make: () => [] };
+    expect(() => thingsOf(ctx, [a, { list: "b", base: 14, max: 3, make: () => [] }])).toThrow(/share ids/);
+    expect(() => thingsOf(ctx, [{ list: "b", base: 12, max: 1, make: () => [] }, a])).toThrow(/share ids/);
+    expect(() => thingsOf(ctx, [a, { list: "b", base: 15, max: 3, make: () => [] }])).not.toThrow();
+  });
   it("drops a site whose kind's place gives null, and moves one it moves", () => {
     const kinds = [{ ...THING_KINDS[0], place: () => null }];
     expect(thingsOf(ctx, [], kinds).things.count).toBe(0);
@@ -182,5 +189,18 @@ describe("clearance, forced", () => {
     expect(thingInCell(hit, slot)).toBeNull();
     const miss = { ...ctx, systems: [], outs: [{ id: "t", at: spot.map((v) => v + 5000), r: 1 }] };
     expect(thingInCell(miss, slot)).not.toBeNull();
+  });
+  it("drops a thing inside a wonder's radius plus its size, except for a nebula", () => {
+    const wonder = (kind, size) => ({ id: "w", kind, at: spot, size });
+    const hit = { ...ctx, outs: [], systems: [], wonders: [wonder("pulsar", 1)] };
+    expect(thingInCell(hit, slot)).toBeNull();
+    expect(thingsOf(hit).things.slot).not.toContain(slot);
+    const edge = { ...hit, wonders: [{ ...wonder("derelict", 1), at: spot.map((v, a) => v + (a ? 0 : free.size + 0.5)) }] };
+    expect(thingInCell(edge, slot)).toBeNull();
+    const clear = { ...hit, wonders: [{ ...wonder("rogue", 1), at: spot.map((v, a) => v + (a ? 0 : free.size + 5)) }] };
+    expect(thingInCell(clear, slot)).not.toBeNull();
+    const nebula = { ...hit, wonders: [wonder("nebula", 2000)] };
+    expect(thingInCell(nebula, slot)).toEqual(free);
+    expect(thingsOf(nebula).things.slot).toContain(slot);
   });
 });

@@ -28,5 +28,17 @@ describe('orbitAt', () => {
     const sys = { id: 'E:1,0:0', at: planet.centre, star: { size: 150 }, planets: [{ ...planet, moonList: [moon] }] };
     expect(bodiesAt(sys, 0).map((b) => [b.id, b.kind])).toEqual([['E:1,0:0', 'star'], [planet.id, 'planet'], [moon.id, 'moon']]);
   });
+  it('starts a moon at its phase in the x-z plane, tilted about x, and lets a tilted one leave that plane', () => {
+    const base = orbitAt(planet, 0);
+    const off = moonAt(moon, planet, 0).map((v, a) => v - base[a]);
+    const { orbit: o, phase: f, tilt: k } = moon;
+    const want = [o * Math.cos(f), -o * Math.sin(f) * Math.sin(k), o * Math.sin(f) * Math.cos(k)];
+    off.forEach((v, a) => expect(v).toBeCloseTo(want[a], 9));
+    let off_plane = 0;
+    for (const t of [0, 3000, 9000, 20000, 40000]) off_plane = Math.max(off_plane, Math.abs(moonAt(moon, planet, t)[1] - orbitAt(planet, t)[1]));
+    expect(off_plane).toBeGreaterThan(1);
+    const flat = { ...moon, tilt: 0 };
+    for (const t of [0, 3000, 9000]) expect(moonAt(flat, planet, t)[1] - orbitAt(planet, t)[1]).toBeCloseTo(0, 9);
+  });
   it('reads the shared clock in seconds', () => expect(spaceTime(1.5e12)).toBe(1.5e9));
 });

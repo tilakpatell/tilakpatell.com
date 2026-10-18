@@ -4,6 +4,8 @@
 //
 // HOME_KEEP: the radius kept clear round the origin
 // KEEP_OUTS: [{ id, at, r }], home first, then the places, then the Rick and Morty pocket
+//   (ids can repeat: PLACES has a planet 'home' and a planet 'rickmorty' beside the home sphere and the
+//   pocket, so key rows by index, or by id plus `at`, never by id alone)
 // keepOutsNear(sx, sy, sz) → the KEEP_OUTS rows whose sphere meets that sector's cube
 // clearOfKeepOuts(at, extent, outs = KEEP_OUTS) → true when a body of that extent at `at` touches none
 
