@@ -358,3 +358,35 @@ describe('the villains', () => {
     expect(spawnUpTo(f, 'mauler', 3, AT)).toBe(f);
   });
 });
+
+const STREET = [50, 0, 0];
+const onStreet = (dz = 0) => ({ p: [STREET[0], groundAt(STREET[0], STREET[2] + dz), STREET[2] + dz], v: [0, 0, 0], mode: 'ground' });
+
+describe('a block', () => {
+  it('halves a Mauler’s swing, knocks nobody back, staggers the Mauler and opens a counter', () => {
+    const f = spawnFoes(newFoes(), 'mauler', 1, [STREET[0], 0, STREET[2] - 2]);
+    const h = onStreet();
+    const blocked = run(f, h, 3, { punch: false, look: [0, 0, -1], block: true }, 0.05);
+    const swing = blocked.ev.find((e) => e.type === 'swing' && e.hit);
+    expect(swing).toBeTruthy();
+    expect(blocked.ev.some((e) => e.type === 'blocked')).toBe(true);
+    const hurt = blocked.ev.find((e) => e.type === 'hurt');
+    expect(FIGHT.hp - hurt.hp).toBeCloseTo(KINDS.mauler.swing * FIGHT.blockHalf);
+    const open = run(f, h, 3, { punch: false, look: [0, 0, -1], block: false }, 0.05);
+    const hurtOpen = open.ev.find((e) => e.type === 'hurt');
+    expect(FIGHT.hp - hurtOpen.hp).toBeCloseTo(KINDS.mauler.swing);
+  });
+  it('the punch inside the window lands twice', () => {
+    const f = spawnFoes(newFoes(), 'mauler', 1, [STREET[0], 0, STREET[2] - 2]);
+    const h = onStreet();
+    let seen = false;
+    const r = run(f, h, 4, (s, st) => {
+      const swung = st.counter > 0 && !seen;
+      if (swung) seen = true;
+      return { punch: swung, look: [0, 0, -1], block: !swung };
+    }, 0.05);
+    const hits = r.ev.filter((e) => e.type === 'hit' && e.punched);
+    expect(hits.length).toBeGreaterThanOrEqual(2);
+    expect(hits.some((e) => e.counter)).toBe(true);
+  });
+});

@@ -18,7 +18,7 @@ const LORE = {
   on: 'Everyone else online here shows as a pale Mark: nothing passes between you but where each of you is',
 };
 
-export default function InvHud({ hud, mapRef, time, cycleTime, chip, trav, found, cards, near, act, toast, radio = null, take = null, touch, onStick, startSound, hold, punch }) {
+export default function InvHud({ hud, mapRef, time, cycleTime, chip, trav, found, cards, near, act, toast, radio = null, take = null, touch, onStick, startSound, hold }) {
   const set = (key) => (el) => (hud.current[key] = el);
   const { pathname } = useLocation();
   const centre = useRef(null);
@@ -111,7 +111,7 @@ export default function InvHud({ hud, mapRef, time, cycleTime, chip, trav, found
             <TouchButton className="iw-boost" {...hold('touchBoost')}>
               Boost
             </TouchButton>
-            <TouchButton className="iw-punch" onPress={punch}>
+            <TouchButton className="iw-punch" {...hold('touchPunch')}>
               Punch
             </TouchButton>
           </div>

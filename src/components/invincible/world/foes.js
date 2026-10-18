@@ -44,6 +44,11 @@ export const FIGHT = {
   lungeSpeed: 70,
   ram: 45, // flying into one faster than this hits it
   hp: 100,
+  // a block (./brawl.js says when he's blocking): a blow's share of its hurt, the
+  // stagger of whoever swung, and the window after it in which a punch counts double
+  blockHalf: 0.5,
+  blockStagger: 0.8,
+  counter: 0.6,
 };
 
 // A knock that carries him `m` metres before he's stopped (./flight.js
@@ -64,7 +69,9 @@ export const KINDS = {
 };
 const FLAXANS = new Set(['flaxan', 'flaxanElite']);
 const kindOf = (e) => e.kind ?? 'flaxan';
-const live = (e) => e.state !== 'waiting' && e.state !== 'ko' && e.state !== 'down';
+export const live = (e) => e.state !== 'waiting' && e.state !== 'ko' && e.state !== 'down';
+// in Mark's hands or thrown out of them (./brawl.js has them meanwhile)
+const busy = (e) => e.state === 'held' || e.state === 'thrown';
 
 export function newFoes(seed = 77) {
   return { on: false, t: 0, seed, foes: [], next: 0, gate: 0, spawned: 0, bolts: [], cars: [], carN: 0, rings: [], hp: FIGHT.hp, cool: 0, lunge: null, won: 0 };
@@ -133,7 +140,7 @@ const unit = (v) => {
   return [v[0] / l, v[1] / l, v[2] / l];
 };
 // the middle of one (a Mauler's and Doc Seismic's `p` is at their feet)
-function mid(e) {
+export function mid(e) {
   const k = kindOf(e);
   const up = k === 'mauler' ? 1.3 : k === 'seismic' ? 0.9 : 0;
   return [e.p[0], e.p[1] + up, e.p[2]];
@@ -148,7 +155,7 @@ function nearest(a, b, c) {
 // `v` turned `a` radians about the upright
 const turnY = (v, a) => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * Math.sin(a) + v[2] * Math.cos(a)];
 
-function knockOut(e, from, ev, extra = {}) {
+export function knockOut(e, from, ev, extra = {}) {
   const d = unit(sub(mid(e), from));
   const k = kindOf(e);
   e.state = 'ko';
@@ -159,7 +166,7 @@ function knockOut(e, from, ev, extra = {}) {
 }
 
 // a blow: a knock-out once it's had enough, a stagger before
-function hitFoe(e, from, ev, extra = {}) {
+export function hitFoe(e, from, ev, extra = {}) {
   const K = KINDS[kindOf(e)];
   e.hits = (e.hits ?? 0) + 1;
   if (e.hits >= K.hits) return knockOut(e, from, ev, extra);
@@ -212,8 +219,9 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
   const byId = (id) => f.foes.find((q) => q.id === id);
   let push = null;
   let stun = 0;
+  // (blocking, he takes half of any blow)
   const hurt = (n, at, extra = {}) => {
-    f.hp -= n;
+    f.hp -= input.block ? n * FIGHT.blockHalf : n;
     ev.push({ type: 'hurt', at: [...at], hp: f.hp, ...extra });
   };
 
@@ -244,6 +252,7 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
   // his punch: a car coming at him first (back it goes), then whoever's in
   // front of him and near, or a lunge to whoever's a little way off
   f.cool = Math.max(0, f.cool - dt);
+  f.counter = Math.max(0, (f.counter ?? 0) - dt);
   if (input.punch && f.cool <= 0) {
     f.cool = 0.35;
     ev.push({ type: 'punch' });
@@ -255,7 +264,7 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
     } else {
       let best = null;
       for (const e of f.foes) {
-        if (!live(e)) continue;
+        if (!live(e) || busy(e)) continue;
         const d = sub(mid(e), chest);
         const dl = len(d);
         if (dl > FIGHT.lunge) continue;
@@ -263,8 +272,14 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
         if (dl > FIGHT.reach && cos < 0.64) continue;
         if (!best || dl < best.dl) best = { e, dl, d };
       }
-      if (best && best.dl <= FIGHT.reach) hitFoe(best.e, chest, ev, { punched: true });
-      else if (best) {
+      if (best && best.dl <= FIGHT.reach) {
+        hitFoe(best.e, chest, ev, { punched: true });
+        // a counter: the punch after a blocked swing lands twice
+        if (f.counter > 0) {
+          f.counter = 0;
+          if (live(best.e)) hitFoe(best.e, chest, ev, { punched: true, counter: true });
+        }
+      } else if (best) {
         push = unit(best.d).map((c) => c * FIGHT.lungeSpeed);
         f.lunge = { id: best.e.id, t: 0.4 };
         ev.push({ type: 'lunge', id: best.e.id });
@@ -283,6 +298,7 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
   const toHero = len(sub(PORTAL.p, chest));
   for (const e of f.foes) {
     const k = kindOf(e);
+    if (busy(e)) continue;
     // flying into one fast (a stagger's a moment's grace: one pass, one blow)
     if (live(e) && e.state !== 'stagger' && heroSpeed > FIGHT.ram && nearest(was, chest, mid(e)) < (k === 'mauler' ? 3 : 2.8)) {
       if (k === 'seismic') hitFoe(e, chest, ev, { rammed: true });
@@ -334,7 +350,13 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
           else {
             const hit = d <= K.reach + 0.5;
             ev.push({ type: 'swing', id: e.id, at: mid(e), hit });
-            if (hit) {
+            if (hit && input.block) {
+              // blocked: half the hurt, no knock, and the Mauler is open for a moment
+              hurt(K.swing, chest, { by: 'mauler', blocked: true });
+              Object.assign(e, { state: 'stagger', t: FIGHT.blockStagger });
+              f.counter = FIGHT.counter;
+              ev.push({ type: 'blocked', id: e.id, at: mid(e) });
+            } else if (hit) {
               hurt(K.swing, chest, { by: 'mauler' });
               const out = unit([flat[0], 0, flat[2]]);
               push = [out[0] * knock(K.knock), 4, out[2] * knock(K.knock)];
@@ -439,6 +461,11 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
   // the cars: held up, then thrown straight at him; punched back, they fall
   const flying = [];
   for (const c of f.cars) {
+    if (c.held === 'mark') {
+      // (in his hands: ./brawl.js carries it)
+      flying.push(c);
+      continue;
+    }
     if (c.held != null) {
       const m = byId(c.held);
       if (m && live(m) && m.state !== 'stagger') {
@@ -486,6 +513,11 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
   // the quake rings: out along the ground, knocking him over if he's on it
   const rings = [];
   for (const q of f.rings) {
+    if (q.mine) {
+      // (his own, from a ground pound: ./brawl.js runs it)
+      rings.push(q);
+      continue;
+    }
     const was = q.r;
     q.r += KINDS.seismic.ring * dt;
     const d = Math.hypot(hero.p[0] - q.at[0], hero.p[2] - q.at[2]);

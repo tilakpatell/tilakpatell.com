@@ -26,7 +26,8 @@ import LoadingVeil from '../../worlds/LoadingVeil';
 import { useStage, useStageFrame } from '../../avengers/shared/runtime';
 import city from './module';
 import Cards from './Cards';
-import { applyOuts, hits, onFoeEvent, onHeroEvent, onQuestEvent, sfx } from './events';
+import { applyOuts, hits, onBrawlEvent, onFoeEvent, onHeroEvent, onQuestEvent, sfx } from './events';
+import { newBrawl, stepBrawl } from './brawl';
 import { drawMap, fitHud } from './hudCanvas';
 import { writeHud } from './hudFrame';
 import { bindKeys, pointerHandlers } from './input';
@@ -97,7 +98,7 @@ function World({ gl, setGl, thinkMark }) {
   if (!sim.current) {
     // (he's put on the lawn for now: where he really starts waits on the
     // world, which the scene makes, and nothing moves before it's there)
-    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null };
+    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null, brawl: newBrawl(), pound: false, dive: false, touchPunch: false, mouseDown: false };
   }
 
   // (`who`, for a line someone says: in their own voice where it's been made;
@@ -489,14 +490,14 @@ function World({ gl, setGl, thinkMark }) {
     const upKey = k.has('up') || s.touchUp || Boolean(pad?.a || pad?.rb);
     const downKey = k.has('down') || s.touchDown || Boolean(pad?.b || pad?.lb);
     const boost = k.has('boost') || s.touchBoost || Boolean(pad?.rt || (pad?.rtv ?? 0) > 0.4);
-    if (pressed('a')) s.jump = true;
+    if (pressed('a')) s.jump = s.dive = true;
     if (pressed('x')) s.punch = true;
     if (pressed('y')) act();
     if (pressed('start')) cycleTime();
     const look = [Math.sin(s.yaw) * Math.cos(s.pitch), Math.sin(s.pitch), Math.cos(s.yaw) * Math.cos(s.pitch)];
     // the jump through its press (./flight.js): a moment early or late still goes
     if (s.jump) s.press.press();
-    let input = { fwd, side, up: upKey ? 1 : 0, down: downKey ? 1 : 0, boost, run: boost, jump: s.jump, look, press: s.press, free: s.free };
+    let input = { fwd, side, up: upKey ? 1 : 0, down: downKey ? 1 : 0, boost, run: boost && !s.brawl.blocking, jump: s.jump, look, press: s.press, free: s.free };
     if (s.intro) {
       // the drop: straight down, flat out, the camera above him, until the ground stops him
       input = { fwd: 0, side: 0, up: 0, down: 1, boost: true, run: false, jump: false, look };
@@ -549,7 +550,7 @@ function World({ gl, setGl, thinkMark }) {
       // scene says where the traffic's cars are while a Mauler's about)
       let r = { foes: s.foes, ev: [], push: null, stun: 0 };
       for (let left = dt, first = true; left > 1e-6; left -= 0.05, first = false) {
-        const q = stepFoes(r.foes, h, { punch: first && s.punch, look, eveHit: first ? s.eveHit : null }, Math.min(0.05, left), { cars: s.cars ?? [], hangar: s.guard ?? null });
+        const q = stepFoes(r.foes, h, { punch: first && s.punch, look, eveHit: first ? s.eveHit : null, block: s.brawl.blocking }, Math.min(0.05, left), { cars: s.cars ?? [], hangar: s.guard ?? null });
         r = { foes: q.foes, ev: [...r.ev, ...q.ev], push: q.push ?? r.push, stun: Math.max(r.stun ?? 0, q.stun ?? 0) };
       }
       s.foes = r.foes;
@@ -565,6 +566,28 @@ function World({ gl, setGl, thinkMark }) {
       }
     }
     s.punch = false;
+    // the brawl (./brawl.js), after the villains' step: a hold, a hurl, a slam, a dive, a block, a pound
+    if (!inSpace) {
+      const landed = h.ev.find((e) => e.type === 'land' || e.type === 'slam' || e.type === 'impact') ?? null;
+      const punchHeld = k.has('punch') || s.touchPunch || s.mouseDown || Boolean(pad?.x);
+      const rb = stepBrawl(s.brawl, s.foes, s.h, { punchHeld, look, dive: s.dive && h.mode === 'air', block: boost && h.mode === 'ground', pound: s.pound, landed }, dt, { cars: s.cars ?? [] });
+      s.brawl = rb.b;
+      s.foes = rb.foes;
+      if (rb.push) {
+        const l = Math.hypot(...rb.push) || 1;
+        s.h = { ...s.h, mode: 'air', crouch: 0, v: rb.push, spd: l, dir: rb.push.map((c) => c / l) };
+      }
+      if (rb.cap != null) {
+        const l = Math.hypot(...s.h.v);
+        if (l > rb.cap) s.h = { ...s.h, v: s.h.v.map((c) => (c * rb.cap) / l), spd: rb.cap };
+      }
+      for (const e of rb.ev) {
+        s.events.push(e);
+        onBrawlEvent(e, { s, say });
+      }
+    }
+    s.pound = false;
+    s.dive = false;
     // a mission's wave (more of them every so often) and its car on the grid (./getaway.js)
     if (s.wave && s.wave.spawned < s.wave.of) {
       s.wave.t += dt;
@@ -684,12 +707,12 @@ function World({ gl, setGl, thinkMark }) {
   const hold = (key) => ({
     onPress: () => {
       startSound();
-      if (key === 'touchUp') sim.current.jump = true;
+      if (key === 'touchUp') sim.current.jump = sim.current.dive = true;
+      if (key === 'touchPunch') sim.current.punch = true;
       sim.current[key] = true;
     },
     onRelease: () => (sim.current[key] = false),
   });
-  const punch = () => (startSound(), (sim.current.punch = true));
 
   return (
     <div className="iw-stage" ref={stageBox} data-zone={zone} data-shutter={shutter ? '1' : undefined}>
@@ -712,7 +735,7 @@ function World({ gl, setGl, thinkMark }) {
       <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Over the city" />
       <MissionCard card={mcard} story={sim.current.story} onClose={closeCard} onAgain={() => startMission(mcard?.id)} onStart={startMission} onAbandon={abandon} />
 
-      <InvHud hud={hud} mapRef={mapRef} time={time} cycleTime={cycleTime} chip={chip} trav={trav} found={found} cards={CARDS.length} near={near} act={act} toast={toast} radio={radio} take={take} touch={touch} onStick={onStick} startSound={startSound} hold={hold} punch={punch} />
+      <InvHud hud={hud} mapRef={mapRef} time={time} cycleTime={cycleTime} chip={chip} trav={trav} found={found} cards={CARDS.length} near={near} act={act} toast={toast} radio={radio} take={take} touch={touch} onStick={onStick} startSound={startSound} hold={hold} />
       {shutter && <div className="iw-shutter" key={shutter} aria-hidden="true" onAnimationEnd={() => setShutter(null)} />}
 
     </div>
