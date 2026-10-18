@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIGHT, KINDS, PORTAL, brawlThings, foeAt, knock, newFoes, pickTarget, portalOpen, spawnFoes, spawnUpTo, startInvasion, stepFoes } from './foes';
+import { FIGHT, KINDS, PORTAL, brawlThings, foeAt, holding, knock, newFoes, pickTarget, portalOpen, spawnFoes, spawnUpTo, startInvasion, stepFoes } from './foes';
 import { groundAt } from './map';
 
 const hero = (p, v = [0, 0, 0]) => ({ p: [...p], v: [...v], mode: 'air' });
@@ -450,5 +450,18 @@ describe('what his brawl can reach', () => {
     expect(things.find((t) => t.id === 'car:3')).toMatchObject({ kind: 'car', grabbable: true, foe: false });
     expect(things.some((t) => t.id === 'car:4')).toBe(false); // (a Mauler's still holding that one)
     expect(brawlThings(newFoes())).toEqual([]);
+  });
+});
+
+describe('what he holds', () => {
+  it('is in his hands until it’s thrown, knocked out of them or gone', () => {
+    let f = spawnFoes(newFoes(), 'mauler', 1, [0, 0, 60]);
+    const h = { p: [0, groundAt(0, 63), 63], v: [0, 0, 0], mode: 'ground' };
+    f = stepFoes(f, h, { punch: false, look: [0, 0, -1], brawl: [{ kind: 'grab', target: 0 }] }, 1 / 30).foes;
+    expect(holding(f, 0)).toBe(true);
+    const out = stepFoes(f, h, { punch: false, look: [0, 0, -1], eveHit: 0 }, 1 / 30).foes;
+    expect(holding(out, 0)).toBe(false);
+    expect(holding(f, 'car:9')).toBe(false);
+    expect(holding({ ...f, cars: [{ id: 9, held: 'mark', p: [0, 0, 0], v: [0, 0, 0] }] }, 'car:9')).toBe(true);
   });
 });

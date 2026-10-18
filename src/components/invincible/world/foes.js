@@ -144,6 +144,10 @@ export function brawlThings(f) {
   for (const c of f.cars ?? []) if (c.held == null || c.held === 'mark') out.push({ id: `car:${c.id}`, kind: 'car', at: [...c.p], grabbable: true, foe: false });
   return out;
 }
+// whether what his brawl says he carries is still in his hands (not
+// knocked out of them, thrown or gone)
+export const holding = (f, target) =>
+  typeof target === 'string' ? f.cars.some((c) => `car:${c.id}` === target && c.held === 'mark') : f.foes.some((e) => e.id === target && e.state === 'held');
 // whether a kind is still standing
 export const anyOf = (f, kind) => Boolean(f.on && f.foes.some((e) => kindOf(e) === kind && live(e)));
 
