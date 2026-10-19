@@ -1,0 +1,141 @@
+/* global window, document */
+// The Rick and Morty adventure played in a browser: each scenario on a fresh
+// profile, driven through the dev hooks (window.__C137__: goto, act,
+// complete, ready; window.__RMSTORY__: get, feed, dialOpen, jump, reset), as
+// scripts/c137-shots.mjs drives C-137. With the dev server up (or a preview of
+// a DEV-hooked build):
+//
+//   node scripts/rm-story-check.mjs [scenario …]
+//
+// Prints `ok <scenario>` for each that passes; exits 1 naming the first that
+// fails (a step that didn't advance, a dial place opened out of turn, a toy
+// that ticked before it was played, an error on the page). BASE sets the
+// server (default http://127.0.0.1:5197), CHROME the browser, OUT a folder for
+// a shot of each scenario's end. Headless browsers draw in software, slowly:
+// the first world takes a while to build.
+import { chromium } from 'playwright-core';
+import { existsSync, mkdirSync } from 'node:fs';
+
+const BASE = process.env.BASE ?? 'http://127.0.0.1:5197';
+const OUT = process.env.OUT ?? null;
+const N = Math.PI / 2;
+
+const exe = [
+  process.env.CHROME,
+  '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+  'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+  'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
+  'C:/Program Files/Google/Chrome/Application/chrome.exe',
+].find((p) => p && existsSync(p));
+
+const check = (ok, what) => {
+  if (!ok) throw new Error(what);
+};
+const done = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('tp-c137-done') ?? '[]'));
+
+// C-137 loaded and its world built, Morty in the garage
+async function c137(page, hash = '#/c-137') {
+  await page.goto(`${BASE}/${hash}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__C137__?.goto || document.querySelector('.rm-world')?.dataset.mode === 'cards', null, { timeout: 600000, polling: 1000 });
+  check(await page.evaluate(() => Boolean(window.__C137__?.goto)), 'the 3D world didn’t start');
+  await page.evaluate(() => document.querySelector('.rm-world')?.scrollIntoView({ block: 'start' }));
+  await page.waitForFunction(() => window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
+}
+// Morty sent somewhere, as a door sends him, and stood till it's built
+async function goto(page, area, x, z, face = N) {
+  check(await page.evaluate(([a, x, z, f]) => window.__C137__.goto(a, x, z, f), [area, x, z, face]), `Morty wouldn’t go to ${area}`);
+  await page.waitForFunction(() => window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
+}
+// E at a hotspot, once he's by it
+async function use(page, id) {
+  await page.waitForFunction((id) => window.__C137__.sim.near?.id === id, id, { timeout: 20000, polling: 100 }).catch(async () => {
+    const at = await page.evaluate(() => ({ x: window.__C137__.sim.m.x, z: window.__C137__.sim.m.z, near: window.__C137__.sim.near?.id ?? null }));
+    throw new Error(`Morty isn’t by ${id} (he’s at ${at.x.toFixed(2)}, ${at.z.toFixed(2)}, by ${at.near})`);
+  });
+  await page.evaluate(() => window.__C137__.act());
+}
+const place = (page, id) => page.locator(`.rm-place[data-place="${id}"]`);
+
+const SCENARIOS = {
+  // C-137's toys tick their task when they're played, not when they open
+  async toys(page) {
+    await c137(page);
+    // cable: three channels watched
+    await goto(page, 'house', -298.1, -4.5, -N);
+    await use(page, 'cable');
+    await place(page, 'cable').waitFor({ timeout: 20000 });
+    check(!(await done(page)).includes('cable'), 'cable ticked when it opened');
+    const up = place(page, 'cable').locator('button[aria-label="Channel up"]');
+    for (let i = 0; i < 2; i++) await up.click();
+    check(!(await done(page)).includes('cable'), 'cable ticked before three channels');
+    await up.click();
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-c137-done') ?? '[]').includes('cable'), null, { timeout: 5000 }).catch(() => {
+      throw new Error('cable didn’t tick after three channels');
+    });
+    await page.keyboard.press('Escape');
+    await place(page, 'cable').waitFor({ state: 'detached', timeout: 10000 });
+    // the plumbus: to the end of its line
+    await goto(page, 'garage', -298.3, 98.6, 0);
+    await use(page, 'plumbus');
+    await place(page, 'plumbus').waitFor({ timeout: 20000 });
+    check(!(await done(page)).includes('plumbus'), 'the plumbus ticked when it opened');
+    const steps = place(page, 'plumbus').locator('.rm-pf-step');
+    await steps.nth(0).click();
+    check(!(await done(page)).includes('plumbus'), 'the plumbus ticked before its last step');
+    await steps.last().click();
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-c137-done') ?? '[]').includes('plumbus'), null, { timeout: 5000 }).catch(() => {
+      throw new Error('the plumbus didn’t tick at the end of its line');
+    });
+    await page.keyboard.press('Escape');
+    await place(page, 'plumbus').waitFor({ state: 'detached', timeout: 10000 });
+    // the butter robot: once the butter's passed
+    await goto(page, 'house', -302.6, -0.2, -N);
+    await use(page, 'butter');
+    await place(page, 'butter').waitFor({ timeout: 20000 });
+    check(!(await done(page)).includes('butter'), 'the butter robot ticked when it opened');
+    await place(page, 'butter').getByRole('button', { name: 'Switch it on' }).click();
+    await place(page, 'butter').getByRole('button', { name: 'Pass the butter' }).click();
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-c137-done') ?? '[]').includes('butter'), null, { timeout: 10000 }).catch(() => {
+      throw new Error('the butter robot didn’t tick once the butter was passed');
+    });
+  },
+};
+
+const only = process.argv.slice(2);
+for (const n of only) if (!SCENARIOS[n]) throw new Error(`no scenario ${n} (there are ${Object.keys(SCENARIOS).join(', ')})`);
+if (OUT) mkdirSync(OUT, { recursive: true });
+const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });
+let failed = null;
+for (const [name, run] of Object.entries(SCENARIOS)) {
+  if (only.length && !only.includes(name)) continue;
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  await ctx.addInitScript((seed) => {
+    // (only on the first load: a scenario that reloads keeps what it's done)
+    if (window.sessionStorage.getItem('rm-check')) return;
+    window.sessionStorage.setItem('rm-check', '1');
+    window.localStorage.setItem('tp-intro', '1');
+    window.localStorage.setItem('tp-start', '"home"');
+    window.localStorage.setItem('tp-worlds', '"load"');
+    window.localStorage.setItem('tp-software', '"on"');
+    for (const [k, v] of Object.entries(seed)) window.localStorage.setItem(k, JSON.stringify(v));
+  }, run.seed ?? {});
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  page.on('console', (m) => m.type() === 'error' && !m.text().startsWith('Failed to load resource') && errors.push(m.text()));
+  page.on('response', (r) => r.status() >= 400 && errors.push(`${r.status()} ${r.url()}`));
+  try {
+    await run(page);
+    check(!errors.length, `errors on the page: ${errors.slice(0, 3).join('; ')}`);
+    if (OUT) await page.screenshot({ path: `${OUT}/${name}.png` });
+    console.log(`ok ${name}`);
+  } catch (e) {
+    if (OUT) await page.screenshot({ path: `${OUT}/${name}-failed.png` }).catch(() => {});
+    console.log(`FAIL ${name}: ${e.message}`);
+    failed = name;
+  }
+  await ctx.close();
+  if (failed) break;
+}
+await browser.close();
+if (failed) process.exit(1);

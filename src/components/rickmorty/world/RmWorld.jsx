@@ -134,7 +134,7 @@ const startDone = () => {
 };
 const CANT_LAND = 'Can’t land here. Slow right down over open ground, clear of the doors: the road or a front lawn.';
 
-// what opens over the page, and the task opening it ticks off
+// what opens over the page, and the task playing it ticks off (each toy's onUsed)
 const PLACES = {
   cable: { title: 'Interdimensional cable', where: 'The Smiths’ living room', task: 'cable' },
   butter: { title: 'The butter robot', where: 'The breakfast table', task: 'butter' },
@@ -356,9 +356,8 @@ export default function RmWorld({ start = null, onLeave = null }) {
       audioContext();
       openRef.current = id;
       setOpen(id);
-      if (PLACES[id].task) complete(PLACES[id].task);
     },
-    [complete],
+    [],
   );
   const close = useCallback(() => {
     openRef.current = null;
@@ -410,7 +409,7 @@ export default function RmWorld({ start = null, onLeave = null }) {
       ) : (
         <Cards done={done} openPlace={openPlace} three={three} gl={gl} toast={toast} retry={() => setGl('loading')} planet={planet} />
       )}
-      {open && <Place id={open} onClose={close} onQuiz={quizDone} onRoy={royLeft} onSewer={sewerLeft} />}
+      {open && <Place id={open} onClose={close} onQuiz={quizDone} onRoy={royLeft} onSewer={sewerLeft} onTask={complete} />}
     </section>
   );
 }
@@ -1985,8 +1984,9 @@ function RoyDown({ onLeave }) {
 // ── what opens over the page ──
 // Its component, and the way back to the room (Esc, the button, or B on a
 // controller). Roy fills the screen and has its own way out.
-function Place({ id, onClose, onQuiz, onRoy, onSewer }) {
+function Place({ id, onClose, onQuiz, onRoy, onSewer, onTask }) {
   const p = PLACES[id];
+  const used = () => p.task && onTask(p.task);
   const back = useRef(null);
   const shell = useRef(null);
   // where the focus was before this opened (read while rendering, before the toy takes it)
@@ -2021,11 +2021,11 @@ function Place({ id, onClose, onQuiz, onRoy, onSewer }) {
     };
   }, [id, p.full, onClose]);
   const body = {
-    cable: <Cable />,
-    butter: <ButterRobot />,
-    meeseeks: <MeeseeksBox />,
-    plumbus: <PlumbusFactory />,
-    portalpanic: <PortalPanic />,
+    cable: <Cable onUsed={used} />,
+    butter: <ButterRobot onUsed={used} />,
+    meeseeks: <MeeseeksBox onUsed={used} />,
+    plumbus: <PlumbusFactory onUsed={used} />,
+    portalpanic: <PortalPanic onUsed={used} />,
     quiz: <Quiz onDone={onQuiz} />,
     // (behind the site's 3D gate, as Portal panic is, with a way back from its cards)
     roy: (
