@@ -28,6 +28,7 @@ import Wardrobe from '../wardrobe/Wardrobe';
 import { useLooks } from '../wardrobe/useLooks';
 import './citadel.css';
 import RmEarnNote from '../RmEarnNote';
+import { useAdventure } from '../adventure/useAdventure';
 import { useRmEarn } from '../useRmEarn';
 import { seedsOf } from '../earn';
 import GuideCue from '../../guide/GuideCue';
@@ -104,12 +105,21 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137' }) 
     return citadelProgress(Array.isArray(d) ? d : []).done;
   });
   const prog = citadelProgress(done);
+  const doneRef = useRef(done);
+  doneRef.current = done;
   const [gl, setGl] = useState('loading'); // loading | on | failed | lost
   const { unlock } = useAchievements();
   // (a quest done pays into the one wallet, once: useRmEarn's ledger knows what the save had)
   const { earn, note: earned } = useRmEarn(() => seedsOf('citadel', done));
+  // the Rick and Morty adventure (../adventure/) told it's here, and each step
+  // the Citadel takes (outside the updater, which React may run twice)
+  const { feed } = useAdventure();
+  useEffect(() => {
+    feed({ type: 'enter', area: 'page:/c-137/citadel' });
+  }, [feed]);
   const complete = useCallback(
     (id) => {
+      const taken = !doneRef.current.includes(id) && citadelProgress([...doneRef.current, id]).done.includes(id);
       setDone((d) => {
         if (d.includes(id)) return d;
         const next = citadelProgress([...d, id]).done;
@@ -118,8 +128,9 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137' }) 
       });
       earn('citadel', id);
       if (SEAL[id]) unlock(SEAL[id]);
+      if (taken) feed({ type: 'citadel', id });
     },
-    [unlock, earn],
+    [unlock, earn, feed],
   );
   const world = three.on && gl !== 'failed' && gl !== 'lost';
   return (
