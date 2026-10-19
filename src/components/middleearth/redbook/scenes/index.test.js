@@ -34,7 +34,9 @@ describe('the pop-ups', () => {
       for (const x of pieces) {
         expect(Math.abs(x.at[0]), `${page.id}: ${x.id}`).toBeLessThanOrEqual(0.24);
         expect(Math.abs(x.at[1]), `${page.id}: ${x.id}`).toBeLessThanOrEqual(0.165);
-        expect(['card', 'glow'].includes(x.kind), `${page.id}: ${x.id}`).toBe(true);
+        expect(['card', 'flat', 'glow'].includes(x.kind), `${page.id}: ${x.id}`).toBe(true);
+        if (x.kind === 'flat') expect(Math.abs(x.at[0]) + x.w / 2, `${page.id}: ${x.id} across`).toBeLessThanOrEqual(0.24);
+        if (x.kind !== 'glow') expect(typeof x.art?.draw, `${page.id}: ${x.id} art`).toBe('function');
         for (const d of x.does ?? []) {
           expect(ACTS.has(d.act), `${page.id}: ${x.id} ${d.act}`).toBe(true);
           for (const t of d.target ?? []) expect(pieces.some((y) => y.id === t), `${page.id}: ${x.id} → ${t}`).toBe(true);
