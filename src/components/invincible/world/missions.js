@@ -86,8 +86,10 @@ const EVE_GATES = [
   [-200, 60, 200],
   [-360, 50, -40],
 ];
-// Dad's four points for the talk, in the order he leads them
-const DAD_POINTS = [PLACES.downtown.p, PLACES.river.p, [-2610, 90, -418], [-2050.2, 40, 264]];
+// Dad's four points for the talk, in the order he leads them: over downtown where he
+// watches from, then over the river and the school above the skyline (the tallest tower
+// is 360 m: he flies over the city, not through it, and Mark can keep with him), then home
+const DAD_POINTS = [PLACES.downtown.p, [1150, 380, -420], [-2610, 380, -418], [-2050.2, 40, 264]];
 // the photo spots: where to hover (a 20 m sphere), and the way to face
 const PHOTOS = [
   { id: 'photo1', name: 'The Guardians’ hall from the plaza', p: [24, 3, 27], face: -2.4 },
