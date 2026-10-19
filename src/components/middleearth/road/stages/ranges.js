@@ -60,6 +60,9 @@ export const RANGES = {
     { az: 10, width: 170, dist: 3200, height: 800, colour: MISTY, snow: 0.5, jag: 0.9, seed: 16 },
     { az: 120, width: 70, dist: 1900, height: 420, colour: GREY, snow: 0.8, jag: 0.7, seed: 17 },
     { az: 190, width: 110, dist: 2600, height: 260, colour: GREY, jag: 0.45, seed: 18 },
+    // (the gorge’s walls: the far side of the valley close across it on the right, and behind)
+    { az: -70, width: 80, dist: 820, height: 270, colour: GREY, jag: 0.8, seed: 46 },
+    { az: 165, width: 60, dist: 900, height: 250, colour: GREY, jag: 0.75, seed: 47 },
   ],
   // the Redhorn: Caradhras ahead, Celebdil and Fanuidhol either side, snow on everything
   caradhras: [
