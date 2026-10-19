@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { RiCloseLine, RiFullscreenExitLine, RiStackLine } from 'react-icons/ri';
 import { systemLabel } from './warText';
 import HoloSide from './HoloSide';
+import HoloStage from './HoloStage';
 import MapSvg, { Axes } from './MapSvg';
 import WarLegend from './WarLegend';
 import WarStrip from './WarStrip';
@@ -98,6 +99,7 @@ const TAU = Math.PI * 2;
 const HOVER_GAP = 14; // (the hover card's distance from its dot, screen px: galaxy.css's)
 const TAG_GUESS = { w: 130, h: 24 }; // (the course tag's size on screen before it's been measured)
 const SEEN_KEY = 'tp-gcw-seen';
+const VIEW_KEY = 'tp-galaxy-map-view'; // ('flat' for the 2D map, in this browser)
 // (screen px a grid square must have for a charted world's name to be shown where it has room, and a landmark's: the whole
 // galaxy names the films' and the shows' worlds alone, its charted worlds faint dots; zoomed in, they're named too)
 const CHARTED_NAMES_AT = 44;
@@ -179,8 +181,13 @@ function paintGalaxy(canvas, zoom = 1) {
   g.globalCompositeOperation = 'source-over';
 }
 
-export default function HoloMap({ current, online, onJump, onClose, onLeave, oath = NO_OATH, oaths = NO_OATHS, suggested = null, onSwear, onTheatre, onCourse, course = null }) {
+export default function HoloMap({ holo = null, current, online, onJump, onClose, onLeave, oath = NO_OATH, oaths = NO_OATHS, suggested = null, onSwear, onTheatre, onCourse, course = null }) {
   const here = systemById(current);
+  // in 3D (HoloStage.jsx, drawn by the galaxy's scene), unless this browser asked for the flat map or there's no scene
+  const [flat, setFlat] = useState(() => local.get(VIEW_KEY) === 'flat');
+  const three = Boolean(holo) && !flat;
+  const setView2d = (on) => (local.set(VIEW_KEY, on ? 'flat' : '3d'), setFlat(on));
+  const stage = useRef(null);
   // the course the page keeps (it stays when the map closes) is the pick when the map opens, unless it's where you are
   const [pick, setPick] = useState(() => seedPick(course, current, SYSTEMS));
   const [era, setEra] = useState('all');
@@ -413,6 +420,16 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
   }, [mv.view, boxPx, war, current, pick, pilots, sized, blocks, mid, tagPx, layers.regions]);
 
   const lit = (s) => (film ? s.films.includes(film) : era === 'all' || erasOf(s).includes(era));
+  // the holotable: open while the map's up in 3D, and told what it shows
+  useEffect(() => {
+    if (!three) return undefined;
+    holo.setOpen(true);
+    return () => holo.setOpen(false);
+  }, [three, holo]);
+  const litSet = useMemo(() => (film || era !== 'all' ? new Set(SYSTEMS.filter((s) => (film ? s.films.includes(film) : erasOf(s).includes(era))).map((s) => s.id)) : null), [film, era]);
+  useEffect(() => {
+    if (three) holo.set({ war, current, pick, hover, lit: litSet, mine: viewOath.side, layers });
+  }, [three, holo, war, current, pick, hover, litSet, viewOath.side, layers]);
   // plot a course to a system (the war card's picks too); with an end of it
   // off the view, zoom to show all of it
   // (reads the view from a ref, so it's the same function through the pans and the zooms: the side panel is a memo it's handed to)
@@ -425,9 +442,10 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
     (id) => {
       setPick(id);
       const s = systemById(id);
-      if (s && here && (!onView(viewNow.current, s.pos) || !onView(viewNow.current, here.pos))) frame([s.pos, here.pos]);
+      if (s && three) stage.current?.frame(here ? [s.pos, here.pos] : [s.pos], { ifOff: true });
+      else if (s && here && (!onView(viewNow.current, s.pos) || !onView(viewNow.current, here.pos))) frame([s.pos, here.pos]);
     },
-    [here, frame],
+    [here, frame, three],
   );
   const back = useCallback(() => setPick(null), []);
   // Tab to a system that's off the view brings it into view, at the zoom the map has (a click on one never does: it's already there)
@@ -465,7 +483,7 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
     setQ('');
     setListOpen(false);
     setPick(s.id);
-    mv.frame(here ? [s.pos, here.pos] : [s.pos]);
+    (three ? stage.current : mv)?.frame(here ? [s.pos, here.pos] : [s.pos]);
     setTimeout(() => jumpBtn.current?.focus(), 0);
   };
 
@@ -501,9 +519,9 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
     else if (act === 'find') (find.current?.focus(), find.current?.select());
     else if (act === 'jump') {
       if (!e.repeat) onJump(picked.id);
-    } else if (act === 'zoomIn') mv.zoomIn();
-    else if (act === 'zoomOut') mv.zoomOut();
-    else mv.fit();
+    } else if (act === 'zoomIn') (three ? stage.current : mv)?.zoomIn();
+    else if (act === 'zoomOut') (three ? stage.current : mv)?.zoomOut();
+    else (three ? stage.current : mv)?.fit();
   };
   // (one listener for the map's life, calling the handler of the latest render: what's open is read there)
   const onKeyNow = useRef(onKey);
@@ -535,7 +553,8 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
   }, [hovered, mv.view, boxPx]);
 
   return createPortal(
-    <div ref={root} className="holomap dark-scope" role="dialog" aria-modal="true" aria-labelledby="holomap-title" style={{ '--btn-bg': picked?.accent ?? '#7fd6ff', '--btn-ink': '#03040a', '--accent': picked?.accent ?? '#7fd6ff', '--accent-text': picked?.accent ?? '#7fd6ff' }}>
+    <div ref={root} className="holomap dark-scope" data-3d={three || undefined} role="dialog" aria-modal="true" aria-labelledby="holomap-title" style={{ '--btn-bg': picked?.accent ?? '#7fd6ff', '--btn-ink': '#03040a', '--accent': picked?.accent ?? '#7fd6ff', '--accent-text': picked?.accent ?? '#7fd6ff' }}>
+      {three && <HoloStage holo={holo} stage={stage} war={war} current={current} pick={pick} hover={hover} onHover={setHover} onChoose={choose} lit={lit} pilots={pilots} fought={fought} now={now} />}
       <div className="holomap-frame">
         <header className="holomap-head">
           <div>
@@ -622,7 +641,7 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
         </div>
 
         <div className="holomap-body">
-          <div ref={box} className="holomap-map" data-zoomed={mv.view.k > 1.01 || undefined} data-fronts={layers.fronts || undefined} {...mv.handlers}>
+          <div ref={box} className="holomap-map" data-zoomed={mv.view.k > 1.01 || undefined} data-fronts={layers.fronts || undefined} {...(three ? {} : mv.handlers)}>
             {/* the war at a glance, and its key (they stay put while the map moves) */}
             <WarStrip table={war} fighting={oath.war} />
             <WarLegend war={view} open={keyOpen} onToggle={setKeyOpen} />
@@ -636,88 +655,99 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
                     {LAYER_LABEL[id]}
                   </button>
                 ))}
+                {/* the map in 3D (HoloStage.jsx) or flat, kept in this browser */}
+                {holo && (
+                  <button type="button" className="holo-flat" aria-pressed={three} onClick={() => setView2d(three)}>
+                    3D map
+                  </button>
+                )}
               </div>
             </div>
-            {/* everything that moves with the map: zoomed and panned as one (galaxy.css) */}
-            <div className="holomap-stage" style={{ '--holomap-k': mv.view.k, '--holomap-vx': mv.view.x, '--holomap-vy': mv.view.y }}>
-              <canvas ref={canvas} className="holomap-canvas" aria-hidden="true" />
-              <MapSvg layers={layers} war={war} ops={ops} route={route} unitPx={unitPx} />
-              {layers.fronts && <Fleets ops={ops} />}
-              {/* the grid's letters and numbers */}
-              {layers.grid && <Axes />}
-              {/* the landmarks' names, with the regions (their clouds and black holes are MapSvg's), each where it has room */}
-              {layers.regions && (
-                <ul className="holomap-systems holomap-landmarks" aria-hidden="true">
-                  {LANDMARKS.map((l) => {
-                    const place = places[`lm:${l.id}`];
-                    return (
-                      <li key={l.id} style={stageAt(l.pos)} data-quiet={!place || undefined} data-place={sideOf(place) ?? undefined} data-hang={hangOf(place)}>
-                        <span className="holomap-landmark">
-                          <span className="holomap-name" data-mark={l.id}>
-                            {l.name}
+            {/* everything that moves with the map: zoomed and panned as one (galaxy.css); in 3D, HoloStage.jsx's */}
+            {!three && (
+              <>
+                <div className="holomap-stage" style={{ '--holomap-k': mv.view.k, '--holomap-vx': mv.view.x, '--holomap-vy': mv.view.y }}>
+                  <canvas ref={canvas} className="holomap-canvas" aria-hidden="true" />
+                  <MapSvg layers={layers} war={war} ops={ops} route={route} unitPx={unitPx} />
+                  {layers.fronts && <Fleets ops={ops} />}
+                  {/* the grid's letters and numbers */}
+                  {layers.grid && <Axes />}
+                  {/* the landmarks' names, with the regions (their clouds and black holes are MapSvg's), each where it has room */}
+                  {layers.regions && (
+                    <ul className="holomap-systems holomap-landmarks" aria-hidden="true">
+                      {LANDMARKS.map((l) => {
+                        const place = places[`lm:${l.id}`];
+                        return (
+                          <li key={l.id} style={stageAt(l.pos)} data-quiet={!place || undefined} data-place={sideOf(place) ?? undefined} data-hang={hangOf(place)}>
+                            <span className="holomap-landmark">
+                              <span className="holomap-name" data-mark={l.id}>
+                                {l.name}
+                              </span>
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  {/* the systems */}
+                  <ul className="holomap-systems" aria-label="Star systems">
+                    {SYSTEMS.map((s) => {
+                      const row = war.byId[s.id];
+                      // (fought over: a front still to liberate, or an attack; the ring's the attacker's share and the holder's)
+                      const by = row?.attack ? row.attack.by : row?.front && row.owner !== w.liberator ? w.liberator : null;
+                      const ring = row ? { '--held': SIDES[row.owner].colour, ...(by && { '--by': SIDES[by].colour, '--take': 1 - row.control }) } : {};
+                      const you = row && fought.has(s.id);
+                      return (
+                      <li key={s.id} style={{ ...stageAt(s.pos), '--c': s.accent, ...ring }} data-dim={!lit(s) || undefined} data-charted={s.charted || undefined} data-game={gameOnly(s) || undefined} data-quiet={places[s.id] === null || undefined} data-place={sideOf(places[s.id]) ?? undefined} data-hang={hangOf(places[s.id])} data-badge={row ? badges[s.id] : undefined} data-held={row?.owner} data-front={(by && !row.attack) || undefined} data-attack={row?.attack ? '' : undefined} data-major={row?.major || undefined} data-decisive={row?.decisive || undefined} data-cut={row?.cut || undefined} data-fought={you || undefined}>
+                        <button type="button" className="holomap-system" aria-pressed={pick === s.id} aria-current={s.id === current ? 'location' : undefined} onFocus={(e) => reveal(s, e)} onPointerEnter={(e) => e.pointerType === 'mouse' && setHover(s.id)} onPointerLeave={() => setHover(null)} onClick={() => choose(s.id)} aria-label={row ? systemLabel(row, now, you) : s.charted ? s.name : undefined}>
+                          <span className="holomap-dot" aria-hidden="true" {...discOf(s.id)}>
+                            {you && <i className="holomap-you" />}
                           </span>
-                        </span>
+                          <span className="holomap-name" data-id={s.id}>
+                            {s.id === current && (
+                              <b className="holomap-youtag" aria-hidden="true">
+                                YOU
+                              </b>
+                            )}
+                            {s.name}
+                            {row?.major && <b className="holomap-star" aria-hidden="true">★</b>}
+                            {row?.battle?.fighting && <b className="holomap-fight" aria-hidden="true">⚔</b>}
+                            {pilots[s.id] > 0 && (
+                              <span className="holomap-pilots" title={`${pilots[s.id]} online`}>
+                                {pilots[s.id]}
+                              </span>
+                            )}
+                          </span>
+                        </button>
                       </li>
-                    );
-                  })}
-                </ul>
-              )}
-              {/* the systems */}
-              <ul className="holomap-systems" aria-label="Star systems">
-                {SYSTEMS.map((s) => {
-                  const row = war.byId[s.id];
-                  // (fought over: a front still to liberate, or an attack; the ring's the attacker's share and the holder's)
-                  const by = row?.attack ? row.attack.by : row?.front && row.owner !== w.liberator ? w.liberator : null;
-                  const ring = row ? { '--held': SIDES[row.owner].colour, ...(by && { '--by': SIDES[by].colour, '--take': 1 - row.control }) } : {};
-                  const you = row && fought.has(s.id);
-                  return (
-                  <li key={s.id} style={{ ...stageAt(s.pos), '--c': s.accent, ...ring }} data-dim={!lit(s) || undefined} data-charted={s.charted || undefined} data-game={gameOnly(s) || undefined} data-quiet={places[s.id] === null || undefined} data-place={sideOf(places[s.id]) ?? undefined} data-hang={hangOf(places[s.id])} data-badge={row ? badges[s.id] : undefined} data-held={row?.owner} data-front={(by && !row.attack) || undefined} data-attack={row?.attack ? '' : undefined} data-major={row?.major || undefined} data-decisive={row?.decisive || undefined} data-cut={row?.cut || undefined} data-fought={you || undefined}>
-                    <button type="button" className="holomap-system" aria-pressed={pick === s.id} aria-current={s.id === current ? 'location' : undefined} onFocus={(e) => reveal(s, e)} onPointerEnter={(e) => e.pointerType === 'mouse' && setHover(s.id)} onPointerLeave={() => setHover(null)} onClick={() => choose(s.id)} aria-label={row ? systemLabel(row, now, you) : s.charted ? s.name : undefined}>
-                      <span className="holomap-dot" aria-hidden="true" {...discOf(s.id)}>
-                        {you && <i className="holomap-you" />}
-                      </span>
-                      <span className="holomap-name" data-id={s.id}>
-                        {s.id === current && (
-                          <b className="holomap-youtag" aria-hidden="true">
-                            YOU
-                          </b>
-                        )}
-                        {s.name}
-                        {row?.major && <b className="holomap-star" aria-hidden="true">★</b>}
-                        {row?.battle?.fighting && <b className="holomap-fight" aria-hidden="true">⚔</b>}
-                        {pilots[s.id] > 0 && (
-                          <span className="holomap-pilots" title={`${pilots[s.id]} online`}>
-                            {pilots[s.id]}
-                          </span>
-                        )}
-                      </span>
-                    </button>
-                  </li>
-                  );
-                })}
-              </ul>
-              {/* the course's own tag, at its middle, and the card of the system the mouse is over (both keep their size, and never take a press) */}
-              {route && (
-                <span ref={tag} className="holomap-course-tag" style={stageAt(mid)}>
-                  {lightYears(here, picked).toLocaleString('en-US')} ly · {jumpTime(route).toFixed(1)} s
-                </span>
-              )}
-              {hovered && hovered.id !== pick && (
-                <span ref={card} className="holomap-hover" data-flip={flip || undefined} style={{ ...stageAt(hovered.pos), '--c': hovered.accent }}>
-                  <b>{hovered.name}</b>
-                  <span>{[hoveredRow && SIDES[hoveredRow.owner].short, hoveredRow?.battle?.fighting && 'Battle on'].filter(Boolean).join(' · ')}</span>
-                  <span>{hovered.id === current ? 'You are here' : `${lightYears(here, hovered).toLocaleString('en-US')} ly`}</span>
-                </span>
-              )}
-            </div>
+                      );
+                    })}
+                  </ul>
+                  {/* the course's own tag, at its middle, and the card of the system the mouse is over (both keep their size, and never take a press) */}
+                  {route && (
+                    <span ref={tag} className="holomap-course-tag" style={stageAt(mid)}>
+                      {lightYears(here, picked).toLocaleString('en-US')} ly · {jumpTime(route).toFixed(1)} s
+                    </span>
+                  )}
+                  {hovered && hovered.id !== pick && (
+                    <span ref={card} className="holomap-hover" data-flip={flip || undefined} style={{ ...stageAt(hovered.pos), '--c': hovered.accent }}>
+                      <b>{hovered.name}</b>
+                      <span>{[hoveredRow && SIDES[hoveredRow.owner].short, hoveredRow?.battle?.fighting && 'Battle on'].filter(Boolean).join(' · ')}</span>
+                      <span>{hovered.id === current ? 'You are here' : `${lightYears(here, hovered).toLocaleString('en-US')} ly`}</span>
+                    </span>
+                  )}
+                </div>
+              </>
+            )}
+            {/* the zoom, on either map (the 3D one's camera through the stage's handle) */}
             <div className="holomap-zoom" role="group" aria-label="Zoom">
-              <button type="button" onClick={mv.zoomIn} aria-label="Zoom in" title="Zoom in (+)">
+              <button type="button" onClick={three ? () => stage.current?.zoomIn() : mv.zoomIn} aria-label="Zoom in" title="Zoom in (+)">
                 +
               </button>
-              <button type="button" onClick={mv.zoomOut} aria-label="Zoom out" title="Zoom out (−)">
+              <button type="button" onClick={three ? () => stage.current?.zoomOut() : mv.zoomOut} aria-label="Zoom out" title="Zoom out (−)">
                 −
               </button>
-              <button type="button" onClick={mv.fit} aria-label="Show the whole galaxy" title="The whole galaxy (0)" aria-disabled={mv.view.k <= 1.01 || undefined}>
+              <button type="button" onClick={three ? () => stage.current?.fit() : mv.fit} aria-label="Show the whole galaxy" title="The whole galaxy (0)" aria-disabled={(!three && mv.view.k <= 1.01) || undefined}>
                 <RiFullscreenExitLine aria-hidden="true" />
               </button>
             </div>

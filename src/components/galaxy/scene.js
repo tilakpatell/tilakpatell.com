@@ -81,6 +81,7 @@ import { gltfStats } from '../../lib/three/gltfCache';
 import { STEPS } from '../../lib/three/pace';
 import { FOV } from '../universe/flight';
 import { createPost } from '../universe/post';
+import { createHoloDriver } from './holo/drive';
 import { GLOW, glowAt } from '../universe/battleFx';
 import { bloomGroups } from '../../lib/three/bloom';
 import { LOOK } from './look';
@@ -253,6 +254,8 @@ export async function create(canvas, ctx) {
   const small = tier !== 'high' || Math.min(window.innerWidth, window.innerHeight) < 600;
   const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
   const post = createPost(renderer, scene, camera, { small, bloom: LOOK.bloom });
+  // the map in 3D, drawn in the flight's place while it's open (./holo/drive.js)
+  const holo = createHoloDriver({ post, small, reduced, invalidate: () => ctx.invalidate() });
   // (the house look, below, on whatever's warmed: patched before it's compiled)
   let house = null;
   const warm = (root, cam = camera, target = scene) => {
@@ -2298,6 +2301,9 @@ export async function create(canvas, ctx) {
       if (lastNow) longest = Math.max(longest, now - lastNow);
       lastNow = now;
     }
+    // (the map open in 3D: the holotable's drawn instead, and the flight waits)
+    const held = holo.frame(ms, now, props.holo, size);
+    if (held !== null) return held;
     // what's sized in screen pixels follows the ratio the scene is drawn at
     // (the runtime's quality softens it: ./drawnAt.js), and the planets'
     // detail follows the sharpness
@@ -3005,6 +3011,7 @@ export async function create(canvas, ctx) {
       return true;
     },
     dispose() {
+      holo.dispose();
       disposed = true;
       engine?.stop();
       dropCab();
