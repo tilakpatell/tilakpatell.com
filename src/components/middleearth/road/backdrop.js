@@ -155,7 +155,11 @@ export function createBackdrop({ road = null, tier = 'high' } = {}) {
   const h = attribute('aHaze', 'float');
   material.colorNode = vec3(1).mul(h.oneMinus());
   material.emissiveNode = uHaze.mul(h);
-  const mesh = new THREE.Mesh(new THREE.BufferGeometry(), material);
+  // (until a stage is set, a geometry with every attribute the material reads, drawn by nothing)
+  const none = new THREE.BufferGeometry();
+  for (const [name, n] of [['position', 3], ['normal', 3], ['color', 3], ['aHaze', 1]]) none.setAttribute(name, new THREE.BufferAttribute(new Float32Array(n * 3), n));
+  const mesh = new THREE.Mesh(none, material);
+  mesh.visible = false;
   mesh.name = 'road:mountains';
   mesh.frustumCulled = false;
   mesh.renderOrder = -0.5;
@@ -180,6 +184,7 @@ export function createBackdrop({ road = null, tier = 'high' } = {}) {
     },
     dispose() {
       for (const g of made.values()) g?.dispose();
+      none.dispose();
       made.clear();
       material.dispose();
       mesh.removeFromParent();
