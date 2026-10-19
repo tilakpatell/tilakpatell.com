@@ -67,7 +67,7 @@ const TABLE = {
   ithilien: [L({ el: 0.5, colour: WARM, ambient: 0.38, fog: [0.72, 0.8, 0.72], density: 0.003 }), { el: 0.1, ambient: 0.1, fog: [0.2, 0.18, 0.2], density: 0.006, pall: 0.8 }],
   'cirith-ungol': [L({ el: -0.2, colour: RED, ambient: 0.06, fog: [0.08, 0.07, 0.08], density: 0.008, pall: 0.8 }), { el: -0.1, ambient: 0.08, fog: [0.2, 0.08, 0.05], density: 0.006, pall: 0.85 }],
   // (the eye opened: under the pall the ash and the hobbits on it went black at 1)
-  gorgoroth: [L({ el: 0.1, colour: RED, ambient: 0.12, fog: [0.3, 0.1, 0.05], density: 0.008, pall: 0.9, exposure: 1.5 }), { el: 0.2, ambient: 0.2, fog: [0.4, 0.3, 0.28], density: 0.006, pall: 0.5, exposure: 1.3 }],
+  gorgoroth: [L({ el: 0.1, colour: RED, ambient: 0.12, fog: [0.3, 0.1, 0.05], density: 0.008, pall: 0.9, exposure: 1.65 }), { el: 0.2, ambient: 0.2, fog: [0.4, 0.3, 0.28], density: 0.006, pall: 0.5, exposure: 1.35 }],
   'minas-tirith': [L({ el: 1.0, colour: WHITE, ambient: 0.45, fog: [0.8, 0.86, 0.92], density: 0.0015 }), { el: 0.9, ambient: 0.45, fog: [0.8, 0.86, 0.92], density: 0.0015 }],
   havens: [L({ el: 0.08, az: Math.PI, colour: GOLD, ambient: 0.3, fog: [0.9, 0.75, 0.6], density: 0.002 }), { el: -0.02, az: Math.PI, colour: RED, ambient: 0.22, fog: [0.85, 0.6, 0.5], density: 0.002 }],
 };

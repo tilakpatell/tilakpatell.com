@@ -45,7 +45,8 @@ export const SOILS = {
   // Cirith Ungol: the stair in black rock
   'cirith-ungol': { greens: [0x282422, 0x332e2a, 0x403832], dirt: 0x3a322c, rock: 0x2a2624, scans: { grass: 'rock', road: 'rock', steep: 'rock' }, blades: 0, glow: 0x3a1a10 },
   // Gorgoroth: ash and cinders under the pall
-  gorgoroth: { greens: [0x2a2422, 0x3a302a, 0x4a3e34], dirt: 0x4a3e34, rock: 0x2a2624, scans: { grass: 'ash', road: 'ash', steep: 'redrock' }, blades: 0, glow: 0x6a2610 },
+  // (the ash a little lighter than black, so its grain shows by the fires’ light)
+  gorgoroth: { greens: [0x3a3230, 0x4c4038, 0x5e4e42], dirt: 0x5a4a3e, rock: 0x2e2a28, scans: { grass: 'ash', road: 'ash', steep: 'redrock' }, blades: 0, glow: 0x8a3414 },
   // the Pelennor: green fields to the white walls, the road paved
   'minas-tirith': { greens: [0x48702e, 0x688a3c, 0x98a44c], dirt: 0xb8aa88, rock: 0xc4beb0, scans: { grass: 'grass', road: 'stone', steep: 'rock' }, blades: 0.8, blade: 0.4 },
   // the Grey Havens: dune grass to the sand
