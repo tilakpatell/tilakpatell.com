@@ -26,6 +26,7 @@ import { light as lightAt } from './daylight';
 import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
 import { createLands } from './lands';
+import { createBackdrop } from './backdrop';
 import { createScatter } from './scatter';
 import { createWeather } from './weather';
 import { createAmbience } from './ambience';
@@ -83,7 +84,8 @@ export default {
   label: 'The Road through Middle-earth',
   create(rt, props = {}) {
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 3000);
+    // (out to 4.5 km: the far mountains on the horizon, backdrop.js)
+    const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 4500);
     scene.fog = new THREE.FogExp2(0xc0c8d0, 0.004);
     const tier = rt.quality?.tier ?? 'high';
     // the house's look on the ground (and, with the post chain, on the rest);
@@ -104,6 +106,9 @@ export default {
     // one wind for the Road’s grass (lib/three/windNodes)
     const wind = createWind({ strength: 0.5 });
     const lands = createLands({ scene, house, tier, scatter, sky, wind });
+    // the mountains on each stage’s horizon (stages/ranges.js)
+    const mountains = createBackdrop({ road, tier });
+    scene.add(mountains.mesh);
     // rain, snow, ash, fire: a kind a draw, asked for by the stages and their beats
     // the chain: the house’s bloom on every tier, the grade (the Ring’s, hooks.js) from high
     const passes = chainFor(tier, rt.gfx.backend, { scene, camera, grade: (tex) => gradeNode(tex, road.uVision) });
@@ -208,6 +213,7 @@ export default {
       const l = lightAt(STAGES, clock.s);
       daylight = l;
       sky.set(l);
+      mountains.set(l);
       weather.light(l);
       const { az, el, colour } = l.sun;
       sunDir.set(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
@@ -228,6 +234,7 @@ export default {
     const frame = (dt = 0) => {
       const here = lineAt(STAGES, clock.s);
       lands.at(here.index);
+      mountains.at(here.stage);
       const line = company();
       const mode = modeAt(stageById(here.stage), here.local);
       // the one you follow (Frodo while he walks with you) at the back of the
@@ -384,6 +391,7 @@ export default {
         windTime.value += dt;
         wind.update(dt);
         lands.follow(camera);
+        mountains.update(camera);
         scatter.update(camera, dt);
       },
       draw(f) {
@@ -445,6 +453,7 @@ export default {
         rt.input?.unbind?.();
         lands.dispose();
         wind.dispose();
+        mountains.dispose();
         scatter.dispose();
         for (const k of kits.values()) k.dispose();
         sky.dispose();
