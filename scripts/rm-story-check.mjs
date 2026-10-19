@@ -1,7 +1,11 @@
 /* global window, document */
 // The Rick and Morty adventure played in a browser: each scenario on a fresh
 // profile, driven through the dev hooks (window.__C137__: goto, act,
-// complete, ready; window.__RMSTORY__: get, feed, dialOpen, jump, reset), as
+// complete, ready, dial, sim, warp (Morty moved within a place, which keeps
+// its game going, where goto starts the place afresh), api (a place's own
+// actions: the Microverse's power, setPower), and Total Rickall's rickall,
+// lookAt, shoot, stopRickall; window.__RMSTORY__: get, feed, dialOpen, jump,
+// reset; the games' own, window.__CABINET__ and window.__SEWER__), as
 // scripts/c137-shots.mjs drives C-137. With the dev server up (or a preview of
 // a DEV-hooked build):
 //
@@ -68,6 +72,8 @@ async function reads(page, text) {
 }
 const WIPED = EPISODES[0];
 const ARCADE = EPISODES[1];
+const GUESTS = EPISODES[2];
+const SMALL = EPISODES[3];
 // Morty by the garage portal, stepped through it, and stood where it took him
 async function throughPortal(page) {
   await goto(page, 'garage', -302.3, 101.4, Math.PI);
@@ -81,10 +87,57 @@ const toast = (page, text) =>
   page.locator('.rm-toast', { hasText: text }).waitFor({ timeout: 10000 }).catch(() => {
     throw new Error(`no toast saying “${text}”`);
   });
-const inGarage = (page) =>
-  page.waitForFunction(() => window.__C137__?.sim?.area === 'garage' && window.__C137__.ready(), null, { timeout: 300000, polling: 250 }).catch(async () => {
-    throw new Error(`C-137 didn’t start in the garage (${await page.evaluate(() => window.__C137__?.sim?.area)})`);
+// Morty in `area`, and it built
+const inArea = (page, area) =>
+  page.waitForFunction((a) => window.__C137__?.sim?.area === a && window.__C137__.ready(), area, { timeout: 300000, polling: 250 }).catch(async () => {
+    throw new Error(`Morty isn’t in ${area} (he’s in ${await page.evaluate(() => window.__C137__?.sim?.area)})`);
   });
+// episode i's card: its number, title and first line, gone at the next key
+async function cardFor(page, i) {
+  const card = page.locator('.rm-episode');
+  await card.waitFor({ timeout: 10000 }).catch(() => {
+    throw new Error(`no card for episode ${i + 1}`);
+  });
+  const said = await card.textContent();
+  check(said.includes(`Episode ${i + 1}`) && said.includes(EPISODES[i].title) && said.includes(EPISODES[i].intro[0][1]), `episode ${i + 1}’s card says “${said}”`);
+  await page.keyboard.press('Shift');
+  await card.waitFor({ state: 'detached', timeout: 5000 });
+}
+// the story at episode e's step s
+async function at(page, e, s, when) {
+  const st = await story(page);
+  check(st.episode === e && st.step === s, `${when} the story is at ${st.episode}.${st.step}, not ${e}.${s}`);
+}
+const opens = async (page, ids, open, when) => {
+  for (const id of ids) check((await page.evaluate((id) => window.__RMSTORY__.dialOpen(id), id)) === open, `${id} is ${open ? 'shut' : 'open'} ${when}`);
+};
+// Total Rickall: someone put in Morty's sights, and shot
+async function shootAt(page, id) {
+  check(await page.evaluate((id) => window.__C137__.lookAt(id), id), `Morty can’t get ${id} in his sights`);
+  await page.waitForFunction((id) => window.__C137__.sim.rickall?.aim === id, id, { timeout: 60000, polling: 100 }).catch(() => {
+    throw new Error(`the sights never settled on ${id}`);
+  });
+  await page.evaluate(() => window.__C137__.shoot());
+  await page.waitForFunction((id) => {
+    const g = window.__C137__.sim.rickall?.game;
+    return !g || g.shot.includes(id) || g.state !== 'on';
+  }, id, { timeout: 120000, polling: 100 }).catch(() => {
+    throw new Error(`the shot at ${id} never landed`);
+  });
+  const hit = await page.evaluate(() => window.__C137__.sim.rickall?.game?.shot.at(-1));
+  check(hit === id, `the shot at ${id} hit ${hit}`);
+}
+// Morty moved to (x, z) within `area` (its game kept going), and E at `id`
+async function warpUse(page, area, id, x, z, face = N) {
+  await page.evaluate(([a, x, z, f]) => window.__C137__.warp(a, x, z, f), [area, x, z, face]);
+  await use(page, id);
+}
+// he's been caught: back at the place's way in, its game started afresh
+const caught = (page, z) =>
+  page.waitForFunction((z) => !window.__C137__.sim.fading && Math.abs(window.__C137__.sim.m.z - z) < 0.05 && window.__C137__.sim.used.size === 0 && !window.__C137__.sim.escape, z, { timeout: 60000, polling: 100 }).catch(() => {
+    throw new Error('Morty wasn’t put back at the way in');
+  });
+const rickallOn = (page) => page.waitForFunction(() => window.__C137__.sim.rickall?.phase === 'on', null, { timeout: 300000, polling: 250 });
 
 const SCENARIOS = {
   // a new visitor plays episode 1 from the street to Customs and back
@@ -155,11 +208,11 @@ const SCENARIOS = {
       throw new Error('the portal didn’t open on the Citadel');
     });
     await page.getByRole('link', { name: 'Back to Dimension C-137' }).click();
-    await inGarage(page);
+    await inArea(page, 'garage');
     await page.goto(`${BASE}/#/c-137/squanch`, { waitUntil: 'domcontentloaded' });
     await page.getByRole('link', { name: 'Home to C-137' }).first().click({ timeout: 600000 });
     await page.waitForFunction(() => window.location.hash === '#/c-137', null, { timeout: 20000 });
-    await inGarage(page);
+    await inArea(page, 'garage');
   },
   // Things to do (M): the Story tab first, the Checklist beside it, and Free
   // roam, which opens every place on the dial
@@ -221,7 +274,7 @@ const SCENARIOS = {
     const said = (await page.locator('.rm-hud .rm-objective').first().textContent()).trim();
     check(said !== WIPED.steps[0].text && /Bird|Birdperson/.test(said), `the planet’s objective reads “${said}”`);
     await page.getByRole('link', { name: 'Home to C-137' }).first().click();
-    await inGarage(page);
+    await inArea(page, 'garage');
     await page.locator('.rm-episode').waitFor({ timeout: 20000 }).catch(() => {
       throw new Error('no episode card once home in C-137');
     });
@@ -322,11 +375,174 @@ const SCENARIOS = {
     });
     check(await cab.isVisible(), 'the overlay closed on the win');
     check((await page.locator('.rm-toast', { hasText: ARCADE.outro[0][1] }).count()) === 0, 'the closing line was said under the overlay');
+    check((await page.locator('.rm-episode').count()) === 0, 'episode 3’s card showed under the overlay');
     await cab.getByRole('button', { name: 'Leave' }).first().click();
     await cab.waitFor({ state: 'detached', timeout: 10000 });
     await toast(page, ARCADE.outro[0][1]);
-    check((await story(page)).episode === 2, 'episode 2 didn’t end');
-    for (const id of ['agency', 'vat']) check(await page.evaluate((id) => window.__RMSTORY__.dialOpen(id), id), `${id} isn’t open after episode 2`);
+    // and on into episode 3: its card, the places episode 2 opened, the next ones still shut
+    await cardFor(page, 2);
+    await at(page, 2, 0, 'after episode 2');
+    await opens(page, ['agency', 'simulation'], true, 'after episode 2');
+    await opens(page, ['microverse', 'anatomy', 'storytrain', 'vat'], false, 'after episode 2');
+    await reads(page, GUESTS.steps[0].text);
+  },
+  // a new visitor plays episode 3: Total Rickall from the egg, Dr. Wong's
+  // therapy, and the sewer run under the agency, counted the moment it's won
+  // and told once its overlay closes
+  async 'episode-3'(page) {
+    await page.goto(`${BASE}/#/c-137`, { waitUntil: 'domcontentloaded' });
+    await page.locator('.rm-episode').waitFor({ timeout: 600000 });
+    await page.keyboard.press('Shift');
+    await page.locator('.rm-episode').waitFor({ state: 'detached', timeout: 5000 });
+    await built(page);
+    // episodes 1 and 2 (the cabinet's played in episode-2: won here before its step)
+    await page.evaluate(() => window.__RMSTORY__.feed({ type: 'win', game: 'cabinet' }));
+    for (const { id } of WIPED.steps) await page.evaluate((id) => window.__C137__.complete(id), id);
+    await cardFor(page, 1);
+    await page.evaluate(() => window.__C137__.complete('roy'));
+    await toast(page, ARCADE.outro[0][1]);
+    await cardFor(page, 2);
+    await at(page, 2, 0, 'at episode 3');
+    await reads(page, GUESTS.steps[0].text);
+    // Total Rickall: stopped, or lost, it counts nothing; won, it does
+    await goto(page, 'house', -305.7, -7.1, -0.5);
+    await use(page, 'egg');
+    await rickallOn(page);
+    check(!(await done(page)).includes('rickall'), 'Total Rickall counted when it started');
+    await page.evaluate(() => window.__C137__.stopRickall());
+    await page.evaluate(() => window.__C137__.rickall(23));
+    await rickallOn(page);
+    await shootAt(page, 'jerry');
+    await page.locator('.rm-ending', { hasText: 'Not a parasite' }).waitFor({ timeout: 10000 });
+    check(!(await done(page)).includes('rickall'), 'a lost Total Rickall counted');
+    await at(page, 2, 0, 'after a lost Total Rickall');
+    await page.evaluate(() => window.__C137__.rickall(23));
+    await rickallOn(page);
+    const parasites = await page.evaluate(() => window.__C137__.sim.rickall.game.people.filter((p) => p.parasite).map((p) => p.id));
+    for (const id of parasites) await shootAt(page, id);
+    await toast(page, 'Survive Total Rickall');
+    await page.locator('.rm-ending', { hasText: 'Survived' }).getByRole('button', { name: 'Leave it there' }).click();
+    await reads(page, GUESTS.steps[1].text);
+    await at(page, 2, 1, 'after Total Rickall');
+    // Dr. Wong: next door to Shoney's; the talk counts a moment after
+    await goto(page, 'street', 24, -13.2, N);
+    await use(page, 'wong-door');
+    await inArea(page, 'wong');
+    await goto(page, 'wong', -300, 897.2, N);
+    await use(page, 'therapy');
+    await toast(page, 'Go to family therapy');
+    await reads(page, GUESTS.steps[2].text);
+    await at(page, 2, 2, 'after therapy');
+    // the sewer: dialled, the hole in the agency's floor, won, and left with a real Esc
+    check((await page.evaluate(() => window.__C137__.dial('agency'))) === 'agency', 'the dial wouldn’t take the agency');
+    await goto(page, 'agency', -417.6, 4011.4, -1.02); // (clear of the guards at the portal's arrival)
+    await use(page, 'sewer');
+    const hole = place(page, 'sewer');
+    const anyway = hole.getByRole('button', { name: 'Play anyway (slow)' });
+    await Promise.race([hole.locator('.sewer').waitFor({ timeout: 120000 }), anyway.waitFor({ timeout: 120000 })]).catch(() => {
+      throw new Error('the hole didn’t open the sewer run');
+    });
+    if (await anyway.count()) await anyway.click();
+    await hole.getByRole('button', { name: 'Roll', exact: true }).click({ timeout: 120000 });
+    if (OUT) await page.screenshot({ path: `${OUT}/episode-3-sewer.png` });
+    check(!(await done(page)).includes('sewer'), 'the sewer counted before it was won');
+    await page.evaluate(() => {
+      const w = window.__SEWER__;
+      w.set({ ...w.state, x: 419.9, items: [], next: 1e6 });
+    });
+    await hole.getByRole('heading', { name: 'Made it' }).waitFor({ timeout: 60000 });
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-c137-done') ?? '[]').includes('sewer'), null, { timeout: 5000 }).catch(() => {
+      throw new Error('the sewer didn’t count once it was won');
+    });
+    check((await page.locator('.rm-toast', { hasText: GUESTS.outro[0][1] }).count()) === 0, 'the closing line was said under the overlay');
+    await page.keyboard.press('Escape');
+    await hole.waitFor({ state: 'detached', timeout: 10000 });
+    await toast(page, GUESTS.outro[0][1]);
+    // and on into episode 4: its card, the places episode 3 opened, the next ones still shut
+    await cardFor(page, 3);
+    await at(page, 3, 0, 'after the sewer');
+    await opens(page, GUESTS.unlocks, true, 'after episode 3');
+    await opens(page, ['gromflomites', 'fortress', 'vat'], false, 'after episode 3');
+    await reads(page, SMALL.steps[0].text);
+  },
+  // a new visitor plays episode 4: the Microverse's power run (lost once,
+  // then won) and Anatomy Park's chase (caught once, then out on the clock)
+  async 'episode-4'(page) {
+    await page.goto(`${BASE}/#/c-137`, { waitUntil: 'domcontentloaded' });
+    await page.locator('.rm-episode').waitFor({ timeout: 600000 });
+    await page.keyboard.press('Shift');
+    await page.locator('.rm-episode').waitFor({ state: 'detached', timeout: 5000 });
+    await built(page);
+    // episodes 1 to 3, each played in its own scenario (the cabinet's won here before its step)
+    await page.evaluate(() => window.__RMSTORY__.feed({ type: 'win', game: 'cabinet' }));
+    for (const { id } of WIPED.steps) await page.evaluate((id) => window.__C137__.complete(id), id);
+    await cardFor(page, 1);
+    await page.evaluate(() => window.__C137__.complete('roy'));
+    await cardFor(page, 2);
+    for (const id of ['rickall', 'wong', 'sewer']) await page.evaluate((id) => window.__C137__.complete(id), id);
+    await toast(page, GUESTS.outro[0][1]);
+    await cardFor(page, 3);
+    await at(page, 3, 0, 'at episode 4');
+    await reads(page, SMALL.steps[0].text);
+    // the Microverse: the charge runs from the first cell taken; run out, Morty's back at the way in
+    check((await page.evaluate(() => window.__C137__.dial('microverse'))) === 'microverse', 'the dial wouldn’t take the Microverse');
+    await throughPortal(page);
+    await inArea(page, 'microverse');
+    const power = () => page.evaluate(() => window.__C137__.api.act('microverse', 'power'));
+    check((await power()).phase === 'idle', 'the charge ran before a cell was taken');
+    await warpUse(page, 'microverse', 'zeepcells', -404.2, 1395.4);
+    // (a press is the place's to take on its next frame)
+    await page.waitForFunction(() => window.__C137__.api.act('microverse', 'power').phase === 'run', null, { timeout: 30000, polling: 100 }).catch(() => {
+      throw new Error('taking a cell didn’t start the run');
+    });
+    await page.locator('.rm-cluster[aria-label="The world’s charge"][data-on]').waitFor({ timeout: 10000 }).catch(() => {
+      throw new Error('no charge meter on the HUD');
+    });
+    if (OUT) await page.screenshot({ path: `${OUT}/episode-4-microverse.png` });
+    await page.evaluate(() => window.__C137__.api.act('microverse', 'setPower', { charge: 0.05 }));
+    await caught(page, 1403.4);
+    check((await power()).phase === 'idle', 'the run didn’t start afresh');
+    check(!(await done(page)).includes('microverse'), 'a lost run counted');
+    // four cells to the gooble boxes
+    for (let i = 0; i < 4; i++) {
+      await warpUse(page, 'microverse', 'zeepcells', -404.2, 1395.4);
+      await warpUse(page, 'microverse', 'gooble', -406, 1401);
+    }
+    await toast(page, 'Power Zeep’s world');
+    await reads(page, SMALL.steps[1].text);
+    await at(page, 3, 1, 'after the Microverse');
+    await warpUse(page, 'microverse', 'microverse-portal', -400, 1405.6, -N);
+    await inArea(page, 'garage');
+    // Anatomy Park: caught, the pieces are lost; all four found, out through the portal on the clock
+    check((await page.evaluate(() => window.__C137__.dial('anatomy'))) === 'anatomy', 'the dial wouldn’t take Anatomy Park');
+    await throughPortal(page);
+    await inArea(page, 'anatomy');
+    await page.waitForFunction(() => (window.__C137__.api.act('anatomy', 'npcs') ?? []).some((n) => n.id === 'loose-tuberculosis'), null, { timeout: 120000, polling: 500 });
+    const tb = await page.evaluate(() => window.__C137__.api.act('anatomy', 'npcs').find((n) => n.id === 'loose-tuberculosis'));
+    await page.evaluate(([x, z]) => window.__C137__.warp('anatomy', x + 0.6, z, Math.PI), [tb.x, tb.z]);
+    await caught(page, 1508.4);
+    check(!(await done(page)).includes('anatomy'), 'a catch counted');
+    const PIECES = [
+      ['mapkiosk', -414, 1504.4],
+      ['mapspleen', -403.5, 1495.4],
+      ['maprib', -382.2, 1489.4],
+      ['mapboat', -381.6, 1501],
+    ];
+    // (a disease may catch him at a piece: each catch a reset, checked, and round again)
+    let found = false;
+    for (let round = 0; round < 4 && !found; round++) {
+      for (const [id, x, z] of PIECES) await warpUse(page, 'anatomy', id, x, z).catch(() => {});
+      found = await page.evaluate(() => window.__C137__.sim.escape?.task === 'anatomy');
+      if (!found) await caught(page, 1508.4);
+    }
+    check(found, 'the park map’s four pieces never started the clock');
+    if (OUT) await page.screenshot({ path: `${OUT}/episode-4-anatomy.png` });
+    await warpUse(page, 'anatomy', 'anatomy-portal', -400, 1510.6, -N);
+    await toast(page, SMALL.outro[0][1]);
+    await at(page, 4, 0, 'after Anatomy Park');
+    await opens(page, [...SMALL.unlocks, 'vat'], true, 'after episode 4');
+    await page.waitForTimeout(1500);
+    check((await page.locator('.rm-episode').count()) === 0, 'a card showed for an episode that isn’t built');
     await reads(page, 'Go into the Smith house and put interdimensional cable on the TV.');
   },
 };

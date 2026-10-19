@@ -1,9 +1,12 @@
-// A model stood up: trellis.cpp's Pixal3D writes Z up (a figure comes out
-// lying on its back, its face to the sky), and glTF and the site are Y up.
-// The vertices themselves are turned (not a node's rotation), so a rig made
-// from it later (Meshy's, from a URL) sees it standing.
+// A model stood up: trellis.cpp's Pixal3D lays it along Z, its top toward −Z
+// and the picture's front toward +Y (a figure comes out lying on its back,
+// its face to the sky; Jedha's temple, made from a still, has its stepped base
+// at +Z), and glTF and the site are Y up. The vertices themselves are turned
+// (not a node's rotation), so a rig made from it later (Meshy's, from a URL)
+// sees it standing. make.mjs does it to every Pixal3D model (generate.mjs's
+// lying).
 //
-//   node scripts/gen3d/upright.mjs IN.glb OUT.glb [--x 90]   (degrees about X; 90 takes Z up to Y up)
+//   node scripts/gen3d/upright.mjs IN.glb OUT.glb [--x 90]   (degrees about X; 90 takes −Z to +Y and +Y to +Z)
 //   upright(doc, { x }) → doc
 
 import { dequantize, meshopt, transformMesh } from '@gltf-transform/functions';
@@ -12,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { io } from './web.mjs';
 
-// a turn of `deg` about X, column-major: +90 takes +Z to +Y (and +Y to −Z… so a face to the sky looks forward, +Z)
+// a turn of `deg` about X, column-major: +90 takes −Z to +Y (the top up) and +Y to +Z (a face to the sky looks forward)
 function aboutX(deg) {
   const a = (deg * Math.PI) / 180;
   const [c, s] = [Math.cos(a), Math.sin(a)];

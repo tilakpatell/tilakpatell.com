@@ -58,6 +58,8 @@ A session takes the next lane whose state allows it, runs until its budget, merg
 - **A figure is never culled** (`cast.js`: a skinned mesh’s bounds don’t follow its pose), so a stage’s own figures cost their triangles wherever the camera looks: show them only near their beat (Rivendell’s guests come in from the bridge). On `low` a figure has no ink hull.
 - **Look before you trust a rig’s numbers**: two of this lane’s beats were black because the camera stood inside a wall (the hollow, Amon Sûl’s ring). Under the vision Weathertop’s one point light turns cold and goes to the five.
 - `lab/road/shots.mjs` edits under its feet reload the page: a beat shot taken while files change can time out; take the pictures once the code is still.
+- **Things knocked flying**: `road/tumble.js` puts a beat’s crates and barrels on Rapier (`lib/physics/world.js`, loaded the first time, not on `low`) with the beat’s movers (Bree’s Riders) as kinematic boxes on the paths the scene draws them on. `tumble.rules.js`’s `replay` runs it from the beat’s seconds, so walking back stands everything up again and walking on falls the same way. A stage gives it `{ items, movers, ground }` and calls `update(since[id])`.
+- **A season’s colour on the kit’s leaves**: a scatter row’s `tint: { Leaves_Birch: { recolour } }` keeps the leaf’s cut-out now (`lib/three/recolourNodes.js` kept the map’s light but not its alpha, and an alpha-tested leaf stood as a dark card).
 
 ## R4’s notes for the next lanes
 

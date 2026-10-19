@@ -87,6 +87,7 @@ import LoadingVeil from '../../worlds/LoadingVeil';
 import { rmWorldModule } from './module';
 import { createLook } from '../../../runtime/look';
 import { createFlightCluster } from '../../../runtime/hud';
+import { powerReadout } from './games/power';
 import { FRICTION, coneFor } from '../../../lib/combat/aim';
 import { createLockOn } from '../../../lib/combat/lockOn';
 import { stepRmLockOn } from './rmLockOn';
@@ -151,7 +152,7 @@ const PLACES = {
   portalpanic: { title: 'Portal panic', where: 'The cabinet in Rick’s garage', task: 'portalpanic' },
   quiz: { title: 'Mr. Goldenfold’s pop quiz', where: 'Harry Herpson High' },
   roy: { title: 'Roy: A Life Well Lived', where: 'Blips and Chitz', full: true },
-  sewer: { title: 'Pickle Rick’s sewer run', where: 'The agency', full: true },
+  sewer: { title: 'Pickle Rick’s sewer run', where: 'The agency', full: true, wait: 'Down the drain…' },
   cabinet2: { title: 'Plumbus Smash', where: 'Blips and Chitz', full: true, wait: 'Switching the cabinet on…' },
 };
 const AREA_NAME = {
@@ -210,7 +211,7 @@ const WHEEL_R = 110;
 
 // Where the next thing to do is, for the map's marker: the area and the spot
 // in it, and from anywhere else, the way towards it.
-const GOAL = { cable: ['house', 'spot:cable'], butter: ['house', 'spot:butter'], meeseeks: ['garage', 'spot:meeseeks'], plumbus: ['garage', 'spot:plumbus'], portalpanic: ['garage', 'spot:portalpanic'], quiz: ['school', 'spot:quiz'], fly: ['street', 'cruiser'], portal: ['garage', 'link:garage-portal'], basement: ['garage', 'link:garage-hatch'], roy: ['arcade', 'spot:roy'], roy55: ['arcade', 'spot:roy'], president: ['street', 'spot:president'], oval: ['garage', 'link:garage-oval'], diner: ['street', 'link:diner-door'], mindblowers: ['mindblowers', 'spot:chair'], rickall: ['house', 'spot:egg'], wong: ['street', 'link:wong-door'], ...Object.fromEntries(DESTINATIONS.flatMap((d) => d.tasks.map((t) => [t.id, [d.id, `spot:${Object.keys(d.done).find((k) => d.done[k] === t.id) ?? d.escape?.after ?? d.escape?.spot ?? d.goal}`]]))), sewer: ['agency', 'spot:sewer'], cabinet: ['arcade', 'spot:cabinet2'] };
+const GOAL = { cable: ['house', 'spot:cable'], butter: ['house', 'spot:butter'], meeseeks: ['garage', 'spot:meeseeks'], plumbus: ['garage', 'spot:plumbus'], portalpanic: ['garage', 'spot:portalpanic'], quiz: ['school', 'spot:quiz'], fly: ['street', 'cruiser'], portal: ['garage', 'link:garage-portal'], basement: ['garage', 'link:garage-hatch'], roy: ['arcade', 'spot:roy'], roy55: ['arcade', 'spot:roy'], president: ['street', 'spot:president'], oval: ['garage', 'link:garage-oval'], diner: ['street', 'link:diner-door'], mindblowers: ['mindblowers', 'spot:chair'], rickall: ['house', 'spot:egg'], wong: ['wong', 'spot:therapy'], ...Object.fromEntries(DESTINATIONS.flatMap((d) => d.tasks.map((t) => [t.id, [d.id, `spot:${Object.keys(d.done).find((k) => d.done[k] === t.id) ?? d.escape?.after ?? d.escape?.spot ?? d.goal}`]]))), sewer: ['agency', 'spot:sewer'], cabinet: ['arcade', 'spot:cabinet2'] };
 // (every destination but the planets is through the garage's portal: they're landed on from the universe map)
 const toDest = (via) => Object.fromEntries(DESTINATIONS.filter((d) => !isPlanet(d.id)).map((d) => [d.id, via]));
 const WAY = {
@@ -486,6 +487,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const [cluster] = useState(createFlightCluster);
   const [vitals] = useState(() => ({ value: 100, max: 100, low: false }));
   const powersRef = useRef(null); // (its power tiles, in the cluster: PowerBar's)
+  // a place run on power: the world's charge and the cells carried, the same kit's cluster
+  const chargeRef = useRef(null);
+  const chargeLine = useRef(null);
+  const [chargeMeter] = useState(createFlightCluster);
   const armsFor = useRef({ loadout, skillFx, powerPicks });
   armsFor.current = { loadout, skillFx, powerPicks };
   useEffect(() => {
@@ -1757,6 +1762,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       // the place's people, for the map (stage.js's NPC layer says where they are)
       s.npcs = api.current?.act(s.area, 'npcs') ?? null;
       drawMap(map.current, s, goalOf(markRef.current, s, planet), s.t);
+      // (and a place run on power, its charge: ./dimensions/stage.js)
+      const charge = powerReadout(api.current?.act(s.area, 'power'));
+      chargeMeter.place(chargeRef.current, { on: charge.on, vitals: charge.vitals, arms: null });
+      if (chargeLine.current) chargeLine.current.textContent = charge.line;
     }
   };
   const tickRef = useRef(tick);
@@ -1940,6 +1949,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         onWardrobe={() => setWardrobe(true)}
         onHangar={onHangar ? () => onHangar() : null}
         clusterRef={clusterRef}
+        chargeRef={chargeRef}
+        chargeLine={chargeLine}
         onShipFire={(on) => {
           sim.current.firing = on;
         }}
@@ -2239,7 +2250,7 @@ function Place({ id, onClose, onQuiz, onRoy, onSewer, onWin, onTask }) {
           </button>
         }
       >
-        {() => <Sewer onLeave={onSewer} />}
+        {() => <Sewer onLeave={onSewer} onWin={() => onTask('sewer')} />}
       </GpuGate>
     ),
     cabinet2: <Cabinet game="cabinet2" onWin={onWin} onLeave={onClose} />,

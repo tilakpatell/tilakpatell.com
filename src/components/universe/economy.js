@@ -25,7 +25,7 @@
 // owned, so nobody loses what they had. Pure (no three.js, no DOM), so it's
 // tested in Node.
 //
-// createEconomy({ saves, achievements, standingOf, rankOf, later, cancel })
+// createEconomy({ saves, achievements, standingOf, rankOf, skillOf, later, cancel })
 //   → { credits, xp, level, owned, spent, earned, earn(what, n, { side }),
 //   canBuy(item), buy(item), checkout(items), canSell(item), sell(item), log,
 //   spend(n), owns(id), grant(ids), record(), on(fn) → off, flush() }
@@ -195,6 +195,7 @@ export function createEconomy({
   achievements = () => [],
   standingOf = () => null,
   rankOf = () => null,
+  skillOf = () => false,
   later = (fn, ms) => setTimeout(fn, ms),
   cancel = (h) => clearTimeout(h),
   now = () => Date.now(),
@@ -279,6 +280,7 @@ export function createEconomy({
       const { side, id } = needs.rank;
       if (!rankMet(side, rankOf(side), id)) return 'rank';
     }
+    if (needs.skill != null && skillOf(needs.skill) !== true) return 'skill';
     return null;
   };
 

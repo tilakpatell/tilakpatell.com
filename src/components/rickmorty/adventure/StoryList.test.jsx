@@ -35,6 +35,17 @@ describe('the Story tab', () => {
     expect(done(html)).toBe(2);
   });
 
+  it('ticks a task done before its step comes up', () => {
+    const at = { episode: 2, step: 0, got: [], wins: [], freeRoam: false };
+    const ticked = (html, text) => new RegExp(`data-done="true"[^>]*>(?:(?!</li>).)*${text}`).test(html);
+    const html = renderToStaticMarkup(<StoryList state={at} tasks={['wong']} />);
+    // episodes 1 and 2 done, and Dr. Wong's step, seen already; Total Rickall still to do
+    expect(done(html)).toBe(3);
+    expect(ticked(html, 'Rick won’t go to therapy')).toBe(true);
+    expect(ticked(html, 'Somebody new is in the family photos')).toBe(false);
+    expect(done(renderToStaticMarkup(<StoryList state={at} />))).toBe(2);
+  });
+
   it('ticks a finished episode, lists an `all`’s parts, and names a later one by its title', () => {
     const html = renderToStaticMarkup(<StoryList state={{ episode: 1, step: 0, got: [1], wins: [], freeRoam: false }} episodes={BOOK} ready={3} />);
     expect(done(html)).toBe(2); // episode one, and the `all`'s second part
@@ -48,8 +59,8 @@ describe('the Story tab', () => {
   });
 
   it('ticks every built episode once they’re all done', () => {
-    const html = renderToStaticMarkup(<StoryList state={{ episode: 2, step: 0, got: [], wins: [], freeRoam: false }} />);
-    expect(done(html)).toBe(2);
+    const html = renderToStaticMarkup(<StoryList state={{ episode: 4, step: 0, got: [], wins: [], freeRoam: false }} />);
+    expect(done(html)).toBe(4);
     expect(html).toContain('More of the story soon.');
   });
 });

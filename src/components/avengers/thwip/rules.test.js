@@ -114,7 +114,34 @@ describe('the street', () => {
     g.hearts = 1;
     ev = run(g, 6);
     expect(types(ev)).toContain('lost');
+    expect(ev.find((e) => e.type === 'lost')).toMatchObject({ why: 'street' });
     expect(g.phase).toBe('lost');
+  });
+});
+
+describe('the bell', () => {
+  it('ends the run as a loss when he does nothing, on every seed: late for school', () => {
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+      const g = started(seed);
+      const ev = run(g, BELL + 5);
+      expect(g.phase).toBe('lost');
+      expect(types(ev)).toContain('bell');
+      expect(ev.find((e) => e.type === 'lost')).toMatchObject({ why: 'bell' });
+      expect(distance(g)).toBeLessThan(SCHOOL);
+      expect(g.t).toBeGreaterThan(BELL);
+      expect(g.t).toBeLessThan(BELL + 2 * DT);
+    }
+  });
+  it('still counts school reached in the step the bell goes as made it', () => {
+    const g = started(1);
+    g.t = BELL - DT / 2;
+    g.p = [0, 30, -(SCHOOL - 0.05)];
+    g.v = [0, 0, -20];
+    const ev = stepRun(g, DT);
+    expect(g.t).toBeGreaterThan(BELL);
+    expect(g.phase).toBe('won');
+    expect(types(ev)).not.toContain('bell');
+    expect(ev.find((e) => e.type === 'won')).not.toHaveProperty('onTime');
   });
 });
 
@@ -130,6 +157,15 @@ describe('the run to school, on the autopilot', () => {
     expect(g.score).toBeGreaterThan(g.got * PACK.points);
     expect(types(ev).find((t) => t === 'won')).toBeTruthy();
   });
+  it('still makes it before the bell, in 45 to 60 s, on seeds 1 to 4', () => {
+    for (const seed of [1, 2, 3, 4]) {
+      const g = started(seed);
+      run(g, BELL + 5, (x) => pilot(x));
+      expect(g.phase).toBe('won');
+      expect(g.t).toBeGreaterThan(45);
+      expect(g.t).toBeLessThan(60);
+    }
+  }); // measured: 48.4, 54.6, 56.3, 49.2 s
   it('plays the same way twice from the same seed', () => {
     const a = started(3);
     const b = started(3);

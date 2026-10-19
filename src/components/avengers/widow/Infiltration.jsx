@@ -3,6 +3,7 @@ import HQFrame from '../hq/HQFrame';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
+import { stoneById } from '../world/labels';
 import { useAchievements } from '../../Achievements';
 import { use3D } from '../../../lib/gpu';
 import { local, prefersReducedMotion } from '../../../lib/hooks';
@@ -477,7 +478,7 @@ export default function Infiltration({ fallback }) {
                 {ui.result?.bites ? ` · ${ui.result.bites} ${ui.result.bites === 1 ? 'bite' : 'bites'}` : ''}. {index + 1 < total ? 'One more line of her file, declassified.' : 'Every line of it.'}
               </p>
               {ui.result?.stone && (
-                <p className="hq-stone" style={{ '--glow': '#ff8a3c' }}>
+                <p className="hq-stone" style={{ '--glow': stoneById('soul-natasha').color }}>
                   <span className="stone-dot" aria-hidden="true" />
                   {ui.result.both ? 'Natasha’s half of the Soul Stone, and Clint’s: the Soul Stone is yours.' : 'Natasha’s half of the Soul Stone. Clint has the other half, at the range.'}
                 </p>

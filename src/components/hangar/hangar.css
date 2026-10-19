@@ -104,6 +104,12 @@
 @media (pointer: coarse) {
   .hangar-lines button { min-height: 44px; }
 }
+/* the unique weapons: the hand's in green, a locked one's name dimmed, its button the way to the skill tree */
+.hangar-unique li[data-line='hand'] .hangar-line-name { color: #c9ff9a; }
+.hangar-unique li[data-open='false'] .hangar-line-name { color: var(--muted); }
+.hangar-unique .hangar-unique-lock { color: var(--muted); }
+.hangar-unique-open { grid-area: go; color: var(--muted); font-size: 0.78rem; }
+.hangar-chips button[data-unique] { border-color: #c9ff9a; }
 @media (max-width: 719px) {
   .hangar-lines li { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'key' 'name' 'does' 'go'; }
   .hangar-lines button { justify-self: start; }

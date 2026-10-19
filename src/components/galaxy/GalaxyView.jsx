@@ -33,7 +33,7 @@ import KeysCard from './KeysCard';
 // While the 3D loads the box says so; without 3D, a note
 // that the galaxy needs it, and the panel and the map still work.
 
-export default function GalaxyView({ system, here, handle, ship, loadout, build = null, tune = null, net = null, frozen, onEvent, onArrive, onAt, onBoard, onCrash, onMap, oath = null, found = [], course = null, hangar = false, onHangar = null, skillFx = null, powerPicks = null }) {
+export default function GalaxyView({ system, here, handle, holo = null, ship, loadout, build = null, tune = null, net = null, frozen, onEvent, onArrive, onAt, onBoard, onCrash, onMap, oath = null, found = [], course = null, hangar = false, onHangar = null, skillFx = null, powerPicks = null }) {
   const labels = useRef({});
   const stars = useRef({});
   const [aim, setAim] = useState(null); // the star the nose is on
@@ -90,6 +90,7 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
       tags,
       frozen,
       course,
+      holo, // (the map in 3D: holo/link.js)
       allegiance: oath,
       onArrive,
       onAt,

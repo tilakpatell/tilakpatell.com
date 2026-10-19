@@ -163,3 +163,49 @@ describe('a place’s set of things to find', () => {
     expect(sim.people.find((p) => p.id === 'nebulon').y).toBe(3.2);
   });
 });
+
+describe('a place that runs on power', () => {
+  it('carries its cells between its own spots, and only the game ticks its task', () => {
+    const powered = DESTINATIONS.filter((d) => d.power);
+    expect(powered.map((d) => d.id)).toEqual(['microverse']);
+    for (const d of powered) {
+      const spots = d.hotspots.map((h) => h.id);
+      expect(spots, d.id).toContain(d.power.from);
+      expect(spots, d.id).toContain(d.power.to);
+      expect(d.tasks.map((t) => t.id)).toContain(d.power.task);
+      expect(spots).toContain(d.goal);
+      expect(d.acts[d.power.from]).toBe('power-take');
+      expect(d.acts[d.power.to]).toBe('power-give');
+      expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(d.power.task);
+      expect(d.power.lost.length).toBeGreaterThan(10);
+      // the boxes' prompt reads as a way to hand a cell over, not only to look
+      expect(d.hotspots.find((h) => h.id === d.power.to).verb).not.toBe('Look');
+      // the loss is said by `who`, in their own voice (not of themselves by name)
+      expect(d.power.lost).not.toContain(d.say[d.power.who].who.split(' ')[0]);
+    }
+  });
+  it('is Zeep’s cells to the gooble boxes, four of them on 25 seconds of charge', () => {
+    const micro = destinationById('microverse');
+    expect(micro.power).toMatchObject({ task: 'microverse', from: 'zeepcells', to: 'gooble', need: 4, s: 25, who: 'zeep' });
+    expect(micro.goal).toBe('zeepcells');
+    expect(micro.unlock).toEqual({ zeep: 'microverse' });
+  });
+});
+
+describe('Anatomy Park', () => {
+  it('is a chase: the park map’s four pieces while the diseases hunt, then out through the portal on the clock', () => {
+    const park = destinationById('anatomy');
+    expect(park.collect).toEqual({ task: 'anatomy', spots: ['mapkiosk', 'mapspleen', 'maprib', 'mapboat'], escape: { s: 40 } });
+    expect(park.goal).toBe('mapkiosk');
+    const hunters = park.people.filter((p) => p.ai?.hunt);
+    expect(hunters.map((p) => p.who)).toEqual(['hepatitis', 'tuberculosis', 'gonorrhoea', 'ecoli']);
+    const spots = new Set(park.hotspots.map((h) => h.id));
+    for (const h of hunters) {
+      expect(spots.has(h.id), `${h.id} is a hotspot too`).toBe(false);
+      expect(park.say[h.id]?.who, `${h.id} has no name to be caught by`).toBeTruthy();
+    }
+    expect(Object.values(park.done)).not.toContain('anatomy');
+    expect(park.unlock).toEqual({ pancreas: 'anatomy' });
+    expect(park.caught.length).toBeGreaterThan(10);
+  });
+});

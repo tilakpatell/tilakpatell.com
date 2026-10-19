@@ -9,8 +9,9 @@
 // (credits), needs, from, stock }. needs is any of { achievement (an id in
 // Achievements.jsx), level (economy.js's, 2…11), standing: { side (sides.js),
 // axis, level (standing.js's level names) }, rank: { side (galaxy/sides.js),
-// id (galaxy/ranks.js) } }. from is the universe an item belongs to
-// ('starwars', 'rickmorty', 'breakingbad', 'galaxy', or null for anyone's),
+// id (galaxy/ranks.js) }, skill (a node of the skill tree's, SKILL_NODES) }.
+// from is the universe an item belongs to ('starwars', 'rickmorty',
+// 'breakingbad', 'galaxy', 'universe' (the map's own worlds), or null for anyone's),
 // for the shop to group by. Stock is free, needs nothing and is always
 // owned. The key is the kind, slot and id together: an id alone isn't
 // enough ('portal' is a booster and a paint both).
@@ -81,7 +82,16 @@ const NEW = {
   // they're priced by hand, as the incom part is)
   'part:secondary:ion': { price: 700, from: 'starwars' },
   'part:ordnance:mk2': { price: 900, from: 'starwars' },
+  // (the skill tree's four, one from each universe: each sold only once its
+  // node is taken, and among the dearest there are)
+  'part:ordnance:seismic': { price: 1500, from: 'starwars', needs: { skill: 'u-seismic' } },
+  'part:secondary:darkmatter': { price: 1250, from: 'rickmorty', needs: { skill: 'u-darkmatter' } },
+  'part:ordnance:crystal': { price: 1250, from: 'breakingbad', needs: { skill: 'u-crystal' } },
+  'part:secondary:energon': { price: 1500, from: 'universe', needs: { skill: 'u-energon' } },
 };
+// the skill tree's nodes a need may name, as the tree names them (hangar/
+// skills/tree.js's: its test holds the two to each other)
+export const SKILL_NODES = { 'u-seismic': 'Seismic charge', 'u-darkmatter': 'Concentrated dark matter', 'u-crystal': 'Blue sky cluster', 'u-energon': 'Energon arc' };
 
 export const keyOf = (kind, slot, id) => `${kind}:${slot}:${id}`;
 
@@ -131,6 +141,7 @@ function needSentences(needs) {
     // the first rank is anyone's who swears: say so, rather than name a rank nobody earns
     out.push(rank && rank !== ladder[0] ? `fly as ${an(rank.name)} ${rank.name} for ${side}` : `swear to ${side} in the galaxy`);
   }
+  if (needs.skill) out.push(`take “${SKILL_NODES[needs.skill] ?? 'its node'}” in the skill tree`);
   return out;
 }
 

@@ -93,6 +93,45 @@ function lanes(K, heightAt, tier) {
   return out;
 }
 
+// the body of the crop behind the near clumps: a canopy of ripe ears a metre
+// over the land, rippled, gold with the light and dark of a field, its lane
+// edge under the clumps (one mesh a side, a few thousand triangles where the
+// clumps would be millions)
+function cropParts(heightAt, parts) {
+  const [z0, z1] = [FENCE.z[0] - 4, FENCE.z[1] + 2];
+  for (const side of [1, -1]) {
+    const x0 = side * (FENCE.x + 2.6);
+    const x1 = side * (FENCE.x + 34);
+    const nx = 34;
+    const nz = 60;
+    const g = new THREE.PlaneGeometry(1, 1, nx, nz);
+    const pos = g.attributes.position;
+    const col = new Float32Array(pos.count * 3);
+    const c = new THREE.Color();
+    for (let i = 0; i < pos.count; i++) {
+      const u = pos.getX(i) + 0.5;
+      const v = pos.getY(i) + 0.5;
+      const x = x0 + (x1 - x0) * u;
+      const z = z0 + (z1 - z0) * v;
+      const ripple = Math.sin(x * 0.9 + z * 0.4) * 0.08 + Math.sin(z * 1.7 - x * 0.3) * 0.06 + ((i * 7919) % 13) / 13 * 0.12;
+      // (the lane edge drops to the land, hidden in the clumps)
+      const rise = Math.min(1, u * 6);
+      pos.setXYZ(i, x, heightAt(x, z) + (0.95 + ripple) * rise, z);
+      c.setRGB(0.78, 0.62, 0.3).offsetHSL(0, 0, ripple * 0.6 - 0.04);
+      c.toArray(col, i * 3);
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    g.deleteAttribute('uv');
+    // (the plane laid on the land faces down on the left, where x runs the other way: its faces turned up)
+    if (side > 0) {
+      const idx = g.index.array;
+      for (let i = 0; i < idx.length; i += 3) [idx[i + 1], idx[i + 2]] = [idx[i + 2], idx[i + 1]];
+    }
+    g.computeVertexNormals();
+    parts.push(g.toNonIndexed());
+  }
+}
+
 function ferryParts(heightAt, level, parts) {
   // the landing stages: planks on posts out from either bank, their decks level with the lane where they start
   const stage = ([z0, z1], from) => {
@@ -155,6 +194,7 @@ export function buildProps({ K, material, heightAt, level, tier = 'high' }) {
   group.add(stand(signpost(K, ['Bucklebury Ferry', 'Stock', 'The Marish']).group, heightAt, -3.4, 118, Math.PI / 2, SHIRE * 1.1));
   for (const [x, z] of [[3.2, 122], [3.6, 123.2], [-3.1, 121.6]]) group.add(stand(bits((bk) => barrelParts(bk, K, { h: 0.9, r: 0.3 })), heightAt, x, z, z));
   const fp = [];
+  cropParts(heightAt, fp);
   const decks = ferryParts(heightAt, level, fp);
   group.add(merged(fp, material, 'shire-edge:ferry'));
   // Buckland’s lanterns on the far stage: the chapter’s lantern, lit

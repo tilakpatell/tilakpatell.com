@@ -39,13 +39,15 @@ export const arsenalOf = (kind) => ARSENAL[kind] ?? DEFAULT;
 // The weapon and the name on each line, for this crew with this loadout.
 // The primary is always the blaster; a secondary or ordnance part names
 // its weapon (an unknown one is stock's), and a stock line keeps the
-// crew's own name for it.
-function linesOf(kind, loadout) {
+// crew's own name for it. A unique weapon fires only while the skill tree
+// has it open (fx.arms): its node reset, the line is stock's again.
+function linesOf(kind, loadout, fx) {
   const names = arsenalOf(kind).names;
   return LINES.map((line, i) => {
     if (line === 'primary') return { id: 'blaster', name: names[i] };
     const p = partById(LINE_SLOT[line], loadout?.[LINE_SLOT[line]]);
-    const id = p && p.id !== STOCK && WEAPONS[p.weapon]?.line === line ? p.weapon : LINE_STOCK[line];
+    const w = p && p.id !== STOCK ? WEAPONS[p.weapon] : null;
+    const id = w?.line === line && (!w.unique || fx?.arms?.includes(p.weapon)) ? p.weapon : LINE_STOCK[line];
     return { id, name: id === LINE_STOCK[line] || !p ? names[i] : p.name };
   });
 }
@@ -75,7 +77,7 @@ function tunedWeapon(w, fx) {
 }
 
 export function createArmory(kind, loadout = STOCK_LOADOUT, fx = NO_FX) {
-  let lines = linesOf(kind, loadout);
+  let lines = linesOf(kind, loadout, fx);
   let tuned = lines.map((l) => tunedWeapon(WEAPONS[l.id], fx));
   let index = 0;
   let last = -Infinity;
@@ -149,7 +151,7 @@ export function createArmory(kind, loadout = STOCK_LOADOUT, fx = NO_FX) {
     // carry over (no more than the new rack holds; a refit is no reload)
     refit(next, nextFx = fx) {
       fx = nextFx ?? NO_FX;
-      lines = linesOf(kind, next);
+      lines = linesOf(kind, next, fx);
       tuned = lines.map((l) => tunedWeapon(WEAPONS[l.id], fx));
       rack = tuned[2];
       ammo = Math.min(ammo, rack.ammo);

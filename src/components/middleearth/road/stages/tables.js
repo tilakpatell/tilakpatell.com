@@ -26,14 +26,16 @@ const BARE = [
   { model: 'DeadTree_1', per100: 0.006, clump: 2, spread: 8, scale: [0.8, 1.2] },
 ];
 
-const CORN = { Grass: { recolour: '#f2dc96' } };
+const CORN = { Grass: { recolour: '#fbe8a8' } };
 const HEATH = { Leaves: { recolour: '#6e6a44' } };
 const BRACKEN = { Leaves: { recolour: '#a8743a' } };
 const GOLD = { Leaves_NormalTree: { recolour: '#d8a23a' }, Leaves_Birch: { recolour: '#e2b84a' } };
-const HOLLY = { Leaves_NormalTree: { recolour: '#1f3a1c' }, Leaves: { recolour: '#22401f' } };
+// (the holly’s bark grey, as the Trollshaws’: the kit’s oak bark is a red-brown)
+const HOLLY = { Leaves_NormalTree: { recolour: '#1f3a1c' }, Leaves: { recolour: '#22401f' }, Bark_NormalTree: { recolour: '#6a6458' } };
 const HEATH_GRASS = { Grass: { recolour: '#8a8458' } };
 const SNOWED = { Leaves_Pine: { recolour: '#e8eef2' } };
-const AUTUMN = { Leaves_NormalTree: { recolour: '#eeae5c' }, Leaves_Birch: { recolour: '#f2c86a' } };
+// (the kit’s oak bark is a red-brown: the Trollshaws’ a warm grey, so it isn’t violet under a grey sky)
+const AUTUMN = { Leaves_NormalTree: { recolour: '#eeae5c' }, Leaves_Birch: { recolour: '#f2c86a' }, Bark_NormalTree: { recolour: '#806c50' } };
 
 export const SCATTER = {
   hobbiton: [
@@ -48,10 +50,11 @@ export const SCATTER = {
     { model: 'Grass_Common_Tall', per100: 0.4, clump: 6, spread: 3, scale: [0.45, 0.7], kind: 'grass' },
   ],
   'shire-edge': [
-    // Maggot’s crop either side of the lane at the stage’s start, standing high
-    // (the kit’s wheat is red-brown: recoloured to standing corn in a low sun)
-    { model: 'Grass_Wheat', per100: 7, clump: 6, spread: 2.5, scale: [1.4, 1.9], z: [-10, 58], x: [5, 34], tint: CORN },
-    { model: 'Grass_Wheat', per100: 7, clump: 6, spread: 2.5, scale: [1.4, 1.9], z: [-10, 58], x: [-34, -5], tint: CORN },
+    // Maggot’s crop either side of the lane at the stage’s start: ears over
+    // the stage’s canopy of corn, a little above a hobbit’s head (the kit’s
+    // wheat is red-brown and 1.75 m: recoloured to standing corn in a low sun)
+    { model: 'Grass_Wheat', per100: 4, clump: 6, spread: 2.5, scale: [0.7, 0.9], z: [-10, 58], x: [5, 34], tint: CORN },
+    { model: 'Grass_Wheat', per100: 4, clump: 6, spread: 2.5, scale: [0.7, 0.9], z: [-10, 58], x: [-34, -5], tint: CORN },
     // the verges: tall grass, clover and the small white flowers of a lane in late summer
     { model: 'Grass_Common_Tall', per100: 2.4, clump: 6, spread: 3, scale: [0.5, 0.8], x: [-24, 24], kind: 'grass' },
     { model: 'Clover_1', per100: 0.6, clump: 5, spread: 2, scale: [0.5, 0.8], x: [-20, 20], kind: 'grass' },

@@ -54,13 +54,13 @@ export const WALKED = [
   }),
   walk('avengers', '/avengers', 'Avengers HQ', {
     title: 'The compound',
-    text: 'You’re Spider-Man: swing, zip, perch. Each building is a game that wins an Infinity Stone, and six Stones open a portal to Titan. Twelve backpacks and a ring course are hidden round the grounds.',
+    text: 'You’re Spider-Man: swing, zip, perch. Each building is a game, most of them for an Infinity Stone, and the Space Stone opens a portal to Titan. Twelve backpacks and a ring course are hidden round the grounds.',
   }),
   walk('middleearth', '/middle-earth', 'Middle-earth', {
-    at: 'me-map',
+    at: 'redbook',
     wait: true, // (the world's own panel or HUD mounts after the page)
-    title: 'The road to Mount Doom',
-    text: 'A map of chapters from Hobbiton to Doom. Every stop has a walk as Frodo, a co-op kitchen with a room code for a friend, and a side game. Wax seals mark the ones you’ve won.',
+    title: 'The Red Book',
+    text: 'Bilbo’s book, open in his study: each page a pop-up of the tale to touch, and its chapter’s game to play. The Palantír goes anywhere on the map; the Ring shows what’s hidden.',
   }),
   walk('scranton', '/scranton', 'Scranton', {
     title: 'A week at Dunder Mifflin',

@@ -13,6 +13,7 @@ import { createFeel, feelGroups } from '../hq/feel';
 import { prefersReducedMotion } from '../../../lib/hooks';
 import { botAt, simulateThrow } from './rules';
 import { buildShield, courtTexture, hazardTexture } from './models';
+import { freeRoom } from './free';
 
 const WALL_H = 1.05;
 const WALL_T = 0.26;
@@ -174,6 +175,9 @@ export async function create(rt, { onSlow } = {}) {
   // ?debug: the feel's numbers on the one panel (hq/stage's tune)
   engine.tune(feelGroups(feel), 'ricochet');
 
+  // made once above: a room's rebuild keeps them
+  const shared = new Set([steel, capMat, hz, trimMat, matMat, glassMat, frameMat, doorMat, lidMat, armorMat, ...Object.values(botMats), ...Object.values(hostageMats)]);
+
   // ── a room's pieces, rebuilt when the room changes ──
   let built = null;
   const roomGroup = new THREE.Group();
@@ -303,11 +307,12 @@ export async function create(rt, { onSlow } = {}) {
   function build(room) {
     for (const f of figures) {
       scene.remove(f.root);
-      f.root.traverse((o) => o.geometry?.dispose?.());
+      freeRoom(f.root, shared);
     }
     figures.length = 0;
     wallMeshes.length = 0;
     switchMeshes.length = 0;
+    freeRoom(roomGroup, shared);
     roomGroup.clear();
     // pillar lids
     const lids = new Map();
