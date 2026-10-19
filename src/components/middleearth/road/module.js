@@ -259,7 +259,9 @@ export default {
       veilMat.opacity = beat.fx.black;
       fxVision = beat.fx.vision;
       const b = beat.shot && beat.shot.rig !== 'follow' ? beat.shot : null;
-      const params = b?.params?.above ? { ...b.params, at: b.params.at && above(b.params.at), lookAt: b.params.lookAt && above(b.params.lookAt) } : (b?.params ?? {});
+      const given = b?.params?.above ? { ...b.params, at: b.params.at && above(b.params.at), lookAt: b.params.lookAt && above(b.params.lookAt) } : (b?.params ?? {});
+      // (the lead rig stands ahead of the whole file, the furthest at `ahead.length` places)
+      const params = b?.rig === 'lead' ? { ...given, file: ahead.length * FILE } : given;
       // (the camera’s lead stands where the walkers do: up a stair, on a bridge, in a boat)
       const ground = lands.heightAt(-ABREAST, here.local);
       const carried = scenes.floor(here.index, -ABREAST, here.local);

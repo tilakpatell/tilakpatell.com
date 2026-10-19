@@ -1,7 +1,7 @@
 // The director: where the camera stands and looks each frame, the films’
 // grammar as rigs (the design’s §4.2). Pure.
 //
-//   pose(ctx) → { at, lookAt, fov, roll, dof }
+//   pose(ctx) → { at, lookAt, fov, roll, dof }   (`lead` takes `params.file`, the metres of walkers ahead of the lead)
 //     ctx: { rig, params, lead: { at, heading }, tangent, metres, look: { yaw, pitch },
 //            mode, reduced, heightAt(x, z) → y, t (seconds in the rig) }
 //   ease(from, to, k) → pose      (the blend between two rigs’ poses, k already eased)
@@ -34,8 +34,12 @@ function framing({ rig, params = {}, lead, tangent, t = 0 }) {
   const eye = add(lead.at, [0, EYE, 0]);
   const follow = () => ({ at: add(add(lead.at, f, -3.2), [0, 1.7, 0]), lookAt: add(eye, tangent, 6) });
   switch (rig) {
-    case 'lead':
-      return { at: add(add(lead.at, f, 4), [0, 1.5, 0]), lookAt: eye };
+    case 'lead': {
+      // (ahead of the whole file, the walkers in front of the lead coming on
+      // towards it, not standing in a hobbit’s head)
+      const file = params.file ?? 0;
+      return { at: add(add(lead.at, f, file + 4), [0, 1.5, 0]), lookAt: add(eye, f, file / 2) };
+    }
     case 'side':
       return { at: add(add(lead.at, right, 4), [0, 1.4, 0]), lookAt: eye };
     case 'low': {

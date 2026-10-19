@@ -24,6 +24,13 @@ describe('the director: the film’s grammar as camera rigs', () => {
     expect(near(p.lookAt, [0, 1, 0])).toBe(true);
   });
 
+  it('lead: 4 m ahead of the whole file, looking back at its middle', () => {
+    // (eight walkers ahead of the lead stand up to 11.2 m in front of him)
+    const p = pose(base({ rig: 'lead', params: { file: 11.2 } }));
+    expect(near(p.at, [0, 1.5, 15.2])).toBe(true);
+    expect(near(p.lookAt, [0, 1, 5.6])).toBe(true);
+  });
+
   it('side: 4 m to the right of the road at 1.4 m', () => {
     const p = pose(base({ rig: 'side' }));
     expect(near(p.at, [-4, 1.4, 0])).toBe(true);
