@@ -52,6 +52,13 @@
   --danger: #b42318;
   --ally: #0b6e3a;
   --scrim: color-mix(in srgb, var(--text) 40%, transparent);
+  /* The ink a drop shadow is mixed from (each keeps its own size and depth),
+     the ink on a saber ground (a selection), and what a primary button turns
+     toward under the pointer. Read here, on the page's root, they take the
+     theme's own ink; a theme whose saber or button is the ink sets its own. */
+  --shadow-ink: var(--text);
+  --saber-ink: #0f1111;
+  --btn-shade: #000;
 
   /* Depth, bottom to top. Every page-level layer names one of these; a layer
      a step above or below its kind's neighbour says so with a calc and why.
@@ -169,6 +176,10 @@
   --btn-bg: #131317;
   --btn-ink: #ffffff;
   --saber: #131317;
+  /* (its saber and its button are the bass black, so a selection is white on
+     it and a button lightens under the pointer) */
+  --saber-ink: #ffffff;
+  --btn-shade: #ffffff;
   --route-plan: #c9cfd5;
   --route-dash: 2px;
   --route-gap: 5px;
@@ -318,6 +329,9 @@ html[data-mode='dark'] {
   --danger: #ff8a8a;
   --ally: #8dffad;
   --scrim: rgb(0 0 0 / 0.6);
+  --shadow-ink: #000;
+  --saber-ink: #0f1111;
+  --btn-shade: #000;
   /* the site's easing, one family: out for anything arriving or settling, smooth
      for a change of state, spring for a bounce, in for anything leaving */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -406,6 +420,17 @@ html[data-mode='dark'][data-theme='devspace'] { --surface: #070c14; --surface-2:
   /* in the dark a shadow is darkness, never a pale glow of the ink */
   --shadow-float: 0 18px 40px -20px rgb(0 0 0 / 0.7);
   --shadow-dialog: 0 24px 50px -24px rgb(0 0 0 / 0.75);
+  /* the states as the dark mode has them, so an error or the ally green reads
+     on a dark island in a light page too; a shadow's ink is darkness here,
+     and a var() in a token takes the value where it is set, so it is set again */
+  --ok: #5cd98a;
+  --warn: #ffd35c;
+  --danger: #ff8a8a;
+  --ally: #8dffad;
+  --scrim: rgb(0 0 0 / 0.6);
+  --shadow-ink: #000;
+  --saber-ink: #0f1111;
+  --btn-shade: #000;
   /* the site's easing, one family: out for anything arriving or settling, smooth
      for a change of state, spring for a bounce, in for anything leaving */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
