@@ -44,3 +44,11 @@ describe('CompoundWorld, what it loads with it', () => {
     expect(src.slice(0, css)).not.toMatch(/runtime\/hud/);
   });
 });
+
+describe('the compound’s HUD', () => {
+  it('counts Things to do from progress()’s count, as the ops board does', () => {
+    const hud = readFileSync(new URL('./CompoundHud.jsx', import.meta.url), 'utf8');
+    expect(hud).toMatch(/const won = prog\.count;/);
+    expect(hud).toMatch(/Things to do · \{won\}\/\{prog\.places\.length\}/);
+  });
+});

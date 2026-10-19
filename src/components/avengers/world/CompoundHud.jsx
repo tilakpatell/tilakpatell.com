@@ -34,7 +34,7 @@ export default function CompoundHud({ touch, gl, prog, hud, sim, enter, portal, 
   const { pathname } = useLocation();
   const here = hud.near ? prog.places.find((p) => p.id === hud.near) : null;
   const herePortal = hud.portal && !here;
-  const won = prog.places.filter((p) => p.done).length;
+  const won = prog.count;
   const openList = () => {
     setList((v) => !v);
     setTuning(false);
