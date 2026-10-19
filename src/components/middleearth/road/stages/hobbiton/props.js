@@ -18,11 +18,14 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { C, canopy, disposeBuilt, merged, mergeStatics, part } from '../parts';
+import { moundTop } from '../../ground';
+import { STAGES } from '../index';
 import { bagEnd, barrelParts, beehiveParts, benchParts, bush, cabbageGeo, cart, dog, flowerBed, greenDragon, hayBaleParts, hedgeGeo, hole, lampParts, mailboxParts, mill, oaks, partyTree, parts, pavilion, pumpkinGeo, scarecrowParts, sheep, signpost, washingLine, wheatGeo, wheelbarrowParts } from '../../../shire/build';
 
 export const SHIRE = 0.68; // the Road’s hobbit (1.05 m) over the chapter’s (1.55)
-// the Hill: a turf dome on terrain.js’s rise, the doors round its foot
-export const HILL = { at: [34, 6], r: 18, squash: 0.6 };
+// the Hill: a turf dome on terrain.js’s rise, the doors round its foot (the
+// stage’s mound, stages/index.js, where the blades grow over it too)
+export const HILL = STAGES.find((s) => s.id === 'hobbiton').ground.mounds[0];
 export const TREE = [30, 128]; // the Party Tree
 export const MILL = [-26, 118]; // the mill on the Water’s near bank
 // the doors round the Hill’s west face, Bag End’s the one facing the lane
@@ -84,8 +87,8 @@ const before = (x, z, yaw, ahead, side = 0) => [x + Math.sin(yaw) * ahead - Math
 function hillMesh(K, heightAt) {
   const [x, z] = HILL.at;
   // (its foot at the lowest of the ground round it, so no edge floats)
-  let low = Infinity;
-  for (let a = 0; a < 16; a++) low = Math.min(low, heightAt(x + Math.cos(a / 2.55) * HILL.r, z + Math.sin(a / 2.55) * HILL.r));
+  const top = moundTop(heightAt, HILL);
+  const low = top.low;
   const g = new THREE.SphereGeometry(HILL.r, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2);
   const pos = g.attributes.position;
   const col = new Float32Array(pos.count * 3);
@@ -99,11 +102,11 @@ function hillMesh(K, heightAt) {
   const uv = g.attributes.uv;
   for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 14, uv.getY(i) * 4);
   const mesh = new THREE.Mesh(g, K.mats.turf);
-  mesh.position.set(x, low - 0.3, z);
+  mesh.position.set(x, low - HILL.sink, z);
   mesh.scale.set(1, HILL.squash, 1);
   mesh.name = 'hobbiton:hill';
   mesh.receiveShadow = true;
-  return { mesh, low };
+  return { mesh, low, top };
 }
 
 // a hole stood with its door at (x, z), facing `yaw`, a garden and a letterbox by its gate
@@ -149,7 +152,7 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   group.add(hill.mesh);
   DOORS.forEach((d, i) => holeAt(K, (x, z) => Math.max(hill.low, heightAt(x, z)), [d.x, d.z, d.yaw, 3.4, d.colour, 2 * i + 1], group, d.bagEnd));
   // the Hill’s surface over (x, z), and the chimneys through its turf, a little sunk in it
-  const dome = (x, z) => hill.low - 0.3 + HILL.r * HILL.squash * Math.sqrt(Math.max(0, 1 - ((x - HILL.at[0]) ** 2 + (z - HILL.at[1]) ** 2) / HILL.r ** 2));
+  const dome = (x, z) => Math.max(hill.low - HILL.sink, hill.top(x, z));
   const chimneys = [];
   for (const [dx, dz] of [[-4, 3], [3, -5], [-7, -6]]) {
     const x = HILL.at[0] + dx;

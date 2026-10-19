@@ -9,7 +9,7 @@
 
 import * as THREE from 'three';
 import { createGrass } from '../../../lib/three/grassNodes';
-import { dot, mix, vec3 } from 'three/tsl';
+import { dot, mix, positionWorld, smoothstep, vec3 } from 'three/tsl';
 import { onColor } from '../../../lib/three/hookNodes';
 
 // (fewer and broader than the galaxy’s: thin blades at this density shimmered, a grain over the fields)
@@ -25,9 +25,24 @@ export function createBlades({ groundMap, wind, soil, tier = 'high' }) {
   // (laid down within NEAR of the camera: a few blades right under a low camera stood as spikes across the picture)
   const grass = createGrass({ ground: groundMap, wind, side, size: patch.size, height: soil.blade ?? 0.45, width: 0.09, root: 0.6, near: NEAR });
   grass.mesh.name = 'road:blades';
-  // (the map’s colour a little greyed: lit straight from above, the blades
-  // stood brighter and greener than the photo-scanned ground between them)
-  onColor(grass.material, (d) => mix(vec3(dot(d.rgb, LUMA)), d.rgb, 0.82), 'blades:tone');
+  // the map’s colour a little greyed (lit straight from above, the blades
+  // stood brighter and greener than the photo-scanned ground between them),
+  // in slow patches lighter and darker, here and there gone dry, as a field
+  // is (the wind’s noise, read still, metres across)
+  const noise = wind.uniforms.uWindNoise;
+  onColor(
+    grass.material,
+    (d) => {
+      const grey = mix(vec3(dot(d.rgb, LUMA)), d.rgb, 0.82);
+      const lit = noise.sample(positionWorld.xz.mul(0.021)).r;
+      const dry = smoothstep(0.58, 0.82, noise.sample(positionWorld.xz.mul(0.0083).add(0.37)).r);
+      return mix(grey, grey.mul(vec3(1.18, 1.06, 0.62)), dry.mul(0.7)).mul(lit.mul(0.36).add(0.82));
+    },
+    'blades:tone',
+    { ...wind.uniforms },
+  );
+  // (in the sun’s shadow on high and up: the trees’ shade lies over the grass, not under it)
+  grass.mesh.receiveShadow = tier === 'high' || tier === 'ultra';
   const centre = new THREE.Vector3();
   return {
     mesh: grass.mesh,

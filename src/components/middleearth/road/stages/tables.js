@@ -26,10 +26,11 @@ const CORN = { Grass: { recolour: '#fbe8a8' } };
 const HEATH = { Leaves: { recolour: '#6e6a44' } };
 const BRACKEN = { Leaves: { recolour: '#a8743a' } };
 const GOLD = { Leaves_NormalTree: { recolour: '#d8a23a' }, Leaves_Birch: { recolour: '#e2b84a' } };
-// the oaks’ bark a warm brown (the kit’s is a cartoon red-brown)
-const OAK = { Bark_NormalTree: { recolour: '#6e5a46' } };
+// the oaks’ bark a warm brown (the kit’s is a cartoon red-brown), and the
+// green stages’ stones and pebbles a warm grey (the kit’s go navy in the shade)
+const OAK = { Bark_NormalTree: { recolour: '#6e5a46' }, Rocks: { recolour: '#8e8474' }, PathRocks: { recolour: '#8e8474' } };
 // the Lone-lands’ stone warm grey (the kit’s goes a cold purple in the dusk), the Midgewater’s reeds dull
-const STONE = { Rocks: { recolour: '#8c8274' } };
+const STONE = { Rocks: { recolour: '#8c8274' }, PathRocks: { recolour: '#8c8274' } };
 const REED = { Grass: { recolour: '#6e7044' } };
 // the dead stems of the Marshes, Mordor’s black rock, the dune grass bleached by the sea’s wind
 const DEAD = { Grass: { recolour: '#7a6e4a' }, Leaves: { recolour: '#5e5638' } };
@@ -64,7 +65,7 @@ export const SCATTER = {
     { model: 'Plant_3', per100: 0.2, clump: 4, spread: 2, scale: [0.7, 1.1], x: [-30, 30] },
     { model: 'Plant_6', per100: 0.2, clump: 4, spread: 2, scale: [0.7, 1.0], x: [-30, 30] },
     // stones kicked to the lane’s edges
-    { model: 'Pebble_Round_2', per100: 0.8, clump: 5, spread: 2, scale: [2, 4], x: [-8, 8] },
+    { model: 'Pebble_Round_2', per100: 0.8, clump: 5, spread: 2, scale: [2, 4], x: [-8, 8], tint: OAK },
     { model: 'Grass_Common_Tall', per100: 0.7, clump: 6, spread: 3, scale: [0.45, 0.7], kind: 'grass' },
     { model: 'Grass_Wispy_Short', per100: 0.5, clump: 6, spread: 3, scale: [0.5, 0.8], x: [-40, 40], kind: 'grass' },
   ],
@@ -96,7 +97,7 @@ export const SCATTER = {
     // the Brandywine’s banks: reeds and rushes, pebbles at the landing
     { model: 'Grass_Wispy_Tall', per100: 2.2, clump: 8, spread: 4, scale: [0.9, 1.3], z: [118, 182], x: [-80, 80], kind: 'grass' },
     { model: 'Plant_2', per100: 0.5, clump: 5, spread: 3, scale: [0.8, 1.2], z: [118, 182], x: [-60, 60] },
-    { model: 'Pebble_Round_2', per100: 1.5, clump: 6, spread: 2, scale: [2, 4], z: [118, 136], x: [-14, 14] },
+    { model: 'Pebble_Round_2', per100: 1.5, clump: 6, spread: 2, scale: [2, 4], z: [118, 136], x: [-14, 14], tint: OAK },
   ],
   bree: [
     // round the town, outside its hedge, and on Bree-hill: hedgerow trees and long grass
@@ -110,7 +111,7 @@ export const SCATTER = {
     { model: 'Plant_2', per100: 0.25, clump: 4, spread: 2, scale: [0.8, 1.2], x: [-50, 50] },
     // the road up to the gate: its verges, puddled and trodden
     { model: 'Grass_Wide_Short', per100: 2, clump: 6, spread: 3, scale: [0.6, 0.9], z: [-40, 12], x: [-30, 30], kind: 'grass' },
-    { model: 'Pebble_Square_3', per100: 2, clump: 6, spread: 2, scale: [2, 4], z: [-40, 150], x: [-6.5, 6.5] },
+    { model: 'Pebble_Square_3', per100: 2, clump: 6, spread: 2, scale: [2, 4], z: [-40, 150], x: [-6.5, 6.5], tint: OAK },
     // cottage gardens behind the houses
     { model: 'Bush_Common_Flowers', per100: 0.25, clump: 3, spread: 3, scale: [0.7, 1.0], z: [24, 140], x: [-22, 22] },
     { model: 'Plant_1', per100: 0.5, clump: 4, spread: 2, scale: [0.8, 1.2], z: [24, 140], x: [-22, 22] },
@@ -127,10 +128,10 @@ export const SCATTER = {
     { model: 'Bush_Common', per100: 0.1, clump: 4, spread: 5, scale: [0.6, 1.0], tint: HEATH },
     { model: 'Fern_2', per100: 0.35, clump: 6, spread: 4, scale: [0.9, 1.3], x: [-80, 80], tint: BRACKEN },
     { model: 'Rock_Medium_2', per100: 0.06, clump: 4, spread: 4, scale: [0.4, 0.9], x: [-50, 50], slope: 1.4, tint: STONE },
-    { model: 'Pebble_Square_2', per100: 0.8, clump: 6, spread: 2.5, scale: [2.5, 5], x: [-20, 20] },
+    { model: 'Pebble_Square_2', per100: 0.8, clump: 6, spread: 2.5, scale: [2.5, 5], x: [-20, 20], tint: STONE },
     // the Midgewater at the stage’s start: reeds over the wet ground
     { model: 'Grass_Wide_Tall', per100: 3, clump: 8, spread: 4, scale: [0.9, 1.3], z: [-40, 50], x: [-120, 120], kind: 'grass', tint: REED },
-    { model: 'Pebble_Round_4', per100: 1, clump: 5, spread: 2, scale: [2, 4], x: [-8, 8] },
+    { model: 'Pebble_Round_4', per100: 1, clump: 5, spread: 2, scale: [2, 4], x: [-8, 8], tint: STONE },
   ],
   ford: [
     // the Trollshaws: grey autumn woods on broken hills, the leaves turned
@@ -139,7 +140,7 @@ export const SCATTER = {
     { model: 'Birch_2', per100: 0.08, clump: 3, spread: 8, scale: [0.8, 1.1], tint: AUTUMN },
     { model: 'DeadTree_1', per100: 0.008, clump: 2, spread: 8, scale: [0.8, 1.1] },
     { model: 'Pine_1', per100: 0.03, clump: 3, spread: 9, scale: [0.9, 1.3], slope: 0.9 },
-    { model: 'Rock_Big_1', per100: 0.012, clump: 2, spread: 8, scale: [0.6, 1.3], slope: 1.4 },
+    { model: 'Rock_Big_1', per100: 0.012, clump: 2, spread: 8, scale: [0.6, 1.3], slope: 1.4, tint: OAK },
     { model: 'Bush_Common', per100: 0.06, clump: 3, spread: 5, scale: [0.9, 1.4], tint: AUTUMN },
     // the woods’ floor: ferns gone bronze, the grass long, the stones of the rivers’ beds
     { model: 'Fern_2', per100: 0.8, clump: 6, spread: 4, scale: [0.9, 1.4], x: [-60, 60], tint: BRACKEN },
@@ -149,8 +150,8 @@ export const SCATTER = {
     { model: 'Fern_1', per100: 0.5, clump: 6, spread: 4, scale: [0.8, 1.3], x: [-50, 50], tint: BRACKEN },
     { model: 'Bush_Large', per100: 0.04, clump: 2, spread: 5, scale: [0.9, 1.3], tint: AUTUMN },
     { model: 'Plant_2', per100: 0.2, clump: 4, spread: 3, scale: [0.8, 1.2], x: [-40, 40] },
-    { model: 'Pebble_Round_1', per100: 2, clump: 6, spread: 2.5, scale: [2.5, 5], z: [38, 66], x: [-40, 40] },
-    { model: 'Pebble_Round_3', per100: 2, clump: 6, spread: 2.5, scale: [2.5, 5], z: [150, 186], x: [-50, 50] },
+    { model: 'Pebble_Round_1', per100: 2, clump: 6, spread: 2.5, scale: [2.5, 5], z: [38, 66], x: [-40, 40], tint: OAK },
+    { model: 'Pebble_Round_3', per100: 2, clump: 6, spread: 2.5, scale: [2.5, 5], z: [150, 186], x: [-50, 50], tint: OAK },
   ],
   rivendell: [
     // autumn gold on the valley’s trees, pines above on the slopes
@@ -158,7 +159,7 @@ export const SCATTER = {
     { model: 'Birch_3', per100: 0.08, clump: 3, spread: 7, scale: [0.9, 1.2], tint: GOLD },
     { model: 'Fern_1', per100: 0.4, clump: 6, spread: 4, scale: [0.8, 1.2], slope: 1.2 },
     { model: 'Pine_3', per100: 0.04, clump: 4, spread: 9, scale: [0.9, 1.3], slope: 0.9 },
-    { model: 'Rock_Medium_2', per100: 0.02, clump: 3, spread: 5, scale: [0.6, 1.2], slope: 1.4 },
+    { model: 'Rock_Medium_2', per100: 0.02, clump: 3, spread: 5, scale: [0.6, 1.2], slope: 1.4, tint: OAK },
     // the gardens: flowering bushes, beds of flowers, the lawns kept short
     { model: 'Bush_Common_Flowers', per100: 0.12, clump: 3, spread: 4, scale: [0.8, 1.2], z: [56, 150], x: [-40, 40] },
     { model: 'Flower_4_Group', per100: 0.35, clump: 4, spread: 2, scale: [0.25, 0.35], z: [56, 150], x: [-30, 30] },
@@ -213,7 +214,7 @@ export const SCATTER = {
     { model: 'Plant_4', per100: 0.25, clump: 4, spread: 2, scale: [0.7, 1.0], x: [-40, 40] },
     { model: 'Fern_1', per100: 0.4, clump: 6, spread: 4, scale: [0.8, 1.3] },
     { model: 'Grass_Common_Tall', per100: 1.6, clump: 6, spread: 3, scale: [0.6, 0.9], kind: 'grass' },
-    { model: 'Rock_Medium_2', per100: 0.02, clump: 3, spread: 5, scale: [0.6, 1.2], slope: 1.4 },
+    { model: 'Rock_Medium_2', per100: 0.02, clump: 3, spread: 5, scale: [0.6, 1.2], slope: 1.4, tint: OAK },
   ],
   // the stair of Cirith Ungol: black rock, nothing growing
   'cirith-ungol': [
@@ -238,7 +239,7 @@ export const SCATTER = {
     { model: 'Grass_Wheat', per100: 2.5, clump: 6, spread: 2.5, scale: [0.7, 0.9], x: [12, 80], tint: CORN },
     { model: 'Grass_Common_Tall', per100: 1.2, clump: 6, spread: 3, scale: [0.6, 0.9], kind: 'grass' },
     { model: 'Flower_3_Group', per100: 0.1, clump: 4, spread: 3, scale: [0.3, 0.45], x: [-30, 30] },
-    { model: 'Rock_Medium_1', per100: 0.015, clump: 2, spread: 4, scale: [0.6, 1.1] },
+    { model: 'Rock_Medium_1', per100: 0.015, clump: 2, spread: 4, scale: [0.6, 1.1], tint: OAK },
   ],
   // the Havens: dune grass and thrift to the sand, wind-bent pines, pebbles at the water
   havens: [
@@ -246,7 +247,7 @@ export const SCATTER = {
     { model: 'Grass_Wispy_Short', per100: 2, clump: 8, spread: 4, scale: [0.7, 1.1], kind: 'grass', tint: DUNE },
     { model: 'Pine_5', per100: 0.03, clump: 3, spread: 9, scale: [0.8, 1.2] },
     { model: 'Flower_6_2', per100: 0.8, clump: 6, spread: 2, scale: [1, 1.4], x: [-40, 40] },
-    { model: 'Rock_Medium_2', per100: 0.03, clump: 3, spread: 5, scale: [0.6, 1.2] },
-    { model: 'Pebble_Round_3', per100: 1.6, clump: 6, spread: 2.5, scale: [2, 4.5] },
+    { model: 'Rock_Medium_2', per100: 0.03, clump: 3, spread: 5, scale: [0.6, 1.2], tint: OAK },
+    { model: 'Pebble_Round_3', per100: 1.6, clump: 6, spread: 2.5, scale: [2, 4.5], tint: OAK },
   ],
 };

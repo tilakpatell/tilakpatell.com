@@ -4,10 +4,16 @@
 // up (soil.js), its grass standing round you (blades.js), under the
 // house’s look.
 //
-//   createGround(land, { house, tier, soil, own, wind, paint, from, to }) → { mesh, groundMap, blades, update(x, z), dispose }
+//   createGround(land, { house, tier, soil, own, mounds, wind, paint, from, to }) → { mesh, groundMap, blades, update(x, z), dispose }
 //     own: the stage’s `ground.paint`, over its soil’s colours
+//     mounds: the stage’s `ground.mounds` (the Hill at Hobbiton): their
+//       blades grow over them too, from a small map of their own
 //     update(x, z): the camera, in the stage’s frame (the blades’ patch follows it)
 //   groundJob(land, …): the same as a generator, a few rows a step (terrain.js’s run)
+//   moundTop(heightAt, mound) → (x, z) → a mound’s surface there (−∞ off it),
+//     its `.low` the lowest of the land round its foot; a mound is
+//     { at: [x, z], r, squash, sink }: a dome `r` across, squashed by
+//     `squash`, its foot `sink` under that lowest
 //
 // The near strip runs NEAR metres either side of the road’s widest reach at
 // 1 m (2 m on low); the rest is a coarse grid at twice the land’s `res` (4 m;
@@ -223,7 +229,58 @@ function* heightJob(land, area, size) {
   };
 }
 
-export function* groundJob(land, { house = null, tier = 'high', soil = null, own = null, wind = null, paint = null, from, to } = {}) {
+export function moundTop(heightAt, { at: [cx, cz], r, squash = 1, sink = 0 }) {
+  let low = Infinity;
+  for (let a = 0; a < 16; a++) low = Math.min(low, heightAt(cx + Math.cos(a / 2.55) * r, cz + Math.sin(a / 2.55) * r));
+  const top = (x, z) => {
+    const d2 = ((x - cx) ** 2 + (z - cz) ** 2) / (r * r);
+    return d2 < 1 ? low - sink + r * squash * Math.sqrt(1 - d2) : -Infinity;
+  };
+  top.low = low;
+  return top;
+}
+
+// the blades over a stage’s mounds: a map of their own over their bounds,
+// fine enough for a dome’s sides (a third of a metre), grass on them short
+// of their foot (where the dome rises too steeply for a texel to follow),
+// the soil’s mid green, the heights a little under the turf’s facets
+const MOUND = { texel: 0.32, foot: 0.6, under: 0.12 };
+function moundBlades(land, mounds, colour, { wind, soil, tier }) {
+  const tops = mounds.map((m) => ({ m, top: moundTop(land.heightAt, m) }));
+  const x0 = Math.min(...mounds.map((m) => m.at[0] - m.r)) - 2;
+  const z0 = Math.min(...mounds.map((m) => m.at[1] - m.r)) - 2;
+  const w = Math.max(...mounds.map((m) => m.at[0] + m.r)) + 2 - x0;
+  const d = Math.max(...mounds.map((m) => m.at[1] + m.r)) + 2 - z0;
+  const size = Math.min(256, Math.ceil(Math.max(w, d) / MOUND.texel));
+  const c = linear(colour);
+  const on = (x, z) => tops.some(({ m }) => Math.hypot(x - m.at[0], z - m.at[1]) < m.r - MOUND.foot);
+  const groundMap = createGroundMap({
+    area: { x0, z0, w, d },
+    size,
+    heightSize: size,
+    paint: (x, z, out) => {
+      out[0] = c[0];
+      out[1] = c[1];
+      out[2] = c[2];
+      return on(x, z) ? 1 : 0;
+    },
+    height: (x, z) => Math.max(land.heightAt(x, z), ...tops.map(({ top }) => top(x, z))) - MOUND.under,
+  });
+  const blades = createBlades({ groundMap, wind, soil, tier });
+  if (!blades) {
+    groundMap.dispose();
+    return null;
+  }
+  return {
+    ...blades,
+    dispose() {
+      blades.dispose();
+      groundMap.dispose();
+    },
+  };
+}
+
+export function* groundJob(land, { house = null, tier = 'high', soil = null, own = null, mounds = null, wind = null, paint = null, from, to } = {}) {
   const geometry = yield* geometryJob(land, { tier, from, to });
   const area = { x0: land.x0, z0: land.z0, w: land.w, d: land.d };
   const size = tier === 'low' ? 512 : 1024;
@@ -240,7 +297,26 @@ export function* groundJob(land, { house = null, tier = 'high', soil = null, own
   const mesh = new THREE.Mesh(geometry, material);
   mesh.receiveShadow = tier !== 'low';
   mesh.name = 'road:ground';
-  const blades = grows ? createBlades({ groundMap, wind, soil, tier }) : null;
+  const field = grows ? createBlades({ groundMap, wind, soil, tier }) : null;
+  const hills = field && mounds?.length ? moundBlades(land, mounds, colours.greens?.[1] ?? GRASS, { wind, soil, tier }) : null;
+  // (one patch, or the field’s and the mounds’ together: a group the lands show and hide as one)
+  let blades = field;
+  if (hills) {
+    const mesh = new THREE.Group();
+    mesh.name = 'road:blades';
+    mesh.add(field.mesh, hills.mesh);
+    blades = {
+      mesh,
+      update(x, z) {
+        field.update(x, z);
+        hills.update(x, z);
+      },
+      dispose() {
+        field.dispose();
+        hills.dispose();
+      },
+    };
+  }
   return {
     mesh,
     groundMap,

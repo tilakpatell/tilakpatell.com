@@ -91,7 +91,9 @@ export default {
     const tier = rt.quality?.tier ?? 'high';
     // the house's look on the ground (and, with the post chain, on the rest);
     // the lands: the stage you are in and its two neighbours, built and placed
-    const road = createRoadHouse();
+    // (the shade’s edge low: under a low sun the lit ground stood half in
+    // the look’s shade already, and a shadow cast on it barely showed)
+    const road = createRoadHouse({ edge: [0.1, 0.55] });
     const house = road.house;
     // the nature kit, one a tint (a season's recolouring), in the house and the wind
     const windTime = { value: 0 };
