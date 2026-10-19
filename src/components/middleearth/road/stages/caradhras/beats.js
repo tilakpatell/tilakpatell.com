@@ -9,8 +9,9 @@
 export { entered, left } from '../../beats';
 
 export const BEATS = [
-  // Eregion’s bare hills, the holly, the mountains ahead
-  { id: 'hollin', kind: 'hollin', at: 12, hold: 0, rig: 'lead', reach: 16 },
+  // Eregion’s bare hills, the holly, the mountains ahead (from the side: a lead shot
+  // looks back from among the nine walking ahead of Frodo)
+  { id: 'hollin', kind: 'hollin', at: 12, hold: 0, rig: 'side', reach: 16 },
   // the flock over the ridge and back; the walkers under the rocks
   { id: 'crebain', kind: 'crebain', at: 32, hold: 8, rig: 'wide', reach: 12, params: { at: [-9, 2.2, 22], lookAt: [6, 9, 52], above: true } },
   // the Redhorn in snow, the wind at full, Saruman’s voice on it
