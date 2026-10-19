@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FLIGHT, FLIGHT_MS, TITLE, flightAt } from './mapFlight';
+import { framing } from './mapFraming';
 import { STOPS } from './road';
 
 const stop = (id) => {
@@ -9,7 +10,7 @@ const stop = (id) => {
 
 describe('the opening’s flight down the road', () => {
   it('starts over Hobbiton', () => {
-    expect(flightAt(0).at).toEqual([186, 196]);
+    expect(flightAt(0).at).toEqual(stop('hobbiton'));
     expect(flightAt(0).zoom).toBe(1.1);
     expect(flightAt(0).done).toBe(false);
   });
@@ -18,7 +19,7 @@ describe('the opening’s flight down the road', () => {
     expect(FLIGHT.slice(0, ids.length).map((k) => k.at)).toEqual(ids.map(stop));
     expect(FLIGHT.map((k) => k.t)).toEqual([0, 1, 1.8, 2.6, 3.3, 4, 4.7, 5.5]);
     expect(FLIGHT[6].zoom).toBe(1.3);
-    expect(FLIGHT.at(-1)).toEqual({ t: 5.5, at: [452, 322], zoom: 3.05 });
+    expect(FLIGHT.at(-1)).toEqual({ t: 5.5, ...framing() });
   });
   it('is over each key at its time', () => {
     for (const k of FLIGHT) {
@@ -28,15 +29,12 @@ describe('the opening’s flight down the road', () => {
       expect(f.zoom, String(k.t)).toBeCloseTo(k.zoom, 9);
     }
   });
-  it('runs east down the road, turning back only for the step from Rivendell down to Moria', () => {
-    // Moria lies 6 px west of Rivendell on the sheet; every other leg is
-    // eastward, and that one goes no further west than Moria itself
+  it('runs east down the road all the way to the Mountain', () => {
+    // the West-gate of Moria lies south-east of Rivendell, so no leg turns back west
     let x = flightAt(0).at[0];
     for (let ms = 100; ms <= 4700; ms += 100) {
       const next = flightAt(ms).at[0];
-      const inMoriaLeg = ms > 1800 && ms <= 2600;
-      if (!inMoriaLeg) expect(next, String(ms)).toBeGreaterThanOrEqual(x - 1e-9);
-      else expect(next, String(ms)).toBeGreaterThanOrEqual(stop('moria')[0] - 1e-9);
+      expect(next, String(ms)).toBeGreaterThanOrEqual(x - 1e-9);
       x = next;
     }
     expect(flightAt(4700).at[0]).toBeGreaterThan(flightAt(0).at[0]);
@@ -49,8 +47,8 @@ describe('the opening’s flight down the road', () => {
     expect(flightAt(1010).at[0] - a).toBeLessThan((b - a) / 80);
   });
   it('ends on the hub’s framing, done, and stays there', () => {
-    expect(flightAt(5500)).toEqual({ at: [452, 322], zoom: 3.05, done: true });
-    expect(flightAt(6000)).toEqual({ at: [452, 322], zoom: 3.05, done: true });
+    expect(flightAt(5500)).toEqual({ ...framing(), done: true });
+    expect(flightAt(6000)).toEqual({ ...framing(), done: true });
     expect(flightAt(5499).done).toBe(false);
   });
   it('lasts as long as its last key', () => {

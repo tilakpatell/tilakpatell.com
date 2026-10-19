@@ -1,5 +1,6 @@
 // The galaxy's routes: a jump between two systems follows the great
-// hyperspace lanes (systems.js's LANES) where they join, and goes direct
+// hyperspace lanes (systems.js's LANES) and the lesser ones (spurs.js's
+// SPURS) where they join, and goes direct
 // where they don't, slower and riskier off the beaten track. Pure numbers,
 // tested in Node; scene.js times the jump by it, HoloMap.jsx draws the
 // course along it, interdiction.js brings the Empire's window on sooner after
@@ -15,6 +16,10 @@
 // viaLanes(route) → the holomap's words for it: 'via the Corellian Run', or that it's off the lanes
 
 import { LANES, SYSTEMS, systemById } from './systems';
+import { SPURS } from './spurs';
+
+// every route a course can take, the great and the lesser
+export const ROUTES = [...LANES, ...SPURS];
 
 export const SNAP = 1.2; // grid squares: how far off a lane point a system still counts as on the lane
 // grid squares: two lanes' points this close are one junction (0.4, not
@@ -53,7 +58,7 @@ function withCrossings(lanes) {
   return lanes.map((l, i) => ({ ...l, pts: l.pts.flatMap((p, a) => [p, ...(extra[i][a] ?? []).sort((x, y) => x.k - y.k).map((x) => x.at)]) }));
 }
 
-export function laneGraph(lanes = LANES, systems = SYSTEMS) {
+export function laneGraph(lanes = ROUTES, systems = SYSTEMS) {
   const nodes = [];
   const edges = [];
   const nodeAt = (at, lane) => {
@@ -155,7 +160,7 @@ export const jumpTime = (route) => Math.min(JUMP.max, (JUMP.base + JUMP.perSquar
 export function viaLanes(route) {
   if (!route) return '';
   if (!route.onLane) return 'off the lanes: a straight jump, slower, and the Empire watches those';
-  const names = route.lanes.map((id) => `the ${LANES.find((l) => l.id === id).name}`);
+  const names = route.lanes.map((id) => `the ${ROUTES.find((l) => l.id === id).name}`);
   // two systems snapped to the one lane point: no lane between them to name
   if (!names.length) return 'a short hop, on the lanes';
   const last = names.pop();

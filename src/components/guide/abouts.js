@@ -14,6 +14,7 @@ export const ABOUT = {
   '/caribbean': 'You’re Jack Sparrow at the Black Pearl’s helm in Dead Man’s Tide: sink the patrol, take the chests, then face the kraken.',
   '/invincible': 'The Graysons’ city, to fly about as Mark: race Dad’s rings, punch the Flaxans out of the sky, and climb to space.',
   '/middle-earth': 'The road from Hobbiton to Mount Doom. At each stop, walk as Frodo, cook in its kitchen and play its game.',
+  '/middle-earth/road': 'One ride from Bag End to the Grey Havens, the films’ moments round you. The games wait at its end.',
   '/middle-earth/place': 'Walk the place as Frodo, then cook in its kitchen, Overcooked-style, alone or with friends.',
   '/avengers': 'The compound in 3D, as Spider-Man: swing across it, and win each building’s game to gather the Infinity Stones.',
   '/scranton': 'Dunder Mifflin in 3D, as Jim: put the stapler in Jell-O, carry Kevin’s chili, and get through the week to a Dundie.',

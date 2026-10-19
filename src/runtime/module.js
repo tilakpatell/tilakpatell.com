@@ -2,12 +2,14 @@
 // written for lib/three/useScene (create(canvas, ctx) → { render(ms, now)
 // → bool, ... }) into a world module without changing it.
 //
-// A world module: { id, shading: 'glsl' | 'nodes', mb, label?, ratio?, sharpness?, create(rt, props) }
+// A world module: { id, shading: 'glsl' | 'nodes', mb, label?, ratio?, sharpness?, antialias?, create(rt, props) }
 // (`label` says what the canvas shows, for a screen reader; `ratio` caps its
 // pixel ratio; `sharpness: 'own'`: when frames run late its world draws
 // softer through its own passes, told the level by lowerQuality, and the
 // runtime keeps the canvas at its size rather than resize it for each
-// level, which cost a cleared buffer and a jump in sharpness each time).
+// level, which cost a cleared buffer and a jump in sharpness each time;
+// `antialias`: the classic canvas multisampled or not, whatever the
+// budget's, for a module whose pictures drew on canvases of their own).
 // A world: { ready?, resize(w, h), step?(dt, input, now), draw(frame),
 //   wants?(), update?(props), setVisible?(on), setColors?(colors),
 //   lowerQuality?(level), warmUp?(timeLeft), prepare?(onProgress, { alive }),

@@ -11,7 +11,7 @@ import { FLY_PAST } from '../components/universe/words';
 import { SHIP_KEY, crewById, parseShip } from '../components/universe/crews';
 import { useShipyardPage } from '../components/universe/shipyard/useShipyardPage';
 import { useAchievements } from '../components/Achievements';
-import { saveStart } from '../lib/view';
+import { VIEW_EVENT, saveStart } from '../lib/view';
 import { useView } from '../components/ViewSwitch';
 import { portalSound } from '../components/universe/sounds';
 import { jumpEvent } from '../components/jumps/styles';
@@ -130,7 +130,9 @@ export default function Universe({ ask = false }) {
   };
   const jumped = useRef(false); // the crew's had their say about a jump this visit
   const [leaving, setLeaving] = useState(null); // { id, mode } once Enter is pressed
-  const [asking, setAsking] = useState(ask); // the front door's choice, on a first arrival
+  // the front door's choice, on a first arrival; never under the intro (the
+  // welcome asks it, and a dialog hidden under the cover would take its focus)
+  const [asking, setAsking] = useState(() => ask && !['covered', 'intro'].some((k) => k in document.documentElement.dataset));
   // the panel, put away to give the map the room (remembered between visits)
   const [tucked, setTucked] = useState(() => local.get(PANEL_KEY) === 'tucked');
   const tuck = (on) => {
@@ -209,11 +211,16 @@ export default function Universe({ ask = false }) {
       setShip(id);
       setAsking(false);
     };
+    // a pick made anywhere else (the first visit's welcome, the view switch)
+    // answers the front door's choice
+    const picked = () => setAsking(false);
     window.addEventListener('tp:arrive', arrive);
     window.addEventListener('tp:board', board);
+    window.addEventListener(VIEW_EVENT, picked);
     return () => {
       window.removeEventListener('tp:arrive', arrive);
       window.removeEventListener('tp:board', board);
+      window.removeEventListener(VIEW_EVENT, picked);
     };
   }, []);
 
@@ -324,7 +331,8 @@ export default function Universe({ ask = false }) {
   // the front door's choice: fly, or the home page; kept if asked to
   const start = (where, remember) => {
     if (remember) saveStart(where);
-    if (where === 'home') navigate('/home');
+    // (kept, / sends you on to /home from now on: Back to it would only come back)
+    if (where === 'home') navigate('/home', remember ? { replace: true } : undefined);
     else setAsking(false);
   };
   const { switchTo } = useView();

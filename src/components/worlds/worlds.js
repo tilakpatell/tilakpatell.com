@@ -30,6 +30,7 @@ export const WORLD_MB = {
   '/fly': 22,
   // planet flight: end
   '/deathstar/inside': 6, // aboard the station: the first room's kit and textures at phone size, and the cast it starts with (people, guns, the borrowed clips)
+  '/middle-earth/road': 8, // the Road: a guess until the measure (lab/road/measure.mjs, the Road’s Task 10) reads it from a ride
   '/middle-earth': 1, // drawn in code too, but for two places on the map (under a tenth of an MB)
   '/music': 7, // the music planet's courtyard: its instruments, chhatri, lamps and gaddi (Meshy models), sandstone, a dusk sky
   '/dot-matrix': 1, // drawn in code
