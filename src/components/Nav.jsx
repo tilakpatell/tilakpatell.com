@@ -199,7 +199,7 @@ export function ThemePicker({ nameless = false }) {
         aria-expanded={open}
         aria-controls="theme-panel"
         className="nav-search whitespace-nowrap"
-        title="Site colours"
+        data-tip="Site colours"
       >
         <span className="h-3 w-3 rounded-full ring-2 ring-[var(--bg)]" style={{ background: t.fill || t.swatch, boxShadow: '0 0 0 3px var(--border)' }} aria-hidden="true" />
         <span className={nameless ? 'sr-only' : 'theme-pick-label'}>
@@ -208,7 +208,7 @@ export function ThemePicker({ nameless = false }) {
         </span>
       </button>
       {open && (
-        <div id="theme-panel" className="card absolute right-0 top-[calc(100%+10px)] z-50 max-h-[calc(100dvh-110px)] w-[19rem] overflow-y-auto p-2" style={{ background: 'var(--surface)' }}>
+        <div id="theme-panel" className="card dialog absolute right-0 top-[calc(100%+10px)] z-50 max-h-[calc(100dvh-110px)] w-[19rem] overflow-y-auto p-2" style={{ background: 'var(--surface)' }}>
           <p className="px-2.5 pb-2 pt-1.5 text-xs leading-relaxed text-muted">
             Each of these colours is a company I’ve worked at. <span className="font-semibold text-ink">Auto</span> follows the page you’re on.
           </p>
@@ -411,27 +411,27 @@ export default function Nav() {
         )}
 
         <div className="flex flex-none items-center gap-1">
-          <button type="button" onClick={openPalette} className="nav-search hidden md:flex" data-tour="search" aria-label={`Search and shortcuts (${shortcutLabel()})`} title={`Search and shortcuts (${shortcutLabel()})`}>
+          <button type="button" onClick={openPalette} className="nav-search hidden md:flex" data-tour="search" aria-label={`Search and shortcuts (${shortcutLabel()})`} data-tip={`Search and shortcuts (${shortcutLabel()})`}>
             <RiSearchLine className="h-[18px] w-[18px]" aria-hidden="true" />
             {!gone('kbd') && <kbd className="kbd hidden lg:inline-grid" data-size="sm">{shortcutLabel()}</kbd>}
           </button>
           <div className="hidden items-center lg:flex" data-tour="colours">
             <ThemePicker nameless={gone('colorName')} />
-            <button type="button" className={`${iconBtn} settings-gear`} onClick={openSettings} aria-label="Settings: quality, sound and this device" title="Settings">
+            <button type="button" className={`${iconBtn} settings-gear`} onClick={openSettings} aria-label="Settings: quality, sound and this device" data-tip="Settings">
               <RiSettings3Line className="h-[18px] w-[18px]" aria-hidden="true" />
             </button>
           </div>
           {!gone('social') && (
             <>
-              <a href={profile.linkedin.url} target="_blank" rel="noopener noreferrer" className={`${iconBtn} hidden xl:grid`} aria-label="LinkedIn" title="LinkedIn">
+              <a href={profile.linkedin.url} target="_blank" rel="noopener noreferrer" className={`${iconBtn} hidden xl:grid`} aria-label="LinkedIn" data-tip="LinkedIn">
                 <RiLinkedinBoxFill className="h-[18px] w-[18px]" />
               </a>
-              <a href={profile.github.url} target="_blank" rel="noopener noreferrer" className={`${iconBtn} hidden xl:grid`} aria-label="GitHub" title="GitHub">
+              <a href={profile.github.url} target="_blank" rel="noopener noreferrer" className={`${iconBtn} hidden xl:grid`} aria-label="GitHub" data-tip="GitHub">
                 <RiGithubFill className="h-[18px] w-[18px]" />
               </a>
             </>
           )}
-          <button type="button" className={iconBtn} onClick={toggleMode} aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
+          <button type="button" className={iconBtn} onClick={toggleMode} aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} data-tip={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
             {mode === 'dark' ? <RiSunLine className="h-[18px] w-[18px]" /> : <RiMoonClearLine className="h-[18px] w-[18px]" />}
           </button>
           <Link to="/resume" className="btn btn-primary btn-sm ml-1 hidden flex-none sm:inline-flex" data-tour="resume">

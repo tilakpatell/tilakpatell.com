@@ -266,8 +266,8 @@
   display: grid;
   grid-template-rows: auto auto 1fr;
   gap: 0.6rem;
-  width: min(1180px, 100%);
-  height: min(860px, 100%);
+  width: min(1720px, 100%); /* (the window's, all but its margin: the map is the biggest square the rest has, .holomap-map) */
+  height: 100%;
   padding: 1rem 1.1rem 1.1rem;
   border: 1px solid rgb(127 214 255 / 0.35);
   border-radius: 18px;
@@ -277,6 +277,22 @@
   overflow: hidden;
 }
 .holomap-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+/* a wide window: the era chips on the title's row, between it and the find, so the map has that row's height too (the
+   header's three are the frame's own cells there: its box goes, its words and buttons stay). Under 1320 px the small caps over
+   the title are its first word alone and the find narrower, so the row still fits a 1280 px laptop's */
+@media (min-width: 1200px) and (max-width: 1319px) {
+  .holomap-kicker-more { display: none; }
+  .holomap-frame .holomap-find input { width: 200px; } /* (over the find's own width, below) */
+}
+@media (min-width: 1200px) {
+  .holomap-frame { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-rows: auto minmax(0, 1fr); column-gap: 1.25rem; align-items: center; }
+  .holomap-head { display: contents; }
+  .holomap-head > div:first-child { grid-area: 1 / 1; }
+  .holomap-eras { grid-area: 1 / 2; }
+  .holomap-find { grid-area: 1 / 3; }
+  .holomap-close { grid-area: 1 / 4; }
+  .holomap-body { grid-area: 2 / 1 / 3 / -1; align-self: stretch; height: 100%; }
+}
 /* the find (HoloMap.jsx, mapKeys.js): a field between the title and the close button, its matches under it */
 .holomap-find { position: relative; margin-left: auto; }
 .holomap-find input { width: min(260px, 42vw); padding: 0.4rem 0.75rem; border: 1px solid rgb(127 214 255 / 0.35); border-radius: 999px; background: rgb(2 8 20 / 0.9); color: #fff; font-size: 0.82rem; }
@@ -329,6 +345,13 @@
 }
 @supports not (width: 1cqh) {
   .holomap-map { width: min(100%, 64vh); }
+}
+/* a tall window wider than a phone's (a tablet held upright): the map over the panel, as on a phone, no taller than two thirds
+   of the window so the panel under it has room (beside it, the map was the column's width, a third of its height, in the middle) */
+@media (min-width: 761px) and (max-aspect-ratio: 5 / 6) {
+  .holomap-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); container-type: normal; }
+  .holomap-map { width: min(100%, 62svh); }
+  .holomap-side { min-height: 0; }
 }
 /* ── Zoom and pan (useMapView.js): the stage holds everything that moves with
    the map and is drawn at the view's k, x and y (mapView.js), from its top-left;
@@ -410,9 +433,9 @@
   background: repeating-linear-gradient(0deg, rgb(127 214 255 / 0.035) 0 1px, transparent 1px 3px);
 }
 .holomap-grid { stroke: rgb(127 214 255 / 0.07); stroke-width: calc(0.02 * var(--u)); }
-.holomap-region { fill: none; stroke: rgb(127 214 255 / 0.28); stroke-width: calc(0.035 * var(--u)); stroke-dasharray: calc(0.12 * var(--u)) calc(0.1 * var(--u)); }
+.holomap-region { fill: none; stroke: rgb(127 214 255 / 0.2); stroke-width: calc(0.035 * var(--u)); stroke-dasharray: calc(0.12 * var(--u)) calc(0.1 * var(--u)); }
 .holomap-region[data-id='deep'] { stroke: rgb(255 214 150 / 0.45); stroke-dasharray: none; }
-.holomap-region[data-id='outer'] { stroke: rgb(127 214 255 / 0.4); stroke-dasharray: none; }
+.holomap-region[data-id='outer'] { stroke: rgb(127 214 255 / 0.32); stroke-dasharray: none; }
 .holomap-unknown { fill: rgb(0 0 0 / 0.45); stroke: rgb(127 214 255 / 0.15); stroke-width: calc(0.03 * var(--u)); }
 /* (the size and spacing are set in HoloMap.jsx, from the box's: 11.5 px on screen at any zoom) */
 .holomap-region-name { fill: rgb(191 234 255 / 0.62); font-family: var(--font-mono); text-anchor: middle; text-transform: uppercase; }
@@ -420,7 +443,7 @@
 /* (dim: the war's own lanes, warmap.css, go over them) */
 .holomap-lane { fill: none; stroke: rgb(255 210 120 / 0.18); stroke-width: calc(0.045 * var(--u)); stroke-linejoin: round; }
 /* (the lesser routes, spurs.js: thinner, dashed) */
-.holomap-spur { fill: none; stroke: rgb(255 210 120 / 0.14); stroke-width: calc(0.03 * var(--u)); stroke-dasharray: calc(0.14 * var(--u)) calc(0.08 * var(--u)); stroke-linejoin: round; }
+.holomap-spur { fill: none; stroke: rgb(255 210 120 / 0.11); stroke-width: calc(0.03 * var(--u)); stroke-dasharray: calc(0.14 * var(--u)) calc(0.08 * var(--u)); stroke-linejoin: round; }
 .holomap-course { fill: none; stroke: #fff; stroke-linejoin: round; stroke-width: calc(0.085 * var(--u)); stroke-dasharray: calc(0.18 * var(--u)) calc(0.12 * var(--u)); animation: holomap-dash 1s linear infinite; }
 @keyframes holomap-dash { to { stroke-dashoffset: calc(-0.6 * var(--u)); } }
 .holomap-course-glow { fill: none; stroke: var(--accent); stroke-width: calc(0.32 * var(--u)); stroke-opacity: 0.28; stroke-linejoin: round; filter: blur(calc(0.06 * var(--u))); }

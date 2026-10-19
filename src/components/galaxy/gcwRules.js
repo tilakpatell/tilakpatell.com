@@ -68,8 +68,9 @@ export const GCW = {
   huttReach: 1, // the raider attacks a Hutt world only where the attack would take it whole (gcw.js)
   routeReach: 2.2, // grid squares: how near a route's point a system must be to be on it
   neighbours: 2, // the nearest few, besides the routes
+  // and these, by hand: the Abrion sector's two (Kamino past the rim, Scarif at the edge of it) and the Core's road to Naboo
   links: [
-    ['kamino', 'lothal'],
+    ['kamino', 'scarif'],
     ['coruscant', 'naboo'],
   ],
 };

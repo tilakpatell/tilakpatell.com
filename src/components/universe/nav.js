@@ -67,10 +67,11 @@ export const HYPER = { flash: 1.2, length: 2.45, recharge: 5 };
 
 // Whether the hyperdrive can jump now: { ready, wait (seconds), why }.
 // `last` is when it last jumped and `now` the clock (both in seconds), or
-// null for never.
-export function hyperState({ last = null, now = 0, interdicted = false } = {}) {
+// null for never; `recharge`, the seconds it takes (the skill tree's hot
+// drive shortens it).
+export function hyperState({ last = null, now = 0, interdicted = false, recharge = HYPER.recharge } = {}) {
   if (interdicted) return { ready: false, wait: 0, why: 'interdicted' };
-  const wait = last === null ? 0 : Math.max(0, last + HYPER.recharge - now);
+  const wait = last === null ? 0 : Math.max(0, last + recharge - now);
   return wait > 0 ? { ready: false, wait, why: 'charging' } : { ready: true, wait: 0, why: null };
 }
 

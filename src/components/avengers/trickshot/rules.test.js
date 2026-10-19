@@ -244,9 +244,10 @@ describe('Trick Shot: rounds', () => {
     const g = newRange({ seed: 1 });
     startRound(g, 0);
     let ev = [];
-    for (let i = 0; i < ROUNDS[0].arrows; i++) ev = ev.concat(shoot(g, { x: 0, y: 0.3, z: -1 }, { fly: 3 }));
+    for (let i = 0; i < ROUNDS[0].arrows; i++) ev = ev.concat(shoot(g, { x: 0, y: -0.3, z: -1 }, { fly: 0.2 }));
     expect(ev.some((e) => e.type === 'roundEnd')).toBe(true);
     expect(g.phase).toBe('roundEnd');
+    expect(g.s.time).toBeGreaterThan(0);
   });
 
   it('ends a round when time runs out, and an idle archer scores nothing', () => {
@@ -279,5 +280,46 @@ describe('Trick Shot: rounds', () => {
       return [g.s.score, g.s.hits, g.s.shots];
     };
     expect(play()).toEqual(play());
+  });
+
+  const FAIR = 0.0125; // the tests’ archer at about 71 % hits: §9’s “fair player”
+  const game = (seed, noise) => {
+    const g = newRange({ seed });
+    for (let r = 0; r < ROUNDS.length; r++) {
+      startRound(g, r);
+      steps(g, ROUNDS[r].time + 5, (q) => archer(q, { noise }));
+    }
+    return g;
+  };
+  const wins = (noise) => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter((seed) => game(seed, noise).total >= STONE_SCORE).length;
+
+  for (const noise of [0, FAIR]) {
+    it(`keeps an archer shooting until the clock ends, every round (noise ${noise})`, () => {
+      const g = newRange({ seed: 1 });
+      for (let r = 0; r < ROUNDS.length; r++) {
+        startRound(g, r);
+        steps(g, ROUNDS[r].time + 5, (q) => archer(q, { noise }));
+        expect(g.s.t).toBeGreaterThanOrEqual(40);
+        expect(g.s.t).toBeGreaterThanOrEqual(ROUNDS[r].time);
+        expect(g.s.arrows).toBeGreaterThan(0);
+      }
+    });
+  }
+  it('keeps the stone from an archer who does nothing', () => {
+    const g = newRange({ seed: 1 });
+    let ev = [];
+    for (let r = 0; r < ROUNDS.length; r++) ev = ev.concat(startRound(g, r), steps(g, ROUNDS[r].time + 1));
+    const end = ev.filter((e) => e.type === 'roundEnd').at(-1);
+    expect(end.last).toBe(true);
+    expect(end.stone).toBe(false);
+    expect(g.total).toBe(0);
+  });
+  it('gives a fair archer the stone about once in two or three tries', () => {
+    const n = wins(FAIR);
+    expect(n).toBeGreaterThanOrEqual(3);
+    expect(n).toBeLessThanOrEqual(5); // 3 of 10 here; 16 of 40 over seeds 1–40
+  });
+  it('gives a steadier archer the stone on most seeds', () => {
+    expect(wins(0.01)).toBeGreaterThanOrEqual(8); // 10 of 10: totals 640–841 over seeds 1–40
   });
 });

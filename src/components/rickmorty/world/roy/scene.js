@@ -18,6 +18,7 @@ import * as THREE from 'three';
 import { createStage, disposeTree, hot } from '../../../../lib/stage3d';
 import { houseOn } from '../../../../lib/three/house';
 import { budget, device } from '../../../../lib/device';
+import { prefersReducedMotion as reduced } from '../../../../lib/hooks';
 import { Pass } from 'three/examples/jsm/postprocessing/Pass.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { InkPass, toon } from '../../portal/toon';
@@ -51,7 +52,6 @@ const smooth = (a, b, v) => {
 const damp = (dt, rate) => 1 - Math.exp(-dt * rate);
 const easeOut = (k) => 1 - (1 - clamp(k, 0, 1)) ** 3;
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
-const reduced = () => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 
 // ── canvas painting ──
 

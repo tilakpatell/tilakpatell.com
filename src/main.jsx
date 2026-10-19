@@ -8,6 +8,8 @@ import './styles/extras.css';
 import './styles/caribbean-themes.css';
 import './styles/middleearth-themes.css';
 import './styles/fan-dark-themes.css';
+import './styles/dialogs.css';
+import './styles/feel.css';
 import App from './App.jsx';
 import { cleanHref } from './lib/stale';
 import { registerWorker } from './lib/sw';

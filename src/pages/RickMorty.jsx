@@ -8,6 +8,10 @@ import MeeseeksBox from '../components/rickmorty/MeeseeksBox';
 import PlumbusFactory from '../components/rickmorty/PlumbusFactory';
 import PortalHero from '../components/rickmorty/PortalHero';
 import RmWorld from '../components/rickmorty/world/RmWorld';
+import RmEarnNote from '../components/rickmorty/RmEarnNote';
+import HangarAboard from '../components/hangar/HangarAboard';
+import { useHangarAboard } from '../components/hangar/useHangarAboard';
+import { crewById } from '../components/universe/crews';
 import { DIMENSIONS } from '../components/rickmorty/dimensions';
 import { isPlanet } from '../components/rickmorty/world/dimensions/destinations';
 import PortalPanic from '../components/rickmorty/portal/PortalPanic';
@@ -19,6 +23,8 @@ import { useAchievements } from '../components/Achievements';
 import { useFun } from '../fun/FunProvider';
 import { audioContext } from '../lib/audio';
 import { useDocumentTitle } from '../lib/hooks';
+
+const CRUISER = crewById('cruiser')?.ship ?? 'The space cruiser';
 
 const FAMILY = [
   { id: 'portal', name: 'Rick Sanchez', role: 'Scientist, grandfather, the smartest man in the universe', line: 'Wubba lubba dub dub. (It means he’s in great pain.)', Face: RickFace, color: '#97ce4c' },
@@ -81,6 +87,9 @@ export default function RickMorty() {
   useDocumentTitle('Dimension C-137');
   const { getSchwifty } = useFun();
   const { notify } = useAchievements();
+  // the Hangar (the crew's looks, the cruiser's arms, powers, skills and
+  // shipyard), its door the street's chip: H, or C on the crew
+  const aboard = useHangarAboard('cruiser');
   const [dim, setDim] = useState(0);
   const [fired, setFired] = useState(0);
   const d = DIMENSIONS[dim];
@@ -106,7 +115,9 @@ export default function RickMorty() {
   return (
     <div className="relative rm-page">
       <GalaxyBackdrop />
-      <RmWorld />
+      <RmWorld frozen={aboard.yard.yard} onHangar={aboard.open} cruiser={aboard.stats} loadout={aboard.yard.loadout} skillFx={aboard.fx} powerPicks={aboard.picks} />
+      <HangarAboard yard={aboard.yard} tab={aboard.tab} onTab={aboard.setTab} shipName={CRUISER} doorAt=".rm-hangar-btn" />
+      <RmEarnNote note={aboard.yard.yardNote} />
       <CruiserFlight />
       <section className="shell relative z-10 grid items-center gap-10 pb-16 pt-[calc(var(--nav-h)+36px)] md:pb-20 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16" aria-labelledby="rm-title">
         <figure className="rm-hero m-0">

@@ -22,7 +22,8 @@ import { useEconomy } from '../EconomyProvider';
 // (Presence.jsx: yours to them, theirs to you) can be turned off, and that's
 // remembered, and they're never drawn over a walkable world (enterWorld(),
 // from ../../middleearth/towns/useTravellers.js), where the others are
-// there in person.
+// there in person, nor over a full-screen world with no others of its own
+// yet (useInWorld(up), from its page).
 //
 // Your level and factions go in the hello too: the wallet's level and its
 // marks (your standing with each universe, your oath and rank in the
@@ -58,6 +59,15 @@ const OFF = { status: 'off', self: null, peers: [], away: [] };
 
 export const OnlineContext = createContext(null);
 export const useOnline = () => useContext(OnlineContext);
+
+// A full-screen world is up (`up`): the site draws no page pointers over it
+// while it is (a pointer over a canvas means nothing). For a world's page
+// that has no travellers of its own (useTravellers says it for those that
+// do); nothing where there's no link.
+export function useInWorld(up = true) {
+  const enterWorld = useOnline()?.enterWorld;
+  useEffect(() => (up && enterWorld ? enterWorld() : undefined), [up, enterWorld]);
+}
 
 export function useOnlineState(where) {
   const [name, setName] = useState(() => cleanName(local.get(NAME_KEY)));

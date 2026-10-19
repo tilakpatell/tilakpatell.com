@@ -1,0 +1,250 @@
+/* The Hangar (HangarPanel.jsx): the Shipyard's page under the nav, its
+   look (shipyard.css's .yard: the dark ground, the line, the crew's
+   --engine), with the pilot's level, credits and skill points in its head,
+   the five tabs under it, and the tab's own body filling the rest. Touch targets 44 px on
+   a coarse pointer; on a phone the head drops the xp bar and the tabs scroll
+   sideways in one row. */
+
+.hangar-panel { display: flex; flex-direction: column; width: 100%; min-height: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .hangar-panel { animation: yard-in 0.2s ease-out; }
+}
+.hangar-pilot { display: flex; align-items: center; gap: 0.6rem; color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
+.hangar-xp { position: relative; display: block; width: 120px; height: 6px; overflow: hidden; border-radius: 4px; background: rgb(255 255 255 / 0.1); }
+.hangar-xp > span { position: absolute; inset: 0; background: var(--engine, #e8eefc); transform-origin: left; scale: var(--v, 0) 1; }
+.hangar-credits { color: var(--text); font-family: var(--font-mono); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+/* (the skill points free: a way to the Skills tab, lit while there are some) */
+.hangar-points { min-height: 30px; padding: 0 0.7rem; border: 1px solid var(--yard-line); border-radius: 999px; color: var(--muted); font-family: var(--font-mono); font-size: 0.76rem; }
+.hangar-points[data-free] { border-color: var(--engine, #e8eefc); color: var(--text); background: color-mix(in srgb, var(--engine, #e8eefc) 16%, transparent); }
+@media (pointer: coarse) {
+  .hangar-points { min-height: 44px; }
+}
+
+.hangar-tabs { display: flex; gap: 0.25rem; padding: 0.4rem 0.75rem; overflow-x: auto; border-bottom: 1px solid var(--yard-line); scrollbar-width: none; }
+.hangar-tabs [role='tab'] { flex: none; min-height: 36px; padding: 0 1rem; border-radius: 999px; color: var(--muted); font-size: 0.82rem; }
+.hangar-tabs [role='tab']:hover { color: var(--text); background: rgb(255 255 255 / 0.05); }
+.hangar-tabs [role='tab'][aria-selected='true'] { color: var(--text); background: color-mix(in srgb, var(--engine, #e8eefc) 20%, transparent); }
+@media (pointer: coarse) {
+  .hangar-tabs [role='tab'] { min-height: 44px; }
+}
+
+.hangar-body { flex: 1; min-height: 0; overflow-y: auto; }
+.hangar-body[data-tab='shipyard'] { display: flex; overflow: hidden; }
+/* (the Shipyard's own grid, its head the Hangar's) */
+.hangar-yard { flex: 1; grid-template-rows: minmax(0, 1fr); grid-template-areas: 'cat stage bill'; }
+@media (max-width: 899px) {
+  .hangar-yard { grid-template-rows: 38vh minmax(0, 1fr) auto; grid-template-areas: 'stage' 'cat' 'bill'; }
+}
+@media (max-width: 719px) {
+  .hangar-xp { display: none; }
+  .hangar-head .yard-ship { display: none; }
+}
+
+/* a tab's own page: a column of sections, each a heading and its rows */
+.hangar-page { display: grid; gap: 1.25rem; max-width: 1100px; margin: 0 auto; padding: 1rem 1rem 2rem; }
+.hangar-page h3 { margin: 0 0 0.5rem; color: var(--muted); font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+.hangar-note { margin: 0; color: var(--muted); font-size: 0.82rem; }
+.hangar-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.hangar-chips button { min-height: 36px; padding: 0 0.8rem; border: 1px solid var(--yard-line); border-radius: 999px; color: var(--text); font-size: 0.8rem; }
+.hangar-chips button[aria-pressed='true'] { border-color: var(--engine, #e8eefc); background: color-mix(in srgb, var(--engine, #e8eefc) 18%, transparent); }
+.hangar-chips button:disabled { color: var(--muted); }
+@media (pointer: coarse) {
+  .hangar-chips button { min-height: 44px; }
+}
+.hangar .hangar-page button:focus-visible { outline: 2px solid var(--engine, #e8eefc); outline-offset: 1px; }
+
+/* the Crew: the Wardrobe's turntable and controls for the cruiser's and
+   the RV's (its inked look, its tokens here since the dialog's root isn't),
+   and a card with chips for the galaxy's four */
+.hangar-crew {
+  --wd-ink: #1b1424;
+  --wd-green: #97ce4c;
+  --wd-lime: #c9ff5a;
+  --wd-glass: rgba(27, 20, 36, 0.94);
+  --wd-paper: #fdfbf5;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  height: 100%;
+  min-height: 0;
+  background: var(--wd-glass);
+  color: #fff;
+}
+.hangar-crew .rm-wardrobe-controls { overflow-y: auto; }
+.hangar-crew[data-cast='breakingbad'] { --wd-green: #5fc8ef; --wd-lime: #f0d43a; }
+.hangar-crew[data-cast='breakingbad'] .rm-wardrobe-stage { background: radial-gradient(circle at 50% 42%, #ffe9bd 0%, #efb766 32%, #8a4f2a 70%, #2a160c 100%); }
+.hangar-crew[data-cast='breakingbad'] .rm-wardrobe-swatch-own { background: conic-gradient(#f0d43a 0 25%, #a24a26 0 50%, #b9a37c 0 75%, #1f1e22 0); }
+@media (max-width: 719px) {
+  .hangar-crew { grid-template-columns: minmax(0, 1fr); grid-template-rows: 40vh auto; height: auto; }
+  .hangar-crew .rm-wardrobe-stage { border-right: 0; }
+}
+.hangar-card { --blade: var(--engine, #e8eefc); padding: 1rem; border: 1px solid var(--yard-line); border-radius: 12px; background: var(--yard-pane); }
+.hangar-card h3 { margin: 0 0 0.35rem; color: var(--text); font-family: inherit; font-size: 1.15rem; letter-spacing: 0; text-transform: none; }
+.hangar-card-line { margin: 0 0 0.75rem; color: var(--muted); font-size: 0.86rem; }
+.hangar-card dl { display: grid; gap: 0.35rem; margin: 0; }
+.hangar-card dl > div { display: flex; gap: 0.75rem; }
+.hangar-card dt { min-width: 7rem; color: var(--muted); font-size: 0.8rem; }
+.hangar-card dd { margin: 0; font-size: 0.86rem; }
+.hangar-blade { display: inline-block; width: 1.6rem; height: 0.3rem; border-radius: 2px; vertical-align: middle; background: var(--blade); box-shadow: 0 0 8px var(--blade); }
+.hangar-swatches { gap: 0.5rem; margin-bottom: 0.5rem; }
+.hangar-chips .hangar-swatch { width: 36px; min-height: 36px; padding: 0; border: 2px solid var(--yard-line); border-radius: 50%; background: var(--swatch); }
+.hangar-chips .hangar-swatch[aria-pressed='true'] { border-color: #fff; background: var(--swatch); box-shadow: 0 0 0 2px var(--swatch); }
+@media (pointer: coarse) {
+  .hangar-chips .hangar-swatch { width: 44px; min-height: 44px; }
+}
+
+/* the Arms: the ship's three lines, a row each */
+.hangar-lines { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.hangar-lines li { display: grid; grid-template-columns: 9rem minmax(0, 1fr) auto; grid-template-areas: 'key name go' 'key does go'; align-items: center; gap: 0.15rem 0.9rem; padding: 0.7rem 0.9rem; border: 1px solid var(--yard-line); border-radius: 12px; background: var(--yard-pane); }
+.hangar-line-key { grid-area: key; color: var(--muted); font-size: 0.8rem; }
+.hangar-line-name { grid-area: name; font-size: 0.95rem; }
+.hangar-lines li[data-line='secondary'] .hangar-line-name { color: #9fd8ff; }
+.hangar-lines li[data-line='ordnance'] .hangar-line-name { color: #ffc070; }
+.hangar-line-does { grid-area: does; color: var(--muted); font-size: 0.8rem; }
+.hangar-lines button { grid-area: go; min-height: 36px; padding: 0 0.8rem; border: 1px solid var(--yard-line); border-radius: 999px; color: var(--text); font-size: 0.78rem; }
+@media (pointer: coarse) {
+  .hangar-lines button { min-height: 44px; }
+}
+/* the unique weapons: the hand's in green, a locked one's name dimmed, its button the way to the skill tree */
+.hangar-unique li[data-line='hand'] .hangar-line-name { color: #c9ff9a; }
+.hangar-unique li[data-open='false'] .hangar-line-name { color: var(--muted); }
+.hangar-unique .hangar-unique-lock { color: var(--muted); }
+.hangar-unique-open { grid-area: go; color: var(--muted); font-size: 0.78rem; }
+.hangar-chips button[data-unique] { border-color: #c9ff9a; }
+@media (max-width: 719px) {
+  .hangar-lines li { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'key' 'name' 'does' 'go'; }
+  .hangar-lines button { justify-self: start; }
+}
+/* the Powers: the crew's two, a card each, the mark in the crew's colour */
+.hangar-powers { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+.hangar-power { display: flex; gap: 0.9rem; padding: 1rem; border: 1px solid var(--yard-line); border-radius: 12px; background: var(--yard-pane); }
+.hangar-power-icon { flex: none; color: var(--engine, #e8eefc); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--engine, #e8eefc) 50%, transparent)); }
+.hangar-power h3 { display: flex; align-items: center; gap: 0.45rem; }
+.hangar-power b { display: block; margin-bottom: 0.25rem; font-size: 1rem; }
+.hangar-power p { margin: 0 0 0.4rem; font-size: 0.86rem; }
+
+.hangar-power-picks { margin-top: 0.6rem; }
+.hangar-lock { color: var(--muted); font-size: 0.72rem; }
+
+/* the Skills: a circuit board a branch (SkillTree.jsx), hexagons wired row
+   to row on a faint grid, the readout beside them (below them on a narrower
+   window, and one board at a time on a phone, picked above it). A wire is
+   lit in the crew's colour along the path taken, runs dashed where it's
+   powered, and is faint where it isn't. A node: lit when taken, bright when
+   it can be taken, dim when it needs something, dashed when it's to come. */
+.hangar-skills { --skill-ink: #0a0d15; --skill-dead: rgb(255 255 255 / 0.1); --skill-live: color-mix(in srgb, var(--engine, #e8eefc) 55%, transparent); max-width: 1440px; }
+.skill-head { display: grid; gap: 0.25rem; }
+.skill-free { margin: 0; font-size: 0.95rem; }
+.skill-free b { color: var(--engine, #e8eefc); font-family: var(--font-mono); font-size: 1.5rem; font-variant-numeric: tabular-nums; text-shadow: 0 0 12px color-mix(in srgb, var(--engine, #e8eefc) 60%, transparent); }
+
+.skill-switch { display: none; gap: 0.35rem; overflow-x: auto; scrollbar-width: none; }
+.skill-switch button { flex: none; min-height: 44px; padding: 0 0.9rem; border: 1px solid var(--yard-line); clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); color: var(--muted); font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.skill-switch button[aria-pressed='true'] { border-color: var(--engine, #e8eefc); color: var(--text); background: color-mix(in srgb, var(--engine, #e8eefc) 18%, transparent); }
+
+.skill-deck { display: grid; grid-template-columns: minmax(0, 1fr) 280px; align-items: start; gap: 1.25rem; }
+.skill-boards { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; }
+.skill-board {
+  padding: 0.5rem 0.5rem 0.75rem;
+  border: 1px solid var(--yard-line);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  background:
+    linear-gradient(rgb(255 255 255 / 0.03) 1px, transparent 1px) 0 0 / 16px 16px,
+    linear-gradient(90deg, rgb(255 255 255 / 0.03) 1px, transparent 1px) 0 0 / 16px 16px,
+    rgb(6 8 14 / 0.85);
+}
+.skill-board-head { display: flex; align-items: baseline; justify-content: space-between; padding: 0.15rem 0.35rem 0.4rem; border-bottom: 1px solid var(--yard-line); font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; }
+.skill-board-tag { color: var(--engine, #e8eefc); }
+.skill-board-count { color: var(--muted); font-variant-numeric: tabular-nums; }
+.skill-board-plate { position: relative; margin: 0.25rem auto 0; }
+.skill-wires { position: absolute; inset: 0; overflow: visible; }
+.skill-wires path { fill: none; stroke: var(--skill-dead); stroke-width: 2; stroke-linecap: square; }
+.skill-wires rect { fill: var(--skill-dead); }
+.skill-wires [data-state='live'] { stroke: var(--skill-live); stroke-dasharray: 3 5; }
+.skill-wires rect[data-state='live'] { fill: var(--skill-live); }
+.skill-wires [data-state='taken'] { stroke: var(--engine, #e8eefc); filter: drop-shadow(0 0 3px var(--engine, #e8eefc)); }
+.skill-wires rect[data-state='taken'] { fill: var(--engine, #e8eefc); }
+@media (prefers-reduced-motion: no-preference) {
+  .skill-wires path[data-state='live'] { animation: skill-flow 1.4s linear infinite; }
+}
+@keyframes skill-flow {
+  to { stroke-dashoffset: -16; }
+}
+
+.skill-node { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer; translate: -50% 0; }
+.skill-hexbox { position: relative; display: grid; place-items: center; width: 48px; height: 48px; }
+.skill-hex { position: absolute; inset: 0; overflow: visible; }
+.skill-hex polygon { fill: var(--skill-ink); stroke: rgb(255 255 255 / 0.22); stroke-width: 1.5; }
+.skill-icon { position: relative; color: var(--muted); }
+.skill-cost { position: absolute; top: -5px; right: -7px; min-width: 15px; padding: 0 3px; border: 1px solid currentColor; background: var(--skill-ink); color: var(--muted); font-family: var(--font-mono); font-size: 0.6rem; line-height: 13px; text-align: center; }
+.skill-name { display: -webkit-box; overflow: hidden; color: inherit; font-size: 0.66rem; line-height: 1.2; text-align: center; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.skill-node[data-state='open'] { color: var(--text); }
+.skill-node[data-state='open'] .skill-hex polygon { stroke: var(--engine, #e8eefc); }
+.skill-node[data-state='open'] .skill-icon,
+.skill-node[data-state='open'] .skill-cost { color: var(--engine, #e8eefc); }
+.skill-node[data-state='taken'] { color: var(--text); }
+.skill-node[data-state='taken'] .skill-hex { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--engine, #e8eefc) 70%, transparent)); }
+.skill-node[data-state='taken'] .skill-hex polygon { fill: color-mix(in srgb, var(--engine, #e8eefc) 34%, var(--skill-ink)); stroke: var(--engine, #e8eefc); }
+.skill-node[data-state='taken'] .skill-icon { color: #fff; }
+.skill-node[data-state='taken'] .skill-cost { border-color: var(--engine, #e8eefc); background: var(--engine, #e8eefc); color: var(--skill-ink); }
+.skill-node:is([data-state='parent'], [data-state='key'], [data-state='points']) { opacity: 0.62; }
+.skill-node[data-state='soon'] { opacity: 0.45; }
+.skill-node[data-state='soon'] .skill-hex polygon { stroke-dasharray: 3 3; }
+/* the node picked: corner brackets round its hexagon */
+.skill-node[aria-pressed='true'] .skill-hexbox::after {
+  --c: var(--engine, #e8eefc);
+  content: '';
+  position: absolute;
+  inset: -6px;
+  background:
+    linear-gradient(var(--c), var(--c)) 0 0 / 9px 1.5px no-repeat,
+    linear-gradient(var(--c), var(--c)) 0 0 / 1.5px 9px no-repeat,
+    linear-gradient(var(--c), var(--c)) 100% 0 / 9px 1.5px no-repeat,
+    linear-gradient(var(--c), var(--c)) 100% 0 / 1.5px 9px no-repeat,
+    linear-gradient(var(--c), var(--c)) 0 100% / 9px 1.5px no-repeat,
+    linear-gradient(var(--c), var(--c)) 0 100% / 1.5px 9px no-repeat,
+    linear-gradient(var(--c), var(--c)) 100% 100% / 9px 1.5px no-repeat,
+    linear-gradient(var(--c), var(--c)) 100% 100% / 1.5px 9px no-repeat;
+}
+.skill-node[aria-pressed='true'] { opacity: 1; }
+.skill-node:hover .skill-hex polygon { stroke-width: 2.25; }
+.hangar .skill-node:focus-visible { outline: none; }
+.hangar .skill-node:focus-visible .skill-hexbox { outline: 2px solid var(--engine, #e8eefc); outline-offset: 4px; }
+
+.skill-readout {
+  position: sticky;
+  top: 0;
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid var(--yard-line);
+  border-left: 3px solid var(--engine, #e8eefc);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+  background: rgb(6 8 14 / 0.92);
+}
+.skill-readout-tag { margin: 0; color: var(--engine, #e8eefc); font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; }
+.skill-readout h3 { margin: 0; color: var(--text); font-family: inherit; font-size: 1.2rem; letter-spacing: 0; text-transform: none; }
+.skill-readout-line { margin: 0; font-size: 0.86rem; }
+.skill-readout-says { margin: 0; color: var(--muted); font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.skill-readout[data-state='open'] .skill-readout-says { color: var(--engine, #e8eefc); }
+.skill-take { min-height: 44px; margin-top: 0.35rem; padding: 0 1rem; border: 1px solid var(--engine, #e8eefc); clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); background: var(--engine, #e8eefc); color: var(--skill-ink); font-family: var(--font-mono); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.skill-take:disabled { border-color: var(--yard-line); background: transparent; color: var(--muted); }
+
+.hangar-skills-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.hangar-reset { min-height: 36px; padding: 0 1rem; border: 1px solid var(--yard-line); border-radius: 999px; color: var(--text); font-size: 0.8rem; }
+.hangar-reset:disabled { color: var(--muted); }
+@media (pointer: coarse) {
+  .hangar-reset { min-height: 44px; }
+}
+/* narrower: the readout under the boards, held at the foot of the view */
+@media (max-width: 1439px) {
+  .skill-deck { grid-template-columns: minmax(0, 1fr); }
+  .skill-readout { top: auto; bottom: 0; z-index: 1; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 1rem; }
+  .skill-readout > :not(.skill-take) { grid-column: 1; }
+  .skill-take { grid-column: 2; grid-row: 1 / span 4; margin: 0; }
+}
+/* a phone: one board at a time, picked above */
+@media (max-width: 719px) {
+  .skill-switch { display: flex; }
+  .skill-board:not([data-active]) { display: none; }
+  .skill-readout { grid-template-columns: minmax(0, 1fr); }
+  .skill-take { grid-column: 1; grid-row: auto; }
+}

@@ -111,8 +111,10 @@ import { FORCE, forceAt, hitStop, pushVelocity } from './combatRules';
 import { createSaberSim, saberOf } from '../../../lib/combat/saber2017';
 import { incomingAt, met, swingingOf } from './duellists';
 import { heatShot, heatStep, spreadAt, vent, ventSpot, withMods } from './weaponRules';
+import { createHandArms } from './handArms';
+import { blastOf, throwOf as palmThrow } from '../../../lib/arms/behaviours';
 import { heroById, heroSpec, partyFor, refitOf, writeHero } from '../heroes';
-import { perkEffects } from '../perks';
+import { groundSkills, perkEffects, withGround } from '../perks';
 import { ABILITIES, GAME_HP, JET, SABER_THROWS, abilitiesOf, forceOf, hitOf, holdOf, jetStep, kindOf, newJet, takenOf, throwOf } from './abilityRules';
 import { createPowers } from './powers';
 import { SABER } from './saberRules';
@@ -388,12 +390,13 @@ export async function create(canvas, ctx) {
   const scattered = site.scatter.filter((s) => !(site.level && s.game)).map((s) => {
     const items = [];
     const [r0, r1] = s.within ?? [20, site.reach];
+    const [cx, cz] = s.at ?? [0, 0]; // (a row round a place: its own clearing is still kept)
     let tries = 0;
     while (items.length < Math.round(s.n * amounts.scatter) && tries++ < s.n * 20 * Math.max(1, amounts.scatter)) {
       const a = r() * Math.PI * 2;
       const d = Math.sqrt(r0 * r0 + r() * (r1 * r1 - r0 * r0));
-      const x = Math.cos(a) * d;
-      const z = Math.sin(a) * d;
+      const x = cx + Math.cos(a) * d;
+      const z = cz + Math.sin(a) * d;
       if (avoid.some((v) => Math.hypot(x - v.at[0], z - v.at[1]) < v.r + (s.clear ?? 4))) continue;
       if (s.solid !== false && inBusy(x, z)) continue;
       if (s.flat && grid.normalAt(x, z)[1] < s.flat) continue;
@@ -581,6 +584,9 @@ export async function create(canvas, ctx) {
     ground: (p) => ({ h: p.y - groundAt(world, p.x, p.z, p.y + 0.3), n: UP }),
     light: flare && { obj: flare, place: (p) => flare.position.copy(p) },
   });
+  // the skill tree's guns that do more than a bolt (handArms.js): the particle beam, the M60's climb, the gauntlet's charge
+  const handMuzzle = new V();
+  const hand = createHandArms({ parent: scene, muzzle: () => me()?.gp?.gun?.getObjectByName('muzzle')?.getWorldPosition(handMuzzle) ?? null });
   // and the same in the 2017 game's look where the bucket had it (lib/three/
   // fx/gameFx.js: its scorch and metal marks, burst, ring, chunks and Force
   // push); each part says whether it drew, and gunfx's own stands in where not
@@ -784,7 +790,8 @@ export async function create(canvas, ctx) {
   const crewOf = PARTY[shipKind] ?? PARTY.xwing;
   let picked = ctx.hero ? writeHero(ctx.hero) : null; // (the choice as kept, to know a new one)
   let hero = ctx.hero ? heroSpec(ctx.hero) : null;
-  let perks = perkEffects(hero?.perks ?? []); // (galaxy/perks.js: the multipliers the hero's perks give)
+  let skillFx = ctx.skillFx ?? null; // (the skill tree's, the page's: hangar/skills's fx)
+  let perks = withGround(perkEffects(hero?.perks ?? []), groundSkills(skillFx)); // (galaxy/perks.js: the multipliers the hero's perks give, and the skill tree's ground branch on them)
   let spareSim = null; // (the dodge's engine for a hero with no saber: dodge())
   // (your mate carries their own two abilities too, where they're on the roster)
   const withAbilities = (s) => (s.abilities || !heroById(s.id)?.abilities ? s : { ...s, abilities: heroById(s.id).abilities });
@@ -916,12 +923,19 @@ export async function create(canvas, ctx) {
   // you were, and your mate is whoever of the crew isn't them; the guard as
   // full as it was, of the new perks' most (a swap mid-fight refills
   // nothing); a mission, your health and where you are kept
+  // new skills (the page's): the perks' numbers again, the skill tree's on
+  // them (the gun in hand keeps its heat's until it's next drawn)
+  function setSkills(fx) {
+    skillFx = fx ?? null;
+    perks = withGround(perkEffects(hero?.perks ?? []), groundSkills(skillFx));
+    if (me().saber) me().saber.sim.scale = { blocked: 1 / perks.guard, recharge: perks.dodge };
+  }
   function setHero(choice) {
     const kept = writeHero(choice);
     if (kept === picked) return;
     picked = kept;
     hero = heroSpec(choice);
-    perks = perkEffects(hero.perks ?? []);
+    perks = withGround(perkEffects(hero.perks ?? []), groundSkills(skillFx));
     if (me().saber) me().saber.sim.scale = { blocked: 1 / perks.guard, recharge: perks.dodge };
     spareSim = null;
     const [lead1, mate1] = partyFor(hero, crewOf).map(withAbilities);
@@ -1050,6 +1064,7 @@ export async function create(canvas, ctx) {
     lock: null, // the enemy a stroke homes on
     cool: { power: -99, second: -99 }, // when each ability is ready again
     overcharge: -99, // until when the gun runs hot-free
+    palm: null, // the gauntlet's charge, let go and on its way out (handArms.js)
     sprint: -99, // until when you're sprinting (abilityRules.js's sprint)
     jet: newJet(), // the jetpack's tank, for a hero with one (the held lightning's too)
     rage: null, // { until, taken, shield }: a rage on you (powers.js)
@@ -1177,6 +1192,7 @@ export async function create(canvas, ctx) {
   const pointer = { x: 0, y: 0, x0: 0, y0: 0, id: null };
   const onKey = (down) => (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (props.frozen && down) return; // (the page's Hangar is open over the world: nothing moves; a key let go still is)
     const tag = e.target?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return;
     const k = KEYS[e.key.toLowerCase()];
@@ -1869,8 +1885,36 @@ export async function create(canvas, ctx) {
   const boltOf = (p) => GUNS[weapon().kind]?.bolt ?? p.spec.bolt ?? '#ff3b30';
   // the eyes' line, scattered by the weapon (tighter down the sights)
   const scatter = (dir, w) => {
-    const sp = spreadAt(w, state.ads);
+    const sp = spreadAt(w, state.ads) * perks.spread; // (steady hands: the skill tree's)
     return dir.clone().add(new V((Math.random() - 0.5) * sp * 2, (Math.random() - 0.5) * sp * 2, (Math.random() - 0.5) * sp * 2)).normalize();
+  };
+  // a shot of yours along `dir`: a bolt; the particle beam's hit at once along the line (handArms.js draws it);
+  // the gauntlet's blast, let go at the charge it had (state.palm): the first in reach hit, harder for the charge, and thrown back
+  const shoot = (from, dir, w, color, muzzle, tag) => {
+    const k = state.palm;
+    if (!w.beam && k == null) return blaster.fire(from, dir, shootable(), color, w.range, muzzle, tag);
+    state.palm = null;
+    const hit = blaster.aim(from, dir, shootable(), w.range);
+    const b = k == null ? null : blastOf(w, k);
+    const t = hit.target;
+    if (t) struck(hit, b ? b.damage : (tag.damage ?? w.damage), { how: tag.how, push: tag.push });
+    if (b && t && !(assaultOn() && !t.ground)) on(t).knock(t, palmThrow(me().st, hit.at, b.push, b.lift));
+    if (b) {
+      // (a blast is short: with nothing in reach it's drawn a few metres out, not to the end of its reach)
+      const start = muzzle ?? from;
+      const end = t ? hit.at : start.clone().addScaledVector(dir, Math.min(6, hit.at.distanceTo(start)));
+      hand.blast(start, end, b.scale);
+      fx.flash(end, dir.clone().negate(), { color: '#bfefff', size: 0.4 * b.scale });
+    } else {
+      hand.beam(muzzle ?? from, hit.at);
+      if (t) fx.sparks(hit.at, UP, '#9dffb0', 3);
+    }
+    return hit;
+  };
+  // the M60's kick walking the aim up the longer it's held (handArms.js)
+  const climbed = (w) => {
+    const c = hand.climb(w, state.t, state.ads);
+    if (c) state.cam.pitch = clamp(state.cam.pitch - c, CAM.pitch[0], CAM.pitch[1]);
   };
   // a side chosen, and onto the field at one of its posts (from the HUD, or the dev hooks)
   function chooseSide(id) {
@@ -1922,7 +1966,7 @@ export async function create(canvas, ctx) {
   const camDir = new V();
   function fire() {
     const p = me().st;
-    if (state.t - state.firedAt < FIRE_EVERY) return;
+    if (state.t - state.firedAt < (hand.unfloored(weapon()) ? 0 : FIRE_EVERY)) return;
     // on a bike in a chase: its cannon, from the nose, where you're looking
     if (state.phase === 'ride' && chase) {
       if (state.t - state.firedAt < BIKE_FIRE_EVERY || !chase.running()) return;
@@ -1947,6 +1991,11 @@ export async function create(canvas, ctx) {
       }
       return;
     }
+    // the gauntlet: charging while F's down; let go, it's fired from stepSaber (state.palm)
+    if (w.charge && state.palm == null) {
+      hand.charge(state.t);
+      return;
+    }
     state.firedAt = state.t;
     camera.getWorldDirection(camDir);
     p.yaw = Math.atan2(camDir.x, camDir.z);
@@ -1966,7 +2015,8 @@ export async function create(canvas, ctx) {
       state.shot = { from, dir: camDir.clone() };
       return;
     }
-    const hit = blaster.fire(from, scatter(camDir, w), shootable(), boltOf(me()), w.range, null, { yours: true, how: w.kind, push: camDir.clone() });
+    const hit = shoot(from, scatter(camDir, w), w, boltOf(me()), null, { yours: true, how: w.kind, push: camDir.clone() });
+    climbed(w);
     groundWar.passed(from, hit.at); // (a soldier it went close by keeps its head down, and has a grudge)
     activity.heard({ x: from.x, z: from.z }, { x: from.x + camDir.x * 40, z: from.z + camDir.z * 40 }); // (the enemies hear it, and one it's aimed near knows)
     heardBy(from, { x: from.x + camDir.x * 40, z: from.z + camDir.z * 40 }); // (and the people about: actors.js's)
@@ -2418,6 +2468,13 @@ export async function create(canvas, ctx) {
       const w = weapon();
       state.heat = heatStep(state.heat, dt, w, state.t);
       stepBurst();
+      // (the gauntlet let go: fired at its charge, as a shot is; a shot that can't go now drops it)
+      const k = hand.step(state.t, w, Boolean(state.keys.fire || state.buttons.fire));
+      if (k != null && state.phase === 'walk') {
+        state.palm = k;
+        fire();
+        if (!state.shot) state.palm = null;
+      }
       if (state.throwQueued) ventGun();
       return;
     }
@@ -2492,10 +2549,11 @@ export async function create(canvas, ctx) {
     const n = w.pellets ?? 1;
     let hit = null;
     for (let i = 0; i < n; i++) {
-      const h = blaster.fire(o.from, scatter(o.dir, w), shootable(), hot ? '#ffffff' : boltOf(p), w.range, r.muzzle, { yours: true, damage: Math.max(1, Math.round((w.damage + (hot ? 1 : 0)) / (n > 1 ? 2 : 1))), how: w.kind, push: o.dir.clone() });
+      const h = shoot(o.from, scatter(o.dir, w), w, hot ? '#ffffff' : boltOf(p), r.muzzle, { yours: true, damage: Math.max(1, Math.round((w.damage + (hot ? 1 : 0)) / (n > 1 ? 2 : 1))), how: w.kind, push: o.dir.clone() });
       groundWar.passed(o.from, h.at);
       hit ??= h;
     }
+    climbed(w);
     activity.heard({ x: o.from.x, z: o.from.z }, { x: o.from.x + o.dir.x * 40, z: o.from.z + o.dir.z * 40 }); // (as for an unrigged shot in fire())
     heardBy(o.from, { x: o.from.x + o.dir.x * 40, z: o.from.z + o.dir.z * 40 });
     const spec = p.gp.spec;
@@ -3496,6 +3554,7 @@ export async function create(canvas, ctx) {
     knockHits.update(dt);
     powers.step(dt); // (a choke, a rush, the arcs and rings: powers.js)
     fx.update(dt);
+    hand.frame(dt);
     gameFx.update(dt);
     spring(state.kick, dt, 240, 22);
     state.aim = Math.max(0, state.aim - dt / 2.5);
@@ -3815,7 +3874,9 @@ export async function create(canvas, ctx) {
       props = next;
       for (const id of next.found ?? []) state.found.add(id);
       for (const id of next.done ?? []) state.done.add(id);
+      if (next.frozen) for (const k of Object.keys(state.keys)) state.keys[k] = false; // (nothing held while the Hangar's open)
       if (next.hero) setHero(next.hero);
+      if ((next.skillFx ?? null) !== skillFx) setSkills(next.skillFx);
     },
     setVisible(on) {
       shown = on;
@@ -4189,6 +4250,7 @@ export async function create(canvas, ctx) {
       }
       powers.dispose();
       fx.dispose();
+      hand.dispose();
       gameFx.dispose();
       cast?.dispose();
       ship.dispose();

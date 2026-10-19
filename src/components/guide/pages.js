@@ -12,26 +12,25 @@ import { TRIBUTE_KEYS, TRIBUTE_PAD, TRIBUTE_TOUCH } from './mario64';
 // the portfolio pages run into one another (components/feed)
 const FEED_TIP = ['Keep scrolling', 'The classic site’s six pages run into one another: reach the end of one and the next begins. After the sixth, the end.'];
 
-// flying, on either map: `guns` are the rows after Fire that only one map
-// has (the universe map's weapons; the galaxy's crew powers)
-const fly = (guns) => [
+// flying, on either map: the same keys in every ship, the arms among them
+// (universe/weapons.js's lines and universe/shipPowers.js's powers, on the
+// universe map and in the galaxy alike)
+const ARMS = [
+  ['R / 1 2 3', 'Weapons: blaster, secondary, heavy ordnance (Shift+R back)'],
+  ['G', 'Your crew’s power: Force Focus, Never tell me the odds, the portal gun or Magnets'],
+  ['X', 'The big one, once your kills have charged it: a torpedo salvo, Chewie on the guns, the death ray or Say my name'],
+];
+const fly = () => [
   ['W S', 'Throttle'],
   ['A D', 'Roll (or turn: flight settings)'],
   ['← →', 'Swing the nose'],
   ['↑ ↓', 'Nose up and down (all the way over, if you hold it)'],
   ['Space / Shift', 'Boost (the pulse drive, out in the open)'],
   ['hold F', 'Fire'],
-  ...guns,
+  ...ARMS,
   ['T / Q', 'Next / previous target'],
   ['V', 'Cockpit or chase camera'],
   ['Drag', 'Fly like a stick'],
-];
-// the universe map's armory (universe/weapons.js)
-const WEAPONS = [['R / 1 2 3', 'Weapons: blaster, spread, heavy ordnance (Shift+R back)']];
-// the galaxy's crew powers (universe/shipPowers.js): no weapons to switch there
-const POWERS = [
-  ['G', 'Your crew’s power: Force Focus, Never tell me the odds, the portal gun or Magnets'],
-  ['X', 'The big one, once your kills have charged it: a torpedo salvo, Chewie on the guns, the death ray or Say my name'],
 ];
 
 const WALK = [
@@ -103,7 +102,7 @@ export const PAGES = {
   '/universe': {
     about: ABOUT['/universe'],
     keys: [
-      { label: 'Flying', rows: [...fly(WEAPONS), ['hold S', 'Drop out of a lane'], ['hold W', 'Carry on through a junction'], ['M', 'The nav map: pick a place and a drive'], ['J', 'Jump to the place picked'], ['E / Enter', 'Land or dock where you are'], ['H', 'The hangar: paint and parts'], ['O', 'Flight settings'], ['Esc', 'Back out to the whole universe']] },
+      { label: 'Flying', rows: [...fly(), ['hold S', 'Drop out of a lane'], ['hold W', 'Carry on through a junction'], ['M', 'The nav map: pick a place and a drive'], ['J', 'Jump to the place picked'], ['E / Enter', 'Land or dock where you are'], ['H', 'The Hangar: crew, arms, powers and the shipyard'], ['C', 'The Hangar, on your crew'], ['O', 'Flight settings'], ['Esc', 'Back out to the whole universe']] },
       { label: 'On foot', rows: [['W A S D', 'Walk'], ['Q E', 'Step sideways'], ['Shift', 'Run'], ['Space', 'Jump'], ['Click, then the mouse', 'Look round (Esc lets go)'], ['F / Click', 'Fire'], ['X', 'Play the other one of your crew'], ['B', 'Rick’s next gadget: the portal gun, the freeze ray, the shrink ray'], ['V', 'Out of their eyes'], ['G', 'Through a door, or back into the ship'], ['Enter', 'Into the planet’s page']] },
     ],
     touch: [
@@ -114,7 +113,7 @@ export const PAGES = {
           ['Tap', 'A planet, station or wonder to fly there; a hunter to lock on'],
         ],
       },
-      { label: 'The buttons', rows: [['Boost', 'Hold to go fast'], ['Fire', 'Shoot'], ['View', 'The cockpit'], ['Hangar', 'Paint and parts (the wrench)'], ['Flight settings', 'How it all feels (the sliders)']] },
+      { label: 'The buttons', rows: [['Boost', 'Hold to go fast'], ['Fire', 'Shoot'], ['Weapon', 'The next of your three guns'], ['Power', 'Your crew’s power'], ['Big one', 'Once your kills have charged it'], ['View', 'The cockpit'], ['Hangar', 'Paint and parts (the wrench)'], ['Flight settings', 'How it all feels (the sliders)']] },
     ],
     tips: [
       ['Pick a ship', 'Rick and Morty’s cruiser, Luke and Artoo’s X-wing, Han and Chewie’s Falcon or Walt and Jesse’s RV. Each crew has a word about every place. No ship? Pick a place and the camera flies there.'],
@@ -131,13 +130,13 @@ export const PAGES = {
   },
   '/galaxy': {
     about: ABOUT['/galaxy'],
-    keys: [{ label: 'Flying', rows: [...fly(POWERS), ['M', 'The galaxy map: plot a course'], ['J', 'Jump to lightspeed, to the star on your nose, or else to the course you plotted'], ['E / Enter', 'Land on the planet (or board the Death Star)'], ['H', 'The shipyard: build, paint and parts'], ['O', 'Flight settings']] }, { label: 'On the galaxy map', rows: [['M / Esc', 'Close the galaxy map'], ['/', 'Find a system'], ['J', 'Jump to the course you plotted'], ['+ − 0', 'Zoom in, out, the whole galaxy; drag to pan']] }],
-    touch: [{ rows: [['Drag', 'Fly'], ['Tap', 'A star’s name to plot a course'], ['Jump', 'Lightspeed, to the star on your nose'], ['Power', 'Your crew’s power'], ['Big one', 'Once your kills have charged it'], ['Shipyard', 'Open the shipyard in the panel: build, paint and parts']] }],
+    keys: [{ label: 'Flying', rows: [...fly(), ['M', 'The galaxy map: plot a course'], ['J', 'Jump to lightspeed, to the star on your nose, or else to the course you plotted'], ['E / Enter', 'Land on the planet (or board the Death Star)'], ['H', 'The Hangar: crew, arms, powers and the shipyard'], ['C', 'The Hangar, on your crew'], ['O', 'Flight settings']] }, { label: 'On the galaxy map', rows: [['M / Esc', 'Close the galaxy map'], ['/', 'Find a system'], ['J', 'Jump to the course you plotted'], ['+ − 0', 'Zoom in, out, the whole galaxy; drag to pan']] }],
+    touch: [{ rows: [['Drag', 'Fly'], ['Tap', 'A star’s name to plot a course'], ['Jump', 'Lightspeed, to the star on your nose'], ['Weapon', 'The next of your three guns'], ['Power', 'Your crew’s power'], ['Big one', 'Once your kills have charged it'], ['Shipyard', 'Open the shipyard in the panel: build, paint and parts']] }],
     tips: [
       ['Jumping', 'Turn the nose toward a star and its name comes up; press J, or fly out of the system toward it. A course plotted on the galaxy map (M) stays on your flight HUD, and J with the nose on no star jumps to it. The map filters by era or film, and its layers switch off what you don’t need.'],
       ['Ship powers', 'Each crew has its own. Luke slows time and Artoo locks four torpedoes; Han corkscrews out of trouble and Chewie takes the quad guns; Rick portals onto a tail and fires the death ray; Walt and Jesse’s magnet drags fighters into a ball, then the crystal goes off. The big one charges as you shoot them down.'],
       ['Pickups', 'A fighter you shoot down now and then leaves one behind (an ace or a capital ship always), floating for 25 seconds: fly through it. A repair kit gives back 40 deflectors, Overcharge a faster boost, Rapid fire quicker guns, a bubble shield takes the next 60 damage, and a power cell charges the big one a quarter and cuts the crew power’s cooldown. The effects show over the cluster, and each pickup is a cyan dot on the radar. A jump, a crash or a landing loses them all.'],
-      ['The shipyard', 'H, or the wrench in the corner: the same shipyard as on the universe map, and what you fit there is on the ship in both. The secondary and ordnance lines fire on the universe map only; here the crew’s powers take their place.'],
+      ['The shipyard', 'H, or the wrench in the corner: the same shipyard as on the universe map, and what you fit there is on the ship in both.'],
       ['Missions', 'Each system has one. The trench run and boarding the Death Star are playable now; the rest are briefings for games still being built. Watch for the tractor beam at Alderaan.'],
       ['Out there', 'Each system is open 2,400 out from its planet, with three to six places to find in it: a derelict, a comet, a beacon, an outpost. Well out from everything, holding Boost opens the drive into super speed; it eases off again coming up on anything.'],
       ['Online', 'The other pilots in the same system are there with you, in their own ships. The galaxy map shows how many are where.'],
@@ -409,8 +408,22 @@ export const PAGES = {
   },
   '/middle-earth': {
     about: ABOUT['/middle-earth'],
+    keys: [
+      {
+        label: 'In the study',
+        rows: [
+          ['← →', 'Turn the pages'],
+          ['R', 'Put on the Ring, or take it off'],
+          ['P', 'Look into the Palantír, or put it down'],
+          ['Esc', 'The Menu, or put the stone down'],
+        ],
+      },
+    ],
     tips: [
-      ['The map', 'Pick a place and the camera flies down to it. The map button takes you back up. A wax seal marks each place you’ve won.'],
+      ['The Red Book', 'Touch what stands up on a page: three to five things on each answer. Play it opens that place’s game; Walk it starts the Road there.'],
+      ['The Palantír', 'Drag the map inside the stone and go wherever it looks. Do not look too long.'],
+      ['The Ring', 'In the study, it shows the moon-letters and one hidden thing on every page, until the Eye comes for it.'],
+      ['The map', 'Middle-earth’s map, from the Menu or the stone: pick a place and the camera flies down to it. A wax seal marks each place you’ve won.'],
       ['The Doors of Durin', 'Move your pointer over the cliff to light the lines, or call the moon. Then say the word: read the arch.'],
       ['The bridge', 'Face the Balrog. Raise the staff (Space) as the whip falls; strike the bridge (Enter) with it right over the deep for a perfect.'],
       ['Gorgoroth', 'Hold to walk (Space or →). Let go when the Eye’s light comes close: standing still, the elven cloaks hide you. Rest before the Ring gets too heavy.'],
@@ -546,16 +559,20 @@ export const PAGES = {
   '/c-137': {
     about: ABOUT['/c-137'],
     keys: [
-      { label: 'Walking', rows: [['W A S D / ← ↑ ↓ →', 'Walk'], ['Shift', 'Run'], ['Space', 'Jump'], ['Click, then the mouse', 'Look round (Esc lets go)'], ['E', 'Doors, the cruiser, the games, the portal gun on Rick’s bench'], ['P', 'The portal gun, from anywhere'], ['M', 'Things to do']] },
-      { label: 'In the cruiser', rows: [['W A S D', 'Fly'], ['Space', 'Climb'], ['Shift', 'Drop'], ['E', 'Land (slow, over open ground)']] },
+      { label: 'Walking', rows: [['W A S D / ← ↑ ↓ →', 'Walk'], ['Shift', 'Run'], ['Space', 'Jump'], ['Click, then the mouse', 'Look round (Esc lets go)'], ['E', 'Doors, the cruiser, the games, the portal gun on Rick’s bench'], ['P', 'The portal gun, from anywhere'], ['M', 'Things to do'], ['H', 'The Hangar: the crew’s looks, and the cruiser’s arms, powers, skills and shipyard'], ['C', 'The Hangar, on the crew']] },
+      { label: 'In the cruiser', rows: [['W A S D', 'Fly'], ['Space', 'Climb'], ['Shift', 'Drop'], ['F', 'Fire (held, it keeps firing): the guns turn onto the Federation patrol, which fights back once it’s hit'], ['R / Shift+R', 'Next or last weapon'], ['1 2 3', 'Pick a weapon'], ['G', 'Power: the portal gun (or the one picked in the Hangar)'], ['X', 'The big one, once your hits have charged it'], ['E', 'Land (slow, over open ground)']] },
       { label: 'Portal panic', rows: [['W A S D', 'Move'], ['Mouse', 'Aim: the gun fires on its own'], ['F', 'Auto-fire off (then hold the mouse to fire)'], ['Space / Shift', 'Portal-dash'], ['1 2 3', 'Take a gadget'], ['P', 'Pause']] },
       { label: 'Total Rickall', rows: [['Mouse', 'Aim (click first to hold the pointer)'], ['E', 'Remember the one in the crosshair'], ['F / Click', 'Shoot them'], ['Tab', 'Lock on: the crosshair stays on them as you move'], ['Esc', 'Stop the game']] },
       { label: 'Through the portal', rows: [['E', 'Talk, take, look, free: whatever the prompt says'], ['F', 'Fire, in a fight (Evil Rick’s lair, the Blood Dome)'], ['Tab', 'Lock on, in a fight: Morty turns to face them'], ['Run', 'From whoever’s after you: the map shows them red']] },
+      { label: 'Plumbus Smash', rows: [['← ↓ → / A S D', 'Smash the left, middle or right chute'], ['P / Esc', 'Pause']] },
+      { label: 'Pickle Rick’s sewer run', rows: [['← → / A D', 'Change lanes'], ['Space / ↑ / W', 'Hop'], ['F / Enter', 'Fire, once three screws make the laser'], ['P / Esc', 'Pause']] },
     ],
     touch: [
       { rows: [['Stick', 'Walk, or fly'], ['Swipe', 'Look round'], ['Tap', 'Jump, climb, drop and act, on their buttons'], ['Portal gun', 'Its button at the top: pick where the garage portal goes']] },
       { label: 'Total Rickall', rows: [['Swipe', 'Aim'], ['Tap', 'Shoot the one in the crosshair (or Remember and Shoot, on their buttons)'], ['Lock', 'The crosshair stays on them as you move']] },
       { label: 'Through the portal', rows: [['Tap', 'The star fires, in a fight'], ['Lock', 'Face whoever you’re fighting (on by itself when they come close)']] },
+      { label: 'Plumbus Smash', rows: [['Tap', 'Smash a chute']] },
+      { label: 'Pickle Rick’s sewer run', rows: [['Tap', 'Left, Hop, Fire and Right, on their buttons']] },
     ],
     tips: [
       ['The portal gun', 'It’s on Rick’s bench in the garage: E there, or P (its button on a phone) anywhere, and pick a place. Then step through the portal on the garage’s west wall: twenty-six places from the show, and Blips and Chitz. Everyone in them does something; some of them come for you, and caught, you’re back at the door. Three slips to spot, a ticket to find, a cell to open, a ring to step into.'],
@@ -566,6 +583,10 @@ export const PAGES = {
       ['Interdimensional cable', 'Turn the dial.'],
       ['A look through', 'Past the street, the page’s Fire the portal gun button shows you another dimension. It’s only a look: the gun that takes you is Rick’s, on his bench (P).'],
       ['The Smiths', 'Four of them are site colours. Jerry can ask.'],
+      ['Plumbus Smash', 'The walkway cabinet at Blips and Chitz. Smash each plumbus at the foot of its chute; a swing at an empty chute sticks the stick. Somebody’s high score is all nines.'],
+      ['Pickle Rick’s sewer run', 'The hole in the agency’s floor. Roll down the drain to the agency: hop the grates, hop onto the rats, and three screws make the rat-suit’s laser. Three bites and you’re a snack.'],
+      ['The Microverse', 'Inside the car’s battery. Carry Zeep’s cells from his console to the gooble boxes, one at a time, before the world’s charge runs down; it runs from the first cell you take.'],
+      ['Anatomy Park', 'Inside Ruben. Find the four pieces of the park map while the diseases hunt you, then get back through the portal before the clock runs out; caught, the pieces blow back where they were.'],
     ],
   },
   // a Rick and Morty planet, landed on from the universe map (/c-137/<id>)
@@ -582,6 +603,7 @@ export const PAGES = {
           ['F', 'Fire the portal gun (on a planet the cruiser landed on)'],
           ['M', 'Things to do'],
           ['B', 'Hold for the emote wheel'],
+          ['H', 'The Hangar: the crew’s looks, and the cruiser’s arms, powers, skills and shipyard (C, on a small planet, opens it on the crew)'],
           ['Esc', 'Back to the cruiser and up to space'],
         ],
       },
@@ -608,7 +630,7 @@ export const PAGES = {
   },
   '/c-137/citadel': {
     about: ABOUT['/c-137/citadel'],
-    keys: [{ rows: [...WALK, ['1 2 3 4', 'Answer'], ['Space', 'Drop a wafer (Simple Rick’s)'], ['Esc', 'Leave a scene']] }],
+    keys: [{ rows: [...WALK, ['1 2 3 4', 'Answer'], ['Space', 'Drop a wafer (Simple Rick’s)'], ['Esc', 'Leave a scene'], ['H', 'The Hangar: the crew’s looks, and the cruiser’s arms, powers, skills and shipyard'], ['C', 'The Hangar, on the crew']] }],
     touch: [{ rows: [...WALK_TOUCH, ['Tap', 'The prompt, and the answers']] }],
     tips: [
       ['Morty Day Care', 'Six Mortys are loose. They run from you, so come at them from the far side and drive them through the gate.'],

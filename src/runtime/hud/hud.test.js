@@ -125,6 +125,11 @@ describe('the players chip', () => {
     expect(othersText(0)).toBe(null);
     expect(othersText(1)).toBe('1 other here');
     expect(othersText(4)).toBe('4 others here');
+    // allies among them (the roster's: the same key in every room)
+    expect(othersText(4, 1)).toBe('4 others here · 1 ally');
+    expect(othersText(3, 2)).toBe('3 others here · 2 allies');
+    expect(othersText(1, 1)).toBe('1 other here · your ally');
+    expect(othersText(2, 0)).toBe('2 others here');
   });
 });
 

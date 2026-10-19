@@ -3,6 +3,7 @@ import HQFrame from '../hq/HQFrame';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
+import { stoneById } from '../world/labels';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
 import { use3D } from '../../../lib/gpu';
@@ -414,7 +415,7 @@ export default function SmashRun({ fallback }) {
                 </p>
               )}
               {res?.stone && (
-                <p className="hq-stone" style={{ '--glow': '#2adf6a' }}>
+                <p className="hq-stone" style={{ '--glow': stoneById('time').color }}>
                   <span className="stone-dot" aria-hidden="true" />
                   The Time Stone is yours.
                 </p>

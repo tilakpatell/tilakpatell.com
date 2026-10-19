@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { NEIGHBOURS, WAR_SYSTEMS, seeded, warTable, GCW } from './gcw';
 import { CORE, RIM, systemById } from './systems';
 import { CELLS, EDGES, bordersOf, capOf, cellsOf, clashOf, contains, linksOf } from './territory';
+import { FIT, onView } from './mapView';
 
 const posOf = (id) => systemById(id).pos;
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -45,11 +46,17 @@ describe('the war’s territory: a cell round each system, as far as its reach',
     expect(inCells).toBeGreaterThan(200);
   });
 
-  it('reaches further from a worthier system, and stays inside the galaxy’s disc', () => {
+  it('reaches further from a worthier system, and stays inside the galaxy’s disc, but for a system past it', () => {
     expect(capOf('coruscant')).toBeGreaterThan(capOf('hoth'));
     expect(capOf('hoth')).toBeGreaterThan(capOf('bespin'));
     // (a corner can sit on the disc's edge itself)
-    for (const c of CELLS) for (const p of c.poly) expect(dist(p, CORE), c.id).toBeLessThanOrEqual(RIM + 1e-9);
+    const past = CELLS.filter((c) => dist(posOf(c.id), CORE) > RIM).map((c) => c.id);
+    expect(past).toEqual(['kamino']); // (past the rim, where the canon atlas has it: a pocket of its own)
+    for (const c of CELLS) if (!past.includes(c.id)) for (const p of c.poly) expect(dist(p, CORE), c.id).toBeLessThanOrEqual(RIM + 1e-9);
+    for (const p of CELLS.find((c) => c.id === 'kamino').poly) expect(dist(p, posOf('kamino'))).toBeLessThanOrEqual(capOf('kamino') + 1e-9);
+    // (and none of it, the pocket either, off the map: mapView.js's square)
+    for (const c of CELLS) for (const p of c.poly) expect(onView(FIT, p, { pad: 0.005 }), `${c.id} ${p}`).toBe(true);
+    expect(Math.max(...CELLS.find((c) => c.id === 'kamino').poly.map((p) => dist(p, CORE)))).toBeGreaterThan(RIM + 0.1);
   });
 
   it('tags each edge with the neighbour it’s shared with (or nobody: the edge of its reach)', () => {
@@ -116,7 +123,7 @@ describe('the war’s links: the hyperspace lanes it runs along', () => {
     let n = 0;
     for (const id of WAR_SYSTEMS) n += NEIGHBOURS[id].length;
     expect(EDGES).toHaveLength(n / 2);
-    expect(EDGES).toHaveLength(28);
+    expect(EDGES).toHaveLength(29); // (Scarif at the canon atlas's S-15: Tatooine's and Geonosis's now, Lothal joined to Yavin)
     for (const [a, b] of EDGES) {
       expect(a < b).toBe(true);
       expect(NEIGHBOURS[a]).toContain(b);
@@ -128,7 +135,7 @@ describe('the war’s links: the hyperspace lanes it runs along', () => {
     Object.assign(owner, { hoth: 'rebel', endor: 'rebel', tatooine: 'hutt' });
     // (the Rebellion's after Bespin from Hoth; the Empire's after Endor from Sorgan)
     const links = linksOf(tableOf(owner, { bespin: 'rebel', endor: 'empire' }));
-    expect(links).toHaveLength(28);
+    expect(links).toHaveLength(29);
     const state = (a, b) => links.find((l) => l.a === a && l.b === b).state;
     expect(state('bespin', 'hoth')).toBe('battle');
     expect(state('endor', 'sorgan')).toBe('battle');

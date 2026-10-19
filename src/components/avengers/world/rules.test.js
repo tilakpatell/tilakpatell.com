@@ -363,6 +363,19 @@ describe('The compound, the world: the heist', () => {
     expect(all.next).toBe(null);
     expect(all.objective).toMatch(/Thanos/);
   });
+  it('counts the gate done once Thwip! has been won, so the list reaches 8/8', () => {
+    const all = ['power', 'reality', 'mind', 'soul-clint', 'soul-natasha', 'soul', 'time', 'space'];
+    expect(progress(all).places.filter((p) => p.done)).toHaveLength(7);
+    const p = progress(all, ['spidey']);
+    expect(PLACES).toHaveLength(8);
+    expect(p.places.filter((q) => q.done)).toHaveLength(8);
+    expect(p.done).toContain('spidey');
+    expect(p.finished).toBe(true);
+    const early = progress([], ['spidey']);
+    expect(early.places.find((q) => q.id === 'spidey').done).toBe(true);
+    expect([early.next, early.stones, early.finished]).toEqual(['stark', 0, false]);
+    expect(progress(all, ['worthy']).places.filter((q) => q.done)).toHaveLength(7);
+  });
 });
 
 // ── swinging, climbing and the roofs ──

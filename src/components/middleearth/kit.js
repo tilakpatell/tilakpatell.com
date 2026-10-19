@@ -5,10 +5,10 @@
 // here are GLSL, for the classic renderer (./nodes/kit.js is the same in
 // TSL).
 
-import * as THREE from "three";
-import { particlePool } from "./kitParts";
+import * as THREE from 'three';
+import { particlePool } from './kitParts';
 
-export * from "./kitParts";
+export * from './kitParts';
 
 // ── shaders ──
 
