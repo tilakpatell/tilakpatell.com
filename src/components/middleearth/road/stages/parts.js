@@ -10,6 +10,9 @@
 //     every still mesh under root into one a material (and a set of
 //     attributes), in root’s frame, leaving what `keep` holds (the parts a
 //     scene moves), instanced and skinned meshes as they were
+//   disposeBuilt(root, K): the geometry under root, and the materials (and
+//     their maps) a builder made for itself (a sign, a hatch) rather than
+//     took from the kit, which the kit’s own dispose frees
 //   C(hex) → THREE.Color
 
 import * as THREE from 'three';
@@ -52,8 +55,9 @@ export function mergeStatics(root, { keep = [] } = {}) {
   for (const k of keep) k?.traverse((o) => kept.add(o));
   const buckets = new Map();
   const gone = [];
-  root.traverse((o) => {
-    if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || kept.has(o) || Array.isArray(o.material) || !o.visible) return;
+  // (a hidden part, or one under a hidden group, is left as it is: a scene may show it)
+  root.traverseVisible((o) => {
+    if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || kept.has(o) || Array.isArray(o.material)) return;
     let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
     for (const name of Object.keys(g.attributes)) if (!SHARED.includes(name)) g.deleteAttribute(name);
     g.morphAttributes = {};
@@ -80,4 +84,18 @@ export function mergeStatics(root, { keep = [] } = {}) {
       if (geos.length > 1) for (const g of geos) g.dispose();
     }
   return root;
+}
+
+export function disposeBuilt(root, K) {
+  const kit = new Set(Object.values(K?.mats ?? {}));
+  const done = new Set();
+  root.traverse((o) => {
+    o.geometry?.dispose();
+    for (const m of [o.material].flat()) {
+      if (!m || kit.has(m) || done.has(m)) continue;
+      done.add(m);
+      for (const v of Object.values(m)) if (v?.isTexture) v.dispose();
+      m.dispose();
+    }
+  });
 }

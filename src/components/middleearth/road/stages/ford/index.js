@@ -50,12 +50,14 @@ export function build({ road, heightAt, waters = [], rt, weather, tier = 'high' 
   trolls.group.scale.setScalar(1.05);
   group.add(trolls.group);
   // dead and fallen trees by the road through the wood
+  const trees = [];
   for (const [x, z, which, seed] of WOOD) {
     const t = which === 'dead' ? deadTree(town.K, seed) : fallenTree(town.K, seed);
     t.group.position.set(x, heightAt(x, z), z);
     t.group.rotation.y = seed;
     t.group.scale.setScalar(0.8);
     group.add(t.group);
+    trees.push(t);
   }
 
   const asfaloth = createHorse(rt, { coat: 'white', height: 1.75, seed: 9 });
@@ -180,6 +182,13 @@ export function build({ road, heightAt, waters = [], rt, weather, tier = 'high' 
         spray = null;
       }
     },
+    // walked out of: the Bruinen back in its bed, the spray and the foam gone
+    leave() {
+      if (bruinen?.uniforms?.uRise) bruinen.uniforms.uRise.value = 0;
+      spray?.stop();
+      spray = null;
+      for (const h of foam) h.group.visible = false;
+    },
     // the bridge carries the walkers over the Hoarwell
     floor(x, z) {
       return Math.abs(x) <= BRIDGE.w / 2 && z >= BRIDGE.z[0] && z <= BRIDGE.z[1] ? props.deck : null;
@@ -198,6 +207,7 @@ export function build({ road, heightAt, waters = [], rt, weather, tier = 'high' 
       if (bruinen?.uniforms?.uRise) bruinen.uniforms.uRise.value = 0;
       props.dispose();
       trolls.group.traverse((o) => o.geometry?.dispose());
+      for (const t of trees) t.group.traverse((o) => o.geometry?.dispose());
       asfaloth.dispose();
       for (const h of foam) h.dispose();
       kit.dispose();

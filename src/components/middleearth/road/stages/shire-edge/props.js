@@ -17,7 +17,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { C, merged, part } from '../parts';
+import { C, disposeBuilt, merged, part } from '../parts';
 import { barn, barrelParts, cabbageGeo, fencePostGeo, fenceRailGeo, hayBaleParts, hedgeGeo, lanternParts, mergeAll, mushroomParts, parts, pumpkinGeo, rootTree, scarecrowParts, signpost, wheatGeo, wheelbarrowParts } from '../../../shire/build';
 
 export const SHIRE = 0.68; // the Road’s hobbit (1.05 m) over the chapter’s (1.55)
@@ -175,8 +175,8 @@ export function buildProps({ K, material, heightAt, level, tier = 'high' }) {
     decks,
     dispose() {
       group.removeFromParent();
-      group.traverse((o) => o.geometry?.dispose());
-      lampMat.dispose();
+      // (the stage’s own vertex-coloured material is the stage’s to free; the rest the builders made, but the kit’s)
+      disposeBuilt(group, { mats: { ...K.mats, material } });
     },
   };
 }

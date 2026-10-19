@@ -54,7 +54,10 @@ export function createScenes({ rt, road, lands, weather, ambience, tier }) {
         entry.scene = build({ road, heightAt: land.field, land, waters: lands.watersOf?.(i) ?? [], rt, weather, ambience, tier });
         group.add(entry.scene.group);
       })
-      .catch(() => made.get(i) === entry && made.delete(i));
+      // (a stage that fails stays failed until it is dropped: built again every frame it would be the kit painted every frame)
+      .catch(() => {
+        entry.failed = true;
+      });
   };
   const drop = (i) => {
     const e = made.get(i);
@@ -81,6 +84,8 @@ export function createScenes({ rt, road, lands, weather, ambience, tier }) {
       else r = stepBeats(since, beats, { from: last, to: local, dt });
       for (const id of r.fired) play(beats.find((b) => b.id === id));
       since = r.since;
+      // (a stage walked out of settles: it is only updated while current, and what runs on in it would run on behind)
+      if (index !== current) made.get(current)?.scene?.leave?.();
       current = index;
       last = local;
       made.get(index)?.scene?.update(local, dt, { since, speed });

@@ -14,7 +14,7 @@
 //   GATE, PONY, WING, BACK, BREE: where they stand, and the scale, for the beats and the scene
 
 import * as THREE from 'three';
-import { C, merged, mergeStatics, part } from '../parts';
+import { C, disposeBuilt, merged, mergeStatics, part } from '../parts';
 import { barrels, crates, gate as buildGate, house, lodge, pony, stable, stall, stockade, well } from '../../../towns/bree/build';
 import { benchParts, parts } from '../../../shire/build';
 
@@ -76,6 +76,7 @@ export function buildProps({ K, material, heightAt }) {
   for (const [side, z, w, d, floors, roof, stone, seed, door] of HOUSES) {
     const h = house(K, { w, d, floors, roof, stone, seed, door });
     group.add(stand(h.group, heightAt, side * (LANE + (d * BREE) / 2), z, FACE[side]));
+    h.group.updateMatrixWorld(true);
     if (h.lamp) lamps.push(h.group.localToWorld(h.lamp.clone()));
   }
   // the Prancing Pony, its door to the lane; a bench under its eaves
@@ -109,7 +110,8 @@ export function buildProps({ K, material, heightAt }) {
     lamps,
     dispose() {
       group.removeFromParent();
-      group.traverse((o) => o.geometry?.dispose());
+      // (the stage’s own vertex-coloured material is the stage’s to free; the rest the builders made, but the kit’s)
+      disposeBuilt(group, { mats: { ...K.mats, material } });
     },
   };
 }

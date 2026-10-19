@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { mergeStatics } from './parts';
+import { disposeBuilt, mergeStatics } from './parts';
 
 const box = (mat, x, uv = true) => {
   const g = new THREE.BoxGeometry(1, 1, 1);
@@ -46,5 +46,23 @@ describe('mergeStatics', () => {
     expect(meshes).toHaveLength(4);
     expect(gate.children).toHaveLength(1);
     expect(meshes.filter((o) => !o.isInstancedMesh && o.parent === root).map((o) => o.geometry.attributes.position.count).sort((x, y) => x - y)).toEqual([36, 72]);
+  });
+});
+
+describe('disposeBuilt', () => {
+  it('frees the geometry and what a builder made, never the kit’s materials', () => {
+    const kitMat = new THREE.MeshBasicMaterial();
+    const map = new THREE.Texture();
+    const own = new THREE.MeshBasicMaterial({ map });
+    const root = new THREE.Group();
+    root.add(box(kitMat, 0), box(own, 1), box(own, 2));
+    const freed = [];
+    for (const x of [kitMat, own, map, ...root.children.map((m) => m.geometry)]) x.addEventListener('dispose', () => freed.push(x));
+    disposeBuilt(root, { mats: { stone: kitMat } });
+    expect(freed).toContain(own);
+    expect(freed).toContain(map);
+    expect(freed).not.toContain(kitMat);
+    expect(freed.filter((x) => x.isBufferGeometry)).toHaveLength(3);
+    expect(freed.filter((x) => x === own)).toHaveLength(1);
   });
 });

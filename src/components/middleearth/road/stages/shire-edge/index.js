@@ -139,6 +139,11 @@ export function build({ road, heightAt, land, rt, weather, ambience, tier = 'hig
       props.raft.position.set(0, deck + Math.sin(bob * 1.1) * 0.03, raftZ);
     },
     // the four crouched in the hollow while the Rider is over it
+    // walked out of: the rain that rides the camera stops with the stage
+    leave() {
+      rain?.stop();
+      rain = null;
+    },
     pose(id) {
       const t = seen.since.roots;
       const at = HIDDEN[id];
