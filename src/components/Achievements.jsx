@@ -139,6 +139,8 @@ export const ACHIEVEMENTS = {
   palantir: { name: 'Seeing-stone', desc: 'Looked into the Palantír until the Eye looked back' },
   wraithworld: { name: 'The other world', desc: 'Wore the Ring in Bag End until a Nazgûl tore it away' },
   redbook: { name: 'Westmarch scholar', desc: 'Found all fifteen things that show only under the Ring in the Red Book' },
+  ainur: { name: 'The Music of the Ainur', desc: 'Named every one of the Valar in the stars over Bag End' },
+  fireletters: { name: 'Fire-letters', desc: 'Cast the Ring into Bilbo’s fire and saw what came up on it' },
   mushrooms: { name: 'Shortcut to mushrooms', desc: 'Took ten of Farmer Maggot’s mushrooms from under his dogs’ noses' },
   smokerings: { name: 'Old Toby', desc: 'Blew three smoke rings through Gandalf’s' },
   fireworks: { name: 'The big one', desc: 'Kept the party cheering until Merry and Pippin lit the dragon' },

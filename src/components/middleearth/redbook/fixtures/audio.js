@@ -58,7 +58,23 @@ export function fakeAudio({ rate = 8000 } = {}) {
     createBiquadFilter: () => node({ type: 'lowpass', frequency: param(350), Q: param(1), gain: param(0) }),
     createConvolver: () => node({ buffer: null, normalize: true }),
     createStereoPanner: () => node({ pan: param(0) }),
-    createOscillator: () => source({ type: 'sine', frequency: param(440), detune: param(0), setPeriodicWave() {} }),
+    // (as a browser does: 'custom' comes only from a periodic wave, never set by hand)
+    createOscillator: () => {
+      const o = source({ frequency: param(440), detune: param(0) });
+      let type = 'sine';
+      Object.defineProperty(o, 'type', {
+        enumerable: true,
+        get: () => type,
+        set(v) {
+          if (v === 'custom') throw new Error("InvalidStateError: 'type' cannot be set directly to 'custom'");
+          type = v;
+        },
+      });
+      o.setPeriodicWave = () => {
+        type = 'custom';
+      };
+      return o;
+    },
     createBufferSource: () => source({ buffer: null, loop: false, playbackRate: param(1) }),
     createPeriodicWave: () => ({}),
     createBuffer(channels, length, sampleRate) {

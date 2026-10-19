@@ -13,15 +13,15 @@
 export const ROOM = [
   { id: 'hearth', name: 'The fire', act: 'stoke', sound: 'crackle', say: 'You stir the fire. Sparks go up the chimney, and the room grows warmer.' },
   { id: 'candles', name: 'The candles', act: 'snuff', sound: 'pop', say: 'A pinch, and the candle is out. Another, and it is lit again.' },
-  { id: 'pipe', name: 'Bilbo’s pipe', act: 'rings', sound: 'puff', say: 'A pull of Old Toby, and a smoke ring sails up into the beams. Gandalf’s go through Bilbo’s.' },
-  { id: 'sting', name: 'Sting', act: 'draw', sound: 'saber', say: 'Bilbo’s little Elvish sword, found in a troll’s cave. Its blade shines blue when orcs are near.' },
+  { id: 'pipe', name: 'Bilbo’s pipe', act: 'rings', say: 'A pull of Old Toby, and a smoke ring sails up into the beams. Gandalf’s go through Bilbo’s.' },
+  { id: 'sting', name: 'Sting', act: 'draw', sound: 'clang', say: 'Bilbo’s little Elvish sword, found in a troll’s cave. Its blade shines blue when orcs are near.' },
   { id: 'mithril', name: 'The mithril coat', act: 'glint', sound: 'ding', say: 'Light as a feather and as hard as dragon scales. Bilbo never said what it was worth: more than the Shire and everything in it.' },
   { id: 'lantern', name: 'The beam and its lantern', act: 'swing', sound: 'knock', say: 'The beam is low, the lantern swings. Gandalf always finds it with his head.' },
   {
     id: 'books',
     name: 'Bilbo’s books',
     act: 'book',
-    sound: 'shutter',
+    sound: 'thunk',
     lines: [
       'Translations from the Elvish, by B. B., in three volumes, much read.',
       'A Long-expected Party: lists of guests, of presents, and of who was not invited.',

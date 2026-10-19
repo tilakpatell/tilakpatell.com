@@ -187,7 +187,8 @@ const filterOf = (ctx, v, type, f, q = 0.7) => {
 };
 const oscOf = (ctx, v, type, f, t) => {
   const o = v.src(ctx.createOscillator());
-  o.type = type;
+  // (a periodic wave sets its own type: 'custom' may not be set by hand)
+  if (type !== 'custom') o.type = type;
   o.frequency.setValueAtTime(f, t);
   return o;
 };
