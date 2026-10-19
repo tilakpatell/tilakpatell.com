@@ -1087,6 +1087,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       if (name === 'caught') {
         const d = destinationById(e.area);
         if (!d) return;
+        stopVoiced(); // (a line still being said, the vat's say, is cut: the catch is what's said)
         say({ kind: 'say', who: SAY[e.who]?.who ?? e.who ?? null, text: e.text ?? d.caught ?? 'Caught.' });
         sound('grab');
         api.current?.shake?.(0.3); // (the Citadel's caught, the same grab)

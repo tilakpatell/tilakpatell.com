@@ -24,7 +24,7 @@ import { createNpcs } from '../npc';
 import { attend } from '../living';
 import { TUNING as POWER, newPower, powerNews, powerReadout, stepPower } from '../games/power';
 import { curse, dealNews, dealReadout, newDeal, stepDeal } from '../games/deal';
-import { freezeEyes, freezeNews, freezeReadout, moving, newFreeze, stepFreeze } from '../games/freeze';
+import { freezeEyes, freezeNews, freezeReadout, moving, newFreeze, stepFreeze, takesJump } from '../games/freeze';
 
 // a speckled paint for a floor or the ground
 export const specks = (base, specks, seed = 7, n = 1600, size = 2) => (g, w, h) => speckle(g, w, h, { base, specks, n, size, seed });
@@ -143,13 +143,19 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   // stepped in the place's own update on Morty's own motion (the render
   // state's), its spot's press the jump in (`freeze-in`, with the builder's
   // splash); said as power's run is, the win with its achievement; its
-  // lookouts turned where the game says the buyers' eyes are. ──
+  // lookouts turned where the game says the buyers' eyes are. (Its task done
+  // before the game was built, its achievement is handed over on the visit.) ──
   const fz = d.freeze;
   let still = fz ? newFreeze() : null;
   let jumped = false;
   let splash = null;
+  let granted = false;
   const freezing = (dt, state) => {
     const done = (state.done ?? []).includes(fz.task);
+    if (done && fz.unlock && !granted && !state.fading) {
+      granted = true;
+      state.emit?.('done', { area: id, task: fz.task, unlock: fz.unlock });
+    }
     if (!done && !state.fading) {
       still = stepFreeze(still, { moving: moving(state.morty), jumped }, dt);
       const news = freezeNews(still, { done, fading: false });
@@ -264,8 +270,9 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     if (still)
       Object.assign(area.actions, {
         'freeze-in': () => {
+          // (the vat splashes only for a jump that takes him in)
+          if (takesJump(still)) splash?.();
           jumped = true;
-          splash?.();
         },
         freeze: () => ({ phase: still.phase, eyes: still.eyes, left: still.left, len: still.len, beat: still.beat }),
         meter: () => freezeReadout(still),

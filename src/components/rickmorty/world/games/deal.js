@@ -47,7 +47,11 @@ export function stepDeal(prev, { use = null } = {}) {
     g.events.push({ type: 'look', id: use, saw: now });
     return g;
   }
-  if (saw === 'bad') return g;
+  // (seen cursed: left be, and the HUD says so again)
+  if (saw === 'bad') {
+    g.last = 'bad';
+    return g;
+  }
   // taken: a curse unseen is the end of it
   if (g.bad.includes(use)) {
     g.phase = 'lost';

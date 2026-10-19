@@ -13,6 +13,7 @@
 //   stepFreeze(game, { moving, jumped }, dt) → game
 //     events: start | in | won | lost { why: 'moved' | 'jumped' }
 //   moving(morty) → whether he's moving (his speed, or off the ground)
+//   takesJump(game) → whether a jump now would take him in (their backs turned)
 //   freezeEyes(game) → null | 'away' | 'look' | 'seen'   for the buyers' figures
 //   freezeNews(game, { done, fading }) → 'done' | 'caught' | null   what the place says
 //   freezeReadout(snapshot) → { on, vitals, line }   for the HUD's meter
@@ -38,6 +39,8 @@ const LINES = {
 
 export const moving = (m) => Boolean(m) && ((m.speed ?? 0) > TUNING.still || Boolean(m.air));
 
+export const takesJump = (g) => g?.phase === 'run' && g.eyes === 'away';
+
 // (the options may carry `perks`; none is read yet)
 export function newFreeze() {
   return { phase: 'idle', eyes: null, beat: 0, left: 0, len: 0, told: false, events: [] };
@@ -56,7 +59,7 @@ export function stepFreeze(prev, input = {}, dt = 1 / 60) {
   };
   // the vat: in behind their backs, else a catch (in already, nothing)
   if (input.jumped && g.phase !== 'in') {
-    if (g.phase !== 'run' || g.eyes !== 'away') return lose('jumped');
+    if (!takesJump(g)) return lose('jumped');
     g.phase = 'in';
     eyesFor(g, 'in', TUNING.hold);
     g.events.push({ type: 'in' });
