@@ -142,4 +142,11 @@ Each stage 20 m in (`shots/<stage>-desktop.webp` and `-phone.webp`) and each sta
 - `rivendell-council-desktop.webp`: the Council in the chapter’s court, the company in the ten chairs round the plinth. The Council of Elrond.
 - `rivendell-reveal-desktop.webp`: the crane from the ridge across the valley to the falls off the far cliff, the house and pavilions on its slope, the bridge over the stream.
 
+After the lane, mended as they were looked at again (`claude/the-road-3-eriador`’s second pull request):
+
+- `shire-edge-crop-desktop.webp`: 30 m in, Maggot’s corn standing gold to the far hedge, its ears a little over a hobbit’s head (the kit’s wheat had stood 2.4 to 3.3 m, its cut-outs dark cards: `recolourNodes` lost the map’s alpha).
+- `bree-riders-desktop.webp`: from over the lane at the Pony’s end, down it to the West-gate on a wet night, the Riders coming up it (the shot had stood inside a roof, black).
+- `weathertop-kingsfoil-desktop.webp`: Frodo down by the glowing athelas, a hobbit by him, Aragorn’s brand stood in the verge their one light (the dell’s fire is eighty metres back: it was the athelas alone in the black).
+- `ford-ride-desktop.webp`: on the road behind Asfaloth, Arwen and Frodo up, the Trollshaws gold either side (the camera had been behind her head).
+
 What still falls short, for R7: the figures seen from behind at dusk and at night read nearly black; Weathertop’s crags are a cold purple in the evening light; the Ford’s Nine are small dark shapes at the flood’s far edge, and the flood a low ridge rather than a wall of water; Rivendell’s valley is gentler than the films’ gorge and its far cliff stands behind a crest.

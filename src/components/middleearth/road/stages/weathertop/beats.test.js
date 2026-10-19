@@ -15,7 +15,8 @@ describe('Weathertop’s beats', () => {
     // (the vision is over before the hold is: the Ring comes off while you still watch)
     const v = by.ring.fx.find((f) => f.kind === 'vision');
     expect(v.at + v.seconds).toBeLessThanOrEqual(by.ring.hold);
-    expect(by.kingsfoil).toMatchObject({ rig: 'low', hold: 10 });
+    expect(by.kingsfoil).toMatchObject({ rig: 'seat', hold: 10 });
+    expect(by.kingsfoil.params.at[1]).toBeLessThan(1.5);
     expect(by.kingsfoil.lines).toEqual(['weathertop-kingsfoil']);
   });
 });
