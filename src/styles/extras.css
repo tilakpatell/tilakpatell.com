@@ -51,7 +51,7 @@
   --surface: #ffffff;
   --surface-2: #edf3f1;
   --border: #d6e2df;
-  --border-strong: #86a09b;
+  --border-strong: #7e9692;
   --text: #0f1a19;
   --text-body: #24332f;
   --muted: #4f6460;
@@ -106,7 +106,7 @@ html[data-mode='dark'][data-theme='travel'] { --bg: #070b0b; --bg-deep: #0a1010;
 
 /* ─── Fan themes, unlocked by easter eggs ────────────────────────────────── */
 [data-theme='jedi'] {
-  --bg: #fbfaf8; --bg-deep: #f1eee8; --surface: #ffffff; --surface-2: #f1eee8; --border: #e1dcd1; --border-strong: #a0977f;
+  --bg: #fbfaf8; --bg-deep: #f1eee8; --surface: #ffffff; --surface-2: #f1eee8; --border: #e1dcd1; --border-strong: #9a917a;
   --text: #1c1a16; --text-body: #38342b; --muted: #665e4f;
   --accent: #2563eb; --accent-text: #1d4ed8; --btn-bg: #2563eb; --btn-ink: #ffffff; --saber: #4aa3ff; --nav-bg: #1c1a16;
   --route-plan: #cfc8b9; --route-dash: 6px; --route-gap: 6px; --marker: circle(50%);
@@ -120,19 +120,19 @@ html[data-mode='dark'][data-theme='travel'] { --bg: #070b0b; --bg-deep: #0a1010;
   --r-card: 2px; --r-panel: 2px; --r-btn: 2px; --r-chip: 2px; --r-photo: 2px;
 }
 [data-theme='heisenberg'] {
-  --bg: #fbfcf9; --bg-deep: #eef3ec; --surface: #ffffff; --surface-2: #edf2ea; --border: #d9e3d5; --border-strong: #8aa083;
+  --bg: #fbfcf9; --bg-deep: #eef3ec; --surface: #ffffff; --surface-2: #edf2ea; --border: #d9e3d5; --border-strong: #83987c;
   --text: #0f1a12; --text-body: #24332a; --muted: #526358;
   --accent: #1e7a3c; --accent-text: #1a6b34; --btn-bg: #f0c330; --btn-ink: #10140f; --saber: #5ec8f0; --nav-bg: #0f1a12;
   --route-plan: #c3d1bf; --marker: inset(0); --r-card: 4px; --r-panel: 3px; --r-btn: 4px; --r-chip: 2px; --r-photo: 4px;
 }
 [data-theme='stark'] {
-  --bg: #fcfbfa; --bg-deep: #f3f1ee; --surface: #ffffff; --surface-2: #f3f0ec; --border: #e4ded7; --border-strong: #a0958a;
+  --bg: #fcfbfa; --bg-deep: #f3f1ee; --surface: #ffffff; --surface-2: #f3f0ec; --border: #e4ded7; --border-strong: #9a8f84;
   --text: #17110f; --text-body: #352a26; --muted: #675b54;
   --accent: #b3161b; --accent-text: #a01318; --btn-bg: #b3161b; --btn-ink: #ffffff; --saber: #7fdcff; --nav-bg: #17110f;
   --route-plan: #d6cdc4; --marker: circle(50%); --r-card: 8px; --r-panel: 6px; --r-chip: 4px; --r-photo: 10px;
 }
 [data-theme='dunder'] {
-  --bg: #fcfcfd; --bg-deep: #f1f3f6; --surface: #ffffff; --surface-2: #f1f3f6; --border: #dde2ea; --border-strong: #8c97a8;
+  --bg: #fcfcfd; --bg-deep: #f1f3f6; --surface: #ffffff; --surface-2: #f1f3f6; --border: #dde2ea; --border-strong: #8892a3;
   --text: #151a22; --text-body: #2b3340; --muted: #5a6474;
   --accent: #1f4e8c; --accent-text: #1f4e8c; --btn-bg: #1f4e8c; --btn-ink: #ffffff; --saber: #8fb6ff; --nav-bg: #151a22;
   --route-plan: #c8cfda; --route-dash: 2px; --route-gap: 4px; --marker: inset(0 round 1px);
@@ -636,7 +636,7 @@ html[data-mode='dark'] { --danger: #ff8a8a; }
 
 /* ─── Transformers themes ────────────────────────────────────────────────── */
 [data-theme='optimus'] {
-  --bg: #fbfbfc; --bg-deep: #f0f2f6; --surface: #ffffff; --surface-2: #eef1f6; --border: #dde2ea; --border-strong: #8d97a8;
+  --bg: #fbfbfc; --bg-deep: #f0f2f6; --surface: #ffffff; --surface-2: #eef1f6; --border: #dde2ea; --border-strong: #8992a3;
   --text: #121722; --text-body: #2b3242; --muted: #5a6476;
   --accent: #c8102e; --accent-text: #b00e28; --btn-bg: #c8102e; --btn-ink: #ffffff; --saber: #ff5263; --nav-bg: #121722;
   --route-plan: #ccd3de; --route-dash: 10px; --route-gap: 4px; --marker: polygon(30% 0, 100% 0, 70% 100%, 0 100%);
@@ -706,21 +706,6 @@ html[data-mode='dark'][data-theme='custom'] { --btn-ink: #0b0b0b; }
 .color-input input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .color-input:focus-within { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 
-/* ─── Middle-earth themes ────────────────────────────────────────────────── */
-[data-theme='shire'] {
-  --bg: #fbfaf3; --bg-deep: #f2f0e2; --surface: #fffefa; --surface-2: #f1efe2; --border: #e2dfcd; --border-strong: #9c9478;
-  --text: #1d1c12; --text-body: #3a3826; --muted: #66624a;
-  --accent: #4f7c2a; --accent-text: #3f6a1f; --btn-bg: #3f6a1f; --btn-ink: #fffef5; --saber: #a3d977; --nav-bg: #1d1c12;
-  --route-plan: #d4d0b8; --marker: circle(50%); --r-card: 18px; --r-panel: 12px; --r-chip: 999px; --r-photo: 24px;
-}
-[data-theme='mordor'] {
-  --bg: #fcfaf9; --bg-deep: #f3eeec; --surface: #ffffff; --surface-2: #f3eeec; --border: #e3dad6; --border-strong: #9a8a84;
-  --text: #1a0f0c; --text-body: #3a2622; --muted: #6a5650;
-  --accent: #c2410c; --accent-text: #a8360a; --btn-bg: #b4320a; --btn-ink: #ffffff; --saber: #ff7a1a; --nav-bg: #1a0f0c;
-  --route-plan: #dbcdc8; --marker: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); --r-card: 2px; --r-panel: 2px; --r-btn: 2px; --r-chip: 2px; --r-photo: 2px;
-}
-.tt[data-kind='ring'] { background: radial-gradient(ellipse at 50% 40%, rgba(60, 22, 4, 0.92), rgba(6, 4, 3, 0.95) 70%); }
-
 /* You shall not pass: the page takes the staff's blow */
 html.stand-ground main { animation: stand-ground 0.9s cubic-bezier(0.3, 0.7, 0.3, 1); }
 @keyframes stand-ground { 0% { transform: none; } 8% { transform: translateY(6px) scale(0.995); } 20% { transform: translateY(-3px); } 34% { transform: translateY(2px); } 100% { transform: none; } }
@@ -757,14 +742,6 @@ html.stand-ground main { animation: stand-ground 0.9s cubic-bezier(0.3, 0.7, 0.3
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
 }
-
-/* Middle-earth: Cinzel, as carved; the Shire in gold, Mordor smouldering */
-:is([data-theme='shire'], [data-theme='mordor']) .display { font-family: 'Cinzel Decorative', 'Cinzel', Georgia, serif; font-stretch: normal; font-weight: 700; letter-spacing: 0; line-height: 1.04; }
-:is([data-theme='shire'], [data-theme='mordor']) .title { font-family: 'Cinzel', Georgia, serif; font-stretch: normal; font-weight: 700; letter-spacing: 0.01em; }
-:is([data-theme='shire'], [data-theme='mordor']) .eyebrow { font-family: 'Cinzel', Georgia, serif; font-weight: 600; letter-spacing: 0.14em; }
-[data-theme='shire'] .display { color: #2e4419; }
-html[data-mode='dark'][data-theme='shire'] .display { color: #e9dfb8; }
-[data-theme='mordor'] .display { text-shadow: 0 0 24px rgba(255, 106, 26, 0.32); }
 
 /* Stark: Marvel's tall capitals */
 [data-theme='stark'] :is(.display, .title) { font-family: 'Bebas Neue', var(--font-sans); font-stretch: normal; font-weight: 400; letter-spacing: 0.015em; line-height: 0.92; }
@@ -867,12 +844,6 @@ html[data-mode='dark'][data-theme='shire'] .display { color: #e9dfb8; }
 :root[data-world='avengers'][data-theme='stark'] .btn-ghost { background: rgba(13, 19, 28, 0.7); }
 
 /* ─── The scroll bar, per theme ──────────────────────────────────────────── */
-/* Sting: an elven blade that glows blue (orange in Mordor) */
-.saber-progress[data-kind='sting'] .hilt { width: 30px; background: linear-gradient(90deg, #3b2a1c 0 60%, #c9d1d9 60% 66%, #3b2a1c 66% 100%); border-radius: 3px 0 0 3px; }
-.saber-progress[data-kind='sting'] .hilt::after { right: -6px; top: -3px; width: 6px; height: 16px; border-radius: 3px; background: linear-gradient(#f0f3f6, #8f98a2); box-shadow: none; }
-.saber-progress[data-kind='sting'] .blade,
-html[data-mode='dark'] .saber-progress[data-kind='sting'] .blade { left: 42px; height: 4px; top: 0; border-radius: 0; background: linear-gradient(#ffffff, #b9c4cf 55%, #7d8894); clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%); box-shadow: none; filter: drop-shadow(0 0 3px #5fb6ff) drop-shadow(0 0 7px #2f86ff); }
-[data-theme='mordor'] .saber-progress[data-kind='sting'] .blade { filter: drop-shadow(0 0 3px #ff9a3c) drop-shadow(0 0 8px #ff4d00); }
 /* Dunder Mifflin: a dotted flight path and a paper airplane at its end */
 .saber-progress[data-kind='plane'] .hilt { width: 26px; height: 12px; top: -4px; border-radius: 1px; background: repeating-linear-gradient(0deg, #ffffff 0 2px, #d7dde6 2px 3px); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
 .saber-progress[data-kind='plane'] .hilt::after { display: none; }
@@ -1023,7 +994,7 @@ html[data-menu] .guide-nudge { visibility: hidden; }
 
 /* ─── Rick and Morty themes: Portal (Rick), Morty, Summer, Beth ────────────── */
 [data-theme='portal'] {
-  --bg: #f8fbf3; --bg-deep: #eef4e6; --surface: #ffffff; --surface-2: #eef4e6; --border: #d9e5cb; --border-strong: #8a9a78;
+  --bg: #f8fbf3; --bg-deep: #eef4e6; --surface: #ffffff; --surface-2: #eef4e6; --border: #d9e5cb; --border-strong: #869574;
   --text: #121a10; --text-body: #2c3626; --muted: #5a6650;
   --accent: #3f8a1f; --accent-text: #357519; --btn-bg: #97ce4c; --btn-ink: #10240a; --saber: #97ce4c; --nav-bg: #121a10;
   --route-plan: #cfdcc0; --marker: circle(50%);
@@ -1037,7 +1008,7 @@ html[data-menu] .guide-nudge { visibility: hidden; }
 [data-theme='summer'] {
   --bg: #fdf8f9; --bg-deep: #f8edf0; --surface: #ffffff; --surface-2: #f7ebee; --border: #ecd8de; --border-strong: #a28a92;
   --text: #1c1216; --text-body: #3a2a30; --muted: #6a5660;
-  --accent: #c93a64; --accent-text: #b2325a; --btn-bg: #e2557f; --btn-ink: #ffffff; --saber: #ff8fb1; --nav-bg: #1c1216;
+  --accent: #c93a64; --accent-text: #b2325a; --btn-bg: #c54a6e; --btn-ink: #ffffff; --saber: #ff8fb1; --nav-bg: #1c1216;
   --route-plan: #e3cfd6; --marker: circle(50%);
 }
 [data-theme='beth'] {

@@ -1,0 +1,105 @@
+/* ─── The fan colours at night ───────────────────────────────────────────────
+   Each fan colour keeps its own ground in dark mode, rather than the house’s
+   shared near-black: the colour’s world, after dark, with its own accent on
+   the buttons (the house’s dark block would put the --saber there, which is
+   a lightsaber’s colour and not always the colour’s own). The Caribbean’s and
+   Middle-earth’s nights are in their own sheets. Every pair is held to its
+   floor by styles/colours.test.js; the values stay plain hex, which
+   travel/Globe.jsx reads raw. */
+
+/* Star Wars: the Jedi Temple’s blue night; the Sith’s crimson dark */
+html[data-mode='dark'][data-theme='jedi'] {
+  --bg: #0a0f1a; --bg-deep: #070b13; --surface: #101827; --surface-2: #172135; --border: #1f2b42; --border-strong: #56637d;
+  --text: #eef2f8; --text-body: #c9d3e3; --muted: #8e9ab0;
+  --accent: #4aa3ff; --accent-text: #6cb6ff; --btn-bg: #4aa3ff; --btn-ink: #06101e; --saber: #4aa3ff; --route-plan: #1f2b42;
+}
+html[data-mode='dark'][data-theme='sith'] {
+  --bg: #0d0809; --bg-deep: #080505; --surface: #170d0f; --surface-2: #221316; --border: #2f1a1e; --border-strong: #73595e;
+  --text: #f6eeee; --text-body: #dccaca; --muted: #a68f91;
+  --accent: #ff2a36; --accent-text: #ff5c66; --btn-bg: #ff3b46; --btn-ink: #140405; --saber: #ff2a36; --route-plan: #2f1a1e;
+}
+
+/* Heisenberg: the desert at night, the lab’s green, the blue in the glass */
+html[data-mode='dark'][data-theme='heisenberg'] {
+  --bg: #07110c; --bg-deep: #050c08; --surface: #0d1a13; --surface-2: #13251b; --border: #1b3326; --border-strong: #4f6e5c;
+  --text: #eef6f0; --text-body: #c8dccf; --muted: #8fa999;
+  --accent: #3fbf6a; --accent-text: #5fd486; --btn-bg: #3fbf6a; --btn-ink: #04110a; --saber: #5ec8f0; --route-plan: #1b3326;
+}
+
+/* Stark: the compound at night, Iron Man red on steel (the Avengers page’s
+   own night, extras.css, still wins there) */
+html[data-mode='dark'][data-theme='stark'] {
+  --bg: #070a10; --bg-deep: #05070c; --surface: #0d131c; --surface-2: #141c27; --border: #1d2734; --border-strong: #536275;
+  --text: #f3f5f8; --text-body: #c9d1dc; --muted: #8b97a8;
+  --accent: #e0322f; --accent-text: #ff6f61; --btn-bg: #c8161d; --btn-ink: #ffffff; --saber: #7fdcff; --route-plan: #1d2734;
+}
+
+/* Dunder Mifflin: the office after hours, in the company’s blue */
+html[data-mode='dark'][data-theme='dunder'] {
+  --bg: #0a0e16; --bg-deep: #070a10; --surface: #111826; --surface-2: #182134; --border: #212c44; --border-strong: #56627c;
+  --text: #f1f4f9; --text-body: #cdd5e2; --muted: #919db2;
+  --accent: #6f9be8; --accent-text: #8fb6ff; --btn-bg: #8fb6ff; --btn-ink: #0a1220; --saber: #8fb6ff; --route-plan: #212c44;
+}
+
+/* Arcade: a cabinet’s violet dark, its pink marquee */
+html[data-mode='dark'][data-theme='arcade'] {
+  --bg: #0c0a14; --bg-deep: #08070e; --surface: #14111f; --surface-2: #1d1830; --border: #2a2342; --border-strong: #62587f;
+  --text: #f6f2fb; --text-body: #d6cde6; --muted: #9d93b3;
+  --accent: #ff4f9a; --accent-text: #ff6aa8; --btn-bg: #ff4f9a; --btn-ink: #14040c; --saber: #22e07a; --route-plan: #2a2342;
+}
+
+/* Raga: an indigo dusk, marigold lamps */
+html[data-mode='dark'][data-theme='raga'] {
+  --bg: #0d0a14; --bg-deep: #09070e; --surface: #161126; --surface-2: #1f1834; --border: #2b2244; --border-strong: #665a82;
+  --text: #f8f2ea; --text-body: #ddd0c2; --muted: #a69a8c;
+  --accent: #ffb347; --accent-text: #ffb347; --btn-bg: #ffa53a; --btn-ink: #140a02; --saber: #ffb347; --route-plan: #2b2244;
+}
+
+/* The Transformers: gunmetal, each in their faction’s light */
+html[data-mode='dark'][data-theme='optimus'] {
+  --bg: #0b0c10; --bg-deep: #07080b; --surface: #13151b; --surface-2: #1b1e26; --border: #262a34; --border-strong: #5a6070;
+  --text: #f2f4f7; --text-body: #ccd1da; --muted: #939aa8;
+  --accent: #ff5263; --accent-text: #ff6b7a; --btn-bg: #ff5263; --btn-ink: #16050a; --saber: #ff5263; --route-plan: #262a34;
+}
+html[data-mode='dark'][data-theme='megatron'] {
+  --bg: #0c0b10; --bg-deep: #08070b; --surface: #15131b; --surface-2: #1e1b27; --border: #2a2635; --border-strong: #635e74;
+  --text: #f3f2f7; --text-body: #cfcbda; --muted: #9893a8;
+  --accent: #b48cff; --accent-text: #c3a3ff; --btn-bg: #b48cff; --btn-ink: #120a20; --saber: #b48cff; --route-plan: #2a2635;
+}
+html[data-mode='dark'][data-theme='bumblebee'] {
+  --bg: #0d0c08; --bg-deep: #090805; --surface: #16140c; --surface-2: #201d11; --border: #2d2918; --border-strong: #6a6447;
+  --text: #f8f6ee; --text-body: #dcd8c6; --muted: #a39e88;
+  --accent: #ffd52e; --accent-text: #ffd52e; --btn-bg: #ffd52e; --btn-ink: #121212; --saber: #ffd52e; --route-plan: #2d2918;
+}
+html[data-mode='dark'][data-theme='shockwave'] {
+  --bg: #0d0a14; --bg-deep: #09070e; --surface: #161126; --surface-2: #1f1834; --border: #2b2244; --border-strong: #665a82;
+  --text: #f5f2fb; --text-body: #d3cbe3; --muted: #9c93b0;
+  --accent: #b07cff; --accent-text: #c39bff; --btn-bg: #b07cff; --btn-ink: #0d0618; --saber: #ffcf3d; --route-plan: #2b2244;
+}
+html[data-mode='dark'][data-theme='soundwave'] {
+  --bg: #070c14; --bg-deep: #05090f; --surface: #0d1522; --surface-2: #131e30; --border: #1c2a42; --border-strong: #4f617e;
+  --text: #eef3fa; --text-body: #c8d3e4; --muted: #8c99b0;
+  --accent: #4fd8ff; --accent-text: #4fd8ff; --btn-bg: #4fd8ff; --btn-ink: #04121a; --saber: #4fd8ff; --route-plan: #1c2a42;
+}
+
+/* Rick and Morty: the portal’s green dark, and each of the Smiths’ own */
+html[data-mode='dark'][data-theme='portal'] {
+  --bg: #070d07; --bg-deep: #050905; --surface: #0e170d; --surface-2: #152214; --border: #1e301c; --border-strong: #536b4f;
+  --text: #f1f8ec; --text-body: #cddcc6; --muted: #93a68b;
+  --accent: #97ce4c; --accent-text: #a7da5f; --btn-bg: #97ce4c; --btn-ink: #0a1405; --saber: #97ce4c; --route-plan: #1e301c;
+}
+html[data-mode='dark'][data-theme='morty'] {
+  --bg: #0d0c07; --bg-deep: #090805; --surface: #17150c; --surface-2: #211e11; --border: #2e2a18; --border-strong: #6b6446;
+  --text: #f9f6ea; --text-body: #ddd8c2; --muted: #a49e86;
+  --accent: #f3d84b; --accent-text: #f3d84b; --btn-bg: #f3d84b; --btn-ink: #14110a; --saber: #f3d84b; --route-plan: #2e2a18;
+}
+html[data-mode='dark'][data-theme='summer'] {
+  --bg: #110a0d; --bg-deep: #0c0709; --surface: #1b1015; --surface-2: #26161d; --border: #352029; --border-strong: #755861;
+  --text: #fbf2f5; --text-body: #e3ccd4; --muted: #ab939b;
+  --accent: #ff8fb1; --accent-text: #ff8fb1; --btn-bg: #ff8fb1; --btn-ink: #1a0a10; --saber: #ff8fb1; --route-plan: #352029;
+}
+html[data-mode='dark'][data-theme='beth'] {
+  --bg: #10090b; --bg-deep: #0b0607; --surface: #1a0f12; --surface-2: #24151a; --border: #331d24; --border-strong: #765961;
+  --text: #faf1f3; --text-body: #e0cad0; --muted: #a99198;
+  --accent: #e07a98; --accent-text: #ea92ab; --btn-bg: #e07a98; --btn-ink: #1a0710; --saber: #f1cf6a; --route-plan: #331d24;
+}
