@@ -266,9 +266,89 @@ export const STAGES = [
       paint: { greens: [0x4e4a30, 0x6a6440, 0x7a7048], dirt: 0x4a4436 },
     },
   },
-  { id: 'ithilien', name: 'Ithilien', date: '7 March 3019', length: 230, mode: 'walk', place: 'minas-morgul' },
-  { id: 'cirith-ungol', name: 'Cirith Ungol', date: '12 March 3019', length: 180, mode: 'climb', place: 'cirith-ungol' },
-  { id: 'gorgoroth', name: 'Gorgoroth', date: '15 March 3019', length: 240, mode: 'walk', place: 'mount-doom' },
+  {
+    id: 'ithilien',
+    name: 'Ithilien',
+    date: '7 March 3019',
+    length: 160,
+    mode: 'walk',
+    place: 'minas-morgul',
+    // green hills and a stream down from the right to Henneth Annûn’s fall
+    // beside the path; the Haradrim road low on the right; then the Cross-
+    // roads, and the Morgul Vale opening on the left, the Mountains of
+    // Shadow behind it
+    ground: {
+      spec: {
+        seed: 22,
+        relief: [
+          { type: 'swell', scale: 200, height: 5 },
+          { type: 'hills', scale: 70, height: 6, gain: 0.42, octaves: 4 },
+          { type: 'island', at: [-44, 40], r: 30, height: -7, core: 0.6 },
+          { type: 'island', at: [-16, 70], r: 14, height: 9, core: 0.5 },
+          { type: 'mountains', scale: 150, height: 110, from: 220, to: 420 },
+        ],
+      },
+      rivers: [{ points: [[-300, 0, 120], [-60, 0, 90], [-18, 0, 64], [0, 0, 60], [60, 0, 54], [300, 0, 50]], depth: 1, width: 4, bank: 3 }],
+      paint: { greens: [0x4a6a30, 0x6a8a3c, 0x8a9a52] },
+    },
+  },
+  {
+    id: 'cirith-ungol',
+    name: 'Cirith Ungol',
+    date: '12 March 3019',
+    length: 150,
+    mode: 'climb',
+    place: 'cirith-ungol',
+    // up the stair in the cliff (the land rising thirty metres to the
+    // tunnel’s mouth), through Shelob’s Lair (its rock is the props’), the
+    // tower above the pass on the left, and down onto the plain
+    ground: {
+      spec: {
+        seed: 23,
+        relief: [
+          { type: 'swell', scale: 180, height: 4 },
+          { type: 'ridges', scale: 80, height: 10, octaves: 4 },
+          { type: 'island', at: [0, 80], r: 70, height: 30, core: 0.7, ragged: 0.2 },
+          { type: 'mountains', scale: 120, height: 140, from: 120, to: 360 },
+        ],
+      },
+      paint: { greens: [0x3a3634, 0x4a4440, 0x5a524c], dirt: 0x3a3430 },
+    },
+    // (the tunnel on the level, the tower’s stair, out of the gate)
+    modes: [
+      { at: 56, mode: 'walk' },
+      { at: 108, mode: 'climb' },
+      { at: 122, mode: 'walk' },
+    ],
+  },
+  {
+    id: 'gorgoroth',
+    name: 'Gorgoroth',
+    date: '15 March 3019',
+    length: 180,
+    mode: 'walk',
+    place: 'mount-doom',
+    // the plain of ash, then the Mountain’s slope from the carry up to the
+    // Sammath Naur’s door (the Mountain itself and the Tower are the props)
+    ground: {
+      spec: {
+        seed: 24,
+        relief: [
+          { type: 'swell', scale: 260, height: 2 },
+          { type: 'hills', scale: 50, height: 2.5, gain: 0.45, octaves: 3 },
+          { type: 'island', at: [20, 150], r: 70, height: 26, core: 0.3, ragged: 0.3 },
+          { type: 'mountains', scale: 160, height: 90, from: 280, to: 480 },
+        ],
+      },
+      paint: { greens: [0x2a2422, 0x3a302a, 0x4a3a30], dirt: 0x2a2220 },
+    },
+    // (carried up the slope, on foot at the Cracks, and on the Eagles out)
+    modes: [
+      { at: 100, mode: 'carried' },
+      { at: 120, mode: 'walk' },
+      { at: 165, mode: 'eagle' },
+    ],
+  },
   { id: 'minas-tirith', name: 'Minas Tirith', date: '1 May 3019', length: 160, mode: 'walk', place: 'minas-tirith' },
   { id: 'havens', name: 'The Grey Havens', date: '29 September 3021', length: 160, mode: 'walk', place: 'grey-havens' },
 ];
