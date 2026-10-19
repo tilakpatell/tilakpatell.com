@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MODES, STAGES } from './index';
+import { endOf } from '../line';
+import { roadFor } from '../terrain';
 
 describe('the sixteen stages', () => {
   it('are in the road’s order, Bag End to the Havens', () => {
@@ -22,5 +24,18 @@ describe('the sixteen stages', () => {
     expect(STAGES[1]).toMatchObject({ name: 'The Shire’s edge', date: '24 September 3018' });
     expect(STAGES[15]).toMatchObject({ name: 'The Grey Havens', date: '29 September 3021' });
     for (const s of STAGES) expect(s.name).not.toMatch(/'/);
+  });
+
+  it('each road starts at the origin and ends on x = 0 heading along +z, so the seams meet', () => {
+    for (const s of STAGES) {
+      const road = roadFor(s.id);
+      const start = road.pointAt(0);
+      expect([start.x, start.z]).toEqual([0, 0]);
+      expect(start.tangent[2]).toBeCloseTo(1, 3);
+      const end = endOf(road);
+      expect(end.at[0]).toBeCloseTo(0, 6);
+      expect(end.heading).toBeCloseTo(0, 3);
+      expect(road.length).toBeCloseTo(s.length, 0);
+    }
   });
 });

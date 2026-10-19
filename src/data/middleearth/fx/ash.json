@@ -1,0 +1,123 @@
+{
+  "kind": "quad",
+  "loop": true,
+  "duration": 1,
+  "gravity": {
+    "g": 0,
+    "random": 0
+  },
+  "drag": 0.3,
+  "wind": 0.5,
+  "color": [
+    0.32,
+    0.3,
+    0.29
+  ],
+  "sizeY": null,
+  "alpha": {
+    "exponent": 1,
+    "curve": 1
+  },
+  "rotation": {
+    "poly": [
+      0,
+      0,
+      200,
+      0
+    ]
+  },
+  "transparency": {
+    "poly": [
+      0,
+      -1,
+      0,
+      1
+    ],
+    "min": 0,
+    "max": 1,
+    "scale": 1
+  },
+  "uv": {
+    "frames": 4,
+    "grid": [
+      4,
+      1
+    ],
+    "fps": 0,
+    "randomStart": true,
+    "overLife": false
+  },
+  "alignment": "screen",
+  "stretch": null,
+  "lightWrap": 0.5,
+  "soft": null,
+  "additive": false,
+  "exposure": 0,
+  "maxSpawnDistance": 0,
+  "cullingFactor": 1,
+  "follow": {
+    "source": false,
+    "velocity": false
+  },
+  "mesh": null,
+  "ribbon": null,
+  "name": "ash: the Road’s, grey flakes falling slowly (Gorgoroth)",
+  "sheet": "ash",
+  "maxCount": 900,
+  "lifetime": {
+    "random": [
+      12,
+      16
+    ]
+  },
+  "spawn": {
+    "rate": 60,
+    "burst": 0,
+    "size": {
+      "random": [
+        0.04,
+        0.09
+      ]
+    },
+    "speed": {
+      "random": [
+        0.4,
+        0.8
+      ]
+    },
+    "rotation": {
+      "random": [
+        0,
+        360
+      ]
+    },
+    "direction": {
+      "box": {
+        "min": [
+          -0.4,
+          -1,
+          -0.4
+        ],
+        "max": [
+          0.4,
+          -0.6,
+          0.4
+        ]
+      }
+    },
+    "position": {
+      "box": {
+        "center": [
+          0,
+          12,
+          0
+        ],
+        "size": [
+          40,
+          0,
+          40
+        ]
+      }
+    }
+  }
+}
