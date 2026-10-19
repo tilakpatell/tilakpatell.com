@@ -36,7 +36,8 @@ export const SOILS = {
   // the Great River’s banks: grass to a stony shore
   anduin: { greens: [0x3c5c30, 0x58783e, 0x7c904a], dirt: 0x9a8a6a, rock: 0x7a766c, scans: { grass: 'grass', road: 'gravel', steep: 'rock' }, blades: 0.8, blade: 0.5 },
   // the Dead Marshes: black mud and dead tussocks
-  marshes: { greens: [0x34342a, 0x464632, 0x5c583a], dirt: 0x3e362a, rock: 0x4a463e, scans: { grass: 'mud', road: 'mud', steep: 'rock' }, blades: 0.45, blade: 0.6 },
+  // (a little lighter than black: under a low sun ahead the near ground went to nothing)
+  marshes: { greens: [0x46463a, 0x5a5842, 0x726c4a], dirt: 0x524838, rock: 0x5a564c, scans: { grass: 'mud', road: 'mud', steep: 'rock' }, blades: 0.45, blade: 0.6 },
   // Ithilien: the garden of Gondor gone wild, herbs and long grass
   ithilien: { greens: [0x386a2c, 0x588a38, 0x88ac48], dirt: 0xa8946a, rock: 0x8c8678, scans: { grass: 'grass', road: 'gravel', steep: 'mossrock' }, blades: 1, blade: 0.48 },
   // Cirith Ungol: the stair in black rock

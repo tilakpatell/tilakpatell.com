@@ -9,6 +9,8 @@
 //     that casts, the sun by day and the moon by night (cold, as bright as its
 //     phase, none under a storm or the pall), so a night reads by moonlight
 //     rather than by the ambient alone
+//   skyLight(light) → the sky light's strength (module.js's hemisphere light):
+//     the chapters' 1.0 by a clear day, so a back turned to a low sun still reads
 //   shadeOf(light, key?) → [r, g, b], linear: the house look's shade (the
 //     albedo times this where the key light doesn't reach), from the sky
 //     light's hue and how much light there is
@@ -132,6 +134,8 @@ export function keyLight(l) {
 // divides by pi); never brighter than a clear day's (a little under the
 // house's LOOK.shadow, 0x9d93c4, so a shadow cast reads) nor so dark that
 // the deeps go black
+export const skyLight = (l) => 0.4 + l.ambient * 1.8;
+
 const VIOLET = [0.195, 0.147, 0.687]; // (0x7a6ad8, linear: houseNodes' shadowFor leans the same way)
 export const SHADE = { day: 0.28, least: 0.07, sun: 0.7, moon: 0.9 }; // its brightness (luma, linear): the most, the least; its share of the full light by the sun, by the moon
 const lumOf = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
@@ -139,7 +143,7 @@ export function shadeOf(l, key = keyLight(l)) {
   const sky = l.fog.colour;
   const lean = (key.moon ? 0.12 : 0.35) * (1 - 0.7 * l.pall.amount);
   const c = sky.map((v, i) => v + (VIOLET[i] - v) * lean);
-  const full = lumOf(key.colour) * key.intensity + lumOf(sky) * (0.25 + l.ambient * 1.6);
+  const full = lumOf(key.colour) * key.intensity + lumOf(sky) * skyLight(l);
   const want = Math.min(SHADE.day, Math.max(SHADE.least, (full / Math.PI) * (key.moon ? SHADE.moon : SHADE.sun)));
   const got = lumOf(c);
   return got > 0 ? c.map((v) => (v * want) / got) : [want, want, want];

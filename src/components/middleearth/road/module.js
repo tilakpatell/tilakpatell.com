@@ -22,7 +22,7 @@ import * as THREE from 'three';
 import { PACE, newClock, step as stepClock } from './clock';
 import { SAVE, recent, resume, ridden as riddenOf, savedAt, shouldOffer } from './entry';
 import { LOOK_LIMIT, pose, settleLook } from './director';
-import { keyLight, light as lightAt, shadeOf } from './daylight';
+import { keyLight, light as lightAt, shadeOf, skyLight } from './daylight';
 import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
 import { createLands } from './lands';
@@ -254,7 +254,7 @@ export default {
       sunDir.set(...key.dir);
       sun.color.setRGB(...key.colour);
       sun.intensity = key.intensity;
-      hemi.intensity = 0.25 + l.ambient * 1.6;
+      hemi.intensity = skyLight(l);
       hemi.color.setRGB(...l.fog.colour);
       // (the light off the ground: the stage’s own grass, or its snow, its stone, its ash)
       hemi.groundColor.setHex(soilOf(lineAt(STAGES, clock.s).stage).greens[1]).multiplyScalar(0.6);
