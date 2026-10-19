@@ -5,6 +5,10 @@
 //     moon: { phase, el }, stars, pall: { amount, from }, exposure, murk }
 //   LIGHTS: { [stage]: { start, end } }, eased from one to the other by
 //     smoothstep over the stage’s length
+//   keyLight(light) → { dir: [x, y, z], colour, intensity }: the one light that
+//     casts, the sun by day and the moon by night (cold, as bright as its
+//     phase, none under a storm or the pall), so a night reads by moonlight
+//     rather than by the ambient alone
 //   STORMS: { [stage]: { at: [from, to], ramp, fog, density, ambient, el? } }:
 //     a stretch of a stage under an air of its own (the white-out on the
 //     Redhorn, the dark under the mountain in Moria), coming on over `ramp`
@@ -99,4 +103,18 @@ export function light(stages, s) {
     exposure: mix(a.exposure, b.exposure, k),
     murk: w,
   };
+}
+
+const MOON = [0.62, 0.7, 0.95];
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+export function keyLight(l) {
+  const { az, el, colour } = l.sun;
+  const pall = 1 - 0.6 * l.pall.amount;
+  const day = clamp01((el + 0.05) / 0.3);
+  const night = clamp01((-el - 0.04) / 0.16) * Math.min(1, l.moon.phase * 2.5) * (1 - (l.murk ?? 0)) * (1 - 0.8 * l.pall.amount);
+  if (day > 0 || night === 0) return { dir: [Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)], colour: [...colour], intensity: 2.4 * day * pall };
+  // (the moon across the sky from where the sun went down, at least a little up)
+  const mel = Math.max(0.35, l.moon.el);
+  const maz = az + Math.PI;
+  return { dir: [Math.sin(maz) * Math.cos(mel), Math.sin(mel), Math.cos(maz) * Math.cos(mel)], colour: [...MOON], intensity: 0.9 * night };
 }

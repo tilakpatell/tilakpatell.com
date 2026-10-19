@@ -22,7 +22,7 @@ import * as THREE from 'three';
 import { PACE, newClock, step as stepClock } from './clock';
 import { SAVE, recent, resume, ridden as riddenOf, savedAt, shouldOffer } from './entry';
 import { LOOK_LIMIT, pose, settleLook } from './director';
-import { light as lightAt } from './daylight';
+import { keyLight, light as lightAt } from './daylight';
 import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
 import { createLands } from './lands';
@@ -216,10 +216,11 @@ export default {
       sky.set(l);
       mountains.set(l);
       weather.light(l);
-      const { az, el, colour } = l.sun;
-      sunDir.set(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
-      sun.color.setRGB(...colour);
-      sun.intensity = 2.4 * Math.max(0, Math.min(1, (el + 0.05) / 0.3)) * (1 - 0.6 * l.pall.amount);
+      // the sun by day, the moon by night (daylight.js’s keyLight)
+      const key = keyLight(l);
+      sunDir.set(...key.dir);
+      sun.color.setRGB(...key.colour);
+      sun.intensity = key.intensity;
       hemi.intensity = 0.25 + l.ambient * 1.6;
       hemi.color.setRGB(...l.fog.colour);
       scene.fog.color.setRGB(...l.fog.colour);

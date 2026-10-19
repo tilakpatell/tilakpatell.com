@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LIGHTS, light } from './daylight';
+import { LIGHTS, keyLight, light } from './daylight';
 import { sOf } from './line';
 import { STAGES } from './stages/index';
 
@@ -74,5 +74,21 @@ describe('daylight: the sky, the sun and the air along the Road', () => {
       const l = light(STAGES, s);
       for (const v of [l.sun.az, l.sun.el, ...l.sun.colour, l.ambient, ...l.fog.colour, l.fog.density, l.moon.phase, l.moon.el, l.stars, l.pall.amount, ...l.pall.from, l.exposure]) expect(Number.isFinite(v)).toBe(true);
     }
+  });
+
+  it('the key light: the sun by day, the moon by night, none in Moria’s dark', () => {
+    const noon = keyLight(light(STAGES, sOf(STAGES, 'hobbiton', 10)));
+    expect(noon.intensity).toBeGreaterThan(1);
+    expect(noon.dir[1]).toBeGreaterThan(0);
+    // (Bree is a wet night: a cold moon, up, a good deal fainter than the sun)
+    const bree = keyLight(light(STAGES, sOf(STAGES, 'bree', 60)));
+    expect(bree.intensity).toBeGreaterThan(0.2);
+    expect(bree.intensity).toBeLessThan(1);
+    expect(bree.dir[1]).toBeGreaterThan(0.3);
+    expect(bree.colour[2]).toBeGreaterThan(bree.colour[0]);
+    // (a direction, its length one)
+    expect(Math.hypot(...bree.dir)).toBeCloseTo(1, 6);
+    const deep = keyLight(light(STAGES, sOf(STAGES, 'moria', 60)));
+    expect(deep.intensity).toBe(0);
   });
 });
