@@ -189,7 +189,7 @@ export default function GuidePanel({ pathname, initialTab, close, onLeave }) {
   });
 
   return createPortal(
-    <div id="guide-panel" ref={panel} className="guide-panel card" role="dialog" aria-modal="false" aria-labelledby={`${ids}-name`} tabIndex={-1}>
+    <div id="guide-panel" ref={panel} className="guide-panel card dialog" role="dialog" aria-modal="false" aria-labelledby={`${ids}-name`} tabIndex={-1}>
       <div className="guide-head">
         {/* the panel says what it is, beside the tabs that say where in it you are */}
         <div className="guide-head-tabs flex min-w-0 items-center gap-3">
