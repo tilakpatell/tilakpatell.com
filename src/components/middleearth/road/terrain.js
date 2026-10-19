@@ -51,7 +51,8 @@ const FLAT = [
   { type: 'hills', scale: 70, height: 3, gain: 0.4, octaves: 3 },
 ];
 export const SPECS = {
-  hobbiton: { seed: 11, relief: GREEN },
+  // (the rise the Hill stands on, left of the lane’s start; the Hill itself is Hobbiton’s props)
+  hobbiton: { seed: 11, relief: [...GREEN, { type: 'island', at: [34, 6], r: 32, height: 4 }] },
   'shire-edge': { seed: 12, relief: GREEN },
   bree: { seed: 13, relief: GREEN },
   weathertop: { seed: 14, relief: [...GREEN.slice(0, 2), { type: 'island', at: [60, 160], r: 90, height: 45 }] },
