@@ -53,6 +53,7 @@
 
 import { addMember, applyRoster, isLeader, isMember, newParty, promote as handTo, removeMember, rosterMsg, successor, takeOver } from './party';
 import { CHAT_MAX, PARTY_MAX, newPartyId, readParty, readPartyId, readQuip, readSay, writeParty } from './partyWire';
+import { SUMMON_GAP } from './partyLimits';
 import { QUIP_MS, quipText } from './quips';
 import { createLimiter } from './protocol';
 import { isMate } from './mates';
@@ -62,7 +63,6 @@ const INVITE_MS = 120000; // an invite waits this long for an answer, and a yes 
 const NO_AGAIN_MS = 60000; // after you turn an invite down, how long before they may ask again (as an alliance)
 const JOIN_GRACE_MS = 20000; // a new member's hello may name no party this long (one sent before the roster reached them: a heartbeat and more)
 const SAY_GAP = 150; // ms between lines of chat sent: past nostr.js's FLUSH_MS, so never two in a bundle
-const SUMMON_GAP = 5000; // a summons at most this often
 
 // a line as it goes: trimmed, and cut to CHAT_MAX characters (whole ones: an emoji isn't split)
 const cut = (text) => [...text.trim()].slice(0, CHAT_MAX).join('');

@@ -12,3 +12,7 @@ export const CHAT_MAX = 200; // characters of a line
 // bytes a character so a full line fits in any script: Gujarati or Chinese
 // take three, an emoji four, and a line cut short on the wire is a line lost.
 export const BLOB_MAX = Math.ceil(((12 + Math.max(32, Math.ceil((2 + CHAT_MAX * 4) / 32) * 32) + 16) * 4) / 3);
+
+// a leader's summons at most this often (partyLink.js sends it, the dialog
+// says when the next may go)
+export const SUMMON_GAP = 5000;
