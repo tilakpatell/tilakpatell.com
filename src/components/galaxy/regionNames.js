@@ -1,9 +1,11 @@
 // The regions' names on the galaxy map (HoloMap.jsx): each is set along its
 // ring at its own angle (so the names spread round the core rather than stand
 // in a column), 11.5 px on screen at any zoom, and shown only when it has the
-// room there: the ring's wide enough for the name to lie along it, and clear
-// of the ring inside it. The inner rings are only about a name's height apart
-// when the map's fitted, so their names come in as you zoom; the Unknown
+// room there: the ring's wide enough for the name to lie along it, and its
+// band (from the ring inside) over twice a name's height wide, so the name
+// sits in it with room to spare rather than wedged between two rings and the
+// lanes. The inner rings are only a name or two's height apart when the map's
+// fitted, even on a big screen, so their names come in as you zoom; the Unknown
 // Regions' is kept in off the map's edge. Pure, tested.
 //
 // regionNamesShown(regions, unitPx, angleFor?, fontPx?) → a Set of the ids
@@ -83,6 +85,8 @@ export function regionAngle(i) {
   return CLEAR_ANGLES[i] ?? deg(homeOf(i));
 }
 
+const ROOM = 2.2; // (a band's least width for its name, in the names' heights: at 1.4 a big screen's map named all four inner rings, crammed round Coruscant)
+
 export function regionNamesShown(regions, unitPx, angleFor = regionAngle, fontPx = REGION_FONT) {
   const shown = new Set();
   if (!(unitPx > 0)) return shown;
@@ -91,8 +95,8 @@ export function regionNamesShown(regions, unitPx, angleFor = regionAngle, fontPx
     const a = angleFor(i);
     const here = edgeAt(r.r, a) * unitPx;
     const gap = here - edgeAt(regions[i - 1].r, a) * unitPx;
-    // (the name lies along the ring, so it wants the ring's width, its letters spaced; and a name's height and a half from the ring inside)
-    if (here >= 0.9 * r.name.length * fontPx * RING_GLYPH && gap >= 1.4 * fontPx) shown.add(r.id);
+    // (the name lies along the ring, so it wants the ring's width, its letters spaced; and its band ROOM names' heights wide)
+    if (here >= 0.9 * r.name.length * fontPx * RING_GLYPH && gap >= ROOM * fontPx) shown.add(r.id);
   });
   return shown;
 }

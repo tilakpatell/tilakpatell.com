@@ -11,6 +11,11 @@ describe('regionNames: which of the regions’ names have room', () => {
     // (the inner rings are 0.4 to 0.5 units, 12 to 15 px, apart: their names would sit on each other)
     expect(ids(617, 1)).toEqual(['mid', 'outer']);
   });
+  it('waits to name the thin inner rings on a big screen’s fitted map, and names them as it zooms in', () => {
+    // (a 1920 by 1080 window's map is 965 px: at 1.4 names' heights a band, all four inner names crowded round Coruscant)
+    expect(ids(965, 1)).toEqual(['core', 'mid', 'outer']);
+    expect(ids(965, 2.25)).toEqual(['core', 'colonies', 'inner', 'expansion', 'mid', 'outer']);
+  });
   it('shows them all at k=3, and each name that shows stays showing as you zoom in', () => {
     expect(ids(617, 3)).toEqual(REGIONS.slice(1).map((r) => r.id));
     for (const box of [340, 617, 900]) {

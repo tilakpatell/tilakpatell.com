@@ -468,14 +468,14 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
     setTimeout(() => jumpBtn.current?.focus(), 0);
   };
 
-  // the map's own keys (mapKeys.js): M closes it; Escape shuts the innermost open thing (the find's list, the films' panel, the key, a
-  // phone's layers) and then it; / finds, J jumps, + − 0 zoom. They're taken at the window's capture, before the page's and the
+  // the map's own keys (mapKeys.js): M closes it; Escape shuts the innermost open thing (the find's list, the films' panel, the key, the
+  // layers) and then it; / finds, J jumps, + − 0 zoom. They're taken at the window's capture, before the page's and the
   // scene's (which stand down for a modal anyway), so what's open is looked at here
   const onKey = (e) => {
     const el = e.target;
     if (el instanceof Element && el.closest('[aria-modal="true"]:not(.holomap)')) return; // (the guide's or the palette's own)
     const typing = el instanceof HTMLElement && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
-    const chip = box.current?.querySelector('.holomap-layers-toggle'); // (the layers' switches fold behind it on a small map only)
+    const chip = box.current?.querySelector('.holomap-layers-toggle'); // (the layers' switches fold behind it)
     const act = mapKeyAction(
       { key: e.key, meta: e.metaKey, ctrl: e.ctrlKey, alt: e.altKey, repeat: e.repeat },
       { typing, canJump: Boolean(picked && picked.id !== current), findOpen: listOpen && q.trim() !== '', filmsOpen: Boolean(films.current?.open), keyOpen, layersOpen: layersOpen && Boolean(chip?.getClientRects().length) },
