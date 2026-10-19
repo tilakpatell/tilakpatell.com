@@ -20,7 +20,7 @@
   height: clamp(30rem, calc(100svh - var(--nav-h, 64px) - 5.25rem), 54rem);
   overflow: hidden;
   background: linear-gradient(180deg, #4f86c6 0%, #a8c8e4 46%, #f6dfb0 64%, #7a9a4a 66%, #5f8a3a 100%);
-  border-block: 1px solid rgba(60, 40, 20, 0.35);
+  border-block: 1px solid var(--border);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -133,7 +133,7 @@
 /* without 3D: what there is to do, as cards */
 .shire-cards-wrap { padding-top: 2.5rem; padding-bottom: 1rem; }
 .shire-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.9rem; margin: 2rem 0 0; padding: 0; list-style: none; }
-.shire-cards li { padding: 1rem 1.1rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.shire-cards li { padding: 1rem 1.1rem; border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface); }
 .shire-cards .shire-list-sub { color: var(--muted); }
 
 @media (max-width: 639px) {

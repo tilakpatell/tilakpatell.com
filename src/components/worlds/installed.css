@@ -8,6 +8,4 @@
 .installed-note { font-size: 0.8rem; color: var(--muted); }
 .installed-actions { display: flex; gap: 0.5rem; }
 .installed-row .install-bar-wrap { flex-basis: 100%; }
-.installed-row .install-bar { background: var(--border); }
-.installed-row .install-bar-text { color: var(--muted); }
 .installed-empty { margin-top: 0.75rem; max-width: 40rem; color: var(--muted); }

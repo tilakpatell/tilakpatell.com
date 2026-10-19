@@ -43,7 +43,7 @@
 .tour-offer-pick:active { transform: translateY(1px) scale(0.98); }
 .tour-offer-pick:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .tour-offer-pick[data-main] { border-color: var(--btn-bg); background: var(--btn-bg); color: var(--btn-ink); }
-.tour-offer-pick[data-main]:hover { background: color-mix(in srgb, var(--btn-bg) 88%, #000); }
+.tour-offer-pick[data-main]:hover { background: color-mix(in srgb, var(--btn-bg) 88%, var(--btn-shade)); }
 .tour-offer-pick-label { font-size: var(--fs-sm); font-weight: 650; line-height: 1.25; }
 .tour-offer-pick-time { color: var(--muted); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
 .tour-offer-pick[data-main] .tour-offer-pick-time { color: inherit; }

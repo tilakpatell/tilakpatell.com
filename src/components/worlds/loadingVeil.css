@@ -37,10 +37,17 @@
 .loading-veil-bar span {
   display: block;
   height: 100%;
-  background: var(--accent, #7fd4ff);
+  /* the HUD kit’s accent, or its blue: the veil is dark glass in every theme,
+     and a light page’s accent can be all but black on it (Bose’s) */
+  background: var(--hud-accent, #7fd4ff);
   transform-origin: left center;
   transition: transform 0.35s ease-out;
   will-change: transform;
+}
+/* (a dark island’s accent is drawn to read on the dark: the map’s pages keep
+   their system’s, their universe’s or the theme’s) */
+.dark-scope .loading-veil-bar span {
+  background: var(--accent);
 }
 .loading-veil-step,
 .loading-veil-line {

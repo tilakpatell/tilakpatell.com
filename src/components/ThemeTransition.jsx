@@ -457,7 +457,7 @@ function Badge({ kind, color, autobot, id }) {
 }
 
 export default function ThemeTransition({ id, onDone }) {
-  const scene = SCENES[id] ?? { kind: 'wipe', color: THEMES[id]?.swatch ?? '#888888', quote: THEMES[id]?.company ?? '', by: 'Site colours' };
+  const scene = SCENES[id] ?? { kind: 'wipe', color: THEMES[id]?.swatch ?? 'var(--accent)', quote: THEMES[id]?.company ?? '', by: 'Site colours' };
   const reduced = prefersReducedMotion();
   const done = useRef(onDone);
   done.current = onDone;

@@ -8,11 +8,16 @@
   --abq-ink: #f6f1e6;
   --abq-glass: rgba(20, 22, 18, 0.78); /* (the HUD's glass floor: runtime/hud/hud.css) */
   --abq-gold: #f0c330;
+  /* how much desert the page’s ground takes on: the sand is mixed into the
+     theme’s own ground, and in the dark it is only a warmth, so the page’s
+     light ink (its muted lines too) keeps its contrast */
+  --abq-desert: 40%;
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cg fill='none' stroke='%231e7a3c' stroke-opacity='0.13' stroke-width='1.5'%3E%3Crect x='14' y='18' width='44' height='48'/%3E%3Crect x='150' y='120' width='44' height='48'/%3E%3C/g%3E%3Cg fill='%231e7a3c' fill-opacity='0.16' font-family='Georgia, serif' font-weight='700'%3E%3Ctext x='21' y='54' font-size='26'%3EBr%3C/text%3E%3Ctext x='155' y='156' font-size='26'%3EBa%3C/text%3E%3Ctext x='18' y='30' font-size='8' font-family='monospace'%3E35%3C/text%3E%3Ctext x='154' y='132' font-size='8' font-family='monospace'%3E56%3C/text%3E%3C/g%3E%3C/svg%3E"),
-    linear-gradient(180deg, #e9d3ae 0%, var(--abq-sand) 28%, #f4ecdb 70%, #f6f0e2 100%);
+    linear-gradient(180deg, color-mix(in srgb, #e9d3ae var(--abq-desert), var(--bg)) 0%, color-mix(in srgb, var(--abq-sand) var(--abq-desert), var(--bg)) 28%, color-mix(in srgb, #f4ecdb var(--abq-desert), var(--bg)) 70%, color-mix(in srgb, #f6f0e2 var(--abq-desert), var(--bg)) 100%);
   background-attachment: scroll, scroll;
 }
+html[data-mode='dark'] .abq-page { --abq-desert: 10%; }
 
 .abq-world { position: relative; z-index: 10; padding-top: var(--nav-h); }
 .abq-world-stage {
@@ -20,7 +25,7 @@
   height: clamp(30rem, calc(100svh - var(--nav-h)), 56rem);
   overflow: hidden;
   background: linear-gradient(180deg, #3d6fb0 0%, #9cc0de 45%, #f3c78f 72%, #cfae80 100%);
-  border-bottom: 1px solid rgba(60, 40, 20, 0.35);
+  border-bottom: 1px solid var(--border);
   touch-action: none;
   user-select: none;
 }
