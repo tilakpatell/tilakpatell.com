@@ -388,12 +388,13 @@ export async function create(canvas, ctx) {
   const scattered = site.scatter.filter((s) => !(site.level && s.game)).map((s) => {
     const items = [];
     const [r0, r1] = s.within ?? [20, site.reach];
+    const [cx, cz] = s.at ?? [0, 0]; // (a row round a place: its own clearing is still kept)
     let tries = 0;
     while (items.length < Math.round(s.n * amounts.scatter) && tries++ < s.n * 20 * Math.max(1, amounts.scatter)) {
       const a = r() * Math.PI * 2;
       const d = Math.sqrt(r0 * r0 + r() * (r1 * r1 - r0 * r0));
-      const x = Math.cos(a) * d;
-      const z = Math.sin(a) * d;
+      const x = cx + Math.cos(a) * d;
+      const z = cz + Math.sin(a) * d;
       if (avoid.some((v) => Math.hypot(x - v.at[0], z - v.at[1]) < v.r + (s.clear ?? 4))) continue;
       if (s.solid !== false && inBusy(x, z)) continue;
       if (s.flat && grid.normalAt(x, z)[1] < s.flat) continue;

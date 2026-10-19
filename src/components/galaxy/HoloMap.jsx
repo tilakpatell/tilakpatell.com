@@ -11,7 +11,7 @@ import { SIDES, WARS } from './sides';
 import { badgeOf, opsOf } from './warMap';
 import { mine, onWar, warNow } from './warState';
 import { jumpTime, routeBetween, routeMid } from './routes';
-import { onView } from './mapView';
+import { FRAME, onSquare, onView, toBox } from './mapView';
 import { LAYERS, LAYERS_KEY, LAYER_LABEL, readLayers, warForEra } from './mapLayers';
 import { HIDDEN, SMALL_DOT, estimateWidth, hangOf, placeLabels, sideOf } from './labelPlace';
 import { courseOf, findSystems, mapKeyAction, pickAction, seedPick } from './mapKeys';
@@ -94,15 +94,24 @@ import { CORE, ERAS, FILMS, FILM_ORDER, RIM, SYSTEMS, eraById, erasOf, filmLabel
 // newest event's time each war, kept in this browser (SEEN_KEY) for you
 // alone, read when the map opens.
 
-const SIZE = 21; // the map is GRID squares across, in its own units
 const TAU = Math.PI * 2;
 const HOVER_GAP = 14; // (the hover card's distance from its dot, screen px: galaxy.css's)
 const TAG_GUESS = { w: 130, h: 24 }; // (the course tag's size on screen before it's been measured)
 const SEEN_KEY = 'tp-gcw-seen';
-// (screen px a grid square must have for a charted world's name to be shown where it has room, and a landmark's: under the
-// first, a phone's whole map, the charted worlds are dots alone; the landmarks are named once the map's zoomed in)
-const CHARTED_NAMES_AT = 30;
+// (screen px a grid square must have for a charted world's name to be shown where it has room, and a landmark's: the whole
+// galaxy names the films' and the shows' worlds alone, its charted worlds faint dots; zoomed in, they're named too)
+const CHARTED_NAMES_AT = 44;
 const LANDMARK_NAMES_AT = 48;
+// (and under this, a phone's whole map, the 2017 game's worlds out of the war (Sullust, which the films only name, Pillio,
+// Vardos, Fondor) are named only where there's room too: the films' worlds and the war's are what the map's for there, and
+// the rest ran into them)
+const ROOMY_AT = 20;
+const gameOnly = (s) => s.films.includes('bf2017');
+// (a map point's place on the stage, as the CSS left and top: mapView.js's square)
+const stageAt = (p) => {
+  const [u, w] = onSquare(p);
+  return { left: `${u * 100}%`, top: `${w * 100}%` };
+};
 const NO_OATH = { war: 'gcw', side: null, sworn: 0, turncoat: false }; // (the defaults of the oath props, one object each: a new one every render would draw the side panel again)
 const NO_OATHS = {};
 const readSeen = () => {
@@ -126,11 +135,11 @@ function paintGalaxy(canvas, zoom = 1) {
   const g = canvas.getContext('2d');
   if (!g) return;
   g.scale(dpr, dpr);
-  const k = Math.min(w, h) / SIZE;
-  const ox = (w - SIZE * k) / 2;
-  const oy = (h - SIZE * k) / 2;
-  const X = (x) => ox + x * k;
-  const Y = (z) => oy + z * k;
+  const k = Math.min(w, h) / FRAME.size;
+  const ox = (w - FRAME.size * k) / 2;
+  const oy = (h - FRAME.size * k) / 2;
+  const X = (x) => ox + (x - FRAME.x0) * k;
+  const Y = (z) => oy + (z - FRAME.z0) * k;
   g.fillStyle = '#020611';
   g.fillRect(0, 0, w, h);
   // the glow of the disc and its core
@@ -311,6 +320,9 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
   }, []);
   const sizes = useRef({}); // id → { w, h } measured px, from the DOM
   const [sized, setSized] = useState({}); // (a copy of it, taken when one changes: what the places are placed from)
+  // (the charted worlds' names and the landmarks' come in zoomed: measured then, not guessed at, as the rest were when the map opened)
+  const namesIn = (boxPx * mv.view.k) / FRAME.size >= CHARTED_NAMES_AT;
+  const marksIn = (boxPx * mv.view.k) / FRAME.size >= LANDMARK_NAMES_AT;
   useLayoutEffect(() => {
     let changed = false;
     for (const el of box.current?.querySelectorAll('.holomap-name[data-id], .holomap-name[data-mark]') ?? []) {
@@ -321,7 +333,7 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
       if (w > 1 && h > 0 && (was?.w !== w || was?.h !== h)) (sizes.current[id] = { w, h }), (changed = true);
     }
     if (changed) setSized({ ...sizes.current });
-  }, [war, boxPx, pilots, layers.regions]);
+  }, [war, boxPx, pilots, layers.regions, namesIn, marksIn]);
   // the controls drawn over the map that stay put (the war's board, the Layers chip, the Key chip, the zoom buttons; the layers' own
   // switches where there's no chip), as boxes from the map's top left: a name goes clear of them as of a dot (labelPlace.js's
   // `blocks`). Measured once drawn, and again when the map or any of them changes size (the board with the war)
@@ -365,31 +377,36 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
     setTagPx((was) => (was?.w === next?.w && was?.h === next?.h ? was : next));
   }, [pick, current]);
   const places = useMemo(() => {
-    const { k, x, y } = mv.view;
-    const unit = (boxPx * k) / SIZE; // (screen px a grid square)
+    const { k } = mv.view;
+    const unit = (boxPx * k) / FRAME.size; // (screen px a grid square)
+    const inBox = (p) => toBox(mv.view, p).map((v) => v * boxPx);
     const named = unit >= CHARTED_NAMES_AT;
     // (centred on the middle, and raised its own height less a tenth: galaxy.css's translate)
     const t = mid ? { w: tagPx?.w ?? TAG_GUESS.w, h: tagPx?.h ?? TAG_GUESS.h } : null;
-    const [tx, ty] = mid ? [(x + (k * mid[0]) / SIZE) * boxPx, (y + (k * mid[1]) / SIZE) * boxPx - 0.9 * t.h] : [0, 0];
+    const [tx, ty] = mid ? [inBox(mid)[0], inBox(mid)[1] - 0.9 * t.h] : [0, 0];
     const tagBlock = t ? [{ x0: tx - t.w / 2 - 2, y0: ty - t.h / 2 - 2, x1: tx + t.w / 2 + 2, y1: ty + t.h / 2 + 2 }] : [];
     const items = SYSTEMS.map((s) => {
       const row = war.byId[s.id];
       const prio = s.id === current ? 100 : s.id === pick ? 90 : row?.battle?.fighting ? 50 : row?.major ? 40 : 0;
       const extras = (row?.major ? 14 : 0) + (row?.battle?.fighting ? 14 : 0) + (pilots[s.id] ? 20 : 0) + (s.id === current ? 32 : 0); // (the YOU tag)
       const z = sized[s.id];
-      // (a charted world, unless it's where you are or the one picked: a small dot, and its name only where there's room)
-      const quiet = s.charted && prio === 0 && { optional: true, dot: SMALL_DOT, ...(!named && { w: 0, h: 0 }) };
-      return { id: s.id, x: (x + (k * s.pos[0]) / SIZE) * boxPx, y: (y + (k * s.pos[1]) / SIZE) * boxPx, w: z ? z.w : estimateWidth(s.name, 12.5, extras), h: z ? z.h : 20, prio, ...quiet };
+      // (a charted world, unless it's where you are or the one picked: a small dot, and its name only where there's room; and on a
+      // small map, a world the war isn't fought over)
+      const quiet = s.charted && prio === 0 ? { optional: true, dot: SMALL_DOT, ...(!named && { w: 0, h: 0 }) } : !row && prio === 0 && unit < ROOMY_AT && gameOnly(s) && { optional: true };
+      const [x, y] = inBox(s.pos);
+      return { id: s.id, x, y, w: z ? z.w : estimateWidth(s.name, 12.5, extras), h: z ? z.h : 20, prio, ...quiet };
     });
     // (the landmarks' names, with the regions, zoomed in: last of all, each only where it has room, landmarks.js; they have no dot)
     if (layers.regions && unit >= LANDMARK_NAMES_AT)
       for (const l of LANDMARKS) {
         const z = sized[`lm:${l.id}`];
-        items.push({ id: `lm:${l.id}`, x: (x + (k * l.pos[0]) / SIZE) * boxPx, y: (y + (k * l.pos[1]) / SIZE) * boxPx, w: z ? z.w : estimateWidth(l.name), h: z ? z.h : 20, prio: -1, optional: true, dot: 0 });
+        const [x, y] = inBox(l.pos);
+        items.push({ id: `lm:${l.id}`, x, y, w: z ? z.w : estimateWidth(l.name), h: z ? z.h : 20, prio: -1, optional: true, dot: 0 });
       }
     // (a view gone wrong must not take the map down with it: every name on the right, as it was)
     if (items.some((i) => !Number.isFinite(i.x) || !Number.isFinite(i.y))) return {};
-    const out = placeLabels(items, { bounds: { x0: 0, y0: 0, x1: boxPx, y1: boxPx }, blocks: [...blocks, ...tagBlock] });
+    // (zoomed in, a dot under a control goes unnamed: a pan brings it out. The whole map names every film world, clear of them)
+    const out = placeLabels(items, { bounds: { x0: 0, y0: 0, x1: boxPx, y1: boxPx }, blocks: [...blocks, ...tagBlock], hideUnder: k > 1.01 });
     // (too small a map for the charted worlds' names: their dots alone, where they're shown at all)
     if (!named) for (const it of items) if (it.w === 0 && out[it.id] && out[it.id] !== HIDDEN) out[it.id] = null;
     return out;
@@ -452,14 +469,14 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
     setTimeout(() => jumpBtn.current?.focus(), 0);
   };
 
-  // the map's own keys (mapKeys.js): M closes it; Escape shuts the innermost open thing (the find's list, the films' panel, the key, a
-  // phone's layers) and then it; / finds, J jumps, + − 0 zoom. They're taken at the window's capture, before the page's and the
+  // the map's own keys (mapKeys.js): M closes it; Escape shuts the innermost open thing (the find's list, the films' panel, the key, the
+  // layers) and then it; / finds, J jumps, + − 0 zoom. They're taken at the window's capture, before the page's and the
   // scene's (which stand down for a modal anyway), so what's open is looked at here
   const onKey = (e) => {
     const el = e.target;
     if (el instanceof Element && el.closest('[aria-modal="true"]:not(.holomap)')) return; // (the guide's or the palette's own)
     const typing = el instanceof HTMLElement && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
-    const chip = box.current?.querySelector('.holomap-layers-toggle'); // (the layers' switches fold behind it on a small map only)
+    const chip = box.current?.querySelector('.holomap-layers-toggle'); // (the layers' switches fold behind it)
     const act = mapKeyAction(
       { key: e.key, meta: e.metaKey, ctrl: e.ctrlKey, alt: e.altKey, repeat: e.repeat },
       { typing, canJump: Boolean(picked && picked.id !== current), findOpen: listOpen && q.trim() !== '', filmsOpen: Boolean(films.current?.open), keyOpen, layersOpen: layersOpen && Boolean(chip?.getClientRects().length) },
@@ -498,8 +515,7 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
     window.addEventListener('keydown', h, true);
     return () => window.removeEventListener('keydown', h, true);
   }, []);
-  const pct = (v) => `${(v / SIZE) * 100}%`;
-  const unitPx = (boxPx * mv.view.k) / SIZE; // (screen px per map unit)
+  const unitPx = (boxPx * mv.view.k) / FRAME.size; // (screen px per map unit)
   const wide = typeof window !== 'undefined' && Boolean(window.matchMedia?.('(min-width: 761px)').matches); // (the panel's rest is open where there's room)
   // (focus leaving the find for another control shuts its list; a press on a button in it has none yet, in Safari, so it's let be)
   const leaveFind = (e) => {
@@ -513,7 +529,7 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
   useLayoutEffect(() => {
     const el = card.current;
     if (!el || !hovered) return;
-    const x = (mv.view.x + (mv.view.k * hovered.pos[0]) / SIZE) * boxPx; // (the dot's, in screen px from the map's left)
+    const x = toBox(mv.view, hovered.pos)[0] * boxPx; // (the dot's, in screen px from the map's left)
     const room = (side) => (side > 0 ? boxPx - 4 - (x + HOVER_GAP) : x - HOVER_GAP - 4) >= el.offsetWidth;
     setFlip(!room(1) && (room(-1) || x > boxPx / 2));
   }, [hovered, mv.view, boxPx]);
@@ -523,7 +539,9 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
       <div className="holomap-frame">
         <header className="holomap-head">
           <div>
-            <p className="holomap-kicker">Navicomputer · Galactic Standard</p>
+            <p className="holomap-kicker">
+              Navicomputer<span className="holomap-kicker-more"> · Galactic Standard</span>
+            </p>
             <h2 id="holomap-title" className="holomap-title">
               Plot a course
             </h2>
@@ -633,7 +651,7 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
                   {LANDMARKS.map((l) => {
                     const place = places[`lm:${l.id}`];
                     return (
-                      <li key={l.id} style={{ left: pct(l.pos[0]), top: pct(l.pos[1]) }} data-quiet={!place || undefined} data-place={sideOf(place) ?? undefined} data-hang={hangOf(place)}>
+                      <li key={l.id} style={stageAt(l.pos)} data-quiet={!place || undefined} data-place={sideOf(place) ?? undefined} data-hang={hangOf(place)}>
                         <span className="holomap-landmark">
                           <span className="holomap-name" data-mark={l.id}>
                             {l.name}
@@ -653,7 +671,7 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
                   const ring = row ? { '--held': SIDES[row.owner].colour, ...(by && { '--by': SIDES[by].colour, '--take': 1 - row.control }) } : {};
                   const you = row && fought.has(s.id);
                   return (
-                  <li key={s.id} style={{ left: pct(s.pos[0]), top: pct(s.pos[1]), '--c': s.accent, ...ring }} data-dim={!lit(s) || undefined} data-charted={s.charted || undefined} data-quiet={places[s.id] === null || undefined} data-place={sideOf(places[s.id]) ?? undefined} data-hang={hangOf(places[s.id])} data-badge={row ? badges[s.id] : undefined} data-held={row?.owner} data-front={(by && !row.attack) || undefined} data-attack={row?.attack ? '' : undefined} data-major={row?.major || undefined} data-decisive={row?.decisive || undefined} data-cut={row?.cut || undefined} data-fought={you || undefined}>
+                  <li key={s.id} style={{ ...stageAt(s.pos), '--c': s.accent, ...ring }} data-dim={!lit(s) || undefined} data-charted={s.charted || undefined} data-game={gameOnly(s) || undefined} data-quiet={places[s.id] === null || undefined} data-place={sideOf(places[s.id]) ?? undefined} data-hang={hangOf(places[s.id])} data-badge={row ? badges[s.id] : undefined} data-held={row?.owner} data-front={(by && !row.attack) || undefined} data-attack={row?.attack ? '' : undefined} data-major={row?.major || undefined} data-decisive={row?.decisive || undefined} data-cut={row?.cut || undefined} data-fought={you || undefined}>
                     <button type="button" className="holomap-system" aria-pressed={pick === s.id} aria-current={s.id === current ? 'location' : undefined} onFocus={(e) => reveal(s, e)} onPointerEnter={(e) => e.pointerType === 'mouse' && setHover(s.id)} onPointerLeave={() => setHover(null)} onClick={() => choose(s.id)} aria-label={row ? systemLabel(row, now, you) : s.charted ? s.name : undefined}>
                       <span className="holomap-dot" aria-hidden="true" {...discOf(s.id)}>
                         {you && <i className="holomap-you" />}
@@ -680,12 +698,12 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
               </ul>
               {/* the course's own tag, at its middle, and the card of the system the mouse is over (both keep their size, and never take a press) */}
               {route && (
-                <span ref={tag} className="holomap-course-tag" style={{ left: pct(mid[0]), top: pct(mid[1]) }}>
+                <span ref={tag} className="holomap-course-tag" style={stageAt(mid)}>
                   {lightYears(here, picked).toLocaleString('en-US')} ly · {jumpTime(route).toFixed(1)} s
                 </span>
               )}
               {hovered && hovered.id !== pick && (
-                <span ref={card} className="holomap-hover" data-flip={flip || undefined} style={{ left: pct(hovered.pos[0]), top: pct(hovered.pos[1]), '--c': hovered.accent }}>
+                <span ref={card} className="holomap-hover" data-flip={flip || undefined} style={{ ...stageAt(hovered.pos), '--c': hovered.accent }}>
                   <b>{hovered.name}</b>
                   <span>{[hoveredRow && SIDES[hoveredRow.owner].short, hoveredRow?.battle?.fighting && 'Battle on'].filter(Boolean).join(' · ')}</span>
                   <span>{hovered.id === current ? 'You are here' : `${lightYears(here, hovered).toLocaleString('en-US')} ly`}</span>
