@@ -17,6 +17,8 @@ export const SHIP_LINES = {
   takeoff: ['Lifting off. Please keep your arms inside the dome.', 'Going up. The neighbours are watching. I could make them stop.', 'Airborne. I’ve disabled the part of me that worries.'],
   fast: ['This is faster than Rick lets you go. I’m choosing to allow it.', 'Speed noted. I’ve drafted a letter to your mother, just in case.', 'You fly like him. That isn’t a compliment.'],
   ceiling: ['That’s as high as I go over a suburb. Any higher and people start filing reports.', 'Ceiling reached. Above this, the air gets political.'],
+  chase: ['The Federation has locked on, Morty. The rings, please. Quickly, if you value the paintwork.', 'They’re shooting at us. I’d go through the rings, Morty. I’d go through them now.'],
+  shaken: ['Shaken. They’ve gone back to circling. I’d like that on the record.', 'We’ve lost them, Morty. I’ll tell Rick it was my flying.'],
   tail: ['A Federation patrol ship is following us. I have four ways to make it stop. Two are legal.', 'We have company, Morty. Shall I make it a psychological problem?', 'The Federation is on our tail. Keep calm. I am always calm.'],
   land: ['Landed. Nobody was hurt. I’d like that on the record.', 'We’re down. That was adequate, Morty.', 'Touchdown. I’ll tell Rick you were careful. I’ll lie.'],
   refuse: ['Not there, Morty. There’s something in the way, and I don’t want to hurt it. Today.', 'I can’t set down there. Find me open ground.'],
@@ -29,7 +31,7 @@ export const SHIP_LINES = {
 export const SHIP_VOICE = 'ship';
 
 // seconds before a kind of line may come again, and between any two lines
-export const COOLDOWN = { board: 5, takeoff: 25, fast: 30, ceiling: 40, tail: 30, land: 8, refuse: 6, leave: 10, hello: 45, idle: 60 };
+export const COOLDOWN = { board: 5, takeoff: 25, fast: 30, ceiling: 40, chase: 20, shaken: 20, tail: 30, land: 8, refuse: 6, leave: 10, hello: 45, idle: 60 };
 export const GAP = 3.5;
 
 export const newShipVoice = () => ({ last: -Infinity, at: {}, said: {} });

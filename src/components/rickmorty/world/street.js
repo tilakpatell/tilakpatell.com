@@ -5,7 +5,8 @@
 // poles, mailboxes, the hydrant), round puffy trees in two greens, the
 // neighbours' houses in their colours, the Smith house, Harry Herpson High
 // with its name, flag, marquee and crosswalk, and the suburb going on past
-// the end of the street. Static parts are merged by material and repeats are
+// the end of the street, and the cruiser's chase rings over it while it
+// flies (./chaseRings.js). Static parts are merged by material and repeats are
 // instanced; the suburb thins out on a phone, its far side is a plain house
 // design, and its trees are simple ones that cast no shadow. (Nothing that
 // stands in front of anything else is left out of the ink: what the ink
@@ -24,6 +25,7 @@ import { buildingMaterials, flagpole, marquee, neighbourHouses, school, smithHou
 import { STREET_SKY, makeSky } from './sky';
 import { shoneys } from './shoneys';
 import { buildVisitors } from './visitors';
+import { createChaseRings } from './chaseRings';
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const FAR = 1200; // how far the ground and the road go on
@@ -321,6 +323,8 @@ export async function buildStreet(kit) {
   // the President's motorcade, the Federation's agents and its patrol ship
   const visitors = await buildVisitors(kit, { roadY: ROAD_Y });
   group.add(visitors.group);
+  const rings = createChaseRings();
+  group.add(rings.group);
 
   // ── the multiverse's vehicles (rules.js's VEHICLES) ──
   // Space Beth's ship and Jerry's car-ship on the Smiths' lawn, the Gotron
@@ -353,7 +357,7 @@ export async function buildStreet(kit) {
     // what the street's light is baked on (lib/three/groundwork)
     floor: [road, ...ground],
     sky,
-    noInk: [sky.dome, wires, ...visitors.noInk],
+    noInk: [sky.dome, wires, ...visitors.noInk, ...rings.noInk],
     light: STREET_LIGHT,
     update(t, dt, state, camera) {
       ridesAt ??= t + RIDES_AFTER;
@@ -364,8 +368,12 @@ export async function buildStreet(kit) {
       sky.update(t, camera);
       flag.update(t);
       visitors.update(t, dt, state);
+      rings.update(t, state.chase, state.flying);
     },
-    dispose: visitors.dispose,
+    dispose() {
+      visitors.dispose();
+      rings.dispose();
+    },
   };
 }
 

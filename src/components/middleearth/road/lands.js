@@ -18,7 +18,7 @@
 import * as THREE from 'three';
 import { STAGES } from './stages/index';
 import { FRAME_BACK, SEAM, landJob, riverLevel, run } from './terrain';
-import { groundJob } from './ground';
+import { groundJob, paintFor } from './ground';
 import { createWater } from './water';
 import { placements, rngOf, rowsFor } from './scatter';
 import { fieldAt } from '../../../lib/land/layers.js';
@@ -39,7 +39,9 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
     // (the first stage has land behind it, the last ahead; the rest abut at their seams)
     const from = i === 0 ? -FRAME_BACK : 0;
     const to = i === STAGES.length - 1 ? land.end + FRAME_BACK : land.end;
-    const ground = yield* groundJob(land, { house, tier, from, to });
+    // (painted as the stage says: its greens, its dirt, its snow; else the default)
+    const own = STAGES[i].ground?.paint;
+    const ground = yield* groundJob(land, { house, tier, from, to, paint: own ? paintFor(land, own) : null });
     const group = new THREE.Group();
     group.name = `road:${id}`;
     group.add(ground.mesh);

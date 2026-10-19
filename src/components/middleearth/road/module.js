@@ -112,7 +112,7 @@ export default {
     // the stage’s sound, the beats’ clips and the cast’s lines, on the runtime’s bus
     const ambience = createAmbience(rt);
     // the written stages’ scenes and their beats (scenes.js)
-    const scenes = createScenes({ rt, road, lands, weather, ambience, tier });
+    const scenes = createScenes({ rt, road, lands, weather, ambience, tier, sky });
     // the black the Road’s first words are said over, lifting: a shell round the camera
     const veilMat = new MeshBasicNodeMaterial({ color: 0x000000, transparent: true, opacity: 0, depthTest: false, depthWrite: false, side: THREE.BackSide, fog: false });
     const veil = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), veilMat);
@@ -148,6 +148,7 @@ export default {
     let shot = null; // { key, from (pose), t }: the camera’s blend between rigs
     let lastPose = null;
     let fxVision = false;
+    let shook = 0; // s the frame has been shaken, for the jolt’s phase
     let wasRidden = riddenOf(saved);
     // (the share walked, not jumped: what makes the ride ridden)
     let walked = byAddress || !back.s ? 0 : (saved?.walked ?? 0);
@@ -259,7 +260,10 @@ export default {
       fxVision = beat.fx.vision;
       const b = beat.shot && beat.shot.rig !== 'follow' ? beat.shot : null;
       const params = b?.params?.above ? { ...b.params, at: b.params.at && above(b.params.at), lookAt: b.params.lookAt && above(b.params.lookAt) } : (b?.params ?? {});
-      const leader = { at: [-ABREAST, lands.heightAt(-ABREAST, here.local), here.local], heading: 0 };
+      // (the camera’s lead stands where the walkers do: up a stair, on a bridge, in a boat)
+      const ground = lands.heightAt(-ABREAST, here.local);
+      const carried = scenes.floor(here.index, -ABREAST, here.local);
+      const leader = { at: [-ABREAST, carried == null ? ground : Math.max(ground, carried), here.local], heading: 0 };
       const want = pose({ rig: b?.rig ?? 'follow', params, lead: leader, tangent: [0, 0, 1], metres: here.local, look, mode: 'walk', reduced: clock.reduced, heightAt: lands.heightAt, t: b ? (beat.since[b.id] ?? 0) : 0 });
       const key = b?.id ?? 'follow';
       if (shot?.key !== key) shot = { key, from: lastPose, t: b?.cut === 0 || !lastPose ? BLEND : 0 };
@@ -268,6 +272,14 @@ export default {
       lastPose = p;
       camera.position.set(...p.at);
       camera.lookAt(...p.lookAt);
+      // (a beat’s jolt: the frame knocked about and settling; never under reduced motion)
+      if (beat.fx.shake > 0 && !clock.reduced) {
+        shook += dt;
+        const a = 0.14 * beat.fx.shake;
+        camera.position.x += Math.sin(shook * 47) * a;
+        camera.position.y += Math.sin(shook * 61 + 1) * a * 0.7;
+        camera.rotation.z += Math.sin(shook * 39 + 2) * a * 0.12;
+      }
       veil.position.copy(camera.position);
       if (camera.fov !== p.fov) {
         camera.fov = p.fov;

@@ -1045,7 +1045,7 @@ export const TASKS = [
   { id: 'plumbus', name: 'See a plumbus made', hint: 'Watch the plumbus factory in Rick’s garage.' },
   { id: 'portalpanic', name: 'Play Portal panic', hint: 'Play the Portal panic cabinet in Rick’s garage.' },
   { id: 'quiz', name: 'Pass the pop quiz', hint: 'Sit Mr. Goldenfold’s pop quiz at Harry Herpson High, and get seven right.' },
-  { id: 'fly', name: 'Fly the cruiser', hint: 'Board Rick’s space cruiser in the driveway and take it up over the neighbourhood.' },
+  { id: 'fly', name: 'Fly the cruiser', hint: 'Board Rick’s space cruiser in the driveway, then fly it through the rings over the street with the Federation ship on your tail.' },
   { id: 'president', name: 'Meet the President', hint: 'The President’s limo is parked outside the Smith house, and he wants Rick.' },
   { id: 'oval', name: 'Visit the Oval Office', hint: 'Take the President’s portal by the garage door in Rick’s garage.' },
   { id: 'diner', name: 'Have breakfast at Shoney’s', hint: 'A Federation agent is waiting in a booth at Shoney’s, up the street from the Smiths’.' },
