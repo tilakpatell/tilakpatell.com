@@ -31,7 +31,7 @@
 // the same few.
 
 import { getSharedSecret, utils } from '@noble/secp256k1';
-import { BLOB_MAX, CHAT_MAX, PARTY_MAX } from './partyWire';
+import { BLOB_MAX, CHAT_MAX, PARTY_MAX } from './partyLimits';
 
 const VERSION = 'tp-psay-v1'; // the HKDF salt and the first of the additional data: a new scheme, a new name
 const IV = 12;

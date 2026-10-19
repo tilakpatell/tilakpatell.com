@@ -25,13 +25,14 @@
 // createPartyStore({ saves, now }) → { get() → { party, as, seen } | null
 //   (none kept, unreadable, or unseen too long), save(party, as) (`as` the
 //   key you fly, whole or its first 16 hex digits), touch() (seen now),
-//   clear(), on(fn) → off (another tab's change) }
+//   clear(), follow() → bool, setFollow(on), on(fn) → off (another tab's change) }
 
 import { cleanName } from './names';
 import { PARTY_MAX, readPartyId } from './partyWire';
 
 export const PARTY_KEY = 'tp-party';
 export const PARTY_DAYS = 14; // unseen this long: forgotten
+export const FOLLOW_KEY = 'tp-party-follow';
 const VERSION = 1;
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -128,6 +129,22 @@ export function createPartyStore({ saves = null, now = () => Date.now() } = {}) 
       write(kept);
     },
     clear: forget,
+    // Follow the leader, a switch of this browser's (not the party's: it
+    // outlives leaving one, as a setting does)
+    follow: () => {
+      try {
+        return saves?.get(FOLLOW_KEY, false) === true;
+      } catch {
+        return false;
+      }
+    },
+    setFollow(on) {
+      try {
+        saves?.set(FOLLOW_KEY, Boolean(on));
+      } catch {
+        /* kept for the visit only */
+      }
+    },
     on(fn) {
       listeners.add(fn);
       return () => listeners.delete(fn);

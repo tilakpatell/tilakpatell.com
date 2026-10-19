@@ -195,6 +195,7 @@ export function useOnlineState(where) {
         allies.current ??= createAllies({ saves: localSaves() });
         partyStore.current ??= createPartyStore({ saves: localSaves() });
         c = createClient({ ...latest.current, allies: allies.current, party: partyStore.current });
+        c.party?.setFollow(partyStore.current.follow());
         setClient(c);
         setRoom(c.snapshot());
         off = c.on((e) => {
@@ -330,6 +331,9 @@ export function useOnlineState(where) {
     summon,
     answerSummon,
     followLeader: Boolean(room.party?.follow),
-    setFollowLeader: (yes) => client?.party?.setFollow(yes),
+    setFollowLeader: (yes) => {
+      partyStore.current?.setFollow(yes);
+      client?.party?.setFollow(yes);
+    },
   };
 }

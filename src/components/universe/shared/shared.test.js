@@ -10,7 +10,7 @@ import * as space from './space';
 
 // The universe's face: exactly these names and nothing else
 const FACE = [
-  [online, ['STALE_MS', 'cleanName', 'createLimiter']],
+  [online, ['STALE_MS', 'cleanName', 'createLimiter', 'isMate']],
   [flying, ['BUILT_KINDS', 'POWERS', 'armsView', 'arsenalOf', 'blastPunch', 'chargeFor', 'createArmory', 'createGalaxyPowers', 'createPowerTiles', 'createPowers', 'createRounds', 'createUniqueArms', 'fan', 'gainPower', 'picksFor', 'powerOn', 'powersView', 'pressPower', 'retunePowers', 'steer', 'stepPowers', 'turnToward']],
   [room, ['joinAsVisitor']],
   [hangar, ['LINES', 'POWERS', 'POWER_ICONS', 'POWER_KEYS', 'SHIP_WEAPONS', 'SKILL_NODES', 'STOCK_LOADOUT', 'ShipyardBody', 'armsView', 'arsenalOf', 'createArmory', 'crewById', 'picksFor', 'powersOf', 'useYard']],

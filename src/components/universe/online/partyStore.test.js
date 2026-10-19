@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSaves } from '../../../runtime/saves';
 import { PARTY_MAX } from './partyWire';
-import { PARTY_DAYS, PARTY_KEY, createPartyStore } from './partyStore';
+import { FOLLOW_KEY, PARTY_DAYS, PARTY_KEY, createPartyStore } from './partyStore';
 
 const DAY = 24 * 60 * 60 * 1000;
 const memory = () => {
@@ -215,5 +215,26 @@ describe('createPartyStore', () => {
     got.party.members.length = 0;
     got.seen = 0;
     expect(store.get()).toEqual({ party: partyOf(2), as: short(1), seen: 1000 });
+  });
+
+  it('keeps Follow the leader as a setting of the browser’s, past leaving the party', () => {
+    const local = memory();
+    const saves = createSaves({ local, session: memory() });
+    const store = createPartyStore({ saves, now: () => 1000 });
+    expect(store.follow()).toBe(false);
+    store.save(partyOf(2), pilot(1));
+    store.setFollow(true);
+    store.clear();
+    expect(createPartyStore({ saves: createSaves({ local, session: memory() }) }).follow()).toBe(true);
+    expect(local.raw.has(FOLLOW_KEY)).toBe(true);
+    store.setFollow(false);
+    expect(store.follow()).toBe(false);
+  });
+
+  it('a browser that keeps nothing follows no one, and doesn’t throw', () => {
+    const store = createPartyStore({ saves: createSaves({ local: broken(), session: broken() }) });
+    expect(() => store.setFollow(true)).not.toThrow();
+    expect(store.follow()).toBe(false);
+    expect(createPartyStore().follow()).toBe(false);
   });
 });

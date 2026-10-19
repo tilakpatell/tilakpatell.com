@@ -29,18 +29,12 @@
 import { cleanName } from './names';
 import { cleanWhere } from './where';
 import { QUIPS } from './quips';
+import { BLOB_MAX, CHAT_MAX, PARTY_MAX } from './partyLimits';
 
-export const PARTY_MAX = 8;
-export const CHAT_MAX = 200; // characters of a line
+// the sizes live where the signer worker can read them alone (partyLimits.js)
+export { PARTY_MAX, CHAT_MAX, BLOB_MAX };
 export const PARTY_ID = /^[0-9a-f]{16}$/;
 export const readPartyId = (v) => (typeof v === 'string' && PARTY_ID.test(v) ? v : null);
-
-// The longest blob a line seals to (partyCrypt.js): the IV (12 bytes), the
-// text's length (2) and CHAT_MAX characters at four bytes each, zero-filled
-// to a multiple of 32, then the tag (16), in base64url with no padding. Four
-// bytes a character so a full line fits in any script: Gujarati or Chinese
-// take three, an emoji four, and a line cut short on the wire is a line lost.
-export const BLOB_MAX = Math.ceil(((12 + Math.max(32, Math.ceil((2 + CHAT_MAX * 4) / 32) * 32) + 16) * 4) / 3);
 
 const ID = /^[0-9a-f]{64}$/;
 const BLOB = /^[A-Za-z0-9_-]+$/;

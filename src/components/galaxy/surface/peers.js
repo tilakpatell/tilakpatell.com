@@ -34,7 +34,7 @@ import { HILTS } from '../heroes';
 import { sharpen } from '../../../lib/three/textures';
 import { createQuipSprite } from '../../../lib/three/quipSprite';
 import { applyEmote, heardEmote, readEmote } from '../../../lib/emote';
-import { isMate } from '../../universe/online/mates';
+import { isMate } from '../../universe/shared/online';
 
 const CREW_MODELS = { artoo: 'r2d2' }; // (scene.js's)
 

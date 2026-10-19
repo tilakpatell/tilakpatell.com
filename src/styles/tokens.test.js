@@ -39,6 +39,7 @@ const SHEETS = [
   'components/universe/universe.css',
   'components/universe/navmap.css',
   'components/universe/online/online.css',
+  'components/universe/online/party.css',
 ];
 
 // A bare number of 10 or more is a page-level layer and must name its depth;

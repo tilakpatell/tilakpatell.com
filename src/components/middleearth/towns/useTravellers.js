@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useOnline } from '../../universe/online/useOnline';
-import { isMate } from '../../universe/online/mates';
+import { isMate } from '../../universe/shared/online';
 
 // A walkable town's other travellers (./travellers.js), while you're online
 // (the site's own switch and callsign) and the town is up. Returns { on,
