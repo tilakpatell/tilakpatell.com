@@ -1,7 +1,7 @@
 // The Road’s walkers: Middle-earth’s Meshy cast (public/models/middleearth/
 // cast/<name>.glb, each with its own idle, walk and run beside it) on the
 // shared skeleton, through lib/three’s rig, animator and locomotion, with
-// the house’s ink line round each (inkNodes). Loaded through the runtime’s
+// the house’s ink line round each above low (inkNodes). Loaded through the runtime’s
 // asset cache under the Road’s name, so they go when the Road does.
 // (Middle-earth’s cast3d.js does this for the towns, but its closure
 // carries GLSL; this is the same recipe on the node renderer.)
@@ -97,8 +97,8 @@ export function walker(name, { height = heightOf(name), seed = 0, rt = null } = 
     model.scale.setScalar(k);
     model.position.y = -tpl.ground * k;
     group.add(model);
-    const ink = inkHull(model, INK / k);
-    materials.add(ink);
+    // (not on low: the hull draws a figure twice, and a figure is never culled)
+    if ((rt?.quality?.tier ?? 'high') !== 'low') materials.add(inkHull(model, INK / k));
     group.updateMatrixWorld(true);
     const anim = createAnimator(model, { clips: tpl.own, hipsY: tpl.hipsY, up: tpl.up, key: `road:${name}:${k.toFixed(2)}`, seed, unit: k });
     const strides = anim.loco?.strides ?? {};

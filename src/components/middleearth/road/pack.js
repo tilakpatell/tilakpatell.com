@@ -3,6 +3,8 @@ export const PACK = {
   id: '/middle-earth/road',
   pages: ['src/pages/TheRoad.jsx'], // page modules: the build adds their JS/CSS chunks
   src: ['src/components/middleearth/road', 'src/pages/TheRoad.jsx'], // where its source is (files or folders, repo-relative): pack-check scans these
-  urls: [],
-  globs: ['/models/middleearth/cast/*'], // the fellowship (road/cast.js: each figure and its idle, walk and run), as Middle-earth’s pack has them
+  // the nature kit’s files the stages’ tables plant (scatter.test.js holds the list to the tables)
+  urls: ['/kit/naturemega/index.json', '/kit/naturemega/birch.glb', '/kit/naturemega/bush.glb', '/kit/naturemega/clover.glb', '/kit/naturemega/commontree.glb', '/kit/naturemega/deadtree.glb', '/kit/naturemega/fern.glb', '/kit/naturemega/flower.glb', '/kit/naturemega/grass.glb', '/kit/naturemega/mushroom.glb', '/kit/naturemega/pebble.glb', '/kit/naturemega/pine.glb', '/kit/naturemega/plant.glb', '/kit/naturemega/rock.glb', '/kit/naturemega/twistedtree.glb', '/kit/farm/horse.glb', '/models/sketchfab/bag-end-door.glb'],
+  globs: ['/models/middleearth/cast/*', '/models/middleearth/fx/*'], // the fellowship (road/cast.js: each figure and its idle, walk and run), as Middle-earth’s pack has them; the weather’s sheets (road/weather.js)
+  computed: ['/kit'], // (the kit’s files are named by its manifest, not the source)
 };

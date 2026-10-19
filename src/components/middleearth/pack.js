@@ -1,8 +1,8 @@
 // What Middle-earth fetches (models, textures, skies, sound): the install's list (scripts/packs.mjs, src/runtime/install.js); scripts/pack-check.mjs fails when its source names an asset this misses.
 export const PACK = {
   id: '/middle-earth',
-  pages: ['src/pages/MiddleEarth.jsx'], // page modules: the build adds their JS/CSS chunks
-  src: ['src/components/middleearth', 'src/pages/MiddleEarth.jsx'], // where its source is (files or folders, repo-relative): pack-check scans these
+  pages: ['src/pages/MiddleEarth.jsx', 'src/pages/RedBook.jsx'], // page modules: the build adds their JS/CSS chunks
+  src: ['src/components/middleearth', 'src/pages/MiddleEarth.jsx', 'src/pages/RedBook.jsx'], // where its source is (files or folders, repo-relative): pack-check scans these
   urls: [
     '/games/models/boulder.glb',
     '/games/models/boulders.glb',
@@ -28,7 +28,25 @@ export const PACK = {
     '/models/sketchfab/orthanc.glb',
     '/models/sketchfab/minas-tirith.glb',
     '/models/sketchfab/bag-end-door.glb',
+    // the nature kit the Road plants (its folder is under this one, so its
+    // own pack’s list is read here too; installing Middle-earth installs the Road’s ground)
+    '/kit/naturemega/index.json',
+    '/kit/naturemega/birch.glb',
+    '/kit/naturemega/bush.glb',
+    '/kit/naturemega/clover.glb',
+    '/kit/naturemega/commontree.glb',
+    '/kit/naturemega/deadtree.glb',
+    '/kit/naturemega/fern.glb',
+    '/kit/naturemega/flower.glb',
+    '/kit/naturemega/grass.glb',
+    '/kit/naturemega/mushroom.glb',
+    '/kit/naturemega/pebble.glb',
+    '/kit/naturemega/pine.glb',
+    '/kit/naturemega/plant.glb',
+    '/kit/naturemega/rock.glb',
+    '/kit/naturemega/twistedtree.glb',
+    '/kit/farm/horse.glb',
   ], // single files
-  globs: ['/cc0/galaxy/**', '/models/middleearth/cast/*'], // folders: `*` within a folder, `**` any depth
+  globs: ['/cc0/galaxy/**', '/models/middleearth/cast/*', '/models/middleearth/fx/*'], // folders: `*` within a folder, `**` any depth
   computed: ['/models/sketchfab'], // folders the source only builds paths in: the files it takes are listed above
 };

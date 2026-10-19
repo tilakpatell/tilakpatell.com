@@ -34,6 +34,7 @@ import GalaxyView from '../components/galaxy/GalaxyView';
 import GalaxyPanel from '../components/galaxy/GalaxyPanel';
 import { holdJump } from '../components/hyperspace3d/timeline';
 import HoloMap from '../components/galaxy/HoloMap';
+import { createHoloLink } from '../components/galaxy/holo/link';
 import { readFound } from '../components/galaxy/places';
 import GalaxyIntro from '../components/galaxy/GalaxyIntro';
 import '../components/galaxy/galaxy.css';
@@ -199,6 +200,8 @@ export default function Galaxy() {
   const [founds, setFounds] = useState(() => readFound(local.get(FOUND_KEY)));
   const found = founds[current] ?? [];
   const [mapOpen, setMapOpen] = useState(false);
+  // the map in 3D: what it and the scene share while it's open (components/galaxy/holo/link.js)
+  const [holo] = useState(createHoloLink);
   const [jumping, setJumping] = useState(null); // { to, phase } while a jump's on
   const [held, setHeld] = useState(null); // { to } while an Interdictor's gravity well holds you (galaxy/interdiction.js)
   const [balked, setBalked] = useState(false); // the hyperdrive asked for under the hold, for a moment
@@ -343,7 +346,7 @@ export default function Galaxy() {
         timer.current = setTimeout(() => dove.current?.(), DIVE_MAX); // (a dive that never ends still lands)
       };
       runtime()
-        .handover(surfaceModule, surfaceProps(id, { ship, loadout, build, net: online.client, reduced, effects: groundEffects(id, oathKept, Date.now()), crew: readCrewStyle(localSaves(), local.get(HERO_KEY)) }), host, { fade: 900, held: true, after, onBuilt })
+        .handover(surfaceModule, surfaceProps(id, { ship, loadout, build, net: online.client, reduced, effects: groundEffects(id, oathKept, Date.now()), crew: readCrewStyle(localSaves(), local.get(HERO_KEY)), arms: skillFx.arms }), host, { fade: 900, held: true, after, onBuilt })
         .catch(() => false)
         .then(() => after)
         .then(() => {
@@ -351,7 +354,7 @@ export default function Galaxy() {
           navigate(to); // (not handed over: the page makes its own)
         });
     },
-    [leave, leaving, navigate, ship, loadout, build, online.client, reduced, oathKept],
+    [leave, leaving, navigate, ship, loadout, build, online.client, reduced, oathKept, skillFx.arms],
   );
   // near a planet you can land on: the surface's code, and its page's, come ahead
   useEffect(() => {
@@ -534,6 +537,7 @@ export default function Galaxy() {
         system={wanted}
         here={current}
         handle={view}
+        holo={holo}
         ship={ship}
         loadout={loadout}
         build={build}
@@ -615,7 +619,7 @@ export default function Galaxy() {
         suggested={suggested}
         onSwear={onSwear}
       />
-      {mapOpen && <HoloMap current={current} online={online} onJump={jumpTo} onCourse={setCourse} course={course} onClose={() => setMapOpen(false)} onLeave={() => leave('/universe/starwars', { jump: true })} oath={oath} oaths={oathKept.oaths} suggested={suggested} onSwear={onSwear} onTheatre={onTheatre} />}
+      {mapOpen && <HoloMap holo={holo} current={current} online={online} onJump={jumpTo} onCourse={setCourse} course={course} onClose={() => setMapOpen(false)} onLeave={() => leave('/universe/starwars', { jump: true })} oath={oath} oaths={oathKept.oaths} suggested={suggested} onSwear={onSwear} onTheatre={onTheatre} />}
       {intro && (
         <GalaxyIntro
           onDone={() => {

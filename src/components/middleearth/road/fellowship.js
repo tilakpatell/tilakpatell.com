@@ -22,16 +22,17 @@ export const CHANGES = [
   { stage: 'hobbiton', local: 0, add: ['frodo'] },
   // (the field’s edge: the last 40 m of the lane)
   { stage: 'hobbiton', local: STAGES[0].length - 40, add: ['sam'] },
-  { stage: 'shire-edge', local: 60, add: ['merry', 'pippin'] },
+  // (Maggot’s crop: the two out of the corn at the mushrooms’ beat)
+  { stage: 'shire-edge', local: 26, add: ['merry', 'pippin'] },
   // (Bree’s last beat: Strider leads them out the back way at dawn)
-  { stage: 'bree', local: 150, add: ['aragorn'] },
+  { stage: 'bree', local: 134, add: ['aragorn'] },
   // (the Ford: Arwen out of the trees, Frodo on Asfaloth with her)
-  { stage: 'ford', local: 120, add: ['arwen'], state: { frodo: 'riding', arwen: 'riding' } },
+  { stage: 'ford', local: 72, add: ['arwen'], state: { frodo: 'riding', arwen: 'riding' } },
   { stage: 'rivendell', local: 0, remove: ['arwen'], state: { frodo: 'walking' } },
   // (the morning they leave: nine under the arch, the film’s order)
   {
     stage: 'rivendell',
-    local: 150,
+    local: 138,
     add: ['gandalf', 'legolas', 'gimli', 'boromir'],
     order: ['gandalf', 'legolas', 'gimli', 'aragorn', 'boromir', 'merry', 'pippin', 'sam', 'frodo'],
   },

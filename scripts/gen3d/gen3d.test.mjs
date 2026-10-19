@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { check } from './budget.mjs';
-import { command, wslPath } from './generate.mjs';
+import { command, lying, wslPath } from './generate.mjs';
 import { caption, layout } from './judge.mjs';
 
 describe('judging sheets', () => {
@@ -61,6 +61,32 @@ describe('following a picture closely', () => {
     if (!cmd) return; // trellis.cpp isn't installed here
     expect(cmd.join(' ')).toContain('--model pixal3d --fov 52');
     expect(command('trelliscpp', 'a.png', 'b.glb').join(' ')).not.toContain('pixal3d');
+  });
+  it('stands up only what Pixal3D made, which lies along Z', () => {
+    expect(lying('trelliscpp', true)).toBe(true);
+    expect([lying('trelliscpp', false), lying('trellis2', true), lying('hunyuan', false), lying('fake', true)]).toEqual([false, false, false, false]);
+  });
+  it('stands a tower Pixal3D laid along Z, its base at +Z, on its base: wide at the foot, Y up', async () => {
+    const { Document } = await import('@gltf-transform/core');
+    const { upright } = await import('./upright.mjs');
+    // (a tapering tower as Jedha's temple came out: its stepped base, 0.5 across, at +Z; its top, 0.1 across, at −Z)
+    const ring = (w, z) => [[-w, -w, z], [w, -w, z], [w, w, z], [-w, w, z]];
+    const pts = [...ring(0.25, 0.45), ...ring(0.05, -0.45)].flat();
+    const doc = new Document();
+    const buffer = doc.createBuffer();
+    const position = doc.createAccessor().setType('VEC3').setArray(new Float32Array(pts)).setBuffer(buffer);
+    doc.createScene().addChild(doc.createNode().setMesh(doc.createMesh().addPrimitive(doc.createPrimitive().setAttribute('POSITION', position))));
+    await upright(doc);
+    const a = doc.getRoot().listMeshes()[0].listPrimitives()[0].getAttribute('POSITION');
+    const out = Array.from({ length: a.getCount() }, (_, i) => a.getElement(i, []));
+    const span = (vs, k) => Math.max(...vs.map((v) => v[k])) - Math.min(...vs.map((v) => v[k]));
+    // (now along Y, the base at the foot)
+    expect(span(out, 1)).toBeCloseTo(0.9);
+    expect(span(out, 2)).toBeCloseTo(0.5);
+    const foot = out.filter((v) => v[1] < 0);
+    const top = out.filter((v) => v[1] > 0);
+    expect(span(foot, 0)).toBeCloseTo(0.5);
+    expect(span(top, 0)).toBeCloseTo(0.1);
   });
 });
 

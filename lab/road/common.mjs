@@ -1,6 +1,6 @@
 // What the Road's lab scripts share: a Chromium on the container's software
 // GL (or CHROME), a page on the dev server (BASE, else localhost:5173), the
-// house's first-visit keys set so no intro stands in front, and the Road's
+// house's first-visit keys set so no intro or Load 3D card stands in front, and the Road's
 // save cleared so no resume card holds the ride.
 import { chromium } from 'playwright-core';
 import { readdirSync, existsSync } from 'node:fs';
@@ -20,6 +20,8 @@ export async function open(b, path, { phone = false, quality = process.env.QUALI
     localStorage.setItem('tp-start', '"universe"');
     localStorage.setItem('tp-quality', q);
     localStorage.setItem('tp-map3d', 'force');
+    // (at low the site holds a heavy world behind its Load 3D card: always load, as the probe does)
+    localStorage.setItem('tp-worlds', JSON.stringify('load'));
     localStorage.removeItem('tp-road');
   }, quality);
   const page = await ctx.newPage();

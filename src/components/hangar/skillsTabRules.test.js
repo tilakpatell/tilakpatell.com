@@ -20,7 +20,7 @@ describe('the Hangar’s skills', () => {
     expect(nodeCard('afterburn', ['afterburn'], { ok: false, why: 'taken' })).toMatchObject({ state: 'taken', says: 'Taken' });
     expect(nodeCard('kesselrun', [], { ok: false, why: 'key' }).says).toBe('Needs an achievement from Star Wars');
     expect(nodeCard('b-cruiser', [], { ok: false, why: 'key' }).says).toBe('Needs an achievement from Rick and Morty');
-    expect(nodeCard('u-seismic', [], { ok: false, why: 'soon' }).says).toBe('Arrives with the unique weapons');
+    expect(nodeCard('u-seismic', [], { ok: false, why: 'soon' }).says).toBe('Not here yet');
     expect(nodeCard('racks', [], { ok: false, why: 'points' }).says).toBe('Short of points');
   });
   it('call a node taken whatever the rules say of it now', () => {
