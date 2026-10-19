@@ -15,7 +15,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { C, merged, part } from '../parts';
+import { C, merged, mergeStatics, part } from '../parts';
 import { bridge as buildBridge, colonnade, court, gate, house, lamp, pavilion, terrace } from '../../../towns/rivendell/build';
 import { birchGeo, cliffGeo } from '../../../towns/rivendell/valley';
 
@@ -139,6 +139,8 @@ export function buildProps({ K, material, heightAt }) {
   ring.rotation.x = Math.PI / 2;
   ring.name = 'rivendell:ring';
   group.add(ring);
+  // (the chapter’s builders draw a building in a mesh a material: one a material for the valley, the Ring left to turn)
+  mergeStatics(group, { keep: [ring] });
 
   return {
     group,

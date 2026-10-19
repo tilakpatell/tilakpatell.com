@@ -10,7 +10,7 @@
 // crosses. In the stage’s frame: the lane along +z from 0, +x on the
 // walker’s left.
 //
-//   buildProps({ K, material, heightAt, level }) → { group, raft, decks, hollow, dispose }
+//   buildProps({ K, material, heightAt, level, tier }) → { group, raft, decks, hollow, dispose }
 //     K: townKit.js’s kit; material: the stage’s vertex-coloured one (the
 //     ferry’s timbers); level(z): the Brandywine’s water under the lane at z
 //   GAP, TREE, HOLLOW, LANDING, RAFT, FAR: where they stand, for the beats and the scene
@@ -50,7 +50,7 @@ function bits(fn) {
 }
 
 // the fences and hedges, instanced: posts, rails in pairs, hedge blocks
-function lanes(K, heightAt) {
+function lanes(K, heightAt, tier) {
   const out = [];
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
@@ -78,8 +78,11 @@ function lanes(K, heightAt) {
   const hedge = new THREE.InstancedMesh(hedgeGeo(), K.mats.hedge, blocks.length);
   blocks.forEach(([x, z], i) => hedge.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z) - 0.1, z), along, new THREE.Vector3(1, 0.85 + ((z * 7.1) % 1) * 0.25, 0.9))));
   // the standing crop close to the lane: the chapter’s wheat clumps, thick by the fences
+  // (four rows deep by the fence; one on low, where the scatter’s corn stands behind it)
+  const rows = tier === 'low' ? 1 : 4;
+  const step = tier === 'low' ? 1.2 : 0.7;
   const clumps = [];
-  for (const side of [1, -1]) for (let z = FENCE.z[0]; z < FENCE.z[1]; z += 0.7) for (let k = 0; k < 4; k++) clumps.push([side * (FENCE.x + 0.6 + k * 0.7 + ((z * 3.7 + k) % 1) * 0.4), z + ((k * 0.37) % 1) * 0.6]);
+  for (const side of [1, -1]) for (let z = FENCE.z[0]; z < FENCE.z[1]; z += step) for (let k = 0; k < rows; k++) clumps.push([side * (FENCE.x + 0.6 + k * 0.7 + ((z * 3.7 + k) % 1) * 0.4), z + ((k * 0.37) % 1) * 0.6]);
   const wheat = new THREE.InstancedMesh(wheatGeo(), K.mats.wheat, clumps.length);
   clumps.forEach(([x, z], i) => wheat.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z), z), q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), (x * 13 + z) % 6.28), new THREE.Vector3(0.9, 0.85 + ((x * z) % 1) * 0.3, 0.9))));
   for (const mesh of [post, rail, hedge, wheat]) {
@@ -125,10 +128,10 @@ function raftMesh(material) {
   return merged(p, material, 'shire-edge:raft');
 }
 
-export function buildProps({ K, material, heightAt, level }) {
+export function buildProps({ K, material, heightAt, level, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'shire-edge:props';
-  for (const mesh of lanes(K, heightAt)) group.add(mesh);
+  for (const mesh of lanes(K, heightAt, tier)) group.add(mesh);
 
   // Maggot’s barn across the field on the right, its doors to the lane; the farm’s dressing
   group.add(stand(barn(K).group, heightAt, -42, 16, Math.PI / 2, SHIRE * 0.9));

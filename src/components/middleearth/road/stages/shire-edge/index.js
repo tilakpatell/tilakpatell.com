@@ -32,7 +32,7 @@ const smooth = (x) => {
   return k * k * (3 - 2 * k);
 };
 
-export function build({ road, heightAt, land, rt, weather, ambience }) {
+export function build({ road, heightAt, land, rt, weather, ambience, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'stage:shire-edge';
   const material = road.material({ vertexColors: true, flatShading: true });
@@ -41,7 +41,7 @@ export function build({ road, heightAt, land, rt, weather, ambience }) {
   const along = river ? riverLevel(heightAt, river) : null;
   // (the water under the lane at z: the river’s level where its line crosses x = 0)
   const level = (z) => (along ? along(river.line.length / 2 + (z - 150) * 0.02) : heightAt(0, z));
-  const props = buildProps({ K: town.K, material, heightAt, level });
+  const props = buildProps({ K: town.K, material, heightAt, level, tier });
   group.add(props.group);
   const deck = level(150) + RAFT.deck;
 

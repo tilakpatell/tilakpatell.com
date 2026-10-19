@@ -14,7 +14,7 @@
 //   GATE, PONY, WING, BACK, BREE: where they stand, and the scale, for the beats and the scene
 
 import * as THREE from 'three';
-import { C, merged, part } from '../parts';
+import { C, merged, mergeStatics, part } from '../parts';
 import { barrels, crates, gate as buildGate, house, lodge, pony, stable, stall, stockade, well } from '../../../towns/bree/build';
 import { benchParts, parts } from '../../../shire/build';
 
@@ -100,6 +100,8 @@ export function buildProps({ K, material, heightAt }) {
   const cobbles = [];
   for (let z = GATE.z; z < BACK.z; z += 8) cobbles.push(part(new THREE.BoxGeometry(3.6, 0.04, 8), C(0x4a4640).offsetHSL(0, 0, ((z * 0.13) % 1) * 0.03), { at: [0, heightAt(0, z + 4) + 0.03, z + 4] }));
   group.add(merged(cobbles, material, 'bree:cobbles'));
+  // (the town’s builders draw a house in a dozen meshes: one a material for the whole town, the gate’s leaves left to move)
+  mergeStatics(group, { keep: [gate.group] });
 
   return {
     group,
