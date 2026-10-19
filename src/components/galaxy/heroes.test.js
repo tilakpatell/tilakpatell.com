@@ -127,6 +127,17 @@ describe('the stance, the gun and the mods', () => {
   });
 });
 
+describe('the skill tree’s guns in a hero’s hand', () => {
+  it('keeps a unique gun only while its node is taken, the hero’s own after a reset', () => {
+    expect(readHero({ id: 'han', gun: 'particle' }).gun).toBe('blaster');
+    expect(readHero({ id: 'han', gun: 'particle' }, 'falcon', {}, ['particle']).gun).toBe('particle');
+    expect(readHero({ id: 'han' }, 'falcon', { han: { gun: 'm60' } }, ['m60']).gun).toBe('m60');
+    expect(readHero({ id: 'han' }, 'falcon', { han: { gun: 'm60' } }, []).gun).toBe('blaster');
+    // (a Jedi's hand is his blade's, whatever's opened)
+    expect(readHero({ id: 'luke', gun: 'amban' }, 'xwing', {}, ['amban']).gun).not.toBe('amban');
+  });
+});
+
 describe('the perks', () => {
   it('ride with the choice, three at most, nonsense dropped', () => {
     expect(readHero({ id: 'luke', perks: ['focus', 'nope', 'nimble', 'nimble', 'survivor', 'riposte'] }).perks).toEqual(['focus', 'nimble', 'survivor']);

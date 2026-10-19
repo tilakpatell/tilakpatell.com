@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAchievements } from '../../Achievements';
-import { useEconomy } from '../../universe/shared/wallet';
+import { tellSkills, useEconomy } from '../../universe/shared/wallet';
 import { localSaves } from '../../../runtime/local';
 import { canTake, effectsOf, legendRank, pointsOf, readSkills, resetCost, withTaken } from './rules';
 import { NODES } from './tree';
@@ -63,6 +63,8 @@ export default function SkillsProvider({ children }) {
     const points = pointsOf({ level, xp, achievements: unlocked });
     const ctx = { earned: points.earned, achievements: unlocked };
     const nodes = readSkills({ nodes: saved.nodes }, ctx);
+    // (the wallet's told here, as the nodes are read, so the shipyard below draws its skill locks from these)
+    tellSkills(nodes);
     return { nodes, ctx, points, xp, fx: effectsOf(nodes) };
   }, [level, xp, unlocked, saved.nodes]);
 

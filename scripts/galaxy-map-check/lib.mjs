@@ -50,17 +50,18 @@ const pageHelpers = () => {
   };
 };
 
-// a galaxy at Tatooine, flown in an X-wing, the map open
-export const open = async (viewport) => {
+// a galaxy at Tatooine, flown in an X-wing, the map open: the flat one, unless `view` is '3d' (the holotable, holo.mjs)
+export const open = async (viewport, { view = 'flat' } = {}) => {
   const ctx = await browser.newContext({ viewport });
-  await ctx.addInitScript(() => {
+  await ctx.addInitScript((v) => {
+    window.localStorage.setItem('tp-galaxy-map-view', JSON.stringify(v)); // (HoloMap.jsx's VIEW_KEY)
     window.localStorage.setItem('tp-3d', 'on');
     window.localStorage.setItem('tp-intro', '1');
     window.localStorage.setItem('tp-sound', 'off');
     window.sessionStorage.setItem('tp-galaxy-intro', '1');
     window.localStorage.setItem('tp-worlds', JSON.stringify('load')); // (the 3D, without the gate's asking)
     window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: the cloud's software GL)
-  });
+  }, view);
   await ctx.addInitScript(pageHelpers);
   const page = await ctx.newPage();
   const errors = [];

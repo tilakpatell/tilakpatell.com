@@ -126,41 +126,39 @@
 .holomap-star { margin-left: 0.25rem; color: #ffd36a; font-weight: 700; text-shadow: 0 0 6px #000; }
 .holomap-fight { margin-left: 0.2rem; color: #ffb347; font-weight: 700; text-shadow: 0 0 6px #000; }
 
-/* ── Over the map's empty north: the war shown (the era chips pick it), and who holds what ── */
-.holomap-strip { position: absolute; z-index: 2; top: 20px; left: 22px; display: grid; gap: 6px; width: min(272px, 46%); }
-.holomap-strip-war { margin: 0 0 0.3rem; color: #fff; font-size: 0.78rem; font-weight: 600; text-shadow: 0 0 6px #000, 0 0 2px #000; }
+/* ── Over the map's empty north: the war shown (the era chips pick it), and who holds what: one row, each side's crest, its
+   systems and its share, the bar under (its name on a hover, WarStrip.jsx's title, and to a screen reader; three rows of names
+   were a table over the map) ── */
+.holomap-strip { position: absolute; z-index: 2; top: 16px; left: 18px; display: grid; gap: 4px; width: max-content; max-width: calc(100% - 36px); }
+.holomap-strip-war { margin: 0; color: #fff; font-size: 0.78rem; font-weight: 600; text-shadow: 0 0 6px #000, 0 0 2px #000; }
 .holomap-strip-yours { color: #ffb347; font-weight: 500; }
-.holomap-strip-board { display: grid; gap: 6px; padding: 7px 10px 9px; border: 1px solid rgb(127 214 255 / 0.22); border-radius: 9px; background: rgb(2 8 20 / 0.78); backdrop-filter: blur(3px); }
-.holomap-strip-sides { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; }
-.holomap-strip-sides li { display: grid; grid-template-columns: 14px minmax(0, 1fr) 1.6em 2.8em 2.4em; align-items: center; gap: 6px; color: #d9f3ff; font-size: 0.72rem; }
-.holomap-strip-sides .holomap-emblem { width: 14px; height: 14px; color: var(--side); }
-.holomap-strip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.holomap-strip-n { color: #fff; font: 600 0.78rem var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.holomap-strip-board { justify-self: start; display: grid; gap: 4px; padding: 4px 9px 5px; border: 1px solid rgb(127 214 255 / 0.22); border-radius: 9px; background: rgb(2 8 20 / 0.78); backdrop-filter: blur(3px); }
+.holomap-strip-sides { display: grid; grid-auto-flow: column; justify-content: start; column-gap: 12px; margin: 0; padding: 0; list-style: none; }
+.holomap-strip-sides li { display: grid; grid-template-columns: 13px auto auto auto; align-items: center; gap: 4px; color: #d9f3ff; font-size: 0.72rem; }
+.holomap-strip-sides .holomap-emblem { width: 13px; height: 13px; color: var(--side); }
+.holomap-strip-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.holomap-strip-n { color: #fff; font: 600 0.74rem var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
 .holomap-strip-share { color: rgb(217 243 255 / 0.6); font: 0.7rem var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
 .holomap-strip-trend { font: 0.7rem var(--font-mono); text-align: right; }
+.holomap-strip-trend:empty { display: none; }
 .holomap-strip-trend[data-trend='up'] { color: #9dffb5; }
 .holomap-strip-trend[data-trend='down'] { color: #ff8a7a; }
 .holomap-strip-bar { display: flex; gap: 2px; height: 5px; border-radius: 999px; overflow: hidden; }
 .holomap-strip-bar span { flex-basis: 0; min-width: 2px; background: var(--side); transition: flex-grow 0.6s var(--ease-smooth, ease); }
 
-/* ── The layers: what the map draws, each a switch (mapLayers.js), over its top right
-   (on a small map, a chip over the key's, on the west's empty side, that opens them: a row of five would
-   cover its names; the key's own panel takes its place while it's open) ── */
-.holomap-layers { position: absolute; z-index: 3; top: 10px; right: 10px; max-width: 60%; }
-.holomap-layers-toggle { display: none; }
-.holomap-layers-set { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
-.holomap-layers-set button { padding: 0.2rem 0.55rem; border: 1px solid rgb(127 214 255 / 0.25); border-radius: 999px; background: rgb(2 8 20 / 0.86); color: rgb(217 243 255 / 0.7); font-size: 0.72rem; }
+/* ── The layers: what the map draws, each a switch (mapLayers.js), behind a chip beside the key's, in the square's empty
+   bottom left corner, that opens them upward (a row of five over the top right covered the north's names, and was one more
+   thing on the map; a chip over the key's reached up into the south west's names on a phone); the key's own panel takes its
+   place while it's open. (--key-chip: the key chip's width, 68 px, and a gap) ── */
+.holomap-layers { --key-chip: 74px; position: absolute; z-index: 3; left: calc(12px + var(--key-chip)); bottom: 10px; display: flex; flex-direction: column-reverse; align-items: flex-start; gap: 4px; }
+.holomap-map:has(.holomap-legend[data-open]) .holomap-layers { display: none; }
+.holomap-layers-toggle { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 32px; padding: 0.25rem 0.7rem; border: 1px solid rgb(127 214 255 / 0.3); border-radius: 8px; background: rgb(2 8 20 / 0.82); color: #bfeaff; font: 0.7rem var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; }
+.holomap-layers-toggle:hover { background: rgb(14 36 64 / 0.9); }
+.holomap-layers-toggle svg { width: 15px; height: 15px; }
+.holomap-layers:not([data-open]) .holomap-layers-set { display: none; }
+.holomap-layers-set { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 3px; max-width: calc(100cqw - 74px); padding: 3px; border: 1px solid rgb(127 214 255 / 0.25); border-radius: 10px; background: rgb(2 8 20 / 0.93); backdrop-filter: blur(4px); }
+.holomap-layers-set button { padding: 0.18rem 0.55rem; border: 1px solid rgb(127 214 255 / 0.25); border-radius: 999px; background: rgb(2 8 20 / 0.86); color: rgb(217 243 255 / 0.7); font-size: 0.72rem; }
 .holomap-layers-set button[aria-pressed='true'] { border-color: rgb(127 214 255 / 0.7); color: #fff; }
-@container holomap-map (max-width: 560px) {
-  .holomap-layers { top: auto; right: auto; left: 12px; bottom: 48px; display: flex; flex-direction: column-reverse; align-items: flex-start; gap: 4px; max-width: none; }
-  .holomap-map:has(.holomap-legend[data-open]) .holomap-layers { display: none; }
-  .holomap-layers-toggle { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 32px; padding: 0.25rem 0.7rem; border: 1px solid rgb(127 214 255 / 0.3); border-radius: 8px; background: rgb(2 8 20 / 0.82); color: #bfeaff; font: 0.7rem var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; }
-  .holomap-layers-toggle:hover { background: rgb(14 36 64 / 0.9); }
-  .holomap-layers-set button { padding-block: 0.18rem; }
-  .holomap-layers-toggle svg { width: 15px; height: 15px; }
-  .holomap-layers:not([data-open]) .holomap-layers-set { display: none; }
-  .holomap-layers-set { justify-content: flex-start; max-width: calc(100cqw - 74px); gap: 3px; padding: 3px; border: 1px solid rgb(127 214 255 / 0.25); border-radius: 10px; background: rgb(2 8 20 / 0.93); backdrop-filter: blur(4px); }
-}
 
 /* ── The key, shut till it's asked for ── */
 .holomap-legend { position: absolute; z-index: 3; left: 12px; bottom: 10px; display: flex; flex-direction: column-reverse; align-items: flex-start; gap: 6px; max-width: calc(100% - 24px); }
@@ -186,14 +184,16 @@
 /* ── Phone width: the war's name across the top, the board under it on the
    left (clear of the northern systems' names), smaller fleets ── */
 @container holomap-map (max-width: 520px) {
-  .holomap-strip { top: 16px; left: 18px; right: 8px; width: auto; gap: 4px; }
-  .holomap-strip-board { justify-self: start; width: 150px; padding: 5px 6px 7px; gap: 4px; }
-  .holomap-strip-sides li { grid-template-columns: 12px minmax(0, 1fr) 1.4em 2.2em; gap: 3px; font-size: 0.7rem; }
+  .holomap-strip { top: 12px; left: 14px; right: 8px; width: auto; gap: 3px; }
+  /* (the board narrower still: each side's crest and count, no share) */
+  .holomap-strip-board { padding: 4px 8px 5px; }
+  .holomap-strip-sides { column-gap: 10px; }
+  .holomap-strip-sides li { grid-template-columns: 12px auto auto; gap: 3px; font-size: 0.7rem; }
   .holomap-strip-sides .holomap-emblem { width: 12px; height: 12px; }
   .holomap-strip-share { display: none; }
   .holomap-strip-n { font-size: 0.7rem; }
   .holomap-legend { left: 8px; bottom: 8px; }
-  .holomap-layers { left: 8px; bottom: 46px; }
+  .holomap-layers { left: calc(8px + var(--key-chip)); bottom: 8px; }
   /* (the open key covers the map, under the zoom buttons' row in the top right corner (galaxy.css: 44 px and the 8 beside them, and a gap); the war's board under it would only show through, so it steps aside) */
   .holomap-legend-panel { width: min(340px, calc(100cqw - 68px)); max-height: calc(100cqw - 112px); }
   .holomap-map:has(.holomap-legend[data-open]) .holomap-strip { visibility: hidden; }
@@ -244,6 +244,16 @@
 .holomap-order-bar { height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--held) 45%, transparent); overflow: hidden; }
 .holomap-order-bar > span { display: block; width: calc(var(--take, 0) * 100%); height: 100%; background: var(--by); }
 .holomap-order-n { color: rgb(217 243 255 / 0.75); font-size: 0.72rem; }
+/* (both sides' orders on one system: a line each, by its crest, yours in gold) */
+.holomap-order-side { display: flex; align-items: center; gap: 0.4rem; color: rgb(217 243 255 / 0.85); font-size: 0.86rem; }
+.holomap-order-side[data-yours] { color: #ffd36a; }
+.holomap-order-side .holomap-emblem { flex: none; width: 14px; height: 14px; color: var(--side); }
+/* a fold in the war card: the older news, and the war in full (the battles on now, who holds each area) */
+.holomap-fold > summary { width: fit-content; padding: 0.15rem 0.1rem; color: rgb(217 243 255 / 0.65); font: 0.7rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+.holomap-fold > summary:hover { color: #fff; }
+.holomap-fold[open] > summary { margin-bottom: 0.35rem; }
+.holomap-fold > ol { display: grid; gap: 0.15rem; margin: 0; padding: 0; list-style: none; }
+.holomap-full[open] { display: grid; gap: 0.55rem; }
 .holomap-join { display: flex; align-items: center; justify-content: center; gap: 0.55rem; width: 100%; padding-block: 0.5rem; line-height: 1.25; text-align: left; white-space: normal; }
 .holomap-join > span { display: grid; gap: 0.1rem; }
 .holomap-join small { font-size: 0.7rem; font-weight: 500; opacity: 0.8; }

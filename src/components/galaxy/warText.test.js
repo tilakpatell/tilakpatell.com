@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GCW, warTable } from './gcw';
 import { WAR_IDS } from './sides';
-import { afterLine, ago, areaLines, battleLine, campaignLine, endCard, eventLine, feedOf, heldColour, newsLine, nextLine, nextOpLine, oathOf, objectiveBars, orderLine, partLine, phaseLine, progressOf, recordLine, resultLine, resultTitle, soon, stageLine, standing, strengthLine, systemLabel, whose, whyLine, yoursLine } from './warText';
+import { afterLine, ago, areaLines, battleLine, campaignLine, endCard, eventLine, feedOf, heldColour, newsLine, nextLine, nextOpLine, oathOf, objectiveBars, orderAim, orderLeft, orderLine, partLine, phaseLine, progressOf, recordLine, resultLine, resultTitle, soon, stageLine, standing, strengthLine, systemLabel, whose, whyLine, yoursLine } from './warText';
 
 const NOW = 1_000_000;
 const row = (o) => ({ id: 'hoth', owner: 'empire', control: 0.75, front: false, attack: null, rate: null, ...o });
@@ -155,6 +155,9 @@ describe('the war’s news', () => {
   it('a side’s order, and the time left on it', () => {
     expect(orderLine({ sys: 'hoth', verb: 'liberate', until: NOW + 4 * H + 12 * 60e3 }, NOW)).toBe('Liberate Hoth · 4h 12m left');
     expect(orderLine({ sys: 'coruscant', verb: 'hold', until: NOW + 90e3 }, NOW)).toBe('Hold Coruscant · 1:30 left');
+    // (apart, for the card both sides' orders share)
+    expect(orderAim({ sys: 'coruscant', verb: 'liberate' })).toBe('Liberate Coruscant');
+    expect(orderLeft({ until: NOW + 4 * H + 12 * 60e3 }, NOW)).toBe('4h 12m left');
     expect(orderLine({ sys: 'naboo', verb: 'take', until: NOW + 90e3 }, NOW)).toBe('Take Naboo · 1:30 left');
     expect(orderLine(null, NOW)).toBeNull();
   });

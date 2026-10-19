@@ -45,7 +45,8 @@ function framing({ rig, params = {}, lead, tangent, t = 0 }) {
     case 'crane': {
       const from = follow();
       const k = smooth(t / (params.seconds ?? 8));
-      return { at: [from.at[0], from.at[1] + (lead.at[1] + CRANE_TOP - from.at[1]) * k, from.at[2]], lookAt: from.lookAt };
+      // (rising from behind the lead; looking ahead, or at what the beat gives it)
+      return { at: [from.at[0], from.at[1] + (lead.at[1] + (params.top ?? CRANE_TOP) - from.at[1]) * k, from.at[2]], lookAt: params.lookAt ? [...params.lookAt] : from.lookAt };
     }
     case 'wide':
     case 'seat':

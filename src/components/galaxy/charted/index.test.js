@@ -43,10 +43,11 @@ describe('the charted worlds', () => {
     }
   });
 
-  it('are flown to and looked at, not fought over or landed on', () => {
+  it('are flown to, looked at and landed on, not fought over', () => {
     for (const id of ids) {
       expect(WAR_SYSTEMS, id).not.toContain(id);
-      expect(canLand(id), id).toBe(false);
+      // (each a free roam of its own: surface/sites/prequels.js, rebellion.js and shows.js)
+      expect(canLand(id), id).toBe(true);
       expect(systemById(id).game.status, id).toBe('soon');
     }
   });

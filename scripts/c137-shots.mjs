@@ -91,6 +91,10 @@ export const VIEWS = {
   vat: { area: 'vat', at: [-400, 4207.4, N], cam: [0, 0.3] },
   dim35c: { area: 'dim35c', at: [-400, 4318, N], cam: [0, 0.2] },
   frundles: { area: 'frundles', at: [-400, 4418, N], cam: [0, 0.2] },
+  // on Blips and Chitz's walkway, before the cabinet that plays: Plumbus Smash
+  arcade: { area: 'arcade', at: [-295.5, 300, 0], cam: [0, 0.25] },
+  // the agency, west of the hole in its floor and facing it: the sewer run's way in
+  agencyhole: { area: 'agency', at: [-417.6, 4011.4, -1.02], cam: [0, 0.3] },
 };
 
 const names = process.argv.slice(2);

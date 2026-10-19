@@ -11,6 +11,9 @@
 // in a cluster are tried in every place together (a search that takes the
 // best of them, up to a budget). In screen pixels, at the map's zoom (the
 // names keep their size while the map scales, so zoomed in they part).
+// With `hideUnder` (the map zoomed in, where a pan brings it out), a dot
+// under a control is out of sight: its name is null, as an optional one's
+// with no room, and it's placed round by no one.
 //
 // An item may be `optional`: a charted world's (charted/index.js), unless
 // it's where you are or the one picked, and a landmark's name (landmarks.js,
@@ -90,13 +93,17 @@ const shrunk = (b) => ({ x0: b.x0 + GRAZE, y0: b.y0 + GRAZE, x1: b.x1 - GRAZE, y
 const NODES = 6000; // (the most places the cluster search tries: a crowd with no clear answer isn't searched for ever, a pan's frame has 16 ms)
 const REACH = 2 * GAP; // (a name's box reaches its own size and a gap past its dot's middle, so two meet only within both sizes and this)
 
-export function placeLabels(items, { dot = DOT, bounds = null, blocks = [] } = {}) {
+export function placeLabels(items, { dot = DOT, bounds = null, blocks = [], hideUnder = false } = {}) {
   const dotOf = (o) => {
     const r = o.dot ?? dot;
     return { x0: o.x - r, y0: o.y - r, x1: o.x + r, y1: o.y + r };
   };
   const byPrio = (a, b) => b.prio - a.prio || (a.id < b.id ? -1 : 1);
-  const order = items.filter((it) => !it.optional).sort(byPrio);
+  // (a dot under a control is out of sight, where asked: its name goes unsaid, and takes no room from its neighbours')
+  const under = (it) => hideUnder && blocks.some((k) => it.x > k.x0 && it.x < k.x1 && it.y > k.y0 && it.y < k.y1);
+  const unseen = items.filter(under);
+  const inSight = items.filter((it) => !under(it));
+  const order = inSight.filter((it) => !it.optional).sort(byPrio);
   const boxes = {}; // id → its box in each place
   const base = {}; // id → what each place costs of what stays put: the dots, the controls, the edge (and a little for each place past the right, so a tie keeps the earlier one: right, as the map always had it)
   for (const it of order) {
@@ -183,14 +190,14 @@ export function placeLabels(items, { dot = DOT, bounds = null, blocks = [] } = {
     if (pick) Object.assign(at, pick);
   }
   // the optional ones, last: a name over one's dot moves off it to a place that covers nothing, where it has one
-  const optional = items.filter((o) => o.optional).sort(byPrio);
+  const optional = inSight.filter((o) => o.optional).sort(byPrio);
   const onDot = (b) => optional.some((o) => area(shrunk(b), dotOf(o)) > 0);
   for (const it of lowest) {
     if (!onDot(boxes[it.id][at[it.id]])) continue;
     const n = PLACES.findIndex((_, k) => cost(it, k) - k * LATER <= 1e-9 && !onDot(boxes[it.id][k]));
     if (n >= 0) at[it.id] = n;
   }
-  const out = Object.fromEntries(order.map((it) => [it.id, PLACES[at[it.id]]]));
+  const out = Object.fromEntries([...order.map((it) => [it.id, PLACES[at[it.id]]]), ...unseen.map((it) => [it.id, null])]);
   // then a dot still under a name is hidden; the rest are named in the first place that covers nothing, or not (null)
   const down = order.map((it) => boxes[it.id][at[it.id]]);
   const shown = optional.filter((it) => !down.some((d) => area(shrunk(d), dotOf(it)) > 0));

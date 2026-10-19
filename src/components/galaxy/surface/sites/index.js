@@ -22,7 +22,9 @@
 //                  (placed relative to it) }
 //   things         placed things (placer.js's specs), at world positions
 //   scatter        [{ kind, n, within: [r0, r1], scale: [a, b], solid?,
-//                  opts?, flat? (on level ground only) }]
+//                  opts?, flat? (on level ground only), at? (the middle
+//                  of its ring, the world's 0, 0 unless said: a stand
+//                  round a place, its clearing kept) }]
 //   flora          { biome, tint?, density?, trees? }: the nature kit's
 //                  cover, middle layer and trees by a recipe (flora.js),
 //                  its rows added after the scatter's own
@@ -84,10 +86,13 @@ import { SITE as bespin } from './bespin';
 import { SITES as edge } from './edge';
 import { SITES as outer } from './outer';
 import { SITES as drop } from './drop';
+import { SITES as prequels } from './prequels';
+import { SITES as rebellion } from './rebellion';
+import { SITES as shows } from './shows';
 import { EXTRA } from './quests';
 import { turnSite } from './turnSite';
 
-export const SITES = { ...desert, ...ice, ...forest, yavin, ...core, coruscant, ...edge, bespin, ...outer, ...drop };
+export const SITES = { ...desert, ...ice, ...forest, yavin, ...core, coruscant, ...edge, bespin, ...outer, ...drop, ...prequels, ...rebellion, ...shows };
 
 // the systems with somewhere to land, in the galaxy's own order
 export const LANDABLE = SYSTEMS.filter((s) => SITES[s.id]).map((s) => s.id);

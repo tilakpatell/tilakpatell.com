@@ -267,6 +267,12 @@ pull request it runs with fake engines (`GEN3D_ENGINE=fake`,
 - **Pixal3D assumes a frontal camera**: fed a three-quarter render it kept
   the shape but tilted it. Use it for photos taken facing the subject, with
   `--fov` when known; use plain TRELLIS.2 for renders and concept art.
+- **Pixal3D lays its model along Z**, its top toward −Z and the picture's
+  front toward +Y; `make.mjs` stands it up (`upright.mjs`) before the bake.
+  Seventeen buildings made before that (the galaxy's worlds, October 2026)
+  came out on their sides or as reliefs facing the sky. A still with its
+  scene round it is also followed too closely: the sky and the ground came
+  out as part of the mesh. Give it the subject alone on white.
 - **Cut, don't crush.** The raw atlas is thousands of charts; meshopt's
   simplifier stops at the seams (~25k triangles for a 300k mesh) and crossing
   them smears the texture. 24k triangles at 1536² is under 900 KB and looks
