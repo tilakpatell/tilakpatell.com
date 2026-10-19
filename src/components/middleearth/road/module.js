@@ -256,8 +256,10 @@ export default {
       sun.intensity = key.intensity;
       hemi.intensity = skyLight(l);
       hemi.color.setRGB(...l.fog.colour);
-      // (the light off the ground: the stage’s own grass, or its snow, its stone, its ash)
-      hemi.groundColor.setHex(soilOf(lineAt(STAGES, clock.s).stage).greens[1]).multiplyScalar(0.6);
+      // (the light off the ground: the stage’s own grass, or its snow, its stone,
+      // its ash; in Mordor the fires’ red glow, its soil’s own `glow`, up under everything)
+      const soil = soilOf(lineAt(STAGES, clock.s).stage);
+      hemi.groundColor.setHex(soil.glow ?? soil.greens[1]).multiplyScalar(soil.glow ? 1 : 0.6);
       // the stage’s exposure, lifted from a little before sunset as an eye opens to the dark (the chapters’ nights are 1.6)
       if (renderer) renderer.toneMappingExposure = l.exposure * (1 + 0.55 * Math.min(1, Math.max(0, (0.1 - l.sun.el) / 0.45)) * (1 - (l.murk ?? 0)));
       scene.fog.color.setRGB(...l.fog.colour);

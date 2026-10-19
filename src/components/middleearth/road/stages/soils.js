@@ -10,6 +10,7 @@
 //       CC0; lib/three/scansNodes), the ground where it grows, where it is
 //       worn, where it is steep
 //     blades: 0…1, how thick the grass close round you stands (0: none); blade: its height, m
+//     glow?: the light off the ground in its place (Mordor’s fires, red, under everything)
 //   }
 //   (a stage’s own `ground.paint`, stages/index.js, is laid over its soil’s colours)
 //   soilOf(stage) → its row (Hobbiton’s for an unknown one)
@@ -42,9 +43,9 @@ export const SOILS = {
   // Ithilien: the garden of Gondor gone wild, herbs and long grass
   ithilien: { greens: [0x386a2c, 0x588a38, 0x88ac48], dirt: 0xa8946a, rock: 0x8c8678, scans: { grass: 'grass', road: 'gravel', steep: 'mossrock' }, blades: 1, blade: 0.48 },
   // Cirith Ungol: the stair in black rock
-  'cirith-ungol': { greens: [0x282422, 0x332e2a, 0x403832], dirt: 0x3a322c, rock: 0x2a2624, scans: { grass: 'rock', road: 'rock', steep: 'rock' }, blades: 0 },
+  'cirith-ungol': { greens: [0x282422, 0x332e2a, 0x403832], dirt: 0x3a322c, rock: 0x2a2624, scans: { grass: 'rock', road: 'rock', steep: 'rock' }, blades: 0, glow: 0x3a1a10 },
   // Gorgoroth: ash and cinders under the pall
-  gorgoroth: { greens: [0x2a2422, 0x3a302a, 0x4a3e34], dirt: 0x4a3e34, rock: 0x2a2624, scans: { grass: 'ash', road: 'ash', steep: 'redrock' }, blades: 0 },
+  gorgoroth: { greens: [0x2a2422, 0x3a302a, 0x4a3e34], dirt: 0x4a3e34, rock: 0x2a2624, scans: { grass: 'ash', road: 'ash', steep: 'redrock' }, blades: 0, glow: 0x6a2610 },
   // the Pelennor: green fields to the white walls, the road paved
   'minas-tirith': { greens: [0x48702e, 0x688a3c, 0x98a44c], dirt: 0xb8aa88, rock: 0xc4beb0, scans: { grass: 'grass', road: 'stone', steep: 'rock' }, blades: 0.8, blade: 0.4 },
   // the Grey Havens: dune grass to the sand

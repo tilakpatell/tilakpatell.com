@@ -32,4 +32,13 @@ describe('the stages’ soils', () => {
   it('no grass where nothing grows: the deeps, the stair and the ash', () => {
     for (const id of ['moria', 'cirith-ungol', 'gorgoroth']) expect(SOILS[id].blades, id).toBe(0);
   });
+
+  it('Mordor’s fires glow up from its ground, a red, and nowhere else', () => {
+    for (const [id, s] of Object.entries(SOILS)) {
+      if (s.glow == null) continue;
+      expect(['cirith-ungol', 'gorgoroth'], id).toContain(id);
+      expect(s.glow >> 16, id).toBeGreaterThan(s.glow & 0xff);
+    }
+    for (const id of ['cirith-ungol', 'gorgoroth']) expect(SOILS[id].glow, id).toBeTruthy();
+  });
 });
