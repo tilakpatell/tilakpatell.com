@@ -26,6 +26,9 @@ const CORN = { Grass: { recolour: '#fbe8a8' } };
 const HEATH = { Leaves: { recolour: '#6e6a44' } };
 const BRACKEN = { Leaves: { recolour: '#a8743a' } };
 const GOLD = { Leaves_NormalTree: { recolour: '#d8a23a' }, Leaves_Birch: { recolour: '#e2b84a' } };
+// the Lone-lands’ stone warm grey (the kit’s goes a cold purple in the dusk), the Midgewater’s reeds dull
+const STONE = { Rocks: { recolour: '#8c8274' } };
+const REED = { Grass: { recolour: '#6e7044' } };
 // the dead stems of the Marshes, Mordor’s black rock, the dune grass bleached by the sea’s wind
 const DEAD = { Grass: { recolour: '#7a6e4a' }, Leaves: { recolour: '#5e5638' } };
 const BLACK = { Rocks: { recolour: '#2e2a28' }, PathRocks: { recolour: '#2e2a28' }, Bark_DeadTree: { recolour: '#2a2422' } };
@@ -114,17 +117,17 @@ export const SCATTER = {
     // the Lone-lands: heath and stone, a thorn or a dead tree, almost nothing tall
     { model: 'Grass_Wispy_Tall', per100: 2, clump: 7, spread: 4, scale: [0.7, 1.1], x: [-90, 90], kind: 'grass' },
     { model: 'Grass_Wispy_Short', per100: 2.4, clump: 7, spread: 4, scale: [0.8, 1.2], x: [-60, 60], kind: 'grass' },
-    { model: 'Rock_Medium_1', per100: 0.05, clump: 3, spread: 4, scale: [0.6, 1.3], slope: 1.4 },
-    { model: 'Rock_Medium_3', per100: 0.04, clump: 3, spread: 5, scale: [0.6, 1.2], slope: 1.4 },
-    { model: 'Rock_Big_2', per100: 0.015, clump: 2, spread: 8, scale: [0.6, 1.2], slope: 1.6 },
+    { model: 'Rock_Medium_1', per100: 0.05, clump: 3, spread: 4, scale: [0.6, 1.3], slope: 1.4, tint: STONE },
+    { model: 'Rock_Medium_3', per100: 0.04, clump: 3, spread: 5, scale: [0.6, 1.2], slope: 1.4, tint: STONE },
+    { model: 'Rock_Big_2', per100: 0.015, clump: 2, spread: 8, scale: [0.6, 1.2], slope: 1.6, tint: STONE },
     { model: 'DeadTree_2', per100: 0.008, clump: 2, spread: 10, scale: [0.8, 1.2] },
     { model: 'TwistedTree_2', per100: 0.004, clump: 1, spread: 1, scale: [0.6, 0.9] },
     { model: 'Bush_Common', per100: 0.1, clump: 4, spread: 5, scale: [0.6, 1.0], tint: HEATH },
     { model: 'Fern_2', per100: 0.35, clump: 6, spread: 4, scale: [0.9, 1.3], x: [-80, 80], tint: BRACKEN },
-    { model: 'Rock_Medium_2', per100: 0.06, clump: 4, spread: 4, scale: [0.4, 0.9], x: [-50, 50], slope: 1.4 },
+    { model: 'Rock_Medium_2', per100: 0.06, clump: 4, spread: 4, scale: [0.4, 0.9], x: [-50, 50], slope: 1.4, tint: STONE },
     { model: 'Pebble_Square_2', per100: 0.8, clump: 6, spread: 2.5, scale: [2.5, 5], x: [-20, 20] },
     // the Midgewater at the stage’s start: reeds over the wet ground
-    { model: 'Grass_Wide_Tall', per100: 3, clump: 8, spread: 4, scale: [0.9, 1.3], z: [-40, 50], x: [-120, 120], kind: 'grass' },
+    { model: 'Grass_Wide_Tall', per100: 3, clump: 8, spread: 4, scale: [0.9, 1.3], z: [-40, 50], x: [-120, 120], kind: 'grass', tint: REED },
     { model: 'Pebble_Round_4', per100: 1, clump: 5, spread: 2, scale: [2, 4], x: [-8, 8] },
   ],
   ford: [
