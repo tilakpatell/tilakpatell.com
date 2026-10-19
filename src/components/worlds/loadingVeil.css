@@ -6,7 +6,7 @@
   display: grid;
   place-items: center;
   padding: 1.5rem;
-  background: radial-gradient(ellipse at center, rgb(6 8 16 / 0.72), rgb(2 3 8 / 0.94));
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--glass-solid) 72%, transparent), color-mix(in srgb, var(--scrim-ink) 94%, transparent));
   color: #e9edf2;
   opacity: 1;
   transition: opacity 0.45s ease;
