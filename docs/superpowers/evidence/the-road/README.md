@@ -111,8 +111,8 @@ Each stage opened a few metres short of its beat by its address, sped to it (`fa
 | --- | --- | --- | --- | --- | --- |
 | shire-edge | the ferry (the Rider on the bank) | high | 141 | 991,442 | 4.5 |
 | shire-edge | the ferry | low | 128 | 393,717 | 5.9 |
-| bree | the riders at the beds | high | BREE_HIGH |
-| bree | the riders at the beds | low | 118 | 344,248 | 7.9 |
+| bree | the riders at the beds | high | 138 | 756,675 | 5.3 |
+| bree | the riders at the beds | low | 111 | 256,813 | 7.9 |
 | weathertop | the Ring (the vision at full) | high | 97 | 700,348 | 5.9 |
 | weathertop | the Ring | low | 116 | 335,358 | 10.0 |
 | ford | the flood | high | 144 | 650,057 | 6.9 |
@@ -123,7 +123,7 @@ Each stage opened a few metres short of its beat by its address, sped to it (`fa
 | rivendell | the Council | low | 64 | 391,635 | 10.6 |
 
 - Against the design’s targets (350 and 200 draws, 1,200,000 and 400,000 triangles) every beat is under on both tiers; the closest are the Shire’s edge at 991,442 triangles on `high` (the chapter’s wheat, four rows deep by the fences) and its 393,717 on `low`.
-- Getting there on `low`: the chapters’ builders draw a building in a mesh a material, so a stage’s still meshes are merged one a material (`stages/parts.js`’s `mergeStatics`; Bree’s riders beat from 261 draws to 118); a figure is drawn once on `low`, without its ink hull (a skinned figure is never culled, so the hull doubled every walker); the Shire’s edge keeps one row of wheat by the fence on `low`, Rivendell its house alone down the valley, and Rivendell’s Council guests come into the garden only from the bridge.
+- Getting there on `low`: the chapters’ builders draw a building in a mesh a material, so a stage’s still meshes are merged one a material (`stages/parts.js`’s `mergeStatics`; Bree’s riders beat from 261 draws to 111 on `low`, 281 to 138 on `high`); a figure is drawn once on `low`, without its ink hull (a skinned figure is never culled, so the hull doubled every walker); the Shire’s edge keeps one row of wheat by the fence on `low`, Rivendell its house alone down the valley, and Rivendell’s Council guests come into the garden only from the bridge.
 - Assets: a stage opened by its address fetches its neighbours’ cast and the chapters’ models too, so these are more than a stage adds on the ride; the boot slice (Hobbiton, R2’s 2.4 MB) is unchanged. A `low` row can fetch more than its `high` one: its slower first frames let more of the cast walk in before the reading.
 
 ### The pictures
