@@ -47,20 +47,20 @@ Pure: no three.js and no React in the rules, each file with its test beside it.
 - **`story.js`**: `fresh()`; `feed(state, event) → { state, out }` where `out` lists `{ type: 'step' | 'episode' | 'unlock' | 'end', … }`; `current(state) → { episode, step } | null`; `objective(state) → { text, to? }` (`to` when the step is on another page); `coordinates(state) → Set` of the places the story has opened; `dialOpen(state, id)` (open if free roam is on, or the story has opened it, or it's bought); `catchUp(state, done)` feeds every id already in `tp-c137-done` and `tp-citadel-done`, so a visitor's past counts and the story starts where their play already reaches. Feeding an event twice changes nothing.
 - **`useAdventure.js`**: the one hook the three Rick and Morty pages mount. It loads the save, catches up, and returns `{ objective, episode, feed, coordinates, dialOpen, freeRoam, setFreeRoam }`. A dev hook `window.__RMSTORY__` (`state`, `feed`, `jump(episode)`) for the checks, in DEV builds only, as `__C137__` is.
 
-**The save** is one key, `tp-rm-story`, registered on `src/runtime/saves.js` at version 1: `{ episode, step, count, coords: [], freeRoam }`. When it's first made, a visitor is a returner if `tp-c137-done` or `tp-citadel-done` holds anything, and a returner starts with `freeRoam: true`. The keys the worlds keep stay as they are; the story only reads them. Nothing a visitor has done is lost.
+**The save** is one key, `tp-rm-story`, registered on `src/runtime/saves.js` at version 1: `{ episode, step, got: [], wins: [], freeRoam }` (`got`: the parts of an `all` step done; `wins`: the games won, so a win before its step still counts). The coordinates the story has opened are worked out from `episode`, never stored, so they can't disagree with it. When it's first made, a visitor is a returner if `tp-c137-done` or `tp-citadel-done` holds anything, and a returner starts with `freeRoam: true`. The keys the worlds keep stay as they are; the story only reads them. Nothing a visitor has done is lost.
 
 **Who feeds it.** `RmWorld.jsx`'s `complete()` runs on every task already, so it feeds `{ type: 'task', id }`; its area change feeds `enter`; a hotspot used feeds `use` and a person talked to feeds `talk`; a game's win feeds `win`. The Citadel feeds `citadel` from where it records a step (`CitadelWorld.jsx`), and a planet's page from where it ticks one. `RmWorld.jsx` is 2,068 lines, over the 1,500 ceiling already: it gains a few lines that call the hook, and everything else goes in `adventure/` and the new files below.
 
 ### 2. The links: every place has a way in and a way home
 
-- The dial (`destinations.js` `DIAL`, `DimensionDial.jsx`) gains **the Citadel** (opens `/c-137/citadel`) and the four sector planets the story visits (open `/c-137/<planet>`). Their rows go on the end of `DIAL`.
+- The dial (`destinations.js` `DIAL`, `DimensionDial.jsx`) gains **the Citadel** (the garage's portal opens `/c-137/citadel`) and the four sector planets the story visits. A planet's area is in C-137's world already (`scripts/c137-shots.mjs` shoots them there), so dialled from the garage it is a destination like any other, with the portal home to the garage; landed on from the map it stays `/c-137/<planet>` with its way back to space. Their rows go on the end of `DIAL`.
 - The Citadel gets **a portal home** to the garage (`/c-137`, arriving at `GARAGE_BACK`). A planet's exit (`planetMode.js`) offers **Home to C-137** beside “Back to space”.
 - When the current step is on another page, the objective line is a link to it (`objective().to`). When everything is done, the closing line links to the map.
 - The dial's default, `portalTarget`, falls back to the first open place rather than Blips and Chitz when that is locked.
 
 ### 3. The dial lock
 
-A new visitor's dial opens **Customs** only. Each episode's `unlocks` opens the next episode's places and one or two places outside the story (the side places), so the whole dial is open by the end of episode 12 without Schmeckles. Before the shop lands, the story is the only way to open a place early; after it, a place still locked can be bought (section 6). A locked place shows on the dial, dimmed by colour (RULES, UI 6), with the episode that opens it and, once the shop is in, its price. Free roam (the world's Menu) opens every place and doesn't change the story. Pages are never locked: the Citadel's page and the map stay where they are; only the dial's entries wait.
+A new visitor's dial opens **Customs** only. The lock bites only as far as the story is built: `episodes.js` says how many episodes are ready (`READY`, a count from the first), and once a visitor has finished the last ready one, every place is open. Each phase raises `READY` by one, so the live site never leaves a visitor stuck behind an episode that isn't there yet. Each episode's `unlocks` opens the next episode's places and one or two places outside the story (the side places), so the whole dial is open by the end of episode 12 without Schmeckles. Before the shop lands, the story is the only way to open a place early; after it, a place still locked can be bought (section 6). A locked place shows on the dial, dimmed by colour (RULES, UI 6), with the episode that opens it and, once the shop is in, its price. Free roam (a switch in Things to do, beside the ship's voice: C-137's HUD has no kit Menu) opens every place and doesn't change the story. Pages are never locked: the Citadel's page and the map stay where they are; only the dial's entries wait.
 
 `episodes.test.js` holds the lock to its promise: every dial place is opened by some episode, every step's place is open by the time that step is current, and a fresh save can finish the story.
 
@@ -147,7 +147,7 @@ From the kit in `src/runtime/hud/` only (RULES, “The worlds' HUDs”).
 - **The episode card**: on an episode's start, its number, title and intro line on glass, gone at the first move; its outro as a toast.
 - **Things to do (M)** has two tabs, **Story** (the episodes, the current one's steps ticked) and **Checklist** (the 54, as today).
 - **The dial** shows how many coordinates are home, the locked places dimmed by colour with the episode that opens them.
-- **The Menu** gains **Free roam**.
+- **Things to do** gains the **Free roam** switch, beside the ship's voice.
 - **The Citadel and the planets** show the same objective line and card through `useAdventure`.
 - The Schmeckles chip comes with section 6.
 
