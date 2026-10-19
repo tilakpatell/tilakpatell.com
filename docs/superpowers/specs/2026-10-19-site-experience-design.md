@@ -37,7 +37,7 @@ Three pull requests, in this order, each merged before the next starts.
 
 A new eager sheet, `src/styles/dialogs.css`, imported in `src/main.jsx` after `fan-dark-themes.css`, holds them:
 
-- `--scrim`: the veil behind a dialog. By day the colour’s own ink at 45% (`color-mix(in srgb, var(--text) 45%, transparent)`), so a warm colour dims warm; at night its deepest ground, darkened, at 72%.
+- `--scrim-ink` and `--scrim`: the veil behind a dialog. By day the colour’s own ink (`--text`), at 45% behind a dialog, so a warm colour dims warm; at night its deepest ground, darkened, at 72%. The tour’s veil, the nav map’s and the start choice’s take their own share of `--scrim-ink`.
 - `--glass`: the dark glass of the map and the worlds, the colour’s brand bar (`--nav-bg`) mixed into the map’s near-black, at 94%; `--glass-solid` the same, opaque (the tour card over the map, where 5% of a white title behind it shows).
 
 Both are declared on `:root`, so they resolve against the colour on `<html>` and a `.dark-scope` island inherits them already resolved. They take the place of the fixed values in the palette’s, the settings’, the tour’s and the nav map’s backdrops, and of the glass of the universe panel, the start card, the map’s offer, the tour card on the map, the world gate and the loading veil. The palette tokens stay plain hex; these two are not palette tokens and may mix.
@@ -51,7 +51,7 @@ Both are declared on `:root`, so they resolve against the colour on `<html>` and
 
 ### A3. Titles in the colour’s face
 
-Every panel title (`.dialog-title`, `.tour-title`, `.tour-offer-title`, `.start-title`, `.world-gate-title`, and the switch-in’s quote) speaks in its colour’s face, in a readable cut: the display faces that can’t be read at 18px (Aurebesh, Cybertron Script) give way to the family’s second face.
+Every panel title (`.dialog-title`, `.tour-title`, `.tour-offer-title`, `.start-title`, the map panel’s `.universe-title`, `.world-gate-title`, and the switch-in’s quote) speaks in its colour’s face, in a readable cut: the display faces that can’t be read at 18px (Aurebesh, Cybertron Script) give way to the family’s second face.
 
 | family | face | treatment |
 | --- | --- | --- |
@@ -73,9 +73,9 @@ The faces are the ones each colour already loads; no new font.
 All CSS, drawn on the panel’s `::before` (Middle-earth’s cards use `::after`), `pointer-events: none`, nothing animated:
 
 - **Companies.** AWS: one orange hairline along the top. RTX: the drafting sheet’s four red corner marks. Bose: no border, its shadow only. Pendar: the spectrum as the top hairline. Empowerreg: a lime hairline. SRC: the title in mono capitals, tracked wide.
-- **Projects** (their own pages): Shell, a terminal window’s three lights in the head and the title in mono; NVIDIA, a green top rule; GitHub, a header band; Claude, the title in a serif.
+- **Projects** (their own pages): Shell, a green top band and the title in mono; NVIDIA, a green top rule and capitals; Claude, the title in a serif and a warm glow in the corner.
 - **Star Wars.** A holo panel: four corner brackets in the saber’s colour; the Sith’s at night with a red under-glow.
-- **Caribbean.** A sea chart’s double rule inside the edge and a compass rose faint in the head’s corner; the Dutchman’s at night glows sea-green.
+- **Caribbean.** A sea chart’s double rule inside the edge and a compass rose faint in the foot’s corner; the Dutchman’s at night glows sea-green.
 - **Middle-earth.** Its frame and strap now reach the settings sheet and the colours panel.
 - **Transformers.** The plate’s bevel without a clip: where the browser can (`corner-shape: bevel`), the corner is cut by the border itself, so the border, the shadow and the focus ring follow it; elsewhere the clip stays and the focus ring moves inside the plate (`outline-offset: -4px`). An energon line along the top.
 - **Rick and Morty.** The ink outline at night as well as by day (a black stroke, an offset shadow in the colour).
