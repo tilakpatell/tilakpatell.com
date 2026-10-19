@@ -34,6 +34,13 @@ export const GARAGE_BACK = { x: -301.2, z: 101.4, face: 0 };
 // spot to the `to` one before `s` seconds of charge run out, `lost` said (by
 // `who`) when they do; its spots tell the stage (`power-take`, `power-give`),
 // which steps it (./stage.js).
+// `deal`: the place run on the deal kind (../games/deal.js): { task, items,
+// bad, need, looks, who, lost, words? }: things for sale (`items`, its own
+// spots), `bad` of them cursed (a count, dealt afresh each run, or the ids);
+// a thing's first use looks it over (`looks` of them), its second takes it;
+// `need` taken with no curse is the task, a cursed one taken is `lost`, said
+// by `who`; `words`, the HUD's (the deal's own if not given). Each thing's
+// spot tells the stage (`deal-<id>`), which steps it.
 // `caught`: what's said when one of the place's hunters catches Morty
 // (stage.js's NPC behaviour); he's put back at the way in. `spotted`: what's
 // said when one of them sees him and starts (a hunter's own `hunt.spotted`
@@ -42,7 +49,7 @@ export const GARAGE_BACK = { x: -301.2, z: 101.4, face: 0 };
 // metres from the middle (turned into the world's here), `watch`, `bark`,
 // `hunt`. Anyone who roams is marked so, and isn't in the way.
 const roams = (ai) => Boolean(ai?.wander || ai?.hunt);
-export function place(i, { id, name, note, kind, deep, wide, sky, ceiling, people = [], extras = [], spots = [], solids = [], tasks = [], say = {}, done = {}, unlock = {}, acts = {}, escape = null, goal = null, collect = null, power = null, caught = null, spotted = null, kinds = [] }) {
+export function place(i, { id, name, note, kind, deep, wide, sky, ceiling, people = [], extras = [], spots = [], solids = [], tasks = [], say = {}, done = {}, unlock = {}, acts = {}, escape = null, goal = null, collect = null, power = null, deal = null, caught = null, spotted = null, kinds = [] }) {
   const area = destArea(i, deep, wide);
   const cx = DEST_X;
   const cz = destZ(i);
@@ -70,11 +77,12 @@ export function place(i, { id, name, note, kind, deep, wide, sky, ceiling, peopl
     say,
     done,
     unlock,
-    acts: { ...acts, ...(power && { [power.from]: 'power-take', [power.to]: 'power-give' }) },
+    acts: { ...acts, ...(power && { [power.from]: 'power-take', [power.to]: 'power-give' }), ...(deal && Object.fromEntries(deal.items.map((s) => [s, `deal-${s}`]))) },
     escape,
     goal,
     collect,
     power,
+    deal,
     caught,
     spotted,
     kinds,

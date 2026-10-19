@@ -23,6 +23,7 @@ import { destinationById } from './destinations';
 import { createNpcs } from '../npc';
 import { attend } from '../living';
 import { TUNING as POWER, newPower, powerNews, powerReadout, stepPower } from '../games/power';
+import { curse, dealNews, dealReadout, newDeal, stepDeal } from '../games/deal';
 
 // a speckled paint for a floor or the ground
 export const specks = (base, specks, seed = 7, n = 1600, size = 2) => (g, w, h) => speckle(g, w, h, { base, specks, n, size, seed });
@@ -113,13 +114,42 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     const blink = run.phase === 'run' && share < POWER.low ? 0.65 + 0.35 * Math.sin(t * 10) : 1;
     glow.material.color.setScalar(Math.max(0.15, share) * blink);
   };
-  const calm = pw
-    ? () => {
-        N.calm();
-        run = fresh();
-        asked = {};
-      }
-    : N.calm;
+
+  // ── a place run on a deal (../games/deal.js, place.js's `deal`): each of
+  // its things' spots queues a use (`deal-<id>`: two presses in one frame
+  // are both kept), stepped in the place's own update and said as power's
+  // run is. Dealt afresh, curses and all, whenever the place calms. ──
+  const dl = d.deal;
+  const dealt = () => newDeal({ items: dl.items, need: dl.need, looks: dl.looks, bad: Array.isArray(dl.bad) ? dl.bad : curse(dl.items, dl.bad, Math.random) });
+  let deal = dl ? dealt() : null;
+  let used = [];
+  const dealing = (state) => {
+    const done = (state.done ?? []).includes(dl.task);
+    if (done || state.fading) {
+      used = [];
+      return;
+    }
+    for (const u of used.splice(0)) deal = stepDeal(deal, { use: u });
+    const news = dealNews(deal, { done, fading: false });
+    if (news === 'done') state.emit?.('done', { area: id, task: dl.task });
+    if (news === 'caught') {
+      deal = { ...deal, told: true };
+      state.emit?.('caught', { area: id, who: dl.who, text: dl.lost });
+    }
+  };
+
+  // (calmed: its people home, and its game started afresh)
+  const calm = () => {
+    N.calm();
+    if (pw) {
+      run = fresh();
+      asked = {};
+    }
+    if (dl) {
+      deal = dealt();
+      used = [];
+    }
+  };
 
   // one of the cast at (x, z) facing `face`, `h` tall (its own height if not
   // given), gone once `until` is done and till `after` is (`when(state)`, if
@@ -166,6 +196,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       update: (t, dt, state, camera) => {
         sky?.update(t, camera);
         if (run && state) powered(t, dt, state);
+        if (deal && state) dealing(state);
         update?.(t, dt, state, camera);
       },
     });
@@ -181,8 +212,9 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     // builder adds its own actions to these. `npcs`: where everyone is, for
     // the QA scripts; `fire`, `bodies` and `hit`: Morty's shot in a duel,
     // where it aims, what it can hit, and what it did when it landed.)
-    // (a place run on power: its spots, where its run is for the HUD and the
-    // checks, and, in development, a way for the checks to set it)
+    // (a place run on power or a deal: its spots, where its game is for the
+    // checks, its meter for the HUD, and, in development, a way for the
+    // checks to set it)
     area.actions = { calm, npcs: N.list, fire: N.fire, bodies: N.bodies, hit: N.hit };
     if (run)
       Object.assign(area.actions, {
@@ -191,6 +223,13 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         power: () => ({ phase: run.phase, charge: run.charge, max: run.max, need: run.need, delivered: run.delivered, carrying: run.carrying }),
         meter: () => powerReadout(run),
         ...(import.meta.env.DEV && { setPower: (patch) => (run = { ...run, ...patch }) }),
+      });
+    if (deal)
+      Object.assign(area.actions, {
+        ...Object.fromEntries(dl.items.map((u) => [`deal-${u}`, () => used.push(u)])),
+        deal: () => ({ phase: deal.phase, need: deal.need, looks: deal.looks, left: deal.left, seen: { ...deal.seen }, taken: [...deal.taken], last: deal.last }),
+        meter: () => dealReadout(deal, dl.words),
+        ...(import.meta.env.DEV && { setDeal: (patch) => (deal = { ...deal, ...patch }) }),
       });
     return area;
   };
