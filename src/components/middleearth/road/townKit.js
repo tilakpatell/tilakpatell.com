@@ -137,7 +137,8 @@ export function createTownKit(road, renderer, { wild = false, elven = false } = 
     });
     Object.assign(mats, {
       ruin: M({ map: tex.stone, normalMap: tex.stoneN, vertexColors: true }),
-      rock: M({ map: tex.stone, normalMap: tex.stoneN, vertexColors: true }),
+      // (the Lone-lands’ stone warm grey, not the cold purple its vertices turn at dusk)
+      rock: M({ map: tex.stone, normalMap: tex.stoneN, vertexColors: true, color: 0xd2bea0 }),
       troll: M({ map: tex.stone, normalMap: tex.stoneN, normalScale: new THREE.Vector2(1.4, 1.4), vertexColors: true }),
       earth: M({ vertexColors: true }),
       scorch: M({ vertexColors: true, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }),

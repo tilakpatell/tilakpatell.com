@@ -7,15 +7,20 @@
 // kilometres off doesn’t come nearer for the metres walked. Under it at night
 // they are black against the stars; in Moria’s dark, nothing.
 //
-//   rangeGeometry(range, { segments, rows }) → BufferGeometry (position, color, aHaze); pure
-//   stageGeometry(stage, opts) → the stage’s ranges in one geometry (null for none)
-//   createBackdrop({ road, tier }) → { mesh, at(stage), set(light), update(camera), dispose() }
+//   rangeGeometry(range, { segments, rows }) → BufferGeometry (position, color, aHaze, aGlow); pure
+//     (a volcano’s width is its footprint’s, whatever its row says; its glow the fire at its crater and down a flank)
+//   foothills(range) → the lower, greener band before a big range (null for a small one or a volcano)
+//   stageGeometry(stage, opts) → the stage’s ranges and their foothills in one geometry (null for none)
+//   towerGeometry({ height }) → Barad-dûr’s mass, its foot at 0 (EYE_AT: the Eye’s height, a share of it); pure
+//   createBackdrop({ road, tier, load }) → { mesh, at(stage), set(light), update(camera), dispose() }
+//     load(url) → a glTF (the runtime’s asset cache), for a landmark that is a model
 
 import * as THREE from 'three';
-import { MeshLambertNodeMaterial } from 'three/webgpu';
-import { attribute, uniform, vec3 } from 'three/tsl';
+import { MeshBasicNodeMaterial, MeshLambertNodeMaterial } from 'three/webgpu';
+import { attribute, float, uniform, vec3 } from 'three/tsl';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { noise2 } from '../../../lib/land/layers.js';
-import { rangesOf } from './stages/ranges';
+import { landmarksOf, rangesOf } from './stages/ranges';
 
 const DEG = Math.PI / 180;
 const SNOW = new THREE.Color(0xffffff);
@@ -44,8 +49,10 @@ export const depthOf = ({ height, cone = false }) => Math.max(260, height * (con
 export function rangeGeometry(range, { segments = 220, rows = 28 } = {}) {
   const { az, width, dist, height, jag = 0.6, snow = null, cone = false, seed = 1 } = range;
   const depth = depthOf(range);
-  const a0 = (az - width / 2) * DEG;
-  const a1 = (az + width / 2) * DEG;
+  // (a cone spans what its foot does, a little over, so its flanks are never cut)
+  const span = cone ? (2 * Math.atan(depth / 2 / dist) * 1.12) / DEG : width;
+  const a0 = (az - span / 2) * DEG;
+  const a1 = (az + span / 2) * DEG;
   const rock = new THREE.Color(range.colour ?? 0x6e6a60);
   // (a snowy range a little clearer: its snow reads through the haze, as snow does)
   const haze = range.haze ?? (1 - Math.exp(-dist / HAZE_FAR)) * (snow != null ? 0.82 : 1);
@@ -54,6 +61,7 @@ export function rangeGeometry(range, { segments = 220, rows = 28 } = {}) {
   const col = new Float32Array(cols * rows * 3);
   const hz = new Float32Array(cols * rows);
   const hs = new Float32Array(cols * rows);
+  const glow = new Float32Array(cols * rows);
   // the peaks: a crest every few hundred metres along it and across, closer with the jag
   const spacing = 520 + 460 * (1 - Math.min(1, jag));
   for (let j = 0; j < rows; j++) {
@@ -71,8 +79,15 @@ export function rangeGeometry(range, { segments = 220, rows = 28 } = {}) {
         const cz = Math.cos(az * DEG) * dist;
         const d = Math.hypot(x - cx, z - cz) / (depth / 2);
         const flank = Math.max(0, 1 - d) ** 1.25;
-        const gully = 0.85 + 0.15 * ridged(Math.atan2(x - cx, z - cz) * 3, d * 2, seed);
+        const round = Math.atan2(x - cx, z - cz);
+        const gully = 0.85 + 0.15 * ridged(round * 3, d * 2, seed);
         h = height * Math.min(flank, 0.94) * gully;
+        // the fire: the crater’s lip, and a runnel of it down the flank toward the road
+        const lip = THREE.MathUtils.smoothstep(flank, 0.86, 0.94);
+        const toward = Math.atan2(-cx, -cz);
+        const off = Math.abs(((round - toward + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+        const runnel = THREE.MathUtils.smoothstep(0.09 + 0.05 * noise2(d * 6, 0, seed), 0, off) * THREE.MathUtils.smoothstep(flank, 0.2, 0.6);
+        glow[j * cols + i] = Math.max(lip, runnel * 0.8);
       } else {
         // the range’s ends tapering, its middle highest, the peaks wandering
         // over it in two sizes (the crests sharpened by the jag), gullies finer still
@@ -121,34 +136,82 @@ export function rangeGeometry(range, { segments = 220, rows = 28 } = {}) {
   }
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
   g.setAttribute('aHaze', new THREE.BufferAttribute(hz, 1));
+  g.setAttribute('aGlow', new THREE.BufferAttribute(glow, 1));
   g.computeBoundingSphere();
   return g;
 }
 
+// (a big range doesn’t stand straight out of the plain: lower hills before it, wooded or grassed, its rock coming through)
+const GREEN = new THREE.Color(0x4e6644);
+export function foothills(range) {
+  if (range.cone || range.height < 400) return null;
+  const colour = new THREE.Color(range.colour ?? 0x6e6a60).lerp(GREEN, 0.55).getHex();
+  return { az: range.az, width: Math.min(180, range.width * 1.15), dist: range.dist - depthOf(range) * 0.5, height: range.height * 0.24, colour, jag: 0.35, snow: null, seed: (range.seed ?? 1) + 100 };
+}
+
 export function stageGeometry(stage, opts) {
-  const parts = rangesOf(stage).map((r) => rangeGeometry(r, opts));
+  const rows = rangesOf(stage).flatMap((r) => [r, foothills(r)].filter(Boolean));
+  const parts = rows.map((r) => rangeGeometry(r, opts));
   if (!parts.length) return null;
   if (parts.length === 1) return parts[0];
   // (one geometry a stage: one draw)
   const count = parts.reduce((s, p) => s + p.attributes.position.count, 0);
-  const out = { position: new Float32Array(count * 3), normal: new Float32Array(count * 3), color: new Float32Array(count * 3), aHaze: new Float32Array(count) };
+  const SIZES = { position: 3, normal: 3, color: 3, aHaze: 1, aGlow: 1 };
+  const out = Object.fromEntries(Object.entries(SIZES).map(([name, n]) => [name, new Float32Array(count * n)]));
   const idx = [];
   let base = 0;
   for (const p of parts) {
-    for (const name of ['position', 'normal', 'color']) out[name].set(p.attributes[name].array, base * 3);
-    out.aHaze.set(p.attributes.aHaze.array, base);
+    for (const [name, n] of Object.entries(SIZES)) out[name].set(p.attributes[name].array, base * n);
     for (const i of p.index.array) idx.push(i + base);
     base += p.attributes.position.count;
     p.dispose();
   }
   const g = new THREE.BufferGeometry();
-  for (const [name, a] of Object.entries(out)) g.setAttribute(name, new THREE.BufferAttribute(a, name === 'aHaze' ? 1 : 3));
+  for (const [name, a] of Object.entries(out)) g.setAttribute(name, new THREE.BufferAttribute(a, SIZES[name]));
   g.setIndex(idx);
   g.computeBoundingSphere();
   return g;
 }
 
-export function createBackdrop({ road = null, tier = 'high' } = {}) {
+export const EYE_AT = 0.93;
+
+export function towerGeometry({ height: h }) {
+  const parts = [];
+  const add = (geo, x, y, z, ry = 0) => {
+    geo.rotateY(ry);
+    geo.translate(x, y, z);
+    parts.push(geo.index ? geo.toNonIndexed() : geo);
+  };
+  // the foot, broad and buttressed
+  add(new THREE.CylinderGeometry(h * 0.15, h * 0.24, h * 0.2, 8), 0, h * 0.1, 0);
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    add(new THREE.BoxGeometry(h * 0.05, h * 0.34, h * 0.13), Math.cos(a) * h * 0.17, h * 0.17, Math.sin(a) * h * 0.17, -a);
+  }
+  // the shaft in tiers, narrowing, spiked at each
+  add(new THREE.CylinderGeometry(h * 0.095, h * 0.14, h * 0.42, 8), 0, h * 0.4, 0);
+  add(new THREE.CylinderGeometry(h * 0.065, h * 0.095, h * 0.3, 8), 0, h * 0.75, 0);
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2 + (i % 2) * 0.2;
+    const tier = i % 3;
+    const r = h * (0.13 - tier * 0.03);
+    const spike = new THREE.ConeGeometry(h * 0.012, h * 0.11, 4);
+    spike.rotateZ(-0.35);
+    add(spike, Math.cos(a) * r, h * (0.56 + tier * 0.12), Math.sin(a) * r, -a);
+  }
+  // the crown: two horns curving up either side of the Eye
+  for (const sx of [-1, 1]) {
+    const horn = new THREE.ConeGeometry(h * 0.028, h * 0.2, 5);
+    horn.rotateZ(-sx * 0.22);
+    add(horn, sx * h * 0.05, h * 0.98, 0);
+  }
+  const g = mergeGeometries(parts);
+  for (const p of parts) p.dispose();
+  g.computeVertexNormals();
+  return g;
+}
+
+export function createBackdrop({ road = null, tier = 'high', load = null } = {}) {
   const opts = tier === 'low' ? { segments: 110, rows: 14 } : { segments: 220, rows: 28 };
   const uHaze = uniform(new THREE.Color(0.75, 0.8, 0.85));
   const material = road ? road.material({ vertexColors: true }) : new MeshLambertNodeMaterial({ vertexColors: true });
@@ -156,40 +219,103 @@ export function createBackdrop({ road = null, tier = 'high' } = {}) {
   // (the air’s colour over their light, by how far off they are: their own light lessened, the haze’s added)
   const h = attribute('aHaze', 'float');
   material.colorNode = vec3(1).mul(h.oneMinus());
-  material.emissiveNode = uHaze.mul(h);
+  // (and a volcano’s fire, glowing through its own haze)
+  material.emissiveNode = uHaze.mul(h).add(vec3(2.2, 0.6, 0.1).mul(attribute('aGlow', 'float')).mul(h.oneMinus().mul(0.6).add(0.4)));
   // (until a stage is set, a geometry with every attribute the material reads, drawn by nothing)
   const none = new THREE.BufferGeometry();
-  for (const [name, n] of [['position', 3], ['normal', 3], ['color', 3], ['aHaze', 1]]) none.setAttribute(name, new THREE.BufferAttribute(new Float32Array(n * 3), n));
+  for (const [name, n] of [['position', 3], ['normal', 3], ['color', 3], ['aHaze', 1], ['aGlow', 1]]) none.setAttribute(name, new THREE.BufferAttribute(new Float32Array(n * 3), n));
   const mesh = new THREE.Mesh(none, material);
   mesh.visible = false;
   mesh.name = 'road:mountains';
   mesh.frustumCulled = false;
   mesh.renderOrder = -0.5;
+  const group = new THREE.Group();
+  group.name = 'road:horizon';
+  group.add(mesh);
+  // a landmark’s material: its stone in the same haze as the ranges at its distance
+  const mats = [];
+  const stoneOf = (colour, dist) => {
+    const m = road ? road.material({ color: colour }) : new MeshLambertNodeMaterial({ color: colour });
+    m.fog = false;
+    const h = float(1 - Math.exp(-dist / HAZE_FAR));
+    m.colorNode = vec3(1).mul(h.oneMinus());
+    m.emissiveNode = uHaze.mul(h);
+    mats.push(m);
+    return m;
+  };
+  const built = []; // the landmarks’ geometry made here
+  const eyeMat = new MeshBasicNodeMaterial({ color: new THREE.Color(3.2, 1.1, 0.25) });
+  eyeMat.fog = false;
+  // each stage’s landmarks, made the first time it’s walked
+  const marks = new Map(); // stage → THREE.Group
+  const landmarks = (stage) => {
+    const out = new THREE.Group();
+    for (const l of landmarksOf(stage)) {
+      const a = (l.az * Math.PI) / 180;
+      const g = new THREE.Group();
+      g.position.set(Math.sin(a) * l.dist, -l.height * 0.04, Math.cos(a) * l.dist);
+      // (its face to the road)
+      g.rotation.y = Math.atan2(-g.position.x, -g.position.z);
+      if (l.kind === 'tower') {
+        const tower = towerGeometry(l);
+        const ball = new THREE.SphereGeometry(1, 12, 8);
+        built.push(tower, ball);
+        g.add(new THREE.Mesh(tower, stoneOf(0x1e1a1a, l.dist)));
+        const eye = new THREE.Mesh(ball, eyeMat);
+        eye.scale.set(l.height * 0.034, l.height * 0.05, l.height * 0.012);
+        eye.position.y = l.height * EYE_AT;
+        g.add(eye);
+      } else if (l.kind === 'city' && load) {
+        const stone = stoneOf(0xe2ddd2, l.dist);
+        Promise.resolve(load(l.model))
+          .then((gltf) => {
+            if (!gltf?.scene || !out.parent) return;
+            const city = gltf.scene.clone(true);
+            const box = new THREE.Box3().setFromObject(city);
+            const size = box.getSize(new THREE.Vector3());
+            city.scale.setScalar(l.height / Math.max(1e-3, size.y));
+            city.position.y = -box.min.y * city.scale.y;
+            city.traverse((o) => o.isMesh && (o.material = stone));
+            g.add(city);
+          })
+          .catch(() => {});
+      }
+      out.add(g);
+    }
+    return out;
+  };
   const made = new Map(); // stage → geometry (or null)
   let current = null;
   return {
-    mesh,
+    mesh: group,
     at(stage) {
       if (stage === current) return;
+      if (current != null) marks.get(current)?.removeFromParent();
       current = stage;
       if (!made.has(stage)) made.set(stage, stageGeometry(stage, opts));
       const g = made.get(stage);
       mesh.visible = Boolean(g);
       if (g) mesh.geometry = g;
+      if (!marks.has(stage)) marks.set(stage, landmarks(stage));
+      group.add(marks.get(stage));
     },
     // the day’s air: the haze is the fog’s colour (black in Moria’s dark and at night: a silhouette)
     set(light) {
       uHaze.value.setRGB(...light.fog.colour);
     },
     update(camera) {
-      mesh.position.set(camera.position.x, 0, camera.position.z);
+      group.position.set(camera.position.x, 0, camera.position.z);
     },
     dispose() {
       for (const g of made.values()) g?.dispose();
       none.dispose();
       made.clear();
+      // (a model’s geometry is the asset cache’s: only what was built here is freed)
+      for (const g of built) g.dispose();
       material.dispose();
-      mesh.removeFromParent();
+      for (const m of mats) m.dispose();
+      eyeMat.dispose();
+      group.removeFromParent();
     },
   };
 }

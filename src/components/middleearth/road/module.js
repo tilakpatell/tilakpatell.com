@@ -107,7 +107,7 @@ export default {
     const wind = createWind({ strength: 0.5 });
     const lands = createLands({ scene, house, tier, scatter, sky, wind });
     // the mountains on each stage’s horizon (stages/ranges.js)
-    const mountains = createBackdrop({ road, tier });
+    const mountains = createBackdrop({ road, tier, load: (url) => rt.assets?.gltf?.(url) });
     scene.add(mountains.mesh);
     // rain, snow, ash, fire: a kind a draw, asked for by the stages and their beats
     // the chain: the house’s bloom on every tier, the grade (the Ring’s, hooks.js) from high

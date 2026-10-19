@@ -28,7 +28,7 @@ const BRACKEN = { Leaves: { recolour: '#a8743a' } };
 const GOLD = { Leaves_NormalTree: { recolour: '#d8a23a' }, Leaves_Birch: { recolour: '#e2b84a' } };
 // the dead stems of the Marshes, Mordor’s black rock, the dune grass bleached by the sea’s wind
 const DEAD = { Grass: { recolour: '#7a6e4a' }, Leaves: { recolour: '#5e5638' } };
-const BLACK = { Rocks: { recolour: '#2e2a28' }, Bark_DeadTree: { recolour: '#2a2422' } };
+const BLACK = { Rocks: { recolour: '#2e2a28' }, PathRocks: { recolour: '#2e2a28' }, Bark_DeadTree: { recolour: '#2a2422' } };
 const DUNE = { Grass: { recolour: '#b8b07a' } };
 // (the kit’s oak bark is a red-brown: the Trollshaws’ a warm grey, so it isn’t violet under a grey sky)
 const AUTUMN = { Leaves_NormalTree: { recolour: '#eeae5c' }, Leaves_Birch: { recolour: '#f2c86a' }, Bark_NormalTree: { recolour: '#806c50' } };

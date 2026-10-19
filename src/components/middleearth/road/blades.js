@@ -17,7 +17,7 @@ export function createBlades({ groundMap, wind, soil, tier = 'high' }) {
   if (!patch || !wind || !(soil?.blades > 0)) return null;
   // (thinner grass: fewer blades over the same patch)
   const side = Math.round(patch.side * Math.sqrt(soil.blades));
-  const grass = createGrass({ ground: groundMap, wind, side, size: patch.size, height: soil.blade ?? 0.45, width: 0.06, root: 0.4 });
+  const grass = createGrass({ ground: groundMap, wind, side, size: patch.size, height: soil.blade ?? 0.45, width: 0.06, root: 0.6 });
   grass.mesh.name = 'road:blades';
   const centre = new THREE.Vector3();
   return {

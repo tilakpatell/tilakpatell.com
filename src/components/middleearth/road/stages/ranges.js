@@ -14,6 +14,7 @@
 //     peaks; cone: one peak, a volcano; haze: how much of the sky’s colour
 //     is in it (by its distance when left out)
 //   rangesOf(stage) → its rows ([] for none)
+//   LANDMARKS, landmarksOf(stage): what stands before them (below)
 
 const DOWNS = 0x587856; // grass over chalk, blue with distance
 const WOODED = 0x3e5638;
@@ -120,3 +121,13 @@ export const RANGES = {
 };
 
 export const rangesOf = (stage) => RANGES[stage] ?? [];
+
+// What stands against the mountains, seen from far off: the White City on
+// Mindolluin’s knee (the map’s model, until the stage’s own lane builds it
+// near), and Barad-dûr beyond Mount Doom with the Eye between its horns.
+//   LANDMARKS[stage] = [{ kind: 'city' | 'tower', az, dist, height, model }]
+export const LANDMARKS = {
+  'minas-tirith': [{ kind: 'city', az: 2, dist: 2300, height: 300, model: '/models/sketchfab/minas-tirith.glb' }],
+  gorgoroth: [{ kind: 'tower', az: 30, dist: 3300, height: 560 }],
+};
+export const landmarksOf = (stage) => LANDMARKS[stage] ?? [];
