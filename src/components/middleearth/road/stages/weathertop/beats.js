@@ -15,7 +15,7 @@ export const BEATS = [
   // five on the skyline above the dell
   { id: 'summit', kind: 'summit', at: 100, hold: 6, rig: 'crane', reach: 12, params: { seconds: 6, top: 9, lookAt: [0, 6, 122], above: true } },
   // the Ring goes on: the world drains, the five are kings, the blade
-  { id: 'ring', kind: 'ring', at: 114, hold: 14, rig: 'seat', cut: 0, reach: 12, params: { at: [3, 1.1, 108], lookAt: [-1, 1.6, 120], above: true }, clip: 'nazgul', fx: [{ kind: 'vision', at: 1, seconds: 12 }] },
+  { id: 'ring', kind: 'ring', at: 114, hold: 14, rig: 'seat', cut: 0, reach: 12, params: { at: [3.4, 2.7, 111], lookAt: [-0.5, 1.1, 126], above: true }, clip: 'nazgul', fx: [{ kind: 'vision', at: 1, seconds: 12 }] },
   // Aragorn with fire in both hands, the Riders burning and gone
   { id: 'fire', kind: 'fire', at: 128, hold: 8, rig: 'follow', reach: 12 },
   // Frodo on the ground, Aragorn kneeling over him: the Morgul blade

@@ -19,11 +19,13 @@ import { FIRE, RING, buildProps } from './props';
 import { BEATS } from './beats';
 
 const MIDGES = 54; // m: the motes over the pools until here
-const FIVE = [-6, -3, 0, 3, 6].map((x, i) => [x, RING.at[1] + 9 + Math.abs(x) * 0.4 + (i % 2) * 0.6]); // on the skyline at the ring’s far side
-const CLOSE = 7; // m they come on through the ring while the Ring is on
+const FIVE = [-4.5, -2.2, 0, 2.2, 4.5].map((x, i) => [x, RING.at[1] + 9 + Math.abs(x) * 0.4 + (i % 2) * 0.6]); // on the skyline at the ring’s far side
+const CLOSE = 9; // m they come on through the ring while the Ring is on
 const VISION = { at: 1, seconds: 12, rate: 2.5 }; // the ring beat’s (beats.js), as vision.js ramps it
 const BURN = 6; // s they burn before they are gone
 const SAT = ['frodo', 'sam', 'merry', 'pippin'];
+const EMBER = new THREE.Color(0xff8a3a);
+const PALE = new THREE.Color(0xc8d4ff);
 const MARKS = Object.fromEntries(BEATS.map((b) => [b.id, b]));
 
 const smooth = (x) => {
@@ -104,6 +106,8 @@ export function build({ road, heightAt, rt, weather }) {
       const glow = 5 + Math.sin(flicker * 11) * 0.5 + Math.sin(flicker * 17.3) * 0.3;
       fireLight.intensity = lit ? glow : 0;
       fireLight.position.set(FIRE[0], heightAt(...FIRE) + 0.8, FIRE[1]);
+      fireLight.color.copy(EMBER);
+      fireLight.distance = 14;
       if (lit && !fire) {
         fire = weather?.kind?.('fire', { count: 60 }) ?? null;
         fire?.at(FIRE[0], heightAt(...FIRE) + 0.1, FIRE[1]);
@@ -133,6 +137,15 @@ export function build({ road, heightAt, rt, weather }) {
         n.set({ king: pose, yaw: 0, pitch: 0.1 });
         n.tick(dt);
       });
+      // (under the Ring the one light is theirs: a cold pale light on the five
+      // and the ground round them, so the wraith-world shows them as kings)
+      if (shown && amount > 0) {
+        const mid = five[2].group.position;
+        fireLight.position.set(mid.x, mid.y + 3, mid.z - 2);
+        fireLight.color.copy(PALE);
+        fireLight.distance = 22;
+        fireLight.intensity = amount * 9;
+      }
       // the blade: raised as he comes, the thrust at ten seconds in
       const thrust = r != null && Number.isFinite(r) ? smooth((r - 9.5) / 0.6) : 0;
       blade.rotation.x = -1.1 + thrust * 1.1;
@@ -156,6 +169,8 @@ export function build({ road, heightAt, rt, weather }) {
         });
         // (the one light goes with him: the torches light the five and the four)
         fireLight.position.set(aragorn.x, aragorn.y + 1.8, aragorn.z + 0.6);
+        fireLight.color.copy(EMBER);
+        fireLight.distance = 14;
         fireLight.intensity = glow * 1.3;
       }
       const burn = f != null && Number.isFinite(f) && f < BURN;
