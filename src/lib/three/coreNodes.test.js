@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
+import * as GPU from 'three/webgpu';
 import * as glsl from './core';
 import * as nodes from './coreNodes';
 
@@ -27,6 +28,11 @@ describe('coreNodes, the twin of core', () => {
     expect(Object.keys(n.userData)).not.toContain('core');
     expect(n.customProgramCacheKey()).toContain('core:n');
     expect(nodes.wear(new THREE.MeshBasicMaterial(), scan).isNodeMaterial).toBeFalsy(); // (unlit: as it was)
+    // (a node material already made is worn in place: a 'nodes' world’s own)
+    const own = new GPU.MeshLambertNodeMaterial();
+    expect(nodes.wear(own, scan)).toBe(own);
+    expect(own.userData.core.uCoreScale.value).toBe(0.5);
+    expect(nodes.wear(new GPU.MeshBasicNodeMaterial(), scan).userData.core).toBeUndefined();
   });
 
   it('dresses a world’s materials as core does, on stand-ins with `keep`', async () => {

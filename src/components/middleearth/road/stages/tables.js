@@ -36,14 +36,28 @@ const AUTUMN = { Leaves_NormalTree: { recolour: '#eeae5c' }, Leaves_Birch: { rec
 export const SCATTER = {
   hobbiton: [
     // (oaks: the common tree at its broadest, in the hedgerows’ clumps)
-    { model: 'CommonTree_1', per100: 0.03, clump: 3, spread: 10, scale: [1.1, 1.6] },
-    { model: 'CommonTree_2', per100: 0.02, clump: 2, spread: 8, scale: [1.0, 1.5] },
-    // the hedges: long bushes strung close in a line of a clump
-    { model: 'Bush_Long_1', per100: 0.12, clump: 6, spread: 6, scale: [1.0, 1.4] },
-    { model: 'Bush_Common_Flowers', per100: 0.05, clump: 3, spread: 4, scale: [0.9, 1.3] },
-    // (the kit’s flowers stand two metres: a third of that is a cottage border’s)
-    { model: 'Flower_3_Group', per100: 0.08, clump: 4, spread: 3, scale: [0.3, 0.45] },
-    { model: 'Grass_Common_Tall', per100: 0.4, clump: 6, spread: 3, scale: [0.45, 0.7], kind: 'grass' },
+    { model: 'CommonTree_1', per100: 0.05, clump: 3, spread: 10, scale: [1.1, 1.6] },
+    { model: 'CommonTree_2', per100: 0.035, clump: 2, spread: 8, scale: [1.0, 1.5] },
+    { model: 'CommonTree_5', per100: 0.02, clump: 2, spread: 7, scale: [1.0, 1.4] },
+    // the hedges: long bushes strung close in a line of a clump, some in flower
+    { model: 'Bush_Long_1', per100: 0.16, clump: 6, spread: 6, scale: [1.0, 1.4] },
+    { model: 'Bush_Common_Flowers', per100: 0.1, clump: 3, spread: 4, scale: [0.9, 1.3] },
+    { model: 'Bush_Large_Flowers', per100: 0.03, clump: 2, spread: 4, scale: [0.8, 1.1] },
+    // the lane’s borders and the gardens by it: flowers in drifts, clover,
+    // herbs (the kit’s flowers stand one and a half to two and a half metres:
+    // a third of that is a cottage border’s)
+    { model: 'Flower_1_Group', per100: 0.3, clump: 5, spread: 2.5, scale: [0.28, 0.4], x: [-30, 30] },
+    { model: 'Flower_2_Group', per100: 0.25, clump: 5, spread: 2.5, scale: [0.28, 0.4], x: [-30, 30] },
+    { model: 'Flower_7_Group', per100: 0.25, clump: 4, spread: 2, scale: [0.28, 0.4], x: [-30, 30] },
+    { model: 'Flower_4_Group', per100: 0.15, clump: 4, spread: 2, scale: [0.2, 0.3], x: [-30, 30] },
+    { model: 'Flower_3_Group', per100: 0.12, clump: 4, spread: 3, scale: [0.3, 0.45] },
+    { model: 'Clover_1', per100: 0.8, clump: 6, spread: 2.5, scale: [0.4, 0.7], x: [-26, 26], kind: 'grass' },
+    { model: 'Plant_3', per100: 0.2, clump: 4, spread: 2, scale: [0.7, 1.1], x: [-30, 30] },
+    { model: 'Plant_6', per100: 0.2, clump: 4, spread: 2, scale: [0.7, 1.0], x: [-30, 30] },
+    // stones kicked to the lane’s edges
+    { model: 'Pebble_Round_2', per100: 0.8, clump: 5, spread: 2, scale: [2, 4], x: [-8, 8] },
+    { model: 'Grass_Common_Tall', per100: 0.7, clump: 6, spread: 3, scale: [0.45, 0.7], kind: 'grass' },
+    { model: 'Grass_Wispy_Short', per100: 0.5, clump: 6, spread: 3, scale: [0.5, 0.8], x: [-40, 40], kind: 'grass' },
   ],
   'shire-edge': [
     // Maggot’s crop either side of the lane at the stage’s start: ears over
@@ -55,11 +69,15 @@ export const SCATTER = {
     { model: 'Grass_Common_Tall', per100: 2.4, clump: 6, spread: 3, scale: [0.5, 0.8], x: [-24, 24], kind: 'grass' },
     { model: 'Clover_1', per100: 0.6, clump: 5, spread: 2, scale: [0.5, 0.8], x: [-20, 20], kind: 'grass' },
     { model: 'Flower_6', per100: 1.2, clump: 6, spread: 2, scale: [1, 1.4], x: [-18, 18] },
+    { model: 'Flower_2_Group', per100: 0.15, clump: 4, spread: 2, scale: [0.25, 0.35], x: [-18, 18] },
+    { model: 'Plant_6', per100: 0.2, clump: 4, spread: 2, scale: [0.7, 1.0], x: [-20, 20] },
     // the Woody End: beeches (the common tree at its tallest) over the hollow, ferns and toadstools under them
     { model: 'CommonTree_2', per100: 0.14, clump: 3, spread: 10, scale: [1.3, 1.8], z: [62, 118] },
     { model: 'CommonTree_4', per100: 0.09, clump: 2, spread: 9, scale: [1.2, 1.7], z: [62, 118] },
     { model: 'Fern_1', per100: 0.9, clump: 6, spread: 4, scale: [0.8, 1.3], z: [62, 118], x: [-70, 70] },
     { model: 'Fern_2', per100: 0.6, clump: 5, spread: 3, scale: [0.9, 1.4], z: [62, 118], x: [-50, 50] },
+    { model: 'Plant_2', per100: 0.3, clump: 4, spread: 3, scale: [0.8, 1.2], z: [62, 118], x: [-40, 40] },
+    { model: 'Mushroom_Laetiporus', per100: 0.03, clump: 2, spread: 1, scale: [0.6, 0.9], z: [62, 118], x: [-30, 30] },
     { model: 'Mushroom_Common', per100: 0.35, clump: 5, spread: 1.5, scale: [0.6, 1], z: [62, 118], x: [-30, 30] },
     { model: 'Mushroom_RedCap', per100: 0.08, clump: 3, spread: 1, scale: [0.5, 0.8], z: [62, 118], x: [-30, 30] },
     { model: 'Bush_Large', per100: 0.05, clump: 2, spread: 5, scale: [0.9, 1.3], z: [62, 118] },
@@ -76,7 +94,11 @@ export const SCATTER = {
     { model: 'CommonTree_1', per100: 0.03, clump: 3, spread: 9, scale: [1.0, 1.5] },
     { model: 'CommonTree_3', per100: 0.02, clump: 2, spread: 8, scale: [1.0, 1.4] },
     { model: 'Bush_Large', per100: 0.04, clump: 3, spread: 5, scale: [0.9, 1.3] },
+    { model: 'Bush_Common', per100: 0.08, clump: 4, spread: 5, scale: [0.9, 1.4] },
+    { model: 'Bush_Long_1', per100: 0.1, clump: 6, spread: 6, scale: [1.0, 1.4] },
     { model: 'Grass_Common_Tall', per100: 1.6, clump: 6, spread: 3, scale: [0.6, 0.9], kind: 'grass' },
+    { model: 'Fern_1', per100: 0.3, clump: 5, spread: 3, scale: [0.8, 1.2], x: [-60, 60] },
+    { model: 'Plant_2', per100: 0.25, clump: 4, spread: 2, scale: [0.8, 1.2], x: [-50, 50] },
     // the road up to the gate: its verges, puddled and trodden
     { model: 'Grass_Wide_Short', per100: 2, clump: 6, spread: 3, scale: [0.6, 0.9], z: [-40, 12], x: [-30, 30], kind: 'grass' },
     { model: 'Pebble_Square_3', per100: 2, clump: 6, spread: 2, scale: [2, 4], z: [-40, 150], x: [-6.5, 6.5] },
@@ -93,15 +115,20 @@ export const SCATTER = {
     { model: 'Rock_Big_2', per100: 0.015, clump: 2, spread: 8, scale: [0.6, 1.2], slope: 1.6 },
     { model: 'DeadTree_2', per100: 0.008, clump: 2, spread: 10, scale: [0.8, 1.2] },
     { model: 'TwistedTree_2', per100: 0.004, clump: 1, spread: 1, scale: [0.6, 0.9] },
-    { model: 'Bush_Common', per100: 0.03, clump: 3, spread: 5, scale: [0.7, 1.1], tint: HEATH },
+    { model: 'Bush_Common', per100: 0.1, clump: 4, spread: 5, scale: [0.6, 1.0], tint: HEATH },
+    { model: 'Fern_2', per100: 0.35, clump: 6, spread: 4, scale: [0.9, 1.3], x: [-80, 80], tint: BRACKEN },
+    { model: 'Rock_Medium_2', per100: 0.06, clump: 4, spread: 4, scale: [0.4, 0.9], x: [-50, 50], slope: 1.4 },
+    { model: 'Pebble_Square_2', per100: 0.8, clump: 6, spread: 2.5, scale: [2.5, 5], x: [-20, 20] },
     // the Midgewater at the stage’s start: reeds over the wet ground
     { model: 'Grass_Wide_Tall', per100: 3, clump: 8, spread: 4, scale: [0.9, 1.3], z: [-40, 50], x: [-120, 120], kind: 'grass' },
     { model: 'Pebble_Round_4', per100: 1, clump: 5, spread: 2, scale: [2, 4], x: [-8, 8] },
   ],
   ford: [
     // the Trollshaws: grey autumn woods on broken hills, the leaves turned
-    { model: 'CommonTree_3', per100: 0.11, clump: 4, spread: 10, scale: [1.0, 1.5], tint: AUTUMN },
-    { model: 'Birch_2', per100: 0.06, clump: 3, spread: 8, scale: [0.8, 1.1], tint: AUTUMN },
+    { model: 'CommonTree_3', per100: 0.15, clump: 4, spread: 10, scale: [1.0, 1.5], tint: AUTUMN },
+    { model: 'CommonTree_1', per100: 0.05, clump: 3, spread: 9, scale: [1.0, 1.4], tint: AUTUMN },
+    { model: 'Birch_2', per100: 0.08, clump: 3, spread: 8, scale: [0.8, 1.1], tint: AUTUMN },
+    { model: 'DeadTree_1', per100: 0.008, clump: 2, spread: 8, scale: [0.8, 1.1] },
     { model: 'Pine_1', per100: 0.03, clump: 3, spread: 9, scale: [0.9, 1.3], slope: 0.9 },
     { model: 'Rock_Big_1', per100: 0.012, clump: 2, spread: 8, scale: [0.6, 1.3], slope: 1.4 },
     { model: 'Bush_Common', per100: 0.06, clump: 3, spread: 5, scale: [0.9, 1.4], tint: AUTUMN },
@@ -109,19 +136,26 @@ export const SCATTER = {
     { model: 'Fern_2', per100: 0.8, clump: 6, spread: 4, scale: [0.9, 1.4], x: [-60, 60], tint: BRACKEN },
     { model: 'Grass_Wide_Short', per100: 1.6, clump: 6, spread: 3, scale: [0.6, 0.9], x: [-30, 30], kind: 'grass' },
     { model: 'Mushroom_Common', per100: 0.15, clump: 4, spread: 1.5, scale: [0.6, 1], x: [-24, 24] },
+    { model: 'Mushroom_RedCap', per100: 0.05, clump: 3, spread: 1, scale: [0.5, 0.8], x: [-24, 24] },
+    { model: 'Fern_1', per100: 0.5, clump: 6, spread: 4, scale: [0.8, 1.3], x: [-50, 50], tint: BRACKEN },
+    { model: 'Bush_Large', per100: 0.04, clump: 2, spread: 5, scale: [0.9, 1.3], tint: AUTUMN },
+    { model: 'Plant_2', per100: 0.2, clump: 4, spread: 3, scale: [0.8, 1.2], x: [-40, 40] },
     { model: 'Pebble_Round_1', per100: 2, clump: 6, spread: 2.5, scale: [2.5, 5], z: [38, 66], x: [-40, 40] },
     { model: 'Pebble_Round_3', per100: 2, clump: 6, spread: 2.5, scale: [2.5, 5], z: [150, 186], x: [-50, 50] },
   ],
   rivendell: [
     // autumn gold on the valley’s trees, pines above on the slopes
-    { model: 'CommonTree_5', per100: 0.06, clump: 3, spread: 9, scale: [1.0, 1.5], tint: GOLD },
-    { model: 'Birch_3', per100: 0.05, clump: 3, spread: 7, scale: [0.9, 1.2], tint: GOLD },
+    { model: 'CommonTree_5', per100: 0.09, clump: 3, spread: 9, scale: [1.0, 1.5], tint: GOLD },
+    { model: 'Birch_3', per100: 0.08, clump: 3, spread: 7, scale: [0.9, 1.2], tint: GOLD },
+    { model: 'Fern_1', per100: 0.4, clump: 6, spread: 4, scale: [0.8, 1.2], slope: 1.2 },
     { model: 'Pine_3', per100: 0.04, clump: 4, spread: 9, scale: [0.9, 1.3], slope: 0.9 },
     { model: 'Rock_Medium_2', per100: 0.02, clump: 3, spread: 5, scale: [0.6, 1.2], slope: 1.4 },
     // the gardens: flowering bushes, beds of flowers, the lawns kept short
     { model: 'Bush_Common_Flowers', per100: 0.12, clump: 3, spread: 4, scale: [0.8, 1.2], z: [56, 150], x: [-40, 40] },
-    { model: 'Flower_4_Group', per100: 0.25, clump: 4, spread: 2, scale: [0.35, 0.5], z: [56, 150], x: [-30, 30] },
-    { model: 'Flower_7_Group', per100: 0.25, clump: 4, spread: 2, scale: [0.35, 0.5], z: [56, 150], x: [-30, 30] },
+    { model: 'Flower_4_Group', per100: 0.35, clump: 4, spread: 2, scale: [0.25, 0.35], z: [56, 150], x: [-30, 30] },
+    { model: 'Flower_7_Group', per100: 0.35, clump: 4, spread: 2, scale: [0.3, 0.42], z: [56, 150], x: [-30, 30] },
+    { model: 'Flower_1_Group', per100: 0.2, clump: 4, spread: 2, scale: [0.28, 0.38], z: [56, 150], x: [-30, 30] },
+    { model: 'Plant_5', per100: 0.15, clump: 3, spread: 2, scale: [0.7, 1.0], z: [40, 150], x: [-30, 30] },
     { model: 'Grass_Common_Short', per100: 2.4, clump: 6, spread: 3, scale: [0.4, 0.6], x: [-40, 40], kind: 'grass' },
     { model: 'Plant_1_Big', per100: 0.15, clump: 3, spread: 2, scale: [0.6, 0.9], z: [40, 60], x: [-30, 30] },
   ],

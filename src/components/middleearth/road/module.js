@@ -30,6 +30,7 @@ import { createScatter } from './scatter';
 import { createWeather } from './weather';
 import { createAmbience } from './ambience';
 import { loadKit } from '../../../lib/three/kitNodes';
+import { createWind } from '../../../lib/three/windNodes';
 import { chainFor, createRoadHouse, gradeNode } from './hooks';
 import { newVision, stepVision } from './vision';
 import { forgetCast, walker } from './cast';
@@ -100,7 +101,9 @@ export default {
     const scatter = createScatter({ kitFor, tier });
     scene.add(scatter.group);
     const sky = createSky({ vision: road.uVision });
-    const lands = createLands({ scene, house, tier, scatter, sky });
+    // one wind for the Road’s grass (lib/three/windNodes)
+    const wind = createWind({ strength: 0.5 });
+    const lands = createLands({ scene, house, tier, scatter, sky, wind });
     // rain, snow, ash, fire: a kind a draw, asked for by the stages and their beats
     // the chain: the house’s bloom on every tier, the grade (the Ring’s, hooks.js) from high
     const passes = chainFor(tier, rt.gfx.backend, { scene, camera, grade: (tex) => gradeNode(tex, road.uVision) });
@@ -379,6 +382,8 @@ export default {
         weather.update(dt, camera);
         ambience.update(dt);
         windTime.value += dt;
+        wind.update(dt);
+        lands.follow(camera);
         scatter.update(camera, dt);
       },
       draw(f) {
@@ -439,6 +444,7 @@ export default {
         save();
         rt.input?.unbind?.();
         lands.dispose();
+        wind.dispose();
         scatter.dispose();
         for (const k of kits.values()) k.dispose();
         sky.dispose();

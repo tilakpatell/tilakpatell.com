@@ -4,9 +4,10 @@
 // in is built at once when it is not ready (an address, a jump); its
 // neighbours a few milliseconds a frame, so a seam never costs a frame.
 //
-//   createLands({ scene, house, tier, budget (ms a frame), wide (m across), scatter, sky }) → {
+//   createLands({ scene, house, tier, budget (ms a frame), wide (m across), scatter, sky, wind }) → {
 //     at(index),            the ride is in stage `index`: re-place, build, drop
 //     step(),               a frame’s slice of the building
+//     follow(camera),       the grass round the camera, in each built stage’s frame
 //     water(dt, light),     the built stages’ rivers flowing, in the day’s light
 //     heightAt(x, z),       the ground under a point in the current frame
 //     ready(index), groupOf(index), landOf(index), watersOf(index), stats, dispose() }
@@ -19,13 +20,14 @@ import * as THREE from 'three';
 import { STAGES } from './stages/index';
 import { FRAME_BACK, SEAM, landJob, riverLevel, run } from './terrain';
 import { groundJob } from './ground';
+import { soilOf } from './stages/soils';
 import { createWater } from './water';
 import { placements, rngOf, rowsFor } from './scatter';
 import { fieldAt } from '../../../lib/land/layers.js';
 
 const RES = { low: 4, mid: 2, high: 2, ultra: 2 };
 
-export function createLands({ scene, house = null, tier = 'high', budget = 6, wide = 1024, scatter = null, sky = null } = {}) {
+export function createLands({ scene, house = null, tier = 'high', budget = 6, wide = 1024, scatter = null, sky = null, wind = null } = {}) {
   const built = new Map(); // index → { land, ground, group }
   const jobs = new Map(); // index → generator
   let current = -1;
@@ -39,10 +41,11 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
     // (the first stage has land behind it, the last ahead; the rest abut at their seams)
     const from = i === 0 ? -FRAME_BACK : 0;
     const to = i === STAGES.length - 1 ? land.end + FRAME_BACK : land.end;
-    const ground = yield* groundJob(land, { house, tier, from, to });
+    const ground = yield* groundJob(land, { house, tier, soil: soilOf(id), wind, from, to });
     const group = new THREE.Group();
     group.name = `road:${id}`;
     group.add(ground.mesh);
+    if (ground.blades) group.add(ground.blades.mesh);
     // its rivers, each a ribbon down its channel, banks and all
     const waters = (land.rivers ?? []).map((r) => {
       const bank = r.bank ?? r.width / 2;
@@ -142,6 +145,15 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
           w.set(light);
           w.update(dt);
         }
+      }
+    },
+    follow(camera) {
+      for (const b of built.values()) {
+        if (!b.group.visible || !b.ground.blades) continue;
+        // (only a stage the camera is over or near grows round it: its patch is in that stage’s frame)
+        const z = camera.position.z - b.group.position.z;
+        b.ground.blades.mesh.visible = z > -40 && z < b.land.end + 40;
+        if (b.ground.blades.mesh.visible) b.ground.update(camera.position.x, z);
       }
     },
     heightAt(x, z) {
