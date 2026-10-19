@@ -205,7 +205,7 @@ describe('the real story', () => {
     expect(out.at(-1)).toEqual({ type: 'end' });
   });
 
-  it('opens episode 3’s places after episode 2, and every place once episode 3, the last built, is done', () => {
+  it('opens episode 3’s places after episode 2, episode 4’s after episode 3, and every place once episode 4, the last built, is done', () => {
     let s = fresh();
     let out = [];
     for (const id of ['diner', 'basement', 'mindblowers', 'customs']) ({ state: s, out } = feed(s, { type: 'task', id }));
@@ -226,8 +226,16 @@ describe('the real story', () => {
     s = feed(s, { type: 'task', id: 'wong' }).state;
     expect(objective(s)).toEqual({ text: EPISODES[2].steps[2].text, to: null });
     ({ state: s, out } = feed(s, { type: 'task', id: 'sewer' }));
-    expect(out).toEqual([{ type: 'done', episode: 2 }]); // (no card: episode 4 isn't built)
-    for (const id of ['annex', 'agency', 'microverse', 'vat', 'citadel', 'squanch', 'evilrick']) expect(dialOpen(s, id), id).toBe(true);
+    expect(out).toEqual([{ type: 'done', episode: 2 }, { type: 'episode', episode: 3 }]);
+    for (const id of ['annex', 'agency', 'microverse', 'anatomy', 'storytrain']) expect(dialOpen(s, id), id).toBe(true);
+    for (const id of ['gromflomites', 'fortress', 'vat', 'citadel', 'squanch', 'evilrick']) expect(dialOpen(s, id), id).toBe(false);
+    expect(objective(s)).toEqual({ text: EPISODES[3].steps[0].text, to: null });
+    ({ state: s, out } = feed(s, { type: 'task', id: 'microverse' }));
+    expect(out).toEqual([{ type: 'step', episode: 3, step: 1 }]);
+    expect(objective(s)).toEqual({ text: EPISODES[3].steps[1].text, to: null });
+    ({ state: s, out } = feed(s, { type: 'task', id: 'anatomy' }));
+    expect(out).toEqual([{ type: 'done', episode: 3 }]); // (no card: episode 5 isn't built)
+    for (const id of ['gromflomites', 'fortress', 'vat', 'citadel', 'squanch', 'evilrick']) expect(dialOpen(s, id), id).toBe(true);
     expect(objective(s)).toBe(null);
   });
 
@@ -247,6 +255,9 @@ describe('the real story', () => {
     expect(newsOf(two.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[1].outro[0][0], text: EPISODES[1].outro[0][1] }], card: 2 });
     const three = feed(s, win, { known: { tasks: ['roy', 'rickall', 'wong', 'sewer'], citadel: [] } });
     expect(three.state).toMatchObject({ episode: 3, step: 0 });
-    expect(newsOf(three.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[2].outro[0][0], text: EPISODES[2].outro[0][1] }], card: null });
+    expect(newsOf(three.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[2].outro[0][0], text: EPISODES[2].outro[0][1] }], card: 3 });
+    const four = feed(s, win, { known: { tasks: ['roy', 'rickall', 'wong', 'sewer', 'microverse', 'anatomy'], citadel: [] } });
+    expect(four.state).toMatchObject({ episode: 4, step: 0 });
+    expect(newsOf(four.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[3].outro[0][0], text: EPISODES[3].outro[0][1] }], card: null });
   });
 });
