@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import HQFrame from '../hq/HQFrame';
+import HQGame from '../hq/HQGame';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
 import { stoneById } from '../world/labels';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
-import { use3D } from '../../../lib/gpu';
+import { useGame3D } from '../hq/useGame3D';
 import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
@@ -65,8 +65,8 @@ function loadProgress() {
 }
 
 export default function TesseractRun({ fallback, onPortal }) {
-  const three = use3D();
-  const stage = useStage(gameModule, { enabled: three.on, id: 'tesseract', forced: three.mode === 'on' });
+  const three = useGame3D('tesseract');
+  const stage = useStage(gameModule, { enabled: three.on, id: 'tesseract', forced: three.mode === 'on', own3D: true });
   const { unlock } = useAchievements();
   const [progress, setProgress] = useState(loadProgress);
   const [leg, setLeg] = useState(() => loadProgress().reached);
@@ -407,8 +407,17 @@ export default function TesseractRun({ fallback, onPortal }) {
   const res = ui.result;
   const crash = ui.crash;
   const total = progress.best.reduce((a, b) => a + b, 0);
+  // the bar's Pause, and a hidden tab: as Esc does
+  const pause = (p) => {
+    input.current.keys.clear();
+    setPaused(p);
+  };
   return (
-    <HQFrame
+    <HQGame
+      game="tesseract"
+      playing={playing}
+      paused={paused}
+      onPause={pause}
       stage={stage}
       three={three}
       fallback={fallback}
@@ -588,7 +597,7 @@ export default function TesseractRun({ fallback, onPortal }) {
       <p className="sr-only" role="status">
         {playing ? `Leg ${game.current.leg + 1}. ${Math.round(ui.fuel * 100)} percent fuel. ${ui.message}` : ui.phase === 'crashed' ? crashLine(crash) : ui.phase === 'delivered' && res ? `Delivered. ${fmt(res.score)} points.` : ''}
       </p>
-    </HQFrame>
+    </HQGame>
   );
 }
 

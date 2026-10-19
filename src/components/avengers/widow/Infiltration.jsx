@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import HQFrame from '../hq/HQFrame';
+import HQGame from '../hq/HQGame';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
 import { stoneById } from '../world/labels';
 import { useAchievements } from '../../Achievements';
-import { use3D } from '../../../lib/gpu';
+import { useGame3D } from '../hq/useGame3D';
 import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { BITE, DIRS, LEVEL_COUNT, LEVELS, act, biteTargets, cloneState, guardAt, laserOn, newLevel, parseLevel, pathTo, solveLevel } from './rules';
@@ -42,8 +42,8 @@ const CAUGHT = { guard: 'A guard saw you.', camera: 'The camera saw you.', laser
 const readSave = () => Math.max(0, Math.min(LEVEL_COUNT, Number(local.get(SAVE, 0)) || 0));
 
 export default function Infiltration({ fallback }) {
-  const three = use3D();
-  const stage = useStage(gameModule, { enabled: three.on, id: 'widow', forced: three.mode === 'on' });
+  const three = useGame3D('widow');
+  const stage = useStage(gameModule, { enabled: three.on, id: 'widow', forced: three.mode === 'on', own3D: true });
   const { unlock } = useAchievements();
   const [cleared, setCleared] = useState(readSave);
   const [index, setIndex] = useState(() => Math.min(readSave(), LEVEL_COUNT - 1));
@@ -52,6 +52,7 @@ export default function Infiltration({ fallback }) {
   const [ui, setUi] = useState({ phase: 'menu', result: null, caught: null, fresh: -1 });
   const [, setTick] = useState(0);
   const [aiming, setAiming] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [holo, setHolo] = useState(() => local.get(HOLO, false) === true);
   const hover = useRef(null); // the tile under the mouse
   const busyUntil = useRef(0);
@@ -74,6 +75,7 @@ export default function Infiltration({ fallback }) {
       game.current = newLevel(i);
       setIndex(i);
       setAiming(false);
+      setPaused(false);
       queued.current = null;
       busyUntil.current = 0;
       fx.current = { alert: null, said: '' };
@@ -159,7 +161,7 @@ export default function Infiltration({ fallback }) {
   const doAction = useCallback(
     (a) => {
       const g = game.current;
-      if (g.phase !== 'play') return;
+      if (g.phase !== 'play' || paused) return;
       const now = performance.now();
       if (now < busyUntil.current) {
         queued.current = a;
@@ -173,7 +175,7 @@ export default function Infiltration({ fallback }) {
       setAiming(false);
       refresh();
     },
-    [handle, stage.view],
+    [handle, paused, stage.view],
   );
 
   const bite = useCallback(
@@ -312,7 +314,7 @@ export default function Infiltration({ fallback }) {
       }
       return;
     }
-    if (ui.phase !== 'play') return;
+    if (paused || ui.phase !== 'play') return;
     if (KEY_DIRS[k]) {
       e.preventDefault();
       if (e.repeat) return;
@@ -352,7 +354,7 @@ export default function Infiltration({ fallback }) {
   };
   const onPointerLeave = () => (hover.current = null);
   const onPointerUp = (e) => {
-    if (ui.phase !== 'play' || e.target.closest('button')) return;
+    if (ui.phase !== 'play' || paused || e.target.closest('button')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const t = tileFrom(e);
     if (!t) return;
@@ -379,8 +381,14 @@ export default function Infiltration({ fallback }) {
   const objective = g.file ? 'Get to the lift' : 'Get the file';
   const total = LEVEL_COUNT;
   const nextUnlocked = Math.min(total - 1, cleared);
+  // the bar's Pause, and a hidden tab: as Esc does
+  const pause = (p) => setPaused(p);
   return (
-    <HQFrame
+    <HQGame
+      game="widow"
+      playing={playing}
+      paused={paused}
+      onPause={pause}
       stage={stage}
       three={three}
       fallback={fallback}
@@ -464,6 +472,24 @@ export default function Infiltration({ fallback }) {
           <p className="iw-alert-text">{CAUGHT[ui.caught?.by] ?? ''} Back to the start.</p>
         </div>
       )}
+      {playing && paused && (
+        <div className="hq-overlay iw-overlay">
+          <p className="hq-overlay-title">Paused</p>
+          <p className="hq-overlay-text">
+            Level {index + 1}, {def.name}.
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary mt-4"
+            onClick={() => {
+              setPaused(false);
+              focus();
+            }}
+          >
+            Resume
+          </button>
+        </div>
+      )}
       {(ui.phase === 'menu' || ui.phase === 'cleared') && (
         <div className="hq-overlay iw-overlay">
           {ui.phase === 'cleared' ? (
@@ -529,7 +555,7 @@ export default function Infiltration({ fallback }) {
       <p className="sr-only" role="status">
         {ui.phase === 'play' ? `Level ${index + 1}, ${def.name}. ${objective}. ${g.turns} turns.${def.charges ? ` ${charges} bites left.` : ''}` : ui.phase === 'caught' ? `Spotted. ${CAUGHT[ui.caught?.by] ?? ''}` : ui.phase === 'cleared' ? `Level ${index + 1} cleared in ${ui.result?.turns} turns.` : ''}
       </p>
-    </HQFrame>
+    </HQGame>
   );
 }
 

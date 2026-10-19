@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import HQFrame from '../hq/HQFrame';
+import HQGame from '../hq/HQGame';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
 import { stoneById } from '../world/labels';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
-import { use3D } from '../../../lib/gpu';
+import { useGame3D } from '../hq/useGame3D';
 import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
@@ -62,8 +62,8 @@ function urgent(g) {
 }
 
 export default function HoldTheLawn({ fallback }) {
-  const three = use3D();
-  const stage = useStage(gameModule, { enabled: three.on, id: 'lawn', forced: three.mode === 'on' });
+  const three = useGame3D('lawn');
+  const stage = useStage(gameModule, { enabled: three.on, id: 'lawn', forced: three.mode === 'on', own3D: true });
   const { unlock } = useAchievements();
   const game = useRef(newLawn({ seed: 1 }));
   const hud = useRef(null);
@@ -466,8 +466,17 @@ export default function HoldTheLawn({ fallback }) {
   const res = ui.result;
   const lifting = ui.phase === 'lift';
   const zone = Math.abs(ui.liftX) < LIFT.green ? 'green' : Math.abs(ui.liftX) < 0.7 ? 'amber' : 'red';
+  // the bar's Pause, and a hidden tab: as Esc does
+  const pause = (p) => {
+    input.current.keys.clear();
+    setPaused(p);
+  };
   return (
-    <HQFrame
+    <HQGame
+      game="lawn"
+      playing={playing || lifting}
+      paused={paused}
+      onPause={pause}
       stage={stage}
       three={three}
       fallback={fallback}
@@ -633,7 +642,7 @@ export default function HoldTheLawn({ fallback }) {
       <p className="sr-only" role="status">
         {playing ? `Wave ${ui.wave}. ${ui.hp} hearts. ${ui.message}` : lifting ? `Lifting: ${Math.round(ui.lift * 100)} percent. ${ui.message}` : ''}
       </p>
-    </HQFrame>
+    </HQGame>
   );
 }
 

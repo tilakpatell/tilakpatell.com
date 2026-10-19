@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import HQGame, { GameScreen, StartNote, TouchHelp } from './HQGame';
 import { GAMES } from './gameScreen';
@@ -74,5 +75,30 @@ describe('the game screen', () => {
     expect(out.match(/<svg/g)).toHaveLength(2);
     for (const g of GAMES) expect(renderToStaticMarkup(<TouchHelp game={g} />)).not.toMatch(/<svg[^>]*><\/svg>/);
     expect(renderToStaticMarkup(<TouchHelp game="nope" />)).toBe('');
+  });
+});
+
+const FILES = { repulsor: 'repulsor/RepulsorRange.jsx', lawn: 'lawn/HoldTheLawn.jsx', ricochet: 'ricochet/Ricochet.jsx', trickshot: 'trickshot/TrickShot.jsx', widow: 'widow/Infiltration.jsx', smash: 'smash/SmashRun.jsx', thwip: 'thwip/Thwip.jsx', tesseract: 'tesseract/TesseractRun.jsx' };
+const src = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
+
+describe('the eight games on the game screen', () => {
+  it.each(GAMES)('%s sits in HQGame with its own 3D and a Pause', (id) => {
+    const s = src(FILES[id]);
+    expect(s).toContain(`useGame3D('${id}')`);
+    expect(s).toContain('own3D: true');
+    expect(s).toContain(`game="${id}"`);
+    expect(s).toMatch(/onPause=\{/);
+    expect(s).not.toMatch(/\buse3D\(/);
+    expect(s).not.toContain('hq/HQFrame');
+  });
+  it('leaves Invincible’s game on HQFrame as it was', () => {
+    expect(src('../invincible/thinkmark/ThinkMark.jsx')).toContain("import HQFrame from '../../avengers/hq/HQFrame'");
+  });
+  it('lets Place hand the game its place, with no header of its own', () => {
+    const place = src('world/Place.jsx');
+    expect(place).toContain('<GameScreen.Provider');
+    expect(place).toContain('aria-labelledby="hq-bar-title"');
+    expect(place).not.toContain('cw-place-head');
+    expect(src('world/world.css')).not.toMatch(/\.cw-place-(head|sub|title|body|intro|stone)\b/);
   });
 });

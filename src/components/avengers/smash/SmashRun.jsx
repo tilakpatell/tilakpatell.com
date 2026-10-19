@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import HQFrame from '../hq/HQFrame';
+import HQGame from '../hq/HQGame';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
 import { stoneById } from '../world/labels';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
-import { use3D } from '../../../lib/gpu';
+import { useGame3D } from '../hq/useGame3D';
 import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
@@ -50,8 +50,8 @@ function warp(g, to) {
 }
 
 export default function SmashRun({ fallback }) {
-  const three = use3D();
-  const stage = useStage(gameModule, { enabled: three.on, id: 'smash', forced: three.mode === 'on' });
+  const three = useGame3D('smash');
+  const stage = useStage(gameModule, { enabled: three.on, id: 'smash', forced: three.mode === 'on', own3D: true });
   const { unlock } = useAchievements();
   const game = useRef(newRun({ seed: 1 }));
   const hud = useRef(null);
@@ -336,8 +336,14 @@ export default function SmashRun({ fallback }) {
 
   const res = ui.result;
   const toStone = Math.min(1, ui.d / STONE_AT);
+  // the bar's Pause, and a hidden tab: as Esc does
+  const pause = (p) => setPaused(p);
   return (
-    <HQFrame
+    <HQGame
+      game="smash"
+      playing={playing}
+      paused={paused}
+      onPause={pause}
       stage={stage}
       three={three}
       fallback={fallback}
@@ -446,7 +452,7 @@ export default function SmashRun({ fallback }) {
       <p className="sr-only" role="status">
         {playing ? `${fmt(ui.d)} metres. ${ui.hp} hearts. ${ui.message}` : ''}
       </p>
-    </HQFrame>
+    </HQGame>
   );
 }
 

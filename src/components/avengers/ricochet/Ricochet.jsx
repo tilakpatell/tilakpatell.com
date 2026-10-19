@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import HQFrame from '../hq/HQFrame';
+import HQGame from '../hq/HQGame';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
 import { stoneById } from '../world/labels';
 import { useAchievements } from '../../Achievements';
-import { use3D } from '../../../lib/gpu';
+import { useGame3D } from '../hq/useGame3D';
 import { local } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
@@ -33,8 +33,8 @@ function loadSave() {
 }
 
 export default function Ricochet({ fallback }) {
-  const three = use3D();
-  const stage = useStage(gameModule, { enabled: three.on, id: 'ricochet', forced: three.mode === 'on' });
+  const three = useGame3D('ricochet');
+  const stage = useStage(gameModule, { enabled: three.on, id: 'ricochet', forced: three.mode === 'on', own3D: true });
   const { unlock } = useAchievements();
   const [save, setSave] = useState(loadSave);
   const [index, setIndex] = useState(() => Math.min(loadSave().reached, ROOMS.length) - 1);
@@ -43,6 +43,7 @@ export default function Ricochet({ fallback }) {
   const acc = useRef(0);
   const [ui, setUi] = useState({ phase: 'menu', throws: 0, left: botsLeft(room.current), result: null });
   const [angleShown, setAngleShown] = useState(0);
+  const [paused, setPaused] = useState(false);
 
   const sync = useCallback((extra = {}) => {
     const r = room.current;
@@ -56,6 +57,7 @@ export default function Ricochet({ fallback }) {
       setIndex(i);
       aim.current.angle = 0;
       acc.current = 0;
+      setPaused(false);
       setUi({ phase: 'aim', throws: 0, left: botsLeft(room.current), result: null });
       stage.wrap.current?.querySelector('.hq-screen')?.focus({ preventScroll: true });
     },
@@ -64,14 +66,14 @@ export default function Ricochet({ fallback }) {
 
   const doThrow = useCallback(() => {
     const r = room.current;
-    if (r.phase !== 'aim') return;
+    if (r.phase !== 'aim' || paused) return;
     audioContext();
     if (throwShield(r, aim.current.angle)) {
       stage.view.current?.startThrow();
       play('zip');
       sync();
     }
-  }, [stage.view, sync]);
+  }, [paused, stage.view, sync]);
 
   useEffect(
     () =>
@@ -165,7 +167,7 @@ export default function Ricochet({ fallback }) {
       if (!view) return;
       const r = room.current;
       const dt = Math.min(0.05, dtMs / 1000);
-      const live = ui.phase === 'aim' || ui.phase === 'flying';
+      const live = (ui.phase === 'aim' || ui.phase === 'flying') && !paused;
       if (live) {
         acc.current += dt * view.timeScale(dt);
         const events = [];
@@ -181,7 +183,7 @@ export default function Ricochet({ fallback }) {
       }
       view.render(r, dt, { angle: live && r.phase === 'aim' ? aim.current.angle : null, assist: index < 3 });
     },
-    [handle, index, stage.view, sync, ui.phase],
+    [handle, index, paused, stage.view, sync, ui.phase],
   );
   useStageFrame(stage, tick, stage.status === 'on' && stage.visible);
 
@@ -200,11 +202,11 @@ export default function Ricochet({ fallback }) {
   };
   const live = ui.phase === 'aim' || ui.phase === 'flying';
   const onPointerMove = (e) => {
-    if (!live) return;
+    if (!live || paused) return;
     if (e.pointerType === 'mouse' || aim.current.pointer) setFromPointer(e);
   };
   const onPointerDown = (e) => {
-    if (!live || e.target.closest('button')) return;
+    if (!live || paused || e.target.closest('button')) return;
     capturePointer(e);
     aim.current.pointer = true;
     setFromPointer(e);
@@ -217,7 +219,7 @@ export default function Ricochet({ fallback }) {
   };
   const onKeyDown = (e) => {
     const k = e.key.toLowerCase();
-    if (!live) return;
+    if (!live || paused) return;
     const step = e.shiftKey ? 0.002 : 0.012;
     if (k === 'arrowleft' || k === 'a') {
       e.preventDefault();
@@ -238,8 +240,17 @@ export default function Ricochet({ fallback }) {
 
   const def = ROOMS[index];
   const totalStars = save.stars.reduce((a, b) => a + (b || 0), 0);
+  // the bar's Pause, and a hidden tab: as Esc does
+  const pause = (p) => {
+    aim.current.pointer = false;
+    setPaused(p);
+  };
   return (
-    <HQFrame
+    <HQGame
+      game="ricochet"
+      playing={live}
+      paused={paused}
+      onPause={pause}
       stage={stage}
       three={three}
       fallback={fallback}
@@ -267,7 +278,7 @@ export default function Ricochet({ fallback }) {
           <span className="cap-angle">{deg(angleShown).toFixed(1)}°</span>
         </div>
       )}
-      {live && (
+      {live && !paused && (
         <div className="cap-touch" onPointerDown={(e) => e.stopPropagation()}>
           <button type="button" className="cap-touch-btn" onClick={() => enter(index)} aria-label="Restart the room">
             ↺
@@ -277,9 +288,26 @@ export default function Ricochet({ fallback }) {
           </button>
         </div>
       )}
-      {!live && (
+      {(!live || paused) && (
         <div className="hq-overlay cap-overlay">
-          {ui.phase === 'cleared' ? (
+          {paused ? (
+            <>
+              <p className="hq-overlay-title">Paused</p>
+              <p className="hq-overlay-text">
+                Room {index + 1} of {ROOMS.length}, {def.name}.
+              </p>
+              <button
+                type="button"
+                className="btn btn-primary mt-4"
+                onClick={() => {
+                  setPaused(false);
+                  stage.wrap.current?.querySelector('.hq-screen')?.focus({ preventScroll: true });
+                }}
+              >
+                Resume
+              </button>
+            </>
+          ) : ui.phase === 'cleared' ? (
             <>
               <p className="hq-overlay-kicker">Room {index + 1} clear</p>
               <p className="hq-overlay-title">{['', 'Done.', 'Nice throwing.', 'He could do this all day.'][ui.result.stars]}</p>
@@ -346,6 +374,6 @@ export default function Ricochet({ fallback }) {
       <p className="sr-only" role="status">
         {live ? `Room ${index + 1}, ${def.name}. ${ui.left} bots left. ${ui.throws} throws.` : ''}
       </p>
-    </HQFrame>
+    </HQGame>
   );
 }
