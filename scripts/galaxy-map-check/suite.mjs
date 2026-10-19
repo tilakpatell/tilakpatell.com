@@ -17,7 +17,7 @@ export const suite = async (viewport, { full = true } = {}) => {
   const names = async (when, all = false) => {
     const r = await namesProblems(page);
     // (every film world's name; a charted world's only where it has room, labelPlace.js's optional, so those are counted, not held,
-    // and the 2017 game's own worlds' (data-game) on a phone's whole map, HoloMap.jsx's ROOMY_AT)
+    // and the 2017 game's worlds' (data-game: Sullust, Pillio, Vardos, Fondor) on a phone's whole map, HoloMap.jsx's ROOMY_AT)
     const v = await J(page, () => {
       const shown = (el) => el.checkVisibility({ visibilityProperty: true });
       const films = [...document.querySelectorAll('.holomap-systems > li:not([data-charted], [data-game]) .holomap-name[data-id]')];

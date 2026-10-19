@@ -102,10 +102,11 @@ const SEEN_KEY = 'tp-gcw-seen';
 // galaxy names the films' and the shows' worlds alone, its charted worlds faint dots; zoomed in, they're named too)
 const CHARTED_NAMES_AT = 44;
 const LANDMARK_NAMES_AT = 48;
-// (and under this, a phone's whole map, the 2017 game's own worlds out of the war, in no film, are named only where there's room
-// too: the films' worlds and the war's are what the map's for there, and the rest ran into them)
+// (and under this, a phone's whole map, the 2017 game's worlds out of the war (Sullust, which the films only name, Pillio,
+// Vardos, Fondor) are named only where there's room too: the films' worlds and the war's are what the map's for there, and
+// the rest ran into them)
 const ROOMY_AT = 20;
-const gameOnly = (s) => s.films.every((f) => f === 'bf2017');
+const gameOnly = (s) => s.films.includes('bf2017');
 // (a map point's place on the stage, as the CSS left and top: mapView.js's square)
 const stageAt = (p) => {
   const [u, w] = onSquare(p);
