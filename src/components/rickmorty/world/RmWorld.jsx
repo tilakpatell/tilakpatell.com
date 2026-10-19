@@ -223,6 +223,7 @@ function goalOf(next, s, planet = null) {
   if (s.flying) return null;
   // (on a planet with everything there done, or a clock running to get back out: its portal home; from C-137, a planet's not pointed at)
   if (!next || (planet && s.escape?.area === planet.id)) return planet ? PROMPT[`link:${planet.id}-portal`].link : null;
+  if (!GOAL[next.id]) return null; // (a game the map has no spot for)
   const [to, key] = GOAL[next.id];
   if (isPlanet(to) && to !== s.area) return null;
   if (to === s.area) {
@@ -356,7 +357,9 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
     [feed, say],
   );
   useEffect(() => {
-    if (gl === 'on' && !planet && intro()) setCard(0);
+    if (gl !== 'on' || planet) return;
+    const n = intro();
+    if (n != null) setCard(n);
   }, [gl, planet, intro]);
   const tellDone = useCallback((ids) => {
     const names = ids.map((id) => TASKS.find((t) => t.id === id)?.name).filter(Boolean);

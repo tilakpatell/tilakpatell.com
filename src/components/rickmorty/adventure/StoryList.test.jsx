@@ -23,6 +23,16 @@ describe('the Story tab', () => {
     expect(html).toContain('Find the hatch in the floor');
     expect(done(html)).toBe(2);
     expect(html).toContain('More of the story soon.');
+    // the next built episode, by its title only
+    expect(html).toContain('Arcade money');
+    expect(html).not.toContain('Rick bet the next set');
+  });
+
+  it('ticks a game won before its step comes up', () => {
+    const html = renderToStaticMarkup(<StoryList state={{ episode: 1, step: 0, got: [], wins: ['cabinet'], freeRoam: false }} />);
+    expect(html).toContain('Rick bet the next set');
+    // episode 1 done, and the cabinet's step, won already; Roy still to play
+    expect(done(html)).toBe(2);
   });
 
   it('ticks a finished episode, lists an `all`’s parts, and names a later one by its title', () => {
@@ -38,8 +48,8 @@ describe('the Story tab', () => {
   });
 
   it('ticks every built episode once they’re all done', () => {
-    const html = renderToStaticMarkup(<StoryList state={{ episode: 1, step: 0, got: [], wins: [], freeRoam: false }} />);
-    expect(done(html)).toBe(1);
+    const html = renderToStaticMarkup(<StoryList state={{ episode: 2, step: 0, got: [], wins: [], freeRoam: false }} />);
+    expect(done(html)).toBe(2);
     expect(html).toContain('More of the story soon.');
   });
 });

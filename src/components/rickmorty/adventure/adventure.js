@@ -9,7 +9,7 @@
 // does its own (saves tell this tab's watchers too), which it knows by the
 // state being the one it holds. Pure: no React, no three.
 
-import { coordinates, dialOpen, feed, fresh, lockNote, objective, valid } from './story';
+import { coordinates, current, dialOpen, feed, fresh, lockNote, objective, valid } from './story';
 
 export const STORY_KEY = 'tp-rm-story';
 
@@ -31,7 +31,7 @@ export function createAdventure({ saves, read, episodes, ready }) {
   let state = feed(made ? fresh({ returner }) : stored, { type: 'none' }, { ...book, known: k }).state;
   saves.set(STORY_KEY, state);
 
-  let introShown = !(made && !returner);
+  let asked = false;
   const listeners = new Set();
   const tell = () => {
     for (const fn of listeners) fn();
@@ -49,13 +49,15 @@ export function createAdventure({ saves, read, episodes, ready }) {
   });
 
   return {
-    // a new save for someone who's never played: episode 1's card shows,
-    // once a visit (intro() says so the first time it's asked)
+    // a new save for someone who's never played
     started: made && !returner,
+    // the episode whose card opens this visit, the first time it's asked: the
+    // one the story's at, when it's built and not yet begun (a step done, or
+    // Free roam on, and there's none)
     intro() {
-      if (introShown) return false;
-      introShown = true;
-      return true;
+      if (asked) return null;
+      asked = true;
+      return !state.freeRoam && state.step === 0 && state.got.length === 0 && current(state, book) ? state.episode : null;
     },
     get: () => state,
     feed(event) {
