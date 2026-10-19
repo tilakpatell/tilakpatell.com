@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import HQGame from '../hq/HQGame';
+import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
+import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
-import { stoneById } from '../world/labels';
+import { HALF_OF } from '../world/labels';
 import { useAchievements } from '../../Achievements';
 import { useGame3D } from '../hq/useGame3D';
 import { local, prefersReducedMotion } from '../../../lib/hooks';
@@ -490,66 +491,49 @@ export default function Infiltration({ fallback }) {
           </button>
         </div>
       )}
-      {(ui.phase === 'menu' || ui.phase === 'cleared') && (
+      {ui.phase === 'cleared' && (
+        <Results
+          className="iw-overlay"
+          won
+          kicker={`Level ${index + 1} · ${def.name} · clear`}
+          title={ui.result?.stone ? 'The file is out.' : ['Clean.', 'Unseen.', 'Like a ghost.'][Math.min(2, ui.result?.turns % 3)]}
+          line={`${ui.result?.turns} turns${ui.result?.takedowns ? ` · ${ui.result.takedowns} ${ui.result.takedowns === 1 ? 'takedown' : 'takedowns'}` : ''}${ui.result?.bites ? ` · ${ui.result.bites} ${ui.result.bites === 1 ? 'bite' : 'bites'}` : ''}. ${index + 1 < total ? 'One more line of her file, declassified.' : 'Every line of it.'}`}
+          stone={ui.result?.stone ? 'soul' : null}
+          half={ui.result?.both ? null : HALF_OF['soul-natasha']}
+          stoneText={ui.result?.both ? 'Natasha’s half of the Soul Stone, and Clint’s: the Soul Stone is yours.' : 'Natasha’s half of the Soul Stone. Clint has the other half, at the range.'}
+          onAgain={() => enter(index)}
+          onward={index + 1 < total ? { label: 'Next level', onClick: () => enter(index + 1) } : null}
+          more={{ label: 'All levels', onClick: () => setUi((u) => ({ ...u, phase: 'menu' })) }}
+        >
+          <Dossier cleared={cleared} fresh={ui.fresh} onPick={enter} />
+        </Results>
+      )}
+      {ui.phase === 'menu' && (
         <div className="hq-overlay iw-overlay">
-          {ui.phase === 'cleared' ? (
-            <>
-              <p className="hq-overlay-kicker">
-                Level {index + 1} · {def.name} · clear
-              </p>
-              <p className="hq-overlay-title">{ui.result?.stone ? 'The file is out.' : ['Clean.', 'Unseen.', 'Like a ghost.'][Math.min(2, ui.result?.turns % 3)]}</p>
-              <p className="hq-overlay-text">
-                {ui.result?.turns} turns
-                {ui.result?.takedowns ? ` · ${ui.result.takedowns} ${ui.result.takedowns === 1 ? 'takedown' : 'takedowns'}` : ''}
-                {ui.result?.bites ? ` · ${ui.result.bites} ${ui.result.bites === 1 ? 'bite' : 'bites'}` : ''}. {index + 1 < total ? 'One more line of her file, declassified.' : 'Every line of it.'}
-              </p>
-              {ui.result?.stone && (
-                <p className="hq-stone" style={{ '--glow': stoneById('soul-natasha').color }}>
-                  <span className="stone-dot" aria-hidden="true" />
-                  {ui.result.both ? 'Natasha’s half of the Soul Stone, and Clint’s: the Soul Stone is yours.' : 'Natasha’s half of the Soul Stone. Clint has the other half, at the range.'}
-                </p>
-              )}
-              <div className="mt-4 flex flex-wrap justify-center gap-3">
-                {index + 1 < total && (
-                  <button type="button" className="btn btn-primary" onClick={() => enter(index + 1)}>
-                    Next level
-                  </button>
-                )}
-                <button type="button" className="btn btn-ghost iw-ghost" onClick={() => enter(index)}>
-                  Again
-                </button>
-                <button type="button" className="btn btn-ghost iw-ghost" onClick={() => setUi((u) => ({ ...u, phase: 'menu' }))}>
-                  All levels
-                </button>
-              </div>
-              <Dossier cleared={cleared} fresh={ui.fresh} onPick={(i) => enter(i)} />
-            </>
-          ) : (
-            <>
-              <p className="hq-overlay-kicker">Operations · the holotable · a HYDRA facility</p>
-              <p className="hq-overlay-title">Infiltration</p>
-              <p className="hq-overlay-text">Plan Natasha’s way in a move at a time: every move she makes, the guards make one too. Stay out of their torches and the cameras’ sweeps, take them down from behind, and get her file out.</p>
-              <ul className="hq-keys">
-                <li>
-                  <kbd>←</kbd>
-                  <kbd>↑</kbd>
-                  <kbd>↓</kbd>
-                  <kbd>→</kbd> move
-                </li>
-                <li>
-                  <kbd>Space</kbd> wait
-                </li>
-                <li>
-                  <kbd>E</kbd> Widow’s Bite
-                </li>
-                <li>or click a tile</li>
-              </ul>
-              <button type="button" className="btn btn-primary mt-4" onClick={() => enter(nextUnlocked)}>
-                {cleared === 0 ? 'Go in' : cleared >= total ? 'Play again' : `Level ${nextUnlocked + 1}`}
-              </button>
-              <Dossier cleared={cleared} fresh={-1} onPick={(i) => enter(i)} />
-            </>
-          )}
+          <p className="hq-overlay-kicker">Operations · the holotable · a HYDRA facility</p>
+          <p className="hq-overlay-title">Infiltration</p>
+          <p className="hq-overlay-text">Plan Natasha’s way in a move at a time: every move she makes, the guards make one too. Stay out of their torches and the cameras’ sweeps, take them down from behind, and get her file out.</p>
+          <StartNote />
+          <ul className="hq-keys">
+            <li>
+              <kbd>←</kbd>
+              <kbd>↑</kbd>
+              <kbd>↓</kbd>
+              <kbd>→</kbd> move
+            </li>
+            <li>
+              <kbd>Space</kbd> wait
+            </li>
+            <li>
+              <kbd>E</kbd> Widow’s Bite
+            </li>
+            <li>or click a tile</li>
+          </ul>
+          <TouchHelp game="widow" />
+          <button type="button" className="btn btn-primary mt-4" onClick={() => enter(nextUnlocked)}>
+            {cleared === 0 ? 'Go in' : cleared >= total ? 'Play again' : `Level ${nextUnlocked + 1}`}
+          </button>
+          <Dossier cleared={cleared} fresh={-1} onPick={(i) => enter(i)} />
         </div>
       )}
       <p className="sr-only" role="status">

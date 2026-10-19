@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import HQGame from '../hq/HQGame';
+import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
+import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
-import { stoneById } from '../world/labels';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
 import { useGame3D } from '../hq/useGame3D';
@@ -439,38 +439,39 @@ export default function RepulsorRange({ fallback }) {
           </button>
         </div>
       )}
-      {(!playing || paused) && (
-        <div className="hq-overlay ir-overlay">
-          {paused ? (
-            <>
-              <p className="hq-overlay-title">Paused</p>
-              <p className="hq-overlay-text">Wave {ui.wave} of {WAVES.length}. Score {fmt(ui.score)}.</p>
-              <button type="button" className="btn btn-primary mt-4" onClick={() => setPaused(false)}>
-                Resume
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="hq-overlay-kicker">Stark Industries · test field</p>
-              <p className="hq-overlay-title">{ui.phase === 'won' ? 'Ultron Prime is down.' : ui.phase === 'lost' ? 'Armour failed.' : 'Repulsor Range'}</p>
-              <p className="hq-overlay-text">
-                {ended
-                  ? ui.message
-                  : 'Hold the field against nine waves of Ultron’s drones and sentries, then Ultron Prime itself. Repulsors draw on the arc reactor; kills charge the unibeam. When a sentry glows red, or the ground lights up under you, strafe.'}
-              </p>
-              {ended && (
-                <p className="hq-overlay-score">
-                  {fmt(ui.score)}
-                  <small>{ui.newBest ? 'a new best' : best ? `best ${fmt(best)}` : 'points'}</small>
+      {(!playing || paused) &&
+        (ended && !paused ? (
+          <Results
+            className="ir-overlay"
+            won={ui.phase === 'won'}
+            kicker="Stark Industries · test field"
+            title={ui.phase === 'won' ? 'Ultron Prime is down.' : 'Armour failed.'}
+            line={ui.message}
+            score={ui.score}
+            best={best}
+            newBest={ui.newBest}
+            stone={ui.phase === 'won' && ui.stone ? 'power' : null}
+            stoneText="The Power Stone is yours. It’s waiting in Thanos’s gauntlet."
+            onAgain={start}
+          />
+        ) : (
+          <div className="hq-overlay ir-overlay">
+            {paused ? (
+              <>
+                <p className="hq-overlay-title">Paused</p>
+                <p className="hq-overlay-text">
+                  Wave {ui.wave} of {WAVES.length}. Score {fmt(ui.score)}.
                 </p>
-              )}
-              {ui.phase === 'won' && ui.stone && (
-                <p className="hq-stone" style={{ '--glow': stoneById('power').color }}>
-                  <span className="stone-dot" aria-hidden="true" />
-                  The Power Stone is yours. It’s waiting in Thanos’s gauntlet.
-                </p>
-              )}
-              {!ended && (
+                <button type="button" className="btn btn-primary mt-4" onClick={() => setPaused(false)}>
+                  Resume
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="hq-overlay-kicker">Stark Industries · test field</p>
+                <p className="hq-overlay-title">Repulsor Range</p>
+                <p className="hq-overlay-text">Hold the field against nine waves of Ultron’s drones and sentries, then Ultron Prime itself. Repulsors draw on the arc reactor; kills charge the unibeam. When a sentry glows red, or the ground lights up under you, strafe.</p>
+                <StartNote />
                 <ul className="hq-keys">
                   <li>
                     <kbd>Mouse</kbd> aim, hold to fire
@@ -486,15 +487,15 @@ export default function RepulsorRange({ fallback }) {
                     <kbd>Space</kbd> fire, F.R.I.D.A.Y. aims
                   </li>
                 </ul>
-              )}
-              <button type="button" className="btn btn-primary mt-5" onClick={start}>
-                {ui.phase === 'ready' ? 'Suit up' : 'Fly it again'}
-              </button>
-              {!ended && best > 0 && <p className="hq-overlay-best">Best {fmt(best)}</p>}
-            </>
-          )}
-        </div>
-      )}
+                <TouchHelp game="repulsor" />
+                <button type="button" className="btn btn-primary mt-5" onClick={start}>
+                  Suit up
+                </button>
+                {best > 0 && <p className="hq-overlay-best">Best {fmt(best)}</p>}
+              </>
+            )}
+          </div>
+        ))}
       <p className="sr-only" role="status">
         {playing ? `Wave ${ui.wave}. Armour ${ui.armor}. ${ui.message}` : ''}
       </p>

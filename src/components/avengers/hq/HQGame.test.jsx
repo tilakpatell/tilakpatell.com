@@ -102,3 +102,19 @@ describe('the eight games on the game screen', () => {
     expect(src('world/world.css')).not.toMatch(/\.cw-place-(head|sub|title|body|intro|stone)\b/);
   });
 });
+
+describe('the start and the end of every game', () => {
+  it.each(GAMES)('%s opens on its start note and touch help and ends on the results card', (id) => {
+    const s = src(FILES[id]);
+    expect(s).toContain('<StartNote />');
+    expect(s).toContain(`<TouchHelp game="${id}" />`);
+    expect(s).toMatch(/<Results\b/);
+    expect(s).not.toContain('className="hq-stone"');
+    expect(s).not.toMatch(/stoneById/);
+  });
+  it('Hold the Lawn keeps both ways back in after a loss past the checkpoint', () => {
+    const s = src(FILES.lawn);
+    expect(s).toMatch(/label: 'Restart at the boss', onClick: startBoss/);
+    expect(s).toContain("'From wave 1'");
+  });
+});

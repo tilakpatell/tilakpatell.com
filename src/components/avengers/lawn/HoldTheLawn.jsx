@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import HQGame from '../hq/HQGame';
+import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
+import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
-import { stoneById } from '../world/labels';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
 import { useGame3D } from '../hq/useGame3D';
@@ -568,42 +568,41 @@ export default function HoldTheLawn({ fallback }) {
           </button>
         </div>
       )}
-      {(!(playing || lifting) || paused) && (
-        <div className="hq-overlay tl-overlay">
-          {paused ? (
-            <>
-              <p className="hq-overlay-title">Paused</p>
-              <p className="hq-overlay-text">
-                Wave {ui.wave} of {WAVES.length}. {ui.hp} hearts left.
-              </p>
-              <button type="button" className="btn btn-primary mt-4" onClick={() => (setPaused(false), focus())}>
-                Resume
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="hq-overlay-kicker">The front lawn · a storm</p>
-              <p className="hq-overlay-title">{res?.won ? 'Cull Obsidian is down.' : res ? 'The line broke.' : 'Hold the Lawn'}</p>
-              <p className="hq-overlay-text">
-                {res?.won
-                  ? `The lawn held, with ${res.bonus / 500} ${res.bonus === 500 ? 'heart' : 'hearts'} to spare.`
-                  : res
-                    ? `On wave ${res.wave} of ${WAVES.length}. Keep the hammer in hand when they’re shooting, and get it behind the shields.`
-                    : 'The Chitauri are coming across the lawn. Lift the hammer, then throw it through them and call it back through them, and bring down the lightning. Seven waves, then Cull Obsidian.'}
-              </p>
-              {res && (
-                <p className="hq-overlay-score">
-                  {fmt(res.score)}
-                  <small>{res.newBest ? 'a new best' : best ? `best ${fmt(best)}` : 'points'}</small>
+      {(!(playing || lifting) || paused) &&
+        (res && !paused ? (
+          <Results
+            className="tl-overlay"
+            won={res.won}
+            kicker="The front lawn · a storm"
+            title={res.won ? 'Cull Obsidian is down.' : 'The line broke.'}
+            line={res.won ? `The lawn held, with ${res.bonus / 500} ${res.bonus === 500 ? 'heart' : 'hearts'} to spare.` : `On wave ${res.wave} of ${WAVES.length}. Keep the hammer in hand when they’re shooting, and get it behind the shields.`}
+            score={res.score}
+            best={best}
+            newBest={res.newBest}
+            stone={res.won && res.stone ? 'reality' : null}
+            stoneText="The Reality Stone is yours, out of the Aether."
+            onAgain={start}
+            onward={!res.won && checkpoint ? { label: 'Restart at the boss', onClick: startBoss } : null}
+            againLabel={!res.won && checkpoint ? 'From wave 1' : undefined}
+          />
+        ) : (
+          <div className="hq-overlay tl-overlay">
+            {paused ? (
+              <>
+                <p className="hq-overlay-title">Paused</p>
+                <p className="hq-overlay-text">
+                  Wave {ui.wave} of {WAVES.length}. {ui.hp} hearts left.
                 </p>
-              )}
-              {res?.won && res.stone && (
-                <p className="hq-stone" style={{ '--glow': stoneById('reality').color }}>
-                  <span className="stone-dot" aria-hidden="true" />
-                  The Reality Stone is yours, out of the Aether.
-                </p>
-              )}
-              {!res && (
+                <button type="button" className="btn btn-primary mt-4" onClick={() => (setPaused(false), focus())}>
+                  Resume
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="hq-overlay-kicker">The front lawn · a storm</p>
+                <p className="hq-overlay-title">Hold the Lawn</p>
+                <p className="hq-overlay-text">The Chitauri are coming across the lawn. Lift the hammer, then throw it through them and call it back through them, and bring down the lightning. Seven waves, then Cull Obsidian.</p>
+                <StartNote />
                 <ul className="hq-keys">
                   <li>
                     <kbd>Mouse</kbd> aim, click to throw, click to recall
@@ -619,26 +618,15 @@ export default function HoldTheLawn({ fallback }) {
                     <kbd>Space</kbd> throw at the nearest
                   </li>
                 </ul>
-              )}
-              {res && !res.won && checkpoint ? (
-                <div className="mt-5 flex flex-wrap justify-center gap-3">
-                  <button type="button" className="btn btn-primary" onClick={startBoss}>
-                    Restart at the boss
-                  </button>
-                  <button type="button" className="btn btn-ghost" onClick={start}>
-                    From wave 1
-                  </button>
-                </div>
-              ) : (
+                <TouchHelp game="lawn" />
                 <button type="button" className="btn btn-primary mt-5" onClick={start}>
-                  {res ? 'Again' : 'Lift the hammer'}
+                  Lift the hammer
                 </button>
-              )}
-              {!res && best > 0 && <p className="hq-overlay-best">Best {fmt(best)}</p>}
-            </>
-          )}
-        </div>
-      )}
+                {best > 0 && <p className="hq-overlay-best">Best {fmt(best)}</p>}
+              </>
+            )}
+          </div>
+        ))}
       <p className="sr-only" role="status">
         {playing ? `Wave ${ui.wave}. ${ui.hp} hearts. ${ui.message}` : lifting ? `Lifting: ${Math.round(ui.lift * 100)} percent. ${ui.message}` : ''}
       </p>

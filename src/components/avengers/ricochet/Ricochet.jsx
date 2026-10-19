@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import HQGame from '../hq/HQGame';
+import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
+import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
-import { stoneById } from '../world/labels';
 import { useAchievements } from '../../Achievements';
 import { useGame3D } from '../hq/useGame3D';
 import { local } from '../../../lib/hooks';
@@ -288,89 +288,70 @@ export default function Ricochet({ fallback }) {
           </button>
         </div>
       )}
-      {(!live || paused) && (
-        <div className="hq-overlay cap-overlay">
-          {paused ? (
-            <>
-              <p className="hq-overlay-title">Paused</p>
-              <p className="hq-overlay-text">
-                Room {index + 1} of {ROOMS.length}, {def.name}.
-              </p>
-              <button
-                type="button"
-                className="btn btn-primary mt-4"
-                onClick={() => {
-                  setPaused(false);
-                  stage.wrap.current?.querySelector('.hq-screen')?.focus({ preventScroll: true });
-                }}
-              >
-                Resume
-              </button>
-            </>
-          ) : ui.phase === 'cleared' ? (
-            <>
-              <p className="hq-overlay-kicker">Room {index + 1} clear</p>
-              <p className="hq-overlay-title">{['', 'Done.', 'Nice throwing.', 'He could do this all day.'][ui.result.stars]}</p>
-              <p className="cap-stars" aria-label={`${ui.result.stars} of 3 stars`}>
-                {[1, 2, 3].map((n) => (
-                  <span key={n} data-on={n <= ui.result.stars || undefined}>
-                    ★
-                  </span>
-                ))}
-              </p>
-              <p className="hq-overlay-text">
-                {ui.result.throws === 1 ? 'One throw' : `${ui.result.throws} throws`}, par {def.par}
-                {ui.result.catches ? ` · caught it ${ui.result.catches === 1 ? 'once' : `${ui.result.catches} times`}` : ''}.
-              </p>
-              {ui.result.stone && (
-                <p className="hq-stone" style={{ '--glow': stoneById('mind').color }}>
-                  <span className="stone-dot" aria-hidden="true" />
-                  The Mind Stone is yours, out of Loki’s sceptre.
+      {(!live || paused) &&
+        (!paused && ui.phase === 'cleared' ? (
+          <Results
+            className="cap-overlay"
+            won
+            kicker={`Room ${index + 1} clear`}
+            title={['', 'Done.', 'Nice throwing.', 'He could do this all day.'][ui.result.stars]}
+            line={`${ui.result.throws === 1 ? 'One throw' : `${ui.result.throws} throws`}, par ${def.par}${ui.result.catches ? ` · caught it ${ui.result.catches === 1 ? 'once' : `${ui.result.catches} times`}` : ''}.`}
+            stars={{ got: ui.result.stars, of: 3 }}
+            stone={ui.result.stone ? 'mind' : null}
+            stoneText="The Mind Stone is yours, out of Loki’s sceptre."
+            onAgain={() => enter(index)}
+            onward={index < ROOMS.length - 1 ? { label: 'Next room', onClick: () => enter(index + 1) } : null}
+            more={{ label: 'All rooms', onClick: () => setUi((u) => ({ ...u, phase: 'menu' })) }}
+          />
+        ) : !paused && ui.phase === 'failed' ? (
+          <Results
+            className="cap-overlay"
+            kicker={`Room ${index + 1}`}
+            title={ui.result.reason === 'hostage' ? 'You hit the hostage.' : 'Out of throws.'}
+            line={ui.result.reason === 'hostage' ? 'The orange dummy is a hostage. Find a way around it.' : `Par is ${def.par}; you get ${limitFor(def)}. ${def.tip}`}
+            onAgain={() => enter(index)}
+          />
+        ) : (
+          <div className="hq-overlay cap-overlay">
+            {paused ? (
+              <>
+                <p className="hq-overlay-title">Paused</p>
+                <p className="hq-overlay-text">
+                  Room {index + 1} of {ROOMS.length}, {def.name}.
                 </p>
-              )}
-              <div className="mt-5 flex flex-wrap justify-center gap-3">
-                {index < ROOMS.length - 1 && (
-                  <button type="button" className="btn btn-primary" onClick={() => enter(index + 1)}>
-                    Next room
-                  </button>
-                )}
-                <button type="button" className="btn btn-ghost cap-ghost" onClick={() => enter(index)}>
-                  Again
+                <button
+                  type="button"
+                  className="btn btn-primary mt-4"
+                  onClick={() => {
+                    setPaused(false);
+                    stage.wrap.current?.querySelector('.hq-screen')?.focus({ preventScroll: true });
+                  }}
+                >
+                  Resume
                 </button>
-                <button type="button" className="btn btn-ghost cap-ghost" onClick={() => setUi((u) => ({ ...u, phase: 'menu' }))}>
-                  All rooms
-                </button>
-              </div>
-            </>
-          ) : ui.phase === 'failed' ? (
-            <>
-              <p className="hq-overlay-kicker">Room {index + 1}</p>
-              <p className="hq-overlay-title">{ui.result.reason === 'hostage' ? 'You hit the hostage.' : 'Out of throws.'}</p>
-              <p className="hq-overlay-text">{ui.result.reason === 'hostage' ? 'The orange dummy is a hostage. Find a way around it.' : `Par is ${def.par}; you get ${limitFor(def)}. ${def.tip}`}</p>
-              <button type="button" className="btn btn-primary mt-5" onClick={() => enter(index)}>
-                Try again
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="hq-overlay-kicker">Training center · shield work</p>
-              <p className="hq-overlay-title">Ricochet</p>
-              <p className="hq-overlay-text">Twelve rooms. Throw the shield, bounce it off the steel, and put every training bot down in as few throws as you can. Blue mats stop it, glass breaks, switches open doors. If it comes back past you, you catch it.</p>
-              <div className="cap-rooms" role="group" aria-label="Rooms">
-                {ROOMS.map((r, i) => (
-                  <button key={r.name} type="button" className="cap-room-btn" disabled={i >= save.reached} onClick={() => enter(i)} aria-label={`Room ${i + 1}, ${r.name}${save.stars[i] ? `, ${save.stars[i]} stars` : ''}`}>
-                    <span>{i + 1}</span>
-                    <small>{save.stars[i] ? '★'.repeat(save.stars[i]) : i < save.reached ? r.name : '—'}</small>
-                  </button>
-                ))}
-              </div>
-              <p className="hq-overlay-best">
-                {totalStars} of {ROOMS.length * 3} stars
-              </p>
-            </>
-          )}
-        </div>
-      )}
+              </>
+            ) : (
+              <>
+                <p className="hq-overlay-kicker">Training center · shield work</p>
+                <p className="hq-overlay-title">Ricochet</p>
+                <p className="hq-overlay-text">Twelve rooms. Throw the shield, bounce it off the steel, and put every training bot down in as few throws as you can. Blue mats stop it, glass breaks, switches open doors. If it comes back past you, you catch it.</p>
+                <StartNote />
+                <TouchHelp game="ricochet" />
+                <div className="cap-rooms" role="group" aria-label="Rooms">
+                  {ROOMS.map((r, i) => (
+                    <button key={r.name} type="button" className="cap-room-btn" disabled={i >= save.reached} onClick={() => enter(i)} aria-label={`Room ${i + 1}, ${r.name}${save.stars[i] ? `, ${save.stars[i]} stars` : ''}`}>
+                      <span>{i + 1}</span>
+                      <small>{save.stars[i] ? '★'.repeat(save.stars[i]) : i < save.reached ? r.name : '—'}</small>
+                    </button>
+                  ))}
+                </div>
+                <p className="hq-overlay-best">
+                  {totalStars} of {ROOMS.length * 3} stars
+                </p>
+              </>
+            )}
+          </div>
+        ))}
       <p className="sr-only" role="status">
         {live ? `Room ${index + 1}, ${def.name}. ${ui.left} bots left. ${ui.throws} throws.` : ''}
       </p>
