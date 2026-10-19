@@ -8,7 +8,17 @@
 //
 //   createScenes({ rt, road, lands, weather, ambience, tier }) → {
 //     at(index, local, dt, { speed, jumped }) → { since, fx, shot }  (fx: fxAt’s; shot: rigAt’s, or null)
+//     floor(index, x, z) → the height the stage’s scene stands the walkers on there, or null (the land’s)
+//     pose(index, id, { x, y, z, base, state }) → what the scene changes of a walker this frame
+//       ({ x, y, z, yaw, base, speed }, each left out for the module’s own), or null
 //     dispose() }
+//
+// A build is given { road, heightAt, land, waters, rt, weather, ambience, tier }
+// (`land`: terrain.js’s, its rivers among it; `waters`: the land’s rivers’
+// water, water.js’s, in the same order), and may answer `floor(x, z)`: what
+// carries the walkers over the land (the raft at the Brandywine), and
+// `pose(id, at)`: a walker as a beat has them (sat by Sam’s fire, Aragorn
+// with a torch, Frodo on Asfaloth’s back).
 
 import { STAGES } from './stages/index';
 import { BEATS_OF } from './stages/registry';
@@ -18,6 +28,9 @@ import { fxAt, rigAt, stepBeats } from './beats';
 // the written stages’ scenes, imported when first wanted
 const SCENES = {
   hobbiton: () => import('./stages/hobbiton/index.js'),
+  'shire-edge': () => import('./stages/shire-edge/index.js'),
+  bree: () => import('./stages/bree/index.js'),
+  weathertop: () => import('./stages/weathertop/index.js'),
 };
 
 export function createScenes({ rt, road, lands, weather, ambience, tier }) {
@@ -36,7 +49,7 @@ export function createScenes({ rt, road, lands, weather, ambience, tier }) {
     SCENES[id]()
       .then(({ build }) => {
         if (entry.gone) return;
-        entry.scene = build({ road, heightAt: land.field, rt, weather, tier });
+        entry.scene = build({ road, heightAt: land.field, land, waters: lands.watersOf?.(i) ?? [], rt, weather, ambience, tier });
         group.add(entry.scene.group);
       })
       .catch(() => made.delete(i));
@@ -70,6 +83,12 @@ export function createScenes({ rt, road, lands, weather, ambience, tier }) {
       last = local;
       made.get(index)?.scene?.update(local, dt, { since, speed });
       return { since, fx: fxAt(beats, since), shot: rigAt(beats, local) };
+    },
+    floor(index, x, z) {
+      return made.get(index)?.scene?.floor?.(x, z) ?? null;
+    },
+    pose(index, id, at) {
+      return made.get(index)?.scene?.pose?.(id, at) ?? null;
     },
     dispose() {
       for (const i of [...made.keys()]) drop(i);

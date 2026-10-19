@@ -142,6 +142,7 @@ export default {
     // (opened on a beat’s mark, Bag End’s first words among them: it holds there first)
     if (!offer) clock = { ...clock, holdLeft: holdAt(clock.s) };
     let jumped = true; // (the first frame is a jump: nothing behind it plays)
+    let lastSince = {}; // (the beats’ seconds, for the development hook’s info)
     let shot = null; // { key, from (pose), t }: the camera’s blend between rigs
     let lastPose = null;
     let fxVision = false;
@@ -234,12 +235,21 @@ export default {
         const rank = w.order === lead ? 0 : ahead.length - ahead.indexOf(w);
         const x = rank % 2 ? ABREAST : -ABREAST;
         const z = here.local + rank * FILE;
-        fig.group.position.set(x, lands.heightAt(x, z), z);
-        fig.set({ base: clipFor(w.state, mode, w.id), speed: clock.speed });
+        // (on the land, or on what the stage’s scene carries them over it on)
+        const ground = lands.heightAt(x, z);
+        const floor = scenes.floor(here.index, x, z);
+        const y = floor == null ? ground : Math.max(ground, floor);
+        const base = clipFor(w.state, mode, w.id);
+        // (and as the beat has them: sat by a fire, a torch in each hand, down on the ground)
+        const o = scenes.pose(here.index, w.id, { x, y, z, base, state: w.state }) ?? {};
+        fig.group.position.set(o.x ?? x, o.y ?? y, o.z ?? z);
+        fig.group.rotation.y = o.yaw ?? 0;
+        fig.set({ base: o.base !== undefined ? o.base : base, speed: o.speed ?? clock.speed });
         fig.tick(dt);
       }
       // the stage’s scene and its beats; the camera on the beat’s rig, eased into it unless it cuts
       const beat = scenes.at(here.index, here.local, dt, { speed: clock.speed, jumped });
+      lastSince = beat.since;
       jumped = false;
       veil.visible = beat.fx.black > 0;
       veilMat.opacity = beat.fx.black;
@@ -441,7 +451,7 @@ export default {
       // lands' building times)
       const info = () => {
         const r = rt.gfx.renderer?.info?.render ?? {};
-        return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, vision: vision.amount, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats };
+        return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, vision: vision.amount, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats, since: lastSince };
       };
       window.__ROAD__ = { world, set: (s) => world.set(s), info, weather, ambience, vision: (on) => void (visionOn = Boolean(on)), passes };
     }

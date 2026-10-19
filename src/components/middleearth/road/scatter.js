@@ -6,7 +6,8 @@
 //   placements(rows, land, road, rng, { tier, reach }) → [{ model, x, y, z, yaw, scale }]
 //     (pure: density per 100 m², in clumps, never within CLEAR of the road,
 //     off steep ground and out of the water, `reach` metres either side of
-//     the road at most; low halves the counts and drops the grass, mid thins it)
+//     the road at most; low halves the counts and drops the grass, mid thins it;
+//     a row with `z: [z0, z1]` or `x: [x0, x1]` keeps to that band of the stage)
 //   rowsFor(id) → the stage’s rows
 //   rngOf(seed) → () → 0…1, the same for the same seed
 //   createScatter({ kitFor, tier }) → { group, set(key, items, dz), free(key), update(camera, dt), stats, dispose }
@@ -48,17 +49,23 @@ export function placements(rows, land, road, rng, { tier = 'high', reach = REACH
   const x1 = Math.min(land.x0 + land.w, reach);
   const z0 = land.z0;
   const z1 = land.z0 + land.d;
-  const area = (x1 - x0) * (z1 - z0);
   const out = [];
   for (const row of rows) {
+    // (a row’s own band, inside the stage’s: a field of corn, a wood)
+    const bx0 = Math.max(x0, row.x?.[0] ?? x0);
+    const bx1 = Math.min(x1, row.x?.[1] ?? x1);
+    const bz0 = Math.max(z0, row.z?.[0] ?? z0);
+    const bz1 = Math.min(z1, row.z?.[1] ?? z1);
+    if (bx1 <= bx0 || bz1 <= bz0) continue;
+    const area = (bx1 - bx0) * (bz1 - bz0);
     const count = Math.round((row.per100 * area * share(row, tier)) / 100);
     const clump = Math.max(1, row.clump ?? 1);
     const spread = row.spread ?? 4;
     const cap = row.slope ?? SLOPE;
     const [s0, s1] = row.scale ?? [1, 1];
     for (let n = 0; n < count; n += clump) {
-      const cx = x0 + rng() * (x1 - x0);
-      const cz = z0 + rng() * (z1 - z0);
+      const cx = bx0 + rng() * (bx1 - bx0);
+      const cz = bz0 + rng() * (bz1 - bz0);
       for (let k = 0; k < clump && n + k < count; k++) {
         const a = rng() * Math.PI * 2;
         const r = Math.sqrt(rng()) * spread;
@@ -66,7 +73,7 @@ export function placements(rows, land, road, rng, { tier = 'high', reach = REACH
         const z = cz + Math.sin(a) * r;
         const yaw = rng() * Math.PI * 2;
         const scale = s0 + rng() * (s1 - s0);
-        if (x < x0 || x > x1 || z < z0 || z > z1) continue;
+        if (x < bx0 || x > bx1 || z < bz0 || z > bz1) continue;
         if (off(x, z) < CLEAR) continue;
         if (land.wet?.(x, z)) continue;
         const sx = (field(x + 1, z) - field(x - 1, z)) / 2;

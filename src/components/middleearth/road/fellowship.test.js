@@ -16,8 +16,8 @@ describe('the fellowship: who walks with you, and how', () => {
   });
 
   it('Merry and Pippin from Maggot’s crop; Strider from Bree’s last beat', () => {
-    expect(ids(at('shire-edge', 59))).toEqual(['frodo', 'sam']);
-    expect(ids(at('shire-edge', 60))).toEqual(['frodo', 'sam', 'merry', 'pippin']);
+    expect(ids(at('shire-edge', 25))).toEqual(['frodo', 'sam']);
+    expect(ids(at('shire-edge', 26))).toEqual(['frodo', 'sam', 'merry', 'pippin']);
     expect(ids(at('bree', 0))).not.toContain('aragorn');
     expect(ids(at('bree', last('bree')))).toContain('aragorn');
   });
