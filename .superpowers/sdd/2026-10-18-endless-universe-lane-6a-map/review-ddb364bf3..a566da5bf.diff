@@ -1,0 +1,265 @@
+# Review package: ddb364bf3..a566da5bf
+
+## Commits
+a566da5bf Nav map check: a base URL, the mini-map and far-ship shots, and the before shots from main
+
+## Files changed
+ .../evidence/endless-universe-6a-map/README.md     |  45 ++++++++++++++++
+ .../endless-universe-6a-map/before/1-navmap.png    | Bin 0 -> 549865 bytes
+ .../before/10-phone-picked.png                     | Bin 0 -> 205350 bytes
+ .../before/11-minimap-flat.png                     | Bin 0 -> 87172 bytes
+ .../before/12-minimap-teaser.png                   | Bin 0 -> 111062 bytes
+ .../endless-universe-6a-map/before/13-far-ship.png | Bin 0 -> 555122 bytes
+ .../endless-universe-6a-map/before/2-picked.png    | Bin 0 -> 529206 bytes
+ .../before/7-home-system.png                       | Bin 0 -> 655014 bytes
+ .../endless-universe-6a-map/before/8-phone-map.png | Bin 0 -> 210110 bytes
+ .../before/9-phone-navmap.png                      | Bin 0 -> 204703 bytes
+ scripts/navmap-check.mjs                           |  57 +++++++++++++++++++--
+ 11 files changed, 98 insertions(+), 4 deletions(-)
+
+## Diff
+diff --git a/docs/superpowers/evidence/endless-universe-6a-map/README.md b/docs/superpowers/evidence/endless-universe-6a-map/README.md
+new file mode 100644
+index 000000000..366224bac
+--- /dev/null
++++ b/docs/superpowers/evidence/endless-universe-6a-map/README.md
+@@ -0,0 +1,45 @@
++# Endless universe lane 6a: the map, evidence
++
++The nav map and the mini-maps, before and after lane 6a. The “before” pictures are `main`'s own code.
++
++- Date taken: 2026-10-18
++- `main` commit: `ddb364bf3`
++- Browser: Playwright’s Chromium, headless, software GL, `?quality=low`
++
++## Command
++
++A dev server on `main`'s code, then the check against it:
++
++```
++npx vite --port 5266 --strictPort
++BASE=http://localhost:5266 OUT=docs/superpowers/evidence/endless-universe-6a-map/before CHROME=<chromium> node scripts/navmap-check.mjs
++```
++
++A single mode (`desktop`, `phone`, `minimap` or `far`) takes just its own shots.
++
++## What fails on `main`
++
++The Citadel jump checks, whose coordinates (1755, −4660) are stale (`docs/superpowers/HANDOFF-universe.md`, “Left”). Four checks print FAIL:
++
++- the go button reads “Jump to The Citadel”
++- the ship’s out at The Citadel on the first frame past the flash
++- with the drive charging, it says so and goes at super speed
++- still on its way out to Aurelia with the selection cleared (it reads `rmportal-back`)
++
++Every other check prints ok, and there are no page errors. The Citadel shots (`3`–`6`) are not kept, since they show the broken jump.
++
++## Shots
++
++| Shot | What it shows | Before | After |
++| --- | --- | --- | --- |
++| `1-navmap` | The map open on the desktop | `before/1-navmap.png` | |
++| `2-picked` | A world picked | `before/2-picked.png` | |
++| `7-home-system` | The home system view | `before/7-home-system.png` | |
++| `8-phone-map` | The phone, before the map opens | `before/8-phone-map.png` | |
++| `9-phone-navmap` | The phone map | `before/9-phone-navmap.png` | |
++| `10-phone-picked` | The phone, a place picked | `before/10-phone-picked.png` | |
++| `11-minimap-flat` | The mini-map on the flat (3D off) page | `before/11-minimap-flat.png` | |
++| `12-minimap-teaser` | The mini-map teaser on the home page | `before/12-minimap-teaser.png` | |
++| `13-far-ship` | The map with the ship 250,000 out: on `main` the marker is missing and the panel says “No ship” | `before/13-far-ship.png` | |
++
++All are PNG and under 1 MB.
+diff --git a/docs/superpowers/evidence/endless-universe-6a-map/before/1-navmap.png b/docs/superpowers/evidence/endless-universe-6a-map/before/1-navmap.png
+new file mode 100644
+index 000000000..359c1a577
+Binary files /dev/null and b/docs/superpowers/evidence/endless-universe-6a-map/before/1-navmap.png differ
+diff --git a/docs/superpowers/evidence/endless-universe-6a-map/before/10-phone-picked.png b/docs/superpowers/evidence/endless-universe-6a-map/before/10-phone-picked.png
+new file mode 100644
+index 000000000..afbcfe1ea
+Binary files /dev/null and b/docs/superpowers/evidence/endless-universe-6a-map/before/10-phone-picked.png differ
+diff --git a/docs/superpowers/evidence/endless-universe-6a-map/before/11-minimap-flat.png b/docs/superpowers/evidence/endless-universe-6a-map/before/11-minimap-flat.png
+new file mode 100644
+index 000000000..292cacb13
+Binary files /dev/null and b/docs/superpowers/evidence/endless-universe-6a-map/before/11-minimap-flat.png differ
+diff --git a/docs/superpowers/evidence/endless-universe-6a-map/before/12-minimap-teaser.png b/docs/superpowers/evidence/endless-universe-6a-map/before/12-minimap-teaser.png
+new file mode 100644
+index 000000000..3142b202b
+Binary files /dev/null and b/docs/superpowers/evidence/endless-universe-6a-map/before/12-minimap-teaser.png differ
+diff --git a/docs/superpowers/evidence/endless-universe-6a-map/before/13-far-ship.png b/docs/superpowers/evidence/endless-universe-6a-map/before/13-far-ship.png
+new file mode 100644
+index 000000000..f2093865c
+Binary files /dev/null and b/docs/superpowers/evidence/endless-universe-6a-map/before/13-far-ship.png differ
+diff --git a/docs/superpowers/evidence/endless-universe-6a-map/before/2-picked.png b/docs/superpowers/evidence/endless-universe-6a-map/before/2-picked.png
+new file mode 100644
+index 000000000..e3a222053
+Binary files /dev/null and b/docs/superpowers/evidence/endless-universe-6a-map/before/2-picked.png differ
+diff --git a/docs/superpowers/evidence/endless-universe-6a-map/before/7-home-system.png b/docs/superpowers/evidence/endless-universe-6a-map/before/7-home-system.png
+new file mode 100644
+index 000000000..ca0377a39
+Binary files /dev/null and b/docs/superpowers/evidence/endless-universe-6a-map/before/7-home-system.png differ
+diff --git a/docs/superpowers/evidence/endless-universe-6a-map/before/8-phone-map.png b/docs/superpowers/evidence/endless-universe-6a-map/before/8-phone-map.png
+new file mode 100644
+index 000000000..67c297e04
+Binary files /dev/null and b/docs/superpowers/evidence/endless-universe-6a-map/before/8-phone-map.png differ
+diff --git a/docs/superpowers/evidence/endless-universe-6a-map/before/9-phone-navmap.png b/docs/superpowers/evidence/endless-universe-6a-map/before/9-phone-navmap.png
+new file mode 100644
+index 000000000..948d2bac6
+Binary files /dev/null and b/docs/superpowers/evidence/endless-universe-6a-map/before/9-phone-navmap.png differ
+diff --git a/scripts/navmap-check.mjs b/scripts/navmap-check.mjs
+index 7528421f1..6368a0ab7 100644
+--- a/scripts/navmap-check.mjs
++++ b/scripts/navmap-check.mjs
+@@ -1,25 +1,28 @@
+ /* global window, document */
+ // A browser check of the universe nav map (NavMap.jsx). With the dev server
+ // up (npx vite --port 5173) and Chrome at $CHROME (or /opt/google/chrome):
+-//   OUT=/tmp/shots node scripts/navmap-check.mjs [desktop|phone]
++//   OUT=/tmp/shots [BASE=http://localhost:5173] node scripts/navmap-check.mjs [desktop|phone|minimap|far]
++// BASE is where the dev server is. A mode alone takes just its own shots; none runs all four.
+ // It opens the map, checks the labels and the go button, jumps to a wonder
+ // (the ship has to be out under the site's jump, which clears the world's
+ // card from the panel), tries a second jump while the hyperdrive charges,
+ // flies out to a wonder at super speed with the selection cleared under it,
+ // then the phone layout. Screenshots go to $OUT. Headless Chrome draws in
+ // software, slowly: clicks go through the DOM, and the waits are long.
+ import { chromium } from 'playwright-core';
+ 
+ const out = process.env.OUT ?? '.';
+ const only = process.argv[2];
+-const URL = 'http://localhost:5173/?quality=low#/universe';
++const BASE = process.env.BASE ?? 'http://localhost:5173';
++const URL = `${BASE}/?quality=low#/universe`;
++const run = (m) => !only || only === m;
+ const browser = await chromium.launch({ executablePath: process.env.CHROME ?? '/opt/google/chrome/chrome', args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
+ const errors = [];
+ const problems = [];
+ const check = (ok, what) => {
+   console.log(ok ? 'ok  ' : 'FAIL', what);
+   if (!ok) problems.push(what);
+ };
+ 
+ async function open(viewport, ship) {
+   const ctx = await browser.newContext({ viewport, hasTouch: viewport.width < 600 });
+@@ -28,37 +31,38 @@ async function open(viewport, ship) {
+     window.localStorage.setItem('tp-start', '"universe"');
+     window.localStorage.setItem('tp-universe-ship', JSON.stringify(s));
+     window.localStorage.setItem('tp-universe-drive', '"super"');
+   }, ship);
+   const page = await ctx.newPage();
+   page.on('pageerror', (e) => errors.push(String(e)));
+   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+   await page.goto(URL, { waitUntil: 'domcontentloaded' });
+   await page.waitForFunction(() => typeof window.__universe === 'function' && window.__universe().ship, null, { timeout: 120000 });
+   await page.waitForTimeout(2000);
++  await page.waitForSelector('.universe-navmap-btn', { state: 'attached', timeout: 120000 });
+   return page;
+ }
+ const click = (page, sel, nth = 0) =>
+   page.evaluate(
+     ([s, n]) => {
+       const el = document.querySelectorAll(s)[n];
+       if (!el) throw new Error(`nothing at ${s}`);
+       el.click();
+     },
+     [sel, nth],
+   );
+ const shot = (page, name) => page.screenshot({ path: `${out}/${name}.png`, timeout: 120000 });
+ const state = (page) => page.evaluate(() => ({ ...window.__universe(), hash: window.location.hash }));
+ const navOpen = (page) => page.waitForSelector('.navmap', { timeout: 60000 });
+ const pickByName = (page, name) => page.evaluate((n) => [...document.querySelectorAll('.navmap-list button')].find((b) => b.textContent.includes(n))?.click(), name);
+ 
+-if (only !== 'phone') {
++if (run('desktop')) {
+   const page = await open({ width: 1440, height: 900 }, 'falcon');
+   await click(page, '.universe-navmap-btn');
+   await navOpen(page);
+   await page.waitForTimeout(800);
+   await shot(page, '1-navmap');
+   // the labels that used to sit on their neighbours
+   const boxes = await page.evaluate(() => {
+     const box = (label) => [...document.querySelectorAll('.navmap-place')].find((b) => b.getAttribute('aria-label')?.startsWith(label))?.querySelector('.navmap-name').getBoundingClientRect();
+     const r = (b) => b && { x0: b.left, x1: b.right, y0: b.top, y1: b.bottom };
+     return { maw: r(box('The Maw')), carib: r(box('The Caribbean')), glacia: r(box('Glacia')), gate: r(box('A galaxy far')) };
+@@ -160,21 +164,21 @@ if (only !== 'phone') {
+   await navOpen(page);
+   await click(page, '.navmap-views button', 1);
+   await page.waitForTimeout(500);
+   await shot(page, '7-home-system');
+   await page.keyboard.press('Escape');
+   await page.waitForTimeout(800);
+   check((await page.$('.navmap')) === null, 'Escape closes the map');
+   await page.context().close();
+ }
+ 
+-if (only !== 'desktop') {
++if (run('phone')) {
+   const page = await open({ width: 390, height: 844 }, 'xwing');
+   await shot(page, '8-phone-map');
+   const btn = await page.evaluate(() => {
+     const r = (s) => document.querySelector(s)?.getBoundingClientRect();
+     const b = r('.universe-navmap-btn');
+     const others = ['.universe-settings-btn', '.universe-hangar-btn', '.online-pill, [class*="online"] button'].map(r).filter(Boolean);
+     return { b: b && { x0: b.left, x1: b.right, y0: b.top, y1: b.bottom, w: window.innerWidth }, hits: others.filter((o) => b && o.left < b.right && b.left < o.right && o.top < b.bottom && b.top < o.bottom).length };
+   });
+   check(btn.b && btn.b.x1 <= btn.b.w && btn.hits === 0, 'the map button fits on a phone, clear of the settings, the hangar and the pilots');
+   await click(page, '.universe-navmap-btn');
+@@ -187,14 +191,59 @@ if (only !== 'desktop') {
+     const s = document.querySelector('.navmap-side').getBoundingClientRect();
+     return { frame: f.right <= window.innerWidth + 1 && f.bottom <= window.innerHeight + 1, chart: c.width > 200, side: s.height > 150 && s.top >= c.bottom - 1 };
+   });
+   check(fits.frame && fits.chart && fits.side, `on a phone the chart sits over the list, all on the screen (${JSON.stringify(fits)})`);
+   await pickByName(page, 'Earth');
+   await page.waitForTimeout(1500);
+   await shot(page, '10-phone-picked');
+   await page.context().close();
+ }
+ 
++if (run('minimap')) {
++  // the flat map (3D off) and the home page's teaser: no __universe here, so no open()
++  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
++  await ctx.addInitScript(() => {
++    window.localStorage.setItem('tp-3d', 'off');
++    window.localStorage.setItem('tp-intro', '1');
++  });
++  const page = await ctx.newPage();
++  page.on('pageerror', (e) => errors.push(String(e)));
++  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
++  await page.goto(URL, { waitUntil: 'domcontentloaded' });
++  const flat = await page.waitForSelector('.universe-flat .minimap', { timeout: 120000 });
++  await flat.screenshot({ path: `${out}/11-minimap-flat.png`, timeout: 120000 });
++  await page.evaluate(() => (window.location.hash = '#/home'));
++  // the section mounts only when scrolled near, so scroll down a screen at a time until it's there
++  await page.waitForFunction(
++    () => {
++      if (document.querySelector('.minimap-teaser')) return true;
++      window.scrollBy(0, window.innerHeight * 0.8);
++      return false;
++    },
++    null,
++    { timeout: 120000, polling: 'raf' },
++  );
++  const teaser = await page.waitForSelector('.minimap-teaser', { timeout: 120000 });
++  await teaser.scrollIntoViewIfNeeded();
++  await teaser.screenshot({ path: `${out}/12-minimap-teaser.png`, timeout: 120000 });
++  check(true, 'the flat mini-map and the home teaser both drew');
++  await ctx.close();
++}
++
++if (run('far')) {
++  const page = await open({ width: 1440, height: 900 }, 'falcon');
++  await page.evaluate(() => {
++    const d = window.__universeDebug.state;
++    d.ship = { ...d.ship, x: 250000, y: 1000, z: 0, speed: 0 };
++  });
++  await page.waitForFunction(() => window.__universe().ship.x > 200000, null, { timeout: 120000 });
++  await page.keyboard.press('m');
++  await navOpen(page);
++  await page.waitForFunction(() => document.querySelectorAll('.navmap-place').length > 0, null, { timeout: 60000 });
++  await shot(page, '13-far-ship');
++  await page.context().close();
++}
++
+ console.log(errors.length ? `page errors: ${JSON.stringify(errors.slice(0, 8))}` : 'no page errors');
+ console.log(problems.length ? `${problems.length} FAILED` : 'all ok');
+ await browser.close();
+ process.exit(problems.length ? 1 : 0);

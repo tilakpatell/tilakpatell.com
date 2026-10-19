@@ -1,0 +1,67 @@
+# Review package: 731b42946..287e9cd9c
+
+## Commits
+287e9cd9c Clip the zoomed mini-map's belt and stems to its box; say the arrows step the drawn places
+
+## Files changed
+ src/components/universe/MiniMap.jsx  | 4 +++-
+ src/components/universe/universe.css | 2 ++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+## Diff
+diff --git a/src/components/universe/MiniMap.jsx b/src/components/universe/MiniMap.jsx
+index baf845ea7..374700d88 100644
+--- a/src/components/universe/MiniMap.jsx
++++ b/src/components/universe/MiniMap.jsx
+@@ -9,21 +9,23 @@ import { chartKey, ringStep } from './chart/input';
+ import { miniView, placeMarks, placeShip, ringOn } from './chart/place';
+ import { FRAMES, levelOf, toFrame } from './chart/projection';
+ import { useChartView } from './chart/useChartView';
+ import './universe.css';
+ 
+ // The universe map drawn flat, on the chart's own projection and marks (the
+ // nav map's: chart/projection.js, place.js, marks.js), so every hand-made
+ // place, wonder and moon sits where the nav map puts it. It's Home's teaser
+ // (`kind="fandom"`: just the worlds, each dot a link into the map) and the
+ // map itself when 3D is off (every place, each a button in one focus group:
+-// the arrow keys step through them, Home and End jump to the ends).
++// the arrow keys step through the places drawn, Home and End jump to the ends:
++// at the opening view that is every place shown, but once zoomed in a place off
++// the chart is not drawn and has no button to focus).
+ //
+ // Props:
+ //   selected, onSelect(id)   the place picked, and the pick
+ //   linkTo(id) → path        makes each place a link (the teaser)
+ //   kind                     'fandom' shows only the worlds of that kind
+ //   className                on the root
+ //   interactive              the visitor can zoom (wheel, + and − keys, the
+ //                            tools row), pan and go back (0); off, the chart
+ //                            is drawn at miniView(shown) exactly
+ //   ship                     { x, y, z, heading } or null. Lane 4c fills it
+diff --git a/src/components/universe/universe.css b/src/components/universe/universe.css
+index 837aed3a6..2d7549599 100644
+--- a/src/components/universe/universe.css
++++ b/src/components/universe/universe.css
+@@ -4,20 +4,22 @@
+ /* The flat map: Home's teaser and the 3D-off map */
+ .minimap { position: relative; width: 100%; aspect-ratio: 2 / 1; }
+ .minimap-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+ .minimap-stem { stroke: rgb(159 216 255 / 0.45); stroke-width: 1; vector-effect: non-scaling-stroke; }
+ .minimap-stem[data-dir='down'] { stroke-dasharray: 2 3; }
+ .minimap-ship { fill: #fff; filter: drop-shadow(0 0 3px #9fd8ff); }
+ /* the wonders and moons are dots like the rest, a little quieter than the worlds */
+ .minimap-planet[data-kind='wonder'] { opacity: 0.8; }
+ .minimap-item[data-quiet] .minimap-name { display: none; }
+ .minimap[data-interactive] { touch-action: none; }
++/* zoomed in, the belt's band and the stems run past the box: clip them (the teaser keeps its overflow) */
++.minimap[data-interactive] .minimap-svg { overflow: hidden; }
+ .minimap-tools {
+   position: absolute;
+   right: 6px;
+   bottom: 6px;
+   display: flex;
+   gap: 4px;
+   padding: 3px;
+   border-radius: 999px;
+   background: rgb(3 4 10 / 0.82); /* glass over the map, past the 0.78 floor for text */
+ }

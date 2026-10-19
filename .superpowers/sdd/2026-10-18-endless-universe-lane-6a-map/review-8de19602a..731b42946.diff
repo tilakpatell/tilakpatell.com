@@ -1,0 +1,509 @@
+# Review package: 8de19602a..731b42946
+
+## Commits
+731b42946 Nav map: the followed ship drawn in the middle on every commit; names kept inside the round chart; the chart worked out only when its inputs change
+
+## Files changed
+ src/components/universe/NavMap.jsx              | 13 ++--
+ src/components/universe/chart/ChartTools.jsx    |  6 +-
+ src/components/universe/chart/NavChart.jsx      | 88 +++++++++++++++----------
+ src/components/universe/chart/declutter.js      | 10 ++-
+ src/components/universe/chart/declutter.test.js |  7 ++
+ src/components/universe/chart/place.js          |  7 +-
+ src/components/universe/chart/place.test.js     | 22 ++++++-
+ 7 files changed, 107 insertions(+), 46 deletions(-)
+
+## Diff
+diff --git a/src/components/universe/NavMap.jsx b/src/components/universe/NavMap.jsx
+index af9fabb1e..8a7d9eae5 100644
+--- a/src/components/universe/NavMap.jsx
++++ b/src/components/universe/NavMap.jsx
+@@ -2,21 +2,21 @@ import { useEffect, useMemo, useRef, useState } from 'react';
+ import { createPortal } from 'react-dom';
+ import { RiArrowLeftLine, RiArrowRightLine, RiCloseLine, RiEyeLine, RiFlashlightFill, RiLinkM, RiRocket2Fill, RiRouteLine, RiSearchLine, RiSpeedUpFill } from 'react-icons/ri';
+ import { CHART_VIEWS, DESTINATIONS, DRIVES, KINDS, destinationById, distanceTo, driveById, findDestinations, formatDistance, formatTime, goalOf, legOf, speedWord, tripTime } from './nav';
+ import { mapSectorOf } from './layout';
+ import { LENGTH } from './scale';
+ import { sectorAt } from '../../lib/space/address';
+ import { CHART_WORDS, FLY_PAST, JAMMED, NAV, PICK_A_SHIP, jumpState } from './words';
+ import NavChart from './chart/NavChart';
+ import { chartKey } from './chart/input';
+ import { HAND_MARKS, liveMarks, markById, openView, presetOf, presetView } from './chart/marks';
+-import { FRAMES } from './chart/projection';
++import { FRAMES, track } from './chart/projection';
+ import { useChartView } from './chart/useChartView';
+ import './navmap.css';
+ 
+ // The nav map: the universe on the chart (chart/NavChart.jsx), centred on
+ // the ship, the way the galaxy's holotable shows the galaxy
+ // (galaxy/HoloMap.jsx). Every station, world and wonder, each on a stem up or
+ // down from the ship's level, where you are and which way you're pointing,
+ // your sector and height, the other pilots online, and the course to
+ // wherever's picked. Scroll, pinch or + − to zoom (from a system out to the
+ // universe), drag to pan, Shift-drag or two fingers to tilt and turn, 0 to
+@@ -46,20 +46,23 @@ function readoutOf(ship) {
+   if (!ship) return null;
+   const y = ship.y ?? 0;
+   return `${CHART_WORDS.sector(sectorAt(ship.x, y, ship.z))} · ${CHART_WORDS.height(formatDistance(Math.abs(y)), Math.abs(y) < LENGTH ? 0 : Math.sign(y))}`;
+ }
+ 
+ export default function NavMap({ where, drive, onDrive, selected = null, live = false, onTravel, onEnter, onWhole, onTour, onClose }) {
+   const [now, setNow] = useState(() => where?.() ?? null);
+   const box = useRef(null);
+   const [open] = useState(() => openView(now?.ship)); // (read once, on mount)
+   const chart = useChartView(box, { open, ship: now?.ship ?? null, frame: FRAMES.nav });
++  // (the view as it is with the ship where it is now: the hook's own track comes a
++  // commit later, and drawn meanwhile a followed ship would sit off the middle)
++  const view = useMemo(() => (now?.ship ? track(chart.view, now.ship) : chart.view), [chart.view, now?.ship]);
+   const [kind, setKind] = useState('all');
+   const [query, setQuery] = useState('');
+   // (what the page has picked, unless that's where the ship is already)
+   const [pick, setPick] = useState(() => (selected && destinationById(selected) && selected !== now?.at ? selected : null));
+   const [times, setTimes] = useState({});
+   const [copied, setCopied] = useState(null); // the place whose link was just copied
+   const close = useRef(null);
+   const search = useRef(null);
+   // which sector of the map the ship's in (the main map's, with no ship, and out in the Expanse)
+   const shipSector = now?.ship ? mapSectorOf(now.ship.x, now.ship.y ?? 0, now.ship.z) : 'main';
+@@ -159,26 +162,26 @@ export default function NavMap({ where, drive, onDrive, selected = null, live =
+       onEnter?.(d.id);
+       return;
+     }
+     onTravel(id, drive);
+   };
+ 
+   const goingTo = now?.going ? destinationById(now.going.id) : null;
+   const course = picked && !at(picked.id) ? picked : goingTo;
+   // the course is drawn to where the trip goes first: the place (its gate, for a star system), or the portal on the way
+   const courseTo = course && now?.ship ? destinationById(legOf(now.ship, course.id))?.at : null;
+-  const preset = presetOf(chart.view);
++  const preset = presetOf(view);
+   const toAll = () => chart.setView(presetView('all', now?.ship));
+   // the way back out of the home system or the Curve (in the Curve with a ship: back through the portal)
+   const homeward = canFly && shipSector === 'rickmorty';
+   const out = preset === 'home' ? { label: NAV.out, onClick: toAll } : preset === 'rickmorty' ? (homeward ? { label: 'Back through the portal', onClick: () => onTravel('rmportal-back', drive) } : { label: NAV.out, onClick: toAll }) : null;
+-  const pitched = chart.view.pitch > 0 || chart.view.yaw !== 0;
++  const pitched = view.pitch > 0 || view.yaw !== 0;
+ 
+   const verb = (d) => {
+     if (!d) return '';
+     if (!flying) return d.kind === 'wonder' ? PICK_A_SHIP.replace(/\.$/, '') : d.via ? `Show me the gate` : `Show me ${d.name}`;
+     if (now?.foot) return 'Back in the ship first (G)';
+     if (at(d.id)) return d.via ? `Through the gate to ${d.name}` : `You’re at ${d.name}`;
+     if (d.sector !== shipSector) return `${driveById(fallsBack ? 'super' : drive).verb} through the portal to ${d.name}`;
+     return d.via ? `${driveById(fallsBack ? 'super' : drive).verb} to the gate, then ${d.name}` : `${driveById(fallsBack ? 'super' : drive).verb} to ${d.name}`;
+   };
+   // a link to a place (a universe, a wonder) that opens the map there
+@@ -251,36 +254,36 @@ export default function NavMap({ where, drive, onDrive, selected = null, live =
+                   setPick(list[0].id);
+                   showOnChart(list[0]);
+                 }
+               }}
+             />
+           </label>
+         </div>
+ 
+         <div className="navmap-body">
+           <NavChart
+-            view={chart.view}
++            view={view}
+             marks={marks}
+             ship={now?.ship ?? null}
+             course={courseTo ? { to: courseTo, drive: goingTo && course === goingTo ? now.going.drive : 'plot' } : null}
+             front={now?.front ?? null}
+             onFront={() => onTravel('front', drive)}
+             frontOff={!canFly}
+             frontTitle={canFly ? `${driveById(fallsBack ? 'super' : drive).verb} to the front` : 'Pick a ship to fly to the front'}
+             pick={pick}
+             here={atId}
+             dim={dim}
+             onChoose={choose}
+             onGo={go}
+             onRegion={(id) => chart.setView(presetView(id, now?.ship))}
+             out={out}
+-            tools={{ onZoomIn: chart.zoomIn, onZoomOut: chart.zoomOut, onShip: flying ? chart.back : null, atShip: chart.view.follow, onFlat: chart.flatten, flat: !pitched }}
++            tools={{ onZoomIn: chart.zoomIn, onZoomOut: chart.zoomOut, onShip: flying ? chart.back : null, atShip: view.follow, onFlat: chart.flatten, flat: !pitched }}
+             readout={readoutOf(now?.ship)}
+             handlers={chart.handlers}
+             boxRef={box}
+           />
+ 
+           <aside className="navmap-side" aria-live="polite">
+             {/* the ship */}
+             <div className="navmap-status">
+               {flying ? (
+                 <>
+diff --git a/src/components/universe/chart/ChartTools.jsx b/src/components/universe/chart/ChartTools.jsx
+index 0d1cecd72..25d8c53ce 100644
+--- a/src/components/universe/chart/ChartTools.jsx
++++ b/src/components/universe/chart/ChartTools.jsx
+@@ -1,23 +1,23 @@
+ import { RiArrowDownCircleLine, RiFocus3Line, RiFullscreenExitLine } from 'react-icons/ri';
+ import { CHART_WORDS as W } from '../words';
+ 
+ // The chart's button row. A button with nothing to do is aria-disabled, not
+ // disabled, so it keeps the focus (the galaxy's way); one with no handler
+ // isn't drawn.
+ export default function ChartTools({ className, buttonClass, label, onZoomIn, onZoomOut, onShip = null, atShip = true, onFlat = null, flat = true, onFit = null }) {
+-  const tool = (label, key, onClick, glyph, idle = false) => (
++  const tool = (name, key, onClick, glyph, idle = false) => (
+     <button
+       type="button"
+       className={buttonClass}
+-      aria-label={label}
+-      title={key ? `${label} (${key})` : label}
++      aria-label={name}
++      title={key ? `${name} (${key})` : name}
+       aria-disabled={idle ? 'true' : undefined}
+       onClick={() => {
+         if (!idle) onClick();
+       }}
+     >
+       {glyph}
+     </button>
+   );
+   return (
+     <div className={className} role="group" aria-label={label}>
+diff --git a/src/components/universe/chart/NavChart.jsx b/src/components/universe/chart/NavChart.jsx
+index 0fc1254d4..89560ec66 100644
+--- a/src/components/universe/chart/NavChart.jsx
++++ b/src/components/universe/chart/NavChart.jsx
+@@ -1,11 +1,11 @@
+-import { useEffect, useRef, useState } from 'react';
++import { useEffect, useMemo, useRef, useState } from 'react';
+ import { RiArrowLeftLine } from 'react-icons/ri';
+ import { BELT } from '../layout';
+ import { destinationById } from '../nav';
+ import { CHART_WORDS } from '../words';
+ import ChartTools from './ChartTools';
+ import { REGIONS } from './marks';
+ import { placeMarks, placeShip, ringOn, sectorGrid } from './place';
+ import { FRAMES, levelOf, project, ringsFor, toFrame, warp } from './projection';
+ 
+ // The nav map's chart (NavMap.jsx keeps the header, the filters and the side
+@@ -148,49 +148,90 @@ export default function NavChart({
+ 
+   // the stars, and the chart's px width, its names' font size and whether
+   // the wonders' names show (a phone hides them: navmap.css), for which names
+   // fit; once, and again on a resize
+   useEffect(() => {
+     const c = canvas.current;
+     const box = c?.parentElement;
+     if (!c || !box) return undefined;
+     const measure = () => {
+       paintStars(c);
+-      const name = box.querySelector('.navmap-name');
++      // (a place's own name: a region's, a fight's or the front's runs smaller; only a place's button has an aria-label)
++      const name = box.querySelector('.navmap-place[aria-label] .navmap-name');
+       const fontPx = name ? parseFloat(window.getComputedStyle(name).fontSize) : NaN;
+       const scale = box.clientWidth / V;
+       const wonders = window.getComputedStyle(box).getPropertyValue('--wonder-names').trim() !== '0';
+       setFit((f) => {
+         const next = { scale: scale > 0 ? scale : f.scale, fontPx: fontPx > 0 ? fontPx : f.fontPx, wonders };
+         return next.scale === f.scale && next.fontPx === f.fontPx && next.wonders === f.wonders ? f : next;
+       });
+     };
+     measure();
+     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+     ro?.observe(box);
+     return () => ro?.disconnect();
+   }, []);
+ 
++  // Everything below is worked out again only when what it's drawn from
++  // changes (the view, the marks, the pick, the measure), not when the side
++  // panel re-renders.
+   const level = levelOf(view.range);
+   const pitched = view.pitch > 0 || view.yaw !== 0;
+-  const shipAt = ship ? placeShip(view, ship, F) : null;
++  const shipAt = useMemo(() => (ship ? placeShip(view, ship, F) : null), [view, ship]);
+   // (the front's button stays on the chart, at its rim when the front is further than the chart reaches)
+-  const frontAt = front ? onFrame(view, front.at, true) : null;
+-  // the place picked stays on, named (a star system: its gate)
+-  const keep = pick ? [pick, destinationById(pick)?.via].filter(Boolean) : [];
+-  // (where the wonders' names are hidden, bar the one picked, they hold no room from the others')
+-  const labelled = fit.wonders ? marks : marks.map((m) => (m.kind === 'wonder' && !keep.includes(m.id) ? { ...m, name: '' } : m));
+-  const names = new Map(marks.map((m) => [m.id, m.name]));
+-  const placed = placeMarks(view, labelled, F, { level, keep, fontPx: fit.fontPx, scale: fit.scale, avoid: [shipAt, frontAt].filter(Boolean) });
+-  const glyphs = placed.filter((p) => GLYPHS.has(p.mark.shape)).sort((a, b) => a.depth - b.depth); // (far first)
++  const frontAt = useMemo(() => (front ? onFrame(view, front.at, true) : null), [view, front]);
++  const names = useMemo(() => new Map(marks.map((m) => [m.id, m.name])), [marks]);
++  const placed = useMemo(() => {
++    // the place picked stays on, named (a star system: its gate)
++    const keep = pick ? [pick, destinationById(pick)?.via].filter(Boolean) : [];
++    // (where the wonders' names are hidden, bar the one picked, they hold no room from the others')
++    const labelled = fit.wonders ? marks : marks.map((m) => (m.kind === 'wonder' && !keep.includes(m.id) ? { ...m, name: '' } : m));
++    return placeMarks(view, labelled, F, { level: levelOf(view.range), keep, fontPx: fit.fontPx, scale: fit.scale, avoid: [shipAt, frontAt].filter(Boolean) });
++  }, [view, marks, pick, fit, shipAt, frontAt]);
++  const glyphs = useMemo(() => placed.filter((p) => GLYPHS.has(p.mark.shape)).sort((a, b) => a.depth - b.depth), [placed]); // (far first)
+   const courseTo = shipAt && course ? onFrame(view, course.to, true) : null;
+ 
++  // the rings, the sectors and the regions: the view's alone
++  const backdrop = useMemo(() => {
++    const at = levelOf(view.range);
++    return (
++      <>
++        {/* range rings round the focus, at powers of ten */}
++        {ringsFor(view.range).map((d) => {
++          const rx = warp([d, 0, 0], view.range)[0] * F.r;
++          return <ellipse key={d} cx={F.cx} cy={F.cy} rx={n2(rx)} ry={n2(rx * Math.cos(view.pitch))} className="navmap-ring" />;
++        })}
++        {/* the sectors round the focus */}
++        {at !== 'system' && sectorGrid(view, at === 'universe' ? 2 : 1).map((s) => <polyline key={s.key} points={points(s.points)} className="navmap-sector" />)}
++        {/* the home system, the belt and the Curve */}
++        {REGIONS.filter((g) => g.levels.includes(at) && reaches(view, g)).map((g) => (
++          <polyline key={g.id} points={points(ringOn(view, g.centre, g.radius))} className="navmap-region" data-region={g.id} strokeWidth={g.id === 'belt' ? beltWidth(view, g.centre) : undefined} />
++        ))}
++      </>
++    );
++  }, [view]);
++  // the crew's war (front.js): its sectors in a line, each in the colour of the side
++  // that holds it, and the front where they meet, a battle going on there
++  const war = useMemo(() => {
++    if (!front) return null;
++    const at = front.sectors.map((sec) => onFrame(view, sec.at));
++    return (
++      <g className="navmap-war">
++        <polyline points={at.map((q) => `${n2(q.x)},${n2(q.y)}`).join(' ')} className="navmap-war-line" />
++        {front.sectors.map((sec, i) => (
++          <circle key={sec.id} cx={n2(at[i].x)} cy={n2(at[i].y)} r={i === front.contested ? 7 : 4.5} fill={front.colours[sec.owner]} className="navmap-war-sector" />
++        ))}
++        <circle cx={n2(frontAt.x)} cy={n2(frontAt.y)} r="14" className="navmap-war-front" />
++      </g>
++    );
++  }, [view, front, frontAt]);
++
+   const dimmed = (id) => Boolean(dim?.has(id));
+   const spot = (x, y) => ({ left: pc(x, F.w), top: pc(y, F.h) });
+   const place = (p) => {
+     const m = p.mark;
+     const name = names.get(p.id) ?? m.name;
+     const region = REGION_PRESET[p.id];
+     if (!m.pickable && !region && m.kind !== 'fight') return null; // (the sun and the pilots: the SVG's alone)
+     const quiet = p.side === null;
+     // (a region or a fight is its name alone: with no room for it, it isn't drawn)
+     if (quiet && !m.pickable) return null;
+@@ -248,53 +289,32 @@ export default function NavChart({
+               <stop offset="0" stopColor="currentColor" stopOpacity="0.5" />
+               <stop offset="0.6" stopColor="currentColor" stopOpacity="0.18" />
+               <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+             </radialGradient>
+             <radialGradient id="navmap-sun">
+               <stop offset="0" stopColor="#fff4d6" />
+               <stop offset="0.35" stopColor="#ffbf5e" />
+               <stop offset="1" stopColor="#ff8a3d" stopOpacity="0" />
+             </radialGradient>
+           </defs>
+-          {/* range rings round the focus, at powers of ten */}
+-          {ringsFor(view.range).map((d) => {
+-            const rx = warp([d, 0, 0], view.range)[0] * F.r;
+-            return <ellipse key={d} cx={F.cx} cy={F.cy} rx={n2(rx)} ry={n2(rx * Math.cos(view.pitch))} className="navmap-ring" />;
+-          })}
+-          {/* the sectors round the focus */}
+-          {level !== 'system' && sectorGrid(view, level === 'universe' ? 2 : 1).map((s) => <polyline key={s.key} points={points(s.points)} className="navmap-sector" />)}
+-          {/* the home system, the belt and the Curve */}
+-          {REGIONS.filter((g) => g.levels.includes(level) && reaches(view, g)).map((g) => (
+-            <polyline key={g.id} points={points(ringOn(view, g.centre, g.radius))} className="navmap-region" data-region={g.id} strokeWidth={g.id === 'belt' ? beltWidth(view, g.centre) : undefined} />
+-          ))}
++          {backdrop}
+           {/* every mark's stem, from level with the ship up or down to it */}
+           {placed.map((p) =>
+             Math.hypot(p.x - p.footX, p.y - p.footY) >= STEM_MIN ? (
+               <line key={p.id} x1={n2(p.footX)} y1={n2(p.footY)} x2={n2(p.x)} y2={n2(p.y)} className="navmap-stem" data-dir={p.footY > p.y ? 'up' : 'down'} />
+             ) : null,
+           )}
+           {/* the wonders, as they are, and the sun */}
+           {glyphs.map((p) => (
+             <Glyph key={p.id} p={p} dim={dimmed(p.id)} />
+           ))}
+-          {/* the crew's war (front.js): its sectors in a line, each in the colour of the side
+-              that holds it, and the front where they meet, a battle going on there */}
+-          {front && (
+-            <g className="navmap-war">
+-              <polyline points={points(front.sectors.map((sec) => [project(view, sec.at).u, project(view, sec.at).v]))} className="navmap-war-line" />
+-              {front.sectors.map((sec, i) => {
+-                const q = onFrame(view, sec.at);
+-                return <circle key={sec.id} cx={n2(q.x)} cy={n2(q.y)} r={i === front.contested ? 7 : 4.5} fill={front.colours[sec.owner]} className="navmap-war-sector" />;
+-              })}
+-              <circle cx={n2(frontAt.x)} cy={n2(frontAt.y)} r="14" className="navmap-war-front" />
+-            </g>
+-          )}
++          {war}
+           {/* the course: where it's going (and how), or to the place picked */}
+           {courseTo && <line x1={n2(shipAt.x)} y1={n2(shipAt.y)} x2={n2(courseTo.x)} y2={n2(courseTo.y)} className="navmap-course" data-drive={course.drive} />}
+           {/* the other pilots online, and someone's fight out in deep space (farFights.js), seen from afar */}
+           {placed.map((p) => {
+             const x = n2(p.x);
+             const y = n2(p.y);
+             if (p.mark.shape === 'pilot') return <rect key={p.id} x={x - 4} y={y - 4} width="8" height="8" className="navmap-pilot" transform={`rotate(45 ${x} ${y})`} />;
+             if (p.mark.shape === 'fight')
+               return (
+                 <g key={p.id} transform={`translate(${x} ${y})`} className="navmap-fight">
+diff --git a/src/components/universe/chart/declutter.js b/src/components/universe/chart/declutter.js
+index 4759d7391..4e27361e1 100644
+--- a/src/components/universe/chart/declutter.js
++++ b/src/components/universe/chart/declutter.js
+@@ -5,38 +5,44 @@
+ // leaves the dot alone. Pure, no imports.
+ //
+ // SIDES = ['right', 'left', 'under']   the navmap.css `data-side` values
+ // boxOf(side, { x, y, w, h }) → { x0, y0, x1, y1 }   a name's box in px
+ // declutter(labels, { bounds, sides, dots }) → Map<id, side | null>
+ //
+ // Greedy, highest priority first, ties by id so the result is the same
+ // whatever order the labels arrive in. Priority may be Infinity. Each label
+ // takes the first side whose box lies inside bounds and meets no kept name and
+ // no dot; if none does it gets null (dot only). Every label has an entry.
+-// Boxes that only touch edge to edge do not meet.
++// Boxes that only touch edge to edge do not meet. Bounds are a box
++// { x0, y0, x1, y1 } or, for a round chart, a circle { cx, cy, r }: a name's
++// box is inside it when all four corners are.
+ 
+ export const SIDES = ['right', 'left', 'under'];
+ 
+ // Half the dot's 16 px box. A dot this close to a label's own point is its own
+ // dot (or one drawn on top of it), so it never blocks that label.
+ const DOT = 8;
+ 
+ // These mirror navmap.css's translates for each data-side.
+ export function boxOf(side, { x, y, w, h }) {
+   if (side === 'left') return { x0: x + DOT - w, y0: y - h / 2, x1: x + DOT, y1: y + h / 2 };
+   if (side === 'under') return { x0: x - w / 2, y0: y - DOT, x1: x + w / 2, y1: y + DOT + h };
+   return { x0: x - DOT, y0: y - h / 2, x1: x - DOT + w, y1: y + h / 2 };
+ }
+ 
+ const meets = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+ 
+-const inside = (b, bounds) => b.x0 >= bounds.x0 && b.y0 >= bounds.y0 && b.x1 <= bounds.x1 && b.y1 <= bounds.y1;
++function inside(b, bounds) {
++  if (bounds.r === undefined) return b.x0 >= bounds.x0 && b.y0 >= bounds.y0 && b.x1 <= bounds.x1 && b.y1 <= bounds.y1;
++  const corner = (x, y) => Math.hypot(x - bounds.cx, y - bounds.cy) <= bounds.r;
++  return corner(b.x0, b.y0) && corner(b.x1, b.y0) && corner(b.x0, b.y1) && corner(b.x1, b.y1);
++}
+ 
+ // Highest first. Compared, never subtracted: Infinity - Infinity is NaN.
+ function byPriority(a, b) {
+   if (a.priority !== b.priority) return a.priority > b.priority ? -1 : 1;
+   if (a.id === b.id) return 0;
+   return a.id < b.id ? -1 : 1;
+ }
+ 
+ export function declutter(labels, { bounds, sides = SIDES, dots = [] }) {
+   const result = new Map();
+diff --git a/src/components/universe/chart/declutter.test.js b/src/components/universe/chart/declutter.test.js
+index 94b01eff6..cb4fa6de7 100644
+--- a/src/components/universe/chart/declutter.test.js
++++ b/src/components/universe/chart/declutter.test.js
+@@ -13,15 +13,22 @@ describe('declutter', () => {
+     expect([...sides.values()].filter((s) => s === null).length).toBeGreaterThan(0);
+     const kept = pile.filter((l) => sides.get(l.id)).map((l) => boxOf(sides.get(l.id), l));
+     for (let i = 0; i < kept.length; i++) for (let j = i + 1; j < kept.length; j++) expect(meet(kept[i], kept[j])).toBe(false);
+   });
+   it('turns a name left at the frame’s right edge', () => {
+     expect(declutter([L('edge', 950, 500, 1)], { bounds }).get('edge')).toBe('left');
+   });
+   it('keeps a name off another place’s dot', () => {
+     expect(declutter([L('a', 500, 500, 1)], { bounds, dots: [{ x: 560, y: 500 }] }).get('a')).toBe('left');
+   });
++  it('keeps names inside round bounds: a corner that fits the square but not the circle turns the name', () => {
++    const round = { cx: 500, cy: 500, r: 500 };
++    // (up and right of the middle, near the rim: the right-hand box's far corner is past the circle)
++    expect(declutter([L('d', 830, 170, 1, 50)], { bounds }).get('d')).toBe('right');
++    expect(declutter([L('d', 830, 170, 1, 50)], { bounds: round }).get('d')).toBe('left');
++    expect(declutter([L('out', 995, 500, 1)], { bounds: round }).get('out')).toBeNull();
++  });
+   it('can be held to one side, as the mini-map’s names hang under their dots', () => {
+     const s = declutter([L('a', 300, 150, 2), L('b', 302, 150, 1)], { bounds, sides: ['under'] });
+     expect([s.get('a'), s.get('b')]).toEqual(['under', null]);
+   });
+ });
+diff --git a/src/components/universe/chart/place.js b/src/components/universe/chart/place.js
+index b2833c33a..81290af56 100644
+--- a/src/components/universe/chart/place.js
++++ b/src/components/universe/chart/place.js
+@@ -72,21 +72,26 @@ export function placeMarks(view, marks, frame, opts = {}) {
+       y: p.y * scale,
+       w,
+       h,
+       priority: kept.has(p.id) ? Infinity : p.mark.priority,
+     });
+   }
+   const dots = [
+     ...placed.map((p) => ({ x: p.x * scale, y: p.y * scale })),
+     ...avoid.map((a) => ({ x: a.x * scale, y: a.y * scale })),
+   ];
+-  const bounds = { x0: 0, y0: 0, x1: frame.w * scale, y1: frame.h * scale };
++  // (a round frame is drawn clipped to its box's inscribed circle, wider than
++  // its chart radius r: a name inside that circle is never cut)
++  const bounds =
++    frame.shape === 'circle'
++      ? { cx: frame.cx * scale, cy: frame.cy * scale, r: (Math.min(frame.w, frame.h) / 2) * scale }
++      : { x0: 0, y0: 0, x1: frame.w * scale, y1: frame.h * scale };
+   const sidesOf = declutter(labels, { bounds, dots, ...(sides ? { sides } : {}) });
+   for (const p of placed) p.side = sidesOf.get(p.id) ?? null;
+   return placed;
+ }
+ 
+ // The nose is (−sin h, −cos h) in (x, z), as ship.js's forward (heading 0 is
+ // −z). It is turned by the yaw the way project turns a warped point, and its b
+ // is squashed by the tilt; y points down the screen, so atan2 reads clockwise.
+ export function placeShip(view, ship, frame) {
+   const at = project(view, [ship.x, ship.y, ship.z]);
+diff --git a/src/components/universe/chart/place.test.js b/src/components/universe/chart/place.test.js
+index 0ae42f286..dae297234 100644
+--- a/src/components/universe/chart/place.test.js
++++ b/src/components/universe/chart/place.test.js
+@@ -1,13 +1,14 @@
+ import { describe, expect, it } from 'vitest';
+ import { CHART, FRAMES, createView, levelOf } from './projection';
+-import { fitRange, miniView, placeMarks, placeShip, reveal, ringOn, sectorGrid } from './place';
++import { fitRange, labelSize, miniView, placeMarks, placeShip, reveal, ringOn, sectorGrid } from './place';
++import { boxOf } from './declutter';
+ 
+ const ALL = ['system', 'neighbourhood', 'universe'];
+ const M = (id, at, more = {}) => ({ id, kind: 'world', name: id.toUpperCase(), at, priority: 50, color: '#fff', levels: ALL, ...more });
+ const marks = [M('near', [2000, 0, 0]), M('station', [300, 0, 0], { kind: 'station', levels: ['system'] }), M('far', [900000, 0, 0]), M('high', [0, 3000, 4000])];
+ const view = createView({ range: 120000 });
+ 
+ describe('placing marks', () => {
+   it('shows what the level shows and the range holds', () => {
+     const ids = placeMarks(view, marks, FRAMES.nav).map((p) => p.id);
+     expect(ids).toEqual(['near', 'high']);
+@@ -42,19 +43,38 @@ describe('placing marks', () => {
+     const away = createView({ focus: [40000, 0, 0], range: 120000, follow: true });
+     const shown = reveal(away, marks[1]);
+     expect(levelOf(shown.range)).toBe('system');
+     expect(shown).toMatchObject({ focus: [300, 0, 0], follow: false });
+     expect(reveal(away, M('n', [41000, 0, 0]))).toBe(away);
+   });
+   it('fits the mini-map’s range round what it shows, at its old tilt', () => {
+     expect(fitRange([0, 0, 0], marks.slice(0, 2))).toBeCloseTo(2100);
+     expect(miniView(marks.slice(0, 2))).toMatchObject({ focus: [0, 0, 0], pitch: CHART.miniPitch, follow: false });
+   });
++  it('keeps a round frame’s names inside the circle it is clipped to, a pinned pick’s too', () => {
++    // (the frame's box is clipped round: its inscribed circle, radius w / 2 about the middle)
++    const inCircle = (p, fontPx = 11) => {
++      const [w, h] = labelSize(p.mark.name, fontPx);
++      const b = boxOf(p.side, { x: p.x, y: p.y, w, h });
++      return [[b.x0, b.y0], [b.x1, b.y0], [b.x0, b.y1], [b.x1, b.y1]].every(([x, y]) => Math.hypot(x - 500, y - 500) <= 500);
++    };
++    const d = 0.99 * 120000 * Math.SQRT1_2; // (up and right, near the rim: its right-hand name fits the square, not the circle)
++    const diag = placeMarks(view, [M('diag', [d, 0, -d])], FRAMES.nav)[0];
++    expect(diag.side).not.toBeNull();
++    expect(inCircle(diag)).toBe(true);
++    const pinned = placeMarks(view, [M('pick', [9e6, 0, -9e6])], FRAMES.nav, { keep: ['pick'] })[0];
++    expect(pinned.edge).toBe(true);
++    expect(pinned.side).not.toBeNull();
++    expect(inCircle(pinned)).toBe(true);
++    // (the mini-map's box frame keeps its square bounds: a name in its corner still fits)
++    const mini = placeMarks(createView({ range: 120000 }), [M('corner', [0.99 * 120000 * 0.8, 0, -0.99 * 120000 * 0.45])], FRAMES.mini, { levels: false, sides: ['under'] });
++    expect(mini.every((p) => p.side === 'under' || p.edge)).toBe(true);
++  });
+   it('outlines the sectors round the focus, and rings a centre', () => {
+     const grid = sectorGrid(createView({ range: 400000 }), 1);
+     expect(grid).toHaveLength(9);
+     expect(grid.map((g) => g.key)).toEqual(expect.arrayContaining(['E:0,0', 'E:1,-1', 'E:-1,1']));
+     const corner = Math.max(...grid.find((g) => g.key === 'E:0,0').points.map(([u, v]) => Math.hypot(u, v)));
+     expect(corner).toBeCloseTo(((60000 * Math.SQRT2) / 400000) ** 0.375, 9);
+     for (const [u, v] of ringOn(createView({ range: 100000 }), [0, 0, 0], 5000)) expect(Math.hypot(u, v)).toBeCloseTo(0.05 ** 0.375, 9);
+   });
+ });

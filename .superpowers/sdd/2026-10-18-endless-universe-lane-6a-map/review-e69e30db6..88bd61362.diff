@@ -1,0 +1,188 @@
+# Review package: e69e30db6..88bd61362
+
+## Commits
+88bd61362 Chart marks from nav.js's places, the live pilots and fights, and the three presets
+
+## Files changed
+ src/components/universe/chart/marks.js      | 101 ++++++++++++++++++++++++++++
+ src/components/universe/chart/marks.test.js |  64 ++++++++++++++++++
+ 2 files changed, 165 insertions(+)
+
+## Diff
+diff --git a/src/components/universe/chart/marks.js b/src/components/universe/chart/marks.js
+new file mode 100644
+index 000000000..6489d1ef1
+--- /dev/null
++++ b/src/components/universe/chart/marks.js
+@@ -0,0 +1,101 @@
++// The chart's data: one Mark for each hand-made place, read from nav.js's own
++// fixed list so the chart can never drift from the nav map, plus three marks
++// that only the chart has, the regions, the live pilots and fights from the
++// scene's where(), and the presets the chart opens on. Pure: no React, no DOM
++// and no three.js. The Mark shape is stated in place.js.
++//
++// HAND_MARKS, markById(id) → Mark | null, REGIONS, liveMarks(now) → Mark[],
++// presetView(id, ship), presetOf(view), openView(ship)
++
++import { CHART_VIEWS, DESTINATIONS } from '../nav';
++import { BELT, HOME_RADIUS, SECTORS, SUN, mapSectorOf } from '../layout';
++import { byId } from '../universes';
++import { CHART, createView, levelOf } from './projection';
++
++// The colours the chart gives marks that nav.js gives none: the nav map's blue
++// for its own labels and the pilots, the sun's amber, and the red-orange the
++// nav map already draws a far fight in.
++const TINT = { blue: '#9fd8ff', sun: '#ffbf5e', fight: '#ff8a5c' };
++
++const ALL = ['system', 'neighbourhood', 'universe'];
++const NEAR = ['system', 'neighbourhood'];
++
++const SHAPE = { Nebula: 'cloud', 'Black hole': 'hole', Star: 'star', Portal: 'portal' };
++
++function placeMark(d) {
++  const moon = d.kind === 'world' && byId(d.id)?.kind === 'moon';
++  const kind = moon ? 'moon' : d.kind;
++  const portal = d.type === 'Portal';
++  const priority = portal ? 30 : { world: 60, wonder: 50, moon: 45, station: 40 }[kind] ?? 40;
++  const levels = kind === 'station' ? ['system'] : moon ? NEAR : ALL;
++  return Object.freeze({
++    id: d.id,
++    kind,
++    name: d.name,
++    at: d.at,
++    color: d.color,
++    reach: d.reach,
++    priority,
++    levels,
++    shape: SHAPE[d.type] ?? 'dot',
++    pickable: true,
++  });
++}
++
++const chartOnly = (m) => Object.freeze({ color: TINT.blue, pickable: false, ...m });
++
++export const HAND_MARKS = Object.freeze([
++  ...DESTINATIONS.filter((d) => d.kind !== 'system').map(placeMark),
++  chartOnly({ id: 'chart:sun', kind: 'sun', name: '', at: SUN.at, reach: SUN.r, shape: 'sun', color: TINT.sun, priority: 80, levels: ALL }),
++  chartOnly({ id: 'chart:home', kind: 'region', name: CHART_VIEWS.home.name, at: [0, 0, 0], priority: 90, levels: ['neighbourhood', 'universe'] }),
++  chartOnly({ id: 'chart:curve', kind: 'region', name: CHART_VIEWS.rickmorty.name, at: SECTORS.rickmorty.origin, priority: 85, levels: ['universe'] }),
++]);
++
++const BY_ID = new Map(HAND_MARKS.map((m) => [m.id, m]));
++export const markById = (id) => BY_ID.get(id) ?? null;
++
++// Rings the chart draws: the home system, the asteroid belt, the Curve. The
++// nav map's old dashed edge isn't one: there is no edge any more.
++export const REGIONS = Object.freeze([
++  Object.freeze({ id: 'home', centre: [0, 0, 0], radius: HOME_RADIUS, levels: ['neighbourhood', 'universe'] }),
++  Object.freeze({ id: 'belt', centre: [0, 0, 0], radius: (BELT.inner + BELT.outer) / 2, levels: ['system'] }),
++  Object.freeze({ id: 'curve', centre: SECTORS.rickmorty.origin, radius: SECTORS.rickmorty.edge, levels: NEAR }),
++]);
++
++// The pilots and far fights where() reports. Neither has a height, so both sit
++// level with the ship, with no stem.
++export function liveMarks(now) {
++  if (!now) return [];
++  const y = now.ship?.y ?? 0;
++  const list = (v) => (Array.isArray(v) ? v : []).filter((e) => Number.isFinite(e?.x) && Number.isFinite(e?.z));
++  return [
++    ...list(now.pilots).map((p) => ({ id: `pilot:${p.id}`, kind: 'pilot', name: '', at: [p.x, y, p.z], color: TINT.blue, priority: 70, levels: NEAR, shape: 'pilot', pickable: false })),
++    ...list(now.farFights).map((f) => ({ id: `fight:${f.id}`, kind: 'fight', name: f.label, at: [f.x, y, f.z], color: TINT.fight, priority: 35, levels: NEAR, shape: 'fight', pickable: false })),
++  ];
++}
++
++// A preset's range kept inside what the chart can draw: today's numbers pass
++// through, and an unbounded edge can't make the chart unbounded.
++const within = (r) => (Number.isNaN(r) ? CHART.range.open : Math.min(CHART.range.max, Math.max(CHART.range.min, r)));
++
++export function presetView(id, ship) {
++  const v = CHART_VIEWS[id];
++  return createView({ focus: [v.origin[0], ship?.y ?? 0, v.origin[2]], range: within(v.r), follow: false });
++}
++
++// Which part of space the chart is looking at.
++export function presetOf(view) {
++  const [x, , z] = view.focus;
++  const o = SECTORS.rickmorty.origin;
++  if (Math.hypot(x - o[0], z - o[2]) <= SECTORS.rickmorty.edge) return 'rickmorty';
++  if (Math.hypot(x, z) <= 2 * HOME_RADIUS && levelOf(view.range) === 'system') return 'home';
++  return 'all';
++}
++
++// What the chart opens on: the universe with no ship, else the ship, followed.
++export function openView(ship) {
++  if (!ship) return presetView('all', null);
++  const y = ship.y ?? 0;
++  const inCurve = mapSectorOf(ship.x, y, ship.z) === 'rickmorty';
++  return createView({ focus: [ship.x, y, ship.z], range: within(inCurve ? CHART_VIEWS.rickmorty.r : CHART.range.open), follow: true });
++}
+diff --git a/src/components/universe/chart/marks.test.js b/src/components/universe/chart/marks.test.js
+new file mode 100644
+index 000000000..38df81500
+--- /dev/null
++++ b/src/components/universe/chart/marks.test.js
+@@ -0,0 +1,64 @@
++import { describe, expect, it } from 'vitest';
++import { CHART_VIEWS, DESTINATIONS } from '../nav';
++import { MOONS } from '../universes';
++import { SECTORS } from '../layout';
++import { CHART, levelOf } from './projection';
++import { HAND_MARKS, liveMarks, markById, openView, presetOf, presetView } from './marks';
++
++const places = DESTINATIONS.filter((d) => d.kind !== 'system');
++
++describe('the chart’s marks', () => {
++  it('has one for every place on the nav map but the galaxy’s systems, as nav.js has it', () => {
++    for (const d of places) expect(markById(d.id), d.id).toMatchObject({ name: d.name, at: d.at, color: d.color, pickable: true });
++    expect(HAND_MARKS.filter((m) => m.pickable)).toHaveLength(places.length);
++  });
++  it('knows the moons, the stations and the wonders’ shapes, and its own three', () => {
++    for (const m of MOONS) expect(markById(m.id).kind).toBe('moon');
++    expect(markById('experience')).toMatchObject({ kind: 'station', levels: ['system'] });
++    expect(['veil', 'maw', 'ember', 'rmportal', 'aurelia'].map((id) => markById(id).shape)).toEqual(['cloud', 'hole', 'star', 'portal', 'dot']);
++    expect(markById('chart:home')).toMatchObject({ name: CHART_VIEWS.home.name, pickable: false, levels: ['neighbourhood', 'universe'] });
++    expect(markById('chart:curve')).toMatchObject({ name: CHART_VIEWS.rickmorty.name, at: SECTORS.rickmorty.origin, levels: ['universe'] });
++    expect(markById('home').kind).toBe('station');
++  });
++  it('makes the live marks from where(): pilots and far fights, level with the ship', () => {
++    const now = { ship: { x: 0, y: 250, z: 0 }, pilots: [{ id: 'a1', name: 'Ace', x: 10, z: 20 }], farFights: [{ id: 'f1', x: 500, z: -500, label: 'Fighting near Ember' }, { id: 'bad', x: NaN, z: 0, label: 'x' }] };
++    expect(liveMarks(now)).toEqual([
++      expect.objectContaining({ id: 'pilot:a1', kind: 'pilot', name: '', at: [10, 250, 20], pickable: false }),
++      expect.objectContaining({ id: 'fight:f1', kind: 'fight', name: 'Fighting near Ember', at: [500, 250, -500] }),
++    ]);
++    expect(liveMarks(null)).toEqual([]);
++  });
++  it('opens on the ship, or the universe without one, and says which part it’s looking at', () => {
++    expect(openView(null)).toMatchObject({ focus: [0, 0, 0], range: CHART_VIEWS.all.r, follow: false });
++    const [x, y, z] = markById('marvel').at;
++    const open = openView({ x, y, z });
++    expect(open).toMatchObject({ focus: [x, y, z], range: CHART.range.open, follow: true });
++    expect(presetOf(open)).toBe('all');
++    const o = SECTORS.rickmorty.origin;
++    const curve = openView({ x: o[0] + 900, y: 0, z: o[2] });
++    expect([curve.range, presetOf(curve)]).toEqual([CHART_VIEWS.rickmorty.r, 'rickmorty']);
++    const home = presetView('home', { x: 5, y: 77, z: 5 });
++    expect(home).toMatchObject({ focus: [0, 77, 0], range: CHART_VIEWS.home.r, follow: false });
++    expect([presetOf(home), levelOf(home.range)]).toEqual(['home', 'system']);
++  });
++});
++
++describe('the chart’s own bounds and odd input', () => {
++  it('keeps every preset’s range finite and inside the chart’s limits', () => {
++    for (const id of ['all', 'home', 'rickmorty']) {
++      const { range } = presetView(id, null);
++      expect(Number.isFinite(range)).toBe(true);
++      expect(range).toBeGreaterThanOrEqual(CHART.range.min);
++      expect(range).toBeLessThanOrEqual(CHART.range.max);
++    }
++  });
++  it('is frozen, and has no mark for an unknown id', () => {
++    expect(Object.isFrozen(HAND_MARKS)).toBe(true);
++    expect(HAND_MARKS.every((m) => Object.isFrozen(m))).toBe(true);
++    expect(markById('nowhere')).toBeNull();
++  });
++  it('tolerates a where() with no pilots or fights', () => {
++    expect(liveMarks({ ship: null, pilots: 'no', farFights: {} })).toEqual([]);
++    expect(liveMarks({})).toEqual([]);
++  });
++});
