@@ -648,7 +648,7 @@ const SCENARIOS = {
     // (a guard may catch him at the cell: each catch a reset, checked, and round again)
     let opened = false;
     for (let round = 0; round < 4 && !opened; round++) {
-      await warpUse(page, 'gromflomites', 'fartcell', -400, 2689.4, -N).catch(() => {});
+      await warpUse(page, 'gromflomites', 'fartcell', -400, 2688.4, -N).catch(() => {});
       opened = await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-c137-done') ?? '[]').includes('gromflomites'), null, { timeout: 30000, polling: 250 }).then(
         () => true,
         () => false,
