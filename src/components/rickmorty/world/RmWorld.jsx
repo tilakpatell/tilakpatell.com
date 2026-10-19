@@ -64,6 +64,8 @@ import { backLink, boundOf, inLine, planetOf, planetProgress, relabel } from './
 import { dialledNote, isGunKey, portalName } from './portalGun';
 import Cards from './WorldCards';
 import RmHud from './RmHud';
+import { useRmEarn } from '../useRmEarn';
+import { seedsOf } from '../earn';
 import { ROOMS, newTrial, pick as pickRoom, retry as retryRooms } from './dimensions/vindicatorsRules';
 import { speak, stopSpeaking } from './shipVoice';
 import { ROOMS_SAY, SAY } from './say';
@@ -300,6 +302,8 @@ export default function RmWorld({ start = null, onLeave = null }) {
   const { unlock } = useAchievements();
   const [done, setDone] = useState(startDone);
   const doneRef = useRef(done);
+  // (what Morty's deeds pay into the one wallet: a task once, a fight won each time)
+  const { earn, note: earned } = useRmEarn(() => seedsOf('task', doneRef.current));
   const [open, setOpen] = useState(null);
   const openRef = useRef(null);
   const [gl, setGl] = useState('loading'); // loading | on | failed | lost
@@ -335,6 +339,7 @@ export default function RmWorld({ start = null, onLeave = null }) {
       doneRef.current = next;
       local.set(DONE, next);
       setDone(next);
+      earn('task', id);
       api.current?.fx('done', { id });
       sound('gadget');
       // (and Morty's pleased with himself: on his upper half if he's walking)
@@ -342,7 +347,7 @@ export default function RmWorld({ start = null, onLeave = null }) {
       if (openRef.current) pending.current.push(id);
       else tellDone([id]);
     },
-    [tellDone],
+    [tellDone, earn],
   );
 
   const openPlace = useCallback(
@@ -401,7 +406,7 @@ export default function RmWorld({ start = null, onLeave = null }) {
   return (
     <section className="rm-world" aria-labelledby="rm-world-title" data-mode={world ? '3d' : 'cards'}>
       {world ? (
-        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} />
+        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} />
       ) : (
         <Cards done={done} openPlace={openPlace} three={three} gl={gl} toast={toast} retry={() => setGl('loading')} planet={planet} />
       )}
@@ -416,7 +421,7 @@ export default function RmWorld({ start = null, onLeave = null }) {
 // hence the reach)
 const ROOM = { bound: boundOf(AREAS), motion: true };
 
-function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave }) {
+function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const touchRef = useRef(touch);
   touchRef.current = touch;
@@ -714,10 +719,12 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       if (!hit) return;
       api.current?.fx('shot', { x: p.x, y: p.h * 0.6, z: p.z, parasite: p.parasite });
       if (run.told?.id === p.id) run.told = null;
-      if (hit === 'parasite') sound('splat');
-      else endRickall(run);
+      if (hit === 'parasite') {
+        sound('splat');
+        earn('parasite');
+      } else endRickall(run);
     },
-    [api, endRickall],
+    [api, endRickall, earn],
   );
   // E: what Morty remembers of whoever's in the sights, the next memory of them each time
   const tellRickall = useCallback(() => {
@@ -1032,6 +1039,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       setDuel({ ...s.duel });
       if (r.down) {
         sound('splat');
+        earn('duel');
         if (r.task) complete(r.task);
         if (r.won) later(() => say({ kind: 'say', ...r.won }), 900);
         later(() => {
@@ -1040,7 +1048,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         }, 2500);
       }
     },
-    [complete, say, later],
+    [complete, say, later, earn],
   );
   const fns = useRef({});
   fns.current = { act, go, shoot: shootRickall, landRickall, stop: stopRickall, start: startRickall, end: endRickall, npc, fire, landDuel, gun: openDial };
@@ -1715,6 +1723,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       <LoadingVeil shown={gl === 'loading'} progress={view.progress.value} step={view.progress.step} title={`Opening a portal${planet ? ` to ${planet.name}` : ''}`} />
 
       <RmHud
+        earned={earned}
         touch={touch}
         gl={gl}
         hud={hud}

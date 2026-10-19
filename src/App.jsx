@@ -5,6 +5,7 @@ import { AchievementProvider, useAchievements } from './components/Achievements'
 import { FunProvider } from './fun/FunProvider';
 import OnlineProvider from './components/universe/online/OnlineProvider';
 import EconomyProvider from './components/universe/EconomyProvider';
+import SkillsProvider from './components/hangar/skills/SkillsProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import Nav from './components/Nav';
 import Footer from './components/Footer';
@@ -414,6 +415,7 @@ function Shell() {
   return (
     // (the wallet outside the link to the other pilots: the roster reads it too)
     <EconomyProvider>
+    <SkillsProvider>
     <OnlineProvider>
       <div className="backdrop" aria-hidden="true" />
       <Ambience />
@@ -483,6 +485,7 @@ function Shell() {
         <IntroJump />
       </ErrorBoundary>
     </OnlineProvider>
+    </SkillsProvider>
     </EconomyProvider>
   );
 }

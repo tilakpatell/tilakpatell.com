@@ -19,7 +19,7 @@ export default function Mario64Page() {
   const navigate = useNavigate();
   const three = use3D();
   const [view, setView] = useState('emu'); // emu | tribute
-  useInWorld(view === 'emu' || three.on); // (the console, or the castle: no page pointers over either)
+  useInWorld(view === 'emu'); // (the console: no page pointers over it; the castle's others online say so themselves)
   const back = () => navigate('/dot-matrix');
   return (
     <div className="relative">

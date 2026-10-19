@@ -1,0 +1,29 @@
+/* what a deed just earned (RmEarnNote.jsx): a moment's sticker under the
+   nav, in the show's ink, a level reached in its slime green */
+.rm-earn {
+  position: fixed;
+  z-index: var(--z-float);
+  top: calc(var(--page-top, 76px) + 12px);
+  left: 50%;
+  margin: 0;
+  padding: 0.35rem 0.85rem;
+  border: 2px solid #1b1424;
+  border-radius: 999px;
+  background: #fdfbf5;
+  box-shadow: 3px 3px 0 #1b1424;
+  color: #1b1424;
+  font-size: 0.82rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+  translate: -50% 0;
+  rotate: -2deg;
+  opacity: 0;
+  transition: opacity var(--t-base, 0.25s);
+}
+.rm-earn[data-on] { opacity: 1; }
+.rm-earn[data-level] { background: #c9ff5a; }
+@media (prefers-reduced-motion: reduce) {
+  .rm-earn { rotate: none; transition: none; }
+}

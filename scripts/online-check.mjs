@@ -111,15 +111,28 @@ async function visitor(name, ship = null, viewport = { width: 1280, height: 800 
 // have allies there), or null: any element reading "<n> … here" outside the
 // site's online corner (whose "· 1 here" is the page's, not the world's)
 const CHIP = /^(\d+)\s*(?:other\s+)?[a-z’']+\s+here(?:\s*·\s*(your ally|\d+ all(?:y|ies)))?$/i;
+// A world whose chip is in the kit's Menu (drawn only while it's open:
+// Cybertron's, Earth's) has its Menu opened for the reading and shut again
+// at once (left open, a Menu can pause its world).
 const chipText = (page) =>
-  page.evaluate((re) => {
+  page.evaluate(async (re) => {
     const CHIP = new RegExp(re, 'i');
-    for (const el of document.querySelectorAll('span, p, b, div, button')) {
-      if (el.closest('.universe-online')) continue;
-      const text = el.textContent.replace(/\s+/g, ' ').trim();
-      if (CHIP.test(text)) return text;
-    }
-    return null;
+    const find = () => {
+      for (const el of document.querySelectorAll('span, p, b, div, button')) {
+        if (el.closest('.universe-online')) continue;
+        const text = el.textContent.replace(/\s+/g, ' ').trim();
+        if (CHIP.test(text)) return text;
+      }
+      return null;
+    };
+    const seen = find();
+    const menu = document.querySelector('.hud-menu > button[aria-expanded="false"]');
+    if (seen || !menu) return seen;
+    menu.click();
+    await new Promise((r) => setTimeout(r, 150));
+    const inMenu = find();
+    if (menu.getAttribute('aria-expanded') === 'true') menu.click();
+    return inMenu;
   }, CHIP.source);
 const chip = async (page) => {
   const text = await chipText(page);
@@ -127,13 +140,20 @@ const chip = async (page) => {
 };
 // a world whose 3D waits to be asked for (the office's, the music room's),
 // or that puts you in it only once you start (the Caribbean's voyage, and
-// on a slow graphics chip, its "play anyway"): ask,
-// whenever the button's there
+// on a slow graphics chip, its "play anyway"; Mario 64's tribute behind
+// its console, then its title's "Press Start"; Minecraft's behind the game's
+// own menu, then its title's "Play"): ask, whenever the button's there
 // (a click in the page itself: the game's buttons sit below the fold of a
 // canvas Playwright never counts as settled)
+// A world that's a section of a page you scroll (Cybertron's, marked
+// `data-travellers`) steps, and so sends where you are, only while it's in
+// view: scrolled to.
 const start = (page) =>
   page
-    .evaluate(() => [...document.querySelectorAll('button')].find((b) => /^(Load the |Weigh anchor|Play anyway)/.test(b.textContent.trim()))?.click())
+    .evaluate(() => {
+      [...document.querySelectorAll('button')].find((b) => /^(Load the |Weigh anchor|Play anyway|Press Start$|play the fan tribute$|(No password\? )?Walk the tribute$|Play$)/.test(b.textContent.trim()))?.click();
+      document.querySelector('[data-travellers]')?.scrollIntoView({ block: 'center' });
+    })
     .catch(() => {});
 // the roster's line for a callsign, opened from the corner (a click in the
 // page: over the map, a frame comes a second or so apart in software, and
@@ -347,10 +367,12 @@ for (const w of universe ? [] : worlds) {
       return x >= 1 && y >= 1 ? [x, y] : null;
     }, 150000, `${w}: each sees the other`);
     const pointers = await a.locator('.presence-pilot').count();
+    // (a world that's a section of a page you scroll keeps the page's pointers: useTravellers's `pointers`)
+    const section = (await a.locator('[data-travellers]').count()) > 0;
     console.log(`ok   ${w}: chips ${n.join(' / ')}, page pointers drawn: ${pointers}`);
     // (on the fake relay there's nobody else: exactly one each)
     if (relays) check(n[0] === 1 && n[1] === 1, `${w}: exactly one other traveller each (${n.join(' / ')})`);
-    if (pointers) {
+    if (pointers && !section) {
       failed++;
       console.log(`FAIL ${w}: page pointers over the world`);
     }

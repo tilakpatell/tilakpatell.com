@@ -22,10 +22,10 @@ import Comms from '../components/universe/Comms';
 import StartChoice from '../components/universe/StartChoice';
 import Rain from '../components/universe/Rain';
 import Online from '../components/universe/online/Online';
-import Wardrobe from '../components/rickmorty/wardrobe/Wardrobe';
-const Shipyard = lazy(() => import('../components/universe/shipyard/Shipyard'));
-import { useLooks } from '../components/rickmorty/wardrobe/useLooks';
-import { CASTS, castOfCrew } from '../components/rickmorty/wardrobe/looks';
+// the Hangar (the crew, the arms, the powers and the shipyard), in its own chunk: opened with H, or C on the crew
+const HangarPanel = lazy(() => import('../components/hangar/HangarPanel'));
+import { TAB_KEY, readTab } from '../components/hangar/hangarRules';
+import { useSkills } from '../components/hangar/skills/useSkills';
 import { useOnline } from '../components/universe/online/useOnline';
 import EarnNote from '../components/universe/EarnNote';
 import { useEarn } from '../components/universe/useEarn';
@@ -108,14 +108,15 @@ export default function Universe({ ask = false }) {
   const { unlocked, unlock } = useAchievements();
   // (the loadouts, hulls and garage builds, the Shipyard's door and what Apply and a sale do: shipyard/useShipyardPage.js, which the galaxy uses too)
   const { loadout, build, tune, garage, dropped, yard, setYard, applyDraft, sellPart, yardNote, live, yardSaves } = useShipyardPage({ ship, unlocked });
+  const { fx: skillFx, picks: powerPicks } = useSkills(); // (the skill tree's effects and the powers picked, the Hangar's: on the ship as its loadout is)
   useEffect(() => setLoadout(loadout), [setLoadout, loadout]);
   useEffect(() => tellBuild?.(build), [tellBuild, build]);
-  // the wardrobe, from the shipyard: how the cruiser’s Rick and Morty look,
-  // or the RV’s Walt and Jesse (whichever crew’s flying)
-  const [looks, setLook] = useLooks();
-  const dressing = castOfCrew(ship) ?? 'rickmorty';
-  const [wardrobe, setWardrobe] = useState(false);
-  const closeWardrobe = useCallback(() => setWardrobe(false), []);
+  // the Hangar's tab, the one last used (this browser's: hangarRules.js's TAB_KEY)
+  const [hangarTab, setHangarTabState] = useState(() => readTab(local.get(TAB_KEY)));
+  const setHangarTab = useCallback((t) => {
+    setHangarTabState(t);
+    local.set(TAB_KEY, t);
+  }, []);
   // the nav map, and the drive picked on it (kept between visits)
   const [charting, setCharting] = useState(false);
   const [phone, setPhone] = useState(false); // the phone out past the belt, picked up: its lock screen
@@ -503,6 +504,8 @@ export default function Universe({ ask = false }) {
         loadout={loadout}
         build={build}
         tune={tune}
+        skillFx={skillFx}
+        powerPicks={powerPicks}
         canFit={Boolean(ship)}
         hangar={yard}
         onHangar={setYard}
@@ -534,10 +537,12 @@ export default function Universe({ ask = false }) {
       {!leaving && <EarnNote note={yardNote ?? earned} />}
       {ship && !leaving && (
         <Suspense fallback={null}>
-          <Shipyard
+          <HangarPanel
             open={yard}
             onOpen={setYard}
-            enabled={!charting && !wardrobe}
+            tab={hangarTab}
+            onTab={setHangarTab}
+            enabled={!charting}
             ship={ship}
             shipName={crew?.ship ?? ''}
             live={live}
@@ -546,14 +551,9 @@ export default function Universe({ ask = false }) {
             dropped={dropped}
             onApply={applyDraft}
             onSell={sellPart}
-            onCrew={() => {
-              setYard(false);
-              setWardrobe(true);
-            }}
           />
         </Suspense>
       )}
-      <Wardrobe open={wardrobe} onClose={closeWardrobe} looks={looks} onLook={setLook} cast={dressing} who={CASTS[dressing][0]} returnTo=".universe-hangar-btn" />
       {!asking && !leaving && <Online online={online} ship={ship} />}
       <UniversePanel
         universe={universe}
@@ -567,7 +567,10 @@ export default function Universe({ ask = false }) {
         loadout={loadout}
         build={build}
         onShip={pickShip}
-        onHangar={() => setYard(true)}
+        onHangar={() => {
+          setHangarTab('shipyard');
+          setYard(true);
+        }}
         onClassic={() => switchTo('classic')}
         tucked={tucked}
         onTuck={tuck}
