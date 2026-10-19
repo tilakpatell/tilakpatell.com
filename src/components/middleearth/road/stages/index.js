@@ -273,8 +273,7 @@ export const STAGES = [
     length: 160,
     mode: 'walk',
     place: 'minas-morgul',
-    // green hills and a stream down from the right to Henneth Annûn’s fall
-    // beside the path; the Haradrim road low on the right; then the Cross-
+    // green hills and a stream across the path by Henneth Annûn’s fall; the Haradrim road low on the right; then the Cross-
     // roads, and the Morgul Vale opening on the left, the Mountains of
     // Shadow behind it
     ground: {
@@ -284,7 +283,6 @@ export const STAGES = [
           { type: 'swell', scale: 200, height: 5 },
           { type: 'hills', scale: 70, height: 6, gain: 0.42, octaves: 4 },
           { type: 'island', at: [-44, 40], r: 30, height: -7, core: 0.6 },
-          { type: 'island', at: [-16, 70], r: 14, height: 9, core: 0.5 },
           { type: 'mountains', scale: 150, height: 110, from: 220, to: 420 },
         ],
       },

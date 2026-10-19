@@ -17,6 +17,7 @@ import { addMarshes } from '../../marshesKit';
 import { createWater } from '../../water';
 import { createGollum } from '../../creatures/gollum';
 import { createFellBeast } from '../../creatures/fellbeast';
+import { marchColumn } from '../columns';
 import { CLIFF, COLUMN, buildProps } from './props';
 import { BEATS } from './beats';
 
@@ -58,30 +59,7 @@ export function build({ road, heightAt, rt, tier = 'high', sky = null }) {
   fell.group.visible = false;
   group.add(fell.group);
 
-  // the column’s ranks along its road, `files` abreast
-  const m = new THREE.Matrix4();
-  const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(COLUMN.to[0] - COLUMN.from[0], COLUMN.to[1] - COLUMN.from[1]));
-  const dir = new THREE.Vector2(COLUMN.to[0] - COLUMN.from[0], COLUMN.to[1] - COLUMN.from[1]);
-  const span = dir.length();
-  dir.normalize();
-  const one = new THREE.Vector3(0.8, 0.8, 0.8);
-  const p = new THREE.Vector3();
-  const march = (t) => {
-    const files = COLUMN.files;
-    const n = props.column.count;
-    for (let i = 0; i < n; i++) {
-      const row = Math.floor(i / files);
-      const along = (row * 1.6 + t * MARCH) % span;
-      const across = ((i % files) - (files - 1) / 2) * 1.3;
-      const x = COLUMN.from[0] + dir.x * along - dir.y * across;
-      const z = COLUMN.from[1] + dir.y * along + dir.x * across;
-      // (a little bob, out of step rank to rank)
-      p.set(x, heightAt(x, z) + Math.abs(Math.sin(t * 4 + row)) * 0.05, z);
-      m.compose(p, q, one);
-      props.column.setMatrixAt(i, m);
-    }
-    props.column.instanceMatrix.needsUpdate = true;
-  };
+  const march = (t) => marchColumn(props.column, { ...COLUMN, speed: MARCH }, heightAt, t);
   march(0);
 
   let clock = 0;
