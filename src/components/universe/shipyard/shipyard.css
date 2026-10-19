@@ -177,7 +177,7 @@
 @media (max-width: 767px) {
   .universe-hangar-stat { grid-template-columns: 7rem 1fr; }
 }
-/* the head's close button, as the universe's settings have it */
-.yard .universe-settings-close { display: grid; place-items: center; width: 32px; height: 32px; margin: -6px -8px -6px 0; color: var(--muted); }
+/* the head's close button, as the universe's settings have it (its size is the head's own, .yard-head's, above) */
+.yard .universe-settings-close { display: grid; place-items: center; margin: -6px -8px -6px 0; color: var(--muted); }
 .yard .universe-settings-close:hover { color: var(--text); background: rgb(255 255 255 / 0.08); }
 .yard .universe-settings-close:focus-visible { outline: 2px solid var(--engine, #e8eefc); outline-offset: 1px; }

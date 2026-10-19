@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useAchievements } from '../Achievements';
-import { useShipyardPage } from '../universe/shipyard/useShipyardPage';
-import { statsOf } from '../universe/outfit';
+import { statsOf, useShipyardPage } from '../universe/shared/fit';
 import { useHangarTab } from './useHangarTab';
 import { useSkills } from './skills/useSkills';
 

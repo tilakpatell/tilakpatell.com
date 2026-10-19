@@ -162,3 +162,12 @@ describe('the patrol in a fight (patrolRules.js turns it on you)', () => {
     expect(f.mode).toBe('loop');
   });
 });
+
+describe('a patrol shot down (patrolRules.js’s down: hidden till the next comes)', () => {
+  it('goes back round its loop, off the cruiser’s tail, and says nothing’s behind you', () => {
+    const c = { x: 0, z: 0, y: 12, yaw: 0 };
+    const near = { ...newFedShip(), x: 4, z: -2, y: 14, mode: 'tail', down: true };
+    expect(stepFedShip(near, c, true, 1 / 30).mode).toBe('loop');
+    expect(onTail(near, c)).toBe(false);
+  });
+});

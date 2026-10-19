@@ -71,6 +71,7 @@ export function createStreetFight({ loadout, fx = null, picks = null, charge = 0
   const cruiserBody = { id: 'cruiser', a: [0, 0, 0], b: [0, 0, 0], r: FIGHT.body.cruiser, side: 'you', ref: 'cruiser' };
   const both = [patrolBody, cruiserBody];
   const alone = [cruiserBody];
+  const patrolOnly = [patrolBody];
   const jitter = () => rand() * 2 - 1;
   const grounded = (now) => now < groundedUntil;
 
@@ -178,7 +179,8 @@ export function createStreetFight({ loadout, fx = null, picks = null, charge = 0
           say({ type: 'down' });
         } else if (was === 'calm' && patrol.mode === 'fight') say({ type: 'provoked' });
       };
-      for (const e of bolts.step(dt, { solids: null, bodies: up ? both : alone })) {
+      // (a cruiser set down is out of the fight: a laser still in the air passes it)
+      for (const e of bolts.step(dt, { solids: null, bodies: flying ? (up ? both : alone) : up ? patrolOnly : NONE })) {
         if (e.type === 'hit' || e.type === 'solid') say({ type: 'hit', at: e.at });
         // Walt's crystal goes off where it ends: the patrol hit by how near it is
         if (e.bolt.tag === 'crystal' && up && patrol.mode !== 'down') {

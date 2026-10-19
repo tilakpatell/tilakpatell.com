@@ -129,3 +129,16 @@ describe('the street’s fight: the cruiser’s powers in it', () => {
     expect(types).toContain('down');
   });
 });
+
+describe('the street’s fight once the cruiser’s landed', () => {
+  it('lets a laser already in the air pass a cruiser that’s set down', () => {
+    const f = createStreetFight({ loadout: STOCK, rand: still });
+    const at = { x: 0, y: 12, z: 10 };
+    f.fire(0, cruiser(), at);
+    run(f, cruiser(), { at, steps: 30 });
+    run(f, cruiser(), { at, steps: 12, from: 1 }); // (its first shot away, at 1.15 s)
+    const types = run(f, cruiser(), { at, flying: false, steps: 60, from: 1.2 }).map((e) => e.type);
+    expect(f.shield).toBe(FIGHT.shield);
+    expect(types).not.toContain('grounded');
+  });
+});

@@ -65,10 +65,13 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
 // One step: `cruiser` is { x, z, y, yaw }; `flying`, whether Morty's flying
-// it; `fight`, { angle } while the patrol's fighting (null when it isn't)
+// it; `fight`, { angle } while the patrol's fighting (null when it isn't).
+// One shot down (`down`, the fight's) goes back round its loop, unseen,
+// where the next comes from.
 export function stepFedShip(f, cruiser, flying, dt, fight = null) {
   const d = Math.hypot(cruiser.x - f.x, cruiser.z - f.z);
-  const mode = flying && fight ? 'fight' : flying && (f.mode === 'tail' ? d < FED.lose : d < FED.near) ? 'tail' : 'loop';
+  const after = flying && !f.down;
+  const mode = after && fight ? 'fight' : after && (f.mode === 'tail' ? d < FED.lose : d < FED.near) ? 'tail' : 'loop';
   let a = f.a;
   let tx;
   let tz;
@@ -110,4 +113,4 @@ export function stepFedShip(f, cruiser, flying, dt, fight = null) {
 }
 
 // close enough on the cruiser's tail to say so
-export const onTail = (f, cruiser) => f.mode === 'tail' && Math.hypot(cruiser.x - f.x, cruiser.z - f.z) < Math.hypot(FED.behind, FED.side) + 6;
+export const onTail = (f, cruiser) => !f.down && f.mode === 'tail' && Math.hypot(cruiser.x - f.x, cruiser.z - f.z) < Math.hypot(FED.behind, FED.side) + 6;

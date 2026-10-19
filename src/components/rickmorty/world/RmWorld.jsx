@@ -1367,6 +1367,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       window.removeEventListener('pointermove', aim);
       wheel.current.cancel();
       s.keys.clear();
+      s.firing = false; // (F let go while something's over the world isn't heard)
     };
   }, [live, closeList, strike, planet, toggleLock, canvas, hasHangar]);
 
@@ -1749,6 +1750,11 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       looker.current = null;
     };
   }, [canvas]);
+  // the page's Hangar over the world: the pointer let go, so its tabs can be
+  // clicked (else Esc only takes the pointer back, and a second shuts it)
+  useEffect(() => {
+    if (frozen) looker.current?.release();
+  }, [frozen]);
   const drag = useRef(null);
   const onPointer = (e) => {
     const s = sim.current;
