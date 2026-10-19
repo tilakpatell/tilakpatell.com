@@ -7,7 +7,7 @@
 
 export function poseFor(mode, aspect = 1.6, { stone = [0.44, 0.13, -0.04] } = {}) {
   const tall = aspect < 0.9;
-  if (mode === 'room') return tall ? { at: [0.05, 0.9, 1.6], look: [0, 0.2, -0.4], fov: 56 } : { at: [0.12, 0.56, 1.28], look: [-0.06, 0.24, -0.5], fov: 40 };
+  if (mode === 'room') return tall ? { at: [0.05, 0.9, 1.6], look: [0, 0.2, -0.4], fov: 56 } : { at: [0.2, 0.56, 1.28], look: [0.06, 0.22, -0.5], fov: 40 };
   if (mode === 'stone') {
     const [x, y, z] = stone;
     return { at: [x - 0.03, y + 0.09, z + (tall ? 0.36 : 0.24)], look: [x, y, z], fov: tall ? 50 : 38 };

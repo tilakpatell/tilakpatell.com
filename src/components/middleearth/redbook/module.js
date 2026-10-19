@@ -104,6 +104,7 @@ export default {
     let landed = -1;
     let coverTold = bk.cover >= 1;
     let arrivalBurst = asked == null && !reduced ? 0.9 : -1;
+    let frozen = false; // (the checks’: a turn held where set() put it)
     let looked = null;
     let hoverName = null;
     let ringHover = false;
@@ -227,7 +228,7 @@ export default {
         }
 
         // the book
-        bk = stepBook(bk, dt);
+        if (!frozen) bk = stepBook(bk, dt);
         if (!coverTold && bk.cover >= 1) {
           coverTold = true;
           tell('cover');
@@ -411,7 +412,13 @@ export default {
         return stone;
       },
       // (the checks’: open the book at a page at once, the Ring on or off, the stone up)
-      set({ page, worn, stone: up } = {}) {
+      set({ page, worn, stone: up, turning } = {}) {
+        frozen = false;
+        if (turning) {
+          const [from, to, t] = turning;
+          bk = { ...newBook({ reduced: true, page: from }), reduced, turning: { from, to, t } };
+          frozen = true;
+        }
         if (page != null) {
           const i = typeof page === 'number' ? page : pageFromAddress(page);
           if (i != null) bk = { ...newBook({ reduced: true, page: i }), reduced };

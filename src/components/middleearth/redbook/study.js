@@ -17,7 +17,7 @@ import { card as cutCard, pen, sheet } from './paint';
 import { canvasMap } from './mats';
 
 // oak, its grain running along the desk
-function woodArt(w, h, { tone = [92, 58, 32] } = {}) {
+function woodArt(w, h, { tone = [66, 42, 26] } = {}) {
   const c = makeCanvas(w, h);
   const ctx = c.getContext('2d');
   const img = ctx.createImageData(w, h);
@@ -66,7 +66,7 @@ function rainArt(w) {
 
 // the plaster of the walls, warm and uneven
 function plasterArt(w) {
-  return sheet(w, w, 51, { tone: '#c9b48e', edge: 0.15 });
+  return sheet(w, w, 51, { tone: '#8f8068', edge: 0.15 });
 }
 
 export function createStudy({ mats, tier = 'high', size = 1 }) {
@@ -134,7 +134,8 @@ export function createStudy({ mats, tier = 'high', size = 1 }) {
 
   // the hearth, to the left: a stone arch and the fire in it
   const hearth = new THREE.Group();
-  hearth.position.set(-0.78, 0, -0.72);
+  // (raised so its fire shows over the desk’s far edge from where you sit)
+  hearth.position.set(-0.8, 0.2, -0.72);
   const stone = mats.lit({ color: 0x6e665c, roughness: 0.9 });
   const sootMat = mats.lit({ color: 0x120c08, roughness: 1 });
   const jambL = new THREE.Mesh(keep(new THREE.BoxGeometry(0.1, 0.6, 0.12)), stone);
@@ -154,7 +155,7 @@ export function createStudy({ mats, tier = 'high', size = 1 }) {
     hearth.add(f);
     flames.push(f);
   }
-  const fire = new THREE.PointLight(0xff8a3a, 0.9, 3.2, 1.6);
+  const fire = new THREE.PointLight(0xff8a3a, 0.6, 3.2, 1.6);
   fire.position.set(0, -0.05, 0.25);
   hearth.add(fire);
   group.add(hearth);
@@ -163,7 +164,7 @@ export function createStudy({ mats, tier = 'high', size = 1 }) {
   const wax = mats.lit({ color: 0xefe6cf, roughness: 0.6 });
   const brass = mats.lit({ color: 0xb08a3a, roughness: 0.35, metalness: 0.7 });
   const candles = [];
-  for (const [x, z, hgt, lit] of [[-0.42, -0.26, 0.14, true], [0.48, -0.32, 0.1, !low]]) {
+  for (const [x, z, hgt, lit] of [[-0.56, -0.36, 0.14, true], [0.62, -0.42, 0.1, !low]]) {
     const c = new THREE.Group();
     c.position.set(x, 0, z);
     const dish = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.04, 0.045, 0.01, 20)), brass);
@@ -179,7 +180,7 @@ export function createStudy({ mats, tier = 'high', size = 1 }) {
     c.add(dish, stick, flame, halo);
     let light = null;
     if (lit) {
-      light = new THREE.PointLight(0xffb066, 0.5, 2.2, 1.7);
+      light = new THREE.PointLight(0xffb066, 0.34, 2.2, 1.7);
       light.position.y = flame.position.y + 0.02;
       c.add(light);
     }
@@ -250,7 +251,7 @@ export function createStudy({ mats, tier = 'high', size = 1 }) {
   group.add(pipe, ink, quill);
 
   // the room’s fill: the moon’s blue from the window, a little warmth below
-  const hemi = new THREE.HemisphereLight(0x5a6a8a, 0x2a1a10, 0.35);
+  const hemi = new THREE.HemisphereLight(0x5a6a8a, 0x1a1210, 0.3);
   const moon = new THREE.DirectionalLight(0x8fa4c8, 0.35);
   moon.position.set(0.4, 1, -1);
   // and the reader’s own candle, out of sight by the reader’s hand: the
@@ -267,13 +268,13 @@ export function createStudy({ mats, tier = 'high', size = 1 }) {
       t += dt;
       rainMap.offset.y = (rainMap.offset.y + dt * 0.12) % 1;
       const f = 0.85 + 0.15 * Math.sin(t * 9.1) * Math.sin(t * 5.3 + 1.2) + 0.05 * Math.sin(t * 23);
-      fire.intensity = 0.9 * f * (1 - vision * 0.5);
+      fire.intensity = 0.6 * f * (1 - vision * 0.5);
       flames.forEach((s, i) => s.scale.set(0.22 + Math.sin(t * 7 + i) * 0.02, 0.3 * (0.9 + 0.12 * Math.sin(t * 11 + i * 2)), 1));
       for (const c of candles) {
         const k = 0.9 + 0.1 * Math.sin(t * 13 + c.seed) * Math.sin(t * 7.7 + c.seed * 2);
         c.flame.scale.set(0.035 * (0.95 + 0.05 * k), 0.06 * k, 1);
         c.halo.material.opacity = 0.35 * k;
-        if (c.light) c.light.intensity = 0.5 * k * (1 - vision * 0.6);
+        if (c.light) c.light.intensity = 0.34 * k * (1 - vision * 0.6);
       }
       reader.intensity = 0.45 * (0.95 + 0.05 * Math.sin(t * 8.3)) * (1 - vision * 0.5);
       // the Eye in the window, and Sting knowing it
@@ -281,7 +282,7 @@ export function createStudy({ mats, tier = 'high', size = 1 }) {
       eyeMesh.scale.setScalar(0.6 + dread * 1.2);
       uSting.value = Math.max(0, (dread - 0.3) / 0.7) * 1.4;
       stingGlow.material.opacity = uSting.value * 0.6;
-      hemi.intensity = 0.35 + vision * 0.35;
+      hemi.intensity = 0.3 + vision * 0.35;
     },
     lower(level) {
       rain.visible = level < 1 && !low && tier !== 'mid';
