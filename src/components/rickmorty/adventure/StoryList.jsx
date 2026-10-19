@@ -5,7 +5,8 @@ import { EPISODES, READY } from './episodes';
 // finished one ticked, the current one with its steps (those done ticked, an
 // `all`'s parts listed, each ticked as it's done), a later one by its title;
 // and while the story isn't all built, a line saying more's coming. Drawn
-// from the story's state alone (../adventure/story.js's shape).
+// from the story's state (../adventure/story.js's shape) and, to tick a step
+// done before it comes up, C-137's tasks done (`tasks`).
 const Tick = ({ on }) => <span className="rm-tick" aria-hidden="true">{on && <RiCheckLine />}</span>;
 
 function Step({ text, done }) {
@@ -20,10 +21,10 @@ function Step({ text, done }) {
   );
 }
 
-export default function StoryList({ state, episodes = EPISODES, ready = READY }) {
+export default function StoryList({ state, tasks = [], episodes = EPISODES, ready = READY }) {
   const built = episodes.slice(0, Math.min(ready, episodes.length));
-  // (a game won before its step comes up counts already: story.js keeps it)
-  const won = (s) => s.type === 'win' && state.wins.includes(s.game);
+  // (a game won, or a task done, before its step comes up counts already: story.js catches up on both)
+  const ahead = (s) => (s.type === 'win' && state.wins.includes(s.game)) || (s.type === 'task' && tasks.includes(s.id));
   return (
     <>
       <ol className="rm-story">
@@ -46,12 +47,12 @@ export default function StoryList({ state, episodes = EPISODES, ready = READY })
                           <p className="rm-list-sub">{s.text}</p>
                           <ol className="rm-story-steps">
                             {s.steps.map((p, k) => (
-                              <Step key={k} text={p.text} done={j < state.step || (j === state.step && state.got.includes(k)) || won(p)} />
+                              <Step key={k} text={p.text} done={j < state.step || (j === state.step && state.got.includes(k)) || ahead(p)} />
                             ))}
                           </ol>
                         </li>
                       ) : (
-                        <Step key={j} text={s.text} done={j < state.step || won(s)} />
+                        <Step key={j} text={s.text} done={j < state.step || ahead(s)} />
                       ),
                     )}
                   </ol>
