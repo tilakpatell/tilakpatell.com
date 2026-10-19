@@ -5,8 +5,9 @@
 // attacks and fronts (warMap.js opsOf) as arcs over the plane, a light running along each to where it's going.
 //
 //   createMarks({ small }) → { group, set(view), animate(t), dispose }
-//   set({ war, ops, pick, current, lit, mine }) the war's table (with byId), its ops, the system picked, where you
-//     are, the systems lit by the era or the film (a Set, or null for all) and the side you're sworn to
+//   set({ war, ops, pick, current, lit, mine, only }) the war's table (with byId), its ops, the system picked, where you
+//     are, the systems lit by the era or the film (a Set, or null for all), the side you're sworn to and the systems drawn
+//     at all (a Set: the open sector's, none on the whole galaxy; null for all); where you are pulses whatever's drawn
 
 import * as THREE from 'three';
 import { SIDES } from '../sides';
@@ -128,26 +129,35 @@ void main() {
   const beadColour = new THREE.Color();
   return {
     group,
-    set({ war, ops = [], pick = null, current = null, lit = null, mine = null }) {
+    set({ war, ops = [], pick = null, current = null, lit = null, mine = null, only = null }) {
       const byId = war?.byId ?? {};
+      const shown = (id) => !only || only.has(id);
       SYSTEMS.forEach((s, i) => {
         const row = byId[s.id];
         const dim = lit && !lit.has(s.id);
+        const show = shown(s.id);
+        // (one not drawn: its bead shrunk to nothing, its pin to a point)
+        const [x, y, z] = worldOf(s);
+        const r = show ? (s.charted ? SMALL_BEAD : BEAD) : 0;
+        beads.setMatrixAt(i, m.makeScale(r, r, r).setPosition(x, y, z));
+        pinPos.set([x, 0, z, x, show ? y : 0, z], i * 6);
         beadColour.set(row ? SIDES[row.owner].colour : s.accent).multiplyScalar(dim ? 0.35 : GLOW);
         if (!row && !dim) beadColour.lerp(new THREE.Color(1, 1, 1), 0.25);
         beads.setColorAt(i, beadColour);
         const ring = holds[i];
-        ring.visible = Boolean(row) && !dim;
+        ring.visible = show && Boolean(row) && !dim;
         if (row) ring.material = holdMat(SIDES[row.owner].colour, row.owner === mine ? 0.55 : 0.85);
         const p = pulses[i];
         const by = row?.attack?.by ?? (row?.front || row?.battle ? (ops.find((o) => o.to === s.id)?.by ?? null) : null);
-        p.visible = Boolean(row && (row.attack || row.front || row.battle)) && !dim;
+        p.visible = show && Boolean(row && (row.attack || row.front || row.battle)) && !dim;
         p.userData.fast = Boolean(row?.attack || row?.battle?.fighting);
         if (p.visible) p.material.color.set(by ? SIDES[by].colour : '#ffffff').multiplyScalar(1.6);
       });
       beads.instanceColor.needsUpdate = true;
+      beads.instanceMatrix.needsUpdate = true;
+      pinGeo.attributes.position.needsUpdate = true;
       const picked = pick ? systemById(pick) : null;
-      pickRing.visible = Boolean(picked);
+      pickRing.visible = Boolean(picked) && shown(picked.id);
       if (picked) pickRing.position.set(...worldOf(picked).map((v, k) => (k === 1 ? 0.01 : v)));
       const here = current ? systemById(current) : null;
       you.visible = Boolean(here);
@@ -157,7 +167,7 @@ void main() {
       for (const op of ops) {
         const a = systemById(op.from);
         const b = systemById(op.to);
-        if (!a || !b) continue;
+        if (!a || !b || !(shown(a.id) || shown(b.id))) continue;
         const pa = new THREE.Vector3(...worldOf(a));
         const pb = new THREE.Vector3(...worldOf(b));
         const lift = 0.35 + pa.distanceTo(pb) * 0.22;
