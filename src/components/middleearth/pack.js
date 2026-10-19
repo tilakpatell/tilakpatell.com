@@ -1,8 +1,8 @@
 // What Middle-earth fetches (models, textures, skies, sound): the install's list (scripts/packs.mjs, src/runtime/install.js); scripts/pack-check.mjs fails when its source names an asset this misses.
 export const PACK = {
   id: '/middle-earth',
-  pages: ['src/pages/MiddleEarth.jsx'], // page modules: the build adds their JS/CSS chunks
-  src: ['src/components/middleearth', 'src/pages/MiddleEarth.jsx'], // where its source is (files or folders, repo-relative): pack-check scans these
+  pages: ['src/pages/MiddleEarth.jsx', 'src/pages/RedBook.jsx'], // page modules: the build adds their JS/CSS chunks
+  src: ['src/components/middleearth', 'src/pages/MiddleEarth.jsx', 'src/pages/RedBook.jsx'], // where its source is (files or folders, repo-relative): pack-check scans these
   urls: [
     '/games/models/boulder.glb',
     '/games/models/boulders.glb',

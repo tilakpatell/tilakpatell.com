@@ -408,8 +408,22 @@ export const PAGES = {
   },
   '/middle-earth': {
     about: ABOUT['/middle-earth'],
+    keys: [
+      {
+        label: 'In the study',
+        rows: [
+          ['← →', 'Turn the pages'],
+          ['R', 'Put on the Ring, or take it off'],
+          ['P', 'Look into the Palantír, or put it down'],
+          ['Esc', 'The Menu, or put the stone down'],
+        ],
+      },
+    ],
     tips: [
-      ['The map', 'Pick a place and the camera flies down to it. The map button takes you back up. A wax seal marks each place you’ve won.'],
+      ['The Red Book', 'Touch what stands up on a page: three to five things on each answer. Play it opens that place’s game; Walk it starts the Road there.'],
+      ['The Palantír', 'Drag the map inside the stone and go wherever it looks. Do not look too long.'],
+      ['The Ring', 'In the study, it shows the moon-letters and one hidden thing on every page, until the Eye comes for it.'],
+      ['The map', 'Middle-earth’s map, from the Menu or the stone: pick a place and the camera flies down to it. A wax seal marks each place you’ve won.'],
       ['The Doors of Durin', 'Move your pointer over the cliff to light the lines, or call the moon. Then say the word: read the arch.'],
       ['The bridge', 'Face the Balrog. Raise the staff (Space) as the whip falls; strike the bridge (Enter) with it right over the deep for a perfect.'],
       ['Gorgoroth', 'Hold to walk (Space or →). Let go when the Eye’s light comes close: standing still, the elven cloaks hide you. Rest before the Ring gets too heavy.'],
