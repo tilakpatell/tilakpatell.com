@@ -80,11 +80,26 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
 
   let dragon = null;
   const at = new THREE.Vector3();
+  // smoke from the chimneys, the Hill’s and the nearest along the lane (fewer
+  // on low), while the walker is in the stage: the weather stands in the
+  // world, which is this stage’s frame only while it is the one walked
+  const chimneys = props.chimneys.slice(0, tier === 'low' ? 2 : 5);
+  let smoke = [];
+  const unsmoke = () => {
+    for (const s of smoke) s?.stop();
+    smoke = [];
+  };
 
   return {
     group,
     update(local, dt, { since = {}, speed = 0 } = {}) {
       props.update(dt);
+      if (!smoke.length)
+        smoke = chimneys.map((c) => {
+          const s = weather?.kind?.('smoke', { count: 24, scale: 0.8 }) ?? null;
+          s?.at(c.x, c.y, c.z);
+          return s;
+        });
       // the windows and the lanterns lit as the day goes (the stage ends at dusk)
       town.setNight(Math.min(1, Math.max(0, (local - 110) / 90)));
       // the cart, from up the lane toward the walkers and past them
@@ -113,8 +128,13 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
       bilbo.group.visible = local < 150 || (s != null && s < GONE);
       if (bilbo.group.visible) bilbo.tick(dt);
     },
+    // walked out of: the smoke stops with the stage
+    leave() {
+      unsmoke();
+    },
     dispose() {
       dragon?.stop();
+      unsmoke();
       props.dispose();
       horse.dispose();
       gandalf.dispose();

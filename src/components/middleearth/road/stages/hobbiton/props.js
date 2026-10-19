@@ -9,7 +9,8 @@
 // oaks and hedges, and at the stage’s end the corn where Sam stops. In the
 // stage’s frame: the lane along +z from 0, +x on the walker’s left.
 //
-//   buildProps({ K, material, heightAt, tier }) → { group, wheel, update(dt), dispose }
+//   buildProps({ K, material, heightAt, tier }) → { group, wheel, chimneys, update(dt), dispose }
+//     chimneys: the chimney tops in the stage’s frame, the Hill’s first (for their smoke)
 //     K: townKit.js’s kit; material: the stage’s vertex-coloured one (the tables)
 //   buildCart(K) → { group, seat } (the chapter’s cart, its shafts to −z in the group)
 //   SHIRE, HILL, DOORS, TREE, MILL: where they stand, for the beats and the scene
@@ -149,7 +150,13 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   DOORS.forEach((d, i) => holeAt(K, (x, z) => Math.max(hill.low, heightAt(x, z)), [d.x, d.z, d.yaw, 3.4, d.colour, 2 * i + 1], group, d.bagEnd));
   // the Hill’s surface over (x, z), and the chimneys through its turf, a little sunk in it
   const dome = (x, z) => hill.low - 0.3 + HILL.r * HILL.squash * Math.sqrt(Math.max(0, 1 - ((x - HILL.at[0]) ** 2 + (z - HILL.at[1]) ** 2) / HILL.r ** 2));
-  for (const [dx, dz] of [[-4, 3], [3, -5], [-7, -6]]) group.add(stand(bits((bk) => bk.add(K.mats.stone, new THREE.CylinderGeometry(0.4, 0.46, 2.6, 7), { p: [0, 1.3, 0] })), dome, HILL.at[0] + dx, HILL.at[1] + dz, 0, SHIRE, 0.5));
+  const chimneys = [];
+  for (const [dx, dz] of [[-4, 3], [3, -5], [-7, -6]]) {
+    const x = HILL.at[0] + dx;
+    const z = HILL.at[1] + dz;
+    group.add(stand(bits((bk) => bk.add(K.mats.stone, new THREE.CylinderGeometry(0.4, 0.46, 2.6, 7), { p: [0, 1.3, 0] })), dome, x, z, 0, SHIRE, 0.5));
+    chimneys.push(new THREE.Vector3(x, dome(x, z) - 0.5 + 2.6 * SHIRE, z));
+  }
   // bushes and their flowers over the Hill’s face and along its crown, as the chapter has its gardens
   const hb = new THREE.Group();
   const hbk = parts();
@@ -162,8 +169,8 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   }
   hbk.build(hb);
   group.add(hb);
-  // the holes along the lane
-  for (const h of HOLES) holeAt(K, heightAt, h, group);
+  // the holes along the lane (their chimneys, for the smoke, once they stand)
+  const lane = HOLES.map((h) => holeAt(K, heightAt, h, group));
 
   // the Party Field: the tree, its lanterns, the pavilion, the long tables
   const tree = partyTree(K);
@@ -198,7 +205,8 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   const theMill = mill(K);
   group.add(stand(theMill.group, heightAt, MILL[0], MILL[1], R, SHIRE * 1.1, 0.05));
   // the Green Dragon, its barrels by the door, a bench
-  group.add(stand(greenDragon(K).group, heightAt, DRAGON[0], DRAGON[1], DRAGON[2], SHIRE, 0.05));
+  const inn = greenDragon(K);
+  group.add(stand(inn.group, heightAt, DRAGON[0], DRAGON[1], DRAGON[2], SHIRE, 0.05));
   for (const [dx, dz] of [[4.6, -3.2], [4.9, -2.2], [4.4, -1.2]]) group.add(stand(bits((bk) => barrelParts(bk, K)), heightAt, DRAGON[0] + dx, DRAGON[1] + dz, dz));
   group.add(stand(bits((bk) => benchParts(bk, K)), heightAt, DRAGON[0] + 4.6, DRAGON[1] + 2.4, R));
 
@@ -258,12 +266,16 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   group.add(wheat);
   group.add(merged([1, -1].map((side) => canopy(heightAt, { x: [side * (CORN.x[1] - 1), side * CORN.far], z: CORN.z, cells: [24, 30] })), material, 'hobbiton:corn'));
 
+  // the chimney tops in the stage’s frame, before the merge takes their groups
+  group.updateMatrixWorld(true);
+  for (const b of [inn, ...lane]) if (b.chimneyTop) chimneys.push(b.chimneyTop.clone().applyMatrix4(b.group.matrixWorld));
   // (a builder draws a hole in a dozen meshes: one a material for the stage, what moves kept)
   mergeStatics(group, { keep: [theMill.wheel, lanterns, hedge, wheat].filter(Boolean) });
 
   return {
     group,
     wheel: theMill.wheel,
+    chimneys,
     update(dt) {
       if (theMill.wheel) theMill.wheel.rotation.z -= dt * 0.6;
     },
