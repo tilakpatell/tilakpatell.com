@@ -12,3 +12,11 @@
 @media (pointer: coarse) {
   .rm-objective:has(.rm-objective-link) { min-height: 44px; }
 }
+
+/* the portal gun's dial (world/dimensions/DimensionDial.jsx): a place the
+   story hasn't opened is dimmed by colour, not faded (RULES UI 6); #9fae99 is
+   about 7.8:1 on the dial's own dark glass, whichever the site's theme */
+.rm-dial-row[data-locked] b, .rm-dial-row[data-locked] span { color: #9fae99; opacity: 1; }
+
+/* a planet's two ways out, side by side */
+.rm-ways { display: flex; flex-wrap: wrap; gap: 0.5rem; }

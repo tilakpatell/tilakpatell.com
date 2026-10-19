@@ -64,6 +64,23 @@ async function reads(page, text) {
   });
 }
 const WIPED = EPISODES[0];
+// Morty by the garage portal, stepped through it, and stood where it took him
+async function throughPortal(page) {
+  await goto(page, 'garage', -302.3, 101.4, Math.PI);
+  await use(page, 'garage-portal');
+}
+const gun = async (page) => {
+  await page.getByRole('button', { name: /Portal gun/ }).first().click();
+  await page.locator('.rm-dial-box').waitFor({ timeout: 10000 });
+};
+const toast = (page, text) =>
+  page.locator('.rm-toast', { hasText: text }).waitFor({ timeout: 10000 }).catch(() => {
+    throw new Error(`no toast saying “${text}”`);
+  });
+const inGarage = (page) =>
+  page.waitForFunction(() => window.__C137__?.sim?.area === 'garage' && window.__C137__.ready(), null, { timeout: 300000, polling: 250 }).catch(async () => {
+    throw new Error(`C-137 didn’t start in the garage (${await page.evaluate(() => window.__C137__?.sim?.area)})`);
+  });
 
 const SCENARIOS = {
   // a new visitor plays episode 1 from the street to Customs and back
@@ -83,6 +100,43 @@ const SCENARIOS = {
     check((await story(page)).episode === 1, 'episode 1 didn’t end');
     for (const id of ['annex', 'vat', 'citadel', 'squanch', 'evilrick']) check(await page.evaluate((id) => window.__RMSTORY__.dialOpen(id), id), `${id} isn’t open after episode 1`);
     await reads(page, 'Go into the Smith house and put interdimensional cable on the TV.');
+  },
+  // a new visitor's dial: Customs open, the rest dimmed with the episode that
+  // opens them; a locked pick says so and changes nothing; a dial left set to
+  // a locked place (tp-rm-dial) still opens the portal on an open one
+  async dial(page) {
+    await c137(page);
+    await gun(page);
+    const rows = page.locator('.rm-dial-row');
+    check((await rows.count()) === 32, `the dial has ${await rows.count()} places, not 32`);
+    check((await page.locator('.rm-dial-row[data-locked]').count()) === 31, 'the dial doesn’t have 31 places locked');
+    check(!(await rows.filter({ hasText: 'Interdimensional Customs' }).getAttribute('data-locked')), 'Customs is locked');
+    check((await page.locator('.rm-dial-lead').textContent()) === 'Coordinates home: 1 of 32', 'the dial doesn’t count the coordinates home');
+    await rows.filter({ hasText: 'vat of acid' }).click();
+    await toast(page, 'Opens after episode 5, “Heat”.');
+    check((await page.evaluate(() => localStorage.getItem('tp-rm-dial'))) !== 'vat', 'a locked pick set the dial');
+    await page.evaluate(() => localStorage.setItem('tp-rm-dial', 'vat'));
+    await throughPortal(page);
+    await page.waitForFunction(() => window.__C137__.sim.area !== 'garage' && window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
+    const area = await page.evaluate(() => window.__C137__.sim.area);
+    check(area === 'customs', `a dial left on the vat opened the portal on ${area}`);
+  },
+  // no place is a dead end: the Citadel through the garage portal and back
+  // to the garage, and a planet landed on from the map has a way home
+  async ways(page) {
+    await c137(page);
+    await page.evaluate(() => window.__RMSTORY__.jump(1)); // (past the built episodes: every place open)
+    check((await page.evaluate(() => window.__C137__.dial('citadel'))) === 'citadel', 'the dial wouldn’t take the Citadel');
+    await throughPortal(page);
+    await page.waitForFunction(() => window.location.hash.startsWith('#/c-137/citadel'), null, { timeout: 20000 }).catch(() => {
+      throw new Error('the portal didn’t open on the Citadel');
+    });
+    await page.getByRole('link', { name: 'Back to Dimension C-137' }).click();
+    await inGarage(page);
+    await page.goto(`${BASE}/#/c-137/squanch`, { waitUntil: 'domcontentloaded' });
+    await page.getByRole('link', { name: 'Home to C-137' }).first().click({ timeout: 600000 });
+    await page.waitForFunction(() => window.location.hash === '#/c-137', null, { timeout: 20000 });
+    await inGarage(page);
   },
   // C-137's toys tick their task when they're played, not when they open
   async toys(page) {

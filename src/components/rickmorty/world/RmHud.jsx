@@ -1,13 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import RmEarnNote from '../RmEarnNote';
 import { Link as RouterLink } from 'react-router-dom';
-import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiEmotionLaughLine, RiListCheck2, RiShirtLine, RiTyphoonLine } from 'react-icons/ri';
+import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiEmotionLaughLine, RiHome4Line, RiListCheck2, RiShirtLine, RiTyphoonLine } from 'react-icons/ri';
 import { EMOTES, wheelAngle } from '../../../lib/emote';
 import { Prompt, Reticle, Stick, TouchButton, reticleState } from '../../../runtime/hud';
 import { PROMPT as LOOK_PROMPT } from '../../../runtime/look';
 import GuideCue from '../../guide/GuideCue';
 import Wardrobe from '../wardrobe/Wardrobe';
-import { DIAL } from './dimensions/destinations';
 import DimensionDial from './dimensions/DimensionDial';
 import { ROOMS } from './dimensions/vindicatorsRules';
 import { listOf } from './planetMode';
@@ -16,6 +15,7 @@ import { MEMORIES, MEMORY_COLORS } from './rules';
 import { SAY } from './say';
 import { setShipVoice, shipVoiceOn, stopSpeaking } from './shipVoice';
 import { Title, Toast } from './WorldCards';
+import { homeLink } from '../adventure/ways';
 import '../adventure/adventure.css';
 
 // Dimension C-137's HUD, over the stage (./RmWorld.jsx keeps the canvas, the
@@ -48,6 +48,8 @@ export default function RmHud({
   looks,
   dialing,
   dialValue,
+  dialItems,
+  dialLead,
   trial,
   trialItems,
   toast,
@@ -112,10 +114,22 @@ export default function RmHud({
     for (const n of row.children) ro?.observe(n);
     return () => ro?.disconnect();
   }, []);
-  const way = (
+  // (a planet landed on from the map: back to space, or home to C-137's garage)
+  const home = homeLink(planet);
+  const back1 = (
     <RouterLink to={back.to} replace={back.replace} className="rm-back">
       <RiArrowLeftLine aria-hidden="true" /> {back.label}
     </RouterLink>
+  );
+  const way = home ? (
+    <div className="rm-ways">
+      {back1}
+      <RouterLink to={home.to} state={home.state} className="rm-back">
+        <RiHome4Line aria-hidden="true" /> {home.label}
+      </RouterLink>
+    </div>
+  ) : (
+    back1
   );
   return (
     <>
@@ -226,7 +240,7 @@ export default function RmHud({
         </div>
       </div>
       <Wardrobe open={wardrobe} onClose={closeWardrobe} looks={looks} onLook={setLook} who="morty" />
-      <DimensionDial open={dialing} items={DIAL} value={dialValue} onPick={pickDial} onClose={closeDial} />
+      <DimensionDial open={dialing} items={dialItems} lead={dialLead} value={dialValue} onPick={pickDial} onClose={closeDial} />
       <DimensionDial open={!!trial} items={trialItems} value={null} onPick={pickTrial} onClose={closeTrial} title={`Rick’s rooms · ${(trial?.room ?? 0) + 1} of ${ROOMS.length}`} lead={trial ? ROOMS[trial.room].prompt : null} foot="↑ ↓ to choose, Enter to pick, Esc to back out" label="Rick’s rooms" />
 
       <Toast toast={toast} />
@@ -485,6 +499,11 @@ function ThingsToDo({ box, prog, done, onClose, back, planet }) {
       <RouterLink to={back.to} replace={back.replace} className="rm-list-back">
         <RiArrowLeftLine aria-hidden="true" /> {back.label}
       </RouterLink>
+      {planet && (
+        <RouterLink to={homeLink(planet).to} state={homeLink(planet).state} className="rm-list-back">
+          <RiHome4Line aria-hidden="true" /> {homeLink(planet).label}
+        </RouterLink>
+      )}
     </div>
   );
 }

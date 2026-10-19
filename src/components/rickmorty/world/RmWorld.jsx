@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import '@fontsource/luckiest-guy/400.css';
 import { useAchievements } from '../../Achievements';
@@ -59,9 +60,10 @@ import {
   stepMorty,
 } from './rules';
 import { newFedShip, newShipVoice, onTail, shipSays, stepFedShip } from './ship';
-import { DESTINATIONS, destinationById, isPlanet, isWayHome, linkTarget, portalTarget, readDial, writeDial } from './dimensions/destinations';
+import { DESTINATIONS, DIAL, destinationById, isPlanet, isWayHome, linkTarget, portalTarget, readDial, writeDial } from './dimensions/destinations';
 import { useAdventure } from '../adventure/useAdventure';
-import { markedTask, newsOf, objectiveLine } from '../adventure/hud';
+import { dialItems, dialLead, markedTask, newsOf, objectiveLine } from '../adventure/hud';
+import { arriveAt } from '../adventure/ways';
 import { backLink, boundOf, inLine, planetOf, planetProgress, relabel } from './planetMode';
 import { dialledNote, isGunKey, portalName } from './portalGun';
 import Cards from './WorldCards';
@@ -435,19 +437,25 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const map = useRef(null);
   const brand = useRef(null); // (the title and what to do: Total Rickall's memory card keeps off it)
   const sim = useRef(null);
-  if (!sim.current) sim.current = newSim(planet ?? START, !!planet);
+  // (home through a portal, from the Citadel or a planet: by the garage's portal)
+  const home = arriveAt(useLocation().state);
+  const navigate = useNavigate();
+  if (!sim.current) sim.current = newSim(planet ?? home ?? START, !!planet || !!home);
   // (C-137's next is never a planet's: they're done on the planets)
   const prog = planet ? planetProgress(planet, done) : progress(done, { skip: PLANET_TASKS });
   const progRef = useRef(prog);
   progRef.current = prog;
   // the story's objective first, and its task for the map's marker (C-137's; a planet keeps its own)
   const story = useAdventure();
+  const { dialOpen, lockNote } = story;
   const objective = objectiveLine(story.objective, prog, { planet: !!planet });
   const markRef = useRef(null);
   markRef.current = planet ? prog.next : markedTask(story.state, prog.next);
+  // (the same list while the story stands still, so the dial keeps its place in it)
+  const dialList = useMemo(() => dialItems(DIAL, story.state), [story.state]);
   const doneRef = useRef(done);
   doneRef.current = done;
-  const [hud, setHud] = useState({ area: (planet ?? START).area, room: null, flying: false, landing: false, near: null, moved: false, alt: 0, kmh: 0 });
+  const [hud, setHud] = useState({ area: (planet ?? home ?? START).area, room: null, flying: false, landing: false, near: null, moved: false, alt: 0, kmh: 0 });
   const hudKey = useRef('');
   // the emote wheel (B, held; on a touch screen its button): what it shows
   const wheel = useRef(null);
@@ -480,7 +488,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const [wardrobe, setWardrobe] = useState(false);
   // the portal gun's dial, open at its stand in the garage (it holds Morty still, as the wardrobe does)
   const [dialing, setDialing] = useState(false);
-  const dialRef = useRef(readDial());
+  // (the dial, wherever it's read, only on a place the story has opened)
+  const dialRef = useRef(portalTarget(readDial(), dialOpen));
   // Rick's rooms on the Vindicators' ship, asked one at a time (it holds him still too)
   const [trial, setTrial] = useState(null);
   const trialRef = useRef(newTrial());
@@ -490,12 +499,13 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const closeDial = useCallback(() => setDialing(false), []);
   const pickDial = useCallback(
     (id) => {
-      writeDial(id);
-      dialRef.current = portalTarget(id);
       setDialing(false);
+      if (!dialOpen(id)) return say({ kind: 'note', text: lockNote(id) });
+      writeDial(id);
+      dialRef.current = portalTarget(id, dialOpen);
       say({ kind: 'note', text: dialledNote(dialRef.current, sim.current.area) });
     },
-    [say],
+    [say, dialOpen, lockNote],
   );
   const closeTrial = useCallback(() => setTrial(null), []);
   const pickTrial = useCallback(
@@ -536,10 +546,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     const s = sim.current;
     if (wardrobeRef.current || s.fading || s.rickall || s.duel || s.flying) return;
     s.keys.clear();
-    dialRef.current = readDial();
+    dialRef.current = portalTarget(readDial(), dialOpen);
     closeList();
     setDialing(true);
-  }, [closeList]);
+  }, [closeList, dialOpen]);
   const [fade, setFade] = useState(null);
   const [duel, setDuel] = useState(null); // the fight's hearts, for the HUD
   const [clock, setClock] = useState(null); // a place left in a hurry: seconds left to the portal
@@ -776,10 +786,18 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         return;
       }
       // (the garage's portal goes where the dial is set: read fresh, in case another tab's set it)
-      dialRef.current = readDial();
+      dialRef.current = portalTarget(readDial(), dialOpen);
       const l = linkTarget(via, dialRef.current);
       s.fading = true;
       s.keys.clear();
+      // a place that's a page of its own (the Citadel): through the portal to it
+      if (l.page) {
+        setFade('portal');
+        sound('portalOpen');
+        complete('portal');
+        later(() => navigate(l.page, { state: { from: 'c137' } }), FADE_MS);
+        return;
+      }
       const climb = l.kind === 'hatch';
       setFade(l.kind === 'portal' ? 'portal' : climb ? (l.to === 'basement' ? 'down' : 'up') : 'door');
       if (l.kind === 'portal') sound('portalOpen');
@@ -831,7 +849,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         setFade(null);
       }, climb ? CLIMB_MS : FADE_MS);
     },
-    [api, complete, unlock, later, stopRickall, planet, onLeave, tell],
+    [api, complete, unlock, later, stopRickall, planet, onLeave, tell, dialOpen, navigate],
   );
   const board = useCallback(() => {
     const s = sim.current;
@@ -1115,7 +1133,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         // the portal gun's dial, set as the stand in the garage sets it
         dial(id) {
           writeDial(id);
-          dialRef.current = portalTarget(id);
+          dialRef.current = portalTarget(id, dialOpen);
           return dialRef.current;
         },
         // Total Rickall, with `seed` (by the egg first, if he isn't in the
@@ -1179,7 +1197,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     // a planet's portal, opened behind him as the world was made (./module.js)
     if (planet) sound('portalHop');
     setGl('on');
-  }, [made, status, api, setGl, complete, planet, view.rt]);
+  }, [made, status, api, setGl, complete, planet, view.rt, dialOpen]);
   // (another landing: its own world, loading until it's up)
   useEffect(
     () => () => {
@@ -1712,7 +1730,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   };
 
   // (the garage portal says where it's dialled; a planet's own portal is the way back to space)
-  const here = relabel(hud.near ? PROMPT[hud.near] : null, { planet, portal: planet ? null : portalName(dialRef.current) });
+  const here = relabel(hud.near ? PROMPT[hud.near] : null, { planet, portal: planet ? null : portalName(portalTarget(dialRef.current, dialOpen)) });
   const back = backLink(planet);
   const placeName = hud.flying ? 'Over the Smiths’ street' : (hud.room ?? AREA_NAME[hud.area]);
   return (
@@ -1756,6 +1774,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         looks={looks}
         dialing={dialing}
         dialValue={dialRef.current}
+        dialItems={dialList}
+        dialLead={dialLead(story.state, DIAL.length)}
         trial={trial}
         trialItems={trialItems}
         toast={toast}

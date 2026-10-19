@@ -1,9 +1,9 @@
 // What the HUD shows of the story, worked out apart from the drawing so
-// RmWorld only calls it: the objective line, what an event's out says, and
-// the task the map's marker points at. Pure.
+// RmWorld only calls it: the objective line, what an event's out says, the
+// task the map's marker points at, and the dial's locks. Pure.
 
 import { EPISODES } from './episodes';
-import { current } from './story';
+import { coordinates, current, dialOpen, lockNote } from './story';
 
 // The objective line: the story's step while there is one, else the
 // checklist's next. In C-137, once nothing's next, the checklist's closing
@@ -38,3 +38,11 @@ export function markedTask(state, next, opts) {
   const part = step.type === 'all' ? step.steps.find((_, i) => !state.got.includes(i)) : step;
   return part?.type === 'task' ? { id: part.id } : null;
 }
+
+// The dial's places, each with its lock: null when it's open, else the
+// episode that opens it.
+export const dialItems = (items, state) => items.map((d) => ({ ...d, locked: dialOpen(state, d.id) ? null : lockNote(d.id) }));
+
+// The dial's lead: how many coordinates the story has brought home (Free
+// roam opens the dial, but brings none home).
+export const dialLead = (state, total) => `Coordinates home: ${coordinates(state).size} of ${total}`;
