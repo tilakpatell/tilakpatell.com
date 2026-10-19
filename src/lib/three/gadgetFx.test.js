@@ -86,3 +86,53 @@ describe('the shrink ray', () => {
     expect(parent.children).toEqual([root]);
   });
 });
+
+describe('the Amban rifle and the particle beam', () => {
+  it('flash light through them and take them away, the figure put back as it was after', () => {
+    for (const ash of [false, true]) {
+      const { parent, root, mats } = figure();
+      const fx = createGadgetFx({ parent });
+      const heard = [];
+      const h = fx.light({ root, tall: 1.8, up: new V(0, 1, 0), ash, on: (e) => heard.push(e) });
+      run(fx, 0.1);
+      const lit = root.children[0].material;
+      expect(lit).not.toBe(mats[0]);
+      expect(lit.emissive.r + lit.emissive.g + lit.emissive.b, `ash ${ash}`).toBeGreaterThan(0.5);
+      expect(root.visible).toBe(true);
+      run(fx, 0.5);
+      expect(heard).toEqual(['gone']);
+      expect(root.visible).toBe(false);
+      run(fx, 1.2);
+      expect(h.done).toBe(true);
+      h.dispose();
+      expect(root.children[0].material).toBe(mats[0]);
+      expect(root.visible).toBe(true);
+      expect(parent.children).toEqual([root]);
+    }
+  });
+});
+
+describe('the repulsor gauntlet', () => {
+  it('throws them back off their feet, lands them on their back the way they went, and they go', () => {
+    const { parent, root } = figure();
+    const fx = createGadgetFx({ parent });
+    const heard = [];
+    const h = fx.thrown({ root, tall: 1.8, up: new V(0, 1, 0), push: new V(1, 0, 0), seed: 1, on: (e) => heard.push(e) });
+    run(fx, 0.4);
+    expect(root.position.x).toBeGreaterThan(1);
+    expect(root.position.y).toBeGreaterThan(0.3);
+    run(fx, 0.8);
+    expect(heard).toEqual(['land']);
+    expect(root.position.y).toBeCloseTo(0, 5);
+    // (lying down: the body's up turned to the way they were thrown)
+    const head = new V(0, 1, 0).applyQuaternion(root.quaternion);
+    expect(head.x).toBeGreaterThan(0.9);
+    run(fx, 2);
+    expect(h.done).toBe(true);
+    expect(root.visible).toBe(false);
+    h.dispose();
+    expect(root.position.length()).toBe(0);
+    expect(root.quaternion.w).toBeCloseTo(1);
+    expect(root.visible).toBe(true);
+  });
+});

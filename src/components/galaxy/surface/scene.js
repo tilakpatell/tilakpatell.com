@@ -111,6 +111,8 @@ import { FORCE, forceAt, hitStop, pushVelocity } from './combatRules';
 import { createSaberSim, saberOf } from '../../../lib/combat/saber2017';
 import { incomingAt, met, swingingOf } from './duellists';
 import { heatShot, heatStep, spreadAt, vent, ventSpot, withMods } from './weaponRules';
+import { createHandArms } from './handArms';
+import { blastOf, throwOf as palmThrow } from '../../../lib/arms/behaviours';
 import { heroById, heroSpec, partyFor, refitOf, writeHero } from '../heroes';
 import { groundSkills, perkEffects, withGround } from '../perks';
 import { ABILITIES, GAME_HP, JET, SABER_THROWS, abilitiesOf, forceOf, hitOf, holdOf, jetStep, kindOf, newJet, takenOf, throwOf } from './abilityRules';
@@ -582,6 +584,9 @@ export async function create(canvas, ctx) {
     ground: (p) => ({ h: p.y - groundAt(world, p.x, p.z, p.y + 0.3), n: UP }),
     light: flare && { obj: flare, place: (p) => flare.position.copy(p) },
   });
+  // the skill tree's guns that do more than a bolt (handArms.js): the particle beam, the M60's climb, the gauntlet's charge
+  const handMuzzle = new V();
+  const hand = createHandArms({ parent: scene, muzzle: () => me()?.gp?.gun?.getObjectByName('muzzle')?.getWorldPosition(handMuzzle) ?? null });
   // and the same in the 2017 game's look where the bucket had it (lib/three/
   // fx/gameFx.js: its scorch and metal marks, burst, ring, chunks and Force
   // push); each part says whether it drew, and gunfx's own stands in where not
@@ -1059,6 +1064,7 @@ export async function create(canvas, ctx) {
     lock: null, // the enemy a stroke homes on
     cool: { power: -99, second: -99 }, // when each ability is ready again
     overcharge: -99, // until when the gun runs hot-free
+    palm: null, // the gauntlet's charge, let go and on its way out (handArms.js)
     sprint: -99, // until when you're sprinting (abilityRules.js's sprint)
     jet: newJet(), // the jetpack's tank, for a hero with one (the held lightning's too)
     rage: null, // { until, taken, shield }: a rage on you (powers.js)
@@ -1882,6 +1888,34 @@ export async function create(canvas, ctx) {
     const sp = spreadAt(w, state.ads) * perks.spread; // (steady hands: the skill tree's)
     return dir.clone().add(new V((Math.random() - 0.5) * sp * 2, (Math.random() - 0.5) * sp * 2, (Math.random() - 0.5) * sp * 2)).normalize();
   };
+  // a shot of yours along `dir`: a bolt; the particle beam's hit at once along the line (handArms.js draws it);
+  // the gauntlet's blast, let go at the charge it had (state.palm): the first in reach hit, harder for the charge, and thrown back
+  const shoot = (from, dir, w, color, muzzle, tag) => {
+    const k = state.palm;
+    if (!w.beam && k == null) return blaster.fire(from, dir, shootable(), color, w.range, muzzle, tag);
+    state.palm = null;
+    const hit = blaster.aim(from, dir, shootable(), w.range);
+    const b = k == null ? null : blastOf(w, k);
+    const t = hit.target;
+    if (t) struck(hit, b ? b.damage : (tag.damage ?? w.damage), { how: tag.how, push: tag.push });
+    if (b && t && !(assaultOn() && !t.ground)) on(t).knock(t, palmThrow(me().st, hit.at, b.push, b.lift));
+    if (b) {
+      // (a blast is short: with nothing in reach it's drawn a few metres out, not to the end of its reach)
+      const start = muzzle ?? from;
+      const end = t ? hit.at : start.clone().addScaledVector(dir, Math.min(6, hit.at.distanceTo(start)));
+      hand.blast(start, end, b.scale);
+      fx.flash(end, dir.clone().negate(), { color: '#bfefff', size: 0.4 * b.scale });
+    } else {
+      hand.beam(muzzle ?? from, hit.at);
+      if (t) fx.sparks(hit.at, UP, '#9dffb0', 3);
+    }
+    return hit;
+  };
+  // the M60's kick walking the aim up the longer it's held (handArms.js)
+  const climbed = (w) => {
+    const c = hand.climb(w, state.t, state.ads);
+    if (c) state.cam.pitch = clamp(state.cam.pitch - c, CAM.pitch[0], CAM.pitch[1]);
+  };
   // a side chosen, and onto the field at one of its posts (from the HUD, or the dev hooks)
   function chooseSide(id) {
     assault?.chooseSide(id);
@@ -1932,7 +1966,7 @@ export async function create(canvas, ctx) {
   const camDir = new V();
   function fire() {
     const p = me().st;
-    if (state.t - state.firedAt < FIRE_EVERY) return;
+    if (state.t - state.firedAt < (hand.unfloored(weapon()) ? 0 : FIRE_EVERY)) return;
     // on a bike in a chase: its cannon, from the nose, where you're looking
     if (state.phase === 'ride' && chase) {
       if (state.t - state.firedAt < BIKE_FIRE_EVERY || !chase.running()) return;
@@ -1957,6 +1991,11 @@ export async function create(canvas, ctx) {
       }
       return;
     }
+    // the gauntlet: charging while F's down; let go, it's fired from stepSaber (state.palm)
+    if (w.charge && state.palm == null) {
+      hand.charge(state.t);
+      return;
+    }
     state.firedAt = state.t;
     camera.getWorldDirection(camDir);
     p.yaw = Math.atan2(camDir.x, camDir.z);
@@ -1976,7 +2015,8 @@ export async function create(canvas, ctx) {
       state.shot = { from, dir: camDir.clone() };
       return;
     }
-    const hit = blaster.fire(from, scatter(camDir, w), shootable(), boltOf(me()), w.range, null, { yours: true, how: w.kind, push: camDir.clone() });
+    const hit = shoot(from, scatter(camDir, w), w, boltOf(me()), null, { yours: true, how: w.kind, push: camDir.clone() });
+    climbed(w);
     groundWar.passed(from, hit.at); // (a soldier it went close by keeps its head down, and has a grudge)
     activity.heard({ x: from.x, z: from.z }, { x: from.x + camDir.x * 40, z: from.z + camDir.z * 40 }); // (the enemies hear it, and one it's aimed near knows)
     heardBy(from, { x: from.x + camDir.x * 40, z: from.z + camDir.z * 40 }); // (and the people about: actors.js's)
@@ -2428,6 +2468,13 @@ export async function create(canvas, ctx) {
       const w = weapon();
       state.heat = heatStep(state.heat, dt, w, state.t);
       stepBurst();
+      // (the gauntlet let go: fired at its charge, as a shot is; a shot that can't go now drops it)
+      const k = hand.step(state.t, w, Boolean(state.keys.fire || state.buttons.fire));
+      if (k != null && state.phase === 'walk') {
+        state.palm = k;
+        fire();
+        if (!state.shot) state.palm = null;
+      }
       if (state.throwQueued) ventGun();
       return;
     }
@@ -2502,10 +2549,11 @@ export async function create(canvas, ctx) {
     const n = w.pellets ?? 1;
     let hit = null;
     for (let i = 0; i < n; i++) {
-      const h = blaster.fire(o.from, scatter(o.dir, w), shootable(), hot ? '#ffffff' : boltOf(p), w.range, r.muzzle, { yours: true, damage: Math.max(1, Math.round((w.damage + (hot ? 1 : 0)) / (n > 1 ? 2 : 1))), how: w.kind, push: o.dir.clone() });
+      const h = shoot(o.from, scatter(o.dir, w), w, hot ? '#ffffff' : boltOf(p), r.muzzle, { yours: true, damage: Math.max(1, Math.round((w.damage + (hot ? 1 : 0)) / (n > 1 ? 2 : 1))), how: w.kind, push: o.dir.clone() });
       groundWar.passed(o.from, h.at);
       hit ??= h;
     }
+    climbed(w);
     activity.heard({ x: o.from.x, z: o.from.z }, { x: o.from.x + o.dir.x * 40, z: o.from.z + o.dir.z * 40 }); // (as for an unrigged shot in fire())
     heardBy(o.from, { x: o.from.x + o.dir.x * 40, z: o.from.z + o.dir.z * 40 });
     const spec = p.gp.spec;
@@ -3506,6 +3554,7 @@ export async function create(canvas, ctx) {
     knockHits.update(dt);
     powers.step(dt); // (a choke, a rush, the arcs and rings: powers.js)
     fx.update(dt);
+    hand.frame(dt);
     gameFx.update(dt);
     spring(state.kick, dt, 240, 22);
     state.aim = Math.max(0, state.aim - dt / 2.5);
@@ -4201,6 +4250,7 @@ export async function create(canvas, ctx) {
       }
       powers.dispose();
       fx.dispose();
+      hand.dispose();
       gameFx.dispose();
       cast?.dispose();
       ship.dispose();

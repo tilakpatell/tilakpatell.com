@@ -160,6 +160,9 @@ export const PARTS = [
     look: 'twin',
   }),
   part('secondary', 'flak', 'Flak burst', 'Seven short-lived shells in a wide fan: hard to miss with, light on each hit.', { mass: 1.5, power: 2, weapon: 'flak', look: 'twin' }),
+  // (the skill tree's two: each sold and fired only once its node is taken, catalog.js's NEW and weapons.js)
+  part('secondary', 'darkmatter', 'Concentrated dark matter', 'Rick’s: one slow, dark bolt that goes through every ship in its line, a third less at each.', { mass: 1.5, power: 2, weapon: 'darkmatter', look: 'twin' }),
+  part('secondary', 'energon', 'Energon arc', 'Cybertron’s lightning: to the lock, then on to up to three more near it, each jump weaker.', { mass: 1, power: 2, weapon: 'energon', look: 'twin' }),
   // the ordnance line: slow homing rounds from a rack
   part('ordnance', STOCK, 'Torpedo rack', 'The rack it came with: four heavy rounds.', { weapon: 'heavy' }),
   part('ordnance', 'missiles', 'Missile rack', 'Six lighter missiles that turn harder and come back sooner.', { mass: 1, power: 1, weapon: 'missiles', look: 'fusion' }),
@@ -171,6 +174,8 @@ export const PARTS = [
     hint: 'Hit the exhaust port in the trench run',
     look: 'fusion',
   }),
+  part('ordnance', 'seismic', 'Seismic charges', 'Two charges dropped behind you: a beat of silence, then a flat ring that takes everything in it.', { mass: 2, power: 2, weapon: 'seismic', look: 'fusion' }),
+  part('ordnance', 'crystal', 'Blue sky cluster', 'Three homing rounds that burst into six blue shards near what they’re after.', { mass: 1, power: 1, weapon: 'crystal', look: 'fusion' }),
 ];
 
 const BY_SLOT = Object.fromEntries(SLOTS.map((slot) => [slot, new Map()]));
