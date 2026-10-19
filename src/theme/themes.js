@@ -6,7 +6,7 @@ export const THEMES = {
   rtx: { id: 'rtx', label: 'RTX', company: 'RTX Corporation', swatch: '#CE1126' },
   bose: { id: 'bose', label: 'Bose', company: 'Bose Corporation', swatch: '#131317' },
   pendar: { id: 'pendar', label: 'Pendar', company: 'Pendar Technologies', swatch: '#4DA3DC' },
-  empowerreg: { id: 'empowerreg', label: 'Empowerreg', company: 'Empowerreg AI', swatch: '#7BC043' },
+  empowerreg: { id: 'empowerreg', label: 'Empowerreg', company: 'Empowerreg AI', swatch: '#DBE64C' },
   src: { id: 'src', label: 'SRC', company: 'SRC, Inc.', swatch: '#002C77' },
   // project themes
   gameboy: { id: 'gameboy', label: 'Game Boy', company: 'Game Boy', swatch: '#9B2257' },
