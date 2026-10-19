@@ -121,20 +121,43 @@ describe('the adventure’s store', () => {
     expect(a.dialOpen('vat')).toBe(false);
     a.jump(1);
     expect(a.get()).toMatchObject({ episode: 1, step: 0, got: [] });
+    expect(a.dialOpen('annex')).toBe(true);
+    expect(a.dialOpen('vat')).toBe(false); // (episode 2 is built: the lock still bites)
+    a.jump(2);
     expect(a.dialOpen('vat')).toBe(true); // (past the last ready episode)
     a.jump(99);
-    expect(a.get().episode).toBe(1);
+    expect(a.get().episode).toBe(2);
     a.reset();
     expect(a.get()).toEqual(fresh());
   });
 
-  it('shows a new visitor episode 1’s card once a visit', () => {
+  it('opens a visit with the card of the episode it starts on, once', () => {
     const a = createAdventure({ saves, read: none });
-    expect(a.intro()).toBe(true);
-    expect(a.intro()).toBe(false);
-    // a returner, or a visitor whose story is saved already, has seen it
-    expect(createAdventure({ saves, read: none }).intro()).toBe(false);
+    expect(a.intro()).toBe(0);
+    expect(a.intro()).toBe(null);
+    // the next visit, still at the start of episode 1: its card again
+    expect(createAdventure({ saves, read: none }).intro()).toBe(0);
+    // at the start of episode 2 (a visitor who finished episode 1 before it was built): episode 2's
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), ...data } }));
+    at({ episode: 1, step: 0 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(1);
+    // part-way through one, past the built ones, or on free roam: none
+    at({ episode: 1, step: 1 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(null);
+    at({ episode: 2, step: 0 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(null);
+    at({ episode: 1, step: 0, freeRoam: true });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(null);
     store.removeItem(STORY_KEY);
-    expect(createAdventure({ saves, read: { tasks: () => ['cable'], citadel: () => [] } }).intro()).toBe(false);
+    expect(createAdventure({ saves, read: { tasks: () => ['cable'], citadel: () => [] } }).intro()).toBe(null);
+  });
+
+  it('shows the card of an episode the visit catches up into, though a step of it was done before', () => {
+    // finished episode 1 before episode 2 was built, and played Roy then: the
+    // catch-up moves them on to the cabinet, and they've never seen its card
+    store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), episode: 1, step: 0 } }));
+    const a = createAdventure({ saves, read: { tasks: () => ['roy'], citadel: () => [] } });
+    expect(a.get()).toMatchObject({ episode: 1, step: 1 });
+    expect(a.intro()).toBe(1);
   });
 });

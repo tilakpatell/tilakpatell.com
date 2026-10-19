@@ -1,0 +1,169 @@
+/* Plumbus Smash on a walkway cabinet's screen (Cabinet.jsx): the screen, the
+   chutes, the cards. The cabinet is its own lit screen in a dark arcade, so its
+   colours are the marquee's, not the site's theme, as the sewer's are. Its key
+   caps are the world's (.rm-place kbd in world.css). */
+.cabinet {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  padding: max(64px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: radial-gradient(120% 90% at 50% 0%, #2a1240, #0b0714 70%);
+  color: #f4ecff;
+  font-family: var(--rm-font, system-ui, sans-serif);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.cabinet-leave {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 2;
+}
+
+/* the screen: a bezel, the HUD across its top, the three chutes below */
+.cabinet-screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100%);
+  height: min(720px, 100%);
+  border: 6px solid #1b1424;
+  border-radius: 18px;
+  background: linear-gradient(#170b26, #0e0818);
+  box-shadow: 0 0 0 2px #ff8fb4, 0 0 28px rgba(255, 143, 180, 0.35), inset 0 0 40px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+.cabinet-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  color: #d9c8ef;
+}
+.cabinet-hud b {
+  font-family: 'Luckiest Guy', var(--rm-font, system-ui, sans-serif);
+  font-weight: 400;
+  font-size: 1.25rem;
+  color: #c9ff5a;
+  font-variant-numeric: tabular-nums;
+}
+.cabinet-lives {
+  color: #ff5a6a;
+  letter-spacing: 2px;
+}
+.cabinet-lives span[data-off] {
+  color: rgba(255, 255, 255, 0.22);
+}
+.cabinet-chutes {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 10px 10px;
+  min-height: 0;
+}
+.cabinet-chute {
+  position: relative;
+  min-height: 44px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid #3a2456;
+  border-radius: 10px;
+  background: linear-gradient(rgba(255, 255, 255, 0.04), rgba(255, 143, 180, 0.08));
+  color: inherit;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.cabinet-chute:active {
+  border-color: #c9ff5a;
+}
+/* the hammer's reach: from the mark to the foot of the chute */
+.cabinet-reach {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-top: 2px dashed rgba(201, 255, 90, 0.6);
+  background: rgba(201, 255, 90, 0.08);
+  pointer-events: none;
+}
+.cabinet-plumbus {
+  position: absolute;
+  left: 50%;
+  width: 40px;
+  height: 52px;
+  margin-left: -20px;
+  pointer-events: none;
+}
+.cabinet-screen[data-stuck] .cabinet-chutes {
+  opacity: 0.6;
+}
+.cabinet-stuck {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  margin: 0;
+  text-align: center;
+  font-family: 'Luckiest Guy', var(--rm-font, system-ui, sans-serif);
+  font-size: 1.2rem;
+  color: #ffd23a;
+  text-shadow: 0 2px 0 #1b1424;
+  pointer-events: none;
+}
+
+/* the cards: the cabinet's attract screen, a pause, the end */
+.cabinet-card {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(11, 7, 20, 0.84);
+  text-align: center;
+}
+.cabinet-card > div {
+  max-width: 440px;
+}
+.cabinet-card h2 {
+  margin: 0 0 8px;
+  font-family: 'Luckiest Guy', var(--rm-font, system-ui, sans-serif);
+  font-weight: 400;
+  font-size: clamp(28px, 6vw, 44px);
+  letter-spacing: 1px;
+  color: #ff8fb4;
+  text-shadow: 3px 3px 0 #1b1424;
+}
+.cabinet-card p {
+  margin: 0 0 14px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #e6dcf3;
+}
+.cabinet-card .cabinet-colour {
+  font-style: italic;
+  color: #c9ff5a;
+}
+.cabinet-card .cabinet-keys {
+  font-size: 0.8rem;
+  color: #b9a8d0;
+}
+.cabinet-card .btn + .btn {
+  margin-left: 8px;
+}
+@media (max-width: 640px) {
+  .cabinet-hud {
+    font-size: 0.72rem;
+  }
+}
+/* (an end card that has only just come up: a tap meant for a chute lands on nothing) */
+.cabinet-card[data-settling] {
+  pointer-events: none;
+}

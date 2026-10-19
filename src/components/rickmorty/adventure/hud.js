@@ -25,29 +25,33 @@ function placesOf(state, opts) {
 }
 
 // What an out says: an episode done is its closing line, as a toast (the
-// first of them), and a built episode begun is its card.
+// last episode's, when one out ends two), and a built episode begun is its
+// card, unless it's over by the end of the same out.
 export function newsOf(out, { episodes = EPISODES } = {}) {
-  const say = [];
+  let say = [];
   let card = null;
   for (const o of out) {
     if (o.type === 'done') {
       const [who, text] = episodes[o.episode].outro[0];
-      say.push({ kind: 'say', who, text });
+      say = [{ kind: 'say', who, text }];
+      if (o.episode === card) card = null;
     }
     if (o.type === 'episode') card = o.episode;
   }
   return { say, card };
 }
 
-// The task the map's marker points at: the story's, while its step waits on
-// one (an `all`'s first part still to do); nothing when its step is
-// something else; the checklist's next once the built episodes are done.
+// What the map's marker points at: the story's task, or the game it's to
+// win, while its step waits on one (an `all`'s first part still to do);
+// nothing when its step is something else; the checklist's next once the
+// built episodes are done. (RmWorld's GOAL says where each is.)
 export function markedTask(state, next, opts) {
   const at = current(state, opts);
   if (!at) return next;
   const { step } = at;
   const part = step.type === 'all' ? step.steps.find((_, i) => !state.got.includes(i)) : step;
-  return part?.type === 'task' ? { id: part.id } : null;
+  if (part?.type === 'task') return { id: part.id };
+  return part?.type === 'win' ? { id: part.game } : null;
 }
 
 // The dial's places, each with its lock: null when it's open, else the
