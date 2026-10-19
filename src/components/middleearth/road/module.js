@@ -260,7 +260,10 @@ export default {
       fxVision = beat.fx.vision;
       const b = beat.shot && beat.shot.rig !== 'follow' ? beat.shot : null;
       const params = b?.params?.above ? { ...b.params, at: b.params.at && above(b.params.at), lookAt: b.params.lookAt && above(b.params.lookAt) } : (b?.params ?? {});
-      const leader = { at: [-ABREAST, lands.heightAt(-ABREAST, here.local), here.local], heading: 0 };
+      // (the camera’s lead stands where the walkers do: up a stair, on a bridge, in a boat)
+      const ground = lands.heightAt(-ABREAST, here.local);
+      const carried = scenes.floor(here.index, -ABREAST, here.local);
+      const leader = { at: [-ABREAST, carried == null ? ground : Math.max(ground, carried), here.local], heading: 0 };
       const want = pose({ rig: b?.rig ?? 'follow', params, lead: leader, tangent: [0, 0, 1], metres: here.local, look, mode: 'walk', reduced: clock.reduced, heightAt: lands.heightAt, t: b ? (beat.since[b.id] ?? 0) : 0 });
       const key = b?.id ?? 'follow';
       if (shot?.key !== key) shot = { key, from: lastPose, t: b?.cut === 0 || !lastPose ? BLEND : 0 };

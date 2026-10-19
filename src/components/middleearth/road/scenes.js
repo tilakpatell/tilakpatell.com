@@ -60,8 +60,10 @@ export function createScenes({ rt, road, lands, weather, ambience, tier, sky = n
         group.add(entry.scene.group);
       })
       // (a stage that fails stays failed until it is dropped: built again every frame it would be the kit painted every frame)
-      .catch(() => {
+      .catch((e) => {
         entry.failed = true;
+        // (in development, say why: a stage that will not build otherwise draws nothing, silently)
+        if (import.meta.env?.DEV) console.warn(`the Road: ${id} did not build`, e);
       });
   };
   const drop = (i) => {

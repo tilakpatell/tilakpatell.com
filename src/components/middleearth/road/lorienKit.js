@@ -17,7 +17,8 @@ import { color, float, mix, uniform, uv, vec3, vertexColor } from 'three/tsl';
 import { canvasTexture, hot } from '../../../lib/three/canvasTexture';
 import { normalFromField } from '../../../lib/paint';
 import { stoneTextures } from '../stoneTextures';
-import { barkCanvas, fieldOf, haloCanvas, leafCardCanvas, weatheredCanvas, woodCanvas } from '../towns/lorien/canvases';
+import { barkCanvas, haloCanvas, leafCardCanvas, weatheredCanvas, woodCanvas } from '../towns/lorien/canvases';
+import { fieldOf } from '../towns/lorien/helpers';
 import { eyeColour } from './creatures/eye';
 
 const S = 256;
@@ -53,11 +54,13 @@ export function addLorien(town, road, renderer) {
   K.night = night;
   K.water = { uTime: { value: 0 }, uNight: night };
   // the Mirror’s water: dark and still, the Eye rising in it with the vision
-  const mirrorWater = () => {
-    const u = { uK: uniform(0), uKind: uniform(0), uTime: tTime };
+  // (the builder keeps the uniforms it passes and sets them: they become the nodes’ own)
+  const mirrorWater = (given = {}) => {
+    const u = Object.assign(given, { uK: uniform(given.uK?.value ?? 0), uKind: uniform(given.uKind?.value ?? 0), uTime: tTime });
     const m = new MeshBasicNodeMaterial();
     const still = mix(vec3(0.05, 0.07, 0.1), vec3(0.2, 0.26, 0.34), float(1).sub(uv().sub(0.5).length().mul(1.6)));
-    const eye = eyeColour(uv(), { k: u.uK.mul(u.uKind.equal(1).select(1, 0)), time: tTime });
+    // (the slit upright as the basin is seen from the road, its steps’ side)
+    const eye = eyeColour(uv().yx, { k: u.uK.mul(u.uKind.equal(1).select(1, 0)), time: tTime });
     m.colorNode = still.add(eye);
     m.uniforms = u;
     made.push(m);
@@ -74,13 +77,14 @@ export function addLorien(town, road, renderer) {
   made.push(halo);
   Object.assign(mats, {
     // the mallorns: silver bark, gold leaves, the far wood
-    bark: M({ map: tex.bark, normalMap: tex.barkN, vertexColors: true, color: 0xf2f4f6 }),
+    // (warmer than the chapter’s: under the Road’s cold sky a white bark reads lilac)
+    bark: M({ map: tex.bark, normalMap: tex.barkN, vertexColors: true, color: 0xc8beac }),
     canopy: M({ map: K.tex.leaves, normalMap: K.tex.leavesN, color: new THREE.Color(1.5, 1.46, 1.36), vertexColors: true }, 0.4),
     leafCard: M({ map: tex.leafCard, vertexColors: true, alphaTest: 0.45, side: THREE.DoubleSide }, 0.4),
-    far: M({ vertexColors: true }, 0.2),
+    far: M({ vertexColors: true, color: 0xd8ccb0 }, 0.2),
     // white-grey elven woodwork, the boat, silver, the lamps’ light
-    elfwood: M({ map: tex.wood, normalMap: tex.woodN, color: 0xe2e5e8 }),
-    boat: M({ map: tex.wood, normalMap: tex.woodN, color: 0xd2d7dc }),
+    elfwood: M({ map: tex.wood, normalMap: tex.woodN, color: 0xd6ccb8 }),
+    boat: M({ map: tex.wood, normalMap: tex.woodN, color: 0xd0c8b8 }),
     silver: M({ color: 0xf4f6fa, emissive: new THREE.Color(0x30343a) }),
     lamp: M({ color: 0xeaf4ff, emissive: hot(0xbfe0ff, 2.4), emissiveIntensity: 0.35 }),
     halo,

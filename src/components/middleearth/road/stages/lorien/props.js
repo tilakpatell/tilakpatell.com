@@ -8,7 +8,7 @@
 // The stair runs straight up the road (the Road’s walkers keep to its
 // line), its posts down to the ground, lanterns along it.
 //
-//   buildProps({ K, road, heightAt, tier }) → { group, mirror, boats, floor(x, z), flet, dispose }
+//   buildProps({ K, road, heightAt, tier }) → { group, mirror, boats, floor(x, z), flet, top, dispose }
 //   DAIS, MIRROR, HYTHE, UP, DOWN, RISE: where they stand, for the beats and the scene
 
 import * as THREE from 'three';
@@ -23,7 +23,7 @@ export const DAIS = { tree: [-9, 80], r: 12 }; // the greatest mallorn, its flet
 export const UP = [46, 75]; // m: the stair up
 export const DOWN = [85, 97]; // m: and down
 export const MIRROR = { at: [-6, 103] }; // the Mirror in its hollow, its steps to the road
-export const HYTHE = { z: [126, 136] }; // the landing on the Silverlode
+export const HYTHE = { z: [121, 137] }; // the landing on the Silverlode, out over the water
 
 // the mallorns by the road: [x, z, height, seed] (on low the first three)
 const TREES = [
@@ -32,7 +32,7 @@ const TREES = [
   [12, 96, 50, 14],
   [-17, 122, 54, 15],
 ];
-const WOOD = 0xe2e5e8;
+const WOOD = 0xdcd2c0; // the pale elven wood, warmed: under the Road’s cold sky a grey-white reads lilac
 
 export function buildProps({ K, road, heightAt, tier = 'high' }) {
   const group = new THREE.Group();
@@ -84,18 +84,18 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
       geos.push(part(new THREE.BoxGeometry(2.4, 0.1, run / n + 0.04), C(WOOD), { at: [0, y0 + (y1 - y0) * k - 0.04, z0 + run * k] }));
     }
     for (const s of [-1, 1]) {
-      geos.push(part(new THREE.BoxGeometry(0.12, 0.34, len), C(0xcfd4d8), { at: [s * 1.25, (y0 + y1) / 2 - 0.2, (z0 + z1) / 2], pitch: -pitch }));
-      geos.push(part(new THREE.BoxGeometry(0.06, 0.06, len), C(0xdfe4e8), { at: [s * 1.25, (y0 + y1) / 2 + 0.95, (z0 + z1) / 2], pitch: -pitch }));
+      geos.push(part(new THREE.BoxGeometry(0.12, 0.34, len), C(0xcac0ae), { at: [s * 1.25, (y0 + y1) / 2 - 0.2, (z0 + z1) / 2], pitch: -pitch }));
+      geos.push(part(new THREE.BoxGeometry(0.06, 0.06, len), C(0xd8cebc), { at: [s * 1.25, (y0 + y1) / 2 + 0.95, (z0 + z1) / 2], pitch: -pitch }));
       for (let z = z0 + 2; z < z1 - 1; z += 3) {
         const y = y0 + ((z - z0) / run) * (y1 - y0);
-        geos.push(part(new THREE.CylinderGeometry(0.03, 0.03, 1, 5), C(0xdfe4e8), { at: [s * 1.25, y + 0.5, z] }));
+        geos.push(part(new THREE.CylinderGeometry(0.03, 0.03, 1, 5), C(0xd8cebc), { at: [s * 1.25, y + 0.5, z] }));
       }
     }
     // (slender posts down to the ground every few metres)
     for (let z = z0 + 4; z < z1 - 1; z += 6) {
       const y = y0 + ((z - z0) / run) * (y1 - y0);
       const g = ground(0, z);
-      if (y - g > 1) for (const s of [-1, 1]) geos.push(part(new THREE.CylinderGeometry(0.1, 0.14, y - g, 6), C(0xd8dde2), { at: [s * 1.15, (y + g) / 2, z] }));
+      if (y - g > 1) for (const s of [-1, 1]) geos.push(part(new THREE.CylinderGeometry(0.1, 0.14, y - g, 6), C(0xd2c8b6), { at: [s * 1.15, (y + g) / 2, z] }));
     }
   };
   flight(UP[0], UP[1], foot[0], top);
@@ -126,7 +126,9 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
 
   // the hythe: a landing of pale planks, three grey boats tied by it
   const landing = merged([part(new THREE.BoxGeometry(4, 0.16, HYTHE.z[1] - HYTHE.z[0]), C(WOOD), { at: [0, 0, 0] })], woodMat, 'lorien:hythe');
-  landing.position.set(0, ground(0, HYTHE.z[0]) + 0.3, (HYTHE.z[0] + HYTHE.z[1]) / 2);
+  // (level with the bank before the river, out over the water)
+  const deck = ground(0, HYTHE.z[0] - 10) + 0.4;
+  landing.position.set(0, deck - 0.08, (HYTHE.z[0] + HYTHE.z[1]) / 2);
   group.add(landing);
   const boats = [0, 1, 2].map(() => {
     const b = buildBoat(K);
@@ -144,6 +146,7 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
     if (z >= UP[0] && z <= UP[1]) return foot[0] + ((z - UP[0]) / (UP[1] - UP[0])) * (top - foot[0]);
     if (z > UP[1] && z < DOWN[0]) return top;
     if (z >= DOWN[0] && z <= DOWN[1]) return top + ((z - DOWN[0]) / (DOWN[1] - DOWN[0])) * (foot[1] - top);
+    if (z >= HYTHE.z[0] && z <= HYTHE.z[1]) return deck;
     return null;
   };
 
