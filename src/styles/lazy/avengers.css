@@ -128,3 +128,23 @@
 
 /* Still in styles/extras.css too; repeated here because this file loads after it */
 @media (prefers-reduced-motion: reduce) { .tesseract, .hulk-stage[data-hulk] { animation: none; } }
+
+/* the ops board (avengers/board): the records strip, then a card a building */
+.hq-records { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; }
+.hq-records > div { gap: 0.5rem; }
+.hq-records dt { color: var(--muted); }
+.hq-records dd { display: inline-flex; align-items: center; gap: 0.5rem; margin: 0; font-weight: 600; color: var(--text); }
+.hq-records-dots { display: inline-flex; gap: 0.25rem; }
+.hq-records-dots .stone-dot { width: 0.75rem; height: 0.75rem; margin: 0; }
+.hq-records-dots .stone-dot:not([data-on]) { opacity: 0.45; box-shadow: none; }
+.hq-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
+.hq-card { display: flex; flex-direction: column; gap: 0.25rem; padding: 1rem 1rem 1rem 1.25rem; border: 1px solid var(--border); border-left: 4px solid var(--glow); border-radius: var(--r-card); background: var(--surface); scroll-margin-top: calc(var(--nav-h) + 1rem); }
+.hq-card[data-next] { border-color: var(--border-strong); border-left-color: var(--glow); }
+.hq-card .label { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0; }
+.hq-card-name { margin: 0.25rem 0 0; font-size: 1.125rem; font-weight: 700; line-height: 1.25; color: var(--text); }
+.hq-card-stone { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0 0; font-size: 0.875rem; color: var(--text-body); }
+.hq-card-stone .stone-dot { flex: none; width: 0.75rem; height: 0.75rem; margin: 0; }
+.hq-card:not([data-done]) .hq-card-stone .stone-dot { opacity: 0.45; box-shadow: none; }
+.hq-card-best { margin: 0; color: var(--muted); }
+.hq-card-acts { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: auto; padding-top: 0.75rem; }
+@media (pointer: coarse) { .hq-card-acts .btn { min-height: 44px; } }
