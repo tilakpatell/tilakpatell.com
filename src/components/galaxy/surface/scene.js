@@ -1899,8 +1899,11 @@ export async function create(canvas, ctx) {
     if (t) struck(hit, b ? b.damage : (tag.damage ?? w.damage), { how: tag.how, push: tag.push });
     if (b && t && !(assaultOn() && !t.ground)) on(t).knock(t, palmThrow(me().st, hit.at, b.push, b.lift));
     if (b) {
-      hand.blast(muzzle ?? from, hit.at, b.scale);
-      fx.flash(hit.at, dir.clone().negate(), { color: '#bfefff', size: 0.4 * b.scale });
+      // (a blast is short: with nothing in reach it's drawn a few metres out, not to the end of its reach)
+      const start = muzzle ?? from;
+      const end = t ? hit.at : start.clone().addScaledVector(dir, Math.min(6, hit.at.distanceTo(start)));
+      hand.blast(start, end, b.scale);
+      fx.flash(end, dir.clone().negate(), { color: '#bfefff', size: 0.4 * b.scale });
     } else {
       hand.beam(muzzle ?? from, hit.at);
       if (t) fx.sparks(hit.at, UP, '#9dffb0', 3);
@@ -2466,7 +2469,7 @@ export async function create(canvas, ctx) {
       stepBurst();
       // (the gauntlet let go: fired at its charge, as a shot is; a shot that can't go now drops it)
       const k = hand.step(state.t, w, Boolean(state.keys.fire || state.buttons.fire));
-      if (k != null) {
+      if (k != null && state.phase === 'walk') {
         state.palm = k;
         fire();
         if (!state.shot) state.palm = null;

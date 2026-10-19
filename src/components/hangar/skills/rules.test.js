@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENTS } from '../../Achievements';
 import { BATTLEFRONT, BRANCHES, KEYS, NODES } from './tree';
+import { SKILL_NODES } from '../../universe/shared/hangar';
 import { canCarry, canTake, effectsOf, keyMet, legendRank, maxPoints, pointsOf, readSkills, resetCost, treeCost, withTaken } from './rules';
 
 const all = Object.keys(ACHIEVEMENTS);
@@ -110,6 +111,13 @@ describe('what they do', () => {
       expect(n.key).toBeTruthy();
       expect(n.soon).toBeUndefined();
     }
+  });
+  it('names the shipyard’s skill locks as the tree names its nodes, each opening the weapon it sells', () => {
+    for (const [id, name] of Object.entries(SKILL_NODES)) {
+      expect(NODES[id]?.name, id).toBe(name);
+      expect(NODES[id].arms, id).toBe(id.slice(2));
+    }
+    expect(Object.keys(SKILL_NODES)).toEqual(Object.keys(NODES).filter((id) => NODES[id].arms && NODES[id].branch === 'guns'));
   });
   it('lets a unique weapon be taken once its row-3 node, its key and the points are there', () => {
     expect(canTake(['trigger', 'loader'], 'u-seismic', plenty).why).toBe('parent');
