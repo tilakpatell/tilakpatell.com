@@ -74,12 +74,12 @@ export function eyeMaterial({ fog = false, additive = false, tower = null } = {}
   const qr = length(q.mul(vec2(1.0, 1.3)));
   const streak = mx_fractal_noise_float(vec3(atan(q.y, q.x).mul(6), qr.mul(7).sub(t.mul(1.1)), 2.0), 3, 2.0, 0.5, 1.0);
   const heat = pow(max(float(1).sub(qr.mul(1.2)), 0), 1.4).add(streak.mul(0.22)).add(focus.mul(0.15));
-  const iris = mix(mix(vec3(0.3, 0.01, 0.0), vec3(1.0, 0.3, 0.02), smoothstep(0.0, 0.42, heat)), vec3(1.0, 0.93, 0.62), smoothstep(0.55, 0.95, heat));
+  const iris = mix(mix(vec3(0.3, 0.01, 0.0), vec3(1.0, 0.3, 0.02), smoothstep(0.0, 0.42, heat)), vec3(1.0, 0.8, 0.38), smoothstep(0.6, 1.0, heat));
   // the pupil: a slit, widest at its middle, narrowing as it fixes on you
-  const half = max(float(1).sub(pow(q.y.div(max(lid, 0.001)), 2)), 0).mul(float(0.07).sub(focus.mul(0.035))).mul(smoothstep(0.1, 0.5, open));
+  const half = max(float(1).sub(pow(q.y.div(max(lid, 0.001)), 2)), 0).mul(float(0.095).sub(focus.mul(0.03))).mul(smoothstep(0.1, 0.5, open));
   const pupil = smoothstep(half.add(0.01), half.sub(0.01), abs(q.x)).mul(inside);
   const burn = smoothstep(half.add(0.07), half.add(0.005), abs(q.x)).mul(inside).sub(pupil).max(0);
-  const eyeColour = iris.add(vec3(1.0, 0.85, 0.4).mul(burn.mul(0.8)));
+  const eyeColour = iris.add(vec3(1.0, 0.6, 0.2).mul(burn.mul(0.45)));
   // the corona: wider than tall, its tongues going out and up
   const wide = length(p.mul(vec2(0.72, 1.35)));
   const tongues = smoothstep(0.95, 0.12, wide.add(flow.mul(0.3)).add(rising.mul(0.28)).sub(max(p.y, 0).mul(rising.add(0.5).mul(0.35)))).mul(float(0.3).add(open.mul(0.7)));

@@ -137,7 +137,7 @@ export function createPalantir({ mats, env }) {
       glass.opacity = 0.94 - show * 0.55 - open * 0.25;
       uRim.value.copy(cold).lerp(hot, Math.min(1, open * 0.6 + seen * 0.4));
       uRimPower.value = 0.5 + show * 0.6 + seen * 0.8 + 0.1 * Math.sin(t * 1.3);
-      heart.material.opacity = 0.12 + open * (0.4 + seen * 0.5) + 0.05 * Math.sin(t * 2);
+      heart.material.opacity = 0.08 + open * (0.16 + seen * 0.2) + 0.04 * Math.sin(t * 2);
       red.intensity = open * (0.5 + seen * 0.9) * (0.9 + 0.1 * Math.sin(t * 7));
     },
     dispose() {

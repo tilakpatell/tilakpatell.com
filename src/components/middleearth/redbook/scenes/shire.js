@@ -446,7 +446,7 @@ export const SCENES = {
       { id: 'sky', kind: 'flat', at: [0, -0.155], w: 0.47, h: 0.21, fold: 'in', lift: 1, art: rainNight, shadow: false },
       { id: 'town', kind: 'flat', at: [0, -0.12], w: 0.46, h: 0.11, fold: 'in', lift: 0.95, art: breeTown },
       { id: 'inn', kind: 'card', at: [0.03, -0.06], h: 0.15, lift: 0.75, art: pony, toy: 'bell', does: [{ act: 'hop' }, { act: 'light', target: ['inn-glow'] }] },
-      { id: 'inn-glow', kind: 'glow', at: [0.03, -0.045], y: 0.05, size: 0.22, colour: '#ffb84a', on: true },
+      { id: 'inn-glow', kind: 'glow', at: [0.03, -0.045], y: 0.05, size: 0.11, colour: '#ffb84a', on: true },
       { id: 'sign', kind: 'card', at: [0.125, -0.04], y: 0.075, h: 0.032, lift: 0.6, art: ponySign, toy: 'sign', does: [{ act: 'swing' }] },
       { id: 'strider', kind: 'card', at: [-0.14, 0.01], h: 0.11, turn: 0.4, lift: 0.4, art: ranger({ glint: true }), toy: 'strider', does: [{ act: 'hop' }] },
       { id: 'rain', kind: 'card', at: [-0.03, 0.09], h: 0.022, lift: 0.15, art: puddle, toy: 'rain', does: [{ act: 'sway' }] },

@@ -293,7 +293,8 @@ export default function RedBook() {
     );
   else if (view !== 'book')
     card = (
-      <div className="redbook-card" data-open>
+      // (on a phone, the title and the ways on until something is touched)
+      <div className="redbook-card" data-open={!touch || said ? true : undefined}>
         <p className="redbook-eyebrow">{view === 'window' ? 'Out of the round window' : 'Bag End'}</p>
         <h1 className="redbook-title">{said?.name ?? (view === 'window' ? 'The night over Hobbiton' : 'Bilbo’s study')}</h1>
         <p className="redbook-line" aria-live="polite">

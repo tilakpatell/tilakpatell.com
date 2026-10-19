@@ -149,7 +149,7 @@
 .redbook-dark {
   position: absolute;
   left: 50%;
-  top: 38%;
+  top: 60%;
   z-index: 3; /* (inside the stage: over the canvas, under the HUD’s frame) */
   width: min(42rem, calc(100% - 2rem));
   margin: 0;

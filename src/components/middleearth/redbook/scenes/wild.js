@@ -47,8 +47,8 @@ const lastHomelyHouse = {
       for (let i = 0; i < n; i++) {
         const x = x0 + ((x1 - x0) * (i + 0.5)) / n;
         const hw = ((x1 - x0) / n) * 0.32;
-        const arch = smooth([[x - hw, y + 0.16], [x - hw, y + 0.04], [x, y - 0.02], [x + hw, y + 0.04], [x + hw, y + 0.16]]);
-        b.fill(arch, { v: ['#f6d890', '#c8a05a'] }, 0.9).ink(arch, { width: 0.0003, twice: false });
+        const arch = smooth([[x - hw * 0.8, y + 0.16], [x - hw * 0.8, y + 0.05], [x, y - 0.03], [x + hw * 0.8, y + 0.05], [x + hw * 0.8, y + 0.16]]);
+        b.fill(arch, { v: ['#4a3420', '#c89a52'], y0: y - 0.03, y1: y + 0.16 }, 0.95).ink(arch, { width: 0.0003, twice: false });
       }
       b.line([[x0, y + 0.17], [x1, y + 0.17]], { width: 0.0006, twice: false });
     }
@@ -456,7 +456,7 @@ export const SCENES = {
     pieces: [
       { id: 'sky', kind: 'flat', at: [0, -0.155], w: 0.47, h: 0.22, fold: 'in', lift: 1, art: twilight, shadow: false },
       { id: 'wood', kind: 'flat', at: [0, -0.11], w: 0.46, h: 0.2, fold: 'in', lift: 0.95, art: wood },
-      { id: 'lamps', kind: 'glow', at: [0, -0.09], y: 0.13, size: 0.3, colour: '#dfe8ff', on: true, toy: 'lamps' },
+      { id: 'lamps', kind: 'glow', at: [0, -0.09], y: 0.13, size: 0.16, colour: '#dfe8ff', on: true, toy: 'lamps' },
       { id: 'lamp-card', kind: 'flat', at: [0, -0.08], y: 0.08, w: 0.4, h: 0.07, fold: 'in', lift: 0.95, art: lampsCard, soft: true, toy: 'lamps', does: [{ act: 'light', target: ['lamps'] }], shadow: false },
       { id: 'basin', kind: 'card', at: [0.04, 0.03], h: 0.05, lift: 0.3, art: mirror, toy: 'basin', does: [{ act: 'show', target: ['vision'], for: 5 }] },
       { id: 'vision', kind: 'card', at: [0.04, 0.032], y: 0.04, h: 0.02, lift: 0.3, hidden: true, art: visionCard, shadow: false },

@@ -328,8 +328,12 @@ export function king({ stone = '#9a958a', moss = '#5f7040', mirror = false } = {
     lit(axe, 0.15, 0.17);
     lit(blade, 0.17, 0.29);
     b.wash(base, { v: [shade(stone, 0.1), shade(stone, 0.4)], y0: 0.9, y1: 1 });
-    b.fill(f.o(0, 0.2, 0.06, 0.05), shade(stone, 0.1));
-    b.fill(f.o(0, 0.2, 0.035, 0.025), shade(stone, 0.5), 0.8);
+    // a king’s face, stern and worn: brows, eyes in shadow, the nose, a beard
+    b.wash(f.o(0, 0.2, 0.06, 0.05), { v: [tint(stone, 0.2), shade(stone, 0.2)], y0: 0.15, y1: 0.25 }, { edge: 0.4 });
+    b.line(f.pts([[-0.04, 0.185], [-0.01, 0.18]]), { width: 0.0007, colour: shade(stone, 0.6), twice: false });
+    b.line(f.pts([[0.01, 0.18], [0.04, 0.185]]), { width: 0.0007, colour: shade(stone, 0.6), twice: false });
+    b.line(f.pts([[0, 0.185], [0.004, 0.215]]), { width: 0.0005, colour: shade(stone, 0.45), twice: false });
+    b.fill(f.sm([[-0.04, 0.22], [0.04, 0.22], [0.03, 0.27], [0, 0.29], [-0.03, 0.27]]), shade(stone, 0.15), 0.9);
     // the stone’s cracks, its age, and moss in the folds
     b.hatch(robe, { angle: 1.5, gap: 0.0016, alpha: 0.35, fade: (x) => (mirror ? 1 - x : x) * 1.2 - 0.2 });
     for (let i = 0; i < 6; i++) b.line(rough(f.pts(P([[-0.15 + i * 0.06, 0.4 + (i % 3) * 0.15], [-0.12 + i * 0.06, 0.48 + (i % 3) * 0.15]])), 0.01, i + 2), { width: 0.0003, alpha: 0.5, twice: false });

@@ -164,12 +164,12 @@ const duskWest = {
 };
 
 const whiteMountains = {
-  outline: many(rangeOutline(BEACONS, { seed: 21 }), ...BEACONS.map(([x, y]) => oval(x, y - 0.01, 0.014, 0.035))),
+  outline: rangeOutline(BEACONS, { seed: 21 }),
   draw(b) {
     const shape = range(b, BEACONS, { rock: '#7a7a8a', snow: '#f6f4f2', foot: 1, seed: 21, snowLine: 0.12 });
     b.fill(shape, { v: [rgba('#3a3050', 0), rgba('#3a3050', 0.35)], y0: 0.3, y1: 1 });
     // a stack of wood ready on every peak
-    for (const [x, y] of BEACONS) b.fill([[x - 0.012, y + 0.01], [x, y - 0.03], [x + 0.012, y + 0.01]], '#4a3018').ink([[x - 0.012, y + 0.01], [x, y - 0.03], [x + 0.012, y + 0.01]], { width: 0.0003, twice: false });
+    for (const [x, y] of BEACONS) b.fill([[x - 0.012, y + 0.05], [x, y + 0.02], [x + 0.012, y + 0.05]], '#4a3018').ink([[x - 0.012, y + 0.05], [x, y + 0.02], [x + 0.012, y + 0.05]], { width: 0.0003, twice: false });
   },
 };
 
@@ -417,7 +417,7 @@ export const SCENES = {
       { id: 'barad-dur', kind: 'card', at: [0.17, -0.145], h: 0.21, lift: 1, art: baradDur },
       { id: 'eye', kind: 'card', at: [0.17, -0.143], y: 0.205, h: 0.032, lift: 1, art: eye(), toy: 'eye', does: [{ act: 'stare' }], shadow: false },
       { id: 'mountain', kind: 'card', at: [-0.05, -0.1], h: 0.19, lift: 0.85, art: mountDoom, toy: 'cracks', does: [{ act: 'light', target: ['lava'] }] },
-      { id: 'lava', kind: 'glow', at: [-0.05, -0.095], y: 0.18, size: 0.12, colour: '#ff6a1a', on: true, flicker: true },
+      { id: 'lava', kind: 'glow', at: [-0.05, -0.095], y: 0.18, size: 0.055, colour: '#ff6a1a', on: true, flicker: true },
       { id: 'plain', kind: 'flat', at: [0, -0.02], w: 0.46, h: 0.04, fold: 'in', lift: 0.5, art: ashPlain },
       { id: 'frodo', kind: 'card', at: [0.0, 0.06], h: 0.047, lift: 0.2, art: hobbit({ coat: '#5a5a4a', cloak: '#4a4a3a' }), toy: 'frodo', does: [{ act: 'hop' }] },
       { id: 'sam', kind: 'card', at: [0.045, 0.075], h: 0.048, lift: 0.2, art: hobbit({ coat: '#6a5a32', vest: '#8a3a2a', cloak: '#4a4a3a' }) },
