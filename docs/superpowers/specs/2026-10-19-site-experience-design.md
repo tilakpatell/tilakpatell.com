@@ -95,11 +95,11 @@ The nav’s icons name themselves with the browser’s grey `title` box. They ge
 
 ### B1. The visitor’s motion setting reaches the code
 
-`prefersReducedMotion()` and `useReducedMotion()` (`src/lib/hooks.js`) also answer yes when `<html data-motion="reduced">`, and the hook re-reads when the setting changes; `src/fun/effects.js` uses the shared helper. Every one of the 112 callers follows.
+`prefersReducedMotion()` and `useReducedMotion()` (`src/lib/hooks.js`) also answer yes when `<html data-motion="reduced">`, and the hook re-reads when the setting changes; `src/fun/effects.js` and the few files that asked the browser themselves use the shared helper, and the page’s first script puts the setting on `<html>` before anything reads it. Every caller follows.
 
 ### B2. Hover where there is hover
 
-The house’s hover lifts and every new hover sit inside `@media (hover: hover)`. In the dark a primary button brightens where it darkened (a lit thing glows when you reach for it), for every colour.
+The house’s hover lifts and every new hover sit inside `@media (hover: hover)`. In the dark a primary button glows where it darkened (a ring and a halo of its own colour: a lit thing glows when you reach for it), for every colour without a hover of its own. Tailwind’s `hover:` styles apply only where there is hover (`hoverOnlyWhenSupported`).
 
 ### B3. The families’ feel
 
@@ -107,7 +107,7 @@ A new eager sheet, `src/styles/feel.css`. Transform and opacity only, never layo
 
 | family | hover | press |
 | --- | --- | --- |
-| Companies | a hairline of the accent draws under a primary button | the house press |
+| Companies | a hairline draws in under a primary button’s label | the house press |
 | Star Wars | a blade ignites along a primary button’s foot (the Sith’s flickers once) | |
 | Caribbean | a card rides a swell (a lift and a slight roll) | |
 | Transformers | the plate’s bevel deepens | a clunk: 1px down |

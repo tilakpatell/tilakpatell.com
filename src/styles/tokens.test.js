@@ -23,6 +23,7 @@ const SHEETS = [
   'styles/extras.css',
   'styles/middleearth-themes.css',
   'styles/dialogs.css',
+  'styles/feel.css',
   'styles/lazy/settings.css',
   'styles/lazy/commandpalette.css',
   'styles/lazy/experience.css',
