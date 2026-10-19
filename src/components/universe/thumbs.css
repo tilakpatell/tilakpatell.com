@@ -200,7 +200,7 @@
     width: var(--panel-w);
     height: auto;
     max-height: calc(100% - var(--nav-h) - 16px);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid color-mix(in srgb, var(--saber) 22%, var(--border)); /* (the panel's own edge, universe.css's: the phone's sheet had none at its foot) */
     border-radius: var(--r-card);
   }
   :root .universe-page:not(.galaxy-page) .universe-panel[data-tucked] { top: calc(var(--nav-h) + 8px); width: var(--tab-w); height: 44px; padding-bottom: 0; }
