@@ -9,9 +9,9 @@ const stepsOf = (e) => e.steps.flatMap((s) => (s.type === 'all' ? [s, ...s.steps
 const allSteps = () => EPISODES.flatMap(stepsOf);
 
 describe('the adventure’s episodes', () => {
-  it('has thirteen episodes, the first three ready', () => {
+  it('has thirteen episodes, the first five ready', () => {
     expect(EPISODES).toHaveLength(13);
-    expect(READY).toBe(3);
+    expect(READY).toBe(5);
     expect(new Set(EPISODES.map((e) => e.id)).size).toBe(13);
   });
 
@@ -90,5 +90,24 @@ describe('the adventure’s episodes', () => {
     expect(guests.steps.map((s) => s.id)).toEqual(['rickall', 'wong', 'sewer']);
     expect(guests.steps[2]).toMatchObject({ type: 'task', id: 'sewer', place: 'agency' });
     expect(guests.unlocks).toEqual(['microverse', 'anatomy', 'storytrain']);
+  });
+
+  it('goes on with Small problems: the Microverse, then Anatomy Park', () => {
+    const small = EPISODES[3];
+    expect(small.title).toBe('Small problems');
+    expect(small.steps.map((s) => s.id)).toEqual(['microverse', 'anatomy']);
+    expect(small.steps[0]).toMatchObject({ type: 'task', id: 'microverse', place: 'microverse' });
+    expect(small.steps[1]).toMatchObject({ type: 'task', id: 'anatomy', place: 'anatomy' });
+    expect(small.unlocks).toEqual(['gromflomites', 'fortress']);
+  });
+
+  it('goes on with Heat: the cruiser’s chase, then the Gromflomite base', () => {
+    const heat = EPISODES[4];
+    expect(heat.title).toBe('Heat');
+    expect(heat.steps.map((s) => s.id ?? s.game)).toEqual(['chase', 'gromflomites']);
+    expect(heat.steps[0]).toMatchObject({ type: 'win', game: 'chase' });
+    expect(heat.steps[0].place).toBe(undefined); // (the cruiser's in the street: no dial place)
+    expect(heat.steps[1]).toMatchObject({ type: 'task', id: 'gromflomites', place: 'gromflomites' });
+    expect(heat.unlocks).toEqual(['needful', 'vat', 'nimbus']);
   });
 });

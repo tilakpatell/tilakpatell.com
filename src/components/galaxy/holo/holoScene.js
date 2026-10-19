@@ -3,28 +3,27 @@
 // its own scene and camera in the map's units with the core at the origin (./holoCamera.js). On the plane: the
 // disc's stars on the 2D map's two arms, the core's glow, the sectors (./sectors.js) in their holders' colours,
 // clouded where they hold, hatched where they only reach, faint where they're yours, the contested ones beating,
-// their borders thin and the regions' brighter, the hyperlanes faint, the regions' names and each side's along the
-// rim (./holoText.js); over it, the systems and the war's marks (./holoMarks.js). The labels are the page's buttons
-// (HoloStage.jsx), put here each frame where their systems are and named only where labelPlace.js finds them room:
-// where you are, the pick and the battles first, then the war's systems, the rest as the camera closes in.
+// their borders thin and the regions' brighter (no hyperlanes: the flat map has them), the regions' names and each
+// side's along the rim (./holoText.js). As Helldivers 2 has it, the whole galaxy is its sectors alone (and where you
+// are, a pulse and its YOU tag); the systems, the war's marks on them (./holoMarks.js) and their names come in only in
+// the sector opened (link.state.sector: brighter and edged, the rest dimmed), the one the pointer's over edged too. The
+// labels are the page's buttons (HoloStage.jsx), put here each frame where their systems are and named where
+// labelPlace.js finds room.
 //
 //   createHoloScene({ small, reduced }) → { scene, camera, frame(dt, now, link, size) → busy, dispose }
 
 import * as THREE from 'three';
 import { HIDDEN, estimateWidth, hangOf, placeLabels, sideOf } from '../labelPlace';
 import { SIDES } from '../sides';
-import { CORE, RIM, SYSTEMS, edgeAt } from '../systems';
-import { ROUTES } from '../routes';
-import { SPURS } from '../spurs';
+import { CORE, RIM, SYSTEMS, edgeAt, systemById } from '../systems';
 import { opsOf } from '../warMap';
 import { FAR, FOV, ease, eye, lensOf, settled } from './holoCamera';
 import { arcText } from './holoText';
 import { createMarks, worldOf } from './holoMarks';
-import { RINGS, SECTORS, holders, rimNames } from './sectors';
+import { RINGS, SECTORS, holders, outline, rimNames, sectorById, sectorOf, systemsIn } from './sectors';
 
 const TAU = Math.PI * 2;
 // (how far off the camera is when each kind of name comes in, grid squares)
-const NAMES_AT = { films: 17, charted: 9.5 }; // (the war's systems named whenever there's room)
 const LABEL_H = 18;
 
 const STAR_VERT = /* glsl */ `
@@ -186,14 +185,16 @@ function sectorMesh() {
     mat,
     // each sector's colour from who holds it: the side's own systems' clouded, only its reach hatched, yours faint
     // (as Super Earth's are, dark under the others'), nobody's dark
-    paint(holds, mine) {
+    // (and with one open, it brighter and the rest dimmed; the one the pointer's over brighter, a dark one tinted)
+    paint(holds, mine, { open = null, hover = null } = {}) {
       const per = SECTORS.map((s) => {
         const h = holds[s.id];
-        if (s.unknown && !h?.held) return { rgb: [0.02, 0.04, 0.09], a: 0.55, hatch: 0, fight: 0 };
-        if (!h?.side) return { rgb: [0, 0, 0], a: 0, hatch: 0, fight: 0 };
+        const k = (open && s.id !== open ? 0.3 : 1) * (s.id === open ? 1.15 : 1) * (s.id === hover && s.id !== open ? 1.6 : 1);
+        if (s.unknown && !h?.held) return { rgb: [0.02, 0.04, 0.09], a: 0.55 * Math.min(1, k), hatch: 0, fight: 0 };
+        if (!h?.side) return s.id === hover ? { rgb: [0.5, 0.8, 1], a: 0.07, hatch: 0, fight: 0 } : { rgb: [0, 0, 0], a: 0, hatch: 0, fight: 0 };
         c.set(SIDES[h.side].colour);
         const yours = h.side === mine;
-        return { rgb: [c.r, c.g, c.b], a: (yours ? 0.12 : 0.34) * (h.held ? 1 : 0.7), hatch: h.held ? 0 : 1, fight: h.contested ? 1 : 0 };
+        return { rgb: [c.r, c.g, c.b], a: Math.min(0.75, (yours ? 0.12 : 0.34) * (h.held ? 1 : 0.7) * k), hatch: h.held ? 0 : 1, fight: h.contested ? 1 : 0 };
       });
       for (let i = 0; i < owner.length; i++) {
         const p = per[owner[i]];
@@ -204,6 +205,24 @@ function sectorMesh() {
       geo.attributes.aMode.needsUpdate = true;
     },
   };
+}
+
+// a sector's edge as a ribbon on the plane, `w` grid squares wide, a little over the sectors: the open one's, the one the
+// pointer's over and yours
+function ribbon(id, w) {
+  const pts = outline(sectorById(id), 16).map(([x, z]) => [x - CORE[0], z - CORE[1]]);
+  const pos = [];
+  for (let i = 0; i < pts.length; i++) {
+    const [ax, az] = pts[i];
+    const [bx, bz] = pts[(i + 1) % pts.length];
+    const len = Math.hypot(bx - ax, bz - az) || 1;
+    const [nx, nz] = [(-(bz - az) / len) * (w / 2), ((bx - ax) / len) * (w / 2)];
+    const q = [[ax + nx, az + nz], [ax - nx, az - nz], [bx + nx, bz + nz], [bx - nx, bz - nz]].map(([x, z]) => [x, 0.014, z]);
+    pos.push(...q[0], ...q[1], ...q[2], ...q[1], ...q[3], ...q[2]);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  return geo;
 }
 
 // the sectors' borders (thin) and the regions' edges (brighter), as line segments on the plane
@@ -231,21 +250,6 @@ function borders() {
   return [make(fine, 0.14), make(bold, 0.32)];
 }
 
-// the hyperlanes, faint on the plane (the great routes brighter than the spurs)
-const SPUR = new Set(SPURS.map((r) => r.id));
-function lanes() {
-  const out = [];
-  for (const r of ROUTES) {
-    const pts = r.pts.map(([x, z]) => new THREE.Vector3(x - CORE[0], 0.003, z - CORE[1]));
-    const geo = new THREE.BufferGeometry().setFromPoints(pts);
-    const mat = new THREE.LineBasicMaterial({ color: 0x7fd6ff, transparent: true, opacity: SPUR.has(r.id) ? 0.16 : 0.3, depthWrite: false });
-    const line = new THREE.Line(geo, mat);
-    line.renderOrder = 2;
-    out.push({ line, geo, mat });
-  }
-  return out;
-}
-
 export function createHoloScene({ small = false, reduced = false } = {}) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#01040b');
@@ -268,11 +272,6 @@ export function createHoloScene({ small = false, reduced = false } = {}) {
   for (const b of borders()) {
     scene.add(b.lines);
     made.push(b.geo, b.mat);
-  }
-  const lanesDrawn = lanes();
-  for (const l of lanesDrawn) {
-    scene.add(l.line);
-    made.push(l.geo, l.mat);
   }
   const marks = createMarks({ small });
   scene.add(marks.group);
@@ -302,10 +301,34 @@ export function createHoloScene({ small = false, reduced = false } = {}) {
     for (const w of rim) scene.add(w.mesh);
   };
 
+  // the edges of the open sector, the one the pointer's over and yours, each made when it changes
+  // (their colours under the bloom's threshold, so an edge stays a line and doesn't bloom into a band)
+  const EDGES = { open: { w: 0.032, colour: new THREE.Color(0.86, 1.04, 1.2), opacity: 0.95 }, hover: { w: 0.026, colour: new THREE.Color(0.55, 0.9, 1.15), opacity: 0.85 }, you: { w: 0.02, colour: new THREE.Color(0.95, 0.95, 0.95), opacity: 0.5 } };
+  const edges = {};
+  const edge = (kind, id) => {
+    const e = edges[kind];
+    if ((e?.id ?? null) === (id ?? null)) return;
+    if (e) (scene.remove(e.mesh), e.geo.dispose(), e.mat.dispose());
+    delete edges[kind];
+    if (!id) return;
+    const { w, colour, opacity } = EDGES[kind];
+    const geo = ribbon(id, w);
+    const mat = new THREE.MeshBasicMaterial({ color: colour, transparent: true, opacity, depthWrite: false, toneMapped: false, side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.renderOrder = 3;
+    scene.add(mesh);
+    edges[kind] = { id, mesh, geo, mat };
+  };
+
   // what the map shows, taken when it changes
   const widths = new Map(); // (each name's, measured as it's first placed, and again once the fonts are in: below)
   let version = -1;
   let warKey = null;
+  let holds = {};
+  let paintedAt = null;
+  let open = null;
+  let only = new Set();
+  let here = null;
   let prio = {};
   const take = (link) => {
     if (link.version === version) return;
@@ -314,19 +337,32 @@ export function createHoloScene({ small = false, reduced = false } = {}) {
     const { war, current, pick, lit } = link.state;
     if (!war) return;
     const mine = link.state.mine ?? null;
+    // (the sector open, if any, and the one the pointer's over: its systems drawn and named, none on the whole galaxy)
+    open = link.state.sector ?? null;
+    const hover = link.state.hoverSector ?? null;
+    only = new Set(open ? systemsIn(open).map((s) => s.id) : []);
+    here = current;
     const key = `${war.war}:${war.campaign}:${war.systems.map((r) => `${r.id}${r.owner}${r.attack ? 'a' : ''}${r.front ? 'f' : ''}${r.battle ? 'b' : ''}`).join('')}:${mine}`;
     if (key !== warKey) {
       warKey = key;
-      const holds = holders(war);
-      sectors.paint(holds, mine);
+      holds = holders(war);
       putRim(holds);
+      paintedAt = null;
     }
-    marks.set({ war, ops: opsOf(war), pick, current, lit, mine });
-    // each system's name: who must be named, who may be
+    if (paintedAt !== `${open}:${hover}`) {
+      paintedAt = `${open}:${hover}`;
+      sectors.paint(holds, mine, { open, hover });
+    }
+    const you = current ? systemById(current) : null;
+    edge('open', open);
+    edge('hover', hover !== open ? hover : null);
+    edge('you', you && !open ? sectorOf(you.pos) : null);
+    marks.set({ war, ops: opsOf(war), pick, current, lit, mine, only });
+    // each system's name in the open sector: who must be named, who may be
     prio = {};
     for (const s of SYSTEMS) {
       const row = war.byId?.[s.id];
-      prio[s.id] = s.id === current ? 100 : s.id === pick ? 90 : s.id === link.state.hover ? 80 : row?.battle?.fighting ? 50 : row?.major ? 40 : row ? 10 : s.charted ? -1 : 0;
+      prio[s.id] = s.id === current ? 100 : s.id === pick ? 90 : s.id === link.state.hover ? 80 : row?.battle?.fighting ? 50 : row?.major ? 40 : row ? 30 : s.charted ? -1 : 20;
     }
   };
 
@@ -336,24 +372,25 @@ export function createHoloScene({ small = false, reduced = false } = {}) {
   let placedAt = null;
   globalThis.document?.fonts?.ready.then(() => (widths.clear(), (placedAt = null)));
   const label = (link, size, force) => {
-    const dist = link.pose.dist;
     const items = [];
     for (const s of SYSTEMS) {
       v.set(...worldOf(s)).project(camera);
       const x = ((v.x + 1) / 2) * size.w;
       const y = ((1 - v.y) / 2) * size.h;
-      const on = v.z < 1 && x > -40 && x < size.w + 40 && y > -40 && y < size.h + 40;
+      // (drawn: the open sector's systems; on the whole galaxy, where you are alone, its tag)
+      const drawn = only.has(s.id) || (!open && s.id === here);
+      const on = drawn && v.z < 1 && x > -40 && x < size.w + 40 && y > -40 && y < size.h + 40;
       link.place(s.id, x, y, on);
       const p = prio[s.id] ?? 0;
-      const named = p >= 40 || p === 10 || (p === 0 && dist < NAMES_AT.films) || (p === -1 && dist < NAMES_AT.charted);
-      // (named only with its dot on the free part of the stage: one past its edge or under the side panel has its dot alone)
-      const inside = x >= 0 && y >= 0 && x <= size.w - (link.inset?.right ?? 0) && y <= size.h - (link.inset?.bottom ?? 0);
-      if (!on || !named || !inside) continue;
+      // (named only with its dot on the free part of the stage: one past its edge, under the header and the crumb or under the
+      // side panel has its dot alone)
+      const inside = x >= 0 && y >= (link.inset?.top ?? 0) && x <= size.w - (link.inset?.right ?? 0) && y <= size.h - (link.inset?.bottom ?? 0);
+      if (!on || !inside) continue;
       const el = link.labels.get(s.id);
       let w = widths.get(s.id);
       // (the name's width, not its button's: the button is the dot's)
       if (!w && el) (w = (el.querySelector('.holo-name')?.offsetWidth ?? 0) + 2), w > 2 && widths.set(s.id, w);
-      items.push({ id: s.id, x, y, w: w || estimateWidth(s.name, 12.5), h: LABEL_H, prio: p, ...(p < 40 && { optional: true }), ...(s.charted && { dot: 4 }) });
+      items.push({ id: s.id, x, y, w: w || estimateWidth(open ? s.name : 'YOU', 12.5), h: LABEL_H, prio: p, ...(p < 0 && { optional: true }), ...(s.charted && { dot: 4 }) });
     }
     // (the names placed again only when the view's moved a pixel or two, or what's shown has changed)
     const { right = 0, bottom = 0 } = link.inset ?? {};
@@ -374,6 +411,8 @@ export function createHoloScene({ small = false, reduced = false } = {}) {
       if (!dot) el.setAttribute('data-off', '');
       else el.removeAttribute('data-off');
       const quiet = !shown.has(s.id) || !place || place === HIDDEN;
+      // (on the whole galaxy, where you are has its YOU tag and no name)
+      el.toggleAttribute('data-tag', !open && s.id === here);
       if (quiet) el.setAttribute('data-quiet', '');
       else el.removeAttribute('data-quiet');
       el.dataset.place = quiet ? 'r' : sideOf(place) ?? 'r';
@@ -411,6 +450,7 @@ export function createHoloScene({ small = false, reduced = false } = {}) {
       return !reduced || moving;
     },
     dispose() {
+      for (const kind of Object.keys(edges)) edge(kind, null);
       marks.dispose();
       for (const w of [...words, ...rim]) w.dispose();
       for (const x of made) x.dispose?.();

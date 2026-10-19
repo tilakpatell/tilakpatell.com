@@ -128,9 +128,17 @@ describe('the adventure’s store', () => {
     expect(a.dialOpen('microverse')).toBe(false); // (episode 3 is built too)
     expect(a.dialOpen('vat')).toBe(false);
     a.jump(3);
+    expect(a.dialOpen('microverse')).toBe(true);
+    expect(a.dialOpen('gromflomites')).toBe(false); // (episode 4 is built too)
+    expect(a.dialOpen('vat')).toBe(false);
+    a.jump(4);
+    expect(a.dialOpen('gromflomites')).toBe(true);
+    expect(a.dialOpen('needful')).toBe(false); // (episode 5 is built too)
+    expect(a.dialOpen('vat')).toBe(false);
+    a.jump(5);
     expect(a.dialOpen('vat')).toBe(true); // (past the last ready episode)
     a.jump(99);
-    expect(a.get().episode).toBe(3);
+    expect(a.get().episode).toBe(5);
     a.reset();
     expect(a.get()).toEqual(fresh());
   });
@@ -148,7 +156,7 @@ describe('the adventure’s store', () => {
     // part-way through one, past the built ones, or on free roam: none
     at({ episode: 1, step: 1 });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
-    at({ episode: 3, step: 0 });
+    at({ episode: 5, step: 0 });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
     at({ episode: 1, step: 0, freeRoam: true });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
@@ -179,6 +187,43 @@ describe('the adventure’s store', () => {
     at({ episode: 2, step: 0 });
     const all = createAdventure({ saves, read: knowing(['rickall', 'wong', 'sewer']) });
     expect(all.get()).toMatchObject({ episode: 3, step: 0 });
-    expect(all.intro()).toBe(null);
+    expect(all.intro()).toBe(3); // (episode 4's card: it's built now)
+  });
+
+  it('opens episode 4 for a visitor who finished episode 3 before it was built', () => {
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), ...data } }));
+    const knowing = (tasks) => ({ tasks: () => tasks, citadel: () => [] });
+    at({ episode: 3, step: 0 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(3);
+    at({ episode: 3, step: 0 });
+    const caught = createAdventure({ saves, read: knowing(['microverse']) });
+    expect(caught.get()).toMatchObject({ episode: 3, step: 1 });
+    expect(caught.intro()).toBe(3);
+    at({ episode: 3, step: 0 });
+    const both = createAdventure({ saves, read: knowing(['microverse', 'anatomy']) });
+    expect(both.get()).toMatchObject({ episode: 4, step: 0 });
+    expect(both.intro()).toBe(4); // (episode 5's card: it's built now)
+  });
+
+  it('opens episode 5 for a visitor who finished episode 4 before it was built', () => {
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), ...data } }));
+    const knowing = (tasks) => ({ tasks: () => tasks, citadel: () => [] });
+    at({ episode: 4, step: 0 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(4);
+    // the Gromflomite base done already, the chase not won: it waits at the chase, with episode 5's card
+    at({ episode: 4, step: 0 });
+    const based = createAdventure({ saves, read: knowing(['gromflomites']) });
+    expect(based.get()).toMatchObject({ episode: 4, step: 0 });
+    expect(based.intro()).toBe(4);
+    // the chase won already (a win before its step is kept): caught up to the base, still episode 5's card
+    at({ episode: 4, step: 0, wins: ['chase'] });
+    const chased = createAdventure({ saves, read: none });
+    expect(chased.get()).toMatchObject({ episode: 4, step: 1 });
+    expect(chased.intro()).toBe(4);
+    // both: episode 5 finishes as the visit loads, with no card (episode 6 isn't built)
+    at({ episode: 4, step: 0, wins: ['chase'] });
+    const both = createAdventure({ saves, read: knowing(['gromflomites']) });
+    expect(both.get()).toMatchObject({ episode: 5, step: 0 });
+    expect(both.intro()).toBe(null);
   });
 });

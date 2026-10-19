@@ -146,11 +146,31 @@ export async function ask(prompt, images = [], { maxTokens = 600 } = {}) {
   return j.choices?.[0]?.message?.content ?? '';
 }
 
-// The JSON object in an answer (the model may wrap it in prose or a code fence).
+// The JSON object in an answer: the first whole one (the model may wrap it in prose or a code fence, or go on after it
+// with more prose holding a brace, which a match from the first brace to the last took in: #1050's judge failed so).
 export function parseJson(text) {
-  const m = text.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error(`no JSON in: ${text.slice(0, 200)}`);
-  return JSON.parse(m[0]);
+  for (let at = text.indexOf('{'); at >= 0; at = text.indexOf('{', at + 1)) {
+    let depth = 0;
+    let quoted = false;
+    let escaped = false;
+    for (let i = at; i < text.length; i++) {
+      const c = text[i];
+      if (quoted) {
+        if (escaped) escaped = false;
+        else if (c === '\\') escaped = true;
+        else if (c === '"') quoted = false;
+      } else if (c === '"') quoted = true;
+      else if (c === '{') depth++;
+      else if (c === '}' && --depth === 0) {
+        try {
+          return JSON.parse(text.slice(at, i + 1));
+        } catch {
+          break; // (not JSON from this brace: try the next)
+        }
+      }
+    }
+  }
+  throw new Error(`no JSON in: ${text.slice(0, 200)}`);
 }
 
 const askJson = async (prompt, images, opts) => parseJson(await ask(prompt, images, opts));

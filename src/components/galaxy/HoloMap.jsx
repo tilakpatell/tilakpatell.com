@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { RiCloseLine, RiFullscreenExitLine, RiStackLine } from 'react-icons/ri';
+import { RiAnticlockwise2Line, RiClockwise2Line, RiCloseLine, RiFullscreenExitLine, RiStackLine } from 'react-icons/ri';
 import { systemLabel } from './warText';
 import HoloSide from './HoloSide';
 import HoloStage from './HoloStage';
@@ -100,6 +100,7 @@ const HOVER_GAP = 14; // (the hover card's distance from its dot, screen px: gal
 const TAG_GUESS = { w: 130, h: 24 }; // (the course tag's size on screen before it's been measured)
 const SEEN_KEY = 'tp-gcw-seen';
 const VIEW_KEY = 'tp-galaxy-map-view'; // ('flat' for the 2D map, in this browser)
+const SHEET = '(max-width: 760px), (max-width: 1024px) and (orientation: portrait)'; // (the 3D map's side panel a sheet along its foot: holo.css)
 // (screen px a grid square must have for a charted world's name to be shown where it has room, and a landmark's: the whole
 // galaxy names the films' and the shows' worlds alone, its charted worlds faint dots; zoomed in, they're named too)
 const CHARTED_NAMES_AT = 44;
@@ -442,7 +443,7 @@ export default function HoloMap({ holo = null, current, online, onJump, onClose,
     (id) => {
       setPick(id);
       const s = systemById(id);
-      if (s && three) stage.current?.frame(here ? [s.pos, here.pos] : [s.pos], { ifOff: true });
+      if (s && three) stage.current?.show(id); // (in 3D, its sector opened if it isn't already)
       else if (s && here && (!onView(viewNow.current, s.pos) || !onView(viewNow.current, here.pos))) frame([s.pos, here.pos]);
     },
     [here, frame, three],
@@ -483,7 +484,8 @@ export default function HoloMap({ holo = null, current, online, onJump, onClose,
     setQ('');
     setListOpen(false);
     setPick(s.id);
-    (three ? stage.current : mv)?.frame(here ? [s.pos, here.pos] : [s.pos]);
+    if (three) stage.current?.show(s.id);
+    else mv.frame(here ? [s.pos, here.pos] : [s.pos]);
     setTimeout(() => jumpBtn.current?.focus(), 0);
   };
 
@@ -515,8 +517,12 @@ export default function HoloMap({ holo = null, current, online, onJump, onClose,
     } else if (act === 'closeLayers') {
       setLayersOpen(false);
       chip?.focus();
-    } else if (act === 'close') onClose();
-    else if (act === 'find') (find.current?.focus(), find.current?.select());
+    } else if (act === 'close') {
+      // (in 3D, Escape shuts the open sector before the map; M shuts the map whatever's open)
+      if (!(three && e.key === 'Escape' && stage.current?.back())) onClose();
+    } else if (act === 'turnLeft' || act === 'turnRight') {
+      if (three) stage.current?.turn(act === 'turnLeft' ? -1 : 1);
+    } else if (act === 'find') (find.current?.focus(), find.current?.select());
     else if (act === 'jump') {
       if (!e.repeat) onJump(picked.id);
     } else if (act === 'zoomIn') (three ? stage.current : mv)?.zoomIn();
@@ -535,6 +541,13 @@ export default function HoloMap({ holo = null, current, online, onJump, onClose,
   }, []);
   const unitPx = (boxPx * mv.view.k) / FRAME.size; // (screen px per map unit)
   const wide = typeof window !== 'undefined' && Boolean(window.matchMedia?.('(min-width: 761px)').matches); // (the panel's rest is open where there's room)
+  // a phone's 3D map (or an upright tablet's): the side panel a sheet folded to its first lines, opened by its handle or a pick
+  const [folded, setFolded] = useState(true);
+  useEffect(() => {
+    if (pick) setFolded(false);
+  }, [pick]);
+  const stacked = typeof window !== 'undefined' && Boolean(window.matchMedia?.(SHEET).matches);
+  const sheet = useMemo(() => (three && stacked ? { folded, toggle: () => setFolded((f) => !f) } : null), [three, stacked, folded]);
   // (focus leaving the find for another control shuts its list; a press on a button in it has none yet, in Safari, so it's let be)
   const leaveFind = (e) => {
     if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) setListOpen(false);
@@ -751,9 +764,21 @@ export default function HoloMap({ holo = null, current, online, onJump, onClose,
                 <RiFullscreenExitLine aria-hidden="true" />
               </button>
             </div>
+            {/* the 3D map's turn (a right drag or two fingers twisting do it too): under the zoom on a wide map, in the
+                bottom corner on a phone's, where its zoom is a row along the top (holo.css) */}
+            {three && (
+              <div className="holomap-zoom holo-turn" role="group" aria-label="Turn">
+                <button type="button" onClick={() => stage.current?.turn(-1)} aria-label="Turn the map left" title="Turn left (Q)">
+                  <RiAnticlockwise2Line aria-hidden="true" />
+                </button>
+                <button type="button" onClick={() => stage.current?.turn(1)} aria-label="Turn the map right" title="Turn right (E)">
+                  <RiClockwise2Line aria-hidden="true" />
+                </button>
+              </div>
+            )}
           </div>
 
-          <HoloSide picked={picked} here={here} route={route} war={war} pickedWar={pickedWar} view={view} now={now} oath={oath} viewOath={viewOath} pilots={pilots} wide={wide} seen={seen} suggested={suggested} record={record} current={current} jumpBtn={jumpBtn} onJump={onJump} onClose={onClose} onLeave={onLeave} onSwear={onSwear} onTheatre={onTheatre} onPick={plot} onBack={back} />
+          <HoloSide picked={picked} here={here} route={route} war={war} pickedWar={pickedWar} view={view} now={now} oath={oath} viewOath={viewOath} pilots={pilots} wide={wide} seen={seen} suggested={suggested} record={record} current={current} jumpBtn={jumpBtn} onJump={onJump} onClose={onClose} onLeave={onLeave} onSwear={onSwear} onTheatre={onTheatre} onPick={plot} onBack={back} fold={sheet} />
         </div>
       </div>
     </div>,

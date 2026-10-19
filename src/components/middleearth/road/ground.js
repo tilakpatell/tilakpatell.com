@@ -24,15 +24,24 @@ import { boundsOf, distanceTo } from '../../../lib/land/paths.js';
 export const NEAR = 60; // m either side of the road
 const COARSE = 2; // the far grid takes every other sample
 
-// The default paint until a stage writes its own: grass by height and a
-// slow noise, worn to dirt on the road, mud where the land dips under its
-// neighbours. `out` takes the linear colour; the return is the grass, 0…1.
+// The paint: grass by height and a slow noise, worn to dirt on the road,
+// mud where the land dips under its neighbours. A stage’s own (its
+// `ground.paint`) gives its greens and its dirt as hex, and may lay snow
+// over the land above a height: `snow: [foot, top]`, none under the foot,
+// whole over the top, the line wandering with the noise, trodden grey on
+// the road. `out` takes the linear colour; the return is the grass, 0…1.
 const C = (hex) => new THREE.Color(hex).toArray();
 const GRASS = C(0x5c8f3a);
 const DEEP = C(0x3d6e2b);
 const SUN = C(0x93b54c);
 const DIRT = C(0xb59d72);
-export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT } = {}) {
+const SNOW = C(0xf4f4f2);
+const TRODDEN = C(0xb8bec8);
+const ROCK = C(0x5e6068);
+const linear = (c) => (typeof c === 'number' ? C(c) : c);
+export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT, snow = null } = {}) {
+  greens = greens.map(linear);
+  dirt = linear(dirt);
   // the road’s nearness, gridded at 1 m over its bounds once rather than
   // searched at every texel
   const reach = 6;
@@ -54,6 +63,7 @@ export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT } = {}
     o[1] = a[1] + (b[1] - a[1]) * t;
     o[2] = a[2] + (b[2] - a[2]) * t;
   };
+  const white = [0, 0, 0];
   return (x, z, out) => {
     const h = land.heightAt(x, z);
     const n = noise2(x / 37, z / 37, 3) * 0.5 + noise2(x / 9, z / 9, 5) * 0.25;
@@ -61,12 +71,20 @@ export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT } = {}
     if (t < 0.5) mix(out, greens[0], greens[1], t * 2);
     else mix(out, greens[1], greens[2], (t - 0.5) * 2);
     const d = dAt(x, z);
-    if (d < 2.8) {
-      const worn = Math.min(1, (2.8 - d) / 1.2) * (0.85 + noise2(x / 3, z / 3, 9) * 0.15);
-      mix(out, out, dirt, worn);
-      return 1 - worn;
+    const worn = d < 2.8 ? Math.min(1, (2.8 - d) / 1.2) * (0.85 + noise2(x / 3, z / 3, 9) * 0.15) : 0;
+    if (worn) mix(out, out, dirt, worn);
+    if (!snow) return 1 - worn;
+    const k = Math.min(1, Math.max(0, (h - snow[0]) / (snow[1] - snow[0]) + n * 0.5));
+    // (none holds on a face steeper than about 40°: the rock shows through, the snow in its ledges)
+    const slope = (Math.abs(land.heightAt(x + 2, z) - land.heightAt(x - 2, z)) + Math.abs(land.heightAt(x, z + 2) - land.heightAt(x, z - 2))) / 4;
+    const bare = Math.min(1, Math.max(0, (slope - 0.8) / 0.5));
+    if (bare) mix(out, out, ROCK, bare * (0.8 + n * 0.2));
+    const lie = k * k * (3 - 2 * k) * (1 - bare * 0.85);
+    if (lie) {
+      mix(white, SNOW, TRODDEN, worn);
+      mix(out, out, white, lie);
     }
-    return 1;
+    return (1 - worn) * (1 - lie) * (1 - bare);
   };
 }
 

@@ -6,7 +6,7 @@ const DT = 1 / 30;
 
 describe('C-137: the cruiser’s voice', () => {
   it('has a few lines for everything it reacts to, in its own manner', () => {
-    expect(Object.keys(SHIP_LINES).sort()).toEqual(['board', 'ceiling', 'fast', 'hello', 'idle', 'land', 'leave', 'refuse', 'tail', 'takeoff']);
+    expect(Object.keys(SHIP_LINES).sort()).toEqual(['board', 'ceiling', 'chase', 'fast', 'hello', 'idle', 'land', 'leave', 'refuse', 'shaken', 'tail', 'takeoff']);
     for (const [event, lines] of Object.entries(SHIP_LINES)) {
       expect(lines.length, event).toBeGreaterThanOrEqual(2);
       expect(COOLDOWN[event], event).toBeGreaterThan(GAP);

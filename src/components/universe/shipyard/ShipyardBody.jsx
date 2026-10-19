@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAchievements } from '../../Achievements';
+import { prefersReducedMotion } from '../../../lib/hooks';
 import { useEconomy } from '../EconomyProvider';
 import { crewById } from '../crews';
 import { readout } from '../outfit';
@@ -33,7 +34,7 @@ export default function ShipyardBody({ ship, shipName = '', live, lastBuild = nu
   const [record, setRecord] = useState(false);
   const { unlocked } = useAchievements();
   const { economy } = useEconomy();
-  const reduced = useMemo(() => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches, []);
+  const reduced = useMemo(() => prefersReducedMotion(), []);
   const { draft, checked, changes, looking, setLooking } = yard;
   // (what the showroom shows, for it to show the moment it's made)
   const latest = useRef(null);
