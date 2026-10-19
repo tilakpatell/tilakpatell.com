@@ -61,8 +61,38 @@ export const STAGES = [
     // Amon Sûl’s crown at the ring (z 122) and down off it to the seam
     ground: { spec: { seed: 14, relief: [{ type: 'swell', scale: 240, height: 4 }, { type: 'hills', scale: 70, height: 4, gain: 0.4, octaves: 3 }, { type: 'island', at: [0, 120], r: 72, height: 26 }, { type: 'mountains', scale: 200, height: 30, from: 360, to: 500 }] } },
   },
-  { id: 'ford', name: 'The Ford of Bruinen', date: '20 October 3018', length: 200, mode: 'walk', place: 'ford-of-bruinen' },
-  { id: 'rivendell', name: 'Rivendell', date: '25 October 3018', length: 155, mode: 'walk', place: 'rivendell' },
+  {
+    id: 'ford',
+    name: 'The Ford of Bruinen',
+    date: '20 October 3018',
+    length: 200,
+    mode: 'walk',
+    // (on Asfaloth from the ride’s beat to the stage’s end)
+    modes: [{ at: 80, mode: 'horse' }],
+    place: 'ford-of-bruinen',
+    // the Hoarwell under the Last Bridge, and the Bruinen at the Ford, shallow
+    // and fast under Rivendell’s hills; both cut and banked inside the seams
+    ground: {
+      rivers: [
+        { points: [[-540, 0, 60], [-200, 0, 54], [0, 0, 52], [220, 0, 49], [540, 0, 44]], depth: 3.2, width: 9, bank: 4 },
+        { points: [[-540, 0, 160], [-240, 0, 166], [0, 0, 168], [260, 0, 171], [540, 0, 164]], depth: 1.1, width: 16, bank: 5 },
+      ],
+    },
+  },
+  {
+    id: 'rivendell',
+    name: 'Rivendell',
+    date: '25 October 3018',
+    length: 155,
+    mode: 'walk',
+    place: 'rivendell',
+    // the valley of Imladris falling away on the right to the falls’ cliff,
+    // the stream under the bridge, the mountains round it all
+    ground: {
+      spec: { seed: 16, relief: [{ type: 'swell', scale: 200, height: 5 }, { type: 'hills', scale: 60, height: 3, gain: 0.4, octaves: 3 }, { type: 'island', at: [-100, 98], r: 90, height: -24 }, { type: 'mountains', scale: 140, height: 110, from: 230, to: 420 }] },
+      rivers: [{ points: [[-540, 0, 44], [-200, 0, 48], [0, 0, 50], [200, 0, 53], [540, 0, 49]], depth: 1.6, width: 5, bank: 3 }],
+    },
+  },
   { id: 'caradhras', name: 'Caradhras', date: '11 January 3019', length: 230, mode: 'walk', place: 'redhorn' },
   { id: 'moria', name: 'Moria', date: '13 January 3019', length: 250, mode: 'walk', place: 'moria' },
   { id: 'lorien', name: 'Lothlórien', date: '17 January 3019', length: 200, mode: 'walk', place: 'lorien' },
@@ -76,3 +106,11 @@ export const STAGES = [
 ];
 
 export const stageById = (id) => STAGES.find((s) => s.id === id) ?? null;
+
+// the way a stage is travelled at `local` metres into it: its first mode,
+// then each of its `modes` switches ({ at, mode }) once passed
+export function modeAt(stage, local) {
+  let mode = stage?.mode ?? 'walk';
+  for (const m of stage?.modes ?? []) if (local >= m.at) mode = m.mode;
+  return mode;
+}

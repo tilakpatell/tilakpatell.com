@@ -31,9 +31,11 @@ export const PACK = {
     // the nature kit the Road plants (its folder is under this one, so its
     // own pack’s list is read here too; installing Middle-earth installs the Road’s ground)
     '/kit/naturemega/index.json',
+    '/kit/naturemega/birch.glb',
     '/kit/naturemega/bush.glb',
     '/kit/naturemega/commontree.glb',
     '/kit/naturemega/deadtree.glb',
+    '/kit/naturemega/fern.glb',
     '/kit/naturemega/flower.glb',
     '/kit/naturemega/grass.glb',
     '/kit/naturemega/pine.glb',

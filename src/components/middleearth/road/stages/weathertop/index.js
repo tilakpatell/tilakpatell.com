@@ -87,7 +87,9 @@ export function build({ road, heightAt, rt, weather }) {
       // Sam’s fire: lit from the dell’s beat, burning on behind the walker
       const lit = since.dell != null;
       flicker += dt;
-      fireLight.intensity = lit ? 5 + Math.sin(flicker * 11) * 0.5 + Math.sin(flicker * 17.3) * 0.3 : 0;
+      const glow = 5 + Math.sin(flicker * 11) * 0.5 + Math.sin(flicker * 17.3) * 0.3;
+      fireLight.intensity = lit ? glow : 0;
+      fireLight.position.set(FIRE[0], heightAt(...FIRE) + 0.8, FIRE[1]);
       if (lit && !fire) {
         fire = weather?.kind?.('fire', { count: 60 }) ?? null;
         fire?.at(FIRE[0], heightAt(...FIRE) + 0.1, FIRE[1]);
@@ -132,9 +134,12 @@ export function build({ road, heightAt, rt, weather }) {
           hand.set(aragorn.x + (i ? -0.45 : 0.45), aragorn.y + 1.45, aragorn.z + 0.35);
           t?.at(hand.x, hand.y, hand.z);
         });
+        // (the one light goes with him: the torches light the five and the four)
+        fireLight.position.set(aragorn.x, aragorn.y + 1.8, aragorn.z + 0.6);
+        fireLight.intensity = glow * 1.3;
       }
       const burn = f != null && Number.isFinite(f) && f < BURN;
-      if (burn && !burning.length) burning = five.map(() => weather?.kind?.('fire', { count: 40 }) ?? null);
+      if (burn && !burning.length) burning = five.map(() => weather?.kind?.('fire', { count: 40, scale: 0.6 }) ?? null);
       if (!burn && burning.length) burning = stopAll(burning);
       burning.forEach((b, i) => b?.at(five[i].group.position.x, five[i].group.position.y + 0.8, five[i].group.position.z));
     },

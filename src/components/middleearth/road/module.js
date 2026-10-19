@@ -16,10 +16,10 @@
 // 'line' { who, text, at } as one of the cast says something (ambience.js).
 // The world adds: goTo(stageId), setAuto(on), press(name, down) (the touch
 // buttons), carryOn(), restart(), skipToEnd(); and set(s), `s`, `scene` for the checks.
-// In development, window.__ROAD__ = { set(s), info(), world, weather, ambience, vision(on) }.
+// In development, window.__ROAD__ = { set(s), info(), world, weather, ambience, vision(on), fast(k) }.
 
 import * as THREE from 'three';
-import { newClock, step as stepClock } from './clock';
+import { PACE, newClock, step as stepClock } from './clock';
 import { SAVE, recent, resume, ridden as riddenOf, savedAt, shouldOffer } from './entry';
 import { LOOK_LIMIT, pose, settleLook } from './director';
 import { light as lightAt } from './daylight';
@@ -34,7 +34,7 @@ import { chainFor, createRoadHouse, gradeNode } from './hooks';
 import { newVision, stepVision } from './vision';
 import { forgetCast, walker } from './cast';
 import { clipFor, walkers as walkersAt } from './fellowship';
-import { STAGES, stageById } from './stages/index';
+import { STAGES, modeAt, stageById } from './stages/index';
 import { BEATS_OF } from './stages/registry';
 import { createScenes } from './scenes';
 import { ease as easePose } from './director';
@@ -143,6 +143,7 @@ export default {
     if (!offer) clock = { ...clock, holdLeft: holdAt(clock.s) };
     let jumped = true; // (the first frame is a jump: nothing behind it plays)
     let lastSince = {}; // (the beats’ seconds, for the development hook’s info)
+    let labPace = 1; // (the development hook’s fast(k): k seconds of the ride to a frame’s one)
     let shot = null; // { key, from (pose), t }: the camera’s blend between rigs
     let lastPose = null;
     let fxVision = false;
@@ -224,7 +225,7 @@ export default {
       const here = lineAt(STAGES, clock.s);
       lands.at(here.index);
       const line = company();
-      const mode = stageById(here.stage).mode;
+      const mode = modeAt(stageById(here.stage), here.local);
       // the one you follow (Frodo while he walks with you) at the back of the
       // file, the rest ahead of him in their order, so none comes between
       // him and the camera
@@ -242,6 +243,7 @@ export default {
         const base = clipFor(w.state, mode, w.id);
         // (and as the beat has them: sat by a fire, a torch in each hand, down on the ground)
         const o = scenes.pose(here.index, w.id, { x, y, z, base, state: w.state }) ?? {};
+        fig.group.visible = !o.hide;
         fig.group.position.set(o.x ?? x, o.y ?? y, o.z ?? z);
         fig.group.rotation.y = o.yaw ?? 0;
         fig.set({ base: o.base !== undefined ? o.base : base, speed: o.speed ?? clock.speed });
@@ -325,6 +327,7 @@ export default {
         camera.updateProjectionMatrix();
       },
       step(dt, input) {
+        dt *= labPace; // (1 but in the lab, where a slow software frame is sped up to reach a beat)
         const pressed = (name) => KEYS[name].some((c) => input?.pressed?.has?.(c));
         // (while the resume card waits, nothing walks: Enter, under reduced
         // motion, is its yes; the card's own buttons take the rest)
@@ -345,7 +348,8 @@ export default {
           next: pressed('next'),
         };
         const was = clock.s;
-        clock = stepClock(clock, dt, keys, { total: TOTAL, holdAt, nextBeat: nextMark });
+        const at = lineAt(STAGES, clock.s);
+        clock = stepClock(clock, dt, keys, { total: TOTAL, holdAt, nextBeat: nextMark, pace: PACE[modeAt(stageById(at.stage), at.local)] ?? 1 });
         // (Next under reduced motion is how that ride is walked, so it counts)
         walked += Math.max(0, clock.s - was);
         if (clock.s !== was) saving = true;
@@ -453,7 +457,7 @@ export default {
         const r = rt.gfx.renderer?.info?.render ?? {};
         return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, vision: vision.amount, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats, since: lastSince };
       };
-      window.__ROAD__ = { world, set: (s) => world.set(s), info, weather, ambience, vision: (on) => void (visionOn = Boolean(on)), passes };
+      window.__ROAD__ = { world, set: (s) => world.set(s), info, weather, ambience, vision: (on) => void (visionOn = Boolean(on)), passes, fast: (k = 1) => void (labPace = Math.max(0, k)) };
     }
     return world;
   },

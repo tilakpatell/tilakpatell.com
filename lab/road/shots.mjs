@@ -28,7 +28,12 @@ for (const pick of ids) {
   const name = beat ? `${id}-${beat}-${secs}` : metres ? `${id}-${metres}` : id;
   for (const kind of kinds) {
     const { ctx, page, errors } = await open(b, `/middle-earth/road?at=${id}:${metres ?? 20}`, { phone: kind === 'phone' });
-    if (beat) await page.waitForFunction(([b, t]) => (window.__ROAD__.info().since?.[b] ?? -1) >= t, [beat, Number(secs)], { timeout: 600000, polling: 100 });
+    // (sped up to the beat: the container’s software frames are slow; then back to one to one for the picture)
+    if (beat) {
+      await page.evaluate(() => window.__ROAD__.fast?.(6));
+      await page.waitForFunction(([b, t]) => (window.__ROAD__.info().since?.[b] ?? -1) >= t, [beat, Number(secs)], { timeout: 600000, polling: 100 });
+      await page.evaluate(() => window.__ROAD__.fast?.(0));
+    }
     else await page.waitForTimeout(WAIT);
     const png = await page.screenshot({ type: 'png', timeout: 120000 });
     const img = kind === 'desktop' ? sharp(png).resize(960, 600) : sharp(png);

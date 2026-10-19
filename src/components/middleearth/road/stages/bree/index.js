@@ -45,15 +45,13 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
     return w;
   };
 
-  // the gatekeeper and his lantern (its light the one point light the stage keeps)
+  // the gatekeeper and his lantern (lit by itself: the stage keeps one point
+  // light, the Pony’s, so its building costs one recompile of the scene’s lights)
   stand('breeman', KEEPER[0], KEEPER[1], -Math.PI / 2);
-  const lampMat = road.material({ color: 0xffc070, emissive: 0xffa040, emissiveIntensity: 2 });
+  const lampMat = new MeshBasicNodeMaterial({ color: new THREE.Color(1.8, 1.2, 0.5) });
   const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 6), lampMat);
   lamp.position.set(KEEPER[0] - 0.45, heightAt(...KEEPER) + 1.75, KEEPER[1] - 0.2);
   group.add(lamp);
-  const lantern = new THREE.PointLight(0xffb060, 6, 9, 2);
-  lantern.position.copy(lamp.position);
-  group.add(lantern);
   if (tier !== 'low') for (const [x, z, yaw] of EAVES) stand('breeman', x, z, yaw);
   // in the Pony: Butterbur behind the bar, the Ranger at the corner table, his pipe
   const roomY = heightAt(PONY.x, PONY.window[2]);

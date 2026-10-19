@@ -10,7 +10,7 @@
 //     at(index, local, dt, { speed, jumped }) → { since, fx, shot }  (fx: fxAt’s; shot: rigAt’s, or null)
 //     floor(index, x, z) → the height the stage’s scene stands the walkers on there, or null (the land’s)
 //     pose(index, id, { x, y, z, base, state }) → what the scene changes of a walker this frame
-//       ({ x, y, z, yaw, base, speed }, each left out for the module’s own), or null
+//       ({ x, y, z, yaw, base, speed, hide }, each left out for the module’s own), or null
 //     dispose() }
 //
 // A build is given { road, heightAt, land, waters, rt, weather, ambience, tier }
@@ -31,6 +31,8 @@ const SCENES = {
   'shire-edge': () => import('./stages/shire-edge/index.js'),
   bree: () => import('./stages/bree/index.js'),
   weathertop: () => import('./stages/weathertop/index.js'),
+  ford: () => import('./stages/ford/index.js'),
+  rivendell: () => import('./stages/rivendell/index.js'),
 };
 
 export function createScenes({ rt, road, lands, weather, ambience, tier }) {

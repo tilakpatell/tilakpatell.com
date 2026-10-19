@@ -26,7 +26,9 @@ const BARE = [
   { model: 'DeadTree_1', per100: 0.006, clump: 2, spread: 8, scale: [0.8, 1.2] },
 ];
 
-const CORN = { Grass: { recolour: '#d2b062' } };
+const CORN = { Grass: { recolour: '#f2dc96' } };
+const GOLD = { Leaves_NormalTree: { recolour: '#d8a23a' }, Leaves_Birch: { recolour: '#e2b84a' } };
+const AUTUMN = { Leaves_NormalTree: { recolour: '#d49450' }, Leaves_Birch: { recolour: '#e0b45a' } };
 
 export const SCATTER = {
   hobbiton: [
@@ -56,8 +58,22 @@ export const SCATTER = {
   ],
   bree: GREEN,
   weathertop: GREEN,
-  ford: ROUGH,
-  rivendell: ROUGH,
+  ford: [
+    // the Trollshaws: grey autumn woods on broken hills, the leaves turned
+    { model: 'CommonTree_3', per100: 0.09, clump: 4, spread: 10, scale: [1.0, 1.5], tint: AUTUMN },
+    { model: 'Birch_2', per100: 0.05, clump: 3, spread: 8, scale: [0.8, 1.1], tint: AUTUMN },
+    { model: 'Pine_1', per100: 0.03, clump: 3, spread: 9, scale: [0.9, 1.3], slope: 0.9 },
+    { model: 'Rock_Big_1', per100: 0.012, clump: 2, spread: 8, scale: [0.6, 1.3], slope: 1.4 },
+    { model: 'Bush_Common', per100: 0.05, clump: 3, spread: 5, scale: [0.9, 1.4], tint: AUTUMN },
+  ],
+  rivendell: [
+    // autumn gold on the valley’s trees, pines above on the slopes
+    { model: 'CommonTree_5', per100: 0.05, clump: 3, spread: 9, scale: [1.0, 1.5], tint: GOLD },
+    { model: 'Birch_3', per100: 0.04, clump: 3, spread: 7, scale: [0.9, 1.2], tint: GOLD },
+    { model: 'Pine_3', per100: 0.04, clump: 4, spread: 9, scale: [0.9, 1.3], slope: 0.9 },
+    { model: 'Rock_Medium_2', per100: 0.02, clump: 3, spread: 5, scale: [0.6, 1.2], slope: 1.4 },
+    { model: 'Bush_Common_Flowers', per100: 0.04, clump: 3, spread: 4, scale: [0.8, 1.2], z: [60, 150] },
+  ],
   caradhras: ROUGH,
   moria: [],
   lorien: GREEN,

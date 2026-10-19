@@ -6,9 +6,9 @@ import { CHANGES } from '../../fellowship';
 describe('the Ford’s beats', () => {
   sweepBeats('ford', BEATS);
 
-  it('the brief’s moments: the trolls low, Arwen from the side, the ride on the horse’s back to the Ford, the river held 18 s', () => {
+  it('the brief’s moments: the trolls wide, Arwen from the side, the ride on the horse’s back to the Ford, the river held 18 s', () => {
     const by = Object.fromEntries(BEATS.map((b) => [b.id, b]));
-    expect(by.trolls).toMatchObject({ rig: 'low', hold: 8 });
+    expect(by.trolls).toMatchObject({ rig: 'wide', hold: 8 });
     expect(by.arwen).toMatchObject({ rig: 'side', hold: 6 });
     expect(by.ride).toMatchObject({ rig: 'ride', hold: 0 });
     // (the ride keeps the camera on the horse until the Ford’s own shot)

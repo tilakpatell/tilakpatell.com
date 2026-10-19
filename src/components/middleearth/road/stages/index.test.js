@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MODES, STAGES } from './index';
+import { MODES, STAGES, modeAt, stageById } from './index';
 import { endOf } from '../line';
 import { roadFor } from '../terrain';
 
@@ -36,6 +36,20 @@ describe('the sixteen stages', () => {
       expect(end.at[0]).toBeCloseTo(0, 6);
       expect(end.heading).toBeCloseTo(0, 3);
       expect(road.length).toBeCloseTo(s.length, 0);
+    }
+  });
+
+  it('a stage’s modes switch its way of travelling once passed: on Asfaloth at the Ford from the ride', () => {
+    const ford = stageById('ford');
+    expect(modeAt(ford, 0)).toBe('walk');
+    expect(modeAt(ford, 79.9)).toBe('walk');
+    expect(modeAt(ford, 80)).toBe('horse');
+    expect(modeAt(ford, ford.length)).toBe('horse');
+    expect(modeAt(stageById('bree'), 50)).toBe('walk');
+    for (const s of STAGES) for (const m of s.modes ?? []) {
+      expect(MODES).toContain(m.mode);
+      expect(m.at).toBeGreaterThan(0);
+      expect(m.at).toBeLessThan(s.length);
     }
   });
 });
