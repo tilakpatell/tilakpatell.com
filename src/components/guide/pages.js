@@ -585,6 +585,8 @@ export const PAGES = {
       ['The Smiths', 'Four of them are site colours. Jerry can ask.'],
       ['Plumbus Smash', 'The walkway cabinet at Blips and Chitz. Smash each plumbus at the foot of its chute; a swing at an empty chute sticks the stick. Somebody’s high score is all nines.'],
       ['Pickle Rick’s sewer run', 'The hole in the agency’s floor. Roll down the drain to the agency: hop the grates, hop onto the rats, and three screws make the rat-suit’s laser. Three bites and you’re a snack.'],
+      ['The Microverse', 'Inside the car’s battery. Carry Zeep’s cells from his console to the gooble boxes, one at a time, before the world’s charge runs down; it runs from the first cell you take.'],
+      ['Anatomy Park', 'Inside Ruben. Find the four pieces of the park map while the diseases hunt you, then get back through the portal before the clock runs out; caught, the pieces blow back where they were.'],
     ],
   },
   // a Rick and Morty planet, landed on from the universe map (/c-137/<id>)

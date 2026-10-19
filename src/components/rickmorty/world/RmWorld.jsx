@@ -87,6 +87,7 @@ import LoadingVeil from '../../worlds/LoadingVeil';
 import { rmWorldModule } from './module';
 import { createLook } from '../../../runtime/look';
 import { createFlightCluster } from '../../../runtime/hud';
+import { powerReadout } from './games/power';
 import { FRICTION, coneFor } from '../../../lib/combat/aim';
 import { createLockOn } from '../../../lib/combat/lockOn';
 import { stepRmLockOn } from './rmLockOn';
@@ -486,6 +487,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const [cluster] = useState(createFlightCluster);
   const [vitals] = useState(() => ({ value: 100, max: 100, low: false }));
   const powersRef = useRef(null); // (its power tiles, in the cluster: PowerBar's)
+  // a place run on power: the world's charge and the cells carried, the same kit's cluster
+  const chargeRef = useRef(null);
+  const chargeLine = useRef(null);
+  const [chargeMeter] = useState(createFlightCluster);
   const armsFor = useRef({ loadout, skillFx, powerPicks });
   armsFor.current = { loadout, skillFx, powerPicks };
   useEffect(() => {
@@ -1757,6 +1762,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       // the place's people, for the map (stage.js's NPC layer says where they are)
       s.npcs = api.current?.act(s.area, 'npcs') ?? null;
       drawMap(map.current, s, goalOf(markRef.current, s, planet), s.t);
+      // (and a place run on power, its charge: ./dimensions/stage.js)
+      const charge = powerReadout(api.current?.act(s.area, 'power'));
+      chargeMeter.place(chargeRef.current, { on: charge.on, vitals: charge.vitals, arms: null });
+      if (chargeLine.current) chargeLine.current.textContent = charge.line;
     }
   };
   const tickRef = useRef(tick);
@@ -1940,6 +1949,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         onWardrobe={() => setWardrobe(true)}
         onHangar={onHangar ? () => onHangar() : null}
         clusterRef={clusterRef}
+        chargeRef={chargeRef}
+        chargeLine={chargeLine}
         onShipFire={(on) => {
           sim.current.firing = on;
         }}
