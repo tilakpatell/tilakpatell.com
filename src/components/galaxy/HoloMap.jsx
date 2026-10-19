@@ -102,9 +102,10 @@ const SEEN_KEY = 'tp-gcw-seen';
 // galaxy names the films' and the shows' worlds alone, its charted worlds faint dots; zoomed in, they're named too)
 const CHARTED_NAMES_AT = 44;
 const LANDMARK_NAMES_AT = 48;
-// (and under this, a phone's whole map, the films' worlds out of the war are named only where there's room too: the war's are
-// what the map's for there, and the rest ran into them)
+// (and under this, a phone's whole map, the 2017 game's own worlds out of the war, in no film, are named only where there's room
+// too: the films' worlds and the war's are what the map's for there, and the rest ran into them)
 const ROOMY_AT = 20;
+const gameOnly = (s) => s.films.every((f) => f === 'bf2017');
 // (a map point's place on the stage, as the CSS left and top: mapView.js's square)
 const stageAt = (p) => {
   const [u, w] = onSquare(p);
@@ -390,7 +391,7 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
       const z = sized[s.id];
       // (a charted world, unless it's where you are or the one picked: a small dot, and its name only where there's room; and on a
       // small map, a world the war isn't fought over)
-      const quiet = s.charted && prio === 0 ? { optional: true, dot: SMALL_DOT, ...(!named && { w: 0, h: 0 }) } : !row && prio === 0 && unit < ROOMY_AT && { optional: true };
+      const quiet = s.charted && prio === 0 ? { optional: true, dot: SMALL_DOT, ...(!named && { w: 0, h: 0 }) } : !row && prio === 0 && unit < ROOMY_AT && gameOnly(s) && { optional: true };
       const [x, y] = inBox(s.pos);
       return { id: s.id, x, y, w: z ? z.w : estimateWidth(s.name, 12.5, extras), h: z ? z.h : 20, prio, ...quiet };
     });
@@ -669,7 +670,7 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
                   const ring = row ? { '--held': SIDES[row.owner].colour, ...(by && { '--by': SIDES[by].colour, '--take': 1 - row.control }) } : {};
                   const you = row && fought.has(s.id);
                   return (
-                  <li key={s.id} style={{ ...stageAt(s.pos), '--c': s.accent, ...ring }} data-dim={!lit(s) || undefined} data-charted={s.charted || undefined} data-quiet={places[s.id] === null || undefined} data-place={sideOf(places[s.id]) ?? undefined} data-hang={hangOf(places[s.id])} data-badge={row ? badges[s.id] : undefined} data-held={row?.owner} data-front={(by && !row.attack) || undefined} data-attack={row?.attack ? '' : undefined} data-major={row?.major || undefined} data-decisive={row?.decisive || undefined} data-cut={row?.cut || undefined} data-fought={you || undefined}>
+                  <li key={s.id} style={{ ...stageAt(s.pos), '--c': s.accent, ...ring }} data-dim={!lit(s) || undefined} data-charted={s.charted || undefined} data-game={gameOnly(s) || undefined} data-quiet={places[s.id] === null || undefined} data-place={sideOf(places[s.id]) ?? undefined} data-hang={hangOf(places[s.id])} data-badge={row ? badges[s.id] : undefined} data-held={row?.owner} data-front={(by && !row.attack) || undefined} data-attack={row?.attack ? '' : undefined} data-major={row?.major || undefined} data-decisive={row?.decisive || undefined} data-cut={row?.cut || undefined} data-fought={you || undefined}>
                     <button type="button" className="holomap-system" aria-pressed={pick === s.id} aria-current={s.id === current ? 'location' : undefined} onFocus={(e) => reveal(s, e)} onPointerEnter={(e) => e.pointerType === 'mouse' && setHover(s.id)} onPointerLeave={() => setHover(null)} onClick={() => choose(s.id)} aria-label={row ? systemLabel(row, now, you) : s.charted ? s.name : undefined}>
                       <span className="holomap-dot" aria-hidden="true" {...discOf(s.id)}>
                         {you && <i className="holomap-you" />}
