@@ -31,12 +31,15 @@
   - Every file stays under 800 lines (`HoldTheLawn.jsx` is 722 today).
   - No new dependency, renderer or animation loop.
   - No edit to `src/components/guide/pages.js` or `src/runtime/hud/*`: open draft #1028 owns them.
+- **Check scripts and scratch.**
+  - Scratch files live in `$S`, the session’s scratchpad, never under the repo. PR 1’s manifest script is saved once, as `$S/closure.mjs` (Task 0), and reused in Task 6.
+  - The scratch browser script sets `tp-3d` raw (`'on'` or `'off'`, as `lib/gpu.js` `setMode3D` stores it; a JSON string reads as auto) and `tp-worlds` as JSON (`'"load"'`, read through `local.get`).
 - **Commits.** A plain sentence as the subject. The body says why, with the measured numbers. End with the harness’s attribution lines. No model names anywhere. Never force-push.
 - **What later PRs rely on.**
   - PR 3 keeps this PR’s tour sentence verbatim.
   - PR 4 rewrites `labels.test.js`’s `stoneById\('` assertion to `<Results\b`, builds its half wording from `HALF_OF` and passes Hold the Lawn’s checkpoint as `onward` with `againLabel="From wave 1"`.
   - PR 5 adds only `count` to `progress()`’s return, and imports `HALF_OF` and `stoneLine`.
-  - PR 6 adds `recordTry('thor')` in `HoldTheLawn`’s `begin`.
+  - PR 6 relies on `const begin = useCallback(` in `HoldTheLawn.jsx`: its pre-flight greps for `const begin = useCallback`, and its `heist.test.js` finds the body by that text to pin the `recordTry('thor')` it adds there.
 
 ## Review Focus
 
@@ -44,15 +47,26 @@
 2. **Shooting through Prime on its way in.** A player who aims at a drone behind the approaching Ultron Prime expects to hit the drone. An unhittable Prime must not soak up the shot. Pinned in Task 2 (“lets a shot through Ultron Prime on its way in, to the drone behind it”).
 3. **Restart at the boss after a lost game.** The checkpoint must carry nothing over: no enemies, bolts or spawns, the hammer in hand, five hearts, lightning empty, score 0. Pinned in Task 3 (“carries nothing over into the checkpoint from a game just lost”).
 4. **Natasha’s half as well as Clint’s.** The half wording must name Natasha for `soul-natasha`, in both the won and the not-yet-won lines, and the whole `soul` id must read plainly as “Soul Stone”. Pinned in Task 5 (“says whose half a half is …”).
-5. **Trick Shot on a phone.** At 390 × 844 the 44-tick quiver in two rows must not run under the wind gauge, the trick-arrow chips or the touch buttons. Pinned in Task 6’s browser script (`trickshot` part: no bounding-box intersections, exactly two rows).
+5. **Trick Shot on a phone.** At 390 × 844 the 44-tick quiver in two rows must not run under the wind gauge, the trick-arrow chips or the touch buttons. Pinned by Task 0’s browser script, run in Task 6 Step 5 (`trickshot` part: no bounding-box intersections, exactly two rows).
 
 ---
 
-### Before Task 1: the before numbers
+### Task 0: The before numbers
 
-- [ ] **Branch and check PR 1 is in:** `git fetch origin main && git switch -c <branch> origin/main && ls src/components/avengers/world/rules/progress.js src/components/avengers/world/scene/doors.js`. Expected: both paths print. `S` below is the session’s scratchpad directory (never under the repo).
-- [ ] **Write the scratch browser script** `$S/hq-pr2-check.mjs` (not committed). It takes part names as arguments and prints `ok <part>` or `FAIL <part>: <why>` for each.
-  - **Launch.** Copy the launch, context and init block of `scripts/hq-world-check.mjs:17-41`, with `W=1024 H=640`, then wait for `window.__HQWORLD__?.api` (the `disabled` part waits for the cards instead, since it runs with 3D off).
+**Files:** none committed.
+
+**Interfaces:**
+- Consumes: PR 1’s `world/rules/progress.js` and `world/scene/doors.js`; PR 1’s manifest script (PR 1 plan, Task 1 Step 2); `scripts/hq-world-check.mjs:17-41`.
+- Produces, all in `$S` and all consumed by Task 6:
+  - `hq-pr2-check.mjs`, the scratch browser script (its parts below);
+  - `closure.mjs` (PR 1’s manifest script, unchanged) and `closure-before.txt`;
+  - `avhq-pr2-before.webp`;
+  - `inv-before/` and `hq-before/`, the two world checks’ pictures;
+  - `check-before.txt`, the `ricochet` and `todo` parts on main.
+
+- [ ] **Step 1: Branch and check PR 1 is in.** `git fetch origin main && git switch -c <branch> origin/main && ls src/components/avengers/world/rules/progress.js src/components/avengers/world/scene/doors.js`. Expected: both paths print. `S` below is the session’s scratchpad directory (never under the repo).
+- [ ] **Step 2: Write the scratch browser script** `$S/hq-pr2-check.mjs` (not committed). It takes part names as arguments and prints `ok <part>` or `FAIL <part>: <why>` for each.
+  - **Launch.** Copy the launch, context and init block of `scripts/hq-world-check.mjs:17-41` (its init lines are `:28-34`), with `W=1024 H=640`. Override only `tp-3d`, set raw to `'on'` as `lib/gpu.js` `setMode3D` stores it (the copied `'"on"'` reads as auto); `tp-worlds` stays JSON, `'"load"'`. Then wait for `window.__HQWORLD__?.api` (the `disabled` part waits for the cards instead, since it runs with 3D off).
   - **Per-part storage.** Each part adds its own `localStorage` entries to the init script.
   - **`ricochet`:**
     - `__HQWORLD__.enter('cap')`, then wait for `__HQ__.ricochet?.view`.
@@ -72,21 +86,21 @@
     - Pass: `.ts-arrows span` count is 44, and the spans have exactly two distinct `getBoundingClientRect().top` values.
     - Pass: the `.ts-arrows` rect intersects none of the visible `.ts-wind`, `.ts-tricks` or `.ts-touch` rects.
     - Screenshot `.hq-screen` to `$S/trickshot-<w>.png`.
-  - **`disabled`** (init, after the copied block: `tp-3d` = `'"off"'`, so `/avengers` shows the cards):
+  - **`disabled`** (init, after the copied block: `tp-3d` = raw `'off'`, as `lib/gpu.js` `setMode3D` stores it, so `/avengers` shows the cards; a JSON `'"off"'` reads as auto, which is 3D on here):
     - Click the card button `Lift it`, then run `document.querySelector('.hq-game .hold-btn').disabled = true`.
     - Pass: its computed `cursor` is `not-allowed`, and its computed `color` equals that of a probe `<span style="color: var(--muted)">` added to the page.
     - Repeat with `document.documentElement.dataset.theme = 'dark'`.
   - **`todo`** (init: `tp-hq-stones` = `JSON.stringify(['power','reality','mind','soul-clint','soul-natasha','soul','time','space'])` and `tp-achievements` = `'["spidey"]'`):
     - Open the HUD’s Menu (the button in `.cw-menu`). Pass: its item contains `Things to do · 8/8`.
     - Rerun with `tp-achievements` removed. Pass: the item contains `Things to do · 7/8`.
-- [ ] **Shoot main.**
+- [ ] **Step 3: Shoot main.**
   - Run `node scripts/autopilot-check.mjs --skip lint,test --routes /avengers,/invincible --shots avhq-pr2 --before`. Expected: it ends `everything green` and writes `public/changes/avhq-pr2-before.webp`.
   - `mv public/changes/avhq-pr2-before.webp $S/`, then `git checkout public/github.json`.
-- [ ] **World checks and measurements on main.**
+- [ ] **Step 4: World checks and the fixes’ parts on main.**
   - Start `npx vite --port 5173 --strictPort` in the background.
   - Run `OUT=$S/inv-before node scripts/inv-world-check.mjs` and `OUT=$S/hq-before node scripts/hq-world-check.mjs`. The second prints `compound up in … s` and ends `no page errors`.
   - Run `node $S/hq-pr2-check.mjs ricochet todo | tee $S/check-before.txt`. Expected on main: `FAIL ricochet` (the second read is higher, by each room’s geometries and the bots’ bone textures) and `FAIL todo` (7/8 with the achievement).
-  - Measure the closure into `$S/closure-before.txt` with Task 6 Step 2’s command.
+- [ ] **Step 5: The closure, before.** Save PR 1’s manifest script (PR 1 plan, Task 1 Step 2) unchanged as `$S/closure.mjs`; run `npx vite build && node $S/closure.mjs | tee $S/closure-before.txt; git checkout public/github.json`. Expected: one total line, about `707 kB raw 260 kB gzip` after PR 1. Zero files means the page key isn’t `src/pages/Avengers.jsx`: grep the manifest for it.
 
 ---
 
@@ -318,7 +332,7 @@ it('gives a steadier archer the stone on most seeds', () => {
   - Set `arrows: QUIVER` at `:37`, `:50` and `:63`. Time and wind stay at 45, 50 and 55 s.
   - Set `STONE_SCORE = 625` (`:27`). Comment: a fair archer (noise 0.0125) scores 518–704 over seeds 1–40 (median 616) and passes 625 on 16 of 40 seeds, so about one try in 2.5.
   - Header `:10`: “Three rounds against the clock (the quiver holds more than the quickest hand can loose in one).”
-  - `trickshot.css:18`: `.ts-arrows { display: grid; grid-template-columns: repeat(22, max-content); gap: 3px; }`, commented “the 44-arrow quiver (rules.js QUIVER) in two rows of 22”. The phone rule at `:44` keeps its 4 × 18 px ticks.
+  - `trickshot.css:18`: `.ts-arrows` becomes a grid of `repeat(22, max-content)` columns, keeping its 3 px gap, commented “the 44-arrow quiver (rules.js QUIVER) in two rows of 22”. The phone rule at `:44` keeps its 4 × 18 px ticks.
   - `TrickShot.jsx` needs no change: it reads `R.arrows` and `STONE_SCORE`.
 - [ ] **Step 9: Run them to see them pass.** `npx vitest run src/components/avengers/trickshot/rules.test.js` → `Tests 26 passed (26)`, each under 1 s (the slowest about 300 ms).
   - With 44 arrows, seed 1 ends its rounds at 45.0, 50.1 and 55.1 s, with 4, 5 and 7 arrows left.
@@ -354,8 +368,8 @@ it('gives a steadier archer the stone on most seeds', () => {
   - In `HoldTheLawn.jsx`:
     - `const BOSS = 'tp-hq-lawn-boss'`.
     - State `checkpoint` (boolean).
-    - `begin(open)`, where `open` is `startLawn` or `startAtBoss`.
-    - `start = () => begin(startLawn)` and `startBoss = () => begin(startAtBoss)`.
+    - `const begin = useCallback((open) => { … }, [focus, stage.view, sync])`, where `open` is `startLawn` or `startAtBoss`.
+    - `const start = useCallback(() => begin(startLawn), [begin])` and `const startBoss = useCallback(() => begin(startAtBoss), [begin])`.
     - `__HQ__.lawn.checkpoint()` calls `startBoss`.
     - After a loss with the checkpoint reached, the overlay shows the buttons `Restart at the boss` (primary) and `From wave 1` (ghost).
 
@@ -413,7 +427,7 @@ it('carries nothing over into the checkpoint from a game just lost', () => {
   - `:13`: import `startAtBoss`.
   - `:28`: add `const BOSS = 'tp-hq-lawn-boss'; // true once Cull Obsidian’s wave has been reached`.
   - `:72`: `const [checkpoint, setCheckpoint] = useState(() => local.get(BOSS, false) === true)`.
-  - `:85-95`: today’s `start` body becomes `begin(open)`, which calls `open(game.current)` where it called `startLawn`. `start` and `startBoss` are thin callbacks over it. `start` stays a callback of no arguments, because it is an `onClick` handler and receives the click event.
+  - `:85-95`: today’s `start` body becomes `const begin = useCallback((open) => { … }, [focus, stage.view, sync])`, which calls `open(game.current)` where it called `startLawn`. Then `const start = useCallback(() => begin(startLawn), [begin])` and `const startBoss = useCallback(() => begin(startAtBoss), [begin])`. `start` stays a callback of no arguments, because it is an `onClick` handler and receives the click event. PR 6 finds `begin` by the text `const begin = useCallback`.
   - `case 'wave'` (`:181-184`): when `e.boss && !checkpoint`, call `setCheckpoint(true)` and `local.set(BOSS, true)`. This mirrors how `tp-hq-lawn-lifted` is written on `lifted`.
   - Add `case 'checkpoint': play('thunder'); break;`.
   - Add `checkpoint` to `handle`’s deps at `:277`.
@@ -626,16 +640,11 @@ it('counts the gate done once Thwip! has been won, so the list reaches 8/8', () 
   - `labels.test.js`: 4 failed (`stoneById is not a function`, `STONE_OF` undefined, the hex literals, `army`).
   - The 8/8 test: `expected [ …(7) ] to have a length of 8`.
 - [ ] **Step 3: One table** in `world/labels.js`.
-  - Export `STONE_OF` and `HALF_OF` as in Produces.
-  - `stoneById = (id) => STONES.find((s) => s.id === (STONE_OF[id] ?? id)) ?? null`.
-  - `stoneFor = (p) => (p.stone ? stoneById(p.stone) : null)`.
-  - `stoneLine(p)`:
-    - No stone: `p.done ? 'No stone here: Peter made it to school' : 'No stone here: just Peter, and school'`.
-    - Done: `` `${HALF_OF[p.stone] ? `${HALF_OF[p.stone]} half of the ` : ''}${st.name}: won back` ``.
-    - Not done: `` `Win it for ${HALF_OF[p.stone] ? `${HALF_OF[p.stone]} half of the` : 'the'} ${st.name}` ``.
-    - §7 (“whose half it is … in the HUD list, the board and the game screen alike”) wins over the earlier brief, which left the not-done line saying “the half”.
+  - Export `STONE_OF` and `HALF_OF` as in Produces, and `stoneById(id)`: a half’s id read through `STONE_OF`, then its `STONES` row, or `null`.
+  - `stoneFor(p)` and `stoneLine(p)` keep their signatures and read through `stoneById` and `HALF_OF`. Their strings are the seven `labels.test.js` pins.
+  - §7 (“whose half it is … in the HUD list, the board and the game screen alike”) wins over the earlier brief, which left the not-done line saying “the half”.
 - [ ] **Step 4: Use the table everywhere.**
-  - `Place.jsx`: delete `:10` and `:153`. Then set `const stone = stoneFor(p)` and `const half = HALF_OF[p.stone] ? `${HALF_OF[p.stone]} half of the ` : 'the '`, importing `{ HALF_OF, stoneFor }` from `./labels`. The rendered text is unchanged.
+  - `Place.jsx`: delete `:10` and `:153`. Then `stone` (`:176`) is `stoneFor(p)` and `half` (`:178`) comes from `HALF_OF` (“Clint’s half of the ”, “Natasha’s half of the ” or “the ”), importing `{ HALF_OF, stoneFor }` from `./labels`. The rendered text is unchanged.
   - The seven overlays: add `import { stoneById } from '../world/labels';` and make the swaps in the table under Files. The badge now takes the gauntlet’s colours (for example, Power `#8e2de2` for `#a24bff`): the intended change of §9.
   - `world/scene/doors.js`: delete the module-level `STONE_OF` and the `STONES` import. The gem colour becomes `const color = stoneFor(p)?.color ?? p.accent`, with `import { stoneFor } from '../labels'`. The colour is the same for every place (the gate falls to `p.accent` as before), so the compound stays pixel-identical.
 - [ ] **Step 5: Things to do at 8/8.**
@@ -652,8 +661,7 @@ it('counts the gate done once Thwip! has been won, so the list reaches 8/8', () 
   - `player.js:57`, as text: `'You’re Spider-Man: swing, zip, perch. Each building is a game, most of them for an Infinity Stone, and the Space Stone opens a portal to Titan. Twelve backpacks and a ring course are hidden round the grounds.'` That is 37 words; `steps.test.js` allows 12 to 45. The player’s reading time goes from 596 s to 597 s against a budget of 660.
   - `CompoundWorld.jsx:664`, the lead: `Marvel, all of it. Every building on the compound belongs to someone, and each has a game (Spider-Man’s is at the front gate). The Infinity Stones are won in the 3D games; here, each building has a simpler one to try. {prog.objective}`
   - `hq.css`, after `:26`:
-    - `.hq-game .btn:disabled { border-color: var(--border); background: var(--surface-2); color: var(--muted); cursor: not-allowed; }`
-    - `.hq-game .btn:disabled:active { transform: none; }`
+    - `.hq-game .btn:disabled`: `color: var(--muted)` and `cursor: not-allowed` (pinned by Task 0’s `disabled` part, in both themes), on the theme’s `--border` and `--surface-2`; its `:active` takes no press transform.
     - Comment: dimmed by colour, never faded (RULES.md UI 6); for the toys’ disabled `.btn` and, from PR 4, a Start that waits for its stage.
     - The games’ own buttons keep their own `:disabled` rules.
 - [ ] **Step 7: Run them to see them pass.**
@@ -674,19 +682,14 @@ it('counts the gate done once Thwip! has been won, so the list reaches 8/8', () 
 - Create: `docs/superpowers/evidence/avengers-hq/pr2/README.md`, plus the pictures it lists under `before/` and `after/`, as PR 1’s evidence folder does (`.webp` or `.png`, each under 1 MB, so committed rather than published to the bucket)
 
 **Interfaces:**
-- Consumes: everything Tasks 1–5 produce; `$S/hq-pr2-check.mjs` and the before files from “Before Task 1”.
+- Consumes: everything Tasks 1–5 produce; Task 0’s `$S` files (`hq-pr2-check.mjs`, `closure.mjs`, `closure-before.txt`, `avhq-pr2-before.webp`, `inv-before/`, `hq-before/` and `check-before.txt`).
 - Produces: the pull request.
 
 - [ ] **Step 1: The gates.**
   - Run `npm run lint && npm test && npm run build && node scripts/health.mjs --check --skip build`, then `git checkout public/github.json`.
   - Expected: lint clean, Vitest all green (Thwip 13, Repulsor 20, Trick Shot 26, Lawn 28, `free` 3, `labels` 4), build green and the health table `within budget`. There is no new big file, dependency, loop or key-cap rule.
   - Don’t ratchet a budget: the steward lowers budgets after the merge.
-- [ ] **Step 2: The `/avengers` closure** (PR 1’s manifest one-liner):
-
-```bash
-npx vite build && node --input-type=module -e "import{readFileSync as r}from'node:fs';import{gzipSync as g}from'node:zlib';const m=JSON.parse(r('dist/.vite/manifest.json','utf8'));const seen=new Set(),rows=[];const v=(k)=>{const c=m[k];if(!c||seen.has(k)||c.isEntry)return;seen.add(k);for(const f of[c.file,...(c.css??[])]){const b=r('dist/'+f);rows.push([c.name??k,b.length,g(b).length,f])}(c.imports??[]).forEach(v)};v('src/pages/Avengers.jsx');const kb=(n)=>(n/1024).toFixed(0)+' kB';console.log('/avengers static closure, app entry left out:',rows.length,'files',kb(rows.reduce((s,x)=>s+x[1],0)),'raw',kb(rows.reduce((s,x)=>s+x[2],0)),'gzip');for(const x of rows.sort((a,b)=>b[1]-a[1]))console.log(' ',String(x[0]).padEnd(28),kb(x[1]).padStart(7),kb(x[2]).padStart(7),x[3])" | tee $S/closure-after.txt; git checkout public/github.json
-```
-
+- [ ] **Step 2: The `/avengers` closure.** With PR 1’s manifest script, saved unchanged as `$S/closure.mjs` in Task 0 (PR 1 plan, Task 1 Step 2), run `npx vite build && node $S/closure.mjs | tee $S/closure-after.txt; git checkout public/github.json`.
   - Expected: within 1 kB of `$S/closure-before.txt` (about 707 kB raw and 260 kB gzip after PR 1). The games are lazy chunks, and `labels.js` was already in the closure. Zero files means the page key isn’t `src/pages/Avengers.jsx`: grep the manifest for it.
 - [ ] **Step 3: The pages in a browser.**
   - Run `node scripts/autopilot-check.mjs --only smoke --routes /avengers,/invincible --shots avhq-pr2`, then `node scripts/autopilot-check.mjs --only smoke --routes /avengers,/invincible --phone`. Each must end `everything green`: no page error, and no console error beyond `scripts/lib/noise.mjs`’s noise.
@@ -694,7 +697,7 @@ npx vite build && node --input-type=module -e "import{readFileSync as r}from'nod
   - Move all three into the evidence folder (`git mv` is not needed: they are untracked), then `git checkout public/github.json`.
 - [ ] **Step 4: The worlds.** With `npx vite --port 5173 --strictPort` up:
   - Run `OUT=$S/inv-after node scripts/inv-world-check.mjs`. Its pictures must match `$S/inv-before` (ThinkMark draws no disabled `.btn`).
-  - Run `OUT=$S/hq-after node scripts/hq-world-check.mjs`. It must print `compound up in` and end `no page errors`. Its nine shots must match `hq-before` by eye: the gate shows no gem, and the doors’ gems are the same colours.
+  - Run `OUT=$S/hq-after node scripts/hq-world-check.mjs`. It must print `compound up in` and end `no page errors`. Its nine shots must match `$S/hq-before` by eye: the gate shows no gem, and the doors’ gems are the same colours.
 - [ ] **Step 5: The fixes in a browser.** Run `node $S/hq-pr2-check.mjs ricochet thwip lawn trickshot disabled todo | tee $S/check-after.txt`. Expected: `ok` for every part, both Trick Shot sizes included.
   - Ricochet’s two `[geometries, textures]` pairs are equal. Record them beside `$S/check-before.txt`’s.
   - Read `$S/lawn-checkpoint.png` and the two `trickshot-*.png`: 44 ticks in two rows of 22, clear of the wind gauge, the trick chips and the touch buttons.

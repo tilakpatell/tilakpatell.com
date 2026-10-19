@@ -34,9 +34,12 @@
 - **The site’s 3D switch (§5, §6).** No code in this PR calls `three.set`, `setMode3D` or `use3D().set`. The no-3D notice’s only actions are a retry when the site’s mode is `'auto'`, loading a world the gate is holding, or opening Settings (`openSettings`, `src/lib/palette.js:25`).
 - **Shared code.** Nothing under `src/components/avengers/hq/` or `src/runtime/` changes; `records.js` and `CompoundWorld` only import from `hq/gameScreen.js`. So `scripts/inv-world-check.mjs` is not run, and Task 6 proves the diff there is empty.
 - **Islands (RULES.md).** `board/` is part of the Avengers world. It imports only `avengers` modules, `src/lib`, `src/runtime` and `interests/stones` (which `labels.js` already reads). It imports no game’s `rules.js`: the counts (12 rooms, 8 levels, 6 legs) are constants pinned by a test, so those 1,677 lines stay out of the page’s static closure.
-- **Open draft #1028** edits `guide/pages.js` (`:15-36`, `:103-140`), `pages.test.js` and `runtime/hud/*`. This PR changes one tip string in `guide/pages.js` (“Without 3D”, `:452`), which it would otherwise make untrue. It does not touch `pages.test.js` or `runtime/hud/*`.
+- **Open draft #1028** edits `guide/pages.js` (`:15-36`, `:103-140`), `pages.test.js` and `runtime/hud/*`. This PR changes one tip string in `guide/pages.js` (“Without 3D”, `:452`), which it would otherwise make untrue, as the index allows. The PR body names it for #1028’s owner. It does not touch `pages.test.js` or `runtime/hud/*`.
 - **Limits.** Files under 800 lines. `CompoundWorld.jsx` is about 750 after PR 4, and this PR is about +5 net (`Cards`, 54 lines, becomes `Air`, about 40). No new dependency, renderer or animation loop. No new `kbd` rule. Sections use `relative z-10`, as the page’s others do.
 - **Tests.** Beside their file, each under one second, no network. No test is skipped, loosened or deleted.
+- **Checks (the index’s rules).**
+  - Scratch files live in `$S`, the session’s scratchpad, never under the repo. PR 1’s manifest script is saved once as `$S/closure.mjs` and reused.
+  - The scratch browser script copies `scripts/hq-world-check.mjs:28-34`’s init lines and overrides only what a part needs: `tp-3d` raw (`'on'` or `'off'`, as `lib/gpu.js` `setMode3D` stores it; a JSON string reads as auto) and `tp-worlds` as JSON (`'"load"'`, read through `local.get`).
 - **Commits.** A plain sentence as the subject; the body says why. End with the session’s attribution lines. No model names anywhere. Never force-push; if `main` moves, merge it in.
 - **What later PRs rely on.**
   - PR 6 imports `readBest(id, get) → { score, text, stars } | null` from `board/records.js` for the summary’s best per game. `text` reads like “Best 12,345”, “3 of 12 rooms” or “Best 460 · 2 of 6 legs”. `Avengers.jsx` no longer imports `Link`, so PR 6 adds it back with `hqState` for its Next link. Titan’s section is untouched.
@@ -78,25 +81,35 @@
 | `src/pages/Avengers.jsx`, `src/pages/Avengers.test.js` (create) | 5 | the page’s order and the Archive |
 | `docs/superpowers/evidence/avengers-hq/pr5/` | 6 | README and pictures |
 
-### Before Task 1: the before numbers
+### Task 0: The before numbers
 
-`S` below is the session’s scratchpad directory (never under the repo).
+**Files:** none committed.
 
-- [ ] **Branch and check PRs 1–4 are in.** Run `git fetch origin main && git switch -c claude/avengers-hq-pr5-ops-board origin/main`. Then:
+**Interfaces:**
+- Consumes: PRs 1–4 as listed under Global Constraints; PR 1’s manifest script (PR 1 plan, Task 1 Step 2); `scripts/hq-world-check.mjs:28-34` (its init lines).
+- Produces, all in `$S` and all consumed by Task 6:
+  - `closure.mjs` (PR 1’s manifest script, unchanged) and `closure-before.txt`;
+  - `health-before.txt` and `tests-before.txt`;
+  - `avhq-pr5-before.webp` and `avhq-pr5-phone-before.webp`;
+  - `links-before/` and `hq-before/`, the two checks’ pictures;
+  - `hq-pr5-check.mjs`, the scratch browser script (its parts below);
+  - `height-before.txt`, the page’s height on a phone without 3D.
+
+- [ ] **Step 1: Branch and check PRs 1–4 are in.** `S` below is the session’s scratchpad directory, never under the repo. Run `git fetch origin main && git switch -c claude/avengers-hq-pr5-ops-board origin/main`. Then:
   - `grep -n "export function progress(earned = \[\], unlocked = \[\])" src/components/avengers/world/rules/progress.js` prints one line.
   - `grep -n "export const HALF_OF" src/components/avengers/world/labels.js` prints one line.
   - `grep -cE "export const (gameOf|hqState)" src/components/avengers/world/links.js` prints `2`.
   - `grep -cE "export (const|function) (GAME_AT|writeLocal3D|fmt)\b" src/components/avengers/hq/gameScreen.js` prints `3`.
   - `grep -nE "^const (CARD|PLAY) = " scripts/hq-links-check.mjs` prints PR 3’s two lines.
   - `ls src/components/avengers/board` fails.
-- [ ] **Draft #1028.** Run `gh pr view 1028 --json state,mergedAt`. If it is open, note it for the PR body. If it is merged, find the “Without 3D” tip by its text.
-- [ ] **Measure main.**
-  - Save PR 1’s manifest script unchanged as `$S/closure.mjs`. Run `npx vite build && node $S/closure.mjs | tee $S/closure-before.txt; git checkout public/github.json`. Expected: one total line, close to PR 4’s stated size.
+- [ ] **Step 2: Draft #1028.** Run `gh pr view 1028 --json state,mergedAt`. If it is open, note it for the PR body. If it is merged, find the “Without 3D” tip by its text.
+- [ ] **Step 3: Measure main.**
+  - If `$S/closure.mjs` isn’t there from an earlier PR, save PR 1’s manifest script (PR 1 plan, Task 1 Step 2) as it, unchanged. Run `npx vite build && node $S/closure.mjs | tee $S/closure-before.txt; git checkout public/github.json`. Expected: one total line, close to PR 4’s stated size.
   - `node scripts/health.mjs --check --skip build | tee $S/health-before.txt`. Expected: `within budget`.
   - `npx vitest run 2>&1 | tail -4 | tee $S/tests-before.txt`. Expected: all passing.
-- [ ] **Shoot main.** Run `node scripts/autopilot-check.mjs --only smoke --routes /avengers,/invincible --shots avhq-pr5 --before`, then the same with `--shots avhq-pr5-phone --phone`. Move both `public/changes/avhq-pr5*-before.webp` to `$S/`, then `git checkout public/github.json`. Expected: each ends `ok   everything green`.
-- [ ] **Write the scratch browser script** `$S/hq-pr5-check.mjs` (not committed). It takes part names and then `before` or `after`. It prints `ok <part>` or `FAIL <part>: <why>` for each part, ends `all ok` or `N problems`, and exits 1 on any FAIL.
-  - **Launch.** Copy `scripts/hq-links-check.mjs`’s chromium launch. Base `http://localhost:5173/?quality=low#`. Every page starts from a new context whose init script copies `scripts/hq-world-check.mjs:28-34` (`tp-intro`, `tp-worlds`, `tp-software`). Set `tp-3d` to raw `'off'` (as `lib/gpu.js:84` stores it), unless the part says 3D, which removes it. Add the part’s own keys. Every `pageerror`, and every console error that `scripts/lib/noise.mjs`’s `noisy()` doesn’t know, is a FAIL of the part. Record every request URL.
+- [ ] **Step 4: Shoot main.** Run `node scripts/autopilot-check.mjs --only smoke --routes /avengers,/invincible --shots avhq-pr5 --before`, then the same with `--shots avhq-pr5-phone --phone`. Move both `public/changes/avhq-pr5*-before.webp` to `$S/`, then `git checkout public/github.json`. Expected: each ends `ok   everything green`.
+- [ ] **Step 5: Write the scratch browser script** `$S/hq-pr5-check.mjs` (not committed). It takes part names and then `before` or `after`. It prints `ok <part>` or `FAIL <part>: <why>` for each part, ends `all ok` or `N problems`, and exits 1 on any FAIL.
+  - **Launch.** Copy `scripts/hq-links-check.mjs`’s chromium launch. Base `http://localhost:5173/?quality=low#`. Every page starts from a new context whose init script copies `scripts/hq-world-check.mjs:28-34`’s lines (`tp-intro`, `tp-3d`, `tp-worlds`, `tp-software`, `tp-quality`) and overrides only `tp-3d`, set raw (as `lib/gpu.js` `setMode3D` stores it, `:84-87`; the copied `'"on"'` reads as auto): `'off'`, or `'on'` when the part says 3D. `tp-worlds` stays JSON, `'"load"'`, read through `local.get`. Add the part’s own keys. Every `pageerror`, and every console error that `scripts/lib/noise.mjs`’s `noisy()` doesn’t know, is a FAIL of the part. Record every request URL.
   - **The records fixture** sets:
     - `tp-hq-swing-tour` = `'41.3'`, `tp-hq-style-best` = `'2450'`, `tp-hq-packs` = `'["hangar","prow"]'`;
     - `tp-hq-ricochet` = `'{"reached":4,"stars":[3,2,1]}'`;
@@ -129,7 +142,7 @@
     - Pass: every `.hq-card-acts .btn` and `details.hq-archive > summary` is at least 44 px tall.
     - Pass: every `.hq-card` has the same `left`, so the cards are one column.
     - Screenshot the board to `OUT/pr5-phone.png`.
-- [ ] **Run the before parts.** Start `npx vite --port 5173 --strictPort` in the background, then:
+- [ ] **Step 6: Run the before parts.** Start `npx vite --port 5173 --strictPort` in the background, then:
   - `OUT=$S/links-before node scripts/hq-links-check.mjs`. Expected: `all ok`.
   - `OUT=$S/hq-before node scripts/hq-world-check.mjs`. Expected: `compound up in … s`, nine `hq-*.png` and `no page errors`.
   - `OUT=$S/before node $S/hq-pr5-check.mjs height before`. Expected: `ok height`, and the page’s height in `$S/height-before.txt` (the spec measured 9,587 px on a phone with 3D; this is without), the README’s before.
@@ -481,15 +494,11 @@ describe('the ops board', () => {
        - `<Link to={c.link} state={hqState} className="btn btn-primary btn-sm">{c.play}<span className="sr-only"> {c.game}</span></Link>`;
        - with `onGo`, a `btn btn-ghost btn-sm` button `Go there<span className="sr-only">: {c.name}</span>` calling `onGo(c.id)`;
        - when `c.state === 'needs3d' && onTry3D`, a `btn btn-ghost btn-sm` button `Try 3D<span className="sr-only">: {c.name}</span>` calling `onTry3D(c.id)`.
-  - **CSS**, appended to `avengers.css` under the comment `/* the ops board (avengers/board): the records strip, then a card a building */`. Tokens and whole 4 px steps only:
-    - `.hq-records`: flex, wrap, gap `0.5rem`, margin 0. `.hq-records dt`: `var(--muted)`. `.hq-records dd`: margin 0, `var(--text)`, weight 600.
-    - `.hq-records-dots`: inline-flex. Its `.stone-dot`: `0.5rem` square, margin `0 0.25rem 0 0`, no shadow, opacity `0.45`, or 1 with `[data-on]` (a picture dims, never text: RULES.md UI 6).
-    - `.hq-cards`: grid, gap `1rem`, `grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr))`, no margin, padding or list style.
-    - `.hq-card`: a flex column, `align-items: flex-start`, gap `0.5rem`, padding `1rem`, `1px solid var(--border)`, a `4px solid var(--glow)` left border, `var(--r-card)` corners, `var(--surface)` background and `scroll-margin-top: calc(var(--nav-h) + 1rem)`. `.hq-card[data-next]`: `border-color: var(--border-strong)`, with the left border still `var(--glow)`.
-    - `.hq-card-name`: margin 0, `var(--text)`, `var(--fs-lg)`, weight 650.
-    - `.hq-card-stone`: flex, centred, gap `0.5rem`, margin 0, `var(--fs-sm)`, `var(--text-body)`. Its `.stone-dot`: margin 0. `.hq-card:not([data-done]) .hq-card-stone .stone-dot`: opacity `0.45`, no shadow.
-    - `.hq-card-best`: margin 0, `var(--muted)`.
-    - `.hq-card-acts`: flex, wrap, gap `0.5rem`, `margin-top: auto`, `padding-top: 0.5rem`. `@media (pointer: coarse) { .hq-card-acts .btn { min-height: 44px; } }`.
+  - **CSS**, appended to `avengers.css` under the comment `/* the ops board (avengers/board): the records strip, then a card a building */`, in the tokens and whole 4 px steps. It styles the classes above (`.hq-records`, `.hq-records-dots`, `.hq-cards`, `.hq-card`, `.hq-card-name`, `.hq-card-stone`, `.hq-card-best`, `.hq-card-acts`). Pinned:
+    - `.hq-cards` is a list-style-free grid of `repeat(auto-fill, minmax(min(100%, 16rem), 1fr))`, so a 390 px phone gets one column (browser `phone`).
+    - `.hq-card` has a `4px solid var(--glow)` left border, kept on `[data-next]` (whose other borders take `var(--border-strong)`), and `scroll-margin-top: calc(var(--nav-h) + 1rem)`, so a pin’s jump lands below the nav.
+    - A dot not yet won (`.hq-records-dots .stone-dot` without `[data-on]`, and `.hq-card:not([data-done]) .hq-card-stone .stone-dot`) is at opacity `0.45` with no shadow: a picture dims, never text (RULES.md UI 6).
+    - `@media (pointer: coarse) { .hq-card-acts .btn { min-height: 44px; } }` (browser `phone`).
 - [ ] **Step 4: Run it to see it pass.** `npx vitest run src/components/avengers/board`. Expected: both files pass (`OpsBoard.test.jsx` 5, `records.test.js` 11), each test under 50 ms. Then `npx eslint src/components/avengers/board`. Expected: no output.
 - [ ] **Step 5: Commit.** `git add src/components/avengers/board/OpsBoard.jsx src/components/avengers/board/OpsBoard.test.jsx src/styles/lazy/avengers.css`. Subject: `Avengers HQ: draw the ops board: the records strip, then a card a building`. Body: Play is each building’s link with the page’s state, so Back pops to the board; Go there shows only with 3D; Try 3D only on a card whose stone is won in the 3D game.
 
@@ -518,7 +527,7 @@ describe('the ops board', () => {
   - `Compound({ spots, titles, stones, onPick, className })` (`avengers/Compound.jsx:488`), whose pins are `.hq-pin[data-pick]`.
 - Produces:
   - In `world/labels.js`: `airNote({ gl, mode, held }) → { text, action: { label, run: 'retry' | 'load' | 'settings' } | null }`.
-  - In `CompoundWorld`: `go = useRef(null)`, which `World` points at `travel`. `goThere(id)` and `tryIn3D(id)`. `<OpsBoard>` is the sibling after `section#hq-world`.
+  - In `CompoundWorld`: `travelTo = useRef(null)`, passed to `World` as `travelTo={travelTo}`; `World` points it at `travel`. `World`’s own `go` (the `useCallback` at `:276`, the E, Enter and pad-A door handler) keeps its name. `goThere(id)` and `tryIn3D(id)`. `<OpsBoard>` is the sibling after `section#hq-world`.
   - The no-3D view is `Air({ prog, three, gl, retry })`; `#hq-world`’s `data-mode` is still `'cards'` without 3D, which PR 4’s checks read.
   - `hq-links-check.mjs`: `CARD = (id) => `#hq-card-${id}``, `PLAY = 'a.btn-primary'`.
 
@@ -534,7 +543,7 @@ describe('the compound and its board', () => {
     expect(world).not.toMatch(/function Cards\(/);
     expect(world).toMatch(/function Air\(/);
     expect(world).toMatch(/onPick=\{\(id\) => jumpTo\(null, `hq-card-\$\{id\}`/);
-    expect(world).toMatch(/go\.current = travel;/);
+    expect(world).toMatch(/travelTo\.current = travel;/);
   });
   it('tries 3D one game at a time, and never touches the site’s 3D setting', () => {
     expect(world).toContain("writeLocal3D(GAME_AT[id], 'on')");
@@ -594,15 +603,15 @@ const PLAY = 'a.btn-primary';
     The labels import becomes `{ airNote, clock, stoneFor }`: `stoneLine` was used only in `Cards`.
   - **The header comment.** Without 3D, the compound is the drawing from the air, and its pins find their buildings on the ops board (`../board/OpsBoard.jsx`). The board sits under the compound in both modes.
   - **In `CompoundWorld`**, beside `api`:
-    - `const go = useRef(null);` — `World` points it at `travel`, as it points `api` at its view.
-    - `goThere(id)`: `go.current?.(id)`, then `jumpTo(null, 'hq-world', { focus: true })`. Focus leaves the board’s button, so Space then jumps him rather than pressing Go there again.
+    - `const travelTo = useRef(null);`, passed as `<World travelTo={travelTo} …>`; `World` points it at `travel`, as it points `api` at its view.
+    - `goThere(id)`: `travelTo.current?.(id)`, then `jumpTo(null, 'hq-world', { focus: true })`. Focus leaves the board’s button, so Space then jumps him rather than pressing Go there again.
     - `tryIn3D(id)`: `writeLocal3D(GAME_AT[id], 'on')`; `if (three.held) three.hold?.load()`, as `useGame3D`’s `set` does; then `enter(id)`. Comment: that game’s own 3D, never the site’s (spec §6), opened by its link with the page’s state, so Back comes back here.
   - **The return** becomes a fragment:
     - the unchanged `section#hq-world`, whose no-3D branch is `<Air prog={prog} three={three} gl={gl} retry={() => setGl('loading')} />`, with the open game inside it as before;
     - then `<OpsBoard prog={prog} can3D={world} unlocked={unlocked} onGo={world ? goThere : null} onTry3D={three.can ? tryIn3D : null} />`.
 
     The board is outside `.cw-world`, so `world.css:87-88`’s glass skin for buttons doesn’t reach it.
-  - **`World`** takes `go`. After `travel`, add `useEffect(() => { go.current = travel; return () => { go.current = null; }; });` with no deps, because `travel` is new every render.
+  - **`World`** takes `travelTo` (not `go`: its door handler is `go`, `:276`). After `travel`, add `useEffect(() => { travelTo.current = travel; return () => { travelTo.current = null; }; });` with no deps, because `travel` is new every render.
   - **`Air({ prog, three, gl, retry })`** replaces `Cards`. It keeps `div.shell.cw-cards-wrap`, the eyebrow and `h1#cw-title`.
     - The lead: “Marvel, all of it. Every building on the compound has a game behind its door; the board below has each one, its stone and your best.” It promises no stone for a toy and drops `{prog.objective}`, which the board shows.
     - When `three.can`, the notice is `note = airNote({ gl, mode: three.mode, held: three.held })`: its text, and its action as today’s `btn btn-ghost btn-sm`. The action runs `retry()` for `'retry'`, `three.hold?.load()` for `'load'` and `openSettings()` for `'settings'`.
@@ -682,10 +691,9 @@ describe('the Avengers page', () => {
 
     Titles, ids, leads and data are unchanged; each `h2` becomes an `h3` with the same `.title`. The GIPHY embeds are untouched. `Gif.jsx` fetches on intersection (`:27`), and a closed `<details>` renders nothing, so nothing is fetched until it opens.
   - **Last:** `<section id="av-credits" className="shell relative z-10 section-last pt-4"><ModelCredits where="avengers" line className="text-xs text-muted" /></section>`.
-  - **CSS**, appended to `avengers.css` under `/* the Avengers page’s Archive: one closed section, a plain chevron to open it */`:
-    - `.hq-archive > summary`: flex, centred, gap `0.75rem`, `min-height: 44px`, no list style, `cursor: pointer`. `.hq-archive > summary::-webkit-details-marker { display: none; }`.
-    - `.hq-archive > summary::before`: an empty `content`, `flex: none`, `0.5rem` square, `2px solid currentColor` right and bottom borders, `rotate(-45deg)`, `transition: transform var(--t-fast) var(--ease-smooth)`. `.hq-archive[open] > summary::before`: `rotate(45deg)`.
-    - `@media (prefers-reduced-motion: reduce) { .hq-archive > summary::before { transition: none; } }`.
+  - **CSS**, appended to `avengers.css` under `/* the Avengers page’s Archive: one closed section, a plain chevron to open it */`. Pinned:
+    - `.hq-archive > summary` is at least 44 px tall (browser `phone`) and has no marker (`list-style: none` and `::-webkit-details-marker { display: none; }`).
+    - The chevron is `summary::before`: a `0.5rem` square’s `2px solid currentColor` right and bottom borders, `rotate(-45deg)` closed and `rotate(45deg)` under `[open]`. Its transition is `none` under `prefers-reduced-motion: reduce`.
 - [ ] **Step 4: Run it to see it pass.** `npx vitest run src/pages/Avengers.test.js src/components/avengers/world/labels.test.js`. Expected: both pass; PR 2’s “says only what is true” still finds no `army`. Then `npx eslint src/pages/Avengers.jsx src/pages/Avengers.test.js`. Expected: no output (no unused import).
 - [ ] **Step 5: Commit.** `git add src/pages/Avengers.jsx src/pages/Avengers.test.js src/styles/lazy/avengers.css`. Subject: `Avengers HQ: order the page: the board, the worlds, Titan, a closed Archive, then the credits`. Body: the second intro goes (its clip is on the soundboard); the soundboard, the GIPHY scenes and the photos are one Archive, closed by default, so nothing is fetched from GIPHY until it opens.
 
@@ -695,7 +703,7 @@ describe('the Avengers page', () => {
 - Create: `docs/superpowers/evidence/avengers-hq/pr5/README.md`, plus the pictures it lists (`.webp` or `.png`, each under 1 MB, committed as PRs 1–4’s are)
 
 **Interfaces:**
-- Consumes: Tasks 1–5; `$S/closure.mjs`, `$S/hq-pr5-check.mjs` and the before files.
+- Consumes: Tasks 1–5; Task 0’s `$S` files (`closure.mjs`, `closure-before.txt`, `health-before.txt`, `tests-before.txt`, the two before pictures, `links-before/`, `hq-before/`, `hq-pr5-check.mjs` and `height-before.txt`).
 - Produces: the pull request, and for PRs 6 and 7 what Global Constraints lists under “What later PRs rely on”.
 
 - [ ] **Step 1: The gates.** Run `npm run lint && npm test && npm run build && node scripts/health.mjs --check --skip build | tee $S/health-after.txt`, then `git checkout public/github.json`. Expected:
@@ -729,7 +737,7 @@ describe('the Avengers page', () => {
   Commit with the subject `Avengers HQ PR 5: the evidence`.
 - [ ] **Step 7: Draft #1028, again.** `gh pr view 1028 --json state`.
   - Merged since the branch was cut: `git merge origin/main` (never a rebase), then rerun Step 1.
-  - Still open: name this PR’s one tip in `guide/pages.js` in the PR body, for its owner.
+  - Still open: the body’s tip line (Step 8) is addressed to its owner.
 - [ ] **Step 8: Open the pull request.**
   - `git push -u origin claude/avengers-hq-pr5-ops-board`, then open the PR with base `main` and title `Avengers HQ 5 of 7: the ops board and records`.
   - The body:
@@ -737,6 +745,7 @@ describe('the Avengers page', () => {
     - **for the owner:** a card’s Try 3D turns on that game’s own 3D, never the site’s. The no-3D notice no longer has “Turn 3D on”: it offers Settings when 3D was switched off there, a retry when the site is on auto, and loading a held world. Ask whether that is what he wants;
     - the numbers table from Step 6;
     - the checks that ran (Steps 1–5) with their results, and why `inv-world-check` did not run;
+    - the one tip string changed in `guide/pages.js` (“Without 3D”, which the board would make untrue), as the index allows, named for draft #1028’s owner;
     - the screenshots as images from `https://raw.githubusercontent.com/tilakpatell/tilakpatell.com/claude/avengers-hq-pr5-ops-board/docs/superpowers/evidence/avengers-hq/pr5/<file>`: `/avengers` before and after, the no-3D view with the map and the board, the records strip with a returning visitor’s saves, the phone, the Archive closed;
     - for PRs 6 and 7: `readBest` and its `text`, the `Link` import gone from `Avengers.jsx`, `FLAT_READY` and the assertions PR 7 moves;
     - the plan’s path and the harness’s PR footer.

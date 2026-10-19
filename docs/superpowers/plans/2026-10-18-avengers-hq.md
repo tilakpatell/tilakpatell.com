@@ -47,7 +47,7 @@ The five failures most likely to bite a visitor, and the PR whose tests pin each
 2. **Back does what the visitor means.** Back from a game opened by a door or the board returns to `/avengers`; Back from a game opened by a shared link replaces with `/avengers` rather than leaving the site; an unknown slug lands on `/avengers`. Pinned by PR 3 (`links.test.js`, the back decision) and `hq-links-check.mjs` in every later PR.
 3. **One game’s 3D switch stays in that game.** Turning a game’s 3D off, or a card’s Try 3D, never changes the site’s setting or drops the compound to 2D. Pinned by PR 4 (`hq/gameScreen.test.js`) and PR 5 (the card’s Try 3D).
 4. **Leaving mid-game.** Browser Back, Esc or a hidden tab during play pauses or closes cleanly; returning shows the veil, then the compound, never a blank. Pinned by PR 4 and its browser check.
-5. **Other worlds that share `hq/`.** Invincible’s ThinkMark and Mario 64 look and run the same after PRs 1, 2, 4, 6 and 7. Pinned by `scripts/inv-world-check.mjs` and the FL2 shots of `invworld`, `thinkmark` and `viewer` in those PRs.
+5. **Other worlds that share `hq/`.** Invincible’s ThinkMark and Mario 64 look and run the same after PRs 1, 2, 4, 6 and 7. Pinned by `scripts/inv-world-check.mjs` (before and after pictures) in each, and by the FL2 shots of `invworld`, `thinkmark` and `viewer` in PRs 1, 4, 6 and 7.
 
 ## The pull requests
 

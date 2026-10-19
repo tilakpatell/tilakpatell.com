@@ -17,7 +17,7 @@
 
 - **Order.** PR 6 of 7, merged in order. Branch from `origin/main` with PRs 1–5 merged. It consumes only these:
   - PR 1: `PLACES`, `placeById(id)` and `progress` through the `world/rules.js` barrel. Ids in order: `stark`, `thor`, `cap`, `hawkeye`, `widow`, `banner`, `spidey`, `vault`.
-  - PR 2: `progress(earned = [], unlocked = [])` (this PR passes only `earned`; it reads `.next`, a place id with a stone or `null`, and `.stones`, whole stones 0–6). `HoldTheLawn.jsx`’s `begin(open)`, which both `start` and `startBoss` call. The notify text `'Every stone, won back on the compound. Thanos is dust; this page is not.'`, kept. `labels.test.js`’s `not.toMatch(/army/)` on `Avengers.jsx`.
+  - PR 2: `progress(earned = [], unlocked = [])` (this PR passes only `earned`; it reads `.next`, a place id with a stone or `null`, and `.stones`, whole stones 0–6). `HoldTheLawn.jsx`’s `const begin = useCallback((open) => …)`, which both `start` and `startBoss` call. The notify text `'Every stone, won back on the compound. Thanos is dust; this page is not.'`, kept. `labels.test.js`’s `not.toMatch(/army/)` on `Avengers.jsx`.
   - PR 3: `linkOf(id) → '/avengers/<slug>' | null` and `hqState = { hq: true }` from `world/links.js`; `scripts/hq-links-check.mjs [--3d]`, whose last line is `all ok`.
   - PR 4: Repulsor’s `start()` begins `if (!startable(stage.status)) return;`. Every game’s results card calls the game’s own start (`start`, `begin(0)`, `enter(index)`, `start(leg)`), so a try counted in the start covers Play again.
   - PR 5: `readBest(id, get) → { score, text, stars } | null` in `board/records.js` (text like `'Best 12,345'`, `'3 of 12 rooms'`). PR 5 deleted `import { Link } from 'react-router-dom'` from `Avengers.jsx`, and this PR adds it back. Also `src/pages/Avengers.test.js`, the page’s source guard.
@@ -33,7 +33,8 @@
 - **Content (§3).** Nothing here draws a figure, suit or mark of any Marvel character. The summary is text on a plain glass panel and the list is text and the stones’ existing colours. The gauntlet drawing is the existing one.
 - **Copy (RULES.md UI 7).** British spelling, curly quotes (’ “ ”) inside strings, sentence case, no Oxford comma. No “army” (PR 2’s test).
 - **Keys and hooks (§3).** `tp-hq-stones` keeps its name and shape (a JSON array of ids), pinned in Task 2. The one new key is `tp-hq-heist`. `__HQ__` and `__HQWORLD__` keep every name, and `__HQ__.titan.view` still exposes `dusting`.
-- **Shared code (§3).** `hq/` is shared with Invincible, Mario 64 and the Marvel landing. This PR changes `hq/stones.js` and adds `hq/heist.js`, which none of them import, so `scripts/inv-world-check.mjs` and the FL2 shots of `thinkmark`, `viewer` and `invworld` must stay identical (Task 6).
+- **Shared code (§3).** `hq/` is shared with Invincible, Mario 64 and the Marvel landing. This PR changes `hq/stones.js` and adds `hq/heist.js`, which none of them import, so `scripts/inv-world-check.mjs` and the FL2 shots of `thinkmark`, `viewer` and `invworld` must stay identical (Task 6). The FL2 `compound` shot is not pixel-stable against `main` itself (FL2 README: 64 px; PR 1: 83 px), so Task 6 shoots `main` twice and passes each target at 0 px against either run, by the index’s rule.
+- **Scratch and check scripts.** Scratch files live in `$S`, the session’s scratchpad, never under the repo. PR 1’s manifest script is saved once as `$S/closure.mjs` and reused. The scratch browser script copies `scripts/hq-world-check.mjs:28-34`’s init lines and overrides only what a part needs: `tp-3d` raw (`'on'` or `'off'`, as `lib/gpu.js` `setMode3D` stores it; a JSON string reads as auto) and `tp-worlds` as JSON (`'"load"'`, read through `local.get`).
 - **UI (RULES.md UI).** The summary is a page panel over the 3D: glass at alpha 0.78 or more, no blur, nothing under 0.7 rem, every hard-coded value commented. No bare `z-index` of 10 or more. No new `kbd` rule.
 - **Limits.** Files under 800 lines (`TesseractRun.jsx` is 792 at `ddb364bf`: check it with `wc -l` after Task 3). No new dependency, renderer or animation loop. No edit to `src/components/guide/pages.js` or `src/runtime/hud/*` (open draft #1028).
 - **Tests.** Beside their files, each under one second, no network. No test is skipped, loosened or deleted.
@@ -67,15 +68,32 @@
 | `docs/architecture.md` | 5 | one sentence |
 | `docs/superpowers/evidence/avengers-hq/pr6/` | 6 | README and pictures |
 
-### Before Task 1: the before numbers
+### Task 0: The before numbers
 
-- [ ] **Branch and check PRs 1–5 are in.** Run `git fetch origin main && git switch -c claude/avengers-hq-pr6-heist origin/main`. Then run `ls src/components/avengers/world/links.js src/components/avengers/board/records.js src/pages/Avengers.test.js scripts/hq-links-check.mjs` and `grep -n "export function readBest\|export const hqState" src/components/avengers/board/records.js src/components/avengers/world/links.js`. Then run `grep -n "if (!startable(stage.status)) return;" src/components/avengers/repulsor/RepulsorRange.jsx` and `grep -n "const begin = useCallback" src/components/avengers/lawn/HoldTheLawn.jsx`. Expected: four paths, then one line from each grep. `S` below is the session’s scratchpad directory, never under the repo.
-- [ ] **The closure, before.** Save PR 1’s manifest script (`2026-10-18-avengers-hq-pr1-splits.md`, Task 1 Step 2) as `$S/closure.mjs`, unchanged. Run `npx vite build && node $S/closure.mjs | tee $S/closure-before.txt; git checkout public/github.json`. Expected: one total line, close to PR 5’s stated size.
-- [ ] **The pages, before.** Run `node scripts/autopilot-check.mjs --only smoke --routes /avengers,/invincible --shots avhq-pr6 --before`, then the same with `--shots avhq-pr6-phone --phone`. Move `public/changes/avhq-pr6*-before.webp` to `$S/`. Expected: each run ends `everything green`.
-- [ ] **The tests, before.** Run `npx vitest run src/components/avengers src/pages 2>&1 | tail -4 | tee $S/tests-before.txt`. Expected: all pass. Keep the counts for the PR.
-- [ ] **The worlds and links, before.** With `npx vite --port 5173 --strictPort` up, run `OUT=$S/links-before node scripts/hq-links-check.mjs` and `OUT=$S/inv-before node scripts/inv-world-check.mjs`. Expected: `all ok`, then `no page errors`.
-- [ ] **Write the scratch browser script** `$S/hq-pr6-check.mjs` (not committed). Run it as `node $S/hq-pr6-check.mjs <part…> <when>`, where `<when>` is `before` or `after`. It prints `ok <part>` or `FAIL <part>: <why>` for each part, ends `all ok` or `N problems` and exits 1 on any FAIL.
-  - **Launch.** Copy `scripts/hq-links-check.mjs`’s chromium launch and init block. Base `http://localhost:5173/?quality=low#`. Use a fresh context per part, at 1440 × 900 unless the part says otherwise. Init `tp-intro` = `'1'` and `tp-worlds` = `'"load"'`. Set `tp-3d` = `'on'` (raw, as `lib/gpu.js` stores it) unless the part says otherwise, plus the part’s own keys. Count every console error not in `scripts/lib/noise.mjs`’s noise as a FAIL of the part.
+**Files:** none committed.
+
+**Interfaces:**
+- Consumes: PRs 1–5 as listed under Global Constraints; PR 1’s manifest script (PR 1 plan, Task 1 Step 2); `scripts/hq-world-check.mjs:28-34` (its init lines).
+- Produces, all in `$S` and all consumed by Task 6:
+  - `hq-pr6-check.mjs`, the scratch browser script (its parts below), also run in Tasks 3, 4 and 5;
+  - `closure.mjs` (PR 1’s manifest script, unchanged) and `closure-before.txt`;
+  - `tests-before.txt`;
+  - `avhq-pr6-before.webp` and `avhq-pr6-phone-before.webp`;
+  - `links-before/` and `inv-before/`, the two checks’ pictures;
+  - `check-before.txt` and `titan-locked-before.png`, the `locked` and `free` parts on main (the picture is the PR’s before picture).
+
+- [ ] **Step 1: Branch and check PRs 1–5 are in.** `S` below is the session’s scratchpad directory, never under the repo. Run `git fetch origin main && git switch -c claude/avengers-hq-pr6-heist origin/main`. Then:
+  - `ls src/components/avengers/world/links.js src/components/avengers/board/records.js src/pages/Avengers.test.js scripts/hq-links-check.mjs` prints four paths.
+  - `grep -n "export function readBest\|export const hqState" src/components/avengers/board/records.js src/components/avengers/world/links.js` prints one line a file.
+  - `grep -n "if (!startable(stage.status)) return;" src/components/avengers/repulsor/RepulsorRange.jsx` prints one line.
+  - `grep -n "const begin = useCallback" src/components/avengers/lawn/HoldTheLawn.jsx` prints one line (PR 2 names it so, and Task 3’s test finds the body by it).
+- [ ] **Step 2: Measure main.**
+  - If `$S/closure.mjs` isn’t there from an earlier PR, save PR 1’s manifest script (PR 1 plan, Task 1 Step 2) as it, unchanged. Run `npx vite build && node $S/closure.mjs | tee $S/closure-before.txt; git checkout public/github.json`. Expected: one total line, close to PR 5’s stated size.
+  - Run `npx vitest run src/components/avengers src/pages 2>&1 | tail -4 | tee $S/tests-before.txt`. Expected: all pass. Keep the counts for the PR.
+- [ ] **Step 3: Shoot main.** Run `node scripts/autopilot-check.mjs --only smoke --routes /avengers,/invincible --shots avhq-pr6 --before`, then the same with `--shots avhq-pr6-phone --phone`. Move both `public/changes/avhq-pr6*-before.webp` to `$S/`. Expected: each run ends `everything green`.
+- [ ] **Step 4: The worlds and links, before.** With `npx vite --port 5173 --strictPort` up, run `OUT=$S/links-before node scripts/hq-links-check.mjs` and `OUT=$S/inv-before node scripts/inv-world-check.mjs`. Expected: `all ok`, then `no page errors`.
+- [ ] **Step 5: Write the scratch browser script** `$S/hq-pr6-check.mjs` (not committed). Run it as `node $S/hq-pr6-check.mjs <part…> <when>`, where `<when>` is `before` or `after`. It prints `ok <part>` or `FAIL <part>: <why>` for each part, ends `all ok` or `N problems` and exits 1 on any FAIL.
+  - **Launch.** Copy `scripts/hq-links-check.mjs`’s chromium launch. Base `http://localhost:5173/?quality=low#`. Use a fresh context per part, at 1440 × 900 unless the part says otherwise. Its init script copies `scripts/hq-world-check.mjs:28-34`’s lines (`tp-intro`, `tp-3d`, `tp-worlds`, `tp-software`, `tp-quality`) and overrides only `tp-3d`, set raw as `lib/gpu.js` `setMode3D` stores it (`:84-87`; the copied `'"on"'` reads as auto): `'on'`, or `'off'` where the part says. `tp-worlds` stays JSON, `'"load"'`, read through `local.get`. Add the part’s own keys. Count every console error not in `scripts/lib/noise.mjs`’s noise as a FAIL of the part.
   - **Fixtures.**
     - `ALL` = `'["power","reality","mind","soul-clint","soul-natasha","soul","time","space"]'`.
     - `HEIST` = `'{"v":1,"data":{"stones":{"power":1760000000000,"mind":1760003600000,"reality":1760007200000,"time":1760010800000,"space":1760086400000,"soul":1760094000000},"tries":{"stark":4,"thor":2,"cap":1,"hawkeye":3,"widow":5,"banner":2,"vault":6}}}'`. The span from the first stone to the sixth is 94,000,000 ms, which reads “1 day 2 hours”.
@@ -98,13 +116,13 @@
     - Pass: `JSON.parse(localStorage.getItem('tp-achievements'))` includes `whatever`.
     - Screenshot `#thanos .gauntlet-stage` to `$S/summary-<width>-<when>.png`. Click `Close the heist summary`. Pass: `.heist-summary` is gone.
   - **`migration`** (`tp-hq-stones` = `ALL`, no `tp-hq-heist`): the same snap. Pass: the span and all seven Tries cells read `Before records began`. Afterwards, `localStorage.getItem('tp-hq-heist')` is `null`. Screenshot `#thanos .gauntlet-stage` to `$S/migration-<when>.png`.
-  - **`flat`** (`tp-3d` = `'off'`, `tp-hq-stones` = `ALL`, `tp-hq-heist` = `HEIST`, the context made with `reducedMotion: 'reduce'`): open `#/avengers` and scroll to `#thanos`.
+  - **`flat`** (`tp-3d` raw `'off'`, `tp-hq-stones` = `ALL`, `tp-hq-heist` = `HEIST`, the context made with `reducedMotion: 'reduce'`): open `#/avengers` and scroll to `#thanos`.
     - Pass: `.gauntlet-wrap svg.gauntlet` is visible and there is no `.titan-canvas`.
     - Click `Snap: I am Iron Man`. Pass: `.heist-summary` is visible within 300 ms, and its computed `animation-name` is `none`.
   - **`free`**: open `#/home` and scroll the Marvel interests card’s `.gauntlet-sockets` into view. Click its first `button.socket`.
     - Pass: the card reads `<that stone’s name> set. 5 to go.`.
     - Click the other five. Pass: the card’s `Snap` button is enabled.
-- [ ] **Run it, before.** With the dev server still up, run `node $S/hq-pr6-check.mjs locked free before`. Expected: `FAIL locked` (the stone list has Set buttons and there is no Next link), `ok free` and `1 problems`. Keep `$S/titan-locked-before.png`; it is the PR’s before picture. Stop the server.
+- [ ] **Step 6: Run it, before.** With the dev server still up, run `node $S/hq-pr6-check.mjs locked free before | tee $S/check-before.txt`. Expected: `FAIL locked` (the stone list has Set buttons and there is no Next link), `ok free` and `1 problems`. Keep `$S/titan-locked-before.png`; it is the PR’s before picture. Stop the server.
 
 ---
 
@@ -214,15 +232,13 @@ describe('the heist summary', () => {
 ```
 
 - [ ] **Step 2: Run them to see them fail.** Run `npx vitest run src/components/avengers/hq/heist.test.js`. Expected: `Failed to resolve import "./heist"`, `Test Files 1 failed`.
-- [ ] **Step 3: Write `hq/heist.js`** with the constants and functions in Interfaces.
+- [ ] **Step 3: Write `hq/heist.js`** with the constants and functions in Interfaces. The tests fix their behaviour; these are the choices they leave:
   - **Header comment.** What `tp-hq-heist` holds, that it is kept through `runtime/saves` at version 1 and that the file is pure. It imports nothing, not even `./stones`, so `stones.js → heist.js` is the only edge and the measure’s `cycles` doesn’t move. That is why `HEIST_STONES` copies `STONE_IDS`, and a test holds them equal.
-  - **`cleanHeist(raw)`.** A non-object or an array gives `{ stones: {}, tries: {} }`. `stones` keeps only `HEIST_STONES` keys whose value is `null` or a finite number ≥ 0. `tries` keeps only `HEIST_GAMES` keys whose value is finite, as `Math.floor(n)` when that is ≥ 1.
-  - **`migrateHeist(raw, held)`.** Starts from `cleanHeist(raw)`, then sets each `held` id that is in `HEIST_STONES` and missing from `stones` to `null`.
-  - **`withStone` and `withTry`.** Each returns `rec` itself when nothing changes: `id` not a whole stone or already a key, or `game` not in `HEIST_GAMES`. Otherwise it returns a shallow copy with the one field set (`at`) or incremented (from 0).
-  - **`registerHeist(saves)`** is `saves.register({ key: HEIST_KEY, version: HEIST_VERSION, migrate: (old) => cleanHeist(old) })`. The registered `migrate` only cleans an unversioned stored value.
-  - **`loadHeist(saves, held)`** is `migrateHeist(saves.get(HEIST_KEY, null), held)`. It cleans even a wrapped value, so a `{ v: 1, data: junk }` reads clean.
-  - **`spanWords(ms)`.** `!(ms >= 60e3)` gives `'Under a minute'`. Under an hour: minutes. Under a day: hours, plus `' N minutes'` when there are any. Otherwise: days, plus `' N hours'` when there are any. Floor every unit and use `1 minute`, `1 hour` and `1 day` in the singular.
-  - **`heistSummary(rec, { games, bests })`.** `span` is `spanWords(max − min)` when all six `HEIST_STONES` values are finite, else `BEFORE`. Each row is `` tries: n >= 1 ? (n === 1 ? '1 try' : `${n} tries`) : BEFORE `` and `best: bests[id] ?? 'No best kept'`.
+  - **Cleaning.** A stone keeps a value that is `null` or a finite number ≥ 0; a try count is kept as `Math.floor(n)` when that is ≥ 1.
+  - **`withStone` and `withTry`** return `rec` itself when nothing changes, else a shallow copy.
+  - **`registerHeist(saves)`** registers `migrate: cleanHeist`, so the registered migration only cleans an unversioned value. **`loadHeist(saves, held)`** is `migrateHeist(saves.get(HEIST_KEY, null), held)`, so a wrapped `{ v: 1, data: junk }` reads clean too.
+  - **`spanWords`** gives at most two units, the larger first, each floored.
+  - **`heistSummary`**’s span is `BEFORE` unless all six `HEIST_STONES` hold a finite time.
 - [ ] **Step 4: Run them to see them pass.** Run `npx vitest run src/components/avengers/hq/heist.test.js`. Expected: `Tests  10 passed (10)`, each well under 1 s.
 - [ ] **Step 5: Commit.** Run `git add src/components/avengers/hq/heist.js src/components/avengers/hq/heist.test.js`. Subject: `Avengers HQ: the heist record’s rules: first wins, tries and the summary’s words`. Body: `tp-hq-heist` is kept at version 1 through `runtime/saves`; stones held before the record have no time (spec §7).
 
@@ -434,13 +450,8 @@ it('earns the snap: nothing set by hand, and Next keeps the page behind its game
 
 - [ ] **Step 2: Run them to see them fail.** Run `npx vitest run src/components/avengers/titan/gate.test.js src/pages/Avengers.test.js`. Expected: `Failed to resolve import "./gate"`, and the page test fails on the missing `<Link to={gate.next.to}`.
 - [ ] **Step 3: Write `titan/gate.js`.** It is pure and imports only `PLACES`, `placeById` and `progress` (`'../world/rules'`) and `linkOf` (`'../world/links'`).
-  - **`snapGate(earned)`** takes `const p = progress(earned)` and returns:
-    - `left = 6 - p.stones` and `ready = left === 0`;
-    - `` label = ready ? null : `${left} ${left === 1 ? 'stone' : 'stones'} left` ``;
-    - `next = ready || !p.next ? null : { id: p.next, name: placeById(p.next).name, to: linkOf(p.next) }`.
-
-    The `ready ||` matters: the whole Soul Stone without its halves leaves `p.next` at the range.
-  - **`HEIST_ROWS`** is `PLACES.filter((p) => p.stone).map((p) => ({ id: p.id, name: p.name }))`.
+  - **`snapGate(earned)`** reads `progress(earned)`: `left` is `6 - p.stones`, and `next` is built from `p.next` with `placeById` and `linkOf`. `next` is `null` whenever the gate is ready, whatever `p.next` says: the whole Soul Stone without its halves leaves `p.next` at the range.
+  - **`HEIST_ROWS`** is the `PLACES` with a `stone`, as `{ id, name }`.
 - [ ] **Step 4: Take the toggle out of `Titan.jsx`.**
   - Signature `function Titan({ have, fallback }, ref)`.
   - Delete the `STONES` import, `buttons`, `place()` and the `.titan-sockets` block.
@@ -526,12 +537,11 @@ describe('the heist summary', () => {
 ```
 
 - [ ] **Step 2: Run them to see them fail.** Run `npx vitest run src/components/avengers/titan/HeistSummary.test.jsx`. Expected: `Failed to resolve import "./HeistSummary"`.
-- [ ] **Step 3: Write `HeistSummary.jsx`.**
-  - **The section:** `<section className="heist-summary" aria-labelledby="heist-summary-title">`.
-  - **The header:** `<h3 id="heist-summary-title" tabIndex={-1}>The heist</h3>` (its ref focused once on mount with `{ preventScroll: true }`) and `<CloseButton label="Close the heist summary" onClick={onClose} />`.
-  - **The span:** `<p className="heist-summary-span"><span>First stone to sixth</span> <strong>{summary.span}</strong></p>`.
-  - **The table:** a `<thead>` row of `Building`, `Tries` and `Best`, then one `<tr>` a row: `<th scope="row">{name}</th><td>{tries}</td><td>{best}</td>`.
-  - It draws nothing but text.
+- [ ] **Step 3: Write `HeistSummary.jsx`.** Text only, in the order the test reads it:
+  - a `<section className="heist-summary">` labelled by its title;
+  - the title the test pins, its ref focused once on mount with `{ preventScroll: true }`, and `<CloseButton label="Close the heist summary" onClick={onClose} />`;
+  - the span as `<p className="heist-summary-span">`, its label in a `span` and its value in a `strong`;
+  - a table whose head row reads `Building`, `Tries` and `Best`, then one row a building, as the test pins.
 - [ ] **Step 4: Show it when the earned snap plays (`Avengers.jsx`).**
   - **Imports:** `heistRecord` (add it to the `hq/stones` import), `heistSummary` from `'../components/avengers/hq/heist'`, `HEIST_ROWS` (add it to the gate import), `HeistSummary` from `'../components/avengers/titan/HeistSummary'`, `readBest` from `'../components/avengers/board/records'` and `localSaves` from `'../runtime/local'`.
   - **State:** `const [summary, setSummary] = useState(null)`.
@@ -545,20 +555,11 @@ describe('the heist summary', () => {
   - **The panel:** inside `div.stones-panel.gauntlet-stage`, after `<Titan … />`, add `{summary && <HeistSummary summary={summary} onClose={() => setSummary(null)} />}`.
     - With 3D, `after()` runs as the fingers meet (`titan/scene.js:417-418`, `snapT` 0.44), and the dust starts at `snapT` 1.05 (`:422`). Without 3D it runs at once, over the drawing.
     - The panel stays until closed, so it outlasts the 8 s of dust (`:438`). A new snap replaces it.
-- [ ] **Step 5: The glass (`avengers.css`, appended after the Titan block).**
-  - **`.heist-summary`:**
-    - placement: `position: absolute; z-index: 1;`, `0.75rem` from the left, right and bottom, `max-height: calc(100% - 1.5rem); overflow-y: auto;`;
-    - box: padding `0.75rem 1rem`, a `1px` border in `var(--border-strong)` and `border-radius: var(--r-card)`;
-    - glass: `background: rgba(8, 12, 20, 0.86)`;
-    - text: `color: var(--text-body)` and `font-size: var(--fs-sm)`;
-    - motion: `animation: heist-rise var(--t-slow) ease-out 0.6s both`.
-
-    Comment the literals: the glass is over the 3D at the kit’s 0.78 or more with no blur (RULES.md UI 5). The 0.6 s delay is because the dust starts 0.61 s after the fingers meet.
-  - **The rest:**
-    - the title and the span’s value take `color: var(--text)`;
-    - the column heads (`thead th`) and the span’s label take `font-size: var(--fs-xs)` (0.8125 rem, over the 0.7 floor);
-    - `@keyframes heist-rise { from { opacity: 0; translate: 0 1.5rem; } }`;
-    - `@media (prefers-reduced-motion: reduce) { .heist-summary { animation: none; } }`.
+- [ ] **Step 5: The glass (`avengers.css`, appended after the Titan block).** The pinned values, each literal commented:
+  - **Placement.** `.heist-summary` is absolute in the stage at `z-index: 1`, `0.75rem` in from the left, right and bottom, with `max-height: calc(100% - 1.5rem)` and `overflow-y: auto`, so on a phone it fits the stage and scrolls (`summary`’s fit).
+  - **Glass.** `rgba(8, 12, 20, 0.86)` with no blur, over the kit’s 0.78 floor for glass over 3D (RULES.md UI 5), on the house border and card radius.
+  - **Type.** Nothing under 0.7 rem: the column heads and the span’s label take `var(--fs-xs)` (0.8125 rem), the rest `var(--fs-sm)`.
+  - **Motion.** `@keyframes heist-rise` rises from `1.5rem` below and transparent, run `var(--t-slow) ease-out 0.6s both`: the dust starts 0.61 s after the fingers meet. Under `prefers-reduced-motion: reduce`, `animation: none` (`flat`).
 - [ ] **Step 6: The architecture page.** Append to `docs/architecture.md:27`’s `avengers/world/` bullet: “The heist is `../hq/stones.js` (`tp-hq-stones`) with its record `../hq/heist.js` (`tp-hq-heist`, through `runtime/saves`, tested); Titan’s snap on `/avengers` opens only with all six won in play (`../titan/gate.js`), and the classic interests card keeps the free gauntlet.”
 - [ ] **Step 7: Run them to see them pass.**
   - Run `npx vitest run src/components/avengers/titan src/pages`. Expected: `HeistSummary.test.jsx` has 2 passed, and everything else still passes.
@@ -572,7 +573,7 @@ describe('the heist summary', () => {
 - Create: `docs/superpowers/evidence/avengers-hq/pr6/README.md`, plus the pictures it lists under `before/` and `after/` (`.webp` or `.png`, each under 1 MB)
 
 **Interfaces:**
-- Consumes: Tasks 1–5; `$S/hq-pr6-check.mjs`, `$S/closure-before.txt`, `$S/tests-before.txt` and the before pictures.
+- Consumes: Tasks 1–5; Task 0’s `$S` files (`hq-pr6-check.mjs`, `closure.mjs`, `closure-before.txt`, `tests-before.txt`, the two before pictures, `links-before/`, `inv-before/`, `check-before.txt` and `titan-locked-before.png`).
 - Produces: the pull request, and for PR 7 everything under “What PR 7 relies on”.
 
 - [ ] **Step 1: The gates.** Run `npm run lint && npm test && npm run build && node scripts/health.mjs --check --skip build`, then `git checkout public/github.json`. Expected:
@@ -589,15 +590,24 @@ describe('the heist summary', () => {
   - Read each `-a.webp` beside its before. The top of `/avengers` and `/invincible` are unchanged.
   - Move the pictures into the evidence folder. `git status --short public/changes` is empty.
 - [ ] **Step 6: The worlds that share `hq/`.**
-  - Run `node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --out $S/hq-main --ref origin/main --only compound,invworld,thinkmark,viewer`, then the same with `--out $S/hq-pr6` and no `--ref`, then `--compare $S/hq-main $S/hq-pr6`. Expected: `0 pixels differ` for all four, exit 0. Leave out `titan`: its viewport shot holds the changed text column.
+  - Shoot `main` twice and the branch once, then compare the branch against each `main` run. Leave out `titan`: its viewport shot holds the changed text column.
+
+    ```bash
+    T=compound,invworld,thinkmark,viewer
+    for b in hq-main-a hq-main-b; do node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --out $S/$b --ref origin/main --only $T; done
+    node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --out $S/hq-pr6 --only $T
+    for b in hq-main-a hq-main-b; do node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --compare $S/$b $S/hq-pr6; done
+    ```
+
+    Expected: each of the four reads `0 pixels differ` against at least one `main` run (`compound` by the index’s two-run rule; `invworld`, `thinkmark` and `viewer` as they are). PR 1’s third-run rule holds (PR 1 plan, Task 2 Step 6): a target off both runs by no more than `hq-main-a` is off `hq-main-b`, in the same place, gets a third `main` run (`--out $S/hq-main-c`) before it counts as a failure. Any other difference blocks the PR.
   - Run `OUT=$S/inv-after node scripts/inv-world-check.mjs` and `OUT=$S/hq-after node scripts/hq-world-check.mjs`. Expected: `no page errors` from both. The Invincible shots match `$S/inv-before` by eye.
   - Stop the server.
 - [ ] **Step 7: The evidence README** at `docs/superpowers/evidence/avengers-hq/pr6/README.md`:
   - one line a picture: what it shows, before or after (Titan’s column before with its Set buttons and after, locked; the summary at 1440 and at 390; the migration’s panel);
   - the closure’s total line, before and after;
   - the test counts in `src/components/avengers` and `src/pages`, before and after;
-  - the `hq-shots` compare table for the four targets;
-  - each `$S/hq-pr6-check.mjs` part and its result, and `hq-links-check`’s results both ways.
+  - the `hq-shots` compare table for the four targets, against both `main` runs;
+  - each `$S/hq-pr6-check.mjs` part and its result, before (`check-before.txt`) and after (`check-after.txt`), and `hq-links-check`’s results both ways.
 
   Commit with the subject `Avengers HQ PR 6: the evidence`.
 - [ ] **Step 8: Open the pull request.**
@@ -637,3 +647,4 @@ describe('the heist summary', () => {
   - `hq-links-check.mjs` runs both ways and ends `all ok` (Task 6).
   - The lawn’s try is in PR 2’s `begin`, so it covers both its starts (Task 3).
   - The checks run on the spec’s routes, `/avengers,/invincible`; `/home` is a core page that `autopilot-check` always opens.
+  - The scratch script sets `tp-3d` raw and `tp-worlds` as JSON, from `hq-world-check.mjs:28-34`; the `compound` shot is held to 0 px against either of two `main` runs (Task 0, Task 6).

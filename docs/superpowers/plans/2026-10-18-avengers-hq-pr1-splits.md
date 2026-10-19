@@ -17,7 +17,9 @@
 
 - §3: “Splits by the barrel recipe (`RULES.md:21-32`): the old path becomes a barrel with the same export names, no caller changes in the same PR, before and after screenshots pixel-identical.”
 - §10: pixel-identical before and after shots with `docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs` (“it holds the clock, so it is the pixel gate”); `scripts/hq-world-check.mjs` “runs as the error check and for the eye”.
+- The index: the FL2 `compound` target is not pixel-stable against main itself (FL2 README: 64 px; the brief’s scratch run: 83 px), so main is shot twice and a target passes at 0 px against either run (Task 2 Steps 1 and 6, Task 4 Step 2).
 - §10: “`CompoundHud.jsx` imports the kit parts it uses from their files, not the barrel. Measure the `/avengers` closure before and after from the build manifest. If the barrel itself should stop re-exporting `Screen`, that is a change to `runtime/hud` and goes through #1028’s owner.”
+- `docs/health/RULES.md:73` (a world takes its HUD kit from `index.js` only) is set aside here by spec §10; the PR body names it beside `index.js`’s header for #1028’s owner. Neither file changes.
 - §11: “1. The splits and the HUD import (§10). No visible change.” One PR, merged before PR 2, green.
 - `RULES.md`, Size: “A file stays under 800 lines; 1,500 is the ceiling the measure counts (`big-files`).” Each part exports what it exported before, with the signature it had.
 - §3: “Pure, seeded rules with tests beside them, each under one second, no network. No test is loosened, skipped or deleted.” `rules.test.js` and every other importer of `rules.js` stay byte-identical; `scene.js` changes only by its own split (Task 2) and still reads `./rules`.
@@ -27,6 +29,7 @@
 - §3: “No new depictions of Marvel characters, suits or marks, drawn in code or generated.” This PR draws nothing new; moved drawing code stays as it was.
 - `RULES.md`, Never: “Reformat lines you aren’t moving. Rename for taste. Raise a budget without a sentence saying why in the commit.” Moved lines keep their text and their (long) lengths; no formatter runs on these files.
 - Nothing under `src/runtime/hud/` or `src/components/guide/pages.js` changes (open draft #1028).
+- Scratch files live in the session’s scratchpad, `$S`, never under the repo: this PR’s under `$S/pr1/`, and its manifest script once at `$S/closure.mjs`, which every later PR reuses unchanged.
 - Copy in comments, commits and the PR: British spelling, curly quotes, sentence case, no Oxford comma. No model names anywhere.
 - §12, before the PR is done: `npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build`; `git checkout public/github.json` after a build; the screenshots read; the `/avengers` closure’s size stated in the PR.
 
@@ -73,18 +76,21 @@
   - `world/rules/progress.js`: `export function progress(earned = [])` → `{ places, next, have, stones, portal, finished, objective, done }`, unchanged. PR 2 edits this file (to `progress(earned = [], unlocked = [])`, so the gate counts once Thwip is won and Things to do reaches 8/8).
   - `world/rules/plan.js`: `PLACES`, `placeById(id)`, `PORTAL`, `START`, `CAST`, `DOOR_R` and the rest of the plan’s names.
   - Inside names, exported by their part for its siblings and kept off the barrel: `plan.js` `EDGE`; `bump.js` `onLawn`, `atHeight`, `wallNormal`, `collide3`; `tuning.js` `turnTo`; `aim.js` `ropeFor`, `clearLine`; `air.js` `stepAir`, `stepWall`.
+  - Scratch, not committed (Steps 1-2), for Task 3 Step 5 and Task 4: `$S/closure.mjs`; in `$S/pr1/`, `lines-before.json`, `closure-before.txt`, `avhq-pr1-before.webp`, `avhq-pr1-phone-before.webp`, `world-before/` and `inv-before/`.
 
 - [ ] **Step 1: Branch, and record the voice lines before any edit**
 
+`S` below is the session’s scratchpad directory (never under the repo).
+
 ```bash
 git fetch origin main && git switch -c claude/avengers-hq-pr1-splits origin/main
-mkdir -p /tmp/pr1 && node scripts/voices/export-lines.mjs --out /tmp/pr1/lines-before.json
+mkdir -p $S/pr1 && node scripts/voices/export-lines.mjs --out $S/pr1/lines-before.json
 ```
-Expected: a count of lines without a recording and `-> /tmp/pr1/lines-before.json` (about 9 s). Keep the file.
+Expected: a count of lines without a recording and `-> $S/pr1/lines-before.json` (about 9 s). Keep the file.
 
 - [ ] **Step 2: Take the PR’s before numbers and pictures on the untouched tree**
 
-Write `/tmp/pr1/closure.mjs` (run from the repo root; it walks the page chunk’s static `imports` in the manifest, the app entry left out):
+Write `$S/closure.mjs` (run from the repo root; it walks the page chunk’s static `imports` in the manifest, the app entry left out). This is “PR 1’s manifest script”: PRs 2 to 7 save it unchanged as `$S/closure.mjs` and measure with it.
 
 ```js
 import { readFileSync as r } from 'node:fs';
@@ -101,13 +107,13 @@ for (const x of rows.sort((a, b) => b[1] - a[1])) console.log(' ', String(x[0]).
 Then, one at a time:
 
 ```bash
-npx vite build && node /tmp/pr1/closure.mjs | tee /tmp/pr1/closure-before.txt
+npx vite build && node $S/closure.mjs | tee $S/pr1/closure-before.txt
 node scripts/autopilot-check.mjs --only smoke --routes /avengers,/invincible --shots avhq-pr1 --before
 node scripts/autopilot-check.mjs --only smoke --routes /avengers,/invincible --shots avhq-pr1-phone --before --phone
-mv public/changes/avhq-pr1-before.webp public/changes/avhq-pr1-phone-before.webp /tmp/pr1/
+mv public/changes/avhq-pr1-before.webp public/changes/avhq-pr1-phone-before.webp $S/pr1/
 npx vite --port 5173 --strictPort &   # leave it up for the two checks below, then stop it
-OUT=/tmp/pr1/world-before node scripts/hq-world-check.mjs
-OUT=/tmp/pr1/inv-before node scripts/inv-world-check.mjs
+OUT=$S/pr1/world-before node scripts/hq-world-check.mjs
+OUT=$S/pr1/inv-before node scripts/inv-world-check.mjs
 ```
 Expected: the closure about `85 files 1422 kB raw 363 kB gzip`, with rows for `shapes` (about 501 kB), the barrel’s `hud` chunk (about 110 kB, plus 16 kB of CSS), `strings` (74 kB), `films` (31 kB) and a bf2017 `layout` (3 kB); zero files means the manifest’s key for the page isn’t `src/pages/Avengers.jsx`, so grep the manifest for it. Each autopilot run ends `ok   everything green`. The world check prints `compound up in N s`, writes nine `hq-*.png` and ends `no page errors`; the Invincible check prints `city up in N s` and ends `no page errors`. `npx vite build` rather than `npm run build`, so `public/github.json` is not rewritten. `git status --short` is empty afterwards.
 
@@ -174,8 +180,8 @@ npx vitest run src/components/avengers/world/rules.barrel.test.js
 npx vitest run src/components/avengers src/components/universe/landings
 npx eslint src/components/avengers/world
 git status --short
-git show HEAD:src/components/avengers/world/rules.js > /tmp/pr1/rules-old.js && cat src/components/avengers/world/rules/*.js | grep -v '^import\|^//' | grep -vxFf /tmp/pr1/rules-old.js
-node scripts/voices/export-lines.mjs --out /tmp/pr1/lines-after.json && cmp /tmp/pr1/lines-before.json /tmp/pr1/lines-after.json && echo same
+git show HEAD:src/components/avengers/world/rules.js > $S/pr1/rules-old.js && cat src/components/avengers/world/rules/*.js | grep -v '^import\|^//' | grep -vxFf $S/pr1/rules-old.js
+node scripts/voices/export-lines.mjs --out $S/pr1/lines-after.json && cmp $S/pr1/lines-before.json $S/pr1/lines-after.json && echo same
 node scripts/health.mjs --only big-files,cycles,boundary-breaks
 wc -l src/components/avengers/world/rules.js src/components/avengers/world/rules/*.js
 ```
@@ -208,17 +214,18 @@ Subject: `world/rules.js under its 800 lines: nine parts in world/rules/, the ol
   - `scene/fx.js`: `buildJets({ scene, env, calm, v3 })` → `{ jet, vfx, placeJet(t, dt) }`; `createEvents({ A, calm, hero, packs, people, squash, swing, vfx, v3, v3b })` → `fx(type, d = {})`.
   - `scene/cast.js`: `async buildCast({ scene, small })` → `{ hero, heroTop, spidey, cap, moves, drive, ghosts, people }`; `wakeCast({ cast, scene, engine, calm, vfx, frameMat, floorLight })` → `{ placeArmour(h, dt), get armour(), stop() }` (synchronous); `createPosing({ cast, life, A, squash })` → `{ R, placeHero(h, dt, say = null, clock), placePeople(s, dt, clock) }`.
   - `createCompoundWorld(rt, { calm })` → `{ engine, ground, scene, render, prepare, fx, screenOf, resize, info, lost, skipIntro, dispose }`, unchanged; `__HQWORLD__` works as before.
+  - Scratch, not committed: `$S/pr1/main-a/` and `main-b/` (Step 1), for Step 6 and Task 4 Step 2.
 
 - [ ] **Step 1: Shoot main twice, the pixel references**
 
 ```bash
 BASE=$(git merge-base HEAD origin/main)
-T=compound,repulsor,lawn,ricochet,trickshot,widow,smash,thwip,tesseract,titan
-node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --ref "$BASE" --out /tmp/pr1/main-a --only $T
-node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --ref "$BASE" --out /tmp/pr1/main-b --only $T
-node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --compare /tmp/pr1/main-a /tmp/pr1/main-b
+T=compound,repulsor,lawn,ricochet,trickshot,widow,smash,thwip,tesseract,titan,invworld,thinkmark,viewer
+node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --ref "$BASE" --out $S/pr1/main-a --only $T
+node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --ref "$BASE" --out $S/pr1/main-b --only $T
+node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --compare $S/pr1/main-a $S/pr1/main-b
 ```
-Run them one after the other in the background (about 20 minutes each in software); editing meanwhile is fine, but run no build and no other browser check until both finish, or the loading can pass the harness’s settle and make false differences. Expected: each `report.json` shows `ok: true` for all ten targets; the compare is main’s own noise floor (in the brief’s scratch run, 83 px at 1/255 on the compound and Titan’s known second outcome). Task 4 reuses these shots.
+Run them one after the other in the background (20 minutes or more each in software); editing meanwhile is fine, but run no build and no other browser check until both finish, or the loading can pass the harness’s settle and make false differences. Expected: each `report.json` shows `ok: true` for all thirteen targets; the compare is main’s own noise floor (in the brief’s scratch run of the ten Avengers targets, 83 px at 1/255 on the compound and Titan’s known second outcome; FL2’s README gives ThinkMark two outcomes too, 887 px apart). `invworld`, `thinkmark` and `viewer` are there because the index’s Review Focus 5 pins Invincible by them in this PR. Task 4 reuses these shots.
 
 - [ ] **Step 2: Write the failing test**
 
@@ -310,7 +317,7 @@ Sizes measured in the brief’s scratch copy, before header comments: `scene.js`
 npx vitest run src/components/avengers/world/scene.test.js
 npx eslint src/components/avengers/world
 git status --short
-git show HEAD:src/components/avengers/world/scene.js > /tmp/pr1/scene-old.js && cat src/components/avengers/world/scene.js src/components/avengers/world/scene/*.js | grep -v '^import\|^//' | grep -vxFf /tmp/pr1/scene-old.js
+git show HEAD:src/components/avengers/world/scene.js > $S/pr1/scene-old.js && cat src/components/avengers/world/scene.js src/components/avengers/world/scene/*.js | grep -v '^import\|^//' | grep -vxFf $S/pr1/scene-old.js
 node scripts/health.mjs --only big-files,cycles,boundary-breaks,glsl-sites,art-mix,hud-kit
 npx vitest run src/components/avengers src/components/universe/landings
 ```
@@ -319,8 +326,8 @@ Expected: `Tests  5 passed (5)`; no lint output; `git status` lists only ` M …
 - [ ] **Step 6: Check the pictures against main**
 
 ```bash
-node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --out /tmp/pr1/t2 --only compound,repulsor,titan
-for b in main-a main-b; do node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --compare /tmp/pr1/t2 /tmp/pr1/$b; done   # (t2 first: it holds three of the ten)
+node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --out $S/pr1/t2 --only compound,repulsor,titan
+for b in main-a main-b; do node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --compare $S/pr1/t2 $S/pr1/$b; done   # (t2 first: it holds three of the thirteen)
 ```
 Expected: `report.json` shows `ok: true` and `errors: []` for each target; each of `compound.png`, `repulsor.png` and `titan.png` reads `0 pixels differ` against at least one main run (Titan may instead sit 2 px off one, its known pair of outcomes, FL2’s README). Any other difference means a part ran out of order or something was awaited in the stretch: fix it before committing. If a target is off both main runs by no more than main-a against main-b in the same place, shoot main a third time (`main-c`) before calling it a failure.
 
@@ -342,7 +349,7 @@ Subject: `world/scene.js under its 800 lines: the compound drawn by six parts in
 
 **Interfaces:**
 - Consumes: the kit parts’ files under `src/runtime/hud/`: `Hud.jsx` (default `Hud`), `Menu.jsx` (default `Menu`, named `MenuItem`), `Objective.jsx`, `Toast.jsx`, `Bubble.jsx`, `Stick.jsx`, `TouchButton.jsx` (defaults), `canvas.js` (named `fitCanvas`), `hud.css` (the tokens, which `index.js:4` loaded first). From `scripts/health/graph.mjs`: `FROM`, `SIDE_EFFECT`, `uncomment(text)`, `async resolve(specifier, from)` → absolute paths (a `src` test importing `scripts/` has precedent in `galaxy/battleCrews/voicelines.test.js:4`).
-- Produces: the compound’s static import closure holds no `runtime/hud/index.js`, `Screen.jsx`, `ScreenCanvas.jsx`, `Film.jsx` and nothing under `src/lib/bf2017/` or `src/data/bf2017/`, and `CompoundWorld.test.js` holds it there. Later PRs that use more kit parts (the `Toast` of §5, for example) import them the same way, `'../../../runtime/hud/<Part>'`, never the barrel, or this test fails.
+- Produces: the compound’s static import closure holds no `runtime/hud/index.js`, `Screen.jsx`, `ScreenCanvas.jsx`, `Film.jsx` and nothing under `src/lib/bf2017/` or `src/data/bf2017/`, and `CompoundWorld.test.js` holds it there. Later PRs that use more kit parts (the `Toast` of §5, for example) import them the same way, `'../../../runtime/hud/<Part>'`, never the barrel, or this test fails. Scratch, not committed: `$S/pr1/closure-after.txt` (Step 5), for Task 4.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -421,7 +428,7 @@ Expected: `Tests  2 passed (2)` in well under a second (about 175 ms); no lint o
 - [ ] **Step 5: Measure the closure after**
 
 ```bash
-npx vite build && node /tmp/pr1/closure.mjs | tee /tmp/pr1/closure-after.txt
+npx vite build && node $S/closure.mjs | tee $S/pr1/closure-after.txt
 ```
 Expected: about `80 files 707 kB raw 260 kB gzip` against Step 2 of Task 1’s `85 files 1422 kB raw 363 kB gzip`; the `shapes`, `strings`, `films` and barrel `hud` rows and the bf2017 `layout` row are gone, and a `canvas` chunk (about 8 kB of JS, 13 kB of CSS) appears. If any of those rows is still listed, find which chunk’s `imports` brings it (the chunker can merge parts back into a chunk shared with `Screen`) before going on.
 
@@ -441,7 +448,7 @@ Subject: `The compound takes the HUD kit by its parts: no Battlefront screens or
 - Create: `docs/superpowers/evidence/avengers-hq/pr1/README.md`, `before/avengers.webp`, `before/avengers-phone.webp`, `after/avengers.webp`, `after/invincible.webp`, `after/avengers-phone.webp`, `after/invincible-phone.webp`
 
 **Interfaces:**
-- Consumes: Tasks 1-3’s commits; `/tmp/pr1/main-a` and `main-b` (Task 2 Step 1); `/tmp/pr1/closure-before.txt` and `closure-after.txt`; the before pictures and world checks in `/tmp/pr1/` (Task 1 Step 2).
+- Consumes: Tasks 1-3’s commits; `$S/pr1/main-a` and `main-b` (Task 2 Step 1); `$S/pr1/closure-before.txt` and `closure-after.txt`; the before pictures and world checks in `$S/pr1/` (Task 1 Step 2).
 - Produces: the merged PR. For PR 2: `world/rules/progress.js` and `world/scene/doors.js` on `main`.
 
 - [ ] **Step 1: The four gates**
@@ -454,11 +461,11 @@ Expected: lint clean; every test file passes; the build green; the health table 
 - [ ] **Step 2: The pixel gate on every `/avengers` target**
 
 ```bash
-T=compound,repulsor,lawn,ricochet,trickshot,widow,smash,thwip,tesseract,titan
-node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --out /tmp/pr1/after --only $T
-for b in main-a main-b; do node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --compare /tmp/pr1/$b /tmp/pr1/after; done
+T=compound,repulsor,lawn,ricochet,trickshot,widow,smash,thwip,tesseract,titan,invworld,thinkmark,viewer
+node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --out $S/pr1/after --only $T
+for b in main-a main-b; do node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --compare $S/pr1/$b $S/pr1/after; done
 ```
-Expected: `ok: true` for all ten; each target `0 pixels differ` against at least one main run, Titan allowed its known 2 px against one; the same third-run rule as Task 2 Step 6. Read `after/compound.png` beside `main-a/compound.png`: the HUD’s title, the objective glass, the map, the `0 of 6` and `0 of 12` chips, Menu and the hint pill match. Any other difference blocks the PR.
+Expected: `ok: true` for all thirteen; each target `0 pixels differ` against at least one main run (`compound` by the index’s two-run rule, `invworld`, `thinkmark` and `viewer` as they are), Titan allowed its known 2 px against one; the same third-run rule as Task 2 Step 6. Read `after/compound.png` beside `main-a/compound.png`: the HUD’s title, the objective glass, the map, the `0 of 6` and `0 of 12` chips, Menu and the hint pill match. Any other difference blocks the PR.
 
 - [ ] **Step 3: Smoke and phone, and read the pictures**
 
@@ -466,16 +473,16 @@ Expected: `ok: true` for all ten; each target `0 pixels differ` against at least
 node scripts/autopilot-check.mjs --only smoke --routes /avengers,/invincible --shots avhq-pr1
 node scripts/autopilot-check.mjs --only smoke --routes /avengers,/invincible --shots avhq-pr1-phone --phone
 ```
-Expected: both end `ok   everything green`. Read `public/changes/avhq-pr1-a.webp` against `/tmp/pr1/avhq-pr1-before.webp`, and the phone pair (the touch Stick and buttons are now direct imports): the compound’s HUD matches; the clock isn’t held here, so judge by eye. Then move the four new WebPs out of `public/changes/` (this is not a ship’s-log change): `avhq-pr1-a` → `evidence/avengers-hq/pr1/after/avengers.webp`, `-b` → `after/invincible.webp`, the phone `-a` and `-b` → `after/avengers-phone.webp` and `after/invincible-phone.webp`, and the two before pictures from `/tmp/pr1/` → `before/avengers.webp` and `before/avengers-phone.webp`. `git status --short public/changes` is empty.
+Expected: both end `ok   everything green`. Read `public/changes/avhq-pr1-a.webp` against `$S/pr1/avhq-pr1-before.webp`, and the phone pair (the touch Stick and buttons are now direct imports): the compound’s HUD matches; the clock isn’t held here, so judge by eye. Then move the four new WebPs out of `public/changes/` (this is not a ship’s-log change): `avhq-pr1-a` → `evidence/avengers-hq/pr1/after/avengers.webp`, `-b` → `after/invincible.webp`, the phone `-a` and `-b` → `after/avengers-phone.webp` and `after/invincible-phone.webp`, and the two before pictures from `$S/pr1/` → `before/avengers.webp` and `before/avengers-phone.webp`. `git status --short public/changes` is empty.
 
 - [ ] **Step 4: The world checks, for errors and the eye**
 
 ```bash
 npx vite --port 5173 --strictPort &   # stop it afterwards
-OUT=/tmp/pr1/world-after node scripts/hq-world-check.mjs
-OUT=/tmp/pr1/inv-after node scripts/inv-world-check.mjs
+OUT=$S/pr1/world-after node scripts/hq-world-check.mjs
+OUT=$S/pr1/inv-after node scripts/inv-world-check.mjs
 ```
-Expected: `compound up in N s`, nine `hq-*.png`, `no page errors`; `city up in N s`, `no page errors`. Compare each pair with Task 1 Step 2’s by eye. `hq/` is not touched by this PR, so the Invincible check is a guard, not a pixel gate (the index’s Review Focus 5 names this PR).
+Expected: `compound up in N s`, nine `hq-*.png`, `no page errors`; `city up in N s`, `no page errors`. Compare each pair with Task 1 Step 2’s by eye. `hq/` is not touched by this PR, so the Invincible check is a guard for errors; the index’s Review Focus 5 names this PR, and Step 2’s `invworld`, `thinkmark` and `viewer` shots are its pixel gate.
 
 - [ ] **Step 5: Write the evidence README and commit it with the pictures**
 
@@ -497,7 +504,7 @@ Open the PR against `main` (the GitHub tool, or `gh pr create`). Title: `Avenger
 - the numbers, before → after: `/avengers` static closure (files, raw, gzip, from `dist/.vite/manifest.json`); `big-files` 30 → 28; tests 503 → 513 in the two folders;
 - the pixel table from the README, and the before and after pictures as images from the branch’s raw URL, `https://raw.githubusercontent.com/tilakpatell/tilakpatell.com/claude/avengers-hq-pr1-splits/docs/superpowers/evidence/avengers-hq/pr1/<before|after>/<name>.webp`;
 - the checks that ran, each with its result;
-- not in this PR: `runtime/hud/index.js` still lends `Screen` and still says a world imports only from it; both are #1028’s owner’s to change;
+- not in this PR: `runtime/hud/index.js` still lends `Screen`, and its header and `docs/health/RULES.md:73` still say a world takes the kit from it only, which spec §10 sets aside here; all three are #1028’s owner’s to change;
 - the plan’s path and the PR footer the harness gives.
 
 Expected: CI green. Merge with a merge commit (`merge_method: merge`), never a squash or rebase; never force-push. Then `git fetch origin main`. A red check is fixed with a new commit on the branch.

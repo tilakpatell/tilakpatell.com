@@ -47,9 +47,11 @@
 - **Open draft #1028** edits `src/App.jsx` (`:8`, about `:403` and `:472`), `src/components/guide/pages.js` (`:15-36`, `:103-140`) and `pages.test.js` (about `:112-135`). This PR’s hunks are disjoint: `App.jsx` `:25`, `:78-108`, `:325-345`, `:439`; `pages.js` one row after `:449`; `pages.test.js` two lines in existing tests. No edit to `src/runtime/hud/*`.
 - **Tests.** Beside their file, each under one second, no network. No test is skipped, loosened or deleted; the `pages.test.js` and `where.test.js` changes only add assertions.
 - **Limits.** Files stay under 800 lines (`CompoundWorld.jsx` is 707 today; this PR adds about 20). No new dependency, renderer or animation loop.
+- **Check scripts’ storage.** `tp-3d` is set raw, `'on'` or `'off'`, as `lib/gpu.js` `setMode3D` stores it (`:84-87`): `mode3D()` (`:75-81`) reads a JSON string such as `'"off"'` as auto, and auto is 3D on under SwiftShader. `tp-worlds` is JSON, `'"load"'`, read through `local.get`. An init script copies `scripts/hq-world-check.mjs:28-34`’s lines and overrides only what a part needs.
+- **Scratch.** Scratch files live in `$S`, the session’s scratchpad, never under the repo. PR 1’s manifest script (PR 1 plan, Task 1 Step 2) is saved once, unchanged, as `$S/closure.mjs` (Task 0) and reused in Task 5.
 - **Commits.** A plain sentence as the subject; the body says why. End with the session’s attribution lines. No model names anywhere. Never force-push; if `main` moves, merge it in.
 - **What later PRs rely on.**
-  - PR 4 imports `linkOf` and `gameOf`, keeps `Place({ id, onLeave, onPortal })` with `onLeave` as this PR’s `leave`, and makes its results card’s “Next: <building>” navigate with `{ replace: true, state: location.state }`. A door-opened game stays door-opened, so Back from the next game still pops to `/avengers`.
+  - PR 4 imports `linkOf` (passed to `nextFor`), keeps `Place({ id, onLeave, onPortal })` with `onLeave` as this PR’s `leave`, and makes its results card’s “Next: <building>” navigate with `{ replace: true, state: location.state }`. A door-opened game stays door-opened, so Back from the next game still pops to `/avengers`.
   - PR 5 imports `gameOf`, `linkOf` and `hqState`, and renders each board card’s Play as `<Link to={linkOf(id)} state={hqState}>`. In `hq-links-check.mjs` it changes the two lines `CARD` and `PLAY` to `(id) => `#hq-card-${id}`` and `'a.btn-primary'`.
   - PR 6 renders its “Next” link as `<Link to={gate.next.to} state={hqState}>`.
   - PRs 4, 5, 6 and 7 each run `OUT=… node scripts/hq-links-check.mjs` (and `--3d` once) and expect `all ok`. The script finds the dialog’s title through `.cw-place`’s `aria-labelledby` and Back as the button in `.cw-place` whose text starts “Back”, so PR 4’s new bar keeps it working.
@@ -84,26 +86,34 @@
 
 ---
 
-### Before Task 1: the before shots and numbers
+### Task 0: The before numbers
 
-`S` below is the session’s scratchpad directory (never under the repo).
+**Files:** none committed.
 
-- [ ] **Branch and check PRs 1 and 2 are in.** `git fetch origin main && git switch -c <branch> origin/main`. Then:
+**Interfaces:**
+- Consumes: PR 1’s `world/rules/progress.js` and PR 2’s `HALF_OF` and tour sentence on `main`; PR 1’s manifest script (PR 1 plan, Task 1 Step 2); `scripts/autopilot-check.mjs`, `scripts/health.mjs` and `scripts/hq-world-check.mjs`.
+- Produces, all in `$S` and all consumed by Task 5:
+  - `9003-before.webp`, main’s `/avengers`;
+  - `health-before.txt` and `tests-before.txt`;
+  - `closure.mjs` (PR 1’s manifest script, unchanged) and `closure-before.txt`;
+  - `hq-before/`, `hq-world-check.mjs`’s nine pictures.
+
+- [ ] **Step 1: Branch and check PRs 1 and 2 are in.** `S` below is the session’s scratchpad directory (never under the repo). `git fetch origin main && git switch -c <branch> origin/main`. Then:
   - `grep -c "most of them for an Infinity Stone" src/components/tour/chapters/player.js` prints `1`.
   - `grep -n "export const HALF_OF" src/components/avengers/world/labels.js` prints one line.
   - `ls src/components/avengers/world/rules/progress.js` prints the path.
   - `ls src/components/avengers/world/links.js` fails.
-- [ ] **Draft #1028.** Run `gh pr view 1028 --json state,mergedAt,files`.
+- [ ] **Step 2: Draft #1028.** Run `gh pr view 1028 --json state,mergedAt,files`.
   - Merged: its changes are on `main` already.
   - Open: note it for the PR body, and keep every hunk inside the lines Global Constraints names.
-- [ ] **Shoot main.**
+- [ ] **Step 3: Shoot main.**
   - `node scripts/autopilot-check.mjs --skip lint,test --routes /avengers,/invincible --shots 9003 --before`. Expected: it ends `everything green` and writes `public/changes/9003-before.webp`.
   - `mv public/changes/9003-before.webp $S/`, then `git checkout public/github.json`.
-- [ ] **Measure main.**
+- [ ] **Step 4: Measure main.**
   - `node scripts/health.mjs --check --skip build | tee $S/health-before.txt`. Expected: `within budget`.
   - `npx vitest run 2>&1 | tail -4 | tee $S/tests-before.txt`. Expected: the files and tests counts, all passing.
-  - The closure, into `$S/closure-before.txt`, with Task 5 Step 2’s command.
   - Start `npx vite --port 5173 --strictPort` in the background, then `OUT=$S/hq-before node scripts/hq-world-check.mjs`. Expected: `compound up in … s`, nine `hq-*.png` and `no page errors` at the end.
+- [ ] **Step 5: The closure, before.** Save PR 1’s manifest script (PR 1 plan, Task 1 Step 2) unchanged as `$S/closure.mjs`; run `npx vite build && node $S/closure.mjs | tee $S/closure-before.txt; git checkout public/github.json`. Expected: one total line, close to PR 2’s stated size (about `707 kB raw 260 kB gzip` after PR 1). Zero files means the page key isn’t `src/pages/Avengers.jsx`: grep the manifest for it.
 
 ---
 
@@ -120,7 +130,7 @@
   - `export const LINKS`: 8 rows `{ slug, id, game }` in `PLACES` order, as the table in Global Constraints. Task 4 appends `words` to each row.
   - `export const linkOf = (id) → '/avengers/<slug>' | null`
   - `export const placeOf = (slug) → placeId | null`: an exact, case-sensitive match. Anything else, including non-strings, gives `null`.
-  - `export const gameOf = (id) → string | null`: the game’s title, for PR 4’s bar and PR 5’s cards.
+  - `export const gameOf = (id) → string | null`: the game’s title, for PR 5’s cards.
   - `export const hqState = { hq: true }`: the state a door on the page pushes with.
   - `export const backTarget = (location) → -1 | '/avengers'`
   - `export const inHq = (pathname) → boolean`: the addresses the route `/avengers/:place?` matches.
@@ -341,9 +351,8 @@ const PLAY = 'button';
   - **Helpers.**
     - Chromium as `scripts/autopilot-check.mjs:151` finds it (`CHROMIUM`, else the first `/opt/pw-browsers/chromium-*/chrome-linux/chrome`). Launch it with `--use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist --enable-webgl`.
     - `check(ok, what)` prints and collects the problem.
-    - `fresh({ stones = [], three = false } = {}) → page` is a new context at 1024 × 640 whose init script sets:
-      - `tp-intro` to `'1'` and `tp-worlds` to `'"load"'`;
-      - `tp-3d` to `'"on"'` or `'"off"'`;
+    - `fresh({ stones = [], three = false } = {}) → page` is a new context at 1024 × 640. Its init script copies `scripts/hq-world-check.mjs:28-34`’s lines (`tp-intro` `'1'`, `tp-worlds` `'"load"'` as JSON, `tp-software`, `tp-quality` `'"low"'`) and overrides only:
+      - `tp-3d`, raw: `window.localStorage.setItem('tp-3d', three ? 'on' : 'off')`, as `setMode3D` stores it (`lib/gpu.js:84-87`). The copied `'"on"'`, or a JSON `'"off"'`, reads as auto, which is 3D on under SwiftShader, so the parts without `--3d` would get the 3D compound and games instead of the cards and the simple versions;
       - `tp-hq-stones` to `JSON.stringify(stones)`.
     - `fresh` also reports every `pageerror` and every console `error` that `noisy()` doesn’t know as a `FAIL` line.
     - `at(page) → { hash, idx, length, y, open, title }` is one `evaluate`:
@@ -392,51 +401,15 @@ const PLAY = 'button';
     - After `:1`, add `import { useLocation, useNavigate, useParams } from 'react-router-dom';`.
     - After `:22`: `import { HQ_HOME, backTarget, hqState, linkOf, placeOf } from './links';`.
   - The header comment `:24-30`: each game opens over the page at its own address (`./links.js`), and Back, Esc or the button closes it.
-  - In `CompoundWorld`, replace `const [inside, setInside] = useState(null);` and today’s `enter`, `leave` and `portal` (`:83-99`) with:
-
-```js
-const { place: slug } = useParams();
-const inside = placeOf(slug);
-const where = useLocation();
-const here = useRef(where);
-here.current = where;
-const navigate = useNavigate();
-const leaving = useRef(false); // one way out per move: a second Esc before the address has moved would go back twice, off the page
-// an address that is no building is the compound (as MiddleEarth.jsx:200-202)
-useEffect(() => {
-  if (slug && !inside) navigate(HQ_HOME, { replace: true });
-}, [slug, inside, navigate]);
-// out of a building however it happened (the browser's Back included), the stones read again: halves send no tp:stones
-useEffect(() => {
-  if (!inside) setHeist(readHeist());
-}, [inside]);
-useEffect(() => {
-  leaving.current = false;
-}, [where.key]);
-const enter = useCallback((id) => {
-  const to = linkOf(id);
-  if (!to) return;
-  audioContext(); // in the key press or click, so the game can be heard
-  api.current?.fx('enter', { id });
-  navigate(to, { state: hqState });
-}, [navigate]);
-const leave = useCallback(() => {
-  if (!inside || leaving.current) return;
-  leaving.current = true;
-  const to = backTarget(here.current);
-  if (to === -1) navigate(-1);
-  else navigate(to, { replace: true });
-}, [inside, navigate]);
-// through the portal (only with the Space Stone, in every mode): out of the hangar, or out from under it, to Titan down the page
-const portal = useCallback(() => {
-  if (!hasEarned('space')) return;
-  audioContext();
-  leave();
-  api.current?.fx('portal');
-  onPortal?.();
-}, [leave, onPortal]);
-```
-
+  - In `CompoundWorld`, replace `const [inside, setInside] = useState(null);` and today’s `enter`, `leave` and `portal` (`:83-99`).
+    - The building is the route’s: `const { place: slug } = useParams(); const inside = placeOf(slug);`, with `useNavigate()` and `useLocation()` (kept in a ref, so `leave` reads the current entry).
+    - `enter(id)` keeps today’s `audioContext()` (in the key press or click, so the game can be heard) and `fx('enter', { id })`, and ends in `navigate(linkOf(id), { state: hqState })` in place of `setInside`. An id with no link does nothing.
+    - An effect on `[slug, inside, navigate]` replaces an address that is no building with `HQ_HOME` (as `MiddleEarth.jsx:200-202`).
+    - An effect on `[inside]` runs `setHeist(readHeist())` whenever `inside` is `null`: out of a building however it happened, the browser’s Back included, the stones read again, since halves send no `tp:stones`.
+    - Three decisions:
+      1. **One way out per move.** A `leaving` ref is set by the first `leave()` and cleared when `location.key` changes. A second Esc before the address has moved does nothing, rather than going back twice and off the page.
+      2. **`leave()` → `backTarget(location)`.** `-1` means `navigate(-1)`; anything else means `navigate(to, { replace: true })`. With `inside` `null` it does nothing.
+      3. **`portal()` returns unless `hasEarned('space')`**, in every mode. Then `audioContext()`, `leave()`, `fx('portal')` and `onPortal?.()`.
   - The render: `<Place key={inside} id={inside} onLeave={leave} onPortal={portal} />`. The key remounts `Place` on a jump from one game to another, so its focus and overflow effect (`Place.jsx:160-174`) runs again.
   - Leave `:104` alone. `Place` renders on `inside` in both branches, so a cold link opens it over the loading veil (3D, with the compound’s stage disabled while `inside`, `:229`) or over the cards (no 3D). That is the spec’s cold link: the compound builds when the game closes.
   - Every way in already calls `enter`, so none changes:
@@ -613,7 +586,7 @@ it('walks into Avengers HQ with the gate a button away, and the Space Stone open
 - Create: `docs/superpowers/evidence/avengers-hq/pr3/README.md`, plus the pictures it lists (`.webp` or `.png`, each under 1 MB, so committed rather than published to the bucket)
 
 **Interfaces:**
-- Consumes: everything Tasks 1–4 produce; the before files from “Before Task 1”.
+- Consumes: everything Tasks 1–4 produce; Task 0’s `$S` files (`9003-before.webp`, `health-before.txt`, `tests-before.txt`, `closure.mjs`, `closure-before.txt` and `hq-before/`).
 - Produces: the pull request.
 
 - [ ] **Step 1: The gates.**
@@ -621,12 +594,7 @@ it('walks into Avengers HQ with the gate a button away, and the Space Stone open
   - Expected: lint clean; every test file passes (record the counts against `$S/tests-before.txt`); the build is green.
   - Expected from health: `within budget`, with `big-files`, `boundary-breaks`, `lint-disables`, `loops`, `kbd-styles` and `hud-kit` as in `$S/health-before.txt`.
   - Don’t ratchet a budget: the steward lowers budgets after the merge.
-- [ ] **Step 2: The `/avengers` closure.**
-
-```bash
-npx vite build && node --input-type=module -e "import{readFileSync as r}from'node:fs';import{gzipSync as g}from'node:zlib';const m=JSON.parse(r('dist/.vite/manifest.json','utf8'));const seen=new Set(),rows=[];const v=(k)=>{const c=m[k];if(!c||seen.has(k)||c.isEntry)return;seen.add(k);for(const f of[c.file,...(c.css??[])]){const b=r('dist/'+f);rows.push([c.name??k,b.length,g(b).length,f])}(c.imports??[]).forEach(v)};v('src/pages/Avengers.jsx');const kb=(n)=>(n/1024).toFixed(0)+' kB';console.log('/avengers static closure, app entry left out:',rows.length,'files',kb(rows.reduce((s,x)=>s+x[1],0)),'raw',kb(rows.reduce((s,x)=>s+x[2],0)),'gzip');for(const x of rows.sort((a,b)=>b[1]-a[1]))console.log(' ',String(x[0]).padEnd(28),kb(x[1]).padStart(7),kb(x[2]).padStart(7),x[3])" | tee $S/closure-after.txt; git checkout public/github.json
-```
-
+- [ ] **Step 2: The `/avengers` closure.** With PR 1’s manifest script (PR 1 plan, Task 1 Step 2), saved unchanged as `$S/closure.mjs` in Task 0, run `npx vite build && node $S/closure.mjs | tee $S/closure-after.txt; git checkout public/github.json`.
   - Expected: within 1 kB of `$S/closure-before.txt`. `links.js` is about 2 kB and is shared with the app’s entry, which the count leaves out.
   - Zero files means the page’s key isn’t `src/pages/Avengers.jsx`: grep the manifest for it.
 - [ ] **Step 3: Nothing shared changed.** `git diff --stat origin/main -- src/components/avengers/hq src/runtime/hud`. Expected: no output, so `scripts/inv-world-check.mjs` is not run (§12 runs it when `hq/` changes). Say so in the PR.

@@ -24,10 +24,15 @@
 - **Copy (RULES.md UI 7).** British spelling, curly quotes (’ “ ”) in strings, sentence case, no Oxford comma, one sentence to a toast. A half stone reads as whose half: “Clint’s half of the Soul Stone”.
 - **Shared code (§3).** `hq/` is shared with Invincible (ThinkMark imports `HQFrame` at `ThinkMark.jsx:2`; `invincible/pack.js:13` lists it). `HQFrame.jsx` is not edited, byte for byte. Every new `hq.css` rule is scoped under a new class, and `hq.css:1-27` is not edited, so `.hq-screen`’s 16:9 still sizes ThinkMark. The Invincible shots must stay pixel-identical (Task 6).
 - **The site’s 3D switch stays in Settings (§5).** No code in this PR calls `three.set` of `use3D()` or `setMode3D`. `src/runtime/useWorld.js` gains one optional flag, `own3D = false`. Every other caller keeps today’s behaviour. Say so to the engine-floor (FL2) session in the PR body, since it owns `src/runtime`.
+- **Next (§5).** Departs from §5’s `progress(heist).next`: Next skips the building just played, so a loss there never points back at it.
 - **Keys.** New keys only: `tp-hq-3d-repulsor`, `-lawn`, `-ricochet`, `-trickshot`, `-widow`, `-smash`, `-thwip`, `-tesseract`. Each holds JSON `"on"` or `"off"`; no key means `auto`. They are unregistered with `runtime/saves`. No existing key changes. `__HQ__` and `__HQWORLD__` keep every name.
 - **Kit and UI (§3, RULES.md UI).** The bar and the results card are the frame of a page game, drawn with the shell’s `.btn` and tokens. Every control there is at least 44 px on a coarse pointer. Text over the 3D sits on glass at alpha 0.78 or more. Nothing new under 0.7 rem. No new `kbd` rule: `kbd-styles` falls by one. No bare page-level `z-index` of 10 or more.
 - **Limits.** Files under 800 lines (`TesseractRun.jsx` is 792 today, so check it with `wc -l`). No new dependency, renderer or animation loop. No edit to `src/components/guide/pages.js` or `src/runtime/hud/*` (open draft #1028): the games keep their own key lists, and the touch help is data in `hq/gameScreen.js`.
 - **Tests.** Beside their files, each under one second, no network. No test is skipped, loosened or deleted. PR 2’s `stoneById(` assertion is replaced by one of equal strength (Task 4).
+- **Checks (the index’s rules).**
+  - Scratch files live in `$S`, the session’s scratchpad, never under the repo. PR 1’s manifest script is saved once as `$S/closure.mjs` and reused.
+  - The scratch browser script copies `scripts/hq-world-check.mjs:28-34`’s init lines and overrides only what a part needs: `tp-3d` raw (`'on'` or `'off'`, as `lib/gpu.js` `setMode3D` stores it; a JSON string reads as auto) and `tp-worlds` as JSON (`'"load"'`, read through `local.get`).
+  - Of FL2’s `hq-shots` targets, `invworld`, `thinkmark` and `viewer` are compared as they are. `compound` isn’t pixel-stable against `main` itself, so a PR that compares it shoots `main` twice; this one leaves it to `hq-world-check`’s shots, read by eye.
 - **Commits.** A plain sentence as the subject; the body says why, with the measured numbers; end with the harness’s attribution lines. No model names anywhere. Never force-push.
 - **What later PRs rely on.**
   - PR 5: `writeLocal3D(GAME_AT[placeId], 'on')` for a card’s per-game Try 3D and the line “The stone here is won in the 3D game.”
@@ -66,14 +71,25 @@
 | `docs/architecture.md` | 3, 5 | one clause on the game screen and the warming |
 | `docs/superpowers/evidence/avengers-hq/pr4/` | 6 | README and pictures |
 
-### Before Task 1: the before numbers
+### Task 0: The before numbers
 
-- [ ] **Branch and check PRs 1–3 are in.** Run `git fetch origin main && git switch -c claude/avengers-hq-pr4-game-screen origin/main`, then `ls src/components/avengers/world/links.js scripts/hq-links-check.mjs src/components/avengers/world/rules/progress.js && grep -n "HALF_OF" src/components/avengers/world/labels.js`. Expected: three paths and one `HALF_OF` line. `S` below is the session’s scratchpad directory, never under the repo.
-- [ ] **The closure, before.** Save PR 1’s manifest script (`2026-10-18-avengers-hq-pr1-splits.md`, Task 1 Step 2) as `$S/closure.mjs`, unchanged. Run `npx vite build && node $S/closure.mjs | tee $S/closure-before.txt`. Expected: one total line, close to PR 3’s stated size (about `707 kB raw 260 kB gzip` after PR 1).
-- [ ] **The pages, before.** Run `node scripts/autopilot-check.mjs --only smoke --routes /avengers/workshop,/invincible --shots avhq-pr4 --before`, then the same with `--shots avhq-pr4-phone --phone`. Move both `public/changes/avhq-pr4*-before.webp` to `$S/`. Expected: each run ends `everything green`.
-- [ ] **The worlds and links, before.** With `npx vite --port 5173 --strictPort` up, run `OUT=$S/links-before node scripts/hq-links-check.mjs`, `OUT=$S/inv-before node scripts/inv-world-check.mjs` and `OUT=$S/hq-before node scripts/hq-world-check.mjs`. Expected: `all ok`, then `no page errors` twice.
-- [ ] **Write the scratch browser script** `$S/hq-pr4-check.mjs` (not committed). It takes part names and prints `ok <part>` or `FAIL <part>: <why>` for each. It ends `all ok` or `N problems` and exits 1 on any FAIL.
-  - **Launch.** Copy `scripts/hq-links-check.mjs`’s chromium launch and init block. Base `http://localhost:5173/?quality=low#`. Init: `tp-intro` = `'1'`, `tp-worlds` = `'load'`, `tp-3d` = `'on'` (raw, as `lib/gpu.js` stores it) unless the part says otherwise, plus the part’s own keys. Count every console error not in `scripts/lib/noise.mjs`’s noise as a FAIL of the part.
+**Files:** none committed.
+
+**Interfaces:**
+- Consumes: PRs 1–3 as listed under Global Constraints; PR 1’s manifest script (PR 1 plan, Task 1 Step 2); `scripts/hq-world-check.mjs:25-34` (its launch, context and init lines).
+- Produces, all in `$S` and all consumed by Task 6:
+  - `closure.mjs` (PR 1’s manifest script, unchanged) and `closure-before.txt`;
+  - `avhq-pr4-before.webp` and `avhq-pr4-phone-before.webp`;
+  - `links-before/`, `inv-before/` and `hq-before/`, the three checks’ pictures;
+  - `hq-pr4-check.mjs`, the scratch browser script (its parts below);
+  - `fit-before.txt`, the before fit table.
+
+- [ ] **Step 1: Branch and check PRs 1–3 are in.** Run `git fetch origin main && git switch -c claude/avengers-hq-pr4-game-screen origin/main`, then `ls src/components/avengers/world/links.js scripts/hq-links-check.mjs src/components/avengers/world/rules/progress.js && grep -n "HALF_OF" src/components/avengers/world/labels.js`. Expected: three paths and one `HALF_OF` line. `S` below is the session’s scratchpad directory, never under the repo.
+- [ ] **Step 2: The closure, before.** If `$S/closure.mjs` isn’t there from an earlier PR, save PR 1’s manifest script (`2026-10-18-avengers-hq-pr1-splits.md`, Task 1 Step 2) as it, unchanged. Run `npx vite build && node $S/closure.mjs | tee $S/closure-before.txt; git checkout public/github.json`. Expected: one total line, close to PR 3’s stated size (about `707 kB raw 260 kB gzip` after PR 1).
+- [ ] **Step 3: The pages, before.** Run `node scripts/autopilot-check.mjs --only smoke --routes /avengers/workshop,/invincible,/avengers --shots avhq-pr4 --before`, then `node scripts/autopilot-check.mjs --only smoke --routes /avengers/workshop,/avengers,/invincible,/avengers/gate --shots avhq-pr4-phone --phone --before`. With `--before` the first route is photographed and the rest are smoke-checked. Move both `public/changes/avhq-pr4*-before.webp` to `$S/`. Expected: each run ends `everything green`.
+- [ ] **Step 4: The worlds and links, before.** With `npx vite --port 5173 --strictPort` up, run `OUT=$S/links-before node scripts/hq-links-check.mjs`, `OUT=$S/inv-before node scripts/inv-world-check.mjs` and `OUT=$S/hq-before node scripts/hq-world-check.mjs`. Expected: `all ok`, then `no page errors` twice.
+- [ ] **Step 5: Write the scratch browser script** `$S/hq-pr4-check.mjs` (not committed). It takes part names and prints `ok <part>` or `FAIL <part>: <why>` for each. It ends `all ok` or `N problems` and exits 1 on any FAIL.
+  - **Launch.** Copy `scripts/hq-world-check.mjs`’s chromium launch (`:25`) and its init lines (`:28-34`: `tp-intro`, `tp-3d`, `tp-worlds`, `tp-software` and `tp-quality`), with a fresh context a part. Base `http://localhost:5173/?quality=low#`. Override only `tp-3d`, set raw to `'on'` (as `lib/gpu.js` `setMode3D` stores it; the copied `'"on"'` reads as auto) unless the part says otherwise. `tp-worlds` stays JSON, `'"load"'`: WorldGate reads it through `local.get`, so a raw `'load'` reads as no choice and the gate holds 3D on software WebGL. Add the part’s own keys. Count every console error not in `scripts/lib/noise.mjs`’s noise as a FAIL of the part.
   - **`fit`** runs at 1024 × 640, then at 390 × 844 with `isMobile` and `hasTouch`. For each row of `LINKS` (imported from `world/links.js`), use a fresh page at `#/avengers/<slug>` and wait up to 240 s for `.cw-place .hq-canvas[data-on]`. Record the start control’s bounding-box bottom. That is the first `.cw-place .hq-overlay .btn-primary`, or for Ricochet, whose menu starts from its room buttons, the first enabled `.cap-room-btn`. Pass: bottom ≤ the viewport height. After this PR, also: `.hq-bar` is at most 56 px tall at 1024 × 640. On the phone, `.hq-touch` is visible, no `.hq-keys` is visible, and every `.hq-bar .btn` is at least 44 px tall. Write a table `slug, w × h, bottom` to `$S/fit-<when>.txt` (`<when>` is the first argument after the parts: `before` or `after`).
   - **`gate`:** open `#/avengers/workshop`. Before `.hq-canvas[data-on]`, the button reading `Suit up` is `disabled` and `__HQ__.repulsor.state.phase` is `'ready'`. After `data-on`, a click makes the phase `'wave'`.
   - **`pause`:** open `#/avengers/lab`, wait for `data-on` and click `Hulk out`. After 1 s, click the bar’s `Pause`. Pass: it has `aria-pressed="true"`, `.sr-overlay .hq-overlay-title` reads `Paused`, and `__HQ__.smash.state.t` doesn’t change over 1 s. Then open `#/avengers/gate`, click `Swing` and run `Object.defineProperty(document, 'hidden', { value: true, configurable: true }); document.dispatchEvent(new Event('visibilitychange'))`. Pass: `.tw-overlay .hq-overlay-title` reads `Paused`.
@@ -81,7 +97,7 @@
     - Pass: `.hq-toy-note` reads `The stone here is won in the 3D game.` and holds a `Try 3D` button, and there is no `.hq-screen`.
     - Click the bar’s Back. Pass: `#hq-world[data-mode="3d"]`, and `localStorage['tp-3d']` is still `'on'`.
     - Wait for `.cw-canvas[data-on]`, run `__HQWORLD__.enter('stark')` and click `Try 3D`. Pass: `.hq-screen` appears, and `tp-hq-3d-repulsor` is `'"on"'`.
-  - **`siteoff`** (init `tp-3d` = `'off'`): open `#/avengers/workshop` and click `Try 3D`. Pass: `.hq-canvas[data-on]` within 240 s. Then click Back. Pass: `#hq-world[data-mode="cards"]` and `tp-3d` is still `'off'`.
+  - **`siteoff`** (init `tp-3d` = raw `'off'`): open `#/avengers/workshop` and click `Try 3D`. Pass: `.hq-canvas[data-on]` within 240 s. Then click Back. Pass: `#hq-world[data-mode="cards"]` and `tp-3d` is still `'off'`.
   - **`results`:**
     - Open `#/avengers/lab`, click `Hulk out`, then run `__HQ__.smash.setState('lost')`.
     - Pass: `.hq-results` holds `Play again`, `Back to the compound` and an `a` whose text starts `Next: ` and whose `href` is `#/avengers/<slug>` for that place. Record `history.length` and click the link. Pass: the hash is that link, `history.length` is unchanged (a replace), and `#hq-bar-title` reads that place’s name.
@@ -94,7 +110,7 @@
     - Open `#/avengers` and wait for `data-on`. Set `__HQWORLD__.sim.h.x` and `.z` to the workshop door’s `x + 12` and `z` (from `PLACES`), and wait 1.5 s.
     - Pass: `performance.getEntriesByType('resource')` now names `repulsor/RepulsorRange.jsx` and `repulsor/scene.js`.
     - Run `__HQWORLD__.enter('stark')` while polling for the text `Opening the door…`. Pass: it never shows, and `.hq-bar` is there within 1 s.
-- [ ] **Run the fit, before.** With the dev server still up, run `node $S/hq-pr4-check.mjs fit before`. Expected: FAIL rows wherever Start is below the fold in the old dialog. Keep `$S/fit-before.txt`; it is the PR’s before table. Stop the server.
+- [ ] **Step 6: Run the fit, before.** With the dev server still up, run `node $S/hq-pr4-check.mjs fit before`. Expected: FAIL rows wherever Start is below the fold in the old dialog. Keep `$S/fit-before.txt`; it is the PR’s before table. Stop the server.
 
 ---
 
@@ -258,15 +274,8 @@ describe('whether a page draws in 3D', () => {
 - [ ] **Step 2: Run them to see them fail.** Run `npx vitest run src/components/avengers/hq/gameScreen.test.js src/runtime/useWorld.test.js`. Expected: `Failed to resolve import "./gameScreen"`, and `wants3D is not a function` (or “does not provide an export named wants3D”).
 - [ ] **Step 3: Write `hq/gameScreen.js`.**
   - Header comment: the game screen’s rules, with no React and no storage of its own (the caller passes a store).
-  - `readLocal3D` JSON-parses the key and returns `'on'` or `'off'`, otherwise `'auto'`. A `null` store or a throw also gives `'auto'`. `writeLocal3D` removes the key for `'auto'`, otherwise sets `JSON.stringify(mode)`, and swallows throws.
-  - `resolveLocal3D`: `'off'` → false; `'on'` → `Boolean(can && !held)`; `'auto'` → `Boolean(on)`.
-  - `switchFor` checks in this order:
-    1. `!can` → `{ bar: null, note: flat ? null : { text: toyLine, action: null } }`.
-    2. `!on` → with `flat`, bar `Play in 3D` / `'on'`; otherwise note `toyLine` with `Try 3D` / `'on'`.
-    3. `status` failed, slow or lost → note with `HQFrame.jsx:37-39`’s line (verbatim) and `Try 3D again` / `'retry'`.
-    4. Otherwise → with `flat`, bar `Play in 2D` / `'off'`; otherwise bar `3D game: on`, `pressed: true`, `'off'`.
-
-    `toyLine` is `stone ? 'The stone here is won in the 3D game.' : 'This game is played in 3D.'`.
+  - `readLocal3D`, `writeLocal3D` and `resolveLocal3D` are as the tests pin them: JSON in the key, no key for `auto`, never a throw.
+  - `switchFor` checks `!can`, then `!on`, then a failed, slow or lost `status`, then on. The failure lines are `HQFrame.jsx:37-39`’s, verbatim.
   - `TOUCH_HELP`, verbatim (curly apostrophes, no full stops):
 
     | game | rows (icon: text) |
@@ -280,18 +289,15 @@ describe('whether a page draws in 3D', () => {
     | `thwip` | hold: Hold anywhere to swing, and let go to fly · drag: Hold on the left or right of the screen to steer |
     | `tesseract` | button: Hold Thrust, and the lean buttons · hold: Or hold a finger on the view: the jet leans towards it |
 
-  - `nextFor`: the first of `prog.places` with `p.stone && !p.done && p.id !== here`. Its `to` is `linkOf(p.id)`. Return `to ? { id, label: p.name, to } : null`. It skips this building because a loss here would otherwise point back at it.
-  - `fmt = (n) => Math.round(n).toLocaleString('en-US')`.
-  - `scoreLine`: `null` for a `null` score. Otherwise `big = format(score)`, and `small` is `'a new best'`, else `` `best ${format(best)}` `` when there is a best, else `'points'`.
-  - `stoneWords`: `` half ? `${half} half of the ${name} is yours.` : `The ${name} is yours.` ``.
-  - `watchHidden`: without a `doc`, return a no-op stop. Otherwise add a `visibilitychange` listener that calls `onHide()` when `doc.hidden`, and return its removal.
+  - `nextFor`: the first place in `prog.places` with a stone, not done and not `here` (Global Constraints, Next), linked by `linkOf`.
+  - `fmt` (rounded, `en-US` grouping), `scoreLine`, `stoneWords` and `watchHidden` are as the tests pin them.
 - [ ] **Step 4: Write `hq/useGame3D.js`.** `useGame3D(game)`:
   - `site = use3D()`; `[local, setLocal] = useState(() => readLocal3D(game))`.
   - `set = useCallback((m) => { writeLocal3D(game, m); setLocal(m); if (m !== 'off' && site.held) site.hold?.load(); }, …)`.
   - Return `{ ...site, local, on: resolveLocal3D(local, site), mode: local === 'auto' ? site.mode : local, set }`.
   - Comment: never the site’s switch, which stays in Settings (spec §5).
 - [ ] **Step 5: The runtime’s say.**
-  - In `src/runtime/useWorld.js`, beside `recoverNow` (`:54`): `export const wants3D = (enabled, siteOn, own3D = false) => Boolean(enabled && (own3D || siteOn));`. One comment line: a page with a 3D switch of its own (an HQ game, `hq/useGame3D.js`) decides with `enabled` alone; every other page still asks the site.
+  - In `src/runtime/useWorld.js`, beside `recoverNow` (`:54`), export `wants3D(enabled, siteOn, own3D = false)`. One comment line: a page with a 3D switch of its own (an HQ game, `hq/useGame3D.js`) decides with `enabled` alone; every other page still asks the site.
   - Add `own3D = false` to `useWorld`’s options (`:107`), and make `:124` read `const wanted = wants3D(enabled, three.on, own3D);`.
   - In `hq/useStage.js`, add `own3D = false` to the options at `:117` and pass `own3D` in the `useWorld` options at `:143`. Invincible’s calls are unchanged.
 - [ ] **Step 6: Run them to see them pass.** Run `npx vitest run src/components/avengers/hq/gameScreen.test.js src/runtime/useWorld.test.js src/components/avengers/shared`, then `npx eslint src/components/avengers/hq src/runtime/useWorld.js`. Expected: every file passes, each under 1 s (`shared/runtime.test.js` still pins its five names). ESLint prints nothing.
@@ -512,32 +518,13 @@ describe('the results card', () => {
 
     The primary is `onward` if given, otherwise Next when `won && next`, otherwise Play again. Every other action is `btn-ghost`. All are full `.btn`, 44 px.
   - The default `Results(props)` reads `s = useContext(GameScreen)` and renders `<ResultsCard {...props} onBack={props.onBack ?? s?.onBack ?? null} next={props.next !== undefined ? props.next : (s?.next?.() ?? null)} />`.
-- [ ] **Step 5: Append to `hq/hq.css`.** Start with a comment: `/* the game screen (hq/HQGame): the game over the whole window under a slim bar */`. All rules are scoped under the new classes:
-  - **Frame and bar.**
-    - `.hq-full`: `flex: 1; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); background: #05070b`.
-    - `.hq-bar`: flex, space-between, gap `0.75rem`, `min-height: 3rem`, padding `0.35rem clamp(0.75rem, 3vw, 1.5rem)`, `world.css:207`’s gradient and ink, and `border-bottom: 2px solid var(--hq-accent, var(--cw-accent))`.
-    - `.hq-bar-title`: `world.css:210`’s Bebas Neue at `clamp(1.15rem, 1rem + 0.6vw, 1.5rem)`, nowrap with an ellipsis.
-    - `.hq-bar .btn`: `world.css:208`’s glass.
-  - **Coarse pointers and narrow screens.** `@media (hover: none) and (pointer: coarse) { .hq-bar .btn, .hq-toy-note .btn { min-height: 44px } .hq-bar-key { display: none } }` and `@media (max-width: 560px) { .hq-bar-more { display: none } }`.
-  - **The screen.**
-    - `.hq-game-full`: `height: 100%; min-height: 0; grid-template-rows: minmax(0, 1fr); gap: 0`.
-    - `.hq-game-full > .hq-switch { display: none }`, because the bar and the note say it instead.
-    - `.hq-game-full .hq-screen`: `height: 100%; aspect-ratio: auto; max-height: none; border: 0; border-radius: 0`.
-    - `.hq-game-full .hq-overlay`: `overflow-y: auto; place-content: safe center`.
-  - **The toy.**
-    - `.hq-toy`: `height: 100%; overflow-y: auto; padding: 1.5rem clamp(1rem, 4vw, 2.5rem); background: var(--bg)`.
-    - `.hq-toy-note`: flex, gap `0.75rem`, `0.85rem`, `var(--muted)`.
-  - **The start overlay.**
-    - `.hq-start-blurb`: `max-width: 54ch`, the `.hq-overlay-text` size.
-    - `.hq-overlay .hq-start-blurb`: `rgba(255, 255, 255, 0.84)`.
-    - `@media (max-height: 700px) { .hq-overlay .hq-start-blurb { display: none } }`, which keeps Start in view at 1024 × 640. The stone line always shows.
-  - **Touch help.** `.hq-touch { display: none }`, shown as a wrapping centred flex row (`0.8rem`, `max-width: 48ch`, `margin-top: 0.8rem`) under the same coarse-pointer query that hides `.hq-keys` (`hq.css:22`). `.hq-touch-icon`: `1.3rem`, `flex: none`.
-  - **The card.**
-    - `.hq-results`: `background: rgba(4, 7, 12, 0.82)` (glass, 0.78 or more).
-    - `.hq-results .hq-overlay-score small`: `font-size: 0.72rem` (the shared `0.68rem` is under the floor).
-    - `.hq-results-actions`: flex wrap, centred, gap `0.75rem`, `margin-top: 1.25rem`.
-    - `.hq-results .btn-ghost`: white ink on `rgba(255, 255, 255, 0.08)`, border `rgba(255, 255, 255, 0.4)`.
-    - `.hq-stars`: takes `ricochet.css:20-22`’s three `.cap-stars` rules, renamed. Task 4 deletes the originals.
+- [ ] **Step 5: Append to `hq/hq.css`.** One comment heads the block: the game screen (`hq/HQGame`), the game over the whole window under a slim bar. Every rule is scoped under Steps 3 and 4’s hooks. The decided values:
+  - **Frame and bar.** `.hq-full` is a grid: the bar, then the screen in the rest of the height. `.hq-bar` takes the old head’s look (`world.css:207-210`, which Task 3 deletes) with an accent rule from `--hq-accent`. It is at most 56 px tall at 1024 × 640 (Task 0’s `fit`).
+  - **Coarse pointers.** `.hq-bar .btn` and `.hq-toy-note .btn` are at least 44 px, and `.hq-bar-key` hides. `.hq-bar-more` hides on a narrow screen, so the bar fits at 390 px.
+  - **The screen.** `.hq-game-full .hq-screen` drops `.hq-screen`’s 16:9 and fills the height; ThinkMark, outside `.hq-game-full`, keeps it. `.hq-game-full > .hq-switch` hides, because the bar and the note say it instead. `.hq-game-full .hq-overlay` scrolls.
+  - **The start overlay.** `@media (max-height: 700px)` hides `.hq-overlay .hq-start-blurb`, which keeps Start in view at 1024 × 640. The stone line always shows.
+  - **Touch help.** `.hq-touch` shows only under the coarse-pointer query that hides `.hq-keys` (`hq.css:22`).
+  - **The card.** `.hq-results` sits on glass at alpha `0.82` (0.78 or more). `.hq-results .hq-overlay-score small` is at least 0.7 rem, since the shared `0.68rem` is under the floor. `.hq-stars` takes `ricochet.css:20-22`’s three `.cap-stars` rules, renamed; Task 4 deletes the originals.
 - [ ] **Step 6: Run them to see them pass.** Run `npx vitest run src/components/avengers/hq` and `npx eslint src/components/avengers/hq`. Expected: every file passes, each test under 1 s. ESLint prints nothing.
 - [ ] **Step 7: Commit.** `git add src/components/avengers/hq/HQGame.jsx src/components/avengers/hq/HQGame.test.jsx src/components/avengers/hq/Results.jsx src/components/avengers/hq/Results.test.jsx src/components/avengers/hq/hq.css`. Subject: `Avengers HQ: the game screen’s parts: a slim bar, the start note, touch help and one results card`.
 
@@ -804,17 +791,16 @@ it('Repulsor Range waits for its stage before wave 1', () => {
 - [ ] **Step 3: Write `world/warm.js`.**
   - It imports `nearPlace` from `'./rules'`.
   - `WARM_R = 15`, with the comment: about two seconds’ run from a door, so its game is fetched before he’s at it.
-  - `doorNear = (x, z) => nearPlace(x, z, WARM_R)?.id ?? null`.
+  - `doorNear` is `nearPlace(x, z, WARM_R)`’s id, or `null`.
   - `LOADERS` has one entry a door, each a literal `() => Promise.all([import('./Place'), import('../<game>/<Component>'), import('../<game>/module')])`: `stark` repulsor/RepulsorRange, `thor` lawn/HoldTheLawn, `cap` ricochet/Ricochet, `hawkeye` trickshot/TrickShot, `widow` widow/Infiltration, `banner` smash/SmashRun, `spidey` thwip/Thwip, `vault` tesseract/TesseractRun. `Place.jsx` lazy-loads the same specifiers, so the chunks are shared.
-  - `warmDoor` returns `null` without a loader, or when `warmed.has(id)`. Otherwise it adds `id` and returns `load().then((m) => m[2].default.warm()).catch(() => { warmed.delete(id); })`.
+  - `warmDoor` is as the tests pin it: one fetch a door with the module’s `warm()` after it. A failed fetch leaves the door to try again.
   - `WARMED` is a module-level `Set`, so each door warms at most once a page.
 - [ ] **Step 4: Write `world/welcome.js`.**
   - It imports `progress` from `'./rules'`.
-  - `gained = (before, after) => after.filter((s) => !before.includes(s))`.
-  - `welcomeFor` returns `null` when nothing was gained. Otherwise, with `q = progress(after)`: `` q.finished ? 'Every stone is back: walk under the portal over the helipad' : `Next: ${q.places.find((x) => x.id === q.next).name}` ``.
-  - `returnVeil`: `const returning = back && gl === 'on'`, then `{ shown: gl === 'loading' || returning, progress: returning ? 1 : prep.value, step: returning ? 'first draw' : prep.step, title: returning ? 'Back to the compound' : 'Flying in to the compound' }`. A compound never drawn (PR 3’s cold link) is flying in.
+  - `gained` and `welcomeFor` are as the tests pin them; `welcomeFor` names `progress(after).next`’s place.
+  - `returnVeil` shows while the compound loads and, on a way back, until its first draw (`gl === 'on'`). A compound never drawn (PR 3’s cold link) is flying in, with `prep`’s real progress.
 - [ ] **Step 5: Repulsor waits for its stage.**
-  - In `gameScreen.js`: `export const startable = (status) => status === 'on';`.
+  - In `gameScreen.js`, export `startable(status)`.
   - In `RepulsorRange.jsx`, `start()` begins `if (!startable(stage.status)) return;`, and `stage.status` joins its deps.
   - The `Suit up` button gets `disabled={!startable(stage.status)}`. PR 2’s `.hq-game .btn:disabled` dims it by colour.
   - `:269` (`useStageFrame`) is unchanged. PR 6 puts its try after this guard.
@@ -836,7 +822,7 @@ it('Repulsor Range waits for its stage before wave 1', () => {
     - The stones chip gets `key={welcome?.n ?? 0}` and `data-pulse={welcome ? '' : undefined}`.
     - The `<Toast` gets `` toast={tourMsg ? { key: tourMsg, text: tourMsg } : welcome ? { key: `back-${welcome.n}`, text: welcome.text } : null} ``, so the HUD keeps one toast, and the tour wins.
   - `world.css`:
-    - After `:69`: `.cw-stones[data-pulse] { animation: cw-pulse 0.7s ease-out 3; }` and `@keyframes cw-pulse { 50% { transform: scale(1.08); border-color: var(--cw-cyan); box-shadow: 0 0 14px color-mix(in srgb, var(--cw-cyan) 55%, transparent); } }`.
+    - After `:69`: `.cw-stones[data-pulse]` pulses three times (`@keyframes cw-pulse`, 0.7 s each, a slight scale and a `--cw-cyan` glow).
     - Add `.cw-stones[data-pulse]` to the reduced-motion `animation: none` list at `:236`.
   - `docs/architecture.md:27`: add “; `warm.js` fetches a door’s game within 15 m”.
 - [ ] **Step 7: Run them to see them pass.**
@@ -851,7 +837,7 @@ it('Repulsor Range waits for its stage before wave 1', () => {
 - Create: `docs/superpowers/evidence/avengers-hq/pr4/README.md`, plus the pictures it lists under `before/` and `after/` (`.webp` or `.png`, each under 1 MB, committed as PR 1’s and PR 2’s are)
 
 **Interfaces:**
-- Consumes: Tasks 1–5; `$S/hq-pr4-check.mjs`, `$S/closure-before.txt`, `$S/fit-before.txt` and the before pictures from “Before Task 1”.
+- Consumes: Tasks 1–5; Task 0’s `$S` files (`closure.mjs`, `closure-before.txt`, the two before pictures, `links-before/`, `inv-before/`, `hq-before/`, `hq-pr4-check.mjs` and `fit-before.txt`).
 - Produces: the pull request. For PRs 5–7, everything listed under “What later PRs rely on”.
 
 - [ ] **Step 1: The gates.** Run `npm run lint && npm test && npm run build && node scripts/health.mjs --check --skip build`, then `git checkout public/github.json`. Expected:
@@ -866,12 +852,12 @@ it('Repulsor Range waits for its stage before wave 1', () => {
 - [ ] **Step 4: The screen in a browser.** Run `node $S/hq-pr4-check.mjs fit gate pause own3d siteoff results back warm after | tee $S/check-after.txt`. Expected: `ok` for every part and `all ok`.
   - `$S/fit-after.txt` shows every Start within the viewport at both sizes.
   - If one game’s Start is below the fold, hide that game’s own long text under the height it needs, as `tesseract.css:49` already does for its keys. Don’t hide Start, the stone line or the bar.
-- [ ] **Step 5: The pages, after.** Run `node scripts/autopilot-check.mjs --only smoke --routes /avengers/workshop,/invincible,/avengers --shots avhq-pr4`, then `node scripts/autopilot-check.mjs --only smoke --routes /avengers/workshop,/avengers/gate --shots avhq-pr4-phone --phone`. Expected: both end `everything green`.
+- [ ] **Step 5: The pages, after.** Run `node scripts/autopilot-check.mjs --only smoke --routes /avengers/workshop,/invincible,/avengers --shots avhq-pr4`, then `node scripts/autopilot-check.mjs --only smoke --routes /avengers/workshop,/avengers,/invincible,/avengers/gate --shots avhq-pr4-phone --phone`. The first two routes are photographed and the rest are smoke-checked. Expected: both end `everything green`.
   - Read `avhq-pr4-a.webp` beside `$S/avhq-pr4-before.webp`. The game fills the window under one slim bar (the name, `3D game: on`, `Back Esc`).
-  - Read the phone pair. The touch help shows, the key list doesn’t and the bar fits.
+  - Read `avhq-pr4-phone-a.webp` beside `$S/avhq-pr4-phone-before.webp`. The touch help shows, the key list doesn’t and the bar fits. `avhq-pr4-phone-b.webp` is the compound on a phone.
   - Move the pictures into the evidence folder. `git status --short public/changes` is empty.
 - [ ] **Step 6: The worlds that share `hq/`.**
-  - Run `node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --out $S/hq-main --ref origin/main --only thinkmark,viewer,invworld`, then the same with `--out $S/hq-pr4` and no `--ref`, then `--compare $S/hq-main $S/hq-pr4`. Expected: `0 pixels differ` for all three, exit 0. The eight HQ game targets change by design and are not compared.
+  - Run `node docs/superpowers/evidence/engine-floor/FL2-avengers/tools/hq-shots.mjs --out $S/hq-main --ref origin/main --only thinkmark,viewer,invworld`, then the same with `--out $S/hq-pr4` and no `--ref`, then `--compare $S/hq-main $S/hq-pr4`. Expected: `0 pixels differ` for all three, exit 0. The eight HQ game targets change by design and are not compared, and `compound` is left out (Global Constraints, Checks).
   - Run `OUT=$S/inv-after node scripts/inv-world-check.mjs` and `OUT=$S/hq-after node scripts/hq-world-check.mjs`. Expected: `no page errors` from both. The compound’s shots match `$S/hq-before` by eye.
   - Stop the server.
 - [ ] **Step 7: The evidence README** at `docs/superpowers/evidence/avengers-hq/pr4/README.md`:
@@ -893,6 +879,7 @@ it('Repulsor Range waits for its stage before wave 1', () => {
     - the checks that ran (Steps 1–6) with their results, `hq-links-check` both ways included;
     - a note for the engine-floor session: `src/runtime/useWorld.js` gains `wants3D` and an optional `own3D` flag, off by default;
     - a note that the start overlay’s blurb hides under 700 px of height, so Start stays in view at 1024 × 640;
+    - a note for the owner: Next departs from §5’s `progress(heist).next`; it skips the building just played, so a loss there never points back at it;
     - the plan’s path and the harness’s PR footer.
   - It is one PR, merged with a merge commit once CI is green. Never force-push; a requested change is a new commit.
 
@@ -917,3 +904,6 @@ it('Repulsor Range waits for its stage before wave 1', () => {
   - The `flat` branches and test helpers are PR 7’s to use without changing `HQGame` (Task 2).
   - `GAME_AT` and `writeLocal3D` give PR 5 a per-game Try 3D (Task 1).
   - Repulsor’s guard comes first in `start()`, for PR 6 (Task 5).
+  - The scratch script copies `hq-world-check.mjs:28-34`, with `tp-worlds` JSON and `tp-3d` raw (Task 0).
+  - The phone runs cover `/avengers` and `/invincible`, and the desktop before run `/avengers` (Tasks 0, 6).
+  - Next’s departure from §5 is named in Global Constraints and the PR body (Task 6).
