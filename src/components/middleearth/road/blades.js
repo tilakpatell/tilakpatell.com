@@ -9,6 +9,7 @@
 
 import * as THREE from 'three';
 import { createGrass } from '../../../lib/three/grassNodes';
+import { onColor } from '../../../lib/three/hookNodes';
 
 export const BLADES = { ultra: { side: 300, size: 46 }, high: { side: 280, size: 44 }, mid: { side: 190, size: 38 }, low: null };
 
@@ -19,6 +20,8 @@ export function createBlades({ groundMap, wind, soil, tier = 'high' }) {
   const side = Math.round(patch.side * Math.sqrt(soil.blades));
   const grass = createGrass({ ground: groundMap, wind, side, size: patch.size, height: soil.blade ?? 0.45, width: 0.06, root: 0.6 });
   grass.mesh.name = 'road:blades';
+  // (a little lighter than the map they’re coloured by: a field of blades reads darker than its ground, the light caught between them)
+  onColor(grass.material, (d) => d.rgb.mul(1.3), 'blades:light');
   const centre = new THREE.Vector3();
   return {
     mesh: grass.mesh,

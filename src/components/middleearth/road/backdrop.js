@@ -276,7 +276,14 @@ export function createBackdrop({ road = null, tier = 'high', load = null } = {})
             const size = box.getSize(new THREE.Vector3());
             city.scale.setScalar(l.height / Math.max(1e-3, size.y));
             city.position.y = -box.min.y * city.scale.y;
-            city.traverse((o) => o.isMesh && (o.material = stone));
+            // (the map’s model has its corners and nothing else: its normals made, on a copy, so it can be lit)
+            city.traverse((o) => {
+              if (!o.isMesh) return;
+              o.geometry = o.geometry.clone();
+              if (!o.geometry.attributes.normal) o.geometry.computeVertexNormals();
+              built.push(o.geometry);
+              o.material = stone;
+            });
             g.add(city);
           })
           .catch(() => {});
