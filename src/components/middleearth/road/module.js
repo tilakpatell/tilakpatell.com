@@ -35,11 +35,19 @@ import { newVision, stepVision } from './vision';
 import { forgetCast, walker } from './cast';
 import { clipFor, walkers as walkersAt } from './fellowship';
 import { STAGES, stageById } from './stages/index';
+import { BEATS_OF } from './stages/registry';
+import { createScenes } from './scenes';
+import { ease as easePose } from './director';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
 
 const TOTAL = total(STAGES);
-// (Next's step until the stages have beats: the next stage's start)
+// the marks the clock stops at or steps to: every written beat (with its
+// hold) and every stage’s start (Next’s step where a stage has no beats yet)
 const STARTS = STAGES.slice(1).map((st) => sOf(STAGES, st.id, 0));
-const nextStage = (s) => STARTS.find((b) => b > s + 1e-9) ?? null;
+const MARKS = [...STAGES.flatMap((st) => (BEATS_OF[st.id] ?? []).map((b) => ({ s: sOf(STAGES, st.id, b.at), hold: b.hold ?? 0 }))), ...STARTS.map((s) => ({ s, hold: 0 }))].sort((a, b) => a.s - b.s);
+const nextMark = (s) => MARKS.find((m) => m.s > s + 1e-9)?.s ?? null;
+const holdAt = (s) => MARKS.find((m) => Math.abs(m.s - s) < 1e-9 && m.hold > 0)?.hold ?? 0;
+const BLEND = 1.2; // s a cut that is not a cut eases over
 const SAVE_EVERY = 5; // s
 const PROGRESS_EVERY = 0.25; // s
 const LOOK_SPEED = 0.004; // radians a pixel of drag
@@ -102,6 +110,15 @@ export default {
     scene.add(weather.group);
     // the stage’s sound, the beats’ clips and the cast’s lines, on the runtime’s bus
     const ambience = createAmbience(rt);
+    // the written stages’ scenes and their beats (scenes.js)
+    const scenes = createScenes({ rt, road, lands, weather, ambience, tier });
+    // the black the Road’s first words are said over, lifting: a shell round the camera
+    const veilMat = new MeshBasicNodeMaterial({ color: 0x000000, transparent: true, opacity: 0, depthTest: false, depthWrite: false, side: THREE.BackSide, fog: false });
+    const veil = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), veilMat);
+    veil.renderOrder = 10000;
+    veil.frustumCulled = false;
+    veil.visible = false;
+    scene.add(veil);
     const sun = new THREE.DirectionalLight(0xffffff, 2);
     const hemi = new THREE.HemisphereLight(0xdfe8ff, 0x5a5040, 0.6);
     scene.add(sun, sun.target, hemi, sky.mesh);
@@ -122,6 +139,12 @@ export default {
     const back = byAddress ? null : resume(saved, now());
     const offer = !byAddress && back.showTitle && shouldOffer({ s: back.s });
     let clock = newClock({ s: byAddress ? sFromAddress(props.at) : back.s, reduced, auto: !offer });
+    // (opened on a beat’s mark, Bag End’s first words among them: it holds there first)
+    if (!offer) clock = { ...clock, holdLeft: holdAt(clock.s) };
+    let jumped = true; // (the first frame is a jump: nothing behind it plays)
+    let shot = null; // { key, from (pose), t }: the camera’s blend between rigs
+    let lastPose = null;
+    let fxVision = false;
     let wasRidden = riddenOf(saved);
     // (the share walked, not jumped: what makes the ride ridden)
     let walked = byAddress || !back.s ? 0 : (saved?.walked ?? 0);
@@ -193,6 +216,8 @@ export default {
       house.light({ sun, hemi });
     };
 
+    // a beat’s fixed camera given over the ground: its heights put on the land
+    const above = (p) => [p[0], p[1] + lands.heightAt(p[0], p[2]), p[2]];
     // the camera on the director’s rig, following the lead along the stage
     const frame = (dt = 0) => {
       const here = lineAt(STAGES, clock.s);
@@ -213,9 +238,24 @@ export default {
         fig.set({ base: clipFor(w.state, mode, w.id), speed: clock.speed });
         fig.tick(dt);
       }
-      const p = pose({ rig: 'follow', params: {}, lead: { at: [-ABREAST, lands.heightAt(-ABREAST, here.local), here.local], heading: 0 }, tangent: [0, 0, 1], metres: here.local, look, mode: 'walk', reduced: clock.reduced, heightAt: lands.heightAt, t: 0 });
+      // the stage’s scene and its beats; the camera on the beat’s rig, eased into it unless it cuts
+      const beat = scenes.at(here.index, here.local, dt, { speed: clock.speed, jumped });
+      jumped = false;
+      veil.visible = beat.fx.black > 0;
+      veilMat.opacity = beat.fx.black;
+      fxVision = beat.fx.vision;
+      const b = beat.shot && beat.shot.rig !== 'follow' ? beat.shot : null;
+      const params = b?.params?.above ? { ...b.params, at: b.params.at && above(b.params.at), lookAt: b.params.lookAt && above(b.params.lookAt) } : (b?.params ?? {});
+      const leader = { at: [-ABREAST, lands.heightAt(-ABREAST, here.local), here.local], heading: 0 };
+      const want = pose({ rig: b?.rig ?? 'follow', params, lead: leader, tangent: [0, 0, 1], metres: here.local, look, mode: 'walk', reduced: clock.reduced, heightAt: lands.heightAt, t: b ? (beat.since[b.id] ?? 0) : 0 });
+      const key = b?.id ?? 'follow';
+      if (shot?.key !== key) shot = { key, from: lastPose, t: b?.cut === 0 || !lastPose ? BLEND : 0 };
+      shot.t += dt;
+      const p = clock.reduced ? want : easePose(shot.from ?? want, want, Math.min(1, shot.t / BLEND) ** 2 * (3 - 2 * Math.min(1, shot.t / BLEND)));
+      lastPose = p;
       camera.position.set(...p.at);
       camera.lookAt(...p.lookAt);
+      veil.position.copy(camera.position);
       if (camera.fov !== p.fov) {
         camera.fov = p.fov;
         camera.updateProjectionMatrix();
@@ -260,6 +300,7 @@ export default {
     let offerOpen = offer;
     const jump = (s) => {
       clock = { ...clock, s: Math.min(1, Math.max(0, s)), holdLeft: 0 };
+      jumped = true;
       relight();
       report(frame(), 0);
     };
@@ -294,7 +335,7 @@ export default {
           next: pressed('next'),
         };
         const was = clock.s;
-        clock = stepClock(clock, dt, keys, { total: TOTAL, holdAt: () => 0, nextBeat: nextStage });
+        clock = stepClock(clock, dt, keys, { total: TOTAL, holdAt, nextBeat: nextMark });
         // (Next under reduced motion is how that ride is walked, so it counts)
         walked += Math.max(0, clock.s - was);
         if (clock.s !== was) saving = true;
@@ -309,7 +350,7 @@ export default {
         const here = frame(dt);
         report(here, dt);
         lands.step();
-        vision = stepVision(vision, dt, { on: visionOn });
+        vision = stepVision(vision, dt, { on: visionOn || fxVision });
         road.uVision.value = vision.amount;
         sky.wind(vision.wind);
         // (what has come into the scene since, in the vision’s hook: a stage, a pool, a figure)
@@ -384,7 +425,10 @@ export default {
         scatter.dispose();
         for (const k of kits.values()) k.dispose();
         sky.dispose();
+        scenes.dispose();
         weather.dispose();
+        veil.geometry.dispose();
+        veilMat.dispose();
         post?.dispose?.();
         ambience.dispose();
         for (const w of cast.values()) w.dispose();

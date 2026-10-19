@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 // (the lands are lands.test.js's; the wiring here walks over a flat stand-in,
 // as building a stage's ground at every jump would take the test seconds)
 vi.mock('./lands', () => ({
-  createLands: () => ({ at() {}, step() {}, water() {}, heightAt: () => 0, ready: () => true, current: null, dispose() {} }),
+  createLands: () => ({ at() {}, step() {}, water() {}, groupOf: () => null, landOf: () => null, heightAt: () => 0, ready: () => true, current: null, dispose() {} }),
 }));
 import { validateModule } from '../../../runtime/module';
 import { WORLD_MB } from '../../worlds/worlds';
@@ -155,12 +155,25 @@ describe('the face’s wiring: keys, events, the save', () => {
     expect(rt.saves.get('tp-road').s).toBeGreaterThan(sOf(STAGES, 'shire-edge', 0));
   });
 
-  it('under reduced motion Next steps to the next stage while there are no beats, never to the end', async () => {
+  it('a first ride holds on Bag End’s mark for the first words, then walks', async () => {
+    const rt = fakeRt();
+    const world = await road.create(rt, { at: null });
+    world.attached();
+    for (let i = 0; i < 5 * 60; i++) world.step(1 / 60, snap([]));
+    expect(world.s).toBe(0);
+    for (let i = 0; i < 2 * 60; i++) world.step(1 / 60, snap([]));
+    expect(world.s).toBeGreaterThan(0);
+  });
+
+  it('under reduced motion Next steps from beat to beat, to the next stage where a stage has none, never to the end', async () => {
     const rt = fakeRt();
     const world = await road.create(rt, { at: null, reduced: true });
     world.attached();
     world.step(1 / 60, snap(['Enter']));
-    expect(world.s).toBeCloseTo(sOf(STAGES, 'shire-edge', 0), 9);
+    expect(world.s).toBeCloseTo(sOf(STAGES, 'hobbiton', 40), 9);
+    world.set(sOf(STAGES, 'bree', 10));
+    world.step(1 / 60, snap(['Enter']));
+    expect(world.s).toBeCloseTo(sOf(STAGES, 'weathertop', 0), 9);
     expect(rt.emitted.some((e) => e.type === 'end')).toBe(false);
   });
 

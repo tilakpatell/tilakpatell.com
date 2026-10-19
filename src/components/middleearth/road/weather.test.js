@@ -57,4 +57,8 @@ describe('the counts by tier', () => {
     expect(evalCurve(em.spawn.rate, 0.5, 0.5) * lifeMax(em)).toBeGreaterThanOrEqual(800);
     expect(KINDS.rain.maxCount).not.toBe(800);
   });
+
+  it('a kind asked at a scale draws each particle that many times its size', () => {
+    expect(recordFor('embers', { scale: 6 }).spawn.size.random).toEqual(KINDS.embers.spawn.size.random.map((v) => v * 6));
+  });
 });

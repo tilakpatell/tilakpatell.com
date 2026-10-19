@@ -103,4 +103,10 @@ describe('the director: the film’s grammar as camera rigs', () => {
   it('the lens: 50° walking, 38° in a seat, 62° on the eagle', () => {
     expect(FOV).toEqual({ walk: 50, seat: 38, eagle: 62 });
   });
+
+  it('a crane may be given what to look at and how high to rise', () => {
+    const p = pose(base({ rig: 'crane', params: { seconds: 4, top: 12, lookAt: [20, 3, 30] }, t: 4 }));
+    expect(p.lookAt).toEqual([20, 3, 30]);
+    expect(p.at[1]).toBeCloseTo(12, 5);
+  });
 });

@@ -13,9 +13,9 @@ export const BEATS = [
   // the cart up the lane, fireworks rattling in its bed, the horse at a slow walk
   { id: 'cart', kind: 'cart', at: 40, hold: 0, rig: 'side', reach: 24, clip: 'wizardLate' },
   // the Party Field: the tree, the lanterns, the long tables, the jig
-  { id: 'partyfield', kind: 'party', at: 120, hold: 14, rig: 'crane', params: { seconds: 10 }, fx: [{ kind: 'jig', at: 0, seconds: 14 }] },
+  { id: 'partyfield', kind: 'party', at: 120, hold: 14, rig: 'crane', params: { seconds: 10, top: 14, lookAt: [26, 4, 130], above: true }, fx: [{ kind: 'jig', at: 0, seconds: 14 }] },
   // the dragon over the field; Bilbo by the tree, and then not
-  { id: 'dragon', kind: 'dragon', at: 150, hold: 10, rig: 'wide', reach: 10, params: { at: [4, 3, 136], lookAt: [30, 14, 140], above: true }, fx: [{ kind: 'vision', at: 6, seconds: 0.4 }] },
+  { id: 'dragon', kind: 'dragon', at: 150, hold: 10, rig: 'wide', reach: 10, params: { at: [-8, 4, 108], lookAt: [32, 16, 142], above: true }, fx: [{ kind: 'vision', at: 6, seconds: 0.4 }] },
   // the corn at the field’s edge, as far as Sam has ever been
   { id: 'leave', kind: 'leave', at: 212, hold: 0, rig: 'follow', lines: ['hobbiton-field-edge', 'hobbiton-field-edge-answer'] },
 ];

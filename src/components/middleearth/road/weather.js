@@ -16,6 +16,7 @@
 // `follow`: the kind’s box rides with the camera (rain, snow, ash round the
 // walkers), `at` its offset from it; else `at` is where it stands. `box`:
 // [w, h, d], the spawning sheet h metres over the point, w × d across.
+// `scale`: each particle that many times its record’s size (a firework’s sparks seen from afar).
 // `count`: the slots (the record’s maxCount else), quartered on low and
 // halved on mid; `rate(k)` scales the spawning (0 holds it, 1 the record’s).
 // `stop()` spawns no more and lets the live ones die before freeing the pool.
@@ -24,7 +25,7 @@
 // straight to the canvas they must not, or the draw writes an output the
 // canvas lacks and WebGL 2 drops it.
 //
-//   KINDS, SHEETS, countFor(n, tier), recordFor(name, { count, box }): pure, for the test.
+//   KINDS, SHEETS, countFor(n, tier), recordFor(name, { count, box, scale }): pure, for the test.
 
 import * as THREE from 'three';
 import { OWNER, aliveCount, lifeMax, spawnCount } from '../../../lib/three/particles/emitter';
@@ -48,12 +49,16 @@ export const countFor = (n, tier) => Math.max(1, Math.round(n * (SHARE[tier] ?? 
 
 // a kind’s record for this asking: its slots, its box, and a rate that keeps
 // that many alive (the shortest life’s worth a second), the record itself untouched
-export function recordFor(name, { count, box } = {}) {
+export function recordFor(name, { count, box, scale = 1 } = {}) {
   const em = structuredClone(KINDS[name]);
   if (count) {
     em.maxCount = count;
     const shortest = Math.max(1e-3, evalCurve(em.lifetime, 0, 0));
     em.spawn.rate = Math.ceil(count / shortest);
+  }
+  if (scale !== 1) {
+    const s = em.spawn.size;
+    em.spawn.size = typeof s === 'number' ? s * scale : { random: s.random.map((v) => v * scale) };
   }
   if (box && em.spawn.position?.box) {
     em.spawn.position.box.size = [box[0], 0, box[2]];
@@ -98,10 +103,10 @@ export function createWeather(renderer, { tier = 'high', velocity = false } = {}
 
   return {
     group,
-    kind(name, { count, box, follow = false } = {}) {
+    kind(name, { count, box, follow = false, scale = 1 } = {}) {
       if (!KINDS[name]) throw new Error(`weather: no kind ${name}`);
       const n = countFor(count ?? KINDS[name].maxCount, tier);
-      const em = recordFor(name, { count: n, box });
+      const em = recordFor(name, { count: n, box, scale });
       const owners = new Float32Array(OWNER);
       owners[3] = 1; // scale
       owners[7] = 1; // the quaternion’s w
