@@ -30,8 +30,8 @@ const CORN = { Grass: { recolour: '#fbe8a8' } };
 const HEATH = { Leaves: { recolour: '#6e6a44' } };
 const BRACKEN = { Leaves: { recolour: '#a8743a' } };
 const GOLD = { Leaves_NormalTree: { recolour: '#d8a23a' }, Leaves_Birch: { recolour: '#e2b84a' } };
-// (the kit’s oak bark is a red-brown: the Trollshaws’ is grey)
-const AUTUMN = { Leaves_NormalTree: { recolour: '#eeae5c' }, Leaves_Birch: { recolour: '#f2c86a' }, Bark_NormalTree: { recolour: '#6e6458' } };
+// (the kit’s oak bark is a red-brown: the Trollshaws’ a warm grey, so it isn’t violet under a grey sky)
+const AUTUMN = { Leaves_NormalTree: { recolour: '#eeae5c' }, Leaves_Birch: { recolour: '#f2c86a' }, Bark_NormalTree: { recolour: '#806c50' } };
 
 export const SCATTER = {
   hobbiton: [
