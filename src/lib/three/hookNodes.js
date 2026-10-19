@@ -46,7 +46,7 @@ import {
   PointsNodeMaterial,
   SpriteNodeMaterial,
 } from 'three/webgpu';
-import { OnBeforeFrameUpdate, buffer, cameraPosition, densityFogFactor, diffuseColor, instanceIndex, instancedBufferAttribute, instancedDynamicBufferAttribute, mat4, mix, positionLocal, positionWorld, rangeFogFactor, reference, renderGroup, uniform, vec4 } from 'three/tsl';
+import { OnBeforeFrameUpdate, buffer, cameraPosition, densityFogFactor, diffuseColor, float, instanceIndex, instancedBufferAttribute, instancedDynamicBufferAttribute, mat4, mix, positionLocal, positionWorld, rangeFogFactor, reference, renderGroup, uniform, vec4 } from 'three/tsl';
 
 const NODE_OF = {
   LineBasicMaterial: LineBasicNodeMaterial,
@@ -155,6 +155,9 @@ export function wrap(material, method, fn, tag, nodes = null) {
   return keyed(material, tag, nodes);
 }
 
+// (one for every hooked material, so it keys them all alike)
+const HOOKED = float(1);
+
 export function keyed(material, tag, nodes = null) {
   const key = material.customProgramCacheKey;
   const ids = idsOf(nodes);
@@ -163,6 +166,11 @@ export function keyed(material, tag, nodes = null) {
   material.customProgramCacheKey = function () {
     return `${key.call(this)}|${typeof tag === 'function' ? tag() : tag}${ids ? `:${ids}` : ''}`;
   };
+  // (a node on the material, which three's observer looks for: a material
+  // holding none is taken for unchanging, and its draws' uniforms are sent
+  // again only when its own properties or its object move; a hook's
+  // uniforms, a wind's time, a patch's centre, would stay at their first)
+  material.hookedNode ??= HOOKED;
   material.needsUpdate = true;
   return material;
 }

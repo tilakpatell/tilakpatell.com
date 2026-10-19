@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { float } from 'three/tsl';
-import { asNode, follow, twinScene, onColor, onDirect, onFog, onIndirect, onLight, onNormal, onPosition, wrap } from './hookNodes';
+import { asNode, follow, keyed, twinScene, onColor, onDirect, onFog, onIndirect, onLight, onNormal, onPosition, wrap } from './hookNodes';
 
 describe('a hook on the node renderer', () => {
   it('turns a classic material into its node twin, every property kept', () => {
@@ -37,6 +37,14 @@ describe('a hook on the node renderer', () => {
     expect(n.uuid).not.toBe(m.uuid);
   });
 
+  it('holds a node, so three sends a hooked material’s uniforms every draw', () => {
+    const m = new THREE.MeshLambertMaterial();
+    const n = onPosition(asNode(m), (p) => p, 'still');
+    // (three's NodeMaterialObserver refreshes a draw each frame only for a
+    // material with a node among its own properties)
+    expect(Object.keys(n).some((k) => n[k]?.isNode)).toBe(true);
+  });
+
   it('follows a { value } the caller goes on writing, and keeps a node', () => {
     const held = { value: 2 };
     const u = follow(held);
@@ -53,7 +61,8 @@ describe('a hook on the node renderer', () => {
 
   it('chains each hook after what was there, and keys the program by them', () => {
     const m = new MeshStandardNodeMaterial();
-    const plain = m.customProgramCacheKey();
+    // (a hooked material's own key: its node for three's observer is in it, the same for all)
+    const plain = keyed(new MeshStandardNodeMaterial(), '').customProgramCacheKey().slice(0, -1);
     const u = follow(1);
     for (const hook of [onPosition, onColor, onNormal, onDirect, onIndirect, onLight, onFog]) hook(m, (x) => x, hook.name, { u });
     const key = m.customProgramCacheKey();
