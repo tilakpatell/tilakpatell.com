@@ -48,10 +48,26 @@ export const isWayHome = (link, id) => link?.id === `${id}-portal`;
 
 // ── the dial ──
 
-// the arcade, then every destination but the planets (an old setting for one is the arcade)
-export const DIAL = [{ id: 'annex', name: 'Blips and Chitz', note: 'An arcade on an alien street. Roy: A Life Well Lived is in the back.' }, ...DESTINATIONS.filter((d) => !isPlanet(d.id)).map(({ id, name, note }) => ({ id, name, note }))];
+// the arcade, then every destination but the planets (an old setting for one
+// is the arcade), then the adventure's five on the end: the Citadel (its own
+// page) and the four sector planets its story visits, dialled from the garage
+// as any destination is, with the portal home to the garage
+const row = ({ id, name, note }) => ({ id, name, note });
+export const DIAL = [
+  { id: 'annex', name: 'Blips and Chitz', note: 'An arcade on an alien street. Roy: A Life Well Lived is in the back.' },
+  ...DESTINATIONS.filter((d) => !isPlanet(d.id)).map(row),
+  { id: 'citadel', name: 'The Citadel', note: 'The Citadel of Ricks: every Rick there is, and a Council to keep them in line.', to: '/c-137/citadel' },
+  ...['birdworld', 'gearworld', 'pluto', 'squanch'].map((id) => row(destinationById(id))),
+];
 export const DIAL_KEY = 'tp-rm-dial';
-export const portalTarget = (dial) => (DIAL.some((d) => d.id === dial) ? dial : 'annex');
+// a dial place that's a page of its own (the Citadel), not an area of C-137's
+export const pageOf = (id) => DIAL.find((d) => d.id === id)?.to ?? null;
+// where the garage portal opens: the dial if it's on the dial and open (the
+// story's lock, when given), else the first open place, else Customs
+export function portalTarget(dial, open = () => true) {
+  if (DIAL.some((d) => d.id === dial) && open(dial)) return dial;
+  return DIAL.find((d) => open(d.id))?.id ?? 'customs';
+}
 export function readDial() {
   try {
     return portalTarget(localStorage.getItem(DIAL_KEY));
@@ -67,10 +83,14 @@ export function writeDial(id) {
   }
 }
 
-// the garage portal, sent where the dial is set; any other link as it is
+// the garage portal, sent where the dial is set (to a page, it carries the
+// page for RmWorld to go to); any other link as it is
 export function linkTarget(link, dial) {
   if (link.id !== 'garage-portal') return link;
-  const d = destinationById(portalTarget(dial));
+  const id = portalTarget(dial);
+  const page = pageOf(id);
+  if (page) return { ...link, page, label: `Through the portal to ${DIAL.find((d) => d.id === id).name}` };
+  const d = destinationById(id);
   return d ? { ...link, to: d.id, label: `Through the portal to ${d.name}`, arrive: d.arrive } : link;
 }
 
