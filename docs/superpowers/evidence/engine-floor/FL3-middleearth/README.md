@@ -125,7 +125,7 @@ What is left slower is software’s, at Low, in Bree and its kitchen and the Shi
 
 ## Checks
 
-`npm run lint` clean; `npm run build` built; `node scripts/health.mjs --check --skip build` within budget (`glsl-sites` 607: the originals stay, orphaned, for their parity cases, till FL4; `renderers` 14). `npm test`: the whole-repo and timing tests failed under the load of the shots beside them (13 files on the last run, the hulls’, the flight island’s, Expanse’s and Albuquerque’s timing among them); each of them passes alone.
+`npm run lint` clean; `npm run build` built; `node scripts/health.mjs --check --skip build` within budget (`glsl-sites` 611 after main’s merge: the originals stay, orphaned, for their parity cases, till FL4; `renderers` 14). `npm test`: the whole-repo and timing tests failed under the load of the shots beside them (13 files on the last run, the hulls’, the flight island’s, Expanse’s and Albuquerque’s timing among them); each of them passes alone.
 
 ## Known, carried on
 
