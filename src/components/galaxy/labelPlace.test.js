@@ -92,6 +92,20 @@ describe('labelPlace', () => {
     const p = placeLabels(items, { blocks: [dotOver] });
     expect(overlapArea([boxAt(p.a, 100, 100, 60, 18), dotOver])).toBe(0);
   });
+  it('leaves a dot under a control unnamed, and its neighbours named as if it weren’t there', () => {
+    // (the war's board over two dots whose names, out of sight, would only have crowded each other)
+    const board = { x0: 0, y0: 0, x1: 120, y1: 60 };
+    const items = [
+      { id: 'yavin', x: 40, y: 30, w: 50, h: 18, prio: 0 },
+      { id: 'mandalore', x: 46, y: 36, w: 80, h: 18, prio: 0 },
+      { id: 'hoth', x: 200, y: 200, w: 50, h: 18, prio: 0 },
+    ];
+    const p = placeLabels(items, { blocks: [board] });
+    expect(p).toEqual({ yavin: null, mandalore: null, hoth: 'r' });
+    // (a name beside the board keeps clear of it, its dot out in the open)
+    const edge = placeLabels([{ id: 'a', x: 130, y: 30, w: 60, h: 18, prio: 0 }], { blocks: [board] });
+    expect(edge.a).toBe('r');
+  });
   it('does better than all-right on a phone-sized map', () => {
     const items = at(380);
     const right = Object.fromEntries(items.map((i) => [i.id, 'r']));
