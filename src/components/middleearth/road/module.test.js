@@ -10,6 +10,7 @@ import { WORLD_MB } from '../../worlds/worlds';
 import road, { KEYS, sFromAddress } from './module';
 import { sOf } from './line';
 import { STAGES } from './stages/index';
+import { BEATS_OF } from './stages/registry';
 import { fakeRt } from './fixtures/rt';
 
 describe('the Road, the world module', () => {
@@ -173,7 +174,14 @@ describe('the face’s wiring: keys, events, the save', () => {
     expect(world.s).toBeCloseTo(sOf(STAGES, 'hobbiton', 40), 9);
     world.set(sOf(STAGES, 'bree', 10));
     world.step(1 / 60, snap(['Enter']));
-    expect(world.s).toBeCloseTo(sOf(STAGES, 'weathertop', 0), 9);
+    expect(world.s).toBeCloseTo(sOf(STAGES, 'bree', BEATS_OF.bree[0].at), 9);
+    // (a stage not yet written steps to the next stage’s start, while there is one)
+    const bare = STAGES.findIndex((st, i) => !BEATS_OF[st.id] && i < STAGES.length - 1);
+    if (bare >= 0) {
+      world.set(sOf(STAGES, STAGES[bare].id, 10));
+      world.step(1 / 60, snap(['Enter']));
+      expect(world.s).toBeCloseTo(sOf(STAGES, STAGES[bare + 1].id, 0), 9);
+    }
     expect(rt.emitted.some((e) => e.type === 'end')).toBe(false);
   });
 

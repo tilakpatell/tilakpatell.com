@@ -61,6 +61,28 @@ describe('the scatter’s placements', () => {
     for (const it of placements([{ ...tree, per100: 1 }], wet, road, rngOf(2))) expect(it.x).toBeLessThan(0);
   });
 
+  it('a row given a band keeps to it, as densely as a row over the whole stage', () => {
+    const corn = { model: 'Grass_Wheat', per100: 2, clump: 4, z: [0, 60], x: [10, 80] };
+    const items = placements([corn], flat, road, rngOf(9));
+    expect(items.length).toBeGreaterThan(50);
+    for (const it of items) {
+      expect(it.z).toBeGreaterThanOrEqual(0);
+      expect(it.z).toBeLessThanOrEqual(60);
+      expect(it.x).toBeGreaterThanOrEqual(10);
+      expect(it.x).toBeLessThanOrEqual(80);
+    }
+    // (2 a hundred square metres over 60 × 70: some fall in clumps over the band’s edge)
+    expect(items.length).toBeLessThanOrEqual(84);
+    expect(items.length).toBeGreaterThan(84 * 0.7);
+  });
+
+  it('plants nothing in the land’s clear circles (a town, a garden)', () => {
+    const town = { ...flat, clear: [{ at: [20, 100], r: 30 }] };
+    const items = placements([{ ...tree, per100: 1 }], town, road, rngOf(13));
+    expect(items.length).toBeGreaterThan(100);
+    for (const it of items) expect(Math.hypot(it.x - 20, it.z - 100)).toBeGreaterThanOrEqual(30);
+  });
+
   it('is the same for the same seed', () => {
     expect(placements([tree], flat, road, rngOf(11))).toEqual(placements([tree], flat, road, rngOf(11)));
   });

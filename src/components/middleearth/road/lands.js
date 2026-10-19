@@ -9,7 +9,7 @@
 //     step(),               a frame’s slice of the building
 //     water(dt, light),     the built stages’ rivers flowing, in the day’s light
 //     heightAt(x, z),       the ground under a point in the current frame
-//     ready(index), groupOf(index), landOf(index), stats, dispose() }
+//     ready(index), groupOf(index), landOf(index), watersOf(index), stats, dispose() }
 //
 // `stats`: each stage built, { id, ms, slices, worst } (ms the whole of its
 // building, slices the frames it took, worst the longest of them), for the
@@ -162,6 +162,8 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
     // (a built stage’s group, which its scene is put in so it moves with it; and its land)
     groupOf: (i) => built.get(i)?.group ?? null,
     landOf: (i) => built.get(i)?.land ?? null,
+    // (its rivers’ water, in its land’s order: the Ford’s scene raises the Bruinen’s)
+    watersOf: (i) => built.get(i)?.waters ?? [],
     stats,
     get current() {
       return built.get(current) ?? null;

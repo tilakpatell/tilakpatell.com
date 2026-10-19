@@ -152,7 +152,8 @@ export function* landJob(id, { res, wide = 1024 } = {}) {
   const d = Math.ceil((end + 2 * FRAME_BACK) / res) * res;
   const rivers = (g.rivers ?? []).map((r) => ({ ...r, line: r.line ?? roadOf(r.points) }));
   const land = yield* heightsJob(specFor(id), { size: [wide, d], res, road, rivers, flats: g.flats ?? [], seam: [0, end] });
-  return { ...land, id, road, end, rivers, wet: wetBy(rivers) };
+  // (`clear`: the stage’s built places, where nothing is planted: scatter.js reads it)
+  return { ...land, id, road, end, rivers, wet: wetBy(rivers), clear: g.clear ?? [] };
 }
 
 // The water stands FILL of the way up its channel, read off the cut land

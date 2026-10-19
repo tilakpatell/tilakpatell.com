@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { BACK, PAUSE_AFTER_INPUT, RUN, WALK, newClock, rideSeconds, step } from './clock';
+import { BACK, PACE, PAUSE_AFTER_INPUT, RUN, WALK, newClock, rideSeconds, step } from './clock';
+import { MODES } from './stages/index';
 import { STAGES } from './stages/index';
 import { total } from './line';
 import { BEATS_OF, HOLDS_UNWRITTEN } from './stages/registry';
@@ -95,5 +96,15 @@ describe('the clock', () => {
       expect(one).toBeGreaterThanOrEqual(60);
       expect(one).toBeLessThanOrEqual(150);
     }
+  });
+
+  it('every mode has its pace: the climb half the walk, the horse faster, the eagles at 40 m/s', () => {
+    for (const m of MODES) expect(PACE[m], m).toBeGreaterThan(0);
+    expect(PACE.walk).toBe(1);
+    expect(PACE.climb).toBe(0.5);
+    expect(PACE.horse).toBeGreaterThan(2);
+    expect(WALK * PACE.eagle).toBe(40);
+    const c = run(newClock(), 1, none, ctx({ pace: PACE.horse }));
+    expect(c.speed).toBeCloseTo(WALK * PACE.horse, 9);
   });
 });
