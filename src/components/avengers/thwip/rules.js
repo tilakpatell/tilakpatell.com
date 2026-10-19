@@ -6,8 +6,8 @@
 // The cross streets have nothing to swing from, so carry your speed over
 // them. Peter's backpacks are webbed up along the way (he keeps losing them).
 // Touch the street and the traffic gets a word in: three times and that's
-// the day. Steer across the avenue; reel the web in to climb. The bell goes
-// at BELL seconds: get there before it.
+// the day. Steer across the avenue; reel the web in to climb. The bell at
+// BELL seconds ends the run: late for school.
 //
 // The avenue runs along -z from z = 0; x is across it (the walls at
 // ±WALL), y up. A web is a rope, not a spring: it only ever pulls. It's
@@ -275,7 +275,7 @@ export function stepRun(g, dt) {
       ev.push({ type: 'street', at: [...g.p], hearts: g.hearts });
       if (g.hearts <= 0) {
         g.phase = 'lost';
-        ev.push({ type: 'lost', d: distance(g), score: Math.round(g.score) });
+        ev.push({ type: 'lost', why: 'street', d: distance(g), score: Math.round(g.score) });
         return ev;
       }
     } else ev.push({ type: 'land', at: [...g.p] });
@@ -306,12 +306,12 @@ export function stepRun(g, dt) {
   g.best = Math.max(g.best, distance(g));
   if (distance(g) >= SCHOOL) {
     g.phase = 'won';
-    const onTime = g.t <= BELL;
     g.score += g.hearts * 300 + Math.max(0, BELL - g.t) * 40;
-    ev.push({ type: 'won', d: SCHOOL, time: g.t, onTime, score: Math.round(g.score) });
-  } else if (g.t > BELL && !g.rang) {
-    g.rang = true;
+    ev.push({ type: 'won', d: SCHOOL, time: g.t, score: Math.round(g.score) });
+  } else if (g.t > BELL) {
+    g.phase = 'lost';
     ev.push({ type: 'bell' });
+    ev.push({ type: 'lost', why: 'bell', d: distance(g), score: Math.round(g.score) });
   }
   return ev;
 }

@@ -108,7 +108,6 @@ export default function Thwip({ fallback }) {
             break;
           case 'bell':
             play('ring');
-            important = { quip: SAYS.bell };
             break;
           case 'won': {
             play('fanfare');
@@ -118,12 +117,12 @@ export default function Thwip({ fallback }) {
               setBest(e.score);
               local.set(BEST, e.score);
             }
-            important = { result: { won: true, onTime: e.onTime, time: e.time, score: e.score, got: g.got, perfects: g.perfects, newBest: isBest } };
+            important = { result: { won: true, time: e.time, score: e.score, got: g.got, perfects: g.perfects, newBest: isBest } };
             break;
           }
           case 'lost':
-            play('alarm');
-            important = { result: { won: false, d: e.d, score: e.score, got: g.got } };
+            if (e.why !== 'bell') play('alarm');
+            important = { result: { won: false, why: e.why, d: e.d, score: e.score, got: g.got } };
             break;
           default:
         }
@@ -344,12 +343,14 @@ export default function Thwip({ fallback }) {
           ) : (
             <>
               <p className="hq-overlay-kicker">Queens · the morning after the press conference</p>
-              <p className="hq-overlay-title tw-title">{res ? (res.won ? (res.onTime ? 'Made it. Barely.' : 'Late again, Mr. Parker.') : 'Taking the subway, then.') : 'Thwip!'}</p>
+              <p className="hq-overlay-title tw-title">{res ? (res.won ? 'Made it. Barely.' : res.why === 'bell' ? 'Late for school.' : 'Taking the subway, then.') : 'Thwip!'}</p>
               <p className="hq-overlay-text">
                 {res
                   ? res.won
                     ? `${Math.round(res.time)} seconds down the avenue, ${res.got} ${res.got === 1 ? 'backpack' : 'backpacks'} back, ${res.perfects} perfect releases.`
-                    : `${fmt(res.d)} m down the avenue, and the traffic had the last word. Swing before you drop too low, and carry your speed over the cross streets.`
+                    : res.why === 'bell'
+                      ? `The bell went with ${fmt(SCHOOL - res.d)} m still to go. Keep off the street and carry your speed over the cross streets.`
+                      : `${fmt(res.d)} m down the avenue, and the traffic had the last word. Swing before you drop too low, and carry your speed over the cross streets.`
                   : 'Peter turned down the suit. Now he’s late for school, two kilometres away, and the quickest way is between the buildings. Hold to swing, let go to fly, on the upswing for a perfect release. His backpacks are webbed up along the way: he keeps losing them.'}
               </p>
               {res && (
