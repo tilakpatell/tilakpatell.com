@@ -335,6 +335,8 @@ export default {
           toggleAuto: pressed('auto'),
           next: pressed('next'),
         };
+        // (the first key, touch or drag wakes the sound: the browser starts a context on a gesture only)
+        if (keys.walk || keys.run || keys.back || keys.toggleAuto || keys.next || input?.pressed?.size || input?.pointer?.drag) ambience.wake();
         const was = clock.s;
         clock = stepClock(clock, dt, keys, { total: TOTAL, holdAt, nextBeat: nextMark });
         // (Next under reduced motion is how that ride is walked, so it counts)
