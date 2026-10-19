@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { roadOf } from './line';
-import { FRAME_BACK, SEAM_EASE, SPECS, buildHeights, landFor, landJob, specFor } from './terrain';
+import { FILL, FRAME_BACK, SEAM_EASE, SPECS, buildHeights, landFor, landJob, riverLevel, specFor, wetBy } from './terrain';
 import { STAGES } from './stages/index';
 
 const flat = { seed: 1, relief: [] };
@@ -105,5 +105,57 @@ describe('the stage’s heights', () => {
     const whole = landFor('bree', { res: 4, wide: 128 });
     expect(steps).toBe(whole.rows);
     expect(Array.from(r.value.heights)).toEqual(Array.from(whole.heights));
+  });
+});
+
+describe('the rivers’ water', () => {
+  const across = roadOf([
+    [-100, 0, 60],
+    [100, 0, 60],
+  ]);
+  const river = { line: across, depth: 2, width: 10, bank: 5 };
+
+  it('stands FILL of the way up its channel on flat land', () => {
+    const t = buildHeights(flat, { size: [256, 160], res: 2, rivers: [river] });
+    const level = riverLevel(t.field, river);
+    for (const m of [0, 50, 100, 150, 200]) expect(level(m)).toBeCloseTo(-2 + 2 * FILL, 5);
+  });
+
+  it('follows the land down a slope, smoothly, never rising on the way down', () => {
+    const slope = (x) => -x * 0.05;
+    const cut = (x, z) => slope(x) - (Math.abs(z - 60) < 5 ? 2 : 0);
+    const level = riverLevel(cut, river);
+    let last = Infinity;
+    for (let m = 0; m <= across.length; m += 1) {
+      const h = level(m);
+      expect(h).toBeLessThanOrEqual(last + 1e-9);
+      last = h;
+    }
+    expect(level(100)).toBeCloseTo(-2 + 2 * FILL, 1);
+  });
+
+  it('a bump in the bed does not lift the water over its banks', () => {
+    const bumpy = (x, z) => (Math.abs(z - 60) < 5 ? (Math.abs(x) < 3 ? 1.5 : 0) - 2 : 0);
+    const level = riverLevel(bumpy, river);
+    expect(level(100)).toBeLessThan(0);
+  });
+
+  it('wet: on the river, not off it', () => {
+    const wet = wetBy([river]);
+    expect(wet(0, 60)).toBe(true);
+    expect(wet(0, 64)).toBe(true);
+    expect(wet(0, 80)).toBe(false);
+    expect(wetBy([])(0, 60)).toBe(false);
+  });
+
+  it('a stage’s land carries its rivers, lines made, and wet', () => {
+    const land = landFor('hobbiton', { res: 4, wide: 256 });
+    expect(land.rivers.length).toBeGreaterThan(0);
+    for (const r of land.rivers) {
+      expect(r.line.length).toBeGreaterThan(0);
+      const mid = r.line.pointAt(r.line.length / 2);
+      expect(land.wet(mid.x, mid.z)).toBe(true);
+    }
+    expect(land.wet(0, 100)).toBe(false);
   });
 });

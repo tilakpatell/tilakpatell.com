@@ -4,9 +4,10 @@
 // in is built at once when it is not ready (an address, a jump); its
 // neighbours a few milliseconds a frame, so a seam never costs a frame.
 //
-//   createLands({ scene, house, tier, budget (ms a frame), wide (m across), scatter }) → {
+//   createLands({ scene, house, tier, budget (ms a frame), wide (m across), scatter, sky }) → {
 //     at(index),            the ride is in stage `index`: re-place, build, drop
 //     step(),               a frame’s slice of the building
+//     water(dt, light),     the built stages’ rivers flowing, in the day’s light
 //     heightAt(x, z),       the ground under a point in the current frame
 //     ready(index), stats, dispose() }
 //
@@ -16,14 +17,15 @@
 
 import * as THREE from 'three';
 import { STAGES } from './stages/index';
-import { FRAME_BACK, SEAM, landJob, run } from './terrain';
+import { FRAME_BACK, SEAM, landJob, riverLevel, run } from './terrain';
 import { groundJob } from './ground';
+import { createWater } from './water';
 import { placements, rngOf, rowsFor } from './scatter';
 import { fieldAt } from '../../../lib/land/layers.js';
 
 const RES = { low: 4, mid: 2, high: 2, ultra: 2 };
 
-export function createLands({ scene, house = null, tier = 'high', budget = 6, wide = 1024, scatter = null } = {}) {
+export function createLands({ scene, house = null, tier = 'high', budget = 6, wide = 1024, scatter = null, sky = null } = {}) {
   const built = new Map(); // index → { land, ground, group }
   const jobs = new Map(); // index → generator
   let current = -1;
@@ -41,9 +43,16 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
     const group = new THREE.Group();
     group.name = `road:${id}`;
     group.add(ground.mesh);
+    // its rivers, each a ribbon down its channel, banks and all
+    const waters = (land.rivers ?? []).map((r) => {
+      const bank = r.bank ?? r.width / 2;
+      return createWater({ along: { line: r.line, width: r.width + 2 * bank, level: riverLevel(land.field, r) }, kind: 'river', sky, ground: land.field });
+    });
+    for (const w of waters) group.add(w.mesh);
+    yield;
     // what grows on it, placed once (its stage’s seed, so a stage is the same every ride)
     const items = scatter ? placements(rowsFor(id), land, land.road, rngOf(1000 + i), { tier }) : [];
-    return { land, ground, group, items };
+    return { land, ground, group, items, waters };
   }
   const finish = (i, value) => {
     const c = clocks.get(i) ?? { ms: 0, slices: 0, worst: 0 };
@@ -71,6 +80,7 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
     if (b) {
       scene.remove(b.group);
       b.ground.dispose();
+      for (const w of b.waters) w.dispose();
       scatter?.free(STAGES[i].id);
       built.delete(i);
     }
@@ -112,6 +122,15 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
         clocks.set(i, { ms: c.ms + took, slices: c.slices + 1, worst: Math.max(c.worst, took) });
         if (done) finish(i, done.value);
         if (now() - t0 >= budget) return;
+      }
+    },
+    water(dt, light) {
+      for (const b of built.values()) {
+        if (!b.group.visible) continue;
+        for (const w of b.waters) {
+          w.set(light);
+          w.update(dt);
+        }
       }
     },
     heightAt(x, z) {

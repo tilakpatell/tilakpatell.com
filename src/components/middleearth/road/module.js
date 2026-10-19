@@ -86,10 +86,10 @@ export default {
     };
     const scatter = createScatter({ kitFor, tier });
     scene.add(scatter.group);
-    const lands = createLands({ scene, house, tier, scatter });
+    const sky = createSky();
+    const lands = createLands({ scene, house, tier, scatter, sky });
     const sun = new THREE.DirectionalLight(0xffffff, 2);
     const hemi = new THREE.HemisphereLight(0xdfe8ff, 0x5a5040, 0.6);
-    const sky = createSky();
     scene.add(sun, sun.target, hemi, sky.mesh);
 
     const reduced = Boolean(props.reduced);
@@ -156,8 +156,10 @@ export default {
     const sunDir = new THREE.Vector3();
 
     // the light for where the ride is: the sky, the sun, the fog
+    let daylight = null;
     const relight = () => {
       const l = lightAt(STAGES, clock.s);
+      daylight = l;
       sky.set(l);
       const { az, el, colour } = l.sun;
       sunDir.set(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
@@ -286,6 +288,7 @@ export default {
         const here = frame(dt);
         report(here, dt);
         lands.step();
+        lands.water(dt, daylight);
         windTime.value += dt;
         scatter.update(camera, dt);
       },

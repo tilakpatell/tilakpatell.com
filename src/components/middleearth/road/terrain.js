@@ -9,6 +9,8 @@
 //   roadFor(id) → the stage’s road (a roadOf of its own `road`, else straight along +z)
 //   landFor(id, { res, wide = 1024 }) → buildHeights for the stage, seamed, with { id, road, end }
 //   heightsJob, landJob: the same as generators, a row a step; run(job) to the end
+//   riverLevel(field, river) → (m) → the water’s height m metres along the river
+//   wetBy(rivers) → (x, z) → true on a river’s water
 //
 // The seams: a stage’s land eases, over SEAM_EASE metres before each end of
 // its road, to SEAM’s profile, which reads x alone, so the stage before and
@@ -25,7 +27,7 @@
 
 import { fieldAt } from '../../../lib/land/layers.js';
 import { flatten } from '../../../lib/land/flats.js';
-import { cutAlong, levelAlong } from '../../../lib/land/paths.js';
+import { cutAlong, distanceTo, levelAlong } from '../../../lib/land/paths.js';
 import { endOf, roadOf } from './line';
 import { stageById } from './stages/index';
 
@@ -149,5 +151,58 @@ export function* landJob(id, { res, wide = 1024 } = {}) {
   const d = Math.ceil((end + 2 * FRAME_BACK) / res) * res;
   const rivers = (g.rivers ?? []).map((r) => ({ ...r, line: r.line ?? roadOf(r.points) }));
   const land = yield* heightsJob(specFor(id), { size: [wide, d], res, road, rivers, flats: g.flats ?? [], seam: [0, end] });
-  return { ...land, id, road, end };
+  return { ...land, id, road, end, rivers, wet: wetBy(rivers) };
+}
+
+// The water stands FILL of the way up its channel, read off the cut land
+// along the river’s middle every LEVEL_STEP metres; held under the banks
+// either side (a stone in the bed must not lift it over them) and smoothed
+// over LEVEL_SPAN. It follows the channel over a rise rather than run level
+// from its lowest point: the channel is cut into the land, not the land
+// shaped round the river, so a level sheet would sink under the bed.
+export const FILL = 0.7;
+const LEVEL_STEP = 2; // m
+const LEVEL_SPAN = 6; // m either side
+const UNDER_BANK = 0.15; // m
+
+export function riverLevel(field, { line, depth, width = 8, bank = width / 2 }) {
+  const n = Math.max(1, Math.ceil(line.length / LEVEL_STEP));
+  const each = line.length / n;
+  const raw = new Float64Array(n + 1);
+  const out = (half) => half + bank;
+  for (let i = 0; i <= n; i++) {
+    const p = line.pointAt(i * each);
+    const [tx, , tz] = p.tangent;
+    const l = Math.hypot(tx, tz) || 1;
+    const nx = -tz / l;
+    const nz = tx / l;
+    const o = out(width / 2);
+    const banks = Math.min(field(p.x + nx * o, p.z + nz * o), field(p.x - nx * o, p.z - nz * o));
+    raw[i] = Math.min(field(p.x, p.z) + depth * FILL, banks - UNDER_BANK);
+  }
+  const k = Math.round(LEVEL_SPAN / each);
+  const level = new Float64Array(n + 1);
+  for (let i = 0; i <= n; i++) {
+    let sum = 0;
+    let count = 0;
+    for (let j = Math.max(0, i - k); j <= Math.min(n, i + k); j++) {
+      sum += raw[j];
+      count++;
+    }
+    level[i] = sum / count;
+  }
+  return (m) => {
+    const f = Math.min(n, Math.max(0, m / each));
+    const i = Math.min(n - 1, Math.floor(f));
+    return level[i] + (level[i + 1] - level[i]) * (f - i);
+  };
+}
+
+// on the water: within the channel’s floor and half its bank of a river’s line
+export function wetBy(rivers) {
+  const near = rivers.map((r) => {
+    const reach = (r.width ?? 8) / 2 + (r.bank ?? (r.width ?? 8) / 2) / 2;
+    return { off: distanceTo(r.line, reach), reach };
+  });
+  return (x, z) => near.some(({ off, reach }) => off(x, z) < reach);
 }
