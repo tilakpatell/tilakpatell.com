@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LIGHTS, keyLight, light } from './daylight';
+import { LIGHTS, SHADE, keyLight, light, shadeOf } from './daylight';
 import { sOf } from './line';
 import { STAGES } from './stages/index';
 
@@ -90,5 +90,17 @@ describe('daylight: the sky, the sun and the air along the Road', () => {
     expect(Math.hypot(...bree.dir)).toBeCloseTo(1, 6);
     const deep = keyLight(light(STAGES, sOf(STAGES, 'moria', 60)));
     expect(deep.intensity).toBe(0);
+  });
+
+  it('the shade: the day’s pale lilac, a fainter blue under the moon, never black', () => {
+    const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    const noon = shadeOf(light(STAGES, sOf(STAGES, 'hobbiton', 10)));
+    expect(luma(noon)).toBeCloseTo(SHADE.day, 3);
+    expect(noon[2]).toBeGreaterThan(noon[1]);
+    const bree = shadeOf(light(STAGES, sOf(STAGES, 'bree', 60)));
+    expect(luma(bree)).toBeLessThan(luma(noon));
+    // (blue: its blue over its red more than the day’s lilac has it)
+    expect(bree[2] / bree[0]).toBeGreaterThan(noon[2] / noon[0]);
+    for (const id of ['moria', 'cirith-ungol', 'gorgoroth']) expect(luma(shadeOf(light(STAGES, sOf(STAGES, id, 60)))), id).toBeGreaterThanOrEqual(SHADE.least - 1e-9);
   });
 });

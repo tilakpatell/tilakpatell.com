@@ -5,10 +5,13 @@
 //     moon: { phase, el }, stars, pall: { amount, from }, exposure, murk }
 //   LIGHTS: { [stage]: { start, end } }, eased from one to the other by
 //     smoothstep over the stage’s length
-//   keyLight(light) → { dir: [x, y, z], colour, intensity }: the one light that
-//     casts, the sun by day and the moon by night (cold, as bright as its
+//   keyLight(light) → { dir: [x, y, z], colour, intensity, moon }: the one light
+//     that casts, the sun by day and the moon by night (cold, as bright as its
 //     phase, none under a storm or the pall), so a night reads by moonlight
 //     rather than by the ambient alone
+//   shadeOf(light, key?) → [r, g, b], linear: the house look's shade (the
+//     albedo times this where the key light doesn't reach), from the sky
+//     light's hue and how much light there is
 //   STORMS: { [stage]: { at: [from, to], ramp, fog, density, ambient, el? } }:
 //     a stretch of a stage under an air of its own (the white-out on the
 //     Redhorn, the dark under the mountain in Moria), coming on over `ramp`
@@ -112,9 +115,28 @@ export function keyLight(l) {
   const pall = 1 - 0.6 * l.pall.amount;
   const day = clamp01((el + 0.05) / 0.3);
   const night = clamp01((-el - 0.04) / 0.16) * Math.min(1, l.moon.phase * 2.5) * (1 - (l.murk ?? 0)) * (1 - 0.8 * l.pall.amount);
-  if (day > 0 || night === 0) return { dir: [Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)], colour: [...colour], intensity: 2.4 * day * pall };
+  if (day > 0 || night === 0) return { dir: [Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)], colour: [...colour], intensity: 2.4 * day * pall, moon: false };
   // (the moon across the sky from where the sun went down, at least a little up)
   const mel = Math.max(0.35, l.moon.el);
   const maz = az + Math.PI;
-  return { dir: [Math.sin(maz) * Math.cos(mel), Math.sin(mel), Math.cos(maz) * Math.cos(mel)], colour: [...MOON], intensity: 0.9 * night };
+  return { dir: [Math.sin(maz) * Math.cos(mel), Math.sin(mel), Math.cos(maz) * Math.cos(mel)], colour: [...MOON], intensity: 0.9 * night, moon: true };
+}
+
+// The shade: the sky light's hue (the fog's, as module.js lights it) leaned
+// toward violet by day, hardly at all under the moon (a night's shade is
+// blue, not purple) or the pall (Mordor's, brown); a little under half the
+// full light the key and the sky light give a face (the house's measure:
+// three's Lambert divides by pi), never brighter than a clear day's (the
+// house's LOOK.shadow, 0x9d93c4) nor so dark that the deeps go black
+const VIOLET = [0.195, 0.147, 0.687]; // (0x7a6ad8, linear: houseNodes' shadowFor leans the same way)
+export const SHADE = { day: 0.32, least: 0.05 }; // its brightness (luma, linear): the most, the least
+const lumOf = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+export function shadeOf(l, key = keyLight(l)) {
+  const sky = l.fog.colour;
+  const lean = (key.moon ? 0.12 : 0.35) * (1 - 0.7 * l.pall.amount);
+  const c = sky.map((v, i) => v + (VIOLET[i] - v) * lean);
+  const full = lumOf(key.colour) * key.intensity + lumOf(sky) * (0.25 + l.ambient * 1.6);
+  const want = Math.min(SHADE.day, Math.max(SHADE.least, (full / Math.PI) * 0.45));
+  const got = lumOf(c);
+  return got > 0 ? c.map((v) => (v * want) / got) : [want, want, want];
 }

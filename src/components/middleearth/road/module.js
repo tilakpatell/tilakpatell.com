@@ -22,7 +22,7 @@ import * as THREE from 'three';
 import { PACE, newClock, step as stepClock } from './clock';
 import { SAVE, recent, resume, ridden as riddenOf, savedAt, shouldOffer } from './entry';
 import { LOOK_LIMIT, pose, settleLook } from './director';
-import { keyLight, light as lightAt } from './daylight';
+import { keyLight, light as lightAt, shadeOf } from './daylight';
 import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
 import { createLands } from './lands';
@@ -133,8 +133,11 @@ export default {
     const hemi = new THREE.HemisphereLight(0xdfe8ff, 0x5a5040, 0.6);
     scene.add(sun, sun.target, hemi, sky.mesh);
     // the sun’s (and the moon’s) soft shadows, through cascades round the
-    // camera (lib/three/light/sun.js, its PCSS from shadows.js), on mid and
-    // up: out to 90 m on high, 50 on mid; none on low
+    // camera (lib/three/light/sun.js), on mid and up: out to 90 m on high, 50
+    // on mid; none on low. PCSS (shadows.js) only where the chain ends in
+    // TRAA: its samples are scattered by a per-pixel noise only a temporal
+    // pass settles, a grain over every shadow without one; elsewhere three’s
+    // own PCF, a little softened (its five taps dither too: kept to an edge)
     const renderer = rt.gfx?.renderer ?? null;
     const shadowWas = renderer?.shadowMap ? { enabled: renderer.shadowMap.enabled, type: renderer.shadowMap.type } : null;
     const exposureWas = renderer?.toneMappingExposure ?? null;
@@ -142,11 +145,12 @@ export default {
     let unlit = false;
     if (tier !== 'low' && renderer?.shadowMap) {
       renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.shadowMap.type = THREE.PCFShadowMap;
+      sun.shadow.radius = 1.5;
       Promise.all([import('../../../lib/three/light/sun'), import('../../../lib/three/light/shadows')])
         .then(async ([{ castCascades }, { filterFor, readPcss, pcssFilter }]) => {
           const soft = filterFor(tier, readPcss(null));
-          const filter = soft.kind === 'pcss' ? await pcssFilter(soft) : null;
+          const filter = soft.kind === 'pcss' && has('traa') ? await pcssFilter(soft) : null;
           if (unlit) return;
           const c = await castCascades(sun, null, { tier, filter, video: { shadowDistance: tier === 'mid' ? 50 : 90 } });
           if (unlit) c?.dispose();
@@ -226,6 +230,7 @@ export default {
       return line;
     };
     const sunDir = new THREE.Vector3();
+    const shade = new THREE.Color();
 
     // the light for where the ride is: the sky, the sun, the fog
     let daylight = null;
@@ -255,6 +260,8 @@ export default {
       scene.fog.density = l.fog.density * (1 + 0.35 * vision.amount * (1 + vision.pulse));
       house.sky({ low: scene.fog.color, high: scene.fog.color, sunDir });
       house.light({ sun, hemi });
+      // (the shade from the light there is: a clear day’s pale lilac, a fainter blue under the moon)
+      house.set({ shadow: shade.setRGB(...shadeOf(l, key)) });
     };
 
     // a beat’s fixed camera given over the ground: its heights put on the land
