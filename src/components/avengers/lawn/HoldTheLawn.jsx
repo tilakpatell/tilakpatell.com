@@ -10,7 +10,7 @@ import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
 import { useSays } from '../hq/useSays';
-import { LAWN, LIFT, WAVES, callLightning, liftInput, newLawn, recallHammer, setMove, skipLift, startLawn, stepLawn, throwHammer } from './rules';
+import { LAWN, LIFT, WAVES, callLightning, liftInput, newLawn, recallHammer, setMove, skipLift, startAtBoss, startLawn, stepLawn, throwHammer } from './rules';
 import { LINES, READY, SAYS, SPOKEN } from './lines';
 import './lawn.css';
 import '../../../styles/lazy/avengers.css';
@@ -26,6 +26,7 @@ const buzz = (ms) => {
 };
 const BEST = 'tp-hq-lawn-best';
 const LIFTED = 'tp-hq-lawn-lifted';
+const BOSS = 'tp-hq-lawn-boss'; // true once Cull Obsidian’s wave has been reached
 const STEP = 1 / 120;
 const fmt = (n) => Math.round(n).toLocaleString('en-US');
 const media = (q) => (typeof window !== 'undefined' ? window.matchMedia?.(q) : null);
@@ -70,6 +71,7 @@ export default function HoldTheLawn({ fallback }) {
   const fxState = useRef({ popups: [], hurt: 0, lastUi: 0, taught: new Set() });
   const [best, setBest] = useState(() => Number(local.get(BEST, 0)) || 0);
   const [lifted, setLifted] = useState(() => !!local.get(LIFTED, false));
+  const [checkpoint, setCheckpoint] = useState(() => local.get(BOSS, false) === true);
   const [ui, setUi] = useState({ phase: 'ready', wave: 1, title: WAVES[0].title, hp: LAWN.hearts, score: 0, charge: 0, hammer: 'held', message: '', result: null, lift: 0, liftX: 0, holding: false });
   const [paused, setPaused] = useState(false);
   const playing = ui.phase === 'wave' || ui.phase === 'break';
@@ -82,17 +84,23 @@ export default function HoldTheLawn({ fallback }) {
 
   const focus = useCallback(() => stage.wrap.current?.querySelector('.hq-screen')?.focus({ preventScroll: true }), [stage.wrap]);
 
-  const start = useCallback(() => {
-    audioContext(); // in the click, so the thunder can be heard
-    game.current = newLawn({ seed: newSeed() });
-    const ev = startLawn(game.current);
-    acc.current = 0;
-    fxState.current.popups = [];
-    setPaused(false);
-    stage.view.current?.fx(ev, game.current);
-    sync({ message: '', result: null });
-    focus();
-  }, [focus, stage.view, sync]);
+  // a new game opened by `open`: startLawn (the lift) or startAtBoss (the checkpoint)
+  const begin = useCallback(
+    (open) => {
+      audioContext(); // in the click, so the thunder can be heard
+      game.current = newLawn({ seed: newSeed() });
+      const ev = open(game.current);
+      acc.current = 0;
+      fxState.current.popups = [];
+      setPaused(false);
+      stage.view.current?.fx(ev, game.current);
+      sync({ message: '', result: null });
+      focus();
+    },
+    [focus, stage.view, sync],
+  );
+  const start = useCallback(() => begin(startLawn), [begin]);
+  const startBoss = useCallback(() => begin(startAtBoss), [begin]);
 
   const skip = useCallback(() => {
     skipLift(game.current);
@@ -112,6 +120,7 @@ export default function HoldTheLawn({ fallback }) {
         },
         start,
         skip,
+        checkpoint: startBoss,
         lift: (holding, push) => liftInput(game.current, holding, push),
         aim(x, z) {
           input.current.aim = { x, z };
@@ -153,7 +162,7 @@ export default function HoldTheLawn({ fallback }) {
           return { state: name };
         },
       }),
-    [start, skip, stage.view, sync],
+    [start, skip, startBoss, stage.view, sync],
   );
 
   // the events of a step: sound, haptics, popups and the HUD
@@ -181,6 +190,13 @@ export default function HoldTheLawn({ fallback }) {
           case 'wave':
             play('drum');
             important = { message: LINES[e.n - 1] ?? '' };
+            if (e.boss && !checkpoint) {
+              setCheckpoint(true);
+              local.set(BOSS, true);
+            }
+            break;
+          case 'checkpoint':
+            play('thunder');
             break;
           case 'throw':
             play('zip');
@@ -274,7 +290,7 @@ export default function HoldTheLawn({ fallback }) {
         sync();
       }
     },
-    [best, lifted, sync, unlock],
+    [best, checkpoint, lifted, sync, unlock],
   );
 
   // ── the loop ──
@@ -594,9 +610,20 @@ export default function HoldTheLawn({ fallback }) {
                   </li>
                 </ul>
               )}
-              <button type="button" className="btn btn-primary mt-5" onClick={start}>
-                {res ? 'Again' : 'Lift the hammer'}
-              </button>
+              {res && !res.won && checkpoint ? (
+                <div className="mt-5 flex flex-wrap justify-center gap-3">
+                  <button type="button" className="btn btn-primary" onClick={startBoss}>
+                    Restart at the boss
+                  </button>
+                  <button type="button" className="btn btn-ghost" onClick={start}>
+                    From wave 1
+                  </button>
+                </div>
+              ) : (
+                <button type="button" className="btn btn-primary mt-5" onClick={start}>
+                  {res ? 'Again' : 'Lift the hammer'}
+                </button>
+              )}
               {!res && best > 0 && <p className="hq-overlay-best">Best {fmt(best)}</p>}
             </>
           )}
