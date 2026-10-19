@@ -34,6 +34,19 @@ const lava =
     camera.position.set(0, 3, 7);
     camera.lookAt(0, 0, -2);
   };
+// the bridge's sea: Bridge3D's numbers, far below in its dense fog
+const sea =
+  (K) =>
+  ({ scene, camera }) => {
+    scene.fog = new THREE.FogExp2(0x140805, 0.011);
+    const m = K.lavaMaterial({ scale: 0.06, spot: [0.5, -6], reach: 0.0026 });
+    m.uniforms.uTime.value = 21.3;
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(520, 360).rotateX(-Math.PI / 2), m);
+    s.position.set(0, -22, -90);
+    scene.add(s);
+    camera.position.set(-4, 4, 14);
+    camera.lookAt(0, -14, -20);
+  };
 const sky =
   (K, cloud) =>
   ({ scene, camera }) => {
@@ -67,6 +80,7 @@ const particles =
 
 export default {
   'middleearth:kit:lava': { node: lava(KN), classic: lava(KO) },
+  'middleearth:kit:lava:sea': { node: sea(KN), classic: sea(KO) },
   'middleearth:kit:sky': { node: sky(KN, false), classic: sky(KO, false) },
   'middleearth:kit:sky:mordor': { node: sky(KN, true), classic: sky(KO, true) },
   'middleearth:kit:fire': {
