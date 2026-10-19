@@ -24,7 +24,7 @@ import { HAND_FX, chargeOf, climbOf } from '../../../lib/arms/behaviours';
 
 const BEAM_HOLD = 0.16; // seconds the beam stays drawn after its last shot
 const BLAST_LIFE = 0.18;
-const GREEN = new THREE.Color(0.5, 3.2, 0.9);
+const GREEN = new THREE.Color(0.35, 2.1, 0.6); // (bright enough to bloom, not to wash out the view round it)
 const REPULSOR = new THREE.Color(1.6, 2.9, 3.6);
 const Z = new THREE.Vector3(0, 0, 1);
 
@@ -44,7 +44,7 @@ export function createHandArms({ parent, muzzle = () => null }) {
     return m;
   };
   const ray = make(rod, GREEN, 'hand-beam');
-  const core = make(rod, new THREE.Color(2.4, 3.6, 2.4), 'hand-beam-core');
+  const core = make(rod, new THREE.Color(1.5, 2.4, 1.5), 'hand-beam-core');
   const end = make(ball, GREEN, 'hand-beam-end');
   const palm = make(ball, REPULSOR, 'hand-charge');
   const burst = make(rod, REPULSOR, 'hand-blast');
@@ -129,8 +129,8 @@ export function createHandArms({ parent, muzzle = () => null }) {
       if (at) {
         const k = chargeOf(held, gauntlet);
         palm.position.copy(at);
-        palm.scale.setScalar((0.03 + 0.09 * k) * (1 + Math.sin(clock * 30) * 0.1 * k));
-        palm.material.color.copy(REPULSOR).multiplyScalar(0.5 + k);
+        palm.scale.setScalar((0.025 + 0.06 * k) * (1 + Math.sin(clock * 30) * 0.1 * k));
+        palm.material.color.copy(REPULSOR).multiplyScalar(0.3 + 0.6 * k);
       }
       // the blast, gone in a moment
       blastAge += dt;

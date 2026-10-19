@@ -1,10 +1,10 @@
 // What the skill tree's four ship weapons look like (lib/arms/behaviours.js
 // says what they do; uniqueArms.js says where and when): the seismic
 // charge, a dark ball with a light blinking on it, and its ring, a flat band
-// of pale blue light swelling out level and fading; the dark matter, a
-// black core in a green glow; the Blue sky cluster's round, a spinning blue
-// gem; and the Energon arc, lightning drawn as short bright struts from
-// point to point. Plain materials, so the node renderer draws them as the
+// of pale blue light on a low wall of it, swelling out level and fading; the
+// dark matter, a black core in a green glow; the Blue sky cluster's round, a
+// spinning blue gem; and the Energon arc, lightning drawn as short bright
+// struts from point to point. Plain materials, so the node renderer draws them as the
 // WebGL one does. Each pool is made once and hidden while it isn't wanted,
 // so a ship with none of these fitted draws nothing more than it did.
 //
@@ -45,25 +45,31 @@ export function createUniqueFx(parent) {
   const charge = pool(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshBasicMaterial({ color: '#1c1f24' }), CHARGES, 'charge');
   const blink = pool(new THREE.SphereGeometry(1, 8, 6), glow(new THREE.Color(4, 0.6, 0.3)), CHARGES, 'blink');
   const core = pool(new THREE.SphereGeometry(1, 14, 10), new THREE.MeshBasicMaterial({ color: '#020403' }), ORBS, 'orb');
-  const halo = pool(new THREE.SphereGeometry(1, 14, 10), glow(DARK), ORBS, 'halo');
+  // (its glow drawn from the inside only, so the core in front hides it: a dark ball ringed in green, not a green disc)
+  const halo = pool(new THREE.SphereGeometry(1, 14, 10), Object.assign(glow(DARK), { side: THREE.BackSide }), ORBS, 'halo');
   const gem = pool(new THREE.IcosahedronGeometry(1, 0), glow(GEM), GEMS, 'gem');
   const strut = pool(new THREE.CylinderGeometry(1, 1, 1, 5, 1).translate(0, 0.5, 0), glow(ENERGON), STRUTS, 'arc');
   // (the struts fade one by one: their colours, under an additive blend, are their brightness)
   strut.setColorAt(0, new THREE.Color(1, 1, 1));
-  // the rings: one mesh each, so each fades on its own (a band lying flat, its inner edge soft by a second, wider band)
+  // the rings: one mesh each, so each fades on its own (a band lying flat,
+  // its inner edge soft by a second, wider band, and a low wall of light
+  // standing on its edge: from the chase camera, at the ship's own height, a
+  // flat ring alone is seen edge on and all but vanishes)
   const ringGeo = keep(new THREE.RingGeometry(0.86, 1, 96, 1).rotateX(-Math.PI / 2));
   const softGeo = keep(new THREE.RingGeometry(0.6, 0.86, 96, 1).rotateX(-Math.PI / 2));
+  const wallGeo = keep(new THREE.CylinderGeometry(1, 1, 1, 96, 1, true));
   const rings = Array.from({ length: RINGS }, () => {
     const g = new THREE.Group();
     const band = new THREE.Mesh(ringGeo, keep(glow(SONIC.clone())));
     const soft = new THREE.Mesh(softGeo, keep(glow(SONIC.clone().multiplyScalar(0.35))));
-    band.material.side = soft.material.side = THREE.DoubleSide;
-    g.add(band, soft);
+    const wall = new THREE.Mesh(wallGeo, keep(glow(SONIC.clone().multiplyScalar(0.5))));
+    band.material.side = soft.material.side = wall.material.side = THREE.DoubleSide;
+    g.add(band, soft, wall);
     g.visible = false;
     g.frustumCulled = false;
     g.name = 'unique-ring';
     parent.add(g);
-    return { g, band, soft };
+    return { g, band, soft, wall };
   });
 
   let clock = 0;
@@ -103,6 +109,8 @@ export function createUniqueFx(parent) {
         r.g.scale.set(t.r, 1, t.r);
         r.band.material.color.copy(SONIC).multiplyScalar(1.6 * t.k);
         r.soft.material.color.copy(SONIC).multiplyScalar(0.5 * t.k);
+        r.wall.scale.y = 0.15 + 0.5 * t.k; // (low, and lower as it fades)
+        r.wall.material.color.copy(SONIC).multiplyScalar(0.7 * t.k);
       }
     },
     orbs(list) {
@@ -136,7 +144,7 @@ export function createUniqueFx(parent) {
           const len = d.length();
           if (len < 1e-4) continue;
           q.setFromUnitVectors(Y, d.divideScalar(len));
-          const w = 0.025 * (0.6 + 0.4 * a.k) * (1 + Math.sin(clock * 90 + i) * 0.25);
+          const w = 0.045 * (0.6 + 0.4 * a.k) * (1 + Math.sin(clock * 90 + i) * 0.25);
           strut.setMatrixAt(n, m4.compose(p.set(from.x, from.y, from.z), q, s.set(w, len, w)));
           strut.setColorAt(n, c.setScalar(a.k));
           n += 1;
