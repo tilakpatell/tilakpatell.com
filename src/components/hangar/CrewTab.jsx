@@ -3,6 +3,7 @@ import { useReducedMotion } from '../../lib/hooks';
 import { CASTS, WardrobeControls, WardrobeStage, castOfCrew, useLooks } from '../rickmorty/shared/wardrobe';
 import { HILTS, SABER_COLORS, heroById, skinsOf } from '../galaxy/shared/arms';
 import { cardOf, crewOf } from './crewTabRules';
+import { useSkills } from './skills/useSkills';
 import { useCrewStyle } from './useCrewStyle';
 
 // The Hangar's Crew: how the ship's two look, wherever they walk. Rick and
@@ -20,6 +21,7 @@ export default function CrewTab({ ship }) {
   const [looks, setLook] = useLooks();
   const reduced = useReducedMotion();
   const [crew, setStyle] = useCrewStyle();
+  const { fx } = useSkills();
   if (!shown) return null;
 
   if (cast) {
@@ -33,7 +35,7 @@ export default function CrewTab({ ship }) {
   }
 
   const style = crew[shown] ?? {};
-  const card = cardOf(shown, style);
+  const card = cardOf(shown, style, fx.arms);
   const hero = heroById(shown);
   const outfits = skinsOf(shown);
   const jedi = hero?.weapon === 'saber';

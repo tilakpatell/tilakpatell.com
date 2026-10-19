@@ -343,7 +343,7 @@ export default function Galaxy() {
         timer.current = setTimeout(() => dove.current?.(), DIVE_MAX); // (a dive that never ends still lands)
       };
       runtime()
-        .handover(surfaceModule, surfaceProps(id, { ship, loadout, build, net: online.client, reduced, effects: groundEffects(id, oathKept, Date.now()), crew: readCrewStyle(localSaves(), local.get(HERO_KEY)) }), host, { fade: 900, held: true, after, onBuilt })
+        .handover(surfaceModule, surfaceProps(id, { ship, loadout, build, net: online.client, reduced, effects: groundEffects(id, oathKept, Date.now()), crew: readCrewStyle(localSaves(), local.get(HERO_KEY)), arms: skillFx.arms }), host, { fade: 900, held: true, after, onBuilt })
         .catch(() => false)
         .then(() => after)
         .then(() => {
@@ -351,7 +351,7 @@ export default function Galaxy() {
           navigate(to); // (not handed over: the page makes its own)
         });
     },
-    [leave, leaving, navigate, ship, loadout, build, online.client, reduced, oathKept],
+    [leave, leaving, navigate, ship, loadout, build, online.client, reduced, oathKept, skillFx.arms],
   );
   // near a planet you can land on: the surface's code, and its page's, come ahead
   useEffect(() => {
