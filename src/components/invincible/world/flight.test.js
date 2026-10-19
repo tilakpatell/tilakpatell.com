@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CARRY, FLY, JUMP, ONE, dive, jumpPress, newHero, onWater, speedOf, stepHero, switchHero } from './flight';
+import { CARRY, FLY, JUMP, ONE, dive, jumpPress, launch, newHero, onWater, speedOf, stepHero, switchHero } from './flight';
+import { HIT } from './missions';
 import { BRIDGES, RIVER, SPAWN, WATER_Y, WORLD, buildWorld, groundAt } from './map';
 
 const W = buildWorld();
@@ -338,5 +339,38 @@ describe('as another hero (./heroes.js’s multipliers)', () => {
     expect(eve.dir).toEqual(h.dir);
     expect(speedOf(eve)).toBeCloseTo(FLY.top * 0.8, 6);
     expect(switchHero(h, { top: 1.8, agility: 1, boom: FLY.barrier })).toEqual(h);
+  });
+});
+
+describe('launched (episode 8: Dad’s hit)', () => {
+  const W3 = buildWorld();
+  const run = (h, t) => {
+    const ev = [];
+    for (let s = 0; s < t - 1e-9; s += 1 / 30) {
+      h = stepHero(h, { ...still, fwd: 1, boost: true, look: [-1, 0, 0] }, 1 / 30, W3);
+      ev.push(...h.ev);
+    }
+    return { h, ev };
+  };
+  it('carries him along it at its speed for 1.2 s whatever he presses, through three houses, then hands him back', () => {
+    const start = { ...newHero({ x: -2050.2, y: 1, z: 256.5, face: 0 }), mode: 'air' };
+    const { h, ev } = run(launch(start, HIT, 343), 1.25);
+    expect(ev.filter((e) => e.type === 'through')).toHaveLength(3);
+    expect(ev.filter((e) => e.type === 'launchEnd')).toHaveLength(1);
+    // (past the three, the strip's shops stop him: a crash, which ends it too)
+    const along = (h.p[0] - start.p[0]) * HIT[0] + (h.p[2] - start.p[2]) * HIT[2];
+    expect(along).toBeGreaterThan(200);
+    expect(h.launched).toBe(null);
+    // (the three it went through came before the end, at Mach 1 all the way)
+    const end = ev.findIndex((e) => e.type === 'launchEnd');
+    expect(ev.slice(0, end).filter((e) => e.type === 'through')).toHaveLength(3);
+  });
+  it('a tower stops him as a crash would, and that’s the end of it', () => {
+    const tower = W3.buildings.reduce((a, b) => (b.h > a.h ? b : a));
+    const start = { ...newHero({ x: tower.x - tower.w / 2 - 30, y: tower.h / 2, z: tower.z, face: 0 }), mode: 'air' };
+    const { h, ev } = run(launch(start, [1, 0, 0], 200, 2), 0.5);
+    expect(ev.find((e) => e.type === 'impact').speed).toBeGreaterThan(150);
+    expect(ev.some((e) => e.type === 'launchEnd')).toBe(true);
+    expect(h.p[0]).toBeLessThan(tower.x - tower.w / 2);
   });
 });

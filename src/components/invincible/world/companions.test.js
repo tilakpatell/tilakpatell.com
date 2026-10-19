@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COMPANION } from './lines';
+import { COMPANION, LINES, linesOf } from './lines';
 import { DAD, EVE, newDad, newEve, stepDad, stepEve } from './companions';
 
 const LOOP = { cx: 0, cz: 0, rad: 400, y: 160, speed: 32 };
@@ -202,5 +202,24 @@ describe('Dad', () => {
     r = runDad(d, 1, sense({ mission: 'ep7', spar: points, hero: [0, 100, 10] }));
     expect(r.ev).toContainEqual({ type: 'dadAt', i: 0 });
     expect(r.dad.next).toBe(1);
+  });
+});
+
+describe('after episode 8', () => {
+  it('Dad is gone: nowhere, whatever the time, the lesson or the porch', () => {
+    const porch = [-2040, 0.3, 250];
+    const d = newDad({ porch, gone: true });
+    for (const s of [sense(), sense({ time: 'night' }), sense({ lesson: { on: true, next: 2, t: 10 } })]) {
+      const r = stepDad(d, s, 1 / 30);
+      expect(r.dad.state).toBe('gone');
+      expect(r.ev).toEqual([]);
+    }
+  });
+  it('Mom has four new lines once he knows', () => {
+    expect(linesOf('debbie', { done: ['ep7'] })).toBe(LINES.debbie);
+    const after = linesOf('debbie', { done: ['ep7', 'ep8'] });
+    expect(after).toHaveLength(4);
+    expect(after).not.toEqual(LINES.debbie);
+    expect(linesOf('cecil', { done: ['ep8'] })).toBe(LINES.cecil);
   });
 });

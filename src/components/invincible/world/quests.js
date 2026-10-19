@@ -220,8 +220,46 @@ export function stepQuests(state, hero, rawDt, world) {
     }
   }
 
+  if (q.rain?.length && !away) stepRain(q, prev, chest, dt);
+
   q.prev = away ? null : chest;
   return q;
+}
+
+// Episode 8's plaza: `n` people thrown off the tower's top Dad drops on it,
+// falling round `at` from 60 to 110 m; flown through, each is caught (the
+// mission's) and let down gently; one that reaches the ground is missed.
+export function rain(q, at, n = 12, seed = 77) {
+  const r = rng(seed);
+  const list = Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * Math.PI * 2 + r() * 0.3;
+    const d = 10 + r() * 24;
+    const out = 2 + r() * 3;
+    return { i, p: [at[0] + Math.cos(a) * d, 60 + r() * 50, at[2] + Math.sin(a) * d], v: [Math.cos(a) * out, 4 + r() * 4, Math.sin(a) * out], state: 'fall' };
+  });
+  return { ...q, rain: list };
+}
+function stepRain(q, prev, chest, dt) {
+  const left = [];
+  for (const f0 of q.rain) {
+    const f = { ...f0, p: [...f0.p], v: [...f0.v] };
+    if (f.state === 'fall') {
+      f.v[1] = Math.max(-48, f.v[1] - G * dt);
+      if (nearest(prev, chest, [f.p[0], f.p[1] + 1, f.p[2]]) < 3.5) {
+        // (caught: let down gently from there)
+        f.state = 'caught';
+        f.v = [0, -3, 0];
+        q.ev.push({ type: 'caught', kind: 'fall', source: 'mission', i: f.i });
+      }
+    }
+    for (const a of [0, 1, 2]) f.p[a] += f.v[a] * dt;
+    if (f.p[1] <= groundAt(f.p[0], f.p[2])) {
+      if (f.state === 'fall') q.ev.push({ type: 'missed', kind: 'fall', source: 'mission', p: [...f.p] });
+      continue;
+    }
+    left.push(f);
+  }
+  q.rain = left;
 }
 
 // what to keep between visits

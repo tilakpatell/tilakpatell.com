@@ -95,6 +95,18 @@ export function newHero({ x, y, z, face = 0 }) {
 // over once he's there (Omni-Man's line-break).
 export const dive = (h, at, speed = BRAWL.dive.speed, { time = 5, through = false } = {}) => ({ ...h, mode: 'air', dive: { at: [...at], speed, t: 0, time, through } });
 
+// Thrown (Dad's hit, episode 8; his drive into a tower after): along `dir`
+// at `speed` for `time` s, whatever's held. He goes through houses (each a
+// `through`), a tower stops him as a crash would, and then he's his own
+// again (`launchEnd`).
+export const launch = (h, dir, speed, time = 1.2) => ({ ...h, mode: 'air', dive: null, crouch: 0, launched: { dir: [...dir], speed, t: 0, time, houses: [] } });
+// (over: his own again)
+function unlaunch(h) {
+  if (!h.launched) return;
+  h.launched = null;
+  h.ev.push({ type: 'launchEnd', at: [...h.p] });
+}
+
 // The highest thing under (x, z) that isn't above `below`: the land, the
 // water (`water` true), a roof or a bridge.
 const scratch = [];
@@ -158,6 +170,14 @@ function collide(h, prev, world) {
   for (const b of near(world, h.p[0], h.p[2], R + 1, scratch)) {
     if (h.p[0] + R <= b.x0 || h.p[0] - R >= b.x1 || h.p[2] + R <= b.z0 || h.p[2] - R >= b.z1) continue;
     if (h.p[1] + H <= b.y0 || h.p[1] >= b.y1) continue;
+    // thrown, he goes through a house (and says which)
+    if (h.launched && b.house != null) {
+      if (!h.launched.houses.includes(b.house)) {
+        h.launched.houses.push(b.house);
+        h.ev.push({ type: 'through', house: b.house, at: [...h.p] });
+      }
+      continue;
+    }
     // came down onto it, or up under it
     if (prev[1] >= b.y1 - 1e-6) {
       h.p[1] = b.y1;
@@ -195,7 +215,12 @@ function stepAir(h, input, dt, world, mult) {
   const k = (input.carry ? CARRY : 1) * mult.top;
   let S = 0;
   let D = h.dir;
-  if (h.dive) {
+  if (h.launched) {
+    // thrown: along the way at its speed, nothing held counts
+    h.launched.t += dt;
+    h.dir = [...h.launched.dir];
+    h.spd = h.launched.speed;
+  } else if (h.dive) {
     // a dive: straight at the point, at its speed, nothing held counts
     h.dive.t += dt;
     const d = [h.dive.at[0] - h.p[0], h.dive.at[1] - h.p[1], h.dive.at[2] - h.p[2]];
@@ -214,7 +239,7 @@ function stepAir(h, input, dt, world, mult) {
     const flat = Math.hypot(mx, mz);
     S = flat < 0.05 ? (my > 0 ? FLY.climb : FLY.descend) * Math.min(1, m) : FLY.cruise * k * Math.min(1, m);
   }
-  if (!h.dive) {
+  if (!h.dive && !h.launched) {
     // just off the ground: the jump carries him up before he settles into a hover
     if (h.lift > 0) {
       h.lift -= dt;
@@ -246,6 +271,7 @@ function stepAir(h, input, dt, world, mult) {
       h.stun = FLY.stun;
       h.dive = null;
       h.ev.push({ type: 'impact', speed: hit.into, at: hit.at, n: hit.n, building: hit.building, house: hit.house });
+      unlaunch(h);
     } else if (input.carry && hit.into > BUMP) h.ev.push({ type: 'bump', speed: hit.into, at: hit.at, n: hit.n, building: hit.building, house: hit.house });
     h.spd = len(h.v[0], h.v[1], h.v[2]);
     if (h.spd > 1e-6) h.dir = [h.v[0] / h.spd, h.v[1] / h.spd, h.v[2] / h.spd];
@@ -289,6 +315,7 @@ function flatten(d, face) {
 // stops dead at its surface instead, hanging there: no crater, a splash.
 function splash(h) {
   h.dive = null;
+  unlaunch(h);
   h.ev.push({ type: 'splash', at: [...h.p], speed: h.spd });
   h.spd = 0;
   h.v = [0, 0, 0];
@@ -297,6 +324,7 @@ function splash(h) {
 
 function land(h, type) {
   h.dive = null;
+  unlaunch(h);
   h.ev.push({ type, at: [...h.p], speed: h.spd });
   h.mode = 'ground';
   h.crouch = type === 'slam' ? FLY.crouch : 0;
@@ -376,7 +404,7 @@ export function switchHero(h, mult = ONE) {
 // One step of `dt` seconds (any length: it's taken in slices of 1/120 s), as
 // Mark or (`mult`) as another hero.
 export function stepHero(hero, input, dt, world, mult = ONE) {
-  const h = { ...hero, p: [...hero.p], v: [...hero.v], dir: [...hero.dir], dive: hero.dive ? { ...hero.dive } : null, ev: [] };
+  const h = { ...hero, p: [...hero.p], v: [...hero.v], dir: [...hero.dir], dive: hero.dive ? { ...hero.dive } : null, launched: hero.launched ? { ...hero.launched, houses: [...hero.launched.houses] } : null, ev: [] };
   const n = Math.max(1, Math.ceil(dt / STEP - 1e-9));
   const sub = dt / n;
   const press = pressOf(input);
@@ -390,6 +418,7 @@ export function stepHero(hero, input, dt, world, mult = ONE) {
       // just off an edge (coyote time): the jump he meant
       if (press.take()) takeoff(h, input);
       stepAir(h, input, sub, world, mult);
+      if (h.launched && h.launched.t >= h.launched.time) unlaunch(h);
     }
     // the edges of the world, and the top of the sky
     const lim = WORLD.half;

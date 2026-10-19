@@ -14,10 +14,11 @@
 // `home` (dusk and night, on the porch by Debbie, with a word when Mark
 // comes up to it); `spar` (the last
 // episode: he flies ahead through his points, waiting at each until Mark's
-// within 20 m).
+// within 20 m); `away` (episode 8, once it's begun: the fight's Dad is
+// ./foes.js's, not this one); `gone` (after it: nowhere at all).
 //
 // sense: { hero, heroV, heroMode, lesson: { on, next, t } | null, mission,
-// spar: [[x, y, z]…] | null, foes: [[x, y, z]…], talk, time }
+// spar: [[x, y, z]…] | null, foes: [[x, y, z]…], talk, time, away }
 
 import { COMPANION } from './lines';
 
@@ -149,14 +150,16 @@ export function stepEve(prev, sense, rawDt) {
   return { eve: e, ev };
 }
 
-export function newDad({ watch = DAD.watch, porch = null } = {}) {
-  return { state: 'watch', watch, porch, p: [...watch], v: [0, 0, 0], ring: null, slowAt: -1, next: 0, said: 0, dir: [0, 0, 1] };
+export function newDad({ watch = DAD.watch, porch = null, gone = false } = {}) {
+  return { state: gone ? 'gone' : 'watch', gone, watch, porch, p: [...watch], v: [0, 0, 0], ring: null, slowAt: -1, next: 0, said: 0, dir: [0, 0, 1] };
 }
 
 export function stepDad(prev, sense, rawDt) {
   const dt = clampDt(rawDt);
   const d = { ...prev, p: [...prev.p] };
   const ev = [];
+  // (gone after episode 8; away while it's on, the fight's own Dad standing in)
+  if (d.gone || sense.away) return { dad: { ...d, state: d.gone ? 'gone' : 'away', v: [0, 0, 0] }, ev };
   const hero = sense.hero;
   d.dir = heading(sense.heroV ?? [0, 0, 0], d.dir);
   let to = d.watch;

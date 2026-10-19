@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildWorld, groundAt, near } from './map';
-import { CARDS, RINGS, keepQuests, newQuests, stepQuests } from './quests';
+import { CARDS, RINGS, keepQuests, newQuests, rain, stepQuests } from './quests';
 
 const W = buildWorld();
 const inside = (b, p, pad = 0) => p[0] > b.x0 - pad && p[0] < b.x1 + pad && p[2] > b.z0 - pad && p[2] < b.z1 + pad && p[1] > b.y0 - pad && p[1] < b.y1 + pad;
@@ -224,5 +224,37 @@ describe('while he’s out in space', () => {
     const r = RINGS[0];
     const { q: l } = run(newQuests(), (s) => ({ ...hero([r.p[0] + r.n[0] * (s * 40 - 10), r.p[1] - 1 + r.n[1] * (s * 40 - 10), r.p[2] + r.n[2] * (s * 40 - 10)]), zone: 'space' }), 0.5);
     expect(l.lesson.on).toBe(false);
+  });
+});
+
+describe('the plaza in episode 8: twelve falling at once', () => {
+  const at = [30, 0, 45];
+  it('falls from the tower’s top over the plaza, each caught once by flying through them, and counted the mission’s', () => {
+    let q = rain(newQuests(), at, 12);
+    expect(q.rain).toHaveLength(12);
+    for (const r of q.rain) {
+      expect(Math.hypot(r.p[0] - at[0], r.p[2] - at[2])).toBeLessThan(40);
+      expect(r.p[1]).toBeGreaterThan(50);
+    }
+    // through the first one's path, and nowhere near the rest
+    const first = q.rain[0];
+    const ev = [];
+    for (let s = 0; s < 1; s += 1 / 30) {
+      q = stepQuests(q, hero([first.p[0], first.p[1] - 1 - 9.8 * s * s * 0.5, first.p[2]]), 1 / 30, W);
+      ev.push(...q.ev);
+    }
+    const caught = ev.filter((e) => e.type === 'caught');
+    expect(caught).toEqual([expect.objectContaining({ source: 'mission' })]);
+    expect(q.rain.filter((r) => r.state === 'caught')).toHaveLength(1);
+  });
+  it('the ones nobody catches come down, and are missed', () => {
+    let q = rain(newQuests(), at, 12);
+    const ev = [];
+    for (let s = 0; s < 12; s += 1 / 30) {
+      q = stepQuests(q, hero([3000, 50, -3000]), 1 / 30, W);
+      ev.push(...q.ev);
+    }
+    expect(ev.filter((e) => e.type === 'missed' && e.source === 'mission')).toHaveLength(12);
+    expect(q.rain).toEqual([]);
   });
 });

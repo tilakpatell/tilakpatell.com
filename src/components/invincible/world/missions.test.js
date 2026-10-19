@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CAST } from '../cast';
 import { KINDS, PORTAL } from './foes';
 import { CITY, buildWorld, near } from './map';
-import { MISSIONS, PHOTO_SPOTS, RADIO, RADIO_CALLS, STORY, feedMission, keepStory, loadStory, markerOf, missionOf, newRadio, nextRadioCall, nextStory, placeOf, startMission, stepOf } from './missions';
+import { HIT, MISSIONS, PHOTO_SPOTS, RADIO, RADIO_CALLS, STORY, canStart, feedMission, keepStory, loadStory, markerOf, missionOf, newRadio, nextRadioCall, nextStory, placeOf, startMission, stepOf } from './missions';
 import { RINGS } from './quests';
 
 const W = buildWorld();
@@ -28,7 +28,7 @@ const ko = (kind, n, from = 0) => Array.from({ length: n }, (_, i) => ({ type: '
 
 describe('the season', () => {
   it('has seven episodes in order, each with its people and its villains in the cast', () => {
-    expect(STORY).toEqual(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7']);
+    expect(STORY).toEqual(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7', 'ep8']);
     for (const m of MISSIONS) {
       expect(m.giver in CAST, `${m.id}'s giver`).toBe(true);
       if (m.start?.npc) expect(m.start.npc in CAST).toBe(true);
@@ -62,6 +62,7 @@ describe('the season', () => {
     expect(nextStory([])).toBe('ep1');
     expect(nextStory(['ep1'])).toBe('ep2');
     expect(nextStory(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6'])).toBe('ep7');
+    expect(nextStory(STORY.slice(0, 7))).toBe('ep8');
     expect(nextStory(STORY)).toBe(null);
     expect(nextStory('garbage')).toBe('ep1');
   });
@@ -243,6 +244,61 @@ describe('each episode, end to end', () => {
     expect(r.p.fail).toBe(null);
     r = feed(r.p, ticks(2));
     expect(r.p.fail).toBe('left');
+  });
+  it('ep8 is offered from the porch at dusk or night, once the first seven are done', () => {
+    expect(canStart('ep8', { done: STORY.slice(0, 6), time: 'night' })).toBe(false);
+    expect(canStart('ep8', { done: STORY.slice(0, 7), time: 'noon' })).toBe(false);
+    expect(canStart('ep8', { done: STORY.slice(0, 7), time: 'dusk' })).toBe(true);
+    expect(canStart('ep7', { done: STORY.slice(0, 6), time: 'night' })).toBe(true);
+    expect(canStart('ep2', { done: [], time: 'noon' })).toBe(true);
+    expect(canStart('nope', { done: STORY, time: 'night' })).toBe(false);
+  });
+  it('ep8: the porch, Dad’s hit through the street, three blows on him, the plaza, the sky', () => {
+    const m = missionOf('ep8');
+    expect(m.title).toBe('Where I Really Come From');
+    const p0 = startMission('ep8');
+    expect(stepOf(p0)).toMatchObject({ i: 0, panels: 'porch' });
+    let r = feed(p0, [{ type: 'panels', id: 'sky' }, ...ticks(5)]);
+    expect(r.p.step).toBe(0);
+    r = feed(r.p, [{ type: 'panels', id: 'porch' }]);
+    expect(r.p.step).toBe(1);
+    // (through the street at Mach 1, the way of three houses)
+    expect(r.out.find((o) => o.type === 'step').launch).toEqual({ dir: HIT, speed: 343 });
+    r = feed(r.p, [{ type: 'launchEnd' }]);
+    expect(r.p.step).toBe(2);
+    expect(r.out.find((o) => o.type === 'step').spawn[0][0]).toBe('omniman');
+    // each blow that lands on him, he answers by driving Mark into a tower
+    r = feed(r.p, [{ type: 'hit', kind: 'omniman', tower: 12 }, { type: 'hit', kind: 'mauler', tower: 3 }]);
+    expect(r.out.filter((o) => o.type === 'driven')).toEqual([{ type: 'driven', tower: 12 }]);
+    expect(r.p.count).toBe(1);
+    r = feed(r.p, [{ type: 'hit', kind: 'omniman', tower: 40 }, { type: 'hit', kind: 'omniman', tower: 41 }]);
+    expect(r.out.filter((o) => o.type === 'driven').map((o) => o.tower)).toEqual([40, 41]);
+    expect(r.p.step).toBe(3);
+    expect(r.out.find((o) => o.type === 'step').rain).toMatchObject({ n: 12 });
+    r = feed(r.p, Array.from({ length: 12 }, caught));
+    expect(r.p.step).toBe(4);
+    expect(r.p.saved).toBe(12);
+    // the sky: his lines, then nothing pressed for 4 s
+    r = feed(r.p, [...ticks(6)]);
+    expect(r.p.step).toBe(4);
+    r = feed(r.p, [{ type: 'panels', id: 'sky' }, ...ticks(3), { type: 'input' }, ...ticks(3)]);
+    expect(r.p.done).toBe(false);
+    r = feed(r.p, ticks(1.2));
+    expect(r.p.done).toBe(true);
+    expect(r.out.at(-1)).toMatchObject({ type: 'done', achievement: 'truth' });
+  });
+  it('ep8’s plaza: the tower’s top carried away is as good as every catch, and time running out is no failure', () => {
+    const at = () => {
+      let r = feed(startMission('ep8'), [{ type: 'panels', id: 'porch' }, { type: 'launchEnd' }]);
+      r = feed(r.p, Array.from({ length: 3 }, (_, i) => ({ type: 'hit', kind: 'omniman', tower: i })));
+      return r.p;
+    };
+    let r = feed(at(), [caught(), { type: 'carried', what: 'chunk' }]);
+    expect(r.p.step).toBe(4);
+    r = feed(at(), [caught(), caught(), ...ticks(8.2)]);
+    expect(r.p.step).toBe(4);
+    expect(r.p.fail).toBe(null);
+    expect(r.p.saved).toBe(2);
   });
   it('abandoned: nothing more counts', () => {
     const r = feed(startMission('ep2'), [{ type: 'abandon' }, at([50, 30, 0])]);

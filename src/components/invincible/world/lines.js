@@ -3,6 +3,8 @@
 // who they are: a person's own, or a townsperson's by the part they play.
 export const LINES = {
   debbie: ['You’re home early. Did you fly?', 'There’s lasagna in the fridge.', 'Your father’s out. Again.', 'Be careful up there, sweetie.'],
+  // Mom, once he knows what his father is (after episode 8: linesOf)
+  debbieAfter: ['He isn’t coming back, is he.', 'I made too much dinner again. Sit down.', 'You don’t have to be anything like him, Mark.', 'Fly safe. Then come home.'],
   cecil: ['Kid. You’re making a lot of noise over my city.', 'Break the sound barrier over downtown and I get the calls.', 'We should talk about your future with the GDA.', 'Don’t look at the building. It’s a records annex.'],
   eve: ['Race you to the river?', 'You know you can just float, right? You don’t have to flap.', 'I’m on patrol. You’re… sightseeing?', 'Nice landing. The street disagrees.'],
   omni: ['Think, Mark!', 'Keep up.', 'You’re flying like a human.', 'Five hundred years from now, this city will be dust. Think about that.'],
@@ -12,6 +14,9 @@ export const LINES = {
   thragg: ['So this is Nolan’s son.', 'Viltrum will have this world, boy. Sooner than you think.', 'Go back to your little city while it’s still there.'],
   fan: ['Is that Invincible?', 'Can I get a picture?', 'My cousin says you can’t even lift a bus.', 'Do you know Omni-Man?', 'You flew over my car. It’s fine. It’s fine.'],
 };
+
+// whose lines someone has now: Mom's change once episode 8 is played
+export const linesOf = (id, story = {}) => (id === 'debbie' && Array.isArray(story?.done) && story.done.includes('ep8') ? LINES.debbieAfter : LINES[id]);
 
 // What Eve and Dad say as they go about with him (./companions.js): Eve
 // coming up to him, flying with him, wading into a fight; Dad at Dad's

@@ -28,6 +28,17 @@
 // - protect what, time   `what`'s hp (from `hurt`) stays above 0 for `time`
 // - through at, r, speed fly through it faster than `speed`
 // - use    id            E somewhere (Think, Mark!, a photo)
+// Episode 8's own:
+// - beats  panels        a strip of panels told (./panels.js), to its end
+// - launched launch      thrown by Dad ({ dir, speed }: ./flight.js's
+//                        launch), until he has himself back ('launchEnd')
+// - hits   kind, n       blows landed on a foe that's never knocked out (Dad);
+//                        each one he answers by driving Mark into a tower
+//                        (`driven`, the tower the world says)
+// - catchmany n, time    as many caught as he can (or the thing they fall
+//                        from carried away) before the time's up; fewer
+//                        saved is no failure (`saved` counts them)
+// - sky    panels, quiet the strip told, then nothing pressed for `quiet` s
 //
 // The events: { type: 'at', p, mode, speed, face, npcs?, car? } each frame
 // (where he is, and where the people and the car the step cares about are),
@@ -35,7 +46,9 @@
 // { type: 'ko', kind, id }, { type: 'ring', i } (and 'lesson-start', the
 // first ring as the lesson starts), { type: 'hurt', what, hp },
 // { type: 'use', id, won? }, { type: 'land', speed, p, body? },
-// { type: 'abandon' }.
+// { type: 'abandon' }; and episode 8's { type: 'panels', id } (a strip
+// told), { type: 'launchEnd' }, { type: 'hit', kind, tower },
+// { type: 'carried', what }, { type: 'input' } (something pressed).
 
 import { PORTAL } from './foes';
 import { CALLS } from './lines';
@@ -60,7 +73,12 @@ const PLACES = {
   bridge: { p: [1150, 12, -440] }, // the middle bridge's deck
   coast: { p: [0, 30, COAST - 120] },
   sky: { p: [0, 2000, 1200] }, // the city from 2 km
+  plaza: { p: [30, 0, 45] }, // in front of the Guardians' hall, where the tower's top comes down
+  pad: { p: [1588, 0, -360] }, // the GDA's pad, where Cecil catches him
 };
+// Dad's hit in episode 8: from the porch toward the city, the way that goes
+// through three houses in the 411 m a Mach 1 launch carries him (./flight.js)
+export const HIT = [Math.sin((110 * Math.PI) / 180), 0, Math.cos((110 * Math.PI) / 180)];
 export const placeOf = (id) => PLACES[id] ?? null;
 
 // the way back from the Moon: three gates, a gentle curve to the top of
@@ -207,6 +225,24 @@ export const MISSIONS = [
     done: [['omni', 'Then we’ll talk again. Go inside, your mother’s waiting.']],
     achievement: 'season',
   },
+  {
+    id: 'ep8',
+    ep: 8,
+    title: 'Where I Really Come From',
+    colour: '#1b2a4a',
+    giver: 'omni',
+    start: { npc: 'omni', place: 'home', time: ['dusk', 'night'], after: ['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7'] },
+    intro: [['omni', 'Sit down, Mark. You’re old enough to hear what I am.']],
+    steps: [
+      step('beats', 'Hear him out', { panels: 'porch', marker: { npc: 'omni' } }),
+      step('launched', 'Get your bearings', { launch: { dir: HIT, speed: 343 } }),
+      step('hits', 'Land three blows on him across downtown', { kind: 'omniman', n: 3, spawn: [['omniman', 1, PLACES.downtown.p]], marker: { foe: true } }),
+      step('catchmany', 'The tower’s top: catch the people falling from it, or carry it away', { n: 12, time: 8, source: 'mission', rain: { at: PLACES.plaza.p, n: 12 }, marker: PLACES.plaza.p }),
+      step('sky', 'Up there with him', { panels: 'sky', quiet: 4 }),
+    ],
+    done: [['cecil', 'Got you. Easy, kid. You’re on the pad. You’re safe.']],
+    achievement: 'truth',
+  },
   // the radio's side calls (`side`): one at a time, when nothing else is on
   {
     id: 'chase',
@@ -258,11 +294,11 @@ export function startMission(id, now = 0) {
   const m = BY_ID[id];
   if (!m) return null;
   // (kos: who's been knocked out since it began, by foe id, and in which step)
-  return { id, step: 0, count: 0, t: 0, stepT: 0, shakeT: 0, hp: m.steps[0].hp ?? null, best: null, started: now, seen: { npcs: {}, car: null, p: null }, kos: {}, away: 0, done: false, fail: null };
+  return { id, step: 0, count: 0, t: 0, stepT: 0, shakeT: 0, hp: m.steps[0].hp ?? null, best: null, started: now, seen: { npcs: {}, car: null, p: null }, kos: {}, saved: 0, heard: false, still: 0, away: 0, done: false, fail: null };
 }
 
 // the step's `out` entry as it begins (what it needs set up: who to spawn, a car)
-const begin = (m, i) => ({ type: 'step', i, text: m.steps[i].text, spawn: m.steps[i].spawn ?? null, car: m.steps[i].car ?? null, wave: m.steps[i].wave ?? null, upto: m.steps[i].upto ?? null });
+const begin = (m, i) => ({ type: 'step', i, text: m.steps[i].text, spawn: m.steps[i].spawn ?? null, car: m.steps[i].car ?? null, wave: m.steps[i].wave ?? null, upto: m.steps[i].upto ?? null, panels: m.steps[i].panels ?? null, launch: m.steps[i].launch ?? null, rain: m.steps[i].rain ?? null });
 // the same for the step under way (the first one, just after startMission)
 export const stepOf = (p) => (p && !p.done && !p.fail && BY_ID[p.id]?.steps[p.step] ? begin(BY_ID[p.id], p.step) : null);
 
@@ -284,6 +320,8 @@ export function feedMission(prev, ev) {
     p.stepT = 0;
     p.shakeT = 0;
     p.away = 0;
+    p.heard = false;
+    p.still = 0;
     if (p.step >= m.steps.length) {
       p.done = true;
       p.best = p.t;
@@ -318,9 +356,15 @@ export function feedMission(prev, ev) {
       const dt = Math.min(0.05, Math.max(0, ev.dt || 0));
       p.t += dt;
       p.stepT += dt;
-      if (s.type === 'protect') {
+      if (s.type === 'protect' || s.type === 'catchmany') {
+        // (held long enough; or, at the plaza, the time's up: what's saved is saved)
         if (p.stepT >= s.time) next();
       } else if (s.time != null && p.stepT > s.time) fail(s.type === 'race' ? 'time' : 'late');
+      else if (s.type === 'sky' && p.heard) {
+        // after his words, nothing pressed for long enough: the answer
+        p.still += dt;
+        if (p.still >= s.quiet) next();
+      }
       else if (s.type === 'catch' && s.shake && s.beat && beatDone(s) && p.count < s.n) {
         // no quakes left to shake them off: the roof gives one up every so often
         p.shakeT += dt;
@@ -379,7 +423,31 @@ export function feedMission(prev, ev) {
       if (s.type === 'catch' && (!s.source || ev.source === s.source)) {
         count();
         if (p.count >= s.n && beatDone(s)) next();
+      } else if (s.type === 'catchmany' && ev.source === s.source) {
+        count();
+        p.saved = p.count;
+        if (p.count >= s.n) next();
       }
+      break;
+    case 'carried':
+      if (s.type === 'catchmany' && ev.what === 'chunk') next();
+      break;
+    case 'panels':
+      if (s.type === 'beats' && ev.id === s.panels) next();
+      else if (s.type === 'sky' && ev.id === s.panels) p.heard = true;
+      break;
+    case 'launchEnd':
+      if (s.type === 'launched') next();
+      break;
+    case 'hit':
+      if (s.type === 'hits' && ev.kind === s.kind) {
+        count();
+        out.push({ type: 'driven', tower: ev.tower ?? null });
+        if (p.count >= s.n) next();
+      }
+      break;
+    case 'input':
+      p.still = 0;
       break;
     case 'ko': {
       // each foe once (one with no id is its own), with the step it went down in
@@ -452,6 +520,16 @@ export function nextRadioCall(prev, dt, state = {}) {
   const call = pool[Math.floor(r() * pool.length)] ?? null;
   radio.last = call;
   return { radio, call };
+}
+
+// whether an episode can be started now: the ones it comes after done, and
+// at its time of day (the last two are Dad's, at home, after dark)
+export function canStart(id, { done = [], time = 'noon' } = {}) {
+  const m = BY_ID[id];
+  if (!m) return false;
+  const have = new Set(Array.isArray(done) ? done : []);
+  if (m.start?.after && !m.start.after.every((q) => have.has(q))) return false;
+  return !m.start?.time || m.start.time.includes(time);
 }
 
 // the next episode to play, or null once the season's done

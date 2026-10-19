@@ -530,3 +530,45 @@ describe('Atom Eve’s walls (./powers.js’s construct)', () => {
     expect(ev.filter((e) => e.type === 'walled')).toHaveLength(2);
   });
 });
+
+describe('Omni-Man, episode 8’s foe', () => {
+  const at = [0, groundAt(0, 60) + 40, 60];
+  const dad = (o = {}) => {
+    const f = spawnFoes(newFoes(), 'omniman', 1, at);
+    return { ...f, foes: [{ ...f.foes[0], ...o }] };
+  };
+  const mark = { p: [at[0], at[1], at[2] + 30], v: [0, 0, 0], mode: 'air' };
+  it('circles him, winds up and charges: the charge hurts, and throws him', () => {
+    const { ev, push } = run(dad(), mark, 8);
+    expect(ev.some((e) => e.type === 'windup' && e.kind === 'omniman')).toBe(true);
+    const hurt = ev.find((e) => e.type === 'hurt' && e.by === 'omniman');
+    expect(hurt.hp).toBe(100 - KINDS.omniman.chargeHurt);
+    expect(Math.hypot(...push)).toBeGreaterThan(20);
+  });
+  it('blocks a punch unless he’s recovering from a charge, and answers it; a punch then lands, and never knocks him out', () => {
+    const near = { ...mark, p: [at[0], at[1] - 1, at[2] + 2] };
+    let r = stepFoes(dad({ state: 'circle', p: [...at] }), near, { punch: true, look: [0, 0, -1] }, 1 / 30);
+    expect(r.ev).toContainEqual(expect.objectContaining({ type: 'parried', id: 0 }));
+    expect(r.ev.find((e) => e.type === 'hurt').hp).toBe(100 - KINDS.omniman.counter);
+    let f = dad({ state: 'recover', t: 1, p: [...at] });
+    for (let i = 0; i < 40; i++) {
+      r = stepFoes(f, near, { punch: true, look: [0, 0, -1] }, 1 / 30);
+      f = { ...r.foes, cool: 0, foes: r.foes.foes.map((e) => ({ ...e, state: 'recover', t: 1, p: [...at] })) };
+      expect(r.ev.some((e) => e.type === 'ko')).toBe(false);
+    }
+    expect(f.foes[0].hits).toBeGreaterThanOrEqual(30);
+  });
+  it('catches a car thrown at him and throws it back', () => {
+    const f = { ...dad({ state: 'circle', p: [...at] }), cars: [{ id: 1, p: [at[0], at[1] + 1, at[2] + 4], v: [0, 0, -40], held: null, away: true, life: 3 }] };
+    let r = stepFoes(f, mark, idle, 1 / 30);
+    expect(r.foes.cars[0].held).toBe(0);
+    const ev = [];
+    let g = r.foes;
+    for (let s = 0; s < 2; s += 1 / 30) {
+      r = stepFoes(g, mark, idle, 1 / 30);
+      g = r.foes;
+      ev.push(...r.ev);
+    }
+    expect(ev.some((e) => e.type === 'carHit')).toBe(true);
+  });
+});

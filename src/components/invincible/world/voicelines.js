@@ -5,7 +5,7 @@
 // voice.
 import { CALLS, HERO_LINES, LINES, RINGS_DONE } from './lines';
 
-export const VOICE = { debbie: 'debbie', cecil: 'cecil', eve: 'eve', omni: 'omniman', omniman: 'omniman', allen: 'allen', thragg: 'thragg', manager: 'invcitizen', student: 'invcitizen', fan: 'invcitizen' };
+export const VOICE = { debbie: 'debbie', debbieAfter: 'debbie', cecil: 'cecil', eve: 'eve', omni: 'omniman', omniman: 'omniman', allen: 'allen', thragg: 'thragg', manager: 'invcitizen', student: 'invcitizen', fan: 'invcitizen' };
 
 export const VOICELINES = [
   ...Object.entries(LINES).flatMap(([who, lines]) => lines.map((text) => ({ who: VOICE[who], text }))),
