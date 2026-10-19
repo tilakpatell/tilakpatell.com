@@ -85,16 +85,26 @@ describe('the chase kind: shake the Federation ship through the rings', () => {
     g = stepChase(g, { flying: true, at: g.at, hit: 2 }, DT);
     expect(g.phase).toBe('lost');
     expect(types(g)).toEqual(['hit', 'hit', 'lost']);
+    expect(g.events.at(-1)).toEqual({ type: 'lost', grounded: false });
     const next = stepChase(g, { flying: true, at: g.at, hit: 1 }, DT);
     expect(next).toMatchObject({ phase: 'idle', next: 0, hits: 0 });
     expect(next.events).toEqual([]);
   });
 
-  it('is lost when the deflectors go and the engines cut', () => {
+  it('is lost when the deflectors go and the engines cut, and says that was why', () => {
     const { g } = through(newChase(), 0);
-    const down = stepChase(g, { flying: true, at: g.at, grounded: true }, DT);
+    const down = stepChase(stepChase(g, { flying: true, at: g.at, hit: 1 }, DT), { flying: true, at: g.at, grounded: true }, DT);
     expect(down.phase).toBe('lost');
-    expect(types(down)).toEqual(['lost']);
+    expect(down.events).toEqual([{ type: 'lost', grounded: true }]);
+    // three hits: the hits were why, even if the third took the deflectors too
+    const hits = stepChase(g, { flying: true, at: g.at, hit: 3, grounded: true }, DT);
+    expect(hits.events.at(-1)).toEqual({ type: 'lost', grounded: false });
+  });
+
+  it('starts no run while the engines are out, a cruiser coasting through the first ring or not', () => {
+    const { g, seen } = through(newChase(), 0, { grounded: true });
+    expect(g.phase).toBe('idle');
+    expect(seen).toEqual([]);
   });
 
   it('ends quietly when the cruiser lands, or the patrol goes down', () => {
@@ -155,7 +165,7 @@ describe('what the chase’s events have C-137 do (RmWorld hands it the calls)',
     const did = [];
     const to = {
       now: 7,
-      fight: { chase: (on, now) => did.push(['chase', on, now]), clear: () => did.push(['clear']) },
+      fight: { chase: (on, now, keep = 0) => did.push(['chase', on, now, keep]), clear: () => did.push(['clear']) },
       ship: (kind) => did.push(['ship', kind]),
       note: (text) => did.push(['note', text]),
       complete: (id) => did.push(['complete', id]),
@@ -167,17 +177,22 @@ describe('what the chase’s events have C-137 do (RmWorld hands it the calls)',
   it('turns the patrol on the cruiser at the start, and the cruiser says so', () => {
     const { did, to } = record();
     chaseCalls([{ type: 'start' }, { type: 'ring', n: 0 }], to);
-    expect(did).toEqual([['chase', true, 7], ['ship', 'chase']]);
+    expect(did).toEqual([['chase', true, 7, 0], ['ship', 'chase']]);
   });
-  it('lets the patrol go at a win, and the cruiser’s ticked and the story told', () => {
+  it('lets the patrol go at a win, held through the rest (shots still in the air take nothing), and the cruiser’s ticked and the story told', () => {
     const { did, to } = record();
     chaseCalls([{ type: 'ring', n: 5 }, { type: 'won', t: 20 }], to);
-    expect(did).toEqual([['chase', false, 7], ['ship', 'shaken'], ['complete', 'fly'], ['tell', { type: 'win', game: 'chase' }]]);
+    expect(did).toEqual([['chase', false, 7, TUNING.rest], ['ship', 'shaken'], ['complete', 'fly'], ['tell', { type: 'win', game: 'chase' }]]);
   });
   it('lets the patrol go at a loss, its shots cleared, a word said, and the run started again', () => {
     const { did, to } = record();
-    chaseCalls([{ type: 'hit', left: 0 }, { type: 'lost' }], to);
-    expect(did).toEqual([['chase', false, 7], ['clear'], ['note', SAYS.lost], ['again']]);
+    chaseCalls([{ type: 'hit', left: 0 }, { type: 'lost', grounded: false }], to);
+    expect(did).toEqual([['chase', false, 7, 0], ['clear'], ['note', SAYS.lost], ['again']]);
+  });
+  it('lets the patrol go when the engines cut, says so, and leaves the cruiser to come down where it is', () => {
+    const { did, to } = record();
+    chaseCalls([{ type: 'hit', left: 1 }, { type: 'lost', grounded: true }], to);
+    expect(did).toEqual([['chase', false, 7, 0], ['clear'], ['note', SAYS.grounded]]);
   });
   it('says why there’s no run with the patrol down, and lets it go quietly when a run’s off', () => {
     const waited = record();
@@ -185,7 +200,7 @@ describe('what the chase’s events have C-137 do (RmWorld hands it the calls)',
     expect(waited.did).toEqual([['note', SAYS.wait]]);
     const off = record();
     chaseCalls([{ type: 'off' }], off.to);
-    expect(off.did).toEqual([['chase', false, 7]]);
+    expect(off.did).toEqual([['chase', false, 7, 0]]);
   });
 });
 

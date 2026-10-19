@@ -12,7 +12,7 @@
 //   stepChase(game, input, dt) → game
 //     input: { at: { x, y, z } (the cruiser), flying, hit (the patrol's hits
 //     this step), down (the patrol shot down), grounded (the engines out) }
-//     events: start | ring { n } | hit { left } | won { t } | lost | wait | off
+//     events: start | ring { n } | hit { left } | won { t } | lost { grounded } | wait | off
 //   shaken(game) → whether the patrol's keeping off after a win
 //   chaseReadout(game) → { on, vitals, line }   for the HUD's meter
 //   chaseGoal(game) → { x, z } of the next ring, for the map
@@ -44,6 +44,7 @@ export const COURSE = Object.freeze([
 export const SAYS = {
   lost: 'Three hits and the Federation ship had you: back to the first ring.',
   wait: 'No Federation ship to shake: the next one’s round in a minute.',
+  grounded: 'The deflectors went and the engines with them: the first ring again once they’re back.',
 };
 
 const BACK = 12; // metres before the first ring a lost run starts again
@@ -83,7 +84,8 @@ export function stepChase(prev, input = {}, dt = 1 / 60) {
   }
   const passed = Boolean(from) && passes(g.rings[g.next], from, g.at);
   if (g.phase === 'idle') {
-    if (!passed) return g;
+    // (the engines out, a cruiser coasting through starts nothing)
+    if (!passed || grounded) return g;
     if (down) {
       g.events.push({ type: 'wait' });
       return g;
@@ -105,7 +107,7 @@ export function stepChase(prev, input = {}, dt = 1 / 60) {
   }
   if (g.hits >= g.max || grounded) {
     g.phase = 'lost';
-    g.events.push({ type: 'lost' });
+    g.events.push({ type: 'lost', grounded: g.hits < g.max });
     return g;
   }
   if (passed) {
@@ -139,24 +141,27 @@ export function chaseStart(g) {
 }
 
 // start: the patrol turned on the cruiser, and the cruiser says so; won: the
-// patrol let go, the cruiser's word, the fly task ticked and the story told;
-// lost: the patrol let go, its shots cleared, a word, and the run started
-// again before the first ring; wait: why there's no run; off: the patrol let go
+// patrol let go (held through the rest, so the shots still in the air don't
+// turn it), the cruiser's word, the fly task ticked and the story told; lost:
+// the patrol let go, its shots cleared, a word, and the run started again
+// before the first ring (lost with the engines out, the cruiser comes down
+// where it is, and the first ring's lit for when they're back); wait: why
+// there's no run; off: the patrol let go
 export function chaseCalls(events, to) {
   for (const e of events) {
     if (e.type === 'start') {
       to.fight.chase(true, to.now);
       to.ship('chase');
     } else if (e.type === 'won') {
-      to.fight.chase(false, to.now);
+      to.fight.chase(false, to.now, TUNING.rest);
       to.ship('shaken');
       to.complete('fly');
       to.tell({ type: 'win', game: 'chase' });
     } else if (e.type === 'lost') {
       to.fight.chase(false, to.now);
       to.fight.clear();
-      to.note(SAYS.lost);
-      to.again();
+      to.note(e.grounded ? SAYS.grounded : SAYS.lost);
+      if (!e.grounded) to.again();
     } else if (e.type === 'wait') to.note(SAYS.wait);
     else if (e.type === 'off') to.fight.chase(false, to.now);
   }
