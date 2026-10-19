@@ -3,7 +3,7 @@ import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
 import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
-import { earnStone, hasEarned } from '../hq/stones';
+import { earnStone, hasEarned, recordTry } from '../hq/stones';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
 import { useGame3D } from '../hq/useGame3D';
@@ -89,6 +89,7 @@ export default function HoldTheLawn({ fallback }) {
   const begin = useCallback(
     (open) => {
       audioContext(); // in the click, so the thunder can be heard
+      recordTry('thor');
       game.current = newLawn({ seed: newSeed() });
       const ev = open(game.current);
       acc.current = 0;

@@ -3,7 +3,7 @@ import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
 import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
-import { earnStone, hasEarned } from '../hq/stones';
+import { earnStone, hasEarned, recordTry } from '../hq/stones';
 import { HALF_OF } from '../world/labels';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
@@ -66,6 +66,7 @@ export default function TrickShot({ fallback }) {
     (round) => {
       audioContext(); // in the click, so the bow can be heard
       if (round === 0) {
+        recordTry('hawkeye'); // (rounds 2 and 3 are the same try)
         game.current = newRange({ seed: newSeed() });
         fxState.current.walled = false;
       }

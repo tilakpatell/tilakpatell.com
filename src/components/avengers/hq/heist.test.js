@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { createSaves } from '../../../runtime/saves';
 import { PLACES } from '../world/rules';
@@ -90,5 +91,42 @@ describe('the heist summary', () => {
       expect(t).not.toMatch(/["']/);
       expect(t).not.toMatch(/\.$/);
     }
+  });
+});
+
+const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+// a component's `const <fn> = useCallback(`, up to its next declaration
+const bodyOf = (src, fn) => {
+  const at = src.indexOf(`const ${fn} = useCallback(`);
+  return at < 0 ? '' : src.slice(at, src.indexOf('\n  const ', at + 1));
+};
+// [place id, file, the callback a run starts in, recordTry calls in the file]
+const STARTS = [
+  ['stark', 'repulsor/RepulsorRange.jsx', 'start', 1],
+  ['thor', 'lawn/HoldTheLawn.jsx', 'begin', 1],
+  ['cap', 'ricochet/Ricochet.jsx', 'enter', 1],
+  ['hawkeye', 'trickshot/TrickShot.jsx', 'begin', 1],
+  ['widow', 'widow/Infiltration.jsx', 'enter', 2],
+  ['banner', 'smash/SmashRun.jsx', 'start', 1],
+  ['spidey', 'thwip/Thwip.jsx', 'start', 1],
+  ['vault', 'tesseract/TesseractRun.jsx', 'start', 1],
+];
+
+describe('every game', () => {
+  it('counts a try where its run starts', () => {
+    expect([...new Set(STARTS.map(([id]) => id))]).toEqual(HEIST_GAMES);
+    for (const [id, file, fn, calls] of STARTS) {
+      const src = read(file);
+      expect(bodyOf(src, fn), file).toContain(`recordTry('${id}')`);
+      expect(src.split('recordTry(').length - 1, file).toBe(calls);
+    }
+  });
+  it('counts no try for a click that starts nothing new', () => {
+    const repulsor = read('repulsor/RepulsorRange.jsx');
+    const guard = repulsor.indexOf('if (!startable(stage.status)) return;');
+    expect(guard).toBeGreaterThan(-1);
+    expect(repulsor.indexOf("recordTry('stark')")).toBeGreaterThan(guard);
+    expect(bodyOf(read('trickshot/TrickShot.jsx'), 'begin')).toMatch(/if \(round === 0\) \{[^}]*recordTry\('hawkeye'\)/);
+    expect(read('widow/Infiltration.jsx')).toMatch(/recordTry\('widow'\);\s*game\.current = newLevel\(g\.index\)/);
   });
 });

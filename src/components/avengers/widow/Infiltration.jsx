@@ -3,7 +3,7 @@ import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
 import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
-import { earnStone, hasEarned } from '../hq/stones';
+import { earnStone, hasEarned, recordTry } from '../hq/stones';
 import { HALF_OF } from '../world/labels';
 import { useAchievements } from '../../Achievements';
 import { useGame3D } from '../hq/useGame3D';
@@ -72,6 +72,7 @@ export default function Infiltration({ fallback }) {
   const enter = useCallback(
     (i) => {
       audioContext(); // in the click, so the first sound can be heard
+      recordTry('widow');
       timers.current.forEach(clearTimeout);
       game.current = newLevel(i);
       setIndex(i);
@@ -123,6 +124,8 @@ export default function Infiltration({ fallback }) {
             timers.current.push(
               setTimeout(
                 () => {
+                  // (caught: the level starts again, and that's a try)
+                  recordTry('widow');
                   game.current = newLevel(g.index);
                   fx.current.alert = null;
                   busyUntil.current = 0;
