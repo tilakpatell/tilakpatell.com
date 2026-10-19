@@ -7,7 +7,7 @@
 // What the original says of itself:
 //
 // What the crews' ship powers look like (shipPowers.js says what they do;
-// the scene's glue, galaxy/powers.js, says where and when): Artoo's
+// the scene's glue, powers.js, says where and when): Artoo's
 // torpedoes, hot orange streaks; Rick's death ray, a green beam with light
 // crawling down it; the RV's magnet, rings of blue spinning round the point
 // it drags the fighters to; Walt's crystal, a spinning blue gem; and its
