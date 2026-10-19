@@ -148,3 +148,11 @@
 .hq-card-best { margin: 0; color: var(--muted); }
 .hq-card-acts { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: auto; padding-top: 0.75rem; }
 @media (pointer: coarse) { .hq-card-acts .btn { min-height: 44px; } }
+
+/* the Avengers page’s Archive: one closed section, a plain chevron to open it */
+.hq-archive > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; min-height: 44px; cursor: pointer; list-style: none; }
+.hq-archive > summary::-webkit-details-marker { display: none; }
+.hq-archive > summary::before { content: ''; flex: none; width: 0.5rem; height: 0.5rem; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform 0.2s ease; }
+.hq-archive[open] > summary::before { transform: rotate(45deg); }
+.hq-archive > summary:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 4px; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) { .hq-archive > summary::before { transition: none; } }
