@@ -62,7 +62,8 @@ const TABLE = {
   moria: [L({ el: 0.25, az: Math.PI - 0.5, colour: GREY, ambient: 0.3, fog: [0.62, 0.66, 0.72], density: 0.004 }), { el: 0.3, ambient: 0.32, fog: [0.66, 0.7, 0.74], density: 0.003 }],
   lorien: [L({ el: 0.3, colour: GOLD, ambient: 0.4, fog: [0.9, 0.8, 0.55], density: 0.003 }), { el: 0.05, ambient: 0.25, fog: [0.7, 0.72, 0.75], density: 0.004 }],
   anduin: [L({ el: 0.3, colour: GREY, ambient: 0.32, fog: [0.66, 0.68, 0.7], density: 0.004 }), { el: 0.25, ambient: 0.3, fog: [0.62, 0.64, 0.66], density: 0.005 }],
-  marshes: [L({ el: 0.2, colour: GREY, ambient: 0.22, fog: [0.5, 0.52, 0.5], density: 0.012 }), { el: 0.15, ambient: 0.15, fog: [0.32, 0.3, 0.3], density: 0.008, pall: 0.5 }],
+  // (the eye opened a little: black mud and dead reeds with the low sun ahead read as nothing at 1)
+  marshes: [L({ el: 0.2, colour: GREY, ambient: 0.22, fog: [0.5, 0.52, 0.5], density: 0.012, exposure: 1.35 }), { el: 0.15, ambient: 0.15, fog: [0.32, 0.3, 0.3], density: 0.008, pall: 0.5, exposure: 1.35 }],
   ithilien: [L({ el: 0.5, colour: WARM, ambient: 0.38, fog: [0.72, 0.8, 0.72], density: 0.003 }), { el: 0.1, ambient: 0.1, fog: [0.2, 0.18, 0.2], density: 0.006, pall: 0.8 }],
   'cirith-ungol': [L({ el: -0.2, colour: RED, ambient: 0.06, fog: [0.08, 0.07, 0.08], density: 0.008, pall: 0.8 }), { el: -0.1, ambient: 0.08, fog: [0.2, 0.08, 0.05], density: 0.006, pall: 0.85 }],
   gorgoroth: [L({ el: 0.1, colour: RED, ambient: 0.12, fog: [0.3, 0.1, 0.05], density: 0.008, pall: 0.9 }), { el: 0.2, ambient: 0.2, fog: [0.4, 0.3, 0.28], density: 0.006, pall: 0.5 }],
