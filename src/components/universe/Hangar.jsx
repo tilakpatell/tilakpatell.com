@@ -1,6 +1,7 @@
-// The way into the Shipyard (shipyard/Shipyard.jsx): the button in the
-// map's corner beside the flight settings. The yard itself fills the page
-// and takes H and Escape; this is only the door.
+// The way into the Hangar (components/hangar: the crew, the arms, the powers
+// and the shipyard): the button in the map's corner beside the flight
+// settings. The Hangar itself fills the page and takes H, C and Escape;
+// this is only the door.
 
 export default function Hangar({ open, onOpen }) {
   return (
@@ -9,8 +10,8 @@ export default function Hangar({ open, onOpen }) {
       className="universe-hangar-btn"
       aria-expanded={open}
       aria-haspopup="dialog"
-      aria-label="Shipyard: build, paint and parts"
-      title="Shipyard: build, paint and parts (H)"
+      aria-label="Hangar: crew, arms, powers and the shipyard"
+      title="Hangar: crew, arms, powers and the shipyard (H)"
       aria-keyshortcuts="H"
       onClick={() => onOpen(!open)}
     >

@@ -27,6 +27,9 @@ import '../../middleearth/towns/bree/bree.css';
 import Wardrobe from '../wardrobe/Wardrobe';
 import { useLooks } from '../wardrobe/useLooks';
 import './citadel.css';
+import RmEarnNote from '../RmEarnNote';
+import { useRmEarn } from '../useRmEarn';
+import { seedsOf } from '../earn';
 import GuideCue from '../../guide/GuideCue';
 import { useTravellers } from '../../middleearth/towns/useTravellers';
 import LoadingVeil from '../../worlds/LoadingVeil';
@@ -103,6 +106,8 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137' }) 
   const prog = citadelProgress(done);
   const [gl, setGl] = useState('loading'); // loading | on | failed | lost
   const { unlock } = useAchievements();
+  // (a quest done pays into the one wallet, once: useRmEarn's ledger knows what the save had)
+  const { earn, note: earned } = useRmEarn(() => seedsOf('citadel', done));
   const complete = useCallback(
     (id) => {
       setDone((d) => {
@@ -111,13 +116,15 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137' }) 
         local.set(DONE, next);
         return next;
       });
+      earn('citadel', id);
       if (SEAL[id]) unlock(SEAL[id]);
     },
-    [unlock],
+    [unlock, earn],
   );
   const world = three.on && gl !== 'failed' && gl !== 'lost';
   return (
     <section className="shire-world citadel-world" aria-labelledby="citadel-title" data-mode={world ? '3d' : 'cards'}>
+      <RmEarnNote note={earned} />
       {world ? <World prog={prog} done={done} complete={complete} gl={gl} setGl={setGl} onLeave={onLeave} leaveLabel={leaveLabel} /> : <Cards prog={prog} three={three} gl={gl} retry={() => setGl('loading')} />}
     </section>
   );

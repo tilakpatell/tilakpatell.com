@@ -1,7 +1,9 @@
-// The crews' ship powers in the galaxy: universe/shipPowers.js says what
-// each does and when it's on, universe/powerFx.js draws them, and this plays
-// them out in the scene (scene.js hands it its pieces and calls it at the
-// moments that matter, so the scene itself only grows by the calls).
+// The crews' ship powers in a scene that flies the universe's ships (the
+// universe map, and the galaxy through shared/flying.js): shipPowers.js says
+// what each does and when it's on, powerFx.js draws them, and this plays
+// them out in the scene (the scene hands it its pieces and calls it at the
+// moments that matter, so the scene itself only grows by the calls). A
+// scene with no war hands `war: null`.
 //
 // - Force Focus: the hunters' clock and the war's battle's at a third, the
 //   guns' help onto the lead and the nose's tracking of the lock turned up
@@ -36,7 +38,7 @@
 // another crew starts from nothing.
 //
 // createGalaxyPowers({ parent, reduced, hunters, war, bolts, flashes, crashFx, pops, post, state, emit, strike, scored, teleport, controls })
-//   → { setCrew(kind), press(slot) → { ok, id } or { ok: false, why }, gain(what, key), pickup(), mods, aim(own),
+//   → { setCrew(kind, { fx, picks }), press(slot) → { ok, id } or { ok: false, why }, gain(what, key), pickup(), mods, aim(own),
 //       shipFor(live), warOpts, hold, afterStep(ship, dt) → ship, roll, hidden, frame(dt, live),
 //       cancel(), place(el, on), view, info, busy, keep(), fill(), dispose() }
 // state: the scene's (its ship, lock, world, space, keys and stick, and the
@@ -45,13 +47,14 @@
 // put there, the camera with it.
 
 import * as THREE from 'three';
-import { KEPT_KEY, POWERS, aimHelp, beamOf, blastPunch, cancel as cancelAll, clearOfSolids, createPowers, crossesShell, finish, firstAlong, gain as charge, hasten, isObjective, isOn, jinkStep, mods as modsOf, pickTargets, portalExit, press as pressSlot, readCooling, readKept, shotAt, step, turretPick, view as viewOf, writeKept } from '../universe/shipPowers';
-import { createPowerFx } from '../universe/powerFx';
-import { steer } from '../universe/weapons';
-import { assist, dirTo, intercept, nose } from '../universe/targeting';
-import { LASER } from './fx';
+import { KEPT_KEY, POWERS, aimHelp, beamOf, blastPunch, cancel as cancelAll, clearOfSolids, createPowers, crossesShell, finish, firstAlong, gain as charge, hasten, isObjective, isOn, jinkStep, mods as modsOf, pickTargets, portalExit, press as pressSlot, readCooling, readKept, retune, shotAt, step, turretPick, view as viewOf, writeKept } from './shipPowers';
+import { createPowerFx } from './powerFx';
+import { steer } from './weapons';
+import { assist, dirTo, intercept, nose } from './targeting';
 
 const SLOTS = ['primary', 'ultimate'];
+// Chewie's bolts off the quad guns: the Rebellion's red, hot enough to bloom (galaxy/fx.js's LASER.rebel; a scene may hand its own as `laser`)
+const REBEL_LASER = [5.8, 0.75, 0.55];
 const BIG = 3; // kills from one big one that make a big haul (the crew's line for it)
 const KEEP_EVERY = 2; // seconds between writes of the charge to the session
 const SPARKS = 0.07; // seconds between the magnet's sparks
@@ -87,7 +90,7 @@ const session = {
   },
 };
 
-export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flashes, crashFx, pops, post, state, emit, strike, scored, teleport, controls }) {
+export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flashes, crashFx, pops, post, state, emit, strike, scored, teleport, controls, laser = REBEL_LASER }) {
   // (with motion reduced there are no hunters or battles to use them on: no powers)
   const fx = reduced || !hunters ? null : createPowerFx(parent);
   let st = null;
@@ -224,7 +227,7 @@ export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flash
         from = to;
         to = { x: a.x + (t.v[0] / speed) * 0.5, y: a.y + (t.v[1] / speed) * 0.5, z: a.z + (t.v[2] / speed) * 0.5 };
       }
-      const hit = kill(strike(from, to, P.punch, { vel: t.v, pilots: false, warPunch: warPunch(from, to, P.punch, P.sub, dt), by: 'salvo' }));
+      const hit = kill(strike(from, to, P.punch * big, { vel: t.v, pilots: false, warPunch: warPunch(from, to, P.punch * big, P.sub * big, dt), by: 'salvo' }));
       if (hit || t.life <= 0) {
         if (!hit) flashes.at(v1.set(t.x, t.y, t.z), { size: 0.35, color: [2.6, 1.1, 0.35], life: 0.4 });
         run.torps.splice(i, 1);
@@ -265,7 +268,7 @@ export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flash
       const was = gen;
       const origin = { x: from.x, y: from.y, z: from.z };
       bolts.fire(from, v2, {
-        color: LASER.rebel,
+        color: laser,
         speed: P.speed,
         width: 0.045,
         length: 2.2,
@@ -273,13 +276,13 @@ export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flash
           ? () => {
               if (was !== gen) return;
               if (src === 'hunters') {
-                const r = hunters.damage(t.id, P.punch);
+                const r = hunters.damage(t.id, P.punch * big);
                 if (r) scored(kill(r), { src, by: 'quad' });
                 return;
               }
               // (one of the war's, if it's still up: one shot down comes back
               // as the same one, but seconds later, long after a bolt's landed)
-              if (warNow().includes(t)) warStrike(t, origin, P.punch, 'quad');
+              if (warNow().includes(t)) warStrike(t, origin, P.punch * big, 'quad');
             }
           : null,
       });
@@ -314,7 +317,7 @@ export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flash
     r.tick -= dt;
     if (r.tick <= 0) {
       r.tick += P.tick;
-      const hit = kill(strike(b.from, b.to, P.punch, { pilots: false, warPunch: warPunch(b.from, b.to, P.punch, P.sub, P.tick), by: 'wubba' }));
+      const hit = kill(strike(b.from, b.to, P.punch * big, { pilots: false, warPunch: warPunch(b.from, b.to, P.punch * big, P.sub * big, P.tick), by: 'wubba' }));
       r.reach = hit ? apart(b.from, hit.at) : P.length;
     }
     const n = nose(state.ship);
@@ -351,14 +354,14 @@ export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flash
     for (const t of huntersNow()) {
       const d = apart(t.at, at);
       if (d > P.radius) continue;
-      const r = hunters.damage(t.id, blastPunch(d, P));
+      const r = hunters.damage(t.id, blastPunch(d, P) * big);
       if (r) scored(kill(r), { src: 'hunters', normal: v2.set(t.at.x - at.x, t.at.y - at.y + 1, t.at.z - at.z).normalize(), by: 'heisenberg' });
     }
     // the war's battle: each of its within reach, a shot at it from the
     // blast through its own hit() (the cut on its objectives)
     for (const t of [...warNow()]) {
       const d = apart(t.at, at);
-      if (d <= P.radius) warStrike(t, at, blastPunch(d, P) * (isObjective(t) ? P.sub : 1), 'heisenberg');
+      if (d <= P.radius) warStrike(t, at, blastPunch(d, P) * big * (isObjective(t) ? P.sub : 1), 'heisenberg');
     }
     run.crystal = null;
     done('ultimate');
@@ -398,13 +401,30 @@ export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flash
 
   let bar = { root: null };
   let denied = null; // { slot, why, until }: the last refusal, while the tile still says why
+  let crewSig = null; // (the crew, skills and picks the state was made for)
+  let big = 1; // the skill tree's overcharge: the big ones' punch
   return {
-    setCrew(kind) {
-      if ((st?.crew ?? null) === (kind ?? null)) return;
+    // the crew flying, with the skill tree's effects and the pair it carries
+    // (hangar/skills's fx and shipPowers.js's picksFor): a crew change starts
+    // from nothing; new skills or picks for the same crew are taken in place
+    // (shipPowers.js's retune: what's on runs on, the charge and the cooldown
+    // kept; only a power that's on whose slot is given another ends)
+    setCrew(kind, { fx: skillFx = null, picks = null } = {}) {
+      const sig = JSON.stringify([kind ?? null, skillFx, picks]);
+      if (sig === crewSig) return;
+      const same = (st?.crew ?? null) === (kind ?? null);
+      crewSig = sig;
+      big = Number.isFinite(skillFx?.bigPunch) && skillFx.bigPunch > 0 ? skillFx.bigPunch : 1;
+      if (same && st) {
+        if (retune(st, { fx: skillFx, picks }).cut) clearRun();
+        m = modsOf(st);
+        this.keep();
+        return;
+      }
       denied = null;
       clearRun();
       const kept = session.get();
-      st = fx && kind ? createPowers(kind, { charge: readKept(kept, kind), cool: readCooling(kept, kind, Date.now()) }) : null;
+      st = fx && kind ? createPowers(kind, { charge: readKept(kept, kind), cool: readCooling(kept, kind, Date.now()), fx: skillFx, picks }) : null;
       m = modsOf(st);
       this.keep(); // (another crew's charge gone at once: a crew change starts from nothing, and stays so if you change back)
     },
@@ -542,7 +562,7 @@ export function createGalaxyPowers({ parent, reduced, hunters, war, bolts, flash
       if (root !== bar.root) {
         const q = (slot) => root?.querySelector(`[data-slot="${slot}"]`) ?? null;
         const part = (slot, sel) => q(slot)?.querySelector(sel) ?? null;
-        bar = { root, on: null, slots: Object.fromEntries(SLOTS.map((slot) => [slot, q(slot)])), small: Object.fromEntries(SLOTS.map((slot) => [slot, part(slot, 'small')])), state: Object.fromEntries(SLOTS.map((slot) => [slot, part(slot, '.ship-power-state')])), sig: {} };
+        bar = { root, on: null, slots: Object.fromEntries(SLOTS.map((slot) => [slot, q(slot)])), small: Object.fromEntries(SLOTS.map((slot) => [slot, part(slot, 'small')])), state: Object.fromEntries(SLOTS.map((slot) => [slot, part(slot, '.hud-power-state')])), sig: {} };
       }
       if (!root) return;
       const shown = Boolean(on && st);

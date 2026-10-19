@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { createGhosts } from './ghosts';
+import { ALLY_HALO, GHOST_HALO, createGhosts } from './ghosts';
 import { releaseCast, setCastSource, tickCast } from '../cast3d';
 import { makePerson } from '../shire/people';
 import { meshyRig } from '../../../lib/three/meshyRig.fixture';
@@ -73,6 +73,21 @@ describe('the ghosts', () => {
     p.emote = null;
     ghosts.update([p], 0.4, dt);
     expect(got.at(-1).emote).toBeNull();
+    ghosts.dispose();
+  });
+
+  it('an ally’s ghost wears the ally green, and a stranger’s the pale blue, as the roster changes', () => {
+    const ghosts = createGhosts({ make, animate: () => {} });
+    const p = { id: 'abc', name: 'Sam', x: 0, z: 0, face: 0, moving: false, ally: false };
+    ghosts.update([p], 0, 0.1);
+    const halo = ghosts.group.children[0].children.find((o) => o.geometry?.type === 'RingGeometry');
+    expect(halo.material.color.getHex()).toBe(GHOST_HALO);
+    p.ally = true;
+    ghosts.update([p], 0.1, 0.1);
+    expect(halo.material.color.getHex()).toBe(ALLY_HALO);
+    p.ally = false;
+    ghosts.update([p], 0.2, 0.1);
+    expect(halo.material.color.getHex()).toBe(GHOST_HALO);
     ghosts.dispose();
   });
 

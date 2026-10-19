@@ -24,6 +24,7 @@ import { disposeTree } from '../../lib/three/renderer';
 import { gltfLoader } from '../../lib/three/gltf';
 import { loadTexture, sharpen, sharpenMaterial } from '../../lib/three/textures';
 import { device } from '../../lib/device';
+import { ghostNodeMaterial } from '../middleearth/shared/ghostNodes';
 import { AIR, airMaterial, beamMaterial, classicOutput, cloudMaterial, globeMaterial, skyMaterial, trailMaterial } from './nodes';
 import { CLOUD_ALT, HOME_V, STAMPS, TRAIL as LOG, cross, placeById, routeArc, unit, unpackPose } from './rules';
 
@@ -317,8 +318,11 @@ export function createEarth(renderer, { small = false, lost = () => false, compi
 
   // ── the other pilots ──
   // each a pale plane with a glow and a name that keep their size on the
-  // screen, eased towards where they said they were, gone when they are
-  const ghostMat = new THREE.MeshStandardMaterial({ color: 0xcfe0ff, emissive: 0x6a8cff, emissiveIntensity: 0.8, roughness: 0.5, transparent: true, opacity: 0, depthWrite: false });
+  // screen, eased towards where they said they were, gone when they are; the
+  // towns' ghost pale and rim of light, in nodes (middleearth/shared/
+  // ghostNodes.js: the same ghost on this renderer as on the classic one),
+  // its glow a little up, for a plane seen small against the globe
+  const ghostMat = ghostNodeMaterial({ glowStrength: 0.8 });
   const ghosts = new Map();
   const makeGhost = (p) => {
     const g = new THREE.Group();

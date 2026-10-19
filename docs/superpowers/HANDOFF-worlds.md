@@ -32,7 +32,7 @@ The universe’s walkable worlds other than Star Wars: Middle-earth’s chapters
 
 ### Cybertron
 
-`src/components/cybertron/game/`: `rules.js`, `areas/` (Iacon, Team Prime’s base, Jasper, Kaon), `sim.js` (a run through every mission under test), `stage/`, `GameWorld.jsx`. Twelve missions with achievements, a side to pick, the Matrix of Leadership with Shockwave as a boss, Megatron’s tank cycle and every Decepticon’s change on one table (`FORMS`, clips in `catalog.js`), Metroplex waking on the skyline, Barricade ramming, the autorig for robots that came without a skeleton, hp that mends, a fuzz test over every area (`fuzz.test.js`). The planet at war is `src/components/cybertron/skin.js` and `war.js`, maps from `scripts/build-cybertron-planet.mjs`; the models come through `scripts/sketchfab-cybertron.mjs`. Dev hook: `window.__CY__` (`go(area)`, `sim`).
+`src/components/cybertron/game/`: `rules.js`, `areas/` (Iacon, Team Prime’s base, Jasper, Kaon), `sim.js` (a run through every mission under test), `stage/`, `GameWorld.jsx`. Twelve missions with achievements, a side to pick, the Matrix of Leadership with Shockwave as a boss, Megatron’s tank cycle and every Decepticon’s change on one table (`FORMS`, clips in `catalog.js`), Metroplex waking on the skyline, Barricade ramming, the autorig for robots that came without a skeleton, hp that mends, a fuzz test over every area (`fuzz.test.js`). The others online walk each area as pale heroes, the area’s Optimus or Megatron stand-in baked to one mesh, their vehicle while they drive (`ghosts.js`, `useTravellers('cybertron')`, the chip in the Menu); the page keeps its pointers, since the world is a section of it. The planet at war is `src/components/cybertron/skin.js` and `war.js`, maps from `scripts/build-cybertron-planet.mjs`; the models come through `scripts/sketchfab-cybertron.mjs`. Dev hook: `window.__CY__` (`go(area)`, `sim`).
 
 ### Dimension C-137, the dial and the Citadel
 
@@ -52,7 +52,7 @@ Ten kitchens, one per chapter, played online (`src/components/middleearth/rush/`
 
 ### Minecraft
 
-The tribute, `#/dot-matrix/minecraft`, `src/components/minecraft/`: an endless seeded world in the game’s own tiles, dig and build, crafting and the save, light and the day, caves, ores, fluids, the furnace, chest, hunger and death. The rules never import three.js; they run in the worker and in vitest. Check: `scripts/mc-check.mjs`; atlas: `scripts/mc-atlas.mjs`. The real game is `src/components/eagler/`: files sealed with the password (`crypt.js`, `scripts/eagler-pack.mjs`, `public/eagler/manifest.json`), two clients (1.12.2 and 1.8.8, `clients.js`), the game in a frame on an origin of its own (`public/eagler-player/index.html`, published by `scripts/eagler-player-publish.mjs`), a shared world for each version in `public/eagler/worlds/`, and `scripts/eagler-check.mjs` proving the wall. Republish the player whenever `public/eagler-player/`, `crypt.js` or `load.js` changes.
+The tribute, `#/dot-matrix/minecraft`, `src/components/minecraft/`: an endless seeded world in the game’s own tiles, dig and build, crafting and the save, light and the day, caves, ores, fluids, the furnace, chest, hunger and death. The rules never import three.js; they run in the worker and in vitest. The others online in the same seed walk it as pale Steves (`scene/others.js`, `rules/online.js`: the height sent is over the generator’s ground, which every visitor to the seed has alike). Check: `scripts/mc-check.mjs`; atlas: `scripts/mc-atlas.mjs`. The real game is `src/components/eagler/`: files sealed with the password (`crypt.js`, `scripts/eagler-pack.mjs`, `public/eagler/manifest.json`), two clients (1.12.2 and 1.8.8, `clients.js`), the game in a frame on an origin of its own (`public/eagler-player/index.html`, published by `scripts/eagler-player-publish.mjs`), a shared world for each version in `public/eagler/worlds/`, and `scripts/eagler-check.mjs` proving the wall. Republish the player whenever `public/eagler-player/`, `crypt.js` or `load.js` changes.
 
 ### The kit and the natural worlds
 
@@ -91,7 +91,6 @@ One ride from Bag End to the Grey Havens at `/middle-earth/road`, a `'nodes'` mo
 
 ### Cybertron
 
-- Online players in the world (`useTravellers`, as Avengers HQ does); out of the spec’s scope, still open.
 - Prime’s Optimus stands with his upper arms out: a per-model `stand` pose in `catalog.js`.
 - Iacon could take more detail: pipes between the towers, a few huge rings, the deck’s trenches.
 
@@ -111,7 +110,7 @@ One ride from Bag End to the Grey Havens at `/middle-earth/road`, a `'nodes'` mo
 - Eve’s ghost on the line at her best time, and Allen flying the race home: the gates are drawn, nobody races.
 - The Flaxans’ portal closes as the second wave goes down, before episode 5’s last step; it should stay open until he flies through it.
 - The bank model’s own lettering reads GDA.
-- No interiors (the Graysons’ house, the GDA’s floor, Burger Mart’s counter would follow the C-137 and Office patterns); online ghosts not wired (`useTravellers` in a room of its own).
+- No interiors (the Graysons’ house, the GDA’s floor, Burger Mart’s counter would follow the C-137 and Office patterns). (Online ghosts are wired: `useTravellers('invincible')`, drawn by `scene.js`’s `createGhosts`.)
 - Phone frame rate on hardware. Levers: a distance cull on the suburb’s instanced trees and houses, the land disc’s ring step, traffic counts. `maulers`, `seismic`, `everace` and `photo` sit over the 1.5 M triangle budget on low.
 - Mark’s `mark` metric misses in the air over towers (a mean-luminance measure; a colour-difference measure would judge it better). Left as is: low-poly yard trees, the HDRI’s clouds above 7 km, the jet’s livery unseen up close.
 

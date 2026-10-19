@@ -342,51 +342,6 @@ body:has(.universe-panel) .guide-btn { display: none; }
   translate: 0 calc(var(--alt, 0) * -75px);
   filter: drop-shadow(0 0 4px rgb(255 255 255 / 0.35));
 }
-/* the weapon readout (weapons.js): its name, the heavy rounds left, the keys */
-.universe-arms {
-  position: absolute;
-  left: var(--hud-edge);
-  top: calc(50% + var(--nav-h, 68px) / 2 + 132px);
-  display: grid;
-  gap: 5px;
-  width: 150px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s;
-  font-family: var(--font-mono);
-}
-.universe-arms[data-on] { opacity: 1; }
-.universe-arms-name {
-  color: #fff;
-  font-size: 0.66rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  text-shadow: 0 1px 6px rgb(0 0 0 / 0.8);
-}
-.universe-arms[data-line='ordnance'] .universe-arms-name { color: #ffc070; }
-.universe-arms[data-line='secondary'] .universe-arms-name { color: #9fd8ff; }
-.universe-arms-rack { display: flex; gap: 4px; }
-.universe-arms-pip {
-  position: relative;
-  width: 18px;
-  height: 6px;
-  border-radius: 3px;
-  overflow: hidden;
-  background: rgb(255 255 255 / 0.14);
-}
-.universe-arms-pip::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: #ffb347;
-  box-shadow: 0 0 6px #ffb347;
-  transform-origin: left;
-  transform: scaleX(var(--fill, 0));
-}
-.universe-arms-pip[data-full]::after { transform: none; }
-.universe-arms-pip[hidden] { display: none; }
-.universe-arms-keys { color: rgb(255 255 255 / 0.5); font-size: 0.62rem; }
-.universe-arms-keys kbd { min-width: 0; padding: 0 3px; font-size: 0.62rem; }
 /* the Citadel's siege (siege.js), while you're near it */
 .universe-siege {
   position: absolute;
@@ -437,44 +392,6 @@ body:has(.universe-panel) .guide-btn { display: none; }
   user-select: none;
 }
 .universe-weapon:active { background: rgb(255 179 71 / 0.25); }
-/* the shields: a slim bar under the height gauge, while there's trouble */
-.universe-shield {
-  position: absolute;
-  left: var(--hud-edge);
-  top: calc(50% + var(--nav-h, 68px) / 2 + 92px);
-  display: grid;
-  gap: 4px;
-  width: 92px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-.universe-shield[data-on] { opacity: 1; }
-.universe-shield-label {
-  color: rgb(255 255 255 / 0.65);
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.universe-shield-bar {
-  position: relative;
-  height: 6px;
-  overflow: hidden;
-  border: 1px solid rgb(255 255 255 / 0.3);
-  border-radius: 4px;
-  background: rgb(3 4 10 / 0.6);
-}
-.universe-shield-bar > span {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, #4fd2ff, #9ef3ff);
-  box-shadow: 0 0 8px rgb(120 220 255 / 0.6);
-  transform-origin: left;
-  scale: var(--shield, 1) 1;
-  transition: scale 0.15s;
-}
-.universe-shield[data-low] .universe-shield-bar > span { background: linear-gradient(90deg, #ff4a3d, #ff9a5c); box-shadow: 0 0 8px rgb(255 90 60 / 0.7); animation: universe-shield-blink 0.6s steps(2) infinite; }
 @keyframes universe-shield-blink { 50% { opacity: 0.45; } }
 /* the law (wanted.js): its stars, what it's doing, and the bounty on you;
    up under the comms, where a glance finds it */
@@ -1074,7 +991,6 @@ body:has(.universe-panel) .guide-btn { display: none; }
   .universe-weapon,
   .universe-view,
   .universe-out { display: grid; }
-  .universe-arms-keys { display: none; }
   .universe-climbs { display: flex; }
   .universe-hint-keys,
   .universe-keys-board { display: none; }
@@ -1369,8 +1285,6 @@ body:has(.universe-panel) .guide-btn { display: none; }
   .universe-boost { right: var(--hud-edge); bottom: calc(var(--sheet-h) + 16px); }
   .universe-fire { right: 104px; bottom: calc(var(--sheet-h) + 22px); }
   .universe-weapon { right: 110px; bottom: calc(var(--sheet-h) + 96px); }
-  /* (above the settings and hangar buttons, which reach 110px over the sheet: halfway down the map it sat under them) */
-  .universe-arms { left: var(--hud-edge); top: auto; bottom: calc(var(--sheet-h) + 120px); width: 110px; }
   .universe-siege { translate: -50% 0; max-width: calc(100% - 32px); }
   .universe-view { right: 184px; bottom: calc(var(--sheet-h) + 27px); }
   .universe-out { right: 248px; bottom: calc(var(--sheet-h) + 27px); }
@@ -1385,16 +1299,13 @@ body:has(.universe-panel) .guide-btn { display: none; }
   .universe-climbs { right: 26px; bottom: calc(var(--sheet-h) + 104px); }
   .universe-alt { left: 12px; top: calc(var(--nav-h, 68px) + (100% - var(--nav-h, 68px) - var(--sheet-h)) / 2); height: 120px; margin-top: -60px; }
   .universe-alt-mark { translate: 0 calc(var(--alt, 0) * -60px); }
-  /* (over the weapon readout, in the left column: on the hint's bottom edge
-     it sat under it, and beside the readout it met the Weapon button) */
-  .universe-shield { left: var(--hud-edge); top: auto; bottom: calc(var(--sheet-h) + 156px); width: 76px; }
   /* (wrapped, above the buttons, clear of the settings button on the left and
      the climb and dive ones on the right) */
   .universe-arrive { left: 16px; right: 16px; top: calc(var(--nav-h, 68px) + 24px); translate: none; max-width: none; }
   /* above the whole cluster of buttons (the weapon one reaches 150px over
      the sheet, the settings and hangar ones 110px), and clear of the climb
      and dive buttons on the right: at 92px it sat over the weapon button */
-  .universe-hint { left: var(--hud-edge); right: 90px; bottom: calc(var(--sheet-h) + 160px); max-width: none; translate: none; padding: 0.4rem 0.7rem; border-radius: 12px; white-space: normal; font-size: 0.78rem; line-height: 1.4; }
+  .universe-hint { left: var(--hud-edge); right: 90px; bottom: calc(var(--sheet-h) + 226px); /* (over the power tiles, which are over the Weapon button) */ max-width: none; translate: none; padding: 0.4rem 0.7rem; border-radius: 12px; white-space: normal; font-size: 0.78rem; line-height: 1.4; }
   /* on foot, above the way in (s+156) rather than on it */
   .universe-hint:not(.universe-hint-fly) { bottom: calc(var(--sheet-h) + 212px); }
   .universe-settings-btn { left: var(--hud-edge); bottom: calc(var(--sheet-h) + 66px); }
@@ -1411,7 +1322,6 @@ body:has(.universe-panel) .guide-btn { display: none; }
   .universe-said { font-size: 0.85rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .universe-shield-bar > span { animation: none; }
   .universe-reticle[data-hit],
   .universe-lock[data-on] > i { animation: none; }
   .universe-threat[data-on] { animation: none; }

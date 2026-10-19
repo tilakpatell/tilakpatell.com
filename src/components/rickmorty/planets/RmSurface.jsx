@@ -18,6 +18,9 @@ import { PROPS as RM_PROPS, SCATTER as RM_SCATTER } from './props';
 import { RM_RIDES } from './rides';
 import '../../galaxy/surface/surface.css';
 import './planets.css';
+import RmEarnNote from '../RmEarnNote';
+import { useRmEarn } from '../useRmEarn';
+import { seedsOf } from '../earn';
 
 // The planets' kit laid over the galaxy's books (the scene keeps the
 // galaxy's rocks and lamps, and the planets' own come first where both
@@ -56,6 +59,8 @@ export default function RmSurface({ id, onLeave }) {
   // never waits on a render)
   const foundNow = useRef(found);
   const doneNow = useRef(done);
+  // (a place found and a quest done pay into the one wallet, once each)
+  const { earn, note: earned } = useRmEarn(() => [...seedsOf('found', found, id), ...seedsOf('quest', done, id)]);
   const [phase, setPhase] = useState('landing');
   const [prompt, setPrompt] = useState(null);
   const [here, setHere] = useState(null);
@@ -129,6 +134,7 @@ export default function RmSurface({ id, onLeave }) {
         foundNow.current = [...foundNow.current, e.id];
         writeFound(id, foundNow.current);
         setFound(foundNow.current);
+        earn('found', e.id, id);
         say(`${place.name}. ${place.about}`);
       } else if (e.type === 'quest') setQuest(e.id ? e : null);
       else if (e.type === 'questDone' && e.id !== mission?.quest?.id) {
@@ -137,6 +143,7 @@ export default function RmSurface({ id, onLeave }) {
           doneNow.current = [...doneNow.current, e.id];
           writeDone(id, doneNow.current);
           setDone(doneNow.current);
+          earn('quest', e.id, id);
         }
         say(q?.reward ?? `${q?.name ?? 'Done'}.`);
       } else if (e.type === 'questFail' && e.id !== mission?.quest?.id) say(e.why === 'time' ? 'Out of time. Back to the start of it: try again.' : 'Try that again.', true);
@@ -153,7 +160,7 @@ export default function RmSurface({ id, onLeave }) {
         }
       } else if (e.type === 'leave') leave();
     },
-    [site, id, mission, leave, later, say],
+    [site, id, mission, leave, later, say, earn],
   );
 
   // M for the things to do, H for the controls (the site's guide), Esc to
@@ -182,6 +189,7 @@ export default function RmSurface({ id, onLeave }) {
   const accent = { '--accent': ACCENT, '--accent-text': ACCENT, '--btn-bg': ACCENT, '--btn-ink': '#03040a' };
   return (
     <div className="dark-scope surface-page rm-surface" style={accent} data-phase={phase}>
+      <RmEarnNote note={earned} />
       <h1 className="sr-only">
         {site.name}: {site.place}
       </h1>

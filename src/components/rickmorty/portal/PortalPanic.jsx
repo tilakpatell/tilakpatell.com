@@ -11,6 +11,8 @@ import { ALOUD, BOSS_LINE, COMBO, LOST_LINE, MEESEEKS, OPENER, PURPOSE, SAUCE } 
 import { PANIC, choose, dash, newGame, step } from './rules';
 import { autopilot } from './pilot';
 import './portal.css';
+import RmEarnNote from '../RmEarnNote';
+import { useRmEarn } from '../useRmEarn';
 
 // Portal panic: the Rick and Morty arena game, in WebGL only (behind the
 // hardware acceleration gate). The rules are in ./rules.js, the drawing in
@@ -62,6 +64,7 @@ export default function PortalPanic() {
 
 function Game({ soft, fail }) {
   const { unlock } = useAchievements();
+  const { earn, note: earned } = useRmEarn(); // (a boss down pays into the one wallet, each time)
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const wrap = useRef(null);
   const gl = useRef(null);
@@ -243,6 +246,7 @@ function Game({ soft, fail }) {
           case 'bossDown':
             play('boom');
             say(`${PANIC.bosses[e.id].name}: down`, 'good');
+            earn('boss', e.id);
             if (e.id === 'cromulon') {
               unlock('showmewhatyougot');
               clip('likeWhatYouGot');
@@ -279,7 +283,7 @@ function Game({ soft, fail }) {
       if (seeded) playCue('seed');
       g.events.length = 0;
     },
-    [say, unlock],
+    [say, unlock, earn],
   );
   const drainRef = useRef(drain);
   drainRef.current = drain;
@@ -582,6 +586,7 @@ function Game({ soft, fail }) {
   const Face = FACE[hero];
   return (
     <div className="pp" data-owns-escape={running || undefined}>
+      <RmEarnNote note={earned} />
       <div
         ref={wrap}
         className="g3 pp-screen"

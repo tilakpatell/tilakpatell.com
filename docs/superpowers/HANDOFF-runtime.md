@@ -43,6 +43,8 @@ Off the runtime, with their own renderer and loop (`src/lib/three/useScene.js`, 
 
 ## Left
 
+**A world with others online, on the node renderer:** its ghosts come from `middleearth/shared/ghostsOf.js` with `ghostNodes.js`’s `ghostNodeMaterial` as `paint`, never `ghosts.js`, whose GLSL rim the node renderer passes over (and `shading.test.js` fails the closure that reaches it). The twin is the same ghost, from the same numbers (`towns/ghostLook.js`, `ghostLook.test.js`): Minecraft and Earth wear it; the Mario 64 tribute, the Death Star’s inside and Middle-earth’s towns switch to it in their ports.
+
 **The ports to the node renderer** (lane P1), one pull request a world, in this order: /fly, the Mario 64 tribute, the Death Star’s inside, the galaxy. Each merges only when all three gates hold: every twin at `scripts/twin-parity.mjs`’s line and the world at `scripts/gpu-parity.mjs`; `scripts/perf-probe.mjs` no slower on the node renderer than the classic one, main thread and GPU, at Low and High (a slower world is first rebuilt the node renderer’s way: `BundleGroup` round what never moves, instancing for what repeats, the GPU scene for a level); `shading.test.js` clean and `glsl-sites` lower by the world’s count. Where they stand:
 
 - /fly on `claude/perf-p1-fly`: its closure is at 0 GLSL, but it is slower on the node renderer (main thread 0.5 → 0.7–0.8 ms at Low; ready 9 → 14 s), the city twin fails parity (20.9 dB, 2.58 % off, console errors) and the world fails against main. Rebuild with bundles and instancing, then the gates.

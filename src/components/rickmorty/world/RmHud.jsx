@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import RmEarnNote from '../RmEarnNote';
 import { Link as RouterLink } from 'react-router-dom';
 import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiEmotionLaughLine, RiListCheck2, RiShirtLine, RiTyphoonLine } from 'react-icons/ri';
 import { EMOTES, wheelAngle } from '../../../lib/emote';
@@ -87,6 +88,7 @@ export default function RmHud({
   locked = false,
   onLock,
   closeList,
+  earned = null,
 }) {
   // Where the top row ends (the taller of the title's column and the map's),
   // measured, for what hangs under it on a phone (./world.css --rm-under):
@@ -115,6 +117,7 @@ export default function RmHud({
   );
   return (
     <>
+      <RmEarnNote note={earned} />
       <div ref={top} className="rm-hud rm-hud-top">
         <div ref={brand} className="rm-brand">
           <Title name={planet?.name} />

@@ -1,6 +1,6 @@
 /* global window, document, getComputedStyle, innerWidth */
 // A browser check of the crews' ship powers in the galaxy (universe/
-// shipPowers.js, battlePowers.js; galaxy/powers.js; PowerBar.jsx). With the
+// shipPowers.js, battlePowers.js; universe/powers.js; PowerBar.jsx). With the
 // dev server up (npx vite --port 5188, or BASE= for another):
 //   OUT=/tmp/shots node scripts/galaxy-powers-check.mjs layout
 //   OUT=/tmp/shots node scripts/galaxy-powers-check.mjs portal
@@ -74,8 +74,8 @@ if (mode === 'layout') {
     const { ctx, page, errors, G, waitGame } = await open('xwing', viewport);
     await waitGame(0.5);
     const r = await G(() => {
-      const bar = document.querySelector('.ship-powers');
-      const tiles = [...document.querySelectorAll('.ship-power')];
+      const bar = document.querySelector('.hud-powers');
+      const tiles = [...document.querySelectorAll('.hud-power')];
       const meets = [];
       for (const e of document.querySelectorAll('body *')) {
         if (bar.contains(e) || e.contains(bar)) continue;

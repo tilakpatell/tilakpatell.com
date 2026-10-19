@@ -153,7 +153,9 @@
 @media (prefers-reduced-motion: reduce) {
   .shire-toast, .shire-tempt, .shire-ring-btn[data-tempt], .shire-stage[data-wearing]::after { animation: none; }
 }
-/* other travellers online (../towns/TownHud.jsx Travellers): pale blue, as their ghosts are */
+/* other travellers online (../towns/TownHud.jsx Travellers): pale blue, as their ghosts are; your allies among them in the site's ally green (universe/online/online.css), as their ghosts' rings are */
 .town-travellers { border-color: rgba(154, 184, 255, 0.55); }
 .town-travellers[data-on] { cursor: default; }
 .town-travellers b { color: #b8ccff; }
+.town-travellers[data-allies] { border-color: rgba(141, 255, 173, 0.55); }
+.town-allies { color: #8dffad; font-style: normal; white-space: pre; }
