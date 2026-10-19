@@ -1110,7 +1110,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         if (s.t - (s.barkAt ?? -1e9) < 6) return;
         s.barkAt = s.t;
         say({ kind: 'say', who: e.who, text: e.text });
-      } else if (name === 'done') complete(e.task);
+      } else if (name === 'done') {
+        complete(e.task);
+        if (e.unlock) unlock(e.unlock); // (a game whose win is an achievement: the vat's)
+      }
       else if (name === 'spotted') {
         // someone's seen him: a word and a sound, not too often
         if (s.t - (s.spottedAt ?? -1e9) < 8) return;
@@ -1155,7 +1158,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         } else api.current?.play('hit', { layer: 'auto' });
       }
     },
-    [api, say, complete, later, loadShots],
+    [api, say, complete, unlock, later, loadShots],
   );
   boardRef.current = board;
   // Morty's shot in a duel (F): a bolt at the hunter if he's in the cone

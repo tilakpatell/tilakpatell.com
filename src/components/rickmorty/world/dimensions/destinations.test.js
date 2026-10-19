@@ -224,6 +224,33 @@ describe('a place that runs on a deal', () => {
   });
 });
 
+describe('a place that runs on a freeze', () => {
+  it('has its lookouts and its spot to jump in at, and only the game ticks its task', () => {
+    const still = DESTINATIONS.filter((d) => d.freeze);
+    expect(still.map((d) => d.id)).toEqual(['vat']);
+    for (const d of still) {
+      const spot = d.hotspots.find((h) => h.id === d.freeze.spot);
+      expect(spot, d.id).toBeTruthy();
+      expect(spot.verb).not.toBe('Look');
+      expect(d.acts[d.freeze.spot]).toBe('freeze-in');
+      expect(d.tasks.map((t) => t.id)).toContain(d.freeze.task);
+      expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(d.freeze.task);
+      expect(d.collect?.task, `${d.id}: a collect ticks the task`).not.toBe(d.freeze.task);
+      expect(d.goal).toBe(d.freeze.spot);
+      expect(d.people.filter((p) => p.ai?.lookout).length).toBeGreaterThan(0);
+      expect(d.freeze.lost.length).toBeGreaterThan(10);
+      expect(d.freeze.lost).not.toMatch(/!/);
+      expect(d.freeze.lost.split(/[.?]\s/)).toHaveLength(1);
+    }
+  });
+  it('is the two Gromflomites at the vat of acid, and its win is the fake death’s achievement', () => {
+    const vat = destinationById('vat');
+    expect(vat.freeze).toMatchObject({ task: 'vat', spot: 'vatrim', unlock: 'vat' });
+    expect(vat.people.filter((p) => p.ai?.lookout).map((p) => p.id)).toEqual(['vgromflomite-a', 'vgromflomite-b']);
+    expect(vat.collect).toBe(null);
+  });
+});
+
 describe('Anatomy Park', () => {
   it('is a chase: the park map’s four pieces while the diseases hunt, then out through the portal on the clock', () => {
     const park = destinationById('anatomy');

@@ -10,7 +10,7 @@
 //
 // stage(kit, id, opts) → { R, d, A, cx, cz, P(dx, dz) (a spot in the world
 // from the place's middle), figure(kind, at), people(), done(light, update),
-// hunt(on), calm(), power({ glow }) } (and the NPC behaviour below: anyone
+// hunt(on), calm(), power({ glow }), freeze({ splash }) } (and the NPC behaviour below: anyone
 // placed with `ai`; and a place run on power, below; whichever game a place
 // runs, its `meter` action is the HUD's readout of it: ../games/meter.js)
 
@@ -24,6 +24,7 @@ import { createNpcs } from '../npc';
 import { attend } from '../living';
 import { TUNING as POWER, newPower, powerNews, powerReadout, stepPower } from '../games/power';
 import { curse, dealNews, dealReadout, newDeal, stepDeal } from '../games/deal';
+import { freezeEyes, freezeNews, freezeReadout, moving, newFreeze, stepFreeze } from '../games/freeze';
 
 // a speckled paint for a floor or the ground
 export const specks = (base, specks, seed = 7, n = 1600, size = 2) => (g, w, h) => speckle(g, w, h, { base, specks, n, size, seed });
@@ -138,6 +139,30 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     }
   };
 
+  // ── a place run on a freeze (../games/freeze.js, place.js's `freeze`):
+  // stepped in the place's own update on Morty's own motion (the render
+  // state's), its spot's press the jump in (`freeze-in`, with the builder's
+  // splash); said as power's run is, the win with its achievement; its
+  // lookouts turned where the game says the buyers' eyes are. ──
+  const fz = d.freeze;
+  let still = fz ? newFreeze() : null;
+  let jumped = false;
+  let splash = null;
+  const freezing = (dt, state) => {
+    const done = (state.done ?? []).includes(fz.task);
+    if (!done && !state.fading) {
+      still = stepFreeze(still, { moving: moving(state.morty), jumped }, dt);
+      const news = freezeNews(still, { done, fading: false });
+      if (news === 'done') state.emit?.('done', { area: id, task: fz.task, unlock: fz.unlock ?? null });
+      if (news === 'caught') {
+        still = { ...still, told: true };
+        state.emit?.('caught', { area: id, who: fz.who, text: fz.lost });
+      }
+    }
+    jumped = false;
+    N.lookout(done ? null : freezeEyes(still));
+  };
+
   // (calmed: its people home, and its game started afresh)
   const calm = () => {
     N.calm();
@@ -148,6 +173,10 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     if (dl) {
       deal = dealt();
       used = [];
+    }
+    if (fz) {
+      still = newFreeze();
+      jumped = false;
     }
   };
 
@@ -197,6 +226,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         sky?.update(t, camera);
         if (run && state) powered(t, dt, state);
         if (deal && state) dealing(state);
+        if (still && state) freezing(dt, state);
         update?.(t, dt, state, camera);
       },
     });
@@ -212,7 +242,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     // builder adds its own actions to these. `npcs`: where everyone is, for
     // the QA scripts; `fire`, `bodies` and `hit`: Morty's shot in a duel,
     // where it aims, what it can hit, and what it did when it landed.)
-    // (a place run on power or a deal: its spots, where its game is for the
+    // (a place run on power, a deal or a freeze: its spots, where its game is for the
     // checks, its meter for the HUD, and, in development, a way for the
     // checks to set it)
     area.actions = { calm, npcs: N.list, fire: N.fire, bodies: N.bodies, hit: N.hit };
@@ -231,8 +261,18 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         meter: () => dealReadout(deal, dl.words),
         ...(import.meta.env.DEV && { setDeal: (patch) => (deal = { ...deal, ...patch }) }),
       });
+    if (still)
+      Object.assign(area.actions, {
+        'freeze-in': () => {
+          jumped = true;
+          splash?.();
+        },
+        freeze: () => ({ phase: still.phase, eyes: still.eyes, left: still.left, len: still.len, beat: still.beat }),
+        meter: () => freezeReadout(still),
+        ...(import.meta.env.DEV && { setFreeze: (patch) => (still = { ...still, ...patch }) }),
+      });
     return area;
   };
-  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null) };
+  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null), freeze: (o) => (splash = o.splash ?? null) };
 
 }
