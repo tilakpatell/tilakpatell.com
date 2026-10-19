@@ -1185,6 +1185,7 @@ export async function create(canvas, ctx) {
   const pointer = { x: 0, y: 0, x0: 0, y0: 0, id: null };
   const onKey = (down) => (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (props.frozen && down) return; // (the page's Hangar is open over the world: nothing moves; a key let go still is)
     const tag = e.target?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return;
     const k = KEYS[e.key.toLowerCase()];
@@ -3823,6 +3824,7 @@ export async function create(canvas, ctx) {
       props = next;
       for (const id of next.found ?? []) state.found.add(id);
       for (const id of next.done ?? []) state.done.add(id);
+      if (next.frozen) for (const k of Object.keys(state.keys)) state.keys[k] = false; // (nothing held while the Hangar's open)
       if (next.hero) setHero(next.hero);
       if ((next.skillFx ?? null) !== skillFx) setSkills(next.skillFx);
     },

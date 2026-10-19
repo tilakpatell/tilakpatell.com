@@ -22,7 +22,8 @@ import { createDrops } from './scene/drops.js';
 import { createIcons } from './scene/icons.js';
 import { TINT_COLOURS, blockMaterial, setFrames } from './scene/nodes.js';
 import { createSky } from './scene/sky.js';
-import { ghostPaint, makeSteve, stride } from './scene/others.js';
+import { ghostLight, lightGhosts, makeSteve, stride } from './scene/others.js';
+import { ghostNodeMaterial } from '../middleearth/shared/ghostNodes';
 import { ABOVE } from './rules/online.js';
 import { createGhostsOf } from '../middleearth/shared/ghostsOf';
 
@@ -43,7 +44,10 @@ export function createScene(rt, { manifest }) {
   // the others online here: on the world's own ground where they stand, put
   // back to the height over it they sent (the generator's, the same on the seed)
   let ground = null;
-  const others = createGhostsOf({ paint: ghostPaint, height: (x, z) => (ground ? ABOVE(ground, x, z) : 0), make: makeSteve, animate: stride, tag: 0.3, halo: 0.9 });
+  const others = createGhostsOf({ paint: ghostNodeMaterial, height: (x, z) => (ground ? ABOVE(ground, x, z) : 0), make: makeSteve, animate: stride, tag: 0.3, halo: 0.9 });
+  // (and the sky's light on them, theirs alone: scene/others.js)
+  const othersLight = ghostLight();
+  others.group.add(othersLight);
   scene.add(others.group);
   let othersAt = null;
 
@@ -104,6 +108,7 @@ export function createScene(rt, { manifest }) {
     // the hour: the sky, and how much of the sky's light reaches the blocks
     sky.update(g.time + alpha, camera, distance * 16, g.ticks + alpha);
     const sun = sunBrightness(g.time + alpha);
+    lightGhosts(othersLight, sun);
     for (const m of Object.values(materials)) {
       m.u.sun.value = sun;
       setFrames(m, anims, g.ticks);
@@ -142,6 +147,7 @@ export function createScene(rt, { manifest }) {
     },
     dispose() {
       others.dispose();
+      othersLight.dispose();
       chunks?.dispose();
       sky?.dispose();
       cursor?.dispose();

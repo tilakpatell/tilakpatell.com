@@ -18,7 +18,7 @@
 //
 // createSharedWorld({ parent, spec, palette, groundAt, tell, respawn, durable,
 //   makeLoader, makeOnline, makeStructures, makePeers, makeBolts, signIn })
-//   → { join(name | null, hidden), step(dt, ship, snap), draw(at), build(ship),
+//   → { join(name | null, hidden, ally), step(dt, ship, snap), draw(at), build(ship),
 //       unbuild(ship), prompt(ship), pilots(), built(), stats(), dispose() }
 // SHARED_KEYS: what it adds to the flight's keys.
 
@@ -70,6 +70,7 @@ export function createSharedWorld({
   let online = null;
   let offOnline = () => {};
   let name = 'Pilot';
+  let allyOf = () => false; // (the roster's allies: join's `ally`)
   let owner = db ? null : 'me'; // the database's id for you (signed in), or the visit's
   let signing = null;
   let busy = false; // a build or a take-down on its way
@@ -218,13 +219,17 @@ export function createSharedWorld({
   // what the HUD shows: the prompt (B, or X by one of yours), the shield, who's near
   function prompt(ship) {
     const can = canBuild(ship, groundAt(ship.x, ship.z), spec.pois);
-    return { build: can.ok && !spec.soft, unbuild: Boolean(nearestOwn(all(), ship, owner)), shield: Math.round(shield), others: online?.peers().length ?? 0, kept: Boolean(db) };
+    const near = online?.peers() ?? [];
+    return { build: can.ok && !spec.soft, unbuild: Boolean(nearestOwn(all(), ship, owner)), shield: Math.round(shield), others: near.length, allies: near.filter((p) => allyOf(p.id)).length, kept: Boolean(db) };
   }
 
   return {
-    // into the planet's room as `name` (null: out of it); `hidden(id)` is the roster's blocks
-    join(next, hidden = () => false) {
+    // into the planet's room as `name` (null: out of it); `hidden(id)` is the
+    // roster's blocks, `ally(id)` its allies (the same key in every room),
+    // asked as they're drawn and counted
+    join(next, hidden = () => false, ally = () => false) {
       if (disposed) return;
+      allyOf = ally;
       if (!next) {
         offOnline();
         online?.leave();
@@ -289,7 +294,7 @@ export function createSharedWorld({
     },
     draw(at) {
       structures.draw(at);
-      peerShips.draw(online?.peers() ?? [], at);
+      peerShips.draw(online?.peers() ?? [], at, allyOf);
       boltDraw.draw(bolts, at);
     },
     build,

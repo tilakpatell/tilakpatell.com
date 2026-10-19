@@ -3,6 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import WorldSwitcher from '../components/worlds/WorldSwitcher';
 import { citadelOut } from '../components/rickmorty/adventure/ways';
 import { useDocumentTitle } from '../lib/hooks';
+import RmEarnNote from '../components/rickmorty/RmEarnNote';
+import HangarAboard from '../components/hangar/HangarAboard';
+import { useHangarAboard } from '../components/hangar/useHangarAboard';
+import { crewById } from '../components/universe/crews';
 import '@fontsource/orbitron/600.css';
 import '@fontsource/orbitron/800.css';
 
@@ -20,13 +24,17 @@ export default function Citadel() {
   const state = useLocation().state;
   const fromMap = state?.from === 'universe';
   const out = citadelOut(state);
+  // the Hangar, its door the concourse's chip: H, or C on the crew
+  const aboard = useHangarAboard('cruiser');
   return (
     <div className="relative">
       <div className="pt-[var(--nav-h)]">
         <Suspense fallback={<div className="shire-stage" aria-hidden="true" />}>
-          <CitadelWorld onLeave={() => navigate(out.to, { state: out.state })} leaveLabel={out.label} />
+          <CitadelWorld onLeave={() => navigate(out.to, { state: out.state })} leaveLabel={out.label} frozen={aboard.yard.yard} onHangar={aboard.open} />
         </Suspense>
       </div>
+      <HangarAboard yard={aboard.yard} tab={aboard.tab} onTab={aboard.setTab} shipName={crewById('cruiser')?.ship ?? ''} doorAt=".rm-hangar-btn" />
+      <RmEarnNote note={aboard.yard.yardNote} />
       <section className="shell relative z-10 py-10 md:py-14" aria-label="About the Citadel">
         <p className="eyebrow">{fromMap ? 'The Rick and Morty sector' : 'Dimension C-137'}</p>
         <p className="lead mt-3 max-w-[62ch]">A city of Ricks, hidden where no Rick can find it, except all of them. Round up the day care’s Mortys, stack wafers at Simple Rick’s, face the Council, vote in the election, and get out before Candidate Morty’s Cop Ricks find you.</p>

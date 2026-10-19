@@ -1234,40 +1234,6 @@ body:has(.universe-panel) .guide-btn { display: none; }
 .universe-navmap-btn:hover { border-color: #9fd8ff; background: rgb(159 216 255 / 0.1); }
 .universe-navmap-btn:focus-visible { outline: 2px solid #9fd8ff; outline-offset: 2px; }
 .universe-page[data-leaving] .universe-navmap-btn { display: none; }
-/* the Shipyard's power cells and read-out bars (shipyard/YardBill.jsx) */
-.universe-hangar-label,
-.universe-hangar-num { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; }
-.universe-hangar-num { color: var(--muted); text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
-.universe-hangar-power { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.6rem; }
-.universe-hangar-cells { display: flex; gap: 3px; }
-.universe-hangar-cells i { flex: 1; height: 8px; border-radius: 2px; background: rgb(255 255 255 / 0.12); }
-.universe-hangar-cells i[data-on] { background: var(--engine, #e8eefc); box-shadow: 0 0 6px color-mix(in srgb, var(--engine, #e8eefc) 60%, transparent); }
-.universe-hangar-power[data-full] .universe-hangar-num { color: var(--hud-warn); }
-/* the cruiser's crew: to the wardrobe */
-/* the shipyard: the hull switch, the roll, the code, a row of modules a slot */
-.universe-hangar-stats { display: grid; gap: 0.35rem; margin: 0; }
-.universe-hangar-stat { display: grid; grid-template-columns: 8.2rem 1fr; align-items: center; gap: 0.6rem; }
-.universe-hangar-stat dt { font-size: 0.74rem; }
-.universe-hangar-stat dd { display: grid; grid-template-columns: 1fr 3.4em; align-items: center; gap: 0.5rem; margin: 0; }
-.universe-hangar-bar { position: relative; height: 6px; border-radius: 3px; background: rgb(255 255 255 / 0.12); overflow: hidden; }
-.universe-hangar-bar > i,
-.universe-hangar-bar > b { position: absolute; inset: 0 auto 0 0; border-radius: 3px; }
-.universe-hangar-bar > i { width: calc(var(--now) * 100%); background: var(--engine, #e8eefc); }
-.universe-hangar-bar > b { width: calc(var(--then) * 100%); background: transparent; }
-.universe-hangar-bar[data-up] > b { background: #6ee7a0; }
-.universe-hangar-bar[data-up] > i { z-index: 1; }
-.universe-hangar-bar[data-down] > b { z-index: 1; background: var(--engine, #e8eefc); }
-.universe-hangar-bar[data-down] > i { background: #ff7a6b; }
-.universe-hangar-change { color: var(--muted); font-family: var(--font-mono); font-size: 0.7rem; font-variant-numeric: tabular-nums; text-align: right; }
-/* the shop's price pill on each of the Shipyard's rows (Owned, 400 ¢, the
-   price dimmed and how short you are, or the lock's sentence) */
-.universe-price { display: inline-flex; align-items: center; justify-self: start; gap: 0.35rem; max-width: 100%; padding: 0.1rem 0.5rem; border: 1px solid rgb(255 255 255 / 0.16); border-radius: 999px; color: var(--muted); font-size: 0.68rem; line-height: 1.4; font-variant-numeric: tabular-nums; }
-.universe-price[data-kind='owned'] { border-color: rgb(110 231 160 / 0.4); color: #6ee7a0; }
-.universe-price[data-kind='buy'] { border-color: var(--engine, #e8eefc); color: var(--text); background: color-mix(in srgb, var(--engine, #e8eefc) 14%, transparent); font-weight: 600; }
-.universe-price[data-kind='short'] { color: var(--hud-warn); }
-.universe-price-was { color: var(--muted); opacity: 0.6; }
-.universe-hangar-change[data-up] { color: #6ee7a0; }
-.universe-hangar-change[data-down] { color: #ff7a6b; }
 
 @media (max-width: 767px) {
   .universe-panel {
@@ -1313,7 +1279,6 @@ body:has(.universe-panel) .guide-btn { display: none; }
   .universe-hangar-btn { left: calc(var(--hud-edge) + 50px); bottom: calc(var(--sheet-h) + 66px); }
   .universe-navmap-btn { left: var(--hud-edge); bottom: calc(var(--sheet-h) + 66px); }
   .universe-navmap-btn[data-ship] { left: calc(var(--hud-edge) + 100px); }
-  .universe-hangar-stat { grid-template-columns: 7rem 1fr; }
   .universe-comms { right: 16px; left: 16px; }
   /* the bar keeps clear of the guide's button in the corner */
   .universe-panel[data-tucked] { padding-bottom: env(safe-area-inset-bottom, 0px); }

@@ -2,18 +2,15 @@
 // each a Steve: the player's own shape, eight pixels of head on twelve of
 // body and twelve of legs, built of six boxes (the game draws no figure of
 // yours, first person; a ghost downloads nothing). middleearth/towns/
-// ghostsOf.js shimmers and fades him, with his name over him, in ghostPaint:
-// the towns' pale with its rim of light, made of nodes, since the tribute
-// is drawn by the node renderer, which runs no GLSL (and has no lights here:
-// the pale is its own colour, as the blocks' light is theirs).
+// ghostsOf.js shimmers and fades him, with his name over him, in the towns'
+// pale and rim of light made of nodes (ghostNodes.js: the tribute is drawn
+// by the node renderer, which runs no GLSL), the same ghost as everywhere.
 //
 //   makeSteve() → { group, top, face, arms, legs, dispose() }
 //   stride(steve, t, p, dt): the walk's swing, arms against legs, as the game's
-//   ghostPaint() → a ghost's material
+//   ghostLight(), lightGhosts(light, sun): the sky's light on them alone
 
 import * as THREE from 'three';
-import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { abs, dot, float, mix, normalView, positionViewDirection, pow, vec3 } from 'three/tsl';
 
 const PX = 1.8 / 32; // (the player is 1.8 m tall; Steve's skin is 32 pixels head to foot)
 
@@ -54,12 +51,13 @@ export function makeSteve() {
   };
 }
 
-// pale blue-white, brighter where a face turns from you (ghosts.js's rim)
-export function ghostPaint() {
-  const m = new MeshBasicNodeMaterial({ transparent: true, opacity: 0, depthWrite: false });
-  const rim = pow(float(1).sub(abs(dot(normalView, positionViewDirection))), 2.2);
-  m.colorNode = mix(vec3(0.62, 0.7, 0.92), vec3(1.15, 1.25, 1.45), rim);
-  return m;
+// The ghosts' pale is a lit one (their tint under the world's light, as in
+// every other world); the tribute's blocks are all their own light, so a
+// hemisphere light here lights the ghosts and nothing else, the day's sun
+// (rules/time.js's sunBrightness, 0 to 1) setting how much.
+export const ghostLight = () => new THREE.HemisphereLight(0xffffff, 0x4a5a6a, 1.6);
+export function lightGhosts(light, sun) {
+  light.intensity = 0.45 + 1.15 * Math.max(0, Math.min(1, sun));
 }
 
 // arms and legs swung opposite, the swing as wide as he's fast (a walk's
