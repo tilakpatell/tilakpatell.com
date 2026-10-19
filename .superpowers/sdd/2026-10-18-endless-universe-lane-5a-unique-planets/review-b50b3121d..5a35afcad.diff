@@ -1,0 +1,555 @@
+# Review package: b50b3121d..5a35afcad
+
+## Commits
+5a35afcad Build every generated planet and moon round, from its own variety
+
+## Files changed
+ src/components/expanse/flight/water.js |  13 +-
+ src/lib/land/flight/generated.js       | 227 +++++++++++++++++++++++++++++++++
+ src/lib/land/flight/generated.test.js  |  87 +++++++++++++
+ src/lib/land/flight/planetSpec.js      |  15 ++-
+ src/lib/land/flight/planetTables.js    |  10 ++
+ 5 files changed, 336 insertions(+), 16 deletions(-)
+
+## Diff
+diff --git a/src/components/expanse/flight/water.js b/src/components/expanse/flight/water.js
+index a5c54dde1..8519bff36 100644
+--- a/src/components/expanse/flight/water.js
++++ b/src/components/expanse/flight/water.js
+@@ -1,36 +1,31 @@
+ // A planet's water: one wide sheet at its level (the sites' own: Scarif's sea
+ // at 0, Mustafar's lava at 2.5, Dagobah's swamp), following the ship in
+ // whole kilometres so it always reaches the fog. Sea and lake catch the sun
+ // (smooth, a little see-through over the shallows); swamp is murky; lava
+-// glows. Its colour leans on the planet's palette.
++// glows. Its colour leans on the planet's palette; a generated planet's
++// water has a colour of its own.
+ //
+ //   createWater(scene, spec) → { place(ship, at), dispose() } | null (no water)
+ 
+ import * as THREE from 'three';
++import { WATER_LOOKS as LOOKS } from '../../../lib/land/flight/planetTables';
+ 
+ const SIZE = 60000; // m: past the fog's far edge either way
+ const SNAP = 1000;
+ 
+-const LOOKS = {
+-  sea: { color: '#1f5a6e', roughness: 0.12, opacity: 0.86 },
+-  lake: { color: '#2a4f5a', roughness: 0.16, opacity: 0.9 },
+-  swamp: { color: '#2e3322', roughness: 0.35, opacity: 0.95 },
+-  lava: { color: '#3a0c02', roughness: 0.6, opacity: 1, glow: '#ff4a0a' },
+-};
+-
+ export function createWater(scene, spec) {
+   const w = spec.water;
+   const look = w && LOOKS[w.kind];
+   if (!look) return null;
+   const material = new THREE.MeshStandardMaterial({
+-    color: new THREE.Color(look.color).lerp(new THREE.Color(spec.palette.accent), 0.15),
++    color: new THREE.Color(w.colour ?? look.color).lerp(new THREE.Color(spec.palette.accent), 0.15),
+     roughness: look.roughness,
+     metalness: 0,
+     transparent: look.opacity < 1,
+     opacity: look.opacity,
+     ...(look.glow ? { emissive: new THREE.Color(look.glow), emissiveIntensity: 0.9 } : {}),
+   });
+   material.name = `flight-water-${w.kind}`;
+   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(SIZE, SIZE, 1, 1), material);
+   mesh.rotation.x = -Math.PI / 2;
+   mesh.name = 'flight-water';
+diff --git a/src/lib/land/flight/generated.js b/src/lib/land/flight/generated.js
+new file mode 100644
+index 000000000..ee59a06d4
+--- /dev/null
++++ b/src/lib/land/flight/generated.js
+@@ -0,0 +1,227 @@
++// A generated planet's or moon's spec, from its row alone: everything a
++// roster spec has, built on its variety (variety.js) instead of its family's
++// template. The fifty never come here (planetSpec.js keeps them on their old
++// paths); every other Expanse planet and moon does.
++//
++// - Round or plane. A landable family's ground is round: sphereField.js's,
++//   on a sphere sized from the universe radius, flown through the chart round
++//   `round.at` (field.js). A gas giant, ringed or not, stays the plane cloud
++//   deck it was, in its own colours: there's no ground to put on a sphere.
++// - The look. The family's template ground (TYPE_LOOK) keeps its scan and
++//   its grain, and takes the variety's colours; its heights follow the
++//   character's peaks, so the rock shows on the ridges and not on the plains.
++// - Places. Each of the variety's POI kinds takes the first of 256 seeded
++//   candidates that is dry, gentle and 0.3 rad from every place already
++//   there: the first half of FIB_512 (a hemisphere, evenly), turned by a
++//   seeded rotation and read in a seeded order, so a planet's places are its
++//   own and a kind that finds no spot is left out. The chart starts at the
++//   first place, so a ship lands beside it.
++// - Charts. A POI's `at` is where the current chart puts it (what the
++//   flight's flats, clutter and occurrences read); chartedAt makes the chart
++//   again round another spot, as a landing far from the first place will.
++//
++// A spec is plain data (it's posted to the terrain and orbit-map workers):
++// every number finite, no −0, nothing undefined.
++//
++// Pure: runs in Node and in a worker.
++//
++//   groundRadius(row) → metres: 15,000 to 60,000, linear in the universe radius
++//     from 18 to 70 and clamped; 15,000 for a moon or a row with no radius
++//   POI_NAMES[kind] → a place's name, by its kind
++//   generatedSpecOf(row, family) → spec (planetSpec.js's seventeen fields and ROSTER_EXTRA's)
++//   chartedAt(spec, dir) → the round spec charted round dir; a plane spec as it is
++
++import { seeded } from '../../seeded.js';
++import { parseSpaceId } from '../../space/address.js';
++import { FIB_512 } from './characters.js';
++import { canonicalId } from './expanse.js';
++import { fold } from './fnl.js';
++import { hash64 } from './hash.js';
++import { PLANE_CLIMATE, TYPE_BIOMES, TYPE_LOOK, expand, roundBiomes } from './planetTables.js';
++import { angleBetween, chartOf, unit } from './sphere.js';
++import { CLIMATE_SPHERE, sphereField } from './sphereField.js';
++import { varietyOf } from './variety.js';
++
++const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
++
++const isMoon = (id) => {
++  const c = canonicalId(id);
++  return Boolean(c) && parseSpaceId(c).moon !== undefined;
++};
++
++export function groundRadius(row) {
++  if (isMoon(row.id) || !Number.isFinite(row.radius)) return 15000;
++  return 15000 + 45000 * clamp((row.radius - 18) / 52, 0, 1);
++}
++
++export const POI_NAMES = { ruins: 'Ruins', wreck: 'A crashed ship', outpost: 'An outpost', monolith: 'A monolith', signal: 'A signal' };
++
++// ── the look ──
++
++// the template's clutter, its trees and spires as thick as the flora (a
++// giant has no flora, and its spires are cloud: they stay); then, on ground
++// only, what the exotic stands on it
++function clutterOf(family, flora, exotic, round) {
++  const density = flora ? flora.density : 1;
++  const rows = TYPE_LOOK[family].clutter.map((c) => (c.kind === 'trunk' || c.kind === 'spire' ? { ...c, perKm2: c.perKm2 * density } : { ...c }));
++  if (!round) return rows;
++  if (exotic === 'crystal') rows.push({ kind: 'crystal', perKm2: 25, depth: 5 });
++  // (a glowing or floating world's trees are what glows or floats)
++  if ((exotic === 'glowing' || exotic === 'floating') && !rows.some((c) => c.kind === 'trunk')) rows.push({ kind: 'trunk', perKm2: 14 });
++  if (exotic === 'spires') rows.push({ kind: 'spire', perKm2: 30, depth: 5, size: 1.4 });
++  return rows;
++}
++
++// the template's ground in the variety's colours; on a round planet its
++// heights are the character's (the rock from half its peaks up) and its wet
++// band sits at the water's level (a band with no water under it would draw
++// a shore on dry land, so it goes)
++function groundOf(family, palette, character, water, round) {
++  const look = TYPE_LOOK[family].ground;
++  const { low, high, rock, accent, deep } = palette;
++  if (!round) return { ...look, palette: { ...look.palette, low, high, rock, accent, deep } };
++  const { wet, ...rest } = look.palette;
++  return {
++    ...look,
++    palette: {
++      ...rest,
++      low,
++      high,
++      rock,
++      accent,
++      deep,
++      hLow: (water?.level ?? 0) + 2,
++      hHigh: clamp(character.peaks * 0.5, 60, 500),
++      ...(wet && water ? { wet: { ...wet, level: water.level } } : {}),
++    },
++  };
++}
++
++const fogOf = (haze) => ({ near: Math.round(1500 - 900 * haze), far: Math.round(21000 - 9000 * haze) });
++
++// ── the places ──
++
++const PLACES = fold(hash64('generated', 'pois'));
++const CANDIDATES = 256;
++// a place stands on ground this far over the water, and no steeper
++const DRY = 4;
++const GENTLE = 0.12;
++// radians between two places
++const APART = 0.3;
++
++// 0…n−1, Fisher–Yates
++function shuffle(n, rnd) {
++  const out = Array.from({ length: n }, (_, i) => i);
++  for (let i = n - 1; i > 0; i--) {
++    const j = Math.floor(rnd() * (i + 1));
++    [out[i], out[j]] = [out[j], out[i]];
++  }
++  return out;
++}
++
++// a rotation drawn evenly over all rotations (a unit quaternion, Shoemake's
++// three draws), as the matrix that turns a direction
++function rotationOf(rnd) {
++  const u1 = rnd();
++  const u2 = rnd() * 2 * Math.PI;
++  const u3 = rnd() * 2 * Math.PI;
++  const a = Math.sqrt(1 - u1);
++  const b = Math.sqrt(u1);
++  const [x, y, z, w] = [a * Math.sin(u2), a * Math.cos(u2), b * Math.sin(u3), b * Math.cos(u3)];
++  return [
++    [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
++    [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
++    [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
++  ];
++}
++
++// (+ 0: no −0 in a spec, which JSON would bring back as 0)
++const turn = (m, d) => unit(m.map((row) => row[0] * d[0] + row[1] * d[1] + row[2] * d[2] + 0));
++
++// The places, and where the chart starts: each kind takes the first
++// candidate that is dry, gentle and apart, and the chart starts at the first
++// place, else at the first dry, gentle candidate, else the first candidate.
++// A candidate's sample is read once, whichever kind asks.
++function placesOf(spec0, kinds) {
++  const rnd = seeded(spec0.seed ^ PLACES);
++  const m = rotationOf(rnd);
++  const dirs = shuffle(CANDIDATES, rnd).map((i) => turn(m, FIB_512[i]));
++  const field = sphereField(spec0);
++  const floor = (spec0.water?.level ?? -Infinity) + DRY;
++  const good = new Map();
++  const isGood = (i) => {
++    if (!good.has(i)) {
++      const s = field.sample(dirs[i]);
++      good.set(i, s.h > floor && s.slope < GENTLE);
++    }
++    return good.get(i);
++  };
++  const pois = [];
++  for (const kind of kinds) {
++    // (drawn whether or not the kind finds a spot, so one left out moves no other)
++    const r = Math.round(60 + 80 * rnd());
++    const edge = Math.round(80 + 40 * rnd());
++    for (let i = 0; i < dirs.length; i++) {
++      if (pois.some((p) => angleBetween(p.dir, dirs[i]) < APART) || !isGood(i)) continue;
++      pois.push({ id: `poi-${pois.length}`, name: POI_NAMES[kind], kind, dir: dirs[i], r, edge });
++      break;
++    }
++  }
++  if (pois.length) return { pois, origin: pois[0].dir };
++  for (let i = 0; i < dirs.length; i++) if (isGood(i)) return { pois, origin: dirs[i] };
++  return { pois, origin: dirs[0] };
++}
++
++// ── the spec ──
++
++export function generatedSpecOf(row, family) {
++  const v = varietyOf(row);
++  const seed = fold(BigInt(row.seed));
++  const moon = isMoon(row.id);
++  const round = family !== 'gas' && family !== 'ringed';
++  const water = round && v.water ? { kind: v.water.kind, level: 0, ...(v.water.colour ? { colour: v.water.colour } : {}) } : null;
++  const spec = {
++    id: row.id,
++    name: row.name,
++    seed,
++    type: family,
++    climate: round ? CLIMATE_SPHERE : PLANE_CLIMATE,
++    biomes: round ? roundBiomes(family) : expand(TYPE_BIOMES[family], seed),
++    pois: [],
++    pits: [],
++    palette: v.palette,
++    clutter: clutterOf(family, v.flora, v.exotic, round),
++    step: 0,
++    soft: !round,
++    ground: groundOf(family, v.palette, v.character, water, round),
++    water,
++    fog: fogOf(v.sky.haze),
++    landmarks: [],
++    hero: null,
++    kind: moon ? 'moon' : 'planet',
++    parent: row.parent ?? null,
++    buildable: false,
++    round: null,
++    character: v.character,
++    sky: v.sky,
++    weather: v.weather,
++    flora: v.flora,
++    fauna: v.fauna,
++    exotic: v.exotic,
++  };
++  if (!round) return spec;
++  // (sphereField reads the radius, not the spot: the spot waits on the places)
++  const spec0 = { ...spec, round: { radius: groundRadius(row), at: FIB_512[0] } };
++  const { pois, origin } = placesOf(spec0, v.poiKinds);
++  return chartedAt({ ...spec0, pois }, origin);
++}
++
++// a POI's place on the chart, to the centimetre
++const chartAt = (chart, dir) => chart.toChart(dir).map((x) => Math.round(x * 100) / 100 + 0);
++
++export function chartedAt(spec, dir) {
++  if (!spec.round) return spec;
++  const at = unit(dir);
++  const chart = chartOf(at, spec.round.radius);
++  return { ...spec, round: { ...spec.round, at }, pois: spec.pois.map((p) => ({ ...p, at: chartAt(chart, p.dir) })) };
++}
+diff --git a/src/lib/land/flight/generated.test.js b/src/lib/land/flight/generated.test.js
+new file mode 100644
+index 000000000..63e90f5ae
+--- /dev/null
++++ b/src/lib/land/flight/generated.test.js
+@@ -0,0 +1,87 @@
++import { describe, expect, it } from 'vitest';
++import { POI_NAMES, chartedAt, groundRadius } from './generated';
++import { sphereField } from './sphereField';
++import { angleBetween, dirOfUv } from './sphere';
++import { planetSpecOf as specWith } from './planetSpec';
++import { MOONS, lookupOf, randomSystems } from './fixtures/generated';
++import { PLANETS, planetSpecOf } from './fixtures/expanse.js';
++
++// every key a roster spec has (its 17 and ROSTER_EXTRA's)
++const KEYS = Object.keys(planetSpecOf('hoth'));
++const rows = randomSystems(60, 4).flat();
++const lookup = lookupOf(rows);
++const landable = rows.filter((r) => !['gas', 'ringed'].includes(r.type)).slice(0, 40);
++
++describe('generatedSpecOf', () => {
++  it('makes a round planet of every landable type, and a moon, with every field a spec has', () => {
++    for (const r of [...landable, ...MOONS]) {
++      const s = specWith(r.id, { expanse: (id) => lookup(id) ?? MOONS.find((m) => m.id === id) ?? null });
++      for (const k of KEYS) expect(k in s, `${r.id} ${k}`).toBe(true);
++      expect(s.round.radius).toBeGreaterThanOrEqual(15000);
++      expect(s.round.radius).toBeLessThanOrEqual(60000);
++      expect(JSON.parse(JSON.stringify(s))).toEqual(s);
++    }
++  });
++
++  it('sizes the ground from the universe radius', () => {
++    expect(groundRadius({ radius: 18 })).toBe(15000);
++    expect(groundRadius({ radius: 70 })).toBe(60000);
++    expect(groundRadius({ radius: 140 })).toBe(60000);
++    expect(groundRadius({ radius: 44 })).toBe(37500);
++    expect(groundRadius({})).toBe(15000);
++  });
++
++  it('puts its places on dry, gentle land, apart, and starts the chart at the first', () => {
++    for (const r of landable) {
++      const s = specWith(r.id, { expanse: lookup });
++      const f = sphereField(s);
++      s.pois.forEach((p, i) => {
++        expect(POI_NAMES[p.kind]).toBe(p.name);
++        expect(f.sample(p.dir).h).toBeGreaterThan((s.water?.level ?? -Infinity) + 3);
++        for (const q of s.pois.slice(0, i)) expect(angleBetween(p.dir, q.dir)).toBeGreaterThanOrEqual(0.3);
++      });
++      if (s.pois.length) expect(Math.hypot(...s.pois[0].at)).toBe(0);
++    }
++  });
++
++  it('gives the seeded thirteen no new places', () => {
++    for (const p of PLANETS.slice(37)) expect(planetSpecOf(p.id).pois).toEqual([]);
++  });
++
++  it('charts again at any spot: the origin and the POIs move, nothing else', () => {
++    const s = specWith(landable[0].id, { expanse: lookup });
++    const t = chartedAt(s, dirOfUv(0.1, 0.3));
++    expect(angleBetween(t.round.at, dirOfUv(0.1, 0.3))).toBeLessThan(1e-12);
++    expect({ ...t, round: null, pois: null }).toEqual({ ...s, round: null, pois: null });
++    expect(t.pois.map((p) => p.dir)).toEqual(s.pois.map((p) => p.dir));
++  });
++
++  it('is the same spec from any lookup that knows the row (the universe’s or the flight’s)', () => {
++    for (const r of landable.slice(0, 10)) expect(specWith(r.id, { expanse: [r] })).toEqual(specWith(r.id, { expanse: lookup }));
++  });
++
++  it('wears its variety in the flight: the sky in its palette, the haze in its fog', () => {
++    const s = specWith(landable[1].id, { expanse: lookup });
++    expect(s.palette.skyLow).toBe(s.sky.low);
++    expect(s.fog.far).toBe(Math.round(21000 - 9000 * s.sky.haze));
++  });
++
++  it('keeps a gas giant a plane cloud deck, recoloured', () => {
++    const g = rows.find((r) => r.type === 'gas');
++    const s = specWith(g.id, { expanse: lookup });
++    expect(s).toMatchObject({ round: null, soft: true, pois: [], water: null, buildable: false });
++  });
++
++  it('shows several biomes on its sphere', () => {
++    let many = 0;
++    for (const r of landable) {
++      const f = sphereField(specWith(r.id, { expanse: lookup }));
++      const count = new Map();
++      for (let j = 0; j < 32; j++) for (let i = 0; i < 64; i++) { const b = f.biomeAt(dirOfUv((i + 0.5) / 64, (j + 0.5) / 32)); count.set(b, (count.get(b) ?? 0) + 1); }
++      const big = [...count.values()].filter((n) => n >= 0.03 * 2048).length;
++      expect(big, r.id).toBeGreaterThanOrEqual(2);
++      if (big >= 3) many++;
++    }
++    expect(many / landable.length).toBeGreaterThanOrEqual(0.9);
++  });
++});
+diff --git a/src/lib/land/flight/planetSpec.js b/src/lib/land/flight/planetSpec.js
+index 020748cc9..d8ba7e479 100644
+--- a/src/lib/land/flight/planetSpec.js
++++ b/src/lib/land/flight/planetSpec.js
+@@ -1,17 +1,19 @@
+ // The flight's planets: what a planet id flies over. The fifty are the
+ // roster of docs/research/2026-10-09-planet-geographies.md, in its order:
+ // the galaxy's 17 worlds, the Rick and Morty sector's 10, the universe map's
+ // 10 fandom planets (each written out in ./planetTables.js: its biomes,
+ // POIs, pits, palette, clutter, and `step` or `soft` where it has them),
+ // then 13 of the Expanse's generated planets, each through its type's stacks
+ // (TYPE_BIOMES, the galaxy's worlds as templates), its own seed and no POIs.
++// Every other Expanse planet and moon is built from its own variety
++// (generated.js): round where it can be landed on, a cloud deck where not.
+ // The Expanse is given, as rows (expanse/flight/planets.js makes them from
+ // the generator): lib knows no page, and the flight can go without the
+ // Expanse noticing.
+ // Scattered islands and craters are placed from the planet's own seed.
+ //
+ // Ids are lower case because the shared world's database takes nothing else
+ // (supabase/migrations' planets check); an Expanse planet is its sector.js id
+ // lowered, 'e:sx,sz:i:j', and either case is read back.
+ //
+ // Pure: no three.js, nothing from a world. An Expanse row is
+@@ -22,83 +24,82 @@
+ //   planetsOf(rows) → { id, name, type, seed }[]: the named worlds, then the rows'
+ //   TYPE_BIOMES[type] → an Expanse planet's biomes
+ //   TERRAIN_VERSION → the ground's version (what's built is put back on a newer one)
+ //   ROSTER_EXTRA → the fields a spec has beside the old seventeen, at the fifty's values
+ //   planetSpecOf(id, { expanse }) → { id, name, seed, type, climate, biomes, pois, pits,
+ //     palette, clutter, step, soft, ground, water, fog, landmarks, hero, ...ROSTER_EXTRA } | null
+ 
+ import { fold } from './fnl.js';
+ import { canonicalId, expanseLookup } from './expanse.js';
+ import { hash64 } from './hash.js';
++import { generatedSpecOf } from './generated.js';
+ import { PLANE_CLIMATE, SEEDED_EXPANSE, TYPE_BIOMES, TYPE_LOOK, WORLDS, expand, familyOf } from './planetTables.js';
+-import { parseSpaceId } from '../../space/address.js';
+ 
+ // The ground's version, for what's built on it (the shared world's
+ // terrain_version): bumped by hand whenever this file or ./planetTables.js
+ // changes a planet's ground, so a turret stored on the old ground's height is
+ // put back on the new one's. planetSpec.test.js hashes the ground and fails
+ // when it moves without this.
+ // (2: Naboo's land drawn after the game's Theed, lane E2)
+ export const TERRAIN_VERSION = 2;
+ 
+ export { TYPE_BIOMES };
+ 
+ // what a spec has beside the old seventeen: the fifty carry these values, and
+-// a generated planet or moon overrides kind, parent and buildable
++// a generated planet or moon its own (generated.js)
+ export const ROSTER_EXTRA = { kind: 'planet', parent: null, buildable: true, round: null, character: null, sky: null, weather: null, flora: null, fauna: null, exotic: null };
+ 
+ const SEEDED = new Set(SEEDED_EXPANSE.map(([id]) => id));
+ 
+ // a named world's seed is its own where it has one (Hoth's), else its id hashed
+ const seedOf = (w) => w.seed ?? fold(hash64('fly', w.id));
+ 
+ // an Expanse row's seed is the generator's, folded as it always was
+ const expanseSeed = (row) => fold(BigInt(row.seed));
+ 
+ export const planetsOf = (expanse = []) => [
+   ...WORLDS.map((w) => ({ id: w.id, name: w.name, type: w.type, seed: seedOf(w) })),
+   ...expanse.map((r) => ({ id: r.id, name: r.name, type: r.type, seed: expanseSeed(r) })),
+ ];
+ 
+-const specOf = ({ id, name, type, seed }, w, extra = ROSTER_EXTRA) => ({
++const specOf = ({ id, name, type, seed }, w) => ({
+   id,
+   name,
+   seed,
+   type,
+   climate: PLANE_CLIMATE,
+   biomes: expand(w.biomes, seed),
+   pois: w.pois ?? [],
+   pits: w.pits ?? [],
+   palette: w.palette,
+   clutter: w.clutter,
+   step: w.step ?? 0,
+   soft: Boolean(w.soft),
+   ground: w.ground ?? null,
+   water: w.water ?? null,
+   fog: w.fog ?? null,
+   landmarks: w.landmarks ?? [],
+   hero: w.hero ?? null,
+-  ...extra,
++  ...ROSTER_EXTRA,
+ });
+ 
+ const templateOf = (type) => {
+   const look = TYPE_LOOK[type];
+   return { biomes: TYPE_BIOMES[type], palette: look.palette, clutter: look.clutter, soft: look.soft, ground: look.ground, water: look.water };
+ };
+ 
+ export function planetSpecOf(planetId, { expanse = null } = {}) {
+   if (typeof planetId !== 'string') return null;
+   const named = planetId.toLowerCase();
+   const w = WORLDS.find((x) => x.id === named);
+   if (w) return specOf({ id: named, name: w.name, type: w.type, seed: seedOf(w) }, w);
+   const id = canonicalId(planetId);
+   if (!id) return null;
+   const p = expanseLookup(expanse)(id);
+   if (!p) return null;
+   // the thirteen are the roster: their old template spec, buildable
+   if (SEEDED.has(id)) return TYPE_BIOMES[p.type] ? specOf({ id, name: p.name, type: p.type, seed: expanseSeed(p) }, templateOf(p.type)) : null;
+   const family = familyOf(p.type);
+   if (!TYPE_BIOMES[family]) return null;
+-  const moon = parseSpaceId(id).moon !== undefined;
+-  const extra = { ...ROSTER_EXTRA, kind: moon ? 'moon' : 'planet', parent: moon ? (p.parent ?? null) : null, buildable: false };
+-  return specOf({ id, name: p.name, type: family, seed: expanseSeed(p) }, templateOf(family), extra);
++  // (the id as it was asked for, canonical, whatever the lookup's row says)
++  return generatedSpecOf(p.id === id ? p : { ...p, id }, family);
+ }
+diff --git a/src/lib/land/flight/planetTables.js b/src/lib/land/flight/planetTables.js
+index 95af18694..55a3b8ff9 100644
+--- a/src/lib/land/flight/planetTables.js
++++ b/src/lib/land/flight/planetTables.js
+@@ -12,20 +12,21 @@
+ // Where the note gives no `at` (the sector's and the fandom planets'), the
+ // first biome sits in the middle and the rest round it (ringed). Where a
+ // galaxy world has a walkable site (galaxy/surface/sites), its first biome's
+ // relief begins with that site's own ground layers, copied here as they are
+ // there (the test holds them to it), so the ground round the landing site is
+ // the same ground; the note's other layers for that biome follow them.
+ //
+ //   WORLDS → worlds, in the roster's order (galaxy, sector, fandom)
+ //   TYPE_BIOMES[type] → an Expanse planet's biomes; TYPE_LOOK[type] → { palette, clutter, soft }
+ //   PLANE_CLIMATE → the plane ground's climate noise
++//   WATER_LOOKS[kind] → { color, roughness, opacity, glow? }: a water sheet's look by its kind
+ //   SEEDED_EXPANSE → the thirteen seeded Expanse planets, [id, type], in the roster's order
+ //   MOON_FAMILY, familyOf(type) → a moon's type as its family's (rocky is rock, icy is ice)
+ //   ROUND_ROUGH[family][biomeId] → its hills' multiplier on a round planet
+ //   roundBiomes(family) → [{ id, at, reach, base, rough, relief: [] }] (throws for gas and ringed)
+ //   expand(biomes, seed) → biomes with each scatter made island layers
+ 
+ import { seeded } from '../../seeded.js';
+ 
+ // ── the layers, short ──
+ const swell = (scale, height) => ({ type: 'swell', scale, height });
+@@ -122,20 +123,29 @@ export const SITE_WATER = {
+   dagobah: { kind: 'swamp', level: 0 },
+   yavin: { kind: 'swamp', level: -3 },
+   naboo: { kind: 'sea', level: -2.06 },
+   kamino: { kind: 'sea', level: 0 },
+   mustafar: { kind: 'lava', level: 2.5 },
+   scarif: { kind: 'sea', level: -0.92 },
+   bespin: { kind: 'clouds', level: -380 },
+   nevarro: { kind: 'lava', level: -3 },
+ };
+ 
++// a water sheet's look by its kind (expanse/flight/water.js draws it; a
++// generated planet's own colour, water.colour, stands in for `color`)
++export const WATER_LOOKS = {
++  sea: { color: '#1f5a6e', roughness: 0.12, opacity: 0.86 },
++  lake: { color: '#2a4f5a', roughness: 0.16, opacity: 0.9 },
++  swamp: { color: '#2e3322', roughness: 0.35, opacity: 0.95 },
++  lava: { color: '#3a0c02', roughness: 0.6, opacity: 1, glow: '#ff4a0a' },
++};
++
+ // a world's ground look for lib/three/groundLook.js: a scan (public/cc0/galaxy/'s role) under its palette
+ const ground = (detail, palette, hLow, hHigh, more = {}) => ({
+   ...(detail ? { detail, detailLook: { color: 0.7, normal: 0.7 } } : {}),
+   wind: more.wind ?? 0.5,
+   palette: { ...palette, hLow, hHigh, rockAt: more.rockAt ?? 0.4, accentCover: more.accentCover ?? 0.22, grain: more.grain ?? 0.6, ...(more.sparkle ? { sparkle: more.sparkle } : {}) },
+ });
+ const water = (kind, level) => ({ kind, level });
+ 
+ 
+ // ── the galaxy, 17 worlds ──

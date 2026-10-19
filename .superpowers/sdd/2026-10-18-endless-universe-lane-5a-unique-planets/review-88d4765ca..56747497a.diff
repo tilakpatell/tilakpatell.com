@@ -1,0 +1,598 @@
+# Review package: 88d4765ca..56747497a
+
+## Commits
+56747497a Grow a generated planet's ground on its sphere: climate, biomes, heights, flats
+
+## Files changed
+ docs/stack/fastnoise-lite.md              |   1 +
+ src/lib/land/flight/biomes.js             |  11 ++-
+ src/lib/land/flight/biomes.test.js        |  10 ++-
+ src/lib/land/flight/fixtures/generated.js |  24 ++++++
+ src/lib/land/flight/fnl.js                |  20 +++--
+ src/lib/land/flight/fnl.test.js           |  26 ++++++
+ src/lib/land/flight/planetTables.js       |  24 ++++++
+ src/lib/land/flight/sphereField.js        | 138 ++++++++++++++++++++++++++++++
+ src/lib/land/flight/sphereField.test.js   |  61 +++++++++++++
+ 9 files changed, 304 insertions(+), 11 deletions(-)
+
+## Diff
+diff --git a/docs/stack/fastnoise-lite.md b/docs/stack/fastnoise-lite.md
+index fa3f64932..0a7fd9502 100644
+--- a/docs/stack/fastnoise-lite.md
++++ b/docs/stack/fastnoise-lite.md
+@@ -34,11 +34,12 @@ The census row is in [README.md](README.md): one file imports it, `src/lib/land/
+ 
+ ## Upgrading
+ 
+ `npm install fastnoise-lite@<v> --save-exact`, then `npx vitest run src/lib/land/flight` and a flight on `/fly/hoth`. Last upgrade: not recorded; record the next one here.
+ 
+ ## Gotchas
+ 
+ - In 1.1.1, `DomainWrap(coord)` warps only when `coord` is an instance of the package's `Vector2` class, which it does not export; a plain `{ x, y }` comes back unchanged with no error (found while writing `src/lib/land/flight/fnl.js`; its test “warps the domain” would fail with the class's warp).
+ - `GetNoise(x, y)` scales by the frequency itself; pass metres, not metres times the frequency.
+ - `GetNoise` picks 2D or 3D by how many arguments it is given, so a 3D call passes all three even when one is 0. The 3D warp is three noises, one an axis, as the 2D warp is two (`noise3For` in `src/lib/land/flight/fnl.js`).
++- In 1.1.1, 3D OpenSimplex2 is not continuous. Where two lattice points are both in reach it adds only one, so the value steps where the pick flips, and its default transform makes every octave flip at once on six planes through the origin: a generated planet's ground stepped up to 13 m along six great circles. So `noise3For`'s `'simplex'` is OpenSimplex2S (continuous, about as fast here), while `noiseFor`'s 2D keeps OpenSimplex2, which the roster planets are drawn with (`src/lib/land/flight/fnl.js`; its test “is continuous across the planes where 3D OpenSimplex2 stepped”).
+ - OpenSimplex2 reads exactly 0 on its lattice points. At frequency 0.01, (100, 100, 100) is one for the noise and for the warp's half-frequency noises too, so warped and unwarped both read 0 there; `fnl.test.js`'s “warps in 3D” samples (100, 37, −80).
+diff --git a/src/lib/land/flight/biomes.js b/src/lib/land/flight/biomes.js
+index cdcd3b629..26daf86e8 100644
+--- a/src/lib/land/flight/biomes.js
++++ b/src/lib/land/flight/biomes.js
+@@ -2,45 +2,50 @@
+ // noises (temperature t and moisture m, each 0…1) place every point in a
+ // climate square; a biome sits at a point of that square with a reach, and
+ // its weight falls off over the outer 40 % of the reach, so two biomes blend
+ // across a band instead of meeting at a cliff. The weights sum to 1; the
+ // first biome is the ground between the others, taking whatever weight they
+ // leave, so a point outside every reach is wholly the first biome's.
+ //
+ // Pure: runs in Node and in the flight's terrain worker.
+ //
+ //   biomeWeights(spec, x, z) → number[] (one a biome, summing to 1)
++//   weightsAt(biomes, t, m) → the same, at a point of the climate square
++//     (a generated planet's round ground reads its climate on the sphere)
+ //   climateOf(spec) → (x, z) → [t, m] (cached by spec)
+ 
+ import { noiseFor } from './fnl.js';
+ 
+ const smoothstep = (a, b, x) => {
+   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+   return t * t * (3 - 2 * t);
+ };
+ 
+ // one pair of noises a spec, not one a call: a leaf asks 1,225 points
+ const climates = new WeakMap();
+-function climateOf(spec) {
++export function climateOf(spec) {
+   let c = climates.get(spec);
+   if (!c) {
+     const t = noiseFor(spec.seed, { ...spec.climate, octaves: 3 });
+     const m = noiseFor(spec.seed + 1, { ...spec.climate, octaves: 3 });
+     c = (x, z) => [t(x, z) * 0.5 + 0.5, m(x, z) * 0.5 + 0.5];
+     climates.set(spec, c);
+   }
+   return c;
+ }
+ 
+ export function biomeWeights(spec, x, z) {
+-  const [t, m] = climateOf(spec)(x, z);
+-  const w = spec.biomes.map((b) => 1 - smoothstep(b.reach * 0.6, b.reach, Math.hypot(t - b.at[0], m - b.at[1])));
++  return weightsAt(spec.biomes, ...climateOf(spec)(x, z));
++}
++
++export function weightsAt(biomes, t, m) {
++  const w = biomes.map((b) => 1 - smoothstep(b.reach * 0.6, b.reach, Math.hypot(t - b.at[0], m - b.at[1])));
+   // The first biome takes what the others leave of 1, so where they fade
+   // out it fades in. Normalising alone would make one biome's last sliver
+   // of weight a whole 1 at the edge of its reach, and the land would step
+   // from its stack to the first's in a metre: a cliff a hundred metres high.
+   let sum = 0;
+   for (const v of w) sum += v;
+   if (sum < 1) {
+     w[0] += 1 - sum;
+     sum = 1;
+   }
+diff --git a/src/lib/land/flight/biomes.test.js b/src/lib/land/flight/biomes.test.js
+index 9f58d8f18..6e6c5f17f 100644
+--- a/src/lib/land/flight/biomes.test.js
++++ b/src/lib/land/flight/biomes.test.js
+@@ -1,12 +1,12 @@
+ import { describe, expect, it } from 'vitest';
+-import { biomeWeights } from './biomes';
++import { biomeWeights, climateOf, weightsAt } from './biomes';
+ import { planetSpecOf } from './planetSpec';
+ 
+ describe('biomeWeights', () => {
+   const hoth = planetSpecOf('hoth');
+ 
+   it('sums to 1 at 100 points, one weight a biome', () => {
+     for (let i = 0; i < 100; i++) {
+       const w = biomeWeights(hoth, Math.sin(i * 12.9898) * 40000, Math.cos(i * 78.233) * 40000);
+       expect(w).toHaveLength(hoth.biomes.length);
+       expect(Math.abs(w.reduce((a, b) => a + b, 0) - 1)).toBeLessThan(1e-6);
+@@ -20,11 +20,19 @@ describe('biomeWeights', () => {
+   });
+ 
+   it('gives every biome somewhere on the planet', () => {
+     const seen = new Set();
+     for (let i = 0; i < 400; i++) {
+       const w = biomeWeights(hoth, (i % 20) * 3000, Math.floor(i / 20) * 3000);
+       seen.add(w.indexOf(Math.max(...w)));
+     }
+     expect(seen.size).toBe(hoth.biomes.length);
+   });
++
++  it('weightsAt is biomeWeights given the climate', () => {
++    for (let i = 0; i < 20; i++) {
++      const x = Math.sin(i * 12.9898) * 40000;
++      const z = Math.cos(i * 78.233) * 40000;
++      expect(biomeWeights(hoth, x, z)).toEqual(weightsAt(hoth.biomes, ...climateOf(hoth)(x, z)));
++    }
++  });
+ });
+diff --git a/src/lib/land/flight/fixtures/generated.js b/src/lib/land/flight/fixtures/generated.js
+index 248f24ca6..96ab2f3dd 100644
+--- a/src/lib/land/flight/fixtures/generated.js
++++ b/src/lib/land/flight/fixtures/generated.js
+@@ -1,18 +1,42 @@
+ // Generated planets as their tests are given them: points on the sphere,
+ // scattered the same way every run. z = 2r − 1 and an angle round it is
+ // uniform on the unit sphere (Archimedes: equal heights of a sphere's band
+ // hold equal areas).
+ //
++// roundSpec is a round planet's spec put together by hand, before anything
++// generates one: what sphereField reads, with one POI. Its `sea` and `peaks`
++// are the middle of the character's ranges unless asked.
++//
+ //   randomDirs(n, seed) → n unit [x, y, z] arrays
++//   roundSpec({ type = 'rock', kind = 'craters', seed = 7, radius = 20000, sea, peaks }) → spec
+ 
+ import { seeded } from '../../../seeded.js';
++import { TERRAIN } from '../characters.js';
++import { roundBiomes } from '../planetTables.js';
++import { dirOfLatLon } from '../sphere.js';
+ 
+ export function randomDirs(n, seed) {
+   const r = seeded(seed);
+   return Array.from({ length: n }, () => {
+     const z = 2 * r() - 1;
+     const a = 2 * Math.PI * r();
+     const s = Math.sqrt(1 - z * z);
+     return [s * Math.cos(a), s * Math.sin(a), z];
+   });
+ }
++
++const mid = ([a, b]) => (a + b) / 2;
++
++export function roundSpec({ type = 'rock', kind = 'craters', seed = 7, radius = 20000, sea, peaks } = {}) {
++  return {
++    id: `round-${type}-${kind}-${seed}`,
++    seed,
++    type,
++    biomes: roundBiomes(type),
++    character: { kind, sea: sea ?? mid(TERRAIN[kind].sea), peaks: peaks ?? mid(TERRAIN[kind].peaks) },
++    round: { radius, at: dirOfLatLon(0, 0) },
++    water: type === 'ocean' || type === 'forest' ? { kind: 'sea', level: 0 } : null,
++    // (its `at` is the chart's business, and sphereField doesn't read it)
++    pois: [{ id: 'poi-0', name: 'Ruins', kind: 'ruins', dir: dirOfLatLon(5, 10), at: [0, 0], r: 120, edge: 100 }],
++  };
++}
+diff --git a/src/lib/land/flight/fnl.js b/src/lib/land/flight/fnl.js
+index 2a0e71425..112ca999b 100644
+--- a/src/lib/land/flight/fnl.js
++++ b/src/lib/land/flight/fnl.js
+@@ -1,44 +1,50 @@
+ // One configured FastNoiseLite per use, behind a function of (x, z), so the
+ // class is named in this file only (docs/stack/fastnoise-lite.md). Seeds are
+ // 32-bit: a planet's bigint is folded, its low 32 bits xor its high 32.
+ //
+ // A generated planet's round ground samples the same noise in 3D, at a point
+ // on its sphere (characters.js), so nothing there has a seam or a pole.
+ //
+ // Pure: runs in Node and in the flight's terrain worker.
+ //
+ //   noiseFor(seed, { type, frequency, octaves, lacunarity, gain, fractal, warp }) → (x, z) → −1…1
+-//   noise3For(seed, the same options) → (x, y, z) → −1…1
++//   noise3For(seed, the same options) → (x, y, z) → −1…1   ('simplex' is OpenSimplex2S in 3D)
+ //   cells3For(seed, { frequency, jitter = 1 }) → (x, y, z) → distance to the nearest cell point, ≥ 0
+ //   fold(seed: bigint | number) → int32
+ 
+ import FastNoiseLite from 'fastnoise-lite';
+ 
+ export const fold = (seed) => (typeof seed === 'bigint' ? Number((seed ^ (seed >> 32n)) & 0xffffffffn) | 0 : seed | 0);
+ 
+ const TYPES = {
+   simplex: FastNoiseLite.NoiseType.OpenSimplex2,
+   cellular: FastNoiseLite.NoiseType.Cellular,
+   perlin: FastNoiseLite.NoiseType.Perlin,
+   value: FastNoiseLite.NoiseType.Value,
+ };
+ const FRACTALS = {
+   fbm: FastNoiseLite.FractalType.FBm,
+   ridged: FastNoiseLite.FractalType.Ridged,
+   pingpong: FastNoiseLite.FractalType.PingPong,
+   none: FastNoiseLite.FractalType.None,
+ };
++// In 3D, 'simplex' is OpenSimplex2S. 1.1.1's 3D OpenSimplex2 adds one of two
++// lattice points where both are in reach, so its value steps where the pick
++// flips, and its transform makes every octave flip at once on six planes
++// through the origin: a generated planet's ground stepped up to 13 m along
++// six great circles. 2D keeps OpenSimplex2, which the roster is drawn with.
++const TYPES3 = { ...TYPES, simplex: FastNoiseLite.NoiseType.OpenSimplex2S };
+ 
+-const make = (seed, type, frequency, fractal, octaves, lacunarity, gain) => {
++const make = (seed, type, frequency, fractal, octaves, lacunarity, gain, types = TYPES) => {
+   const n = new FastNoiseLite(seed);
+-  n.SetNoiseType(TYPES[type]);
++  n.SetNoiseType(types[type]);
+   n.SetFrequency(frequency);
+   n.SetFractalType(FRACTALS[fractal]);
+   n.SetFractalOctaves(octaves);
+   n.SetFractalLacunarity(lacunarity);
+   n.SetFractalGain(gain);
+   return n;
+ };
+ 
+ export function noiseFor(seed, { type = 'simplex', frequency = 0.01, octaves = 4, lacunarity = 2, gain = 0.5, fractal = 'fbm', warp = 0 } = {}) {
+   const s = fold(seed);
+@@ -50,25 +56,25 @@ export function noiseFor(seed, { type = 'simplex', frequency = 0.01, octaves = 4
+   // { x, y } goes through unwarped and nothing says so.
+   const wx = make(s ^ 0x5bd1e995, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5);
+   const wz = make(s ^ 0x27d4eb2f, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5);
+   return (x, z) => n.GetNoise(x + wx.GetNoise(x, z) * warp, z + wz.GetNoise(x, z) * warp);
+ }
+ 
+ // GetNoise reads its arguments' count: three are 3D, so every call passes all
+ // three. The 3D warp is noiseFor's made the same way, a third noise for y.
+ export function noise3For(seed, { type = 'simplex', frequency = 0.01, octaves = 4, lacunarity = 2, gain = 0.5, fractal = 'fbm', warp = 0 } = {}) {
+   const s = fold(seed);
+-  const n = make(s, type, frequency, fractal, octaves, lacunarity, gain);
++  const n = make(s, type, frequency, fractal, octaves, lacunarity, gain, TYPES3);
+   if (!warp) return (x, y, z) => n.GetNoise(x, y, z);
+-  const wx = make(s ^ 0x5bd1e995, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5);
+-  const wy = make(s ^ 0x165667b1, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5);
+-  const wz = make(s ^ 0x27d4eb2f, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5);
++  const wx = make(s ^ 0x5bd1e995, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5, TYPES3);
++  const wy = make(s ^ 0x165667b1, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5, TYPES3);
++  const wz = make(s ^ 0x27d4eb2f, 'simplex', frequency * 0.5, 'fbm', 3, 2, 0.5, TYPES3);
+   return (x, y, z) => n.GetNoise(x + wx.GetNoise(x, y, z) * warp, y + wy.GetNoise(x, y, z) * warp, z + wz.GetNoise(x, y, z) * warp);
+ }
+ 
+ // The class's cellular Distance is the Euclidean distance to the nearest
+ // jittered cell point, in cells, less 1; adding the 1 back reads it from 0.
+ export function cells3For(seed, { frequency = 0.01, jitter = 1 } = {}) {
+   const n = make(fold(seed), 'cellular', frequency, 'none', 1, 2, 0.5);
+   n.SetCellularDistanceFunction(FastNoiseLite.CellularDistanceFunction.Euclidean);
+   n.SetCellularReturnType(FastNoiseLite.CellularReturnType.Distance);
+   n.SetCellularJitter(jitter);
+diff --git a/src/lib/land/flight/fnl.test.js b/src/lib/land/flight/fnl.test.js
+index ac4e47bfc..022a3f83e 100644
+--- a/src/lib/land/flight/fnl.test.js
++++ b/src/lib/land/flight/fnl.test.js
+@@ -52,20 +52,46 @@ describe('noise3For', () => {
+   it('is continuous: two points a millimetre apart differ by under 1e−3', () => {
+     const n = noise3For(4, { octaves: 5 });
+     for (let i = 0; i < 200; i++) {
+       const [x, y, z] = [i * 91.7 - 5000, i * -23.9 + 700, i * 57.3];
+       expect(Math.abs(n(x + 0.001, y, z) - n(x, y, z))).toBeLessThan(1e-3);
+       expect(Math.abs(n(x, y + 0.001, z) - n(x, y, z))).toBeLessThan(1e-3);
+       expect(Math.abs(n(x, y, z + 0.001) - n(x, y, z))).toBeLessThan(1e-3);
+     }
+   });
+ 
++  // 1.1.1's 3D OpenSimplex2 picks one of two lattice points where both are in
++  // reach, and its transform makes every octave tie at once on six planes
++  // through the origin: a generated planet's ground stepped up to 13 m along
++  // six great circles. Points a millimetre either side of each plane, round
++  // a 20 km circle in it, at a ground layer's frequency.
++  it('is continuous across the planes where 3D OpenSimplex2 stepped', () => {
++    const n = noise3For(7, { frequency: 1 / 1600, octaves: 5 });
++    const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
++    const len = (v) => Math.hypot(v[0], v[1], v[2]);
++    for (const plane of [[1, -1, 0], [1, 0, -1], [0, 1, -1], [1, 1, 4], [1, 4, 1], [4, 1, 1]]) {
++      const nrm = plane.map((c) => c / len(plane));
++      const u0 = cross(nrm, Math.abs(nrm[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]);
++      const u = u0.map((c) => c / len(u0));
++      const w = cross(nrm, u);
++      let worst = 0;
++      for (let k = 0; k < 500; k++) {
++        const t = (k / 500) * 2 * Math.PI;
++        const p = [0, 1, 2].map((c) => (u[c] * Math.cos(t) + w[c] * Math.sin(t)) * 20000);
++        const a = p.map((c, i) => c + nrm[i] * 0.0005);
++        const b = p.map((c, i) => c - nrm[i] * 0.0005);
++        worst = Math.max(worst, Math.abs(n(a[0], a[1], a[2]) - n(b[0], b[1], b[2])));
++      }
++      expect(worst, `across the plane ⟂ [${plane}]`).toBeLessThan(1e-3);
++    }
++  });
++
+   it('warps in 3D', () => {
+     // not (100, 100, 100): a lattice point of the noise and of the warp's
+     // own, where OpenSimplex2 reads 0 warped or not
+     expect(noise3For(5, { warp: 200 })(100, 37, -80)).not.toBe(noise3For(5, { warp: 0 })(100, 37, -80));
+   });
+ 
+   it('takes every type and fractal it names', () => {
+     for (const type of ['simplex', 'cellular', 'perlin', 'value'])
+       for (const fractal of ['fbm', 'ridged', 'pingpong', 'none']) expect(Number.isFinite(noise3For(3, { type, fractal })(50, 70, -90))).toBe(true);
+   });
+diff --git a/src/lib/land/flight/planetTables.js b/src/lib/land/flight/planetTables.js
+index fd7075d9a..254918dc7 100644
+--- a/src/lib/land/flight/planetTables.js
++++ b/src/lib/land/flight/planetTables.js
+@@ -11,20 +11,22 @@
+ //   scatter? (islands or craters placed from the planet's seed: expand) }.
+ // Where the note gives no `at` (the sector's and the fandom planets'), the
+ // first biome sits in the middle and the rest round it (ringed). Where a
+ // galaxy world has a walkable site (galaxy/surface/sites), its first biome's
+ // relief begins with that site's own ground layers, copied here as they are
+ // there (the test holds them to it), so the ground round the landing site is
+ // the same ground; the note's other layers for that biome follow them.
+ //
+ //   WORLDS → worlds, in the roster's order (galaxy, sector, fandom)
+ //   TYPE_BIOMES[type] → an Expanse planet's biomes; TYPE_LOOK[type] → { palette, clutter, soft }
++//   ROUND_ROUGH[family][biomeId] → its hills' multiplier on a round planet
++//   roundBiomes(family) → [{ id, at, reach, base, rough, relief: [] }] (throws for gas and ringed)
+ //   expand(biomes, seed) → biomes with each scatter made island layers
+ 
+ import { seeded } from '../../seeded.js';
+ 
+ // ── the layers, short ──
+ const swell = (scale, height) => ({ type: 'swell', scale, height });
+ const hills = (scale, height, more = {}) => ({ type: 'hills', scale, height, ...more });
+ // the cartoon worlds' hills: rounder (gain 0.4, three octaves)
+ const soft = (scale, height) => hills(scale, height, { gain: 0.4, octaves: 3 });
+ const dunes = (scale, height, wind = 0) => ({ type: 'dunes', scale, height, wind });
+@@ -609,20 +611,42 @@ export const TYPE_LOOK = {
+   ice: look('hoth'),
+   desert: look('tatooine'),
+   forest: look('endor'),
+   lava: look('mustafar'),
+   ocean: look('scarif'),
+   gas: look('bespin'),
+   ringed: look('bespin'),
+   rock: look('geonosis', { clutter: clutter(['rock', 60], ['debris', 15]) }),
+ };
+ 
++// A generated planet's round ground (sphereField.js) keeps its family's
++// biomes for their places on the climate square and their base heights, and
++// trades their relief for one hilly noise, scaled per biome by these: a
++// range rougher than the plains, a shelf or a chott near flat. By family,
++// then by the template's biome id (two families each have a `plains`).
++export const ROUND_ROUGH = {
++  ice: { plains: 0.7, shelf: 0.3, range: 2.2, glacier: 0.8, valley: 0.6 },
++  desert: { jundland: 1.2, dunesea: 0.8, plateau: 0.6, chott: 0.25, wastes: 0.9 },
++  forest: { redwoods: 1, savannah: 0.6, range: 2.2, lakes: 0.4, desert: 0.7 },
++  lava: { fields: 1, volcanoes: 2, ash: 0.6, glass: 0.3 },
++  ocean: { islands: 1, volcano: 1.6, reef: 0.3, deep: 0.5 },
++  rock: { plains: 0.6, mesas: 1.2, badlands: 1.6, craters: 1 },
++};
++
++// the family's biomes with no relief and no scatter (their islands and
++// craters are placed on a plane), each with its roughness
++export function roundBiomes(family) {
++  const rough = ROUND_ROUGH[family];
++  if (!rough) throw new Error(`No round ground for ${family}.`);
++  return TYPE_BIOMES[family].map(({ id, at, reach, base }) => ({ id, at: [...at], reach, base, rough: rough[id], relief: [] }));
++}
++
+ const between = (rnd, [a, b]) => a + rnd() * (b - a);
+ 
+ export function expand(biomes, seed) {
+   return biomes.map((x, i) => {
+     if (!x.scatter) return x;
+     const { count, spread, r, height, core = 0.25, ragged = 0.35, rim = 0, crater = 0 } = x.scatter;
+     const rnd = seeded((seed | 0) ^ Math.imul(i + 1, 0x9e3779b1));
+     const relief = [...x.relief];
+     for (let k = 0; k < count; k++) {
+       const at = [Math.round((rnd() * 2 - 1) * spread), Math.round((rnd() * 2 - 1) * spread)];
+diff --git a/src/lib/land/flight/sphereField.js b/src/lib/land/flight/sphereField.js
+new file mode 100644
+index 000000000..71774b985
+--- /dev/null
++++ b/src/lib/land/flight/sphereField.js
+@@ -0,0 +1,138 @@
++// A generated planet's round ground: its climate, biomes, heights and POI
++// flats, each a function of a unit direction on its sphere, so nothing has a
++// seam, a pole or an edge. The flight reads it through a chart round the
++// landing spot (field.js) and the orbit map bakes it texel by texel.
++//
++// - Climate. Two 3D noises of the direction (CLIMATE_SPHERE), each read 0…1
++//   and stretched about 0.5 so the planet reaches the corners of the climate
++//   square. Temperature leans on the latitude too: 0.55 of it is how far
++//   from a pole the point is, so the poles are cold whatever the noise does.
++// - Biomes. biomes.js's weightsAt at that climate; each biome keeps its base
++//   height and scales one hilly noise by its `rough` (planetTables.js's
++//   ROUND_ROUGH), in place of its plane relief.
++// - Height. The character's ground (characters.js's groundOf), the weighted
++//   biomes and a few metres of detail, pressed softly into −200…1150 m.
++// - POI flats. flats.js's rule on the sphere, the distance a great circle's:
++//   inside r a POI is its level exactly (the raw height at its direction),
++//   eased back to the land over its edge.
++//
++// sample(dir) reads the slope as the flight's chart does, the four heights
++// SLOPE_STEP m either way along chartOf(dir, radius)'s x and z, in the same
++// order, so the orbit map's texel and the flight's ground agree to the bit.
++//
++// The noises are built once a call of sphereField: the terrain worker and
++// the orbit map's bake ask one field for millions of heights.
++//
++// Pure: runs in Node and in a worker.
++//
++//   CLIMATE_SPHERE = { frequency, octaves, stretch }
++//   SLOPE_STEP: metres either side of a point its slope is read over
++//   sphereField(spec) → {
++//     heightAt(dir) → metres, biomeAt(dir) → index of the heaviest biome,
++//     climateAt(dir) → [t, m] (each 0…1), sample(dir) → { h, slope: 0…1, biome } }
++
++import { weightsAt } from './biomes.js';
++import { groundOf } from './characters.js';
++import { noise3For } from './fnl.js';
++import { angleBetween, chartOf, unit } from './sphere.js';
++
++// frequency is in cycles across the unit sphere, so a climate band is the
++// same share of any planet's circumference
++export const CLIMATE_SPHERE = { frequency: 1.6, octaves: 3, stretch: 1.5 };
++export const SLOPE_STEP = 8;
++
++const clamp01 = (x) => Math.min(1, Math.max(0, x));
++const smoothstep = (a, b, x) => {
++  const t = clamp01((x - a) / (b - a));
++  return t * t * (3 - 2 * t);
++};
++
++// the range pressed into −200…1150 m: untouched between −150 and 900, eased
++// (tanh: steady where it starts, never past its bound) beyond
++const soft = (h) => {
++  if (h > 900) return 900 + 250 * Math.tanh((h - 900) / 250);
++  if (h < -150) return -150 - 50 * Math.tanh((-150 - h) / 50);
++  return h;
++};
++
++// the hills' and the detail's own noises, seeded apart from the climate's
++const HILLS = 0x2c1b3c6d;
++const DETAIL = 0x297a2d39;
++
++export function sphereField(spec) {
++  const R = spec.round.radius;
++  const biomes = spec.biomes;
++  const base = biomes.map((b) => b.base ?? 0);
++  const rough = biomes.map((b) => b.rough ?? 1);
++  const ground = groundOf({ ...spec.character, wet: Boolean(spec.water) }, spec.seed, R);
++
++  const { frequency, octaves, stretch } = CLIMATE_SPHERE;
++  const nt = noise3For(spec.seed, { frequency, octaves });
++  const nm = noise3For(spec.seed + 1, { frequency, octaves });
++  // read 0…1, then stretched about 0.5: 0.5 + (0.5n + 0.5 − 0.5)·stretch
++  const stretched = (n) => clamp01(0.5 + 0.5 * n * stretch);
++  const climate = (d) => [0.55 * (1 - Math.abs(d[1])) + 0.45 * stretched(nt(d[0], d[1], d[2])), stretched(nm(d[0], d[1], d[2]))];
++
++  // in metres at p = dir × radius: hills 0…26 m before a biome's roughness,
++  // detail ±3 m (fbm read 0…1 is (n + 1)/2, so 2·fbm − 1 is n)
++  const hills = noise3For(spec.seed ^ HILLS, { frequency: 1 / 520, octaves: 4 });
++  const detail = noise3For(spec.seed ^ DETAIL, { frequency: 1 / 70, octaves: 3 });
++
++  const raw = (d) => {
++    const w = weightsAt(biomes, ...climate(d));
++    let b = 0;
++    let r = 0;
++    for (let i = 0; i < w.length; i++) {
++      b += w[i] * base[i];
++      r += w[i] * rough[i];
++    }
++    const x = d[0] * R;
++    const y = d[1] * R;
++    const z = d[2] * R;
++    return soft(ground(d).h + b + r * ((hills(x, y, z) + 1) / 2) * 26 + detail(x, y, z) * 3);
++  };
++
++  // each POI's pad, as flats.js makes it; `cos` is a cheap first test (the
++  // dot product) for a point well out of its reach, a thousandth wider than
++  // the reach so it never skips a point the rule would touch
++  const pads = (spec.pois ?? []).map((p) => {
++    const dir = unit(p.dir);
++    const edge = p.edge ?? Math.max(8, p.r * 0.6);
++    const reach = p.r + edge;
++    return { dir, r: p.r, edge, reach, cos: Math.cos(Math.min(Math.PI, (reach / R) * 1.001)), h: p.h ?? raw(dir) };
++  });
++
++  const heightAt = (dir) => {
++    const d = unit(dir);
++    let h = raw(d);
++    for (const p of pads) {
++      if (d[0] * p.dir[0] + d[1] * p.dir[1] + d[2] * p.dir[2] <= p.cos) continue;
++      const at = R * angleBetween(d, p.dir);
++      if (at >= p.reach) continue;
++      const w = 1 - smoothstep(p.r, p.reach, at);
++      h += (p.h - h) * w;
++    }
++    return h;
++  };
++
++  const climateAt = (dir) => climate(unit(dir));
++
++  const biomeAt = (dir) => {
++    const w = weightsAt(biomes, ...climateAt(dir));
++    let best = 0;
++    for (let i = 1; i < w.length; i++) if (w[i] > w[best]) best = i;
++    return best;
++  };
++
++  const sample = (dir) => {
++    const c = chartOf(dir, R);
++    const at = (x, z) => heightAt(c.toDir(x, z));
++    const s = SLOPE_STEP;
++    const gx = (at(s, 0) - at(-s, 0)) / (2 * s);
++    const gz = (at(0, s) - at(0, -s)) / (2 * s);
++    // groundLook.js's 1 − normal.y, the normal of the plane through them
++    return { h: heightAt(dir), slope: 1 - 1 / Math.hypot(1, gx, gz), biome: biomeAt(dir) };
++  };
++
++  return { heightAt, biomeAt, climateAt, sample };
++}
+diff --git a/src/lib/land/flight/sphereField.test.js b/src/lib/land/flight/sphereField.test.js
+new file mode 100644
+index 000000000..59e381f5f
+--- /dev/null
++++ b/src/lib/land/flight/sphereField.test.js
+@@ -0,0 +1,61 @@
++import { describe, expect, it } from 'vitest';
++import { CLIMATE_SPHERE, SLOPE_STEP, sphereField } from './sphereField';
++import { CHARACTERS } from './characters';
++import { angleBetween, chartOf, dirOfLatLon, dirOfUv } from './sphere';
++import { randomDirs, roundSpec } from './fixtures/generated';
++
++const TYPES = ['rock', 'ice', 'desert', 'forest', 'lava', 'ocean'];
++
++describe('sphereField', () => {
++  it.each(TYPES.flatMap((type, i) => [[type, CHARACTERS[i]], [type, CHARACTERS[i + 2]]]))('%s, %s: finite, within −200…1200, never more than 60 m in 4 m', (type, kind) => {
++    const spec = roundSpec({ type, kind });
++    const f = sphereField(spec);
++    for (const [i, d] of randomDirs(800, 5).entries()) {
++      const h = f.heightAt(d);
++      expect(h).toBeGreaterThanOrEqual(-200);
++      expect(h).toBeLessThanOrEqual(1200);
++      if (angleBetween(d, spec.pois[0].dir) * spec.round.radius < 240) continue;
++      const n = chartOf(d, spec.round.radius).toDir(Math.cos(i) * 4, Math.sin(i) * 4);
++      expect(Math.abs(f.heightAt(n) - h)).toBeLessThanOrEqual(60);
++    }
++  });
++
++  it('has no seam where the map wraps nor at the poles', () => {
++    const f = sphereField(roundSpec({ type: 'ice', kind: 'ridges' }));
++    for (let i = 1; i < 200; i++) {
++      const v = i / 200;
++      expect(Math.abs(f.heightAt(dirOfUv(1 - 1e-9, v)) - f.heightAt(dirOfUv(1e-9, v)))).toBeLessThan(0.01);
++    }
++    for (const pole of [0, 1]) {
++      const hs = Array.from({ length: 36 }, (_, k) => f.heightAt(dirOfUv(k / 36, pole === 0 ? 1e-6 : 1 - 1e-6)));
++      expect(Math.max(...hs) - Math.min(...hs)).toBeLessThan(1);
++    }
++  });
++
++  it('holds a POI flat at the land’s own height there', () => {
++    const spec = roundSpec();
++    const f = sphereField(spec);
++    const at = spec.pois[0].dir;
++    const level = f.heightAt(at);
++    expect(f.heightAt(chartOf(at, spec.round.radius).toDir(110, 0))).toBeCloseTo(level, 6);
++  });
++
++  it('samples what it answers: sample(dir).h is heightAt(dir), its slope 0…1, its biome biomeAt(dir)', () => {
++    const f = sphereField(roundSpec({ type: 'desert', kind: 'mesas' }));
++    for (const d of randomDirs(50, 8)) {
++      const s = f.sample(d);
++      expect(s.h).toBe(f.heightAt(d));
++      expect(s.slope).toBeGreaterThanOrEqual(0);
++      expect(s.slope).toBeLessThan(1);
++      expect(s.biome).toBe(f.biomeAt(d));
++    }
++    expect(SLOPE_STEP).toBe(8);
++    expect(CLIMATE_SPHERE.frequency).toBe(1.6);
++  });
++
++  it('is colder at the poles than at the equator, on the whole', () => {
++    const f = sphereField(roundSpec({ type: 'forest', kind: 'continents' }));
++    const mean = (lat) => Array.from({ length: 72 }, (_, k) => f.climateAt(dirOfLatLon(lat, k * 5))[0]).reduce((a, b) => a + b) / 72;
++    expect(mean(0)).toBeGreaterThan(mean(80) + 0.2);
++  });
++});

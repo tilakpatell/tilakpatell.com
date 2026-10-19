@@ -1,0 +1,359 @@
+# Review package: 5a35afcad..be4fc2bb0
+
+## Commits
+be4fc2bb0 Let a generated planet's fauna, trees and places come from its variety
+
+## Files changed
+ src/components/expanse/flight/landmarks.js      |  4 +--
+ src/components/expanse/flight/landmarks.test.js |  6 ++++
+ src/lib/land/flight/landmarkTables.js           | 37 +++++++++++++++++++++++--
+ src/lib/land/flight/landmarkTables.test.js      | 27 ++++++++++++++++--
+ src/lib/land/flight/lifeTables.js               | 20 ++++++++-----
+ src/lib/land/flight/lifeTables.test.js          | 18 ++++++++++++
+ 6 files changed, 99 insertions(+), 13 deletions(-)
+
+## Diff
+diff --git a/src/components/expanse/flight/landmarks.js b/src/components/expanse/flight/landmarks.js
+index e57b129d8..ddc2aaab8 100644
+--- a/src/components/expanse/flight/landmarks.js
++++ b/src/components/expanse/flight/landmarks.js
+@@ -14,21 +14,21 @@
+ // (LANDMARKS) stands on the flight's ground.
+ //
+ // No three.js: the sites and the galaxy's terrain are data and pure code.
+ //
+ //   siteFor(spec, poi) → the walkable site (siteOf's) | null
+ //   placementsFor(spec, poi, { heightAt, site }) → { list: [{ kind, model?,
+ //     opts?, at: [x, z], y, yaw, pitch?, roll?, scale, abs: true, solid:
+ //     false }], dropped }
+ 
+ import { makeHeight, siteOf } from '../../galaxy/shared/ground';
+-import { DROP_Y, LANDMARKS, LANDMARK_MAX, SITE_PLACES } from '../../../lib/land/flight/landmarkTables';
++import { DROP_Y, LANDMARK_MAX, SITE_PLACES, landmarkRowsOf } from '../../../lib/land/flight/landmarkTables';
+ 
+ // the site's air, not its places': drawn by the walkable site round you, never from a ship
+ const AIR = new Set(['lightshafts', 'ds2sky', 'ds1sky']);
+ 
+ // what grows, lies or drifts stands on whatever ground it's given: the drop is for what's built
+ const GROWS = new Set(['lavarock', 'karst', 'glassshard', 'floatrocks', 'smoke', 'wrecksmoke', 'grove', 'redwood', 'jungletree', 'yavintree', 'palm', 'dagocypress', 'dagoroots', 'gnarltree', 'wroshyr', 'wroshyrgreat', 'ewoktree', 'sorganbirch', 'sorganfir', 'sorganfern', 'fern', 'log', 'qpine', 'qdeadtree', 'qfern']);
+ const grows = (t) => GROWS.has(t.kind) || String(t.model ?? '').startsWith('kit:naturemega/');
+ 
+ // A site's ground as the flight reads it: a site on the game's level keeps
+ // its own land for the flight (ground.flight), the heightmap being the
+@@ -136,13 +136,13 @@ function fromRow(t, poi, heightAt) {
+ }
+ 
+ function fromTable(rows, poi, heightAt) {
+   return { list: capped(rows.map((t) => fromRow(t, poi, heightAt)), poi), dropped: 0 };
+ }
+ 
+ export function placementsFor(spec, poi, { heightAt, site = null } = {}) {
+   const m = mapOf(spec, poi);
+   const data = site ? { site, height: site.noGround ? () => 0 : makeHeight(flightGround(site.ground)) } : m ? siteData(m.site) : null;
+   if (m && data) return fromSite(data, m, poi, heightAt);
+-  const rows = LANDMARKS[spec?.id]?.[poi?.id];
++  const rows = landmarkRowsOf(spec, poi);
+   return rows ? fromTable(rows, poi, heightAt) : { list: [], dropped: 0 };
+ }
+diff --git a/src/components/expanse/flight/landmarks.test.js b/src/components/expanse/flight/landmarks.test.js
+index 06bf71645..ed464fac4 100644
+--- a/src/components/expanse/flight/landmarks.test.js
++++ b/src/components/expanse/flight/landmarks.test.js
+@@ -93,11 +93,17 @@ describe('placementsFor', () => {
+       }
+       if (kept + dropped) expect(dropped / (kept + dropped), id).toBeLessThan(0.1);
+     }
+   });
+ 
+   it('is the same list every time', () => {
+     const spec = planetSpecOf('tatooine');
+     const { heightAt } = planetField(spec);
+     expect(placementsFor(spec, spec.pois[0], { heightAt })).toEqual(placementsFor(spec, spec.pois[0], { heightAt }));
+   });
++
++  it('stands a generated POI from its kind’s list', () => {
++    const poi = { id: 'poi-0', kind: 'outpost', at: [100, 200], r: 80 };
++    const { list } = placementsFor({ id: 'e:3,-2:1:0', type: 'rock' }, poi, { heightAt: () => 5 });
++    expect(list.length).toBeGreaterThanOrEqual(3);
++  });
+ });
+diff --git a/src/lib/land/flight/landmarkTables.js b/src/lib/land/flight/landmarkTables.js
+index 2a645e781..d889047ca 100644
+--- a/src/lib/land/flight/landmarkTables.js
++++ b/src/lib/land/flight/landmarkTables.js
+@@ -15,21 +15,24 @@
+ // Pure: plain data and a few helpers, no three.js.
+ //
+ //   SITE_PLACES[planetId][poiId] → { site, places: [placeId…] | '*', centre?,
+ //     extra? } (centre: [x, z] in the site, for '*': the whole site round
+ //     that point; extra: rows as LANDMARKS', for a place the site keeps bare)
+ //   LANDMARKS[planetId][poiId] → [{ kind | kit: { kit, name }, at: [x, z]
+ //     (relative to the POI), yaw, scale, opts? }]
+ //   CLUTTER_KIT[type], CLUTTER_KIT_OF[planetId] → { [kind]: { kit, name, size } }
+ //     (size: the model's scale for a row of scale 1, so it stands as tall
+ //     as the code-built shape it replaces)
+-//   clutterKitOf(spec) → that planet's, its own over its type's
++//   clutterKitOf(spec) → that planet's, its own over its type's, then its
++//     flora's tree and its exotic's
++//   POI_KITS[kind], FLORA_TRUNKS, EXOTIC_KIT, landmarkRowsOf(spec, poi): a
++//     generated planet's places, trees and exotic clutter
+ 
+ export const LANDMARK_NEAR = 6000; // m: a landmark is drawn within this of its POI
+ export const LANDMARK_FREE = 1.3; // …and freed past this many times it
+ export const LANDMARK_PREFETCH = 2; // …and its files fetched from this many times it
+ export const LANDMARK_CAP = 4; // the nearest this many at once
+ export const LANDMARK_MIN = 3; // a POI stands with at least this many things…
+ export const LANDMARK_MAX = 80; // …and at most this many, the nearest its middle
+ export const DROP_Y = 3; // m: a site's thing standing this far off the flight's ground goes
+ 
+ // (Jabba's palace in the site is its gate and walls: the skiff and its crates are the flight's)
+@@ -187,20 +190,48 @@ export const LANDMARKS = {
+     smiths: [one(HOUSE, [0, 0], 0, 4), one('speedertruck', [18, 10], 1.6), ...ring(TREE, 5, 40, 1.2), ...ring(BUSH, 4, 22, 1.4)],
+     school: [one(LONG, [0, 0], 0, 6), ...ring(TREE, 6, 70, 1.4), ...ring('lamp', 4, 40)],
+     blips: [one(k('House_Cylinder'), [0, 0], 0, 5), ...ring('lamp', 6, 40), ...ring('speedertruck', 3, 60, 1, 0.4)],
+   },
+   'dot-matrix': {
+     castle: [one('theedpalace'), one('statue', [-30, 60], 0, 2), one('statue', [30, 60], 0, 2), ...ring(PINE, 10, 150, 2)],
+     'bob-omb': [...ring(k('Rock_Large_2'), 6, 30, 3), ...ring(PINE, 6, 50, 1.6)],
+   },
+ };
+ 
++// ── a generated planet's places, trees and exotic clutter, from its variety ──
++// (a POI's `kind` picks its list)
++export const POI_KITS = {
++  ruins: [one('ruins'), one('stonehead', [30, 10], 2.4), one('ruins', [-40, 22], 0.7), one('stonehead', [-12, -34], 0.9, 0.7)],
++  wreck: [{ ...one(k('Spaceship_RaeTheRedPanda'), [0, 0], 0.6, 4), pitch: 0.35, roll: -0.5 }, one('crates', [18, 6], 0.4), one('barrel', [-14, 10]), one('fire', [8, -14])],
++  outpost: base(36),
++  monolith: [one(k('MetalSupport'), [0, 0], 0, 9), ...ring(k('Rock_Large_1'), 5, 26, 1.2)],
++  signal: [one(k('Roof_Radar'), [0, 0], 0, 5), one(k('Roof_Antenna'), [12, 4], 0.5, 5), one(k('SolarPanel_Ground'), [-14, 6], 0.4, 3), ...ring('lamp', 3, 20)],
++};
++
++// the green trees the tables already use, one for each quarter of a flora's `pick`
++export const FLORA_TRUNKS = [
++  { ...k('GiantPine_2', 'naturemega'), size: 4.6 },
++  { ...k('GiantPine_4', 'naturemega'), size: 4.8 },
++  { ...k('GiantPine_5', 'naturemega'), size: 5 },
++  { ...k('CommonTree_3', 'naturemega'), size: 5 },
++];
++
++// an exotic world's clutter (not green, on purpose; crystal is code-built)
++export const EXOTIC_KIT = {
++  glowing: { trunk: { ...k('Tree_Light_1'), size: 3 } },
++  floating: { trunk: { ...k('Tree_Floating_1'), size: 3 } },
++  spires: { spire: { ...k('Tree_Spikes_2'), size: 1.4 } },
++  crystal: {},
++};
++
++export const landmarkRowsOf = (spec, poi) => LANDMARKS[spec?.id]?.[poi?.id] ?? POI_KITS[poi?.kind];
++
+ // Each kind's kit model where the planet type has one; a kind left out
+ // keeps its code-built shape (Hoth's ice spires, the snowspeeder debris, a
+ // city's towers). Sizes put a row of scale 1 at about the code shape's size
+ // (ground.js: a rock 7 m across, a spire 26 m tall, a trunk and its crown
+ // 79 m); a temperate world's trees a little under, as they're its parks' and
+ // gardens', not a wroshyr forest's.
+ export const CLUTTER_KIT = {
+   ice: { rock: { ...k('Rock_Large_2'), size: 1.4 } },
+   rock: { rock: { ...k('Rock_Large_1'), size: 1.5 } },
+   lava: { rock: { ...k('Rock_Large_3'), size: 1.5 } },
+@@ -213,12 +244,14 @@ export const CLUTTER_KIT = {
+ // a world's own trees where its fiction has them (green ones only: the kit's
+ // tall thick trees are blue, its birches autumn, its twisted trees red; the
+ // test holds every tree here to green leaves)
+ export const CLUTTER_KIT_OF = {
+   yavin: { trunk: { ...k('GiantPine_4', 'naturemega'), size: 4.8 } },
+   kashyyyk: { trunk: { ...k('GiantPine_5', 'naturemega'), size: 5 } },
+   dagobah: { spire: { ...k('DeadTree_5', 'naturemega'), size: 1.6 } },
+ };
+ 
+ export function clutterKitOf(spec) {
+-  return { ...(CLUTTER_KIT[spec?.type] ?? {}), ...(CLUTTER_KIT_OF[spec?.id] ?? {}) };
++  const fam = spec?.flora?.family;
++  const tree = fam === 'forest' || fam === 'temperate' ? { trunk: FLORA_TRUNKS[Math.min(3, Math.floor((spec.flora.pick ?? 0) * 4))] } : {};
++  return { ...(CLUTTER_KIT[spec?.type] ?? {}), ...(CLUTTER_KIT_OF[spec?.id] ?? {}), ...tree, ...(EXOTIC_KIT[spec?.exotic] ?? {}) };
+ }
+diff --git a/src/lib/land/flight/landmarkTables.test.js b/src/lib/land/flight/landmarkTables.test.js
+index 2819c677e..026ec0332 100644
+--- a/src/lib/land/flight/landmarkTables.test.js
++++ b/src/lib/land/flight/landmarkTables.test.js
+@@ -1,17 +1,19 @@
+ import { describe, expect, it } from 'vitest';
+ import { readFileSync } from 'node:fs';
+-import { CLUTTER_KIT, CLUTTER_KIT_OF, LANDMARKS, SITE_PLACES, clutterKitOf } from './landmarkTables.js';
++import { CLUTTER_KIT, CLUTTER_KIT_OF, EXOTIC_KIT, FLORA_TRUNKS, LANDMARKS, LANDMARK_MIN, POI_KITS, SITE_PLACES, clutterKitOf, landmarkRowsOf } from './landmarkTables.js';
+ import { PLANETS, planetSpecOf } from './fixtures/expanse.js';
+ import { CLUTTER_KINDS } from './leafMesh.js';
+ 
+-const manifest = (pack) => JSON.parse(readFileSync(new URL(`../../../../public/kit/${pack}/index.json`, import.meta.url), 'utf8'));
++// (read once a pack: the manifests are big, and this runs for every model named)
++const manifests = {};
++const manifest = (pack) => (manifests[pack] ??= JSON.parse(readFileSync(new URL(`../../../../public/kit/${pack}/index.json`, import.meta.url), 'utf8')));
+ const kitHas = ({ kit, name }) => {
+   const row = manifest(kit).models[name];
+   return Boolean(row) && !row.rig;
+ };
+ 
+ describe('the landmark tables', () => {
+   it('gives every POI planetTables doesn’t build a site place or a list of its own, never both', () => {
+     let n = 0;
+     for (const { id } of PLANETS) {
+       const spec = planetSpecOf(id);
+@@ -33,20 +35,23 @@ describe('the landmark tables', () => {
+         const ids = new Set(planetSpecOf(planet).pois.map((p) => p.id));
+         for (const poi of Object.keys(byPoi)) expect(ids.has(poi), `${planet}/${poi}`).toBe(true);
+       }
+   });
+ 
+   it('names only kit models the kits have, and no rig', () => {
+     const named = [
+       ...Object.values(LANDMARKS).flatMap((byPoi) => Object.values(byPoi).flat()).filter((t) => t.kit).map((t) => t.kit),
+       ...Object.values(CLUTTER_KIT).flatMap(Object.values),
+       ...Object.values(CLUTTER_KIT_OF).flatMap(Object.values),
++      ...Object.values(POI_KITS).flat().filter((t) => t.kit).map((t) => t.kit),
++      ...FLORA_TRUNKS.map(({ kit, name }) => ({ kit, name })),
++      ...Object.values(EXOTIC_KIT).flatMap(Object.values).filter((v) => v.kit),
+     ];
+     expect(named.length).toBeGreaterThan(5);
+     for (const k of named) expect(kitHas(k), `${k.kit}/${k.name}`).toBe(true);
+   });
+ 
+   it('dresses the ground only in trees with green leaves', () => {
+     for (const table of [...Object.values(CLUTTER_KIT), ...Object.values(CLUTTER_KIT_OF)])
+       for (const { kit, name } of Object.values(table)) {
+         const tones = manifest(kit).models[name].tones;
+         // (a leafless tree, a rock: no tones, nothing to be green)
+@@ -61,11 +66,29 @@ describe('the landmark tables', () => {
+         expect(k.size).toBeGreaterThan(0);
+       }
+   });
+ 
+   it('gives a planet its own trees over its type’s', () => {
+     expect(clutterKitOf({ id: 'yavin', type: 'forest' }).trunk.name).toBe('GiantPine_4');
+     expect(clutterKitOf({ id: 'e:1,0:0:0', type: 'forest' }).trunk.name).toBe('GiantPine_2');
+     expect(clutterKitOf({ id: 'x', type: 'gas' })).toEqual({});
+     expect(clutterKitOf(null)).toEqual({});
+   });
++
++  it('stands every generated POI kind on at least LANDMARK_MIN things', () => {
++    expect(Object.keys(POI_KITS).sort()).toEqual(['monolith', 'outpost', 'ruins', 'signal', 'wreck']);
++    for (const [kind, rows] of Object.entries(POI_KITS)) expect(rows.length, kind).toBeGreaterThanOrEqual(LANDMARK_MIN);
++  });
++
++  it('gives a generated planet a tree from its flora, and an exotic one its own', () => {
++    const spec = { id: 'e:3,-2:0:1', type: 'forest', flora: { family: 'forest', pick: 0.6 } };
++    expect(clutterKitOf(spec).trunk.name).toBe('GiantPine_5');
++    expect(clutterKitOf({ ...spec, exotic: 'glowing' }).trunk.name).toBe('Tree_Light_1');
++    expect(clutterKitOf({ ...spec, exotic: 'spires' }).spire.name).toBe('Tree_Spikes_2');
++  });
++
++  it('reads a generated POI’s rows by its kind, a named one by its id', () => {
++    expect(landmarkRowsOf({ id: 'e:3,-2:1:0' }, { id: 'poi-0', kind: 'wreck' })).toBe(POI_KITS.wreck);
++    expect(landmarkRowsOf({ id: 'lothal' }, { id: 'temple', kind: 'ruins' })).toBe(LANDMARKS.lothal.temple);
++    expect(landmarkRowsOf(null, null)).toBeUndefined();
++  });
+ });
+diff --git a/src/lib/land/flight/lifeTables.js b/src/lib/land/flight/lifeTables.js
+index 87438d563..124137cdf 100644
+--- a/src/lib/land/flight/lifeTables.js
++++ b/src/lib/land/flight/lifeTables.js
+@@ -359,53 +359,59 @@ export const LIFE = {
+       gnd('sheep', 'herd', 0.3, [3, 6], { body: 'beast', tint: '#e8e8e8' }),
+     ],
+   },
+ };
+ 
+ // ── the Expanse: by faction, traffic and hazard (the note's last row) ──
+ const FAUNA = { ice: 'tauntaun', desert: 'bantha', forest: 'nerf', ocean: 'seabird' };
+ const PATROL = { empire: 'tie', federation: 'gunship', dea: 'deachopper' };
+ const TRAFFIC = { empire: ['shuttle', 'transport'], federation: ['hauler', 'saucer'], dea: ['deachopper', 'freighter'] };
+ 
+-export function expanseLife(type, biomes, system) {
++// a generated planet's own fauna (its spec's, planetSpec's `fauna`) stands in for the type's row
++const PLAN_MODEL = { beast: 'grazer', flyer: 'skimmer', walker: 'strider' };
++
++export function expanseLife(type, biomes, system, fauna = null) {
+   // gas and ringed giants have no ground, so nothing lives on them
+   if (type === 'gas' || type === 'ringed' || !system) return NONE;
+   const held = system.faction?.id && system.faction.id !== 'independent';
+-  const fauna = FAUNA[type];
+-  if (!held && !fauna && system.hazard !== 'pirates') return NONE;
++  const wild = fauna ? (fauna.density > 0 && fauna.plans?.length ? fauna : null) : FAUNA[type];
++  if (!held && !wild && system.hazard !== 'pirates') return NONE;
+   const ids = biomes.map((b) => b.id);
+-  const kinds = { default: fauna ? 'wild' : 'dead' };
++  const kinds = { default: wild ? 'wild' : 'dead' };
+   if (held) kinds[ids[0]] = 'settled';
+   if (system.hazard === 'pirates') kinds[ids[ids.length - 1]] = 'hostile';
+   const out = { kinds, air: [], ground: [] };
+   const faction = system.faction?.id ?? 'independent';
+   if (held) {
+     const lanes = system.traffic > 0.5;
+     for (const m of TRAFFIC[faction] ?? ['freighter', 'hauler']) out.air.push(air(m, lanes ? system.traffic * 1.5 : system.traffic * 0.05, [150, 450], 90, lanes ? 'lane' : 'shuttle', lanes ? { lanes: 2 } : {}));
+     out.air.push(air(PATROL[faction] ?? 'patrol', 0.03, [150, 350], 150, 'patrol'));
+     out.ground.push(gnd('colonist', 'settler', 0.4, [2, 5], { model: 'villager', kind: 'settled' }));
+   }
+   if (system.hazard === 'pirates') {
+     out.air.push(air('gunboat', 0.04, [120, 300], 170, 'patrol', { kind: 'hostile', scramble: { r: 2500, n: 2 }, hostile: fights(700, 3, 6) }));
+     out.ground.push(gnd('pirate', 'hostile', 0.1, [3, 5], { model: 'mercenary', kind: 'hostile', hostile: fights(240) }));
+   }
+-  if (fauna === 'seabird') out.ground.push(gnd('seabird', 'flock', 0.3, [4, 8], { body: 'flyer', tint: '#e8e8e0', alt: [6, 50] }));
+-  else if (fauna) out.ground.push(gnd(fauna, 'herd', 0.3, [4, 8], { spread: 35, kind: 'wild' }));
++  if (fauna) {
++    for (const { body, role, tint, group } of wild?.plans ?? [])
++      out.ground.push(gnd(PLAN_MODEL[body], role, 0.3 * fauna.density, group, { body, tint, kind: 'wild', ...(body === 'flyer' ? { alt: [6, 50] } : {}) }));
++  } else if (wild === 'seabird') out.ground.push(gnd('seabird', 'flock', 0.3, [4, 8], { body: 'flyer', tint: '#e8e8e0', alt: [6, 50] }));
++  else if (wild) out.ground.push(gnd(wild, 'herd', 0.3, [4, 8], { spread: 35, kind: 'wild' }));
+   return out;
+ }
+ 
+ // the system an Expanse planet id names (its faction, traffic and hazard), or
+ // null: on its row, given as planetSpecOf is given it
+ export const systemOf = (planetId, { expanse = null } = {}) =>
+   expanseLookup(expanse)(canonicalId(planetId))?.system ?? null;
+ 
+ export function lifeFor(spec, { expanse = null } = {}) {
+   if (!spec?.id) return NONE;
+   const named = LIFE[spec.id];
+-  const life = named ?? (canonicalId(spec.id) ? expanseLife(spec.type, spec.biomes ?? [], systemOf(spec.id, { expanse })) : NONE);
++  const life = named ?? (canonicalId(spec.id) ? expanseLife(spec.type, spec.biomes ?? [], systemOf(spec.id, { expanse }), spec.fauna ?? null) : NONE);
+   return { kinds: life.kinds, air: life.air, ground: life.ground };
+ }
+ 
+ export const kindAt = (life, biomeId) => life.kinds[biomeId] ?? life.kinds.default ?? 'wild';
+ 
+ // is anything alive on this planet at all (a dead world makes no pool, no brain)
+ export const isDead = (life) => !life.air.length && !life.ground.length;
+diff --git a/src/lib/land/flight/lifeTables.test.js b/src/lib/land/flight/lifeTables.test.js
+index 4d10d75d9..48f07ffc7 100644
+--- a/src/lib/land/flight/lifeTables.test.js
++++ b/src/lib/land/flight/lifeTables.test.js
+@@ -104,11 +104,29 @@ describe('lifeTables', () => {
+     expect(DENY.test('grey')).toBe(false);
+     const words = JSON.stringify(LIFE);
+     expect(words).not.toMatch(DENY);
+     for (const p of PLANETS) expect(JSON.stringify(lifeFor(planetSpecOf(p.id)))).not.toMatch(DENY);
+   });
+ 
+   it('halves on low', () => {
+     expect(DENSITY.low).toBe(0.5);
+     expect(DENSITY.mid).toBe(1);
+   });
++
++  it('lets a generated planet’s fauna walk it, scaled by its density', () => {
++    const biomes = [{ id: 'a' }, { id: 'b' }];
++    const plans = [{ body: 'beast', role: 'herd', tint: '#806040', group: [4, 8] }, { body: 'flyer', role: 'flock', tint: '#c0c0c0', group: [4, 8] }];
++    const life = expanseLife('forest', biomes, { faction: null, traffic: 0, hazard: null }, { density: 1, plans });
++    expect(life.ground).toHaveLength(2);
++    expect(life.ground.map((r) => r.model)).toEqual(['figure', 'figure']);
++    expect(life.ground.map((r) => r.perKm2)).toEqual([0.3, 0.3]);
++    expect(life.ground.map((r) => r.body)).toEqual(['beast', 'flyer']);
++    expect(life.ground[0].alt).toBeUndefined();
++    expect(life.ground[1].alt).toEqual([6, 50]);
++  });
++
++  it('has no wild rows with no fauna', () => {
++    const plans = [{ body: 'beast', role: 'herd', tint: '#806040', group: [4, 8] }];
++    const life = expanseLife('forest', [{ id: 'a' }], { faction: null, traffic: 0, hazard: null }, { density: 0, plans });
++    expect(life.ground.some((r) => r.kind === 'wild')).toBe(false);
++  });
+ });
