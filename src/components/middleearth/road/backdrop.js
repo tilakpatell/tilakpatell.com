@@ -238,7 +238,8 @@ export function createBackdrop({ road = null, tier = 'high', load = null } = {})
     const m = road ? road.material({ color: colour }) : new MeshLambertNodeMaterial({ color: colour });
     m.fog = false;
     const h = float(1 - Math.exp(-dist / HAZE_FAR));
-    m.colorNode = vec3(1).mul(h.oneMinus());
+    // (the colour node is the whole of its colour: the stone’s own, lessened by the haze)
+    m.colorNode = uniform(new THREE.Color(colour)).mul(h.oneMinus());
     m.emissiveNode = uHaze.mul(h);
     mats.push(m);
     return m;
