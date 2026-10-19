@@ -28,7 +28,10 @@ export const CHARACTERS = ['continents', 'archipelago', 'canyons', 'mesas', 'dun
 // Starting values, to tune by eye. Two peaks moved so that every planet in
 // range keeps the flight's limits at any `sea`: craters' to 140 (a bowl digs
 // 1.3 × peaks, so 250 went to −310 m) and ridges' to 850 (1100 stood 1330 m
-// tall at sea 0).
+// tall at sea 0). Ridges’ and plateaus’ sea starts at 0.1, not 0: the
+// contact sheet’s lava ridges at sea 0 had no lava. Their layers only
+// lift (craters’ bowls and canyons’ floors dip under the shore and fill),
+// so a lava or forest planet of either drawn near 0 had no sea at all.
 export const TERRAIN = {
   continents: { shape: 1.3, sea: [0.35, 0.6], peaks: [300, 900], lift: 260 },
   archipelago: { shape: 3.2, sea: [0.62, 0.8], peaks: [150, 450], lift: 200 },
@@ -36,8 +39,8 @@ export const TERRAIN = {
   mesas: { shape: 1.0, sea: [0, 0.15], peaks: [60, 160], lift: 60 },
   dunes: { shape: 0.9, sea: [0, 0.1], peaks: [20, 60], lift: 40 },
   craters: { shape: 1.0, sea: [0, 0.1], peaks: [80, 140], lift: 60 },
-  ridges: { shape: 1.1, sea: [0, 0.3], peaks: [600, 850], lift: 200 },
-  plateaus: { shape: 1.0, sea: [0, 0.3], peaks: [80, 200], lift: 0 },
+  ridges: { shape: 1.1, sea: [0.1, 0.3], peaks: [600, 850], lift: 200 },
+  plateaus: { shape: 1.0, sea: [0.1, 0.3], peaks: [80, 200], lift: 0 },
 };
 
 // metres a unit of shape sinks under the shore on a planet with water, at
