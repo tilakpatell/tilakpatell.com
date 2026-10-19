@@ -23,5 +23,9 @@
 .hq-stone { display: inline-flex; align-items: center; gap: 0.55rem; margin-top: 0.7rem; padding: 0.45rem 0.85rem; border: 1px solid color-mix(in srgb, var(--glow) 55%, transparent); border-radius: 10px; background: color-mix(in srgb, var(--glow) 14%, rgba(0, 0, 0, 0.4)); font-size: 0.82rem; }
 .hq-stone .stone-dot { margin: 0; }
 .hq-switch { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; font-size: 0.75rem; color: var(--muted); }
+/* a disabled button dims by colour, never by fading (RULES.md, UI 6): for the toys' disabled .btn and,
+   from the game screen, a Start that waits for its stage; the games' own buttons keep their own rules */
+.hq-game .btn:disabled { color: var(--muted); cursor: not-allowed; border-color: var(--border); background: var(--surface-2); }
+.hq-game .btn:disabled:active { transform: none; }
 @media (max-width: 480px) { .hq-overlay .btn { min-height: 44px; } }
 @media (prefers-reduced-motion: reduce) { .hq-loading-ring { animation-duration: 3s; } .hq-canvas { transition: none; } }
