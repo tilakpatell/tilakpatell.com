@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { BACK, PAUSE_AFTER_INPUT, RUN, WALK, newClock, rideSeconds, step } from './clock';
 import { STAGES } from './stages/index';
 import { total } from './line';
+import { BEATS_OF, HOLDS_UNWRITTEN } from './stages/registry';
+import { holdsOf } from './beats';
 
 const TOTAL = 1000; // metres, for round numbers
 const none = { walk: false, run: false, back: false, toggleAuto: false, next: false };
@@ -82,13 +84,14 @@ describe('the clock', () => {
     expect(step(r, 1 / 60, { ...none, next: true }, c).s).toBe(1);
   });
 
-  it('the ledger: a ride on auto is 20 to 30 minutes, each stage 1 to 2.5 (half a minute of holds a stage until the stages say theirs)', () => {
-    const secs = rideSeconds(STAGES, () => 30);
-    expect(secs).toBe(total(STAGES) / WALK + STAGES.length * 30);
+  it('the ledger: a ride on auto is 20 to 30 minutes, each stage 1 to 2.5 (its beats’ holds where written, half a minute until then)', () => {
+    const holds = (st) => (BEATS_OF[st.id] ? holdsOf(BEATS_OF[st.id]) : HOLDS_UNWRITTEN);
+    const secs = rideSeconds(STAGES, holds);
+    expect(secs).toBe(total(STAGES) / WALK + STAGES.reduce((a, st) => a + holds(st), 0));
     expect(secs).toBeGreaterThanOrEqual(1200);
     expect(secs).toBeLessThanOrEqual(1800);
     for (const st of STAGES) {
-      const one = st.length / WALK + 30;
+      const one = st.length / WALK + holds(st);
       expect(one).toBeGreaterThanOrEqual(60);
       expect(one).toBeLessThanOrEqual(150);
     }
