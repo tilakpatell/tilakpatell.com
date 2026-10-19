@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EYE, LANES, RANGE, WAVES, aimAt, newRange, startRange, stepRange, strafe, unibeam } from './rules';
+import { EYE, LANES, RANGE, WAVES, aimAt, newRange, rayHit, startRange, stepRange, strafe, unibeam } from './rules';
 
 const DT = 1 / 120;
 
@@ -192,4 +192,58 @@ describe('Repulsor Range', () => {
     expect(s.enemies).toEqual([]);
     expect(s.wave).toBe(0);
   });
+
+  // wave 9 begun, nothing else on the range: Ultron Prime on its way in
+  const approaching = () => {
+    const s = newRange({ seed: 1 });
+    startRange(s);
+    Object.assign(s, { enemies: [], spawns: [], wave: WAVES.length - 2, phase: 'break', breakT: 0 });
+    run(s, 0.1);
+    return [s, s.enemies.find((e) => e.kind === 'prime')];
+  };
+  const eye = (s) => ({ x: s.x, y: EYE, z: 0 });
+  const shoulderOf = (e) => ({ x: e.x + 0.82, y: e.y + 0.4, z: e.z });
+  const aimShoulder = (e) => (s) => (s.input.aim = aimAt(eye(s), shoulderOf(e)));
+  const touched = (ev, e) => ev.some((x) => x.id === e.id && (x.type === 'hit' || x.type === 'deflect'));
+
+  it('cannot touch Ultron Prime on its way in, by repulsor or unibeam, and can once it has arrived', () => {
+    const [s, prime] = approaching();
+    expect(prime.arrived).toBe(false);
+    expect(rayHit(s, aimAt(eye(s), shoulderOf(prime)))).toBeNull();
+    const hp = prime.parts.map((p) => p.hp);
+    s.input.firing = true;
+    let ev = run(s, 1, aimShoulder(prime));
+    s.input.firing = false;
+    s.charge = 100;
+    expect(unibeam(s)).toBe(true);
+    ev = ev.concat(run(s, RANGE.beam.dur + 0.1, aimShoulder(prime)));
+    expect(touched(ev, prime)).toBe(false);
+    expect(prime.parts.map((p) => p.hp)).toEqual(hp);
+    until(s, () => prime.arrived, 15);
+    expect(rayHit(s, aimAt(eye(s), shoulderOf(prime))).e).toBe(prime);
+    s.energy = RANGE.energy;
+    s.input.firing = true;
+    expect(touched(run(s, 0.5, aimShoulder(prime)), prime)).toBe(true); // lands as 'deflect' on the armed core
+  });
+
+  it('lets a shot through Ultron Prime on its way in, to the drone behind it', () => {
+    const [s, prime] = approaching();
+    const at = shoulderOf(prime);
+    s.enemies.push({ id: 801, kind: 'drone', x: at.x, y: at.y, z: prime.z - 6, vx: 0, vy: 0, vz: 0, hp: 1, r: RANGE.r.drone, t: 0, seed: 0, hold: true });
+    expect(rayHit(s, aimAt(eye(s), at)).e.id).toBe(801);
+  });
+
+  for (const seed of [1, 2, 3, 4]) {
+    it(`makes a sensible pilot face Prime’s volleys and summons before it falls (seed ${seed})`, () => {
+      const s = newRange({ seed });
+      startRange(s);
+      const ev = run(s, 900, pilot);
+      const end = ev.findIndex((e) => e.type === 'kill' && e.kind === 'prime');
+      expect(end).toBeGreaterThan(-1);
+      expect(ev.slice(0, end).some((e) => e.type === 'volley')).toBe(true);
+      expect(ev.slice(0, end).some((e) => e.type === 'summon')).toBe(true);
+      const boss = ev.findIndex((e) => e.type === 'boss');
+      expect(ev.slice(0, boss).some((e) => e.type === 'hit' && e.kind === 'prime')).toBe(false);
+    });
+  }
 });
