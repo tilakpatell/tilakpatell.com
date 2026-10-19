@@ -4,7 +4,7 @@ import { LOOK } from '../look';
 import { reservedIn } from '../__fixtures__/glsl';
 import { nebulaBudget } from './budget';
 import { FORMS } from './rules';
-import { GAS } from './shaders';
+import { GAS, SCREEN_RAY, screenRay } from './shaders';
 import { createNebulae } from './index';
 
 const cam = (p, look, far = 45000) => {
@@ -111,8 +111,8 @@ describe('the nebulae’s renderer', () => {
     expect(reservedIn(m.vertexShader + m.fragmentShader)).toEqual([]);
   });
 
-  // (beyond the plan's list: the check above has to be able to fail, the
-  // bloom's line is a number, and inside() is rules.js's insideOf)
+  // (beyond the plan’s list: the check above has to be able to fail, the
+  // bloom’s line is a number, and inside() is rules.js’s insideOf)
   it('would catch a reserved name', () => {
     expect(reservedIn('float sample = 1.0; vec3 tint;')).toEqual(['sample']);
   });
@@ -123,7 +123,7 @@ describe('the nebulae’s renderer', () => {
     expect((GAS.EMIT / GAS.ABSORB) * Math.max(...m.uniforms.uCore.value)).toBeLessThan(LOOK.bloom.threshold);
   });
   it('is never culled for which way its quad winds, and draws in one pass', () => {
-    // (a transparent two-sided material is drawn twice unless it's forced single)
+    // (a transparent two-sided material is drawn twice unless it’s forced single)
     const m = clouds(made().n).material;
     expect(m.side).toBe(THREE.DoubleSide);
     expect(m.forceSinglePass).toBe(true);
@@ -135,5 +135,35 @@ describe('the nebulae’s renderer', () => {
     expect(n.inside([0, 0, 5000])).toBeNull();
     n.remove(h);
     expect(n.inside([0, 0, 0])).toBeNull();
+  });
+  it('never lets a handle from one renderer remove another’s cloud', () => {
+    const a = made().n, b = made().n;
+    const stale = a.add(VEIL);
+    a.dispose();
+    b.add(VEIL);
+    b.remove(stale);
+    b.update(cam([1e6, 200, -3e5 + 12000], VEIL.at));
+    expect(clouds(b).visible).toBe(true);
+  });
+  it('casts the inside ray through the lens as the camera has it, nav and side panel and all', () => {
+    // (scene.js’s measure(): a 380 px panel and the 68 px nav on 1600 × 900)
+    const c = cam([10, 20, 30], [400, -50, -1000]);
+    c.setViewOffset(1600, 900, 190, 34, 1600, 900);
+    c.updateProjectionMatrix();
+    const e = c.projectionMatrix.elements;
+    expect(Math.abs(e[8]) > 0.1 && Math.abs(e[9]) > 0.01).toBe(true); // (the shift is there)
+    for (const [x, y] of [[-1, -1], [1, -1], [1, 1], [-1, 1], [0, 0], [0.3, -0.7]]) {
+      const want = new THREE.Vector3(x, y, 0.5).unproject(c).applyMatrix4(c.matrixWorldInverse);
+      const ray = screenRay([x, y], e);
+      expect(ray[2]).toBe(-1);
+      expect(ray[0]).toBeCloseTo(want.x / -want.z, 9);
+      expect(ray[1]).toBeCloseTo(want.y / -want.z, 9);
+    }
+    // the shader draws it from the same lines, for a cloud the camera is in
+    const m = clouds(made().n).material;
+    expect(SCREEN_RAY).toMatch(/\(ndc \+ vec2\(projectionMatrix\[2\]\[0\], projectionMatrix\[2\]\[1\]\)\) \/ vec2\(projectionMatrix\[0\]\[0\], projectionMatrix\[1\]\[1\]\)/);
+    expect(m.vertexShader).toContain(SCREEN_RAY);
+    expect(m.vertexShader).toMatch(/transpose\(mat3\(modelViewMatrix\)\) \* screenRay\(position\.xy\)/);
+    expect(m.uniforms.uTan).toBeUndefined();
   });
 });

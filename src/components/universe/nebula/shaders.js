@@ -1,4 +1,4 @@
-// The nebulae’s GLSL, strings only (./index.js makes the material). Every
+// The nebulae’s GLSL, as strings (./index.js makes the material). Every
 // cloud and its young stars are one instanced quad: a cloud’s quad covers
 // its sphere and ray-marches it through the noise volume (./volume.js); a
 // young star’s is a sprite so many pixels across, as the sparks were.
@@ -6,6 +6,9 @@
 // GAS: the look’s numbers, { EMIT, ABSORB, DUST }
 // FIELD: the cloud’s field at a point, a chunk of its own so the fog round
 //   the ship can share it, its wisps the same gas as the cloud from outside
+// SCREEN_RAY: screenRay(ndc), the view-space ray through a point of the
+//   screen, lens shift and all, a vertex chunk the fog shares too; and
+//   screenRay(ndc, elements), the same lines in JS for the tests
 // CLOUD_VERT, CLOUD_FRAG: the one draw (MAX_STEPS defined by the tier)
 //
 // Light over a thick cloud tends to EMIT / ABSORB times its colour (at full
@@ -52,6 +55,18 @@ float nebulaField(vec3 p, vec3 seed, vec4 form, float core, float detail, vec3 c
 }
 `;
 
+// The universe’s camera always has a lens shift (scene.js setViewOffset:
+// half the nav, and half a side panel when one is open), which puts it in
+// the projection’s third column; a ray from the field of view alone would
+// miss it by up to ~7°. Inverted from clip = P · (x, y, -1): the shift is
+// P[2][0], P[2][1], the scale P[0][0], P[1][1] (elements 8, 9, 0, 5).
+export const SCREEN_RAY = /* glsl */ `
+vec3 screenRay(vec2 ndc) {
+  return vec3((ndc + vec2(projectionMatrix[2][0], projectionMatrix[2][1])) / vec2(projectionMatrix[0][0], projectionMatrix[1][1]), -1.0);
+}
+`;
+export const screenRay = ([x, y], e) => [(x + e[8]) / e[0], (y + e[9]) / e[5], -1];
+
 const VARYINGS = /* glsl */ `
 varying vec3 vRay;
 varying vec3 vCentre;
@@ -83,10 +98,10 @@ attribute vec4 aSeed;
 attribute float aSteps;
 uniform vec4 uForms[3];
 uniform float uCore[3];
-uniform vec2 uTan;
 uniform float uNear;
 uniform float uScale;
 ${VARYINGS}
+${SCREEN_RAY}
 void main() {
   vCol0 = aCol0;
   vCol1 = aCol1;
@@ -113,7 +128,7 @@ void main() {
     float d0 = max(aStart, 4.0 * uNear);
     vec4 front = projectionMatrix * vec4(0.0, 0.0, -d0, 1.0);
     gl_Position = vec4(position.xy * front.w, front.z, front.w);
-    vRay = transpose(mat3(modelViewMatrix)) * vec3(position.xy * uTan, -1.0);
+    vRay = transpose(mat3(modelViewMatrix)) * screenRay(position.xy);
   } else {
     // a square facing the eye, just covering the sphere's outline, at the
     // front of it (or, pulled in, at its middle)

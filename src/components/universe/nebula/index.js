@@ -39,6 +39,10 @@ import { noiseVolume } from './volume';
 // (the one place this file makes a GLSL material: glsl-sites counts each)
 const glslMaterial = (opts) => new THREE.ShaderMaterial(opts);
 
+// handles count up across every renderer, so one kept from a disposed
+// renderer can never name another’s cloud
+let nextHandle = 1;
+
 const FORM_ORDER = Object.keys(FORM_INDEX).sort((a, b) => FORM_INDEX[a] - FORM_INDEX[b]);
 // a young star before its brightness: the sparks’ blue-white, a fifth of the
 // way to one of its cloud’s colours
@@ -96,7 +100,6 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
     // (the forms’ numbers have one source: rules.js)
     uForms: { value: FORM_ORDER.map((f) => new THREE.Vector4(FORMS[f].inner, FORMS[f].peak, FORMS[f].outer, FORMS[f].flat)) },
     uCore: { value: FORM_ORDER.map((f) => FORMS[f].core) },
-    uTan: { value: new THREE.Vector2(1, 1) },
     uNear: { value: 0.1 },
     uScale: { value: 500 },
   };
@@ -122,16 +125,14 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
   mesh.frustumCulled = false;
   mesh.renderOrder = -5;
   mesh.visible = false;
-  // what the shader needs of the camera that draws it: a sprite’s pixels a
-  // unit is at a distance of one (as deepspace’s young stars had it), and
-  // the ray through the screen’s corner for a cloud the camera is in
+  // what the shader needs of the camera that draws it besides its
+  // projection: a sprite’s pixels a unit is at a distance of one (as
+  // deepspace’s young stars had it), and its near plane
   const px = new THREE.Vector2();
   mesh.onBeforeRender = (r, scene, camera) => {
     const target = r.getRenderTarget();
     const h = target ? target.height : r.getDrawingBufferSize(px).y;
-    const e = camera.projectionMatrix.elements;
-    uniforms.uScale.value = (h / 2) * (e[5] || 1);
-    uniforms.uTan.value.set(1 / (e[0] || 1), 1 / (e[5] || 1));
+    uniforms.uScale.value = (h / 2) * (camera.projectionMatrix.elements[5] || 1);
     uniforms.uNear.value = camera.near ?? 0.1;
   };
   group.add(mesh);
@@ -145,7 +146,6 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
 
   const entries = new Map(); // id → its entry, while any handle holds it
   const handles = new Map(); // handle → id
-  let next = 1;
   let disposed = false;
 
   const cloud = (i, e, pl, detail) => {
@@ -185,7 +185,7 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
     group,
     add(desc) {
       const d = checkDesc(desc);
-      const handle = next++;
+      const handle = nextHandle++;
       if (disposed) return handle;
       if (!entries.has(d.id)) entries.set(d.id, entryOf(d, row));
       entries.get(d.id).count += 1;
