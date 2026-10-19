@@ -187,3 +187,21 @@ describe('a place that runs on power', () => {
     expect(micro.unlock).toEqual({ zeep: 'microverse' });
   });
 });
+
+describe('Anatomy Park', () => {
+  it('is a chase: the park map’s four pieces while the diseases hunt, then out through the portal on the clock', () => {
+    const park = destinationById('anatomy');
+    expect(park.collect).toEqual({ task: 'anatomy', spots: ['mapkiosk', 'mapspleen', 'maprib', 'mapboat'], escape: { s: 40 } });
+    expect(park.goal).toBe('mapkiosk');
+    const hunters = park.people.filter((p) => p.ai?.hunt);
+    expect(hunters.map((p) => p.who)).toEqual(['hepatitis', 'tuberculosis', 'gonorrhoea', 'ecoli']);
+    const spots = new Set(park.hotspots.map((h) => h.id));
+    for (const h of hunters) {
+      expect(spots.has(h.id), `${h.id} is a hotspot too`).toBe(false);
+      expect(park.say[h.id]?.who, `${h.id} has no name to be caught by`).toBeTruthy();
+    }
+    expect(Object.values(park.done)).not.toContain('anatomy');
+    expect(park.unlock).toEqual({ pancreas: 'anatomy' });
+    expect(park.caught.length).toBeGreaterThan(10);
+  });
+});
