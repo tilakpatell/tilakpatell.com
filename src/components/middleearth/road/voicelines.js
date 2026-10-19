@@ -47,6 +47,8 @@ export const LINES = {
   // (Haldir on the Nimrodel, then the Lady on her dais)
   'lorien-haldir': { who: 'haldir', text: 'You breathe so loud we could have shot you in the dark. Come. The Lady has asked for you.' },
   'lorien-galadriel': { who: 'galadriel', text: 'Nine left Rivendell. Eight are here. Your quest stands on the edge of a knife.' },
+  // (before the Black Gate: Gollum’s other way)
+  'marshes-gollum': { who: 'gollum', text: 'Not this gate, master. They will catch you. There is another way, a secret way, up the dark stairs.' },
 };
 
 export const VOICELINES = Object.values(LINES);

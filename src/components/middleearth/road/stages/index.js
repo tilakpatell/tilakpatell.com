@@ -240,7 +240,32 @@ export const STAGES = [
     ],
     place: 'argonath',
   },
-  { id: 'marshes', name: 'The Dead Marshes', date: '1 March 3019', length: 210, mode: 'walk', place: 'dead-marshes' },
+  {
+    id: 'marshes',
+    name: 'The Dead Marshes',
+    date: '1 March 3019',
+    length: 150,
+    mode: 'walk',
+    place: 'dead-marshes',
+    // down off the Emyn Muil (its cliff and spires are the props: a seam
+    // eases the land flat), out over the marsh, its pools sunk either side
+    // of the track, then the dry slag of Dagorlad up to the Gate, which
+    // stands off to the left in its mountains’ arms at the stage’s end
+    ground: {
+      spec: {
+        seed: 21,
+        relief: [
+          { type: 'swell', scale: 260, height: 1.5 },
+          { type: 'hills', scale: 40, height: 1.2, gain: 0.4, octaves: 3 },
+          { type: 'island', at: [-16, 70], r: 14, height: -1.6, core: 0.5, ragged: 0.4 },
+          { type: 'island', at: [14, 84], r: 12, height: -1.6, core: 0.5, ragged: 0.4 },
+          { type: 'island', at: [-12, 98], r: 11, height: -1.6, core: 0.5, ragged: 0.4 },
+          { type: 'mountains', scale: 140, height: 90, from: 260, to: 460 },
+        ],
+      },
+      paint: { greens: [0x4e4a30, 0x6a6440, 0x7a7048], dirt: 0x4a4436 },
+    },
+  },
   { id: 'ithilien', name: 'Ithilien', date: '7 March 3019', length: 230, mode: 'walk', place: 'minas-morgul' },
   { id: 'cirith-ungol', name: 'Cirith Ungol', date: '12 March 3019', length: 180, mode: 'climb', place: 'cirith-ungol' },
   { id: 'gorgoroth', name: 'Gorgoroth', date: '15 March 3019', length: 240, mode: 'walk', place: 'mount-doom' },
