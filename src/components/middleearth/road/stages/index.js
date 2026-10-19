@@ -59,7 +59,8 @@ export const STAGES = [
     place: 'weathertop',
     // the hill on the road: the Lone-lands low and open, then the climb to
     // Amon Sûl’s crown at the ring (z 122) and down off it to the seam
-    ground: { spec: { seed: 14, relief: [{ type: 'swell', scale: 240, height: 4 }, { type: 'hills', scale: 70, height: 4, gain: 0.4, octaves: 3 }, { type: 'island', at: [0, 120], r: 72, height: 26 }, { type: 'mountains', scale: 200, height: 30, from: 360, to: 500 }] } },
+    // (the crown levelled under the ruin, as the chapter’s plateau)
+    ground: { spec: { seed: 14, relief: [{ type: 'swell', scale: 240, height: 4 }, { type: 'hills', scale: 70, height: 4, gain: 0.4, octaves: 3 }, { type: 'island', at: [0, 120], r: 72, height: 26 }, { type: 'mountains', scale: 200, height: 30, from: 360, to: 500 }] }, flats: [{ at: [2.2, 122], r: 16, edge: 12 }] },
   },
   {
     id: 'ford',

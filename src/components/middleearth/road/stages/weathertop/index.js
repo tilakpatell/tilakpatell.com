@@ -13,11 +13,13 @@
 import * as THREE from 'three';
 import { createNazgulKit } from '../../creatures/nazgul';
 import { kingsPose } from '../../creatures/nazgul.rules';
+import { createTownKit } from '../../townKit';
+import { torch as buildTorch } from '../../../towns/weathertop/build';
 import { FIRE, RING, buildProps } from './props';
 import { BEATS } from './beats';
 
 const MIDGES = 54; // m: the motes over the pools until here
-const FIVE = [-6, -3, 0, 3, 6].map((x, i) => [x, RING.at[1] + 8 + Math.abs(x) * 0.4 + (i % 2) * 0.6]); // on the skyline at the ring’s far side
+const FIVE = [-6, -3, 0, 3, 6].map((x, i) => [x, RING.at[1] + 9 + Math.abs(x) * 0.4 + (i % 2) * 0.6]); // on the skyline at the ring’s far side
 const CLOSE = 7; // m they come on through the ring while the Ring is on
 const VISION = { at: 1, seconds: 12, rate: 2.5 }; // the ring beat’s (beats.js), as vision.js ramps it
 const BURN = 6; // s they burn before they are gone
@@ -38,8 +40,8 @@ const visionAt = (t) => {
 export function build({ road, heightAt, rt, weather }) {
   const group = new THREE.Group();
   group.name = 'stage:weathertop';
-  const material = road.material({ vertexColors: true, flatShading: true });
-  const props = buildProps({ material, heightAt });
+  const town = createTownKit(road, rt?.gfx?.renderer ?? null, { wild: true });
+  const props = buildProps({ K: town.K, heightAt });
   group.add(props.group);
 
   // the fire in the dell, its light the stage’s one point light
@@ -58,6 +60,14 @@ export function build({ road, heightAt, rt, weather }) {
   const blade = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 1.1), bladeMat);
   blade.position.set(0.32, 1.15, 0.5);
   five[2].group.add(blade);
+  // Aragorn’s two brands, the chapter’s torch, in his hands for the fire’s beat
+  const brands = [0, 1].map(() => {
+    const t = buildTorch(town.K);
+    t.group.visible = false;
+    t.group.scale.setScalar(1.3);
+    group.add(t.group);
+    return t;
+  });
 
   let midges = null;
   let fire = null;
@@ -78,6 +88,10 @@ export function build({ road, heightAt, rt, weather }) {
     update(local, dt, { since = {} } = {}) {
       seen.since = since;
       seen.local = local;
+      // dusk into night: the lantern by the camp and the embers lit as it darkens
+      town.setNight(smooth((local - 40) / 60));
+      const k = since.kingsfoil;
+      props.athelas.glow(k != null && Number.isFinite(k) ? smooth(k / 3) : k === Infinity ? 1 : 0);
       // the midges over the Lone-lands
       if (local < MIDGES) midges ??= weather?.kind?.('motes', { follow: true, count: 120 }) ?? null;
       else if (midges) {
@@ -129,9 +143,15 @@ export function build({ road, heightAt, rt, weather }) {
       const torching = f != null && Number.isFinite(f) && f < BURN + 2;
       if (torching && !torches.length && aragorn) torches = [0, 1].map(() => weather?.kind?.('fire', { count: 30, scale: 0.5 }) ?? null);
       if (!torching && torches.length) torches = stopAll(torches);
+      brands.forEach((b, i) => {
+        b.group.visible = torches.length > 0 && aragorn != null;
+        if (!b.group.visible) return;
+        b.group.position.set(aragorn.x + (i ? -0.45 : 0.45), aragorn.y + 0.95, aragorn.z + 0.35);
+        b.group.rotation.set(0.35, 0, i ? 0.25 : -0.25);
+      });
       if (torches.length && aragorn) {
         torches.forEach((t, i) => {
-          hand.set(aragorn.x + (i ? -0.45 : 0.45), aragorn.y + 1.45, aragorn.z + 0.35);
+          hand.set(aragorn.x + (i ? -0.45 : 0.45) * 1.25, aragorn.y + 1.75, aragorn.z + 0.6);
           t?.at(hand.x, hand.y, hand.z);
         });
         // (the one light goes with him: the torches light the five and the four)
@@ -170,7 +190,8 @@ export function build({ road, heightAt, rt, weather }) {
       kit.dispose();
       blade.geometry.dispose();
       bladeMat.dispose();
-      material.dispose();
+      for (const b of brands) b.group.traverse((o) => o.geometry?.dispose());
+      town.dispose();
       group.removeFromParent();
     },
   };

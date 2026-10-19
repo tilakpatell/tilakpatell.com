@@ -7,7 +7,7 @@
 // each beat’s scene a function of where the walker is (`local`) and how
 // long since the beat began (`since[id]`), so walking back puts it back.
 //
-//   build(ctx) → { group, update(local, dt, { since, speed }), floor(x, z), dispose }
+//   build(ctx) → { group, update(local, dt, { since, speed }), pose(id), floor(x, z), dispose }
 //   ctx: { road, heightAt, land, rt, weather, ambience, tier }
 
 import * as THREE from 'three';
@@ -15,10 +15,15 @@ import { walker } from '../../cast';
 import { createNazgulKit } from '../../creatures/nazgul';
 import { search } from '../../creatures/nazgul.rules';
 import { riverLevel } from '../../terrain';
-import { BANK, BEECH, FAR, GAP, LANDING, RAFT, buildProps } from './props';
+import { createTownKit } from '../../townKit';
+import { FAR, GAP, HOLLOW, LANDING, RAFT, buildProps } from './props';
+import { BEATS } from './beats';
 
 const RAFT_AT = { from: LANDING.z[1] + RAFT.d / 2, to: FAR.z[0] - RAFT.d / 2, lead: 2.4 }; // its middle: at the near stage, at the far, and ahead of the walker’s mark
-const ROOTS = { from: 112, stop: BEECH[1] + 3, x: (BANK.x[0] + BANK.x[1]) / 2 + 0.4, come: 5, look: 11, gone: 34 }; // the Rider on the bank: from, where it stands, its seconds
+const ROOTS = { from: 114, stop: HOLLOW[1] + 1.6, x: -0.4, come: 5, look: 11, gone: 34 }; // the Rider down the lane to stand over the hollow: from, where, its seconds
+const MARKS = Object.fromEntries(BEATS.map((b) => [b.id, b]));
+// the four in the hollow while the Rider stands over it, crouched, faces to the lane
+const HIDDEN = { frodo: [0.5, -0.9], sam: [0.9, -0.1], merry: [0.5, 0.7], pippin: [0.9, 1.4] };
 const FERRY = { from: 88, stop: LANDING.z[0] + 1, ride: 5.5 }; // the Rider down the lane to the landing, in seconds
 const RUN_AT = 104; // m: the rain comes on
 
@@ -31,11 +36,12 @@ export function build({ road, heightAt, land, rt, weather, ambience }) {
   const group = new THREE.Group();
   group.name = 'stage:shire-edge';
   const material = road.material({ vertexColors: true, flatShading: true });
+  const town = createTownKit(road, rt?.gfx?.renderer ?? null);
   const river = land?.rivers?.[0] ?? null;
   const along = river ? riverLevel(heightAt, river) : null;
   // (the water under the lane at z: the river’s level where its line crosses x = 0)
   const level = (z) => (along ? along(river.line.length / 2 + (z - 150) * 0.02) : heightAt(0, z));
-  const props = buildProps({ material, heightAt, level });
+  const props = buildProps({ K: town.K, material, heightAt, level });
   group.add(props.group);
   const deck = level(150) + RAFT.deck;
 
@@ -55,6 +61,7 @@ export function build({ road, heightAt, land, rt, weather, ambience }) {
   let hissed = false;
   let raftZ = RAFT_AT.from;
   let bob = 0;
+  const seen = { since: {}, local: 0 }; // (the last frame’s, for pose: the walkers are placed before the scene steps)
 
   const place = (x, z, yaw, speed, y = heightAt(x, z)) => {
     rider.group.visible = true;
@@ -66,6 +73,8 @@ export function build({ road, heightAt, land, rt, weather, ambience }) {
   return {
     group,
     update(local, dt, { since = {} } = {}) {
+      seen.since = since;
+      seen.local = local;
       // Merry and Pippin, out of the gap and into the lane while the beat holds
       const m = since.mushrooms;
       const out = m != null && local < GAP[1] + 2;
@@ -90,13 +99,13 @@ export function build({ road, heightAt, land, rt, weather, ambience }) {
         place(0, z, 0, k < 1 ? 7 : 0, Math.max(heightAt(0, z), z > LANDING.z[0] ? props.decks.near : -Infinity));
         rider.set(k < 1 ? { yaw: 0, pitch: 0 } : { yaw: Math.sin(f) * 0.25, pitch: 0.15 });
       } else if (r != null && Number.isFinite(r) && r < ROOTS.gone) {
-        const top = heightAt(BANK.x[0], BEECH[1]) + BANK.top - 0.1;
         if (r < ROOTS.come) {
           const z = ROOTS.from + (ROOTS.stop - ROOTS.from) * smooth(r / ROOTS.come);
-          place(ROOTS.x, z, Math.PI, 1.2, top);
+          place(ROOTS.x, z, Math.PI, 1.6 * (1 - smooth(r / ROOTS.come)) + 0.3);
           rider.set({ yaw: 0, pitch: 0 });
         } else if (r < ROOTS.look) {
-          place(ROOTS.x, ROOTS.stop, Math.PI, 0, top);
+          // (stood over the hollow, turned to it, the hood searching and bowing to the roots)
+          place(ROOTS.x, ROOTS.stop, Math.PI / 2, 0);
           const s = search(r - ROOTS.come);
           rider.set({ yaw: s.yaw, pitch: s.pitch });
           // (it breathes in over the roots: the wraith’s hiss while it searches)
@@ -106,7 +115,7 @@ export function build({ road, heightAt, land, rt, weather, ambience }) {
           }
         } else {
           const z = ROOTS.stop - (r - ROOTS.look) * 2;
-          place(ROOTS.x, z, Math.PI, 2, z > BANK.z[0] ? top : heightAt(ROOTS.x, z));
+          place(ROOTS.x, z, Math.PI, 2);
           rider.set({ yaw: 0, pitch: 0 });
         }
       } else rider.group.visible = false;
@@ -129,6 +138,15 @@ export function build({ road, heightAt, land, rt, weather, ambience }) {
       bob += dt;
       props.raft.position.set(0, deck + Math.sin(bob * 1.1) * 0.03, raftZ);
     },
+    // the four crouched in the hollow while the Rider is over it
+    pose(id) {
+      const t = seen.since.roots;
+      const at = HIDDEN[id];
+      if (!at || t == null || !Number.isFinite(t) || t >= MARKS.roots.hold || Math.abs(seen.local - MARKS.roots.at) > 0.5) return null;
+      const x = HOLLOW[0] + at[0];
+      const z = HOLLOW[1] + at[1];
+      return { x, y: heightAt(x, z), z, yaw: -Math.PI / 2, base: 'crouch', speed: 0 };
+    },
     // the walkers stand on the stages and the raft where they are over the water
     floor(x, z) {
       if (Math.abs(x) > RAFT.w / 2) return null;
@@ -142,6 +160,7 @@ export function build({ road, heightAt, land, rt, weather, ambience }) {
       if (hissed) ambience?.beat?.('wraith:off');
       props.dispose();
       kit.dispose();
+      town.dispose();
       for (const w of runners) w.dispose();
       material.dispose();
       group.removeFromParent();

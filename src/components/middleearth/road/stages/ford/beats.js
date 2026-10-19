@@ -10,7 +10,7 @@ export { entered, left } from '../../beats';
 export const BEATS = [
   // the three trolls in stone, as Bilbo left them, under the leaves: the
   // walkers small beside them (the plan’s low rig had the walkers fill the frame)
-  { id: 'trolls', kind: 'trolls', at: 30, hold: 8, rig: 'wide', reach: 14, params: { at: [-3.5, 1.4, 24], lookAt: [9, 2.6, 40], above: true } },
+  { id: 'trolls', kind: 'trolls', at: 30, hold: 8, rig: 'wide', reach: 14, params: { at: [-2.5, 1.5, 27], lookAt: [9.5, 2.4, 40], above: true } },
   // Arwen out of the trees on the white horse
   { id: 'arwen', kind: 'arwen', at: 72, hold: 6, rig: 'side', reach: 8, lines: ['ford-arwen'] },
   // the ride: on Asfaloth behind her, the trees whipping by, the Nine gaining

@@ -1,17 +1,16 @@
 // The Ford’s landmarks, built in code and flat-shaded on the house’s look:
-// the trolls’ clearing with the cold fire-pit and the cave’s mouth behind
-// them, the Last Bridge’s three stone arches over the Hoarwell, and the
+// the trolls’ clearing’s cold fire-pit and the cave’s mouth behind it (the
+// trolls themselves are the Weathertop chapter’s, stood there by the scene), the Last Bridge’s three stone arches over the Hoarwell, and the
 // Ford: its stones across the Bruinen and the dark of Rivendell’s pines on
 // the far bank. Everything still is one mesh. In the stage’s frame: the
 // road along +z from 0, +x on the walker’s left.
 //
 //   buildProps({ material, heightAt }) → { group, deck, dispose }
-//   TROLLS, BRIDGE, FORD: where they stand, for the beats and the scene
+//   BRIDGE, FORD: where they stand, for the beats and the scene
 
 import * as THREE from 'three';
 import { C, merged, part } from '../parts';
 
-export const TROLLS = [[7.5, 36, -2.4], [10.5, 40, -1.6], [6.8, 43, -2.9]]; // x, z, facing: the three over their cold fire
 export const BRIDGE = { z: [41, 63], w: 4.6 }; // the Last Bridge: its deck’s span along the road, its width
 export const FORD = { z: 168, stones: 9 }; // the Bruinen’s middle at the road, and the stones across it
 
@@ -21,8 +20,8 @@ const ASH = C(0x5a5650);
 const MOSS = C(0x5f6e46);
 
 function clearingParts(heightAt, parts) {
-  // the fire-pit the trolls bent over, long cold, and a spit across it
-  const [fx, fz] = [9, 40];
+  // the fire-pit the trolls bent over (the scene stands them round it), long cold, and a spit across it
+  const [fx, fz] = [9.5, 40];
   const y = heightAt(fx, fz);
   for (let i = 0; i < 10; i++) {
     const a = (i / 10) * Math.PI * 2;

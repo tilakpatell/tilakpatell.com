@@ -1,83 +1,102 @@
-// Weathertop’s landmarks, built in code and flat-shaded on the house’s
-// look: the broken ring of Amon Sûl’s wall on the hill’s crown (the road
-// goes in at one gap and out at another), its fallen stones, the dell under
-// the summit with Sam’s fire-ring, his pans and the packs. Everything still
-// is one mesh. In the stage’s frame: the road along +z from 0, +x on the
-// walker’s left.
+// Weathertop’s landmarks, built with the Weathertop chapter’s own builders
+// (towns/weathertop/build.js and trollshaws.js, on the Road’s town kit with
+// its wild materials): Amon Sûl’s ruin on the crown, its broken ring of
+// weathered walls and three arches, the flagstones and the plinth, turned
+// so the road comes in under an arch and out by the wide gap on the far
+// side; Sam’s camp in the dell under it, the fire-ring, the bedrolls, the
+// pan; crags and dead trees on the hill’s flanks, weeds about the ruin, and
+// the athelas by the road where Frodo falls. In the stage’s frame: the road
+// along +z from 0, +x on the walker’s left.
 //
-//   buildProps({ material, heightAt }) → { group, dispose }
-//   RING, FIRE: where they stand, for the beats and the scene
+//   buildProps({ K, heightAt }) → { group, camp, athelas, dispose }
+//   RING, FIRE, KINGSFOIL: where they stand, for the beats and the scene
 
 import * as THREE from 'three';
-import { C, merged, part } from '../parts';
+import { camp as buildCamp, rockGeo, ruin } from '../../../towns/weathertop/build';
+import { athelas as buildAthelas, deadTree, weed } from '../../../towns/weathertop/trollshaws';
+import { RUIN } from '../../../towns/weathertop/layout';
+import { rngOf } from '../../scatter';
 
-export const RING = { at: [0, 122], r: 13 }; // Amon Sûl’s wall on the crown
-export const FIRE = [1.8, 68.5]; // Sam’s fire in the dell, beside the road
+// the ruin: its middle off the road’s line, so the plinth stands beside the
+// walkers, and turned (yaw) so its arch at −0.875 rad is where the road comes in
+export const RING = { at: [2.2, 122], scale: 1.3, yaw: 0.87 };
+export const FIRE = [2.4, 68.5]; // Sam’s fire in the dell, beside the road
+export const KINGSFOIL = [1.3, 147.2]; // the athelas, where Frodo lies
+const WILD = 0.68; // the Road’s hobbit (1.05 m) over the chapter’s (1.55): the camp and the plants
+const CRAGS = 46; // rocks on the hill’s flanks
+const DEAD = [[-14, 84, 1], [18, 98, 2], [-22, 140, 3], [12, 40, 4]]; // x, z, seed
 
-const STONE = C(0x8a8478);
-const MOSS = C(0x5e6a48);
-const DARK = C(0x3a342c);
-const IRON = C(0x2a2a2e);
-const PACK = C(0x6a5a3a);
-
-function ringParts(heightAt, parts) {
-  const [cx, cz] = RING.at;
-  // the wall in broken lengths round the crown, with gaps where the road goes through
-  for (let a = 0; a < 360; a += 9) {
-    const r = (a * Math.PI) / 180;
-    const x = cx + Math.sin(r) * RING.r;
-    const z = cz + Math.cos(r) * RING.r;
-    if (Math.abs(x) < 3.2) continue; // (the road’s gaps, at the ring’s front and back)
-    // (the height of each length, broken unevenly: tall on the west, low on the east)
-    const h = 0.6 + Math.abs(Math.sin(a * 0.11) * 2.6) + (x < 0 ? 0.8 : 0) - ((a * 37) % 7) * 0.15;
-    if (h < 0.4) continue;
-    const y = heightAt(x, z);
-    parts.push(part(new THREE.BoxGeometry(2.2, h, 1.2), STONE.clone().offsetHSL(0, 0, ((a * 13) % 9) * 0.006), { at: [x, y + h / 2 - 0.2, z], yaw: r }));
-    if (h > 1.4) parts.push(part(new THREE.BoxGeometry(2.25, 0.12, 1.25), MOSS, { at: [x, y + h - 0.2, z], yaw: r }));
-  }
-  // fallen stones, inside and out
-  for (let i = 0; i < 18; i++) {
-    const a = i * 2.4;
-    const r = RING.r + (i % 2 ? -3 : 3) * (0.5 + (i % 3) * 0.4);
-    const x = cx + Math.sin(a) * r;
-    const z = cz + Math.cos(a) * r;
-    if (Math.abs(x) < 2.6) continue;
-    parts.push(part(new THREE.BoxGeometry(1 + (i % 3) * 0.4, 0.5 + (i % 2) * 0.3, 0.8), STONE, { at: [x, heightAt(x, z) + 0.15, z], yaw: a, roll: (i % 4) * 0.12 }));
-  }
-}
-
-function dellParts(heightAt, parts) {
-  const [fx, fz] = FIRE;
-  const y = heightAt(fx, fz);
-  // the fire-ring, the pan on its stones, the packs and a bedroll
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2;
-    parts.push(part(new THREE.DodecahedronGeometry(0.18, 0), STONE, { at: [fx + Math.cos(a) * 0.55, y + 0.08, fz + Math.sin(a) * 0.55] }));
-  }
-  for (let i = 0; i < 4; i++) parts.push(part(new THREE.CylinderGeometry(0.05, 0.06, 0.9, 5), DARK, { at: [fx, y + 0.12, fz], yaw: i * 0.8, roll: Math.PI / 2 }));
-  parts.push(part(new THREE.CylinderGeometry(0.22, 0.18, 0.12, 10), IRON, { at: [fx + 0.4, y + 0.3, fz] }));
-  for (const [dx, dz] of [[1.6, -0.8], [2.2, 0.7], [-1.4, 1.2]]) parts.push(part(new THREE.BoxGeometry(0.5, 0.6, 0.35), PACK, { at: [fx + dx, heightAt(fx + dx, fz + dz) + 0.3, fz + dz], yaw: dx }));
-  parts.push(part(new THREE.CylinderGeometry(0.16, 0.16, 1.2, 8), C(0x7a2e2a), { at: [fx + 2.6, y + 0.16, fz - 1.4], yaw: 0.4, roll: Math.PI / 2 }));
-  // the dell’s rim: a few big stones on the slope above
-  for (let i = 0; i < 6; i++) {
-    const x = fx + 4 + (i % 3) * 2.2;
-    const z = fz - 4 + i * 1.6;
-    parts.push(part(new THREE.DodecahedronGeometry(0.8 + (i % 2) * 0.4, 0), STONE, { at: [x, heightAt(x, z) + 0.3, z], yaw: i }));
-  }
-}
-
-export function buildProps({ material, heightAt }) {
+export function buildProps({ K, heightAt }) {
   const group = new THREE.Group();
   group.name = 'weathertop:props';
-  const parts = [];
-  ringParts(heightAt, parts);
-  dellParts(heightAt, parts);
-  group.add(merged(parts, material, 'weathertop:statics'));
+  // Amon Sûl’s ruin on the crown
+  const amonSul = ruin(K, RUIN);
+  amonSul.group.position.set(RING.at[0], heightAt(...RING.at) - 0.1, RING.at[1]);
+  amonSul.group.rotation.y = RING.yaw;
+  amonSul.group.scale.setScalar(RING.scale);
+  group.add(amonSul.group);
+
+  // Sam’s camp in the dell
+  const camp = buildCamp(K);
+  camp.group.position.set(FIRE[0], heightAt(...FIRE), FIRE[1]);
+  camp.group.scale.setScalar(WILD);
+  group.add(camp.group);
+
+  // crags on the flanks (not on the road, not in the ruin), instanced, three shapes
+  const rng = rngOf(14);
+  const shapes = [rockGeo(3), rockGeo(8), rockGeo(21)];
+  const per = shapes.map(() => []);
+  for (let i = 0; i < CRAGS; i++) {
+    const x = (rng() < 0.5 ? -1 : 1) * (4 + rng() * 40);
+    const z = 20 + rng() * 140;
+    if (Math.hypot(x - RING.at[0], z - RING.at[1]) < RUIN.r * RING.scale + 2) continue;
+    per[i % 3].push({ x, z, s: 0.6 + rng() * 1.6, yaw: rng() * 6.28, tilt: (rng() - 0.5) * 0.4 });
+  }
+  const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const e = new THREE.Euler();
+  shapes.forEach((geo, k) => {
+    const list = per[k];
+    const mesh = new THREE.InstancedMesh(geo, K.mats.rock, list.length);
+    list.forEach((r, i) => mesh.setMatrixAt(i, m.compose(new THREE.Vector3(r.x, heightAt(r.x, r.z) - 0.25 * r.s, r.z), q.setFromEuler(e.set(r.tilt, r.yaw, 0)), new THREE.Vector3(r.s, r.s * 0.8, r.s))));
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+  });
+  // dead trees on the flanks, weeds about the ruin and the road
+  for (const [x, z, seed] of DEAD) {
+    const t = deadTree(K, seed);
+    t.group.position.set(x, heightAt(x, z), z);
+    t.group.scale.setScalar(WILD * 1.2);
+    group.add(t.group);
+  }
+  for (let i = 0; i < 18; i++) {
+    const a = rng() * 6.28;
+    const r = RUIN.r * RING.scale * (0.4 + rng() * 0.9);
+    const x = RING.at[0] + Math.cos(a) * r;
+    const z = RING.at[1] + Math.sin(a) * r;
+    if (Math.abs(x) < 1.4) continue;
+    const w = weed(K, 10 + i);
+    w.group.position.set(x, heightAt(x, z), z);
+    w.group.scale.setScalar(WILD);
+    group.add(w.group);
+  }
+  // the athelas where Frodo falls
+  const athelas = buildAthelas(K);
+  athelas.group.position.set(KINGSFOIL[0], heightAt(...KINGSFOIL), KINGSFOIL[1]);
+  athelas.group.scale.setScalar(WILD * 1.4);
+  group.add(athelas.group);
+
   return {
     group,
+    camp,
+    athelas,
     dispose() {
       group.removeFromParent();
-      group.traverse((o) => o.geometry?.dispose());
+      group.traverse((o) => {
+        o.geometry?.dispose();
+        if (o.isSprite) o.material.dispose();
+      });
     },
   };
 }

@@ -7,7 +7,8 @@
 //     (pure: density per 100 m², in clumps, never within CLEAR of the road,
 //     off steep ground and out of the water, `reach` metres either side of
 //     the road at most; low halves the counts and drops the grass, mid thins it;
-//     a row with `z: [z0, z1]` or `x: [x0, x1]` keeps to that band of the stage)
+//     a row with `z: [z0, z1]` or `x: [x0, x1]` keeps to that band of the stage;
+//     nothing inside the land’s `clear` circles, [{ at: [x, z], r }]: a town, a garden)
 //   rowsFor(id) → the stage’s rows
 //   rngOf(seed) → () → 0…1, the same for the same seed
 //   createScatter({ kitFor, tier }) → { group, set(key, items, dz), free(key), update(camera, dt), stats, dispose }
@@ -76,6 +77,7 @@ export function placements(rows, land, road, rng, { tier = 'high', reach = REACH
         if (x < bx0 || x > bx1 || z < bz0 || z > bz1) continue;
         if (off(x, z) < CLEAR) continue;
         if (land.wet?.(x, z)) continue;
+        if (land.clear?.some((c) => Math.hypot(x - c.at[0], z - c.at[1]) < c.r)) continue;
         const sx = (field(x + 1, z) - field(x - 1, z)) / 2;
         const sz = (field(x, z + 1) - field(x, z - 1)) / 2;
         if (Math.hypot(sx, sz) > cap) continue;

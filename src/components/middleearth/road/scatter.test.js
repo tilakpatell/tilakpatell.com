@@ -76,6 +76,13 @@ describe('the scatter’s placements', () => {
     expect(items.length).toBeGreaterThan(84 * 0.7);
   });
 
+  it('plants nothing in the land’s clear circles (a town, a garden)', () => {
+    const town = { ...flat, clear: [{ at: [20, 100], r: 30 }] };
+    const items = placements([{ ...tree, per100: 1 }], town, road, rngOf(13));
+    expect(items.length).toBeGreaterThan(100);
+    for (const it of items) expect(Math.hypot(it.x - 20, it.z - 100)).toBeGreaterThanOrEqual(30);
+  });
+
   it('is the same for the same seed', () => {
     expect(placements([tree], flat, road, rngOf(11))).toEqual(placements([tree], flat, road, rngOf(11)));
   });

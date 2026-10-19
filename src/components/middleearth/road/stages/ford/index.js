@@ -11,10 +11,11 @@
 //   ctx: { road, heightAt, waters, rt, weather, tier }
 
 import * as THREE from 'three';
-import { walker } from '../../cast';
 import { createHorse } from '../../creatures/horse';
+import { createTownKit } from '../../townKit';
+import { deadTree, fallenTree, trolls as buildTrolls } from '../../../towns/weathertop/trollshaws';
 import { createNazgulKit } from '../../creatures/nazgul';
-import { BRIDGE, FORD, TROLLS, buildProps } from './props';
+import { BRIDGE, FORD, buildProps } from './props';
 import { BEATS } from './beats';
 
 const MARKS = Object.fromEntries(BEATS.map((b) => [b.id, b]));
@@ -24,6 +25,9 @@ const SEAT = 1.3; // m over the ground a rider sits on a 1.75 m horse
 const LEFT = new Set(['sam', 'merry', 'pippin', 'aragorn']); // left behind at the ride
 const NINE = { far: 42, near: 12 }; // m behind the walker: at the ride’s start, at its end
 const FLOOD = { in: 6.5, rise: 8, top: 10, swept: 9.5, gone: 14, ebb: 40 }; // seconds into the Ford’s beat
+const FOAM = { n: 7, run: 9, from: -46, speed: 11 }; // the horses of foam: how many, their seconds, where they start downstream of, m/s
+const CLEARING = [9.5, 40, -0.6]; // the trolls’ clearing: x, z, the three turned to the road
+const WOOD = [[-7, 18, 'dead', 2], [8.5, 66, 'fallen', 3], [-9, 104, 'dead', 5], [7, 132, 'fallen', 6]]; // x, z, which, seed: by the road through the Trollshaws
 
 const smooth = (x) => {
   const k = Math.min(1, Math.max(0, x));
@@ -34,22 +38,25 @@ export function build({ road, heightAt, waters = [], rt, weather, tier = 'high' 
   const group = new THREE.Group();
   group.name = 'stage:ford';
   const material = road.material({ vertexColors: true, flatShading: true });
+  const town = createTownKit(road, rt?.gfx?.renderer ?? null, { wild: true });
   const props = buildProps({ material, heightAt });
   group.add(props.group);
   const bruinen = waters[1] ?? null;
 
-  // Bilbo’s trolls, in stone: three orc figures at troll size, each held in a pose
-  const stone = road.material({ color: 0x8e8574, flatShading: true });
-  const trolls = TROLLS.map(([x, z, yaw], i) => {
-    const t = walker('orc', { rt, seed: 70 + i, height: 4.4 });
-    t.group.position.set(x, heightAt(x, z) - 0.1, z);
-    t.group.rotation.y = yaw;
-    t.set({ base: ['kneel.fix', 'idle', 'sit.ground'][i], speed: 0 });
-    // (the body turned to stone; the ink line round it kept)
-    t.ready?.then?.(() => t.group.traverse((o) => o.isMesh && !o.userData.ink && (o.material = stone)));
+  // Bilbo’s trolls, in stone, as the Weathertop chapter carved them (a nest on Tom’s head)
+  const trolls = buildTrolls(town.K);
+  trolls.group.position.set(CLEARING[0], heightAt(CLEARING[0], CLEARING[1]) - 0.1, CLEARING[1]);
+  trolls.group.rotation.y = CLEARING[2];
+  trolls.group.scale.setScalar(1.05);
+  group.add(trolls.group);
+  // dead and fallen trees by the road through the wood
+  for (const [x, z, which, seed] of WOOD) {
+    const t = which === 'dead' ? deadTree(town.K, seed) : fallenTree(town.K, seed);
+    t.group.position.set(x, heightAt(x, z), z);
+    t.group.rotation.y = seed;
+    t.group.scale.setScalar(0.8);
     group.add(t.group);
-    return { t, posed: 0 };
-  });
+  }
 
   const asfaloth = createHorse(rt, { coat: 'white', height: 1.75, seed: 9 });
   asfaloth.group.visible = false;
@@ -62,6 +69,21 @@ export function build({ road, heightAt, waters = [], rt, weather, tier = 'high' 
     return r;
   });
 
+  // the horses of foam the river rises in: white horses, glowing a little, running down the flood
+  const foam = Array.from({ length: tier === 'low' ? 3 : FOAM.n }, (_, i) => {
+    const h = createHorse(rt, { coat: 'white', height: 1.9 + (i % 3) * 0.25, seed: 60 + i });
+    h.group.visible = false;
+    h.ready?.then?.(() =>
+      h.group.traverse((o) => {
+        if (!o.isMesh) return;
+        o.material.transparent = true;
+        o.material.opacity = 0.78;
+        if (o.material.emissive) o.material.emissive.setRGB(0.55, 0.65, 0.72);
+      }),
+    );
+    group.add(h.group);
+    return h;
+  });
   let spray = null;
   const horse = { x: 0, y: 0, z: 0, on: false };
   const seen = { since: {}, local: 0 };
@@ -71,13 +93,6 @@ export function build({ road, heightAt, waters = [], rt, weather, tier = 'high' 
     update(local, dt, { since = {}, speed = 0 } = {}) {
       seen.since = since;
       seen.local = local;
-      // the trolls: each held a moment into its clip, then still as stone
-      for (const tr of trolls) {
-        if (tr.posed < 0.6) {
-          tr.t.tick(dt);
-          tr.posed += dt;
-        }
-      }
 
       // Asfaloth: out of the trees, then beside the line, then under the two riders
       const a = since.arwen;
@@ -143,6 +158,20 @@ export function build({ road, heightAt, waters = [], rt, weather, tier = 'high' 
       // the Bruinen rises at the Nine: the ridge of the water and its manes of spray
       const rise = f == null || !Number.isFinite(f) ? 0 : smooth((f - FLOOD.rise) / (FLOOD.top - FLOOD.rise)) * (1 - 0.8 * smooth((f - FLOOD.gone) / (FLOOD.ebb - FLOOD.gone)));
       if (bruinen?.uniforms?.uRise) bruinen.uniforms.uRise.value = rise;
+      // the horses of foam, downstream to up along the ridge, rising and falling as they run
+      const run = f != null && Number.isFinite(f) ? f - FLOOD.rise + 0.4 : -1;
+      foam.forEach((h, i) => {
+        const on = run >= 0 && run < FOAM.run;
+        h.group.visible = on;
+        if (!on) return;
+        const x = FOAM.from + (i - foam.length / 2) * 3.4 + run * FOAM.speed;
+        const z = FORD.z - 2 + Math.sin(i * 2.1) * 3;
+        const y = heightAt(0, FORD.z) + 0.6 + rise * 1.6 + Math.abs(Math.sin(run * 4 + i)) * 0.5;
+        h.group.position.set(x, y, z);
+        h.group.rotation.y = Math.PI / 2;
+        h.set({ speed: 9 });
+        h.tick(dt);
+      });
       if (rise > 0.3 && !spray) {
         spray = weather?.kind?.('spray', { count: 400, box: [36, 0.5, 8] }) ?? null;
         spray?.at(0, heightAt(0, FORD.z) + 1.8, FORD.z - 2);
@@ -168,10 +197,11 @@ export function build({ road, heightAt, waters = [], rt, weather, tier = 'high' 
       spray?.stop();
       if (bruinen?.uniforms?.uRise) bruinen.uniforms.uRise.value = 0;
       props.dispose();
-      for (const tr of trolls) tr.t.dispose();
+      trolls.group.traverse((o) => o.geometry?.dispose());
       asfaloth.dispose();
+      for (const h of foam) h.dispose();
       kit.dispose();
-      stone.dispose();
+      town.dispose();
       material.dispose();
       group.removeFromParent();
     },

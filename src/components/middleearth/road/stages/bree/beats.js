@@ -12,10 +12,12 @@ export const BEATS = [
   { id: 'gate', kind: 'gate', at: 16, hold: 8, rig: 'low', reach: 14 },
   // the lane between the tall houses, Bree men under the eaves
   { id: 'lane', kind: 'lane', at: 50, hold: 0, rig: 'follow' },
-  // the Pony’s window: Butterbur at the bar, a pipe glowing in the corner
-  { id: 'pony', kind: 'pony', at: 82, hold: 12, rig: 'seat', reach: 14, params: { at: [-5.5, 1.5, 88], lookAt: [-9.5, 1.9, 96], above: true }, lines: ['bree-pony'] },
+  // the Pony’s open door: Butterbur in it, the common room’s light behind him, a
+  // Ranger’s pipe glowing on the bench under the eaves (the window the brief has
+  // is the chapter’s Pony’s door here: its walls are closed)
+  { id: 'pony', kind: 'pony', at: 82, hold: 12, rig: 'seat', reach: 14, params: { at: [1.4, 1.6, 86.5], lookAt: [-3.4, 1.5, 93.6], above: true }, lines: ['bree-pony'] },
   // the Riders: four through the gate at a gallop, the blades in the beds
-  { id: 'riders', kind: 'riders', at: 108, hold: 10, rig: 'wide', cut: 0, reach: 14, params: { at: [6, 7, 122], lookAt: [-2, 1.5, 70], above: true }, clip: 'nazgul' },
+  { id: 'riders', kind: 'riders', at: 108, hold: 10, rig: 'wide', cut: 0, reach: 14, params: { at: [3.6, 6.5, 116], lookAt: [0, 1.8, 40], above: true }, clip: 'nazgul' },
   // grey morning: Strider takes them out by the back way
   { id: 'dawn', kind: 'dawn', at: 134, hold: 0, rig: 'lead', reach: 16, lines: ['bree-dawn'] },
 ];
