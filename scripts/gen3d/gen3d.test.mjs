@@ -292,6 +292,10 @@ describe("the model's eyes", () => {
     const { parseJson } = await import('./vlm.mjs');
     expect(parseJson('Sure. ```json\n{"score": 7, "problems": ["the wings are too short"]}\n```')).toEqual({ score: 7, problems: ['the wings are too short'] });
     expect(() => parseJson('no idea')).toThrow(/no JSON/);
+    // (the first whole object, though prose holding braces follows it, a brace is quoted in it, or a stray one comes first)
+    expect(parseJson('{"score": 3, "problems": ["one hollow dome"]}\nNote: the {base} is missing.')).toEqual({ score: 3, problems: ['one hollow dome'] });
+    expect(parseJson('{"score": 5, "problems": ["a \\"{\\" in it", "and } this"]} done')).toEqual({ score: 5, problems: ['a "{" in it', 'and } this'] });
+    expect(parseJson('use {braces} like so: {"score": 6, "problems": []}')).toEqual({ score: 6, problems: [] });
   });
 });
 

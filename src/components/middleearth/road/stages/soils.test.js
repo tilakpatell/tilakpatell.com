@@ -29,7 +29,7 @@ describe('the stages’ soils', () => {
       }
   });
 
-  it('no grass where nothing grows: the snow, the deeps, the stair and the ash', () => {
-    for (const id of ['caradhras', 'moria', 'cirith-ungol', 'gorgoroth']) expect(SOILS[id].blades, id).toBe(0);
+  it('no grass where nothing grows: the deeps, the stair and the ash', () => {
+    for (const id of ['moria', 'cirith-ungol', 'gorgoroth']) expect(SOILS[id].blades, id).toBe(0);
   });
 });

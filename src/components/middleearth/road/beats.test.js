@@ -67,4 +67,14 @@ describe('a stage’s beats', () => {
     expect(fxAt(beats, { d: 6.5 }).vision).toBe(false);
     expect(fxAt(beats, { d: 5 }).vision).toBe(false);
   });
+
+  it('fxAt: a shake as hard as it is at its start, dying away over its seconds, none before or after', () => {
+    const beats = [{ id: 's', at: 0, hold: 5, rig: 'follow', fx: [{ kind: 'shake', at: 1, seconds: 2 }] }];
+    expect(fxAt(beats, {}).shake).toBe(0);
+    expect(fxAt(beats, { s: 0.5 }).shake).toBe(0);
+    expect(fxAt(beats, { s: 1 }).shake).toBe(1);
+    expect(fxAt(beats, { s: 2 }).shake).toBeCloseTo(0.5, 5);
+    expect(fxAt(beats, { s: 3.5 }).shake).toBe(0);
+    expect(fxAt(beats, { s: Infinity }).shake).toBe(0);
+  });
 });

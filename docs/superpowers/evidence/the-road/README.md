@@ -150,3 +150,70 @@ After the lane, mended as they were looked at again (`claude/the-road-3-eriador`
 - `ford-ride-desktop.webp`: on the road behind Asfaloth, Arwen and Frodo up, the Trollshaws gold either side (the camera had been behind her head).
 
 What still falls short, for R7: the figures seen from behind at dusk and at night read nearly black; Weathertop’s crags are a cold purple in the evening light; the Ford’s Nine are small dark shapes at the flood’s far edge, and the flood a low ridge rather than a wall of water; Rivendell’s valley is gentler than the films’ gorge and its far cliff stands behind a crest.
+
+## R4, stages 7 to 10 (2026-10-19)
+
+Caradhras and the Doors, Moria, Lothlórien and the Anduin, each on Hobbiton’s recipe and drawn with its chapter’s own builders: the Moria, Lothlórien and Amon Hen chapters split by what they draw so their builders carry no GLSL (`towns/{moria,lorien,amonhen}/`), and their materials made on the Road’s look (`road/moriaKit.js`, `road/lorienKit.js`). Measured in the container on `nodes-webgl`; **the WebGPU rows are the owner’s machines’ and are left empty**.
+
+### Each stage’s heaviest beats (the beat held, `window.__ROAD__.info()`)
+
+As R3’s: each stage opened a few metres short of its beat, sped to it (`fast(6)`), held at one to one, then the last frame read 2.5 s on. Assets are everything fetched from cold, the neighbours’ included.
+
+| stage | beat | quality | draws | triangles | assets MB |
+| --- | --- | --- | --- | --- | --- |
+| caradhras | the crebain over the ridge | high | 60 | 494,275 | 7.1 |
+| caradhras | the crebain | low | 35 | 182,858 | 6.9 |
+| caradhras | the white-out (Saruman on the wind) | high | 70 | 463,152 | 7.3 |
+| caradhras | the white-out | low | 47 | 194,607 | 7.1 |
+| caradhras | the Doors (the ithildin, open) | high | 61 | 385,510 | 7.3 |
+| caradhras | the Doors | low | 53 | 312,193 | 10.1 |
+| caradhras | the Watcher (Frodo lifted) | high | 74 | 445,554 | 7.1 |
+| caradhras | the Watcher | low | 47 | 208,871 | 6.9 |
+| moria | Balin’s tomb | high | 73 | 346,933 | 5.9 |
+| moria | Balin’s tomb | low | 55 | 199,540 | 5.8 |
+| moria | the Dwarrowdelf (the staff flared) | high | 75 | 457,746 | 21.6 |
+| moria | the Dwarrowdelf | low | 52 | 183,360 | 6.8 |
+| moria | the Bridge (the Balrog) | high | 154 | 416,159 | 5.8 |
+| moria | the Bridge | low | 140 | 223,428 | 6.9 |
+| moria | the Dimrill Dale | high | 45 | 323,143 | 5.2 |
+| moria | the Dimrill Dale | low | 35 | 159,251 | 6.3 |
+| lorien | the dais on the flet | high | 67 | 608,496 | 6.9 |
+| lorien | the dais | low | 49 | 338,031 | 7.5 |
+| lorien | the Mirror (the Eye) | high | 69 | 573,397 | 6.8 |
+| lorien | the Mirror | low | 48 | 308,346 | 7.4 |
+| anduin | the Argonath | high | 63 | 402,396 | 5.5 |
+| anduin | the Argonath | low | 44 | 223,681 | 6.4 |
+| anduin | the Seat (the vision) | high | 63 | 416,647 | 5.5 |
+| anduin | the Seat | low | 41 | 199,267 | 6.4 |
+
+- Against the design’s targets (350 and 200 draws, 1,200,000 and 400,000 triangles) every beat is under on both tiers; the closest are Lothlórien’s dais at 608,496 triangles on `high` (four mallorns by the road and the great one, each a few tens of thousands) and 338,031 on `low`, and the Bridge’s 140 draws on `low` (the Balrog’s many parts, which the chapter animates and so are not merged).
+- The Dwarrowdelf’s 21.6 MB on `high` is the window fetching the cast of the stages either side as it was opened by its address, not what the ride adds there; its `low` row, opened the same way, fetched 6.8.
+- Getting there: every stage’s still meshes merged one a material (`mergeStatics`); on `low` the hall is a narrower bay of pillars, three goblins rather than six, six of the Watcher’s arms rather than twelve, three mallorns by the road rather than four, half the far wood and the Anduin’s woods; the crebain are 120 on `low`, 300 on `high`, one instanced draw.
+
+### The ride’s length
+
+The four stages are shorter than the table’s first lengths (170, 180, 150 and 170 m) with their holds trimmed (47, 54, 34 and 42 s): the ride on auto is 1,749 s with stages 11 to 16 still counted at half a minute of holds (`clock.test.js`). Each of the four is 94 to 126 s on auto.
+
+### The pictures
+
+Each stage 20 m in (`shots/<stage>-desktop.webp` and `-phone.webp`) and its film moments held, every one looked at:
+
+- `caradhras-crebain-desktop.webp`: the wide on Hollin’s slope, the company small on the snow’s edge, the black flock wheeling over the ridge.
+- `caradhras-snow-desktop.webp`: the white-out on the Redhorn’s shoulder: the walkers grey shapes in it, the sky gone into the fog.
+- `caradhras-avalanche-desktop.webp`: the slab come down ahead of them, a burst of white, the frame shaken.
+- `caradhras-doors-desktop.webp`: low behind Frodo at dusk, the Doors of Durin in silver lines on the cliff between the two hollies: the arch, the crown and seven stars, the trees.
+- `caradhras-watcher-desktop.webp`: the arms out of the black lake in the Doors’ silver light, Frodo hung from the first.
+- `moria-tomb-desktop.webp`: the Chamber of Mazarbul, Balin’s tomb in its shaft of grey light, the dead dwarves, the company round it.
+- `moria-dwarrowdelf-desktop.webp`: the crane up the Dwarrowdelf, Gandalf’s staff flared and the carved pillars with their runes going on into the dark.
+- `moria-bridge-desktop.webp`: from the far bank, Gandalf small on the span, the Balrog over him, its sword of fire raised, the fire red under the abyss.
+- `moria-dale-desktop.webp`: out into a grey day, the eight climbing the Dale’s slope, the Mirrormere dark in its hollow, snow on the peak.
+- `lorien-haldir-desktop.webp`: Haldir out of the trees by the company, the stair going up beside the road, the mallorns.
+- `lorien-climb-desktop.webp`: up the stair behind the company, the flet round the great tree ahead.
+- `lorien-dais-desktop.webp`: on the flet, the Lady and the Lord on the dais under the gold crowns, a lantern, the rail.
+- `lorien-mirror-desktop.webp`: over the basin, the Eye of fire with its black slit in the water, the Lady watching, Frodo at the rim.
+- `lorien-boats-desktop.webp`: Frodo and Sam in a grey boat pulling from the hythe, the flet beyond.
+- `anduin-argonath-desktop.webp`: the crane up between the Kings, a hand raised on each side.
+- `anduin-seat-desktop.webp`: from the Seat, the vision’s four pictures in the western sky under the vision’s drain (the White City’s tiers, Orthanc, Edoras’ hill), the Seat’s broken columns.
+- `anduin-breaking-desktop.webp`: Frodo and Sam alone in one boat on the lake, Tol Brandir grey beyond.
+
+What still falls short, for R7: the white-out’s flakes do not show (the fog carries it); Frodo on the Watcher’s arm is small; the goblins are dark shapes on the pillars; the Balrog’s fire cards are the chapter shader’s to place, so here it is its sword, whip and red glow; the Seat’s pictures are hazy under the vision; the Uruks at the horn run outside the shot; Lothlórien’s seated rowers stand.

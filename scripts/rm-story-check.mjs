@@ -3,7 +3,8 @@
 // profile, driven through the dev hooks (window.__C137__: goto, act,
 // complete, ready, dial, sim, warp (Morty moved within a place, which keeps
 // its game going, where goto starts the place afresh), api (a place's own
-// actions: the Microverse's power, setPower), and Total Rickall's rickall,
+// actions: the Microverse's power, setPower), the cruiser's board and the
+// street's fight (sim.chase is the cruiser's chase), and Total Rickall's rickall,
 // lookAt, shoot, stopRickall; window.__RMSTORY__: get, feed, dialOpen, jump,
 // reset; the games' own, window.__CABINET__ and window.__SEWER__), as
 // scripts/c137-shots.mjs drives C-137. With the dev server up (or a preview of
@@ -20,6 +21,7 @@
 import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync } from 'node:fs';
 import { EPISODES, READY } from '../src/components/rickmorty/adventure/episodes.js';
+import { COURSE, chaseStart, newChase } from '../src/components/rickmorty/world/games/chase.js';
 
 const BASE = process.env.BASE ?? 'http://127.0.0.1:5197';
 const OUT = process.env.OUT ?? null;
@@ -74,6 +76,7 @@ const WIPED = EPISODES[0];
 const ARCADE = EPISODES[1];
 const GUESTS = EPISODES[2];
 const SMALL = EPISODES[3];
+const HEAT = EPISODES[4];
 // Morty by the garage portal, stepped through it, and stood where it took him
 async function throughPortal(page) {
   await goto(page, 'garage', -302.3, 101.4, Math.PI);
@@ -136,6 +139,17 @@ async function warpUse(page, area, id, x, z, face = N) {
 const caught = (page, z) =>
   page.waitForFunction((z) => !window.__C137__.sim.fading && Math.abs(window.__C137__.sim.m.z - z) < 0.05 && window.__C137__.sim.used.size === 0 && !window.__C137__.sim.escape, z, { timeout: 60000, polling: 100 }).catch(() => {
     throw new Error('Morty wasn’t put back at the way in');
+  });
+// the cruiser a metre before ring `r` of the chase, on its way through at 10 m/s
+// (the step after a move this long isn't a pass: the next few frames are)
+const before = (page, r) =>
+  page.evaluate((r) => {
+    const s = window.__C137__.sim;
+    s.c = { ...s.c, x: r.x - Math.sin(r.yaw), y: r.y, z: r.z - Math.cos(r.yaw), yaw: r.yaw, speed: 10, vy: 0 };
+  }, r);
+const chasing = (page, phase, what) =>
+  page.waitForFunction((p) => window.__C137__.sim.chase?.phase === p, phase, { timeout: 60000, polling: 100 }).catch(() => {
+    throw new Error(what);
   });
 const rickallOn = (page) => page.waitForFunction(() => window.__C137__.sim.rickall?.phase === 'on', null, { timeout: 300000, polling: 250 });
 
@@ -539,8 +553,113 @@ const SCENARIOS = {
     if (OUT) await page.screenshot({ path: `${OUT}/episode-4-anatomy.png` });
     await warpUse(page, 'anatomy', 'anatomy-portal', -400, 1510.6, -N);
     await toast(page, SMALL.outro[0][1]);
+    // and on into episode 5: its card, the places episode 4 opened, the next ones still shut
+    await cardFor(page, 4);
     await at(page, 4, 0, 'after Anatomy Park');
-    await opens(page, [...SMALL.unlocks, 'vat'], true, 'after episode 4');
+    await opens(page, SMALL.unlocks, true, 'after episode 4');
+    await opens(page, HEAT.unlocks, false, 'after episode 4');
+    await reads(page, HEAT.steps[0].text);
+  },
+  // a new visitor plays episode 5: the cruiser's chase (taking off ticks
+  // nothing; lost once, then won) and the Gromflomite base (caught once,
+  // then the cell opened)
+  async 'episode-5'(page) {
+    await page.goto(`${BASE}/#/c-137`, { waitUntil: 'domcontentloaded' });
+    await page.locator('.rm-episode').waitFor({ timeout: 600000 });
+    await page.keyboard.press('Shift');
+    await page.locator('.rm-episode').waitFor({ state: 'detached', timeout: 5000 });
+    await built(page);
+    // episodes 1 to 4, each played in its own scenario
+    await page.evaluate(() => window.__RMSTORY__.feed({ type: 'win', game: 'cabinet' }));
+    for (const { id } of WIPED.steps) await page.evaluate((id) => window.__C137__.complete(id), id);
+    await cardFor(page, 1);
+    await page.evaluate(() => window.__C137__.complete('roy'));
+    await cardFor(page, 2);
+    for (const id of ['rickall', 'wong', 'sewer']) await page.evaluate((id) => window.__C137__.complete(id), id);
+    await cardFor(page, 3);
+    for (const id of ['microverse', 'anatomy']) await page.evaluate((id) => window.__C137__.complete(id), id);
+    await toast(page, SMALL.outro[0][1]);
+    await cardFor(page, 4);
+    await at(page, 4, 0, 'at episode 5');
+    await reads(page, HEAT.steps[0].text);
+    // the cruiser boarded and taken up: that's not the chase, and ticks nothing
+    await goto(page, 'street', -19, -8.3, -N);
+    await use(page, 'cruiser');
+    await page.waitForFunction(() => window.__C137__.sim.flying, null, { timeout: 10000, polling: 100 });
+    await page.evaluate(() => {
+      const s = window.__C137__.sim;
+      s.c = { ...s.c, y: 8 };
+    });
+    await page.waitForTimeout(1000);
+    check(!(await done(page)).includes('fly'), 'taking off ticked the fly task');
+    await page.waitForFunction(() => Boolean(window.__C137__.fight()), null, { timeout: 60000, polling: 250 });
+    // through the first ring: the run's on, the Federation ship on the cruiser, the meter up
+    await before(page, COURSE[0]);
+    await chasing(page, 'run', 'flying through the first ring didn’t start the chase');
+    check((await page.evaluate(() => window.__C137__.fight().patrol.mode)) === 'fight', 'the Federation ship wasn’t turned on the cruiser');
+    await page.locator('.rm-chase[data-on]').waitFor({ timeout: 10000 }).catch(() => {
+      throw new Error('no chase meter on the HUD');
+    });
+    if (OUT) await page.screenshot({ path: `${OUT}/episode-5-chase.png` });
+    // three hits: lost, and back before the first ring, the ship let go
+    await page.evaluate(() => {
+      const s = window.__C137__.sim;
+      s.chase = { ...s.chase, hits: s.chase.max };
+    });
+    await toast(page, 'Three hits');
+    const start = chaseStart(newChase());
+    await page
+      .waitForFunction(([x, z]) => {
+        const s = window.__C137__.sim;
+        return !s.fading && s.chase.phase === 'idle' && Math.hypot(s.c.x - x, s.c.z - z) < 0.5;
+      }, [start.x, start.z], { timeout: 30000, polling: 100 })
+      .catch(() => {
+        throw new Error('a lost chase didn’t start again before the first ring');
+      });
+    check((await page.evaluate(() => window.__C137__.fight().patrol.mode)) === 'calm', 'the Federation ship kept on after a lost chase');
+    check(!(await story(page)).wins.includes('chase') && !(await done(page)).includes('fly'), 'a lost chase counted');
+    // through the first ring again, and on to the last: won
+    await before(page, COURSE[0]);
+    await chasing(page, 'run', 'the first ring didn’t start the chase again');
+    await page.evaluate((r) => {
+      const s = window.__C137__.sim;
+      s.chase = { ...s.chase, next: s.chase.rings.length - 1, hits: 0 };
+      s.c = { ...s.c, x: r.x - Math.sin(r.yaw), y: r.y, z: r.z - Math.cos(r.yaw), yaw: r.yaw, speed: 10, vy: 0 };
+    }, COURSE.at(-1));
+    await page.waitForFunction(() => window.__RMSTORY__.get().wins.includes('chase'), null, { timeout: 60000, polling: 100 }).catch(() => {
+      throw new Error('the last ring didn’t win the chase');
+    });
+    await toast(page, 'Fly the cruiser');
+    check((await done(page)).includes('fly'), 'the chase won didn’t tick the fly task');
+    await at(page, 4, 1, 'after the chase');
+    await reads(page, HEAT.steps[1].text);
+    await page.waitForFunction(() => window.__C137__.sim.fed.mode === 'loop', null, { timeout: 30000, polling: 100 }).catch(() => {
+      throw new Error('the Federation ship stayed on the cruiser once shaken');
+    });
+    // the Gromflomite base: caught once, back at the way in; then the cell opened
+    check((await page.evaluate(() => window.__C137__.dial('gromflomites'))) === 'gromflomites', 'the dial wouldn’t take the Gromflomite base');
+    await throughPortal(page);
+    await inArea(page, 'gromflomites');
+    await page.waitForFunction(() => (window.__C137__.api.act('gromflomites', 'npcs') ?? []).some((n) => n.id === 'guard-a'), null, { timeout: 120000, polling: 500 });
+    const guard = await page.evaluate(() => window.__C137__.api.act('gromflomites', 'npcs').find((n) => n.id === 'guard-a'));
+    await page.evaluate(([x, z]) => window.__C137__.warp('gromflomites', x + 0.6, z, Math.PI), [guard.x, guard.z]);
+    await caught(page, 2713.4);
+    check(!(await done(page)).includes('gromflomites'), 'a catch counted');
+    // (a guard may catch him at the cell: each catch a reset, checked, and round again)
+    let opened = false;
+    for (let round = 0; round < 4 && !opened; round++) {
+      await warpUse(page, 'gromflomites', 'fartcell', -400, 2688.4, -N).catch(() => {});
+      opened = await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-c137-done') ?? '[]').includes('gromflomites'), null, { timeout: 30000, polling: 250 }).then(
+        () => true,
+        () => false,
+      );
+      if (!opened) await caught(page, 2713.4);
+    }
+    check(opened, 'Fart’s cell never opened');
+    if (OUT) await page.screenshot({ path: `${OUT}/episode-5-gromflomites.png` });
+    await toast(page, HEAT.outro[0][1]);
+    await at(page, 5, 0, 'after the Gromflomite base');
+    await opens(page, [...HEAT.unlocks, 'citadel', 'squanch', 'evilrick'], true, 'after episode 5');
     await page.waitForTimeout(1500);
     check((await page.locator('.rm-episode').count()) === 0, 'a card showed for an episode that isn’t built');
     await reads(page, 'Go into the Smith house and put interdimensional cable on the TV.');

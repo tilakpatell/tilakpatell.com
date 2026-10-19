@@ -4,7 +4,8 @@
 // up (soil.js), its grass standing round you (blades.js), under the
 // house’s look.
 //
-//   createGround(land, { house, tier, soil, wind, paint, from, to }) → { mesh, groundMap, blades, update(x, z), dispose }
+//   createGround(land, { house, tier, soil, own, wind, paint, from, to }) → { mesh, groundMap, blades, update(x, z), dispose }
+//     own: the stage’s `ground.paint`, over its soil’s colours
 //     update(x, z): the camera, in the stage’s frame (the blades’ patch follows it)
 //   groundJob(land, …): the same as a generator, a few rows a step (terrain.js’s run)
 //
@@ -29,16 +30,27 @@ import { boundsOf, distanceTo } from '../../../lib/land/paths.js';
 export const NEAR = 60; // m either side of the road
 const COARSE = 2; // the far grid takes every other sample
 
-// The paint: the soil’s colours by height and a slow noise, its rock where
-// the land is steep, worn to its dirt on the road. `out` takes the linear
-// colour; the return is the grass, 0…1 (none on rock or road).
+// The paint: the soil’s colours (stages/soils.js) by height and a slow
+// noise, its rock where the land is steep, worn to its dirt on the road. A
+// stage’s own (its `ground.paint`) gives its greens and its dirt as hex over
+// the soil’s, and may lay snow over the land above a height: `snow: [foot,
+// top]`, none under the foot, whole over the top, the line wandering with the
+// noise, trodden grey on the road. `out` takes the linear colour; the return
+// is the grass, 0…1 (none on rock, road or snow).
 const C = (hex) => new THREE.Color(hex).toArray();
 const GRASS = C(0x5c8f3a);
 const DEEP = C(0x3d6e2b);
 const SUN = C(0x93b54c);
 const DIRT = C(0xb59d72);
 const ROCK = C(0x8a8272);
-export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT, rock = ROCK } = {}) {
+const SNOW = C(0xf4f4f2);
+const TRODDEN = C(0xb8bec8);
+const BARE = C(0x5e6068); // (the rock through the snow)
+const linear = (c) => (typeof c === 'number' ? C(c) : c);
+export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT, rock = ROCK, snow = null } = {}) {
+  greens = greens.map(linear);
+  dirt = linear(dirt);
+  rock = linear(rock);
   // the road’s nearness, gridded at 1 m over its bounds once rather than
   // searched at every texel
   const reach = 6;
@@ -60,6 +72,7 @@ export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT, rock 
     o[1] = a[1] + (b[1] - a[1]) * t;
     o[2] = a[2] + (b[2] - a[2]) * t;
   };
+  const white = [0, 0, 0];
   return (x, z, out) => {
     const h = land.heightAt(x, z);
     const n = noise2(x / 37, z / 37, 3) * 0.5 + noise2(x / 9, z / 9, 5) * 0.25;
@@ -73,12 +86,23 @@ export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT, rock 
     if (steep > 0) mix(out, out, rock, steep);
     let grass = 1 - steep;
     const d = dAt(x, z);
-    if (d < 2.8) {
-      const worn = Math.min(1, (2.8 - d) / 1.2) * (0.85 + noise2(x / 3, z / 3, 9) * 0.15);
+    const worn = d < 2.8 ? Math.min(1, (2.8 - d) / 1.2) * (0.85 + noise2(x / 3, z / 3, 9) * 0.15) : 0;
+    if (worn) {
       mix(out, out, dirt, worn);
       grass = Math.min(grass, 1 - worn);
     }
-    return grass;
+    if (!snow) return grass;
+    const k = Math.min(1, Math.max(0, (h - snow[0]) / (snow[1] - snow[0]) + n * 0.5));
+    // (none holds on a face steeper than about 40°: the rock shows through, the snow in its ledges)
+    const slope = (Math.abs(land.heightAt(x + 2, z) - land.heightAt(x - 2, z)) + Math.abs(land.heightAt(x, z + 2) - land.heightAt(x, z - 2))) / 4;
+    const bare = Math.min(1, Math.max(0, (slope - 0.8) / 0.5));
+    if (bare) mix(out, out, BARE, bare * (0.8 + n * 0.2));
+    const lie = k * k * (3 - 2 * k) * (1 - bare * 0.85);
+    if (lie) {
+      mix(white, SNOW, TRODDEN, worn);
+      mix(out, out, white, lie);
+    }
+    return grass * (1 - lie) * (1 - bare);
   };
 }
 
@@ -199,11 +223,11 @@ function* heightJob(land, area, size) {
   };
 }
 
-export function* groundJob(land, { house = null, tier = 'high', soil = null, wind = null, paint = null, from, to } = {}) {
+export function* groundJob(land, { house = null, tier = 'high', soil = null, own = null, wind = null, paint = null, from, to } = {}) {
   const geometry = yield* geometryJob(land, { tier, from, to });
   const area = { x0: land.x0, z0: land.z0, w: land.w, d: land.d };
   const size = tier === 'low' ? 512 : 1024;
-  const colours = soil ? { greens: soil.greens.map(C), dirt: C(soil.dirt), rock: C(soil.rock) } : undefined;
+  const colours = { ...(soil ? { greens: soil.greens, dirt: soil.dirt, rock: soil.rock } : {}), ...(own ?? {}) };
   const painted = yield* paintJob(area, size, paint ?? paintFor(land, colours));
   // (heights only where blades will stand on them)
   const grows = Boolean(wind && soil?.blades > 0 && tier !== 'low');

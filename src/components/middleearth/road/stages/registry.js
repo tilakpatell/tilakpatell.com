@@ -15,7 +15,15 @@ import { BEATS as ford } from './ford/beats';
 import { LORE as fordLore } from './ford/lore';
 import { BEATS as rivendell } from './rivendell/beats';
 import { LORE as rivendellLore } from './rivendell/lore';
+import { BEATS as caradhras } from './caradhras/beats';
+import { LORE as caradhrasLore } from './caradhras/lore';
+import { BEATS as moria } from './moria/beats';
+import { LORE as moriaLore } from './moria/lore';
+import { BEATS as lorien } from './lorien/beats';
+import { LORE as lorienLore } from './lorien/lore';
+import { BEATS as anduin } from './anduin/beats';
+import { LORE as anduinLore } from './anduin/lore';
 
-export const BEATS_OF = { hobbiton, 'shire-edge': shireEdge, bree, weathertop, ford, rivendell };
-export const LORE_OF = { hobbiton: hobbitonLore, 'shire-edge': shireEdgeLore, bree: breeLore, weathertop: weathertopLore, ford: fordLore, rivendell: rivendellLore };
+export const BEATS_OF = { hobbiton, 'shire-edge': shireEdge, bree, weathertop, ford, rivendell, caradhras, moria, lorien, anduin };
+export const LORE_OF = { hobbiton: hobbitonLore, 'shire-edge': shireEdgeLore, bree: breeLore, weathertop: weathertopLore, ford: fordLore, rivendell: rivendellLore, caradhras: caradhrasLore, moria: moriaLore, lorien: lorienLore, anduin: anduinLore };
 export const HOLDS_UNWRITTEN = 30; // s a stage, until its beats say

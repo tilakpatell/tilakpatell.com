@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import RmEarnNote from '../RmEarnNote';
 import { PowerBar } from '../../universe/shared/powerBar';
 import { Link as RouterLink } from 'react-router-dom';
-import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiEmotionLaughLine, RiHeart3Line, RiHome4Line, RiListCheck2, RiFlashlightLine, RiShieldLine, RiShirtLine, RiToolsLine, RiTyphoonLine } from 'react-icons/ri';
+import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiCrosshair2Line, RiEmotionLaughLine, RiHeart3Line, RiHome4Line, RiListCheck2, RiFlashlightLine, RiShieldLine, RiShirtLine, RiToolsLine, RiTyphoonLine } from 'react-icons/ri';
 import { EMOTES, wheelAngle } from '../../../lib/emote';
 import { Arms, Cluster, Prompt, Reticle, Stick, TouchButton, Vitals, createFlightCluster, reticleState } from '../../../runtime/hud';
 import { enemyShare, heartsToHealth } from './vitalsOf';
@@ -108,6 +108,8 @@ export default function RmHud({
   clusterRef = null,
   chargeRef = null,
   chargeLine = null,
+  chaseRef = null,
+  chaseLine = null,
   onShipFire = null,
   onWeapon = null,
   powersRef = null,
@@ -396,6 +398,14 @@ export default function RmHud({
       {clusterRef && (
         <Cluster rootRef={clusterRef} className="rm-cluster" label="The cruiser">
           <Vitals label="Deflectors" icon={<RiShieldLine aria-hidden="true" />} className="rm-cluster-vitals" />
+          {/* (the chase through the rings: the hits it can still take, and the ring it's on) */}
+          {chaseRef && (
+            <div ref={chaseRef} className="rm-chase">
+              <Vitals label="Hits" icon={<RiCrosshair2Line aria-hidden="true" />} className="rm-cluster-vitals">
+                <span ref={chaseLine} className="hud-line" />
+              </Vitals>
+            </div>
+          )}
           <Arms className="rm-cluster-arms" keys={!touch} />
           {onPower && <PowerBar ship="cruiser" reduced={false} barRef={powersRef} onPress={onPower} placement="cluster" picks={powerPicks} carry={carry} />}
         </Cluster>

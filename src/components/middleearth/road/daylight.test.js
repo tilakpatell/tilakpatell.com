@@ -20,10 +20,31 @@ describe('daylight: the sky, the sun and the air along the Road', () => {
     expect(night.stars).toBeGreaterThan(0.8);
   });
 
-  it('Moria has no sun and next to no light but the staff’s', () => {
-    const m = lit('moria', 150);
-    expect(m.sun.el).toBeLessThan(0);
-    expect(m.ambient).toBeLessThan(0.05);
+  it('Moria has no sun and next to no light but the staff’s, from the Doors to the East-gate; the Dale is a grey day', () => {
+    for (const local of [0, 60, 110]) {
+      const m = lit('moria', local);
+      expect(m.sun.el, local).toBeLessThan(0);
+      expect(m.ambient, local).toBeLessThan(0.05);
+      expect(Math.max(...m.fog.colour), local).toBeLessThan(0.05);
+    }
+    const dale = lit('moria', 165);
+    expect(dale.sun.el).toBeGreaterThan(0);
+    expect(dale.ambient).toBeGreaterThan(0.25);
+    expect(dale.murk).toBe(0);
+  });
+
+  it('the Redhorn’s shoulder whites out in its storm: thick pale fog over the pass, clear air before and after', () => {
+    const before = lit('caradhras', 20);
+    const storm = lit('caradhras', 75);
+    const after = lit('caradhras', 140);
+    expect(storm.fog.density).toBeGreaterThan(0.02);
+    expect(before.fog.density).toBeLessThan(0.006);
+    expect(after.fog.density).toBeLessThan(0.006);
+    expect(Math.min(...storm.fog.colour)).toBeGreaterThan(0.75);
+    // (and the sky goes with it)
+    expect(storm.murk).toBeGreaterThan(0.95);
+    expect(before.murk).toBe(0);
+    expect(lit('hobbiton', 50).murk).toBe(0);
   });
 
   it('Gorgoroth lies under the pall, from the east', () => {

@@ -44,7 +44,8 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
     // (the first stage has land behind it, the last ahead; the rest abut at their seams)
     const from = i === 0 ? -FRAME_BACK : 0;
     const to = i === STAGES.length - 1 ? land.end + FRAME_BACK : land.end;
-    const ground = yield* groundJob(land, { house, tier, soil: soilOf(id), wind, from, to });
+    // (painted in its soil’s colours, or as the stage says: its greens, its dirt, its snow)
+    const ground = yield* groundJob(land, { house, tier, soil: soilOf(id), own: STAGES[i].ground?.paint ?? null, wind, from, to });
     const group = new THREE.Group();
     group.name = `road:${id}`;
     group.add(ground.mesh);

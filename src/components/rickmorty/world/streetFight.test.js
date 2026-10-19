@@ -54,6 +54,49 @@ describe('the street’s fight: the cruiser’s guns', () => {
   });
 });
 
+describe('the street’s fight in a chase (./games/chase.js)', () => {
+  it('turns the patrol on the cruiser for a chase, without a word, and lets it go', () => {
+    const f = createStreetFight({ loadout: STOCK, rand: still });
+    const at = { x: 0, y: 12, z: 12 };
+    f.chase(true, 5);
+    expect(f.patrol).toMatchObject({ mode: 'fight', nextShot: 5 + PATROL.first });
+    expect(run(f, cruiser(), { at, steps: 30, from: 5 }).map((e) => e.type)).not.toContain('provoked');
+    f.chase(false);
+    expect(f.patrol.mode).toBe('calm');
+  });
+  it('holds a patrol in a chase: a hit flashes and takes nothing, and once it’s let go a hit takes its share', () => {
+    const f = createStreetFight({ loadout: STOCK, rand: still });
+    const at = { x: 0, y: 12, z: 12 };
+    f.chase(true, 0);
+    f.pick(2); // (a heavy round: more than its hp)
+    f.fire(0, cruiser(), at);
+    const held = run(f, cruiser(), { at, steps: 60 }).map((e) => e.type);
+    expect(held).toContain('hit');
+    expect(held).not.toContain('down');
+    expect(f.patrol).toMatchObject({ mode: 'fight', hp: PATROL.hp });
+    f.chase(false);
+    f.fire(2, cruiser(), at);
+    expect(run(f, cruiser(), { at, steps: 60, from: 2 }).map((e) => e.type)).toContain('down');
+    expect(f.patrol.mode).toBe('down');
+  });
+  it('keeps a patrol let go held a while when asked (a chase won: the shots still in the air take nothing, and don’t turn it)', () => {
+    const f = createStreetFight({ loadout: STOCK, rand: still });
+    const at = { x: 0, y: 12, z: 12 };
+    f.chase(true, 0);
+    f.chase(false, 1, 10);
+    expect(f.patrol.mode).toBe('calm');
+    f.pick(2);
+    f.fire(2, cruiser(), at);
+    const kept = run(f, cruiser(), { at, steps: 60, from: 2 }).map((e) => e.type);
+    expect(kept).not.toContain('provoked');
+    expect(kept).not.toContain('down');
+    expect(f.patrol).toMatchObject({ mode: 'calm', hp: PATROL.hp });
+    // the while over, a hit counts again
+    f.fire(12, cruiser(), at);
+    expect(run(f, cruiser(), { at, steps: 60, from: 12 }).map((e) => e.type)).toContain('down');
+  });
+});
+
 describe('the street’s fight: the patrol’s laser and the deflectors', () => {
   const angry = () => {
     const f = createStreetFight({ loadout: STOCK, rand: still });

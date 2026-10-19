@@ -17,10 +17,14 @@
 //     `rise` over the land, gold with a field’s light and dark, its x0 edge
 //     (the lane’s, under the clumps there) dropping to the ground; faces up
 //     whichever way x runs (a few thousand triangles where clumps would be millions)
+//   waterOn(land, i) → (x, z) → the height of the land’s i-th river’s water
+//     there, or null off it: what carries a boat
 //   C(hex) → THREE.Color
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { nearestOn } from '../../../../lib/land/paths.js';
+import { riverLevel } from '../terrain';
 
 export const C = (hex) => new THREE.Color(hex);
 
@@ -131,4 +135,14 @@ export function canopy(heightAt, { x: [x0, x1], z: [z0, z1], rise = 0.95, cells 
   const flat = g.toNonIndexed();
   g.dispose();
   return flat;
+}
+
+export function waterOn(land, i) {
+  const r = land.rivers?.[i];
+  if (!r) return () => null;
+  const level = riverLevel(land.field, r);
+  return (x, z) => {
+    const { m, d } = nearestOn(r.line, x, z);
+    return d <= r.width / 2 ? level(m) : null;
+  };
 }

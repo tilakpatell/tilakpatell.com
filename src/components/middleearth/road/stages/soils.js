@@ -11,6 +11,7 @@
 //       worn, where it is steep
 //     blades: 0…1, how thick the grass close round you stands (0: none); blade: its height, m
 //   }
+//   (a stage’s own `ground.paint`, stages/index.js, is laid over its soil’s colours)
 //   soilOf(stage) → its row (Hobbiton’s for an unknown one)
 
 export const SOILS = {
@@ -25,8 +26,9 @@ export const SOILS = {
   ford: { greens: [0x3a5428, 0x56723a, 0x8a8440], dirt: 0x8e7a58, rock: 0x77736a, scans: { grass: 'grass', road: 'gravel', steep: 'mossrock' }, blades: 0.85, blade: 0.45 },
   // Imladris: lawns kept short, the paths pale
   rivendell: { greens: [0x325a28, 0x4e7c38, 0x80a046], dirt: 0xb4a47e, rock: 0x8a8478, scans: { grass: 'grass', road: 'gravel', steep: 'mossrock' }, blades: 0.9, blade: 0.32 },
-  // the Redhorn Pass: snow over everything, black rock where it is too steep to lie
-  caradhras: { greens: [0xc4ccd8, 0xdfe4ec, 0xf4f6fa], dirt: 0xaeb4be, rock: 0x55555c, scans: { grass: 'snow', road: 'snow', steep: 'rock' }, blades: 0 },
+  // Hollin’s heath under the Redhorn, the snow above (the stage’s own paint
+  // lays it, stages/index.js): grass where it grows, snow’s grain on the snow and the trodden road
+  caradhras: { greens: [0xc4ccd8, 0xdfe4ec, 0xf4f6fa], dirt: 0xaeb4be, rock: 0x55555c, scans: { grass: 'grass', road: 'snow', steep: 'rock' }, blades: 0.5, blade: 0.32 },
   // Moria: the dwarves’ stone floors, the dust on them
   moria: { greens: [0x2a2826, 0x34312d, 0x403b35], dirt: 0x3a3632, rock: 0x2e2c2a, scans: { grass: 'rock', road: 'stone', steep: 'rock' }, blades: 0 },
   // Lothlórien: gold leaves fallen under the mallorns, the grass between
