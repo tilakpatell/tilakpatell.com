@@ -145,6 +145,7 @@ export default function HangarPanel({ open, onOpen, tab, onTab, enabled = true, 
                 setSlot(s);
                 onTab('shipyard');
               }}
+              onSkills={() => onTab('skills')}
             />
           )}
           {tab === 'powers' && <PowersTab ship={ship} />}

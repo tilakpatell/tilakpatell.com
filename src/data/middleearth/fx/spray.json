@@ -1,0 +1,122 @@
+{
+  "kind": "quad",
+  "loop": true,
+  "duration": 1,
+  "gravity": {
+    "g": 9.8,
+    "random": 0.1
+  },
+  "drag": 0.5,
+  "wind": 0,
+  "color": [
+    0.92,
+    0.95,
+    0.97
+  ],
+  "sizeY": null,
+  "alpha": {
+    "exponent": 1,
+    "curve": 1
+  },
+  "rotation": 0,
+  "transparency": {
+    "poly": [
+      0,
+      -1,
+      0,
+      1
+    ],
+    "min": 0,
+    "max": 1,
+    "scale": 1
+  },
+  "uv": {
+    "frames": 4,
+    "grid": [
+      4,
+      1
+    ],
+    "fps": 0,
+    "randomStart": true,
+    "overLife": false
+  },
+  "alignment": "screen",
+  "stretch": null,
+  "lightWrap": 0.5,
+  "soft": null,
+  "additive": false,
+  "exposure": 0,
+  "maxSpawnDistance": 0,
+  "cullingFactor": 1,
+  "follow": {
+    "source": false,
+    "velocity": false
+  },
+  "mesh": null,
+  "ribbon": null,
+  "name": "spray: the Road’s, white water thrown up and falling (the Ford, the falls)",
+  "sheet": "puff",
+  "maxCount": 400,
+  "lifetime": {
+    "random": [
+      1.0,
+      1.6
+    ]
+  },
+  "spawn": {
+    "rate": 260,
+    "burst": 0,
+    "size": {
+      "random": [
+        0.4,
+        0.9
+      ]
+    },
+    "speed": {
+      "random": [
+        3,
+        6
+      ]
+    },
+    "rotation": {
+      "random": [
+        0,
+        360
+      ]
+    },
+    "direction": {
+      "dir": [
+        0,
+        1,
+        0
+      ],
+      "from": 0,
+      "spread": 35
+    },
+    "position": {
+      "box": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "size": [
+          3,
+          0.2,
+          3
+        ]
+      }
+    }
+  },
+  "size": {
+    "poly": [
+      0,
+      0,
+      1.6,
+      1
+    ],
+    "min": 0,
+    "max": 3,
+    "scale": 1
+  }
+}
