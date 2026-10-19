@@ -53,6 +53,8 @@ const birches = (per100, o = {}) => ['BirchTree_1', 'BirchTree_2', 'BirchTree_3'
 // the dead trees, standing (snags: the two small ones)
 const deadwood = (per100, o = {}) => ['DeadTree_1', 'DeadTree_2', 'DeadTree_4', 'DeadTree_6', 'DeadTree_7', 'DeadTree_8', 'DeadTree_10'].map((model) => ({ model, pack: NATURE, per100: per100 / 7, clump: 1, spread: 1, scale: [0.8, 1.2], ...o }));
 const snags = (per100, o = {}) => ['DeadTree_5', 'DeadTree_9'].map((model) => ({ model, pack: NATURE, per100: per100 / 2, clump: 2, spread: 6, scale: [0.8, 1.2], ...o }));
+// (the maples just turning, amber over their green: the Shire in late September)
+const TURNING = { MapleTree_Leaves: { recolour: '#b8903e' } };
 // (the maples and birches green: spring in Ithilien)
 const SPRING = { MapleTree_Leaves: { recolour: '#6f9a3e' }, BirchTree_Leaves: { recolour: '#8fb04a' } };
 
@@ -83,7 +85,7 @@ export const SCATTER = {
     { model: 'Grass_Wispy_Short', per100: 0.5, clump: 6, spread: 3, scale: [0.5, 0.8], x: [-40, 40], kind: 'grass' },
     // birches down by the Water, a maple or two turning: the year’s end coming
     ...birches(0.03, { x: [-200, -40] }),
-    ...maples(0.012),
+    ...maples(0.012, { tint: TURNING }),
   ],
   'shire-edge': [
     // Maggot’s crop either side of the lane at the stage’s start: ears over
