@@ -197,6 +197,13 @@
   pointer-events: none;
   z-index: 2;
 }
+/* the others online: the kit's chip over the world, top left, clear of the hotbar and the way out */
+.mc-players {
+  position: absolute;
+  top: calc(var(--hud-pad, 12px) + env(safe-area-inset-top));
+  left: calc(var(--hud-pad, 12px) + env(safe-area-inset-left));
+  z-index: 3;
+}
 .mc-crosshair {
   position: absolute;
   left: 50%;

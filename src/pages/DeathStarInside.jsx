@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import WorldSwitcher from '../components/worlds/WorldSwitcher';
 import { use3D } from '../lib/gpu';
 import { useDocumentTitle } from '../lib/hooks';
-import { useInWorld } from '../components/universe/online/useOnline';
 
 const Inside = lazy(() => import('../components/deathstar/inside/Inside.jsx'));
 
@@ -14,7 +13,6 @@ export default function DeathStarInsidePage() {
   useDocumentTitle('Aboard the Death Star');
   const navigate = useNavigate();
   const three = use3D();
-  useInWorld(three.on); // (a full-screen world with no travellers yet: no page pointers over it)
   const back = () => navigate('/deathstar');
   return (
     <div className="relative">

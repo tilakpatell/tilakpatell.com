@@ -391,8 +391,9 @@ function rig(model, walkClips, { kind, tall, tint, dye, gloss, key }) {
   return personOf({ object, kind, tall, hand: bones.RightHand ?? null, anim, bones, owned });
 }
 
-// a plain capsule and head for a model that didn’t load: white for a trooper, grey for anyone else
-function standIn(kind, tall, tint) {
+// a plain capsule and head for a model that didn’t load: white for a trooper,
+// grey for anyone else (and the others online, made pale: ./index.js)
+export function standIn(kind, tall, tint) {
   const color = new THREE.Color(kind === 'stormtrooper' ? 0xe6e8ea : 0x8a8f96);
   if (tint != null) color.multiply(new THREE.Color(tint));
   const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
