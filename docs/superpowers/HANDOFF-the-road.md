@@ -51,6 +51,14 @@ A session takes the next lane whose state allows it, runs until its budget, merg
 - **The worst frames** are node shaders built in the frame (the evidence README); compiling each stage off the frame as lands.js finishes it is the mend (R7, or the next lane that feels it).
 - `lab/road/common.mjs` sets `tp-worlds` to load, as the probe does: at `low` the site otherwise holds the Road behind its Load 3D card and the lab scripts time out.
 
+## R3’s notes for the next lanes
+
+- **Drawn as the chapters are**: a stage whose chapter exists builds with that chapter’s builders (`shire/build.js`, `towns/<town>/build.js`) on `road/townKit.js`’s kit (`createTownKit(road, renderer, { wild, elven })`: the Shire’s and Bree’s materials, Weathertop’s and the Ford’s with `wild`, Rivendell’s with `elven`), at `0.8` (the Road’s man over the chapter’s Big Folk). Caradhras, Moria, Lothlórien and the rest have chapters too: split their builders from their shaders as `76f0dbd22` did, verbatim, before the Road imports them.
+- **Merge after building**: the builders draw a building in a mesh a material, a dozen draws a house; `stages/parts.js`’s `mergeStatics(group, { keep })` merges a stage’s still meshes one a material, leaving what the scene moves. Bree went from 261 draws to 118 on `low`.
+- **A figure is never culled** (`cast.js`: a skinned mesh’s bounds don’t follow its pose), so a stage’s own figures cost their triangles wherever the camera looks: show them only near their beat (Rivendell’s guests come in from the bridge). On `low` a figure has no ink hull.
+- **Look before you trust a rig’s numbers**: two of this lane’s beats were black because the camera stood inside a wall (the hollow, Amon Sûl’s ring). Under the vision Weathertop’s one point light turns cold and goes to the five.
+- `lab/road/shots.mjs` edits under its feet reload the page: a beat shot taken while files change can time out; take the pictures once the code is still.
+
 ## Checks
 
 Before a change is done (CLAUDE.md): `npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build`; `git checkout public/github.json` after a build. The browser in the container draws in software (SwiftShader) with no WebGPU device: the `webgpu` rows are the owner’s laptop and desktop; leave them empty and say so, never estimate. `?gpu=webgl` forces the node renderer over WebGL 2 (`nodes-webgl`), which is what the container measures.
