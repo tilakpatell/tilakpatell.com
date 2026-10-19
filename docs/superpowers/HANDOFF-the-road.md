@@ -61,6 +61,16 @@ A session takes the next lane whose state allows it, runs until its budget, merg
 - **Things knocked flying**: `road/tumble.js` puts a beat’s crates and barrels on Rapier (`lib/physics/world.js`, loaded the first time, not on `low`) with the beat’s movers (Bree’s Riders) as kinematic boxes on the paths the scene draws them on. `tumble.rules.js`’s `replay` runs it from the beat’s seconds, so walking back stands everything up again and walking on falls the same way. A stage gives it `{ items, movers, ground }` and calls `update(since[id])`.
 - **A season’s colour on the kit’s leaves**: a scatter row’s `tint: { Leaves_Birch: { recolour } }` keeps the leaf’s cut-out now (`lib/three/recolourNodes.js` kept the map’s light but not its alpha, and an alpha-tested leaf stood as a dark card).
 
+## The Road’s look, since R3 (for every lane after)
+
+- **Every stage on its own soil**: `stages/soils.js` gives a stage its ground colours, its rock, its road and three photo scans (`public/cc0/galaxy/`’s roles: grass, gravel, mud, snow, rock, stone, ash, leaves…). `ground.js` paints the map with them (rock where the land is steep) and `soil.js` lays the scans over it close up. A new stage’s row there is all it needs; there is a test that every stage has one.
+- **Grass that stands**: `blades.js` grows grassNodes’ blades round the camera on each stage’s map, as thick and tall as its soil’s `blades` and `blade`; nothing on the road or where the paint says rock. `0` for a stage where nothing grows.
+- **Mountains**: `stages/ranges.js` puts each stage’s ranges on its horizon as the map has them, drawn by `backdrop.js` (kilometres off, lit, snow above their line, the day’s haze in them). A range’s angle in the sky stays under 20° and its far foot inside the camera’s 4.5 km (the test holds both).
+- **Birds**: `stages/life.js`, a flock or two a stage (`birds.js`); none in the deeps or Mordor.
+- **Drawn from the chapters, densely**: Hobbiton is now the Shire chapter’s builders (Bag End and Bagshot Row, holes in the banks, the Party Tree, the mill, the Green Dragon, gardens and the dressing); the town kit wears the chapters’ scans (`shire/dress.js` through `coreNodes.dress`). A stage that looks bare beside its chapter is wrong: use the chapter’s builders and dress the stretches between the beats, not only the beats.
+- **A field of corn is a canopy**: `stages/parts.js`’s `canopy` with the chapter’s clumps only by the lane; clumps across a field were a million triangles.
+- **The weather stands in the world**: an emitter a stage starts (smoke, fire) is in the current stage’s frame only while it is current; start it in `update` and stop it in `leave()`.
+
 ## Checks
 
 Before a change is done (CLAUDE.md): `npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build`; `git checkout public/github.json` after a build. The browser in the container draws in software (SwiftShader) with no WebGPU device: the `webgpu` rows are the owner’s laptop and desktop; leave them empty and say so, never estimate. `?gpu=webgl` forces the node renderer over WebGL 2 (`nodes-webgl`), which is what the container measures.

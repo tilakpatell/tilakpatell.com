@@ -55,7 +55,7 @@ export function rangeGeometry(range, { segments = 220, rows = 28 } = {}) {
   const hz = new Float32Array(cols * rows);
   const hs = new Float32Array(cols * rows);
   // the peaks: a crest every few hundred metres along it and across, closer with the jag
-  const spacing = 380 + 460 * (1 - Math.min(1, jag));
+  const spacing = 520 + 460 * (1 - Math.min(1, jag));
   for (let j = 0; j < rows; j++) {
     const v = j / (rows - 1); // 0 the near foot, 1 the far
     const r = dist - depth / 2 + v * depth;
@@ -80,7 +80,8 @@ export function rangeGeometry(range, { segments = 220, rows = 28 } = {}) {
         const across = 1 - Math.abs(v * 2 - 1) ** 1.6;
         const s = (a - a0) * dist;
         const t = (v - 0.5) * depth;
-        const crest = ridged(s / spacing, t / spacing, seed) ** (1 + jag);
+        // (sharpened by the jag, but a peak’s shoulders kept: massifs, not needles)
+        const crest = ridged(s / spacing, t / spacing, seed) ** (1 + 0.5 * Math.min(1, jag));
         const roll = 0.5 + 0.5 * noise2(s / (spacing * 1.7), t / (spacing * 1.7), seed + 3);
         const fine = ridged(s / (spacing * 0.3), t / (spacing * 0.3), seed + 5, 3);
         h = height * ends * across * (0.3 + 0.7 * (jag * crest + (1 - jag) * roll)) + height * 0.07 * across * ends * fine;
