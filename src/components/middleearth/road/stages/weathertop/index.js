@@ -24,7 +24,7 @@ const CLOSE = 9; // m they come on through the ring while the Ring is on
 const VISION = { at: 1, seconds: 12, rate: 2.5 }; // the ring beat’s (beats.js), as vision.js ramps it
 const BURN = 6; // s they burn before they are gone
 const SAT = ['frodo', 'sam', 'merry', 'pippin'];
-const STUCK = [2.3, 146.9]; // the brand Aragorn stands in the earth by Frodo at the kingsfoil, its fire the one light
+const STUCK = [-1.4, 145.8]; // the brand Aragorn stands in the verge by Frodo at the kingsfoil, its fire the one light
 const EMBER = new THREE.Color(0xff8a3a);
 const PALE = new THREE.Color(0xc8d4ff);
 const MARKS = Object.fromEntries(BEATS.map((b) => [b.id, b]));
@@ -199,7 +199,7 @@ export function build({ road, heightAt, rt, weather }) {
         fireLight.position.set(STUCK[0], heightAt(...STUCK) + 1.1, STUCK[1]);
         fireLight.color.copy(EMBER);
         fireLight.distance = 12;
-        fireLight.intensity = glow;
+        fireLight.intensity = glow * 1.6;
       }
     },
     // the four sat round the fire while the dell’s beat holds; Aragorn’s torches;
