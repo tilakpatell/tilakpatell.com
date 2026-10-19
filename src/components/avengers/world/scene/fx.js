@@ -3,7 +3,7 @@
 
 
 import * as THREE from 'three';
-import { ARMOUR, PLACES, PORTAL } from './rules';
+import { ARMOUR, PLACES, PORTAL } from '../rules';
 
 export function createEvents({ A, calm, hero, packs, people, squash, swing, vfx, v3, v3b }) {
   const fx = (type, d = {}) => {

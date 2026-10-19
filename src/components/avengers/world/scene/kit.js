@@ -5,8 +5,8 @@
 
 
 import * as THREE from 'three';
-import { canvasTexture } from '../hq/kit/shapes';
-import { S, V } from './rules';
+import { canvasTexture } from '../../hq/kit/shapes';
+import { S, V } from '../rules';
 
 export const SC = { s: S, v: V };
 // a plan point (x east, y south, z up, in units) in the world

@@ -3,12 +3,12 @@
 
 
 import * as THREE from 'three';
-import { hot } from '../hq/stage';
-import { rbox } from '../hq/kit/shapes';
-import { buildPortal } from '../lawn/models';
-import { inPoly } from '../compound/plan';
-import { STONES } from '../../interests/stones';
-import { BUILDINGS, PLACES, PORTAL } from './rules';
+import { hot } from '../../hq/stage';
+import { rbox } from '../../hq/kit/shapes';
+import { buildPortal } from '../../lawn/models';
+import { inPoly } from '../../compound/plan';
+import { STONES } from '../../../interests/stones';
+import { BUILDINGS, PLACES, PORTAL } from '../rules';
 import { beamMaterial, cloudy, signTexture } from './kit';
 
 const STONE_OF = { power: 'power', reality: 'reality', mind: 'mind', 'soul-clint': 'soul', 'soul-natasha': 'soul', time: 'time', space: 'space' };

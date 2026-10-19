@@ -5,16 +5,16 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { pbr } from '../hq/assets';
-import { antiTile, detailNormal } from '../../../lib/three/surface';
-import { canvasTexture } from '../hq/kit/shapes';
-import { instanced } from '../hq/kit/instanced';
-import { scatter, trees } from '../hq/kit/world';
-import { carGeometries, carMaterials } from '../smash/models';
-import { LAWN, RIVER, SHORE, TREES, inPoly, rng } from '../compound/plan';
-import { flatShape, groundPaint } from '../compound/models';
-import { createGrass } from './grass';
-import { BUILDINGS, LAMPS, LAWN_TREES, PARKED_CARS, PLANTERS, ROADS_W, ROAD_HALF, S, nearestEdge, samplePath, treeHeight } from './rules';
+import { pbr } from '../../hq/assets';
+import { antiTile, detailNormal } from '../../../../lib/three/surface';
+import { canvasTexture } from '../../hq/kit/shapes';
+import { instanced } from '../../hq/kit/instanced';
+import { scatter, trees } from '../../hq/kit/world';
+import { carGeometries, carMaterials } from '../../smash/models';
+import { LAWN, RIVER, SHORE, TREES, inPoly, rng } from '../../compound/plan';
+import { flatShape, groundPaint } from '../../compound/models';
+import { createGrass } from '../grass';
+import { BUILDINGS, LAMPS, LAWN_TREES, PARKED_CARS, PLANTERS, ROADS_W, ROAD_HALF, S, nearestEdge, samplePath, treeHeight } from '../rules';
 import { SC, cloudy, matte, grounded, groundShade, ribbon, waterNormal, blobTexture } from './kit';
 
 export async function buildGround({ scene, engine, small, env }) {
