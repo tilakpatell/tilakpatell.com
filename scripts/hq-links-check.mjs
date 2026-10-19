@@ -62,11 +62,13 @@ const at = (page) =>
     return { hash: window.location.hash, idx: window.history.state?.idx, length: window.history.length, y: window.scrollY, open: !!dialog, title: label?.textContent?.trim() ?? null };
   });
 
-async function until(page, hash, open, ms = 20000) {
+// (and the title, when one is named: a navigation is a transition, so the game
+// before stays on screen until the next one's code has loaded)
+async function until(page, hash, open, ms = 20000, title = null) {
   const end = Date.now() + ms;
   while (Date.now() < end) {
     const a = await at(page);
-    if (a.hash === hash && a.open === open) return true;
+    if (a.hash === hash && a.open === open && (title === null || a.title === title)) return true;
     await page.waitForTimeout(150);
   }
   return false;
@@ -254,8 +256,8 @@ if (!THREE_D) {
     await page.keyboard.type('thwip');
     await page.waitForTimeout(400);
     await page.keyboard.press('Enter');
-    const opened = await until(page, '#/avengers/gate', true, 60000);
-    check(opened && (await at(page)).title === NAME.spidey, 'jump: the palette opens the gate’s game in place of the training center’s');
+    const opened = await until(page, '#/avengers/gate', true, 60000, NAME.spidey);
+    check(opened, 'jump: the palette opens the gate’s game in place of the training center’s');
     await page.keyboard.press('Escape');
     check(await until(page, '#/avengers', false), 'jump: Esc puts the compound in its place');
     await page.context().close();

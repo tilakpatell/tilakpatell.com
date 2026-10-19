@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import HQFrame from './HQFrame';
+import { GameScreen } from './screen';
 import { TOUCH_HELP, switchFor, watchHidden } from './gameScreen';
 import { hasEarned } from './stones';
 
@@ -9,10 +10,8 @@ import { hasEarned } from './stones';
 // HQFrame, which Invincible's game still uses as it is. Outside a building
 // (no GameScreen) it is the bare frame.
 
-// What the building hands its game: { id, name, blurb, accent, stone: { id,
-// name, color, half } | null, onBack(), next() → { id, label, to, state } | null }
-// eslint-disable-next-line react-refresh/only-export-components -- the screen and the context its parts read live together
-export const GameScreen = createContext(null);
+// (the context a building hands its game, kept in ./screen.js so this file exports only components)
+export { GameScreen } from './screen';
 
 export function GameBar({ name, onBack, backRef, children }) {
   return (
@@ -105,10 +104,11 @@ export default function HQGame({ game, stage, three, fallback, flat = null, play
   const act = (next) => (next === 'retry' ? stage.retry() : three.set(next));
   const screenEl = () => stage.wrap?.current?.querySelector('.hq-screen') ?? null;
 
+  // (once, as the game opens: the stage's wrap is a ref, the same each render)
+  const wrap = stage.wrap;
   useEffect(() => {
-    (screenEl() ?? backRef.current)?.focus({ preventScroll: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, as the game opens
-  }, []);
+    (wrap?.current?.querySelector('.hq-screen') ?? backRef.current)?.focus({ preventScroll: true });
+  }, [wrap]);
   const pausable = Boolean(onPause);
   useEffect(() => {
     if (!playing || paused || !pausable) return undefined;
