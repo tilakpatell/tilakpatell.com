@@ -43,6 +43,9 @@ describe('the deal kind: Needful Things’ free things, one with no curse', () =
     const { g, seen } = use(game(), 'typewriter', 'typewriter');
     expect(g).toMatchObject({ phase: 'run', taken: [], left: TUNING.looks - 1 });
     expect(seen).toEqual([{ type: 'look', id: 'typewriter', saw: 'bad' }]);
+    // (and the HUD says so again, whatever was looked at since)
+    const back = use(game(), 'typewriter', 'shopmirror', 'typewriter').g;
+    expect(dealReadout(back).line).toBe(WORDS.bad);
   });
 
   it('with no looks left, sees nothing, and a second use chances it: lost on a curse, taken on none', () => {

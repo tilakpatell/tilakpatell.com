@@ -130,8 +130,14 @@ const SCENARIOS = {
       check(await page.evaluate(() => window.__RMSTORY__.dialOpen('vat')), 'a returner’s vat is locked');
       check((await page.locator('.rm-episode').count()) === 0, 'a returner was shown the episode card');
       check((await done(page)).includes('cable'), 'a returner lost what they’d done');
+      // the vat faked before its game was built: the game stays idle, and its achievement comes on the visit
+      await goto(page, 'vat', -400, 4207.4);
+      await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]').includes('vat'), null, { timeout: 30000, polling: 250 }).catch(() => {
+        throw new Error('a returner who’d faked the death never got its achievement');
+      });
+      check((await page.evaluate(() => window.__C137__.api.act('vat', 'freeze'))).phase === 'idle', 'a returner’s vat started its game again');
     },
-    { seed: { 'tp-c137-done': ['cable'] } },
+    { seed: { 'tp-c137-done': ['cable', 'vat'] } },
   ),
   // the Citadel tells the story where it is and what's done there (episode 10
   // isn't built yet, so on Free roam nothing moves), and its steps still save

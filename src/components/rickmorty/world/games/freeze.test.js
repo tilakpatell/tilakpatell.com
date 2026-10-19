@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TUNING, freezeEyes, freezeNews, freezeReadout, moving, newFreeze, stepFreeze } from './freeze';
+import { TUNING, freezeEyes, freezeNews, freezeReadout, moving, newFreeze, stepFreeze, takesJump } from './freeze';
 
 const DT = 0.05;
 // `s` seconds of steps with this input, the events gathered
@@ -72,6 +72,14 @@ describe('the freeze kind: play dead while the buyers look', () => {
     expect(stepFreeze(looking, { jumped: true }, DT).events).toEqual([{ type: 'lost', why: 'jumped' }]);
     // (in already, the vat used again is nothing)
     expect(stepFreeze(into, { jumped: true }, DT)).toMatchObject({ phase: 'in', events: [] });
+  });
+
+  it('says whether a jump now would take him in (so the vat splashes only for one)', () => {
+    expect(takesJump(started())).toBe(true);
+    expect(takesJump(newFreeze())).toBe(false);
+    expect(takesJump(hold(started(), TUNING.away[0] + 0.1).g)).toBe(false); // (turning)
+    expect(takesJump(stepFreeze(started(), { jumped: true }, DT))).toBe(false); // (in already)
+    expect(takesJump(null)).toBe(false);
   });
 
   it('gives him a moment to settle in the vat before it judges him', () => {
