@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Letterbox } from '../../../../runtime/hud';
 import { MiniMap } from './Map';
 import { bladeName, doubtLine, gunName, promptLine, sectionName, security } from './state';
 
@@ -140,7 +141,7 @@ export default function Hud({ ui, hud, say, hurt = null, hit = 0, touch, playing
   );
   return (
     <div className="ds-hud" data-touch={touch || undefined} data-start={ui.mode === 'start' || ui.mode === 'loading' || undefined} data-scene={(playing && ui.scene) || undefined}>
-      {playing && ui.scene && <div className="ds-letterbox" aria-hidden="true" />}
+      {playing && ui.scene && <Letterbox />}
       {wantTips && tipsUp && !ui.talk && !ui.map?.open && <Tips touch={touch} story={ui.play === 'story'} onDone={() => onSet?.({ tips: false })} />}
       <div className="ds-top">
         <div className="ds-top-left">

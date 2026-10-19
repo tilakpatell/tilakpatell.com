@@ -1,12 +1,14 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
-import { RiCompass3Line } from 'react-icons/ri';
+import { IconGo, IconTour } from '../icons';
+import { CloseButton } from '../ui';
 import { useAchievements } from '../Achievements';
 import { local, storage } from '../../lib/hooks';
-import { TOUR_EVENT, TOUR_KEY, TOUR_NAMES, isLightRoute, offerHere, openTour, parseTourLink, readProgress, samePage, startAt, tourFor, unfinished, writeProgress } from '../../lib/tour';
+import { TOUR_EVENT, TOUR_KEY, TOUR_MINUTES, TOUR_NAMES, isLightRoute, offerHere, openTour, parseTourLink, readProgress, samePage, startAt, tourFor, unfinished, writeProgress } from '../../lib/tour';
 import { planOf } from './plan';
 import { BRIEF_EVENT, BRIEF_KEY, briefHere, briefKeyFor, sawBrief } from './brief';
 import { guideKeyFor } from '../guide/routes';
+import { isMapPath } from '../../lib/view';
 import './offer.css';
 
 // Always in the shell, and small: starts a tour of the site when asked
@@ -65,6 +67,13 @@ const BOTH = { mixed: ['recruiter', 'player'] };
 const PRIZE = { recruiter: 'tourRecruiter', player: 'tourPlayer' };
 const NUDGED = 'tp-tour-nudged'; // (session) the carry-on note's been shown this visit
 const lower = (name) => name.replace(/^The /, 'the ');
+// the offer's three ways round, each with how long it takes; the two folded
+// together leads, as the primary button did
+const PICKS = [
+  { audience: 'recruiter', label: 'To hire' },
+  { audience: 'player', label: 'To play' },
+  { audience: 'mixed', label: 'Both', main: true },
+];
 
 export default function TourHost() {
   const location = useLocation();
@@ -296,6 +305,8 @@ export default function TourHost() {
     remember({});
   };
   const start = (audience) => () => openTour({ audience });
+  // (over the map, the notes wear its dark glass, as the panel beside them does)
+  const onMap = isMapPath(pathname);
 
   // where an audience's tour has got to: remembered, so a reload, the guide
   // or the note can carry on
@@ -336,66 +347,73 @@ export default function TourHost() {
   return (
     <>
       {offer && !run && (
-        <div className="tour-offer card" role="status">
-          <RiCompass3Line className="tour-offer-icon" aria-hidden="true" />
-          <div>
-            <p className="tour-offer-title">New here?</p>
-            <p className="tour-offer-text">Here to hire, here to play, or both? I’ll show you round.</p>
-            <div className="tour-offer-buttons">
-              <button type="button" className="btn btn-ghost btn-sm" onClick={start('recruiter')}>
-                I’m hiring
+        <div className={`tour-offer notice${onMap ? ' dark-scope' : ''}`} data-map={onMap ? '' : undefined} role="status">
+          <div className="tour-offer-head">
+            <IconTour className="tour-offer-icon" aria-hidden="true" />
+            <p className="tour-offer-title">New here? I’ll show you round</p>
+            <CloseButton label="Not now" className="tour-offer-x" onClick={notNow} />
+          </div>
+          <p className="tour-offer-text">Here to hire, to play or both?</p>
+          <div className="tour-offer-picks">
+            {PICKS.map((p) => (
+              <button
+                key={p.audience}
+                type="button"
+                className="tour-offer-pick"
+                data-main={p.main ? '' : undefined}
+                // (the name starts with the words on it: "To hire, 5 min: the hiring tour")
+                aria-label={`${p.label}, ${TOUR_MINUTES[p.audience]} min: ${lower(TOUR_NAMES[p.audience])}`}
+                onClick={start(p.audience)}
+              >
+                <span className="tour-offer-pick-label">{p.label}</span>
+                <span className="tour-offer-pick-time">{TOUR_MINUTES[p.audience]} min</span>
               </button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={start('player')}>
-                I’m here to play
-              </button>
-              <button type="button" className="btn btn-primary btn-sm" onClick={start('mixed')}>
-                Both
-              </button>
-              <button type="button" className="tour-offer-later" onClick={notNow}>
-                Not now
-              </button>
-            </div>
+            ))}
           </div>
         </div>
       )}
       {nudge && !run && !offer && (
-        <div className="tour-offer card" role="status">
-          <RiCompass3Line className="tour-offer-icon" aria-hidden="true" />
-          <div>
-            <p className="tour-offer-title">
-              Carry on {lower(TOUR_NAMES[nudge.audience])} · chapter {nudge.n} of {nudge.of}
+        <div className={`tour-offer notice${onMap ? ' dark-scope' : ''}`} data-map={onMap ? '' : undefined} role="status">
+          <div className="tour-offer-head">
+            <IconTour className="tour-offer-icon" aria-hidden="true" />
+            <p className="tour-offer-title">Carry on {lower(TOUR_NAMES[nudge.audience])}</p>
+            {/* (the × only puts the note away: the guide still offers to carry on) */}
+            <CloseButton label="Not now" className="tour-offer-x" onClick={() => setNudge(null)} />
+          </div>
+          <div className="tour-offer-row">
+            <p className="tour-offer-text">
+              Chapter {nudge.n} of {nudge.of}
             </p>
-            <div className="tour-offer-buttons">
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                onClick={() =>
-                  openTour({
-                    audience: nudge.audience,
-                    chapter: nudge.chapter,
-                    stop: nudge.stop,
-                  })
-                }
-              >
-                Carry on
-              </button>
+            {nudge.after === 'excursion' && (
               <button
                 type="button"
                 className="tour-offer-later"
                 onClick={() => {
                   setNudge(null);
                   // Stop, after an excursion, means stop: no note again
-                  if (nudge.after === 'excursion')
-                    remember({
-                      audience: undefined,
-                      chapter: undefined,
-                      stop: undefined,
-                    });
+                  remember({
+                    audience: undefined,
+                    chapter: undefined,
+                    stop: undefined,
+                  });
                 }}
               >
-                {nudge.after === 'excursion' ? 'Stop' : 'Not now'}
+                Stop
               </button>
-            </div>
+            )}
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() =>
+                openTour({
+                  audience: nudge.audience,
+                  chapter: nudge.chapter,
+                  stop: nudge.stop,
+                })
+              }
+            >
+              Carry on <IconGo className="h-4 w-4" aria-hidden="true" />
+            </button>
           </div>
         </div>
       )}

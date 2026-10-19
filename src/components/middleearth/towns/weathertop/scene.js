@@ -13,7 +13,7 @@
 // screenOf(kind, id), aimAt(x, y), resize, dispose, lost, info }.
 
 import * as THREE from 'three';
-import { createStage, disposeTree } from '../../../../lib/stage3d';
+import { createStage, disposeTree } from '../../stage';
 import { createHouse } from '../../../../lib/three/house';
 import { dress, rolesFor } from '../../../../lib/three/core';
 import { device } from '../../../../lib/device';

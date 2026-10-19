@@ -43,7 +43,7 @@ export const THEMES = {
   summer: { id: 'summer', label: 'Summer', company: 'Summer Smith', swatch: '#E2557F', fan: true },
   beth: { id: 'beth', label: 'Beth', company: 'Beth Smith', swatch: '#8E2B48', fan: true },
   // the visitor's own colour (see theme/custom.js); its swatch follows their pick
-  custom: { id: 'custom', label: 'Yours', company: 'Your color', swatch: 'var(--custom-accent, #7c3aed)' },
+  custom: { id: 'custom', label: 'Yours', company: 'Your colour', swatch: 'var(--custom-accent, #7c3aed)' },
 };
 
 // Fan themes and the achievement that unlocks each. The hint shows on the
@@ -94,6 +94,7 @@ export const ROUTE_THEMES = {
   '/caribbean': 'tortuga',
   '/music': 'raga',
   '/middle-earth': 'shire',
+  '/middle-earth/mordor': 'mordor',
   '/avengers': 'stark',
   '/scranton': 'dunder',
   '/cybertron': 'optimus',
@@ -102,3 +103,16 @@ export const ROUTE_THEMES = {
   '/dot-matrix': 'gameboy',
   '/earth': 'travel',
 };
+
+// Worlds whose inner pages wear the world’s colours. Only Middle-earth’s
+// chapters do: the Citadel, the 64 and a project’s sub-pages keep the house’s.
+export const ROUTE_PREFIX_THEMES = { '/middle-earth': 'shire' };
+
+// A page’s colours by its address: its own first, else its world’s. A prefix
+// ends at a ‘/’, so /middle-earth/bree is the Shire’s and /middle-earthly isn’t.
+export function routeTheme(pathname) {
+  if (!pathname) return undefined;
+  if (ROUTE_THEMES[pathname]) return ROUTE_THEMES[pathname];
+  const world = Object.keys(ROUTE_PREFIX_THEMES).find((p) => pathname.startsWith(`${p}/`));
+  return world && ROUTE_PREFIX_THEMES[world];
+}

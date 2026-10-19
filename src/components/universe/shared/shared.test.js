@@ -5,6 +5,7 @@ import * as room from './room';
 import * as hangar from './hangar';
 import * as wallet from './wallet';
 import * as powerBar from './powerBar';
+import * as space from './space';
 
 // The universe's face: exactly these names and nothing else
 const FACE = [
@@ -14,6 +15,7 @@ const FACE = [
   [hangar, ['LINES', 'POWERS', 'POWER_ICONS', 'POWER_KEYS', 'SHIP_WEAPONS', 'STOCK_LOADOUT', 'ShipyardBody', 'armsView', 'arsenalOf', 'createArmory', 'crewById', 'picksFor', 'powersOf', 'useYard']],
   [wallet, ['EARN', 'LEVELS', 'TITLES', 'createPayLedger', 'useEarn', 'useEconomy']],
   [powerBar, ['PowerBar']],
+  [space, ['PLACES', 'SECTORS', 'SECTOR_RADIUS', 'sectorOf']],
 ];
 
 describe('universe/shared', () => {

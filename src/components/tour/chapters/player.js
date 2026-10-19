@@ -108,7 +108,7 @@ export const PLAYER = [
     stops: [
       {
         id: 'worlds-hello',
-        title: 'Thirteen more worlds',
+        title: 'Fourteen more worlds',
         text: 'Each is its own game. The tour walks into eight of them next; Go there leaves it for any, and when you’re back, the guide carries on where you left off.',
       },
       ...worldCards(),

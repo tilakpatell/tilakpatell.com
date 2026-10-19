@@ -8,7 +8,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { canvasTexture, createStage, hot } from '../../lib/stage3d';
+import { canvasTexture, createStage, hot } from './stage';
 import { createModels } from '../../lib/models';
 import { houseOn } from '../../lib/three/house';
 import { fbm, makeCanvas, makeNoise, ridge, smooth, tiled } from '../../lib/paint';
