@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { AWAY, UNIVERSE, cleanWhere, isFlight, ownCorner, placeName, whereOf } from './where';
 
 describe('whereOf', () => {
+  it('keeps Avengers HQ one place while a building’s game is open over it', () => {
+    for (const p of ['/avengers', '/avengers/gate', '/avengers/nowhere']) expect(whereOf(p), p).toBe('/avengers');
+    expect(whereOf('/avengersx')).toBe('/avengersx');
+  });
   it('keeps one place for the map and the experience page', () => {
     expect(whereOf('/')).toBe(UNIVERSE);
     expect(whereOf('/universe/marvel')).toBe(UNIVERSE);
