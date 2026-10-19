@@ -178,6 +178,10 @@ describe('a place that runs on power', () => {
       expect(d.acts[d.power.to]).toBe('power-give');
       expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(d.power.task);
       expect(d.power.lost.length).toBeGreaterThan(10);
+      // the boxes' prompt reads as a way to hand a cell over, not only to look
+      expect(d.hotspots.find((h) => h.id === d.power.to).verb).not.toBe('Look');
+      // the loss is said by `who`, in their own voice (not of themselves by name)
+      expect(d.power.lost).not.toContain(d.say[d.power.who].who.split(' ')[0]);
     }
   });
   it('is Zeep’s cells to the gooble boxes, four of them on 25 seconds of charge', () => {

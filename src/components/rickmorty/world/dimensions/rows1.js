@@ -242,7 +242,7 @@ export const ROWS = [
     spots: [
       { id: 'zeep', dx: -1.5, dz: -5.2, label: 'Zeep Xanflorp', verb: 'Talk' },
       { id: 'kyle', dx: 6, dz: -1, label: 'Kyle', verb: 'Talk', until: 'microverse' },
-      { id: 'gooble', dx: -7, dz: 1, label: 'The gooble boxes', verb: 'Look' },
+      { id: 'gooble', dx: -7, dz: 1, label: 'The gooble boxes', verb: 'Use' },
       { id: 'battery', dx: 2, dz: -1, label: 'The Miniverse battery', verb: 'Look' },
       { id: 'zeepcells', dx: -4.2, dz: -5.6, label: 'Zeep’s cells', verb: 'Take' },
     ],
@@ -260,7 +260,7 @@ export const ROWS = [
       zeepcells: { who: null, text: 'Charged cells from Zeep’s console. One at a time: they’re heavier than they look.' },
     },
     unlock: { zeep: 'microverse' },
-    power: { task: 'microverse', from: 'zeepcells', to: 'gooble', need: 4, s: 25, who: 'zeep', lost: 'The world’s gone dark. Zeep wants you back at his console.' },
+    power: { task: 'microverse', from: 'zeepcells', to: 'gooble', need: 4, s: 25, who: 'zeep', lost: 'The world’s gone dark. Back to my console, and we start again.' },
     goal: 'zeepcells',
     kinds: ['zeep', 'kyle'],
   }),
