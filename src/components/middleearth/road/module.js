@@ -139,8 +139,10 @@ export default {
     scene.add(sun, sun.target, hemi, sky.mesh);
     // the sun’s (and the moon’s) soft shadows, through cascades round the
     // camera (lib/three/light/sun.js), on mid and up: out to 60 m on high, 40
-    // on mid (at 90 the cascades drew the Shire's every hole and hedge four
-    // times over, a million and a half triangles a frame); none on low. PCSS (shadows.js) only where the chain ends in
+    // on mid, in two cascades (at 90 and four the cascades drew the Shire's
+    // every hole and hedge four times over, a million and a half triangles
+    // a frame; its statics are merged in bands, stages/parts.js, so each
+    // cascade leaves out what it can't see); none on low. PCSS (shadows.js) only where the chain ends in
     // TRAA: its samples are scattered by a per-pixel noise only a temporal
     // pass settles, a grain over every shadow without one; elsewhere three’s
     // own PCF, a little softened (its five taps dither too: kept to an edge)
@@ -158,7 +160,7 @@ export default {
           const soft = filterFor(tier, readPcss(null));
           const filter = soft.kind === 'pcss' && has('traa') ? await pcssFilter(soft) : null;
           if (unlit) return;
-          const c = await castCascades(sun, null, { tier, filter, video: { shadowDistance: tier === 'mid' ? 40 : 60 } });
+          const c = await castCascades(sun, null, { tier, filter, video: { shadowDistance: tier === 'mid' ? 40 : 60, cascades: 2 } });
           if (unlit) c?.dispose();
           else cascades = c;
         })

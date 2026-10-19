@@ -4,11 +4,14 @@
 //
 //   part(geometry, colour, { at, yaw, pitch, roll, scale }) → BufferGeometry
 //   merged(parts, material, name) → THREE.Mesh, or null for no parts
-//   mergeStatics(root, { keep }) → root: the chapters’ builders make a
+//   mergeStatics(root, { keep, band }) → root: the chapters’ builders make a
 //     mesh a material a building (a Bree house is a dozen); this merges
 //     every still mesh under root into one a material (and a set of
-//     attributes), in root’s frame, leaving what `keep` holds (the parts a
-//     scene moves), instanced and skinned meshes as they were
+//     attributes) and a `band` of the stage along z (60 m: so the view and
+//     each of the sun’s cascades leave out what’s behind or far ahead; one
+//     mesh the stage’s length, every cascade drew all of it), in root’s
+//     frame, leaving what `keep` holds (the parts a scene moves),
+//     instanced and skinned meshes as they were
 //   disposeBuilt(root, K): the geometry under root, and the materials (and
 //     their maps) a builder made for itself (a sign, a hatch) rather than
 //     took from the kit, which the kit’s own dispose frees
@@ -62,7 +65,9 @@ export function merged(parts, material, name) {
 
 const SHARED = ['position', 'normal', 'uv', 'color'];
 
-export function mergeStatics(root, { keep = [] } = {}) {
+export const BAND = 60; // m along z: a merged mesh of statics spans no more than this
+
+export function mergeStatics(root, { keep = [], band = BAND } = {}) {
   root.updateMatrixWorld(true);
   const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
   const kept = new Set();
@@ -77,7 +82,8 @@ export function mergeStatics(root, { keep = [] } = {}) {
     g.morphAttributes = {};
     g.clearGroups();
     g.applyMatrix4(m.multiplyMatrices(inv, o.matrixWorld));
-    const key = `${Object.keys(g.attributes).sort().join()}`;
+    g.computeBoundingSphere();
+    const key = `${band > 0 ? Math.floor(g.boundingSphere.center.z / band) : 0}|${Object.keys(g.attributes).sort().join()}`;
     if (!buckets.has(o.material)) buckets.set(o.material, new Map());
     const by = buckets.get(o.material);
     if (!by.has(key)) by.set(key, { geos: [], cast: false, receive: false });

@@ -50,6 +50,32 @@ describe('mergeStatics', () => {
   });
 });
 
+describe('mergeStatics, by band', () => {
+  it('a material’s statics merged a band of the stage along z at a time, so a band out of view is left out', () => {
+    const a = new THREE.MeshBasicMaterial();
+    const root = new THREE.Group();
+    for (const z of [0, 10, 70, 75, 200]) {
+      const b = box(a, 0);
+      b.position.z = z;
+      root.add(b);
+    }
+    mergeStatics(root, { band: 60 });
+    const meshes = [];
+    root.traverse((o) => o.isMesh && meshes.push(o));
+    // (0 and 10 in the first band, 70 and 75 the second, 200 the fourth)
+    expect(meshes.map((o) => o.geometry.attributes.position.count).sort((x, y) => x - y)).toEqual([36, 72, 72]);
+    // (no band: one mesh, as before)
+    const whole = new THREE.Group();
+    for (const z of [0, 100]) {
+      const b = box(a, 0);
+      b.position.z = z;
+      whole.add(b);
+    }
+    mergeStatics(whole, { band: 0 });
+    expect(whole.children).toHaveLength(1);
+  });
+});
+
 describe('disposeBuilt', () => {
   it('frees the geometry and what a builder made, never the kit’s materials', () => {
     const kitMat = new THREE.MeshBasicMaterial();
