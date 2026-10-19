@@ -1,6 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { matchPath } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { HQ_HOME, LINKS, backTarget, gameOf, hqState, inHq, linkOf, placeOf } from './links';
 import { PLACES } from './rules';
+
+const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 
 describe('the compound’s addresses', () => {
   it('names each building by its place, as the spec’s table does, in the compound’s order', () => {
@@ -44,5 +48,14 @@ describe('the compound’s addresses', () => {
     expect(backTarget({ state: hqState, key: 'default' })).toBe('/avengers');
     expect(backTarget({ state: { feed: true }, key: 'k1' })).toBe('/avengers');
     expect(backTarget(undefined)).toBe('/avengers');
+  });
+
+  it('is one route App.jsx declares, matched as the router matches, on one page', () => {
+    const app = read('../../../App.jsx');
+    const pats = [...app.matchAll(/<Route path="([^"]+)"/g)].map((m) => m[1]).filter((p) => p !== '*'); // (the not-found page matches anything)
+    expect(pats).toContain('/avengers/:place?');
+    expect(pats).not.toContain('/avengers');
+    for (const to of [HQ_HOME, ...LINKS.map((l) => linkOf(l.id))]) expect(pats.filter((p) => matchPath({ path: p, end: true }, to)), to).toEqual(['/avengers/:place?']);
+    expect(app).toMatch(/inHq\(pathname\)\s*\?\s*'\/avengers'/); // pageKey: one page for every address
   });
 });

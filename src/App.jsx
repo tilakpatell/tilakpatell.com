@@ -5,6 +5,7 @@ import { AchievementProvider, useAchievements } from './components/Achievements'
 import { FunProvider } from './fun/FunProvider';
 import OnlineProvider from './components/universe/online/OnlineProvider';
 import EconomyProvider from './components/universe/EconomyProvider';
+import { inHq } from './components/avengers/world/links';
 import SkillsProvider from './components/hangar/skills/SkillsProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import Nav from './components/Nav';
@@ -344,6 +345,8 @@ function PaletteHost() {
 // (/middle-earth/moria) keep one page the same way, so its map stays up,
 // and so do the galaxy's systems (/galaxy/hoth), so a jump from one to the
 // next keeps the one scene (its missions' briefings are pages of their own).
+// Avengers HQ's buildings (/avengers/gate) keep one page the same way, so the
+// compound stays loaded while a game opens and closes over it.
 // The portfolio's six pages are one feed (components/feed): reach the end of
 // one and the next begins under it, with the address following the scroll, so
 // they share a key too.
@@ -352,7 +355,9 @@ const pageKey = (pathname) =>
     ? '/universe'
     : pathname.startsWith('/middle-earth')
       ? '/middle-earth'
-      : /^\/galaxy(\/[a-z0-9-]+)?$/.test(pathname)
+      : inHq(pathname)
+        ? '/avengers'
+        : /^\/galaxy(\/[a-z0-9-]+)?$/.test(pathname)
         ? '/galaxy'
         : categoryAt(pathname)
           ? '/feed'
@@ -454,7 +459,7 @@ function Shell() {
                 <Route path="/middle-earth/map" element={<MiddleEarth />} />
                 <Route path="/middle-earth/:place" element={<MiddleEarth />} />
                 <Route path="/scranton" element={<Scranton />} />
-                <Route path="/avengers" element={<Avengers />} />
+                <Route path="/avengers/:place?" element={<Avengers />} />
                 <Route path="/cybertron" element={<Cybertron />} />
                 <Route path="/albuquerque" element={<Albuquerque />} />
                 <Route path="/c-137" element={<RickMorty />} />
