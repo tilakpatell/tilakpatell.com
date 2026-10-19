@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CHAPTERS, chapter, neighbours } from './chapters';
+import { CHAPTERS, chapter, neighbours, stopOf } from './chapters';
+import { STOPS } from './road';
 import { SHEET } from './mapData';
 
 describe('the places on the map', () => {
@@ -24,5 +25,12 @@ describe('the places on the map', () => {
     expect(neighbours('moria').prev.id).toBe('rivendell');
     expect(neighbours('mordor').next).toBeNull();
     expect(neighbours(undefined)).toEqual({ prev: null, next: null });
+  });
+  it('stands each place where its stop is, so a fly-down lands on its landmark', () => {
+    for (const c of CHAPTERS) {
+      const s = STOPS[stopOf(c.id)];
+      expect(s.id, c.id).toBe(c.stop);
+      expect(c.at, c.id).toEqual([s.x, s.y]);
+    }
   });
 });

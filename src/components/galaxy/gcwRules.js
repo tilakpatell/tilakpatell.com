@@ -68,8 +68,9 @@ export const GCW = {
   huttReach: 1, // the raider attacks a Hutt world only where the attack would take it whole (gcw.js)
   routeReach: 2.2, // grid squares: how near a route's point a system must be to be on it
   neighbours: 2, // the nearest few, besides the routes
+  // and these, by hand: the Abrion sector's two (Kamino past the rim, Scarif at the edge of it) and the Core's road to Naboo
   links: [
-    ['kamino', 'lothal'],
+    ['kamino', 'scarif'],
     ['coruscant', 'naboo'],
   ],
 };
@@ -78,7 +79,7 @@ export const HOURS_PER_STEP = GCW.step / 3600e3;
 // (the systems the war is fought over: those with a `war` row. Alderaan is
 // rubble, Dagobah is left to its swamp, and the 2017 game's six (lane E5:
 // Felucia, Kessel, Sullust, Pillio, Vardos, Fondor) are places to land on
-// the game's own maps, not fronts)
+// the game's own maps, not fronts; nor are the charted worlds, charted/)
 export const WAR_SYSTEMS = SYSTEMS.filter((s) => s.body && s.war).map((s) => s.id);
 const BY_ID = Object.fromEntries(SYSTEMS.map((s) => [s.id, s]));
 

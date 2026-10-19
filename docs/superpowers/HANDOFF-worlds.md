@@ -62,6 +62,10 @@ The Quaternius packs as one kit: `scripts/kit/`, `public/kit/`, `src/lib/three/k
 
 The house look on every galaxy world (`src/lib/three/house.js`, each world’s look in `src/components/galaxy/surface/look.js`, the fog from `skyfog.js`, exposure through `src/components/universe/post.js`), and the three sites in `src/components/galaxy/surface/sites/` (`coruscant.js`, `yavin.js`, `bespin.js`). Gates for a surface change: `scripts/galaxy-check.mjs surface` against a baseline from main, never over 600 draw calls or 2.5 M triangles, no page error.
 
+### The Road through Middle-earth
+
+One ride from Bag End to the Grey Havens at `/middle-earth/road`, a `'nodes'` module in `src/components/middleearth/road/` (lane R1, 2026-10-18: the spine; sixteen stages to come). Its own hand-off is `HANDOFF-the-road.md`, with the lanes, what each must know about Middle-earth’s files and the owner’s steps.
+
 ## Left
 
 ### Albuquerque

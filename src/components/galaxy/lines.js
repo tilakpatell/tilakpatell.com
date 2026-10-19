@@ -22,6 +22,8 @@
 // remnant's TIEs over the New Republic's worlds (shot down, they're TIEs:
 // the crews' own lines). galaxyCrew lays all this over a crew's own lines.
 
+import { CHARTED_ARRIVE } from './charted/lines';
+
 export const GALAXY_LINES = {
   cruiser: {
     arrive: {
@@ -1116,6 +1118,9 @@ export const GALAXY_LINES = {
     },
   },
 };
+
+// (and their arrivals at the charted worlds: charted/lines.js)
+for (const [crew, lines] of Object.entries(CHARTED_ARRIVE)) Object.assign(GALAXY_LINES[crew].arrive, lines);
 
 // A crew (universe/crews.js) as it is in the galaxy: its own lines, with
 // the galaxy's arrivals in place of the universe map's (there are no

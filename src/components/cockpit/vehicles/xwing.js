@@ -15,6 +15,8 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { blinkers, consoleMaps, consoleMat, glassMat, glowSprite, plated, platingMaps, rng, roundedBox, screen, tubeAlong } from '../kit';
 import { hyperspace, planet, sky } from '../space';
 import { clamp01, smooth } from '../timeline';
+import { shadowRadius } from '../levels';
+import { dimmer } from '../dim';
 import { loadTexture } from '../../../lib/three/textures';
 
 const EYE = [0, 1.02, 0.18];
@@ -96,7 +98,7 @@ function wingmate(mats) {
   return g;
 }
 
-export async function build({ rich, coarse, renderer }) {
+export async function build({ rich, level, coarse, renderer }) {
   const inside = new THREE.Group();
   const outside = new THREE.Group();
   const r = rng(5);
@@ -385,7 +387,10 @@ export async function build({ rich, coarse, renderer }) {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
+    // (the level's map, ./levels.js; softened over the same width at any size)
+    const map = level?.shadows || 1024;
+    sun.shadow.mapSize.set(map, map);
+    sun.shadow.radius = shadowRadius(level);
     Object.assign(sun.shadow.camera, { left: -1.5, right: 1.5, top: 1.5, bottom: -1.5, near: 0.5, far: 9 });
     sun.shadow.bias = -0.0008;
     sun.shadow.normalBias = 0.02;
@@ -403,7 +408,7 @@ export async function build({ rich, coarse, renderer }) {
   inside.add(jump, jump.target);
 
   // ── outside: Yavin, the Death Star beyond it, Red Squadron ──
-  const space = sky({ seed: 23, nebula: ['#1d2c55', '#3a2350'], band: [-0.4, 1, 0.3] });
+  const space = sky({ seed: 23, nebula: ['#1d2c55', '#3a2350'], band: [-0.4, 1, 0.3], count: Math.round(5200 * (level?.stars ?? 1)) });
   outside.add(space.group);
   const small = coarse || Math.min(window.innerWidth, window.innerHeight) < 600;
   // (decoded off the main thread, and shared with the universe map's planets)
@@ -424,6 +429,8 @@ export async function build({ rich, coarse, renderer }) {
   dsLight.position.set(1000, 500, -1000);
   dsLight.target = ds;
   outside.add(dsLight);
+  // (faded as the jump takes them, not gone in a frame)
+  const dimWorld = dimmer(yavin.group, ds, dsLight);
   const mates = [
     { at: new THREE.Vector3(-14, 2.5, -26), roll: 0.12 },
     { at: new THREE.Vector3(19, -4, -44), roll: -0.18 },
@@ -438,7 +445,16 @@ export async function build({ rich, coarse, renderer }) {
   const mateSun = new THREE.DirectionalLight(0xfff4e8, 2.2);
   mateSun.position.set(3, 4, -2);
   outside.add(mateSun);
-  const hyper = hyperspace({ count: rich ? 2200 : 1300, seed: 31 });
+  // the hard white sun that lights you, off to the right: seen when you
+  // look round at it, and the lens's glare (scene.js) when you do (lower
+  // than the light's own way, which is past where the view turns)
+  const sunDisc = glowSprite('#fff6ea', 170, 1);
+  sunDisc.position.set(3, 1.8, -2.4).normalize().multiplyScalar(1500);
+  const sunHalo = glowSprite('#ffe6c4', 760, 0.16);
+  sunHalo.position.copy(sunDisc.position);
+  outside.add(sunDisc, sunHalo);
+  const glare = { at: sunDisc.position, color: '#fff6ea', k: 1, size: 0.012 };
+  const hyper = hyperspace({ count: level?.streaks ?? (rich ? 2200 : 1300), seed: 31 });
   outside.add(hyper.group);
 
   let foil = 0;
@@ -460,6 +476,7 @@ export async function build({ rich, coarse, renderer }) {
     bloom: [0.6, 0.45, 0.8],
     flash: '#eef5ff',
     rumble: 0.9,
+    glare,
     triggers: [tHit, throttle, stick],
     resize(w, h, px) {
       hyper.resize(w, h, px);
@@ -467,7 +484,8 @@ export async function build({ rich, coarse, renderer }) {
     },
     launch() {},
     update(dt, t, { launching, t: lt, throttle: thr }) {
-      for (const s of screens) s.tick(t);
+      // (the screens drawn again till the jump's light washes them out)
+      if (!launching || thr < 0.3) for (const s of screens) s.tick(t);
       lights.tick(t);
       yavin.spin(dt);
       ds.rotation.y += dt * 0.01;
@@ -489,7 +507,10 @@ export async function build({ rich, coarse, renderer }) {
       const pre = launching ? 1 - smooth((thr - 0.3) / 0.35) : 1;
       hyper.update(dt, t, { throttle: launching ? thr : 0, tunnel, shown: 1 });
       space.set({ fade: 0.15 + 0.85 * pre });
+      if (launching) dimWorld(pre);
       yavin.group.visible = ds.visible = pre > 0.01;
+      sunDisc.material.opacity = glare.k = pre;
+      sunHalo.material.opacity = 0.16 * pre;
       const k = hyper.light(jumpColor, { throttle: launching ? thr : 0, tunnel });
       jump.color.copy(jumpColor);
       jump.intensity = (k > 0 ? 1.6 : 0) + snap * 6;
