@@ -391,6 +391,7 @@ export default {
         windTime.value += dt;
         wind.update(dt);
         lands.follow(camera);
+        lands.life(dt);
         mountains.update(camera);
         scatter.update(camera, dt);
       },

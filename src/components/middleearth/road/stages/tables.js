@@ -21,15 +21,15 @@ const ROUGH = [
   { model: 'Rock_Big_1', per100: 0.012, clump: 2, spread: 8, scale: [0.6, 1.4], slope: 1.4 },
   { model: 'Rock_Medium_2', per100: 0.03, clump: 3, spread: 5, scale: [0.6, 1.2], slope: 1.4 },
 ];
-const BARE = [
-  { model: 'Rock_Medium_3', per100: 0.02, clump: 3, spread: 5, scale: [0.6, 1.2] },
-  { model: 'DeadTree_1', per100: 0.006, clump: 2, spread: 8, scale: [0.8, 1.2] },
-];
 
 const CORN = { Grass: { recolour: '#fbe8a8' } };
 const HEATH = { Leaves: { recolour: '#6e6a44' } };
 const BRACKEN = { Leaves: { recolour: '#a8743a' } };
 const GOLD = { Leaves_NormalTree: { recolour: '#d8a23a' }, Leaves_Birch: { recolour: '#e2b84a' } };
+// the dead stems of the Marshes, Mordor’s black rock, the dune grass bleached by the sea’s wind
+const DEAD = { Grass: { recolour: '#7a6e4a' }, Leaves: { recolour: '#5e5638' } };
+const BLACK = { Rocks: { recolour: '#2e2a28' }, Bark_DeadTree: { recolour: '#2a2422' } };
+const DUNE = { Grass: { recolour: '#b8b07a' } };
 // (the kit’s oak bark is a red-brown: the Trollshaws’ a warm grey, so it isn’t violet under a grey sky)
 const AUTUMN = { Leaves_NormalTree: { recolour: '#eeae5c' }, Leaves_Birch: { recolour: '#f2c86a' }, Bark_NormalTree: { recolour: '#806c50' } };
 
@@ -163,10 +163,62 @@ export const SCATTER = {
   moria: [],
   lorien: GREEN,
   anduin: ROUGH,
-  marshes: BARE,
-  ithilien: GREEN,
-  'cirith-ungol': BARE,
-  gorgoroth: BARE,
-  'minas-tirith': GREEN,
-  havens: BARE,
+  // the Dead Marshes: dead reeds and rushes over the pools, rotten stumps, the tussocks between
+  marshes: [
+    { model: 'Grass_Wide_Tall', per100: 3.2, clump: 9, spread: 4, scale: [0.9, 1.4], x: [-120, 120], kind: 'grass', tint: DEAD },
+    { model: 'Grass_Wispy_Tall', per100: 2, clump: 8, spread: 4, scale: [0.8, 1.2], x: [-90, 90], kind: 'grass', tint: DEAD },
+    { model: 'DeadTree_3', per100: 0.008, clump: 2, spread: 10, scale: [0.5, 0.8] },
+    { model: 'DeadTree_1', per100: 0.01, clump: 3, spread: 8, scale: [0.4, 0.7] },
+    { model: 'Plant_7', per100: 0.6, clump: 6, spread: 3, scale: [1.5, 2.5], x: [-60, 60], tint: DEAD },
+    { model: 'Rock_Medium_3', per100: 0.02, clump: 3, spread: 5, scale: [0.4, 0.8] },
+  ],
+  // Ithilien: the garden of Gondor gone wild, cedars and pines, herbs and flowers in the long grass
+  ithilien: [
+    { model: 'CommonTree_4', per100: 0.08, clump: 3, spread: 10, scale: [1.0, 1.5] },
+    { model: 'Pine_2', per100: 0.05, clump: 3, spread: 9, scale: [0.9, 1.3] },
+    { model: 'GiantPine_3', per100: 0.008, clump: 1, spread: 1, scale: [0.6, 0.8] },
+    { model: 'Bush_Large_Flowers', per100: 0.08, clump: 3, spread: 4, scale: [0.8, 1.2] },
+    { model: 'Bush_Common_Flowers', per100: 0.12, clump: 3, spread: 4, scale: [0.8, 1.2] },
+    { model: 'Flower_2_Group', per100: 0.3, clump: 5, spread: 2.5, scale: [0.28, 0.4], x: [-40, 40] },
+    { model: 'Flower_4_Group', per100: 0.25, clump: 4, spread: 2, scale: [0.2, 0.3], x: [-40, 40] },
+    { model: 'Flower_7_Group', per100: 0.3, clump: 4, spread: 2, scale: [0.28, 0.4], x: [-40, 40] },
+    { model: 'Plant_4', per100: 0.25, clump: 4, spread: 2, scale: [0.7, 1.0], x: [-40, 40] },
+    { model: 'Fern_1', per100: 0.4, clump: 6, spread: 4, scale: [0.8, 1.3] },
+    { model: 'Grass_Common_Tall', per100: 1.6, clump: 6, spread: 3, scale: [0.6, 0.9], kind: 'grass' },
+    { model: 'Rock_Medium_2', per100: 0.02, clump: 3, spread: 5, scale: [0.6, 1.2], slope: 1.4 },
+  ],
+  // the stair of Cirith Ungol: black rock, nothing growing
+  'cirith-ungol': [
+    { model: 'Rock_Big_1', per100: 0.04, clump: 3, spread: 6, scale: [0.6, 1.4], slope: 2, tint: BLACK },
+    { model: 'Rock_Medium_1', per100: 0.12, clump: 4, spread: 5, scale: [0.5, 1.2], slope: 2, tint: BLACK },
+    { model: 'Rock_Medium_4', per100: 0.1, clump: 4, spread: 4, scale: [0.4, 1.0], slope: 2, tint: BLACK },
+    { model: 'Pebble_Square_4', per100: 1.2, clump: 6, spread: 2, scale: [2, 4], x: [-10, 10], tint: BLACK },
+  ],
+  // Gorgoroth: cinders and slag, the rocks black, dead wood where anything once grew
+  gorgoroth: [
+    { model: 'Rock_Big_2', per100: 0.03, clump: 3, spread: 8, scale: [0.6, 1.3], tint: BLACK },
+    { model: 'Rock_Medium_3', per100: 0.1, clump: 5, spread: 5, scale: [0.4, 1.0], tint: BLACK },
+    { model: 'Pebble_Round_5', per100: 1.6, clump: 8, spread: 3, scale: [2, 4.5], x: [-30, 30], tint: BLACK },
+    { model: 'DeadTree_4', per100: 0.004, clump: 1, spread: 1, scale: [0.4, 0.6], tint: BLACK },
+  ],
+  // the Pelennor: farms and fields under the walls, orchards, the road between low walls
+  'minas-tirith': [
+    { model: 'CommonTree_5', per100: 0.05, clump: 6, spread: 12, scale: [0.8, 1.1] },
+    { model: 'CommonTree_2', per100: 0.03, clump: 3, spread: 9, scale: [1.0, 1.4] },
+    { model: 'Bush_Long_1', per100: 0.12, clump: 6, spread: 6, scale: [1.0, 1.3] },
+    { model: 'Bush_Common', per100: 0.06, clump: 3, spread: 5, scale: [0.9, 1.3] },
+    { model: 'Grass_Wheat', per100: 2.5, clump: 6, spread: 2.5, scale: [0.7, 0.9], x: [12, 80], tint: CORN },
+    { model: 'Grass_Common_Tall', per100: 1.2, clump: 6, spread: 3, scale: [0.6, 0.9], kind: 'grass' },
+    { model: 'Flower_3_Group', per100: 0.1, clump: 4, spread: 3, scale: [0.3, 0.45], x: [-30, 30] },
+    { model: 'Rock_Medium_1', per100: 0.015, clump: 2, spread: 4, scale: [0.6, 1.1] },
+  ],
+  // the Havens: dune grass and thrift to the sand, wind-bent pines, pebbles at the water
+  havens: [
+    { model: 'Grass_Wispy_Tall', per100: 2.4, clump: 8, spread: 4, scale: [0.8, 1.2], kind: 'grass', tint: DUNE },
+    { model: 'Grass_Wispy_Short', per100: 2, clump: 8, spread: 4, scale: [0.7, 1.1], kind: 'grass', tint: DUNE },
+    { model: 'Pine_5', per100: 0.03, clump: 3, spread: 9, scale: [0.8, 1.2] },
+    { model: 'Flower_6_2', per100: 0.8, clump: 6, spread: 2, scale: [1, 1.4], x: [-40, 40] },
+    { model: 'Rock_Medium_2', per100: 0.03, clump: 3, spread: 5, scale: [0.6, 1.2] },
+    { model: 'Pebble_Round_3', per100: 1.6, clump: 6, spread: 2.5, scale: [2, 4.5] },
+  ],
 };

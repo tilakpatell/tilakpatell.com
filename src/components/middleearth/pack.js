@@ -38,6 +38,7 @@ export const PACK = {
     '/kit/naturemega/deadtree.glb',
     '/kit/naturemega/fern.glb',
     '/kit/naturemega/flower.glb',
+    '/kit/naturemega/giantpine.glb',
     '/kit/naturemega/grass.glb',
     '/kit/naturemega/mushroom.glb',
     '/kit/naturemega/pebble.glb',

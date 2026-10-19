@@ -8,6 +8,7 @@
 //     at(index),            the ride is in stage `index`: re-place, build, drop
 //     step(),               a frame’s slice of the building
 //     follow(camera),       the grass round the camera, in each built stage’s frame
+//     life(dt),             the birds over the stages in sight (stages/life.js)
 //     water(dt, light),     the built stages’ rivers flowing, in the day’s light
 //     heightAt(x, z),       the ground under a point in the current frame
 //     ready(index), groupOf(index), landOf(index), watersOf(index), stats, dispose() }
@@ -21,6 +22,8 @@ import { STAGES } from './stages/index';
 import { FRAME_BACK, SEAM, landJob, riverLevel, run } from './terrain';
 import { groundJob } from './ground';
 import { soilOf } from './stages/soils';
+import { lifeOf } from './stages/life';
+import { createBirds } from './birds';
 import { createWater } from './water';
 import { placements, rngOf, rowsFor } from './scatter';
 import { fieldAt } from '../../../lib/land/layers.js';
@@ -52,6 +55,9 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
       return createWater({ along: { line: r.line, width: r.width + 2 * bank, level: riverLevel(land.field, r) }, kind: 'river', sky, ground: land.field });
     });
     for (const w of waters) group.add(w.mesh);
+    // its birds, their flock’s middle that high over the ground there
+    const birds = lifeOf(id).birds.map((f) => createBirds({ ...f, at: [f.at[0], land.heightAt(f.at[0], f.at[2]) + f.at[1], f.at[2]] }));
+    for (const b of birds) group.add(b.mesh);
     // (a job let go here, its stage dropped before it finished: what it made goes with it)
     let done = false;
     try {
@@ -61,11 +67,12 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
       if (!done) {
         ground.dispose();
         for (const w of waters) w.dispose();
+        for (const b of birds) b.dispose();
       }
     }
     // what grows on it, placed once (its stage’s seed, so a stage is the same every ride)
     const items = scatter ? placements(rowsFor(id), land, land.road, rngOf(1000 + i), { tier }) : [];
-    return { land, ground, group, items, waters };
+    return { land, ground, group, items, waters, birds };
   }
   const finish = (i, value) => {
     const c = clocks.get(i) ?? { ms: 0, slices: 0, worst: 0 };
@@ -94,6 +101,7 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
       scene.remove(b.group);
       b.ground.dispose();
       for (const w of b.waters) w.dispose();
+      for (const f of b.birds) f.dispose();
       scatter?.free(STAGES[i].id);
       built.delete(i);
     }
@@ -146,6 +154,9 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
           w.update(dt);
         }
       }
+    },
+    life(dt) {
+      for (const b of built.values()) if (b.group.visible) for (const f of b.birds) f.update(dt);
     },
     follow(camera) {
       for (const b of built.values()) {

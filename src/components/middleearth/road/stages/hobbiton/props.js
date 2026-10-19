@@ -16,8 +16,8 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { C, disposeBuilt, merged, mergeStatics, part } from '../parts';
-import { bagEnd, barrelParts, beehiveParts, benchParts, cabbageGeo, cart, dog, flowerBed, greenDragon, hayBaleParts, hedgeGeo, hole, lampParts, mailboxParts, mill, oaks, partyTree, parts, pavilion, pumpkinGeo, scarecrowParts, sheep, signpost, washingLine, wheatGeo, wheelbarrowParts } from '../../../shire/build';
+import { C, canopy, disposeBuilt, merged, mergeStatics, part } from '../parts';
+import { bagEnd, barrelParts, beehiveParts, benchParts, bush, cabbageGeo, cart, dog, flowerBed, greenDragon, hayBaleParts, hedgeGeo, hole, lampParts, mailboxParts, mill, oaks, partyTree, parts, pavilion, pumpkinGeo, scarecrowParts, sheep, signpost, washingLine, wheatGeo, wheelbarrowParts } from '../../../shire/build';
 
 export const SHIRE = 0.68; // the Road’s hobbit (1.05 m) over the chapter’s (1.55)
 // the Hill: a turf dome on terrain.js’s rise, the doors round its foot
@@ -52,7 +52,7 @@ const HOLES = [
 const DRAGON = [-17, 152, R]; // the Green Dragon, its door to the lane
 const PAVILION = [21, 146, Math.PI];
 const PATCH = { x: [19, 27], z: [30, 41], crow: [23.5, 35.5] }; // the vegetable patch and its scarecrow
-const CORN = { z: [198, 224], x: [5.5, 26] }; // the field’s edge, either side
+const CORN = { z: [198, 226], x: [5.5, 8.6], far: 30 }; // the field’s edge either side: clumps by the lane, the canopy behind to `far`
 const HEDGES = [[1, 56, 68], [1, 78, 104], [1, 150, 184], [-1, 58, 88], [-1, 104, 112], [-1, 120, 140], [-1, 160, 170], [-1, 182, 196]]; // side, z from, z to
 const OAKS = [[-22, 18, 1.1], [24, 30, 0.9], [-28, 82, 1.2], [27, 96, 1.0], [44, 150, 1.3], [-11, 204, 0.9], [14, 168, 1.1], [-33, 132, 1.0], [8, 230, 1.0], [48, 60, 1.2], [-40, 54, 1.1], [36, 196, 1.0]];
 const SHEEP = [[-36, 178], [-40, 183], [-33, 188], [-44, 190], [-38, 195], [-31, 200]];
@@ -147,8 +147,21 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   const hill = hillMesh(K, heightAt);
   group.add(hill.mesh);
   DOORS.forEach((d, i) => holeAt(K, (x, z) => Math.max(hill.low, heightAt(x, z)), [d.x, d.z, d.yaw, 3.4, d.colour, 2 * i + 1], group, d.bagEnd));
-  // chimneys through the Hill’s turf
-  for (const [dx, dz] of [[-4, 3], [3, -5], [-7, -6]]) group.add(stand(bits((bk) => bk.add(K.mats.stone, new THREE.CylinderGeometry(0.4, 0.46, 2.6, 7), { p: [0, 1.3, 0] })), () => hill.low + HILL.r * HILL.squash * 0.9, HILL.at[0] + dx, HILL.at[1] + dz));
+  // the Hill’s surface over (x, z), and the chimneys through its turf, a little sunk in it
+  const dome = (x, z) => hill.low - 0.3 + HILL.r * HILL.squash * Math.sqrt(Math.max(0, 1 - ((x - HILL.at[0]) ** 2 + (z - HILL.at[1]) ** 2) / HILL.r ** 2));
+  for (const [dx, dz] of [[-4, 3], [3, -5], [-7, -6]]) group.add(stand(bits((bk) => bk.add(K.mats.stone, new THREE.CylinderGeometry(0.4, 0.46, 2.6, 7), { p: [0, 1.3, 0] })), dome, HILL.at[0] + dx, HILL.at[1] + dz, 0, SHIRE, 0.5));
+  // bushes and their flowers over the Hill’s face and along its crown, as the chapter has its gardens
+  const hb = new THREE.Group();
+  const hbk = parts();
+  for (let i = 0; i < 26; i++) {
+    const a = (100 + ((i * 37) % 160)) * (Math.PI / 180);
+    const r = HILL.r * (0.25 + ((i * 0.61) % 0.7));
+    const x = HILL.at[0] + Math.cos(a) * r;
+    const z = HILL.at[1] + Math.sin(a) * r;
+    bush(hbk, K, x, dome(x, z) - 0.25, z, 0.7 + (i % 4) * 0.22, i + 3, i % 3 === 0 ? 10 : 0);
+  }
+  hbk.build(hb);
+  group.add(hb);
   // the holes along the lane
   for (const h of HOLES) holeAt(K, heightAt, h, group);
 
@@ -235,13 +248,15 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   hedge.castShadow = true;
   group.add(hedge);
 
-  // the corn at the field’s edge, either side of the lane (fewer clumps on low)
-  const step = tier === 'low' ? 1.6 : 0.75;
+  // the corn at the field’s edge, either side of the lane: the chapter’s
+  // clumps by it (fewer on low), the field’s body behind them a canopy
+  const step = tier === 'low' ? 1.5 : 0.75;
   const clumps = [];
   for (const side of [1, -1]) for (let z = CORN.z[0]; z < CORN.z[1]; z += step) for (let x = CORN.x[0]; x < CORN.x[1]; x += step) clumps.push([side * (x + ((z * 3.7) % 1) * 0.5), z + ((x * 1.3) % 1) * 0.4]);
   const wheat = new THREE.InstancedMesh(crops.wheat, K.mats.wheat, clumps.length);
   clumps.forEach(([x, z], i) => wheat.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z), z), q.setFromAxisAngle(up, (x * 13 + z) % 6.28), new THREE.Vector3(0.9, 0.8 + ((x * z) % 1) * 0.3, 0.9))));
   group.add(wheat);
+  group.add(merged([1, -1].map((side) => canopy(heightAt, { x: [side * (CORN.x[1] - 1), side * CORN.far], z: CORN.z, cells: [24, 30] })), material, 'hobbiton:corn'));
 
   // (a builder draws a hole in a dozen meshes: one a material for the stage, what moves kept)
   mergeStatics(group, { keep: [theMill.wheel, lanterns, hedge, wheat].filter(Boolean) });

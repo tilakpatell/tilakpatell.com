@@ -1,7 +1,6 @@
 // The stages’ building blocks, shared from the second stage on: a geometry
 // in one colour moved into place (its colour in its vertices, so a stage’s
-// statics merge into one mesh on one material), and that merge. Hobbiton
-// keeps its own copy in its props.js, written before this was.
+// statics merge into one mesh on one material), and that merge.
 //
 //   part(geometry, colour, { at, yaw, pitch, roll, scale }) → BufferGeometry
 //   merged(parts, material, name) → THREE.Mesh, or null for no parts
@@ -13,6 +12,11 @@
 //   disposeBuilt(root, K): the geometry under root, and the materials (and
 //     their maps) a builder made for itself (a sign, a hatch) rather than
 //     took from the kit, which the kit’s own dispose frees
+//   canopy(heightAt, { x: [x0, x1], z: [z0, z1], rise, cells }) → BufferGeometry: the
+//     body of a standing crop a field across, a rippled sheet of ripe ears
+//     `rise` over the land, gold with a field’s light and dark, its x0 edge
+//     (the lane’s, under the clumps there) dropping to the ground; faces up
+//     whichever way x runs (a few thousand triangles where clumps would be millions)
 //   C(hex) → THREE.Color
 
 import * as THREE from 'three';
@@ -98,4 +102,33 @@ export function disposeBuilt(root, K) {
       m.dispose();
     }
   });
+}
+
+export function canopy(heightAt, { x: [x0, x1], z: [z0, z1], rise = 0.95, cells = [34, 60] }) {
+  const [nx, nz] = cells;
+  const g = new THREE.PlaneGeometry(1, 1, nx, nz);
+  const pos = g.attributes.position;
+  const col = new Float32Array(pos.count * 3);
+  const c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    const u = pos.getX(i) + 0.5;
+    const v = pos.getY(i) + 0.5;
+    const x = x0 + (x1 - x0) * u;
+    const z = z0 + (z1 - z0) * v;
+    const ripple = Math.sin(x * 0.9 + z * 0.4) * 0.08 + Math.sin(z * 1.7 - x * 0.3) * 0.06 + (((i * 7919) % 13) / 13) * 0.12;
+    pos.setXYZ(i, x, heightAt(x, z) + (rise + ripple) * Math.min(1, u * 6), z);
+    c.setRGB(0.78, 0.62, 0.3).offsetHSL(0, 0, ripple * 0.6 - 0.04);
+    c.toArray(col, i * 3);
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g.deleteAttribute('uv');
+  // (laid with x running toward +x it faces down: its faces turned up)
+  if (x1 > x0) {
+    const idx = g.index.array;
+    for (let i = 0; i < idx.length; i += 3) [idx[i + 1], idx[i + 2]] = [idx[i + 2], idx[i + 1]];
+  }
+  g.computeVertexNormals();
+  const flat = g.toNonIndexed();
+  g.dispose();
+  return flat;
 }
