@@ -3,7 +3,7 @@
 // four sat round it, five Nazgûl on the skyline over the crown, the Ring on:
 // the five are pale kings in crowns and the Witch-king’s blade goes in, then
 // Aragorn with fire in both hands and the Riders burning, and Frodo on the
-// ground with Aragorn kneeling over him. This file only draws, each beat’s
+// ground with Aragorn kneeling over him by a brand stood in the earth. This file only draws, each beat’s
 // scene a function of where the walker is (`local`) and how long since the
 // beat began (`since[id]`), so walking back puts it back.
 //
@@ -24,6 +24,7 @@ const CLOSE = 9; // m they come on through the ring while the Ring is on
 const VISION = { at: 1, seconds: 12, rate: 2.5 }; // the ring beat’s (beats.js), as vision.js ramps it
 const BURN = 6; // s they burn before they are gone
 const SAT = ['frodo', 'sam', 'merry', 'pippin'];
+const STUCK = [-1.4, 145.8]; // the brand Aragorn stands in the verge by Frodo at the kingsfoil, its fire the one light
 const EMBER = new THREE.Color(0xff8a3a);
 const PALE = new THREE.Color(0xc8d4ff);
 const MARKS = Object.fromEntries(BEATS.map((b) => [b.id, b]));
@@ -70,8 +71,15 @@ export function build({ road, heightAt, rt, weather }) {
     group.add(t.group);
     return t;
   });
+  const stuck = buildTorch(town.K);
+  stuck.group.visible = false;
+  stuck.group.scale.setScalar(1.3);
+  stuck.group.position.set(STUCK[0], heightAt(...STUCK) - 0.2, STUCK[1]);
+  stuck.group.rotation.set(0.12, 0, -0.18);
+  group.add(stuck.group);
 
   let midges = null;
+  let stuckFire = null;
   let fire = null;
   let torches = [];
   let burning = [];
@@ -177,6 +185,22 @@ export function build({ road, heightAt, rt, weather }) {
       if (burn && !burning.length) burning = five.map(() => weather?.kind?.('fire', { count: 40, scale: 0.6 }) ?? null);
       if (!burn && burning.length) burning = stopAll(burning);
       burning.forEach((b, i) => b?.at(five[i].group.position.x, five[i].group.position.y + 0.8, five[i].group.position.z));
+      // the kingsfoil: a brand stood in the earth by them, the one light its fire
+      // (Sam’s is far behind in the dell), so Frodo and Aragorn are seen by it
+      stuck.group.visible = k != null;
+      if (k != null && !stuckFire) {
+        stuckFire = weather?.kind?.('fire', { count: 30, scale: 0.5 }) ?? null;
+        stuckFire?.at(STUCK[0], heightAt(...STUCK) + 0.75, STUCK[1]);
+      } else if (k == null && stuckFire) {
+        stuckFire.stop();
+        stuckFire = null;
+      }
+      if (k != null) {
+        fireLight.position.set(STUCK[0], heightAt(...STUCK) + 1.1, STUCK[1]);
+        fireLight.color.copy(EMBER);
+        fireLight.distance = 12;
+        fireLight.intensity = glow * 1.6;
+      }
     },
     // the four sat round the fire while the dell’s beat holds; Aragorn’s torches;
     // Frodo down and Aragorn knelt over him at the kingsfoil (each only on its mark:
@@ -199,13 +223,14 @@ export function build({ road, heightAt, rt, weather }) {
     dispose() {
       midges?.stop();
       fire?.stop();
+      stuckFire?.stop();
       stopAll(torches);
       stopAll(burning);
       props.dispose();
       kit.dispose();
       blade.geometry.dispose();
       bladeMat.dispose();
-      for (const b of brands) b.group.traverse((o) => o.geometry?.dispose());
+      for (const b of [...brands, stuck]) b.group.traverse((o) => o.geometry?.dispose());
       town.dispose();
       group.removeFromParent();
     },
