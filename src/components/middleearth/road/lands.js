@@ -4,11 +4,12 @@
 // in is built at once when it is not ready (an address, a jump); its
 // neighbours a few milliseconds a frame, so a seam never costs a frame.
 //
-//   createLands({ scene, house, tier, budget (ms a frame), wide (m across), scatter, sky, wind }) → {
+//   createLands({ scene, house, tier, budget (ms a frame), wide (m across), scatter, sky, wind, load }) → {
 //     at(index),            the ride is in stage `index`: re-place, build, drop
 //     step(),               a frame’s slice of the building
 //     follow(camera),       the grass round the camera, in each built stage’s frame
-//     life(dt),             the birds over the stages in sight (stages/life.js)
+//     life(dt),             the birds over the stages in sight and the herds at graze (stages/life.js;
+//                           the herds’ models through `load(url)`, none without it)
 //     water(dt, light),     the built stages’ rivers flowing, in the day’s light
 //     heightAt(x, z),       the ground under a point in the current frame
 //     ready(index), groupOf(index), landOf(index), watersOf(index), stats, dispose() }
@@ -24,13 +25,17 @@ import { groundJob } from './ground';
 import { soilOf } from './stages/soils';
 import { lifeOf } from './stages/life';
 import { createBirds } from './birds';
+import { createHerd } from './herds';
+import { distanceTo } from '../../../lib/land/paths.js';
 import { createWater } from './water';
 import { placements, rngOf, rowsFor } from './scatter';
 import { fieldAt } from '../../../lib/land/layers.js';
 
 const RES = { low: 4, mid: 2, high: 2, ultra: 2 };
 
-export function createLands({ scene, house = null, tier = 'high', budget = 6, wide = 1024, scatter = null, sky = null, wind = null } = {}) {
+const HERD_CLEAR = 7; // m: no beast stands nearer the road’s middle than this
+
+export function createLands({ scene, house = null, tier = 'high', budget = 6, wide = 1024, scatter = null, sky = null, wind = null, load = null } = {}) {
   const built = new Map(); // index → { land, ground, group }
   const jobs = new Map(); // index → generator
   let current = -1;
@@ -59,6 +64,11 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
     // its birds, their flock’s middle that high over the ground there
     const birds = lifeOf(id).birds.map((f) => createBirds({ ...f, at: [f.at[0], land.heightAt(f.at[0], f.at[2]) + f.at[1], f.at[2]] }));
     for (const b of birds) group.add(b.mesh);
+    // its herds at graze, off the road and out of the water (fewer on low)
+    const off = distanceTo(land.road, HERD_CLEAR);
+    const away = (x, z) => off(x, z) < HERD_CLEAR || Boolean(land.wet?.(x, z)) || (land.clear ?? []).some((c) => Math.hypot(x - c.at[0], z - c.at[1]) < c.r);
+    const herds = load ? (lifeOf(id).herds ?? []).map((h) => createHerd({ ...h, count: tier === 'low' ? Math.ceil(h.count / 2) : h.count, load, heightAt: land.heightAt, away })) : [];
+    for (const h of herds) group.add(h.group);
     // (a job let go here, its stage dropped before it finished: what it made goes with it)
     let done = false;
     try {
@@ -69,11 +79,12 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
         ground.dispose();
         for (const w of waters) w.dispose();
         for (const b of birds) b.dispose();
+        for (const h of herds) h.dispose();
       }
     }
     // what grows on it, placed once (its stage’s seed, so a stage is the same every ride)
     const items = scatter ? placements(rowsFor(id), land, land.road, rngOf(1000 + i), { tier }) : [];
-    return { land, ground, group, items, waters, birds };
+    return { land, ground, group, items, waters, birds, herds };
   }
   const finish = (i, value) => {
     const c = clocks.get(i) ?? { ms: 0, slices: 0, worst: 0 };
@@ -103,6 +114,7 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
       b.ground.dispose();
       for (const w of b.waters) w.dispose();
       for (const f of b.birds) f.dispose();
+      for (const h of b.herds) h.dispose();
       scatter?.free(STAGES[i].id);
       built.delete(i);
     }
@@ -157,7 +169,11 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
       }
     },
     life(dt) {
-      for (const b of built.values()) if (b.group.visible) for (const f of b.birds) f.update(dt);
+      for (const b of built.values()) {
+        if (!b.group.visible) continue;
+        for (const f of b.birds) f.update(dt);
+        for (const h of b.herds) h.tick(dt);
+      }
     },
     follow(camera) {
       for (const b of built.values()) {

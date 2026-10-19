@@ -110,7 +110,8 @@ export default {
     const sky = createSky({ vision: road.uVision });
     // one wind for the Road’s grass (lib/three/windNodes)
     const wind = createWind({ strength: 0.5 });
-    const lands = createLands({ scene, house, tier, scatter, sky, wind });
+    // (the herds’ beasts through the runtime’s asset cache: the farm pack’s, CC0)
+    const lands = createLands({ scene, house, tier, scatter, sky, wind, load: (url) => rt.assets?.gltf?.(url) });
     // the mountains on each stage’s horizon (stages/ranges.js)
     const mountains = createBackdrop({ road, tier, load: (url) => rt.assets?.gltf?.(url) });
     scene.add(mountains.mesh);

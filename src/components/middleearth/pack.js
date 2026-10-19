@@ -51,7 +51,10 @@ export const PACK = {
     '/kit/naturemega/plant.glb',
     '/kit/naturemega/rock.glb',
     '/kit/naturemega/twistedtree.glb',
+    '/kit/farm/cow.glb',
     '/kit/farm/horse.glb',
+    '/kit/farm/pig.glb',
+    '/kit/farm/sheep.glb',
   ], // single files
   globs: ['/cc0/galaxy/**', '/models/middleearth/cast/*', '/models/middleearth/fx/*'], // folders: `*` within a folder, `**` any depth
   computed: ['/models/sketchfab'], // folders the source only builds paths in: the files it takes are listed above

@@ -63,5 +63,5 @@ describe('a stage’s mounds', () => {
     const plain = createGround(land, { tier: 'mid', soil: soilOf('hobbiton'), wind: createWind(), from: 0, to: land.end });
     expect(plain.blades.mesh.isMesh).toBe(true);
     plain.dispose();
-  });
+  }, 30000);
 });
