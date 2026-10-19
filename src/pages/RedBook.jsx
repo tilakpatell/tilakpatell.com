@@ -72,6 +72,8 @@ export default function RedBook() {
   const said$ = useRef(null);
   const named = useRef(new Set());
   const fell = useRef(false);
+  const fellT = useRef(0);
+  const alive = useRef(true);
 
   const note = useCallback((text, bad = false) => setToast({ key: `${Date.now()}-${text}`, text, bad }), []);
   const play = useCallback((name) => sfx().then((s) => s[name]?.()).catch(() => {}), []);
@@ -98,7 +100,7 @@ export default function RedBook() {
       } else if (e.type === 'outside') {
         setSaid({ name: e.title ? `${e.name}, ${e.title}` : e.name, say: e.say });
         clip(e.clip);
-        if (e.kind === 'vala') {
+        if (e.kind === 'vala' && !named.current.has(e.id)) {
           named.current.add(e.id);
           if (named.current.size === VALAR.length) {
             note('All the Valar named, under the light of the One.');
@@ -134,7 +136,8 @@ export default function RedBook() {
       } else if (e.type === 'dropped') {
         fell.current = true;
         note('The Eye has seen you. The stone falls from your hands.', true);
-        setTimeout(() => {
+        clearTimeout(fellT.current);
+        fellT.current = setTimeout(() => {
           fell.current = false;
           setDark(null);
         }, 2200);
@@ -165,7 +168,15 @@ export default function RedBook() {
   useEffect(() => {
     if (back) setKeep({ ...(api()?.keep ?? { met: [], found: [], toys: [] }) });
   }, [back, api]);
-  useEffect(() => () => (said$.current?.stop?.(), hush()), []);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      clearTimeout(fellT.current);
+      said$.current?.stop?.();
+      hush();
+    };
+  }, []);
   const toggleMusic = () => {
     const on = !musicOn;
     setMusicOn(on);
@@ -187,10 +198,17 @@ export default function RedBook() {
     if (e.target.closest('.hud, button, input, a')) return;
     audioContext();
     press.current = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, moved: false, t: performance.now(), type: e.pointerType };
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* the pointer has gone already */
+    }
   };
   const onPointerMove = (e) => {
     const p = press.current;
-    if (p) {
+    // (a press let go where the stage never heard it)
+    if (p && e.pointerType === 'mouse' && e.buttons === 0) press.current = null;
+    else if (p) {
       if (!p.moved && Math.hypot(e.clientX - p.x, e.clientY - p.y) > MOVED) p.moved = true;
       if (p.moved) api()?.drag(e.clientX - p.lx, e.clientY - p.ly);
       p.lx = e.clientX;
@@ -233,6 +251,7 @@ export default function RedBook() {
     if (toy.clip) clip(toy.clip);
     else
       import('../lib/voiced').then((v) => {
+        if (!alive.current) return;
         said$.current?.stop?.();
         said$.current = v.sayVoiced(who, toy.say, { mode: 'cut' });
       });
@@ -380,7 +399,7 @@ export default function RedBook() {
 
   return (
     <div className="pt-[var(--nav-h)]">
-      <WorldHost world={{ host }} className="redbook-stage" data-worn={ring.worn || undefined} data-stone={stone.held || undefined} data-eye={(stone.held && stone.eye >= 1) || undefined} data-view={view} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerLeave={() => api()?.hover(null)}>
+      <WorldHost world={{ host }} className="redbook-stage" data-worn={ring.worn || undefined} data-stone={stone.held || undefined} data-eye={(stone.held && stone.eye >= 1) || undefined} data-view={view} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={() => (press.current = null)} onPointerLeave={() => api()?.hover(null)}>
         {status !== 'on' && <p className="redbook-loading">The candles are being lit…</p>}
         <div className="redbook-wraith" aria-hidden="true" />
         <div className="redbook-eye-veil" aria-hidden="true" style={{ '--seen': stone.seen }} />

@@ -115,7 +115,13 @@ export default {
     if (fit.bloom >= 1 && rt.gfx?.post) {
       try {
         post = rt.gfx.post([{ kind: 'render', scene, camera }, { kind: 'bloom', strength: LOOK.bloom.strength, radius: LOOK.bloom.radius, threshold: LOOK.bloom.threshold }, { kind: 'output' }]);
-        Promise.resolve(post.ready).then(() => (postReady = true), () => (post = null));
+        Promise.resolve(post.ready).then(
+          () => (postReady = true),
+          () => {
+            post?.dispose?.();
+            post = null;
+          },
+        );
       } catch {
         post = null;
       }
@@ -239,11 +245,12 @@ export default {
     const describe = (hit) => {
       const o = hit?.object;
       if (!o) return null;
+      // (the stone first: it can be taken up from the window too)
+      if (o.userData.stone) return { kind: 'stone', name: 'The Palantír' };
       if (view === 'window') {
         const p = study.outside.pick(hit);
         return p ? { ...p, name: p.item.name, title: p.item.title } : null;
       }
-      if (o.userData.stone) return { kind: 'stone', name: 'The Palantír' };
       if (o.userData.ring) return { kind: 'ring', name: 'The One Ring' };
       if (o.userData.cover) return { kind: 'cover', name: 'The Red Book' };
       if (o.userData.room) return { kind: 'room', id: o.userData.room, index: o.userData.index, name: roomThing(o.userData.room)?.name ?? null };
@@ -279,6 +286,7 @@ export default {
       look.yaw = 0;
       look.pitch = 0;
       music.page(v === 'window' ? 'havens' : (PAGES[bk.page]?.id ?? 'met'));
+      lit = null;
       if (v !== 'window') study.outside.light(null, false);
       else study.outside.wake();
       tell('view', { view });
@@ -287,6 +295,7 @@ export default {
       if (on && stone.rest > 0) return;
       if (on === wantStone) return;
       wantStone = on;
+      const dropsRing = on && ringHeld;
       if (on) {
         ringHeld = false;
         eyeCued = false;
@@ -294,6 +303,7 @@ export default {
       spoken = 0;
       music.cue(on ? 'stone-up' : 'stone-down');
       tell('stone', { held: on, eye: 0, seen: 0 });
+      if (dropsRing) ringState();
     };
     const playRoom = (d) => {
       const thing = roomThing(d.id);
@@ -458,7 +468,10 @@ export default {
       wants: () => true,
       anchor: () => camera.position.toArray(),
       lowerQuality(level) {
-        if (level >= 1) post = null;
+        if (level >= 1) {
+          post?.dispose?.();
+          post = null;
+        }
         study.lower(level);
       },
       update() {},
