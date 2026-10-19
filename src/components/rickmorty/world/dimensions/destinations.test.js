@@ -163,3 +163,27 @@ describe('a place’s set of things to find', () => {
     expect(sim.people.find((p) => p.id === 'nebulon').y).toBe(3.2);
   });
 });
+
+describe('a place that runs on power', () => {
+  it('carries its cells between its own spots, and only the game ticks its task', () => {
+    const powered = DESTINATIONS.filter((d) => d.power);
+    expect(powered.map((d) => d.id)).toEqual(['microverse']);
+    for (const d of powered) {
+      const spots = d.hotspots.map((h) => h.id);
+      expect(spots, d.id).toContain(d.power.from);
+      expect(spots, d.id).toContain(d.power.to);
+      expect(d.tasks.map((t) => t.id)).toContain(d.power.task);
+      expect(spots).toContain(d.goal);
+      expect(d.acts[d.power.from]).toBe('power-take');
+      expect(d.acts[d.power.to]).toBe('power-give');
+      expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(d.power.task);
+      expect(d.power.lost.length).toBeGreaterThan(10);
+    }
+  });
+  it('is Zeep’s cells to the gooble boxes, four of them on 25 seconds of charge', () => {
+    const micro = destinationById('microverse');
+    expect(micro.power).toMatchObject({ task: 'microverse', from: 'zeepcells', to: 'gooble', need: 4, s: 25, who: 'zeep' });
+    expect(micro.goal).toBe('zeepcells');
+    expect(micro.unlock).toEqual({ zeep: 'microverse' });
+  });
+});

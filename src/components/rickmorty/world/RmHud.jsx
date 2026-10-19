@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import RmEarnNote from '../RmEarnNote';
 import { PowerBar } from '../../universe/shared/powerBar';
 import { Link as RouterLink } from 'react-router-dom';
-import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiEmotionLaughLine, RiHeart3Line, RiHome4Line, RiListCheck2, RiShieldLine, RiShirtLine, RiToolsLine, RiTyphoonLine } from 'react-icons/ri';
+import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiEmotionLaughLine, RiHeart3Line, RiHome4Line, RiListCheck2, RiFlashlightLine, RiShieldLine, RiShirtLine, RiToolsLine, RiTyphoonLine } from 'react-icons/ri';
 import { EMOTES, wheelAngle } from '../../../lib/emote';
 import { Arms, Cluster, Prompt, Reticle, Stick, TouchButton, Vitals, createFlightCluster, reticleState } from '../../../runtime/hud';
 import { enemyShare, heartsToHealth } from './vitalsOf';
@@ -106,6 +106,8 @@ export default function RmHud({
   earned = null,
   onHangar = null,
   clusterRef = null,
+  chargeRef = null,
+  chargeLine = null,
   onShipFire = null,
   onWeapon = null,
   powersRef = null,
@@ -396,6 +398,14 @@ export default function RmHud({
           <Vitals label="Deflectors" icon={<RiShieldLine aria-hidden="true" />} className="rm-cluster-vitals" />
           <Arms className="rm-cluster-arms" keys={!touch} />
           {onPower && <PowerBar ship="cruiser" reduced={false} barRef={powersRef} onPress={onPower} placement="cluster" picks={powerPicks} carry={carry} />}
+        </Cluster>
+      )}
+      {/* in a place run on power: the world's charge and the cells carried, the same kit's cluster (the frame loop writes it) */}
+      {chargeRef && (
+        <Cluster rootRef={chargeRef} className="rm-cluster" label="The world’s charge">
+          <Vitals label="Charge" icon={<RiFlashlightLine aria-hidden="true" />} className="rm-cluster-vitals">
+            <span ref={chargeLine} className="hud-line" />
+          </Vitals>
         </Cluster>
       )}
       <div className="rm-hud rm-hud-bottom">

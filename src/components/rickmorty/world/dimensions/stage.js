@@ -10,7 +10,8 @@
 //
 // stage(kit, id, opts) → { R, d, A, cx, cz, P(dx, dz) (a spot in the world
 // from the place's middle), figure(kind, at), people(), done(light, update),
-// hunt(on), calm() } (and the NPC behaviour below: anyone placed with `ai`)
+// hunt(on), calm(), power({ glow }) } (and the NPC behaviour below: anyone
+// placed with `ai`; and a place run on power, below)
 
 import * as THREE from 'three';
 import { makeSky } from '../sky';
@@ -20,6 +21,7 @@ import { RIGGED } from '../../portal/meshyCast';
 import { destinationById } from './destinations';
 import { createNpcs } from '../npc';
 import { attend } from '../living';
+import { TUNING as POWER, newPower, powerNews, stepPower } from '../games/power';
 
 // a speckled paint for a floor or the ground
 export const specks = (base, specks, seed = 7, n = 1600, size = 2) => (g, w, h) => speckle(g, w, h, { base, specks, n, size, seed });
@@ -82,6 +84,42 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   // ── the people who do something (../npc.js): the place's brains ──
   const N = createNpcs({ id, area: A, solids: d.solids, words: { caught: d.caught, spotted: d.spotted } });
 
+  // ── a place run on power (../games/power.js, place.js's `power`): its run,
+  // stepped in the place's own update; its spots tell it (`power-take`,
+  // `power-give`); it says what's happened through the render state as the
+  // hunters do (won: the task done; lost: caught, back at the way in, which
+  // calms the place and starts it afresh). Idle once its task's done. The
+  // builder may hand it a glow to light with the charge (`power({ glow })`). ──
+  const pw = d.power;
+  const fresh = () => newPower({ need: pw.need, charge: pw.s });
+  let run = pw ? fresh() : null;
+  let asked = {};
+  let glow = null;
+  const powered = (t, dt, state) => {
+    const done = (state.done ?? []).includes(pw.task);
+    if (!done && !state.fading) {
+      run = stepPower(run, asked, dt);
+      asked = {};
+      const news = powerNews(run, { done, fading: false });
+      if (news === 'done') state.emit?.('done', { area: id, task: pw.task });
+      if (news === 'caught') {
+        run = { ...run, told: true };
+        state.emit?.('caught', { area: id, who: pw.who, text: pw.lost });
+      }
+    }
+    if (!glow) return;
+    const share = done || run.phase !== 'run' ? (run.phase === 'lost' ? 0 : 1) : run.charge / run.max;
+    const blink = run.phase === 'run' && share < POWER.low ? 0.65 + 0.35 * Math.sin(t * 10) : 1;
+    glow.material.color.setScalar(Math.max(0.15, share) * blink);
+  };
+  const calm = pw
+    ? () => {
+        N.calm();
+        run = fresh();
+        asked = {};
+      }
+    : N.calm;
+
   // one of the cast at (x, z) facing `face`, `h` tall (its own height if not
   // given), gone once `until` is done and till `after` is (`when(state)`, if
   // given, says instead); with `ai`, someone who does something (above);
@@ -126,6 +164,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       light,
       update: (t, dt, state, camera) => {
         sky?.update(t, camera);
+        if (run && state) powered(t, dt, state);
         update?.(t, dt, state, camera);
       },
     });
@@ -141,9 +180,18 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     // builder adds its own actions to these. `npcs`: where everyone is, for
     // the QA scripts; `fire`, `bodies` and `hit`: Morty's shot in a duel,
     // where it aims, what it can hit, and what it did when it landed.)
-    area.actions = { calm: N.calm, npcs: N.list, fire: N.fire, bodies: N.bodies, hit: N.hit };
+    // (a place run on power: its spots, where its run is for the HUD and the
+    // checks, and, in development, a way for the checks to set it)
+    area.actions = { calm, npcs: N.list, fire: N.fire, bodies: N.bodies, hit: N.hit };
+    if (run)
+      Object.assign(area.actions, {
+        'power-take': () => (asked.take = true),
+        'power-give': () => (asked.give = true),
+        power: () => ({ phase: run.phase, charge: run.charge, max: run.max, need: run.need, delivered: run.delivered, carrying: run.carrying }),
+        ...(import.meta.env.DEV && { setPower: (patch) => (run = { ...run, ...patch }) }),
+      });
     return area;
   };
-  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm: N.calm };
+  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null) };
 
 }
