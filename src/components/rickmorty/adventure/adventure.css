@@ -1,0 +1,14 @@
+/* The Rick and Morty adventure on C-137's HUD (world/world.css's tokens:
+   --rm-ink, --rm-glass, --rm-gold). */
+
+/* the objective line, when the step is on another page: a link. The HUD takes
+   no pointer events, so the link takes them back, and the whole chip is its
+   hit area (44 px on a coarse pointer, RULES UI 2). */
+.rm-objective:has(.rm-objective-link) { position: relative; }
+.rm-objective-link { pointer-events: auto; color: inherit; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
+.rm-objective-link::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
+.rm-objective-link:focus-visible { outline: none; }
+.rm-objective:has(.rm-objective-link:focus-visible) { outline: 3px solid var(--rm-gold); outline-offset: 2px; }
+@media (pointer: coarse) {
+  .rm-objective:has(.rm-objective-link) { min-height: 44px; }
+}

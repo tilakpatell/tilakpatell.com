@@ -16,6 +16,7 @@ import { MEMORIES, MEMORY_COLORS } from './rules';
 import { SAY } from './say';
 import { setShipVoice, shipVoiceOn, stopSpeaking } from './shipVoice';
 import { Title, Toast } from './WorldCards';
+import '../adventure/adventure.css';
 
 // Dimension C-137's HUD, over the stage (./RmWorld.jsx keeps the canvas, the
 // fades and the loading veil, and everything the HUD reads and does): the
@@ -36,6 +37,7 @@ export default function RmHud({
   planet,
   game,
   prog,
+  objective,
   duel,
   clock,
   placeName,
@@ -134,7 +136,15 @@ export default function RmHud({
           ) : (
             <p className="rm-objective" aria-live="polite">
               <span className="rm-swirl rm-swirl-sm" aria-hidden="true" />
-              <span>{prog.objective}</span>
+              <span>
+                {objective.to ? (
+                  <RouterLink to={objective.to} className="rm-objective-link">
+                    {objective.text}
+                  </RouterLink>
+                ) : (
+                  objective.text
+                )}
+              </span>
             </p>
           )}
           {duel && (

@@ -60,6 +60,8 @@ import {
 } from './rules';
 import { newFedShip, newShipVoice, onTail, shipSays, stepFedShip } from './ship';
 import { DESTINATIONS, destinationById, isPlanet, isWayHome, linkTarget, portalTarget, readDial, writeDial } from './dimensions/destinations';
+import { useAdventure } from '../adventure/useAdventure';
+import { markedTask, newsOf, objectiveLine } from '../adventure/hud';
 import { backLink, boundOf, inLine, planetOf, planetProgress, relabel } from './planetMode';
 import { dialledNote, isGunKey, portalName } from './portalGun';
 import Cards from './WorldCards';
@@ -324,6 +326,9 @@ export default function RmWorld({ start = null, onLeave = null }) {
     preloadVoiced();
     return stopVoiced;
   }, []);
+  // the adventure told what's happened (../adventure/), and what it says back
+  const { feed } = useAdventure();
+  const tell = useCallback((e) => newsOf(feed(e)).say.forEach(say), [feed, say]);
   const tellDone = useCallback((ids) => {
     const names = ids.map((id) => TASKS.find((t) => t.id === id)?.name).filter(Boolean);
     const p = progress(doneRef.current);
@@ -346,8 +351,9 @@ export default function RmWorld({ start = null, onLeave = null }) {
       api.current?.play('cheer', { hold: 0.2, layer: 'auto' });
       if (openRef.current) pending.current.push(id);
       else tellDone([id]);
+      tell({ type: 'task', id });
     },
-    [tellDone, earn],
+    [tellDone, earn, tell],
   );
 
   const openPlace = useCallback(
@@ -405,7 +411,7 @@ export default function RmWorld({ start = null, onLeave = null }) {
   return (
     <section className="rm-world" aria-labelledby="rm-world-title" data-mode={world ? '3d' : 'cards'}>
       {world ? (
-        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} />
+        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} tell={tell} />
       ) : (
         <Cards done={done} openPlace={openPlace} three={three} gl={gl} toast={toast} retry={() => setGl('loading')} planet={planet} />
       )}
@@ -420,7 +426,7 @@ export default function RmWorld({ start = null, onLeave = null }) {
 // hence the reach)
 const ROOM = { bound: boundOf(AREAS), motion: true };
 
-function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned }) {
+function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned, tell }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const touchRef = useRef(touch);
   touchRef.current = touch;
@@ -434,6 +440,11 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const prog = planet ? planetProgress(planet, done) : progress(done, { skip: PLANET_TASKS });
   const progRef = useRef(prog);
   progRef.current = prog;
+  // the story's objective first, and its task for the map's marker (C-137's; a planet keeps its own)
+  const story = useAdventure();
+  const objective = objectiveLine(story.objective, prog, { planet: !!planet });
+  const markRef = useRef(null);
+  markRef.current = planet ? prog.next : markedTask(story.state, prog.next);
   const doneRef = useRef(done);
   doneRef.current = done;
   const [hud, setHud] = useState({ area: (planet ?? START).area, room: null, flying: false, landing: false, near: null, moved: false, alt: 0, kmh: 0 });
@@ -788,6 +799,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         }
         stopRickall(); // (a trip anywhere is the end of Total Rickall)
         s.area = l.to;
+        tell({ type: 'enter', area: s.area });
         s.m = newMorty(l.arrive);
         // out of a portal, the camera stands off to one side, so the swirl
         // is beside him rather than between him and the camera
@@ -819,7 +831,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         setFade(null);
       }, climb ? CLIMB_MS : FADE_MS);
     },
-    [api, complete, unlock, later, stopRickall, planet, onLeave],
+    [api, complete, unlock, later, stopRickall, planet, onLeave, tell],
   );
   const board = useCallback(() => {
     const s = sim.current;
@@ -897,7 +909,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         s.mind = { x: s.m.x, z: s.m.z, i: 0, next: 0 };
         playMemory(0);
       }
-    } else if (n.id === 'dial') openDial();
+    } else if (n.id === 'dial') {
+      openDial();
+      tell({ type: 'use', id: 'dial' });
+    }
     else if (SAY[n.id]) {
       // (a place's clock starts only once what comes first is done: the
       // scanner finds nothing on him till he's taken the seeds)
@@ -914,6 +929,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         s.talkN += 1;
         s.talk = { id: who.id, n: s.talkN, hold: lineHold(line?.text), x: who.x, z: who.z, at: s.t, area: s.area };
         if (!who.ai?.hunt && !n.spot?.anim) api.current?.play('wave', { layer: 'upper' });
+        tell({ type: 'talk', who: who.id });
       }
       if (!early && n.spot?.anim) api.current?.play(n.spot.anim, n.spot.anim === 'dance' ? { loop: false, hold: 0.2 } : {});
       if (!early && ACTS[n.id]) api.current?.act(...ACTS[n.id]);
@@ -935,7 +951,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       }
       if (TALK_UNLOCK[n.id]) later(() => unlock(TALK_UNLOCK[n.id]), TALK_MS);
     }
-  }, [api, go, board, openPlace, openDial, say, complete, unlock, playMemory, shipTalk, later, startRickall, tellRickall]);
+  }, [api, go, board, openPlace, openDial, say, complete, unlock, playMemory, shipTalk, later, startRickall, tellRickall, tell]);
   // what a place's people do to Morty (stage.js's NPC behaviour, through the
   // render state's emit): caught, he's put back at the way in with what the
   // catcher said, and the place settles; a bark is a line said in passing
@@ -1586,7 +1602,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     if (++s.frame % 3 === 0) {
       // the place's people, for the map (stage.js's NPC layer says where they are)
       s.npcs = api.current?.act(s.area, 'npcs') ?? null;
-      drawMap(map.current, s, goalOf(progRef.current.next, s, planet), s.t);
+      drawMap(map.current, s, goalOf(markRef.current, s, planet), s.t);
     }
   };
   const tickRef = useRef(tick);
@@ -1729,6 +1745,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         planet={planet}
         game={game}
         prog={prog}
+        objective={objective}
         duel={duel}
         clock={clock}
         placeName={placeName}

@@ -15,6 +15,7 @@
 // the first world takes a while to build.
 import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync } from 'node:fs';
+import { EPISODES } from '../src/components/rickmorty/adventure/episodes.js';
 
 const BASE = process.env.BASE ?? 'http://127.0.0.1:5197';
 const OUT = process.env.OUT ?? null;
@@ -55,8 +56,34 @@ async function use(page, id) {
   await page.evaluate(() => window.__C137__.act());
 }
 const place = (page, id) => page.locator(`.rm-place[data-place="${id}"]`);
+const story = (page) => page.evaluate(() => window.__RMSTORY__.get());
+// the objective line reads `text` (it's the story's, or the checklist's)
+async function reads(page, text) {
+  await page.waitForFunction((t) => document.querySelector('.rm-hud .rm-objective')?.textContent.trim() === t, text, { timeout: 10000 }).catch(async () => {
+    throw new Error(`the objective reads “${await page.locator('.rm-hud .rm-objective').first().textContent()}”, not “${text}”`);
+  });
+}
+const WIPED = EPISODES[0];
 
 const SCENARIOS = {
+  // a new visitor plays episode 1 from the street to Customs and back
+  async 'episode-1'(page) {
+    await c137(page);
+    check((await story(page)).freeRoam === false, 'a new visitor started on free roam');
+    await reads(page, WIPED.steps[0].text);
+    for (const [i, { id }] of WIPED.steps.slice(0, 3).entries()) {
+      await page.evaluate((id) => window.__C137__.complete(id), id);
+      await reads(page, WIPED.steps[i + 1].text);
+      const s = await story(page);
+      check(s.episode === 0 && s.step === i + 1, `after ${id} the story is at ${s.episode}.${s.step}`);
+    }
+    // the last step: out of Customs with the seeds; the episode's closing line, and (only episode 1 built) every place open
+    await page.evaluate(() => window.__C137__.complete('customs'));
+    await page.locator('.rm-toast', { hasText: WIPED.outro[0][1] }).waitFor({ timeout: 10000 });
+    check((await story(page)).episode === 1, 'episode 1 didn’t end');
+    for (const id of ['annex', 'vat', 'citadel', 'squanch', 'evilrick']) check(await page.evaluate((id) => window.__RMSTORY__.dialOpen(id), id), `${id} isn’t open after episode 1`);
+    await reads(page, 'Go into the Smith house and put interdimensional cable on the TV.');
+  },
   // C-137's toys tick their task when they're played, not when they open
   async toys(page) {
     await c137(page);
