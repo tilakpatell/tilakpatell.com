@@ -208,7 +208,7 @@ export const STAGES = [
     mode: 'boat',
     // the Great River down the road between rising walls of rock, the
     // Argonath over it, then the lake opening out: the river swings left
-    // round Parth Galen’s shore (the road on land from z 95 to 145); Amon
+    // round Parth Galen’s shore (the road on land from z 95 to 138); Amon
     // Hen’s wooded hill on the
     // right, Tol Brandir in the lake ahead; at the end it runs across the
     // road, and the boat crosses it to the east bank (so the river is gone
@@ -225,7 +225,7 @@ export const STAGES = [
           { type: 'mountains', scale: 140, height: 110, from: 240, to: 420 },
         ],
       },
-      rivers: [{ points: [[0, 0, -40], [0, 0, 80], [24, 0, 108], [26, 0, 130], [6, 0, 148], [-60, 0, 148], [-300, 0, 134]], depth: 2.4, width: 30, bank: 4 }],
+      rivers: [{ points: [[0, 0, -40], [0, 0, 80], [24, 0, 108], [26, 0, 130], [8, 0, 148], [-60, 0, 148], [-300, 0, 134]], depth: 2.4, width: 30, bank: 4 }],
       // (the Seat on its hill’s shoulder level)
       flats: [{ at: [-7, 118], r: 7, edge: 6 }],
       clear: [{ at: [-7, 118], r: 7 }],
@@ -235,8 +235,8 @@ export const STAGES = [
     modes: [
       { at: 100, mode: 'walk' },
       // (a metre before the breaking’s mark: the clock holds a hair short of it)
-      { at: 145, mode: 'boat' },
-      { at: 160, mode: 'walk' },
+      { at: 139, mode: 'boat' },
+      { at: 166, mode: 'walk' },
     ],
     place: 'argonath',
   },
