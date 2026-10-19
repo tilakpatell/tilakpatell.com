@@ -144,6 +144,13 @@ export function useStage(module, { enabled, id, forced = false, options = null, 
   hostOf.current = world.host;
   const rt = world.rt;
   const mine = rt?.current?.module === module;
+  // (`mine` reads the runtime, which React doesn't see: a mount made while
+  // another world was on can run loading, ready and on before the page
+  // renders, so its status ends as it began and React drops the render that
+  // would find the world now ours. A count of the runtime's changes makes
+  // that render count.)
+  const [, heard] = useState(0);
+  useEffect(() => rt?.on(() => heard((n) => n + 1)), [rt]);
   useEffect(() => {
     if (world.status === 'failed' && rt?.failure?.world === module.id) setDown('failed');
   }, [world.status, rt, module]);
