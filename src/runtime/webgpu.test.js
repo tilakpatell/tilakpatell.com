@@ -5,7 +5,14 @@ import * as THREE from 'three';
 const made = [];
 let fallBack = false; // (three's renderer, finding no adapter, on its WebGL 2 backend)
 let software = false; // (a fallback adapter: WebGPU drawn on the CPU)
+// (three's observer of what changed between draws: the runtime teaches it textures' places, ./textureWatch.js)
+class NodeMaterialObserver {
+  equals() {
+    return true;
+  }
+}
 vi.mock('three/webgpu', () => ({
+  NodeMaterialObserver,
   WebGPURenderer: class {
     constructor(options) {
       this.options = options;
@@ -165,6 +172,18 @@ describe('createWebGPU', () => {
     expect(gfx.lost).toBe(true);
     gfx.dispose();
     expect(canvas.removeEventListener).toHaveBeenCalledWith('webglcontextlost', handler);
+  });
+});
+
+describe('the node renderer’s observer', () => {
+  it('is taught textures’ places when a renderer is made', async () => {
+    await createWebGPU(fakeCanvas());
+    const map = new THREE.Texture();
+    const ro = { material: new THREE.MeshBasicMaterial({ map }) };
+    const o = new NodeMaterialObserver();
+    o.equals(ro);
+    map.offset.x = 0.5;
+    expect(o.equals(ro)).toBe(false);
   });
 });
 

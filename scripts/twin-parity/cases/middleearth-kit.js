@@ -58,7 +58,7 @@ const sky =
     camera.lookAt(10, 3, -6);
   };
 const particles =
-  (K, ramp, additive) =>
+  (K, ramp, additive, late = false) =>
   ({ scene, camera }) => {
     const p = K.createParticles(64, {
       ramp: K[ramp],
@@ -68,14 +68,19 @@ const particles =
       swirl: 0.4,
     });
     scene.add(p.mesh);
-    seeded(() => {
-      for (let i = 0; i < 40; i++) {
-        p.emit((Math.random() - 0.5) * 3, Math.random() * 0.5, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 0.4, 0.8 + Math.random(), (Math.random() - 0.5) * 0.4, 1.5 + Math.random(), 0.6, 1.4, 1);
-        p.step(0.03);
-      }
-    });
+    const fill = () =>
+      seeded(() => {
+        for (let i = 0; i < 40; i++) {
+          p.emit((Math.random() - 0.5) * 3, Math.random() * 0.5, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 0.4, 0.8 + Math.random(), (Math.random() - 0.5) * 0.4, 1.5 + Math.random(), 0.6, 1.4, 1);
+          p.step(0.03);
+        }
+      });
     camera.position.set(0, 1.5, 5);
     camera.lookAt(0, 1, 0);
+    // (`late`: drawn empty a frame first, filled after, as a scene's pool is)
+    if (!late) return fill();
+    let done = false;
+    return { tick: (i) => i > 0 && !done && ((done = true), fill()) };
   };
 
 export default {
@@ -86,6 +91,10 @@ export default {
   'middleearth:kit:fire': {
     node: particles(KN, 'FIRE', true),
     classic: particles(KO, 'FIRE', true),
+  },
+  'middleearth:kit:smoke:late': {
+    node: particles(KN, 'SMOKE', false, true),
+    classic: particles(KO, 'SMOKE', false, true),
   },
   'middleearth:kit:smoke': {
     node: particles(KN, 'SMOKE', false),
