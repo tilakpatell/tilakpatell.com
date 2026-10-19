@@ -118,7 +118,7 @@ export default function TideHud({ hud, chart, ui, callout, phase, touch, picking
       )}
 
       <div className="g3-tools">
-        <PlayersChip className="dt-players" count={trav.count} on={trav.on} onJoin={trav.join} available={trav.available} lore={LORE} />
+        <PlayersChip className="dt-players" count={trav.count} allies={trav.allies} on={trav.on} onJoin={trav.join} available={trav.available} lore={LORE} />
         {running && (
           <button type="button" className="g3-tool" onClick={onPause} aria-label="Pause">
             <RiPauseLine aria-hidden="true" />

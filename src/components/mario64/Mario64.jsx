@@ -5,7 +5,8 @@ import { audioContext } from '../../lib/audio';
 import { useMediaQuery } from '../../lib/hooks';
 import { useVoiced } from '../../lib/useVoiced';
 import { WorldHost, useWorld } from '../../runtime';
-import { Exit, Stick, TouchButton } from '../../runtime/hud';
+import { Exit, PlayersChip, Stick, TouchButton } from '../../runtime/hud';
+import { useTravellers } from '../middleearth/shared/travellers';
 import GuideCue from '../guide/GuideCue';
 import { KeyTable } from '../guide/KeyTable';
 import { TRIBUTE_KEYS, TRIBUTE_PAD, TRIBUTE_TOUCH } from '../guide/mario64';
@@ -20,6 +21,11 @@ import './mario64.css';
 // touch pad (a stick, A, B, Z, the camera) on phones.
 //
 // <Mario64 mode="page" | "overlay" onExit />
+
+// the room for the others online: Bob-omb Battlefield and the grounds reach
+// some 76 m from their middles, and Mario jumps (his height goes too)
+const ROOM = { bound: 90, motion: true };
+const LORE = { off: 'Go online, and see everyone else in the area you’re in as a pale Mario, with their name over him', on: 'Everyone else online in the area you’re in, as pale Marios: nothing passes between you but where each of you is' };
 
 const LOOKS = [
   ['modern', 'Modern'],
@@ -88,6 +94,14 @@ export default function Mario64({ mode = 'page', onExit = null }) {
   );
   const { host, status, rt } = useWorld(module, { props, onEvent });
   const api = useCallback(() => (rt?.current?.module === module ? rt.current.world : null), [rt]);
+  // the others online in the area you're in (middleearth/towns/useTravellers),
+  // as pale Marios: the world sends where you are and draws them (./online.js),
+  // through the link it's handed; people jump, and the grounds reach some 76 m
+  const trav = useTravellers('mario64', status === 'on', ROOM);
+  const travRef = trav.ref;
+  useEffect(() => {
+    if (status === 'on') api()?.online?.(() => travRef.current);
+  }, [status, api, travRef]);
 
   // the first touch or key wakes the audio
   const wake = () => audioContext();
@@ -169,6 +183,7 @@ export default function Mario64({ mode = 'page', onExit = null }) {
                 <span className="m64-x">×</span>
                 <span>{hud.stars}</span>
               </div>
+              <PlayersChip className="m64-players" count={trav.count} allies={trav.allies} on={trav.on} onJoin={trav.join} available={trav.available} noun="Marios" lore={LORE} />
               {course && hud.reds > 0 && (
                 <div className="m64-reds" aria-label={`${hud.reds} of 8 red coins`}>
                   {Array.from({ length: 8 }, (_, i) => (

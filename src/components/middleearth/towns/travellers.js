@@ -9,10 +9,10 @@
 // and then, and where they are a few times a second while walking (once a
 // second standing still); anyone not heard from in a while is gone.
 //
-// createTravellers({ town, name, bound, motion, hidden }) → { status, list(),
+// createTravellers({ town, name, bound, motion, hidden, ally }) → { status, list(),
 // pose(h, { inside, ring, ride, area, emote, move }, { force }), rename(name), leave() };
 // list() gives [{ id, name, x, z, face, moving, inside, ring, ride, area, emote,
-// motion, at }] (and speed and y, with `motion`). `bound` is how far from the
+// motion, at, ally }] (and speed and y, with `motion`). `bound` is how far from the
 // middle a town reaches, in metres; `force` sends a pose now (going indoors,
 // say), whatever the pace. A world that draws you on the animation layer says
 // what you're doing and how you move (lib/emote.js): `emote` its
@@ -27,7 +27,10 @@
 // blocked: a traveller's id is their id there too, nostr.js's visitKeys),
 // and it's asked before anyone's given a place, so the blocked don't take
 // any of a town's MAX (one blocked after they came gives theirs up as soon
-// as they're next heard).
+// as they're next heard). `ally(id)` is true of an ally of yours (the
+// roster's, allies.js: the same key here), and each of list()'s rows says
+// so as `ally`, so a world can draw your allies apart from strangers and
+// count them on its chip; nothing else about an ally differs.
 
 import { createLimiter } from '../../universe/online/protocol';
 import { cleanName } from '../../universe/online/names';
@@ -94,7 +97,7 @@ export function readStep(data, bound = 200) {
   return step;
 }
 
-export function createTravellers({ town, name, load = loadRoom, now = () => Date.now(), bound = 200, motion = false, hidden = () => false }) {
+export function createTravellers({ town, name, load = loadRoom, now = () => Date.now(), bound = 200, motion = false, hidden = () => false, ally = () => false }) {
   const peers = new Map();
   const limits = new Map();
   let me = { name: cleanName(name) ?? 'Traveller' };
@@ -181,10 +184,18 @@ export function createTravellers({ town, name, load = loadRoom, now = () => Date
     get status() {
       return status;
     },
-    // the travellers here now, walking the town (not indoors)
+    // the travellers here now, walking the town (not indoors), each saying
+    // whether they're an ally of yours (asked now: an alliance made while
+    // you're both here shows at once)
     list() {
       sweep();
-      return [...peers.values()].filter((p) => p.placed && (p.area ?? null) === area && !hidden(p.id));
+      const out = [];
+      for (const p of peers.values()) {
+        if (!p.placed || (p.area ?? null) !== area || hidden(p.id)) continue;
+        p.ally = Boolean(ally(p.id));
+        out.push(p);
+      }
+      return out;
     },
     // where you are: sent often while you walk, now and then when you don't
     pose(h, flags = {}, { force = false } = {}) {

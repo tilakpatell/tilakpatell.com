@@ -59,6 +59,12 @@ describe('the players chip', () => {
     expect(text(<PlayersChip count={3} noun="drivers" />)).toBe('3 others here');
     expect(text(<PlayersChip count={1} />)).toBe('1 other here');
   });
+  it('counts your allies among them, and says so on the chip', () => {
+    expect(text(<PlayersChip count={3} allies={1} />)).toBe('3 others here · 1 ally');
+    expect(text(<PlayersChip count={1} allies={1} />)).toBe('1 other here · your ally');
+    expect(renderToStaticMarkup(<PlayersChip count={3} allies={1} />)).toContain('data-allies="1"');
+    expect(renderToStaticMarkup(<PlayersChip count={3} />)).not.toContain('data-allies');
+  });
   it('is nothing where there’s no going online', () => {
     expect(renderToStaticMarkup(<PlayersChip available={false} />)).toBe('');
   });

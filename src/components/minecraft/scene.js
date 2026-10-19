@@ -3,9 +3,11 @@
 // array (scene/atlasTexture.js), under the sky (scene/sky.js), seen from
 // the player's eyes at 70° as the game's default. sync(g, alpha) puts the
 // camera between the last two ticks, so it's smooth at any frame rate;
-// under water the fog closes in blue, as the game's does.
+// under water the fog closes in blue, as the game's does. The others online
+// in your world (sync's `travellers`, ../rules/online.js) walk it as pale
+// Steves (scene/others.js).
 //
-// createScene(rt, { manifest }) → { ready, camera, chunks, sync,
+// createScene(rt, { manifest }) → { ready, camera, chunks, sync(g, alpha, travellers?),
 //   render(renderer), resize, setRenderDistance, dispose }
 
 import * as THREE from 'three';
@@ -20,6 +22,9 @@ import { createDrops } from './scene/drops.js';
 import { createIcons } from './scene/icons.js';
 import { TINT_COLOURS, blockMaterial, setFrames } from './scene/nodes.js';
 import { createSky } from './scene/sky.js';
+import { ghostPaint, makeSteve, stride } from './scene/others.js';
+import { ABOVE } from './rules/online.js';
+import { createGhostsOf } from '../middleearth/shared/ghostsOf';
 
 const WATER = byName.get('water').id;
 const UNDERWATER = new THREE.Vector3(0.02, 0.06, 0.24);
@@ -35,6 +40,12 @@ export function createScene(rt, { manifest }) {
   let sky = null;
   let cursor = null;
   let drops = null;
+  // the others online here: on the world's own ground where they stand, put
+  // back to the height over it they sent (the generator's, the same on the seed)
+  let ground = null;
+  const others = createGhostsOf({ paint: ghostPaint, height: (x, z) => (ground ? ABOVE(ground, x, z) : 0), make: makeSteve, animate: stride, tag: 0.3, halo: 0.9 });
+  scene.add(others.group);
+  let othersAt = null;
 
   const ready = (async () => {
     const map = (name) => pixels(`${MC}sprites/${name}.webp`).catch(() => null);
@@ -78,8 +89,13 @@ export function createScene(rt, { manifest }) {
     }
   }
 
-  function sync(g, alpha) {
+  function sync(g, alpha, travellers = []) {
     const p = g.player;
+    ground = g.gen?.height ?? null;
+    // (their clock in seconds, from the game's ticks)
+    const t = (g.ticks + alpha) / 20;
+    others.update(travellers, t, othersAt === null ? 0 : Math.max(0, Math.min(0.25, t - othersAt)));
+    othersAt = t;
     const prev = g.prev ?? p;
     const eye = p.sneak ? EYE.sneak : EYE.stand;
     camera.position.set(prev.x + (p.x - prev.x) * alpha, prev.y + (p.y - prev.y) * alpha + eye, prev.z + (p.z - prev.z) * alpha);
@@ -125,6 +141,7 @@ export function createScene(rt, { manifest }) {
       camera.updateProjectionMatrix();
     },
     dispose() {
+      others.dispose();
       chunks?.dispose();
       sky?.dispose();
       cursor?.dispose();
