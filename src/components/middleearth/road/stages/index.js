@@ -219,15 +219,16 @@ export const STAGES = [
         relief: [
           { type: 'swell', scale: 180, height: 6 },
           { type: 'ridges', scale: 90, height: 10, octaves: 4 },
-          { type: 'island', at: [-60, 40], r: 46, height: 60, ragged: 0.4 },
-          { type: 'island', at: [60, 40], r: 46, height: 60, ragged: 0.4 },
+          { type: 'island', at: [-60, 24], r: 44, height: 56, ragged: 0.4 },
+          { type: 'island', at: [60, 24], r: 44, height: 56, ragged: 0.4 },
           { type: 'island', at: [-40, 120], r: 40, height: 32 },
           { type: 'mountains', scale: 140, height: 110, from: 240, to: 420 },
         ],
       },
       rivers: [{ points: [[0, 0, -40], [0, 0, 80], [24, 0, 108], [26, 0, 130], [6, 0, 148], [-60, 0, 148], [-300, 0, 134]], depth: 2.4, width: 30, bank: 4 }],
       // (the Seat on its hill’s shoulder level)
-      flats: [{ at: [-4, 118], r: 6, edge: 6 }],
+      flats: [{ at: [-7, 118], r: 7, edge: 6 }],
+      clear: [{ at: [-7, 118], r: 7 }],
       paint: { greens: [0x4a5838, 0x66704a, 0x8a8a64], dirt: 0x8a7c62 },
     },
     // (ashore at Parth Galen for the Seat and the horn, the boat across to the east bank, and on foot)

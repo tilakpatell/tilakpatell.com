@@ -36,6 +36,8 @@ const SCENES = {
   rivendell: () => import('./stages/rivendell/index.js'),
   caradhras: () => import('./stages/caradhras/index.js'),
   moria: () => import('./stages/moria/index.js'),
+  lorien: () => import('./stages/lorien/index.js'),
+  anduin: () => import('./stages/anduin/index.js'),
 };
 
 export function createScenes({ rt, road, lands, weather, ambience, tier, sky = null }) {

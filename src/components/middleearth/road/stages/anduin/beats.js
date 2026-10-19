@@ -15,8 +15,8 @@ export const BEATS = [
   { id: 'argonath', kind: 'argonath', at: 46, hold: 12, rig: 'crane', reach: 16, params: { seconds: 10, top: 8, lookAt: [0, 40, 70] } },
   // Nen Hithoel opening out: Tol Brandir, the roar of Rauros
   { id: 'nenhithoel', kind: 'nenhithoel', at: 78, hold: 0, rig: 'wide', reach: 18, params: { at: [-10, 2.6, 70], lookAt: [6, 8, 120], above: true } },
-  // ashore at Parth Galen, up to the Seat: the vision across the sky
-  { id: 'seat', kind: 'seat', at: 112, hold: 12, rig: 'seat', cut: 0, reach: 10, params: { at: [2.6, 2.2, 108], lookAt: [-1, 2.6, 130], above: true }, fx: [{ kind: 'vision', at: 2, seconds: 8 }] },
+  // ashore at Parth Galen, up to the Seat: the vision across the western sky, behind Frodo
+  { id: 'seat', kind: 'seat', at: 112, hold: 12, rig: 'seat', cut: 0, reach: 10, params: { at: [-1.5, 3.4, 114], lookAt: [-60, 30, 124], above: true }, fx: [{ kind: 'vision', at: 2, seconds: 8 }] },
   // three notes of the horn, the Uruks through the trees
   { id: 'horn', kind: 'horn', at: 130, hold: 8, rig: 'follow', reach: 12, clip: 'meatsBack' },
   // Frodo to the boat, Sam into the water after him, hauled in
