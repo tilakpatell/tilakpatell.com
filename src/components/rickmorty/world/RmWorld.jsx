@@ -110,7 +110,7 @@ import { stepRmLockOn } from './rmLockOn';
 
 const Roy = lazy(() => import('./roy/Roy').catch(() => ({ default: RoyDown })));
 const Sewer = lazy(() => import('./sewer/Sewer').catch(() => ({ default: RoyDown })));
-const Cabinet = lazy(() => import('./games/Cabinet').catch(() => ({ default: RoyDown })));
+const Cabinet = lazy(() => import('./games/Cabinet.jsx').catch(() => ({ default: RoyDown })));
 const sound = (name) =>
   import('../../games/gameAudio')
     .then((g) => g[name]?.())

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import Cabinet from './Cabinet';
+import Cabinet from './Cabinet.jsx';
 
 describe('Plumbus Smash’s cabinet', () => {
   it('opens on its card: the game, the cabinet’s own line, Rick’s bet and the keys', () => {
