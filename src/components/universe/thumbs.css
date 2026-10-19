@@ -131,13 +131,16 @@
     margin-inline: auto;
     translate: none;
   }
-  /* the first-flight hint (and the keys on foot): low in the open part left
-     of the grid, where the drag it asks for goes */
+  /* the first-flight hint (and the keys on foot): over the grid, a row over
+     what the right thumb may press next (a tablet's corner column leaves too
+     little room beside it; on a phone it goes low in the open part, where
+     the drag it asks for goes: below) */
   :root .universe-map[data-ship]:not(.galaxy-map) .universe-hint {
-    right: calc(var(--thumbs-r) + var(--thumbs-w, 0px) + 12px);
-    bottom: var(--thumbs-b);
+    left: auto;
+    right: var(--thumbs-r);
+    bottom: calc(var(--thumbs-over) + 52px);
     width: fit-content;
-    max-width: 30rem;
+    max-width: min(30rem, calc(100% - var(--thumbs-r) - var(--hud-edge)));
     margin: 0;
     translate: none;
     text-align: left;
@@ -173,19 +176,13 @@
   .universe-hint-turn { display: inline; }
   .universe-hint-more { display: none; }
 }
-/* (the narrowest rows along the top, a 320 phone upright or a small one on
-   its side beside the panel's bar: multiplayer's pill its dot and icon,
-   its name still read) */
-@media (pointer: coarse) and (max-width: 359px), (pointer: coarse) and (max-height: 500px) and (max-width: 639px) {
-  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) .universe-online:not([data-floating]) .universe-online-short { display: none; }
-}
 /* (a phone on its side: the panel at the side, never a sheet, and the
    narrower of it; the grid at the very corner while it's put away) */
 @media (pointer: coarse) and (max-height: 500px) {
   :root .universe-page:not(.galaxy-page) {
     --panel-w: min(340px, 42vw);
     --sheet-h: 0px;
-    --thumbs-r: calc(var(--panel-w) + 2 * var(--hud-edge));
+    --thumbs-r: calc(var(--panel-w) + var(--hud-edge) + 12px);
     --thumbs-b: var(--hud-pad-b);
   }
   :root .universe-page:not(.galaxy-page)[data-tucked] { --panel-w: 0px; --thumbs-r: var(--hud-edge); }
@@ -203,7 +200,7 @@
   :root .universe-page:not(.galaxy-page) .universe-panel[data-tucked] { top: calc(var(--nav-h) + 8px); width: var(--tab-w); height: 44px; padding-bottom: 0; }
   :root .universe-page:not(.galaxy-page) .universe-untuck { padding-right: 1rem; }
   :root .universe-page:not(.galaxy-page) :is(.universe-flat, .loading-veil.universe-loading) { right: calc(var(--panel-w) + 24px); bottom: 0; }
-  :root .universe-page:not(.galaxy-page) .universe-comms { left: var(--hud-edge); right: calc(var(--panel-w) + 2 * var(--hud-edge)); }
+  :root .universe-page:not(.galaxy-page) .universe-comms { left: var(--hud-edge); right: calc(var(--panel-w) + var(--hud-edge) + 12px); }
   /* with a ship: the whole screen. The site's bar steps aside (the panel,
      or its bar, has the ways back to the page: the classic site, the
      guide, the nav map), and the panel's bar names nothing but itself */
@@ -263,20 +260,43 @@
     width: min(340px, calc(100vw - 2 * var(--hud-edge)));
     max-height: calc(100svh - var(--hud-top) - var(--sheet-h, 0px) - 12px);
   }
-  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) .universe-online:not([data-floating]) .universe-online-feed { top: calc(100% + 8px); bottom: auto; }
+  /* (its news under the crew's line, from the screen's edge) */
+  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) .universe-online:not([data-floating]) .universe-online-feed {
+    top: calc(100% + 8px + var(--comms-h, 0px));
+    bottom: auto;
+    left: calc(-1 * (var(--vitals-w) + 8px));
+    max-width: calc(100vw - 2 * var(--hud-edge));
+  }
+  /* under the row, one under another: the crew's line, the law, then the
+     tour's pill or the place's name, then the siege */
   :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) .universe-comms { top: var(--hud-top); }
-  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) :is(.universe-tour, .universe-wanted) { top: calc(var(--hud-top) + var(--comms-h, 0px)); bottom: auto; }
-  :root .universe-map[data-ship]:not(.galaxy-map) .universe-siege { top: calc(var(--hud-top) + var(--comms-h, 0px) + 36px); }
-  :root .universe-map[data-ship]:not(.galaxy-map) .universe-arrive { top: calc(var(--hud-top) + var(--comms-h, 0px)); }
-  :root .universe-map[data-ship]:not(.galaxy-map) .universe-hint { left: var(--hud-edge); }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-wanted { top: calc(var(--hud-top) + var(--comms-h, 0px)); }
+  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) .universe-tour { top: calc(var(--hud-top) + var(--comms-h, 0px) + 36px); bottom: auto; }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-arrive { top: calc(var(--hud-top) + var(--comms-h, 0px) + 36px); }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-siege { top: calc(var(--hud-top) + var(--comms-h, 0px) + 84px); }
+  /* the first-flight hint: low in the open part left of the grid */
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-hint {
+    left: var(--hud-edge);
+    right: calc(var(--thumbs-r) + var(--thumbs-w, 0px) + 12px);
+    bottom: var(--thumbs-b);
+    max-width: 30rem;
+  }
 }
 /* a phone on its side: the tools left of the panel (or its bar); the
    crew's line shorter (two lines at most: the comms box keeps the rest of
    the screen for the flying), the law over the open part, and the height's
    scale clear of a notch */
 @media (pointer: coarse) and (max-height: 500px) {
-  :root .universe-map[data-ship]:not(.galaxy-map) .universe-tools { right: calc(var(--panel-w) + 2 * var(--hud-edge)); }
-  :root .universe-page:not(.galaxy-page)[data-tucked] .universe-map[data-ship]:not(.galaxy-map) .universe-tools { right: calc(var(--tab-w) + 2 * var(--hud-edge)); }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-tools { right: calc(var(--panel-w) + var(--hud-edge) + 12px); }
+  :root .universe-page:not(.galaxy-page)[data-tucked] .universe-map[data-ship]:not(.galaxy-map) .universe-tools { right: calc(var(--tab-w) + var(--hud-edge) + 12px); }
+  /* (multiplayer's pill its short word, as a phone's: the row's tight) */
+  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) .universe-online:not([data-floating]) .universe-online-full { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) .universe-online:not([data-floating]) .universe-online-short { display: inline; }
+  /* (the tour's pill over the open part left of the grid; the place's name
+     and the siege over the part the panel leaves) */
+  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) .universe-tour { left: var(--hud-edge); right: calc(var(--thumbs-r) + var(--thumbs-w, 0px) + 12px); }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-arrive { left: var(--hud-edge); right: calc(var(--panel-w) + var(--hud-edge) + 12px); max-width: none; translate: none; }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-siege { max-width: calc(100% - var(--panel-w) - 2 * var(--hud-edge) - 12px); translate: calc(-50% - (var(--panel-w) + var(--hud-edge)) / 2) 0; }
   :root .universe-page:not(.galaxy-page) .universe-line { max-width: 440px; padding: 0.4rem 0.75rem 0.4rem 0.4rem; gap: 0.5rem; }
   :root .universe-page:not(.galaxy-page) .universe-face { width: 30px; height: 30px; }
   :root .universe-page:not(.galaxy-page) .universe-said { display: -webkit-box; overflow: hidden; font-size: 0.8rem; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
@@ -288,6 +308,23 @@
    puts the panel away) */
 @media (pointer: coarse) and (max-height: 500px) and (max-width: 739px) {
   :root .universe-page:not(.galaxy-page):not([data-tucked]) .universe-map .universe-thumbs { display: none; }
+}
+/* (the narrowest rows along the top, a 320 phone upright or a small one on
+   its side beside the panel's bar: multiplayer's pill its dot and icon,
+   its name still read) */
+@media (pointer: coarse) and (max-width: 359px), (pointer: coarse) and (max-height: 500px) and (max-width: 639px) {
+  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) .universe-online:not([data-floating]) .universe-online-short { display: none; }
+}
+/* (a phone on its side as short as 320: over the grid is the crew's line,
+   so what the right thumb may press next goes beside the grid's top row,
+   and the line about it under that) */
+@media (pointer: coarse) and (max-height: 360px) {
+  :root .universe-map[data-ship]:not(.galaxy-map) :is(.universe-jump, .universe-wayin, .universe-prompt) {
+    right: calc(var(--thumbs-r) + var(--thumbs-w, 0px) + 12px);
+    bottom: calc(var(--thumbs-b) + var(--thumbs-h, 0px) - 44px);
+    max-width: calc(100% - var(--thumbs-r) - var(--thumbs-w, 0px) - 12px - var(--hud-edge));
+  }
+  :root .universe-map[data-ship]:not(.galaxy-map):has(.universe-jump, .universe-wayin:not([hidden])) .universe-prompt { bottom: calc(var(--thumbs-b) + var(--thumbs-h, 0px) - 96px); }
 }
 /* (Esc stops the tour on a keyboard; a touch screen has the button alone) */
 @media (pointer: coarse) {

@@ -71,9 +71,13 @@ body:has(.universe-page) .tour-offer { bottom: calc(128px + env(safe-area-inset-
   body:has(.universe-page) .tour-offer { top: calc(var(--nav-h) + 8px); bottom: auto; }
 }
 /* (a phone on its side, over the map: under the HUD's row along the top,
-   clear of the thumbs' grid in the corner: universe/thumbs.css) */
+   clear of the thumbs' grid in the corner: universe/thumbs.css; upright,
+   the same once a ship's flying and the row is there) */
 @media (pointer: coarse) and (max-height: 500px) {
   body:has(.universe-page) .tour-offer { top: calc(var(--nav-h) + 60px); bottom: auto; max-height: calc(100dvh - var(--nav-h) - 72px); }
+}
+@media (pointer: coarse) and (max-width: 767px) {
+  body:has(.universe-map[data-ship]:not(.galaxy-map)) .tour-offer { top: calc(var(--nav-h) + 60px); bottom: auto; }
 }
 html[data-menu] .tour-offer { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .tour-offer { animation: none; } }

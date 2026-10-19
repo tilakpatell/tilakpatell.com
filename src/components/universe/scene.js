@@ -1266,7 +1266,9 @@ export async function create(canvas, ctx) {
   const measure = () => {
     const box = (ctx.rt.host ?? ctx.el).getBoundingClientRect();
     const panel = panelEl()?.getBoundingClientRect();
-    const nav = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 68;
+    // (0 is a real answer: a phone on its side, flying, has no bar: thumbs.css)
+    const navRead = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'));
+    const nav = Number.isFinite(navRead) ? navRead : 68;
     let side = 0;
     let sheet = 0;
     if (panel && panel.width > 0) {

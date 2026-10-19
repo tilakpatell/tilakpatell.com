@@ -45,9 +45,12 @@ const NavMap = lazy(() => import('../components/universe/NavMap'));
 const SAFFRON = '#ff9a2a';
 const PHONE_MS = 700;
 const PANEL_KEY = 'tp-universe-panel'; // 'tucked' once the panel's been put away
-// a phone flying: a touch screen as narrow as the panel's sheet, or one on its
-// side (universe/thumbs.css lays the HUD out for both by the same numbers)
-const PHONE_FLIGHT = '(pointer: coarse) and (max-width: 767px), (pointer: coarse) and (max-height: 500px)';
+// a phone whose touch buttons wait for the panel to be put away: one held
+// upright, or a small one on its side (universe/thumbs.css hides them by the
+// same numbers). A wider one on its side has them beside the open panel, so
+// a launch may come from a held Boost: folding then would move them from
+// under the thumb
+const PHONE_FLIGHT = '(pointer: coarse) and (max-width: 767px) and (min-height: 501px), (pointer: coarse) and (max-height: 500px) and (max-width: 739px)';
 // (the page you go into knows you came from the map, so its way out can be
 // back to space: the Citadel's)
 const FROM_MAP = { state: { from: 'universe' } };
@@ -358,8 +361,8 @@ export default function Universe({ ask = false }) {
       pay(e.what, e.n, e.side);
       return;
     }
-    // on a phone the panel folds away once the ship's flown: the sheet (or,
-    // on its side, the panel) would hide half the map under the thumbs
+    // on a phone the panel folds away once the ship's flown: its buttons
+    // wait for it, and the sheet hides half the map
     if (e.type === 'launch' && !tucked && window.matchMedia?.(PHONE_FLIGHT).matches) tuck(true);
     // (the hello says what you are to the others: useOnline.js reads it again)
     if (e.type === 'event' && e.id === 'standing') window.dispatchEvent(new Event('tp:standing'));
