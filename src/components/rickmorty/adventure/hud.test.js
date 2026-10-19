@@ -56,7 +56,10 @@ describe('what the HUD shows of the story', () => {
     expect(markedTask(fresh(), next)).toEqual({ id: 'diner' });
     expect(markedTask({ ...fresh(), step: 3 }, next)).toEqual({ id: 'customs' });
     // past the last ready episode: the checklist's
-    expect(markedTask({ ...fresh(), episode: 4 }, next)).toBe(next);
+    expect(markedTask({ ...fresh(), episode: 5 }, next)).toBe(next);
+    // episode 5: the chase to win (RmWorld's GOAL has it at the cruiser), then the Gromflomite base
+    expect(markedTask({ ...fresh(), episode: 4 }, next)).toEqual({ id: 'chase' });
+    expect(markedTask({ ...fresh(), episode: 4, step: 1 }, next)).toEqual({ id: 'gromflomites' });
     ['microverse', 'anatomy'].forEach((id, step) => expect(markedTask({ ...fresh(), episode: 3, step }, next)).toEqual({ id }));
     expect(markedTask({ ...fresh(), episode: 1 }, next)).toEqual({ id: 'roy' });
     ['rickall', 'wong', 'sewer'].forEach((id, step) => expect(markedTask({ ...fresh(), episode: 2, step }, next)).toEqual({ id }));
@@ -78,7 +81,7 @@ describe('what the HUD shows of the story', () => {
     expect(items.filter((d) => !d.locked).map((d) => d.id)).toEqual(['customs']);
     // free roam, or past the last built episode: nothing locked
     expect(dialItems(DIAL, { ...fresh(), freeRoam: true }).every((d) => d.locked === null)).toBe(true);
-    expect(dialItems(DIAL, { ...fresh(), episode: 4 }).every((d) => d.locked === null)).toBe(true);
+    expect(dialItems(DIAL, { ...fresh(), episode: 5 }).every((d) => d.locked === null)).toBe(true);
     // after episode 1, its places, and the next episode's still shut
     const one = dialItems(DIAL, { ...fresh(), episode: 1 });
     expect(one.filter((d) => !d.locked).map((d) => d.id)).toEqual(['annex', 'customs', 'meeseeksgolf']);
@@ -91,6 +94,10 @@ describe('what the HUD shows of the story', () => {
     const three = dialItems(DIAL, { ...fresh(), episode: 3 });
     expect(three.filter((d) => !d.locked).map((d) => d.id)).toEqual(['annex', 'customs', 'microverse', 'anatomy', 'simulation', 'storytrain', 'agency', 'meeseeksgolf']);
     for (const id of ['gromflomites', 'fortress']) expect(three.find((d) => d.id === id).locked).toBe('Opens after episode 4, “Small problems”.');
+    // after episode 4, likewise
+    const four = dialItems(DIAL, { ...fresh(), episode: 4 });
+    expect(four.filter((d) => !d.locked).map((d) => d.id)).toEqual(['annex', 'customs', 'microverse', 'anatomy', 'simulation', 'storytrain', 'fortress', 'gromflomites', 'agency', 'meeseeksgolf']);
+    for (const id of ['needful', 'vat', 'nimbus']) expect(four.find((d) => d.id === id).locked).toBe('Opens after episode 5, “Heat”.');
   });
 
   it('counts the coordinates home on the dial', () => {
@@ -98,7 +105,8 @@ describe('what the HUD shows of the story', () => {
     expect(dialLead({ ...fresh(), episode: 1 }, DIAL.length)).toBe('Coordinates home: 3 of 32');
     expect(dialLead({ ...fresh(), episode: 2 }, DIAL.length)).toBe('Coordinates home: 5 of 32');
     expect(dialLead({ ...fresh(), episode: 3 }, DIAL.length)).toBe('Coordinates home: 8 of 32');
-    expect(dialLead({ ...fresh(), episode: 4 }, DIAL.length)).toBe('Coordinates home: 32 of 32');
+    expect(dialLead({ ...fresh(), episode: 4 }, DIAL.length)).toBe('Coordinates home: 10 of 32');
+    expect(dialLead({ ...fresh(), episode: 5 }, DIAL.length)).toBe('Coordinates home: 32 of 32');
     // (free roam opens the dial, but brings no coordinates home)
     expect(dialLead({ ...fresh(), freeRoam: true }, DIAL.length)).toBe('Coordinates home: 1 of 32');
   });
