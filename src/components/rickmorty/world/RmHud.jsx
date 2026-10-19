@@ -556,7 +556,7 @@ function ThingsToDo({ box, prog, done, onClose, back, planet }) {
         ))}
       </div>
       <div className="rm-list-panel" id="rm-list-panel" role="tabpanel" aria-labelledby={`rm-tab-${tab}`}>
-        {tab === 'story' ? <StoryList state={story.state} /> : <Checklist rows={rows} rest={rest} next={prog.next} />}
+        {tab === 'story' ? <StoryList state={story.state} tasks={done} /> : <Checklist rows={rows} rest={rest} next={prog.next} />}
       </div>
       <label className="rm-list-switch">
         <input
