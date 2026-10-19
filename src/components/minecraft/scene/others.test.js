@@ -29,15 +29,17 @@ describe('a Steve for the others online', () => {
   });
 });
 
-describe('the pale they wear', () => {
-  it('is made of nodes, for the node renderer, and starts unseen (ghostsOf fades it in)', async () => {
-    const { ghostPaint } = await import('./others');
-    const m = ghostPaint();
-    expect(m.isNodeMaterial).toBe(true);
-    expect(m.colorNode).toBeTruthy();
-    expect(m.transparent).toBe(true);
-    expect(m.opacity).toBe(0);
-    expect(m.onBeforeCompile.toString()).not.toMatch(/fragmentShader/);
-    m.dispose();
+describe('the light they wear', () => {
+  it('lights the ghosts alone (every block is its own light), as the day lights the world', async () => {
+    const { ghostLight, lightGhosts } = await import('./others');
+    const l = ghostLight();
+    expect(l.isHemisphereLight).toBe(true);
+    lightGhosts(l, 1);
+    const noon = l.intensity;
+    lightGhosts(l, 0);
+    expect(l.intensity).toBeLessThan(noon);
+    // (never quite out: a ghost at night is still a pale figure, as the towns' are by their lamps)
+    expect(l.intensity).toBeGreaterThan(0);
+    l.dispose();
   });
 });
