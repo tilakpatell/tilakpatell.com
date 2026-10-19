@@ -86,20 +86,25 @@ function ScrollToTop() {
   const { pathname, search } = location;
   // the feed (components/feed) moves the address as you scroll: not a new page
   const feed = isFeedMove(location, navType);
+  // a game opening or closing over Avengers HQ (/avengers to /avengers/gate and
+  // back) is the same page: no jump to the top, and the page's clips play on;
+  // a load or a reload has was === pathname, so its scroll is as before
+  const was = useRef(pathname);
+  const hq = was.current !== pathname && inHq(pathname) && inHq(was.current);
   // a link to one role (/experience/aws) lands on that role, not the top
-  const top = !feed && !search.includes('role=') && !/^\/(experience|universe)\/[^/]+$/.test(pathname);
+  const top = !hq && !feed && !search.includes('role=') && !/^\/(experience|universe)\/[^/]+$/.test(pathname);
   // Both only on a new path, read through a ref: a page's own search params
   // (a filter, a tab) change neither. As dependencies, a filter picked after
   // the feed had moved the address flipped them, which threw the visitor to
   // the top of the feed (the page it started on) and stopped the page's music.
-  const now = useRef({ top, feed });
-  now.current = { top, feed };
+  const now = useRef({ top, feed, hq });
+  now.current = { top, feed, hq };
   useEffect(() => {
     if (now.current.top) window.scrollTo(0, 0);
   }, [pathname]);
   // a page's music and lines stop when you leave it
   useEffect(() => {
-    if (!now.current.feed) import('./lib/clips').then((c) => c.stopPageClips());
+    if (!now.current.feed && !now.current.hq) import('./lib/clips').then((c) => c.stopPageClips());
   }, [pathname]);
   // every page shown, the feed's included, for the guide's checklist: the
   // page, and its guide's key when that's another (a place in a world ticks
@@ -110,6 +115,9 @@ function ScrollToTop() {
     let list = addVisited(local.get(VISITED_KEY, []), pathname);
     if (key && key !== pathname) list = addVisited(list, key);
     local.set(VISITED_KEY, list);
+  }, [pathname]);
+  useEffect(() => {
+    was.current = pathname;
   }, [pathname]);
   return null;
 }
