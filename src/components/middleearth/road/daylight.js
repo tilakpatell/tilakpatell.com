@@ -124,15 +124,16 @@ export function keyLight(l) {
 
 // The shade: the sky light's hue (the fog's, as module.js lights it) leaned
 // toward violet by day, hardly at all under the moon (a night's shade is
-// blue, not purple) or the pall (Mordor's, brown). By day a little under
-// half the full light the key and the sky light give a face, by night
-// nearer all of it (an eye used to the dark: Bree's street, in the houses'
-// moon shadow, went black), on the house's measure (three's Lambert
+// blue, not purple) or the pall (Mordor's, brown). By day seven tenths of
+// the full light the key and the sky light give a face (a noon's is held
+// to its cap; a dusk's, all of it shade, went muddy at less), by night nine
+// (an eye used to the dark: Bree's street, in the houses' moon shadow,
+// went black), on the house's measure (three's Lambert
 // divides by pi); never brighter than a clear day's (a little under the
 // house's LOOK.shadow, 0x9d93c4, so a shadow cast reads) nor so dark that
 // the deeps go black
 const VIOLET = [0.195, 0.147, 0.687]; // (0x7a6ad8, linear: houseNodes' shadowFor leans the same way)
-export const SHADE = { day: 0.28, least: 0.07, sun: 0.45, moon: 0.9 }; // its brightness (luma, linear): the most, the least; its share of the full light by the sun, by the moon
+export const SHADE = { day: 0.28, least: 0.07, sun: 0.7, moon: 0.9 }; // its brightness (luma, linear): the most, the least; its share of the full light by the sun, by the moon
 const lumOf = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 export function shadeOf(l, key = keyLight(l)) {
   const sky = l.fog.colour;

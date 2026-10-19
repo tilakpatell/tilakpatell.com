@@ -39,6 +39,11 @@ export const PACK = {
     '/kit/naturemega/fern.glb',
     '/kit/naturemega/flower.glb',
     '/kit/naturemega/giantpine.glb',
+    // (the Road’s maples, birches and dead trees: the older Stylized Nature Pack’s kit)
+    '/kit/nature/index.json',
+    '/kit/nature/birchtree.glb',
+    '/kit/nature/deadtree.glb',
+    '/kit/nature/mapletree.glb',
     '/kit/naturemega/grass.glb',
     '/kit/naturemega/mushroom.glb',
     '/kit/naturemega/pebble.glb',

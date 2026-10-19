@@ -1,9 +1,11 @@
 // What grows beside the road: a stage’s table (stages/tables.js) placed on
-// its land by a pure rule, then drawn through the nature kit’s instanced
+// its land by a pure rule, then drawn through the nature kits’ instanced
 // pools (kitNodes), one pool a model for every built stage, each stage’s
-// items under its own key.
+// items under its own key. A row is the MegaKit’s (`naturemega`) unless it
+// names another kit (`pack: 'nature'`: the older Stylized Nature Pack’s
+// maples, birches and dead trees).
 //
-//   placements(rows, land, road, rng, { tier, reach }) → [{ model, x, y, z, yaw, scale }]
+//   placements(rows, land, road, rng, { tier, reach }) → [{ model, x, y, z, yaw, scale, tint, pack? }]
 //     (pure: density per 100 m², in clumps, never within CLEAR of the road,
 //     off steep ground and out of the water, `reach` metres either side of
 //     the road at most; low halves the counts and drops the grass, mid thins it;
@@ -12,7 +14,7 @@
 //   rowsFor(id) → the stage’s rows
 //   rngOf(seed) → () → 0…1, the same for the same seed
 //   createScatter({ kitFor, tier }) → { group, set(key, items, dz), free(key), update(camera, dt), stats, dispose }
-//     kitFor(tint) → the nature kit in that tint (null: its own colours)
+//     kitFor(tint, pack) → that kit in that tint (null: its own colours; no pack: the MegaKit)
 
 import * as THREE from 'three';
 import { createPool } from '../../../lib/three/kitNodes';
@@ -81,7 +83,7 @@ export function placements(rows, land, road, rng, { tier = 'high', reach = REACH
         const sx = (field(x + 1, z) - field(x - 1, z)) / 2;
         const sz = (field(x, z + 1) - field(x, z - 1)) / 2;
         if (Math.hypot(sx, sz) > cap) continue;
-        out.push({ model: row.model, x, y: field(x, z), z, yaw, scale, tint: row.tint ?? null });
+        out.push({ model: row.model, x, y: field(x, z), z, yaw, scale, tint: row.tint ?? null, ...(row.pack ? { pack: row.pack } : {}) });
       }
     }
   }
@@ -93,16 +95,16 @@ export function createScatter({ kitFor, tier = 'high' } = {}) {
   const bands = [level.near, level.mid];
   const group = new THREE.Group();
   group.name = 'road:scatter';
-  const pools = new Map(); // tint and model → Promise<pool | null>
+  const pools = new Map(); // kit, tint and model → Promise<pool | null>
   const live = []; // the pools in, for the frame’s update
   const keys = new Map(); // key → the pools it has items in
   let gone = false;
-  const idOf = (model, tint) => `${tint ? JSON.stringify(tint) : ''}|${model}`;
+  const idOf = (model, tint, pack) => `${pack ?? ''}|${tint ? JSON.stringify(tint) : ''}|${model}`;
 
-  const poolFor = (model, tint) => {
-    const id = idOf(model, tint);
+  const poolFor = (model, tint, pack) => {
+    const id = idOf(model, tint, pack);
     if (!pools.has(id)) {
-      const kit = kitFor(tint);
+      const kit = kitFor(tint, pack ?? null);
       const made = kit.manifest.then(() => {
         if (gone || !kit.info(model)) return null;
         const pool = createPool(kit, model, { bands, shadows: tier !== 'low' });
@@ -123,8 +125,8 @@ export function createScatter({ kitFor, tier = 'high' } = {}) {
     async set(key, items, dz = 0) {
       const byPool = new Map();
       for (const it of items) {
-        const id = idOf(it.model, it.tint);
-        if (!byPool.has(id)) byPool.set(id, { model: it.model, tint: it.tint, list: [] });
+        const id = idOf(it.model, it.tint, it.pack);
+        if (!byPool.has(id)) byPool.set(id, { model: it.model, tint: it.tint, pack: it.pack, list: [] });
         byPool.get(id).list.push({ x: it.x, y: it.y, z: it.z + dz, yaw: it.yaw, scale: it.scale });
       }
       const was = keys.get(key) ?? new Set();
@@ -132,8 +134,8 @@ export function createScatter({ kitFor, tier = 'high' } = {}) {
       keys.set(key, now);
       for (const id of was) if (!now.has(id)) freeIn(id, key);
       await Promise.all(
-        [...byPool.values()].map(async ({ model, tint, list }) => {
-          const pool = await poolFor(model, tint).catch(() => null);
+        [...byPool.values()].map(async ({ model, tint, pack, list }) => {
+          const pool = await poolFor(model, tint, pack).catch(() => null);
           // (a later set or a free for the key wins over this one)
           if (pool && keys.get(key) === now) pool.set(key, list);
         }),

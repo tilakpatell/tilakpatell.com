@@ -33,8 +33,8 @@ const OAK = { Bark_NormalTree: { recolour: '#6e5a46' }, Rocks: { recolour: '#8e8
 const STONE = { Rocks: { recolour: '#8c8274' }, PathRocks: { recolour: '#8c8274' } };
 const REED = { Grass: { recolour: '#6e7044' } };
 // the dead stems of the Marshes, Mordor’s black rock, the dune grass bleached by the sea’s wind
-const DEAD = { Grass: { recolour: '#7a6e4a' }, Leaves: { recolour: '#5e5638' } };
-const BLACK = { Rocks: { recolour: '#2e2a28' }, PathRocks: { recolour: '#2e2a28' }, Bark_DeadTree: { recolour: '#2a2422' } };
+const DEAD = { Grass: { recolour: '#7a6e4a' }, Leaves: { recolour: '#5e5638' }, NormalTree_Bark: { recolour: '#565046' } };
+const BLACK = { Rocks: { recolour: '#2e2a28' }, PathRocks: { recolour: '#2e2a28' }, Bark_DeadTree: { recolour: '#2a2422' }, NormalTree_Bark: { recolour: '#2a2422' } };
 const DUNE = { Grass: { recolour: '#b8b07a' } };
 // (the holly’s bark grey, as the Trollshaws’: the kit’s oak bark is a red-brown)
 const HOLLY = { Leaves_NormalTree: { recolour: '#1f3a1c' }, Leaves: { recolour: '#22401f' }, Bark_NormalTree: { recolour: '#6a6458' } };
@@ -42,6 +42,19 @@ const HEATH_GRASS = { Grass: { recolour: '#8a8458' } };
 const SNOWED = { Leaves_Pine: { recolour: '#e8eef2' } };
 // (the kit’s oak bark is a red-brown: the Trollshaws’ a warm grey, so it isn’t violet under a grey sky)
 const AUTUMN = { Leaves_NormalTree: { recolour: '#eeae5c' }, Leaves_Birch: { recolour: '#f2c86a' }, Leaves: { recolour: '#b07a3e' }, Bark_NormalTree: { recolour: '#806c50' } };
+
+// The older Stylized Nature Pack’s trees (kit `nature`, public/kit/nature/,
+// from tilakverse-assets; Quaternius, CC0): maples in red and orange leaf,
+// birches yellow on white bark, ten dead trees, their bark `NormalTree_Bark`.
+// Sized to the MegaKit’s: its trees stand about half as tall at scale 1.
+const NATURE = 'nature';
+const maples = (per100, o = {}) => ['MapleTree_1', 'MapleTree_2', 'MapleTree_3', 'MapleTree_5'].map((model) => ({ model, pack: NATURE, per100: per100 / 4, clump: 2, spread: 8, scale: [1.1, 1.5], ...o }));
+const birches = (per100, o = {}) => ['BirchTree_1', 'BirchTree_2', 'BirchTree_3', 'BirchTree_5'].map((model) => ({ model, pack: NATURE, per100: per100 / 4, clump: 3, spread: 6, scale: [1.4, 1.9], ...o }));
+// the dead trees, standing (snags: the two small ones)
+const deadwood = (per100, o = {}) => ['DeadTree_1', 'DeadTree_2', 'DeadTree_4', 'DeadTree_6', 'DeadTree_7', 'DeadTree_8', 'DeadTree_10'].map((model) => ({ model, pack: NATURE, per100: per100 / 7, clump: 1, spread: 1, scale: [0.8, 1.2], ...o }));
+const snags = (per100, o = {}) => ['DeadTree_5', 'DeadTree_9'].map((model) => ({ model, pack: NATURE, per100: per100 / 2, clump: 2, spread: 6, scale: [0.8, 1.2], ...o }));
+// (the maples and birches green: spring in Ithilien)
+const SPRING = { MapleTree_Leaves: { recolour: '#6f9a3e' }, BirchTree_Leaves: { recolour: '#8fb04a' } };
 
 export const SCATTER = {
   hobbiton: [
@@ -68,6 +81,9 @@ export const SCATTER = {
     { model: 'Pebble_Round_2', per100: 0.8, clump: 5, spread: 2, scale: [2, 4], x: [-8, 8], tint: OAK },
     { model: 'Grass_Common_Tall', per100: 0.7, clump: 6, spread: 3, scale: [0.45, 0.7], kind: 'grass' },
     { model: 'Grass_Wispy_Short', per100: 0.5, clump: 6, spread: 3, scale: [0.5, 0.8], x: [-40, 40], kind: 'grass' },
+    // birches down by the Water, a maple or two turning: the year’s end coming
+    ...birches(0.03, { x: [-200, -40] }),
+    ...maples(0.012),
   ],
   'shire-edge': [
     // Maggot’s crop either side of the lane at the stage’s start: ears over
@@ -91,9 +107,13 @@ export const SCATTER = {
     { model: 'Mushroom_Common', per100: 0.35, clump: 5, spread: 1.5, scale: [0.6, 1], z: [62, 118], x: [-30, 30] },
     { model: 'Mushroom_RedCap', per100: 0.08, clump: 3, spread: 1, scale: [0.5, 0.8], z: [62, 118], x: [-30, 30] },
     { model: 'Bush_Large', per100: 0.05, clump: 2, spread: 5, scale: [0.9, 1.3], z: [62, 118] },
+    // (among the beeches, birches gone yellow and maples red: late September)
+    ...birches(0.08, { z: [62, 118] }),
+    ...maples(0.05, { z: [62, 118] }),
     // the rest of the Eastfarthing
     { model: 'CommonTree_1', per100: 0.02, clump: 3, spread: 9, scale: [0.9, 1.4], tint: OAK },
     { model: 'Bush_Common', per100: 0.06, clump: 4, spread: 5, scale: [0.9, 1.5] },
+    ...maples(0.012),
     // the Brandywine’s banks: reeds and rushes, pebbles at the landing
     { model: 'Grass_Wispy_Tall', per100: 2.2, clump: 8, spread: 4, scale: [0.9, 1.3], z: [118, 182], x: [-80, 80], kind: 'grass' },
     { model: 'Plant_2', per100: 0.5, clump: 5, spread: 3, scale: [0.8, 1.2], z: [118, 182], x: [-60, 60] },
@@ -106,6 +126,9 @@ export const SCATTER = {
     { model: 'Bush_Large', per100: 0.04, clump: 3, spread: 5, scale: [0.9, 1.3] },
     { model: 'Bush_Common', per100: 0.08, clump: 4, spread: 5, scale: [0.9, 1.4] },
     { model: 'Bush_Long_1', per100: 0.1, clump: 6, spread: 6, scale: [1.0, 1.4] },
+    // the Chetwood’s edge: maples and birches at the turn of the year
+    ...maples(0.03),
+    ...birches(0.025),
     { model: 'Grass_Common_Tall', per100: 1.6, clump: 6, spread: 3, scale: [0.6, 0.9], kind: 'grass' },
     { model: 'Fern_1', per100: 0.3, clump: 5, spread: 3, scale: [0.8, 1.2], x: [-60, 60] },
     { model: 'Plant_2', per100: 0.25, clump: 4, spread: 2, scale: [0.8, 1.2], x: [-50, 50] },
@@ -125,6 +148,9 @@ export const SCATTER = {
     { model: 'Rock_Big_2', per100: 0.015, clump: 2, spread: 8, scale: [0.6, 1.2], slope: 1.6, tint: STONE },
     { model: 'DeadTree_2', per100: 0.008, clump: 2, spread: 10, scale: [0.8, 1.2] },
     { model: 'TwistedTree_2', per100: 0.004, clump: 1, spread: 1, scale: [0.6, 0.9] },
+    // dead trees alone on the heath, snags in the bracken
+    ...deadwood(0.018, { slope: 1.2 }),
+    ...snags(0.02, { x: [-80, 80] }),
     { model: 'Bush_Common', per100: 0.1, clump: 4, spread: 5, scale: [0.6, 1.0], tint: HEATH },
     { model: 'Fern_2', per100: 0.35, clump: 6, spread: 4, scale: [0.9, 1.3], x: [-80, 80], tint: BRACKEN },
     { model: 'Rock_Medium_2', per100: 0.06, clump: 4, spread: 4, scale: [0.4, 0.9], x: [-50, 50], slope: 1.4, tint: STONE },
@@ -139,6 +165,10 @@ export const SCATTER = {
     { model: 'CommonTree_1', per100: 0.05, clump: 3, spread: 9, scale: [1.0, 1.4], tint: AUTUMN },
     { model: 'Birch_2', per100: 0.08, clump: 3, spread: 8, scale: [0.8, 1.1], tint: AUTUMN },
     { model: 'DeadTree_1', per100: 0.008, clump: 2, spread: 8, scale: [0.8, 1.1] },
+    // the maples red and orange, the birches yellow
+    ...maples(0.12, { clump: 3 }),
+    ...birches(0.06),
+    ...snags(0.01),
     { model: 'Pine_1', per100: 0.03, clump: 3, spread: 9, scale: [0.9, 1.3], slope: 0.9 },
     { model: 'Rock_Big_1', per100: 0.012, clump: 2, spread: 8, scale: [0.6, 1.3], slope: 1.4, tint: OAK },
     { model: 'Bush_Common', per100: 0.06, clump: 3, spread: 5, scale: [0.9, 1.4], tint: AUTUMN },
@@ -157,6 +187,9 @@ export const SCATTER = {
     // autumn gold on the valley’s trees, pines above on the slopes
     { model: 'CommonTree_5', per100: 0.09, clump: 3, spread: 9, scale: [1.0, 1.5], tint: GOLD },
     { model: 'Birch_3', per100: 0.08, clump: 3, spread: 7, scale: [0.9, 1.2], tint: GOLD },
+    // (red among the gold: maples, and birches over the river)
+    ...maples(0.05),
+    ...birches(0.04),
     { model: 'Fern_1', per100: 0.4, clump: 6, spread: 4, scale: [0.8, 1.2], slope: 1.2 },
     { model: 'Pine_3', per100: 0.04, clump: 4, spread: 9, scale: [0.9, 1.3], slope: 0.9 },
     { model: 'Rock_Medium_2', per100: 0.02, clump: 3, spread: 5, scale: [0.6, 1.2], slope: 1.4, tint: OAK },
@@ -190,14 +223,19 @@ export const SCATTER = {
     { model: 'Rock_Medium_2', per100: 0.08, clump: 3, spread: 4, scale: [0.6, 1.3], z: [128, 200] },
     { model: 'Pine_3', per100: 0.02, clump: 3, spread: 8, scale: [0.7, 1.1], z: [136, 200], slope: 0.9 },
   ],
-  lorien: GREEN,
-  anduin: ROUGH,
+  // (young mallorns at the wood’s edge: birches in their gold, grown tall)
+  lorien: [...GREEN, ...birches(0.06, { scale: [1.8, 2.4] })],
+  // (February on the Great River: trees bare on the banks, as dead ones stand)
+  anduin: [...ROUGH, ...deadwood(0.012)],
   // the Dead Marshes: dead reeds and rushes over the pools, rotten stumps, the tussocks between
   marshes: [
     { model: 'Grass_Wide_Tall', per100: 3.2, clump: 9, spread: 4, scale: [0.9, 1.4], x: [-120, 120], kind: 'grass', tint: DEAD },
     { model: 'Grass_Wispy_Tall', per100: 2, clump: 8, spread: 4, scale: [0.8, 1.2], x: [-90, 90], kind: 'grass', tint: DEAD },
     { model: 'DeadTree_3', per100: 0.008, clump: 2, spread: 10, scale: [0.5, 0.8] },
     { model: 'DeadTree_1', per100: 0.01, clump: 3, spread: 8, scale: [0.4, 0.7] },
+    // drowned trees grey in the pools, snags of them in the reeds
+    ...deadwood(0.03, { tint: DEAD, scale: [0.6, 1.0] }),
+    ...snags(0.05, { tint: DEAD, x: [-90, 90] }),
     { model: 'Plant_7', per100: 0.6, clump: 6, spread: 3, scale: [1.5, 2.5], x: [-60, 60], tint: DEAD },
     { model: 'Rock_Medium_3', per100: 0.02, clump: 3, spread: 5, scale: [0.4, 0.8] },
   ],
@@ -206,6 +244,9 @@ export const SCATTER = {
     { model: 'CommonTree_4', per100: 0.08, clump: 3, spread: 10, scale: [1.0, 1.5], tint: OAK },
     { model: 'Pine_2', per100: 0.05, clump: 3, spread: 9, scale: [0.9, 1.3] },
     { model: 'GiantPine_3', per100: 0.008, clump: 1, spread: 1, scale: [0.6, 0.8] },
+    // in their spring leaf
+    ...maples(0.04, { tint: SPRING }),
+    ...birches(0.025, { tint: SPRING }),
     { model: 'Bush_Large_Flowers', per100: 0.08, clump: 3, spread: 4, scale: [0.8, 1.2] },
     { model: 'Bush_Common_Flowers', per100: 0.12, clump: 3, spread: 4, scale: [0.8, 1.2] },
     { model: 'Flower_2_Group', per100: 0.3, clump: 5, spread: 2.5, scale: [0.28, 0.4], x: [-40, 40] },
@@ -222,6 +263,7 @@ export const SCATTER = {
     { model: 'Rock_Medium_1', per100: 0.12, clump: 4, spread: 5, scale: [0.5, 1.2], slope: 2, tint: BLACK },
     { model: 'Rock_Medium_4', per100: 0.1, clump: 4, spread: 4, scale: [0.4, 1.0], slope: 2, tint: BLACK },
     { model: 'Pebble_Square_4', per100: 1.2, clump: 6, spread: 2, scale: [2, 4], x: [-10, 10], tint: BLACK },
+    ...snags(0.008, { tint: BLACK, slope: 2 }),
   ],
   // Gorgoroth: cinders and slag, the rocks black, dead wood where anything once grew
   gorgoroth: [
@@ -229,6 +271,8 @@ export const SCATTER = {
     { model: 'Rock_Medium_3', per100: 0.1, clump: 5, spread: 5, scale: [0.4, 1.0], tint: BLACK },
     { model: 'Pebble_Round_5', per100: 1.6, clump: 8, spread: 3, scale: [2, 4.5], x: [-30, 30], tint: BLACK },
     { model: 'DeadTree_4', per100: 0.004, clump: 1, spread: 1, scale: [0.4, 0.6], tint: BLACK },
+    ...deadwood(0.008, { tint: BLACK, scale: [0.6, 1.0] }),
+    ...snags(0.01, { tint: BLACK }),
   ],
   // the Pelennor: farms and fields under the walls, orchards, the road between low walls
   'minas-tirith': [
@@ -246,6 +290,9 @@ export const SCATTER = {
     { model: 'Grass_Wispy_Tall', per100: 2.4, clump: 8, spread: 4, scale: [0.8, 1.2], kind: 'grass', tint: DUNE },
     { model: 'Grass_Wispy_Short', per100: 2, clump: 8, spread: 4, scale: [0.7, 1.1], kind: 'grass', tint: DUNE },
     { model: 'Pine_5', per100: 0.03, clump: 3, spread: 9, scale: [0.8, 1.2] },
+    // (an autumn again, as the ride ends: birches and a maple about the Havens)
+    ...birches(0.015),
+    ...maples(0.008),
     { model: 'Flower_6_2', per100: 0.8, clump: 6, spread: 2, scale: [1, 1.4], x: [-40, 40] },
     { model: 'Rock_Medium_2', per100: 0.03, clump: 3, spread: 5, scale: [0.6, 1.2], tint: OAK },
     { model: 'Pebble_Round_3', per100: 1.6, clump: 6, spread: 2.5, scale: [2, 4.5], tint: OAK },

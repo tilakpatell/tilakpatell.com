@@ -12,7 +12,9 @@ const road = roadOf([
   [0, 0, 200],
 ]);
 const flat = { ...buildHeights({ seed: 1, relief: [] }, { size: [512, 280], res: 4, road }), road };
-const KIT = JSON.parse(readFileSync(new URL('../../../../public/kit/naturemega/index.json', import.meta.url), 'utf8'));
+const kitIndex = (pack) => JSON.parse(readFileSync(new URL(`../../../../public/kit/${pack}/index.json`, import.meta.url), 'utf8'));
+const KITS = { naturemega: kitIndex('naturemega'), nature: kitIndex('nature') };
+const kitOf = (r) => KITS[r.pack ?? 'naturemega'];
 const tree = { model: 'CommonTree_1', per100: 0.2, clump: 3 };
 
 describe('the scatter’s placements', () => {
@@ -87,12 +89,12 @@ describe('the scatter’s placements', () => {
     expect(placements([tree], flat, road, rngOf(11))).toEqual(placements([tree], flat, road, rngOf(11)));
   });
 
-  it('every stage has rows, each a model of the nature kit by its name', () => {
+  it('every stage has rows, each a model of its kit by its name', () => {
     for (const st of STAGES) {
       const rows = rowsFor(st.id);
       expect(Array.isArray(rows)).toBe(true);
       for (const r of rows) {
-        expect(KIT.models[r.model], r.model).toBeTruthy();
+        expect(kitOf(r)?.models[r.model], `${r.pack ?? 'naturemega'}/${r.model}`).toBeTruthy();
         expect(r.per100).toBeGreaterThan(0);
       }
     }
@@ -100,7 +102,14 @@ describe('the scatter’s placements', () => {
   });
 
   it('every model the tables plant is in the Road’s pack', () => {
-    for (const st of STAGES) for (const r of rowsFor(st.id)) expect(PACK.urls).toContain(`/kit/naturemega/${KIT.models[r.model].file}`);
-    expect(PACK.urls).toContain('/kit/naturemega/index.json');
+    for (const st of STAGES) for (const r of rowsFor(st.id)) expect(PACK.urls).toContain(`/kit/${r.pack ?? 'naturemega'}/${kitOf(r).models[r.model].file}`);
+    for (const pack of Object.keys(KITS)) expect(PACK.urls).toContain(`/kit/${pack}/index.json`);
+  });
+
+  it('a row of another kit keeps its kit on its items', () => {
+    const items = placements([{ model: 'MapleTree_1', pack: 'nature', per100: 0.5, clump: 2 }], flat, road, rngOf(5));
+    expect(items.length).toBeGreaterThan(0);
+    for (const it of items) expect(it.pack).toBe('nature');
+    for (const it of placements([tree], flat, road, rngOf(5))) expect('pack' in it).toBe(false);
   });
 });

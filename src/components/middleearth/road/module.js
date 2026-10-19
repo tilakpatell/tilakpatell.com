@@ -95,12 +95,14 @@ export default {
     // the look’s shade already, and a shadow cast on it barely showed)
     const road = createRoadHouse({ edge: [0.1, 0.55] });
     const house = road.house;
-    // the nature kit, one a tint (a season's recolouring), in the house and the wind
+    // the nature kits (the MegaKit, and the older pack’s maples, birches and
+    // dead trees), one a kit and a tint (a season's recolouring), in the house and the wind
     const windTime = { value: 0 };
     const kits = new Map();
-    const kitFor = (tint) => {
-      const key = tint ? JSON.stringify(tint) : '';
-      if (!kits.has(key)) kits.set(key, loadKit('naturemega', { house, wind: { time: windTime }, tint }));
+    const kitFor = (tint, pack = null) => {
+      const kit = pack ?? 'naturemega';
+      const key = `${kit}|${tint ? JSON.stringify(tint) : ''}`;
+      if (!kits.has(key)) kits.set(key, loadKit(kit, { house, wind: { time: windTime }, tint }));
       return kits.get(key);
     };
     const scatter = createScatter({ kitFor, tier });
@@ -255,8 +257,8 @@ export default {
       hemi.color.setRGB(...l.fog.colour);
       // (the light off the ground: the stage’s own grass, or its snow, its stone, its ash)
       hemi.groundColor.setHex(soilOf(lineAt(STAGES, clock.s).stage).greens[1]).multiplyScalar(0.6);
-      // the stage’s exposure, lifted after sunset as an eye opens to the dark (the chapters’ nights are 1.6)
-      if (renderer) renderer.toneMappingExposure = l.exposure * (1 + 0.55 * Math.min(1, Math.max(0, -l.sun.el / 0.35)) * (1 - (l.murk ?? 0)));
+      // the stage’s exposure, lifted from a little before sunset as an eye opens to the dark (the chapters’ nights are 1.6)
+      if (renderer) renderer.toneMappingExposure = l.exposure * (1 + 0.55 * Math.min(1, Math.max(0, (0.1 - l.sun.el) / 0.45)) * (1 - (l.murk ?? 0)));
       scene.fog.color.setRGB(...l.fog.colour);
       // (the fog throbs with the vision’s pulse)
       scene.fog.density = l.fog.density * (1 + 0.35 * vision.amount * (1 + vision.pulse));
