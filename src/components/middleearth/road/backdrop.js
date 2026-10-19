@@ -18,7 +18,7 @@ import { noise2 } from '../../../lib/land/layers.js';
 import { rangesOf } from './stages/ranges';
 
 const DEG = Math.PI / 180;
-const SNOW = new THREE.Color(0xeef2f8);
+const SNOW = new THREE.Color(0xffffff);
 const CREVICE = 0.62; // the gullies’ shade of the rock
 const HAZE_FAR = 5200; // m: the distance the haze is two thirds of everything at
 
@@ -47,7 +47,8 @@ export function rangeGeometry(range, { segments = 220, rows = 28 } = {}) {
   const a0 = (az - width / 2) * DEG;
   const a1 = (az + width / 2) * DEG;
   const rock = new THREE.Color(range.colour ?? 0x6e6a60);
-  const haze = range.haze ?? 1 - Math.exp(-dist / HAZE_FAR);
+  // (a snowy range a little clearer: its snow reads through the haze, as snow does)
+  const haze = range.haze ?? (1 - Math.exp(-dist / HAZE_FAR)) * (snow != null ? 0.82 : 1);
   const cols = segments + 1;
   const pos = new Float32Array(cols * rows * 3);
   const col = new Float32Array(cols * rows * 3);
@@ -112,7 +113,7 @@ export function rangeGeometry(range, { segments = 220, rows = 28 } = {}) {
     c.copy(rock).multiplyScalar(CREVICE + (1 - CREVICE) * (0.55 * up + 0.45 * grain) + hs[k] * 0.12);
     if (snow != null) {
       const line = snow + (grain - 0.5) * 0.18;
-      const lies = THREE.MathUtils.smoothstep(hs[k], line, line + 0.08) * THREE.MathUtils.smoothstep(up, 0.35, 0.65);
+      const lies = THREE.MathUtils.smoothstep(hs[k], line, line + 0.06) * THREE.MathUtils.smoothstep(up, 0.22, 0.5);
       c.lerp(SNOW, lies);
     }
     c.toArray(col, k * 3);
