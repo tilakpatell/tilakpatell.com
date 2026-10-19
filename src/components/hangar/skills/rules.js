@@ -14,7 +14,8 @@
 //   readSkills(raw, { earned, achievements }) → the ids kept, in the order taken
 //   withTaken(saved, id) → the save with a node taken on its end (the save as it
 //     was, not as read now: what the points can't hold today waits for them)
-//   effectsOf(nodes) → fx (adders 0 and multipliers 1 where nothing's taken; carry: the crews' powers any ship may carry)
+//   effectsOf(nodes) → fx (adders 0 and multipliers 1 where nothing's taken; carry: the crews' powers any ship may carry;
+//     arms: the unique weapons opened, lib/arms's ids)
 //   canCarry(fx, crew, powersCrew) → boolean
 //   resetCost(resets) → credits
 
@@ -75,7 +76,7 @@ export const withTaken = (saved, id) => {
 };
 
 export function effectsOf(nodes) {
-  const fx = { carry: [] };
+  const fx = { carry: [], arms: [] };
   for (const k of ADDERS) fx[k] = 0;
   for (const k of MULTIPLIERS) fx[k] = 1;
   for (const id of Array.isArray(nodes) ? nodes : []) {
@@ -86,6 +87,7 @@ export function effectsOf(nodes) {
       else if (MULTIPLIERS.includes(k)) fx[k] *= v;
     }
     if (n.borrows && !fx.carry.includes(n.borrows)) fx.carry.push(n.borrows);
+    if (n.arms && !fx.arms.includes(n.arms)) fx.arms.push(n.arms);
   }
   return fx;
 }

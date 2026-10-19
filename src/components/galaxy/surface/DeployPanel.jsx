@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { HEROES, HILTS, SABER_COLORS, heroById, heroSpec, leanText, loadoutLine, skinsOf } from '../heroes';
 import { STANCE_NAMES } from './combatRules';
-import { MAX_MODS, MODS, MOD_IDS, PICKABLE, WEAPONS, withMods } from './weaponRules';
+import { MAX_MODS, MODS, MOD_IDS, WEAPONS, pickableWith, withMods } from './weaponRules';
 import { MAX_PERKS, PERKS, PERK_IDS } from '../perks';
 import { ABILITIES, abilitiesOf } from './abilityRules';
 import { GameIcon } from '../../../runtime/hud';
@@ -31,7 +31,7 @@ const ARM = { saber: 'Lightsaber', bowcaster: 'Bowcaster', rifle: 'Blaster rifle
 const CLASS_ICON = { assault: '/battlefront/icons/UI/SVG/Classes/Class_Troopers_Assault_01.svg', heavy: '/battlefront/icons/UI/SVG/Classes/Class_Troopers_Heavy_01.svg', officer: '/battlefront/icons/UI/SVG/Classes/Class_Troopers_Officer_01.svg', specialist: '/battlefront/icons/UI/SVG/Classes/Class_Troopers_Specialist_01.svg' };
 const num = (v, d = 0) => (Math.round(v * 10 ** d) / 10 ** d).toString();
 
-export default function DeployPanel({ hero, onChange, onClose, system = null, era = 'empire', stoodIn = null }) {
+export default function DeployPanel({ hero, onChange, onClose, system = null, era = 'empire', stoodIn = null, arms = [] }) {
   const [pick, setPick] = useState(hero);
   const [tab, setTab] = useState('hero');
   const h = heroById(pick.id);
@@ -57,7 +57,7 @@ export default function DeployPanel({ hero, onChange, onClose, system = null, er
     setPick({ ...pick, perks });
   };
   const changed = JSON.stringify(pick) !== JSON.stringify(hero);
-  const guns = [h?.weapon, ...PICKABLE].filter((g, i, a) => g && g !== 'saber' && a.indexOf(g) === i);
+  const guns = [h?.weapon, ...pickableWith(arms)].filter((g, i, a) => g && g !== 'saber' && a.indexOf(g) === i); // (the skill tree's guns once their nodes are taken)
   const stats = !saber && pick.gun ? withMods(pick.gun, pick.mods) : null;
   const looks = skinsOf(pick.id);
   // (the middle tab is the blade or the gun, whichever the pick carries; a
