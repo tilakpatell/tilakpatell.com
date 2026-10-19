@@ -21,6 +21,7 @@ const TOKENS = [
 const SHEETS = [
   'index.css',
   'styles/extras.css',
+  'styles/middleearth-themes.css',
   'styles/lazy/commandpalette.css',
   'styles/lazy/experience.css',
   'styles/lazy/home.css',

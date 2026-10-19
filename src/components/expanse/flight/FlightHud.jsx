@@ -14,7 +14,7 @@ import FlightMap from './FlightMap';
 // you in the Menu.
 //
 //   <FlightHud name way planets onPlanet toast numbers touch onStick onThrottle map shared onShared online />
-//   shared: { build, unbuild, others } | null; onShared('build' | 'unbuild'); online: { on, onJoin }
+//   shared: { build, unbuild, others, allies } | null; onShared('build' | 'unbuild'); online: { on, onJoin }
 export default function FlightHud({ name, way, planets = [], onPlanet, toast, numbers, touch = false, onStick, onThrottle, map = null, shared = null, onShared, online = null }) {
   const take = shared?.unbuild ? <Prompt k="X" verb="Take down" thing="your turret" touch={touch} onClick={() => onShared('unbuild')} /> : null;
   const prompt = shared?.build ? <Prompt k="B" verb="Build turret" touch={touch} onClick={() => onShared('build')} alt={take} /> : take;
@@ -31,7 +31,7 @@ export default function FlightHud({ name, way, planets = [], onPlanet, toast, nu
       }
       tools={
         <Menu className="fly-menu" way={way}>
-          {online && <PlayersChip item count={shared?.others ?? 0} on={online.on} onJoin={online.onJoin} noun="pilots" />}
+          {online && <PlayersChip item count={shared?.others ?? 0} allies={shared?.allies ?? 0} on={online.on} onJoin={online.onJoin} noun="pilots" />}
           {planets.map((p) => (
             <MenuItem key={p.id} onClick={() => onPlanet(p.id)}>
               Fly over <b>{p.name}</b>

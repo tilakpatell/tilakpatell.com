@@ -5,6 +5,7 @@ import { AchievementProvider, useAchievements } from './components/Achievements'
 import { FunProvider } from './fun/FunProvider';
 import OnlineProvider from './components/universe/online/OnlineProvider';
 import EconomyProvider from './components/universe/EconomyProvider';
+import SkillsProvider from './components/hangar/skills/SkillsProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import Nav from './components/Nav';
 import Footer from './components/Footer';
@@ -19,6 +20,7 @@ import { VISITED_KEY, addVisited } from './lib/visited';
 import { isPaletteKey } from './lib/palette';
 import { guideKeyFor } from './components/guide/routes';
 import { introPlaying } from './lib/stale';
+import { isMapPath, saveStart } from './lib/view';
 import { jumpStyle } from './components/jumps/styles';
 import WorldGate from './components/worlds/WorldGate';
 import Ambience from './components/ambience/Ambience';
@@ -40,6 +42,7 @@ const GalaxyMission = lazy(() => import('./pages/GalaxyMission'));
 const GalaxySurface = lazy(() => import('./pages/GalaxyLanding'));
 const Music = lazy(() => import('./pages/Music'));
 const MiddleEarth = lazy(() => import('./pages/MiddleEarth'));
+const TheRoad = lazy(() => import('./pages/TheRoad'));
 const Scranton = lazy(() => import('./pages/Scranton'));
 const Avengers = lazy(() => import('./pages/Avengers'));
 const Cybertron = lazy(() => import('./pages/Cybertron'));
@@ -174,8 +177,11 @@ function Lightspeed() {
 }
 
 // A first visit to the site opens on a welcome (what the site is, what the
-// intro does, and whose worlds these are; Skip goes straight to the front
-// door), then the crawl, then puts you in a cockpit
+// intro does, and whose worlds these are), the visit's one question: start
+// the intro, skip to the universe or go to the classic site. The answer is
+// the front door's choice too, kept (lib/view's saveStart), so the universe
+// doesn't ask it again over the map. Start plays the crawl, then puts you in
+// a cockpit
 // (the Falcon first; the X-wing, Rick's cruiser and the RV a click away),
 // and the launch comes out at the front door's choice over the universe
 // map, where everything is laid out as places to fly to. The inline script
@@ -241,11 +247,18 @@ function IntroJump() {
     return (
       <Suspense fallback={null}>
         <Welcome
-          onStart={() => setStage('crawl')}
-          onSkip={() => {
+          onStart={() => {
+            saveStart('universe');
+            setStage('crawl');
+          }}
+          onSkip={(where) => {
+            saveStart(where);
             setStage(null);
-            // to the front door's choice, as the launch would have come out
-            requestAnimationFrame(() => document.querySelector('.start-choice button')?.focus({ preventScroll: true }));
+            // (the front door may have sent a kept pick on to /home under the welcome)
+            if (where === 'home') navigate('/home', { replace: true });
+            else if (!isMapPath(pathname)) navigate('/', { replace: true });
+            // (the page under it has the focus next, as the launch would give it)
+            requestAnimationFrame(() => document.getElementById('main')?.focus({ preventScroll: true }));
           }}
         />
       </Suspense>
@@ -402,6 +415,7 @@ function Shell() {
   return (
     // (the wallet outside the link to the other pilots: the roster reads it too)
     <EconomyProvider>
+    <SkillsProvider>
     <OnlineProvider>
       <div className="backdrop" aria-hidden="true" />
       <Ambience />
@@ -434,6 +448,7 @@ function Shell() {
                 <Route path="/galaxy/:system/surface" element={<GalaxySurface />} />
                 <Route path="/fly/:planet?" element={<Fly />} /> {/* planet flight */}
                 <Route path="/music" element={<Music />} />
+                <Route path="/middle-earth/road" element={<TheRoad />} />
                 <Route path="/middle-earth/:place?" element={<MiddleEarth />} />
                 <Route path="/scranton" element={<Scranton />} />
                 <Route path="/avengers" element={<Avengers />} />
@@ -470,6 +485,7 @@ function Shell() {
         <IntroJump />
       </ErrorBoundary>
     </OnlineProvider>
+    </SkillsProvider>
     </EconomyProvider>
   );
 }

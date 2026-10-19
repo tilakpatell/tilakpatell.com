@@ -12,7 +12,8 @@
 //
 // createGame(canvas, { tier, onLost }) → Promise<{ setArea(id), render(sim, view, dt, now),
 //   events(list, sim), resize(w, h), precompile(), info(), dispose() }>
-// `view` is the camera: { yaw, pitch, zoom } (GameWorld.jsx turns it).
+// `view` is the camera: { yaw, pitch, zoom } (GameWorld.jsx turns it), and
+// `travellers`, the others online here (./ghosts.js).
 
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
@@ -35,6 +36,8 @@ import { createDust } from '../../../lib/three/dust';
 import { createImpacts, impactGroups } from '../../../lib/impact';
 import { createVehicleFeel, feelGroups as rideFeelGroups } from '../../../lib/vehicleFeel';
 import { createSpring, springGroups } from '../../../lib/spring';
+import { createGhosts } from '../../middleearth/shared/ghosts';
+import { ghostFigure, ghostPose } from './ghosts';
 
 const STAGES = {
   iacon: () => import('./stage/iacon'),
@@ -147,6 +150,12 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
   let playerFall = null;
   const player = { root: new THREE.Group(), robot: null, vehicle: null, forms: { robot: null, vehicle: null }, change: null, kinds: null };
   scene.add(player.root);
+  // the others online in the area you're in (GameWorld's useTravellers, as
+  // `view.travellers`): each this area's hero, pale (./ghosts.js); the card
+  // over his head and the ring at his feet sized for a robot of nine metres
+  let heroes = { robot: 'optimus-wfc', vehicle: 'cybertruck' };
+  const others = createGhosts({ make: () => ghostFigure(heroes), animate: ghostPose, tag: 1.5, halo: 6, snap: 40 });
+  scene.add(others.group);
   // the mission's beacon: a column of light where you're meant to go
   const beaconMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffc44a').multiplyScalar(1.6), transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, side: THREE.DoubleSide });
   const beaconGeo = new THREE.CylinderGeometry(4, 4, 300, 24, 1, true);
@@ -223,6 +232,7 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
     loading = (async () => {
       clearArea();
       areaId = area.id;
+      heroes = area.player;
       const look = area.look ?? {};
       const fog = look.fog ?? ['#0b1220', 150, 2600];
       scene.fog = new THREE.Fog(fog[0], fog[1], Math.max(fog[2], 1800));
@@ -439,6 +449,7 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
   const gs = new THREE.Vector3();
   const gp = new THREE.Vector3();
 
+  const drawn = { calls: 0, triangles: 0 }; // (the last frame's, whole)
   const render = (sim, view, dt, now) => {
     if (lost) return;
     clock += dt;
@@ -648,6 +659,7 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
       gates.instanceMatrix.needsUpdate = true;
     }
     stage?.update(clock, dt, camera, sim);
+    others.update(view.travellers ?? [], clock, dt);
     happened.hitMe = null;
     happened.fired = false;
     happened.won = false;
@@ -658,7 +670,12 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
     // (the shade follows the area's light; what's come in since, taken on now and then)
     lightsOf();
     house.follow({ adopt: houseFrames++ % 60 === 0 });
+    // (counted over the whole frame, the post's passes and all, for info())
+    renderer.info.autoReset = false;
+    renderer.info.reset();
     post.render(size.w, size.h);
+    drawn.calls = renderer.info.render.calls;
+    drawn.triangles = renderer.info.render.triangles;
   };
 
   return {
@@ -727,7 +744,7 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
     tune: () => [...feelGroups(feel), ...impactGroups(knockRules), ...rideFeelGroups(rideFeel), ...springGroups(landing, 'landing')],
     // the gun's muzzle as the robot holds it now (for where his shots start)
     muzzle: () => (player.robot?.group.visible && player.robot.muzzle?.(muzzleAt) ? [muzzleAt.x, muzzleAt.y, muzzleAt.z] : null),
-    info: () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, area: areaId }),
+    info: () => ({ ...drawn, area: areaId }),
     dispose() {
       generation++;
       clearArea();
@@ -737,6 +754,7 @@ export async function createGame(canvas, { tier = 'high', onLost } = {}) {
         matrixModel.object.traverse((o) => o.isMesh && o.material?.dispose?.());
       }
       player.robot?.dispose();
+      others.dispose();
       effects.dispose();
       loose?.dispose();
       knocks.dispose();

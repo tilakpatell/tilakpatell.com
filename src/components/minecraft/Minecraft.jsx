@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import '@fontsource/press-start-2p/400.css';
 import { useMediaQuery } from '../../lib/hooks';
 import { WorldHost, useWorld } from '../../runtime';
-import { Exit, Stick, TouchButton } from '../../runtime/hud';
+import { Exit, PlayersChip, Stick, TouchButton } from '../../runtime/hud';
+import { useTravellers } from '../middleearth/shared/travellers';
 import GuideCue from '../guide/GuideCue';
 import module from './module';
 import { ITEMS } from './rules/items';
@@ -23,6 +24,10 @@ import './minecraft.css';
 // On the page the world is the address's ?world=<seed> (set to the world played when missing).
 
 const sprite = (name) => `${MC}sprites/${name}.webp`;
+// the room for the others online: a world has no edge, so the link takes
+// them out to 30 km from its middle (no one walks further), and people jump
+const ROOM = { bound: 30000, motion: true };
+const LORE = { off: 'Go online, and see everyone else in this world (its seed) as a pale Steve, with their name over him', on: 'Everyone else online in this world, as pale Steves: nothing passes between you but where each of you is' };
 
 // where a screen's slots sit on the pack's panel, in its pixels (the game's own layout)
 const GRID = {
@@ -150,6 +155,14 @@ export default function Minecraft({ mode = 'page', onExit = null }) {
   useEffect(() => () => clearTimeout(sayTimer.current), []);
   const { host, status, rt } = useWorld(module, { props, onEvent });
   const api = useCallback(() => (rt?.current?.module === module ? rt.current.world : null), [rt]);
+  // the others online in the world you're in (middleearth/towns/useTravellers),
+  // as pale Steves: the world sends where you are and draws them
+  // (rules/online.js), through the link it's handed
+  const trav = useTravellers('minecraft', status === 'on', ROOM);
+  const travRef = trav.ref;
+  useEffect(() => {
+    if (status === 'on') api()?.online?.(() => travRef.current);
+  }, [status, api, travRef]);
   // the address follows the world played, and a new address opens its world
   const lastWant = useRef(want);
   useEffect(() => {
@@ -344,6 +357,7 @@ export default function Minecraft({ mode = 'page', onExit = null }) {
           </div>
         )}
 
+        {(playing || paused || screenOpen || dead) && hud && <PlayersChip className="mc-players" count={trav.count} allies={trav.allies} on={trav.on} onJoin={trav.join} available={trav.available} lore={LORE} />}
         {(playing || paused || screenOpen || dead) && hud && (
           <div className="mc-hud" aria-hidden="true">
             {!screenOpen && <img className="mc-crosshair" src={sprite('crosshair')} alt="" />}

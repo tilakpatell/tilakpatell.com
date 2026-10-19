@@ -3,6 +3,7 @@ import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import BattlefrontWorld from '../components/battlefront/BattlefrontWorld.jsx';
 import { LEVEL_MODES, LEVELS, MODES, firstModeOf, menuRouteFor, routeFor, wayBack } from '../components/battlefront';
 import { useDocumentTitle } from '../lib/hooks';
+import { useInWorld } from '../components/universe/online/useOnline';
 
 // The game's own front end (its Start, main menu and Play screens), loaded
 // with the page only when it is asked for.
@@ -26,6 +27,7 @@ export default function Battlefront() {
   const { search, state } = useLocation();
   const back = wayBack(search);
   useDocumentTitle(level ? 'Battlefront · Hoth' : 'Battlefront');
+  useInWorld(); // (a full-screen game: no page pointers over it)
   if (!level)
     return (
       <main className="bf-page">

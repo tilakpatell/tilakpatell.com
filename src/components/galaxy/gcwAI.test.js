@@ -65,17 +65,19 @@ describe('the underdog and the leader', () => {
 });
 
 describe('supply lines', () => {
-  // the Rebellion's Yavin, Kashyyyk and Naboo in a line, and Hoth and Kamino,
-  // each alone among the Empire's. (They ran from the capital alone, and with
-  // these openings that left a side's systems cut off as a rule, not by an
-  // encirclement: 7 of the Separatists' 8 at the Clone Wars' opening, and 41
-  // to 56% of every war's systems, with nobody playing. Now a stronghold, a
-  // system worth GCW.stronghold, supplies its own piece of territory too, so
-  // Hoth's in supply and only Kamino, encircled with nothing of worth, isn't.)
+  // the Rebellion's Yavin, Kashyyyk, Naboo and Kamino in a line (Kamino, past
+  // the southern rim, borders Naboo), and Hoth alone among the Empire's. (They
+  // ran from the capital alone, and with these openings that left a side's
+  // systems cut off as a rule, not by an encirclement: 7 of the Separatists' 8
+  // at the Clone Wars' opening, and 41 to 56% of every war's systems, with
+  // nobody playing. Now a stronghold, a system worth GCW.stronghold, supplies
+  // its own piece of territory too, so Hoth's in supply; and Kamino is, through
+  // Naboo, till Naboo falls and leaves it encircled with nothing of worth.)
   const owner = map('empire', { yavin: 'rebel', kashyyyk: 'rebel', naboo: 'rebel', hoth: 'rebel', kamino: 'rebel' });
   it('run from a side’s capital and its strongholds through its own systems: a piece joined to neither is cut off', () => {
     expect(GCW.stronghold).toBe(2);
-    expect([...supplied(owner, 'rebel', 'yavin')].sort()).toEqual(['hoth', 'kashyyyk', 'naboo', 'yavin']);
+    expect([...supplied(owner, 'rebel', 'yavin')].sort()).toEqual(['hoth', 'kamino', 'kashyyyk', 'naboo', 'yavin']);
+    expect([...supplied({ ...owner, naboo: 'empire' }, 'rebel', 'yavin')].sort()).toEqual(['hoth', 'kashyyyk', 'yavin']);
     // (the Empire holds the rest, all in supply but Bespin, Mustafar and Nevarro, that only Hoth joined to it)
     const empire = supplied(owner, 'empire', 'coruscant');
     expect(WAR_SYSTEMS.filter((id) => owner[id] === 'empire' && !empire.has(id)).sort()).toEqual(['bespin', 'mustafar', 'nevarro']);
@@ -88,12 +90,14 @@ describe('supply lines', () => {
   it('run from its worthiest system when it holds neither its capital nor a stronghold (the first of the worthiest, in the map’s order)', () => {
     const lost = { ...owner, yavin: 'empire' };
     expect([...supplied(lost, 'rebel', 'yavin')]).toEqual(['hoth']);
-    // (Naboo, Kashyyyk and Kamino are all worth 1: Naboo comes first)
-    expect([...supplied({ ...lost, hoth: 'empire' }, 'rebel', 'yavin')].sort()).toEqual(['kashyyyk', 'naboo']);
+    // (Naboo, Kashyyyk and Kamino are all worth 1: Naboo comes first, and its piece is all three)
+    expect([...supplied({ ...lost, hoth: 'empire' }, 'rebel', 'yavin')].sort()).toEqual(['kamino', 'kashyyyk', 'naboo']);
+    // (with Naboo gone too, Kashyyyk comes before Kamino)
+    expect([...supplied({ ...lost, hoth: 'empire', naboo: 'empire' }, 'rebel', 'yavin')]).toEqual(['kashyyyk']);
   });
   it('count what taking a system would cut off from its holder’s supply', () => {
-    expect(cutOff(owner, 'kashyyyk', 'yavin')).toBe(1);
-    expect(cutOff(owner, 'naboo', 'yavin')).toBe(0);
+    expect(cutOff(owner, 'kashyyyk', 'yavin')).toBe(2);
+    expect(cutOff(owner, 'naboo', 'yavin')).toBe(1);
     expect(cutOff(owner, 'hoth', 'yavin')).toBe(0);
     expect(cutOff(owner, 'kamino', 'yavin')).toBe(0);
     // (a stronghold taken takes its piece's supply with it)
@@ -213,6 +217,9 @@ describe('the liberator’s fronts and orders', () => {
     expect(orderTarget({ ...c, rates: { coruscant: 8, endor: 8 } })).toBe('coruscant');
     expect(orderTarget({ ...c, rates: { coruscant: 8, endor: 8 }, previous: 'coruscant' })).toBe('endor');
     expect(orderTarget({ ...c, rates: { coruscant: 8, endor: 8 }, holdsOut: new Set(['coruscant']) })).toBe('endor');
+    // (with only last stands left, one that moves over one that's stuck, the worthier: the GCW's Rebels
+    // once held all but the Empire's Scarif, stalled behind its shield, and the Hutts' Tatooine)
+    expect(orderTarget({ ...c, rates: { coruscant: 0.5, endor: 8 }, holdsOut: new Set(['coruscant', 'endor']) })).toBe('endor');
     expect(orderTarget({ ...c, border: [], rates: {} })).toBeNull();
   });
   it('orders the raider to take what it’s attacking, else hold its weakest system under threat', () => {

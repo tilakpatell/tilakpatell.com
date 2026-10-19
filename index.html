@@ -30,6 +30,11 @@
       try {
         var m = localStorage.getItem('tp-mode');
         if (m === 'dark' || (!m && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.dataset.mode = 'dark';
+        // A colour picked this visit lands with the first paint, not after the
+        // app mounts (AWS’s showed first). The visitor’s own colour waits for
+        // the app, which computes its tokens.
+        var p = sessionStorage.getItem('tp-theme-pin');
+        if (p && p !== 'custom' && /^[a-z0-9]+$/.test(p)) document.documentElement.dataset.theme = p;
         // First visit to the home page: cover it until the hyperspace intro starts.
         var h = location.hash;
         if (!localStorage.getItem('tp-intro') && (h === '' || h === '#' || h === '#/') && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.dataset.intro = '1';

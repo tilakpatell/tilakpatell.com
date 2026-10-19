@@ -55,7 +55,9 @@
 // the frames after it, gated, draw it at once.
 //
 // guard(renderer, { uploadMB, compileMs, frame, invalidate, frames(target), firstWhole }) → { enabled,
-//   invalidate, adopt(scene, fn) → undo, pending(), dispose() }, one per renderer (asked again, the same).
+//   invalidate, adopt(scene, fn) → undo, frames(fn) → undo, pending(), dispose() }, one per renderer (asked again, the same).
+// (`frames(fn)` on a guard made already: another owner's buffers are frames
+// too, a view drawing on a renderer it shares, runtime/views.js)
 // In development, a frame in which three still compiled a shader mid-draw
 // says so in the console, so what's still slipping through can be found.
 // heldBack() → what every live guard is still readying, the sum of their
@@ -107,6 +109,7 @@ export function guard(renderer, { uploadMB = 8, compileMs = 4, frame = nextFrame
   const shapes = new WeakMap(); // a ready material → what its shader was made for (shapeOf)
   const pictures = new WeakMap(); // material → { v: its version, list: the pictures it holds }
   const queue = new Map(); // material → an object it was to be drawn on
+  const owners = new Set(); // frames(fn)'s: what else names its buffers as frames
   const linking = new Set(); // compiled, waiting to link
   const adopters = new WeakMap(); // scene → its look, put on what's late into it
   let scene = null;
@@ -184,6 +187,10 @@ export function guard(renderer, { uploadMB = 8, compileMs = 4, frame = nextFrame
 
   const g = {
     enabled: true,
+    frames(fn) {
+      owners.add(fn);
+      return () => owners.delete(fn);
+    },
     // asked for a frame once something held back is ready (settable)
     invalidate,
     // fn(object) runs on a thing late into `scene` before its shader is
@@ -298,6 +305,7 @@ export function guard(renderer, { uploadMB = 8, compileMs = 4, frame = nextFrame
   // it), or one the owner names
   const frameTarget = (t) => {
     if (!t || frames?.(t)) return true;
+    for (const fn of owners) if (fn(t)) return true;
     const c = renderer.domElement;
     if (c) {
       drawn.x = c.width;

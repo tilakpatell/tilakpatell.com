@@ -112,7 +112,7 @@ import { createSaberSim, saberOf } from '../../../lib/combat/saber2017';
 import { incomingAt, met, swingingOf } from './duellists';
 import { heatShot, heatStep, spreadAt, vent, ventSpot, withMods } from './weaponRules';
 import { heroById, heroSpec, partyFor, refitOf, writeHero } from '../heroes';
-import { perkEffects } from '../perks';
+import { groundSkills, perkEffects, withGround } from '../perks';
 import { ABILITIES, GAME_HP, JET, SABER_THROWS, abilitiesOf, forceOf, hitOf, holdOf, jetStep, kindOf, newJet, takenOf, throwOf } from './abilityRules';
 import { createPowers } from './powers';
 import { SABER } from './saberRules';
@@ -784,7 +784,8 @@ export async function create(canvas, ctx) {
   const crewOf = PARTY[shipKind] ?? PARTY.xwing;
   let picked = ctx.hero ? writeHero(ctx.hero) : null; // (the choice as kept, to know a new one)
   let hero = ctx.hero ? heroSpec(ctx.hero) : null;
-  let perks = perkEffects(hero?.perks ?? []); // (galaxy/perks.js: the multipliers the hero's perks give)
+  let skillFx = ctx.skillFx ?? null; // (the skill tree's, the page's: hangar/skills's fx)
+  let perks = withGround(perkEffects(hero?.perks ?? []), groundSkills(skillFx)); // (galaxy/perks.js: the multipliers the hero's perks give, and the skill tree's ground branch on them)
   let spareSim = null; // (the dodge's engine for a hero with no saber: dodge())
   // (your mate carries their own two abilities too, where they're on the roster)
   const withAbilities = (s) => (s.abilities || !heroById(s.id)?.abilities ? s : { ...s, abilities: heroById(s.id).abilities });
@@ -916,12 +917,19 @@ export async function create(canvas, ctx) {
   // you were, and your mate is whoever of the crew isn't them; the guard as
   // full as it was, of the new perks' most (a swap mid-fight refills
   // nothing); a mission, your health and where you are kept
+  // new skills (the page's): the perks' numbers again, the skill tree's on
+  // them (the gun in hand keeps its heat's until it's next drawn)
+  function setSkills(fx) {
+    skillFx = fx ?? null;
+    perks = withGround(perkEffects(hero?.perks ?? []), groundSkills(skillFx));
+    if (me().saber) me().saber.sim.scale = { blocked: 1 / perks.guard, recharge: perks.dodge };
+  }
   function setHero(choice) {
     const kept = writeHero(choice);
     if (kept === picked) return;
     picked = kept;
     hero = heroSpec(choice);
-    perks = perkEffects(hero.perks ?? []);
+    perks = withGround(perkEffects(hero.perks ?? []), groundSkills(skillFx));
     if (me().saber) me().saber.sim.scale = { blocked: 1 / perks.guard, recharge: perks.dodge };
     spareSim = null;
     const [lead1, mate1] = partyFor(hero, crewOf).map(withAbilities);
@@ -1177,6 +1185,7 @@ export async function create(canvas, ctx) {
   const pointer = { x: 0, y: 0, x0: 0, y0: 0, id: null };
   const onKey = (down) => (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (props.frozen && down) return; // (the page's Hangar is open over the world: nothing moves; a key let go still is)
     const tag = e.target?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return;
     const k = KEYS[e.key.toLowerCase()];
@@ -1869,7 +1878,7 @@ export async function create(canvas, ctx) {
   const boltOf = (p) => GUNS[weapon().kind]?.bolt ?? p.spec.bolt ?? '#ff3b30';
   // the eyes' line, scattered by the weapon (tighter down the sights)
   const scatter = (dir, w) => {
-    const sp = spreadAt(w, state.ads);
+    const sp = spreadAt(w, state.ads) * perks.spread; // (steady hands: the skill tree's)
     return dir.clone().add(new V((Math.random() - 0.5) * sp * 2, (Math.random() - 0.5) * sp * 2, (Math.random() - 0.5) * sp * 2)).normalize();
   };
   // a side chosen, and onto the field at one of its posts (from the HUD, or the dev hooks)
@@ -3815,7 +3824,9 @@ export async function create(canvas, ctx) {
       props = next;
       for (const id of next.found ?? []) state.found.add(id);
       for (const id of next.done ?? []) state.done.add(id);
+      if (next.frozen) for (const k of Object.keys(state.keys)) state.keys[k] = false; // (nothing held while the Hangar's open)
       if (next.hero) setHero(next.hero);
+      if ((next.skillFx ?? null) !== skillFx) setSkills(next.skillFx);
     },
     setVisible(on) {
       shown = on;

@@ -8,8 +8,8 @@
 // site's master volume, and only once the visitor has clicked or pressed
 // something (browsers hold sound back until then).
 
-import { audioContext, output, voiceOutput } from '../../lib/audio';
-import { playClip } from '../../lib/clips';
+import { audioContext, loadBuffer, output, voiceOutput } from '../../lib/audio';
+import { CLIPS, playClip } from '../../lib/clips';
 import { portalSound, shipEngine } from '../universe/sounds';
 
 // where in the hyperspace clip its boom lands (s)
@@ -260,12 +260,17 @@ function gear(at = 0) {
 }
 
 const ENGINE = { falcon: 'falcon', xwing: 'xwing', cruiser: 'cruiser' };
+// the clips each launch plays, fetched and decoded as you sit down: a clip's
+// start is worked out before it's loaded, so a first launch's boom came late
+// by the time its file took to come
+const LAUNCH_CLIPS = { falcon: ['hyperspaceEnter'], xwing: ['hyperspaceEnter'], cruiser: ['portalGun'], rv: ['bbIntro'] };
 
 // The sound of one cockpit. set() every frame; launch(plan, t) when you go
 // (t: ms already into the launch); skip(plan, to) when the launch is skipped
 // on; stop() when you leave.
 export function cockpitSound(id) {
   const engine = ENGINE[id] ? shipEngine(ENGINE[id]) : id === 'rv' ? rvEngine() : null;
+  for (const name of LAUNCH_CLIPS[id] ?? []) loadBuffer(CLIPS[name].src).catch(() => {});
   const clips = [];
   const timers = [];
   let paused = false;

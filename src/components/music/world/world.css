@@ -21,6 +21,7 @@
 .mw-chips { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
 span.mw-chip { display: inline-flex; align-items: center; gap: 0.35rem; }
 .mw-chip b { color: #ffd27a; font-variant-numeric: tabular-nums; }
+.mw-chip[data-allies] { border-color: rgba(141, 255, 173, 0.55); } /* your allies among the listeners: the site's ally green */
 span.mw-chip:hover { background: rgba(20, 14, 30, 0.5); }
 .mw-prompt { display: inline-flex; align-items: center; gap: 0.6rem; min-height: 48px; padding: 0 1.2rem; border: 1px solid rgba(255, 214, 150, 0.7); border-radius: 999px; background: rgba(36, 20, 30, 0.72); color: #fff4e2; font-weight: 600; font-size: 1rem; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35), 0 0 24px rgba(255, 170, 80, 0.25); backdrop-filter: blur(8px); animation: mw-in 0.25s ease both; }
 .mw-prompt kbd { display: inline-grid; place-items: center; min-width: 1.6rem; height: 1.6rem; border: 1px solid rgba(255, 228, 190, 0.55); border-radius: 6px; font: 600 0.8rem/1 var(--font-mono); }

@@ -8,8 +8,8 @@
 
 /* ── Territory: each system's cell, brighter the firmer its holder's hold,
    hatched in the attacker's colour where it's fought over ── */
-.holomap-cell { fill: var(--held); fill-opacity: calc(0.06 + 0.14 * var(--hold, 1)); stroke: var(--held); stroke-opacity: 0.3; stroke-width: calc(0.03 * var(--u)); stroke-linejoin: round; }
-.holomap-cell-hatch { opacity: 0.32; }
+.holomap-cell { fill: var(--held); fill-opacity: calc(0.04 + 0.1 * var(--hold, 1)); stroke: var(--held); stroke-opacity: 0.24; stroke-width: calc(0.03 * var(--u)); stroke-linejoin: round; }
+.holomap-cell-hatch { opacity: 0.22; } /* (quieter than they were, with twice the systems over them: the names and the fronts read first) */
 
 /* ── The war's lanes: held in the holder's colour, contested dashed,
    fought along throbbing ── */
