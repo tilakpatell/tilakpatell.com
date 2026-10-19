@@ -192,6 +192,38 @@ describe('a place that runs on power', () => {
   });
 });
 
+describe('a place that runs on a deal', () => {
+  it('sells its own things, each looked over and taken by its own spot, and only the game ticks its task', () => {
+    const dealing = DESTINATIONS.filter((d) => d.deal);
+    expect(dealing.map((d) => d.id)).toEqual(['needful']);
+    for (const d of dealing) {
+      const spots = d.hotspots.map((h) => h.id);
+      for (const id of d.deal.items) {
+        expect(spots, `${d.id}: ${id}`).toContain(id);
+        expect(d.say[id]?.text, `${d.id}: ${id} has a line`).toBeTruthy();
+        expect(d.acts[id]).toBe(`deal-${id}`);
+        // (its prompt reads as more than a look: a look over, and a take)
+        expect(d.hotspots.find((h) => h.id === id).verb).not.toBe('Look');
+      }
+      expect(d.tasks.map((t) => t.id)).toContain(d.deal.task);
+      expect(spots).toContain(d.goal);
+      expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(d.deal.task);
+      expect(d.deal.bad).toBeLessThan(d.deal.items.length);
+      expect(d.deal.lost.length).toBeGreaterThan(10);
+      expect(d.deal.lost).not.toMatch(/!/);
+      expect(d.deal.lost.split(/[.?]\s/)).toHaveLength(1);
+      // the loss is said by `who`, in their own voice (not of themselves by name)
+      expect(d.deal.lost).not.toContain(d.say[d.deal.who].who.split(' ')[0]);
+    }
+  });
+  it('is Mr. Needful’s five free things, all but one cursed, three looks and one to take', () => {
+    const shop = destinationById('needful');
+    expect(shop.deal).toMatchObject({ task: 'needful', items: ['typewriter', 'aftershave', 'cream', 'shopclock', 'shopmirror'], bad: 4, need: 1, looks: 3, who: 'needful' });
+    expect(shop.goal).toBe('needful');
+    expect(shop.unlock).toEqual({ needful: 'needful' });
+  });
+});
+
 describe('Anatomy Park', () => {
   it('is a chase: the park map’s four pieces while the diseases hunt, then out through the portal on the clock', () => {
     const park = destinationById('anatomy');
