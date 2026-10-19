@@ -34,9 +34,12 @@ const check = (ok, what) => {
 };
 const done = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('tp-c137-done') ?? '[]'));
 
-// C-137 loaded and its world built, Morty in the garage
+// C-137 loaded and its world built
 async function c137(page, hash = '#/c-137') {
   await page.goto(`${BASE}/${hash}`, { waitUntil: 'domcontentloaded' });
+  await built(page);
+}
+async function built(page) {
   await page.waitForFunction(() => window.__C137__?.goto || document.querySelector('.rm-world')?.dataset.mode === 'cards', null, { timeout: 600000, polling: 1000 });
   check(await page.evaluate(() => Boolean(window.__C137__?.goto)), 'the 3D world didn’t start');
   await page.evaluate(() => document.querySelector('.rm-world')?.scrollIntoView({ block: 'start' }));
@@ -85,7 +88,17 @@ const inGarage = (page) =>
 const SCENARIOS = {
   // a new visitor plays episode 1 from the street to Customs and back
   async 'episode-1'(page) {
-    await c137(page);
+    // the card: episode 1, as the world comes on, gone at the next key
+    await page.goto(`${BASE}/#/c-137`, { waitUntil: 'domcontentloaded' });
+    const card = page.locator('.rm-episode');
+    await card.waitFor({ timeout: 600000 }).catch(() => {
+      throw new Error('no episode card for a new visitor');
+    });
+    const said = await card.textContent();
+    check(said.includes('Episode 1') && said.includes(WIPED.title) && said.includes(WIPED.intro[0][1]), `the card says “${said}”`);
+    await page.keyboard.press('Shift');
+    await card.waitFor({ state: 'detached', timeout: 5000 });
+    await built(page);
     check((await story(page)).freeRoam === false, 'a new visitor started on free roam');
     await reads(page, WIPED.steps[0].text);
     for (const [i, { id }] of WIPED.steps.slice(0, 3).entries()) {
@@ -138,6 +151,57 @@ const SCENARIOS = {
     await page.waitForFunction(() => window.location.hash === '#/c-137', null, { timeout: 20000 });
     await inGarage(page);
   },
+  // Things to do (M): the Story tab first, the Checklist beside it, and Free
+  // roam, which opens every place on the dial
+  async 'free-roam'(page) {
+    await c137(page);
+    await page.getByRole('button', { name: /Things to do/ }).first().click();
+    const list = page.locator('#rm-list');
+    await list.waitFor({ timeout: 10000 });
+    check((await list.getByRole('tab', { name: 'Story' }).getAttribute('aria-selected')) === 'true', 'the Story tab isn’t first');
+    check((await list.textContent()).includes(WIPED.steps[0].text), 'the Story tab doesn’t show the first step');
+    await list.getByRole('tab', { name: 'Checklist' }).click();
+    check((await list.textContent()).includes('Watch interdimensional cable'), 'the Checklist tab doesn’t show the checklist');
+    check(!(await page.evaluate(() => window.__RMSTORY__.dialOpen('vat'))), 'the vat was open before Free roam');
+    await list.getByRole('checkbox', { name: /Free roam/ }).check();
+    check(await page.evaluate(() => window.__RMSTORY__.dialOpen('vat') && window.__RMSTORY__.get().freeRoam), 'Free roam didn’t open the vat');
+    if (OUT) await page.screenshot({ path: `${OUT}/free-roam-list.png` });
+    await list.getByRole('button', { name: 'Close the list' }).click();
+    await gun(page);
+    check((await page.locator('.rm-dial-row[data-locked]').count()) === 0, 'places stayed locked on Free roam');
+  },
+  // a visitor with progress already saved keeps every place, and sees no card
+  returner: Object.assign(
+    async (page) => {
+      await c137(page);
+      const s = await story(page);
+      check(s.freeRoam === true, 'a returner isn’t on free roam');
+      check(await page.evaluate(() => window.__RMSTORY__.dialOpen('vat')), 'a returner’s vat is locked');
+      check((await page.locator('.rm-episode').count()) === 0, 'a returner was shown the episode card');
+      check((await done(page)).includes('cable'), 'a returner lost what they’d done');
+    },
+    { seed: { 'tp-c137-done': ['cable'] } },
+  ),
+  // the Citadel tells the story where it is and what's done there (episode 10
+  // isn't built yet, so on Free roam nothing moves), and its steps still save
+  citadel: Object.assign(
+    async (page, errors) => {
+      await page.goto(`${BASE}/#/c-137/citadel`, { waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => window.__CITADEL__?.api || document.querySelector('.citadel-world')?.dataset.mode === 'cards', null, { timeout: 600000, polling: 1000 });
+      check(await page.evaluate(() => Boolean(window.__CITADEL__?.api)), 'the Citadel’s 3D world didn’t start');
+      check(await page.evaluate(() => Boolean(window.__RMSTORY__)), 'the Citadel doesn’t read the story');
+      const s = await story(page);
+      check(s.freeRoam && s.episode === 0 && s.step === 0, `entering the Citadel moved the story to ${s.episode}.${s.step}`);
+      const before = errors.length;
+      await page.evaluate(() => window.__CITADEL__.complete('daycare'));
+      await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-citadel-done') ?? '[]').includes('daycare'), null, { timeout: 5000 }).catch(() => {
+        throw new Error('the Citadel didn’t keep the day care done');
+      });
+      await page.waitForTimeout(1000);
+      check(errors.length === before, `errors after a Citadel step: ${errors.slice(before, before + 3).join('; ')}`);
+    },
+    { seed: { 'tp-c137-done': ['cable'] } },
+  ),
   // C-137's toys tick their task when they're played, not when they open
   async toys(page) {
     await c137(page);
@@ -206,7 +270,7 @@ for (const [name, run] of Object.entries(SCENARIOS)) {
   page.on('console', (m) => m.type() === 'error' && !m.text().startsWith('Failed to load resource') && errors.push(m.text()));
   page.on('response', (r) => r.status() >= 400 && errors.push(`${r.status()} ${r.url()}`));
   try {
-    await run(page);
+    await run(page, errors);
     check(!errors.length, `errors on the page: ${errors.slice(0, 3).join('; ')}`);
     if (OUT) await page.screenshot({ path: `${OUT}/${name}.png` });
     console.log(`ok ${name}`);

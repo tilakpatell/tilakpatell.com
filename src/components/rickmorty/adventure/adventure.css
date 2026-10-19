@@ -20,3 +20,31 @@
 
 /* a planet's two ways out, side by side */
 .rm-ways { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+/* Things to do (M), in two tabs (the house's .switch), the panel scrolling
+   between them and the switches (not the list in it, as .rm-list ol has it) */
+.rm-list-tabs { margin-bottom: 0.55rem; }
+.rm-list-panel { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.rm-list .rm-list-panel ol { overflow: visible; }
+.rm-list-switch .rm-list-sub { display: block; }
+
+/* the Story tab (./StoryList.jsx): an episode a row, the current one's steps under it */
+.rm-story-title { margin: 0; font: 700 0.9rem/1.3 var(--font-sans); }
+.rm-list li[data-done] .rm-story-title { color: rgba(255, 255, 255, 0.6); }
+.rm-list .rm-story-steps { gap: 0.15rem; margin-top: 0.4rem; padding: 0; }
+.rm-list .rm-story-steps li { padding: 0.2rem 0; }
+.rm-list .rm-story-steps .rm-list-name { font-weight: 600; }
+.rm-list .rm-story-all { flex-direction: column; gap: 0.2rem; }
+
+/* an episode's card, as it starts: in the middle of the stage, under the
+   portal's fade, on C-137's glass (no blur), letting taps through to the world */
+.rm-episode { position: absolute; left: 50%; top: 50%; z-index: 5; display: grid; justify-items: center; gap: 0.45rem; width: min(26rem, calc(100% - 2rem)); padding: 1.1rem 1.3rem 1.25rem; border: 3px solid var(--rm-ink, #1b1424); border-radius: 18px; background: var(--rm-glass, rgba(27, 20, 36, 0.86)); color: #fff; text-align: center; box-shadow: 0 6px 0 rgba(27, 20, 36, 0.6), inset 0 0 0 1px rgba(201, 255, 90, 0.35); transform: translate(-50%, -50%); pointer-events: none; animation: rm-episode-in 0.3s ease-out both; }
+.rm-episode p { margin: 0; }
+.rm-episode-n { color: rgba(255, 255, 255, 0.78); font: 700 0.74rem/1 var(--font-sans); letter-spacing: 0.12em; text-transform: uppercase; }
+.rm-episode-title { color: var(--rm-lime, #c9ff5a); font: 400 clamp(1.8rem, 1.5rem + 1vw, 2.4rem)/1 'Luckiest Guy', var(--font-sans); letter-spacing: 0.03em; text-shadow: 0 3px 0 var(--rm-ink, #1b1424); }
+.rm-episode-line { font: 600 1rem/1.45 var(--font-sans); }
+.rm-episode-line b { color: var(--rm-lime, #c9ff5a); }
+@keyframes rm-episode-in { from { opacity: 0; transform: translate(-50%, -46%) scale(0.96); } }
+@media (prefers-reduced-motion: reduce) {
+  .rm-episode { animation: none; }
+}

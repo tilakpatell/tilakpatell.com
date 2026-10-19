@@ -328,9 +328,23 @@ export default function RmWorld({ start = null, onLeave = null }) {
     preloadVoiced();
     return stopVoiced;
   }, []);
-  // the adventure told what's happened (../adventure/), and what it says back
-  const { feed } = useAdventure();
-  const tell = useCallback((e) => newsOf(feed(e)).say.forEach(say), [feed, say]);
+  // the adventure told what's happened (../adventure/), and what it says
+  // back: an episode's closing line, and the next one's card (a new
+  // visitor's first, once the world's on)
+  const { feed, intro } = useAdventure();
+  const [card, setCard] = useState(null);
+  const closeCard = useCallback(() => setCard(null), []);
+  const tell = useCallback(
+    (e) => {
+      const news = newsOf(feed(e));
+      news.say.forEach(say);
+      if (news.card != null) setCard(news.card);
+    },
+    [feed, say],
+  );
+  useEffect(() => {
+    if (gl === 'on' && intro()) setCard(0);
+  }, [gl, intro]);
   const tellDone = useCallback((ids) => {
     const names = ids.map((id) => TASKS.find((t) => t.id === id)?.name).filter(Boolean);
     const p = progress(doneRef.current);
@@ -413,7 +427,7 @@ export default function RmWorld({ start = null, onLeave = null }) {
   return (
     <section className="rm-world" aria-labelledby="rm-world-title" data-mode={world ? '3d' : 'cards'}>
       {world ? (
-        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} tell={tell} />
+        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} tell={tell} card={card} closeCard={closeCard} />
       ) : (
         <Cards done={done} openPlace={openPlace} three={three} gl={gl} toast={toast} retry={() => setGl('loading')} planet={planet} />
       )}
@@ -428,7 +442,7 @@ export default function RmWorld({ start = null, onLeave = null }) {
 // hence the reach)
 const ROOM = { bound: boundOf(AREAS), motion: true };
 
-function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned, tell }) {
+function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned, tell, card, closeCard }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const touchRef = useRef(touch);
   touchRef.current = touch;
@@ -1764,6 +1778,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         game={game}
         prog={prog}
         objective={objective}
+        card={card}
+        closeCard={closeCard}
         duel={duel}
         clock={clock}
         placeName={placeName}

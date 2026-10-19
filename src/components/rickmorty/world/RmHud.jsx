@@ -15,6 +15,10 @@ import { MEMORIES, MEMORY_COLORS } from './rules';
 import { SAY } from './say';
 import { setShipVoice, shipVoiceOn, stopSpeaking } from './shipVoice';
 import { Title, Toast } from './WorldCards';
+import { EPISODES } from '../adventure/episodes';
+import EpisodeCard from '../adventure/EpisodeCard';
+import StoryList from '../adventure/StoryList';
+import { useAdventure } from '../adventure/useAdventure';
 import { homeLink } from '../adventure/ways';
 import '../adventure/adventure.css';
 
@@ -38,6 +42,8 @@ export default function RmHud({
   game,
   prog,
   objective,
+  card,
+  closeCard,
   duel,
   clock,
   placeName,
@@ -244,6 +250,7 @@ export default function RmHud({
       <DimensionDial open={!!trial} items={trialItems} value={null} onPick={pickTrial} onClose={closeTrial} title={`Rick’s rooms · ${(trial?.room ?? 0) + 1} of ${ROOMS.length}`} lead={trial ? ROOMS[trial.room].prompt : null} foot="↑ ↓ to choose, Enter to pick, Esc to back out" label="Rick’s rooms" />
 
       <Toast toast={toast} />
+      {card != null && <EpisodeCard episode={EPISODES[card]} n={card + 1} onDone={closeCard} />}
       {shipLine && hud.area === 'street' && (
         <p className="rm-shipline" role="status" key={shipLine.at}>
           <span className="rm-shipline-eyes" aria-hidden="true">
@@ -452,11 +459,16 @@ function EmoteWheel({ hover, touch, onPick, onClose }) {
   );
 }
 
-// The list (M): every thing to do, ticked when it's done, with where to go for the rest (on a
-// planet, its own and a line for the rest: ./planetMode.js's listOf); and the cruiser's voice.
+// The list (M), in two tabs: the story so far (../adventure/StoryList.jsx),
+// and every thing to do, ticked when it's done, with where to go for the rest
+// (on a planet, its own and a line for the rest: ./planetMode.js's listOf);
+// then the cruiser's voice, and Free roam (every place on the dial open).
 function ThingsToDo({ box, prog, done, onClose, back, planet }) {
   const [voice, setVoice] = useState(shipVoiceOn);
+  const [tab, setTab] = useState('story');
+  const story = useAdventure();
   const { label, rows, rest } = listOf(planet, done);
+  const home = homeLink(planet);
   return (
     <div ref={box} className="rm-list" id="rm-list" role="region" aria-label={label}>
       <div className="rm-list-head">
@@ -467,9 +479,57 @@ function ThingsToDo({ box, prog, done, onClose, back, planet }) {
           <RiCloseLine aria-hidden="true" />
         </button>
       </div>
+      <div className="switch rm-list-tabs" data-size="menu" role="tablist" aria-label="Things to do">
+        {[
+          ['story', 'Story'],
+          ['checklist', 'Checklist'],
+        ].map(([id, name]) => (
+          <button key={id} type="button" role="tab" id={`rm-tab-${id}`} aria-selected={tab === id} aria-controls="rm-list-panel" onClick={() => setTab(id)}>
+            {name}
+          </button>
+        ))}
+      </div>
+      <div className="rm-list-panel" id="rm-list-panel" role="tabpanel" aria-labelledby={`rm-tab-${tab}`}>
+        {tab === 'story' ? <StoryList state={story.state} /> : <Checklist rows={rows} rest={rest} next={prog.next} />}
+      </div>
+      <label className="rm-list-switch">
+        <input
+          type="checkbox"
+          checked={voice}
+          onChange={(e) => {
+            setShipVoice(e.target.checked);
+            setVoice(e.target.checked);
+            if (!e.target.checked) stopSpeaking();
+          }}
+        />
+        <span>The ship’s voice</span>
+      </label>
+      <label className="rm-list-switch">
+        <input type="checkbox" checked={story.state.freeRoam} onChange={(e) => story.setFreeRoam(e.target.checked)} />
+        <span>
+          Free roam
+          <span className="rm-list-sub">Every place on the dial, open.</span>
+        </span>
+      </label>
+      <RouterLink to={back.to} replace={back.replace} className="rm-list-back">
+        <RiArrowLeftLine aria-hidden="true" /> {back.label}
+      </RouterLink>
+      {home && (
+        <RouterLink to={home.to} state={home.state} className="rm-list-back">
+          <RiHome4Line aria-hidden="true" /> {home.label}
+        </RouterLink>
+      )}
+    </div>
+  );
+}
+
+// the Checklist tab: every thing to do, ticked when it's done, and (on a planet) a line for the rest
+function Checklist({ rows, rest, next }) {
+  return (
+    <>
       <ol>
         {rows.map((t) => (
-          <li key={t.id} data-done={t.done || undefined} data-next={prog.next?.id === t.id || undefined}>
+          <li key={t.id} data-done={t.done || undefined} data-next={next?.id === t.id || undefined}>
             <span className="rm-tick" aria-hidden="true">
               {t.done && <RiCheckLine />}
             </span>
@@ -484,27 +544,7 @@ function ThingsToDo({ box, prog, done, onClose, back, planet }) {
         ))}
       </ol>
       {rest && <p className="rm-list-rest">{rest}</p>}
-      <label className="rm-list-switch">
-        <input
-          type="checkbox"
-          checked={voice}
-          onChange={(e) => {
-            setShipVoice(e.target.checked);
-            setVoice(e.target.checked);
-            if (!e.target.checked) stopSpeaking();
-          }}
-        />
-        <span>The ship’s voice</span>
-      </label>
-      <RouterLink to={back.to} replace={back.replace} className="rm-list-back">
-        <RiArrowLeftLine aria-hidden="true" /> {back.label}
-      </RouterLink>
-      {planet && (
-        <RouterLink to={homeLink(planet).to} state={homeLink(planet).state} className="rm-list-back">
-          <RiHome4Line aria-hidden="true" /> {homeLink(planet).label}
-        </RouterLink>
-      )}
-    </div>
+    </>
   );
 }
 

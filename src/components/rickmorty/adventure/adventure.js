@@ -31,6 +31,7 @@ export function createAdventure({ saves, read, episodes, ready }) {
   let state = feed(made ? fresh({ returner }) : stored, { type: 'none' }, { ...book, known: k }).state;
   saves.set(STORY_KEY, state);
 
+  let introShown = !(made && !returner);
   const listeners = new Set();
   const tell = () => {
     for (const fn of listeners) fn();
@@ -48,8 +49,14 @@ export function createAdventure({ saves, read, episodes, ready }) {
   });
 
   return {
-    // a new save for someone who's never played: episode 1's card shows
+    // a new save for someone who's never played: episode 1's card shows,
+    // once a visit (intro() says so the first time it's asked)
     started: made && !returner,
+    intro() {
+      if (introShown) return false;
+      introShown = true;
+      return true;
+    },
     get: () => state,
     feed(event) {
       const r = feed(state, event, { ...book, known: known() });

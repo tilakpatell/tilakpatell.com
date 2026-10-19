@@ -127,4 +127,14 @@ describe('the adventure’s store', () => {
     a.reset();
     expect(a.get()).toEqual(fresh());
   });
+
+  it('shows a new visitor episode 1’s card once a visit', () => {
+    const a = createAdventure({ saves, read: none });
+    expect(a.intro()).toBe(true);
+    expect(a.intro()).toBe(false);
+    // a returner, or a visitor whose story is saved already, has seen it
+    expect(createAdventure({ saves, read: none }).intro()).toBe(false);
+    store.removeItem(STORY_KEY);
+    expect(createAdventure({ saves, read: { tasks: () => ['cable'], citadel: () => [] } }).intro()).toBe(false);
+  });
 });
