@@ -74,9 +74,10 @@ export function gradeNode(tex, uVision) {
   // the house’s grade: a gentle filmic curve, the colour a little richer, the
   // highlights warm and the shadows cool (as a print is); then a cold tint
   // by the vision, the corners darkened more as it rises
-  const curved = mix(shown, shown.mul(shown).mul(shown.mul(-2).add(3)), 0.22);
+  // (the curve gentle: at a fifth it pressed the grass and the shade down with the AO)
+  const curved = mix(shown, shown.mul(shown).mul(shown.mul(-2).add(3)), 0.12);
   const lum = dot(curved, LUMA);
-  const rich = mix(vec3(lum), curved, 1.1);
+  const rich = mix(vec3(lum), curved, 1.08);
   const split = mix(vec3(0.97, 0.99, 1.04), vec3(1.035, 1.0, 0.955), clamp(lum.mul(1.6).sub(0.3), 0, 1));
   const contrast = rich.mul(split);
   const tinted = mix(contrast, contrast.mul(vec3(0.86, 0.93, 1.08)), uVision);
@@ -106,8 +107,10 @@ export function chainFor(tier, backend, { scene = null, camera = null, grade = n
     if (kind === 'render') out.push({ kind, scene, camera });
     else if (kind === 'bloom') out.push({ kind, strength: BLOOM.strength, radius: BLOOM.radius, threshold: BLOOM.threshold });
     else if (kind === 'grade') out.push({ kind, node: grade });
-    // (soft and denoised: the grass moves in its vertices, which TRAA cannot settle, and it was grain)
-    else if (kind === 'ao') out.push({ kind, radius: 0.9, denoise: true });
+    // (soft and denoised: the grass moves in its vertices, which TRAA cannot settle, and it was
+    // grain; a contact shadow, short and three quarters strong: wider and whole, it darkened
+    // a field of blades a fifth below the mid tier's, which draws none)
+    else if (kind === 'ao') out.push({ kind, radius: 0.5, scale: 0.75, denoise: true });
     else if (kind === 'godrays') out.push({ kind, light: sun, strength: 0.2 });
     // (focused on the walkers ahead, the far hills soft)
     else if (kind === 'dof') out.push({ kind, focusDistance: 8, range: 30, bokehScale: 2 });
