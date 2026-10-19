@@ -186,10 +186,13 @@
 /* ── Phone width: the war's name across the top, the board under it on the
    left (clear of the northern systems' names), smaller fleets ── */
 @container holomap-map (max-width: 520px) {
-  .holomap-strip { top: 16px; left: 18px; right: 8px; width: auto; gap: 4px; }
-  .holomap-strip-board { justify-self: start; width: 150px; padding: 5px 6px 7px; gap: 4px; }
-  .holomap-strip-sides li { grid-template-columns: 12px minmax(0, 1fr) 1.4em 2.2em; gap: 3px; font-size: 0.7rem; }
+  .holomap-strip { top: 12px; left: 14px; right: 8px; width: auto; gap: 3px; }
+  /* (the board one row, each side's crest and count, the bar under: three rows of names covered the north's systems) */
+  .holomap-strip-board { justify-self: start; width: auto; padding: 4px 8px 5px; gap: 4px; }
+  .holomap-strip-sides { grid-auto-flow: column; justify-content: start; column-gap: 10px; }
+  .holomap-strip-sides li { grid-template-columns: 12px auto auto; gap: 3px; font-size: 0.7rem; }
   .holomap-strip-sides .holomap-emblem { width: 12px; height: 12px; }
+  .holomap-strip-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .holomap-strip-share { display: none; }
   .holomap-strip-n { font-size: 0.7rem; }
   .holomap-legend { left: 8px; bottom: 8px; }
