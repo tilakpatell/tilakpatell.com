@@ -2,12 +2,12 @@
    lit box's shadow, so the box shows the thing it's on; a card in the middle,
    with nothing lit, dims the veil instead. */
 .tour { position: fixed; inset: 0; z-index: calc(var(--z-dialog) + 8); } /* over any dialog it points at, under the covers */
-.tour-veil { position: absolute; inset: 0; background: rgb(2 6 14 / 0.62); }
+.tour-veil { position: absolute; inset: 0; background: color-mix(in srgb, var(--scrim-ink) 62%, transparent); } /* (the colour's own dark: styles/dialogs.css) */
 .tour[data-lit] .tour-veil { background: transparent; }
 .tour-spot {
   position: fixed;
-  border-radius: 14px;
-  box-shadow: 0 0 0 2px var(--accent), 0 0 0 200vmax rgb(2 6 14 / 0.62);
+  border-radius: min(var(--r-card), 14px);
+  box-shadow: 0 0 0 2px var(--accent), 0 0 0 200vmax color-mix(in srgb, var(--scrim-ink) 62%, transparent);
   pointer-events: none;
   transition: top 0.3s var(--ease-smooth), left 0.3s var(--ease-smooth), width 0.3s var(--ease-smooth), height 0.3s var(--ease-smooth);
 }
@@ -30,7 +30,7 @@
 }
 /* over the map: the panel's own ink, solid (it may sit over the panel, and
    even 5% of the panel's white title shows through on that near-black) */
-.tour-card[data-map] { border-color: var(--border-strong); background: rgb(6 8 16); }
+.tour-card[data-map] { border-color: var(--border-strong); background: var(--glass-solid); }
 .tour-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1.15rem 1.2rem 6px; } /* (6 px: the last action's focus ring, inside the scroller) */
 .tour-foot { flex: none; padding: calc(0.9rem - 6px) 1.2rem 1rem; }
 .tour-count { color: var(--muted); font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -49,8 +49,8 @@
 .tour-card :focus-visible { outline: 2px solid var(--accent-text, var(--accent)); outline-offset: 2px; }
 /* a world's basics: the world shows through a lighter dim, and the card is
    wider for its keys */
-.tour[data-kind='brief'] .tour-veil { background: rgb(2 6 14 / 0.45); }
-.tour[data-kind='brief'] .tour-spot { box-shadow: 0 0 0 2px var(--accent), 0 0 0 200vmax rgb(2 6 14 / 0.45); }
+.tour[data-kind='brief'] .tour-veil { background: color-mix(in srgb, var(--scrim-ink) 45%, transparent); }
+.tour[data-kind='brief'] .tour-spot { box-shadow: 0 0 0 2px var(--accent), 0 0 0 200vmax color-mix(in srgb, var(--scrim-ink) 45%, transparent); }
 .tour[data-kind='brief'] .tour-card { width: min(400px, calc(100vw - 32px)); }
 .tour-keys { margin-top: 0.7rem; font-size: 0.8125rem; }
 .tour-keys th { width: 46%; padding: 0.35rem 0.6rem 0.35rem 0; }
@@ -71,7 +71,7 @@
 .tour[data-waiting] .tour-text { color: var(--muted); }
 /* a world asking before it downloads: the gate takes the clicks, the card waits in a corner */
 .tour[data-asking] { z-index: calc(var(--z-sheet) - 1); }
-.tour[data-asking] .tour-veil { pointer-events: none; background: rgb(2 6 14 / 0.25); }
+.tour[data-asking] .tour-veil { pointer-events: none; background: color-mix(in srgb, var(--scrim-ink) 25%, transparent); }
 .tour-notice { margin: 0.5rem 0 0; font-size: 0.8rem; color: var(--muted); }
 @keyframes tour-in { from { opacity: 0; transform: translateY(6px); } }
 
