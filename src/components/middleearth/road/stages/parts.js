@@ -19,9 +19,15 @@
 //     whichever way x runs (a few thousand triangles where clumps would be millions)
 //   waterOn(land, i) → (x, z) → the height of the land’s i-th river’s water
 //     there, or null off it: what carries a boat
+//   lampPools(lamps, heightAt, { radius, colour, strength, toward }) → { mesh, set(amount), dispose }:
+//     the light of lamps on the ground, a warm disc under each (nudged
+//     `toward` x = 0, off a wall onto the lane), added on in one draw,
+//     fading out with distance; no light (a stage’s lights compile once)
 //   C(hex) → THREE.Color
 
 import * as THREE from 'three';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { cameraPosition, clamp, length, positionWorld, pow, smoothstep, uniform, uv, vec3 } from 'three/tsl';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { nearestOn } from '../../../../lib/land/paths.js';
 import { riverLevel } from '../terrain';
@@ -144,5 +150,40 @@ export function waterOn(land, i) {
   return (x, z) => {
     const { m, d } = nearestOn(r.line, x, z);
     return d <= r.width / 2 ? level(m) : null;
+  };
+}
+
+export function lampPools(lamps, heightAt, { radius = 3.4, colour = 0xffa050, strength = 0.5, toward = 1.4 } = {}) {
+  const geometry = new THREE.CircleGeometry(1, 28).rotateX(-Math.PI / 2);
+  const amount = uniform(1);
+  const c = new THREE.Color(colour);
+  const material = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
+  // (brightest under the lamp, gone at the rim; and gone in the distance, where the fog would have it)
+  const fall = pow(clamp(length(uv().sub(0.5)).mul(2).oneMinus(), 0, 1), 2);
+  const near = smoothstep(90, 35, length(positionWorld.sub(cameraPosition)));
+  material.colorNode = vec3(c.r, c.g, c.b).mul(fall.mul(near).mul(amount).mul(strength));
+  const mesh = new THREE.InstancedMesh(geometry, material, Math.max(1, lamps.length));
+  mesh.name = 'lamp-pools';
+  mesh.count = lamps.length;
+  mesh.renderOrder = 1;
+  const m = new THREE.Matrix4();
+  lamps.forEach((p, i) => {
+    const x = p.x - Math.sign(p.x) * Math.min(toward, Math.abs(p.x));
+    m.makeScale(radius, 1, radius).setPosition(x, heightAt(x, p.z) + 0.06, p.z);
+    mesh.setMatrixAt(i, m);
+  });
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.computeBoundingSphere();
+  return {
+    mesh,
+    set(k) {
+      amount.value = k;
+      mesh.visible = k > 0.01;
+    },
+    dispose() {
+      mesh.removeFromParent();
+      geometry.dispose();
+      material.dispose();
+    },
   };
 }
