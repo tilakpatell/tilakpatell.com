@@ -23,6 +23,7 @@ import { distanceTo } from '../../../lib/land/paths.js';
 import { SCATTER } from './stages/tables';
 
 export const CLEAR = 6; // m: nothing grows nearer the road’s middle than this
+export const CASTS = new Set(['tree', 'bush', 'rock']); // the kit's kinds that cast the sun's shadow
 const SLOPE = 0.6; // the steepest ground a row stands on by default (rise over run)
 const REACH = 300; // m either side of the road a stage is planted to
 
@@ -106,8 +107,11 @@ export function createScatter({ kitFor, tier = 'high' } = {}) {
     if (!pools.has(id)) {
       const kit = kitFor(tint, pack ?? null);
       const made = kit.manifest.then(() => {
-        if (gone || !kit.info(model)) return null;
-        const pool = createPool(kit, model, { bands, shadows: tier !== 'low' });
+        const row = kit.info(model);
+        if (gone || !row) return null;
+        // (only what stands casts: trees, bushes, rocks; grass, flowers and
+        // pebbles casting into four cascades were most of a stage’s triangles)
+        const pool = createPool(kit, model, { bands, shadows: tier !== 'low' && CASTS.has(row.kind) });
         group.add(pool.group);
         live.push(pool);
         return pool;
