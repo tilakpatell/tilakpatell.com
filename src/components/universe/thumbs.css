@@ -147,6 +147,12 @@
   }
 }
 
+/* (a tablet: with a button up, the line about it is a row over the grid's
+   slot, so the hint goes a row over that) */
+@media (pointer: coarse) and (min-width: 768px) and (min-height: 501px) {
+  :root .universe-map[data-ship]:not(.galaxy-map):has(.universe-jump, .universe-wayin:not([hidden])) .universe-hint { bottom: calc(var(--thumbs-over) + 104px); }
+}
+
 /* ── A phone, flying: held upright, or on its side ── */
 /* (a phone upright: the grid taller than it's wide, clear of the sheet; a
    small phone on its side is as narrow, but keeps the wide grid, below) */

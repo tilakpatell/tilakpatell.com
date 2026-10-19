@@ -474,7 +474,7 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
                   </span>
                   {/* (a phone held upright is told it flies better on its side: the page can't turn it) */}
                   <span className="universe-hint-touch">
-                    Drag to fly<span className="universe-hint-more">, hold Fire and Boost, and fly down into a planet’s air to go in</span>
+                    Drag to fly<span className="universe-hint-more"> · hold Fire and Boost · fly down into a planet’s air to go in</span>
                     <span className="universe-hint-turn"> · Turn the phone on its side for more room</span>
                     <GuideCue touch />
                   </span>
