@@ -71,6 +71,21 @@ describe('a Middle-earth stage on the node renderer', () => {
     expect(bloom.radius.value).toBe(0.6);
   });
 
+  it('compiles for the target the chain’s scene pass draws into, then puts the renderer’s back', async () => {
+    const w = (world.current = fakeWorld());
+    const s = createStage({}, { soft: false });
+    const target = { isRenderTarget: true };
+    w.built[0].parts = { scenePass: { renderTarget: target } };
+    let current = null;
+    w.renderer.getRenderTarget = () => current;
+    w.renderer.setRenderTarget = (t) => (current = t);
+    const seen = [];
+    w.rt.gfx.compile = vi.fn(() => (seen.push(current), Promise.resolve()));
+    await s.precompile();
+    expect(seen).toEqual([target]);
+    expect(current).toBe(null);
+  });
+
   it('draws a soft stage straight to its view, and takes the bloom out on its rung', () => {
     const w = (world.current = fakeWorld());
     const soft = createStage({}, { soft: true });

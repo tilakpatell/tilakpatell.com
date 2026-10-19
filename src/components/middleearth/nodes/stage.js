@@ -210,7 +210,17 @@ export function createStage(canvas, { soft = false, bloom = BLOOM, exposure = LO
   const compile = async (root = scene) => {
     world.views.enter(canvas);
     gfx.upload?.(root);
-    await Promise.all([gfx.compile?.(root, camera, scene), post?.ready, post?.compile?.()]);
+    await post?.ready;
+    // (for the target the chain's scene pass draws into: a program is made
+    // for its target's kind, and the canvas's isn't the pass's half-float
+    // one, so compiled for the canvas each was made again on its first
+    // frame, seconds a town in software after it said it was ready)
+    const target = post?.parts?.scenePass?.renderTarget ?? null;
+    const was = target ? renderer.getRenderTarget?.() ?? null : null;
+    if (target) renderer.setRenderTarget(target);
+    const made = gfx.compile?.(root, camera, scene);
+    if (target) renderer.setRenderTarget(was);
+    await Promise.all([made, post?.compile?.()]);
   };
   const precompile = (root = scene) => {
     if (lost || disposed) return Promise.resolve();
