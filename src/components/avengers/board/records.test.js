@@ -52,7 +52,7 @@ describe('the ops board’s bests', () => {
   });
   it('names the very keys the games and the compound write', () => {
     expect(Object.values(BESTS).map((b) => b.key)).toEqual(['tp-hq-repulsor-best', 'tp-hq-lawn-best', 'tp-hq-ricochet', 'tp-hq-trickshot-best', 'tp-hq-widow-level', 'tp-hq-smash-best', 'tp-hq-thwip-best', 'tp-hq-tesseract-best']);
-    const FILE = { stark: 'repulsor/RepulsorRange.jsx', thor: 'lawn/HoldTheLawn.jsx', cap: 'ricochet/save.js', hawkeye: 'trickshot/TrickShot.jsx', widow: 'widow/Infiltration.jsx', banner: 'smash/SmashRun.jsx', spidey: 'thwip/Thwip.jsx', vault: 'tesseract/TesseractRun.jsx' };
+    const FILE = { stark: 'repulsor/RepulsorRange.jsx', thor: 'lawn/HoldTheLawn.jsx', cap: 'ricochet/save.js', hawkeye: 'trickshot/TrickShot.jsx', widow: 'widow/save.js', banner: 'smash/SmashRun.jsx', spidey: 'thwip/Thwip.jsx', vault: 'tesseract/TesseractRun.jsx' };
     for (const [id, f] of Object.entries(FILE)) expect(readFileSync(new URL(`../${f}`, import.meta.url), 'utf8'), f).toContain(`'${BESTS[id].key}'`);
     const world = readFileSync(new URL('../world/CompoundWorld.jsx', import.meta.url), 'utf8');
     for (const k of Object.values(RECORD_KEYS)) expect(world, k).toContain(`'${k}'`);

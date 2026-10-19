@@ -4,12 +4,15 @@ import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned, recordTry } from '../hq/stones';
-import { HALF_OF } from '../world/labels';
 import { useAchievements } from '../../Achievements';
 import { useGame3D } from '../hq/useGame3D';
 import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
-import { BITE, DIRS, LEVEL_COUNT, LEVELS, act, biteTargets, cloneState, guardAt, laserOn, newLevel, parseLevel, pathTo, solveLevel } from './rules';
+import { BITE, DIRS, LEVEL_COUNT, act, biteTargets, cloneState, guardAt, laserOn, newLevel, parseLevel, pathTo, solveLevel } from './rules';
+import { readCleared, recordWin } from './save';
+import { CAUGHT, levelEnd } from './ends';
+import { KEY_DIRS } from './flatInput';
+import Dossier from './Dossier';
 import './widow.css';
 import '../../../styles/lazy/avengers.css';
 
@@ -22,32 +25,17 @@ const buzz = (ms) => {
     /* no vibration */
   }
 };
-const SAVE = 'tp-hq-widow-level'; // how many levels she has cleared
 const HOLO = 'tp-hq-widow-holo';
 const TURN_MS = 230;
-const KEY_DIRS = { arrowup: 'N', w: 'N', arrowdown: 'S', s: 'S', arrowleft: 'W', a: 'W', arrowright: 'E', d: 'E' };
 
-// Her file, a line declassified for each level cleared.
-const FILE = [
-  ['Name', 'Natasha Romanoff. Codename: Black Widow.'],
-  ['Trained', 'In the Red Room, from childhood.'],
-  ['Family', 'Yelena Belova. A sister, if not by blood.'],
-  ['Recruited', 'By Clint Barton, who was sent to kill her and made a different call.'],
-  ['Budapest', 'Classified. She and Barton remember it very differently.'],
-  ['Cover', 'Natalie Rushman, Stark Industries, 2010.'],
-  ['2014', 'Put S.H.I.E.L.D.’s secrets on the internet, and HYDRA’s with them.'],
-  ['Vormir', 'Whatever it takes.'],
-];
-const CAUGHT = { guard: 'A guard saw you.', camera: 'The camera saw you.', laser: 'You stood in a live laser.' };
 
-const readSave = () => Math.max(0, Math.min(LEVEL_COUNT, Number(local.get(SAVE, 0)) || 0));
 
 export default function Infiltration({ fallback }) {
   const three = useGame3D('widow');
   const stage = useStage(gameModule, { enabled: three.on, id: 'widow', forced: three.mode === 'on', own3D: true });
   const { unlock } = useAchievements();
-  const [cleared, setCleared] = useState(readSave);
-  const [index, setIndex] = useState(() => Math.min(readSave(), LEVEL_COUNT - 1));
+  const [cleared, setCleared] = useState(readCleared);
+  const [index, setIndex] = useState(() => Math.min(readCleared(), LEVEL_COUNT - 1));
   const game = useRef(newLevel(index));
   const hud = useRef(null);
   const [ui, setUi] = useState({ phase: 'menu', result: null, caught: null, fresh: -1 });
@@ -138,11 +126,9 @@ export default function Infiltration({ fallback }) {
             break;
           }
           case 'won': {
-            const n = e.index + 1;
             play('decode');
-            const fresh = n > readSave() ? e.index : -1;
-            if (n > readSave()) local.set(SAVE, n);
-            setCleared(readSave());
+            const { cleared: c, fresh } = recordWin(e.index);
+            setCleared(c);
             setUi((u) => ({ ...u, phase: 'cleared', fresh, result: { turns: e.turns, takedowns: g.takedowns, bites: g.bites, stone: false } }));
             break;
           }
@@ -497,13 +483,7 @@ export default function Infiltration({ fallback }) {
       {ui.phase === 'cleared' && (
         <Results
           className="iw-overlay"
-          won
-          kicker={`Level ${index + 1} · ${def.name} · clear`}
-          title={ui.result?.stone ? 'The file is out.' : ['Clean.', 'Unseen.', 'Like a ghost.'][Math.min(2, ui.result?.turns % 3)]}
-          line={`${ui.result?.turns} turns${ui.result?.takedowns ? ` · ${ui.result.takedowns} ${ui.result.takedowns === 1 ? 'takedown' : 'takedowns'}` : ''}${ui.result?.bites ? ` · ${ui.result.bites} ${ui.result.bites === 1 ? 'bite' : 'bites'}` : ''}. ${index + 1 < total ? 'One more line of her file, declassified.' : 'Every line of it.'}`}
-          stone={ui.result?.stone ? 'soul' : null}
-          half={ui.result?.both ? null : HALF_OF['soul-natasha']}
-          stoneText={ui.result?.both ? 'Natasha’s half of the Soul Stone, and Clint’s: the Soul Stone is yours.' : 'Natasha’s half of the Soul Stone. Clint has the other half, at the range.'}
+          {...levelEnd(ui.result, index)}
           onAgain={() => enter(index)}
           onward={index + 1 < total ? { label: 'Next level', onClick: () => enter(index + 1) } : null}
           more={{ label: 'All levels', onClick: () => setUi((u) => ({ ...u, phase: 'menu' })) }}
@@ -543,40 +523,6 @@ export default function Infiltration({ fallback }) {
         {ui.phase === 'play' ? `Level ${index + 1}, ${def.name}. ${objective}. ${g.turns} turns.${def.charges ? ` ${charges} bites left.` : ''}` : ui.phase === 'caught' ? `Spotted. ${CAUGHT[ui.caught?.by] ?? ''}` : ui.phase === 'cleared' ? `Level ${index + 1} cleared in ${ui.result?.turns} turns.` : ''}
       </p>
     </HQGame>
-  );
-}
-
-// The file: a line for each level, redacted until that level is cleared;
-// each line a way into its level once it can be played.
-function Dossier({ cleared, fresh, onPick }) {
-  return (
-    <div className="iw-file" role="group" aria-label="Natasha Romanoff’s file">
-      <p className="iw-file-head">
-        <span>S.H.I.E.L.D. · Personnel file</span>
-        <span>
-          {Math.min(cleared, FILE.length)}/{FILE.length} declassified
-        </span>
-      </p>
-      <ol className="iw-file-lines">
-        {FILE.map(([label, text], i) => {
-          const open = i < cleared;
-          const playable = i <= Math.min(cleared, LEVEL_COUNT - 1);
-          return (
-            <li key={label} data-open={open || undefined} data-fresh={i === fresh || undefined}>
-              <button type="button" disabled={!playable} onClick={() => onPick(i)} aria-label={`Level ${i + 1}, ${LEVELS[i].name}${open ? `. ${label}: ${text}` : playable ? '. Redacted until cleared' : '. Locked'}`}>
-                <span className="iw-file-n">{String(i + 1).padStart(2, '0')}</span>
-                <span className="iw-file-label">{label}</span>
-                <span className="iw-file-text">
-                  <span className="iw-file-words">{text}</span>
-                  {!open && <span className="iw-file-bar" aria-hidden="true" />}
-                </span>
-                <span className="iw-file-level">{LEVELS[i].name}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-    </div>
   );
 }
 
