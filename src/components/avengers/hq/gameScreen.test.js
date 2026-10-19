@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import { GAMES, GAME_AT, TOUCH_HELP, TOUCH_ICONS, fmt, local3DKey, nextFor, readLocal3D, resolveLocal3D, scoreLine, stoneWords, switchFor, watchHidden, writeLocal3D } from './gameScreen';
+import { GAMES, GAME_AT, TOUCH_HELP, TOUCH_ICONS, fmt, local3DKey, nextFor, readLocal3D, resolveLocal3D, scoreLine, startable, stoneWords, switchFor, watchHidden, writeLocal3D } from './gameScreen';
 import { PLACES, progress } from '../world/rules';
 import { linkOf } from '../world/links';
 
@@ -116,6 +116,10 @@ describe('the way on and the score', () => {
     expect(scoreLine({ score: null })).toBe(null);
     expect(stoneWords('Power Stone')).toBe('The Power Stone is yours.');
     expect(stoneWords('Soul Stone', 'Clint’s')).toBe('Clint’s half of the Soul Stone is yours.');
+  });
+  it('starts a game only on a stage that has drawn', () => {
+    expect(startable('on')).toBe(true);
+    for (const s of ['idle', 'loading', 'failed', 'slow', 'lost']) expect(startable(s)).toBe(false);
   });
 });
 

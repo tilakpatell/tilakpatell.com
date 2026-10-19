@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
 import Results from '../hq/Results';
+import { startable } from '../hq/gameScreen';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
@@ -87,6 +88,8 @@ export default function RepulsorRange({ fallback }) {
   }, []);
 
   const start = useCallback(() => {
+    // (wave 1 waits for the stage: a run that began on a dark screen lost armour unseen)
+    if (!startable(stage.status)) return;
     audioContext(); // in the click, so the run can be heard
     const s = game.current;
     s.seed = newSeed();
@@ -96,7 +99,7 @@ export default function RepulsorRange({ fallback }) {
     sync({ message: LINES[0], newBest: false, stone: false, bonus: 0 });
     stage.wrap.current?.querySelector('.hq-screen')?.focus({ preventScroll: true });
     if (ev.length) play('beeps');
-  }, [sync, stage.wrap]);
+  }, [sync, stage.status, stage.wrap]);
 
   // browser checks: the game, its view, and ways to jump to a state
   useEffect(
@@ -488,7 +491,7 @@ export default function RepulsorRange({ fallback }) {
                   </li>
                 </ul>
                 <TouchHelp game="repulsor" />
-                <button type="button" className="btn btn-primary mt-5" onClick={start}>
+                <button type="button" className="btn btn-primary mt-5" disabled={!startable(stage.status)} onClick={start}>
                   Suit up
                 </button>
                 {best > 0 && <p className="hq-overlay-best">Best {fmt(best)}</p>}

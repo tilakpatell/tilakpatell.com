@@ -67,6 +67,9 @@
 .cw-chip b { color: var(--cw-cyan); font-variant-numeric: tabular-nums; }
 .cw-stones .stone-dot { width: 0.62rem; height: 0.62rem; opacity: 0.28; box-shadow: none; }
 .cw-stones .stone-dot[data-on] { opacity: 1; box-shadow: 0 0 8px var(--glow); }
+/* a stone won: the chip pulses as you come back out */
+.cw-stones[data-pulse] { animation: cw-pulse 0.7s ease-in-out 3; }
+@keyframes cw-pulse { 50% { transform: scale(1.06); border-color: var(--cw-cyan); box-shadow: 0 0 18px color-mix(in srgb, var(--cw-cyan) 55%, transparent); } }
 /* (a key cap in the HUD is the kit's; the game's page, over the site, keeps its own) */
 .cw-place kbd { margin-left: 0.4rem; padding: 0.05rem 0.35rem; border: 1px solid currentColor; border-radius: 4px; font: 600 0.68rem/1.4 var(--font-mono); opacity: 0.75; }
 
@@ -223,7 +226,7 @@
   .cw-bubble > div { max-width: 13rem; font-size: 0.8rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .cw-door, .cw-list, .cw-place, .cw-pack, .cw-tour-msg, .cw-menu .hud-menu-list { animation: none; }
+  .cw-door, .cw-list, .cw-place, .cw-pack, .cw-tour-msg, .cw-menu .hud-menu-list, .cw-stones[data-pulse] { animation: none; }
   .cw-trick { animation: none; }
   .cw-speed { display: none; }
 }

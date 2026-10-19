@@ -118,6 +118,10 @@ export function scoreLine({ score, best = 0, newBest = false, format = fmt }) {
 
 export const stoneWords = (name, half = null) => (half ? `${half} half of the ${name} is yours.` : `The ${name} is yours.`);
 
+// A game starts only on a stage that has drawn (the runtime reports 'on'
+// only after its first frame), so a run never begins on a dark screen.
+export const startable = (status) => status === 'on';
+
 // Pause a game when its tab is hidden; the call returned stops listening.
 export function watchHidden(doc, onHide) {
   if (!doc?.addEventListener) return () => {};

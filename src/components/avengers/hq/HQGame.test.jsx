@@ -117,4 +117,9 @@ describe('the start and the end of every game', () => {
     expect(s).toMatch(/label: 'Restart at the boss', onClick: startBoss/);
     expect(s).toContain("'From wave 1'");
   });
+  it('Repulsor Range waits for its stage before wave 1', () => {
+    const s = src(FILES.repulsor);
+    expect(s).toMatch(/if \(!startable\(stage\.status\)\) return;/);
+    expect(s).toMatch(/disabled=\{!startable\(stage\.status\)\}/);
+  });
 });
