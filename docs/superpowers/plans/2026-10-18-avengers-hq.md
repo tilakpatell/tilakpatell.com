@@ -28,7 +28,10 @@
 - Worlds are islands; no new cross-world import. `avengers/hq` is shared with Invincible, Mario 64 and the Marvel landing: `hq/HQFrame.jsx` keeps its props and picture, and any PR that changes `hq/` runs `scripts/inv-world-check.mjs` with identical shots.
 - One runtime renderer and one live 3D view a page; no new renderers or animation loops; the HQ modules stay `'glsl'`.
 - Tests beside their files, each under one second, no network.
-- The HQ games keep their own key lists until open draft #1028 (which edits `guide/pages.js` and `runtime/hud/*`) merges; touch `guide/pages.js` only as PR 3 says, minimally.
+- The HQ games keep their own key lists until open draft #1028 (which edits `guide/pages.js` and `runtime/hud/*`) merges; touch `guide/pages.js` only as PR 3 (one tip row) and PR 5 (the “Without 3D” tip string) say.
+- Check scripts set `tp-3d` raw (`'on'` or `'off'`, as `lib/gpu.js` `setMode3D` stores it; a JSON string reads as auto) and `tp-worlds` as JSON (`'"load"'`, read through `local.get`); copy `scripts/hq-world-check.mjs:28-34`’s init lines and override only what a part needs.
+- Scratch files live in the session’s scratchpad, `$S`, never under the repo; PR 1’s manifest script is saved once as `$S/closure.mjs` and reused by every later PR.
+- The FL2 shots’ `compound` target is not pixel-stable against `main` itself (FL2 README: 64 px, PR 1: 83 px), so a PR that compares it shoots `main` twice and passes a target at 0 px against either run; `invworld`, `thinkmark` and `viewer` are compared as they are.
 
 **Every PR, before it is done:**
 - `npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build`, then `git checkout public/github.json`.
@@ -44,7 +47,7 @@ The five failures most likely to bite a visitor, and the PR whose tests pin each
 2. **Back does what the visitor means.** Back from a game opened by a door or the board returns to `/avengers`; Back from a game opened by a shared link replaces with `/avengers` rather than leaving the site; an unknown slug lands on `/avengers`. Pinned by PR 3 (`links.test.js`, the back decision) and `hq-links-check.mjs` in every later PR.
 3. **One game’s 3D switch stays in that game.** Turning a game’s 3D off, or a card’s Try 3D, never changes the site’s setting or drops the compound to 2D. Pinned by PR 4 (`hq/gameScreen.test.js`) and PR 5 (the card’s Try 3D).
 4. **Leaving mid-game.** Browser Back, Esc or a hidden tab during play pauses or closes cleanly; returning shows the veil, then the compound, never a blank. Pinned by PR 4 and its browser check.
-5. **Other worlds that share `hq/`.** Invincible’s ThinkMark and Mario 64 look and run the same after PRs 1, 2 and 4. Pinned by `scripts/inv-world-check.mjs` in those PRs.
+5. **Other worlds that share `hq/`.** Invincible’s ThinkMark and Mario 64 look and run the same after PRs 1, 2, 4, 6 and 7. Pinned by `scripts/inv-world-check.mjs` and the FL2 shots of `invworld`, `thinkmark` and `viewer` in those PRs.
 
 ## The pull requests
 
