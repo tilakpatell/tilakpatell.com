@@ -12,7 +12,7 @@ Middle-earth as a journey: one continuous three.js ride from Bag End to the Grey
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | R1 the spine | the module, the line, the clock, the director, the fellowship, daylight, the face, the rows, the cast, the measure | `…-the-road.md` | 1 to 10 | `claude/the-road-1-spine` | 2026-10-18 | #1034 | done: tasks 1 to 10; the numbers in `evidence/the-road/README.md`; next R2 (Task 11) |
 | S the sheet | the geography, the projection, the consumers, the painter, the shots | `…-middle-earth-sheet.md` | 1 to 6 | `claude/middle-earth-sheet` | | | free: #1023 has merged |
-| R2 the systems | the ground, the scatter, the water, the weather, the ambience, the house and the vision, Hobbiton in full | `…-the-road.md` | 11 to 17 | `claude/the-road-2-systems` | | | |
+| R2 the systems | the ground, the scatter, the water, the weather, the ambience, the house and the vision, Hobbiton in full | `…-the-road.md` | 11 to 17 | `claude/the-road-2-systems` | 2026-10-19 (session_01Pa7Th5Ndiq8Vz332ijCx2w) | | in progress: tasks 11 and 12 done; Task 13 (the water) from the start |
 | R3 stages 2 to 6 | the Shire’s edge, Bree, Weathertop, the Ford, Rivendell | the same | 18 to 22 | `claude/the-road-3-eriador` | | | |
 | R4 stages 7 to 10 | Caradhras and the Doors, Moria, Lothlórien, the Anduin | the same | 23 to 26 | `claude/the-road-4-mountains` | | | |
 | R5 stages 11 to 14 | the Marshes and the Gate, Ithilien and the Vale, Cirith Ungol, Gorgoroth and the Mountain | the same | 27 to 30 | `claude/the-road-5-mordor` | | | |
