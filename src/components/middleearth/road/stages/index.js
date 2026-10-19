@@ -106,10 +106,38 @@ export const STAGES = [
       ],
     },
   },
-  { id: 'caradhras', name: 'Caradhras', date: '11 January 3019', length: 230, mode: 'walk', place: 'redhorn' },
-  { id: 'moria', name: 'Moria', date: '13 January 3019', length: 250, mode: 'walk', place: 'moria' },
-  { id: 'lorien', name: 'Lothlórien', date: '17 January 3019', length: 200, mode: 'walk', place: 'lorien' },
-  { id: 'anduin', name: 'The Anduin', date: '16 February 3019', length: 240, mode: 'boat', place: 'argonath' },
+  // (stages 7 to 10 shorter than the table’s first lengths: their holds are
+  // longer than the half minute the ledger counted, and the ride must stay
+  // under half an hour with stages 11 to 16 still to come)
+  { id: 'caradhras', name: 'Caradhras', date: '11 January 3019', length: 170, mode: 'walk', place: 'redhorn' },
+  { id: 'moria', name: 'Moria', date: '13 January 3019', length: 180, mode: 'walk', place: 'moria' },
+  {
+    id: 'lorien',
+    name: 'Lothlórien',
+    date: '17 January 3019',
+    length: 150,
+    mode: 'walk',
+    // (round the mallorn’s stair to the flets, along them, and down to the boats at the hythe)
+    modes: [
+      { at: 46, mode: 'climb' },
+      { at: 76, mode: 'walk' },
+      { at: 136, mode: 'boat' },
+    ],
+    place: 'lorien',
+  },
+  {
+    id: 'anduin',
+    name: 'The Anduin',
+    date: '16 February 3019',
+    length: 170,
+    mode: 'boat',
+    // (ashore at Parth Galen for the Seat and the horn, and away again in the boat)
+    modes: [
+      { at: 100, mode: 'walk' },
+      { at: 154, mode: 'boat' },
+    ],
+    place: 'argonath',
+  },
   { id: 'marshes', name: 'The Dead Marshes', date: '1 March 3019', length: 210, mode: 'walk', place: 'dead-marshes' },
   { id: 'ithilien', name: 'Ithilien', date: '7 March 3019', length: 230, mode: 'walk', place: 'minas-morgul' },
   { id: 'cirith-ungol', name: 'Cirith Ungol', date: '12 March 3019', length: 180, mode: 'climb', place: 'cirith-ungol' },
