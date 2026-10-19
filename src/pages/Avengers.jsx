@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom';
 import HQBackdrop from '../components/avengers/HQBackdrop';
 import CompoundWorld from '../components/avengers/world/CompoundWorld';
 import Titan from '../components/avengers/titan/Titan';
-import { SOUL_HALVES, hasEarned, useStones } from '../components/avengers/hq/stones';
-import { snapGate } from '../components/avengers/titan/gate';
+import { SOUL_HALVES, hasEarned, heistRecord, useStones } from '../components/avengers/hq/stones';
+import { heistSummary } from '../components/avengers/hq/heist';
+import { HEIST_ROWS, snapGate } from '../components/avengers/titan/gate';
+import HeistSummary from '../components/avengers/titan/HeistSummary';
+import { readBest } from '../components/avengers/board/records';
 import { hqState } from '../components/avengers/world/links';
 import { useAchievements } from '../components/Achievements';
 import ModelCredits from '../components/ModelCredits';
@@ -18,6 +21,7 @@ import { hasPhotos, hasScenes } from '../components/worlds/media';
 import { audioContext } from '../lib/audio';
 import { jumpTo } from '../lib/anchors';
 import { prefersReducedMotion, useDocumentTitle } from '../lib/hooks';
+import { localSaves } from '../runtime/local';
 import '../styles/lazy/avengers.css';
 
 const sfx = () => import('../lib/sfx');
@@ -72,6 +76,7 @@ export default function Avengers() {
   const titan = useRef(null);
   const [portal, setPortal] = useState(false);
   const [arrived, setArrived] = useState(false);
+  const [summary, setSummary] = useState(null); // the heist's, raised by Tony's snap
   const timers = useRef([]);
   // the page's own look (styles/extras.css), while the Stark theme is on
   useLayoutEffect(() => {
@@ -119,6 +124,8 @@ export default function Avengers() {
       sfx().then((s) => s.thunder());
       unlock('whatever');
       notify('I am Iron Man.', 'Every stone, won back on the compound. Thanos is dust; this page is not.', 'note', 'whatever');
+      // (the column is headed Best, so a best's own "Best " goes)
+      setSummary(heistSummary(heistRecord(), { games: HEIST_ROWS, bests: Object.fromEntries(HEIST_ROWS.map((r) => [r.id, readBest(r.id, localSaves().get)?.text.replace(/^Best /, '')])) }));
     };
     if (titan.current?.snap(true, after)) return;
     after();
@@ -147,6 +154,7 @@ export default function Avengers() {
                 </div>
               }
             />
+            {summary && <HeistSummary summary={summary} onClose={() => setSummary(null)} />}
           </div>
           <div>
             <p className="eyebrow">Titan · beyond the portal</p>
