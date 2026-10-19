@@ -8,8 +8,13 @@
 // copied: importing them would bring its GLSL into a 'nodes' world's closure.
 // `near` (m, this twin's own; 0: none) lays the blades down within that of
 // the camera, so a low camera never looks through a few huge blades.
+// `faceCamera` (this twin's own) turns each blade's front to the camera:
+// unset, the camera sees its back, and three turns a double-sided
+// material's normal over on a back face, so the blades are lit from below
+// (the sky light's ground half) and never by the sun; the worlds before
+// it were tuned so, and keep it.
 //
-//   createGrass({ ground, wind, tracks, side, size, height, width, root, seed, near })
+//   createGrass({ ground, wind, tracks, side, size, height, width, root, seed, near, faceCamera })
 //     → { mesh, material, uniforms, update(centre), set(opts), dispose() }
 //   bladeLayout(opts), grassGeometry(opts)
 
@@ -57,7 +62,7 @@ export function grassGeometry({ side = 280, size = 40, seed = 7 } = {}) {
   return g;
 }
 
-export function createGrass({ ground, wind, tracks = null, side = 280, size = 40, height = 0.55, width = 0.07, root = 0.5, seed = 7, near = 0 } = {}) {
+export function createGrass({ ground, wind, tracks = null, side = 280, size = 40, height = 0.55, width = 0.07, root = 0.5, seed = 7, near = 0, faceCamera = false } = {}) {
   const geometry = grassGeometry({ side, size, seed });
   const uniforms = {
     uGrassCentre: uniform(new THREE.Vector2()),
@@ -88,7 +93,7 @@ export function createGrass({ ground, wind, tracks = null, side = 280, size = 40
       if (near > 0) h.mulAssign(smoothstep(near * 0.35, near, length(cameraPosition.sub(modelWorldMatrix.mul(vec4(xz.x, ground.groundHeight(xz), xz.y, 1)).xyz))));
       const w = u.uGrassWidth.mul(step(0.1, grass)).mul(step(0.001, h));
       const to = normalize(cameraPosition.xz.sub(xz).add(vec2(1e-4, 0)));
-      const across = vec2(to.y.negate(), to.x);
+      const across = faceCamera ? vec2(to.y, to.x.negate()) : vec2(to.y.negate(), to.x);
       const p = positionGeometry;
       const spread = across.mul(p.x).mul(w).add(wind.windOffset(xz).mul(p.y).mul(h).mul(2));
       vTip.assign(p.y);
