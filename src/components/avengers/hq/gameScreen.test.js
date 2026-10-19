@@ -81,7 +81,7 @@ describe('the switch, the touch help and the games', () => {
     }
   });
   it('has touch words for every game, each with an icon it can draw', () => {
-    expect(Object.keys(TOUCH_HELP).sort()).toEqual([...GAMES, 'ricochet-flat'].sort());
+    expect(Object.keys(TOUCH_HELP).sort()).toEqual([...GAMES, 'ricochet-flat', 'widow-flat'].sort());
     for (const rows of Object.values(TOUCH_HELP)) {
       expect(rows.length).toBeGreaterThanOrEqual(1);
       expect(rows.length).toBeLessThanOrEqual(3);
@@ -98,8 +98,9 @@ describe('the switch, the touch help and the games', () => {
       expect(switchFor({ can: true, on: true, status, flat: true })).toEqual({ bar: null, note: { text, action: { label: 'Try 3D again', next: 'retry' } } });
     }
   });
-  it('has touch words for Ricochet in 2D', () => {
+  it('has touch words for the two 2D views', () => {
     expect(TOUCH_HELP['ricochet-flat'].map((r) => r.icon)).toEqual(['drag', 'tap', 'button']);
+    expect(TOUCH_HELP['widow-flat'].map((r) => r.icon)).toEqual(['tap', 'tap', 'button']);
   });
   it('names the game at every door', () => {
     expect(Object.keys(GAME_AT)).toEqual(PLACES.map((p) => p.id));

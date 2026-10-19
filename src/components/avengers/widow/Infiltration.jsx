@@ -13,6 +13,7 @@ import { readCleared, recordWin } from './save';
 import { CAUGHT, levelEnd } from './ends';
 import { KEY_DIRS } from './flatInput';
 import Dossier from './Dossier';
+import InfiltrationFlat from './Flat';
 import './widow.css';
 import '../../../styles/lazy/avengers.css';
 
@@ -35,6 +36,10 @@ export default function Infiltration({ fallback }) {
   const stage = useStage(gameModule, { enabled: three.on, id: 'widow', forced: three.mode === 'on', own3D: true });
   const { unlock } = useAchievements();
   const [cleared, setCleared] = useState(readCleared);
+  // (the 2D view writes the same save, so the 3D menu reads it again on the way back)
+  useEffect(() => {
+    if (three.on) setCleared(readCleared());
+  }, [three.on]);
   const [index, setIndex] = useState(() => Math.min(readCleared(), LEVEL_COUNT - 1));
   const game = useRef(newLevel(index));
   const hud = useRef(null);
@@ -42,6 +47,7 @@ export default function Infiltration({ fallback }) {
   const [, setTick] = useState(0);
   const [aiming, setAiming] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [flatLive, setFlatLive] = useState(false); // the 2D view's level in play
   const [holo, setHolo] = useState(() => local.get(HOLO, false) === true);
   const hover = useRef(null); // the tile under the mouse
   const busyUntil = useRef(0);
@@ -376,9 +382,10 @@ export default function Infiltration({ fallback }) {
   return (
     <HQGame
       game="widow"
-      playing={playing}
+      playing={playing || flatLive}
       paused={paused}
       onPause={pause}
+      flat={<InfiltrationFlat paused={paused} onLive={setFlatLive} />}
       stage={stage}
       three={three}
       fallback={fallback}

@@ -125,7 +125,7 @@ describe('the start and the end of every game', () => {
 });
 
 // [the 2D view, the 3D game's own live flag, its file, how the 3D game re-reads the save]
-const FLAT = { ricochet: ['RicochetFlat', 'live', 'ricochet/Flat.jsx', /if \(three\.on\) setSave\(loadSave\(\)\)/] };
+const FLAT = { ricochet: ['RicochetFlat', 'live', 'ricochet/Flat.jsx', /if \(three\.on\) setSave\(loadSave\(\)\)/], widow: ['InfiltrationFlat', 'playing', 'widow/Flat.jsx', /if \(three\.on\) setCleared\(readCleared\(\)\)/] };
 
 describe('a game with a 2D view', () => {
   it('offers Play in 2D over its 3D game, with the 2D view kept out of it', () => {

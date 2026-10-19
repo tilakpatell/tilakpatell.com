@@ -94,6 +94,11 @@ export const TOUCH_HELP = {
     { icon: 'hold', text: 'Hold anywhere to swing, and let go to fly' },
     { icon: 'drag', text: 'Hold on the left or right of the screen to steer' },
   ],
+  'widow-flat': [
+    { icon: 'tap', text: 'Tap a tile next to her to see the step, then tap it again to take it' },
+    { icon: 'tap', text: 'Tap her own tile twice to wait a turn' },
+    { icon: 'button', text: 'Bite, then a guard’s tile, uses the Widow’s Bite' },
+  ],
   'ricochet-flat': [
     { icon: 'drag', text: 'Press anywhere in the room to aim there, slide to adjust and lift to throw' },
     { icon: 'tap', text: 'Let go back on Cap to keep the shield' },
