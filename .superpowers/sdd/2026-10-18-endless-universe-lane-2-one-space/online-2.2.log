@@ -1,0 +1,10 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+browserType.launch: Failed to launch chromium because executable doesn't exist at /opt/pw-browsers/chromium
+    at C:\Users\tilak\src\tilakpatell.com\.claude\worktrees\agent-aeeef2bf873ba228b\scripts\online-check.mjs:70:32 {
+  name: 'Error'
+}
+
+Node.js v24.14.1

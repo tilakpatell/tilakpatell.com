@@ -1,0 +1,168 @@
+# Review package: a1df4d569..HEAD
+
+## Commits
+892cce033 Keep-outs round the hand-made places, as spheres
+
+## Files changed
+ src/components/expanse/gen/keepOuts.js        | 58 +++++++++++++++++++++++++++
+ src/components/expanse/gen/keepOuts.test.js   | 49 ++++++++++++++++++++++
+ src/components/universe/shared/shared.test.js |  2 +
+ src/components/universe/shared/space.js       |  5 +++
+ 4 files changed, 114 insertions(+)
+
+## Diff
+diff --git a/src/components/expanse/gen/keepOuts.js b/src/components/expanse/gen/keepOuts.js
+new file mode 100644
+index 000000000..d8a91b172
+--- /dev/null
++++ b/src/components/expanse/gen/keepOuts.js
+@@ -0,0 +1,58 @@
++// The keep-outs: spheres round the hand-made places, so the generator, which
++// fills every sector (the core too), leaves them clear. Pure (no three.js),
++// so it runs in Node.
++//
++// HOME_KEEP: the radius kept clear round the origin
++// KEEP_OUTS: [{ id, at, r }], home first, then the places, then the Rick and Morty pocket
++// keepOutsNear(sx, sy, sz) → the KEEP_OUTS rows whose sphere meets that sector's cube
++// clearOfKeepOuts(at, extent, outs = KEEP_OUTS) → true when a body of that extent at `at` touches none
++
++import { SECTOR, sectorCentre } from '../../../lib/space/address.js';
++import { PLACES, SECTORS, SECTOR_RADIUS, sectorOf } from '../../universe/shared/space';
++
++export const HOME_KEEP = 8000;
++
++// A place keeps three of its own reaches clear; a station rides with its
++// planet, and what sits inside the pocket is covered by the pocket's sphere.
++const PLACE_KEEP = 3;
++const POCKET_MARGIN = 4000;
++
++export const KEEP_OUTS = [
++  { id: 'home', at: [0, 0, 0], r: HOME_KEEP },
++  ...PLACES.filter((p) => p.kind !== 'station' && sectorOf(...p.at) === 'main').map((p) => ({
++    id: p.id,
++    at: [...p.at],
++    r: PLACE_KEEP * p.reach,
++  })),
++  {
++    id: 'rickmorty',
++    at: [...SECTORS.rickmorty.origin],
++    r: SECTOR_RADIUS.rickmorty + POCKET_MARGIN,
++  },
++];
++
++// A sphere meets a cube when its centre is within r of the cube's nearest point.
++export function keepOutsNear(sx, sy, sz) {
++  const c = sectorCentre(sx, sy, sz);
++  const half = SECTOR / 2;
++  return KEEP_OUTS.filter((k) => {
++    let d2 = 0;
++    for (let i = 0; i < 3; i++) {
++      const over = Math.abs(k.at[i] - c[i]) - half;
++      if (over > 0) d2 += over * over;
++    }
++    return d2 <= k.r * k.r;
++  });
++}
++
++export function clearOfKeepOuts(at, extent, outs = KEEP_OUTS) {
++  for (let i = 0; i < outs.length; i++) {
++    const k = outs[i];
++    const dx = at[0] - k.at[0];
++    const dy = at[1] - k.at[1];
++    const dz = at[2] - k.at[2];
++    const min = k.r + extent;
++    if (dx * dx + dy * dy + dz * dz < min * min) return false;
++  }
++  return true;
++}
+diff --git a/src/components/expanse/gen/keepOuts.test.js b/src/components/expanse/gen/keepOuts.test.js
+new file mode 100644
+index 000000000..8c47c68dd
+--- /dev/null
++++ b/src/components/expanse/gen/keepOuts.test.js
+@@ -0,0 +1,49 @@
++import { describe, expect, it } from 'vitest';
++import { PLACES, SECTORS, SECTOR_RADIUS, sectorOf } from '../../universe/shared/space';
++import { HOME_KEEP, KEEP_OUTS, clearOfKeepOuts, keepOutsNear } from './keepOuts';
++
++const ids = (rows) => rows.map((r) => r.id);
++
++describe('keep-outs', () => {
++  it('puts home first', () => {
++    expect(KEEP_OUTS[0]).toEqual({ id: 'home', at: [0, 0, 0], r: 8000 });
++    expect(HOME_KEEP).toBe(8000);
++  });
++
++  it('keeps three reaches round each main-map place that is not a station', () => {
++    const wanted = PLACES.filter((p) => p.kind !== 'station' && sectorOf(...p.at) === 'main');
++    expect(wanted.length).toBeGreaterThan(0);
++    for (const p of wanted) {
++      // (ids are not unique across the sources, so a row is found by id and where it sits)
++      const row = KEEP_OUTS.find((k) => k.id === p.id && k.at.every((v, i) => v === p.at[i]));
++      expect(row, p.id).toBeDefined();
++      expect(row.r).toBe(3 * p.reach);
++      expect(row.at).not.toBe(p.at);
++    }
++  });
++
++  it('keeps the Rick and Morty pocket out as one sphere', () => {
++    const rows = KEEP_OUTS.filter((k) => k.at.every((v, i) => v === SECTORS.rickmorty.origin[i]));
++    expect(rows).toEqual([{ id: 'rickmorty', at: SECTORS.rickmorty.origin, r: SECTOR_RADIUS.rickmorty + 4000 }]);
++  });
++
++  it('has no row for a station or for a place inside the pocket', () => {
++    const wanted = PLACES.filter((p) => p.kind !== 'station' && sectorOf(...p.at) === 'main');
++    // home, one per wanted place, and the pocket: nothing else
++    expect(KEEP_OUTS).toHaveLength(wanted.length + 2);
++    expect(PLACES.some((p) => sectorOf(...p.at) === 'rickmorty' || p.kind === 'station')).toBe(true);
++  });
++
++  it('finds the keep-outs that meet a sector', () => {
++    expect(ids(keepOutsNear(0, 0, 0))).toContain('home');
++    expect(ids(keepOutsNear(0, 0, -1))).toContain('rickmorty');
++    expect(keepOutsNear(5, 0, 5)).toEqual([]);
++    expect(keepOutsNear(0, 2, 0)).toEqual([]);
++  });
++
++  it('clears a point only when it is a sphere plus its extent away', () => {
++    expect(clearOfKeepOuts([0, 0, 8040], 50)).toBe(false);
++    expect(clearOfKeepOuts([0, 0, 8100], 50)).toBe(true);
++    expect(clearOfKeepOuts([0, 0, 8040], 50, [])).toBe(true);
++  });
++});
+diff --git a/src/components/universe/shared/shared.test.js b/src/components/universe/shared/shared.test.js
+index 459ad7efe..d40a38992 100644
+--- a/src/components/universe/shared/shared.test.js
++++ b/src/components/universe/shared/shared.test.js
+@@ -1,18 +1,20 @@
+ import { describe, expect, it } from 'vitest';
+ import * as online from './online';
+ import * as flying from './flying';
+ import * as room from './room';
++import * as space from './space';
+ 
+ // The universe's face: exactly these names and nothing else
+ const FACE = [
+   [online, ['STALE_MS', 'cleanName', 'createLimiter']],
+   [flying, ['BUILT_KINDS', 'turnToward']],
+   [room, ['joinAsVisitor']],
++  [space, ['PLACES', 'SECTORS', 'SECTOR_RADIUS', 'sectorOf']],
+ ];
+ 
+ describe('universe/shared', () => {
+   it.each(FACE.map(([mod, names], i) => [i, mod, names]))('face %i lends exactly its names', (_, mod, names) => {
+     expect(Object.keys(mod).sort()).toEqual([...names].sort());
+     for (const n of names) expect(['function', 'object', 'number']).toContain(typeof mod[n]);
+   });
+ });
+diff --git a/src/components/universe/shared/space.js b/src/components/universe/shared/space.js
+new file mode 100644
+index 000000000..5eb7c828f
+--- /dev/null
++++ b/src/components/universe/shared/space.js
+@@ -0,0 +1,5 @@
++// The universe's face for its one space: the hand-made places, the sectors
++// they sit in and which sector a point is in, for the expanse's generator.
++
++export { PLACES } from '../deep';
++export { SECTORS, SECTOR_RADIUS, sectorOf } from '../layout';

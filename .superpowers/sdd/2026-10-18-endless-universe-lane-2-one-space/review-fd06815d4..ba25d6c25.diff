@@ -1,0 +1,492 @@
+# Review package: fd06815d4..ba25d6c25
+
+## Commits
+ba25d6c25 Generator: steadier speed test, moon convention pinned, face and wonder tests, notes for later lanes
+1b4294c73 Generator: keep systems 6,000 apart across sector faces and things clear of wonders
+
+## Files changed
+ src/components/expanse/gen/fingerprint.test.js |  2 +-
+ src/components/expanse/gen/grid.js             |  2 ++
+ src/components/expanse/gen/keepOuts.js         |  2 ++
+ src/components/expanse/gen/orbits.test.js      | 12 +++++++
+ src/components/expanse/gen/space.js            | 15 ++++----
+ src/components/expanse/gen/space.test.js       | 50 ++++++++++++++++++++++----
+ src/components/expanse/gen/things.js           | 25 ++++++++++++-
+ src/components/expanse/gen/things.test.js      | 20 +++++++++++
+ 8 files changed, 114 insertions(+), 14 deletions(-)
+
+## Diff
+diff --git a/src/components/expanse/gen/fingerprint.test.js b/src/components/expanse/gen/fingerprint.test.js
+index 7dfc2607c..2733218fb 100644
+--- a/src/components/expanse/gen/fingerprint.test.js
++++ b/src/components/expanse/gen/fingerprint.test.js
+@@ -1,12 +1,12 @@
+ /* global process */
+-import { existsSync,readFileSync, writeFileSync } from 'node:fs';
++import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+ import { describe, expect, it } from 'vitest';
+ import { PRINTED, digest, plainSector } from './fixtures/fingerprint';
+ import { makeSector } from './sector';
+ import { UNIVERSE } from './seed';
+ 
+ const FILE = new URL('./fixtures/fingerprint.json', import.meta.url);
+ const today = () => Object.fromEntries(PRINTED.map(([sx, sz]) => {
+   const s = makeSector(UNIVERSE, sx, sz);
+   return [s.id, { systems: s.systems.length, wonders: s.wonders.length, sha256: digest(plainSector(s)) }];
+ }));
+diff --git a/src/components/expanse/gen/grid.js b/src/components/expanse/gen/grid.js
+index 8c35d24c8..e6f4e90ac 100644
+--- a/src/components/expanse/gen/grid.js
++++ b/src/components/expanse/gen/grid.js
+@@ -9,20 +9,22 @@
+ // sectorId(sx, sz) → 'E:sx,sz'; parseSector(id) → [sx, sz] or null
+ // sectorCentre(sx, sz) → [x, 0, z]
+ 
+ import {
+   SECTOR,
+   sectorAt as addressAt,
+   sectorCentre as addressCentre,
+   sectorKey,
+ } from "../../../lib/space/address";
+ 
++// 120,000 is the universe's spread to six (scale.js's SPREAD): the authored map's edge is 54,000 out,
++// so sector 0,0 must reach past it.
+ export { SECTOR };
+ 
+ export const sectorAt = (x, z) => {
+   const [sx, , sz] = addressAt(x, 0, z);
+   return [sx, sz];
+ };
+ export const sectorId = (sx, sz) => sectorKey(sx, 0, sz);
+ // (stricter than the address's parser: two numbers only, an upper-case E)
+ export function parseSector(id) {
+   const m = typeof id === "string" && /^E:(-?\d+),(-?\d+)$/.exec(id);
+diff --git a/src/components/expanse/gen/keepOuts.js b/src/components/expanse/gen/keepOuts.js
+index d8a91b172..36ab1f317 100644
+--- a/src/components/expanse/gen/keepOuts.js
++++ b/src/components/expanse/gen/keepOuts.js
+@@ -1,16 +1,18 @@
+ // The keep-outs: spheres round the hand-made places, so the generator, which
+ // fills every sector (the core too), leaves them clear. Pure (no three.js),
+ // so it runs in Node.
+ //
+ // HOME_KEEP: the radius kept clear round the origin
+ // KEEP_OUTS: [{ id, at, r }], home first, then the places, then the Rick and Morty pocket
++//   (ids can repeat: PLACES has a planet 'home' and a planet 'rickmorty' beside the home sphere and the
++//   pocket, so key rows by index, or by id plus `at`, never by id alone)
+ // keepOutsNear(sx, sy, sz) → the KEEP_OUTS rows whose sphere meets that sector's cube
+ // clearOfKeepOuts(at, extent, outs = KEEP_OUTS) → true when a body of that extent at `at` touches none
+ 
+ import { SECTOR, sectorCentre } from '../../../lib/space/address.js';
+ import { PLACES, SECTORS, SECTOR_RADIUS, sectorOf } from '../../universe/shared/space';
+ 
+ export const HOME_KEEP = 8000;
+ 
+ // A place keeps three of its own reaches clear; a station rides with its
+ // planet, and what sits inside the pocket is covered by the pocket's sphere.
+diff --git a/src/components/expanse/gen/orbits.test.js b/src/components/expanse/gen/orbits.test.js
+index 648012deb..8fdc84a9e 100644
+--- a/src/components/expanse/gen/orbits.test.js
++++ b/src/components/expanse/gen/orbits.test.js
+@@ -21,12 +21,24 @@ describe('orbitAt', () => {
+       const step = len(orbitAt(planet, t0 + 1 / 60), orbitAt(planet, t0));
+       expect(step).toBeGreaterThan(0);
+       expect(step).toBeLessThanOrEqual(most + 1e-6);
+     }
+   });
+   it('carries a moon round its planet, and lists a system’s bodies where they are', () => {
+     for (const t of [0, 500, 1e9]) expect(len(moonAt(moon, planet, t), orbitAt(planet, t))).toBeCloseTo(120, 6);
+     const sys = { id: 'E:1,0:0', at: planet.centre, star: { size: 150 }, planets: [{ ...planet, moonList: [moon] }] };
+     expect(bodiesAt(sys, 0).map((b) => [b.id, b.kind])).toEqual([['E:1,0:0', 'star'], [planet.id, 'planet'], [moon.id, 'moon']]);
+   });
++  it('starts a moon at its phase in the x-z plane, tilted about x, and lets a tilted one leave that plane', () => {
++    const base = orbitAt(planet, 0);
++    const off = moonAt(moon, planet, 0).map((v, a) => v - base[a]);
++    const { orbit: o, phase: f, tilt: k } = moon;
++    const want = [o * Math.cos(f), -o * Math.sin(f) * Math.sin(k), o * Math.sin(f) * Math.cos(k)];
++    off.forEach((v, a) => expect(v).toBeCloseTo(want[a], 9));
++    let off_plane = 0;
++    for (const t of [0, 3000, 9000, 20000, 40000]) off_plane = Math.max(off_plane, Math.abs(moonAt(moon, planet, t)[1] - orbitAt(planet, t)[1]));
++    expect(off_plane).toBeGreaterThan(1);
++    const flat = { ...moon, tilt: 0 };
++    for (const t of [0, 3000, 9000]) expect(moonAt(flat, planet, t)[1] - orbitAt(planet, t)[1]).toBeCloseTo(0, 9);
++  });
+   it('reads the shared clock in seconds', () => expect(spaceTime(1.5e12)).toBe(1.5e9));
+ });
+diff --git a/src/components/expanse/gen/space.js b/src/components/expanse/gen/space.js
+index 024da17a9..f711e5500 100644
+--- a/src/components/expanse/gen/space.js
++++ b/src/components/expanse/gen/space.js
+@@ -4,31 +4,34 @@
+ // Pure (no React, DOM or three.js), so it runs in Node.
+ //
+ // fullSector(universe, sx, sy, sz, { things = true } = {}) → {
+ //   id: sectorKey, sx, sy, sz, seed, origin: [x, y, z],
+ //   systems (addBodies'd; legacy first on sy 0, then appended; systems[i].i === i),
+ //   wonders (today's on the middle layer, [] elsewhere),
+ //   things (a ThingSet, empty when things is false), extras ({ [list]: rows }),
+ //   beacons (today's on the middle layer, the same rule at the sector's height elsewhere),
+ //   legacy: { systems, wonders } (where the appended part begins) }
+ // placeOf(universe, id) → { kind: 'system' | 'planet' | 'moon' | 'wonder' | 'thing' | 'extra', row, sector } | null
+-//   (keeps the last 8 sectors it built)
++//   (keeps the last 8 sectors it built: its rows are shared with that cache, so treat them as
++//   read-only; a cache miss builds a whole sector synchronously)
+ 
+ import { parseSpaceId, sectorCentre, sectorKey } from '../../../lib/space/address.js';
+ import { clearOfKeepOuts, keepOutsNear } from './keepOuts';
+ import { hash64, int, range, rngOf, sectorSeedOf, systemSeed } from './seed';
+ import { beaconsOf, makeSector } from './sector';
+ import { addBodies, localFactions, systemAt } from './systems';
+ import { factionBand } from './tables';
+ import { SECTOR_EXTRAS, THING_BASE, thingRow, thingsOf } from './things';
+ 
+-const CUBE = 58000; // appended systems stay this far from the middle, each way
++// Appended systems stay this far from the middle, each way. Legacy systems sit at least 2,000
++// inside a sector face, so 4,000 more keeps the spec's 6,000 gap across a face (60,000 - 4,000).
++const CUBE_HALF = 56000;
+ const GAP = 6000; // between systems, in 3D
+ const NEAR = 3000; // between a system and a wonder or beacon
+ const TRIES = 60; // darts a system
+ const KEPT = 8; // sectors placeOf remembers
+ 
+ const noThings = () => ({
+   count: 0,
+   slot: new Uint16Array(0),
+   kind: new Uint8Array(0),
+   at: new Float32Array(0),
+@@ -82,23 +85,23 @@ function appendSystems(sector, outs) {
+   const fixed = [...sector.wonders.map((w) => w.at), ...Object.values(sector.beacons).map((b) => b.at)];
+ 
+   for (let a = 0; a < attempts; a++) {
+     const i = sector.systems.length;
+     const sSeed = systemSeed(seed, i);
+     const ctx = { ...base, i };
+     let reach = -1; // (only a sector with keep-outs near it needs the system's reach before the dart)
+     let at = null;
+     for (let t = 0; t < TRIES && !at; t++) {
+       const p = [
+-        origin[0] + range(rng, -CUBE, CUBE),
+-        origin[1] + range(rng, -CUBE, CUBE),
+-        origin[2] + range(rng, -CUBE, CUBE),
++        origin[0] + range(rng, -CUBE_HALF, CUBE_HALF),
++        origin[1] + range(rng, -CUBE_HALF, CUBE_HALF),
++        origin[2] + range(rng, -CUBE_HALF, CUBE_HALF),
+       ];
+       if (!grid.clear(p) || fixed.some((f) => near(p, f, NEAR))) continue;
+       if (outs.length) {
+         if (reach < 0) reach = built(sSeed, ctx, origin).reach;
+         if (!clearOfKeepOuts(p, reach, outs)) continue;
+       }
+       at = p;
+     }
+     if (!at) continue;
+     grid.add(at);
+@@ -118,21 +121,21 @@ export function fullSector(universe, sx, sy, sz, { things = true } = {}) {
+     sector.beacons = old.beacons;
+   } else {
+     sector.systems = [];
+     sector.wonders = [];
+     sector.beacons = beaconsOf(sx, sz, seed, sy);
+   }
+   sector.legacy = { systems: sector.systems.length, wonders: sector.wonders.length };
+   const outs = keepOutsNear(sx, sy, sz);
+   appendSystems(sector, outs);
+   if (things) {
+-    const made = thingsOf({ sx, sy, sz, origin, seed, systems: sector.systems, outs }, SECTOR_EXTRAS);
++    const made = thingsOf({ sx, sy, sz, origin, seed, systems: sector.systems, wonders: sector.wonders, outs }, SECTOR_EXTRAS);
+     sector.things = made.things;
+     sector.extras = made.extras;
+   } else {
+     sector.things = noThings();
+     sector.extras = {};
+   }
+   return sector;
+ }
+ 
+ const kept = new Map();
+diff --git a/src/components/expanse/gen/space.test.js b/src/components/expanse/gen/space.test.js
+index 0601f3be5..64254c6fa 100644
+--- a/src/components/expanse/gen/space.test.js
++++ b/src/components/expanse/gen/space.test.js
+@@ -1,10 +1,11 @@
++/* global process */
+ import { describe, expect, it } from 'vitest';
+ import { spaceId } from '../../../lib/space/address.js';
+ import { PRINTED, digest, plainSector } from './fixtures/fingerprint';
+ import fingerprint from './fixtures/fingerprint.json';
+ import { KEEP_OUTS, keepOutsNear } from './keepOuts';
+ import { UNIVERSE, universeOf } from './seed';
+ import { beaconsOf, makeSector } from './sector';
+ import { fullSector, placeOf } from './space';
+ 
+ const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+@@ -65,28 +66,58 @@ describe('counts and places', () => {
+ 
+ describe('spacing', () => {
+   it.each([[0, 0, 0], [1, 0, 0], [-2, 0, 3], [2, -3, 1], [0, 1, 0]])('keeps %i,%i,%i apart', (sx, sy, sz) => {
+     const s = fullSector(UNIVERSE, sx, sy, sz, { things: false });
+     const outs = keepOutsNear(sx, sy, sz);
+     const at = s.systems.map((x) => x.at);
+     for (let a = 0; a < at.length; a++)
+       for (let b = a + 1; b < at.length; b++) expect(dist(at[a], at[b])).toBeGreaterThanOrEqual(6000);
+     const beacons = Object.values(s.beacons).map((b) => b.at);
+     for (const sys of s.systems.slice(s.legacy.systems)) {
+-      for (let k = 0; k < 3; k++) expect(Math.abs(sys.at[k] - s.origin[k])).toBeLessThanOrEqual(58000);
++      for (let k = 0; k < 3; k++) expect(Math.abs(sys.at[k] - s.origin[k])).toBeLessThanOrEqual(56000);
+       for (const w of s.wonders) expect(dist(sys.at, w.at)).toBeGreaterThanOrEqual(3000);
+       for (const b of beacons) expect(dist(sys.at, b)).toBeGreaterThanOrEqual(3000);
+       for (const o of outs) expect(dist(sys.at, o.at)).toBeGreaterThanOrEqual(o.r + sys.reach);
+     }
+   });
+ });
+ 
++describe('sector faces', () => {
++  const side = (a, b) => {
++    const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
++    return d.findIndex((v) => v !== 0);
++  };
++  it.each([
++    [[1, 0, 0], [2, 0, 0]],
++    [[1, 0, 0], [1, 0, 1]],
++    [[0, 0, 0], [0, 1, 0]],
++    [[2, -1, 1], [2, 0, 1]],
++    // (found by sweeping: these two had pairs under 6,000 apart when the cube half was 58,000)
++    [[1, 0, 0], [1, 1, 0]],
++    [[2, 0, 0], [3, 0, 0]],
++  ])('keeps systems across the face of %j and %j 6,000 apart', (pa, pb) => {
++    const a = fullSector(UNIVERSE, ...pa, { things: false });
++    const b = fullSector(UNIVERSE, ...pb, { things: false });
++    const axis = side(pa, pb);
++    const edge = (a.origin[axis] + b.origin[axis]) / 2;
++    const near = (s) => s.systems.map((x, i) => ({ x, legacy: i < s.legacy.systems })).filter(({ x }) => Math.abs(x.at[axis] - edge) < 6000);
++    const na = near(a);
++    const nb = near(b);
++    expect(na.length + nb.length).toBeGreaterThan(0);
++    for (const p of na)
++      for (const q of nb) {
++        if (p.legacy && q.legacy) continue;
++        expect(dist(p.x.at, q.x.at)).toBeGreaterThanOrEqual(6000);
++      }
++  });
++});
++
+ describe('determinism', () => {
+   it('gives the same sector twice', () => {
+     expect(fullSector(UNIVERSE, 3, 0, -2)).toEqual(fullSector(UNIVERSE, 3, 0, -2));
+   });
+   it('differs in another universe, and keeps the core’s keep-outs', () => {
+     const other = universeOf('elsewhere');
+     const a = fullSector(UNIVERSE, 3, 0, -2, { things: false });
+     const b = fullSector(other, 3, 0, -2, { things: false });
+     expect(b.systems.slice(0, 3).map((s) => s.seed)).not.toEqual(a.systems.slice(0, 3).map((s) => s.seed));
+     expect(b.systems.slice(b.legacy.systems).map((s) => s.at)).not.toEqual(
+@@ -128,19 +159,26 @@ describe('placeOf', () => {
+     expect(placeOf(U, 'E:1,0:w60')).toBeNull();
+     expect(placeOf(U, 'beacon:E:1,0:n')).toBeNull();
+     expect(placeOf(U, 'E:1,0:0:99')).toBeNull();
+   });
+   it('resolves sectors above the middle layer too', () => {
+     expect(placeOf(U, 'E:2,1,-3:5').row.id).toBe('E:2,1,-3:5');
+   });
+ });
+ 
+ describe('speed', () => {
++  // CPU time, not the clock: under a loaded machine the wall clock counts the waiting too.
++  const cpu = () => {
++    const u = process.cpuUsage();
++    return (u.user + u.system) / 1000;
++  };
+   it('makes ten middle-layer sectors in under 600 ms', () => {
+     fullSector(UNIVERSE, 9, 0, 9);
+-    const t = performance.now();
+-    for (let k = 0; k < 10; k++) fullSector(UNIVERSE, 10 + k, 0, 3);
+-    const ms = performance.now() - t;
+-    console.log(`ten sectors: ${ms.toFixed(0)} ms`);
+-    expect(ms).toBeLessThan(600);
++    let best = Infinity;
++    for (let b = 0; b < 3; b++) {
++      const t = cpu();
++      for (let k = 0; k < 10; k++) fullSector(UNIVERSE, 10 + k, 0, 3);
++      best = Math.min(best, cpu() - t);
++    }
++    expect(best).toBeLessThan(600);
+   });
+ });
+diff --git a/src/components/expanse/gen/things.js b/src/components/expanse/gen/things.js
+index 4f0727dfc..25db43b3d 100644
+--- a/src/components/expanse/gen/things.js
++++ b/src/components/expanse/gen/things.js
+@@ -2,27 +2,34 @@
+ // most one rock, ice, derelict or rogue, so space is populated in every
+ // direction. The cell's slot and a 32-bit hash of the sector seed fix what
+ // sits in it, so any one cell can be rebuilt alone, in any order, and give
+ // what the whole list gives. Pure (no three.js), so it runs in Node.
+ //
+ // THING_BASE (wonder ids from here up are lattice slots), THING_CELLS, THING_JITTER, THING_NEAR
+ // THING_KINDS: the table of kinds, { kind, weight, size: [least, most], look: { color, lit }, place?(site, ctx) }
+ //   (place may return a new [x, y, z] in absolute space or null to drop the site; it runs before the clearance checks)
+ // SECTOR_EXTRAS: whole-sector lists { list, base, max, make(ctx) → [{ kind, at, size, ... }] }
+ // thingsOf(ctx, extras = SECTOR_EXTRAS, kinds = THING_KINDS) → { things: ThingSet, extras: { [list]: Row[] } }
+-//   ctx is { sx, sy, sz, origin, seed, systems, outs }
++//   ctx is { sx, sy, sz, origin, seed, systems, outs, wonders? } (wonders: the legacy ones; absent means none).
++//   A ctx is treated as immutable: the per-ctx cache snapshots its systems and wonders.
++//   A wonder's size is its radius (tables.js WONDERS says so; scene/sectors.js draws a nebula as a cloud of
++//   about that size and the others as a ball of size * 0.15 to 0.5, so the table radius is the safe reach).
++//   Every wonder but a nebula (a soft cloud a rock can sit in) keeps lattice things its size plus the thing's away.
+ //   ThingSet is { count, slot: Uint16Array, kind: Uint8Array (index into kinds), at: Float32Array (xyz from the origin), size: Float32Array }
+ // thingInCell(ctx, slot, kinds = THING_KINDS) → { kind (index), at (from the origin), size } | null
+ //   (cells run in slot order ix + 20 * (iy + 20 * iz), centre = origin - 57000 + 6000 * (ix, iy, iz))
+ // thingSeed(sectorSeed, n) → bigint
+ // thingRow(sector, i) → { id, n, kind (name), at (absolute), size, seed, name }
+ //   (sector carries { sx, sy, sz, origin, seed, things })
++// An extras row's make() output must be plain data (numbers, strings, arrays, plain objects), because
++// sectors cross to a worker later. Extras rows must have base >= 3 (w0-w2 are the middle layer's wonders)
++// and not overlap each other's [base, base + max).
+ 
+ import { SECTOR, spaceId } from '../../../lib/space/address.js';
+ import { clearOfKeepOuts } from './keepOuts';
+ import { nameOf } from './names';
+ import { hash64, rngOf } from './seed';
+ import { systemReach } from './systems';
+ 
+ export const THING_BASE = 64;
+ export const THING_CELLS = 20;
+ export const THING_JITTER = 0.8;
+@@ -80,21 +87,25 @@ function prepare(ctx, kinds) {
+     const row = { at: s.at, reach: reach - maxSize };
+     for (let x = lo[0]; x <= hi[0]; x++)
+       for (let y = lo[1]; y <= hi[1]; y++)
+         for (let z = lo[2]; z <= hi[2]; z++) {
+           const k = key(x, y, z);
+           const list = grid.get(k);
+           if (list) list.push(row);
+           else grid.set(k, [row]);
+         }
+   }
++  const wonders = (ctx.wonders ?? [])
++    .filter((w) => w.kind !== 'nebula')
++    .map((w) => ({ at: w.at, r: w.size }));
+   p = {
++    wonders,
+     h0: Number(seed & 0xffffffffn) | 0,
+     h1: Number((seed >> 32n) & 0xffffffffn) | 0,
+     total: kinds.reduce((t, k) => t + k.weight, 0),
+     grid,
+   };
+   byKinds.set(kinds, p);
+   return p;
+ }
+ 
+ function cell(ctx, p, kinds, slot) {
+@@ -132,20 +143,27 @@ function cell(ctx, p, kinds, slot) {
+   );
+   if (near) {
+     for (const s of near) {
+       const dx = at[0] - s.at[0];
+       const dy = at[1] - s.at[1];
+       const dz = at[2] - s.at[2];
+       const min = s.reach + size;
+       if (dx * dx + dy * dy + dz * dz < min * min) return null;
+     }
+   }
++  for (const w of p.wonders) {
++    const dx = at[0] - w.at[0];
++    const dy = at[1] - w.at[1];
++    const dz = at[2] - w.at[2];
++    const min = w.r + size;
++    if (dx * dx + dy * dy + dz * dz < min * min) return null;
++  }
+   return {
+     kind: ki,
+     at: [at[0] - ctx.origin[0], at[1] - ctx.origin[1], at[2] - ctx.origin[2]],
+     size,
+   };
+ }
+ 
+ export function thingInCell(ctx, slot, kinds = THING_KINDS) {
+   return cell(ctx, prepare(ctx, kinds), kinds, slot);
+ }
+@@ -167,21 +185,26 @@ export function thingsOf(ctx, extras = SECTOR_EXTRAS, kinds = THING_KINDS) {
+     count++;
+   }
+   const things = {
+     count,
+     slot: slot.slice(0, count),
+     kind: kind.slice(0, count),
+     at: at.slice(0, count * 3),
+     size: size.slice(0, count),
+   };
+   const lists = {};
++  const ranges = [];
+   for (const e of extras) {
++    if (e.base < 3) throw new Error(`extra ${e.list} starts inside the middle layer's wonder ids`);
++    for (const [list, lo, hi] of ranges)
++      if (e.base < hi && lo < e.base + e.max) throw new Error(`extras ${list} and ${e.list} share ids`);
++    ranges.push([e.list, e.base, e.base + e.max]);
+     if (e.base + e.max > THING_BASE) throw new Error(`extra ${e.list} reaches into the lattice's ids`);
+     lists[e.list] = e
+       .make(ctx)
+       .slice(0, e.max)
+       .map((row, k) => ({ ...row, id: spaceId([ctx.sx, ctx.sy, ctx.sz], { wonder: e.base + k }) }));
+   }
+   return { things, extras: lists };
+ }
+ 
+ export function thingRow(sector, i) {
+diff --git a/src/components/expanse/gen/things.test.js b/src/components/expanse/gen/things.test.js
+index a66ddbd55..24c3e984e 100644
+--- a/src/components/expanse/gen/things.test.js
++++ b/src/components/expanse/gen/things.test.js
+@@ -131,20 +131,27 @@ describe("thingRow", () => {
+ describe("hooks", () => {
+   it("keeps the first max rows of an extra, with ids from base", () => {
+     const a = { kind: "rock", at: [0, 0, 0], size: 1 };
+     const out = thingsOf(ctx, [{ list: "test", base: 3, max: 2, make: () => [a, a, a] }]);
+     expect(out.extras.test).toHaveLength(2);
+     expect(out.extras.test.map((r) => r.id.split(":").pop())).toEqual(["w3", "w4"]);
+   });
+   it("refuses an extra that reaches into the lattice's ids", () => {
+     expect(() => thingsOf(ctx, [{ list: "x", base: 63, max: 2, make: () => [] }])).toThrow();
+   });
++  it("refuses an extra below the middle layer's wonders, and two extras that overlap", () => {
++    expect(() => thingsOf(ctx, [{ list: "x", base: 2, max: 2, make: () => [] }])).toThrow(/middle layer/);
++    const a = { list: "a", base: 10, max: 5, make: () => [] };
++    expect(() => thingsOf(ctx, [a, { list: "b", base: 14, max: 3, make: () => [] }])).toThrow(/share ids/);
++    expect(() => thingsOf(ctx, [{ list: "b", base: 12, max: 1, make: () => [] }, a])).toThrow(/share ids/);
++    expect(() => thingsOf(ctx, [a, { list: "b", base: 15, max: 3, make: () => [] }])).not.toThrow();
++  });
+   it("drops a site whose kind's place gives null, and moves one it moves", () => {
+     const kinds = [{ ...THING_KINDS[0], place: () => null }];
+     expect(thingsOf(ctx, [], kinds).things.count).toBe(0);
+     const moved = [{ ...THING_KINDS[0], place: (site) => [site.at[0], site.at[1] + 1, site.at[2]] }];
+     const plain = [THING_KINDS[0]];
+     const a = thingInCell(ctx, 4000, plain);
+     const b = thingInCell(ctx, 4000, moved);
+     expect(a).not.toBeNull();
+     expect(b.at[1] - a.at[1]).toBeCloseTo(1, 2);
+   });
+@@ -176,11 +183,24 @@ describe("clearance, forced", () => {
+     const miss = { ...ctx, outs: [], systems: [{ at: spot.map((v) => v + 5000), reach: 1 }] };
+     expect(thingInCell(miss, slot)).not.toBeNull();
+     expect(thingsOf(hit).things.slot).not.toContain(slot);
+   });
+   it("drops a thing whose site is inside a keep-out", () => {
+     const hit = { ...ctx, systems: [], outs: [{ id: "t", at: spot, r: 1 }] };
+     expect(thingInCell(hit, slot)).toBeNull();
+     const miss = { ...ctx, systems: [], outs: [{ id: "t", at: spot.map((v) => v + 5000), r: 1 }] };
+     expect(thingInCell(miss, slot)).not.toBeNull();
+   });
++  it("drops a thing inside a wonder's radius plus its size, except for a nebula", () => {
++    const wonder = (kind, size) => ({ id: "w", kind, at: spot, size });
++    const hit = { ...ctx, outs: [], systems: [], wonders: [wonder("pulsar", 1)] };
++    expect(thingInCell(hit, slot)).toBeNull();
++    expect(thingsOf(hit).things.slot).not.toContain(slot);
++    const edge = { ...hit, wonders: [{ ...wonder("derelict", 1), at: spot.map((v, a) => v + (a ? 0 : free.size + 0.5)) }] };
++    expect(thingInCell(edge, slot)).toBeNull();
++    const clear = { ...hit, wonders: [{ ...wonder("rogue", 1), at: spot.map((v, a) => v + (a ? 0 : free.size + 5)) }] };
++    expect(thingInCell(clear, slot)).not.toBeNull();
++    const nebula = { ...hit, wonders: [wonder("nebula", 2000)] };
++    expect(thingInCell(nebula, slot)).toEqual(free);
++    expect(thingsOf(nebula).things.slot).toContain(slot);
++  });
+ });

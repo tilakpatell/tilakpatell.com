@@ -1,0 +1,151 @@
+
+  [32m[1mVITE[22m v8.3.2[39m  [2mready in [0m[1m4751[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
+[2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/textures/universe/k8.json[33m instead of [36m/public/textures/universe/k8.json[33m.
+If you intend to use the URL of that asset, use [36m/textures/universe/k8.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/cc0/galaxy/index.json[33m instead of [36m/public/cc0/galaxy/index.json[33m.
+If you intend to use the URL of that asset, use [36m/cc0/galaxy/index.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/textures/galaxy/bf2017/index.json[33m instead of [36m/public/textures/galaxy/bf2017/index.json[33m.
+If you intend to use the URL of that asset, use [36m/textures/galaxy/bf2017/index.json?url[33m.[39m
+[2m5:27:07 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial "PMREM.Background" on Mesh
+[2m5:27:07 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:27:07 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:27:08 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "SphericalGaussianBlur" on Mesh
+[2m5:27:08 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mTHREE.WebGLProgram: Program Info Log: (210,86-138): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision
+(209,39-65): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision
+(210,87-113): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision
+(209,39-65): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision
+(210,87-113): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision
+[2m5:27:08 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "PMREMGGXConvolution" on Mesh
+[2m5:27:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial on Mesh
+[2m5:27:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mTHREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2m5:27:12 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "unspecified" on Mesh
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/EconomyProvider.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/OnlineProvider.jsx, /src/components/universe/online/Online.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/OnlineProvider.jsx, /src/components/universe/online/Online.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/OnlineProvider.jsx, /src/components/universe/online/Online.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/Achievements.jsx, /src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/components/universe/UniversePanel.jsx, /src/components/universe/EconomyProvider.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/shipyard/YardBill.jsx, /src/components/universe/shipyard/YardCatalogue.jsx, /src/components/universe/Record.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx and 2 more[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/Achievements.jsx, /src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/components/universe/UniversePanel.jsx, /src/components/universe/EconomyProvider.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/shipyard/YardBill.jsx, /src/components/universe/shipyard/YardCatalogue.jsx, /src/components/universe/Record.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx and 2 more[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/Achievements.jsx, /src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/components/universe/UniversePanel.jsx, /src/components/universe/EconomyProvider.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/shipyard/YardBill.jsx, /src/components/universe/shipyard/YardCatalogue.jsx, /src/components/universe/Record.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/Online.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/EconomyProvider.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/textures/universe/k8.json[33m instead of [36m/public/textures/universe/k8.json[33m.
+If you intend to use the URL of that asset, use [36m/textures/universe/k8.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/cc0/galaxy/index.json[33m instead of [36m/public/cc0/galaxy/index.json[33m.
+If you intend to use the URL of that asset, use [36m/cc0/galaxy/index.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/textures/galaxy/bf2017/index.json[33m instead of [36m/public/textures/galaxy/bf2017/index.json[33m.
+If you intend to use the URL of that asset, use [36m/textures/galaxy/bf2017/index.json?url[33m.[39m
+[2m5:27:35 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial "PMREM.Background" on Mesh
+[2m5:27:35 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:27:35 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:27:35 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "SphericalGaussianBlur" on Mesh
+[2m5:27:35 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mTHREE.WebGLProgram: Program Info Log: (210,86-138): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision
+(209,39-65): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision
+(210,87-113): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision
+(209,39-65): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision
+(210,87-113): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision
+[2m5:27:35 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "PMREMGGXConvolution" on Mesh
+[2m5:27:36 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial on Mesh
+[2m5:27:36 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mTHREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2m5:27:39 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "unspecified" on Mesh
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/OnlineProvider.jsx, /src/components/universe/online/Online.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/OnlineProvider.jsx, /src/components/universe/online/Online.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/OnlineProvider.jsx, /src/components/universe/online/Online.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/OnlineProvider.jsx, /src/components/universe/online/Online.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/EconomyProvider.jsx[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/OnlineProvider.jsx, /src/components/universe/online/Online.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/components/universe/deep.js[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/components/universe/layout.js[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/Achievements.jsx, /src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/components/universe/UniversePanel.jsx, /src/components/universe/EconomyProvider.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/shipyard/YardBill.jsx, /src/components/universe/shipyard/YardCatalogue.jsx, /src/components/universe/Record.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/Online.jsx[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/EconomyProvider.jsx[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/components/universe/curve.test.js[22m

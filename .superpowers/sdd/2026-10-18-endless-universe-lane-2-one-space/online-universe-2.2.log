@@ -1,0 +1,14 @@
+ok   warmed /universe in 9 s
+ok   Alpha hears Bravo on the map
+ok   exactly one other pilot each: Alpha sees ["Bravo"], Bravo ["Alpha"]
+ok   far tag at 300 units: {"mode":"far","relation":"none","level":null,"dist":"3.0 km","px":12.08,"opacity":"0.65","inside":true}
+ok   far tag on a phone: {"mode":"far","relation":"none","level":null,"dist":"3.0 km","px":12.08,"opacity":"0.65","inside":true}
+ok   roster row: "BravoLv 1Millennium Falcon · Universe · the voidFly toAllyBlock", chip "Lv 1", relation none
+ok   the record opens from the roster (Flight record)
+ok   allies
+ok   ally's tag at 300 units: {"mode":"far","relation":"ally","level":null,"dist":"3.0 km","px":12.08,"opacity":"1","inside":true}
+ok   ally's tag at 1000 units: {"mode":"far","relation":"ally","level":null,"dist":"10.0 km","px":12,"opacity":"1","inside":true}
+ok   near tag at 20 units: {"mode":"near","relation":"ally","level":"Lv 1","dist":"","px":12.8,"opacity":"1","inside":true}
+ok   ally behind: {"name":"Bravo","off":true}
+errors: []
+ALL OK

@@ -1,0 +1,60 @@
+# Review package: 21ca0a3ad..fd06815d4
+
+## Commits
+fd06815d4 Things: test that keep-outs and systems clear the lattice
+
+## Files changed
+ src/components/expanse/gen/things.test.js | 35 +++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
+## Diff
+diff --git a/src/components/expanse/gen/things.test.js b/src/components/expanse/gen/things.test.js
+index d2ed76c11..a66ddbd55 100644
+--- a/src/components/expanse/gen/things.test.js
++++ b/src/components/expanse/gen/things.test.js
+@@ -142,10 +142,45 @@ describe("hooks", () => {
+     const kinds = [{ ...THING_KINDS[0], place: () => null }];
+     expect(thingsOf(ctx, [], kinds).things.count).toBe(0);
+     const moved = [{ ...THING_KINDS[0], place: (site) => [site.at[0], site.at[1] + 1, site.at[2]] }];
+     const plain = [THING_KINDS[0]];
+     const a = thingInCell(ctx, 4000, plain);
+     const b = thingInCell(ctx, 4000, moved);
+     expect(a).not.toBeNull();
+     expect(b.at[1] - a.at[1]).toBeCloseTo(1, 2);
+   });
+ });
++
++describe("clearance, forced", () => {
++  const home = build(0, 0);
++  const homeSet = thingsOf(home).things;
++  it("removes slots near the home keep-out, and the rest clear it", () => {
++    expect(home.outs.length).toBeGreaterThan(0);
++    expect(homeSet.count).toBeLessThan(8000);
++    for (let i = 0; i < homeSet.count; i++) {
++      const p = [0, 1, 2].map((a) => home.origin[a] + homeSet.at[i * 3 + a]);
++      for (const k of home.outs) {
++        const d = Math.hypot(p[0] - k.at[0], p[1] - k.at[1], p[2] - k.at[2]);
++        expect(d).toBeGreaterThanOrEqual(k.r + (THING_NEAR + 1) * homeSet.size[i] - 0.5);
++      }
++    }
++  });
++  const slot = 4210;
++  const free = thingInCell({ ...ctx, systems: [], outs: [] }, slot);
++  const spot = free && free.at.map((v, a) => ctx.origin[a] + v);
++  it("has a free site to aim at", () => {
++    expect(free).not.toBeNull();
++  });
++  it("drops a thing whose site is inside a system's reach", () => {
++    const hit = { ...ctx, outs: [], systems: [{ at: spot, reach: 1 }] };
++    expect(thingInCell(hit, slot)).toBeNull();
++    const miss = { ...ctx, outs: [], systems: [{ at: spot.map((v) => v + 5000), reach: 1 }] };
++    expect(thingInCell(miss, slot)).not.toBeNull();
++    expect(thingsOf(hit).things.slot).not.toContain(slot);
++  });
++  it("drops a thing whose site is inside a keep-out", () => {
++    const hit = { ...ctx, systems: [], outs: [{ id: "t", at: spot, r: 1 }] };
++    expect(thingInCell(hit, slot)).toBeNull();
++    const miss = { ...ctx, systems: [], outs: [{ id: "t", at: spot.map((v) => v + 5000), r: 1 }] };
++    expect(thingInCell(miss, slot)).not.toBeNull();
++  });
++});

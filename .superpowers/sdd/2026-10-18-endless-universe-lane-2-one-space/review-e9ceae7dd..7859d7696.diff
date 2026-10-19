@@ -1,0 +1,1252 @@
+# Review package: e9ceae7dd..7859d7696
+
+## Commits
+7859d7696 Poses carry their sector in 3D; the height clamp goes; old poses read as before
+8756d2ee5 Merge origin/main into the 2.2 branch: the generator (PR 2.1) for rosterWhere
+367e8a699 No ceiling or floor anywhere in the universe; home and the pocket as spheres
+432c2be28 Sectors keyed in 3D; the Rick and Morty pocket a ball
+
+## Files changed
+ src/components/universe/curve.js                   |  25 +++--
+ src/components/universe/curve.test.js              |  19 ++++
+ src/components/universe/deep.js                    |   3 +-
+ src/components/universe/deep.test.js               |   7 +-
+ src/components/universe/layout.js                  |  18 ++--
+ src/components/universe/layout.test.js             |   9 ++
+ src/components/universe/online/protocol.js         |  30 +++---
+ src/components/universe/online/protocol.test.js    |  23 ++++-
+ src/components/universe/online/rosterWhere.js      |  14 +--
+ src/components/universe/online/rosterWhere.test.js |   7 +-
+ src/components/universe/scene.js                   |  12 +--
+ src/components/universe/ship.js                    | 115 ++++++++++++++-------
+ src/components/universe/ship.test.js               |  69 ++++++++++++-
+ 13 files changed, 268 insertions(+), 83 deletions(-)
+
+## Diff
+diff --git a/src/components/universe/curve.js b/src/components/universe/curve.js
+index 7645e8b7f..ea9707816 100644
+--- a/src/components/universe/curve.js
++++ b/src/components/universe/curve.js
+@@ -1,36 +1,46 @@
+ // The Central Finite Curve, drawn: the Rick and Morty sector's edge
+ // (layout.js's SECTORS.rickmorty), where the ship's turned back (ship.js),
+-// as a faint luminous wall round the whole sector. A tall open cylinder at
+-// the edge, seen from inside: a thin bright band round it at the disc's
+-// height, a soft glow either side of it, and its threads (the Curve's
++// as a faint luminous wall round the whole sector. The edge is a ball, so
++// the wall is one too, seen from inside: a thin bright band round it at the
++// disc's height, a soft glow either side of it, and its threads (the Curve's
+ // walled-off dimensions) short faint strands across the band, drifting
+ // slowly along it. Far off it's a ring on the horizon; close, it shimmers.
++// The ball is as coarse as can be up and down: two rows, the old open
++// cylinder's 512 triangles, round the same 256 ways. The band sits on its
++// middle row, right on the edge; above and below, the rows lean in to the
++// poles, but the glow is measured by height, not by the rows, and fades out
++// within about 1,500 of the disc, so the coarse caps draw nothing anyone sees.
+ // Space scenery, so shaders only. Drawn only while the camera's inside the
+ // sector: from the main map it's nothing (and the far side of the portal
+ // is a long way off, but not past the far plane from all of the map).
+ //
+ // createCurve(parent) → { update(t, here), dispose() }
+ 
+ import * as THREE from 'three';
+ import { SECTORS } from './layout';
+ import { DEEP } from './deep';
+ 
+-const VERT = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
++// how far up or down the wall the height runs from 0 to 1 (the old
++// cylinder's half-height, so the band and the glow are as thick as they were)
++const HALF = (DEEP.ceiling * 1.3).toFixed(1);
++
++const VERT = 'varying vec2 vUv; varying vec3 vPos; void main() { vUv = uv; vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
+ const FRAG = `
+ uniform float uTime;
+ varying vec2 vUv;
++varying vec3 vPos;
+ float hash(float n) { return fract(sin(n) * 43758.5453); }
+ void main() {
+-  // round the wall (u, 0…1) and up it (h, -1 at the floor, 1 at the ceiling)
++  // round the wall (u, 0…1) and up it (h, 0 at the disc, ±1 HALF above or below it)
+   float u = vUv.x;
+-  float h = vUv.y * 2.0 - 1.0;
++  float h = vPos.y / ${HALF};
+   // the glow: faint, at the disc's height, gone well before floor and ceiling
+   float glow = exp(-h * h * 9.0) * 0.06;
+   // the band round its middle: a thin bright line in a soft halo
+   float band = exp(-pow(h * 40.0, 2.0)) * 0.3 + exp(-pow(h * 10.0, 2.0)) * 0.05;
+   // the threads: short strands across the band, each its own height, a few
+   // lit at a time and drifting along at their own pace; their edges a pixel
+   // wide whatever the distance, and gone where they'd be only a few pixels
+   // apart (far off, where they'd just flicker)
+   float threads = 0.0;
+   for (int i = 0; i < 2; i++) {
+@@ -43,22 +53,21 @@ void main() {
+     float tall = 0.12 + 0.22 * hash(id + 7.0);
+     threads += line * on * exp(-pow(h / tall, 2.0)) * (1.0 - smoothstep(0.08, 0.3, w)) * 0.16;
+   }
+   float a = glow + band + threads;
+   vec3 col = mix(vec3(0.35, 1.0, 0.55), vec3(0.85, 1.0, 0.9), clamp(band * 2.0 + threads * 3.0, 0.0, 1.0));
+   gl_FragColor = vec4(col * a, a);
+ }`;
+ 
+ export function createCurve(parent) {
+   const sec = SECTORS.rickmorty;
+-  const height = DEEP.ceiling * 2.6;
+-  const geo = new THREE.CylinderGeometry(sec.edge, sec.edge, height, 256, 1, true);
++  const geo = new THREE.SphereGeometry(sec.edge, 256, 2);
+   const uTime = { value: 0 };
+   const mat = new THREE.ShaderMaterial({
+     vertexShader: VERT,
+     fragmentShader: FRAG,
+     uniforms: { uTime },
+     transparent: true,
+     depthWrite: false,
+     side: THREE.DoubleSide,
+     blending: THREE.AdditiveBlending,
+     toneMapped: false,
+diff --git a/src/components/universe/curve.test.js b/src/components/universe/curve.test.js
+new file mode 100644
+index 000000000..faec29213
+--- /dev/null
++++ b/src/components/universe/curve.test.js
+@@ -0,0 +1,19 @@
++import * as THREE from 'three';
++import { describe, expect, it } from 'vitest';
++import { createCurve } from './curve';
++import { SECTORS } from './layout';
++
++describe('the Central Finite Curve', () => {
++  it('is drawn as a ball round the Rick and Morty pocket, where its wall stands, no heavier than the old wall', () => {
++    const parent = new THREE.Group();
++    const curve = createCurve(parent);
++    const wall = parent.getObjectByName('central-finite-curve');
++    expect(wall.geometry).toBeInstanceOf(THREE.SphereGeometry);
++    expect(wall.geometry.parameters.radius).toBe(SECTORS.rickmorty.edge);
++    expect(wall.position.toArray()).toEqual(SECTORS.rickmorty.origin);
++    // (the open cylinder it replaces: 256 round and one high, 512 triangles)
++    expect(wall.geometry.index.count / 3).toBeLessThanOrEqual(512);
++    curve.dispose();
++    expect(parent.children).toHaveLength(0);
++  });
++});
+diff --git a/src/components/universe/deep.js b/src/components/universe/deep.js
+index 3563f50c6..122fa3795 100644
+--- a/src/components/universe/deep.js
++++ b/src/components/universe/deep.js
+@@ -295,21 +295,22 @@ export function nearestPlace(x, y, z) {
+   for (const p of far) {
+     const dx = x - p.at[0];
+     const dy = y - p.at[1];
+     const dz = z - p.at[2];
+     const g = Math.sqrt(dx * dx + dy * dy + dz * dz) - p.reach;
+     if (g < gap) {
+       gap = g;
+       place = p;
+     }
+   }
+-  const home = Math.sqrt(x * x + z * z) - HOME_RADIUS;
++  // (the home system as a ball round the sun: far above or below it is open space)
++  const home = Math.sqrt(x * x + y * y + z * z) - HOME_RADIUS;
+   return home < gap ? { place: null, gap: home } : { place, gap };
+ }
+ 
+ // 0 at a place (the home system, a planet, a wonder: in its space you fly at
+ // the boost, under the home ceiling), rising smoothly to 1 out in the open
+ // between them: how far it's opened up at (x, y, z). (What the ship's pulse
+ // drive does is driveOpen's, below; this is where it's deep space, for the
+ // crews, the traffic and the hunters.)
+ export function openness(x, y, z) {
+   const { gap } = nearestPlace(x, y, z);
+diff --git a/src/components/universe/deep.test.js b/src/components/universe/deep.test.js
+index 9ddf7b578..a582f6d4f 100644
+--- a/src/components/universe/deep.test.js
++++ b/src/components/universe/deep.test.js
+@@ -1,12 +1,12 @@
+ import { describe, expect, it } from 'vitest';
+-import { DEEP, DEEP_SOLIDS, PLACES, STARS, WONDERS, beyondOf, binaryAt, moveBinaries, nearestStar, openness, parseWonder, planetAt, reachOf, wonderById } from './deep';
++import { DEEP, DEEP_SOLIDS, PLACES, STARS, WONDERS, beyondOf, binaryAt, moveBinaries, nearestPlace, nearestStar, openness, parseWonder, planetAt, reachOf, wonderById } from './deep';
+ import { GOALS } from './ship';
+ import { HOME_RADIUS, ORDER, POSITIONS, REACH, SECTORS, SECTOR_OF, inSector, sectorOf } from './layout';
+ import { MOONS, byId } from './universes';
+ 
+ describe('deep space', () => {
+   it('puts every wonder well out past the home system and inside the edge, within the ceiling', () => {
+     for (const w of WONDERS) {
+       const sec = SECTORS[sectorOf(...w.at)];
+       expect(sec.id, w.id).toBe(w.sector ?? 'main');
+       const r = Math.hypot(w.at[0] - sec.origin[0], w.at[2] - sec.origin[2]);
+@@ -111,20 +111,25 @@ describe('deep space', () => {
+     expect(openness(HOME_RADIUS + DEEP.near, 0, 0)).toBe(0);
+     // leaving home the way none of the planets lie
+     const clear = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => i * 0.785).find((a) => openness(Math.cos(a) * (DEEP.open + 1), 0, Math.sin(a) * (DEEP.open + 1)) === 1);
+     expect(clear).toBeDefined();
+     const half = HOME_RADIUS + DEEP.near + DEEP.ramp / 2;
+     const mid = openness(Math.cos(clear) * half, 0, Math.sin(clear) * half);
+     expect(mid).toBeGreaterThan(0.4);
+     expect(mid).toBeLessThan(0.6);
+   });
+ 
++  it('measures the home system as a ball: far over it, it’s open space', () => {
++    expect(openness(0, 50000, 0)).toBe(1);
++    expect(Math.abs(nearestPlace(0, 50000, 0).gap - (50000 - HOME_RADIUS))).toBeLessThan(1);
++  });
++
+   it('turns a binary’s suns round the point their masses balance at, apart by the same all the way round', () => {
+     const w = WONDERS.find((x) => x.kind === 'binary');
+     const p = w.pair.period;
+     const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+     for (const t of [0, p / 8, p / 4, p / 2, p * 0.9]) {
+       const { a, b } = binaryAt(w, t);
+       expect(dist(a, b)).toBeCloseTo(w.pair.apart, 6);
+       // the middle stays put, nearer the bigger sun (masses as r³)
+       const ma = w.r ** 3;
+       const mb = w.pair.r ** 3;
+diff --git a/src/components/universe/layout.js b/src/components/universe/layout.js
+index 73263e792..f47387ac3 100644
+--- a/src/components/universe/layout.js
++++ b/src/components/universe/layout.js
+@@ -12,21 +12,21 @@
+ // and the Rick and Morty sector, a region of space of its own far past the
+ // main map's rim (SECTORS.rickmorty.origin), with the Citadel at its middle
+ // (deep.js) and the show's worlds (universes.js's MOONS) on a spiral of its
+ // own round it, a thousand and more units apart. Everything stays on plain
+ // map coordinates (a sector's body is its origin plus where it sits in it),
+ // so flight, landings and the autopilot work the same anywhere; what's
+ // per-sector is the edge the ship's turned back at (ship.js) and the chart.
+ 
+ import { MOONS, UNIVERSES, byId } from './universes';
+ import { HOME_SPREAD, SPREAD } from './scale';
+-import { sectorAt, sectorCentre, sectorId } from '../expanse/gen/grid';
++import { parseSectorKey, sectorAt, sectorCentre, sectorKey } from '../../lib/space/address';
+ 
+ const GOLDEN = Math.PI * (3 - Math.sqrt(5)); // ≈ 137.5°
+ // (the first two by scale.js's SPREAD; the height stays as it was at the
+ // spread to four, 1,120, so the highest world stays under deep space's
+ // ceiling, deep.js's 1,400, and the disc only gets flatter as it widens)
+ const FIRST = 2000 * SPREAD; // how far out the nearest fandom is
+ const STEP = 330 * SPREAD; // and how much further each one after it
+ const HEIGHT = 1120; // how far above or below the disc they go
+ // (and the Rick and Morty sector's worlds round its middle, the same way)
+ const SECTOR_FIRST = 900;
+@@ -47,39 +47,41 @@ export const ORDER = UNIVERSES.map((u) => u.id);
+ // its origin, 66,000 down: the line runs halfway between the two edges). The
+ // sector keeps its own layout (it's a pocket universe reached by portal);
+ // only its origin moved out with the main map's spread, keeping the 6,000
+ // between the two edges.
+ export const SECTORS = {
+   main: { id: 'main', origin: [0, 0, 0], edge: 9000 * SPREAD, name: 'Deep space' },
+   rickmorty: { id: 'rickmorty', origin: [0, 0, -66000], edge: 6000, name: 'The Central Finite Curve' },
+ };
+ const SECTOR_SPLIT = (-SECTORS.main.edge + SECTORS.rickmorty.origin[2] + SECTORS.rickmorty.edge) / 2;
+ // Past both edges is the Expanse (expanse/gen): a grid of generated sectors,
+-// each 'E:sx,sz' (grid.js). Inside an edge it's that edge's sector, as it
++// each 'E:sx,sz' on the middle layer, 'E:sx,sz,sy' above or below it
++// (lib/space/address.js). Inside an edge it's that edge's sector, as it
+ // always was; the Rick and Morty sector is its own pocket, walled from the
+-// Expanse round it (ship.js), so only what's inside its edge is its own.
++// Expanse round it (ship.js), so only what's inside its edge (a ball) is its own.
+ const RM = SECTORS.rickmorty;
+ export const sectorOf = (x, y, z) => {
+-  if (z < SECTOR_SPLIT && Math.hypot(x - RM.origin[0], z - RM.origin[2]) <= RM.edge + 1) return 'rickmorty';
+-  if (Math.hypot(x, z) <= SECTORS.main.edge + 1) return 'main';
+-  return sectorId(...sectorAt(x, z));
++  if (z < SECTOR_SPLIT && Math.hypot(x - RM.origin[0], y - RM.origin[1], z - RM.origin[2]) <= RM.edge + 1) return 'rickmorty';
++  const at = sectorAt(x, y, z);
++  if (at[0] === 0 && at[1] === 0 && at[2] === 0 && Math.hypot(x, z) <= SECTORS.main.edge + 1) return 'main';
++  return sectorKey(...at);
+ };
+ export const inExpanse = (id) => typeof id === 'string' && id.startsWith('E:');
+ // the map's own sector for a point: the Rick and Morty pocket, or the main
+ // map's everywhere else (the Expanse is charted, sided and crewed as the
+ // main map is: what goes by sector inside the edges reads this)
+ export const mapSectorOf = (x, y, z) => (sectorOf(x, y, z) === 'rickmorty' ? 'rickmorty' : 'main');
+ // a sector by id: one of SECTORS, or an Expanse sector (no edge: it goes on)
+ export const sectorById = (id) => SECTORS[id] ?? (inExpanse(id) ? expanseSector(id) : null);
+ function expanseSector(id) {
+-  const [sx, sz] = id.slice(2).split(',').map(Number);
+-  return { id, origin: sectorCentre(sx, sz), edge: Infinity, name: id, expanse: true };
++  const [sx, sy, sz] = parseSectorKey(id) ?? [0, 0, 0];
++  return { id, origin: sectorCentre(sx, sy, sz), edge: Infinity, name: id, expanse: true };
+ }
+ // a point given in a sector's own frame, in the map's
+ export const inSector = (sector, [x, y, z]) => {
+   const o = SECTORS[sector].origin;
+   return [o[0] + x, o[1] + y, o[2] + z];
+ };
+ // how far (x, z) is out from its sector's middle, level, and that sector
+ export function sectorOut(x, z) {
+   const sec = sectorById(sectorOf(x, 0, z));
+   return { sec, out: Math.hypot(x - sec.origin[0], z - sec.origin[2]) };
+diff --git a/src/components/universe/layout.test.js b/src/components/universe/layout.test.js
+index e80fa408d..873690a6a 100644
+--- a/src/components/universe/layout.test.js
++++ b/src/components/universe/layout.test.js
+@@ -138,12 +138,21 @@ describe('the spread', () => {
+     expect(mapSectorOf(135000, 0, 0)).toBe('main');
+     expect(mapSectorOf(0, 0, -66000)).toBe('rickmorty');
+     // (a point saved before the spread is still somewhere: the old pocket's middle is open main space now)
+     expect(sectorOf(0, 0, -48000)).toBe('main');
+     const sec = sectorById('E:1,-2');
+     expect(sec.origin).toEqual([120000, 0, -240000]);
+     expect(sec.edge).toBe(Infinity);
+     expect(sectorById('main')).toBe(SECTORS.main);
+     expect(sectorById('nowhere')).toBeNull();
+   });
++
++  it('keys sectors in 3D: layers above and below, and the pocket a ball', () => {
++    expect(sectorOf(0, 70000, 0)).toBe('E:0,0,1');
++    expect(sectorOf(0, 50000, 0)).toBe('main');
++    expect(sectorOf(0, 5000, -66000)).toBe('rickmorty');
++    expect(sectorOf(0, 6500, -66000)).toBe('E:0,-1');
++    expect(sectorOf(4500, 4500, -66000)).toBe('E:0,-1');
++    expect(sectorById('E:1,-2,3').origin).toEqual([120000, 360000, -240000]);
++  });
+ });
+ 
+diff --git a/src/components/universe/online/protocol.js b/src/components/universe/online/protocol.js
+index 0204334cb..b92773a1a 100644
+--- a/src/components/universe/online/protocol.js
++++ b/src/components/universe/online/protocol.js
+@@ -20,22 +20,23 @@
+ //   hi    { n: name, k: ship kind or null, p: its paint job, o: its parts
+ //           (outfit.js), b: its garage build (shipyard/build.js's ids) or
+ //           none, l: [Rick's look, Morty's] (wardrobe/looks.js's ids) or
+ //           none, lb: [Walt’s look, Jesse’s] or none, c: kills, w: where
+ //           on the site, lv: level (economy.js's, 1 to 11), f: factions
+ //           { s: side (sides.js), st: { law, civil, outlaw } standing.js's
+ //           level names, w: war, o: the side sworn to in it (galaxy/sides.js),
+ //           r: rank on that side (galaxy/ranks.js) } or none; a build older
+ //           than these sends neither: level 1, nobody's }  on joining, and on any change
+ //   pose  [x, y, z, heading, pitch, bank, speed, vy, flags, shields, sec?]  ten times a second while flying
+-//         (sec: out in the Expanse, its sector, 'E:sx,sz', and x and z then
+-//         from that sector's middle; without it, the authored map's, as ever)
++//         (sec: out in the Expanse, its sector, 'E:sx,sz' or, off the middle
++//         layer, 'E:sx,sz,sy', and x, y and z then from that sector's middle;
++//         without it, the authored map's, as ever)
+ //         (flags: hidden, boosting, safe: just back, your hits don't count, and
+ //         lane, from when there were hyperlanes: read by nothing now)
+ //   shot  [x, y, z, vx, vy, vz, w?]                      a bolt fired (for drawing it); w: the
+ //                                                       weapon (weapons.js's code), 0 if left off
+ //   hit   { d: damage }                                  to the pilot a bolt of yours hit (up to
+ //                                                       DAMAGE_MAX, a heavy round's)
+ //   ram   { v: closing speed }                           to the pilot you flew into (they take it off
+ //                                                       their own shields by the contact law,
+ //                                                       lib/combat/contact.js, at no more than both
+ //                                                       your speeds allow: ramCounts)
+@@ -68,21 +69,21 @@
+ import { parseShip } from '../crews';
+ import { FOOT, METRE } from '../foot';
+ import { readOutfit } from '../outfit';
+ import { readBuildWire } from '../shipyard/build';
+ import { CASTS, defaultLook, readLookWire, writeLook } from '../../rickmorty/wardrobe/looks';
+ import { byId } from '../universes';
+ import { KINDS as HUNTERS } from '../../galaxy/hunted';
+ import { fromAngles, slerp, toAngles } from '../orient';
+ import { cleanWhere } from './where';
+ import { inExpanse, sectorOf } from '../layout';
+-import { SECTOR, parseSector, sectorCentre } from '../../expanse/gen/grid';
++import { SECTOR, parseSectorKey, sectorCentre, sectorKey } from '../../../lib/space/address';
+ import { cleanName } from './names';
+ import { LEVELS as XP_LEVELS } from '../economy';
+ import { SIDES } from '../sides';
+ import { AXES, LEVELS as STANDING_LEVELS } from '../standing';
+ import { SIDES as WAR_SIDES, WARS, warOfSide } from '../../galaxy/sides';
+ import { RANKS } from '../../galaxy/ranks';
+ import { STANCE_IDS } from '../../galaxy/surface/combatRules';
+ import { NO_FACTIONS } from './relations';
+ import { motionPacket, readEmoteWire, readMotion } from '../../../lib/emote';
+ import { WEAPONS, byCode } from '../weaponTable';
+@@ -199,42 +200,45 @@ export function readCursor(data) {
+   const y = num(data[1], 0, 500000);
+   if (x === null || y === null) return null;
+   return { x, y, touch: data[2] === 1 };
+ }
+ 
+ // what goes out as a pose, from ship.js's numbers (and the shields, 0 to
+ // 100); the bank with the lean into a turn on it, so others see that too
+ export function writePose(s, flags = 0, shield = 100) {
+   const r = (v, k = 1000) => Math.round((v || 0) * k) / k;
+   const sec = sectorOf(s.x || 0, s.y || 0, s.z || 0);
+-  const o = inExpanse(sec) ? sectorCentre(...parseSector(sec)) : null;
+-  const out = [r(s.x - (o?.[0] ?? 0), 100), r(s.y, 100), r(s.z - (o?.[2] ?? 0), 100), r(s.heading), r(s.pitch), r(wrap((s.bank || 0) + (s.lean || 0))), r(s.speed, 100), r(s.vy, 100), flags | 0, Math.round(shield)];
++  const o = inExpanse(sec) ? sectorCentre(...parseSectorKey(sec)) : null;
++  const out = [r(s.x - (o?.[0] ?? 0), 100), r(s.y - (o?.[1] ?? 0), 100), r(s.z - (o?.[2] ?? 0), 100), r(s.heading), r(s.pitch), r(wrap((s.bank || 0) + (s.lean || 0))), r(s.speed, 100), r(s.vy, 100), flags | 0, Math.round(shield)];
+   if (o) out.push(sec);
+   return out;
+ }
+-// how far from its sector's middle an Expanse pose may be (its half and a margin)
++// how far from its sector's middle an Expanse pose may be, up and down too
++// (its half and a margin); a sectorless pose's height gets the same room
+ const SEC_FAR = SECTOR / 2 + 2000;
+ 
+ // a pose as it came in: { x, y, z, heading, pitch, bank, speed, vy, hidden,
+ // boost, safe, lane, shield, sec? }, or null if it isn't one (out past deep space's
+ // edge, it's clamped; an older pilot's never has the lane bit, so reads not riding).
+-// x and z are the map's: an Expanse pose's are put back from its sector's
+-// middle (and `sec` kept); one without a sector is the authored map's.
++// x, y and z are the map's: an Expanse pose's are put back from its sector's
++// middle (and `sec` kept, in sectorKey's form); one without a sector is the
++// authored map's.
+ export function readPose(data) {
+   if (!Array.isArray(data) || data.length < 9) return null;
+-  const at = data.length > 10 ? parseSector(data[10]) : null;
+-  const sec = at && inExpanse(data[10]) ? data[10] : null;
+-  const o = sec ? sectorCentre(...at) : null;
++  const at = data.length > 10 ? parseSectorKey(data[10]) : null;
++  const sec = at ? sectorKey(...at) : null;
++  const o = at ? sectorCentre(...at) : null;
+   const lx = o ? num(data[0], -SEC_FAR, SEC_FAR) : num(data[0], -FAR, FAR);
+-  const y = num(data[1], -1300, 1300);
++  const ly = num(data[1], -SEC_FAR, SEC_FAR);
+   const lz = o ? num(data[2], -SEC_FAR, SEC_FAR) : num(data[2], -FAR, FAR);
+   const x = lx === null ? null : lx + (o?.[0] ?? 0);
++  const y = ly === null ? null : ly + (o?.[1] ?? 0);
+   const z = lz === null ? null : lz + (o?.[2] ?? 0);
+   const heading = num(data[3], -100, 100);
+   if (x === null || y === null || z === null || heading === null) return null;
+   const flags = Math.floor(num(data[8], 0, 255) ?? 0);
+   return {
+     x,
+     y,
+     z,
+     heading: wrap(heading),
+     pitch: num(data[4], -1.6, 1.6) ?? 0,
+@@ -254,21 +258,21 @@ export const writeShot = (p, v, w = 0) => {
+   const out = [p.x, p.y, p.z, v[0], v[1], v[2]].map((n) => Math.round(n * 1000) / 1000);
+   if (w) out.push(w);
+   return out;
+ };
+ 
+ // a shot as it came in: { p: [x, y, z], v: [vx, vy, vz] }, or null; it has
+ // to start near where the pilot was last seen (`from`, a pose, if known)
+ export function readShot(data, from = null) {
+   if (!Array.isArray(data) || data.length < 6) return null;
+   // (anywhere in the universe; its speed's checked just below)
+-  const n = data.slice(0, 6).map((v, i) => (i < 3 ? num(v, -FAR, FAR) : num(v, -7500, 7500)));
++  const n = data.slice(0, 6).map((v, i) => (i < 3 ? num(v, -1e12, 1e12) : num(v, -7500, 7500)));
+   if (n.some((v) => v === null)) return null;
+   if (Math.hypot(n[3], n[4], n[5]) > 800) return null;
+   // (as far as it could have gone since that pose, on the pulse drive)
+   if (from && Math.hypot(n[0] - from.x, n[1] - from.y, n[2] - from.z) > 6 + Math.abs(from.speed ?? 0) * 0.3) return null;
+   // (a code from the weapon table; a newer peer's or junk is the blaster)
+   const w = Number.isInteger(data[6]) ? WEAPONS[byCode(data[6])].code : 0;
+   return { p: n.slice(0, 3), v: n.slice(3), w };
+ }
+ 
+ export function readHit(data) {
+diff --git a/src/components/universe/online/protocol.test.js b/src/components/universe/online/protocol.test.js
+index a8a6a28ac..738d9c0ce 100644
+--- a/src/components/universe/online/protocol.test.js
++++ b/src/components/universe/online/protocol.test.js
+@@ -164,40 +164,59 @@ describe('poses', () => {
+     expect(p.pitch).toBe(1.6);
+     expect(p.speed).toBe(5000);
+     expect(p.hidden).toBe(true);
+   });
+   it('reaches as far as the spread universe does, and as fast as its lanes run', () => {
+     // (the Rick and Morty sector sits at z −66,000 since the spread to six, its far edge −72,000; the fastest ever ran at 4,000 a second)
+     const p = readPose(writePose({ ...ship, x: 54000, z: -70000, speed: 4000 }));
+     expect(p.x).toBe(54000);
+     expect(p.z).toBe(-70000);
+     expect(p.speed).toBe(4000);
+-    expect(readPose([0, 1e9, 0, 0, 0, 0, 0, 0, 0]).y).toBe(1300); // (the height is as it was)
++    expect(readPose([0, 1e9, 0, 0, 0, 0, 0, 0, 0]).y).toBe(62000); // (the height clamp is gone: sectorless poses reach SEC_FAR up)
+   });
+   it('carries the sector out in the Expanse, with x and z from its middle, and reads one without as the authored map', () => {
+     const out = writePose({ ...ship, x: 185184.78, y: 5, z: -121500 });
+     expect(out[10]).toBe('E:2,-1');
+     expect(out[0]).toBeCloseTo(185184.78 - 240000, 2);
+     expect(out[2]).toBeCloseTo(-121500 + 120000, 2);
+     const p = readPose(out);
+     expect(p.sec).toBe('E:2,-1');
+     expect(p.x).toBeCloseTo(185184.78, 2);
+     expect(p.z).toBeCloseTo(-121500, 2);
+     // (on the authored map: no sector, as before)
+     expect(writePose(ship)).toHaveLength(10);
+     expect(readPose(writePose(ship)).sec).toBeUndefined();
+     // (a reader given no sector, or junk for one, takes the map's coordinates)
+     expect(readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'E:x']).x).toBe(1);
+     expect(readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'main']).sec).toBeUndefined();
+     // (an Expanse pose is kept near its own sector)
+     expect(readPose([1e9, 0, 0, 0, 0, 0, 0, 0, 0, 100, 'E:1,0']).x).toBe(120000 + 62000);
+   });
++  it('carries the sector in 3D, and a two-number pose from an older build reads as before', () => {
++    const out = writePose({ ...ship, x: 185184.78, y: 70000, z: -121500 });
++    expect(out[10]).toBe('E:2,-1,1');
++    expect(out[1]).toBeCloseTo(-50000, 1);
++    const p = readPose(out);
++    expect(p.y).toBeCloseTo(70000, 1);
++    expect(p.sec).toBe('E:2,-1,1');
++    expect(readPose(writePose({ ...ship, y: 50000 })).y).toBe(50000);
++    expect(readPose(writePose({ ...ship, y: 50000 })).sec).toBeUndefined();
++    const old = readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'E:2,-1']);
++    expect([old.x, old.y, old.z]).toEqual([240001, 2, -119997]);
++    expect(readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'E:1,0,x']).sec).toBeUndefined();
++    expect(readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'X:1,0']).sec).toBeUndefined();
++  });
++  it('reads a shot from far out, held to its pilot', () => {
++    const from = { x: 500000, y: 0, z: 0, speed: 0 };
++    expect(readShot([500000, 0, 0, 1, 0, 0], from)).not.toBeNull();
++    expect(readShot([501000, 0, 0, 1, 0, 0], from)).toBeNull();
++  });
+   it('says when a pilot is riding a lane, and an old pose says they are not', () => {
+     expect(FLAG.lane).toBe(8);
+     expect(readPose(writePose(ship, FLAG.lane)).lane).toBe(true);
+     expect(readPose(writePose(ship, FLAG.boost | FLAG.lane)).boost).toBe(true);
+     expect(readPose(writePose(ship, FLAG.boost)).lane).toBe(false);
+     // (nine fields, from a pilot whose site is older than the shields on the pose)
+     expect(readPose([1, 2, 3, 0, 0, 0, 5, 0, 2]).lane).toBe(false);
+   });
+   it('carries the lane bit to where they are drawn', () => {
+     const snaps = [
+@@ -300,21 +319,21 @@ describe('shots', () => {
+     expect(readShot([0, 0, 0, 1, 0, 0, -1]).w).toBe(0);
+   });
+   it('refuses one from far off where the pilot was, or impossibly fast', () => {
+     expect(readShot([50, 0, 0, 0, 0, -20], { x: 0, y: 0, z: 0 })).toBeNull();
+     expect(readShot([0, 0, 0, 0, 0, -5000])).toBeNull();
+     expect(readShot([0, 0, 0, 0, 0])).toBeNull();
+   });
+   it('reads a shot fired anywhere in the spread universe', () => {
+     const s = readShot(writeShot({ x: 45000, y: 0, z: -70000 }, [0, 0, -20]));
+     expect(s.p).toEqual([45000, 0, -70000]);
+-    expect(readShot([1e9, 0, 0, 0, 0, -20]).p[0]).toBe(90000);
++    expect(readShot([1e13, 0, 0, 0, 0, -20]).p[0]).toBe(1e12); // (the bound is 1e12 now, not FAR)
+   });
+ });
+ 
+ describe('rams', () => {
+   it('reads the closing speed, capped, and nothing else', () => {
+     expect(readRam({ v: 8 })).toBe(8);
+     expect(readRam({ v: 1e9 })).toBe(RAM_MAX);
+     expect(readRam({ v: -3 })).toBe(0);
+     expect(readRam({ v: 'fast' })).toBeNull();
+     expect(readRam(null)).toBeNull();
+diff --git a/src/components/universe/online/rosterWhere.js b/src/components/universe/online/rosterWhere.js
+index 88134fe93..85806c8e9 100644
+--- a/src/components/universe/online/rosterWhere.js
++++ b/src/components/universe/online/rosterWhere.js
+@@ -2,49 +2,49 @@
+ // name (where.js's placeName); on it, the region they were last seen in
+ // (regions.js), so a universe spread this wide still says roughly where:
+ // “Universe · Near Middle-earth”, “Universe · the void”. A module of its
+ // own, not where.js, which the site's shell loads on every page: this one
+ // pulls in the map's layout, and only the roster (loaded once you're
+ // online) needs it. Out in the Expanse (a pose with a sector), the sector
+ // and the nearest system in it: “Universe · E:3,-2 · Kepler”.
+ 
+ import { regionAt } from '../regions';
+ import { SECTORS, inExpanse, mapSectorOf } from '../layout';
+-import { makeSector } from '../../expanse/gen/sector';
++import { fullSector } from '../../expanse/gen/space';
+ import { UNIVERSE as SHARED } from '../../expanse/gen/seed';
+-import { parseSector } from '../../expanse/gen/grid';
++import { parseSectorKey } from '../../../lib/space/address';
+ import { UNIVERSE, placeName } from './where';
+ 
+ // (mid-sentence, a leading “The” goes small: “the home system”)
+ const small = (name) => name.replace(/^The /, 'the ');
+ 
+ // the roster's words for `where` (a page key), with the pilot's last pose
+ // ({ x, y, z }, or null) to say whereabouts on the map
+ export function rosterWhere(where, pose) {
+   if (where !== UNIVERSE || !pose) return placeName(where);
+   const { x, y, z } = pose;
+-  if (inExpanse(pose.sec)) return `Universe · ${pose.sec}${nearest(pose.sec, x, z)}`;
++  if (inExpanse(pose.sec)) return `Universe · ${pose.sec}${nearest(pose.sec, x, y, z)}`;
+   // (the Rick and Morty sector is through its portal: none of the regions reach it;
+   // a pose without a sector is the authored map's, wherever it says)
+   const sector = mapSectorOf(x, y, z);
+   const area = sector !== 'main' ? SECTORS[sector].name : (regionAt(x, y, z)?.name ?? 'the void');
+   return `Universe · ${small(area)}`;
+ }
+ 
+-// ' · <name>' of the system in the sector nearest (x, z), within NEAR of it
++// ' · <name>' of the system in the sector nearest (x, y, z), within NEAR of it
+ const NEAR = 12000;
+ const SEEN = new Map(); // sector id → its systems (the last few)
+-function nearest(id, x, z) {
++function nearest(id, x, y, z) {
+   let systems = SEEN.get(id);
+   if (!systems) {
+-    systems = makeSector(SHARED, ...parseSector(id)).systems;
++    systems = fullSector(SHARED, ...parseSectorKey(id), { things: false }).systems;
+     if (SEEN.size > 16) SEEN.clear();
+     SEEN.set(id, systems);
+   }
+   let best = null;
+   let d = NEAR;
+   for (const s of systems) {
+-    const k = Math.hypot(s.at[0] - x, s.at[2] - z);
++    const k = Math.hypot(s.at[0] - x, s.at[1] - y, s.at[2] - z);
+     if (k < d) [best, d] = [s, k];
+   }
+   return best ? ` · ${best.name}` : '';
+ }
+diff --git a/src/components/universe/online/rosterWhere.test.js b/src/components/universe/online/rosterWhere.test.js
+index 9f88ea694..6b22991ee 100644
+--- a/src/components/universe/online/rosterWhere.test.js
++++ b/src/components/universe/online/rosterWhere.test.js
+@@ -1,14 +1,15 @@
+ import { describe, expect, it } from 'vitest';
+ import { rosterWhere } from './rosterWhere';
+ import { UNIVERSE } from './where';
+ import { makeSector } from '../../expanse/gen/sector';
++import { fullSector } from '../../expanse/gen/space';
+ import { UNIVERSE as SHARED } from '../../expanse/gen/seed';
+ 
+ import { POSITIONS } from '../layout';
+ 
+ describe('rosterWhere', () => {
+   it('names the region a pilot in the universe is in, after its place', () => {
+     const [x, y, z] = POSITIONS.middleearth;
+     expect(rosterWhere(UNIVERSE, { x: x + 300, y, z })).toBe('Universe · Near Middle-earth');
+   });
+   it('says so when they are out in the void between the regions', () => {
+@@ -22,12 +23,16 @@ describe('rosterWhere', () => {
+     expect(rosterWhere(UNIVERSE, null)).toBe('the universe');
+     expect(rosterWhere('/galaxy/hoth', { x: 0, y: 0, z: 0 })).toBe('Hoth');
+     expect(rosterWhere('/deathstar', null)).toBe('the Death Star');
+   });
+   it('says the Expanse sector of a pose with one, and the system nearby', () => {
+     const sec = makeSector(SHARED, 1, 0);
+     const [x, y, z] = sec.systems[0].at;
+     expect(rosterWhere(UNIVERSE, { x: x + 50, y, z, sec: 'E:1,0' })).toBe(`Universe · E:1,0 · ${sec.systems[0].name}`);
+     expect(rosterWhere(UNIVERSE, { x: 120000 + 59000, y: 0, z: 59000, sec: 'E:1,0' })).toMatch(/^Universe · E:1,0/);
+   });
++  it('names the nearest system of a sector above the middle layer', () => {
++    const sec = fullSector(SHARED, 1, 1, 0, { things: false });
++    const [x, y, z] = sec.systems[0].at;
++    expect(rosterWhere(UNIVERSE, { x: x + 50, y, z, sec: 'E:1,0,1' })).toBe(`Universe · E:1,0,1 · ${sec.systems[0].name}`);
++  });
+ });
+-
+diff --git a/src/components/universe/scene.js b/src/components/universe/scene.js
+index 173b91938..7cebfec96 100644
+--- a/src/components/universe/scene.js
++++ b/src/components/universe/scene.js
+@@ -115,21 +115,21 @@ import { buildSun } from './sun';
+ import { MAP_LENS, aberrationFor, createPost, spaceEnvironment } from './post';
+ import { grainFor } from '../../lib/three/noise';
+ import { createFlare, flareWeight, occluded } from '../../lib/three/flare';
+ import { exposureFor, sunShareOf } from '../../lib/three/exposure';
+ import { houseOn } from '../../lib/three/house';
+ import { houseGroups } from '../../lib/three/houseTuning';
+ import { createFeel, feelGroups } from '../../lib/three/feel';
+ import { bloomGroups } from '../../lib/three/bloom';
+ import { createImpacts, impactGroups } from '../../lib/impact';
+ import { debugOn, debugPanel } from '../../lib/debugPanel';
+-import { LEAN, OPEN_SPACE, PLANETS, SHIP, SOLIDS, SPACE, autopilot, crashLoud, forward, headingTo, holdReach, isGoal, isPlace, noseOf, orbiting, parkAt, spawn, startAt, step } from './ship';
++import { LEAN, OPEN_SPACE, PLANETS, SHIP, SOLIDS, autopilot, crashLoud, forward, headingTo, holdReach, isGoal, isPlace, noseOf, orbiting, parkAt, spawn, startAt, step } from './ship';
+ import { HYPER, destinationById, driveById, hyperState, legOf, parkFor, riftExit, shortDistance } from './nav';
+ import { REAIM_MS, parkBehind, pilotId, pilotSpace, reached } from './pilotGoal';
+ import { FACTIONS, HUNTER_KINDS, NAMES, createHunters } from './hunters';
+ import { ION } from './hunterRules';
+ import { difficultyOf } from './difficulty';
+ import { AHEAD_OF, crewAt, factionsOf, kindsOf, pick as pickFaction, sideAt, sideFor, sideOf, wingOf } from './sides';
+ import { TROOPS } from './foot';
+ import { GLB, createFleet } from './glbFleet';
+ import { createDirector, withWhere, zoneOf } from './director';
+ import { regionAt } from './regions';
+@@ -1799,21 +1799,21 @@ export async function create(canvas, ctx) {
+       const l = Math.hypot(dx, dy, dz) || 1;
+       state.jump = { id, park, phase: 'align', age: 0, dir: [dx / l, dy / l, dz / l], at: Infinity, name: pose?.name ?? null };
+     } else {
+       if (hyper) {
+         // (not yet: on super speed instead, and the HUD says why)
+         emit({ type: 'hyper', why: hyper.why, wait: hyper.wait });
+         state.note = { text: hyper.why === 'interdicted' ? JAMMED.long : `${jumpState(false, hyper.wait)}: super speed instead`, until: wall() + 3.5 };
+       }
+       state.auto = { id, park, od: driveById(hyper ? 'super' : drive).od };
+       // (a pilot moves: where they'll be parked behind is worked out again every REAIM_MS, chasePilot)
+-      if (pose) Object.assign(state.auto, { pilot: pid, name: pose.name, drive, space: pilotSpace(SPACE, pid, pose), reaimAt: performance.now() + REAIM_MS });
++      if (pose) Object.assign(state.auto, { pilot: pid, name: pose.name, drive, space: pilotSpace(OPEN_SPACE, pid, pose), reaimAt: performance.now() + REAIM_MS });
+     }
+     retarget(700);
+     ctx.invalidate();
+     return true;
+   };
+   // the ship put straight down at a parking spot, still, level and facing
+   // the place (reduced motion's trip, and a jump's way out of hyperspace)
+   const arriveAt = (park) => {
+     state.ship = { ...state.ship, ...park, speed: 0, vy: 0, lift: 0, pitch: 0, bank: 0, rate: 0, tipRate: 0, rollRate: 0, lean: 0, edge: false };
+     state.yaw = -state.ship.heading;
+@@ -1823,21 +1823,21 @@ export async function create(canvas, ctx) {
+   // the war's front as somewhere the autopilot can go (front.js's goal):
+   // parked just inside the fight on the side you come from, facing it
+   const frontPark = ([x, z]) => {
+     const g = front?.goal();
+     if (!g) return null;
+     const dx = x - g.at[0];
+     const dz = z - g.at[2];
+     const l = Math.hypot(dx, dz) || 1;
+     return { x: g.at[0] + (dx / l) * g.reach, y: g.at[1], z: g.at[2] + (dz / l) * g.reach, heading: headingTo(-dx / l, -dz / l) };
+   };
+-  const frontSpace = () => ({ ...SPACE, goals: { ...SPACE.goals, front: front.goal() } });
++  const frontSpace = () => ({ ...OPEN_SPACE, goals: { ...OPEN_SPACE.goals, front: front.goal() } });
+   // Flying to another pilot (travel's `pilot:<id>`): there once within reach
+   // of them, the HUD says who you're with; gone (offline, hidden, down on a
+   // planet, blocked, off to another page) and the trip ends, the autopilot
+   // off and their goal with it, and the HUD says so. Their name is only
+   // ever the note's text (placePrompt sets it as textContent)
+   const withPilot = (name) => {
+     state.note = { text: `With ${name ?? 'them'}`, until: wall() + 3.5 };
+   };
+   const pilotGone = (id, name) => {
+     state.note = { text: `${name ?? 'They'} ${name ? 'has' : 'have'} gone`, until: wall() + 3.5 };
+@@ -1870,21 +1870,21 @@ export async function create(canvas, ctx) {
+     const now = performance.now();
+     if (now < a.reaimAt) return;
+     // (gone through a portal ahead of you: after them, by it)
+     if (legOf(state.ship, id, pose) !== id) {
+       state.auto = null;
+       if (!travel(id, a.drive === 'hyper' ? 'super' : a.drive)) emit({ type: 'arrived', id, done: false });
+       return;
+     }
+     a.reaimAt = now + REAIM_MS;
+     a.park = park;
+-    a.space = pilotSpace(SPACE, a.pilot, pose);
++    a.space = pilotSpace(OPEN_SPACE, a.pilot, pose);
+   };
+ 
+   // ── The ship ──
+   const heard = () => {
+     // the first key or press: sound may start now
+     if (!state.kind) return;
+     audioContext();
+     if (!engine) engine = shipEngine(state.kind);
+   };
+ 
+@@ -3388,21 +3388,21 @@ export async function create(canvas, ctx) {
+       else if (pieces.chopperHere && !hunters.active) pieces.leave();
+     }
+   };
+ 
+   // what the director sets going
+   // on the way somewhere (out in the open at speed), a pack comes in ahead
+   // of you and interdicts you: an ambush (laid where you'll be once they've
+   // pulled the drive down, not where you are: at the pulse drive's speed
+   // that's a few hundred units on)
+   const travelling = (s) => openness(s.x, s.y, s.z) > 0.5 && Math.abs(s.speed) > 40;
+-  const leadOf = (s) => holdReach(s, { ramp: INTERDICT_IN, solids: siegeSt.down ? SOLIDS_OPEN : SOLIDS });
++  const leadOf = (s) => holdReach(s, { ramp: INTERDICT_IN, solids: siegeSt.down ? SOLIDS_OPEN : SOLIDS, space: OPEN_SPACE });
+   const happen = (id, ship) => {
+     const side = sideHere();
+     if (!side) return;
+     const ambush = travelling(ship) ? { ahead: true, interdict: true, lead: leadOf(ship) } : {};
+     // (more of them, and the ace more often, the more trouble you've made; the first pack is a small one)
+     const strength = { heat: state.heat, first: hunts === 0 };
+     if (id === 'hunt' || id === 'council' || id === 'roadblock') hunts += 1;
+     if (id === 'hunt') hunters.pack(pickFaction(side, 'hunt'), ship, { ...ambush, ...strength });
+     else if (id === 'council') pieces.portals(hunters.pack(pickFaction(side, 'council'), ship, { ...ambush, ...strength }));
+     else if (id === 'roadblock') {
+@@ -4304,21 +4304,21 @@ export async function create(canvas, ctx) {
+     if (!state.jump && pieces.riftAt && pieces.riftInside(state.ship)) riftThrough();
+     if (!state.jump) chasePilot();
+     // the big ships moving through (the capital, the sector fleet, the big traffic): solids for the step, and for the autopilot to steer round
+     const moving = solidsWith(NO_SHIPS, pieces.solids, sectorFleet.solids, traffic?.solids(state.ship, 12));
+     if (state.jump?.phase === 'align') input = { throttle: state.ship.speed > SHIP.cruise ? 0 : 0.35, ...steerToward(state.ship, state.jump.dir) }; // (coming round onto it, easing off to cruise)
+     else if (state.jump) input = { throttle: 1, boost: true }; // (spooling up: straight on, flat out)
+     else if (state.auto) {
+       const od = state.interdicted ? 1 : (state.auto.od ?? 1);
+       // (and the battle's hold on the drive, so it plans its stop for it: front.js holdAt, as it would be coming straight in)
+       const hold = front ? (x, y, z) => front.holdAt(x, y, z, null) : null;
+-      const a = autopilot(state.ship, state.auto.id, state.auto.park, state.auto.space ?? (state.auto.id === 'front' && front ? frontSpace() : undefined), od, hold, moving);
++      const a = autopilot(state.ship, state.auto.id, state.auto.park, state.auto.space ?? (state.auto.id === 'front' && front ? frontSpace() : OPEN_SPACE), od, hold, moving);
+       input = a.input;
+       if (a.done) {
+         const id = state.auto.id;
+         state.auto = null;
+         emit({ type: 'arrived', id, done: true }); // (the page's tour, and a trip on through the gate, go on from here)
+       }
+       // the crew's word on super speed, the first time it's past the pulse drive
+       if (od > 1 && !state.odSaid && state.ship.speed > SHIP.pulse * 1.2) {
+         state.odSaid = true;
+         emit({ type: 'event', id: 'overdrive' });
+diff --git a/src/components/universe/ship.js b/src/components/universe/ship.js
+index abcd049d3..beadd0242 100644
+--- a/src/components/universe/ship.js
++++ b/src/components/universe/ship.js
+@@ -21,21 +21,23 @@
+ // `tipRate`, `rollRate`, radians a second, easing toward what the stick
+ // asks), so it rolls into and out of everything rather than snapping, and
+ // all of it is slower the faster it goes. Let go of the roll and the nose
+ // and it rolls itself back upright (as quickly as `level` says; 0, never).
+ // It flies along its nose, so pointed up it climbs and pointed down it
+ // dives, faster the faster it goes; turning, it leans into the turn
+ // (`lean`, for the model and the camera only). It coasts to a stop, can't
+ // go through a planet (it bounces off) and is turned back at the edge of
+ // the map; near the ceiling or the floor (SHIP.ceiling above or below the
+ // disc) the nose comes round level in time for the speed it has, and past
+-// them it's eased back in.
++// them it's eased back in. That's the authored map alone (SPACE); the open
++// universe (OPEN_SPACE) has no ceiling or floor anywhere, so it flies on up
++// or down for ever, and only the Rick and Morty pocket keeps a wall, a ball.
+ //
+ // Between the places (deep.js) it opens up: the boost becomes a pulse drive
+ // (up to SHIP.pulse, easing back as it comes up on any place, so it never
+ // arrives at a planet at pulse speed, but not for one it's only flying past:
+ // deep.js's driveOpen; and cut to the boost while hunters have it
+ // interdicted, `input.interdicted`: true, or how far, 0 … 1, as a battle
+ // holds it coming in to the fight), the brakes and the
+ // coasting bite harder to match, the ceiling lifts to DEEP.ceiling out of
+ // the home system, and the wonders out there are as solid as the planets,
+ // and places the autopilot can take you (GOALS: every planet and station,
+@@ -50,21 +52,21 @@
+ // pulse drive's push that many squared as hard, so it stops in the same room
+ // it would have and still comes up on every place at the boost. The
+ // autopilot flies it (its `od`); hunters' interdiction cuts it like the rest.
+ // Past the pulse drive's speed with no overdrive left (the pilot took the
+ // stick), it falls back as hard as it's over, so it drops out of super speed
+ // in a second or so rather than sailing on. Over what the drive allows
+ // anywhere it's eased down onto it (SHIP.settle), never braked at a flat
+ // rate into a wall.
+ 
+ import { DEEP, DEEP_SOLIDS, WONDERS, driveOpen, easeOpen, gapAlong, openness, reachOf, trenchBand } from './deep';
+-import { BODIES, HOME_RADIUS, POSITIONS, REACH, SECTORS, SECTOR_RADIUS, SUN, sectorOf, sectorOut } from './layout';
++import { BODIES, HOME_RADIUS, POSITIONS, REACH, SECTORS, SECTOR_RADIUS, SUN, sectorById, sectorOf, sectorOut } from './layout';
+ import { MAW } from './maw';
+ import { NOSE, UP, axisAngle, conj, fromAngles, mul, normalize, rotate, toAngles, turnToward } from './orient';
+ import { byId } from './universes';
+ import { sunFor } from './lighting';
+ import { REGIONS } from './regions';
+ import { springStep } from '../../lib/spring';
+ 
+ // (the speeds as they were till October 2026, cruise 5.5, boost 20 and the
+ // pulse drive 420, got there in under a second and felt far too fast for a
+ // ship a quarter of a unit long: about 13 of its own lengths a second at
+@@ -199,34 +201,45 @@ export const isGoal = (id) => Boolean(GOALS[id]);
+ // stations is a hop, not a launch), and that gives way to deep space's once
+ // well out past the home system (by then deep space's is open all the way
+ // anyway). (each with how close to its surface the drive's all the way down:
+ // a station's door, and well clear of the sun, which the autopilot goes round)
+ const HOME_RAMP = 300;
+ const HOME_TOP = 0.4;
+ const HOME_BODIES = [...PLANETS.filter((p) => byId(p.id).kind === 'core').map((p) => ({ at: p.at, r: p.r, room: 8 })), { at: SUN.at, r: SUN.r, room: 20 }];
+ // how much of the home system's own handling there is at (x, z): 1 in it
+ // and out past it till deep space's drive is open all the way, then easing
+ // to 0. There the boost gets going harder, and the autopilot comes in to
+-// park quicker, to match the hops between stations (step, autopilot)
+-export function homeAt(x, z) {
+-  const out = (Math.sqrt(x * x + z * z) - DEEP.open) / DEEP.ramp;
++// park quicker, to match the hops between stations (step, autopilot).
++// homeAt measures it level, under the authored map's ceiling; homeAt3 (the
++// open universe's, with no ceiling) as a ball round the sun, so far above
++// or below home it's open space
++function homeFrom(d) {
++  const out = (d - DEEP.open) / DEEP.ramp;
+   return out <= 0 ? 1 : out >= 1 ? 0 : 1 - out * out * (3 - 2 * out);
+ }
+-export function driveAlong(x, y, z, f = null) {
++export function homeAt(x, z) {
++  return homeFrom(Math.sqrt(x * x + z * z));
++}
++export function homeAt3(x, z, y = 0) {
++  return homeFrom(Math.sqrt(x * x + y * y + z * z));
++}
++// (`roof`: whether the home system's ceiling and floor count; `round`: home
++// as a ball, homeAt3)
++export function driveAlong(x, y, z, f = null, { roof = true, round = false } = {}) {
+   const o = driveOpen(x, y, z, f);
+-  const w = homeAt(x, z);
++  const w = round ? homeAt3(x, z, y) : homeAt(x, z);
+   if (w <= 0) return o;
+   // (the home system's ceiling and floor count too, going toward one: it
+   // can't go faster than it could come level by them; its gap is how far
+   // along the way it's going it would reach it)
+   const up = f ? f[1] * (y < 0 ? -1 : 1) : 1;
+-  let k = up > 0.02 ? easeOpen((ceilingAt(x, z) - Math.abs(y) - 8) / up, HOME_RAMP) : 1;
++  let k = roof && up > 0.02 ? easeOpen((ceilingAt(x, z) - Math.abs(y) - 8) / up, HOME_RAMP) : 1;
+   for (const b of HOME_BODIES) k = Math.min(k, easeOpen(gapAlong(x, y, z, f, b.at, b.r + b.room), HOME_RAMP));
+   return Math.min(o, 1 - w * (1 - k * HOME_TOP));
+ }
+ export const driveAt = (x, y, z) => driveAlong(x, y, z);
+ 
+ // how high it can go at (x, z): the home system's ceiling, lifting to deep
+ // space's out past it; how fast its boost goes at (x, y, z): the pulse
+ // drive as far as it's open there (driveAt), the boost where it's down; how
+ // hard it brakes and coasts there (harder the more it's open, to match the
+ // speeds)
+@@ -370,26 +383,40 @@ export function startAt(rand = Math.random) {
+ export function spawn(id, start = HOME_EDGE) {
+   const at = id && PLANET[id] ? parkAt(id) : start;
+   return { ...at, speed: 0, vy: 0, lift: 0, pitch: 0, bank: 0, rate: 0, tipRate: 0, rollRate: 0, lean: 0, leanV: 0, edge: false };
+ }
+ 
+ // The space the ship flies in: the universe map's, as this file has it
+ // (its edge, its ceiling and floor, where it's open enough for the pulse
+ // drive, and how hard the brakes and coasting bite there; what's solid and
+ // where the autopilot can go). Another map brings its own, the same shape
+ // (the galaxy's star systems: galaxy/space.js), to step() and autopilot().
+-export const SPACE = { edge: EDGE, ceilingAt, openness, driveAt, driveAlong, homeAt, boostAt, brakeAt, coastAt, approachAt, solids: SOLIDS, goals: GOALS };
++// `roof` is what turns it back above and below (none: it flies on up or
++// down for ever); a space with no `roof` key has its `ceilingAt` for one
++// (the galaxy's), and `ceilingAt` is also where things are placed under it
++export const SPACE = { edge: EDGE, ceilingAt, roof: ceilingAt, openness, driveAt, driveAlong, homeAt, boostAt, brakeAt, coastAt, approachAt, solids: SOLIDS, goals: GOALS };
++const roofOf = (space) => ('roof' in space ? space.roof : space.ceilingAt);
+ // and the map with the Expanse past its edge (expanse/gen): nothing turns the
+ // ship back at the main map's edge, it flies on out into the generated
+-// sectors; the Rick and Morty sector stays a pocket, its edge a wall from
+-// both sides (in through its portal, as ever)
+-export const OPEN_SPACE = { ...SPACE, expanse: true };
++// sectors, and nothing above or below anywhere (home is a ball, homeAt3, and
++// its ceiling no longer closes the drive); the Rick and Morty sector stays a
++// pocket, its edge a ball and a wall from both sides (in through its
++// portal, as ever)
++const OPEN = { roof: false, round: true };
++export const OPEN_SPACE = {
++  ...SPACE,
++  expanse: true,
++  roof: null,
++  homeAt: homeAt3,
++  driveAlong: (x, y, z, f) => driveAlong(x, y, z, f, OPEN),
++  driveAt: (x, y, z) => driveAlong(x, y, z, null, OPEN),
++};
+ const POCKET = SECTORS.rickmorty;
+ 
+ // How far the ship carries on, boosting straight on, while hunters pull the
+ // pulse drive down over `ramp` seconds (eased in, as the scene does it), till
+ // it's down to the boost: where an ambush laid ahead of it has to be to
+ // still be ahead of it then (hunterRules.js's entryPoint, `lead`)
+ export function holdReach(s, { ramp = 2, solids = SOLIDS, space = SPACE, dt = 1 / 30 } = {}) {
+   let ship = s;
+   let gone = 0;
+   for (let t = 0; t < ramp + 1; t += dt) {
+@@ -448,21 +475,21 @@ export function step(s, input, dt, solids = SOLIDS, space = SPACE) {
+   const ahead = openAt(ax, ay, az);
+   const next = space.boostAt(ax, ay, az, boost, ahead) * overdriveAt(ahead, od);
+   const target = Math.min(want, next);
+   const faster = Math.abs(target) > Math.abs(s.speed) && Math.sign(target) !== -Math.sign(s.speed);
+   let accel;
+   if (faster) {
+     // (boosting toward more than the boost, the pulse drive pushes from the
+     // start, all of it once it's a third of the way open: a hop between two
+     // stations gets going straight away. Boosters fitted push the boost, not
+     // the pulse drive, which is the same for everyone)
+-    accel = input.boost ? (SHIP.accel * 1.8 * (1 + space.homeAt(s.x, s.z)) * accelK + (want > boost + 1 ? SHIP.pulseAccel * Math.min(1, open * 3) : 0)) * odK : SHIP.accel * (1 + near) * accelK; // (and up to the approach quicker)
++    accel = input.boost ? (SHIP.accel * 1.8 * (1 + space.homeAt(s.x, s.z, s.y)) * accelK + (want > boost + 1 ? SHIP.pulseAccel * Math.min(1, open * 3) : 0)) * odK : SHIP.accel * (1 + near) * accelK; // (and up to the approach quicker)
+   } else {
+     // slowing. What the drive takes off, past what it allows the way it's
+     // going (coming up on a place at pulse speed, turning toward one, held
+     // down): it eases down onto it, the further over the harder (up to
+     // SHIP.drop, and as hard as it ever did past the pulse drive's speed: out
+     // of super speed), keeping up with it as it closes ahead. And what the
+     // pilot's slowing takes off (the brakes, or coasting): never less, over
+     // the limit or not
+     const over = Math.max(0, s.speed - limit);
+     const past = Math.max(1, s.speed / SHIP.pulse) ** 2;
+@@ -485,40 +512,49 @@ export function step(s, input, dt, solids = SOLIDS, space = SPACE) {
+   const rate = ease(s.rate || 0, -turn * SHIP.turn * turnK * agile, SHIP.yawEase * Math.sqrt(turnK));
+   const tipRate = ease(s.tipRate || 0, climb * SHIP.pitch * pitchK * agile, SHIP.pitchEase * Math.sqrt(pitchK));
+   const free = (1 - Math.abs(roll)) * (1 - Math.abs(climb)) ** 2;
+   const upright = -clamp(bank0 * 2, -1, 1) * SHIP.level * levelK * free * Math.cos(pitch0) ** 2;
+   const rollRate = ease(s.rollRate || 0, roll * SHIP.roll * rollK * agile + upright, SHIP.rollEase);
+   let q = fromAngles(s.heading, pitch0, bank0);
+   const spin = Math.sqrt(tipRate * tipRate + rate * rate + rollRate * rollRate);
+   if (spin > 1e-9) q = normalize(mul(q, axisAngle([tipRate / spin, rate / spin, -rollRate / spin], spin * dt)));
+ 
+   // turned back at the edge: the nose comes round toward the middle (of
+-  // the sector it's in: layout.js's SECTORS, each with an edge of its own;
+-  // the main one's is space.edge)
+-  const { sec, out } = sectorOut(s.x, s.z);
+-  const [ox, , oz] = sec.origin;
++  // the sector it's in, by where it is in all three: layout.js's SECTORS,
++  // each with an edge of its own; the main one's is space.edge, level, and
++  // the Rick and Morty pocket's a ball round its middle, so over or under
++  // it is out of it)
++  const sec = sectorById(sectorOf(s.x, s.y, s.z));
++  const [ox, oy, oz] = sec.origin;
++  const ball = sec.id === POCKET.id;
++  const out = Math.hypot(s.x - ox, ball ? s.y - oy : 0, s.z - oz);
+   const edgeR = sec.id === 'main' ? (space.expanse ? Infinity : space.edge) : sec.edge;
+   if (out > edgeR - 2) {
+     const k = clamp((out - (edgeR - 2)) / 2, 0, 1);
+     const f = rotate(q, NOSE);
+     const level = Math.hypot(f[0], f[2]);
+-    q = turnToward(q, [(-(s.x - ox) / out) * level, f[1], (-(s.z - oz) / out) * level], 2.2 * dt * k);
++    // (a ball's: straight back at its middle; a level edge's: level toward
++    // it, climbing or diving as it was)
++    const to = ball ? [-(s.x - ox) / out, -(s.y - oy) / out, -(s.z - oz) / out] : [(-(s.x - ox) / out) * level, f[1], (-(s.z - oz) / out) * level];
++    q = turnToward(q, to, 2.2 * dt * k);
+   }
+ 
+-  // the ceiling and the floor: going out toward one, the nose is never
++  // the ceiling and the floor, where the space has a roof (none: it flies
++  // on up or down for ever): going out toward one, the nose is never
+   // steeper than it could still round out from by then at the speed it has
+   // (so it comes round level in time), and past one it's pointed back in
++  const roof = roofOf(space);
+   const y0 = s.y;
+-  const ceiling = space.ceilingAt(s.x, s.z);
++  const ceiling = roof ? roof(s.x, s.z) : Infinity;
+   const side = y0 < 0 ? -1 : 1;
+   const room = ceiling - Math.abs(y0);
+-  if (speed > 0.05) {
++  if (roof && speed > 0.05) {
+     const f = rotate(q, NOSE);
+     const steep = Math.asin(clamp(f[1] * side, -1, 1)); // how steeply it's going out
+     const most = room <= 0 ? -0.2 : Math.acos(clamp(1 - (room * SHIP.round) / speed, -1, 1));
+     if (steep > most) {
+       // round out the way it's already pointing (pointed straight out, the
+       // way its top faces: the way a pull on the stick would take it)
+       let [hx, hz] = [f[0], f[2]];
+       if (Math.hypot(hx, hz) < 0.05) {
+         const u = rotate(q, UP);
+         [hx, hz] = [u[0], u[2]];
+@@ -537,40 +573,43 @@ export function step(s, input, dt, solids = SOLIDS, space = SPACE) {
+   // it up or down a little
+   const lift0 = s.lift || 0;
+   const back = room < 0 ? -side * Math.max(1.5, -room * 1.2) : clamp(input.hover || 0, -1, 1) * SHIP.hover;
+   const push = SHIP.lift * (room < 0 ? 1 + 3 * open : 1) * dt; // (quicker easing back in from past the ceiling where the drive's open; a parking nudge is a nudge)
+   let lift = lift0 + clamp(back - lift0, -push, push);
+ 
+   let x = s.x + f[0] * speed * dt;
+   let y = s.y + (f[1] * speed + lift) * dt;
+   let z = s.z + f[2] * speed * dt;
+   let v = speed;
+-  const r = Math.hypot(x - ox, z - oz);
+-  const ceil = space.ceilingAt(x, z);
++  const r = Math.hypot(x - ox, ball ? y - oy : 0, z - oz);
++  const ceil = roof ? roof(x, z) : Infinity;
+   let edge = s.edge && (r > edgeR - 1 || Math.abs(y) > ceil - 1); // clears once well back inside
+   if (r > edgeR) {
+     x = ox + (x - ox) * (edgeR / r);
++    if (ball) y = oy + (y - oy) * (edgeR / r);
+     z = oz + (z - oz) * (edgeR / r);
+   }
+   if (r > edgeR) {
+     if (!edge) events.push({ type: 'edge' });
+     edge = true;
+   } else if (Math.abs(y) > ceil) edge = true; // (eased back from the ceiling or the floor without a word)
+-  // (out in the Expanse, the Rick and Morty pocket's edge is a wall: kept
+-  // off it, out along the line from its middle)
++  // (out in the Expanse, the Rick and Morty pocket's edge is a wall, a
++  // ball: kept off it, out along the line from its middle)
+   if (sec.expanse) {
+     const px = x - POCKET.origin[0];
++    const py = y - POCKET.origin[1];
+     const pz = z - POCKET.origin[2];
+-    const pr = Math.hypot(px, pz);
++    const pr = Math.hypot(px, py, pz);
+     const wall = POCKET.edge + 2;
+     if (pr < wall) {
+       x = POCKET.origin[0] + (pr > 1e-9 ? px / pr : 1) * wall;
++      y = POCKET.origin[1] + (pr > 1e-9 ? py / pr : 0) * wall;
+       z = POCKET.origin[2] + (pr > 1e-9 ? pz / pr : 0) * wall;
+       if (!edge) events.push({ type: 'edge' });
+       edge = true;
+     }
+   }
+ 
+   // off a planet, never through it: out along the line from its middle,
+   // whichever way the ship came at it (from the side, from above or below).
+   // A solid with a trench round its middle (the Death Star) lets the ship
+   // down into it, as far as its floor, along the stretch that's laid
+@@ -628,32 +667,32 @@ export function orbiting(s, current) {
+       bd = d;
+     }
+   }
+   return best;
+ }
+ 
+ // How fast it can be going and still stop by `park`, `far` away, at 0.7 of
+ // its brakes: the brakes all the way there count (harder where the drive's
+ // open, between stations as out in deep space; weaker where something holds
+ // the drive down, `hold`), not just where it is now
+-// (`od`, the overdrive: a number, or what it is at (x, z) on the way)
++// (`od`, the overdrive: a number, or what it is at (x, z, y) on the way)
+ function stopFrom(s, park, far, space = SPACE, od = 1, hold = null) {
+   const N = 8;
+   const py = park.y ?? SHIP.height;
+   const step = Math.max(0, far - 0.3) / N;
+   let v2 = 0;
+   for (let i = 0; i < N; i++) {
+     const k = (i + 0.5) / N; // from the stop back toward the ship
+     const [x, y, z] = [park.x + (s.x - park.x) * k, py + (s.y - py) * k, park.z + (s.z - park.z) * k];
+     const h = hold ? clamp(hold(x, y, z), 0, 1) : 0;
+     const o = space.driveAt(x, y, z) * (1 - h);
+-    const odHere = typeof od === 'function' ? od(x, z) : od;
++    const odHere = typeof od === 'function' ? od(x, z, y) : od;
+     v2 += 2 * 0.7 * space.brakeAt(x, y, z, o) * (odHere > 1 ? overdriveAt(o, 1 + (odHere - 1) * (1 - h)) ** 2 : 1) * step;
+   }
+   return Math.sqrt(v2);
+ }
+ 
+ const NO_SOLIDS = [];
+ 
+ // A stop (`park`) out of the way of the big ships moving through
+ // (`moving`, solids): one that's come down on it pushes it out level from
+ // its middle (as wide as it is at the stop's height, as the autopilot reads
+@@ -717,28 +756,30 @@ function stickToward(s, dir) {
+ export function autopilot(s, id, park = GOALS[id] && parkAt(id, [s.x, s.z]), space = SPACE, od = 1, hold = null, moving = NO_SOLIDS) {
+   const p = space.goals[id];
+   if (!p || !park) return { input: { throttle: 0, turn: 0 }, done: true };
+   park = clearPark(park, moving);
+   const solids = moving.length ? [...space.solids, ...moving] : space.solids;
+   // (a hop between two of the home system's stations is no quicker on it:
+   // none. Coming home on it, it fades out as the ship comes in to the home
+   // system, and the stop is planned for that, not for the overdrive's brakes
+   // all the way in)
+   const odMax = clamp(od, 1, OVERDRIVE);
+-  const odFor = space.homeAt(park.x, park.z) >= 1 ? (x, z) => 1 + (odMax - 1) * (1 - space.homeAt(x, z)) : () => odMax;
+-  od = odFor(s.x, s.z);
++  const odFor = space.homeAt(park.x, park.z, park.y ?? SHIP.height) >= 1 ? (x, z, y) => 1 + (odMax - 1) * (1 - space.homeAt(x, z, y)) : () => odMax;
++  od = odFor(s.x, s.z, s.y);
+   const tx = park.x - s.x;
+   const tz = park.z - s.z;
+   const dist = Math.sqrt(tx * tx + tz * tz);
+   // up or down to the planet's height (and no lower or higher than it can
+-  // go here: the home system's floor and ceiling are near)
+-  const ceil = space.ceilingAt(s.x, s.z) - 2;
++  // go here, where the space has a roof: the home system's floor and
++  // ceiling are near)
++  const roof = roofOf(space);
++  const ceil = roof ? roof(s.x, s.z) - 2 : Infinity;
+   const ty = clamp(park.y ?? SHIP.height, -ceil, ceil) - s.y;
+   if (dist < 0.4 && Math.abs(ty) < 0.4) {
+     // there: stop, level off and turn to face it (nudged up or down the last little bit)
+     const face = wrap(park.heading - s.heading);
+     const [fx, fz] = forward(park.heading);
+     const done = Math.abs(face) < 0.08 && Math.abs(s.speed) < 0.25 && Math.abs(ty) < 0.25 && Math.abs(s.vy || 0) < 0.3 && Math.abs(s.pitch || 0) < 0.1 && Math.abs(s.bank || 0) < 0.1;
+     return { input: { throttle: 0, ...stickToward(s, [fx, 0, fz]), hover: clamp(ty * 3 - (s.vy || 0), -1, 1) }, done };
+   }
+   // toward the parking spot, steering round anything the straight line
+   // would clip (further ahead the faster it goes, and harder the closer it
+@@ -795,34 +836,38 @@ export function autopilot(s, id, park = GOALS[id] && parkAt(id, [s.x, s.z]), spa
+     const cross = ox * hz - oz * hx;
+     const clear = r + SHIP.radius + Math.max(0.8, r * 0.2);
+     if (Math.abs(cross) > clear) continue;
+     danger = true;
+     const side = Math.sign(cross) || 1;
+     dx += -side * hz * 2.5;
+     dz += side * hx * 2.5;
+   }
+   // the way to go: round what's in the way, and up or down to its height
+   // on the way, mostly early (aiming at a point further up or down than it
+-  // is), easing in
++  // is), easing in. Under a roof, no steeper than 1.2 radians; with none,
++  // nearly straight up or down (a stop far above or below is climbed to, not
++  // circled under: at 1.2, over it, its nose is never on the way, and it
++  // weaves round under it at cruise)
+   const hl = Math.hypot(dx, dz) || 1;
+-  const rise = clamp(Math.atan2(ty * 2.5 - (s.vy || 0) * 0.4, Math.max(dist, 1)), -1.2, 1.2);
++  const steepest = roof ? 1.2 : 1.5;
++  const rise = clamp(Math.atan2(ty * 2.5 - (s.vy || 0) * 0.4, Math.max(dist, 1)), -steepest, steepest);
+   const dir = [(dx / hl) * Math.cos(rise), Math.sin(rise), (dz / hl) * Math.cos(rise)];
+   const nose = rotate(fromAngles(s.heading, s.pitch || 0, s.bank || 0), NOSE);
+   const off = Math.acos(clamp(nose[0] * dir[0] + nose[1] * dir[1] + nose[2] * dir[2], -1, 1));
+   // no faster than it can brake from by the stop (gently, over the last
+   // bit); slow for sharp turns, and hard for anything dead ahead within
+   // stopping distance (something merely in the way of the straight line is
+   // steered round at speed)
+   const far = Math.hypot(dist, ty);
+   // (the drive the way it's pointing: a place it's only flying past doesn't slow it)
+   const open = (space.driveAlong ? space.driveAlong(s.x, s.y, s.z, nose) : space.driveAt(s.x, s.y, s.z)) * (1 - held);
+   const odV = overdriveAt(open, odHeld);
+-  const vmax = Math.min(stopFrom(s, park, far, space, odFor, hold), (0.9 + 1.5 * space.homeAt(s.x, s.z)) * odV * far + 0.3);
++  const vmax = Math.min(stopFrom(s, park, far, space, odFor, hold), (0.9 + 1.5 * space.homeAt(s.x, s.z, s.y)) * odV * far + 0.3);
+   const brake = (off > 1.1 ? 0.15 : 1) * (danger ? 0.12 : 1);
+   const limit = space.boostAt(s.x, s.y, s.z, SHIP.boost, open) * odV;
+   const top = Math.min(vmax, limit) * brake;
+   // flat out (the pulse drive, out in the open) once it's pointed right and
+   // nothing's dead ahead
+   const boost = !danger && top > SHIP.cruise && off < 0.25;
+   const throttle = clamp(top / (boost ? limit : SHIP.cruise), 0.12, 1);
+   return { input: { throttle, ...stickToward(s, dir), boost, ...(od > 1 ? { overdrive: od } : {}) }, done: false };
+ }
+diff --git a/src/components/universe/ship.test.js b/src/components/universe/ship.test.js
+index d4f63a635..faaa9ab11 100644
+--- a/src/components/universe/ship.test.js
++++ b/src/components/universe/ship.test.js
+@@ -1,12 +1,12 @@
+ import { describe, expect, it } from 'vitest';
+-import { EDGE, GOALS, OVERDRIVE, PLANETS, SHIP, SOLIDS, SPACE, STARTS, autopilot, boostAt, brakeAt, ceilingAt, clearPark, crashLoud, driveAt, forward, holdReach, inTrench, noseOf, orbiting, parkAt, spawn, startAt, step, turnAt } from './ship';
++import { EDGE, GOALS, OPEN_SPACE, OVERDRIVE, PLANETS, SHIP, SOLIDS, SPACE, STARTS, autopilot, boostAt, brakeAt, ceilingAt, clearPark, crashLoud, driveAt, forward, holdReach, inTrench, noseOf, orbiting, parkAt, spawn, startAt, step, turnAt } from './ship';
+ import { DEEP, WONDERS, easeOpen, gapAlong, trenchBand } from './deep';
+ import { MAW } from './maw';
+ import { NOSE, UP, fromAngles, rotate } from './orient';
+ import { HOME_RADIUS, ORDER, POSITIONS, REACH, SECTORS, SUN, sectorOf } from './layout';
+ 
+ const inMain = (at) => sectorOf(...at) === 'main';
+ import { byId } from './universes';
+ import { ENTRY, LANDABLE, airTop } from './entry';
+ import { sunFor } from './lighting';
+ 
+@@ -962,10 +962,77 @@ describe('autopilot', () => {
+       for (let t = 0; t < 255 && !done; t += 1 / 60) {
+         const a = autopilot(s, id, park);
+         done = a.done;
+         s = step(s, a.input, 1 / 60).ship;
+         expect(inside(s), `${id} at ${t.toFixed(2)}s`).toBe(false);
+       }
+       expect(done, id).toBe(true);
+     }
+   }, LONG);
+ });
++
++describe('open space', () => {
++  const up = (dir) => ({ ...spawn(null), pitch: dir * (Math.PI / 2 - 0.01) });
++  const climb = (s0, dir) => {
++    let s = s0, t = 0, edge = 0;
++    while (Math.abs(s.y) < 100000 && t < 600) {
++      const r = step(s, { throttle: 1, boost: true }, 1 / 20, SOLIDS, OPEN_SPACE);
++      edge += r.events.filter((e) => e.type === 'edge').length;
++      if (t > 1) expect(dir * (r.ship.y - s.y)).toBeGreaterThan(0);
++      s = r.ship; t += 1 / 20;
++    }
++    return { s, t, edge };
++  };
++  it('has no roof, and SPACE keeps its own', () => {
++    expect(OPEN_SPACE.roof).toBeNull();
++    expect(SPACE.roof).toBe(ceilingAt);
++  });
++  it('flies 100,000 straight up from home, and straight down, never turned back, on the pulse drive', () => {
++    for (const dir of [1, -1]) {
++      const { s, t, edge } = climb(up(dir), dir);
++      expect(edge).toBe(0);
++      expect(Math.abs(s.y)).toBeGreaterThanOrEqual(100000);
++      expect(t).toBeLessThan(600);
++      expect(s.speed).toBeGreaterThan(SHIP.boost * 2);
++    }
++  });
++  it('lets the autopilot climb to a park 30,000 above home', () => {
++    const high = { id: 'high', at: [0, 30000, 2000], r: 10, reach: 20 };
++    const space = { ...OPEN_SPACE, goals: { ...OPEN_SPACE.goals, high } };
++    // (parked off it on the side home is, level with it and facing it)
++    const park = { x: 0, y: 30000, z: high.at[2] + high.reach + 4, heading: 0 };
++    let s = spawn(null);
++    let done = false;
++    for (let t = 0; t < 600 && !done; t += 1 / 20) {
++      const a = autopilot(s, 'high', park, space);
++      done = a.done;
++      s = step(s, a.input, 1 / 20, SOLIDS, space).ship;
++    }
++    expect(Math.abs(s.y - 30000)).toBeLessThan(5);
++  });
++  it('walls the Rick and Morty pocket as a ball, both ways, and nothing above it', () => {
++    const RM = SECTORS.rickmorty;
++    const [ox, oy, oz] = RM.origin;
++    const fromMiddle = (s) => Math.hypot(s.x - ox, s.y - oy, s.z - oz);
++    // inside, from its middle, straight up: held in the ball, and turned back at it
++    let s = { ...up(1), x: ox, y: oy, z: oz, speed: 40 };
++    let edge = 0;
++    for (let t = 0; t < 60; t += 1 / 20) {
++      const r = step(s, { throttle: 1, boost: true }, 1 / 20, [], OPEN_SPACE);
++      edge += r.events.filter((e) => e.type === 'edge').length;
++      s = r.ship;
++      expect(fromMiddle(s)).toBeLessThanOrEqual(RM.edge + 1e-6);
++    }
++    expect(edge).toBeGreaterThan(0);
++    // outside, level 7,000 over its middle, flying across it: nothing up
++    // there turns it back, and it comes out over the far side
++    s = { ...spawn(null), x: ox, y: oy + 7000, z: oz + RM.edge + 500, heading: 0, speed: 40 };
++    edge = 0;
++    for (let t = 0; t < 200 && s.z > oz - RM.edge - 500; t += 1 / 20) {
++      const r = step(s, { throttle: 1, boost: true }, 1 / 20, [], OPEN_SPACE);
++      edge += r.events.filter((e) => e.type === 'edge').length;
++      s = r.ship;
++    }
++    expect(edge).toBe(0);
++    expect(s.z).toBeLessThan(oz - RM.edge - 500);
++  });
++});

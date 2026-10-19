@@ -1,0 +1,275 @@
+# Review package: ddb364bf3..HEAD
+
+## Commits
+a40d7ffcb Fingerprint the Expanse's middle layer; grid over the shared address
+
+## Files changed
+ src/components/expanse/gen/fingerprint.test.js     |  24 ++++
+ src/components/expanse/gen/fixtures/fingerprint.js |  46 ++++++++
+ .../expanse/gen/fixtures/fingerprint.json          | 127 +++++++++++++++++++++
+ src/components/expanse/gen/grid.js                 |  29 +++--
+ 4 files changed, 215 insertions(+), 11 deletions(-)
+
+## Diff
+diff --git a/src/components/expanse/gen/fingerprint.test.js b/src/components/expanse/gen/fingerprint.test.js
+new file mode 100644
+index 000000000..7dfc2607c
+--- /dev/null
++++ b/src/components/expanse/gen/fingerprint.test.js
+@@ -0,0 +1,24 @@
++/* global process */
++import { existsSync,readFileSync, writeFileSync } from 'node:fs';
++import { describe, expect, it } from 'vitest';
++import { PRINTED, digest, plainSector } from './fixtures/fingerprint';
++import { makeSector } from './sector';
++import { UNIVERSE } from './seed';
++
++const FILE = new URL('./fixtures/fingerprint.json', import.meta.url);
++const today = () => Object.fromEntries(PRINTED.map(([sx, sz]) => {
++  const s = makeSector(UNIVERSE, sx, sz);
++  return [s.id, { systems: s.systems.length, wonders: s.wonders.length, sha256: digest(plainSector(s)) }];
++}));
++
++describe('the middle layer, fingerprinted', () => {
++  it('pins 25 sectors, the seeded planets’ five first', () => {
++    expect(PRINTED).toHaveLength(25);
++    expect(PRINTED.slice(0, 5)).toEqual([[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1]]);
++  });
++  it('makeSector makes today’s sectors, field for field', () => {
++    // (written once, from the generator as it was on main; never rewritten)
++    if (!existsSync(FILE) && process.env.FINGERPRINT_WRITE) writeFileSync(FILE, `${JSON.stringify(today(), null, 2)}\n`);
++    expect(today()).toEqual(JSON.parse(readFileSync(FILE, 'utf8')));
++  });
++});
+diff --git a/src/components/expanse/gen/fixtures/fingerprint.js b/src/components/expanse/gen/fixtures/fingerprint.js
+new file mode 100644
+index 000000000..c3e669249
+--- /dev/null
++++ b/src/components/expanse/gen/fixtures/fingerprint.js
+@@ -0,0 +1,46 @@
++// Test-only: pins what makeSector gave on main, so the middle layer can be
++// shown unchanged. Not shipped.
++//
++// PRINTED → the 25 [sx, sz] the fingerprint covers
++// plainSector(sector, { systems?, wonders? }) → today's fields only, bigints
++//   as strings, cut to the first systems and wonders when asked
++// digest(plain) → hex sha256 of the plain sector's JSON
++
++import { createHash } from "node:crypto";
++
++// (the first five are flight/planets.js's SECTORS, where the seeded planets come from)
++export const PRINTED = [
++  [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [0, 0], [1, -1], [-1, 1], [-1, -1],
++  [2, 0], [0, 2], [-2, 0], [0, -2], [2, -1], [3, -2], [1, 2], [5, 5], [-3, -6],
++  [7, -9], [-7, 4], [12, 0], [0, -12], [100, 3], [-40, 17], [250, -250],
++];
++
++// (JSON can't hold a bigint, so every one becomes a string)
++const plain = (v) =>
++  typeof v === "bigint"
++    ? String(v)
++    : Array.isArray(v)
++      ? v.map(plain)
++      : v && typeof v === "object"
++        ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plain(x)]))
++        : v;
++
++const take = (o, keys) => Object.fromEntries(keys.map((k) => [k, plain(o[k])]));
++
++const PLANET = ["id", "name", "type", "radius", "color", "at", "orbit", "moons", "rings", "seed"];
++const SYSTEM = ["id", "i", "name", "designation", "at", "seed", "culture", "star", "faction", "traffic", "hazard"];
++const WONDER = ["id", "kind", "name", "at", "size", "seed"];
++
++export function plainSector(sector, { systems, wonders } = {}) {
++  return {
++    ...take(sector, ["id", "sx", "sz", "seed", "origin"]),
++    systems: sector.systems.slice(0, systems).map((s) => ({
++      ...take(s, SYSTEM),
++      planets: s.planets.map((p) => take(p, PLANET)),
++    })),
++    wonders: sector.wonders.slice(0, wonders).map((w) => take(w, WONDER)),
++    beacons: take(sector.beacons, ["n", "e", "s", "w"]),
++  };
++}
++
++export const digest = (p) => createHash("sha256").update(JSON.stringify(p)).digest("hex");
+diff --git a/src/components/expanse/gen/fixtures/fingerprint.json b/src/components/expanse/gen/fixtures/fingerprint.json
+new file mode 100644
+index 000000000..e6c153f59
+--- /dev/null
++++ b/src/components/expanse/gen/fixtures/fingerprint.json
+@@ -0,0 +1,127 @@
++{
++  "E:1,0": {
++    "systems": 12,
++    "wonders": 0,
++    "sha256": "b7339f6f3cb1a12a9501c399ec30a1cb1dfbbecba0f57de1a9371e4efd1f8353"
++  },
++  "E:0,1": {
++    "systems": 22,
++    "wonders": 0,
++    "sha256": "9e4eca9a52f6cd630931d9025be8a272821b81607fefac4a583fb3e6dd4b13cc"
++  },
++  "E:-1,0": {
++    "systems": 19,
++    "wonders": 2,
++    "sha256": "417e76a2c47a0e634032cd735b5941286ed467096e7fbc2499f6670885924919"
++  },
++  "E:0,-1": {
++    "systems": 24,
++    "wonders": 1,
++    "sha256": "1a1383e30a1b365b5ed4f15bbe43bf2b83086d6808e4660b9c92fc86463493bc"
++  },
++  "E:1,1": {
++    "systems": 12,
++    "wonders": 2,
++    "sha256": "6960e0a880cb7fe5628e4331903794ae40fbb135da28c78a2920d728e7671aeb"
++  },
++  "E:0,0": {
++    "systems": 0,
++    "wonders": 0,
++    "sha256": "050a205ce652724e63a05ee391fc79f19be930ad236309fc03cafecee9a6bf98"
++  },
++  "E:1,-1": {
++    "systems": 18,
++    "wonders": 2,
++    "sha256": "e92faf867d98c31191ca9313e84605fd385f75bd308475ebf52f9daa14a2bb73"
++  },
++  "E:-1,1": {
++    "systems": 19,
++    "wonders": 2,
++    "sha256": "d5c5530b11d9db1ef64be0636f5e15d4e9c4c19279940e2f4dbc260bdbe33210"
++  },
++  "E:-1,-1": {
++    "systems": 22,
++    "wonders": 2,
++    "sha256": "fcbada6043f82c80049de93dd25335ad930188e8f37718ac52ce8d021d399dcf"
++  },
++  "E:2,0": {
++    "systems": 22,
++    "wonders": 2,
++    "sha256": "2d23b7d7e55b06361c439d87d32f9713875efdeee89c659c9f208156b8855b8d"
++  },
++  "E:0,2": {
++    "systems": 8,
++    "wonders": 1,
++    "sha256": "ac9877f2f749cdb3e4541682c748143abe68e46960a67173af44fd5806ef7079"
++  },
++  "E:-2,0": {
++    "systems": 23,
++    "wonders": 1,
++    "sha256": "68816d9b514b0afb1917950ee0b9c364603834b9fd79c4bfe183982a89f91de7"
++  },
++  "E:0,-2": {
++    "systems": 22,
++    "wonders": 0,
++    "sha256": "0776ec30501f0c447359e8162cb57af8c09f80b442d49448b28da03cd4e2df4a"
++  },
++  "E:2,-1": {
++    "systems": 24,
++    "wonders": 3,
++    "sha256": "7feff46a293028a13c084bca9f37f4d0082366251e084e3d226425a4c8fa8958"
++  },
++  "E:3,-2": {
++    "systems": 18,
++    "wonders": 3,
++    "sha256": "8fe4f29cfd6a9e6d1db82060f304fbfce3e9ea0b65d5ce1306e7e6a50a76a81d"
++  },
++  "E:1,2": {
++    "systems": 12,
++    "wonders": 3,
++    "sha256": "63d66fa87928ca4857f7896c3b5c8d6948dadac606e425db2d63e248825f3e4b"
++  },
++  "E:5,5": {
++    "systems": 24,
++    "wonders": 0,
++    "sha256": "f99ee9d20c83e5f097178e7868370320fe8c91616aa376c2ba9b7cf690f666bc"
++  },
++  "E:-3,-6": {
++    "systems": 8,
++    "wonders": 2,
++    "sha256": "11a312b04491501f583126577f1da400481a84a4e509f0cc8bb89e8813ceba15"
++  },
++  "E:7,-9": {
++    "systems": 15,
++    "wonders": 2,
++    "sha256": "57113131895595378586ef8f40e84322224c3f364bc5f1da1568d6e951d3c1b6"
++  },
++  "E:-7,4": {
++    "systems": 10,
++    "wonders": 3,
++    "sha256": "0678407aae459f0045e7783851f4e3356ceba754123f8a2e8de1e46c61c35dac"
++  },
++  "E:12,0": {
++    "systems": 14,
++    "wonders": 1,
++    "sha256": "eb58ab86d25c6610ff2c1bc0e9e3728ae65b8b7f306d19a936bd564ac403ba4f"
++  },
++  "E:0,-12": {
++    "systems": 11,
++    "wonders": 3,
++    "sha256": "9c92deae845af6720195d2b82cca263e8c8a869f96704b0cb85caf519d13e33b"
++  },
++  "E:100,3": {
++    "systems": 11,
++    "wonders": 3,
++    "sha256": "e131086cceed6f7e96455234f06fc0ce40bd71b2306c7d95c9d70091591ed914"
++  },
++  "E:-40,17": {
++    "systems": 19,
++    "wonders": 3,
++    "sha256": "3071be8606804ed58f568cdb2838c6635f1e43e386037b9dda41467447a24cc8"
++  },
++  "E:250,-250": {
++    "systems": 9,
++    "wonders": 1,
++    "sha256": "9dd615511418fb04755c9fb0e876bc7b45cb3ec4d2e8fe3f078f41d2c0fd1948"
++  }
++}
+diff --git a/src/components/expanse/gen/grid.js b/src/components/expanse/gen/grid.js
+index 36b13c4ef..8c35d24c8 100644
+--- a/src/components/expanse/gen/grid.js
++++ b/src/components/expanse/gen/grid.js
+@@ -1,24 +1,31 @@
+ // The expanse's grid: square sectors SECTOR across, sector (sx, sz) centred
+ // on (sx * SECTOR, sz * SECTOR) and reaching SECTOR / 2 each way. Sector
+-// (0, 0) is the authored map. Pure, no imports.
++// (0, 0) is the authored map. This is the middle layer (sy 0) of the shared
++// address in src/lib/space/address.js, kept in its old two-number shape.
++// Pure.
+ //
+ // SECTOR
+ // sectorAt(x, z) → [sx, sz]
+ // sectorId(sx, sz) → 'E:sx,sz'; parseSector(id) → [sx, sz] or null
+ // sectorCentre(sx, sz) → [x, 0, z]
+ 
+-// (120,000 since the universe's spread to six, scale.js's SPREAD: the authored
+-// map's edge is 54,000 out, so sector (0, 0) has to reach past it)
+-export const SECTOR = 120000;
++import {
++  SECTOR,
++  sectorAt as addressAt,
++  sectorCentre as addressCentre,
++  sectorKey,
++} from "../../../lib/space/address";
+ 
+-// (+ 0 turns -0 into 0)
+-export const sectorAt = (x, z) => [
+-  Math.round(x / SECTOR) + 0,
+-  Math.round(z / SECTOR) + 0,
+-];
+-export const sectorId = (sx, sz) => `E:${sx},${sz}`;
++export { SECTOR };
++
++export const sectorAt = (x, z) => {
++  const [sx, , sz] = addressAt(x, 0, z);
++  return [sx, sz];
++};
++export const sectorId = (sx, sz) => sectorKey(sx, 0, sz);
++// (stricter than the address's parser: two numbers only, an upper-case E)
+ export function parseSector(id) {
+   const m = typeof id === "string" && /^E:(-?\d+),(-?\d+)$/.exec(id);
+   return m ? [Number(m[1]) + 0, Number(m[2]) + 0] : null;
+ }
+-export const sectorCentre = (sx, sz) => [sx * SECTOR, 0, sz * SECTOR];
++export const sectorCentre = (sx, sz) => addressCentre(sx, 0, sz);

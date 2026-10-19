@@ -1,0 +1,331 @@
+# Review package: 8756d2ee5..7859d7696
+
+## Commits
+7859d7696 Poses carry their sector in 3D; the height clamp goes; old poses read as before
+
+## Files changed
+ src/components/universe/online/protocol.js         | 30 ++++++++++++----------
+ src/components/universe/online/protocol.test.js    | 23 +++++++++++++++--
+ src/components/universe/online/rosterWhere.js      | 14 +++++-----
+ src/components/universe/online/rosterWhere.test.js |  7 ++++-
+ 4 files changed, 51 insertions(+), 23 deletions(-)
+
+## Diff
+diff --git a/src/components/universe/online/protocol.js b/src/components/universe/online/protocol.js
+index 0204334cb..b92773a1a 100644
+--- a/src/components/universe/online/protocol.js
++++ b/src/components/universe/online/protocol.js
+@@ -20,22 +20,23 @@
+ //   hi    { n: name, k: ship kind or null, p: its paint job, o: its parts
+ //           (outfit.js), b: its garage build (shipyard/build.js's ids) or
+ //           none, l: [Rick's look, Morty's] (wardrobe/looks.js's ids) or
+ //           none, lb: [Walt’s look, Jesse’s] or none, c: kills, w: where
+ //           on the site, lv: level (economy.js's, 1 to 11), f: factions
+ //           { s: side (sides.js), st: { law, civil, outlaw } standing.js's
+ //           level names, w: war, o: the side sworn to in it (galaxy/sides.js),
+ //           r: rank on that side (galaxy/ranks.js) } or none; a build older
+ //           than these sends neither: level 1, nobody's }  on joining, and on any change
+ //   pose  [x, y, z, heading, pitch, bank, speed, vy, flags, shields, sec?]  ten times a second while flying
+-//         (sec: out in the Expanse, its sector, 'E:sx,sz', and x and z then
+-//         from that sector's middle; without it, the authored map's, as ever)
++//         (sec: out in the Expanse, its sector, 'E:sx,sz' or, off the middle
++//         layer, 'E:sx,sz,sy', and x, y and z then from that sector's middle;
++//         without it, the authored map's, as ever)
+ //         (flags: hidden, boosting, safe: just back, your hits don't count, and
+ //         lane, from when there were hyperlanes: read by nothing now)
+ //   shot  [x, y, z, vx, vy, vz, w?]                      a bolt fired (for drawing it); w: the
+ //                                                       weapon (weapons.js's code), 0 if left off
+ //   hit   { d: damage }                                  to the pilot a bolt of yours hit (up to
+ //                                                       DAMAGE_MAX, a heavy round's)
+ //   ram   { v: closing speed }                           to the pilot you flew into (they take it off
+ //                                                       their own shields by the contact law,
+ //                                                       lib/combat/contact.js, at no more than both
+ //                                                       your speeds allow: ramCounts)
+@@ -68,21 +69,21 @@
+ import { parseShip } from '../crews';
+ import { FOOT, METRE } from '../foot';
+ import { readOutfit } from '../outfit';
+ import { readBuildWire } from '../shipyard/build';
+ import { CASTS, defaultLook, readLookWire, writeLook } from '../../rickmorty/wardrobe/looks';
+ import { byId } from '../universes';
+ import { KINDS as HUNTERS } from '../../galaxy/hunted';
+ import { fromAngles, slerp, toAngles } from '../orient';
+ import { cleanWhere } from './where';
+ import { inExpanse, sectorOf } from '../layout';
+-import { SECTOR, parseSector, sectorCentre } from '../../expanse/gen/grid';
++import { SECTOR, parseSectorKey, sectorCentre, sectorKey } from '../../../lib/space/address';
+ import { cleanName } from './names';
+ import { LEVELS as XP_LEVELS } from '../economy';
+ import { SIDES } from '../sides';
+ import { AXES, LEVELS as STANDING_LEVELS } from '../standing';
+ import { SIDES as WAR_SIDES, WARS, warOfSide } from '../../galaxy/sides';
+ import { RANKS } from '../../galaxy/ranks';
+ import { STANCE_IDS } from '../../galaxy/surface/combatRules';
+ import { NO_FACTIONS } from './relations';
+ import { motionPacket, readEmoteWire, readMotion } from '../../../lib/emote';
+ import { WEAPONS, byCode } from '../weaponTable';
+@@ -199,42 +200,45 @@ export function readCursor(data) {
+   const y = num(data[1], 0, 500000);
+   if (x === null || y === null) return null;
+   return { x, y, touch: data[2] === 1 };
+ }
+ 
+ // what goes out as a pose, from ship.js's numbers (and the shields, 0 to
+ // 100); the bank with the lean into a turn on it, so others see that too
+ export function writePose(s, flags = 0, shield = 100) {
+   const r = (v, k = 1000) => Math.round((v || 0) * k) / k;
+   const sec = sectorOf(s.x || 0, s.y || 0, s.z || 0);
+-  const o = inExpanse(sec) ? sectorCentre(...parseSector(sec)) : null;
+-  const out = [r(s.x - (o?.[0] ?? 0), 100), r(s.y, 100), r(s.z - (o?.[2] ?? 0), 100), r(s.heading), r(s.pitch), r(wrap((s.bank || 0) + (s.lean || 0))), r(s.speed, 100), r(s.vy, 100), flags | 0, Math.round(shield)];
++  const o = inExpanse(sec) ? sectorCentre(...parseSectorKey(sec)) : null;
++  const out = [r(s.x - (o?.[0] ?? 0), 100), r(s.y - (o?.[1] ?? 0), 100), r(s.z - (o?.[2] ?? 0), 100), r(s.heading), r(s.pitch), r(wrap((s.bank || 0) + (s.lean || 0))), r(s.speed, 100), r(s.vy, 100), flags | 0, Math.round(shield)];
+   if (o) out.push(sec);
+   return out;
+ }
+-// how far from its sector's middle an Expanse pose may be (its half and a margin)
++// how far from its sector's middle an Expanse pose may be, up and down too
++// (its half and a margin); a sectorless pose's height gets the same room
+ const SEC_FAR = SECTOR / 2 + 2000;
+ 
+ // a pose as it came in: { x, y, z, heading, pitch, bank, speed, vy, hidden,
+ // boost, safe, lane, shield, sec? }, or null if it isn't one (out past deep space's
+ // edge, it's clamped; an older pilot's never has the lane bit, so reads not riding).
+-// x and z are the map's: an Expanse pose's are put back from its sector's
+-// middle (and `sec` kept); one without a sector is the authored map's.
++// x, y and z are the map's: an Expanse pose's are put back from its sector's
++// middle (and `sec` kept, in sectorKey's form); one without a sector is the
++// authored map's.
+ export function readPose(data) {
+   if (!Array.isArray(data) || data.length < 9) return null;
+-  const at = data.length > 10 ? parseSector(data[10]) : null;
+-  const sec = at && inExpanse(data[10]) ? data[10] : null;
+-  const o = sec ? sectorCentre(...at) : null;
++  const at = data.length > 10 ? parseSectorKey(data[10]) : null;
++  const sec = at ? sectorKey(...at) : null;
++  const o = at ? sectorCentre(...at) : null;
+   const lx = o ? num(data[0], -SEC_FAR, SEC_FAR) : num(data[0], -FAR, FAR);
+-  const y = num(data[1], -1300, 1300);
++  const ly = num(data[1], -SEC_FAR, SEC_FAR);
+   const lz = o ? num(data[2], -SEC_FAR, SEC_FAR) : num(data[2], -FAR, FAR);
+   const x = lx === null ? null : lx + (o?.[0] ?? 0);
++  const y = ly === null ? null : ly + (o?.[1] ?? 0);
+   const z = lz === null ? null : lz + (o?.[2] ?? 0);
+   const heading = num(data[3], -100, 100);
+   if (x === null || y === null || z === null || heading === null) return null;
+   const flags = Math.floor(num(data[8], 0, 255) ?? 0);
+   return {
+     x,
+     y,
+     z,
+     heading: wrap(heading),
+     pitch: num(data[4], -1.6, 1.6) ?? 0,
+@@ -254,21 +258,21 @@ export const writeShot = (p, v, w = 0) => {
+   const out = [p.x, p.y, p.z, v[0], v[1], v[2]].map((n) => Math.round(n * 1000) / 1000);
+   if (w) out.push(w);
+   return out;
+ };
+ 
+ // a shot as it came in: { p: [x, y, z], v: [vx, vy, vz] }, or null; it has
+ // to start near where the pilot was last seen (`from`, a pose, if known)
+ export function readShot(data, from = null) {
+   if (!Array.isArray(data) || data.length < 6) return null;
+   // (anywhere in the universe; its speed's checked just below)
+-  const n = data.slice(0, 6).map((v, i) => (i < 3 ? num(v, -FAR, FAR) : num(v, -7500, 7500)));
++  const n = data.slice(0, 6).map((v, i) => (i < 3 ? num(v, -1e12, 1e12) : num(v, -7500, 7500)));
+   if (n.some((v) => v === null)) return null;
+   if (Math.hypot(n[3], n[4], n[5]) > 800) return null;
+   // (as far as it could have gone since that pose, on the pulse drive)
+   if (from && Math.hypot(n[0] - from.x, n[1] - from.y, n[2] - from.z) > 6 + Math.abs(from.speed ?? 0) * 0.3) return null;
+   // (a code from the weapon table; a newer peer's or junk is the blaster)
+   const w = Number.isInteger(data[6]) ? WEAPONS[byCode(data[6])].code : 0;
+   return { p: n.slice(0, 3), v: n.slice(3), w };
+ }
+ 
+ export function readHit(data) {
+diff --git a/src/components/universe/online/protocol.test.js b/src/components/universe/online/protocol.test.js
+index a8a6a28ac..738d9c0ce 100644
+--- a/src/components/universe/online/protocol.test.js
++++ b/src/components/universe/online/protocol.test.js
+@@ -164,40 +164,59 @@ describe('poses', () => {
+     expect(p.pitch).toBe(1.6);
+     expect(p.speed).toBe(5000);
+     expect(p.hidden).toBe(true);
+   });
+   it('reaches as far as the spread universe does, and as fast as its lanes run', () => {
+     // (the Rick and Morty sector sits at z −66,000 since the spread to six, its far edge −72,000; the fastest ever ran at 4,000 a second)
+     const p = readPose(writePose({ ...ship, x: 54000, z: -70000, speed: 4000 }));
+     expect(p.x).toBe(54000);
+     expect(p.z).toBe(-70000);
+     expect(p.speed).toBe(4000);
+-    expect(readPose([0, 1e9, 0, 0, 0, 0, 0, 0, 0]).y).toBe(1300); // (the height is as it was)
++    expect(readPose([0, 1e9, 0, 0, 0, 0, 0, 0, 0]).y).toBe(62000); // (the height clamp is gone: sectorless poses reach SEC_FAR up)
+   });
+   it('carries the sector out in the Expanse, with x and z from its middle, and reads one without as the authored map', () => {
+     const out = writePose({ ...ship, x: 185184.78, y: 5, z: -121500 });
+     expect(out[10]).toBe('E:2,-1');
+     expect(out[0]).toBeCloseTo(185184.78 - 240000, 2);
+     expect(out[2]).toBeCloseTo(-121500 + 120000, 2);
+     const p = readPose(out);
+     expect(p.sec).toBe('E:2,-1');
+     expect(p.x).toBeCloseTo(185184.78, 2);
+     expect(p.z).toBeCloseTo(-121500, 2);
+     // (on the authored map: no sector, as before)
+     expect(writePose(ship)).toHaveLength(10);
+     expect(readPose(writePose(ship)).sec).toBeUndefined();
+     // (a reader given no sector, or junk for one, takes the map's coordinates)
+     expect(readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'E:x']).x).toBe(1);
+     expect(readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'main']).sec).toBeUndefined();
+     // (an Expanse pose is kept near its own sector)
+     expect(readPose([1e9, 0, 0, 0, 0, 0, 0, 0, 0, 100, 'E:1,0']).x).toBe(120000 + 62000);
+   });
++  it('carries the sector in 3D, and a two-number pose from an older build reads as before', () => {
++    const out = writePose({ ...ship, x: 185184.78, y: 70000, z: -121500 });
++    expect(out[10]).toBe('E:2,-1,1');
++    expect(out[1]).toBeCloseTo(-50000, 1);
++    const p = readPose(out);
++    expect(p.y).toBeCloseTo(70000, 1);
++    expect(p.sec).toBe('E:2,-1,1');
++    expect(readPose(writePose({ ...ship, y: 50000 })).y).toBe(50000);
++    expect(readPose(writePose({ ...ship, y: 50000 })).sec).toBeUndefined();
++    const old = readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'E:2,-1']);
++    expect([old.x, old.y, old.z]).toEqual([240001, 2, -119997]);
++    expect(readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'E:1,0,x']).sec).toBeUndefined();
++    expect(readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'X:1,0']).sec).toBeUndefined();
++  });
++  it('reads a shot from far out, held to its pilot', () => {
++    const from = { x: 500000, y: 0, z: 0, speed: 0 };
++    expect(readShot([500000, 0, 0, 1, 0, 0], from)).not.toBeNull();
++    expect(readShot([501000, 0, 0, 1, 0, 0], from)).toBeNull();
++  });
+   it('says when a pilot is riding a lane, and an old pose says they are not', () => {
+     expect(FLAG.lane).toBe(8);
+     expect(readPose(writePose(ship, FLAG.lane)).lane).toBe(true);
+     expect(readPose(writePose(ship, FLAG.boost | FLAG.lane)).boost).toBe(true);
+     expect(readPose(writePose(ship, FLAG.boost)).lane).toBe(false);
+     // (nine fields, from a pilot whose site is older than the shields on the pose)
+     expect(readPose([1, 2, 3, 0, 0, 0, 5, 0, 2]).lane).toBe(false);
+   });
+   it('carries the lane bit to where they are drawn', () => {
+     const snaps = [
+@@ -300,21 +319,21 @@ describe('shots', () => {
+     expect(readShot([0, 0, 0, 1, 0, 0, -1]).w).toBe(0);
+   });
+   it('refuses one from far off where the pilot was, or impossibly fast', () => {
+     expect(readShot([50, 0, 0, 0, 0, -20], { x: 0, y: 0, z: 0 })).toBeNull();
+     expect(readShot([0, 0, 0, 0, 0, -5000])).toBeNull();
+     expect(readShot([0, 0, 0, 0, 0])).toBeNull();
+   });
+   it('reads a shot fired anywhere in the spread universe', () => {
+     const s = readShot(writeShot({ x: 45000, y: 0, z: -70000 }, [0, 0, -20]));
+     expect(s.p).toEqual([45000, 0, -70000]);
+-    expect(readShot([1e9, 0, 0, 0, 0, -20]).p[0]).toBe(90000);
++    expect(readShot([1e13, 0, 0, 0, 0, -20]).p[0]).toBe(1e12); // (the bound is 1e12 now, not FAR)
+   });
+ });
+ 
+ describe('rams', () => {
+   it('reads the closing speed, capped, and nothing else', () => {
+     expect(readRam({ v: 8 })).toBe(8);
+     expect(readRam({ v: 1e9 })).toBe(RAM_MAX);
+     expect(readRam({ v: -3 })).toBe(0);
+     expect(readRam({ v: 'fast' })).toBeNull();
+     expect(readRam(null)).toBeNull();
+diff --git a/src/components/universe/online/rosterWhere.js b/src/components/universe/online/rosterWhere.js
+index 88134fe93..85806c8e9 100644
+--- a/src/components/universe/online/rosterWhere.js
++++ b/src/components/universe/online/rosterWhere.js
+@@ -2,49 +2,49 @@
+ // name (where.js's placeName); on it, the region they were last seen in
+ // (regions.js), so a universe spread this wide still says roughly where:
+ // “Universe · Near Middle-earth”, “Universe · the void”. A module of its
+ // own, not where.js, which the site's shell loads on every page: this one
+ // pulls in the map's layout, and only the roster (loaded once you're
+ // online) needs it. Out in the Expanse (a pose with a sector), the sector
+ // and the nearest system in it: “Universe · E:3,-2 · Kepler”.
+ 
+ import { regionAt } from '../regions';
+ import { SECTORS, inExpanse, mapSectorOf } from '../layout';
+-import { makeSector } from '../../expanse/gen/sector';
++import { fullSector } from '../../expanse/gen/space';
+ import { UNIVERSE as SHARED } from '../../expanse/gen/seed';
+-import { parseSector } from '../../expanse/gen/grid';
++import { parseSectorKey } from '../../../lib/space/address';
+ import { UNIVERSE, placeName } from './where';
+ 
+ // (mid-sentence, a leading “The” goes small: “the home system”)
+ const small = (name) => name.replace(/^The /, 'the ');
+ 
+ // the roster's words for `where` (a page key), with the pilot's last pose
+ // ({ x, y, z }, or null) to say whereabouts on the map
+ export function rosterWhere(where, pose) {
+   if (where !== UNIVERSE || !pose) return placeName(where);
+   const { x, y, z } = pose;
+-  if (inExpanse(pose.sec)) return `Universe · ${pose.sec}${nearest(pose.sec, x, z)}`;
++  if (inExpanse(pose.sec)) return `Universe · ${pose.sec}${nearest(pose.sec, x, y, z)}`;
+   // (the Rick and Morty sector is through its portal: none of the regions reach it;
+   // a pose without a sector is the authored map's, wherever it says)
+   const sector = mapSectorOf(x, y, z);
+   const area = sector !== 'main' ? SECTORS[sector].name : (regionAt(x, y, z)?.name ?? 'the void');
+   return `Universe · ${small(area)}`;
+ }
+ 
+-// ' · <name>' of the system in the sector nearest (x, z), within NEAR of it
++// ' · <name>' of the system in the sector nearest (x, y, z), within NEAR of it
+ const NEAR = 12000;
+ const SEEN = new Map(); // sector id → its systems (the last few)
+-function nearest(id, x, z) {
++function nearest(id, x, y, z) {
+   let systems = SEEN.get(id);
+   if (!systems) {
+-    systems = makeSector(SHARED, ...parseSector(id)).systems;
++    systems = fullSector(SHARED, ...parseSectorKey(id), { things: false }).systems;
+     if (SEEN.size > 16) SEEN.clear();
+     SEEN.set(id, systems);
+   }
+   let best = null;
+   let d = NEAR;
+   for (const s of systems) {
+-    const k = Math.hypot(s.at[0] - x, s.at[2] - z);
++    const k = Math.hypot(s.at[0] - x, s.at[1] - y, s.at[2] - z);
+     if (k < d) [best, d] = [s, k];
+   }
+   return best ? ` · ${best.name}` : '';
+ }
+diff --git a/src/components/universe/online/rosterWhere.test.js b/src/components/universe/online/rosterWhere.test.js
+index 9f88ea694..6b22991ee 100644
+--- a/src/components/universe/online/rosterWhere.test.js
++++ b/src/components/universe/online/rosterWhere.test.js
+@@ -1,14 +1,15 @@
+ import { describe, expect, it } from 'vitest';
+ import { rosterWhere } from './rosterWhere';
+ import { UNIVERSE } from './where';
+ import { makeSector } from '../../expanse/gen/sector';
++import { fullSector } from '../../expanse/gen/space';
+ import { UNIVERSE as SHARED } from '../../expanse/gen/seed';
+ 
+ import { POSITIONS } from '../layout';
+ 
+ describe('rosterWhere', () => {
+   it('names the region a pilot in the universe is in, after its place', () => {
+     const [x, y, z] = POSITIONS.middleearth;
+     expect(rosterWhere(UNIVERSE, { x: x + 300, y, z })).toBe('Universe · Near Middle-earth');
+   });
+   it('says so when they are out in the void between the regions', () => {
+@@ -22,12 +23,16 @@ describe('rosterWhere', () => {
+     expect(rosterWhere(UNIVERSE, null)).toBe('the universe');
+     expect(rosterWhere('/galaxy/hoth', { x: 0, y: 0, z: 0 })).toBe('Hoth');
+     expect(rosterWhere('/deathstar', null)).toBe('the Death Star');
+   });
+   it('says the Expanse sector of a pose with one, and the system nearby', () => {
+     const sec = makeSector(SHARED, 1, 0);
+     const [x, y, z] = sec.systems[0].at;
+     expect(rosterWhere(UNIVERSE, { x: x + 50, y, z, sec: 'E:1,0' })).toBe(`Universe · E:1,0 · ${sec.systems[0].name}`);
+     expect(rosterWhere(UNIVERSE, { x: 120000 + 59000, y: 0, z: 59000, sec: 'E:1,0' })).toMatch(/^Universe · E:1,0/);
+   });
++  it('names the nearest system of a sector above the middle layer', () => {
++    const sec = fullSector(SHARED, 1, 1, 0, { things: false });
++    const [x, y, z] = sec.systems[0].at;
++    expect(rosterWhere(UNIVERSE, { x: x + 50, y, z, sec: 'E:1,0,1' })).toBe(`Universe · E:1,0,1 · ${sec.systems[0].name}`);
++  });
+ });
+-

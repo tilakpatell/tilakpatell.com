@@ -1,0 +1,255 @@
+
+  [32m[1mVITE[22m v8.3.2[39m  [2mready in [0m[1m5113[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5191[22m/[39m
+[2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/textures/universe/k8.json[33m instead of [36m/public/textures/universe/k8.json[33m.
+If you intend to use the URL of that asset, use [36m/textures/universe/k8.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/textures/universe/k8.json[33m instead of [36m/public/textures/universe/k8.json[33m.
+If you intend to use the URL of that asset, use [36m/textures/universe/k8.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/cc0/galaxy/index.json[33m instead of [36m/public/cc0/galaxy/index.json[33m.
+If you intend to use the URL of that asset, use [36m/cc0/galaxy/index.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/textures/galaxy/bf2017/index.json[33m instead of [36m/public/textures/galaxy/bf2017/index.json[33m.
+If you intend to use the URL of that asset, use [36m/textures/galaxy/bf2017/index.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/cc0/galaxy/index.json[33m instead of [36m/public/cc0/galaxy/index.json[33m.
+If you intend to use the URL of that asset, use [36m/cc0/galaxy/index.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/textures/galaxy/bf2017/index.json[33m instead of [36m/public/textures/galaxy/bf2017/index.json[33m.
+If you intend to use the URL of that asset, use [36m/textures/galaxy/bf2017/index.json?url[33m.[39m
+[2m5:23:16 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial "PMREM.Background" on Mesh
+[2m5:23:16 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:23:16 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:23:16 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "SphericalGaussianBlur" on Mesh
+[2m5:23:17 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial "PMREM.Background" on Mesh
+[2m5:23:17 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mTHREE.WebGLProgram: Program Info Log: (210,86-138): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision
+(209,39-65): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision
+(210,87-113): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision
+(209,39-65): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision
+(210,87-113): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision
+[2m5:23:17 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "PMREMGGXConvolution" on Mesh
+[2m5:23:17 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:23:17 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:23:17 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "SphericalGaussianBlur" on Mesh
+[2m5:23:17 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "PMREMGGXConvolution" on Mesh
+[2m5:23:18 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial on Mesh
+[2m5:23:18 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial on Mesh
+[2m5:23:18 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mTHREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2m5:23:18 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mTHREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2m5:23:22 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "unspecified" on Mesh
+[2m5:23:22 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial "PMREM.Background" on Mesh
+[2m5:23:22 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:23:22 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:23:22 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "SphericalGaussianBlur" on Mesh
+[2m5:23:22 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "PMREMGGXConvolution" on Mesh
+[2m5:23:22 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "unspecified" on Mesh
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/textures/universe/k8.json[33m instead of [36m/public/textures/universe/k8.json[33m.
+If you intend to use the URL of that asset, use [36m/textures/universe/k8.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/cc0/galaxy/index.json[33m instead of [36m/public/cc0/galaxy/index.json[33m.
+If you intend to use the URL of that asset, use [36m/cc0/galaxy/index.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/textures/galaxy/bf2017/index.json[33m instead of [36m/public/textures/galaxy/bf2017/index.json[33m.
+If you intend to use the URL of that asset, use [36m/textures/galaxy/bf2017/index.json?url[33m.[39m
+[2m5:23:42 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial "PMREM.Background" on Mesh
+[2m5:23:42 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:23:42 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:23:42 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "SphericalGaussianBlur" on Mesh
+[2m5:23:42 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mTHREE.WebGLProgram: Program Info Log: (210,86-138): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision
+(209,39-65): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision
+(210,87-113): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision
+(209,39-65): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision
+(210,87-113): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision
+[2m5:23:42 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "PMREMGGXConvolution" on Mesh
+[2m5:23:43 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial on Mesh
+[2m5:23:43 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mTHREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2m5:23:45 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "unspecified" on Mesh
+[2m5:23:47 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh
+[2m5:23:47 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh
+[2m5:23:47 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh
+[2m5:23:47 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh
+[2m5:23:48 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshBasicMaterial on Mesh "exhaust"
+[2m5:23:48 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh
+[2m5:23:48 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] 6 shader(s) compiled in a 548 ms frame
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/textures/universe/k8.json[33m instead of [36m/public/textures/universe/k8.json[33m.
+If you intend to use the URL of that asset, use [36m/textures/universe/k8.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/textures/universe/k8.json[33m instead of [36m/public/textures/universe/k8.json[33m.
+If you intend to use the URL of that asset, use [36m/textures/universe/k8.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/cc0/galaxy/index.json[33m instead of [36m/public/cc0/galaxy/index.json[33m.
+If you intend to use the URL of that asset, use [36m/cc0/galaxy/index.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/textures/galaxy/bf2017/index.json[33m instead of [36m/public/textures/galaxy/bf2017/index.json[33m.
+If you intend to use the URL of that asset, use [36m/textures/galaxy/bf2017/index.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/cc0/galaxy/index.json[33m instead of [36m/public/cc0/galaxy/index.json[33m.
+If you intend to use the URL of that asset, use [36m/cc0/galaxy/index.json?url[33m.[39m
+[33mAssets in public directory cannot be imported from JavaScript.
+If you intend to import that asset, put the file in the src directory, and use [36m/src/textures/galaxy/bf2017/index.json[33m instead of [36m/public/textures/galaxy/bf2017/index.json[33m.
+If you intend to use the URL of that asset, use [36m/textures/galaxy/bf2017/index.json?url[33m.[39m
+[2m5:23:56 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial "PMREM.Background" on Mesh
+[2m5:23:56 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:23:56 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:23:56 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "SphericalGaussianBlur" on Mesh
+[2m5:23:56 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "PMREMGGXConvolution" on Mesh
+[2m5:23:56 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial "PMREM.Background" on Mesh
+[2m5:23:56 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:23:56 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:23:56 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "SphericalGaussianBlur" on Mesh
+[2m5:23:56 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "PMREMGGXConvolution" on Mesh
+[2m5:23:56 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial on Mesh
+[2m5:23:56 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mTHREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2m5:23:57 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial on Mesh
+[2m5:23:57 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mTHREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.
+[2m5:23:59 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "unspecified" on Mesh
+[2m5:23:59 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "unspecified" on Mesh
+[2m5:24:03 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshStandardMaterial "Main_Shader1" on Mesh "mesh_0"
+[2m5:24:03 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshStandardMaterial "Windows_Shader1" on Mesh "mesh_0_2"
+[2m5:24:03 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshStandardMaterial "Windows_Shader1" on Mesh "mesh_0_2"
+[2m5:24:04 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshStandardMaterial "Main_Shader1" on Mesh "mesh_0"
+[2m5:24:04 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshStandardMaterial "Windows_Shader1" on Mesh "mesh_0_2"
+[2m5:24:04 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshStandardMaterial "Windows_Shader1" on Mesh "mesh_0_2"
+[2m5:24:08 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh
+[2m5:24:08 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Points "far-stars"
+[2m5:24:08 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh "landmarks"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh "meteors"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshBasicMaterial on Mesh "mine lamps"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshBasicMaterial on Mesh "sublight"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial "Main_Shader1" on Mesh "mesh_0"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Points
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh in "deep-galaxies"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial "Windows_Shader1" on Mesh "mesh_0_2"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial "Windows_Shader1" on Mesh "mesh_0_2"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Points
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Points "far-stars"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh "landmarks"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh in "portal-rmportal"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Points "deep-young-stars" in "deep-space"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh "meteors"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh in "portal-rmportal"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshBasicMaterial on Mesh "mine lamps"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh in "portal-rmportal"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh "hull"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh "engines"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh "deep-labels" in "deep-space"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] 18 shader(s) compiled in a 884 ms frame
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh "stripes"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh "intakes"
+[2m5:24:09 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshBasicMaterial on Mesh "exhaust"
+[2m5:24:10 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial "Main_Shader1" on Mesh "mesh_0"
+[2m5:24:10 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Points
+[2m5:24:10 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh in "deep-galaxies"
+[2m5:24:10 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial "Windows_Shader1" on Mesh "mesh_0_2"
+[2m5:24:10 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial "Windows_Shader1" on Mesh "mesh_0_2"
+[2m5:24:10 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Points
+[2m5:24:10 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh in "portal-rmportal"
+[2m5:24:10 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Points "deep-young-stars" in "deep-space"
+[2m5:24:10 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh in "portal-rmportal"
+[2m5:24:10 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh "engines"
+[2m5:24:10 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh in "portal-rmportal"
+[2m5:24:10 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh "deep-labels" in "deep-space"
+[2m5:24:10 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] 21 shader(s) compiled in a 687 ms frame
+[2m5:24:19 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial "tiebomber-lod" on Mesh "tiebomber_1" in "tiebomber"
+[2m5:24:19 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] 1 shader(s) compiled in a 148 ms frame
+[2m5:24:40 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh
+[2m5:24:40 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] 1 shader(s) compiled in a 45 ms frame
+[2m5:24:44 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): SpriteMaterial on Sprite
+[2m5:24:44 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] 1 shader(s) compiled in a 50 ms frame
+[2m5:24:44 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh
+[2m5:24:52 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshBasicMaterial on Mesh
+[2m5:24:52 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] 1 shader(s) compiled in a 40 ms frame
+[2m5:24:57 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial "PMREM.Background" on Mesh
+[2m5:24:57 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:24:57 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh
+[2m5:24:57 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "SphericalGaussianBlur" on Mesh
+[2m5:24:57 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial "PMREMGGXConvolution" on Mesh
+[2m5:24:57 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh
+[2m5:24:57 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh
+[2m5:24:57 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] 2 shader(s) compiled in a 174 ms frame
+[2m5:24:58 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh
+[2m5:24:58 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22m[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/EconomyProvider.jsx, /src/components/Hyperspace.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/online/Online.jsx, /src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/online/Online.jsx, /src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/online/Online.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/Achievements.jsx, /src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/UniversePanel.jsx, /src/components/universe/EconomyProvider.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/shipyard/YardCatalogue.jsx, /src/components/universe/shipyard/YardBill.jsx, /src/components/universe/Record.jsx, /src/components/CommandPalette.jsx and 2 more[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/Achievements.jsx, /src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/UniversePanel.jsx, /src/components/universe/EconomyProvider.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/shipyard/YardCatalogue.jsx, /src/components/universe/shipyard/YardBill.jsx, /src/components/universe/Record.jsx, /src/components/CommandPalette.jsx and 2 more[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/Achievements.jsx, /src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/UniversePanel.jsx, /src/components/universe/EconomyProvider.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/shipyard/YardCatalogue.jsx, /src/components/universe/shipyard/YardBill.jsx, /src/components/universe/Record.jsx, /src/components/CommandPalette.jsx, /src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/Online.jsx[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/online/Online.jsx, /src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/online/Online.jsx, /src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/online/Online.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/EconomyProvider.jsx, /src/components/Hyperspace.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/Achievements.jsx, /src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/UniversePanel.jsx, /src/components/universe/EconomyProvider.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/shipyard/YardCatalogue.jsx, /src/components/universe/shipyard/YardBill.jsx, /src/components/universe/Record.jsx, /src/components/CommandPalette.jsx and 2 more[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/Achievements.jsx, /src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/UniversePanel.jsx, /src/components/universe/EconomyProvider.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/shipyard/YardCatalogue.jsx, /src/components/universe/shipyard/YardBill.jsx, /src/components/universe/Record.jsx, /src/components/CommandPalette.jsx and 2 more[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/Achievements.jsx, /src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/UniversePanel.jsx, /src/components/universe/EconomyProvider.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/shipyard/YardCatalogue.jsx, /src/components/universe/shipyard/YardBill.jsx, /src/components/universe/Record.jsx, /src/components/CommandPalette.jsx, /src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/Online.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/universe/online/OnlineProvider.jsx, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Universe.jsx, /src/App.jsx, /src/components/universe/UniverseMap.jsx, /src/components/universe/shipyard/Shipyard.jsx, /src/components/universe/EconomyProvider.jsx, /src/components/Hyperspace.jsx[22m
+[2m5:27:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m5:27:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
