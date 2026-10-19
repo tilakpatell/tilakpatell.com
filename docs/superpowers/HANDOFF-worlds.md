@@ -121,7 +121,6 @@ One ride from Bag End to the Grey Havens at `/middle-earth/road`, a `'nodes'` mo
 
 ### Minecraft
 
-- The others online are drawn in `ghosts.js`’s material, whose rim of light is GLSL: on the node renderer Minecraft runs on, a ghost is its pale emissive alone. A node twin of the rim would give them their edge back.
 - The tribute is frozen at Phase 4 by the owner. If resumed: Phase 5, mobs, has its rules written and tested on the `claude/minecraft-phase-5` branch but no drawing; never merge the rules without the drawing, or the monsters hunt unseen. Phase 6, biomes and builds (per-place tints need the biome in the vertex). Phase 7, polish.
 - Eaglercraft: the 1.21.11 beta, only ever in the walled-off player; the owner fetches it, it is inspected as text, its `worldsDB` patch checked, sealed beside the other two, greyed out where `WebAssembly.Suspending` is missing. More shared worlds, sealed beside The Plaza. A live shared server (EaglerXServer on Velocity in front of Paper, through a tunnel), only with the owner’s say.
 

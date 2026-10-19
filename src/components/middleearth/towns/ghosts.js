@@ -36,21 +36,22 @@ import * as THREE from 'three';
 import { pose } from '../mapFigures';
 import { makePerson } from '../shire/people';
 import { ALLY_HALO, GHOST_HALO, createGhostsOf } from './ghostsOf';
+import { GHOST } from './ghostLook';
 
 export { ALLY_HALO, GHOST_HALO };
 
-const TINT = new THREE.Color(0xcfe0ff);
-const GLOW = new THREE.Color(0x6a8cff);
 // pale, see-through, brighter at the edges (a rim of light, as the Ring's
-// world shows things)
-function ghostMaterial() {
-  const m = new THREE.MeshStandardMaterial({ color: TINT, emissive: GLOW, emissiveIntensity: 0.55, roughness: 0.5, transparent: true, opacity: 0, depthWrite: false });
+// world shows things): ./ghostLook.js's numbers, in GLSL, for the classic
+// renderer (./ghostNodes.js is the same in nodes, for the node renderer)
+export function ghostMaterial() {
+  const m = new THREE.MeshStandardMaterial({ color: new THREE.Color(GHOST.tint), emissive: new THREE.Color(GHOST.glow), emissiveIntensity: GHOST.glowStrength, roughness: GHOST.roughness, transparent: true, opacity: 0, depthWrite: false });
+  const [r, g, b] = GHOST.rim.map((v) => v.toFixed(2));
   m.onBeforeCompile = (sh) => {
     sh.fragmentShader = sh.fragmentShader.replace(
       '#include <emissivemap_fragment>',
       `#include <emissivemap_fragment>
       float rim = 1.0 - abs(dot(normalize(normal), normalize(vViewPosition)));
-      totalEmissiveRadiance += vec3(0.55, 0.7, 1.0) * pow(rim, 2.2) * 1.6;`,
+      totalEmissiveRadiance += vec3(${r}, ${g}, ${b}) * pow(rim, ${GHOST.rimPower.toFixed(1)}) * ${GHOST.rimStrength.toFixed(1)};`,
     );
   };
   return m;

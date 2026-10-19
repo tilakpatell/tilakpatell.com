@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import * as travellers from './travellers';
 import * as ghosts from './ghosts';
 import * as ghostsOf from './ghostsOf';
+import * as ghostNodes from './ghostNodes';
 
 // Middle-earth's face: exactly these names and nothing else
 const FACE = [
   [travellers, ['useTravellers']],
   [ghosts, ['ALLY_HALO', 'GHOST_HALO', 'createGhosts']],
   [ghostsOf, ['createGhostsOf']],
+  [ghostNodes, ['ghostNodeMaterial']],
 ];
 
 describe('middleearth/shared', () => {
