@@ -124,20 +124,22 @@ export function keyLight(l) {
 
 // The shade: the sky light's hue (the fog's, as module.js lights it) leaned
 // toward violet by day, hardly at all under the moon (a night's shade is
-// blue, not purple) or the pall (Mordor's, brown); a little under half the
-// full light the key and the sky light give a face (the house's measure:
-// three's Lambert divides by pi), never brighter than a clear day's (a
-// little under the house's LOOK.shadow, 0x9d93c4, so a shadow cast reads)
-// nor so dark that the deeps go black
+// blue, not purple) or the pall (Mordor's, brown). By day a little under
+// half the full light the key and the sky light give a face, by night
+// nearer all of it (an eye used to the dark: Bree's street, in the houses'
+// moon shadow, went black), on the house's measure (three's Lambert
+// divides by pi); never brighter than a clear day's (a little under the
+// house's LOOK.shadow, 0x9d93c4, so a shadow cast reads) nor so dark that
+// the deeps go black
 const VIOLET = [0.195, 0.147, 0.687]; // (0x7a6ad8, linear: houseNodes' shadowFor leans the same way)
-export const SHADE = { day: 0.28, least: 0.05 }; // its brightness (luma, linear): the most, the least
+export const SHADE = { day: 0.28, least: 0.07, sun: 0.45, moon: 0.9 }; // its brightness (luma, linear): the most, the least; its share of the full light by the sun, by the moon
 const lumOf = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 export function shadeOf(l, key = keyLight(l)) {
   const sky = l.fog.colour;
   const lean = (key.moon ? 0.12 : 0.35) * (1 - 0.7 * l.pall.amount);
   const c = sky.map((v, i) => v + (VIOLET[i] - v) * lean);
   const full = lumOf(key.colour) * key.intensity + lumOf(sky) * (0.25 + l.ambient * 1.6);
-  const want = Math.min(SHADE.day, Math.max(SHADE.least, (full / Math.PI) * 0.45));
+  const want = Math.min(SHADE.day, Math.max(SHADE.least, (full / Math.PI) * (key.moon ? SHADE.moon : SHADE.sun)));
   const got = lumOf(c);
   return got > 0 ? c.map((v) => (v * want) / got) : [want, want, want];
 }
