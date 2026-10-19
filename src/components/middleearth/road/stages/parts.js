@@ -13,10 +13,14 @@
 //   disposeBuilt(root, K): the geometry under root, and the materials (and
 //     their maps) a builder made for itself (a sign, a hatch) rather than
 //     took from the kit, which the kit’s own dispose frees
+//   waterOn(land, i) → (x, z) → the height of the land’s i-th river’s water
+//     there, or null off it: what carries a boat
 //   C(hex) → THREE.Color
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { nearestOn } from '../../../../lib/land/paths.js';
+import { riverLevel } from '../terrain';
 
 export const C = (hex) => new THREE.Color(hex);
 
@@ -98,4 +102,14 @@ export function disposeBuilt(root, K) {
       m.dispose();
     }
   });
+}
+
+export function waterOn(land, i) {
+  const r = land.rivers?.[i];
+  if (!r) return () => null;
+  const level = riverLevel(land.field, r);
+  return (x, z) => {
+    const { m, d } = nearestOn(r.line, x, z);
+    return d <= r.width / 2 ? level(m) : null;
+  };
 }
