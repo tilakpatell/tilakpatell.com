@@ -64,8 +64,8 @@ const SPRING = { MapleTree_Leaves: { recolour: '#6f9a3e' }, BirchTree_Leaves: { 
 export const SCATTER = {
   hobbiton: [
     // (oaks: the common tree at its broadest, in the hedgerows’ clumps)
-    { model: 'CommonTree_1', per100: 0.05, clump: 3, spread: 10, scale: [1.1, 1.6], tint: OAK },
-    { model: 'CommonTree_2', per100: 0.035, clump: 2, spread: 8, scale: [1.0, 1.5], tint: OAK },
+    { model: 'CommonTree_1', per100: 0.038, clump: 3, spread: 10, scale: [1.1, 1.6], tint: OAK },
+    { model: 'CommonTree_2', per100: 0.026, clump: 2, spread: 8, scale: [1.0, 1.5], tint: OAK },
     { model: 'CommonTree_5', per100: 0.02, clump: 2, spread: 7, scale: [1.0, 1.4], tint: OAK },
     // the hedges: long bushes strung close in a line of a clump, some in flower
     { model: 'Bush_Long_1', per100: 0.16, clump: 6, spread: 6, scale: [1.0, 1.4] },
@@ -103,8 +103,8 @@ export const SCATTER = {
     { model: 'Flower_2_Group', per100: 0.15, clump: 4, spread: 2, scale: [0.25, 0.35], x: [-18, 18] },
     { model: 'Plant_6', per100: 0.2, clump: 4, spread: 2, scale: [0.7, 1.0], x: [-20, 20] },
     // the Woody End: beeches (the common tree at its tallest) over the hollow, ferns and toadstools under them
-    { model: 'CommonTree_2', per100: 0.14, clump: 3, spread: 10, scale: [1.3, 1.8], z: [62, 118], tint: OAK },
-    { model: 'CommonTree_4', per100: 0.09, clump: 2, spread: 9, scale: [1.2, 1.7], z: [62, 118], tint: OAK },
+    { model: 'CommonTree_2', per100: 0.1, clump: 3, spread: 10, scale: [1.3, 1.8], z: [62, 118], tint: OAK },
+    { model: 'CommonTree_4', per100: 0.065, clump: 2, spread: 9, scale: [1.2, 1.7], z: [62, 118], tint: OAK },
     { model: 'Fern_1', per100: 0.9, clump: 6, spread: 4, scale: [0.8, 1.3], z: [62, 118], x: [-70, 70] },
     { model: 'Fern_2', per100: 0.6, clump: 5, spread: 3, scale: [0.9, 1.4], z: [62, 118], x: [-50, 50] },
     { model: 'Plant_2', per100: 0.3, clump: 4, spread: 3, scale: [0.8, 1.2], z: [62, 118], x: [-40, 40] },
@@ -113,8 +113,8 @@ export const SCATTER = {
     { model: 'Mushroom_RedCap', per100: 0.08, clump: 3, spread: 1, scale: [0.5, 0.8], z: [62, 118], x: [-30, 30] },
     { model: 'Bush_Large', per100: 0.05, clump: 2, spread: 5, scale: [0.9, 1.3], z: [62, 118] },
     // (among the beeches, birches gone yellow and maples red: late September)
-    ...birches(0.08, { z: [62, 118] }),
-    ...maples(0.05, { z: [62, 118] }),
+    ...birches(0.05, { z: [62, 118] }),
+    ...maples(0.035, { z: [62, 118] }),
     // the rest of the Eastfarthing
     { model: 'CommonTree_1', per100: 0.02, clump: 3, spread: 9, scale: [0.9, 1.4], tint: OAK },
     { model: 'Bush_Common', per100: 0.06, clump: 4, spread: 5, scale: [0.9, 1.5] },
