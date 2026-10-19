@@ -88,6 +88,7 @@ import { rmWorldModule } from './module';
 import { createLook } from '../../../runtime/look';
 import { createFlightCluster } from '../../../runtime/hud';
 import { powerReadout } from './games/power';
+import { chaseCalls, chaseGoal, chaseReadout, chaseStart, newChase, shaken, stepChase } from './games/chase';
 import { FRICTION, coneFor } from '../../../lib/combat/aim';
 import { createLockOn } from '../../../lib/combat/lockOn';
 import { stepRmLockOn } from './rmLockOn';
@@ -211,7 +212,7 @@ const WHEEL_R = 110;
 
 // Where the next thing to do is, for the map's marker: the area and the spot
 // in it, and from anywhere else, the way towards it.
-const GOAL = { cable: ['house', 'spot:cable'], butter: ['house', 'spot:butter'], meeseeks: ['garage', 'spot:meeseeks'], plumbus: ['garage', 'spot:plumbus'], portalpanic: ['garage', 'spot:portalpanic'], quiz: ['school', 'spot:quiz'], fly: ['street', 'cruiser'], portal: ['garage', 'link:garage-portal'], basement: ['garage', 'link:garage-hatch'], roy: ['arcade', 'spot:roy'], roy55: ['arcade', 'spot:roy'], president: ['street', 'spot:president'], oval: ['garage', 'link:garage-oval'], diner: ['street', 'link:diner-door'], mindblowers: ['mindblowers', 'spot:chair'], rickall: ['house', 'spot:egg'], wong: ['wong', 'spot:therapy'], ...Object.fromEntries(DESTINATIONS.flatMap((d) => d.tasks.map((t) => [t.id, [d.id, `spot:${Object.keys(d.done).find((k) => d.done[k] === t.id) ?? d.escape?.after ?? d.escape?.spot ?? d.goal}`]]))), sewer: ['agency', 'spot:sewer'], cabinet: ['arcade', 'spot:cabinet2'] };
+const GOAL = { cable: ['house', 'spot:cable'], butter: ['house', 'spot:butter'], meeseeks: ['garage', 'spot:meeseeks'], plumbus: ['garage', 'spot:plumbus'], portalpanic: ['garage', 'spot:portalpanic'], quiz: ['school', 'spot:quiz'], fly: ['street', 'cruiser'], portal: ['garage', 'link:garage-portal'], basement: ['garage', 'link:garage-hatch'], roy: ['arcade', 'spot:roy'], roy55: ['arcade', 'spot:roy'], president: ['street', 'spot:president'], oval: ['garage', 'link:garage-oval'], diner: ['street', 'link:diner-door'], mindblowers: ['mindblowers', 'spot:chair'], rickall: ['house', 'spot:egg'], wong: ['wong', 'spot:therapy'], ...Object.fromEntries(DESTINATIONS.flatMap((d) => d.tasks.map((t) => [t.id, [d.id, `spot:${Object.keys(d.done).find((k) => d.done[k] === t.id) ?? d.escape?.after ?? d.escape?.spot ?? d.goal}`]]))), sewer: ['agency', 'spot:sewer'], cabinet: ['arcade', 'spot:cabinet2'], chase: ['street', 'cruiser'] };
 // (every destination but the planets is through the garage's portal: they're landed on from the universe map)
 const toDest = (via) => Object.fromEntries(DESTINATIONS.filter((d) => !isPlanet(d.id)).map((d) => [d.id, via]));
 const WAY = {
@@ -266,7 +267,7 @@ const newSim = (at = START, portal = false) => ({
   flying: false,
   landing: false,
   landT: 0,
-  boardAt: null,
+  chase: newChase(), // (the cruiser's, through the rings: ./games/chase.js)
   yaw: behindYaw(at.face) + (portal ? 0.85 : 0),
   pitch: PITCH,
   dragAt: portal ? 0 : -1e9,
@@ -491,6 +492,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const chargeRef = useRef(null);
   const chargeLine = useRef(null);
   const [chargeMeter] = useState(createFlightCluster);
+  // the cruiser's chase: the hits it can still take, in the cruiser's cluster
+  const chaseRef = useRef(null);
+  const chaseLine = useRef(null);
+  const [chaseMeter] = useState(createFlightCluster);
   const armsFor = useRef({ loadout, skillFx, powerPicks });
   armsFor.current = { loadout, skillFx, powerPicks };
   useEffect(() => {
@@ -947,7 +952,6 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     const s = sim.current;
     s.flying = true;
     s.landing = false;
-    s.boardAt = { x: s.c.x, z: s.c.z };
     s.tookOff = false;
     s.fastT = 0;
     s.leftFrom = null;
@@ -973,6 +977,17 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     s.leftFrom = { x: s.c.x, z: s.c.z };
     shipTalk('land');
   }, [api, shipTalk]);
+  // a chase lost: a blink, and the cruiser's before the first ring again, still
+  const chaseAgain = useCallback(() => {
+    const s = sim.current;
+    s.fading = true;
+    setFade('door');
+    later(() => {
+      s.c = { ...s.c, ...chaseStart(s.chase), speed: 0, vy: 0, bank: 0, bankV: 0 };
+      s.fading = false;
+      setFade(null);
+    }, FADE_MS);
+  }, [later]);
   const act = useCallback(() => {
     const s = sim.current;
     if (!api.current || s.fading || s.landing) return;
@@ -1509,8 +1524,6 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           if (s.c.y <= CRUISER.hover + 0.01) touchDown();
         }
       }
-      // the first take-off: up off the driveway, or away along the street
-      if (s.flying && s.boardAt && !doneRef.current.includes('fly') && (s.c.y > CRUISER.hover + 1.5 || Math.hypot(s.c.x - s.boardAt.x, s.c.z - s.boardAt.z) > 5)) complete('fly');
       // the cruiser has something to say: up, fast, at the ceiling, the Federation behind
       if (s.flying && !s.landing) {
         if (!s.tookOff && s.c.y > CRUISER.hover + 2) {
@@ -1589,13 +1602,14 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     s.near = near ? PROMPT[near] : null;
     s.view.link = s.near?.kind === 'link' ? s.near.id : null;
     s.view.hotspot = s.near?.kind === 'spot' ? s.near.id : null;
-    // the Federation's patrol ship, round its loop or on the cruiser's tail
-    s.fed = stepFedShip(s.fed, s.c, s.flying, dt, fightRef.current?.ring() ?? null);
+    // the Federation's patrol ship, round its loop or on the cruiser's tail (kept off a while once shaken)
+    s.fed = stepFedShip(s.fed, s.c, s.flying && !shaken(s.chase), dt, fightRef.current?.ring() ?? null);
     // the fight over the street: the cruiser's guns (held F), the patrol's
     // laser, the deflectors, and the cluster that shows them
     const fight = planet ? null : fightRef.current;
     let fightHits = null;
     if (fight) {
+      let hurt = 0;
       if (s.firing && s.flying) fight.fire(s.t, s.c, s.fed, cruiser?.cadence ?? 1);
       for (const e of fight.step(dt, s.t, { cruiser: s.c, at: s.fed, flying: s.flying, stats: cruiser })) {
         if (e.type === 'hit') (fightHits ??= []).push(e.at);
@@ -1604,8 +1618,12 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           say({ kind: 'say', who: 'Rick', text: FIGHT_SAYS.down });
         } else if (e.type === 'provoked') say({ kind: 'say', who: 'Rick', text: FIGHT_SAYS.provoked });
         else if (e.type === 'grounded') say({ kind: 'note', bad: true, text: FIGHT_SAYS.grounded });
+        else if (e.type === 'hurt') hurt += 1;
       }
       s.fed.down = fight.patrol.mode === 'down';
+      // the cruiser's chase through the rings, on the patrol's hits (./games/chase.js)
+      s.chase = stepChase(s.chase, { at: s.c, flying: s.flying && !s.landing, hit: hurt, down: s.fed.down, grounded: fight.grounded(s.t) }, dt);
+      if (s.chase.events.length) chaseCalls(s.chase.events, { fight, now: s.t, ship: shipTalk, note: (text) => say({ kind: 'note', bad: true, text }), complete, tell, again: chaseAgain });
       vitals.value = fight.shield;
       vitals.low = fight.shield < 25;
       cluster.place(clusterRef.current, { on: s.flying, vitals, arms: fight.view() });
@@ -1692,6 +1710,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           near: s.view,
           done: doneRef.current,
           fed: s.fed,
+          chase: s.chase,
           travellers: tv ? tv.list() : null,
           sight: sightLine,
           rickall: run?.game ? { game: run.game, aim: run.aim, hide: run.hide } : null,
@@ -1761,11 +1780,15 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     if (++s.frame % 3 === 0) {
       // the place's people, for the map (stage.js's NPC layer says where they are)
       s.npcs = api.current?.act(s.area, 'npcs') ?? null;
-      drawMap(map.current, s, goalOf(markRef.current, s, planet), s.t);
+      drawMap(map.current, s, goalOf(markRef.current, s, planet) ?? (s.flying && !planet ? chaseGoal(s.chase) : null), s.t);
       // (and a place run on power, its charge: ./dimensions/stage.js)
       const charge = powerReadout(api.current?.act(s.area, 'power'));
       chargeMeter.place(chargeRef.current, { on: charge.on, vitals: charge.vitals, arms: null });
       if (chargeLine.current) chargeLine.current.textContent = charge.line;
+      // (and the cruiser's chase, its hits left)
+      const run = chaseReadout(s.flying ? s.chase : null);
+      chaseMeter.place(chaseRef.current, { on: run.on, vitals: run.vitals, arms: null });
+      if (chaseLine.current) chaseLine.current.textContent = run.line;
     }
   };
   const tickRef = useRef(tick);
@@ -1951,6 +1974,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         clusterRef={clusterRef}
         chargeRef={chargeRef}
         chargeLine={chargeLine}
+        chaseRef={chaseRef}
+        chaseLine={chaseLine}
         onShipFire={(on) => {
           sim.current.firing = on;
         }}

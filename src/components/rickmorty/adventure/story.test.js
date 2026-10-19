@@ -205,7 +205,7 @@ describe('the real story', () => {
     expect(out.at(-1)).toEqual({ type: 'end' });
   });
 
-  it('opens episode 3’s places after episode 2, episode 4’s after episode 3, and every place once episode 4, the last built, is done', () => {
+  it('opens episode 3’s places after episode 2, episode 4’s after episode 3, episode 5’s after episode 4, and every place once episode 5, the last built, is done', () => {
     let s = fresh();
     let out = [];
     for (const id of ['diner', 'basement', 'mindblowers', 'customs']) ({ state: s, out } = feed(s, { type: 'task', id }));
@@ -234,8 +234,16 @@ describe('the real story', () => {
     expect(out).toEqual([{ type: 'step', episode: 3, step: 1 }]);
     expect(objective(s)).toEqual({ text: EPISODES[3].steps[1].text, to: null });
     ({ state: s, out } = feed(s, { type: 'task', id: 'anatomy' }));
-    expect(out).toEqual([{ type: 'done', episode: 3 }]); // (no card: episode 5 isn't built)
-    for (const id of ['gromflomites', 'fortress', 'vat', 'citadel', 'squanch', 'evilrick']) expect(dialOpen(s, id), id).toBe(true);
+    expect(out).toEqual([{ type: 'done', episode: 3 }, { type: 'episode', episode: 4 }]);
+    for (const id of ['gromflomites', 'fortress']) expect(dialOpen(s, id), id).toBe(true);
+    for (const id of ['needful', 'vat', 'nimbus', 'citadel', 'squanch', 'evilrick']) expect(dialOpen(s, id), id).toBe(false);
+    expect(objective(s)).toEqual({ text: EPISODES[4].steps[0].text, to: null });
+    ({ state: s, out } = feed(s, { type: 'win', game: 'chase' }));
+    expect(out).toEqual([{ type: 'step', episode: 4, step: 1 }]);
+    expect(objective(s)).toEqual({ text: EPISODES[4].steps[1].text, to: null });
+    ({ state: s, out } = feed(s, { type: 'task', id: 'gromflomites' }));
+    expect(out).toEqual([{ type: 'done', episode: 4 }]); // (no card: episode 6 isn't built)
+    for (const id of ['needful', 'vat', 'nimbus', 'citadel', 'squanch', 'evilrick']) expect(dialOpen(s, id), id).toBe(true);
     expect(objective(s)).toBe(null);
   });
 
@@ -258,6 +266,23 @@ describe('the real story', () => {
     expect(newsOf(three.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[2].outro[0][0], text: EPISODES[2].outro[0][1] }], card: 3 });
     const four = feed(s, win, { known: { tasks: ['roy', 'rickall', 'wong', 'sewer', 'microverse', 'anatomy'], citadel: [] } });
     expect(four.state).toMatchObject({ episode: 4, step: 0 });
-    expect(newsOf(four.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[3].outro[0][0], text: EPISODES[3].outro[0][1] }], card: null });
+    expect(newsOf(four.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[3].outro[0][0], text: EPISODES[3].outro[0][1] }], card: 4 });
+    // the Gromflomite base known too, the chase not won: it waits at the chase
+    expect(feed(s, win, { known: { tasks: ['roy', 'rickall', 'wong', 'sewer', 'microverse', 'anatomy', 'gromflomites'], citadel: [] } }).state).toMatchObject({ episode: 4, step: 0 });
+    // and with the chase won already, through episode 5: Rick's line, no card
+    const five = feed({ ...s, wins: ['chase'] }, win, { known: { tasks: ['roy', 'rickall', 'wong', 'sewer', 'microverse', 'anatomy', 'gromflomites'], citadel: [] } });
+    expect(five.state).toMatchObject({ episode: 5, step: 0 });
+    expect(newsOf(five.out)).toEqual({ say: [{ kind: 'say', who: EPISODES[4].outro[0][0], text: EPISODES[4].outro[0][1] }], card: null });
+  });
+
+  it('keeps a chase won early, and opens episode 5 at the Gromflomite base', () => {
+    const won = feed({ ...fresh(), episode: 3, step: 1 }, { type: 'win', game: 'chase' });
+    expect(won.state).toMatchObject({ episode: 3, step: 1, wins: ['chase'] });
+    expect(won.out).toEqual([]);
+    const { state, out } = feed(won.state, { type: 'task', id: 'anatomy' });
+    expect(state).toMatchObject({ episode: 4, step: 1 });
+    expect(out).toEqual([{ type: 'done', episode: 3 }, { type: 'episode', episode: 4 }, { type: 'step', episode: 4, step: 1 }]);
+    // (episode 5 begun and not over in the same out: its card)
+    expect(newsOf(out).card).toBe(4);
   });
 });

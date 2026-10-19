@@ -6,17 +6,18 @@
 // beat reached plays its clip and its lines, and the scene reads how long
 // since each began.
 //
-//   createScenes({ rt, road, lands, weather, ambience, tier }) → {
+//   createScenes({ rt, road, lands, weather, ambience, tier, sky }) → {
 //     at(index, local, dt, { speed, jumped }) → { since, fx, shot }  (fx: fxAt’s; shot: rigAt’s, or null)
 //     floor(index, x, z) → the height the stage’s scene stands the walkers on there, or null (the land’s)
 //     pose(index, id, { x, y, z, base, state }) → what the scene changes of a walker this frame
 //       ({ x, y, z, yaw, base, speed, hide }, each left out for the module’s own), or null
 //     dispose() }
 //
-// A build is given { road, heightAt, land, waters, rt, weather, ambience, tier }
+// A build is given { road, heightAt, land, waters, rt, weather, ambience, tier, sky }
 // (`land`: terrain.js’s, its rivers among it; `waters`: the land’s rivers’
-// water, water.js’s, in the same order), and may answer `floor(x, z)`: what
-// carries the walkers over the land (the raft at the Brandywine), and
+// water, water.js’s, in the same order; `sky`: sky.js’s, for a lake of
+// its own), and may answer `floor(x, z)`: what carries the walkers over the
+// land (the raft at the Brandywine), and
 // `pose(id, at)`: a walker as a beat has them (sat by Sam’s fire, Aragorn
 // with a torch, Frodo on Asfaloth’s back).
 
@@ -33,9 +34,13 @@ const SCENES = {
   weathertop: () => import('./stages/weathertop/index.js'),
   ford: () => import('./stages/ford/index.js'),
   rivendell: () => import('./stages/rivendell/index.js'),
+  caradhras: () => import('./stages/caradhras/index.js'),
+  moria: () => import('./stages/moria/index.js'),
+  lorien: () => import('./stages/lorien/index.js'),
+  anduin: () => import('./stages/anduin/index.js'),
 };
 
-export function createScenes({ rt, road, lands, weather, ambience, tier }) {
+export function createScenes({ rt, road, lands, weather, ambience, tier, sky = null }) {
   const made = new Map(); // index → { scene | null, group (the land’s it is in), gone }
   let current = -1;
   let last = 0;
@@ -51,12 +56,14 @@ export function createScenes({ rt, road, lands, weather, ambience, tier }) {
     SCENES[id]()
       .then(({ build }) => {
         if (entry.gone) return;
-        entry.scene = build({ road, heightAt: land.field, land, waters: lands.watersOf?.(i) ?? [], rt, weather, ambience, tier });
+        entry.scene = build({ road, heightAt: land.field, land, waters: lands.watersOf?.(i) ?? [], rt, weather, ambience, tier, sky });
         group.add(entry.scene.group);
       })
       // (a stage that fails stays failed until it is dropped: built again every frame it would be the kit painted every frame)
-      .catch(() => {
+      .catch((e) => {
         entry.failed = true;
+        // (in development, say why: a stage that will not build otherwise draws nothing, silently)
+        if (import.meta.env?.DEV) console.warn(`the Road: ${id} did not build`, e);
       });
   };
   const drop = (i) => {

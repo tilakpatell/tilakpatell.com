@@ -35,6 +35,14 @@ describe('the Story tab', () => {
     expect(done(html)).toBe(2);
   });
 
+  it('ticks a chase won before its step comes up', () => {
+    const html = renderToStaticMarkup(<StoryList state={{ episode: 4, step: 0, got: [], wins: ['chase'], freeRoam: false }} />);
+    expect(html).toContain('The Federation ship is over the street');
+    // episodes 1 to 4 done, and the chase's step, won already; the Gromflomite base still to do
+    expect(done(html)).toBe(5);
+    expect(done(renderToStaticMarkup(<StoryList state={{ episode: 4, step: 0, got: [], wins: [], freeRoam: false }} />))).toBe(4);
+  });
+
   it('ticks a task done before its step comes up', () => {
     const at = { episode: 2, step: 0, got: [], wins: [], freeRoam: false };
     const ticked = (html, text) => new RegExp(`data-done="true"[^>]*>(?:(?!</li>).)*${text}`).test(html);
@@ -59,8 +67,8 @@ describe('the Story tab', () => {
   });
 
   it('ticks every built episode once they’re all done', () => {
-    const html = renderToStaticMarkup(<StoryList state={{ episode: 4, step: 0, got: [], wins: [], freeRoam: false }} />);
-    expect(done(html)).toBe(4);
+    const html = renderToStaticMarkup(<StoryList state={{ episode: 5, step: 0, got: [], wins: [], freeRoam: false }} />);
+    expect(done(html)).toBe(5);
     expect(html).toContain('More of the story soon.');
   });
 });

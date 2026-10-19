@@ -10,7 +10,7 @@
 //     (since: { id: seconds since it began }); a step forward begins each beat it reaches
 //     (on its mark counts: the clock stops on it to hold), a step back undoes each it
 //     goes back over, a jump marks those behind as long done without playing them
-//   fxAt(beats, since) → { black (0…1), vision (bool) }: the beats’ effects this moment
+//   fxAt(beats, since) → { black (0…1), vision (bool), shake (0…1) }: the beats’ effects this moment
 
 export const REACH = 18; // m past its mark a beat keeps the camera, unless it says
 
@@ -57,6 +57,7 @@ const BLACK_HOLD = 0.6;
 export function fxAt(beats, since) {
   let black = 0;
   let vision = false;
+  let shake = 0;
   for (const b of beats) {
     const s = since[b.id];
     if (s == null || !Number.isFinite(s)) continue;
@@ -65,7 +66,9 @@ export function fxAt(beats, since) {
       if (t < 0 || t > f.seconds) continue;
       if (f.kind === 'black') black = Math.max(black, t < f.seconds * BLACK_HOLD ? 1 : 1 - (t - f.seconds * BLACK_HOLD) / (f.seconds * (1 - BLACK_HOLD)));
       if (f.kind === 'vision') vision = true;
+      // (a jolt, dying away: the slab off the ridge, the drums, the bridge breaking)
+      if (f.kind === 'shake') shake = Math.max(shake, 1 - t / f.seconds);
     }
   }
-  return { black, vision };
+  return { black, vision, shake };
 }
