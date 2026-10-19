@@ -98,3 +98,48 @@ Moria’s first metre, as R1’s rows; run against the warm dev server (the prob
 - `hobbiton-party-desktop.webp` and `hobbiton-party-phone.webp`: the crane up over the Party Field at dusk: the tree, its lanterns, the long tables, eight dancers round them. The party.
 - `hobbiton-dragon-desktop.webp`: the dragon, a fiery streak over the field from the tree, under the first stars.
 - `hobbiton-vision-desktop.webp`: `window.__ROAD__.vision(1)` on the lane: the world drained to a cold grey-blue, its edges smeared, the sky washed out; the beat takes it for 0.4 s as Bilbo goes.
+
+## R3, stages 2 to 6 (2026-10-19)
+
+The Shire’s edge, Bree, Weathertop, the Ford of Bruinen and Rivendell, each on Hobbiton’s recipe and drawn with its chapter’s own builders (`shire/build.js`, `towns/*/build.js`) on the Road’s town kit. Measured in the container on `nodes-webgl`; **the WebGPU rows are the owner’s machines’ and are left empty**.
+
+### Each stage’s heaviest beat (the beat held, `window.__ROAD__.info()`)
+
+Each stage opened a few metres short of its beat by its address, sped to it (`fast(6)`), held there at one to one, then the last frame read. Assets are everything fetched from cold under `/models`, `/textures` and the like, the neighbours’ included.
+
+| stage | beat | quality | draws | triangles | assets MB |
+| --- | --- | --- | --- | --- | --- |
+| shire-edge | the ferry (the Rider on the bank) | high | 141 | 991,442 | 4.5 |
+| shire-edge | the ferry | low | 128 | 393,717 | 5.9 |
+| bree | the riders at the beds | high | 138 | 756,675 | 5.3 |
+| bree | the riders at the beds | low | 111 | 256,813 | 7.9 |
+| weathertop | the Ring (the vision at full) | high | 97 | 700,348 | 5.9 |
+| weathertop | the Ring | low | 116 | 335,358 | 10.0 |
+| ford | the flood | high | 144 | 650,057 | 6.9 |
+| ford | the flood | low | 181 | 345,574 | 12.9 |
+| rivendell | the reveal from the ridge | high | 104 | 694,622 | 10.1 |
+| rivendell | the reveal | low | 74 | 360,407 | 10.5 |
+| rivendell | the Council | high | 107 | 806,377 | 10.2 |
+| rivendell | the Council | low | 64 | 391,635 | 10.6 |
+
+- Against the design’s targets (350 and 200 draws, 1,200,000 and 400,000 triangles) every beat is under on both tiers; the closest are the Shire’s edge at 991,442 triangles on `high` (the chapter’s wheat, four rows deep by the fences) and its 393,717 on `low`.
+- Getting there on `low`: the chapters’ builders draw a building in a mesh a material, so a stage’s still meshes are merged one a material (`stages/parts.js`’s `mergeStatics`; Bree’s riders beat from 261 draws to 111 on `low`, 281 to 138 on `high`); a figure is drawn once on `low`, without its ink hull (a skinned figure is never culled, so the hull doubled every walker); the Shire’s edge keeps one row of wheat by the fence on `low`, Rivendell its house alone down the valley, and Rivendell’s Council guests come into the garden only from the bridge.
+- Assets: a stage opened by its address fetches its neighbours’ cast and the chapters’ models too, so these are more than a stage adds on the ride; the boot slice (Hobbiton, R2’s 2.4 MB) is unchanged. A `low` row can fetch more than its `high` one: its slower first frames let more of the cast walk in before the reading.
+
+### The pictures
+
+Each stage 20 m in (`shots/<stage>-desktop.webp` and `-phone.webp`) and each stage’s film moment held (`shots/<stage>-<beat>-desktop.webp`), every one looked at:
+
+- `shire-edge-desktop.webp`: the lane between Maggot’s fences, the standing wheat either side, the mushrooms spilt where Merry and Pippin came through the gap.
+- `shire-edge-roots-desktop.webp`: from the mouth of the hollow under the old tree’s roots, a hobbit close by and the Rider’s cloaked shape over them against the sky.
+- `bree-desktop.webp` and `bree-phone.webp`: the lane on a wet night, jettied houses with lit windows and a lantern at every door.
+- `bree-pony-desktop.webp`: the Prancing Pony’s front, Butterbur in its door, its windows warm.
+- `weathertop-desktop.webp`: the wide on the hill at dusk, Amon Sûl’s broken ring on its crown, the company small on the road below.
+- `weathertop-ring-desktop.webp`: inside the ring under the Ring: the five as pale kings coming on in the wraith-world’s cold light, the blade, Frodo’s shoulder in the foreground.
+- `ford-desktop.webp`: Bilbo’s three trolls in stone by the road and the Last Bridge ahead.
+- `ford-ford-desktop.webp`: the Bruinen rising across the ford, the foam horses on the flood, the Nine at the far bank.
+- `rivendell-desktop.webp`, `rivendell-phone.webp`: the road down past the court and a pavilion, golden birches, the south gate ahead.
+- `rivendell-council-desktop.webp`: the Council in the chapter’s court, the company in the ten chairs round the plinth. The Council of Elrond.
+- `rivendell-reveal-desktop.webp`: the crane from the ridge across the valley to the falls off the far cliff, the house and pavilions on its slope, the bridge over the stream.
+
+What still falls short, for R7: the figures seen from behind at dusk and at night read nearly black; Weathertop’s crags are a cold purple in the evening light; the Ford’s Nine are small dark shapes at the flood’s far edge, and the flood a low ridge rather than a wall of water; Rivendell’s valley is gentler than the films’ gorge and its far cliff stands behind a crest.
