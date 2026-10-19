@@ -6,9 +6,10 @@
 // the garage.
 //
 // Ten of them are the planets of the universe map's Rick and Morty sector
-// (PLANETS), and aren't on the dial: you land on one from the map and come
-// out at its way in (#/c-137/<id>, planetStart), and its own portal
-// (isWayHome) takes you back out to the map, not to the garage.
+// (PLANETS): you land on one from the map and come out at its way in
+// (#/c-137/<id>, planetStart), and its own portal (isWayHome) takes you back
+// out to the map, not to the garage. Four of them (the adventure's) are on
+// the dial too, where they're a destination like any other.
 //
 // Pure: rules.js spreads these into AREAS, LINKS, PEOPLE, HOTSPOTS and
 // TASKS; RmWorld.jsx takes the names, what people say and what talking to
