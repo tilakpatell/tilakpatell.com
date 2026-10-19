@@ -93,3 +93,39 @@ describe('the street’s fight: the patrol’s laser and the deflectors', () => 
     expect(f.shield).toBeGreaterThan(hurt);
   });
 });
+
+describe('the street’s fight: the cruiser’s powers in it', () => {
+  const angry = (picks = null, charge = 0) => {
+    const f = createStreetFight({ loadout: STOCK, picks, charge, rand: still });
+    const at = { x: 0, y: 12, z: 10, yaw: 0 };
+    f.fire(0, cruiser(), at);
+    run(f, cruiser(), { at, steps: 30 });
+    return { f, at };
+  };
+  it('portals the cruiser onto the patrol’s tail with G', () => {
+    const { f, at } = angry();
+    const r = f.power('primary', 1, cruiser(), at);
+    expect(r).toMatchObject({ ok: true, id: 'portal' });
+    expect(r.portal.z).toBeCloseTo(at.z - 5);
+  });
+  it('takes no hit while Never tell me the odds is on', () => {
+    const { f, at } = angry({ cruiser: { primary: 'odds', ultimate: 'wubba' } });
+    f.setPowers({ cruiser: { primary: 'odds', ultimate: 'wubba' } }, { carry: ['falcon'] });
+    f.power('primary', 1.05, cruiser(), at);
+    run(f, cruiser(), { at, steps: 60 * 2, from: 1.05 });
+    expect(f.shield).toBe(FIGHT.shield);
+  });
+  it('lets a dazed patrol fire nothing while the magnets are on', () => {
+    const { f, at } = angry();
+    f.setPowers({ cruiser: { primary: 'magnets', ultimate: 'heisenberg' } }, { carry: ['rv'] });
+    f.power('primary', 1.05, cruiser(), at);
+    run(f, cruiser(), { at, steps: 60 * 3, from: 1.05 });
+    expect(f.shield).toBe(FIGHT.shield);
+  });
+  it('fires the big one once it’s charged, and the death ray takes the patrol down', () => {
+    const { f, at } = angry(null, 1);
+    expect(f.power('ultimate', 2, cruiser(), at)).toMatchObject({ ok: true, id: 'wubba' });
+    const types = run(f, cruiser(), { at, steps: 60 * 3, from: 2 }).map((e) => e.type);
+    expect(types).toContain('down');
+  });
+});

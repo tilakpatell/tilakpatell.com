@@ -50,6 +50,7 @@ import {
   dropAt,
   exitCruiser,
   floorAt,
+  FLY,
   inArea,
   nearHotspot,
   nearLink,
@@ -307,8 +308,8 @@ const newSim = (at = START, portal = false) => ({
 // opens its Hangar, which then has the C key and the chip that was the
 // Wardrobe's; `cruiser`: the ship's numbers as fitted and skilled, the
 // universe's statsOf, for the street's cruiser to fly on: rules.js's cruiserOf;
-// `loadout` and `skillFx`: what its guns are, for the street's fight)
-export default function RmWorld({ start = null, onLeave = null, frozen = false, onHangar = null, cruiser = null, loadout = null, skillFx = null }) {
+// `loadout`, `skillFx` and `powerPicks`: its guns and its powers, for the street's fight)
+export default function RmWorld({ start = null, onLeave = null, frozen = false, onHangar = null, cruiser = null, loadout = null, skillFx = null, powerPicks = null }) {
   const planet = useMemo(() => planetOf(start), [start]);
   const three = use3D();
   const { unlock } = useAchievements();
@@ -418,7 +419,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   return (
     <section className="rm-world" aria-labelledby="rm-world-title" data-mode={world ? '3d' : 'cards'}>
       {world ? (
-        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} cruiser={cruiser} loadout={loadout} skillFx={skillFx} />
+        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} cruiser={cruiser} loadout={loadout} skillFx={skillFx} powerPicks={powerPicks} />
       ) : (
         <Cards done={done} openPlace={openPlace} three={three} gl={gl} toast={toast} retry={() => setGl('loading')} planet={planet} />
       )}
@@ -433,7 +434,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
 // hence the reach)
 const ROOM = { bound: boundOf(AREAS), motion: true };
 
-function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned, frozen, onHangar, cruiser, loadout, skillFx }) {
+function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned, frozen, onHangar, cruiser, loadout, skillFx, powerPicks }) {
   // (the cruiser's numbers, read by the frame loop)
   const fitted = useMemo(() => cruiserOf(cruiser), [cruiser]);
   const fittedRef = useRef(fitted);
@@ -445,19 +446,36 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const clusterRef = useRef(null);
   const [cluster] = useState(createFlightCluster);
   const [vitals] = useState(() => ({ value: 100, max: 100, low: false }));
-  const armsFor = useRef({ loadout, skillFx });
-  armsFor.current = { loadout, skillFx };
+  const powersRef = useRef(null); // (its power tiles, in the cluster: PowerBar's)
+  const armsFor = useRef({ loadout, skillFx, powerPicks });
+  armsFor.current = { loadout, skillFx, powerPicks };
   useEffect(() => {
     if (gl !== 'on' || planet || fightRef.current) return undefined;
     let gone = false;
     import('./streetFight').then((m) => {
-      if (!gone && !fightRef.current) fightRef.current = m.createStreetFight({ loadout: armsFor.current.loadout, fx: armsFor.current.skillFx });
+      if (!gone && !fightRef.current) fightRef.current = m.createStreetFight({ loadout: armsFor.current.loadout, fx: armsFor.current.skillFx, picks: armsFor.current.powerPicks });
     });
     return () => {
       gone = true;
     };
   }, [gl, planet]);
   useEffect(() => fightRef.current?.refit(loadout, skillFx), [loadout, skillFx]);
+  useEffect(() => fightRef.current?.setPowers(powerPicks, skillFx), [powerPicks, skillFx]);
+  // G or X in the cruiser: the power, if it can be (./streetFight.js); the
+  // portal brings the cruiser out where it says, else a refusal's word on its tile
+  const playPower = (slot) => {
+    const s = sim.current;
+    const r = s.flying ? fightRef.current?.power(slot, s.t, s.c, s.fed) : null;
+    if (!r) return;
+    if (r.portal) {
+      const x = Math.max(FLY.x0 + 2, Math.min(FLY.x1 - 2, r.portal.x));
+      const z = Math.max(FLY.z0 + 2, Math.min(FLY.z1 - 2, r.portal.z));
+      s.c = { ...s.c, x, z, y: Math.max(floorAt(x, z), Math.min(CRUISER.ceiling, r.portal.y)), yaw: r.portal.yaw };
+      sound('portalHop');
+    } else if (!r.ok) s.denied = { slot, why: r.why, until: performance.now() + 2000 };
+  };
+  const playPowerRef = useRef(playPower);
+  playPowerRef.current = playPower;
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const touchRef = useRef(touch);
   touchRef.current = touch;
@@ -1285,9 +1303,15 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         }
       }
       // in the cruiser: F fires (held, it keeps firing), R and Shift+R go along
-      // the lines, 1 2 3 pick one (./streetFight.js)
+      // the lines, 1 2 3 pick one, G and X are its powers (./streetFight.js)
       if (s.flying && !e.metaKey && !e.ctrlKey && !e.altKey) {
         const line = /^Digit[1-3]$/.test(e.code) ? Number(e.code.slice(5)) - 1 : -1;
+        const power = e.code === 'KeyG' ? 'primary' : e.code === 'KeyX' ? 'ultimate' : null;
+        if (power) {
+          e.preventDefault();
+          if (!e.repeat) playPowerRef.current(power);
+          return;
+        }
         if (e.code === 'KeyF' || e.code === 'KeyR' || line >= 0) {
           e.preventDefault();
           if (e.code === 'KeyF') s.firing = true;
@@ -1514,6 +1538,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       vitals.value = fight.shield;
       vitals.low = fight.shield < 25;
       cluster.place(clusterRef.current, { on: s.flying, vitals, arms: fight.view() });
+      fight.placeTiles(powersRef.current, s.flying, s.denied ?? null, performance.now());
     }
     // the clock of a place left in a hurry, for the HUD (whole seconds, so it rarely redraws)
     const left = s.escape && s.area === s.escape.area ? Math.max(0, Math.ceil(s.escape.s - (s.t - s.escape.at))) : null;
@@ -1843,6 +1868,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           sim.current.firing = on;
         }}
         onWeapon={() => fightRef.current?.cycle(1)}
+        powersRef={powersRef}
+        onPower={(slot) => playPowerRef.current(slot)}
+        powerPicks={powerPicks}
+        carry={skillFx?.carry ?? null}
         closeWardrobe={closeWardrobe}
         setLook={setLook}
         openDial={openDial}

@@ -9,21 +9,26 @@
 // with the skill tree's plating: stats.armorGame); at none the cruiser's
 // engines cut out for `down` seconds and the patrol goes back to its loop.
 // The deflectors come back once out of trouble a while, as the map's
-// shields do. Pure: plain arrays, no React, no three.js.
+// shields do. Its powers are the crew's (./streetPowers.js: G and X, the
+// pair carried and the skill tree's effects), played at the street's size.
+// Pure: plain arrays, no React, no three.js.
 //
 //   FIGHT                          its numbers
-//   createStreetFight({ loadout, fx, rand }) → {
+//   createStreetFight({ loadout, fx, picks, charge, rand }) → {
 //     patrol, shield, groundedUntil, armory,
 //     fire(now, cruiser, at, cadence?) → boolean   (`at`: the patrol's place, or null)
 //     pick(i), cycle(dir), refit(loadout, fx), view() → the HUD kit's ArmsView,
 //     ring() → { angle } while the patrol fights (ship.js's stepFedShip), else null,
-//     grounded(now), step(dt, now, { cruiser, at, flying, stats }) → events, live(), clear() }
+//     grounded(now), step(dt, now, { cruiser, at, flying, stats }) → events, live(), clear(),
+//     power(slot, now, cruiser, at) → { ok, id, why, portal? } (G and X), setPowers(picks, fx),
+//     placeTiles(root, on, denied, nowMs) (the HUD's power tiles) }
 //   events: { type: 'hit', at } (a flash) | 'provoked' | 'down' | 'hurt' | 'grounded' | 'back'
 // (now in seconds; `cruiser` { x, y, z, yaw })
 
 import { createBolts } from '../../../lib/combat/bolt';
-import { armsView, createArmory, fan, steer } from '../../universe/shared/flying';
+import { armsView, createArmory, createPowerTiles, fan, picksFor, steer } from '../../universe/shared/flying';
 import { PATROL, calm, hitPatrol, newPatrol, patrolShot, stepPatrol } from './patrolRules';
+import { createStreetPowers } from './streetPowers';
 
 export const FIGHT = {
   shield: 100,
@@ -47,8 +52,12 @@ const unit = (x, y, z) => {
   return [x / l, y / l, z / l];
 };
 
-export function createStreetFight({ loadout, fx = null, rand = Math.random } = {}) {
+export function createStreetFight({ loadout, fx = null, picks = null, charge = 0, rand = Math.random } = {}) {
   const armory = createArmory('cruiser', loadout, fx ?? undefined);
+  const powers = createStreetPowers({ rand, charge });
+  const tiles = createPowerTiles();
+  const setPowers = (p, f) => powers.setCrew(picksFor('cruiser', p, f?.carry), f);
+  setPowers(picks, fx);
   const bolts = createBolts({ pool: 16 });
   let patrol = newPatrol();
   let shield = FIGHT.shield;
@@ -81,6 +90,10 @@ export function createStreetFight({ loadout, fx = null, rand = Math.random } = {
     cycle: (dir) => armory.cycle(dir),
     refit: (next, nextFx) => armory.refit(next, nextFx ?? {}),
     view: () => armsView(armory, armsOut),
+    setPowers,
+    // G and X: the power, if it can be (`portal`: where the cruiser comes out)
+    power: (slot, now, c, at) => powers.press(slot, { now, cruiser: c, at: at && patrol.mode !== 'down' ? at : null }),
+    placeTiles: (root, on, denied, nowMs) => tiles.place(root, on, powers.view(), denied, nowMs),
     ring() {
       if (patrol.mode !== 'fight') return null;
       ringArg.angle = angle;
@@ -100,7 +113,7 @@ export function createStreetFight({ loadout, fx = null, rand = Math.random } = {
         const d = Math.hypot(to[0], to[1], to[2]);
         const flat = Math.hypot(to[0], to[2]) || 1;
         const off = Math.acos(Math.max(-1, Math.min(1, (to[0] * nose[0] + to[2] * nose[2]) / flat)));
-        if (d < FIGHT.reach && off < FIGHT.turn) dir = unit(to[0], to[1], to[2]);
+        if (d < FIGHT.reach && off < (powers.mods().assist ? Math.PI : FIGHT.turn)) dir = unit(to[0], to[1], to[2]);
       }
       const speed = FIGHT.bolt * w.speed;
       for (const d of fan(dir, w.count, w.cone, jitter)) {
@@ -123,15 +136,22 @@ export function createStreetFight({ loadout, fx = null, rand = Math.random } = {
       if (!flying) patrol = calm(patrol);
       if (patrol.mode === 'fight') angle += FIGHT.ringRate * dt;
       const up = Boolean(at) && patrol.mode !== 'down';
-      // the patrol's laser, while it's fighting and you're up there
-      if (up && flying && !grounded(now)) {
+      const m = powers.mods();
+      // the patrol's laser, while it's fighting and you're up there (not
+      // while the magnets have it dazed; slowed while Force Focus is on)
+      if (up && flying && !grounded(now) && !m.daze) {
         const r = patrolShot(patrol, at, c, now, rand);
-        patrol = r.patrol;
+        patrol = r.shot && m.slow < 1 ? { ...r.patrol, nextShot: now + (r.patrol.nextShot - now) / m.slow } : r.patrol;
         if (r.shot) {
           const L = PATROL.laser;
           const b = bolts.fire({ from: r.shot.from, dir: r.shot.dir, speed: L.speed, range: L.speed * L.life, owner: 'patrol', side: 'them', damage: L.damage, colour: FIGHT.foe, tag: 'laser' });
           b.homing = 0;
         }
+      }
+      // what the powers fire (the ray, the torpedoes, Chewie, the crystal)
+      for (const s of powers.step(dt, { now, cruiser: c, at: up ? at : null, flying })) {
+        const b = bolts.fire({ from: s.from, dir: s.dir, speed: s.speed, range: s.range, owner: 'cruiser', side: 'you', damage: s.damage, colour: s.colour, tag: s.tag });
+        b.homing = s.homing ?? 0;
       }
       // the heavy rounds come round onto it
       if (up) {
@@ -148,16 +168,29 @@ export function createStreetFight({ loadout, fx = null, rand = Math.random } = {
       cruiserBody.a[2] = cruiserBody.b[2] = c.z;
       cruiserBody.a[1] = c.y - 0.3;
       cruiserBody.b[1] = c.y + 0.6;
+      const land = (punch) => {
+        const was = patrol.mode;
+        const r = hitPatrol(patrol, punch, now);
+        patrol = r.patrol;
+        if (punch > 0) powers.hit();
+        if (r.down) {
+          powers.kill();
+          say({ type: 'down' });
+        } else if (was === 'calm' && patrol.mode === 'fight') say({ type: 'provoked' });
+      };
       for (const e of bolts.step(dt, { solids: null, bodies: up ? both : alone })) {
         if (e.type === 'hit' || e.type === 'solid') say({ type: 'hit', at: e.at });
+        // Walt's crystal goes off where it ends: the patrol hit by how near it is
+        if (e.bolt.tag === 'crystal' && up && patrol.mode !== 'down') {
+          const p = e.at ?? e.bolt.pos;
+          const punch = powers.blast({ x: p[0], y: p[1], z: p[2] }, at);
+          if (punch > 0) land(punch);
+          if (e.type === 'gone') say({ type: 'hit', at: p });
+        }
         if (e.type !== 'hit') continue;
         if (e.body.ref === 'patrol') {
-          const was = patrol.mode;
-          const r = hitPatrol(patrol, e.bolt.damage, now);
-          patrol = r.patrol;
-          if (r.down) say({ type: 'down' });
-          else if (was === 'calm' && patrol.mode === 'fight') say({ type: 'provoked' });
-        } else if (e.body.ref === 'cruiser' && !grounded(now)) {
+          if (e.bolt.tag !== 'crystal') land(e.bolt.damage);
+        } else if (e.body.ref === 'cruiser' && !grounded(now) && !m.ghost) {
           shield = Math.max(0, shield - e.bolt.damage * (stats?.armorGame ?? 1));
           hitAt = now;
           say({ type: 'hurt' });

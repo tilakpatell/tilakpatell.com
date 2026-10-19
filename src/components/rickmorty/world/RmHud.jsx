@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import RmEarnNote from '../RmEarnNote';
+import { PowerBar } from '../../universe/shared/powerBar';
 import { Link as RouterLink } from 'react-router-dom';
 import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiEmotionLaughLine, RiListCheck2, RiShieldLine, RiShirtLine, RiToolsLine, RiTyphoonLine } from 'react-icons/ri';
 import { EMOTES, wheelAngle } from '../../../lib/emote';
@@ -93,6 +94,10 @@ export default function RmHud({
   clusterRef = null,
   onShipFire = null,
   onWeapon = null,
+  powersRef = null,
+  onPower = null,
+  powerPicks = null,
+  carry = null,
 }) {
   // Where the top row ends (the taller of the title's column and the map's),
   // measured, for what hangs under it on a phone (./world.css --rm-under):
@@ -351,6 +356,7 @@ export default function RmHud({
         <Cluster rootRef={clusterRef} className="rm-cluster" label="The cruiser">
           <Vitals label="Deflectors" icon={<RiShieldLine aria-hidden="true" />} className="rm-cluster-vitals" />
           <Arms className="rm-cluster-arms" keys={!touch} />
+          {onPower && <PowerBar ship="cruiser" reduced={false} barRef={powersRef} onPress={onPower} placement="cluster" picks={powerPicks} carry={carry} />}
         </Cluster>
       )}
       <div className="rm-hud rm-hud-bottom">

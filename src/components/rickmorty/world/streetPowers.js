@@ -13,7 +13,7 @@
 //   magnets     the patrol dazed: it can't fire
 //   heisenberg  a crystal thrown ahead, to go off where it lands (blast())
 //
-//   createStreetPowers({ rand }) → {
+//   createStreetPowers({ rand, charge }) → {   (`charge`: the big one's, kept, 0–1)
 //     setCrew(pair, fx)   the pair carried (picksFor's) and the skill tree's effects
 //     press(slot, { now, cruiser, at }) → { ok, id, why, portal? }
 //     step(dt, { now, cruiser, at, flying }) → the shots it fires: [{ from, dir,
@@ -40,8 +40,8 @@ const unit = (x, y, z) => {
 const apart = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 const muzzle = (c) => [c.x + Math.sin(c.yaw) * 2, c.y, c.z + Math.cos(c.yaw) * 2];
 
-export function createStreetPowers({ rand = Math.random } = {}) {
-  const st = createPowers(CREW);
+export function createStreetPowers({ rand = Math.random, charge = 0 } = {}) {
+  const st = createPowers(CREW, { charge });
   let sig = null;
   let big = 1;
   const run = { queue: [], beamNext: 0, quadNext: 0 };

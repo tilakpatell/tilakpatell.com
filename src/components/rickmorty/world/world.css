@@ -495,11 +495,13 @@
   --hud-cluster-label: var(--rm-lime);
   --hud-vitals-fill: var(--rm-lime);
   --hud-vitals-glow: rgba(201, 255, 90, 0.5); /* (the lime's own glow) */
+  --text: #fff; /* (the page round it is light: the cluster's words stay white on its ink) */
+  --muted: rgba(255, 255, 255, 0.72);
   z-index: 3;
 }
 .rm-cluster .hud-glass { border-width: 2px; box-shadow: 0 3px 0 var(--rm-ink); }
 @media (pointer: fine) and (min-width: 768px) {
-  .rm-cluster { left: 40%; right: 16px; bottom: 76px; justify-items: end; }
+  .rm-cluster { left: 62%; right: 16px; bottom: 76px; justify-items: end; }
   .rm-cluster .hud-cluster-row { justify-content: flex-end; }
 }
 @media (pointer: coarse), (max-width: 767px) {
