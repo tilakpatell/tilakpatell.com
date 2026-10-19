@@ -8,6 +8,7 @@ import { paintsFor } from './universe/paint';
 import { useTouring } from './tour/useTouring';
 import Gif from './Gif';
 import { worldAt } from './worlds/worlds';
+import { isMapPath } from '../lib/view';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const ACHIEVEMENTS = {
@@ -369,8 +370,10 @@ export function AchievementProvider({ children }) {
   const value = useMemo(() => ({ unlock, notify, unlocked }), [unlock, notify, unlocked]);
   // In a world the HUD's foot is the prompt, the thumbs and the instruments:
   // the toast goes top centre, under the nav, instead (the worlds' own
-  // toasts sit lower, under their top row).
+  // toasts sit lower, under their top row). The map's foot is the same:
+  // the flight cluster, and the thumbs on a touch screen.
   const inWorld = Boolean(worldAt(pathname));
+  const up = inWorld || isMapPath(pathname);
   const themeId = toast?.kind.startsWith('theme:') ? toast.kind.slice(6) : null;
 
   return (
@@ -378,7 +381,7 @@ export function AchievementProvider({ children }) {
       {children}
       {/* taps pass through the toast to whatever is under it, except on its own controls */}
       {/* in language mode the toast reads plainly, and sits above the Back to English pill */}
-      <div className={`toast-host pointer-events-none fixed inset-x-0 ${inWorld ? 'top-[calc(var(--nav-h)+0.75rem)]' : 'bottom-5'} z-[var(--z-sheet)] flex justify-center px-4 [&_.toast_a]:pointer-events-auto [&_.toast_button]:pointer-events-auto`} aria-live="polite" data-in-world={inWorld || undefined}>
+      <div className={`toast-host pointer-events-none fixed inset-x-0 ${up ? 'top-[calc(var(--nav-h)+0.75rem)]' : 'bottom-5'} z-[var(--z-sheet)] flex justify-center px-4 [&_.toast_a]:pointer-events-auto [&_.toast_button]:pointer-events-auto`} aria-live="polite" data-in-world={inWorld || undefined}>
         {toast && (
           <div
             key={toast.key}

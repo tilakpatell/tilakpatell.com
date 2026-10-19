@@ -1273,6 +1273,13 @@ export async function create(canvas, ctx) {
       if (panel.width >= box.width * 0.75) sheet = Math.max(0, box.bottom - panel.top);
       else if (!panelEl().hasAttribute('data-tucked')) side = Math.max(0, box.right - panel.left);
     }
+    // a touch screen held upright: the thumbs' grid fills the foot of the
+    // map (UniverseMap.jsx, thumbs.css), so the open part stops over it and
+    // the ship flies above the buttons, not under them (no box on a desktop)
+    if (box.height > box.width) {
+      const thumbs = (ctx.rt.host ?? ctx.el).closest('.universe-page')?.querySelector('.universe-thumbs')?.getBoundingClientRect();
+      if (thumbs?.height > 0) sheet = Math.max(sheet, box.bottom - thumbs.top + 12);
+    }
     state.rect = cover({ w: size.w, h: size.h, panel: side, sheet, top: Math.max(0, nav - box.top) });
     state.overview = overviewPose(size, state.rect);
     camera.aspect = size.w / size.h;
@@ -4825,6 +4832,9 @@ export async function create(canvas, ctx) {
     el.toggleAttribute('data-on', Boolean(text));
     el.toggleAttribute('data-say', Boolean(say));
     el.toggleAttribute('data-plain', plain);
+    // (which key: a touch screen leaves J's line out, the Jump button saying it)
+    if (text && !plain && !say) el.dataset.key = cap;
+    else delete el.dataset.key;
   };
 
   // ── Frames ──
@@ -6106,6 +6116,11 @@ export async function create(canvas, ctx) {
     seat() {
       heard();
       setSeat(state.seat === 'cockpit' ? 'chase' : 'cockpit');
+    },
+    // the touch buttons' grid came, went or changed size: the open part again
+    refit() {
+      measure();
+      ctx.invalidate();
     },
     // the phone's climb and dive buttons: 1 held to climb, −1 to dive, 0 let go
     climb(way) {

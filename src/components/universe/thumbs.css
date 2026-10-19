@@ -1,0 +1,295 @@
+/* ─── Flying on a touch screen ───────────────────────────────────────────────
+   The ship's HUD laid out for thumbs (UniverseMap.jsx), imported by
+   universe.css before its own rules: so every selector here outweighs the
+   one it replaces there (each starts from :root or the map), whatever the
+   order the two land in.
+
+   The right thumb has one grid (.universe-thumbs: the powers, the portal
+   gun, the climbs, View, the way out, Weapon, Fire and Boost), in the corner
+   of the open map. The left thumb has the rest of the bottom: a drag
+   anywhere steers, so nothing sits there but the first-flight hint, which
+   says so. What the right thumb may press next (the jump, the way in) and
+   the line about it sit over the grid, at its measured height (--thumbs-h,
+   --thumbs-w: UniverseMap.jsx writes them on the page). On a phone, flying,
+   the status and the tools make one row along the top: the shields and
+   multiplayer at the left, the nav map, the Hangar's door and the flight
+   settings at the right. On its side a phone gets the whole screen while
+   the panel's put away: the site's bar steps aside (as Cybertron's does)
+   and the panel is the slim bar in the corner (the page folds it away at
+   the first launch on a phone: Universe.jsx).
+
+   The galaxy is a universe page too (and its map a .universe-map with a
+   ship), and flies with these buttons' classes (GalaxyView.jsx), but has no
+   .universe-thumbs, and every rule here leaves out .galaxy-page and
+   .galaxy-map: none of this reaches it.
+   A desktop (a fine pointer) gets nothing from this file either: the two
+   wrappers have no box of their own, and each part keeps its place. */
+
+/* (no box of their own: each part placed against the map, as it was) */
+.universe-thumbs,
+.universe-tools { display: contents; }
+/* (the portrait phone's word about turning it: off unless it's held upright) */
+.universe-hint-turn { display: none; }
+
+@media (pointer: coarse) {
+  /* where the grid goes: the open map's bottom right corner (left of the
+     panel on a tablet), and what goes over it */
+  :root .universe-page:not(.galaxy-page) {
+    --thumbs-r: calc(var(--panel-w) + 12px + var(--hud-edge));
+    --thumbs-b: calc(var(--hud-pad-b) + 8px);
+    --thumbs-over: calc(var(--thumbs-b) + var(--thumbs-h, 0px) + 12px);
+  }
+  :root .universe-map .universe-thumbs {
+    position: absolute;
+    z-index: 1;
+    right: var(--thumbs-r);
+    bottom: var(--thumbs-b);
+    display: grid;
+    /* the kit's sizes (runtime/hud/hud.css): Boost the one big one, Fire an
+       action, the rest small; the climbs one column, over Boost */
+    grid-template-columns: var(--touch-secondary) var(--touch-secondary) var(--touch-action) var(--touch-primary);
+    grid-template-rows: var(--touch-secondary) var(--touch-secondary) var(--touch-primary);
+    grid-template-areas:
+      'p2  p1   portal climb'
+      'out view weapon climb'
+      '.   .    fire   boost';
+    gap: 8px;
+    place-items: center;
+    pointer-events: none;
+  }
+  :root .universe-map .universe-thumbs > * { position: static; margin: 0; pointer-events: auto; }
+  :root .universe-map .universe-thumbs > .universe-fire { grid-area: fire; }
+  :root .universe-map .universe-thumbs > .universe-boost { grid-area: boost; }
+  :root .universe-map .universe-thumbs > .universe-weapon { grid-area: weapon; width: var(--touch-secondary); height: var(--touch-secondary); }
+  :root .universe-map .universe-thumbs > .universe-view { grid-area: view; width: var(--touch-secondary); height: var(--touch-secondary); }
+  :root .universe-map .universe-thumbs > .universe-out { grid-area: out; width: var(--touch-secondary); height: var(--touch-secondary); }
+  /* (the kit's button sets its words in capitals and bold: these keep the
+     map's, as View and Weapon have them) */
+  :root .universe-map .universe-thumbs > :is(.universe-fire, .universe-boost) { font-weight: 400; letter-spacing: 0.04em; line-height: normal; text-transform: none; }
+  :root .universe-map .universe-thumbs > .universe-climbs {
+    grid-area: climb;
+    display: grid;
+    grid-template-rows: var(--touch-secondary) var(--touch-secondary);
+    align-content: start;
+    gap: 8px;
+  }
+  :root .universe-map .universe-thumbs .universe-climb { width: var(--touch-action); height: var(--touch-secondary); }
+  /* the portal gun: the swirl alone, round (its name is read, not shown) */
+  :root .universe-map .universe-thumbs > .universe-portalgun { grid-area: portal; width: var(--touch-secondary); height: var(--touch-secondary); padding: 0; justify-content: center; border-radius: 50%; }
+  :root .universe-map .universe-thumbs .universe-portalgun-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  :root .universe-map .universe-thumbs .universe-portalgun-swirl { width: 28px; height: 28px; }
+  /* the powers (the kit's Powers): a round button each in the grid, the
+     seconds or the charge a badge on its shoulder; shown only while the
+     scene says so (their row has no box here, so each button fades itself) */
+  :root .universe-map .universe-thumbs > .hud-powers { display: contents; }
+  :root .universe-map .universe-thumbs .hud-power {
+    width: var(--touch-secondary);
+    height: var(--touch-secondary);
+    padding: 0;
+    grid-template-rows: none;
+    border-radius: 50%;
+    transition: opacity 0.3s;
+  }
+  :root .universe-map .universe-thumbs .hud-power[data-slot='primary'] { grid-area: p1; }
+  :root .universe-map .universe-thumbs .hud-power[data-slot='ultimate'] { grid-area: p2; }
+  :root .universe-map .universe-thumbs .hud-powers:not([data-on]) > .hud-power { opacity: 0; pointer-events: none; }
+  :root .universe-map .universe-thumbs .hud-power small {
+    top: -5px;
+    right: -5px;
+    bottom: auto;
+    translate: none;
+    min-width: 1.7em;
+    padding: 0 0.3em;
+    border-radius: 999px;
+    background: rgb(3 4 10 / 0.85);
+    line-height: 1.5;
+    text-align: center;
+    text-shadow: none;
+  }
+  :root .universe-map .universe-thumbs .hud-power small:empty { display: none; }
+
+  /* over the grid, in line with its right edge: the jump, the way in, and
+     the line about what's here (one row up when a button's under it; and
+     not J's line at all, the Jump button saying it) */
+  :root .universe-map[data-ship]:not(.galaxy-map) :is(.universe-jump, .universe-wayin, .universe-prompt) {
+    left: auto;
+    right: var(--thumbs-r);
+    bottom: var(--thumbs-over);
+    max-width: calc(100% - var(--thumbs-r) - var(--hud-edge));
+    translate: none;
+  }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-prompt { overflow: hidden; text-overflow: ellipsis; }
+  :root .universe-map[data-ship]:not(.galaxy-map):has(.universe-jump, .universe-wayin:not([hidden])) .universe-prompt { bottom: calc(var(--thumbs-over) + 52px); }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-prompt[data-key='J'] { display: none; }
+  /* what you've just earned: level with them, over the open part to their left */
+  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) .universe-earn {
+    left: var(--hud-edge);
+    right: calc(var(--thumbs-r) + var(--thumbs-w, 0px) + 12px);
+    bottom: var(--thumbs-over);
+    width: max-content;
+    max-width: none;
+    margin-inline: auto;
+    translate: none;
+  }
+  /* the first-flight hint (and the keys on foot): low in the open part left
+     of the grid, where the drag it asks for goes */
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-hint {
+    right: calc(var(--thumbs-r) + var(--thumbs-w, 0px) + 12px);
+    bottom: var(--thumbs-b);
+    width: fit-content;
+    max-width: 30rem;
+    margin: 0;
+    translate: none;
+    text-align: left;
+  }
+}
+
+/* ── A phone, flying: held upright, or on its side ── */
+/* (a phone upright: the grid taller than it's wide, clear of the sheet; a
+   small phone on its side is as narrow, but keeps the wide grid, below) */
+@media (pointer: coarse) and (max-width: 767px) and (min-height: 501px) {
+  :root .universe-page:not(.galaxy-page) {
+    --thumbs-r: var(--hud-edge);
+    --thumbs-b: calc(var(--sheet-h) + 12px);
+  }
+  :root .universe-map .universe-thumbs {
+    grid-template-columns: var(--touch-secondary) var(--touch-action) var(--touch-primary);
+    grid-template-rows: var(--touch-secondary) var(--touch-secondary) var(--touch-secondary) var(--touch-primary);
+    grid-template-areas:
+      'p2  p1     portal'
+      'out view   climb'
+      '.   weapon climb'
+      '.   fire   boost';
+  }
+  /* (the sheet up is for reading: the map over it is too short for the grid
+     and the row along the top both, so the grid waits till it's put away,
+     which the first drag does: Universe.jsx) */
+  :root .universe-page:not(.galaxy-page):not([data-tucked]) .universe-map .universe-thumbs { display: none; }
+  :root .universe-page:not(.galaxy-page):not([data-tucked]) .universe-map[data-ship]:not(.galaxy-map) .universe-hint { right: 50%; }
+}
+/* (upright, the hint's column is narrow: the drag and the word about
+   turning it, the rest left to the prompt over a planet and the guide) */
+@media (pointer: coarse) and (max-width: 767px) and (min-height: 501px) and (orientation: portrait) {
+  .universe-hint-turn { display: inline; }
+  .universe-hint-more { display: none; }
+}
+/* (the narrowest rows along the top, a 320 phone upright or a small one on
+   its side beside the panel's bar: multiplayer's pill its dot and icon,
+   its name still read) */
+@media (pointer: coarse) and (max-width: 359px), (pointer: coarse) and (max-height: 500px) and (max-width: 639px) {
+  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) .universe-online:not([data-floating]) .universe-online-short { display: none; }
+}
+/* (a phone on its side: the panel at the side, never a sheet, and the
+   narrower of it; the grid at the very corner while it's put away) */
+@media (pointer: coarse) and (max-height: 500px) {
+  :root .universe-page:not(.galaxy-page) {
+    --panel-w: min(340px, 42vw);
+    --sheet-h: 0px;
+    --thumbs-r: calc(var(--panel-w) + 2 * var(--hud-edge));
+    --thumbs-b: var(--hud-pad-b);
+  }
+  :root .universe-page:not(.galaxy-page)[data-tucked] { --panel-w: 0px; --thumbs-r: var(--hud-edge); }
+  :root .universe-page:not(.galaxy-page) .universe-panel {
+    top: calc(var(--nav-h) + 8px);
+    left: auto;
+    right: var(--hud-edge);
+    bottom: auto;
+    width: var(--panel-w);
+    height: auto;
+    max-height: calc(100% - var(--nav-h) - 16px);
+    border-bottom: 1px solid var(--border);
+    border-radius: var(--r-card);
+  }
+  :root .universe-page:not(.galaxy-page) .universe-panel[data-tucked] { top: calc(var(--nav-h) + 8px); width: var(--tab-w); height: 44px; padding-bottom: 0; }
+  :root .universe-page:not(.galaxy-page) .universe-untuck { padding-right: 1rem; }
+  :root .universe-page:not(.galaxy-page) :is(.universe-flat, .loading-veil.universe-loading) { right: calc(var(--panel-w) + 24px); bottom: 0; }
+  :root .universe-page:not(.galaxy-page) .universe-comms { left: var(--hud-edge); right: calc(var(--panel-w) + 2 * var(--hud-edge)); }
+  /* with a ship: the whole screen. The site's bar steps aside (the panel,
+     or its bar, has the ways back to the page: the classic site, the
+     guide, the nav map), and the panel's bar names nothing but itself */
+  :root:not([data-touring]):has(.universe-page:not(.galaxy-page) .universe-map[data-ship]:not(.galaxy-map)) { --nav-h: 0px; }
+  :root:not([data-touring]):has(.universe-page:not(.galaxy-page) .universe-map[data-ship]:not(.galaxy-map)) .site-nav { visibility: hidden; }
+  :root .universe-page:not(.galaxy-page) .universe-untuck .eyebrow { display: none; }
+}
+/* the row along the top, flying on a phone (either way up): the shields
+   and multiplayer at the left, the tools at the right (on its side, left
+   of the panel or its bar); the crew's line, the law and the siege under it */
+@media (pointer: coarse) and (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  :root .universe-page:not(.galaxy-page) {
+    --hud-row-t: calc(var(--nav-h) + 8px);
+    --hud-top: calc(var(--hud-row-t) + 52px);
+    --vitals-w: 72px;
+  }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-tools {
+    position: absolute;
+    z-index: 3;
+    top: var(--hud-row-t);
+    right: var(--hud-edge);
+    display: flex;
+    gap: 8px;
+  }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-tools > button { position: static; }
+  /* the flight settings open under their button, down the right */
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-tools > .universe-settings {
+    top: calc(100% + 8px);
+    right: 0;
+    bottom: auto;
+    left: auto;
+    width: min(312px, calc(100vw - 2 * var(--hud-edge)));
+    max-height: calc(100svh - var(--hud-top) - var(--sheet-h, 0px) - 12px);
+  }
+  /* the shields: a short block, the icon by the number, the bar under */
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-cluster .hud-vitals-block {
+    top: var(--hud-row-t);
+    bottom: auto;
+    left: var(--hud-edge);
+    width: var(--vitals-w);
+    height: 44px;
+    padding: 6px 8px;
+    align-content: center;
+  }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-cluster .hud-vitals-block > .hud-line { flex-direction: row; justify-content: center; gap: 5px; }
+  /* multiplayer: beside the shields, its card and its news opening down */
+  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) .universe-online:not([data-floating]) {
+    top: var(--hud-row-t);
+    bottom: auto;
+    left: calc(var(--hud-edge) + var(--vitals-w) + 8px);
+    flex-direction: column-reverse;
+  }
+  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) .universe-online:not([data-floating]) .universe-online-card {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: calc(-1 * (var(--vitals-w) + 8px));
+    width: min(340px, calc(100vw - 2 * var(--hud-edge)));
+    max-height: calc(100svh - var(--hud-top) - var(--sheet-h, 0px) - 12px);
+  }
+  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) .universe-online:not([data-floating]) .universe-online-feed { top: calc(100% + 8px); bottom: auto; }
+  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) .universe-comms { top: var(--hud-top); }
+  :root .universe-page:not(.galaxy-page):has(.universe-map[data-ship]:not(.galaxy-map)) :is(.universe-tour, .universe-wanted) { top: calc(var(--hud-top) + var(--comms-h, 0px)); bottom: auto; }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-siege { top: calc(var(--hud-top) + var(--comms-h, 0px) + 36px); }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-arrive { top: calc(var(--hud-top) + var(--comms-h, 0px)); }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-hint { left: var(--hud-edge); }
+}
+/* a phone on its side: the tools left of the panel (or its bar); the
+   crew's line shorter (two lines at most: the comms box keeps the rest of
+   the screen for the flying), the law over the open part, and the height's
+   scale clear of a notch */
+@media (pointer: coarse) and (max-height: 500px) {
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-tools { right: calc(var(--panel-w) + 2 * var(--hud-edge)); }
+  :root .universe-page:not(.galaxy-page)[data-tucked] .universe-map[data-ship]:not(.galaxy-map) .universe-tools { right: calc(var(--tab-w) + 2 * var(--hud-edge)); }
+  :root .universe-page:not(.galaxy-page) .universe-line { max-width: 440px; padding: 0.4rem 0.75rem 0.4rem 0.4rem; gap: 0.5rem; }
+  :root .universe-page:not(.galaxy-page) .universe-face { width: 30px; height: 30px; }
+  :root .universe-page:not(.galaxy-page) .universe-said { display: -webkit-box; overflow: hidden; font-size: 0.8rem; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-wanted { translate: calc(-50% - (var(--panel-w) + var(--hud-edge)) / 2) 0; }
+  :root .universe-map[data-ship]:not(.galaxy-map) .universe-alt { left: var(--hud-edge); }
+}
+/* (a small phone on its side has no room for the grid beside the panel:
+   while it's open the grid waits, as it does upright, till the first drag
+   puts the panel away) */
+@media (pointer: coarse) and (max-height: 500px) and (max-width: 739px) {
+  :root .universe-page:not(.galaxy-page):not([data-tucked]) .universe-map .universe-thumbs { display: none; }
+}
+/* (Esc stops the tour on a keyboard; a touch screen has the button alone) */
+@media (pointer: coarse) {
+  :root .universe-page:not(.galaxy-page) .universe-tour kbd { display: none; }
+}

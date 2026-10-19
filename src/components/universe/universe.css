@@ -1,5 +1,6 @@
 /* ─── The universe map ───────────────────────────────────────────────────── */
 @import './hud.css';
+@import './thumbs.css';
 
 /* The flat map: Home's teaser and the 3D-off map */
 .minimap { position: relative; width: 100%; aspect-ratio: 2 / 1; }
