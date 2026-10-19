@@ -10,7 +10,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
-import { texture, uniform, vec4 } from 'three/tsl';
+import { float, length, mix, smoothstep, texture, uniform, uv, vec3, vec4 } from 'three/tsl';
 import { paintMap } from '../mapPaint';
 import { SHEET } from '../sheet';
 import { eye as eyeArt } from './figures';
@@ -41,7 +41,9 @@ export function createPalantir({ mats, size = 1 }) {
   const discMat = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
   const mt = texture(mapMap);
   // (the sheet, darkened and tinted to the stone’s smoky blue)
-  discMat.colorNode = vec4(mt.rgb.mul(0.55).add(vec4(0.02, 0.05, 0.1, 0).rgb), 1);
+  // (and dark toward its rim, as if seen down a well of smoke)
+  const rim = float(1).sub(smoothstep(0.25, 0.5, length(uv().sub(0.5))));
+  discMat.colorNode = vec4(mix(vec3(0.02, 0.04, 0.08), mt.rgb.mul(vec3(0.62, 0.72, 0.95)), rim), 1);
   discMat.opacityNode = uShow;
   keep(discMat);
   const disc = new THREE.Mesh(keep(new THREE.CircleGeometry(DISC, 48)), discMat);

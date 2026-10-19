@@ -135,8 +135,8 @@ export const SCENES = {
     pieces: [
       { id: 'hill', kind: 'card', w: 0.26, h: 0.13, at: [0.04, -0.08], lift: 0.9, px: 512, art: smial, toy: 'door', does: [{ act: 'knock' }, { act: 'light', target: ['door'] }] },
       { id: 'door', kind: 'glow', at: [0.04, -0.07], y: 0.03, size: 0.08, colour: '#ffcf6a', on: false },
-      { id: 'tree', kind: 'card', w: 0.12, h: 0.16, at: [-0.15, -0.04], turn: 0.4, lift: 0.7, px: 384, art: partyTree, toy: 'lanterns', does: [{ act: 'light', target: ['lanterns'] }] },
-      { id: 'lanterns', kind: 'glow', at: [-0.15, -0.035], y: 0.1, size: 0.12, colour: '#ffcf5a', on: false },
+      { id: 'tree', kind: 'card', w: 0.12, h: 0.16, at: [-0.16, 0.0], turn: 0.4, lift: 0.7, px: 384, art: partyTree, toy: 'lanterns', does: [{ act: 'light', target: ['lanterns'] }] },
+      { id: 'lanterns', kind: 'glow', at: [-0.16, 0.005], y: 0.1, size: 0.12, colour: '#ffcf5a', on: false },
       { id: 'gandalf', kind: 'card', w: 0.045, h: 0.11, at: [0.12, 0.05], turn: -0.3, lift: 0.2, px: 256, art: person({ kind: 'wizard', robe: '#8a8e96' }), toy: 'gandalf', does: [{ act: 'hop' }] },
       { id: 'bilbo', kind: 'card', w: 0.035, h: 0.06, at: [-0.03, 0.06], turn: 0.2, lift: 0.1, px: 192, art: person({ kind: 'hobbit', robe: '#a8452c' }), does: [{ act: 'hop' }] },
       { id: 'dragon', kind: 'card', w: 0.12, h: 0.09, at: [-0.02, -0.12], y: 0.11, lift: 1, px: 384, art: dragon, toy: 'dragon', does: [{ act: 'burst', colour: '#9cff7a' }, { act: 'fly' }] },

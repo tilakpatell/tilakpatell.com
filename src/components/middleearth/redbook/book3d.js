@@ -77,9 +77,10 @@ export function createBook({ mats, size = 1 }) {
     halves[side < 0 ? 'left' : 'right'] = half;
   }
   // the spine, a round of leather the halves turn about
-  const spine = new THREE.Mesh(keep(new THREE.CylinderGeometry(H * 0.6, H * 0.6, PD + OVER * 2, 12, 1, false, Math.PI / 2, Math.PI)), leather);
+  // (under the gutter, its top no higher than the pages’ face)
+  const spine = new THREE.Mesh(keep(new THREE.CylinderGeometry(H * 0.5, H * 0.5, PD + OVER * 2, 12)), leather);
   spine.rotation.x = Math.PI / 2;
-  spine.position.y = H * 0.55;
+  spine.position.y = H * 0.48;
   group.add(spine);
 
   // the leaf: a strip across, its front and back two meshes of one shape

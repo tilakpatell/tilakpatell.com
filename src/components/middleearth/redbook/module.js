@@ -416,7 +416,10 @@ export default {
           const i = typeof page === 'number' ? page : pageFromAddress(page);
           if (i != null) bk = { ...newBook({ reduced: true, page: i }), reduced };
         }
-        if (worn != null) ring = { ...wear(ring, worn), vision: worn ? 1 : 0 };
+        if (worn != null) {
+          ring = { ...wear(ring, worn), vision: worn ? 1 : 0 };
+          tell('ring', { worn: ring.worn, cooling: false });
+        }
         if (up != null) holdStone(up);
         arrivalBurst = -1;
       },

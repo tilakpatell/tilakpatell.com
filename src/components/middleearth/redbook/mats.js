@@ -13,6 +13,7 @@ import { makeCanvas } from '../../../lib/paint';
 
 const COLD = vec3(0.55, 0.6, 0.7);
 const LUMA = vec3(0.2126, 0.7152, 0.0722);
+const PAPER_GLOW = 0.3;
 
 // a soft round light, white, for every glow to tint
 function glowTexture() {
@@ -54,7 +55,10 @@ export function createMats() {
       const m = new MeshStandardNodeMaterial({ side: THREE.DoubleSide, roughness: 0.92, metalness: 0 });
       const t = texture(map);
       m.colorNode = vec4(drain(t.rgb), t.a);
-      if (shine) m.emissiveNode = t.rgb.mul(shine);
+      // (paper holds the candlelight: a card facing away from every flame
+      // still reads as painted, not as a black cut-out)
+      const paper = drain(t.rgb).mul(PAPER_GLOW);
+      m.emissiveNode = shine ? paper.add(t.rgb.mul(shine)) : paper;
       if (blend) {
         m.transparent = true;
         m.depthWrite = false;

@@ -253,7 +253,11 @@ export function createStudy({ mats, tier = 'high', size = 1 }) {
   const hemi = new THREE.HemisphereLight(0x5a6a8a, 0x2a1a10, 0.35);
   const moon = new THREE.DirectionalLight(0x8fa4c8, 0.35);
   moon.position.set(0.4, 1, -1);
-  group.add(hemi, moon);
+  // and the reader’s own candle, out of sight by the reader’s hand: the
+  // light the pop-ups are seen by, from the front
+  const reader = new THREE.PointLight(0xffc27a, 0.45, 2.4, 1.4);
+  reader.position.set(0.35, 0.45, 0.55);
+  group.add(hemi, moon, reader);
 
   let t = 0;
   return {
@@ -271,6 +275,7 @@ export function createStudy({ mats, tier = 'high', size = 1 }) {
         c.halo.material.opacity = 0.35 * k;
         if (c.light) c.light.intensity = 0.5 * k * (1 - vision * 0.6);
       }
+      reader.intensity = 0.45 * (0.95 + 0.05 * Math.sin(t * 8.3)) * (1 - vision * 0.5);
       // the Eye in the window, and Sting knowing it
       uDread.value = Math.max(0, (dread - 0.15) / 0.85);
       eyeMesh.scale.setScalar(0.6 + dread * 1.2);

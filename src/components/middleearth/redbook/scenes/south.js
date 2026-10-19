@@ -5,14 +5,6 @@ import { bird, eye, flame, peaks, person, tower, tree } from '../figures';
 import { ellipse, ridge } from '../paint';
 import { band, gutter, heading, land } from './ground';
 
-const candle = {
-  outline: ellipse(0.5, 0.5, 0.45, 0.45),
-  draw(p) {
-    p.glow(0.5, 0.5, 0.5, '#bfe8a0', 1);
-    p.wash(ellipse(0.5, 0.5, 0.12, 0.16), '#f4ffe0', { alpha: 1 });
-  },
-};
-
 const face = {
   outline: ellipse(0.5, 0.5, 0.4, 0.45),
   draw(p) {
@@ -107,13 +99,6 @@ const gulls = {
     for (let i = 0; i < 9; i++) bird(p.ctx, (0.1 + p.r() * 0.8) * p.w, (0.2 + p.r() * 0.6) * p.h, p.w * 0.04, '#5a6470');
   },
 };
-
-const ghostLight = (colour) => ({
-  outline: ellipse(0.5, 0.5, 0.45, 0.45),
-  draw(p) {
-    p.glow(0.5, 0.5, 0.5, colour, 1);
-  },
-});
 
 export const SCENES = {
   marshes: {
