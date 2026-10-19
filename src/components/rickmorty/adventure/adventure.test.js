@@ -151,4 +151,13 @@ describe('the adventure’s store', () => {
     store.removeItem(STORY_KEY);
     expect(createAdventure({ saves, read: { tasks: () => ['cable'], citadel: () => [] } }).intro()).toBe(null);
   });
+
+  it('shows the card of an episode the visit catches up into, though a step of it was done before', () => {
+    // finished episode 1 before episode 2 was built, and played Roy then: the
+    // catch-up moves them on to the cabinet, and they've never seen its card
+    store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), episode: 1, step: 0 } }));
+    const a = createAdventure({ saves, read: { tasks: () => ['roy'], citadel: () => [] } });
+    expect(a.get()).toMatchObject({ episode: 1, step: 1 });
+    expect(a.intro()).toBe(1);
+  });
 });
