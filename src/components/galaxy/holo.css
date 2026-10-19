@@ -58,6 +58,34 @@ body:has(> .holomap[data-3d]) .galaxy-map > canvas { visibility: visible !import
 .holo-label[aria-pressed='true'] .holo-name { background: rgb(2 6 16 / 0.86); box-shadow: inset 0 0 0 1px var(--c); color: #fff; font-weight: 700; }
 .holo-label[aria-current='location'] .holo-name { font-weight: 700; }
 .holo-youtag { padding: 0 0.3rem; border-radius: 4px; background: #fff; color: #03040a; font: 700 0.7rem var(--font-mono); }
+/* the 3D map's turn buttons (HoloMap.jsx): a column beside the zoom's on a wide map, a row in the bottom corner on a
+   phone's, where the zoom is a row along the top (galaxy.css) */
+.holomap-zoom.holo-turn { right: calc(10px + 34px + 6px); }
+@media (pointer: coarse) {
+  .holomap-zoom.holo-turn { right: calc(10px + 44px + 6px); }
+}
+@container holomap-map (max-width: 560px) {
+  .holomap-zoom.holo-turn { top: auto; right: 10px; bottom: 10px; grid-auto-flow: column; }
+}
+
+/* (on the whole galaxy, where you are has its YOU tag alone: the systems come in with their sector) */
+.holo-label[data-tag] .holo-name > :not(.holo-youtag) { display: none; }
+/* the sector the pointer's over: a card by the pointer (HoloStage.jsx moves it) */
+.holo-scard { position: absolute; left: 0; top: 0; z-index: 3; display: grid; gap: 0.1rem; padding: 0.45rem 0.65rem; border: 1px solid rgb(127 214 255 / 0.45); border-radius: 10px; background: rgb(2 6 16 / 0.92); color: #d9f3ff; font-size: 0.74rem; white-space: nowrap; pointer-events: none; }
+.holo-scard[hidden] { display: none; }
+.holo-scard b { color: #fff; font-size: 0.86rem; }
+.holo-scard span { color: rgb(217 243 255 / 0.8); }
+/* where the map is, under the header in the middle of the free part: the whole galaxy's hint, or the open sector and the
+   way back to the galaxy */
+.holo-crumb { position: absolute; z-index: 2; translate: -50% 0; display: flex; align-items: center; gap: 0.6rem; max-width: calc(100% - 32px); min-height: 32px; padding: 0.25rem 0.75rem 0.25rem 0.3rem; border: 1px solid rgb(127 214 255 / 0.25); border-radius: 999px; background: rgb(2 6 16 / 0.86); color: #d9f3ff; font-size: 0.76rem; white-space: nowrap; cursor: default; }
+.holo-crumb-hint { padding: 0 0.5rem; color: rgb(217 243 255 / 0.78); font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.holo-back { display: inline-flex; flex: none; align-items: center; gap: 0.1rem; min-height: 26px; padding: 0.15rem 0.6rem 0.15rem 0.3rem; border: 1px solid rgb(127 214 255 / 0.45); border-radius: 999px; color: #fff; font-size: 0.74rem; }
+.holo-back:hover { background: rgb(127 214 255 / 0.14); }
+.holo-back:focus-visible { outline: 2px solid #7fd6ff; outline-offset: 2px; }
+.holo-back svg { width: 16px; height: 16px; }
+.holo-crumb-name { flex: none; color: #fff; font-weight: 650; }
+.holo-crumb-meta { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: rgb(217 243 255 / 0.72); }
+
 /* the card of the system the pointer's over, under its name */
 .holo-card { position: absolute; left: 0; top: calc(100% + 10px); z-index: 2; display: grid; gap: 0.1rem; padding: 0.45rem 0.65rem; border: 1px solid var(--c); border-radius: 10px; background: rgb(2 6 16 / 0.94); font-size: 0.74rem; text-align: left; white-space: nowrap; }
 .holo-card b { color: var(--c); font-size: 0.84rem; }
@@ -73,10 +101,16 @@ body:has(> .holomap[data-3d]) .galaxy-map > canvas { visibility: visible !import
 .holomap[data-3d] .holomap-filmpick > summary { background: rgb(2 6 16 / 0.84); }
 .holomap[data-3d] .holomap-eras button[aria-pressed='true'] { background: color-mix(in srgb, var(--era, #7fd6ff) 18%, rgb(2 6 16 / 0.9)); }
 
-/* a phone, or a narrow window: the side panel a sheet along the bottom and the eras' chips without their dates (each
-   one's title has them), so the header's two rows leave the disc the window's middle */
-@media (max-width: 760px) {
+/* a phone, a narrow window or a tablet held upright: the side panel a sheet along the bottom and the eras' chips without
+   their dates (each one's title has them), so the header's rows leave the disc the window's width (HoloMap.jsx's SHEET) */
+@media (max-width: 760px), (max-width: 1024px) and (orientation: portrait) {
   .holomap[data-3d] .holomap-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; container-type: normal; }
-  .holomap[data-3d] .holomap-side { max-height: 30svh; }
+  .holomap[data-3d] .holomap-side { max-height: 46svh; }
   .holomap[data-3d] .holomap-eras button span { display: none; }
+  /* (the sheet folded to its first lines till a system's picked or it's opened, so the disc has the window) */
+  .holomap[data-3d] .holomap-side[data-folded] { max-height: 112px; overflow: hidden; }
+  .holo-crumb-meta { display: none; }
 }
+/* the sheet's handle (HoloSide.jsx, on a phone's 3D map only) */
+.holomap-fold { display: flex; justify-content: center; align-items: center; gap: 0.3rem; width: 100%; min-height: 28px; margin: -0.35rem 0 0.25rem; color: rgb(217 243 255 / 0.8); font: 0.7rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.holomap-fold svg { width: 16px; height: 16px; }
