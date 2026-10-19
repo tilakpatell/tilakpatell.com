@@ -105,8 +105,9 @@ export default {
     // the chain: the house’s bloom on every tier, the grade (the Ring’s, hooks.js) from high
     const passes = chainFor(tier, rt.gfx.backend, { scene, camera, grade: (tex) => gradeNode(tex, road.uVision) });
     const post = rt.gfx.post?.(passes) ?? null;
-    // (the quads keep their velocity only where TRAA reads it)
-    const weather = createWeather(rt.gfx.renderer, { tier, velocity: Boolean(post) && passes.some((p) => p.kind === 'traa') });
+    // (the quads write the targets the chain’s scene pass has: a normal for AO, a velocity for TRAA)
+    const has = (kind) => Boolean(post) && passes.some((p) => p.kind === kind);
+    const weather = createWeather(rt.gfx.renderer, { tier, outputs: [has('ao') && 'normal', has('traa') && 'velocity'].filter(Boolean) });
     scene.add(weather.group);
     // the stage’s sound, the beats’ clips and the cast’s lines, on the runtime’s bus
     const ambience = createAmbience(rt);
@@ -441,7 +442,7 @@ export default {
       // lands' building times)
       const info = () => {
         const r = rt.gfx.renderer?.info?.render ?? {};
-        return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, vision: vision.amount, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats };
+        return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, vision: vision.amount, shot: shot?.key ?? null, mode: clock.mode, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats };
       };
       window.__ROAD__ = { world, set: (s) => world.set(s), info, weather, ambience, vision: (on) => void (visionOn = Boolean(on)), passes };
     }
