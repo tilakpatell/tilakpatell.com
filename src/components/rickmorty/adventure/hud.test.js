@@ -56,8 +56,9 @@ describe('what the HUD shows of the story', () => {
     expect(markedTask(fresh(), next)).toEqual({ id: 'diner' });
     expect(markedTask({ ...fresh(), step: 3 }, next)).toEqual({ id: 'customs' });
     // past the last ready episode: the checklist's
-    expect(markedTask({ ...fresh(), episode: 2 }, next)).toBe(next);
+    expect(markedTask({ ...fresh(), episode: 3 }, next)).toBe(next);
     expect(markedTask({ ...fresh(), episode: 1 }, next)).toEqual({ id: 'roy' });
+    ['rickall', 'wong', 'sewer'].forEach((id, step) => expect(markedTask({ ...fresh(), episode: 2, step }, next)).toEqual({ id }));
     // a game to win: the game
     expect(markedTask({ ...fresh(), episode: 1, step: 1 }, next)).toEqual({ id: 'cabinet' });
     // a step that's neither (the Citadel's page): nothing to point at
@@ -76,17 +77,22 @@ describe('what the HUD shows of the story', () => {
     expect(items.filter((d) => !d.locked).map((d) => d.id)).toEqual(['customs']);
     // free roam, or past the last built episode: nothing locked
     expect(dialItems(DIAL, { ...fresh(), freeRoam: true }).every((d) => d.locked === null)).toBe(true);
-    expect(dialItems(DIAL, { ...fresh(), episode: 2 }).every((d) => d.locked === null)).toBe(true);
+    expect(dialItems(DIAL, { ...fresh(), episode: 3 }).every((d) => d.locked === null)).toBe(true);
     // after episode 1, its places, and the next episode's still shut
     const one = dialItems(DIAL, { ...fresh(), episode: 1 });
     expect(one.filter((d) => !d.locked).map((d) => d.id)).toEqual(['annex', 'customs', 'meeseeksgolf']);
     expect(one.find((d) => d.id === 'agency').locked).toBe('Opens after episode 2, “Arcade money”.');
+    // after episode 2, likewise
+    const two = dialItems(DIAL, { ...fresh(), episode: 2 });
+    expect(two.filter((d) => !d.locked).map((d) => d.id)).toEqual(['annex', 'customs', 'simulation', 'agency', 'meeseeksgolf']);
+    expect(two.find((d) => d.id === 'microverse').locked).toBe('Opens after episode 3, “House guests”.');
   });
 
   it('counts the coordinates home on the dial', () => {
     expect(dialLead(fresh(), DIAL.length)).toBe('Coordinates home: 1 of 32');
     expect(dialLead({ ...fresh(), episode: 1 }, DIAL.length)).toBe('Coordinates home: 3 of 32');
-    expect(dialLead({ ...fresh(), episode: 2 }, DIAL.length)).toBe('Coordinates home: 32 of 32');
+    expect(dialLead({ ...fresh(), episode: 2 }, DIAL.length)).toBe('Coordinates home: 5 of 32');
+    expect(dialLead({ ...fresh(), episode: 3 }, DIAL.length)).toBe('Coordinates home: 32 of 32');
     // (free roam opens the dial, but brings no coordinates home)
     expect(dialLead({ ...fresh(), freeRoam: true }, DIAL.length)).toBe('Coordinates home: 1 of 32');
   });

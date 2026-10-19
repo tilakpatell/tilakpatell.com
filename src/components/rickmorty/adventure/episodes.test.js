@@ -9,9 +9,9 @@ const stepsOf = (e) => e.steps.flatMap((s) => (s.type === 'all' ? [s, ...s.steps
 const allSteps = () => EPISODES.flatMap(stepsOf);
 
 describe('the adventure’s episodes', () => {
-  it('has thirteen episodes, the first two ready', () => {
+  it('has thirteen episodes, the first three ready', () => {
     expect(EPISODES).toHaveLength(13);
-    expect(READY).toBe(2);
+    expect(READY).toBe(3);
     expect(new Set(EPISODES.map((e) => e.id)).size).toBe(13);
   });
 
@@ -82,5 +82,13 @@ describe('the adventure’s episodes', () => {
     expect(arcade.steps.map((s) => s.id ?? s.game)).toEqual(['roy', 'cabinet']);
     expect(arcade.steps[1]).toMatchObject({ type: 'win', game: 'cabinet', place: 'annex' });
     expect(arcade.unlocks).toEqual(['agency', 'simulation']);
+  });
+
+  it('goes on with House guests: Total Rickall, Dr. Wong, then the sewer', () => {
+    const guests = EPISODES[2];
+    expect(guests.title).toBe('House guests');
+    expect(guests.steps.map((s) => s.id)).toEqual(['rickall', 'wong', 'sewer']);
+    expect(guests.steps[2]).toMatchObject({ type: 'task', id: 'sewer', place: 'agency' });
+    expect(guests.unlocks).toEqual(['microverse', 'anatomy', 'storytrain']);
   });
 });

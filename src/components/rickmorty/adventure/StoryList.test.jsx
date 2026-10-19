@@ -48,8 +48,8 @@ describe('the Story tab', () => {
   });
 
   it('ticks every built episode once they’re all done', () => {
-    const html = renderToStaticMarkup(<StoryList state={{ episode: 2, step: 0, got: [], wins: [], freeRoam: false }} />);
-    expect(done(html)).toBe(2);
+    const html = renderToStaticMarkup(<StoryList state={{ episode: 3, step: 0, got: [], wins: [], freeRoam: false }} />);
+    expect(done(html)).toBe(3);
     expect(html).toContain('More of the story soon.');
   });
 });
