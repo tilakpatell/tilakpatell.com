@@ -71,8 +71,14 @@ export function gradeNode(tex, uVision) {
   rgb = mix(rgb, vec3(...COLD).mul(dot(rgb, LUMA).mul(1.4)), uVision.mul(0.8));
   // shown: the house’s tone and the screen’s encoding (the pipeline’s own transform is off after a grade)
   const shown = renderOutput(vec4(rgb, 1), THREE.NeutralToneMapping, THREE.SRGBColorSpace).rgb;
-  // a little contrast, a cold tint by the vision, the corners darkened more as it rises
-  const contrast = shown.sub(0.5).mul(1.06).add(0.5);
+  // the house’s grade: a gentle filmic curve, the colour a little richer, the
+  // highlights warm and the shadows cool (as a print is); then a cold tint
+  // by the vision, the corners darkened more as it rises
+  const curved = mix(shown, shown.mul(shown).mul(shown.mul(-2).add(3)), 0.22);
+  const lum = dot(curved, LUMA);
+  const rich = mix(vec3(lum), curved, 1.1);
+  const split = mix(vec3(0.97, 0.99, 1.04), vec3(1.035, 1.0, 0.955), clamp(lum.mul(1.6).sub(0.3), 0, 1));
+  const contrast = rich.mul(split);
   const tinted = mix(contrast, contrast.mul(vec3(0.86, 0.93, 1.08)), uVision);
   const vignette = float(1).sub(pow(length(off.mul(vec2(1.1, 1))).mul(1.25), 2.6).mul(uVision.mul(0.45).add(0.22)));
   return vec4(clamp(tinted.mul(vignette), 0, 1), 1);
@@ -100,6 +106,8 @@ export function chainFor(tier, backend, { scene = null, camera = null, grade = n
     if (kind === 'render') out.push({ kind, scene, camera });
     else if (kind === 'bloom') out.push({ kind, strength: BLOOM.strength, radius: BLOOM.radius, threshold: BLOOM.threshold });
     else if (kind === 'grade') out.push({ kind, node: grade });
+    // (soft and denoised: the grass moves in its vertices, which TRAA cannot settle, and it was grain)
+    else if (kind === 'ao') out.push({ kind, radius: 0.9, denoise: true });
     else if (kind === 'godrays') out.push({ kind, light: sun, strength: 0.2 });
     // (focused on the walkers ahead, the far hills soft)
     else if (kind === 'dof') out.push({ kind, focusDistance: 8, range: 30, bokehScale: 2 });

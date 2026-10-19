@@ -27,6 +27,7 @@ import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
 import { createLands } from './lands';
 import { createBackdrop } from './backdrop';
+import { soilOf } from './stages/soils';
 import { createScatter } from './scatter';
 import { createWeather } from './weather';
 import { createAmbience } from './ambience';
@@ -131,6 +132,28 @@ export default {
     const sun = new THREE.DirectionalLight(0xffffff, 2);
     const hemi = new THREE.HemisphereLight(0xdfe8ff, 0x5a5040, 0.6);
     scene.add(sun, sun.target, hemi, sky.mesh);
+    // the sun’s (and the moon’s) soft shadows, through cascades round the
+    // camera (lib/three/light/sun.js, its PCSS from shadows.js), on mid and
+    // up: out to 90 m on high, 50 on mid; none on low
+    const renderer = rt.gfx?.renderer ?? null;
+    const shadowWas = renderer?.shadowMap ? { enabled: renderer.shadowMap.enabled, type: renderer.shadowMap.type } : null;
+    const exposureWas = renderer?.toneMappingExposure ?? null;
+    let cascades = null;
+    let unlit = false;
+    if (tier !== 'low' && renderer?.shadowMap) {
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      Promise.all([import('../../../lib/three/light/sun'), import('../../../lib/three/light/shadows')])
+        .then(async ([{ castCascades }, { filterFor, readPcss, pcssFilter }]) => {
+          const soft = filterFor(tier, readPcss(null));
+          const filter = soft.kind === 'pcss' ? await pcssFilter(soft) : null;
+          if (unlit) return;
+          const c = await castCascades(sun, null, { tier, filter, video: { shadowDistance: tier === 'mid' ? 50 : 90 } });
+          if (unlit) c?.dispose();
+          else cascades = c;
+        })
+        .catch(() => {});
+    }
 
     const reduced = Boolean(props.reduced);
     // (Enter is the Road's only under reduced motion, where it is Next: bound
@@ -223,6 +246,10 @@ export default {
       sun.intensity = key.intensity;
       hemi.intensity = 0.25 + l.ambient * 1.6;
       hemi.color.setRGB(...l.fog.colour);
+      // (the light off the ground: the stage’s own grass, or its snow, its stone, its ash)
+      hemi.groundColor.setHex(soilOf(lineAt(STAGES, clock.s).stage).greens[1]).multiplyScalar(0.6);
+      // the stage’s exposure, lifted after sunset as an eye opens to the dark (the chapters’ nights are 1.6)
+      if (renderer) renderer.toneMappingExposure = l.exposure * (1 + 0.55 * Math.min(1, Math.max(0, -l.sun.el / 0.35)) * (1 - (l.murk ?? 0)));
       scene.fog.color.setRGB(...l.fog.colour);
       // (the fog throbs with the vision’s pulse)
       scene.fog.density = l.fog.density * (1 + 0.35 * vision.amount * (1 + vision.pulse));
@@ -298,6 +325,8 @@ export default {
       }
       sun.position.copy(camera.position).addScaledVector(sunDir, 100);
       sun.target.position.copy(camera.position);
+      cascades?.follow();
+      cascades?.update(camera);
       sky.update(camera, dt);
       return here;
     };
@@ -468,6 +497,10 @@ export default {
         lands.dispose();
         wind.dispose();
         mountains.dispose();
+        unlit = true;
+        cascades?.dispose();
+        if (shadowWas) Object.assign(renderer.shadowMap, shadowWas);
+        if (exposureWas != null) renderer.toneMappingExposure = exposureWas;
         scatter.dispose();
         for (const k of kits.values()) k.dispose();
         sky.dispose();

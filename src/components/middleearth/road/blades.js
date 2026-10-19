@@ -11,14 +11,15 @@ import * as THREE from 'three';
 import { createGrass } from '../../../lib/three/grassNodes';
 import { onColor } from '../../../lib/three/hookNodes';
 
-export const BLADES = { ultra: { side: 300, size: 46 }, high: { side: 280, size: 44 }, mid: { side: 190, size: 38 }, low: null };
+// (fewer and broader than the galaxy’s: thin blades at this density shimmered, a grain over the fields)
+export const BLADES = { ultra: { side: 240, size: 46 }, high: { side: 220, size: 44 }, mid: { side: 160, size: 38 }, low: null };
 
 export function createBlades({ groundMap, wind, soil, tier = 'high' }) {
   const patch = BLADES[tier] ?? null;
   if (!patch || !wind || !(soil?.blades > 0)) return null;
   // (thinner grass: fewer blades over the same patch)
   const side = Math.round(patch.side * Math.sqrt(soil.blades));
-  const grass = createGrass({ ground: groundMap, wind, side, size: patch.size, height: soil.blade ?? 0.45, width: 0.06, root: 0.6 });
+  const grass = createGrass({ ground: groundMap, wind, side, size: patch.size, height: soil.blade ?? 0.45, width: 0.09, root: 0.6 });
   grass.mesh.name = 'road:blades';
   // (a little lighter than the map they’re coloured by: a field of blades reads darker than its ground, the light caught between them)
   onColor(grass.material, (d) => d.rgb.mul(1.3), 'blades:light');

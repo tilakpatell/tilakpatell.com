@@ -93,7 +93,8 @@ export function soilHook(material, { groundMap, soil, tier = 'high' }) {
       const g = smoothstep(0.15, 0.85, groundMap.groundGrass(at));
       const read = (r) => u[r].normal.sample(at.mul(u[r].k.x)).xyz.mul(2).sub(1).mul(u[r].k.z);
       const t = mix(read('road'), read('grass'), g);
-      const k = near().mul(steepOf().oneMinus()).mul(0.8);
+      // (a gentle relief: a strong one sparkled at the distance the grain fades to)
+      const k = near().mul(near()).mul(steepOf().oneMinus()).mul(0.5);
       return normalize(normal.add(cameraViewMatrix.mul(vec4(t.x.mul(k), 0, t.y.mul(k), 0)).xyz));
     },
     'soil:relief',
