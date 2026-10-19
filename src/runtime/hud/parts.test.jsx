@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import Prompt from './Prompt';
 import Exit from './Exit';
@@ -67,6 +67,47 @@ describe('the players chip', () => {
   });
   it('is nothing where there’s no going online', () => {
     expect(renderToStaticMarkup(<PlayersChip available={false} />)).toBe('');
+  });
+
+  describe('once you’re in', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('is a button that opens the party, its words as they were', () => {
+      const html = renderToStaticMarkup(<PlayersChip count={3} allies={1} />);
+      expect(html).toMatch(/^<button type="button"[^>]*aria-haspopup="dialog"/);
+      expect(html).toContain('aria-label="3 others here · 1 ally"');
+      expect(text(<PlayersChip count={0} />)).toBe('No one else here');
+      expect(renderToStaticMarkup(<PlayersChip count={0} />)).toMatch(/^<button[^>]*aria-label="No one else here"/);
+    });
+
+    it('is a button in the Menu too', () => {
+      const html = renderToStaticMarkup(<PlayersChip count={2} item className="menu-entry" />);
+      expect(html).toMatch(/^<button type="button" class="menu-entry"/);
+      expect(text(<PlayersChip count={2} item />)).toBe('2 others here');
+    });
+
+    it('opens the party dialog (lib/palette’s openParty) on its own tab', () => {
+      const win = new EventTarget();
+      const got = [];
+      win.addEventListener('tp:party', (e) => got.push(e.detail));
+      vi.stubGlobal('window', win);
+      // (a function component with no hooks: what it returns is the button)
+      PlayersChip({ count: 3 }).props.onClick({ type: 'click' });
+      expect(got).toEqual([null]);
+    });
+
+    it('calls a world’s own onOpen instead, given one', () => {
+      const onOpen = vi.fn();
+      PlayersChip({ count: 1, onOpen }).props.onClick({ type: 'click' });
+      expect(onOpen).toHaveBeenCalledTimes(1);
+      expect(onOpen).toHaveBeenCalledWith(); // (not the click: it isn't a tab)
+    });
+
+    it('stays a plain status where a world opens nothing', () => {
+      const html = renderToStaticMarkup(<PlayersChip count={3} onOpen={null} />);
+      expect(html).toMatch(/^<span[^>]*role="status"/);
+      expect(html).not.toContain('<button');
+    });
   });
 });
 

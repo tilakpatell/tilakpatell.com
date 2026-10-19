@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { crewById } from '../crews';
 import Face from '../Faces';
+import { isMate } from './mates';
+import { quipEl, setQuip } from './quipBubble';
 import './online.css';
 
 // The other pilots on the page you're on, off the universe map: each one's
@@ -9,7 +11,11 @@ import './online.css';
 // the edge where they're reading). Someone further up or down the page sits
 // at the top or bottom edge, pointing the way. Yours goes out to them the
 // same way. React draws who's here; a frame loop moves them, straight from
-// client.js's pointers, so nothing re-renders as they move.
+// client.js's pointers, so nothing re-renders as they move. What one has
+// just said (quick chat: client.quip(id)) is a bubble over their callsign,
+// quipBubble.js's, which the same loop sets and writes only on a change. An
+// ally and a mate in your party (mates.js's isMate) are both in the ally
+// green.
 
 const IDLE_MS = 8000; // a pointer still this long fades
 const GONE_MS = 90000; // and this long, goes
@@ -22,6 +28,9 @@ export default function Presence({ online }) {
   const { client, room, where } = online;
   const here = room.peers.filter((p) => !p.blocked && p.where === where);
   const els = useRef(new Map());
+  // (each pointer's bubble, made the first time the loop meets it: React
+  // doesn't draw it, so a render never takes away what the loop wrote)
+  const bubbles = useRef(new WeakMap());
   const count = here.length;
 
   // yours, out to them: the pointer (and where it is on the page as you
@@ -55,6 +64,16 @@ export default function Presence({ online }) {
     // (each pointer's last state as written: a frame writes only what
     // changed, so a page with pilots at rest restyles nothing)
     const written = new WeakMap();
+    const bubbleOf = (el) => {
+      let b = bubbles.current.get(el);
+      if (!b) {
+        const tag = el.querySelector('.presence-tag');
+        if (!tag) return null;
+        b = tag.appendChild(quipEl(document));
+        bubbles.current.set(el, b);
+      }
+      return b;
+    };
     const frame = () => {
       raf = requestAnimationFrame(frame);
       const now = performance.now();
@@ -71,6 +90,7 @@ export default function Presence({ online }) {
           }
           continue;
         }
+        setQuip(bubbleOf(el), client.quip?.(id) ?? null);
         let x = cur.touch ? 10 : w / 2 + cur.x;
         let y = cur.y - top;
         const off = y < TOP ? 'up' : y > h - 44 ? 'down' : null;
@@ -98,13 +118,14 @@ export default function Presence({ online }) {
       {here.map((p) => {
         const crew = crewById(p.kind);
         const who = crew ? Object.keys(crew.speakers)[0] : null;
+        const mate = isMate(p);
         return (
           <div
             key={p.id}
             ref={(el) => (el ? els.current.set(p.id, el) : els.current.delete(p.id))}
             className="presence-pilot"
-            data-ally={p.ally === 'ally' || undefined}
-            style={{ '--who': p.ally === 'ally' ? ALLY : colorOf(crew) }}
+            data-ally={mate || undefined}
+            style={{ '--who': mate ? ALLY : colorOf(crew) }}
           >
             <svg className="presence-arrow" viewBox="0 0 16 16" width="16" height="16">
               <path d="M1.5 1.5l5 13 1.9-5.1 5.1-1.9z" />

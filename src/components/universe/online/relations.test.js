@@ -11,6 +11,13 @@ describe('relation', () => {
     expect(relation({ ally: true, factions: f({ war: 'gcw', oath: 'rebel' }) }, { factions: f({ war: 'gcw', oath: 'empire' }) })).toBe('ally');
     expect(relation({ ally: false, factions: NONE }, { ally: 'ally', factions: NONE })).toBe('ally');
   });
+  it('relation: a mate in your party is on your side as an ally is, whatever their oath', () => {
+    expect(relation({ factions: f({ war: 'gcw', oath: 'rebel' }) }, { ally: 'none', mate: true, factions: f({ war: 'gcw', oath: 'empire' }) })).toBe('ally');
+    // (someone blocked is no one's mate: they're what their factions say)
+    expect(relation({ factions: f({ war: 'gcw', oath: 'rebel' }) }, { mate: true, blocked: true, factions: f({ war: 'gcw', oath: 'empire' }) })).toBe('foe');
+    // (only the party's own word: a mate is `mate: true`, nothing else)
+    expect(relation({ factions: NONE }, { mate: 'yes', factions: NONE })).toBe('none');
+  });
   it('relation: the same oath is a friend', () => {
     expect(relation({ factions: f({ war: 'gcw', oath: 'rebel' }) }, { factions: f({ war: 'gcw', oath: 'rebel' }) })).toBe('friend');
     // or the same universe's law trusts you both

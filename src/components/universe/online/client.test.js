@@ -1,8 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createClient } from './client';
 import { createAllies } from './allies';
+import { createPartyStore } from './partyStore';
 import { STOCK_LOADOUT } from '../outfit';
 import { PUNCH_MAX } from './protocol';
+import { QUIP_MS } from './quips';
+
+// a party's line sealed by naming who it's for, base64url as the wire wants (partyCrypt.js's own sealing is tested there)
+const blob = (v) => btoa(JSON.stringify(v)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const unblob = (s) => { try { return JSON.parse(atob(s.replace(/-/g, '+').replace(/_/g, '/'))); } catch { return null; } };
 
 // An in-memory room: what one client sends, the others get straight away.
 // room(id) on its own is a pilot with no client, sending whatever it likes.
@@ -30,6 +36,8 @@ function createBus() {
         return a;
       },
       leave: () => Promise.resolve(),
+      seal: (to, party, text) => Promise.resolve(to.map((k) => blob([id, k, party, text]))),
+      open: (from, party, blobs) => Promise.resolve(blobs.map(unblob).find((x) => x?.[0] === from && x[1] === id && x[2] === party)?.[3] ?? null),
       actions,
     };
     rooms.push(r);
@@ -83,7 +91,7 @@ describe('createClient', () => {
   it('each sees the other, by name and ship', async () => {
     const { a, b } = await pair();
     expect(a.snapshot().status).toBe('online');
-    expect(a.snapshot().peers).toEqual([{ id: 'B', name: 'Rick', kind: 'cruiser', loadout: STOCK_LOADOUT, build: null, looks: null, kills: 0, where: '/universe', level: 1, factions: { side: 'rickmorty', standing: null, war: null, oath: null, rank: null }, ally: 'none', blocked: false }]);
+    expect(a.snapshot().peers).toEqual([{ id: 'B', name: 'Rick', kind: 'cruiser', loadout: STOCK_LOADOUT, build: null, looks: null, kills: 0, where: '/universe', level: 1, factions: { side: 'rickmorty', standing: null, war: null, oath: null, rank: null }, ally: 'none', blocked: false, mate: false }]);
     expect(b.snapshot().peers[0].name).toBe('Han');
   });
 
@@ -709,5 +717,83 @@ describe('allies that last (allies.js)', () => {
     tick(3000);
     a.leave();
     expect(stores.han.allies()).toMatchObject([{ id: RICK, seen: 4000 }]);
+  });
+});
+
+// Han, Rick and Morty by their keys, each with a party store; gather(): Han's party of the three (Rick asks Morty)
+const MORTY = 'd'.repeat(64);
+async function crew() {
+  const bus = createBus();
+  let t = 1000;
+  const [a, b, c] = [['Han', HAN], ['Rick', RICK], ['Morty', MORTY]].map(([name, id]) => createClient({ name, kind: 'falcon', load: bus.load(id), now: () => t, party: createPartyStore() }));
+  await flush();
+  const seen = { a: [], b: [], c: [] };
+  for (const [k, x] of Object.entries({ a, b, c })) x.on((e) => seen[k].push(e));
+  bus.meet();
+  const gather = () => [a.party.invite(RICK), b.party.accept(HAN), b.party.invite(MORTY), c.party.accept(RICK)];
+  return { a, b, c, bus, seen, gather, tick: (ms) => (t += ms) };
+}
+const members = (x) => x.snapshot().party.party?.members.map((m) => m.id) ?? null;
+const lines = (list) => list.filter((e) => e.type === 'chat').map((e) => e.line.text);
+
+describe('a party (partyLink.js)', () => {
+  it('three pilots: invited and in, mates spared, chat both ways, a quip over the leader and a summons', async () => {
+    const { a, b, c, seen, gather, tick } = await crew();
+    const hurt = () => seen.b.filter((e) => e.type === 'hit' || e.type === 'rammed').length;
+    lineUp(a, b);
+    a.hit(RICK);
+    expect(a.snapshot().party).toEqual({ party: null, invites: [], follow: false });
+    expect(gather()).toEqual([true, true, true, true]);
+    expect(feeds(seen.b)).toContain('Han asks you to their party');
+    for (const x of [a, b, c]) expect(members(x)).toEqual([HAN, RICK, MORTY]);
+    expect(a.peers.get(MORTY)).toMatchObject({ mate: true, pt: a.snapshot().party.party.id });
+    expect(b.snapshot().peers.find((p) => p.id === HAN).mate).toBe(true);
+    expect(await a.party.say('Punch it')).toBe(true);
+    await flush();
+    tick(200);
+    expect(await c.party.say('Aw geez')).toBe(true);
+    await flush();
+    for (const x of [seen.a, seen.b, seen.c]) expect(lines(x)).toEqual(['Punch it', 'Aw geez']);
+    lineUp(a, b); // (a hit counted before; now they're mates, none, and no ram)
+    a.hit(RICK);
+    a.ram(RICK, 8);
+    expect(hurt()).toBe(1);
+    expect(a.party.quip(2)).toBe(true);
+    expect([a.quip(HAN), b.quip(HAN), c.quip(HAN)]).toEqual(['On my way', 'On my way', 'On my way']);
+    expect(feeds(seen.c)).toContain('Han: On my way');
+    tick(QUIP_MS);
+    expect(b.quip(HAN)).toBeNull();
+    a.setProfile({ where: '/middle-earth/bree' });
+    expect(a.party.summon()).toBe(true);
+    expect(seen.c.filter((e) => e.type === 'summon')).toEqual([{ type: 'summon', from: HAN, name: 'Han', where: '/middle-earth/bree' }]);
+  });
+
+  it('make leader, remove, leave, and the leader going: the next one here takes over', async () => {
+    const { a, b, c, bus, seen, gather } = await crew();
+    gather();
+    expect(a.party.promote(RICK)).toBe(true);
+    for (const x of [a, b, c]) expect(x.snapshot().party.party.leader).toBe(RICK);
+    expect(b.party.remove(MORTY)).toBe(true);
+    expect(members(c)).toBeNull();
+    expect(feeds(seen.c)).toContain('Rick removed you from the party');
+    b.party.invite(MORTY);
+    c.party.accept(RICK);
+    expect(c.party.leave()).toBe(true);
+    expect(members(a)).toEqual([HAN, RICK]);
+    bus.gone(RICK);
+    expect(a.snapshot().party.party.leader).toBe(HAN);
+    expect(feeds(seen.a)).toContain('You lead the party now');
+    expect(b.snapshot().party.party.leader).toBe(HAN); // (the old leader takes the newer roster)
+  });
+
+  it('a block takes a pilot out of the party, and a blocked pilot’s words change nothing', async () => {
+    const { a, b, c, bus, gather } = await crew();
+    gather();
+    a.block(MORTY, true);
+    expect([members(a), members(b), members(c)]).toEqual([[HAN, RICK], [HAN, RICK], null]);
+    bus.room(MORTY).makeAction('party').send({ t: 'ros', p: a.snapshot().party.party.id, l: MORTY, e: 99, m: [[MORTY, 'Morty'], [HAN, 'Han'], [RICK, 'Rick']] });
+    expect([members(a), members(b)]).toEqual([[HAN, RICK], [HAN, RICK]]);
+    b.block(HAN, true);
+    expect([members(a), members(b)]).toEqual([[HAN], null]);
   });
 });

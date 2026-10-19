@@ -339,6 +339,10 @@ describe('rams', () => {
     expect(ramCounts(peer({ ramAt: 900 }), me, 8, 900 + CONTACT.cool * 1000)).toBe(8);
     expect(ramCounts(peer(), null, 8, 1000)).toBeNull();
   });
+  it('ignores a mate in your party, as it does an ally (mates.js)', () => {
+    expect(ramCounts(peer({ mate: true }), me, 8, 1000)).toBeNull();
+    expect(ramCounts(peer({ mate: false }), me, 8, 1000)).toBe(8);
+  });
 });
 
 describe('hits', () => {
@@ -357,6 +361,10 @@ describe('hits', () => {
     expect(hitCounts(peer({ ally: 'ally' }), me, 1200)).toBe(false);
     expect(hitCounts(peer({ blocked: true }), me, 1200)).toBe(false);
     expect(hitCounts(peer(), me, 1000 + GUARD.shotWindow + 1)).toBe(false);
+  });
+  it('ignores a mate in your party, as it does an ally (mates.js)', () => {
+    expect(hitCounts(peer({ mate: true }), me, 1200)).toBe(false);
+    expect(hitCounts(peer({ mate: false }), me, 1200)).toBe(true);
   });
   it('ignores a hit from a shot that went nowhere near you', () => {
     const wide = { p: [5, 0, 0], v: [0, 0, -18], at: 1000 }; // fired off to the side

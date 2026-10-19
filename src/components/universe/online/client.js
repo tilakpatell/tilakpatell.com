@@ -32,6 +32,14 @@
 // mute is for the visit: nothing's saved, no alliance ends, they're told
 // nothing.
 //
+// A party (partyLink.js, which this hands the room, admit, the peers and
+// each hello): up to eight pilots by invite, one leading, remembered in this
+// browser (`party`, partyStore.js's store, as `allies` comes in), its chat
+// sealed for each mate (the room's seal and open), and quick chat for
+// everyone. Your hello names your party (`pt`), and a party joined or left
+// is said in a hello at once, so your mates see you in it straight away. A
+// member here is a mate (peer.mate: mates.js's isMate, spared as an ally is).
+//
 // The hunters after you are yours to fly (hunters.js), and the others see
 // them: while someone's in the same place, where they are goes out a few
 // times a second (pack), each pilot's come in as peer.hunters ({ at, list })
@@ -39,7 +47,7 @@
 // told to you (hunterHit → a 'hunterHit' event, once it's checked: they'd
 // just fired, and were close to it), so a friend can shoot one off your tail.
 //
-// createClient({ name, kind, loadout, build, looks, where, level, marks, allies }) → { selfId, factions, on(fn) → off, snapshot() (with `away`: the saved allies who aren't here, { id, name, seen }),
+// createClient({ name, kind, loadout, build, looks, where, level, marks, allies, party }) → { selfId, factions, on(fn) → off, snapshot() (with `away`: the saved allies who aren't here, { id, name, seen }; `party`: partyLink.js's snapshot(), { party, invites, follow }),
 //   setProfile({ name, kind, loadout, build, looks, where, level, marks }) (level: the
 //   wallet's; marks: its marks(), your standing and oath, read into factions
 //   for the side of the ship you fly: relations.js's factionsFrom), pose(ship, { hidden, boost, safe,
@@ -54,7 +62,9 @@
 //   asked for only when it's time to send), hunterHit(peerId, hunterId,
 //   damage), helped(peerId, what) (their shot took one of yours down),
 //   ally(peerId, 'ask' | 'accept' | 'decline' | 'end'), block(peerId, on),
-//   peers, takeShots(), leave() }
+//   party (partyLink.js's api: start, invite, accept, decline, leave, remove,
+//   promote, summon, say, quip, setFollow), quip(id) (the quick-chat line over
+//   a pilot now, yours too, or null), peers, takeShots(), leave() }
 // Events, to on(fn): { type: 'status' }, { type: 'roster' }, { type: 'feed',
 // text, tone }, { type: 'hit', from, damage }, { type: 'rammed', from, into,
 // at } (they flew into you: the closing speed believed, and where they
@@ -66,7 +76,9 @@
 // with siege.js's readSiege), { type: 'war', from, msg } (another pilot's
 // word on the galaxy's war, from anywhere: tally.js's readTally), { type:
 // 'fight', from, msg } (another pilot's on the battle where you are), {
-// type: 'allied', id } (an alliance made with them).
+// type: 'allied', id } (an alliance made with them), and the party's:
+// { type: 'party' }, { type: 'chat', line }, { type: 'summon', from, name,
+// where }, { type: 'quip', id, text } (partyLink.js).
 
 import { readBuildWire, writeBuild } from '../shipyard/build';
 import { EVERYONE, readLooks, writeLook } from '../../rickmorty/wardrobe/looks';
@@ -76,6 +88,8 @@ import { STOCK_LOADOUT, readLoadout, writeOutfit } from '../outfit';
 import { readSiege } from '../siege';
 import { readTally } from '../tally';
 import { NO_FACTIONS, factionsFrom } from './relations';
+import { createPartyLink } from './partyLink';
+import { isMate } from './mates';
 import { sideOf } from '../sides';
 
 const SNAPS = 12; // poses kept per pilot
@@ -90,7 +104,7 @@ const ALLY_AGAIN_MS = 60000; // after you turn someone down, how long before the
 const levelOf = (lv) => (Number.isInteger(lv) && lv >= 1 ? lv : 1);
 const loadRoom = () => import('./nostr').then((m) => ({ joinRoom: m.joinAsVisitor }));
 
-export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build = null, looks = null, where = UNIVERSE, level = 1, marks = null, allies = null, load = loadRoom, now = () => performance.now() }) {
+export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build = null, looks = null, where = UNIVERSE, level = 1, marks = null, allies = null, party = null, load = loadRoom, now = () => performance.now() }) {
   const self = { id: null, name: cleanName(name) ?? 'Pilot', kind, loadout: readLoadout(loadout), build: build ? readBuildWire(writeBuild(build)) : null, looks: looks ? readLooks(looks) : null, kills: 0, where, level: levelOf(level), marks, factions: factionsFrom(sideOf(kind), marks) };
   const peers = new Map();
   const listeners = new Set();
@@ -125,10 +139,26 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
     const as = allies?.madeAs?.(id) ?? null;
     return !as || as === (self.id ?? '').slice(0, 16);
   };
+  let saidPt = null; // the party your last hello named
   const hello = () => {
     const f = writeFactions(self.factions);
-    return { n: self.name, k: self.kind, p: self.loadout.paint, o: writeOutfit(self.loadout), ...(self.build ? { b: writeBuild(self.build) } : {}), ...writeLooksWire(self.looks), c: self.kills, w: self.where, lv: self.level, ...(f ? { f } : {}) };
+    const pt = link.helloField();
+    saidPt = pt.pt ?? null;
+    return { n: self.name, k: self.kind, p: self.loadout.paint, o: writeOutfit(self.loadout), ...(self.build ? { b: writeBuild(self.build) } : {}), ...writeLooksWire(self.looks), c: self.kills, w: self.where, lv: self.level, ...(f ? { f } : {}), ...pt };
   };
+  // the party's side; a party joined or left is said in a hello now, not at the next heartbeat
+  const link = createPartyLink({
+    self,
+    peers,
+    feed,
+    roster,
+    now,
+    store: party,
+    emit(e) {
+      emit(e);
+      if (e.type === 'party' && send && (link.helloField().pt ?? null) !== saidPt) send.hi(hello());
+    },
+  });
   const same = (a, b) => Object.keys(STOCK_LOADOUT).every((slot) => a[slot] === b[slot]);
   const sameBuild = (a, b) => (a ? writeBuild(a).join() : '') === (b ? writeBuild(b).join() : '');
   const factionsKey = (f) => JSON.stringify(writeFactions(f));
@@ -164,6 +194,9 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
         ramAt: -Infinity, // their last ram on you that counted
         rammedByMeAt: -Infinity, // your last ram on them
         declinedAt: -Infinity,
+        mate: false, // in your party and here (partyLink.js's)
+        pt: null, // the party their hello names
+        quip: null, // their last quick-chat line: { text, at }
         seen: now(),
         limit: createLimiter(),
       };
@@ -208,6 +241,7 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
     p.hunters = null;
     p.cur = null;
     p.shots.length = 0;
+    link.blocked(p, on, muted);
     roster();
   };
 
@@ -232,6 +266,7 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
     peers.delete(p.id);
     if (allies?.isAlly(p.id)) allies.seenAlly(p.id, p.name);
     if (p.name && !p.blocked) feed(`${p.name} went offline`, 'info');
+    link.gone(p);
     roster();
   };
   // anyone gone quiet is gone (a missed goodbye, or a tab that froze)
@@ -260,6 +295,8 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
     const siege = action('siege');
     const war = action('war');
     const fight = action('fight');
+    link.wire({ action, admit });
+    link.setCrypt(typeof r.seal === 'function' && typeof r.open === 'function' ? { seal: r.seal, open: r.open } : null);
     send = {
       pack: (data) => pack.send(data).catch(() => {}),
       hhit: (data, to) => hhit.send(data, { target: to }).catch(() => {}),
@@ -316,6 +353,7 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
         allies.seenAlly(peerId, p.name);
         if (p.ally === 'none' && madeWithMe(peerId)) setAlly(p, 'ask');
       }
+      link.hello(p, data, first);
       if (changed) roster();
     };
     pose.onMessage = (data, { peerId }) => {
@@ -461,6 +499,7 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
     heartbeat = setInterval(() => {
       send?.hi(hello());
       sweep();
+      link.tick();
     }, HEARTBEAT_MS);
   };
 
@@ -497,6 +536,10 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
       return self.factions;
     },
     peers,
+    // your party: partyLink.js's api
+    party: link.api,
+    // the quick-chat line over a pilot now (yours too), or null: for wherever they're drawn
+    quip: (id) => link.quipOf(id),
     on(fn) {
       listeners.add(fn);
       return () => listeners.delete(fn);
@@ -504,11 +547,11 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
     // for the page: who's here, as plain data
     snapshot() {
       const list = [];
-      for (const p of peers.values()) if (p.name !== null) list.push({ id: p.id, name: p.name, kind: p.kind, loadout: p.loadout, build: p.build, looks: p.looks, kills: p.kills, where: p.where, level: p.level, factions: p.factions, ally: p.ally, blocked: p.blocked });
+      for (const p of peers.values()) if (p.name !== null) list.push({ id: p.id, name: p.name, kind: p.kind, loadout: p.loadout, build: p.build, looks: p.looks, kills: p.kills, where: p.where, level: p.level, factions: p.factions, ally: p.ally, blocked: p.blocked, mate: p.mate });
       list.sort((a, b) => a.name.localeCompare(b.name));
       // (saved allies who aren't here, newest seen first)
       const away = (allies?.allies() ?? []).filter((a) => !peers.get(a.id)?.name).map(({ id, name, seen }) => ({ id, name, seen }));
-      return { status, self: { name: self.name, kind: self.kind, loadout: self.loadout, kills: self.kills, where: self.where, level: self.level, factions: self.factions }, peers: list, away };
+      return { status, self: { name: self.name, kind: self.kind, loadout: self.loadout, kills: self.kills, where: self.where, level: self.level, factions: self.factions }, peers: list, away, party: link.snapshot() };
     },
     setProfile({ name: n = self.name, kind: k = self.kind, loadout: l = self.loadout, build: b = self.build, looks: lk = self.looks, where: w = self.where, level: lv = self.level, marks: m = self.marks } = {}) {
       const clean = cleanName(n) ?? self.name;
@@ -639,7 +682,7 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
     // a bolt of yours hit them: tell them (they take it off their own shields)
     hit(id, damage = DAMAGE) {
       const p = peers.get(id);
-      if (!send || !p || p.blocked || p.ally === 'ally') return;
+      if (!send || !p || p.blocked || isMate(p)) return;
       p.hitByMeAt = now();
       send.hit({ d: Math.min(DAMAGE_MAX, Math.max(1, Math.round(damage))) }, id);
     },
@@ -647,7 +690,7 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
     // hard as they believe it: protocol.js's ramCounts)
     ram(id, into) {
       const p = peers.get(id);
-      if (!send || !p || p.blocked || p.ally === 'ally') return;
+      if (!send || !p || p.blocked || isMate(p)) return;
       p.rammedByMeAt = now();
       send.ram({ v: Math.round(Math.max(0, into) * 100) / 100 }, id);
     },
@@ -685,6 +728,7 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
       clearTimeout(cursorLater);
       clearInterval(heartbeat);
       offAllies?.();
+      link.dispose(); // (your party's kept for next time: leaving the room isn't leaving it)
       // (the saved allies here were last seen now)
       for (const p of peers.values()) if (allies?.isAlly(p.id)) allies.seenAlly(p.id, p.name);
       listeners.clear();

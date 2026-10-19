@@ -194,6 +194,7 @@ import { JAMMED, jumpState } from './words';
 import { CORE, GENS, citadelGeometry, createSiege, segmentSphere } from './siege';
 import { createCitadelSiege } from './citadelSiege';
 import { GUARD, STALE_MS } from './online/protocol';
+import { isMate } from './online/mates';
 import { createLook } from '../../runtime/look';
 import { reticleState } from '../../runtime/hud/reticle';
 import { createFlightCluster } from '../../runtime/hud/cluster.js';
@@ -817,10 +818,11 @@ export async function create(canvas, ctx) {
   const foot = standIn(footCode, { props: { phase: null, id: null, debug: null, spots: null }, methods: { begin: () => (footCode.want(), false) } });
   const onFoot = () => Boolean(foot.phase);
   // the other pilots whose crews are down on a planet now (the scene hands
-  // the ones on yours to the foot scene)
+  // the ones on yours to the foot scene): an ally or a party mate is `ally`
+  // (mates.js), and `quip` is what one's just said (net.quip: quick chat)
   const guestsOnFoot = (now) => {
     const out = [];
-    for (const p of net?.peers?.values() ?? []) if (!p.blocked && p.name && p.foot && now - p.foot.at < STALE_MS) out.push({ id: p.id, name: p.name, ally: p.ally === 'ally', foot: p.foot, looks: p.looks ?? null });
+    for (const p of net?.peers?.values() ?? []) if (!p.blocked && p.name && p.foot && now - p.foot.at < STALE_MS) out.push({ id: p.id, name: p.name, ally: isMate(p), quip: net.quip?.(p.id) ?? null, foot: p.foot, looks: p.looks ?? null });
     return out;
   };
   // everyone else out here (none with reduced motion), and the pops when a shot hits one

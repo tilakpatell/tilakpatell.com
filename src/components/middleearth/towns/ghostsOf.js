@@ -8,9 +8,15 @@
 // createGhostsOf({ paint, make, animate, height, tag, halo, snap }) → as
 // createGhosts; `paint()` makes a ghost's one material (transparent, its
 // opacity the ghost's to set), and `make` and `animate` are required.
+//
+// A row's `quip` (travellers.js: their quick-chat line, while it shows) is a
+// bubble over the name card (lib/three/quipSprite.js), as faded in as they
+// are. It's made the first time they say something and hidden between
+// lines, so a town of quiet ghosts has no bubble to draw.
 
 import * as THREE from 'three';
 import { sharpen } from '../../../lib/three/textures';
+import { createQuipSprite } from '../../../lib/three/quipSprite';
 import { seeded } from '../../../lib/seeded';
 import { applyEmote, heardEmote, readEmote } from '../../../lib/emote';
 
@@ -90,7 +96,7 @@ export function createGhostsOf({ paint, height = () => 0, make: build, animate, 
     group.add(root);
     // (first seen up high: there at once, not rising from the ground; `clock`
     // is their own gait's time, so two don't step in time)
-    return { f, mat, root, halo, tag, name: p.name, ally, x: p.x, z: p.z, y: p.y ?? 0, face: p.face, fade: 0, clock: seeded(idHash(p.id))() * 10 };
+    return { f, mat, root, halo, tag, quip: null, name: p.name, ally, x: p.x, z: p.z, y: p.y ?? 0, face: p.face, fade: 0, clock: seeded(idHash(p.id))() * 10 };
   };
 
   const drop = (id, g) => {
@@ -102,6 +108,7 @@ export function createGhostsOf({ paint, height = () => 0, make: build, animate, 
     g.halo.material.dispose();
     g.tag.material.map.dispose();
     g.tag.material.dispose();
+    g.quip?.dispose();
     ghosts.delete(id);
   };
 
@@ -170,6 +177,17 @@ export function createGhostsOf({ paint, height = () => 0, make: build, animate, 
         g.mat.opacity = 0.42 * g.fade * shimmer;
         g.halo.material.opacity = 0.5 * g.fade * (0.7 + Math.sin(t * 3 + g.z) * 0.3);
         g.tag.material.opacity = 0.95 * g.fade;
+        // what they've just said, stood on the name card (the card's as tall
+        // as tagSize, about its middle: the bubble's tail a little over its top)
+        if (p.quip && !g.quip) {
+          g.quip = createQuipSprite({ height: tagSize });
+          g.root.add(g.quip.sprite);
+        }
+        if (g.quip) {
+          g.quip.set(p.quip ?? null);
+          g.quip.sprite.position.y = g.tag.position.y + tagSize * 0.6;
+          g.quip.fade(g.fade);
+        }
         g.root.visible = g.fade > 0.02;
       }
       for (const [id, g] of ghosts) {
@@ -179,6 +197,7 @@ export function createGhostsOf({ paint, height = () => 0, make: build, animate, 
         g.mat.opacity = 0.42 * Math.max(0, g.fade);
         g.tag.material.opacity = Math.max(0, g.fade);
         g.halo.material.opacity = 0.5 * Math.max(0, g.fade);
+        g.quip?.fade(g.fade);
         if (g.fade <= 0) drop(id, g);
       }
     },

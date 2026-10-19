@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import * as glsl from './pilots';
 import * as nodes from './pilotsNodes';
 import { STOCK_LOADOUT } from '../outfit';
@@ -77,5 +77,88 @@ describe('pilotsNodes, the twin of pilots', () => {
     const { parent, pilots } = make(nodes);
     pilots.dispose();
     expect(parent.children).toHaveLength(0);
+  });
+});
+
+// The tags are the page's: an element that keeps what's written to it
+// stands in for each (Node has no DOM), and a view that puts everyone in
+// the middle of an 800 × 600 box, near.
+function fakeEl(tag) {
+  const el = {
+    tag,
+    className: '',
+    textContent: '',
+    hidden: false,
+    title: '',
+    kids: [],
+    attrs: {},
+    dataset: {},
+    style: { transform: '', setProperty() {} },
+    offsetWidth: 90,
+    offsetHeight: 22,
+    clientWidth: 800,
+    clientHeight: 600,
+    append: (...kids) => el.kids.push(...kids),
+    setAttribute: (k, v) => (el.attrs[k] = String(v)),
+    toggleAttribute: (k, on) => (on ? (el.attrs[k] = '') : delete el.attrs[k]),
+    addEventListener() {},
+    remove() {},
+  };
+  return el;
+}
+const view = (tags) => ({ tags, project: (x, y, z, out) => Object.assign(out, { x: 400, y: 300, z: 5 }), locked: null, footOn: null, me: null, factions: null });
+
+describe('the tags, in both', () => {
+  beforeAll(() => vi.stubGlobal('document', { createElement: fakeEl }));
+  afterAll(() => vi.unstubAllGlobals());
+
+  it('hold a bubble with what the pilot’s just said, while it shows (client.quip)', () => {
+    for (const P of [glsl, nodes]) {
+      const said = new Map();
+      const tags = fakeEl('div');
+      const pilots = P.createPilots(new THREE.Group(), { fleet: fleet(), kinds: HUNTER_KINDS });
+      const client = { peers: new Map([['ann', peer('ann')]]), takeShots: () => [], quip: (id) => said.get(id) ?? null };
+      pilots.update(1 / 60, 150, client, view(tags));
+      const [tag] = tags.kids;
+      const bubble = tag.kids.find((k) => k.className === 'quip-bubble');
+      expect(bubble.hidden).toBe(true);
+      said.set('ann', 'Nice one');
+      pilots.update(1 / 60, 166, client, view(tags));
+      expect(bubble.hidden).toBe(false);
+      expect(bubble.textContent).toBe('Nice one');
+      // the line's old: hidden again
+      said.delete('ann');
+      pilots.update(1 / 60, 182, client, view(tags));
+      expect(bubble.hidden).toBe(true);
+      // (a client without quick chat, an older one: nothing said)
+      pilots.update(1 / 60, 198, { ...client, quip: undefined }, view(tags));
+      expect(bubble.hidden).toBe(true);
+      pilots.dispose();
+    }
+  });
+
+  it('wear the ally green for a mate in your party, who is spared as an ally is', () => {
+    for (const P of [glsl, nodes]) {
+      const tags = fakeEl('div');
+      const pilots = P.createPilots(new THREE.Group(), { fleet: fleet(), kinds: HUNTER_KINDS });
+      const ann = peer('ann');
+      const client = { peers: new Map([['ann', ann]]), takeShots: () => [] };
+      pilots.update(1 / 60, 150, client, view(tags));
+      const [tag] = tags.kids;
+      expect('data-ally' in tag.attrs).toBe(false);
+      expect(tag.dataset.relation).toBe('none');
+      expect(pilots.targets.map((t) => t.peer)).toEqual(['ann']);
+      ann.mate = true;
+      pilots.update(1 / 60, 166, client, view(tags));
+      expect('data-ally' in tag.attrs).toBe(true);
+      expect(tag.dataset.relation).toBe('ally');
+      expect(pilots.targets).toEqual([]);
+      expect(pilots.mates.map((m) => m.id)).toEqual(['ann']);
+      // (blocked, no one's mate)
+      ann.blocked = true;
+      pilots.update(1 / 60, 182, client, view(tags));
+      expect(pilots.mates).toEqual([]);
+      pilots.dispose();
+    }
   });
 });
