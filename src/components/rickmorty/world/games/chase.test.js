@@ -96,9 +96,9 @@ describe('the chase kind: shake the Federation ship through the rings', () => {
     const down = stepChase(stepChase(g, { flying: true, at: g.at, hit: 1 }, DT), { flying: true, at: g.at, grounded: true }, DT);
     expect(down.phase).toBe('lost');
     expect(down.events).toEqual([{ type: 'lost', grounded: true }]);
-    // three hits: the hits were why, even if the third took the deflectors too
+    // the third hit taking the deflectors too: the engines are out, so that's the word (no dead cruiser put back in the air)
     const hits = stepChase(g, { flying: true, at: g.at, hit: 3, grounded: true }, DT);
-    expect(hits.events.at(-1)).toEqual({ type: 'lost', grounded: false });
+    expect(hits.events.at(-1)).toEqual({ type: 'lost', grounded: true });
   });
 
   it('starts no run while the engines are out, a cruiser coasting through the first ring or not', () => {
