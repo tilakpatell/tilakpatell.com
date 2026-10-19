@@ -24,13 +24,14 @@ import { beechGeo, pineGeo } from '../../../towns/amonhen/forest';
 import { eyeColour } from '../../creatures/eye';
 import { C, merged, mergeStatics, part } from '../parts';
 
-export const ARGONATH = { z: 66 }; // m: the Kings, either side of the river
+export const ARGONATH = { z: 72, scale: 0.6 }; // m: the Kings, either side of the river (at 0.6 the chapter’s: 55 m to their hands, close enough to the river to be seen from it)
 export const SEAT = { at: [-7, 118] }; // the Seat of Seeing, its steps (+x) to the road
 export const CAMP = { at: [-8, 104] }; // the lawn of Parth Galen
 const TOL = [-30, 230, 70]; // Tol Brandir: x, z, height
 
 // the woods round Parth Galen: [x, z, kind] (on low every other)
-const WOODS = [[-16, 96, 'pine'], [-22, 110, 'beech'], [-18, 128, 'pine'], [-28, 136, 'beech'], [-12, 140, 'pine'], [-34, 120, 'pine'], [-26, 98, 'beech'], [8, 124, 'pine'], [12, 112, 'beech'], [-40, 132, 'beech'], [-10, 150, 'pine']];
+// (none west of the Seat, where its view goes)
+const WOODS = [[-16, 96, 'pine'], [-22, 100, 'beech'], [-18, 138, 'pine'], [-28, 142, 'beech'], [-12, 146, 'pine'], [-34, 150, 'pine'], [-26, 92, 'beech'], [8, 124, 'pine'], [12, 112, 'beech'], [6, 98, 'beech'], [-8, 152, 'pine']];
 
 // the vision’s four pictures: a few boxes and cones each, in the site’s colours
 function visions() {
@@ -53,6 +54,7 @@ export function buildProps({ K, road, heightAt, level, tier = 'high' }) {
   const kings = argonath(K, rocks);
   kings.group.position.set(0, level(0, ARGONATH.z) ?? heightAt(0, ARGONATH.z), ARGONATH.z);
   kings.group.rotation.y = Math.PI;
+  kings.group.scale.setScalar(ARGONATH.scale);
   group.add(kings.group);
 
   // Tol Brandir out of the lake ahead, a spire of rock

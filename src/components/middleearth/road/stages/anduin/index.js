@@ -25,7 +25,7 @@ import { BEATS } from './beats';
 const MARKS = Object.fromEntries(BEATS.map((b) => [b.id, b]));
 const STAGE = stageById('anduin');
 const VISION = [2, 4, 10, 12]; // s into the Seat’s beat: the pictures coming, all there, going, gone
-const URUKS = [[-30, 128], [-34, 134], [-27, 140], [-36, 124]]; // where they break out of the trees, running at the road
+const URUKS = [[-26, 143], [-30, 147], [-24, 150], [-32, 145]]; // where they break out of the trees ahead, running at the road
 
 const smooth = (x) => {
   const k = Math.min(1, Math.max(0, x));

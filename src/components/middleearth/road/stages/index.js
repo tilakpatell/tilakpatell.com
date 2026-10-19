@@ -221,7 +221,7 @@ export const STAGES = [
           { type: 'ridges', scale: 90, height: 10, octaves: 4 },
           { type: 'island', at: [-60, 24], r: 44, height: 56, ragged: 0.4 },
           { type: 'island', at: [60, 24], r: 44, height: 56, ragged: 0.4 },
-          { type: 'island', at: [-40, 120], r: 40, height: 32 },
+          { type: 'island', at: [-12, 118], r: 28, height: 9, core: 0.3 },
           { type: 'mountains', scale: 140, height: 110, from: 240, to: 420 },
         ],
       },
@@ -234,7 +234,8 @@ export const STAGES = [
     // (ashore at Parth Galen for the Seat and the horn, the boat across to the east bank, and on foot)
     modes: [
       { at: 100, mode: 'walk' },
-      { at: 146, mode: 'boat' },
+      // (a metre before the breaking’s mark: the clock holds a hair short of it)
+      { at: 145, mode: 'boat' },
       { at: 160, mode: 'walk' },
     ],
     place: 'argonath',
