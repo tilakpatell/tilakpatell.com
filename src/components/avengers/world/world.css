@@ -209,13 +209,9 @@
 .cw-place { --cw-accent: #8fe9ff; position: fixed; inset: 0; z-index: var(--z-place, 70); display: flex; flex-direction: column; background: var(--bg); animation: cw-place-in 0.25s ease-out both; }
 @keyframes cw-place-in { from { opacity: 0; transform: translateY(10px); } }
 
-/* without 3D: the compound from the air, and the buildings as cards */
+/* without 3D: the compound from the air; the board below has the buildings */
 .cw-cards-wrap { padding-top: 2.5rem; padding-bottom: 1.5rem; }
-.cw-cards-grid { display: grid; gap: 2rem; align-items: start; }
-@media (min-width: 1024px) { .cw-cards-grid { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); } }
-.cw-cards { display: grid; gap: 0.7rem; margin: 0; padding: 0; list-style: none; }
-.cw-cards li { display: flex; flex-direction: column; align-items: flex-start; padding: 0.9rem 1.1rem; border: 1px solid var(--border); border-left: 3px solid var(--glow); border-radius: 8px; background: var(--surface); }
-.cw-cards .cw-list-sub { color: var(--muted); }
+.cw-air { max-width: 48rem; }
 
 @media (max-width: 639px) {
   .cw-stage { height: calc(100svh - var(--nav-h)); min-height: 30rem; }

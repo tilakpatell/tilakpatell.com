@@ -488,7 +488,7 @@ export const PAGES = {
       ['A link to each game', 'Each game has an address of its own, #/avengers/ and its building: workshop, lawn, training, range, operations, lab, gate or hangar. It opens at once over the compound; Esc or Back closes it.'],
       ['Other players', 'See other players goes online: everyone else on the compound shows as a hologram with their name over them.'],
       ['The gate: Thwip!', 'Spider-Man, late for school. Hold to web the wall ahead and swing, let go to fly; let go on the upswing for a perfect. Grab Peter’s backpacks, beat the bell, keep off the street.'],
-      ['Without 3D', 'The compound is drawn from the air, and its pins open each game in its simple version.'],
+      ['Without 3D', 'The compound is drawn from the air. Pick a pin to find its building on the ops board below, where Play opens its game.'],
     ],
   },
   '/scranton': {

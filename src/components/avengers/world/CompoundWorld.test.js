@@ -52,3 +52,28 @@ describe('the compound’s HUD', () => {
     expect(hud).toMatch(/Things to do · \{won\}\/\{prog\.places\.length\}/);
   });
 });
+
+describe('the compound and its board', () => {
+  const world = readFileSync(new URL('./CompoundWorld.jsx', import.meta.url), 'utf8');
+  it('puts the ops board directly under the compound, in place of the cards, with the pins finding its cards', () => {
+    const open = world.indexOf('<section id="hq-world"');
+    expect(open).toBeGreaterThan(-1);
+    expect(world.indexOf('<OpsBoard')).toBeGreaterThan(world.indexOf('</section>', open));
+    expect(world).not.toMatch(/function Cards\(/);
+    expect(world).toMatch(/function Air\(/);
+    expect(world).toMatch(/onPick=\{\(id\) => jumpTo\(null, `hq-card-\$\{id\}`/);
+    expect(world).toMatch(/travelTo\.current = travel;/);
+  });
+  it('tries 3D one game at a time, and never touches the site’s 3D setting', () => {
+    expect(world).toContain("writeLocal3D(GAME_AT[id], 'on')");
+    expect(world).not.toMatch(/three\.set\(|setMode3D/);
+  });
+  it('brings the board with it, and no game’s rules', async () => {
+    const files = await loadsWith(`${ROOT}src/components/avengers/world/CompoundWorld.jsx`);
+    expect(files).toEqual(expect.arrayContaining(['src/components/avengers/board/OpsBoard.jsx', 'src/components/avengers/board/records.js']));
+    expect(files.filter((f) => /^src\/components\/avengers\/(ricochet|widow|tesseract)\/rules\.js$/.test(f))).toEqual([]);
+  });
+  it('tells the guide’s readers the same', () => {
+    expect(readFileSync(new URL('../../guide/pages.js', import.meta.url), 'utf8')).toMatch(/\['Without 3D', '[^']*the ops board below[^']*'\]/);
+  });
+});

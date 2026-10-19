@@ -17,9 +17,9 @@ const OUT = process.env.OUT ?? '.';
 const THREE_D = process.argv.includes('--3d');
 // (rules.js’ PLACES names: that module imports without extensions, which Node can’t)
 const NAME = { stark: 'Tony Stark’s workshop', thor: 'Mjolnir', cap: 'The training center', hawkeye: 'The range', widow: 'Operations', banner: 'Bruce Banner’s lab', spidey: 'The front gate', vault: 'The hangar' };
-// the no-3D view’s card for a place, and its way in (PR 5’s board changes these two lines)
-const CARD = (id) => `.cw-cards li:nth-child(${LINKS.findIndex((l) => l.id === id) + 1})`;
-const PLAY = 'button';
+// the ops board’s card for a place, and its way in (avengers/board/OpsBoard.jsx)
+const CARD = (id) => `#hq-card-${id}`;
+const PLAY = 'a.btn-primary';
 
 mkdirSync(OUT, { recursive: true });
 const chrome =
