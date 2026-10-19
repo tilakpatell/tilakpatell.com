@@ -9,13 +9,13 @@ export { entered, left } from '../../beats';
 
 export const BEATS = [
   // the reveal from the ridge: terraces, bridges, the falls catching the sun
-  { id: 'reveal', kind: 'reveal', at: 14, hold: 12, rig: 'crane', reach: 16, params: { seconds: 10, top: 18, lookAt: [-30, -6, 90], above: true } },
+  { id: 'reveal', kind: 'reveal', at: 14, hold: 12, rig: 'crane', reach: 16, params: { seconds: 10, top: 18, lookAt: [-70, -8, 96], above: true } },
   // down over the bridge
   { id: 'bridge', kind: 'bridge', at: 48, hold: 0, rig: 'follow' },
   // the Council: a hard cut to the ring of chairs, the Ring on its plinth, Frodo stands
-  { id: 'council', kind: 'council', at: 78, hold: 20, rig: 'seat', cut: 0, reach: 12, params: { at: [4, 2.4, 76], lookAt: [-5, 1.1, 85], above: true }, lines: ['rivendell-elrond', 'rivendell-boromir', 'rivendell-frodo'] },
+  { id: 'council', kind: 'council', at: 78, hold: 20, rig: 'seat', cut: 0, reach: 12, params: { at: [-0.5, 2.6, 80], lookAt: [-9, 1, 85.5], above: true }, lines: ['rivendell-elrond', 'rivendell-boromir', 'rivendell-frodo'] },
   // Gimli on his feet as the hold ends (the clip after the voices, never under one)
-  { id: 'axe', kind: 'axe', at: 79, hold: 0, rig: 'seat', reach: 6, params: { at: [4, 2.4, 76], lookAt: [-5, 1.1, 85], above: true }, clip: 'andMyAxe' },
+  { id: 'axe', kind: 'axe', at: 79, hold: 0, rig: 'seat', reach: 6, params: { at: [-0.5, 2.6, 80], lookAt: [-9, 1, 85.5], above: true }, clip: 'andMyAxe' },
   // the shards of Narsil on their cloth
   { id: 'narsil', kind: 'narsil', at: 100, hold: 8, rig: 'low', reach: 10 },
   // Bilbo on a bench with his book

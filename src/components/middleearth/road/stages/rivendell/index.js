@@ -12,33 +12,29 @@
 
 import * as THREE from 'three';
 import { walker } from '../../cast';
-import { ARCH, BENCH, BRIDGE, COUNCIL, FALLS, buildProps } from './props';
+import { createTownKit } from '../../townKit';
+import { ARCH, BRIDGE, FALLS, buildProps } from './props';
 import { BEATS } from './beats';
 
 const MARKS = Object.fromEntries(BEATS.map((b) => [b.id, b]));
-// the chairs (props.js’s ring): who sits where, Elrond at the head across from the road
+// the court’s chairs (props.js’s, the chapter’s ten from its way in round): who sits where, Elrond at the head across from the road
 const SEATS = { elrond: 5, gandalf: 4, legolas: 3, gimli: 2, boromir: 6, aragorn: 7, frodo: 9, sam: 8, merry: 0, pippin: 1 };
 const GUESTS = ['elrond', 'gandalf', 'legolas', 'gimli', 'boromir']; // the scene’s own, until four of them join the line
 const STANDS = 8; // s into the Council Frodo is on his feet (after Elrond’s and Boromir’s lines)
 const GONE = MARKS.narsil.at; // m: the Council’s guests are left in the garden behind
 
-const chairAt = (i) => {
-  const a = (i / COUNCIL.chairs) * Math.PI * 2 + 0.3;
-  const x = COUNCIL.at[0] + Math.cos(a) * COUNCIL.r;
-  const z = COUNCIL.at[1] + Math.sin(a) * COUNCIL.r;
-  return { x, z, yaw: Math.atan2(COUNCIL.at[0] - x, COUNCIL.at[1] - z) };
-};
-
 export function build({ road, heightAt, rt, weather, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'stage:rivendell';
   const material = road.material({ vertexColors: true, flatShading: true });
-  const props = buildProps({ material, heightAt });
+  const town = createTownKit(road, rt?.gfx?.renderer ?? null, { elven: true });
+  const props = buildProps({ K: town.K, material, heightAt });
+  const chairAt = (i) => props.chairs[i];
   group.add(props.group);
   const figures = new Map();
-  const add = (key, name, x, z, yaw, base) => {
+  const add = (key, name, x, z, yaw, base, y = null) => {
     const w = walker(name, { rt, seed: 90 + figures.size });
-    w.group.position.set(x, heightAt(x, z), z);
+    w.group.position.set(x, y ?? heightAt(x, z), z);
     w.group.rotation.y = yaw;
     w.set({ base, speed: 0 });
     group.add(w.group);
@@ -47,9 +43,9 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
   };
   for (const id of GUESTS) {
     const c = chairAt(SEATS[id]);
-    add(id, id, c.x, c.z, c.yaw, 'sit.idle');
+    add(id, id, c.x, c.z, c.yaw, 'sit.idle', c.y);
   }
-  add('bilbo', 'bilbo', BENCH[0] - 0.1, BENCH[1], -Math.PI / 2, 'sit.talk');
+  add('bilbo', 'bilbo', props.seat.x, props.seat.z, props.seat.yaw, 'sit.talk', props.seat.y);
   // at the arch, the morning they leave
   add('elrond:arch', 'elrond', -ARCH.w / 2 - 2.2, ARCH.z + 1.5, Math.PI / 2, null);
   add('arwen:arch', 'arwen', -ARCH.w / 2 - 3.2, ARCH.z + 0.4, Math.PI / 2, null);
@@ -86,7 +82,7 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
       for (const s of sprays) {
         if (!s.h) {
           s.h = weather?.kind?.('spray', { count: 80, box: [3, 0.5, 3] }) ?? null;
-          s.h?.at(s.x + 2, heightAt(s.x, s.z) + 1, s.z);
+          s.h?.at(s.x + 6, heightAt(s.x, s.z) + 1, s.z);
         }
       }
       if (tier !== 'low' && local < MARKS.setout.at) motes ??= weather?.kind?.('motes', { follow: true, count: 80 }) ?? null;
@@ -97,7 +93,7 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
     },
     // the bridge carries the walkers over the stream
     floor(x, z) {
-      return Math.abs(x) <= BRIDGE.w / 2 && z >= BRIDGE.z[0] && z <= BRIDGE.z[1] ? props.deck : null;
+      return Math.abs(x) <= BRIDGE.w / 2 && z >= BRIDGE.z[0] && z <= BRIDGE.z[1] ? props.deck(z) : null;
     },
     // the company in their chairs while the Council holds (Frodo up when he speaks)
     pose(id) {
@@ -105,7 +101,7 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
       if (t == null || !Number.isFinite(t) || t >= MARKS.council.hold || Math.abs(seen.local - MARKS.council.at) > 0.5 || SEATS[id] == null) return null;
       const c = chairAt(SEATS[id]);
       const up = id === 'frodo' && t >= STANDS;
-      return { x: c.x, y: heightAt(c.x, c.z) + (up ? 0 : 0.05), z: c.z, yaw: c.yaw, base: up ? 'idle' : 'sit.idle', speed: 0 };
+      return { x: c.x, y: c.y, z: c.z, yaw: c.yaw, base: up ? 'idle' : 'sit.idle', speed: 0 };
     },
     dispose() {
       motes?.stop();
@@ -113,6 +109,7 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
       props.dispose();
       for (const w of figures.values()) w.dispose();
       material.dispose();
+      town.dispose();
       group.removeFromParent();
     },
   };

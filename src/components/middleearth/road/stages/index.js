@@ -90,8 +90,20 @@ export const STAGES = [
     // the valley of Imladris falling away on the right to the falls’ cliff,
     // the stream under the bridge, the mountains round it all
     ground: {
-      spec: { seed: 16, relief: [{ type: 'swell', scale: 200, height: 5 }, { type: 'hills', scale: 60, height: 3, gain: 0.4, octaves: 3 }, { type: 'island', at: [-100, 98], r: 90, height: -24 }, { type: 'mountains', scale: 140, height: 110, from: 230, to: 420 }] },
+      spec: { seed: 16, relief: [{ type: 'swell', scale: 200, height: 5 }, { type: 'hills', scale: 60, height: 3, gain: 0.4, octaves: 3 }, { type: 'island', at: [-100, 98], r: 90, height: -34 }, { type: 'mountains', scale: 140, height: 110, from: 230, to: 420 }] },
       rivers: [{ points: [[-540, 0, 44], [-200, 0, 48], [0, 0, 50], [200, 0, 53], [540, 0, 49]], depth: 1.6, width: 5, bank: 3 }],
+      // (the court, the hall of the shards and Bilbo’s pavilion stand on level ground, nothing planted in them)
+      flats: [
+        { at: [-9, 85], r: 9, edge: 8 },
+        { at: [-9.5, 103.5], r: 8, edge: 8 },
+        { at: [6.2, 119], r: 5, edge: 6 },
+      ],
+      clear: [
+        { at: [-9, 85], r: 8 },
+        { at: [-9.5, 103.5], r: 8 },
+        { at: [6.2, 119], r: 4 },
+        { at: [-34, 94], r: 12 },
+      ],
     },
   },
   { id: 'caradhras', name: 'Caradhras', date: '11 January 3019', length: 230, mode: 'walk', place: 'redhorn' },
