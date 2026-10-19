@@ -136,9 +136,13 @@ describe('the adventure’s store', () => {
     expect(a.dialOpen('needful')).toBe(false); // (episode 5 is built too)
     expect(a.dialOpen('vat')).toBe(false);
     a.jump(5);
-    expect(a.dialOpen('vat')).toBe(true); // (past the last ready episode)
+    expect(a.dialOpen('needful')).toBe(true);
+    expect(a.dialOpen('vat')).toBe(true);
+    expect(a.dialOpen('jerryboree')).toBe(false); // (episode 6 is built too)
+    a.jump(6);
+    expect(a.dialOpen('jerryboree')).toBe(true); // (past the last ready episode)
     a.jump(99);
-    expect(a.get().episode).toBe(5);
+    expect(a.get().episode).toBe(6);
     a.reset();
     expect(a.get()).toEqual(fresh());
   });
@@ -156,7 +160,7 @@ describe('the adventure’s store', () => {
     // part-way through one, past the built ones, or on free roam: none
     at({ episode: 1, step: 1 });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
-    at({ episode: 5, step: 0 });
+    at({ episode: 6, step: 0 });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
     at({ episode: 1, step: 0, freeRoam: true });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
@@ -220,10 +224,32 @@ describe('the adventure’s store', () => {
     const chased = createAdventure({ saves, read: none });
     expect(chased.get()).toMatchObject({ episode: 4, step: 1 });
     expect(chased.intro()).toBe(4);
-    // both: episode 5 finishes as the visit loads, with no card (episode 6 isn't built)
+    // both: episode 5 finishes as the visit loads
     at({ episode: 4, step: 0, wins: ['chase'] });
     const both = createAdventure({ saves, read: knowing(['gromflomites']) });
     expect(both.get()).toMatchObject({ episode: 5, step: 0 });
+    expect(both.intro()).toBe(5); // (episode 6's card: it's built now)
+  });
+
+  it('opens episode 6 for a visitor who finished episode 5 before it was built', () => {
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), ...data } }));
+    const knowing = (tasks) => ({ tasks: () => tasks, citadel: () => [] });
+    at({ episode: 5, step: 0 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(5);
+    // Needful Things done already: caught up to the vat, still episode 6's card
+    at({ episode: 5, step: 0 });
+    const dealt = createAdventure({ saves, read: knowing(['needful']) });
+    expect(dealt.get()).toMatchObject({ episode: 5, step: 1 });
+    expect(dealt.intro()).toBe(5);
+    // the vat done already, Needful Things not: it waits at Needful Things, with episode 6's card
+    at({ episode: 5, step: 0 });
+    const dipped = createAdventure({ saves, read: knowing(['vat']) });
+    expect(dipped.get()).toMatchObject({ episode: 5, step: 0 });
+    expect(dipped.intro()).toBe(5);
+    // both: episode 6 finishes as the visit loads, with no card (episode 7 isn't built)
+    at({ episode: 5, step: 0 });
+    const both = createAdventure({ saves, read: knowing(['needful', 'vat']) });
+    expect(both.get()).toMatchObject({ episode: 6, step: 0 });
     expect(both.intro()).toBe(null);
   });
 });
