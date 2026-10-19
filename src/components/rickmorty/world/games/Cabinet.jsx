@@ -5,6 +5,7 @@ import { useFrameLoop, useMediaQuery } from '../../../../lib/hooks';
 import { readPad } from '../../../games/pad';
 import { SAY } from '../say';
 import { CABINETS, TUNING, newCabinet, stepCabinet } from './cabinet';
+import { drawn, keyFor } from './cabinetPlay';
 import './cabinet.css';
 
 // A walkway cabinet at Blips and Chitz, played: Plumbus Smash on the
@@ -15,27 +16,24 @@ import './cabinet.css';
 // <Cabinet game="cabinet2" onWin={() => …} onLeave={() => …} /> fills its
 // parent (the world's overlay): onWin once a run, the moment the target's
 // beaten; onLeave from every way out. It owns Esc: a pause while playing,
-// the way out otherwise.
+// the way out otherwise (./cabinetPlay.js). Each frame moves the plumbuses'
+// own elements; React draws again only when what it draws changes.
 
 const STEP = 1 / 60;
 const MAX_STEPS = 6;
-const SETTLE_MS = 600; // an end card ignores a pad's presses this long
-const CHUTES = [
-  ['ArrowLeft', 'a', 'A'],
-  ['ArrowDown', 's', 'S'],
-  ['ArrowRight', 'd', 'D'],
-];
+const SETTLE_MS = 600; // an end card ignores keys, a pad and taps this long
 const SIDES = ['left', 'middle', 'right'];
 const score = (n) => n.toLocaleString('en-GB');
 const sfx = () => import('../../../../lib/sfx');
 const play = (name) => sfx().then((s) => s[name]?.(), () => {});
 const cheer = () => import('../../../games/gameAudio').then((g) => g.plumbus?.(), () => {});
 const seed = () => 1 + Math.floor(Math.random() * 1e6);
+const top = (y) => `calc(${(y * 100).toFixed(2)}% - 26px)`;
 
 // the plumbus, as the factory draws one: the dinglebop's pink, a grumbo below
-function Plumbus({ y }) {
+function Plumbus({ y, ref }) {
   return (
-    <svg className="cabinet-plumbus" viewBox="0 0 40 52" style={{ top: `calc(${(y * 100).toFixed(2)}% - 26px)` }} aria-hidden="true">
+    <svg ref={ref} className="cabinet-plumbus" viewBox="0 0 40 52" style={{ top: top(y) }} aria-hidden="true">
       <path d="M12 6 C4 10 4 26 14 28 C10 34 12 40 16 46 H24 C28 40 30 34 26 28 C36 26 36 10 28 6 C24 2 16 2 12 6 Z" fill="#ff8fb4" stroke="#1b1424" strokeWidth="2.5" strokeLinejoin="round" />
       <circle cx="20" cy="15" r="4" fill="#ffd0e0" stroke="#1b1424" strokeWidth="2" />
     </svg>
@@ -55,7 +53,11 @@ export default function Cabinet({ game = 'cabinet2', onWin, onLeave }) {
   const presses = useRef([]);
   const acc = useRef(0);
   const told = useRef(false);
-  const endedAt = useRef(0);
+  const [settled, setSettled] = useState(true);
+  const settledRef = useRef(settled);
+  settledRef.current = settled;
+  const dropEls = useRef(new Map()); // a plumbus's id → its element
+  const shown = useRef(drawn(run.current));
   const padWas = useRef({});
   const won = useRef(onWin);
   won.current = onWin;
@@ -67,9 +69,23 @@ export default function Cabinet({ game = 'cabinet2', onWin, onLeave }) {
     presses.current = [];
     acc.current = 0;
     told.current = false;
+    shown.current = drawn(run.current);
     setView(run.current);
     setPhase('play');
   }, [game]);
+
+  // where each plumbus is, straight to its element; the rest only when it changes
+  const draw = useCallback((g) => {
+    for (const d of g.drops) {
+      const el = dropEls.current.get(d.id);
+      if (el) el.style.top = top(d.y);
+    }
+    const now = drawn(g);
+    if (now !== shown.current) {
+      shown.current = now;
+      setView(g);
+    }
+  }, []);
 
   // steps with these presses, and what they did: sounds, the win told once, the end
   const advance = useCallback((steps) => {
@@ -90,30 +106,32 @@ export default function Cabinet({ game = 'cabinet2', onWin, onLeave }) {
       }
     }
     run.current = g;
-    setView(g);
+    draw(g);
     if (g.phase !== 'play') {
-      endedAt.current = performance.now();
+      settledRef.current = false;
+      setSettled(false);
+      setView(g);
       setPhase(g.phase);
     }
-  }, []);
+  }, [draw]);
+  // an end card, settled
+  useEffect(() => {
+    if (settled) return undefined;
+    const t = setTimeout(() => setSettled(true), SETTLE_MS);
+    return () => clearTimeout(t);
+  }, [settled]);
 
-  // the keys: Esc and P pause (Esc leaves when not playing), the chutes smash
+  // the keys: Esc and P pause, Esc leaves from a card, the chutes smash
   useEffect(() => {
     const down = (e) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const p = phaseRef.current;
-      if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
-        e.preventDefault();
-        if (p === 'play') setPhase('paused');
-        else if (p === 'paused') setPhase('play');
-        else if (e.key === 'Escape') leave();
-        return;
-      }
-      const lane = CHUTES.findIndex((keys) => keys.includes(e.key));
-      if (lane >= 0 && p === 'play') {
-        e.preventDefault();
-        if (!e.repeat) presses.current.push(lane);
-      }
+      const act = keyFor(phaseRef.current, e.key, !settledRef.current);
+      if (act == null) return;
+      e.preventDefault();
+      if (act === 'pause') setPhase('paused');
+      else if (act === 'play') setPhase('play');
+      else if (act === 'leave') leave();
+      else if (act.smash != null && !e.repeat) presses.current.push(act.smash);
     };
     window.addEventListener('keydown', down);
     return () => window.removeEventListener('keydown', down);
@@ -139,7 +157,7 @@ export default function Cabinet({ game = 'cabinet2', onWin, onLeave }) {
         return;
       }
       if (p === 'won' || p === 'lost') {
-        if (performance.now() - endedAt.current < SETTLE_MS) return;
+        if (!settledRef.current) return;
         if (edge('a')) again();
         else if (edge('b')) leave();
         return;
@@ -173,6 +191,7 @@ export default function Cabinet({ game = 'cabinet2', onWin, onLeave }) {
       },
       set(g) {
         run.current = g;
+        shown.current = drawn(g);
         setView(g);
       },
       step: (input = {}) => advance([input]),
@@ -210,7 +229,14 @@ export default function Cabinet({ game = 'cabinet2', onWin, onLeave }) {
               {view.drops
                 .filter((d) => d.lane === lane)
                 .map((d) => (
-                  <Plumbus key={d.id} y={d.y} />
+                  <Plumbus
+                    key={d.id}
+                    y={d.y}
+                    ref={(el) => {
+                      dropEls.current.set(d.id, el);
+                      return () => dropEls.current.delete(d.id);
+                    }}
+                  />
                 ))}
             </button>
           ))}
@@ -257,7 +283,7 @@ export default function Cabinet({ game = 'cabinet2', onWin, onLeave }) {
         </div>
       )}
       {(phase === 'won' || phase === 'lost') && (
-        <div className="cabinet-card">
+        <div className="cabinet-card" data-settling={!settled || undefined}>
           <div>
             <h2>{phase === 'won' ? 'High score' : cab.name}</h2>
             <p>{phase === 'won' ? `${score(view.score)}. Rick’s bet is good.` : `Game over at ${score(view.score)}.`}</p>

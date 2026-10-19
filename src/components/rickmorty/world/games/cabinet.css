@@ -163,3 +163,7 @@
     font-size: 0.72rem;
   }
 }
+/* (an end card that has only just come up: a tap meant for a chute lands on nothing) */
+.cabinet-card[data-settling] {
+  pointer-events: none;
+}
