@@ -4604,5 +4604,13 @@
     ],
     "license": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm.",
     "use": "The planets’ loading films on the galaxy’s cards and landing veils, the campaign’s cinematics as the briefings of the worlds they are set on, the menu tiles, tutorials and logo for the game’s world, and Mustafar’s lava (MT_Volcano2): the drop’s WebM as it is (MT_Volcano2 cut from VP6 to VP9), published to site-assets by scripts/assets-publish.mjs, the posters and captions in public/films/bf2017/, by scripts/bf2017-ui.mjs"
+  },
+  "gen3d/jedha-kyber-temple": {
+    "source": "https://github.com/microsoft/TRELLIS.2",
+    "name": "the Temple of the Kyber in the Holy City of Jedha: a tall tapering tower of sandstone slabs on a stepped base, made for this site with Pixal3D (trellis.cpp), baked in Blender on the site owner's machine (scripts/gen3d)",
+    "authors": [
+      "Tilak Patel, with Microsoft TRELLIS.2"
+    ],
+    "license": "Generated for this site; TRELLIS.2 is MIT"
   }
 }
