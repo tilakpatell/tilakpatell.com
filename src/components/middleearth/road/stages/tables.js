@@ -26,6 +26,8 @@ const CORN = { Grass: { recolour: '#fbe8a8' } };
 const HEATH = { Leaves: { recolour: '#6e6a44' } };
 const BRACKEN = { Leaves: { recolour: '#a8743a' } };
 const GOLD = { Leaves_NormalTree: { recolour: '#d8a23a' }, Leaves_Birch: { recolour: '#e2b84a' } };
+// the oaks’ bark a warm brown (the kit’s is a cartoon red-brown)
+const OAK = { Bark_NormalTree: { recolour: '#6e5a46' } };
 // the Lone-lands’ stone warm grey (the kit’s goes a cold purple in the dusk), the Midgewater’s reeds dull
 const STONE = { Rocks: { recolour: '#8c8274' } };
 const REED = { Grass: { recolour: '#6e7044' } };
@@ -38,14 +40,14 @@ const HOLLY = { Leaves_NormalTree: { recolour: '#1f3a1c' }, Leaves: { recolour: 
 const HEATH_GRASS = { Grass: { recolour: '#8a8458' } };
 const SNOWED = { Leaves_Pine: { recolour: '#e8eef2' } };
 // (the kit’s oak bark is a red-brown: the Trollshaws’ a warm grey, so it isn’t violet under a grey sky)
-const AUTUMN = { Leaves_NormalTree: { recolour: '#eeae5c' }, Leaves_Birch: { recolour: '#f2c86a' }, Bark_NormalTree: { recolour: '#806c50' } };
+const AUTUMN = { Leaves_NormalTree: { recolour: '#eeae5c' }, Leaves_Birch: { recolour: '#f2c86a' }, Leaves: { recolour: '#b07a3e' }, Bark_NormalTree: { recolour: '#806c50' } };
 
 export const SCATTER = {
   hobbiton: [
     // (oaks: the common tree at its broadest, in the hedgerows’ clumps)
-    { model: 'CommonTree_1', per100: 0.05, clump: 3, spread: 10, scale: [1.1, 1.6] },
-    { model: 'CommonTree_2', per100: 0.035, clump: 2, spread: 8, scale: [1.0, 1.5] },
-    { model: 'CommonTree_5', per100: 0.02, clump: 2, spread: 7, scale: [1.0, 1.4] },
+    { model: 'CommonTree_1', per100: 0.05, clump: 3, spread: 10, scale: [1.1, 1.6], tint: OAK },
+    { model: 'CommonTree_2', per100: 0.035, clump: 2, spread: 8, scale: [1.0, 1.5], tint: OAK },
+    { model: 'CommonTree_5', per100: 0.02, clump: 2, spread: 7, scale: [1.0, 1.4], tint: OAK },
     // the hedges: long bushes strung close in a line of a clump, some in flower
     { model: 'Bush_Long_1', per100: 0.16, clump: 6, spread: 6, scale: [1.0, 1.4] },
     { model: 'Bush_Common_Flowers', per100: 0.1, clump: 3, spread: 4, scale: [0.9, 1.3] },
@@ -79,8 +81,8 @@ export const SCATTER = {
     { model: 'Flower_2_Group', per100: 0.15, clump: 4, spread: 2, scale: [0.25, 0.35], x: [-18, 18] },
     { model: 'Plant_6', per100: 0.2, clump: 4, spread: 2, scale: [0.7, 1.0], x: [-20, 20] },
     // the Woody End: beeches (the common tree at its tallest) over the hollow, ferns and toadstools under them
-    { model: 'CommonTree_2', per100: 0.14, clump: 3, spread: 10, scale: [1.3, 1.8], z: [62, 118] },
-    { model: 'CommonTree_4', per100: 0.09, clump: 2, spread: 9, scale: [1.2, 1.7], z: [62, 118] },
+    { model: 'CommonTree_2', per100: 0.14, clump: 3, spread: 10, scale: [1.3, 1.8], z: [62, 118], tint: OAK },
+    { model: 'CommonTree_4', per100: 0.09, clump: 2, spread: 9, scale: [1.2, 1.7], z: [62, 118], tint: OAK },
     { model: 'Fern_1', per100: 0.9, clump: 6, spread: 4, scale: [0.8, 1.3], z: [62, 118], x: [-70, 70] },
     { model: 'Fern_2', per100: 0.6, clump: 5, spread: 3, scale: [0.9, 1.4], z: [62, 118], x: [-50, 50] },
     { model: 'Plant_2', per100: 0.3, clump: 4, spread: 3, scale: [0.8, 1.2], z: [62, 118], x: [-40, 40] },
@@ -89,7 +91,7 @@ export const SCATTER = {
     { model: 'Mushroom_RedCap', per100: 0.08, clump: 3, spread: 1, scale: [0.5, 0.8], z: [62, 118], x: [-30, 30] },
     { model: 'Bush_Large', per100: 0.05, clump: 2, spread: 5, scale: [0.9, 1.3], z: [62, 118] },
     // the rest of the Eastfarthing
-    { model: 'CommonTree_1', per100: 0.02, clump: 3, spread: 9, scale: [0.9, 1.4] },
+    { model: 'CommonTree_1', per100: 0.02, clump: 3, spread: 9, scale: [0.9, 1.4], tint: OAK },
     { model: 'Bush_Common', per100: 0.06, clump: 4, spread: 5, scale: [0.9, 1.5] },
     // the Brandywine’s banks: reeds and rushes, pebbles at the landing
     { model: 'Grass_Wispy_Tall', per100: 2.2, clump: 8, spread: 4, scale: [0.9, 1.3], z: [118, 182], x: [-80, 80], kind: 'grass' },
@@ -98,8 +100,8 @@ export const SCATTER = {
   ],
   bree: [
     // round the town, outside its hedge, and on Bree-hill: hedgerow trees and long grass
-    { model: 'CommonTree_1', per100: 0.03, clump: 3, spread: 9, scale: [1.0, 1.5] },
-    { model: 'CommonTree_3', per100: 0.02, clump: 2, spread: 8, scale: [1.0, 1.4] },
+    { model: 'CommonTree_1', per100: 0.03, clump: 3, spread: 9, scale: [1.0, 1.5], tint: OAK },
+    { model: 'CommonTree_3', per100: 0.02, clump: 2, spread: 8, scale: [1.0, 1.4], tint: OAK },
     { model: 'Bush_Large', per100: 0.04, clump: 3, spread: 5, scale: [0.9, 1.3] },
     { model: 'Bush_Common', per100: 0.08, clump: 4, spread: 5, scale: [0.9, 1.4] },
     { model: 'Bush_Long_1', per100: 0.1, clump: 6, spread: 6, scale: [1.0, 1.4] },
@@ -200,7 +202,7 @@ export const SCATTER = {
   ],
   // Ithilien: the garden of Gondor gone wild, cedars and pines, herbs and flowers in the long grass
   ithilien: [
-    { model: 'CommonTree_4', per100: 0.08, clump: 3, spread: 10, scale: [1.0, 1.5] },
+    { model: 'CommonTree_4', per100: 0.08, clump: 3, spread: 10, scale: [1.0, 1.5], tint: OAK },
     { model: 'Pine_2', per100: 0.05, clump: 3, spread: 9, scale: [0.9, 1.3] },
     { model: 'GiantPine_3', per100: 0.008, clump: 1, spread: 1, scale: [0.6, 0.8] },
     { model: 'Bush_Large_Flowers', per100: 0.08, clump: 3, spread: 4, scale: [0.8, 1.2] },
@@ -229,8 +231,8 @@ export const SCATTER = {
   ],
   // the Pelennor: farms and fields under the walls, orchards, the road between low walls
   'minas-tirith': [
-    { model: 'CommonTree_5', per100: 0.05, clump: 6, spread: 12, scale: [0.8, 1.1] },
-    { model: 'CommonTree_2', per100: 0.03, clump: 3, spread: 9, scale: [1.0, 1.4] },
+    { model: 'CommonTree_5', per100: 0.05, clump: 6, spread: 12, scale: [0.8, 1.1], tint: OAK },
+    { model: 'CommonTree_2', per100: 0.03, clump: 3, spread: 9, scale: [1.0, 1.4], tint: OAK },
     { model: 'Bush_Long_1', per100: 0.12, clump: 6, spread: 6, scale: [1.0, 1.3] },
     { model: 'Bush_Common', per100: 0.06, clump: 3, spread: 5, scale: [0.9, 1.3] },
     { model: 'Grass_Wheat', per100: 2.5, clump: 6, spread: 2.5, scale: [0.7, 0.9], x: [12, 80], tint: CORN },
