@@ -15,7 +15,7 @@
 // the answer), 'menu' {} and 'lore' {} on their keys, 'end' {} at the Havens.
 // The world adds: goTo(stageId), setAuto(on), press(name, down) (the touch
 // buttons), carryOn(), restart(), skipToEnd(); and set(s), `s`, `scene` for the checks.
-// In development, window.__ROAD__ = { set(s), info(), world }.
+// In development, window.__ROAD__ = { set(s), info(), world, weather }.
 
 import * as THREE from 'three';
 import { newClock, step as stepClock } from './clock';
@@ -26,6 +26,7 @@ import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
 import { createLands } from './lands';
 import { createScatter } from './scatter';
+import { createWeather } from './weather';
 import { loadKit } from '../../../lib/three/kitNodes';
 import { createHouse } from '../../../lib/three/houseNodes';
 import { forgetCast, walker } from './cast';
@@ -88,6 +89,9 @@ export default {
     scene.add(scatter.group);
     const sky = createSky();
     const lands = createLands({ scene, house, tier, scatter, sky });
+    // rain, snow, ash, fire: a kind a draw, asked for by the stages and their beats
+    const weather = createWeather(rt.gfx.renderer, { tier });
+    scene.add(weather.group);
     const sun = new THREE.DirectionalLight(0xffffff, 2);
     const hemi = new THREE.HemisphereLight(0xdfe8ff, 0x5a5040, 0.6);
     scene.add(sun, sun.target, hemi, sky.mesh);
@@ -161,6 +165,7 @@ export default {
       const l = lightAt(STAGES, clock.s);
       daylight = l;
       sky.set(l);
+      weather.light(l);
       const { az, el, colour } = l.sun;
       sunDir.set(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
       sun.color.setRGB(...colour);
@@ -289,6 +294,7 @@ export default {
         report(here, dt);
         lands.step();
         lands.water(dt, daylight);
+        weather.update(dt, camera);
         windTime.value += dt;
         scatter.update(camera, dt);
       },
@@ -352,6 +358,7 @@ export default {
         scatter.dispose();
         for (const k of kits.values()) k.dispose();
         sky.dispose();
+        weather.dispose();
         for (const w of cast.values()) w.dispose();
         forgetCast();
         if (typeof window !== 'undefined' && window.__ROAD__?.world === world) delete window.__ROAD__;
@@ -364,7 +371,7 @@ export default {
         const r = rt.gfx.renderer?.info?.render ?? {};
         return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats };
       };
-      window.__ROAD__ = { world, set: (s) => world.set(s), info };
+      window.__ROAD__ = { world, set: (s) => world.set(s), info, weather };
     }
     return world;
   },
