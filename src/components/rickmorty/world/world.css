@@ -421,13 +421,18 @@
   min-width: 76px;
   font-weight: 700;
 }
-.rm-fight-hearts {
-  letter-spacing: 2px;
-  color: #ff5a6a;
+.rm-fight-row em { min-width: 3ch; font-style: normal; font-variant-numeric: tabular-nums; }
+/* (the enemy's hits left, as a share of its full: ./vitalsOf.js) */
+.rm-fight-bar {
+  position: relative;
+  display: block;
+  width: 120px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.18);
 }
-.rm-fight-hearts span[data-off] {
-  color: rgba(255, 255, 255, 0.22);
-}
+.rm-fight-bar > i { position: absolute; inset: 0; background: #ff5a6a; transform-origin: left; scale: var(--v, 1) 1; }
 .rm-fight-hint {
   font-size: 0.7rem; /* (the HUD's floor) */
   opacity: 0.75;

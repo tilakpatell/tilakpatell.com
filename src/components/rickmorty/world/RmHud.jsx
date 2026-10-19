@@ -2,9 +2,10 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import RmEarnNote from '../RmEarnNote';
 import { PowerBar } from '../../universe/shared/powerBar';
 import { Link as RouterLink } from 'react-router-dom';
-import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiEmotionLaughLine, RiListCheck2, RiShieldLine, RiShirtLine, RiToolsLine, RiTyphoonLine } from 'react-icons/ri';
+import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiEmotionLaughLine, RiHeart3Line, RiListCheck2, RiShieldLine, RiShirtLine, RiToolsLine, RiTyphoonLine } from 'react-icons/ri';
 import { EMOTES, wheelAngle } from '../../../lib/emote';
-import { Arms, Cluster, Prompt, Reticle, Stick, TouchButton, Vitals, reticleState } from '../../../runtime/hud';
+import { Arms, Cluster, Prompt, Reticle, Stick, TouchButton, Vitals, createFlightCluster, reticleState } from '../../../runtime/hud';
+import { enemyShare, heartsToHealth } from './vitalsOf';
 import { PROMPT as LOOK_PROMPT } from '../../../runtime/look';
 import GuideCue from '../../guide/GuideCue';
 import Wardrobe from '../wardrobe/Wardrobe';
@@ -29,6 +30,9 @@ import { Title, Toast } from './WorldCards';
 // C-137's own look; the spacing is the kit's tokens (./world.css).
 
 const EMOTE_NAME = { wave: 'Wave', cheer: 'Cheer', dance: 'Dance', taunt: 'Taunt', sit: 'Sit' };
+
+// the gun in Morty's hand in a duel, on the kit's Arms (no rack: it never runs dry)
+const HAND_GUN = { name: 'Rick’s gun', line: 'primary', index: 0, ammo: 0, max: 0, filling: 0 };
 
 export default function RmHud({
   touch,
@@ -104,6 +108,17 @@ export default function RmHud({
   // the toast and the cruiser's caption sit just under it however tall the
   // objective or the chips make it, never over them.
   const top = useRef(null);
+  // a duel: Morty's health and his gun on the HUD kit's cluster (his hearts
+  // on the one scale: ./vitalsOf.js), written when the duel changes
+  const footRef = useRef(null);
+  const [footCluster] = useState(createFlightCluster);
+  const health = duel ? heartsToHealth(duel.mortyHp, duel.mortyMax) : null;
+  const healthValue = health?.value ?? null;
+  const healthLow = health?.low ?? false;
+  useLayoutEffect(() => {
+    const on = healthValue !== null;
+    footCluster.place(footRef.current, { on, vitals: on ? { value: healthValue, max: 100, low: healthLow } : null, arms: on ? HAND_GUN : null });
+  }, [footCluster, healthValue, healthLow]);
   useLayoutEffect(() => {
     const row = top.current;
     const stage = row?.parentElement;
@@ -150,24 +165,12 @@ export default function RmHud({
             <div className="rm-fight" aria-live="polite">
               <div className="rm-fight-row">
                 <b>{SAY[duel.who]?.who ?? 'Them'}</b>
-                <span className="rm-fight-hearts" aria-label={`${duel.hp} of ${duel.max}`}>
-                  {Array.from({ length: duel.max }, (_, i) => (
-                    <span key={i} data-off={i >= duel.hp || undefined}>
-                      ♥
-                    </span>
-                  ))}
+                <span className="rm-fight-bar" style={{ '--v': enemyShare(duel.hp, duel.max) / 100 }} aria-hidden="true">
+                  <i />
                 </span>
+                <em>{enemyShare(duel.hp, duel.max)}%</em>
               </div>
-              <div className="rm-fight-row">
-                <b>Morty</b>
-                <span className="rm-fight-hearts" aria-label={`${duel.mortyHp} of ${duel.mortyMax}`}>
-                  {Array.from({ length: duel.mortyMax }, (_, i) => (
-                    <span key={i} data-off={i >= duel.mortyHp || undefined}>
-                      ♥
-                    </span>
-                  ))}
-                </span>
-              </div>
+              <span className="sr-only">Morty: {health.value} of 100.</span>
               <span className="rm-fight-hint">F fires. Keep out of reach.</span>
             </div>
           )}
@@ -351,6 +354,11 @@ export default function RmHud({
         </p>
       )}
 
+      {/* in a duel: Morty's health and his gun, the same kit's cluster */}
+      <Cluster rootRef={footRef} className="rm-cluster" label="Morty">
+        <Vitals label="Morty" icon={<RiHeart3Line aria-hidden="true" />} className="rm-cluster-vitals" />
+        <Arms className="rm-cluster-arms" />
+      </Cluster>
       {/* in the cruiser: its deflectors and its guns, the HUD kit's cluster in the show's ink (the frame loop writes it) */}
       {clusterRef && (
         <Cluster rootRef={clusterRef} className="rm-cluster" label="The cruiser">
