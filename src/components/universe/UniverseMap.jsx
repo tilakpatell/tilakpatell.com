@@ -12,7 +12,9 @@ import MiniMap from './MiniMap';
 import GuideCue from '../guide/GuideCue';
 import { askBrief } from '../tour/brief';
 import LoadingVeil from '../worlds/LoadingVeil';
-import { Prompt, Reticle } from '../../runtime/hud';
+import { RiShieldLine } from 'react-icons/ri';
+import PowerBar from './PowerBar';
+import { Arms, Cluster, Prompt, Reticle, Vitals } from '../../runtime/hud';
 import { PROMPT as LOOK_PROMPT } from '../../runtime/look';
 
 // The map: the 3D scene (scene.js and planets.js, a world module on the
@@ -37,16 +39,16 @@ import { PROMPT as LOOK_PROMPT } from '../../runtime/look';
 // is the one picked there, how the ship goes anywhere it's sent, and
 // `charting` says the nav map's open (the director holds off meanwhile).
 
-export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen, ship, loadout, build = null, tune = null, canFit = false, hangar = false, onHangar, net = null, onEvent, onLand, onCrash, drive = 'super', charting = false, onMap, startAt = null, universe = null }) {
+export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen, ship, loadout, build = null, tune = null, canFit = false, hangar = false, onHangar, net = null, onEvent, onLand, onCrash, drive = 'super', charting = false, onMap, startAt = null, universe = null, skillFx = null, powerPicks = null }) {
   const labels = useRef({});
   const tags = useRef(null);
   const stick = useRef(null);
   const alt = useRef(null);
-  const shield = useRef(null);
+  const cluster = useRef(null); // the flight cluster: shields and arms in a ship, health on foot (the HUD kit's: clusterView.js)
+  const powers = useRef(null); // the crew's two powers' tiles in it (PowerBar.jsx; the scene writes them: powers.js)
   const wantedEl = useRef(null); // (the law's stars and the bounty on you: wanted.js)
   const { economy } = useEconomy({ ask: false }); // (the wallet a bounty's paid off from)
   const hud = useRef(null);
-  const arms = useRef(null); // the weapon readout (weapons.js)
   const siegeEl = useRef(null); // the Citadel's siege (siege.js)
   const prompt = useRef(null);
   const enterBtn = useRef(null); // into the world you're down on (landings/wayin.js): the scene shows it
@@ -96,15 +98,17 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
       loadout,
       build,
       tune,
+      skillFx, // (the skill tree's effects and the powers picked: hangar/skills's, the page's)
+      powerPicks,
       controls,
       labels,
       stick,
       alt,
-      shield,
+      cluster,
+      powers,
       wanted: wantedEl,
       wallet: economy,
       hud,
-      arms,
       siege: siegeEl,
       net,
       tags,
@@ -161,6 +165,24 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
   // the first flight's basics (components/tour), as the ship's under you
   useEffect(() => {
     if (ship && on) askBrief('/universe/fly');
+  }, [ship, on]);
+  // The cluster's height on the map (--hud-cluster-h), for the prompt, the
+  // way in and the jump button over it: layout, not a HUD number, so the
+  // browser says when it changes (as the galaxy's --fc-h). (On a touch
+  // screen the row has no box of its own: 0.)
+  useEffect(() => {
+    const root = cluster.current;
+    const map = root?.parentElement;
+    const row = root?.querySelector('.hud-cluster-row');
+    if (!row || !map || typeof ResizeObserver !== 'function') return undefined;
+    const fit = () => map.style.setProperty('--hud-cluster-h', `${row.offsetHeight}px`);
+    const watch = new ResizeObserver(fit);
+    watch.observe(row);
+    fit();
+    return () => {
+      watch.disconnect();
+      map.style.removeProperty('--hud-cluster-h');
+    };
   }, [ship, on]);
   useEffect(() => {
     if (!arrive) return undefined;
@@ -278,12 +300,12 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
               <div ref={alt} className="universe-alt" aria-hidden="true">
                 <span className="universe-alt-mark" />
               </div>
-              <div ref={shield} className="universe-shield" aria-hidden="true">
-                <span className="universe-shield-label">{onFoot ? 'Health' : 'Shields'}</span>
-                <span className="universe-shield-bar">
-                  <span />
-                </span>
-              </div>
+              {/* the flight cluster, bottom centre, as the galaxy has it: the shields and the line picked (health on foot) */}
+              <Cluster rootRef={cluster} className="universe-cluster" label={onFoot ? 'On foot' : 'Flight'}>
+                <Vitals label={onFoot ? 'Health' : 'Shields'} icon={<RiShieldLine aria-hidden="true" />} />
+                <Arms keys />
+                {!onFoot && <PowerBar ship={ship} reduced={reduced} barRef={powers} onPress={(slot) => view.current?.power?.(slot)} placement="cluster" picks={powerPicks} carry={skillFx?.carry} />}
+              </Cluster>
               <div ref={wantedEl} className="universe-wanted" aria-hidden="true">
                 <span className="universe-wanted-stars">
                   <i />
@@ -328,20 +350,6 @@ export default function UniverseMap({ selected, onSelect, onOpen, handle, frozen
                   <i />
                   <b className="universe-nav-name" />
                   <b className="universe-nav-dist" />
-                </span>
-              </div>
-              <div ref={arms} className="universe-arms" aria-hidden="true">
-                <span className="universe-arms-name" />
-                <span className="universe-arms-rack">
-                  <i className="universe-arms-pip" />
-                  <i className="universe-arms-pip" />
-                  <i className="universe-arms-pip" />
-                  <i className="universe-arms-pip" />
-                  <i className="universe-arms-pip" />
-                  <i className="universe-arms-pip" />
-                </span>
-                <span className="universe-arms-keys">
-                  <kbd>R</kbd> or <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>
                 </span>
               </div>
               <div ref={siegeEl} className="universe-siege" role="status">
