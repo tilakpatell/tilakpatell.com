@@ -37,7 +37,7 @@ export const CHANGES = [
     order: ['gandalf', 'legolas', 'gimli', 'aragorn', 'boromir', 'merry', 'pippin', 'sam', 'frodo'],
   },
   // (the Bridge of Khazad-dûm)
-  { stage: 'moria', local: 137, remove: ['gandalf'], state: { legolas: 'grieving', gimli: 'grieving', aragorn: 'grieving', boromir: 'grieving', merry: 'grieving', pippin: 'grieving', sam: 'grieving', frodo: 'grieving' } },
+  { stage: 'moria', local: 107, remove: ['gandalf'], state: { legolas: 'grieving', gimli: 'grieving', aragorn: 'grieving', boromir: 'grieving', merry: 'grieving', pippin: 'grieving', sam: 'grieving', frodo: 'grieving' } },
   { stage: 'lorien', local: 0, state: walking(['legolas', 'gimli', 'aragorn', 'boromir', ...HOBBITS]) },
   // (Amon Hen: two go east)
   { stage: 'anduin', local: 146, remove: ['legolas', 'gimli', 'aragorn', 'boromir', 'merry', 'pippin'] },

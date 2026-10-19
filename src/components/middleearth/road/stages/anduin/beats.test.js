@@ -19,13 +19,14 @@ describe('the Anduin’s beats', () => {
     expect(by.breaking).toMatchObject({ rig: 'side' });
   });
 
-  it('in the boats on the river, ashore at Parth Galen, and away in the boat at the end with Sam alone', () => {
+  it('in the boats on the river, ashore at Parth Galen, across in the boat with Sam alone and on to the east bank', () => {
     const st = stageById('anduin');
     const by = Object.fromEntries(BEATS.map((b) => [b.id, b]));
     expect(modeAt(st, 0)).toBe('boat');
     expect(modeAt(st, by.argonath.at)).toBe('boat');
     expect(modeAt(st, by.seat.at)).toBe('walk');
-    expect(modeAt(st, st.length - 1)).toBe('boat');
+    expect(modeAt(st, by.breaking.at + 4)).toBe('boat');
+    expect(modeAt(st, st.length - 1)).toBe('walk');
     const two = CHANGES.find((c) => c.stage === 'anduin' && c.remove?.includes('aragorn'));
     expect(two.local).toBe(by.breaking.at);
     const before = STAGES.slice(0, STAGES.indexOf(st)).reduce((a, x) => a + x.length, 0);

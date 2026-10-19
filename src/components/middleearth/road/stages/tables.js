@@ -141,7 +141,12 @@ export const SCATTER = {
     { model: 'CommonTree_3', per100: 0.04, clump: 2, spread: 6, scale: [0.6, 0.85], z: [116, 150], tint: HOLLY },
     { model: 'Pebble_Round_3', per100: 1.2, clump: 6, spread: 2.5, scale: [2.5, 5], z: [116, 160], x: [-30, 12] },
   ],
-  moria: [],
+  // (under the mountain nothing; the Dimrill Dale’s heath, stones and a few firs past the East-gate)
+  moria: [
+    { model: 'Grass_Wispy_Short', per100: 1.6, clump: 7, spread: 4, scale: [0.6, 0.9], z: [130, 200], x: [-60, 60], kind: 'grass', tint: HEATH_GRASS },
+    { model: 'Rock_Medium_2', per100: 0.08, clump: 3, spread: 4, scale: [0.6, 1.3], z: [128, 200] },
+    { model: 'Pine_3', per100: 0.02, clump: 3, spread: 8, scale: [0.7, 1.1], z: [136, 200], slope: 0.9 },
+  ],
   lorien: GREEN,
   anduin: ROUGH,
   marshes: BARE,

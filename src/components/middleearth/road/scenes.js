@@ -35,6 +35,7 @@ const SCENES = {
   ford: () => import('./stages/ford/index.js'),
   rivendell: () => import('./stages/rivendell/index.js'),
   caradhras: () => import('./stages/caradhras/index.js'),
+  moria: () => import('./stages/moria/index.js'),
 };
 
 export function createScenes({ rt, road, lands, weather, ambience, tier, sky = null }) {

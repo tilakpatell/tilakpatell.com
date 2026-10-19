@@ -9,7 +9,7 @@
 // their emitters, the ithildin an emissive drawing whose glow the scene
 // raises, the wings a dark membrane.
 //
-//   addMoria(town, road, renderer, { gate, deep }) → { U, tick(t), setIthildin(k), dispose() }
+//   addMoria(town, road, renderer, { gate, deep }) → { U, tex, tick(t), setIthildin(k), dispose() }
 //     town: createTownKit’s, made `wild` (its rope, its void); K gains Moria’s mats, U, shaders
 //     gate: the West-gate, its holly and the Watcher’s arms (Caradhras)
 //     deep: the halls, the chamber, the bridge, the troll, the goblins, the Balrog (Moria)
@@ -83,7 +83,7 @@ export function addMoria(town, road, renderer, { gate = false, deep = false } = 
   };
   const shaders = {
     // the shaft of grey daylight down onto the tomb
-    beam: () => withUniforms(B({ color: hot(0xdfe6f0, 0.7), transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })),
+    beam: () => withUniforms(B({ color: hot(0xdfe6f0, 0.5), transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })),
     // the pool of light it throws
     sunlit: () => withUniforms(B({ color: hot(0xd0d8e4, 0.6), transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false })),
     // dust in the beam, sparks up out of the abyss
@@ -163,7 +163,6 @@ export function addMoria(town, road, renderer, { gate = false, deep = false } = 
       page: keep(T(pageCanvas(), { wrap: false })),
       wart: keep(T(wart.c, { srgb: false })),
       wartN: keep(T(normalFromField(wart.field, 256, 256, 6), { srgb: false })),
-      crack: keep(T(crack.c, { srgb: false })),
       crackN: keep(T(normalFromField(crack.field, 256, 256, 4), { srgb: false })),
     });
     Object.assign(mats, {
@@ -204,8 +203,9 @@ export function addMoria(town, road, renderer, { gate = false, deep = false } = 
       goblinSkin: M({ vertexColors: true, normalMap: tex.wartN }),
       goblinGear: M({ vertexColors: true }),
       goblinEye: M({ vertexColors: true, color: 0xe8e2c4, emissive: new THREE.Color(0x3a382a) }),
-      // Durin’s Bane: black rock-hide, fire in its cracks (the crack map as its glow), horn, coal eyes
-      balrogSkin: M({ vertexColors: true, color: 0x2a2220, normalMap: tex.crackN, emissive: hot(0xff5a14, 1.6), emissiveMap: tex.crack, emissiveIntensity: 1 }),
+      // Durin’s Bane: black rock-hide lit red from within (the cracks’ map is data, its
+      // channels fields, not a colour to glow with), horn, coal eyes
+      balrogSkin: M({ vertexColors: true, color: 0x2a2220, normalMap: tex.crackN, emissive: new THREE.Color(0x5a1406), emissiveIntensity: 1 }),
       horn: M({ color: 0x15110f }),
       balrogEye: B({ color: hot(0xff8a24, 5) }),
       wing: B({ color: 0x0a0807, transparent: true, opacity: 0.86, side: THREE.DoubleSide, depthWrite: false }),
@@ -216,6 +216,7 @@ export function addMoria(town, road, renderer, { gate = false, deep = false } = 
 
   return {
     U,
+    tex,
     tick(t) {
       U.uTime.value = t;
       tNode.value = t;

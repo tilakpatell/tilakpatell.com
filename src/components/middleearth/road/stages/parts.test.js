@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { disposeBuilt, mergeStatics } from './parts';
+import { disposeBuilt, mergeStatics, waterOn } from './parts';
+import { landFor } from '../terrain';
 
 const box = (mat, x, uv = true) => {
   const g = new THREE.BoxGeometry(1, 1, 1);
@@ -64,5 +65,16 @@ describe('disposeBuilt', () => {
     expect(freed).not.toContain(kitMat);
     expect(freed.filter((x) => x.isBufferGeometry)).toHaveLength(3);
     expect(freed.filter((x) => x === own)).toHaveLength(1);
+  });
+});
+
+describe('waterOn', () => {
+  it('reads a river’s water where it runs, over its bed, and nothing off it', () => {
+    const land = landFor('anduin', { res: 8, wide: 256 });
+    const on = waterOn(land, 0);
+    const level = on(0, 40);
+    expect(level).toBeGreaterThan(land.field(0, 40));
+    expect(on(-60, 40)).toBeNull();
+    expect(waterOn(land, 7)(0, 40)).toBeNull();
   });
 });

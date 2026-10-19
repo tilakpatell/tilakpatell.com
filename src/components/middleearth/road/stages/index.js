@@ -141,13 +141,57 @@ export const STAGES = [
       paint: { greens: [0x4a4c34, 0x666242, 0x8a8260], dirt: 0x8c8474, snow: [9, 13] },
     },
   },
-  { id: 'moria', name: 'Moria', date: '13 January 3019', length: 180, mode: 'walk', place: 'moria' },
+  {
+    id: 'moria',
+    name: 'Moria',
+    date: '13 January 3019',
+    length: 180,
+    mode: 'walk',
+    place: 'moria',
+    // the halls level, then down the broken stair (z 76 to 90) twelve metres
+    // to the deep, the abyss across the road under the Bridge (z 91 to 125),
+    // and the Dimrill Dale climbing out to the seam, the Mirrormere in its
+    // hollow on the left, the Misty Mountains round it
+    ground: {
+      spec: {
+        seed: 18,
+        relief: [
+          { type: 'swell', scale: 260, height: 1 },
+          { type: 'island', at: [0, 140], r: 60, height: -12, core: 0.85, ragged: 0 },
+          { type: 'island', at: [0, 108], r: 18, height: -40, core: 0.55, ragged: 0.15 },
+          { type: 'island', at: [28, 160], r: 18, height: -5, core: 0.4 },
+          { type: 'mountains', scale: 120, height: 140, from: 200, to: 360 },
+        ],
+      },
+      // (the Chamber of Mazarbul and the hall’s floor level; nothing grows under the mountain)
+      flats: [
+        { at: [-14, 24], r: 10, edge: 6 },
+        { at: [4.5, 56], r: 26, edge: 8 },
+      ],
+      paint: { greens: [0x585a54, 0x6e6e62, 0x8a8874], dirt: 0x5a5650, snow: [10, 16] },
+    },
+  },
   {
     id: 'lorien',
     name: 'Lothlórien',
     date: '17 January 3019',
     length: 150,
     mode: 'walk',
+    // the Nimrodel across the road under the first mallorns; the wood’s
+    // floor gently rolling; the Silverlode in from the right to the hythe and
+    // on down the road into the Anduin (its width and depth the Anduin’s, so
+    // the two meet at the seam)
+    ground: {
+      spec: { seed: 19, relief: [{ type: 'swell', scale: 220, height: 5 }, { type: 'hills', scale: 80, height: 5, gain: 0.4, octaves: 3 }, { type: 'mountains', scale: 160, height: 40, from: 320, to: 480 }] },
+      rivers: [
+        { points: [[-540, 0, 6], [-200, 0, 10], [0, 0, 14], [200, 0, 18], [540, 0, 14]], depth: 0.9, width: 5, bank: 3 },
+        { points: [[-300, 0, 70], [-120, 0, 100], [-30, 0, 126], [0, 0, 138], [0, 0, 220]], depth: 2.4, width: 30, bank: 4 },
+      ],
+      // (the Mirror’s hollow level)
+      flats: [{ at: [-5, 103], r: 7, edge: 6 }],
+      clear: [{ at: [-5, 103], r: 8 }],
+      paint: { greens: [0x5a6a38, 0x8a8a44, 0xb89c4c] },
+    },
     // (round the mallorn’s stair to the flets, along them, and down to the boats at the hythe)
     modes: [
       { at: 46, mode: 'climb' },
@@ -162,10 +206,35 @@ export const STAGES = [
     date: '16 February 3019',
     length: 170,
     mode: 'boat',
-    // (ashore at Parth Galen for the Seat and the horn, and away again in the boat)
+    // the Great River down the road between rising walls of rock, the
+    // Argonath over it, then the lake opening out: the river swings left
+    // round Parth Galen’s shore (the road on land from z 95 to 145); Amon
+    // Hen’s wooded hill on the
+    // right, Tol Brandir in the lake ahead; at the end it runs across the
+    // road, and the boat crosses it to the east bank (so the river is gone
+    // from the seam, as the Marshes have none)
+    ground: {
+      spec: {
+        seed: 20,
+        relief: [
+          { type: 'swell', scale: 180, height: 6 },
+          { type: 'ridges', scale: 90, height: 10, octaves: 4 },
+          { type: 'island', at: [-60, 40], r: 46, height: 60, ragged: 0.4 },
+          { type: 'island', at: [60, 40], r: 46, height: 60, ragged: 0.4 },
+          { type: 'island', at: [-40, 120], r: 40, height: 32 },
+          { type: 'mountains', scale: 140, height: 110, from: 240, to: 420 },
+        ],
+      },
+      rivers: [{ points: [[0, 0, -40], [0, 0, 80], [24, 0, 108], [26, 0, 130], [6, 0, 148], [-60, 0, 148], [-300, 0, 134]], depth: 2.4, width: 30, bank: 4 }],
+      // (the Seat on its hill’s shoulder level)
+      flats: [{ at: [-4, 118], r: 6, edge: 6 }],
+      paint: { greens: [0x4a5838, 0x66704a, 0x8a8a64], dirt: 0x8a7c62 },
+    },
+    // (ashore at Parth Galen for the Seat and the horn, the boat across to the east bank, and on foot)
     modes: [
       { at: 100, mode: 'walk' },
-      { at: 154, mode: 'boat' },
+      { at: 146, mode: 'boat' },
+      { at: 160, mode: 'walk' },
     ],
     place: 'argonath',
   },
