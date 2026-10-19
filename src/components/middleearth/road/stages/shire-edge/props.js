@@ -86,7 +86,9 @@ function lanes(K, heightAt, tier) {
   const wheat = new THREE.InstancedMesh(wheatGeo(), K.mats.wheat, clumps.length);
   clumps.forEach(([x, z], i) => wheat.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z), z), q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), (x * 13 + z) % 6.28), new THREE.Vector3(0.9, 0.85 + ((x * z) % 1) * 0.3, 0.9))));
   for (const mesh of [post, rail, hedge, wheat]) {
-    mesh.castShadow = true;
+    // (the wheat takes the fences’ and hedges’ shade but casts none: its own fell
+    // only among its clumps, and drawn into the cascades it was most of the stage’s triangles)
+    mesh.castShadow = mesh !== wheat;
     mesh.receiveShadow = true;
     out.push(mesh);
   }
