@@ -41,7 +41,9 @@
 .party-title { color: var(--text); font-size: var(--fs-lg); font-weight: 650; line-height: 1.3; }
 .party-text { margin: 0.5rem 0 0; font-size: var(--fs-sm); line-height: 1.5; }
 .party-fine { margin: 0.75rem 0 0; color: var(--muted); font-size: var(--fs-xs); line-height: 1.5; }
-.party-fine:empty { display: none; }
+/* a status line with nothing to say yet takes no room, but stays in the page:
+   a live region hidden while it’s empty isn’t heard when it fills */
+.party-fine:empty { margin: 0; }
 .party-link { color: var(--accent-text); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 
 /* a member, an invite, a pilot to invite: a name and its line, the buttons after */
@@ -63,6 +65,9 @@
 .party-row:not([data-away]) .party-sub[data-where]::before { content: ''; display: inline-block; width: 0.45rem; height: 0.45rem; margin-right: 0.35rem; border-radius: 50%; background: var(--ok); vertical-align: 0.05em; }
 .party-acts { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.4rem; }
 .party-remove { color: var(--danger); }
+/* a button that does nothing now: dimmed by colour, and still a Tab stop when
+   it’s only aria-disabled (an Invite asked, Summon just sent) */
+.party-dialog .btn:is(:disabled, [aria-disabled='true']) { border-color: var(--border); background: var(--surface-2); color: var(--muted); cursor: default; transform: none; }
 .party-count { color: var(--muted); font-family: var(--font-mono); font-size: var(--fs-xs); white-space: nowrap; }
 
 .party-summon,

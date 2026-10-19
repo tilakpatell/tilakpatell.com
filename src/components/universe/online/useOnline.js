@@ -55,9 +55,11 @@ import { useEconomy } from '../EconomyProvider';
 // with no link; partyDo(name, …args) is one of its actions (start, invite,
 // accept, decline, leave, remove, promote, summon). Its chat is the last
 // CHAT_KEEP lines heard this visit (kept over a dropped link, never past the
-// tab), each stamped `seen` with this browser's clock as it came, `unread`
-// counting the others' since markRead() (the dialog's Chat tab, while it's
-// in view); say(text) → whether it went. quip(i) says one of quips.js's lines
+// tab), each stamped `seen` with this browser’s clock as it came, and with
+// the party it was sealed in by the link; `unread` counts the others’ in the
+// party you’re in now since markRead() (the dialog’s Chat tab, while it’s in
+// view), so the lines of one you’ve left aren’t the next one’s to read
+// (unreadIn); say(text) → whether it went. quip(i) says one of quips.js’s lines
 // over you. A summons from the leader waits as `summon` ({ from, name,
 // where }) till answerSummon(go) or SUMMON_MS: Go sets off after the leader
 // where you fly, and hands back where they called you, for the page to go to
@@ -77,6 +79,18 @@ const OFF = { status: 'off', self: null, peers: [], away: [] };
 
 export const OnlineContext = createContext(null);
 export const useOnline = () => useContext(OnlineContext);
+
+// The others’ lines in the party `id` heard since `from` (a line’s key, as
+// they’re counted this visit): the dot on its Chat tab and the corner’s Party.
+// Only that party’s: the chat isn’t emptied when the party changes (a dropped
+// link briefly reports none, and the lines are kept over it), so a line from
+// one you’ve left stays, and counts for that one alone.
+export function unreadIn(chat, id, from = 0) {
+  if (!id) return 0;
+  let n = 0;
+  for (const l of chat) if (!l.mine && l.party === id && l.key >= from) n++;
+  return n;
+}
 
 // A full-screen world is up (`up`): the site draws no page pointers over it
 // while it is (a pointer over a canvas means nothing). For a world's page
@@ -119,7 +133,7 @@ export function useOnlineState(where) {
   const partyStore = useRef(null); // (partyStore.js's, made with it: your party, kept in this browser)
   const [chat, setChat] = useState([]); // the party's lines this visit, the newest last
   const heard = useRef(0); // (each line's key: counted over every link this visit, as the lines are kept over them)
-  const [unread, setUnread] = useState(0);
+  const [readTo, setReadTo] = useState(0); // the key of the first line not yet read
   const [summon, setSummon] = useState(null); // the leader's call, waiting for Go or Not now
   const [room, setRoom] = useState(OFF);
   const [feed, setFeed] = useState([]);
@@ -203,7 +217,6 @@ export function useOnlineState(where) {
           else if (e.type === 'chat' && e.line) {
             const line = { ...e.line, key: heard.current++, seen: Date.now() };
             setChat((lines) => [...lines.slice(1 - CHAT_KEEP), line]);
-            if (!line.mine) setUnread((u) => u + 1);
           } else if (e.type === 'summon') setSummon({ from: e.from, name: e.name, where: e.where, key: n++ });
           else if (e.type === 'feed') {
             const item = { id: n++, text: e.text, tone: e.tone };
@@ -243,7 +256,7 @@ export function useOnlineState(where) {
     const t = setTimeout(() => setSummon(null), SUMMON_MS);
     return () => clearTimeout(t);
   }, [summon]);
-  const markRead = useCallback(() => setUnread(0), []);
+  const markRead = useCallback(() => setReadTo(heard.current), []);
   const answerSummon = useCallback(
     (go) => {
       setSummon(null);
@@ -318,7 +331,7 @@ export function useOnlineState(where) {
     // (only the link's own actions, by name: start, invite, accept, decline, leave, remove, promote, summon)
     partyDo: (name, ...args) => (client?.party && Object.hasOwn(client.party, name) ? client.party[name](...args) : undefined),
     chat,
-    unread,
+    unread: unreadIn(chat, room.party?.party?.id, readTo),
     markRead,
     async say(text) {
       try {

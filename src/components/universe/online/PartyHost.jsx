@@ -7,13 +7,16 @@ import { AWAY, UNIVERSE, cleanWhere, isFlight } from './where';
 // Always up, in OnlineProvider (inside the router, online or not): opens the
 // party's dialog when something asks ('tp:party', lib/palette's openParty;
 // offline it offers the way online), and does what a member's party asks of
-// them while it's shut. A summons from the leader (useOnline's `summon`)
-// shows top centre with Go and Not now; Go goes there, and after the leader
-// once the ship's in where you fly, as the roster's Go does. With Follow the
-// leader on, the leader's going somewhere new is followed after a moment
-// (FOLLOW_WAIT_MS), with Stay to turn it off instead. The dialog and the
-// notices load from PartyDialog.jsx the first time either is wanted, with
-// their stylesheet, so a page that never sees them never loads them.
+// them while it’s shut. A summons from the leader of your party (useOnline’s
+// `summon`) shows top centre with Go and Not now; Go goes there, and after
+// the leader once the ship’s in where you fly, as the roster’s Go does. With
+// Follow the leader on, the leader’s going somewhere new is followed after a
+// moment (FOLLOW_WAIT_MS), with Stay to turn it off instead. Both wait while
+// the dialog’s up: under its scrim and out of its focus trap, Go and Stay
+// couldn’t be pressed. The dialog and the notices load from PartyDialog.jsx
+// the first time either is wanted, with their stylesheet, so a page that
+// never sees them never loads them; the live region they’re read out from
+// doesn’t, as it has to be there before them.
 
 const PartyDialog = lazy(() => import('./PartyDialog'));
 const PartyCalls = lazy(() => import('./PartyDialog').then((m) => ({ default: m.PartyCalls })));
@@ -52,7 +55,9 @@ export default function PartyHost({ online }) {
 
   // Follow the leader: only a move counts (the same leader, seen somewhere,
   // somewhere new now), not a new leader nor one coming online, and only to
-  // somewhere you aren't already
+  // somewhere you aren’t already. Each move of theirs decides afresh, so one
+  // still waiting is let go when they come back to you, go on somewhere no
+  // one can follow or go offline: the moment’s up only where they still are.
   const party = online.party?.party ?? null;
   const following = Boolean(online.party?.follow);
   const lead = party?.members.find((m) => m.leader && !m.you) ?? null;
@@ -64,29 +69,33 @@ export default function PartyHost({ online }) {
   useEffect(() => {
     const was = seen.current;
     seen.current = { id: leadId, at: leadAt };
-    if (!following || !leadId) {
+    if (!following || !leadId || was.id !== leadId) {
       setMoving(null);
       return;
     }
-    if (was.id !== leadId || !was.at || !leadAt || was.at === leadAt) return;
-    if (reachable(leadAt) && leadAt !== here) setMoving({ id: leadId, name: leadName, where: leadAt });
+    if (was.at === leadAt) return;
+    setMoving(was.at && leadAt && reachable(leadAt) && leadAt !== here ? { id: leadId, name: leadName, where: leadAt } : null);
   }, [following, leadId, leadName, leadAt, here]);
+  // (the moment to press Stay starts once the dialog’s shut and its notice shows)
+  const shut = !open;
   useEffect(() => {
-    if (!moving) return undefined;
+    if (!moving || !shut) return undefined;
     const t = setTimeout(() => {
       setMoving(null);
       going.current(moving.where, moving.id);
     }, FOLLOW_WAIT_MS);
     return () => clearTimeout(t);
-  }, [moving]);
+  }, [moving, shut]);
   const stay = useCallback(() => {
     setFollowLeader(false);
     setMoving(null);
   }, [setFollowLeader]);
 
-  // a summons to somewhere you can go, and aren't (where you fly, Go is the flight to them)
+  // a summons to somewhere you can go, and aren’t (where you fly, Go is the
+  // flight to them), from the leader of the party you’re in: one heard before
+  // you left, or were removed, or followed someone else, isn’t yours to answer
   const s = online.summon;
-  const summon = s && reachable(s.where) && (s.where !== here || isFlight(here)) ? s : null;
+  const summon = s && party?.leader === s.from && reachable(s.where) && (s.where !== here || isFlight(here)) ? s : null;
   const answer = useCallback(
     (go) => {
       const to = answerSummon(go);
@@ -104,15 +113,21 @@ export default function PartyHost({ online }) {
           </Suspense>
         </ErrorBoundary>
       )}
-      {(summon || moving) &&
-        createPortal(
-          <ErrorBoundary fallback={null}>
-            <Suspense fallback={null}>
-              <PartyCalls summon={summon} moving={moving} wait={FOLLOW_WAIT_MS} onSummon={answer} onStay={stay} />
-            </Suspense>
-          </ErrorBoundary>,
-          document.body,
-        )}
+      {/* (one live region, up from the start and empty: a call put into a
+          region that’s already there is read out, where one born with its
+          call in it isn’t) */}
+      {createPortal(
+        <div className="party-calls" aria-live="polite">
+          {shut && (summon || moving) && (
+            <ErrorBoundary fallback={null}>
+              <Suspense fallback={null}>
+                <PartyCalls summon={summon} moving={moving} wait={FOLLOW_WAIT_MS} onSummon={answer} onStay={stay} />
+              </Suspense>
+            </ErrorBoundary>
+          )}
+        </div>,
+        document.body,
+      )}
     </>
   );
 }

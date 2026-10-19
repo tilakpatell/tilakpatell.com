@@ -1,9 +1,99 @@
-import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { ChatTab, PartyCalls, PartySheet, PartyTab, QuickTab } from './PartyDialog';
 import { QUIPS } from './quips';
 import { CHAT_MAX, PARTY_MAX } from './partyWire';
+import { SUMMON_GAP } from './partyLimits';
+import { placeName } from './where';
+
+// A part run by hand, as React would run it, for what a press does (there’s
+// no DOM here): its hooks kept between runs, its effects run after each and
+// again till its state settles, its timers on vitest’s clock; what it draws
+// is read as elements, and a part inside it isn’t run. Only while `H.on`:
+// the markup tests render through React’s own hooks.
+const H = vi.hoisted(() => ({ on: false, hooks: [], at: 0, effects: [], dirty: false, navigate: () => {} }));
+vi.mock('react', async (load) => {
+  const React = await load();
+  const same = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((x, i) => Object.is(x, b[i]));
+  const slot = (make) => {
+    const i = H.at++;
+    H.hooks[i] ??= make(i);
+    return H.hooks[i];
+  };
+  const own = {
+    useState(init) {
+      const s = slot(() => ({ v: typeof init === 'function' ? init() : init }));
+      s.set ??= (next) => {
+        const v = typeof next === 'function' ? next(s.v) : next;
+        if (Object.is(v, s.v)) return;
+        s.v = v;
+        H.dirty = true;
+      };
+      return [s.v, s.set];
+    },
+    useRef: (current) => slot(() => ({ current })),
+    useId: () => slot((i) => ({ id: `:h${i}:` })).id,
+    useEffect(fn, deps) {
+      const s = slot(() => ({}));
+      if (same(s.deps, deps)) return;
+      H.effects.push(() => {
+        s.deps = deps;
+        s.undo?.();
+        const undo = fn();
+        s.undo = typeof undo === 'function' ? undo : null;
+      });
+    },
+  };
+  const either = (name) => (...args) => (H.on ? own[name](...args) : React[name](...args));
+  return { ...React, ...Object.fromEntries(Object.keys(own).map((name) => [name, either(name)])) };
+});
+vi.mock('react-router-dom', async (load) => {
+  const Router = await load();
+  const routed = Router.useNavigate; // (the router’s own, for the markup tests in a MemoryRouter)
+  return { ...Router, useNavigate: () => (H.on ? H.navigate : routed()) };
+});
+
+// runs `Part` with `props` till it settles: → what it drew
+function run(Part, props) {
+  H.on = true;
+  try {
+    for (let n = 0; n < 20; n++) {
+      H.at = 0;
+      H.effects = [];
+      H.dirty = false;
+      const out = Part(props);
+      if (H.dirty) continue; // (state set while drawing: drawn again before its effects, as React does)
+      for (const fx of H.effects) fx();
+      if (!H.dirty) return out;
+    }
+  } finally {
+    H.on = false;
+  }
+  throw new Error('it never settles');
+}
+// every element drawn, depth first, and the words in one
+const elements = (node, out = []) => {
+  if (Array.isArray(node)) for (const n of node) elements(n, out);
+  else if (node?.props) {
+    out.push(node);
+    elements(node.props.children, out);
+  }
+  return out;
+};
+const textOf = (node) => (Array.isArray(node) ? node.map(textOf).join('') : typeof node === 'string' || typeof node === 'number' ? String(node) : node?.props ? textOf(node.props.children) : '');
+const byLabel = (tree, label) => elements(tree).find((el) => el.props['aria-label'] === label) ?? null;
+const byText = (tree, text) => elements(tree).find((el) => el.type === 'button' && textOf(el).trim() === text) ?? null;
+const status = (tree) => elements(tree).find((el) => el.props.role === 'status') ?? null;
+beforeEach(() => {
+  H.hooks = [];
+});
+afterEach(() => {
+  for (const s of H.hooks) s?.undo?.();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 const ALPHA = 'a'.repeat(64);
 const BRAVO = 'b'.repeat(64);
@@ -83,6 +173,57 @@ describe('the party dialog', () => {
     expect(odd).toMatch(/aria-selected="true"[^>]*>Party/);
   });
 
+  // the sheet run by hand, on a stand-in window and document: → what it drew, and the keys its effect listens for
+  const sheetKeys = () => {
+    const heard = {};
+    vi.stubGlobal('window', { addEventListener: (type, fn) => (heard[type] = fn), removeEventListener() {} });
+    vi.stubGlobal('document', { activeElement: null, documentElement: { style: {} }, querySelector: () => null });
+    vi.stubGlobal('requestAnimationFrame', () => 0);
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+    const tree = run(PartySheet, { online: online({ party: { party: led, invites: [], follow: false } }), request: { tab: 'chat' }, onClose() {} });
+    return { tree, heard };
+  };
+
+  it('keeps Tab in the sheet, but lets the browser take its own step from a stop it made there', () => {
+    const { tree, heard } = sheetKeys();
+    const stop = (name) => ({ name, disabled: false, tabIndex: 0, getClientRects: () => [{}], focus: vi.fn() });
+    const [tab, close, say, send] = ['tab', 'close', 'say', 'send'].map(stop);
+    const list = { name: 'the chat’s list: a stop of the browser’s own once it scrolls' };
+    const inside = [tab, close, list, say, send];
+    elements(tree).find((el) => el.props.role === 'dialog').props.ref.current = { contains: (el) => inside.includes(el), querySelectorAll: () => [tab, close, say, send] };
+    // → whether the sheet took the step itself
+    const press = (at, shiftKey = false) => {
+      document.activeElement = at;
+      const e = { key: 'Tab', shiftKey, preventDefault: vi.fn(), stopPropagation: vi.fn() };
+      heard.keydown(e);
+      return e.preventDefault.mock.calls.length > 0;
+    };
+    // from the list on to the field, or back to Close: the browser’s own steps
+    expect(press(list)).toBe(false);
+    expect(press(list, true)).toBe(false);
+    expect(tab.focus).not.toHaveBeenCalled();
+    // round at an end, and back in from outside, as before
+    expect(press(send)).toBe(true);
+    expect(tab.focus).toHaveBeenCalledTimes(1);
+    expect(press({ name: 'the page under it' })).toBe(true);
+    expect(tab.focus).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps a key pressed in it from the world under it, but lets ⌘K and the like through', () => {
+    const scrim = elements(sheetKeys().tree).find((el) => el.props.className === 'party-scrim');
+    const key = (k, mod = null) => ({ key: k, metaKey: false, ctrlKey: false, altKey: false, ...(mod && { [mod]: true }), stopPropagation: vi.fn() });
+    for (const k of ['ArrowRight', ' ', 'Enter', 'w']) {
+      const e = key(k);
+      scrim.props.onKeyDown(e);
+      expect(e.stopPropagation).toHaveBeenCalled();
+    }
+    for (const mod of ['metaKey', 'ctrlKey', 'altKey']) {
+      const e = key('k', mod);
+      scrim.props.onKeyDown(e);
+      expect(e.stopPropagation).not.toHaveBeenCalled();
+    }
+  });
+
   it('marks the Chat tab while a line waits unread', () => {
     const party = { party: led, invites: [], follow: false };
     expect(html(<PartySheet online={online({ party, unread: 2 })} request={{ tab: 'party' }} onClose={() => {}} />)).toMatch(/>Chat<span class="party-dot"/);
@@ -156,6 +297,46 @@ describe('the Party tab', () => {
     expect(out).toContain('aria-label="Go to Bree, where Bravo is"');
   });
 
+  it('keeps an Invite pressed in the Tab order: “Asked”, and nothing more', () => {
+    const partyDo = vi.fn();
+    const props = { online: online({ party: { party: led, invites: [], follow: false }, partyDo }) };
+    byLabel(run(PartyTab, props), 'Invite Delta to your party').props.onClick();
+    expect(partyDo).toHaveBeenCalledWith('invite', DELTA);
+    const asked = byLabel(run(PartyTab, props), 'Asked Delta to your party');
+    expect(textOf(asked)).toBe('Asked');
+    expect(asked.props.disabled).toBeFalsy(); // (a disabled button drops the keyboard’s place)
+    expect(asked.props['aria-disabled']).toBe(true);
+    asked.props.onClick();
+    expect(partyDo).toHaveBeenCalledTimes(1);
+  });
+
+  it('tells the leader the summons went, and holds Summon for the gap the link keeps', () => {
+    vi.useFakeTimers();
+    const partyDo = vi.fn(() => true);
+    const props = { online: online({ party: { party: led, invites: [], follow: false }, partyDo }) };
+    let tree = run(PartyTab, props);
+    expect(textOf(status(tree))).toBe(''); // (up already, so what comes into it is read out)
+    byText(tree, 'Summon').props.onClick();
+    expect(partyDo).toHaveBeenCalledWith('summon');
+    tree = run(PartyTab, props);
+    expect(textOf(status(tree))).toBe(`Summoned Bravo to ${placeName('/projects')}`);
+    expect(byText(tree, 'Summon').props['aria-disabled']).toBe(true);
+    byText(tree, 'Summon').props.onClick();
+    expect(partyDo).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(SUMMON_GAP);
+    tree = run(PartyTab, props);
+    expect(byText(tree, 'Summon').props['aria-disabled']).toBeFalsy();
+    expect(textOf(status(tree))).toBe('');
+  });
+
+  it('tells the leader when a summons didn’t go', () => {
+    const props = { online: online({ party: { party: led, invites: [], follow: false }, partyDo: () => false }) };
+    byText(run(PartyTab, props), 'Summon').props.onClick();
+    const tree = run(PartyTab, props);
+    expect(textOf(status(tree))).toMatch(/didn’t go/);
+    expect(byText(tree, 'Summon').props['aria-disabled']).toBeFalsy();
+  });
+
   it('says when the party’s full, and offers no invites', () => {
     const many = { ...led, members: [...led.members, ...'45678'.split('').map((d) => member(d.repeat(64), `Pilot ${d}`))] };
     expect(many.members).toHaveLength(PARTY_MAX);
@@ -172,14 +353,35 @@ describe('the Chat tab', () => {
 
   it('shows each line with who said it and when', () => {
     const chat = [
-      { key: 1, from: BRAVO, name: 'Bravo', text: 'Meet at the Prancing Pony', seen: Date.UTC(2026, 9, 19, 18, 5), mine: false },
-      { key: 2, from: ALPHA, name: 'Alpha', text: 'On my way', seen: Date.UTC(2026, 9, 19, 18, 6), mine: true },
+      { key: 1, from: BRAVO, name: 'Bravo', text: 'Meet at the Prancing Pony', seen: Date.UTC(2026, 9, 19, 18, 5), mine: false, party: PARTY },
+      { key: 2, from: ALPHA, name: 'Alpha', text: 'On my way', seen: Date.UTC(2026, 9, 19, 18, 6), mine: true, party: PARTY },
     ];
     const out = html(<ChatTab online={online({ party: { party: led, invites: [], follow: false }, chat })} />);
     expect(row(out, 'Bravo')).toContain('Meet at the Prancing Pony');
     expect(row(out, 'Bravo')).toContain('<time dateTime="2026-10-19T18:05:00.000Z"');
     expect(row(out, 'Alpha')).toContain('data-mine');
     expect(out).toMatch(/aria-live="polite"/);
+  });
+
+  it('has its live list up while nothing’s been said, so the first line is heard', () => {
+    const el = <ChatTab online={online({ party: { party: led, invites: [], follow: false } })} />;
+    const out = html(el);
+    expect(out).toMatch(/<ol[^>]*class="party-lines"[^>]*aria-live="polite"/);
+    expect(out.match(/aria-live=/g)).toHaveLength(1);
+    expect(words(el)).toContain('Nothing said yet this visit.');
+  });
+
+  it('shows only this party’s lines, not those of one you were in before', () => {
+    const chat = [
+      { key: 1, from: CHARLIE, name: 'Charlie', text: 'Only for the old lot', seen: 1, mine: false, party: 'fedcba9876543210' },
+      { key: 2, from: BRAVO, name: 'Bravo', text: 'Welcome aboard', seen: 2, mine: false, party: PARTY },
+    ];
+    const both = words(<ChatTab online={online({ party: { party: led, invites: [], follow: false }, chat })} />);
+    expect(both).toContain('Welcome aboard');
+    expect(both).not.toContain('Only for the old lot');
+    const old = words(<ChatTab online={online({ party: { party: led, invites: [], follow: false }, chat: chat.slice(0, 1) })} />);
+    expect(old).not.toContain('Only for the old lot');
+    expect(old).toContain('Nothing said yet this visit.');
   });
 
   it('has a field held to CHAT_MAX with its count, Send, and says the lines are sealed', () => {
@@ -210,6 +412,33 @@ describe('the Quick chat tab', () => {
   it('offline, is the way online', () => {
     expect(html(<QuickTab online={online({ on: false, party: null, room: { status: 'off', peers: [] } })} />)).toContain('Go online');
   });
+
+  it('says a line was said only when it went', () => {
+    let goes = true;
+    const props = { online: online({ quip: vi.fn(() => goes) }) };
+    let tree = run(QuickTab, props);
+    expect(textOf(status(tree))).toBe(''); // (up already, so what comes into it is read out)
+    byText(tree, 'Thanks').props.onClick();
+    tree = run(QuickTab, props);
+    expect(textOf(status(tree))).toBe('You said “Thanks”');
+    goes = false; // (too soon after the last: the link holds it)
+    byText(tree, 'Follow me').props.onClick();
+    tree = run(QuickTab, props);
+    expect(textOf(status(tree))).not.toMatch(/You said/);
+    expect(textOf(status(tree))).toMatch(/Wait a moment/);
+  });
+
+  it('says the same line afresh each time, so it’s heard again', () => {
+    const props = { online: online({ quip: () => true }) };
+    let tree = run(QuickTab, props);
+    byText(tree, 'Thanks').props.onClick();
+    tree = run(QuickTab, props);
+    const first = status(tree).props.children;
+    byText(tree, 'Thanks').props.onClick();
+    tree = run(QuickTab, props);
+    expect(textOf(status(tree))).toBe('You said “Thanks”');
+    expect(status(tree).props.children?.key).not.toBe(first?.key);
+  });
 });
 
 describe('the party’s calls', () => {
@@ -228,5 +457,20 @@ describe('the party’s calls', () => {
 
   it('is nothing with nothing to say', () => {
     expect(html(<PartyCalls />)).toBe('');
+  });
+
+  it('is the notices alone, for PartyHost’s live region, which is up before them', () => {
+    const out = html(<PartyCalls summon={{ from: BRAVO, name: 'Bravo', where: '/middle-earth/bree' }} moving={{ id: BRAVO, name: 'Bravo', where: '/travel' }} />);
+    expect(out).not.toMatch(/aria-live|role="status"/); // (a region of their own inside it would be read twice, or not at all)
+    expect(out.match(/<div class="party-call notice"/g)).toHaveLength(2);
+  });
+});
+
+describe('party.css', () => {
+  it('never hides a live region while it’s empty: it has to be there before its words', () => {
+    const css = readFileSync(new URL('./party.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, sel, body]) => [sel.trim(), body.trim()]).filter(([sel]) => /party-fine|party-lines|party-calls/.test(sel));
+    expect(rules.length).toBeGreaterThan(0);
+    for (const [sel, body] of rules) expect(`${sel} { ${body} }`).not.toMatch(/display:\s*none|visibility:\s*hidden/);
   });
 });

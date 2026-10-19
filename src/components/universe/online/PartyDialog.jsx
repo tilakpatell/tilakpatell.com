@@ -7,6 +7,7 @@ import { focusBack, wrapFocus } from '../../../lib/focus';
 import { NAME_MAX } from './names';
 import { AWAY, UNIVERSE, isFlight, placeName } from './where';
 import { CHAT_MAX, PARTY_MAX } from './partyWire';
+import { SUMMON_GAP } from './partyLimits';
 import { QUIPS, QUIP_MS } from './quips';
 import './party.css';
 
@@ -25,8 +26,9 @@ import './party.css';
 //
 // A modal, as the settings sheet is: a scrim over the page, focus in on the
 // tab you're on and kept in, Esc first (in the capture phase, so the world
-// under it doesn't also back out), the page held still, and focus back to
-// whatever opened it. In a portal on the body, out of the map's dark scope,
+// under it doesn’t also back out), every other key kept from the world (bar
+// ⌘K and the like), the page held still, and focus back to whatever opened
+// it. In a portal on the body, out of the map’s dark scope,
 // so it wears the page's own theme and mode; a sheet from the bottom on a
 // phone (party.css). PartyCalls, the notices a member gets (a summons, the
 // leader on the move), is here too, so its look loads with the dialog's.
@@ -77,7 +79,13 @@ export function PartySheet({ online, request, onClose }) {
         return;
       }
       if (e.key !== 'Tab' || !sheet.current) return;
-      const next = wrapFocus(focusables(sheet.current), document.activeElement, e.shiftKey);
+      const items = focusables(sheet.current);
+      const at = document.activeElement;
+      // (a stop in the sheet that isn’t one of them takes the browser’s own
+      // step: the chat’s list, once it scrolls, is one the browser makes, and
+      // sent back to the tabs from it, Tab would never reach the field)
+      if (sheet.current.contains(at) && !items.includes(at)) return;
+      const next = wrapFocus(items, at, e.shiftKey);
       if (!next) return;
       e.preventDefault();
       next.focus();
@@ -113,9 +121,16 @@ export function PartySheet({ online, request, onClose }) {
     requestAnimationFrame(() => document.getElementById(`${ids}-${next}`)?.focus());
   };
   const unread = tab !== 'chat' && online.unread > 0 ? online.unread : 0;
+  // (a key pressed in the dialog goes no further: the world under it listens
+  // on the window, and would walk or jump on an arrow, or take Space and
+  // Enter for itself, so the button they were pressed on never heard them;
+  // ⌘K and the like still reach the page)
+  const hold = (e) => {
+    if (!e.metaKey && !e.ctrlKey && !e.altKey) e.stopPropagation();
+  };
 
   return (
-    <div className="party-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="party-scrim" onKeyDown={hold} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div ref={sheet} className="party-dialog card" role="dialog" aria-modal="true" aria-labelledby={`${ids}-title`}>
         <div className="party-head">
           <h2 id={`${ids}-title`} className="dialog-title">
@@ -197,6 +212,14 @@ function GoOnline({ online }) {
 export function PartyTab({ online, onGo = null }) {
   const navigate = useNavigate();
   const [asked, setAsked] = useState(() => new Set()); // invited while the dialog's been up
+  // the leader’s last Summon, said in a status line ({ ok, text, n }): held
+  // for the gap the link keeps between two, so a press in it isn’t lost unsaid
+  const [called, setCalled] = useState(null);
+  useEffect(() => {
+    if (!called) return undefined;
+    const t = setTimeout(() => setCalled(null), SUMMON_GAP);
+    return () => clearTimeout(t);
+  }, [called]);
   const id = useId();
   const gate = Gate({ online });
   if (gate) return gate;
@@ -263,10 +286,18 @@ export function PartyTab({ online, onGo = null }) {
     onGo?.();
   };
   const invite = (p) => {
+    if (asked.has(p.id)) return;
     online.partyDo('invite', p.id);
     setAsked((s) => new Set(s).add(p.id));
   };
   const summonable = others.length > 0 && online.where && online.where !== AWAY;
+  const summon = () => {
+    if (called?.ok) return;
+    const ok = Boolean(online.partyDo('summon'));
+    const who = others.length === 1 ? others[0].name : `${others.length} of your party`;
+    const text = ok ? `Summoned ${who} to ${placeName(online.where)}` : 'That summons didn’t go: try again in a moment';
+    setCalled((was) => ({ ok, text, n: (was?.n ?? 0) + 1 }));
+  };
 
   return (
     <>
@@ -319,12 +350,18 @@ export function PartyTab({ online, onGo = null }) {
           })}
         </ul>
         {leading ? (
-          <div className="party-summon">
-            <span className="party-sub">{summonable ? `Calls everyone in it who’s online to ${placeName(online.where)}` : 'Calls your party to you, once anyone else in it is online'}</span>
-            <button type="button" className="btn btn-primary btn-sm" onClick={act('summon')} disabled={!summonable}>
-              {WORDS.summon}
-            </button>
-          </div>
+          <>
+            <div className="party-summon">
+              <span className="party-sub">{summonable ? `Calls everyone in it who’s online to ${placeName(online.where)}` : 'Calls your party to you, once anyone else in it is online'}</span>
+              <button type="button" className="btn btn-primary btn-sm" onClick={summon} disabled={!summonable} aria-disabled={called?.ok || undefined}>
+                {WORDS.summon}
+              </button>
+            </div>
+            {/* (keyed, so the same words twice are read out twice) */}
+            <p className="party-fine" role="status">
+              {called && <span key={called.n}>{called.text}</span>}
+            </p>
+          </>
         ) : (
           <div className="party-follow">
             <span id={`${id}-follow`}>
@@ -350,22 +387,27 @@ export function PartyTab({ online, onGo = null }) {
           <p className="party-text">{`Your party is full: ${PARTY_MAX} is as many as fly together.`}</p>
         ) : pilots.length ? (
           <ul className="party-list">
-            {pilots.map((p) => (
-              <li key={p.id} className="party-row" data-ally={p.ally === 'ally' || undefined}>
-                <span className="party-who">
-                  <span className="party-name">
-                    <b>{p.name}</b>
+            {pilots.map((p) => {
+              const was = asked.has(p.id);
+              return (
+                <li key={p.id} className="party-row" data-ally={p.ally === 'ally' || undefined}>
+                  <span className="party-who">
+                    <span className="party-name">
+                      <b>{p.name}</b>
+                    </span>
+                    <span className="party-sub">
+                      {p.ally === 'ally' ? 'your ally · ' : ''}
+                      {placeName(p.where)}
+                    </span>
                   </span>
-                  <span className="party-sub">
-                    {p.ally === 'ally' ? 'your ally · ' : ''}
-                    {placeName(p.where)}
-                  </span>
-                </span>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => invite(p)} disabled={asked.has(p.id)} aria-label={`Invite ${p.name} to your party`}>
-                  {asked.has(p.id) ? 'Asked' : 'Invite'}
-                </button>
-              </li>
-            ))}
+                  {/* (asked, it stays in the Tab order, marked and doing nothing:
+                      a disabled button would drop the keyboard’s place after each invite) */}
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => invite(p)} aria-disabled={was || undefined} aria-label={`${was ? 'Asked' : 'Invite'} ${p.name} to your party`}>
+                    {was ? 'Asked' : 'Invite'}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <p className="party-text">No one else is online to invite right now.</p>
@@ -380,7 +422,9 @@ export function PartyTab({ online, onGo = null }) {
   );
 }
 
-// The Chat tab: the party's lines this visit, and a field
+// The Chat tab: the party’s lines this visit, and a field. Only this party’s:
+// each line comes stamped with the party it was sealed in (partyLink.js), and
+// those of one you’ve left stay that one’s, not the next one’s to read.
 export function ChatTab({ online }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -408,7 +452,7 @@ export function ChatTab({ online }) {
         </div>
       </section>
     );
-  const lines = online.chat ?? [];
+  const lines = (online.chat ?? []).filter((l) => l.party === party.id);
   const mates = party.members.filter((m) => !m.you && m.present).length;
   const count = [...text].length;
   const send = async (e) => {
@@ -429,26 +473,23 @@ export function ChatTab({ online }) {
   };
   return (
     <>
-      {lines.length ? (
-        <ol ref={list} className="party-lines" aria-live="polite" aria-label="The party’s chat">
-          {lines.map((l) => {
-            const t = when(l.seen);
-            return (
-              <li key={l.key} className="party-line" data-mine={l.mine || undefined}>
-                <span className="party-line-head">
-                  <b>{l.name}</b>
-                  {t && <time dateTime={t.iso}>{t.text}</time>}
-                </span>
-                <p>{l.text}</p>
-              </li>
-            );
-          })}
-        </ol>
-      ) : (
-        <p className="party-text" aria-live="polite">
-          Nothing said yet this visit.
-        </p>
-      )}
+      {/* (the list is up, empty, before the first line: a line put into a live
+          region that’s there is read out, where one born with it in isn’t) */}
+      <ol ref={list} className="party-lines" aria-live="polite" aria-label="The party’s chat">
+        {lines.map((l) => {
+          const t = when(l.seen);
+          return (
+            <li key={l.key} className="party-line" data-mine={l.mine || undefined}>
+              <span className="party-line-head">
+                <b>{l.name}</b>
+                {t && <time dateTime={t.iso}>{t.text}</time>}
+              </span>
+              <p>{l.text}</p>
+            </li>
+          );
+        })}
+      </ol>
+      {!lines.length && <p className="party-text">Nothing said yet this visit.</p>}
       <form className="party-say" onSubmit={send}>
         <label className="sr-only" htmlFor={id}>
           Say to your party
@@ -485,14 +526,17 @@ export function ChatTab({ online }) {
   );
 }
 
-// The Quick chat tab: the set lines, any of them over you for a moment
+// The Quick chat tab: the set lines, any of them over you for a moment. The
+// status says what went, or that one didn’t (the link holds the next a
+// moment after three quick ones), each time afresh so the same line twice
+// is heard twice.
 export function QuickTab({ online }) {
-  const [said, setSaid] = useState(null);
+  const [said, setSaid] = useState(null); // { text, n }: text null when it didn’t go
   const gate = Gate({ online });
   if (gate) return gate;
   const say = (i) => {
-    online.quip(i);
-    setSaid(QUIPS[i]);
+    const went = Boolean(online.quip(i));
+    setSaid((was) => ({ text: went ? QUIPS[i] : null, n: (was?.n ?? 0) + 1 }));
   };
   return (
     <>
@@ -505,7 +549,7 @@ export function QuickTab({ online }) {
         ))}
       </div>
       <p className="party-fine" role="status">
-        {said ? `You said “${said}”` : ''}
+        {said && <span key={said.n}>{said.text ? `You said “${said.text}”` : 'Wait a moment before the next line'}</span>}
       </p>
     </>
   );
@@ -514,13 +558,15 @@ export function QuickTab({ online }) {
 // What a member's asked while the dialog's shut, top centre: a summons
 // (`summon` { name, where }: onSummon(go)), or the leader on the move with
 // Follow the leader on (`moving` { name, where }: off in `wait` ms, unless
-// onStay). PartyHost.jsx puts it on the body and does the going.
+// onStay). The notices alone: PartyHost.jsx puts them in its live region on
+// the body (.party-calls, up before them, so they’re read out) and does the
+// going.
 export function PartyCalls({ summon = null, moving = null, wait = 5000, onSummon = null, onStay = null }) {
   if (!summon && !moving) return null;
   return (
-    <div className="party-calls" aria-live="polite">
+    <>
       {summon && (
-        <div className="party-call notice" role="status">
+        <div className="party-call notice">
           <p>
             <b>{summon.name}</b> summons the party to {placeName(summon.where)}
           </p>
@@ -535,7 +581,7 @@ export function PartyCalls({ summon = null, moving = null, wait = 5000, onSummon
         </div>
       )}
       {moving && (
-        <div key={`${moving.id}:${moving.where}`} className="party-call notice" role="status">
+        <div key={`${moving.id}:${moving.where}`} className="party-call notice">
           <p>
             Following <b>{moving.name}</b> to {placeName(moving.where)}…
           </p>
@@ -545,6 +591,6 @@ export function PartyCalls({ summon = null, moving = null, wait = 5000, onSummon
           <span className="party-call-time" style={{ '--wait': `${wait}ms` }} aria-hidden="true" />
         </div>
       )}
-    </div>
+    </>
   );
 }
