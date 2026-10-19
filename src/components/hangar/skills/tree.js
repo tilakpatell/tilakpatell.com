@@ -5,11 +5,13 @@
 // of the row above in its own branch, never another branch's, so the order
 // is the player's. A few deep nodes also need a key: any one achievement
 // from a universe (KEYS), which makes the whole tree a whole-site thing.
-// The unique weapons' nodes are here (`soon`) and count toward the cost,
-// but can't be taken until the weapons arrive. Pure data.
+// The deepest nodes of the guns and the ground open the unique weapons
+// (`arms`: lib/arms/ship.js's and hand.js's), one from each universe, so
+// they're the last things anyone gets and which is theirs to choose. A node
+// marked `soon` would wait for what it opens to arrive. Pure data.
 //
 //   BRANCHES, BRANCH_LABEL, KEY_LABEL
-//   NODES     by id: { branch, row, cost, name, line, key?, soon?, borrows? (a crew), does: { effect: amount } }
+//   NODES     by id: { branch, row, cost, name, line, key?, soon?, borrows? (a crew), arms? (a unique weapon), does: { effect: amount } }
 //   KEYS      by universe: achievement ids (Achievements.jsx), any one of which opens it
 //   BATTLEFRONT  the achievements that earn no points (it's apart from all this)
 //
@@ -38,20 +40,20 @@ export const NODES = {
   scatter: node('guns', 2, 2, 'Wide scatter', 'One more shot in every secondary burst.', { shots: 1 }),
   loader: node('guns', 2, 2, 'Fast loader', 'Ordnance comes back a fifth sooner.', { reload: 0.8 }),
   longlock: node('guns', 3, 1, 'Smart rounds', 'Heavy rounds home harder and fly further.', { homing: 1.3, life: 1.25 }),
-  'u-seismic': node('guns', 4, 2, 'Seismic charge', 'Ordnance: dropped behind you, a ring of silence, then the bang.', {}, { key: 'starwars', soon: true }),
-  'u-darkmatter': node('guns', 4, 2, 'Concentrated dark matter', 'Secondary: one slow bolt through every ship in its line.', {}, { key: 'rickmorty', soon: true }),
-  'u-crystal': node('guns', 4, 2, 'Blue sky cluster', 'Ordnance: a homing round that bursts into six blue shards.', {}, { key: 'breakingbad', soon: true }),
-  'u-energon': node('guns', 4, 2, 'Energon arc', 'Secondary: lightning to the lock and on to three more.', {}, { key: 'universe', soon: true }),
+  'u-seismic': node('guns', 4, 2, 'Seismic charge', 'Ordnance: dropped behind you, a ring of silence, then the bang.', {}, { key: 'starwars', arms: 'seismic' }),
+  'u-darkmatter': node('guns', 4, 2, 'Concentrated dark matter', 'Secondary: one slow bolt through every ship in its line.', {}, { key: 'rickmorty', arms: 'darkmatter' }),
+  'u-crystal': node('guns', 4, 2, 'Blue sky cluster', 'Ordnance: a homing round that bursts into six blue shards.', {}, { key: 'breakingbad', arms: 'crystal' }),
+  'u-energon': node('guns', 4, 2, 'Energon arc', 'Secondary: lightning to the lock and on to three more.', {}, { key: 'universe', arms: 'energon' }),
   // ── Ground ──
   tough: node('ground', 1, 1, 'Tough', 'A tenth more health on foot.', { health: 1.1 }),
   steady: node('ground', 1, 1, 'Steady hands', 'Less scatter from every gun in the hand.', { spread: 0.85 }),
   coolant: node('ground', 2, 2, 'Coolant', 'Guns heat slower and cool faster.', { heat: 0.85, cool: 1.15 }),
   medic: node('ground', 2, 2, 'Field medic', 'Health comes back half again as fast.', { heal: 1.5 }),
   hardhit: node('ground', 3, 1, 'Hard hitter', 'Hit the game’s troops a little harder.', { damage: 1.15 }),
-  'u-amban': node('ground', 4, 2, 'Amban phase-pulse rifle', 'One heavy shot, a long reach, and a flash.', {}, { key: 'starwars', soon: true }),
-  'u-particle': node('ground', 4, 2, 'Particle beam', 'Held, not fired: a beam that heats fast.', {}, { key: 'rickmorty', soon: true }),
-  'u-m60': node('ground', 4, 2, 'The M60 from the trunk', 'A long stream, slow to heat, with a kick.', {}, { key: 'breakingbad', soon: true }),
-  'u-gauntlet': node('ground', 4, 2, 'Repulsor gauntlet', 'A palm blast that throws them back.', {}, { key: 'universe', soon: true }),
+  'u-amban': node('ground', 4, 2, 'Amban phase-pulse rifle', 'One heavy shot, a long reach, and a flash.', {}, { key: 'starwars', arms: 'amban' }),
+  'u-particle': node('ground', 4, 2, 'Particle beam', 'Held, not fired: a beam that heats fast.', {}, { key: 'rickmorty', arms: 'particle' }),
+  'u-m60': node('ground', 4, 2, 'The M60 from the trunk', 'A long stream, slow to heat, with a kick.', {}, { key: 'breakingbad', arms: 'm60' }),
+  'u-gauntlet': node('ground', 4, 2, 'Repulsor gauntlet', 'A palm blast that throws them back.', {}, { key: 'universe', arms: 'gauntlet' }),
   // ── Powers ──
   quickcharge: node('powers', 1, 1, 'Fast charge', 'The big one charges a fifth quicker.', { charge: 1.2 }),
   recovery: node('powers', 1, 1, 'Quick recovery', 'The power cools down sooner.', { powerCool: 0.85 }),

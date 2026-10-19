@@ -73,7 +73,7 @@ describe('the parts', () => {
 
   it('borrow only the look of a part of their own slot (a weapon line’s, of a gun) that has one of its own', () => {
     const borrowers = PARTS.filter((p) => p.look);
-    expect(borrowers.map((p) => p.id).sort()).toEqual(['council', 'flak', 'incom', 'ion', 'missiles', 'mk2', 'vamonos']);
+    expect(borrowers.map((p) => p.id).sort()).toEqual(['council', 'crystal', 'darkmatter', 'energon', 'flak', 'incom', 'ion', 'missiles', 'mk2', 'seismic', 'vamonos']);
     for (const p of borrowers) {
       const from = partById(['secondary', 'ordnance'].includes(p.slot) ? 'guns' : p.slot, p.look);
       expect(from.id, p.id).toBe(p.look);

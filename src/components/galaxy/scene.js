@@ -123,7 +123,7 @@ import { PICKUPS, createPickups, gunsUnder } from './pickups';
 import { createPickupFx } from './pickupFx';
 import { createRadar } from './radar';
 import { drawRadar } from './radarDraw';
-import { armsView, arsenalOf, chargeFor, createArmory, createGalaxyPowers, createRounds, fan, picksFor } from '../universe/shared/flying';
+import { armsView, arsenalOf, chargeFor, createArmory, createGalaxyPowers, createRounds, createUniqueArms, fan, picksFor } from '../universe/shared/flying';
 import { shotPunch } from './gunRules';
 import { effectsFor } from './warEffects';
 import { CABS } from './cabs';
@@ -431,6 +431,8 @@ export async function create(canvas, ctx) {
   // the crew's ship powers (powers.js), played out with the scene's own pieces
   // (made before the first frame's shaders are, so its look is made with them)
   const powers = createGalaxyPowers({ parent: scene, reduced, hunters, war, bolts, flashes, crashFx, pops, post, state, emit, controls, strike: (...a) => strike(...a), scored: (...a) => scored(...a), teleport: (pose) => teleport(pose), laser: LASER.rebel });
+  // the skill tree's four ship weapons (the universe's uniqueArms.js): fired as the guns are, played out beside the powers
+  const unique = createUniqueArms({ parent: scene, reduced, hunters, war, bolts, flashes, state, emit, strike: (...a) => strike(...a), scored: (...a) => scored(...a) });
   const cluster = createCluster(); // (the flight cluster's writer: placeShield)
   // what a kill leaves behind (pickups.js: the rules, pickupFx.js: the drawing); none online, and none survive a jump, a landing or a crash
   const pickups = createPickups();
@@ -1011,11 +1013,13 @@ export async function create(canvas, ctx) {
     }
     const speed = AIM.bolt * w.speed + Math.max(0, s.speed);
     const punch = shotPunch(w, g, gun);
-    if (w.heavy) {
+    let v = [dir[0] * speed, dir[1] * speed, dir[2] * speed];
+    if (w.unique) v = unique.fire(arm.id, shotAt, dir, speed, w, punch);
+    else if (w.heavy) {
       rounds.launch(shotAt, dir, speed, { life: AIM.life * w.life, punch, damage: w.damage, homing: w.homing, target: state.lockTarget });
       state.kick = Math.max(state.kick, 0.4);
     } else for (const d of fan(dir, w.count, w.cone, jitter)) spawnBolt(shotAt, d, speed, AIM.life * w.life, punch, w.damage, g.bolt * w.scale);
-    net?.shot(shotAt, [dir[0] * speed, dir[1] * speed, dir[2] * speed], w.code);
+    net?.shot(shotAt, v, w.code);
     emit({ type: 'fire', weapon: arm.id });
     ctx.invalidate();
   };
@@ -1159,6 +1163,7 @@ export async function create(canvas, ctx) {
   // ── Shields, crashes, being shot down ──
   const startCrash = (e) => {
     powers.cancel();
+    unique.clear();
     pickups.clear();
     const s = state.ship;
     const solid = solidsNow.find((o) => o.id === e.id) ?? state.space.solids.find((o) => o.id === e.id);
@@ -1189,6 +1194,7 @@ export async function create(canvas, ctx) {
   };
   const startDestroyed = (by = null, rammed = false) => {
     powers.cancel();
+    unique.clear();
     pickups.clear();
     const s = state.ship;
     const from = new THREE.Vector3(s.x, s.y, s.z);
@@ -1492,6 +1498,7 @@ export async function create(canvas, ctx) {
     jumpDir.set(...dir);
     state.auto = null;
     powers.cancel();
+    unique.clear();
     // the jump's time by its route along the lanes (routes.js), slower off them
     const route = routeBetween(state.sys.id, to.id);
     const dur = route ? jumpTime(route) : jumpSeconds(state.sys, to);
@@ -1926,6 +1933,7 @@ export async function create(canvas, ctx) {
       busy = w.busy || busy;
     }
     powers.frame(dt, live);
+    unique.frame(dt);
     // the pickups: aged and drawn always, taken only while the ship's flying free (not in a jump, a crash or a dive: those clear them)
     const taken = pickups.step(props.frozen ? 0 : dt, state.ship ?? ORIGIN, { live: Boolean(live) && !state.dive });
     for (const k of taken) takeOne(k);
@@ -2907,6 +2915,7 @@ export async function create(canvas, ctx) {
       const r = state.sys?.body?.r;
       if (!s || !r || state.dive || state.crash || state.jump) return false;
       powers.cancel(); // (the ship's going down to the planet: no portal hop out of the dive)
+      unique.clear();
       pickups.clear();
       state.dive = planDive(s, r);
       aimAt(null);
@@ -3015,6 +3024,7 @@ export async function create(canvas, ctx) {
       disposeTree(spares);
       state.world?.dispose();
       powers.dispose();
+      unique.dispose();
       pickupFx.dispose();
       crashFx.dispose();
       pops.dispose();
