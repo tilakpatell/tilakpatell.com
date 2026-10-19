@@ -138,18 +138,19 @@
 .holomap-strip-sides .holomap-emblem { width: 13px; height: 13px; color: var(--side); }
 .holomap-strip-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .holomap-strip-n { color: #fff; font: 600 0.74rem var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
-.holomap-strip-share { color: rgb(217 243 255 / 0.6); font: 0.68rem var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
-.holomap-strip-trend { font: 0.68rem var(--font-mono); text-align: right; }
+.holomap-strip-share { color: rgb(217 243 255 / 0.6); font: 0.7rem var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.holomap-strip-trend { font: 0.7rem var(--font-mono); text-align: right; }
 .holomap-strip-trend:empty { display: none; }
 .holomap-strip-trend[data-trend='up'] { color: #9dffb5; }
 .holomap-strip-trend[data-trend='down'] { color: #ff8a7a; }
 .holomap-strip-bar { display: flex; gap: 2px; height: 5px; border-radius: 999px; overflow: hidden; }
 .holomap-strip-bar span { flex-basis: 0; min-width: 2px; background: var(--side); transition: flex-grow 0.6s var(--ease-smooth, ease); }
 
-/* ── The layers: what the map draws, each a switch (mapLayers.js), behind a chip over the key's, on the west's empty side,
-   that opens them (a row of five over the top right covered the north's names, and was one more thing on the map); the key's
-   own panel takes its place while it's open ── */
-.holomap-layers { position: absolute; z-index: 3; left: 12px; bottom: 48px; display: flex; flex-direction: column-reverse; align-items: flex-start; gap: 4px; }
+/* ── The layers: what the map draws, each a switch (mapLayers.js), behind a chip beside the key's, in the square's empty
+   bottom left corner, that opens them upward (a row of five over the top right covered the north's names, and was one more
+   thing on the map; a chip over the key's reached up into the south west's names on a phone); the key's own panel takes its
+   place while it's open. (--key-chip: the key chip's width, 68 px, and a gap) ── */
+.holomap-layers { --key-chip: 74px; position: absolute; z-index: 3; left: calc(12px + var(--key-chip)); bottom: 10px; display: flex; flex-direction: column-reverse; align-items: flex-start; gap: 4px; }
 .holomap-map:has(.holomap-legend[data-open]) .holomap-layers { display: none; }
 .holomap-layers-toggle { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 32px; padding: 0.25rem 0.7rem; border: 1px solid rgb(127 214 255 / 0.3); border-radius: 8px; background: rgb(2 8 20 / 0.82); color: #bfeaff; font: 0.7rem var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; }
 .holomap-layers-toggle:hover { background: rgb(14 36 64 / 0.9); }
@@ -192,7 +193,7 @@
   .holomap-strip-share { display: none; }
   .holomap-strip-n { font-size: 0.7rem; }
   .holomap-legend { left: 8px; bottom: 8px; }
-  .holomap-layers { left: 8px; bottom: 46px; }
+  .holomap-layers { left: calc(8px + var(--key-chip)); bottom: 8px; }
   /* (the open key covers the map, under the zoom buttons' row in the top right corner (galaxy.css: 44 px and the 8 beside them, and a gap); the war's board under it would only show through, so it steps aside) */
   .holomap-legend-panel { width: min(340px, calc(100cqw - 68px)); max-height: calc(100cqw - 112px); }
   .holomap-map:has(.holomap-legend[data-open]) .holomap-strip { visibility: hidden; }
