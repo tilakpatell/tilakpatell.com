@@ -22,6 +22,7 @@ export const BRIEFED = new Set([
   '/invincible',
   '/middle-earth',
   '/middle-earth/place',
+  '/middle-earth/road',
   '/avengers',
   '/scranton',
   '/cybertron',

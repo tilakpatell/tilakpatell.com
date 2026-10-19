@@ -15,6 +15,10 @@
 //       damage (dealt) }
 // (the game has no parry, and a strike's lunge is its animation's: the
 // perks that bent those are gone, and a kept choice drops them)
+//   groundSkills(fx) the skill tree's ground branch (hangar/skills's fx) as
+//     perk numbers: { hurt (one over its health), regen (heal), heat, cool,
+//     damage, spread (the gun's scatter) }, 1 where nothing's taken
+//   withGround(perks, ground) the two multiplied, key by key
 
 export const MAX_PERKS = 3;
 
@@ -38,4 +42,17 @@ export function perkEffects(ids) {
   const fx = Object.fromEntries(KEYS.map((k) => [k, 1]));
   for (const id of readPerks(ids)) for (const k of KEYS) if (PERKS[id][k] != null) fx[k] *= PERKS[id][k];
   return fx;
+}
+
+// the skill tree's ground branch, in the perks' terms (a tenth more health is
+// a tenth less from each hit: the bar stays 100)
+const factor = (v) => (Number.isFinite(v) && v > 0 ? v : 1);
+export function groundSkills(fx) {
+  const f = fx ?? {};
+  return { hurt: 1 / factor(f.health), regen: factor(f.heal), heat: factor(f.heat), cool: factor(f.cool), damage: factor(f.damage), spread: factor(f.spread) };
+}
+export function withGround(perks, ground) {
+  const out = { ...perks };
+  for (const k of Object.keys(ground)) out[k] = (out[k] ?? 1) * ground[k];
+  return out;
 }

@@ -16,6 +16,8 @@ import { blinkers, consoleMaps, consoleMat, glassMat, glowSprite, plated, platin
 import { hyperspace, planet, sky } from '../space';
 import { loadCrew, nudge, prefetchCrew } from '../crew';
 import { clamp01, smooth } from '../timeline';
+import { shadowRadius } from '../levels';
+import { dimmer } from '../dim';
 import { loadTexture } from '../../../lib/three/textures';
 
 const EYE = [-0.42, 1.16, 0.3];
@@ -232,7 +234,7 @@ function numbers(g, w, h, t) {
   g.globalAlpha = 1;
 }
 
-export async function build({ rich, coarse, renderer }) {
+export async function build({ rich, level, coarse, renderer }) {
   const inside = new THREE.Group();
   const outside = new THREE.Group();
   const r = rng(7);
@@ -513,7 +515,10 @@ export async function build({ rich, coarse, renderer }) {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     key.castShadow = true;
-    key.shadow.mapSize.set(1024, 1024);
+    // (the level's map, ./levels.js; softened over the same width at any size)
+    const map = level?.shadows || 1024;
+    key.shadow.mapSize.set(map, map);
+    key.shadow.radius = shadowRadius(level);
     const c = key.shadow.camera;
     c.left = -1.6;
     c.right = 1.6;
@@ -551,7 +556,7 @@ export async function build({ rich, coarse, renderer }) {
   inside.add(jump, jump.target);
 
   // ── outside: the desert planet and its two suns ──
-  const space = sky({ seed: 11, nebula: ['#23356a', '#5b2a5e'], band: [0.6, 1, -0.2] });
+  const space = sky({ seed: 11, nebula: ['#23356a', '#5b2a5e'], band: [0.6, 1, -0.2], count: Math.round(5200 * (level?.stars ?? 1)) });
   outside.add(space.group);
   const small = coarse || Math.min(window.innerWidth, window.innerHeight) < 600;
   // (decoded off the main thread, and shared with the universe map's planets)
@@ -560,6 +565,8 @@ export async function build({ rich, coarse, renderer }) {
   world.group.position.set(820, -820, -1900);
   world.body.rotation.set(0.3, 2.2, 0.15);
   outside.add(world.group);
+  // (faded with the suns as the jump takes them, not gone in a frame)
+  const dimWorld = dimmer(world.group);
   const suns = SUNS.map((d, i) => {
     const s = glowSprite(i ? '#ffd9a8' : '#fff4dc', i ? 150 : 210, 1);
     s.position.set(...d).normalize().multiplyScalar(1500);
@@ -569,13 +576,16 @@ export async function build({ rich, coarse, renderer }) {
   const sunHalo = glowSprite('#ffcf8f', 900, 0.22);
   sunHalo.position.copy(suns[0].position);
   outside.add(sunHalo);
-  const hyper = hyperspace({ count: rich ? 2200 : 1300 });
+  const hyper = hyperspace({ count: level?.streaks ?? (rich ? 2200 : 1300) });
   outside.add(hyper.group);
+  // the brighter sun, for the lens's glare (scene.js): as bright as it's drawn
+  const glare = { at: suns[0].position, color: '#fff3dc', k: 1, size: 0.013 };
 
   // the cockpit, as it stands still
   let leverK = 0;
   const jumpColor = new THREE.Color();
   const glassLight = new THREE.Color();
+  const blue = new THREE.Color(0.55, 0.75, 1.3);
 
   return {
     inside,
@@ -592,6 +602,7 @@ export async function build({ rich, coarse, renderer }) {
     flash: '#eef5ff',
     glance: -0.75, // over at Chewie
     rumble: 1,
+    glare,
     triggers: [hitBox, ...leverHit],
     resize(w, h, px) {
       hyper.resize(w, h, px);
@@ -599,7 +610,8 @@ export async function build({ rich, coarse, renderer }) {
     },
     launch() {},
     update(dt, t, { launching, t: lt, throttle }) {
-      for (const s of screens) s.tick(t);
+      // (the screens drawn again till the jump's light washes them out)
+      if (!launching || throttle < 0.3) for (const s of screens) s.tick(t);
       lights.tick(t);
       // the levers: pushed forward in the first moments of the launch
       const want = launching ? smooth(lt / 380) : 0;
@@ -618,14 +630,16 @@ export async function build({ rich, coarse, renderer }) {
       const pre = launching ? 1 - smooth((throttle - 0.3) / 0.35) : 1;
       hyper.update(dt, t, { throttle: launching ? throttle : 0, tunnel, shown: 1 });
       space.set({ fade: 0.15 + 0.85 * pre });
+      if (launching) dimWorld(pre);
       world.group.visible = pre > 0.01;
       for (const s of suns) s.material.opacity = pre;
       sunHalo.material.opacity = 0.22 * pre;
+      glare.k = pre;
       const k = hyper.light(jumpColor, { throttle: launching ? throttle : 0, tunnel });
       jump.color.copy(jumpColor);
       jump.intensity = (k > 0 ? 1.6 : 0) + snap * 6;
       key.intensity = 2.4 * (0.3 + 0.7 * pre);
-      glassLight.setRGB(1, 0.95, 0.88).lerp(new THREE.Color(0.55, 0.75, 1.3), clamp01(tunnel + throttle * 0.3));
+      glassLight.setRGB(1, 0.95, 0.88).lerp(blue, clamp01(tunnel + throttle * 0.3));
       glassM.userData.setLight?.(glassLight);
       panelGlow.intensity = 0.9 + (launching ? 0.6 * Math.sin(t * 40) * Math.min(1, throttle * 3) : 0);
     },

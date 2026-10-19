@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useDocumentTitle, useMediaQuery } from '../lib/hooks';
 import { PLANETS, planetSpecOf } from '../components/expanse/flight/planets';
 import { WorldHost, useWorld } from '../runtime';
-import { useOnline } from '../components/universe/online/useOnline';
+import { useInWorld, useOnline } from '../components/universe/online/useOnline';
 import { wayOut } from '../components/worlds/worlds';
 import FlightHud from '../components/expanse/flight/FlightHud';
 import flightModule from '../components/expanse/flight/module';
@@ -49,6 +49,7 @@ function Flight({ spec }) {
   const [shared, setShared] = useState(null);
   // the other pilots, while you're online (the site's switch and callsign, as the towns'); the roster's blocks aren't shown
   const online = useOnline();
+  useInWorld(); // (the other pilots are ships over the planet: no page pointers over the canvas)
   const callsign = online?.on ? (online.name ?? null) : null;
   const blocked = useRef(null);
   blocked.current = (id) => online?.client?.peers?.get(id)?.blocked === true || Boolean(online?.isBlocked?.(id));

@@ -92,7 +92,7 @@ import { springGroups } from '../../lib/spring';
 import { SIDES, sideFor, squadKinds } from './sides';
 import { ASSIST, friction } from '../../lib/combat/aim';
 import { footAim } from './footAim';
-import { BOLT, FOOT, METRE, PARKED, TROOPS, aimAt, apart, at, bearing, byTrench, createJump, facingAlong, flat, footBodies, footSolids, inTrench, landingSpot, march, offset, person, rightOf, squad, turnToward, vec, walk } from './foot';
+import { BOLT, FOOT, METRE, PARKED, TROOPS, aimAt, apart, at, bearing, byTrench, createJump, facingAlong, flat, footBodies, footSkills, footSolids, inTrench, landingSpot, march, offset, person, rightOf, squad, turnToward, vec, walk } from './foot';
 import { TRENCH_MODEL, trenchOf } from './deep';
 import { POSITIONS } from './layout';
 import { byId } from './universes';
@@ -903,7 +903,19 @@ const blobMat = () => new THREE.MeshBasicMaterial({ map: blobTexture(), transpar
 // (`prepare(roots, alive)`: the map's way of readying a landing before it's
 // shown, its look put on, its pictures sent and its shaders made, a slice at
 // a time; a promise)
-export function createFoot({ map, emit, reduced = false, small = false, planetOf, renderer = null, prepare = null, cone = () => ASSIST.mouse }) {
+export function createFoot({ map, emit, reduced = false, small = false, planetOf, renderer = null, prepare = null, cone = () => ASSIST.mouse, skills = () => null }) {
+  // the skill tree's ground branch (foot.js's footSkills, of the scene's fx),
+  // worked out again only when the skills change
+  let skillsOf;
+  let skillsNow = footSkills(null);
+  const own = () => {
+    const fx = skills();
+    if (fx !== skillsOf) {
+      skillsOf = fx;
+      skillsNow = footSkills(fx);
+    }
+    return skillsNow;
+  };
   const root = new THREE.Group(); // at the planet's middle, in the map
   root.name = 'foot';
   root.visible = false;
@@ -2465,7 +2477,7 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
       }
     }
     // health comes back once out of trouble a while
-    if (S.clock - S.hitAt > 4 && S.health < FOOT.health) S.health = Math.min(FOOT.health, S.health + FOOT.heal * dt);
+    if (S.clock - S.hitAt > 4 && S.health < FOOT.health) S.health = Math.min(FOOT.health, S.health + own().heal * dt);
     S.cool -= dt;
     // the gun stays up a while after the last shot, longer with a lock still there
     S.aim = Math.max(0, S.aim - dt / (S.lock ? 6 : 2.5));
@@ -2503,7 +2515,7 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
   const hurt = (damage, knock = null) => {
     if (S.phase !== 'walk') return;
     S.knock = knock;
-    S.health = Math.max(0, S.health - damage);
+    S.health = Math.max(0, S.health - damage * own().hurt);
     S.hitAt = S.clock;
     emit({ type: 'foot', id: 'hurt', damage });
     if (S.health > 0) reactMe('hit', { where: rand() < 0.3 ? 'head' : 'chest' });
@@ -3002,7 +3014,7 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
       const aimed = aimNow(c);
       const target = aimed?.target ? S.troops.find((o) => o.id === aimed.target.id && o.alive) ?? null : null;
       if (aimed) S.aimed = aimed;
-      shoot(me, target, 'me', damageOf(me), 0, aimed ? new V(...aimed.at) : null);
+      shoot(me, target, 'me', damageOf(me) * own().damage, 0, aimed ? new V(...aimed.at) : null);
       S.acted = true;
       S.aim = 1;
       if (!reduced) S.cam.kick.v += GUNS[gunOf(me)]?.kick.up ?? 1.5;

@@ -46,6 +46,7 @@ import { precompile } from '../../lib/three/renderer';
 import { tileFbm } from '../../lib/texture';
 import { RIM, SYSTEMS, coreBearing, courseTo, distance } from './systems';
 import { panoramaUrl } from './skyPanorama';
+import { skyLandmark } from './landmarks';
 
 const SKY_R = 5200; // (inside the camera's far plane, outside everything else)
 const SUN_R = 4800;
@@ -342,7 +343,7 @@ const NEBULAE = [
 // just after the sky's seed, as they always did, so the stars after them stay
 // where they were too. The third, the sizes and the twists come from numbers
 // of their own.
-function nebulaeFrom(sys, rand) {
+function nebulaeFrom(sys, rand, landmarks = true) {
   const more = seeded(`${sys.id}/nebulae`);
   const toward = (r) => {
     const v = new THREE.Vector3(r() * 2 - 1, (r() * 2 - 1) * 0.5, r() * 2 - 1).normalize();
@@ -353,7 +354,12 @@ function nebulaeFrom(sys, rand) {
   const other = NEBULAE[(k + 1 + Math.floor(more() * (NEBULAE.length - 1))) % NEBULAE.length];
   const colors = [...NEBULAE[k], other[more() < 0.5 ? 0 : 1]];
   dirs.push(toward(more));
-  return dirs.map((dir, i) => ({ dir, color: colors[i], size: 0.18 + more() * 0.27, warp: 0.6 + more() }));
+  const out = dirs.map((dir, i) => ({ dir, color: colors[i], size: 0.18 + more() * 0.27, warp: 0.6 + more() }));
+  // (and where the atlas has a nebula near, landmarks.js's, the third is that one, where it really is from here: the Akkadese
+  // Maelstrom over Kessel, the Kaliida Nebula over Naboo; not in a sky borrowed where there's no jumping, which is no place)
+  const near = landmarks ? skyLandmark(sys) : null;
+  if (near) out[2] = { ...out[2], dir: near.dir, color: near.color, size: near.size };
+  return out;
 }
 export function nebulaeOf(sys) {
   const rand = seeded(sys.id);
@@ -505,7 +511,7 @@ export function createSky({ small = false, level = null, renderer = null, beacon
       u.uNear.value = near * near * 0.85 + near * 0.15;
       u.uSide.value = Math.min(0.95, Math.max(0, (d / RIM - 0.45) * 1.6));
       u.uSeed.value = rand() * 40;
-      nebulaeFrom(sys, rand).forEach((nb, i) => {
+      nebulaeFrom(sys, rand, showBeacons).forEach((nb, i) => {
         u.uNebDir.value[i].set(...nb.dir);
         u.uNebCol.value[i].set(clouds ? nb.color : 0x000000);
         u.uNebShape.value[i].set(nb.size, nb.warp);

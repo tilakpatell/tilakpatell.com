@@ -42,7 +42,7 @@ export const HELLO = {
   mixed: {
     id: 'tour-hello',
     title: 'The whole tour',
-    text: 'A quarter of an hour, the work and the worlds: the hiring tour with the player’s folded in. Esc stops it; it remembers where you were.',
+    text: 'Twelve minutes, the work and the worlds: the hiring tour with the player’s folded in. Esc stops it; it remembers where you were.',
   },
 };
 

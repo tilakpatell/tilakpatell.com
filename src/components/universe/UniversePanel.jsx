@@ -72,7 +72,7 @@ const KEYMAP = [
   [['F'], 'Fire'],
   [['M'], 'Nav map'],
   [['V'], 'Cockpit'],
-  [['H'], 'Shipyard'],
+  [['H'], 'Hangar'],
 ];
 // (and the one way down there's no key for, said under the grid)
 const LANDING = 'Fly down into a planet’s air to go straight into its world.';

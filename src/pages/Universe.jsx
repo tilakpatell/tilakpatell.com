@@ -11,7 +11,7 @@ import { FLY_PAST } from '../components/universe/words';
 import { SHIP_KEY, crewById, parseShip } from '../components/universe/crews';
 import { useShipyardPage } from '../components/universe/shipyard/useShipyardPage';
 import { useAchievements } from '../components/Achievements';
-import { saveStart } from '../lib/view';
+import { VIEW_EVENT, saveStart } from '../lib/view';
 import { useView } from '../components/ViewSwitch';
 import { portalSound } from '../components/universe/sounds';
 import { jumpEvent } from '../components/jumps/styles';
@@ -22,10 +22,10 @@ import Comms from '../components/universe/Comms';
 import StartChoice from '../components/universe/StartChoice';
 import Rain from '../components/universe/Rain';
 import Online from '../components/universe/online/Online';
-import Wardrobe from '../components/rickmorty/wardrobe/Wardrobe';
-const Shipyard = lazy(() => import('../components/universe/shipyard/Shipyard'));
-import { useLooks } from '../components/rickmorty/wardrobe/useLooks';
-import { CASTS, castOfCrew } from '../components/rickmorty/wardrobe/looks';
+// the Hangar (the crew, the arms, the powers and the shipyard), in its own chunk: opened with H, or C on the crew
+const HangarPanel = lazy(() => import('../components/hangar/HangarPanel'));
+import { TAB_KEY, readTab } from '../components/hangar/hangarRules';
+import { useSkills } from '../components/hangar/skills/useSkills';
 import { useOnline } from '../components/universe/online/useOnline';
 import EarnNote from '../components/universe/EarnNote';
 import { useEarn } from '../components/universe/useEarn';
@@ -108,14 +108,15 @@ export default function Universe({ ask = false }) {
   const { unlocked, unlock } = useAchievements();
   // (the loadouts, hulls and garage builds, the Shipyard's door and what Apply and a sale do: shipyard/useShipyardPage.js, which the galaxy uses too)
   const { loadout, build, tune, garage, dropped, yard, setYard, applyDraft, sellPart, yardNote, live, yardSaves } = useShipyardPage({ ship, unlocked });
+  const { fx: skillFx, picks: powerPicks } = useSkills(); // (the skill tree's effects and the powers picked, the Hangar's: on the ship as its loadout is)
   useEffect(() => setLoadout(loadout), [setLoadout, loadout]);
   useEffect(() => tellBuild?.(build), [tellBuild, build]);
-  // the wardrobe, from the shipyard: how the cruiser’s Rick and Morty look,
-  // or the RV’s Walt and Jesse (whichever crew’s flying)
-  const [looks, setLook] = useLooks();
-  const dressing = castOfCrew(ship) ?? 'rickmorty';
-  const [wardrobe, setWardrobe] = useState(false);
-  const closeWardrobe = useCallback(() => setWardrobe(false), []);
+  // the Hangar's tab, the one last used (this browser's: hangarRules.js's TAB_KEY)
+  const [hangarTab, setHangarTabState] = useState(() => readTab(local.get(TAB_KEY)));
+  const setHangarTab = useCallback((t) => {
+    setHangarTabState(t);
+    local.set(TAB_KEY, t);
+  }, []);
   // the nav map, and the drive picked on it (kept between visits)
   const [charting, setCharting] = useState(false);
   const [phone, setPhone] = useState(false); // the phone out past the belt, picked up: its lock screen
@@ -129,7 +130,9 @@ export default function Universe({ ask = false }) {
   };
   const jumped = useRef(false); // the crew's had their say about a jump this visit
   const [leaving, setLeaving] = useState(null); // { id, mode } once Enter is pressed
-  const [asking, setAsking] = useState(ask); // the front door's choice, on a first arrival
+  // the front door's choice, on a first arrival; never under the intro (the
+  // welcome asks it, and a dialog hidden under the cover would take its focus)
+  const [asking, setAsking] = useState(() => ask && !['covered', 'intro'].some((k) => k in document.documentElement.dataset));
   // the panel, put away to give the map the room (remembered between visits)
   const [tucked, setTucked] = useState(() => local.get(PANEL_KEY) === 'tucked');
   const tuck = (on) => {
@@ -208,11 +211,16 @@ export default function Universe({ ask = false }) {
       setShip(id);
       setAsking(false);
     };
+    // a pick made anywhere else (the first visit's welcome, the view switch)
+    // answers the front door's choice
+    const picked = () => setAsking(false);
     window.addEventListener('tp:arrive', arrive);
     window.addEventListener('tp:board', board);
+    window.addEventListener(VIEW_EVENT, picked);
     return () => {
       window.removeEventListener('tp:arrive', arrive);
       window.removeEventListener('tp:board', board);
+      window.removeEventListener(VIEW_EVENT, picked);
     };
   }, []);
 
@@ -323,7 +331,8 @@ export default function Universe({ ask = false }) {
   // the front door's choice: fly, or the home page; kept if asked to
   const start = (where, remember) => {
     if (remember) saveStart(where);
-    if (where === 'home') navigate('/home');
+    // (kept, / sends you on to /home from now on: Back to it would only come back)
+    if (where === 'home') navigate('/home', remember ? { replace: true } : undefined);
     else setAsking(false);
   };
   const { switchTo } = useView();
@@ -495,6 +504,8 @@ export default function Universe({ ask = false }) {
         loadout={loadout}
         build={build}
         tune={tune}
+        skillFx={skillFx}
+        powerPicks={powerPicks}
         canFit={Boolean(ship)}
         hangar={yard}
         onHangar={setYard}
@@ -526,10 +537,12 @@ export default function Universe({ ask = false }) {
       {!leaving && <EarnNote note={yardNote ?? earned} />}
       {ship && !leaving && (
         <Suspense fallback={null}>
-          <Shipyard
+          <HangarPanel
             open={yard}
             onOpen={setYard}
-            enabled={!charting && !wardrobe}
+            tab={hangarTab}
+            onTab={setHangarTab}
+            enabled={!charting}
             ship={ship}
             shipName={crew?.ship ?? ''}
             live={live}
@@ -538,14 +551,9 @@ export default function Universe({ ask = false }) {
             dropped={dropped}
             onApply={applyDraft}
             onSell={sellPart}
-            onCrew={() => {
-              setYard(false);
-              setWardrobe(true);
-            }}
           />
         </Suspense>
       )}
-      <Wardrobe open={wardrobe} onClose={closeWardrobe} looks={looks} onLook={setLook} cast={dressing} who={CASTS[dressing][0]} returnTo=".universe-hangar-btn" />
       {!asking && !leaving && <Online online={online} ship={ship} />}
       <UniversePanel
         universe={universe}
@@ -559,7 +567,10 @@ export default function Universe({ ask = false }) {
         loadout={loadout}
         build={build}
         onShip={pickShip}
-        onHangar={() => setYard(true)}
+        onHangar={() => {
+          setHangarTab('shipyard');
+          setYard(true);
+        }}
         onClassic={() => switchTo('classic')}
         tucked={tucked}
         onTuck={tuck}

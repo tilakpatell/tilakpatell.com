@@ -22,14 +22,14 @@ export const readDone = () => readAll(QUESTS_KEY);
 
 // what the surface module is made with when the galaxy hands over to it
 // (its page's own props replace these once it's up: the compass is its)
-export function surfaceProps(system, { ship, loadout, build = null, net = null, reduced = false, effects = null }) {
+export function surfaceProps(system, { ship, loadout, build = null, net = null, reduced = false, effects = null, crew = {} }) {
   const found = readFound()[system];
   const done = readDone()[system];
   return {
     system,
     mission: null,
     ship,
-    hero: readHero(local.get(HERO_KEY), ship ?? 'xwing'), // (who you picked to play as: the page reads the same)
+    hero: readHero(local.get(HERO_KEY), ship ?? 'xwing', crew), // (who you picked to play as, in the crew's own style the page hands in: the surface page reads the same)
     loadout,
     build,
     found: Array.isArray(found) ? found : [],

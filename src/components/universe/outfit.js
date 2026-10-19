@@ -229,7 +229,10 @@ export const fits = (kind, loadout, build = null, tune = null) => powerOf(loadou
 // On a garage build, the build's own numbers are what it does as it comes;
 // on the crew's own ship, the modules of its tune (a tune is a stock ship's
 // only: a build's modules are the ship) add theirs to what it does as it comes.
-export function statsOf(kind, loadout = STOCK_LOADOUT, build = null, tune = null) {
+// (the skill tree's effects, hangar/skills's fx, as the scenes hand them in;
+// neutral when there are none: nothing added, nothing multiplied)
+const NO_FX = {};
+export function statsOf(kind, loadout = STOCK_LOADOUT, build = null, tune = null, fx = NO_FX) {
   const own = build ? statsOfBuild(build) : tune ? statsOfTune(tune) : null;
   const s = { boost: own?.boost ?? 1, accel: own?.accel ?? 1, cruise: own?.cruise ?? 1, agility: own?.agility ?? 1, level: own?.level ?? 1, cadence: 1, punch: 1, bolt: 1, armor: 1, regen: 1, delay: 5 };
   for (const p of fitted(loadout)) {
@@ -239,6 +242,14 @@ export function statsOf(kind, loadout = STOCK_LOADOUT, build = null, tune = null
     s.bolt = Math.max(s.bolt, p.bolt ?? 1);
     s.delay = Math.min(s.delay, p.delay ?? 5);
   }
+  // the skills on top of the parts: added as a part's share is, multiplied as
+  // a part's are; their plating only against the game's own ships (armorGame:
+  // the scenes' hurt() takes it for a hit with no pilot behind it), and the
+  // hyperdrive's recharge (jump)
+  for (const k of ['boost', 'accel', 'cruise', 'agility', 'level']) s[k] += Number.isFinite(fx[k]) ? fx[k] : 0;
+  for (const k of ['cadence', 'regen']) s[k] *= Number.isFinite(fx[k]) ? fx[k] : 1;
+  s.armorGame = Number.isFinite(fx.armor) ? fx.armor : 1;
+  s.jump = Number.isFinite(fx.jump) ? fx.jump : 1;
   // the ordnance rack's worth, against the stock torpedoes'
   const rack = WEAPONS[partById('ordnance', loadout.ordnance)?.weapon] ?? WEAPONS.heavy;
   s.ordnance = rackOf(rack) / rackOf(WEAPONS.heavy);

@@ -16,8 +16,14 @@ export const suite = async (viewport, { full = true } = {}) => {
   };
   const names = async (when, all = false) => {
     const r = await namesProblems(page);
-    const total = await J(page, () => document.querySelectorAll('.holomap-name[data-id]').length);
-    say(all ? r.n === total : r.n >= 3, `${when}: ${r.n} of ${total} names on view`);
+    // (every film world's name; a charted world's only where it has room, labelPlace.js's optional, so those are counted, not held)
+    const v = await J(page, () => {
+      const shown = (el) => el.checkVisibility({ visibilityProperty: true });
+      const films = [...document.querySelectorAll('.holomap-systems > li:not([data-charted]) .holomap-name[data-id]')];
+      const charted = [...document.querySelectorAll('.holomap-systems > li[data-charted] .holomap-name[data-id]')];
+      return { films: films.length, filmsShown: films.filter(shown).length, charted: charted.length, chartedShown: charted.filter(shown).length };
+    });
+    say(all ? v.filmsShown === v.films : r.n >= 3, `${when}: ${r.n} names on view (the films’ ${v.filmsShown} of ${v.films}, the charted worlds’ ${v.chartedShown} of ${v.charted})`);
     say(r.meets.length === 0, `${when}: no two names meet${r.meets.length ? ` (${r.meets.slice(0, 6).join(', ')})` : ''}`);
     const dots = dotsCheck(r.dots, viewport.width);
     say(dots.ok, `${when}: no name over another system's dot${viewport.width <= 560 ? ` deeper than ${PHONE_GRAZE} px` : ''}${dots.text}`);
