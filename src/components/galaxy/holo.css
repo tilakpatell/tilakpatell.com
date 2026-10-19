@@ -1,0 +1,82 @@
+/* ── The map in 3D (HoloStage.jsx; docs/superpowers/specs/2026-10-19-galaxy-holotable-design.md): the whole window,
+   the galaxy's scene drawing the holotable on its canvas behind it, the header and the side panel over it on glass, and
+   nothing else of the page (the site's bar, the flight's HUD and its sky's names) showing through: hidden, and the canvas
+   alone made visible again under them ── */
+body:has(> .holomap[data-3d]) > :not(.holomap),
+body:has(> .holomap[data-3d]) > :not(.holomap) * { visibility: hidden !important; } /* (!important: the sky's names and the HUD set their own) */
+body:has(> .holomap[data-3d]) .galaxy-map > canvas { visibility: visible !important; } /* (the world's own canvas, not the radar's) */
+
+.holomap[data-3d] { padding: 0; background: transparent; place-items: stretch; }
+.holo-stage { position: fixed; inset: 0; z-index: 0; overflow: hidden; touch-action: none; user-select: none; cursor: grab; }
+.holo-stage:active { cursor: grabbing; }
+.holomap[data-3d] .holomap-frame {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: none;
+  padding: max(12px, env(safe-area-inset-top)) 16px 16px;
+  border: 0;
+  border-radius: 0;
+  /* (the top and the right darkened a little, under the glass, so the panels' edges never meet bright stars) */
+  background: linear-gradient(to bottom, rgb(1 4 11 / 0.55), transparent 140px), linear-gradient(to left, rgb(1 4 11 / 0.45), transparent 420px);
+  box-shadow: none;
+  pointer-events: none;
+}
+.holomap[data-3d] .holomap-frame > * { pointer-events: auto; }
+.holomap[data-3d] .holomap-head { padding: 8px 12px; border: 1px solid rgb(127 214 255 / 0.2); border-radius: 12px; background: rgb(2 6 16 / 0.82); }
+.holomap[data-3d] .holomap-body { grid-template-columns: minmax(0, 1fr) 320px; pointer-events: none; }
+.holomap[data-3d] .holomap-side { pointer-events: auto; background: rgb(2 6 16 / 0.86); }
+/* (the map's own corner: the war's board, the key and the layers stay where they were; the rest of it is the stage's) */
+.holomap[data-3d] .holomap-map { width: auto; aspect-ratio: auto; align-self: stretch; justify-self: stretch; overflow: visible; border-radius: 0; background: none; pointer-events: none; }
+.holomap[data-3d] .holomap-map > * { pointer-events: auto; }
+
+/* ── Each system: its button where its system is drawn (the scene's translate), its name round it where labelPlace.js
+   found room (data-place, as the 2D map's), out of sight off the screen (data-off) and unnamed where there's none
+   (data-quiet); the dot itself is the scene's ── */
+.holo-labels { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; pointer-events: none; }
+.holo-label { position: absolute; left: 0; top: 0; width: 16px; height: 16px; margin: -8px 0 0 -8px; padding: 0; border: 0; border-radius: 50%; background: none; color: #e6f6ff; font-size: 0.78rem; pointer-events: none; will-change: transform; }
+.holo-label[data-off] { visibility: hidden; }
+.holo-label:focus-visible { outline: 2px solid #7fd6ff; outline-offset: 3px; }
+/* (each place's box as labelPlace.js's boxAt has it, from the dot's middle, the button's: GAP 9 px clear of it beside, above
+   or below, CORNER 5.4 px off it at a corner, an above-or-below name hung from the dot's edge, DOT 7 px; and the height it
+   places by, LABEL_H's 18 px) */
+.holo-name { position: absolute; left: 17px; top: 50%; translate: 0 -50%; box-sizing: border-box; display: inline-flex; align-items: center; gap: 0.25rem; height: 18px; padding: 0 0.35rem; border-radius: 6px; line-height: 16px; white-space: nowrap; text-shadow: 0 0 6px #000, 0 0 2px #000; }
+.holo-label[data-quiet] .holo-name { visibility: hidden; }
+.holo-label[data-place='l'] .holo-name { left: auto; right: 17px; }
+.holo-label[data-place='t'] .holo-name { left: 50%; top: auto; bottom: 17px; translate: -50% 0; }
+.holo-label[data-place='b'] .holo-name { left: 50%; top: 17px; translate: -50% 0; }
+.holo-label[data-place='t'][data-hang='s'] .holo-name,
+.holo-label[data-place='b'][data-hang='s'] .holo-name { left: 1px; translate: 0 0; }
+.holo-label[data-place='t'][data-hang='e'] .holo-name,
+.holo-label[data-place='b'][data-hang='e'] .holo-name { left: auto; right: 1px; translate: 0 0; }
+.holo-label[data-place='tr'] .holo-name { top: auto; bottom: 13.4px; left: 13.4px; translate: 0 0; }
+.holo-label[data-place='br'] .holo-name { top: 13.4px; left: 13.4px; translate: 0 0; }
+.holo-label[data-place='tl'] .holo-name { top: auto; bottom: 13.4px; left: auto; right: 13.4px; translate: 0 0; }
+.holo-label[data-place='bl'] .holo-name { top: 13.4px; left: auto; right: 13.4px; translate: 0 0; }
+.holo-label[data-charted] .holo-name { color: rgb(217 243 255 / 0.82); font-size: 0.72rem; }
+.holo-label[data-dim] .holo-name { color: #8fa3b4; }
+.holo-label[aria-pressed='true'] .holo-name { background: rgb(2 6 16 / 0.86); box-shadow: inset 0 0 0 1px var(--c); color: #fff; font-weight: 700; }
+.holo-label[aria-current='location'] .holo-name { font-weight: 700; }
+.holo-youtag { padding: 0 0.3rem; border-radius: 4px; background: #fff; color: #03040a; font: 700 0.7rem var(--font-mono); }
+/* the card of the system the pointer's over, under its name */
+.holo-card { position: absolute; left: 0; top: calc(100% + 10px); z-index: 2; display: grid; gap: 0.1rem; padding: 0.45rem 0.65rem; border: 1px solid var(--c); border-radius: 10px; background: rgb(2 6 16 / 0.94); font-size: 0.74rem; text-align: left; white-space: nowrap; }
+.holo-card b { color: var(--c); font-size: 0.84rem; }
+.holo-card span { color: rgb(217 243 255 / 0.8); }
+
+/* (what's read over the 3D map on glass and not blurred, docs/health/RULES.md: the war's board and its name, the key's
+   and the layers' panels, the eras' chips) */
+.holomap[data-3d] .holomap-strip-board,
+.holomap[data-3d] .holomap-layers-set,
+.holomap[data-3d] .holomap-legend-panel { background: rgb(2 8 20 / 0.9); backdrop-filter: none; }
+.holomap[data-3d] .holomap-strip-war { justify-self: start; padding: 1px 7px; border-radius: 6px; background: rgb(2 8 20 / 0.84); }
+.holomap[data-3d] .holomap-eras button,
+.holomap[data-3d] .holomap-filmpick > summary { background: rgb(2 6 16 / 0.84); }
+.holomap[data-3d] .holomap-eras button[aria-pressed='true'] { background: color-mix(in srgb, var(--era, #7fd6ff) 18%, rgb(2 6 16 / 0.9)); }
+
+/* a phone, or a narrow window: the side panel a sheet along the bottom and the eras' chips without their dates (each
+   one's title has them), so the header's two rows leave the disc the window's middle */
+@media (max-width: 760px) {
+  .holomap[data-3d] .holomap-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; container-type: normal; }
+  .holomap[data-3d] .holomap-side { max-height: 30svh; }
+  .holomap[data-3d] .holomap-eras button span { display: none; }
+}

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useAchievements } from '../Achievements';
 import { local } from '../../lib/hooks';
+import { skillTaken } from './skillsTaken';
 
 // The wallet for the whole site (economy.js), held above the pages beside
 // OnlineProvider, so the hangar, the record card and every world that pays
@@ -13,7 +14,9 @@ import { local } from '../../lib/hooks';
 //
 // It reads what you've earned elsewhere as it goes: the achievements (the
 // provider above), your standing with each universe's law, ordinary ships
-// and pirates, and your oath and rank in the galaxy's wars (pilotMarks.js).
+// and pirates, your oath and rank in the galaxy's wars (pilotMarks.js), and
+// the skill tree's nodes taken (its provider, below this one, tells
+// skillsTaken.js).
 //
 // useEconomy() → { economy (null until it's loaded), version (bumps on
 // every change, for a render), marks() → { standing: { side: levels },
@@ -26,6 +29,7 @@ const EconomyContext = createContext({ economy: null, version: 0, want: () => {}
 // finds it made, rather than a second wallet writing over the first).
 let made = null;
 let unlockedNow = [];
+
 function load() {
   made ??= Promise.all([import('../../runtime'), import('./economy'), import('./pilotMarks'), import('../galaxy/warState'), import('../galaxy/allegiance')]).then(([rt, eco, pm, war, oath]) => {
     const allegiance = () => local.get(oath.SIDE_KEY, null);
@@ -35,6 +39,7 @@ function load() {
       achievements: () => unlockedNow,
       standingOf: (side) => pm.standingLevels(local, side),
       rankOf: (side) => pm.warRank(allegiance(), side, points),
+      skillOf: skillTaken,
     });
     // (a buy just before the tab closes is kept, not lost to the debounce)
     window.addEventListener('pagehide', () => economy.flush());

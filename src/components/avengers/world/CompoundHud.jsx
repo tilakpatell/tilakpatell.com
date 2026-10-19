@@ -1,6 +1,14 @@
 import { useLocation } from 'react-router-dom';
 import { audioContext } from '../../../lib/audio';
-import { Bubble, Hud, Menu, MenuItem, Objective, Stick, Toast, TouchButton } from '../../../runtime/hud';
+// the kit by its parts: its barrel (index.js) brings the Battlefront screens and their data
+import '../../../runtime/hud/hud.css';
+import Hud from '../../../runtime/hud/Hud.jsx';
+import Menu, { MenuItem } from '../../../runtime/hud/Menu';
+import Objective from '../../../runtime/hud/Objective';
+import Toast from '../../../runtime/hud/Toast';
+import Bubble from '../../../runtime/hud/Bubble';
+import Stick from '../../../runtime/hud/Stick';
+import TouchButton from '../../../runtime/hud/TouchButton';
 import { wayOut } from '../../worlds/worlds';
 import { PACKS, PHOTO, SETTINGS, SETTINGS_DEFAULTS } from './rules';
 import { STONES } from '../../interests/stones';

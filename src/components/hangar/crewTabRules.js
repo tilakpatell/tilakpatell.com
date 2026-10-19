@@ -6,11 +6,13 @@
 // Pure, tested.
 //
 //   crewOf(ship) → [who, who]
-//   carries(who, gun) → boolean            a gun they may have in their hand
-//   gunOf(who, style) → a gun's id, or null for a Jedi or Artoo
-//   cardOf(who, style) → { name, outfit, blade: { hex, color, hilt } | null, gun, line }
+//   carries(who, gun, arms) → boolean      a gun they may have in their hand
+//   gunOf(who, style, arms) → a gun's id, or null for a Jedi or Artoo
+//   cardOf(who, style, arms) → { name, outfit, blade: { hex, color, hilt } | null, gun, line }
+// (`arms`: the skill tree's unique weapons opened, its fx.arms: a unique gun
+// is theirs to carry only while its node is taken)
 
-import { HAND_WEAPONS, HILTS, PICKABLE, SABER_COLORS, heroById, skinsOf } from '../galaxy/shared/arms';
+import { HAND_WEAPONS, HILTS, SABER_COLORS, heroById, pickableWith, skinsOf } from '../galaxy/shared/arms';
 
 const CREWS = { cruiser: ['rick', 'morty'], rv: ['walt', 'jesse'], xwing: ['luke', 'artoo'], falcon: ['han', 'chewie'] };
 export const crewOf = (ship) => CREWS[ship] ?? [];
@@ -19,18 +21,18 @@ export const crewOf = (ship) => CREWS[ship] ?? [];
 const ARTOO = { name: 'R2-D2', blurb: 'An astromech who has saved the galaxy more times than anyone has thanked him for. Flies in the X-wing’s socket.' };
 
 const jedi = (who) => heroById(who)?.weapon === 'saber';
-export const carries = (who, gun) => {
+export const carries = (who, gun, arms = []) => {
   const own = heroById(who)?.weapon;
   if (!own || own === 'saber' || !HAND_WEAPONS[gun]) return false;
-  return gun === own || PICKABLE.includes(gun);
+  return gun === own || pickableWith(arms).includes(gun);
 };
-export function gunOf(who, style) {
+export function gunOf(who, style, arms = []) {
   const hero = heroById(who);
   if (!hero || jedi(who)) return null;
-  return carries(who, style?.gun) ? style.gun : hero.weapon;
+  return carries(who, style?.gun, arms) ? style.gun : hero.weapon;
 }
 
-export function cardOf(who, style = {}) {
+export function cardOf(who, style = {}, arms = []) {
   const hero = heroById(who);
   if (!hero) return { name: who === 'artoo' ? ARTOO.name : who, outfit: null, blade: null, gun: null, line: who === 'artoo' ? ARTOO.blurb : '' };
   const looks = skinsOf(who);
@@ -41,6 +43,6 @@ export function cardOf(who, style = {}) {
     const hilt = HILTS.find((h) => h.id === style.saber?.hilt) ?? HILTS.find((h) => h.id === hero.saber?.hilt) ?? HILTS[0];
     blade = { hex: color.hex, color: color.name, hilt: hilt.name };
   }
-  const gun = gunOf(who, style);
+  const gun = gunOf(who, style, arms);
   return { name: hero.name, outfit, blade, gun: gun ? HAND_WEAPONS[gun].name : null, line: hero.blurb };
 }

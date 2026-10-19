@@ -169,6 +169,26 @@ describe('the armoury with the skill tree’s guns (hangar/skills’ fx)', () =>
     expect(a.weapon.homing).toBeCloseTo(WEAPONS.heavy.homing * 1.3);
     expect(a.weapon.life).toBeCloseTo(WEAPONS.heavy.life * 1.25);
   });
+  it('fires a unique weapon only while the skill tree has it open, stock’s line otherwise', () => {
+    const fitted = { ...STOCK_LOADOUT, secondary: 'energon', ordnance: 'seismic' };
+    const shut = createArmory('xwing', fitted);
+    shut.select(1);
+    expect(shut.id).toBe('spread');
+    expect(shut.name).toBe('Ion scatter');
+    shut.select(2);
+    expect(shut.id).toBe('heavy');
+    const open = createArmory('xwing', fitted, { arms: ['seismic', 'energon'] });
+    open.select(1);
+    expect(open.id).toBe('energon');
+    expect(open.name).toBe('Energon arc');
+    open.select(2);
+    expect(open.id).toBe('seismic');
+    expect(open.ammoMax).toBe(2);
+    // (a reset: the refit with the node gone puts the stock rack back, no more rounds than it holds)
+    open.refit(fitted, { arms: ['energon'] });
+    expect(open.id).toBe('heavy');
+    expect(open.ammo).toBeLessThanOrEqual(WEAPONS.heavy.ammo);
+  });
   it('is the armoury as it was with no skills, the table untouched', () => {
     const a = createArmory('xwing', STOCK_LOADOUT);
     a.select(2);

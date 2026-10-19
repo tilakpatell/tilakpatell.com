@@ -1,11 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENTS } from '../../Achievements';
 import { BATTLEFRONT, BRANCHES, KEYS, NODES } from './tree';
+import { SKILL_NODES } from '../../universe/shared/hangar';
 import { canCarry, canTake, effectsOf, keyMet, legendRank, maxPoints, pointsOf, readSkills, resetCost, treeCost, withTaken } from './rules';
 
 const all = Object.keys(ACHIEVEMENTS);
 const countable = all.filter((id) => !BATTLEFRONT.includes(id)).length;
 const plenty = { earned: 70, achievements: [KEYS.starwars[0], KEYS.rickmorty[0], KEYS.breakingbad[0], KEYS.universe[0]] };
+// (nothing in the tree waits for anything now: a node that would, while a test runs)
+const SOON = 'test-soon';
+const withSoon = (fn) => {
+  NODES[SOON] = { branch: 'guns', row: 4, cost: 2, name: 'Soon', line: '', does: {}, soon: true };
+  try {
+    fn();
+  } finally {
+    delete NODES[SOON];
+  }
+};
 
 describe('the skill tree', () => {
   it('costs 60, between four fifths of the most the site gives and the most', () => {
@@ -63,8 +74,7 @@ describe('taking a node', () => {
     expect(keyMet('starwars', [KEYS.rickmorty[0]])).toBe(false);
   });
   it('waits for what isn’t here yet, and for the points', () => {
-    const soon = Object.keys(NODES).find((id) => NODES[id].soon);
-    expect(canTake(['trigger', 'loader', 'longlock'], soon, plenty).why).toBe('soon');
+    withSoon(() => expect(canTake(['trigger', 'loader', 'longlock'], SOON, plenty).why).toBe('soon'));
     expect(canTake([], 'afterburn', { earned: 0, achievements: [] }).why).toBe('points');
     expect(canTake(['afterburn'], 'afterburn', plenty).why).toBe('taken');
   });
@@ -75,8 +85,7 @@ describe('the nodes kept', () => {
     expect(readSkills({ nodes: ['afterburn', 'trim', 'deflectors'] }, { earned: 2, achievements: [] })).toEqual(['afterburn', 'trim']);
   });
   it('drop what’s unknown, what lost its parent and what isn’t here yet', () => {
-    const soon = Object.keys(NODES).find((id) => NODES[id].soon);
-    expect(readSkills({ nodes: ['nope', 'deflectors', 'afterburn', soon] }, plenty)).toEqual(['afterburn']);
+    withSoon(() => expect(readSkills({ nodes: ['nope', 'deflectors', 'afterburn', SOON] }, plenty)).toEqual(['afterburn']));
     expect(readSkills('junk', plenty)).toEqual([]);
     expect(readSkills(null, plenty)).toEqual([]);
   });
@@ -91,6 +100,30 @@ describe('what they do', () => {
     expect(fx.accel).toBe(0);
     expect(fx.regen).toBe(1);
     expect(fx.carry).toEqual([]);
+    expect(fx.arms).toEqual([]);
+  });
+  it('opens the unique weapons, one a node, the last thing in its branch', () => {
+    expect(effectsOf(['u-seismic', 'u-amban', 'trigger']).arms).toEqual(['seismic', 'amban']);
+    const unique = Object.values(NODES).filter((n) => n.arms);
+    expect(unique).toHaveLength(8);
+    for (const n of unique) {
+      expect(n.row).toBe(4);
+      expect(n.key).toBeTruthy();
+      expect(n.soon).toBeUndefined();
+    }
+  });
+  it('names the shipyard’s skill locks as the tree names its nodes, each opening the weapon it sells', () => {
+    for (const [id, name] of Object.entries(SKILL_NODES)) {
+      expect(NODES[id]?.name, id).toBe(name);
+      expect(NODES[id].arms, id).toBe(id.slice(2));
+    }
+    expect(Object.keys(SKILL_NODES)).toEqual(Object.keys(NODES).filter((id) => NODES[id].arms && NODES[id].branch === 'guns'));
+  });
+  it('lets a unique weapon be taken once its row-3 node, its key and the points are there', () => {
+    expect(canTake(['trigger', 'loader'], 'u-seismic', plenty).why).toBe('parent');
+    expect(canTake(['trigger', 'loader', 'longlock'], 'u-seismic', { earned: 70, achievements: [KEYS.rickmorty[0]] }).why).toBe('key');
+    expect(canTake(['trigger', 'loader', 'longlock'], 'u-seismic', plenty).ok).toBe(true);
+    expect(canTake(['tough', 'medic', 'hardhit'], 'u-gauntlet', plenty).ok).toBe(true);
   });
   it('lets any ship carry a crew’s pair once its node is taken', () => {
     expect(canCarry(effectsOf([]), 'xwing', 'cruiser')).toBe(false);

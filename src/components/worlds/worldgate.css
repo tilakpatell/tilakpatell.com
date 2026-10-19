@@ -9,10 +9,10 @@
   max-width: 30rem;
   margin-inline: auto;
   padding: 1rem 1.1rem 1.05rem;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--saber) 24%, rgb(255 255 255 / 0.16));
+  border-radius: min(var(--r-card), 14px);
   color: #e9edf3;
-  background: rgba(7, 9, 14, 0.94);
+  background: var(--glass); /* the colour's own dark: styles/dialogs.css */
   box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.55);
   animation: world-gate-in 0.35s var(--ease-out);
 }

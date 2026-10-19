@@ -34,7 +34,7 @@ const SAYS = {
   parent: () => 'Needs one from the row above',
   key: (n) => `Needs an achievement from ${KEY_LABEL[n.key] ?? 'another universe'}`,
   points: () => 'Short of points',
-  soon: () => 'Arrives with the unique weapons',
+  soon: () => 'Not here yet',
 };
 
 export function nodeCard(id, nodes, can) {

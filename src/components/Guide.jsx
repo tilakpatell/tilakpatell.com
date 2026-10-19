@@ -161,7 +161,8 @@ export default function Guide() {
         aria-controls={open ? 'guide-panel' : undefined}
         aria-keyshortcuts="?"
         aria-label={meta ? `Guide: controls and tips for ${meta.title}` : 'Guide: how this site works'}
-        title="Guide (?)"
+        data-tip="Guide (?)"
+        data-tip-side="left"
       >
         <IconGuide className="h-5 w-5" aria-hidden="true" />
       </button>

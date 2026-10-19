@@ -1,6 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { RiCloseLine } from 'react-icons/ri';
 import { BUDGETS, LEVELS, quality, setQuality } from '../../lib/device';
 import { setMode3D } from '../../lib/gpu';
 import { setSound, setVoicesOn, setVolumes } from '../../lib/audio';
@@ -9,6 +8,7 @@ import DeviceReadout from './DeviceReadout';
 import Video from './Video.jsx';
 import { useVideo } from './useVideo.js';
 import { Row, Segmented, Slider } from './parts.jsx';
+import { CloseButton } from '../ui';
 import { write as writeVideo } from '../../lib/video.js';
 import '../../styles/lazy/settings.css';
 
@@ -105,12 +105,12 @@ export default function Settings({ onClose }) {
 
   return (
     <div className="settings-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={sheet} className="settings-sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div ref={sheet} className="settings-sheet card dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
         <header className="settings-head">
-          <h2 id="settings-title">Settings</h2>
-          <button type="button" className="settings-close" onClick={onClose} aria-label="Close settings">
-            <RiCloseLine aria-hidden="true" />
-          </button>
+          <h2 id="settings-title" className="dialog-title">
+            Settings
+          </h2>
+          <CloseButton label="Close settings" onClick={onClose} />
         </header>
 
         <div className="settings-body">

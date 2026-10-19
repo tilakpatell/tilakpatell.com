@@ -15,6 +15,13 @@ describe('the ships’ weapons, one table for every world that flies them', () =
     expect(byCode(WEAPONS.heavy.code)).toBe('heavy');
     expect(byCode(99)).toBe('blaster');
   });
+  it('keeps the skill tree’s four on codes of their own, after the seven there were', () => {
+    const unique = Object.entries(WEAPONS).filter(([, w]) => w.unique);
+    expect(unique.map(([id]) => id)).toEqual(['seismic', 'darkmatter', 'crystal', 'energon']);
+    expect(unique.map(([, w]) => w.code)).toEqual([7, 8, 9, 10]);
+    expect([WEAPONS.seismic.ammo, WEAPONS.seismic.reload, WEAPONS.crystal.ammo]).toEqual([2, 10, 3]);
+    for (const [id, w] of unique) expect(w.heavy === true, id).toBe(w.line === 'ordnance');
+  });
   it('weighs a rack and a burst against the hunters', () => {
     expect(rackOf(WEAPONS.heavy)).toBeCloseTo((8 * 4) / 6.5);
     expect(burstOf(WEAPONS.spread)).toBeCloseTo((5 * 0.6) / 2.4);

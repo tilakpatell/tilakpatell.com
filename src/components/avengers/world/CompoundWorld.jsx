@@ -13,7 +13,7 @@ import './world.css';
 import '../../../styles/lazy/avengers.css';
 import CompoundHud from './CompoundHud';
 import { drawMap } from './map';
-import { fitCanvas } from '../../../runtime/hud';
+import { fitCanvas } from '../../../runtime/hud/canvas';
 import { clock, stoneFor, stoneLine } from './labels';
 import { useVoiced } from '../../../lib/useVoiced';
 import { sayVoiced } from '../../../lib/voiced';

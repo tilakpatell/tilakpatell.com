@@ -288,8 +288,11 @@ describe('shots', () => {
   });
   it('carries the weapon, and reads an unknown one as the blaster', () => {
     expect(readShot(writeShot({ x: 1, y: 2, z: 3 }, [0, 0, -20], 2)).w).toBe(2);
-    expect(readShot([1, 2, 3, 0, 0, -20, 7]).w).toBe(0);
+    expect(readShot([1, 2, 3, 0, 0, -20, 15]).w).toBe(0);
     expect(readShot([1, 2, 3, 0, 0, -20, 'x']).w).toBe(0);
+  });
+  it('carries the skill tree’s four by their own codes', () => {
+    for (const w of [7, 8, 9, 10]) expect(readShot([1, 2, 3, 0, 0, -20, w]).w).toBe(w);
   });
 
   it('a shot code past the table reads as the blaster', () => {

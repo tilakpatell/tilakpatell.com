@@ -18,6 +18,11 @@ export const WALK = 2.5; // m/s: a film’s walk, not a hike
 export const RUN = 6.0;
 export const BACK = 1.5;
 export const PAUSE_AFTER_INPUT = 6; // s
+// each travel mode’s share of the speeds (stages/index.js’s MODES): a climb
+// halves them, a horse at a gallop more than doubles them, the eagles fly
+// at 40 m/s; the ledger counts every stage at the walk, so a faster mode
+// only shortens the ride it promises
+export const PACE = { walk: 1, horse: 2.4, climb: 0.5, boat: 1, carried: 0.6, eagle: 16, ship: 0.6 };
 
 export function newClock({ s = 0, auto = true, reduced = false } = {}) {
   return { s, mode: 'idle', held: false, auto: auto && !reduced, speed: 0, pausedUntil: 0, t: 0, holdLeft: 0, reduced };

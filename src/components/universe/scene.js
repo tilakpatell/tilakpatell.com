@@ -201,6 +201,7 @@ import { createFlightCluster } from '../../runtime/hud/cluster.js';
 import { clusterView } from './clusterView';
 import { createRounds } from './rounds';
 import { createGalaxyPowers } from './powers';
+import { createUniqueArms } from './uniqueArms';
 import { chargeFor, picksFor } from './shipPowers';
 import { canPower, mixPost } from './powerSeams';
 import { createBolts, createFlashes } from '../galaxy/shared/fx';
@@ -1788,6 +1789,7 @@ export async function create(canvas, ctx) {
       const dz = park.z - s.z;
       const l = Math.hypot(dx, dy, dz) || 1;
       powers.cancel();
+      unique.clear();
       state.jump = { id, park, phase: 'align', age: 0, dir: [dx / l, dy / l, dz / l], at: Infinity, name: pose?.name ?? null };
     } else {
       if (hyper) {
@@ -2303,6 +2305,8 @@ export async function create(canvas, ctx) {
   // (the room a portal's way out needs: the map's solids as this frame has them; no wall at the edge, the Expanse goes on)
   Object.defineProperty(state, 'space', { get: () => ({ solids: solidsNow, edge: Infinity, ceilingAt: OPEN_SPACE.ceilingAt }) });
   const powers = createGalaxyPowers({ parent: map, reduced, hunters, war: null, bolts: powerBolts, flashes: powerFlashes, crashFx, pops, post: powerPost, state, emit, controls, strike: (...a) => powerStrike(...a), scored: (...a) => powerScored(...a), teleport: (pose) => powerTeleport(pose) });
+  // the skill tree's four ship weapons (uniqueArms.js): fired as the guns are, played out beside the powers
+  const unique = createUniqueArms({ parent: map, reduced, hunters, war: null, bolts: powerBolts, flashes: powerFlashes, state, emit, strike: (...a) => powerStrike(...a), scored: (...a) => powerScored(...a) });
   // the big one charged by what the guns hit (a power's own hits, `by` it, charge nothing)
   const charge = (hh) => powers.gain(chargeFor(hh, { war: false, ace: FACTIONS_ALL[hh.faction]?.ace === hh.kind }), `hunters:${hh.id}`);
   // G or X: on, if a power may be played now (in flight only), and whether it went
@@ -2382,9 +2386,11 @@ export async function create(canvas, ctx) {
       shotAt.set(s.x + dir[0] * 0.16 - fz * side, s.y + dir[1] * 0.16, s.z + dir[2] * 0.16 + fx * side);
     }
     const speed = AIM.bolt * w.speed + Math.max(0, s.speed);
-    if (w.heavy) launch(shotAt, dir, speed, w, g);
+    let v = [dir[0] * speed, dir[1] * speed, dir[2] * speed];
+    if (w.unique) v = unique.fire(arm.id, shotAt, dir, speed, w, (g.punch ?? 1) * w.punch);
+    else if (w.heavy) launch(shotAt, dir, speed, w, g);
     else for (const d of fan(dir, w.count, w.cone, jitter)) spawnBolt(shotAt, d, speed, w, g);
-    net?.shot(shotAt, [dir[0] * speed, dir[1] * speed, dir[2] * speed], w.code);
+    net?.shot(shotAt, v, w.code);
     emit({ type: 'fire', weapon: arm.id });
     ctx.invalidate();
   };
@@ -3006,6 +3012,7 @@ export async function create(canvas, ctx) {
   // ── A crash: into something too fast ──
   const startCrash = (e) => {
     powers.cancel();
+    unique.clear();
     const s = state.ship;
     const solid = solidsNow.find((o) => o.id === e.id) ?? SOLIDS.find((o) => o.id === e.id);
     const center = new THREE.Vector3(...solid.at);
@@ -3072,6 +3079,7 @@ export async function create(canvas, ctx) {
   // last of the shields ──
   const startDestroyed = (by = null, rammed = false) => {
     powers.cancel();
+    unique.clear();
     const s = state.ship;
     const from = new THREE.Vector3(s.x, s.y, s.z);
     state.crash = {
@@ -3829,6 +3837,7 @@ export async function create(canvas, ctx) {
     const live = flying() && !onFoot() && !state.crash && !state.dive && !props.frozen ? state.ship : null;
     if (hunters) for (const e of hunters.update(dt * powers.mods.slow, t, powers.shipFor(live))) onHunters(e);
     powers.frame(dt, live);
+    unique.frame(dt);
     if (law) law.step(dt, live, { heat: state.heat });
     else wanted.side(sideOf(state.kind));
     if (wingmen) helpFrom(dt, t, live);
@@ -4575,6 +4584,7 @@ export async function create(canvas, ctx) {
   const startFoot = ({ id = state.landable, entry = null } = {}) => {
     if (!flying() || onFoot() || state.crash || state.dive || props.frozen || !state.model) return false;
     powers.cancel(); // (a power is the ship's: out of it, whatever's on stops)
+    unique.clear();
     if (!id) {
       emit({ type: 'foot', id: 'nowhere' });
       return false;
@@ -6170,6 +6180,7 @@ export async function create(canvas, ctx) {
     dive(id) {
       if (reduced || !planetOf[id] || !state.pose) return 0;
       powers.cancel();
+      unique.clear();
       state.dive = { id, start: performance.now(), from: { ...state.pose, target: [...state.pose.target] } };
       state.flight = null;
       engine?.set({ speed: SHIP.boost, boost: true });
@@ -6180,6 +6191,7 @@ export async function create(canvas, ctx) {
       disposed = true;
       powers.keep(); // (the big one's charge, kept in the session for the next take-off)
       powers.dispose();
+      unique.dispose();
       powerBolts.dispose();
       powerFlashes.dispose();
       stopVoiced(); // (anyone down on a planet, mid-line)

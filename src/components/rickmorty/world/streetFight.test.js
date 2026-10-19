@@ -142,3 +142,58 @@ describe('the street’s fight once the cruiser’s landed', () => {
     expect(types).not.toContain('grounded');
   });
 });
+
+describe('the street’s fight: the skill tree’s four', () => {
+  const ARMS = { arms: ['seismic', 'darkmatter', 'crystal', 'energon'] };
+  const armed = (loadout) => createStreetFight({ loadout: { ...STOCK, ...loadout }, fx: ARMS, rand: still });
+  it('drops a seismic charge behind, and its ring takes down a patrol on the cruiser’s tail', () => {
+    const f = armed({ ordnance: 'seismic' });
+    f.pick(2);
+    const c = cruiser();
+    const tail = { x: 0, y: 12, z: -6 };
+    expect(f.fire(0, c, tail)).toBe(true);
+    const [b] = f.live();
+    expect(b.dir[2]).toBeCloseTo(-1);
+    expect(b.pos[2]).toBeLessThan(c.z);
+    const types = run(f, c, { at: tail, steps: 120 }).map((e) => e.type);
+    expect(types).toContain('down');
+  });
+  it('leaves a patrol well clear of the ring be', () => {
+    const f = armed({ ordnance: 'seismic' });
+    f.pick(2);
+    f.fire(0, cruiser(), null);
+    const types = run(f, cruiser(), { at: { x: 0, y: 12, z: 40 }, steps: 120 }).map((e) => e.type);
+    expect(types).not.toContain('down');
+    expect(f.patrol.mode).toBe('calm');
+  });
+  it('bursts the cluster’s round into six shards near the patrol', () => {
+    const f = armed({ ordnance: 'crystal' });
+    f.pick(2);
+    const at = { x: 0, y: 12, z: 20 };
+    f.fire(0, cruiser(), at);
+    let most = 0;
+    for (let i = 0; i < 40; i++) {
+      f.step(1 / 60, i / 60, { cruiser: cruiser(), at, flying: true });
+      most = Math.max(most, f.live().length);
+    }
+    expect(most).toBeGreaterThanOrEqual(6);
+  });
+  it('lands the arc on the patrol at once within the guns’ reach, and crackles out ahead with none', () => {
+    const f = armed({ secondary: 'energon' });
+    f.pick(1);
+    const at = { x: 0, y: 12, z: 15 };
+    f.fire(0, cruiser(), at);
+    const types = f.step(1 / 60, 0, { cruiser: cruiser(), at, flying: true }).map((e) => e.type);
+    expect(types).toContain('provoked');
+    expect(f.patrol.hp).toBeCloseTo(PATROL.hp - 2.4);
+    const g = armed({ secondary: 'energon' });
+    g.pick(1);
+    g.fire(0, cruiser(), null);
+    expect(g.live()[0].range).toBe(6);
+  });
+  it('fires the stock line for a unique part whose node isn’t taken', () => {
+    const f = createStreetFight({ loadout: { ...STOCK, ordnance: 'seismic' }, rand: still });
+    f.pick(2);
+    expect(f.armory.id).toBe('heavy');
+  });
+});

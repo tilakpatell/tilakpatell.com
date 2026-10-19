@@ -11,6 +11,13 @@
 // The deflectors come back once out of trouble a while, as the map's
 // shields do. Its powers are the crew's (./streetPowers.js: G and X, the
 // pair carried and the skill tree's effects), played at the street's size.
+// The skill tree's four unique weapons fire here too, at the street's size
+// against its one patrol (lib/arms/behaviours.js's tricks, as the map's
+// uniqueArms.js plays them): a seismic charge dropped behind that goes off
+// at its fuse, the patrol hit if it's within the ring; dark matter, a slow,
+// big bolt; the cluster's round, bursting into its shards near the patrol;
+// the arc, landing at once on the patrol within the guns' reach, drawn as a
+// bolt too fast to see fly.
 // Pure: plain arrays, no React, no three.js.
 //
 //   FIGHT                          its numbers
@@ -25,6 +32,7 @@
 //   events: { type: 'hit', at } (a flash) | 'provoked' | 'down' | 'hurt' | 'grounded' | 'back'
 // (now in seconds; `cruiser` { x, y, z, yaw })
 
+import { SHIP_FX, burstDirs } from '../../../lib/arms/behaviours';
 import { createBolts } from '../../../lib/combat/bolt';
 import { armsView, createArmory, createPowerTiles, fan, picksFor, steer } from '../../universe/shared/flying';
 import { PATROL, calm, hitPatrol, newPatrol, patrolShot, stepPatrol } from './patrolRules';
@@ -44,6 +52,8 @@ export const FIGHT = {
   colour: '#9dff4a',
   heavy: '#dff4ff',
   foe: '#ff5a3c',
+  // the unique four at the street's size (`ring`: the seismic charge's, metres; `drop`: how fast it falls behind)
+  unique: { ring: 9, drop: 3, arc: 400, colour: { darkmatter: '#3dff6a', crystal: '#7fd8ff', energon: '#9ff3ff' } },
 };
 
 const NONE = [];
@@ -74,6 +84,38 @@ export function createStreetFight({ loadout, fx = null, picks = null, charge = 0
   const patrolOnly = [patrolBody];
   const jitter = () => rand() * 2 - 1;
   const grounded = (now) => now < groundedUntil;
+  let arcs = []; // the arc's punches, landed on the step after it's fired (where a hit is landed)
+  const U = FIGHT.unique;
+  // a unique line's shot: `dir` the guns' way (onto the patrol where they turn to it), `nose` the cruiser's
+  const fireUnique = (id, w, from, dir, nose, c, at) => {
+    if (id === 'seismic') {
+      const back = [c.x - nose[0] * 3, c.y - 0.4, c.z - nose[2] * 3];
+      bolts.fire({ from: back, dir: [-nose[0], 0, -nose[2]], speed: U.drop, range: U.drop * SHIP_FX.seismic.fuse, owner: 'cruiser', side: 'you', damage: w.punch, colour: FIGHT.heavy, tag: 'seismic' }).homing = 0;
+      return;
+    }
+    if (id === 'energon') {
+      const d = at && patrol.mode !== 'down' ? Math.hypot(at.x - from[0], at.y - from[1], at.z - from[2]) : Infinity;
+      const reach = d <= Math.min(FIGHT.reach, SHIP_FX.energon.reach) && dir !== nose;
+      if (reach) arcs.push(w.punch);
+      bolts.fire({ from, dir, speed: U.arc, range: reach ? d : 6, owner: 'cruiser', side: 'you', damage: 0, colour: U.colour.energon, ghost: true, tag: 'arc' }).homing = 0;
+      return;
+    }
+    const speed = FIGHT.bolt * w.speed;
+    for (const d of fan(dir, w.count, w.cone, jitter)) {
+      const b = bolts.fire({ from, dir: d, speed, range: speed * w.life, owner: 'cruiser', side: 'you', damage: w.punch, colour: U.colour[id] ?? FIGHT.colour, tag: id === 'crystal' ? 'cluster' : 'shot' });
+      b.homing = id === 'crystal' ? (w.homing ?? 0) : 0;
+    }
+  };
+  // the cluster's rounds near the patrol: each bursts into its shards, flying on at it
+  const burstNear = (at) => {
+    const P = SHIP_FX.crystal;
+    for (const b of bolts.live()) {
+      if (b.tag !== 'cluster' || Math.hypot(at.x - b.pos[0], at.y - b.pos[1], at.z - b.pos[2]) > P.near) continue;
+      b.alive = false;
+      const way = unit(at.x - b.pos[0], at.y - b.pos[1], at.z - b.pos[2]);
+      for (const d of burstDirs(way, P.shards, P.cone, rand)) bolts.fire({ from: b.pos, dir: d, speed: P.speed, range: P.reach, owner: 'cruiser', side: 'you', damage: (P.punch * b.damage) / 3, colour: U.colour.crystal, tag: 'shot' }).homing = 0;
+    }
+  };
 
   return {
     get patrol() {
@@ -117,10 +159,12 @@ export function createStreetFight({ loadout, fx = null, picks = null, charge = 0
         if (d < FIGHT.reach && off < (powers.mods().assist ? Math.PI : FIGHT.turn)) dir = unit(to[0], to[1], to[2]);
       }
       const speed = FIGHT.bolt * w.speed;
-      for (const d of fan(dir, w.count, w.cone, jitter)) {
-        const b = bolts.fire({ from, dir: d, speed, range: speed * w.life, owner: 'cruiser', side: 'you', damage: w.punch, colour: w.heavy ? FIGHT.heavy : FIGHT.colour, tag: w.heavy ? 'heavy' : 'shot' });
-        b.homing = w.heavy ? (w.homing ?? 0) : 0;
-      }
+      if (w.unique) fireUnique(armory.id, w, from, dir, nose, c, at);
+      else
+        for (const d of fan(dir, w.count, w.cone, jitter)) {
+          const b = bolts.fire({ from, dir: d, speed, range: speed * w.life, owner: 'cruiser', side: 'you', damage: w.punch, colour: w.heavy ? FIGHT.heavy : FIGHT.colour, tag: w.heavy ? 'heavy' : 'shot' });
+          b.homing = w.heavy ? (w.homing ?? 0) : 0;
+        }
       armory.fired(now * 1000);
       return true;
     },
@@ -154,10 +198,11 @@ export function createStreetFight({ loadout, fx = null, picks = null, charge = 0
         const b = bolts.fire({ from: s.from, dir: s.dir, speed: s.speed, range: s.range, owner: 'cruiser', side: 'you', damage: s.damage, colour: s.colour, tag: s.tag });
         b.homing = s.homing ?? 0;
       }
-      // the heavy rounds come round onto it
+      // the heavy rounds come round onto it (the cluster's too, bursting near it)
       if (up) {
+        burstNear(at);
         for (const b of bolts.live()) {
-          if (b.tag !== 'heavy' || !b.homing) continue;
+          if ((b.tag !== 'heavy' && b.tag !== 'cluster') || !b.homing) continue;
           steer(b.dir, unit(at.x - b.pos[0], at.y - b.pos[1], at.z - b.pos[2]), b.homing, dt);
         }
         patrolBody.a[0] = patrolBody.b[0] = at.x;
@@ -179,8 +224,21 @@ export function createStreetFight({ loadout, fx = null, picks = null, charge = 0
           say({ type: 'down' });
         } else if (was === 'calm' && patrol.mode === 'fight') say({ type: 'provoked' });
       };
+      // the arc, landed as it's drawn
+      if (arcs.length) {
+        if (up && patrol.mode !== 'down') for (const p of arcs) land(p);
+        if (up) say({ type: 'hit', at: [at.x, at.y, at.z] });
+        arcs = [];
+      }
       // (a cruiser set down is out of the fight: a laser still in the air passes it)
       for (const e of bolts.step(dt, { solids: null, bodies: flying ? (up ? both : alone) : up ? patrolOnly : NONE })) {
+        // the seismic charge goes off where it is at its fuse (or on the patrol, if it runs into it): the patrol hit within the ring
+        if (e.bolt.tag === 'seismic') {
+          const p = e.at ?? e.bolt.pos;
+          if (up && patrol.mode !== 'down' && Math.hypot(at.x - p[0], (at.y - p[1]) * 0.5, at.z - p[2]) <= U.ring) land(e.bolt.damage);
+          say({ type: 'hit', at: p });
+          continue;
+        }
         if (e.type === 'hit' || e.type === 'solid') say({ type: 'hit', at: e.at });
         // Walt's crystal goes off where it ends: the patrol hit by how near it is
         if (e.bolt.tag === 'crystal' && up && patrol.mode !== 'down') {
@@ -210,6 +268,7 @@ export function createStreetFight({ loadout, fx = null, picks = null, charge = 0
     live: () => bolts.live(),
     clear() {
       bolts.clear();
+      arcs = [];
     },
   };
 }

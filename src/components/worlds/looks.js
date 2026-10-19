@@ -51,6 +51,7 @@ export const LOOK_FOLDERS = [
   { folder: 'middleearth/towns', routes: ['/middle-earth/bree'] },
   { folder: 'middleearth/rush', routes: ['/middle-earth/shire'] },
   { folder: 'middleearth/road', routes: ['/middle-earth/road'] },
+  { folder: 'middleearth/redbook', routes: ['/middle-earth'] },
   { folder: 'albuquerque/world', routes: ['/albuquerque'] },
   { folder: 'albuquerque/casa', routes: ['/albuquerque'] },
   { folder: 'albuquerque/metherria', routes: ['/albuquerque'] },
