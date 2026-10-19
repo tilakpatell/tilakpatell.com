@@ -138,6 +138,7 @@
   --marker: polygon(50% 0, 100% 100%, 0 100%);
   --r-card: 4px;
   --r-panel: 2px;
+  --r-btn: 2px;
   --r-chip: 2px;
   --r-photo: 4px;
 }
@@ -175,7 +176,7 @@
   --bg-deep: #f2f5f9;
   --surface-2: #eef3f8;
   --border: #d6dee8;
-  --border-strong: #8fa3bd;
+  --border-strong: #8294ac;
   --text: #000f22;
   --text-body: #1d2f47;
   --muted: #4a5d78;
@@ -201,7 +202,7 @@
   --bg-deep: #eefaff;
   --surface-2: #eefaff;
   --border: #d3e3f2;
-  --border-strong: #8ea7cc;
+  --border-strong: #7e95b6;
   --text: #081730;
   --text-body: #1b2a4a;
   --muted: #4a5875;
@@ -227,7 +228,7 @@
   --bg-deep: #f2f6f9;
   --surface-2: #eef3f7;
   --border: #d5dfe8;
-  --border-strong: #8fa1b8;
+  --border-strong: #8494a9;
   --text: #1b2536;
   --text-body: #2c3a4f;
   --muted: #4b5b6e;
@@ -257,12 +258,12 @@
   --surface: #ffffff;
   --surface-2: #f0eee6;
   --border: #e8e6dc;
-  --border-strong: #b0aea5;
+  --border-strong: #929089;
   --text: #141413;
   --text-body: #3d3d3a;
   --muted: #6b6a64;
   --accent: #d97757;
-  --accent-text: #b4573a;
+  --accent-text: #a95237;
   --btn-bg: #d97757;
   --btn-ink: #141413;
   --nav-bg: #141413;
@@ -286,7 +287,7 @@ html[data-mode='dark'] {
   --surface: #121215;
   --surface-2: #1b1c20;
   --border: #222428;
-  --border-strong: #4a4e56;
+  --border-strong: #60636a; /* a ghost button’s edge, 3:1 on the darkest of the dark grounds */
   --text: #f6f6f4;
   --text-body: #d7dae0;
   --muted: #9aa0a9;
@@ -315,53 +316,53 @@ html[data-mode='dark'][data-theme='claude'] { --bg: #141413; --bg-deep: #0f0f0e;
 
 /* ─── Project themes (each project page) ─────────────────────────────────── */
 [data-theme='gameboy'] {
-  --bg: #f6f5f2; --bg-deep: #ebe9e5; --surface: #ffffff; --surface-2: #edebe7; --border: #dcd9d4; --border-strong: #a19c96;
+  --bg: #f6f5f2; --bg-deep: #ebe9e5; --surface: #ffffff; --surface-2: #edebe7; --border: #dcd9d4; --border-strong: #918c87;
   --text: #1c1d2e; --text-body: #2e3047; --muted: #5d5f73;
   --accent: #9b2257; --accent-text: #9b2257; --btn-bg: #9b2257; --btn-ink: #ffffff; --saber: #8bc11a;
   --route-plan: #c9c5bf; --route-dash: 4px; --route-gap: 4px; --marker: inset(0 round 2px);
   --r-card: 12px; --r-panel: 8px; --r-chip: 4px; --r-photo: 12px;
 }
 [data-theme='devspace'] {
-  --bg-deep: #f3f6fb; --surface-2: #eef3fa; --border: #d6e0ee; --border-strong: #8ea2bf;
+  --bg-deep: #f3f6fb; --surface-2: #eef3fa; --border: #d6e0ee; --border-strong: #8193ae;
   --text: #0d1726; --text-body: #22324a; --muted: #4d607a;
   --accent: #007acc; --accent-text: #006bb3; --btn-bg: #007acc; --btn-ink: #ffffff; --saber: #3fb6ff;
-  --route-plan: #b8c7dc; --marker: inset(0 round 2px); --r-card: 10px; --r-panel: 6px; --r-btn: 8px; --r-chip: 4px;
+  --route-plan: #b8c7dc; --marker: inset(0 round 2px); --r-card: 10px; --r-photo: 10px; --r-panel: 6px; --r-btn: 8px; --r-chip: 4px;
 }
 [data-theme='github'] {
-  --bg-deep: #f6f8fa; --surface-2: #f6f8fa; --border: #d1d9e0; --border-strong: #8c959f;
+  --bg-deep: #f6f8fa; --surface-2: #f6f8fa; --border: #d1d9e0; --border-strong: #8b949d;
   --text: #1f2328; --text-body: #2f363d; --muted: #59636e;
   --accent: #8250df; --accent-text: #8250df; --btn-bg: #1f883d; --btn-ink: #ffffff; --saber: #a371f7;
-  --route-plan: #c8d1da; --marker: circle(50%); --r-card: 12px; --r-panel: 6px; --r-btn: 6px; --r-chip: 999px;
+  --route-plan: #c8d1da; --marker: circle(50%); --r-card: 12px; --r-photo: 12px; --r-panel: 6px; --r-btn: 6px; --r-chip: 999px;
 }
 [data-theme='shell'] {
-  --bg-deep: #f4f6f3; --surface-2: #eef2ec; --border: #d7ddd3; --border-strong: #8d9888;
+  --bg-deep: #f4f6f3; --surface-2: #eef2ec; --border: #d7ddd3; --border-strong: #8c9687;
   --text: #111611; --text-body: #263024; --muted: #556052;
   --accent: #2f8a1f; --accent-text: #2b7a1d; --btn-bg: #111611; --btn-ink: #ffffff; --saber: #4eaa25;
-  --route-plan: #c3cbbf; --route-dash: 3px; --route-gap: 3px; --marker: inset(0); --r-card: 6px; --r-panel: 4px; --r-btn: 4px; --r-chip: 2px;
+  --route-plan: #c3cbbf; --route-dash: 3px; --route-gap: 3px; --marker: inset(0); --r-card: 6px; --r-photo: 6px; --r-panel: 4px; --r-btn: 4px; --r-chip: 2px;
 }
 [data-theme='fuse'] {
-  --bg-deep: #faf6f0; --surface-2: #f6efe4; --border: #e6dccd; --border-strong: #a8957a;
+  --bg-deep: #faf6f0; --surface-2: #f6efe4; --border: #e6dccd; --border-strong: #a39176;
   --text: #1d150c; --text-body: #3a2c1b; --muted: #6b5843;
   --accent: #b45309; --accent-text: #a14a08; --btn-bg: #b45309; --btn-ink: #ffffff; --saber: #f59e0b;
-  --route-plan: #d8cab5; --marker: inset(0 round 1px); --r-card: 6px; --r-panel: 4px; --r-btn: 6px; --r-chip: 3px;
+  --route-plan: #d8cab5; --marker: inset(0 round 1px); --r-card: 6px; --r-photo: 6px; --r-panel: 4px; --r-btn: 6px; --r-chip: 3px;
 }
 [data-theme='finance'] {
-  --bg-deep: #f2f8f4; --surface-2: #ecf6ef; --border: #d2e5d8; --border-strong: #86a891;
+  --bg-deep: #f2f8f4; --surface-2: #ecf6ef; --border: #d2e5d8; --border-strong: #7b9b85;
   --text: #0c1a12; --text-body: #1f3428; --muted: #4c6455;
-  --accent: #0f9d58; --accent-text: #0b7a44; --btn-bg: #0f9d58; --btn-ink: #ffffff; --saber: #34d399;
-  --route-plan: #b9d6c3; --marker: polygon(50% 0, 100% 100%, 0 100%); --r-card: 12px; --r-chip: 999px;
+  --accent: #0f9d58; --accent-text: #0b7a44; --btn-bg: #0d874c; --btn-ink: #ffffff; --saber: #34d399;
+  --route-plan: #b9d6c3; --marker: polygon(50% 0, 100% 100%, 0 100%); --r-card: 12px; --r-photo: 12px; --r-chip: 999px;
 }
 [data-theme='pytorch'] {
-  --bg-deep: #fbf4f2; --surface-2: #f9ece8; --border: #eed8d1; --border-strong: #b98f84;
+  --bg-deep: #fbf4f2; --surface-2: #f9ece8; --border: #eed8d1; --border-strong: #b2897f;
   --text: #1f100c; --text-body: #3b211a; --muted: #6e4f46;
-  --accent: #ee4c2c; --accent-text: #c8391d; --btn-bg: #ee4c2c; --btn-ink: #ffffff; --saber: #ff6f4c;
-  --route-plan: #e0c2b9; --marker: circle(50%); --r-card: 14px; --r-chip: 999px;
+  --accent: #ee4c2c; --accent-text: #c6381d; --btn-bg: #d44427; --btn-ink: #ffffff; --saber: #ff6f4c;
+  --route-plan: #e0c2b9; --marker: circle(50%); --r-card: 14px; --r-photo: 14px; --r-chip: 999px;
 }
 [data-theme='nvidia'] {
-  --bg-deep: #f5f8ef; --surface-2: #eef4e3; --border: #dbe5c8; --border-strong: #93a478;
+  --bg-deep: #f5f8ef; --surface-2: #eef4e3; --border: #dbe5c8; --border-strong: #899970;
   --text: #11160a; --text-body: #263016; --muted: #556143;
   --accent: #5e9400; --accent-text: #4a7a00; --btn-bg: #76b900; --btn-ink: #0f1111; --saber: #76b900;
-  --route-plan: #c7d4ae; --marker: inset(0); --r-card: 4px; --r-panel: 2px; --r-btn: 4px; --r-chip: 2px;
+  --route-plan: #c7d4ae; --marker: inset(0); --r-card: 4px; --r-photo: 4px; --r-panel: 2px; --r-btn: 4px; --r-chip: 2px;
 }
 html[data-mode='dark'][data-theme='gameboy'] { --bg: #070806; --surface: #10120d; --surface-2: #191c14; --border: #262b1e; --bg-deep: #050604; }
 html[data-mode='dark'][data-theme='github'] { --bg: #0a0d12; --surface: #0d1117; --surface-2: #161b22; --border: #30363d; --bg-deep: #010409; }
