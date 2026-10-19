@@ -1,0 +1,173 @@
+# Review package: a93fd5fe1..81a90c5a8
+
+## Commits
+81a90c5a8 Nebulae: a tiling 3D noise volume, made in code
+
+## Files changed
+ src/components/universe/nebula/volume.js      | 120 ++++++++++++++++++++++++++
+ src/components/universe/nebula/volume.test.js |  30 +++++++
+ 2 files changed, 150 insertions(+)
+
+## Diff
+diff --git a/src/components/universe/nebula/volume.js b/src/components/universe/nebula/volume.js
+new file mode 100644
+index 000000000..c74d860c0
+--- /dev/null
++++ b/src/components/universe/nebula/volume.js
+@@ -0,0 +1,120 @@
++// The noise the nebulae are ray-marched through: a small 3D texture made in
++// code, so nothing is downloaded. Pure; the renderer uploads the bytes as a
++// two-channel Data3DTexture with RepeatWrapping, so the volume has to tile.
++// No three.js.
++//
++// fbm3(x, y, z, { period, octaves, seed }) → 0…1
++// noiseVolume(size, seed) → Uint8Array(size³ · 2), cached by size and seed
++//
++// Each octave is one seeded lattice of random values, `period · 2^o` cells a
++// side, wrapped by index and blended trilinearly. That is a table look-up per
++// corner rather than a hash, which keeps a 64³ volume to tens of milliseconds.
++
++const lattices = new Map();
++const volumes = new Map();
++
++// small seeded generator; the same seed always gives the same lattice
++function rng(seed) {
++  let a = (seed * 2654435761) >>> 0;
++  return () => {
++    a = (a + 0x6d2b79f5) >>> 0;
++    let t = a;
++    t = Math.imul(t ^ (t >>> 15), t | 1);
++    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
++    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
++  };
++}
++
++function latticeOf(seed, octave, n) {
++  const key = `${seed}:${octave}:${n}`;
++  let l = lattices.get(key);
++  if (!l) {
++    const next = rng(seed * 131 + octave * 7919 + 1);
++    l = new Float32Array(n * n * n);
++    for (let i = 0; i < l.length; i++) l[i] = next();
++    lattices.set(key, l);
++  }
++  return l;
++}
++
++const fade = (t) => t * t * (3 - 2 * t);
++
++function sample(l, n, x, y, z) {
++  const fx = Math.floor(x) | 0, fy = Math.floor(y) | 0, fz = Math.floor(z) | 0;
++  const u = fade(x - fx), v = fade(y - fy), w = fade(z - fz);
++  // (n is the wrap, so negative inputs land inside the lattice too; the
++  // integer arithmetic is what keeps the volume quick)
++  let x0 = fx % n, y0 = fy % n, z0 = fz % n;
++  if (x0 < 0) x0 += n;
++  if (y0 < 0) y0 += n;
++  if (z0 < 0) z0 += n;
++  const x1 = x0 + 1 === n ? 0 : x0 + 1, y1 = y0 + 1 === n ? 0 : y0 + 1, z1 = z0 + 1 === n ? 0 : z0 + 1;
++  const r0 = z0 * n * n, r1 = z1 * n * n;
++  const a0 = y0 * n, a1 = y1 * n;
++  let p = l[r0 + a0 + x0], q = l[r0 + a0 + x1];
++  const c00 = p + (q - p) * u;
++  p = l[r0 + a1 + x0]; q = l[r0 + a1 + x1];
++  const c10 = p + (q - p) * u;
++  p = l[r1 + a0 + x0]; q = l[r1 + a0 + x1];
++  const c01 = p + (q - p) * u;
++  p = l[r1 + a1 + x0]; q = l[r1 + a1 + x1];
++  const c11 = p + (q - p) * u;
++  const c0 = c00 + (c10 - c00) * v, c1 = c01 + (c11 - c01) * v;
++  return c0 + (c1 - c0) * w;
++}
++
++// the lattices are looked up once per call here, not once per sample, so the
++// volume’s inner loop does no string keys or allocation
++function stackOf(period, octaves, seed) {
++  const stack = [];
++  for (let o = 0; o < octaves; o++) {
++    const n = period * 2 ** o;
++    stack.push({ l: latticeOf(seed, o, n), n, f: 2 ** o });
++  }
++  return stack;
++}
++
++function fbmOf(stack, x, y, z) {
++  let sum = 0, amp = 1, total = 0;
++  for (let o = 0; o < stack.length; o++) {
++    const { l, n, f } = stack[o];
++    sum += amp * sample(l, n, x * f, y * f, z * f);
++    total += amp;
++    amp *= 0.5;
++  }
++  return sum / total;
++}
++
++export function fbm3(x, y, z, { period = 4, octaves = 4, seed = 1 } = {}) {
++  return fbmOf(stackOf(period, octaves, seed), x, y, z);
++}
++
++export function noiseVolume(size, seed = 1) {
++  const key = `${size}:${seed}`;
++  const cached = volumes.get(key);
++  if (cached) return cached;
++
++  const period = 4;
++  const out = new Uint8Array(size ** 3 * 2);
++  const raw = new Float32Array(size ** 3);
++  // R is the gas; G is the colour mix and the dust, from the next seed
++  for (let c = 0; c < 2; c++) {
++    const stack = stackOf(period, 4, seed + c);
++    let lo = Infinity, hi = -Infinity;
++    for (let k = 0, p = 0; k < size; k++) {
++      for (let j = 0; j < size; j++) {
++        for (let i = 0; i < size; i++, p++) {
++          const s = fbmOf(stack, (i / size) * period, (j / size) * period, (k / size) * period);
++          raw[p] = s;
++          if (s < lo) lo = s;
++          if (s > hi) hi = s;
++        }
++      }
++    }
++    // each channel gets the whole 0…255 so the shader’s thresholds have range
++    const scale = 255 / (hi - lo || 1);
++    for (let p = 0; p < raw.length; p++) out[p * 2 + c] = Math.round((raw[p] - lo) * scale);
++  }
++  volumes.set(key, out);
++  return out;
++}
+diff --git a/src/components/universe/nebula/volume.test.js b/src/components/universe/nebula/volume.test.js
+new file mode 100644
+index 000000000..17da0678b
+--- /dev/null
++++ b/src/components/universe/nebula/volume.test.js
+@@ -0,0 +1,30 @@
++import { describe, expect, it } from 'vitest';
++import { fbm3, noiseVolume } from './volume';
++
++describe('the noise volume', () => {
++  it('repeats exactly over its period', () => {
++    for (const [x, y, z] of [[0.3, 1.7, 2.2], [3.9, 0.1, 0.5]]) expect(fbm3(x + 4, y, z)).toBeCloseTo(fbm3(x, y, z), 12); // (x + 4 rounds its fraction in the last bit)
++  });
++  it('is the same for a seed and different for another', () => {
++    expect(fbm3(1.2, 2.3, 0.4, { seed: 3 })).toBe(fbm3(1.2, 2.3, 0.4, { seed: 3 }));
++    expect(fbm3(1.2, 2.3, 0.4, { seed: 3 })).not.toBe(fbm3(1.2, 2.3, 0.4, { seed: 4 }));
++  });
++  it('fills size³ two-channel voxels with contrast, and is made once', () => {
++    const v = noiseVolume(32, 1);
++    expect(v).toHaveLength(32 ** 3 * 2);
++    for (const c of [0, 1]) {
++      let lo = 255, hi = 0;
++      for (let i = c; i < v.length; i += 2) { lo = Math.min(lo, v[i]); hi = Math.max(hi, v[i]); }
++      expect(lo).toBeLessThan(40);
++      expect(hi).toBeGreaterThan(215);
++    }
++    expect(noiseVolume(32, 1)).toBe(v);
++  });
++  it('has no seam where it wraps', () => {
++    const v = noiseVolume(32, 1);
++    const at = (i, j, k) => v[((k * 32 + j) * 32 + i) * 2];
++    let seam = 0, step = 0;
++    for (let j = 0; j < 32; j++) for (let k = 0; k < 32; k++) { seam += Math.abs(at(31, j, k) - at(0, j, k)); step += Math.abs(at(15, j, k) - at(16, j, k)); }
++    expect(seam).toBeLessThan(step * 2);
++  });
++});

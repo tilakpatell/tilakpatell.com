@@ -1,0 +1,3734 @@
+# Review package: ddb364bf3..HEAD
+
+## Commits
+ba920b4cd Nebulae lane: the before shots and numbers, from main
+
+## Files changed
+ docs/superpowers/evidence/endless-lane1/README.md  |  70 +++
+ .../evidence/endless-lane1/before-galaxy.webp      | Bin 0 -> 43044 bytes
+ .../evidence/endless-lane1/before-high.json        | 462 ++++++++++++++++
+ .../evidence/endless-lane1/before-low.json         | 462 ++++++++++++++++
+ .../endless-lane1/before-mid-overview-rerun.json   |  42 ++
+ .../evidence/endless-lane1/before-mid.json         | 433 +++++++++++++++
+ .../evidence/endless-lane1/before-perf-low-2.json  | 530 +++++++++++++++++++
+ .../evidence/endless-lane1/before-perf-low-2.md    |   3 +
+ .../evidence/endless-lane1/before-perf-low.json    | 524 ++++++++++++++++++
+ .../evidence/endless-lane1/before-perf-low.md      |   3 +
+ .../evidence/endless-lane1/before-perf-mid-2.json  | 583 +++++++++++++++++++++
+ .../evidence/endless-lane1/before-perf-mid-2.md    |   3 +
+ .../evidence/endless-lane1/before-perf-mid.json    | 502 ++++++++++++++++++
+ .../evidence/endless-lane1/before-perf-mid.md      |   3 +
+ .../evidence/endless-lane1/before-universe.webp    | Bin 0 -> 27632 bytes
+ 15 files changed, 3620 insertions(+)
+
+## Diff
+diff --git a/docs/superpowers/evidence/endless-lane1/README.md b/docs/superpowers/evidence/endless-lane1/README.md
+new file mode 100644
+index 000000000..994f3b703
+--- /dev/null
++++ b/docs/superpowers/evidence/endless-lane1/README.md
+@@ -0,0 +1,70 @@
++# Endless universe, lane 1: before, on main
++
++These numbers and shots come from commit ddb364bf3 (main, before any nebula change). Later tasks compare against them. Task 11 compares all 14 poses.
++
++## Shots
++
++- `before-universe.webp`: the /universe route.
++- `before-galaxy.webp`: the /galaxy route (Tatooine). The gate for a software renderer was passed with its "Try anyway" button, because the shot script's own run stopped at the gate.
++
++## Draw calls and triangles per pose
++
++Measured with `scripts/universe-check.mjs` at 1280 by 720, software WebGL (SwiftShader), one whole frame's count. Raw files: `before-high.json`, `before-mid.json`, `before-low.json`.
++
++The ten baseline poses (the keys of `lab/universe/baseline/high.json`):
++
++| pose | high (calls / tris) | mid | low |
++| --- | --- | --- | --- |
++| overview | 99 / 571083 | 97 / 638581 | 99 / 521489 |
++| falcon-sun | 83 / 561609 | 96 / 518707 | 86 / 516493 |
++| middleearth-limb | 37 / 126027 | 0 / 0 | 37 / 51511 |
++| rickmorty | 38 / 127153 | 24 / 65883 | 38 / 65865 |
++| gaming | 41 / 107073 | 27 / 75107 | 41 / 75089 |
++| caribbean | 41 / 175787 | 27 / 114517 | 41 / 114499 |
++| belt | 30 / 492595 | 0 / 0 | 44 / 450925 |
++| maw | 0 / 0 | 45 / 120408 | 41 / 103877 |
++| landing-middleearth | 0 / 0 | 0 / 0 | 99 / 178231 |
++| station | 82 / 546715 | 52 / 488603 | 66 / 488583 |
++
++The other poses among the 14 that universe-check shoots:
++
++| pose | high (calls / tris) | mid | low |
++| --- | --- | --- | --- |
++| middleearth | 37 / 126027 | 23 / 64757 | 37 / 64739 |
++| breakingbad | 62 / 120225 | 48 / 58955 | 62 / 58937 |
++| office | 39 / 66451 | 25 / 53389 | 39 / 53371 |
++| far-rim | 0 / 0 | 26 / 70275 | 40 / 70227 |
++
++Notes:
++
++- The mid overview failed in the main run (the page took over 180 s to open, a timeout). It was re-run alone: `before-mid-overview-rerun.json`. The table uses the re-run for that cell.
++- The counts are not perfectly steady. A pose can be counted on a frame that drew nothing (the 0 / 0 cells: high maw, landing-middleearth and far-rim, and mid middleearth-limb, belt and landing-middleearth). Those cells are missed frames, not real counts. An earlier partial high run (cut off at 8 poses) gave overview 107 calls (high) against 99 here, and falcon-sun 801601 triangles against 561609. Treat a difference of a few calls, or of a few tens of thousands of triangles, as noise.
++
++## Frame times (perf-probe)
++
++`QUALITY=<tier> node scripts/perf-probe.mjs universe`, twice per tier (the second run is the noise floor). Numbers are milliseconds. This machine draws on its own graphics chip (D3D11), not SwiftShader, so these are not comparable with the universe-check frame times. Raw files: `before-perf-{mid,low}{,-2}.json` and the printed tables in the `.md` files beside them.
++
++### mid
++
++| phase | run 1 p50 | run 1 p95 | run 2 p50 | run 2 p95 | p50 spread | p95 spread |
++| --- | --- | --- | --- | --- | --- | --- |
++| load | 0.3 | 1 | 0.4 | 31.5 | 0.1 | 30.5 |
++| settle | 1.4 | 2.7 | 1.4 | 4.8 | 0.0 | 2.1 |
++| idle | 1 | 1.5 | 1.2 | 3.6 | 0.2 | 2.1 |
++| fly | 1.2 | 2.1 | 1.7 | 6.6 | 0.5 | 4.5 |
++
++### low
++
++| phase | run 1 p50 | run 1 p95 | run 2 p50 | run 2 p95 | p50 spread | p95 spread |
++| --- | --- | --- | --- | --- | --- | --- |
++| load | 0.4 | 31.6 | 0.4 | 31.5 | 0.0 | 0.1 |
++| settle | 1.3 | 4.2 | 1.5 | 5.3 | 0.2 | 1.1 |
++| idle | 1.1 | 3.6 | 1.3 | 5.2 | 0.2 | 1.6 |
++| fly | 1.5 | 5.8 | 1.7 | 5.9 | 0.2 | 0.1 |
++
++The load phase's p95 is the same shape in every run (about 31 ms), and its blocked time varies by seconds. The mid second run saw 19 late pipelines where the other three saw 0.
++
++## Size of the code
++
++- `wc -l src/components/universe/scene.js`: 6226 lines (health counts it as 6227).
++- `node scripts/health.mjs --only glsl-sites,big-files`: glsl-sites 607 (budget 619), big-files 30 (budget 30).
+diff --git a/docs/superpowers/evidence/endless-lane1/before-galaxy.webp b/docs/superpowers/evidence/endless-lane1/before-galaxy.webp
+new file mode 100644
+index 000000000..3bc4ce4da
+Binary files /dev/null and b/docs/superpowers/evidence/endless-lane1/before-galaxy.webp differ
+diff --git a/docs/superpowers/evidence/endless-lane1/before-high.json b/docs/superpowers/evidence/endless-lane1/before-high.json
+new file mode 100644
+index 000000000..63e06775f
+--- /dev/null
++++ b/docs/superpowers/evidence/endless-lane1/before-high.json
+@@ -0,0 +1,462 @@
++{
++  "tier": "high",
++  "viewport": [
++    1280,
++    720
++  ],
++  "poses": {
++    "overview": {
++      "calls": 99,
++      "triangles": 571083,
++      "shipPx": {
++        "w": 0,
++        "h": 0,
++        "box": [
++          434,
++          601,
++          434,
++          602
++        ]
++      },
++      "frameMs": 303.8,
++      "frameMsMedian": 306.7,
++      "memory": {
++        "geometries": 362,
++        "textures": 139
++      },
++      "metrics": {
++        "colorBuckets": 136,
++        "colorEntropyBits": 2.95,
++        "edgeDensity": 0.066,
++        "luminance": {
++          "mean": 22.8,
++          "p5": 4.9,
++          "p95": 73.8,
++          "contrast": 68.8
++        },
++        "dominantColorShare": 0.293
++      },
++      "errors": []
++    },
++    "falcon-sun": {
++      "calls": 83,
++      "triangles": 561609,
++      "shipPx": {
++        "w": 297,
++        "h": 146,
++        "box": [
++          274,
++          318,
++          571,
++          464
++        ]
++      },
++      "frameMs": 266.9,
++      "frameMsMedian": 267.3,
++      "memory": {
++        "geometries": 358,
++        "textures": 138
++      },
++      "metrics": {
++        "colorBuckets": 297,
++        "colorEntropyBits": 6.83,
++        "edgeDensity": 0.263,
++        "luminance": {
++          "mean": 127.4,
++          "p5": 41.9,
++          "p95": 205.5,
++          "contrast": 163.6
++        },
++        "dominantColorShare": 0.033
++      },
++      "errors": []
++    },
++    "middleearth-limb": {
++      "calls": 37,
++      "triangles": 126027,
++      "shipPx": {
++        "w": 100,
++        "h": 44,
++        "box": [
++          384,
++          497,
++          485,
++          541
++        ]
++      },
++      "frameMs": 237.4,
++      "frameMsMedian": 239.4,
++      "memory": {
++        "geometries": 371,
++        "textures": 161
++      },
++      "metrics": {
++        "colorBuckets": 166,
++        "colorEntropyBits": 5.7,
++        "edgeDensity": 0.164,
++        "luminance": {
++          "mean": 70.5,
++          "p5": 21.9,
++          "p95": 146.8,
++          "contrast": 124.8
++        },
++        "dominantColorShare": 0.116
++      },
++      "errors": []
++    },
++    "rickmorty": {
++      "calls": 38,
++      "triangles": 127153,
++      "shipPx": {
++        "w": 100,
++        "h": 43,
++        "box": [
++          384,
++          492,
++          485,
++          535
++        ]
++      },
++      "frameMs": 259.9,
++      "frameMsMedian": 261.6,
++      "memory": {
++        "geometries": 361,
++        "textures": 141
++      },
++      "metrics": {
++        "colorBuckets": 499,
++        "colorEntropyBits": 5.8,
++        "edgeDensity": 0.193,
++        "luminance": {
++          "mean": 73.6,
++          "p5": 19.3,
++          "p95": 168,
++          "contrast": 148.7
++        },
++        "dominantColorShare": 0.105
++      },
++      "errors": []
++    },
++    "gaming": {
++      "calls": 41,
++      "triangles": 107073,
++      "shipPx": {
++        "w": 100,
++        "h": 43,
++        "box": [
++          384,
++          491,
++          485,
++          533
++        ]
++      },
++      "frameMs": 180.5,
++      "frameMsMedian": 184.2,
++      "memory": {
++        "geometries": 362,
++        "textures": 141
++      },
++      "metrics": {
++        "colorBuckets": 220,
++        "colorEntropyBits": 4.96,
++        "edgeDensity": 0.149,
++        "luminance": {
++          "mean": 76.7,
++          "p5": 27.2,
++          "p95": 147.8,
++          "contrast": 120.6
++        },
++        "dominantColorShare": 0.084
++      },
++      "errors": []
++    },
++    "caribbean": {
++      "calls": 41,
++      "triangles": 175787,
++      "shipPx": {
++        "w": 100,
++        "h": 44,
++        "box": [
++          384,
++          502,
++          485,
++          546
++        ]
++      },
++      "frameMs": 243.1,
++      "frameMsMedian": 199.6,
++      "memory": {
++        "geometries": 360,
++        "textures": 140
++      },
++      "metrics": {
++        "colorBuckets": 224,
++        "colorEntropyBits": 5.14,
++        "edgeDensity": 0.151,
++        "luminance": {
++          "mean": 56.4,
++          "p5": 16.8,
++          "p95": 105,
++          "contrast": 88.2
++        },
++        "dominantColorShare": 0.137
++      },
++      "errors": []
++    },
++    "middleearth": {
++      "calls": 37,
++      "triangles": 126027,
++      "shipPx": {
++        "w": 100,
++        "h": 44,
++        "box": [
++          384,
++          497,
++          485,
++          540
++        ]
++      },
++      "frameMs": 244.4,
++      "frameMsMedian": 203.7,
++      "memory": {
++        "geometries": 359,
++        "textures": 137
++      },
++      "metrics": {
++        "colorBuckets": 171,
++        "colorEntropyBits": 5.12,
++        "edgeDensity": 0.108,
++        "luminance": {
++          "mean": 64.6,
++          "p5": 22.9,
++          "p95": 120,
++          "contrast": 97
++        },
++        "dominantColorShare": 0.144
++      },
++      "errors": []
++    },
++    "breakingbad": {
++      "calls": 62,
++      "triangles": 120225,
++      "shipPx": {
++        "w": 100,
++        "h": 43,
++        "box": [
++          384,
++          491,
++          485,
++          534
++        ]
++      },
++      "frameMs": 272.6,
++      "frameMsMedian": 201,
++      "memory": {
++        "geometries": 360,
++        "textures": 137
++      },
++      "metrics": {
++        "colorBuckets": 257,
++        "colorEntropyBits": 5.34,
++        "edgeDensity": 0.135,
++        "luminance": {
++          "mean": 82.5,
++          "p5": 22.2,
++          "p95": 182.2,
++          "contrast": 160
++        },
++        "dominantColorShare": 0.128
++      },
++      "errors": []
++    },
++    "office": {
++      "calls": 39,
++      "triangles": 66451,
++      "shipPx": {
++        "w": 100,
++        "h": 44,
++        "box": [
++          384,
++          502,
++          485,
++          546
++        ]
++      },
++      "frameMs": 204.1,
++      "frameMsMedian": 161,
++      "memory": {
++        "geometries": 360,
++        "textures": 137
++      },
++      "metrics": {
++        "colorBuckets": 134,
++        "colorEntropyBits": 5.82,
++        "edgeDensity": 0.072,
++        "luminance": {
++          "mean": 124.9,
++          "p5": 60.8,
++          "p95": 210.8,
++          "contrast": 150
++        },
++        "dominantColorShare": 0.075
++      },
++      "errors": []
++    },
++    "belt": {
++      "calls": 30,
++      "triangles": 492595,
++      "shipPx": {
++        "w": 154,
++        "h": 84,
++        "box": [
++          358,
++          591,
++          512,
++          676
++        ]
++      },
++      "frameMs": 121.4,
++      "frameMsMedian": 186.8,
++      "memory": {
++        "geometries": 359,
++        "textures": 135
++      },
++      "metrics": {
++        "colorBuckets": 98,
++        "colorEntropyBits": 5.08,
++        "edgeDensity": 0.194,
++        "luminance": {
++          "mean": 74.2,
++          "p5": 32.3,
++          "p95": 120,
++          "contrast": 87.8
++        },
++        "dominantColorShare": 0.102
++      },
++      "errors": []
++    },
++    "maw": {
++      "calls": 0,
++      "triangles": 0,
++      "shipPx": {
++        "w": 154,
++        "h": 70,
++        "box": [
++          358,
++          518,
++          512,
++          588
++        ]
++      },
++      "frameMs": 65.3,
++      "frameMsMedian": 35.4,
++      "memory": {
++        "geometries": 358,
++        "textures": 137
++      },
++      "metrics": {
++        "colorBuckets": 186,
++        "colorEntropyBits": 4.73,
++        "edgeDensity": 0.121,
++        "luminance": {
++          "mean": 66.7,
++          "p5": 20.9,
++          "p95": 139.4,
++          "contrast": 118.5
++        },
++        "dominantColorShare": 0.13
++      },
++      "errors": []
++    },
++    "landing-middleearth": {
++      "calls": 0,
++      "triangles": 0,
++      "shipPx": null,
++      "frameMs": 197,
++      "frameMsMedian": 177.1,
++      "memory": {
++        "geometries": 526,
++        "textures": 181
++      },
++      "metrics": {
++        "colorBuckets": 184,
++        "colorEntropyBits": 5.25,
++        "edgeDensity": 0.118,
++        "luminance": {
++          "mean": 108.2,
++          "p5": 33,
++          "p95": 212.2,
++          "contrast": 179.2
++        },
++        "dominantColorShare": 0.154
++      },
++      "errors": []
++    },
++    "station": {
++      "calls": 82,
++      "triangles": 546715,
++      "shipPx": {
++        "w": 154,
++        "h": 80,
++        "box": [
++          358,
++          555,
++          512,
++          635
++        ]
++      },
++      "frameMs": 298.5,
++      "frameMsMedian": 292.1,
++      "memory": {
++        "geometries": 374,
++        "textures": 145
++      },
++      "metrics": {
++        "colorBuckets": 342,
++        "colorEntropyBits": 7.39,
++        "edgeDensity": 0.248,
++        "luminance": {
++          "mean": 151.9,
++          "p5": 73.7,
++          "p95": 225.6,
++          "contrast": 151.9
++        },
++        "dominantColorShare": 0.025
++      },
++      "errors": []
++    },
++    "far-rim": {
++      "calls": 0,
++      "triangles": 0,
++      "shipPx": {
++        "w": 155,
++        "h": 80,
++        "box": [
++          357,
++          602,
++          512,
++          683
++        ]
++      },
++      "frameMs": 53.8,
++      "frameMsMedian": 58.3,
++      "memory": {
++        "geometries": 357,
++        "textures": 134
++      },
++      "metrics": {
++        "colorBuckets": 123,
++        "colorEntropyBits": 4.84,
++        "edgeDensity": 0.041,
++        "luminance": {
++          "mean": 77.3,
++          "p5": 25.1,
++          "p95": 124.3,
++          "contrast": 99.2
++        },
++        "dominantColorShare": 0.131
++      },
++      "errors": []
++    }
++  }
++}
+diff --git a/docs/superpowers/evidence/endless-lane1/before-low.json b/docs/superpowers/evidence/endless-lane1/before-low.json
+new file mode 100644
+index 000000000..bd6ab157d
+--- /dev/null
++++ b/docs/superpowers/evidence/endless-lane1/before-low.json
+@@ -0,0 +1,462 @@
++{
++  "tier": "low",
++  "viewport": [
++    1280,
++    720
++  ],
++  "poses": {
++    "overview": {
++      "calls": 99,
++      "triangles": 521489,
++      "shipPx": {
++        "w": 0,
++        "h": 0,
++        "box": [
++          434,
++          601,
++          434,
++          602
++        ]
++      },
++      "frameMs": 330.6,
++      "frameMsMedian": 329.3,
++      "memory": {
++        "geometries": 92,
++        "textures": 53
++      },
++      "metrics": {
++        "colorBuckets": 124,
++        "colorEntropyBits": 3.17,
++        "edgeDensity": 0.052,
++        "luminance": {
++          "mean": 29.2,
++          "p5": 6.2,
++          "p95": 82.8,
++          "contrast": 76.6
++        },
++        "dominantColorShare": 0.409
++      },
++      "errors": []
++    },
++    "falcon-sun": {
++      "calls": 86,
++      "triangles": 516493,
++      "shipPx": {
++        "w": 297,
++        "h": 145,
++        "box": [
++          274,
++          316,
++          571,
++          461
++        ]
++      },
++      "frameMs": 326.4,
++      "frameMsMedian": 324.9,
++      "memory": {
++        "geometries": 91,
++        "textures": 58
++      },
++      "metrics": {
++        "colorBuckets": 299,
++        "colorEntropyBits": 6.72,
++        "edgeDensity": 0.242,
++        "luminance": {
++          "mean": 125.5,
++          "p5": 41.6,
++          "p95": 202.9,
++          "contrast": 161.3
++        },
++        "dominantColorShare": 0.04
++      },
++      "errors": []
++    },
++    "middleearth-limb": {
++      "calls": 37,
++      "triangles": 51511,
++      "shipPx": {
++        "w": 100,
++        "h": 44,
++        "box": [
++          384,
++          500,
++          485,
++          544
++        ]
++      },
++      "frameMs": 299.2,
++      "frameMsMedian": 288.4,
++      "memory": {
++        "geometries": 94,
++        "textures": 64
++      },
++      "metrics": {
++        "colorBuckets": 230,
++        "colorEntropyBits": 5.61,
++        "edgeDensity": 0.161,
++        "luminance": {
++          "mean": 63.4,
++          "p5": 22.2,
++          "p95": 123.9,
++          "contrast": 101.7
++        },
++        "dominantColorShare": 0.106
++      },
++      "errors": []
++    },
++    "rickmorty": {
++      "calls": 38,
++      "triangles": 65865,
++      "shipPx": {
++        "w": 100,
++        "h": 44,
++        "box": [
++          384,
++          499,
++          485,
++          543
++        ]
++      },
++      "frameMs": 242.2,
++      "frameMsMedian": 242,
++      "memory": {
++        "geometries": 91,
++        "textures": 62
++      },
++      "metrics": {
++        "colorBuckets": 601,
++        "colorEntropyBits": 5.84,
++        "edgeDensity": 0.181,
++        "luminance": {
++          "mean": 71.4,
++          "p5": 19.9,
++          "p95": 156.4,
++          "contrast": 136.5
++        },
++        "dominantColorShare": 0.106
++      },
++      "errors": []
++    },
++    "gaming": {
++      "calls": 41,
++      "triangles": 75089,
++      "shipPx": {
++        "w": 100,
++        "h": 43,
++        "box": [
++          384,
++          494,
++          485,
++          538
++        ]
++      },
++      "frameMs": 301,
++      "frameMsMedian": 294,
++      "memory": {
++        "geometries": 97,
++        "textures": 62
++      },
++      "metrics": {
++        "colorBuckets": 178,
++        "colorEntropyBits": 4.95,
++        "edgeDensity": 0.124,
++        "luminance": {
++          "mean": 70.6,
++          "p5": 24.1,
++          "p95": 150.4,
++          "contrast": 126.4
++        },
++        "dominantColorShare": 0.082
++      },
++      "errors": []
++    },
++    "caribbean": {
++      "calls": 41,
++      "triangles": 114499,
++      "shipPx": {
++        "w": 100,
++        "h": 43,
++        "box": [
++          384,
++          492,
++          485,
++          534
++        ]
++      },
++      "frameMs": 260.3,
++      "frameMsMedian": 259.9,
++      "memory": {
++        "geometries": 89,
++        "textures": 59
++      },
++      "metrics": {
++        "colorBuckets": 246,
++        "colorEntropyBits": 4.95,
++        "edgeDensity": 0.106,
++        "luminance": {
++          "mean": 56.4,
++          "p5": 21.2,
++          "p95": 115,
++          "contrast": 93.8
++        },
++        "dominantColorShare": 0.12
++      },
++      "errors": []
++    },
++    "middleearth": {
++      "calls": 37,
++      "triangles": 64739,
++      "shipPx": {
++        "w": 100,
++        "h": 44,
++        "box": [
++          384,
++          500,
++          485,
++          543
++        ]
++      },
++      "frameMs": 288.3,
++      "frameMsMedian": 265.4,
++      "memory": {
++        "geometries": 94,
++        "textures": 60
++      },
++      "metrics": {
++        "colorBuckets": 218,
++        "colorEntropyBits": 6.01,
++        "edgeDensity": 0.13,
++        "luminance": {
++          "mean": 77.7,
++          "p5": 26,
++          "p95": 173.4,
++          "contrast": 147.4
++        },
++        "dominantColorShare": 0.088
++      },
++      "errors": []
++    },
++    "breakingbad": {
++      "calls": 62,
++      "triangles": 58937,
++      "shipPx": {
++        "w": 100,
++        "h": 43,
++        "box": [
++          384,
++          491,
++          485,
++          533
++        ]
++      },
++      "frameMs": 250,
++      "frameMsMedian": 251,
++      "memory": {
++        "geometries": 96,
++        "textures": 67
++      },
++      "metrics": {
++        "colorBuckets": 225,
++        "colorEntropyBits": 5.16,
++        "edgeDensity": 0.099,
++        "luminance": {
++          "mean": 75.9,
++          "p5": 19,
++          "p95": 172.3,
++          "contrast": 153.3
++        },
++        "dominantColorShare": 0.129
++      },
++      "errors": []
++    },
++    "office": {
++      "calls": 39,
++      "triangles": 53371,
++      "shipPx": {
++        "w": 100,
++        "h": 43,
++        "box": [
++          384,
++          495,
++          485,
++          539
++        ]
++      },
++      "frameMs": 110.2,
++      "frameMsMedian": 110.5,
++      "memory": {
++        "geometries": 93,
++        "textures": 55
++      },
++      "metrics": {
++        "colorBuckets": 159,
++        "colorEntropyBits": 5.82,
++        "edgeDensity": 0.096,
++        "luminance": {
++          "mean": 125.2,
++          "p5": 60.8,
++          "p95": 211.7,
++          "contrast": 150.9
++        },
++        "dominantColorShare": 0.085
++      },
++      "errors": []
++    },
++    "belt": {
++      "calls": 44,
++      "triangles": 450925,
++      "shipPx": {
++        "w": 154,
++        "h": 86,
++        "box": [
++          358,
++          599,
++          512,
++          684
++        ]
++      },
++      "frameMs": 295,
++      "frameMsMedian": 294.8,
++      "memory": {
++        "geometries": 91,
++        "textures": 58
++      },
++      "metrics": {
++        "colorBuckets": 116,
++        "colorEntropyBits": 5,
++        "edgeDensity": 0.173,
++        "luminance": {
++          "mean": 60.6,
++          "p5": 26.5,
++          "p95": 114.3,
++          "contrast": 87.8
++        },
++        "dominantColorShare": 0.12
++      },
++      "errors": []
++    },
++    "maw": {
++      "calls": 41,
++      "triangles": 103877,
++      "shipPx": {
++        "w": 154,
++        "h": 71,
++        "box": [
++          358,
++          523,
++          512,
++          594
++        ]
++      },
++      "frameMs": 202,
++      "frameMsMedian": 167.7,
++      "memory": {
++        "geometries": 89,
++        "textures": 51
++      },
++      "metrics": {
++        "colorBuckets": 172,
++        "colorEntropyBits": 4.6,
++        "edgeDensity": 0.074,
++        "luminance": {
++          "mean": 57.6,
++          "p5": 0,
++          "p95": 105.8,
++          "contrast": 105.8
++        },
++        "dominantColorShare": 0.115
++      },
++      "errors": []
++    },
++    "landing-middleearth": {
++      "calls": 99,
++      "triangles": 178231,
++      "shipPx": null,
++      "frameMs": 308.4,
++      "frameMsMedian": 307.3,
++      "memory": {
++        "geometries": 263,
++        "textures": 104
++      },
++      "metrics": {
++        "colorBuckets": 162,
++        "colorEntropyBits": 4.42,
++        "edgeDensity": 0.078,
++        "luminance": {
++          "mean": 84.2,
++          "p5": 28.9,
++          "p95": 213.4,
++          "contrast": 184.5
++        },
++        "dominantColorShare": 0.257
++      },
++      "errors": []
++    },
++    "station": {
++      "calls": 66,
++      "triangles": 488583,
++      "shipPx": {
++        "w": 154,
++        "h": 79,
++        "box": [
++          358,
++          551,
++          512,
++          630
++        ]
++      },
++      "frameMs": 347.5,
++      "frameMsMedian": 347,
++      "memory": {
++        "geometries": 88,
++        "textures": 55
++      },
++      "metrics": {
++        "colorBuckets": 351,
++        "colorEntropyBits": 7.25,
++        "edgeDensity": 0.245,
++        "luminance": {
++          "mean": 138.6,
++          "p5": 75.5,
++          "p95": 202.6,
++          "contrast": 127.1
++        },
++        "dominantColorShare": 0.023
++      },
++      "errors": []
++    },
++    "far-rim": {
++      "calls": 40,
++      "triangles": 70227,
++      "shipPx": {
++        "w": 155,
++        "h": 83,
++        "box": [
++          357,
++          615,
++          512,
++          698
++        ]
++      },
++      "frameMs": 68.5,
++      "frameMsMedian": 27,
++      "memory": {
++        "geometries": 88,
++        "textures": 55
++      },
++      "metrics": {
++        "colorBuckets": 104,
++        "colorEntropyBits": 4.81,
++        "edgeDensity": 0.034,
++        "luminance": {
++          "mean": 77.3,
++          "p5": 25.1,
++          "p95": 124,
++          "contrast": 98.9
++        },
++        "dominantColorShare": 0.133
++      },
++      "errors": []
++    }
++  }
++}
+diff --git a/docs/superpowers/evidence/endless-lane1/before-mid-overview-rerun.json b/docs/superpowers/evidence/endless-lane1/before-mid-overview-rerun.json
+new file mode 100644
+index 000000000..bc1c4b145
+--- /dev/null
++++ b/docs/superpowers/evidence/endless-lane1/before-mid-overview-rerun.json
+@@ -0,0 +1,42 @@
++{
++  "tier": "mid",
++  "viewport": [
++    1280,
++    720
++  ],
++  "poses": {
++    "overview": {
++      "calls": 97,
++      "triangles": 638581,
++      "shipPx": {
++        "w": 0,
++        "h": 0,
++        "box": [
++          434,
++          601,
++          434,
++          602
++        ]
++      },
++      "frameMs": 406.6,
++      "frameMsMedian": 347.2,
++      "memory": {
++        "geometries": 368,
++        "textures": 162
++      },
++      "metrics": {
++        "colorBuckets": 138,
++        "colorEntropyBits": 3.06,
++        "edgeDensity": 0.06,
++        "luminance": {
++          "mean": 27.3,
++          "p5": 7.1,
++          "p95": 79.9,
++          "contrast": 72.8
++        },
++        "dominantColorShare": 0.396
++      },
++      "errors": []
++    }
++  }
++}
+diff --git a/docs/superpowers/evidence/endless-lane1/before-mid.json b/docs/superpowers/evidence/endless-lane1/before-mid.json
+new file mode 100644
+index 000000000..fa2fa0192
+--- /dev/null
++++ b/docs/superpowers/evidence/endless-lane1/before-mid.json
+@@ -0,0 +1,433 @@
++{
++  "tier": "mid",
++  "viewport": [
++    1280,
++    720
++  ],
++  "poses": {
++    "overview": {
++      "error": "page.goto: Timeout 180000ms exceeded.",
++      "errors": []
++    },
++    "falcon-sun": {
++      "calls": 96,
++      "triangles": 518707,
++      "shipPx": {
++        "w": 296,
++        "h": 147,
++        "box": [
++          274,
++          322,
++          571,
++          468
++        ]
++      },
++      "frameMs": 121.1,
++      "frameMsMedian": 128.3,
++      "memory": {
++        "geometries": 368,
++        "textures": 144
++      },
++      "metrics": {
++        "colorBuckets": 283,
++        "colorEntropyBits": 6.69,
++        "edgeDensity": 0.228,
++        "luminance": {
++          "mean": 127.2,
++          "p5": 44.7,
++          "p95": 205.8,
++          "contrast": 161.1
++        },
++        "dominantColorShare": 0.035
++      },
++      "errors": []
++    },
++    "middleearth-limb": {
++      "calls": 0,
++      "triangles": 0,
++      "shipPx": {
++        "w": 100,
++        "h": 43,
++        "box": [
++          384,
++          492,
++          485,
++          535
++        ]
++      },
++      "frameMs": 133.9,
++      "frameMsMedian": 123.5,
++      "memory": {
++        "geometries": 364,
++        "textures": 140
++      },
++      "metrics": {
++        "colorBuckets": 242,
++        "colorEntropyBits": 6.3,
++        "edgeDensity": 0.134,
++        "luminance": {
++          "mean": 83.8,
++          "p5": 34.5,
++          "p95": 147.2,
++          "contrast": 112.7
++        },
++        "dominantColorShare": 0.099
++      },
++      "errors": []
++    },
++    "rickmorty": {
++      "calls": 24,
++      "triangles": 65883,
++      "shipPx": {
++        "w": 100,
++        "h": 43,
++        "box": [
++          384,
++          495,
++          485,
++          538
++        ]
++      },
++      "frameMs": 98.4,
++      "frameMsMedian": 99.1,
++      "memory": {
++        "geometries": 356,
++        "textures": 135
++      },
++      "metrics": {
++        "colorBuckets": 556,
++        "colorEntropyBits": 5.93,
++        "edgeDensity": 0.202,
++        "luminance": {
++          "mean": 78.2,
++          "p5": 23.2,
++          "p95": 159.5,
++          "contrast": 136.2
++        },
++        "dominantColorShare": 0.107
++      },
++      "errors": []
++    },
++    "gaming": {
++      "calls": 27,
++      "triangles": 75107,
++      "shipPx": {
++        "w": 100,
++        "h": 43,
++        "box": [
++          384,
++          495,
++          485,
++          538
++        ]
++      },
++      "frameMs": 115.2,
++      "frameMsMedian": 105.5,
++      "memory": {
++        "geometries": 358,
++        "textures": 137
++      },
++      "metrics": {
++        "colorBuckets": 192,
++        "colorEntropyBits": 4.92,
++        "edgeDensity": 0.152,
++        "luminance": {
++          "mean": 74.7,
++          "p5": 27.2,
++          "p95": 134.8,
++          "contrast": 107.6
++        },
++        "dominantColorShare": 0.088
++      },
++      "errors": []
++    },
++    "caribbean": {
++      "calls": 27,
++      "triangles": 114517,
++      "shipPx": {
++        "w": 100,
++        "h": 43,
++        "box": [
++          384,
++          496,
++          485,
++          539
++        ]
++      },
++      "frameMs": 128.5,
++      "frameMsMedian": 132.9,
++      "memory": {
++        "geometries": 356,
++        "textures": 137
++      },
++      "metrics": {
++        "colorBuckets": 229,
++        "colorEntropyBits": 5.04,
++        "edgeDensity": 0.13,
++        "luminance": {
++          "mean": 56.5,
++          "p5": 14.9,
++          "p95": 103.2,
++          "contrast": 88.3
++        },
++        "dominantColorShare": 0.137
++      },
++      "errors": []
++    },
++    "middleearth": {
++      "calls": 23,
++      "triangles": 64757,
++      "shipPx": {
++        "w": 100,
++        "h": 44,
++        "box": [
++          384,
++          497,
++          485,
++          540
++        ]
++      },
++      "frameMs": 110.8,
++      "frameMsMedian": 111.7,
++      "memory": {
++        "geometries": 355,
++        "textures": 134
++      },
++      "metrics": {
++        "colorBuckets": 170,
++        "colorEntropyBits": 5.04,
++        "edgeDensity": 0.106,
++        "luminance": {
++          "mean": 62.8,
++          "p5": 22.2,
++          "p95": 115.8,
++          "contrast": 93.6
++        },
++        "dominantColorShare": 0.153
++      },
++      "errors": []
++    },
++    "breakingbad": {
++      "calls": 48,
++      "triangles": 58955,
++      "shipPx": {
++        "w": 100,
++        "h": 44,
++        "box": [
++          384,
++          501,
++          485,
++          545
++        ]
++      },
++      "frameMs": 108.5,
++      "frameMsMedian": 99.5,
++      "memory": {
++        "geometries": 356,
++        "textures": 135
++      },
++      "metrics": {
++        "colorBuckets": 240,
++        "colorEntropyBits": 5.26,
++        "edgeDensity": 0.105,
++        "luminance": {
++          "mean": 78.9,
++          "p5": 22.5,
++          "p95": 158.4,
++          "contrast": 135.9
++        },
++        "dominantColorShare": 0.126
++      },
++      "errors": []
++    },
++    "office": {
++      "calls": 25,
++      "triangles": 53389,
++      "shipPx": {
++        "w": 100,
++        "h": 43,
++        "box": [
++          384,
++          491,
++          485,
++          534
++        ]
++      },
++      "frameMs": 82.3,
++      "frameMsMedian": 84.4,
++      "memory": {
++        "geometries": 355,
++        "textures": 134
++      },
++      "metrics": {
++        "colorBuckets": 143,
++        "colorEntropyBits": 5.76,
++        "edgeDensity": 0.079,
++        "luminance": {
++          "mean": 127,
++          "p5": 60.8,
++          "p95": 213.2,
++          "contrast": 152.3
++        },
++        "dominantColorShare": 0.097
++      },
++      "errors": []
++    },
++    "belt": {
++      "calls": 0,
++      "triangles": 0,
++      "shipPx": {
++        "w": 154,
++        "h": 85,
++        "box": [
++          358,
++          596,
++          512,
++          681
++        ]
++      },
++      "frameMs": 77,
++      "frameMsMedian": 128.2,
++      "memory": {
++        "geometries": 356,
++        "textures": 135
++      },
++      "metrics": {
++        "colorBuckets": 91,
++        "colorEntropyBits": 5.06,
++        "edgeDensity": 0.188,
++        "luminance": {
++          "mean": 75.1,
++          "p5": 32.2,
++          "p95": 118.5,
++          "contrast": 86.3
++        },
++        "dominantColorShare": 0.098
++      },
++      "errors": []
++    },
++    "maw": {
++      "calls": 45,
++      "triangles": 120408,
++      "shipPx": {
++        "w": 154,
++        "h": 72,
++        "box": [
++          358,
++          526,
++          512,
++          598
++        ]
++      },
++      "frameMs": 75.8,
++      "frameMsMedian": 84.3,
++      "memory": {
++        "geometries": 358,
++        "textures": 141
++      },
++      "metrics": {
++        "colorBuckets": 166,
++        "colorEntropyBits": 4.59,
++        "edgeDensity": 0.073,
++        "luminance": {
++          "mean": 56.6,
++          "p5": 0,
++          "p95": 102,
++          "contrast": 102
++        },
++        "dominantColorShare": 0.114
++      },
++      "errors": []
++    },
++    "landing-middleearth": {
++      "calls": 0,
++      "triangles": 0,
++      "shipPx": null,
++      "frameMs": 149.8,
++      "frameMsMedian": 164.8,
++      "memory": {
++        "geometries": 482,
++        "textures": 168
++      },
++      "metrics": {
++        "colorBuckets": 166,
++        "colorEntropyBits": 4.2,
++        "edgeDensity": 0.162,
++        "luminance": {
++          "mean": 157.2,
++          "p5": 48.2,
++          "p95": 255,
++          "contrast": 206.8
++        },
++        "dominantColorShare": 0.192
++      },
++      "errors": []
++    },
++    "station": {
++      "calls": 52,
++      "triangles": 488603,
++      "shipPx": {
++        "w": 154,
++        "h": 81,
++        "box": [
++          358,
++          560,
++          512,
++          641
++        ]
++      },
++      "frameMs": 106,
++      "frameMsMedian": 57.9,
++      "memory": {
++        "geometries": 360,
++        "textures": 136
++      },
++      "metrics": {
++        "colorBuckets": 395,
++        "colorEntropyBits": 6.75,
++        "edgeDensity": 0.541,
++        "luminance": {
++          "mean": 123.5,
++          "p5": 52.8,
++          "p95": 232.3,
++          "contrast": 179.4
++        },
++        "dominantColorShare": 0.052
++      },
++      "errors": []
++    },
++    "far-rim": {
++      "calls": 26,
++      "triangles": 70275,
++      "shipPx": {
++        "w": 155,
++        "h": 80,
++        "box": [
++          357,
++          602,
++          512,
++          683
++        ]
++      },
++      "frameMs": 26.9,
++      "frameMsMedian": 27.4,
++      "memory": {
++        "geometries": 355,
++        "textures": 134
++      },
++      "metrics": {
++        "colorBuckets": 109,
++        "colorEntropyBits": 4.81,
++        "edgeDensity": 0.033,
++        "luminance": {
++          "mean": 77.2,
++          "p5": 25.1,
++          "p95": 123.9,
++          "contrast": 98.8
++        },
++        "dominantColorShare": 0.133
++      },
++      "errors": []
++    }
++  }
++}
+diff --git a/docs/superpowers/evidence/endless-lane1/before-perf-low-2.json b/docs/superpowers/evidence/endless-lane1/before-perf-low-2.json
+new file mode 100644
+index 000000000..236b4bf84
+--- /dev/null
++++ b/docs/superpowers/evidence/endless-lane1/before-perf-low-2.json
+@@ -0,0 +1,530 @@
++{
++ "view": {
++  "vw": 1470,
++  "vh": 956,
++  "vdpr": 2
++ },
++ "machine": "",
++ "quality": "low",
++ "gpu": "default",
++ "report": {
++  "universe": {
++   "route": "/universe",
++   "machine": "",
++   "quality": "low",
++   "backend": "default",
++   "drawnOn": "webgl",
++   "rows": [
++    {
++     "phase": "load",
++     "secs": 61,
++     "frames": 13091,
++     "fps": 218.3,
++     "p50": 0.4,
++     "p95": 31.5,
++     "stdev": 11,
++     "p99": 35.5,
++     "w1": 70.4,
++     "max": 1660,
++     "over50": 32,
++     "over100": 15,
++     "main": 0,
++     "gpu": null,
++     "loafs": 24,
++     "block": 3051,
++     "links": 168,
++     "pipes": 0,
++     "progs": 162,
++     "mid": 0,
++     "texMB": 79.7,
++     "bufMB": 8.7,
++     "draws": 0,
++     "ktris": 0,
++     "sizes": 1,
++     "worst": [
++      {
++       "ms": 1660,
++       "links": 19,
++       "tex": 13,
++       "texMB": 32.6,
++       "bufMB": 0.1,
++       "glMs": 618,
++       "drawMs": 0,
++       "slow": "getProgramParameter 50ms ",
++       "scripts": [
++        {
++         "ms": 1629,
++         "fn": "Promise.resolve",
++         "url": "src/lib/three/textures.js",
++         "at": 8486
++        }
++       ]
++      },
++      {
++       "ms": 308,
++       "links": 1,
++       "tex": 33,
++       "texMB": 26.4,
++       "bufMB": 8.4,
++       "glMs": 53,
++       "drawMs": 0,
++       "slow": "getProgramParameter 50ms ",
++       "scripts": [
++        {
++         "ms": 296,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      },
++      {
++       "ms": 270,
++       "links": 33,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 59,
++         "fn": "ReadableStreamDefaultReader.read.then",
++         "url": "src/lib/net/assetFetch.js",
++         "at": 5062
++        },
++        {
++         "ms": 8,
++         "fn": "go",
++         "url": "src/lib/three/gpuWork.js",
++         "at": 2477
++        },
++        {
++         "ms": 26,
++         "fn": "Promise.resolve",
++         "url": "src/lib/net/assetFetch.js",
++         "at": 4962
++        }
++       ]
++      },
++      {
++       "ms": 252,
++       "links": 26,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 247,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      }
++     ]
++    },
++    {
++     "phase": "settle",
++     "secs": 4.1,
++     "frames": 1937,
++     "fps": 469.1,
++     "p50": 1.5,
++     "p95": 5.3,
++     "stdev": 2.4,
++     "p99": 13.6,
++     "w1": 19.5,
++     "max": 34,
++     "over50": 0,
++     "over100": 0,
++     "main": 1,
++     "gpu": null,
++     "loafs": 0,
++     "block": 0,
++     "links": 0,
++     "pipes": 0,
++     "progs": 162,
++     "mid": 0,
++     "texMB": 33.1,
++     "bufMB": 41.2,
++     "draws": 45,
++     "ktris": 14,
++     "sizes": 0,
++     "worst": [
++      {
++       "ms": 34,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 32,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 31,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 24,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 24,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      }
++     ]
++    },
++    {
++     "phase": "idle",
++     "secs": 6,
++     "frames": 2830,
++     "fps": 469.7,
++     "p50": 1.3,
++     "p95": 5.2,
++     "stdev": 3,
++     "p99": 11.3,
++     "w1": 22.5,
++     "max": 97,
++     "over50": 2,
++     "over100": 0,
++     "main": 1.1,
++     "gpu": null,
++     "loafs": 2,
++     "block": 48,
++     "links": 0,
++     "pipes": 0,
++     "progs": 162,
++     "mid": 0,
++     "texMB": 2.9,
++     "bufMB": 58.8,
++     "draws": 53,
++     "ktris": 22,
++     "sizes": 0,
++     "worst": [
++      {
++       "ms": 97,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 95,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      },
++      {
++       "ms": 54,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 53,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      },
++      {
++       "ms": 44,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 30,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 28,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 53,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      }
++     ]
++    },
++    {
++     "phase": "fly",
++     "secs": 9.5,
++     "frames": 3919,
++     "fps": 410.8,
++     "p50": 1.7,
++     "p95": 5.9,
++     "stdev": 2.1,
++     "p99": 11.9,
++     "w1": 15.9,
++     "max": 25,
++     "over50": 0,
++     "over100": 0,
++     "main": 1.3,
++     "gpu": null,
++     "loafs": 0,
++     "block": 0,
++     "links": 0,
++     "pipes": 0,
++     "progs": 162,
++     "mid": 0,
++     "texMB": 9.6,
++     "bufMB": 99.7,
++     "draws": 58,
++     "ktris": 156,
++     "sizes": 0,
++     "worst": [
++      {
++       "ms": 25,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 25,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 22,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 22,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 22,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      }
++     ]
++    }
++   ],
++   "play": {
++    "phase": "play",
++    "secs": 15.6,
++    "frames": 6749,
++    "fps": 433.7,
++    "p50": 1.6,
++    "p95": 5.7,
++    "stdev": 2.5,
++    "p99": 11.8,
++    "w1": 18.8,
++    "max": 97,
++    "over50": 2,
++    "over100": 0,
++    "main": 1.2,
++    "gpu": null,
++    "loafs": 2,
++    "block": 48,
++    "links": 0,
++    "pipes": 0,
++    "progs": 162,
++    "mid": 0,
++    "texMB": 12.5,
++    "bufMB": 158.6,
++    "draws": 56,
++    "ktris": 100,
++    "sizes": 0,
++    "worst": [
++     {
++      "ms": 97,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": [
++       {
++        "ms": 95,
++        "fn": "FrameRequestCallback",
++        "url": "",
++        "at": -1
++       }
++      ]
++     },
++     {
++      "ms": 54,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": [
++       {
++        "ms": 53,
++        "fn": "FrameRequestCallback",
++        "url": "",
++        "at": -1
++       }
++      ]
++     },
++     {
++      "ms": 44,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": []
++     },
++     {
++      "ms": 30,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": []
++     },
++     {
++      "ms": 28,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": [
++       {
++        "ms": 53,
++        "fn": "FrameRequestCallback",
++        "url": "",
++        "at": -1
++       }
++      ]
++     }
++    ]
++   },
++   "late": 0,
++   "errors": [],
++   "failed": null,
++   "secs": 85,
++   "readyS": 61,
++   "heapMB": 178,
++   "slips": {
++    "[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial \"PMREM.Background\" on Mesh": 1,
++    "[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh": 2,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"SphericalGaussianBlur\" on Mesh": 1,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"PMREMGGXConvolution\" on Mesh": 1,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial on Mesh": 1,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"unspecified\" on Mesh": 1
++   }
++  }
++ }
++}
+\ No newline at end of file
+diff --git a/docs/superpowers/evidence/endless-lane1/before-perf-low-2.md b/docs/superpowers/evidence/endless-lane1/before-perf-low-2.md
+new file mode 100644
+index 000000000..3e77ee273
+--- /dev/null
++++ b/docs/superpowers/evidence/endless-lane1/before-perf-low-2.md
+@@ -0,0 +1,3 @@
++| route | machine | drawn on | quality | ready s | fps | p50 ms | worst 1 % ms | main ms | GPU ms | draws | programs | late pipelines |
++| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
++| /universe | - | webgl | low | 61 | 433.7 | 1.6 | 18.8 | 1.2 | - | 56 | 162 | 0 |
+diff --git a/docs/superpowers/evidence/endless-lane1/before-perf-low.json b/docs/superpowers/evidence/endless-lane1/before-perf-low.json
+new file mode 100644
+index 000000000..1350f7e70
+--- /dev/null
++++ b/docs/superpowers/evidence/endless-lane1/before-perf-low.json
+@@ -0,0 +1,524 @@
++{
++ "view": {
++  "vw": 1470,
++  "vh": 956,
++  "vdpr": 2
++ },
++ "machine": "",
++ "quality": "low",
++ "gpu": "default",
++ "report": {
++  "universe": {
++   "route": "/universe",
++   "machine": "",
++   "quality": "low",
++   "backend": "default",
++   "drawnOn": "webgl",
++   "rows": [
++    {
++     "phase": "load",
++     "secs": 60.8,
++     "frames": 11831,
++     "fps": 198.1,
++     "p50": 0.4,
++     "p95": 31.6,
++     "stdev": 10.9,
++     "p99": 32.7,
++     "w1": 62.1,
++     "max": 1660,
++     "over50": 17,
++     "over100": 7,
++     "main": 0,
++     "gpu": null,
++     "loafs": 14,
++     "block": 2291,
++     "links": 168,
++     "pipes": 0,
++     "progs": 162,
++     "mid": 0,
++     "texMB": 76.3,
++     "bufMB": 8.7,
++     "draws": 0,
++     "ktris": 0,
++     "sizes": 1,
++     "worst": [
++      {
++       "ms": 1660,
++       "links": 19,
++       "tex": 13,
++       "texMB": 32.6,
++       "bufMB": 0.1,
++       "glMs": 614,
++       "drawMs": 0,
++       "slow": "getProgramParameter 48ms ",
++       "scripts": [
++        {
++         "ms": 1616,
++         "fn": "Promise.resolve",
++         "url": "src/lib/three/textures.js",
++         "at": 8486
++        }
++       ]
++      },
++      {
++       "ms": 402,
++       "links": 43,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 2,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 117,
++         "fn": "go",
++         "url": "src/lib/three/gpuWork.js",
++         "at": 2477
++        },
++        {
++         "ms": 79,
++         "fn": "Promise.resolve",
++         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
++         "at": 1102969
++        }
++       ]
++      },
++      {
++       "ms": 292,
++       "links": 1,
++       "tex": 33,
++       "texMB": 26.4,
++       "bufMB": 8.4,
++       "glMs": 63,
++       "drawMs": 0,
++       "slow": "getProgramParameter 59ms ",
++       "scripts": [
++        {
++         "ms": 282,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      },
++      {
++       "ms": 257,
++       "links": 17,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 92,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      },
++      {
++       "ms": 194,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 173,
++         "fn": "http://127.0.0.1:5294/src/main.jsx",
++         "url": "src/main.jsx",
++         "at": 0
++        }
++       ]
++      }
++     ]
++    },
++    {
++     "phase": "settle",
++     "secs": 4,
++     "frames": 2239,
++     "fps": 556,
++     "p50": 1.3,
++     "p95": 4.2,
++     "stdev": 2.1,
++     "p99": 10.2,
++     "w1": 18.1,
++     "max": 30,
++     "over50": 0,
++     "over100": 0,
++     "main": 1,
++     "gpu": null,
++     "loafs": 1,
++     "block": 0,
++     "links": 0,
++     "pipes": 0,
++     "progs": 162,
++     "mid": 0,
++     "texMB": 37.4,
++     "bufMB": 48,
++     "draws": 44,
++     "ktris": 71,
++     "sizes": 0,
++     "worst": [
++      {
++       "ms": 30,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 28,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 28,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 28,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 24,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      }
++     ]
++    },
++    {
++     "phase": "idle",
++     "secs": 6,
++     "frames": 3978,
++     "fps": 660,
++     "p50": 1.1,
++     "p95": 3.6,
++     "stdev": 1.3,
++     "p99": 6.3,
++     "w1": 9.9,
++     "max": 36,
++     "over50": 0,
++     "over100": 0,
++     "main": 0.9,
++     "gpu": null,
++     "loafs": 0,
++     "block": 0,
++     "links": 0,
++     "pipes": 0,
++     "progs": 162,
++     "mid": 0,
++     "texMB": 0,
++     "bufMB": 81.8,
++     "draws": 46,
++     "ktris": 73,
++     "sizes": 0,
++     "worst": [
++      {
++       "ms": 36,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 22,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 19,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 14,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 14,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      }
++     ]
++    },
++    {
++     "phase": "fly",
++     "secs": 9.6,
++     "frames": 4224,
++     "fps": 441.9,
++     "p50": 1.5,
++     "p95": 5.8,
++     "stdev": 3.1,
++     "p99": 15.3,
++     "w1": 25.7,
++     "max": 65,
++     "over50": 2,
++     "over100": 0,
++     "main": 1.1,
++     "gpu": null,
++     "loafs": 7,
++     "block": 17,
++     "links": 0,
++     "pipes": 0,
++     "progs": 162,
++     "mid": 0,
++     "texMB": 10.5,
++     "bufMB": 109.3,
++     "draws": 57,
++     "ktris": 166,
++     "sizes": 0,
++     "worst": [
++      {
++       "ms": 65,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 53,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 49,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 1,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 48,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 9,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      },
++      {
++       "ms": 43,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 28,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      }
++     ]
++    }
++   ],
++   "play": {
++    "phase": "play",
++    "secs": 15.6,
++    "frames": 8202,
++    "fps": 526.3,
++    "p50": 1.3,
++    "p95": 4.6,
++    "stdev": 2.5,
++    "p99": 11,
++    "w1": 20,
++    "max": 65,
++    "over50": 2,
++    "over100": 0,
++    "main": 1,
++    "gpu": null,
++    "loafs": 7,
++    "block": 17,
++    "links": 0,
++    "pipes": 0,
++    "progs": 162,
++    "mid": 0,
++    "texMB": 10.5,
++    "bufMB": 191.1,
++    "draws": 51,
++    "ktris": 121,
++    "sizes": 0,
++    "worst": [
++     {
++      "ms": 65,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": []
++     },
++     {
++      "ms": 53,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": []
++     },
++     {
++      "ms": 49,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 1,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": []
++     },
++     {
++      "ms": 48,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": [
++       {
++        "ms": 9,
++        "fn": "FrameRequestCallback",
++        "url": "",
++        "at": -1
++       }
++      ]
++     },
++     {
++      "ms": 43,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": [
++       {
++        "ms": 28,
++        "fn": "FrameRequestCallback",
++        "url": "",
++        "at": -1
++       }
++      ]
++     }
++    ]
++   },
++   "late": 0,
++   "errors": [],
++   "failed": null,
++   "secs": 88,
++   "readyS": 60.8,
++   "heapMB": 175,
++   "slips": {
++    "[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial \"PMREM.Background\" on Mesh": 1,
++    "[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh": 2,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"SphericalGaussianBlur\" on Mesh": 1,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"PMREMGGXConvolution\" on Mesh": 1,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial on Mesh": 1,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"unspecified\" on Mesh": 1
++   }
++  }
++ }
++}
+\ No newline at end of file
+diff --git a/docs/superpowers/evidence/endless-lane1/before-perf-low.md b/docs/superpowers/evidence/endless-lane1/before-perf-low.md
+new file mode 100644
+index 000000000..5d38aa4da
+--- /dev/null
++++ b/docs/superpowers/evidence/endless-lane1/before-perf-low.md
+@@ -0,0 +1,3 @@
++| route | machine | drawn on | quality | ready s | fps | p50 ms | worst 1 % ms | main ms | GPU ms | draws | programs | late pipelines |
++| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
++| /universe | - | webgl | low | 60.8 | 526.3 | 1.3 | 20 | 1 | - | 51 | 162 | 0 |
+diff --git a/docs/superpowers/evidence/endless-lane1/before-perf-mid-2.json b/docs/superpowers/evidence/endless-lane1/before-perf-mid-2.json
+new file mode 100644
+index 000000000..603477ebd
+--- /dev/null
++++ b/docs/superpowers/evidence/endless-lane1/before-perf-mid-2.json
+@@ -0,0 +1,583 @@
++{
++ "view": {
++  "vw": 1470,
++  "vh": 956,
++  "vdpr": 2
++ },
++ "machine": "",
++ "quality": "mid",
++ "gpu": "default",
++ "report": {
++  "universe": {
++   "route": "/universe",
++   "machine": "",
++   "quality": "mid",
++   "backend": "default",
++   "drawnOn": "webgl",
++   "rows": [
++    {
++     "phase": "load",
++     "secs": 65.6,
++     "frames": 14148,
++     "fps": 220.7,
++     "p50": 0.4,
++     "p95": 31.5,
++     "stdev": 10.8,
++     "p99": 33.4,
++     "w1": 57.3,
++     "max": 1791,
++     "over50": 18,
++     "over100": 9,
++     "main": 0,
++     "gpu": null,
++     "loafs": 18,
++     "block": 2458,
++     "links": 173,
++     "pipes": 0,
++     "progs": 167,
++     "mid": 0,
++     "texMB": 283.1,
++     "bufMB": 20.2,
++     "draws": 0,
++     "ktris": 1,
++     "sizes": 2,
++     "worst": [
++      {
++       "ms": 1791,
++       "links": 19,
++       "tex": 13,
++       "texMB": 32.6,
++       "bufMB": 0.1,
++       "glMs": 628,
++       "drawMs": 0,
++       "slow": "getProgramParameter 49ms ",
++       "scripts": [
++        {
++         "ms": 1758,
++         "fn": "Promise.resolve",
++         "url": "src/lib/three/textures.js",
++         "at": 8486
++        }
++       ]
++      },
++      {
++       "ms": 246,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 232,
++         "fn": "http://127.0.0.1:5294/src/main.jsx",
++         "url": "src/main.jsx",
++         "at": 0
++        }
++       ]
++      },
++      {
++       "ms": 163,
++       "links": 1,
++       "tex": 31,
++       "texMB": 18.2,
++       "bufMB": 20,
++       "glMs": 80,
++       "drawMs": 0,
++       "slow": "getProgramParameter 68ms ",
++       "scripts": [
++        {
++         "ms": 160,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      },
++      {
++       "ms": 159,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 158,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      }
++     ]
++    },
++    {
++     "phase": "settle",
++     "secs": 4,
++     "frames": 1613,
++     "fps": 507.9,
++     "p50": 1.4,
++     "p95": 4.8,
++     "stdev": 2,
++     "p99": 8.8,
++     "w1": 15.5,
++     "max": 41,
++     "over50": 0,
++     "over100": 0,
++     "main": 1.1,
++     "gpu": null,
++     "loafs": 1,
++     "block": 1433,
++     "links": 0,
++     "pipes": 0,
++     "progs": 167,
++     "mid": 0,
++     "texMB": 28,
++     "bufMB": 35.1,
++     "draws": 36,
++     "ktris": 96,
++     "sizes": 0,
++     "worst": [
++      {
++       "ms": 41,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 29,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 27,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 18,
++         "fn": "import.then",
++         "url": "src/components/universe/scene.js",
++         "at": 43141
++        },
++        {
++         "ms": 1457,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      },
++      {
++       "ms": 17,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 16,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      }
++     ]
++    },
++    {
++     "phase": "idle",
++     "secs": 6,
++     "frames": 3290,
++     "fps": 609.8,
++     "p50": 1.2,
++     "p95": 3.6,
++     "stdev": 3.1,
++     "p99": 7.3,
++     "w1": 16.2,
++     "max": 152,
++     "over50": 1,
++     "over100": 1,
++     "main": 1,
++     "gpu": null,
++     "loafs": 1,
++     "block": 101,
++     "links": 12,
++     "pipes": 0,
++     "progs": 179,
++     "mid": 11,
++     "texMB": 0.6,
++     "bufMB": 68.1,
++     "draws": 44,
++     "ktris": 153,
++     "sizes": 0,
++     "worst": [
++      {
++       "ms": 152,
++       "links": 3,
++       "tex": 2,
++       "texMB": 0.6,
++       "bufMB": 0.5,
++       "glMs": 143,
++       "drawMs": 0,
++       "slow": "getProgramParameter 142ms ",
++       "scripts": [
++        {
++         "ms": 151,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      },
++      {
++       "ms": 44,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 40,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 19,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 18,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      }
++     ]
++    },
++    {
++     "phase": "fly",
++     "secs": 12,
++     "frames": 4138,
++     "fps": 343.5,
++     "p50": 1.7,
++     "p95": 6.6,
++     "stdev": 4.1,
++     "p99": 14,
++     "w1": 64.1,
++     "max": 938,
++     "over50": 4,
++     "over100": 3,
++     "main": 1.3,
++     "gpu": null,
++     "loafs": 5,
++     "block": 1681,
++     "links": 7,
++     "pipes": 0,
++     "progs": 186,
++     "mid": 6,
++     "texMB": 3.3,
++     "bufMB": 109.8,
++     "draws": 59,
++     "ktris": 294,
++     "sizes": 0,
++     "worst": [
++      {
++       "ms": 938,
++       "links": 4,
++       "tex": 1,
++       "texMB": 2.1,
++       "bufMB": 0,
++       "glMs": 911,
++       "drawMs": 0,
++       "slow": "getProgramParameter 144ms ",
++       "scripts": [
++        {
++         "ms": 934,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      },
++      {
++       "ms": 668,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 666,
++         "fn": "onKeyDown",
++         "url": "src/components/universe/scene.js",
++         "at": 251078
++        }
++       ]
++      },
++      {
++       "ms": 197,
++       "links": 1,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 190,
++       "drawMs": 0,
++       "slow": "getProgramParameter 190ms ",
++       "scripts": [
++        {
++         "ms": 194,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      },
++      {
++       "ms": 68,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 63,
++         "fn": "Promise.resolve",
++         "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
++         "at": 1102969
++        }
++       ]
++      },
++      {
++       "ms": 42,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 21,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      }
++     ]
++    }
++   ],
++   "play": {
++    "phase": "play",
++    "secs": 18.1,
++    "frames": 7428,
++    "fps": 425.9,
++    "p50": 1.4,
++    "p95": 5.3,
++    "stdev": 3.7,
++    "p99": 11.6,
++    "w1": 44.4,
++    "max": 938,
++    "over50": 5,
++    "over100": 4,
++    "main": 1.2,
++    "gpu": null,
++    "loafs": 6,
++    "block": 1782,
++    "links": 19,
++    "pipes": 0,
++    "progs": 186,
++    "mid": 17,
++    "texMB": 3.9,
++    "bufMB": 177.9,
++    "draws": 53,
++    "ktris": 231,
++    "sizes": 0,
++    "worst": [
++     {
++      "ms": 938,
++      "links": 4,
++      "tex": 1,
++      "texMB": 2.1,
++      "bufMB": 0,
++      "glMs": 911,
++      "drawMs": 0,
++      "slow": "getProgramParameter 144ms ",
++      "scripts": [
++       {
++        "ms": 934,
++        "fn": "FrameRequestCallback",
++        "url": "",
++        "at": -1
++       }
++      ]
++     },
++     {
++      "ms": 668,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": [
++       {
++        "ms": 666,
++        "fn": "onKeyDown",
++        "url": "src/components/universe/scene.js",
++        "at": 251078
++       }
++      ]
++     },
++     {
++      "ms": 197,
++      "links": 1,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 190,
++      "drawMs": 0,
++      "slow": "getProgramParameter 190ms ",
++      "scripts": [
++       {
++        "ms": 194,
++        "fn": "FrameRequestCallback",
++        "url": "",
++        "at": -1
++       }
++      ]
++     },
++     {
++      "ms": 152,
++      "links": 3,
++      "tex": 2,
++      "texMB": 0.6,
++      "bufMB": 0.5,
++      "glMs": 143,
++      "drawMs": 0,
++      "slow": "getProgramParameter 142ms ",
++      "scripts": [
++       {
++        "ms": 151,
++        "fn": "FrameRequestCallback",
++        "url": "",
++        "at": -1
++       }
++      ]
++     },
++     {
++      "ms": 68,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": [
++       {
++        "ms": 63,
++        "fn": "Promise.resolve",
++        "url": "node_modules/.vite/deps/three.core-D5jE5TYE.js",
++        "at": 1102969
++       }
++      ]
++     }
++    ]
++   },
++   "late": 19,
++   "errors": [],
++   "failed": null,
++   "secs": 95,
++   "readyS": 65.6,
++   "heapMB": 198,
++   "slips": {
++    "[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial \"PMREM.Background\" on Mesh": 1,
++    "[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh": 2,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"SphericalGaussianBlur\" on Mesh": 1,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"PMREMGGXConvolution\" on Mesh": 1,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial on Mesh": 1,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"unspecified\" on Mesh": 1,
++    "[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh": 4,
++    "[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh \"meteors\"": 1,
++    "[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh \"mines\"": 1,
++    "[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh \"hull\"": 1,
++    "[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh \"stripes\"": 1,
++    "[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh \"intakes\"": 1,
++    "[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial \"baked\" on Mesh \"low\" in \"Scene\"": 1,
++    "[frameGuard] 9 shader(s) compiled in a 1454 ms frame": 1,
++    "[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh \"metal\"": 1,
++    "[frameGuard] shader compiled mid-frame (frame): MeshBasicMaterial on Mesh \"glow\"": 1,
++    "[frameGuard] 2 shader(s) compiled in a 147 ms frame": 1,
++    "[frameGuard] shader compiled mid-frame (frame): MeshStandardMaterial on Mesh in \"deep-debris\"": 1,
++    "[frameGuard] 1 shader(s) compiled in a 193 ms frame": 1,
++    "[frameGuard] shader compiled mid-frame (frame): MeshPhysicalMaterial on Mesh": 3,
++    "[frameGuard] 4 shader(s) compiled in a 932 ms frame": 1,
++    "[frameGuard] shader compiled mid-frame (frame): ShaderMaterial on Mesh": 1,
++    "[frameGuard] 1 shader(s) compiled in a 3 ms frame": 1
++   }
++  }
++ }
++}
+\ No newline at end of file
+diff --git a/docs/superpowers/evidence/endless-lane1/before-perf-mid-2.md b/docs/superpowers/evidence/endless-lane1/before-perf-mid-2.md
+new file mode 100644
+index 000000000..74959ce3d
+--- /dev/null
++++ b/docs/superpowers/evidence/endless-lane1/before-perf-mid-2.md
+@@ -0,0 +1,3 @@
++| route | machine | drawn on | quality | ready s | fps | p50 ms | worst 1 % ms | main ms | GPU ms | draws | programs | late pipelines |
++| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
++| /universe | - | webgl | mid | 65.6 | 425.9 | 1.4 | 44.4 | 1.2 | - | 53 | 186 | 19 |
+diff --git a/docs/superpowers/evidence/endless-lane1/before-perf-mid.json b/docs/superpowers/evidence/endless-lane1/before-perf-mid.json
+new file mode 100644
+index 000000000..ee01f71b3
+--- /dev/null
++++ b/docs/superpowers/evidence/endless-lane1/before-perf-mid.json
+@@ -0,0 +1,502 @@
++{
++ "view": {
++  "vw": 1470,
++  "vh": 956,
++  "vdpr": 2
++ },
++ "machine": "",
++ "quality": "mid",
++ "gpu": "default",
++ "report": {
++  "universe": {
++   "route": "/universe",
++   "machine": "",
++   "quality": "mid",
++   "backend": "default",
++   "drawnOn": "webgl",
++   "rows": [
++    {
++     "phase": "load",
++     "secs": 62,
++     "frames": 41572,
++     "fps": 684.8,
++     "p50": 0.3,
++     "p95": 1,
++     "stdev": 5.9,
++     "p99": 31.6,
++     "w1": 41.9,
++     "max": 2260,
++     "over50": 15,
++     "over100": 9,
++     "main": 0,
++     "gpu": null,
++     "loafs": 19,
++     "block": 3573,
++     "links": 178,
++     "pipes": 0,
++     "progs": 167,
++     "mid": 0,
++     "texMB": 289.1,
++     "bufMB": 20.3,
++     "draws": 0,
++     "ktris": 0,
++     "sizes": 2,
++     "worst": [
++      {
++       "ms": 2260,
++       "links": 19,
++       "tex": 13,
++       "texMB": 32.6,
++       "bufMB": 0.1,
++       "glMs": 944,
++       "drawMs": 0,
++       "slow": "getProgramParameter 21ms ",
++       "scripts": [
++        {
++         "ms": 2210,
++         "fn": "Promise.resolve",
++         "url": "src/lib/three/textures.js",
++         "at": 8486
++        }
++       ]
++      },
++      {
++       "ms": 538,
++       "links": 0,
++       "tex": 2,
++       "texMB": 2.5,
++       "bufMB": 0,
++       "glMs": 1,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 523,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      },
++      {
++       "ms": 264,
++       "links": 1,
++       "tex": 31,
++       "texMB": 18.2,
++       "bufMB": 20,
++       "glMs": 166,
++       "drawMs": 0,
++       "slow": "getProgramParameter 131ms ",
++       "scripts": [
++        {
++         "ms": 257,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      },
++      {
++       "ms": 210,
++       "links": 16,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 30,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        },
++        {
++         "ms": 142,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        },
++        {
++         "ms": 34,
++         "fn": "FrameRequestCallback",
++         "url": "",
++         "at": -1
++        }
++       ]
++      },
++      {
++       "ms": 167,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": [
++        {
++         "ms": 139,
++         "fn": "http://127.0.0.1:5294/src/main.jsx",
++         "url": "src/main.jsx",
++         "at": 0
++        }
++       ]
++      }
++     ]
++    },
++    {
++     "phase": "settle",
++     "secs": 4,
++     "frames": 2547,
++     "fps": 631.6,
++     "p50": 1.4,
++     "p95": 2.7,
++     "stdev": 1.1,
++     "p99": 5.4,
++     "w1": 9.3,
++     "max": 24,
++     "over50": 0,
++     "over100": 0,
++     "main": 1,
++     "gpu": null,
++     "loafs": 0,
++     "block": 0,
++     "links": 5,
++     "pipes": 0,
++     "progs": 167,
++     "mid": 0,
++     "texMB": 6.7,
++     "bufMB": 54.2,
++     "draws": 49,
++     "ktris": 74,
++     "sizes": 0,
++     "worst": [
++      {
++       "ms": 24,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 22,
++       "links": 5,
++       "tex": 2,
++       "texMB": 6,
++       "bufMB": 0.1,
++       "glMs": 8,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 21,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 20,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 13,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      }
++     ]
++    },
++    {
++     "phase": "idle",
++     "secs": 6,
++     "frames": 5616,
++     "fps": 934.5,
++     "p50": 1,
++     "p95": 1.5,
++     "stdev": 0.3,
++     "p99": 2.1,
++     "w1": 2.7,
++     "max": 9,
++     "over50": 0,
++     "over100": 0,
++     "main": 0.9,
++     "gpu": null,
++     "loafs": 0,
++     "block": 0,
++     "links": 0,
++     "pipes": 0,
++     "progs": 167,
++     "mid": 0,
++     "texMB": 0,
++     "bufMB": 119,
++     "draws": 52,
++     "ktris": 76,
++     "sizes": 0,
++     "worst": [
++      {
++       "ms": 9,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 8,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 5,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 4,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 4,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      }
++     ]
++    },
++    {
++     "phase": "fly",
++     "secs": 9.2,
++     "frames": 6701,
++     "fps": 727.2,
++     "p50": 1.2,
++     "p95": 2.1,
++     "stdev": 0.8,
++     "p99": 5,
++     "w1": 7.3,
++     "max": 17,
++     "over50": 0,
++     "over100": 0,
++     "main": 1,
++     "gpu": null,
++     "loafs": 0,
++     "block": 0,
++     "links": 0,
++     "pipes": 0,
++     "progs": 167,
++     "mid": 0,
++     "texMB": 2.3,
++     "bufMB": 171.6,
++     "draws": 52,
++     "ktris": 86,
++     "sizes": 0,
++     "worst": [
++      {
++       "ms": 17,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 12,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 12,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 12,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      },
++      {
++       "ms": 11,
++       "links": 0,
++       "tex": 0,
++       "texMB": 0,
++       "bufMB": 0,
++       "glMs": 0,
++       "drawMs": 0,
++       "slow": "",
++       "scripts": []
++      }
++     ]
++    }
++   ],
++   "play": {
++    "phase": "play",
++    "secs": 15.2,
++    "frames": 12317,
++    "fps": 809.1,
++    "p50": 1.1,
++    "p95": 1.9,
++    "stdev": 0.6,
++    "p99": 3,
++    "w1": 5.8,
++    "max": 17,
++    "over50": 0,
++    "over100": 0,
++    "main": 0.9,
++    "gpu": null,
++    "loafs": 0,
++    "block": 0,
++    "links": 0,
++    "pipes": 0,
++    "progs": 167,
++    "mid": 0,
++    "texMB": 2.3,
++    "bufMB": 290.7,
++    "draws": 52,
++    "ktris": 81,
++    "sizes": 0,
++    "worst": [
++     {
++      "ms": 17,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": []
++     },
++     {
++      "ms": 12,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": []
++     },
++     {
++      "ms": 12,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": []
++     },
++     {
++      "ms": 12,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": []
++     },
++     {
++      "ms": 11,
++      "links": 0,
++      "tex": 0,
++      "texMB": 0,
++      "bufMB": 0,
++      "glMs": 0,
++      "drawMs": 0,
++      "slow": "",
++      "scripts": []
++     }
++    ]
++   },
++   "late": 0,
++   "errors": [],
++   "failed": null,
++   "secs": 88,
++   "readyS": 61.9,
++   "heapMB": 188,
++   "slips": {
++    "[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial \"PMREM.Background\" on Mesh": 3,
++    "[frameGuard] shader compiled mid-frame (off-frame): MeshBasicMaterial on Mesh": 6,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"SphericalGaussianBlur\" on Mesh": 3,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"PMREMGGXConvolution\" on Mesh": 3,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial on Mesh": 1,
++    "[frameGuard] shader compiled mid-frame (off-frame): ShaderMaterial \"unspecified\" on Mesh": 1
++   }
++  }
++ }
++}
+\ No newline at end of file
+diff --git a/docs/superpowers/evidence/endless-lane1/before-perf-mid.md b/docs/superpowers/evidence/endless-lane1/before-perf-mid.md
+new file mode 100644
+index 000000000..5e29382ac
+--- /dev/null
++++ b/docs/superpowers/evidence/endless-lane1/before-perf-mid.md
+@@ -0,0 +1,3 @@
++| route | machine | drawn on | quality | ready s | fps | p50 ms | worst 1 % ms | main ms | GPU ms | draws | programs | late pipelines |
++| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
++| /universe | - | webgl | mid | 61.9 | 809.1 | 1.1 | 5.8 | 0.9 | - | 52 | 167 | 0 |
+diff --git a/docs/superpowers/evidence/endless-lane1/before-universe.webp b/docs/superpowers/evidence/endless-lane1/before-universe.webp
+new file mode 100644
+index 000000000..c8eb2ff62
+Binary files /dev/null and b/docs/superpowers/evidence/endless-lane1/before-universe.webp differ
