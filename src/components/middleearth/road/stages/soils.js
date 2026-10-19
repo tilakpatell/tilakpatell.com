@@ -32,7 +32,8 @@ export const SOILS = {
   // Moria: the dwarves’ stone floors, the dust on them
   moria: { greens: [0x2a2826, 0x34312d, 0x403b35], dirt: 0x3a3632, rock: 0x2e2c2a, scans: { grass: 'rock', road: 'stone', steep: 'rock' }, blades: 0 },
   // Lothlórien: gold leaves fallen under the mallorns, the grass between
-  lorien: { greens: [0x4e6a2a, 0x7c8c3a, 0xb8a04a], dirt: 0xa89068, rock: 0x8a8276, scans: { grass: 'leaves', road: 'gravel', steep: 'mossrock' }, blades: 0.5, blade: 0.36 },
+  // (short and close: at half as many the blades stood over the leaves as dark spikes)
+  lorien: { greens: [0x4e6a2a, 0x7c8c3a, 0xb8a04a], dirt: 0xa89068, rock: 0x8a8276, scans: { grass: 'leaves', road: 'gravel', steep: 'mossrock' }, blades: 0.85, blade: 0.28 },
   // the Great River’s banks: grass to a stony shore
   anduin: { greens: [0x3c5c30, 0x58783e, 0x7c904a], dirt: 0x9a8a6a, rock: 0x7a766c, scans: { grass: 'grass', road: 'gravel', steep: 'rock' }, blades: 0.8, blade: 0.5 },
   // the Dead Marshes: black mud and dead tussocks
