@@ -612,7 +612,10 @@ const SCENARIOS = {
     });
     if (OUT) await page.screenshot({ path: `${OUT}/episode-6-vat.png` });
     await page.evaluate(() => window.__C137__.api.act('vat', 'setFreeze', { left: 0.05 }));
-    await toast(page, 'Fake your death in the vat');
+    // (the episode's last step: its closing line is the toast, as the base's and Anatomy Park's are)
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-c137-done') ?? '[]').includes('vat'), null, { timeout: 30000, polling: 100 }).catch(() => {
+      throw new Error('playing dead in the vat didn’t count');
+    });
     check((await page.evaluate(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]'))).includes('vat'), 'the fake death’s achievement wasn’t earned');
     await toast(page, DEALS.outro[0][1]);
     await at(page, 6, 0, 'after the vat');
