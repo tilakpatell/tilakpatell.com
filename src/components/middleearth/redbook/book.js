@@ -8,12 +8,13 @@
 //   stepBook(book, dt) → the next
 //   turnTo(book, page) → the book with that turn begun (or queued)
 //   open(book, 'from' | 'to') → 0…1, how open the spread on show is, for its pop-up
+//   leaf(book) → 0…1 the leaf’s way over, or null
 //   pageFromAddress(id) → the place a ?page= names, or null
 
 import { BACK, PAGES, pageIndex } from './pages';
 
 export const LAST = PAGES.length + BACK.length - 1;
-export const TURN = 0.9; // s a leaf takes to turn
+export const TURN = 1.4; // s a turn takes: the pop-up folds, the leaf goes over, the next stands
 const REST = 1.2; // s the shut book lies before it opens itself
 const OPENING = 1.6; // s the cover takes to swing
 
@@ -46,12 +47,23 @@ export function stepBook(book, dt) {
   return b.queued == null ? landed : turnTo(landed, b.queued);
 }
 
-// how open a spread stands: the one going falls flat as the leaf lifts,
-// the one coming rises as the leaf lands; at rest, the cover’s opening
+// A turn in three parts: the spread going folds flat (the first FOLD of
+// it), the leaf goes over (LEAF), the spread coming stands up (the rest).
+const FOLD = 0.3;
+const LEAF = [0.3, 0.85];
+
+// how open a spread stands: the one going, falling flat before the leaf
+// lifts; the one coming, rising as the leaf lands; at rest, the cover’s
 export function open(book, which = 'from') {
   if (!book.turning) return which === 'to' ? 0 : book.cover;
   const t = book.turning.t;
-  return which === 'to' ? clamp((t - 0.5) * 2) : clamp(1 - t * 2);
+  return which === 'to' ? clamp((t - 0.7) / 0.3) : clamp(1 - t / FOLD);
+}
+
+// the leaf’s way over, 0 lying where it began to 1 where it lands; null at rest
+export function leaf(book) {
+  if (!book.turning) return null;
+  return clamp((book.turning.t - LEAF[0]) / (LEAF[1] - LEAF[0]));
 }
 
 export function pageFromAddress(id) {

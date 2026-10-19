@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LAST, TURN, newBook, open as openOf, pageFromAddress, stepBook, turnTo } from './book';
+import { LAST, TURN, leaf, newBook, open as openOf, pageFromAddress, stepBook, turnTo } from './book';
 import { PAGES } from './pages';
 
 describe('the book', () => {
@@ -64,6 +64,18 @@ describe('the book', () => {
     expect(openOf(b, 'to')).toBe(0);
     const late = stepBook(b, TURN * 0.6);
     expect(openOf(late, 'to')).toBeGreaterThan(0);
+  });
+
+  it('folds the pop-up flat before the leaf lifts, and stands the next once it lands', () => {
+    const b = turnTo(newBook({ page: 0, cover: 1 }), 1);
+    expect(leaf(b)).toBe(0);
+    const folded = stepBook(b, TURN * 0.3);
+    expect(openOf(folded, 'from')).toBeCloseTo(0);
+    expect(leaf(folded)).toBeCloseTo(0);
+    const over = stepBook(b, TURN * 0.85);
+    expect(leaf(over)).toBeCloseTo(1);
+    expect(openOf(over, 'to')).toBeGreaterThan(0);
+    expect(leaf(newBook())).toBeNull();
   });
 
   it('reads ?page= from the address', () => {
