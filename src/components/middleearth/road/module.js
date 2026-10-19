@@ -12,10 +12,11 @@
 // 'mode' { auto, mode, holding } when the clock’s changes, 'progress'
 // { s, stage, local } four times a second, 'resume' { id, name } when a
 // save past the first stage is there to carry on from (the ride waits for
-// the answer), 'menu' {} and 'lore' {} on their keys, 'end' {} at the Havens.
+// the answer), 'menu' {} and 'lore' {} on their keys, 'end' {} at the Havens,
+// 'line' { who, text, at } as one of the cast says something (ambience.js).
 // The world adds: goTo(stageId), setAuto(on), press(name, down) (the touch
 // buttons), carryOn(), restart(), skipToEnd(); and set(s), `s`, `scene` for the checks.
-// In development, window.__ROAD__ = { set(s), info(), world, weather }.
+// In development, window.__ROAD__ = { set(s), info(), world, weather, ambience }.
 
 import * as THREE from 'three';
 import { newClock, step as stepClock } from './clock';
@@ -27,6 +28,7 @@ import { createSky } from './sky';
 import { createLands } from './lands';
 import { createScatter } from './scatter';
 import { createWeather } from './weather';
+import { createAmbience } from './ambience';
 import { loadKit } from '../../../lib/three/kitNodes';
 import { createHouse } from '../../../lib/three/houseNodes';
 import { forgetCast, walker } from './cast';
@@ -92,6 +94,8 @@ export default {
     // rain, snow, ash, fire: a kind a draw, asked for by the stages and their beats
     const weather = createWeather(rt.gfx.renderer, { tier });
     scene.add(weather.group);
+    // the stage’s sound, the beats’ clips and the cast’s lines, on the runtime’s bus
+    const ambience = createAmbience(rt);
     const sun = new THREE.DirectionalLight(0xffffff, 2);
     const hemi = new THREE.HemisphereLight(0xdfe8ff, 0x5a5040, 0.6);
     scene.add(sun, sun.target, hemi, sky.mesh);
@@ -215,6 +219,7 @@ export default {
     const report = (here, dt) => {
       if (here.stage !== stageId) {
         stageId = here.stage;
+        ambience.stage(stageId);
         const st = stageById(stageId);
         if (!quietTitle) tell('stage', { id: st.id, name: st.name, date: st.date, first: clock.s === 0 && st.id === STAGES[0].id });
         quietTitle = false;
@@ -295,6 +300,7 @@ export default {
         lands.step();
         lands.water(dt, daylight);
         weather.update(dt, camera);
+        ambience.update(dt);
         windTime.value += dt;
         scatter.update(camera, dt);
       },
@@ -359,6 +365,7 @@ export default {
         for (const k of kits.values()) k.dispose();
         sky.dispose();
         weather.dispose();
+        ambience.dispose();
         for (const w of cast.values()) w.dispose();
         forgetCast();
         if (typeof window !== 'undefined' && window.__ROAD__?.world === world) delete window.__ROAD__;
@@ -371,7 +378,7 @@ export default {
         const r = rt.gfx.renderer?.info?.render ?? {};
         return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats };
       };
-      window.__ROAD__ = { world, set: (s) => world.set(s), info, weather };
+      window.__ROAD__ = { world, set: (s) => world.set(s), info, weather, ambience };
     }
     return world;
   },
