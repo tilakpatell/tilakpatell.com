@@ -330,7 +330,7 @@ export default function RmWorld({ start = null, onLeave = null }) {
   }, []);
   // the adventure told what's happened (../adventure/), and what it says
   // back: an episode's closing line, and the next one's card (a new
-  // visitor's first, once the world's on)
+  // visitor's first, once C-137's world is on)
   const { feed, intro } = useAdventure();
   const [card, setCard] = useState(null);
   const closeCard = useCallback(() => setCard(null), []);
@@ -343,8 +343,8 @@ export default function RmWorld({ start = null, onLeave = null }) {
     [feed, say],
   );
   useEffect(() => {
-    if (gl === 'on' && intro()) setCard(0);
-  }, [gl, intro]);
+    if (gl === 'on' && !planet && intro()) setCard(0);
+  }, [gl, planet, intro]);
   const tellDone = useCallback((ids) => {
     const names = ids.map((id) => TASKS.find((t) => t.id === id)?.name).filter(Boolean);
     const p = progress(doneRef.current);
@@ -462,7 +462,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   // the story's objective first, and its task for the map's marker (C-137's; a planet keeps its own)
   const story = useAdventure();
   const { dialOpen, lockNote } = story;
-  const objective = objectiveLine(story.objective, prog, { planet: !!planet });
+  const objective = objectiveLine(story.objective, prog, { planet, state: story.state });
   const markRef = useRef(null);
   markRef.current = planet ? prog.next : markedTask(story.state, prog.next);
   // (the same list while the story stands still, so the dial keeps its place in it)

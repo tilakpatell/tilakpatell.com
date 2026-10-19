@@ -202,6 +202,20 @@ const SCENARIOS = {
     },
     { seed: { 'tp-c137-done': ['cable'] } },
   ),
+  // a new visitor who lands on a planet from the map reads what to do there,
+  // and episode 1's card waits for C-137
+  async planet(page) {
+    await c137(page, '#/c-137/birdworld');
+    await page.waitForTimeout(2500);
+    check((await page.locator('.rm-episode').count()) === 0, 'episode 1’s card showed on a planet');
+    const said = (await page.locator('.rm-hud .rm-objective').first().textContent()).trim();
+    check(said !== WIPED.steps[0].text && /Bird|Birdperson/.test(said), `the planet’s objective reads “${said}”`);
+    await page.getByRole('link', { name: 'Home to C-137' }).first().click();
+    await inGarage(page);
+    await page.locator('.rm-episode').waitFor({ timeout: 20000 }).catch(() => {
+      throw new Error('no episode card once home in C-137');
+    });
+  },
   // C-137's toys tick their task when they're played, not when they open
   async toys(page) {
     await c137(page);

@@ -19,7 +19,22 @@ describe('what the HUD shows of the story', () => {
     const all = { next: null, count: 54, total: 54, objective: 'Everything’s done. Wubba lubba dub dub.' };
     expect(objectiveLine(null, all).to).toBe('/universe');
     // (on a planet the line is its own, with its portal home)
-    expect(objectiveLine(null, rest, { planet: true }).to).toBe(null);
+    expect(objectiveLine(null, rest, { planet: { id: 'birdworld' } }).to).toBe(null);
+  });
+
+  it('reads the story’s step on a planet only when the step is there', () => {
+    const own = { next: { id: 'birdworld' }, count: 0, total: 54, objective: 'Knock at Birdperson’s door.' };
+    const wiped = { text: EPISODES[0].steps[0].text, to: null };
+    // episode 1's first step is in C-137: on Bird World the line is Bird World's own
+    expect(objectiveLine(wiped, own, { planet: { id: 'birdworld' }, state: fresh() })).toEqual({ text: 'Knock at Birdperson’s door.', to: null });
+    // in C-137 it's the story's
+    expect(objectiveLine(wiped, own, { state: fresh() })).toEqual(wiped);
+    // the sector's `all`: on a planet whose part is still to do, the story's line; once that part's done, the planet's own
+    const sector = EPISODES.findIndex((e) => e.id === 'sector');
+    const at = { ...fresh(), episode: sector, got: [] };
+    const line = { text: EPISODES[sector].steps[0].text, to: null };
+    expect(objectiveLine(line, own, { planet: { id: 'birdworld' }, state: at, ready: 13 })).toEqual(line);
+    expect(objectiveLine(line, own, { planet: { id: 'birdworld' }, state: { ...at, got: [0] }, ready: 13 }).text).toBe('Knock at Birdperson’s door.');
   });
 
   it('raises an episode’s closing line as a toast, and the next built episode’s card', () => {

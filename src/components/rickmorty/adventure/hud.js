@@ -6,11 +6,22 @@ import { EPISODES } from './episodes';
 import { coordinates, current, dialOpen, lockNote } from './story';
 
 // The objective line: the story's step while there is one, else the
-// checklist's next. In C-137, once nothing's next, the checklist's closing
-// line is the way on: the universe map (a planet's own line has its portal).
-export function objectiveLine(story, prog, { planet = false } = {}) {
-  if (story) return story;
+// checklist's next. On a planet landed on from the map, the story's step only
+// when it's on that planet (an `all`'s part still to do there): anything else
+// can't be done there, so the planet's own line. In C-137, once nothing's
+// next, the checklist's closing line is the way on: the universe map (a
+// planet's own line has its portal).
+export function objectiveLine(story, prog, { planet = null, state = null, ...opts } = {}) {
+  if (story && (!planet || placesOf(state, opts).includes(planet.id))) return story;
   return { text: prog.objective, to: !planet && !prog.next ? '/universe' : null };
+}
+
+// the dial places the story's step is waiting on (an `all`'s parts still to do)
+function placesOf(state, opts) {
+  const at = state && current(state, opts);
+  if (!at) return [];
+  const { step } = at;
+  return (step.type === 'all' ? step.steps.filter((_, i) => !state.got.includes(i)) : [step]).map((s) => s.place).filter(Boolean);
 }
 
 // What an out says: an episode done is its closing line, as a toast (the
