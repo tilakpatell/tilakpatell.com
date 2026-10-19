@@ -17,6 +17,8 @@
 //   chaseReadout(game) → { on, vitals, line }   for the HUD's meter
 //   chaseGoal(game) → { x, z } of the next ring, for the map
 //   chaseStart(game) → { x, y, z, yaw } where a lost run starts again
+//   chaseCalls(events, to) what C-137 does about them, through the calls it
+//     hands over: { fight, now, ship(kind), note(text), complete(id), tell(e), again() }
 //
 // `perks` (the shop's, P13) are taken and, until the shop decides what they
 // do here, none is read.
@@ -134,4 +136,28 @@ export function chaseGoal(g) {
 export function chaseStart(g) {
   const r = g.rings[0];
   return { x: r.x - Math.sin(r.yaw) * BACK, y: r.y, z: r.z - Math.cos(r.yaw) * BACK, yaw: r.yaw };
+}
+
+// start: the patrol turned on the cruiser, and the cruiser says so; won: the
+// patrol let go, the cruiser's word, the fly task ticked and the story told;
+// lost: the patrol let go, its shots cleared, a word, and the run started
+// again before the first ring; wait: why there's no run; off: the patrol let go
+export function chaseCalls(events, to) {
+  for (const e of events) {
+    if (e.type === 'start') {
+      to.fight.chase(true, to.now);
+      to.ship('chase');
+    } else if (e.type === 'won') {
+      to.fight.chase(false, to.now);
+      to.ship('shaken');
+      to.complete('fly');
+      to.tell({ type: 'win', game: 'chase' });
+    } else if (e.type === 'lost') {
+      to.fight.chase(false, to.now);
+      to.fight.clear();
+      to.note(SAYS.lost);
+      to.again();
+    } else if (e.type === 'wait') to.note(SAYS.wait);
+    else if (e.type === 'off') to.fight.chase(false, to.now);
+  }
 }
