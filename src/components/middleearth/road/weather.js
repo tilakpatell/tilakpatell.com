@@ -91,6 +91,7 @@ export function createWeather(renderer, { tier = 'high', outputs = [] } = {}) {
   let seeds = 0;
   const last = new THREE.Vector3();
   let lastSet = false;
+  let disposed = false;
 
   const free = (h) => {
     handles.delete(h);
@@ -100,7 +101,10 @@ export function createWeather(renderer, { tier = 'high', outputs = [] } = {}) {
       h.mesh.geometry.dispose();
       h.mesh.material.dispose();
     }
+    // (each let go once: a handle may be freed by stop or dispose, then again as its build lands)
     h.sim?.dispose();
+    h.sim = null;
+    h.mesh = null;
   };
 
   return {
@@ -115,8 +119,16 @@ export function createWeather(renderer, { tier = 'high', outputs = [] } = {}) {
       const h = { name, em, n, owners, follow, pos: [0, 0, 0], k: 1, on: true, left: 0, state: { t: 0, acc: 0, burst: false }, sim: null, mesh: null, dead: false };
       h.ready = (async () => {
         const sim = await createSim(em, n, { renderer, seed: 1 + ++seeds });
+        h.sim = sim;
+        if (h.dead || disposed) return free(h);
         const [map, sh] = await Promise.all([sheet(em.sheet), shared]);
+        if (h.dead || disposed) return free(h);
         const mesh = await createSpriteMesh(em, sim, { shared: sh, map });
+        if (h.dead || disposed) {
+          mesh.geometry.dispose();
+          mesh.material.dispose();
+          return;
+        }
         // (sprites.js gave it output and a still velocity: keep what the pass has)
         const still = mesh.material.mrtNode;
         if (!outputs.length) mesh.material.mrtNode = null;
@@ -131,12 +143,10 @@ export function createWeather(renderer, { tier = 'high', outputs = [] } = {}) {
           }
           mesh.material.mrtNode = outputs.includes('velocity') && still ? still.merge(mrt(own)) : mrt(own);
         }
-        h.sim = sim;
         h.mesh = mesh;
-        if (h.dead) return free(h);
         mesh.name = `weather:${name}`;
         group.add(mesh);
-      })();
+      })().catch(() => free(h));
       handles.add(h);
       return {
         at(x, y, z) {
@@ -180,6 +190,7 @@ export function createWeather(renderer, { tier = 'high', outputs = [] } = {}) {
     },
     stats: () => [...handles].map((h) => ({ name: h.name, n: h.n, at: h.owners.slice(0, 3).map((v) => Math.round(v * 10) / 10), alive: h.sim?.mode === 'cpu' ? aliveCount(h.sim.pool) : null })),
     dispose() {
+      disposed = true;
       for (const h of [...handles]) free(h);
       for (const p of sheets.values()) p.then((t) => t.dispose());
     },

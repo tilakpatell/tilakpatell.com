@@ -49,7 +49,17 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
       return createWater({ along: { line: r.line, width: r.width + 2 * bank, level: riverLevel(land.field, r) }, kind: 'river', sky, ground: land.field });
     });
     for (const w of waters) group.add(w.mesh);
-    yield;
+    // (a job let go here, its stage dropped before it finished: what it made goes with it)
+    let done = false;
+    try {
+      yield;
+      done = true;
+    } finally {
+      if (!done) {
+        ground.dispose();
+        for (const w of waters) w.dispose();
+      }
+    }
     // what grows on it, placed once (its stage’s seed, so a stage is the same every ride)
     const items = scatter ? placements(rowsFor(id), land, land.road, rngOf(1000 + i), { tier }) : [];
     return { land, ground, group, items, waters };
@@ -84,6 +94,7 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
       scatter?.free(STAGES[i].id);
       built.delete(i);
     }
+    jobs.get(i)?.return();
     jobs.delete(i);
   };
 
@@ -156,8 +167,7 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
       return built.get(current) ?? null;
     },
     dispose() {
-      for (const i of [...built.keys()]) drop(i);
-      jobs.clear();
+      for (const i of [...built.keys(), ...jobs.keys()]) drop(i);
     },
   };
 }

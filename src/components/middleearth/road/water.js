@@ -156,7 +156,7 @@ export function createWater({ area = null, along = null, level = 0, flow = [0, 1
     const nz = noise(vec3(q.add(vec2(0, 0.15)), u.uTime.mul(0.3)), u.uSeed).sub(n0);
     // (faded out with distance, where it would only sparkle in the pixels)
     const toEye = cameraPosition.sub(worldV.add(vec3(0, w.y, 0)));
-    const fine = amp.mul(1.5).add(0.004).mul(25 * (FINE[kind] ?? 1)).mul(smoothstep(140, 25, length(toEye)));
+    const fine = amp.mul(1.5).add(0.004).mul(25 * (FINE[kind] ?? 1)).mul(float(1).sub(smoothstep(25, 140, length(toEye))));
     const n = normalize(vec3(w.sx.add(nx.mul(fine)).negate(), 1, w.sz.add(nz.mul(fine)).negate()));
     const view = normalize(toEye);
     const fres = pow(max(dot(n, view), 0).oneMinus(), 5).mul(0.95).add(0.05);
@@ -167,7 +167,7 @@ export function createWater({ area = null, along = null, level = 0, flow = [0, 1
     const body = mix(vec3(SHALLOW.r, SHALLOW.g, SHALLOW.b), vec3(DEEP.r, DEEP.g, DEEP.b), smoothstep(0.2, 1.6, depth)).mul(u.uLight);
     const c = mix(body, skyCol, fres).add(glint).toVar();
     // foam at the shallow edge, broken by the noise; and on the rise’s crests
-    const edge = smoothstep(0.18, 0.02, depth).mul(smoothstep(0, 0.5, n0));
+    const edge = float(1).sub(smoothstep(0.02, 0.18, depth)).mul(smoothstep(0, 0.5, n0));
     const foam = edge.mul(0.55).add(u.uRise.mul(smoothstep(0.75, 1, w.crest))).clamp(0, 1);
     c.assign(mix(c, vec3(FOAM.r, FOAM.g, FOAM.b).mul(u.uLight), foam.mul(0.8)));
     // (none where the land stands above it; thin at the edge, so it meets the bank softly)

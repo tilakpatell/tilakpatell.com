@@ -167,6 +167,12 @@ const LEVEL_SPAN = 6; // m either side
 const UNDER_BANK = 0.15; // m
 
 export function riverLevel(field, { line, depth, width = 8, bank = width / 2 }) {
+  // (a river of no length: one level, where it is)
+  if (!(line.length > 0)) {
+    const p = line.pointAt(0);
+    const at = field(p.x, p.z) + depth * FILL;
+    return () => at;
+  }
   const n = Math.max(1, Math.ceil(line.length / LEVEL_STEP));
   const each = line.length / n;
   const raw = new Float64Array(n + 1);

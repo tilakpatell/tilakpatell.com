@@ -66,6 +66,7 @@ export function createAmbience(rt) {
   let held = null; // the Ring’s whisper while it lasts
   const clips = new Set();
   const lines = new Set();
+  let epoch = 0; // (bumped by stop: a clip that lands after it is stopped at once)
 
   // the bus once the context runs; the sources made as they are first wanted
   const ready = () => {
@@ -109,7 +110,12 @@ export function createAmbience(rt) {
       BEATS[kind]?.();
     },
     async clip(id, opts) {
+      const mine = epoch;
       const c = await playClip(id, opts);
+      if (c && mine !== epoch) {
+        c.stop?.();
+        return null;
+      }
       if (c) {
         clips.add(c);
         c.ended?.then?.(() => clips.delete(c));
@@ -125,6 +131,7 @@ export function createAmbience(rt) {
     },
     stats: () => ({ state: ctx?.state ?? null, layers: Object.fromEntries([...sources.keys()].map((n) => [n, Math.round(sources.get(n).node.gain.value * 100) / 100])) }),
     stop() {
+      epoch += 1;
       for (const c of clips) c.stop?.();
       for (const l of lines) l.stop?.();
       clips.clear();
