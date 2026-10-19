@@ -204,6 +204,62 @@ if (!THREE_D) {
     check(closed && top !== null && top >= -8 && top <= 120, `toy: with it, the portal takes you to Titan (its top at ${top})`);
     await page.context().close();
   }
+
+  // palette: each game is a Worlds row at its own address; one picked from the palette closes to the compound
+  const groupOf = (page, id) =>
+    page.evaluate((x) => {
+      let li = document.getElementById(x)?.closest('li');
+      while (li) {
+        const g = li.querySelector('.palette-group');
+        if (g) return g.textContent.trim();
+        li = li.previousElementSibling;
+      }
+      return null;
+    }, id);
+  {
+    const page = await fresh();
+    await page.goto(`${BASE}/home`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
+    await page.keyboard.press('Control+k');
+    await page.waitForSelector('#palette-list', { timeout: 20000 });
+    await page.keyboard.type('ricochet');
+    await page.waitForTimeout(400);
+    const picked = await page.evaluate(() => document.getElementById('pal-w-av-training')?.getAttribute('aria-selected'));
+    check(picked === 'true' && (await groupOf(page, 'pal-w-av-training')) === 'Worlds', 'palette: “ricochet” picks Avengers HQ · Ricochet, under Worlds');
+    await page.screenshot({ path: `${OUT}/hq-links-palette.png` });
+    await page.keyboard.press('Enter');
+    const opened = await until(page, '#/avengers/training', true, 60000);
+    const a = await at(page);
+    check(opened && a.title === NAME.cap, 'palette: Enter opens the training center’s game');
+    await page.keyboard.press('Escape');
+    const closed = await until(page, '#/avengers', false);
+    check(closed && (await at(page)).length === a.length, 'palette: Esc replaces the game with /avengers');
+    await page.goBack();
+    await page.waitForTimeout(800);
+    check((await at(page)).hash === '#/home', 'palette: the browser’s Back returns to /home');
+    await page.keyboard.press('Control+k');
+    await page.waitForSelector('#palette-list', { timeout: 20000 });
+    await page.keyboard.type('avengers hq');
+    await page.waitForTimeout(400);
+    check((await page.$('#pal-w-av')) !== null && (await groupOf(page, 'pal-w-av')) === 'Worlds', 'palette: “avengers hq” lists the compound under Worlds');
+    await page.context().close();
+  }
+
+  // jump: from one game to another through the palette, then Esc puts the compound in its place
+  {
+    const page = await fresh();
+    await openFromCard(page, 'cap');
+    await page.keyboard.press('Control+k');
+    await page.waitForSelector('#palette-list', { timeout: 20000 });
+    await page.keyboard.type('thwip');
+    await page.waitForTimeout(400);
+    await page.keyboard.press('Enter');
+    const opened = await until(page, '#/avengers/gate', true, 60000);
+    check(opened && (await at(page)).title === NAME.spidey, 'jump: the palette opens the gate’s game in place of the training center’s');
+    await page.keyboard.press('Escape');
+    check(await until(page, '#/avengers', false), 'jump: Esc puts the compound in its place');
+    await page.context().close();
+  }
 } else {
   const page = await fresh({ three: true });
   // 3d-cold: the game opens at once, before the compound is built; the compound builds when it closes

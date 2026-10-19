@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { matchPath } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import { HQ_HOME, LINKS, backTarget, gameOf, hqState, inHq, linkOf, placeOf } from './links';
+import { HQ_HOME, HQ_PALETTE, LINKS, backTarget, gameOf, hqState, inHq, linkOf, placeOf } from './links';
 import { PLACES } from './rules';
+import { THINGS_TO_DO } from '../../../data/todo';
+import { PAGES } from '../../guide/pages';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 
@@ -57,5 +59,40 @@ describe('the compound’s addresses', () => {
     expect(pats).not.toContain('/avengers');
     for (const to of [HQ_HOME, ...LINKS.map((l) => linkOf(l.id))]) expect(pats.filter((p) => matchPath({ path: p, end: true }, to)), to).toEqual(['/avengers/:place?']);
     expect(app).toMatch(/inHq\(pathname\)\s*\?\s*'\/avengers'/); // pageKey: one page for every address
+  });
+
+  it('names the compound and each game for the palette, at its own address', () => {
+    expect(HQ_PALETTE.map((r) => [r.id, r.label, r.to])).toEqual([
+      ['w-av', 'Avengers HQ', '/avengers'],
+      ['w-av-workshop', 'Avengers HQ · Repulsor Range', '/avengers/workshop'],
+      ['w-av-lawn', 'Avengers HQ · Hold the Lawn', '/avengers/lawn'],
+      ['w-av-training', 'Avengers HQ · Ricochet', '/avengers/training'],
+      ['w-av-range', 'Avengers HQ · Trick Shot', '/avengers/range'],
+      ['w-av-operations', 'Avengers HQ · Infiltration', '/avengers/operations'],
+      ['w-av-lab', 'Avengers HQ · Smash Run', '/avengers/lab'],
+      ['w-av-gate', 'Avengers HQ · Thwip!', '/avengers/gate'],
+      ['w-av-hangar', 'Avengers HQ · Tesseract Run', '/avengers/hangar'],
+    ]);
+    expect(HQ_PALETTE[0].keywords).toMatch(/^marvel avengers compound tower .* world$/);
+    for (const l of LINKS) {
+      const r = HQ_PALETTE.find((x) => x.id === `w-av-${l.slug}`);
+      expect(r.keywords, r.id).toMatch(/^marvel avengers hq game [a-z0-9 -]+$/);
+      expect(r.keywords, r.id).toContain(l.game.toLowerCase().replace('!', ''));
+    }
+  });
+
+  it('is in the command palette under Worlds, none of it an Easter egg', () => {
+    const src = read('../../CommandPalette.jsx');
+    expect(src).toMatch(/\.\.\.HQ_PALETTE\.map\(\(r\) => \(\{ \.\.\.r, group: 'Worlds', icon: RiArrowRightLine, run: go\(r\.to\) \}\)\)/);
+    expect(src).not.toMatch(/id: 'w-av'/);
+  });
+
+  it('is where the checklist and the guide send you for a building', () => {
+    expect(THINGS_TO_DO.find((t) => t.id === 'thwip').to).toBe(linkOf('spidey'));
+    for (const t of THINGS_TO_DO.filter((t) => t.to.startsWith('/avengers/'))) expect(placeOf(t.to.split('/')[2]), t.id).not.toBe(null);
+    const tips = PAGES['/avengers'].tips.map(([, v]) => v).join(' ');
+    const slugs = LINKS.map((l) => l.slug);
+    expect(tips).toContain(`#${HQ_HOME}/`);
+    expect(tips).toContain(`${slugs.slice(0, -1).join(', ')} or ${slugs.at(-1)}`);
   });
 });

@@ -10,6 +10,7 @@ import { isLightRoute, shellStopsFor } from '../../lib/tour';
 import { WORLDS, WORLD_MB } from '../worlds/worlds';
 import { ACHIEVEMENTS } from '../Achievements';
 import { ABOUT } from '../guide/abouts';
+import { linkOf } from '../avengers/world/links';
 
 const SRC = join(import.meta.dirname, '../..');
 
@@ -305,6 +306,11 @@ describe('the player’s worlds', () => {
   it('takes its Flying chapter from the map’s own basics', () => {
     expect(TOURS.player[0]).toMatchObject({ id: 'flying', path: '/universe', brief: '/universe/fly' });
     expect(TOURS.player[0].stops).toBeUndefined();
+  });
+  it('walks into Avengers HQ with the gate a button away, and the Space Stone opening the portal', () => {
+    const stop = WALKED.find((c) => c.id === 'walk-avengers').stops[0];
+    expect(stop.actions).toEqual([{ label: 'Play Thwip! at the gate', to: linkOf('spidey') }]);
+    expect(textOf(stop, ctx)).toMatch(/the Space Stone opens a portal to Titan/);
   });
 });
 
