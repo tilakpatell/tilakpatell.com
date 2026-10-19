@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useRef } from 'react';
+import { useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { SIDES } from './sides';
 import { CORE, SYSTEMS, lightYears, systemById } from './systems';
 import { systemLabel } from './warText';
@@ -18,9 +18,50 @@ const STEP = 1.5; // (a button's or a key's zoom)
 const DRAG = 5; // (px a press moves before it's a drag, not a pick)
 const TURN = 0.006; // (radians a pixel, turning)
 
+// the camera's moves, by what the stage measured (the link's size and inset): made once a link
+function cameraOf(holo) {
+  let fitted = null; // (the last whole-disc pose it was sent to)
+  // the frame the scene draws in: the stage, and past it what the panels cover (its lens shifted, holoScene.js)
+  const frameOf = () => lensOf(holo.size, holo.inset);
+  const norm = (x, y) => {
+    const f = frameOf();
+    return [((x + f.x) / f.W) * 2 - 1, 1 - ((y + f.y) / f.H) * 2];
+  };
+  // (whether a map point is drawn on the free part of the stage, a name's room in from its edges, where the camera's going)
+  const onView = ([x, z], f) => {
+    const [nx, ny, depth] = project(holo.target, [x - CORE[0], 0, z - CORE[1]], { aspect: f.aspect, fov: FOV });
+    const sx = ((nx + 1) / 2) * f.W - f.x;
+    const sy = ((1 - ny) / 2) * f.H - f.y;
+    const { top = 0, right = 0, bottom = 0 } = holo.inset;
+    return depth > 0 && sx > 40 && sx < holo.size.w - right - 40 && sy > top + 30 && sy < holo.size.h - bottom - 30;
+  };
+  const under = (x, y) => planeAt(holo.target, ...norm(x, y), { aspect: frameOf().aspect, fov: FOV });
+  return {
+    frameOf,
+    // the whole disc fitted to the free part (now: no easing)
+    fit(now = false) {
+      const f = frameOf();
+      fitted = WHOLE(f.aspect, FOV, f);
+      (now ? holo.snap : holo.aim)(fitted);
+    },
+    // (whether the camera's still where the last fit sent it: the hands haven't moved it off)
+    onFit: () => Boolean(fitted) && settled(holo.target, fitted),
+    // (about the point under the pointer, or a button's about the camera's own: the free part's middle)
+    zoomBy: (f, x, y) => holo.aim(zoomAt(holo.target, f, x === undefined ? null : under(x, y))),
+    // a course's ends in view, fitted to the free part of the screen (with `ifOff`, only if one of them isn't on it: a pick's,
+    // as on the 2D map)
+    frame(points, { ifOff = false } = {}) {
+      const f = frameOf();
+      if (ifOff && points.every((p) => onView(p, f))) return;
+      holo.aim(fitTo(holo.target, points, { aspect: f.aspect, fov: FOV, fx: f.fx, fy: f.fy }));
+    },
+  };
+}
+
 export default function HoloStage({ holo, stage, war, current, pick, hover, onHover, onChoose, lit, pilots, fought, now }) {
   const root = useRef(null);
   const here = systemById(current);
+  const cam = useMemo(() => cameraOf(holo), [holo]);
   // (the size the scene puts the labels by: the stage's, which is the window's)
   useEffect(() => {
     const el = root.current;
@@ -47,54 +88,20 @@ export default function HoloStage({ holo, stage, war, current, pick, hover, onHo
       holo.inset = { top, right: beside ? Math.max(0, r.right - p.left + 12) : 0, bottom: p && !beside ? Math.max(0, r.bottom - p.top + 8) : 0 };
       holo.blocks = controls.map((c) => c.getBoundingClientRect()).filter((b) => b.width > 0).map((b) => ({ x0: b.left - r.left, y0: b.top - r.top, x1: b.right - r.left, y1: b.bottom - r.top }));
       // (the whole disc fitted again to a window that's changed, unless the hands have moved off it)
-      if (fitted.current && settled(holo.target, fitted.current)) fit(true);
+      if (cam.onFit()) cam.fit(true);
       holo.wake();
     };
     measure();
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
     for (const box of [el, side, ...heads]) if (box) ro?.observe(box);
     return () => ro?.disconnect();
-  }, [holo]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [holo, cam]);
 
-  // the frame the scene draws in: the stage, and past it what the panels cover (its lens shifted, holoScene.js)
-  const frameOf = () => lensOf(holo.size, holo.inset);
-  const fitted = useRef(null); // (the last whole-disc pose it was sent to)
-  const fit = (now = false) => {
-    const f = frameOf();
-    fitted.current = WHOLE(f.aspect, FOV, f);
-    (now ? holo.snap : holo.aim)(fitted.current);
-  };
-  const norm = (x, y) => {
-    const f = frameOf();
-    return [((x + f.x) / f.W) * 2 - 1, 1 - ((y + f.y) / f.H) * 2];
-  };
-  // (whether a map point is drawn on the free part of the stage, a name's room in from its edges, where the camera's going)
-  const onView = ([x, z], f) => {
-    const [nx, ny, depth] = project(holo.target, [x - CORE[0], 0, z - CORE[1]], { aspect: f.aspect, fov: FOV });
-    const sx = ((nx + 1) / 2) * f.W - f.x;
-    const sy = ((1 - ny) / 2) * f.H - f.y;
-    const { top = 0, right = 0, bottom = 0 } = holo.inset;
-    return depth > 0 && sx > 40 && sx < holo.size.w - right - 40 && sy > top + 30 && sy < holo.size.h - bottom - 30;
-  };
-  const under = (x, y) => planeAt(holo.target, ...norm(x, y), { aspect: frameOf().aspect, fov: FOV });
-  // (about the point under the pointer, or a button's about the camera's own: the free part's middle)
-  const zoomBy = (f, x, y) => holo.aim(zoomAt(holo.target, f, x === undefined ? null : under(x, y)));
-  useImperativeHandle(stage, () => ({
-    zoomIn: () => zoomBy(STEP),
-    zoomOut: () => zoomBy(1 / STEP),
-    fit: () => fit(),
-    // a course's ends in view, fitted to the free part of the screen (with `ifOff`, only if one of them isn't on it: a pick's,
-    // as on the 2D map)
-    frame: (points, { ifOff = false } = {}) => {
-      const f = frameOf();
-      if (ifOff && points.every((p) => onView(p, f))) return;
-      holo.aim(fitTo(holo.target, points, { aspect: f.aspect, fov: FOV, fx: f.fx, fy: f.fy }));
-    },
-  }));
+  useImperativeHandle(stage, () => ({ zoomIn: () => cam.zoomBy(STEP), zoomOut: () => cam.zoomBy(1 / STEP), fit: () => cam.fit(), frame: cam.frame }), [cam]);
   // the first frame, the whole disc fitted to the part of the window the side panel leaves (measured with the stage)
   useEffect(() => {
-    fit(true);
-  }, [holo]); // eslint-disable-line react-hooks/exhaustive-deps
+    cam.fit(true);
+  }, [cam]);
 
   // the hands
   const hands = useRef({ pts: new Map(), moved: false, last: null, pinch: null });
@@ -106,11 +113,11 @@ export default function HoloStage({ holo, stage, war, current, pick, hover, onHo
       const r = el.getBoundingClientRect();
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 120 : 1);
       if (!Number.isFinite(dy) || !dy) return;
-      zoomBy(Math.exp(-Math.max(-60, Math.min(60, dy)) * 0.0068), e.clientX - r.left, e.clientY - r.top);
+      cam.zoomBy(Math.exp(-Math.max(-60, Math.min(60, dy)) * 0.0068), e.clientX - r.left, e.clientY - r.top);
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [holo]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cam]);
 
   const local = (e) => {
     const r = root.current.getBoundingClientRect();
@@ -139,7 +146,7 @@ export default function HoloStage({ holo, stage, war, current, pick, hover, onHo
     if (h.pts.size === 2 && h.pinch) {
       const [a, b] = [...h.pts.values()];
       const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
-      if (d > 0 && h.pinch.d > 0) zoomBy(d / h.pinch.d, ...h.pinch.mid);
+      if (d > 0 && h.pinch.d > 0) cam.zoomBy(d / h.pinch.d, ...h.pinch.mid);
       h.pinch.d = d;
       h.moved = true;
       return;
@@ -149,7 +156,7 @@ export default function HoloStage({ holo, stage, war, current, pick, hover, onHo
     if (!h.moved && Math.hypot(p[0] - h.last[0], p[1] - h.last[1]) < DRAG) return;
     h.moved = true;
     h.last = p;
-    holo.snap(h.turning ? turn(holo.target, -dx * TURN, dy * TURN) : pan(holo.target, dx, dy, { fov: FOV, h: frameOf().H }));
+    holo.snap(h.turning ? turn(holo.target, -dx * TURN, dy * TURN) : pan(holo.target, dx, dy, { fov: FOV, h: cam.frameOf().H }));
   };
   const onPointerUp = (e) => {
     const h = hands.current;
