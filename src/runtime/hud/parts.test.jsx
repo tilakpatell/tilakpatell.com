@@ -8,6 +8,10 @@ import QuestList from './QuestList';
 import Toast from './Toast';
 import MiniMap from './MiniMap';
 import { RendererLine, VoicesItem } from './Menu';
+import Cluster from './Cluster.jsx'; // (named in full: ./cluster.js is beside it)
+import Vitals from './Vitals';
+import Arms from './Arms';
+import Powers from './Powers';
 import { rendererReport } from '../backend';
 
 const text = (el) => renderToStaticMarkup(el).replace(/<[^>]+>/g, '');
@@ -54,6 +58,12 @@ describe('the players chip', () => {
   it('says “N others here” once you’re in', () => {
     expect(text(<PlayersChip count={3} noun="drivers" />)).toBe('3 others here');
     expect(text(<PlayersChip count={1} />)).toBe('1 other here');
+  });
+  it('counts your allies among them, and says so on the chip', () => {
+    expect(text(<PlayersChip count={3} allies={1} />)).toBe('3 others here · 1 ally');
+    expect(text(<PlayersChip count={1} allies={1} />)).toBe('1 other here · your ally');
+    expect(renderToStaticMarkup(<PlayersChip count={3} allies={1} />)).toContain('data-allies="1"');
+    expect(renderToStaticMarkup(<PlayersChip count={3} />)).not.toContain('data-allies');
   });
   it('is nothing where there’s no going online', () => {
     expect(renderToStaticMarkup(<PlayersChip available={false} />)).toBe('');
@@ -119,5 +129,53 @@ describe('the Menu’s renderer line', () => {
 
   it('says nothing with no world up', () => {
     expect(renderToStaticMarkup(<RendererLine />)).toBe('');
+  });
+});
+
+describe('the flight cluster', () => {
+  const count = (html, cls) => (html.match(new RegExp(`class="([^"]* )?${cls}( [^"]*)?"`, 'g')) ?? []).length;
+  it('holds its row and what goes over it', () => {
+    const html = renderToStaticMarkup(
+      <Cluster label="Flight" over={<i id="o" />}>
+        <b id="c" />
+      </Cluster>,
+    );
+    expect(html).toContain('role="group"');
+    expect(html).toContain('aria-label="Flight"');
+    expect(html).toMatch(/class="hud-cluster-over"><i id="o">/);
+    expect(html).toMatch(/class="hud-cluster-row"><b id="c">/);
+  });
+  it('draws the vitals with their label, keeping a world’s extra lines', () => {
+    const el = (
+      <Vitals label="Deflectors">
+        <span className="x" />
+      </Vitals>
+    );
+    const html = renderToStaticMarkup(el);
+    expect(text(el)).toContain('Deflectors');
+    expect(html).toContain('class="x"');
+    expect(count(html, 'hud-vitals')).toBe(1);
+    expect(count(html, 'hud-vitals-n')).toBe(1);
+  });
+  it('draws the arms: three lines and eight pips, the keys when asked', () => {
+    const html = renderToStaticMarkup(<Arms keys />);
+    expect(count(html, 'hud-arms-line')).toBe(3);
+    expect(count(html, 'hud-arms-pip')).toBe(8);
+    expect(text(<Arms keys />)).toMatch(/R.*1 2 3/);
+    expect(text(<Arms />)).not.toContain('1 2 3');
+  });
+  it('draws a power tile per slot, its name and key in its label', () => {
+    const slots = [
+      { slot: 'primary', id: 'focus', name: 'Force Focus', short: 'Force', about: 'Time slows.', key: 'G', icon: <circle r="2" /> },
+      { slot: 'ultimate', id: 'salvo', name: 'Torpedo salvo', short: 'Torpedoes', about: 'Four away.', key: 'X', icon: <path d="M0 0" /> },
+    ];
+    const html = renderToStaticMarkup(<Powers slots={slots} data={{ ship: 'xwing' }} placement="cluster" />);
+    expect(count(html, 'hud-power')).toBe(2);
+    expect(html).toContain('aria-label="Force Focus (G)"');
+    expect(html).toMatch(/data-slot="primary"[^>]*data-phase="ready"/);
+    expect(html).toMatch(/data-slot="ultimate"[^>]*data-phase="charging"/);
+    expect(html).toContain('data-ship="xwing"');
+    expect(html).toContain('data-place="cluster"');
+    expect(renderToStaticMarkup(<Powers slots={[]} />)).toBe('');
   });
 });

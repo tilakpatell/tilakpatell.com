@@ -3,7 +3,10 @@
 // films begin. Pure data, by system id: the episode line (the film's own,
 // 'A Star Wars Story' for Rogue One, or a show's title and chapter), the
 // mission's title, and three paragraphs in the crawl's voice, the last
-// trailing off into the mission itself.
+// trailing off into the mission itself. (The charted worlds' are
+// charted/crawls.js's, joined here.)
+
+import { CHARTED_CRAWLS } from './charted/crawls';
 
 export const CRAWLS = {
   tatooine: {
@@ -229,4 +232,5 @@ export const CRAWLS = {
       'Paid in krill and a place to stay, the Mandalorian and Cara Dune must teach the farmers to fight, dig a trap in the pond, and bring the walker down when the raiders come in the night…',
     ],
   },
+  ...CHARTED_CRAWLS,
 };

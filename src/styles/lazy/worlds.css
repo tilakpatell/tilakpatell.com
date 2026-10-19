@@ -1,16 +1,80 @@
 /* Split out of styles/extras.css so it loads with the components that use it
    (each imports it), not with every page. */
-.backdrop-me[data-variant='shire'] { --me-sky-top: #fbfaf3; --me-sky-bottom: #f1edd6; --me-far: #dcdfca; --me-mid: #bccba0; --me-near: #93b065; --me-mist: #fbfaf3; }
-html[data-mode='dark'] .backdrop-me[data-variant='shire'] { --me-sky-top: #09090b; --me-sky-bottom: #11160c; --me-far: #1b2215; --me-mid: #233019; --me-near: #2c3f1e; --me-mist: #09090b; }
-.backdrop-me[data-variant='mordor'] { --me-sky-top: #fcfaf9; --me-sky-bottom: #f6e0d2; --me-far: #ddcdc6; --me-mid: #ad958d; --me-near: #3b2a26; --me-mist: #fcfaf9; }
-html[data-mode='dark'] .backdrop-me[data-variant='mordor'] { --me-sky-top: #09090b; --me-sky-bottom: #2c0e05; --me-far: #1d120e; --me-mid: #170d0a; --me-near: #0c0605; --me-mist: #09090b; }
-.me-eye, .me-lava { animation: me-flicker 3s ease-in-out infinite; }
+/* Middle-earth’s drawn backdrop (worlds/Backdrops.jsx). The Shire at golden
+   hour, warm and lighter with distance, and on a summer night under the moon;
+   Mordor under ash, and under fire with a blue-black sky. */
+.backdrop-me[data-variant='shire'] {
+  --me-sky-mid: rgb(246 223 160 / 0.5); --me-sky-low: rgb(236 190 122 / 0.72); --me-sun: #fff4d4; --me-glow: #ffe7a8;
+  --me-peaks: #d9d3b8; --me-far: #d6d79f; --me-tree: #8e9c5e; --me-tree-hi: #b0b878; --me-water: #efdda6; --me-glint: #fff3cc; --me-mill: #b9ae85;
+  --me-mid-hi: #c9d692; --me-mid: #b1c37a; --me-near-hi: #a2be69; --me-near: #88a953; --me-hedge: #6a963c;
+  --me-hill-hi: #8ab354; --me-hill: #5f8c36; --me-oak: #4e6b2f; --me-oak-hi: #658a39; --me-trunk: #3f2a1a;
+  --me-stone: #b8a27a; --me-tick: #8e7a55; --me-plank: #2f5a2e; --me-plank-2: #376536; --me-seam: #22401f; --me-iron: #2a2418;
+  --me-knob: #c9a227; --me-knob-hi: #f1d58a; --me-frame: #6f4a2b; --me-pane: #ffe7a8; --me-lamp: #e9dcb4;
+  --me-road: #8c6a40; --me-fence: #f3e9cc; --me-ground-hi: #6f9a3f; --me-ground: #5a8633; --me-smoke: #b8ad94; --me-rim: transparent;
+  --me-star: #f3ecd4; --me-moon: #ede3c4; --me-firefly: #f5e3a1;
+  --me-burrow-1: #e2b548; --me-burrow-2: #a23e2b; --me-burrow-3: #3e5f8a; --me-burrow-4: #3c6b35;
+  --me-flower-1: #d9534f; --me-flower-2: #f2c14e; --me-flower-3: #8e6bbf; --me-lantern-1: #f2c14e; --me-lantern-2: #e07a4f; --me-lantern-3: #f5e3a1;
+}
+html[data-mode='dark'] .backdrop-me[data-variant='shire'] {
+  --me-sky-mid: rgb(24 34 58 / 0.3); --me-sky-low: rgb(24 34 58 / 0.85);
+  --me-peaks: #18202c; --me-far: #1f2b22; --me-tree: #141c15; --me-tree-hi: #6b6a4a; --me-water: #2a3533; --me-glint: #c9d3c0; --me-mill: #2a3428;
+  --me-mid-hi: #1e2b1d; --me-mid: #1a2519; --me-near-hi: #172416; --me-near: #142013; --me-hedge: #101a10;
+  --me-hill-hi: #14220f; --me-hill: #0f190e; --me-oak: #0b130b; --me-oak-hi: #0f1a0e; --me-trunk: #080d07;
+  --me-stone: #4a4636; --me-tick: #2e2c22; --me-plank: #1f3a22; --me-plank-2: #24432a; --me-seam: #132514; --me-iron: #0b0d08;
+  --me-knob: #e2be5c; --me-knob-hi: #fff0b8; --me-frame: #3d2c1c; --me-pane: #ffc96b; --me-lamp: #ffd27a;
+  --me-road: #5a5038; --me-fence: #2a3122; --me-ground-hi: #0e170d; --me-ground: #0b130a; --me-smoke: #7f8c7c; --me-rim: rgb(201 211 192 / 0.22);
+}
+.backdrop-me[data-variant='mordor'] {
+  --me-sky-top: rgb(207 199 188 / 0.85); --me-sky-mid: #d6b8a0; --me-sky-low: #d9a27a; --me-glow: #c8763e; --me-heat: #e08a50;
+  --me-ridge-far: #a39a8f; --me-ridge: #8f857b; --me-doom: #5e5650; --me-doom-hi: #7a7068; --me-crater: #ff8a1e;
+  --me-lava-0: #ffb347; --me-lava-1: #ff7a1a; --me-lava-2: #d2421a; --me-seam-glow: 0.15;
+  --me-smoke: rgb(154 147 138 / 0.32); --me-smoke-lit: transparent;
+  --me-tower: #2a2624; --me-rim: transparent; --me-window: transparent; --me-slit: #080504; --me-lash: rgb(255 122 26 / 0.45); --me-fire: #ff7a1a;
+  --me-iris-0: #ffb347; --me-iris-1: #ff7a1a; --me-iris-2: #a8230e;
+  --me-plain-hi: #bdb5aa; --me-plain: #ada498; --me-gate: #3a3431; --me-gate-hi: #4a423e; --me-rivet: #5c5450; --me-teeth: #2a2624; --me-mote: #6b655e;
+}
+html[data-mode='dark'] .backdrop-me[data-variant='mordor'] {
+  --me-sky-top: rgb(22 32 38 / 0.55); --me-sky-mid: #2b1a14; --me-sky-low: #7a4524; --me-glow: #b0612a; --me-heat: #d2421a;
+  --me-ridge-far: #2b2522; --me-ridge: #1f1a18; --me-doom: #120e0c; --me-doom-hi: #2a1a14; --me-crater: #ff8a1e;
+  --me-lava-0: #ffe08a; --me-lava-1: #ff8a1e; --me-lava-2: #d2421a; --me-seam-glow: 0.35;
+  --me-smoke: rgb(22 16 14 / 0.9); --me-smoke-lit: rgb(150 50 16 / 0.55);
+  --me-tower: #0a0807; --me-rim: #4e170b; --me-window: #ff8a1e; --me-lash: rgb(255 138 30 / 0.8);
+  --me-iris-0: #ffe9a3; --me-iris-1: #ff7a1a; --me-iris-2: #a8230e;
+  --me-plain-hi: #1c1613; --me-plain: #15110f; --me-gate: #0f0c0b; --me-gate-hi: #171210; --me-rivet: #2e2724; --me-teeth: #080605; --me-mote: #ffb347;
+}
+/* a wide screen’s hero crops the sky off the top of the drawing, so it fades in
+   there as well as out at the foot (the foot as home.css fades every skyline) */
+.hero-backdrop.backdrop-me {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 24px, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 24px, #000 55%, transparent 100%);
+}
+.backdrop-me .me-night, html[data-mode='dark'] .backdrop-me .me-day { display: none; }
+html[data-mode='dark'] .backdrop-me .me-night { display: inline; }
+html[data-mode='dark'] .backdrop-me .me-burrows { opacity: 0.4; }
+/* light text on the night needs less of the page’s colour over the land */
+html[data-mode='dark'] .backdrop-me .me-wash { opacity: 0.6; }
+.me-smoke { stroke-dasharray: 9 7; animation: me-smoke 6s linear infinite; }
+.me-twinkle { animation: me-twinkle 8s ease-in-out infinite; }
+/* the Eye holds still by day and pulses by night */
+.me-eye { transform-box: fill-box; transform-origin: center; }
+html[data-mode='dark'] .me-eye { animation: me-eye 6s ease-in-out infinite; }
+.me-lava { animation: me-flicker 3s ease-in-out infinite; }
+.me-cloud { animation: me-drift 30s ease-in-out infinite alternate; }
+/* ash falls by day; by night the motes are embers, and rise */
+.me-mote { animation: me-fall 9s linear infinite; }
+html[data-mode='dark'] .me-mote { animation-name: me-rise; }
+@keyframes me-smoke { to { stroke-dashoffset: -32; } }
+@keyframes me-twinkle { 50% { opacity: 0.25; } }
+@keyframes me-eye { 50% { transform: scale(1.05); } }
+@keyframes me-drift { to { transform: translateX(40px); } }
+@keyframes me-fall { from { transform: translate(0, -30px); opacity: 0; } 20%, 80% { opacity: 0.7; } to { transform: translate(-24px, 70px); opacity: 0; } }
+@keyframes me-rise { from { transform: translate(0, 40px); opacity: 0; } 20%, 70% { opacity: 0.9; } to { transform: translate(18px, -120px); opacity: 0; } }
 .backdrop-cy[data-faction='autobot'] { --cy-light: #2fb7e6; --cy-far: #e3e8ef; --cy-mid: #cfd7e2; --cy-near: #b9c4d3; }
 .backdrop-cy[data-faction='decepticon'] { --cy-light: #9a6cf0; --cy-far: #e6e3ee; --cy-mid: #d3cee0; --cy-near: #bdb6d0; }
 html[data-mode='dark'] .backdrop-cy[data-faction='autobot'] { --cy-light: #4fd8ff; --cy-far: #121a26; --cy-mid: #0e151f; --cy-near: #0a0f16; }
 html[data-mode='dark'] .backdrop-cy[data-faction='decepticon'] { --cy-light: #b48cff; --cy-far: #171326; --cy-mid: #120f1f; --cy-near: #0c0a15; }
 .cy-blink { animation: cy-blink 2.8s steps(2, jump-none) infinite; }
-@media (prefers-reduced-motion: reduce) { .me-eye, .me-lava, .cy-blink { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .me-smoke, .me-twinkle, html[data-mode='dark'] .me-eye, .me-lava, .me-cloud, .cy-blink { animation: none; } .backdrop-me .me-mote { display: none; } }
 .world-switcher { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
 .world-switcher-label { margin-right: 0.3rem; font: 600 0.72rem/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 .world-photos { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr); }

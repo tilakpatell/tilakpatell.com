@@ -5,6 +5,7 @@ import { AchievementProvider, useAchievements } from './components/Achievements'
 import { FunProvider } from './fun/FunProvider';
 import OnlineProvider from './components/universe/online/OnlineProvider';
 import EconomyProvider from './components/universe/EconomyProvider';
+import SkillsProvider from './components/hangar/skills/SkillsProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import Nav from './components/Nav';
 import Footer from './components/Footer';
@@ -41,6 +42,7 @@ const GalaxyMission = lazy(() => import('./pages/GalaxyMission'));
 const GalaxySurface = lazy(() => import('./pages/GalaxyLanding'));
 const Music = lazy(() => import('./pages/Music'));
 const MiddleEarth = lazy(() => import('./pages/MiddleEarth'));
+const TheRoad = lazy(() => import('./pages/TheRoad'));
 const Scranton = lazy(() => import('./pages/Scranton'));
 const Avengers = lazy(() => import('./pages/Avengers'));
 const Cybertron = lazy(() => import('./pages/Cybertron'));
@@ -413,6 +415,7 @@ function Shell() {
   return (
     // (the wallet outside the link to the other pilots: the roster reads it too)
     <EconomyProvider>
+    <SkillsProvider>
     <OnlineProvider>
       <div className="backdrop" aria-hidden="true" />
       <Ambience />
@@ -445,6 +448,7 @@ function Shell() {
                 <Route path="/galaxy/:system/surface" element={<GalaxySurface />} />
                 <Route path="/fly/:planet?" element={<Fly />} /> {/* planet flight */}
                 <Route path="/music" element={<Music />} />
+                <Route path="/middle-earth/road" element={<TheRoad />} />
                 <Route path="/middle-earth/:place?" element={<MiddleEarth />} />
                 <Route path="/scranton" element={<Scranton />} />
                 <Route path="/avengers" element={<Avengers />} />
@@ -481,6 +485,7 @@ function Shell() {
         <IntroJump />
       </ErrorBoundary>
     </OnlineProvider>
+    </SkillsProvider>
     </EconomyProvider>
   );
 }

@@ -2,16 +2,24 @@
 // road east, as the films begin in the Shire and end at the Mountain, then
 // pulls back to frame the whole map for the hub. Each key is over a stop of
 // the road (./road.js) where the sheet has it; the hub’s framing and zoom
-// are the ones MapBackdrop3D gives the whole map. `t` is in seconds.
+// are the ones the stops’ bounds give (./mapFraming.js). `t` is in seconds.
+import { framing } from './mapFraming';
+import { STOPS } from './road';
+
+const over = (id) => {
+  const s = STOPS.find((x) => x.id === id);
+  return [s.x, s.y];
+};
+
 export const FLIGHT = [
-  { t: 0, at: [186, 196], zoom: 1.1 }, // Hobbiton
-  { t: 1.0, at: [262, 200], zoom: 1.25 }, // Bree
-  { t: 1.8, at: [388, 176], zoom: 1.45 }, // Rivendell
-  { t: 2.6, at: [382, 258], zoom: 1.6 }, // Moria
-  { t: 3.3, at: [438, 282], zoom: 1.6 }, // Lothlórien
-  { t: 4.0, at: [486, 346], zoom: 1.5 }, // Amon Hen
-  { t: 4.7, at: [660, 420], zoom: 1.3 }, // Mount Doom
-  { t: 5.5, at: [452, 322], zoom: 3.05 }, // the hub
+  { t: 0, at: over('hobbiton'), zoom: 1.1 },
+  { t: 1.0, at: over('bree'), zoom: 1.25 },
+  { t: 1.8, at: over('rivendell'), zoom: 1.45 },
+  { t: 2.6, at: over('moria'), zoom: 1.6 },
+  { t: 3.3, at: over('lorien'), zoom: 1.6 },
+  { t: 4.0, at: over('amon-hen'), zoom: 1.5 },
+  { t: 4.7, at: over('mount-doom'), zoom: 1.3 },
+  { t: 5.5, ...framing() }, // the hub
 ];
 
 export const FLIGHT_MS = FLIGHT.at(-1).t * 1000;

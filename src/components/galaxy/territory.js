@@ -72,7 +72,8 @@ export function cellsOf(points, { core = CORE, rim = RIM } = {}) {
       // (nearer me than o: 2p·(o − me) ≤ |o|² − |me|²)
       poly = clip(poly, [x1 - x0, z1 - z0], (x1 * x1 + z1 * z1 - x0 * x0 - z0 * z0) / 2, o.id);
     }
-    for (const [n, c] of disc) poly = clip(poly, n, c, null);
+    // (a system past the disc, Kamino, holds a pocket of space of its own beyond it: the disc doesn't cut it off)
+    if (Math.hypot(x0 - core[0], z0 - core[1]) <= rim) for (const [n, c] of disc) poly = clip(poly, n, c, null);
     // (a corner cut exactly on a line comes out twice: the second's the one whose edge goes on)
     poly = poly.filter((v, i) => {
       const w = poly[(i + 1) % poly.length];

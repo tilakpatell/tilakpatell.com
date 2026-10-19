@@ -246,7 +246,7 @@ function World({ attempt, onStatus }) {
             <Menu
               className="earth-menu"
               todo={{ label: 'Passport', done: count, total: STAMPS.length, onOpen: () => setPassport(true) }}
-              players={{ available: trav.available, on: trav.on, count: trav.count, onJoin: trav.join }}
+              players={{ available: trav.available, on: trav.on, count: trav.count, allies: trav.allies, onJoin: trav.join }}
               lore={LORE}
               way={wayOut(pathname)}
             />

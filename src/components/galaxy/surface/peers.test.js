@@ -44,4 +44,28 @@ describe('the others’ blades', () => {
     expect(seen.updates.at(-1).eye).toBe(eye);
     peers.dispose();
   });
+
+  it('give an ally of yours a new callsign tag when the alliance is made or ends', () => {
+    const parent = new THREE.Group();
+    const peers = createPeers({ parent, placer: {}, getCast: () => null });
+    const walk = () => ({ world: 'hoth', at: performance.now(), lead: { who: 'luke', x: 0, y: 0, z: 0, yaw: 0, speed: 0 }, mate: null, ride: null });
+    const p = { id: 'p', name: 'Pilot', ally: 'none', walk: walk() };
+    const net = { peers: new Map([['p', p]]) };
+    const tags = () => parent.getObjectByName('peers').children.filter((o) => o.isSprite);
+    peers.update(net, 'hoth', 1 / 30);
+    const [first] = tags();
+    expect(first).toBeTruthy();
+    // allies now: the tag is drawn again (in the ally green)
+    p.ally = 'ally';
+    p.walk = walk();
+    peers.update(net, 'hoth', 1 / 30);
+    expect(tags()).toHaveLength(1);
+    expect(tags()[0]).not.toBe(first);
+    // the same alliance a frame on: the same tag
+    const [second] = tags();
+    p.walk = walk();
+    peers.update(net, 'hoth', 1 / 30);
+    expect(tags()[0]).toBe(second);
+    peers.dispose();
+  });
 });

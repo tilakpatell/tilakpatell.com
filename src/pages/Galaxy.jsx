@@ -27,6 +27,8 @@ import { groundEffects } from '../components/galaxy/siteWar';
 import { mine, onWar, warNow } from '../components/galaxy/warState';
 import { SIDE_KEY, current as currentOath, readAllegiance, setTheatre, suggestSide, swear } from '../components/galaxy/allegiance';
 import { HERO_KEY, readHero } from '../components/galaxy/heroes';
+import { readCrewStyle } from '../components/galaxy/heroStyle';
+import { localSaves } from '../runtime/local';
 import { RANKS, rankOf } from '../components/galaxy/ranks';
 import GalaxyView from '../components/galaxy/GalaxyView';
 import GalaxyPanel from '../components/galaxy/GalaxyPanel';
@@ -38,8 +40,10 @@ import '../components/galaxy/galaxy.css';
 import { thud } from '../lib/sfx';
 import { createImpacts } from '../lib/impact';
 
-// the Shipyard (the universe map's own), in its own chunk: opened with H
-const Shipyard = lazy(() => import('../components/universe/shipyard/Shipyard'));
+// the Hangar (the crew, the arms, the powers and the universe map's own shipyard), in its own chunk: opened with H, or C on the crew
+const HangarPanel = lazy(() => import('../components/hangar/HangarPanel'));
+import { TAB_KEY, readTab } from '../components/hangar/hangarRules';
+import { useSkills } from '../components/hangar/skills/useSkills';
 // a bump's and a crash's thud, by the hit law (lib/impact.js)
 const knockLaw = createImpacts();
 
@@ -181,6 +185,13 @@ export default function Galaxy() {
   // the ship as it's fitted, and the hull it flies: stock, or its garage build; and the Shipyard (H) that changes them, which is the
   // universe map's, with the same saves (shipyard/useShipyardPage.js)
   const { loadout, build, tune, garage, dropped, yard, setYard, applyDraft, sellPart, yardNote, live, yardSaves } = useShipyardPage({ ship, unlocked });
+  const { fx: skillFx, picks: powerPicks } = useSkills(); // (the skill tree's effects and the powers picked, the Hangar's: on the ship as its loadout is)
+  // the Hangar's tab, the one last used (this browser's: hangarRules.js's TAB_KEY)
+  const [hangarTab, setHangarTabState] = useState(() => readTab(local.get(TAB_KEY)));
+  const setHangarTab = useCallback((t) => {
+    setHangarTabState(t);
+    local.set(TAB_KEY, t);
+  }, []);
   useEffect(() => setLoadout(loadout), [setLoadout, loadout]);
   useEffect(() => tellBuild?.(build), [tellBuild, build]);
   const [at, setAt] = useState(null); // what in the system you're at (its planet, the Death Star…)
@@ -332,7 +343,7 @@ export default function Galaxy() {
         timer.current = setTimeout(() => dove.current?.(), DIVE_MAX); // (a dive that never ends still lands)
       };
       runtime()
-        .handover(surfaceModule, surfaceProps(id, { ship, loadout, build, net: online.client, reduced, effects: groundEffects(id, oathKept, Date.now()) }), host, { fade: 900, held: true, after, onBuilt })
+        .handover(surfaceModule, surfaceProps(id, { ship, loadout, build, net: online.client, reduced, effects: groundEffects(id, oathKept, Date.now()), crew: readCrewStyle(localSaves(), local.get(HERO_KEY)) }), host, { fade: 900, held: true, after, onBuilt })
         .catch(() => false)
         .then(() => after)
         .then(() => {
@@ -527,6 +538,8 @@ export default function Galaxy() {
         loadout={loadout}
         build={build}
         tune={tune}
+        skillFx={skillFx}
+        powerPicks={powerPicks}
         net={online.client}
         frozen={Boolean(leaving) || intro || yard}
         hangar={yard}
@@ -545,9 +558,11 @@ export default function Galaxy() {
       <EarnNote note={yardNote ?? earned} />
       {ship && !leaving && (
         <Suspense fallback={null}>
-          <Shipyard
+          <HangarPanel
             open={yard}
             onOpen={openYard}
+            tab={hangarTab}
+            onTab={setHangarTab}
             enabled={yard || (!mapOpen && !jumping && !intro)}
             ship={ship}
             shipName={crew?.ship ?? ''}
@@ -557,7 +572,6 @@ export default function Galaxy() {
             dropped={dropped}
             onApply={applyDraft}
             onSell={sellPart}
-            hint="Secondary and ordnance fire on the universe map; here the crew’s powers take their place."
           />
         </Suspense>
       )}
@@ -577,7 +591,14 @@ export default function Galaxy() {
         at={at}
         ship={ship}
         onShip={pickShip}
-        onHangar={ship && !jumping ? () => openYard(true) : null}
+        onHangar={
+          ship && !jumping
+            ? () => {
+                setHangarTab('shipyard'); // (the panel's link says the shipyard: the Hangar opens on it)
+                openYard(true);
+              }
+            : null
+        }
         onMap={() => setMapOpen(true)}
         onGo={(id) => view.current.goTo(id)}
         onLeave={() => leave('/universe/starwars', { jump: true })}

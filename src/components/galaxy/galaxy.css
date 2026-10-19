@@ -266,8 +266,8 @@
   display: grid;
   grid-template-rows: auto auto 1fr;
   gap: 0.6rem;
-  width: min(1180px, 100%);
-  height: min(860px, 100%);
+  width: min(1720px, 100%); /* (the window's, all but its margin: the map is the biggest square the rest has, .holomap-map) */
+  height: 100%;
   padding: 1rem 1.1rem 1.1rem;
   border: 1px solid rgb(127 214 255 / 0.35);
   border-radius: 18px;
@@ -277,6 +277,17 @@
   overflow: hidden;
 }
 .holomap-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+/* a wide window: the era chips on the title's row, between it and the find, so the map has that row's height too (the
+   header's three are the frame's own cells there: its box goes, its words and buttons stay) */
+@media (min-width: 1320px) {
+  .holomap-frame { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-rows: auto minmax(0, 1fr); column-gap: 1.25rem; align-items: center; }
+  .holomap-head { display: contents; }
+  .holomap-head > div:first-child { grid-area: 1 / 1; }
+  .holomap-eras { grid-area: 1 / 2; }
+  .holomap-find { grid-area: 1 / 3; }
+  .holomap-close { grid-area: 1 / 4; }
+  .holomap-body { grid-area: 2 / 1 / 3 / -1; align-self: stretch; height: 100%; }
+}
 /* the find (HoloMap.jsx, mapKeys.js): a field between the title and the close button, its matches under it */
 .holomap-find { position: relative; margin-left: auto; }
 .holomap-find input { width: min(260px, 42vw); padding: 0.4rem 0.75rem; border: 1px solid rgb(127 214 255 / 0.35); border-radius: 999px; background: rgb(2 8 20 / 0.9); color: #fff; font-size: 0.82rem; }
@@ -410,15 +421,17 @@
   background: repeating-linear-gradient(0deg, rgb(127 214 255 / 0.035) 0 1px, transparent 1px 3px);
 }
 .holomap-grid { stroke: rgb(127 214 255 / 0.07); stroke-width: calc(0.02 * var(--u)); }
-.holomap-region { fill: none; stroke: rgb(127 214 255 / 0.28); stroke-width: calc(0.035 * var(--u)); stroke-dasharray: calc(0.12 * var(--u)) calc(0.1 * var(--u)); }
+.holomap-region { fill: none; stroke: rgb(127 214 255 / 0.2); stroke-width: calc(0.035 * var(--u)); stroke-dasharray: calc(0.12 * var(--u)) calc(0.1 * var(--u)); }
 .holomap-region[data-id='deep'] { stroke: rgb(255 214 150 / 0.45); stroke-dasharray: none; }
-.holomap-region[data-id='outer'] { stroke: rgb(127 214 255 / 0.4); stroke-dasharray: none; }
+.holomap-region[data-id='outer'] { stroke: rgb(127 214 255 / 0.32); stroke-dasharray: none; }
 .holomap-unknown { fill: rgb(0 0 0 / 0.45); stroke: rgb(127 214 255 / 0.15); stroke-width: calc(0.03 * var(--u)); }
 /* (the size and spacing are set in HoloMap.jsx, from the box's: 11.5 px on screen at any zoom) */
 .holomap-region-name { fill: rgb(191 234 255 / 0.62); font-family: var(--font-mono); text-anchor: middle; text-transform: uppercase; }
 .holomap-unknown-name { fill: rgb(191 234 255 / 0.45); }
 /* (dim: the war's own lanes, warmap.css, go over them) */
 .holomap-lane { fill: none; stroke: rgb(255 210 120 / 0.18); stroke-width: calc(0.045 * var(--u)); stroke-linejoin: round; }
+/* (the lesser routes, spurs.js: thinner, dashed) */
+.holomap-spur { fill: none; stroke: rgb(255 210 120 / 0.11); stroke-width: calc(0.03 * var(--u)); stroke-dasharray: calc(0.14 * var(--u)) calc(0.08 * var(--u)); stroke-linejoin: round; }
 .holomap-course { fill: none; stroke: #fff; stroke-linejoin: round; stroke-width: calc(0.085 * var(--u)); stroke-dasharray: calc(0.18 * var(--u)) calc(0.12 * var(--u)); animation: holomap-dash 1s linear infinite; }
 @keyframes holomap-dash { to { stroke-dashoffset: calc(-0.6 * var(--u)); } }
 .holomap-course-glow { fill: none; stroke: var(--accent); stroke-width: calc(0.32 * var(--u)); stroke-opacity: 0.28; stroke-linejoin: round; filter: blur(calc(0.06 * var(--u))); }
@@ -462,6 +475,15 @@
 }
 /* a world the game's front end drew a globe of, or one rendered from its skin (globes.js): that globe for its dot, ringed faintly in its colour */
 .holomap-dot[data-globe] { inset: -2px; background: var(--globe) center / contain no-repeat; box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent); }
+/* a charted world (charted/index.js): a smaller dot, 8 px (labelPlace.js's SMALL_DOT), its own size again once picked or where you
+   are; its name only where labelPlace.js found it room (data-quiet: none), and the whole of it tucked away where another's name
+   covers its dot (data-place none) till the map's zoomed in enough to part them */
+.holomap-systems > li[data-charted] .holomap-system:not([aria-pressed='true'], [aria-current='location']) .holomap-dot { inset: 3px; background: radial-gradient(circle, var(--c) 0 1.6px, color-mix(in srgb, var(--c) 35%, transparent) 2.4px, transparent 4px); }
+/* a landmark's name (landmarks.js), placed round its middle as a system's is round its dot, in the same box; it takes no press */
+.holomap-landmarks { pointer-events: none; }
+.holomap-landmark { position: absolute; left: 0; top: 0; display: block; width: 14px; height: 14px; translate: -50% -50%; color: #a9c6d8; font-size: 0.78rem; font-style: italic; white-space: nowrap; }
+.holomap-systems > li[data-quiet] .holomap-name,
+.holomap-systems > li[data-place='none'] { visibility: hidden; }
 /* a name sits in the place round its dot that HoloMap.jsx gave it, to the pixel (labelPlace.js's boxAt: right by default; a
    corner's box is 5.4 px, CORNER, off the dot's middle each way; above or below it can hang from the dot's left or right
    edge, data-hang s or e, where the dot has neighbours: data-place is then its b or t). The names are placed by their boxes, so
@@ -544,7 +566,8 @@
   .holomap-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); container-type: normal; }
   .holomap-map { width: 100%; max-height: none; }
   .holomap-side { max-height: 40svh; }
-  .holomap-system { font-size: 0.7rem; }
+  .holomap-system,
+  .holomap-landmark { font-size: 0.7rem; }
   .holomap-filmpick[open] .holomap-films { grid-template-columns: repeat(2, minmax(0, auto)); }
 }
 

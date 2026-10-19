@@ -11,7 +11,7 @@
 // a small lit room rendered once into an environment map.
 
 import * as THREE from 'three';
-import { createStage, canvasTexture, hot } from '../../lib/stage3d';
+import { createStage, canvasTexture, hot } from './stage';
 import { sharpen } from '../../lib/three/textures';
 import { fbm, makeCanvas, makeNoise } from '../../lib/paint';
 import { EMBER, FIRE, createParticles, lavaMaterial, skyDome } from './kit';
