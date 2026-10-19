@@ -1,18 +1,20 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import HQBackdrop from '../components/avengers/HQBackdrop';
 import CompoundWorld from '../components/avengers/world/CompoundWorld';
 import Titan from '../components/avengers/titan/Titan';
-import { earnedStones, useStones } from '../components/avengers/hq/stones';
+import { SOUL_HALVES, hasEarned, useStones } from '../components/avengers/hq/stones';
+import { snapGate } from '../components/avengers/titan/gate';
+import { hqState } from '../components/avengers/world/links';
 import { useAchievements } from '../components/Achievements';
 import ModelCredits from '../components/ModelCredits';
 import Gauntlet from '../components/interests/Gauntlet';
-import { STONES, VIEW } from '../components/interests/stones';
+import { STONES } from '../components/interests/stones';
 import WorldSwitcher from '../components/worlds/WorldSwitcher';
 import ClipBoard from '../components/worlds/ClipBoard';
 import WorldPhotos from '../components/worlds/WorldPhotos';
 import Scenes from '../components/worlds/Scenes';
 import { hasPhotos, hasScenes } from '../components/worlds/media';
-import { useFun } from '../fun/FunProvider';
 import { audioContext } from '../lib/audio';
 import { jumpTo } from '../lib/anchors';
 import { prefersReducedMotion, useDocumentTitle } from '../lib/hooks';
@@ -65,12 +67,9 @@ const SCENES = ['marvelAssemble', 'marvelGroot', 'snap'];
 // Archive and the credits.
 export default function Avengers() {
   useDocumentTitle('Avengers HQ');
-  const { snap } = useFun();
   const { unlock, notify } = useAchievements();
   const earned = useStones();
   const titan = useRef(null);
-  // the gauntlet starts with every stone won back in the games
-  const [have, setHave] = useState(earnedStones);
   const [portal, setPortal] = useState(false);
   const [arrived, setArrived] = useState(false);
   const timers = useRef([]);
@@ -106,27 +105,23 @@ export default function Avengers() {
     );
   };
 
-  useEffect(() => setHave((h) => [...new Set([...h, ...earned])]), [earned]);
-  // a stone in or out of the gauntlet (the list, or its socket)
-  const toggleStone = (id) => setHave((h) => (h.includes(id) ? h.filter((x) => x !== id) : [...h, id]));
-  const all = have.length === STONES.length;
-  // all six taken back by playing: the snap is Tony's
-  const heist = earned.length === STONES.length;
+  // The snap is earned: the gauntlet holds the stones won in play, and opens
+  // with all six. (A half of the Soul Stone sends no event, but every route
+  // change re-renders the page, so Back from a game reads the halves again.)
+  const held = [...earned, ...SOUL_HALVES.filter(hasEarned)];
+  const gate = snapGate(held);
+  const all = gate.ready;
   const doSnap = () => {
+    if (!gate.ready) return;
     audioContext();
-    // whoever has the gauntlet says it first
-    import('../lib/clips').then((c) => c.playClip(heist ? 'ironMan' : 'iAmInevitable'));
-    const after = (tony) => {
-      if (!tony) {
-        snap();
-        return;
-      }
+    import('../lib/clips').then((c) => c.playClip('ironMan'));
+    const after = () => {
       sfx().then((s) => s.thunder());
       unlock('whatever');
       notify('I am Iron Man.', 'Every stone, won back on the compound. Thanos is dust; this page is not.', 'note', 'whatever');
     };
-    if (titan.current?.snap(heist, after)) return;
-    after(heist);
+    if (titan.current?.snap(true, after)) return;
+    after();
   };
   return (
     <div className="hq-page relative">
@@ -145,29 +140,11 @@ export default function Avengers() {
           <div className="stones-panel gauntlet-stage" data-all={all || undefined}>
             <Titan
               ref={titan}
-              have={have}
-              onSet={toggleStone}
+              have={earned}
               fallback={
-            <div className="gauntlet-wrap">
-              <Gauntlet have={have} all={all} />
-              <div className="gauntlet-sockets" role="group" aria-label="Infinity Stones">
-                {STONES.map((s) => {
-                  const on = have.includes(s.id);
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      className="socket"
-                      style={{ left: `${((s.x - VIEW.x) / VIEW.w) * 100}%`, top: `${((s.y - VIEW.y) / VIEW.h) * 100}%`, '--glow': s.color }}
-                      aria-pressed={on}
-                      aria-label={on ? `${s.name}, set` : `Set the ${s.name}`}
-                      data-label={s.name}
-                      onClick={() => setHave((h) => (on ? h : [...h, s.id]))}
-                    />
-                  );
-                })}
-              </div>
-            </div>
+                <div className="gauntlet-wrap">
+                  <Gauntlet have={earned} all={all} />
+                </div>
               }
             />
           </div>
@@ -176,39 +153,42 @@ export default function Avengers() {
             <h2 id="gauntlet-title" className="title mt-4">
               Thanos
             </h2>
-            <p className="lead mt-4 max-w-[46ch]">
-              {heist
-                ? 'You took every stone back from the compound. Set them, and this time the snap is Tony’s: Thanos turns to dust, and the page stays.'
-                : 'He has the gauntlet. Set all six stones, and the snap takes half this page for a few seconds. Win all six back on the compound, and the snap is Tony’s.'}
-            </p>
-            <ul className="stone-list mt-6" aria-label="Set the stones">
+            <p className="lead mt-4 max-w-[46ch]">{gate.ready ? 'You took every stone back from the compound. Snap, and this time it’s Tony’s: Thanos turns to dust, and the page stays.' : 'He has the gauntlet. Win the six stones back on the compound, one building at a time, and the snap is Tony’s.'}</p>
+            <ul className="stone-list mt-6" aria-label="The stones">
               {STONES.map((s) => {
-                const on = have.includes(s.id);
+                const on = earned.includes(s.id);
                 return (
                   <li key={s.id} data-on={on || undefined} style={{ '--glow': s.color }}>
-                    <button type="button" className="stone-pick" aria-pressed={on} onClick={() => toggleStone(s.id)}>
+                    <div className="stone-pick">
                       <span className="stone-dot" aria-hidden="true" />
                       <span>
                         <span className="font-semibold text-ink">{s.name}</span>
                         <span className="block text-sm text-body">{WHERE[s.id]}</span>
                       </span>
-                      <span className="stone-pick-state">{on ? 'Set' : 'Set it'}</span>
-                    </button>
+                      <span className="stone-pick-state">{on ? 'Won' : 'Not yet'}</span>
+                    </div>
                   </li>
                 );
               })}
             </ul>
             <div className="mt-7 flex flex-wrap gap-3">
-              <button type="button" className="btn btn-primary" disabled={!all} onClick={doSnap}>
-                {heist ? 'Snap: I am Iron Man' : 'Snap'}
+              <button type="button" className="btn btn-primary" disabled={!gate.ready} aria-describedby={gate.ready ? undefined : 'snap-left'} onClick={doSnap}>
+                {gate.ready ? 'Snap: I am Iron Man' : 'Snap'}
               </button>
-              <button type="button" className="btn btn-ghost" disabled={!have.length} onClick={() => setHave([])}>
-                Take them out
-              </button>
+              {gate.next && (
+                <Link to={gate.next.to} state={hqState} className="btn btn-ghost">
+                  Next: {gate.next.name}
+                </Link>
+              )}
               <a href="#hq-world" className="btn btn-ghost" onClick={(e) => jumpTo(e, 'hq-world')}>
                 Back through the portal
               </a>
             </div>
+            {!gate.ready && (
+              <p id="snap-left" className="mt-3 text-sm text-muted">
+                {gate.label}
+              </p>
+            )}
           </div>
         </div>
       </section>

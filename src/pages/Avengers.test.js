@@ -17,4 +17,12 @@ describe('the Avengers page', () => {
     const next = page.indexOf('<section', page.indexOf('<CompoundWorld'));
     expect(page.slice(next, page.indexOf('</section>', next))).toContain('<WorldSwitcher');
   });
+  it('earns the snap: nothing set by hand, and Next keeps the page behind its game', () => {
+    const page = readFileSync(new URL('./Avengers.jsx', import.meta.url), 'utf8');
+    const titan = readFileSync(new URL('../components/avengers/titan/Titan.jsx', import.meta.url), 'utf8');
+    expect(page).toMatch(/<Link\s+to=\{gate\.next\.to\}\s+state=\{hqState\}/);
+    expect(page).toMatch(/disabled=\{!gate\.ready\}/);
+    for (const gone of ['toggleStone', 'setHave', 'onSet=', 'Take them out', 'useFun', 'playClip(heist']) expect(page).not.toContain(gone);
+    expect(titan).not.toMatch(/onSet|titan-socket|<button/);
+  });
 });
