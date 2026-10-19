@@ -21,7 +21,7 @@ const WOODED = 0x3e5638;
 const GREY = 0x6e6a60;
 const MISTY = 0x6e7280; // the Misty Mountains’ grey granite
 const DARK = 0x2e2a2c; // the Mountains of Shadow
-const WHITE = 0x7c808c; // the White Mountains
+const WHITE = 0x666a76; // the White Mountains’ rock (their snow above it: at noon a snow line under halfway made them one white wall)
 const BLUE = 0x5e6c7e; // Ered Luin
 
 export const RANGES = {
@@ -112,8 +112,8 @@ export const RANGES = {
   ],
   // Mindolluin over the city ahead, the White Mountains west of it, Mordor’s mountains dark across the River
   'minas-tirith': [
-    { az: 0, width: 70, dist: 3000, height: 950, colour: WHITE, snow: 0.45, jag: 0.9, seed: 41 },
-    { az: -45, width: 90, dist: 3300, height: 800, colour: WHITE, snow: 0.5, jag: 0.85, seed: 42 },
+    { az: 0, width: 70, dist: 3000, height: 950, colour: WHITE, snow: 0.6, jag: 0.9, seed: 41 },
+    { az: -45, width: 90, dist: 3300, height: 800, colour: WHITE, snow: 0.64, jag: 0.85, seed: 42 },
     { az: 150, width: 100, dist: 3500, height: 520, colour: DARK, jag: 1, haze: 0.6, seed: 43 },
   ],
   // the Blue Mountains either side of the Gulf of Lune, the sea between to the west
