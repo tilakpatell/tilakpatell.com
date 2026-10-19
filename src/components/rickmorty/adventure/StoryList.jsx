@@ -22,6 +22,8 @@ function Step({ text, done }) {
 
 export default function StoryList({ state, episodes = EPISODES, ready = READY }) {
   const built = episodes.slice(0, Math.min(ready, episodes.length));
+  // (a game won before its step comes up counts already: story.js keeps it)
+  const won = (s) => s.type === 'win' && state.wins.includes(s.game);
   return (
     <>
       <ol className="rm-story">
@@ -44,12 +46,12 @@ export default function StoryList({ state, episodes = EPISODES, ready = READY })
                           <p className="rm-list-sub">{s.text}</p>
                           <ol className="rm-story-steps">
                             {s.steps.map((p, k) => (
-                              <Step key={k} text={p.text} done={j < state.step || (j === state.step && state.got.includes(k))} />
+                              <Step key={k} text={p.text} done={j < state.step || (j === state.step && state.got.includes(k)) || won(p)} />
                             ))}
                           </ol>
                         </li>
                       ) : (
-                        <Step key={j} text={s.text} done={j < state.step} />
+                        <Step key={j} text={s.text} done={j < state.step || won(s)} />
                       ),
                     )}
                   </ol>

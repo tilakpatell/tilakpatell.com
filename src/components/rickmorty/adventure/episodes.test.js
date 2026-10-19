@@ -9,9 +9,9 @@ const stepsOf = (e) => e.steps.flatMap((s) => (s.type === 'all' ? [s, ...s.steps
 const allSteps = () => EPISODES.flatMap(stepsOf);
 
 describe('the adventure’s episodes', () => {
-  it('has thirteen episodes, the first ready', () => {
+  it('has thirteen episodes, the first two ready', () => {
     expect(EPISODES).toHaveLength(13);
-    expect(READY).toBe(1);
+    expect(READY).toBe(2);
     expect(new Set(EPISODES.map((e) => e.id)).size).toBe(13);
   });
 
@@ -74,5 +74,13 @@ describe('the adventure’s episodes', () => {
     expect(wiped.steps.map((s) => s.id)).toEqual(['diner', 'basement', 'mindblowers', 'customs']);
     expect(wiped.unlocks).toEqual(['annex', 'meeseeksgolf']);
     expect(wiped.steps[0].text).toBe('A Federation agent is in a booth at Shoney’s, up the street. Find out what the raid took.');
+  });
+
+  it('goes on with Arcade money: Roy, then a walkway cabinet’s target', () => {
+    const arcade = EPISODES[1];
+    expect(arcade.title).toBe('Arcade money');
+    expect(arcade.steps.map((s) => s.id ?? s.game)).toEqual(['roy', 'cabinet']);
+    expect(arcade.steps[1]).toMatchObject({ type: 'win', game: 'cabinet', place: 'annex' });
+    expect(arcade.unlocks).toEqual(['agency', 'simulation']);
   });
 });

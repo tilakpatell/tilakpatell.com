@@ -45,15 +45,24 @@ describe('what the HUD shows of the story', () => {
     expect(newsOf([])).toEqual({ say: [], card: null });
   });
 
+  it('says only the last closing line, and shows no card for an episode already over', () => {
+    const out = [{ type: 'done', episode: 0 }, { type: 'episode', episode: 1 }, { type: 'step', episode: 1, step: 1 }, { type: 'done', episode: 1 }];
+    const [who, text] = EPISODES[1].outro[0];
+    expect(newsOf(out)).toEqual({ say: [{ kind: 'say', who, text }], card: null });
+  });
+
   it('points the map’s marker at the story’s task, else the checklist’s next', () => {
     const next = progress([]).next;
     expect(markedTask(fresh(), next)).toEqual({ id: 'diner' });
     expect(markedTask({ ...fresh(), step: 3 }, next)).toEqual({ id: 'customs' });
     // past the last ready episode: the checklist's
-    expect(markedTask({ ...fresh(), episode: 1 }, next)).toBe(next);
-    // a step that isn't a task: nothing to point at
-    expect(markedTask({ ...fresh(), episode: 1 }, next, { ready: 2 })).toEqual({ id: 'roy' });
-    expect(markedTask({ ...fresh(), episode: 1, step: 1 }, next, { ready: 2 })).toBe(null);
+    expect(markedTask({ ...fresh(), episode: 2 }, next)).toBe(next);
+    expect(markedTask({ ...fresh(), episode: 1 }, next)).toEqual({ id: 'roy' });
+    // a game to win: the game
+    expect(markedTask({ ...fresh(), episode: 1, step: 1 }, next)).toEqual({ id: 'cabinet' });
+    // a step that's neither (the Citadel's page): nothing to point at
+    const citadel = EPISODES.findIndex((e) => e.id === 'citadel');
+    expect(markedTask({ ...fresh(), episode: citadel }, next, { ready: 13 })).toBe(null);
     // an `all`: its first part not done yet
     const sector = EPISODES.findIndex((e) => e.id === 'sector');
     expect(markedTask({ ...fresh(), episode: sector, got: [0] }, next, { ready: 13 })).toEqual({ id: 'gearworld' });
@@ -67,12 +76,17 @@ describe('what the HUD shows of the story', () => {
     expect(items.filter((d) => !d.locked).map((d) => d.id)).toEqual(['customs']);
     // free roam, or past the last built episode: nothing locked
     expect(dialItems(DIAL, { ...fresh(), freeRoam: true }).every((d) => d.locked === null)).toBe(true);
-    expect(dialItems(DIAL, { ...fresh(), episode: 1 }).every((d) => d.locked === null)).toBe(true);
+    expect(dialItems(DIAL, { ...fresh(), episode: 2 }).every((d) => d.locked === null)).toBe(true);
+    // after episode 1, its places, and the next episode's still shut
+    const one = dialItems(DIAL, { ...fresh(), episode: 1 });
+    expect(one.filter((d) => !d.locked).map((d) => d.id)).toEqual(['annex', 'customs', 'meeseeksgolf']);
+    expect(one.find((d) => d.id === 'agency').locked).toBe('Opens after episode 2, “Arcade money”.');
   });
 
   it('counts the coordinates home on the dial', () => {
     expect(dialLead(fresh(), DIAL.length)).toBe('Coordinates home: 1 of 32');
-    expect(dialLead({ ...fresh(), episode: 1 }, DIAL.length)).toBe('Coordinates home: 32 of 32');
+    expect(dialLead({ ...fresh(), episode: 1 }, DIAL.length)).toBe('Coordinates home: 3 of 32');
+    expect(dialLead({ ...fresh(), episode: 2 }, DIAL.length)).toBe('Coordinates home: 32 of 32');
     // (free roam opens the dial, but brings no coordinates home)
     expect(dialLead({ ...fresh(), freeRoam: true }, DIAL.length)).toBe('Coordinates home: 1 of 32');
   });

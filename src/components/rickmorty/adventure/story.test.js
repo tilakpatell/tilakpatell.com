@@ -204,11 +204,27 @@ describe('the real story', () => {
     expect(out.at(-1)).toEqual({ type: 'end' });
   });
 
-  it('opens every place once episode 1 is done while it’s the only one built', () => {
+  it('opens episode 2’s places after episode 1, and every place once episode 2, the last built, is done', () => {
     let s = fresh();
-    for (const id of ['diner', 'basement', 'mindblowers', 'customs']) s = feed(s, { type: 'task', id }).state;
+    let out = [];
+    for (const id of ['diner', 'basement', 'mindblowers', 'customs']) ({ state: s, out } = feed(s, { type: 'task', id }));
     expect(s).toMatchObject({ episode: 1, step: 0 });
-    for (const id of ['annex', 'vat', 'citadel', 'squanch', 'evilrick']) expect(dialOpen(s, id), id).toBe(true);
+    expect(out.slice(-2)).toEqual([{ type: 'done', episode: 0 }, { type: 'episode', episode: 1 }]);
+    for (const id of ['annex', 'meeseeksgolf']) expect(dialOpen(s, id), id).toBe(true);
+    for (const id of ['agency', 'vat', 'citadel', 'squanch', 'evilrick']) expect(dialOpen(s, id), id).toBe(false);
+    expect(objective(s)).toEqual({ text: EPISODES[1].steps[0].text, to: null });
+    s = feed(s, { type: 'task', id: 'roy' }).state;
+    expect(objective(s)).toEqual({ text: EPISODES[1].steps[1].text, to: null });
+    ({ state: s, out } = feed(s, { type: 'win', game: 'cabinet' }));
+    expect(out).toEqual([{ type: 'done', episode: 1 }]);
+    for (const id of ['annex', 'agency', 'vat', 'citadel', 'squanch', 'evilrick']) expect(dialOpen(s, id), id).toBe(true);
     expect(objective(s)).toBe(null);
+  });
+
+  it('keeps a cabinet won early', () => {
+    const s = { ...fresh(), step: 3, wins: ['cabinet'] };
+    const { state, out } = feed(s, { type: 'task', id: 'customs' }, { known: { tasks: ['roy'], citadel: [] } });
+    expect(state).toMatchObject({ episode: 2, step: 0 });
+    expect(out.map((o) => o.type)).toEqual(['done', 'episode', 'step', 'done']);
   });
 });
