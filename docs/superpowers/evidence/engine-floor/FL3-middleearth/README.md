@@ -65,8 +65,76 @@ Each GLSL site of Middle-earth’s own is moved verbatim out of its file into a 
 
 ## The before
 
-TO COME
+Main at `96ca7b73` (FL2’s #1023 and the map’s redrawing merged), a development build, every place shot with FL2’s `shoot.mjs` (Playwright’s clock, a seeded `Math.random`, Low, SwiftShader, 1440 × 900): 27 shots, the before; and its production build for the pace (`pace.mjs`, FL2’s). Middle-earth there is `'glsl'`: its 132 GLSL sites drawn by the classic renderer.
 
 ## The after
 
-TO COME
+The branch’s development build, shot the same way and against the before (`scripts/gpu-parity/diff.mjs`: ≥ 32 dB, under 2 % of pixels off by more than 16/255; a town inside its stage’s box, as FL2’s). At `dbe046ea`, every place; the rows marked † again at `89a37217`, after the textures’ fix below.
+
+| place | dB | % off | | place | dB | % off |
+| --- | --- | --- | --- | --- | --- | --- |
+| the map | Infinity | 0.00 | | the Shire † | 40.0 | 0.53 |
+| Bree | 39.1 | 0.64 | | Weathertop | 43.8 | 0.17 |
+| Rivendell | 44.3 | 0.18 | | Moria | 42.6 | 0.16 |
+| Lothlórien | 39.1 | 1.08 | | Amon Hen | 27.7 | 2.74 ✗ |
+| the Dead Marshes | 43.8 | 0.02 | | Cirith Ungol | 42.6 | 0.19 |
+| Mordor | 39.4 | 0.64 | | Orthanc | 43.4 | 0.10 |
+| Minas Tirith † | 39.3 | 0.65 | | Edoras † | 31.9 | 2.54 ✗ |
+| the Shire’s kitchen | 43.7 | 0.37 | | Bree’s kitchen † | 43.8 | 0.00 |
+| Weathertop’s kitchen | 47.9 | 0.00 | | Rivendell’s kitchen | 48.7 | 0.01 |
+| Moria’s kitchen † | 35.0 | 1.88 | | Lothlórien’s kitchen | 40.6 | 0.19 |
+| Amon Hen’s kitchen | 42.3 | 0.14 | | the Dead Marshes’ kitchen | 46.4 | 0.00 |
+| Cirith Ungol’s kitchen | 41.1 | 0.23 | | Mordor’s kitchen | 39.5 | 0.42 |
+| the bridge | 33.5 | 3.11 ✗ | | Gorgoroth | 34.1 | 1.54 |
+| the Ring | 35.6 | 0.89 | | | | |
+
+24 of 27 within the bar. The three that are not:
+
+- *Amon Hen*: the figures stand in other poses, FL2’s race (a figure’s seed from a page-wide count, the order the scenes are made in); with the count taken out of the seed on both sides (a build of each, not committed), 43.7 dB, 0.27 % off, and Lothlórien, which the same race took on one run, 39.1 dB, 1.09 %. Main’s, not the port’s.
+- *Edoras*: 81 % of what’s off is on an edge, the barrows’ tufts and the flowers’ clusters, and their glow. Not the clock (`U.uTime` held at 0 on both sides, the same), nor the place of things (seeded), nor the textures’ slide; not found.
+- *The bridge*: its lava brighter, and its pools larger. Not the lava’s shader (the bridge’s own numbers and fog, `middleearth:kit:lava:sea`, 58.0 dB; through the stage’s whole chain, the bridge’s grade and exposure, `middleearth:stage:sea`, 67.8 dB), nor its clock (held at 0), nor the particles (hidden on both sides), nor the random numbers the page draws (`--trace-random`: the same draws in the same order), nor the camera (no shift). Not found.
+- *Amon Hen’s kitchen* at `89a37217`: the kitchen itself 48.0 dB, 0.00 % off; the strip of the town over it is the town’s last frame, kept as the kitchen took the canvas, and which frame that is moved with the stage’s compile (below).
+
+Found by the gate and mended on the way (the commits say how):
+
+- the bloom’s strength, three times (the stage’s case, 16.5 → 64.6 dB);
+- a classic material’s twin following its classic material (Bree’s lamps, 24.3 → 39.1 dB);
+- a hooked material’s uniforms sent every draw (the Shire’s grass in the wind, 35.7 → 40.3 dB);
+- a texture slid along its surface drawn where it is (`src/runtime/textureWatch.js`: Moria’s kitchen, 3.30 → 1.88 %, the kitchen itself 0.02 %);
+- the parity page drawing its frames a frame apart (`scripts/twin-parity/page.js`: three frames in one task were one on the node side).
+
+`node scripts/twin-parity.mjs` (every case, the corrected page), 2026-10-19: 308 cases within the bar; the Nazgûl’s Ring face half on logs the classic side’s shader error (main’s own, above).
+
+## The pace
+
+`pace.mjs`, each build’s production `vite preview` (main at `96ca7b73`, the branch at `6dc39366`), 1440 × 900, settled 8 s, then real time; the builds alternating, two runs each, the second run’s numbers here. SwiftShader, where no `KHR_parallel_shader_compile` is offered: a program the node renderer links waits for the main thread, where the classic renderer’s were sliced over frames by `lib/three/gpuWork`.
+
+| place | Low, main | Low, branch | High, main | High, branch |
+| --- | --- | --- | --- | --- |
+| the map (frames in 12 s) | 170 | 178 | 171 | 191 |
+| Bree (12 s; at High 40 s) | 8 | 5 | 5 | 5 |
+| the Shire | 8 | 6 | 5 | 6 |
+| Moria | 14 | 13 | 11 | 15 |
+| Bree’s kitchen (12 s) | 6 | 2 | | |
+| the bridge (12 s) | 27 | 27 | 24 | 23 |
+| the Ring (12 s) | 38 | 37 | 31 | 34 |
+
+Two things the gate found and mended first: the stage compiled its shaders for the canvas where its chain’s scene pass draws into a half-float target, so each was made again on its first frame (the Shire 58 % in `getProgramParameter` twenty seconds after it said it was ready); and on the node renderer a view’s clear went through the quad that tone-maps the canvas, made again whenever the tone map differed from the last (Bree’s page: eight builds and programs in twenty seconds, none since).
+
+What is left slower is software’s, at Low, in Bree and its kitchen and the Shire: a profile of Bree’s kitchen eight seconds after it’s ready is its first programs being linked, on the main thread (nothing is made from fifteen seconds on). The node renderer makes more programs than the classic one (a hooked material’s program is keyed by its own uniforms, so two don’t share one), and with no parallel compile each waits; a kitchen compiled whole when it’s made (tried) held the town over it for twenty seconds instead, and compiled a thing at a frame (tried, as `gpuWork` did) spread the same work over every frame measured. Both taken out. On a GPU whose browser offers `KHR_parallel_shader_compile`, which the node renderer uses, the linking is off the main thread. The WebGPU rows are the owner’s machines’ (the laptop’s Radeon 740M, the desktop’s RTX 5090) and are left empty.
+
+## Checks
+
+`npm run lint` clean; `npm run build` built; `node scripts/health.mjs --check --skip build` within budget (`glsl-sites` 607: the originals stay, orphaned, for their parity cases, till FL4; `renderers` 14). `npm test`: the whole-repo and timing tests failed under the load of the shots beside them (13 files on the last run, the hulls’, the flight island’s, Expanse’s and Albuquerque’s timing among them); each of them passes alone.
+
+## Known, carried on
+
+- The Nazgûl’s Ring face: the GLSL original’s never compiles on three r186 (`totalEmissiveRadiance *= vColor`, `vec3` by `vec4`), on main as here; the twin keeps it out; `vColor.rgb` would mend both, and changes main’s pictures: the owner’s call.
+- Edoras and the bridge, above: not found.
+- The software pace in Bree, its kitchen and the Shire, above.
+- The originals the flip leaves orphaned: FL4 deletes them with the classic renderer.
+
+## Tools
+
+- `lab/fl2/` (not committed: the lane’s own): `parity.mjs` (two folders of shots against each other, each town in its box), `boxparity.mjs`, `edges.mjs` (how much of what’s off is on an edge), `sbs.mjs` (main, the branch and their difference), `prof.mjs` (a place’s main thread profiled), `proto.mjs` (a route on the dev server, an expression read in the page), `flip.py` (the flip’s imports).
+- FL2’s `shoot.mjs` and `pace.mjs`.
