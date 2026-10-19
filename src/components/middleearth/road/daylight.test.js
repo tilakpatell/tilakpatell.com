@@ -26,6 +26,20 @@ describe('daylight: the sky, the sun and the air along the Road', () => {
     expect(m.ambient).toBeLessThan(0.05);
   });
 
+  it('the Redhorn’s shoulder whites out in its storm: thick pale fog over the pass, clear air before and after', () => {
+    const before = lit('caradhras', 20);
+    const storm = lit('caradhras', 75);
+    const after = lit('caradhras', 140);
+    expect(storm.fog.density).toBeGreaterThan(0.02);
+    expect(before.fog.density).toBeLessThan(0.006);
+    expect(after.fog.density).toBeLessThan(0.006);
+    expect(Math.min(...storm.fog.colour)).toBeGreaterThan(0.75);
+    // (and the sky goes with it)
+    expect(storm.murk).toBeGreaterThan(0.95);
+    expect(before.murk).toBe(0);
+    expect(lit('hobbiton', 50).murk).toBe(0);
+  });
+
   it('Gorgoroth lies under the pall, from the east', () => {
     const g = lit('gorgoroth', 0);
     expect(g.pall.amount).toBeGreaterThan(0.8);

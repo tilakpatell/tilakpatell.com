@@ -30,6 +30,9 @@ const CORN = { Grass: { recolour: '#f2dc96' } };
 const HEATH = { Leaves: { recolour: '#6e6a44' } };
 const BRACKEN = { Leaves: { recolour: '#a8743a' } };
 const GOLD = { Leaves_NormalTree: { recolour: '#d8a23a' }, Leaves_Birch: { recolour: '#e2b84a' } };
+const HOLLY = { Leaves_NormalTree: { recolour: '#1f3a1c' }, Leaves: { recolour: '#22401f' } };
+const HEATH_GRASS = { Grass: { recolour: '#8a8458' } };
+const SNOWED = { Leaves_Pine: { recolour: '#e8eef2' } };
 const AUTUMN = { Leaves_NormalTree: { recolour: '#eeae5c' }, Leaves_Birch: { recolour: '#f2c86a' } };
 
 export const SCATTER = {
@@ -123,7 +126,21 @@ export const SCATTER = {
     { model: 'Grass_Common_Short', per100: 2.4, clump: 6, spread: 3, scale: [0.4, 0.6], x: [-40, 40], kind: 'grass' },
     { model: 'Plant_1_Big', per100: 0.15, clump: 3, spread: 2, scale: [0.6, 0.9], z: [40, 60], x: [-30, 30] },
   ],
-  caradhras: ROUGH,
+  caradhras: [
+    // Hollin: holly (the common tree, dark and glossy), heath and grey stone on bare hills
+    { model: 'CommonTree_3', per100: 0.05, clump: 3, spread: 7, scale: [0.6, 0.9], z: [-40, 46], tint: HOLLY },
+    { model: 'Bush_Large', per100: 0.08, clump: 3, spread: 5, scale: [0.8, 1.2], z: [-40, 46], tint: HOLLY },
+    { model: 'Grass_Wispy_Short', per100: 2, clump: 7, spread: 4, scale: [0.7, 1.0], z: [-40, 46], x: [-70, 70], kind: 'grass', tint: HEATH_GRASS },
+    { model: 'Rock_Medium_1', per100: 0.06, clump: 3, spread: 4, scale: [0.6, 1.3], slope: 1.4 },
+    { model: 'Rock_Big_1', per100: 0.02, clump: 2, spread: 8, scale: [0.8, 1.6], slope: 1.6 },
+    // the Redhorn’s shoulder: pines under snow, boulders out of the drifts
+    { model: 'Pine_1', per100: 0.03, clump: 3, spread: 9, scale: [0.8, 1.2], z: [40, 116], slope: 0.9, tint: SNOWED },
+    { model: 'Pine_3', per100: 0.02, clump: 2, spread: 8, scale: [0.7, 1.1], z: [40, 116], slope: 0.9, tint: SNOWED },
+    { model: 'Rock_Big_2', per100: 0.03, clump: 2, spread: 7, scale: [0.8, 1.5], z: [40, 116], slope: 1.6 },
+    // the lake’s shore: holly again, stones by the water
+    { model: 'CommonTree_3', per100: 0.04, clump: 2, spread: 6, scale: [0.6, 0.85], z: [116, 150], tint: HOLLY },
+    { model: 'Pebble_Round_3', per100: 1.2, clump: 6, spread: 2.5, scale: [2.5, 5], z: [116, 160], x: [-30, 12] },
+  ],
   moria: [],
   lorien: GREEN,
   anduin: ROUGH,

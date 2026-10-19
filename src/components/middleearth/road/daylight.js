@@ -2,7 +2,7 @@
 // §4.3, each stage’s “light, weather”). Pure; sky.js and the world read it.
 //
 //   light(stages, s) → { sun: { az, el, colour }, ambient, fog: { colour, density },
-//     moon: { phase, el }, stars, pall: { amount, from }, exposure }
+//     moon: { phase, el }, stars, pall: { amount, from }, exposure, murk }
 //   LIGHTS: { [stage]: { start, end } }, eased from one to the other by
 //     smoothstep over the stage’s length
 //
@@ -54,6 +54,11 @@ const TABLE = {
   havens: [L({ el: 0.08, az: Math.PI, colour: GOLD, ambient: 0.3, fog: [0.9, 0.75, 0.6], density: 0.002 }), { el: -0.02, az: Math.PI, colour: RED, ambient: 0.22, fog: [0.85, 0.6, 0.5], density: 0.002 }],
 };
 
+export const STORMS = {
+  // (the snow on the Redhorn’s shoulder: the walkers grey shapes in it, the mountain gone)
+  caradhras: { at: [46, 104], ramp: 14, fog: [0.86, 0.88, 0.92], density: 0.04, ambient: 0.55 },
+};
+
 const ids = Object.keys(TABLE);
 export const LIGHTS = Object.fromEntries(
   ids.map((id, i) => {
@@ -72,13 +77,17 @@ export function light(stages, s) {
   const len = stages[here.index].length;
   const { start: a, end: b } = LIGHTS[here.stage];
   const k = smooth(Math.min(1, Math.max(0, here.local / len)));
+  const storm = STORMS[here.stage];
+  const w = storm ? smooth(Math.min(1, Math.max(0, (here.local - storm.at[0]) / storm.ramp))) * (1 - smooth(Math.min(1, Math.max(0, (here.local - storm.at[1] + storm.ramp) / storm.ramp)))) : 0;
+  const fog = mix3(a.fog.colour, b.fog.colour, k);
   return {
     sun: { az: mix(a.sun.az, b.sun.az, k), el: mix(a.sun.el, b.sun.el, k), colour: mix3(a.sun.colour, b.sun.colour, k) },
-    ambient: mix(a.ambient, b.ambient, k),
-    fog: { colour: mix3(a.fog.colour, b.fog.colour, k), density: mix(a.fog.density, b.fog.density, k) },
+    ambient: mix(mix(a.ambient, b.ambient, k), storm?.ambient ?? 0, w),
+    fog: { colour: w ? mix3(fog, storm.fog, w) : fog, density: mix(mix(a.fog.density, b.fog.density, k), storm?.density ?? 0, w) },
     moon: { phase: mix(a.moon.phase, b.moon.phase, k), el: mix(a.moon.el, b.moon.el, k) },
     stars: mix(a.stars, b.stars, k),
     pall: { amount: mix(a.pall.amount, b.pall.amount, k), from: mix3(a.pall.from, b.pall.from, k) },
     exposure: mix(a.exposure, b.exposure, k),
+    murk: w,
   };
 }

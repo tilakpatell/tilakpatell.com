@@ -112,7 +112,7 @@ export default {
     // the stage’s sound, the beats’ clips and the cast’s lines, on the runtime’s bus
     const ambience = createAmbience(rt);
     // the written stages’ scenes and their beats (scenes.js)
-    const scenes = createScenes({ rt, road, lands, weather, ambience, tier });
+    const scenes = createScenes({ rt, road, lands, weather, ambience, tier, sky });
     // the black the Road’s first words are said over, lifting: a shell round the camera
     const veilMat = new MeshBasicNodeMaterial({ color: 0x000000, transparent: true, opacity: 0, depthTest: false, depthWrite: false, side: THREE.BackSide, fog: false });
     const veil = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), veilMat);
@@ -148,6 +148,7 @@ export default {
     let shot = null; // { key, from (pose), t }: the camera’s blend between rigs
     let lastPose = null;
     let fxVision = false;
+    let shook = 0; // s the frame has been shaken, for the jolt’s phase
     let wasRidden = riddenOf(saved);
     // (the share walked, not jumped: what makes the ride ridden)
     let walked = byAddress || !back.s ? 0 : (saved?.walked ?? 0);
@@ -268,6 +269,14 @@ export default {
       lastPose = p;
       camera.position.set(...p.at);
       camera.lookAt(...p.lookAt);
+      // (a beat’s jolt: the frame knocked about and settling; never under reduced motion)
+      if (beat.fx.shake > 0 && !clock.reduced) {
+        shook += dt;
+        const a = 0.14 * beat.fx.shake;
+        camera.position.x += Math.sin(shook * 47) * a;
+        camera.position.y += Math.sin(shook * 61 + 1) * a * 0.7;
+        camera.rotation.z += Math.sin(shook * 39 + 2) * a * 0.12;
+      }
       veil.position.copy(camera.position);
       if (camera.fov !== p.fov) {
         camera.fov = p.fov;

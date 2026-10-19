@@ -109,7 +109,38 @@ export const STAGES = [
   // (stages 7 to 10 shorter than the table’s first lengths: their holds are
   // longer than the half minute the ledger counted, and the ride must stay
   // under half an hour with stages 11 to 16 still to come)
-  { id: 'caradhras', name: 'Caradhras', date: '11 January 3019', length: 170, mode: 'walk', place: 'redhorn' },
+  {
+    id: 'caradhras',
+    name: 'Caradhras',
+    date: '11 January 3019',
+    length: 170,
+    mode: 'walk',
+    place: 'redhorn',
+    // Hollin’s bare hills, then the road over the Redhorn’s shoulder in snow
+    // (the peak itself up on the left), and down to the black lake under the
+    // Walls of Moria on the right, the cliff across the road’s end
+    ground: {
+      spec: {
+        seed: 17,
+        relief: [
+          { type: 'swell', scale: 180, height: 6 },
+          { type: 'ridges', scale: 110, height: 8, octaves: 4 },
+          { type: 'island', at: [0, 74], r: 62, height: 20 },
+          { type: 'island', at: [120, 70], r: 90, height: 120, core: 0.04, ragged: 0.5 },
+          { type: 'island', at: [-42, 134], r: 30, height: -12 },
+          { type: 'mountains', scale: 140, height: 140, from: 200, to: 420 },
+        ],
+      },
+      // (the shore under the cliff level, where the Doors are read)
+      flats: [{ at: [0, 150], r: 13, edge: 10 }],
+      // (and the shore clear where the Watcher’s arms come out, so nothing stands in front of them)
+      clear: [
+        { at: [0, 156], r: 12 },
+        { at: [-14, 142], r: 14 },
+      ],
+      paint: { greens: [0x4a4c34, 0x666242, 0x8a8260], dirt: 0x8c8474, snow: [9, 13] },
+    },
+  },
   { id: 'moria', name: 'Moria', date: '13 January 3019', length: 180, mode: 'walk', place: 'moria' },
   {
     id: 'lorien',
