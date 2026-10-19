@@ -64,7 +64,8 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
       spin += dt;
       props.ring.rotation.z = spin * 0.4;
       // the guests in the garden while the walker is near it; Gimli up for his axe
-      const garden = local < GONE;
+      // (from the bridge on: a figure is never culled, and from the ridge the garden is a speck)
+      const garden = local > MARKS.bridge.at - 8 && local < GONE;
       for (const id of GUESTS) {
         const w = figures.get(id);
         w.group.visible = garden;
