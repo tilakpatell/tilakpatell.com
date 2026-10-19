@@ -10,7 +10,7 @@
 // unlit, off the chapter’s pale jointed rock. In the stage’s frame: the road along +z from 0, +x on the
 // walker’s left.
 //
-//   buildProps({ K, material, heightAt }) → { group, ring, deck(z), seat, chairs, dispose }
+//   buildProps({ K, material, heightAt, tier }) → { group, ring, deck(z), seat, chairs, dispose }
 //   COUNCIL, NARSIL, BENCH, ARCH, BRIDGE, FALLS, ELVEN: where they stand, and the scale, for the beats and the scene
 
 import * as THREE from 'three';
@@ -57,13 +57,16 @@ const out = (g, v) => {
   return v.clone().applyMatrix4(g.matrix);
 };
 
-export function buildProps({ K, material, heightAt }) {
+export function buildProps({ K, material, heightAt, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'rivendell:props';
 
-  for (const [x, z, w, d, h] of TERRACES) group.add(stand(terrace(K, w, d, h).group, heightAt, x, z, Math.PI / 2, ELVEN, -0.4));
-  const tops = new Map(TERRACES.map(([x, z, , , h]) => [`${x},${z}`, h * ELVEN - 0.4]));
-  for (const [x, z, what, yaw] of VALLEY) {
+  // (on low the house alone stands down the valley: the far pavilions are a building’s triangles each)
+  const valley = tier === 'low' ? VALLEY.filter((v) => v[2] === 'house') : VALLEY;
+  const terraces = tier === 'low' ? TERRACES.slice(0, 1) : TERRACES;
+  for (const [x, z, w, d, h] of terraces) group.add(stand(terrace(K, w, d, h).group, heightAt, x, z, Math.PI / 2, ELVEN, -0.4));
+  const tops = new Map(terraces.map(([x, z, , , h]) => [`${x},${z}`, h * ELVEN - 0.4]));
+  for (const [x, z, what, yaw] of valley) {
     const b = what === 'house' ? house(K) : pavilion(K);
     group.add(stand(b.group, heightAt, x, z, yaw, ELVEN, tops.get(`${x},${z}`) ?? 0));
   }

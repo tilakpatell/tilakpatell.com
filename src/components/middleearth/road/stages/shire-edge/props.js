@@ -80,7 +80,7 @@ function lanes(K, heightAt, tier) {
   // the standing crop close to the lane: the chapter’s wheat clumps, thick by the fences
   // (four rows deep by the fence; one on low, where the scatter’s corn stands behind it)
   const rows = tier === 'low' ? 1 : 4;
-  const step = tier === 'low' ? 1.2 : 0.7;
+  const step = tier === 'low' ? 2 : 0.7;
   const clumps = [];
   for (const side of [1, -1]) for (let z = FENCE.z[0]; z < FENCE.z[1]; z += step) for (let k = 0; k < rows; k++) clumps.push([side * (FENCE.x + 0.6 + k * 0.7 + ((z * 3.7 + k) % 1) * 0.4), z + ((k * 0.37) % 1) * 0.6]);
   const wheat = new THREE.InstancedMesh(wheatGeo(), K.mats.wheat, clumps.length);

@@ -28,7 +28,7 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
   group.name = 'stage:rivendell';
   const material = road.material({ vertexColors: true, flatShading: true });
   const town = createTownKit(road, rt?.gfx?.renderer ?? null, { elven: true });
-  const props = buildProps({ K: town.K, material, heightAt });
+  const props = buildProps({ K: town.K, material, heightAt, tier });
   const chairAt = (i) => props.chairs[i];
   group.add(props.group);
   const figures = new Map();
