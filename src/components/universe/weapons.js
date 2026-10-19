@@ -11,9 +11,9 @@
 //
 // R (or Shift+R) cycles them, 1 2 3 picks one; the phone has a button.
 //
-// createArmory(kind, loadout) → { index, id, line, weapon, name, ammo,
+// createArmory(kind, loadout, fx?) → { index, id, line, weapon, name, ammo,
 //   ammoMax, filling, select(i), cycle(dir), ready(now, cadence) → bool,
-//   fired(now), update(dt), reload(), refit(loadout) }
+//   fired(now), update(dt), reload(), refit(loadout, fx?) }
 // `cadence` is the ship's own seconds between blaster shots (outfit.js and
 // scene.js's CADENCE); each weapon fires at a multiple of it.
 
@@ -50,11 +50,36 @@ function linesOf(kind, loadout) {
   });
 }
 
-export function createArmory(kind, loadout = STOCK_LOADOUT) {
+// A weapon as the skill tree's guns have it (hangar/skills's fx): a round
+// more in the rack (ammo) and back sooner (reload), a shot more a burst
+// (shots), harder homing and a longer flight (homing, life). The table's own
+// when there are none (never changed: a copy).
+const NO_FX = {};
+const num = (v, d) => (Number.isFinite(v) ? v : d);
+function tunedWeapon(w, fx) {
+  const ammo = num(fx.ammo, 0);
+  const reload = num(fx.reload, 1);
+  const shots = num(fx.shots, 0);
+  const homing = num(fx.homing, 1);
+  const life = num(fx.life, 1);
+  if (!ammo && reload === 1 && !shots && homing === 1 && life === 1) return w;
+  const out = { ...w };
+  if (w.line === 'secondary') out.count = w.count + shots;
+  if (w.heavy) {
+    out.ammo = w.ammo + ammo;
+    out.reload = w.reload * reload;
+    out.life = w.life * life;
+    if (w.homing) out.homing = w.homing * homing;
+  }
+  return out;
+}
+
+export function createArmory(kind, loadout = STOCK_LOADOUT, fx = NO_FX) {
   let lines = linesOf(kind, loadout);
+  let tuned = lines.map((l) => tunedWeapon(WEAPONS[l.id], fx));
   let index = 0;
   let last = -Infinity;
-  let rack = WEAPONS[lines[2].id]; // the ordnance line's weapon, whose rounds these are
+  let rack = tuned[2]; // the ordnance line's weapon, whose rounds these are
   let ammo = rack.ammo;
   let refill = 0; // seconds toward the next round
   return {
@@ -68,7 +93,7 @@ export function createArmory(kind, loadout = STOCK_LOADOUT) {
       return LINES[index];
     },
     get weapon() {
-      return WEAPONS[lines[index].id];
+      return tuned[index];
     },
     get name() {
       return lines[index].name;
@@ -94,13 +119,13 @@ export function createArmory(kind, loadout = STOCK_LOADOUT) {
     },
     // may it fire now? (the blaster's cadence times the weapon's; heavy ones need a round)
     ready(now, cadence) {
-      const w = WEAPONS[lines[index].id];
+      const w = tuned[index];
       if (w.heavy && ammo < 1) return false;
       return now - last >= cadence * w.cadence * 1000;
     },
     fired(now) {
       last = now;
-      if (WEAPONS[lines[index].id].heavy) ammo = Math.max(0, ammo - 1);
+      if (tuned[index].heavy) ammo = Math.max(0, ammo - 1);
     },
     // the rack fills back up, a round at a time
     update(dt) {
@@ -119,15 +144,32 @@ export function createArmory(kind, loadout = STOCK_LOADOUT) {
       ammo = rack.ammo;
       refill = 0;
     },
-    // a new loadout fitted: the same line stays picked, and the rounds left
+    // a new loadout fitted, or new skills taken (fx: the skills it has kept
+    // when none are handed): the same line stays picked, and the rounds left
     // carry over (no more than the new rack holds; a refit is no reload)
-    refit(next) {
+    refit(next, nextFx = fx) {
+      fx = nextFx ?? NO_FX;
       lines = linesOf(kind, next);
-      rack = WEAPONS[lines[2].id];
+      tuned = lines.map((l) => tunedWeapon(WEAPONS[l.id], fx));
+      rack = tuned[2];
       ammo = Math.min(ammo, rack.ammo);
       if (ammo >= rack.ammo) refill = 0;
     },
   };
+}
+
+// What the HUD kit's arms block shows of an armoury (runtime/hud/cluster.js's
+// ArmsView): the line picked, its name, and the ordnance rack, whichever
+// line is picked (it's the one count of the rounds left). Fills `out`, so a
+// frame loop makes nothing.
+export function armsView(a, out = { name: '', line: 'primary', index: 0, ammo: 0, max: 0, filling: 0 }) {
+  out.name = a.name;
+  out.line = a.line;
+  out.index = a.index;
+  out.ammo = a.ammo;
+  out.max = a.ammoMax;
+  out.filling = a.filling;
+  return out;
 }
 
 // the directions of a fan of `count` shots about `dir` (a unit [x, y, z]),

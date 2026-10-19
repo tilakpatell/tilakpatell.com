@@ -7,7 +7,8 @@
 // moves (protocol.js's `motion`: their clips paced to it, as yours are, so
 // their feet don't skate) and what the lead's doing (an `emote`, timed from
 // when it came in and played once: lib/emote.js); an older pilot's, without
-// them, walks as it always did.
+// them, walks as it always did. An ally's callsign (the roster's: peer.ally)
+// is in the site's ally green, as their tag is on the universe map.
 //
 // createPeers({ parent, placer, getCast, rides?, models? }) → { update(net, siteId, dt, eye),
 // dispose() } (eye: the camera's position, their lit blades' light out past
@@ -35,18 +36,19 @@ const QUIET = 3000; // ms with nothing from them: gone
 // (the crews, and the heroes anyone may be playing as: heroes.js)
 const SPECS = Object.fromEntries([...Object.values(PARTY).flat(), ...HEROES.map((h) => heroSpec({ id: h.id, color: h.saber?.color ?? 'blue', hilt: h.saber?.hilt ?? 'skywalker' }))].map((s) => [s.id, s]));
 
-function nameTag(text) {
+const ALLY_INK = '#8dffad'; // the site's ally green (universe/online/online.css)
+function nameTag(text, ally = false) {
   const c = document.createElement('canvas');
   c.width = 256;
   c.height = 64;
   const g = c.getContext('2d');
   g.font = '600 30px system-ui, sans-serif';
   const w = Math.min(248, g.measureText(text).width + 28);
-  g.fillStyle = 'rgba(6, 8, 14, 0.62)';
+  g.fillStyle = ally ? 'rgba(10, 36, 22, 0.66)' : 'rgba(6, 8, 14, 0.62)';
   g.beginPath();
   g.roundRect((256 - w) / 2, 10, w, 44, 22);
   g.fill();
-  g.fillStyle = '#ffffff';
+  g.fillStyle = ally ? ALLY_INK : '#ffffff';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.fillText(text, 128, 33);
@@ -161,11 +163,21 @@ export function createPeers({ parent, placer, getCast, rides: RIDES = GALAXY_RID
         const w = p.walk;
         if (p.blocked || !w || w.world !== siteId || now - w.at > QUIET) continue;
         live.add(p.id);
+        const ally = p.ally === 'ally';
         let e = shown.get(p.id);
         if (!e) {
-          e = { walkers: [], ride: null, tag: nameTag(p.name ?? 'Pilot'), name: p.name };
+          e = { walkers: [], ride: null, tag: nameTag(p.name ?? 'Pilot', ally), name: p.name, ally };
           group.add(e.tag);
           shown.set(p.id, e);
+        } else if (e.name !== p.name || e.ally !== ally) {
+          // a new callsign, or an alliance made or ended down here: a new tag
+          group.remove(e.tag);
+          e.tag.material.map.dispose();
+          e.tag.material.dispose();
+          e.tag = nameTag(p.name ?? 'Pilot', ally);
+          group.add(e.tag);
+          e.name = p.name;
+          e.ally = ally;
         }
         const want = [w.lead, w.mate].filter(Boolean);
         // (a new crew, or a swap: the figures follow who's who)

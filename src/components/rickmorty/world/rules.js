@@ -928,6 +928,20 @@ export const dropAt = (area, x, z, y = 0) => (area === 'garage' && y < 0.2 && Ma
 // ── the cruiser ──
 
 export const CRUISER = { radius: 1.7, hover: 1.2, top: 22, accel: 9, turn: 1.8, climb: 8, ceiling: 120 };
+// The cruiser as it's fitted and skilled: the universe's statsOf numbers (the
+// pages hand them in: outfit.js's, with the Hangar's parts and the skill
+// tree) over its own. The top speed takes the cruise and the boost, the
+// pick-up the accel, the turn and the climb the agility; each kept to 0.7 to
+// 1.6 of stock, so a street stays a street. Its size, hover and ceiling are
+// its own.
+const FIT = [0.7, 1.6];
+const share = (v) => (Number.isFinite(v) && v > 0 ? v : 1);
+const fit = (v) => Math.max(FIT[0], Math.min(FIT[1], v));
+export function cruiserOf(stats) {
+  if (!stats) return CRUISER;
+  const agile = fit(share(stats.agility));
+  return { ...CRUISER, top: CRUISER.top * fit(share(stats.cruise) * share(stats.boost)), accel: CRUISER.accel * fit(share(stats.accel)), turn: CRUISER.turn * agile, climb: CRUISER.climb * agile };
+}
 // where it flies: well past the hedges, over the suburb (it lands only in the street)
 export const FLY = { x0: -400, x1: 400, z0: -260, z1: 260 };
 const EDGE = 2; // it keeps this far in from the edge of where it flies
@@ -950,11 +964,11 @@ const under = (x, z) => ROOFS.filter((b) => Math.abs(x - b.x) <= b.w / 2 + CRUIS
 export const floorAt = (x, z) => Math.max(CRUISER.hover, ...under(x, z).map((b) => b.roof + 2));
 
 // One step of flying. input: { throttle -1..1, steer -1..1 (1 is left, as the
-// cars turn), lift -1..1 }.
-export function stepCruiser(c, { throttle = 0, steer = 0, lift = 0 } = {}, dt) {
+// cars turn), lift -1..1 }; `k`: its numbers (cruiserOf's; stock if none).
+export function stepCruiser(c, { throttle = 0, steer = 0, lift = 0 } = {}, dt, k = CRUISER) {
   const turn = clamp(steer, -1, 1);
-  const yaw = c.yaw + turn * CRUISER.turn * dt;
-  let speed = c.speed + clamp(clamp(throttle, -1, 1) * CRUISER.top - c.speed, -CRUISER.accel * dt, CRUISER.accel * dt);
+  const yaw = c.yaw + turn * k.turn * dt;
+  let speed = c.speed + clamp(clamp(throttle, -1, 1) * k.top - c.speed, -k.accel * dt, k.accel * dt);
   const s = FLY;
   const goX = Math.sin(yaw) * speed * dt;
   const goZ = Math.cos(yaw) * speed * dt;
@@ -966,7 +980,7 @@ export function stepCruiser(c, { throttle = 0, steer = 0, lift = 0 } = {}, dt) {
   // `bump`: the speed something took off it this step (the edge, a roof, the
   // ground, the ceiling), so a knock is as hard as it was
   let bump = was - Math.abs(speed);
-  let vy = c.vy + (clamp(lift, -1, 1) * CRUISER.climb - c.vy) * Math.min(1, dt * 5);
+  let vy = c.vy + (clamp(lift, -1, 1) * k.climb - c.vy) * Math.min(1, dt * 5);
   let y = c.y + vy * dt;
   const floor = floorAt(x, z);
   if (y < floor || y > CRUISER.ceiling) {
@@ -974,7 +988,7 @@ export function stepCruiser(c, { throttle = 0, steer = 0, lift = 0 } = {}, dt) {
     bump += Math.abs(vy);
     vy = 0;
   }
-  const [bank, bankV] = springStep(c.bank ?? 0, c.bankV ?? 0, turn * clamp(speed / CRUISER.top, -1, 1) * BANK, BANK_SPRING.k, BANK_SPRING.c, dt);
+  const [bank, bankV] = springStep(c.bank ?? 0, c.bankV ?? 0, turn * clamp(speed / k.top, -1, 1) * BANK, BANK_SPRING.k, BANK_SPRING.c, dt);
   return { x, z, y, yaw, speed, vy, bank, bankV, bump };
 }
 

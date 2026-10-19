@@ -9,8 +9,8 @@
 //
 // The world adds: press(button, down), stick(x, y), zoom(), start(),
 // advance(), back(), pause(on), exitCourse(), setLook(look), setSound(on),
-// erase(), and `game`
-// for the browser checks.
+// erase(), online(() => link | null) (the others online: ./online.js), and
+// `game` for the browser checks.
 
 import * as THREE from 'three';
 import { COURSES } from './courses/index';
@@ -18,6 +18,7 @@ import { drain, enterArea, enterCourse, exitCourse, newGame, tick } from './rule
 import { SAVE, SAVE_VERSION, blank, clean, starTotal } from './rules/save';
 import { ZOOMS } from './rules/camera';
 import { createScene } from './scene';
+import { stepOf } from './online';
 
 export const KEYS = {
   up: ['KeyW', 'ArrowUp'],
@@ -80,6 +81,7 @@ export default {
     await scene.setArea(g.areaId);
     let shown = g.areaId;
     let loading = false;
+    let others = null; // () => the link to the others online (the page's, through online())
     let gone = false; // (disposed: what's still on its way is dropped)
 
     rt.input.bind(KEYS);
@@ -220,6 +222,9 @@ export default {
           g.mode = g.mode === 'pause' ? 'play' : 'pause';
         }
         if (!loading) tick(g, dt, inp);
+        // where he is, to the others online in the area he's in (./online.js),
+        // once past the title (reading a sign, he's still there to see)
+        if (!loading && g.mode !== 'title' && shown === g.areaId) others?.()?.pose(...stepOf(g.mario, g.areaId));
         for (const e of drain(g)) handle(e);
         if (g.saveDirty) {
           g.saveDirty = false;
@@ -261,7 +266,7 @@ export default {
         }
       },
       draw() {
-        if (shown === g.areaId) scene.sync(g, g.alpha);
+        if (shown === g.areaId) scene.sync(g, g.alpha, g.mode === 'title' ? [] : (others?.()?.list() ?? []));
         scene.render();
       },
       wants: () => true,
@@ -279,6 +284,11 @@ export default {
       stick(x, y) {
         touch.x = x;
         touch.y = y;
+      },
+      // the link to the others online, as a getter (it comes and goes with
+      // the page's switch; null while offline)
+      online(get) {
+        others = typeof get === 'function' ? get : null;
       },
       zoom() {
         press('zoom');

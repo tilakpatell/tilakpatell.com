@@ -29,6 +29,9 @@ import { makeHdMario } from './models/mario-hd';
 import { canvasTexture } from './models/common';
 import { createMarioBody, easeFace, faceFor, lookFor } from './motion';
 import { MATS } from './textures';
+import { createGhosts } from '../middleearth/shared/ghosts';
+import { LIFT } from './online';
+import { ghostGeometry } from './models/ghost';
 
 export const S = 0.01;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -256,6 +259,27 @@ export function createScene(renderer, { small = false } = {}) {
   const marioBlob = new THREE.Mesh(blobGeo, blobMat);
   marioBlob.renderOrder = 2;
   scene.add(marioBlob);
+  // the others online in the area you're in (the module hands them to sync,
+  // ./online.js), as the Middle-earth towns show theirs: each a Mario from
+  // another save, pale, with their name over him. The code-made Mario in one
+  // piece (models/ghost.js: one draw, not his 39 parts'), made the first time
+  // someone comes and shared by them all, so a ghost going frees none of it;
+  // their height comes lifted by LIFT, and goes down by it here
+  let ghostShape = null;
+  const ghostPaint = new THREE.MeshBasicMaterial(); // (ghosts.js puts its pale one on)
+  const others = createGhosts({
+    height: () => -LIFT,
+    make: () => {
+      ghostShape ??= ghostGeometry();
+      const group = new THREE.Group();
+      group.add(new THREE.Mesh(ghostShape, ghostPaint));
+      return { group, top: 1.6, shared: true, dispose: () => {} };
+    },
+    animate: () => {},
+    tag: 0.3,
+    halo: 1,
+  });
+  scene.add(others.group);
 
   const materials = new Map();
   const models = new Map(); // actor id → { model, blob }
@@ -358,11 +382,13 @@ export function createScene(renderer, { small = false } = {}) {
   }
 
   // Everything where the rules have it, between their last two steps.
-  function sync(g, alpha) {
+  function sync(g, alpha, travellers = []) {
     if (!areaId || g.areaId !== areaId) return;
     const t = g.t + alpha;
     const dt = Math.max(0, t - lastT);
     lastT = t;
+    // (the game's clock is in its steps, thirty a second; the ghosts' in seconds)
+    others.update(travellers, t / 30, dt / 30);
     const m = g.mario;
     const l = m.last ?? { x: m.pos.x, y: m.pos.y, z: m.pos.z, yaw: m.yaw };
     const x = lerp(l.x, m.pos.x, alpha) * S, y = lerp(l.y, m.pos.y, alpha) * S, z = lerp(l.z, m.pos.z, alpha) * S;
@@ -510,6 +536,9 @@ export function createScene(renderer, { small = false } = {}) {
       clear(props);
       clear(cast);
       mario.dispose?.();
+      others.dispose();
+      ghostShape?.dispose();
+      ghostPaint.dispose();
       look.dispose();
       pmrem.dispose();
       scene.environment?.dispose?.();

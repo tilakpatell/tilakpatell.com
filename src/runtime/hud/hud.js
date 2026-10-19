@@ -64,8 +64,16 @@ export function promptText({ key = 'E', verb = '', thing = '', touch = false } =
   return touch || !key ? words : `${key} ${words}`.trim();
 }
 
-// "N others here" (the glossary's players chip), or null when you're alone.
-export const othersText = (count) => (count > 0 ? `${count} ${count === 1 ? 'other' : 'others'} here` : null);
+// "N others here" (the glossary's players chip), or null when you're alone;
+// with your allies among them (the roster's: the same key in every room),
+// "· 1 ally", "· 2 allies", or "· your ally" when they're the only one here.
+export const alliesText = (allies, count = Infinity) => (allies > 0 ? (allies === 1 && count === 1 ? 'your ally' : `${allies} ${allies === 1 ? 'ally' : 'allies'}`) : null);
+export const othersText = (count, allies = 0) => {
+  if (!(count > 0)) return null;
+  const others = `${count} ${count === 1 ? 'other' : 'others'} here`;
+  const who = alliesText(allies, count);
+  return who ? `${others} · ${who}` : others;
+};
 
 export const COMPASS = { span: Math.PI * 0.9, gap: 72, reserve: 220, markerMin: 24, markerMax: 72, fov: 64 };
 

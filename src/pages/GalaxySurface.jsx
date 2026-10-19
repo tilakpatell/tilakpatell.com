@@ -33,6 +33,9 @@ import DeployPanel from '../components/galaxy/surface/DeployPanel';
 import { ABILITIES, abilitiesOf } from '../components/galaxy/surface/abilityRules';
 import { GameIcon } from '../runtime/hud';
 import { HERO_KEY, heroById, heroSpec, loadoutLine, readHero, writeHero } from '../components/galaxy/heroes';
+import { keepHeroStyle, readCrewStyle } from '../components/galaxy/heroStyle';
+import { localSaves } from '../runtime/local';
+import { useSkills } from '../components/hangar/skills/useSkills';
 import { standInLine } from '../components/galaxy/surface/standIn';
 import HitMarker from '../components/galaxy/surface/HitMarker';
 import { reticleLock, reticleShape } from '../components/galaxy/surface/reticleFor';
@@ -125,8 +128,8 @@ export default function GalaxySurface() {
   useDocumentTitle(site ? (mission ? `${mission.name} · ${sys.name}` : `${site.place} · ${sys.name}`) : 'A galaxy far, far away');
   const reduced = useReducedMotion();
   const [ship] = useState(() => parseShip(local.get(SHIP_KEY)) ?? 'xwing');
-  // who you play as down here (heroes.js), kept across worlds
-  const [hero, setHero] = useState(() => readHero(local.get(HERO_KEY), parseShip(local.get(SHIP_KEY)) ?? 'xwing'));
+  // who you play as down here (heroes.js), kept across worlds, in the crew's own style (the Hangar's: heroStyle.js)
+  const [hero, setHero] = useState(() => readHero(local.get(HERO_KEY), parseShip(local.get(SHIP_KEY)) ?? 'xwing', readCrewStyle(localSaves(), local.get(HERO_KEY))));
   const [picking, setPicking] = useState(false);
   // (what's on in the world: the scene says so as a pick goes on, its
   // 'hero' event; a pick whose figure wouldn't load goes back to this)
@@ -138,6 +141,7 @@ export default function GalaxySurface() {
   const pickHero = (next) => {
     setHero(next);
     local.set(HERO_KEY, writeHero(next));
+    keepHeroStyle(localSaves(), next);
     setPicking(false);
   };
   const crew = crewById(ship);
@@ -174,6 +178,7 @@ export default function GalaxySurface() {
     const { next, keep } = deployPick(offer, heroNow.current, ship);
     setHero(next);
     if (keep) local.set(HERO_KEY, writeHero(next));
+    if (keep) keepHeroStyle(localSaves(), next);
     if (keep) lastClass.current = next;
     onLoan.current = !keep;
     view.current?.input?.('deploy', postId, offer);
@@ -182,6 +187,10 @@ export default function GalaxySurface() {
   // took while you were up, and the battle if you won it
   const posted = useRef(false);
   const build = useMemo(() => (ship && readHulls(local.get(HULL_KEY), CREWS.map((c) => c.id))[ship]) || null, [ship]);
+  // the skill tree's ground branch (the Hangar's), on your perks: not in the
+  // Battlefront battles, which stay as the game has them
+  const { fx: skills } = useSkills();
+  const skillFx = BATTLES.has(mission?.kind) ? null : skills;
   const tune = useMemo(() => (ship && readTunes(local.get(TUNE_KEY), CREWS.map((c) => c.id))[ship]) || null, [ship]); // (the crew's own ship, tuned: its parts must still be ones its plant runs)
   // (the hero's two abilities by id, for the game's icons on the HUD's buttons)
   const powerIds = useMemo(() => abilitiesOf(hero ? heroSpec(hero) : null), [hero]);
@@ -563,7 +572,7 @@ export default function GalaxySurface() {
       <h1 className="sr-only">
         {sys.name}: {site.place}
       </h1>
-      <SurfaceView system={id} site={site.district ? site : null} mission={mission?.id ?? null} ship={ship} hero={hero} loadout={loadout} build={build} found={found} done={done} compass={compass} net={online.client} handle={view} onEvent={onEvent} effects={effects} />
+      <SurfaceView system={id} site={site.district ? site : null} mission={mission?.id ?? null} ship={ship} hero={hero} loadout={loadout} build={build} found={found} done={done} compass={compass} net={online.client} handle={view} onEvent={onEvent} effects={effects} skillFx={skillFx} />
 
       {/* where you are, and how much of it you've found */}
       <div className="surface-where">

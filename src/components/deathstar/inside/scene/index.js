@@ -28,7 +28,7 @@
 //   createScene(renderer, { tier, small, station }) → { scene, camera, layout, ready, sync, hear, warm, resize, render, timeScale, tune, dispose }
 //     sync(g, alpha, look?)   once a frame, after the game’s steps: g as rules/game.js keeps it
 //       ({ side, you: body & { room, crouch, hp, gun, armour, hero, pitch? }, doors, time, crew?, combat? }),
-//       alpha how far the frame is from the last step to the next; look: { yaw, pitch, view, aim } as
+//       alpha how far the frame is from the last step to the next; look: { yaw, pitch, view, aim, travellers } as
 //       the module holds them (the mouse turns the eye every frame, not every step); without it, the
 //       body’s yaw, level, third person. crew: rules/brains.js’s ({ people }), each person drawn;
 //       combat: rules/combat.js’s ({ bolts }), every bolt in the air given to the effects, then they step
@@ -47,7 +47,9 @@ import { STATIONS } from '../rules/stations';
 import { CAMERA, cameraPose, wallHits } from './camera';
 import { createCinematics } from './cinematics';
 import { colliderFor } from './fall';
-import { loadPerson, motionOf, playerKind } from './figures';
+import { loadPerson, motionOf, playerKind, standIn } from './figures';
+import { createGhosts } from '../../../middleearth/shared/ghosts';
+import { floorOf } from '../rules/online';
 import { createFx } from './fx';
 import { createKit } from './kit';
 import { createPeople } from './people';
@@ -179,6 +181,25 @@ export function createScene(renderer, { tier = 'high', small = false, station = 
   const unitBox = new THREE.BoxGeometry(1, 1, 1);
   const leaves = new Map(); // doorId → { group, parts: [{ body, edge }] }
   const track = createTrack();
+  // the others online in the room you're in (look.travellers: the module's,
+  // rules/online.js), as the Middle-earth towns show theirs: each a pale
+  // trooper, the station's plainest figure (the capsule a model that
+  // didn't load stands in as, so a ghost downloads nothing), with their
+  // name over them, at the height over the room's lowest floor they sent
+  const GHOST_TALL = 1.83; // (a trooper's height, figures.js's PEOPLE)
+  let here = null; // (the room you're in: everyone listed is in it too)
+  const others = createGhosts({
+    height: () => floorOf(here ? layout.rooms.get(here) : null),
+    make: () => {
+      const p = standIn('stormtrooper', GHOST_TALL);
+      return { group: p.object, top: GHOST_TALL, dispose: p.dispose };
+    },
+    // (a capsule has no legs to walk on: it glides, as a ghost may)
+    animate: () => {},
+    tag: 0.22,
+    halo: 0.9,
+  });
+  scene.add(others.group);
   let person = null;
   let wanted = null; // the kind the player should be drawn as
   let downed = false;
@@ -309,6 +330,8 @@ export function createScene(renderer, { tier = 'high', small = false, station = 
     const pitch = look.pitch ?? you.pitch ?? 0;
     const view = look.view ?? g.view ?? 'third';
     const aim = Boolean(look.aim);
+    here = you.room ?? null;
+    others.update(look.travellers ?? [], time, dt);
 
     // the camera: snapped in to a wall at once, eased back out after it
     const hits = wallHits(layout, (id) => passable(g.doors, id), (room) => g.solidsOf?.(room) ?? []);
@@ -436,6 +459,7 @@ export function createScene(renderer, { tier = 'high', small = false, station = 
     disposed = true;
     person?.dispose();
     person = null;
+    others.dispose();
     cine.dispose();
     people.dispose();
     show.dispose();

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import WorldSwitcher from '../components/worlds/WorldSwitcher';
 import { use3D } from '../lib/gpu';
 import { useDocumentTitle } from '../lib/hooks';
+import { useInWorld } from '../components/universe/online/useOnline';
 
 const Minecraft = lazy(() => import('../components/minecraft/Minecraft'));
 const Eaglercraft = lazy(() => import('../components/eagler/Eaglercraft'));
@@ -16,6 +17,7 @@ export default function MinecraftPage() {
   const navigate = useNavigate();
   const three = use3D();
   const [tribute, setTribute] = useState(false);
+  useInWorld(!tribute || three.on); // (the game, or the tribute: no page pointers over either)
   const back = () => navigate('/dot-matrix');
   return (
     <div className="relative">

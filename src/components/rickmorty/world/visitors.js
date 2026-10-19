@@ -232,6 +232,7 @@ export async function buildVisitors(kit, { roadY = 0 } = {}) {
       }
       // the ship
       const f = state?.fed ?? fallback;
+      ship.visible = !f.down; // (shot down: gone till the next one comes round)
       ship.position.set(f.x, f.y, f.z);
       // a lean into its turns
       const turn = lastYaw == null ? 0 : wrap(f.yaw - lastYaw) / Math.max(dt, 1e-3);
@@ -243,7 +244,7 @@ export async function buildVisitors(kit, { roadY = 0 } = {}) {
       // the searchlight reaches the ground, brighter while it's on the cruiser's tail
       beam.scale.set(1, Math.max(1, f.y - SHIP_H * 0.45 - roadY), 1);
       beam.position.y = -SHIP_H * 0.45;
-      beam.material.opacity = f.mode === 'tail' ? 1 : 0.55 + Math.sin(t * 0.7) * 0.1;
+      beam.material.opacity = f.mode === 'tail' || f.mode === 'fight' ? 1 : 0.55 + Math.sin(t * 0.7) * 0.1;
     },
     dispose() {
       for (const o of owned) o.dispose?.();

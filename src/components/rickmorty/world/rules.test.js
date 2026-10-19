@@ -74,6 +74,7 @@ import {
   progress,
   ringWalls,
   stepCruiser,
+  cruiserOf,
   stepMorty,
   wallsIn,
 } from './rules';
@@ -2458,5 +2459,37 @@ describe('C-137: the cruiser’s bump', () => {
   it('says how fast it came down onto a roof or the ground', () => {
     const c = stepCruiser({ ...newCruiser(), x: 0, z: 0, y: CRUISER.hover + 0.05, vy: -8 }, { lift: -1 }, DT);
     expect(c.bump).toBeGreaterThan(5);
+  });
+});
+
+describe('the cruiser on its loadout and the skill tree (the pages hand it statsOf’s numbers)', () => {
+  const stock = { boost: 1, accel: 1, cruise: 1, agility: 1 };
+  it('is the stock cruiser with stock numbers, or none', () => {
+    expect(cruiserOf(stock)).toEqual(CRUISER);
+    expect(cruiserOf(null)).toEqual(CRUISER);
+  });
+  it('takes the cruise and the boost on its top speed, the accel on its pick-up, the agility on its turn and climb', () => {
+    const k = cruiserOf({ boost: 1.2, accel: 1.15, cruise: 1.1, agility: 1.08 });
+    expect(k.top).toBeCloseTo(CRUISER.top * 1.2 * 1.1);
+    expect(k.accel).toBeCloseTo(CRUISER.accel * 1.15);
+    expect(k.turn).toBeCloseTo(CRUISER.turn * 1.08);
+    expect(k.climb).toBeCloseTo(CRUISER.climb * 1.08);
+    expect(k.hover).toBe(CRUISER.hover);
+    expect(k.ceiling).toBe(CRUISER.ceiling);
+  });
+  it('keeps a wild number to between 0.7 and 1.6 of stock', () => {
+    expect(cruiserOf({ boost: 3, cruise: 3, accel: 0.1, agility: Number.NaN }).top).toBeCloseTo(CRUISER.top * 1.6);
+    expect(cruiserOf({ boost: 3, cruise: 3, accel: 0.1 }).accel).toBeCloseTo(CRUISER.accel * 0.7);
+    expect(cruiserOf({ agility: Number.NaN }).turn).toBe(CRUISER.turn);
+  });
+  it('flies further in a second on faster numbers', () => {
+    let a = newCruiser();
+    let b = newCruiser();
+    const fast = cruiserOf({ boost: 1.3, cruise: 1.2, accel: 1.3 });
+    for (let i = 0; i < 60; i++) {
+      a = stepCruiser(a, { throttle: 1 }, 1 / 60);
+      b = stepCruiser(b, { throttle: 1 }, 1 / 60, fast);
+    }
+    expect(b.speed).toBeGreaterThan(a.speed);
   });
 });
