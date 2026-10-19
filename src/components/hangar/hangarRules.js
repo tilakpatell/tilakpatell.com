@@ -9,7 +9,8 @@
 //   TABS, TAB_LABEL, TAB_KEY
 //   readTab(raw) → a tab ('shipyard' for anything else)
 //   tabForKey(key, last) → a tab, or null for a key that isn't the Hangar's
-//   wantsKey(e, { open, typing, otherDialog, door }) → boolean
+//   wantsKey(e, { open, typing, otherDialog, door, crewKey }) → boolean
+//   (crewKey false: a world whose foot has C, a big planet's block, keeps it)
 
 export const TABS = ['crew', 'arms', 'powers', 'skills', 'shipyard'];
 export const TAB_LABEL = { crew: 'Crew', arms: 'Arms', powers: 'Powers', skills: 'Skills', shipyard: 'Shipyard' };
@@ -24,10 +25,10 @@ export function tabForKey(key, last) {
   return null;
 }
 
-export function wantsKey(e, { open = false, typing = false, otherDialog = false, door = false } = {}) {
+export function wantsKey(e, { open = false, typing = false, otherDialog = false, door = false, crewKey = true } = {}) {
   if (!e || e.metaKey || e.ctrlKey || e.altKey) return false;
   const k = typeof e.key === 'string' ? e.key.toLowerCase() : '';
-  if (k !== 'h' && k !== 'c') return false;
+  if (k !== 'h' && (k !== 'c' || !crewKey)) return false;
   if (typing || otherDialog) return false;
   return open || door;
 }

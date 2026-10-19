@@ -421,13 +421,18 @@
   min-width: 76px;
   font-weight: 700;
 }
-.rm-fight-hearts {
-  letter-spacing: 2px;
-  color: #ff5a6a;
+.rm-fight-row em { min-width: 3ch; font-style: normal; font-variant-numeric: tabular-nums; }
+/* (the enemy's hits left, as a share of its full: ./vitalsOf.js) */
+.rm-fight-bar {
+  position: relative;
+  display: block;
+  width: 120px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.18);
 }
-.rm-fight-hearts span[data-off] {
-  color: rgba(255, 255, 255, 0.22);
-}
+.rm-fight-bar > i { position: absolute; inset: 0; background: #ff5a6a; transform-origin: left; scale: var(--v, 1) 1; }
 .rm-fight-hint {
   font-size: 0.7rem; /* (the HUD's floor) */
   opacity: 0.75;
@@ -482,3 +487,28 @@
 .rm-world-stage > .rm-world-canvas { position: absolute; inset: 0; }
 /* (the box fades in, as the canvas did: the runtime canvas's own fade-in would fade it twice) */
 .rm-world-stage > .rm-world-canvas > .world-canvas { transition: none; }
+
+/* the cruiser's flight cluster (the HUD kit's: RmHud.jsx), its glass in the
+   show's ink with a slime-green bar: bottom right over the guide's button on
+   a wide screen (the middle's the landing prompt's and the hint's); on a
+   touch screen or a narrow one, the kit's narrow deflectors block, over the
+   stick (the Weapon button is the arms there) */
+.rm-cluster {
+  --hud-cluster-glass: var(--rm-glass);
+  --hud-cluster-line: var(--rm-ink);
+  --hud-cluster-ink: #fff;
+  --hud-cluster-label: var(--rm-lime);
+  --hud-vitals-fill: var(--rm-lime);
+  --hud-vitals-glow: rgba(201, 255, 90, 0.5); /* (the lime's own glow) */
+  --text: #fff; /* (the page round it is light: the cluster's words stay white on its ink) */
+  --muted: rgba(255, 255, 255, 0.72);
+  z-index: 3;
+}
+.rm-cluster .hud-glass { border-width: 2px; box-shadow: 0 3px 0 var(--rm-ink); }
+@media (pointer: fine) and (min-width: 768px) {
+  .rm-cluster { left: 62%; right: 16px; bottom: 76px; justify-items: end; }
+  .rm-cluster .hud-cluster-row { justify-content: flex-end; }
+}
+@media (pointer: coarse), (max-width: 767px) {
+  .rm-cluster .hud-vitals-block { bottom: 190px; }
+}

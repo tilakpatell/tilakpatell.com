@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import RmEarnNote from '../RmEarnNote';
+import { PowerBar } from '../../universe/shared/powerBar';
 import { Link as RouterLink } from 'react-router-dom';
-import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiEmotionLaughLine, RiListCheck2, RiShirtLine, RiTyphoonLine } from 'react-icons/ri';
+import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiEmotionLaughLine, RiHeart3Line, RiListCheck2, RiShieldLine, RiShirtLine, RiToolsLine, RiTyphoonLine } from 'react-icons/ri';
 import { EMOTES, wheelAngle } from '../../../lib/emote';
-import { Prompt, Reticle, Stick, TouchButton, reticleState } from '../../../runtime/hud';
+import { Arms, Cluster, Prompt, Reticle, Stick, TouchButton, Vitals, createFlightCluster, reticleState } from '../../../runtime/hud';
+import { enemyShare, heartsToHealth } from './vitalsOf';
 import { PROMPT as LOOK_PROMPT } from '../../../runtime/look';
 import GuideCue from '../../guide/GuideCue';
 import Wardrobe from '../wardrobe/Wardrobe';
@@ -28,6 +30,9 @@ import { Title, Toast } from './WorldCards';
 // C-137's own look; the spacing is the kit's tokens (./world.css).
 
 const EMOTE_NAME = { wave: 'Wave', cheer: 'Cheer', dance: 'Dance', taunt: 'Taunt', sit: 'Sit' };
+
+// the gun in Morty's hand in a duel, on the kit's Arms (no rack: it never runs dry)
+const HAND_GUN = { name: 'Rick’s gun', line: 'primary', index: 0, ammo: 0, max: 0, filling: 0 };
 
 export default function RmHud({
   touch,
@@ -89,12 +94,31 @@ export default function RmHud({
   onLock,
   closeList,
   earned = null,
+  onHangar = null,
+  clusterRef = null,
+  onShipFire = null,
+  onWeapon = null,
+  powersRef = null,
+  onPower = null,
+  powerPicks = null,
+  carry = null,
 }) {
   // Where the top row ends (the taller of the title's column and the map's),
   // measured, for what hangs under it on a phone (./world.css --rm-under):
   // the toast and the cruiser's caption sit just under it however tall the
   // objective or the chips make it, never over them.
   const top = useRef(null);
+  // a duel: Morty's health and his gun on the HUD kit's cluster (his hearts
+  // on the one scale: ./vitalsOf.js), written when the duel changes
+  const footRef = useRef(null);
+  const [footCluster] = useState(createFlightCluster);
+  const health = duel ? heartsToHealth(duel.mortyHp, duel.mortyMax) : null;
+  const healthValue = health?.value ?? null;
+  const healthLow = health?.low ?? false;
+  useLayoutEffect(() => {
+    const on = healthValue !== null;
+    footCluster.place(footRef.current, { on, vitals: on ? { value: healthValue, max: 100, low: healthLow } : null, arms: on ? HAND_GUN : null });
+  }, [footCluster, healthValue, healthLow]);
   useLayoutEffect(() => {
     const row = top.current;
     const stage = row?.parentElement;
@@ -141,24 +165,12 @@ export default function RmHud({
             <div className="rm-fight" aria-live="polite">
               <div className="rm-fight-row">
                 <b>{SAY[duel.who]?.who ?? 'Them'}</b>
-                <span className="rm-fight-hearts" aria-label={`${duel.hp} of ${duel.max}`}>
-                  {Array.from({ length: duel.max }, (_, i) => (
-                    <span key={i} data-off={i >= duel.hp || undefined}>
-                      ♥
-                    </span>
-                  ))}
+                <span className="rm-fight-bar" style={{ '--v': enemyShare(duel.hp, duel.max) / 100 }} aria-hidden="true">
+                  <i />
                 </span>
+                <em>{enemyShare(duel.hp, duel.max)}%</em>
               </div>
-              <div className="rm-fight-row">
-                <b>Morty</b>
-                <span className="rm-fight-hearts" aria-label={`${duel.mortyHp} of ${duel.mortyMax}`}>
-                  {Array.from({ length: duel.mortyMax }, (_, i) => (
-                    <span key={i} data-off={i >= duel.mortyHp || undefined}>
-                      ♥
-                    </span>
-                  ))}
-                </span>
-              </div>
+              <span className="sr-only">Morty: {health.value} of 100.</span>
               <span className="rm-fight-hint">F fires. Keep out of reach.</span>
             </div>
           )}
@@ -200,11 +212,19 @@ export default function RmHud({
             </b>
             {!touch && <kbd>M</kbd>}
           </button>
-          <button type="button" className="rm-chip" onClick={onWardrobe} aria-haspopup="dialog" aria-label="Wardrobe: how Morty and Rick look">
-            <RiShirtLine aria-hidden="true" />
-            <span>Wardrobe</span>
-            {!touch && <kbd>C</kbd>}
-          </button>
+          {onHangar ? (
+            <button type="button" className="rm-chip rm-hangar-btn" onClick={onHangar} aria-haspopup="dialog" aria-label="Hangar: the crew’s looks, and the cruiser’s arms, powers, skills and shipyard" aria-keyshortcuts="H">
+              <RiToolsLine aria-hidden="true" />
+              <span>Hangar</span>
+              {!touch && <kbd>H</kbd>}
+            </button>
+          ) : (
+            <button type="button" className="rm-chip" onClick={onWardrobe} aria-haspopup="dialog" aria-label="Wardrobe: how Morty and Rick look">
+              <RiShirtLine aria-hidden="true" />
+              <span>Wardrobe</span>
+              {!touch && <kbd>C</kbd>}
+            </button>
+          )}
           {!planet && !game && !duel && !hud.flying && (
             <button type="button" className="rm-chip" onClick={openDial} aria-haspopup="dialog" aria-label="Portal gun: pick where Rick’s garage portal goes">
               <RiTyphoonLine aria-hidden="true" />
@@ -322,12 +342,31 @@ export default function RmHud({
               <span>
                 <kbd>Shift</kbd> down
               </span>
+              <span>
+                <kbd>F</kbd> fire
+              </span>
+              <span>
+                <kbd>R</kbd> weapon
+              </span>
               <span>Slow down over open ground, then E to land</span>
             </>
           )}
         </p>
       )}
 
+      {/* in a duel: Morty's health and his gun, the same kit's cluster */}
+      <Cluster rootRef={footRef} className="rm-cluster" label="Morty">
+        <Vitals label="Morty" icon={<RiHeart3Line aria-hidden="true" />} className="rm-cluster-vitals" />
+        <Arms className="rm-cluster-arms" />
+      </Cluster>
+      {/* in the cruiser: its deflectors and its guns, the HUD kit's cluster in the show's ink (the frame loop writes it) */}
+      {clusterRef && (
+        <Cluster rootRef={clusterRef} className="rm-cluster" label="The cruiser">
+          <Vitals label="Deflectors" icon={<RiShieldLine aria-hidden="true" />} className="rm-cluster-vitals" />
+          <Arms className="rm-cluster-arms" keys={!touch} />
+          {onPower && <PowerBar ship="cruiser" reduced={false} barRef={powersRef} onPress={onPower} placement="cluster" picks={powerPicks} carry={carry} />}
+        </Cluster>
+      )}
       <div className="rm-hud rm-hud-bottom">
         {touch ? (
           <>
@@ -381,6 +420,33 @@ export default function RmHud({
                   <TouchButton aria-label="Drop" onPress={() => onLift(-1)} onRelease={() => onLift(0)}>
                     <RiArrowDownLine aria-hidden="true" />
                   </TouchButton>
+                  {/* the cruiser's guns: held, they keep firing; the next line on its own button */}
+                  {onShipFire && (
+                    <TouchButton
+                      className="rm-fire"
+                      aria-label="Fire"
+                      onPress={(e) => {
+                        e.preventDefault();
+                        onShipFire(true);
+                      }}
+                      onRelease={() => onShipFire(false)}
+                    >
+                      ✦
+                    </TouchButton>
+                  )}
+                  {onWeapon && (
+                    <TouchButton
+                      className="rm-lock"
+                      size={52}
+                      aria-label="Next weapon"
+                      onPress={(e) => {
+                        e.preventDefault();
+                        onWeapon();
+                      }}
+                    >
+                      Weapon
+                    </TouchButton>
+                  )}
                 </div>
               )}
               {game ? (
