@@ -5,13 +5,15 @@ import { PLACES } from './plan';
 // ── the heist so far ──
 
 const WHOLE = ['space', 'mind', 'reality', 'power', 'time', 'soul'];
+const GATE_WIN = 'spidey'; // the achievement Thwip.jsx unlocks on a win
 
-// From the stones earned (as hq/stones keeps them, halves of Soul included):
-// each place done or not, the next one to go to, which stones are back,
+// From the stones earned (as hq/stones keeps them, halves of Soul included)
+// and the achievements unlocked: each place done or not (the gate once Thwip!
+// is won, though it's never the next one for the heist), the next one to go to, which stones are back,
 // whether the portal is open, and the line at the top of the screen.
-export function progress(earned = []) {
+export function progress(earned = [], unlocked = []) {
   const has = new Set(earned);
-  const places = PLACES.map((p) => ({ ...p, done: p.stone ? has.has(p.stone) : false }));
+  const places = PLACES.map((p) => ({ ...p, done: p.stone ? has.has(p.stone) : p.id === 'spidey' && unlocked.includes(GATE_WIN) }));
   // (the gate has no stone: it's never the next one for the heist)
   const next = places.find((p) => p.stone && !p.done) ?? null;
   const have = WHOLE.filter((s) => has.has(s));

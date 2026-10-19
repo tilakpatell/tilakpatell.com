@@ -65,7 +65,8 @@ const keep = (h) => ({ x: h.x, z: h.z, face: h.face, y: h.mode === 'ground' ? h.
 export default function CompoundWorld({ onPortal }) {
   const three = use3D();
   const [heist, setHeist] = useState(readHeist);
-  const prog = progress(heist);
+  const { unlocked } = useAchievements();
+  const prog = progress(heist, unlocked);
   const [inside, setInside] = useState(null);
   const [gl, setGl] = useState('loading'); // loading | on | failed | lost
   const api = useRef(null);
@@ -661,7 +662,7 @@ function Cards({ prog, enter, three, gl, retry }) {
       <h1 id="cw-title" className="display hq-steel mt-4 text-[clamp(2.6rem,1.6rem+3.6vw,4.6rem)]">
         Avengers HQ
       </h1>
-      <p className="lead mt-4 max-w-[60ch]">Marvel, all of it. Every building on the compound belongs to someone, and each has a game that wins an Infinity Stone back (and Spider-Man has one at the front gate). {prog.objective}</p>
+      <p className="lead mt-4 max-w-[60ch]">Marvel, all of it. Every building on the compound belongs to someone, and each has a game (Spider-Man’s is at the front gate). The Infinity Stones are won in the 3D games; here, each building has a simpler one to try. {prog.objective}</p>
       {three.can && (
         <p className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted">
           {gl === 'lost' ? 'The graphics chip reset, so here’s the compound from the air.' : gl === 'failed' ? 'The 3D compound couldn’t start here, so here it is from the air.' : three.held ? 'The 3D compound isn’t loaded yet, so here it is from the air.' : '3D is switched off, so here’s the compound from the air.'}

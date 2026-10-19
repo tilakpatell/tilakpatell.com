@@ -3,6 +3,7 @@ import HQFrame from '../hq/HQFrame';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
+import { stoneById } from '../world/labels';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
 import { use3D } from '../../../lib/gpu';
@@ -563,7 +564,7 @@ export default function TesseractRun({ fallback, onPortal }) {
             </div>
           </dl>
           {ui.won && ui.stone && (
-            <p className="hq-stone" style={{ '--glow': '#3d8bff' }}>
+            <p className="hq-stone" style={{ '--glow': stoneById('space').color }}>
               <span className="stone-dot" aria-hidden="true" />
               The Space Stone is yours. It opens a portal.
             </p>

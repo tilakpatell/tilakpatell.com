@@ -54,7 +54,7 @@ export const WALKED = [
   }),
   walk('avengers', '/avengers', 'Avengers HQ', {
     title: 'The compound',
-    text: 'You’re Spider-Man: swing, zip, perch. Each building is a game that wins an Infinity Stone, and six Stones open a portal to Titan. Twelve backpacks and a ring course are hidden round the grounds.',
+    text: 'You’re Spider-Man: swing, zip, perch. Each building is a game, most of them for an Infinity Stone, and the Space Stone opens a portal to Titan. Twelve backpacks and a ring course are hidden round the grounds.',
   }),
   walk('middleearth', '/middle-earth', 'Middle-earth', {
     at: 'redbook',

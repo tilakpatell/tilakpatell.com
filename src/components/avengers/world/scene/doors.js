@@ -7,11 +7,10 @@ import { hot } from '../../hq/stage';
 import { rbox } from '../../hq/kit/shapes';
 import { buildPortal } from '../../lawn/models';
 import { inPoly } from '../../compound/plan';
-import { STONES } from '../../../interests/stones';
+import { stoneFor } from '../labels';
 import { BUILDINGS, PLACES, PORTAL } from '../rules';
 import { beamMaterial, cloudy, signTexture } from './kit';
 
-const STONE_OF = { power: 'power', reality: 'reality', mind: 'mind', 'soul-clint': 'soul', 'soul-natasha': 'soul', time: 'time', space: 'space' };
 
 export function buildDoors({ scene, env, white }) {
   // ── a door into each game: glass in a dark frame, a lit lintel in the game's
@@ -69,8 +68,9 @@ export function buildMarkers(scene) {
     const beamMat = beamMaterial(p.accent);
     const beam = new THREE.Mesh(beamGeo, beamMat);
     beam.renderOrder = 4;
-    // (the gate has no stone to win: a gem nobody will see, in its own colour)
-    const color = STONES.find((s) => s.id === STONE_OF[p.stone])?.color ?? p.accent;
+    // (the gate has no stone to win, so its gem never shows, even once Thwip! is
+    // won; its beam still goes off once it's done, like any finished door)
+    const color = stoneFor(p)?.color ?? p.accent;
     const gem = new THREE.Mesh(gemGeo, new THREE.MeshStandardMaterial({ color, emissive: new THREE.Color(color), emissiveIntensity: 2.6, roughness: 0.15, metalness: 0.1 }));
     gem.position.y = 4.6;
     gem.scale.setScalar(0.55);
@@ -95,7 +95,7 @@ export function buildMarkers(scene) {
       m.beam.visible = !won && near > 0.02;
       m.beamMat.uniforms.uTime.value = clock;
       m.beamMat.uniforms.uStrength.value = (next ? 1.15 : 0.55) * near;
-      m.gem.visible = won;
+      m.gem.visible = won && Boolean(p.stone);
       if (won) {
         m.gem.rotation.y = clock * 0.9;
         m.gem.position.y = 4.6 + Math.sin(clock * 1.5 + p.z) * 0.25;

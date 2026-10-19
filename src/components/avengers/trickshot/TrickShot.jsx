@@ -3,6 +3,7 @@ import HQFrame from '../hq/HQFrame';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
+import { stoneById } from '../world/labels';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
 import { use3D } from '../../../lib/gpu';
@@ -536,7 +537,7 @@ export default function TrickShot({ fallback }) {
                 </p>
               )}
               {ended && res?.stone && (
-                <p className="hq-stone" style={{ '--glow': '#ff8a00' }}>
+                <p className="hq-stone" style={{ '--glow': stoneById('soul-clint').color }}>
                   <span className="stone-dot" aria-hidden="true" />
                   {res.whole ? 'With Natasha’s half, the Soul Stone is whole.' : 'Clint’s half of the Soul Stone is yours. Natasha’s half is in Operations.'}
                 </p>

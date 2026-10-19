@@ -145,7 +145,7 @@ export default function Avengers() {
       }
       sfx().then((s) => s.thunder());
       unlock('whatever');
-      notify('I am Iron Man.', 'Every stone, won back on the compound. Thanos and his army are dust; this page is not.', 'note', 'whatever');
+      notify('I am Iron Man.', 'Every stone, won back on the compound. Thanos is dust; this page is not.', 'note', 'whatever');
     };
     if (titan.current?.snap(heist, after)) return;
     after(heist);
@@ -216,7 +216,7 @@ export default function Avengers() {
             </h2>
             <p className="lead mt-4 max-w-[46ch]">
               {heist
-                ? 'You took every stone back from the compound. Set them, and this time the snap is Tony’s: Thanos and his army turn to dust, and the page stays.'
+                ? 'You took every stone back from the compound. Set them, and this time the snap is Tony’s: Thanos turns to dust, and the page stays.'
                 : 'He has the gauntlet. Set all six stones, and the snap takes half this page for a few seconds. Win all six back on the compound, and the snap is Tony’s.'}
             </p>
             <ul className="stone-list mt-6" aria-label="Set the stones">

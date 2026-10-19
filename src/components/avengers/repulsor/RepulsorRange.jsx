@@ -3,6 +3,7 @@ import HQFrame from '../hq/HQFrame';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
+import { stoneById } from '../world/labels';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
 import { use3D } from '../../../lib/gpu';
@@ -455,7 +456,7 @@ export default function RepulsorRange({ fallback }) {
                 </p>
               )}
               {ui.phase === 'won' && ui.stone && (
-                <p className="hq-stone" style={{ '--glow': '#a24bff' }}>
+                <p className="hq-stone" style={{ '--glow': stoneById('power').color }}>
                   <span className="stone-dot" aria-hidden="true" />
                   The Power Stone is yours. It’s waiting in Thanos’s gauntlet.
                 </p>
