@@ -87,7 +87,7 @@ import LoadingVeil from '../../worlds/LoadingVeil';
 import { rmWorldModule } from './module';
 import { createLook } from '../../../runtime/look';
 import { createFlightCluster } from '../../../runtime/hud';
-import { powerReadout } from './games/power';
+import { METER_OFF } from './games/meter';
 import { chaseCalls, chaseGoal, chaseReadout, chaseStart, newChase, shaken, stepChase } from './games/chase';
 import { FRICTION, coneFor } from '../../../lib/combat/aim';
 import { createLockOn } from '../../../lib/combat/lockOn';
@@ -1781,8 +1781,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       // the place's people, for the map (stage.js's NPC layer says where they are)
       s.npcs = api.current?.act(s.area, 'npcs') ?? null;
       drawMap(map.current, s, goalOf(markRef.current, s, planet) ?? (s.flying && !planet ? chaseGoal(s.chase) : null), s.t);
-      // (and a place run on power, its charge: ./dimensions/stage.js)
-      const charge = powerReadout(api.current?.act(s.area, 'power'));
+      // (and a place's game, its meter: ./dimensions/stage.js's `meter`)
+      const charge = api.current?.act(s.area, 'meter') ?? METER_OFF;
       chargeMeter.place(chargeRef.current, { on: charge.on, vitals: charge.vitals, arms: null });
       if (chargeLine.current) chargeLine.current.textContent = charge.line;
       // (and the cruiser's chase, its hits left)

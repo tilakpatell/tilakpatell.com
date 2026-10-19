@@ -11,7 +11,8 @@
 // stage(kit, id, opts) → { R, d, A, cx, cz, P(dx, dz) (a spot in the world
 // from the place's middle), figure(kind, at), people(), done(light, update),
 // hunt(on), calm(), power({ glow }) } (and the NPC behaviour below: anyone
-// placed with `ai`; and a place run on power, below)
+// placed with `ai`; and a place run on power, below; whichever game a place
+// runs, its `meter` action is the HUD's readout of it: ../games/meter.js)
 
 import * as THREE from 'three';
 import { makeSky } from '../sky';
@@ -21,7 +22,7 @@ import { RIGGED } from '../../portal/meshyCast';
 import { destinationById } from './destinations';
 import { createNpcs } from '../npc';
 import { attend } from '../living';
-import { TUNING as POWER, newPower, powerNews, stepPower } from '../games/power';
+import { TUNING as POWER, newPower, powerNews, powerReadout, stepPower } from '../games/power';
 
 // a speckled paint for a floor or the ground
 export const specks = (base, specks, seed = 7, n = 1600, size = 2) => (g, w, h) => speckle(g, w, h, { base, specks, n, size, seed });
@@ -188,6 +189,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         'power-take': () => (asked.take = true),
         'power-give': () => (asked.give = true),
         power: () => ({ phase: run.phase, charge: run.charge, max: run.max, need: run.need, delivered: run.delivered, carrying: run.carrying }),
+        meter: () => powerReadout(run),
         ...(import.meta.env.DEV && { setPower: (patch) => (run = { ...run, ...patch }) }),
       });
     return area;
