@@ -40,8 +40,9 @@ describe('the ops board', () => {
   it('offers Try 3D only on a card whose stone is won in the 3D game, and only where 3D can be tried', () => {
     const prog = progress(['power']);
     const off = render({ prog, can3D: false, onTry3D: () => {} });
-    expect(count(off, '>Try 3D<')).toBe(6);
-    expect(count(off, 'The stone here is won in the 3D game.')).toBe(6);
+    expect(count(off, '>Try 3D<')).toBe(4);
+    expect(count(off, 'The stone here is won in the 3D game.')).toBe(4);
+    expect(count(off, '>Play in 2D<')).toBe(2);
     expect(count(render({ prog, can3D: false }), '>Try 3D<')).toBe(0);
     expect(count(render({ prog, can3D: true, onTry3D: () => {} }), '>Try 3D<')).toBe(0);
   });
@@ -59,14 +60,14 @@ describe('the ops board', () => {
   it('opens a building with the page’s own state, so Back comes back to the board, and hands each button its place', () => {
     const go = vi.fn();
     const try3D = vi.fn();
-    const card = boardCards(progress([]), { get: from({}), can3D: false }).find((c) => c.id === 'cap');
+    const card = boardCards(progress([]), { get: from({}), can3D: false }).find((c) => c.id === 'thor');
     const els = walk(BoardCard({ card, onGo: go, onTry3D: try3D }));
     const link = els.find((e) => e.type === Link);
-    expect(link.props.to).toBe('/avengers/training');
+    expect(link.props.to).toBe('/avengers/lawn');
     expect(link.props.state).toBe(hqState);
     expect(link.props.replace).toBeUndefined();
     els.find((e) => e.type === 'button' && words(e) === 'Try 3D').props.onClick();
     els.find((e) => e.type === 'button' && words(e) === 'Go there').props.onClick();
-    expect([try3D.mock.calls, go.mock.calls]).toEqual([[['cap']], [['cap']]]);
+    expect([try3D.mock.calls, go.mock.calls]).toEqual([[['thor']], [['thor']]]);
   });
 });

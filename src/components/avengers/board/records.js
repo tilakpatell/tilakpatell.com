@@ -17,8 +17,8 @@ export const RECORD_KEYS = { tour: 'tp-hq-swing-tour', style: 'tp-hq-style-best'
 // snap is left out)
 export const AVENGERS_ACHIEVEMENTS = ['worthy', 'ironman', 'captain', 'hawkeye', 'widow', 'thor', 'hulk', 'whatever', 'quinjet', 'spidey', 'swingtour', 'backpacks', 'suitup', 'showboat'];
 
-// the places whose game has a 2D view of its own (PR 7)
-export const FLAT_READY = [];
+// the places whose game has a 2D view of its own (ricochet/Flat.jsx, widow/Flat.jsx)
+export const FLAT_READY = ['cap', 'widow'];
 
 // a score as the games read theirs (Number(local.get(BEST, 0)) || 0), with 0 or less counting as nothing
 const pos = (v) => {
