@@ -10,7 +10,17 @@
 export const MODES = ['walk', 'horse', 'climb', 'boat', 'carried', 'eagle', 'ship'];
 
 export const STAGES = [
-  { id: 'hobbiton', name: 'Hobbiton', date: '22 September 3018', length: 220, mode: 'walk', place: 'hobbiton' },
+  {
+    id: 'hobbiton',
+    name: 'Hobbiton',
+    date: '22 September 3018',
+    length: 220,
+    mode: 'walk',
+    place: 'hobbiton',
+    // the Water, in from the west, by the lane past the mill and away
+    // west again before the stage’s end, so its channel never meets a seam
+    ground: { rivers: [{ points: [[-240, 0, -30], [-120, 0, 30], [-42, 0, 95], [-38, 0, 140], [-110, 0, 190], [-200, 0, 214]], depth: 2.6, width: 12, bank: 22 }] },
+  },
   { id: 'shire-edge', name: 'The Shire’s edge', date: '24 September 3018', length: 190, mode: 'walk', place: 'bucklebury' },
   { id: 'bree', name: 'Bree', date: '29 September 3018', length: 170, mode: 'walk', place: 'bree' },
   { id: 'weathertop', name: 'Weathertop', date: '6 October 3018', length: 200, mode: 'walk', place: 'weathertop' },

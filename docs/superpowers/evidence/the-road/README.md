@@ -55,3 +55,46 @@ The frame rate is the software rasteriser’s, not the Road’s: in the same con
 ### The Death Star’s letterbox, lifted into the kit
 
 The bars drawn by the old `.ds-letterbox` rules and by the kit’s `Letterbox` with the Death Star’s skin (`--hud-bar: 11%`, `--hud-bar-in: 0.5s`), in a 960 × 600 frame once their animation has run: 0 bytes differ, 22 % of the frame black (two bars of 11 %). The page’s first screen in the container (its graphics-chip gate) before and after: 0 bytes differ.
+
+## R2, the systems and Hobbiton (2026-10-19)
+
+The ground, the scatter, the water, the weather, the ambience, the house with the Ring vision and the post chain, and Hobbiton built in full (the stage recipe). Measured in the container on `nodes-webgl`; **the WebGPU rows are the owner’s machines’ and are left empty**.
+
+### Hobbiton (`node lab/road/measure.mjs hobbiton`, and each beat held)
+
+| where | quality | draws | triangles | assets MB | UI share |
+| --- | --- | --- | --- | --- | --- |
+| the first beat (Bag End’s door, 6 s in) | high | 49 | 339,778 | 2.4 | 13.9 % |
+| the first beat | low | 35 | 139,769 | 4.7 | 13.9 % |
+| the Party Field, the crane up (the heaviest frame) | high | 82 | 848,682 | | |
+| the Party Field, the crane up | low | 44 | 263,795 | | |
+| the dragon over the field | high | 80 | 821,187 | | |
+| the dragon over the field | low | 42 | 237,589 | | |
+
+- Against the design’s targets (350 and 200 draws, 1,200,000 and 400,000 triangles): the heaviest frame is 82 draws and 848,682 triangles on `high`, 44 and 263,795 on `low`. The chain adds about twenty draws on `high` (AO, bloom, the grade, SMAA: 51 against 30 before it at the same spot).
+- Assets from cold: 2.4 MB at `high` (the Hill’s door, the farm horse, the nature kit, Frodo and Gandalf, Bilbo and the dancers once near); the 4.7 MB at `low` counted the cast that walked in during the slower first frames. Under the boot slice’s 8 MB either way.
+- The Road’s own sheets (rain, snow, ash, embers, motes, spray, smoke, fire) are 1.5 to 14 kB each; the eight sounds are made on the context, nothing fetched.
+
+### The probe (`BASE=http://localhost:5173 node scripts/perf-probe.mjs road`)
+
+Moria’s first metre, as R1’s rows; run against the warm dev server (the probe’s own fresh Vite counts its dependency pre-bundling in the ready time: 55 s that way, cold).
+
+| route | machine | drawn on | quality | ready s | fps | p50 ms | worst 1 % ms | main ms | GPU ms | draws | programs | late pipelines |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| road | container | nodes-webgl | high | 36.6 | 4.8 | 4.9 | 9,520.6 | 3.5 | - | 37 | 27 | 7 |
+| road | container | nodes-webgl | low | 13.5 | 4.6 | 4.4 | 10,550.1 | 3.2 | - | 37 | 27 | 7 |
+| road | owner’s laptop | webgpu | high | | | | | | | | | |
+| road | owner’s desktop | webgpu | high | | | | | | | | | |
+
+- The median main thread is a few milliseconds; the worst frames (5 to 11 s here) are node shaders built inside the frame as a stage’s materials first draw (`getProgramParameter`, and three’s builder under `Promise.resolve`): the neighbour stage’s scatter pools, the water and the sprites. On SwiftShader that is seconds; on a graphics chip tens of milliseconds a material. Open for R7: compile each built stage off the frame (`rt.gfx.compile` on its group once lands.js finishes it) before it is drawn.
+- `/middle-earth/road?at=moria` comes up (the world on) in 4.6 s from a warm page in the container.
+
+### The pictures
+
+`shots/hobbiton-desktop.webp` and `-phone.webp` (`node lab/road/shots.mjs hobbiton`: 20 m in, the cart coming down the lane), and the beats, each looked at against its film moment:
+
+- `hobbiton-door-desktop.webp`: the first beat’s wide on the Hill, six round doors in its turf, Bag End’s the Sketchfab door, chimneys on the crown; Frodo on the lane. The Shire’s morning.
+- `hobbiton-cart-desktop.webp`: the side shot as Gandalf’s cart passes, the bay horse at a slow walk, the fireworks in the bed, Frodo turning to it. “A wizard is never late.”
+- `hobbiton-party-desktop.webp` and `hobbiton-party-phone.webp`: the crane up over the Party Field at dusk: the tree, its lanterns, the long tables, eight dancers round them. The party.
+- `hobbiton-dragon-desktop.webp`: the dragon, a fiery streak over the field from the tree, under the first stars.
+- `hobbiton-vision-desktop.webp`: `window.__ROAD__.vision(1)` on the lane: the world drained to a cold grey-blue, its edges smeared, the sky washed out; the beat takes it for 0.4 s as Bilbo goes.
