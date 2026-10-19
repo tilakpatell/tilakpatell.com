@@ -16,7 +16,7 @@
 // 'line' { who, text, at } as one of the cast says something (ambience.js).
 // The world adds: goTo(stageId), setAuto(on), press(name, down) (the touch
 // buttons), carryOn(), restart(), skipToEnd(); and set(s), `s`, `scene` for the checks.
-// In development, window.__ROAD__ = { set(s), info(), world, weather, ambience }.
+// In development, window.__ROAD__ = { set(s), info(), world, weather, ambience, vision(on) }.
 
 import * as THREE from 'three';
 import { newClock, step as stepClock } from './clock';
@@ -30,7 +30,8 @@ import { createScatter } from './scatter';
 import { createWeather } from './weather';
 import { createAmbience } from './ambience';
 import { loadKit } from '../../../lib/three/kitNodes';
-import { createHouse } from '../../../lib/three/houseNodes';
+import { chainFor, createRoadHouse, gradeNode } from './hooks';
+import { newVision, stepVision } from './vision';
 import { forgetCast, walker } from './cast';
 import { clipFor, walkers as walkersAt } from './fellowship';
 import { STAGES, stageById } from './stages/index';
@@ -78,7 +79,8 @@ export default {
     const tier = rt.quality?.tier ?? 'high';
     // the house's look on the ground (and, with the post chain, on the rest);
     // the lands: the stage you are in and its two neighbours, built and placed
-    const house = createHouse();
+    const road = createRoadHouse();
+    const house = road.house;
     // the nature kit, one a tint (a season's recolouring), in the house and the wind
     const windTime = { value: 0 };
     const kits = new Map();
@@ -89,10 +91,14 @@ export default {
     };
     const scatter = createScatter({ kitFor, tier });
     scene.add(scatter.group);
-    const sky = createSky();
+    const sky = createSky({ vision: road.uVision });
     const lands = createLands({ scene, house, tier, scatter, sky });
     // rain, snow, ash, fire: a kind a draw, asked for by the stages and their beats
-    const weather = createWeather(rt.gfx.renderer, { tier });
+    // the chain: the house’s bloom on every tier, the grade (the Ring’s, hooks.js) from high
+    const passes = chainFor(tier, rt.gfx.backend, { scene, camera, grade: (tex) => gradeNode(tex, road.uVision) });
+    const post = rt.gfx.post?.(passes) ?? null;
+    // (the quads keep their velocity only where TRAA reads it)
+    const weather = createWeather(rt.gfx.renderer, { tier, velocity: Boolean(post) && passes.some((p) => p.kind === 'traa') });
     scene.add(weather.group);
     // the stage’s sound, the beats’ clips and the cast’s lines, on the runtime’s bus
     const ambience = createAmbience(rt);
@@ -165,6 +171,10 @@ export default {
 
     // the light for where the ride is: the sky, the sun, the fog
     let daylight = null;
+    // the Ring: on while a beat holds it (or the check’s hook), its amount every material’s uVision
+    let vision = newVision();
+    let visionOn = false;
+    let sinceAdopt = Infinity;
     const relight = () => {
       const l = lightAt(STAGES, clock.s);
       daylight = l;
@@ -177,7 +187,8 @@ export default {
       hemi.intensity = 0.25 + l.ambient * 1.6;
       hemi.color.setRGB(...l.fog.colour);
       scene.fog.color.setRGB(...l.fog.colour);
-      scene.fog.density = l.fog.density;
+      // (the fog throbs with the vision’s pulse)
+      scene.fog.density = l.fog.density * (1 + 0.35 * vision.amount * (1 + vision.pulse));
       house.sky({ low: scene.fog.color, high: scene.fog.color, sunDir });
       house.light({ sun, hemi });
     };
@@ -298,6 +309,14 @@ export default {
         const here = frame(dt);
         report(here, dt);
         lands.step();
+        vision = stepVision(vision, dt, { on: visionOn });
+        road.uVision.value = vision.amount;
+        sky.wind(vision.wind);
+        // (what has come into the scene since, in the vision’s hook: a stage, a pool, a figure)
+        if ((sinceAdopt += dt) > 1) {
+          sinceAdopt = 0;
+          road.adopt(scene);
+        }
         lands.water(dt, daylight);
         weather.update(dt, camera);
         ambience.update(dt);
@@ -305,7 +324,8 @@ export default {
         scatter.update(camera, dt);
       },
       draw(f) {
-        (f?.renderer ?? rt.gfx.renderer).render(scene, camera);
+        if (post) post.render();
+        else (f?.renderer ?? rt.gfx.renderer).render(scene, camera);
       },
       wants: () => true,
       scene,
@@ -365,6 +385,7 @@ export default {
         for (const k of kits.values()) k.dispose();
         sky.dispose();
         weather.dispose();
+        post?.dispose?.();
         ambience.dispose();
         for (const w of cast.values()) w.dispose();
         forgetCast();
@@ -376,9 +397,9 @@ export default {
       // lands' building times)
       const info = () => {
         const r = rt.gfx.renderer?.info?.render ?? {};
-        return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats };
+        return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, vision: vision.amount, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats };
       };
-      window.__ROAD__ = { world, set: (s) => world.set(s), info, weather, ambience };
+      window.__ROAD__ = { world, set: (s) => world.set(s), info, weather, ambience, vision: (on) => void (visionOn = Boolean(on)), passes };
     }
     return world;
   },
