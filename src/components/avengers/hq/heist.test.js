@@ -110,6 +110,7 @@ const STARTS = [
   ['banner', 'smash/SmashRun.jsx', 'start', 1],
   ['spidey', 'thwip/Thwip.jsx', 'start', 1],
   ['vault', 'tesseract/TesseractRun.jsx', 'start', 1],
+  ['cap', 'ricochet/Flat.jsx', 'enter', 1],
 ];
 
 describe('every game', () => {

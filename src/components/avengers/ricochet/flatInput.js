@@ -70,6 +70,10 @@ export function previewPath(room, angle, assist) {
   return out;
 }
 
+// the SVG's words for the chevron turned to the aim, and for a path
+export const thrownAt = ([cx, cz], angle) => `translate(${cx} ${cz}) rotate(${((angle * 180) / Math.PI).toFixed(1)})`;
+export const pointsOf = (path) => path.map((p) => p.join(',')).join(' ');
+
 // where the disc is along its flight
 export function discAt(flight) {
   if (!flight) return null;
