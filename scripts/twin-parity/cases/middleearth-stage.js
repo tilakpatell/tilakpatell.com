@@ -17,9 +17,13 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { GRADE } from '../../../src/lib/stage3d.js';
 import { gradeNode, gradeUniforms } from '../../../src/lib/three/stage3dNodes.js';
+import * as KO from '../../../src/components/middleearth/kit.js';
+import * as KN from '../../../src/components/middleearth/nodes/kit.js';
 
 const LOOKS = {
   plain: {},
+  // (the bridge's: Bridge3D's grade)
+  bridge: { uContrast: 0.2, uSat: 1.08, uVignette: 0.42, uShadow: [0.01, 0.004, 0], uHigh: [0.03, 0.012, 0] },
   mordor: {
     uContrast: 0.2,
     uSat: 0.8,
@@ -56,6 +60,17 @@ const fill = (scene, camera, glow = false) => {
   camera.position.set(0, 2.5, 7);
   camera.lookAt(0, 0.3, 0);
 };
+// the bridge's sea of molten rock, its fog and its exposure (Bridge3D's 1.15, the house's 1.4 over it)
+const sea = (K) => (scene, camera) => {
+  scene.fog = new THREE.FogExp2(0x140805, 0.011);
+  scene.background = new THREE.Color(0x050302);
+  const m = K.lavaMaterial({ scale: 0.06, spot: [0.5, -6], reach: 0.0026 });
+  const s = new THREE.Mesh(new THREE.PlaneGeometry(520, 360).rotateX(-Math.PI / 2), m);
+  s.position.set(0, -22, -90);
+  scene.add(s);
+  camera.position.set(-4, 4, 14);
+  camera.lookAt(0, -14, -20);
+};
 const set = (u, look, read) => {
   for (const [k, v] of Object.entries({ uGrain: 0, uAspect: 1, ...look })) {
     if (Array.isArray(v)) read(u[k]).setRGB(...v);
@@ -63,15 +78,16 @@ const set = (u, look, read) => {
     else u[k].value = v;
   }
 };
-const tone = (r) => {
+const tone = (r, exposure = 1.2) => {
   r.toneMapping = THREE.NeutralToneMapping;
-  r.toneMappingExposure = 1.2;
+  r.toneMappingExposure = exposure;
 };
 
 const node =
-  (look, glow = false, bloomOn = glow) =>
+  (look, glow = false, bloomOn = glow, own = null, exposure = 1.2) =>
   ({ scene, camera, renderer }) => {
-    fill(scene, camera, glow);
+    if (own) own(scene, camera);
+    else fill(scene, camera, glow);
     const u = gradeUniforms();
     set(u, LOOKS[look], (x) => x.value);
     const pipeline = new RenderPipeline(renderer);
@@ -80,12 +96,13 @@ const node =
     // (three times the strength, as the stage hands it over: UnrealBloomPass glows 3 × its own)
     const lit = bloomOn ? picture.add(bloom(picture, BLOOM.strength * 3, BLOOM.radius, BLOOM.threshold)) : picture;
     pipeline.outputNode = gradeNode(u)(convert(lit));
-    return { render: () => (tone(renderer), pipeline.render()) };
+    return { render: () => (tone(renderer, exposure), pipeline.render()) };
   };
 const classic =
-  (look, glow = false, bloomOn = glow) =>
+  (look, glow = false, bloomOn = glow, own = null, exposure = 1.2) =>
   ({ scene, camera, renderer }) => {
-    fill(scene, camera, glow);
+    if (own) own(scene, camera);
+    else fill(scene, camera, glow);
     const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(256, 256, { type: THREE.HalfFloatType }));
     composer.addPass(new RenderPass(scene, camera));
     const b = bloomOn ? new UnrealBloomPass(new THREE.Vector2(128, 128), BLOOM.strength, BLOOM.radius, BLOOM.threshold) : null;
@@ -97,7 +114,7 @@ const classic =
     // (sized as a stage sizes it: the picture's, the bloom at half)
     composer.setSize(256, 256);
     b?.resolution.set(128, 128);
-    return { render: () => (tone(renderer), composer.render()) };
+    return { render: () => (tone(renderer, exposure), composer.render()) };
   };
 
 export default {
@@ -105,5 +122,6 @@ export default {
   'middleearth:stage:grade:mordor': { node: node('mordor'), classic: classic('mordor') },
   // (a lit window over white, as Rivendell’s: the house bloom on each side)
   'middleearth:stage:bloom': { node: node('plain', true), classic: classic('plain', true) },
+  'middleearth:stage:sea': { node: node('bridge', false, false, sea(KN), 1.15 * 1.4), classic: classic('bridge', false, false, sea(KO), 1.15 * 1.4) },
   'middleearth:stage:bright': { node: node('plain', true, false), classic: classic('plain', true, false) },
 };
