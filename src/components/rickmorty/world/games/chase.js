@@ -107,7 +107,7 @@ export function stepChase(prev, input = {}, dt = 1 / 60) {
   }
   if (g.hits >= g.max || grounded) {
     g.phase = 'lost';
-    g.events.push({ type: 'lost', grounded: g.hits < g.max });
+    g.events.push({ type: 'lost', grounded: Boolean(grounded) });
     return g;
   }
   if (passed) {
