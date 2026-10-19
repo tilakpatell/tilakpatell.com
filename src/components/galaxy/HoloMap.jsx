@@ -403,7 +403,8 @@ export default function HoloMap({ current, online, onJump, onClose, onLeave, oat
       }
     // (a view gone wrong must not take the map down with it: every name on the right, as it was)
     if (items.some((i) => !Number.isFinite(i.x) || !Number.isFinite(i.y))) return {};
-    const out = placeLabels(items, { bounds: { x0: 0, y0: 0, x1: boxPx, y1: boxPx }, blocks: [...blocks, ...tagBlock] });
+    // (zoomed in, a dot under a control goes unnamed: a pan brings it out. The whole map names every film world, clear of them)
+    const out = placeLabels(items, { bounds: { x0: 0, y0: 0, x1: boxPx, y1: boxPx }, blocks: [...blocks, ...tagBlock], hideUnder: k > 1.01 });
     // (too small a map for the charted worlds' names: their dots alone, where they're shown at all)
     if (!named) for (const it of items) if (it.w === 0 && out[it.id] && out[it.id] !== HIDDEN) out[it.id] = null;
     return out;

@@ -10,9 +10,10 @@
 // cover something look again with everyone down, and the few that are left
 // in a cluster are tried in every place together (a search that takes the
 // best of them, up to a budget). In screen pixels, at the map's zoom (the
-// names keep their size while the map scales, so zoomed in they part). A
-// dot under a control is out of sight: its name is null, as an optional
-// one's with no room, and it's placed round by no one.
+// names keep their size while the map scales, so zoomed in they part).
+// With `hideUnder` (the map zoomed in, where a pan brings it out), a dot
+// under a control is out of sight: its name is null, as an optional one's
+// with no room, and it's placed round by no one.
 //
 // An item may be `optional`: a charted world's (charted/index.js), unless
 // it's where you are or the one picked, and a landmark's name (landmarks.js,
@@ -92,14 +93,14 @@ const shrunk = (b) => ({ x0: b.x0 + GRAZE, y0: b.y0 + GRAZE, x1: b.x1 - GRAZE, y
 const NODES = 6000; // (the most places the cluster search tries: a crowd with no clear answer isn't searched for ever, a pan's frame has 16 ms)
 const REACH = 2 * GAP; // (a name's box reaches its own size and a gap past its dot's middle, so two meet only within both sizes and this)
 
-export function placeLabels(items, { dot = DOT, bounds = null, blocks = [] } = {}) {
+export function placeLabels(items, { dot = DOT, bounds = null, blocks = [], hideUnder = false } = {}) {
   const dotOf = (o) => {
     const r = o.dot ?? dot;
     return { x0: o.x - r, y0: o.y - r, x1: o.x + r, y1: o.y + r };
   };
   const byPrio = (a, b) => b.prio - a.prio || (a.id < b.id ? -1 : 1);
-  // (a dot under a control is out of sight: its name goes unsaid, and takes no room from its neighbours')
-  const under = (it) => blocks.some((k) => it.x > k.x0 && it.x < k.x1 && it.y > k.y0 && it.y < k.y1);
+  // (a dot under a control is out of sight, where asked: its name goes unsaid, and takes no room from its neighbours')
+  const under = (it) => hideUnder && blocks.some((k) => it.x > k.x0 && it.x < k.x1 && it.y > k.y0 && it.y < k.y1);
   const unseen = items.filter(under);
   const inSight = items.filter((it) => !under(it));
   const order = inSight.filter((it) => !it.optional).sort(byPrio);
