@@ -762,7 +762,7 @@ export const HOTSPOTS = [
   spot('tinyrick', 'school', -303.1, 203.25, 'Tiny Rick', 'Talk'),
   spot('roy', 'arcade', -300, 293.6, 'Roy: A Life Well Lived', 'Put the headset on'),
   spot('cabinet1', 'arcade', -308.4, 297, 'Arcade cabinet', 'Play'),
-  spot('cabinet2', 'arcade', -291.6, 300, 'Arcade cabinet', 'Play'),
+  spot('cabinet2', 'arcade', -291.6, 300, 'Plumbus Smash', 'Play'),
   spot('cabinet3', 'arcade', -308.4, 303, 'Arcade cabinet', 'Play'),
   // Rick's clone lab: the tube, the west desk's screens, Pickle Rick in his jar on the east desk
   spot('clone', 'basement', -300, 500.9, 'The clone tube', 'Look'),

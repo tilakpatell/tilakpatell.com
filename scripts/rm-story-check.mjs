@@ -15,7 +15,7 @@
 // the first world takes a while to build.
 import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync } from 'node:fs';
-import { EPISODES } from '../src/components/rickmorty/adventure/episodes.js';
+import { EPISODES, READY } from '../src/components/rickmorty/adventure/episodes.js';
 
 const BASE = process.env.BASE ?? 'http://127.0.0.1:5197';
 const OUT = process.env.OUT ?? null;
@@ -67,6 +67,7 @@ async function reads(page, text) {
   });
 }
 const WIPED = EPISODES[0];
+const ARCADE = EPISODES[1];
 // Morty by the garage portal, stepped through it, and stood where it took him
 async function throughPortal(page) {
   await goto(page, 'garage', -302.3, 101.4, Math.PI);
@@ -107,12 +108,21 @@ const SCENARIOS = {
       const s = await story(page);
       check(s.episode === 0 && s.step === i + 1, `after ${id} the story is at ${s.episode}.${s.step}`);
     }
-    // the last step: out of Customs with the seeds; the episode's closing line, and (only episode 1 built) every place open
+    // the last step: out of Customs with the seeds; the episode's closing line, then episode 2's card
     await page.evaluate(() => window.__C137__.complete('customs'));
-    await page.locator('.rm-toast', { hasText: WIPED.outro[0][1] }).waitFor({ timeout: 10000 });
-    check((await story(page)).episode === 1, 'episode 1 didn’t end');
-    for (const id of ['annex', 'vat', 'citadel', 'squanch', 'evilrick']) check(await page.evaluate((id) => window.__RMSTORY__.dialOpen(id), id), `${id} isn’t open after episode 1`);
-    await reads(page, 'Go into the Smith house and put interdimensional cable on the TV.');
+    await toast(page, WIPED.outro[0][1]);
+    await card.waitFor({ timeout: 10000 }).catch(() => {
+      throw new Error('no card for episode 2 once episode 1 ended');
+    });
+    const next = await card.textContent();
+    check(next.includes('Episode 2') && next.includes(ARCADE.title) && next.includes(ARCADE.intro[0][1]), `episode 2’s card says “${next}”`);
+    await page.keyboard.press('Shift');
+    await card.waitFor({ state: 'detached', timeout: 5000 });
+    const s = await story(page);
+    check(s.episode === 1 && s.step === 0, `after episode 1 the story is at ${s.episode}.${s.step}`);
+    for (const id of ['annex', 'meeseeksgolf']) check(await page.evaluate((id) => window.__RMSTORY__.dialOpen(id), id), `${id} isn’t open after episode 1`);
+    for (const id of ['agency', 'vat']) check(!(await page.evaluate((id) => window.__RMSTORY__.dialOpen(id), id)), `${id} is open after episode 1`);
+    await reads(page, ARCADE.steps[0].text);
   },
   // a new visitor's dial: Customs open, the rest dimmed with the episode that
   // opens them; a locked pick says so and changes nothing; a dial left set to
@@ -138,7 +148,7 @@ const SCENARIOS = {
   // to the garage, and a planet landed on from the map has a way home
   async ways(page) {
     await c137(page);
-    await page.evaluate(() => window.__RMSTORY__.jump(1)); // (past the built episodes: every place open)
+    await page.evaluate((n) => window.__RMSTORY__.jump(n), READY); // (past the built episodes: every place open)
     check((await page.evaluate(() => window.__C137__.dial('citadel'))) === 'citadel', 'the dial wouldn’t take the Citadel');
     await throughPortal(page);
     await page.waitForFunction(() => window.location.hash.startsWith('#/c-137/citadel'), null, { timeout: 20000 }).catch(() => {
@@ -257,6 +267,67 @@ const SCENARIOS = {
     await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-c137-done') ?? '[]').includes('butter'), null, { timeout: 10000 }).catch(() => {
       throw new Error('the butter robot didn’t tick once the butter was passed');
     });
+  },
+  // a new visitor plays episode 2: Roy, then Plumbus Smash on the walkway
+  // cabinet, its win told once the cabinet's overlay closes
+  async 'episode-2'(page) {
+    await page.goto(`${BASE}/#/c-137`, { waitUntil: 'domcontentloaded' });
+    const card = page.locator('.rm-episode');
+    await card.waitFor({ timeout: 600000 });
+    await page.keyboard.press('Shift');
+    await card.waitFor({ state: 'detached', timeout: 5000 });
+    await built(page);
+    for (const { id } of WIPED.steps) await page.evaluate((id) => window.__C137__.complete(id), id);
+    await card.waitFor({ timeout: 10000 });
+    await page.keyboard.press('Shift');
+    await card.waitFor({ state: 'detached', timeout: 5000 });
+    await reads(page, ARCADE.steps[0].text);
+    await page.evaluate(() => window.__C137__.complete('roy'));
+    await reads(page, ARCADE.steps[1].text);
+    // the cabinet: up over the page, and nothing won by opening it
+    await goto(page, 'arcade', -292.6, 300, 0);
+    await use(page, 'cabinet2');
+    const cab = place(page, 'cabinet2');
+    await cab.locator('.cabinet').waitFor({ timeout: 60000 }).catch(() => {
+      throw new Error('the walkway cabinet didn’t open Plumbus Smash');
+    });
+    const wins = async () => (await story(page)).wins;
+    check(!(await wins()).includes('cabinet'), 'the cabinet counted as won when it opened');
+    // a run lost counts nothing
+    await cab.getByRole('button', { name: 'Start' }).click();
+    await page.evaluate(() => {
+      const c = window.__CABINET__;
+      c.set({ ...c.state, lives: 1, drops: [{ id: 999, lane: 0, y: 0.999 }] });
+      c.step({});
+    });
+    await cab.getByRole('button', { name: 'Again' }).waitFor({ timeout: 5000 });
+    check(!(await wins()).includes('cabinet'), 'a lost run counted');
+    await cab.getByRole('button', { name: 'Again' }).click();
+    if (OUT) {
+      // (a run part-way, set rather than played: a headless browser draws a few frames a second)
+      await page.evaluate(() => {
+        const c = window.__CABINET__;
+        c.set({ ...c.state, score: 4250, smashed: 17, lives: 2, drops: [{ id: 901, lane: 0, y: 0.18 }, { id: 902, lane: 1, y: 0.7 }, { id: 903, lane: 2, y: 0.44 }] });
+      });
+      await page.screenshot({ path: `${OUT}/episode-2-cabinet.png` });
+    }
+    // one smash short of the target, a plumbus in reach: one press wins, while the overlay's still up
+    await page.evaluate(() => {
+      const c = window.__CABINET__;
+      c.set({ ...c.state, score: c.state.target - 250, stuck: 0, drops: [{ id: 999, lane: 1, y: 0.8 }] });
+      c.step({ smash: 1 });
+    });
+    await page.waitForFunction(() => window.__RMSTORY__.get().wins.includes('cabinet'), null, { timeout: 5000 }).catch(() => {
+      throw new Error('the cabinet’s win didn’t count');
+    });
+    check(await cab.isVisible(), 'the overlay closed on the win');
+    check((await page.locator('.rm-toast', { hasText: ARCADE.outro[0][1] }).count()) === 0, 'the closing line was said under the overlay');
+    await cab.getByRole('button', { name: 'Leave' }).first().click();
+    await cab.waitFor({ state: 'detached', timeout: 10000 });
+    await toast(page, ARCADE.outro[0][1]);
+    check((await story(page)).episode === 2, 'episode 2 didn’t end');
+    for (const id of ['agency', 'vat']) check(await page.evaluate((id) => window.__RMSTORY__.dialOpen(id), id), `${id} isn’t open after episode 2`);
+    await reads(page, 'Go into the Smith house and put interdimensional cable on the TV.');
   },
 };
 

@@ -110,6 +110,7 @@ import { stepRmLockOn } from './rmLockOn';
 
 const Roy = lazy(() => import('./roy/Roy').catch(() => ({ default: RoyDown })));
 const Sewer = lazy(() => import('./sewer/Sewer').catch(() => ({ default: RoyDown })));
+const Cabinet = lazy(() => import('./games/Cabinet').catch(() => ({ default: RoyDown })));
 const sound = (name) =>
   import('../../games/gameAudio')
     .then((g) => g[name]?.())
@@ -151,6 +152,7 @@ const PLACES = {
   quiz: { title: 'Mr. Goldenfold’s pop quiz', where: 'Harry Herpson High' },
   roy: { title: 'Roy: A Life Well Lived', where: 'Blips and Chitz', full: true },
   sewer: { title: 'Pickle Rick’s sewer run', where: 'The agency', full: true },
+  cabinet2: { title: 'Plumbus Smash', where: 'Blips and Chitz', full: true, wait: 'Switching the cabinet on…' },
 };
 const AREA_NAME = {
   street: 'The Smiths’ street',
@@ -208,7 +210,7 @@ const WHEEL_R = 110;
 
 // Where the next thing to do is, for the map's marker: the area and the spot
 // in it, and from anywhere else, the way towards it.
-const GOAL = { cable: ['house', 'spot:cable'], butter: ['house', 'spot:butter'], meeseeks: ['garage', 'spot:meeseeks'], plumbus: ['garage', 'spot:plumbus'], portalpanic: ['garage', 'spot:portalpanic'], quiz: ['school', 'spot:quiz'], fly: ['street', 'cruiser'], portal: ['garage', 'link:garage-portal'], basement: ['garage', 'link:garage-hatch'], roy: ['arcade', 'spot:roy'], roy55: ['arcade', 'spot:roy'], president: ['street', 'spot:president'], oval: ['garage', 'link:garage-oval'], diner: ['street', 'link:diner-door'], mindblowers: ['mindblowers', 'spot:chair'], rickall: ['house', 'spot:egg'], wong: ['street', 'link:wong-door'], ...Object.fromEntries(DESTINATIONS.flatMap((d) => d.tasks.map((t) => [t.id, [d.id, `spot:${Object.keys(d.done).find((k) => d.done[k] === t.id) ?? d.escape?.after ?? d.escape?.spot ?? d.goal}`]]))), sewer: ['agency', 'spot:sewer'] };
+const GOAL = { cable: ['house', 'spot:cable'], butter: ['house', 'spot:butter'], meeseeks: ['garage', 'spot:meeseeks'], plumbus: ['garage', 'spot:plumbus'], portalpanic: ['garage', 'spot:portalpanic'], quiz: ['school', 'spot:quiz'], fly: ['street', 'cruiser'], portal: ['garage', 'link:garage-portal'], basement: ['garage', 'link:garage-hatch'], roy: ['arcade', 'spot:roy'], roy55: ['arcade', 'spot:roy'], president: ['street', 'spot:president'], oval: ['garage', 'link:garage-oval'], diner: ['street', 'link:diner-door'], mindblowers: ['mindblowers', 'spot:chair'], rickall: ['house', 'spot:egg'], wong: ['street', 'link:wong-door'], ...Object.fromEntries(DESTINATIONS.flatMap((d) => d.tasks.map((t) => [t.id, [d.id, `spot:${Object.keys(d.done).find((k) => d.done[k] === t.id) ?? d.escape?.after ?? d.escape?.spot ?? d.goal}`]]))), sewer: ['agency', 'spot:sewer'], cabinet: ['arcade', 'spot:cabinet2'] };
 // (every destination but the planets is through the garage's portal: they're landed on from the universe map)
 const toDest = (via) => Object.fromEntries(DESTINATIONS.filter((d) => !isPlanet(d.id)).map((d) => [d.id, via]));
 const WAY = {
@@ -344,17 +346,27 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   }, []);
   // the adventure told what's happened (../adventure/), and what it says
   // back: an episode's closing line, and the next one's card (a new
-  // visitor's first, once C-137's world is on)
+  // visitor's first, once C-137's world is on). While something's open over
+  // the page what it says waits, and is said as that closes.
   const { feed, intro } = useAdventure();
   const [card, setCard] = useState(null);
   const closeCard = useCallback(() => setCard(null), []);
-  const tell = useCallback(
-    (e) => {
-      const news = newsOf(feed(e));
+  const held = useRef([]);
+  const show = useCallback(
+    (out) => {
+      const news = newsOf(out);
       news.say.forEach(say);
       if (news.card != null) setCard(news.card);
     },
-    [feed, say],
+    [say],
+  );
+  const tell = useCallback(
+    (e) => {
+      const out = feed(e);
+      if (openRef.current) held.current.push(...out);
+      else show(out);
+    },
+    [feed, show],
   );
   useEffect(() => {
     if (gl !== 'on' || planet) return;
@@ -404,7 +416,8 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
       tellDone(pending.current);
       pending.current = [];
     }
-  }, [tellDone]);
+    if (held.current.length) show(held.current.splice(0));
+  }, [tellDone, show]);
   const quizDone = useCallback(
     (pass) => {
       if (!pass) return;
@@ -432,6 +445,8 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
     },
     [complete, close],
   );
+  // a walkway cabinet's target beaten (told as it's beaten, said when it closes)
+  const cabinetWon = useCallback(() => tell({ type: 'win', game: 'cabinet' }), [tell]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -447,7 +462,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
       ) : (
         <Cards done={done} openPlace={openPlace} three={three} gl={gl} toast={toast} retry={() => setGl('loading')} planet={planet} />
       )}
-      {open && <Place id={open} onClose={close} onQuiz={quizDone} onRoy={royLeft} onSewer={sewerLeft} onTask={complete} />}
+      {open && <Place id={open} onClose={close} onQuiz={quizDone} onRoy={royLeft} onSewer={sewerLeft} onWin={cabinetWon} onTask={complete} />}
     </section>
   );
 }
@@ -2158,8 +2173,8 @@ function RoyDown({ onLeave }) {
 
 // ── what opens over the page ──
 // Its component, and the way back to the room (Esc, the button, or B on a
-// controller). Roy fills the screen and has its own way out.
-function Place({ id, onClose, onQuiz, onRoy, onSewer, onTask }) {
+// controller). Roy, the sewer and the cabinet fill the screen and have their own ways out.
+function Place({ id, onClose, onQuiz, onRoy, onSewer, onWin, onTask }) {
   const p = PLACES[id];
   const used = () => p.task && onTask(p.task);
   const back = useRef(null);
@@ -2227,6 +2242,7 @@ function Place({ id, onClose, onQuiz, onRoy, onSewer, onTask }) {
         {() => <Sewer onLeave={onSewer} />}
       </GpuGate>
     ),
+    cabinet2: <Cabinet game="cabinet2" onWin={onWin} onLeave={onClose} />,
   }[id];
   return createPortal(
     <div ref={shell} className="rm-place" data-full={p.full || undefined} data-place={id} role="dialog" aria-modal="true" aria-label={p.full ? p.title : undefined} aria-labelledby={p.full ? undefined : 'rm-place-title'} tabIndex={-1}>
@@ -2244,7 +2260,7 @@ function Place({ id, onClose, onQuiz, onRoy, onSewer, onTask }) {
         </header>
       )}
       <div className="rm-place-body">
-        <Suspense fallback={<p className="rm-place-wait">{p.full ? 'Putting the headset on…' : 'Opening it up…'}</p>}>{p.full ? body : <div className="shell py-6 md:py-10">{body}</div>}</Suspense>
+        <Suspense fallback={<p className="rm-place-wait">{p.wait ?? (p.full ? 'Putting the headset on…' : 'Opening it up…')}</p>}>{p.full ? body : <div className="shell py-6 md:py-10">{body}</div>}</Suspense>
       </div>
     </div>,
     document.body,
