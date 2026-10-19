@@ -20,8 +20,9 @@ export const left = (beats, from, to) => (from > to ? beats.filter((b) => b.at >
 
 export function rigAt(beats, local) {
   let found = null;
-  for (const b of beats) if (b.at <= local && local - b.at <= (b.reach ?? REACH)) found = b;
-  return found && { id: found.id, rig: found.rig, params: found.params ?? {}, cut: found.cut, since: local - found.at };
+  // (on its mark is at it: the clock stops on a beat’s s, which reads back a hair short in metres)
+  for (const b of beats) if (b.at <= local + 1e-6 && local - b.at <= (b.reach ?? REACH)) found = b;
+  return found && { id: found.id, rig: found.rig, params: found.params ?? {}, cut: found.cut, since: Math.max(0, local - found.at) };
 }
 
 export const holdsOf = (beats) => beats.reduce((a, b) => a + (b.hold ?? 0), 0);

@@ -1,0 +1,140 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createSaves } from '../../../runtime/saves';
+import { fresh } from './story';
+import { STORY_KEY, createAdventure } from './adventure';
+
+const memoryStore = () => {
+  const m = new Map();
+  return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) };
+};
+// a window whose storage event the test fires itself, as another tab's write would
+const fakeWindow = () => {
+  let handler = null;
+  return {
+    addEventListener: (type, fn) => type === 'storage' && (handler = fn),
+    removeEventListener: () => (handler = null),
+    storage: (e) => handler?.(e),
+  };
+};
+const none = { tasks: () => [], citadel: () => [] };
+
+let store;
+let fakeWin;
+let saves;
+beforeEach(() => {
+  store = memoryStore();
+  fakeWin = fakeWindow();
+  saves = createSaves({ local: store, session: memoryStore(), win: fakeWin });
+});
+
+describe('the adventure’s store', () => {
+  it('keeps the story under tp-rm-story', () => expect(STORY_KEY).toBe('tp-rm-story'));
+
+  it('starts a new visitor at episode 1 with the dial shut', () => {
+    const a = createAdventure({ saves, read: none });
+    expect(a.started).toBe(true);
+    expect(a.get()).toMatchObject({ episode: 0, step: 0, freeRoam: false });
+    expect(a.dialOpen('customs')).toBe(true);
+    expect(a.dialOpen('vat')).toBe(false);
+    expect(a.objective().text).toMatch(/^A Federation agent is in a booth at Shoney’s/);
+    expect(a.lockNote('vat')).toBe('Opens after episode 5, “Heat”.');
+    expect([...a.coordinates()]).toEqual(['customs']);
+  });
+
+  it('starts a returner on free roam, caught up', () => {
+    const a = createAdventure({ saves, read: { tasks: () => ['diner', 'basement'], citadel: () => [] } });
+    expect(a.get()).toMatchObject({ episode: 0, step: 2, freeRoam: true });
+    expect(a.started).toBe(false);
+    expect(a.dialOpen('vat')).toBe(true);
+    // the Citadel's progress makes a returner too
+    store.removeItem(STORY_KEY);
+    expect(createAdventure({ saves, read: { tasks: () => [], citadel: () => ['daycare'] } }).get().freeRoam).toBe(true);
+  });
+
+  it('keeps the story in tp-rm-story, version 1', () => {
+    createAdventure({ saves, read: none }).feed({ type: 'task', id: 'diner' });
+    expect(JSON.parse(store.getItem('tp-rm-story'))).toMatchObject({ v: 1, data: { step: 1 } });
+    // and the next visit takes it up where it was, not as a new visitor
+    const again = createAdventure({ saves, read: none });
+    expect(again.started).toBe(false);
+    expect(again.get()).toMatchObject({ episode: 0, step: 1 });
+  });
+
+  it('starts again on a broken save', () => {
+    store.setItem('tp-rm-story', '{"v":1,"data":{"episode":"x"}}');
+    expect(createAdventure({ saves, read: none }).get().episode).toBe(0);
+    // an old shape, unversioned, goes the same way, and a returner keeps free roam
+    store.setItem('tp-rm-story', '{"episode":3}');
+    const a = createAdventure({ saves, read: { tasks: () => ['cable'], citadel: () => [] } });
+    expect(a.get()).toMatchObject({ episode: 0, freeRoam: true });
+  });
+
+  it('hears another tab', () => {
+    const a = createAdventure({ saves, read: none });
+    const heard = vi.fn();
+    a.on(heard);
+    const other = JSON.stringify({ v: 1, data: { ...fresh(), step: 2 } });
+    store.setItem('tp-rm-story', other);
+    fakeWin.storage({ key: 'tp-rm-story', newValue: other });
+    expect(heard).toHaveBeenCalled();
+    expect(a.get().step).toBe(2);
+  });
+
+  it('turns away a broken write from another tab', () => {
+    const a = createAdventure({ saves, read: none });
+    const heard = vi.fn();
+    a.on(heard);
+    for (const bad of ['{"v":1,"data":{"episode":-4}}', null]) fakeWin.storage({ key: 'tp-rm-story', newValue: bad });
+    expect(heard).not.toHaveBeenCalled();
+    expect(a.get()).toEqual(fresh());
+  });
+
+  it('tells its listeners once a change, and keeps the same state when nothing moves', () => {
+    const a = createAdventure({ saves, read: none });
+    const heard = vi.fn();
+    const off = a.on(heard);
+    const before = a.get();
+    expect(a.feed({ type: 'task', id: 'basement' })).toEqual([]);
+    expect(a.get()).toBe(before);
+    expect(heard).not.toHaveBeenCalled();
+    expect(a.feed({ type: 'task', id: 'diner' })).toEqual([{ type: 'step', episode: 0, step: 1 }]);
+    expect(heard).toHaveBeenCalledTimes(1);
+    off();
+    a.feed({ type: 'task', id: 'basement' });
+    expect(heard).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads what’s done at the moment it’s fed', () => {
+    const done = [];
+    const a = createAdventure({ saves, read: { tasks: () => done, citadel: () => [] } });
+    done.push('diner', 'basement');
+    expect(a.feed({ type: 'task', id: 'basement' }).map((x) => x.type)).toEqual(['step', 'step']);
+    expect(a.get()).toMatchObject({ episode: 0, step: 2 });
+  });
+
+  it('switches free roam, and jumps for the checks', () => {
+    const a = createAdventure({ saves, read: none });
+    a.setFreeRoam(true);
+    expect(a.dialOpen('vat')).toBe(true);
+    expect(JSON.parse(store.getItem('tp-rm-story')).data.freeRoam).toBe(true);
+    a.setFreeRoam(false);
+    expect(a.dialOpen('vat')).toBe(false);
+    a.jump(1);
+    expect(a.get()).toMatchObject({ episode: 1, step: 0, got: [] });
+    expect(a.dialOpen('vat')).toBe(true); // (past the last ready episode)
+    a.jump(99);
+    expect(a.get().episode).toBe(1);
+    a.reset();
+    expect(a.get()).toEqual(fresh());
+  });
+
+  it('shows a new visitor episode 1’s card once a visit', () => {
+    const a = createAdventure({ saves, read: none });
+    expect(a.intro()).toBe(true);
+    expect(a.intro()).toBe(false);
+    // a returner, or a visitor whose story is saved already, has seen it
+    expect(createAdventure({ saves, read: none }).intro()).toBe(false);
+    store.removeItem(STORY_KEY);
+    expect(createAdventure({ saves, read: { tasks: () => ['cable'], citadel: () => [] } }).intro()).toBe(false);
+  });
+});

@@ -70,7 +70,8 @@ export function createHorse(rt, { coat = 'bay', height = 1.6, seed = 0 } = {}) {
       show(gait);
       // (the clip paced to the ground, so the hooves don’t slide)
       const own = GAITS[gait] * (height / 1.6);
-      if (own > 0) st.actions[gait].timeScale = Math.max(0.4, Math.min(2.2, Math.abs(speed) / own));
+      const action = st.actions[gait];
+      if (action && own > 0) action.timeScale = Math.max(0.4, Math.min(2.2, Math.abs(speed) / own));
       st.mixer.update(dt);
     },
     dispose() {

@@ -93,7 +93,7 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
       // the dragon: a trail of sparks up over the field and away, while the beat lasts
       const s = since.dragon;
       if (s != null && s < DRAGON) {
-        dragon ??= weather?.kind?.('embers', { count: 600, scale: 7 });
+        dragon ??= weather?.kind?.('embers', { count: 700, scale: 18 });
         dragon?.at(...dragonAt(s / DRAGON, heightAt, at).toArray());
       } else if (dragon) {
         dragon.stop();

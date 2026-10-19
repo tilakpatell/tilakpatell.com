@@ -74,12 +74,34 @@ describe('createAmbience without a context', () => {
   it('waits quietly for the first key: no bus, nothing made, nothing thrown', async () => {
     vi.resetModules();
     const { createAmbience } = await import('./ambience');
-    const rt = { audio: { bus: () => null, context: () => null }, events: { emit: vi.fn() } };
+    const bus = vi.fn(() => null);
+    const rt = { audio: { bus, context: () => null }, events: { emit: vi.fn() } };
     const amb = createAmbience(rt);
     amb.stage('hobbiton');
     amb.update(0.5);
+    // (not even asked for before a key: the browser would refuse it every frame)
+    expect(bus).not.toHaveBeenCalled();
+    amb.wake();
+    expect(bus).toHaveBeenCalled();
     amb.say('sam', 'Mr Frodo', 12);
     expect(rt.events.emit).toHaveBeenCalledWith('line', { who: 'sam', text: 'Mr Frodo', at: 12 });
     amb.dispose();
+  });
+});
+
+describe('a clip that lands after the Road has stopped', () => {
+  it('is stopped as it lands, not left playing', async () => {
+    vi.resetModules();
+    let land;
+    const stop = vi.fn();
+    vi.doMock('../../../lib/clips', () => ({ playClip: () => new Promise((r) => (land = () => r({ stop, ended: new Promise(() => {}) }))) }));
+    const { createAmbience } = await import('./ambience');
+    const amb = createAmbience({ audio: { bus: () => null }, events: { emit() {} } });
+    const playing = amb.clip('worldIsChanged');
+    amb.dispose();
+    land();
+    expect(await playing).toBe(null);
+    expect(stop).toHaveBeenCalled();
+    vi.doUnmock('../../../lib/clips');
   });
 });

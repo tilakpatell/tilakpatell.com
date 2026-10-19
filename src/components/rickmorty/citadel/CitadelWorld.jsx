@@ -28,6 +28,7 @@ import Wardrobe from '../wardrobe/Wardrobe';
 import { useLooks } from '../wardrobe/useLooks';
 import './citadel.css';
 import RmEarnNote from '../RmEarnNote';
+import { useAdventure } from '../adventure/useAdventure';
 import { useRmEarn } from '../useRmEarn';
 import { seedsOf } from '../earn';
 import GuideCue from '../../guide/GuideCue';
@@ -97,19 +98,30 @@ function useSaid(who, text) {
 }
 
 // (`leaveLabel`: what the hangar's way out says; the page knows where it goes)
-export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137' }) {
+// (`frozen`: the page's Hangar is open over it; `onHangar(tab?)` opens it, and
+// then C and the chip that was the Wardrobe's are the Hangar's)
+export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137', frozen = false, onHangar = null }) {
   const three = use3D();
   const [done, setDone] = useState(() => {
     const d = local.get(DONE, []);
     return citadelProgress(Array.isArray(d) ? d : []).done;
   });
   const prog = citadelProgress(done);
+  const doneRef = useRef(done);
+  doneRef.current = done;
   const [gl, setGl] = useState('loading'); // loading | on | failed | lost
   const { unlock } = useAchievements();
   // (a quest done pays into the one wallet, once: useRmEarn's ledger knows what the save had)
   const { earn, note: earned } = useRmEarn(() => seedsOf('citadel', done));
+  // the Rick and Morty adventure (../adventure/) told it's here, and each step
+  // the Citadel takes (outside the updater, which React may run twice)
+  const { feed } = useAdventure();
+  useEffect(() => {
+    feed({ type: 'enter', area: 'page:/c-137/citadel' });
+  }, [feed]);
   const complete = useCallback(
     (id) => {
+      const taken = !doneRef.current.includes(id) && citadelProgress([...doneRef.current, id]).done.includes(id);
       setDone((d) => {
         if (d.includes(id)) return d;
         const next = citadelProgress([...d, id]).done;
@@ -118,14 +130,15 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137' }) 
       });
       earn('citadel', id);
       if (SEAL[id]) unlock(SEAL[id]);
+      if (taken) feed({ type: 'citadel', id });
     },
-    [unlock, earn],
+    [unlock, earn, feed],
   );
   const world = three.on && gl !== 'failed' && gl !== 'lost';
   return (
     <section className="shire-world citadel-world" aria-labelledby="citadel-title" data-mode={world ? '3d' : 'cards'}>
       <RmEarnNote note={earned} />
-      {world ? <World prog={prog} done={done} complete={complete} gl={gl} setGl={setGl} onLeave={onLeave} leaveLabel={leaveLabel} /> : <Cards prog={prog} three={three} gl={gl} retry={() => setGl('loading')} />}
+      {world ? <World prog={prog} done={done} complete={complete} gl={gl} setGl={setGl} onLeave={onLeave} leaveLabel={leaveLabel} frozen={frozen} onHangar={onHangar} /> : <Cards prog={prog} three={three} gl={gl} retry={() => setGl('loading')} />}
     </section>
   );
 }
@@ -133,7 +146,7 @@ export default function CitadelWorld({ onLeave, leaveLabel = 'Back to C-137' }) 
 // others online on the concourse (middleearth/towns/useTravellers), as Ricks from other dimensions
 const ROOM = { bound: 160, motion: true };
 
-function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
+function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel, frozen, onHangar }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const trav = useTravellers('citadel', gl === 'on', ROOM);
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.3 });
@@ -251,7 +264,8 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
 
   // live: on, on screen, and not in a hidden tab (the hum and siren stop too)
   const showing = usePageVisible();
-  const live = gl === 'on' && inView && showing;
+  const live = gl === 'on' && inView && showing && !frozen;
+  const hasHangar = Boolean(onHangar);
 
   // the concourse's hum, while it's on screen
   useEffect(() => {
@@ -641,7 +655,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
           e.preventDefault();
           enter(s.near);
         } else if (k === 'm' || k === 'M') setList((v) => !v);
-        else if (k === 'c' || k === 'C') {
+        else if ((k === 'c' || k === 'C') && !hasHangar) {
           e.preventDefault();
           s.keys.clear();
           setWardrobe(true);
@@ -671,7 +685,7 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
     };
     window.addEventListener('keydown', down);
     return () => window.removeEventListener('keydown', down);
-  }, [live, near, enter, talkOnward, drop, leaveRoom, leaveHearing]);
+  }, [live, near, enter, talkOnward, drop, leaveRoom, leaveHearing, hasHangar]);
 
   // ── every frame (the runtime's: the module's draw runs it while live) ──
   const tick = (ms) => {
@@ -1062,9 +1076,15 @@ function World({ prog, done, complete, gl, setGl, onLeave, leaveLabel }) {
             <button type="button" className="shire-chip" onClick={() => setList((v) => !v)} aria-expanded={list}>
               <b>{done.length}</b> of {QUESTS.length} done {!touch && <kbd>M</kbd>}
             </button>
-            <button type="button" className="shire-chip" onClick={() => setWardrobe(true)} aria-haspopup="dialog">
-              Wardrobe {!touch && <kbd>C</kbd>}
-            </button>
+            {onHangar ? (
+              <button type="button" className="shire-chip rm-hangar-btn" onClick={() => onHangar()} aria-haspopup="dialog" aria-keyshortcuts="H" aria-label="Hangar: the crew’s looks, and the cruiser’s arms, powers, skills and shipyard">
+                Hangar {!touch && <kbd>H</kbd>}
+              </button>
+            ) : (
+              <button type="button" className="shire-chip" onClick={() => setWardrobe(true)} aria-haspopup="dialog">
+                Wardrobe {!touch && <kbd>C</kbd>}
+              </button>
+            )}
             <button type="button" className="shire-chip citadel-emote-chip" onPointerDown={emoteDown} onPointerUp={emoteUp} onClick={(e) => e.detail === 0 && pickEmote(sim.current.wheel.choose(sim.current.wheel.last))} aria-haspopup="menu" aria-expanded={wheel.open} title={touch ? 'Tap to emote again; hold for the wheel' : 'Tap B to emote again; hold it for the wheel'}>
               Emote {!touch && <kbd>B</kbd>}
             </button>

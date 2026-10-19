@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AREAS, HOTSPOTS, LINKS, PEOPLE, ROOM_IDS, TASKS } from '../rules';
-import { DEST_COL, DESTINATIONS, DIAL, GARAGE_BACK, PLANETS, destArea, destinationById, isBigPlanet, isPlanet, isWayHome, linkTarget, planetStart, portalTarget, validArrive } from './destinations';
+import { DEST_COL, DESTINATIONS, DIAL, GARAGE_BACK, PLANETS, destArea, destinationById, isBigPlanet, isPlanet, isWayHome, linkTarget, pageOf, planetStart, portalTarget, validArrive } from './destinations';
 
 const inside = (a, x, z, pad = 0) => x >= a.x0 + pad && x <= a.x1 - pad && z >= a.z0 + pad && z <= a.z1 - pad;
 const overlap = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.z0 < b.z1 && b.z0 < a.z1;
@@ -48,11 +48,41 @@ describe('the destinations', () => {
 });
 
 describe('the dial', () => {
-  it('lists the arcade first, then every destination but the planets', () => {
+  it('lists the arcade first, then every destination but the planets, then the adventure’s five', () => {
     expect(DIAL[0].id).toBe('annex');
-    expect(DIAL.map((d) => d.id).slice(1)).toEqual(DESTINATIONS.filter((d) => !isPlanet(d.id)).map((d) => d.id));
-    // (the planets are landed on from the universe map instead)
-    for (const id of PLANETS) expect(DIAL.map((d) => d.id)).not.toContain(id);
+    expect(DIAL.map((d) => d.id).slice(1, -5)).toEqual(DESTINATIONS.filter((d) => !isPlanet(d.id)).map((d) => d.id));
+    // (the other planets are landed on from the universe map only)
+    const dialled = ['squanch', 'birdworld', 'gearworld', 'pluto'];
+    for (const id of PLANETS.filter((p) => !dialled.includes(p))) expect(DIAL.map((d) => d.id)).not.toContain(id);
+  });
+  it('puts the Citadel and the four sector planets on the end of the dial', () => {
+    expect(DIAL.slice(-5).map((d) => d.id)).toEqual(['citadel', 'birdworld', 'gearworld', 'pluto', 'squanch']);
+    expect(DIAL).toHaveLength(32);
+    expect(DIAL[0].id).toBe('annex');
+    // a planet's row is its destination's name and note; the Citadel's is the site's own
+    for (const d of DIAL.slice(-4)) expect(d).toEqual({ id: d.id, name: destinationById(d.id).name, note: destinationById(d.id).note });
+    expect(DIAL.at(-5)).toMatchObject({ id: 'citadel', to: '/c-137/citadel' });
+    expect(DIAL.at(-5).note).toBe('The Citadel of Ricks: every Rick there is, and a Council to keep them in line.');
+  });
+  it('sends the Citadel to its page, and every other dial place through the garage portal', () => {
+    expect(pageOf('citadel')).toBe('/c-137/citadel');
+    expect(pageOf('customs')).toBe(null);
+    expect(pageOf('birdworld')).toBe(null);
+    expect(pageOf('nope')).toBe(null);
+    // the garage portal, dialled to the Citadel, names it and carries its page; to a planet, it goes to the planet's area
+    const portal = LINKS.find((l) => l.id === 'garage-portal');
+    expect(linkTarget(portal, 'citadel')).toMatchObject({ id: 'garage-portal', page: '/c-137/citadel', label: 'Through the portal to The Citadel' });
+    expect(linkTarget(portal, 'birdworld')).toMatchObject({ to: 'birdworld', arrive: destinationById('birdworld').arrive });
+    expect(linkTarget(portal, 'birdworld').page).toBeUndefined();
+  });
+  it('opens the portal on an open place only', () => {
+    const open = (id) => id === 'customs' || id === 'annex';
+    expect(portalTarget('annex', open)).toBe('annex');
+    expect(portalTarget('vat', open)).toBe('annex'); // locked: the first open place
+    expect(portalTarget('nowhere', open)).toBe('annex'); // not on the dial
+    expect(portalTarget('vat')).toBe('vat'); // no lock given: as today
+    expect(portalTarget('vat', () => false)).toBe('customs');
+    expect(portalTarget('vat', (id) => id === 'customs')).toBe('customs');
   });
   it('sends the garage portal where it’s set, and anything unknown to the arcade', () => {
     expect(portalTarget('nope')).toBe('annex');

@@ -5,12 +5,12 @@
 // drawn from its own sheets (scripts/road-sheets.mjs). One pool a kind
 // asked for, so a kind is one draw.
 //
-//   createWeather(renderer, { tier, velocity }) → {
+//   createWeather(renderer, { tier, outputs }) → {
 //     group,                         the quads (each at the origin, its corners in world space)
 //     kind(name, { count, box, follow }) → { at(x, y, z), rate(k), stop(), ready },
 //     light(daylight),               the sun and the ambient the lit kinds take
 //     update(dt, camera, { wind }),  spawn and step every kind
-//     stats(),                       [{ name, n, alive }] (alive on the CPU path; null on the GPU’s)
+//     stats(),                       [{ name, n, at, alive }] (alive on the CPU path; null on the GPU’s)
 //     dispose() }
 //
 // `follow`: the kind’s box rides with the camera (rain, snow, ash round the
@@ -20,14 +20,16 @@
 // `count`: the slots (the record’s maxCount else), quartered on low and
 // halved on mid; `rate(k)` scales the spawning (0 holds it, 1 the record’s).
 // `stop()` spawns no more and lets the live ones die before freeing the pool.
-// `velocity`: the frame is drawn into a pass with a velocity target (the
-// chain’s TRAA), so the quads keep sprites.js’s still velocity; drawn
-// straight to the canvas they must not, or the draw writes an output the
-// canvas lacks and WebGL 2 drops it.
+// `outputs`: the targets the chain’s scene pass writes besides the colour
+// (lib/three/light/passes.js: 'normal' for AO, 'velocity' for TRAA). The
+// quads write exactly those (a still velocity, a normal facing the
+// camera), none drawn straight to the canvas: a draw that writes fewer
+// outputs than its target has, or more than the canvas, WebGL 2 drops.
 //
 //   KINDS, SHEETS, countFor(n, tier), recordFor(name, { count, box, scale }): pure, for the test.
 
 import * as THREE from 'three';
+import { mrt, output, vec4 } from 'three/tsl';
 import { OWNER, aliveCount, lifeMax, spawnCount } from '../../../lib/three/particles/emitter';
 import { evalCurve } from '../../../lib/three/particles/curves';
 import { createSim } from '../../../lib/three/particles/gpu';
@@ -67,7 +69,7 @@ export function recordFor(name, { count, box, scale = 1 } = {}) {
   return em;
 }
 
-export function createWeather(renderer, { tier = 'high', velocity = false } = {}) {
+export function createWeather(renderer, { tier = 'high', outputs = [] } = {}) {
   const group = new THREE.Group();
   group.name = 'road:weather';
   const shared = createShared();
@@ -89,6 +91,7 @@ export function createWeather(renderer, { tier = 'high', velocity = false } = {}
   let seeds = 0;
   const last = new THREE.Vector3();
   let lastSet = false;
+  let disposed = false;
 
   const free = (h) => {
     handles.delete(h);
@@ -98,7 +101,10 @@ export function createWeather(renderer, { tier = 'high', velocity = false } = {}
       h.mesh.geometry.dispose();
       h.mesh.material.dispose();
     }
+    // (each let go once: a handle may be freed by stop or dispose, then again as its build lands)
     h.sim?.dispose();
+    h.sim = null;
+    h.mesh = null;
   };
 
   return {
@@ -113,15 +119,34 @@ export function createWeather(renderer, { tier = 'high', velocity = false } = {}
       const h = { name, em, n, owners, follow, pos: [0, 0, 0], k: 1, on: true, left: 0, state: { t: 0, acc: 0, burst: false }, sim: null, mesh: null, dead: false };
       h.ready = (async () => {
         const sim = await createSim(em, n, { renderer, seed: 1 + ++seeds });
-        const [map, sh] = await Promise.all([sheet(em.sheet), shared]);
-        const mesh = await createSpriteMesh(em, sim, { shared: sh, map });
-        if (!velocity) mesh.material.mrtNode = null;
         h.sim = sim;
+        if (h.dead || disposed) return free(h);
+        const [map, sh] = await Promise.all([sheet(em.sheet), shared]);
+        if (h.dead || disposed) return free(h);
+        const mesh = await createSpriteMesh(em, sim, { shared: sh, map });
+        if (h.dead || disposed) {
+          mesh.geometry.dispose();
+          mesh.material.dispose();
+          return;
+        }
+        // (sprites.js gave it output and a still velocity: keep what the pass has)
+        const still = mesh.material.mrtNode;
+        if (!outputs.length) mesh.material.mrtNode = null;
+        else {
+          const own = { output };
+          // (a normal facing the camera; the pass blends the colour alone and
+          // takes the rest as written, so a quad’s clear texels are thrown
+          // away rather than write over the ground’s normal for AO)
+          if (outputs.includes('normal')) {
+            own.normal = vec4(0.5, 0.5, 1, 1);
+            mesh.material.alphaTest = 0.04;
+          }
+          mesh.material.mrtNode = outputs.includes('velocity') && still ? still.merge(mrt(own)) : mrt(own);
+        }
         h.mesh = mesh;
-        if (h.dead) return free(h);
         mesh.name = `weather:${name}`;
         group.add(mesh);
-      })();
+      })().catch(() => free(h));
       handles.add(h);
       return {
         at(x, y, z) {
@@ -163,8 +188,9 @@ export function createWeather(renderer, { tier = 'high', velocity = false } = {}
         if (!h.on && (h.left -= dt) <= 0) free(h);
       }
     },
-    stats: () => [...handles].map((h) => ({ name: h.name, n: h.n, alive: h.sim?.mode === 'cpu' ? aliveCount(h.sim.pool) : null })),
+    stats: () => [...handles].map((h) => ({ name: h.name, n: h.n, at: h.owners.slice(0, 3).map((v) => Math.round(v * 10) / 10), alive: h.sim?.mode === 'cpu' ? aliveCount(h.sim.pool) : null })),
     dispose() {
+      disposed = true;
       for (const h of [...handles]) free(h);
       for (const p of sheets.values()) p.then((t) => t.dispose());
     },

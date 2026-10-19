@@ -12,8 +12,8 @@ Middle-earth as a journey: one continuous three.js ride from Bag End to the Grey
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | R1 the spine | the module, the line, the clock, the director, the fellowship, daylight, the face, the rows, the cast, the measure | `…-the-road.md` | 1 to 10 | `claude/the-road-1-spine` | 2026-10-18 | #1034 | done: tasks 1 to 10; the numbers in `evidence/the-road/README.md`; next R2 (Task 11) |
 | S the sheet | the geography, the projection, the consumers, the painter, the shots | `…-middle-earth-sheet.md` (done, removed) | 1 to 6 | `claude/middle-earth-sheet` | 2026-10-18 | #1036 | done: every task, then the map made less crowded on the owner’s word (names ranked and placed, Tolkien’s forests, the hub’s foot on two lines, the frame on the whole road); main with #1023 merged in |
-| R2 the systems | the ground, the scatter, the water, the weather, the ambience, the house and the vision, Hobbiton in full | `…-the-road.md` | 11 to 17 | `claude/the-road-2-systems` | 2026-10-19 (session_01Pa7Th5Ndiq8Vz332ijCx2w) | | in progress: tasks 11 to 16 done (the ground, the scatter, the water, the weather, the ambience, the house, the vision and the chain); next Task 17 (Hobbiton in full, the stage recipe) |
-| R3 stages 2 to 6 | the Shire’s edge, Bree, Weathertop, the Ford, Rivendell | the same | 18 to 22 | `claude/the-road-3-eriador` | 2026-10-19 (session_015Er4bG6AGb2eoh5zdZEaMK) | | in progress: claimed while R2 finishes Task 17, so the branch stands on R2’s head and takes main again once R2 has merged; the stages’ data first (beats, lore, lines, the ledger), their scenes on Hobbiton’s recipe once it is pushed |
+| R2 the systems | the ground, the scatter, the water, the weather, the ambience, the house and the vision, Hobbiton in full | `…-the-road.md` | 11 to 17 | `claude/the-road-2-systems` | 2026-10-19 (session_01Pa7Th5Ndiq8Vz332ijCx2w) | #1088 | done: tasks 11 to 17 (the ground, the scatter, the water, the weather, the ambience, the house, the Ring vision and the chain, Hobbiton in full); the numbers in `evidence/the-road/README.md`; next R3 (Task 18, the Shire’s edge) |
+| R3 stages 2 to 6 | the Shire’s edge, Bree, Weathertop, the Ford, Rivendell | the same | 18 to 22 | `claude/the-road-3-eriador` | 2026-10-19 (session_015Er4bG6AGb2eoh5zdZEaMK, then session_011VvN2wZk3G1EWPerQB4Ycq) | | in progress: R2 merged (#1088) and main taken in; the Shire’s edge, Bree, Weathertop and the Ford built, Rivendell built; next the looking and the numbers per stage |
 | R4 stages 7 to 10 | Caradhras and the Doors, Moria, Lothlórien, the Anduin | the same | 23 to 26 | `claude/the-road-4-mountains` | | | |
 | R5 stages 11 to 14 | the Marshes and the Gate, Ithilien and the Vale, Cirith Ungol, Gorgoroth and the Mountain | the same | 27 to 30 | `claude/the-road-5-mordor` | | | |
 | R6 the end | the White City, the Havens, the desk, the hub’s first step, the journal, the achievement | the same | 31 to 33 | `claude/the-road-6-end` | | | free: #1023 has merged |
@@ -40,6 +40,16 @@ A session takes the next lane whose state allows it, runs until its budget, merg
 - No MiniMap and no Bubble yet: the first draws nothing until Task 20, the second has no line to say until a beat plays one.
 - On a phone the ribbon’s sixteen 44 px dots overlap (R7).
 - The container’s SwiftShader draws the Road at about one frame a second (and `/earth` at 1.6): judge frame time on the owner’s machines, draws and triangles here.
+
+## R2’s notes for the next lanes
+
+- **The recipe** is Hobbiton’s: `stages/<id>/beats.js` (data, with `entered`/`left` re-exported), `lore.js`, `props.js`, `index.js`’s `build(ctx)` (`ctx = { road, heightAt, rt, weather, tier }`; `update(local, dt, { since, speed })`, each beat’s scene a function of `since[id]`, so walking back puts it back). Register the stage in `stages/registry.js` (its beats and lore: the ledger and the lore sweep read them) and its scene’s import in `scenes.js`’s `SCENES`. `stages/index.js` takes its `ground` (rivers as `points`, `depth`, `width`, `bank`).
+- **Beats**: the clock stops on every written beat’s mark for its `hold`; Next under reduced motion steps beat to beat. A beat’s `params.above: true` puts its camera’s heights over the land. A `crane` takes `params.top` and `params.lookAt`. `fx: [{ kind: 'black' | 'vision', at, seconds }]` (`beats.js`’s `fxAt`). `clip` plays once as the beat is reached; `lines` are `voicelines.js` ids, said and told as `'line'` events (the Bubble is the face’s to draw).
+- **Water**: `water.js`’s `createWater({ along: { line, width, level } | area, kind: 'river' | 'still' | 'lava', sky, ground })`; rivers in a stage’s ground get theirs from `lands.js` (`riverLevel`, and `land.wet` keeps the scatter out). `uRise` is the Ford’s.
+- **Weather**: `weather.kind(name, { count, box, follow, scale })` → `{ at, rate, stop }`; a kind is one draw. Under the chain its quads write the scene pass’s normal and throw away clear texels (`weather.js`), or AO leaves squares behind them.
+- **The vision**: `road.uVision` is on every lit material (swept once a second) and in the grade; `vision.js` is the state.
+- **The worst frames** are node shaders built in the frame (the evidence README); compiling each stage off the frame as lands.js finishes it is the mend (R7, or the next lane that feels it).
+- `lab/road/common.mjs` sets `tp-worlds` to load, as the probe does: at `low` the site otherwise holds the Road behind its Load 3D card and the lab scripts time out.
 
 ## Checks
 

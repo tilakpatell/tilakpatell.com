@@ -29,6 +29,7 @@ describe('a stage’s beats', () => {
     expect(rigAt(B, 120)).toMatchObject({ id: 'c', rig: 'crane', cut: 0 });
     expect(rigAt(B, 70)).toEqual(null);
     expect(rigAt(B, 39.9)).toEqual(null);
+    expect(rigAt(B, 119.9999999)).toMatchObject({ id: 'c', since: 0 });
   });
 
   it('a step forward begins each beat it reaches, once; the clock stopping on a mark counts', () => {

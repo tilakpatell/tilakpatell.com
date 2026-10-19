@@ -34,7 +34,8 @@ function note(d, rate, t0, dur, f, wave, env, gain = 1) {
   const i0 = Math.floor(t0 * rate);
   const n = Math.floor(dur * rate);
   let ph = 0;
-  for (let k = 0; k < n && i0 + k < d.length; k++) {
+  // (a note past the loop’s end wraps to its start, so the loop has no seam)
+  for (let k = 0; k < n; k++) {
     const age = k / rate;
     ph += (f(age) * TAU) / rate;
     d[(i0 + k) % d.length] += wave(ph) * env(age, dur) * gain;

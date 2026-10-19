@@ -54,7 +54,7 @@ export function createScenes({ rt, road, lands, weather, ambience, tier }) {
         entry.scene = build({ road, heightAt: land.field, land, waters: lands.watersOf?.(i) ?? [], rt, weather, ambience, tier });
         group.add(entry.scene.group);
       })
-      .catch(() => made.delete(i));
+      .catch(() => made.get(i) === entry && made.delete(i));
   };
   const drop = (i) => {
     const e = made.get(i);

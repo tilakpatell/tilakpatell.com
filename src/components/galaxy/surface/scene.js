@@ -388,12 +388,13 @@ export async function create(canvas, ctx) {
   const scattered = site.scatter.filter((s) => !(site.level && s.game)).map((s) => {
     const items = [];
     const [r0, r1] = s.within ?? [20, site.reach];
+    const [cx, cz] = s.at ?? [0, 0]; // (a row round a place: its own clearing is still kept)
     let tries = 0;
     while (items.length < Math.round(s.n * amounts.scatter) && tries++ < s.n * 20 * Math.max(1, amounts.scatter)) {
       const a = r() * Math.PI * 2;
       const d = Math.sqrt(r0 * r0 + r() * (r1 * r1 - r0 * r0));
-      const x = Math.cos(a) * d;
-      const z = Math.sin(a) * d;
+      const x = cx + Math.cos(a) * d;
+      const z = cz + Math.sin(a) * d;
       if (avoid.some((v) => Math.hypot(x - v.at[0], z - v.at[1]) < v.r + (s.clear ?? 4))) continue;
       if (s.solid !== false && inBusy(x, z)) continue;
       if (s.flat && grid.normalAt(x, z)[1] < s.flat) continue;
@@ -1185,6 +1186,7 @@ export async function create(canvas, ctx) {
   const pointer = { x: 0, y: 0, x0: 0, y0: 0, id: null };
   const onKey = (down) => (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (props.frozen && down) return; // (the page's Hangar is open over the world: nothing moves; a key let go still is)
     const tag = e.target?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return;
     const k = KEYS[e.key.toLowerCase()];
@@ -3823,6 +3825,7 @@ export async function create(canvas, ctx) {
       props = next;
       for (const id of next.found ?? []) state.found.add(id);
       for (const id of next.done ?? []) state.done.add(id);
+      if (next.frozen) for (const k of Object.keys(state.keys)) state.keys[k] = false; // (nothing held while the Hangar's open)
       if (next.hero) setHero(next.hero);
       if ((next.skillFx ?? null) !== skillFx) setSkills(next.skillFx);
     },

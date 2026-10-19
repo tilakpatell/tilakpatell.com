@@ -100,13 +100,16 @@ function Scene({ id }) {
   );
 }
 
-export default function Cable() {
+// `onUsed`: called once, on the third channel watched (C-137 ticks its task then)
+export default function Cable({ onUsed }) {
   const [ch, setCh] = useState(0);
   const [fuzz, setFuzz] = useState(false);
   const [flipped, setFlipped] = useState(false); // (the first channel waits to be tuned in, rather than talking as the page opens)
   const timer = useRef(0);
+  const flips = useRef(0);
   useEffect(() => () => clearTimeout(timer.current), []);
   const flip = (dir) => {
+    if (++flips.current === 3) onUsed?.();
     audioContext();
     import('../games/gameAudio').then((m) => m.portalHop?.());
     clearTimeout(timer.current);

@@ -3,14 +3,15 @@
 // beats’ one-off sounds through lib/sfx.js where it has them; the clips
 // through lib/clips.js; the cast’s lines through lib/voiced.js, each told to
 // the page as a 'line' event for the Bubble whether or not it has a voice.
-// Everything goes on rt.audio’s bus, which is there only once the site’s
-// context has started (the first key or tap): until then the Road is quiet
-// and nothing is made.
+// Everything goes on rt.audio’s bus, asked for only once the visitor has
+// pressed a key or touched (`wake()`, the module’s): before that the browser
+// will not start a context, and asking every frame only had it refuse every
+// frame. Until then the Road is quiet and nothing is made.
 //
 //   LAYERS = { stageId: [[source, level], …] }   (sounds.js’s SOURCES)
 //   fade(t) → { from, to }, an equal-gain cross-fade (they sum to 1)
 //   levelsBetween(a, b, t) → { source: level } part way from layers a to b
-//   createAmbience(rt) → { stage(id), update(dt), beat(kind), clip(id), say(who, text, at), stop(), stats(), dispose() }
+//   createAmbience(rt) → { wake(), stage(id), update(dt), beat(kind), clip(id), say(who, text, at), stop(), stats(), dispose() }
 //     stats() → { state (the context’s, or null before it is there), layers: { source: level } }
 
 import { makeSource } from './sounds';
@@ -66,10 +67,13 @@ export function createAmbience(rt) {
   let held = null; // the Ring’s whisper while it lasts
   const clips = new Set();
   const lines = new Set();
+  let awake = false; // (a key or a touch has come: the context may start)
+  let epoch = 0; // (bumped by stop: a clip that lands after it is stopped at once)
 
   // the bus once the context runs; the sources made as they are first wanted
   const ready = () => {
     if (bus) return true;
+    if (!awake) return false;
     bus = rt.audio?.bus?.() ?? null;
     ctx = bus?.context ?? null;
     return Boolean(bus && ctx);
@@ -84,6 +88,11 @@ export function createAmbience(rt) {
   };
 
   return {
+    wake() {
+      if (awake) return;
+      awake = true;
+      apply();
+    },
     stage(id) {
       // (from where the fade had got to, so a quick step back is not a jump)
       const at = levelsBetween(was, now, t);
@@ -109,7 +118,12 @@ export function createAmbience(rt) {
       BEATS[kind]?.();
     },
     async clip(id, opts) {
+      const mine = epoch;
       const c = await playClip(id, opts);
+      if (c && mine !== epoch) {
+        c.stop?.();
+        return null;
+      }
       if (c) {
         clips.add(c);
         c.ended?.then?.(() => clips.delete(c));
@@ -125,6 +139,7 @@ export function createAmbience(rt) {
     },
     stats: () => ({ state: ctx?.state ?? null, layers: Object.fromEntries([...sources.keys()].map((n) => [n, Math.round(sources.get(n).node.gain.value * 100) / 100])) }),
     stop() {
+      epoch += 1;
       for (const c of clips) c.stop?.();
       for (const l of lines) l.stop?.();
       clips.clear();
