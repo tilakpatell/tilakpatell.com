@@ -106,6 +106,15 @@ describe('the scatter’s placements', () => {
     for (const pack of Object.keys(KITS)) expect(PACK.urls).toContain(`/kit/${pack}/index.json`);
   });
 
+  it('grass keeps near the road: a band of its own, never a stage’s whole width', () => {
+    for (const st of STAGES)
+      for (const r of rowsFor(st.id)) {
+        if (r.kind !== 'grass') continue;
+        expect(r.x, `${st.id}: ${r.model}`).toBeTruthy();
+        expect(r.x[1] - r.x[0], `${st.id}: ${r.model}`).toBeLessThanOrEqual(240);
+      }
+  });
+
   it('a row of another kit keeps its kit on its items', () => {
     const items = placements([{ model: 'MapleTree_1', pack: 'nature', per100: 0.5, clump: 2 }], flat, road, rngOf(5));
     expect(items.length).toBeGreaterThan(0);

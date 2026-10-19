@@ -58,6 +58,9 @@ const TURNING = { MapleTree_Leaves: { recolour: '#b8903e' } };
 // (the maples and birches green: spring in Ithilien)
 const SPRING = { MapleTree_Leaves: { recolour: '#6f9a3e' }, BirchTree_Leaves: { recolour: '#8fb04a' } };
 
+// (a grass row with no band of its own keeps within 70 m of the road: the
+// blades cover the ground near it, and across a stage’s whole width the
+// tufts were millions of triangles, the Havens’ dune grass four)
 export const SCATTER = {
   hobbiton: [
     // (oaks: the common tree at its broadest, in the hedgerows’ clumps)
@@ -81,7 +84,7 @@ export const SCATTER = {
     { model: 'Plant_6', per100: 0.2, clump: 4, spread: 2, scale: [0.7, 1.0], x: [-30, 30] },
     // stones kicked to the lane’s edges
     { model: 'Pebble_Round_2', per100: 0.8, clump: 5, spread: 2, scale: [2, 4], x: [-8, 8], tint: OAK },
-    { model: 'Grass_Common_Tall', per100: 0.7, clump: 6, spread: 3, scale: [0.45, 0.7], kind: 'grass' },
+    { model: 'Grass_Common_Tall', per100: 0.7, clump: 6, spread: 3, scale: [0.45, 0.7], x: [-70, 70], kind: 'grass' },
     { model: 'Grass_Wispy_Short', per100: 0.5, clump: 6, spread: 3, scale: [0.5, 0.8], x: [-40, 40], kind: 'grass' },
     // birches down by the Water, a maple or two turning: the year’s end coming
     ...birches(0.03, { x: [-200, -40] }),
@@ -131,7 +134,7 @@ export const SCATTER = {
     // the Chetwood’s edge: maples and birches at the turn of the year
     ...maples(0.03),
     ...birches(0.025),
-    { model: 'Grass_Common_Tall', per100: 1.6, clump: 6, spread: 3, scale: [0.6, 0.9], kind: 'grass' },
+    { model: 'Grass_Common_Tall', per100: 1.6, clump: 6, spread: 3, scale: [0.6, 0.9], x: [-70, 70], kind: 'grass' },
     { model: 'Fern_1', per100: 0.3, clump: 5, spread: 3, scale: [0.8, 1.2], x: [-60, 60] },
     { model: 'Plant_2', per100: 0.25, clump: 4, spread: 2, scale: [0.8, 1.2], x: [-50, 50] },
     // the road up to the gate: its verges, puddled and trodden
@@ -256,7 +259,7 @@ export const SCATTER = {
     { model: 'Flower_7_Group', per100: 0.3, clump: 4, spread: 2, scale: [0.28, 0.4], x: [-40, 40] },
     { model: 'Plant_4', per100: 0.25, clump: 4, spread: 2, scale: [0.7, 1.0], x: [-40, 40] },
     { model: 'Fern_1', per100: 0.4, clump: 6, spread: 4, scale: [0.8, 1.3] },
-    { model: 'Grass_Common_Tall', per100: 1.6, clump: 6, spread: 3, scale: [0.6, 0.9], kind: 'grass' },
+    { model: 'Grass_Common_Tall', per100: 1.6, clump: 6, spread: 3, scale: [0.6, 0.9], x: [-70, 70], kind: 'grass' },
     { model: 'Rock_Medium_2', per100: 0.02, clump: 3, spread: 5, scale: [0.6, 1.2], slope: 1.4, tint: OAK },
   ],
   // the stair of Cirith Ungol: black rock, nothing growing
@@ -283,14 +286,14 @@ export const SCATTER = {
     { model: 'Bush_Long_1', per100: 0.12, clump: 6, spread: 6, scale: [1.0, 1.3] },
     { model: 'Bush_Common', per100: 0.06, clump: 3, spread: 5, scale: [0.9, 1.3] },
     { model: 'Grass_Wheat', per100: 2.5, clump: 6, spread: 2.5, scale: [0.7, 0.9], x: [12, 80], tint: CORN },
-    { model: 'Grass_Common_Tall', per100: 1.2, clump: 6, spread: 3, scale: [0.6, 0.9], kind: 'grass' },
+    { model: 'Grass_Common_Tall', per100: 1.2, clump: 6, spread: 3, scale: [0.6, 0.9], x: [-70, 70], kind: 'grass' },
     { model: 'Flower_3_Group', per100: 0.1, clump: 4, spread: 3, scale: [0.3, 0.45], x: [-30, 30] },
     { model: 'Rock_Medium_1', per100: 0.015, clump: 2, spread: 4, scale: [0.6, 1.1], tint: OAK },
   ],
   // the Havens: dune grass and thrift to the sand, wind-bent pines, pebbles at the water
   havens: [
-    { model: 'Grass_Wispy_Tall', per100: 2.4, clump: 8, spread: 4, scale: [0.8, 1.2], kind: 'grass', tint: DUNE },
-    { model: 'Grass_Wispy_Short', per100: 2, clump: 8, spread: 4, scale: [0.7, 1.1], kind: 'grass', tint: DUNE },
+    { model: 'Grass_Wispy_Tall', per100: 2.4, clump: 8, spread: 4, scale: [0.8, 1.2], x: [-70, 70], kind: 'grass', tint: DUNE },
+    { model: 'Grass_Wispy_Short', per100: 2, clump: 8, spread: 4, scale: [0.7, 1.1], x: [-70, 70], kind: 'grass', tint: DUNE },
     { model: 'Pine_5', per100: 0.03, clump: 3, spread: 9, scale: [0.8, 1.2] },
     // (an autumn again, as the ride ends: birches and a maple about the Havens)
     ...birches(0.015),
