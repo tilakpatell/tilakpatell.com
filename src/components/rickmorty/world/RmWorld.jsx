@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import '@fontsource/luckiest-guy/400.css';
 import { useAchievements } from '../../Achievements';
@@ -61,7 +62,10 @@ import {
   stepMorty,
 } from './rules';
 import { newFedShip, newShipVoice, onTail, shipSays, stepFedShip } from './ship';
-import { DESTINATIONS, destinationById, isPlanet, isWayHome, linkTarget, portalTarget, readDial, writeDial } from './dimensions/destinations';
+import { DESTINATIONS, DIAL, destinationById, isPlanet, isWayHome, linkTarget, portalTarget, readDial, writeDial } from './dimensions/destinations';
+import { useAdventure } from '../adventure/useAdventure';
+import { dialItems, dialLead, markedTask, newsOf, objectiveLine } from '../adventure/hud';
+import { arriveAt } from '../adventure/ways';
 import { backLink, boundOf, inLine, planetOf, planetProgress, relabel } from './planetMode';
 import { dialledNote, isGunKey, portalName } from './portalGun';
 import Cards from './WorldCards';
@@ -137,7 +141,7 @@ const startDone = () => {
 };
 const CANT_LAND = 'Can’t land here. Slow right down over open ground, clear of the doors: the road or a front lawn.';
 
-// what opens over the page, and the task opening it ticks off
+// what opens over the page, and the task playing it ticks off (each toy's onUsed)
 const PLACES = {
   cable: { title: 'Interdimensional cable', where: 'The Smiths’ living room', task: 'cable' },
   butter: { title: 'The butter robot', where: 'The breakfast table', task: 'butter' },
@@ -337,6 +341,23 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
     preloadVoiced();
     return stopVoiced;
   }, []);
+  // the adventure told what's happened (../adventure/), and what it says
+  // back: an episode's closing line, and the next one's card (a new
+  // visitor's first, once C-137's world is on)
+  const { feed, intro } = useAdventure();
+  const [card, setCard] = useState(null);
+  const closeCard = useCallback(() => setCard(null), []);
+  const tell = useCallback(
+    (e) => {
+      const news = newsOf(feed(e));
+      news.say.forEach(say);
+      if (news.card != null) setCard(news.card);
+    },
+    [feed, say],
+  );
+  useEffect(() => {
+    if (gl === 'on' && !planet && intro()) setCard(0);
+  }, [gl, planet, intro]);
   const tellDone = useCallback((ids) => {
     const names = ids.map((id) => TASKS.find((t) => t.id === id)?.name).filter(Boolean);
     const p = progress(doneRef.current);
@@ -359,8 +380,9 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
       api.current?.play('cheer', { hold: 0.2, layer: 'auto' });
       if (openRef.current) pending.current.push(id);
       else tellDone([id]);
+      tell({ type: 'task', id });
     },
-    [tellDone, earn],
+    [tellDone, earn, tell],
   );
 
   const openPlace = useCallback(
@@ -369,9 +391,8 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
       audioContext();
       openRef.current = id;
       setOpen(id);
-      if (PLACES[id].task) complete(PLACES[id].task);
     },
-    [complete],
+    [],
   );
   const close = useCallback(() => {
     openRef.current = null;
@@ -419,11 +440,11 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
   return (
     <section className="rm-world" aria-labelledby="rm-world-title" data-mode={world ? '3d' : 'cards'}>
       {world ? (
-        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} cruiser={cruiser} loadout={loadout} skillFx={skillFx} powerPicks={powerPicks} />
+        <World api={api} done={done} open={open} openPlace={openPlace} complete={complete} unlock={unlock} gl={gl} setGl={setGl} toast={toast} say={say} planet={planet} onLeave={onLeave} earn={earn} earned={earned} frozen={frozen} onHangar={onHangar} cruiser={cruiser} loadout={loadout} skillFx={skillFx} powerPicks={powerPicks} tell={tell} card={card} closeCard={closeCard} />
       ) : (
         <Cards done={done} openPlace={openPlace} three={three} gl={gl} toast={toast} retry={() => setGl('loading')} planet={planet} />
       )}
-      {open && <Place id={open} onClose={close} onQuiz={quizDone} onRoy={royLeft} onSewer={sewerLeft} />}
+      {open && <Place id={open} onClose={close} onQuiz={quizDone} onRoy={royLeft} onSewer={sewerLeft} onTask={complete} />}
     </section>
   );
 }
@@ -434,7 +455,7 @@ export default function RmWorld({ start = null, onLeave = null, frozen = false, 
 // hence the reach)
 const ROOM = { bound: boundOf(AREAS), motion: true };
 
-function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned, frozen, onHangar, cruiser, loadout, skillFx, powerPicks }) {
+function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast, say, planet, onLeave, earn, earned, frozen, onHangar, cruiser, loadout, skillFx, powerPicks, tell, card, closeCard }) {
   // (the cruiser's numbers, read by the frame loop)
   const fitted = useMemo(() => cruiserOf(cruiser), [cruiser]);
   const fittedRef = useRef(fitted);
@@ -484,14 +505,25 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const map = useRef(null);
   const brand = useRef(null); // (the title and what to do: Total Rickall's memory card keeps off it)
   const sim = useRef(null);
-  if (!sim.current) sim.current = newSim(planet ?? START, !!planet);
+  // (home through a portal, from the Citadel or a planet: by the garage's portal)
+  const home = arriveAt(useLocation().state);
+  const navigate = useNavigate();
+  if (!sim.current) sim.current = newSim(planet ?? home ?? START, !!planet || !!home);
   // (C-137's next is never a planet's: they're done on the planets)
   const prog = planet ? planetProgress(planet, done) : progress(done, { skip: PLANET_TASKS });
   const progRef = useRef(prog);
   progRef.current = prog;
+  // the story's objective first, and its task for the map's marker (C-137's; a planet keeps its own)
+  const story = useAdventure();
+  const { dialOpen, lockNote } = story;
+  const objective = objectiveLine(story.objective, prog, { planet, state: story.state });
+  const markRef = useRef(null);
+  markRef.current = planet ? prog.next : markedTask(story.state, prog.next);
+  // (the same list while the story stands still, so the dial keeps its place in it)
+  const dialList = useMemo(() => dialItems(DIAL, story.state), [story.state]);
   const doneRef = useRef(done);
   doneRef.current = done;
-  const [hud, setHud] = useState({ area: (planet ?? START).area, room: null, flying: false, landing: false, near: null, moved: false, alt: 0, kmh: 0 });
+  const [hud, setHud] = useState({ area: (planet ?? home ?? START).area, room: null, flying: false, landing: false, near: null, moved: false, alt: 0, kmh: 0 });
   const hudKey = useRef('');
   // the emote wheel (B, held; on a touch screen its button): what it shows
   const wheel = useRef(null);
@@ -524,7 +556,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const [wardrobe, setWardrobe] = useState(false);
   // the portal gun's dial, open at its stand in the garage (it holds Morty still, as the wardrobe does)
   const [dialing, setDialing] = useState(false);
-  const dialRef = useRef(readDial());
+  // (the dial, wherever it's read, only on a place the story has opened)
+  const dialRef = useRef(portalTarget(readDial(), dialOpen));
   // Rick's rooms on the Vindicators' ship, asked one at a time (it holds him still too)
   const [trial, setTrial] = useState(null);
   const trialRef = useRef(newTrial());
@@ -534,12 +567,13 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const closeDial = useCallback(() => setDialing(false), []);
   const pickDial = useCallback(
     (id) => {
-      writeDial(id);
-      dialRef.current = portalTarget(id);
       setDialing(false);
+      if (!dialOpen(id)) return say({ kind: 'note', text: lockNote(id) });
+      writeDial(id);
+      dialRef.current = portalTarget(id, dialOpen);
       say({ kind: 'note', text: dialledNote(dialRef.current, sim.current.area) });
     },
-    [say],
+    [say, dialOpen, lockNote],
   );
   const closeTrial = useCallback(() => setTrial(null), []);
   const pickTrial = useCallback(
@@ -580,10 +614,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     const s = sim.current;
     if (wardrobeRef.current || s.fading || s.rickall || s.duel || s.flying) return;
     s.keys.clear();
-    dialRef.current = readDial();
+    dialRef.current = portalTarget(readDial(), dialOpen);
     closeList();
     setDialing(true);
-  }, [closeList]);
+  }, [closeList, dialOpen]);
   const [fade, setFade] = useState(null);
   const [duel, setDuel] = useState(null); // the fight's hearts, for the HUD
   const [clock, setClock] = useState(null); // a place left in a hurry: seconds left to the portal
@@ -820,10 +854,18 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         return;
       }
       // (the garage's portal goes where the dial is set: read fresh, in case another tab's set it)
-      dialRef.current = readDial();
+      dialRef.current = portalTarget(readDial(), dialOpen);
       const l = linkTarget(via, dialRef.current);
       s.fading = true;
       s.keys.clear();
+      // a place that's a page of its own (the Citadel): through the portal to it
+      if (l.page) {
+        setFade('portal');
+        sound('portalOpen');
+        complete('portal');
+        later(() => navigate(l.page, { state: { from: 'c137' } }), FADE_MS);
+        return;
+      }
       const climb = l.kind === 'hatch';
       setFade(l.kind === 'portal' ? 'portal' : climb ? (l.to === 'basement' ? 'down' : 'up') : 'door');
       if (l.kind === 'portal') sound('portalOpen');
@@ -843,6 +885,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         }
         stopRickall(); // (a trip anywhere is the end of Total Rickall)
         s.area = l.to;
+        tell({ type: 'enter', area: s.area });
         s.m = newMorty(l.arrive);
         // out of a portal, the camera stands off to one side, so the swirl
         // is beside him rather than between him and the camera
@@ -874,7 +917,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         setFade(null);
       }, climb ? CLIMB_MS : FADE_MS);
     },
-    [api, complete, unlock, later, stopRickall, planet, onLeave],
+    [api, complete, unlock, later, stopRickall, planet, onLeave, tell, dialOpen, navigate],
   );
   const boardRef = useRef(null);
   const board = useCallback(() => {
@@ -953,7 +996,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         s.mind = { x: s.m.x, z: s.m.z, i: 0, next: 0 };
         playMemory(0);
       }
-    } else if (n.id === 'dial') openDial();
+    } else if (n.id === 'dial') {
+      openDial();
+      tell({ type: 'use', id: 'dial' });
+    }
     else if (SAY[n.id]) {
       // (a place's clock starts only once what comes first is done: the
       // scanner finds nothing on him till he's taken the seeds)
@@ -970,6 +1016,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         s.talkN += 1;
         s.talk = { id: who.id, n: s.talkN, hold: lineHold(line?.text), x: who.x, z: who.z, at: s.t, area: s.area };
         if (!who.ai?.hunt && !n.spot?.anim) api.current?.play('wave', { layer: 'upper' });
+        tell({ type: 'talk', who: who.id });
       }
       if (!early && n.spot?.anim) api.current?.play(n.spot.anim, n.spot.anim === 'dance' ? { loop: false, hold: 0.2 } : {});
       if (!early && ACTS[n.id]) api.current?.act(...ACTS[n.id]);
@@ -991,7 +1038,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       }
       if (TALK_UNLOCK[n.id]) later(() => unlock(TALK_UNLOCK[n.id]), TALK_MS);
     }
-  }, [api, go, board, openPlace, openDial, say, complete, unlock, playMemory, shipTalk, later, startRickall, tellRickall]);
+  }, [api, go, board, openPlace, openDial, say, complete, unlock, playMemory, shipTalk, later, startRickall, tellRickall, tell]);
   // what a place's people do to Morty (stage.js's NPC behaviour, through the
   // render state's emit): caught, he's put back at the way in with what the
   // catcher said, and the place settles; a bark is a line said in passing
@@ -1159,7 +1206,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         // the portal gun's dial, set as the stand in the garage sets it
         dial(id) {
           writeDial(id);
-          dialRef.current = portalTarget(id);
+          dialRef.current = portalTarget(id, dialOpen);
           return dialRef.current;
         },
         // Total Rickall, with `seed` (by the egg first, if he isn't in the
@@ -1223,7 +1270,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     // a planet's portal, opened behind him as the world was made (./module.js)
     if (planet) sound('portalHop');
     setGl('on');
-  }, [made, status, api, setGl, complete, planet, view.rt]);
+  }, [made, status, api, setGl, complete, planet, view.rt, dialOpen]);
   // (another landing: its own world, loading until it's up)
   useEffect(
     () => () => {
@@ -1691,7 +1738,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     if (++s.frame % 3 === 0) {
       // the place's people, for the map (stage.js's NPC layer says where they are)
       s.npcs = api.current?.act(s.area, 'npcs') ?? null;
-      drawMap(map.current, s, goalOf(progRef.current.next, s, planet), s.t);
+      drawMap(map.current, s, goalOf(markRef.current, s, planet), s.t);
     }
   };
   const tickRef = useRef(tick);
@@ -1806,7 +1853,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   };
 
   // (the garage portal says where it's dialled; a planet's own portal is the way back to space)
-  const here = relabel(hud.near ? PROMPT[hud.near] : null, { planet, portal: planet ? null : portalName(dialRef.current) });
+  const here = relabel(hud.near ? PROMPT[hud.near] : null, { planet, portal: planet ? null : portalName(portalTarget(dialRef.current, dialOpen)) });
   const back = backLink(planet);
   const placeName = hud.flying ? 'Over the Smiths’ street' : (hud.room ?? AREA_NAME[hud.area]);
   return (
@@ -1839,6 +1886,9 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         planet={planet}
         game={game}
         prog={prog}
+        objective={objective}
+        card={card}
+        closeCard={closeCard}
         duel={duel}
         clock={clock}
         placeName={placeName}
@@ -1849,6 +1899,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         looks={looks}
         dialing={dialing}
         dialValue={dialRef.current}
+        dialItems={dialList}
+        dialLead={dialLead(story.state, DIAL.length)}
         trial={trial}
         trialItems={trialItems}
         toast={toast}
@@ -2104,8 +2156,9 @@ function RoyDown({ onLeave }) {
 // ── what opens over the page ──
 // Its component, and the way back to the room (Esc, the button, or B on a
 // controller). Roy fills the screen and has its own way out.
-function Place({ id, onClose, onQuiz, onRoy, onSewer }) {
+function Place({ id, onClose, onQuiz, onRoy, onSewer, onTask }) {
   const p = PLACES[id];
+  const used = () => p.task && onTask(p.task);
   const back = useRef(null);
   const shell = useRef(null);
   // where the focus was before this opened (read while rendering, before the toy takes it)
@@ -2140,11 +2193,11 @@ function Place({ id, onClose, onQuiz, onRoy, onSewer }) {
     };
   }, [id, p.full, onClose]);
   const body = {
-    cable: <Cable />,
-    butter: <ButterRobot />,
-    meeseeks: <MeeseeksBox />,
-    plumbus: <PlumbusFactory />,
-    portalpanic: <PortalPanic />,
+    cable: <Cable onUsed={used} />,
+    butter: <ButterRobot onUsed={used} />,
+    meeseeks: <MeeseeksBox onUsed={used} />,
+    plumbus: <PlumbusFactory onUsed={used} />,
+    portalpanic: <PortalPanic onUsed={used} />,
     quiz: <Quiz onDone={onQuiz} />,
     // (behind the site's 3D gate, as Portal panic is, with a way back from its cards)
     roy: (

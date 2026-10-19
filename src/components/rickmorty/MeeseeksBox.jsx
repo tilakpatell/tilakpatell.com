@@ -18,7 +18,9 @@ const cue = (name) => import('../games/gameAudio').then((m) => m[name]?.());
 const effect = (name) => import('../../lib/sfx').then((m) => m[name]?.());
 const clip = (id) => import('../../lib/clips').then((m) => m.playClip(id));
 
-export default function MeeseeksBox() {
+// `onUsed`: called once, the first time a Meeseeks has done its task (C-137
+// ticks its task then; letting them go isn't a task done)
+export default function MeeseeksBox({ onUsed }) {
   const { unlock } = useAchievements();
   const { pin } = useTheme();
   const [crew, setCrew] = useState([]); // Meeseeks out of the box
@@ -27,6 +29,7 @@ export default function MeeseeksBox() {
   const timers = useRef([]);
   const canDo = useRef(null); // his "Can do!" playing, so he says he's done once it's over
   const gone = useRef(false);
+  const used = useRef(false);
   useEffect(() => {
     const pending = timers.current; // (the one list, added to as it goes)
     gone.current = false;
@@ -47,11 +50,15 @@ export default function MeeseeksBox() {
   };
 
   // the task's done: he's gone
-  const poof = (text) => {
+  const poof = (text, did = true) => {
     cue('splat');
     setLine(text);
     setCrew([]);
     setDone((n) => n + 1);
+    if (did && !used.current) {
+      used.current = true;
+      onUsed?.();
+    }
   };
   // a task he can do, done, and said so once his "Can do!" is over
   const doneSaying = (text) => {
@@ -62,7 +69,7 @@ export default function MeeseeksBox() {
   };
   // all of them, said by them (the tasks they can do have a clip of their own)
   const letGo = () => {
-    poof(LET_GO);
+    poof(LET_GO, false);
     voice(LET_GO);
   };
 

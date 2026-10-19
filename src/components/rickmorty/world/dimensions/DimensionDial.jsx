@@ -4,7 +4,9 @@ import { dialKey } from './dialKey';
 // The portal gun's dial, opened at its stand in Rick's garage (or from
 // anywhere in C-137 with P, or the HUD's chip): every place the garage portal
 // can open on, the one it's set to marked. Arrows to move, Enter (or a click)
-// to dial, Esc to close. (The Vindicators' ship asks
+// to dial, Esc to close. A place the story hasn't opened yet (`locked`: the
+// episode that opens it) is dimmed, its note saying so; picking it still
+// calls onPick, which says why it won't dial. (The Vindicators' ship asks
 // Rick's rooms in it too: `title`, `lead` (the room's question), `foot`.)
 export default function DimensionDial({ open, items, value, onPick, onClose, title = 'Pick a dimension', lead = null, foot = '↑ ↓ to turn the dial, Enter to set it, Esc to put the gun down', label = 'The portal gun’s dial' }) {
   const [i, setI] = useState(0);
@@ -44,9 +46,9 @@ export default function DimensionDial({ open, items, value, onPick, onClose, tit
       <ul ref={list} className="rm-dial-list">
         {items.map((d, n) => (
           <li key={d.id}>
-            <button type="button" className="rm-dial-row" data-on={n === i || undefined} data-set={d.id === value || undefined} onMouseEnter={() => setI(n)} onClick={() => onPick(d.id)}>
+            <button type="button" className="rm-dial-row" data-on={n === i || undefined} data-set={d.id === value || undefined} data-locked={d.locked ? true : undefined} onMouseEnter={() => setI(n)} onClick={() => onPick(d.id)}>
               <b>{d.name}</b>
-              {d.note && <span>{d.note}</span>}
+              {(d.locked ?? d.note) && <span>{d.locked ?? d.note}</span>}
             </button>
           </li>
         ))}
