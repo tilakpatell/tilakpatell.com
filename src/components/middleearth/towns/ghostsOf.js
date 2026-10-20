@@ -72,6 +72,12 @@ export function createGhostsOf({ paint, height = () => 0, make: build, animate, 
     const pale = () =>
       f.group.traverse((o) => {
         if (!o.isMesh || o.material === mat) return;
+        // (a figure's ink line, lib/three/ink.js's hull, is no part of a
+        // ghost: hidden, not painted pale as a second body over the first)
+        if (o.userData.ink) {
+          o.visible = false;
+          return;
+        }
         old.add(o.material);
         o.material = mat;
         o.castShadow = false;
