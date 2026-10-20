@@ -52,6 +52,30 @@
 .shire-ring-btn[data-on] { background: rgba(80, 30, 10, 0.85); }
 .shire-ring-btn[data-tempt] { animation: shire-tempt 0.9s ease-in-out infinite alternate; }
 @keyframes shire-tempt { to { box-shadow: 0 0 0 4px rgba(240, 192, 64, 0.45), 0 0 24px rgba(255, 120, 30, 0.5); } }
+
+/* the town's Menu (towns/TownHud.jsx TownMenu): the kit's, in the chips' look,
+   at the head of the side column; its list opens over the map below it */
+.town-menu {
+  --hud-ink: var(--shire-ink);
+  --hud-muted: rgba(251, 244, 226, 0.78);
+  --hud-glass: var(--shire-glass);
+  --hud-glass-hi: var(--shire-glass-hi);
+  --hud-line: var(--shire-line);
+  --hud-accent: var(--shire-gold);
+  --hud-radius: 8px;
+  --hud-border: 1px solid var(--shire-line);
+  --hud-shadow: 0 6px 22px rgba(0, 0, 0, 0.32);
+  --hud-face: var(--font-sans);
+  z-index: 6;
+}
+.town-menu .hud-btn { position: relative; font-size: 0.82rem; }
+/* (the town's glass over a near-black, so the map and chips it opens over don't read through) */
+.town-menu .hud-menu-list { text-align: left; background: linear-gradient(var(--shire-glass-hi), var(--shire-glass-hi)), rgb(10 10 8 / 0.92); }
+/* (a finger's hit area, wider than the chip drawn) */
+@media (pointer: coarse) {
+  .town-menu .hud-btn::after { content: ''; position: absolute; inset: -9px -4px; }
+  .town-menu .hud-menu-list > :is(button, a) { min-height: 44px; display: flex; align-items: center; }
+}
 .shire-world kbd { margin-left: 0.35rem; padding: 0.05rem 0.35rem; border: 1px solid currentColor; border-radius: 4px; font: 600 0.68rem/1.4 var(--font-mono); opacity: 0.75; }
 
 .shire-meter { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.6rem; border: 1px solid var(--shire-line); border-radius: 8px; background: var(--shire-glass); color: var(--shire-ink); font: 700 0.72rem/1 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; }
@@ -143,6 +167,7 @@
   .shire-objective { font-size: 0.78rem; padding: 0.4rem 0.6rem; }
   .shire-map { width: 96px; height: 96px; }
   .shire-chip { font-size: 0.74rem; padding: 0.35rem 0.55rem; }
+  .town-menu .hud-btn { font-size: 0.74rem; padding: 0.35rem 0.55rem; }
   .shire-door { bottom: 4.4rem; right: 0.8rem; left: auto; transform: none; width: min(13.5rem, calc(100% - 9.5rem)); padding: 0.7rem 0.8rem; }
   .shire-door-name { font-size: 0.98rem; }
   .shire-hint { bottom: 9.2rem; font-size: 0.78rem; }

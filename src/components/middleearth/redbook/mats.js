@@ -89,6 +89,10 @@ export function createMats() {
       if (emissive) m.emissiveNode = vec3(...new THREE.Color(emissive).toArray());
       return keep(m);
     },
+    // the soft shadow a standing card lays on its page (its opacity set as it stands)
+    shade(map) {
+      return keep(new MeshBasicNodeMaterial({ map, color: new THREE.Color(0x1a0e06), transparent: true, depthWrite: false, opacity: 0 }));
+    },
     // a light seen: a glow card that always faces the eye, added to what is behind
     glow(colour, opacity = 1) {
       const m = new SpriteNodeMaterial({ map: soft, color: new THREE.Color(colour), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity });

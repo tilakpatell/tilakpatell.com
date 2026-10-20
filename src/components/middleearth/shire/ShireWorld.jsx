@@ -9,7 +9,7 @@ import { sayVoiced, stopVoiced } from '../../../lib/voiced';
 import { useVoiced } from '../../../lib/useVoiced';
 import { readPad, typing } from '../../games/pad';
 import { keyDown, keyUp, moveOf, ownButton } from '../towns/keys';
-import { Bubble, QuestList, Stick, Travellers } from '../towns/TownHud';
+import { Bubble, QuestList, Stick, TownMenu, Travellers } from '../towns/TownHud';
 import { useTravellers } from '../towns/useTravellers';
 import {
   CAST,
@@ -848,6 +848,7 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
             </p>
           </div>
           <div className="shire-side">
+            <TownMenu chapter="shire" />
             <canvas ref={map} className="shire-map" width="150" height="150" aria-hidden="true" />
             <button type="button" className="shire-chip" onClick={() => setList((v) => !v)} aria-expanded={list}>
               <b>{count}</b> of {QUESTS.length} done {!touch && <kbd>M</kbd>}

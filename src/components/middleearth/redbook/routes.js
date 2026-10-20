@@ -19,3 +19,15 @@ export const PINS = [
 ];
 
 export const goFor = (pin) => (pin.page ? { page: pin.page } : { to: pin.to });
+
+// From a chapter’s game back to the book: the first page that plays it (a
+// game with no page of its own, Orthanc or Edoras, opens the book at its
+// start), and the Road’s stage that page walks (null when it has none)
+const pageOf = (chapter) => PAGES.find((p) => p.play === chapter) ?? null;
+export const bookPageFor = (chapter) => (pageOf(chapter) ?? PAGES[0]).id;
+export const walkFor = (chapter) => pageOf(chapter)?.walk ?? null;
+
+// From a stage of the Road back to the book: the page that walks it
+// (Ithilien has none of its own: it is in the Marshes’ page), else the start
+const FOLDED = { ithilien: 'marshes' };
+export const bookPageForStage = (stage) => FOLDED[stage] ?? PAGES.find((p) => p.walk === stage)?.id ?? PAGES[0].id;

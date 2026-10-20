@@ -76,6 +76,17 @@ describe('the Red Book, the world module', () => {
     world.dispose();
   });
 
+  it('puts the Ring down, and says so, when the stone is taken up', () => {
+    const rt = fakeRt();
+    const world = redbook.create(rt, { reduced: true });
+    world.attached();
+    world.holdRing(true);
+    expect(rt.emitted.filter((e) => e.type === 'ring').at(-1)).toMatchObject({ held: true });
+    world.set({ stone: true });
+    expect(rt.emitted.filter((e) => e.type === 'ring').at(-1)).toMatchObject({ held: false });
+    world.dispose();
+  });
+
   it('opens the Doors to the right word only, and only at Moria', () => {
     const rt = fakeRt();
     const world = redbook.create(rt, { page: 'moria', reduced: true });
