@@ -55,7 +55,8 @@ export function switchFor({ can, on, status, flat = false, stone = true }) {
   const why = stone ? 'The stone here is won in the 3D game.' : 'This game is played in 3D.';
   if (!can) return { bar: null, note: flat ? null : { text: why, action: null } };
   if (!on) return flat ? { bar: { label: 'Play in 3D', next: 'on' }, note: null } : { bar: null, note: { text: why, action: { label: 'Try 3D', next: 'on' } } };
-  if (STOPPED[status]) return { bar: null, note: { text: STOPPED[status], action: { label: 'Try 3D again', next: 'retry' } } };
+  // (a game with a 2D view of its own falls back to it, and says so)
+  if (STOPPED[status]) return { bar: null, note: { text: flat ? STOPPED[status].replace('the simple version', 'the 2D version') : STOPPED[status], action: { label: 'Try 3D again', next: 'retry' } } };
   return { bar: flat ? { label: 'Play in 2D', next: 'off' } : { label: '3D game: on', pressed: true, next: 'off' }, note: null };
 }
 
@@ -92,6 +93,16 @@ export const TOUCH_HELP = {
   thwip: [
     { icon: 'hold', text: 'Hold anywhere to swing, and let go to fly' },
     { icon: 'drag', text: 'Hold on the left or right of the screen to steer' },
+  ],
+  'widow-flat': [
+    { icon: 'tap', text: 'Tap a tile next to her to see the step, then tap it again to take it' },
+    { icon: 'tap', text: 'Tap her own tile twice to wait a turn' },
+    { icon: 'button', text: 'Bite, then a guard’s tile, uses the Widow’s Bite' },
+  ],
+  'ricochet-flat': [
+    { icon: 'drag', text: 'Press anywhere in the room to aim there, slide to adjust and lift to throw' },
+    { icon: 'tap', text: 'Let go back on Cap to keep the shield' },
+    { icon: 'button', text: 'The ↺ button starts the room again' },
   ],
   tesseract: [
     { icon: 'button', text: 'Hold Thrust, and the lean buttons' },

@@ -6,10 +6,13 @@ import gameModule from './module';
 import { earnStone, hasEarned, recordTry } from '../hq/stones';
 import { useAchievements } from '../../Achievements';
 import { useGame3D } from '../hq/useGame3D';
-import { local } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
-import { ROOMS, botsLeft, limitFor, newRoom, stepRoom, throwShield } from './rules';
+import { ROOMS, STEP, botsLeft, limitFor, newRoom, stepRoom, throwShield } from './rules';
+import { clearReward, loadSave, saveClear } from './save';
+import { roomEnd } from './ends';
+import Rooms from './Rooms';
+import RicochetFlat from './Flat';
 import './ricochet.css';
 import '../../../styles/lazy/avengers.css';
 
@@ -22,21 +25,17 @@ const buzz = (ms) => {
     /* no vibration */
   }
 };
-const SAVE = 'tp-hq-ricochet';
-const STEP = 1 / 120;
 const deg = (r) => (r * 180) / Math.PI;
-
-function loadSave() {
-  const s = local.get(SAVE, null);
-  const stars = Array.isArray(s?.stars) ? s.stars.map((n) => Math.max(0, Math.min(3, Number(n) || 0))) : [];
-  return { reached: Math.max(1, Math.min(ROOMS.length, Number(s?.reached) || 1)), stars };
-}
 
 export default function Ricochet({ fallback }) {
   const three = useGame3D('ricochet');
   const stage = useStage(gameModule, { enabled: three.on, id: 'ricochet', forced: three.mode === 'on', own3D: true });
   const { unlock } = useAchievements();
   const [save, setSave] = useState(loadSave);
+  // (the 2D view writes the same save, so the 3D menu reads it again on the way back)
+  useEffect(() => {
+    if (three.on) setSave(loadSave());
+  }, [three.on]);
   const [index, setIndex] = useState(() => Math.min(loadSave().reached, ROOMS.length) - 1);
   const room = useRef(newRoom(index));
   const aim = useRef({ angle: 0, pointer: false });
@@ -44,6 +43,7 @@ export default function Ricochet({ fallback }) {
   const [ui, setUi] = useState({ phase: 'menu', throws: 0, left: botsLeft(room.current), result: null });
   const [angleShown, setAngleShown] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [flatLive, setFlatLive] = useState(false); // the 2D view's room in play
 
   const sync = useCallback((extra = {}) => {
     const r = room.current;
@@ -136,17 +136,12 @@ export default function Ricochet({ fallback }) {
           case 'cleared': {
             play('ding');
             const i = room.current.index;
-            setSave((s) => {
-              const stars = [...s.stars];
-              stars[i] = Math.max(stars[i] ?? 0, e.stars);
-              const next = { reached: Math.max(s.reached, Math.min(ROOMS.length, i + 2)), stars };
-              local.set(SAVE, next);
-              return next;
-            });
+            setSave((s) => saveClear(s, i, e.stars));
             let stone = false;
-            if (i === ROOMS.length - 1) {
-              unlock('captain');
-              stone = earnStone('mind') || hasEarned('mind');
+            const reward = clearReward(i);
+            if (reward) {
+              unlock(reward.achievement);
+              stone = earnStone(reward.stone) || hasEarned(reward.stone);
               play('victory');
             }
             sync({ phase: 'cleared', result: { stars: e.stars, throws: e.throws, catches: e.catches, stone } });
@@ -240,7 +235,6 @@ export default function Ricochet({ fallback }) {
   };
 
   const def = ROOMS[index];
-  const totalStars = save.stars.reduce((a, b) => a + (b || 0), 0);
   // the bar's Pause, and a hidden tab: as Esc does
   const pause = (p) => {
     aim.current.pointer = false;
@@ -249,9 +243,10 @@ export default function Ricochet({ fallback }) {
   return (
     <HQGame
       game="ricochet"
-      playing={live}
+      playing={live || flatLive}
       paused={paused}
       onPause={pause}
+      flat={<RicochetFlat paused={paused} onLive={setFlatLive} />}
       stage={stage}
       three={three}
       fallback={fallback}
@@ -293,13 +288,7 @@ export default function Ricochet({ fallback }) {
         (!paused && ui.phase === 'cleared' ? (
           <Results
             className="cap-overlay"
-            won
-            kicker={`Room ${index + 1} clear`}
-            title={['', 'Done.', 'Nice throwing.', 'He could do this all day.'][ui.result.stars]}
-            line={`${ui.result.throws === 1 ? 'One throw' : `${ui.result.throws} throws`}, par ${def.par}${ui.result.catches ? ` · caught it ${ui.result.catches === 1 ? 'once' : `${ui.result.catches} times`}` : ''}.`}
-            stars={{ got: ui.result.stars, of: 3 }}
-            stone={ui.result.stone ? 'mind' : null}
-            stoneText="The Mind Stone is yours, out of Loki’s sceptre."
+            {...roomEnd('cleared', ui.result, index)}
             onAgain={() => enter(index)}
             onward={index < ROOMS.length - 1 ? { label: 'Next room', onClick: () => enter(index + 1) } : null}
             more={{ label: 'All rooms', onClick: () => setUi((u) => ({ ...u, phase: 'menu' })) }}
@@ -307,9 +296,7 @@ export default function Ricochet({ fallback }) {
         ) : !paused && ui.phase === 'failed' ? (
           <Results
             className="cap-overlay"
-            kicker={`Room ${index + 1}`}
-            title={ui.result.reason === 'hostage' ? 'You hit the hostage.' : 'Out of throws.'}
-            line={ui.result.reason === 'hostage' ? 'The orange dummy is a hostage. Find a way around it.' : `Par is ${def.par}; you get ${limitFor(def)}. ${def.tip}`}
+            {...roomEnd('failed', ui.result, index)}
             onAgain={() => enter(index)}
           />
         ) : (
@@ -338,17 +325,7 @@ export default function Ricochet({ fallback }) {
                 <p className="hq-overlay-text">Twelve rooms. Throw the shield, bounce it off the steel, and put every training bot down in as few throws as you can. Blue mats stop it, glass breaks, switches open doors. If it comes back past you, you catch it.</p>
                 <StartNote />
                 <TouchHelp game="ricochet" />
-                <div className="cap-rooms" role="group" aria-label="Rooms">
-                  {ROOMS.map((r, i) => (
-                    <button key={r.name} type="button" className="cap-room-btn" disabled={i >= save.reached} onClick={() => enter(i)} aria-label={`Room ${i + 1}, ${r.name}${save.stars[i] ? `, ${save.stars[i]} stars` : ''}`}>
-                      <span>{i + 1}</span>
-                      <small>{save.stars[i] ? '★'.repeat(save.stars[i]) : i < save.reached ? r.name : '—'}</small>
-                    </button>
-                  ))}
-                </div>
-                <p className="hq-overlay-best">
-                  {totalStars} of {ROOMS.length * 3} stars
-                </p>
+                <Rooms save={save} onPick={enter} />
               </>
             )}
           </div>

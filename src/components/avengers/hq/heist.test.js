@@ -110,6 +110,8 @@ const STARTS = [
   ['banner', 'smash/SmashRun.jsx', 'start', 1],
   ['spidey', 'thwip/Thwip.jsx', 'start', 1],
   ['vault', 'tesseract/TesseractRun.jsx', 'start', 1],
+  ['cap', 'ricochet/Flat.jsx', 'enter', 1],
+  ['widow', 'widow/Flat.jsx', 'enter', 2],
 ];
 
 describe('every game', () => {
@@ -128,5 +130,6 @@ describe('every game', () => {
     expect(repulsor.indexOf("recordTry('stark')")).toBeGreaterThan(guard);
     expect(bodyOf(read('trickshot/TrickShot.jsx'), 'begin')).toMatch(/if \(round === 0\) \{[^}]*recordTry\('hawkeye'\)/);
     expect(read('widow/Infiltration.jsx')).toMatch(/recordTry\('widow'\);\s*game\.current = newLevel\(g\.index\)/);
+    expect(read('widow/Flat.jsx')).toMatch(/recordTry\('widow'\);\s*game\.current = newLevel\(g\.index\)/);
   });
 });

@@ -52,7 +52,7 @@ describe('the ops board’s bests', () => {
   });
   it('names the very keys the games and the compound write', () => {
     expect(Object.values(BESTS).map((b) => b.key)).toEqual(['tp-hq-repulsor-best', 'tp-hq-lawn-best', 'tp-hq-ricochet', 'tp-hq-trickshot-best', 'tp-hq-widow-level', 'tp-hq-smash-best', 'tp-hq-thwip-best', 'tp-hq-tesseract-best']);
-    const FILE = { stark: 'repulsor/RepulsorRange.jsx', thor: 'lawn/HoldTheLawn.jsx', cap: 'ricochet/Ricochet.jsx', hawkeye: 'trickshot/TrickShot.jsx', widow: 'widow/Infiltration.jsx', banner: 'smash/SmashRun.jsx', spidey: 'thwip/Thwip.jsx', vault: 'tesseract/TesseractRun.jsx' };
+    const FILE = { stark: 'repulsor/RepulsorRange.jsx', thor: 'lawn/HoldTheLawn.jsx', cap: 'ricochet/save.js', hawkeye: 'trickshot/TrickShot.jsx', widow: 'widow/save.js', banner: 'smash/SmashRun.jsx', spidey: 'thwip/Thwip.jsx', vault: 'tesseract/TesseractRun.jsx' };
     for (const [id, f] of Object.entries(FILE)) expect(readFileSync(new URL(`../${f}`, import.meta.url), 'utf8'), f).toContain(`'${BESTS[id].key}'`);
     const world = readFileSync(new URL('../world/CompoundWorld.jsx', import.meta.url), 'utf8');
     for (const k of Object.values(RECORD_KEYS)) expect(world, k).toContain(`'${k}'`);
@@ -96,7 +96,7 @@ describe('the board’s cards', () => {
     expect(at(on, 'widow')).toMatchObject({ state: 'open', stoneText: 'Win Natasha’s half of the Soul Stone here' });
     expect(at(on, 'thor')).toMatchObject({ state: 'open', stoneText: 'Win the Reality Stone here', play: 'Play' });
     const off = boardCards(prog, { get: from({}), can3D: false });
-    expect(off.filter((c) => c.state === 'needs3d').map((c) => c.id)).toEqual(['thor', 'cap', 'widow', 'banner', 'vault']);
+    expect(off.filter((c) => c.state === 'needs3d').map((c) => c.id)).toEqual(['thor', 'banner', 'vault']);
     expect(at(off, 'thor').stoneText).toBe('The stone here is won in the 3D game.');
     expect(at(off, 'thor').stoneText).toBe(switchFor({ can: true, on: false, status: 'idle' }).note.text); // the game screen’s words
     expect(at(off, 'stark').state).toBe('won');
@@ -104,7 +104,11 @@ describe('the board’s cards', () => {
   it('plays in 2D where a game has a 2D view, and counts the gate done once Thwip! is won', () => {
     const flat = boardCards(progress(['power', 'soul-clint']), { get: from({}), can3D: false, flat: ['cap'] });
     expect(at(flat, 'cap')).toMatchObject({ state: 'flat', play: 'Play in 2D', stoneText: 'Win the Mind Stone here in 2D' });
-    expect(FLAT_READY).toEqual([]);
+    expect(FLAT_READY).toEqual(['cap', 'widow']);
+    const none = boardCards(progress([]), { get: from({}), can3D: false });
+    expect(at(none, 'cap')).toMatchObject({ state: 'flat', play: 'Play in 2D', stoneText: 'Win the Mind Stone here in 2D' });
+    expect(at(none, 'widow')).toMatchObject({ state: 'flat', play: 'Play in 2D', stoneText: 'Win Natasha’s half of the Soul Stone here in 2D' });
+    expect(at(boardCards(progress([]), { get: from({}), can3D: true }), 'cap')).toMatchObject({ state: 'open', play: 'Play' });
     expect(at(boardCards(progress([], ['spidey']), { get: from({ 'tp-hq-thwip-best': 9876 }), can3D: true }), 'spidey')).toMatchObject({ state: 'gate', done: true, stoneText: 'No stone here: Peter made it to school', best: { text: 'Best 9,876' } });
     expect(at(boardCards(progress([]), { get: from({}), can3D: false }), 'spidey')).toMatchObject({ state: 'gate', done: false, stoneText: 'No stone here: just Peter, and school', play: 'Play' });
   });

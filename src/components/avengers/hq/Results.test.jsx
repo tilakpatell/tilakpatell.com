@@ -77,3 +77,19 @@ describe('the results card', () => {
     expect(renderToStaticMarkup(<MemoryRouter><Results won title="Done." onAgain={noop} /></MemoryRouter>)).not.toContain('Next:');
   });
 });
+
+describe('a long record on the card', () => {
+  it('goes after the buttons, so the way on is in view on a short screen', () => {
+    const out = r({ won: true, title: 'The file is out.', after: <dl className="the-file" />, children: <p className="the-touch">Set down.</p> });
+    expect(out.indexOf('the-touch')).toBeLessThan(out.indexOf('hq-results-actions'));
+    expect(out.indexOf('hq-results-actions')).toBeLessThan(out.indexOf('the-file'));
+  });
+  it('is how Infiltration shows its file, in 3D and in 2D', async () => {
+    const { readFileSync } = await import('node:fs');
+    for (const f of ['../widow/Infiltration.jsx', '../widow/Flat.jsx']) {
+      const src = readFileSync(new URL(f, import.meta.url), 'utf8');
+      expect(src, f).toMatch(/after=\{<Dossier /);
+      expect(src, f).not.toMatch(/>\s*<Dossier [^>]*\/>\s*<\/Results>/);
+    }
+  });
+});

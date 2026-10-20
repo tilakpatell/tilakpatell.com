@@ -9,7 +9,7 @@ import { scoreLine, stoneWords } from './gameScreen';
 // in its own colour, stars where the game keeps them, and the ways on: a way
 // on inside the game, Play again, the next stone's building, Back to the
 // compound and the game's own way back. Hook-free, so a test can call it.
-export function ResultsCard({ won = false, kicker = '', title, line = '', stone = null, half = null, stoneText = '', score = null, best = 0, newBest = false, format, stars = null, onward = null, againLabel = 'Play again', onAgain, onBack = null, next = null, more = null, className = '', children }) {
+export function ResultsCard({ won = false, kicker = '', title, line = '', stone = null, half = null, stoneText = '', score = null, best = 0, newBest = false, format, stars = null, onward = null, againLabel = 'Play again', onAgain, onBack = null, next = null, more = null, className = '', children, after = null }) {
   const row = stone ? STONES.find((s) => s.id === stone) : null;
   const sc = scoreLine({ score, best, newBest, format });
   // the one primary: the way on inside the game, else the next stone after a win, else Play again
@@ -69,6 +69,7 @@ export function ResultsCard({ won = false, kicker = '', title, line = '', stone 
           </button>
         )}
       </div>
+      {after /* (a long record, such as Infiltration's file: after the buttons, so the way on stays in view) */}
     </div>
   );
 }

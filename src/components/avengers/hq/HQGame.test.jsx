@@ -123,3 +123,32 @@ describe('the start and the end of every game', () => {
     expect(s).toMatch(/disabled=\{!startable\(stage\.status\)\}/);
   });
 });
+
+// [the 2D view, the 3D game's own live flag, its file, how the 3D game re-reads the save]
+const FLAT = { ricochet: ['RicochetFlat', 'live', 'ricochet/Flat.jsx', /if \(three\.on\) setSave\(loadSave\(\)\)/], widow: ['InfiltrationFlat', 'playing', 'widow/Flat.jsx', /if \(three\.on\) setCleared\(readCleared\(\)\)/] };
+
+describe('a game with a 2D view', () => {
+  it('offers Play in 2D over its 3D game, with the 2D view kept out of it', () => {
+    const out = html(game({ flat: <i>flat</i> }));
+    expect(barOf(out)).toContain('>Play in 2D<');
+    expect(out).toContain('<i>hud</i>');
+    expect(out).not.toContain('<i>flat</i>');
+  });
+  it('says the 2D version when its 3D falls back, and shows the 2D view alone without WebGL', () => {
+    const slow = html(game({ stage: { status: 'slow' }, flat: <i>flat</i> }));
+    expect(noteOf(slow)).toContain('This device was struggling with 3D, so here is the 2D version.');
+    expect(slow).toContain('<i>flat</i>');
+    const none = html(game({ stage: { status: 'idle' }, three: { on: false, can: false }, flat: <i>flat</i> }));
+    expect(none).toContain('<i>flat</i>');
+    expect(barOf(none)).not.toMatch(/Play in|3D game/);
+    expect(noteOf(none)).toBe('');
+  });
+  it.each(Object.keys(FLAT))('%s hands the frame its 2D view, live and paused with the game, and re-reads its save on the way back to 3D', (id) => {
+    const [name, live, file, reread] = FLAT[id];
+    const s = src(FILES[id]);
+    expect(s).toContain(`flat={<${name} paused={paused} onLive={setFlatLive} />}`);
+    expect(s).toContain(`playing={${live} || flatLive}`);
+    expect(s).toMatch(reread);
+    expect(src(file)).toContain("e.target.closest('button')");
+  });
+});
