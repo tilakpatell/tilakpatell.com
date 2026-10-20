@@ -25,6 +25,7 @@ import { attend } from '../living';
 import { TUNING as POWER, newPower, powerNews, powerReadout, stepPower } from '../games/power';
 import { curse, dealNews, dealReadout, newDeal, stepDeal } from '../games/deal';
 import { freezeEyes, freezeNews, freezeReadout, jumpSplashes, moving, newFreeze, stepFreeze } from '../games/freeze';
+import { findNews, findReadout, newFind, pickOurs, stepFind } from '../games/find';
 
 // a speckled paint for a floor or the ground
 export const specks = (base, specks, seed = 7, n = 1600, size = 2) => (g, w, h) => speckle(g, w, h, { base, specks, n, size, seed });
@@ -171,6 +172,30 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     N.lookout(done ? null : freezeEyes(still));
   };
 
+  // ── a place run on a find (../games/find.js, place.js's `find`): each
+  // candidate's spot queues a use (`find-<id>`), stepped at no time in the
+  // place's own update, then the clock; said as power's run is, the win
+  // with its achievement. Ours dealt afresh whenever the place calms. ──
+  const fd = d.find;
+  const sought = () => newFind({ items: fd.items, ours: fd.ours ?? pickOurs(fd.items, Math.random), s: fd.s, cost: fd.cost });
+  let search = fd ? sought() : null;
+  let asks = [];
+  const finding = (dt, state) => {
+    const done = (state.done ?? []).includes(fd.task);
+    if (done || state.fading) {
+      asks = [];
+      return;
+    }
+    for (const u of asks.splice(0)) search = stepFind(search, { use: u }, 0);
+    search = stepFind(search, {}, dt);
+    const news = findNews(search, { done, fading: false });
+    if (news === 'done') state.emit?.('done', { area: id, task: fd.task, unlock: fd.unlock ?? null });
+    if (news === 'caught') {
+      search = { ...search, told: true };
+      state.emit?.('caught', { area: id, who: fd.who, text: fd.lost });
+    }
+  };
+
   // (calmed: its people home, and its game started afresh)
   const calm = () => {
     N.calm();
@@ -185,6 +210,10 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     if (fz) {
       still = newFreeze();
       jumped = false;
+    }
+    if (fd) {
+      search = sought();
+      asks = [];
     }
   };
 
@@ -235,6 +264,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         if (run && state) powered(t, dt, state);
         if (deal && state) dealing(state);
         if (still && state) freezing(dt, state);
+        if (search && state) finding(dt, state);
         update?.(t, dt, state, camera);
       },
     });
@@ -250,7 +280,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     // builder adds its own actions to these. `npcs`: where everyone is, for
     // the QA scripts; `fire`, `bodies` and `hit`: Morty's shot in a duel,
     // where it aims, what it can hit, and what it did when it landed.)
-    // (a place run on power, a deal or a freeze: its spots, where its game is for the
+    // (a place run on power, a deal, a freeze or a find: its spots, where its game is for the
     // checks, its meter for the HUD, and, in development, a way for the
     // checks to set it)
     area.actions = { calm, npcs: N.list, fire: N.fire, bodies: N.bodies, hit: N.hit };
@@ -279,6 +309,14 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         freeze: () => ({ phase: still.phase, eyes: still.eyes, left: still.left, len: still.len, beat: still.beat }),
         meter: () => freezeReadout(still),
         ...(import.meta.env.DEV && { setFreeze: (patch) => (still = { ...still, ...patch }) }),
+      });
+    if (search)
+      Object.assign(area.actions, {
+        ...Object.fromEntries(fd.items.map((u) => [`find-${u}`, () => asks.push(u)])),
+        // (never ours: the checks set it, a player finds it)
+        find: () => ({ phase: search.phase, left: search.left, len: search.len, heard: [...search.heard], wrong: [...search.wrong], last: search.last }),
+        meter: () => findReadout(search, fd.tells),
+        ...(import.meta.env.DEV && { setFind: (patch) => (search = { ...search, ...patch }) }),
       });
     return area;
   };

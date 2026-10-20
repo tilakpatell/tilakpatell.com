@@ -64,6 +64,7 @@ export const GUESTS = EPISODES[2];
 export const SMALL = EPISODES[3];
 export const HEAT = EPISODES[4];
 export const DEALS = EPISODES[5];
+export const JERRY = EPISODES[6];
 // Morty by the garage portal, stepped through it, and stood where it took him
 export async function throughPortal(page) {
   await goto(page, 'garage', -302.3, 101.4, Math.PI);
@@ -153,6 +154,6 @@ export async function playTo(page, e, wins = []) {
     await cardFor(page, i + 1);
   }
 }
-// a place's game, as its stage has it (Needful Things' deal, the vat's freeze)
+// a place's game, as its stage has it (Needful Things' deal, the vat's freeze, the Jerryboree's find)
 export const game = (page, area, what) => page.evaluate(([a, w]) => window.__C137__.api.act(a, w), [area, what]);
 export const rickallOn = (page) => page.waitForFunction(() => window.__C137__.sim.rickall?.phase === 'on', null, { timeout: 300000, polling: 250 });

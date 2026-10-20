@@ -598,6 +598,8 @@ export const PAGES = {
       ['The cruiser’s chase', 'Fly through the six rings over the street, in order, with the Federation ship shooting at you: three hits and it’s back to the first ring, and it can’t be shot down while it chases you.'],
       ['Needful Things', 'Everything in Mr. Needful’s shop is free, and all but one of the free things are cursed. Look them over first, three looks at most, then take the one with no curse on it; take a cursed one and you’re back at the door.'],
       ['The vat of acid', 'Rick’s fake death, sold to two Gromflomites. Move while their backs are turned and keep still while they look; jump in behind their backs, then play dead while they peer in. Seen moving, you’re back at the door.'],
+      ['The Jerryboree', 'A daycare for Jerrys, and one of them is ours. Talk to them: ours offers you an apple, as he does at home, and talking to him again takes him. A wrong pick costs time, and when the clock runs out you’re back at the door.'],
+      ['St. Gloopy Noops', 'The hospital in space, where the doctors want something of Jerry’s. Get past them to the theatre at the end of the ward, visit Shrimply Pibbles and take back Jerry’s things, then get out through the portal before the clock runs out; caught, you’re back at the door.'],
     ],
   },
   // a Rick and Morty planet, landed on from the universe map (/c-137/<id>)

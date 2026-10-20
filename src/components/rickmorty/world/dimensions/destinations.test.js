@@ -251,6 +251,84 @@ describe('a place that runs on a freeze', () => {
   });
 });
 
+describe('a place that runs on a find', () => {
+  it('has its candidates as people with spots of their own, each with a tell, and only the game ticks its task', () => {
+    const finding = DESTINATIONS.filter((d) => d.find);
+    expect(finding.map((d) => d.id)).toEqual(['jerryboree']);
+    for (const d of finding) {
+      const spots = d.hotspots.map((h) => h.id);
+      const people = d.people.map((p) => p.id);
+      for (const id of d.find.items) {
+        expect(people, `${d.id}: ${id} is someone`).toContain(id);
+        expect(spots, `${d.id}: ${id} has a spot`).toContain(id);
+        expect(d.say[id]?.text, `${d.id}: ${id} has a line`).toBeTruthy();
+        expect(d.acts[id]).toBe(`find-${id}`);
+        expect(d.hotspots.find((h) => h.id === id).verb).toBe('Talk');
+        const tell = d.find.tells[id];
+        expect(tell, `${d.id}: ${id} has a tell`).toBeTruthy();
+        expect(tell.length).toBeLessThanOrEqual(36);
+        expect(tell).not.toMatch(/[!:.]/);
+      }
+      expect(d.find.tells.ours.length).toBeLessThanOrEqual(36);
+      expect(d.find.tells.ours).not.toMatch(/[!:.]/);
+      const tells = [d.find.tells.ours, ...d.find.items.map((id) => d.find.tells[id])];
+      expect(new Set(tells).size).toBe(tells.length);
+      expect(d.tasks.map((t) => t.id)).toContain(d.find.task);
+      // the map's marker on a spot, never on a candidate (it would give ours away)
+      expect(spots).toContain(d.goal);
+      expect(d.find.items).not.toContain(d.goal);
+      expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(d.find.task);
+      expect(Object.values(d.unlock), `${d.id}: a talk gives the achievement`).not.toContain(d.find.unlock);
+      expect(d.find.lost).not.toMatch(/!/);
+      expect(d.find.lost).not.toContain('Rick');
+      expect(d.find.lost.split(/[.?]\s/)).toHaveLength(1);
+    }
+  });
+  it('is the Jerryboree’s six Jerrys standing still, ours dealt each run, forty-five seconds and fifteen a wrong pick', () => {
+    const daycare = destinationById('jerryboree');
+    expect(daycare.find).toMatchObject({ task: 'jerryboree', items: ['jerryreal', 'jerrytv', 'jerrygown', 'jerrytux', 'jerrytrack', 'jerryrobe'], s: 45, cost: 15, who: 'receptionist', unlock: 'jerryboree' });
+    expect(daycare.find.ours).toBe(undefined);
+    expect(daycare.goal).toBe('receptionist');
+    expect(daycare.done).toEqual({});
+    expect(daycare.unlock).toEqual({});
+  });
+  it('has each Jerry’s tell as something he does, never something he says, so it can’t contradict the line he’s just said', () => {
+    const daycare = destinationById('jerryboree');
+    for (const [id, tell] of Object.entries(daycare.find.tells)) expect(tell, id).not.toMatch(/\b(asks?|says?|shushes|tells?)\b/);
+    expect(daycare.find.tells.ours).toBe('He offers you an apple');
+    expect(daycare.tasks[0].hint).toContain('ours offers you an apple');
+  });
+});
+
+describe('St. Gloopy Noops', () => {
+  it('is a hunt: past the doctors to the theatre, Jerry’s things back, then out through the portal on the clock', () => {
+    const ward = destinationById('gloopynoops');
+    expect(ward.collect).toEqual({ task: 'gloopynoops', spots: ['shrimply', 'jerrysthings'], escape: { s: 30 } });
+    expect(ward.goal).toBe('jerrysthings');
+    const hunters = ward.people.filter((p) => p.ai?.hunt);
+    expect(hunters.map((p) => p.id)).toEqual(['gdoctor-a', 'gdoctor-b', 'gdoctor-c']);
+    const spots = ward.hotspots.map((h) => h.id);
+    for (const p of hunters) {
+      expect(p.who, p.id).toBe('glipglop');
+      expect(p.roams, p.id).toBe(true);
+      expect(spots, `${p.id} isn’t a spot`).not.toContain(p.id);
+      expect(ward.say[p.id]?.who, `${p.id} has a name for a catch`).toBeTruthy();
+    }
+    expect(ward.done).toEqual({});
+    expect(ward.unlock).toEqual({});
+    expect(ward.hotspots.find((h) => h.id === 'jerrysthings').verb).not.toBe('Look');
+    // (said in a doctor's voice, the toast naming him: never "A doctor" again)
+    for (const line of [ward.caught, ward.spotted, ward.say.jerrysthings.text]) {
+      expect(line).not.toMatch(/!/);
+      expect(line.split(/[.?]\s/)).toHaveLength(1);
+    }
+    for (const line of [ward.caught, ward.spotted]) expect(line.startsWith('A doctor')).toBe(false);
+    // (a catch starts the whole visit over, Shrimply too, and it can come before anything's taken)
+    expect(ward.caught).toContain('your visit starts over');
+    expect(ward.caught).not.toContain('Jerry’s things');
+  });
+});
+
 describe('Anatomy Park', () => {
   it('is a chase: the park map’s four pieces while the diseases hunt, then out through the portal on the clock', () => {
     const park = destinationById('anatomy');
