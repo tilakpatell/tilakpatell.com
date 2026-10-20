@@ -61,6 +61,8 @@ export function groundMaterial(site, { small = false, map = null, splat: layered
     uMarks: texture(BLACK),
     uMarkColor: uniform(col(p.mark, '#000000')),
     uHalf: uniform(half),
+    // (where the square lies: the origin, or round you in the free roam, galaxy/surface/roam.js)
+    uCentre: uniform(new THREE.Vector2()),
     uNoise: texture(noiseTexture()),
     uScan: texture(WHITE),
     uScanN: texture(FLAT),
@@ -137,7 +139,7 @@ export function groundMaterial(site, { small = false, map = null, splat: layered
     // darker toward the water's edge
     c.assign(mix(c, u.uWetColor, fall(u.uWet.x, u.uWet.x.add(u.uWet.y), vGround.y).mul(0.75).mul(step(-9999, u.uWet.x))));
     if (map) {
-      const mq = abs(xz).div(u.uHalf);
+      const mq = abs(xz.sub(u.uCentre)).div(u.uHalf);
       c.assign(mix(c, map.groundColour(xz), fall(0.88, 1, mq.x.max(mq.y))));
     }
     // grain close up, fading out before it shimmers
@@ -175,7 +177,7 @@ export function groundMaterial(site, { small = false, map = null, splat: layered
       });
     }
     // where things have been (sampled always, used inside the square)
-    const muv = xz.div(u.uHalf.mul(2)).add(0.5);
+    const muv = xz.sub(u.uCentre).div(u.uHalf.mul(2)).add(0.5);
     const inside = muv.x.greaterThan(0).and(muv.x.lessThan(1)).and(muv.y.greaterThan(0)).and(muv.y.lessThan(1));
     const marked = mix(c, u.uMarkColor, u.uMarks.sample(muv).r);
     return select(inside, marked, c);

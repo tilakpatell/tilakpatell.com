@@ -30,6 +30,18 @@ describe('fieldAt', () => {
   });
 
   describe('the flight’s additions', () => {
+    it('mountains with ranges break past `to` into ranges with lowlands between, and are as they were inside it', () => {
+      const ring = { type: 'mountains', from: 600, to: 3000, height: 300, scale: 1100 };
+      const ranged = { ...ring, ranges: 4000 };
+      for (const r of [700, 1500, 2900]) expect(LAYERS.mountains(r, 0, ranged, 3)).toBe(LAYERS.mountains(r, 0, ring, 3));
+      // (far out: some ground as high as the ring's, much of it far lower)
+      const far = [];
+      for (let i = 0; i < 400; i++) far.push(LAYERS.mountains(6000 + (i % 20) * 900, 6000 + Math.floor(i / 20) * 900, ranged, 3) / LAYERS.mountains(6000 + (i % 20) * 900, 6000 + Math.floor(i / 20) * 900, ring, 3));
+      expect(Math.max(...far)).toBeGreaterThan(0.95);
+      expect(far.filter((k) => k < 0.2).length).toBeGreaterThan(40);
+      expect(far.every((k) => k >= 0 && k <= 1 + 1e-9)).toBe(true);
+    });
+
     it('mountains from 0 with no `to` are a range everywhere, finite, not a ring', () => {
       const l = { type: 'mountains', from: 0, height: 300, scale: 1200 };
       let lo = Infinity;

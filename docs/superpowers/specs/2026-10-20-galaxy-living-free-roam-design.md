@@ -94,6 +94,20 @@ but:
 - The living ground (lane 1) already follows you there. Far places are
   seeded a region at a time: ruins, camps, and small towns from lane 2's
   `city()`.
+- As built: the roam has no edge wherever you are on a world's own ground
+  with no mission running (`surface/roam.js`'s `roamOn`), not on a game
+  level. In place of a quadtree the ground's grid and its map move with
+  you: 240 m from the grid's middle a new grid round you is sampled a few
+  rows a frame (`terrain.js`'s `gridBuild`), the map painted round it
+  (`groundmap`'s `moveTo`), and both go in on one frame, the new middle on
+  the fine grid's lattice so the near ground stays where it was (about
+  180 ms of work over some 40 frames). Past a world's mountain ring the
+  land breaks into ranges 4.2 km across with lowlands between (`layers.js`'s
+  mountains `ranges`). The living ground is laid again on the moved ground,
+  and the grass hides if you outrun the map. Far places: one or none a
+  kilometre square (`surface/wayside.js`), a camp, a downed starfighter, an
+  outpost or a ruin by the kind of world, on the land's own height; the
+  small towns are not built yet.
 
 ## Order and checks
 
