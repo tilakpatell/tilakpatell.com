@@ -363,6 +363,7 @@ The whole ride is 1,797 s on auto, the deeds' waits aside. The per-beat draws an
 - The Havens' sea had trees and reeds standing in it: a stage's `ground.sea` now makes the land wet under it, so the scatter keeps to the beach; the last stage's land no longer rises back to the seam at its far end.
 - The four stood in the quay's coping (its top a tenth over the floor the scene gave them); Frodo went up into the ship through her side, not over it (now by a gangway).
 - After the bow at the Court the King's side turned their backs on the four: the kneel clip was looped from its start, not held at its kneel.
+- Gorgoroth's carry was shot from over the two at the ash, Frodo hiding Sam; it's now from beside, staged as the chapter stages it (Sam bent under him, Frodo on his back), and a scene's poses are given the lead's place so the two stand together whichever is asked first. The eruption's shot looked back at the sky since the Mountain moved ahead: it now faces the Mountain and the Tower.
 - A whole city in the shadow pass threw on the WebGL fallback (`updateColor` reading `.r` of undefined): the city and Gorgoroth's props cast nothing into the cascades.
 
 ### The pictures
@@ -375,3 +376,4 @@ The whole ride is 1,797 s on auto, the deeds' waits aside. The per-beat draws an
 - `havens-gangway-desktop.webp`: the farewell: Frodo going up the gangway over her rail, the three on the quay, those sailing aboard.
 - `gorgoroth-built-desktop.webp`: the plain under the pall, the Mountain filling the sky, its plume and its fire; the column's spears on the road.
 - `gorgoroth-column-desktop.webp`: the two among the orc column, the driver with his whip.
+- `gorgoroth-eruption-desktop.webp`: the Mountain breaking, fire out of its cone and down its streams, from the slope's top.
