@@ -308,6 +308,8 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
           jumped = true;
         },
         freeze: () => ({ phase: still.phase, eyes: still.eyes, left: still.left, len: still.len, beat: still.beat }),
+        // (whether a jump in now would take him, so the vat's long line isn't said before a catch's)
+        'freeze-takes': () => jumpSplashes(still, { done: finished }),
         meter: () => freezeReadout(still),
         ...(import.meta.env.DEV && { setFreeze: (patch) => (still = { ...still, ...patch }) }),
       });
@@ -321,6 +323,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       });
     return area;
   };
-  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null), freeze: (o) => (splash = o.splash ?? null) };
+  // (`taken()`: what a deal's had off the shelves this run, for the builder to take away)
+  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null), freeze: (o) => (splash = o.splash ?? null), taken: () => deal?.taken ?? [] };
 
 }

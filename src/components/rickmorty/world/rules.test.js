@@ -1731,6 +1731,25 @@ describe('C-137: the President, the Federation, the Oval Office and Shoney’s',
 });
 
 describe('C-137: the people', () => {
+  it('leaves no one in the way where a dial place’s crowd started, once they roam; who stands still stays solid', () => {
+    let roamers = 0;
+    for (const d of DESTINATIONS) {
+      // (a step off the middle: pushOut can't tell which way to push a point dead on a circle's centre)
+      const near = (e, o) => Math.hypot(o.x - e.x, o.z - e.z) < 2.5;
+      for (const e of d.extras) {
+        if (!e.roams) {
+          expect(free(d.id, e.x + 0.1, e.z), `${d.id}: ${e.kind} stands still`).toBe(false);
+          continue;
+        }
+        // (where nothing else stands near)
+        if (d.solids.some((o) => near(e, o)) || d.people.some((o) => near(e, o)) || d.extras.some((o) => o !== e && !o.roams && near(e, o))) continue;
+        roamers += 1;
+        expect(free(d.id, e.x + 0.1, e.z), `${d.id}: ${e.kind} roams`).toBe(true);
+      }
+    }
+    expect(roamers).toBeGreaterThan(10);
+  });
+
   // whose hotspot each is
   const HOTSPOT_OF = { jerry: 'jerry', beth: 'beth', summer: 'summer', rick: 'rick', teacher: 'quiz', drwong: 'therapy' };
   // the people behind a desk, across it from their hotspot

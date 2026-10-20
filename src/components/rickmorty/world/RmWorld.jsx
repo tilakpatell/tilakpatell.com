@@ -185,6 +185,7 @@ const TALK_UNLOCK = { therapy: 'wong', ...Object.assign({}, ...DESTINATIONS.map(
 // the places left in a hurry (./dimensions/destinations.js's `escape`), by
 // the hotspot that starts the clock: the Purge Planet's siren, Customs'
 // scanner, the wedding's toast
+const FREEZE_SPOTS = new Set(DESTINATIONS.filter((d) => d.freeze).map((d) => d.freeze.spot));
 const ESCAPES = Object.fromEntries(DESTINATIONS.filter((d) => d.escape).map((d) => [d.escape.spot, { ...d.escape, area: d.id }]));
 // and what using a hotspot tells its place's builder
 const ACTS = Object.assign({}, ...DESTINATIONS.map((d) => Object.fromEntries(Object.entries(d.acts).map(([spot, name]) => [spot, [d.id, name]]))));
@@ -1058,7 +1059,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       const e = ESCAPES[n.id];
       const early = e?.after && !s.used?.has(e.after);
       const line = early ? e.before : SAY[n.id];
-      say({ kind: 'say', ...line });
+      // (a jump into a freeze's vat that'll be caught says nothing of its own: the catch is what's said)
+      if (!(FREEZE_SPOTS.has(n.id) && api.current?.act(s.area, 'freeze-takes') === false)) say({ kind: 'say', ...line });
       (s.used ??= new Set()).add(n.id);
       // someone to talk to: their head turns to him and their hands go while
       // the line plays (state.talk), his head on them; a wave from him first,

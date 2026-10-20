@@ -733,7 +733,11 @@ export async function createRmWorld(rt, { looks = null, track: stages = null } =
 
   const fire = (type, d) => {
     const m = morty.group.position;
-    if (type === 'done') fx.burst(m.x, m.y + 2.1, m.z, 110, 4.5);
+    // (a task done in flight bursts over the cruiser he's in, not where he got in)
+    if (type === 'done') {
+      const o = cam.flying ? cruiser.position : m;
+      fx.burst(o.x, o.y + 2.1, o.z, 110, 4.5);
+    }
     else if (type === 'portal') {
       const p = d.at ?? { x: m.x, z: m.z };
       fx.openPortal(p.x, p.z, 0);
