@@ -17,7 +17,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { C, canopy, disposeBuilt, merged, mergeStatics, part } from '../parts';
+import { BAND, C, canopy, disposeBuilt, merged, mergeStatics, part } from '../parts';
 import { moundTop } from '../../ground';
 import { STAGES } from '../index';
 import { bagEnd, barrelParts, beehiveParts, benchParts, bush, cabbageGeo, cart, dog, flowerBed, greenDragon, hayBaleParts, hedgeGeo, hole, lampParts, mailboxParts, mill, oaks, partyTree, parts, pavilion, pumpkinGeo, scarecrowParts, sheep, signpost, washingLine, wheatGeo, wheelbarrowParts } from '../../../shire/build';
@@ -241,23 +241,42 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   const [dx, dz] = before(bag.x, bag.z, bag.yaw, 3.2, -1.6);
   group.add(stand(dog(K).group, heightAt, dx, dz, bag.yaw + 1.2));
 
-  // the chapter’s oaks, instanced, and its hedges along the lane
+  // the chapter’s oaks, instanced, and its hedges along the lane, each a
+  // band of the stage at a time (parts.js’s BAND: the view and the sun’s
+  // cascades leave out a band they can’t see; one mesh the lane’s length,
+  // the hedges were drawn whole into every cascade)
+  const bandOf = (z) => Math.floor(z / BAND);
+  const banded = (list, z) => {
+    const by = new Map();
+    for (const it of list) {
+      const k = bandOf(z(it));
+      if (!by.has(k)) by.set(k, []);
+      by.get(k).push(it);
+    }
+    return by.values();
+  };
   for (const [k, oak] of oaks().entries()) {
-    const list = OAKS.filter((_, i) => i % 3 === k);
-    for (const [geo, mat] of [[oak.trunk, K.mats.trunk], [oak.crown, K.mats.crown]]) {
-      const inst = new THREE.InstancedMesh(geo, mat, list.length);
-      list.forEach(([x, z, s], i) => inst.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z) - 0.1, z), q.setFromAxisAngle(up, x + z), new THREE.Vector3(s, s, s).multiplyScalar(SHIRE * 1.6))));
-      inst.castShadow = true;
-      group.add(inst);
+    for (const list of banded(OAKS.filter((_, i) => i % 3 === k), (o) => o[1])) {
+      for (const [geo, mat] of [[oak.trunk, K.mats.trunk], [oak.crown, K.mats.crown]]) {
+        const inst = new THREE.InstancedMesh(geo, mat, list.length);
+        list.forEach(([x, z, s], i) => inst.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z) - 0.1, z), q.setFromAxisAngle(up, x + z), new THREE.Vector3(s, s, s).multiplyScalar(SHIRE * 1.6))));
+        inst.computeBoundingSphere();
+        inst.castShadow = true;
+        group.add(inst);
+      }
     }
   }
   const blocks = [];
   for (const [side, z0, z1] of HEDGES) for (let z = z0; z < z1; z += 0.95) blocks.push([side * 4.6, z]);
   const along = new THREE.Quaternion().setFromAxisAngle(up, R);
-  const hedge = new THREE.InstancedMesh(hedgeGeo(), K.mats.hedge, blocks.length);
-  blocks.forEach(([x, z], i) => hedge.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z) - 0.1, z), along, new THREE.Vector3(1, 0.85 + ((z * 7.1) % 1) * 0.25, 0.9))));
-  hedge.castShadow = true;
-  group.add(hedge);
+  const hedgeGeometry = hedgeGeo();
+  for (const list of banded(blocks, (b) => b[1])) {
+    const hedge = new THREE.InstancedMesh(hedgeGeometry, K.mats.hedge, list.length);
+    list.forEach(([x, z], i) => hedge.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z) - 0.1, z), along, new THREE.Vector3(1, 0.85 + ((z * 7.1) % 1) * 0.25, 0.9))));
+    hedge.computeBoundingSphere();
+    hedge.castShadow = true;
+    group.add(hedge);
+  }
 
   // the corn at the field’s edge, either side of the lane: the chapter’s
   // clumps by it (fewer on low), the field’s body behind them a canopy
@@ -273,7 +292,7 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   group.updateMatrixWorld(true);
   for (const b of [inn, ...lane]) if (b.chimneyTop) chimneys.push(b.chimneyTop.clone().applyMatrix4(b.group.matrixWorld));
   // (a builder draws a hole in a dozen meshes: one a material for the stage, what moves kept)
-  mergeStatics(group, { keep: [theMill.wheel, lanterns, hedge, wheat].filter(Boolean) });
+  mergeStatics(group, { keep: [theMill.wheel, lanterns, wheat].filter(Boolean) });
 
   return {
     group,
