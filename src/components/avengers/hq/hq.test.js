@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { rng, pick, range } from './rng';
-import { STONE_IDS, earnStone, earnedStones, heistComplete, forgetStones, SOUL_HALVES } from './stones';
+import { STONE_IDS, earnStone, earnedStones, heistComplete, forgetStones, heistRecord, recordTry, SOUL_HALVES } from './stones';
 import { createFeel } from './feel';
 
 describe('the seeded random source', () => {
@@ -102,6 +102,40 @@ describe('the stone heist', () => {
     earnStone('power');
     forgetStones();
     expect(earnedStones()).toEqual([]);
+  });
+  it('writes when each stone was first won to the heist record, and adds no event', () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1000);
+    earnStone('power');
+    now.mockReturnValue(9000);
+    earnStone('power');
+    earnStone('soul-clint');
+    now.mockReturnValue(12000);
+    earnStone('soul-natasha');
+    expect(heistRecord()).toEqual({ stones: { power: 1000, soul: 12000 }, tries: {} });
+    expect(JSON.parse(window.localStorage.getItem('tp-hq-heist')).v).toBe(1);
+    expect(JSON.parse(window.localStorage.getItem('tp-hq-stones'))).toEqual(['power', 'soul-clint', 'soul-natasha', 'soul']);
+    expect(window.dispatchEvent).toHaveBeenCalledTimes(2);
+    now.mockRestore();
+  });
+  it('gives stones held before the record no time, and the next stone its own', () => {
+    window.localStorage.setItem('tp-hq-stones', JSON.stringify(['power', 'mind']));
+    expect(heistRecord()).toEqual({ stones: { power: null, mind: null }, tries: {} });
+    expect(window.localStorage.getItem('tp-hq-heist')).toBe(null);
+    const now = vi.spyOn(Date, 'now').mockReturnValue(5000);
+    earnStone('time');
+    expect(heistRecord().stones).toEqual({ power: null, mind: null, time: 5000 });
+    now.mockRestore();
+  });
+  it('counts a try each time a game starts', () => {
+    for (const g of ['stark', 'stark', 'cap', 'nowhere']) recordTry(g);
+    expect(heistRecord().tries).toEqual({ stark: 2, cap: 1 });
+    expect(window.dispatchEvent).not.toHaveBeenCalled();
+  });
+  it('keeps no record, and never throws, when storage is blocked', () => {
+    vi.stubGlobal('window', { get localStorage() { throw new Error('blocked'); }, dispatchEvent: vi.fn() });
+    expect(() => recordTry('stark')).not.toThrow();
+    expect(() => earnStone('mind')).not.toThrow();
+    expect(heistRecord()).toEqual({ stones: {}, tries: {} });
   });
 });
 

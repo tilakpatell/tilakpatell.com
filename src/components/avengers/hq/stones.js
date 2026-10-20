@@ -1,8 +1,12 @@
 // The stone heist: each building's game gives up one Infinity Stone, kept
 // between visits. Clint and Natasha went to Vormir together, so the Soul Stone
 // takes both of their games. The stones you earn are set in Thanos's
-// gauntlet; all six earned this way is the heist.
+// gauntlet; all six earned this way is the heist. Each stone's first win and
+// each game's tries are kept in the heist's record (./heist.js, tp-hq-heist,
+// through runtime/saves).
 import { useEffect, useState } from 'react';
+import { createSaves } from '../../../runtime/saves';
+import { HEIST_GAMES, HEIST_KEY, loadHeist, registerHeist, withStone, withTry } from './heist';
 
 const KEY = 'tp-hq-stones';
 const EVENT = 'tp:stones';
@@ -28,6 +32,25 @@ function write(list) {
   }
 }
 
+// The heist's record, through a saves instance made on each call (as read and
+// write read window each time; the cached localSaves() would keep the first storage it saw).
+const localStore = () => {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+};
+const heistSaves = () => {
+  const saves = createSaves({ local: localStore() });
+  registerHeist(saves);
+  return saves;
+};
+const noteHeist = (change, held) => {
+  const saves = heistSaves();
+  saves.set(HEIST_KEY, change(loadHeist(saves, held)));
+};
+
 // The stones earned, in the gauntlet's order.
 export const earnedStones = () => {
   const have = read();
@@ -52,6 +75,8 @@ export function earnStone(id) {
     got = 'soul';
   }
   write(next);
+  // (seeded with the stones held before this win, so this one gets its time rather than null)
+  if (got) noteHeist((r) => withStone(r, got, Date.now()), STONE_IDS.filter((s) => have.includes(s)));
   if (!got) return false;
   try {
     window.dispatchEvent(new CustomEvent(EVENT, { detail: got }));
@@ -68,6 +93,16 @@ export function forgetStones() {
   } catch {
     /* no window events here */
   }
+}
+
+// The heist's record: when each stone was first won (null for one held
+// before the record began) and how many times each game was started. Never writes.
+export const heistRecord = () => loadHeist(heistSaves(), earnedStones());
+
+// One start of a building's game (a place id); any other id is ignored.
+export function recordTry(game) {
+  if (!HEIST_GAMES.includes(game)) return;
+  noteHeist((r) => withTry(r, game), earnedStones());
 }
 
 // The stones earned so far, kept up to date as games give them up.

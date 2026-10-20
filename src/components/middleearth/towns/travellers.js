@@ -9,10 +9,10 @@
 // and then, and where they are a few times a second while walking (once a
 // second standing still); anyone not heard from in a while is gone.
 //
-// createTravellers({ town, name, bound, motion, hidden, ally }) → { status, list(),
+// createTravellers({ town, name, bound, motion, hidden, ally, quip }) → { status, list(),
 // pose(h, { inside, ring, ride, area, emote, move }, { force }), rename(name), leave() };
 // list() gives [{ id, name, x, z, face, moving, inside, ring, ride, area, emote,
-// motion, at, ally }] (and speed and y, with `motion`). `bound` is how far from the
+// motion, at, ally, quip }] (and speed and y, with `motion`). `bound` is how far from the
 // middle a town reaches, in metres; `force` sends a pose now (going indoors,
 // say), whatever the pace. A world that draws you on the animation layer says
 // what you're doing and how you move (lib/emote.js): `emote` its
@@ -30,7 +30,11 @@
 // as they're next heard). `ally(id)` is true of an ally of yours (the
 // roster's, allies.js: the same key here), and each of list()'s rows says
 // so as `ally`, so a world can draw your allies apart from strangers and
-// count them on its chip; nothing else about an ally differs.
+// count them on its chip; nothing else about an ally differs. `quip(id)` is
+// the quick-chat line over them now (the site's, client.quip: one of its set
+// lines, said to the whole site's room, or null once it's old), asked as
+// `ally` is and carried as `quip`, for a world to show over their head;
+// nothing of it goes through the town's own room.
 
 import { createLimiter } from '../../universe/online/protocol';
 import { cleanName } from '../../universe/online/names';
@@ -50,6 +54,7 @@ const loadRoom = () => import('../../universe/online/nostr').then((m) => m.joinA
 
 const num = (v, lo, hi) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : null);
 const r2 = (v) => Math.round(v * 100) / 100;
+const lineOf = (v) => (typeof v === 'string' && v ? v : null); // (a quick-chat line, or none)
 
 // [x, z, face, moving, flags], and back (flags: 1 indoors, 2 wearing the Ring,
 // 4 riding something: a world's own vehicle, drawn instead of the walker).
@@ -97,7 +102,7 @@ export function readStep(data, bound = 200) {
   return step;
 }
 
-export function createTravellers({ town, name, load = loadRoom, now = () => Date.now(), bound = 200, motion = false, hidden = () => false, ally = () => false }) {
+export function createTravellers({ town, name, load = loadRoom, now = () => Date.now(), bound = 200, motion = false, hidden = () => false, ally = () => false, quip = () => null }) {
   const peers = new Map();
   const limits = new Map();
   let me = { name: cleanName(name) ?? 'Traveller' };
@@ -185,14 +190,16 @@ export function createTravellers({ town, name, load = loadRoom, now = () => Date
       return status;
     },
     // the travellers here now, walking the town (not indoors), each saying
-    // whether they're an ally of yours (asked now: an alliance made while
-    // you're both here shows at once)
+    // whether they're an ally of yours and what they've just said (asked
+    // now: an alliance made while you're both here shows at once, and a
+    // line goes when it's old)
     list() {
       sweep();
       const out = [];
       for (const p of peers.values()) {
         if (!p.placed || (p.area ?? null) !== area || hidden(p.id)) continue;
         p.ally = Boolean(ally(p.id));
+        p.quip = lineOf(quip(p.id));
         out.push(p);
       }
       return out;

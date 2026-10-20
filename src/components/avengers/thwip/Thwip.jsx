@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import HQFrame from '../hq/HQFrame';
+import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
+import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
+import { recordTry } from '../hq/stones';
 import gameModule from './module';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
 import { edges, readPad, typing } from '../../games/pad';
-import { use3D } from '../../../lib/gpu';
+import { useGame3D } from '../hq/useGame3D';
 import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
@@ -32,8 +34,8 @@ const calm = typeof window !== 'undefined' && prefersReducedMotion();
 const VOICED = new Set(SPOKEN);
 
 export default function Thwip({ fallback }) {
-  const three = use3D();
-  const stage = useStage(gameModule, { enabled: three.on, id: 'thwip', forced: three.mode === 'on' });
+  const three = useGame3D('thwip');
+  const stage = useStage(gameModule, { enabled: three.on, id: 'thwip', forced: three.mode === 'on', own3D: true });
   const { unlock } = useAchievements();
   const game = useRef(newRun({ seed: 1 }));
   const demo = useRef(null);
@@ -56,6 +58,7 @@ export default function Thwip({ fallback }) {
 
   const start = useCallback(() => {
     audioContext(); // in the click, so the first thwip can be heard
+    recordTry('spidey');
     game.current = newRun({ seed: newSeed() });
     startRun(game.current);
     acc.current = 0;
@@ -285,8 +288,14 @@ export default function Thwip({ fallback }) {
   const res = ui.result;
   const left = Math.max(0, SCHOOL - ui.d);
   const clock = Math.max(0, BELL - ui.t);
+  // the bar's Pause, and a hidden tab: as Esc does
+  const pause = (p) => setPaused(p);
   return (
-    <HQFrame
+    <HQGame
+      game="thwip"
+      playing={playing}
+      paused={paused}
+      onPause={pause}
       stage={stage}
       three={three}
       fallback={fallback}
@@ -330,36 +339,41 @@ export default function Thwip({ fallback }) {
           {ui.quip && <p className="tw-quip">{ui.quip}</p>}
         </div>
       )}
-      {(!playing || paused) && (
-        <div className="hq-overlay tw-overlay">
-          {paused ? (
-            <>
-              <p className="hq-overlay-title">Paused</p>
-              <p className="hq-overlay-text">{fmt(left)} m to go.</p>
-              <button type="button" className="btn btn-primary mt-4" onClick={() => (setPaused(false), focus())}>
-                Keep swinging
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="hq-overlay-kicker">Queens · the morning after the press conference</p>
-              <p className="hq-overlay-title tw-title">{res ? (res.won ? 'Made it. Barely.' : res.why === 'bell' ? 'Late for school.' : 'Taking the subway, then.') : 'Thwip!'}</p>
-              <p className="hq-overlay-text">
-                {res
-                  ? res.won
-                    ? `${Math.round(res.time)} seconds down the avenue, ${res.got} ${res.got === 1 ? 'backpack' : 'backpacks'} back, ${res.perfects} perfect releases.`
-                    : res.why === 'bell'
-                      ? `The bell went with ${fmt(SCHOOL - res.d)} m still to go. Keep off the street and carry your speed over the cross streets.`
-                      : `${fmt(res.d)} m down the avenue, and the traffic had the last word. Swing before you drop too low, and carry your speed over the cross streets.`
-                  : 'Peter turned down the suit. Now he’s late for school, two kilometres away, and the quickest way is between the buildings. Hold to swing, let go to fly, on the upswing for a perfect release. His backpacks are webbed up along the way: he keeps losing them.'}
-              </p>
-              {res && (
-                <p className="hq-overlay-score">
-                  {fmt(res.score)}
-                  <small>{res.newBest ? 'a new best' : best ? `best ${fmt(best)}` : 'points'}</small>
-                </p>
-              )}
-              {!res && (
+      {(!playing || paused) &&
+        (res && !paused ? (
+          <Results
+            className="tw-overlay"
+            won={res.won}
+            kicker="Queens · the morning after the press conference"
+            title={res.won ? 'Made it. Barely.' : res.why === 'bell' ? 'Late for school.' : 'Taking the subway, then.'}
+            line={
+              res.won
+                ? `${Math.round(res.time)} seconds down the avenue, ${res.got} ${res.got === 1 ? 'backpack' : 'backpacks'} back, ${res.perfects} perfect releases.`
+                : res.why === 'bell'
+                  ? `The bell went with ${fmt(SCHOOL - res.d)} m still to go. Keep off the street and carry your speed over the cross streets.`
+                  : `${fmt(res.d)} m down the avenue, and the traffic had the last word. Swing before you drop too low, and carry your speed over the cross streets.`
+            }
+            score={res.score}
+            best={best}
+            newBest={res.newBest}
+            onAgain={start}
+          />
+        ) : (
+          <div className="hq-overlay tw-overlay">
+            {paused ? (
+              <>
+                <p className="hq-overlay-title">Paused</p>
+                <p className="hq-overlay-text">{fmt(left)} m to go.</p>
+                <button type="button" className="btn btn-primary mt-4" onClick={() => (setPaused(false), focus())}>
+                  Keep swinging
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="hq-overlay-kicker">Queens · the morning after the press conference</p>
+                <p className="hq-overlay-title">Thwip!</p>
+                <p className="hq-overlay-text">Peter turned down the suit. Now he’s late for school, two kilometres away, and the quickest way is between the buildings. Hold to swing, let go to fly, on the upswing for a perfect release. His backpacks are webbed up along the way: he keeps losing them.</p>
+                <StartNote />
                 <ul className="hq-keys">
                   <li>
                     Hold <kbd>Space</kbd> or the mouse: swing
@@ -371,21 +385,20 @@ export default function Thwip({ fallback }) {
                   <li>
                     <kbd>W</kbd> reel in
                   </li>
-                  <li>Touch: hold to swing, left or right to steer</li>
                 </ul>
-              )}
-              <button type="button" className="btn btn-primary mt-5" onClick={start}>
-                {res ? 'Again' : 'Swing'}
-              </button>
-              {!res && best > 0 && <p className="hq-overlay-best">Best {fmt(best)}</p>}
-            </>
-          )}
-        </div>
-      )}
+                <TouchHelp game="thwip" />
+                <button type="button" className="btn btn-primary mt-5" onClick={start}>
+                  Swing
+                </button>
+                {best > 0 && <p className="hq-overlay-best">Best {fmt(best)}</p>}
+              </>
+            )}
+          </div>
+        ))}
       <p className="sr-only" role="status">
         {playing ? `${fmt(left)} metres to school. ${ui.hearts} hearts. ${ui.quip}` : ''}
       </p>
-    </HQFrame>
+    </HQGame>
   );
 }
 

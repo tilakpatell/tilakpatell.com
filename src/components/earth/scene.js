@@ -5,6 +5,7 @@
 // a blue rim from orbit and a sky from low down, the stars behind, a beacon
 // at every place in the passport, the other pilots online as pale planes
 // with a glow and their name (the same size on the screen from anywhere),
+// and what one's just said over the name (quick chat: the row's `quip`),
 // and the plane (a 737, repainted) with its
 // lights and contrails. The sun is where it really is now.
 //
@@ -23,6 +24,7 @@ import * as THREE from 'three';
 import { disposeTree } from '../../lib/three/renderer';
 import { gltfLoader } from '../../lib/three/gltf';
 import { loadTexture, sharpen, sharpenMaterial } from '../../lib/three/textures';
+import { createQuipSprite } from '../../lib/three/quipSprite';
 import { device } from '../../lib/device';
 import { ghostNodeMaterial } from '../middleearth/shared/ghostNodes';
 import { AIR, airMaterial, beamMaterial, classicOutput, cloudMaterial, globeMaterial, skyMaterial, trailMaterial } from './nodes';
@@ -85,7 +87,8 @@ function paperPlane() {
 }
 
 // a name on a card, as a sprite that stays the same size on the screen
-function nameSprite(name, h = 0.028) {
+const NAME_H = 0.028; // a pilot's name card, a share of the view's height (sizeAttenuation off)
+function nameSprite(name, h = NAME_H) {
   const c = document.createElement('canvas');
   const g = c.getContext('2d');
   const font = '600 30px system-ui, sans-serif';
@@ -109,6 +112,18 @@ function nameSprite(name, h = 0.028) {
   sp.center.set(0.5, -0.9);
   sp.renderOrder = 6;
   return sp;
+}
+
+// what a pilot's just said, stood on their name: the card's NAME_H tall,
+// its bottom 0.9 of that over the plane (nameSprite's centre), so the
+// bubble's tail sits a tenth over its top; the same size on the screen, and
+// over the globe as the name is
+function quipOver() {
+  const q = createQuipSprite({ height: NAME_H, sizeAttenuation: false });
+  q.sprite.center.set(0.5, -(NAME_H * 2) / q.sprite.scale.y);
+  q.sprite.material.depthTest = false;
+  q.sprite.renderOrder = 7;
+  return q;
 }
 
 // the largest picture the renderer can hold, whichever renderer it is
@@ -344,10 +359,11 @@ export function createEarth(renderer, { small = false, lost = () => false, compi
     g.add(body, dot, tag);
     scene.add(g);
     const at = unpackPose(p);
-    return { g, body, dot, tag, name: p.name, p: v3(at.p), h: v3(at.h), alt: at.alt, fade: 0 };
+    return { g, body, dot, tag, quip: null, name: p.name, p: v3(at.p), h: v3(at.h), alt: at.alt, fade: 0 };
   };
   const dropGhost = (id, gh) => {
     scene.remove(gh.g);
+    gh.quip?.dispose();
     gh.tag.material.map.dispose();
     gh.tag.material.dispose();
     gh.dot.material.dispose();
@@ -392,6 +408,14 @@ export function createEarth(renderer, { small = false, lost = () => false, compi
       gh.body.quaternion.setFromRotationMatrix(gBasis);
       gh.dot.material.opacity = 0.85 * gh.fade;
       gh.tag.material.opacity = 0.95 * gh.fade;
+      // what they've just said: made the first time they say something,
+      // hidden between lines, so a quiet sky has no bubble to draw
+      if (p.quip && !gh.quip) {
+        gh.quip = quipOver();
+        gh.g.add(gh.quip.sprite);
+      }
+      gh.quip?.set(p.quip ?? null);
+      gh.quip?.fade(gh.fade);
       gh.g.visible = gh.fade > 0.02;
     }
     for (const [id, gh] of ghosts) {
@@ -399,6 +423,7 @@ export function createEarth(renderer, { small = false, lost = () => false, compi
       gh.fade -= dt * 2;
       gh.dot.material.opacity = 0.85 * Math.max(0, gh.fade);
       gh.tag.material.opacity = Math.max(0, gh.fade);
+      gh.quip?.fade(gh.fade);
       if (gh.fade <= 0) dropGhost(id, gh);
     }
     // (one material for every ghost plane: as pale as the most faded-in of them)

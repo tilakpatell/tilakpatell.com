@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import HQFrame from '../hq/HQFrame';
+import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
+import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
-import { earnStone, hasEarned } from '../hq/stones';
-import { stoneById } from '../world/labels';
+import { earnStone, hasEarned, recordTry } from '../hq/stones';
+import { HALF_OF } from '../world/labels';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
-import { use3D } from '../../../lib/gpu';
+import { useGame3D } from '../hq/useGame3D';
 import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
@@ -38,8 +39,8 @@ const VOICED = new Set(SPOKEN);
 const dirOf = (yaw, pitch) => ({ x: Math.sin(yaw) * Math.cos(pitch), y: Math.sin(pitch), z: -Math.cos(yaw) * Math.cos(pitch) });
 
 export default function TrickShot({ fallback }) {
-  const three = use3D();
-  const stage = useStage(gameModule, { enabled: three.on, id: 'trickshot', forced: three.mode === 'on' });
+  const three = useGame3D('trickshot');
+  const stage = useStage(gameModule, { enabled: three.on, id: 'trickshot', forced: three.mode === 'on', own3D: true });
   const { unlock } = useAchievements();
   const game = useRef(newRange({ seed: 1 }));
   const hud = useRef(null);
@@ -65,6 +66,7 @@ export default function TrickShot({ fallback }) {
     (round) => {
       audioContext(); // in the click, so the bow can be heard
       if (round === 0) {
+        recordTry('hawkeye'); // (rounds 2 and 3 are the same try)
         game.current = newRange({ seed: newSeed() });
         fxState.current.walled = false;
       }
@@ -409,8 +411,17 @@ export default function TrickShot({ fallback }) {
   const R = ROUNDS[ui.round - 1] ?? ROUNDS[0];
   const res = ui.result;
   const ended = ui.phase === 'done';
+  // the bar's Pause, and a hidden tab: as Esc does
+  const pause = (p) => {
+    letDown(game.current);
+    setPaused(p);
+  };
   return (
-    <HQFrame
+    <HQGame
+      game="trickshot"
+      playing={live}
+      paused={paused}
+      onPause={pause}
       stage={stage}
       three={three}
       fallback={fallback}
@@ -492,57 +503,55 @@ export default function TrickShot({ fallback }) {
           </button>
         </div>
       )}
-      {(!live || paused) && (
-        <div className="hq-overlay ts-overlay">
-          {paused ? (
-            <>
-              <p className="hq-overlay-title">Paused</p>
-              <p className="hq-overlay-text">
-                Round {ui.round} of {ROUNDS.length}. {ui.arrows} arrows left, {Math.ceil(ui.time)} seconds.
-              </p>
-              <button type="button" className="btn btn-primary mt-4" onClick={() => (setPaused(false), focus())}>
-                Resume
-              </button>
-            </>
-          ) : ui.phase === 'roundEnd' && res ? (
-            <>
-              <p className="hq-overlay-kicker">Round {res.round} done</p>
-              <p className="hq-overlay-title">{res.score >= 120 ? 'Clint would nod at that.' : res.score >= 70 ? 'Not bad at all.' : 'Shake it off.'}</p>
-              <p className="hq-overlay-score">
-                {res.score}
-                <small>this round · {res.total} in all</small>
-              </p>
-              <p className="hq-overlay-text">
-                Next: {ROUNDS[res.round].title}. {INTROS[res.round]}
-              </p>
-              <button type="button" className="btn btn-primary mt-5" onClick={() => begin(res.round)}>
-                Round {res.round + 1}
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="hq-overlay-kicker">The range · bow work</p>
-              <p className="hq-overlay-title">{ended ? (res?.stone ? 'He never misses.' : 'Out of rounds.') : 'Trick Shot'}</p>
-              <p className="hq-overlay-text">
-                {ended
-                  ? res?.stone
-                    ? `${res.total} points across three rounds. Hawkeye would take you on a mission.`
-                    : `${res?.total ?? 0} points. ${STONE_SCORE} takes Clint’s half of the Soul Stone. Leading the movers and the clays is where the points are.`
-                  : 'Three rounds against the clock: boards from 18 to 60 metres, targets that slide and swing, clay pigeons, practice drones, and the wind. The bow’s sight shows where the arrow will land at each distance. Three hits in a row earn a trick arrow.'}
-              </p>
-              {ended && (
+      {(!live || paused) &&
+        (ended && !paused ? (
+          <Results
+            className="ts-overlay"
+            won={Boolean(res?.stone)}
+            kicker="The range · bow work"
+            title={res?.stone ? 'He never misses.' : 'Out of rounds.'}
+            line={res?.stone ? `${res.total} points across three rounds. Hawkeye would take you on a mission.` : `${res?.total ?? 0} points. ${STONE_SCORE} takes Clint’s half of the Soul Stone. Leading the movers and the clays is where the points are.`}
+            score={res?.total ?? 0}
+            best={best}
+            newBest={res?.newBest}
+            stone={res?.stone ? 'soul' : null}
+            half={res?.whole ? null : HALF_OF['soul-clint']}
+            stoneText={res?.whole ? 'With Natasha’s half, the Soul Stone is whole.' : 'Clint’s half of the Soul Stone is yours. Natasha’s half is in Operations.'}
+            onAgain={() => begin(0)}
+          />
+        ) : (
+          <div className="hq-overlay ts-overlay">
+            {paused ? (
+              <>
+                <p className="hq-overlay-title">Paused</p>
+                <p className="hq-overlay-text">
+                  Round {ui.round} of {ROUNDS.length}. {ui.arrows} arrows left, {Math.ceil(ui.time)} seconds.
+                </p>
+                <button type="button" className="btn btn-primary mt-4" onClick={() => (setPaused(false), focus())}>
+                  Resume
+                </button>
+              </>
+            ) : ui.phase === 'roundEnd' && res ? (
+              <>
+                <p className="hq-overlay-kicker">Round {res.round} done</p>
+                <p className="hq-overlay-title">{res.score >= 120 ? 'Clint would nod at that.' : res.score >= 70 ? 'Not bad at all.' : 'Shake it off.'}</p>
                 <p className="hq-overlay-score">
-                  {res?.total ?? 0}
-                  <small>{res?.newBest ? 'a new best' : best ? `best ${best}` : 'points'}</small>
+                  {res.score}
+                  <small>this round · {res.total} in all</small>
                 </p>
-              )}
-              {ended && res?.stone && (
-                <p className="hq-stone" style={{ '--glow': stoneById('soul-clint').color }}>
-                  <span className="stone-dot" aria-hidden="true" />
-                  {res.whole ? 'With Natasha’s half, the Soul Stone is whole.' : 'Clint’s half of the Soul Stone is yours. Natasha’s half is in Operations.'}
+                <p className="hq-overlay-text">
+                  Next: {ROUNDS[res.round].title}. {INTROS[res.round]}
                 </p>
-              )}
-              {!ended && (
+                <button type="button" className="btn btn-primary mt-5" onClick={() => begin(res.round)}>
+                  Round {res.round + 1}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="hq-overlay-kicker">The range · bow work</p>
+                <p className="hq-overlay-title">Trick Shot</p>
+                <p className="hq-overlay-text">Three rounds against the clock: boards from 18 to 60 metres, targets that slide and swing, clay pigeons, practice drones, and the wind. The bow’s sight shows where the arrow will land at each distance. Three hits in a row earn a trick arrow.</p>
+                <StartNote />
                 <ul className="hq-keys">
                   <li>
                     <kbd>Mouse</kbd> aim, hold to draw, let go
@@ -562,19 +571,19 @@ export default function TrickShot({ fallback }) {
                     <kbd>Space</kbd> keyboard
                   </li>
                 </ul>
-              )}
-              <button type="button" className="btn btn-primary mt-5" onClick={() => begin(0)}>
-                {ended ? 'Shoot again' : 'Pick up the bow'}
-              </button>
-              {!ended && best > 0 && <p className="hq-overlay-best">Best {best}</p>}
-            </>
-          )}
-        </div>
-      )}
+                <TouchHelp game="trickshot" />
+                <button type="button" className="btn btn-primary mt-5" onClick={() => begin(0)}>
+                  Pick up the bow
+                </button>
+                {best > 0 && <p className="hq-overlay-best">Best {best}</p>}
+              </>
+            )}
+          </div>
+        ))}
       <p className="sr-only" role="status">
         {live ? `Round ${ui.round}. ${ui.arrows} arrows. Score ${ui.score}. ${ui.message}` : ''}
       </p>
-    </HQFrame>
+    </HQGame>
   );
 }
 

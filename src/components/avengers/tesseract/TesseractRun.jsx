@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import HQFrame from '../hq/HQFrame';
+import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
+import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
-import { earnStone, hasEarned } from '../hq/stones';
-import { stoneById } from '../world/labels';
+import { earnStone, hasEarned, recordTry } from '../hq/stones';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
-import { use3D } from '../../../lib/gpu';
+import { useGame3D } from '../hq/useGame3D';
 import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
@@ -65,8 +65,8 @@ function loadProgress() {
 }
 
 export default function TesseractRun({ fallback, onPortal }) {
-  const three = use3D();
-  const stage = useStage(gameModule, { enabled: three.on, id: 'tesseract', forced: three.mode === 'on' });
+  const three = useGame3D('tesseract');
+  const stage = useStage(gameModule, { enabled: three.on, id: 'tesseract', forced: three.mode === 'on', own3D: true });
   const { unlock } = useAchievements();
   const [progress, setProgress] = useState(loadProgress);
   const [leg, setLeg] = useState(() => loadProgress().reached);
@@ -95,6 +95,7 @@ export default function TesseractRun({ fallback, onPortal }) {
   const start = useCallback(
     (i = leg, seed = newSeed()) => {
       audioContext(); // in the click, so the engines can be heard
+      recordTry('vault');
       const n = clamp(i, 0, LEGS.length - 1);
       setLeg(n);
       game.current = newGame({ seed, leg: n });
@@ -407,8 +408,17 @@ export default function TesseractRun({ fallback, onPortal }) {
   const res = ui.result;
   const crash = ui.crash;
   const total = progress.best.reduce((a, b) => a + b, 0);
+  // the bar's Pause, and a hidden tab: as Esc does
+  const pause = (p) => {
+    input.current.keys.clear();
+    setPaused(p);
+  };
   return (
-    <HQFrame
+    <HQGame
+      game="tesseract"
+      playing={playing}
+      paused={paused}
+      onPause={pause}
       stage={stage}
       three={three}
       fallback={fallback}
@@ -492,6 +502,7 @@ export default function TesseractRun({ fallback, onPortal }) {
           <p className="hq-overlay-kicker">The hangar · the airfield at golden hour</p>
           <p className="hq-overlay-title">Tesseract Run</p>
           <p className="hq-overlay-text">Fly the Quinjet with the Tesseract’s case slung on a cable beneath it, and set the case down gently on the pad. Six legs from the airfield to the hangar, through gusts, under a gantry and into a storm.</p>
+          <StartNote />
           <div className="tr-legs" role="group" aria-label="Legs">
             {LEGS.map((l, i) => (
               <button key={l.id} type="button" className="tr-leg-pick" aria-pressed={i === leg} aria-label={`Leg ${i + 1}: ${l.title}${i > progress.reached ? ', locked' : ''}`} disabled={i > progress.reached} onClick={() => setLeg(i)}>
@@ -513,6 +524,7 @@ export default function TesseractRun({ fallback, onPortal }) {
             </li>
             <li>mouse: hold, lean toward it</li>
           </ul>
+          <TouchHelp game="tesseract" />
           <button type="button" className="btn btn-primary mt-3" onClick={() => start(leg)}>
             Fly leg {leg + 1}
           </button>
@@ -520,31 +532,30 @@ export default function TesseractRun({ fallback, onPortal }) {
         </div>
       )}
       {ui.phase === 'crashed' && crash && (
-        <div className="tr-card" role="dialog" aria-label="Crashed">
-          <p className="tr-card-kicker">Leg {game.current.leg + 1} · {L.title}</p>
-          <p className="tr-card-title">{crash.what === 'fuel' ? 'Out of fuel.' : crash.what === 'case' ? 'The case broke.' : 'Crashed.'}</p>
-          <p className="tr-card-text">
-            {crashLine(crash)} {TIP[crash.what === 'case' && crash.into === 'ground' ? 'ground' : crash.into] ?? ''}
-          </p>
-          <div className="tr-card-actions">
-            <button type="button" className="btn btn-primary" onClick={() => start(game.current.leg)}>
-              Fly it again
-            </button>
-            <button type="button" className="btn btn-ghost" onClick={() => (game.current = newGame({ seed: 1, leg: game.current.leg }), sync({ result: null, crash: null }))}>
-              Legs
-            </button>
-          </div>
-        </div>
+        <Results
+          className="tr-overlay"
+          kicker={`Leg ${game.current.leg + 1} · ${L.title}`}
+          title={crash.what === 'fuel' ? 'Out of fuel.' : crash.what === 'case' ? 'The case broke.' : 'Crashed.'}
+          line={`${crashLine(crash)} ${TIP[crash.what === 'case' && crash.into === 'ground' ? 'ground' : crash.into] ?? ''}`.trim()}
+          onAgain={() => start(game.current.leg)}
+          more={{ label: 'Legs', onClick: () => ((game.current = newGame({ seed: 1, leg: game.current.leg })), sync({ result: null, crash: null })) }}
+        />
       )}
       {ui.phase === 'delivered' && res && (
-        <div className="tr-card" data-won={ui.won || undefined} role="dialog" aria-label={ui.won ? 'The Tesseract is home' : 'Delivered'}>
-          <p className="tr-card-kicker">
-            Leg {res.leg + 1} · {LEGS[res.leg].title}
-          </p>
-          <p className="tr-card-title">
-            {ui.won ? 'The Tesseract is home.' : 'Delivered.'} <span className="tr-card-score">{fmt(res.score)}</span>
-          </p>
-          <p className="tr-card-best">{res.isBest ? 'A new best for this leg' : `Best ${fmt(progress.best[res.leg] ?? res.score)}`} · set down at {res.touch.toFixed(1)} m/s</p>
+        <Results
+          className="tr-overlay"
+          won
+          kicker={`Leg ${res.leg + 1} · ${LEGS[res.leg].title}`}
+          title={ui.won ? 'The Tesseract is home.' : 'Delivered.'}
+          score={res.score}
+          best={progress.best[res.leg] ?? res.score}
+          newBest={res.isBest}
+          stone={ui.won && ui.stone ? 'space' : null}
+          stoneText="The Space Stone is yours. It opens a portal."
+          onAgain={() => start(res.leg)}
+          onward={ui.won ? { label: 'Open the portal', onClick: () => onPortal?.() } : { label: `Fly leg ${res.leg + 2}`, onClick: () => start(res.leg + 1) }}
+        >
+          <p className="hq-overlay-text">Set down at {res.touch.toFixed(1)} m/s.</p>
           <dl className="tr-score">
             <div>
               <dt>Fuel</dt>
@@ -563,32 +574,12 @@ export default function TesseractRun({ fallback, onPortal }) {
               <dd>{fmt(res.parts.aim)}</dd>
             </div>
           </dl>
-          {ui.won && ui.stone && (
-            <p className="hq-stone" style={{ '--glow': stoneById('space').color }}>
-              <span className="stone-dot" aria-hidden="true" />
-              The Space Stone is yours. It opens a portal.
-            </p>
-          )}
-          <div className="tr-card-actions">
-            {ui.won ? (
-              <button type="button" className="btn btn-primary" onClick={() => onPortal?.()}>
-                Open the portal
-              </button>
-            ) : (
-              <button type="button" className="btn btn-primary" onClick={() => start(res.leg + 1)}>
-                Next: {LEGS[res.leg + 1].title}
-              </button>
-            )}
-            <button type="button" className="btn btn-ghost" onClick={() => start(res.leg)}>
-              Fly it again
-            </button>
-          </div>
-        </div>
+        </Results>
       )}
       <p className="sr-only" role="status">
         {playing ? `Leg ${game.current.leg + 1}. ${Math.round(ui.fuel * 100)} percent fuel. ${ui.message}` : ui.phase === 'crashed' ? crashLine(crash) : ui.phase === 'delivered' && res ? `Delivered. ${fmt(res.score)} points.` : ''}
       </p>
-    </HQFrame>
+    </HQGame>
   );
 }
 

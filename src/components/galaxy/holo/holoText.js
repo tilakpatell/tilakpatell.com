@@ -2,15 +2,19 @@
 // the regions' names, and each side's over the stretch of the rim it holds (./holoScene.js). Each is its text
 // drawn once into a canvas, laid on a strip that follows the ring's bulged edge (systems.js edgeAt), read left to
 // right from the south (in the south half the strip runs the other way and its letters' tops face the core, so
-// they're the right way up from there as well).
+// they're the right way up from there as well). Each letter is drawn over a dark edge of its own, so a name reads
+// on a bright sector's fill as on the dark; the canvas is tall enough, and the texture filtered as steeply as the
+// card allows, that the letters stay sharp on a plane seen at a slant.
 //
-//   arcText(text, { r, a, size, colour, alpha, weight, spacing, font }) → { mesh, dispose } the words centred on
-//     angle `a` (radians, 0 east, π/2 south) along the ring of radius r, `size` grid squares tall
+//   arcText(text, { r, a, size, colour, alpha, weight, spacing, font }) → { mesh, dispose, setAlpha(k) } the words
+//     centred on angle `a` (radians, 0 east, π/2 south) along the ring of radius r, `size` grid squares tall
+//   flatText(text, { x, z, size, … }) → the same, straight and read with the north up, centred on the plane's point
+//     [x, z] (the world's: the core at the origin)
 
 import * as THREE from 'three';
 import { edgeAt } from '../systems';
 
-const PX = 96; // (the canvas's letter height: sharp enough close in)
+const PX = 128; // (the canvas's letter height: sharp enough close in)
 
 function paint(text, { colour, weight, spacing, font }) {
   const c = document.createElement('canvas');
@@ -22,22 +26,49 @@ function paint(text, { colour, weight, spacing, font }) {
   c.width = Math.min(4096, w);
   c.height = Math.ceil(PX * 1.3);
   g.font = face;
-  g.fillStyle = colour;
   g.textBaseline = 'middle';
-  let x = PX * 0.2;
-  for (const ch of text) {
-    g.fillText(ch, x, c.height / 2);
-    x += g.measureText(ch).width + gap;
+  g.lineJoin = 'round';
+  g.lineWidth = PX * 0.14;
+  g.strokeStyle = 'rgba(1, 4, 11, 0.8)';
+  g.fillStyle = colour;
+  for (const pass of ['stroke', 'fill']) {
+    let x = PX * 0.2;
+    for (const ch of text) {
+      if (pass === 'stroke') g.strokeText(ch, x, c.height / 2);
+      else g.fillText(ch, x, c.height / 2);
+      x += g.measureText(ch).width + gap;
+    }
   }
   return { canvas: c, aspect: c.width / c.height };
 }
 
-export function arcText(text, { r, a, size = 0.4, colour = '#d9f3ff', alpha = 0.6, weight = 600, spacing = 0.22, font = 'ui-monospace, monospace', lift = 0.004 } = {}) {
-  if (typeof document === 'undefined') return { mesh: new THREE.Group(), dispose: () => {} };
-  const { canvas, aspect } = paint(text.toUpperCase(), { colour, weight, spacing, font });
+// (the words' material, and how they're let go)
+function words(canvas, alpha, geo) {
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
+  tex.anisotropy = 16; // (three holds it to the card's most)
+  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: alpha, depthWrite: false, side: THREE.DoubleSide });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.renderOrder = 4;
+  return {
+    mesh,
+    // (a share of its own alpha: the rest of the map dimmed while a sector's open)
+    setAlpha(k) {
+      mat.opacity = alpha * k;
+    },
+    dispose() {
+      geo.dispose();
+      mat.dispose();
+      tex.dispose();
+    },
+  };
+}
+
+const none = () => ({ mesh: new THREE.Group(), dispose: () => {}, setAlpha: () => {} });
+
+export function arcText(text, { r, a, size = 0.4, colour = '#d9f3ff', alpha = 0.6, weight = 600, spacing = 0.22, font = 'ui-monospace, monospace', lift = 0.004 } = {}) {
+  if (typeof document === 'undefined') return none();
+  const { canvas, aspect } = paint(text.toUpperCase(), { colour, weight, spacing, font });
   const length = size * aspect; // (along the ring, grid squares)
   const span = length / Math.max(0.5, edgeAt(r, a));
   const flip = Math.sin(a) > 0; // (the south half)
@@ -63,15 +94,13 @@ export function arcText(text, { r, a, size = 0.4, colour = '#d9f3ff', alpha = 0.
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   geo.setIndex(idx);
-  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: alpha, depthWrite: false, side: THREE.DoubleSide });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.renderOrder = 3;
-  return {
-    mesh,
-    dispose() {
-      geo.dispose();
-      mat.dispose();
-      tex.dispose();
-    },
-  };
+  return words(canvas, alpha, geo);
+}
+
+export function flatText(text, { x, z, size = 0.4, colour = '#d9f3ff', alpha = 0.6, weight = 600, spacing = 0.22, font = 'ui-monospace, monospace', lift = 0.004 } = {}) {
+  if (typeof document === 'undefined') return none();
+  const { canvas, aspect } = paint(text.toUpperCase(), { colour, weight, spacing, font });
+  // (a plane facing up, its top to the north)
+  const geo = new THREE.PlaneGeometry(size * aspect, size).rotateX(-Math.PI / 2).translate(x, lift, z);
+  return words(canvas, alpha, geo);
 }

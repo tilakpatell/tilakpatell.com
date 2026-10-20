@@ -87,7 +87,7 @@
   border: 1px solid rgb(127 214 255 / 0.18);
   border-radius: var(--r-card);
   background: linear-gradient(170deg, rgb(20 60 110 / 0.16), rgb(4 8 18 / 0.85));
-  color: var(--body);
+  color: var(--text-body);
   font-size: 0.92rem;
   line-height: 1.55;
 }

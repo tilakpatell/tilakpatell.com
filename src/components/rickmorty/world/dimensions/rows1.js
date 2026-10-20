@@ -379,7 +379,7 @@ export const ROWS = [
     wide: 22,
     ceiling: 4,
     people: [
-      { id: 'jerryreal', who: 'jerry', dx: -6.5, dz: 4.5, face: N, ai: { watch: 7, bark: { r: 4, every: 14, lines: ['Morty! Oh thank god. Tell them I’m your Jerry.', 'They have a TV here. It only shows one channel. It’s fine.'] } } },
+      { id: 'jerryreal', who: 'jerry', dx: -6.5, dz: 4.5, face: N, ai: { watch: 7, bark: { r: 4, every: 14, lines: ['Morty! Is it pick-up time? It feels like pick-up time.', 'They have a TV here. It only shows one channel. It’s fine.'] } } },
       { id: 'receptionist', who: 'rick', dx: 6.5, dz: 2.2, face: S, ai: { watch: 9 } },
       { id: 'jerrytv', who: 'jerry-cardigan', dx: -2, dz: -5, face: N },
       // (the Jerrys standing still: with the two above, the candidates; one of them ours, dealt each run)

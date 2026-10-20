@@ -21,6 +21,7 @@ import './sewer.css';
 
 const STEP = 1 / 60;
 const MAX_STEPS = 6;
+const SETTLE_MS = 600; // an end card ignores the keys this long, as the cabinet's does
 const KEYS = {
   left: ['ArrowLeft', 'a', 'A'],
   right: ['ArrowRight', 'd', 'D'],
@@ -46,6 +47,7 @@ export default function Sewer({ onLeave, onWin }) {
   const [hud, setHud] = useState({ hp: TUNING.hp, screws: 0, laser: false, kills: 0, pct: 0 });
   const touch = useMediaQuery('(pointer: coarse)');
   const wonRef = useRef(false);
+  const endAt = useRef(0); // when the end card came up: a key held through the end doesn't leave it (SETTLE_MS)
   const winRef = useRef(onWin);
   winRef.current = onWin;
 
@@ -117,7 +119,7 @@ export default function Sewer({ onLeave, onWin }) {
           e.preventDefault();
           if (p === 'intro' && (name === 'hop' || name === 'fire')) setPhase('play');
           else if (p === 'play' && !e.repeat) press(name);
-          else if ((p === 'won' || p === 'lost') && (name === 'hop' || name === 'fire')) onLeave(wonRef.current);
+          else if ((p === 'won' || p === 'lost') && (name === 'hop' || name === 'fire') && !e.repeat && performance.now() - endAt.current > SETTLE_MS) onLeave(wonRef.current);
         }
       }
     };
@@ -162,8 +164,12 @@ export default function Sewer({ onLeave, onWin }) {
           if (r.phase === 'won') {
             if (!wonRef.current) winRef.current?.();
             wonRef.current = true;
+            endAt.current = performance.now();
             setPhase('won');
-          } else if (r.phase === 'lost') setPhase('lost');
+          } else if (r.phase === 'lost') {
+            endAt.current = performance.now();
+            setPhase('lost');
+          }
         }
       }
       a.render(view.current, ms);
