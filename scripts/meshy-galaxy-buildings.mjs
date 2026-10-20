@@ -67,6 +67,7 @@ import { BUILDINGS as NEVARRO_LANE } from './meshy-galaxy-buildings-nevarro.mjs'
 import { BUILDINGS as AUDIT_LANE } from './meshy-galaxy-audit.mjs';
 import { BUILDINGS as ULTRA_LANE } from './meshy-galaxy-ultra.mjs';
 import { BUILDINGS as WORLDS_LANE } from './meshy-galaxy-worlds.mjs';
+import { BUILDINGS as CITIES_LANE } from './meshy-galaxy-cities.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'public', 'models', 'galaxy', 'surface');
@@ -140,7 +141,7 @@ Object.assign(BUILDINGS, NEVARRO_LANE);
 // remade there takes over from its earlier lane's entry
 Object.assign(BUILDINGS, AUDIT_LANE);
 // and the new worlds' landmarks (scripts/meshy-galaxy-worlds.mjs)
-Object.assign(BUILDINGS, WORLDS_LANE);
+Object.assign(BUILDINGS, WORLDS_LANE, CITIES_LANE);
 // and the ultra level's remakes (scripts/meshy-galaxy-ultra.mjs), last of all
 Object.assign(BUILDINGS, ULTRA_LANE);
 
