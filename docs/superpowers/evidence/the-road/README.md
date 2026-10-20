@@ -274,3 +274,46 @@ Each at a beat of its stage, desktop, looked at (taken before the triangles were
 - `look-havens-60-desktop.webp`: Gandalf and Bilbo ahead in the dune grass, the pines, a maple red.
 
 What still falls short: Mordor is dark (on purpose, but the ash is near black away from the fires); the blades read a little darker than the field beyond them under a high sun; the galaxy’s and the Shire chapter’s grass still show their backs (`faceCamera` off: they were tuned so); the PCSS filter’s WebGL failure is noted in the hand-off, not fixed.
+
+## Doing, not watching (2026-10-20)
+
+The owner, after the look: the Road made no sense, you could pass through things, there was no Minas Tirith, nothing to do, and no telling it from the chapters. This section is the first three answered; the White City and the stages after the Anduin are the next pull request's.
+
+### What there is to do
+
+Twelve of the Road's moments now wait for the visitor (`deeds.js`, `doing.js`): the walk stops at the beat, the beat plays up to its deed's moment (`deed.at`) and holds there, and the page asks.
+
+| stage | beat | deed | how |
+| --- | --- | --- | --- |
+| hobbiton | dragon | Light the dragon | E |
+| shire-edge | roots | Keep still, and keep the Ring off | hold E, 4 s |
+| bree | gate | Knock at the West-gate | E |
+| bree | pony | The name you give at the Pony | Baggins, Underhill, Took (Sam and Pippin answer a wrong one) |
+| weathertop | fire | Drive them back with fire | A and D in turn, 12 |
+| ford | ride | Ride for the Ford | A and D in turn, 10 |
+| ford | ford | Call up the river | E, 5 s in |
+| rivendell | council | Stand up and say you'll carry it | E, 7.5 s in (Frodo's line after) |
+| caradhras | snow | Push on through the snow | A and D in turn, 12 |
+| caradhras | doors | Speak, friend, and enter | Edro, Annon, Mellon (Gandalf answers a wrong one) |
+| moria | bridge | Hold the bridge with Gandalf | hold E, 3 s, 8 s in (the line, then the staff at 11) |
+| lorien | mirror | Look into the Mirror | E (Galadriel's clip after) |
+| anduin | argonath | Paddle under the Pillars of the Kings | A and D in turn, 12 |
+
+Letting the road walk itself, the company does a deed after 20 s; under reduced motion each is one press (Enter or E); on touch the keys are buttons. T (or Talk) has whoever walks with you say the stage's next line (`talk.js`: three to seven a stage, in the site's own words, then each one's own); every line the cast says is now a subtitle (the page never showed them: unvoiced, they were silent); each title card says the tale so far (`stages/tales.js`).
+
+### Nothing walked or seen through
+
+Each stage's build is laid into a grid of what stands solid along its road (`solids.js`: half-metre cells 12 m either side of the lane, 64 half-metre layers over the ground, from the merged statics and the instanced dressing, never what a scene moves), a slice of 40,000 triangles a frame: Bree's 3,817 cells, Hobbiton's 2,846, Moria's 5,814. On it (`clear.js`) the walkers ease round what stands in their lane (1.6 m/s, looking 3 m ahead), a shot hung off the lead pulls in along its boom short of a wall, a placed shot is moved out of what it's in, and a figure the camera comes into isn't drawn while it's there. The follow and the low shot stand off the lead's left shoulder: straight behind, a toy's big head filled the middle of the frame (the Doors' low shot had Frodo's head where the Doors are).
+
+### The fellowship's gear
+
+Gandalf's staff (the Grey's gnarled, a crystal in its head; the White's straight) held planted in the right hand; Gimli's axe carried the same way; Legolas's bow upright in his left, a quiver on his back; Aragorn's sword at his hip; Boromir's sword and his round shield on his back (`gear.js`, `lib/three/held.js`). The worn things were never on until the body measure read a Meshy figure's skin through its bones: the mesh sits under an armature scaled a hundredth.
+
+### The pictures
+
+- `deed-doors.webp`: the Doors in the moonlight, the ithildin out, the deed's three words.
+- `deed-doors-wrong.webp`: Edro struck through, Gandalf's answer as a subtitle.
+- `talk-bree.webp`: Bree's street at night from over Frodo's shoulder, his line as a subtitle, the prompt naming Sam next.
+- `gear-fellowship.webp`: the five close (Caradhras' foot): Aragorn's side and front, Boromir's shield from behind and his front, Gandalf with his staff, Gimli with his axe, Legolas's quiver from behind and his bow.
+
+What still falls short: the six stages after the Anduin are not built (Minas Tirith among them: the next pull request); the new lines aren't voiced yet (`scripts/voices` on the owner's desktop); in the container a CSS fade begun after the 3D loop is busy never starts (the deed card has no backwards fill so it shows regardless).

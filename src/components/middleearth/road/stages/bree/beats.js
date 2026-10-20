@@ -9,13 +9,13 @@ export { entered, left } from '../../beats';
 
 export const BEATS = [
   // the West-gate in the rain, the hatch open, the lantern held up
-  { id: 'gate', kind: 'gate', at: 16, hold: 8, rig: 'low', reach: 14 },
+  { id: 'gate', kind: 'gate', at: 16, hold: 8, rig: 'low', reach: 14, deed: { verb: 'press', label: 'Knock at the West-gate' } },
   // the lane between the tall houses, Bree men under the eaves
   { id: 'lane', kind: 'lane', at: 50, hold: 0, rig: 'follow' },
   // the Pony’s open door: Butterbur in it, the common room’s light behind him, a
   // Ranger’s pipe glowing on the bench under the eaves (the window the brief has
   // is the chapter’s Pony’s door here: its walls are closed)
-  { id: 'pony', kind: 'pony', at: 82, hold: 12, rig: 'seat', reach: 14, params: { at: [1.4, 1.6, 86.5], lookAt: [-3.4, 1.5, 93.6], above: true }, lines: ['bree-pony'] },
+  { id: 'pony', kind: 'pony', at: 82, hold: 12, rig: 'seat', reach: 14, params: { at: [1.4, 1.6, 86.5], lookAt: [-3.4, 1.5, 93.6], above: true }, deed: { verb: 'choose', label: 'The name you give at the Pony', choices: [{ label: 'Baggins', line: { who: 'sam', text: 'Underhill, Mr Frodo! Gandalf said Underhill.' } }, { label: 'Underhill', right: true }, { label: 'Took', line: { who: 'pippin', text: 'That’s my name, not yours.' } }], lines: ['bree-pony'] } },
   // the Riders: four through the gate at a gallop, the blades in the beds
   // (from over the lane at the Pony’s end, down it to the gate: the eaves either side)
   { id: 'riders', kind: 'riders', at: 108, hold: 10, rig: 'wide', cut: 0, reach: 14, params: { at: [0.2, 7.2, 121], lookAt: [0, 1.6, 48], above: true }, clip: 'nazgul' },

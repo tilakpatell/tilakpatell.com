@@ -13,7 +13,7 @@ describe('Lothlórien’s beats', () => {
     expect(by.nimrodel).toMatchObject({ rig: 'side' });
     expect(by.haldir.lines.map((l) => LINES[l].who)).toEqual(['haldir']);
     expect(by.dais.lines.map((l) => LINES[l].who)).toEqual(['galadriel']);
-    expect(by.mirror).toMatchObject({ rig: 'seat', cut: 0, clip: 'taskAppointed' });
+    expect(by.mirror).toMatchObject({ rig: 'seat', cut: 0, deed: { verb: 'press', clip: 'taskAppointed' } });
     expect(by.mirror.hold).toBeGreaterThanOrEqual(12);
     expect(by.boats).toMatchObject({ rig: 'lead' });
   });

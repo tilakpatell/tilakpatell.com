@@ -107,4 +107,38 @@ describe('the clock', () => {
     const c = run(newClock(), 1, none, ctx({ pace: PACE.horse }));
     expect(c.speed).toBeCloseTo(WALK * PACE.horse, 9);
   });
+
+  it('a deed undone is a gate: neither a held walk nor auto goes past it; done, its beat holds and the walk goes on', () => {
+    const at = 0.5;
+    let done = false;
+    const c = ctx({ gate: (s) => (!done && s <= at + 1e-9 ? at : null), holdAt: (s) => (Math.abs(s - at) < 1e-9 ? 4 : 0), nextBeat: (s) => (s < at - 1e-9 ? at : null) });
+    // (held: up to it and no further)
+    const walked = run(newClock({ s: 0.49, auto: false }), 10, { ...none, run: true }, c);
+    expect(walked.s).toBe(at);
+    expect(walked.mode).toBe('deed');
+    // (auto: the same, and it waits there)
+    const waits = run(newClock({ s: 0.49 }), 30, none, c);
+    expect(waits).toMatchObject({ s: at, mode: 'deed', speed: 0 });
+    // (back is allowed)
+    expect(run(walked, 1, { ...none, back: true }, c).s).toBeLessThan(at);
+    // (done: its hold, then on)
+    done = true;
+    const held = step(waits, 1 / 60, none, c);
+    expect(held).toMatchObject({ mode: 'hold', holdLeft: 4 });
+    expect(run(held, 3.9, none, c).s).toBe(at);
+    expect(run(held, 6, none, c).s).toBeGreaterThan(at);
+  });
+
+  it('under reduced motion Next stops at a deed rather than stepping over it', () => {
+    const at = 0.5;
+    let done = false;
+    const c = ctx({ gate: (s) => (!done && s <= at + 1e-9 ? at : null), nextBeat: (s) => (s < 0.7 - 1e-9 ? 0.7 : null) });
+    const r = newClock({ s: 0.4, reduced: true });
+    const stopped = step(r, 1 / 60, { ...none, next: true }, c);
+    expect(stopped).toMatchObject({ s: at, mode: 'deed' });
+    expect(step(stopped, 1 / 60, { ...none, next: true }, c).s).toBe(at);
+    done = true;
+    expect(step(stopped, 1 / 60, none, c).mode).toBe('still');
+    expect(step(stopped, 1 / 60, { ...none, next: true }, c).s).toBe(0.7);
+  });
 });

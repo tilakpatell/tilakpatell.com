@@ -40,6 +40,9 @@ import { clipFor, walkers as walkersAt } from './fellowship';
 import { STAGES, modeAt, stageById } from './stages/index';
 import { BEATS_OF } from './stages/registry';
 import { createScenes } from './scenes';
+import { createDoing } from './doing';
+import { createClear, tooNear } from './clear';
+import { LINES } from './voicelines';
 import { ease as easePose } from './director';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 
@@ -67,6 +70,11 @@ export const KEYS = {
   menu: ['Escape'],
   map: ['KeyM'],
   lore: ['KeyL'],
+  // (a deed's keys: E to do it, A and D in turn for a rhythm; T for a word with the company)
+  act: ['KeyE'],
+  left: ['KeyA', 'ArrowLeft'],
+  right: ['KeyD', 'ArrowRight'],
+  talk: ['KeyT'],
   ...Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((n, i) => [`stage${i + 1}`, [`Digit${n}`]])),
 };
 
@@ -142,10 +150,10 @@ export default {
     // on mid, in two cascades (at 90 and four the cascades drew the Shire's
     // every hole and hedge four times over, a million and a half triangles
     // a frame; its statics are merged in bands, stages/parts.js, so each
-    // cascade leaves out what it can't see); none on low. PCSS (shadows.js) only where the chain ends in
-    // TRAA: its samples are scattered by a per-pixel noise only a temporal
-    // pass settles, a grain over every shadow without one; elsewhere three’s
-    // own PCF, a little softened (its five taps dither too: kept to an edge)
+    // cascade leaves out what it can't see); none on low. Three’s own PCF,
+    // a little softened, on every backend: PCSS (shadows.js) drew no shadow
+    // at all on the WebGL fallback, and its noise is a grain wherever no
+    // TRAA settles it (its five taps dither too: kept to an edge)
     const renderer = rt.gfx?.renderer ?? null;
     const shadowWas = renderer?.shadowMap ? { enabled: renderer.shadowMap.enabled, type: renderer.shadowMap.type } : null;
     const exposureWas = renderer?.toneMappingExposure ?? null;
@@ -155,12 +163,10 @@ export default {
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFShadowMap;
       sun.shadow.radius = 1.5;
-      Promise.all([import('../../../lib/three/light/sun'), import('../../../lib/three/light/shadows')])
-        .then(async ([{ castCascades }, { filterFor, readPcss, pcssFilter }]) => {
-          const soft = filterFor(tier, readPcss(null));
-          const filter = soft.kind === 'pcss' && has('traa') ? await pcssFilter(soft) : null;
+      import('../../../lib/three/light/sun')
+        .then(async ({ castCascades }) => {
           if (unlit) return;
-          const c = await castCascades(sun, null, { tier, filter, video: { shadowDistance: tier === 'mid' ? 40 : 60, cascades: 2 } });
+          const c = await castCascades(sun, null, { tier, filter: null, video: { shadowDistance: tier === 'mid' ? 40 : 60, cascades: 2 } });
           if (unlit) c?.dispose();
           else cascades = c;
         })
@@ -213,6 +219,10 @@ export default {
       if (held) held.push([type, data]);
       else rt.events?.emit?.(type, data);
     };
+    // what the visitor does: the deeds the walk waits on, and a word with the company
+    const doing = createDoing({ stages: STAGES, beatsOf: BEATS_OF, lines: LINES, tell, say: (who, text) => ambience.say(who, text), clip: (id) => ambience.clip(id), reduced });
+    doing.jumped(clock.s);
+    let present = []; // the ids walking now, as the last frame had them
     const look = { yaw: 0, pitch: 0 };
     // who walks with you: made as they join, gone as they leave
     const cast = new Map(); // id → walker
@@ -276,12 +286,28 @@ export default {
 
     // a beat’s fixed camera given over the ground: its heights put on the land
     const above = (p) => [p[0], p[1] + lands.heightAt(p[0], p[2]), p[2]];
+    // (each walker’s own, so a scene may keep it till its update)
+    const tips = new Map();
+    const tipOf = (id) => {
+      if (!tips.has(id)) tips.set(id, new THREE.Vector3());
+      return tips.get(id);
+    };
+    // nothing walked or seen through (clear.js, on the stage's solids.js grid,
+    // in its land's frame: the scene's, moved by where the land stands)
+    const clear = createClear();
+    const landAt = new THREE.Vector3();
+    const inLand = (p) => [p[0] - landAt.x, p[1] - landAt.y, p[2] - landAt.z];
     // the camera on the director’s rig, following the lead along the stage
     const frame = (dt = 0) => {
       const here = lineAt(STAGES, clock.s);
       lands.at(here.index);
       mountains.at(here.stage);
+      const grid = scenes.solids(here.index);
+      const landGroup = lands.groupOf(here.index);
+      if (landGroup) landGroup.getWorldPosition(landAt);
+      else landAt.set(0, 0, 0);
       const line = company();
+      present = line.map((w) => w.id);
       const mode = modeAt(stageById(here.stage), here.local);
       // the one you follow (Frodo while he walks with you) at the back of the
       // file, the rest ahead of him in their order, so none comes between
@@ -298,16 +324,20 @@ export default {
         const floor = scenes.floor(here.index, x, z);
         const y = floor == null ? ground : Math.max(ground, floor);
         const base = clipFor(w.state, mode, w.id);
-        // (and as the beat has them: sat by a fire, a torch in each hand, down on the ground)
-        const o = scenes.pose(here.index, w.id, { x, y, z, base, state: w.state }) ?? {};
+        // (and as the beat has them: sat by a fire, a torch in each hand, down on the ground;
+        // `tip`: the head of what it holds, last frame, a staff’s where its light goes)
+        const o = scenes.pose(here.index, w.id, { x, y, z, base, state: w.state, tip: fig.tip?.(tipOf(w.id)) ?? null }) ?? {};
+        // (round what stands in their lane, where the beat isn't placing them itself)
+        const [lx, , lz] = inLand([x, y, z]);
+        const free = o.x == null ? x + clear.walker(w.id, { x: lx, z: lz, y: y - landAt.y }, grid, dt) - lx : x;
         fig.group.visible = !o.hide;
-        fig.group.position.set(o.x ?? x, o.y ?? y, o.z ?? z);
+        fig.group.position.set(o.x ?? free, o.y ?? y, o.z ?? z);
         fig.group.rotation.y = o.yaw ?? 0;
         fig.set({ base: o.base !== undefined ? o.base : base, speed: o.speed ?? clock.speed });
         fig.tick(dt);
       }
       // the stage’s scene and its beats; the camera on the beat’s rig, eased into it unless it cuts
-      const beat = scenes.at(here.index, here.local, dt, { speed: clock.speed, jumped });
+      const beat = scenes.at(here.index, here.local, dt, { speed: clock.speed, jumped, waits: doing.waits(here.stage) });
       lastSince = beat.since;
       jumped = false;
       veil.visible = beat.fx.black > 0;
@@ -325,8 +355,17 @@ export default {
       shot.t += dt;
       const p = clock.reduced ? want : easePose(shot.from ?? want, want, Math.min(1, shot.t / BLEND) ** 2 * (3 - 2 * Math.min(1, shot.t / BLEND)));
       lastPose = p;
-      camera.position.set(...p.at);
+      // (never in a wall: a shot hung off the lead comes in along its boom; a placed one out of what it's in)
+      const eye = inLand([leader.at[0], leader.at[1] + 1.1, leader.at[2]]);
+      const stand = clear.camera(inLand(p.at), eye, { rig: b?.rig ?? 'follow', lookAt: inLand(p.lookAt) }, grid, dt);
+      camera.position.set(stand[0] + landAt.x, stand[1] + landAt.y, stand[2] + landAt.z);
       camera.lookAt(...p.lookAt);
+      // (nor in a figure: one the camera comes into is not drawn while it's there)
+      const eyeAt = camera.position.toArray();
+      for (const w of line) {
+        const fig = cast.get(w.id);
+        if (fig?.group.visible && tooNear(eyeAt, fig.group.position.toArray())) fig.group.visible = false;
+      }
       // (a beat’s jolt: the frame knocked about and settling; never under reduced motion)
       if (beat.fx.shake > 0 && !clock.reduced) {
         shook += dt;
@@ -357,7 +396,8 @@ export default {
         if (!quietTitle) tell('stage', { id: st.id, name: st.name, date: st.date, first: clock.s === 0 && st.id === STAGES[0].id });
         quietTitle = false;
       }
-      const holding = clock.mode === 'hold';
+      // (a deed waiting is a beat held too: the letterbox, the prompt out of its way)
+      const holding = clock.mode === 'hold' || clock.mode === 'deed';
       const mode = `${clock.auto}:${clock.mode}`;
       if (mode !== lastMode) {
         lastMode = mode;
@@ -382,6 +422,8 @@ export default {
     let offerOpen = offer;
     const jump = (s) => {
       clock = { ...clock, s: Math.min(1, Math.max(0, s)), holdLeft: 0 };
+      doing.jumped(clock.s);
+      clear.reset();
       jumped = true;
       relight();
       report(frame(), 0);
@@ -409,7 +451,14 @@ export default {
         }
         if (pressed('menu')) tell('menu');
         if (pressed('lore')) tell('lore');
-        for (let i = 1; i <= 10; i++) if (pressed(`stage${i}`)) world.goTo(STAGES[i - 1].id);
+        // (while a word is to be chosen, the digits choose it rather than a stage)
+        const choosing = doing.choosing();
+        let pick = null;
+        for (let i = 1; i <= 10; i++) {
+          if (!pressed(`stage${i}`)) continue;
+          if (choosing) pick ??= i - 1;
+          else world.goTo(STAGES[i - 1].id);
+        }
         const keys = {
           walk: touch.walk || Boolean(input?.action?.('walk')),
           run: touch.run || Boolean(input?.action?.('run')),
@@ -421,7 +470,11 @@ export default {
         if (keys.walk || keys.run || keys.back || keys.toggleAuto || keys.next || input?.pressed?.size || input?.pointer?.drag) ambience.wake();
         const was = clock.s;
         const at = lineAt(STAGES, clock.s);
-        clock = stepClock(clock, dt, keys, { total: TOTAL, holdAt, nextBeat: nextMark, pace: PACE[modeAt(stageById(at.stage), at.local)] ?? 1 });
+        clock = stepClock(clock, dt, keys, { total: TOTAL, holdAt, nextBeat: nextMark, gate: doing.gate, holdAfter: doing.holdAfter, pace: PACE[modeAt(stageById(at.stage), at.local)] ?? 1 });
+        // (the deed on the mark, if the walk waits on one; under reduced motion Enter does it too)
+        const deedKeys = { act: pressed('act') || (clock.reduced && keys.next), acting: KEYS.act.some((c) => input?.keys?.has?.(c)), left: pressed('left'), right: pressed('right'), pick };
+        doing.step(dt, deedKeys, { s: clock.s, stage: at.stage, since: lastSince, present, auto: clock.auto });
+        if (pressed('talk')) doing.talk(at.stage, present);
         // (Next under reduced motion is how that ride is walked, so it counts)
         walked += Math.max(0, clock.s - was);
         if (clock.s !== was) saving = true;
@@ -478,6 +531,15 @@ export default {
       },
       press(name, down) {
         if (name in touch) touch[name] = Boolean(down);
+        else doing.press(name, down);
+      },
+      // (a deed's word, by its button)
+      pick(i) {
+        doing.pick(i);
+      },
+      // (a word with the company, by the Talk button)
+      talk() {
+        doing.talk(lineAt(STAGES, clock.s).stage, present);
       },
       carryOn() {
         if (!offerOpen) return;
@@ -537,7 +599,7 @@ export default {
       // lands' building times)
       const info = () => {
         const r = rt.gfx.renderer?.info?.render ?? {};
-        return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, vision: vision.amount, shot: shot?.key ?? null, mode: clock.mode, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats, since: lastSince };
+        return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, vision: vision.amount, shot: shot?.key ?? null, mode: clock.mode, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats, since: lastSince, solids: scenes.solids(lineAt(STAGES, clock.s).index)?.filled() ?? null, boom: clear.boom, camera: camera.position.toArray().map((v) => Math.round(v * 100) / 100) };
       };
       window.__ROAD__ = { world, set: (s) => world.set(s), info, weather, ambience, vision: (on) => void (visionOn = Boolean(on)), passes, fast: (k = 1) => void (labPace = Math.max(0, k)) };
     }

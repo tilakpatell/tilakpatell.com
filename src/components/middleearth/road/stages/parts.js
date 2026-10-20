@@ -11,7 +11,8 @@
 //     each of the sun’s cascades leave out what’s behind or far ahead; one
 //     mesh the stage’s length, every cascade drew all of it), in root’s
 //     frame, leaving what `keep` holds (the parts a scene moves),
-//     instanced and skinned meshes as they were
+//     instanced and skinned meshes as they were; each merged mesh is
+//     `userData.solid` (scenes.js fills the stage's solids.js grid from them)
 //   disposeBuilt(root, K): the geometry under root, and the materials (and
 //     their maps) a builder made for itself (a sign, a hatch) rather than
 //     took from the kit, which the kit’s own dispose frees
@@ -100,6 +101,8 @@ export function mergeStatics(root, { keep = [], band = BAND } = {}) {
       mesh.name = `${root.name || 'statics'}:${material.name || material.type}`;
       mesh.castShadow = cast;
       mesh.receiveShadow = receive;
+      // (what doesn't move stands solid: solids.js's grid is filled from it)
+      mesh.userData.solid = true;
       root.add(mesh);
       if (geos.length > 1) for (const g of geos) g.dispose();
     }
