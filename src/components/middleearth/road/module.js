@@ -41,6 +41,7 @@ import { STAGES, modeAt, stageById } from './stages/index';
 import { BEATS_OF } from './stages/registry';
 import { createScenes } from './scenes';
 import { createDoing } from './doing';
+import { createClear, tooNear } from './clear';
 import { LINES } from './voicelines';
 import { ease as easePose } from './director';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
@@ -291,11 +292,20 @@ export default {
       if (!tips.has(id)) tips.set(id, new THREE.Vector3());
       return tips.get(id);
     };
+    // nothing walked or seen through (clear.js, on the stage's solids.js grid,
+    // in its land's frame: the scene's, moved by where the land stands)
+    const clear = createClear();
+    const landAt = new THREE.Vector3();
+    const inLand = (p) => [p[0] - landAt.x, p[1] - landAt.y, p[2] - landAt.z];
     // the camera on the director’s rig, following the lead along the stage
     const frame = (dt = 0) => {
       const here = lineAt(STAGES, clock.s);
       lands.at(here.index);
       mountains.at(here.stage);
+      const grid = scenes.solids(here.index);
+      const landGroup = lands.groupOf(here.index);
+      if (landGroup) landGroup.getWorldPosition(landAt);
+      else landAt.set(0, 0, 0);
       const line = company();
       present = line.map((w) => w.id);
       const mode = modeAt(stageById(here.stage), here.local);
@@ -317,8 +327,11 @@ export default {
         // (and as the beat has them: sat by a fire, a torch in each hand, down on the ground;
         // `tip`: the head of what it holds, last frame, a staff’s where its light goes)
         const o = scenes.pose(here.index, w.id, { x, y, z, base, state: w.state, tip: fig.tip?.(tipOf(w.id)) ?? null }) ?? {};
+        // (round what stands in their lane, where the beat isn't placing them itself)
+        const [lx, , lz] = inLand([x, y, z]);
+        const free = o.x == null ? x + clear.walker(w.id, { x: lx, z: lz, y: y - landAt.y }, grid, dt) - lx : x;
         fig.group.visible = !o.hide;
-        fig.group.position.set(o.x ?? x, o.y ?? y, o.z ?? z);
+        fig.group.position.set(o.x ?? free, o.y ?? y, o.z ?? z);
         fig.group.rotation.y = o.yaw ?? 0;
         fig.set({ base: o.base !== undefined ? o.base : base, speed: o.speed ?? clock.speed });
         fig.tick(dt);
@@ -342,8 +355,17 @@ export default {
       shot.t += dt;
       const p = clock.reduced ? want : easePose(shot.from ?? want, want, Math.min(1, shot.t / BLEND) ** 2 * (3 - 2 * Math.min(1, shot.t / BLEND)));
       lastPose = p;
-      camera.position.set(...p.at);
+      // (never in a wall: a shot hung off the lead comes in along its boom; a placed one out of what it's in)
+      const eye = inLand([leader.at[0], leader.at[1] + 1.1, leader.at[2]]);
+      const stand = clear.camera(inLand(p.at), eye, { rig: b?.rig ?? 'follow', lookAt: inLand(p.lookAt) }, grid, dt);
+      camera.position.set(stand[0] + landAt.x, stand[1] + landAt.y, stand[2] + landAt.z);
       camera.lookAt(...p.lookAt);
+      // (nor in a figure: one the camera comes into is not drawn while it's there)
+      const eyeAt = camera.position.toArray();
+      for (const w of line) {
+        const fig = cast.get(w.id);
+        if (fig?.group.visible && tooNear(eyeAt, fig.group.position.toArray())) fig.group.visible = false;
+      }
       // (a beat’s jolt: the frame knocked about and settling; never under reduced motion)
       if (beat.fx.shake > 0 && !clock.reduced) {
         shook += dt;
@@ -401,6 +423,7 @@ export default {
     const jump = (s) => {
       clock = { ...clock, s: Math.min(1, Math.max(0, s)), holdLeft: 0 };
       doing.jumped(clock.s);
+      clear.reset();
       jumped = true;
       relight();
       report(frame(), 0);
@@ -576,7 +599,7 @@ export default {
       // lands' building times)
       const info = () => {
         const r = rt.gfx.renderer?.info?.render ?? {};
-        return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, vision: vision.amount, shot: shot?.key ?? null, mode: clock.mode, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats, since: lastSince };
+        return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, vision: vision.amount, shot: shot?.key ?? null, mode: clock.mode, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats, since: lastSince, solids: scenes.solids(lineAt(STAGES, clock.s).index)?.filled() ?? null, boom: clear.boom, camera: camera.position.toArray().map((v) => Math.round(v * 100) / 100) };
       };
       window.__ROAD__ = { world, set: (s) => world.set(s), info, weather, ambience, vision: (on) => void (visionOn = Boolean(on)), passes, fast: (k = 1) => void (labPace = Math.max(0, k)) };
     }

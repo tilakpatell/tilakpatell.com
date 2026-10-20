@@ -10,10 +10,15 @@ describe('the director: the film’s grammar as camera rigs', () => {
     expect(RIGS).toEqual(['follow', 'lead', 'side', 'low', 'crane', 'wide', 'seat', 'ride']);
   });
 
-  it('follow: 3.2 m back, 1.7 m up, looking 6 m ahead along the road', () => {
+  it('follow: over the lead’s left shoulder, 3.4 m back and 1.6 m up, looking 7 m ahead along the road', () => {
     const p = pose(base());
-    expect(near(p.at, [0, 1.7, -3.2])).toBe(true);
-    expect(near(p.lookAt, [0, 1, 6])).toBe(true);
+    // (the left of a lead walking +z is +x)
+    expect(near(p.at, [0.75, 1.6, -3.4])).toBe(true);
+    expect(near(p.lookAt, [0.35, 1.35, 7])).toBe(true);
+    // (the lead to one side of the frame's middle, not in it)
+    const aim = Math.atan2(p.lookAt[0] - p.at[0], p.lookAt[2] - p.at[2]);
+    const lead = Math.atan2(0 - p.at[0], 0 - p.at[2]);
+    expect(Math.abs(lead - aim)).toBeGreaterThan(0.15);
     expect(p.fov).toBe(FOV.walk);
     expect(p.dof).toBe(false);
   });
@@ -39,11 +44,11 @@ describe('the director: the film’s grammar as camera rigs', () => {
   });
 
   it('crane: from follow up to 30 m over its seconds', () => {
-    expect(near(pose(base({ rig: 'crane', t: 0 })).at, [0, 1.7, -3.2])).toBe(true);
+    expect(near(pose(base({ rig: 'crane', t: 0 })).at, [0.75, 1.6, -3.4])).toBe(true);
     expect(pose(base({ rig: 'crane', t: 8 })).at[1]).toBeCloseTo(30, 6);
     expect(pose(base({ rig: 'crane', t: 2, params: { seconds: 2 } })).at[1]).toBeCloseTo(30, 6);
     const half = pose(base({ rig: 'crane', t: 4 })).at[1];
-    expect(half).toBeGreaterThan(1.7);
+    expect(half).toBeGreaterThan(1.6);
     expect(half).toBeLessThan(30);
   });
 
@@ -61,9 +66,9 @@ describe('the director: the film’s grammar as camera rigs', () => {
     expect(pose(base({ rig: 'ride', mode: 'eagle', params: { offset: [0, 2, -1] } })).fov).toBe(FOV.eagle);
   });
 
-  it('turns with the lead: follow behind a lead heading +x is at −x', () => {
+  it('turns with the lead: follow behind a lead heading +x is at −x, over its left shoulder (−z)', () => {
     const p = pose(base({ lead: { at: [0, 0, 0], heading: Math.PI / 2 }, tangent: [1, 0, 0] }));
-    expect(near(p.at, [-3.2, 1.7, 0])).toBe(true);
+    expect(near(p.at, [-3.4, 1.6, -0.75])).toBe(true);
   });
 
   it('the visitor’s look turns the frame about the rig’s, clamped; a seat’s closer', () => {

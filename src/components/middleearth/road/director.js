@@ -18,6 +18,16 @@ const CLEAR = 0.4; // m over the ground at least
 const EYE = 1; // m: the height on a walker the rigs look at
 const LOW_TILT = (20 * Math.PI) / 180;
 const CRANE_TOP = 30;
+// the follow: over the lead's left shoulder, so the lead stands to one side
+// of the frame (the right of it: the camera's on their left) and the road
+// ahead is open (straight behind, a toy's big head filled the middle of
+// it); aimed a little up, so the lead stands clear of the HUD's foot
+const BEHIND = 3.4;
+const SHOULDER = 0.75; // m to the lead's left
+const OVER = 1.6; // m up
+const AHEAD = 7; // m ahead it looks
+const AIM = 0.35; // m to the lead's left it looks
+const AIM_UP = 0.35; // m over the eye it looks
 const SETTLE = 2; // 1/s: e^-4 of a look is left after two seconds
 
 const add = (a, b, k = 1) => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
@@ -32,7 +42,8 @@ function framing({ rig, params = {}, lead, tangent, t = 0 }) {
   const f = [Math.sin(h), 0, Math.cos(h)];
   const right = [-Math.cos(h), 0, Math.sin(h)];
   const eye = add(lead.at, [0, EYE, 0]);
-  const follow = () => ({ at: add(add(lead.at, f, -3.2), [0, 1.7, 0]), lookAt: add(eye, tangent, 6) });
+  const left = [-right[0], 0, -right[2]];
+  const follow = () => ({ at: add(add(add(lead.at, f, -BEHIND), left, SHOULDER), [0, OVER, 0]), lookAt: add(add(add(eye, tangent, AHEAD), left, AIM), [0, AIM_UP, 0]) });
   switch (rig) {
     case 'lead':
       return { at: add(add(lead.at, f, 4), [0, 1.5, 0]), lookAt: eye };
