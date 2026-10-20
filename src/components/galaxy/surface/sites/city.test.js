@@ -67,6 +67,20 @@ describe('cityOf: a grid', () => {
     expect(towers.length).toBeGreaterThan(8);
   });
 
+  it('paves its streets and its plaza for the ground', () => {
+    const c = grid({ street: 9, block: 36 });
+    expect(c.paving[0]).toEqual({ at: [0, 0], r: 30 });
+    const streets = c.paving.filter((s) => s.a);
+    expect(streets.length).toBeGreaterThan(8);
+    for (const s of streets) {
+      expect(s.w).toBe(9);
+      // (each on a line between the blocks, end to end across the city)
+      const line = s.a[0] === s.b[0] ? s.a[0] : s.a[1];
+      expect(Math.abs(((((line / 45) % 1) + 1) % 1) - 0.5)).toBeLessThan(1e-9);
+      expect(Math.hypot(...s.a)).toBeCloseTo(150, 6);
+    }
+  });
+
   it('lays no lamps when told not to, and stands nothing where nothing fits', () => {
     expect(grid({ lamps: null }).things.some((t) => t.kind === 'lamp')).toBe(false);
     expect(buildings(grid({ kit: [{ kind: 'tower', foot: [80, 80] }] }))).toEqual([]);
@@ -104,6 +118,14 @@ describe('cityOf: rings', () => {
     ];
     for (const seed of [3, 5, 7171, 12])
       expect(cityOf({ plan: 'rings', r: 160, block: 32, plaza: 88, kit }, { seed }).things.filter((t) => t.kind === 'house').length, `seed ${seed}`).toBeGreaterThan(10);
+  });
+
+  it('paves its ring streets and its plaza for the ground', () => {
+    const c = rings({ street: 9 });
+    expect(c.paving[0]).toEqual({ at: [0, 0], r: 30 });
+    const roads = c.paving.slice(1);
+    expect(roads.length).toBeGreaterThan(1);
+    expect(roads.every((s) => s.w === 9 && s.r > 30 && s.r <= 150)).toBe(true);
   });
 
   it('walks and flies its ring streets', () => {

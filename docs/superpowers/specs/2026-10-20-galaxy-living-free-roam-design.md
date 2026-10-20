@@ -70,7 +70,14 @@ but:
   over the roofs).
 - The kits are the made buildings that fit (`catalog/worlds.js`, the earlier
   Meshy lanes', Nevarro's and Mos Eisley's) and a few new Meshy ones where a
-  city has none of its own style.
+  city has none of its own style: fourteen, drawn from words
+  (`scripts/meshy-galaxy-cities.mjs`), a light copy each.
+- As built: the buildings are scatter rows, not things (a city of a hundred
+  houses is a few instanced draws), each solid over its footprint's box; a
+  lot is split as the kit can fill it, a ring's lots cut as long as its
+  widest house needs; a crowd's middle is kept clear, not all it roams;
+  the streets and the plaza are painted into the ground map as paving
+  (`site.paving`, `groundPaint.js`), with no grass on them.
 - The cities: Coronet City, Worlport (Ord Mantell), Calodan, Kestro City,
   Pau City, Mygeeto's crystal city, Cato Neimoidia's bridge city, NiJedha,
   Plazir-15, Kafrene's Ring, Fondor's yard city, Saleucami's crater town and

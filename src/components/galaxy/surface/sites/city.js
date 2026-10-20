@@ -7,7 +7,10 @@
 // to the city's (docs/superpowers/specs/2026-10-20-galaxy-living-free-
 // roam-design.md, 2).
 //
-//   cityOf(spec, { seed }) → { things, life, flat: { r }, lots }
+//   cityOf(spec, { seed }) → { things, life, flat: { r }, lots, paving }
+//     paving: its streets and its plaza, for the ground (groundPaint.js):
+//     [{ a: [x, z], b: [x, z], w } a street, { at, r, w } a ring street,
+//     { at, r } the plaza]
 //   rowsOf(things, foot) → scatter rows, a kind each ({ kind, items: [{ at,
 //     yaw, scale, box? }], solid, city }): drawn instanced, a few draws for a
 //     city, each building solid over its footprint (`foot`, a kind's [w, d]
@@ -202,10 +205,12 @@ export function cityOf(spec, { seed = 1 } = {}) {
   const life = [];
   const out = [];
   let lots = 0;
+  const paving = plaza > 0 ? [{ at: [0, 0], r: plaza }] : [];
   if ((spec.plan ?? 'grid') === 'grid') {
     const g = grid(spec, rand, keep);
     out.push(...g.things);
     lots = g.things.length;
+    for (const s of g.streets) paving.push({ a: s.from, b: s.to, w: street });
     if (lampKind) for (const s of g.streets) lampsAlong(s.from, s.to, { kind: lampKind, every, side: street / 2 - KERB }, [...keep, { at: [0, 0], r: plaza }], out);
     // clutter at the blocks' corners, on the pavement
     for (const [bx, bz] of g.blocks)
@@ -242,6 +247,7 @@ export function cityOf(spec, { seed = 1 } = {}) {
     const g = rings(spec, rand, keep);
     out.push(...g.things);
     lots = g.lots;
+    for (const R of g.roads) paving.push({ at: [0, 0], r: R, w: street });
     const circle = (R, n = 16) => Array.from({ length: n }, (_, i) => [Math.cos((i / n) * Math.PI * 2) * R, Math.sin((i / n) * Math.PI * 2) * R]);
     if (lampKind)
       for (const R of g.roads) {
@@ -262,7 +268,7 @@ export function cityOf(spec, { seed = 1 } = {}) {
         life.push({ kind: spec.traffic.kind, path, pause: 0, speed: spec.traffic.speed ?? 14, y: (spec.traffic.y ?? 14) + (i % 3) * 4, solid: false, city: true });
       }
   }
-  return { things: out, life, flat: { r: spec.r + 6 }, lots, block, street };
+  return { things: out, life, flat: { r: spec.r + 6 }, lots, block, street, paving };
 }
 
 // a city's things as scatter rows, a kind each, so a city of a hundred

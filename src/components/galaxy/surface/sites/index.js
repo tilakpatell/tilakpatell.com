@@ -165,6 +165,7 @@ function cityIn(p, i, raw) {
     rows: rowsOf(built.things, FOOT).map((r) => ({ ...r, items: r.items.map((it) => ({ ...it, at: world(it.at), yaw: it.yaw + (p.yaw ?? 0) })) })),
     life: built.life.map((a) => ({ ...a, path: a.path.map(world) })),
     flat: { ...(p.flat ?? {}), r: Math.max(p.flat?.r ?? 0, built.flat.r) },
+    paving: built.paving.map((s) => (s.a ? { ...s, a: world(s.a), b: world(s.b) } : { ...s, at: world(s.at) })),
   };
 }
 
@@ -254,6 +255,8 @@ export function siteFrom(raw, id, { name, accent } = {}) {
     zones,
     quests,
     life: [...(raw.life ?? []), ...cities.flatMap((c) => c?.life ?? []), ...zoneLife],
+    // (the cities' streets, paved into the ground: groundPaint.js)
+    paving: [...(raw.paving ?? []), ...cities.flatMap((c) => c?.paving ?? [])],
     wants: [...(raw.wants ?? []), ...zoneWants],
     ground: { ...raw.ground, flats, pits },
     things_all: [...(raw.things ?? []), ...places.flatMap((p) => p.things)],
