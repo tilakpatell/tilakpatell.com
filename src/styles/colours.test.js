@@ -12,7 +12,7 @@ import { THEMES } from '../theme/themes';
 // the colour’s own. The visitor’s own colour is computed in theme/custom.js
 // and leaves this out.
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-const css = ['index.css', 'styles/extras.css', 'styles/caribbean-themes.css', 'styles/middleearth-themes.css', 'styles/fan-dark-themes.css'].map(read).join('\n');
+const css = ['index.css', 'styles/extras.css', 'styles/caribbean-themes.css', 'styles/middleearth-themes.css', 'styles/fan-dark-themes.css', 'styles/house-nights.css'].map(read).join('\n');
 
 // (a statement before a rule, an @tailwind or an @import, ends at its ;)
 const rules = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, s, b]) => [s.split(';').pop().trim(), b]);
@@ -52,9 +52,9 @@ describe('every colour', () => {
     });
   });
 
-  // a fan colour picked by an easter egg keeps its own ground at night,
-  // rather than the house’s shared near-black
-  it.each(IDS.filter((id) => THEMES[id].fan))('%s has a night of its own', (id) => {
+  // every colour keeps its own ground at night, rather than the house’s
+  // shared near-black
+  it.each(IDS)('%s has a night of its own', (id) => {
     expect(tokens(`html[data-mode='dark'][data-theme='${id}']`)['--bg']).toMatch(/^#[0-9a-f]{6}$/i);
   });
 });

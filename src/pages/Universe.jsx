@@ -33,6 +33,7 @@ import { goodStanding } from '../components/universe/economy';
 import { createPayLedger } from '../components/universe/earnRules';
 import { pocketOf, registerPocket } from '../components/expanse/pocket';
 import { createRegistry } from '../components/worlds/registry';
+import { useTouring } from '../components/tour/useTouring';
 import { worldStore } from '../runtime';
 
 const PORTAL = '#97ce4c';
@@ -44,6 +45,12 @@ const NavMap = lazy(() => import('../components/universe/NavMap'));
 const SAFFRON = '#ff9a2a';
 const PHONE_MS = 700;
 const PANEL_KEY = 'tp-universe-panel'; // 'tucked' once the panel's been put away
+// a phone whose touch buttons wait for the panel to be put away: one held
+// upright, or a small one on its side (universe/thumbs.css hides them by the
+// same numbers). A wider one on its side has them beside the open panel, so
+// a launch may come from a held Boost: folding then would move them from
+// under the thumb
+const PHONE_FLIGHT = '(pointer: coarse) and (max-width: 767px) and (min-height: 501px), (pointer: coarse) and (max-height: 500px) and (max-width: 739px)';
 // (the page you go into knows you came from the map, so its way out can be
 // back to space: the Citadel's)
 const FROM_MAP = { state: { from: 'universe' } };
@@ -139,6 +146,10 @@ export default function Universe({ ask = false }) {
     setTucked(on);
     local.set(PANEL_KEY, on ? 'tucked' : 'open');
   };
+  // (a site tour brings the panel out, put away or not, and the page makes
+  // room for it as the panel does: UniversePanel.jsx)
+  const siteTour = useTouring();
+  const tuckedNow = tucked && !siteTour;
   const timer = useRef(0);
   const trip = useRef(null); // a jump out (jumps/jumpOut.js): this page gone first, its dark coming late changes nothing
   useEffect(
@@ -350,6 +361,9 @@ export default function Universe({ ask = false }) {
       pay(e.what, e.n, e.side);
       return;
     }
+    // on a phone the panel folds away once the ship's flown: its buttons
+    // wait for it, and the sheet hides half the map
+    if (e.type === 'launch' && !tucked && window.matchMedia?.(PHONE_FLIGHT).matches) tuck(true);
     // (the hello says what you are to the others: useOnline.js reads it again)
     if (e.type === 'event' && e.id === 'standing') window.dispatchEvent(new Event('tp:standing'));
     if (e.type === 'event' && e.id === 'standing' && goodStanding(e.sub) && stood.once(`${e.side}:${e.sub}`)) pay('standingUp', 1, e.side);
@@ -487,7 +501,7 @@ export default function Universe({ ask = false }) {
   const fade = leaving?.mode === 'phone' ? SAFFRON : leaving?.mode === 'portal' ? PORTAL : leaving?.mode === 'beyond' ? '#000' : leaving?.mode === 'dive' || leaving?.mode === 'crash' ? byId(leaving.id).palette.base : undefined;
 
   return (
-    <div className="dark-scope universe-page" style={accent} data-leaving={leaving?.mode} data-card={universe ? '' : undefined} data-tucked={tucked ? '' : undefined}>
+    <div className="dark-scope universe-page" style={accent} data-leaving={leaving?.mode} data-card={universe ? '' : undefined} data-tucked={tuckedNow ? '' : undefined}>
       <h1 className="sr-only">Tilak Patel: the whole site as a universe</h1>
       <p className="sr-only" aria-live="polite">
         {universe ? `${universe.label}: selected` : ''}

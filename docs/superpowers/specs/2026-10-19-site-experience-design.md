@@ -127,7 +127,7 @@ A new eager sheet, `src/styles/feel.css`. Transform and opacity only, never layo
 
 ### C1. Nights
 
-AWS (squid ink), RTX, Shell, FUSE, Finance, PyTorch and NVIDIA get a dark palette of their own; Pendar, Empowerreg and SRC a ground to match their surfaces; the Game Boy keeps its magenta at night. All are held to the floors by `colours.test.js`, whose night test widens from the fan colours to every colour.
+AWS (squid ink), RTX, DevSpace, Shell, FUSE, Finance, PyTorch and NVIDIA get a dark palette of their own (`src/styles/house-nights.css`); Bose, Pendar, Empowerreg and SRC a ground to match their surfaces; the Game Boy keeps its magenta at night. All are held to the floors by `colours.test.js`, whose night test widens from the fan colours to every colour.
 
 ### C2. The company switch-in
 
@@ -135,8 +135,8 @@ The flat slab gives way to the company’s own: its brand bar’s dark, its mark
 
 ### C3. Small mends
 
-- The colours panel’s line says what it holds: the companies, and the colours found along the way.
-- A dark dot gets a light ring (`THEMES[id].ring`), so Bose’s shows on a dark panel; Empowerreg’s dot is its lime.
+- The colours panel’s line says what it holds: “The companies I’ve worked at, your own colour and the ones you find along the way.”
+- Every colour’s dot keeps an edge drawn from the ink (`.swatch-dot`), so Bose’s near-black shows on a dark panel; Empowerreg’s dot is its lime. The never-defined `THEMES[id].fill` the panel read goes.
 
 ## What doesn’t change
 
