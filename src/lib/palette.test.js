@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { guideDetail, isPaletteKey } from './palette';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { guideDetail, isPaletteKey, openParty } from './palette';
 
 describe('the palette’s key', () => {
   it('is ⌘K or Ctrl K, whichever case', () => {
@@ -23,5 +23,31 @@ describe('opening the guide on a tab', () => {
 
   it('reads a click, a word or nothing as no tab', () => {
     for (const x of [undefined, null, 'checklist', new Event('click'), { tab: 3 }]) expect(guideDetail(x), String(x)).toBeNull();
+  });
+});
+
+describe('opening the party', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  // (the page's window, as far as an event goes: Node has EventTarget and CustomEvent)
+  const heard = () => {
+    const win = new EventTarget();
+    const got = [];
+    win.addEventListener('tp:party', (e) => got.push(e.detail));
+    vi.stubGlobal('window', win);
+    return got;
+  };
+
+  it('asks the host for the dialog, on the tab it’s given', () => {
+    const got = heard();
+    openParty({ tab: 'quick' });
+    openParty({ tab: 'chat' });
+    expect(got).toEqual([{ tab: 'quick' }, { tab: 'chat' }]);
+  });
+
+  it('reads a click or nothing as no tab: the dialog opens where it would', () => {
+    const got = heard();
+    openParty();
+    openParty(new Event('click'));
+    expect(got).toEqual([null, null]);
   });
 });

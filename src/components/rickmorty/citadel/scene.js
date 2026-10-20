@@ -1,8 +1,9 @@
 // The Citadel of Ricks in WebGL: the concourse (./concourse.js), the two
 // rooms under it (./rooms.js) and the people (./people.js), drawn in the
-// show's look (toon shading and the ink line from ../portal/toon.js, bloom
-// on the light strips), with the third-person camera the towns use and a
-// camera for each room's beat and for the cruiser getting away. The state
+// show's look (flat toon shading from ../portal/toon.js, a line round the
+// cast only, no film grade but the alarm's, bloom on the light strips),
+// with the third-person camera the towns use and a camera for each room's
+// beat and for the cruiser getting away. The state
 // it draws comes from ./CitadelWorld.jsx each frame, with its cues (what's
 // just happened, for the people to react to). Every figure is stepped as
 // lib/three/animBudget.js says: near and in view every frame, further off
@@ -25,11 +26,11 @@ import { createAnimBudget } from '../../../lib/three/animBudget';
 import { applyEmote } from '../../../lib/emote';
 import { groundWorld } from '../../../lib/three/groundwork';
 import { houseOn } from '../../../lib/three/house';
-import { LOOK } from './look';
+import { LOOK, alarmGrade } from './look';
+import { PLAIN } from '../world/look';
 import { createFeel, feelGroups } from '../../../lib/three/feel';
 import { damp } from '../../../lib/ease';
 import { createMeshyCast } from '../portal/meshyCast';
-import { InkPass } from '../portal/toon';
 import { EDGE_BUILDINGS, buildConcourse } from './concourse';
 import { createCrowd } from './crowd';
 import { LIVE, createPeople } from './people';
@@ -106,7 +107,7 @@ export async function createCitadelWorld(rt, { looks = null, track = null } = {}
   // Citadel's own numbers: a decay of 0.8 a second, 0.5 off at full, no roll
   const feel = createFeel({ baseFov: 52, offset: 0.5 });
   feel.set({ decay: 0.8, roll: 0 });
-  stage.grade({ contrast: 0.08, saturation: 1.08, vignette: 0.2, grain: 0.008, shadow: [0.0, 0.012, 0.02], high: [0.02, 0.012, 0.0] });
+  stage.grade(PLAIN);
   const { scene, camera, renderer } = stage;
   // the city's golden haze
   scene.fog = new THREE.Fog(0xe0b57a, 80, 360);
@@ -159,14 +160,6 @@ export async function createCitadelWorld(rt, { looks = null, track = null } = {}
     models.dispose();
     stage.dispose();
     throw e;
-  }
-
-  // (Mortytown's sky and neon join these when it's built)
-  const unlined = [...concourse.hide, fxRoot];
-  if (!soft) {
-    const big = Math.min(window.screen?.width ?? 1280, window.screen?.height ?? 800) >= 700;
-    const ink = new InkPass(scene, camera, { hide: () => unlined, width: big ? 1.15 : 1 });
-    stage.composer.insertPass(ink, 1);
   }
 
   // others online here (CitadelWorld's useTravellers), as the Middle-earth
@@ -236,7 +229,6 @@ export async function createCitadelWorld(rt, { looks = null, track = null } = {}
             district.dispose();
             return false;
           }
-          unlined.push(...district.hide);
           const lights = district.lights.map(([x, y, z, c]) => [x + TOWN.x, y + TOWN.y, z + TOWN.z, c]);
           const tracked = [...(folk?.movers ?? []), people.rick].filter((f) => f?.group).map(walker);
           const ground = groundWorld({ renderer, scene, floor: [district.floor], sun: key, casters: [district.group], skip: [fxRoot, ...district.hide], movers: tracked, shade: 0x2a2418, blobOpacity: 0.6, tier, auto: true, clip: true });
@@ -258,8 +250,8 @@ export async function createCitadelWorld(rt, { looks = null, track = null } = {}
   const tmp2 = V(0, 0, 0);
   const look = V(0, 0, 0);
 
-  // the grade each frame, changed in place (nothing new made a frame)
-  const graded = { vignette: 0.2, high: [0.006, 0.006, 0.014], shadow: [0, 0.008, 0.03] };
+  // the grade each frame: only the alarm's, changed in place (nothing new made a frame)
+  const graded = alarmGrade(0, 0, false);
   const render = (s, ms, fast = 1) => {
     const dt = Math.min(0.05 * fast, ms / 1000);
     A.t += dt;
@@ -298,10 +290,7 @@ export async function createCitadelWorld(rt, { looks = null, track = null } = {}
       hemi.color.setRGB(0.92, 0.82, 0.68 - A.red * 0.2);
       key.intensity *= 0.62;
     }
-    graded.vignette = 0.2 + A.red * 0.18 + (s.chased ? 0.12 : 0);
-    graded.high[0] = 0.006 + pulse * 0.05;
-    graded.shadow[0] = pulse * 0.025;
-    stage.grade(graded);
+    stage.grade(alarmGrade(A.red, pulse, s.chased, graded));
 
     concourse.update(t, dt, { gateOpen: s.gateOpen, hangarOpen: s.hangarOpen, escapeT: s.escapeT });
     concourse.group.visible = !inside && !away;

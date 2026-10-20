@@ -36,6 +36,13 @@ export const WORDS = {
   ctrlK: 'Ctrl K',
   downloadPdf: 'Download the PDF',
   copyEmail: 'Copy email address',
+  // the pilots online together by invite (universe/online/party.js), and the
+  // set lines anyone online can say over their ship (quips.js)
+  party: 'Party',
+  quickChat: 'Quick chat',
+  leader: 'leader', // the party's, who keeps its roster
+  summon: 'Summon', // the leader calling the party to where they are
+  followLeader: 'Follow the leader', // a member's switch: go where the leader goes
 };
 
 // The way out of a world names the view the visitor came from (revision 2, C2).
