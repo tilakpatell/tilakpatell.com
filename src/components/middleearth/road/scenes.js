@@ -10,7 +10,8 @@
 //     at(index, local, dt, { speed, jumped, waits }) → { since, fx, shot }  (fx: fxAt’s; shot: rigAt’s, or null;
 //       waits: the beats whose deed is undone, held at its moment till it’s done, doing.js’s)
 //     floor(index, x, z) → the height the stage’s scene stands the walkers on there, or null (the land’s)
-//     pose(index, id, { x, y, z, base, state }) → what the scene changes of a walker this frame
+//     pose(index, id, { x, y, z, base, state, lead }) → what the scene changes of a walker this frame
+//       (`lead`: { x, z }, the lead's place in the line this frame, whichever walker is asked first)
 //       ({ x, y, z, yaw, base, speed, hide }, each left out for the module’s own), or null
 //     solids(index) → the stage’s solids.js grid (in its land’s frame) once filled, or null
 //     dispose() }

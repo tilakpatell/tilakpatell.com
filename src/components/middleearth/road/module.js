@@ -314,6 +314,7 @@ export default {
       // him and the camera
       const lead = Math.max(0, line.findIndex((w) => w.id === 'frodo'));
       const ahead = line.filter((_, i) => i !== lead);
+      const leadAt = { x: -ABREAST, z: here.local };
       for (const w of line) {
         const fig = cast.get(w.id);
         const rank = w.order === lead ? 0 : ahead.length - ahead.indexOf(w);
@@ -326,7 +327,7 @@ export default {
         const base = clipFor(w.state, mode, w.id);
         // (and as the beat has them: sat by a fire, a torch in each hand, down on the ground;
         // `tip`: the head of what it holds, last frame, a staff’s where its light goes)
-        const o = scenes.pose(here.index, w.id, { x, y, z, base, state: w.state, tip: fig.tip?.(tipOf(w.id)) ?? null }) ?? {};
+        const o = scenes.pose(here.index, w.id, { x, y, z, base, state: w.state, tip: fig.tip?.(tipOf(w.id)) ?? null, lead: leadAt }) ?? {};
         // (round what stands in their lane, where the beat isn't placing them itself)
         const [lx, , lz] = inLand([x, y, z]);
         const free = o.x == null ? x + clear.walker(w.id, { x: lx, z: lz, y: y - landAt.y }, grid, dt) - lx : x;

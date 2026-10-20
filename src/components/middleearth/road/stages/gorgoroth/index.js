@@ -113,7 +113,6 @@ export function build({ road, heightAt, rt, tier = 'high', backdrop = null }) {
   const up = new THREE.Vector3(0, 1, 0);
   const dir = new THREE.Vector3();
   const lashAt = new THREE.Vector3();
-  const carrier = new THREE.Vector3(0, 0, MARKS.carry.at);
   const inCracks = () => live(seen.since.cracks) && seen.local >= MARKS.cracks.at - 0.5 && seen.local < MARKS.eruption.at;
 
   return {
@@ -188,14 +187,13 @@ export function build({ road, heightAt, rt, tier = 'high', backdrop = null }) {
     pose(id, at) {
       // (Gollum's figure is this stage's own: the line's is never drawn)
       if (id === 'gollum') return { hide: true };
-      // carried up the slope, as the Mount Doom chapter has it: Sam in Frodo's place
+      // carried up the slope, as the Mount Doom chapter has it: Sam in the lead's place
       // in the line (where the shot is), bent under him, Frodo on his back
-      if (seen.local >= MARKS.carry.at && seen.local < CARRY_END) {
-        if (id === 'frodo') {
-          carrier.set(at.x, at.y, at.z);
-          return { x: at.x, y: at.y + ON_BACK[1], z: at.z - ON_BACK[0], yaw: 0, base: 'sit.ground', speed: 0 };
-        }
-        if (id === 'sam') return { x: carrier.x, y: carrier.y, z: carrier.z, yaw: 0, base: 'walk.carry', speed: 0 };
+      if (seen.local >= MARKS.carry.at && seen.local < CARRY_END && (id === 'frodo' || id === 'sam')) {
+        const { x, z } = at.lead ?? at;
+        const y = heightAt(x, z);
+        if (id === 'frodo') return { x, y: y + ON_BACK[1], z: z - ON_BACK[0], yaw: 0, base: 'sit.ground', speed: 0 };
+        return { x, y, z, yaw: 0, base: 'walk.carry', speed: 0 };
       }
       // in the Sammath Naur: Frodo at the spur's tip, unseen under the Ring, then over the edge; Sam behind him
       if (inCracks() && CRACKS[id]) {
