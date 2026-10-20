@@ -376,4 +376,5 @@ The whole ride is 1,797 s on auto, the deeds' waits aside. The per-beat draws an
 - `havens-gangway-desktop.webp`: the farewell: Frodo going up the gangway over her rail, the three on the quay, those sailing aboard.
 - `gorgoroth-built-desktop.webp`: the plain under the pall, the Mountain filling the sky, its plume and its fire; the column's spears on the road.
 - `gorgoroth-column-desktop.webp`: the two among the orc column, the driver with his whip.
+- `gorgoroth-carry-desktop.webp`: from beside on the slope, Sam bent under Frodo on his back.
 - `gorgoroth-eruption-desktop.webp`: the Mountain breaking, fire out of its cone and down its streams, from the slope's top.
