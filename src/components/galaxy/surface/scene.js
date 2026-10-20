@@ -3646,7 +3646,11 @@ export async function create(canvas, ctx) {
     if (grass) {
       camera.getWorldDirection(grassAhead).setY(0);
       if (grassAhead.lengthSq() < 1e-6) grassAhead.set(0, 0, -1);
-      grass.update(grassAt.set(me().st.x, 0, me().st.z).addScaledVector(grassAhead.normalize(), amounts.grass.size * 0.3));
+      grassAt.set(me().st.x, 0, me().st.z).addScaledVector(grassAhead.normalize(), amounts.grass.size * 0.3);
+      // (none past the map's square: run on ahead of the free roam's move,
+      // the blades would stand at its edge's height)
+      grass.mesh.visible = !roam || Math.max(Math.abs(grassAt.x - roam.centre[0]), Math.abs(grassAt.z - roam.centre[1])) + amounts.grass.size / 2 < HALF;
+      grass.update(grassAt);
     }
     wind.update(dt);
     stepDust(dt);
