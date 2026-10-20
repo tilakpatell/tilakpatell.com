@@ -9,15 +9,17 @@
 // would sit (Moria's staff light); each worn thing put on its bone where
 // the figure's own body is, measured from its skin in the bind pose.
 //
-//   GEAR: { [name]: [{ kind, held: true, hand? } | { kind, on: bone, at }] }
+//   GEAR: { [name]: [{ kind, held: true, as?, hand? } | { kind, on: bone, at }] }
+//     (as: the grip kind held.js carries it by, when it isn't the thing's own:
+//     the bow carried upright as a cane is, the axe planted as a staff is)
 //   gearFor(name) → the entries, or []
 //   makeGear(kind, height) → Object3D (a new one, its own geometry and materials), with a
 //     `grip` child (held things) and a `tip` child (a staff's head)
-//   bodyAt(model, y, frame, bones) → { back, front, half }: the body's depth
-//     and half-width at a height, its bind pose, in `frame`'s space (the
-//     figure's group: forward +z, its left +x), for what's worn; of a skinned
-//     mesh only the vertices `bones` carry most (the A-pose's hands hang at
-//     the hips: the trunk's, not theirs)
+//   bodyAt(model, y, frame) → { back, front, left, right, half }: the body's
+//     depth and width at a height, its bind pose, in `frame`'s space (the
+//     figure's group: forward +z, its left +x), for what's worn; its sides
+//     out to the first gap, so the A-pose's hands hanging at the hips aren't
+//     its width
 //   wear(model, item, { on, at }, height) → the item on its bone, or null
 //     (call it with the model in its bind pose, under its group)
 
@@ -28,7 +30,7 @@ export const GEAR = {
   gandalf: [{ kind: 'staff', held: true }],
   gandalfwhite: [{ kind: 'white-staff', held: true }],
   legolas: [
-    { kind: 'bow', held: true },
+    { kind: 'bow', held: true, as: 'cane', hand: 'left' },
     { kind: 'quiver', on: 'Spine02', at: 'back' },
   ],
   // (an axe carried upright, as a staff is: its head by his shoulder, its foot by his boots)
@@ -142,7 +144,7 @@ const MAKERS = {
     const below = 0.3 * h;
     const above = 0.5 * h;
     add(g, new THREE.CylinderGeometry(0.02, 0.024, below + above, 7), mat(0x5a3c22), [0, (above - below) / 2, 0]);
-    const steel = mat(0xb4b8c0, { metalness: 0.75, roughness: 0.35 });
+    const steel = mat(0xb4b8c0, { metalness: 0.25, roughness: 0.45 });
     const blade = new THREE.Shape();
     blade.moveTo(0, -0.07 * h);
     blade.quadraticCurveTo(0.2 * h, -0.13 * h, 0.22 * h, 0);
@@ -152,7 +154,7 @@ const MAKERS = {
     bladeGeo.translate(0.02, 0, -0.007);
     add(g, bladeGeo, steel, [0, above - 0.06 * h, 0]);
     add(g, new THREE.ConeGeometry(0.03 * h, 0.1 * h, 6), steel, [-0.06 * h, above - 0.06 * h, 0]).rotation.z = Math.PI / 2;
-    add(g, new THREE.CylinderGeometry(0.03, 0.03, 0.05 * h, 8), mat(0x7a6a40, { metalness: 0.5, roughness: 0.4 }), [0, above - 0.06 * h, 0]);
+    add(g, new THREE.CylinderGeometry(0.03, 0.03, 0.05 * h, 8), mat(0x7a6a40, { metalness: 0.2, roughness: 0.5 }), [0, above - 0.06 * h, 0]);
     point(g, 'grip', [0, 0, 0]);
     point(g, 'tip', [0, above, 0]);
     return g;
@@ -164,8 +166,8 @@ const MAKERS = {
     const leather = mat(0x2e221a, { roughness: 0.7 });
     const scabbard = add(g, new THREE.BoxGeometry(0.05, len, 0.022), leather, [0, -len / 2, 0]);
     scabbard.scale.set(1, 1, 1);
-    add(g, new THREE.BoxGeometry(0.058, 0.04, 0.03), mat(0x8a7a5a, { metalness: 0.5, roughness: 0.4 }), [0, -len + 0.02, 0]);
-    const steel = mat(0x9aa0a8, { metalness: 0.7, roughness: 0.35 });
+    add(g, new THREE.BoxGeometry(0.058, 0.04, 0.03), mat(0x8a7a5a, { metalness: 0.2, roughness: 0.5 }), [0, -len + 0.02, 0]);
+    const steel = mat(0xa8aeb6, { metalness: 0.25, roughness: 0.45 });
     add(g, new THREE.BoxGeometry(0.16, 0.022, 0.03), steel, [0, 0.012, 0]);
     add(g, new THREE.CylinderGeometry(0.014, 0.016, 0.09 * h, 7), mat(0x3a2a20), [0, 0.012 + 0.045 * h, 0]);
     add(g, new THREE.SphereGeometry(0.022, 8, 6), steel, [0, 0.012 + 0.09 * h + 0.012, 0]);
@@ -177,9 +179,9 @@ const MAKERS = {
     const r = 0.16 * h;
     const face = add(g, new THREE.CylinderGeometry(r, r, 0.03, 20), mat(0x6a2a22, { roughness: 0.65 }));
     face.rotation.x = Math.PI / 2;
-    const rim = add(g, new THREE.TorusGeometry(r, 0.012, 5, 24), mat(0x9a8a5a, { metalness: 0.6, roughness: 0.4 }));
+    const rim = add(g, new THREE.TorusGeometry(r, 0.012, 5, 24), mat(0x9a8a5a, { metalness: 0.2, roughness: 0.5 }));
     rim.position.z = 0.012;
-    add(g, new THREE.SphereGeometry(0.035, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xb0a070, { metalness: 0.6, roughness: 0.35 }), [0, 0, 0.015]).rotation.x = Math.PI / 2;
+    add(g, new THREE.SphereGeometry(0.035, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xb0a070, { metalness: 0.2, roughness: 0.45 }), [0, 0, 0.015]).rotation.x = Math.PI / 2;
     return g;
   },
   // a quiver of arrows, slung across the back, the fletchings over the shoulder
@@ -201,44 +203,71 @@ export function makeGear(kind, height) {
   return item;
 }
 
-// the body's depth and half-width at a height: its skin's bind-pose vertices
-// within a few centimetres of it, in `frame`'s space
+// the body's depth and width at a height: its skin's faces within a few
+// centimetres of it, where the skin puts them (three's own skinning, through
+// the bones and their inverses: a Meshy figure's mesh sits under an armature
+// scaled a hundredth, which only the skeleton undoes), in `frame`'s space.
+// By the shape, not by the bones: Meshy's weights give a chest's sides to the
+// forearms and its belly to the thighs. `left` and `right` are its sides out
+// to the first gap (a hand hanging by the hips is not its width), `back` and
+// `front` down its middle.
 const V = new THREE.Vector3();
 const M = new THREE.Matrix4();
-export const TRUNK = ['Hips', 'Spine02', 'Spine01', 'Spine', 'LeftUpLeg', 'RightUpLeg'];
-// a skinned vertex's bone, the one that carries it most
-const carrier = (o, i) => {
-  const si = o.geometry.attributes.skinIndex;
-  const sw = o.geometry.attributes.skinWeight;
-  let best = 0;
-  for (let k = 1; k < 4; k++) if (sw.getComponent(i, k) > sw.getComponent(i, best)) best = k;
-  return o.skeleton.bones[si.getComponent(i, best)]?.name ?? '';
-};
-export function bodyAt(model, y, frame = null, bones = TRUNK, band = 0.06) {
-  const trunk = new Set(bones);
-  let back = Infinity;
-  let front = -Infinity;
-  let half = 0;
+const BIN = 0.015;
+const GAP = 2;
+export function bodyAt(model, y, frame = null, band = 0.06) {
+  // each face's reach across the band: x from, x to, z from, z to
+  const spans = [];
   model.updateMatrixWorld(true);
   const toFrame = frame ? new THREE.Matrix4().copy(frame.matrixWorld).invert() : new THREE.Matrix4();
   model.traverse((o) => {
     // (the body alone: not what it already wears, nor the ink round it)
     if (!o.isMesh || o.userData.gear || o.userData.ink || !o.geometry?.attributes?.position) return;
-    const p = o.geometry.attributes.position;
-    const step = Math.max(1, Math.floor(p.count / 6000));
-    // (a skinned mesh's vertices where they're bound, its bones at rest: only the trunk's)
-    const skinned = o.isSkinnedMesh && o.skeleton && o.geometry.attributes.skinIndex && o.geometry.attributes.skinWeight;
+    const n = o.geometry.attributes.position.count;
     M.multiplyMatrices(toFrame, o.matrixWorld);
-    for (let i = 0; i < p.count; i += step) {
-      if (skinned && !trunk.has(carrier(o, i))) continue;
-      V.fromBufferAttribute(p, i).applyMatrix4(M);
-      if (Math.abs(V.y - y) > band) continue;
-      back = Math.min(back, V.z);
-      front = Math.max(front, V.z);
-      half = Math.max(half, Math.abs(V.x));
+    const at = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      o.getVertexPosition(i, V).applyMatrix4(M);
+      at[i * 3] = V.x;
+      at[i * 3 + 1] = V.y;
+      at[i * 3 + 2] = V.z;
+    }
+    const index = o.geometry.index;
+    const tris = Math.floor((index ? index.count : n) / 3);
+    for (let t = 0; t < tris; t++) {
+      const [i, j, k] = [0, 1, 2].map((c) => 3 * (index ? index.getX(t * 3 + c) : t * 3 + c));
+      if (Math.max(at[i + 1], at[j + 1], at[k + 1]) < y - band || Math.min(at[i + 1], at[j + 1], at[k + 1]) > y + band) continue;
+      spans.push(Math.min(at[i], at[j], at[k]), Math.max(at[i], at[j], at[k]), Math.min(at[i + 2], at[j + 2], at[k + 2]), Math.max(at[i + 2], at[j + 2], at[k + 2]));
     }
   });
-  return Number.isFinite(back) ? { back, front, half } : null;
+  if (!spans.length) return null;
+  const side = (sign) => {
+    const filled = new Set();
+    for (let s = 0; s < spans.length; s += 4) {
+      const lo = Math.max(0, Math.min(sign * spans[s], sign * spans[s + 1]));
+      const hi = Math.max(sign * spans[s], sign * spans[s + 1]);
+      for (let k = Math.floor(lo / BIN); k <= Math.floor(hi / BIN) && hi >= 0; k++) filled.add(k);
+    }
+    let last = -1;
+    for (let k = 0, empty = 0; empty < GAP; k++) {
+      if (filled.has(k)) {
+        last = k;
+        empty = 0;
+      } else empty++;
+    }
+    return (last + 1) * BIN;
+  };
+  const left = side(1);
+  const right = side(-1);
+  const mid = Math.max(BIN, 0.35 * Math.min(left, right));
+  let back = Infinity;
+  let front = -Infinity;
+  for (let s = 0; s < spans.length; s += 4) {
+    if (spans[s + 1] < -mid || spans[s] > mid) continue;
+    back = Math.min(back, spans[s + 2]);
+    front = Math.max(front, spans[s + 3]);
+  }
+  return Number.isFinite(back) ? { back, front, left, right, half: Math.max(left, right) } : null;
 }
 
 // a worn thing on its bone: where the body is at that bone's height (its
@@ -254,7 +283,7 @@ export function wear(model, item, { on, at }, height) {
   if (!body) return null;
   if (at === 'hip') {
     // (at the left hip, a little forward, the blade swept back)
-    item.position.set(Math.min(body.half, 0.2 * height) * 0.85, p.y + 0.02 * height, (body.back + body.front) / 2 + 0.03 * height);
+    item.position.set(Math.min(body.left, 0.2 * height) * 0.85, p.y + 0.02 * height, (body.back + body.front) / 2 + 0.03 * height);
     item.rotation.set(0.45, 0, 0.12);
   } else {
     // (on the back, flat to it, a little below the shoulders)

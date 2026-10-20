@@ -84,14 +84,36 @@ describe('the fellowship’s gear', () => {
     expect(shield.getWorldPosition(new THREE.Vector3()).distanceTo(was)).toBeGreaterThan(0.001);
   });
 
-  it('the body measured by its trunk alone: the hands hanging by the hips are not its width', () => {
+  it('the body measured by its shape: the hands hanging by it are not its width, and its skin is read through its bones', () => {
     const fig = figure();
-    // (the fixture's hands: skinned to the hands, out at the sides)
-    const hand = fig.model.getObjectByName('RightHand').getWorldPosition(new THREE.Vector3());
-    const all = bodyAt(fig.model, hand.y, fig.group, ['RightHand', 'LeftHand']);
-    const trunk = bodyAt(fig.model, hand.y, fig.group);
-    expect(all.half).toBeGreaterThan(0.2);
-    expect(trunk?.half ?? 0).toBeLessThan(all.half);
+    // (the fixture's hands: out at the sides, at the torso's height)
+    const hand = fig.model.getObjectByName('LeftHand').getWorldPosition(new THREE.Vector3());
+    const body = bodyAt(fig.model, hand.y, fig.group);
+    expect(body.left).toBeGreaterThan(0.18);
+    expect(body.left).toBeLessThan(0.25);
+    expect(body.right).toBeLessThan(0.25);
+    expect(body.back).toBeCloseTo(-0.12, 1);
+    // (a Meshy file's way: the skin under an armature scaled a hundredth, the bones'
+    // inverses undoing it, so the faces are where the skeleton puts them, not where the mesh is)
+    const rig = meshyRig();
+    rig.model.updateMatrixWorld(true);
+    const bones = Object.values(rig.bones);
+    const chest = bones.indexOf(rig.bones.Spine02);
+    const geometry = new THREE.BoxGeometry(0.4, 0.7, 0.24, 2, 8, 2).translate(0, 1.2, 0);
+    const n = geometry.attributes.position.count;
+    geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(Array.from({ length: n * 4 }, (_, k) => (k % 4 ? 0 : chest)), 4));
+    geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(Array.from({ length: n * 4 }, (_, k) => (k % 4 ? 0 : 1)), 4));
+    const skin = new THREE.SkinnedMesh(geometry, new THREE.MeshBasicMaterial());
+    const armature = new THREE.Group();
+    armature.scale.setScalar(0.01);
+    armature.add(skin);
+    rig.model.add(armature);
+    skin.bind(new THREE.Skeleton(bones), new THREE.Matrix4());
+    const group = new THREE.Group();
+    group.add(rig.model);
+    const skinned = bodyAt(rig.model, 1.2, group);
+    expect(skinned?.left).toBeCloseTo(0.2, 1);
+    expect(skinned.back).toBeCloseTo(-0.12, 1);
   });
 
   it('nothing worn on a bone a figure hasn’t, nor where no body is to wear it on', () => {
