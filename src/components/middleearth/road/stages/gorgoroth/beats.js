@@ -22,11 +22,13 @@ export const BEATS = [
   // the wind from the west: the sky brightening behind
   { id: 'wind', kind: 'wind', at: 74, hold: 0, rig: 'follow', reach: 14 },
   // Frodo can go no further: Sam carries him up the slope
-  { id: 'carry', kind: 'carry', at: 100, hold: 6, rig: 'ride', reach: 14, params: { offset: [0.7, 1.5, -1.4] }, deed: { verb: 'rhythm', label: 'Carry him up the Mountain', beats: 14, at: 0.5, clip: 'carryYou' } },
+  // (from beside: from behind, Frodo on his back hid Sam; from over them, the frame was ash)
+  { id: 'carry', kind: 'carry', at: 100, hold: 6, rig: 'side', reach: 14, deed: { verb: 'rhythm', label: 'Carry him up the Mountain', beats: 14, at: 0.5, clip: 'carryYou' } },
   // the Cracks of Doom: the ledge, the Ring on, Gollum, the finger, over
   { id: 'cracks', kind: 'cracks', at: 126, hold: 20, rig: 'seat', cut: 0, reach: 12, params: { at: CRACKS.camera, lookAt: CRACKS.look }, clip: 'myPrecious', fx: [{ kind: 'vision', at: 4, seconds: 6 }], deed: { verb: 'hold', label: 'Reach for Frodo’s hand', seconds: 3, at: 13, lines: ['gorgoroth-hand'] } },
   // the Mountain breaks, Barad-dûr falls, the Eye goes out
-  { id: 'eruption', kind: 'eruption', at: 146, hold: 8, rig: 'wide', reach: 14, params: { at: [-10, 3, 138], lookAt: [20, 30, 110], above: true }, clip: 'oneRing', fx: [{ kind: 'shake', at: 0.5, seconds: 4 }] },
+  // (from the slope's top, 3 m over it, looking up the lane between the Mountain, 9° right, and the Tower, 31°)
+  { id: 'eruption', kind: 'eruption', at: 146, hold: 8, rig: 'wide', reach: 14, params: { at: [-10, 27.5, 138], lookAt: [23.6, 46.6, 230.2] }, clip: 'oneRing', fx: [{ kind: 'shake', at: 0.5, seconds: 4 }] },
   // the Eagles: up and away west over the ruin
   { id: 'eagles', kind: 'eagles', at: 166, hold: 8, rig: 'ride', reach: 14, params: { offset: [0, 2.2, -5] } },
 ];

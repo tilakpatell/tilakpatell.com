@@ -3,6 +3,8 @@ import { BEATS } from './beats';
 import { sweepBeats } from '../fixtures/beats';
 import { CHANGES } from '../../fellowship';
 import { modeAt, stageById } from '../index';
+import { LANDMARKS } from '../ranges';
+import { MOUNT } from './place';
 
 describe('Gorgoroth’s beats', () => {
   sweepBeats('gorgoroth', BEATS);
@@ -12,12 +14,22 @@ describe('Gorgoroth’s beats', () => {
     const by = Object.fromEntries(BEATS.map((b) => [b.id, b]));
     expect(by.beam).toMatchObject({ rig: 'wide', cut: 0 });
     // (Sam's line once the visitor has carried Frodo up: the deed's)
-    expect(by.carry).toMatchObject({ rig: 'ride', deed: { verb: 'rhythm', clip: 'carryYou' } });
+    expect(by.carry).toMatchObject({ rig: 'side', deed: { verb: 'rhythm', clip: 'carryYou' } });
     expect(by.cracks.deed).toMatchObject({ verb: 'hold' });
     expect(by.cracks.deed.at).toBeLessThan(by.cracks.hold);
     expect(by.cracks).toMatchObject({ rig: 'seat', cut: 0, clip: 'myPrecious' });
     expect(by.cracks.hold).toBeGreaterThanOrEqual(20);
     expect(by.eruption).toMatchObject({ rig: 'wide', clip: 'oneRing' });
+    // (the eruption looks between the Mountain and the Tower, so both are in its frame)
+    const [cx, , cz] = by.eruption.params.at;
+    const [lx, , lz] = by.eruption.params.lookAt;
+    const bearing = (x, z) => (Math.atan2(x - cx, z - cz) * 180) / Math.PI;
+    const tower = LANDMARKS.gorgoroth.find((m) => m.kind === 'tower');
+    const towerAt = [Math.sin((tower.az * Math.PI) / 180) * tower.dist, Math.cos((tower.az * Math.PI) / 180) * tower.dist];
+    const look = bearing(lx, lz);
+    expect(look).toBeGreaterThan(bearing(MOUNT.at[0], MOUNT.at[2]));
+    expect(look).toBeLessThan(bearing(...towerAt));
+    expect(bearing(...towerAt) - bearing(MOUNT.at[0], MOUNT.at[2])).toBeLessThan(50);
     expect(by.eagles).toMatchObject({ rig: 'ride' });
   });
 

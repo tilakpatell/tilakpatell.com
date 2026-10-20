@@ -31,6 +31,7 @@ const ERUPT = 3; // s into the eruption the Mountain is ablaze
 const DOWN = MARKS.eruption.hold; // s the Tower takes to go down
 const SWOOP = [0, 4, 8]; // s into the Eagles' beat: in, down to the rock, away
 const CARRY_END = 120; // m: on foot again at the Sammath Naur's door (the stage's modes)
+const ON_BACK = [0.28, 0.42]; // m behind Sam and up: Frodo on his back (the chapter's)
 const COUNT = { high: 60, mid: 40, low: 24 };
 const PBR = ['roughness', 'metalness', 'envMap', 'envMapIntensity'];
 
@@ -187,13 +188,14 @@ export function build({ road, heightAt, rt, tier = 'high', backdrop = null }) {
     pose(id, at) {
       // (Gollum's figure is this stage's own: the line's is never drawn)
       if (id === 'gollum') return { hide: true };
-      // carried up the slope: Frodo on Sam's back (Sam's place as the last frame had it)
+      // carried up the slope, as the Mount Doom chapter has it: Sam in Frodo's place
+      // in the line (where the shot is), bent under him, Frodo on his back
       if (seen.local >= MARKS.carry.at && seen.local < CARRY_END) {
-        if (id === 'sam') {
+        if (id === 'frodo') {
           carrier.set(at.x, at.y, at.z);
-          return null;
+          return { x: at.x, y: at.y + ON_BACK[1], z: at.z - ON_BACK[0], yaw: 0, base: 'sit.ground', speed: 0 };
         }
-        if (id === 'frodo') return { x: carrier.x, y: carrier.y + 0.55, z: carrier.z - 0.15, yaw: 0, base: 'sit.ground', speed: 0 };
+        if (id === 'sam') return { x: carrier.x, y: carrier.y, z: carrier.z, yaw: 0, base: 'walk.carry', speed: 0 };
       }
       // in the Sammath Naur: Frodo at the spur's tip, unseen under the Ring, then over the edge; Sam behind him
       if (inCracks() && CRACKS[id]) {
