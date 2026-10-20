@@ -1,5 +1,6 @@
 /* ─── The universe map ───────────────────────────────────────────────────── */
 @import './hud.css';
+@import './thumbs.css';
 
 /* The flat map: Home's teaser and the 3D-off map */
 .minimap { position: relative; width: 100%; aspect-ratio: 2 / 1; }
@@ -147,11 +148,12 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 1.25rem;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--saber) 22%, var(--border));
   border-radius: var(--r-card);
   /* (no blur behind it: over a map that's redrawn every frame, a blur is
-     worked out afresh every frame, and at this opacity it barely shows) */
-  background: var(--hud-sheet-bg);
+     worked out afresh every frame, and at this opacity it barely shows. The
+     glass is the colour's own dark: styles/dialogs.css) */
+  background: var(--glass);
 }
 /* hide (in the panel's corner) and show (the whole bar, once it's away) */
 .universe-tuck {
@@ -1309,7 +1311,7 @@ body:has(.universe-panel) .guide-btn { display: none; }
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: calc(var(--nav-h) + 16px) 16px max(16px, env(safe-area-inset-bottom));
-  background: radial-gradient(ellipse at 40% 50%, rgb(3 4 10 / 0.45), rgb(3 4 10 / 0.8));
+  background: radial-gradient(ellipse at 40% 50%, color-mix(in srgb, var(--scrim-ink) 45%, transparent), color-mix(in srgb, var(--scrim-ink) 80%, transparent));
   animation: start-in var(--t-slow) var(--ease-out) both;
 }
 /* (from the width the panel stops being the phone's sheet: beside it, never on it) */
@@ -1318,9 +1320,9 @@ body:has(.universe-panel) .guide-btn { display: none; }
   width: min(600px, 100%);
   margin: auto;
   padding: clamp(1.25rem, 3.5vh, 2rem);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--saber) 22%, var(--border));
   border-radius: var(--r-card);
-  background: var(--hud-sheet-bg);
+  background: var(--glass);
   box-shadow: var(--shadow-dialog);
 }
 .start-title { color: var(--text); font-size: clamp(1.35rem, min(2.6vw, 4.6vh), 1.8rem); font-stretch: 112%; font-weight: 650; letter-spacing: -0.015em; line-height: 1.2; }

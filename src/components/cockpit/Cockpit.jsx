@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { RiArrowRightLine } from 'react-icons/ri';
-import { local, useReducedMotion } from '../../lib/hooks';
+import { local, prefersReducedMotion, useReducedMotion } from '../../lib/hooks';
 import { playFile } from '../../lib/clips';
 import { useMouth } from '../../lib/mouth';
 import { preloadVoiced, voicedSrc } from '../../lib/voiced';
@@ -133,7 +133,7 @@ export default function Cockpit({ start, onPeak, onDone }) {
       c = scene.run(canvas, {
         vehicle: id,
         veil: veil.current,
-        reduced: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
+        reduced: prefersReducedMotion(),
         onBoarded: (got) => setBoarded(got),
         onFirstFrame: () => delete document.documentElement.dataset.intro,
         onLine: say,

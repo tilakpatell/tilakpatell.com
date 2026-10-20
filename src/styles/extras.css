@@ -825,9 +825,9 @@ html.stand-ground main { animation: stand-ground 0.9s cubic-bezier(0.3, 0.7, 0.3
   --text: #f3f5f8; --text-body: #c9d1dc; --muted: #8b97a8;
   --accent: #e0322f; --accent-text: #ff6f61; --btn-bg: #c8161d; --btn-ink: #ffffff; --saber: #7fdcff; --nav-bg: #05070c;
   --route-plan: #2b3644; --shadow-card: 0 30px 60px -40px rgba(0, 0, 0, 0.9);
-  /* (dark ground, as in dark mode: shadows and a scrim are darkness, not the root’s mix of this pale --text, and the states are lifted, the root’s red being 2.8:1 here) */
+  /* (dark ground, as in dark mode: shadows and the scrim’s ink (styles/dialogs.css) are darkness, not this pale --text, and the states are lifted, the root’s red being 2.8:1 here) */
   --shadow-float: 0 18px 40px -20px rgb(0 0 0 / 0.7); --shadow-dialog: 0 24px 50px -24px rgb(0 0 0 / 0.75);
-  --shadow-ink: #000; --scrim: rgb(0 0 0 / 0.6); --ok: #5cd98a; --warn: #ffd35c; --danger: #ff8a8a; --ally: #8dffad;
+  --shadow-ink: #000; --scrim-ink: #000; --ok: #5cd98a; --warn: #ffd35c; --danger: #ff8a8a; --ally: #8dffad;
   --hud: #7fdcff;
   color-scheme: dark;
 }

@@ -13,7 +13,8 @@
 import * as THREE from 'three';
 import { createHorse } from '../../creatures/horse';
 import { createTownKit } from '../../townKit';
-import { deadTree, fallenTree, trolls as buildTrolls } from '../../../towns/weathertop/trollshaws';
+import { birchGeo, deadTree, fallenTree, pineGeo, trolls as buildTrolls } from '../../../towns/weathertop/trollshaws';
+import { rngOf } from '../../scatter';
 import { createNazgulKit } from '../../creatures/nazgul';
 import { BRIDGE, FORD, buildProps } from './props';
 import { BEATS } from './beats';
@@ -49,6 +50,32 @@ export function build({ road, heightAt, waters = [], rt, weather, tier = 'high' 
   trolls.group.rotation.y = CLEARING[2];
   trolls.group.scale.setScalar(1.05);
   group.add(trolls.group);
+  // the Trollshaws’ own trees, as the Weathertop chapter grows them: birches
+  // and pines either side of the road, out of the rivers and the trolls’ clearing
+  const woods = [];
+  {
+    const rng = rngOf(15);
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    const open = (x, z) => Math.abs(z - (BRIDGE.z[0] + BRIDGE.z[1]) / 2) < 10 || Math.abs(z - FORD.z) < 14 || Math.hypot(x - CLEARING[0], z - CLEARING[1]) < 8;
+    for (const [geo, n] of [[birchGeo(4), tier === 'low' ? 14 : 30], [pineGeo(9), tier === 'low' ? 8 : 16]]) {
+      const mesh = new THREE.InstancedMesh(geo, town.mats.tree, n);
+      for (let i = 0; i < n; i++) {
+        let x;
+        let z;
+        do {
+          x = (rng() < 0.5 ? -1 : 1) * (7 + rng() * 34);
+          z = rng() * 200;
+        } while (open(x, z));
+        const s = 0.55 + rng() * 0.35;
+        mesh.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z) - 0.1, z), q.setFromAxisAngle(up, rng() * 6.28), new THREE.Vector3(s, s, s)));
+      }
+      mesh.castShadow = true;
+      group.add(mesh);
+      woods.push(mesh);
+    }
+  }
   // dead and fallen trees by the road through the wood
   const trees = [];
   for (const [x, z, which, seed] of WOOD) {
@@ -208,6 +235,7 @@ export function build({ road, heightAt, waters = [], rt, weather, tier = 'high' 
       props.dispose();
       trolls.group.traverse((o) => o.geometry?.dispose());
       for (const t of trees) t.group.traverse((o) => o.geometry?.dispose());
+      for (const w of woods) w.geometry.dispose();
       asfaloth.dispose();
       for (const h of foam) h.dispose();
       kit.dispose();

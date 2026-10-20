@@ -45,13 +45,12 @@
      has them and a theme may set its own: all's well (online, sent), wait or
      take care, gone wrong or for good (a form's error, Remove), and the ally
      green (your allies and your party, as the map's tags have them). Each
-     reads 4.5:1 as text on every theme's grounds. The scrim is the shade under
-     a dialog that asks for the whole page, in the theme's own ink. */
+     reads 4.5:1 as text on every theme's grounds. (The shade under a dialog,
+     --scrim, is the colour's own: styles/dialogs.css.) */
   --ok: #116329;
   --warn: #7a5100;
   --danger: #b42318;
   --ally: #0b6e3a;
-  --scrim: color-mix(in srgb, var(--text) 40%, transparent);
   /* The ink a drop shadow is mixed from (each keeps its own size and depth),
      the ink on a saber ground (a selection), and what a primary button turns
      toward under the pointer. Read here, on the page's root, they take the
@@ -323,12 +322,11 @@ html[data-mode='dark'] {
   --shadow-float: 0 18px 40px -20px rgb(0 0 0 / 0.7);
   --shadow-dialog: 0 24px 50px -24px rgb(0 0 0 / 0.75);
   /* (the states lifted to read on the near black; the ally green is the map's
-     own; a scrim is darkness here too, never the pale ink) */
+     own) */
   --ok: #5cd98a;
   --warn: #ffd35c;
   --danger: #ff8a8a;
   --ally: #8dffad;
-  --scrim: rgb(0 0 0 / 0.6);
   --shadow-ink: #000;
   --saber-ink: #0f1111;
   --btn-shade: #000;
@@ -427,7 +425,6 @@ html[data-mode='dark'][data-theme='devspace'] { --surface: #070c14; --surface-2:
   --warn: #ffd35c;
   --danger: #ff8a8a;
   --ally: #8dffad;
-  --scrim: rgb(0 0 0 / 0.6);
   --shadow-ink: #000;
   --saber-ink: #0f1111;
   --btn-shade: #000;

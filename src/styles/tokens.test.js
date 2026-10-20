@@ -22,6 +22,9 @@ const SHEETS = [
   'index.css',
   'styles/extras.css',
   'styles/middleearth-themes.css',
+  'styles/dialogs.css',
+  'styles/feel.css',
+  'styles/lazy/settings.css',
   'styles/lazy/commandpalette.css',
   'styles/lazy/experience.css',
   'styles/lazy/home.css',
@@ -91,7 +94,7 @@ describe('the states and the inks', () => {
     const at = css.indexOf(`${selector} {`);
     return css.slice(at, css.indexOf('}', at));
   };
-  const STATES = ['--ok', '--warn', '--danger', '--ally', '--scrim', '--shadow-ink', '--saber-ink', '--btn-shade'];
+  const STATES = ['--ok', '--warn', '--danger', '--ally', '--shadow-ink', '--saber-ink', '--btn-shade'];
 
   it.each(['\n:root', "html[data-mode='dark']", '\n.dark-scope'])('%s sets every one', (selector) => {
     const text = block(selector);

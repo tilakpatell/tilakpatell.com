@@ -7,7 +7,7 @@ import Range from '../Range';
 import Dossier from '../Dossier';
 import HulkLab from '../HulkLab';
 import WebShooter from '../WebShooter';
-import { STONES } from '../../interests/stones';
+import { HALF_OF, stoneFor } from './labels';
 import { audioContext } from '../../../lib/audio';
 import { sayVoiced, stopVoiced } from '../../../lib/voiced';
 import { hasEarned } from '../hq/stones';
@@ -76,7 +76,8 @@ function ReactorToy() {
 }
 
 // The hangar without 3D: the Tesseract in its case, and the Space Stone's portal.
-function TesseractToy({ onPortal }) {
+// (the portal needs the Space Stone in every mode, and it's won in the 3D game)
+function TesseractToy({ onPortal, space }) {
   const [open, setOpen] = useState(false);
   return (
     <div>
@@ -114,7 +115,7 @@ function TesseractToy({ onPortal }) {
       <button
         type="button"
         className="btn btn-primary mt-6"
-        disabled={open}
+        disabled={open || !space}
         onClick={() => {
           setOpen(true);
           onPortal?.();
@@ -122,7 +123,7 @@ function TesseractToy({ onPortal }) {
       >
         Space
       </button>
-      <p className="mt-3 text-sm text-muted">The Space Stone opens a portal. Thanos is on the other side.</p>
+      <p className="mt-3 text-sm text-muted">{space ? 'The Space Stone opens a portal. Thanos is on the other side.' : 'The Space Stone opens a portal, and it’s won in the 3D game. Thanos is on the other side.'}</p>
     </div>
   );
 }
@@ -144,13 +145,12 @@ function Game({ id, onPortal }) {
     case 'spidey':
       return <Thwip fallback={<WebShooter />} />;
     case 'vault':
-      return <TesseractRun onPortal={onPortal} fallback={<TesseractToy onPortal={onPortal} />} />;
+      return <TesseractRun onPortal={onPortal} fallback={<TesseractToy onPortal={onPortal} space={hasEarned('space')} />} />;
     default:
       return null;
   }
 }
 
-const STONE_OF = { 'soul-clint': 'soul', 'soul-natasha': 'soul' };
 
 export default function Place({ id, onLeave, onPortal }) {
   const p = placeById(id);
@@ -173,9 +173,9 @@ export default function Place({ id, onLeave, onPortal }) {
     };
   }, []);
   if (!p) return null;
-  const stone = p.stone ? STONES.find((s) => s.id === (STONE_OF[p.stone] ?? p.stone)) : null;
+  const stone = stoneFor(p);
   const won = p.stone ? hasEarned(p.stone) : false;
-  const half = p.stone?.startsWith('soul-') ? (p.id === 'hawkeye' ? 'Clint’s half of the ' : 'Natasha’s half of the ') : 'the ';
+  const half = HALF_OF[p.stone] ? `${HALF_OF[p.stone]} half of the ` : 'the ';
   // on the body, so nothing on the page (the nav, a transition) sits over it
   return createPortal(
     <div className="cw-place" role="dialog" aria-modal="true" aria-labelledby="cw-place-title" style={{ '--cw-accent': p.accent }}>

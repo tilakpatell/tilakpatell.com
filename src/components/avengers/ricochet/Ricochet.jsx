@@ -3,6 +3,7 @@ import HQFrame from '../hq/HQFrame';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
 import { earnStone, hasEarned } from '../hq/stones';
+import { stoneById } from '../world/labels';
 import { useAchievements } from '../../Achievements';
 import { use3D } from '../../../lib/gpu';
 import { local } from '../../../lib/hooks';
@@ -294,7 +295,7 @@ export default function Ricochet({ fallback }) {
                 {ui.result.catches ? ` · caught it ${ui.result.catches === 1 ? 'once' : `${ui.result.catches} times`}` : ''}.
               </p>
               {ui.result.stone && (
-                <p className="hq-stone" style={{ '--glow': '#ffd400' }}>
+                <p className="hq-stone" style={{ '--glow': stoneById('mind').color }}>
                   <span className="stone-dot" aria-hidden="true" />
                   The Mind Stone is yours, out of Loki’s sceptre.
                 </p>

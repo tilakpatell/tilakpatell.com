@@ -1,6 +1,4 @@
-/* ─── A world asking before it downloads its 3D (WorldGate.jsx) ───
-   The house .notice’s drawing (the tour’s offer beside it is one): light on a
-   light page, dark in the dark, in the theme’s radius and ink, over any world. */
+/* ─── A world asking before it downloads its 3D (WorldGate.jsx) ─── */
 
 .world-gate {
   position: fixed;
@@ -11,21 +9,23 @@
   max-width: 30rem;
   margin-inline: auto;
   padding: 1rem 1.1rem 1.05rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--r-panel);
-  color: var(--text);
-  background: var(--surface);
-  box-shadow: var(--shadow-float);
+  border: 1px solid color-mix(in srgb, var(--saber) 24%, rgb(255 255 255 / 0.16));
+  border-radius: min(var(--r-card), 14px);
+  color: #e9edf3;
+  background: var(--glass); /* the colour's own dark: styles/dialogs.css */
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.55);
   animation: world-gate-in 0.35s var(--ease-out);
 }
-.world-gate-title { display: flex; align-items: center; gap: 0.45rem; padding-right: 2rem; font-weight: 650; font-size: 1rem; line-height: 1.3; color: var(--text); }
-.world-gate-title svg { flex: none; font-size: 1.15rem; color: var(--accent-text); }
-.world-gate-text { margin-top: 0.4rem; font-size: 0.88rem; line-height: 1.5; color: var(--text-body); }
+.world-gate-title { display: flex; align-items: center; gap: 0.45rem; padding-right: 2rem; font-weight: 650; font-size: 1rem; line-height: 1.3; color: #fff; }
+.world-gate-title svg { flex: none; font-size: 1.15rem; color: var(--accent-text, #ffd28c); }
+.world-gate-text { margin-top: 0.4rem; font-size: 0.88rem; line-height: 1.5; color: rgba(233, 237, 243, 0.8); }
 .world-gate-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.6rem; margin-top: 0.85rem; }
-.world-gate-always { min-height: 36px; padding: 0 0.25rem; font-size: 0.8rem; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
-.world-gate-always:hover { color: var(--text); }
-.world-gate-x { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 999px; font-size: 20px; color: var(--muted); }
-.world-gate-x:hover { color: var(--text); background: var(--surface-2); }
+.world-gate-actions .btn-ghost { background: rgba(255, 255, 255, 0.06); color: #fff; border-color: rgba(255, 255, 255, 0.3); }
+.world-gate-actions .btn-ghost:hover { background: rgba(255, 255, 255, 0.14); }
+.world-gate-always { min-height: 36px; padding: 0 0.25rem; font-size: 0.8rem; color: rgba(233, 237, 243, 0.72); text-decoration: underline; text-underline-offset: 3px; }
+.world-gate-always:hover { color: #fff; }
+.world-gate-x { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; font-size: 20px; color: rgba(233, 237, 243, 0.7); }
+.world-gate-x:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
 .world-gate-pill {
   position: fixed;
   z-index: var(--z-sheet);
@@ -37,29 +37,28 @@
   gap: 0.4rem;
   min-height: 40px;
   padding: 0 0.9rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--r-btn);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
   font: 600 0.78rem/1 var(--font-mono);
-  color: var(--text);
-  background: var(--surface);
-  box-shadow: var(--shadow-float);
+  color: #fff;
+  background: rgba(7, 9, 14, 0.88);
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.5);
 }
-.world-gate-pill:hover { background: var(--surface-2); }
-.world-gate :focus-visible, .world-gate-pill:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.world-gate-pill:hover { background: rgba(20, 24, 34, 0.94); }
+.world-gate :focus-visible, .world-gate-pill:focus-visible { outline: 2px solid var(--accent-text, #ffd28c); outline-offset: 2px; }
 /* the install's bar (InstallCard.jsx) */
 .install-bar-wrap { margin-top: 0.75rem; }
-.install-bar { height: 8px; overflow: hidden; border-radius: 999px; background: var(--border); }
-.install-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--accent-text); transition: width 0.2s linear; }
-.install-bar-text { margin-top: 0.35rem; font: 500 0.78rem/1.3 var(--font-mono); color: var(--muted); }
-.world-gate-error { color: var(--danger); }
+.install-bar { height: 8px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.12); }
+.install-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--accent-text, #ffd28c); transition: width 0.2s linear; }
+.install-bar-text { margin-top: 0.35rem; font: 500 0.78rem/1.3 var(--font-mono); color: rgba(233, 237, 243, 0.78); }
+.world-gate-error { color: #ffb4a8; }
 /* a desktop's offer to install a heavy world: the pill and its close */
 .world-gate-pill-row { position: fixed; z-index: var(--z-sheet); right: calc(68px + env(safe-area-inset-right)); bottom: calc(23px + env(safe-area-inset-bottom)); display: inline-flex; align-items: center; gap: 0.25rem; }
 .world-gate-pill-row .world-gate-pill { position: static; }
-/* (edged like its pill: a bare white disc would vanish over a pale world) */
-.world-gate-pill-x { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--border-strong); border-radius: var(--r-btn); font-size: 16px; color: var(--muted); background: var(--surface); }
-.world-gate-pill-x:hover { color: var(--text); }
+.world-gate-pill-x { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px; font-size: 16px; color: rgba(233, 237, 243, 0.8); background: rgba(7, 9, 14, 0.8); }
+.world-gate-pill-x:hover { color: #fff; }
 .world-gate-pill-busy { cursor: default; }
-.world-gate-pill-x:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.world-gate-pill-x:focus-visible { outline: 2px solid var(--accent-text, #ffd28c); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .install-bar > span { transition: none; } }
 @keyframes world-gate-in { from { opacity: 0; transform: translateY(16px); } }
 @media (prefers-reduced-motion: reduce) { .world-gate { animation: none; } }
@@ -74,9 +73,9 @@
 /* the graphics hint (GpuHint.jsx): the gate's panel at the top, clear of
    the install card and the pill at the foot */
 .world-gpu-hint { top: calc(var(--page-top, 4rem) + 8px); bottom: auto; }
-.world-gpu-steps { margin-top: 0.5rem; padding-left: 1.1rem; list-style: decimal; font-size: 0.85rem; line-height: 1.5; color: var(--text-body); }
+.world-gpu-steps { margin-top: 0.5rem; padding-left: 1.1rem; list-style: decimal; font-size: 0.85rem; line-height: 1.5; color: rgba(233, 237, 243, 0.8); }
 .world-gpu-steps li + li { margin-top: 0.35rem; }
-.world-gpu-steps code { font: 500 0.8rem/1.4 var(--font-mono); overflow-wrap: anywhere; color: var(--text); }
+.world-gpu-steps code { font: 500 0.8rem/1.4 var(--font-mono); overflow-wrap: anywhere; color: #fff; }
 .world-gpu-copy { margin-top: 0.3rem; }
-/* (muted, as the unfit card’s own text is; the gate’s steps read as its body) */
 .world-unfit .world-gpu-steps { color: var(--muted); }
+.world-unfit .world-gpu-steps code { color: var(--text); }

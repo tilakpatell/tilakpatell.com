@@ -5,7 +5,8 @@
 // dark lid coming from one side. Every number is a uniform, so the ride
 // changes the sky without a recompile. Under the Ring (`vision`, hooks.js’s
 // uVision) the clouds stretch into streaks along the vision’s wind and race,
-// and the sky drains toward a cold grey.
+// and the sky drains toward a cold grey. In a storm (`murk`) the dome is
+// lost in the fog.
 //
 //   createSky({ radius, vision }) → { mesh, uniforms, set(light), wind(angle), update(camera, dt), dispose }
 
@@ -32,6 +33,7 @@ export function createSky({ radius = 2500, vision = uniform(0) } = {}) {
     seed: uniform(new THREE.Vector3(3.1, 7.7, 1.3)),
     vision,
     windDir: uniform(new THREE.Vector2(1, 0)),
+    murk: uniform(0),
   };
   const { noise, hash13 } = noiseWith(u.seed, { octaves: 3 });
 
@@ -65,6 +67,8 @@ export function createSky({ radius = 2500, vision = uniform(0) } = {}) {
     const lid = smoothstep(-0.4, 0.6, dot(dir, normalize(u.pallFrom)).add(up.mul(0.6))).mul(u.pall);
     sky.assign(mix(sky, vec3(LID.r, LID.g, LID.b).add(u.sunCol.mul(0.04)), lid.clamp(0, 0.95)));
     sky.assign(mix(sky, vec3(0.55, 0.6, 0.7).mul(dot(sky, vec3(0.2126, 0.7152, 0.0722)).mul(1.3)), u.vision.mul(0.7)));
+    // a storm’s murk: the whole dome lost in the fog’s colour (the white-out on the Redhorn)
+    sky.assign(mix(sky, u.horizon, u.murk));
     // under the horizon: the haze, darker downward
     return mix(u.horizon.mul(0.7), sky, step(float(0), dir.y).max(smoothstep(-0.08, 0.0, dir.y)));
   });
@@ -89,6 +93,7 @@ export function createSky({ radius = 2500, vision = uniform(0) } = {}) {
       u.stars.value = light.stars;
       u.pall.value = light.pall.amount;
       u.pallFrom.value.set(...light.pall.from);
+      u.murk.value = light.murk ?? 0;
     },
     wind(angle) {
       u.windDir.value.set(Math.cos(angle), Math.sin(angle));

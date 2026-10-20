@@ -31,7 +31,9 @@ export function buildProps({ K, heightAt }) {
   group.name = 'weathertop:props';
   // Amon Sûl’s ruin on the crown
   const amonSul = ruin(K, RUIN);
-  amonSul.group.position.set(RING.at[0], heightAt(...RING.at) - 0.1, RING.at[1]);
+  // (its floor at the road’s height where the road crosses it: the road is
+  // levelled along its own line, a little under the crown’s pad)
+  amonSul.group.position.set(RING.at[0], heightAt(0, RING.at[1]) - 0.12, RING.at[1]);
   amonSul.group.rotation.y = RING.yaw;
   amonSul.group.scale.setScalar(RING.scale);
   group.add(amonSul.group);

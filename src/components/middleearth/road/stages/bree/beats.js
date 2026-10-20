@@ -17,7 +17,8 @@ export const BEATS = [
   // is the chapter’s Pony’s door here: its walls are closed)
   { id: 'pony', kind: 'pony', at: 82, hold: 12, rig: 'seat', reach: 14, params: { at: [1.4, 1.6, 86.5], lookAt: [-3.4, 1.5, 93.6], above: true }, lines: ['bree-pony'] },
   // the Riders: four through the gate at a gallop, the blades in the beds
-  { id: 'riders', kind: 'riders', at: 108, hold: 10, rig: 'wide', cut: 0, reach: 14, params: { at: [3.6, 6.5, 116], lookAt: [0, 1.8, 40], above: true }, clip: 'nazgul' },
+  // (from over the lane at the Pony’s end, down it to the gate: the eaves either side)
+  { id: 'riders', kind: 'riders', at: 108, hold: 10, rig: 'wide', cut: 0, reach: 14, params: { at: [0.2, 7.2, 121], lookAt: [0, 1.6, 48], above: true }, clip: 'nazgul' },
   // grey morning: Strider takes them out by the back way
   { id: 'dawn', kind: 'dawn', at: 134, hold: 0, rig: 'lead', reach: 16, lines: ['bree-dawn'] },
 ];
