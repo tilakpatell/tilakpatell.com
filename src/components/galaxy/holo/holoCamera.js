@@ -2,7 +2,9 @@
 // galaxy's plane it looks at ([x, z] in map units, systems.js's), how far it's turned round it (yaw: 0 has the
 // north at the top, as the 2D map), how steeply it looks down (pitch, radians up from the plane) and how far off
 // it is (dist, grid squares). The world the scene draws is the map's own units with the core at the origin, y up:
-// [x - CORE.x, lift, z - CORE.z]. Zoomed in it tilts toward the plane, as Helldivers 2's sectors do. Pure, tested.
+// [x - CORE.x, lift, z - CORE.z]. The map is flat: seen straight down at every distance, a sector opened too, and the
+// hands turn it round and never tip it (the owner, 2026-10-20: tilted, at 64° and then 79°, it read worse). Pure,
+// tested.
 //
 //   WHOLE(aspect, fov, { fx, fy }) → the pose that shows the whole disc: as close as it can be with every point of the
 //     rings' bulged edge within the screen's middle fx of its width and fy of its height (the rest under the side panel,
@@ -11,7 +13,7 @@
 //   project(pose, [x, y, z], { aspect, fov }) → the screen's normalised point (−1 … 1, y up) of a world point, and its
 //     depth along the view (negative: behind)
 //   eye(pose) → { at: [x, y, z], look: [x, 0, z] } the camera's place and the point it looks at, in the world
-//   pitchFor(dist) → the tilt a distance looks down at
+//   pitchFor(dist) → the tilt a distance looks down at (straight down at every one)
 //   lensOf({ w, h }, { top, right, bottom }) → the frame the camera draws in so the disc's middle is the free part's
 //     (the stage less the header over its top, the side panel at its right or the sheet along its foot): { W, H } that
 //     frame's size, { x, y } where the stage is in it, its aspect, and fx, fy the free part's share of it
@@ -31,13 +33,13 @@ import { CORE, RIM, edgeAt } from '../systems';
 export const FOV = 38; // (degrees, the vertical field of view)
 export const NEAR = 2.2; // (the nearest it comes, grid squares)
 export const FAR = 90; // (the furthest: a phone's narrow window, standing off to fit the disc's width)
-export const LOW = 0.62; // (the shallowest look, radians: 35°)
-export const HIGH = 1.52; // (and the steepest: 87°)
-// (the whole disc seen almost straight down, as Helldivers 2's galaxy is: round, its rings' and sides' names upright, the
-// near side no bigger than the far by more than a seventh; at 64° the near side loomed and the names along the east and
-// west lay on their sides)
-const TOP = 1.38; // (79°)
-const CLOSE = 0.82; // (close in: 47°)
+// (straight down, as the flat map is: round, its names upright, the near side no bigger than the far; a hair short of
+// it, so the camera's turn still says which way is up the screen)
+const FLAT = Math.PI / 2 - 0.002;
+export const LOW = FLAT; // (the shallowest look, and the steepest: the same, so a turn never tips it)
+export const HIGH = FLAT;
+const TOP = FLAT; // (the whole disc's)
+const CLOSE = FLAT; // (and close in)
 const REACH = RIM + 1.5; // (how far from the core its point may go)
 
 const deg = (d) => (d * Math.PI) / 180;

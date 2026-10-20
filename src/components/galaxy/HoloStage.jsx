@@ -10,9 +10,9 @@ import './holo.css';
 // The holotable's stage (docs/superpowers/specs/2026-10-19-galaxy-holotable-design.md): the whole window, under
 // HoloMap.jsx's glass panels, that the hands work on while the galaxy's scene draws the map in 3D behind it
 // (holo/drive.js). As Helldivers 2 has it, the whole galaxy is its sectors: a press on one with systems in it opens it
-// (the camera flies in and leans away, its systems and their names come in), the crumb over the map or Escape shuts it,
+// (the camera flies in, the map flat, its systems and their names come in), the crumb over the map or Escape shuts it,
 // and a press on a system in it picks it (a second, as on the 2D map, jumps). A drag slides the plane; a right drag
-// (or one with Shift or Ctrl) turns it and tips it, as two fingers twisting do; a wheel or a pinch zooms about the
+// (or one with Shift or Ctrl) turns it round, as two fingers twisting do; a wheel or a pinch zooms about the
 // pointer. Every system is a button here (Tab goes through the open sector's, a screen reader reads them), put where
 // its system is each frame by the scene (holo/holoScene.js) and named only where there's room; the hover card rides in
 // the hovered one's, a sector's follows the pointer. `stage` (a ref) gets the zoom and turn buttons' (HoloMap.jsx's, in
@@ -22,7 +22,6 @@ const STEP = 1.5; // (a button's or a key's zoom)
 const DRAG = 5; // (px a press moves before it's a drag, not a pick)
 const TURN = 0.006; // (radians a pixel, turning)
 const TURN_STEP = Math.PI / 8; // (a turn button's or a key's: 22.5°)
-const SECTOR_PITCH = 1.0; // (an open sector's tilt: 57°, the plane leaning away as Helldivers 2's sector view has it, not so far its far edge is lost)
 
 // the camera's moves, by what the stage measured (the link's size and inset): made once a link
 function cameraOf(holo) {
@@ -60,11 +59,11 @@ function cameraOf(holo) {
     zoomBy: (f, x, y) => holo.aim(zoomAt(holo.target, f, x === undefined ? null : under(x, y))),
     // the map point under a screen point as it's drawn now: what a press or the pointer is over
     seen: (x, y) => planeAt(holo.pose, ...norm(x, y), { aspect: frameOf().aspect, fov: FOV }),
-    // a sector opened: its edge and its systems fitted to the free part, the plane leaning away
+    // a sector opened: its edge and its systems fitted to the free part, the map flat as ever
     open(id, now = false) {
       const f = frameOf();
       const pts = [...outline(sectorById(id), 6), ...systemsIn(id).map((s) => s.pos)];
-      fitted = fitTo(holo.target, pts, { aspect: f.aspect, fov: FOV, fx: f.fx, fy: f.fy, pitch: SECTOR_PITCH });
+      fitted = fitTo(holo.target, pts, { aspect: f.aspect, fov: FOV, fx: f.fx, fy: f.fy });
       refit = () => this.open(id);
       (now ? holo.snap : holo.aim)(fitted);
     },

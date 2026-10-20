@@ -549,6 +549,8 @@ export function createHoloScene({ small = false, reduced = false } = {}) {
       // (a star's size is in the page's pixels: the device's follow the ratio drawn at)
       sky.mat.uniforms.uRatio.value = ratio;
       far.mat.uniforms.uRatio.value = ratio;
+      // (the grid squares a pixel covers where it looks, for the marks' size on the screen)
+      marks.fit((2 * Math.tan((FOV * Math.PI) / 360) * link.pose.dist) / Math.max(1, lens.H));
       const t = reduced ? 0 : now / 1000;
       sectors.mat.uniforms.uTime.value = t;
       marks.animate(t);
