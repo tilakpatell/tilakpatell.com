@@ -585,11 +585,13 @@ const SCENARIOS = {
     await use(page, 'shopclock');
     await caught(page, 1600.9);
     check((await game(page, 'needful', 'deal')).phase === 'idle' && !(await done(page)).includes('needful'), 'a cursed thing taken counted');
-    // dealt afresh: the mirror the clean one, looked over and taken
-    await page.evaluate(() => window.__C137__.api.act('needful', 'setDeal', { bad: ['typewriter', 'aftershave', 'cream', 'shopclock'] }));
-    await warpUse(page, 'needful', 'shopmirror', -397.6, 1595.6, N);
-    await seen('shopmirror', 'good');
-    await use(page, 'shopmirror');
+    // dealt afresh: the mirror the clean one, looked over and taken by two presses in one frame (both count)
+    await page.evaluate(() => {
+      const act = (...a) => window.__C137__.api.act('needful', ...a);
+      act('setDeal', { bad: ['typewriter', 'aftershave', 'cream', 'shopclock'] });
+      act('deal-shopmirror');
+      act('deal-shopmirror');
+    });
     await toast(page, 'Take something free from Mr. Needful');
     await at(page, 5, 1, 'after Needful Things');
     await reads(page, DEALS.steps[1].text);

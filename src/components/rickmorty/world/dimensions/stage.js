@@ -24,7 +24,7 @@ import { createNpcs } from '../npc';
 import { attend } from '../living';
 import { TUNING as POWER, newPower, powerNews, powerReadout, stepPower } from '../games/power';
 import { curse, dealNews, dealReadout, newDeal, stepDeal } from '../games/deal';
-import { freezeEyes, freezeNews, freezeReadout, moving, newFreeze, stepFreeze, takesJump } from '../games/freeze';
+import { freezeEyes, freezeNews, freezeReadout, jumpSplashes, moving, newFreeze, stepFreeze } from '../games/freeze';
 
 // a speckled paint for a floor or the ground
 export const specks = (base, specks, seed = 7, n = 1600, size = 2) => (g, w, h) => speckle(g, w, h, { base, specks, n, size, seed });
@@ -150,8 +150,10 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   let jumped = false;
   let splash = null;
   let granted = false;
+  let finished = false; // (its task done: the vat's just a vat to jump in)
   const freezing = (dt, state) => {
     const done = (state.done ?? []).includes(fz.task);
+    finished = done;
     if (done && fz.unlock && !granted && !state.fading) {
       granted = true;
       state.emit?.('done', { area: id, task: fz.task, unlock: fz.unlock });
@@ -270,8 +272,8 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     if (still)
       Object.assign(area.actions, {
         'freeze-in': () => {
-          // (the vat splashes only for a jump that takes him in)
-          if (takesJump(still)) splash?.();
+          // (the vat splashes for a jump that takes him in, or any once its task's done)
+          if (jumpSplashes(still, { done: finished })) splash?.();
           jumped = true;
         },
         freeze: () => ({ phase: still.phase, eyes: still.eyes, left: still.left, len: still.len, beat: still.beat }),

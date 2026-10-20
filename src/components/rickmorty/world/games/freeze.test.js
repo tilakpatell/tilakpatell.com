@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TUNING, freezeEyes, freezeNews, freezeReadout, moving, newFreeze, stepFreeze, takesJump } from './freeze';
+import { TUNING, freezeEyes, freezeNews, freezeReadout, jumpSplashes, moving, newFreeze, stepFreeze, takesJump } from './freeze';
 
 const DT = 0.05;
 // `s` seconds of steps with this input, the events gathered
@@ -80,6 +80,14 @@ describe('the freeze kind: play dead while the buyers look', () => {
     expect(takesJump(hold(started(), TUNING.away[0] + 0.1).g)).toBe(false); // (turning)
     expect(takesJump(stepFreeze(started(), { jumped: true }, DT))).toBe(false); // (in already)
     expect(takesJump(null)).toBe(false);
+  });
+
+  it('splashes the vat for a jump that takes him in, and for any jump once the death’s been faked', () => {
+    expect(jumpSplashes(started(), { done: false })).toBe(true);
+    expect(jumpSplashes(hold(started(), TUNING.away[0] + 0.1).g, { done: false })).toBe(false); // (turning: a catch, no splash)
+    expect(jumpSplashes(newFreeze(), { done: false })).toBe(false);
+    // (its task done: the game's idle, and the vat's just a vat to jump in)
+    expect(jumpSplashes(newFreeze(), { done: true })).toBe(true);
   });
 
   it('gives him a moment to settle in the vat before it judges him', () => {

@@ -14,6 +14,8 @@
 //     events: start | in | won | lost { why: 'moved' | 'jumped' }
 //   moving(morty) → whether he's moving (his speed, or off the ground)
 //   takesJump(game) → whether a jump now would take him in (their backs turned)
+//   jumpSplashes(game, { done }) → whether the vat splashes for a jump now (one
+//     that takes him in, or any once the task's done and the vat's just a vat)
 //   freezeEyes(game) → null | 'away' | 'look' | 'seen'   for the buyers' figures
 //   freezeNews(game, { done, fading }) → 'done' | 'caught' | null   what the place says
 //   freezeReadout(snapshot) → { on, vitals, line }   for the HUD's meter
@@ -40,6 +42,8 @@ const LINES = {
 export const moving = (m) => Boolean(m) && ((m.speed ?? 0) > TUNING.still || Boolean(m.air));
 
 export const takesJump = (g) => g?.phase === 'run' && g.eyes === 'away';
+
+export const jumpSplashes = (g, { done = false } = {}) => done || takesJump(g);
 
 // (the options may carry `perks`; none is read yet)
 export function newFreeze() {
