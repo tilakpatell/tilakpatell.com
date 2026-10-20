@@ -50,22 +50,27 @@ function hull({ length, beam, depth, sheer }) {
   return g;
 }
 
-// the swan's neck up out of the prow, its head and its golden beak
-function swan(length) {
-  const bow = length / 2;
-  const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0.3, bow - 0.6), new THREE.Vector3(0, 1.8, bow + 0.4), new THREE.Vector3(0, 3.4, bow + 0.1), new THREE.Vector3(0, 4.1, bow - 0.7), new THREE.Vector3(0, 4.0, bow - 1.3)]);
-  const neck = new THREE.TubeGeometry(curve, 24, 0.22, 8, false);
-  // (thinning toward the head)
-  const p = neck.attributes.position;
+// a tube along points, thinning by `thin` toward its end
+function tapered(points, radius, thin) {
+  const curve = new THREE.CatmullRomCurve3(points.map((q) => new THREE.Vector3(...q)));
+  const tube = new THREE.TubeGeometry(curve, 24, radius, 8, false);
+  const p = tube.attributes.position;
   const v = new THREE.Vector3();
   for (let i = 0; i < p.count; i++) {
     v.fromBufferAttribute(p, i);
     const u = Math.floor(i / 9) / 24;
     const c = curve.getPoint(Math.min(1, u));
-    v.sub(c).multiplyScalar(1 - 0.45 * u).add(c);
+    v.sub(c).multiplyScalar(1 - thin * u).add(c);
     p.setXYZ(i, v.x, v.y, v.z);
   }
-  neck.computeVertexNormals();
+  tube.computeVertexNormals();
+  return tube;
+}
+
+// the swan's neck up out of the prow, its head and its golden beak
+function swan(length) {
+  const bow = length / 2;
+  const neck = tapered([[0, 0.3, bow - 0.6], [0, 1.8, bow + 0.4], [0, 3.4, bow + 0.1], [0, 4.1, bow - 0.7], [0, 4.0, bow - 1.3]], 0.22, 0.45);
   return [
     part(neck, C(WHITE)),
     part(new THREE.SphereGeometry(0.34, 10, 8), C(WHITE), { at: [0, 4.05, bow - 1.35], scale: [1, 0.85, 1.25] }),
@@ -88,8 +93,8 @@ function buildShip(road) {
     // the rail along each side, silver
     ...[-1, 1].map((s) => part(new THREE.BoxGeometry(0.08, 0.08, length * 0.72), C(SILVER), { at: [s * beam * 0.4, deckY + 0.75, 0] })),
     ...swan(length).map((g) => g.translate(0, deckY, 0)),
-    // the stern post curling up
-    part(new THREE.TorusGeometry(0.9, 0.16, 6, 14, Math.PI * 1.2), C(WHITE), { at: [0, deckY + 1.6, -length / 2 + 0.6], yaw: Math.PI / 2 }),
+    // the stern post: rising out of her stern and curling over toward the deck, thinning to its tip
+    part(tapered([[0, 0.2, -length / 2 + 0.7], [0, 1.4, -length / 2 - 0.1], [0, 2.5, -length / 2 + 0.1], [0, 2.9, -length / 2 + 0.8], [0, 2.55, -length / 2 + 1.25]], 0.17, 0.7), C(WHITE), { at: [0, deckY, 0] }),
     // the mast and its yard
     part(new THREE.CylinderGeometry(0.11, 0.16, 12, 8), C(SILVER), { at: [0, deckY + 6, 0.8] }),
     part(new THREE.CylinderGeometry(0.07, 0.07, 7.6, 6), C(SILVER), { at: [0, deckY + 10.6, 1], roll: Math.PI / 2 }),
