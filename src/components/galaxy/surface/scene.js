@@ -75,6 +75,7 @@ import { audioContext } from '../../../lib/audio';
 import { SURFACE_MODELS } from './catalog';
 import { HALF, heightGrid, makeHeight } from './terrain';
 import { createRoam, roamGround, roamOn } from './roam';
+import { regionsAround, waysideAt } from './wayside';
 import { createMarks, groundGeometry, groundMaterial, groundMesh } from './ground';
 import { lavaFilm } from './lavaFilm';
 import { floatPose } from './floats';
@@ -559,6 +560,24 @@ export async function create(canvas, ctx) {
           living?.relay();
         },
       })
+    : null;
+  // and what you come on out there (wayside.js): each region's place put in
+  // as it comes within sight, on the land's own height (the ground as it
+  // will be drawn when you get there), never taken back
+  const SIGHT = 1600;
+  const seen = new Set();
+  let looked = null;
+  const comeOn = roaming
+    ? (x, z) => {
+        if (looked && Math.hypot(x - looked[0], z - looked[1]) < 100) return;
+        looked = [x, z];
+        for (const [rx, rz] of regionsAround(x, z, SIGHT)) {
+          const key = `${rx},${rz}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          for (const t of waysideAt(site, rx, rz)?.things ?? []) placer.put({ ...t, abs: true, y: height(t.at[0], t.at[1]) });
+        }
+      }
     : null;
   // (and its biome's birds, over its places: flocks.js)
   const flocks = createFlocks(site.air?.flocks, { heightAt: world.heightAt, reduced });
@@ -3615,6 +3634,7 @@ export async function create(canvas, ctx) {
     life.update(dt, state.phase === 'walk' ? me().st : null, state.phase === 'walk' || state.phase === 'ride' ? me().st : camera.position);
     placer.update(t, dt, me().st);
     roam?.update(me().st.x, me().st.z);
+    comeOn?.(me().st.x, me().st.z);
     living?.update(me().st.x, me().st.z, camera, dt);
     flocks?.update(dt);
     gameLevel?.update([me().st.x, me().st.z]);
