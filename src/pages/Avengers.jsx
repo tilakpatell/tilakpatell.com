@@ -74,6 +74,7 @@ export default function Avengers() {
   const { unlock, notify } = useAchievements();
   const earned = useStones();
   const titan = useRef(null);
+  const stageEl = useRef(null); // Titan's panel, which the snap brings into view
   const [portal, setPortal] = useState(false);
   const [arrived, setArrived] = useState(false);
   const [summary, setSummary] = useState(null); // the heist's, raised by Tony's snap
@@ -118,6 +119,11 @@ export default function Avengers() {
   const all = gate.ready;
   const doSnap = () => {
     if (!gate.ready) return;
+    // (on a phone the panel is above the button, and its frames only run on
+    // screen: brought to the middle, clear of the bar and the toast, the dust
+    // plays where it's seen)
+    const box = stageEl.current?.getBoundingClientRect();
+    if (box && (box.top < 0 || box.bottom > window.innerHeight)) stageEl.current.scrollIntoView({ block: 'center', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
     audioContext();
     import('../lib/clips').then((c) => c.playClip('ironMan'));
     const after = () => {
@@ -144,7 +150,7 @@ export default function Avengers() {
       <section id="thanos" className="space-scope relative z-10 py-20 md:py-28" data-arrived={arrived || undefined} aria-labelledby="gauntlet-title">
         <div className="ds-stars pointer-events-none absolute inset-0" aria-hidden="true" />
         <div className="shell relative grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
-          <div className="stones-panel gauntlet-stage" data-all={all || undefined}>
+          <div ref={stageEl} className="stones-panel gauntlet-stage" data-all={all || undefined}>
             <Titan
               ref={titan}
               have={earned}
