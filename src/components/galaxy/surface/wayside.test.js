@@ -56,6 +56,32 @@ describe('waysideAt', () => {
   });
 });
 
+describe('waysideAt on the land', () => {
+  // (a region's land: a steep ramp but for a flat shelf in its south-west)
+  const shelf = ([i, j]) => (x, z) => (x < (i + 0.4) * REGION && z < (j + 0.4) * REGION ? 0 : 0.6 * (x + z));
+
+  it('goes on flat ground in its region where the first spot is steep, the same every visit', () => {
+    let moved = 0;
+    for (let i = -6; i < 6; i++)
+      for (let j = -6; j < 6; j++) {
+        const first = waysideAt(green, i, j);
+        if (!first) continue;
+        const height = shelf([i, j]);
+        const w = waysideAt(green, i, j, height);
+        expect(w).toEqual(waysideAt(green, i, j, height));
+        expect(w.kind).toBe(first.kind);
+        expect(w.at[0]).toBeGreaterThanOrEqual(i * REGION);
+        expect(w.at[0]).toBeLessThanOrEqual((i + 1) * REGION);
+        if (w.at[0] !== first.at[0]) moved++;
+      }
+    expect(moved).toBeGreaterThan(10);
+  });
+
+  it('stays where it was on flat land', () => {
+    for (let i = 2; i < 6; i++) for (let j = 2; j < 6; j++) expect(waysideAt(green, i, j, () => 3)).toEqual(waysideAt(green, i, j));
+  });
+});
+
 describe('regionsAround', () => {
   it('lists the regions whose middles are within reach', () => {
     const near = regionsAround(5200, -3100, 1600);

@@ -8,7 +8,10 @@
 // roam-design.md, 3).
 //
 //   REGION = 1000 (metres a side)
-//   waysideAt(site, rx, rz) → { id, kind, at: [x, z], things: [spec…] } | null
+//   waysideAt(site, rx, rz, height?) → { id, kind, at: [x, z], things: [spec…] } | null
+//     (given the land's height, the place goes on the flattest of a few
+//     spots in its region, the first flat enough: no camp on a cliff, no
+//     ship across a hilltop)
 //     (a thing's `lie`: metres each way the scene lays it along the land's slope)
 //   regionsAround(x, z, reach) → [[rx, rz]] whose middles are within reach
 //   laidOn(thing, height) → the thing on the land's own height (`abs`, `y`),
@@ -20,6 +23,10 @@ export const REGION = 1000;
 const CHANCE = 0.55; // of a region holding a place
 const JITTER = 0.35; // of a region its place may stand off its middle
 const CORE = 300; // metres past the world's reach before the first
+const TRIES = 8; // spots in its region a place may try for flat ground
+const FLAT = 0.12; // the most its ground may rise across it, a metre a metre
+// (the metres across a place that must be flat: a ship's its length)
+const SPAN = { camp: 10, outpost: 12, ruin: 12 };
 
 // a place's things, about its middle and turned with it: [kind, x, z, more]
 const KITS = {
@@ -67,18 +74,42 @@ const pick = (rand, odds) => {
   return Object.keys(odds)[0];
 };
 
-export function waysideAt(site, rx, rz) {
+// how steep the ground is across (x, z), r round: its rise over its width
+const roughAt = (height, x, z, r) => {
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const h = i === 8 ? height(x, z) : height(x + Math.cos(a) * r, z + Math.sin(a) * r);
+    lo = Math.min(lo, h);
+    hi = Math.max(hi, h);
+  }
+  return (hi - lo) / (2 * r);
+};
+
+export function waysideAt(site, rx, rz, height = null) {
   const rand = seeded((Math.imul(rx | 0, 73856093) ^ Math.imul(rz | 0, 19349663) ^ Math.imul((site.ground?.seed ?? 1) + 7, 83492791)) >>> 0);
   const mx = (rx + 0.5) * REGION;
   const mz = (rz + 0.5) * REGION;
   const held = rand();
-  const x = mx + (rand() * 2 - 1) * JITTER * REGION;
-  const z = mz + (rand() * 2 - 1) * JITTER * REGION;
+  let x = mx + (rand() * 2 - 1) * JITTER * REGION;
+  let z = mz + (rand() * 2 - 1) * JITTER * REGION;
   const yaw = rand() * Math.PI * 2;
   const kind = pick(rand, LUSH.has(site.flora?.biome) ? GREEN : BARE);
   const [ship, metres] = SHIPS[Math.floor(rand() * SHIPS.length)];
   const roll = (rand() < 0.5 ? -1 : 1) * (0.3 + rand() * 0.3);
   if (held > CHANCE || Math.hypot(x, z) < (site.reach ?? 590) + CORE) return null;
+  if (height) {
+    // (more spots drawn after the rest, so the place is the same without the land's height)
+    const r = kind === 'wreck' ? metres / 2 : SPAN[kind];
+    let best = roughAt(height, x, z, r);
+    for (let i = 1; i < TRIES && best > FLAT; i++) {
+      const cx = mx + (rand() * 2 - 1) * JITTER * REGION;
+      const cz = mz + (rand() * 2 - 1) * JITTER * REGION;
+      const rough = Math.hypot(cx, cz) < (site.reach ?? 590) + CORE ? Infinity : roughAt(height, cx, cz, r);
+      if (rough < best) [x, z, best] = [cx, cz, rough];
+    }
+  }
   const c = Math.cos(yaw);
   const s = Math.sin(yaw);
   const things = KITS[kind].map(([k, dx, dz, more = {}]) => ({

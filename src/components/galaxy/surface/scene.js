@@ -568,6 +568,7 @@ export async function create(canvas, ctx) {
   // will be drawn when you get there), never taken back
   const SIGHT = 1600;
   const seen = new Set();
+  const came = []; // (what's been put in, for the dev hook)
   let looked = null;
   const comeOn = roaming
     ? (x, z) => {
@@ -577,7 +578,7 @@ export async function create(canvas, ctx) {
           const key = `${rx},${rz}`;
           if (seen.has(key)) continue;
           seen.add(key);
-          for (const t of waysideAt(site, rx, rz)?.things ?? []) placer.put(laidOn(t, height));
+          for (const t of waysideAt(site, rx, rz, height)?.things ?? []) placer.put(laidOn(t, height)).then((o) => o && came.push({ kind: t.kind, at: t.at, o }));
         }
       }
     : null;
@@ -3823,6 +3824,8 @@ export async function create(canvas, ctx) {
       surfaces: () => ({ level: surfaces?.level ?? null, print: groundPrint, picks: [...picks] }),
       living: () => living?.stats ?? null,
       roam: () => (roam ? { centre: roam.centre, moving: roam.moving, ...roam.stats } : null),
+      // (the wayside's things put in: each one's lowest point against the drawn ground under it)
+      wayside: () => came.map(({ kind, at, o }) => ({ kind, at: at.map(Math.round), y: +o.position.y.toFixed(2), low: +new THREE.Box3().setFromObject(o).min.y.toFixed(2), ground: +world.heightAt(...at).toFixed(2) })),
       solidsNear: (x, z, r = 60) => world.solids.near(x, z, r).map(({ type, x: sx, z: sz, r: sr, hw, hd, c, s, top, base, tag }) => ({ type, x: sx, z: sz, r: sr, hw, hd, c, s, top, base, tag })),
       shoot: (from, to) => blaster.fire(new V(...from), new V(...to).sub(new V(...from)).normalize(), [], boltOf(me()), 90, null, { yours: true, push: new V() }),
       // (a stroke now, as the button makes one, for the QA scripts: { heavy, dir, lock } as saber.js takes them)
