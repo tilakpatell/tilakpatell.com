@@ -6,6 +6,7 @@
 // actions: the Microverse's power, setPower), the cruiser's board and the
 // street's fight (sim.chase is the cruiser's chase), Needful Things' deal
 // and the vat's freeze (the places' actions deal, setDeal, freeze, setFreeze),
+// the Jerryboree's find (find, setFind),
 // and Total Rickall's rickall,
 // lookAt, shoot, stopRickall; window.__RMSTORY__: get, feed, dialOpen, jump,
 // reset; the games' own, window.__CABINET__ and window.__SEWER__), as
@@ -25,7 +26,7 @@ import { chromium } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
 import { READY } from '../src/components/rickmorty/adventure/episodes.js';
 import { COURSE, chaseStart, newChase } from '../src/components/rickmorty/world/games/chase.js';
-import { BASE, OUT, N, exe, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, GUESTS, SMALL, HEAT, DEALS, throughPortal, gun, toast, inArea, cardFor, at, opens, shootAt, warpUse, caught, before, chasing, playTo, game, rickallOn } from './rm-story/helpers.mjs';
+import { BASE, OUT, N, exe, check, done, c137, built, goto, use, place, story, reads, WIPED, ARCADE, GUESTS, SMALL, HEAT, DEALS, JERRY, throughPortal, gun, toast, inArea, cardFor, at, opens, shootAt, warpUse, caught, before, chasing, playTo, game, rickallOn } from './rm-story/helpers.mjs';
 
 const SCENARIOS = {
   // a new visitor plays episode 1 from the street to Customs and back
@@ -136,8 +137,13 @@ const SCENARIOS = {
         throw new Error('a returner who’d faked the death never got its achievement');
       });
       check((await page.evaluate(() => window.__C137__.api.act('vat', 'freeze'))).phase === 'idle', 'a returner’s vat started its game again');
+      // Jerry picked up before the find was built: a Jerry picked does nothing, and no meter shows
+      await goto(page, 'jerryboree', -400, 1703.4);
+      await page.evaluate(() => ['find-jerrytv', 'find-jerrytv'].forEach((a) => window.__C137__.api.act('jerryboree', a)));
+      await page.waitForTimeout(1000);
+      check((await game(page, 'jerryboree', 'find')).phase === 'idle' && !(await page.locator('.rm-cluster[aria-label="Pick-up time"][data-on]').count()), 'a returner’s Jerryboree started its game again');
     },
-    { seed: { 'tp-c137-done': ['cable', 'vat'] } },
+    { seed: { 'tp-c137-done': ['cable', 'vat', 'jerryboree'] } },
   ),
   // the Citadel tells the story where it is and what's done there (episode 10
   // isn't built yet, so on Free roam nothing moves), and its steps still save
@@ -626,8 +632,85 @@ const SCENARIOS = {
     });
     check((await page.evaluate(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]'))).includes('vat'), 'the fake death’s achievement wasn’t earned');
     await toast(page, DEALS.outro[0][1]);
+    // and on into episode 7: its card, the places episode 6 opened, the next ones still shut
+    await cardFor(page, 6);
     await at(page, 6, 0, 'after the vat');
-    await opens(page, [...DEALS.unlocks, 'citadel', 'squanch', 'evilrick'], true, 'after episode 6');
+    await opens(page, DEALS.unlocks, true, 'after episode 6');
+    await opens(page, JERRY.unlocks, false, 'after episode 6');
+    await reads(page, JERRY.steps[0].text);
+  },
+  // a new visitor plays episode 7: the Jerryboree's find (a wrong Jerry
+  // picked costs time, the clock run out and back at the door, then ours
+  // picked) and St. Gloopy Noops (a doctor's catch, then Shrimply and
+  // Jerry's things in the theatre, and out through the portal on the clock)
+  async 'episode-7'(page) {
+    await playTo(page, 6, ['cabinet', 'chase']);
+    await at(page, 6, 0, 'at episode 7');
+    await reads(page, JERRY.steps[0].text);
+    // the Jerryboree: ours dealt as the check sets it
+    check((await page.evaluate(() => window.__C137__.dial('jerryboree'))) === 'jerryboree', 'the dial wouldn’t take the Jerryboree');
+    await throughPortal(page);
+    await inArea(page, 'jerryboree');
+    check((await game(page, 'jerryboree', 'find')).phase === 'idle', 'the find started before a Jerry was talked to');
+    const ours = (id) => page.evaluate((id) => window.__C137__.api.act('jerryboree', 'setFind', { ours: id }), id);
+    await ours('jerryreal');
+    // the Jerry at the TV: talked to (the clock on, the meter up), then picked: not ours, and time off the clock
+    await warpUse(page, 'jerryboree', 'jerrytv', -402, 1695.8, N);
+    await page.waitForFunction(() => window.__C137__.api.act('jerryboree', 'find').heard.includes('jerrytv'), null, { timeout: 30000, polling: 100 }).catch(() => {
+      throw new Error('talking to a Jerry didn’t start the find');
+    });
+    await page.locator('.rm-cluster[aria-label="Pick-up time"][data-on]').waitFor({ timeout: 10000 }).catch(() => {
+      throw new Error('no find meter on the HUD');
+    });
+    if (OUT) await page.screenshot({ path: `${OUT}/episode-7-jerryboree.png` });
+    await use(page, 'jerrytv');
+    await page.waitForFunction(() => window.__C137__.api.act('jerryboree', 'find').wrong.includes('jerrytv'), null, { timeout: 30000, polling: 100 }).catch(() => {
+      throw new Error('a wrong Jerry picked wasn’t counted wrong');
+    });
+    const left = (await game(page, 'jerryboree', 'find')).left;
+    check(left <= 30 && !(await done(page)).includes('jerryboree'), `a wrong Jerry picked left ${left} s, or counted`);
+    // out of time: back at the door, the find idle, nothing done
+    await page.evaluate(() => window.__C137__.api.act('jerryboree', 'setFind', { left: 0.05 }));
+    await caught(page, 1703.4);
+    check((await game(page, 'jerryboree', 'find')).phase === 'idle' && !(await done(page)).includes('jerryboree'), 'a find run out of time counted');
+    // dealt afresh: ours the Jerry by the door, talked to and picked
+    await ours('jerryreal');
+    await warpUse(page, 'jerryboree', 'jerryreal', -405.7, 1704.5, Math.PI);
+    await use(page, 'jerryreal');
+    await toast(page, 'Pick up the right Jerry');
+    check((await page.evaluate(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]'))).includes('jerryboree'), 'the right Jerry’s achievement wasn’t earned');
+    await at(page, 6, 1, 'after the Jerryboree');
+    await reads(page, JERRY.steps[1].text);
+    await warpUse(page, 'jerryboree', 'jerryboree-portal', -400, 1705.6, -N);
+    await inArea(page, 'garage');
+    // St. Gloopy Noops: a doctor's catch; then Shrimply and Jerry's things, and out on the clock
+    check((await page.evaluate(() => window.__C137__.dial('gloopynoops'))) === 'gloopynoops', 'the dial wouldn’t take St. Gloopy Noops');
+    await throughPortal(page);
+    await inArea(page, 'gloopynoops');
+    await page.waitForFunction(() => (window.__C137__.api.act('gloopynoops', 'npcs') ?? []).some((n) => n.id === 'gdoctor-b'), null, { timeout: 120000, polling: 500 });
+    const doc = await page.evaluate(() => window.__C137__.api.act('gloopynoops', 'npcs').find((n) => n.id === 'gdoctor-b'));
+    await page.evaluate(([x, z]) => window.__C137__.warp('gloopynoops', x + 0.6, z, Math.PI), [doc.x, doc.z]);
+    await caught(page, 3112.4);
+    check(!(await done(page)).includes('gloopynoops'), 'a catch counted');
+    const THINGS = [
+      ['shrimply', -400, 3090.2, N],
+      ['jerrysthings', -396.6, 3086.8, Math.PI],
+    ];
+    // (a doctor may catch him in the theatre: each catch a reset, checked, and round again)
+    let taken = false;
+    for (let round = 0; round < 4 && !taken; round++) {
+      for (const [id, x, z, f] of THINGS) await warpUse(page, 'gloopynoops', id, x, z, f).catch(() => {});
+      taken = await page.evaluate(() => window.__C137__.sim.escape?.task === 'gloopynoops');
+      if (!taken) await caught(page, 3112.4);
+    }
+    check(taken, 'Jerry’s things taken back never started the clock');
+    if (OUT) await page.screenshot({ path: `${OUT}/episode-7-gloopynoops.png` });
+    await warpUse(page, 'gloopynoops', 'gloopynoops-portal', -400, 3114.6, -N);
+    // (the episode's last step: its closing line is the toast, and the way out earns its achievement)
+    await toast(page, JERRY.outro[0][1]);
+    check((await page.evaluate(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]'))).includes('gloopynoops'), 'the hospital’s achievement wasn’t earned');
+    await at(page, 7, 0, 'after St. Gloopy Noops');
+    await opens(page, [...JERRY.unlocks, 'citadel', 'squanch', 'evilrick'], true, 'after episode 7');
     await page.waitForTimeout(1500);
     check((await page.locator('.rm-episode').count()) === 0, 'a card showed for an episode that isn’t built');
     await reads(page, 'Go into the Smith house and put interdimensional cable on the TV.');
