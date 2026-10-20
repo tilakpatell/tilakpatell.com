@@ -127,7 +127,7 @@ export const SITES = {
       { id: 'quarry', name: 'The quarry', at: [200, -200], r: 50, flat: { r: 34 }, about: 'Where the prisoners work: a pit, a crane and the mud running into it every time it rains, which is always.', things: [{ kind: 'mining', at: [0, 0], yaw: 0.6, scale: 0.4 }, ...grove(84, 8, 18, 40, ['needle'], [0.3, 0.6])] },
     ],
     scatter: [{ kind: 'rock', model: NATURE.rock, n: 80, within: [20, 560], scale: [0.6, 2.2], opts: { color: '#4a4436' } }, { kind: 'stones', model: NATURE.stone, n: 70, within: [10, 300], scale: [0.6, 1.2], solid: false, opts: { color: '#4a3e30' } }],
-    flora: { biome: 'ash', tint: { Rocks: { recolour: '#4a4436' } } },
+    flora: { biome: 'tundra' },
     things: [{ kind: 'crates', at: [-12, 10], opts: { color: '#5a5650' } }],
     life: [
       { kind: 'k2so', id: 'k2so', at: [110, 146], still: true, face: 2.2, name: 'K-2SO', named: true, quest: 'transport', says: ['I find that answer vague and unconvincing.', 'There is a ninety-seven point six per cent chance of failure.'] },

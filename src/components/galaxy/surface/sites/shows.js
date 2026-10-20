@@ -29,7 +29,7 @@ export const SITES = {
       { id: 'office', name: 'The yard office', at: [-120, 220], r: 40, flat: { r: 32 }, about: 'Where the yards keep their records: what was built, and who paid for it, and where it was delivered.', things: [{ kind: 'bunker', at: [0, 0], yaw: 4.4, opts: { w: 16, d: 10 } }, { kind: 'pad', at: [22, 10], opts: { r: 10 } }] },
     ],
     scatter: [{ kind: 'rock', model: NATURE.stone, n: 50, within: [30, 560], scale: [0.6, 1.8], opts: { color: '#4a4642' } }],
-    flora: { biome: 'ash', tint: { Rocks: { recolour: '#4a4642' } } },
+    flora: { biome: 'tundra' },
     things: [{ kind: 'barrels', at: [10, -10] }, { kind: 'crates', at: [-12, 10] }],
     life: [
       { kind: 'ahsoka', id: 'ahsoka', at: [-108, 210], still: true, face: 3.6, name: 'Ahsoka Tano', named: true, quest: ['records', 'droids'], says: ['I’m no Jedi.', 'Someone here built a hyperspace ring. I want to know who.'] },

@@ -198,7 +198,7 @@ export const SITES = {
       { id: 'cranes', name: 'The crane field', at: [-120, 230], r: 50, flat: { r: 40 }, about: 'Where the hull plates wait to be lifted: stacks of them, and the cranes to lift them, and Ugnaughts to work the cranes.', things: [...ring(4, 22, 0.4).map(([x, z, yaw]) => ({ kind: 'game', model: EMPIRE.container, at: [x, z], yaw })), { kind: 'crates', at: [0, 0] }] },
     ],
     scatter: [{ kind: 'rock', model: NATURE.stone, n: 50, within: [30, 560], scale: [0.6, 1.8], opts: { color: '#3e3c38' } }],
-    flora: { biome: 'ash', tint: { Rocks: { recolour: '#3e3c38' } } },
+    flora: { biome: 'tundra' },
     skyships: [{ kind: 'destroyer', metres: 1600, at: [700, 520, 300], yaw: 1.6 }],
     things: [{ kind: 'game', model: EMPIRE.box, at: [12, -8], yaw: 0.8 }],
     life: [

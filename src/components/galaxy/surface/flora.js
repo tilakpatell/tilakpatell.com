@@ -257,7 +257,8 @@ export const BIOMES = {
     // (the scrub bush is the kit's long bush, its leaves the broad trees')
     tint: { Leaves: { recolour: '#8a7c4e' }, Leaves_NormalTree: { recolour: '#7a6e44' }, Grass: { recolour: '#b4a070' }, PathRocks: { recolour: '#9a8a6a' } },
   },
-  // Mustafar's and Sullust's: stones near black, dark boulders, no plants
+  // Mustafar's and Sullust's, Eadu's and Corvus's: stones near black, the
+  // volcano's dark rocks, no plants
   ash: {
     near: [
       ['Pebble_Square_2', 0.5, [3, 6]],
@@ -272,7 +273,8 @@ export const BIOMES = {
     count: { cover: 900 },
     tint: { PathRocks: { recolour: '#2c2926' } },
   },
-  // Hoth's and Mygeeto's: nothing green, outcrops of blue-grey rock
+  // Hoth's and Mygeeto's, and the grey yards and camps of Corellia, Fondor
+  // and Wobani: nothing green, outcrops of grey rock
   // (no pebbles: on snow they read as dirt, and the design lays none where
   // no ground shows)
   tundra: {
