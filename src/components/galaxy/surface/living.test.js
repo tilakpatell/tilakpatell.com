@@ -172,6 +172,30 @@ describe('createLiving', () => {
     living.dispose();
   });
 
+  it('lays every tile in again over the frames after the ground moves, and none of them twice', () => {
+    let lift = 0;
+    const solids = createSolids();
+    const kit = kitFor();
+    const living = createLiving({ rows: ROWS, kitFor: () => kit, seed: 3, height: () => lift, keep: () => true, solids });
+    living.fill(0, 0);
+    const tiles = living.stats.tiles;
+    const trunks = solids.all.length;
+    lift = 5;
+    living.relay();
+    expect(living.stats.queued).toBe(tiles);
+    for (let i = 0; i < 500 && living.stats.queued; i++) living.update(0, 0, cam(), 0.016);
+    expect(living.stats.queued).toBe(0);
+    expect(living.stats.tiles).toBe(tiles);
+    expect(solids.all.length).toBe(trunks);
+    living.dispose();
+  });
+
+  it('keeps no bound or edge in the free roam', () => {
+    const k = keepOf({ site: { reach: 590 }, heightAt: () => 0, avoid: [], bound: Infinity, edge: Infinity });
+    expect(k(5000, -7000, { band: 'cover' })).toBe(true);
+    expect(keepOf({ site: { reach: 590 }, heightAt: () => 0, avoid: [] })(5000, -7000, { band: 'cover' })).toBe(false);
+  });
+
   it('lays only the bands a world has', () => {
     const { living, solids } = livingOf({ rows: { cover: ROWS.cover, mid: [], trees: [] } });
     living.fill(0, 0);

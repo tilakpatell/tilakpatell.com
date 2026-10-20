@@ -40,16 +40,26 @@ import { looks } from './looks';
 export const groundMaterial = (site, opts = {}) => looks().groundMaterial(site, { half: HALF, ...opts });
 
 // The mesh, from the height grid: lines × lines vertices, each cell two
-// triangles split from (i, j + 1) to (i + 1, j) (as heightGrid reads them)
+// triangles split from (i, j + 1) to (i + 1, j) (as heightGrid reads them),
+// where the grid lies
 export function groundMesh(grid, material) {
+  const mesh = new THREE.Mesh(groundGeometry(grid), material);
+  mesh.receiveShadow = true;
+  mesh.name = 'ground';
+  return mesh;
+}
+
+// (its geometry alone: the free roam swaps a new one in as the grid moves round you, roam.js)
+export function groundGeometry(grid) {
   const { lines, heights, size: w } = grid;
+  const [cx, cz] = grid.centre ?? [0, 0];
   const pos = new Float32Array(w * w * 3);
   for (let j = 0; j < w; j++)
     for (let i = 0; i < w; i++) {
       const k = (j * w + i) * 3;
-      pos[k] = lines[i];
+      pos[k] = cx + lines[i];
       pos[k + 1] = heights[j * w + i];
-      pos[k + 2] = lines[j];
+      pos[k + 2] = cz + lines[j];
     }
   const index = new Uint32Array((w - 1) * (w - 1) * 6);
   let t = 0;
@@ -71,10 +81,7 @@ export function groundMesh(grid, material) {
   geo.setIndex(new THREE.BufferAttribute(index, 1));
   geo.computeVertexNormals();
   geo.computeBoundingSphere();
-  const mesh = new THREE.Mesh(geo, material);
-  mesh.receiveShadow = true;
-  mesh.name = 'ground';
-  return mesh;
+  return geo;
 }
 
 // Where things have been, over the walkable square: a canvas the scene
@@ -92,12 +99,13 @@ export function createMarks(size = 512) {
   texture.generateMipmaps = false;
   let dirty = false;
   let sent = -Infinity; // (when it last went up to the graphics chip: a 512² upload, at most four times a second)
+  const centre = [0, 0]; // (where the square lies: the free roam moves it round you, roam.js)
   return {
     texture,
     // a dab at (x, z), r metres across, `k` strong (0…1)
     dab(x, z, r = 1.2, k = 0.35) {
-      const u = ((x / (2 * HALF)) + 0.5) * size;
-      const v = ((z / (2 * HALF)) + 0.5) * size;
+      const u = (((x - centre[0]) / (2 * HALF)) + 0.5) * size;
+      const v = (((z - centre[1]) / (2 * HALF)) + 0.5) * size;
       if (u < 0 || v < 0 || u > size || v > size) return;
       const px = Math.max(1, (r / (2 * HALF)) * size);
       const grad = c.createRadialGradient(u, v, 0, u, v, px);
@@ -105,6 +113,14 @@ export function createMarks(size = 512) {
       grad.addColorStop(1, 'rgba(255,0,0,0)');
       c.fillStyle = grad;
       c.fillRect(u - px, v - px, px * 2, px * 2);
+      dirty = true;
+    },
+    // the square laid round another middle, its marks gone with the old one
+    moveTo(x, z) {
+      centre[0] = x;
+      centre[1] = z;
+      c.fillStyle = '#000';
+      c.fillRect(0, 0, size, size);
       dirty = true;
     },
     flush(now = performance.now()) {

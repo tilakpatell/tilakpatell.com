@@ -96,6 +96,8 @@ for (const v of views) {
   const yaw = Math.atan2(x - sx, z - sz);
   await page.evaluate(([sx, sz, yaw, pitch]) => window.__surfaceDo('teleport', sx, sz, yaw, null, pitch), [sx, sz, yaw, pitch == null || pitch === '' ? null : Number(pitch)]);
   await page.waitForTimeout(7000);
+  // (in the free roam, far out: the ground moved round the new spot, MOVE_WAIT ms at most)
+  await page.waitForFunction(() => !window.__surfaceScene?.roam?.()?.moving, null, { timeout: Number(process.env.MOVE_WAIT ?? 300000), polling: 1000 }).catch(() => console.log('  (the ground still moving: shot as it stands)'));
   // (on a game level: its cells round the new spot streamed in, LEVEL_WAIT ms at most)
   await page.waitForFunction(() => window.__surfaceScene?.level?.()?.ready !== false, null, { timeout: Number(process.env.LEVEL_WAIT ?? 600000) }).catch(() => console.log('  (the level still streaming: shot as it stands)'));
   await unveiled();
@@ -105,7 +107,7 @@ for (const v of views) {
   // (the frame's draws and triangles, as galaxy-check reads them, and the living ground's tiles)
   const frame = await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => {
     const i = window.__surfaceScene?.renderer?.info?.render;
-    r({ calls: i?.drawCalls ?? i?.calls, tris: i?.triangles, living: window.__surfaceScene?.living?.() ?? null });
+    r({ calls: i?.drawCalls ?? i?.calls, tris: i?.triangles, living: window.__surfaceScene?.living?.() ?? null, roam: window.__surfaceScene?.roam?.() ?? null });
   }))));
   console.log('  frame', JSON.stringify(frame));
 }

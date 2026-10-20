@@ -74,7 +74,8 @@ import { buildGalaxyShip } from '../fleet';
 import { audioContext } from '../../../lib/audio';
 import { SURFACE_MODELS } from './catalog';
 import { HALF, heightGrid, makeHeight } from './terrain';
-import { createMarks, groundMaterial, groundMesh } from './ground';
+import { createRoam, roamGround, roamOn } from './roam';
+import { createMarks, groundGeometry, groundMaterial, groundMesh } from './ground';
 import { lavaFilm } from './lavaFilm';
 import { floatPose } from './floats';
 import { adoptLater, exposureOf, groundPieces, lookOf } from './look';
@@ -375,13 +376,17 @@ export async function create(canvas, ctx) {
   // ── The land ──
   // (a world on the game's level: its heightmaps decoded first, so the grid
   // is the game's ground; any other world's ground is as it was)
-  const height = makeHeight(await levelGround(site.ground), { relief: amounts.relief });
+  // (free roam with no mission: no edge, the ground moving round you, its
+  // mountain rings breaking into ranges past them: roam.js)
+  const roaming = roamOn(site, mission);
+  const height = makeHeight(roaming ? roamGround(await levelGround(site.ground)) : await levelGround(site.ground), { relief: amounts.relief });
   // (and what the map itself places: its creatures, droids and vehicles where the game stood them)
   const placed = await levelPlaced(site);
   // (and the cells its pieces fill, which the world's own solid scatter keeps out of)
   const busy = await levelBusy(site);
   const inBusy = (x, z) => busy.size > 0 && busy.has(`${Math.floor(x / 128)},${Math.floor(z / 128)}`);
-  const grid = heightGrid(height, amounts.grid);
+  let grid = heightGrid(height, amounts.grid);
+  let paintGrid = grid;
   // (water you wade in: not lava, not cloud, and not a sea far under a
   // platform with nothing else under it, which you'd fall into)
   const wade = site.water && !site.noGround && site.water.kind !== 'clouds' && site.water.kind !== 'lava' ? site.water.level : null;
@@ -426,7 +431,8 @@ export async function create(canvas, ctx) {
       return canopy ? items.map((it) => ({ at: it.at, r: canopy * it.scale })) : [];
     });
     if (live) shade.push(...shadeOf(live.trees, { level, seed: liveSeed, height: grid.heightAt, keep: keepOf({ site, heightAt: grid.heightAt, avoid, busy: inBusy, wade }), half: HALF }));
-    const painter = groundPainter(site, grid, { shade });
+    // (the grid it paints from read where it is now: the free roam moves it, roam.js)
+    const painter = groundPainter(site, { heightAt: (x, z) => paintGrid.heightAt(x, z), normalAt: (x, z, e) => paintGrid.normalAt(x, z, e) }, { shade });
     const mapSize = amounts.map;
     groundMap = createGroundMap({ area: mapAreaOf(), size: mapSize, heightSize: mapSize / 2, paint: painter.paint, height: painter.height });
     if (pieces.bounce) house.ground(groundMap);
@@ -451,7 +457,7 @@ export async function create(canvas, ctx) {
   if (!site.noGround) scene.add(ground);
   // (Mustafar's rivers flow with the game's lava film on high and ultra: lavaFilm.js)
   const lava = lavaFilm(site, { level, reduced });
-  const water = site.water ? createWater(site, sunDir, site.sky.suns?.[0]?.color ?? '#ffffff', { heightAt: site.noGround ? null : grid.heightAt, small, id: site.id, rings: amounts.rings, depthN: amounts.depthN, foam: amounts.splat, flow: lava?.texture, flipped: lava?.flipped }) : null;
+  const water = site.water ? createWater(site, sunDir, site.sky.suns?.[0]?.color ?? '#ffffff', { heightAt: site.noGround ? null : (x, z) => grid.heightAt(x, z), small, id: site.id, rings: amounts.rings, depthN: amounts.depthN, foam: amounts.splat, flow: lava?.texture, flipped: lava?.flipped }) : null;
   if (water) {
     scene.add(water.mesh);
     if (water.glow) scene.add(water.glow);
@@ -462,7 +468,7 @@ export async function create(canvas, ctx) {
     normalAt: site.noGround ? () => [0, 1, 0] : (x, z) => grid.normalAt(x, z),
     solids: createSolids(),
     floors: [...(site.floors ?? [])],
-    reach: site.reach,
+    reach: roaming ? Infinity : site.reach,
     water: wade,
     // (how deep the water can be before you're turned back: the lagoon on Kashyyyk)
     wadeMax: wade != null ? site.water.wadeMax : undefined,
@@ -524,12 +530,36 @@ export async function create(canvas, ctx) {
   // placer's kit; nothing where your ship comes down (`clearings`, once known)
   const clearings = [];
   const living = live
-    ? createLiving({ rows: live, kitFor: placer.kitFor, level, seed: liveSeed, height: world.heightAt, keep: keepOf({ site, heightAt: world.heightAt, solids: world.solids, avoid, clearings, busy: inBusy, wade }), cover: site.grass ? (x, z) => coverAt(grid, site, x, z) : null, solids: world.solids })
+    ? createLiving({ rows: live, kitFor: placer.kitFor, level, seed: liveSeed, height: (x, z) => world.heightAt(x, z), keep: keepOf({ site, heightAt: (x, z) => world.heightAt(x, z), solids: world.solids, avoid, clearings, busy: inBusy, wade, ...(roaming ? { bound: Infinity, edge: Infinity } : {}) }), cover: site.grass ? (x, z) => coverAt(grid, site, x, z) : null, solids: world.solids })
     : null;
   if (living) {
     scene.add(living.group);
     living.fill(...site.land.at);
   }
+  // the ground round you as you go, in the free roam (roam.js): the grid,
+  // its mesh, the walker's ground, the map and the look's square moved on
+  // one frame, the living ground laid on it again
+  const roam = roaming
+    ? createRoam({
+        height,
+        grid,
+        gridOpts: amounts.grid,
+        map: groundMap,
+        onGrid(next) {
+          paintGrid = next;
+        },
+        onMove(next) {
+          grid = next;
+          world.heightAt = next.heightAt;
+          const was = ground.geometry;
+          ground.geometry = groundGeometry(next);
+          was.dispose();
+          gmat.uniforms.uCentre?.value.set(...next.centre);
+          marks.moveTo(...next.centre);
+          living?.relay();
+        },
+      })
+    : null;
   // (and its biome's birds, over its places: flocks.js)
   const flocks = createFlocks(site.air?.flocks, { heightAt: world.heightAt, reduced });
   if (flocks) scene.add(flocks.group);
@@ -1850,7 +1880,7 @@ export async function create(canvas, ctx) {
     const z = state.zone;
     if (!z) return;
     state.zone = null;
-    world.reach = site.reach;
+    world.reach = roaming ? Infinity : site.reach;
     const [bx, bz] = z.back ?? z.door.at;
     const yaw = state.outside?.[2] ?? 0;
     putAt(me().st, bx, bz, yaw + Math.PI);
@@ -3584,6 +3614,7 @@ export async function create(canvas, ctx) {
     state.aim = Math.max(0, state.aim - dt / 2.5);
     life.update(dt, state.phase === 'walk' ? me().st : null, state.phase === 'walk' || state.phase === 'ride' ? me().st : camera.position);
     placer.update(t, dt, me().st);
+    roam?.update(me().st.x, me().st.z);
     living?.update(me().st.x, me().st.z, camera, dt);
     flocks?.update(dt);
     gameLevel?.update([me().st.x, me().st.z]);
@@ -3765,6 +3796,7 @@ export async function create(canvas, ctx) {
       level: () => (gameLevel ? { ...gameLevel.stats(), ready: gameLevel.ready(), progress: gameLevel.progress() } : null),
       surfaces: () => ({ level: surfaces?.level ?? null, print: groundPrint, picks: [...picks] }),
       living: () => living?.stats ?? null,
+      roam: () => (roam ? { centre: roam.centre, moving: roam.moving, ...roam.stats } : null),
       solidsNear: (x, z, r = 60) => world.solids.near(x, z, r).map(({ type, x: sx, z: sz, r: sr, hw, hd, c, s, top, base, tag }) => ({ type, x: sx, z: sz, r: sr, hw, hd, c, s, top, base, tag })),
       shoot: (from, to) => blaster.fire(new V(...from), new V(...to).sub(new V(...from)).normalize(), [], boltOf(me()), 90, null, { yours: true, push: new V() }),
       // (a stroke now, as the button makes one, for the QA scripts: { heavy, dir, lock } as saber.js takes them)
