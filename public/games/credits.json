@@ -4604,5 +4604,275 @@
     ],
     "license": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm.",
     "use": "The planets’ loading films on the galaxy’s cards and landing veils, the campaign’s cinematics as the briefings of the worlds they are set on, the menu tiles, tutorials and logo for the game’s world, and Mustafar’s lava (MT_Volcano2): the drop’s WebM as it is (MT_Volcano2 cut from VP6 to VP9), published to site-assets by scripts/assets-publish.mjs, the posters and captions in public/films/bf2017/, by scripts/bf2017-ui.mjs"
+  },
+  "meshy/pautower": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f6-fa4f-74fe-81ae-b86aa8d09777",
+    "name": "the towers of Pau City, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:Ossic building Pau City.jpg)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/mygeetotower": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f6-fdb8-7145-88bb-cc9703b42828",
+    "name": "the towers of Mygeeto, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:Mygeetobridgebattle.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/lawquanefarm": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-00d6-7531-af72-808dfe80153f",
+    "name": "the domed farmhouses, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:Lawquane farm.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/catobridge": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-0470-7481-904d-21a27eb20848",
+    "name": "the bridge city, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:Cato Neimoidia concept art.jpg)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/massabase": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-0803-74a2-8964-811770ca561b",
+    "name": "the Polis Massa base, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:Polis Massa Base AoRSR.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/dugpalace": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-0b45-7613-89df-1c8a35a2cfec",
+    "name": "the Imperial palace of Malastare, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:Malastare Imperial Palace.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/kybertemple": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-0fff-7216-bd5c-8967ebf5424d",
+    "name": "the Temple of the Kyber, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:JedhaCity-SoR.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/eadulab": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-1328-7245-b621-f9a0295247b6",
+    "name": "the Eadu facility, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:Eadu Scientific research base.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/ersohome": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-1662-7501-b3b2-3de3ddf92c8b",
+    "name": "the Erso homestead, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:Erso homestead.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/kafrenering": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-19c6-7693-a10f-f8a22e981a04",
+    "name": "the Ring of Kafrene, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:RingOfKafrene-TSWB.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/mantellpalace": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-1ca6-75ec-9ae8-71b24eda00c7",
+    "name": "the palace of Ord Mantell City, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:OrdMantellCity TBB.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/seeingstone": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-1fb4-7032-88aa-fd1e87a6fcdb",
+    "name": "the seeing stone, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:SeeingStone-ConceptArt.jpg)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/niktocompound": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-2320-7639-989b-6417f51dc21c",
+    "name": "the Nikto compound, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:Arvala-7-Nikto-Compound-TheMandalorian.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/morakrefinery": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-25f0-71ff-a28a-bf1b82259197",
+    "name": "the Morak refinery, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:MorakImpRefinery-TMCh15.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/seatosmonolith": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-2932-72bf-aa58-f2349a3a6f11",
+    "name": "the monoliths of Seatos, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:Sabine Wren and Baylan Skoll-Seatos.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/felwatertower": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-2cd1-727c-9e81-e824a238515e",
+    "name": "the farm’s water tower, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:Nicillin farmers.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/sullustfactory": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-2fd2-7338-aa7d-f3fa43a44207",
+    "name": "the Imperial factory, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:Sullust Imperial Factory.jpg)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/kestrotower": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-3360-7088-9d4a-aad455d8e7ba",
+    "name": "the Kestro City tower, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:VardosConcept.jpg)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/coronettower": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f7-3692-77a2-8bef-d63f5ac67c4c",
+    "name": "the shipyard towers, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:Coronet City.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/calodanpagoda": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f6-e83e-77c1-802b-dce9a45f0989",
+    "name": "the magistrate’s pagoda, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, from a description)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/wobanitower": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f6-ebf3-74df-a98c-ce66958fa93a",
+    "name": "the camp’s guard towers, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, from a description)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/plazirdome": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f6-eefc-714e-8447-ff1b375004c9",
+    "name": "the domed city, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, from a description)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/pilliovault": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f6-f2cb-74fb-8d84-0053d002fa30",
+    "name": "the Emperor’s observatory, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, from a description)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/fondorgantry": {
+    "source": "https://www.meshy.ai",
+    "id": "01a157f6-f67b-754e-a45f-58bf29f61fce",
+    "name": "the shipyard gantries, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, from a description)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/catopalace": {
+    "source": "https://www.meshy.ai",
+    "id": "01a1583f-ae1b-7517-be4f-e1350604da24",
+    "name": "the viceroy’s palace, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:LottDodPalace-SS.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/coronetspire": {
+    "source": "https://www.meshy.ai",
+    "id": "01a1583f-b1e0-70ec-9935-635004b2aefb",
+    "name": "the towers of Coronet City, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, lifted out of Wookieepedia’s File:Coronet City.png)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/calodanhouse": {
+    "source": "https://www.meshy.ai",
+    "id": "01a1583f-9c8f-778c-bd8b-ed03b1125850",
+    "name": "the houses of Calodan, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, from a description)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/calodangate": {
+    "source": "https://www.meshy.ai",
+    "id": "01a1583f-a1a4-72bc-9271-67b0daf6e6d5",
+    "name": "the gate of Calodan, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, from a description)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/fondorblock": {
+    "source": "https://www.meshy.ai",
+    "id": "01a1583f-a5fc-71fe-9d03-e2eb796bef28",
+    "name": "the yard city’s towers, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, from a description)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/malastareworks": {
+    "source": "https://www.meshy.ai",
+    "id": "01a1583f-aa0b-7450-87bf-64b3e47aa74f",
+    "name": "the fuel works, generated for this site with Meshy AI (scripts/meshy-galaxy-worlds.mjs, from a description)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
   }
 }
