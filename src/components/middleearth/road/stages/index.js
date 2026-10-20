@@ -388,6 +388,8 @@ export const STAGES = [
           { type: 'island', at: [0, 210], r: 200, height: -14, core: 0.35, ragged: 0.12 },
         ],
       },
+      // (the Gulf's level, place.js's WATER: nothing is planted under it)
+      sea: -2,
     },
     // (aboard her once she casts off)
     modes: [{ at: 160, mode: 'ship' }],

@@ -10,10 +10,11 @@
 //   landFor(id, { res, wide = 1024 }) → buildHeights for the stage, seamed, with { id, road, end }
 //   heightsJob, landJob: the same as generators, a row a step; run(job) to the end
 //   riverLevel(field, river) → (m) → the water’s height m metres along the river
-//   wetBy(rivers) → (x, z) → true on a river’s water
+//   wetBy(rivers) → (x, z) → true on a river’s water (a land’s `wet` adds its
+//     ground’s `sea`: under that level)
 //
 // The seams: a stage’s land eases, over SEAM_EASE metres before each end of
-// its road, to SEAM’s profile, which reads x alone, so the stage before and
+// its road (the last stage’s start alone), to SEAM’s profile, which reads x alone, so the stage before and
 // the stage after meet it at the same heights and the grounds abut with no
 // step. That holds while a stage’s road starts at (0, 0) and ends at x = 0
 // heading along +z (stages/index.test.js holds every stage to it).
@@ -29,9 +30,10 @@ import { fieldAt } from '../../../lib/land/layers.js';
 import { flatten } from '../../../lib/land/flats.js';
 import { cutAlong, distanceTo, levelAlong } from '../../../lib/land/paths.js';
 import { endOf, roadOf } from './line';
-import { stageById } from './stages/index';
+import { STAGES, stageById } from './stages/index';
 
 export const FRAME_BACK = 40; // m of land behind a stage’s start
+const SHORE = 0.4; // m over a stage’s sea still wet (the strand)
 
 // The land under each stage until its own task writes its ground: low
 // swells for the green places, ridges and peaks round the horizon for the
@@ -151,9 +153,15 @@ export function* landJob(id, { res, wide = 1024 } = {}) {
   // first stage has ground behind it and the last ahead)
   const d = Math.ceil((end + 2 * FRAME_BACK) / res) * res;
   const rivers = (g.rivers ?? []).map((r) => ({ ...r, line: r.line ?? roadOf(r.points) }));
-  const land = yield* heightsJob(specFor(id), { size: [wide, d], res, road, rivers, flats: g.flats ?? [], seam: [0, end] });
-  // (`clear`: the stage’s built places, where nothing is planted: scatter.js reads it)
-  return { ...land, id, road, end, rivers, wet: wetBy(rivers), clear: g.clear ?? [] };
+  // (the last stage has no stage after it to meet: its own land runs on past its end)
+  const far = STAGES[STAGES.length - 1].id === id ? Infinity : end;
+  const land = yield* heightsJob(specFor(id), { size: [wide, d], res, road, rivers, flats: g.flats ?? [], seam: [0, far] });
+  // (`clear`: the stage’s built places, where nothing is planted: scatter.js reads it;
+  // `sea`: a level the land sinks under, wet below it, as a river's water is)
+  const river = wetBy(rivers);
+  const sea = g.sea;
+  const wet = sea == null ? river : (x, z) => river(x, z) || land.field(x, z) < sea + SHORE;
+  return { ...land, id, road, end, rivers, wet, clear: g.clear ?? [] };
 }
 
 // The water stands FILL of the way up its channel, read off the cut land
