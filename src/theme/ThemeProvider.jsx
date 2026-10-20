@@ -217,7 +217,7 @@ export function ThemeProvider({ children }) {
         {children}
         {switching && (
           <Suspense fallback={null}>
-            <ThemeTransition key={switching.key} id={switching.id} onDone={() => setSwitching(null)} />
+            <ThemeTransition key={switching.key} id={switching.id} custom={customColor} onDone={() => setSwitching(null)} />
           </Suspense>
         )}
       </ThemeContext.Provider>

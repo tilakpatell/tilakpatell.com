@@ -40,6 +40,9 @@ html[data-mode='dark'] {
 .switch, .close-btn, .theme-chip, .guide-btn, .nav-icon, .nav-search, .universe-tuck { border-radius: var(--r-btn); }
 .switch > :is(button, [role='tab']) { border-radius: max(0px, calc(var(--r-btn) - 2px)); }
 
+/* A colour’s dot keeps an edge, so a dark one (Bose’s) shows on a dark panel */
+.swatch-dot { box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 22%, transparent); }
+
 /* The toast rises over a dialog’s dim (it may be the dialog that unlocked
    it), under the tour and the covers. */
 .toast-host { z-index: calc(var(--z-dialog) + 2); }
