@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
 import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
+import { recordTry } from '../hq/stones';
 import gameModule from './module';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
@@ -57,6 +58,7 @@ export default function Thwip({ fallback }) {
 
   const start = useCallback(() => {
     audioContext(); // in the click, so the first thwip can be heard
+    recordTry('spidey');
     game.current = newRun({ seed: newSeed() });
     startRun(game.current);
     acc.current = 0;

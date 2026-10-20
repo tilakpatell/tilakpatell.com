@@ -3,7 +3,7 @@ import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
 import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
-import { earnStone, hasEarned } from '../hq/stones';
+import { earnStone, hasEarned, recordTry } from '../hq/stones';
 import { useAchievements } from '../../Achievements';
 import { useGame3D } from '../hq/useGame3D';
 import { local } from '../../../lib/hooks';
@@ -53,6 +53,7 @@ export default function Ricochet({ fallback }) {
   const enter = useCallback(
     (i) => {
       audioContext(); // in the click, so the clangs can be heard
+      recordTry('cap');
       room.current = newRoom(i);
       setIndex(i);
       aim.current.angle = 0;

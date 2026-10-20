@@ -4,7 +4,7 @@ import Results from '../hq/Results';
 import { startable } from '../hq/gameScreen';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
-import { earnStone, hasEarned } from '../hq/stones';
+import { earnStone, hasEarned, recordTry } from '../hq/stones';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
 import { useGame3D } from '../hq/useGame3D';
@@ -91,6 +91,7 @@ export default function RepulsorRange({ fallback }) {
     // (wave 1 waits for the stage: a run that began on a dark screen lost armour unseen)
     if (!startable(stage.status)) return;
     audioContext(); // in the click, so the run can be heard
+    recordTry('stark');
     const s = game.current;
     s.seed = newSeed();
     const ev = startRange(s);

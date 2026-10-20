@@ -27,12 +27,10 @@
 .gauntlet-stage { aspect-ratio: 4 / 3; height: auto; border: 1px solid var(--border); border-radius: var(--r-card); box-shadow: var(--shadow-card); }
 .stone-list { display: grid; gap: 0.2rem; }
 .stone-list li { display: block; }
-.stone-pick { display: flex; gap: 0.75rem; align-items: flex-start; width: calc(100% + 1.2rem); margin: 0 -0.6rem; padding: 0.45rem 0.6rem; border: 1px solid transparent; border-radius: 10px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background-color 0.2s ease, border-color 0.2s ease; }
-.stone-pick:hover { border-color: color-mix(in srgb, var(--glow) 45%, transparent); background: color-mix(in srgb, var(--glow) 8%, transparent); }
-.stone-pick:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
-.stone-pick[aria-pressed='true'] { border-color: color-mix(in srgb, var(--glow) 55%, transparent); background: color-mix(in srgb, var(--glow) 12%, transparent); }
+.stone-pick { display: flex; gap: 0.75rem; align-items: flex-start; width: calc(100% + 1.2rem); margin: 0 -0.6rem; padding: 0.45rem 0.6rem; border: 1px solid transparent; border-radius: 10px; background: none; color: inherit; font: inherit; text-align: left; }
+.stone-list li[data-on] .stone-pick { border-color: color-mix(in srgb, var(--glow) 55%, transparent); background: color-mix(in srgb, var(--glow) 12%, transparent); }
 .stone-pick-state { margin-left: auto; align-self: center; padding: 0.15rem 0.5rem; border: 1px solid color-mix(in srgb, var(--glow) 50%, transparent); border-radius: 999px; font: 600 0.68rem/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; color: var(--glow); }
-.stone-pick[aria-pressed='true'] .stone-pick-state { background: var(--glow); color: #0b0812; }
+.stone-list li[data-on] .stone-pick-state { background: var(--glow); color: #0b0812; }
 .stone-list .stone-dot { opacity: 0.4; transition: opacity 0.3s ease, box-shadow 0.3s ease; }
 .stone-list li[data-on] .stone-dot { opacity: 1; }
 .stone-dot { width: 12px; height: 12px; margin-top: 0.35rem; flex: none; border-radius: 999px; background: var(--glow); box-shadow: 0 0 0 3px color-mix(in srgb, var(--glow) 25%, transparent); }
@@ -123,8 +121,22 @@
 .titan-stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .titan-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; opacity: 0; transition: opacity 0.9s ease; }
 .titan-canvas[data-on] { opacity: 1; }
-.titan-sockets { position: absolute; inset: 0; pointer-events: none; }
-.titan-socket { pointer-events: auto; }
+/* the snap, locked until the six stones are won (as the interests card's, styles/extras.css) */
+#thanos .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+/* the heist's summary, on glass over Titan's dust */
+.heist-summary { position: absolute; z-index: 1; left: 0.75rem; right: 0.75rem; bottom: 0.75rem; max-height: calc(100% - 1.5rem); /* inside the stage, scrolling on a phone */ overflow-y: auto; padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: var(--r-card); background: rgba(8, 12, 20, 0.86); /* over the kit's 0.78 floor for glass over 3D; no blur */ color: #f4f7fb; font-size: var(--fs-sm); animation: heist-rise var(--t-slow) ease-out 0.6s both; /* the dust starts 0.61 s after the fingers meet */ }
+@keyframes heist-rise { from { opacity: 0; transform: translateY(1.5rem); } }
+.heist-summary-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.heist-summary-title { margin: 0; font-size: 1.25rem; font-weight: 700; outline: none; }
+.heist-summary-span { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; margin: 0.5rem 0 0; }
+.heist-summary-span span, .heist-summary-table thead th { font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; color: rgba(244, 247, 251, 0.72); /* the muted ink on the dark glass */ }
+.heist-summary-span strong { font-size: 1.125rem; }
+.heist-summary-table { width: 100%; margin-top: 0.75rem; border-collapse: collapse; }
+.heist-summary-table th, .heist-summary-table td { padding: 0.25rem 0.5rem 0.25rem 0; text-align: left; vertical-align: top; }
+.heist-summary-table tbody th { font-weight: 600; }
+.heist-summary-table tbody tr + tr > * { border-top: 1px solid rgba(244, 247, 251, 0.14); /* a hairline on the dark glass */ }
+.heist-summary .close-btn { flex: none; color: inherit; }
+@media (prefers-reduced-motion: reduce) { .heist-summary { animation: none; } }
 
 /* Still in styles/extras.css too; repeated here because this file loads after it */
 @media (prefers-reduced-motion: reduce) { .tesseract, .hulk-stage[data-hulk] { animation: none; } }
