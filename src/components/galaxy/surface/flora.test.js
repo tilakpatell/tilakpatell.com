@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { BIOMES, floraNames, floraRows, floraTint } from './flora';
+import { BIOMES, airOf, floraNames, floraRows, floraTint, livingOn, livingRows } from './flora';
 
 const MANIFEST = JSON.parse(readFileSync(new URL('../../../../public/kit/naturemega/index.json', import.meta.url), 'utf8'));
-const plains = (flora = {}, more = {}) => ({ flora: { biome: 'plains', ...flora }, reach: 590, ground: {}, grass: {}, ...more });
+// (the rings the scene lays once: a world whose cover doesn't stream)
+const plains = (flora = {}, more = {}) => ({ flora: { biome: 'plains', living: false, ...flora }, reach: 590, ground: {}, grass: {}, ...more });
+const lush = (flora = {}, more = {}) => ({ flora: { biome: 'plains', ...flora }, reach: 590, ground: {}, grass: {}, ...more });
 const band = (rows, b) => rows.filter((r) => r.band === b);
 const total = (rows) => rows.reduce((s, r) => s + r.n, 0);
 
@@ -129,6 +131,91 @@ describe('floraRows: a world’s cover from its biome', () => {
   });
 });
 
+describe('livingRows: the cover, the bushes and the trees that stream round you', () => {
+  it('streams a biome with a living recipe on ground of its own, and not otherwise', () => {
+    expect(livingOn(lush())).toBe(true);
+    expect(livingOn(plains())).toBe(false);
+    expect(livingOn(lush({}, { level: 'naboo' }))).toBe(false);
+    expect(livingOn(lush({}, { noGround: true }))).toBe(false);
+    expect(livingOn({ flora: { biome: 'tundra' }, ground: {} })).toBe(false);
+    expect(livingOn({ ground: {} })).toBe(false);
+    expect(livingRows(plains())).toBeNull();
+  });
+
+  it('lays no ring of cover, no kit bush and no tree of its own once they stream; the game’s rocks stay', () => {
+    const rows = floraRows(lush());
+    expect(band(rows, 'cover')).toEqual([]);
+    expect(band(rows, 'trees')).toEqual([]);
+    expect(band(rows, 'mid')).toEqual([]);
+    // (temperate's rock, the game's: its count as it was)
+    const temperate = (living) => band(floraRows({ flora: { biome: 'temperate', living }, reach: 590, ground: {} }), 'mid');
+    expect(temperate(undefined).map((r) => r.model)).toEqual([BIOMES.temperate.mid[1][0]]);
+    expect(temperate(undefined)[0].n).toBe(temperate(false).find((r) => r.model.startsWith('game:')).n);
+    // (a biome whose recipe streams no trees keeps its rows': tropical's are none)
+    expect(band(floraRows({ flora: { biome: 'tropical' }, reach: 590, ground: {} }), 'trees')).toEqual([]);
+  });
+
+  it('gives each row its density, its family’s clumping and its size', () => {
+    const { cover, mid, trees } = livingRows(lush());
+    const total = (rows) => rows.reduce((s, r) => s + r.per100, 0);
+    // (the Road's and the Shire's thickness: some 6 a 100 m² on a green world)
+    expect(total(cover)).toBeGreaterThan(5);
+    expect(total(cover)).toBeLessThan(8);
+    expect(total(mid)).toBeCloseTo(0.35, 2);
+    expect(total(trees)).toBeCloseTo(0.14, 2);
+    const grass = cover.find((r) => r.model === 'kit:naturemega/Grass_Common_Short');
+    expect(grass).toMatchObject({ band: 'cover', clump: 7, on: 'grass', scale: [0.35, 0.6] });
+    expect(cover.find((r) => r.model.endsWith('Flower_2_Single')).woods).toBeLessThan(0);
+    expect(trees.every((r) => r.woods === 1 && r.solid > 0 && r.canopy > 0 && r.clear === 25)).toBe(true);
+    expect(mid.find((r) => r.model.endsWith('Bush_Large')).solid).toBe(1);
+    expect([...cover, ...mid, ...trees].every((r) => r.model.startsWith('kit:naturemega/'))).toBe(true);
+  });
+
+  it('scales by the site’s density, keeps out of the water and lays no trees when told not to', () => {
+    const half = livingRows(lush({ density: 0.5 }));
+    expect(half.cover[0].per100).toBeCloseTo(livingRows(lush()).cover[0].per100 / 2, 6);
+    expect(livingRows(lush({ trees: false })).trees).toEqual([]);
+    const wet = livingRows(lush({}, { water: { level: -3 } }));
+    expect([...wet.cover, ...wet.mid, ...wet.trees].every((r) => r.above === 0.4)).toBe(true);
+    // (a recipe's own size wins over the family's)
+    const dry = livingRows({ flora: { biome: 'dry' }, reach: 590, ground: {} });
+    expect(dry.cover.find((r) => r.model.endsWith('Plant_7')).scale).toEqual([2.5, 4]);
+    expect(dry.cover.find((r) => r.model.endsWith('Grass_Wispy_Short')).on).toBe('any');
+  });
+});
+
+describe('airOf: what’s in a world’s air from its biome', () => {
+  const places = [{ at: [200, 0] }, { at: [-150, 220] }, { at: [0, -300] }, { at: [300, 300] }];
+
+  it('flies a green world’s flocks off the landing and over its first places, each its own', () => {
+    const { flocks, song } = airOf(lush({}, { places, land: { at: [10, 0] } }));
+    expect(song).toBe(0.6);
+    expect(flocks).toHaveLength(3);
+    expect(flocks[0].at).toEqual([80, -50]);
+    expect(Math.hypot(flocks[1].at[0] - 200, flocks[1].at[1])).toBeLessThan(50);
+    expect(new Set(flocks.map((f) => f.seed)).size).toBe(3);
+    expect(flocks.every((f) => f.count === 12 && f.height >= 30 && f.radius > 0 && f.colour)).toBe(true);
+    // (a desert's few big ones, high)
+    const dry = airOf({ flora: { biome: 'dry' }, ground: {}, places });
+    expect(dry.flocks).toHaveLength(1);
+    expect(dry.flocks[0]).toMatchObject({ count: 4, size: 1.1, height: 70 });
+  });
+
+  it('lays pollen in a clear sky only', () => {
+    expect(airOf(lush({}, { places })).weather).toEqual([{ kind: 'pollen', color: BIOMES.plains.air.pollen }]);
+    expect(airOf(lush({}, { places, weather: [{ kind: 'rain' }] })).weather).toEqual([]);
+    expect(airOf(lush({}, { places, weather: [{ kind: 'motes' }] })).weather).toEqual([]);
+    expect(airOf({ flora: { biome: 'tropical' }, ground: {} }).weather).toEqual([]);
+  });
+
+  it('is still where the biome has no air, or there is no ground', () => {
+    const none = { weather: [], song: 0, flocks: [] };
+    expect(airOf({ flora: { biome: 'tundra' }, ground: {} })).toEqual(none);
+    expect(airOf({ ground: {} })).toEqual(none);
+    expect(airOf(lush({}, { noGround: true }))).toEqual(none);
+  });
+});
+
 describe('floraTint', () => {
   it('tints: the biome’s defaults under the site’s own', () => {
     const was = BIOMES.plains.tint;
@@ -159,8 +246,10 @@ describe('floraTint', () => {
 describe('floraNames', () => {
   it('names every model it uses from the manifest', () => {
     for (const biome of Object.keys(BIOMES)) {
-      const names = floraNames(floraRows({ flora: { biome }, reach: 590, ground: {} }));
+      const names = floraNames(floraRows({ flora: { biome, living: false }, reach: 590, ground: {} }));
       for (const name of names) expect(MANIFEST.models[name], `${biome}: ${name}`).toBeTruthy();
+      const live = livingRows({ flora: { biome }, reach: 590, ground: {} });
+      for (const name of floraNames(live ? [...live.cover, ...live.mid, ...live.trees] : [])) expect(MANIFEST.models[name], `${biome} streamed: ${name}`).toBeTruthy();
     }
     expect(floraNames(floraRows(plains())).has('CommonTree_1')).toBe(true);
   });

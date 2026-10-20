@@ -1,4 +1,4 @@
-/* global window, document */
+/* global window, document, requestAnimationFrame */
 // Pictures of a galaxy world from where you choose to stand (the
 // checkpoints' before/after shots of the planets overhaul): each view is a
 // thing to look at, how far off to stand and from which side (degrees,
@@ -102,6 +102,12 @@ for (const v of views) {
   const file = `${out}/${world}-${zone ? `${zone}-` : ''}${label ?? `${x0}_${z0}_${deg}`}-${quality}.png`;
   await page.screenshot({ path: file, timeout: 180000 });
   console.log(file);
+  // (the frame's draws and triangles, as galaxy-check reads them, and the living ground's tiles)
+  const frame = await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => {
+    const i = window.__surfaceScene?.renderer?.info?.render;
+    r({ calls: i?.drawCalls ?? i?.calls, tris: i?.triangles, living: window.__surfaceScene?.living?.() ?? null });
+  }))));
+  console.log('  frame', JSON.stringify(frame));
 }
 if (errors.length) console.log('errors:', errors.slice(0, 3).join(' | '));
 await browser.close();

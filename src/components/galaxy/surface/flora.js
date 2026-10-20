@@ -29,6 +29,14 @@
 //     holds every one to the manifest)
 //   `flora.game`: a recipe of the drop's own objects (gameFlora.js), laid
 //     after the kit's (biome 'none' for a world that wants only those)
+//   livingOn(site), livingRows(site) → { cover, mid, trees } | null: a
+//     biome's `living` recipe ([Name, per100, more?] a band), streamed
+//     round you a tile at a time (living.js), in place of the cover, the
+//     kit's bushes and the trees floraRows would lay once
+//     (docs/superpowers/specs/2026-10-20-galaxy-living-free-roam-design.md, 1)
+//   airOf(site) → { weather, song, flocks }: a biome's `air`, its flocks
+//     ([{ at, count, size, colour, height, radius, speed, seed }]), its
+//     birdsong and its pollen
 
 import { REACH } from './terrain';
 import { gameRows } from './gameFlora';
@@ -129,6 +137,31 @@ export const BIOMES = {
     ],
     // (the kit painted its common bush's leaves autumn red: a meadow's are green)
     tint: { Leaves_TwistedTree: { recolour: '#587a34' } },
+    // (the air: flocks over the places, birdsong, pollen over the meadows)
+    air: { flocks: { n: 3, count: 12 }, song: 0.6, pollen: '#fff1c4' },
+    // (streamed round you, living.js: per 100 m²)
+    living: {
+      cover: [
+        ['Grass_Common_Short', 1.6],
+        ['Grass_Wide_Short', 1],
+        ['Grass_Wispy_Tall', 0.6],
+        ['Clover_1', 0.9],
+        ['Flower_2_Single', 0.7],
+        ['Flower_7_Single', 0.5],
+        ['Petal_3', 0.6],
+        ['Pebble_Round_2', 0.3],
+      ],
+      mid: [
+        ['Bush_Common', 0.2],
+        ['Bush_Common_Flowers', 0.12],
+        ['Bush_Large', 0.03],
+      ],
+      trees: [
+        ['CommonTree_1', 0.05],
+        ['CommonTree_2', 0.05],
+        ['CommonTree_5', 0.04],
+      ],
+    },
   },
   // (the rest as the living layer's design lists them, its table at
   // docs/superpowers/specs/2026-10-09-galaxy-surfaces-living-layer-design.md:
@@ -157,6 +190,26 @@ export const BIOMES = {
       ['Birch_2', 0.5],
       ['Pine_4', 0.5],
     ],
+    air: { flocks: { n: 3, count: 10 }, song: 0.7, pollen: '#f4f0d4' },
+    living: {
+      cover: [
+        ['Grass_Common_Short', 1.5],
+        ['Grass_Common_Tall', 0.9],
+        ['Clover_1', 0.8],
+        ['Fern_1', 0.6],
+        ['Flower_2_Single', 0.4],
+        ['Mushroom_Common', 0.25],
+        ['Pebble_Round_3', 0.3],
+      ],
+      mid: [
+        ['Bush_Large', 0.1],
+        ['Bush_Long_1', 0.12],
+      ],
+      trees: [
+        ['Birch_2', 0.04],
+        ['Pine_4', 0.06],
+      ],
+    },
   },
   // Endor's floor: ferns and toadstools, a dead tree here and there under the
   // built redwoods
@@ -177,6 +230,19 @@ export const BIOMES = {
     ],
     trees: [['DeadTree_3', 1]],
     count: { trees: 40 },
+    air: { flocks: { n: 2, count: 8 }, song: 0.6 },
+    living: {
+      cover: [
+        ['Fern_1', 1.2],
+        ['Fern_2', 0.8],
+        ['Plant_3', 0.5],
+        ['Mushroom_Common', 0.3],
+        ['Mushroom_RedCap', 0.2],
+        ['Pebble_Round_1', 0.3],
+      ],
+      mid: [['Bush_Large', 0.15]],
+      trees: [['DeadTree_3', 0.015]],
+    },
   },
   // Yavin's and Morak's undergrowth: ferns and broad plants, long bushes,
   // mossed rocks, a few twisted trees
@@ -201,6 +267,26 @@ export const BIOMES = {
       ['TwistedTree_3', 0.5],
     ],
     count: { trees: 60 },
+    air: { flocks: { n: 2, count: 14, colour: '#3a2e24' }, song: 0.45, pollen: '#dcf5a8' },
+    living: {
+      cover: [
+        ['Fern_1', 1.2],
+        ['Clover_2', 0.6],
+        ['Plant_4', 0.5],
+        ['Plant_5', 0.5],
+        ['Plant_1_Big', 0.4],
+        ['Plant_2_Big', 0.4],
+        ['Mushroom_Oyster', 0.15],
+      ],
+      mid: [
+        ['Bush_Long_1', 0.3],
+        ['Bush_Large', 0.12],
+      ],
+      trees: [
+        ['TwistedTree_1', 0.025],
+        ['TwistedTree_3', 0.025],
+      ],
+    },
   },
   // Dagobah's: fungus on the roots, low plants, dead and twisted trees
   swamp: {
@@ -219,6 +305,20 @@ export const BIOMES = {
       ['TwistedTree_2', 0.5],
     ],
     count: { trees: 60 },
+    air: { flocks: { n: 1, count: 6 }, song: 0.15 },
+    living: {
+      cover: [
+        ['Plant_2', 0.6],
+        ['Plant_6', 0.5],
+        ['Fern_2', 0.6],
+        ['Mushroom_Oyster', 0.15],
+      ],
+      mid: [],
+      trees: [
+        ['DeadTree_1', 0.02],
+        ['TwistedTree_2', 0.02],
+      ],
+    },
   },
   // Scarif's and Pillio's shore: wispy grass, flowers, broad plants and
   // flowering bushes (its palms are its trees)
@@ -234,6 +334,19 @@ export const BIOMES = {
     ],
     mid: [['Bush_Common_Flowers', 1]],
     trees: [],
+    // (gulls, white over the shore)
+    air: { flocks: { n: 3, count: 10, colour: '#e8e4dc', size: 0.7 }, song: 0.3 },
+    living: {
+      cover: [
+        ['Grass_Wispy_Tall', 1],
+        ['Grass_Wispy_Short', 0.8],
+        ['Flower_7_Single', 0.5],
+        ['Plant_1_Big', 0.3],
+        ['Pebble_Round_4', 0.3],
+      ],
+      mid: [['Bush_Common_Flowers', 0.15]],
+      trees: [],
+    },
   },
   // Tatooine's and Saleucami's scrub: pebbles, low scrub and dry tufts,
   // rocks and boulders, no trees
@@ -256,6 +369,19 @@ export const BIOMES = {
     count: { cover: 1800 },
     // (the scrub bush is the kit's long bush, its leaves the broad trees')
     tint: { Leaves: { recolour: '#8a7c4e' }, Leaves_NormalTree: { recolour: '#7a6e44' }, Grass: { recolour: '#b4a070' }, PathRocks: { recolour: '#9a8a6a' } },
+    // (a few big birds circling high over the scrub)
+    air: { flocks: { n: 1, count: 4, size: 1.1, height: 70, radius: 70 }, song: 0.12 },
+    living: {
+      cover: [
+        ['Plant_7', 1, { scale: [2.5, 4] }],
+        ['Plant_7_Big', 0.5, { scale: [2, 3.5] }],
+        ['Grass_Wispy_Short', 0.6, { on: 'any' }],
+        ['Pebble_Round_5', 0.5, { scale: [3, 6] }],
+        ['Pebble_Square_1', 0.3, { scale: [3, 6] }],
+      ],
+      mid: [['Bush_Long_1', 0.08, { scale: [0.5, 0.9] }]],
+      trees: [],
+    },
   },
   // Mustafar's and Sullust's: stones near black, the volcano's dark rocks,
   // no plants
@@ -272,6 +398,16 @@ export const BIOMES = {
     trees: [],
     count: { cover: 900 },
     tint: { PathRocks: { recolour: '#2c2926' } },
+    living: {
+      cover: [
+        ['Pebble_Square_2', 0.6, { scale: [3, 6] }],
+        ['Pebble_Square_4', 0.6, { scale: [3, 6] }],
+        ['Pebble_Square_1', 0.4, { scale: [3, 6] }],
+        ['Pebble_Square_3', 0.4, { scale: [3, 6] }],
+      ],
+      mid: [],
+      trees: [],
+    },
   },
   // Hoth's and Mygeeto's, and the grey yards, camps and burnt woods of
   // Corellia, Fondor, Wobani, Eadu and Corvus: nothing green, outcrops of
@@ -290,9 +426,77 @@ export const BIOMES = {
 
 const biomeOf = (site) => (site?.flora ? (BIOMES[site.flora.biome] ?? null) : null);
 
+// How a streamed row of each family lies (living.js, lib/land/cover.js): how
+// many stand together and how far apart, whether it keeps to the grass, to
+// the woods (1) or to the glades (-1), and the trunk a walker stops at
+// (metres at scale 1). A recipe's entry may say its own.
+const LIVE = [
+  ['Grass_', { clump: 7, spread: 3, on: 'grass' }],
+  ['Clover_', { clump: 5, spread: 2.5, on: 'grass' }],
+  ['Flower_', { clump: 6, spread: 2.5, on: 'grass', woods: -0.6 }],
+  ['Petal_', { clump: 4, spread: 2, on: 'grass' }],
+  ['Pebble_', { clump: 3, spread: 2.5 }],
+  ['Fern_', { clump: 5, spread: 3, woods: 0.5 }],
+  ['Mushroom_', { clump: 4, spread: 1.5, woods: 0.8 }],
+  ['Plant_', { clump: 4, spread: 3, woods: 0.3 }],
+  ['Bush_Large', { clump: 2, spread: 5, solid: 1 }],
+  ['Bush_', { clump: 3, spread: 4, woods: 0.4 }],
+  ['', { clump: 3, spread: 10, woods: 1, solid: 0.45 }],
+];
+const liveOf = (name) => LIVE.find(([p]) => name.startsWith(p))[1];
+
+// What's in a world's air from its biome: its flocks, over its places and
+// off the landing (lib/three/birds, two draws a flock: flocks.js), its
+// birdsong (sounds.js's `song`, 0…1) and its pollen (weather.js's), unless
+// the sky is already busy with sand, snow, rain, ash or motes.
+const FLOCK = { count: 10, size: 0.5, colour: '#2a2622', height: 34, radius: 45, speed: 9 };
+const BUSY = new Set(['sand', 'snow', 'rain', 'ash', 'motes', 'pollen']);
+
+export function airOf(site) {
+  const air = biomeOf(site)?.air;
+  if (!air || site.noGround) return { weather: [], song: 0, flocks: [] };
+  const busy = (site.weather ?? []).some((w) => BUSY.has(w.kind));
+  const land = site.land?.at ?? [0, 0];
+  // (the first off the landing, the rest over the places, each a little off its middle)
+  const spots = [[land[0] + 70, land[1] - 50], ...(site.places ?? []).map((p, i) => [p.at[0] + (i % 2 ? 30 : -30), p.at[1] + 25])];
+  const { n = 0, ...look } = air.flocks ?? {};
+  const seed = site.ground?.seed ?? 1;
+  const flocks = spots.slice(0, n).map((at, i) => ({ ...FLOCK, ...look, at, height: (look.height ?? FLOCK.height) + (i % 3) * 6, seed: seed * 31 + i * 7 }));
+  return { weather: air.pollen && !busy ? [{ kind: 'pollen', color: air.pollen }] : [], song: air.song ?? 0, flocks };
+}
+
+// whether a world's cover, bushes and trees stream round you (living.js) in
+// place of the rings the scene lays once: a biome with a living recipe, on
+// ground of its own (a world on the game's level has the game's own
+// scatter, and `flora.living: false` keeps the rings)
+export const livingOn = (site) => {
+  const biome = biomeOf(site);
+  return Boolean(biome?.living && site.flora.living !== false && !site.noGround && !site.level);
+};
+
+// the streamed rows, band by band: { cover, mid, trees } of { model, kind,
+// per100, clump, spread, scale, on?, woods?, solid?, canopy?, above?,
+// clear? } (null where nothing streams); a site's `flora.density` scales
+// every per100, and `trees: false` lays none
+export function livingRows(site) {
+  if (!livingOn(site)) return null;
+  const { living } = biomeOf(site);
+  const density = site.flora.density ?? 1;
+  const wet = site.water ? { above: ABOVE } : {};
+  const rows = (band, list) =>
+    list.map(([name, per100, more = {}]) => {
+      const canopy = band === 'trees' ? CANOPY[name.replace(/_.*$/, '')] : 0;
+      return { band, kind: kindOf(name), model: PACK + name, per100: per100 * density, scale: sizeOf(name), ...liveOf(name), ...(canopy ? { canopy } : {}), ...(band === 'trees' ? { clear: CLEAR } : {}), ...wet, ...more };
+    });
+  return { cover: rows('cover', living.cover), mid: rows('mid', living.mid), trees: site.flora.trees === false ? [] : rows('trees', living.trees) };
+}
+
 export function floraRows(site) {
   const biome = biomeOf(site);
   if (!biome || site.noGround) return [];
+  // (streamed instead: the cover, the kit's bushes and the trees; the game's
+  // rocks and the drop's own stay rows)
+  const live = livingOn(site);
   const density = site.flora.density ?? 1;
   const count = { ...COUNT, ...(biome.count ?? {}) };
   const reach = site.reach ?? REACH;
@@ -308,9 +512,11 @@ export function floraRows(site) {
   };
   // (the cover too low to throw a shadow worth its draws)
   const near = biome.near?.length ? NEAR : 0;
-  lay('cover', biome.near ?? [], count.cover * near, RINGS.near, () => ({ solid: false, shadow: false }));
-  lay('cover', biome.cover, count.cover * (1 - near), RINGS.cover, () => ({ solid: false, shadow: false }));
-  lay('mid', biome.mid, count.mid, RINGS.mid, () => ({ solid: true }));
+  // (each of the game's rocks its count as it was)
+  const mid = live ? biome.mid.filter(([name]) => name.startsWith('game:')) : biome.mid;
+  if (!live) lay('cover', biome.near ?? [], count.cover * near, RINGS.near, () => ({ solid: false, shadow: false }));
+  if (!live) lay('cover', biome.cover, count.cover * (1 - near), RINGS.cover, () => ({ solid: false, shadow: false }));
+  lay('mid', mid, count.mid, RINGS.mid, () => ({ solid: true }));
   // (and round each place out past the landing's rings, where its landmark
   // stands: a band of the cover and the mid outside its flat, which the
   // scene keeps clear, so a building stands in its world's ground and not
@@ -320,10 +526,10 @@ export function floraRows(site) {
     const within = [r0, r0 + PLACE.band];
     const area = Math.PI * (within[1] ** 2 - r0 ** 2);
     const at = { at: p.at };
-    lay('cover', biome.cover, area / PLACE.cover, within, () => ({ ...at, solid: false, shadow: false }));
-    lay('mid', biome.mid, area / PLACE.mid, within, () => ({ ...at, solid: true }));
+    if (!live) lay('cover', biome.cover, area / PLACE.cover, within, () => ({ ...at, solid: false, shadow: false }));
+    lay('mid', mid, area / PLACE.mid, within, () => ({ ...at, solid: true }));
   }
-  if (site.flora.trees !== false) {
+  if (site.flora.trees !== false && !(live && biome.living.trees.length)) {
     const within = [RINGS.trees[0], Math.min(RINGS.trees[1], reach)];
     lay('trees', biome.trees, count.trees, within, (name) => {
       const canopy = CANOPY[name.replace(/_.*$/, '')];

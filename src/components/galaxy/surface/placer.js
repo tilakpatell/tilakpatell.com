@@ -10,7 +10,8 @@
 // scatter(kind, items, opts), update(t, dt, you), signal(name, on) (to the
 // built things that move when something happens: a trapdoor, a gate),
 // setZone(inZone), ready (a promise: everything asked for so far is in),
-// dispose() }
+// kitFor(pack) (a nature kit in the world's wind, look and tint, once a
+// pack: the living ground draws in it too, living.js), dispose() }
 //   `models`: the book of models kinds are looked up in (catalog's
 //   SURFACE_MODELS unless a page hands in its own); `props`, `scatter`:
 //   the builds (props/'s PROPS and SCATTER unless a page hands in its own).
@@ -399,6 +400,7 @@ export function createPlacer({ parent, kit, world, warm = (o) => Promise.resolve
 
   return {
     group,
+    kitFor,
     // one thing; resolves to its object (or null)
     put(spec) {
       // (a generic prop the game has, on mid and up: the game's, catalog/bf2017-game-for.js)
