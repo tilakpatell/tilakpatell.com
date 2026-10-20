@@ -11,7 +11,7 @@ import { chapter as findChapter, neighbours, stopOf } from '../components/middle
 import { hidden as hiddenPlace } from '../components/middleearth/hidden';
 import { shouldOpen } from '../components/middleearth/opening';
 import { STOPS } from '../components/middleearth/road';
-import { PAGES } from '../components/middleearth/redbook/pages';
+import { bookPageFor } from '../components/middleearth/redbook/routes';
 import WorldSwitcher from '../components/worlds/WorldSwitcher';
 import WorldPhotos from '../components/worlds/WorldPhotos';
 import Scenes from '../components/worlds/Scenes';
@@ -96,8 +96,6 @@ const WRONG = [
 const FLY = 950;
 // a chapter on the road, or a place off it that someone found (./hidden.js)
 const placeOf = (id) => findChapter(id) ?? hiddenPlace(id);
-// the Red Book's page for a chapter (its first that plays it), or its first page
-const bookPage = (id) => PAGES.find((p) => p.play === id)?.id ?? PAGES[0].id;
 
 export default function MiddleEarth() {
   const { place } = useParams();
@@ -256,8 +254,11 @@ export default function MiddleEarth() {
 
       {here && (
         <div className="me-bar shell relative z-20">
-          <button type="button" className="btn btn-ghost btn-sm me-bar-back" onClick={toMap}>
-            <span aria-hidden="true">←</span> The map
+          <button type="button" className="btn btn-ghost btn-sm me-bar-back" onClick={() => navigate(`/middle-earth?page=${bookPageFor(here.id)}`)}>
+            <span aria-hidden="true">←</span> The Red Book
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm me-bar-map" onClick={toMap}>
+            The map
           </button>
           <p className="me-bar-where">
             <span className="eyebrow">Middle-earth</span> <b>{here.name}</b>
@@ -580,7 +581,7 @@ export default function MiddleEarth() {
                   The map
                 </button>
               )}
-              <button type="button" className="btn btn-ghost" onClick={() => navigate(`/middle-earth?page=${bookPage(here.id)}`)}>
+              <button type="button" className="btn btn-ghost" onClick={() => navigate(`/middle-earth?page=${bookPageFor(here.id)}`)}>
                 The Red Book
               </button>
             </div>

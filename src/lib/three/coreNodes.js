@@ -74,7 +74,8 @@ const weightsOf = (n) => {
   return w.div(w.x.add(w.y).add(w.z));
 };
 
-const LIT = (m) => Boolean(m && (m.isMeshStandardMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial || m.isMeshToonMaterial));
+// (a node material already made counts: a 'nodes' world's own, worn in place)
+const LIT = (m) => Boolean(m && (m.isMeshStandardMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial || m.isMeshToonMaterial || m.isMeshStandardNodeMaterial || m.isMeshLambertNodeMaterial || m.isMeshPhongNodeMaterial || m.isMeshToonNodeMaterial));
 
 // A scan ({ map, normalMap }) on a lit material, once: `metres` of world a
 // repeat, `strength` of its colour (0 to 1), `normal` its relief, `mean` the

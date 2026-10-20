@@ -21,6 +21,7 @@ import { createTownKit } from '../../townKit';
 import { createTumble } from '../../tumble';
 import { barrelParts, parts } from '../../../shire/build';
 import { GATE, PONY, WING, buildProps } from './props';
+import { lampPools } from '../parts';
 import { BEATS } from './beats';
 import { STAGES } from '../index';
 
@@ -68,6 +69,9 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
   town.setNight(1);
   const props = buildProps({ K: town.K, material, heightAt });
   group.add(props.group);
+  // the lamps’ light on the wet street, a warm pool under each (no light added: see the one below)
+  const pools = lampPools(props.lamps, heightAt);
+  group.add(pools.mesh);
   const { gate } = props;
   const leaves = gate.leaves.map((l) => ({ l, p: l.position.clone(), r: l.rotation.clone() }));
 
@@ -212,6 +216,7 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
       tumble.dispose();
       for (const { object } of things) object.traverse((o) => o.geometry?.dispose());
       props.dispose();
+      pools.dispose();
       kit.dispose();
       for (const f of figures) f.dispose();
       pipe.geometry.dispose();

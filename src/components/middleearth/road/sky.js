@@ -56,9 +56,11 @@ export function createSky({ radius = 2500, vision = uniform(0) } = {}) {
     const cover = smoothstep(0.45, 0.75, n1.mul(0.65).add(n2.mul(0.35))).mul(smoothstep(0.0, 0.25, dir.y));
     const lit = mix(u.horizon.mul(0.6), u.sunCol, u.day.mul(0.6)).add(u.day.mul(0.2));
     sky.assign(mix(sky, lit, cover.mul(0.7)));
-    // the stars, where the sky is dark enough and no cloud covers them
+    // the stars, where the sky is dark enough and no cloud covers them (none
+    // in a dusk still bright: they come out as the sky round them darkens)
     const cell = floor(dir.mul(STAR_GRID));
-    const star = step(0.9965, hash13(cell, u.seed)).mul(u.stars).mul(smoothstep(0.02, 0.2, dir.y)).mul(cover.oneMinus());
+    const dark = smoothstep(0.16, 0.04, dot(sky, vec3(0.2126, 0.7152, 0.0722)));
+    const star = step(0.9965, hash13(cell, u.seed)).mul(u.stars).mul(dark).mul(smoothstep(0.02, 0.2, dir.y)).mul(cover.oneMinus());
     sky.addAssign(vec3(star.mul(0.9)));
     // the sun’s disc, above the horizon only
     const disc = smoothstep(0.9994, 0.9997, c).mul(smoothstep(-0.03, 0.02, u.sunDir.y));

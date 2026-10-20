@@ -16,7 +16,7 @@
 import * as THREE from 'three';
 import { C, disposeBuilt, merged, mergeStatics, part } from '../parts';
 import { barrels, crates, gate as buildGate, house, lodge, pony, stable, stall, stockade, well } from '../../../towns/bree/build';
-import { benchParts, parts } from '../../../shire/build';
+import { barn, benchParts, fencePostGeo, fenceRailGeo, hayBaleParts, hole, mergeAll, parts, signpost } from '../../../shire/build';
 
 export const BREE = 0.8; // the Road’s man (1.8 m) over the chapter’s Big Folk (2.3)
 export const GATE = { z: 22, half: 2.6 }; // the West-gate across the lane, its leaves either side of the middle
@@ -41,12 +41,27 @@ const HOUSES = [
   [-1, 127, 7, 7, 2, 'slate', true, 15, 0x2a3a2a],
 ];
 const LANE = 3.4; // m: the lane’s half-width to the house fronts
+const SHIRE = 0.68; // the Road’s hobbit over the Shire chapter’s: the holes’ scale
+// the holes of the Little Folk in Bree-hill’s face toward the road: the hill’s
+// middle and the slope they’re dug into (degrees round from +x, metres out),
+// each a door colour and a seed
+const HILL = [-140, 90];
+const DUG = [[-24, 74, 0x7a3f2a, 21], [-14, 70, 0x2e4a6a, 23], [-5, 76, 0x5a6a2a, 25], [6, 72, 0x8a2e2e, 27], [16, 77, 0x3a5a3a, 29], [27, 73, 0x6a4a2a, 31]];
+const FARM = { barn: [-30, 10], paddock: { x: [-46, -14], z: [1.5, 18.5] } }; // a farmstead outside the West-gate (inside the stage: before 0 is the last one’s ground)
 
 // a builder’s group stood on the land at (x, z), turned (its front, +z, to `yaw`), at the Road’s scale
 function stand(g, heightAt, x, z, yaw, s = BREE, foot = 0) {
   g.position.set(x, heightAt(x, z) + foot, z);
   g.rotation.y = yaw;
   g.scale.setScalar(s);
+  return g;
+}
+// a parts function’s pieces built into a group of their own
+function bits(fn) {
+  const g = new THREE.Group();
+  const bk = parts();
+  fn(bk);
+  bk.build(g);
   return g;
 }
 // (a front to the lane: the left side’s houses face −x, the right side’s +x)
@@ -102,6 +117,37 @@ export function buildProps({ K, material, heightAt }) {
   for (let z = GATE.z; z < BACK.z; z += 8) cobbles.push(part(new THREE.BoxGeometry(3.6, 0.04, 8), C(0x4a4640).offsetHSL(0, 0, ((z * 0.13) % 1) * 0.03), { at: [0, heightAt(0, z + 4) + 0.03, z + 4] }));
   group.add(merged(cobbles, material, 'bree:cobbles'));
   // (the town’s builders draw a house in a dozen meshes: one a material for the whole town, the gate’s leaves left to move)
+  // Bree-hill’s holes, their doors and round windows to the road (lit at night with the town’s)
+  for (const [deg, r, door, seed] of DUG) {
+    const a = (deg * Math.PI) / 180;
+    const x = HILL[0] + Math.cos(a) * r;
+    const z = HILL[1] + Math.sin(a) * r;
+    const h = hole(K, { R: 3.8, door, seed });
+    // (its mound’s middle a little into the slope behind the door)
+    const back = (h.front ?? 3) * SHIRE;
+    group.add(stand(h.group, heightAt, x - Math.cos(a) * back, z - Math.sin(a) * back, Math.atan2(Math.cos(a), Math.sin(a)), SHIRE, -0.15));
+  }
+  // the farmstead outside the gate: the barn, its hay, the paddock’s fence; the signpost where the roads meet
+  group.add(stand(barn(K).group, heightAt, FARM.barn[0], FARM.barn[1], FACE[-1], SHIRE * 0.95));
+  for (const [x, z, yaw] of [[-20, 6, 0.3], [-21.4, 7.4, 1.1], [-19.6, 8.8, 2.4], [-23, 15, 0.7]]) group.add(stand(bits((bk) => hayBaleParts(bk, K)), heightAt, x, z, yaw, SHIRE));
+  {
+    const { x: [x0, x1], z: [z0, z1] } = FARM.paddock;
+    const posts = [];
+    const runs = [];
+    for (let x = x0; x <= x1; x += 2.4) posts.push([x, z0], [x, z1]);
+    for (let z = z0 + 2.4; z < z1; z += 2.4) posts.push([x0, z]);
+    for (let x = x0; x < x1 - 1; x += 2.4) runs.push([x + 1.2, z0, 0], [x + 1.2, z1, 0]);
+    for (let z = z0; z < z1 - 1; z += 2.4) runs.push([x0, z + 1.2, Math.PI / 2]);
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    const post = new THREE.InstancedMesh(fencePostGeo(), K.mats.fence, posts.length);
+    posts.forEach(([x, z], i) => post.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z), z), q.identity(), new THREE.Vector3(SHIRE, SHIRE * 1.2, SHIRE))));
+    const rail = new THREE.InstancedMesh(mergeAll([fenceRailGeo(0.45, 1), fenceRailGeo(0.85, 2)]), K.mats.fence, runs.length);
+    runs.forEach(([x, z, yaw], i) => rail.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z), z), q.setFromAxisAngle(up, yaw), new THREE.Vector3(2.4, SHIRE * 1.2, SHIRE))));
+    group.add(post, rail);
+  }
+  group.add(stand(signpost(K, ['Bree', 'The Greenway', 'The East Road']).group, heightAt, 3.4, 6, FACE[1], SHIRE * 1.2));
   mergeStatics(group, { keep: [gate.group] });
 
   return {

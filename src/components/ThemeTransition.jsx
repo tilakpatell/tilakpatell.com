@@ -59,7 +59,7 @@ function sceneFor(id, custom) {
   const role = roles.find((r) => r.id === id);
   if (role) return { kind: 'company', color: THEMES[id].swatch, quote: role.company, by: role.shortTitle };
   if (id === 'custom') return { kind: 'wheel', color: custom, quote: THEMES.custom.company, by: String(custom).toUpperCase() };
-  return { kind: 'wipe', color: THEMES[id]?.swatch ?? '#888888', quote: THEMES[id]?.company ?? '', by: 'Site colours' };
+  return { kind: 'wipe', color: THEMES[id]?.swatch ?? 'var(--accent)', quote: THEMES[id]?.company ?? '', by: 'Site colours' };
 }
 
 function Scene({ kind, color }) {

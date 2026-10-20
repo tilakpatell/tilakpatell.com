@@ -5,8 +5,8 @@
 
 .yard {
   --yard-bg: rgb(5 7 14);
-  --yard-line: rgb(255 255 255 / 0.12);
-  --yard-pane: rgb(255 255 255 / 0.03);
+  --yard-line: color-mix(in srgb, var(--text) 12%, transparent);
+  --yard-pane: color-mix(in srgb, var(--text) 3%, transparent);
   position: fixed;
   inset: var(--nav-h, 68px) 0 0 0;
   z-index: var(--z-sheet, 60); /* (over the floating cards, the tour's offer among them; under the dialogs) */
@@ -46,7 +46,7 @@
 .yard-rail { display: flex; flex-direction: column; gap: 2px; padding: 0.5rem 0.35rem; overflow-y: auto; border-right: 1px solid var(--yard-line); }
 .yard-rail button { min-height: 36px; padding: 0 0.5rem; border-radius: 6px; color: var(--muted); font-size: 0.74rem; text-align: left; }
 .yard-rail button[data-build] { font-style: italic; }
-.yard-rail button:hover { color: var(--text); background: rgb(255 255 255 / 0.05); }
+.yard-rail button:hover { color: var(--text); background: color-mix(in srgb, var(--text) 5%, transparent); }
 .yard-rail button[aria-selected='true'] { color: var(--text); background: color-mix(in srgb, var(--engine, #e8eefc) 18%, transparent); }
 .yard-list { display: flex; flex-direction: column; gap: 0.6rem; min-height: 0; padding: 0.6rem; overflow-y: auto; }
 .yard-build-tools { display: grid; gap: 0.45rem; }
@@ -62,7 +62,7 @@
 .yard-paste button:disabled { opacity: 0.4; }
 .yard-rows { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .yard-row { display: grid; gap: 0.25rem; width: 100%; min-height: 44px; padding: 0.5rem 0.6rem; border: 1px solid var(--yard-line); border-radius: 10px; color: var(--text); text-align: left; transition: border-color 0.15s, background-color 0.15s; }
-.yard-row:hover { border-color: rgb(255 255 255 / 0.32); background: rgb(255 255 255 / 0.04); }
+.yard-row:hover { border-color: color-mix(in srgb, var(--text) 32%, transparent); background: color-mix(in srgb, var(--text) 4%, transparent); }
 .yard-row[aria-pressed='true'] { border-color: var(--engine, #e8eefc); background: color-mix(in srgb, var(--engine, #e8eefc) 14%, transparent); }
 .yard-row[aria-disabled] { opacity: 0.6; }
 .yard-row-top { display: flex; align-items: center; gap: 0.45rem; }
@@ -72,7 +72,7 @@
 .yard-row-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
 .yard-row-tags:empty { display: none; }
 .yard-tag { padding: 0 0.45rem; border: 1px solid var(--yard-line); border-radius: 999px; color: var(--muted); font-size: 0.66rem; }
-.yard-swatch { flex: none; width: 18px; height: 18px; border: 1.5px solid rgb(255 255 255 / 0.35); border-radius: 50%; }
+.yard-swatch { flex: none; width: 18px; height: 18px; border: 1.5px solid color-mix(in srgb, var(--text) 35%, transparent); border-radius: 50%; }
 
 /* the showroom */
 .yard-stage { position: relative; grid-area: stage; min-height: 0; background: radial-gradient(ellipse at 50% 38%, #1b2640 0%, #0b1020 55%, #04060c 100%); }
@@ -135,7 +135,7 @@
   .yard-bill-toggle { display: grid; grid-row: span 2; place-items: center; width: 44px; height: 44px; border: 1px solid var(--yard-line); border-radius: 10px; color: var(--text); }
   .yard-bill-body { display: none; max-height: 52vh; border-top: 1px solid var(--yard-line); }
   .yard-bill[data-open] .yard-bill-body { display: flex; }
-  .yard-bill[data-open] { position: absolute; right: 0; bottom: 0; left: 0; z-index: 2; box-shadow: 0 -12px 30px rgb(0 0 0 / 0.5); }
+  .yard-bill[data-open] { position: absolute; right: 0; bottom: 0; left: 0; z-index: 2; box-shadow: 0 -12px 30px color-mix(in srgb, var(--shadow-ink) 50%, transparent); }
 }
 
 /* (the read-out and the prices came from universe.css, so they're the Shipyard's
@@ -146,7 +146,7 @@
 .universe-hangar-num { color: var(--muted); text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
 .universe-hangar-power { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.6rem; }
 .universe-hangar-cells { display: flex; gap: 3px; }
-.universe-hangar-cells i { flex: 1; height: 8px; border-radius: 2px; background: rgb(255 255 255 / 0.12); }
+.universe-hangar-cells i { flex: 1; height: 8px; border-radius: 2px; background: color-mix(in srgb, var(--text) 12%, transparent); }
 .universe-hangar-cells i[data-on] { background: var(--engine, #e8eefc); box-shadow: 0 0 6px color-mix(in srgb, var(--engine, #e8eefc) 60%, transparent); }
 .universe-hangar-power[data-full] .universe-hangar-num { color: var(--hud-warn, #ffb35c); }
 /* the cruiser's crew: to the wardrobe */
@@ -155,7 +155,7 @@
 .universe-hangar-stat { display: grid; grid-template-columns: 8.2rem 1fr; align-items: center; gap: 0.6rem; }
 .universe-hangar-stat dt { font-size: 0.74rem; }
 .universe-hangar-stat dd { display: grid; grid-template-columns: 1fr 3.4em; align-items: center; gap: 0.5rem; margin: 0; }
-.universe-hangar-bar { position: relative; height: 6px; border-radius: 3px; background: rgb(255 255 255 / 0.12); overflow: hidden; }
+.universe-hangar-bar { position: relative; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--text) 12%, transparent); overflow: hidden; }
 .universe-hangar-bar > i,
 .universe-hangar-bar > b { position: absolute; inset: 0 auto 0 0; border-radius: 3px; }
 .universe-hangar-bar > i { width: calc(var(--now) * 100%); background: var(--engine, #e8eefc); }
@@ -167,7 +167,7 @@
 .universe-hangar-change { color: var(--muted); font-family: var(--font-mono); font-size: 0.7rem; font-variant-numeric: tabular-nums; text-align: right; }
 /* the shop's price pill on each of the Shipyard's rows (Owned, 400 ¢, the
    price dimmed and how short you are, or the lock's sentence) */
-.universe-price { display: inline-flex; align-items: center; justify-self: start; gap: 0.35rem; max-width: 100%; padding: 0.1rem 0.5rem; border: 1px solid rgb(255 255 255 / 0.16); border-radius: 999px; color: var(--muted); font-size: 0.68rem; line-height: 1.4; font-variant-numeric: tabular-nums; }
+.universe-price { display: inline-flex; align-items: center; justify-self: start; gap: 0.35rem; max-width: 100%; padding: 0.1rem 0.5rem; border: 1px solid color-mix(in srgb, var(--text) 16%, transparent); border-radius: 999px; color: var(--muted); font-size: 0.68rem; line-height: 1.4; font-variant-numeric: tabular-nums; }
 .universe-price[data-kind='owned'] { border-color: rgb(110 231 160 / 0.4); color: #6ee7a0; }
 .universe-price[data-kind='buy'] { border-color: var(--engine, #e8eefc); color: var(--text); background: color-mix(in srgb, var(--engine, #e8eefc) 14%, transparent); font-weight: 600; }
 .universe-price[data-kind='short'] { color: var(--hud-warn, #ffb35c); }
@@ -179,5 +179,5 @@
 }
 /* the head's close button, as the universe's settings have it (its size is the head's own, .yard-head's, above) */
 .yard .universe-settings-close { display: grid; place-items: center; margin: -6px -8px -6px 0; color: var(--muted); }
-.yard .universe-settings-close:hover { color: var(--text); background: rgb(255 255 255 / 0.08); }
+.yard .universe-settings-close:hover { color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); }
 .yard .universe-settings-close:focus-visible { outline: 2px solid var(--engine, #e8eefc); outline-offset: 1px; }

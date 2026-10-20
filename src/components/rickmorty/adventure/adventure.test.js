@@ -136,9 +136,17 @@ describe('the adventure’s store', () => {
     expect(a.dialOpen('needful')).toBe(false); // (episode 5 is built too)
     expect(a.dialOpen('vat')).toBe(false);
     a.jump(5);
-    expect(a.dialOpen('vat')).toBe(true); // (past the last ready episode)
+    expect(a.dialOpen('needful')).toBe(true);
+    expect(a.dialOpen('vat')).toBe(true);
+    expect(a.dialOpen('jerryboree')).toBe(false); // (episode 6 is built too)
+    a.jump(6);
+    expect(a.dialOpen('jerryboree')).toBe(true);
+    expect(a.dialOpen('gloopynoops')).toBe(true);
+    expect(a.dialOpen('cablestudio')).toBe(false); // (episode 7 is built too)
+    a.jump(7);
+    expect(a.dialOpen('cablestudio')).toBe(true); // (past the last ready episode)
     a.jump(99);
-    expect(a.get().episode).toBe(5);
+    expect(a.get().episode).toBe(7);
     a.reset();
     expect(a.get()).toEqual(fresh());
   });
@@ -156,7 +164,7 @@ describe('the adventure’s store', () => {
     // part-way through one, past the built ones, or on free roam: none
     at({ episode: 1, step: 1 });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
-    at({ episode: 5, step: 0 });
+    at({ episode: 7, step: 0 });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
     at({ episode: 1, step: 0, freeRoam: true });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
@@ -220,10 +228,54 @@ describe('the adventure’s store', () => {
     const chased = createAdventure({ saves, read: none });
     expect(chased.get()).toMatchObject({ episode: 4, step: 1 });
     expect(chased.intro()).toBe(4);
-    // both: episode 5 finishes as the visit loads, with no card (episode 6 isn't built)
+    // both: episode 5 finishes as the visit loads
     at({ episode: 4, step: 0, wins: ['chase'] });
     const both = createAdventure({ saves, read: knowing(['gromflomites']) });
     expect(both.get()).toMatchObject({ episode: 5, step: 0 });
+    expect(both.intro()).toBe(5); // (episode 6's card: it's built now)
+  });
+
+  it('opens episode 6 for a visitor who finished episode 5 before it was built', () => {
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), ...data } }));
+    const knowing = (tasks) => ({ tasks: () => tasks, citadel: () => [] });
+    at({ episode: 5, step: 0 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(5);
+    // Needful Things done already: caught up to the vat, still episode 6's card
+    at({ episode: 5, step: 0 });
+    const dealt = createAdventure({ saves, read: knowing(['needful']) });
+    expect(dealt.get()).toMatchObject({ episode: 5, step: 1 });
+    expect(dealt.intro()).toBe(5);
+    // the vat done already, Needful Things not: it waits at Needful Things, with episode 6's card
+    at({ episode: 5, step: 0 });
+    const dipped = createAdventure({ saves, read: knowing(['vat']) });
+    expect(dipped.get()).toMatchObject({ episode: 5, step: 0 });
+    expect(dipped.intro()).toBe(5);
+    // both: episode 6 finishes as the visit loads
+    at({ episode: 5, step: 0 });
+    const both = createAdventure({ saves, read: knowing(['needful', 'vat']) });
+    expect(both.get()).toMatchObject({ episode: 6, step: 0 });
+    expect(both.intro()).toBe(6); // (episode 7's card: it's built now)
+  });
+
+  it('opens episode 7 for a visitor who finished episode 6 before it was built', () => {
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), ...data } }));
+    const knowing = (tasks) => ({ tasks: () => tasks, citadel: () => [] });
+    at({ episode: 6, step: 0 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(6);
+    // the Jerryboree done already: caught up to St. Gloopy Noops, still episode 7's card
+    at({ episode: 6, step: 0 });
+    const picked = createAdventure({ saves, read: knowing(['jerryboree']) });
+    expect(picked.get()).toMatchObject({ episode: 6, step: 1 });
+    expect(picked.intro()).toBe(6);
+    // St. Gloopy Noops done already, the Jerryboree not: it waits at the Jerryboree, with episode 7's card
+    at({ episode: 6, step: 0 });
+    const visited = createAdventure({ saves, read: knowing(['gloopynoops']) });
+    expect(visited.get()).toMatchObject({ episode: 6, step: 0 });
+    expect(visited.intro()).toBe(6);
+    // both: episode 7 finishes as the visit loads, with no card (episode 8 isn't built)
+    at({ episode: 6, step: 0 });
+    const both = createAdventure({ saves, read: knowing(['jerryboree', 'gloopynoops']) });
+    expect(both.get()).toMatchObject({ episode: 7, step: 0 });
     expect(both.intro()).toBe(null);
   });
 });

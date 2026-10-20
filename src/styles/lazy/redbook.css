@@ -127,3 +127,43 @@
 .redbook-card .redbook-btn { background: rgb(243 234 214 / 0.08); color: var(--rb-ink); border: 1px solid rgb(243 234 214 / 0.35); }
 .redbook-card .redbook-btn:hover:not(:disabled) { background: rgb(243 234 214 / 0.16); border-color: var(--rb-gold); }
 .redbook-card .redbook-btn:disabled { background: transparent; color: var(--rb-muted); border-color: rgb(243 234 214 / 0.15); }
+
+/* the room and the window: an eye of the study and a round pane */
+.redbook-look-icon { border: 2px solid var(--rb-gold); border-radius: 50% 50% 8px 8px / 60% 60% 8px 8px; background: linear-gradient(180deg, rgb(255 190 110 / 0.35), rgb(40 24 12 / 0.9)); }
+.redbook-window-icon { border: 3px solid #4f8a5a; background: radial-gradient(circle at 50% 40%, #fff2c8 0 8%, #1a2a52 12% 100%); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.15); }
+.redbook-objects { flex-wrap: wrap; justify-content: flex-end; max-width: 26rem; }
+
+/* the Palantír held: the card burns as the Eye comes to know you */
+.redbook-stage[data-eye] .redbook-stone-card { border-color: rgb(255 106 42 / 0.6); }
+.redbook-stage[data-eye] .redbook-stone-card .redbook-eyebrow { color: #ff8a4a; }
+.redbook-meter { display: block; height: 6px; margin-top: 0.2rem; border-radius: 3px; background: rgb(243 234 214 / 0.12); overflow: hidden; }
+.redbook-meter > span { display: block; height: 100%; background: linear-gradient(90deg, #ff9a3a, #ff3a10); transform-origin: left; transition: transform 0.2s linear; }
+/* (the frame’s edges reddening, no blur: the canvas under it is drawn every frame) */
+.redbook-eye-veil { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at 50% 50%, rgb(0 0 0 / 0) 40%, rgb(90 10 0 / 0.5) 80%, rgb(20 0 0 / 0.9) 100%); transition: opacity 0.6s ease; }
+.redbook-stage[data-eye] .redbook-eye-veil { opacity: calc(0.35 + var(--seen, 0) * 0.65); }
+
+/* the Ring in hand: gold on the glass */
+.redbook-ring-card { border-color: rgb(217 178 90 / 0.55); }
+
+/* the Eye’s words: burning in the middle of the screen, louder line by line */
+.redbook-dark {
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  z-index: 3; /* (inside the stage: over the canvas, under the HUD’s frame) */
+  width: min(42rem, calc(100% - 2rem));
+  margin: 0;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  background: rgb(14 4 2 / 0.78);
+  color: #ffd9a0;
+  font: 700 italic clamp(1.15rem, calc(0.9rem + 1.2vw * (0.7 + var(--loud, 0.5) * 0.6)), 2.1rem) / 1.25 'Cinzel', Georgia, serif;
+  letter-spacing: 0.03em;
+  text-align: center;
+  text-shadow: 0 0 calc(8px + var(--loud, 0.5) * 22px) rgb(255 90 20 / 0.85), 0 0 2px rgb(255 200 120 / 0.9);
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: redbook-burn 0.9s ease-out both;
+}
+@keyframes redbook-burn { from { opacity: 0; letter-spacing: 0.2em; filter: brightness(2.2); } to { opacity: 1; letter-spacing: 0.03em; filter: none; } }
+@media (prefers-reduced-motion: reduce) { .redbook-dark { animation: none; } }

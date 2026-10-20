@@ -1,15 +1,36 @@
 import { forwardRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { audioContext } from '../../../lib/audio';
 import { useVoiced } from '../../../lib/useVoiced';
-import { Bubble as KitBubble, Exit, QuestList as KitQuestList, Stick as KitStick, alliesText } from '../../../runtime/hud';
+import { Bubble as KitBubble, Exit, Menu, MenuItem, QuestList as KitQuestList, Stick as KitStick, alliesText } from '../../../runtime/hud';
+import { wayOut } from '../../worlds/worlds';
+import { MAP, bookPageFor, walkFor } from '../redbook/routes';
 import { nodeVoice, personVoice } from './talk';
 import '../../../styles/lazy/middleearth.css';
 
 // The HUD parts a walkable town shares, the HUD kit's (src/runtime/hud) in
 // the Shire's look (its shire-* classes and variables, ../shire/shire.css,
-// re-tinted by each town): the list of things to do, a speech bubble, a
-// conversation, the touch stick and the other travellers. The corner map is
-// ./map.js.
+// re-tinted by each town): the Menu, the list of things to do, a speech
+// bubble, a conversation, the touch stick and the other travellers. The
+// corner map is ./map.js.
+
+// The town's one Menu (the kit's), at the head of the side column: back to
+// this chapter's page of the Red Book, the whole map, the Road from this
+// chapter's stage, then the kit's own (voices, Controls, the picture) and the
+// way out of the worlds. `chapter` is the town's id in chapters.js or
+// hidden.js ('shire', 'amon-hen', 'edoras'…).
+export function TownMenu({ chapter }) {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const stage = walkFor(chapter);
+  return (
+    <Menu className="town-menu" way={wayOut(pathname)}>
+      <MenuItem onClick={() => navigate(`/middle-earth?page=${bookPageFor(chapter)}`)}>The Red Book</MenuItem>
+      <MenuItem onClick={() => navigate(MAP)}>Middle-earth’s map</MenuItem>
+      {stage && <MenuItem onClick={() => navigate(`/middle-earth/road?at=${stage}`)}>The Road</MenuItem>}
+    </Menu>
+  );
+}
 
 // The list of things to do (the HUD kit's, in the Shire's look: its
 // shire-list skin) and, under it, anything a town has on the side or a

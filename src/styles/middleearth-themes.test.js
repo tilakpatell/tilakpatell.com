@@ -13,8 +13,9 @@ const sheet = read('styles/middleearth-themes.css');
 const house = read('index.css');
 
 // every flat rule as [selector, body]; a rule inside @media comes out too, so
-// a block is found by its whole selector, never by a piece of it
-const rules = (css) => [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, s, b]) => [s.trim(), b]);
+// a block is found by its whole selector, never by a piece of it (a statement
+// before a rule, index.css’s @tailwind lines before its :root, ends at its ;)
+const rules = (css) => [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, s, b]) => [s.split(';').pop().trim(), b]);
 const decls = (body) => Object.fromEntries([...body.matchAll(/(--[\w-]+)\s*:\s*([^;]+)/g)].map(([, k, v]) => [k, v.trim()]));
 const tokens = (css, selector) => Object.assign({}, ...rules(css).filter(([s]) => s === selector).map(([, b]) => decls(b)));
 const resolve = (set) => {
@@ -66,8 +67,9 @@ describe('the Middle-earth colours', () => {
     });
 
     it('keeps selected text readable', () => {
-      // ::selection in index.css sets #0f1111 on --saber
-      expect(contrast('#0f1111', t['--saber'])).toBeGreaterThanOrEqual(4.5);
+      // ::selection in index.css sets --saber-ink on --saber (a token now, so a
+      // theme whose saber is dark, as Bose’s is, can turn its selection white)
+      expect(contrast(t['--saber-ink'], t['--saber'])).toBeGreaterThanOrEqual(4.5);
     });
   });
 

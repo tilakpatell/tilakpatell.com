@@ -41,6 +41,23 @@
      --text, so they darken with the theme's ink rather than a fixed black. */
   --shadow-float: 0 18px 40px -20px color-mix(in srgb, var(--text) 60%, transparent);
   --shadow-dialog: 0 24px 50px -24px color-mix(in srgb, var(--text) 55%, transparent);
+  /* What a colour says, set once here and once for the dark, so every theme
+     has them and a theme may set its own: all's well (online, sent), wait or
+     take care, gone wrong or for good (a form's error, Remove), and the ally
+     green (your allies and your party, as the map's tags have them). Each
+     reads 4.5:1 as text on every theme's grounds. (The shade under a dialog,
+     --scrim, is the colour's own: styles/dialogs.css.) */
+  --ok: #116329;
+  --warn: #7a5100;
+  --danger: #b42318;
+  --ally: #0b6e3a;
+  /* The ink a drop shadow is mixed from (each keeps its own size and depth),
+     the ink on a saber ground (a selection), and what a primary button turns
+     toward under the pointer. Read here, on the page's root, they take the
+     theme's own ink; a theme whose saber or button is the ink sets its own. */
+  --shadow-ink: var(--text);
+  --saber-ink: #0f1111;
+  --btn-shade: #000;
 
   /* Depth, bottom to top. Every page-level layer names one of these; a layer
      a step above or below its kind's neighbour says so with a calc and why.
@@ -158,6 +175,10 @@
   --btn-bg: #131317;
   --btn-ink: #ffffff;
   --saber: #131317;
+  /* (its saber and its button are the bass black, so a selection is white on
+     it and a button lightens under the pointer) */
+  --saber-ink: #ffffff;
+  --btn-shade: #ffffff;
   --route-plan: #c9cfd5;
   --route-dash: 2px;
   --route-gap: 5px;
@@ -300,6 +321,15 @@ html[data-mode='dark'] {
   /* in the dark a shadow is darkness, never a pale glow of the ink */
   --shadow-float: 0 18px 40px -20px rgb(0 0 0 / 0.7);
   --shadow-dialog: 0 24px 50px -24px rgb(0 0 0 / 0.75);
+  /* (the states lifted to read on the near black; the ally green is the map's
+     own) */
+  --ok: #5cd98a;
+  --warn: #ffd35c;
+  --danger: #ff8a8a;
+  --ally: #8dffad;
+  --shadow-ink: #000;
+  --saber-ink: #0f1111;
+  --btn-shade: #000;
   /* the site's easing, one family: out for anything arriving or settling, smooth
      for a change of state, spring for a bounce, in for anything leaving */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -388,6 +418,16 @@ html[data-mode='dark'][data-theme='devspace'] { --surface: #070c14; --surface-2:
   /* in the dark a shadow is darkness, never a pale glow of the ink */
   --shadow-float: 0 18px 40px -20px rgb(0 0 0 / 0.7);
   --shadow-dialog: 0 24px 50px -24px rgb(0 0 0 / 0.75);
+  /* the states as the dark mode has them, so an error or the ally green reads
+     on a dark island in a light page too; a shadow's ink is darkness here,
+     and a var() in a token takes the value where it is set, so it is set again */
+  --ok: #5cd98a;
+  --warn: #ffd35c;
+  --danger: #ff8a8a;
+  --ally: #8dffad;
+  --shadow-ink: #000;
+  --saber-ink: #0f1111;
+  --btn-shade: #000;
   /* the site's easing, one family: out for anything arriving or settling, smooth
      for a change of state, spring for a bounce, in for anything leaving */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -436,7 +476,7 @@ html:not([data-mode='dark'])[data-theme='bose'] .dark-scope { --accent: #ffffff;
     text-wrap: balance;
   }
   p { text-wrap: pretty; }
-  ::selection { background: var(--saber); color: #0f1111; }
+  ::selection { background: var(--saber); color: var(--saber-ink); }
   :focus { outline: none; }
   :focus-visible {
     outline: 2px solid var(--accent-text);
@@ -523,7 +563,7 @@ html:not([data-mode='dark'])[data-theme='bose'] .dark-scope { --accent: #ffffff;
   }
   .btn:active { transform: translateY(1px) scale(0.98); }
   .btn-primary { background: var(--btn-bg); color: var(--btn-ink); }
-  .btn-primary:hover { background: color-mix(in srgb, var(--btn-bg) 88%, #000); }
+  .btn-primary:hover { background: color-mix(in srgb, var(--btn-bg) 88%, var(--btn-shade)); }
   .btn-ghost { background: var(--surface); border-color: var(--border-strong); color: var(--text); }
   .btn-ghost:hover { background: var(--surface-2); }
   .btn-sm { min-height: 36px; padding: 0 0.9rem; font-size: var(--fs-sm); }
@@ -565,7 +605,7 @@ html:not([data-mode='dark'])[data-theme='bose'] .dark-scope { --accent: #ffffff;
   .card-tint { background: color-mix(in srgb, var(--accent) 6%, var(--surface)); }
   a.card:hover, .card-hover:hover {
     border-color: var(--border-strong);
-    box-shadow: 0 1px 2px rgba(15, 17, 17, 0.06), 0 18px 40px -20px color-mix(in srgb, var(--text) 30%, transparent);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 6%, transparent), 0 18px 40px -20px color-mix(in srgb, var(--shadow-ink) 30%, transparent);
   }
   html[data-mode='dark'] a.card:hover { box-shadow: 0 18px 40px -24px color-mix(in srgb, var(--accent) 35%, transparent); }
 
@@ -751,7 +791,7 @@ html:not([data-mode='dark'])[data-theme='bose'] .dark-scope { --accent: #ffffff;
 .switch { display: inline-flex; flex: none; align-items: center; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-2); }
 .switch > :is(button, [role='tab']) { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-width: 32px; height: 30px; padding: 0 0.6rem; border-radius: 999px; color: var(--muted); font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; transition: background-color var(--t-fast) var(--ease-smooth), color var(--t-fast) var(--ease-smooth), box-shadow var(--t-fast) var(--ease-smooth); }
 .switch > :is(button, [role='tab']):hover { color: var(--text); }
-.switch > :is([aria-pressed='true'], [aria-selected='true']) { background: var(--bg); color: var(--text); box-shadow: 0 1px 2px rgba(15, 17, 17, 0.08), 0 0 0 1px var(--border); }
+.switch > :is([aria-pressed='true'], [aria-selected='true']) { background: var(--bg); color: var(--text); box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 8%, transparent), 0 0 0 1px var(--border); }
 .switch > :is(button, [role='tab']):focus-visible { outline: 2px solid var(--accent-text); outline-offset: 1px; }
 .switch[data-size='sm'] > :is(button, [role='tab']) { height: 28px; gap: 0.3rem; font-size: 0.75rem; }
 .switch[data-size='md'] > :is(button, [role='tab']) { height: 34px; padding: 0 0.85rem; font-size: 0.85rem; }
@@ -796,7 +836,7 @@ html:not([data-mode='dark'])[data-theme='bose'] .dark-scope { --accent: #ffffff;
 .nav-bar {
   background: color-mix(in srgb, var(--bg) 94%, transparent);
   border: 1px solid var(--border);
-  box-shadow: 0 1px 2px rgba(15, 17, 17, 0.04), 0 10px 30px -18px rgba(15, 17, 17, 0.35);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 4%, transparent), 0 10px 30px -18px color-mix(in srgb, var(--shadow-ink) 35%, transparent);
 }
 html[data-mode='dark'] .nav-bar { box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.9); }
 .wordmark {
@@ -960,11 +1000,10 @@ html[data-mode='dark'] .saber-progress .blade { background: #ffffff; box-shadow:
   padding: 10% 12%;
   border: 1px solid var(--border);
   border-radius: calc(var(--r-card) + 6px);
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 17, 17, 0.06), 0 30px 60px -30px color-mix(in srgb, var(--accent) 55%, transparent);
+  background: var(--surface);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 6%, transparent), 0 30px 60px -30px color-mix(in srgb, var(--accent) 55%, transparent);
   animation: logo-in 0.6s var(--ease-smooth) backwards;
 }
-html[data-mode='dark'] .hero-logo-card { background: var(--surface); }
 .chapter-logo-card.is-small { width: clamp(150px, 16vw, 200px); }
 .chapter-logo-card {
   display: flex;
@@ -975,7 +1014,7 @@ html[data-mode='dark'] .hero-logo-card { background: var(--surface); }
   border: 1px solid var(--border);
   border-radius: calc(var(--r-card) + 4px);
   background: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 17, 17, 0.06), 0 24px 48px -28px color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 6%, transparent), 0 24px 48px -28px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 .reveal.chapter-logo-card:not([data-in='true']) { opacity: 0; transform: scale(0.9) translateY(14px); }
 .aws-logo .aws-letters { fill: #252f3e; animation: hero-up 0.6s var(--ease-smooth) 0.15s backwards; }

@@ -10,8 +10,9 @@
 //
 // stage(kit, id, opts) → { R, d, A, cx, cz, P(dx, dz) (a spot in the world
 // from the place's middle), figure(kind, at), people(), done(light, update),
-// hunt(on), calm(), power({ glow }) } (and the NPC behaviour below: anyone
-// placed with `ai`; and a place run on power, below)
+// hunt(on), calm(), power({ glow }), freeze({ splash }) } (and the NPC behaviour below: anyone
+// placed with `ai`; and a place run on power, below; whichever game a place
+// runs, its `meter` action is the HUD's readout of it: ../games/meter.js)
 
 import * as THREE from 'three';
 import { makeSky } from '../sky';
@@ -21,7 +22,10 @@ import { RIGGED } from '../../portal/meshyCast';
 import { destinationById } from './destinations';
 import { createNpcs } from '../npc';
 import { attend } from '../living';
-import { TUNING as POWER, newPower, powerNews, stepPower } from '../games/power';
+import { TUNING as POWER, newPower, powerNews, powerReadout, stepPower } from '../games/power';
+import { curse, dealNews, dealReadout, newDeal, stepDeal } from '../games/deal';
+import { freezeEyes, freezeNews, freezeReadout, jumpSplashes, moving, newFreeze, stepFreeze } from '../games/freeze';
+import { findNews, findReadout, newFind, pickOurs, stepFind } from '../games/find';
 
 // a speckled paint for a floor or the ground
 export const specks = (base, specks, seed = 7, n = 1600, size = 2) => (g, w, h) => speckle(g, w, h, { base, specks, n, size, seed });
@@ -112,13 +116,106 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     const blink = run.phase === 'run' && share < POWER.low ? 0.65 + 0.35 * Math.sin(t * 10) : 1;
     glow.material.color.setScalar(Math.max(0.15, share) * blink);
   };
-  const calm = pw
-    ? () => {
-        N.calm();
-        run = fresh();
-        asked = {};
+
+  // ── a place run on a deal (../games/deal.js, place.js's `deal`): each of
+  // its things' spots queues a use (`deal-<id>`: two presses in one frame
+  // are both kept), stepped in the place's own update and said as power's
+  // run is. Dealt afresh, curses and all, whenever the place calms. ──
+  const dl = d.deal;
+  const dealt = () => newDeal({ items: dl.items, need: dl.need, looks: dl.looks, bad: Array.isArray(dl.bad) ? dl.bad : curse(dl.items, dl.bad, Math.random) });
+  let deal = dl ? dealt() : null;
+  let used = [];
+  const dealing = (state) => {
+    const done = (state.done ?? []).includes(dl.task);
+    if (done || state.fading) {
+      used = [];
+      return;
+    }
+    for (const u of used.splice(0)) deal = stepDeal(deal, { use: u });
+    const news = dealNews(deal, { done, fading: false });
+    if (news === 'done') state.emit?.('done', { area: id, task: dl.task });
+    if (news === 'caught') {
+      deal = { ...deal, told: true };
+      state.emit?.('caught', { area: id, who: dl.who, text: dl.lost });
+    }
+  };
+
+  // ── a place run on a freeze (../games/freeze.js, place.js's `freeze`):
+  // stepped in the place's own update on Morty's own motion (the render
+  // state's), its spot's press the jump in (`freeze-in`, with the builder's
+  // splash); said as power's run is, the win with its achievement; its
+  // lookouts turned where the game says the buyers' eyes are. (Its task done
+  // before the game was built, its achievement is handed over on the visit.) ──
+  const fz = d.freeze;
+  let still = fz ? newFreeze() : null;
+  let jumped = false;
+  let splash = null;
+  let granted = false;
+  let finished = false; // (its task done: the vat's just a vat to jump in)
+  const freezing = (dt, state) => {
+    const done = (state.done ?? []).includes(fz.task);
+    finished = done;
+    if (done && fz.unlock && !granted && !state.fading) {
+      granted = true;
+      state.emit?.('done', { area: id, task: fz.task, unlock: fz.unlock });
+    }
+    if (!done && !state.fading) {
+      still = stepFreeze(still, { moving: moving(state.morty), jumped }, dt);
+      const news = freezeNews(still, { done, fading: false });
+      if (news === 'done') state.emit?.('done', { area: id, task: fz.task, unlock: fz.unlock ?? null });
+      if (news === 'caught') {
+        still = { ...still, told: true };
+        state.emit?.('caught', { area: id, who: fz.who, text: fz.lost });
       }
-    : N.calm;
+    }
+    jumped = false;
+    N.lookout(done ? null : freezeEyes(still));
+  };
+
+  // ── a place run on a find (../games/find.js, place.js's `find`): each
+  // candidate's spot queues a use (`find-<id>`), stepped at no time in the
+  // place's own update, then the clock; said as power's run is, the win
+  // with its achievement. Ours dealt afresh whenever the place calms. ──
+  const fd = d.find;
+  const sought = () => newFind({ items: fd.items, ours: fd.ours ?? pickOurs(fd.items, Math.random), s: fd.s, cost: fd.cost });
+  let search = fd ? sought() : null;
+  let asks = [];
+  const finding = (dt, state) => {
+    const done = (state.done ?? []).includes(fd.task);
+    if (done || state.fading) {
+      asks = [];
+      return;
+    }
+    for (const u of asks.splice(0)) search = stepFind(search, { use: u }, 0);
+    search = stepFind(search, {}, dt);
+    const news = findNews(search, { done, fading: false });
+    if (news === 'done') state.emit?.('done', { area: id, task: fd.task, unlock: fd.unlock ?? null });
+    if (news === 'caught') {
+      search = { ...search, told: true };
+      state.emit?.('caught', { area: id, who: fd.who, text: fd.lost });
+    }
+  };
+
+  // (calmed: its people home, and its game started afresh)
+  const calm = () => {
+    N.calm();
+    if (pw) {
+      run = fresh();
+      asked = {};
+    }
+    if (dl) {
+      deal = dealt();
+      used = [];
+    }
+    if (fz) {
+      still = newFreeze();
+      jumped = false;
+    }
+    if (fd) {
+      search = sought();
+      asks = [];
+    }
+  };
 
   // one of the cast at (x, z) facing `face`, `h` tall (its own height if not
   // given), gone once `until` is done and till `after` is (`when(state)`, if
@@ -165,6 +262,9 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       update: (t, dt, state, camera) => {
         sky?.update(t, camera);
         if (run && state) powered(t, dt, state);
+        if (deal && state) dealing(state);
+        if (still && state) freezing(dt, state);
+        if (search && state) finding(dt, state);
         update?.(t, dt, state, camera);
       },
     });
@@ -180,18 +280,46 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     // builder adds its own actions to these. `npcs`: where everyone is, for
     // the QA scripts; `fire`, `bodies` and `hit`: Morty's shot in a duel,
     // where it aims, what it can hit, and what it did when it landed.)
-    // (a place run on power: its spots, where its run is for the HUD and the
-    // checks, and, in development, a way for the checks to set it)
+    // (a place run on power, a deal, a freeze or a find: its spots, where its game is for the
+    // checks, its meter for the HUD, and, in development, a way for the
+    // checks to set it)
     area.actions = { calm, npcs: N.list, fire: N.fire, bodies: N.bodies, hit: N.hit };
     if (run)
       Object.assign(area.actions, {
         'power-take': () => (asked.take = true),
         'power-give': () => (asked.give = true),
         power: () => ({ phase: run.phase, charge: run.charge, max: run.max, need: run.need, delivered: run.delivered, carrying: run.carrying }),
+        meter: () => powerReadout(run),
         ...(import.meta.env.DEV && { setPower: (patch) => (run = { ...run, ...patch }) }),
+      });
+    if (deal)
+      Object.assign(area.actions, {
+        ...Object.fromEntries(dl.items.map((u) => [`deal-${u}`, () => used.push(u)])),
+        deal: () => ({ phase: deal.phase, need: deal.need, looks: deal.looks, left: deal.left, seen: { ...deal.seen }, taken: [...deal.taken], last: deal.last }),
+        meter: () => dealReadout(deal, dl.words),
+        ...(import.meta.env.DEV && { setDeal: (patch) => (deal = { ...deal, ...patch }) }),
+      });
+    if (still)
+      Object.assign(area.actions, {
+        'freeze-in': () => {
+          // (the vat splashes for a jump that takes him in, or any once its task's done)
+          if (jumpSplashes(still, { done: finished })) splash?.();
+          jumped = true;
+        },
+        freeze: () => ({ phase: still.phase, eyes: still.eyes, left: still.left, len: still.len, beat: still.beat }),
+        meter: () => freezeReadout(still),
+        ...(import.meta.env.DEV && { setFreeze: (patch) => (still = { ...still, ...patch }) }),
+      });
+    if (search)
+      Object.assign(area.actions, {
+        ...Object.fromEntries(fd.items.map((u) => [`find-${u}`, () => asks.push(u)])),
+        // (never ours: the checks set it, a player finds it)
+        find: () => ({ phase: search.phase, left: search.left, len: search.len, heard: [...search.heard], wrong: [...search.wrong], last: search.last }),
+        meter: () => findReadout(search, fd.tells),
+        ...(import.meta.env.DEV && { setFind: (patch) => (search = { ...search, ...patch }) }),
       });
     return area;
   };
-  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null) };
+  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null), freeze: (o) => (splash = o.splash ?? null) };
 
 }

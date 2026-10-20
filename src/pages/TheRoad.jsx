@@ -11,6 +11,7 @@ import { markAt } from '../components/middleearth/road/line';
 import TitleCard from '../components/middleearth/road/TitleCard';
 import LoreCard from '../components/middleearth/road/LoreCard';
 import ResumeCard from '../components/middleearth/road/ResumeCard';
+import { MAP, bookPageForStage } from '../components/middleearth/redbook/routes';
 import '@fontsource/cinzel/600.css';
 import '@fontsource/cinzel/700.css';
 import '../styles/lazy/road.css';
@@ -101,7 +102,8 @@ export default function TheRoad() {
                     Letterbox · {bars ? 'on' : 'off'}
                   </MenuItem>
                 )}
-                <MenuItem onClick={() => navigate('/middle-earth')}>The map</MenuItem>
+                <MenuItem onClick={() => navigate(`/middle-earth?page=${bookPageForStage(stage.id)}`)}>The Red Book</MenuItem>
+                <MenuItem onClick={() => navigate(MAP)}>Middle-earth’s map</MenuItem>
                 <MenuItem onClick={() => api()?.restart()}>Start again</MenuItem>
                 <MenuItem onClick={() => api()?.skipToEnd()}>Skip to the end</MenuItem>
               </Menu>
