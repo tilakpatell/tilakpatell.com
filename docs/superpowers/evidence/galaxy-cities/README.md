@@ -22,7 +22,7 @@ OUT=lab/shots node scripts/surface-shot.mjs fondor -191,-140,128,0,street,-0.12 
 | Worlport (Ord Mantell) | skyline | 344 | 1,323,850 |
 | NiJedha (Jedha) | street | 386 | 1,786,680 |
 | NiJedha (Jedha) | skyline | 509 | 1,958,901 |
-| Plazir-15 | street | 358 | 1,557,748 |
+| Plazir-15 | the first street view, inside a villa | 358 | 1,557,748 |
 | Plazir-15 | skyline | 414 | 1,870,878 |
 | Fondor's yard city | street | 279 | 1,000,112 |
 | Fondor's yard city | skyline | 303 | 916,719 |
