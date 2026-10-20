@@ -128,7 +128,8 @@ export default function RmHud({
   // objective or the chips make it, never over them.
   const top = useRef(null);
   // (the game the place Morty's in runs, if any: its meter's name)
-  const meterKind = kindOf(destinationById(hud.area)) ?? 'power';
+  // (in the street, its one meter is the stone's at the park's pond)
+  const meterKind = hud.area === 'street' ? 'skip' : (kindOf(destinationById(hud.area)) ?? 'power');
   // a duel: Morty's health and his gun on the HUD kit's cluster (his hearts
   // on the one scale: ./vitalsOf.js), written when the duel changes
   const footRef = useRef(null);

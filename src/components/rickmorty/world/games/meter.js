@@ -7,6 +7,7 @@
 //   KINDS          the kinds a place may run, by their place() key
 //   kindOf(d)      the kind a destination runs, or null
 //   METER          each kind's cluster: its title (the cluster's label) and its word for the bar
+//                  (and the street's stone, `skip`)
 //   METER_OFF      the readout when no game runs
 
 export const KINDS = ['power', 'deal', 'freeze', 'find'];
@@ -18,6 +19,8 @@ export const METER = Object.freeze({
   deal: { title: 'The deal', label: 'Looks' },
   freeze: { title: 'Who’s looking', label: 'Eyes' },
   find: { title: 'Pick-up time', label: 'Time' },
+  // (not a place's: the street's stone at the park's pond, ../town/skip.js)
+  skip: { title: 'The throw', label: 'Power' },
 });
 
 export const METER_OFF = Object.freeze({ on: false, vitals: null, line: '' });

@@ -4,6 +4,7 @@
 // ./RmWorld.jsx shows it; ./voicelines.js says it in the speaker's own voice.
 
 import { DESTINATIONS } from './dimensions/destinations';
+import { TOWN_SAY } from './town/words';
 
 export const SAY = {
   jerry: { who: 'Jerry', text: 'Hungry for apples?' },
@@ -42,6 +43,8 @@ export const SAY = {
   therapy: { who: 'Dr. Wong', text: 'Sit down, Morty. Your grandfather told me this was for Jerry. It isn’t. We have fifty minutes.' },
   // the multiverse's destinations (./dimensions/destinations.js)
   ...Object.fromEntries(DESTINATIONS.flatMap((d) => Object.entries(d.say))),
+  // the town round the street (./town/words.js)
+  ...TOWN_SAY,
 };
 
 // how Rick's rooms on the Vindicators' ship end (./dimensions/vindicatorsRules.js)
