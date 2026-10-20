@@ -33,7 +33,7 @@
 }
 .universe-tag[data-on] { display: flex; }
 /* how they stand to you (relations.js) */
-.universe-tag[data-relation='ally'] { --relation: #8dffad; }
+.universe-tag[data-relation='ally'] { --relation: var(--ally); }
 .universe-tag[data-relation='friend'] { --relation: #8fc6ff; }
 .universe-tag[data-relation='foe'] { --relation: #ff6a5c; }
 /* just back from being shot down: can't be hit yet */
@@ -96,10 +96,12 @@
   min-height: 40px;
   padding: 0 0.95rem 0 0.8rem;
   border: 1px solid var(--border);
-  border-radius: 999px;
-  /* (no blur behind it: over the universe map, redrawn every frame, a blur
-     is worked out afresh every frame, and at this opacity it barely shows) */
-  background: rgb(6 8 16 / 0.9);
+  border-radius: var(--r-btn); /* (a square colour squares it, as its other pills: styles/dialogs.css) */
+  /* the colour’s own dark glass, the universe panel’s beside it, so the
+     corner and the panel are one glass in every colour (styles/dialogs.css);
+     no blur behind it: over the universe map, redrawn every frame, a blur is
+     worked out afresh every frame, and at this opacity it barely shows */
+  background: var(--glass);
   color: var(--text);
   font-family: var(--font-mono);
   font-size: 0.74rem;
@@ -109,9 +111,11 @@
 .universe-online-pill:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .universe-online-short { display: none; }
 .universe-online-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-.universe-online-dot[data-status='online'] { background: #5cff8a; box-shadow: 0 0 8px rgb(92 255 138 / 0.7); }
-.universe-online-dot[data-status='connecting'] { background: #ffd35c; animation: universe-online-blink 1s steps(2) infinite; }
-.universe-online-dot[data-status='failed'] { background: #ff5c5c; }
+/* the states’ own colours, the dark scope’s here (the corner is always one),
+   the glow from the same ink */
+.universe-online-dot[data-status='online'] { background: var(--ok); box-shadow: 0 0 8px color-mix(in srgb, var(--ok) 70%, transparent); }
+.universe-online-dot[data-status='connecting'] { background: var(--warn); animation: universe-online-blink 1s steps(2) infinite; }
+.universe-online-dot[data-status='failed'] { background: var(--danger); }
 @keyframes universe-online-blink { 50% { opacity: 0.3; } }
 .universe-online-badge {
   display: grid;
@@ -120,7 +124,9 @@
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: #8dffad;
+  background: var(--ally);
+  /* (a fixed near-black: the badge is only ever in the corner’s dark scope,
+     on its bright ally green; the light page’s deep green would want white) */
   color: #04120a;
   font-size: 0.66rem;
   font-weight: 700;
@@ -137,20 +143,25 @@
   margin: 0;
   padding: 0.35rem 0.75rem;
   border-left: 2px solid var(--muted);
-  /* (the glass is hud.css's too; written here as well, because off the map
-     the floating card loads this sheet alone) */
+  /* the corner’s glass, as the pill it rises over (the first-flight hint
+     keeps the map kit’s, hud.css); the radius is the hint’s, a sentence
+     over the map */
   border-radius: 14px;
-  background: rgb(3 4 10 / 0.85);
+  background: var(--glass);
   color: var(--text);
   font-size: 0.8rem;
   animation: universe-online-in 0.25s ease-out;
 }
 .universe-online-note[data-tone='join'] { border-color: #7cc8ff; }
-.universe-online-note[data-tone='ally'] { border-color: #8dffad; }
+.universe-online-note[data-tone='ally'] { border-color: var(--ally); }
 .universe-online-note[data-tone='kill'] { border-color: #ff7a5c; }
 @keyframes universe-online-in { from { opacity: 0; translate: 0 6px; } }
 
 .universe-online-card {
+  /* over the notes: on the map they rise from where the card opens, and
+     what they say is in the card (they still speak, for a screen reader) */
+  position: relative;
+  z-index: 1;
   width: min(340px, calc(100vw - 32px));
   max-height: calc(100vh - var(--nav-h, 68px) - 140px);
   overflow-y: auto;
@@ -158,13 +169,17 @@
   padding: 1rem 1.1rem 1.1rem;
   border: 1px solid var(--border);
   border-radius: var(--r-card);
-  background: rgb(6 8 16 / 0.96); /* (no blur: see the pill) */
-  box-shadow: 0 20px 60px rgb(0 0 0 / 0.45);
+  /* the pill’s glass, all but solid: a card of words over the corner’s own
+     buttons (and a page’s headings), which ghost through the glass. Not quite
+     opaque: an opaque scroller, once its rows overflow, has Chromium stop
+     drawing the map in a band above it. No blur, as the pill */
+  background: color-mix(in srgb, var(--glass-solid) 98%, transparent);
+  box-shadow: var(--shadow-float);
 }
 .universe-online-head { display: flex; align-items: center; justify-content: space-between; margin: -0.25rem -0.4rem 0.35rem 0; }
 .universe-online-head .eyebrow { margin: 0; }
-.universe-online-x { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px; color: var(--muted); }
-.universe-online-x:hover { color: var(--text); background: rgb(255 255 255 / 0.06); }
+.universe-online-x { display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--r-btn); color: var(--muted); }
+.universe-online-x:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
 .universe-online-title { color: var(--text); font-size: 1.1rem; font-weight: 600; line-height: 1.3; }
 .universe-online-text { margin: 0.5rem 0 0; font-size: 0.86rem; line-height: 1.5; }
 .universe-online-fine { margin: 0.8rem 0 0; color: var(--muted); font-size: 0.72rem; line-height: 1.5; }
@@ -176,7 +191,7 @@
   padding: 0 0.75rem;
   border: 1px solid var(--border-strong, var(--border));
   border-radius: 10px;
-  background: rgb(255 255 255 / 0.04);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
   color: var(--text);
   font-size: 0.95rem;
 }
@@ -202,13 +217,14 @@
 .universe-online-list { display: grid; gap: 0.4rem; margin: 0.8rem 0 0; padding: 0; list-style: none; }
 .universe-online-pilot {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem;
   padding: 0.45rem 0.55rem;
   border: 1px solid var(--border);
   border-radius: 12px;
 }
-.universe-online-pilot[data-ally] { border-color: rgb(141 255 173 / 0.45); }
+.universe-online-pilot[data-ally] { border-color: color-mix(in srgb, var(--ally) 45%, transparent); }
 /* how they stand to you, as their tag over the map says it (relations.js) */
 .universe-online-pilot[data-relation='friend'] { border-color: rgb(143 198 255 / 0.45); }
 .universe-online-pilot[data-relation='foe'] { border-color: rgb(255 106 92 / 0.5); }
@@ -216,9 +232,9 @@
 /* your allies, first: those saved and away dimmed by colour, their words at --muted */
 .universe-online-allies .universe-online-list { margin-top: 0.4rem; }
 .universe-online-pilot[data-away] .universe-online-who b { color: var(--muted); font-weight: 500; }
-.universe-online-pilot[data-focus] { background: rgb(255 255 255 / 0.05); }
-.universe-online-face { flex: none; width: 32px; height: 32px; border-radius: 50%; background: rgb(255 255 255 / 0.06); }
-.universe-online-who { display: grid; flex: 1; min-width: 0; }
+.universe-online-pilot[data-focus] { background: color-mix(in srgb, var(--text) 5%, transparent); }
+.universe-online-face { flex: none; width: 32px; height: 32px; border-radius: 50%; background: color-mix(in srgb, var(--text) 6%, transparent); }
+.universe-online-who { display: grid; flex: 1 1 9rem; min-width: 0; } /* (under 9rem left for the name, the acts go to a line of their own) */
 .universe-online-name { display: flex; align-items: baseline; gap: 0.4rem; min-width: 0; }
 .universe-online-lv {
   flex: none;
@@ -232,22 +248,22 @@
 }
 .universe-online-mine { display: flex; flex: none; gap: 0.6rem; }
 .universe-online-who b { overflow: hidden; color: var(--text); font-size: 0.86rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.universe-online-pilot[data-ally] .universe-online-who b { color: #8dffad; }
+.universe-online-pilot[data-ally] .universe-online-who b { color: var(--ally); }
 .universe-online-pilot[data-relation='friend'] .universe-online-who b { color: #8fc6ff; }
 .universe-online-pilot[data-relation='foe'] .universe-online-who b { color: #ff6a5c; }
 .universe-online-who span { color: var(--muted); font-size: 0.72rem; line-height: 1.35; overflow-wrap: anywhere; }
-.universe-online-acts { display: flex; flex: none; align-items: center; gap: 0.4rem; }
+.universe-online-acts { display: flex; flex: none; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0.4rem; margin-left: auto; }
 .universe-online-act {
   min-height: 30px;
   padding: 0 0.6rem;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--r-btn);
   color: var(--text);
   font-size: 0.74rem;
   transition: border-color 0.2s, background-color 0.2s;
 }
-.universe-online-act:hover { border-color: var(--muted); background: rgb(255 255 255 / 0.05); }
-.universe-online-act[data-yes] { border-color: rgb(141 255 173 / 0.6); color: #8dffad; }
+.universe-online-act:hover { border-color: var(--muted); background: color-mix(in srgb, var(--text) 5%, transparent); }
+.universe-online-act[data-yes] { border-color: color-mix(in srgb, var(--ally) 60%, transparent); color: var(--ally); }
 @media (pointer: coarse) {
   .universe-online-act { min-height: 40px; }
   .universe-online-pill { min-height: 44px; }
@@ -264,7 +280,9 @@
   .universe-online-short { display: inline; }
   .universe-online:not([data-floating]) .universe-online-card { max-height: calc(100vh - var(--nav-h, 68px) - var(--sheet-h) - 110px); }
 }
-/* the other pilots on your page, off the map: their pointers */
+/* the other pilots on your page, off the map: their pointers. Out of any
+   dark scope, they wear the page’s own surface and ink, as the quick-chat
+   bubble over them does, so they read on a light page and on a dark one */
 .presence { position: fixed; inset: 0; z-index: calc(var(--z-float) + 7); overflow: hidden; pointer-events: none; }
 .presence-pilot {
   position: absolute;
@@ -277,7 +295,8 @@
 }
 .presence-pilot[data-on] { display: flex; }
 .presence-pilot[data-idle] { opacity: 0.45; }
-.presence-arrow { flex: none; fill: var(--who); stroke: #04060c; stroke-width: 1.2; filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.5)); }
+/* (the crew’s colour may be pale: the page’s ink outlines it) */
+.presence-arrow { flex: none; fill: var(--who); stroke: var(--text); stroke-width: 1.2; filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--shadow-ink) 50%, transparent)); }
 .presence-tag {
   display: inline-flex;
   align-items: center;
@@ -285,13 +304,16 @@
   margin: 12px 0 0 -2px;
   padding: 2px 9px 2px 3px;
   border: 1.5px solid var(--who);
-  border-radius: 999px;
-  background: #0b0f17;
-  color: #fff;
+  border-radius: var(--r-btn);
+  background: var(--surface);
+  color: var(--text);
   font-family: var(--font-mono);
   font-size: 0.68rem;
   white-space: nowrap;
-  box-shadow: 0 4px 14px rgb(0 0 0 / 0.35);
+  /* (its own lift, in the page’s shadow ink: the house float’s -20px spread
+     swallows a chip 23px tall whole, and with no shadow a white chip edged
+     in a pale crew’s colour all but melts into a light page) */
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--shadow-ink) 35%, transparent);
 }
 .presence-tag b { font-weight: 500; }
 .presence-face { width: 20px; height: 20px; border-radius: 50%; }
@@ -299,8 +321,10 @@
 /* further up or down the page: at the edge, pointing the way */
 .presence-pilot[data-off] .presence-arrow { display: none; }
 .presence-pilot[data-off] .presence-tag { margin-top: 0; }
-.presence-pilot[data-off='up'] .presence-tag::before { content: '↑'; color: var(--who); }
-.presence-pilot[data-off='down'] .presence-tag::before { content: '↓'; color: var(--who); }
+/* (the way, in the crew’s colour taken towards the ink: a pale crew’s own
+   would all but vanish on a light page’s white chip) */
+.presence-pilot[data-off='up'] .presence-tag::before { content: '↑'; color: color-mix(in srgb, var(--who) 60%, var(--text)); }
+.presence-pilot[data-off='down'] .presence-tag::before { content: '↓'; color: color-mix(in srgb, var(--who) 60%, var(--text)); }
 /* reading on a phone: a marker at the left edge */
 .presence-pilot[data-touch] .presence-arrow { display: none; }
 .presence-pilot[data-touch] .presence-tag { margin-top: 0; }
