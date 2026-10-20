@@ -29,7 +29,7 @@ const KITS = {
     ['log', 2, -7, { yaw: 1.3 }],
   ],
   wreck: [
-    ['$ship', 0, 0, { roll: 0.45, pitch: -0.12 }],
+    ['$ship', 0, 0],
     ['wrecksmoke', 1, 1, { solid: false, opts: { h: 18, r: 1.1 } }],
     ['crates', 9, 4],
     ['crates', -7, -5, { yaw: 2.1 }],
@@ -47,7 +47,12 @@ const KITS = {
     ['statue', -9, 6, { scale: 0.6, roll: 0.3 }],
   ],
 };
-const SHIPS = ['xwing', 'ywing', 'tiefighter'];
+// (the flight's own models, at their lengths: props/generic.js's downed)
+const SHIPS = [
+  ['xwing', 12.5],
+  ['ywing', 23.4],
+  ['tie', 6.3],
+];
 // which a world's kind of land turns up, and how often
 const GREEN = { camp: 0.4, ruin: 0.35, wreck: 0.25 };
 const BARE = { wreck: 0.35, outpost: 0.35, camp: 0.3 };
@@ -63,17 +68,19 @@ export function waysideAt(site, rx, rz) {
   const rand = seeded((Math.imul(rx | 0, 73856093) ^ Math.imul(rz | 0, 19349663) ^ Math.imul((site.ground?.seed ?? 1) + 7, 83492791)) >>> 0);
   const mx = (rx + 0.5) * REGION;
   const mz = (rz + 0.5) * REGION;
-  const roll = rand();
+  const held = rand();
   const x = mx + (rand() * 2 - 1) * JITTER * REGION;
   const z = mz + (rand() * 2 - 1) * JITTER * REGION;
   const yaw = rand() * Math.PI * 2;
   const kind = pick(rand, LUSH.has(site.flora?.biome) ? GREEN : BARE);
-  const ship = SHIPS[Math.floor(rand() * SHIPS.length)];
-  if (roll > CHANCE || Math.hypot(x, z) < (site.reach ?? 590) + CORE) return null;
+  const [ship, metres] = SHIPS[Math.floor(rand() * SHIPS.length)];
+  const roll = (rand() < 0.5 ? -1 : 1) * (0.3 + rand() * 0.3);
+  if (held > CHANCE || Math.hypot(x, z) < (site.reach ?? 590) + CORE) return null;
   const c = Math.cos(yaw);
   const s = Math.sin(yaw);
   const things = KITS[kind].map(([k, dx, dz, more = {}]) => ({
-    kind: k === '$ship' ? ship : k,
+    kind: k === '$ship' ? 'downed' : k,
+    ...(k === '$ship' ? { opts: { ship, metres, roll } } : {}),
     at: [x + dx * c + dz * s, z - dx * s + dz * c],
     ...more,
     yaw: yaw + (more.yaw ?? 0),

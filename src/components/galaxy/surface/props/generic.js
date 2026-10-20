@@ -1,9 +1,11 @@
 // Props any world can have: rocks to scatter, landing pads, crates, lamps,
-// a campfire. (props/index.js has what a builder returns.)
+// a campfire, a starfighter come down. (props/index.js has what a builder
+// returns.)
 
 import * as THREE from 'three';
 import { box, cyl, part, rockGeometry, rod } from '../kitCore';
 import { loft, trap8 } from '../../../universe/trafficKit';
+import { buildGalaxyShip } from '../../fleet';
 
 const { PI, cos, sin } = Math;
 
@@ -161,6 +163,19 @@ export const PROPS = {
   lamp(k, { h = 4, light = '#ffd9a0', color = '#4a4844' } = {}) {
     const parts = [part(cyl(0.12, 0.08, h, 8), { color, to: 'metal' }), part(new THREE.SphereGeometry(0.22, 12, 8), { at: [0, h + 0.1, 0], color: new THREE.Color(light).multiplyScalar(4), to: 'glow' })];
     return { object: k.build(parts, { name: 'lamp' }), solids: [{ circle: [0, 0, 0.2] }] };
+  },
+
+  // a starfighter come down hard: the flight's own model (fleet.js), its
+  // length the ship's (`metres`), nose down, rolled onto a wing and dug in
+  downed(k, { ship = 'xwing', metres = 12.5, pitch = -0.14, roll = 0.45, sink = 0.5 } = {}) {
+    const m = buildGalaxyShip(ship);
+    k.own({ dispose: () => m.dispose() });
+    m.group.scale.setScalar(metres);
+    m.group.rotation.set(pitch, 0, roll, 'YXZ');
+    m.group.position.y = metres * 0.12 - sink;
+    const object = new THREE.Group();
+    object.add(m.group);
+    return { object, solids: [{ box: [0, 0, metres * 0.36, metres * 0.44, 0] }], update: (t) => m.update?.(t) };
   },
 
   // a campfire: stones round embers, its flame flickering

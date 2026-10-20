@@ -43,9 +43,9 @@ describe('waysideAt', () => {
     const kinds = (site) => new Set(regions(site).filter(Boolean).map((w) => w.kind));
     expect([...kinds(green)].sort()).toEqual(['camp', 'ruin', 'wreck']);
     expect([...kinds(bare)].sort()).toEqual(['camp', 'outpost', 'wreck']);
-    const wreck = regions(bare).find((w) => w?.kind === 'wreck');
-    expect(['xwing', 'ywing', 'tiefighter']).toContain(wreck.things[0].kind);
-    expect(wreck.things[0].roll).toBeGreaterThan(0);
+    const ships = regions(bare).filter((w) => w?.kind === 'wreck').map((w) => w.things[0]);
+    expect(ships.every((t) => t.kind === 'downed' && Math.abs(t.opts.roll) >= 0.3)).toBe(true);
+    expect(new Set(ships.map((t) => t.opts.ship))).toEqual(new Set(['xwing', 'ywing', 'tie']));
   });
 
   it('stands only things the scene can place', () => {
