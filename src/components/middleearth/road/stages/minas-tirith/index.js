@@ -24,6 +24,9 @@ import { CITY, COURT, floorAt } from './place';
 const MARKS = Object.fromEntries(BEATS.map((b) => [b.id, b]));
 const BOWED = MARKS.court.deed.at + 1.4; // s into the Court: the line said, the court bows to the four
 const KING = ['aragorn', 'arwen', 'gandalfwhite', 'legolas', 'gimli'];
+// the chapter's stone lit by the Road's light reads grey, not white: lifted
+const WHITE = { wall: 1.3, trim: 1.25, paving: 1.25, court: 1.2, road: 1.15, house: 1.2, houseRoof: 1.1, slate: 1.1, rock: 1.25 };
+const BLOOM = 0.55; // the Tree in flower as they come; full once the court bows
 const SOFT = /water|fall|banner|lamp|glass|pane|fountain/i;
 
 const live = (t) => t != null && Number.isFinite(t);
@@ -37,6 +40,7 @@ export function build({ rt, tier = 'high', weather = null }) {
   group.name = 'stage:minas-tirith';
   const renderer = rt?.gfx?.renderer ?? null;
   const kit = createMinasKit(renderer, { tier });
+  for (const [k, lift] of Object.entries(WHITE)) kit.mats[k]?.color?.multiplyScalar(lift);
 
   // the city, turned to face down the road, and the Tree in its Court
   const city = kit.city();
@@ -44,10 +48,14 @@ export function build({ rt, tier = 'high', weather = null }) {
   city.group.rotation.y = CITY.turn;
   const tree = kit.tree();
   tree.group.position.set(TREE.x, COURT_Y, TREE.z);
-  tree.set(0);
+  tree.set(BLOOM);
   city.group.add(tree.group);
-  // (its stone stands solid: the walkers keep to the gate, the camera out of the walls)
+  // (its stone stands solid: the walkers keep to the gate, the camera out of the walls;
+  // and it casts no shadow into the Road's cascades: its houses' node material reads
+  // the material's own colour, which the cascades' depth pass hasn't, and the frame
+  // fails. It is mostly past the cascades' 60 m anyway; it still takes the shadow)
   city.group.traverse((o) => {
+    o.castShadow = false;
     if (o.isMesh && !SOFT.test(o.name) && !SOFT.test(o.material?.name ?? '')) o.userData.solid = true;
   });
   group.add(city.group);
@@ -74,7 +82,7 @@ export function build({ rt, tier = 'high', weather = null }) {
       kit.tick(clock);
       // the Tree comes into flower as the court bows
       const c = since.court;
-      tree.set(c == null ? 0.25 : c === Infinity ? 1 : 0.25 + 0.75 * smooth((c - BOWED) / 4));
+      tree.set(c == null ? BLOOM : c === Infinity ? 1 : BLOOM + (1 - BLOOM) * smooth((c - BOWED) / 4));
       // petals from it over the Court once it does
       const falling = live(c) && c > BOWED && inCourt();
       if (falling && !petals) {
