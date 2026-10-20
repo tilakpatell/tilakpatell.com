@@ -494,9 +494,8 @@ export default function Infiltration({ fallback }) {
           onAgain={() => enter(index)}
           onward={index + 1 < total ? { label: 'Next level', onClick: () => enter(index + 1) } : null}
           more={{ label: 'All levels', onClick: () => setUi((u) => ({ ...u, phase: 'menu' })) }}
-        >
-          <Dossier cleared={cleared} fresh={ui.fresh} onPick={enter} />
-        </Results>
+          after={<Dossier cleared={cleared} fresh={ui.fresh} onPick={enter} />}
+        />
       )}
       {ui.phase === 'menu' && (
         <div className="hq-overlay iw-overlay">

@@ -283,9 +283,8 @@ export default function InfiltrationFlat({ paused = false, onLive = null }) {
           onAgain={() => enter(index)}
           onward={index + 1 < LEVEL_COUNT ? { label: 'Next level', onClick: () => enter(index + 1) } : null}
           more={{ label: 'All levels', onClick: () => setUi((u) => ({ ...u, phase: 'menu' })) }}
-        >
-          <Dossier cleared={cleared} fresh={ui.fresh} onPick={enter} />
-        </Results>
+          after={<Dossier cleared={cleared} fresh={ui.fresh} onPick={enter} />}
+        />
       )}
       <p className="sr-only" role="status">
         {paused && playing ? 'Paused.' : ui.phase === 'play' ? `Level ${index + 1}, ${def.name}. ${objective}. ${g.turns} turns.${def.charges ? ` ${g.charges} bites left.` : ''}${preview?.danger ? ' This step gets you caught.' : ''}` : ui.phase === 'caught' ? `Spotted. ${CAUGHT[ui.caught?.by] ?? ''}` : ui.phase === 'cleared' ? `Level ${index + 1} cleared in ${ui.result?.turns} turns.` : ''}
