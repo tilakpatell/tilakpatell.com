@@ -36,6 +36,16 @@ describe('the holotable’s camera', () => {
     const [cx, cy] = project(p, eye(p).look);
     expect(Math.abs(cx) + Math.abs(cy)).toBeLessThan(1e-9);
   });
+  it('shows the whole disc round, from nearly overhead: its near side drawn no bigger than its far by a seventh', () => {
+    // (at 64° the near side loomed a third bigger than the far, and the names along the east and west lay on their sides)
+    for (const aspect of [16 / 9, 1108 / 900, 390 / 520]) {
+      const p = WHOLE(aspect);
+      expect(p.pitch).toBeGreaterThan(1.3);
+      // (a grid square's width across the north rim and across the south, as drawn)
+      const across = (z) => project(p, [1, 0, z], { aspect })[0] - project(p, [-1, 0, z], { aspect })[0];
+      expect(across(10.6 * 1.18) / across(-10.6 * 0.82)).toBeLessThan(8 / 7);
+    }
+  });
   it('centres its frame on the part of the stage the panels leave free', () => {
     // (a side panel at the right: the frame wider by it, the stage its right part, so the frame's middle is the free part's)
     const side = lensOf({ w: 1440, h: 900 }, { right: 332 });

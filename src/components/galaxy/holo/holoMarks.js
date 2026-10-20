@@ -1,5 +1,6 @@
-// The holotable's systems and the war's marks on them (./holoScene.js draws them): each system a bright bead at
-// its height over the plane (systems.js liftOf) on a thin pin down to it, a ring on the plane round its foot in
+// The holotable's systems and the war's marks on them (./holoScene.js draws them): each system a small lit globe at
+// its height over the plane (systems.js liftOf; shaded by the scene's two lights, so it reads round and not as a flat
+// disc) on a thin pin down to it, a ring on the plane round its foot in
 // its holder's colour; a contested one's ring pulsing in the colour of the side pushing there; the one picked
 // ringed in white, broken and turning, as Helldivers 2 rings a planet; where you are, a white pulse; and the war's
 // attacks and fronts (warMap.js opsOf) as arcs over the plane, a light running along each to where it's going.
@@ -14,9 +15,9 @@ import { SIDES } from '../sides';
 import { CORE, SYSTEMS, liftOf, systemById } from '../systems';
 
 export const LIFT_Y = 0.55; // (a system's height over the plane, grid squares a unit of liftOf)
-const BEAD = 0.13;
-const SMALL_BEAD = 0.075; // (a charted world's)
-const GLOW = 1.9; // (how far past white a bead's colour goes: the bloom picks it up)
+const BEAD = 0.12;
+const SMALL_BEAD = 0.07; // (a charted world's)
+const GLOW = 1.2; // (a bead's colour, before the scene's light: its lit side a little past white, so the bloom gives it a halo)
 
 export const worldOf = (s) => [s.pos[0] - CORE[0], liftOf(s) * LIFT_Y, s.pos[1] - CORE[1]];
 
@@ -29,8 +30,8 @@ export function createMarks({ small = false } = {}) {
   const n = SYSTEMS.length;
 
   // the beads
-  const beadGeo = keep(new THREE.SphereGeometry(1, small ? 10 : 16, small ? 8 : 12));
-  const beadMat = keep(new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }));
+  const beadGeo = keep(new THREE.SphereGeometry(1, small ? 16 : 24, small ? 12 : 16));
+  const beadMat = keep(new THREE.MeshLambertMaterial({ color: 0xffffff }));
   const beads = new THREE.InstancedMesh(beadGeo, beadMat, n);
   const m = new THREE.Matrix4();
   SYSTEMS.forEach((s, i) => {

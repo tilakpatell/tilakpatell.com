@@ -32,8 +32,11 @@ export const FOV = 38; // (degrees, the vertical field of view)
 export const NEAR = 2.2; // (the nearest it comes, grid squares)
 export const FAR = 90; // (the furthest: a phone's narrow window, standing off to fit the disc's width)
 export const LOW = 0.62; // (the shallowest look, radians: 35°)
-export const HIGH = 1.45; // (and the steepest: 83°)
-const TOP = 1.12; // (the whole disc's tilt: 64°)
+export const HIGH = 1.52; // (and the steepest: 87°)
+// (the whole disc seen almost straight down, as Helldivers 2's galaxy is: round, its rings' and sides' names upright, the
+// near side no bigger than the far by more than a seventh; at 64° the near side loomed and the names along the east and
+// west lay on their sides)
+const TOP = 1.38; // (79°)
 const CLOSE = 0.82; // (close in: 47°)
 const REACH = RIM + 1.5; // (how far from the core its point may go)
 

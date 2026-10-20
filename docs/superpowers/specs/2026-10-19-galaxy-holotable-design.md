@@ -24,11 +24,26 @@ The 2D map stays, whole, for a device without the galaxy’s 3D (no link, or the
 The owner, on the first pass: “The 3D map is messed up also you should only see planets and stuff when you click on a sector and it expands. Also make it properly fit on the page and able to move and turn”; and “Get rid of the hyperlanes it looks bad”. So, as Helldivers 2 has it:
 
 - **The whole galaxy is its sectors.** No system, name, pin or arc on it, only the sectors in their holders’ colours, their borders, the regions’ and the sides’ names, and where you are: a pulse, its YOU tag and its sector’s edge. The hyperlanes are gone from the 3D map at every level (the flat map keeps them, a layer).
-- **A sector opens.** A press on a sector with systems in it (26 of the 97) flies the camera to it, fitted to the free part of the screen and leaning away at 48° (`holoCamera.js`’s `fitTo` with a `pitch`). The sector brightens and is edged, the rest dim to a third, and its systems come in: beads, pins, their holders’ rings, the war’s arcs that touch them, and every one named. The pointer over another sector edges it and shows its card: its name, its ring, who holds it and how many systems are in it.
+- **A sector opens.** A press on a sector with systems in it (26 of the 97) flies the camera to it, fitted to the free part of the screen and leaning away at 57° (`holoCamera.js`’s `fitTo` with a `pitch`; 48° at first, which lost its far edge). The sector brightens and is edged, the rest dim to a third, and its systems come in: beads, pins, their holders’ rings, the war’s arcs that touch them, and every one named. The pointer over another sector edges it and shows its card: its name, its ring, who holds it and how many systems are in it.
   - **Names:** `sectors.js`’s `sectorName`: the canon sector most of its systems are in (`systems.js`’s `sector`: Arkanis for Tatooine’s, Anoat for Hoth’s), else its ring and the grid square of its middle.
   - **The crumb**, under the header in the free part’s middle, says where the map is: on the galaxy, how to open a sector; in one, its name, ring, holder and count, and the way back (“The galaxy”). Escape goes back too, before it shuts the map; the find, the side panel and the war card’s picks open the picked system’s sector.
 - **Move and turn.** A drag slides the plane; a right drag, or one with Shift or Ctrl, turns and tips it; two fingers pinch to zoom, twist to turn and slide together to move it; the turn buttons (beside the zoom on a wide map, in the bottom corner on a phone’s) and Q and E turn it 22.5°.
 - **Fit.** The disc, and a sector opened, fill the part of the screen the panels leave. On a phone and a tablet held upright the side panel is a sheet along the foot, folded to its first lines (“You are here · Tatooine”) till it’s opened or a system’s picked, so the map has the window’s width and most of its height.
+
+## Sharp, overhead and lit (the third pass)
+
+2026-10-20. The owner: “The 3d map … is blurry angled wrong and just terrible. Fix it and make it much much better.” What was wrong, seen in the browser:
+
+- **Blurry.** The map is drawn through the flight’s post chain, so it took the flight’s softened sharpness (the pace’s steps, down to 0.6 of a pixel), its boost’s rush, a hit’s red edge and its flare, all left standing from the flight’s last frame. The sectors’ clouded fill read as smudges, the core’s glow was a haze over the inner rings, the borders were one-pixel GL lines, and the stars piled into a white blot at the core.
+- **Angled wrong.** The whole galaxy was seen at 64°: the near side loomed a third bigger than the far, and the names along the east and west lay on their sides.
+
+So (`holo/drive.js`, `holoScene.js`, `holoCamera.js`, `holoText.js`, `holoMarks.js`):
+
+- The map draws at the renderer’s whole sharpness, the flight’s put back after it, and with none of the flight’s moment (`drive.test.js`).
+- The whole galaxy is seen from nearly overhead (79°), round, its near side within a seventh of its far (`holoCamera.test.js`); zooming in still tilts it toward the plane, and a sector opens at 57°.
+- The sectors are tiles: a flat fill brighter in toward its edge, hatched where held only in reach, their borders drawn in the fill’s own shader a pixel wide at every zoom (a ring’s bolder than a cut), nobody’s a faint blue with its borders alone, the open one swept by the projector’s light. A ticked bezel rings the rim.
+- The galaxy under them: a small hot core and its bulge, the two arms’ faint glow, the disc’s stars as sharp points over the tiles (fewer and dimmer at the core, none past the rim), and a far field under the table.
+- The regions’ names in a column down the south, the right way up; the Unknown Regions’ straight across their dark; every name over a dark edge of its own, drawn at 128 px and filtered as steeply as the card allows. The systems are small lit globes.
 
 ## Not in this pass
 

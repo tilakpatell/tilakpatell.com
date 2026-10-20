@@ -22,7 +22,7 @@ const STEP = 1.5; // (a button's or a key's zoom)
 const DRAG = 5; // (px a press moves before it's a drag, not a pick)
 const TURN = 0.006; // (radians a pixel, turning)
 const TURN_STEP = Math.PI / 8; // (a turn button's or a key's: 22.5°)
-const SECTOR_PITCH = 0.84; // (an open sector's tilt: 48°, the plane leaning away as Helldivers 2's sector view has it)
+const SECTOR_PITCH = 1.0; // (an open sector's tilt: 57°, the plane leaning away as Helldivers 2's sector view has it, not so far its far edge is lost)
 
 // the camera's moves, by what the stage measured (the link's size and inset): made once a link
 function cameraOf(holo) {
