@@ -146,6 +146,31 @@ export function dimensionOf(id) {
   const code = `${String.fromCharCode(65 + (h % 26))}-${10 + ((h >>> 5) % 290)}${GREEK[(h >>> 14) % GREEK.length]}${(h >>> 19) % 10}`;
   return { code, hue: ((h >>> 9) % 360) / 360 };
 }
+// A guest crew’s tags, kept by setGuests each frame: each walker’s says who
+// they are (and their dimension, for a double), the lead’s whose crew too,
+// in how their pilot stands to you. A tag’s a canvas, drawn once, so it’s
+// made again when what it says changes, or a crew stood there as their
+// pilot joins your party (or leaves it, or is renamed) would keep the old
+// colour and words till they left. The new one stands where the old one did
+// till the next frame places it. make(text, colour) → a tag; drop(tag)
+const GUEST_ALLY = '#8dff9a';
+export function keepGuestTags(g, make, drop) {
+  g.walkers.forEach((wk, i) => {
+    if (!wk) return;
+    const who = `${wk.spec.name}${wk.alt ? ` of ${g.dim.code}` : ''}`;
+    const text = i === 0 ? `${who} · ${g.name ?? 'a pilot'}` : who;
+    const colour = g.ally ? GUEST_ALLY : wk.alt ? `hsl(${Math.round(g.dim.hue * 360)}, 90%, 72%)` : '#ffffff';
+    const says = `${colour} ${text}`;
+    if (wk.label && wk.says === says) return;
+    const was = wk.label;
+    wk.label = make(text, colour);
+    wk.says = says;
+    if (!was) return;
+    wk.label.position.copy(was.position);
+    wk.label.visible = was.visible;
+    drop(was);
+  });
+}
 const LAND = { down: 3.4, out: 1.3, board: 0.8, lift: 2.4, fall: 2.6, ready: 6, party: 2.5 }; // seconds
 const CAM = { dist: 3.4, up: 0.55, pitch: [-0.25, 0.75], look: 1.6 }; // metres, radians
 
@@ -1949,6 +1974,12 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     sprite.material.map.dispose();
     sprite.material.dispose();
   };
+  // (a guest walker’s tag, in the scene: keepGuestTags’s make)
+  const guestTag = (text, colour) => {
+    const sprite = tagFor(text, colour);
+    root.add(sprite);
+    return sprite;
+  };
   // what a guest's pilot has just said, stood on their lead's tag: a card as
   // tall as the tag's (0.024 of the view), its tail's tip a little over the
   // tag's top (tagFor's: 0.029 up); the same size whatever the distance
@@ -2037,16 +2068,12 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
           wk = g.walkers[i] = null;
         }
         if (!to || !SPEC[to.who]) return;
-        if (!wk) {
-          wk = g.walkers[i] = guestWalker(g, to.who, here(g).has(to.who));
-          const who = `${wk.spec.name}${wk.alt ? ` of ${g.dim.code}` : ''}`;
-          wk.label = tagFor(i === 0 ? `${who} · ${g.name ?? 'a pilot'}` : who, g.ally ? '#8dff9a' : wk.alt ? `hsl(${Math.round(g.dim.hue * 360)}, 90%, 72%)` : '#ffffff');
-          root.add(wk.label);
-        }
+        if (!wk) wk = g.walkers[i] = guestWalker(g, to.who, here(g).has(to.who));
         // (a new word from them: when it came, for an emote timed from then)
         if (wk.to !== to) wk.toAt = S.clock;
         wk.to = to;
       });
+      keepGuestTags(g, guestTag, dropTag);
       // your crew have something to say about who's turned up (once you're out)
       const first = g.walkers[0];
       if (!g.said && first && S.phase === 'walk') {

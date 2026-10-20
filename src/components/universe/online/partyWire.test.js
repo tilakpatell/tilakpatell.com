@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { BLOB_MAX, CHAT_MAX, PARTY_ID, PARTY_MAX, newPartyId, readParty, readPartyId, readQuip, readSay, writeParty } from './partyWire';
+import { BLOB_MAX, CHAT_MAX, EPOCH_MAX, PARTY_ID, PARTY_MAX, newPartyId, readEpoch, readParty, readPartyId, readQuip, readSay, writeParty } from './partyWire';
 import { QUIPS } from './quips';
 import { RATES, createLimiter } from './protocol';
 
-const pilot = (n) => n.toString(16).padStart(64, '0'); // (a pilot's id is their key: 64 hex digits)
+const pilot = (n) => n.toString(16).padStart(64, '0'); // (a pilot’s id is their key: 64 hex digits)
 const P = '0123456789abcdef';
 const roster = (n, o = {}) => ({ t: 'ros', p: P, l: pilot(1), e: 3, m: Array.from({ length: n }, (_, i) => ({ id: pilot(i + 1), name: `Pilot ${i + 1}` })), ...o });
 // a roster as it goes over the wire
@@ -122,6 +122,21 @@ describe('readParty', () => {
       expect(readParty(wire(2, { e: 12345 })).e).toBe(12345);
       for (const e of [0, -1, 1.5, '3', null, NaN, Infinity, 2 ** 53]) expect(readParty(wire(2, { e }))).toBeNull();
     });
+    it('stops one short of the largest whole number, so an epoch can always be told apart from the next', () => {
+      // (a roster at Number.MAX_SAFE_INTEGER would leave no epoch past it: the party could never change again)
+      expect(EPOCH_MAX).toBe(Number.MAX_SAFE_INTEGER - 1);
+      expect(readParty(wire(2, { e: EPOCH_MAX })).e).toBe(EPOCH_MAX);
+      expect(readParty(wire(2, { e: Number.MAX_SAFE_INTEGER }))).toBeNull();
+      expect(writeParty(roster(2, { e: Number.MAX_SAFE_INTEGER }))).toBeNull();
+    });
+  });
+});
+
+describe('readEpoch', () => {
+  it('reads an epoch as a roster carries it (a hello’s `pe`), or null', () => {
+    expect(readEpoch(1)).toBe(1);
+    expect(readEpoch(EPOCH_MAX)).toBe(EPOCH_MAX);
+    for (const v of [0, -1, 1.5, '3', null, undefined, NaN, Infinity, Number.MAX_SAFE_INTEGER, [1], {}]) expect(readEpoch(v)).toBeNull();
   });
 });
 
@@ -135,7 +150,7 @@ describe('writeParty', () => {
   });
   it('sends the fields of its word and nothing else', () => {
     expect(writeParty({ t: 'join', p: P, l: pilot(1), secret: 'x' })).toEqual({ t: 'join', p: P });
-    // (a party's member as party.js keeps one: when they joined stays here)
+    // (a party’s member as party.js keeps one: when they joined stays here)
     expect(writeParty({ ...roster(1), m: [{ id: pilot(1), name: 'Pilot 1', since: 5 }] }).m).toEqual([[pilot(1), 'Pilot 1']]);
   });
   it('sends a name as anyone would read it', () => {
@@ -166,7 +181,7 @@ describe('readSay', () => {
     expect(said.b).not.toBe(b);
   });
   it('has room for the longest line, in any script', () => {
-    // CHAT_MAX characters of four bytes each, in partyCrypt.js's layout
+    // CHAT_MAX characters of four bytes each, in partyCrypt.js’s layout
     // (the IV, the length and the text zero-filled to 32s, the tag)
     const bytes = 12 + Math.ceil((2 + CHAT_MAX * 4) / 32) * 32 + 16;
     expect(BLOB_MAX).toBe(Math.ceil((bytes * 4) / 3));

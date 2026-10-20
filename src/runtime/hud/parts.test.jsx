@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import Prompt from './Prompt';
@@ -15,6 +16,123 @@ import Powers from './Powers';
 import { rendererReport } from '../backend';
 
 const text = (el) => renderToStaticMarkup(el).replace(/<[^>]+>/g, '');
+
+// Tests run in node with no browser to ask what a sheet does to an element,
+// so this resolves the cascade itself (as styles/colours.test.js does), for
+// one property on the last of a chain of elements, each the parent of the
+// next: of the rules whose selector reaches it, the weightiest wins, the
+// later on a tie. Enough of Selectors 4 for these sheets: tags, classes,
+// attributes, :is, :where and :not, child and descendant; a state the element
+// isn’t in, or a selector this doesn’t know, never matches. (Each @media is
+// read as if it held: none here touches what these ask.)
+const sheets = (...paths) => paths.flatMap((p) => [...readFileSync(new URL(p, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, s, b]) => [s.split(';').pop().trim(), b]));
+const split = (s, at) => {
+  const out = [''];
+  let depth = 0;
+  for (const ch of s) {
+    depth += ch === '(' ? 1 : ch === ')' ? -1 : 0;
+    if (!depth && at.includes(ch)) out.push('');
+    else out[out.length - 1] += ch;
+  }
+  return out.map((x) => x.trim()).filter(Boolean);
+};
+// a complex selector’s compounds, with `>`, `+` or `~` between two where it isn’t a descendant
+const compounds = (sel) => split(sel.replace(/\s+/g, ' ').replace(/\s*([>+~])\s*/g, ' $1 '), ' ');
+const closing = (s, i) => {
+  let depth = 0;
+  for (; i < s.length; i++) {
+    if (s[i] === '(') depth++;
+    else if (s[i] === ')' && !--depth) return i + 1;
+  }
+  return i;
+};
+// a compound’s simple selectors: a tag, *, .class, #id, [attr], :pseudo(…) or ::element
+const simples = (c) => {
+  const out = [];
+  for (let i = 0; i < c.length; ) {
+    let j = c[i] === '[' ? c.indexOf(']', i) + 1 : i + (c.startsWith('::', i) ? 2 : 1);
+    if (c[i] !== '[') {
+      while (j < c.length && /[\w%-]/.test(c[j])) j++;
+      if (c[j] === '(') j = closing(c, j);
+    }
+    out.push(c.slice(i, j));
+    i = j;
+  }
+  return out;
+};
+const pseudo = (s) => s.match(/^:([\w-]+)(?:\((.*)\))?$/s) ?? [];
+const reaches = (sel, chain, i = chain.length - 1) => {
+  const p = compounds(sel);
+  const at = (k, n) => {
+    if (n < 0 || !matches(p[k], chain, n)) return false;
+    if (k === 0) return true;
+    if (p[k - 1] === '>') return at(k - 2, n - 1);
+    if (/^[+~]$/.test(p[k - 1])) return false; // (no siblings in these chains)
+    for (let m = n - 1; m >= 0; m--) if (at(k - 1, m)) return true;
+    return false;
+  };
+  return at(p.length - 1, i);
+};
+const matches = (compound, chain, i) => {
+  const el = chain[i];
+  return simples(compound).every((s) => {
+    if (s === '*') return true;
+    if (s[0] === '.') return el.cls.includes(s.slice(1));
+    if (s[0] === '#') return el.attrs.id === s.slice(1);
+    if (s[0] === '[') {
+      const [, name, value] = s.match(/^\[([\w-]+)(?:=['"]?([^'"\]]*)['"]?)?\]$/) ?? [];
+      return name !== undefined && name in el.attrs && (value === undefined || el.attrs[name] === value);
+    }
+    if (s.startsWith('::')) return false;
+    if (s[0] === ':') {
+      const [, name, arg = ''] = pseudo(s);
+      if (name === 'is' || name === 'where') return split(arg, ',').some((x) => reaches(x, chain, i));
+      if (name === 'not') return !split(arg, ',').some((x) => reaches(x, chain, i));
+      return el.states.includes(name);
+    }
+    return s === el.tag;
+  });
+};
+// specificity as one number: ids, then classes, attributes and pseudo-classes, then tags
+const weight = (sel) =>
+  compounds(sel)
+    .filter((c) => !/^[>+~]$/.test(c))
+    .flatMap(simples)
+    .reduce((w, s) => {
+      if (s === '*') return w;
+      if (s[0] === '#') return w + 10000;
+      if (s[0] === '.' || s[0] === '[') return w + 100;
+      if (s.startsWith('::')) return w + 1;
+      if (s[0] !== ':') return w + 1;
+      const [, name, arg = ''] = pseudo(s);
+      if (name === 'where') return w;
+      if (name === 'is' || name === 'not' || name === 'has') return w + Math.max(...split(arg, ',').map(weight));
+      return w + 100;
+    }, 0);
+const resolve = (rules, chain, read) => {
+  let best = null;
+  for (const [sel, body] of rules) {
+    const hits = split(sel, ',').filter((s) => reaches(s, chain));
+    if (!hits.length) continue;
+    const w = Math.max(...hits.map(weight));
+    for (const decl of body.split(';')) {
+      const [, name, value] = decl.match(/^\s*([\w-]+)\s*:\s*(.+?)\s*$/s) ?? [];
+      const v = name && read(name, value);
+      if (v !== undefined && (!best || w >= best.w)) best = { w, v };
+    }
+  }
+  return best?.v;
+};
+const cursor = (name, v) => (name === 'cursor' ? v : undefined);
+// (the border shorthand sets the style too: to none when it names none)
+const borderStyle = (name, v) => (name === 'border-style' ? v : name === 'border' ? (v.match(/\b(none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset)\b/)?.[1] ?? (v.includes('var(') ? v : 'none')) : undefined);
+const box = (...cls) => ({ tag: 'div', cls, attrs: {}, states: [] });
+// an element as React draws it, from its markup: its tag, classes and attributes
+const chipEl = (el, states = []) => {
+  const [, tag, rest] = renderToStaticMarkup(el).match(/^<(\w+)([^>]*)>/);
+  const attrs = Object.fromEntries([...rest.matchAll(/([\w-]+)(?:="([^"]*)")?/g)].map(([, k, v]) => [k, v ?? '']));
+  return { tag, cls: (attrs.class ?? '').split(' ').filter(Boolean), attrs, states };
+};
 
 describe('the prompt', () => {
   it('reads key first: “E Go in · Burger Mart”', () => {
@@ -107,6 +225,38 @@ describe('the players chip', () => {
       const html = renderToStaticMarkup(<PlayersChip count={3} onOpen={null} />);
       expect(html).toMatch(/^<span[^>]*role="status"/);
       expect(html).not.toContain('<button');
+    });
+  });
+
+  // Both forms wear `data-on` (a world styles the count’s figures through
+  // it), so a sheet’s rule for the plain count reaches the button too unless
+  // it names the span: these ask each sheet that draws the chip what it ends
+  // up wearing, in the ancestors it’s drawn in.
+  describe('as the stylesheets draw it', () => {
+    const party = (props) => chipEl(<PlayersChip count={2} {...props} />, ['hover']);
+    const status = (props) => chipEl(<PlayersChip count={2} onOpen={null} {...props} />, ['hover']);
+
+    it('in the kit’s Menu, the way to your party shows a hand, the plain count an arrow', () => {
+      const rules = sheets('./hud.css');
+      const menu = [box('hud'), box('hud-row', 'hud-top'), box('hud-tools'), box('hud-menu'), box('hud-menu-list')];
+      expect(resolve(rules, [...menu, party({ item: true })], cursor)).toBe('pointer');
+      expect(resolve(rules, [...menu, status({ item: true })], cursor)).toBe('default');
+    });
+
+    it('in Invincible’s Menu (its own skin of the list) the same', () => {
+      const rules = sheets('./hud.css', '../../components/invincible/world/world.css');
+      const menu = [box('hud', 'iw-hud'), box('hud-row', 'hud-top'), box('hud-tools'), box('hud-menu', 'iw-menu'), box('hud-menu-list')];
+      expect(resolve(rules, [...menu, party({ item: true })], cursor)).toBe('pointer');
+      expect(resolve(rules, [...menu, status({ item: true })], cursor)).toBe('default');
+    });
+
+    it('in Dead Man’s Tide, only the way in is dashed: the count online is a solid chip, a hand over it', () => {
+      const rules = sheets('./hud.css', '../../components/caribbean/tide/tide.css');
+      const tools = [box('dt-screen'), box('g3-tools')];
+      const join = chipEl(<PlayersChip on={false} onJoin={() => {}} className="dt-players" />);
+      expect(resolve(rules, [...tools, join], borderStyle)).toBe('dashed');
+      expect(resolve(rules, [...tools, party({ className: 'dt-players' })], borderStyle)).toBe('solid');
+      expect(resolve(rules, [...tools, party({ className: 'dt-players' })], cursor)).toBe('pointer');
     });
   });
 });

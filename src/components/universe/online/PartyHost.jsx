@@ -73,19 +73,24 @@ export default function PartyHost({ online }) {
       setMoving(null);
       return;
     }
-    if (was.at === leadAt) return;
-    setMoving(was.at && leadAt && reachable(leadAt) && leadAt !== here ? { id: leadId, name: leadName, where: leadAt } : null);
+    // (got there yourself, by the dialog’s Go or the map, while it waited:
+    // nothing’s left to follow, and leaving again isn’t to be pulled back)
+    if (was.at === leadAt) setMoving((m) => (m?.where === here ? null : m));
+    else setMoving(was.at && leadAt && reachable(leadAt) && leadAt !== here ? { id: leadId, name: leadName, where: leadAt } : null);
   }, [following, leadId, leadName, leadAt, here]);
+  // (and not for the one frame before that’s let go, in a live region that
+  // would read “Following them…” out where you already are)
+  const move = moving && moving.where !== here ? moving : null;
   // (the moment to press Stay starts once the dialog’s shut and its notice shows)
   const shut = !open;
   useEffect(() => {
-    if (!moving || !shut) return undefined;
+    if (!move || !shut) return undefined;
     const t = setTimeout(() => {
       setMoving(null);
-      going.current(moving.where, moving.id);
+      going.current(move.where, move.id);
     }, FOLLOW_WAIT_MS);
     return () => clearTimeout(t);
-  }, [moving, shut]);
+  }, [move, shut]);
   const stay = useCallback(() => {
     setFollowLeader(false);
     setMoving(null);
@@ -118,10 +123,10 @@ export default function PartyHost({ online }) {
           call in it isn’t) */}
       {createPortal(
         <div className="party-calls" aria-live="polite">
-          {shut && (summon || moving) && (
+          {shut && (summon || move) && (
             <ErrorBoundary fallback={null}>
               <Suspense fallback={null}>
-                <PartyCalls summon={summon} moving={moving} wait={FOLLOW_WAIT_MS} onSummon={answer} onStay={stay} />
+                <PartyCalls summon={summon} moving={move} wait={FOLLOW_WAIT_MS} onSummon={answer} onStay={stay} />
               </Suspense>
             </ErrorBoundary>
           )}

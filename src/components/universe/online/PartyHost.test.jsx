@@ -62,6 +62,12 @@ function run(online) {
   }
   throw new Error('it never settles');
 }
+// draws it once with `online`, its effects not run: what one frame shows
+function once(online) {
+  H.at = 0;
+  H.effects = [];
+  return PartyHost({ online });
+}
 // every element drawn, depth first
 const elements = (node, out = []) => {
   if (Array.isArray(node)) for (const n of node) elements(n, out);
@@ -185,6 +191,26 @@ describe('Follow the leader', () => {
     expect(H.navigate).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);
     expect(H.navigate).toHaveBeenCalledWith(BREE);
+  });
+
+  it('lets the move go once you’re there yourself, by the dialog’s Go or on your own', () => {
+    run(online());
+    window.dispatchEvent(new CustomEvent('tp:party', { detail: {} }));
+    const tree = run(online({ at: BREE }));
+    // Go on the leader’s row: to Bree, and the dialog shut as it goes
+    dialog(tree).onClose();
+    expect(calls(once(online({ here: BREE, at: BREE })))).toBeNull(); // (not even drawn the once, before its effect lets it go)
+    expect(calls(run(online({ here: BREE, at: BREE })))).toBeNull(); // (no “Following Bravo to Bree…” in Bree)
+    vi.advanceTimersByTime(60000);
+    expect(H.navigate).not.toHaveBeenCalled();
+    // and with the dialog shut all along: there by the map before the moment’s up
+    run(online({ here: '/projects', at: '/projects' }));
+    expect(calls(run(online({ at: '/travel' }))).moving.where).toBe('/travel');
+    expect(calls(run(online({ here: '/travel', at: '/travel' })))).toBeNull();
+    // (and off again on your own: the leader hasn’t moved, so you aren’t pulled back)
+    expect(calls(run(online({ here: '/projects', at: '/travel' })))).toBeNull();
+    vi.advanceTimersByTime(60000);
+    expect(H.navigate).not.toHaveBeenCalled();
   });
 });
 

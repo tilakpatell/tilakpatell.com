@@ -36,9 +36,11 @@
 // each hello): up to eight pilots by invite, one leading, remembered in this
 // browser (`party`, partyStore.js's store, as `allies` comes in), its chat
 // sealed for each mate (the room's seal and open), and quick chat for
-// everyone. Your hello names your party (`pt`), and a party joined or left
-// is said in a hello at once, so your mates see you in it straight away. A
-// member here is a mate (peer.mate: mates.js's isMate, spared as an ally is).
+// everyone. Your hello names your party (`pt`) and the epoch you hold it at
+// (`pe`), and a party joined or left, or a new epoch, is said in a hello at
+// once, so your mates see you in it straight away, and one of it ahead of
+// you (or behind) can tell you the roster at once. A member here is a mate
+// (peer.mate: mates.js’s isMate, spared as an ally is).
 //
 // The hunters after you are yours to fly (hunters.js), and the others see
 // them: while someone's in the same place, where they are goes out a few
@@ -139,14 +141,16 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
     const as = allies?.madeAs?.(id) ?? null;
     return !as || as === (self.id ?? '').slice(0, 16);
   };
-  let saidPt = null; // the party your last hello named
+  // the party your last hello named, and the epoch: a change of either is said at once
+  const fieldKey = (pt) => `${pt.pt ?? ''}:${pt.pe ?? ''}`;
+  let saidParty = fieldKey({});
   const hello = () => {
     const f = writeFactions(self.factions);
     const pt = link.helloField();
-    saidPt = pt.pt ?? null;
+    saidParty = fieldKey(pt);
     return { n: self.name, k: self.kind, p: self.loadout.paint, o: writeOutfit(self.loadout), ...(self.build ? { b: writeBuild(self.build) } : {}), ...writeLooksWire(self.looks), c: self.kills, w: self.where, lv: self.level, ...(f ? { f } : {}), ...pt };
   };
-  // the party's side; a party joined or left is said in a hello now, not at the next heartbeat
+  // the party’s side; a party joined or left, or its new epoch, is said in a hello now, not at the next heartbeat
   const link = createPartyLink({
     self,
     peers,
@@ -156,7 +160,7 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
     store: party,
     emit(e) {
       emit(e);
-      if (e.type === 'party' && send && (link.helloField().pt ?? null) !== saidPt) send.hi(hello());
+      if (e.type === 'party' && send && fieldKey(link.helloField()) !== saidParty) send.hi(hello());
     },
   });
   const same = (a, b) => Object.keys(STOCK_LOADOUT).every((slot) => a[slot] === b[slot]);
@@ -196,6 +200,7 @@ export function createClient({ name, kind = null, loadout = STOCK_LOADOUT, build
         declinedAt: -Infinity,
         mate: false, // in your party and here (partyLink.js's)
         pt: null, // the party their hello names
+        pe: null, // and the epoch they hold it at
         quip: null, // their last quick-chat line: { text, at }
         seen: now(),
         limit: createLimiter(),

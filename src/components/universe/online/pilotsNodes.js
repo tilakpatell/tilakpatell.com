@@ -38,7 +38,8 @@
 //   the pilots flying, and the hunters after them) }
 // view: { project(x, y, z, out) (to the canvas: out.x, out.y in px and
 // out.z, the depth), tags (the element the tags go in), locked (the pilot
-// the guns are locked on, whose name the lock shows instead; footOn, the
+// the guns are locked on, whose name the lock shows instead: their tag’s up
+// only while they’ve a line to show, which the lock doesn’t; footOn, the
 // planet you're down on, if you are: the crews there have tags of their own),
 // me (your ship, for how far off they are; the camera's depth without it),
 // factions (yours: client.js's, for whose side each of them is on),
@@ -53,9 +54,10 @@
 // with their id, for the roster (Online.jsx) to open on them. Over it, what
 // they've just said, while it shows (client.quip(id): quick chat, a set
 // line): quipBubble.js's bubble, set each frame the tag's drawn and written
-// only when the line changes. An ally and a mate in your party are one
-// (mates.js's isMate): the ally green, spared by the guns, on the HUD's
-// markers.
+// only when the line changes, and measured with the tag (it’s out of the
+// tag’s flow), so all of it is kept inside the box. An ally and a mate in
+// your party are one (mates.js’s isMate): the ally green, spared by the
+// guns, on the HUD’s markers.
 
 import { writeBuild } from '../shipyard/build';
 import * as THREE from 'three';
@@ -77,7 +79,7 @@ import { howToDraw } from './pilotsRules';
 import { distText, fontPx, keepIn, tagMode } from './tagRules';
 import { relation } from './relations';
 import { isMate } from './mates';
-import { quipEl, setQuip } from './quipBubble';
+import { quipEl, quipLine, setQuip } from './quipBubble';
 import { RANKS } from '../../galaxy/ranks';
 import { gltfLoader } from '../../../lib/three/gltf';
 
@@ -201,7 +203,7 @@ export function createPilots(parent, { T = {}, colors = {}, here = UNIVERSE, fle
       bits = { name: document.createElement('b'), dist: document.createElement('small'), level: document.createElement('em'), rank: document.createElement('span') };
       bits.rank.className = 'universe-tag-rank';
       line.append(bits.name, bits.dist, bits.level);
-      // (the bubble's placed above the tag, so it doesn't change the size measured)
+      // (the bubble’s placed above the tag, so it doesn’t change the tag’s size: it’s measured on its own)
       bubble = quipEl(document);
       tag.append(line, bits.rank, document.createElement('i'), bubble);
       tag.title = 'Show in the roster';
@@ -210,7 +212,7 @@ export function createPilots(parent, { T = {}, colors = {}, here = UNIVERSE, fle
     }
     // (what the tag last showed, so it's written only on a change; its size
     // measured at the start of the next update, before anything's written)
-    return { kind, hull: hullKey(hull), loadout: STOCK_LOADOUT, model, tag, bits, bubble, name: '', at: new THREE.Vector3(), prev: new THREE.Vector3(), vel: new THREE.Vector3(), shown: false, pose: null, mode: null, seen: { x: 0, z: 0 }, parked: false, under: null, ally: false, safe: false, threat: 0, tagOn: null, tagName: null, tagShown: {}, tagW: 90, tagH: 22, measure: true };
+    return { kind, hull: hullKey(hull), loadout: STOCK_LOADOUT, model, tag, bits, bubble, name: '', at: new THREE.Vector3(), prev: new THREE.Vector3(), vel: new THREE.Vector3(), shown: false, pose: null, mode: null, seen: { x: 0, z: 0 }, parked: false, under: null, ally: false, safe: false, threat: 0, tagOn: null, tagName: null, tagShown: {}, tagW: 90, tagH: 22, quipW: 0, quipH: 0, measure: true };
   };
 
   // bolts from the others' guns: only drawn (a hit is the shooter's to call)
@@ -292,6 +294,11 @@ export function createPilots(parent, { T = {}, colors = {}, here = UNIVERSE, fle
         sh.measure = false;
         sh.tagW = sh.tag.offsetWidth;
         sh.tagH = sh.tag.offsetHeight;
+        // (a line’s bubble too: its width, and how far it stands over the
+        // tag’s top, the gap included, for keepIn to keep all of it in view)
+        const quiet = sh.bubble.hidden;
+        sh.quipW = quiet ? 0 : sh.bubble.offsetWidth;
+        sh.quipH = quiet ? 0 : Math.max(0, -sh.bubble.offsetTop);
       }
       const away = (p) => (p.where ?? UNIVERSE) !== at; // (somewhere else: gone off into a world, or another system)
       // (spread out, on the universe map, once the scene says where you are)
@@ -380,8 +387,12 @@ export function createPilots(parent, { T = {}, colors = {}, here = UNIVERSE, fle
         // the tag over them
         const tag = sh.tag;
         if (!tag) continue;
+        // (a line’s read first: the pilot the guns are locked on keeps their
+        // tag while they’ve one, else it’d be lost, the lock’s bracket
+        // showing only their name)
+        const said = quipLine(client?.quip?.(p.id));
         // (parked, over the ship, unless you're down there with them: their crew have tags then)
-        let show = (on && view.locked !== p.id) || (down && view.footOn !== down.planet);
+        let show = (on && (view.locked !== p.id || said !== null)) || (down && view.footOn !== down.planet);
         let mode = null;
         let pos = null;
         let dist = 0;
@@ -393,7 +404,7 @@ export function createPilots(parent, { T = {}, colors = {}, here = UNIVERSE, fle
           const me = view.me;
           dist = me ? Math.hypot(x - me.x, y - me.y, z - me.z) : spot.z;
           mode = tagMode(dist, { ally: sh.ally });
-          pos = spot.z > 0.3 && mode.mode ? keepIn(spot.x, spot.y, sh.tagW, sh.tagH, boxW, boxH) : null;
+          pos = spot.z > 0.3 && mode.mode ? keepIn(spot.x, spot.y, Math.max(sh.tagW, sh.quipW), sh.tagH + sh.quipH, boxW, boxH) : null;
           show = Boolean(pos);
         }
         if (show !== sh.tagOn) {
@@ -441,7 +452,8 @@ export function createPilots(parent, { T = {}, colors = {}, here = UNIVERSE, fle
         tag.style.setProperty('--fade', mode.fade.toFixed(2));
         tag.style.setProperty('--font', `${fontPx(mode.scale)}px`);
         tag.style.transform = `translate3d(${pos.x.toFixed(1)}px, ${pos.y.toFixed(1)}px, 0) scale(${Math.ceil(mode.scale * 1000) / 1000})`;
-        setQuip(sh.bubble, client?.quip?.(p.id) ?? null);
+        // (a line come or gone changes what’s kept in view: measured again)
+        if (setQuip(sh.bubble, said)) sh.measure = true;
       }
       // the hunters after them: where each pilot last said, flown on from there
       if (fleet) {

@@ -746,7 +746,7 @@ describe('a party (partyLink.js)', () => {
     expect(gather()).toEqual([true, true, true, true]);
     expect(feeds(seen.b)).toContain('Han asks you to their party');
     for (const x of [a, b, c]) expect(members(x)).toEqual([HAN, RICK, MORTY]);
-    expect(a.peers.get(MORTY)).toMatchObject({ mate: true, pt: a.snapshot().party.party.id });
+    for (const id of [RICK, MORTY]) expect(a.peers.get(id)).toMatchObject({ mate: true, pt: a.snapshot().party.party.id, pe: 3 }); // (a new epoch is said in a hello at once, as a party joined is)
     expect(b.snapshot().peers.find((p) => p.id === HAN).mate).toBe(true);
     expect(await a.party.say('Punch it')).toBe(true);
     await flush();
