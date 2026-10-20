@@ -400,10 +400,10 @@ export const ROWS = [
     people: [
       { id: 'glipglop', dx: 4, dz: -6, face: S, ai: { wander: [[4, -6], [10, -4], [8, 2], [0, -2]], speed: 0.9, pause: 4, watch: 7, bark: { r: 5, every: 16, lines: ['The Jerry’s with you? Good. We just need a small part of him. Trust me, I’m Dr. Glip-Glop.', 'Shrimply Pibbles freed a billion people. Jerry Smith watched a lot of television. Weigh it.'] } } },
       { id: 'gjerry', who: 'jerry', dx: -12, dz: 4, face: E, ai: { watch: 6, bark: { r: 4, every: 16, lines: ['Morty, they want my… they want a thing. I said I’d think about it. Tell them I’m still thinking.'] } } },
-      // (the doctors on their rounds before the theatre: they hunt whoever comes for Jerry's things)
-      { id: 'gdoctor-a', who: 'glipglop', dx: -14, dz: -4, face: E, ai: { wander: [[-14, -4], [-16, -12], [-8, -12], [-8, -2]], speed: 1.1, pause: 1.5, hunt: { speed: 3.0, catchR: 1.3, near: 4.5, lose: 8 } } },
-      { id: 'gdoctor-b', who: 'glipglop', dx: -14, dz: -7, face: E, ai: { wander: [[-14, -7], [14, -7]], speed: 0.9, pause: 2, hunt: { speed: 2.8, catchR: 1.3, near: 4.5, lose: 8 } } },
-      { id: 'gdoctor-c', who: 'glipglop', dx: 14, dz: -4, face: W, ai: { wander: [[14, -4], [18, -12], [10, -14], [10, -2]], speed: 1.2, pause: 1.2, hunt: { speed: 3.2, catchR: 1.3, near: 4.5, lose: 8 } } },
+      // (the doctors on their rounds before the theatre: they hunt whoever comes for Jerry's things, till he's had them back)
+      { id: 'gdoctor-a', who: 'glipglop', dx: -14, dz: -4, face: E, ai: { wander: [[-14, -4], [-16, -12], [-8, -12], [-8, -2]], speed: 1.1, pause: 1.5, hunt: { speed: 3.0, catchR: 1.3, near: 4.5, lose: 8, until: 'gloopynoops' } } },
+      { id: 'gdoctor-b', who: 'glipglop', dx: -14, dz: -7, face: E, ai: { wander: [[-14, -7], [14, -7]], speed: 0.9, pause: 2, hunt: { speed: 2.8, catchR: 1.3, near: 4.5, lose: 8, until: 'gloopynoops' } } },
+      { id: 'gdoctor-c', who: 'glipglop', dx: 14, dz: -4, face: W, ai: { wander: [[14, -4], [18, -12], [10, -14], [10, -2]], speed: 1.2, pause: 1.2, hunt: { speed: 3.2, catchR: 1.3, near: 4.5, lose: 8, until: 'gloopynoops' } } },
     ],
     extras: [
       { kind: 'gloopnurse', dx: -4, dz: 6, face: N, ai: { wander: [[-4, 6], [-10, 10], [6, 10], [2, 4]], speed: 0.8, pause: 3 } },

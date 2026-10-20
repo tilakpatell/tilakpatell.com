@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { STONES } from '../../interests/stones';
-import { HALF_OF, STONE_OF, stoneById, stoneFor, stoneLine } from './labels';
+import { HALF_OF, STONE_OF, airNote, stoneById, stoneFor, stoneLine } from './labels';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const GAMES = ['../repulsor/RepulsorRange.jsx', '../lawn/HoldTheLawn.jsx', '../ricochet/Ricochet.jsx', '../trickshot/TrickShot.jsx', '../widow/Infiltration.jsx', '../smash/SmashRun.jsx', '../tesseract/TesseractRun.jsx'];
@@ -29,7 +29,8 @@ describe('the stones’ labels', () => {
   it('gives every game’s stone badge the stone’s own colour, and keeps the table in one place', () => {
     for (const f of GAMES) {
       expect(read(f), f).not.toMatch(/'--glow': '#/);
-      expect(read(f), f).toMatch(/stoneById\('/);
+      expect(read(f), f).toMatch(/<Results\b/);
+      expect(read(f), f).not.toContain('className="hq-stone"');
     }
     for (const f of ['./Place.jsx', './scene/doors.js']) expect(read(f), f).not.toMatch(/STONE_OF =/);
   });
@@ -37,5 +38,13 @@ describe('the stones’ labels', () => {
     expect(read('../../../pages/Avengers.jsx')).not.toMatch(/army/);
     expect(read('../../tour/chapters/player.js')).toMatch(/the Space Stone opens a portal to Titan/);
     expect(read('./CompoundWorld.jsx')).not.toMatch(/wins an Infinity Stone back/);
+  });
+  it('says why the compound is drawn from the air, and offers only what leaves the site’s 3D setting as it is', () => {
+    const failed = 'The 3D compound couldn’t start here, so here it is from the air.';
+    expect(airNote({ gl: 'failed', mode: 'auto', held: false })).toEqual({ text: failed, action: { label: 'Try 3D again', run: 'retry' } });
+    expect(airNote({ gl: 'lost', mode: 'auto', held: false })).toEqual({ text: 'The graphics chip reset, so here’s the compound from the air.', action: { label: 'Try 3D again', run: 'retry' } });
+    expect(airNote({ gl: 'failed', mode: 'on', held: false })).toEqual({ text: failed, action: null });
+    expect(airNote({ gl: 'loading', mode: 'auto', held: true })).toEqual({ text: 'The 3D compound isn’t loaded yet, so here it is from the air.', action: { label: 'Load the 3D', run: 'load' } });
+    expect(airNote({ gl: 'failed', mode: 'off', held: true })).toEqual({ text: '3D is switched off in Settings, so here’s the compound from the air.', action: { label: 'Settings', run: 'settings' } });
   });
 });

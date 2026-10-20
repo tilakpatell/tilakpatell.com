@@ -101,7 +101,7 @@
    or the big one charges (--k: 0 full, 1 empty, written by the scene), in
    the crew's own colour (--hud-power, the world's). */
 :where(.hud-powers):not(hud-none) {
-  --power: var(--hud-power, var(--accent, #7fd6ff));
+  --power: var(--hud-power, var(--hud-accent, #7fd6ff));
   position: absolute;
   z-index: 1;
   left: 16px;
@@ -125,7 +125,7 @@
   border: 0;
   border-radius: 12px;
   background: rgb(3 4 10 / 0.62);
-  color: var(--text, #e8eefc);
+  color: var(--hud-cluster-ink, #e8f4ff);
   font-family: var(--font-mono);
   cursor: pointer;
   touch-action: none;

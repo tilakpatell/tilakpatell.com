@@ -26,6 +26,9 @@ import { STREET_SKY, makeSky } from './sky';
 import { shoneys } from './shoneys';
 import { buildVisitors } from './visitors';
 import { createChaseRings } from './chaseRings';
+import { GAPS, SKIP_AT, TOWN_HOUSES, TOWN_TREES } from './town/plan';
+import { buildTown } from './town/scene';
+import { landed, newSkip, skipReadout, stepSkip } from './town/skip';
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const FAR = 1200; // how far the ground and the road go on
@@ -156,22 +159,39 @@ export async function buildStreet(kit) {
     houses.push({ x: o.x, z: o.z, turn: o.z < 0 ? 0 : Math.PI, look: o.look, tint: pick(TINTS), roofTint: pick(ROOFS), id: o.id });
     drives.push({ x: o.x - 7.8, z: o.z, s: Math.sign(o.z) });
   }
-  // the street's edge: a hedge all round (gaps for the road and sidewalks,
-  // closed off there with striped barriers), so nothing stops Morty unseen
+  // the town's houses round the street (./town/plan.js), drawn as these are; their drives come below
+  for (const h of TOWN_HOUSES) houses.push({ x: h.x, z: h.z, turn: h.turn, look: h.look, tint: h.tint, roofTint: h.roofTint, id: h.id });
+  // the street's edge: a hedge all round, with gaps where the roads run out
+  // through it (./town/plan.js's GAPS), each closed with a striped barrier,
+  // so nothing stops Morty unseen
   const A = AREAS.street;
   const hedge = mats.toon(0x3d8a3a);
   const barrier = mats.toon(0xd8302a);
-  const hx = (A.x1 - A.x0) / 2;
-  for (const s of [-1, 1]) b.add(BOX, hedge, at(0, 0.65, s * (A.z1 + 0.6), 0, A.x1 - A.x0 + 2.4, 1.3, 1.2));
-  for (const s of [-1, 1])
-    for (const t of [-1, 1]) {
-      const z0 = t < 0 ? A.z0 - 1.2 : WALK + 0.2;
-      const z1 = t < 0 ? -WALK - 0.2 : A.z1 + 1.2;
-      b.add(BOX, hedge, at(s * (hx + 0.6), 0.65, (z0 + z1) / 2, 0, 1.2, 1.3, z1 - z0));
-      // the barrier across the road and its sidewalk, red and white
-      for (let z = -WALK; z < WALK; z += 1) b.add(BOX, (Math.round(z) & 1) ? m.white : barrier, at(s * (hx + 0.5), 0.9, z + 0.5, 0, 0.12, 0.3, 1));
-      for (const z of [-WALK + 0.3, 0, WALK - 0.3]) b.add(BOX, m.white, at(s * (hx + 0.5), 0.45, z, 0, 0.1, 0.9, 0.1));
+  const runs = (from, to, gaps) => {
+    const out = [];
+    let a = from;
+    for (const [g0, g1] of [...gaps].sort((p, q) => p[0] - q[0])) {
+      out.push([a, g0]);
+      a = g1;
     }
+    out.push([a, to]);
+    return out.filter(([p, q]) => q - p > 0.01);
+  };
+  // (a hedge line along x at z, or along z at x; its barriers across each gap)
+  for (const s of [-1, 1]) {
+    const z = s * (A.z1 + 0.6);
+    for (const [x0, x1] of runs(A.x0 - 1.2, A.x1 + 1.2, GAPS.ns)) b.add(BOX, hedge, at((x0 + x1) / 2, 0.65, z, 0, x1 - x0, 1.3, 1.2));
+    for (const [g0, g1] of GAPS.ns) {
+      for (let x = g0; x < g1; x += 1) b.add(BOX, Math.round(x - g0) & 1 ? m.white : barrier, at(x + 0.5, 0.9, z - s * 0.1, 0, 1, 0.3, 0.12));
+      for (const x of [g0 + 0.3, (g0 + g1) / 2, g1 - 0.3]) b.add(BOX, m.white, at(x, 0.45, z - s * 0.1, 0, 0.1, 0.9, 0.1));
+    }
+    const x = s * ((A.x1 - A.x0) / 2 + 0.6);
+    for (const [z0, z1] of runs(A.z0 - 1.2, A.z1 + 1.2, GAPS.we)) b.add(BOX, hedge, at(x, 0.65, (z0 + z1) / 2, 0, 1.2, 1.3, z1 - z0));
+    for (const [g0, g1] of GAPS.we) {
+      for (let zz = g0; zz < g1; zz += 1) b.add(BOX, Math.round(zz - g0) & 1 ? m.white : barrier, at(x - s * 0.1, 0.9, zz + 0.5, 0, 0.12, 0.3, 1));
+      for (const zz of [g0 + 0.3, (g0 + g1) / 2, g1 - 0.3]) b.add(BOX, m.white, at(x - s * 0.1, 0.45, zz, 0, 0.1, 0.9, 0.1));
+    }
+  }
   const suburb = [];
   let k = 0;
   for (let x = AREAS.street.x1 + 8; x < plan.side; x += 21 + r() * 4, k++)
@@ -183,7 +203,8 @@ export async function buildStreet(kit) {
         suburb.push({ x: sx * x, z: s * 20, turn: s < 0 ? 0 : Math.PI, look: near ? pick(['colonial', 'ranch']) : 'distant', tint: pick(TINTS), roofTint: pick(ROOFS) });
         if (near) drives.push({ x: sx * x + side * 7.8, z: s * 20, s });
       }
-  if (plan.back) for (let x = -plan.side; x < plan.side; x += 22 + r() * 5) for (const s of [-1, 1]) suburb.push({ x, z: s * 62, turn: s < 0 ? Math.PI : 0, look: 'distant', tint: pick(TINTS), roofTint: pick(ROOFS) });
+  // (the rows behind are out past the town's hedges)
+  if (plan.back) for (let x = -plan.side; x < plan.side; x += 22 + r() * 5) for (const s of [-1, 1]) suburb.push({ x, z: s * 172, turn: s < 0 ? Math.PI : 0, look: 'distant', tint: pick(TINTS), roofTint: pick(ROOFS) });
   // the street's own cast shadows; the suburb's are too far off to need them
   const hood = neighbourHouses(mats, houses);
   const nearSuburb = neighbourHouses(mats, suburb.filter((h) => h.look !== 'distant'), { shadows: false });
@@ -200,8 +221,11 @@ export async function buildStreet(kit) {
     g.fillRect(0, h - 6, w, 6);
   });
   for (const [x, y] of hood.designs[next.look]?.awnings ?? []) b.add(BOX, stripes, at(next.x + x, y, next.z + 5.35, 0, 1.5, 0.06, 0.8, 0.55));
-  // their driveways
+  // their driveways, and the town's
   for (const d of drives) pad(d.x - 1.5, d.x + 1.5, d.s < 0 ? d.z - 4 : WALK, d.s < 0 ? -WALK : d.z + 4);
+  for (const { drive: d } of TOWN_HOUSES) pad(d.x0, d.x1, d.z0, d.z1);
+  // the town round the street: its roads, park, shops and the rest (./town/scene.js)
+  const town = buildTown(kit, { group, b, flat, m, mats });
 
   // ── the street's small things, where rules.js has them ──
   const mailRed = mats.toon(0xc8352e);
@@ -304,6 +328,14 @@ export async function buildStreet(kit) {
   for (let kind = 0; kind < 3; kind++) {
     const list = near.filter((t) => t.kind === kind);
     if (list.length) planted(treeGeometry(kind, tier === 'high' ? 2 : 1), list, true);
+    // the town's, a step back from the road, at the plainer detail (the
+    // plainest on a low device), in a north half and a south half so the
+    // half behind the camera isn't drawn
+    const geo = treeGeometry(kind, tier === 'low' ? 0 : 1);
+    for (const north of [true, false]) {
+      const half = TOWN_TREES.filter((t) => t.kind === kind && t.z < 0 === north);
+      if (half.length) planted(geo, half, true);
+    }
   }
   planted(farTree({ leaf: [0x3d8a35, 0x4f9c3c, 0x63b545], trunk: 0x7a5232 }), far, false);
 
@@ -350,6 +382,31 @@ export async function buildStreet(kit) {
     }
   };
 
+  // the stone Morty skips on the park's pond (./town/skip.js): E at the
+  // shore (the street's `skip` action) picks one up and throws it, the bar
+  // on the HUD's meter (`meter`); what it did is said as it lands, and five
+  // skips is the `pond` thing done. Walked off from the shore, it's dropped.
+  let skip = newSkip();
+  let pressed = false;
+  const skipping = (t, dt, state) => {
+    const m = state.morty;
+    const away = state.area !== 'street' || !m || Math.hypot(m.x - SKIP_AT.x, m.z - SKIP_AT.z) > 3;
+    skip = stepSkip(skip, { press: pressed, away }, dt);
+    pressed = false;
+    for (const e of skip.events) {
+      if (e.type === 'pick') state.emit?.('note', { area: 'street', text: 'You find a flat stone.' });
+      else if (e.type === 'drop') state.emit?.('note', { area: 'street', text: 'You drop the stone.' });
+      else if (e.type === 'throw') {
+        town.throwStone({ x: m.x, z: m.z }, e.n, t);
+        state.emit?.('throw', { area: 'street' });
+      } else if (e.type === 'land') {
+        const r = landed(e.n, { power: e.power });
+        state.emit?.('note', { area: 'street', text: r.text, sound: r.done ? 'seed' : 'splat' });
+        if (r.done && !(state.done ?? []).includes('pond')) state.emit?.('done', { area: 'street', task: 'pond' });
+      }
+    }
+  };
+
   b.build(group);
   const ground = flat.build(group, { cast: false });
   return {
@@ -357,14 +414,17 @@ export async function buildStreet(kit) {
     // what the street's light is baked on (lib/three/groundwork)
     floor: [road, ...ground],
     sky,
-    noInk: [sky.dome, wires, ...visitors.noInk, ...rings.noInk],
+    noInk: [sky.dome, wires, ...visitors.noInk, ...rings.noInk, ...town.noInk],
     light: STREET_LIGHT,
     update(t, dt, state, camera) {
       ridesAt ??= t + RIDES_AFTER;
       if (t >= ridesAt && ridesAt !== Infinity) {
         ridesAt = Infinity;
         loadRides();
+        town.load();
       }
+      town.update(t);
+      if (state) skipping(t, dt, state);
       sky.update(t, camera);
       flag.update(t);
       visitors.update(t, dt, state);
@@ -373,6 +433,15 @@ export async function buildStreet(kit) {
     dispose() {
       visitors.dispose();
       rings.dispose();
+      town.dispose();
+    },
+    // (the stone's: E at the pond, and the bar for the HUD's meter)
+    actions: {
+      skip: () => (pressed = true),
+      meter: () => skipReadout(skip),
+      // (where the stone's got to, for the checks; and in development, a way for them to set it)
+      stone: () => ({ phase: skip.phase, power: skip.power, n: skip.n, best: skip.best }),
+      ...(import.meta.env.DEV && { setSkip: (patch) => (skip = { ...skip, ...patch }) }),
     },
   };
 }

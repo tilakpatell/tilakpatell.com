@@ -376,6 +376,18 @@ describe('The compound, the world: the heist', () => {
     expect([early.next, early.stones, early.finished]).toEqual(['stark', 0, false]);
     expect(progress(all, ['worthy']).places.filter((q) => q.done)).toHaveLength(7);
   });
+  it('counts the places done, the gate by Thwip!’s win alone, for the HUD and the board', () => {
+    const all = ['power', 'reality', 'mind', 'soul-clint', 'soul-natasha', 'soul', 'time', 'space'];
+    expect(progress(all).count).toBe(7);
+    expect(progress(all, ['spidey']).count).toBe(8);
+    expect(progress([], ['spidey']).count).toBe(1);
+    expect(progress(['soul-clint']).count).toBe(1);
+    expect(progress([], ['ironman', 'worthy', 'hulk']).count).toBe(0);
+    for (const [earned, unlocked] of [[[], []], [['power'], ['spidey']], [all, ['worthy']]]) {
+      const p = progress(earned, unlocked);
+      expect(p.count, String(earned)).toBe(p.places.filter((q) => q.done).length);
+    }
+  });
 });
 
 // ── swinging, climbing and the roofs ──

@@ -39,15 +39,14 @@
 /* Scranton: the office from above */
 .office-plan { position: relative; align-self: start; overflow: hidden; border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--shadow-card); }
 /* smaller on phones; sized inside the box so the flight path's position isn't scaled */
-.of-floor { fill: #ece7da; }
-html[data-mode='dark'] .of-floor { fill: #1c1f26; }
-.of-wall { fill: none; stroke: #6b6f78; stroke-width: 4; stroke-linecap: square; }
+.of-floor { fill: var(--surface-2); }
+.of-wall { fill: none; stroke: var(--border-strong); stroke-width: 4; stroke-linecap: square; }
 .of-glass { fill: none; stroke: #8fc3ea; stroke-width: 3; stroke-dasharray: 10 4; }
 .of-door { stroke: #c0392b; stroke-width: 5; }
-.of-label { font: 700 9px/1 var(--font-mono); letter-spacing: 1.2px; fill: #7a7f88; }
+.of-label { font: 700 9px/1 var(--font-mono); letter-spacing: 1.2px; fill: var(--muted); }
 .of-desk { fill: #c9a878; stroke: #8a6a3e; stroke-width: 1.5; }
 html[data-mode='dark'] .of-desk { fill: #6d5636; stroke: #a8865a; }
-.office-mark { position: absolute; display: grid; place-items: center; width: 34px; height: 34px; translate: -50% -50%; border: 2px solid var(--surface); border-radius: 999px; background: var(--text); color: var(--bg); font: 700 0.72rem/1 var(--font-sans); box-shadow: 0 4px 10px -4px rgba(0, 0, 0, 0.45); transition: transform 0.15s ease, background-color 0.15s ease; }
+.office-mark { position: absolute; display: grid; place-items: center; width: 34px; height: 34px; translate: -50% -50%; border: 2px solid var(--surface); border-radius: 999px; background: var(--text); color: var(--bg); font: 700 0.72rem/1 var(--font-sans); box-shadow: 0 4px 10px -4px color-mix(in srgb, var(--shadow-ink) 45%, transparent); transition: transform 0.15s ease, background-color 0.15s ease; }
 .office-mark:hover { transform: scale(1.12); }
 .office-mark[aria-pressed='true'] { background: var(--btn-bg); color: var(--btn-ink); transform: scale(1.18); }
 .office-mark:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
@@ -73,12 +72,9 @@ html[data-mode='dark'] .of-desk { fill: #6d5636; stroke: #a8865a; }
 .office-gif { position: relative; }
 .office-gif-item { position: absolute; right: -6px; bottom: 18px; width: 64px; height: 64px; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35)); }
 .office-gif-item .office-item { width: 64px; height: 64px; }
-.of-outside { fill: #d9d9d4; }
-html[data-mode='dark'] .of-outside { fill: #121419; }
-.of-floor-alt { fill: #e3ddcd; }
-html[data-mode='dark'] .of-floor-alt { fill: #191b21; }
-.of-lift { fill: #c9c9c4; stroke: #6b6f78; stroke-width: 2; }
-.of-lift-x { stroke: #8a8e96; stroke-width: 1.2; }
+.of-outside { fill: color-mix(in srgb, var(--border) 70%, var(--surface)); }
+.of-floor-alt { fill: color-mix(in srgb, var(--surface-2) 60%, var(--border)); }
+.of-lift { fill: var(--border); stroke: var(--border-strong); stroke-width: 2; }
+.of-lift-x { stroke: var(--border-strong); stroke-width: 1.2; }
 .of-wall-in { stroke-width: 2.5; }
-.of-stair { stroke: #9aa0a8; stroke-width: 1.5; }
-html[data-mode='dark'] .of-lift { fill: #23262d; }
+.of-stair { stroke: var(--border-strong); stroke-width: 1.5; }
