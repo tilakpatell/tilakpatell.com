@@ -37,8 +37,12 @@ const membersOf = (page) =>
 const linesOf = (page) => page.evaluate(() => [...document.querySelectorAll('.party-dialog .party-line')].map((l) => l.textContent.replace(/\s+/g, ' ').trim()));
 
 // Alpha set `dist` units off Bravo's nose, both held still, so Bravo's tag
-// for Alpha is drawn near
-const placeAlpha = async (a, b, dist) => {
+// for Alpha is drawn near. Bravo is put back where it came in (`from`): the
+// dialog's steps take minutes drawing in software, and a ship left flying
+// all that while can end up nose to a planet, with Alpha set inside it and
+// its tag hidden behind it.
+const placeAlpha = async (a, b, dist, from) => {
+  if (from) await b.evaluate((from) => Object.assign(window.__universeDebug.state.ship, from), from);
   const at = await b.evaluate(() => ({ ...window.__universeDebug.state.ship }));
   await b.evaluate(() => Object.assign(window.__universeDebug.state.ship, { speed: 0, pitch: 0 }));
   await a.evaluate(
@@ -60,6 +64,14 @@ export async function partyCheck({ a, b, base, check, waitFor, chipText, start, 
   for (const p of [a, b]) await p.waitForFunction(() => typeof window.__universe === 'function' && window.__universe().ship, null, { timeout: 240000 });
   await waitFor(() => a.evaluate(() => [...(window.__universeDebug.net()?.peers.values() ?? [])].some((p) => p.name === 'Bravo' && p.snaps.length)), 120000, 'Alpha hears Bravo on the map');
   console.log('ok   Alpha hears Bravo on the map');
+  // (both held still where they came in, for the quip over the tag later)
+  const from = await b.evaluate(() => {
+    const s = window.__universeDebug.state;
+    s.auto = null;
+    Object.assign(s.ship, { speed: 0, pitch: 0 });
+    return { x: s.ship.x, y: s.ship.y, z: s.ship.z, heading: s.ship.heading, pitch: 0, speed: 0 };
+  });
+  await a.evaluate(() => Object.assign(window.__universeDebug.state.ship, { speed: 0, pitch: 0 }));
 
   // Alpha starts a party and invites Bravo, from the dialog
   await openDialog(a, 'Party');
@@ -105,13 +117,21 @@ export async function partyCheck({ a, b, base, check, waitFor, chipText, start, 
   // a quip from Alpha, over Alpha's tag on Bravo's map, in the ally green
   await closeDialog(b);
   await openDialog(a, 'Quick chat');
-  await placeAlpha(a, b, 60);
-  await press(a.locator('.party-dialog .party-quips button', { hasText: /^On my way$/ }));
+  // (said again every so often till it's seen: a line shows for six
+  // seconds, and in software the tag may take longer than that to come up)
+  const say = () => press(a.locator('.party-dialog .party-quips button', { hasText: /^On my way$/ }));
+  await placeAlpha(a, b, 60, from);
+  await say();
+  let saidAt = Date.now();
   const tag = await waitFor(async () => {
-    await placeAlpha(a, b, 60);
+    await placeAlpha(a, b, 60, from);
     const t = await tagFor(b, 'Alpha');
+    if (!t?.quip && Date.now() - saidAt > 5000) {
+      await say();
+      saidAt = Date.now();
+    }
     return t?.quip ? t : null;
-  }, 90000, 'Alpha’s quip over the tag on Bravo’s map');
+  }, 120000, 'Alpha’s quip over the tag on Bravo’s map');
   check(tag.quip === 'On my way' && tag.relation === 'ally', `the tag on Bravo’s map: ${JSON.stringify(tag)}`);
   await shot(b, 'quip-map');
   await closeDialog(a);
