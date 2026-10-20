@@ -68,8 +68,8 @@ export const SCATTER = {
     { model: 'CommonTree_2', per100: 0.026, clump: 2, spread: 8, scale: [1.0, 1.5], tint: OAK },
     { model: 'CommonTree_5', per100: 0.02, clump: 2, spread: 7, scale: [1.0, 1.4], tint: OAK },
     // the hedges: long bushes strung close in a line of a clump, some in flower
-    { model: 'Bush_Long_1', per100: 0.16, clump: 6, spread: 6, scale: [1.0, 1.4] },
-    { model: 'Bush_Common_Flowers', per100: 0.1, clump: 3, spread: 4, scale: [0.9, 1.3] },
+    { model: 'Bush_Long_1', per100: 0.16, clump: 6, spread: 6, scale: [1.0, 1.4], x: [-150, 150] },
+    { model: 'Bush_Common_Flowers', per100: 0.1, clump: 3, spread: 4, scale: [0.9, 1.3], x: [-120, 120] },
     { model: 'Bush_Large_Flowers', per100: 0.03, clump: 2, spread: 4, scale: [0.8, 1.1] },
     // the lane’s borders and the gardens by it: flowers in drifts, clover,
     // herbs (the kit’s flowers stand one and a half to two and a half metres:
@@ -78,7 +78,7 @@ export const SCATTER = {
     { model: 'Flower_2_Group', per100: 0.25, clump: 5, spread: 2.5, scale: [0.28, 0.4], x: [-30, 30] },
     { model: 'Flower_7_Group', per100: 0.25, clump: 4, spread: 2, scale: [0.28, 0.4], x: [-30, 30] },
     { model: 'Flower_4_Group', per100: 0.15, clump: 4, spread: 2, scale: [0.2, 0.3], x: [-30, 30] },
-    { model: 'Flower_3_Group', per100: 0.12, clump: 4, spread: 3, scale: [0.3, 0.45] },
+    { model: 'Flower_3_Group', per100: 0.12, clump: 4, spread: 3, scale: [0.3, 0.45], x: [-60, 60] },
     { model: 'Clover_1', per100: 0.8, clump: 6, spread: 2.5, scale: [0.4, 0.7], x: [-26, 26], kind: 'grass' },
     { model: 'Plant_3', per100: 0.2, clump: 4, spread: 2, scale: [0.7, 1.1], x: [-30, 30] },
     { model: 'Plant_6', per100: 0.2, clump: 4, spread: 2, scale: [0.7, 1.0], x: [-30, 30] },
