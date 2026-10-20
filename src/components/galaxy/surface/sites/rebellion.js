@@ -4,7 +4,7 @@
 // film’s moment. (sites/index.js has what a site is.)
 
 import { grove } from './stand';
-import { sky, palette, hostile, troops } from './outerKit';
+import { sky, palette, hostile, troops, NATURE } from './outerKit';
 
 // n spots evenly round a circle of radius r (a turn of `phase` first), each [x, z, yaw] facing the middle
 const ring = (n, r, phase = 0) =>
@@ -30,7 +30,7 @@ export const SITES = {
       { id: 'heads', name: 'The fallen guardians', at: [-60, 270], r: 50, about: 'The heads of the old Jedi statues, toppled into the sand long ago and too heavy to move. The pilgrims leave kyber at their feet.', things: [{ kind: 'stonehead', at: [0, 0], yaw: 0.4, scale: 2.4, opts: { s: 1 } }, { kind: 'stonehead', at: [22, 14], yaw: 2.2, scale: 1.8 }, { kind: 'stonehead', at: [-20, 18], yaw: 4.1, scale: 1.6 }] },
       { id: 'partisans', name: 'Saw Gerrera’s camp', at: [320, 250], r: 40, flat: { r: 30 }, about: 'Where Saw’s partisans hide between raids on the Empire: older than the Rebellion, and angrier.', things: [{ kind: 'tent', at: [0, 0], opts: { r: 4, h: 3, sides: 6, color: '#5a4a3a' } }, { kind: 'tent', at: [10, 8], yaw: 1.2, opts: { r: 3, h: 2.6, sides: 6, color: '#6a5a44' } }, { kind: 'crates', at: [-8, 6] }, { kind: 'fire', at: [4, -6] }] },
     ],
-    flora: { biome: 'none', game: 'badlands' },
+    flora: { biome: 'dry', game: 'badlands', tint: { Rocks: { recolour: '#c4b49c' } } },
     skyships: [{ kind: 'destroyer', metres: 1600, at: [500, 900, -1400], yaw: 2.4 }],
     things: [{ kind: 'crates', at: [10, -10] }],
     life: [
@@ -64,7 +64,8 @@ export const SITES = {
       { id: 'crash', name: 'The U-wing’s crash', at: [-170, 160], r: 40, about: 'Where Rogue One’s ship came down in the storm, short of the facility and out of the Empire’s sight, just.', things: [{ kind: 'uwing', at: [0, 0], yaw: 0.8 }, { kind: 'wrecksmoke', at: [2, 0], opts: { h: 14 } }] },
       { id: 'ridge', name: 'The sniper’s ridge', at: [80, 240], r: 36, about: 'The rock over the platform, where Cassian lay in the rain with his orders and his rifle.', things: grove(82, 10, 6, 30, ['needle'], [0.5, 0.8]) },
     ],
-    scatter: [{ kind: 'basalt', n: 110, within: [20, 600], scale: [0.8, 2.6] }, { kind: 'rock', n: 70, within: [10, 500], scale: [0.6, 2], opts: { color: '#2e3032', sharp: 0.7 } }],
+    scatter: [{ kind: 'basalt', n: 110, within: [20, 600], scale: [0.8, 2.6] }, { kind: 'rock', model: NATURE.rock, n: 90, within: [10, 500], scale: [0.6, 2.4], opts: { color: '#2e3032', sharp: 0.7 } }],
+    flora: { biome: 'ash', tint: { Rocks: { recolour: '#3a3c3e' } } },
     things: [{ kind: 'crates', at: [-10, 8], opts: { color: '#4a4c50' } }],
     life: [
       { kind: 'cassian', id: 'cassian', at: [86, 230], still: true, face: 0.4, name: 'Cassian Andor', named: true, quest: 'sniper', says: ['I’ve been in this fight since I was six years old.', 'Stay with me.'] },
@@ -97,7 +98,8 @@ export const SITES = {
       { id: 'shuttle', name: 'Krennic’s landing', at: [-40, 210], r: 40, flat: { r: 32 }, about: 'Where the shuttle came down out of the grey with the Director on it, and his troopers in black.', things: [{ kind: 'lambda', at: [0, 0], yaw: 3.4 }] },
       { id: 'beach', name: 'The black sand beach', at: [420, -60], r: 50, about: 'Where the grass ends and the sand goes down to the sea, black as coal, the waves grey on it.', things: [{ kind: 'log', at: [0, 0], yaw: 0.7, scale: 1.4 }, { kind: 'log', at: [12, 8], yaw: 2.2 }] },
     ],
-    scatter: [{ kind: 'rock', n: 80, within: [20, 560], scale: [0.6, 2.2], opts: { color: '#2c2a28' } }, { kind: 'tuft', n: 160, within: [6, 380], scale: [0.8, 1.4], opts: { color: '#6a7a46' } }],
+    scatter: [{ kind: 'rock', model: NATURE.rock, n: 90, within: [20, 560], scale: [0.6, 2.4], opts: { color: '#2c2a28' } }],
+    flora: { biome: 'temperate', trees: false, tint: { Rocks: { recolour: '#2c2a28' } } },
     things: [{ kind: 'crates', at: [10, 8] }],
     life: [
       { kind: 'villager', id: 'lyra', at: [150, 70], still: true, face: 3, name: 'Lyra Erso', named: true, quest: 'hide', says: ['Trust the Force.', 'If they come, you know where to go.'] },
@@ -124,7 +126,8 @@ export const SITES = {
       { id: 'road', name: 'The transport road', at: [120, 160], r: 46, flat: { r: 30 }, about: 'The track the prison transports take through the mud. The Rebellion stopped one here, and asked for a prisoner by name.', things: [{ kind: 'speedertruck', at: [0, 0], yaw: 1.2 }, { kind: 'crates', at: [10, 8] }] },
       { id: 'quarry', name: 'The quarry', at: [200, -200], r: 50, flat: { r: 34 }, about: 'Where the prisoners work: a pit, a crane and the mud running into it every time it rains, which is always.', things: [{ kind: 'mining', at: [0, 0], yaw: 0.6, scale: 0.4 }, ...grove(84, 8, 18, 40, ['needle'], [0.3, 0.6])] },
     ],
-    scatter: [{ kind: 'rock', n: 70, within: [20, 560], scale: [0.6, 2], opts: { color: '#4a4436' } }, { kind: 'stones', n: 60, within: [10, 300], scale: [0.6, 1.2], opts: { color: '#4a3e30' } }],
+    scatter: [{ kind: 'rock', model: NATURE.rock, n: 80, within: [20, 560], scale: [0.6, 2.2], opts: { color: '#4a4436' } }, { kind: 'stones', model: NATURE.stone, n: 70, within: [10, 300], scale: [0.6, 1.2], solid: false, opts: { color: '#4a3e30' } }],
+    flora: { biome: 'ash', tint: { Rocks: { recolour: '#4a4436' } } },
     things: [{ kind: 'crates', at: [-12, 10], opts: { color: '#5a5650' } }],
     life: [
       { kind: 'k2so', id: 'k2so', at: [110, 146], still: true, face: 2.2, name: 'K-2SO', named: true, quest: 'transport', says: ['I find that answer vague and unconvincing.', 'There is a ninety-seven point six per cent chance of failure.'] },
@@ -152,7 +155,8 @@ export const SITES = {
       { id: 'alley', name: 'Tivik’s alley', at: [-150, 160], r: 34, flat: { r: 24 }, about: 'A dead end behind the market, where Cassian Andor met an informant who knew too much and couldn’t run.', things: [{ kind: 'crates', at: [0, 0] }, { kind: 'crates', at: [6, 4], yaw: 1 }, { kind: 'lamp', at: [-4, 6], opts: { h: 3, light: '#ffb86a' } }] },
       { id: 'docks', name: 'The docks', at: [-190, -170], r: 46, flat: { r: 38 }, about: 'Berths cut into the asteroid’s face, freighters coming and going, and stormtroopers checking whoever looks worth checking.', things: [{ kind: 'dockingbay', at: [0, 0], opts: { r: 18, h: 7 } }, { kind: 'hangar', at: [30, 10], yaw: 1.4, opts: { w: 30, d: 20, h: 12 } }] },
     ],
-    scatter: [{ kind: 'rock', n: 120, within: [12, 560], scale: [0.6, 2.4], opts: { color: '#4a443e', sharp: 0.8 } }, { kind: 'blackspire', n: 26, within: [100, 560], scale: [0.8, 1.6] }],
+    scatter: [{ kind: 'rock', model: NATURE.rock, n: 120, within: [12, 560], scale: [0.6, 2.6], opts: { color: '#4a443e', sharp: 0.8 } }, { kind: 'blackspire', n: 26, within: [100, 560], scale: [0.8, 1.6] }],
+    flora: { biome: 'tundra', tint: { Rocks: { recolour: '#4a443e' } } },
     things: [{ kind: 'skyring', at: [0, 0], opts: { az: 2.2, el: 0.5, width: 0.06, dist: 9000 } }, { kind: 'crates', at: [10, -8] }],
     life: [
       { kind: 'cassian', id: 'cassian', at: [-138, 150], still: true, face: 3, name: 'Cassian Andor', named: true, quest: 'informant', says: ['Calm down. Every time.', 'They’re onto us. We have to go.'] },
@@ -207,7 +211,8 @@ export const SITES = {
       { id: 'worlport', name: 'Worlport', at: [-200, -140], r: 70, flat: { r: 58 }, about: 'The capital: old towers, older markets, and a cantina where you can buy a ship, a crew or someone to find either.', things: [{ kind: 'mantellpalace', at: [0, -34], scale: 0.8 }, { kind: 'cantina', at: [30, 14], yaw: 0.3 }, { kind: 'stall', at: [-24, 10] }] },
       { id: 'field', name: 'The landing field', at: [-120, 220], r: 50, flat: { r: 42 }, about: 'Pads and fuel lines for whoever pays the fee, and a bounty board on the fence that’s always full.', things: [{ kind: 'pad', at: [0, 0], opts: { r: 16 } }, { kind: 'pad', at: [36, 4], opts: { r: 12, number: 2 } }, { kind: 'barrels', at: [18, -16] }] },
     ],
-    scatter: [{ kind: 'rock', n: 60, within: [20, 560], scale: [0.6, 2], opts: { color: '#6a5a44' } }],
+    scatter: [{ kind: 'rock', model: NATURE.mudrock, n: 70, within: [20, 560], scale: [0.8, 2.4], opts: { color: '#6a5a44' } }],
+    flora: { biome: 'dry', tint: { Rocks: { recolour: '#7a6a52' } } },
     things: [{ kind: 'barrel', at: [10, 10] }, { kind: 'crates', at: [-12, 8] }],
     life: [
       { kind: 'rodian', id: 'dealer', at: [206, 120], still: true, face: 3.4, name: 'A scrap dealer', quest: 'parts', says: ['Everything’s got a price. Most of it’s low.', 'Bounty hunters in town. Bad for business, good for business.'] },

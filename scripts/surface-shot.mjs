@@ -1,4 +1,4 @@
-/* global window */
+/* global window, document */
 // Pictures of a galaxy world from where you choose to stand (the
 // checkpoints' before/after shots of the planets overhaul): each view is a
 // thing to look at, how far off to stand and from which side (degrees,
@@ -69,6 +69,10 @@ await page.evaluate(() => window.__tpGuardOff?.());
 // (the floor's light baked, if the world has one: a shot before it lands is
 // the world without its shadows; one with no ground runs out the clock)
 await page.waitForFunction(() => Boolean(window.__surfaceScene?.api?.ground?.stats?.baked), null, { timeout: Number(process.env.BAKE_WAIT ?? 150000), polling: 1000 }).catch(() => {});
+// (the loading veil gone: its shader tuning can outlast the bake when the
+// machine is busy, and a shot through it is of the veil)
+const unveiled = () => page.waitForFunction(() => !document.querySelector('.loading-veil-card'), null, { timeout: Number(process.env.VEIL_WAIT ?? 300000), polling: 1000 }).catch(() => console.log('  (the loading veil still up: shot as it stands)'));
+await unveiled();
 if (process.env.WEATHER) console.log('weather', JSON.stringify(await page.evaluate((w) => window.__surfaceDo('weather', w, 0), process.env.WEATHER)));
 const zone = process.env.ZONE ?? null;
 let origin = [0, 0];
@@ -92,6 +96,7 @@ for (const v of views) {
   await page.waitForTimeout(7000);
   // (on a game level: its cells round the new spot streamed in, LEVEL_WAIT ms at most)
   await page.waitForFunction(() => window.__surfaceScene?.level?.()?.ready !== false, null, { timeout: Number(process.env.LEVEL_WAIT ?? 600000) }).catch(() => console.log('  (the level still streaming: shot as it stands)'));
+  await unveiled();
   const file = `${out}/${world}-${zone ? `${zone}-` : ''}${label ?? `${x0}_${z0}_${deg}`}-${quality}.png`;
   await page.screenshot({ path: file, timeout: 180000 });
   console.log(file);

@@ -123,15 +123,159 @@ export const BIOMES = {
     // (the kit painted its common bush's leaves autumn red: a meadow's are green)
     tint: { Leaves_TwistedTree: { recolour: '#587a34' } },
   },
-  // (filled a phase at a time: an empty biome lays nothing)
-  temperate: { near: [], cover: [], mid: [], trees: [] },
-  conifer: { near: [], cover: [], mid: [], trees: [] },
-  jungle: { near: [], cover: [], mid: [], trees: [] },
-  swamp: { near: [], cover: [], mid: [], trees: [] },
-  tropical: { near: [], cover: [], mid: [], trees: [] },
-  dry: { near: [], cover: [], mid: [], trees: [] },
-  ash: { near: [], cover: [], mid: [], trees: [] },
-  tundra: { near: [], cover: [], mid: [], trees: [] },
+  // (the rest as the living layer's design lists them, its table at
+  // docs/superpowers/specs/2026-10-09-galaxy-surfaces-living-layer-design.md:
+  // what each lays, band by band; a world tints them to its own ground)
+  // Sorgan's woods, Tython's and Lah'mu's grass: ferns, clover and toadstools
+  // in the grass, big bushes and rocks, birches and pines
+  temperate: {
+    near: [
+      ['Clover_1', 0.35],
+      ['Fern_1', 0.35],
+      ['Mushroom_Common', 0.3],
+    ],
+    cover: [
+      ['Grass_Common_Short', 0.45],
+      ['Grass_Common_Tall', 0.35],
+      ['Pebble_Round_3', 0.2],
+    ],
+    mid: [
+      ['Bush_Large', 0.55],
+      ['Rock_Medium_2', 0.45],
+    ],
+    trees: [
+      ['Birch_2', 0.5],
+      ['Pine_4', 0.5],
+    ],
+  },
+  // Endor's floor: ferns and toadstools, a dead tree here and there under the
+  // built redwoods
+  conifer: {
+    near: [
+      ['Mushroom_Common', 0.35],
+      ['Mushroom_RedCap', 0.25],
+      ['Plant_3', 0.4],
+    ],
+    cover: [
+      ['Fern_1', 0.5],
+      ['Fern_2', 0.3],
+      ['Pebble_Round_1', 0.2],
+    ],
+    mid: [
+      ['Bush_Large', 0.5],
+      ['Rock_Big_1', 0.5],
+    ],
+    trees: [['DeadTree_3', 1]],
+    count: { trees: 40 },
+  },
+  // Yavin's and Morak's undergrowth: ferns and broad plants, long bushes,
+  // mossed rocks, a few twisted trees
+  jungle: {
+    near: [
+      ['Clover_2', 0.35],
+      ['Mushroom_Oyster', 0.25],
+      ['Plant_5', 0.4],
+    ],
+    cover: [
+      ['Fern_1', 0.3],
+      ['Plant_1_Big', 0.25],
+      ['Plant_2_Big', 0.25],
+      ['Plant_4', 0.2],
+    ],
+    mid: [
+      ['Bush_Long_1', 0.6],
+      ['Rock_Big_2', 0.4],
+    ],
+    trees: [
+      ['TwistedTree_1', 0.5],
+      ['TwistedTree_3', 0.5],
+    ],
+    count: { trees: 60 },
+    tint: { Rocks: '#7a8a62' },
+  },
+  // Dagobah's: fungus on the roots, low plants, dead and twisted trees
+  swamp: {
+    near: [
+      ['Mushroom_Laetiporus', 0.4],
+      ['Mushroom_Oyster', 0.6],
+    ],
+    cover: [
+      ['Plant_2', 0.4],
+      ['Plant_6', 0.3],
+      ['Fern_2', 0.3],
+    ],
+    mid: [['Rock_Medium_3', 1]],
+    trees: [
+      ['DeadTree_1', 0.5],
+      ['TwistedTree_2', 0.5],
+    ],
+    count: { trees: 60 },
+  },
+  // Scarif's and Pillio's shore: wispy grass, flowers, broad plants and
+  // flowering bushes (its palms are its trees)
+  tropical: {
+    near: [
+      ['Flower_7_Single', 0.5],
+      ['Pebble_Round_4', 0.5],
+    ],
+    cover: [
+      ['Grass_Wispy_Tall', 0.5],
+      ['Grass_Wispy_Short', 0.3],
+      ['Plant_1_Big', 0.2],
+    ],
+    mid: [['Bush_Common_Flowers', 1]],
+    trees: [],
+  },
+  // Tatooine's and Saleucami's scrub: pebbles, low scrub and dry tufts,
+  // rocks and boulders, no trees
+  dry: {
+    near: [
+      ['Pebble_Round_5', 0.5],
+      ['Plant_7', 0.5],
+    ],
+    cover: [
+      ['Plant_7_Big', 0.4],
+      ['Pebble_Square_1', 0.3],
+      ['Grass_Wispy_Short', 0.3],
+    ],
+    mid: [
+      ['Rock_Medium_1', 0.5],
+      ['Rock_Big_1', 0.5],
+    ],
+    trees: [],
+    count: { cover: 1400 },
+    tint: { Leaves: { recolour: '#8a7c4e' }, Grass: { recolour: '#b4a070' } },
+  },
+  // Mustafar's and Sullust's: stones near black, dark boulders, no plants
+  ash: {
+    near: [
+      ['Pebble_Square_2', 0.5],
+      ['Pebble_Square_4', 0.5],
+    ],
+    cover: [
+      ['Pebble_Square_1', 0.5],
+      ['Pebble_Square_3', 0.5],
+    ],
+    mid: [
+      ['Rock_Big_2', 0.6],
+      ['Rock_Medium_4', 0.4],
+    ],
+    trees: [],
+    count: { cover: 900 },
+    tint: { Rocks: { recolour: '#2c2926' } },
+  },
+  // Hoth's and Mygeeto's: nothing green, outcrops of blue-grey rock
+  tundra: {
+    near: [],
+    cover: [['Pebble_Round_2', 1]],
+    mid: [
+      ['Rock_Big_1', 0.6],
+      ['Rock_Big_2', 0.4],
+    ],
+    trees: [],
+    count: { cover: 500 },
+    tint: { Rocks: { recolour: '#8a96a4' } },
+  },
   // Coruscant, Kamino, Bespin: no ground to grow on
   none: { near: [], cover: [], mid: [], trees: [] },
 };

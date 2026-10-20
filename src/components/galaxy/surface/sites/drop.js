@@ -10,7 +10,7 @@
 // game's maps and the films. (sites/index.js has what a site is.)
 
 import { grove } from './stand';
-import { sky, palette, hostile, troops } from './outerKit';
+import { sky, palette, hostile, troops, NATURE } from './outerKit';
 
 // n spots evenly round a circle of radius r (a turn of `phase` first), each [x, z, yaw] facing the middle
 const ring = (n, r, phase = 0) =>
@@ -83,6 +83,7 @@ export const SITES = {
       { id: 'farm', name: 'The nicillin farm', at: [150, -210], r: 40, flat: { r: 30 }, about: 'Where the farmers grow nicillin, the medicine half the galaxy wants: the farm that hired bounty hunters to hold it against Hondo Ohnaka’s pirates.', things: [{ kind: 'felwatertower', at: [0, 0], yaw: 0.6 }, { kind: 'felwatertower', at: [16, 10], yaw: 2, scale: 0.85 }, { kind: 'crates', at: [-8, 6] }] },
     ],
     scatter: [{ kind: 'fungus', n: 90, at: [220, 120], within: [10, 120], scale: [2, 4.4], solid: 0.5 }, { kind: 'fungus', n: 220, within: [30, 620], scale: [1.2, 4], solid: 0.5 }, { kind: 'jungletree', n: 90, within: [50, 620], scale: [0.8, 1.6] }, { kind: 'plant', n: 140, within: [6, 400], scale: [0.8, 1.6], solid: false }, { kind: 'fern', n: 120, within: [6, 400], scale: [0.8, 1.6], solid: false }],
+    flora: { biome: 'jungle', trees: false, tint: { Leaves: { recolour: '#8a9a34' }, Rocks: { recolour: '#6a5a3a' } } },
     things: [{ kind: 'crates', at: [10, 8] }],
     life: [
       { kind: 'clone', id: 'bly', at: [-186, -136], still: true, face: 3.4, name: 'Commander Bly', named: true, quest: 'separatists', says: ['327th Star Corps, hold the outpost.', 'The general’s out ahead. As usual.'] },
@@ -111,7 +112,8 @@ export const SITES = {
       { id: 'collector', name: 'The lava collectors', at: [-180, -160], r: 50, flat: { r: 30 }, about: 'Long arms out over the lava, drawing the heat off for the works: the same kind the Separatists built on Mustafar.', things: [{ kind: 'lavacollector', at: [0, 0], yaw: 0.8 }] },
       { id: 'crater', name: 'The crater’s rim', at: [-120, 240], r: 46, about: 'The edge of the old crater, black rock and yellow sulphur, and the whole works below you in the smoke.', things: [{ kind: 'game', model: SULLUST.crater, at: [0, 0], yaw: 0.2, scale: 1.4 }, { kind: 'game', model: SULLUST.crater, at: [14, 10], yaw: 2, scale: 1.1 }] },
     ],
-    scatter: [{ kind: 'basalt', n: 120, within: [20, 600], scale: [0.8, 2.6] }, { kind: 'lavacrack', n: 40, within: [40, 500], scale: [0.8, 1.6] }],
+    scatter: [{ kind: 'rock', model: NATURE.crater, n: 120, within: [20, 600], scale: [0.6, 2.8], opts: { color: '#2a2422', sharp: 0.7 } }, { kind: 'stones', model: NATURE.sulphur, n: 200, within: [8, 420], scale: [0.25, 0.8], solid: false, opts: { color: '#2e2624' } }, { kind: 'lavacrack', n: 40, within: [40, 500], scale: [0.8, 1.6] }],
+    flora: { biome: 'ash' },
     things: [{ kind: 'game', model: EMPIRE.box, at: [10, -10], yaw: 0.4 }],
     life: [
       { kind: 'sullustan', id: 'foreman', at: [214, 40], still: true, face: 2.2, name: 'A Sullustan foreman', named: true, quest: 'sabotage', says: ['The Empire pays in promises. We work for real.', '(He clicks his tongue twice: a Sullustan curse, a polite one.)'] },
@@ -139,7 +141,8 @@ export const SITES = {
       { id: 'beach', name: 'The white beach', at: [-60, -180], r: 50, about: 'Sand as white as flour, water clear to the bottom, and the shrimp the size of a man wading in the shallows.', things: [{ kind: 'palm', at: [0, 0] }, { kind: 'palm', at: [10, 8], yaw: 1 }, { kind: 'palm', at: [-12, 6], yaw: 2 }] },
       { id: 'cove', name: 'The western island', at: [-280, -120], r: 50, about: 'A low island across the shallows, where the Empire’s garrison keeps its boats.', things: [{ kind: 'pad', at: [0, 0], opts: { r: 12 } }, { kind: 'crates', at: [12, 8] }] },
     ],
-    scatter: [{ kind: 'palm', n: 70, within: [20, 360], scale: [0.8, 1.4] }, { kind: 'rock', n: 50, within: [20, 400], scale: [0.6, 2], opts: { color: '#8a8a78' } }, { kind: 'tuft', n: 120, within: [6, 280], scale: [0.8, 1.4], opts: { color: '#6a9a4a' } }],
+    scatter: [{ kind: 'palm', n: 70, within: [20, 360], scale: [0.8, 1.4] }, { kind: 'rock', model: NATURE.rock, n: 50, within: [20, 400], scale: [0.6, 2.2], opts: { color: '#8a8a78' } }],
+    flora: { biome: 'tropical' },
     things: [{ kind: 'crates', at: [10, 8] }],
     life: [
       { kind: 'officer', id: 'meeko', at: [14, 10], still: true, face: 2.8, name: 'Del Meeko', named: true, quest: 'observatory', says: ['The Emperor had his secrets here. I want to know what they were.', 'Watch the shrimp. They bite.'] },
@@ -194,7 +197,8 @@ export const SITES = {
       { id: 'yardcity', name: 'The yard city', at: [-220, -140], r: 70, flat: { r: 58 }, about: 'Where the yard workers live: towers, canteens, a cantina where nobody talks about what they’re building.', things: [{ kind: 'skyscraper', at: [0, 0], opts: { style: 2, h: 90, w: 18, seed: 61 } }, { kind: 'skyscraper', at: [30, 20], opts: { style: 0, h: 110, w: 18, seed: 62 } }, { kind: 'cantina', at: [-24, 24], yaw: 1 }] },
       { id: 'cranes', name: 'The crane field', at: [-120, 230], r: 50, flat: { r: 40 }, about: 'Where the hull plates wait to be lifted: stacks of them, and the cranes to lift them, and Ugnaughts to work the cranes.', things: [...ring(4, 22, 0.4).map(([x, z, yaw]) => ({ kind: 'game', model: EMPIRE.container, at: [x, z], yaw })), { kind: 'crates', at: [0, 0] }] },
     ],
-    scatter: [{ kind: 'rock', n: 40, within: [30, 560], scale: [0.6, 1.6], opts: { color: '#3e3c38' } }],
+    scatter: [{ kind: 'rock', model: NATURE.stone, n: 50, within: [30, 560], scale: [0.6, 1.8], opts: { color: '#3e3c38' } }],
+    flora: { biome: 'ash', tint: { Rocks: { recolour: '#3e3c38' } } },
     skyships: [{ kind: 'destroyer', metres: 1600, at: [700, 520, 300], yaw: 1.6 }],
     things: [{ kind: 'game', model: EMPIRE.box, at: [12, -8], yaw: 0.8 }],
     life: [

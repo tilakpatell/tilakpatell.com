@@ -4,7 +4,7 @@
 // index.js has what a site is.)
 
 import { grove } from './stand';
-import { sky, palette, hostile } from './outerKit';
+import { sky, palette, hostile, NATURE } from './outerKit';
 
 // n spots evenly round a circle of radius r (a turn of `phase` first), each [x, z, yaw] facing the middle
 const ring = (n, r, phase = 0) =>
@@ -31,7 +31,7 @@ export const SITES = {
       { id: 'command', name: 'The Separatist command post', at: [-160, -230], r: 46, flat: { r: 38 }, about: 'The Confederacy’s last headquarters before Mustafar: a bunker on the plateau, its guns on the sinkhole road.', things: [{ kind: 'bunker', at: [0, 0], yaw: 0.7, opts: { w: 18, d: 12 } }, { kind: 'turret', at: [16, 14], yaw: 2, opts: { color: '#8a7a64' } }, { kind: 'droidplatform', at: [-18, 8], yaw: 1.2 }, { kind: 'crates', at: [10, -14] }] },
       { id: 'rim', name: 'The windward rim', at: [80, -320], r: 40, about: 'The edge of the plateau, where the wind comes off the plains below and the rock is cut into fins.', things: grove(41, 9, 6, 36, ['needle'], [0.5, 0.9]) },
     ],
-    flora: { biome: 'none', game: 'badlands' },
+    flora: { biome: 'dry', game: 'badlands', tint: { Rocks: { recolour: '#a89c88' } } },
     things: [{ kind: 'crates', at: [-12, 8] }, { kind: 'barrel', at: [-9, 11], yaw: 0.4 }],
     life: [
       { kind: 'obiwan', id: 'kenobi', at: [232, 40], still: true, face: 2.6, name: 'Obi-Wan Kenobi', named: true, quest: 'grievous', says: ['Hello there.', 'The general’s on the tenth level. I’ll need the droids kept busy.'] },
@@ -63,6 +63,7 @@ export const SITES = {
       { id: 'crags', name: 'The ice crags', at: [120, 300], r: 30, about: 'Shards of crystal as tall as a gunship, half buried in the ice. The wind sings through them.', things: grove(74, 12, 6, 30, ['glassshard'], [1.6, 3.6]) },
     ],
     scatter: [{ kind: 'glassshard', n: 140, within: [30, 620], scale: [0.8, 2.6], sink: 0.4, solid: 0.4 }, { kind: 'snowrock', n: 90, within: [20, 560], scale: [0.6, 2], sink: 0.4 }, { kind: 'iceblock', n: 24, at: [120, 300], within: [8, 70], scale: [1.4, 3], sink: 0.5 }, { kind: 'iceblock', n: 10, at: [-250, 120], within: [30, 60], scale: [1.2, 2.4], sink: 0.5 }],
+    flora: { biome: 'tundra', tint: { Rocks: { recolour: '#9aa6b4' } } },
     things: [{ kind: 'crates', at: [10, -12], opts: { color: '#6a7488' } }],
     life: [
       { kind: 'clone', id: 'bacara', at: [-52, -230], still: true, face: 3.4, name: 'Commander Bacara', named: true, quest: 'bridge', says: ['Galactic Marines, hold this line.', 'The bridge is ours by nightfall, General.'] },
@@ -90,7 +91,8 @@ export const SITES = {
       { id: 'crater', name: 'The crater city', at: [-200, -170], r: 60, flat: { r: 48 }, about: 'Saleucami’s towns are built in old craters, out of the wind: domed houses round a well.', things: [...ring(5, 28, 0.3).map(([x, z, yaw], i) => ({ kind: 'lawquanefarm', at: [x, z], yaw, scale: [1, 0.85, 0.92, 1, 0.8][i] })), { kind: 'stall', at: [0, 8] }, { kind: 'vaporator', at: [-6, -4] }] },
       { id: 'scouts', name: 'The scouts’ camp', at: [-160, 220], r: 36, flat: { r: 28 }, about: 'Clone scouts camped with their bikes, out on the plain where the Separatists’ last droids hide.', things: [{ kind: 'tent', at: [0, 0], opts: { r: 3.4, h: 3, sides: 6, color: '#5a5e48' } }, { kind: 'speederbike', at: [8, 6], yaw: 1 }, { kind: 'speederbike', at: [10, -4], yaw: 1.4 }, { kind: 'crates', at: [-8, 4] }] },
     ],
-    scatter: [{ kind: 'fungus', n: 70, at: [220, 160], within: [10, 110], scale: [1.6, 3.8], solid: 0.5 }, { kind: 'fungus', n: 110, within: [40, 600], scale: [1, 3], solid: 0.5 }, { kind: 'rock', n: 50, within: [20, 560], scale: [0.6, 2], opts: { color: '#8a7458' } }],
+    scatter: [{ kind: 'fungus', n: 70, at: [220, 160], within: [10, 110], scale: [1.6, 3.8], solid: 0.5 }, { kind: 'fungus', n: 110, within: [40, 600], scale: [1, 3], solid: 0.5 }, { kind: 'rock', model: NATURE.mudrock, n: 70, within: [20, 560], scale: [0.8, 2.6], opts: { color: '#8a7458' } }, { kind: 'stones', model: NATURE.canyon, n: 90, within: [8, 360], scale: [0.5, 1.2], solid: false, opts: { color: '#8a7458' } }],
+    flora: { biome: 'dry', tint: { Rocks: { recolour: '#9a8262' } } },
     things: [{ kind: 'barrel', at: [12, 10] }],
     rides: [{ kind: 'speederbike', at: [14, -8], yaw: 1.6 }],
     life: [
@@ -119,6 +121,7 @@ export const SITES = {
       { id: 'palace', name: 'The viceroy’s palace', at: [-220, 170], r: 50, flat: { r: 40 }, about: 'Nute Gunray’s seat on his homeworld, its treasury under it: the Federation’s wealth, and its droids standing over it.', things: [{ kind: 'skyscraper', at: [0, 0], opts: { style: 1, h: 90, w: 26, seed: 7 } }, { kind: 'plaza', at: [0, 34], opts: { w: 40, d: 24 } }, { kind: 'droidplatform', at: [26, 18], yaw: 2 }] },
     ],
     scatter: [{ kind: 'karst', n: 60, within: [60, 600], scale: [2, 5], solid: 0.6 }, { kind: 'jungletree', n: 80, within: [40, 600], scale: [0.8, 1.4] }],
+    flora: { biome: 'temperate', trees: false, tint: { Rocks: { recolour: '#6a6658' } } },
     grass: { h: [0.3, 0.6], w: 0.05, root: '#3e4a2c', mid: '#5a6a3c', tip: '#8a9a5e', dry: '#8a8a5c', cover: 0.6, scale: 90, wind: 0.4 },
     things: [{ kind: 'crates', at: [-10, 10] }],
     life: [
@@ -148,7 +151,8 @@ export const SITES = {
       { id: 'dig', name: 'The excavation', at: [-160, -170], r: 46, flat: { r: 32 }, about: 'The Polis Massans came to dig for the remains of their own lost homeworld: trenches, lamps and the finds laid out on tables.', things: [{ kind: 'tent', at: [0, 0], opts: { r: 4, h: 3, sides: 4, color: '#8a8478' } }, { kind: 'lamp', at: [8, 6] }, { kind: 'lamp', at: [-8, -6] }, { kind: 'crates', at: [10, -8] }, { kind: 'mining', at: [-22, 14], yaw: 1, scale: 0.4 }] },
       { id: 'crater', name: 'The great crater', at: [-150, 190], r: 50, about: 'Struck when the asteroid broke off its world. Nothing has moved in it since but the station’s survey droids.' },
     ],
-    scatter: [{ kind: 'rock', n: 120, within: [12, 600], scale: [0.4, 2.2], opts: { color: '#5a524a', sharp: 0.7 } }, { kind: 'stones', n: 80, within: [8, 300], scale: [0.6, 1.4], opts: { color: '#6a625a' } }],
+    scatter: [{ kind: 'rock', model: NATURE.rock, n: 120, within: [12, 600], scale: [0.5, 2.4], opts: { color: '#5a524a', sharp: 0.7 } }, { kind: 'stones', model: NATURE.stone, n: 80, within: [8, 300], scale: [0.6, 1.4], solid: false, opts: { color: '#6a625a' } }],
+    flora: { biome: 'tundra', tint: { Rocks: { recolour: '#6a625a' } } },
     things: [{ kind: 'crates', at: [12, -10], opts: { color: '#d8d4cc' } }],
     life: [
       { kind: 'droid', id: 'meddroid', at: [214, 44], still: true, face: 2, name: 'A medical droid', named: true, quest: 'supplies', says: ['The patient has lost the will to live.', 'Supplies are short. They always are, out here.'] },

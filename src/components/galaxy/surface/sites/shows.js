@@ -4,7 +4,7 @@
 // its episode’s moment. (sites/index.js has what a site is.)
 
 import { grove } from './stand';
-import { sky, palette, hostile, troops } from './outerKit';
+import { sky, palette, hostile, troops, NATURE } from './outerKit';
 
 // n spots evenly round a circle of radius r (a turn of `phase` first), each [x, z, yaw] facing the middle
 const ring = (n, r, phase = 0) =>
@@ -28,7 +28,8 @@ export const SITES = {
       { id: 'coronet', name: 'Coronet City', at: [-220, -150], r: 70, flat: { r: 58 }, about: 'The capital: old stone and new towers, and spacers in every bar trading stories about the ships they flew out of here.', things: [{ kind: 'skyscraper', at: [0, 0], opts: { style: 0, h: 120, w: 20, seed: 31 } }, { kind: 'skyscraper', at: [32, 18], opts: { style: 2, h: 80, w: 16, seed: 32 } }, { kind: 'skyscraper', at: [-30, 22], opts: { style: 1, h: 100, w: 18, seed: 33 } }, { kind: 'plaza', at: [0, -30], opts: { w: 40, d: 24 } }, { kind: 'cantina', at: [-30, -24], yaw: 0.8 }] },
       { id: 'office', name: 'The yard office', at: [-120, 220], r: 40, flat: { r: 32 }, about: 'Where the yards keep their records: what was built, and who paid for it, and where it was delivered.', things: [{ kind: 'bunker', at: [0, 0], yaw: 4.4, opts: { w: 16, d: 10 } }, { kind: 'pad', at: [22, 10], opts: { r: 10 } }] },
     ],
-    scatter: [{ kind: 'rock', n: 40, within: [30, 560], scale: [0.6, 1.6], opts: { color: '#4a4642' } }],
+    scatter: [{ kind: 'rock', model: NATURE.stone, n: 50, within: [30, 560], scale: [0.6, 1.8], opts: { color: '#4a4642' } }],
+    flora: { biome: 'ash', tint: { Rocks: { recolour: '#4a4642' } } },
     things: [{ kind: 'barrels', at: [10, -10] }, { kind: 'crates', at: [-12, 10] }],
     life: [
       { kind: 'ahsoka', id: 'ahsoka', at: [-108, 210], still: true, face: 3.6, name: 'Ahsoka Tano', named: true, quest: ['records', 'droids'], says: ['I’m no Jedi.', 'Someone here built a hyperspace ring. I want to know who.'] },
@@ -59,7 +60,8 @@ export const SITES = {
       { id: 'temple', name: 'The temple ruins', at: [-210, 120], r: 50, flat: { r: 40 }, about: 'Older than the Jedi Order, from when the first of them came here to learn the Force: walls fallen into the grass, and steps up to nothing.', things: [{ kind: 'ruins', at: [0, 0], yaw: 0.8, opts: { seed: 11 } }, { kind: 'pillars', at: [18, -10], yaw: 1.4 }, { kind: 'statue', at: [-14, 12], opts: { h: 16 } }] },
       { id: 'landing', name: 'Where the Razor Crest stood', at: [60, 200], r: 36, flat: { r: 28 }, about: 'Where the Mandalorian set down his ship, before an Imperial cruiser turned it into a crater.', things: [{ kind: 'razorcrest', at: [0, 0], yaw: 2.1 }] },
     ],
-    scatter: [{ kind: 'rock', n: 90, within: [20, 560], scale: [0.6, 2.6], opts: { color: '#6a6a60' } }, { kind: 'tuft', n: 120, within: [6, 300], scale: [0.8, 1.4] }],
+    scatter: [{ kind: 'rock', model: NATURE.rock, n: 90, within: [20, 560], scale: [0.6, 2.8], opts: { color: '#6a6a60' } }],
+    flora: { biome: 'temperate', tint: { Rocks: { recolour: '#7a7a70' } } },
     things: [{ kind: 'crates', at: [10, 8] }],
     life: [
       { kind: 'mando', id: 'mando', at: [196, -140], still: true, face: 2.2, name: 'The Mandalorian', named: true, quest: 'tragedy', says: ['This is the Way.', 'He’s on the stone. Nobody touches him till he’s done.'] },
@@ -88,7 +90,7 @@ export const SITES = {
       { id: 'crawler', name: 'The Jawas’ sandcrawler', at: [-140, 230], r: 50, flat: { r: 40 }, about: 'Where the Jawas park their crawler and sell back what they took: the Razor Crest’s parts, for a price.', things: [{ kind: 'sandcrawler', at: [0, 0], yaw: 1.2 }, { kind: 'crates', at: [24, 10] }] },
       { id: 'cave', name: 'The Mudhorn’s cave', at: [300, -230], r: 40, about: 'A hollow in the cliff, a nest of hide and bone, and the Mudhorn that lives in it, who doesn’t want visitors.', things: grove(93, 10, 8, 32, ['needle'], [0.5, 0.9]) },
     ],
-    flora: { biome: 'none', game: 'badlands' },
+    flora: { biome: 'dry', game: 'badlands', tint: { Rocks: { recolour: '#9a7a5a' } } },
     things: [{ kind: 'razorcrest', at: [-20, -14], yaw: 0.8 }],
     life: [
       { kind: 'kuiil', id: 'kuiil', at: [176, 106], still: true, face: 3, name: 'Kuiil', named: true, quest: ['compound', 'parts'], says: ['I have spoken.', 'Your ship is in pieces, and the Jawas have the pieces.'] },
@@ -119,7 +121,8 @@ export const SITES = {
       { id: 'inn', name: 'The inn', at: [-150, -150], r: 40, flat: { r: 32 }, about: 'Where the Mandalorian ate chowder, and the Quarren tried to drown him for it.', things: [{ kind: 'cantina', at: [0, 0], yaw: 0.6 }, { kind: 'barrels', at: [14, 10] }] },
       { id: 'dock', name: 'The freighter dock', at: [-180, 180], r: 50, flat: { r: 40 }, about: 'Where an Imperial freighter took on weapons the Remnant shouldn’t have, and Bo-Katan’s Nite Owls came aboard to take them back.', things: [{ kind: 'dockingbay', at: [0, 0], opts: { r: 18, h: 7 } }, { kind: 'gr75', at: [0, 30], yaw: 1.4, scale: 0.4 }] },
     ],
-    scatter: [{ kind: 'reeds', n: 140, within: [30, 500], scale: [0.8, 1.6] }, { kind: 'rock', n: 50, within: [20, 500], scale: [0.6, 2], opts: { color: '#3a3c3a' } }],
+    scatter: [{ kind: 'reeds', n: 140, within: [30, 500], scale: [0.8, 1.6] }, { kind: 'rock', model: NATURE.rock, n: 60, within: [20, 500], scale: [0.6, 2.4], opts: { color: '#3a3c3a' } }],
+    flora: { biome: 'tundra', tint: { Rocks: { recolour: '#3a3c3a' } } },
     things: [{ kind: 'crates', at: [10, 8] }, { kind: 'barrel', at: [-8, 10] }],
     life: [
       { kind: 'bokatan', id: 'bokatan', at: [-170, 166], still: true, face: 3.4, name: 'Bo-Katan Kryze', named: true, quest: 'freighter', says: ['You’re a Child of the Watch, aren’t you?', 'We take the weapons. We take back Mandalore.'] },
@@ -147,7 +150,8 @@ export const SITES = {
       { id: 'garden', name: 'The magistrate’s garden', at: [300, 170], r: 40, flat: { r: 30 }, about: 'The only green on Corvus: a garden walled in the city’s heart, where Morgan Elsbeth met Ahsoka with a staff of beskar.', things: [{ kind: 'jungletree', at: [0, 0] }, { kind: 'jungletree', at: [12, 10], scale: 0.8 }, { kind: 'pillars', at: [-14, 6], yaw: 1 }] },
       { id: 'forest', name: 'The burnt forest', at: [-200, -150], r: 60, about: 'Where Ahsoka Tano waited in the ash, and the magistrate’s men went out to find her and didn’t come back.', things: [...grove(95, 22, 6, 58, ['gnarltree', 'log'], [0.8, 1.6]), { kind: 'smoke', at: [10, 6], opts: { h: 40, n: 6, color: '#4a4846' } }] },
     ],
-    scatter: [{ kind: 'gnarltree', n: 160, within: [40, 620], scale: [0.8, 1.6], opts: { color: '#3a3836' } }, { kind: 'log', n: 60, within: [20, 500], scale: [0.6, 1.4] }],
+    scatter: [{ kind: 'gnarltree', n: 160, within: [40, 620], scale: [0.8, 1.6], opts: { color: '#3a3836' } }, { kind: 'log', model: NATURE.log, n: 60, within: [20, 500], scale: [0.7, 1.5] }, { kind: 'deadtree', model: 'kit:naturemega/DeadTree_2', n: 50, within: [60, 600], scale: [0.9, 1.3], clear: 25 }, { kind: 'deadtree', model: 'kit:naturemega/DeadTree_4', n: 40, within: [60, 600], scale: [0.9, 1.3], clear: 25 }],
+    flora: { biome: 'ash', tint: { Rocks: { recolour: '#3a3836' }, Bark_DeadTree: { recolour: '#2e2a28' } } },
     things: [{ kind: 'crates', at: [10, -8] }],
     life: [
       { kind: 'ahsoka', id: 'ahsoka', at: [-190, -140], still: true, face: 2.8, name: 'Ahsoka Tano', named: true, quest: 'magistrate', says: ['The Magistrate has been burning this world for her war.', 'Grogu? I can feel him. He’s been hidden a long time.'] },
@@ -175,7 +179,8 @@ export const SITES = {
       { id: 'road', name: 'The convoy road', at: [-60, 220], r: 50, flat: { r: 30 }, about: 'The road the juggernauts take out of the jungle, slow and careful: one wrong bump and a load of rhydonium goes up.', things: [{ kind: 'juggernaut', at: [0, 0], yaw: 1.2 }, { kind: 'crates', at: [14, -10] }] },
       { id: 'ridge', name: 'The pirates’ ridge', at: [-240, -60], r: 40, about: 'Where the pirates wait for the convoys, and where Mayfeld nearly lost the ride to the refinery.', things: grove(96, 10, 6, 34, ['jungletree'], [0.8, 1.4]) },
     ],
-    scatter: [{ kind: 'jungletree', n: 200, within: [40, 620], scale: [0.8, 1.6] }, { kind: 'fern', n: 140, within: [10, 400], scale: [0.8, 1.6], solid: false }, { kind: 'plant', n: 80, within: [10, 300], scale: [0.8, 1.4], solid: false }],
+    scatter: [{ kind: 'jungletree', n: 200, within: [40, 620], scale: [0.8, 1.6] }, { kind: 'fern', model: NATURE.bush, n: 120, within: [10, 400], scale: [0.8, 1.5], solid: false }, { kind: 'plant', model: NATURE.shrub, n: 120, within: [10, 300], scale: [1, 1.8], solid: false }],
+    flora: { biome: 'jungle' },
     things: [{ kind: 'crates', at: [-10, 8] }],
     life: [
       { kind: 'mercenary', id: 'mayfeld', at: [-48, 206], still: true, face: 3.4, name: 'Migs Mayfeld', named: true, quest: 'terminal', says: ['Everybody’s got a little Imperial in them.', 'We drive the juggernaut in, we walk out with the coordinates. Easy.'] },
@@ -235,7 +240,8 @@ export const SITES = {
       { id: 'cliffs', name: 'The sea cliffs', at: [-280, 240], r: 46, about: 'Where the island falls into the sea, and the wind comes straight off the water at you.', things: grove(98, 8, 6, 36, ['needle'], [0.4, 0.8]) },
       { id: 'landing', name: 'The shuttle’s landing', at: [-140, -170], r: 40, flat: { r: 32 }, about: 'Where Baylan Skoll and Shin Hati set down, a step behind Ahsoka, as they would be all the way to Peridea.', things: [{ kind: 'mpad', at: [0, 0], opts: { r: 14 } }] },
     ],
-    scatter: [{ kind: 'rock', n: 80, within: [20, 460], scale: [0.6, 2.4], opts: { color: '#5a5a52' } }, { kind: 'tuft', n: 120, within: [6, 300], scale: [0.8, 1.4] }],
+    scatter: [{ kind: 'rock', model: NATURE.rock, n: 80, within: [20, 460], scale: [0.6, 2.6], opts: { color: '#5a5a52' } }],
+    flora: { biome: 'temperate', trees: false, tint: { Rocks: { recolour: '#5a5a52' } } },
     things: [{ kind: 'crates', at: [10, -8] }],
     life: [
       { kind: 'ahsoka', id: 'ahsoka', at: [200, -84], still: true, face: 3.2, name: 'Ahsoka Tano', named: true, quest: ['map', 'shin'], says: ['The map is here. I can feel it.', 'Huyang, keep the ship warm.'] },
