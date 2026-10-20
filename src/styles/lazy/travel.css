@@ -227,11 +227,13 @@ html[data-mode='dark'] .jali-pattern { opacity: 0.12; }
 }
 .peace[data-live] .peace-glow { animation-name: peace-breathe; }
 @keyframes peace-breathe { 0%, 100% { opacity: 0.75; transform: scale(1); } 50% { opacity: 1; transform: scale(1.06); } }
-.peace-rule { display: block; width: 72px; height: 2px; margin: 2rem auto 2.25rem; background: linear-gradient(90deg, transparent, #ffd27a, transparent); }
+/* The verse’s column is a .dark-scope (Peace.jsx), as the shaded photo under
+   it is dark in every mode: its gold is the theme’s saber as a dark ground
+   reads it (Bose’s turns white), and its focus ring is the house one */
+.peace-rule { display: block; width: 72px; height: 2px; margin: 2rem auto 2.25rem; background: linear-gradient(90deg, transparent, var(--accent), transparent); }
 .peace .peace-gu { color: #ffffff; text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45); }
 .peace .peace-en { color: rgba(255, 255, 255, 0.9); }
 .peace .peace-note { color: rgba(255, 255, 255, 0.72); }
-.peace .peace-ref { color: #ffd27a; }
 .peace-listen {
   display: inline-flex;
   align-items: center;
@@ -239,16 +241,15 @@ html[data-mode='dark'] .jali-pattern { opacity: 0.12; }
   margin-top: 2rem;
   padding: 0.55rem 1.05rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 210, 122, 0.55);
-  color: #ffe9bf;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent-text);
   font-size: 0.875rem;
   font-weight: 600;
   background: rgba(10, 8, 6, 0.35);
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
-.peace-listen:hover { background: rgba(255, 210, 122, 0.12); border-color: #ffd27a; }
-.peace-listen[aria-pressed='true'] { background: rgba(255, 210, 122, 0.18); }
-.peace-listen:focus-visible { outline: 2px solid #ffd27a; outline-offset: 3px; }
+.peace-listen:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); border-color: var(--accent); }
+.peace-listen[aria-pressed='true'] { background: color-mix(in srgb, var(--accent) 18%, transparent); }
 @media (prefers-reduced-motion: reduce) { .peace-photo, .peace-glow { animation: none; } .peace-glow { opacity: 1; } }
 .heritage-zoom { position: relative; display: block; overflow: hidden; padding: 0; text-align: left; cursor: zoom-in; }
 .heritage-zoom-icon { position: absolute; right: 10px; bottom: 10px; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px; background: rgba(8, 9, 12, 0.6); color: #ffffff; opacity: 0; transition: opacity 0.2s ease; }

@@ -82,10 +82,11 @@ describe('a hunter’s body', () => {
   it('tells RmWorld what it always told it, and shows it: seen, then caught', () => {
     const N = createNpcs({ id: 'x', area: AREA, words: { caught: 'Got you.', spotted: 'There!' } });
     const c = figure();
-    const n = N.add(c, { x: 0, z: 0, face: 0, ai: { hunt: { speed: 3, catchR: 1.1, near: 6 } }, id: 'guard' });
+    const n = N.add(c, { x: 0, z: 0, face: 0, ai: { hunt: { speed: 3, catchR: 1.1, near: 6 } }, id: 'guard', name: 'A guard' });
     const { events } = run(N, [n], 4, () => ({ x: 3, z: 0 }));
-    expect(events[0]).toEqual(['spotted', { area: 'x', who: 'guard', text: 'There!' }]);
-    expect(events.some(([name, e]) => name === 'caught' && e.text === 'Got you.' && e.who === 'guard')).toBe(true);
+    // (its id, and the name its kind gives it for the caption: never the id)
+    expect(events[0]).toEqual(['spotted', { area: 'x', who: 'guard', name: 'A guard', text: 'There!' }]);
+    expect(events.some(([name, e]) => name === 'caught' && e.text === 'Got you.' && e.who === 'guard' && e.name === 'A guard')).toBe(true);
     expect(reacts(c, 'alert').length).toBe(1);
     expect(reacts(c, 'caught').length).toBeGreaterThan(0);
     expect(reacts(c, 'greet').length).toBe(0); // (a hunter doesn't wave)
@@ -119,7 +120,7 @@ describe('a local’s body', () => {
     const n = local(N, c);
     const { events } = run(N, [n], 1, () => ({ x: 3, z: 0 }));
     const bark = events.find(([name]) => name === 'bark');
-    expect(bark[1]).toEqual({ area: 'x', who: 'jessica', text: 'Oh, hey, Morty. Brad’s around somewhere.' });
+    expect(bark[1]).toEqual({ area: 'x', who: 'jessica', name: null, text: 'Oh, hey, Morty. Brad’s around somewhere.' });
     const says = reacts(c, 'say');
     expect(says.length).toBe(1);
     expect(says[0][1].hold).toBeCloseTo(lineHold(bark[1].text), 6);

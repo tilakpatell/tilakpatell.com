@@ -30,7 +30,7 @@ html[data-mode='light'] .inv-dots { opacity: 0.5; }
 .inv-card {
   position: relative; display: grid; place-content: center; justify-items: center; gap: 0.6rem; width: 100%; aspect-ratio: 16 / 9; overflow: hidden;
   border-radius: var(--r-card); background: var(--card); color: var(--inv-yellow); cursor: pointer; isolation: isolate;
-  box-shadow: 0 30px 80px -40px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.08); transition: background-color 0.35s ease;
+  box-shadow: var(--shadow-float), inset 0 0 0 1px rgba(255, 255, 255, 0.08); transition: background-color 0.35s ease;
 }
 .inv-card::after { /* the season's wear: red flecks, more of them each week */
   content: ''; position: absolute; inset: 0; z-index: -1; opacity: calc((var(--ep, 1) - 1) / 7 * 0.85); pointer-events: none;
@@ -63,27 +63,27 @@ html[data-mode='light'] .inv-dots { opacity: 0.5; }
 .gda-stage { display: grid; gap: 0.7rem; }
 .gda-screen { position: relative; aspect-ratio: 4 / 5; max-height: 640px; overflow: hidden; border: 1px solid rgba(95, 200, 255, 0.25); border-radius: var(--r-card); background: #070a12; cursor: grab; touch-action: pan-y; outline: none; }
 .gda-screen:active { cursor: grabbing; }
-.gda-screen:focus-visible { outline: 2px solid #5fc8ff; outline-offset: 3px; }
+.gda-screen:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 3px; } /* (the ring falls on the page round the screen, so it takes the page’s ring colour; it stays its own rule, as the screen’s outline: none outranks the base one) */
 .gda-flat { display: grid; place-items: center; font: 400 2.6rem/1 'Bebas Neue', var(--font-sans); color: var(--inv-yellow); background: radial-gradient(circle at 50% 40%, #1b2a4a, #070a12 70%); cursor: default; }
 .gda-stamp { position: absolute; left: 14px; top: 12px; padding: 0.25rem 0.55rem; border: 1px solid rgba(95, 200, 255, 0.5); border-radius: 4px; font: 600 0.62rem/1.2 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: #8fd8ff; background: rgba(5, 12, 24, 0.6); pointer-events: none; }
 .gda-poses { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.gda-poses button, .gda-tabs button { padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 999px; font-size: 0.8rem; font-weight: 600; color: var(--body); background: var(--surface); transition: border-color 0.15s, background-color 0.15s; }
-.gda-poses button[aria-checked='true'], .gda-tabs button[aria-selected='true'] { border-color: var(--inv-yellow); color: var(--ink); background: color-mix(in srgb, var(--inv-yellow) 18%, var(--surface)); }
+.gda-poses button, .gda-tabs button { padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 999px; font-size: 0.8rem; font-weight: 600; color: var(--text-body); background: var(--surface); transition: border-color 0.15s, background-color 0.15s; }
+.gda-poses button[aria-checked='true'], .gda-tabs button[aria-selected='true'] { border-color: var(--inv-yellow); color: var(--text); background: color-mix(in srgb, var(--inv-yellow) 18%, var(--surface)); }
 .gda-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .gda-card { margin-top: 0.9rem; padding: clamp(1.1rem, 3vw, 1.6rem); border: 1px solid var(--border); border-left: 4px solid var(--inv-yellow); border-radius: var(--r-card); background: var(--surface); }
 .gda-kicker { font: 600 0.66rem/1.2 var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
-.gda-name { margin-top: 0.5rem; font: 400 clamp(2.2rem, 1.6rem + 2vw, 3.1rem)/0.95 'Bebas Neue', var(--font-sans); letter-spacing: 0.02em; color: var(--ink); }
+.gda-name { margin-top: 0.5rem; font: 400 clamp(2.2rem, 1.6rem + 2vw, 3.1rem)/0.95 'Bebas Neue', var(--font-sans); letter-spacing: 0.02em; color: var(--text); }
 .gda-real { margin-top: 0.15rem; font-size: 0.9rem; color: var(--muted); }
-.gda-facts { display: grid; gap: 0.5rem; margin-top: 1rem; padding-left: 1.1rem; list-style: square; color: var(--body); }
+.gda-facts { display: grid; gap: 0.5rem; margin-top: 1rem; padding-left: 1.1rem; list-style: square; color: var(--text-body); }
 .gda-facts li::marker { color: var(--inv-yellow); }
-.gda-note { margin-top: 1rem; padding-top: 0.8rem; border-top: 1px dashed var(--border); font-size: 0.92rem; color: var(--body); }
+.gda-note { margin-top: 1rem; padding-top: 0.8rem; border-top: 1px dashed var(--border); font-size: 0.92rem; color: var(--text-body); }
 
 /* the lines: speech balloons that do something */
 .inv-lines { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr)); gap: 1rem; }
-.inv-quote { position: relative; display: flex; flex-direction: column; padding: 1.1rem 1.1rem 1rem; border: 2px solid var(--ink); border-radius: 18px; background: var(--surface); box-shadow: 5px 5px 0 var(--inv-yellow); }
-.inv-quote-said { font: 400 1.75rem/1 'Bebas Neue', var(--font-sans); letter-spacing: 0.015em; color: var(--ink); }
+.inv-quote { position: relative; display: flex; flex-direction: column; padding: 1.1rem 1.1rem 1rem; border: 2px solid var(--text); border-radius: 18px; background: var(--surface); box-shadow: 5px 5px 0 var(--inv-yellow); }
+.inv-quote-said { font: 400 1.75rem/1 'Bebas Neue', var(--font-sans); letter-spacing: 0.015em; color: var(--text); }
 .inv-quote-who { margin-top: 0.5rem; font-size: 0.78rem; color: var(--muted); }
-.inv-quote-reply { min-height: 2.6em; margin-top: 0.7rem; font-size: 0.88rem; line-height: 1.4; color: var(--body); }
+.inv-quote-reply { min-height: 2.6em; margin-top: 0.7rem; font-size: 0.88rem; line-height: 1.4; color: var(--text-body); }
 .inv-quote-act { align-self: flex-start; margin-top: auto; padding: 0.45rem 0.9rem; border-radius: 999px; background: var(--inv-blue); color: #fff; font-weight: 700; font-size: 0.82rem; transition: transform 0.1s, background-color 0.15s; }
 .inv-quote-act:hover { background: #1558ad; }
 .inv-quote-act:active { transform: translateY(1px); }

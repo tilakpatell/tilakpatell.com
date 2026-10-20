@@ -15,13 +15,19 @@ import '../../../styles/lazy/avengers.css';
 import CompoundHud from './CompoundHud';
 import { drawMap } from './map';
 import { fitCanvas } from '../../../runtime/hud/canvas';
-import { clock, stoneFor, stoneLine } from './labels';
+import { airNote, clock, stoneFor } from './labels';
 import { useVoiced } from '../../../lib/useVoiced';
 import { sayVoiced } from '../../../lib/voiced';
 import LoadingVeil from '../../worlds/LoadingVeil';
 import { useStage, useStageFrame } from '../hq/useStage';
 import compound from './module';
 import { HQ_HOME, backTarget, hqState, linkOf, placeOf } from './links';
+import { doorNear, warmDoor } from './warm';
+import { returnVeil, welcomeFor } from './welcome';
+import OpsBoard from '../board/OpsBoard';
+import { GAME_AT, writeLocal3D } from '../hq/gameScreen';
+import { jumpTo } from '../../../lib/anchors';
+import { openSettings } from '../../../lib/palette';
 
 // The Avengers compound, the world: walk about the compound as Spider-Man,
 // and go into the buildings to play their games. Anyone else online here
@@ -30,7 +36,8 @@ import { HQ_HOME, backTarget, hqState, linkOf, placeOf } from './links';
 // doors. Each game opens over the page (./Place.jsx) at its own address
 // (./links.js: /avengers/gate and so on); Back, Esc or the button closes it,
 // and you're back outside its door. Without 3D, the compound is the drawing from the
-// air, and its pins open the games.
+// air, and its pins find their buildings on the ops board (../board/OpsBoard.jsx),
+// which sits under the compound in both modes.
 
 const Place = lazy(() => import('./Place'));
 const CompoundMap = lazy(() => import('../Compound'));
@@ -79,6 +86,7 @@ export default function CompoundWorld({ onPortal }) {
   where.current = location;
   const [gl, setGl] = useState('loading'); // loading | on | failed | lost
   const api = useRef(null);
+  const travelTo = useRef(null); // World's travel, for the board's Go there
 
   useEffect(() => {
     const on = () => setHeist(readHeist());
@@ -98,6 +106,22 @@ export default function CompoundWorld({ onPortal }) {
   // read again: a half of the Soul Stone sends no tp:stones
   useEffect(() => {
     if (!inside) setHeist(readHeist());
+  }, [inside]);
+  // the heist as a building was entered (a Next from game to game keeps the
+  // first), to welcome you back with what's next when a stone was won there
+  const entered = useRef(null);
+  const welcomes = useRef(0);
+  const [welcome, setWelcome] = useState(null);
+  const clearWelcome = useCallback(() => setWelcome(null), []);
+  useEffect(() => {
+    if (inside) {
+      entered.current ??= readHeist();
+      return;
+    }
+    if (!entered.current) return;
+    const text = welcomeFor(entered.current, readHeist());
+    entered.current = null;
+    if (text) setWelcome({ n: ++welcomes.current, text });
   }, [inside]);
 
   const enter = useCallback(
@@ -132,23 +156,40 @@ export default function CompoundWorld({ onPortal }) {
     onPortal?.();
   }, [leave, onPortal]);
 
+  // the board's Go there: outside that door, and up to the compound (focus
+  // leaves the board's button, so Space then jumps him rather than pressing it again)
+  const goThere = (id) => {
+    travelTo.current?.(id);
+    jumpTo(null, 'hq-world', { focus: true });
+  };
+  // a card's Try 3D: that game's own 3D, never the site's (spec §6), opened by
+  // its link with the page's state, so Back comes back here
+  const tryIn3D = (id) => {
+    writeLocal3D(GAME_AT[id], 'on');
+    if (three.held) three.hold?.load();
+    enter(id);
+  };
+
   const world = three.on && gl !== 'failed' && gl !== 'lost';
   return (
-    <section id="hq-world" className="cw-world" aria-labelledby="cw-title" data-mode={world ? '3d' : 'cards'}>
-      {world ? <World api={api} prog={prog} inside={inside} enter={enter} portal={portal} gl={gl} setGl={setGl} /> : <Cards prog={prog} enter={enter} three={three} gl={gl} retry={() => setGl('loading')} />}
-      {inside && (
-        <Suspense fallback={null}>
-          <Place key={inside} id={inside} onLeave={leave} onPortal={portal} />
-        </Suspense>
-      )}
-    </section>
+    <>
+      <section id="hq-world" className="cw-world" aria-labelledby="cw-title" data-mode={world ? '3d' : 'cards'}>
+        {world ? <World api={api} travelTo={travelTo} prog={prog} inside={inside} enter={enter} portal={portal} gl={gl} setGl={setGl} welcome={welcome} onWelcomed={clearWelcome} /> : <Air prog={prog} three={three} gl={gl} retry={() => setGl('loading')} />}
+        {inside && (
+          <Suspense fallback={null}>
+            <Place key={inside} id={inside} onLeave={leave} onPortal={portal} />
+          </Suspense>
+        )}
+      </section>
+      <OpsBoard prog={prog} can3D={world} unlocked={unlocked} onGo={world ? goThere : null} onTry3D={three.can ? tryIn3D : null} />
+    </>
   );
 }
 
 // the compound reaches past the towns' 200 m, and its people run and jump
 const ROOM = { bound: 260, motion: true };
 
-function World({ api, prog, inside, enter, portal, gl, setGl }) {
+function World({ api, travelTo, prog, inside, enter, portal, gl, setGl, welcome, onWelcomed }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   // other players online here, as holograms (middleearth/towns/useTravellers)
   const trav = useTravellers('avengers', gl === 'on', ROOM);
@@ -262,6 +303,18 @@ function World({ api, prog, inside, enter, portal, gl, setGl }) {
   const options = useMemo(() => ({ calm: prefersReducedMotion() }), []);
   const stage = useStage(compound, { enabled: !inside, id: 'compound', forced: true, options });
   const prep = stage.progress; // (how far it's got sending itself to the graphics chip)
+  // on the way back out of a building, until the compound has drawn again
+  const [back, setBack] = useState(false);
+  useEffect(() => {
+    if (back && stage.status === 'on') setBack(false);
+  }, [back, stage.status]);
+  // the welcome back, from when the veil is down
+  useEffect(() => {
+    if (!welcome || back) return undefined;
+    const t = setTimeout(onWelcomed, 4200);
+    return () => clearTimeout(t);
+  }, [welcome, back, onWelcomed]);
+  const veil = returnVeil({ gl, back, prep });
   // (the box: in view for the keys, and the page's live view by its share of the screen)
   const stageBox = useCallback(
     (el) => {
@@ -294,6 +347,7 @@ function World({ api, prog, inside, enter, portal, gl, setGl }) {
     // gone indoors: the others see you go (they'd otherwise see you stand at the door)
     if (inside) trav.ref.current?.pose(sim.current.h, { inside: true }, { force: true });
     if (inside || !from) return;
+    setBack(true);
     const p = placeById(from);
     if (!p) return;
     const s = sim.current;
@@ -533,6 +587,11 @@ function World({ api, prog, inside, enter, portal, gl, setGl }) {
     // (the armour's plinth is by the workshop's door: whichever is nearer)
     const grounded = s.h.mode === 'ground' && s.h.y < 0.3;
     const door = grounded ? nearPlace(s.h.x, s.h.z) : null;
+    // the game behind a door within 15 m, fetched ahead (swinging past counts)
+    if (s.frame % 20 === 0) {
+      const d = doorNear(s.h.x, s.h.z);
+      if (d) warmDoor(d);
+    }
     const plinth = grounded ? Math.hypot(s.h.x - ARMOUR.x, s.h.z - ARMOUR.z) : Infinity;
     s.armour = plinth < SUIT.r && (!door || plinth < door.d);
     s.near = s.armour ? null : (door?.id ?? null);
@@ -655,13 +714,20 @@ function World({ api, prog, inside, enter, portal, gl, setGl }) {
     s.dragAt = s.t;
     setList(false);
   };
+  // (and from the board, through the page's ref: travel is new every render)
+  useEffect(() => {
+    travelTo.current = travel;
+    return () => {
+      travelTo.current = null;
+    };
+  });
 
   return (
     <div ref={stageBox} className="cw-stage" data-touch={touch || undefined} data-photo={photo ? '' : undefined}>
       <div ref={stage.host} className="cw-canvas" data-on={stage.status === 'on' || undefined} aria-label="The Avengers compound in 3D: the hangar, the main building and its glass wing, the training center, the lab and the range, and Spider-Man on the lawn" role="img" onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} onWheel={(e) => sim.current.photo && changePhoto({ dist: sim.current.photo.dist * (e.deltaY > 0 ? 1.1 : 1 / 1.1) })} />
       <div ref={speedRef} className="cw-speed" aria-hidden="true" />
-      <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Flying in to the compound" />
-      <CompoundHud touch={touch} gl={gl} prog={prog} hud={hud} sim={sim} enter={enter} portal={portal} trav={trav} list={list} setList={setList} tuning={tuning} setTuning={setTuning} photo={photo} photoMode={photoMode} changePhoto={changePhoto} onSavePhoto={() => savePhoto(api.current, stage.rt?.gfx?.canvas, sim.current, progRef.current)} settings={settings} changeSettings={changeSettings} tourMsg={tourMsg} pack={pack} trick={trick} styleRef={styleRef} tourRef={tourRef} map={map} bubble={bubble} bubbleRef={bubbleRef} tourBest={tourBest} styleBest={styleBest} found={found} toTour={toTour} travel={travel} onStick={onStick} />
+      <LoadingVeil shown={veil.shown} progress={veil.progress} step={veil.step} title={veil.title} />
+      <CompoundHud touch={touch} gl={gl} prog={prog} hud={hud} sim={sim} enter={enter} portal={portal} trav={trav} list={list} setList={setList} tuning={tuning} setTuning={setTuning} photo={photo} photoMode={photoMode} changePhoto={changePhoto} onSavePhoto={() => savePhoto(api.current, stage.rt?.gfx?.canvas, sim.current, progRef.current)} settings={settings} changeSettings={changeSettings} tourMsg={tourMsg} welcome={veil.shown ? null : welcome} pack={pack} trick={trick} styleRef={styleRef} tourRef={tourRef} map={map} bubble={bubble} bubbleRef={bubbleRef} tourBest={tourBest} styleBest={styleBest} found={found} toTour={toTour} travel={travel} onStick={onStick} />
     </div>
   );
 }
@@ -687,55 +753,35 @@ function savePhoto(a, c, s, p) {
 
 // Without 3D: the compound from the air, its pins opening the games, and the
 // buildings as cards.
-function Cards({ prog, enter, three, gl, retry }) {
+function Air({ prog, three, gl, retry }) {
   const ids = PLACES.map((p) => p.id);
+  const note = three.can ? airNote({ gl, mode: three.mode, held: three.held }) : null;
+  const act = { retry, load: () => three.hold?.load(), settings: openSettings };
   return (
     <div className="shell cw-cards-wrap">
       <p className="eyebrow">The Avengers compound · Upstate New York</p>
       <h1 id="cw-title" className="display hq-steel mt-4 text-[clamp(2.6rem,1.6rem+3.6vw,4.6rem)]">
         Avengers HQ
       </h1>
-      <p className="lead mt-4 max-w-[60ch]">Marvel, all of it. Every building on the compound belongs to someone, and each has a game (Spider-Man’s is at the front gate). The Infinity Stones are won in the 3D games; here, each building has a simpler one to try. {prog.objective}</p>
-      {three.can && (
+      <p className="lead mt-4 max-w-[60ch]">Marvel, all of it. Every building on the compound has a game behind its door; the board below has each one, its stone and your best.</p>
+      {note && (
         <p className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted">
-          {gl === 'lost' ? 'The graphics chip reset, so here’s the compound from the air.' : gl === 'failed' ? 'The 3D compound couldn’t start here, so here it is from the air.' : three.held ? 'The 3D compound isn’t loaded yet, so here it is from the air.' : '3D is switched off, so here’s the compound from the air.'}
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => {
-              if (!three.on) three.set('auto');
-              retry();
-            }}
-          >
-            {three.on ? 'Try 3D again' : three.held ? 'Load the 3D' : 'Turn 3D on'}
-          </button>
+          {note.text}
+          {note.action && (
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => act[note.action.run]()}>
+              {note.action.label}
+            </button>
+          )}
         </p>
       )}
-      <div className="cw-cards-grid mt-8">
-        <figure className="m-0">
-          <div className="hq-hud">
-            <Suspense fallback={<div className="hq-map" aria-hidden="true" />}>
-              <CompoundMap spots={ids} titles={prog.places.map((p, i) => `${i + 1}. ${p.name}`)} stones={prog.places.map((p) => (p.done ? stoneFor(p)?.color ?? null : null))} onPick={enter} className="hq-hero-map" />
-            </Suspense>
-          </div>
-          <figcaption className="mt-3 text-sm text-muted">The compound from the air. Pick a pin to go in.</figcaption>
-        </figure>
-        <ol className="cw-cards">
-          {prog.places.map((p, i) => (
-            <li key={p.id} data-done={p.done || undefined} style={{ '--glow': stoneFor(p)?.color ?? p.accent }}>
-              <p className="cw-list-name">
-                {i + 1}. {p.name}
-              </p>
-              <p className="cw-list-sub">
-                {p.where} · {stoneLine(p)}
-              </p>
-              <button type="button" className="btn btn-primary btn-sm mt-3" onClick={() => enter(p.id)}>
-                {p.act}
-              </button>
-            </li>
-          ))}
-        </ol>
-      </div>
+      <figure className="cw-air m-0 mt-8">
+        <div className="hq-hud">
+          <Suspense fallback={<div className="hq-map" aria-hidden="true" />}>
+            <CompoundMap spots={ids} titles={prog.places.map((p, i) => `${i + 1}. ${p.name}`)} stones={prog.places.map((p) => (p.done ? stoneFor(p)?.color ?? null : null))} onPick={(id) => jumpTo(null, `hq-card-${id}`, { focus: true, block: 'center' })} className="hq-hero-map" />
+          </Suspense>
+        </div>
+        <figcaption className="mt-3 text-sm text-muted">The compound from the air. Pick a pin to find its building on the board.</figcaption>
+      </figure>
     </div>
   );
 }

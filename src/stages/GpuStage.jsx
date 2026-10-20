@@ -20,7 +20,11 @@ const GPUS = [
 ];
 const RING = 'M 100 66 H 280 V 214 H 100 Z';
 const STORE = { x: 430, y: 92, w: 176, h: 100 };
-const FAULT = '#ff6b6b';
+// The fault red for the 3D prop alone: scene.js parses it as a colour, and a
+// var() can’t be parsed. The SVG and the labels take the house --danger, so
+// this is the window’s own (a .dark-scope’s) --danger written out, and the
+// model goes the same red as its LOST tag.
+const FAULT = '#ff8a8a';
 const LABEL = 'Four GPUs connected in a ring, a checkpoint store, and the current phase of checkpoint-restart';
 
 // The same scene as hardware, drawn in 3D over the SVG once it has loaded.
@@ -98,12 +102,12 @@ export default function GpuStage() {
                     width="120"
                     height="64"
                     rx="8"
-                    style={{ fill: down ? 'color-mix(in srgb, #ff6b6b 18%, var(--surface))' : 'var(--surface)', stroke: down ? FAULT : 'var(--border-strong)' }}
+                    style={{ fill: down ? 'color-mix(in srgb, var(--danger) 18%, var(--surface))' : 'var(--surface)', stroke: down ? 'var(--danger)' : 'var(--border-strong)' }}
                   />
                   <text x={g.x + 12} y={g.y + 22} style={{ fill: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
                     GPU {i}
                   </text>
-                  <text x={g.x + 108} y={g.y + 22} textAnchor="end" style={{ fill: down ? FAULT : 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>
+                  <text x={g.x + 108} y={g.y + 22} textAnchor="end" style={{ fill: down ? 'var(--danger)' : 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>
                     {down ? 'LOST' : `rank ${i}`}
                   </text>
                   <rect x={g.x + 12} y={g.y + 38} width="96" height="10" rx="3" style={{ fill: 'var(--bg-deep)' }} />
@@ -113,7 +117,7 @@ export default function GpuStage() {
                     height="10"
                     rx="3"
                     width={load(id, step, i)}
-                    style={{ fill: down ? FAULT : 'color-mix(in srgb, var(--text) 70%, transparent)', transition: 'width .6s ease' }}
+                    style={{ fill: down ? 'var(--danger)' : 'color-mix(in srgb, var(--text) 70%, transparent)', transition: 'width .6s ease' }}
                   />
                 </g>
               );
@@ -131,12 +135,12 @@ export default function GpuStage() {
               <rect key={saved} className="anim-grow" x={STORE.x + 16} y={STORE.y + 66} height="12" rx="4" width={STORE.w - 32} style={{ fill: 'var(--accent)' }} />
             )}
             {id === 'fault' && (
-              <text x="190" y="146" textAnchor="middle" style={{ fill: FAULT, fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+              <text x="190" y="146" textAnchor="middle" style={{ fill: 'var(--danger)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
                 ncclAllReduce stalled
               </text>
             )}
           </svg>
-          <div ref={wrap} className="gpu3d" data-on={on || undefined} style={{ '--gpu-fault': FAULT }} aria-hidden="true" />
+          <div ref={wrap} className="gpu3d" data-on={on || undefined} style={{ '--gpu-fault': 'var(--danger)' }} aria-hidden="true" />
         </div>
       </StageWindow>
       <div className="mt-3 flex flex-wrap gap-2">
