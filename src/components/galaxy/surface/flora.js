@@ -230,50 +230,51 @@ export const BIOMES = {
   // rocks and boulders, no trees
   dry: {
     near: [
-      ['Pebble_Round_5', 0.5],
-      ['Plant_7', 0.5],
+      ['Pebble_Round_5', 0.4, [3, 6]],
+      ['Plant_7', 0.6, [2.5, 4]],
     ],
     cover: [
-      ['Plant_7_Big', 0.4],
-      ['Pebble_Square_1', 0.3],
-      ['Grass_Wispy_Short', 0.3],
+      ['Plant_7_Big', 0.45, [2, 3.5]],
+      ['Grass_Wispy_Short', 0.35],
+      ['Pebble_Square_1', 0.2, [3, 6]],
     ],
+    // (a scrub bush and a stone: the boulders are the game's scanned
+    // rocks on the site's own rows, which a faceted kit boulder near them
+    // would show up)
     mid: [
-      ['Rock_Medium_1', 0.5],
-      ['Rock_Big_1', 0.5],
+      ['Bush_Long_1', 0.55, [0.5, 0.9]],
+      ['Rock_Medium_1', 0.45],
     ],
     trees: [],
-    count: { cover: 1400 },
+    count: { cover: 1800 },
     tint: { Leaves: { recolour: '#8a7c4e' }, Grass: { recolour: '#b4a070' } },
   },
   // Mustafar's and Sullust's: stones near black, dark boulders, no plants
   ash: {
     near: [
-      ['Pebble_Square_2', 0.5],
-      ['Pebble_Square_4', 0.5],
+      ['Pebble_Square_2', 0.5, [3, 6]],
+      ['Pebble_Square_4', 0.5, [3, 6]],
     ],
     cover: [
-      ['Pebble_Square_1', 0.5],
-      ['Pebble_Square_3', 0.5],
+      ['Pebble_Square_1', 0.5, [3, 6]],
+      ['Pebble_Square_3', 0.5, [3, 6]],
     ],
-    mid: [
-      ['Rock_Big_2', 0.6],
-      ['Rock_Medium_4', 0.4],
-    ],
+    mid: [['Rock_Medium_4', 1]],
     trees: [],
     count: { cover: 900 },
     tint: { Rocks: { recolour: '#2c2926' } },
   },
   // Hoth's and Mygeeto's: nothing green, outcrops of blue-grey rock
+  // (no pebbles: on snow they read as dirt, and the design lays none where
+  // no ground shows)
   tundra: {
     near: [],
-    cover: [['Pebble_Round_2', 1]],
+    cover: [],
     mid: [
-      ['Rock_Big_1', 0.6],
-      ['Rock_Big_2', 0.4],
+      ['Rock_Medium_2', 0.5],
+      ['Rock_Big_2', 0.5],
     ],
     trees: [],
-    count: { cover: 500 },
     tint: { Rocks: { recolour: '#8a96a4' } },
   },
   // Coruscant, Kamino, Bespin: no ground to grow on

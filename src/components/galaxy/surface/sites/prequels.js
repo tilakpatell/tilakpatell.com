@@ -116,9 +116,9 @@ export const SITES = {
     weather: [],
     land: { at: [0, 0], yaw: 3 },
     places: [
-      { id: 'bridgecity', name: 'The bridge city', at: [240, 60], r: 80, flat: { r: 56 }, about: 'A Neimoidian city hung from an arch of rock: halls and hangars on the span, and nothing under them but mist.', things: [{ kind: 'catobridge', at: [0, -16], yaw: 0.2, solid: false }, { kind: 'hangar', at: [0, 26], yaw: 0.2, opts: { w: 40, d: 28, h: 16 } }] },
+      { id: 'bridgecity', name: 'The bridge city', at: [240, 60], r: 80, flat: { r: 56 }, about: 'A Neimoidian city hung from an arch of rock: halls and hangars on the span, and nothing under them but mist.', things: [{ kind: 'catobridge', at: [0, -16], yaw: 0.2, solid: false }] },
       { id: 'crash', name: 'Plo Koon’s crash', at: [-180, -200], r: 40, about: 'Where the Jedi Master’s starfighter came down, shot out of the sky by his own wingmen when Order 66 came.', things: [{ kind: 'probewreck', at: [0, 0], yaw: 0.8, scale: 1.4 }, { kind: 'wrecksmoke', at: [2, 0], opts: { h: 18 } }] },
-      { id: 'palace', name: 'The viceroy’s palace', at: [-220, 170], r: 50, flat: { r: 40 }, about: 'Nute Gunray’s seat on his homeworld, its treasury under it: the Federation’s wealth, and its droids standing over it.', things: [{ kind: 'skyscraper', at: [0, 0], opts: { style: 1, h: 90, w: 26, seed: 7 } }, { kind: 'plaza', at: [0, 34], opts: { w: 40, d: 24 } }, { kind: 'droidplatform', at: [26, 18], yaw: 2 }] },
+      { id: 'palace', name: 'The viceroy’s palace', at: [-220, 170], r: 50, flat: { r: 44 }, about: 'Nute Gunray’s seat on his homeworld, its treasury under it: the Federation’s wealth, and its droids standing over it.', things: [{ kind: 'catopalace', at: [0, -30] }, { kind: 'plaza', at: [0, 34], opts: { w: 40, d: 24 } }, { kind: 'droidplatform', at: [26, 18], yaw: 2 }] },
     ],
     scatter: [{ kind: 'karst', n: 60, within: [60, 600], scale: [2, 5], solid: 0.6 }, { kind: 'jungletree', n: 80, within: [40, 600], scale: [0.8, 1.4] }],
     flora: { biome: 'temperate', trees: false, tint: { Rocks: { recolour: '#6a6658' } } },
@@ -178,7 +178,7 @@ export const SITES = {
     land: { at: [0, 0], yaw: 0.2 },
     places: [
       { id: 'course', name: 'The podrace course', at: [220, -120], r: 70, flat: { r: 56 }, about: 'The Malastare 100: grandstands on the hill, the start grid below, and a course that eats engines.', things: [{ kind: 'stall', at: [-20, -30] }, { kind: 'stall', at: [0, -34] }, { kind: 'stall', at: [20, -30] }, { kind: 'pillars', at: [0, 30], yaw: 0 }, { kind: 'podracer', at: [-10, 4], yaw: 1.6 }, { kind: 'podracer', at: [10, 4], yaw: 1.6 }] },
-      { id: 'works', name: 'The fuel works', at: [-240, -120], r: 56, flat: { r: 46 }, about: 'Malastare’s fuel, pumped out of the ground and sold to half the Republic. The Dugs run it, and run it hard.', things: [{ kind: 'works', at: [0, 0], yaw: 0.5 }, { kind: 'smoke', at: [6, -6], opts: { h: 70, n: 8, color: '#5a5650' } }, { kind: 'barrels', at: [24, 16] }] },
+      { id: 'works', name: 'The fuel works', at: [-240, -120], r: 56, flat: { r: 46 }, about: 'Malastare’s fuel, pumped out of the ground and sold to half the Republic. The Dugs run it, and run it hard.', things: [{ kind: 'malastareworks', at: [-28, 0], yaw: 0.5, scale: 0.8 }, { kind: 'barrels', at: [24, 16] }] },
       { id: 'village', name: 'The Dug village', at: [-120, 240], r: 46, flat: { r: 38 }, about: 'Round huts on the hillside, a market and a well. The Dugs walk on their hands and argue with them too.', things: [...ring(5, 18, 0.2).map(([x, z, yaw]) => ({ kind: 'adobe', at: [x, z], yaw, opts: { r: 4 } })), { kind: 'stall', at: [0, 0] }, { kind: 'fire', at: [6, -6] }] },
       { id: 'palace', name: 'The Imperial palace', at: [280, 180], r: 60, flat: { r: 50 }, about: 'Where the Dug Council rules Malastare: black spires round one needle, lit amber at their foot, over the plain the Republic fought for.', things: [{ kind: 'dugpalace', at: [0, 0], yaw: 4.1 }] },
     ],

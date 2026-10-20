@@ -80,5 +80,5 @@ export const BUILDINGS = {
   // Fondor: a tower block of the yard city
   fondorblock: drawn('A tall grim grey worker tower block of a starship-yard city: stacked concrete storeys with rows of small lit windows, external pipes, stairs and gantries up its sides, antennae and vents on the roof, rust streaks, industrial and imperial.', 90, 'h', { hero: true }),
   // Malastare: the fuel works
-  malastareworks: drawn('A fuel refinery of tall rust-red cylindrical storage tanks joined by pipes and catwalks, a pump house and a tall flare stack, on a cracked concrete pad, dusty and industrial, on an alien grassland world.', 60, 'w', { hero: true }),
+  malastareworks: drawn('A fuel refinery of tall rust-red cylindrical storage tanks joined by pipes and catwalks, a pump house and a tall flare stack, on a cracked concrete pad, dusty and industrial; the refinery alone, nothing behind it.', 60, 'w', { hero: true }),
 };

@@ -25,7 +25,7 @@ export const SITES = {
     land: { at: [0, 0], yaw: 2.2 },
     places: [
       { id: 'yards', name: 'The slipways', at: [250, 40], r: 80, flat: { r: 70 }, about: 'Hulls on the ways and cranes over them, droids working the night shift and the day shift too. Somewhere in here, a hyperspace ring is being built for someone who shouldn’t have one.', things: [{ kind: 'hangar', at: [0, 0], yaw: 1.6, opts: { w: 70, d: 40, h: 26 } }, { kind: 'coronettower', at: [0, -48], solid: false }, { kind: 'works', at: [50, -6], yaw: 1 }, { kind: 'smoke', at: [50, -6], opts: { h: 80, n: 9, color: '#4a4440' } }, { kind: 'crates', at: [-20, 30] }] },
-      { id: 'coronet', name: 'Coronet City', at: [-220, -150], r: 70, flat: { r: 58 }, about: 'The capital: old stone and new towers, and spacers in every bar trading stories about the ships they flew out of here.', things: [{ kind: 'skyscraper', at: [0, 0], opts: { style: 0, h: 120, w: 20, seed: 31 } }, { kind: 'skyscraper', at: [32, 18], opts: { style: 2, h: 80, w: 16, seed: 32 } }, { kind: 'skyscraper', at: [-30, 22], opts: { style: 1, h: 100, w: 18, seed: 33 } }, { kind: 'plaza', at: [0, -30], opts: { w: 40, d: 24 } }, { kind: 'cantina', at: [-30, -24], yaw: 0.8 }] },
+      { id: 'coronet', name: 'Coronet City', at: [-220, -150], r: 70, flat: { r: 58 }, about: 'The capital: old stone and new towers, and spacers in every bar trading stories about the ships they flew out of here.', things: [{ kind: 'coronetspire', at: [0, 10], yaw: 0.3 }, { kind: 'coronetspire', at: [44, 26], yaw: 1.2, scale: 0.6 }, { kind: 'coronetspire', at: [-40, 30], yaw: 2.6, scale: 0.75 }, { kind: 'plaza', at: [0, -30], opts: { w: 40, d: 24 } }, { kind: 'cantina', at: [-30, -24], yaw: 0.8 }] },
       { id: 'office', name: 'The yard office', at: [-120, 220], r: 40, flat: { r: 32 }, about: 'Where the yards keep their records: what was built, and who paid for it, and where it was delivered.', things: [{ kind: 'bunker', at: [0, 0], yaw: 4.4, opts: { w: 16, d: 10 } }, { kind: 'pad', at: [22, 10], opts: { r: 10 } }] },
     ],
     scatter: [{ kind: 'rock', model: NATURE.stone, n: 50, within: [30, 560], scale: [0.6, 1.8], opts: { color: '#4a4642' } }],
@@ -146,7 +146,7 @@ export const SITES = {
     weather: [{ kind: 'ash', count: 700 }],
     land: { at: [0, 0], yaw: 0.9 },
     places: [
-      { id: 'calodan', name: 'Calodan', at: [250, 80], r: 80, flat: { r: 66 }, about: 'The city behind its walls, the forest burnt to the stumps round it to feed the magistrate’s works, and her guards on every gate.', things: [{ kind: 'palacegate', at: [0, -40], yaw: 0 }, { kind: 'barricade', at: [-34, -40], opts: { len: 24 } }, { kind: 'barricade', at: [34, -40], opts: { len: 24 } }, { kind: 'lookout', at: [-50, -44], opts: { h: 20 } }, { kind: 'lookout', at: [50, -44], opts: { h: 20 } }, { kind: 'plaza', at: [0, 20], opts: { w: 40, d: 30, fountain: true } }, { kind: 'calodanpagoda', at: [0, 46], yaw: Math.PI }] },
+      { id: 'calodan', name: 'Calodan', at: [250, 80], r: 80, flat: { r: 66 }, about: 'The city behind its walls, the forest burnt to the stumps round it to feed the magistrate’s works, and her guards on every gate.', things: [{ kind: 'calodangate', at: [0, -40], yaw: Math.PI }, ...[[-36, 8, 1.57], [-36, 30, 1.57], [36, 8, -1.57], [36, 30, -1.57], [-30, 58, 2.4], [30, 58, -2.4]].map(([x, z, yaw], i) => ({ kind: 'calodanhouse', at: [x, z], yaw, scale: [1, 0.9, 1, 0.85, 0.95, 1][i] })), { kind: 'lookout', at: [-50, -44], opts: { h: 20 } }, { kind: 'lookout', at: [50, -44], opts: { h: 20 } }, { kind: 'plaza', at: [0, 20], opts: { w: 40, d: 30, fountain: true } }, { kind: 'calodanpagoda', at: [0, 46], yaw: Math.PI }] },
       { id: 'garden', name: 'The magistrate’s garden', at: [300, 170], r: 40, flat: { r: 30 }, about: 'The only green on Corvus: a garden walled in the city’s heart, where Morgan Elsbeth met Ahsoka with a staff of beskar.', things: [{ kind: 'jungletree', at: [0, 0] }, { kind: 'jungletree', at: [12, 10], scale: 0.8 }, { kind: 'pillars', at: [-14, 6], yaw: 1 }] },
       { id: 'forest', name: 'The burnt forest', at: [-200, -150], r: 60, about: 'Where Ahsoka Tano waited in the ash, and the magistrate’s men went out to find her and didn’t come back.', things: [...grove(95, 22, 6, 58, ['gnarltree', 'log'], [0.8, 1.6]), { kind: 'smoke', at: [10, 6], opts: { h: 40, n: 6, color: '#4a4846' } }] },
     ],
@@ -156,7 +156,7 @@ export const SITES = {
     life: [
       { kind: 'ahsoka', id: 'ahsoka', at: [-190, -140], still: true, face: 2.8, name: 'Ahsoka Tano', named: true, quest: 'magistrate', says: ['The Magistrate has been burning this world for her war.', 'Grogu? I can feel him. He’s been hidden a long time.'] },
       { kind: 'mando', at: [-178, -148], still: true, face: 3, name: 'The Mandalorian', says: ['Bo-Katan sent me.'] },
-      { kind: 'mercenary', at: [244, 40], still: true, face: 1, name: 'Lang', says: ['I’d think twice about it, friend.'] },
+      { kind: 'mercenary', at: [244, 22], still: true, face: 1, name: 'Lang', says: ['I’d think twice about it, friend.'] },
       { kind: 'civcity1', n: 4, at: [250, 80], spread: 30, roam: 12, speed: 0.6, name: 'Calodan villager', says: ['(They won’t meet your eyes. The guards are watching.)'] },
     ],
     quests: [

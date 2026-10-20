@@ -134,25 +134,31 @@
     "model": "01a157f7-3692-77a2-8bef-d63f5ac67c4c"
   },
   "calodanhouse": {
-    "image": "01a1583c-4946-774d-9a98-a1afc91914fe"
+    "image": "01a1583c-4946-774d-9a98-a1afc91914fe",
+    "model": "01a1583f-9c8f-778c-bd8b-ed03b1125850"
   },
   "calodangate": {
-    "image": "01a1583c-49a6-7580-bc9a-686e9c90296c"
+    "image": "01a1583c-49a6-7580-bc9a-686e9c90296c",
+    "model": "01a1583f-a1a4-72bc-9271-67b0daf6e6d5"
   },
   "fondorblock": {
-    "image": "01a1583c-4a07-7363-8769-579cba063d8c"
-  },
-  "malastareworks": {
-    "image": "01a1583c-4a63-74f9-a590-a66a7f66e8e3"
+    "image": "01a1583c-4a07-7363-8769-579cba063d8c",
+    "model": "01a1583f-a5fc-71fe-9d03-e2eb796bef28"
   },
   "catopalace": {
     "lift": [
       "01a1583d-71d4-7099-bbdd-2cd805bf4638"
-    ]
+    ],
+    "model": "01a1583f-ae1b-7517-be4f-e1350604da24"
   },
   "coronetspire": {
     "lift": [
       "01a1583d-743b-7433-bbab-0e14940f9bf1"
-    ]
+    ],
+    "model": "01a1583f-b1e0-70ec-9935-635004b2aefb"
+  },
+  "malastareworks": {
+    "image": "01a1583e-99bf-7090-9748-dcf69732c0c6",
+    "model": "01a1583f-aa0b-7450-87bf-64b3e47aa74f"
   }
 }

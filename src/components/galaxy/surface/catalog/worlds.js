@@ -55,4 +55,16 @@ export const MODELS = {
   pilliovault: { made: 'meshy', as: 'the Emperor’s observatory', metres: 32, along: 'x', hero: true, lod: true, detail: 'concrete' },
   // Fondor: a construction gantry of the shipyards
   fondorgantry: { made: 'meshy', as: 'the shipyard gantries', metres: 90, along: 'y', hero: true, lod: true, detail: 'metal' },
+  // The worlds' other buildings that were built in code (the lane's second part)
+  // Cato Neimoidia: the viceroy's palace, its towers and round landing pads
+  catopalace: { made: 'meshy', as: 'the viceroy’s palace', metres: 90, along: 'x', hero: true, lod: true, detail: 'stone' },
+  // Corellia: a tower of Coronet City, dark and stepped
+  coronetspire: { made: 'meshy', as: 'the towers of Coronet City', metres: 140, along: 'y', hero: true, lod: true, detail: 'metal' },
+  // Corvus: Calodan's town houses and its gate
+  calodanhouse: { made: 'meshy', as: 'the houses of Calodan', metres: 14, along: 'x', detail: 'wood' },
+  calodangate: { made: 'meshy', as: 'the gate of Calodan', metres: 32, along: 'x', hero: true, lod: true, detail: 'stone' },
+  // Fondor: a tower block of the yard city
+  fondorblock: { made: 'meshy', as: 'the yard city’s towers', metres: 90, along: 'y', hero: true, lod: true, detail: 'concrete' },
+  // Malastare: the fuel works' tanks and flare stack
+  malastareworks: { made: 'meshy', as: 'the fuel works', metres: 60, along: 'x', hero: true, lod: true, detail: 'metal' },
 };
