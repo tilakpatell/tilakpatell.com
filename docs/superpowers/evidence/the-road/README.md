@@ -372,3 +372,6 @@ The whole ride is 1,797 s on auto, the deeds' waits aside. The per-beat draws an
 - `deed-minas-tirith-court.webp`: the Court of the Fountain, the King before the White Tree, the four before him, the deed's card.
 - `havens-built-desktop.webp`: the Gulf at sunset from the beach, the quay out to the white ship.
 - `havens-quay-desktop.webp`: out along the quay, the ship at its end.
+- `havens-gangway-desktop.webp`: the farewell: Frodo going up the gangway over her rail, the three on the quay, those sailing aboard.
+- `gorgoroth-built-desktop.webp`: the plain under the pall, the Mountain filling the sky, its plume and its fire; the column's spears on the road.
+- `gorgoroth-column-desktop.webp`: the two among the orc column, the driver with his whip.
