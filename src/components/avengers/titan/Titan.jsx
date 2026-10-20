@@ -41,11 +41,12 @@ const Titan = forwardRef(function Titan({ have, fallback }, ref) {
   }, [status, have]);
 
   // the snap: true if the 3D is doing it (and calls `done(tony)` at the moment
-  // the fingers meet), false if the page should do it itself
+  // the fingers meet), false if the page should do it itself (as with reduced
+  // motion, where no loop runs to play it)
   useImperativeHandle(ref, () => ({
     snap(tony, done) {
       const v = view.current;
-      if (status !== 'on' || !v) return false;
+      if (status !== 'on' || !v || calm.current) return false;
       return v.snap(tony, done);
     },
   }));
