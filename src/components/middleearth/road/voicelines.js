@@ -66,6 +66,9 @@ export const LINES = {
   // (the Havens: Gandalf by the ship, Frodo to the three)
   'havens-gandalf': { who: 'gandalfwhite', text: 'It is time, Frodo. The tide will not wait for us twice.' },
   'havens-frodo': frodo('Go home, Sam. Rosie is waiting, and the little one. The Shire needs you more than I do.'),
+  // (Gorgoroth: still under the Eye's beam; Sam's hand at the Crack)
+  'gorgoroth-beam': sam('Don’t move, Mr Frodo. It can’t see us, not under these.'),
+  'gorgoroth-hand': sam('I’ve got you, Mr Frodo. Up you come. I won’t let you fall.'),
 };
 
 export const VOICELINES = Object.values(LINES);

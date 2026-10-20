@@ -104,9 +104,9 @@ export const RANGES = {
     { az: -90, width: 90, dist: 1500, height: 450, colour: 0x262224, jag: 1.2, seed: 36 },
     { az: 180, width: 90, dist: 1800, height: 460, colour: 0x262224, jag: 1.1, seed: 37 },
   ],
-  // Mount Doom alone ahead, the Ash Mountains to the north, the Ephel Dúath behind
+  // the Ash Mountains to the north, the Ephel Dúath behind (Mount Doom ahead is the
+  // stage's own, the chapter's mountain: stages/gorgoroth)
   gorgoroth: [
-    { az: 4, width: 26, dist: 3000, height: 760, colour: 0x2c201c, cone: true, jag: 0.5, seed: 38 },
     { az: 80, width: 120, dist: 3500, height: 520, colour: 0x2a2426, jag: 1, seed: 39 },
     { az: 185, width: 150, dist: 2600, height: 560, colour: 0x262224, jag: 1.1, seed: 40 },
   ],

@@ -374,7 +374,7 @@ export const STAGES = [
     id: 'havens',
     name: 'The Grey Havens',
     date: '29 September 3021',
-    length: 300,
+    length: 290,
     mode: 'walk',
     place: 'grey-havens',
     // the beach and the dunes running down into the Gulf of Lune (the sea's

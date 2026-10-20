@@ -2677,8 +2677,12 @@ function gollumEyeCanvas() {
 
 // ── the kit ──
 
-export function createDoomKit(renderer) {
-  const kit = createShireKit(renderer);
+// `base`: the kit it adds to (the Shire's, unless a world gives its own: the
+// Road's town kit); `material`: how a plain material is made (a standard one,
+// unless a world wants its own look: the Road's house). The shaders are the
+// chapter's own either way (../../nodes/towns/doom/propsShaders.js).
+export function createDoomKit(renderer, { base = null, material = null } = {}) {
+  const kit = base ?? createShireKit(renderer);
   const S = 256;
   const T = (c, o) => canvasTexture(c, renderer, o);
   const basalt = basaltCanvas(S, 31);
@@ -2705,7 +2709,7 @@ export function createDoomKit(renderer) {
   tex.env = env;
   // one clock and one eruption for every shader in the kit
   const U = { uTime: { value: 0 }, uErupt: { value: 0 }, uNoise: { value: tex.noise }, uPuff: { value: tex.puff } };
-  const M = (o) => new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, ...o });
+  const M = material ?? ((o) => new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, ...o }));
   const rockish = { map: tex.rock, normalMap: tex.rockN, vertexColors: true };
   const ashish = { map: tex.cinder, normalMap: tex.cinderN, vertexColors: true };
   const mats = {

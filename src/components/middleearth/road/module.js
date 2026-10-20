@@ -134,7 +134,7 @@ export default {
     // the stage’s sound, the beats’ clips and the cast’s lines, on the runtime’s bus
     const ambience = createAmbience(rt);
     // the written stages’ scenes and their beats (scenes.js)
-    const scenes = createScenes({ rt, road, lands, weather, ambience, tier, sky });
+    const scenes = createScenes({ rt, road, lands, weather, ambience, tier, sky, backdrop: mountains });
     // the black the Road’s first words are said over, lifting: a shell round the camera
     const veilMat = new MeshBasicNodeMaterial({ color: 0x000000, transparent: true, opacity: 0, depthTest: false, depthWrite: false, side: THREE.BackSide, fog: false });
     const veil = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), veilMat);

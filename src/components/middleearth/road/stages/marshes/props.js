@@ -140,6 +140,8 @@ export function buildProps({ K, heightAt, tier = 'high' }) {
   const column = new THREE.InstancedMesh(columnGeo(), mats.easterling, count);
   column.name = 'marshes:column';
   column.frustumCulled = false;
+  // (it marches: not solid where it first stood)
+  column.userData.moves = true;
   group.add(column);
 
   // (the stills one a material: the rope, the candles, the faces, the gate’s leaves and the column as they are)

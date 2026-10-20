@@ -11,7 +11,10 @@ describe('Gorgoroth’s beats', () => {
     expect(BEATS.map((b) => b.id)).toEqual(['plain', 'column', 'beam', 'wind', 'carry', 'cracks', 'eruption', 'eagles']);
     const by = Object.fromEntries(BEATS.map((b) => [b.id, b]));
     expect(by.beam).toMatchObject({ rig: 'wide', cut: 0 });
-    expect(by.carry).toMatchObject({ rig: 'ride', clip: 'carryYou' });
+    // (Sam's line once the visitor has carried Frodo up: the deed's)
+    expect(by.carry).toMatchObject({ rig: 'ride', deed: { verb: 'rhythm', clip: 'carryYou' } });
+    expect(by.cracks.deed).toMatchObject({ verb: 'hold' });
+    expect(by.cracks.deed.at).toBeLessThan(by.cracks.hold);
     expect(by.cracks).toMatchObject({ rig: 'seat', cut: 0, clip: 'myPrecious' });
     expect(by.cracks.hold).toBeGreaterThanOrEqual(20);
     expect(by.eruption).toMatchObject({ rig: 'wide', clip: 'oneRing' });

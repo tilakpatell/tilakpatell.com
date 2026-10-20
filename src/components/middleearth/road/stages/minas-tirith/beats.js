@@ -23,7 +23,7 @@ export const BEATS = [
     id: 'court',
     kind: 'court',
     at: GATE + 14,
-    hold: 26,
+    hold: 24,
     rig: 'seat',
     cut: 0,
     reach: 40,
