@@ -77,9 +77,10 @@
   .universe-page:not(.galaxy-page) .universe-hint { bottom: max(24px, calc(var(--hud-pad-b, 12px) + 20px + var(--hud-cluster-h, 0px))); }
 }
 
-/* A sentence over the map: the first-flight hint, a multiplayer note. */
-.universe-hint,
-.universe-online-note {
+/* A sentence over the map: the first-flight hint. (A multiplayer note wears
+   the online corner’s glass instead, the colour’s, as the pill it rises
+   over: online/online.css.) */
+.universe-hint {
   border-radius: 14px;
   background: rgb(3 4 10 / 0.85);
 }

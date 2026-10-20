@@ -22,7 +22,10 @@ import './online.css';
 const IDLE_MS = 8000; // a pointer still this long fades
 const GONE_MS = 90000; // and this long, goes
 const TOP = 76; // px kept clear for the nav
-const ALLY = '#8dffad';
+// (the theme’s ally green, as the pointer’s --who: a custom property that
+// takes its value on the pointer, out of any dark scope, so it’s the page’s
+// own, a deep green on a light page and the bright one at night)
+const ALLY = 'var(--ally)';
 
 const colorOf = (crew) => (crew ? Object.values(crew.speakers)[0].color : '#c9d2e3');
 
