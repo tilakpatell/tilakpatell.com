@@ -342,6 +342,16 @@ describe('leaving, removing and leading', () => {
     expect(c.link.snapshot().party.leader).toBe(BRAVO);
   });
 
+  it('one only just in isn’t dropped for a hello sent before the roster reached them, by whoever leads now', () => {
+    const { room, a, b } = threeOf(); // (Charlie just in, and Alpha hands the lead to Bravo)
+    a.link.api.promote(BRAVO);
+    b.link.hello(b.peers.get(CHARLIE), {}, false);
+    expect(ids(b)).toEqual([ALPHA, BRAVO, CHARLIE]);
+    room.tick(21000);
+    b.link.hello(b.peers.get(CHARLIE), {}, false);
+    expect(ids(b)).toEqual([ALPHA, BRAVO]);
+  });
+
   it('the leader drops a member whose hello names another party, once they’ve had time to hear the roster', () => {
     const { room, a, b } = twoOf();
     room.tick(21000);

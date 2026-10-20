@@ -20,7 +20,7 @@
 //                                   so all anyone else learns is who spoke, when, and to how many
 //   quip  { q }                     a quick-chat line, its index in quips.js’s QUIPS   to everyone
 //
-// p is a party’s id (16 hex digits, newPartyId), l and the members pilots'
+// p is a party’s id (16 hex digits, newPartyId), l and the members pilots’
 // keys (64 hex digits: their id online), e an epoch (readEpoch: a whole
 // number from 1 to EPOCH_MAX, as a hello’s `pe` is too). Read, a roster’s
 // members are [{ id, name }], a name cleaned (names.js: one that can’t be

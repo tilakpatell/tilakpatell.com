@@ -16,25 +16,32 @@
 // leader also to each who comes into view, and anyone, at the heartbeat, to
 // one of it still ahead of them; a member only a roster they didn’t take on
 // another’s word), once an epoch or again a while on (one sent before they’d
-// read your hello is lost), so a member back behind a change, or put out
-// while away, is told by whoever’s here of the ones they’d believe. The
-// leader also sends it with every heartbeat while anyone else is here, and
-// back to a member whose roster it didn’t believe; a member, back to one
-// holding an older. When the leader’s gone (offline, quiet past the room’s
-// patience, or their hello naming no party or another) the first member
-// here in joining order takes over (party.js’s successor), but not while
-// what you hold may be behind: alone with a party back from the store (a
-// takeover there makes an epoch the others never had, which the live
-// roster could lose someone to), or after a member’s newer roster without
-// you in it. A member whose hello names no
-// party or another has left it, a goodbye the leader missed, and the leader
-// takes them out (unless they’ve only just joined: a hello sent before the
-// roster reached them). A leader who hands over and leaves keeps the
-// hand-over for the visit, to tell a member of it back behind it.
+// read your hello is lost; to one not in it, whatever epoch they hold), so a
+// member back behind a change, or put out while away, is told by whoever’s
+// here of the ones they’d believe. One out of a party keeps its last roster
+// for the visit to tell the same (`partings`: you may be the only one there
+// they know). The leader also sends it with every heartbeat while anyone
+// else is here, and back to a member whose roster it didn’t believe; a
+// member, back to one holding an older. When the leader’s gone (offline,
+// quiet past the room’s patience, or their hello naming no party or
+// another) the first member here in joining order takes over (party.js’s
+// successor), but not while what you hold may be behind: alone with a party
+// back from the store (a takeover there makes an epoch the others never
+// had, which the live roster could lose someone to), or after a member’s
+// newer roster without you in it; unless your leader has been here without
+// it two heartbeats running, when no one you’d believe is left to say more.
+// Back from the store, you make no change of your own (a removal, a new
+// leader) till one of it here is no further on (`unsure`). A member whose
+// hello names no party or another has left it, a goodbye the leader missed,
+// and the leader takes them out (unless they’ve only just come in, whoever
+// let them: a hello sent before the roster reached them).
 //
 // Anyone can send anything, so: nothing from a pilot unknown (no hello
 // read) or blocked changes anything (client.js’s admit); a roster is
-// believed only as applyRoster says (party.js’s header); a yes is let in
+// believed only as applyRoster says (party.js’s header), and one bringing
+// back a pilot you saw go this visit (put out, or leaving) only from your
+// leader (one gone, back with a changed client, could tell a member who
+// missed it anything, and through them you); a yes is let in
 // only if the pilot was asked to that party, by the leader or by a member
 // who told the leader whom (the same `inv`, sent to the leader with its `l`
 // the pilot asked: the leader can’t read an invite sent to another), and
@@ -57,8 +64,9 @@
 //   members: [{ id, name, since, present, where, leader, you }] } | null,
 //   invites: [{ from, name, party, leader, at }], follow }, quipOf(id) → the
 //   line over them now (yours too) or null, api: { start(), invite(id),
-//   accept(fromId), decline(fromId), leave(), remove(id), promote(id),
-//   summon(), say(text) → Promise<bool>, quip(i), setFollow(on) }, dispose() }
+//   accept(fromId), decline(fromId), leave(), remove(id), promote(id) (to a
+//   member here), summon(), say(text) → Promise<bool>, quip(i),
+//   setFollow(on) }, dispose() }
 // `now` is the client’s clock; `date` the wall clock, for a member’s
 // `since`, which is kept across visits. Events, to emit: { type: 'party' }
 // (any of the snapshot changed), { type: 'chat', line: { from, name, text,
@@ -78,6 +86,7 @@ const NO_AGAIN_MS = 60000; // after you turn an invite down, how long before the
 const JOIN_GRACE_MS = 20000; // a new member’s hello may name no party this long (one sent before the roster reached them: a heartbeat and more)
 const SAY_GAP = 150; // ms between lines of chat sent: past nostr.js’s FLUSH_MS, so never two in a bundle
 const CATCH_MS = 10000; // a roster to catch a pilot up, again at most this often (under a heartbeat: one sent before they’d read your hello is dropped)
+const PARTINGS = 4; // parties you’re out of whose last roster you keep, for the visit
 
 // a line as it goes: trimmed, and cut to CHAT_MAX characters (whole ones: an emoji isn’t split)
 const cut = (text) => [...text.trim()].slice(0, CHAT_MAX).join('');
@@ -96,16 +105,39 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
   let lastSummon = -Infinity;
   // how far your party, as you hold it, can be trusted to be the party as it is now
   let stale = false; // re-formed from the store, and no roster since: it may be behind
+  let back = null; // the party as the store gave it back (one of it then may have put you out first, though you’ve put them out since)
   let held = false; // a member’s newer roster without you in it heard: you may have been put out
-  let prior = null; // { leader, epoch, from }: the leader you had when you took a member’s word, till they speak
-  let handover = null; // the roster you handed over with as you left (or, the last one, the party as you left it), for a member of it back behind it
+  let prior = null; // { leader, epoch, from, had }: the leader you had when you took a member’s word, till they speak (and the party’s ids then)
+  // The last roster you had of a party you’re out of, for the visit, to tell
+  // one of it back behind it how it stands (you may be the only one here
+  // they know), and to whom (`may`): the hand-over you left with as its
+  // leader (the last one out, the party as you left it), to anyone naming
+  // the party, as a leader’s roster is; the roster you left as a member, to
+  // one it lists, or one you saw go (`dropped`: taken out by you, leading,
+  // or by your leader);
+  // or the roster that put you out (`outOf`: who did, as their word that
+  // you’re out may come before it, and the party you had then), to one it
+  // lists or one already out of the party as you had it, but not to one in
+  // it with you whom it leaves out: of them it says nothing true (let in to
+  // the party as you had it, one that lost to this, they were never in this
+  // one, and no one put them out).
+  const partings = new Map(); // party → { msg, may(id) }: PARTINGS at most, a party each (you may leave several in a visit)
+  let outOf = null; // { p, from, had }
+  const part = (x) => {
+    partings.delete(x.msg.p);
+    partings.set(x.msg.p, x);
+    if (partings.size > PARTINGS) partings.delete(partings.keys().next().value);
+  };
+  const listing = (msg) => (id) => msg.m.some((m) => m.id === id);
+  const putOut = (msg, had) => ({ msg, may: (id) => listing(msg)(id) || !isMember(had, id) });
   let lapsed = null; // the leader you hold, in the room at the last heartbeat with a hello that named no party or another
   let ousted = null; // the leader you took over from, while you lead: their word may yet cross your takeover
   const invites = new Map(); // from → { from, name, party, leader, at }
   const declined = new Map(); // from → when you said no
   const invited = new Map(); // id → { party, at }: whom you asked
   const asked = new Map(); // (leading) id → { party, at }: asked into that party, by you or a member
-  const added = new Map(); // (leading) id → when they came in
+  const added = new Map(); // id → when they came into the party as you hold it, whoever let them in (should you lead before their hello names it)
+  const dropped = new Set(); // whom you saw go from the party you’re in, this visit (put out, or leaving): taken out by you, leading it, or by your leader
   const caught = new Map(); // id → { k, at }: the roster ('party:epoch') last sent them to catch up, and when
   const answered = new Map(); // id → the roster ('party:epoch') last sent back to one you didn’t believe
   const turned = new Map(); // id → when a join of theirs was last turned away
@@ -139,16 +171,19 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
   // each who comes into view (they may hold a fork only the leader can put
   // right); and at the heartbeat to one of it still ahead of you (`ahead`:
   // they may hold a word yours puts right, and if not, they answer with
-  // theirs). Once an epoch, but again after CATCH_MS. Not one you hold on a
-  // member’s word (`prior`): taken on trust, it isn’t yours to pass on (one
-  // put out could have said it).
+  // theirs). Once an epoch, but again after CATCH_MS (the leader’s to a
+  // member come into view at once: to one not in it, too, a stranger’s
+  // hellos naming the party and then none, by turns, would each be a
+  // roster). Not one you hold on a member’s word (`prior`): taken on trust,
+  // it isn’t yours to pass on (one put out could have said it).
   const offer = (p, msg, { arrived = false, ahead = false, out = false } = {}) => {
     const leads = msg.l === key();
     if (!leads && prior && msg.p === party?.id) return;
-    if (!(p.pe === null || p.pe < msg.e || ahead || out || (leads && arrived))) return;
+    const fresh = leads && arrived && !out;
+    if (!(p.pe === null || p.pe < msg.e || ahead || out || fresh)) return;
     const k = `${msg.p}:${msg.e}`;
     const last = caught.get(p.id);
-    if (!(leads && arrived) && last?.k === k && now() - last.at < CATCH_MS) return;
+    if (!fresh && last?.k === k && now() - last.at < CATCH_MS) return;
     caught.set(p.id, { k, at: now() });
     tell(msg, p.id);
   };
@@ -181,15 +216,29 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
     if (was?.id !== next?.id) {
       asked.clear();
       added.clear();
+      dropped.clear();
       stale = held = false;
-      prior = lapsed = ousted = null;
+      prior = lapsed = ousted = back = null;
     }
     if (party?.leader !== key()) ousted = null;
+    if (was && party && was.id === party.id) for (const m of party.members) if (!isMember(was, m.id)) added.set(m.id, now());
     if (party) keep();
     else forget();
     if (told && was && party && was.id === party.id) news(was, party);
     mark();
     changed();
+  };
+  // A party back from the store makes no change of your own (a removal, a
+  // new leader) till one of it here shows it’s no further on than yours:
+  // while you were away someone may have taken over and put you out, and a
+  // change made now would be a second party under the one id. Said, as the
+  // dialog doesn’t.
+  const unsure = () => {
+    if (!stale) return false;
+    const mates = party.members.filter((m) => m.id !== key() && here(m.id)).map((m) => peers.get(m.id));
+    if (mates.length && mates.every((p) => p.pe !== null && p.pe <= party.epoch)) return false;
+    feed(mates.length ? 'The party’s catching up: try again in a moment' : 'Can’t change the party till someone else in it is online', 'info');
+    return true;
   };
   // your leader in the room, their hello naming no party or another: they’ve left it
   const leaderLeft = () => {
@@ -197,12 +246,14 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
     return Boolean(p) && p.name !== null && !p.blocked && p.pt !== party.id;
   };
   // The leader gone and you next: you lead, and say so. Not while what you
-  // hold may be behind, unless (`sure`) your leader has been here without
-  // the party two heartbeats running: then no one you know of is left to
-  // tell you more (a hand-over of theirs has had a heartbeat to reach you),
-  // and waiting would leave you in their party for good.
+  // hold may be behind, or a member’s newer word may have put you out
+  // (`held`), unless (`sure`) your leader has been here without the party
+  // two heartbeats running: then no one you know of is left to tell you more
+  // (a hand-over of theirs has had a heartbeat to reach you), and waiting
+  // would leave you in their party for good. (Leading what the store gave
+  // back, a member’s word that you’re out is believed.)
   const lead = (sure = false) => {
-    if (!party || held || isLeader(party, key()) || here(party.leader) || successor(party, here) !== key()) return;
+    if (!party || (held && !sure) || isLeader(party, key()) || here(party.leader) || successor(party, here) !== key()) return;
     if (stale && !sure && !party.members.some((m) => m.id !== key() && here(m.id))) return;
     const next = takeOver(party, key());
     if (!next) return;
@@ -220,10 +271,14 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
     if (isLeader(was, key())) {
       const heir = successor(was, here);
       handed = removeMember(heir ? handTo(was, heir) : was, key());
-      handover = rosterMsg(handed ?? was);
+      part({ msg: rosterMsg(handed ?? was), may: () => true });
+    } else {
+      const msg = rosterMsg(was);
+      const theirs = new Set(dropped);
+      part({ msg, may: (id) => listing(msg)(id) || theirs.has(id) });
     }
     return () => {
-      if (handed) tell(handover);
+      if (handed) tell(rosterMsg(handed));
       tell({ t: 'left', p: was.id });
     };
   };
@@ -241,6 +296,7 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
     if (!next) return false;
     const name = nameOf(id);
     const pid = party.id;
+    dropped.add(id);
     change(next, false);
     feed(`You removed ${name} from the party`, 'info');
     tell({ t: 'out', p: pid }, id);
@@ -294,7 +350,6 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
         const next = ask?.party === msg.p && now() - ask.at <= INVITE_MS ? addMember(party, { id: p.id, name: p.name }, date()) : null;
         if (next) {
           asked.delete(p.id);
-          added.set(p.id, now());
           change(next);
           tell(rosterMsg(next));
           return;
@@ -319,7 +374,16 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
     ros(msg, p) {
       const was = party;
       const ours = was?.id === msg.p;
-      const { party: next, why } = applyRoster(party, msg, { fromId: p.id, selfId: key(), joining, now: date(), present, prior, ousted });
+      if (!ours && outOf?.p === msg.p && outOf.from === p.id && !msg.m.some((m) => m.id === key())) {
+        part(putOut(msg, outOf.had));
+        outOf = null; // (that one only: of one a later roster leaves out, who was in it with you, it can’t say how)
+      }
+      // (one you saw go, back on a word that isn’t the leader’s you have, had,
+      // or took over from: a member who missed it may be passing on what the
+      // one gone told them, or leading on it. Not one the store gave back,
+      // while that’s all you hold: you may have taken them out on a guess)
+      const revives = ours && ![was.leader, ousted, prior?.leader].includes(p.id) && msg.m.some((m) => dropped.has(m.id) && !isMember(was, m.id) && !(stale && isMember(back, m.id)));
+      const { party: next, why } = revives ? { party, why: 'ignored' } : applyRoster(party, msg, { fromId: p.id, selfId: key(), joining, now: date(), present, prior, ousted, kept: stale ? back : null });
       // (the leader you had has spoken since you took another’s word: settled, whichever way)
       const settled = ours && prior?.leader === p.id && msg.e > prior.epoch;
       if (settled) prior = null;
@@ -331,6 +395,7 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
         return;
       }
       if (why === 'removed') {
+        part(putOut(msg, was));
         change(null);
         feed('You’re no longer in the party', 'info');
         return;
@@ -346,8 +411,12 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
         return;
       }
       // (another member’s word over your leader’s: kept till the leader you had speaks)
-      if (!settled && !prior && p.id !== was.leader && was.leader !== key()) prior = { leader: was.leader, epoch: was.epoch, from: p.id };
-      stale = held = false;
+      if (!settled && !prior && p.id !== was.leader && was.leader !== key()) prior = { leader: was.leader, epoch: was.epoch, from: p.id, had: was.members.map((m) => m.id) };
+      // (made leader while you were away, what you hold is still the word of
+      // then: one of it who took over since may yet put you out)
+      if (!(stale && next.leader === key())) stale = false;
+      held = false;
+      if (p.id === was.leader) for (const m of was.members) if (!isMember(next, m.id)) dropped.add(m.id);
       change(next);
     },
     left(msg, p) {
@@ -356,6 +425,7 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
       if (isLeader(party, key())) {
         const next = removeMember(party, p.id);
         if (next) {
+          dropped.add(p.id);
           change(next);
           tell(rosterMsg(next));
         }
@@ -367,6 +437,7 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
     },
     out(msg, p) {
       if (party?.id !== msg.p || p.id !== party.leader) return;
+      outOf = { p: msg.p, from: p.id, had: party };
       change(null);
       feed(`${p.name} removed you from the party`, 'info');
     },
@@ -456,11 +527,11 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
       leaveParty();
       return true;
     },
-    remove: (id) => removeOne(id),
+    remove: (id) => isLeader(party, key()) && id !== key() && isMember(party, id) && !unsure() && removeOne(id),
     // the lead to a member here (as the dialog offers it): one away would come
     // back to a lead they never had, while what they hold had moved on without it
     promote(id) {
-      if (!party || !isLeader(party, key()) || !here(id)) return false;
+      if (!party || !isLeader(party, key()) || !here(id) || unsure()) return false;
       const next = handTo(party, id);
       if (!next) return false;
       change(next);
@@ -531,7 +602,7 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
       // your party, remembered under the key you fly now: yours again, as it was (it may be behind)
       const kept = key() && !party ? store?.get(key()) : null;
       if (kept && isMember(kept.party, key())) {
-        party = kept.party;
+        party = back = kept.party;
         stale = true;
         keep();
         changed();
@@ -547,7 +618,8 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
       p.pt = readPartyId(data?.pt);
       p.pe = p.pt ? readEpoch(data?.pe) : null;
       // (the lead you handed over as you left, told to one of that party back behind it)
-      if (handover && p.pt === handover.p && party?.id !== handover.p) offer(p, handover);
+      const left = p.pt && party?.id !== p.pt ? partings.get(p.pt) : null;
+      if (left?.may(p.id)) offer(p, left.msg);
       if (!party) return;
       // (the leader you had, holding the party no further on than when you took another’s word: nothing they’d say against it)
       if (prior?.leader === p.id && p.pt === party.id && p.pe !== null && p.pe <= prior.epoch) prior = null;
@@ -563,6 +635,7 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
         if (!is && now() - (added.get(p.id) ?? -Infinity) > JOIN_GRACE_MS) {
           const next = removeMember(party, p.id);
           if (next) {
+            dropped.add(p.id);
             change(next);
             tell(rosterMsg(next));
           }
@@ -631,13 +704,14 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
         joining = null;
         moved = true;
       }
+      if (party && !isLeader(party, key())) {
+        const out = leaderLeft() ? party.leader : null;
+        const sure = out !== null && out === lapsed;
+        lapsed = out;
+        lead(sure);
+      } else if (party?.members.some((m) => m.id !== key() && here(m.id))) tell(rosterMsg(party));
+      // (asked afresh: what a takeover said may have been answered already, and changed the party again)
       if (party) {
-        if (!isLeader(party, key())) {
-          const out = leaderLeft() ? party.leader : null;
-          lead(out !== null && out === lapsed);
-          lapsed = out;
-        }
-        else if (party.members.some((m) => m.id !== key() && here(m.id))) tell(rosterMsg(party));
         // (one of it still ahead a heartbeat on, past any roster on its way: they may hold a word yours puts right)
         for (const m of party.members) {
           const p = m.id !== key() && here(m.id) ? peers.get(m.id) : null;
@@ -669,9 +743,9 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
       party = null;
       joining = null;
       mine = null;
-      handover = prior = lapsed = ousted = null;
+      outOf = prior = lapsed = ousted = back = null;
       stale = held = false;
-      for (const m of [invites, declined, invited, asked, added, caught, answered, turned]) m.clear();
+      for (const m of [invites, declined, invited, asked, added, dropped, caught, answered, turned, partings]) m.clear();
     },
   };
 }

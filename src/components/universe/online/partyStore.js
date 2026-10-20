@@ -76,7 +76,7 @@ function readEntry(data) {
   return party && seen !== null ? { party, seen } : null;
 }
 // What’s kept, as it reads back: a Map of key → { party, seen }, the
-// unreadable left out. Version 1's single entry is read as its key’s (an old
+// unreadable left out. Version 1’s single entry is read as its key’s (an old
 // tab’s write, heard, is that shape too).
 function readKept(data) {
   const kept = new Map();

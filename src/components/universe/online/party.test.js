@@ -220,8 +220,27 @@ describe('applyRoster', () => {
       expect(away.why).toBe('updated');
       expect(away.party).toMatchObject({ leader: ALPHA, epoch: 9 });
       expect(applyRoster(mine, ros(ALPHA, 9, [ALPHA, BRAVO, CHARLIE]), at(CHARLIE, BRAVO, { present: here(ALPHA) })).why).toBe('ignored');
-      // (and only from one who’s in what they pass on)
-      expect(applyRoster(mine, ros(ALPHA, 9, [ALPHA, BRAVO]), at(CHARLIE, BRAVO)).why).toBe('ignored');
+      // (or from one who has left it since, handing over as they went: they aren’t in it, and a member could say as much leading it)
+      expect(applyRoster(mine, ros(DELTA, 9, [ALPHA, BRAVO, DELTA]), at(CHARLIE, BRAVO)).party).toMatchObject({ leader: DELTA, epoch: 9 });
+      expect(applyRoster(mine, ros(DELTA, 9, [ALPHA, BRAVO, DELTA]), at(CHARLIE, BRAVO, { present: here(ALPHA) })).why).toBe('ignored');
+    });
+    it('a leader who took over takes the hand-over of the one they took over from, at that epoch or past it, though they’ve put them out since', () => {
+      // (Alpha let Charlie in at 3 and handed over to Bravo as he left; Bravo, on the hello that said he’d gone, took over from 2 and took him out)
+      const mine = freeze(removeMember(takeOver(partyOf(ALPHA, BRAVO), BRAVO), ALPHA)); // (Bravo, alone, at 4)
+      const handed = ros(BRAVO, 5, [BRAVO, CHARLIE]);
+      expect(applyRoster(mine, handed, at(ALPHA, BRAVO, { present: here(BRAVO), ousted: ALPHA })).party).toMatchObject({ leader: BRAVO, epoch: 5, members: [{ id: BRAVO }, { id: CHARLIE }] });
+      // (not an older word of his, nor his without the takeover)
+      expect(applyRoster(mine, ros(ALPHA, 3, [ALPHA, BRAVO, CHARLIE]), at(ALPHA, BRAVO, { present: here(BRAVO), ousted: ALPHA })).why).toBe('ignored');
+      expect(applyRoster(mine, handed, at(ALPHA, BRAVO, { present: here(BRAVO) })).why).toBe('ignored');
+    });
+    it('a leader back from last visit takes the hand-over of one of it as he came back, though he’s put them out since', () => {
+      // (Bravo took over while Alpha was away, let Delta in, handed the lead to Delta and left; Alpha, back, took him out for a hello naming no party)
+      const kept = partyOf(ALPHA, BRAVO); // (epoch 2, as the store gave it back)
+      const mine = freeze(removeMember(kept, BRAVO));
+      const handed = ros(DELTA, 6, [ALPHA, DELTA]);
+      expect(applyRoster(mine, handed, at(BRAVO, ALPHA, { kept })).party).toMatchObject({ leader: DELTA, epoch: 6, members: [{ id: ALPHA }, { id: DELTA }] });
+      expect(applyRoster(mine, handed, at(BRAVO, ALPHA)).why).toBe('ignored');
+      expect(applyRoster(mine, handed, at(CHARLIE, ALPHA, { kept })).why).toBe('ignored');
     });
     it('a leader takes another’s word for the party only while theirs may be out of date (`present` says they aren’t)', () => {
       // (Alpha, back from the store, leading as he left it: the party moved on without him)
@@ -237,18 +256,30 @@ describe('applyRoster', () => {
       expect(applyRoster(mine, ros(ALPHA, 4, [ALPHA, CHARLIE]), at(CHARLIE, BRAVO))).toEqual({ party: mine, why: 'ignored' });
       expect(applyRoster(mine, ros(ALPHA, 4, [ALPHA, CHARLIE]), at(ALPHA, BRAVO)).why).toBe('removed');
     });
-    it('a leader back from last visit is put out by the member who took over from them, and by no one else', () => {
+    it('a leader back from last visit is put out by the member who took over from them, or one passing on their word, and by no one else', () => {
       // (Alpha led, went, and Bravo, taking over, took him out: back as he left it, Alpha leads, and no one else would tell him)
       const mine = partyOf(ALPHA, BRAVO, CHARLIE);
       const out = ros(BRAVO, 5, [BRAVO, CHARLIE]);
       expect(applyRoster(mine, out, at(BRAVO, ALPHA))).toEqual({ party: null, why: 'removed' });
       // (or at the epoch he holds: Bravo, back from the store too, leading as he left it, put him out while he was away)
       expect(applyRoster(mine, ros(BRAVO, 3, [BRAVO, CHARLIE]), at(BRAVO, ALPHA)).why).toBe('removed');
-      // not once what he holds is more than the store’s word, nor on a member passing on another’s, nor at an older epoch
+      // or on a member passing on the roster of the one who did (who has led it since, and is no one he knows)
+      expect(applyRoster(mine, ros(DELTA, 5, [BRAVO, DELTA]), at(BRAVO, ALPHA)).why).toBe('removed');
+      // not once what he holds is more than the store’s word, nor at an older epoch
       expect(applyRoster(mine, out, at(BRAVO, ALPHA, { present: here(ALPHA) })).why).toBe('ignored');
-      expect(applyRoster(mine, ros(CHARLIE, 5, [BRAVO, CHARLIE]), at(BRAVO, ALPHA)).why).toBe('ignored');
       expect(applyRoster(mine, ros(BRAVO, 2, [BRAVO, CHARLIE]), at(BRAVO, ALPHA)).why).toBe('ignored');
       expect(applyRoster(mine, ros(BRAVO, 4 + EPOCH_SPAN, [BRAVO, CHARLIE]), at(BRAVO, ALPHA)).why).toBe('ignored');
+    });
+    it('a leader back from last visit who has put a member out since is put out by them all the same, if they’d done it first', () => {
+      // (Bravo took over while Alpha was away and took him out at 4; Alpha, back as he left it, took Bravo out at 3 before hearing it)
+      const kept = partyOf(ALPHA, BRAVO); // (epoch 2, as the store gave it back)
+      const mine = freeze(removeMember(kept, BRAVO));
+      expect(applyRoster(mine, ros(BRAVO, 4, [BRAVO]), at(BRAVO, ALPHA, { kept }))).toEqual({ party: null, why: 'removed' });
+      // (only one of it as he came back, only at his epoch or past it, and only while that’s all he holds)
+      expect(applyRoster(mine, ros(CHARLIE, 4, [CHARLIE]), at(CHARLIE, ALPHA, { kept })).why).toBe('ignored');
+      expect(applyRoster(mine, ros(BRAVO, 2, [BRAVO]), at(BRAVO, ALPHA, { kept })).why).toBe('ignored');
+      expect(applyRoster(mine, ros(BRAVO, 4, [BRAVO]), at(BRAVO, ALPHA, { kept, present: here(ALPHA) })).why).toBe('ignored');
+      expect(applyRoster(mine, ros(BRAVO, 4, [BRAVO]), at(BRAVO, ALPHA)).why).toBe('ignored');
     });
     it('a leader who took over is put out by the one they took over from, at that epoch or past it: their word crossed the takeover', () => {
       // (Bravo took over from Alpha at 3, thinking him gone; Alpha, there all along, had taken Bravo out at 3)
@@ -256,10 +287,11 @@ describe('applyRoster', () => {
       const out = ros(ALPHA, 4, [ALPHA, CHARLIE]);
       expect(applyRoster(mine, out, at(ALPHA, BRAVO, { present: here(BRAVO), ousted: ALPHA }))).toEqual({ party: null, why: 'removed' });
       expect(applyRoster(mine, ros(ALPHA, 5, [ALPHA, CHARLIE]), at(ALPHA, BRAVO, { present: here(BRAVO), ousted: ALPHA })).why).toBe('removed');
-      // not from another member, nor once you’ve moved on past it, nor naming another leader, nor without the takeover
+      // (or naming another: his word, whatever it says, as he’d handed the lead on as well)
+      expect(applyRoster(mine, ros(CHARLIE, 5, [ALPHA, CHARLIE]), at(ALPHA, BRAVO, { present: here(BRAVO), ousted: ALPHA })).why).toBe('removed');
+      // not from another member, nor once you’ve moved on past it, nor without the takeover
       expect(applyRoster(mine, ros(CHARLIE, 4, [ALPHA, CHARLIE]), at(CHARLIE, BRAVO, { present: here(BRAVO), ousted: ALPHA })).why).toBe('ignored');
       expect(applyRoster(freeze(removeMember(mine, CHARLIE)), out, at(ALPHA, BRAVO, { present: here(BRAVO), ousted: ALPHA })).why).toBe('ignored');
-      expect(applyRoster(mine, ros(CHARLIE, 4, [ALPHA, CHARLIE]), at(ALPHA, BRAVO, { present: here(BRAVO), ousted: ALPHA })).why).toBe('ignored');
       expect(applyRoster(mine, out, at(ALPHA, BRAVO, { present: here(BRAVO) })).why).toBe('ignored');
     });
     it('takes a member’s word at most EPOCH_SPAN past yours, so no one can push the epoch past every roster to come', () => {
@@ -413,6 +445,20 @@ describe('applyRoster', () => {
       expect(applyRoster(lied, ros(ALPHA, 5, [ALPHA, BRAVO, CHARLIE, DELTA]), at(ALPHA, CHARLIE, { prior })).why).toBe('ignored');
       expect(applyRoster(lied, ros(ALPHA, 4, [ALPHA, BRAVO, CHARLIE]), at(ALPHA, CHARLIE, { prior })).why).toBe('ignored');
       expect(applyRoster(lied, ros(BRAVO, 5, [BRAVO, CHARLIE]), at(BRAVO, CHARLIE, { prior })).why).toBe('ignored');
+    });
+    it('…or another of the party as you had it then, who saw it: keeping you in, and no further off than a member’s word may be', () => {
+      // (Alpha may never be back; Bravo, who saw Delta put out, passes on Alpha’s
+      // word, though Delta’s roster left Bravo out so that no one he knew could)
+      const kept = partyOf(ALPHA, BRAVO, CHARLIE, DELTA);
+      const lied = applyRoster(kept, ros(DELTA, 9, [DELTA, ALPHA, CHARLIE]), at(DELTA, CHARLIE)).party;
+      const prior = { leader: ALPHA, epoch: 4, from: DELTA, had: [ALPHA, BRAVO, CHARLIE, DELTA] };
+      const real = ros(ALPHA, 5, [ALPHA, BRAVO, CHARLIE]);
+      expect(applyRoster(lied, real, at(BRAVO, CHARLIE, { prior: { ...prior, had: undefined } })).why).toBe('ignored');
+      expect(applyRoster(lied, real, at(BRAVO, CHARLIE, { prior })).party).toMatchObject({ leader: ALPHA, epoch: 5 });
+      // (not one putting you out, still listing Delta, or past EPOCH_SPAN)
+      expect(applyRoster(lied, ros(ALPHA, 5, [ALPHA, BRAVO]), at(BRAVO, CHARLIE, { prior })).why).toBe('ignored');
+      expect(applyRoster(lied, ros(ALPHA, 5, [ALPHA, BRAVO, CHARLIE, DELTA]), at(BRAVO, CHARLIE, { prior })).why).toBe('ignored');
+      expect(applyRoster(lied, ros(ALPHA, 10 + EPOCH_SPAN, [ALPHA, BRAVO, CHARLIE]), at(BRAVO, CHARLIE, { prior })).why).toBe('ignored');
     });
     it('alone after a reload with the leader not back, you take over', () => {
       const kept = partyOf(ALPHA, BRAVO);

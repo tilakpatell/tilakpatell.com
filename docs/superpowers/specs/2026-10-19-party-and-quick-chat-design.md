@@ -45,7 +45,8 @@ ephemeral: nothing is kept, a late arrival hears nothing said before.
   minute isn’t asked again (as an ally ask isn’t).
 - **Leave:** anyone. The leader leaving hands over first (see below).
 - **Remove:** the leader, from the roster; the removed pilot is told.
-- **Make leader:** the leader, by a roster naming another member, epoch + 1.
+- **Make leader:** the leader, to a member who is here (one away would come
+  back to a lead they never had), by a roster naming them, epoch + 1.
 - **When the leader is gone** (offline, or quiet past the room’s 45 s): the
   first *present* member in roster order takes over and sends the roster with
   itself as leader at epoch + 1. Two who both think so: the higher epoch wins;
@@ -54,17 +55,33 @@ ephemeral: nothing is kept, a late arrival hears nothing said before.
   settle the same way everywhere and a stale fork never puts out a member the
   live roster has). A returning old leader takes the newer roster like any
   member. A party re-formed from the store doesn’t take over alone: it waits
-  for another of its members.
+  for another of its members, unless its leader has been here without the
+  party for two heartbeats (they left it while you were away). Nor does it
+  remove anyone or make a leader until one of it here holds no newer epoch
+  (“Can’t change the party till someone else in it is online”). Having taken
+  over, the leader you took over from still puts you right, so a removal that
+  crossed a takeover never leaves two leaders at one epoch.
 - **Catching up:** the hello carries the epoch you hold (`pe`), and whoever
   holds a newer roster sends it to a member behind them (a member passes on
   the roster it holds; one taken on another member’s word isn’t passed on).
   A pilot whose hello names the party but isn’t on the roster (removed while
-  away) is sent the roster, which says so. Only your own leader’s roster can
-  remove you; another member’s is believed at most 256 epochs past yours.
+  away) is sent the roster, which says so, again every 10 s while they name
+  it. What you leave or are put out of keeps its last roster for the visit
+  (a party each, four at most), to tell one of it who comes back behind it.
+  Only your own leader’s roster can remove you (and, while you lead what the
+  store gave back, a member at your epoch or past it); another member’s is
+  believed at most 256 epochs past yours, and a roster bringing back someone
+  you saw go this visit only from your leader. Anyone just let in has a
+  grace before a hello naming no party counts as leaving, whoever let them
+  in. `partySim.test.js` plays thousands of seeded random visits of honest
+  pilots and a stranger, and holds them to this.
 - **Whom it trusts:** a party trusts its members, who were invited; a member
   running a changed client can disrupt it. A stranger, who can read every
   roster and hello, can’t join, be sealed a line, remove anyone, or make a
-  member leave.
+  member leave. Without signed rosters, a few forks stay possible: a member
+  back from a long absence who knows no one there now can’t be caught up (a
+  stranger’s word would let anyone in), and a removal seen by no one online
+  can be undone by the one removed, for that visit.
 - **Remembered:** your party (id, leader, members with names, epoch) is kept
   in this browser (`tp-party`, version 2), one entry for each key you fly
   (`as`, as allies keep it; up to four), so a guest tab’s party never takes

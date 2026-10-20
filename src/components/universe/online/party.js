@@ -27,23 +27,29 @@
 // - from the leader you have, at a newer epoch, whatever it says: an add, a
 //   removal (you too), a new leader. At the same epoch only as a rename, or
 //   the roster again;
-// - from another member, one in it too (a takeover names its sender as
-//   leader; a member passing on the roster they hold names whoever leads),
-//   if it keeps you in it (only your own leader puts you out: or, while you
-//   lead as you were last visit, the member who took over from you, in a
-//   roster of theirs at your epoch or past it, since there’s no leader of
-//   yours to tell you; or, once you’ve taken over, the leader you took over
-//   from (`ousted`), leading in a roster at your epoch or past it: they
-//   weren’t gone, and their word crossed yours) and is newer by at most
-//   EPOCH_SPAN, or, at the same epoch, wins the tie (beats). One
-//   passing on another’s roster, only while your leader isn’t here to say it
+// - from the leader you had before you took another member’s word
+//   (`prior`: { leader, epoch, from, had }), at a newer epoch than you had
+//   it, leaving out the one whose word you took: they were put out, and
+//   their word goes with them; or from another of the party as you had it
+//   then (`had`), the same, if it keeps you in and is no further off than a
+//   member’s may be: one who saw them put out (the leader you had may never
+//   be back, and the one put out may have named another of it leader, or
+//   you, to keep you);
+// - while you lead, from the leader you took over from (`ousted`), at your
+//   epoch or past it, whatever it says: they weren’t gone, and their word
+//   crossed your takeover;
+// - from another member (of the party as you hold it, or, while that’s only
+//   the store’s word, as it gave it back, `kept`: you may have put them out
+//   since): a takeover (naming its sender leader) newer by at most
+//   EPOCH_SPAN, or at the same epoch winning the tie (beats); a roster
+//   passed on (naming another leader, or a hand-over without the one who
+//   left), the same, but only while your leader isn’t here to say it
 //   (`present`: a leader asks it of themselves, and is “not here” only while
 //   what they hold may be out of date, back from last visit, so the members
-//   can tell them how the party moved on without them);
-// - from the leader you had before you took another member’s word
-//   (`prior`: { leader, epoch, from }), at a newer epoch than you had it,
-//   leaving out the one whose word you took: they were put out, and their
-//   word goes with them.
+//   can tell them how the party moved on without them). Only if it keeps you
+//   in: only your own leader puts you out, or, while you lead as you were
+//   last visit, one of it at your epoch or past it, who took over from you
+//   while you were away or passes on the word of one who did.
 // A party you aren’t in is believed only as your way in: the one whose
 // invite you said yes to, from the leader it named, with you in it.
 //
@@ -55,8 +61,8 @@
 // selfId) → party | null (not in it); each change null at EPOCH_MAX;
 // rosterMsg(party) → { t: 'ros', p, l, e, m: [{ id, name }] }; beats(a, b)
 // → bool (party a over b, at one epoch); applyRoster(party, msg, { fromId,
-// selfId, joining, now, present, prior, ousted }) → { party, why: 'joined' |
-// 'updated' | 'removed' | 'ignored' }
+// selfId, joining, now, present, prior, ousted, kept }) → { party, why:
+// 'joined' | 'updated' | 'removed' | 'ignored' }
 
 import { cleanName } from './names';
 import { EPOCH_MAX, PARTY_MAX, readEpoch } from './partyWire';
@@ -135,19 +141,27 @@ export function beats(a, b) {
 }
 
 // whether `next` (the roster as read) is believed over your party, as above
-function believed(party, next, { fromId, selfId, present, prior, ousted }) {
+function believed(party, next, { fromId, selfId, present, prior, ousted, kept }) {
   const listed = (id) => isMember(next, id);
-  // (the leader you had, saying the one whose word you took is out)
-  if (prior && fromId === prior.leader && next.epoch > prior.epoch && !listed(prior.from)) return true;
+  const near = next.epoch - party.epoch <= EPOCH_SPAN;
+  // (the leader you had, or another of the party as you had it, saying the one whose word you took is out)
+  if (prior && next.epoch > prior.epoch && !listed(prior.from)) {
+    if (fromId === prior.leader) return true;
+    if (fromId !== prior.from && prior.had?.includes(fromId) && listed(selfId) && near) return true;
+  }
   if (fromId === party.leader) return next.epoch > party.epoch || (next.epoch === party.epoch && next.leader === party.leader && sameIds(party, next));
-  if (!isMember(party, fromId) || !listed(fromId)) return false;
-  // (you out: only your own leader says so; or, while you lead it, in their
-  // own roster at your epoch or past it, the member who took over from you
-  // while you were away, or the one you took over from, who wasn’t gone)
-  if (!listed(selfId)) return party.leader === selfId && (!present(selfId) || fromId === ousted) && next.leader === fromId && next.epoch >= party.epoch && next.epoch - party.epoch <= EPOCH_SPAN;
-  // (another’s roster passed on, while your own leader’s here to say it: theirs stands)
+  // (the leader you took over from, at your epoch or past it: they weren’t
+  // gone, and their word, whatever it says, crossed your takeover)
+  if (fromId === ousted && party.leader === selfId) return next.epoch >= party.epoch && near;
+  // (one of it: as you hold it, or as the store gave it back while that’s all you hold, though you’ve put them out since)
+  if (!isMember(party, fromId) && !isMember(kept, fromId)) return false;
+  // (you out: only your own leader says so; or, while you lead it as you
+  // were last visit, at your epoch or past it, one of it who took over from
+  // you while you were away, or passes on the word of one who did)
+  if (!listed(selfId)) return party.leader === selfId && !present(selfId) && next.epoch >= party.epoch && near;
+  // (another’s roster passed on, or their hand-over as they left it, while your own leader’s here to say it: theirs stands)
   if (next.leader !== fromId && present(party.leader)) return false;
-  if (next.epoch > party.epoch) return next.epoch - party.epoch <= EPOCH_SPAN;
+  if (next.epoch > party.epoch) return near;
   return next.epoch === party.epoch && beats(next, party);
 }
 
@@ -162,13 +176,13 @@ function wayIn(msg, fromId, joining) {
 
 const same = (a, b) => a.leader === b.leader && a.epoch === b.epoch && a.members.length === b.members.length && a.members.every((m, i) => m.id === b.members[i].id && m.name === b.members[i].name);
 
-export function applyRoster(party, msg, { fromId, selfId, joining = null, now, present = () => false, prior = null, ousted = null }) {
+export function applyRoster(party, msg, { fromId, selfId, joining = null, now, present = () => false, prior = null, ousted = null, kept = null }) {
   const ignored = { party, why: 'ignored' };
   if (!wellFormed(msg)) return ignored;
   const ours = Boolean(party) && party.id === msg.p;
   const was = new Map(ours ? party.members.map((m) => [m.id, m.since]) : []);
   const next = { id: msg.p, leader: msg.l, epoch: msg.e, members: msg.m.map(({ id, name }) => ({ id, name: named(name), since: was.get(id) ?? now })) };
-  if (ours ? !believed(party, next, { fromId, selfId, present, prior, ousted }) : !wayIn(msg, fromId, joining)) return ignored;
+  if (ours ? !believed(party, next, { fromId, selfId, present, prior, ousted, kept }) : !wayIn(msg, fromId, joining)) return ignored;
   // (a roster for a party you’re joining that hasn’t you in it yet crossed your yes)
   if (!isMember(next, selfId)) return ours ? { party: null, why: 'removed' } : ignored;
   if (!ours) return { party: next, why: 'joined' };
