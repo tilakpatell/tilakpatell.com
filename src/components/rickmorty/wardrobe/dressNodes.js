@@ -108,7 +108,8 @@ export function recolor(material, bodyId, colors = {}) {
 // instance, and its program's key.
 export function cloneShaded(material) {
   const m = material.clone();
-  for (const k of Object.keys(material)) if (typeof material[k] === 'function') m[k] = material[k];
+  // (and a hook's node, lib/three/hookNodes' mark for three's observer, which a clone leaves behind too)
+  for (const k of Object.keys(material)) if (typeof material[k] === 'function' || (material[k]?.isNode && m[k] === undefined)) m[k] = material[k];
   // (and the marks that say what's in them, which a copy leaves behind:
   // house and core would put theirs on it a second time, a fog hook its)
   for (const k of ['house', 'core', '__fog']) if (material.userData[k]) Object.defineProperty(m.userData, k, { value: material.userData[k], enumerable: false, configurable: true });

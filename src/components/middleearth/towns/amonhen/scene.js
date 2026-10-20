@@ -11,22 +11,23 @@
 // screenOf(kind, id), resize, dispose, lost, info }.
 
 import * as THREE from 'three';
-import { createStage, disposeTree } from '../../stage';
-import { createHouse } from '../../../../lib/three/house';
-import { dress, rolesFor } from '../../../../lib/three/core';
+import { createStage, disposeTree } from '../../nodes/stage';
+import { createHouse } from '../../../../lib/three/houseNodes';
+import { dress, rolesFor } from '../../../../lib/three/coreNodes';
 import { device } from '../../../../lib/device';
 import { fbm, makeNoise, smooth } from '../../../../lib/paint';
 import { pose } from '../../mapFigures';
-import { createParticles } from '../../kit';
-import { instances } from '../../shire/ground';
+import { createParticles } from '../../nodes/kit';
+import { instances } from '../../nodes/shire/ground';
 import { LOOKS, sit } from '../../shire/people';
-import { makeAtmosphere, makeSky } from '../../shire/sky';
-import { createFx } from '../../shire/fx';
-import { createGhosts } from '../ghosts';
-import { makeTerrain } from '../ground';
+import { makeAtmosphere, makeSky } from '../../nodes/shire/sky';
+import { createFx } from '../../nodes/shire/fx';
+import { createGhosts } from '../../nodes/towns/ghosts';
+import { makeTerrain } from '../../nodes/towns/ground';
 import { FIGURE, groundTown } from '../grounded';
 import { makeFolk } from '../bree/props';
 import { createAmonHenKit } from './props';
+import { lakeMaterial } from '../../nodes/towns/amonhen/sceneShaders';
 import { stoneAt } from './rules';
 import { BOATS, CAMP, CAST, COLLIDERS, DECOY_RUN, KINGS, LAKE_Y, PILLARS, SEAT, SHORE_SPOT, SKIPPERS, SKIPPING, STAIR, STICKS, TREES, height, shoreX, toPath } from './layout';
 import { attend, castDo, castPlay, drawWatcher, releaseCast, tickCast, upgrade } from '../../cast3d';
@@ -133,39 +134,7 @@ export function createAmonHenWorld(canvas, { onLost } = {}) {
   // ── the ground and the lake ──
   const terrain = makeTerrain(renderer, { size: 340, seg: tier === 'high' ? 230 : tier === 'mid' ? 170 : 110, height, paint, blades: 0.12 });
   land.add(terrain);
-  const lakeMat = new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 } }]),
-    fog: true,
-    vertexShader: `
-      #include <fog_pars_vertex>
-      varying vec3 vWorld;
-      void main() {
-        vec4 wp = modelMatrix * vec4(position, 1.0);
-        vWorld = wp.xyz;
-        vec4 mvPosition = viewMatrix * wp;
-        gl_Position = projectionMatrix * mvPosition;
-        #include <fog_vertex>
-      }`,
-    fragmentShader: `
-      #include <fog_pars_fragment>
-      uniform float uTime;
-      uniform vec3 uSky, uDeep, uSun, uSunColor;
-      varying vec3 vWorld;
-      float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-      float noise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y); }
-      void main() {
-        vec2 p = vWorld.xz * 0.3;
-        float n = noise(p + uTime * 0.07) * 0.5 + noise(p * 2.4 - uTime * 0.1) * 0.5;
-        vec3 nrm = normalize(vec3((n - 0.5) * 0.28, 1.0, (noise(p * 1.7 + 3.0) - 0.5) * 0.28));
-        vec3 view = normalize(cameraPosition - vWorld);
-        float fres = pow(1.0 - max(dot(nrm, view), 0.0), 3.0);
-        vec3 col = mix(uDeep, uSky, 0.2 + fres * 0.75);
-        col += uSunColor * pow(max(dot(reflect(-normalize(uSun), nrm), view), 0.0), 120.0) * 2.0;
-        gl_FragColor = vec4(col, 1.0);
-        #include <fog_fragment>
-      }`,
-  });
-  for (const k of ['uSky', 'uDeep', 'uSun', 'uSunColor']) lakeMat.uniforms[k] = water.uniforms[k];
+  const lakeMat = lakeMaterial(water);
   const lake = new THREE.Mesh(new THREE.PlaneGeometry(900, 900).rotateX(-Math.PI / 2), lakeMat);
   lake.position.set(shoreX(0) + 440, LAKE_Y, 0);
   land.add(lake);

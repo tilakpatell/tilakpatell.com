@@ -16,7 +16,7 @@
 // keeps where the mask has none (a wood: under the canopy the mask's sun is
 // nought, and a floor lit by the sky's term alone goes black).
 
-import { groundWorld } from '../../../lib/three/groundwork';
+import { groundWorld } from '../../../lib/three/groundworkNodes';
 
 export const FIGURE = 0.84; // a figure's blob, across (the circles it replaces were 0.42 in radius)
 

@@ -1,13 +1,12 @@
-// Lothlórien’s shaders, for the chapter’s classic renderer: the basin’s
-// water, the falls’ sheets and the Mirror’s water. The builders reach them
-// through the kit (K.shaders), so the builders’ files carry no GLSL and a
-// ‘nodes’ world may build with them on its own materials.
+// Lothlórien’s shaders: the GLSL of ./props.js’s waters and the leaves’
+// glow, moved here whole so ./props.js holds none, and ../../nodes/towns/
+// lorien/propsShaders.js is their twin on the node renderer, the same
+// names. Each takes what it reads (the uniforms, the material it patches)
+// and returns what ./props.js uses.
 
 import * as THREE from 'three';
 
-// ── shaders ──
-
-export const NOISE_GLSL = `
+const NOISE_GLSL = `
   float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
   float vnoise(vec2 p) {
     vec2 i = floor(p);
@@ -234,4 +233,14 @@ export function mirrorWaterMaterial(uniforms) {
         #include <fog_fragment>
       }`,
   });
+}
+
+// Leaves (and the far trees, and the flowers) glow softly in their own
+// colours, so a crown is luminous gold rather than lit lumps.
+export function glowByColour(m) {
+  m.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance *= vColor.rgb;\n#endif');
+  };
+  m.customProgramCacheKey = () => 'lorien-glow';
+  return m;
 }

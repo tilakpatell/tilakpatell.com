@@ -26,9 +26,9 @@ import { envCanvas } from './helpers';
 import { king } from './kings';
 import { rauros } from './rauros';
 import { ruinStair, seat } from './seat';
-import { eyeMaterial, fallsMaterial, foamMaterial, mistMaterial, urukMaterial } from './shaders';
 import { fallenLeavesGeo } from './stone';
 import { horn, uruk } from './uruks';
+import { eyeMaterial, fallsMaterial, foamMaterial, mistMaterial, urukMaterial } from '../../nodes/towns/amonhen/propsShaders';
 
 // ── the kit ──
 

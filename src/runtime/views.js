@@ -188,6 +188,32 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
     putState(renderer, v.state);
     owner = v;
   };
+  // (the node renderer draws a frame for the canvas through one target of
+  // its own, then onto the canvas through a quad that tone-maps and encodes
+  // it, made again whenever the tone map or the colour space differs from
+  // the last: two views drawn straight to the canvas with two (the map's
+  // ACES, a town's Neutral) had it made, and compiled, each time they took
+  // turns, a second or more a turn in software. Each view keeps its own
+  // target, and with it its own quad: three's map of them, keyed by the
+  // canvas, holds the view's while it draws)
+  const targets = () => (renderer._frameBufferTargets instanceof Map ? renderer._frameBufferTargets : null);
+  const ownTarget = (v) => {
+    const fbts = targets();
+    if (!fbts) return undefined;
+    const key = renderer._canvasTarget;
+    const shared = fbts.get(key);
+    if (v.fbt) fbts.set(key, v.fbt);
+    else fbts.delete(key);
+    return shared;
+  };
+  const giveBack = (v, shared) => {
+    const fbts = targets();
+    if (!fbts) return;
+    const key = renderer._canvasTarget;
+    v.fbt = fbts.get(key) ?? null;
+    if (shared) fbts.set(key, shared);
+    else fbts.delete(key);
+  };
   // `v`'s corner of the buffer, with the renderer set for it
   const within = (v, fn) => {
     enter(v);
@@ -198,15 +224,23 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
     // from another view's frame, under a filter the page puts on it)
     full();
     renderer.setClearColor?.(0x000000, 0);
+    // (and cleared with no tone map, in the working colour space: on the
+    // node renderer a clear with either goes through its target for the
+    // canvas and the quad that tone-maps it, made again whenever the tone
+    // map differs from the last view's)
+    renderer.toneMapping = 0; // (three's NoToneMapping)
+    renderer.outputColorSpace = 'srgb-linear'; // (three's LinearSRGBColorSpace, its working space)
     renderer.clear?.(true, true, true);
     putState(renderer, mine);
     const [bw, bh] = v.buffer;
     renderer.setViewport?.(0, 0, bw / ratioOf(), bh / ratioOf());
     renderer.getDrawingBufferSize = (target) => target.set(bw, bh);
+    const shared = ownTarget(v);
     try {
       fn();
       if (v.opaque) solid();
     } finally {
+      giveBack(v, shared);
       renderer.getDrawingBufferSize = realSize;
       full();
     }
@@ -453,6 +487,8 @@ export function createViews(gfx, { observe = observeOnScreen } = {}) {
         dispose() {
           stopObserving();
           stopAttrs();
+          v.fbt?.dispose?.();
+          v.fbt = null;
           if (views.get(el) === v) views.delete(el);
           if (owner === v) owner = null;
           if (lead === v) {

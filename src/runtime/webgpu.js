@@ -27,6 +27,7 @@ import * as THREE from 'three';
 import { settle } from '../lib/settle';
 import { BLOOM } from '../lib/three/bloom';
 import { NODE_PASSES, temporal } from '../lib/three/light/post';
+import { watchTextures } from './textureWatch';
 import { setMipState } from '../lib/three/mipBias';
 import { guardPipelines } from '../lib/three/pipelineGuard';
 import { makeGfx } from './gfx';
@@ -97,6 +98,10 @@ export function buildLitPost(renderer, passes) {
     get passes() {
       return passes;
     },
+    // (the built chain's parts, its bloom for a world's own controls: none till ready)
+    get parts() {
+      return chain?.parts ?? null;
+    },
     render: () => chain?.pipeline.render(),
     setSize: () => {},
     compile: () => settle(ready, 4000),
@@ -136,7 +141,9 @@ export const isFallback = (adapter, device = null) => Boolean(device?.adapterInf
 // (hdr, lane H1: a half-float canvas, which three configures with the
 // 'extended' tone-mapping mode, so an HDR display shows the chain's range)
 export async function createWebGPU(canvas, { budget, onLost, alpha = true, toneMapping = THREE.NeutralToneMapping, exposure = 1, forceWebGL = false, reversedDepth = null, temporal = true, hdr = false, invalidate = null } = {}) {
-  const { WebGPURenderer } = await import('three/webgpu');
+  const { WebGPURenderer, NodeMaterialObserver } = await import('three/webgpu');
+  // (a texture a world slides along its surface is drawn where it is: ./textureWatch.js)
+  watchTextures(NodeMaterialObserver);
   // A device is made with its adapter's own limits where the defaults are
   // tighter than the chip: a post chain's five colour targets cost more a
   // sample than the default 32 bytes on some chains, and a chip that can
