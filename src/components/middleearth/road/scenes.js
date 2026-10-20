@@ -87,6 +87,8 @@ const SCENES = {
   lorien: () => import('./stages/lorien/index.js'),
   anduin: () => import('./stages/anduin/index.js'),
   marshes: () => import('./stages/marshes/index.js'),
+  ithilien: () => import('./stages/ithilien/index.js'),
+  'cirith-ungol': () => import('./stages/cirith-ungol/index.js'),
 };
 
 export function createScenes({ rt, road, lands, weather, ambience, tier, sky = null }) {
