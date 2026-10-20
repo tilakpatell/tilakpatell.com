@@ -47,6 +47,10 @@ const RINGS = { near: [4, 60], cover: [4, 160], mid: [20, 320], trees: [60, 560]
 const FLAT = 0.86; // (the ground's normal at least this upright: never on a cliff)
 const ABOVE = 0.4; // (metres over the water, where the world has some)
 const CLEAR = 25; // (metres a tree keeps from a place's flat)
+// The band round a place: 60 m wide past its flat, its cover one an 70 m²
+// and its mid one an 500 m², for the first four places past 150 m of the
+// landing (nearer, the landing's own rings reach it)
+const PLACE = { band: 60, cover: 70, mid: 500, skip: 150, most: 4 };
 
 // The kit's sizes, by family. Quaternius made its plants big (a flower
 // two metres tall, a clover a metre): scaled here so a grass clump comes to
@@ -247,7 +251,8 @@ export const BIOMES = {
     ],
     trees: [],
     count: { cover: 1800 },
-    tint: { Leaves: { recolour: '#8a7c4e' }, Grass: { recolour: '#b4a070' } },
+    // (the scrub bush is the kit's long bush, its leaves the broad trees')
+    tint: { Leaves: { recolour: '#8a7c4e' }, Leaves_NormalTree: { recolour: '#7a6e44' }, Grass: { recolour: '#b4a070' }, PathRocks: { recolour: '#9a8a6a' } },
   },
   // Mustafar's and Sullust's: stones near black, dark boulders, no plants
   ash: {
@@ -262,7 +267,7 @@ export const BIOMES = {
     mid: [['Rock_Medium_4', 1]],
     trees: [],
     count: { cover: 900 },
-    tint: { Rocks: { recolour: '#2c2926' } },
+    tint: { Rocks: { recolour: '#2c2926' }, PathRocks: { recolour: '#2c2926' } },
   },
   // Hoth's and Mygeeto's: nothing green, outcrops of blue-grey rock
   // (no pebbles: on snow they read as dirt, and the design lays none where
@@ -302,6 +307,18 @@ export function floraRows(site) {
   lay('cover', biome.near ?? [], count.cover * near, RINGS.near, () => ({ solid: false, shadow: false }));
   lay('cover', biome.cover, count.cover * (1 - near), RINGS.cover, () => ({ solid: false, shadow: false }));
   lay('mid', biome.mid, count.mid, RINGS.mid, () => ({ solid: true }));
+  // (and round each place out past the landing's rings, where its landmark
+  // stands: a band of the cover and the mid outside its flat, which the
+  // scene keeps clear, so a building stands in its world's ground and not
+  // on a bare patch)
+  for (const p of (site.places ?? []).filter((p) => Math.hypot(...p.at) > PLACE.skip).slice(0, PLACE.most)) {
+    const r0 = p.flat?.r ?? p.r * 0.6;
+    const within = [r0, r0 + PLACE.band];
+    const area = Math.PI * (within[1] ** 2 - r0 ** 2);
+    const at = { at: p.at };
+    lay('cover', biome.cover, area / PLACE.cover, within, () => ({ ...at, solid: false, shadow: false }));
+    lay('mid', biome.mid, area / PLACE.mid, within, () => ({ ...at, solid: true }));
+  }
   if (site.flora.trees !== false) {
     const within = [RINGS.trees[0], Math.min(RINGS.trees[1], reach)];
     lay('trees', biome.trees, count.trees, within, (name) => {
@@ -317,6 +334,9 @@ export function floraTint(site) {
   const biome = biomeOf(site);
   if (!biome) return null;
   const tint = { ...(biome.tint ?? {}), ...(site.flora.tint ?? {}) };
+  // (the pebbles, the kit's path stones, take a world's rock colour unless
+  // it gives them their own)
+  if (site.flora.tint?.Rocks && !site.flora.tint.PathRocks) tint.PathRocks = site.flora.tint.Rocks;
   return Object.keys(tint).length ? tint : null;
 }
 
