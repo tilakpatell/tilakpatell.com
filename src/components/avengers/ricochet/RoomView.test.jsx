@@ -44,3 +44,15 @@ describe('a room from above', () => {
     expect(fly).not.toMatch(/data-disc[^>]*visibility="hidden"/);
   });
 });
+
+describe('the 2D view’s cards over the room', () => {
+  it('sit on glass dense enough to read over the room’s bright walls, the 3D game’s own left as it is', async () => {
+    const { readFileSync } = await import('node:fs');
+    const css = readFileSync(new URL('./ricochet.css', import.meta.url), 'utf8');
+    const rule = css.match(/\.rf > \.hq-overlay \{ background: ([^;]+); \}/);
+    expect(rule, 'a .rf > .hq-overlay background').not.toBe(null);
+    const alphas = [...rule[1].matchAll(/rgba\([^)]*,\s*([\d.]+)\)/g)].map((m) => Number(m[1]));
+    expect(alphas.length).toBeGreaterThan(0);
+    expect(Math.min(...alphas)).toBeGreaterThanOrEqual(0.78);
+  });
+});

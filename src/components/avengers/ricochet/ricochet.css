@@ -33,6 +33,7 @@
 /* Ricochet in 2D (ricochet/Flat.jsx): the room from above. The colours are the
    3D room's materials (scene.js); stroke widths are in metres, the SVG's units. */
 .rf { --rf-floor: #1b2230; --rf-steel: #c9d0d9; --rf-mat: #2f62c0; --rf-glass: #bfe6ff; --rf-door: #d9a21c; --rf-bot: #e9ebee; --rf-armor: #2a2f36; --rf-hostage: #e0661c; --rf-down: #5a6270; display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; gap: 0.5rem; height: min(78vh, 760px); /* the 3D screen's own cap, so the room's row has a height to share */ max-height: none; padding: 0.75rem; aspect-ratio: auto; color: #fff; }
+.rf > .hq-overlay { background: radial-gradient(120% 90% at 50% 40%, rgba(4, 7, 12, 0.8), rgba(4, 7, 12, 0.92)); } /* (the room’s steel and bots are bright: the menu, the pause and the card read on denser glass than over the 3D) */
 .rf-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.25rem 1rem; font: 600 0.78rem/1.3 var(--font-sans); font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, 0.86); }
 .rf-stage { min-height: 0; display: grid; }
 .rf-room { width: 100%; height: 100%; min-height: 0; }
