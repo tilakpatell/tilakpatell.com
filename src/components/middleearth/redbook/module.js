@@ -420,7 +420,7 @@ export default {
         // the drawing
         lay();
         for (const sp of new Set([book.shown.left, book.shown.right])) sp?.tick(dt, ring.vision);
-        study.tick(dt, { dread: ring.dread, vision: ring.vision, camera, view });
+        study.tick(dt, { dread: ring.dread, vision: ring.vision, camera, view, reduced });
         stoneArt.tick(dt, { held: stone.held, eye: stone.eye, seen: stone.seen, look: eyeLook, camera, reduced });
         const carry = ringHeld ? camera.localToWorld(inHand.set(0.06, 0.02, -0.17)) : ringFire > 0 ? HEARTH : null;
         ringArt.tick(dt, { hover: ringHover, worn: ring.worn, held: ringHeld, heat: ringFire > 0 ? 1 : ringHeld ? 0.35 : ringHover ? 0.08 : 0, camera, at: carry });
@@ -479,6 +479,9 @@ export default {
         const was = held ?? [];
         held = null;
         for (const [type, data] of was) rt.events?.emit?.(type, data);
+        // (a world made again, after the picture was lost, tells the page where it is)
+        tell('view', { view });
+        tell('stone', { held: wantStone, eye: stone.eye, seen: stone.seen });
         ringState();
       },
 

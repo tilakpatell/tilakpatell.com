@@ -16,7 +16,8 @@
 // hold the room’s lights in them (`env`); on the low tier, colour alone.
 //
 //   createStudy({ mats, tier, size, rt, env }) → { group, things (meshes to pick, userData.room),
-//     outside, act(id, index) → what it told, tick(dt, { dread, vision, camera }), lower(level), dispose() }
+//     outside, act(id, index) → what it told, tick(dt, { dread, vision, camera, view, reduced }), lower(level), dispose() }
+// (`reduced`: Sting is drawn or back at once, and the lantern does not swing)
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
@@ -487,7 +488,7 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null, env = nu
       } else if (glint[id] != null) glint[id] = 1;
       return [...told];
     },
-    tick(dt, { dread = 0, vision = 0, camera = null, view = 'book' } = {}) {
+    tick(dt, { dread = 0, vision = 0, camera = null, view = 'book', reduced = false } = {}) {
       t += dt;
       rainMat.opacity += ((view === 'window' ? 0.07 : 0.45) - rainMat.opacity) * Math.min(1, dt * 3);
       rainMap.offset.y = (rainMap.offset.y + dt * 0.12) % 1;
@@ -542,7 +543,7 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null, env = nu
         if (camera) r.m.lookAt(camPos);
       }
       // Sting: off its peg and shining when drawn, or knowing the Eye
-      drawn += ((stingOut ? 1 : 0) - drawn) * Math.min(1, dt * 4);
+      drawn = reduced ? (stingOut ? 1 : 0) : drawn + ((stingOut ? 1 : 0) - drawn) * Math.min(1, dt * 4);
       const e = drawn * drawn * (3 - 2 * drawn);
       sting.position.set(lerp(PEG.at[0], DRAWN.at[0], e), lerp(PEG.at[1], DRAWN.at[1], e), lerp(PEG.at[2], DRAWN.at[2], e));
       sting.rotation.set(0, lerp(PEG.turn, DRAWN.turn, e), lerp(PEG.tilt, DRAWN.tilt, e));
@@ -551,7 +552,7 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null, env = nu
       stingGlow.material.opacity = shine * 0.22;
       stingLight.intensity = shine * 1.5 * (1 - vision * 0.3);
       // the lantern swinging, settling, its flame and its light with it
-      swing = Math.max(0, swing - dt * 0.3);
+      swing = reduced ? 0 : Math.max(0, swing - dt * 0.3);
       lantern.rotation.z = Math.sin(t * 3.2) * 0.25 * swing;
       lantern.rotation.x = Math.sin(t * 2.7) * 0.08 * swing;
       const lamp = 0.9 + 0.06 * Math.sin(t * 6) + 0.04 * Math.sin(t * 15.7);

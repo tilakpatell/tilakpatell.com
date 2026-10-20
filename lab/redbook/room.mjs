@@ -1,6 +1,6 @@
 // The study’s light and surfaces, shot from the chair (the look view): the
 // room, Sting on its peg and drawn, the mithril coat touched, the hearth,
-// a candle out, the lantern swinging. With the draws of each, from the dev
+// a candle out, the lantern knocked. With the draws of each, from the dev
 // server (BASE, else localhost:5173) on the container’s software GL. Writes
 // to OUT (else lab/redbook/out), each name prefixed with TAG (else room).
 // `node lab/redbook/room.mjs`.
@@ -24,7 +24,7 @@ await ctx.addInitScript((q) => {
 const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
-page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+page.on('console', (m) => (m.type() === 'error' || m.type() === 'warning') && errors.push(m.text()));
 await page.goto(`${BASE}/?calibrate=off#/middle-earth`, { waitUntil: 'domcontentloaded', timeout: 180000 });
 await page.waitForFunction(() => window.__REDBOOK__ && window.__RUNTIME__?.status === 'on', null, { timeout: 240000 });
 

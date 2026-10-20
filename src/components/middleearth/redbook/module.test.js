@@ -76,6 +76,16 @@ describe('the Red Book, the world module', () => {
     world.dispose();
   });
 
+  it('tells the page where it is as it is attached, so a world made again is followed', () => {
+    const rt = fakeRt();
+    const world = redbook.create(rt, { reduced: true });
+    world.attached();
+    expect(rt.emitted.filter((e) => e.type === 'view').at(-1)).toMatchObject({ view: 'book' });
+    expect(rt.emitted.filter((e) => e.type === 'stone').at(-1)).toMatchObject({ held: false });
+    expect(rt.emitted.filter((e) => e.type === 'ring').at(-1)).toMatchObject({ worn: false, held: false });
+    world.dispose();
+  });
+
   it('puts the Ring down, and says so, when the stone is taken up', () => {
     const rt = fakeRt();
     const world = redbook.create(rt, { reduced: true });
