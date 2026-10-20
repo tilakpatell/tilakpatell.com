@@ -1,7 +1,7 @@
-// Amon Hen’s shaders, for the chapter’s classic renderer: the Uruks’ skin,
-// the falls’ water, foam and mist, the Eye’s fire. Only the kit makes them,
-// so the builders’ files carry no GLSL and a ‘nodes’ world may build with
-// them on its own materials.
+// Amon Hen’s shaders, moved out of ./props.js as they were (the Uruk-hai’s
+// war paint and iron; the falls of Rauros, their foam and mist; the Eye),
+// so ../../nodes/towns/amonhen/propsShaders.js can be their twin on the
+// node renderer.
 
 import * as THREE from 'three';
 
@@ -10,7 +10,13 @@ import * as THREE from 'three';
 // where it falls on the war-paint sheet, whose alpha lays white paint (the
 // White Hand) over the colour. Every part of every Uruk shares it.
 export function urukMaterial(paint, env) {
-  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0, envMap: env, envMapIntensity: 0.6 });
+  const m = new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    roughness: 0.8,
+    metalness: 0,
+    envMap: env,
+    envMapIntensity: 0.6,
+  });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uPaint = { value: paint };
     sh.vertexShader = sh.vertexShader
@@ -26,7 +32,7 @@ export function urukMaterial(paint, env) {
   return m;
 }
 
-export const NOISE_GLSL = `
+const NOISE_GLSL = `
   float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
   float vnoise(vec2 p) {
     vec2 i = floor(p), f = fract(p);

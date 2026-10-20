@@ -3,7 +3,7 @@
 // copies. itemMaker(kit.K) → { make({ k, s }), M (the materials), dispose }.
 
 import * as THREE from 'three';
-import { hot } from '../../../lib/stage3d';
+import { hot } from '../../../lib/three/stage3dNodes';
 import { B, ball, cyl, lathe } from '../shire/props';
 
 // ── the things in hand and on the counters ──

@@ -157,6 +157,20 @@ const grass = ([G, M, W]) => ({ scene, camera }) => {
   g.update({ x: 0.3, z: 0.1 });
   scene.add(g.mesh);
 };
+// the Shire's grass: its wind, its patch, in the house look (Middle-earth's towns)
+const shireGrass = ([G, M, W, H]) => ({ scene, camera, sun }) => {
+  camera.position.set(0, 1.6, 5);
+  camera.lookAt(0, 0.2, 0);
+  const groundMap = M.createGroundMap({ area: { x0: -20, z0: -20, w: 40, d: 40 }, size: 64, paint: (x, z, out) => ((out[0] = 0.2), (out[1] = 0.45 + 0.01 * x), (out[2] = 0.1), z > 3 ? 0 : 1), height: (x) => 0.05 * x });
+  const wind = W.createWind({ strength: 0.45, angle: 0.6 * Math.PI });
+  for (let i = 0; i < 40; i++) wind.update(0.016);
+  const g = G.createGrass({ ground: groundMap, wind, side: 120, size: 12 });
+  g.update({ x: 0.3, z: 0.1 });
+  scene.add(g.mesh);
+  const h = H.createHouse();
+  h.adopt(scene);
+  h.light({ sun });
+};
 const dust = (D) => ({ scene }) => {
   const r = Math.random;
   let k = 0;
@@ -294,6 +308,7 @@ const cases = {
   'house': pair(house, [HO, MO], [HN, MN]),
   'ink': pair(ink, IO, IN),
   'grass': pair(grass, [RO, MO, WO], [RN, MN, WN]),
+  'grass:shire': pair(shireGrass, [RO, MO, WO, HO], [RN, MN, WN, HN]),
   'dust': pair(dust, DO, DN),
   'recolour': pair(recolour, KO, KN),
   'matcap': pair(matcap, XO, XN),
