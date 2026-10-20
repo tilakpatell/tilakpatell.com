@@ -90,6 +90,17 @@ describe('createRoam', () => {
     expect(roam.stats.swap).toBeGreaterThanOrEqual(0);
   });
 
+  it('makes what is built from the new grid over frames, and hands it over as the ground goes in', () => {
+    let steps = 0;
+    const handed = [];
+    const build = (g) => ({ step: () => ++steps >= 4, of: g });
+    const { roam } = roamOf({ build, onMove: (g, made) => handed.push([g, made]) });
+    settle(roam, MOVE + 30, 10);
+    expect(steps).toBe(4);
+    expect(handed).toHaveLength(1);
+    expect(handed[0][1].of).toBe(handed[0][0]);
+  });
+
   it('goes on as far as you go', () => {
     const { roam, moved } = roamOf();
     for (const x of [500, 1000, 1500, 20000]) settle(roam, x, -x);

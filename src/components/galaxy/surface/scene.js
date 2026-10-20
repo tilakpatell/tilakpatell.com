@@ -76,7 +76,7 @@ import { SURFACE_MODELS } from './catalog';
 import { HALF, heightGrid, makeHeight } from './terrain';
 import { createRoam, roamGround, roamOn } from './roam';
 import { regionsAround, waysideAt } from './wayside';
-import { createMarks, groundGeometry, groundMaterial, groundMesh } from './ground';
+import { createMarks, groundBuild, groundGeometry, groundMaterial, groundMesh } from './ground';
 import { lavaFilm } from './lavaFilm';
 import { floatPose } from './floats';
 import { adoptLater, exposureOf, groundPieces, lookOf } from './look';
@@ -546,14 +546,16 @@ export async function create(canvas, ctx) {
         grid,
         gridOpts: amounts.grid,
         map: groundMap,
+        // (the mesh made over the move's frames, not on the frame it goes in)
+        build: groundBuild,
         onGrid(next) {
           paintGrid = next;
         },
-        onMove(next) {
+        onMove(next, made) {
           grid = next;
           world.heightAt = next.heightAt;
           const was = ground.geometry;
-          ground.geometry = groundGeometry(next);
+          ground.geometry = made?.geometry ?? groundGeometry(next);
           was.dispose();
           gmat.uniforms.uCentre?.value.set(...next.centre);
           marks.moveTo(...next.centre);
@@ -4285,7 +4287,7 @@ export async function create(canvas, ctx) {
     roamNow() {
       if (!import.meta.env.DEV || !roam) return null;
       const p = me().st;
-      for (let i = 0; i < 3 && !roam.update(p.x, p.z, Infinity); i++);
+      for (let i = 0; i < 4 && !roam.update(p.x, p.z, Infinity); i++);
       p.y = groundAt(world, p.x, p.z, 1e4, 1e4);
       living?.fill(p.x, p.z);
       ctx.invalidate();
