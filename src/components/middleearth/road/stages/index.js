@@ -348,7 +348,28 @@ export const STAGES = [
       { at: 165, mode: 'eagle' },
     ],
   },
-  { id: 'minas-tirith', name: 'Minas Tirith', date: '1 May 3019', length: 160, mode: 'walk', place: 'minas-tirith' },
+  {
+    id: 'minas-tirith',
+    name: 'Minas Tirith',
+    date: '1 May 3019',
+    length: 160,
+    mode: 'walk',
+    place: 'minas-tirith',
+    // the Pelennor levelled under the city and its causeway (the city stands on
+    // its own levels, stages/minas-tirith/place.js), and Mindolluin rising behind it
+    ground: {
+      flats: [{ at: [0, 150], r: 150, edge: 40, h: 0 }],
+      spec: {
+        seed: 25,
+        relief: [
+          { type: 'swell', scale: 240, height: 3 },
+          { type: 'hills', scale: 90, height: 3, gain: 0.42, octaves: 3 },
+          { type: 'island', at: [0, 400], r: 220, height: 300, core: 0.2, ragged: 0.25 },
+          { type: 'mountains', scale: 180, height: 60, from: 360, to: 500 },
+        ],
+      },
+    },
+  },
   { id: 'havens', name: 'The Grey Havens', date: '29 September 3021', length: 160, mode: 'walk', place: 'grey-havens' },
 ];
 

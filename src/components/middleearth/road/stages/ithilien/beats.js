@@ -19,9 +19,9 @@ export const BEATS = [
   // inside Henneth Annûn, looking out through its falling water at the sunset
   { id: 'henneth', kind: 'henneth', at: 66, hold: 8, rig: 'seat', reach: 10, params: { at: [-9, 2.2, 72], lookAt: [-9, 2.6, 60], above: true } },
   // the Cross-roads: the seated king, his head fallen and crowned with flowers
-  { id: 'crossroads', kind: 'crossroads', at: 88, hold: 5, rig: 'low', reach: 10 },
+  { id: 'crossroads', kind: 'crossroads', at: 88, hold: 5, rig: 'low', reach: 10, deed: { verb: 'press', label: 'Look up at the fallen king', at: 1, lines: ['ithilien-crown'] } },
   // the Morgul Vale: the tower lit, its beam, the Witch-king rising, the host out
-  { id: 'vale', kind: 'vale', at: 112, hold: 18, rig: 'crane', cut: 0, reach: 18, params: { seconds: 14, top: 9, lookAt: [44, 18, 150] } },
+  { id: 'vale', kind: 'vale', at: 112, hold: 18, rig: 'crane', cut: 0, reach: 18, params: { seconds: 14, top: 9, lookAt: [44, 18, 150] }, deed: { verb: 'hold', label: 'Keep hold of Frodo', seconds: 4, at: 1.5, lines: ['ithilien-vale'] } },
   // far off across the dark to the west, the beacons lit one by one
   { id: 'beacons', kind: 'beacons', at: 146, hold: 13, rig: 'wide', reach: 14, params: { at: [2, 2.4, 142], lookAt: [-90, 14, 150], above: true } },
 ];

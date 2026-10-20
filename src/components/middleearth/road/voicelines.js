@@ -55,6 +55,14 @@ export const LINES = {
   // (Cirith Ungol: Gollum in Frodo’s ear, then Sam alone over him)
   'cirith-gollum': { who: 'gollum', text: 'The fat one eats the bread, master. He wants it for himself. Send him away.' },
   'cirith-sam': sam('I won’t leave you to them, Mr Frodo. Not while I’ve breath in me.'),
+  // (the deeds’: said once the visitor has done them)
+  'marshes-faces': sam('Don’t look in the lights, Mr Frodo. Come away from the water.'),
+  'ithilien-crown': frodo('Look, Sam. Flowers round his head, a crown of them. The dark doesn’t win every time.'),
+  'ithilien-vale': sam('Not that way, Mr Frodo. Look at me, not at it.'),
+  'cirith-phial': sam('Galadriel’s light. Back to your hole, you, and stay there.'),
+  // (the White City: Pippin on the field, the King in the Court before the four bow)
+  'minas-pippin': { who: 'pippin', text: 'There it is. I rode up all seven of those streets on Shadowfax, in the dark, with Gandalf.' },
+  'minas-aragorn': aragorn('This city is yours as much as mine. Every one of you carried it here.'),
 };
 
 export const VOICELINES = Object.values(LINES);

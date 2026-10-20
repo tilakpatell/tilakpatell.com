@@ -19,7 +19,7 @@ export const BEATS = [
   { id: 'candles', kind: 'candles', at: 58, hold: 0, rig: 'side', reach: 18 },
   // the faces under the water; Frodo down at the edge, pulled back (looking
   // down past him into the pool: a low camera sees only the water’s skin)
-  { id: 'faces', kind: 'faces', at: 80, hold: 8, rig: 'seat', reach: 12, params: { at: [1.5, 1.7, 78], lookAt: [9, -0.6, 85], above: true } },
+  { id: 'faces', kind: 'faces', at: 80, hold: 8, rig: 'seat', reach: 12, params: { at: [1.5, 1.7, 78], lookAt: [9, -0.6, 85], above: true }, deed: { verb: 'hold', label: 'Pull Frodo back from the water', seconds: 3, at: 2.5, lines: ['marshes-faces'] } },
   // the fell beast’s shadow across the marsh, its scream
   { id: 'fellbeast', kind: 'fellbeast', at: 102, hold: 6, rig: 'wide', reach: 14, params: { at: [-6, 1.2, 96], lookAt: [8, 14, 120], above: true }, clip: 'nazgul' },
   // the Morannon: the Easterlings marching in under the trumpets, the doors; the other way

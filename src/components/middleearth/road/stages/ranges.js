@@ -126,11 +126,13 @@ export const RANGES = {
 export const rangesOf = (stage) => RANGES[stage] ?? [];
 
 // What stands against the mountains, seen from far off: the White City on
-// Mindolluin’s knee (the map’s model, until the stage’s own lane builds it
-// near), and Barad-dûr beyond Mount Doom with the Eye between its horns.
+// Mindolluin’s knee across the River from Ithilien, where the beacons are
+// lit (the map’s model; on its own stage the chapter’s city stands, near:
+// stages/minas-tirith), and Barad-dûr beyond Mount Doom with the Eye
+// between its horns.
 //   LANDMARKS[stage] = [{ kind: 'city' | 'tower', az, dist, height, model }]
 export const LANDMARKS = {
-  'minas-tirith': [{ kind: 'city', az: 2, dist: 2300, height: 300, model: '/models/sketchfab/minas-tirith.glb' }],
+  ithilien: [{ kind: 'city', az: -78, dist: 3200, height: 220, model: '/models/sketchfab/minas-tirith.glb' }],
   gorgoroth: [{ kind: 'tower', az: 30, dist: 3300, height: 560 }],
 };
 export const landmarksOf = (stage) => LANDMARKS[stage] ?? [];

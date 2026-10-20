@@ -16,7 +16,7 @@ export const BEATS = [
   // into the tunnel: the webs, the Phial lit
   { id: 'tunnel', kind: 'tunnel', at: 62, hold: 0, rig: 'follow', reach: 14 },
   // Shelob out of the side passage; the sting; Sam with the light, and she goes
-  { id: 'shelob', kind: 'shelob', at: 82, hold: 16, rig: 'low', cut: 0, reach: 12 },
+  { id: 'shelob', kind: 'shelob', at: 82, hold: 16, rig: 'low', cut: 0, reach: 12, deed: { verb: 'press', label: 'Raise the Phial', at: 7.5, lines: ['cirith-phial'] } },
   // the orcs’ torches round Frodo where he fell; Sam alone in the dark, looking back
   { id: 'taken', kind: 'taken', at: 100, hold: 8, rig: 'seat', reach: 10, params: { at: [-2.5, 1.5, 90], lookAt: [0.6, 0.4, 83], above: true }, lines: ['cirith-sam'] },
   // up the tower’s stair; Frodo found, sitting up

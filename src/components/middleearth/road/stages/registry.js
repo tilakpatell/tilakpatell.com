@@ -30,8 +30,10 @@ import { LORE as ithilienLore } from './ithilien/lore';
 import { BEATS as cirithUngol } from './cirith-ungol/beats';
 import { LORE as cirithUngolLore } from './cirith-ungol/lore';
 import { BEATS as gorgoroth } from './gorgoroth/beats';
+import { BEATS as minasTirith } from './minas-tirith/beats';
+import { LORE as minasTirithLore } from './minas-tirith/lore';
 import { LORE as gorgorothLore } from './gorgoroth/lore';
 
-export const BEATS_OF = { hobbiton, 'shire-edge': shireEdge, bree, weathertop, ford, rivendell, caradhras, moria, lorien, anduin, marshes, ithilien, 'cirith-ungol': cirithUngol, gorgoroth };
-export const LORE_OF = { hobbiton: hobbitonLore, 'shire-edge': shireEdgeLore, bree: breeLore, weathertop: weathertopLore, ford: fordLore, rivendell: rivendellLore, caradhras: caradhrasLore, moria: moriaLore, lorien: lorienLore, anduin: anduinLore, marshes: marshesLore, ithilien: ithilienLore, 'cirith-ungol': cirithUngolLore, gorgoroth: gorgorothLore };
+export const BEATS_OF = { hobbiton, 'shire-edge': shireEdge, bree, weathertop, ford, rivendell, caradhras, moria, lorien, anduin, marshes, ithilien, 'cirith-ungol': cirithUngol, gorgoroth, 'minas-tirith': minasTirith };
+export const LORE_OF = { hobbiton: hobbitonLore, 'shire-edge': shireEdgeLore, bree: breeLore, weathertop: weathertopLore, ford: fordLore, rivendell: rivendellLore, caradhras: caradhrasLore, moria: moriaLore, lorien: lorienLore, anduin: anduinLore, marshes: marshesLore, ithilien: ithilienLore, 'cirith-ungol': cirithUngolLore, gorgoroth: gorgorothLore, 'minas-tirith': minasTirithLore };
 export const HOLDS_UNWRITTEN = 30; // s a stage, until its beats say
