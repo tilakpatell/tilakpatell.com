@@ -32,6 +32,7 @@ describe('the worlds’ conversations, said in their speakers’ voices', () => 
     const { voiceOf } = await import('./voiced');
     expect(voiceOf('gandalf')).toBe('gandalf');
     expect(voiceOf('strider')).toBe('aragorn');
+    expect(voiceOf('gandalfwhite')).toBe('gandalf');
     expect(voiceOf('councilb')).toBe('rick');
     expect(voiceOf('evilmorty')).toBe('morty');
     expect(voiceOf('narrator')).toBeNull();

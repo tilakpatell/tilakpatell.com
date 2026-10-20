@@ -1,10 +1,11 @@
 {
- "why": "Speakers the site gives lines to with no voice made yet (no folder under public/audio/voiced/), found when the asset tests were first run (2026-10-07): each needs a reference (scripts/voices/README.md). The list only shrinks.",
+ "why": "Speakers the site gives lines to with no voice made yet (no folder under public/audio/voiced/), found when the asset tests were first run (2026-10-07): each needs a reference (scripts/voices/README.md). The list only shrinks, but for a speaker a world gains before the owner's desktop can make their voice: Faramir, the Road's Ithilien (2026-10-20).",
  "speakers": [
   "bibfortuna",
   "bossnass",
   "camie",
   "erin",
+  "faramir",
   "gungan",
   "imperialofficer",
   "meredith",
