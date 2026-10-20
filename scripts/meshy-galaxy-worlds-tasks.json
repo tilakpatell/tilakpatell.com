@@ -23,5 +23,90 @@
   },
   "fondorgantry": {
     "image": "01a157f3-2b4f-7363-8943-5962b078fc77"
+  },
+  "lawquanefarm": {
+    "lift": [
+      "01a157f4-4005-711a-b99c-9b6d6aa89916"
+    ]
+  },
+  "catobridge": {
+    "lift": [
+      "01a157f4-42e8-7359-8cf0-ef6095529c4c"
+    ]
+  },
+  "massabase": {
+    "lift": [
+      "01a157f4-464c-7087-a02c-18750d4e2b34"
+    ]
+  },
+  "dugpalace": {
+    "lift": [
+      "01a157f4-4a2f-7292-8d2b-2561661f76c4"
+    ]
+  },
+  "kybertemple": {
+    "lift": [
+      "01a157f4-4d35-7236-aec9-b81373174557"
+    ]
+  },
+  "eadulab": {
+    "lift": [
+      "01a157f4-4f0d-7535-9876-8f1b9b798117"
+    ]
+  },
+  "ersohome": {
+    "lift": [
+      "01a157f4-50cf-7479-b1e4-c5df48fc2e93"
+    ]
+  },
+  "kafrenering": {
+    "lift": [
+      "01a157f4-5315-77c0-9cf9-3b6c845c0486"
+    ]
+  },
+  "mantellpalace": {
+    "lift": [
+      "01a157f4-555e-71da-addb-cff490b402b9"
+    ]
+  },
+  "seeingstone": {
+    "lift": [
+      "01a157f4-5724-7051-95cc-7f1ba2d24034"
+    ]
+  },
+  "niktocompound": {
+    "lift": [
+      "01a157f4-591a-752e-a9ac-10e7338a3d2c"
+    ]
+  },
+  "morakrefinery": {
+    "lift": [
+      "01a157f4-5aaf-73b5-9dfa-87f1fa2381e4"
+    ]
+  },
+  "seatosmonolith": {
+    "lift": [
+      "01a157f4-5cd9-707f-86c3-6efb37b95537"
+    ]
+  },
+  "felwatertower": {
+    "lift": [
+      "01a157f4-5e55-74f8-a934-434dd8058f03"
+    ]
+  },
+  "sullustfactory": {
+    "lift": [
+      "01a157f4-5fb5-7257-8526-ce91b76bc541"
+    ]
+  },
+  "kestrotower": {
+    "lift": [
+      "01a157f4-622a-7444-a2e8-d4641695863a"
+    ]
+  },
+  "coronettower": {
+    "lift": [
+      "01a157f4-63b1-7251-8c42-a37053a5f06d"
+    ]
   }
 }
