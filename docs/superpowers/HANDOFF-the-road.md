@@ -86,6 +86,15 @@ A session takes the next lane whose state allows it, runs until its budget, merg
 - **Trees and beasts from tilakverse-assets**: the older Stylized Nature Pack’s maples, birches and ten dead trees are the kit `public/kit/nature/` (a row’s `pack: 'nature'` in `stages/tables.js`); the farm pack’s cows, pigs, sheep and horses graze by `stages/life.js`’s `herds` (`herds.js`).
 - **Mounds grow grass**: a stage’s `ground.mounds` (`stages/index.js`; the Hill at Hobbiton) are domes the blades stand on too, from a map of their own; its props read the same row, so the turf and the grass agree.
 
+## Doing, not watching (for every lane after)
+
+The owner found the Road made no sense, let you pass through things and gave you nothing to do. What a stage written from here on must keep:
+
+- **A deed at its moment**: a beat may carry `deed: { verb: 'press' | 'hold' | 'rhythm' | 'choose', label, at?, seconds?, beats?, choices?, lines?, clip? }` (`deeds.js`). The walk stops at the beat (the clock's `gate`), the beat plays up to `at` seconds and holds there (`stepBeats`' `waits`), the page shows the card; done, the deed's own `lines` and `clip` play (move a beat's line there when it should follow the act) and the beat's hold runs on from `at`. Put `at` just before the scene's turn (the Doors' `RISE`, the bridge's staff at 11 s). Letting the road walk, the company does it after 20 s; reduced motion makes every deed one press. Each stage after the Anduin wants one or two: the lights in the Marshes not followed, the Phial raised, Sam carrying Frodo, the Ring cast, the bow at the crowning, the ship boarded.
+- **Lines to talk with**: `talk.js`'s `CHATTER[stage]`, three or more a stage said by someone walking there (`talk.test.js` holds it for every stage), and `stages/tales.js`'s sentence for the title card. The site's own words; a film line only where a clip carries it. They show as subtitles; `scripts/voices` can voice them later.
+- **Solid**: what a stage builds is solid if it's a merged static (`mergeStatics` marks it `userData.solid`) or opaque instanced dressing; anything else a builder wants solid sets `userData.solid` itself, and anything a scene moves (a gate, a raft, a boat) must not be merged or marked. Water, light, crop and spray are never solid (`scenes.js`'s `SOFT`). The walkers step round what's in their lane and the camera stops short of it (`clear.js`); keep the lane itself clear (the walkers' x is ±0.45 m) and a placed shot out of walls.
+- **Frame the lead off-centre**: the follow and the low shot stand off the lead's left shoulder; a placed shot that looks past a figure should keep it at a third, not in the middle.
+
 ## Checks
 
 Before a change is done (CLAUDE.md): `npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build`; `git checkout public/github.json` after a build. The browser in the container draws in software (SwiftShader) with no WebGPU device: the `webgpu` rows are the owner’s laptop and desktop; leave them empty and say so, never estimate. `?gpu=webgl` forces the node renderer over WebGL 2 (`nodes-webgl`), which is what the container measures.

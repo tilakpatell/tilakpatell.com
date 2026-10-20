@@ -17,6 +17,7 @@ export const FOV = { walk: 50, seat: 38, eagle: 62 };
 const CLEAR = 0.4; // m over the ground at least
 const EYE = 1; // m: the height on a walker the rigs look at
 const LOW_TILT = (20 * Math.PI) / 180;
+const LOW_SIDE = 0.9; // m to the lead's left the low shot stands
 const CRANE_TOP = 30;
 // the follow: over the lead's left shoulder, so the lead stands to one side
 // of the frame (the right of it: the camera's on their left) and the road
@@ -50,7 +51,8 @@ function framing({ rig, params = {}, lead, tangent, t = 0 }) {
     case 'side':
       return { at: add(add(lead.at, right, 4), [0, 1.4, 0]), lookAt: eye };
     case 'low': {
-      const at = add(add(lead.at, f, -2), [0, 0.5, 0]);
+      // (beside the lead's left knee, not behind its head: what it looks up at is in the frame)
+      const at = add(add(add(lead.at, f, -2), [-right[0], 0, -right[2]], LOW_SIDE), [0, 0.5, 0]);
       return { at, lookAt: add(at, [f[0] * Math.cos(LOW_TILT), Math.sin(LOW_TILT), f[2] * Math.cos(LOW_TILT)], 10) };
     }
     case 'crane': {

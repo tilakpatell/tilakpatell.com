@@ -85,15 +85,16 @@ export default function TheRoad() {
     const t = setTimeout(() => setTitle(null), title.first ? FIRST_FOR : TITLE_FOR);
     return () => clearTimeout(t);
   }, [title]);
-  // each line its time to read, then the next
+  // each line its time to read, then the next (none read while a stage's
+  // card is up: they wait, so the two never sit over each other)
   useEffect(() => {
-    if (!said) return undefined;
+    if (!said || title) return undefined;
     const t = setTimeout(() => {
       saying.current = lines.current.shift() ?? null;
       setSaid(saying.current);
     }, saidFor(said.text));
     return () => clearTimeout(t);
-  }, [said]);
+  }, [said, title]);
   useEffect(() => {
     if (!lore) return undefined;
     lastLore.current = lore;
@@ -171,7 +172,7 @@ export default function TheRoad() {
         >
           {title && !offer && <TitleCard key={title.key} name={title.name} date={title.date} tale={TALES[title.id]} first={title.first} />}
           {!offer && <DeedCard deed={deed} touch={touch} api={api} />}
-          {!offer && said && <Said key={said.key} line={{ name: nameOf(said.who, stage.id), text: said.text }} />}
+          {!offer && !title && said && <Said key={said.key} line={{ name: nameOf(said.who, stage.id), text: said.text }} />}
           {lore && <LoreCard card={lore} />}
           {offer && (
             <ResumeCard

@@ -35,9 +35,9 @@ describe('the director: the film’s grammar as camera rigs', () => {
     expect(near(p.lookAt, [0, 1, 0])).toBe(true);
   });
 
-  it('low: 0.5 m up, 2 m back, looking up 20°, the depth of field on', () => {
+  it('low: 0.5 m up, 2 m back beside the lead’s left knee, looking up 20°, the depth of field on', () => {
     const p = pose(base({ rig: 'low' }));
-    expect(near(p.at, [0, 0.5, -2])).toBe(true);
+    expect(near(p.at, [0.9, 0.5, -2])).toBe(true);
     const d = p.lookAt.map((v, i) => v - p.at[i]);
     expect(Math.atan2(d[1], Math.hypot(d[0], d[2]))).toBeCloseTo((20 * Math.PI) / 180, 6);
     expect(p.dof).toBe(true);
