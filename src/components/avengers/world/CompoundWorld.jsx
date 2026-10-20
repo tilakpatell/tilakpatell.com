@@ -22,6 +22,8 @@ import LoadingVeil from '../../worlds/LoadingVeil';
 import { useStage, useStageFrame } from '../hq/useStage';
 import compound from './module';
 import { HQ_HOME, backTarget, hqState, linkOf, placeOf } from './links';
+import { doorNear, warmDoor } from './warm';
+import { returnVeil, welcomeFor } from './welcome';
 
 // The Avengers compound, the world: walk about the compound as Spider-Man,
 // and go into the buildings to play their games. Anyone else online here
@@ -99,6 +101,22 @@ export default function CompoundWorld({ onPortal }) {
   useEffect(() => {
     if (!inside) setHeist(readHeist());
   }, [inside]);
+  // the heist as a building was entered (a Next from game to game keeps the
+  // first), to welcome you back with what's next when a stone was won there
+  const entered = useRef(null);
+  const welcomes = useRef(0);
+  const [welcome, setWelcome] = useState(null);
+  const clearWelcome = useCallback(() => setWelcome(null), []);
+  useEffect(() => {
+    if (inside) {
+      entered.current ??= readHeist();
+      return;
+    }
+    if (!entered.current) return;
+    const text = welcomeFor(entered.current, readHeist());
+    entered.current = null;
+    if (text) setWelcome({ n: ++welcomes.current, text });
+  }, [inside]);
 
   const enter = useCallback(
     (id) => {
@@ -135,7 +153,7 @@ export default function CompoundWorld({ onPortal }) {
   const world = three.on && gl !== 'failed' && gl !== 'lost';
   return (
     <section id="hq-world" className="cw-world" aria-labelledby="cw-title" data-mode={world ? '3d' : 'cards'}>
-      {world ? <World api={api} prog={prog} inside={inside} enter={enter} portal={portal} gl={gl} setGl={setGl} /> : <Cards prog={prog} enter={enter} three={three} gl={gl} retry={() => setGl('loading')} />}
+      {world ? <World api={api} prog={prog} inside={inside} enter={enter} portal={portal} gl={gl} setGl={setGl} welcome={welcome} onWelcomed={clearWelcome} /> : <Cards prog={prog} enter={enter} three={three} gl={gl} retry={() => setGl('loading')} />}
       {inside && (
         <Suspense fallback={null}>
           <Place key={inside} id={inside} onLeave={leave} onPortal={portal} />
@@ -148,7 +166,7 @@ export default function CompoundWorld({ onPortal }) {
 // the compound reaches past the towns' 200 m, and its people run and jump
 const ROOM = { bound: 260, motion: true };
 
-function World({ api, prog, inside, enter, portal, gl, setGl }) {
+function World({ api, prog, inside, enter, portal, gl, setGl, welcome, onWelcomed }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   // other players online here, as holograms (middleearth/towns/useTravellers)
   const trav = useTravellers('avengers', gl === 'on', ROOM);
@@ -262,6 +280,18 @@ function World({ api, prog, inside, enter, portal, gl, setGl }) {
   const options = useMemo(() => ({ calm: prefersReducedMotion() }), []);
   const stage = useStage(compound, { enabled: !inside, id: 'compound', forced: true, options });
   const prep = stage.progress; // (how far it's got sending itself to the graphics chip)
+  // on the way back out of a building, until the compound has drawn again
+  const [back, setBack] = useState(false);
+  useEffect(() => {
+    if (back && stage.status === 'on') setBack(false);
+  }, [back, stage.status]);
+  // the welcome back, from when the veil is down
+  useEffect(() => {
+    if (!welcome || back) return undefined;
+    const t = setTimeout(onWelcomed, 4200);
+    return () => clearTimeout(t);
+  }, [welcome, back, onWelcomed]);
+  const veil = returnVeil({ gl, back, prep });
   // (the box: in view for the keys, and the page's live view by its share of the screen)
   const stageBox = useCallback(
     (el) => {
@@ -294,6 +324,7 @@ function World({ api, prog, inside, enter, portal, gl, setGl }) {
     // gone indoors: the others see you go (they'd otherwise see you stand at the door)
     if (inside) trav.ref.current?.pose(sim.current.h, { inside: true }, { force: true });
     if (inside || !from) return;
+    setBack(true);
     const p = placeById(from);
     if (!p) return;
     const s = sim.current;
@@ -533,6 +564,11 @@ function World({ api, prog, inside, enter, portal, gl, setGl }) {
     // (the armour's plinth is by the workshop's door: whichever is nearer)
     const grounded = s.h.mode === 'ground' && s.h.y < 0.3;
     const door = grounded ? nearPlace(s.h.x, s.h.z) : null;
+    // the game behind a door within 15 m, fetched ahead (swinging past counts)
+    if (s.frame % 20 === 0) {
+      const d = doorNear(s.h.x, s.h.z);
+      if (d) warmDoor(d);
+    }
     const plinth = grounded ? Math.hypot(s.h.x - ARMOUR.x, s.h.z - ARMOUR.z) : Infinity;
     s.armour = plinth < SUIT.r && (!door || plinth < door.d);
     s.near = s.armour ? null : (door?.id ?? null);
@@ -660,8 +696,8 @@ function World({ api, prog, inside, enter, portal, gl, setGl }) {
     <div ref={stageBox} className="cw-stage" data-touch={touch || undefined} data-photo={photo ? '' : undefined}>
       <div ref={stage.host} className="cw-canvas" data-on={stage.status === 'on' || undefined} aria-label="The Avengers compound in 3D: the hangar, the main building and its glass wing, the training center, the lab and the range, and Spider-Man on the lawn" role="img" onPointerDown={onPointer} onPointerMove={onPointer} onPointerUp={onPointer} onPointerCancel={onPointer} onContextMenu={(e) => e.preventDefault()} onWheel={(e) => sim.current.photo && changePhoto({ dist: sim.current.photo.dist * (e.deltaY > 0 ? 1.1 : 1 / 1.1) })} />
       <div ref={speedRef} className="cw-speed" aria-hidden="true" />
-      <LoadingVeil shown={gl === 'loading'} progress={prep.value} step={prep.step} title="Flying in to the compound" />
-      <CompoundHud touch={touch} gl={gl} prog={prog} hud={hud} sim={sim} enter={enter} portal={portal} trav={trav} list={list} setList={setList} tuning={tuning} setTuning={setTuning} photo={photo} photoMode={photoMode} changePhoto={changePhoto} onSavePhoto={() => savePhoto(api.current, stage.rt?.gfx?.canvas, sim.current, progRef.current)} settings={settings} changeSettings={changeSettings} tourMsg={tourMsg} pack={pack} trick={trick} styleRef={styleRef} tourRef={tourRef} map={map} bubble={bubble} bubbleRef={bubbleRef} tourBest={tourBest} styleBest={styleBest} found={found} toTour={toTour} travel={travel} onStick={onStick} />
+      <LoadingVeil shown={veil.shown} progress={veil.progress} step={veil.step} title={veil.title} />
+      <CompoundHud touch={touch} gl={gl} prog={prog} hud={hud} sim={sim} enter={enter} portal={portal} trav={trav} list={list} setList={setList} tuning={tuning} setTuning={setTuning} photo={photo} photoMode={photoMode} changePhoto={changePhoto} onSavePhoto={() => savePhoto(api.current, stage.rt?.gfx?.canvas, sim.current, progRef.current)} settings={settings} changeSettings={changeSettings} tourMsg={tourMsg} welcome={veil.shown ? null : welcome} pack={pack} trick={trick} styleRef={styleRef} tourRef={tourRef} map={map} bubble={bubble} bubbleRef={bubbleRef} tourBest={tourBest} styleBest={styleBest} found={found} toTour={toTour} travel={travel} onStick={onStick} />
     </div>
   );
 }

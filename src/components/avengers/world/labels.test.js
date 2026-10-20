@@ -29,7 +29,8 @@ describe('the stones’ labels', () => {
   it('gives every game’s stone badge the stone’s own colour, and keeps the table in one place', () => {
     for (const f of GAMES) {
       expect(read(f), f).not.toMatch(/'--glow': '#/);
-      expect(read(f), f).toMatch(/stoneById\('/);
+      expect(read(f), f).toMatch(/<Results\b/);
+      expect(read(f), f).not.toContain('className="hq-stone"');
     }
     for (const f of ['./Place.jsx', './scene/doors.js']) expect(read(f), f).not.toMatch(/STONE_OF =/);
   });

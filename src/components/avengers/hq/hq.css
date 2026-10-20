@@ -29,3 +29,41 @@
 .hq-game .btn:disabled:active { transform: none; }
 @media (max-width: 480px) { .hq-overlay .btn { min-height: 44px; } }
 @media (prefers-reduced-motion: reduce) { .hq-loading-ring { animation-duration: 3s; } .hq-canvas { transition: none; } }
+
+/* ─── the game screen (hq/HQGame): the game over the whole window under a slim bar ─── */
+.hq-full { flex: 1; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+.hq-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-width: 0; padding: 0.4rem clamp(0.75rem, 2.5vw, 1.5rem); background: linear-gradient(90deg, #0c1420, #142233); color: #f4f7fb; border-bottom: 2px solid var(--hq-accent, #8fe9ff); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2); }
+.hq-bar-title { min-width: 0; margin: 0; overflow: hidden; font: 400 clamp(1.3rem, 1rem + 0.8vw, 1.7rem)/1.1 'Bebas Neue', Impact, sans-serif; letter-spacing: 0.03em; white-space: nowrap; text-overflow: ellipsis; }
+.hq-bar-acts { display: flex; flex: none; align-items: center; gap: 0.5rem; }
+.hq-bar .btn { background: rgba(255, 255, 255, 0.1); color: #f4f7fb; border-color: rgba(255, 255, 255, 0.4); white-space: nowrap; }
+.hq-bar .btn[aria-pressed='true'] { border-color: var(--hq-accent, #8fe9ff); }
+.hq-game-full { min-height: 0; display: flex; flex-direction: column; gap: 0; overflow-y: auto; overscroll-behavior: contain; }
+.hq-game-full > .hq-screen { flex: 1; min-height: 0; aspect-ratio: auto; max-height: none; border: 0; border-radius: 0; }
+.hq-game-full > .hq-switch { display: none; }
+.hq-game-full .hq-overlay { overflow-y: auto; place-content: safe center; }
+.hq-toy { display: grid; align-content: start; gap: 1rem; width: min(100% - 2rem, 72rem); margin-inline: auto; padding-block: 1.5rem 2.5rem; }
+.hq-toy .hq-stone { justify-self: start; margin: 0; background: color-mix(in srgb, var(--glow) 10%, var(--surface)); }
+.hq-toy-note { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; margin: 0; font-size: 0.85rem; color: var(--muted); }
+.hq-start-blurb { max-width: 62ch; margin: 0; line-height: 1.5; text-wrap: pretty; }
+.hq-toy .hq-start-blurb { font-size: clamp(1rem, 0.95rem + 0.3vw, 1.15rem); }
+.hq-overlay .hq-start-blurb { max-width: 54ch; margin-top: 0.35rem; font-size: clamp(0.82rem, 0.75rem + 0.3vw, 0.95rem); color: rgba(255, 255, 255, 0.84); }
+@media (max-height: 700px) { .hq-overlay .hq-start-blurb { display: none; } }
+@media (max-width: 639px) { .hq-bar-more, .hq-bar-key { display: none; } }
+/* touch help: in words and icons, where the key list hides */
+.hq-touch { display: none; gap: 0.4rem; max-width: 40ch; margin: 0.8rem 0 0; padding: 0; list-style: none; text-align: left; font-size: 0.8rem; line-height: 1.35; color: rgba(255, 255, 255, 0.84); }
+.hq-touch li { display: flex; align-items: center; gap: 0.6rem; }
+.hq-touch-icon { flex: none; width: 1.4rem; height: 1.4rem; color: var(--hq-accent); }
+@media (hover: none) and (pointer: coarse) {
+  .hq-touch { display: grid; }
+  .hq-bar-key { display: none; }
+  .hq-bar .btn, .hq-toy-note .btn { min-height: 44px; }
+}
+/* the results card: on glass, whatever the 3D behind it */
+.hq-results { background: rgba(4, 7, 12, 0.82); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.hq-results .hq-overlay-score small { font-size: 0.72rem; }
+.hq-results-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-top: 1.1rem; }
+.hq-results-actions .btn { min-height: 44px; }
+.hq-results .btn-ghost { color: #fff; border-color: rgba(255, 255, 255, 0.4); }
+.hq-stars { display: flex; gap: 0.35rem; margin-top: 0.4rem; font-size: 2rem; line-height: 1; }
+.hq-stars span { color: rgba(255, 255, 255, 0.22); }
+.hq-stars span[data-on] { color: #ffd04a; text-shadow: 0 0 14px rgba(255, 190, 60, 0.6); }
