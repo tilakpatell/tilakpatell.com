@@ -43,7 +43,7 @@ const V = 1000; // the SVG's units across
 const ICONS = { hyper: RiFlashlightFill, super: RiSpeedUpFill, cruise: RiRocket2Fill };
 const WHY = { interdicted: JAMMED.short, charging: 'Charging' };
 // which names keep theirs first when there isn't room for all
-const PRIORITY = { pick: 100, home: 95, here: 90, going: 85, front: 80, world: 50, station: 50, portal: 40, wonder: 30, fight: 10 };
+const PRIORITY = { pick: 100, here: 97, home: 95, going: 85, front: 80, world: 50, station: 50, portal: 40, wonder: 30, fight: 10 };
 const LABEL_H = 20; // (a name's line: the button is 24 high, and two may graze)
 const DOT_W = 16 + 5 + 7; // (the dot, the gap after it and the button's padding past the name: navmap.css)
 const WONDER_FS = 0.92; // (a wonder's name, of the chart's font size: navmap.css)
@@ -274,7 +274,8 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
     if (shipAt) dots.push({ x: shipAt[0] * k, y: shipAt[1] * k });
     return declutter(labels, { bounds: { x0: 0, y0: 0, x1: px, y1: px }, round: true, dots });
   })();
-  // a place's side, or none (its name on hover and focus); the place picked and where you are always say theirs
+  // a place's side, or none (its name on hover and focus); the place picked and where you are always say theirs,
+  // on glass over their neighbours where there was no room (`data-forced`)
   const sideOf = (id, always = false) => sides.get(id) ?? (always ? 'right' : null);
 
   const verb = (d) => {
@@ -466,7 +467,7 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
                   const mine = pick === d.id || at(d.id);
                   const side = sideOf(d.id, mine);
                   return (
-                    <li key={d.id} style={{ ...pct(xy), '--c': d.color }} data-dim={!shown.has(d.id) || undefined} data-kind={d.kind} data-type={d.kind === 'wonder' ? d.type.toLowerCase().replace(/\s+/g, '-') : undefined} data-side={side ?? undefined} data-label={side ? undefined : 'off'}>
+                    <li key={d.id} style={{ ...pct(xy), '--c': d.color }} data-dim={!shown.has(d.id) || undefined} data-kind={d.kind} data-type={d.kind === 'wonder' ? d.type.toLowerCase().replace(/\s+/g, '-') : undefined} data-side={side ?? undefined} data-label={side ? undefined : 'off'} data-mine={mine || undefined} data-forced={(mine && !sides.get(d.id)) || undefined}>
                       <button
                         type="button"
                         className="navmap-place"

@@ -150,6 +150,8 @@
 .navmap-places { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; font-size: 0.74rem; }
 .navmap-places > li { position: absolute; width: 0; height: 0; }
 .navmap-places > li:is(:hover, :focus-within) { z-index: 2; }
+.navmap-places > li[data-mine] { z-index: 3; } /* (the place picked, and where you are: over their neighbours) */
+.navmap-places > li[data-forced] .navmap-place:not([aria-pressed='true']) { background: var(--nm-glass); box-shadow: 0 0 0 1px var(--nm-line-strong); }
 .navmap-place {
   position: absolute;
   left: 0;
@@ -193,8 +195,9 @@
     radial-gradient(circle at 40% 36%, color-mix(in srgb, var(--c) 40%, #fff) 0 1.2px, var(--c) 3.2px, color-mix(in srgb, var(--c) 50%, #000) 5.4px, transparent 5.9px),
     radial-gradient(circle, color-mix(in srgb, var(--c) 36%, transparent) 0 5.5px, transparent 8px);
 }
-.navmap-places > li[data-kind='wonder'] .navmap-dot { background: none; }
-.navmap-places > li[data-kind='wonder'] .navmap-dot::before {
+/* (the list's wonders wear the same diamond) */
+:is(.navmap-places > li, .navmap-list li)[data-kind='wonder'] .navmap-dot { background: none; }
+:is(.navmap-places > li, .navmap-list li)[data-kind='wonder'] .navmap-dot::before {
   content: '';
   position: absolute;
   inset: 4.5px;
@@ -328,16 +331,6 @@
   transition: background var(--t-fast);
 }
 .navmap-list button:hover { background: rgb(159 216 255 / 0.07); }
-.navmap-list li[data-kind='wonder'] .navmap-dot { background: none; }
-.navmap-list li[data-kind='wonder'] .navmap-dot::before {
-  content: '';
-  position: absolute;
-  inset: 4.5px;
-  rotate: 45deg;
-  border: 1.5px solid var(--c);
-  border-radius: 1.5px;
-  background: color-mix(in srgb, var(--c) 30%, transparent);
-}
 .navmap-list-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .navmap-list-meta { flex: none; color: var(--nm-faint); font-family: var(--font-mono); font-size: 0.68rem; font-variant-numeric: tabular-nums; }
 .navmap-list button[aria-current='location'] .navmap-list-meta { color: #7dff9a; }
