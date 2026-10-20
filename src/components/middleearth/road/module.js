@@ -276,6 +276,12 @@ export default {
 
     // a beat’s fixed camera given over the ground: its heights put on the land
     const above = (p) => [p[0], p[1] + lands.heightAt(p[0], p[2]), p[2]];
+    // (each walker’s own, so a scene may keep it till its update)
+    const tips = new Map();
+    const tipOf = (id) => {
+      if (!tips.has(id)) tips.set(id, new THREE.Vector3());
+      return tips.get(id);
+    };
     // the camera on the director’s rig, following the lead along the stage
     const frame = (dt = 0) => {
       const here = lineAt(STAGES, clock.s);
@@ -298,8 +304,9 @@ export default {
         const floor = scenes.floor(here.index, x, z);
         const y = floor == null ? ground : Math.max(ground, floor);
         const base = clipFor(w.state, mode, w.id);
-        // (and as the beat has them: sat by a fire, a torch in each hand, down on the ground)
-        const o = scenes.pose(here.index, w.id, { x, y, z, base, state: w.state }) ?? {};
+        // (and as the beat has them: sat by a fire, a torch in each hand, down on the ground;
+        // `tip`: the head of what it holds, last frame, a staff’s where its light goes)
+        const o = scenes.pose(here.index, w.id, { x, y, z, base, state: w.state, tip: fig.tip?.(tipOf(w.id)) ?? null }) ?? {};
         fig.group.visible = !o.hide;
         fig.group.position.set(o.x ?? x, o.y ?? y, o.z ?? z);
         fig.group.rotation.y = o.yaw ?? 0;

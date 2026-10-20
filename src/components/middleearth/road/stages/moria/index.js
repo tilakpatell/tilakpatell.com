@@ -110,7 +110,9 @@ export function build({ road, heightAt, rt, tier = 'high', sky = null }) {
       shaft.intensity = Math.abs(local - CHAMBER.at[1]) < 20 ? 60 : 0;
       halo.visible = lit;
       if (lit) {
-        staff.position.set(gandalf.x + 0.35, gandalf.y + 2.1, gandalf.z + 0.2);
+        // (at the staff’s head, in his hand; by his shoulder while it isn’t in yet)
+        if (gandalf.tip) staff.position.copy(gandalf.tip);
+        else staff.position.set(gandalf.x + 0.35, gandalf.y + 2.1, gandalf.z + 0.2);
         halo.position.copy(staff.position);
       }
       gandalf = null;
@@ -168,7 +170,7 @@ export function build({ road, heightAt, rt, tier = 'high', sky = null }) {
         if (id === 'gandalf') {
           const st = stance(t);
           const pos = { x: 0, y: props.low - st.gandalf * DROP * 0.6, z: STAND - st.gandalf * 2.5, yaw: Math.PI, base: 'idle', speed: 0 };
-          gandalf = pos;
+          gandalf = { ...pos, tip: at.tip };
           return st.gandalf >= 1 ? { ...pos, hide: true } : pos;
         }
         const p = ACROSS[id];
