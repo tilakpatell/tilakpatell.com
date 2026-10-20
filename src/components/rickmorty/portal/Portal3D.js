@@ -391,7 +391,7 @@ export async function createPortal3D(canvas, { soft = false, hero: heroKind = 'r
     ),
   );
   // the cast and set pieces modelled for the site (./meshyCast.js)
-  const meshy = createMeshyCast({ ink: soft ? 0 : CAST_INK }); // (the show's line round each, but in software)
+  const meshy = createMeshyCast({ ink: soft ? 0 : CAST_INK }); // (the show's line round each; none in software mode)
   await meshy.load((k) => progress(0.58 + k * 0.2, 'Bringing in the cast'));
   // a figure: the modelled one where it loaded, the shapes otherwise
   const figure = (kind, variant = 0) => meshy.make(kind, variant) ?? makeCast(kind, variant);

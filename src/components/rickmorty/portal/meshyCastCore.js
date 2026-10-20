@@ -285,6 +285,9 @@ const MORTYTOWN_PROPS = ['mortymart', 'creepymorty'];
 // can end up standing inside (the hull's back faces would fill the view)
 export const SET_PIECES = new Set(['birdperson-house', 'squanchy-house', 'frundleshouse', 'needful-shop', 'toasterhouse', 'mortymart', 'snakerocket', 'vindicators-ship', 'dirlycar', 'nuptiamachine', 'brainalyzer', 'omegadevice']);
 export const INK_TALLEST = 4;
+// (and none of it nearer the eye than this, in metres: a camera passing
+// through a figure sees through it, as it would without the line)
+const INK_NEAR = 0.6;
 // the cast's figures found on Sketchfab rather than made, by their files
 export const FOUND = { krombopulos: '/games/meshy/krombopulos.glb' };
 export const FOLDERS = Object.fromEntries([...RICKALL_PROPS, ...FAMILY_PROPS, ...MORTYTOWN_PROPS, ...DEST_PROPS].map((a) => [a, '/models/c137/rm']));
@@ -448,7 +451,7 @@ function createMeshyCast({ kinds = MESHY, rigged = RIGGED, cull = false, ink = 0
     model.position.copy(src.offset).multiplyScalar(k);
     body.add(model);
     // (its line before the culling, so the line's culled with it)
-    const line = ink > 0 && inkHull && !SET_PIECES.has(spec.a) && spec.h <= INK_TALLEST ? inkHull(model, ink) : null;
+    const line = ink > 0 && inkHull && !SET_PIECES.has(spec.a) && spec.h <= INK_TALLEST ? inkHull(model, ink, { near: INK_NEAR }) : null;
     if (cull)
       model.traverse((o) => {
         if (o.isSkinnedMesh) cullWithin(o, group, spec.h);

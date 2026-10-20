@@ -197,6 +197,8 @@ describe('a Meshy figure’s line', () => {
       expect(h.frustumCulled).toBe(true);
       if (src.isSkinnedMesh) expect(h.boundingSphere.equals(src.boundingSphere)).toBe(true);
     }
+    // (and none drawn right at the eye: a camera passing through a figure sees through it)
+    expect(inks[0].material.customProgramCacheKey()).toContain('near-0.60');
     let freed = 0;
     for (const h of inks) h.material.addEventListener('dispose', () => (freed += 1));
     c.release();

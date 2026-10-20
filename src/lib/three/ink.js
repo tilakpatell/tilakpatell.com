@@ -14,7 +14,6 @@
 import * as THREE from 'three';
 
 const INK = 0x1b1424;
-const NEAR = 0.6; // metres: no line drawn nearer the eye than this
 
 // `inkNormal` for a geometry (once: it's kept on the geometry, which clones
 // of a figure share). Returns the geometry.
@@ -80,8 +79,11 @@ export function smoothNormals(geometry) {
 // faces drawn flat, pushed out along `inkNormal` once posed, in view space
 // (so `width` is in the scene's units whatever scale the model or its
 // skeleton has). None above `clipY`, in the meshes' own units (the
-// cruiser's glass). Returns the material, for the caller to dispose.
-export function inkHull(root, width, { clipY = null, color = INK } = {}) {
+// cruiser's glass), and none nearer the eye than `near`, in the scene's
+// units (a camera that passes through a figure would otherwise see the
+// hull's back faces all round it, a screen of ink). Returns the material,
+// for the caller to dispose.
+export function inkHull(root, width, { clipY = null, color = INK, near = 0 } = {}) {
   const mat = new THREE.MeshBasicMaterial({ color, side: THREE.BackSide });
   mat.onBeforeCompile = (s) => {
     s.vertexShader = s.vertexShader
@@ -108,11 +110,9 @@ export function inkHull(root, width, { clipY = null, color = INK } = {}) {
           gl_Position = projectionMatrix * mvPosition;
         }`,
       );
-    // (none within NEAR metres of the eye: a camera passing through a figure
-    // would otherwise see the hull's back faces all round it, a screen of ink)
-    s.fragmentShader = s.fragmentShader.replace('void main() {', `varying float vInkY;\nvarying float vInkZ;\nvoid main() {\nif (vInkZ < ${NEAR.toFixed(2)}) discard;\n${clipY == null ? '' : `if (vInkY > ${clipY.toFixed(5)}) discard;`}`);
+    s.fragmentShader = s.fragmentShader.replace('void main() {', `varying float vInkY;\nvarying float vInkZ;\nvoid main() {\n${near > 0 ? `if (vInkZ < ${near.toFixed(2)}) discard;` : ''}\n${clipY == null ? '' : `if (vInkY > ${clipY.toFixed(5)}) discard;`}`);
   };
-  mat.customProgramCacheKey = () => `ink-${width.toFixed(4)}-${clipY}`;
+  mat.customProgramCacheKey = () => `ink-${width.toFixed(4)}-${clipY}${near > 0 ? `-near-${near.toFixed(2)}` : ''}`;
   const meshes = [];
   root.traverse((o) => {
     if (o.isMesh && !o.userData.ink) meshes.push(o);
