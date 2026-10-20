@@ -414,7 +414,7 @@ export const ROWS = [
       { id: 'cot-a', dx: -8.5, dz: -5, w: 2, d: 1.1 },
       { id: 'cot-b', dx: -8.5, dz: -2, w: 2, d: 1.1 },
     ],
-    tasks: [{ id: 'jerryboree', name: 'Pick up the right Jerry', hint: 'Dial the Jerryboree and talk to the Jerrys: ours asks if you’re hungry for apples, as he does at home, and a wrong pick costs time.' }],
+    tasks: [{ id: 'jerryboree', name: 'Pick up the right Jerry', hint: 'Dial the Jerryboree and talk to the Jerrys: ours offers you an apple, as he does at home, and a wrong pick costs time.' }],
     say: {
       jerryreal: { who: 'Jerry', text: 'Morty! Is Beth here? Tell her I’ve been good. I made a friend. He’s also me.' },
       receptionist: { who: 'The Jerryboree’s Rick', text: 'Drop-off or pick-up? Ticket, please. No ticket, no Jerry. Rules are rules.' },
@@ -430,7 +430,7 @@ export const ROWS = [
     find: {
       task: 'jerryboree',
       items: ['jerryreal', 'jerrytv', 'jerrygown', 'jerrytux', 'jerrytrack', 'jerryrobe'],
-      tells: { ours: 'He asks if you’re hungry for apples', jerryreal: 'He asks if Beth’s here', jerrytv: 'He shushes you for his programme', jerrygown: 'He asks if you’re the doctor', jerrytux: 'He asks when his Rick’s coming', jerrytrack: 'He asks if you’re hungry for pears', jerryrobe: 'He asks if you’re his Morty' },
+      tells: { ours: 'He offers you an apple', jerryreal: 'He looks round for Beth', jerrytv: 'He turns back to his programme', jerrygown: 'He takes his own pulse', jerrytux: 'He straightens his bow tie', jerrytrack: 'He offers you a pear', jerryrobe: 'He ties his robe tighter' },
       s: 45,
       cost: 15,
       who: 'receptionist',

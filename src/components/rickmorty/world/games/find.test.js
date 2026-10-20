@@ -12,7 +12,7 @@ const use = (g, ...ids) => {
   }
   return { g, seen };
 };
-const TELLS = { ours: 'He asks if you’re hungry for apples', jerrytv: 'He shushes you for his programme' };
+const TELLS = { ours: 'He offers you an apple', jerrytv: 'He turns back to his programme' };
 
 describe('the find kind: our Jerry among the Jerrys, against the clock', () => {
   it('waits, the clock still, till a Jerry is talked to', () => {

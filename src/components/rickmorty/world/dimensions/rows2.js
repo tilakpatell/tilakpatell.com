@@ -443,7 +443,7 @@ export const ROWS = [
     collect: { task: 'gloopynoops', spots: ['shrimply', 'jerrysthings'], escape: { s: 30 } },
     goal: 'jerrysthings',
     spotted: 'His eyes swing round on their stalks, and he’s coming for you.',
-    caught: 'He takes you kindly by the elbow and walks you back to the portal, and Jerry’s things go back by the bed.',
+    caught: 'He takes you kindly by the elbow and walks you back to the portal, and your visit starts over.',
     kinds: ['glipglop', 'jerry', 'gloopnurse', 'shrimply'],
   }),
   place(23, {

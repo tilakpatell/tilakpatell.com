@@ -292,6 +292,12 @@ describe('a place that runs on a find', () => {
     expect(daycare.done).toEqual({});
     expect(daycare.unlock).toEqual({});
   });
+  it('has each Jerry’s tell as something he does, never something he says, so it can’t contradict the line he’s just said', () => {
+    const daycare = destinationById('jerryboree');
+    for (const [id, tell] of Object.entries(daycare.find.tells)) expect(tell, id).not.toMatch(/\b(asks?|says?|shushes|tells?)\b/);
+    expect(daycare.find.tells.ours).toBe('He offers you an apple');
+    expect(daycare.tasks[0].hint).toContain('ours offers you an apple');
+  });
 });
 
 describe('St. Gloopy Noops', () => {
@@ -317,6 +323,9 @@ describe('St. Gloopy Noops', () => {
       expect(line.split(/[.?]\s/)).toHaveLength(1);
     }
     for (const line of [ward.caught, ward.spotted]) expect(line.startsWith('A doctor')).toBe(false);
+    // (a catch starts the whole visit over, Shrimply too, and it can come before anything's taken)
+    expect(ward.caught).toContain('your visit starts over');
+    expect(ward.caught).not.toContain('Jerry’s things');
   });
 });
 
