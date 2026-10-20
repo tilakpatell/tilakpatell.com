@@ -73,7 +73,7 @@ import { METRE } from '../../universe/foot';
 import { buildGalaxyShip } from '../fleet';
 import { audioContext } from '../../../lib/audio';
 import { SURFACE_MODELS } from './catalog';
-import { heightGrid, makeHeight } from './terrain';
+import { HALF, heightGrid, makeHeight } from './terrain';
 import { createMarks, groundMaterial, groundMesh } from './ground';
 import { lavaFilm } from './lavaFilm';
 import { floatPose } from './floats';
@@ -135,7 +135,10 @@ import { RULES as ASSAULT } from './missions/assault';
 import { garrisonLife, garrisonProbe } from './garrison';
 import { createGround, landingFor } from './ground/index';
 import { standable } from './sites/validity';
-import { floraTint } from './flora';
+import { floraTint, livingRows } from './flora';
+import { coverAt } from './grass';
+import { createLiving, keepOf, shadeOf } from './living';
+import { createFlocks } from './flocks';
 import { footprintOf, impactOf, loadMaterials, tagOf } from '../../../lib/physics/materials';
 import { landingLook, printOf } from './impactLook';
 import { ONE_EXPOSURE, gameSite } from '../../../lib/three/gameLight';
@@ -412,12 +415,17 @@ export async function create(canvas, ctx) {
   // the house bounces it up onto everything low. None where there's no
   // ground (look.js's groundPieces).
   const pieces = groundPieces(site);
+  // (the cover, the bushes and the trees that stream round you, living.js;
+  // null where the rings above are laid once)
+  const live = livingRows(site);
+  const liveSeed = site.ground.seed ?? 1;
   let groundMap = null;
   if (pieces.map) {
     const shade = scattered.flatMap(({ s, items }) => {
       const canopy = s.canopy ?? SCATTER[s.kind]?.canopy; // (a kit tree's row says its own: flora.js)
       return canopy ? items.map((it) => ({ at: it.at, r: canopy * it.scale })) : [];
     });
+    if (live) shade.push(...shadeOf(live.trees, { level, seed: liveSeed, height: grid.heightAt, keep: keepOf({ site, heightAt: grid.heightAt, avoid, busy: inBusy, wade }), half: HALF }));
     const painter = groundPainter(site, grid, { shade });
     const mapSize = amounts.map;
     groundMap = createGroundMap({ area: mapAreaOf(), size: mapSize, heightSize: mapSize / 2, paint: painter.paint, height: painter.height });
@@ -512,6 +520,19 @@ export async function create(canvas, ctx) {
     if (t.float && water?.height) put.then((o) => o && floaters.push({ o, x: o.position.x, z: o.position.z, yaw: t.yaw ?? 0, float: t.float }));
   }
   for (const { s, items } of scattered) placer.scatter(s.kind, items, { opts: s.opts, solid: s.solid ?? true, model: s.model ?? true, shadow: s.shadow !== false });
+  // and the living ground round you, laid as you go (living.js), in the
+  // placer's kit; nothing where your ship comes down (`clearings`, once known)
+  const clearings = [];
+  const living = live
+    ? createLiving({ rows: live, kitFor: placer.kitFor, level, seed: liveSeed, height: world.heightAt, keep: keepOf({ site, heightAt: world.heightAt, solids: world.solids, avoid, clearings, busy: inBusy, wade }), cover: site.grass ? (x, z) => coverAt(grid, site, x, z) : null, solids: world.solids })
+    : null;
+  if (living) {
+    scene.add(living.group);
+    living.fill(...site.land.at);
+  }
+  // (and its biome's birds, over its places: flocks.js)
+  const flocks = createFlocks(site.air?.flocks, { heightAt: world.heightAt, reduced });
+  if (flocks) scene.add(flocks.group);
   // the grass round you (lib/three/grass, Bruno's: a triangle a blade, one
   // draw, the patch going with you), standing on the ground map and its
   // colour, where the site grows it
@@ -519,6 +540,8 @@ export async function create(canvas, ctx) {
     ? createGrass({ ground: groundMap, wind, side: amounts.grass.side, size: amounts.grass.size, height: site.grass.h?.[1] ?? 0.5, width: site.grass.w ?? 0.05, root: 0.35 })
     : null;
   if (grass) scene.add(grass.mesh);
+  const grassAt = new THREE.Vector3();
+  const grassAhead = new THREE.Vector3();
   // ?debug: the look, the grass and the wind on sliders, copied out as the
   // site's own blocks (lib/debugPanel, tune.js)
   // the feel: every knock's shake (state.shake, drained into it each frame:
@@ -717,6 +740,7 @@ export async function create(canvas, ctx) {
   const landing = landingFor(site, mission ? null : ctx.effects, { standable: (p) => standable(site, p) && !world.solids.near(p[0], p[1], 9).some((o) => pushOut(o, p[0], p[1], 9)), seesThrough: (a, b) => lineClear(world.solids, a, b), posts: groundWar.posts, height: world.heightAt });
   groundWar.landed(landing.covert ? landing.at : null);
   const landAt = landing.at;
+  clearings.push({ at: landAt, r: 30 });
   const landY = groundAt(world, landAt[0], landAt[1]);
   const shipHolder = new THREE.Group(); // where it is
   const shipTilt = new THREE.Group(); // how it's tilted, coming down
@@ -3560,12 +3584,19 @@ export async function create(canvas, ctx) {
     state.aim = Math.max(0, state.aim - dt / 2.5);
     life.update(dt, state.phase === 'walk' ? me().st : null, state.phase === 'walk' || state.phase === 'ride' ? me().st : camera.position);
     placer.update(t, dt, me().st);
+    living?.update(me().st.x, me().st.z, camera, dt);
+    flocks?.update(dt);
     gameLevel?.update([me().st.x, me().st.z]);
     // (lane N4: the level's stream paused by its data budget, told the HUD as it begins and ends)
     if ((gameLevel?.paused?.() ?? false) !== detailPaused) emit({ type: 'detail', paused: (detailPaused = !detailPaused) });
     gameScatter?.update([me().st.x, me().st.z], dt);
     if (!reduced) kit.tick(dt);
-    grass?.update(me().st);
+    // (the grass's patch a little ahead of the eye, where the view lands, as the Shire's)
+    if (grass) {
+      camera.getWorldDirection(grassAhead).setY(0);
+      if (grassAhead.lengthSq() < 1e-6) grassAhead.set(0, 0, -1);
+      grass.update(grassAt.set(me().st.x, 0, me().st.z).addScaledVector(grassAhead.normalize(), amounts.grass.size * 0.3));
+    }
     wind.update(dt);
     stepDust(dt);
     storm(dt);
@@ -3733,6 +3764,7 @@ export async function create(canvas, ctx) {
       // (the game's level's own share of the frame: its calls, triangles, lights and probe)
       level: () => (gameLevel ? { ...gameLevel.stats(), ready: gameLevel.ready(), progress: gameLevel.progress() } : null),
       surfaces: () => ({ level: surfaces?.level ?? null, print: groundPrint, picks: [...picks] }),
+      living: () => living?.stats ?? null,
       solidsNear: (x, z, r = 60) => world.solids.near(x, z, r).map(({ type, x: sx, z: sz, r: sr, hw, hd, c, s, top, base, tag }) => ({ type, x: sx, z: sz, r: sr, hw, hd, c, s, top, base, tag })),
       shoot: (from, to) => blaster.fire(new V(...from), new V(...to).sub(new V(...from)).normalize(), [], boltOf(me()), 90, null, { yours: true, push: new V() }),
       // (a stroke now, as the button makes one, for the QA scripts: { heavy, dir, lock } as saber.js takes them)
@@ -3766,6 +3798,9 @@ export async function create(canvas, ctx) {
     // (the props' scanned surfaces on before their shaders are made, so
     // they're made once)
     await Promise.all([placer.ready.catch(() => {}), kit.ready.catch(() => {}), stacking]);
+    // (the walls in, and where your ship came down: the living ground laid again round them, its models in before the floor's light is baked)
+    living?.refresh();
+    await living?.ready;
     // (the floor's baked light where the sun has no cascades, low's: from
     // mid up the sun casts through its cascades, nodes/stack.js)
     if (!disposed && !site.noGround && !stack?.parts.cascades) {
@@ -3777,7 +3812,7 @@ export async function create(canvas, ctx) {
         area: { x0: landAt[0] - R, z0: landAt[1] - R, w: R * 2, d: R * 2 },
         sun,
         // (what moves isn't baked: the folk and beasts about, the speeders)
-        skip: [sky.mesh, water?.mesh, water?.glow, water?.spray, weather?.group, weather?.mesh, camera, life.group, grass?.mesh, ...rides.map((x) => x.holder)].filter(Boolean),
+        skip: [sky.mesh, water?.mesh, water?.glow, water?.spray, weather?.group, weather?.mesh, camera, life.group, grass?.mesh, flocks?.group, ...rides.map((x) => x.holder)].filter(Boolean),
         movers: [...people.map((p) => ({ object: p.holder, size: [0.8, 0.8] })), ...life.actors.filter((a) => a.holder).map((a) => ({ object: a.holder, size: [1, 1] })), ...rides.map((x) => ({ object: x.holder, size: [1.4, 2.6] }))],
         shade: site.light.shade ?? site.light.ground ?? '#3a3028',
         height: world.heightAt,
@@ -4238,6 +4273,8 @@ export async function create(canvas, ctx) {
       markMat.dispose();
       life.dispose();
       placer.dispose();
+      living?.dispose();
+      flocks?.dispose();
       grass?.dispose();
       wind.dispose();
       panel?.dispose();

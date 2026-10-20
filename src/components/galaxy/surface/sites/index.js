@@ -25,9 +25,12 @@
 //                  opts?, flat? (on level ground only), at? (the middle
 //                  of its ring, the world's 0, 0 unless said: a stand
 //                  round a place, its clearing kept) }]
-//   flora          { biome, tint?, density?, trees? }: the nature kit's
-//                  cover, middle layer and trees by a recipe (flora.js),
-//                  its rows added after the scatter's own
+//   flora          { biome, tint?, density?, trees?, living? }: the nature
+//                  kit's cover, middle layer and trees by a recipe
+//                  (flora.js), its rows added after the scatter's own (or
+//                  streamed round you, living.js); and its biome's `air`:
+//                  pollen after the weather's own, and `air` { song,
+//                  flocks } (sounds.js's birdsong, flocks.js's birds)
 //   life           actors.js's
 //   rides          [{ kind (rides.js's), at, yaw }]
 //   flyovers       [{ kind (a galaxy ship), n, metres, alt, speed, every }]
@@ -75,7 +78,7 @@
 
 import { SYSTEMS } from '../../systems';
 import { REACH } from '../terrain';
-import { floraRows } from '../flora';
+import { airOf, floraRows } from '../flora';
 import { SITES as desert } from './desert';
 import { SITES as ice } from './ice';
 import { SITES as forest } from './forest';
@@ -177,6 +180,7 @@ export function siteFrom(raw, id, { name, accent } = {}) {
   const zoneLife = zones.flatMap((z) => (z.life ?? []).map((a) => ({ ...a, zone: z.id, at: a.at && inZone(z.id, a.at), path: a.path?.map((q) => inZone(z.id, q)), level: a.level != null ? z.origin[1] + a.level : undefined })));
   // (and the places in them its people go to, where they are)
   const zoneWants = zones.flatMap((z) => (z.wants ?? []).map((w) => ({ ...w, zone: z.id, at: inZone(z.id, w.at), ...(w.spots ? { spots: w.spots.map((q) => inZone(z.id, q)) } : {}) })));
+  const air = airOf({ ...raw, places });
   const levelIn = (id, y) => (y == null ? undefined : zones.find((q) => q.id === id).origin[1] + y);
   const quests = (raw.quests ?? []).map((q) => ({
     ...q,
@@ -192,7 +196,6 @@ export function siteFrom(raw, id, { name, accent } = {}) {
     name: name ?? id,
     accent: accent ?? '#ffffff',
     reach: REACH,
-    weather: [],
     things: [],
     rides: [],
     flyovers: [],
@@ -201,6 +204,8 @@ export function siteFrom(raw, id, { name, accent } = {}) {
     ...raw,
     // (the site's own rows, then its flora's: the recipe adds, never replaces)
     scatter: [...(raw.scatter ?? []), ...floraRows(raw)],
+    weather: [...(raw.weather ?? []), ...air.weather],
+    air: { song: air.song, flocks: air.flocks },
     land,
     places,
     zones,

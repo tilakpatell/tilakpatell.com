@@ -26,7 +26,7 @@ const placeable = (kind) => Boolean(PROPS[kind] || SURFACE_MODELS[kind]);
 // kit, so a typo in its name fails here and not in a browser)
 const KIT = JSON.parse(readFileSync(new URL('../../../../../public/kit/naturemega/index.json', import.meta.url), 'utf8')).models;
 const kitName = (model) => (typeof model === 'string' && model.startsWith('kit:naturemega/') ? model.slice('kit:naturemega/'.length) : null);
-const WEATHER = ['sand', 'snow', 'rain', 'ash', 'embers', 'motes', 'spray'];
+const WEATHER = ['sand', 'snow', 'rain', 'ash', 'embers', 'motes', 'spray', 'pollen'];
 
 describe('the worlds you can land on', () => {
   it('are every one of the galaxy’s systems but Alderaan (it’s gone): each planet has a world to land on', () => {
