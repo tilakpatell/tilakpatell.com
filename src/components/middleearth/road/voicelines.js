@@ -7,7 +7,7 @@
 //   LINES: { beatId: { who, text } }
 //   SPEAKERS: who may say one: the cast, and the few met on the road who
 //     do not walk it (Butterbur at his own bar, Saruman on the wind, Haldir
-//     on the Nimrodel)
+//     on the Nimrodel, Faramir in Ithilien)
 //
 // A line the site has recorded already is reused word for word, so its
 // voice is found (lib/voiced.js’s lineId reads the words): Strider’s at
@@ -15,7 +15,7 @@
 
 import { CAST } from './fellowship';
 
-export const SPEAKERS = [...CAST, 'butterbur', 'saruman', 'haldir'];
+export const SPEAKERS = [...CAST, 'butterbur', 'saruman', 'haldir', 'faramir'];
 
 const sam = (text) => ({ who: 'sam', text });
 const frodo = (text) => ({ who: 'frodo', text });
@@ -47,6 +47,14 @@ export const LINES = {
   // (Haldir on the Nimrodel, then the Lady on her dais)
   'lorien-haldir': { who: 'haldir', text: 'You breathe so loud we could have shot you in the dark. Come. The Lady has asked for you.' },
   'lorien-galadriel': { who: 'galadriel', text: 'Nine left Rivendell. Eight are here. Your quest stands on the edge of a knife.' },
+  // (before the Black Gate: Gollum’s other way)
+  'marshes-gollum': { who: 'gollum', text: 'Not this gate, master. They will catch you. There is another way, a secret way, up the dark stairs.' },
+  // (Ithilien: Sam at the mûmakil, Faramir out of the ferns)
+  'ithilien-sam': sam('An oliphaunt, Mr Frodo. Grey as a house, and nobody at home will ever believe me.'),
+  'ithilien-faramir': { who: 'faramir', text: 'You are no orcs, and no spies of the Enemy I know. Tell me what brings two halflings to Ithilien.' },
+  // (Cirith Ungol: Gollum in Frodo’s ear, then Sam alone over him)
+  'cirith-gollum': { who: 'gollum', text: 'The fat one eats the bread, master. He wants it for himself. Send him away.' },
+  'cirith-sam': sam('I won’t leave you to them, Mr Frodo. Not while I’ve breath in me.'),
 };
 
 export const VOICELINES = Object.values(LINES);
