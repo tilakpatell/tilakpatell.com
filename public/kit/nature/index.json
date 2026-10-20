@@ -1,0 +1,442 @@
+{
+  "pack": "nature",
+  "licence": "CC0-1.0",
+  "source": "Quaternius, Stylized Nature Pack (https://quaternius.com)",
+  "models": {
+    "BirchTree_1": {
+      "family": "birchtree",
+      "file": "birchtree.glb",
+      "parts": [
+        "bark",
+        "leaves"
+      ],
+      "tris": 4596,
+      "tris1": 1435,
+      "radius": 1.666,
+      "height": 5.435,
+      "trunk": 0.166,
+      "kind": "tree",
+      "tones": [
+        [
+          0.7101,
+          0.5026,
+          0
+        ],
+        [
+          0.9038,
+          0.6397,
+          0
+        ]
+      ]
+    },
+    "BirchTree_2": {
+      "family": "birchtree",
+      "file": "birchtree.glb",
+      "parts": [
+        "bark",
+        "leaves"
+      ],
+      "tris": 7660,
+      "tris1": 2244,
+      "radius": 2.186,
+      "height": 7.54,
+      "trunk": 0.147,
+      "kind": "tree",
+      "tones": [
+        [
+          0.7101,
+          0.5026,
+          0
+        ],
+        [
+          0.9038,
+          0.6397,
+          0
+        ]
+      ]
+    },
+    "BirchTree_3": {
+      "family": "birchtree",
+      "file": "birchtree.glb",
+      "parts": [
+        "bark",
+        "leaves"
+      ],
+      "tris": 6818,
+      "tris1": 2325,
+      "radius": 2.057,
+      "height": 5.746,
+      "trunk": 0.155,
+      "kind": "tree",
+      "tones": [
+        [
+          0.7101,
+          0.5026,
+          0
+        ],
+        [
+          0.9038,
+          0.6397,
+          0
+        ]
+      ]
+    },
+    "BirchTree_4": {
+      "family": "birchtree",
+      "file": "birchtree.glb",
+      "parts": [
+        "bark",
+        "leaves"
+      ],
+      "tris": 3562,
+      "tris1": 1056,
+      "radius": 1.665,
+      "height": 4.202,
+      "trunk": 0.129,
+      "kind": "tree",
+      "tones": [
+        [
+          0.7101,
+          0.5026,
+          0
+        ],
+        [
+          0.9038,
+          0.6397,
+          0
+        ]
+      ]
+    },
+    "BirchTree_5": {
+      "family": "birchtree",
+      "file": "birchtree.glb",
+      "parts": [
+        "bark",
+        "leaves"
+      ],
+      "tris": 4520,
+      "tris1": 1349,
+      "radius": 2.509,
+      "height": 5.508,
+      "trunk": 0.173,
+      "kind": "tree",
+      "tones": [
+        [
+          0.7101,
+          0.5026,
+          0
+        ],
+        [
+          0.9038,
+          0.6397,
+          0
+        ]
+      ]
+    },
+    "DeadTree_1": {
+      "family": "deadtree",
+      "file": "deadtree.glb",
+      "parts": [
+        "bark"
+      ],
+      "tris": 4792,
+      "tris1": 1198,
+      "radius": 1.676,
+      "height": 6.186,
+      "trunk": 0.154,
+      "kind": "tree"
+    },
+    "DeadTree_10": {
+      "family": "deadtree",
+      "file": "deadtree.glb",
+      "parts": [
+        "bark"
+      ],
+      "tris": 3208,
+      "tris1": 802,
+      "radius": 3.176,
+      "height": 7.126,
+      "trunk": 0.336,
+      "kind": "tree"
+    },
+    "DeadTree_2": {
+      "family": "deadtree",
+      "file": "deadtree.glb",
+      "parts": [
+        "bark"
+      ],
+      "tris": 5344,
+      "tris1": 1336,
+      "radius": 1.858,
+      "height": 6.186,
+      "trunk": 0.157,
+      "kind": "tree"
+    },
+    "DeadTree_3": {
+      "family": "deadtree",
+      "file": "deadtree.glb",
+      "parts": [
+        "bark"
+      ],
+      "tris": 4928,
+      "tris1": 1232,
+      "radius": 2.275,
+      "height": 4.948,
+      "trunk": 0.157,
+      "kind": "tree"
+    },
+    "DeadTree_4": {
+      "family": "deadtree",
+      "file": "deadtree.glb",
+      "parts": [
+        "bark"
+      ],
+      "tris": 3528,
+      "tris1": 882,
+      "radius": 2.564,
+      "height": 4.601,
+      "trunk": 0.172,
+      "kind": "tree"
+    },
+    "DeadTree_5": {
+      "family": "deadtree",
+      "file": "deadtree.glb",
+      "parts": [
+        "bark"
+      ],
+      "tris": 1360,
+      "tris1": 339,
+      "radius": 1.052,
+      "height": 2.603,
+      "trunk": 0.109,
+      "kind": "tree"
+    },
+    "DeadTree_6": {
+      "family": "deadtree",
+      "file": "deadtree.glb",
+      "parts": [
+        "bark"
+      ],
+      "tris": 2984,
+      "tris1": 746,
+      "radius": 3.167,
+      "height": 6.415,
+      "trunk": 0.336,
+      "kind": "tree"
+    },
+    "DeadTree_7": {
+      "family": "deadtree",
+      "file": "deadtree.glb",
+      "parts": [
+        "bark"
+      ],
+      "tris": 3504,
+      "tris1": 875,
+      "radius": 3.969,
+      "height": 6.315,
+      "trunk": 0.348,
+      "kind": "tree"
+    },
+    "DeadTree_8": {
+      "family": "deadtree",
+      "file": "deadtree.glb",
+      "parts": [
+        "bark"
+      ],
+      "tris": 4944,
+      "tris1": 1235,
+      "radius": 4.736,
+      "height": 6.277,
+      "trunk": 0.338,
+      "kind": "tree"
+    },
+    "DeadTree_9": {
+      "family": "deadtree",
+      "file": "deadtree.glb",
+      "parts": [
+        "bark"
+      ],
+      "tris": 824,
+      "tris1": 206,
+      "radius": 1.09,
+      "height": 3.296,
+      "trunk": 0.152,
+      "kind": "tree"
+    },
+    "MapleTree_1": {
+      "family": "mapletree",
+      "file": "mapletree.glb",
+      "parts": [
+        "bark",
+        "leaves"
+      ],
+      "tris": 3848,
+      "tris1": 1092,
+      "radius": 3.964,
+      "height": 6.645,
+      "trunk": 0.336,
+      "kind": "tree",
+      "tones": [
+        [
+          0.5506,
+          0.0884,
+          0.0432
+        ],
+        [
+          0.7008,
+          0.1125,
+          0.055
+        ]
+      ]
+    },
+    "MapleTree_2": {
+      "family": "mapletree",
+      "file": "mapletree.glb",
+      "parts": [
+        "bark",
+        "leaves"
+      ],
+      "tris": 4800,
+      "tris1": 1393,
+      "radius": 4.579,
+      "height": 6.715,
+      "trunk": 0.348,
+      "kind": "tree",
+      "tones": [
+        [
+          0.5506,
+          0.0884,
+          0.0432
+        ],
+        [
+          0.7008,
+          0.1125,
+          0.055
+        ]
+      ]
+    },
+    "MapleTree_3": {
+      "family": "mapletree",
+      "file": "mapletree.glb",
+      "parts": [
+        "bark",
+        "leaves"
+      ],
+      "tris": 6678,
+      "tris1": 1929,
+      "radius": 5.576,
+      "height": 6.987,
+      "trunk": 0.338,
+      "kind": "tree",
+      "tones": [
+        [
+          0.5506,
+          0.0884,
+          0.0432
+        ],
+        [
+          0.7008,
+          0.1125,
+          0.055
+        ]
+      ]
+    },
+    "MapleTree_4": {
+      "family": "mapletree",
+      "file": "mapletree.glb",
+      "parts": [
+        "bark",
+        "leaves"
+      ],
+      "tris": 1256,
+      "tris1": 378,
+      "radius": 1.844,
+      "height": 3.589,
+      "trunk": 0.152,
+      "kind": "tree",
+      "tones": [
+        [
+          0.5506,
+          0.0884,
+          0.0432
+        ],
+        [
+          0.7008,
+          0.1125,
+          0.055
+        ]
+      ]
+    },
+    "MapleTree_5": {
+      "family": "mapletree",
+      "file": "mapletree.glb",
+      "parts": [
+        "bark",
+        "leaves"
+      ],
+      "tris": 4504,
+      "tris1": 1320,
+      "radius": 4.328,
+      "height": 7.281,
+      "trunk": 0.336,
+      "kind": "tree",
+      "tones": [
+        [
+          0.5506,
+          0.0884,
+          0.0432
+        ],
+        [
+          0.7008,
+          0.1125,
+          0.055
+        ]
+      ]
+    }
+  },
+  "materials": {
+    "BirchTree_Bark": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": "tree",
+      "maps": {
+        "colour": "1024x1024",
+        "normal": "1024x1024"
+      }
+    },
+    "BirchTree_Leaves": {
+      "alpha": "mask",
+      "leaf": true,
+      "wind": "tree",
+      "maps": {
+        "colour": "512x512"
+      }
+    },
+    "MapleTree_Bark": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": "tree",
+      "maps": {
+        "colour": "1024x1024",
+        "normal": "1024x1024"
+      }
+    },
+    "MapleTree_Leaves": {
+      "alpha": "mask",
+      "leaf": true,
+      "wind": "tree",
+      "maps": {
+        "colour": "512x512"
+      }
+    },
+    "NormalTree_Bark": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": "tree",
+      "maps": {
+        "colour": "1024x1024",
+        "normal": "1024x1024"
+      }
+    }
+  }
+}

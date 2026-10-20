@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { paintFor } from './ground';
-import { roadFor } from './terrain';
+import { createGround, moundTop, paintFor } from './ground';
+import { landFor, roadFor } from './terrain';
+import { createWind } from '../../../lib/three/windNodes';
+import { soilOf } from './stages/soils';
+import { STAGES } from './stages/index';
 
 // a land that climbs a metre a metre along z, on Caradhras’ road
 const land = { road: roadFor('caradhras'), heightAt: (x, z) => z / 4 };
@@ -37,4 +40,28 @@ describe('a stage’s ground paint', () => {
     const { out } = at(paintFor(steep, { snow: [10, 14] }), 60, 40);
     expect(Math.max(...out)).toBeLessThan(0.5);
   });
+});
+
+describe('a stage’s mounds', () => {
+  it('a dome stood on the lowest of the ground round its foot, nothing off it', () => {
+    const top = moundTop((x) => x / 10, { at: [0, 0], r: 10, squash: 0.5, sink: 0.3 });
+    expect(top.low).toBeCloseTo(-1, 2);
+    expect(top(0, 0)).toBeCloseTo(top.low - 0.3 + 5, 6);
+    expect(top(6, 0)).toBeCloseTo(top.low - 0.3 + 4, 6);
+    expect(top(11, 0)).toBe(-Infinity);
+  });
+
+  it('the blades grow over Hobbiton’s Hill too, shown and hidden with the field’s as one', () => {
+    const land = landFor('hobbiton', { res: 8, wide: 256 });
+    const mounds = STAGES[0].ground.mounds;
+    const ground = createGround(land, { tier: 'mid', soil: soilOf('hobbiton'), mounds, wind: createWind(), from: 0, to: land.end });
+    expect(ground.blades.mesh.isGroup).toBe(true);
+    expect(ground.blades.mesh.children).toHaveLength(2);
+    ground.update(30, 10);
+    ground.dispose();
+    // (no mounds: the field’s patch alone)
+    const plain = createGround(land, { tier: 'mid', soil: soilOf('hobbiton'), wind: createWind(), from: 0, to: land.end });
+    expect(plain.blades.mesh.isMesh).toBe(true);
+    plain.dispose();
+  }, 30000);
 });

@@ -35,7 +35,8 @@ for (const pick of ids) {
       await page.evaluate(() => window.__ROAD__.fast?.(0));
     }
     else await page.waitForTimeout(WAIT);
-    const png = await page.screenshot({ type: 'png', timeout: 120000 });
+    // (a frame in the container’s software GL can take minutes on a heavy stage)
+    const png = await page.screenshot({ type: 'png', timeout: 360000 });
     const img = kind === 'desktop' ? sharp(png).resize(960, 600) : sharp(png);
     await img.webp({ quality: 72 }).toFile(`${OUT}${name}-${kind}.webp`);
     console.log(`${name}-${kind}.webp${errors.length ? ` (${errors.length} page errors: ${errors[0]})` : ''}`);

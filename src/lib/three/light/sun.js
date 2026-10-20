@@ -44,7 +44,8 @@
 //   each cascade's draws, for the evidence.
 //
 // readShadowRecord(entry) → { viewDistance: { low, mid, high, ultra }, shadowSun: [x, y] | null }   (pure)
-// cascadesFor(tier, viewDistance, video?) → { n, far, map }   (pure; video: lib/video.js's `shadows` and `shadowDistance` over the tier's)
+// cascadesFor(tier, viewDistance, video?) → { n, far, map }   (pure; video: lib/video.js's `shadows` and `shadowDistance` over the tier's,
+//   and `cascades`: at most that many, at the tier's map size: a world near the camera that wants fewer passes, not smaller maps)
 // splitsFor(near, far, n, lambda = 0.5) → n + 1 distances  (pure)
 // biasFor(texel, { bias, normalBias }) → { bias, normalBias }   (pure)
 // cadenceFor(n) → { near, far, split } | null; cascadeDue(i, frame, cadence, entered) → boolean   (pure)
@@ -98,7 +99,8 @@ export function cascadesFor(tier, viewDistance = VIEW_DISTANCE, video = null) {
   const key = TIERS[tier] ? tier : 'high';
   const asked = Number(video?.shadowDistance);
   const far = Number.isFinite(asked) && asked > 0 ? asked : key === 'ultra' ? ULTRA_SHADOW_FAR : (viewDistance[key] ?? VIEW_DISTANCE[key]);
-  return { n: t.n, far, map: t.map };
+  const most = Number(video?.cascades);
+  return { n: Number.isFinite(most) && most > 0 ? Math.min(t.n, Math.round(most)) : t.n, far, map: t.map };
 }
 
 // The practical split: each inner edge the average, weighted by lambda, of
