@@ -171,8 +171,8 @@ export const SCATTER = {
     { model: 'Birch_2', per100: 0.08, clump: 3, spread: 8, scale: [0.8, 1.1], tint: AUTUMN },
     { model: 'DeadTree_1', per100: 0.008, clump: 2, spread: 8, scale: [0.8, 1.1] },
     // the maples red and orange, the birches yellow
-    ...maples(0.12, { clump: 3 }),
-    ...birches(0.06),
+    ...maples(0.06, { clump: 3 }),
+    ...birches(0.04),
     ...snags(0.01),
     { model: 'Pine_1', per100: 0.03, clump: 3, spread: 9, scale: [0.9, 1.3], slope: 0.9 },
     { model: 'Rock_Big_1', per100: 0.012, clump: 2, spread: 8, scale: [0.6, 1.3], slope: 1.4, tint: OAK },
