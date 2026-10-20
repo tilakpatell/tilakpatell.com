@@ -65,7 +65,7 @@ export const BUILDINGS = {
   // Plazir-15: the city under its dome
   plazirdome: drawn('A huge transparent geodesic glass dome of fine white struts over a cluster of gleaming white modernist towers with rounded corners and green roof gardens, a clean bright utopian city, the dome sitting on a low white ring base.', 110, 'w', { hero: true }),
   // Pillio: the Emperor's observatory
-  pilliovault: drawn('A low angular dark grey military bunker with sloped armoured walls and a heavy round vault door in its front, set into a mossy grey rock outcrop on a tropical island, small antenna and vents on its roof, hidden and secret.', 32, 'w', { tris: 30000 }),
+  pilliovault: drawn('A low angular dark grey military bunker with sloped armoured walls and a heavy round vault door in its front, set into a mossy grey rock outcrop on a tropical island, small antenna and vents on its roof, hidden and secret.', 32, 'w', { tris: 30000, hero: true }),
   // Fondor: a construction gantry of the shipyards
   fondorgantry: drawn('A colossal starship construction gantry of a shipyard: a grey steel lattice tower with two long cantilevered crane arms reaching out at its top, gangways and stairs up its sides, work lights and cable reels, standing on a heavy concrete foot, industrial and imperial.', 90, 'h', { hero: true }),
 };
