@@ -19,6 +19,7 @@ describe('which guide a page gets', () => {
   });
 
   it('gives a section’s deeper pages their own kind of guide', () => {
+    expect(guideFor('/avengers/gate').key).toBe('/avengers');
     expect(guideFor('/experience/aws').key).toBe('/experience');
     expect(guideFor('/projects/gameboy').key).toBe('/project');
     expect(guideFor('/galaxy/hoth').key).toBe('/galaxy');
@@ -44,6 +45,7 @@ describe('which guide a page gets', () => {
   });
 
   it('has none for a page it doesn’t know', () => {
+    expect(guideFor('/avengers/gate/deeper')).toBe(null);
     expect(guideFor('/nowhere')).toBe(null);
     expect(guideFor('/galaxy/hoth/surface/deeper')).toBe(null);
   });

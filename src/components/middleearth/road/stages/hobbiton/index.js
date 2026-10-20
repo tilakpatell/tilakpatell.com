@@ -1,5 +1,6 @@
 // Hobbiton, the first stage in full (the plan’s Task 17, the recipe the
-// other fifteen follow): its props, Gandalf’s cart up the lane, the dancers
+// other fifteen follow): its props (the Shire chapter’s own builders,
+// props.js), Gandalf’s cart up the lane, the dancers
 // on the Party Field, the dragon over it and Bilbo by the tree, and then
 // not. The data is the stage’s row (stages/index.js), its beats.js and
 // lore.js; this file only draws, each beat’s scene a function of where the
@@ -14,6 +15,8 @@ import * as THREE from 'three';
 import { walker } from '../../cast';
 import { createHorse } from '../../creatures/horse';
 import { HEIGHTS } from '../../cast';
+import { createTownKit } from '../../townKit';
+import { disposeBuilt } from '../parts';
 import { TREE, buildCart, buildProps } from './props';
 
 const LANE = 2.4; // m: the cart keeps the lane’s far half from the side shot, coming down it
@@ -34,19 +37,24 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'stage:hobbiton';
   const material = road.material({ vertexColors: true, flatShading: true });
-  const props = buildProps({ material, heightAt, rt });
+  // the town kit in the Shire chapter’s materials, its windows and lanterns lit as the evening comes
+  const town = createTownKit(road, rt?.gfx?.renderer ?? null);
+  const props = buildProps({ K: town.K, material, heightAt, tier });
   group.add(props.group);
 
-  // Gandalf’s cart: the bed, the bay horse before it, the wizard on the bench
-  const cart = buildCart(material);
+  // Gandalf’s cart, the chapter’s with its fireworks: the bay horse before it, the wizard on the bench
+  const theCart = buildCart(town.K);
+  const cart = theCart.group;
   const horse = createHorse(rt, { coat: 'bay', height: 1.55 });
-  horse.group.position.set(0, 0, -2.7);
+  // (the cart comes down the lane, toward the walkers: the horse before it, facing the way it goes)
+  horse.group.position.set(0, 0, -3.4);
+  horse.group.rotation.y = Math.PI;
   cart.add(horse.group);
   const gandalf = walker('gandalf', { rt, seed: 3 });
-  gandalf.group.position.set(0, 1.0, 0.4);
+  gandalf.group.position.copy(theCart.seat).add(new THREE.Vector3(0, -0.45, 0));
+  gandalf.group.rotation.y = Math.PI;
   gandalf.set({ base: 'sit.ground', speed: 0 });
   cart.add(gandalf.group);
-  cart.rotation.y = Math.PI; // (coming down the lane, toward the walkers)
   group.add(cart);
 
   // the dancers on the field, round the tree (four on low)
@@ -72,11 +80,28 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
 
   let dragon = null;
   const at = new THREE.Vector3();
+  // smoke from the chimneys, the Hill’s and the nearest along the lane (fewer
+  // on low), while the walker is in the stage: the weather stands in the
+  // world, which is this stage’s frame only while it is the one walked
+  const chimneys = props.chimneys.slice(0, tier === 'low' ? 2 : 5);
+  let smoke = [];
+  const unsmoke = () => {
+    for (const s of smoke) s?.stop();
+    smoke = [];
+  };
 
   return {
     group,
     update(local, dt, { since = {}, speed = 0 } = {}) {
       props.update(dt);
+      if (!smoke.length)
+        smoke = chimneys.map((c) => {
+          const s = weather?.kind?.('smoke', { count: 24, scale: 0.8 }) ?? null;
+          s?.at(c.x, c.y, c.z);
+          return s;
+        });
+      // the windows and the lanterns lit as the day goes (the stage ends at dusk)
+      town.setNight(Math.min(1, Math.max(0, (local - 110) / 90)));
       // the cart, from up the lane toward the walkers and past them
       const z = CART.from - CART.k * local;
       cart.visible = local < 120;
@@ -103,15 +128,23 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
       bilbo.group.visible = local < 150 || (s != null && s < GONE);
       if (bilbo.group.visible) bilbo.tick(dt);
     },
+    // walked out of: the smoke stops with the stage
+    leave() {
+      unsmoke();
+    },
     dispose() {
       dragon?.stop();
+      unsmoke();
       props.dispose();
       horse.dispose();
       gandalf.dispose();
       bilbo.dispose();
       for (const d of dancers) d.dispose();
-      cart.traverse((o) => o.geometry?.dispose());
+      // (the horse and the wizard are theirs to free: out of the cart before what it was built of goes)
+      cart.remove(horse.group, gandalf.group);
+      disposeBuilt(cart, { mats: town.K.mats });
       material.dispose();
+      town.dispose();
       group.removeFromParent();
     },
   };

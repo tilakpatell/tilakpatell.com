@@ -485,6 +485,7 @@ export const PAGES = {
     tips: [
       ['Swinging', 'Let go on the upswing for a perfect release. Hold on with nothing to catch for web wings. Race the swing tour’s rings round the compound.'],
       ['The stones', 'Win a building’s game and its stone hangs over the door. The Space Stone opens a portal over the helipad: walk under it to Titan.'],
+      ['A link to each game', 'Each game has an address of its own, #/avengers/ and its building: workshop, lawn, training, range, operations, lab, gate or hangar. It opens at once over the compound; Esc or Back closes it.'],
       ['Other players', 'See other players goes online: everyone else on the compound shows as a hologram with their name over them.'],
       ['The gate: Thwip!', 'Spider-Man, late for school. Hold to web the wall ahead and swing, let go to fly; let go on the upswing for a perfect. Grab Peter’s backpacks, beat the bell, keep off the street.'],
       ['Without 3D', 'The compound is drawn from the air, and its pins open each game in its simple version.'],

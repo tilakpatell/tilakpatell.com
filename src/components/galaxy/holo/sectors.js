@@ -14,9 +14,12 @@
 //   rimNames(holds, { least }) → [{ side, a, span }] each side's name along the rim: the middle of its longest run
 //     of the outermost ring's sectors, where that run is at least `least` radians
 //   outline(sector, steps) → [[x, z], …] a sector's edge on the map, bulged, as a closed loop
+//   systemsIn(id) → the systems in a sector, the films' and the shows' worlds before the charted ones
+//   sectorName(id) → what a sector is called: the canon sector most of its systems are in (systems.js's `sector`, a
+//     tie to the first system's), else its ring and the grid square of its middle ("Wild Space · C-9")
 
 import { WARS } from '../sides';
-import { CORE, REGIONS, SYSTEMS, UNKNOWN, edgeAt } from '../systems';
+import { CORE, REGIONS, SYSTEMS, UNKNOWN, edgeAt, gridAt } from '../systems';
 
 const TAU = Math.PI * 2;
 const WILD = 0.9; // (Wild Space: a band this wide past the Outer Rim, bulged as the rings are)
@@ -132,4 +135,19 @@ export function outline(s, steps = 12) {
   for (let i = 0; i <= steps; i++) pts.push(at(s.a0 + ((s.a1 - s.a0) * i) / steps, s.r1));
   for (let i = steps; i >= 0; i--) pts.push(at(s.a0 + ((s.a1 - s.a0) * i) / steps, s.r0));
   return pts;
+}
+
+// (each sector's systems, worked out once)
+const IN = new Map(SECTORS.map((sec) => [sec.id, []]));
+for (const s of SYSTEMS) IN.get(sectorOf(s.pos))?.push(s);
+for (const list of IN.values()) list.sort((a, b) => Number(Boolean(a.charted)) - Number(Boolean(b.charted)));
+export const systemsIn = (id) => IN.get(id) ?? [];
+
+export function sectorName(id) {
+  const sec = sectorById(id);
+  if (!sec) return '';
+  const tally = new Map();
+  for (const s of systemsIn(id)) if (s.sector) tally.set(s.sector, (tally.get(s.sector) ?? 0) + 1);
+  if (tally.size) return [...tally].reduce((best, x) => (x[1] > best[1] ? x : best))[0];
+  return `${RINGS.find((r) => r.id === sec.ring).name} · ${gridAt(middleOf(sec))}`;
 }

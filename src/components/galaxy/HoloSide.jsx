@@ -1,17 +1,25 @@
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
-import { RiArrowGoBackLine, RiRocket2Fill } from 'react-icons/ri';
+import { RiArrowDownSLine, RiArrowGoBackLine, RiArrowUpSLine, RiRocket2Fill } from 'react-icons/ri';
 import WarCard, { SystemWar } from './WarCard';
 import { jumpTime, viaLanes } from './routes';
 import { FILMS, eraById, eraOf, gridAt, jumpSeconds, lightYears } from './systems';
 
 // The galaxy map's side panel (HoloMap.jsx): with a system picked, its name, the jump first, how far and how long and the route, then
 // the rest folded (era, films, mission, its place in the war, who's online there); with none, where you are and the war's own card.
-// A memo: a pan or a zoom of the map, which changes none of what it shows, doesn't draw it again.
-const HoloSide = memo(function HoloSide({ picked, here, route, war, pickedWar, view, now, oath, viewOath, pilots, wide, seen, suggested, record, current, jumpBtn, onJump, onClose, onLeave, onSwear, onTheatre, onPick, onBack }) {
+// A memo: a pan or a zoom of the map, which changes none of what it shows, doesn't draw it again. On a phone's 3D map (`fold`:
+// { folded, toggle }) it's a sheet along the foot with a handle, folded to its first lines.
+const HoloSide = memo(function HoloSide({ picked, here, route, war, pickedWar, view, now, oath, viewOath, pilots, wide, seen, suggested, record, current, jumpBtn, onJump, onClose, onLeave, onSwear, onTheatre, onPick, onBack, fold = null }) {
   const away = picked && picked.id !== current;
   return (
-    <aside className="holomap-side">
+    <aside className="holomap-side" data-folded={fold?.folded || undefined}>
+      {/* (a phone's 3D map: the panel a sheet along the foot, folded to its first lines till it's opened) */}
+      {fold && (
+        <button type="button" className="holomap-fold" aria-expanded={!fold.folded} onClick={fold.toggle}>
+          {fold.folded ? <RiArrowUpSLine aria-hidden="true" /> : <RiArrowDownSLine aria-hidden="true" />}
+          {fold.folded ? 'More' : 'Less'}
+        </button>
+      )}
       {picked ? (
         <>
           <div aria-live="polite">

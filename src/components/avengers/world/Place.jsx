@@ -76,7 +76,8 @@ function ReactorToy() {
 }
 
 // The hangar without 3D: the Tesseract in its case, and the Space Stone's portal.
-function TesseractToy({ onPortal }) {
+// (the portal needs the Space Stone in every mode, and it's won in the 3D game)
+function TesseractToy({ onPortal, space }) {
   const [open, setOpen] = useState(false);
   return (
     <div>
@@ -114,7 +115,7 @@ function TesseractToy({ onPortal }) {
       <button
         type="button"
         className="btn btn-primary mt-6"
-        disabled={open}
+        disabled={open || !space}
         onClick={() => {
           setOpen(true);
           onPortal?.();
@@ -122,7 +123,7 @@ function TesseractToy({ onPortal }) {
       >
         Space
       </button>
-      <p className="mt-3 text-sm text-muted">The Space Stone opens a portal. Thanos is on the other side.</p>
+      <p className="mt-3 text-sm text-muted">{space ? 'The Space Stone opens a portal. Thanos is on the other side.' : 'The Space Stone opens a portal, and it’s won in the 3D game. Thanos is on the other side.'}</p>
     </div>
   );
 }
@@ -144,7 +145,7 @@ function Game({ id, onPortal }) {
     case 'spidey':
       return <Thwip fallback={<WebShooter />} />;
     case 'vault':
-      return <TesseractRun onPortal={onPortal} fallback={<TesseractToy onPortal={onPortal} />} />;
+      return <TesseractRun onPortal={onPortal} fallback={<TesseractToy onPortal={onPortal} space={hasEarned('space')} />} />;
     default:
       return null;
   }

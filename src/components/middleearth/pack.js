@@ -38,6 +38,12 @@ export const PACK = {
     '/kit/naturemega/deadtree.glb',
     '/kit/naturemega/fern.glb',
     '/kit/naturemega/flower.glb',
+    '/kit/naturemega/giantpine.glb',
+    // (the Road’s maples, birches and dead trees: the older Stylized Nature Pack’s kit)
+    '/kit/nature/index.json',
+    '/kit/nature/birchtree.glb',
+    '/kit/nature/deadtree.glb',
+    '/kit/nature/mapletree.glb',
     '/kit/naturemega/grass.glb',
     '/kit/naturemega/mushroom.glb',
     '/kit/naturemega/pebble.glb',
@@ -45,7 +51,10 @@ export const PACK = {
     '/kit/naturemega/plant.glb',
     '/kit/naturemega/rock.glb',
     '/kit/naturemega/twistedtree.glb',
+    '/kit/farm/cow.glb',
     '/kit/farm/horse.glb',
+    '/kit/farm/pig.glb',
+    '/kit/farm/sheep.glb',
   ], // single files
   globs: ['/cc0/galaxy/**', '/models/middleearth/cast/*', '/models/middleearth/fx/*'], // folders: `*` within a folder, `**` any depth
   computed: ['/models/sketchfab'], // folders the source only builds paths in: the files it takes are listed above

@@ -48,8 +48,8 @@ describe('a pack file’s kind, from its family', () => {
   });
 
   it('gathers each kind’s other families into it', () => {
-    // (the nature pack's trees, then the space pack's)
-    for (const n of ['CherryBlossom_2', 'CommonTree_1', 'DeadTree_5', 'GiantPine_4', 'Pine_2', 'TallThick_3', 'TwistedTree_1', 'Tree_Blob_1']) {
+    // (the nature packs' trees, the older pack's by its own names, then the space pack's)
+    for (const n of ['CherryBlossom_2', 'CommonTree_1', 'DeadTree_5', 'GiantPine_4', 'Pine_2', 'TallThick_3', 'TwistedTree_1', 'BirchTree_2', 'MapleTree_4', 'PalmTree_1', 'Tree_Blob_1']) {
       expect(kindOf(n, 'x'), n).toBe('tree');
     }
     expect(kindOf('Petal_3', 'x')).toBe('flower');

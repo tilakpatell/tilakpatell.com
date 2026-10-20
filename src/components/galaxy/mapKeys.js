@@ -1,12 +1,14 @@
 // The galaxy map's own keys (HoloMap.jsx) and its find: M closes it, and so
 // does Escape, but Escape shuts the innermost open thing first (the find's
 // list, which it clears; the films' panel; the key; the layers' switches on
-// a phone), the map only when none is open; / goes to the find field, J
-// jumps to the course, + − 0 zoom; the rest is the page's or the field's.
+// a phone), the map only when none is open (and on the 3D map an open sector
+// before it: HoloMap.jsx); / goes to the find field, J jumps to the course,
+// + − 0 zoom, Q and E turn the 3D map; the rest is the page's or the field's.
 // Pure, tested.
 //
 // mapKeyAction({ key, meta, ctrl, alt, repeat }, { typing, canJump, findOpen, filmsOpen, keyOpen, layersOpen }) →
-// 'close' | 'clearFind' | 'closeFilms' | 'closeKey' | 'closeLayers' | 'find' | 'jump' | 'zoomIn' | 'zoomOut' | 'fit' | null
+// 'close' | 'clearFind' | 'closeFilms' | 'closeKey' | 'closeLayers' | 'find' | 'jump' | 'zoomIn' | 'zoomOut' | 'fit' | 'turnLeft' |
+// 'turnRight' | null
 // pickAction(pick, id, current) → what pressing the system `id` does when `pick` is picked and `current` is where you are:
 // 'pick' it (plot the course), 'jump' to it (it's picked already), or 'clear' the pick (it's where you are, picked)
 // courseOf(pick, current) → the system the course is to: the pick, unless it's where you are, or none
@@ -24,6 +26,8 @@ export function mapKeyAction({ key, meta, ctrl, alt, repeat }, { typing = false,
   if (k === '+' || k === '=') return 'zoomIn';
   if (k === '-' || k === '_') return 'zoomOut';
   if (k === '0') return 'fit';
+  if (k === 'q') return 'turnLeft'; // (the 3D map's: HoloMap.jsx)
+  if (k === 'e') return 'turnRight';
   return null;
 }
 
