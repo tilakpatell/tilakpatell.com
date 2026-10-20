@@ -19,8 +19,9 @@
 //   turn(pose, dYaw, dPitch) → turned round its point and tipped (held between LOW and HIGH)
 //   pan(pose, dx, dy, { fov, h }) → slid over the plane by screen pixels (h the screen's height)
 //   focus(pose, point, { dist }) → looking at a map point, no further off than dist
-//   fitTo(pose, points, { aspect, fov, fx, fy }) → looking at map points' middle, as close as it can be (no closer than
-//     SHOW) with every one of them in the screen's middle fx, fy and room round them for their names: a course's ends
+//   fitTo(pose, points, { aspect, fov, fx, fy, pitch }) → looking at map points' middle, as close as it can be (no closer
+//     than SHOW) with every one of them in the screen's middle fx, fy and room round them for their names: a course's
+//     ends, or a sector opened (at its own tilt, `pitch`, where one's given)
 //   planeAt(pose, nx, ny, { aspect, fov }) → the map point under the screen's normalised point (−1 … 1, y up), or null
 //   ease(from, to, dt, rate) → a step from one pose toward another (the yaw the short way round)
 //   settled(a, b) → whether two poses are as good as the same
@@ -133,9 +134,9 @@ export const focus = (pose, [x, z], { dist = 7 } = {}) => {
 };
 
 const SHOW = 7; // (the closest a course's ends are shown from)
-export function fitTo(pose, points, { aspect = 16 / 9, fov = FOV, fx = 1, fy = 1 } = {}) {
+export function fitTo(pose, points, { aspect = 16 / 9, fov = FOV, fx = 1, fy = 1, pitch = null } = {}) {
   const mid = [points.reduce((n, p) => n + p[0], 0) / points.length, points.reduce((n, p) => n + p[1], 0) / points.length];
-  const at = (dist) => keep({ ...pose, x: mid[0], z: mid[1], dist, pitch: pose.pitch + (pitchFor(dist) - pitchFor(pose.dist)) });
+  const at = (dist) => keep({ ...pose, x: mid[0], z: mid[1], dist, pitch: pitch ?? pose.pitch + (pitchFor(dist) - pitchFor(pose.dist)) });
   const fits = (dist) => {
     const p = at(dist);
     return points.every(([x, z]) => {

@@ -18,6 +18,10 @@
 // big bolt; the cluster's round, bursting into its shards near the patrol;
 // the arc, landing at once on the patrol within the guns' reach, drawn as a
 // bolt too fast to see fly.
+// In a chase (./games/chase.js) the patrol's turned on the cruiser without
+// a word and held: a hit on it flashes and takes nothing, so it can't be
+// shot down mid-run; let go, it's calmed (and held `keep` seconds more, when
+// asked: a chase won, the shots still in the air don't turn it).
 // Pure: plain arrays, no React, no three.js.
 //
 //   FIGHT                          its numbers
@@ -28,6 +32,7 @@
 //     ring() → { angle } while the patrol fights (ship.js's stepFedShip), else null,
 //     grounded(now), step(dt, now, { cruiser, at, flying, stats }) → events, live(), clear(),
 //     power(slot, now, cruiser, at) → { ok, id, why, portal? } (G and X), setPowers(picks, fx),
+//     chase(on, now, keep) (a chase's start, held; its end, let go and calmed, held `keep` s more),
 //     placeTiles(root, on, denied, nowMs) (the HUD's power tiles) }
 //   events: { type: 'hit', at } (a flash) | 'provoked' | 'down' | 'hurt' | 'grounded' | 'back'
 // (now in seconds; `cruiser` { x, y, z, yaw })
@@ -35,7 +40,7 @@
 import { SHIP_FX, burstDirs } from '../../../lib/arms/behaviours';
 import { createBolts } from '../../../lib/combat/bolt';
 import { armsView, createArmory, createPowerTiles, fan, picksFor, steer } from '../../universe/shared/flying';
-import { PATROL, calm, hitPatrol, newPatrol, patrolShot, stepPatrol } from './patrolRules';
+import { PATROL, calm, hitPatrol, newPatrol, patrolShot, provoke, stepPatrol } from './patrolRules';
 import { createStreetPowers } from './streetPowers';
 
 export const FIGHT = {
@@ -74,6 +79,7 @@ export function createStreetFight({ loadout, fx = null, picks = null, charge = 0
   let hitAt = -Infinity;
   let groundedUntil = -Infinity;
   let angle = 0;
+  let heldUntil = -Infinity; // (in a chase, and a while after when asked: hits take nothing)
   const ringArg = { angle: 0 };
   const armsOut = { name: '', line: 'primary', index: 0, ammo: 0, max: 0, filling: 0 };
   // (the two bodies a bolt can meet, moved each step)
@@ -137,6 +143,10 @@ export function createStreetFight({ loadout, fx = null, picks = null, charge = 0
     // G and X: the power, if it can be (`portal`: where the cruiser comes out)
     power: (slot, now, c, at) => powers.press(slot, { now, cruiser: c, at: at && patrol.mode !== 'down' ? at : null }),
     placeTiles: (root, on, denied, nowMs) => tiles.place(root, on, powers.view(), denied, nowMs),
+    chase(on, now, keep = 0) {
+      heldUntil = on ? Infinity : (now ?? -Infinity) + keep;
+      patrol = on ? provoke(patrol, now) : calm(patrol);
+    },
     ring() {
       if (patrol.mode !== 'fight') return null;
       ringArg.angle = angle;
@@ -216,7 +226,7 @@ export function createStreetFight({ loadout, fx = null, picks = null, charge = 0
       cruiserBody.b[1] = c.y + 0.6;
       const land = (punch) => {
         const was = patrol.mode;
-        const r = hitPatrol(patrol, punch, now);
+        const r = now < heldUntil ? { patrol, down: false } : hitPatrol(patrol, punch, now);
         patrol = r.patrol;
         if (punch > 0) powers.hit();
         if (r.down) {

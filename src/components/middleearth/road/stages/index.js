@@ -18,8 +18,9 @@ export const STAGES = [
     mode: 'walk',
     place: 'hobbiton',
     // the Water, in from the west, by the lane past the mill and away
-    // west again before the stage’s end, so its channel never meets a seam
-    ground: { rivers: [{ points: [[-240, 0, -30], [-120, 0, 30], [-42, 0, 95], [-38, 0, 140], [-110, 0, 190], [-200, 0, 214]], depth: 2.6, width: 12, bank: 22 }] },
+    // west again before the stage’s end, so its channel never meets a seam;
+    // the Hill, Bag End in its west face (hobbiton/props.js builds its turf)
+    ground: { rivers: [{ points: [[-240, 0, -30], [-120, 0, 30], [-42, 0, 95], [-38, 0, 140], [-110, 0, 190], [-200, 0, 214]], depth: 2.6, width: 12, bank: 22 }], mounds: [{ at: [34, 6], r: 18, squash: 0.6, sink: 0.3 }] },
   },
   {
     id: 'shire-edge',
@@ -106,10 +107,140 @@ export const STAGES = [
       ],
     },
   },
-  { id: 'caradhras', name: 'Caradhras', date: '11 January 3019', length: 230, mode: 'walk', place: 'redhorn' },
-  { id: 'moria', name: 'Moria', date: '13 January 3019', length: 250, mode: 'walk', place: 'moria' },
-  { id: 'lorien', name: 'Lothlórien', date: '17 January 3019', length: 200, mode: 'walk', place: 'lorien' },
-  { id: 'anduin', name: 'The Anduin', date: '16 February 3019', length: 240, mode: 'boat', place: 'argonath' },
+  // (stages 7 to 10 shorter than the table’s first lengths: their holds are
+  // longer than the half minute the ledger counted, and the ride must stay
+  // under half an hour with stages 11 to 16 still to come)
+  {
+    id: 'caradhras',
+    name: 'Caradhras',
+    date: '11 January 3019',
+    length: 170,
+    mode: 'walk',
+    place: 'redhorn',
+    // Hollin’s bare hills, then the road over the Redhorn’s shoulder in snow
+    // (the peak itself up on the left), and down to the black lake under the
+    // Walls of Moria on the right, the cliff across the road’s end
+    ground: {
+      spec: {
+        seed: 17,
+        relief: [
+          { type: 'swell', scale: 180, height: 6 },
+          { type: 'ridges', scale: 110, height: 8, octaves: 4 },
+          { type: 'island', at: [0, 74], r: 62, height: 20 },
+          { type: 'island', at: [120, 70], r: 90, height: 120, core: 0.04, ragged: 0.5 },
+          { type: 'island', at: [-42, 134], r: 30, height: -12 },
+          { type: 'mountains', scale: 140, height: 140, from: 200, to: 420 },
+        ],
+      },
+      // (the shore under the cliff level, where the Doors are read)
+      flats: [{ at: [0, 150], r: 13, edge: 10 }],
+      // (and the shore clear where the Watcher’s arms come out, so nothing stands in front of them)
+      clear: [
+        { at: [0, 156], r: 12 },
+        { at: [-14, 142], r: 14 },
+      ],
+      paint: { greens: [0x4a4c34, 0x666242, 0x8a8260], dirt: 0x8c8474, snow: [9, 13] },
+    },
+  },
+  {
+    id: 'moria',
+    name: 'Moria',
+    date: '13 January 3019',
+    length: 180,
+    mode: 'walk',
+    place: 'moria',
+    // the halls level, then down the broken stair (z 76 to 90) twelve metres
+    // to the deep, the abyss across the road under the Bridge (z 91 to 125),
+    // and the Dimrill Dale climbing out to the seam, the Mirrormere in its
+    // hollow on the left, the Misty Mountains round it
+    ground: {
+      spec: {
+        seed: 18,
+        relief: [
+          { type: 'swell', scale: 260, height: 1 },
+          { type: 'island', at: [0, 140], r: 60, height: -12, core: 0.85, ragged: 0 },
+          { type: 'island', at: [0, 108], r: 18, height: -40, core: 0.55, ragged: 0.15 },
+          { type: 'island', at: [28, 160], r: 18, height: -5, core: 0.4 },
+          { type: 'mountains', scale: 120, height: 140, from: 200, to: 360 },
+        ],
+      },
+      // (the Chamber of Mazarbul and the hall’s floor level; nothing grows under the mountain)
+      flats: [
+        { at: [-14, 24], r: 10, edge: 6 },
+        { at: [4.5, 56], r: 26, edge: 8 },
+      ],
+      paint: { greens: [0x585a54, 0x6e6e62, 0x8a8874], dirt: 0x5a5650, snow: [10, 16] },
+    },
+  },
+  {
+    id: 'lorien',
+    name: 'Lothlórien',
+    date: '17 January 3019',
+    length: 150,
+    mode: 'walk',
+    // the Nimrodel across the road under the first mallorns; the wood’s
+    // floor gently rolling; the Silverlode in from the right to the hythe and
+    // on down the road into the Anduin (its width and depth the Anduin’s, so
+    // the two meet at the seam)
+    ground: {
+      spec: { seed: 19, relief: [{ type: 'swell', scale: 220, height: 5 }, { type: 'hills', scale: 80, height: 5, gain: 0.4, octaves: 3 }, { type: 'mountains', scale: 160, height: 40, from: 320, to: 480 }] },
+      rivers: [
+        { points: [[-540, 0, 6], [-200, 0, 10], [0, 0, 14], [200, 0, 18], [540, 0, 14]], depth: 0.9, width: 5, bank: 3 },
+        { points: [[-300, 0, 70], [-120, 0, 100], [-30, 0, 126], [0, 0, 138], [0, 0, 220]], depth: 2.4, width: 30, bank: 4 },
+      ],
+      // (the Mirror’s hollow level)
+      flats: [{ at: [-5, 103], r: 7, edge: 6 }],
+      clear: [{ at: [-5, 103], r: 8 }],
+      paint: { greens: [0x5a6a38, 0x8a8a44, 0xb89c4c] },
+    },
+    // (round the mallorn’s stair to the flets, along them, and down to the boats at the hythe)
+    modes: [
+      { at: 46, mode: 'climb' },
+      { at: 76, mode: 'walk' },
+      { at: 136, mode: 'boat' },
+    ],
+    place: 'lorien',
+  },
+  {
+    id: 'anduin',
+    name: 'The Anduin',
+    date: '16 February 3019',
+    length: 170,
+    mode: 'boat',
+    // the Great River down the road between rising walls of rock, the
+    // Argonath over it, then the lake opening out: the river swings left
+    // round Parth Galen’s shore (the road on land from z 95 to 138); Amon
+    // Hen’s wooded hill on the
+    // right, Tol Brandir in the lake ahead; at the end it runs across the
+    // road, and the boat crosses it to the east bank (so the river is gone
+    // from the seam, as the Marshes have none)
+    ground: {
+      spec: {
+        seed: 20,
+        relief: [
+          { type: 'swell', scale: 180, height: 6 },
+          { type: 'ridges', scale: 90, height: 10, octaves: 4 },
+          { type: 'island', at: [-60, 24], r: 44, height: 56, ragged: 0.4 },
+          { type: 'island', at: [60, 24], r: 44, height: 56, ragged: 0.4 },
+          { type: 'island', at: [-12, 118], r: 28, height: 9, core: 0.3 },
+          { type: 'mountains', scale: 140, height: 110, from: 240, to: 420 },
+        ],
+      },
+      rivers: [{ points: [[0, 0, -40], [0, 0, 80], [24, 0, 108], [26, 0, 130], [8, 0, 148], [-60, 0, 148], [-300, 0, 134]], depth: 2.4, width: 30, bank: 4 }],
+      // (the Seat on its hill’s shoulder level)
+      flats: [{ at: [-7, 118], r: 7, edge: 6 }],
+      clear: [{ at: [-7, 118], r: 7 }],
+      paint: { greens: [0x4a5838, 0x66704a, 0x8a8a64], dirt: 0x8a7c62 },
+    },
+    // (ashore at Parth Galen for the Seat and the horn, the boat across to the east bank, and on foot)
+    modes: [
+      { at: 100, mode: 'walk' },
+      // (a metre before the breaking’s mark: the clock holds a hair short of it)
+      { at: 139, mode: 'boat' },
+      { at: 166, mode: 'walk' },
+    ],
+    place: 'argonath',
+  },
   { id: 'marshes', name: 'The Dead Marshes', date: '1 March 3019', length: 210, mode: 'walk', place: 'dead-marshes' },
   { id: 'ithilien', name: 'Ithilien', date: '7 March 3019', length: 230, mode: 'walk', place: 'minas-morgul' },
   { id: 'cirith-ungol', name: 'Cirith Ungol', date: '12 March 3019', length: 180, mode: 'climb', place: 'cirith-ungol' },

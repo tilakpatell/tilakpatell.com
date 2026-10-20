@@ -102,6 +102,8 @@ describe('the holotable’s camera', () => {
     // (a narrower free part stands further off; one system alone, from its closest)
     expect(fitTo(p, ends, { aspect: 1108 / 900, fx: 0.5 }).dist).toBeGreaterThan(f.dist);
     expect(fitTo(p, [[17.6, 15.4]]).dist).toBeCloseTo(7);
+    // (a sector opened at a tilt of its own)
+    expect(fitTo(p, ends, { pitch: 0.84 }).pitch).toBeCloseTo(0.84);
   });
   it('flies to a system, no further off than it asks, and eases there the short way round', () => {
     const p = WHOLE();

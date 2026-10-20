@@ -4,9 +4,12 @@
 // in is built at once when it is not ready (an address, a jump); its
 // neighbours a few milliseconds a frame, so a seam never costs a frame.
 //
-//   createLands({ scene, house, tier, budget (ms a frame), wide (m across), scatter, sky }) → {
+//   createLands({ scene, house, tier, budget (ms a frame), wide (m across), scatter, sky, wind, load }) → {
 //     at(index),            the ride is in stage `index`: re-place, build, drop
 //     step(),               a frame’s slice of the building
+//     follow(camera),       the grass round the camera, in each built stage’s frame
+//     life(dt),             the birds over the stages in sight and the herds at graze (stages/life.js;
+//                           the herds’ models through `load(url)`, none without it)
 //     water(dt, light),     the built stages’ rivers flowing, in the day’s light
 //     heightAt(x, z),       the ground under a point in the current frame
 //     ready(index), groupOf(index), landOf(index), watersOf(index), stats, dispose() }
@@ -19,13 +22,20 @@ import * as THREE from 'three';
 import { STAGES } from './stages/index';
 import { FRAME_BACK, SEAM, landJob, riverLevel, run } from './terrain';
 import { groundJob } from './ground';
+import { soilOf } from './stages/soils';
+import { lifeOf } from './stages/life';
+import { createBirds } from './birds';
+import { createHerd } from './herds';
+import { distanceTo } from '../../../lib/land/paths.js';
 import { createWater } from './water';
 import { placements, rngOf, rowsFor } from './scatter';
 import { fieldAt } from '../../../lib/land/layers.js';
 
 const RES = { low: 4, mid: 2, high: 2, ultra: 2 };
 
-export function createLands({ scene, house = null, tier = 'high', budget = 6, wide = 1024, scatter = null, sky = null } = {}) {
+const HERD_CLEAR = 7; // m: no beast stands nearer the road’s middle than this
+
+export function createLands({ scene, house = null, tier = 'high', budget = 6, wide = 1024, scatter = null, sky = null, wind = null, load = null } = {}) {
   const built = new Map(); // index → { land, ground, group }
   const jobs = new Map(); // index → generator
   let current = -1;
@@ -39,16 +49,26 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
     // (the first stage has land behind it, the last ahead; the rest abut at their seams)
     const from = i === 0 ? -FRAME_BACK : 0;
     const to = i === STAGES.length - 1 ? land.end + FRAME_BACK : land.end;
-    const ground = yield* groundJob(land, { house, tier, from, to });
+    // (painted in its soil’s colours, or as the stage says: its greens, its dirt, its snow)
+    const ground = yield* groundJob(land, { house, tier, soil: soilOf(id), own: STAGES[i].ground?.paint ?? null, mounds: STAGES[i].ground?.mounds ?? null, wind, from, to });
     const group = new THREE.Group();
     group.name = `road:${id}`;
     group.add(ground.mesh);
+    if (ground.blades) group.add(ground.blades.mesh);
     // its rivers, each a ribbon down its channel, banks and all
     const waters = (land.rivers ?? []).map((r) => {
       const bank = r.bank ?? r.width / 2;
       return createWater({ along: { line: r.line, width: r.width + 2 * bank, level: riverLevel(land.field, r) }, kind: 'river', sky, ground: land.field });
     });
     for (const w of waters) group.add(w.mesh);
+    // its birds, their flock’s middle that high over the ground there
+    const birds = lifeOf(id).birds.map((f) => createBirds({ ...f, at: [f.at[0], land.heightAt(f.at[0], f.at[2]) + f.at[1], f.at[2]] }));
+    for (const b of birds) group.add(b.mesh);
+    // its herds at graze, off the road and out of the water (fewer on low)
+    const off = distanceTo(land.road, HERD_CLEAR);
+    const away = (x, z) => off(x, z) < HERD_CLEAR || Boolean(land.wet?.(x, z)) || (land.clear ?? []).some((c) => Math.hypot(x - c.at[0], z - c.at[1]) < c.r);
+    const herds = load ? (lifeOf(id).herds ?? []).map((h) => createHerd({ ...h, count: tier === 'low' ? Math.ceil(h.count / 2) : h.count, load, heightAt: land.heightAt, away })) : [];
+    for (const h of herds) group.add(h.group);
     // (a job let go here, its stage dropped before it finished: what it made goes with it)
     let done = false;
     try {
@@ -58,11 +78,13 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
       if (!done) {
         ground.dispose();
         for (const w of waters) w.dispose();
+        for (const b of birds) b.dispose();
+        for (const h of herds) h.dispose();
       }
     }
     // what grows on it, placed once (its stage’s seed, so a stage is the same every ride)
     const items = scatter ? placements(rowsFor(id), land, land.road, rngOf(1000 + i), { tier }) : [];
-    return { land, ground, group, items, waters };
+    return { land, ground, group, items, waters, birds, herds };
   }
   const finish = (i, value) => {
     const c = clocks.get(i) ?? { ms: 0, slices: 0, worst: 0 };
@@ -91,6 +113,8 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
       scene.remove(b.group);
       b.ground.dispose();
       for (const w of b.waters) w.dispose();
+      for (const f of b.birds) f.dispose();
+      for (const h of b.herds) h.dispose();
       scatter?.free(STAGES[i].id);
       built.delete(i);
     }
@@ -142,6 +166,22 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
           w.set(light);
           w.update(dt);
         }
+      }
+    },
+    life(dt) {
+      for (const b of built.values()) {
+        if (!b.group.visible) continue;
+        for (const f of b.birds) f.update(dt);
+        for (const h of b.herds) h.tick(dt);
+      }
+    },
+    follow(camera) {
+      for (const b of built.values()) {
+        if (!b.group.visible || !b.ground.blades) continue;
+        // (only a stage the camera is over or near grows round it: its patch is in that stage’s frame)
+        const z = camera.position.z - b.group.position.z;
+        b.ground.blades.mesh.visible = z > -40 && z < b.land.end + 40;
+        if (b.ground.blades.mesh.visible) b.ground.update(camera.position.x, z);
       }
     },
     heightAt(x, z) {

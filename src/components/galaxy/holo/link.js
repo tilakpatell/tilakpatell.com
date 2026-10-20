@@ -5,7 +5,8 @@
 // that was on the screen. Made once a page (pages/Galaxy.jsx). Tested.
 //
 //   link.open                 whether the holotable is up (the page's open(on))
-//   link.state                { war, current, pick, hover, lit, layers }: what the map shows (the page's set(patch));
+//   link.state                { war, current, pick, hover, lit, layers, mine, sector, hoverSector }: what the map shows
+//                             (the page's set(patch)): the sector open, if any, and the one the pointer's over;
 //                             link.version counts its changes
 //   link.pose, link.target    where the camera is and where it's going (holoCamera.js poses); aim(pose) moves the
 //                             target (eased to), snap(pose) both
@@ -25,7 +26,7 @@ export function createHoloLink() {
   const link = {
     open: false,
     version: 0,
-    state: { war: null, current: null, pick: null, hover: null, lit: null, layers: null },
+    state: { war: null, current: null, pick: null, hover: null, lit: null, layers: null, mine: null, sector: null, hoverSector: null },
     pose: WHOLE(),
     target: WHOLE(),
     labels: new Map(),

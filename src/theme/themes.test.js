@@ -25,4 +25,9 @@ describe('routeTheme', () => {
   it('leaves the other worlds’ inner pages alone', () => {
     for (const p of ['/c-137/citadel', '/dot-matrix/64', '/projects/devspace/x']) expect(routeTheme(p), p).toBeUndefined();
   });
+
+  it('keeps Avengers HQ’s colours under every building’s address', () => {
+    for (const p of ['/avengers', '/avengers/gate', '/avengers/hangar', '/avengers/nowhere']) expect(routeTheme(p), p).toBe('stark');
+    expect(routeTheme('/avengersx')).toBeUndefined();
+  });
 });

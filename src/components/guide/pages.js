@@ -492,6 +492,7 @@ export const PAGES = {
     tips: [
       ['Swinging', 'Let go on the upswing for a perfect release. Hold on with nothing to catch for web wings. Race the swing tour’s rings round the compound.'],
       ['The stones', 'Win a building’s game and its stone hangs over the door. The Space Stone opens a portal over the helipad: walk under it to Titan.'],
+      ['A link to each game', 'Each game has an address of its own, #/avengers/ and its building: workshop, lawn, training, range, operations, lab, gate or hangar. It opens at once over the compound; Esc or Back closes it.'],
       ['Other players', 'See other players goes online: everyone else on the compound shows as a hologram with their name over them.'],
       ['The gate: Thwip!', 'Spider-Man, late for school. Hold to web the wall ahead and swing, let go to fly; let go on the upswing for a perfect. Grab Peter’s backpacks, beat the bell, keep off the street.'],
       ['Without 3D', 'The compound is drawn from the air, and its pins open each game in its simple version.'],
@@ -594,6 +595,9 @@ export const PAGES = {
       ['Pickle Rick’s sewer run', 'The hole in the agency’s floor. Roll down the drain to the agency: hop the grates, hop onto the rats, and three screws make the rat-suit’s laser. Three bites and you’re a snack.'],
       ['The Microverse', 'Inside the car’s battery. Carry Zeep’s cells from his console to the gooble boxes, one at a time, before the world’s charge runs down; it runs from the first cell you take.'],
       ['Anatomy Park', 'Inside Ruben. Find the four pieces of the park map while the diseases hunt you, then get back through the portal before the clock runs out; caught, the pieces blow back where they were.'],
+      ['The cruiser’s chase', 'Fly through the six rings over the street, in order, with the Federation ship shooting at you: three hits and it’s back to the first ring, and it can’t be shot down while it chases you.'],
+      ['Needful Things', 'Everything in Mr. Needful’s shop is free, and all but one of the free things are cursed. Look them over first, three looks at most, then take the one with no curse on it; take a cursed one and you’re back at the door.'],
+      ['The vat of acid', 'Rick’s fake death, sold to two Gromflomites. Move while their backs are turned and keep still while they look; jump in behind their backs, then play dead while they peer in. Seen moving, you’re back at the door.'],
     ],
   },
   // a Rick and Morty planet, landed on from the universe map (/c-137/<id>)

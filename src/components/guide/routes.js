@@ -57,6 +57,7 @@ const RULES = [
   [/^\/battlefront\/[^/]+(\/[^/]+)?$/, '/battlefront'],
   [/^\/middle-earth\/road$/, '/middle-earth/road'], // (the Road is a ride of its own, not a place on it)
   [/^\/middle-earth\/[^/]+$/, '/middle-earth/place'],
+  [/^\/avengers\/[^/]+$/, '/avengers'], // a building's game opens over the compound, so it's the compound's guide
   [/^\/c-137\/(?!citadel$)[a-z0-9-]+$/, '/c-137/planet'],
 ];
 

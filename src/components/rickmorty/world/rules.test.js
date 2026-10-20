@@ -2211,6 +2211,10 @@ describe('C-137: what there is to do', () => {
     }
   });
 
+  it('ticks the cruiser on its first chase won, as the fly task’s hint says', () => {
+    expect(TASKS.find((t) => t.id === 'fly')).toEqual({ id: 'fly', name: 'Fly the cruiser', hint: 'Board Rick’s space cruiser in the driveway, then fly it through the rings over the street with the Federation ship on your tail.' });
+  });
+
   it('starts at the cable, and moves on as things are done, in whatever order', () => {
     const p = progress([]);
     expect(p).toMatchObject({ done: [], count: 0, total: TASKS.length });

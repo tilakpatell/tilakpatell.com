@@ -9,9 +9,9 @@ const stepsOf = (e) => e.steps.flatMap((s) => (s.type === 'all' ? [s, ...s.steps
 const allSteps = () => EPISODES.flatMap(stepsOf);
 
 describe('the adventure’s episodes', () => {
-  it('has thirteen episodes, the first four ready', () => {
+  it('has thirteen episodes, the first six ready', () => {
     expect(EPISODES).toHaveLength(13);
-    expect(READY).toBe(4);
+    expect(READY).toBe(6);
     expect(new Set(EPISODES.map((e) => e.id)).size).toBe(13);
   });
 
@@ -99,5 +99,24 @@ describe('the adventure’s episodes', () => {
     expect(small.steps[0]).toMatchObject({ type: 'task', id: 'microverse', place: 'microverse' });
     expect(small.steps[1]).toMatchObject({ type: 'task', id: 'anatomy', place: 'anatomy' });
     expect(small.unlocks).toEqual(['gromflomites', 'fortress']);
+  });
+
+  it('goes on with Heat: the cruiser’s chase, then the Gromflomite base', () => {
+    const heat = EPISODES[4];
+    expect(heat.title).toBe('Heat');
+    expect(heat.steps.map((s) => s.id ?? s.game)).toEqual(['chase', 'gromflomites']);
+    expect(heat.steps[0]).toMatchObject({ type: 'win', game: 'chase' });
+    expect(heat.steps[0].place).toBe(undefined); // (the cruiser's in the street: no dial place)
+    expect(heat.steps[1]).toMatchObject({ type: 'task', id: 'gromflomites', place: 'gromflomites' });
+    expect(heat.unlocks).toEqual(['needful', 'vat', 'nimbus']);
+  });
+
+  it('goes on with Bad deals: Needful Things, then the vat of acid', () => {
+    const deals = EPISODES[5];
+    expect(deals.title).toBe('Bad deals');
+    expect(deals.steps.map((s) => s.id)).toEqual(['needful', 'vat']);
+    expect(deals.steps[0]).toMatchObject({ type: 'task', id: 'needful', place: 'needful' });
+    expect(deals.steps[1]).toMatchObject({ type: 'task', id: 'vat', place: 'vat' });
+    expect(deals.unlocks).toEqual(['jerryboree', 'gloopynoops', 'prison']);
   });
 });

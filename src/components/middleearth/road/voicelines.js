@@ -6,7 +6,8 @@
 //   VOICELINES: [{ who, text }]   (grows with each stage)
 //   LINES: { beatId: { who, text } }
 //   SPEAKERS: who may say one: the cast, and the few met on the road who
-//     do not walk it (Butterbur at his own bar)
+//     do not walk it (Butterbur at his own bar, Saruman on the wind, Haldir
+//     on the Nimrodel)
 //
 // A line the site has recorded already is reused word for word, so its
 // voice is found (lib/voiced.js’s lineId reads the words): Strider’s at
@@ -14,11 +15,12 @@
 
 import { CAST } from './fellowship';
 
-export const SPEAKERS = [...CAST, 'butterbur'];
+export const SPEAKERS = [...CAST, 'butterbur', 'saruman', 'haldir'];
 
 const sam = (text) => ({ who: 'sam', text });
 const frodo = (text) => ({ who: 'frodo', text });
 const aragorn = (text) => ({ who: 'aragorn', text });
+const gandalf = (text) => ({ who: 'gandalf', text });
 
 export const LINES = {
   // (Hobbiton, the last of the lane: the corn the Shire ends at)
@@ -37,6 +39,14 @@ export const LINES = {
   'rivendell-frodo': frodo('Then it had better be me. I don’t know the way, but I’ll carry it.'),
   // (Bilbo on his bench, the book open)
   'rivendell-bilbo': { who: 'bilbo', text: 'There and Back Again: A Hobbit’s Tale, by Bilbo Baggins.' },
+  // (Caradhras: Saruman on the wind, then Gandalf reading the Doors)
+  'caradhras-saruman': { who: 'saruman', text: 'Turn back, Grey Pilgrim. The mountain is mine tonight, and it will bury you.' },
+  'caradhras-mellon': gandalf('Speak, friend, and enter. I read it as a riddle. It was only ever a welcome: mellon.'),
+  // (Balin’s tomb)
+  'moria-gimli': { who: 'gimli', text: 'Here lies Balin, son of Fundin, Lord of Moria. So he is dead, then. I feared it.' },
+  // (Haldir on the Nimrodel, then the Lady on her dais)
+  'lorien-haldir': { who: 'haldir', text: 'You breathe so loud we could have shot you in the dark. Come. The Lady has asked for you.' },
+  'lorien-galadriel': { who: 'galadriel', text: 'Nine left Rivendell. Eight are here. Your quest stands on the edge of a knife.' },
 };
 
 export const VOICELINES = Object.values(LINES);

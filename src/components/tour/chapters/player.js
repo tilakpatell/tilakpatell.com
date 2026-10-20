@@ -2,6 +2,7 @@ import { ABOUT } from '../../guide/abouts';
 import { WORLDS, WORLD_MB } from '../../worlds/worlds';
 import { ACHIEVEMENTS } from '../../Achievements';
 import { worldStop } from './shared';
+import { linkOf } from '../../avengers/world/links';
 
 // The player's tour: what there is to play, in about seven minutes. The
 // ship (the map's own basics, briefs.js's '/universe/fly'), the galaxy, the
@@ -55,6 +56,7 @@ export const WALKED = [
   walk('avengers', '/avengers', 'Avengers HQ', {
     title: 'The compound',
     text: 'You’re Spider-Man: swing, zip, perch. Each building is a game, most of them for an Infinity Stone, and the Space Stone opens a portal to Titan. Twelve backpacks and a ring course are hidden round the grounds.',
+    actions: [{ label: 'Play Thwip! at the gate', to: linkOf('spidey') }],
   }),
   walk('middleearth', '/middle-earth', 'Middle-earth', {
     at: 'redbook',
