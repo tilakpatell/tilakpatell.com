@@ -87,7 +87,7 @@ import LoadingVeil from '../../worlds/LoadingVeil';
 import { rmWorldModule } from './module';
 import { createLook } from '../../../runtime/look';
 import { createFlightCluster } from '../../../runtime/hud';
-import { powerReadout } from './games/power';
+import { METER_OFF } from './games/meter';
 import { chaseCalls, chaseGoal, chaseReadout, chaseStart, newChase, shaken, stepChase } from './games/chase';
 import { FRICTION, coneFor } from '../../../lib/combat/aim';
 import { createLockOn } from '../../../lib/combat/lockOn';
@@ -1087,6 +1087,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       if (name === 'caught') {
         const d = destinationById(e.area);
         if (!d) return;
+        stopVoiced(); // (a line still being said, the vat's say, is cut: the catch is what's said)
         say({ kind: 'say', who: SAY[e.who]?.who ?? e.who ?? null, text: e.text ?? d.caught ?? 'Caught.' });
         sound('grab');
         api.current?.shake?.(0.3); // (the Citadel's caught, the same grab)
@@ -1110,7 +1111,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         if (s.t - (s.barkAt ?? -1e9) < 6) return;
         s.barkAt = s.t;
         say({ kind: 'say', who: e.who, text: e.text });
-      } else if (name === 'done') complete(e.task);
+      } else if (name === 'done') {
+        complete(e.task);
+        if (e.unlock) unlock(e.unlock); // (a game whose win is an achievement: the vat's)
+      }
       else if (name === 'spotted') {
         // someone's seen him: a word and a sound, not too often
         if (s.t - (s.spottedAt ?? -1e9) < 8) return;
@@ -1155,7 +1159,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         } else api.current?.play('hit', { layer: 'auto' });
       }
     },
-    [api, say, complete, later, loadShots],
+    [api, say, complete, unlock, later, loadShots],
   );
   boardRef.current = board;
   // Morty's shot in a duel (F): a bolt at the hunter if he's in the cone
@@ -1781,8 +1785,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       // the place's people, for the map (stage.js's NPC layer says where they are)
       s.npcs = api.current?.act(s.area, 'npcs') ?? null;
       drawMap(map.current, s, goalOf(markRef.current, s, planet) ?? (s.flying && !planet ? chaseGoal(s.chase) : null), s.t);
-      // (and a place run on power, its charge: ./dimensions/stage.js)
-      const charge = powerReadout(api.current?.act(s.area, 'power'));
+      // (and a place's game, its meter: ./dimensions/stage.js's `meter`)
+      const charge = api.current?.act(s.area, 'meter') ?? METER_OFF;
       chargeMeter.place(chargeRef.current, { on: charge.on, vitals: charge.vitals, arms: null });
       if (chargeLine.current) chargeLine.current.textContent = charge.line;
       // (and the cruiser's chase, its hits left)

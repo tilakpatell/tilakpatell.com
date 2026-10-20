@@ -31,7 +31,7 @@ export const WORLD_MB = {
   // planet flight: end
   '/deathstar/inside': 6, // aboard the station: the first room's kit and textures at phone size, and the cast it starts with (people, guns, the borrowed clips)
   '/middle-earth/road': 8, // the Road: a guess until the measure (lab/road/measure.mjs, the Road’s Task 10) reads it from a ride
-  '/middle-earth': 1, // drawn in code too, but for two places on the map (under a tenth of an MB)
+  '/middle-earth': 1, // the Red Book is drawn in code; Gandalf through its window is the cast’s model and its three clips, 0.52 MB, fetched the first time the window is looked through (the map hub’s two places are under a tenth of an MB)
   '/music': 7, // the music planet's courtyard: its instruments, chhatri, lamps and gaddi (Meshy models), sandstone, a dusk sky
   '/dot-matrix': 1, // drawn in code
   '/dot-matrix/64': 7, // the castle's and Bob-omb Ridge's texture sets at phone size, two skies, and Mario, the cast and the props (fan-made Sketchfab models, 2 MB)

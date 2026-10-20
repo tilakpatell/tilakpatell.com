@@ -1,42 +1,47 @@
 import { describe, expect, it } from 'vitest';
-import { DROP, EYE, newStone, nearest, stepStone } from './stone';
+import { DROP, OPEN, SEEN, newStone, stepStone } from './stone';
 
-const PINS = [
-  { id: 'a', at: [0, 0] },
-  { id: 'b', at: [100, 0] },
-  { id: 'c', at: [0, 100] },
-];
+const hold = (s, secs, held = true, dt = 0.05) => {
+  let x = s;
+  const drops = [];
+  for (let t = 0; t < secs; t += dt) {
+    x = stepStone(x, dt, { held });
+    if (x.dropped) drops.push(t);
+  }
+  return [x, drops];
+};
 
 describe('the Palantír', () => {
-  it('looks at the pin nearest the middle of the stone', () => {
-    expect(nearest(PINS, [10, 5])?.id).toBe('a');
-    expect(nearest(PINS, [80, 10])?.id).toBe('b');
-    expect(nearest(PINS, [400, 400], 60)).toBeNull();
+  it('is smoke at first, and the Eye opens in it within a second or two of looking', () => {
+    const [first] = hold(newStone(), 0.1);
+    expect(first.held).toBe(true);
+    expect(first.eye).toBe(0);
+    const [opened] = hold(newStone(), OPEN + 0.2);
+    expect(opened.eye).toBe(1);
+    expect(OPEN).toBeLessThan(2.5);
   });
 
-  it('lets the gaze grow while held still, and rest while turned', () => {
-    let s = stepStone(newStone(), 1, { held: true, turning: false });
-    expect(s.gaze).toBeCloseTo(1);
-    s = stepStone(s, 1, { held: true, turning: true });
-    expect(s.gaze).toBeCloseTo(1);
+  it('grows aware of whoever holds it, and at DROP has seen them: the stone falls, once', () => {
+    const [aware] = hold(newStone(), (SEEN + DROP) / 2);
+    expect(aware.seen).toBeGreaterThan(0);
+    expect(aware.seen).toBeLessThan(1);
+    const [x, drops] = hold(newStone(), DROP + 1);
+    expect(drops).toHaveLength(1);
+    expect(x.held).toBe(false);
+    expect(x.rest).toBeGreaterThan(0);
   });
 
-  it('opens the Eye at EYE seconds and drops the stone at DROP', () => {
-    let s = newStone();
-    let dropped = 0;
-    for (let t = 0; t < DROP + 1; t += 0.1) {
-      s = stepStone(s, 0.1, { held: true, turning: false });
-      if (s.dropped) dropped++;
-      if (t > EYE + 0.2 && t < DROP - 0.2) expect(s.eye).toBeGreaterThan(0);
-    }
-    expect(dropped).toBe(1);
-    expect(s.held).toBe(false);
+  it('cannot be taken up again straight after it falls', () => {
+    const [x] = hold(newStone(), DROP + 0.1);
+    const [again] = hold(x, 0.5);
+    expect(again.held).toBe(false);
+    const [later] = hold(again, 4);
+    expect(later.held).toBe(true);
   });
 
   it('forgets the gaze when put down', () => {
-    let s = stepStone(newStone(), 10, { held: true, turning: false });
-    s = stepStone(s, 1, { held: false });
-    expect(s.gaze).toBe(0);
-    expect(s.eye).toBe(0);
+    const [held] = hold(newStone(), 5);
+    const [down] = hold(held, 0.1, false);
+    expect(down).toMatchObject({ held: false, gaze: 0, eye: 0, seen: 0 });
   });
 });

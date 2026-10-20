@@ -218,7 +218,7 @@ html[data-script] .toast-host { bottom: calc(88px + env(safe-area-inset-bottom))
   border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--text);
-  box-shadow: 0 14px 34px -18px color-mix(in srgb, var(--text) 50%, transparent);
+  box-shadow: 0 14px 34px -18px color-mix(in srgb, var(--shadow-ink) 50%, transparent);
   font-size: 0.875rem;
 }
 .aurebesh-pill button { padding: 0.35rem 0.8rem; border-radius: 999px; background: var(--btn-bg); color: var(--btn-ink); font-weight: 600; white-space: nowrap; }
@@ -497,8 +497,6 @@ html[data-menu] .aurebesh-pill { visibility: hidden; }
 .periodic { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 6px; }
 
 /* ─── Contact: an interoffice memo ───────────────────────────────────────── */
-:root { --danger: #b42318; }
-html[data-mode='dark'] { --danger: #ff8a8a; }
 .memo-form { background-image: linear-gradient(90deg, transparent 1.15rem, color-mix(in srgb, #d64949 30%, transparent) 1.15rem, color-mix(in srgb, #d64949 30%, transparent) calc(1.15rem + 1px), transparent calc(1.15rem + 1px)); }
 .memo-top { padding-bottom: 1rem; border-bottom: 2px solid var(--text); }
 
@@ -686,7 +684,6 @@ html[data-mode='dark'] { --danger: #ff8a8a; }
 .egg-corner { position: absolute; right: var(--gutter-r); bottom: 0.75rem; z-index: 2; }
 .egg-pop { display: grid; animation: egg-pop 0.6s var(--ease-spring); }
 @keyframes egg-pop { 0% { transform: scale(0.6) rotate(-20deg); } 60% { transform: scale(1.25) rotate(8deg); } 100% { transform: none; } }
-.dark-scope .egg { color: #9aa0a9; }
 @media (prefers-reduced-motion: reduce) { .egg, .egg-pop { transition: none; animation: none; } }
 @media print { .egg { display: none !important; } }
 
@@ -828,8 +825,9 @@ html.stand-ground main { animation: stand-ground 0.9s cubic-bezier(0.3, 0.7, 0.3
   --text: #f3f5f8; --text-body: #c9d1dc; --muted: #8b97a8;
   --accent: #e0322f; --accent-text: #ff6f61; --btn-bg: #c8161d; --btn-ink: #ffffff; --saber: #7fdcff; --nav-bg: #05070c;
   --route-plan: #2b3644; --shadow-card: 0 30px 60px -40px rgba(0, 0, 0, 0.9);
-  /* (dark ground: shadows are darkness, as in dark mode) */
+  /* (dark ground, as in dark mode: shadows and the scrim’s ink (styles/dialogs.css) are darkness, not this pale --text, and the states are lifted, the root’s red being 2.8:1 here) */
   --shadow-float: 0 18px 40px -20px rgb(0 0 0 / 0.7); --shadow-dialog: 0 24px 50px -24px rgb(0 0 0 / 0.75);
+  --shadow-ink: #000; --scrim-ink: #000; --ok: #5cd98a; --warn: #ffd35c; --danger: #ff8a8a; --ally: #8dffad;
   --hud: #7fdcff;
   color-scheme: dark;
 }
@@ -892,7 +890,7 @@ html[data-mode='dark'] .saber-progress[data-kind='pixels'] .blade { height: 6px;
 @media (prefers-reduced-motion: reduce) { .gus { transition-duration: 0.01s; } }
 
 /* The guide: a ? in the corner, and the panel it opens */
-.guide-btn { position: fixed; right: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); z-index: calc(var(--z-float) - 4); display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--surface); color: var(--text); box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--text) 60%, transparent); transition: transform var(--t-fast) var(--ease-smooth), border-color var(--t-fast) var(--ease-smooth); }
+.guide-btn { position: fixed; right: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); z-index: calc(var(--z-float) - 4); display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--surface); color: var(--text); box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--shadow-ink) 60%, transparent); transition: transform var(--t-fast) var(--ease-smooth), border-color var(--t-fast) var(--ease-smooth); }
 .guide-btn:hover { transform: translateY(-2px); border-color: var(--accent); }
 @media (max-width: 639px) {
   .guide-btn { transition: transform 0.25s ease, opacity 0.25s ease; }
@@ -934,7 +932,7 @@ html[data-menu] .guide-btn, .crawl ~ .guide-btn { visibility: hidden; }
    (guide/GuideCue.jsx). Low weight, so a world's own hint styling wins. */
 :where(.guide-cue) { opacity: 0.85; }
 :where(.guide-cue) kbd { display: inline-grid; place-items: center; min-width: 1.35em; padding: 0 0.3em; border: 1px solid currentColor; border-radius: 4px; font: 600 0.85em/1.35 var(--font-mono); }
-.guide-btn[data-nudge] { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 28%, transparent), 0 10px 24px -14px color-mix(in srgb, var(--text) 60%, transparent); }
+.guide-btn[data-nudge] { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 28%, transparent), 0 10px 24px -14px color-mix(in srgb, var(--shadow-ink) 60%, transparent); }
 html[data-menu] .guide-nudge { visibility: hidden; }
 /* on a phone the guide is a sheet up from the bottom */
 /* On a phone the head is the three tabs and the X: the panel's name stays

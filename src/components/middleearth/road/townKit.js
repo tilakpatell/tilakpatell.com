@@ -29,6 +29,13 @@ import { barkCanvas, grassCanvas, heightOf, leavesCanvas, planksCanvas, plasterC
 import { stoneTextures } from '../stoneTextures';
 import { haloCanvas, weatheredCanvas, woolCanvas } from '../towns/weathertop/build';
 import { archFillCanvas, carvingCanvas, courtCanvas, elfstoneCanvas, glassCanvas, linenCanvas, puffCanvas, roofCanvas, traceryCanvas } from '../towns/rivendell/canvases';
+import { dress } from '../../../lib/three/coreNodes';
+import { SHIRE_CORE } from '../shire/dress';
+
+// (the wild’s and Rivendell’s stone and wood wear the same scans: the ruin’s
+// and the crags’ rough rock, the trees’ bark, the elves’ pale dressed stone and wood)
+const WILD_CORE = { ruin: 'rock', rock: 'rock', deadwood: 'bark', pinebark: 'bark' };
+const ELVEN_CORE = { elfstone: 'stone', pave: 'stone', court: 'stone', elfwood: 'wood' };
 
 const S = 256; // the painted canvases’ size, the Shire kit’s
 
@@ -130,7 +137,8 @@ export function createTownKit(road, renderer, { wild = false, elven = false } = 
     });
     Object.assign(mats, {
       ruin: M({ map: tex.stone, normalMap: tex.stoneN, vertexColors: true }),
-      rock: M({ map: tex.stone, normalMap: tex.stoneN, vertexColors: true }),
+      // (the Lone-lands’ stone warm grey, not the cold purple its vertices turn at dusk)
+      rock: M({ map: tex.stone, normalMap: tex.stoneN, vertexColors: true, color: 0xd2bea0 }),
       troll: M({ map: tex.stone, normalMap: tex.stoneN, normalScale: new THREE.Vector2(1.4, 1.4), vertexColors: true }),
       earth: M({ vertexColors: true }),
       scorch: M({ vertexColors: true, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }),
@@ -227,6 +235,11 @@ export function createTownKit(road, renderer, { wild = false, elven = false } = 
     });
     made.push(mats.shaft, mats.flame);
   }
+  // the site’s scanned surfaces worn over the builders’ own pictures, as the
+  // chapters wear them (shire/dress.js; lib/three/coreNodes, on stand-ins
+  // at once, the scans in as they come): the grain of real stone, wood and
+  // bark at its real size
+  dress(mats, { ...SHIRE_CORE, ...(wild ? WILD_CORE : {}), ...(elven ? ELVEN_CORE : {}) }, { keep: true, strength: 0.4, normal: 0.8 });
   const K = { mats, tex, paint, renderer };
   const lerp = (a, b, t) => a + (b - a) * t;
   return {

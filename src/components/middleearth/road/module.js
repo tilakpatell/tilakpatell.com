@@ -22,14 +22,17 @@ import * as THREE from 'three';
 import { PACE, newClock, step as stepClock } from './clock';
 import { SAVE, recent, resume, ridden as riddenOf, savedAt, shouldOffer } from './entry';
 import { LOOK_LIMIT, pose, settleLook } from './director';
-import { light as lightAt } from './daylight';
+import { keyLight, light as lightAt, shadeOf, skyLight } from './daylight';
 import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
 import { createLands } from './lands';
+import { createBackdrop } from './backdrop';
+import { soilOf } from './stages/soils';
 import { createScatter } from './scatter';
 import { createWeather } from './weather';
 import { createAmbience } from './ambience';
 import { loadKit } from '../../../lib/three/kitNodes';
+import { createWind } from '../../../lib/three/windNodes';
 import { chainFor, createRoadHouse, gradeNode } from './hooks';
 import { newVision, stepVision } from './vision';
 import { forgetCast, walker } from './cast';
@@ -82,25 +85,36 @@ export default {
   label: 'The Road through Middle-earth',
   create(rt, props = {}) {
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 3000);
+    // (out to 4.5 km: the far mountains on the horizon, backdrop.js)
+    const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 4500);
     scene.fog = new THREE.FogExp2(0xc0c8d0, 0.004);
     const tier = rt.quality?.tier ?? 'high';
     // the house's look on the ground (and, with the post chain, on the rest);
     // the lands: the stage you are in and its two neighbours, built and placed
-    const road = createRoadHouse();
+    // (the shade’s edge low: under a low sun the lit ground stood half in
+    // the look’s shade already, and a shadow cast on it barely showed)
+    const road = createRoadHouse({ edge: [0.1, 0.55] });
     const house = road.house;
-    // the nature kit, one a tint (a season's recolouring), in the house and the wind
+    // the nature kits (the MegaKit, and the older pack’s maples, birches and
+    // dead trees), one a kit and a tint (a season's recolouring), in the house and the wind
     const windTime = { value: 0 };
     const kits = new Map();
-    const kitFor = (tint) => {
-      const key = tint ? JSON.stringify(tint) : '';
-      if (!kits.has(key)) kits.set(key, loadKit('naturemega', { house, wind: { time: windTime }, tint }));
+    const kitFor = (tint, pack = null) => {
+      const kit = pack ?? 'naturemega';
+      const key = `${kit}|${tint ? JSON.stringify(tint) : ''}`;
+      if (!kits.has(key)) kits.set(key, loadKit(kit, { house, wind: { time: windTime }, tint }));
       return kits.get(key);
     };
     const scatter = createScatter({ kitFor, tier });
     scene.add(scatter.group);
     const sky = createSky({ vision: road.uVision });
-    const lands = createLands({ scene, house, tier, scatter, sky });
+    // one wind for the Road’s grass (lib/three/windNodes)
+    const wind = createWind({ strength: 0.5 });
+    // (the herds’ beasts through the runtime’s asset cache: the farm pack’s, CC0)
+    const lands = createLands({ scene, house, tier, scatter, sky, wind, load: (url) => rt.assets?.gltf?.(url) });
+    // the mountains on each stage’s horizon (stages/ranges.js)
+    const mountains = createBackdrop({ road, tier, load: (url) => rt.assets?.gltf?.(url) });
+    scene.add(mountains.mesh);
     // rain, snow, ash, fire: a kind a draw, asked for by the stages and their beats
     // the chain: the house’s bloom on every tier, the grade (the Ring’s, hooks.js) from high
     const passes = chainFor(tier, rt.gfx.backend, { scene, camera, grade: (tex) => gradeNode(tex, road.uVision) });
@@ -123,6 +137,35 @@ export default {
     const sun = new THREE.DirectionalLight(0xffffff, 2);
     const hemi = new THREE.HemisphereLight(0xdfe8ff, 0x5a5040, 0.6);
     scene.add(sun, sun.target, hemi, sky.mesh);
+    // the sun’s (and the moon’s) soft shadows, through cascades round the
+    // camera (lib/three/light/sun.js), on mid and up: out to 60 m on high, 40
+    // on mid, in two cascades (at 90 and four the cascades drew the Shire's
+    // every hole and hedge four times over, a million and a half triangles
+    // a frame; its statics are merged in bands, stages/parts.js, so each
+    // cascade leaves out what it can't see); none on low. PCSS (shadows.js) only where the chain ends in
+    // TRAA: its samples are scattered by a per-pixel noise only a temporal
+    // pass settles, a grain over every shadow without one; elsewhere three’s
+    // own PCF, a little softened (its five taps dither too: kept to an edge)
+    const renderer = rt.gfx?.renderer ?? null;
+    const shadowWas = renderer?.shadowMap ? { enabled: renderer.shadowMap.enabled, type: renderer.shadowMap.type } : null;
+    const exposureWas = renderer?.toneMappingExposure ?? null;
+    let cascades = null;
+    let unlit = false;
+    if (tier !== 'low' && renderer?.shadowMap) {
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFShadowMap;
+      sun.shadow.radius = 1.5;
+      Promise.all([import('../../../lib/three/light/sun'), import('../../../lib/three/light/shadows')])
+        .then(async ([{ castCascades }, { filterFor, readPcss, pcssFilter }]) => {
+          const soft = filterFor(tier, readPcss(null));
+          const filter = soft.kind === 'pcss' && has('traa') ? await pcssFilter(soft) : null;
+          if (unlit) return;
+          const c = await castCascades(sun, null, { tier, filter, video: { shadowDistance: tier === 'mid' ? 40 : 60, cascades: 2 } });
+          if (unlit) c?.dispose();
+          else cascades = c;
+        })
+        .catch(() => {});
+    }
 
     const reduced = Boolean(props.reduced);
     // (Enter is the Road's only under reduced motion, where it is Next: bound
@@ -195,6 +238,7 @@ export default {
       return line;
     };
     const sunDir = new THREE.Vector3();
+    const shade = new THREE.Color();
 
     // the light for where the ride is: the sky, the sun, the fog
     let daylight = null;
@@ -206,18 +250,28 @@ export default {
       const l = lightAt(STAGES, clock.s);
       daylight = l;
       sky.set(l);
+      mountains.set(l);
       weather.light(l);
-      const { az, el, colour } = l.sun;
-      sunDir.set(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
-      sun.color.setRGB(...colour);
-      sun.intensity = 2.4 * Math.max(0, Math.min(1, (el + 0.05) / 0.3)) * (1 - 0.6 * l.pall.amount);
-      hemi.intensity = 0.25 + l.ambient * 1.6;
+      // the sun by day, the moon by night (daylight.js’s keyLight)
+      const key = keyLight(l);
+      sunDir.set(...key.dir);
+      sun.color.setRGB(...key.colour);
+      sun.intensity = key.intensity;
+      hemi.intensity = skyLight(l);
       hemi.color.setRGB(...l.fog.colour);
+      // (the light off the ground: the stage’s own grass, or its snow, its stone,
+      // its ash; in Mordor the fires’ red glow, its soil’s own `glow`, up under everything)
+      const soil = soilOf(lineAt(STAGES, clock.s).stage);
+      hemi.groundColor.setHex(soil.glow ?? soil.greens[1]).multiplyScalar(soil.glow ? 1 : 0.6);
+      // the stage’s exposure, lifted from a little before sunset as an eye opens to the dark (the chapters’ nights are 1.6)
+      if (renderer) renderer.toneMappingExposure = l.exposure * (1 + 0.55 * Math.min(1, Math.max(0, (0.1 - l.sun.el) / 0.45)) * (1 - (l.murk ?? 0)));
       scene.fog.color.setRGB(...l.fog.colour);
       // (the fog throbs with the vision’s pulse)
       scene.fog.density = l.fog.density * (1 + 0.35 * vision.amount * (1 + vision.pulse));
       house.sky({ low: scene.fog.color, high: scene.fog.color, sunDir });
       house.light({ sun, hemi });
+      // (the shade from the light there is: a clear day’s pale lilac, a fainter blue under the moon)
+      house.set({ shadow: shade.setRGB(...shadeOf(l, key)) });
     };
 
     // a beat’s fixed camera given over the ground: its heights put on the land
@@ -226,6 +280,7 @@ export default {
     const frame = (dt = 0) => {
       const here = lineAt(STAGES, clock.s);
       lands.at(here.index);
+      mountains.at(here.stage);
       const line = company();
       const mode = modeAt(stageById(here.stage), here.local);
       // the one you follow (Frodo while he walks with you) at the back of the
@@ -287,6 +342,8 @@ export default {
       }
       sun.position.copy(camera.position).addScaledVector(sunDir, 100);
       sun.target.position.copy(camera.position);
+      cascades?.follow();
+      cascades?.update(camera);
       sky.update(camera, dt);
       return here;
     };
@@ -391,6 +448,10 @@ export default {
         weather.update(dt, camera);
         ambience.update(dt);
         windTime.value += dt;
+        wind.update(dt);
+        lands.follow(camera);
+        lands.life(dt);
+        mountains.update(camera);
         scatter.update(camera, dt);
       },
       draw(f) {
@@ -451,6 +512,12 @@ export default {
         save();
         rt.input?.unbind?.();
         lands.dispose();
+        wind.dispose();
+        mountains.dispose();
+        unlit = true;
+        cascades?.dispose();
+        if (shadowWas) Object.assign(renderer.shadowMap, shadowWas);
+        if (exposureWas != null) renderer.toneMappingExposure = exposureWas;
         scatter.dispose();
         for (const k of kits.values()) k.dispose();
         sky.dispose();

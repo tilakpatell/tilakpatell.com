@@ -7,7 +7,7 @@ import { useTick } from '../../tick';
 import { engine } from '../../module';
 import { sayVoiced, stopVoiced } from '../../../../lib/voiced';
 import { readPad, typing } from '../../../games/pad';
-import { Bubble, Convo, QuestList, Stick, Travellers } from '../TownHud';
+import { Bubble, Convo, QuestList, Stick, TownMenu, Travellers } from '../TownHud';
 import { useTravellers } from '../useTravellers';
 import { keyDown, keyUp, moveOf, ownButton } from '../keys';
 import { nearest } from '../story';
@@ -867,6 +867,7 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
             </p>
           </div>
           <div className="shire-side">
+            <TownMenu chapter="moria" />
             <button type="button" className="shire-chip" onClick={() => setList((v) => !v)} aria-expanded={list}>
               <b>{prog.done.length}</b> of {QUESTS.length} done {!touch && <kbd>M</kbd>}
             </button>

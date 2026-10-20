@@ -18,8 +18,9 @@ export const STAGES = [
     mode: 'walk',
     place: 'hobbiton',
     // the Water, in from the west, by the lane past the mill and away
-    // west again before the stage’s end, so its channel never meets a seam
-    ground: { rivers: [{ points: [[-240, 0, -30], [-120, 0, 30], [-42, 0, 95], [-38, 0, 140], [-110, 0, 190], [-200, 0, 214]], depth: 2.6, width: 12, bank: 22 }] },
+    // west again before the stage’s end, so its channel never meets a seam;
+    // the Hill, Bag End in its west face (hobbiton/props.js builds its turf)
+    ground: { rivers: [{ points: [[-240, 0, -30], [-120, 0, 30], [-42, 0, 95], [-38, 0, 140], [-110, 0, 190], [-200, 0, 214]], depth: 2.6, width: 12, bank: 22 }], mounds: [{ at: [34, 6], r: 18, squash: 0.6, sink: 0.3 }] },
   },
   {
     id: 'shire-edge',

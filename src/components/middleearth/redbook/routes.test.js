@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { PINS, goFor, playTo, walkTo } from './routes';
+import { PINS, bookPageFor, bookPageForStage, goFor, playTo, walkFor, walkTo } from './routes';
+import { STAGES } from '../road/stages/index';
 import { PAGES } from './pages';
 
 describe('where the book and the stone go', () => {
@@ -19,5 +20,23 @@ describe('where the book and the stone go', () => {
   it('a pin with a page opens the book there; one without, its game', () => {
     expect(goFor(PINS.find((x) => x.page === 'moria'))).toEqual({ page: 'moria' });
     expect(goFor(PINS.find((x) => x.id === 'edoras'))).toEqual({ to: '/middle-earth/edoras' });
+  });
+
+  it('a chapter’s game goes back to its own page of the book, and its stage of the Road', () => {
+    expect(bookPageFor('shire')).toBe('bag-end');
+    expect(bookPageFor('weathertop')).toBe('weathertop');
+    expect(bookPageFor('mordor')).toBe('doom');
+    expect(walkFor('mordor')).toBe('gorgoroth');
+    // (a game with no page opens the book at its start, and has no stage)
+    expect(bookPageFor('orthanc')).toBe(PAGES[0].id);
+    expect(walkFor('edoras')).toBeNull();
+  });
+
+  it('every stage of the Road goes back to a page of the book', () => {
+    expect(bookPageForStage('bree')).toBe('bree');
+    expect(bookPageForStage('gorgoroth')).toBe('doom');
+    expect(bookPageForStage('ithilien')).toBe('marshes');
+    const ids = new Set(PAGES.map((p) => p.id));
+    for (const st of STAGES) expect(ids.has(bookPageForStage(st.id))).toBe(true);
   });
 });

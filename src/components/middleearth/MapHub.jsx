@@ -402,6 +402,9 @@ export default function MapHub({ api, hover, onHover, onGo, leaving, hidden, fra
           Where will you go?
         </h1>
         <p className="me-hub-lead">The map of the Ring’s road. Pick a place on it, and go there.</p>
+        <Link to="/middle-earth" className="btn btn-ghost btn-sm me-hub-book">
+          <span aria-hidden="true">←</span> The Red Book
+        </Link>
       </div>
 
       <nav className="me-hub-foot shell" aria-label="The road">
@@ -437,6 +440,9 @@ export default function MapHub({ api, hover, onHover, onGo, leaving, hidden, fra
           <button type="button" className="btn btn-ghost btn-sm me-record-btn" data-on={record || undefined} aria-expanded={record} aria-controls="me-record" onClick={toggleRecord}>
             The road so far
           </button>
+          <Link to="/middle-earth" className="btn btn-ghost btn-sm">
+            The Red Book
+          </Link>
           <Link to="/" className="btn btn-ghost btn-sm">
             Back to the site
           </Link>
