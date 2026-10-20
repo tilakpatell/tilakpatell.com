@@ -144,5 +144,15 @@
   },
   "malastareworks": {
     "image": "01a1583c-4a63-74f9-a590-a66a7f66e8e3"
+  },
+  "catopalace": {
+    "lift": [
+      "01a1583d-71d4-7099-bbdd-2cd805bf4638"
+    ]
+  },
+  "coronetspire": {
+    "lift": [
+      "01a1583d-743b-7433-bbab-0e14940f9bf1"
+    ]
   }
 }
