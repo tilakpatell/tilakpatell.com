@@ -544,7 +544,9 @@ export async function createRmWorld(rt, { looks = null, track: stages = null } =
       sharp = s;
       stage.scale(s); // (made with the next frame the stage draws: ../stage)
     }
-    const dt = Math.min(0.1, ms / 1000);
+    // (held: something's open over the world that it waits for, the list of
+    // things to do say; it's drawn, but nothing in it moves on)
+    const dt = state.held ? 0 : Math.min(0.1, ms / 1000);
     t += dt;
     const area = state.area ?? 'street';
     if (area !== shown && !showArea(area)) return;

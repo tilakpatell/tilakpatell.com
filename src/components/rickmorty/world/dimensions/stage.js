@@ -89,6 +89,17 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   // ── the people who do something (../npc.js): the place's brains ──
   const N = createNpcs({ id, area: A, solids: d.solids, words: { caught: d.caught, spotted: d.spotted } });
 
+  // what a place's game says has happened, said through the render state as
+  // the hunters say it (won: its task done, with its achievement if it has
+  // one; lost: caught, back at the way in, which calms the place and starts
+  // it afresh): the game, marked told once its loss is said
+  const told = (news, game, { task, who, lost, unlock = null }, state) => {
+    if (news === 'done') state.emit?.('done', { area: id, task, unlock });
+    if (news !== 'caught') return game;
+    state.emit?.('caught', { area: id, who, text: lost });
+    return { ...game, told: true };
+  };
+
   // ── a place run on power (../games/power.js, place.js's `power`): its run,
   // stepped in the place's own update; its spots tell it (`power-take`,
   // `power-give`); it says what's happened through the render state as the
@@ -105,12 +116,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     if (!done && !state.fading) {
       run = stepPower(run, asked, dt);
       asked = {};
-      const news = powerNews(run, { done, fading: false });
-      if (news === 'done') state.emit?.('done', { area: id, task: pw.task });
-      if (news === 'caught') {
-        run = { ...run, told: true };
-        state.emit?.('caught', { area: id, who: pw.who, text: pw.lost });
-      }
+      run = told(powerNews(run, { done, fading: false }), run, pw, state);
     }
     if (!glow) return;
     const share = done || run.phase !== 'run' ? (run.phase === 'lost' ? 0 : 1) : run.charge / run.max;
@@ -133,12 +139,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       return;
     }
     for (const u of used.splice(0)) deal = stepDeal(deal, { use: u });
-    const news = dealNews(deal, { done, fading: false });
-    if (news === 'done') state.emit?.('done', { area: id, task: dl.task });
-    if (news === 'caught') {
-      deal = { ...deal, told: true };
-      state.emit?.('caught', { area: id, who: dl.who, text: dl.lost });
-    }
+    deal = told(dealNews(deal, { done, fading: false }), deal, dl, state);
   };
 
   // ── a place run on a freeze (../games/freeze.js, place.js's `freeze`):
@@ -162,12 +163,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     }
     if (!done && !state.fading) {
       still = stepFreeze(still, { moving: moving(state.morty), jumped }, dt);
-      const news = freezeNews(still, { done, fading: false });
-      if (news === 'done') state.emit?.('done', { area: id, task: fz.task, unlock: fz.unlock ?? null });
-      if (news === 'caught') {
-        still = { ...still, told: true };
-        state.emit?.('caught', { area: id, who: fz.who, text: fz.lost });
-      }
+      still = told(freezeNews(still, { done, fading: false }), still, fz, state);
     }
     jumped = false;
     N.lookout(done ? null : freezeEyes(still));
@@ -187,14 +183,13 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       asks = [];
       return;
     }
-    for (const u of asks.splice(0)) search = stepFind(search, { use: u }, 0);
-    search = stepFind(search, {}, dt);
-    const news = findNews(search, { done, fading: false });
-    if (news === 'done') state.emit?.('done', { area: id, task: fd.task, unlock: fd.unlock ?? null });
-    if (news === 'caught') {
-      search = { ...search, told: true };
-      state.emit?.('caught', { area: id, who: fd.who, text: fd.lost });
+    for (const u of asks.splice(0)) {
+      search = stepFind(search, { use: u }, 0);
+      // (a wrong one taken: the time it cost is heard as well as seen)
+      if (search.events.some((e) => e.type === 'wrong')) state.emit?.('miss', { area: id });
     }
+    search = stepFind(search, {}, dt);
+    search = told(findNews(search, { done, fading: false }), search, fd, state);
   };
 
   // (calmed: its people home, and its game started afresh)
@@ -247,6 +242,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     return c;
   };
   const placed = [];
+  let cast = false; // the place's people stood (./done, below)
   // things to place once their models are in: [kind, at] pairs (`at.onPlace(c)`: told when it's stood)
   const figure = (kind, spot) => placed.push([kind, spot]);
   // the place's people and its crowd, from ./destinations.js (`extras`:
@@ -262,19 +258,23 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       light,
       update: (t, dt, state, camera) => {
         sky?.update(t, camera);
-        if (run && state) powered(t, dt, state);
-        if (deal && state) dealing(state);
-        if (still && state) freezing(dt, state);
-        if (search && state) finding(dt, state);
+        // (a game waits for the place's people: no clock runs, no look is
+        // taken, before there's anyone there to see him)
+        if (run && state && cast) powered(t, dt, state);
+        if (deal && state && cast) dealing(state);
+        if (still && state && cast) freezing(dt, state);
+        if (search && state && cast) finding(dt, state);
         update?.(t, dt, state, camera);
       },
     });
     // the cast, fetched behind the scenes and stood in place as each arrives
     const kinds = [...new Set(placed.map(([k]) => k))];
+    cast = !kinds.length;
     if (kinds.length)
       kit.track(
         Promise.all(kinds.map((k) => load([k]))).then(() => {
           for (const [k, spot] of placed) make(k, spot);
+          cast = true; // (stood, or left out if one wouldn't load: the game goes on either way)
         }),
       );
     // (every place settles when Morty leaves it: its hunters go home. A

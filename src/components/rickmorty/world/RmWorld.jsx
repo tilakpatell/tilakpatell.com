@@ -110,13 +110,17 @@ import { stepRmLockOn } from './rmLockOn';
 // Started on a planet of the universe map's Rick and Morty sector (`start`),
 // it's that planet alone, its portal the way back to space (./planetMode.js).
 
-const Roy = lazy(() => import('./roy/Roy').catch(() => ({ default: RoyDown })));
-const Sewer = lazy(() => import('./sewer/Sewer').catch(() => ({ default: RoyDown })));
-const Cabinet = lazy(() => import('./games/Cabinet.jsx').catch(() => ({ default: RoyDown })));
+// (each says what didn't load, and its way back to the room it was opened from)
+const Roy = lazy(() => import('./roy/Roy').catch(() => ({ default: placeDown('Roy’s headset', 'Back to the arcade') })));
+const Sewer = lazy(() => import('./sewer/Sewer').catch(() => ({ default: placeDown('The sewer', 'Back to the agency') })));
+const Cabinet = lazy(() => import('./games/Cabinet.jsx').catch(() => ({ default: placeDown('The cabinet', 'Back to the arcade') })));
 const sound = (name) =>
   import('../../games/gameAudio')
     .then((g) => g[name]?.())
     .catch(() => {});
+
+// what's said when a place's clock runs out before he's back through its portal
+const LATE = 'Out of time. Back to where you came in, and try it again.';
 
 const DONE = 'tp-c137-done';
 const ROY = 'tp-c137-roy';
@@ -572,6 +576,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const [list, setList] = useState(false);
   const listRef = useRef(list);
   listRef.current = list;
+  const cardRef = useRef(card);
+  cardRef.current = card;
   // the wardrobe: how Morty looks here (and Rick, wherever he turns up)
   const [looks, setLook] = useLooks();
   const looksRef = useRef(looks);
@@ -1109,9 +1115,12 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         }, FADE_MS);
       } else if (name === 'bark') {
         if (s.t - (s.barkAt ?? -1e9) < 6) return;
+        // (nor over what someone's saying to him while it's still being said)
+        if (s.talk && s.talk.area === s.area && s.t - s.talk.at < s.talk.hold) return;
         s.barkAt = s.t;
         say({ kind: 'say', who: e.name ?? SAY[e.who]?.who ?? null, text: e.text });
-      } else if (name === 'done') {
+      } else if (name === 'miss') sound('ouch');
+      else if (name === 'done') {
         complete(e.task);
         if (e.unlock) unlock(e.unlock); // (a game whose win is an achievement: the vat's)
       }
@@ -1465,7 +1474,11 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     const a = api.current;
     if (!a || a.lost) return;
     const s = sim.current;
-    const dt = Math.min(0.05, ms / 1000);
+    // the world waits while the list of things to do, the wardrobe, the dial
+    // or an episode's card is open over it: it's drawn, but no clock runs
+    // (an escape's, a game's, the chase's), no hunter moves and nor does he
+    const held = Boolean(listRef.current || wardrobeRef.current || cardRef.current != null);
+    const dt = held ? 0 : Math.min(0.05, ms / 1000);
     s.t += dt;
     const k = s.keys;
     const raw = readPad();
@@ -1641,7 +1654,14 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       clockRef.current = left;
       setClock(left);
     }
-    if (s.escape && left === 0) s.escape = null;
+    // (out of time before its task's done: the run's lost, as a catch is: back
+    // at the way in, the place settled, and a fresh go from the start)
+    if (s.escape && left === 0) {
+      const late = !doneRef.current.includes(s.escape.task) && !s.fading;
+      const area = s.escape.area;
+      s.escape = null;
+      if (late) fns.current.npc?.('caught', { area, who: null, text: LATE });
+    }
     // what the cruiser was about to say when it'd only just spoken
     if (s.shipNext) {
       if (s.t > s.shipNext.until || s.area !== 'street') s.shipNext = null;
@@ -1706,6 +1726,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       a.render(
         {
           area: s.area,
+          held,
           morty: s.m,
           flying: s.flying,
           cruiser: s.c,
@@ -2200,15 +2221,17 @@ function drawMap(c, s, goal, t) {
 }
 
 // Roy, if its code won't load (offline, or a deploy since the page opened)
-function RoyDown({ onLeave }) {
-  return (
-    <div className="rm-place-down" role="alert">
-      <p>Roy’s headset didn’t load. Check the connection, then reload the page to try again.</p>
-      <button type="button" className="rm-btn" onClick={() => onLeave?.(null, null)}>
-        Back to the arcade
-      </button>
-    </div>
-  );
+function placeDown(what, back) {
+  return function PlaceDown({ onLeave }) {
+    return (
+      <div className="rm-place-down" role="alert">
+        <p>{what} didn’t load. Check the connection, then reload the page to try again.</p>
+        <button type="button" className="rm-btn" onClick={() => onLeave?.(null, null)}>
+          {back}
+        </button>
+      </div>
+    );
+  };
 }
 
 // ── what opens over the page ──
