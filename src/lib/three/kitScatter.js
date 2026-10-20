@@ -4,11 +4,13 @@
 // (middleearth/road/scatter.js) and a galaxy world's streamed tiles
 // (galaxy/surface/living.js) both draw through it.
 //
-//   createKitScatter({ kitFor, tier, name }) → { group, set(key, items, dz),
+//   createKitScatter({ kitFor, tier, name, poolOptions }) → { group, set(key, items, dz),
 //     free(key), update(camera, dt), stats: { pools, total }, ready (every
 //     pool named so far drawn: its models in), dispose() }
 //     kitFor(tint, pack) → that kit in that tint (null: its own colours; no
 //       pack: the MegaKit's)
+//     poolOptions(model, pack) → more of createPool's options for that
+//       model's pool (its `reach`, its `dissolve`)
 //     items  [{ model, x, y, z, yaw, scale, tint?, pack? }], `model` the
 //       kit's own name; `dz` metres along +z for every item of the set
 //   CASTS: the kit's kinds that cast the sun's shadow (trees, bushes, rocks),
@@ -20,7 +22,7 @@ import { budget } from '../budgets';
 
 export const CASTS = new Set(['tree', 'bush', 'rock']);
 
-export function createKitScatter({ kitFor, tier = 'high', name = 'kit:scatter' } = {}) {
+export function createKitScatter({ kitFor, tier = 'high', name = 'kit:scatter', poolOptions = () => ({}) } = {}) {
   const level = budget(tier);
   const bands = [level.near, level.mid];
   const group = new THREE.Group();
@@ -40,7 +42,7 @@ export function createKitScatter({ kitFor, tier = 'high', name = 'kit:scatter' }
         if (gone || !row) return null;
         // (only what stands casts: trees, bushes, rocks; grass, flowers and
         // pebbles casting into four cascades were most of a stage's triangles)
-        const pool = createPool(kit, model, { bands, shadows: tier !== 'low' && CASTS.has(row.kind) });
+        const pool = createPool(kit, model, { bands, shadows: tier !== 'low' && CASTS.has(row.kind), ...poolOptions(model, pack ?? null) });
         group.add(pool.group);
         live.push(pool);
         return pool;

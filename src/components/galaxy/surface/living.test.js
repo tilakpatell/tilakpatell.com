@@ -29,9 +29,13 @@ const cam = (x = 0, z = 0) => {
 describe('reachOf and shareOf', () => {
   it('lays each band out from the level’s kit bands, more on a higher level', () => {
     const high = reachOf('high');
-    expect(high).toEqual({ cover: budget('high').near + 20, mid: Math.round((budget('high').near + budget('high').mid) / 2), trees: 2 * budget('high').mid });
+    expect(high).toEqual({ cover: budget('high').near + 40, mid: 2 * budget('high').mid, trees: budget('high').far });
     expect(reachOf('low').cover).toBeLessThan(high.cover);
-    expect(reachOf('ultra').trees).toBe(500);
+    expect(reachOf('low').trees).toBeLessThan(high.trees);
+    // (ultra's bushes kept to 600 m: its full meshes stand to 400)
+    expect(reachOf('ultra').mid).toBe(600);
+    // (the trees as far as across the core of a world, and further on ultra)
+    expect(high.trees).toBeGreaterThan(640);
   });
 
   it('lays the level’s props share of each row, and no grass clumps on low', () => {
@@ -143,6 +147,24 @@ describe('createLiving', () => {
     living.refresh();
     expect(solids.all.length).toBeLessThan(n);
     expect(solids.all.every((s) => s.x >= 0)).toBe(true);
+    living.dispose();
+  });
+
+  it('draws each band’s pools to its reach: the trees far past where a kit model’s puff would stop', async () => {
+    const { living } = livingOf();
+    living.fill(0, 0);
+    await living.ready;
+    living.update(0, 0, cam(0, 0), 0.016);
+    let farthest = 0;
+    living.group.traverse((o) => {
+      if (!o.isInstancedMesh || !o.name.startsWith('Birch_1') || !o.count) return;
+      for (let i = 0; i < o.count; i++) {
+        const e = o.instanceMatrix.array.subarray(i * 16, i * 16 + 16);
+        if (e[5] > 0) farthest = Math.max(farthest, Math.hypot(e[12], e[14]));
+      }
+    });
+    expect(farthest).toBeGreaterThan(2 * budget('high').mid);
+    expect(farthest).toBeLessThan(reachOf('high').trees * 1.06);
     living.dispose();
   });
 

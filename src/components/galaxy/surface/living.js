@@ -3,13 +3,18 @@
 // wherever you walk the ground is as thick as by the landing, at the Road's
 // and the Shire's densities. Each tile's items go under its key into the
 // kit's pools (lib/three/kitScatter: the full model near, its LOD1 further,
-// a puff to twice that), its trunks solid while it's in; a tile goes as you
-// leave it. (docs/superpowers/specs/2026-10-20-galaxy-living-free-roam-
+// a puff to the band's reach), its trunks solid while it's in; a tile goes
+// as you leave it. (docs/superpowers/specs/2026-10-20-galaxy-living-free-roam-
 // design.md, 1)
 //
 //   SIZE: { cover, mid, trees } metres a side of a band's tile
 //   reachOf(level) → { cover, mid, trees }: metres a band is laid out to,
-//     from the level's kit bands (lib/budgets' near and mid)
+//     and drawn to, from the level's row (lib/budgets): the cover a little
+//     past the kit's full band, the bushes as far as their far stand-ins
+//     go, the trees to `far`, the edge of what you can see across a world.
+//     Each shrinks away over the end of its reach (the pools' dissolve: the
+//     cover's longer), so no ring is seen, and a tile laid at the edge is
+//     laid where nothing of it shows yet
 //   shareOf(level) → (row) → the share of a row's count the level lays (its
 //     `props`; on low no grass clumps, the blades being its grass)
 //   keepOf({ site, heightAt, solids, avoid, clearings, busy, wade }) →
@@ -36,7 +41,10 @@ import { createKitScatter } from '../../../lib/three/kitScatter';
 import { HALF } from './terrain';
 import { pushOut } from './walker';
 
-export const SIZE = { cover: TILE, mid: TILE, trees: 2 * TILE };
+export const SIZE = { cover: TILE, mid: 2 * TILE, trees: 4 * TILE };
+// the share of a band's reach its items shrink away over (kitNodes' dissolve)
+const DISSOLVE = { cover: 0.4, mid: 0.25, trees: 0.2 };
+const BUSHES = 600; // metres the bushes are drawn to at most (ultra keeps its full meshes to 400)
 const BANDS = ['cover', 'mid', 'trees'];
 // (each band's rows from their own numbers: a bush never stands on a tuft's clump)
 const SEEDS = { cover: 0, mid: 1009, trees: 2003 };
@@ -46,8 +54,8 @@ const EDGE = 12; // metres inside the ground's square nothing is laid past
 const WALL = 0.6; // metres a bush or a tuft keeps from a wall
 
 export function reachOf(level) {
-  const { near, mid } = budget(level);
-  return { cover: near + 20, mid: Math.round((near + mid) / 2), trees: Math.min(2 * mid, 500) };
+  const { near, mid, far } = budget(level);
+  return { cover: near + 40, mid: Math.min(2 * mid, BUSHES), trees: far };
 }
 
 export function shareOf(level) {
@@ -91,10 +99,16 @@ export function shadeOf(rows, { level, seed, height, keep, half = HALF }) {
 }
 
 export function createLiving({ rows, kitFor, level = 'high', seed = 1, height, keep, cover = null, solids = null }) {
-  const scatter = createKitScatter({ kitFor: (tint, pack) => kitFor(pack ?? 'naturemega'), tier: level, name: 'galaxy:living' });
   const reach = reachOf(level);
   const share = shareOf(level);
   const refs = Object.fromEntries(BANDS.map((b) => [b, (rows[b] ?? []).map(refOf)]));
+  // (each model's pool drawn to its band's reach, shrinking away at its end)
+  const bandOf = new Map(BANDS.flatMap((b) => refs[b].map((r) => [`${r.pack}|${r.name}`, b])));
+  const poolOptions = (model, pack) => {
+    const band = bandOf.get(`${pack}|${model}`) ?? 'cover';
+    return { reach: reach[band], dissolve: DISSOLVE[band] };
+  };
+  const scatter = createKitScatter({ kitFor: (tint, pack) => kitFor(pack ?? 'naturemega'), tier: level, name: 'galaxy:living', poolOptions });
   const tiles = new Map(); // key → { band, tx, tz, trunks }
   let queue = []; // [band, tx, tz, d], nearest first
   let last = null; // where the ring was last looked at

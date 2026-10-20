@@ -51,7 +51,7 @@
 //     { recolour: colour }: the map's light and shade in that colour in
 //     place of its own hue (lib/three/recolour: Lothal's grass straw, a
 //     jungle's twisted trees green where the kit painted them red)
-//   createPool(kit, name, { bands, cap, shadows, puff, lod1, wait }) → {
+//   createPool(kit, name, { bands, reach, dissolve, cap, shadows, puff, lod1, wait }) → {
 //     set(key, items), free(key), shift(dx, dz), update(camera, dt),
 //     setBands([near, mid]), bands ([near, mid] now),
 //     stats: { total, levels: [full, lod1, puff], sorts }, group, ready, dispose() }
@@ -84,6 +84,7 @@ import { MeshLambertNodeMaterial } from 'three/webgpu';
 import { faceless, wind as windOn } from './foliageNodes';
 import { loadGltf } from './gltf';
 import { lodBand } from './lod';
+import { dissolveOf } from './scatter/grid';
 import { puffFor } from './puffsNodes';
 import { REF, measureMap, recolour } from './recolourNodes';
 import { coverageTexture, fitTexture } from './textures';
@@ -94,6 +95,7 @@ const GROWTH = 1.5; // a pool's capacity, grown by half again when it overflows
 const HYSTERESIS = 0.1; // a band edge's dead zone, a share of its distance
 const EVERY = 0.5; // seconds between re-sorts
 const MOVE = 20; // or metres of camera travel
+const DISSOLVE = 0.25; // the last share of a pool's reach its items shrink away over
 
 // A new material for a manifest entry `def` ({ alpha, leaf, wind, maps }):
 // the house's (or a plain Lambert), a leaf's cut out and two-sided and lit
@@ -327,8 +329,8 @@ export function loadKit(pack, { load = loadGltf, base = '/kit', house = null, wi
 // its turn about up and its size (column-major, as three's), times the
 // part's own matrix `b`; `c`, `s` (the turn's cosine and sine times the
 // size) another turn than the item's own, the puff's to the camera.
-function place(out, o, it, b, c = it.c, s = it.s) {
-  const { x, y, z, k } = it;
+function place(out, o, it, b, c = it.c, s = it.s, k = it.k) {
+  const { x, y, z } = it;
   for (let j = 0; j < 16; j += 4) {
     const b0 = b[j];
     const b1 = b[j + 1];
@@ -351,7 +353,11 @@ const itemOf = ({ x = 0, y = 0, z = 0, yaw = 0, scale = 1 }) => ({ x, y, z, c: M
 // was from, each sort (and each shift, which writes them again; a free
 // moves one already turned); every other level's keep their item's turn. `bands`
 // [near, mid] in metres, across the ground: full within near, LOD1 to mid,
-// the puff to twice mid, nothing beyond (lib/budgets' row for the device's
+// the puff to `reach` (twice mid unless given: a streamed wood's trees
+// to the edge of what you can see), nothing beyond, each item shrinking
+// away over the last `dissolve` share of the reach as the 2017 game's
+// scatter does (scatter/grid's dissolveOf), so none pops in or out at
+// the edge as you go (lib/budgets' row for the device's
 // level unless given, as is `lod1`: false keeps the full parts where the
 // LOD1's would be, as ultra does, and so does a model whose LOD1 won't
 // load, said once). `setBands` gives it new ones (a world stepping its
@@ -374,14 +380,14 @@ const itemOf = ({ x = 0, y = 0, z = 0, yaw = 0, scale = 1 }) => ({ x, y, z, c: M
 // then are drawn once they're in, and a model that won't load draws
 // nothing, said once (`ready` rejects). Wants the kit's manifest in, and
 // refuses a rigged model: a pool draws still props.
-export function createPool(kit, name, { bands = null, cap = 256, shadows = true, puff = null, lod1 = null, wait: start = Math.random() * EVERY } = {}) {
+export function createPool(kit, name, { bands = null, reach = null, dissolve = DISSOLVE, cap = 256, shadows = true, puff = null, lod1 = null, wait: start = Math.random() * EVERY } = {}) {
   const row = kit.info(name);
   if (!row) throw new Error(`createPool: kit ${kit.pack} has no model ${name}`);
   if (row.rig) throw new Error(`createPool: ${name} is rigged, and a pool draws still props`);
   const far = puff ?? kit.puff?.(name) ?? null;
   const level = budget(detailLevel());
   const [near, mid] = bands ?? [level.near, level.mid];
-  const edges = [near, mid, 2 * mid];
+  const edges = [near, mid, reach ?? 2 * mid];
   const withLod1 = lod1 ?? level.lod1;
 
   const group = new THREE.Group();
@@ -443,18 +449,20 @@ export function createPool(kit, name, { bands = null, cap = 256, shadows = true,
         const at = it.slot * 16;
         const ps = parts[l];
         if (!ps) continue;
+        const dx = last.x - it.x;
+        const dz = last.z - it.z;
+        const d = Math.hypot(dx, dz);
+        // (its size, shrunk toward the reach's end; whole till a camera's
+        // known, and always with no dissolve)
+        const f = dissolve > 0 && d < Infinity ? dissolveOf(d, edges[2], dissolve) : 1;
+        let c = it.c * f;
+        let s = it.s * f;
         // (a puff turned to the camera across the ground: its +Z, (s, 0, c), toward it)
-        let { c, s } = it;
-        if (l === 2 && far) {
-          const dx = last.x - it.x;
-          const dz = last.z - it.z;
-          const d = Math.hypot(dx, dz);
-          if (d > 1e-6 && d < Infinity) {
-            c = (dz / d) * it.k;
-            s = (dx / d) * it.k;
-          }
+        if (l === 2 && far && d > 1e-6 && d < Infinity) {
+          c = (dz / d) * it.k * f;
+          s = (dx / d) * it.k * f;
         }
-        for (let i = 0; i < ps.length; i++) place(meshes[l][i].instanceMatrix.array, at, it, ps[i].local.elements, c, s);
+        for (let i = 0; i < ps.length; i++) place(meshes[l][i].instanceMatrix.array, at, it, ps[i].local.elements, c, s, it.k * f);
       }
     }
     counted();
@@ -548,7 +556,7 @@ export function createPool(kit, name, { bands = null, cap = 256, shadows = true,
     setBands([n, m]) {
       edges[0] = n;
       edges[1] = m;
-      edges[2] = 2 * m;
+      edges[2] = reach ?? 2 * m;
       dirty = true;
     },
     update(camera, dt = 0) {

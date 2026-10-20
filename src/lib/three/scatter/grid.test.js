@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DENSITY_CAP, REACH, TILE, dissolveOf, keepShare, layerAt, mulberry32, reachOf, tileInstances, tilesAround } from './grid.js';
+import { DENSITY_CAP, REACH, TILE, dissolveOf, keepShare, layerAt, mulberry32, reachOf, thinOf, tileInstances, tilesAround } from './grid.js';
 
 // a 64 m square at 2 m a texel: layer 4 west of x = 32, layer 7 east, none in the last row
 const mask = (() => {
@@ -64,6 +64,17 @@ describe('reach, dissolve and the cap', () => {
     expect(dissolveOf(24, 40, 0.4)).toBe(1);
     expect(dissolveOf(32, 40, 0.4)).toBeCloseTo(0.5, 5);
     expect(dissolveOf(40, 40, 0.4)).toBe(0);
+  });
+  it('keeps all of a type near, thinning toward its reach’s end', () => {
+    expect(thinOf(0, 64)).toBe(1);
+    expect(thinOf(64 * 0.4, 64)).toBe(1);
+    expect(thinOf(64 * 0.7, 64)).toBeCloseTo(0.65, 5);
+    expect(thinOf(64, 64)).toBeCloseTo(0.3, 5);
+    for (let d = 0; d < 64; d += 4) expect(thinOf(d + 4, 64)).toBeLessThanOrEqual(thinOf(d, 64));
+  });
+  it('draws the ring out where a clump is a few pixels, 64 m on high', () => {
+    expect(REACH.high).toBe(64);
+    expect(Object.values(REACH)).toEqual([...Object.values(REACH)].sort((a, b) => a - b));
   });
   it('keeps all under the tier’s cap, the cap’s share over it', () => {
     expect(keepShare(100, 'high')).toBe(1);

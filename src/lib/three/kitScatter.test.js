@@ -44,6 +44,22 @@ describe('createKitScatter', () => {
     scatter.dispose();
   });
 
+  it('gives a model’s pool the options asked for it', async () => {
+    const asked = [];
+    const { scatter } = scatterOf({ poolOptions: (model, pack) => (asked.push([model, pack]), model === 'Birch_1' ? { reach: 900 } : {}) });
+    await scatter.set('a', [at('Birch_1', 600), at('Fern_1', 600)]);
+    await scatter.ready;
+    const cam = { position: { x: 0, z: 0 } };
+    scatter.update(cam, 0);
+    expect(asked).toEqual([['Birch_1', null], ['Fern_1', null]]);
+    // (the birch's puff to 900 m: drawn at 600; the fern's to 440 on high: not)
+    expect(scatter.stats.total).toBe(2);
+    const drawn = new Set();
+    scatter.group.traverse((o) => o.isInstancedMesh && o.count > 0 && drawn.add(o.name.split(':')[0]));
+    expect([...drawn]).toEqual(['Birch_1']);
+    scatter.dispose();
+  });
+
   it('casts the sun’s shadow from the trees and rocks only, and none on low', async () => {
     const shadowed = async (tier) => {
       const { scatter } = scatterOf({ tier });
