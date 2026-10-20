@@ -18,7 +18,7 @@ export const BEATS = [
   { id: 'dais', kind: 'dais', at: 80, hold: 8, rig: 'seat', reach: 10, params: { at: [3.4, 19.9, 75.5], lookAt: [-4.2, 19.7, 81.6], above: true }, lines: ['lorien-galadriel'] },
   // the Mirror: the basin goes dark, the Eye looks out, then her light (no vision
   // drain: the Eye’s fire is to be the one colour in the frame)
-  { id: 'mirror', kind: 'mirror', at: 100, hold: 14, rig: 'seat', cut: 0, reach: 10, params: { at: [-2.6, 3.9, 98.6], lookAt: [-6, 0.4, 103.2], above: true }, clip: 'taskAppointed' },
+  { id: 'mirror', kind: 'mirror', at: 100, hold: 14, rig: 'seat', cut: 0, reach: 10, params: { at: [-2.6, 3.9, 98.6], lookAt: [-6, 0.4, 103.2], above: true }, deed: { verb: 'press', label: 'Look into the Mirror', clip: 'taskAppointed' } },
   // the hythe and the swan-boat; away down the Silverlode
   { id: 'boats', kind: 'boats', at: 128, hold: 6, rig: 'lead', reach: 22 },
 ];

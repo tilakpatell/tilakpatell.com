@@ -16,7 +16,9 @@ describe('Caradhras’ beats', () => {
     expect(by.avalanche).toMatchObject({ rig: 'follow', cut: 0 });
     expect(by.doors).toMatchObject({ rig: 'low' });
     expect(by.doors.hold).toBeGreaterThanOrEqual(12);
-    expect(by.doors.lines.map((l) => LINES[l].who)).toEqual(['gandalf']);
+    // (the word is the visitor’s to choose; Gandalf’s line once it’s said)
+    expect(by.doors.deed.choices.find((c) => c.right).label).toBe('Mellon');
+    expect(by.doors.deed.lines.map((l) => LINES[l].who)).toEqual(['gandalf']);
     expect(by.watcher).toMatchObject({ rig: 'seat', cut: 0 });
   });
 });

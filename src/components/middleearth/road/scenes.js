@@ -7,7 +7,8 @@
 // since each began.
 //
 //   createScenes({ rt, road, lands, weather, ambience, tier, sky }) → {
-//     at(index, local, dt, { speed, jumped }) → { since, fx, shot }  (fx: fxAt’s; shot: rigAt’s, or null)
+//     at(index, local, dt, { speed, jumped, waits }) → { since, fx, shot }  (fx: fxAt’s; shot: rigAt’s, or null;
+//       waits: the beats whose deed is undone, held at its moment till it’s done, doing.js’s)
 //     floor(index, x, z) → the height the stage’s scene stands the walkers on there, or null (the land’s)
 //     pose(index, id, { x, y, z, base, state }) → what the scene changes of a walker this frame
 //       ({ x, y, z, yaw, base, speed, hide }, each left out for the module’s own), or null
@@ -79,7 +80,7 @@ export function createScenes({ rt, road, lands, weather, ambience, tier, sky = n
   };
 
   return {
-    at(index, local, dt, { speed = 0, jumped = false } = {}) {
+    at(index, local, dt, { speed = 0, jumped = false, waits = null } = {}) {
       for (const i of [...made.keys()]) if (Math.abs(i - index) > 1 || lands.groupOf(i) !== made.get(i).group) drop(i);
       for (const i of [index, index + 1, index - 1]) if (i >= 0 && i < STAGES.length) want(i);
       const beats = BEATS_OF[STAGES[index].id] ?? [];
@@ -87,8 +88,8 @@ export function createScenes({ rt, road, lands, weather, ambience, tier, sky = n
       // not played; walked on into the next, its beats from its start)
       let r;
       if (jumped || index < current) r = stepBeats({}, beats, { from: local, to: local, jumped: true });
-      else if (index > current) r = stepBeats({}, beats, { from: 0, to: local, dt });
-      else r = stepBeats(since, beats, { from: last, to: local, dt });
+      else if (index > current) r = stepBeats({}, beats, { from: 0, to: local, dt, waits });
+      else r = stepBeats(since, beats, { from: last, to: local, dt, waits });
       for (const id of r.fired) play(beats.find((b) => b.id === id));
       since = r.since;
       // (a stage walked out of settles: it is only updated while current, and what runs on in it would run on behind)

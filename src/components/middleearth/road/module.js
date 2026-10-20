@@ -40,6 +40,8 @@ import { clipFor, walkers as walkersAt } from './fellowship';
 import { STAGES, modeAt, stageById } from './stages/index';
 import { BEATS_OF } from './stages/registry';
 import { createScenes } from './scenes';
+import { createDoing } from './doing';
+import { LINES } from './voicelines';
 import { ease as easePose } from './director';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 
@@ -67,6 +69,11 @@ export const KEYS = {
   menu: ['Escape'],
   map: ['KeyM'],
   lore: ['KeyL'],
+  // (a deed's keys: E to do it, A and D in turn for a rhythm; T for a word with the company)
+  act: ['KeyE'],
+  left: ['KeyA', 'ArrowLeft'],
+  right: ['KeyD', 'ArrowRight'],
+  talk: ['KeyT'],
   ...Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((n, i) => [`stage${i + 1}`, [`Digit${n}`]])),
 };
 
@@ -211,6 +218,10 @@ export default {
       if (held) held.push([type, data]);
       else rt.events?.emit?.(type, data);
     };
+    // what the visitor does: the deeds the walk waits on, and a word with the company
+    const doing = createDoing({ stages: STAGES, beatsOf: BEATS_OF, lines: LINES, tell, say: (who, text) => ambience.say(who, text), clip: (id) => ambience.clip(id), reduced });
+    doing.jumped(clock.s);
+    let present = []; // the ids walking now, as the last frame had them
     const look = { yaw: 0, pitch: 0 };
     // who walks with you: made as they join, gone as they leave
     const cast = new Map(); // id → walker
@@ -286,6 +297,7 @@ export default {
       lands.at(here.index);
       mountains.at(here.stage);
       const line = company();
+      present = line.map((w) => w.id);
       const mode = modeAt(stageById(here.stage), here.local);
       // the one you follow (Frodo while he walks with you) at the back of the
       // file, the rest ahead of him in their order, so none comes between
@@ -312,7 +324,7 @@ export default {
         fig.tick(dt);
       }
       // the stage’s scene and its beats; the camera on the beat’s rig, eased into it unless it cuts
-      const beat = scenes.at(here.index, here.local, dt, { speed: clock.speed, jumped });
+      const beat = scenes.at(here.index, here.local, dt, { speed: clock.speed, jumped, waits: doing.waits(here.stage) });
       lastSince = beat.since;
       jumped = false;
       veil.visible = beat.fx.black > 0;
@@ -362,7 +374,8 @@ export default {
         if (!quietTitle) tell('stage', { id: st.id, name: st.name, date: st.date, first: clock.s === 0 && st.id === STAGES[0].id });
         quietTitle = false;
       }
-      const holding = clock.mode === 'hold';
+      // (a deed waiting is a beat held too: the letterbox, the prompt out of its way)
+      const holding = clock.mode === 'hold' || clock.mode === 'deed';
       const mode = `${clock.auto}:${clock.mode}`;
       if (mode !== lastMode) {
         lastMode = mode;
@@ -387,6 +400,7 @@ export default {
     let offerOpen = offer;
     const jump = (s) => {
       clock = { ...clock, s: Math.min(1, Math.max(0, s)), holdLeft: 0 };
+      doing.jumped(clock.s);
       jumped = true;
       relight();
       report(frame(), 0);
@@ -414,7 +428,14 @@ export default {
         }
         if (pressed('menu')) tell('menu');
         if (pressed('lore')) tell('lore');
-        for (let i = 1; i <= 10; i++) if (pressed(`stage${i}`)) world.goTo(STAGES[i - 1].id);
+        // (while a word is to be chosen, the digits choose it rather than a stage)
+        const choosing = doing.choosing();
+        let pick = null;
+        for (let i = 1; i <= 10; i++) {
+          if (!pressed(`stage${i}`)) continue;
+          if (choosing) pick ??= i - 1;
+          else world.goTo(STAGES[i - 1].id);
+        }
         const keys = {
           walk: touch.walk || Boolean(input?.action?.('walk')),
           run: touch.run || Boolean(input?.action?.('run')),
@@ -426,7 +447,11 @@ export default {
         if (keys.walk || keys.run || keys.back || keys.toggleAuto || keys.next || input?.pressed?.size || input?.pointer?.drag) ambience.wake();
         const was = clock.s;
         const at = lineAt(STAGES, clock.s);
-        clock = stepClock(clock, dt, keys, { total: TOTAL, holdAt, nextBeat: nextMark, pace: PACE[modeAt(stageById(at.stage), at.local)] ?? 1 });
+        clock = stepClock(clock, dt, keys, { total: TOTAL, holdAt, nextBeat: nextMark, gate: doing.gate, holdAfter: doing.holdAfter, pace: PACE[modeAt(stageById(at.stage), at.local)] ?? 1 });
+        // (the deed on the mark, if the walk waits on one; under reduced motion Enter does it too)
+        const deedKeys = { act: pressed('act') || (clock.reduced && keys.next), acting: KEYS.act.some((c) => input?.keys?.has?.(c)), left: pressed('left'), right: pressed('right'), pick };
+        doing.step(dt, deedKeys, { s: clock.s, stage: at.stage, since: lastSince, present, auto: clock.auto });
+        if (pressed('talk')) doing.talk(at.stage, present);
         // (Next under reduced motion is how that ride is walked, so it counts)
         walked += Math.max(0, clock.s - was);
         if (clock.s !== was) saving = true;
@@ -483,6 +508,15 @@ export default {
       },
       press(name, down) {
         if (name in touch) touch[name] = Boolean(down);
+        else doing.press(name, down);
+      },
+      // (a deed's word, by its button)
+      pick(i) {
+        doing.pick(i);
+      },
+      // (a word with the company, by the Talk button)
+      talk() {
+        doing.talk(lineAt(STAGES, clock.s).stage, present);
       },
       carryOn() {
         if (!offerOpen) return;

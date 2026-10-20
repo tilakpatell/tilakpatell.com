@@ -70,3 +70,27 @@
   .road-title, .road-lore { animation: none; }
   .road-ribbon-mark { transition: none; }
 }
+
+/* the tale so far, under a stage's name */
+.road-title-tale { margin: 0.6rem 0 0; font-size: var(--fs-sm); line-height: 1.5; }
+
+/* what the road waits for you to do: low in the middle, over the foot */
+.road-deed { position: absolute; left: 50%; bottom: calc(var(--hud-foot) + var(--road-dot) + 6.5rem); z-index: 3; display: grid; justify-items: center; gap: 0.6rem; width: max-content; max-width: calc(100% - 2 * var(--hud-pad)); padding: 0.9rem 1.25rem; border-radius: var(--hud-radius); background: var(--hud-glass-hi); color: var(--hud-ink); text-align: center; transform: translateX(-50%); animation: road-card var(--t-slow) ease-out both; pointer-events: auto; }
+.road-deed-label { margin: 0; font: 700 var(--fs-lg)/1.2 var(--hud-title-face); letter-spacing: 0.02em; }
+.road-deed-keys { margin: 0; font-size: var(--fs-sm); color: var(--hud-muted); }
+.road-deed-keys kbd, .road-deed-word kbd { display: inline-block; min-width: 1.6rem; padding: 0.1rem 0.4rem; border: 1px solid var(--hud-accent); border-radius: 4px; color: var(--hud-ink); font-size: var(--fs-xs); font-weight: 600; line-height: 1.4; }
+.road-deed-bar { position: relative; width: 12rem; height: 6px; border-radius: 3px; background: rgb(243 234 214 / 0.18); overflow: hidden; }
+.road-deed-bar > span { position: absolute; inset: 0; background: var(--hud-accent); transform-origin: left; transform: scaleX(var(--k, 0)); transition: transform 0.12s linear; }
+.road-deed-words { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.road-deed-word { min-height: 44px; padding: 0.4rem 0.9rem; border: 1px solid rgb(216 178 90 / 0.6); border-radius: var(--hud-radius); background: transparent; color: var(--hud-ink); font: 600 var(--fs-sm)/1.2 var(--hud-title-face); cursor: pointer; }
+.road-deed-word:hover, .road-deed-word:focus-visible { border-color: var(--hud-accent); background: rgb(216 178 90 / 0.14); }
+.road-deed-word[data-wrong] { color: var(--hud-muted); text-decoration: line-through; opacity: 0.7; }
+.road-deed-thumbs { display: flex; gap: 0.75rem; }
+
+/* what the company says, as subtitles: low in the middle, over the ribbon */
+.road-said { position: absolute; left: 50%; bottom: calc(var(--hud-foot) + var(--road-dot) + 3.4rem); z-index: 2; width: max-content; max-width: min(42rem, calc(100% - 2 * var(--hud-pad))); margin: 0; padding: 0.55rem 1rem; border-radius: var(--hud-radius); background: var(--hud-glass); color: var(--hud-ink); font-size: var(--fs-sm); line-height: 1.45; text-align: center; transform: translateX(-50%); animation: road-card var(--t-base) ease-out both; pointer-events: none; }
+.road-said b { font: 700 var(--fs-xs)/1 var(--hud-title-face); letter-spacing: 0.06em; color: var(--hud-accent); margin-right: 0.35rem; }
+@media (prefers-reduced-motion: reduce) {
+  .road-deed, .road-said { animation: none; }
+  .road-deed-bar > span { transition: none; }
+}

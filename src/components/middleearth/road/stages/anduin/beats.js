@@ -12,7 +12,7 @@ export const BEATS = [
   // in the boats at night, the log drifting far behind
   { id: 'river', kind: 'river', at: 0, hold: 0, rig: 'ride', reach: 40, params: { offset: [-0.6, 1.6, -3.4] } },
   // the Kings of old either side of the gorge, rising as the boats come under them
-  { id: 'argonath', kind: 'argonath', at: 30, hold: 12, rig: 'crane', reach: 24, params: { seconds: 10, top: 6, lookAt: [0, 30, 72] } },
+  { id: 'argonath', kind: 'argonath', at: 30, hold: 12, rig: 'crane', reach: 24, params: { seconds: 10, top: 6, lookAt: [0, 30, 72] }, deed: { verb: 'rhythm', label: 'Paddle under the Pillars of the Kings', beats: 12 } },
   // Nen Hithoel opening out: Tol Brandir, the roar of Rauros
   { id: 'nenhithoel', kind: 'nenhithoel', at: 78, hold: 0, rig: 'wide', reach: 18, params: { at: [-10, 2.6, 70], lookAt: [6, 8, 120], above: true } },
   // ashore at Parth Galen, up to the Seat: the vision across the western sky, behind Frodo
