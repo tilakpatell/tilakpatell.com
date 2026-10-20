@@ -47,10 +47,10 @@ const RINGS = { near: [4, 60], cover: [4, 160], mid: [20, 320], trees: [60, 560]
 const FLAT = 0.86; // (the ground's normal at least this upright: never on a cliff)
 const ABOVE = 0.4; // (metres over the water, where the world has some)
 const CLEAR = 25; // (metres a tree keeps from a place's flat)
-// The band round a place: 60 m wide past its flat, its cover one an 70 m²
+// The band round a place: 90 m wide past its flat, its cover one an 70 m²
 // and its mid one an 500 m², for the first four places past 150 m of the
 // landing (nearer, the landing's own rings reach it)
-const PLACE = { band: 60, cover: 70, mid: 500, skip: 150, most: 4 };
+const PLACE = { band: 90, cover: 70, mid: 500, skip: 150, most: 4 };
 
 // The kit's sizes, by family. Quaternius made its plants big (a flower
 // two metres tall, a clover a metre): scaled here so a grass clump comes to

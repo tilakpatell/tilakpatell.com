@@ -83,10 +83,10 @@ describe('floraRows: a world’s cover from its biome', () => {
     const rows = floraRows(plains({}, { places }));
     const round = (id) => rows.filter((r) => r.at === places.find((p) => p.id === id).at);
     expect(round('far').map((r) => r.band)).toEqual([...BIOMES.plains.cover.map(() => 'cover'), ...BIOMES.plains.mid.map(() => 'mid')]);
-    expect(round('far').every((r) => r.within[0] === 50 && r.within[1] === 110)).toBe(true);
-    expect(round('unflat').every((r) => r.within[0] === 30 && r.within[1] === 90)).toBe(true);
+    expect(round('far').every((r) => r.within[0] === 50 && r.within[1] === 140)).toBe(true);
+    expect(round('unflat').every((r) => r.within[0] === 30 && r.within[1] === 120)).toBe(true);
     // (one an about 70 m² of cover, 500 of mid, over the band)
-    const area = Math.PI * (110 ** 2 - 50 ** 2);
+    const area = Math.PI * (140 ** 2 - 50 ** 2);
     expect(total(band(round('far'), 'cover'))).toBeCloseTo(area / 70, -1);
     expect(total(band(round('far'), 'mid'))).toBeCloseTo(area / 500, -1);
     expect(band(round('far'), 'cover').every((r) => r.solid === false && r.shadow === false)).toBe(true);
