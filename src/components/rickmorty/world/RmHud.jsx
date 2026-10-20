@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import RmEarnNote from '../RmEarnNote';
 import { PowerBar } from '../../universe/shared/powerBar';
 import { Link as RouterLink } from 'react-router-dom';
-import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiCrosshair2Line, RiEmotionLaughLine, RiHeart3Line, RiHome4Line, RiListCheck2, RiFlashlightLine, RiShieldLine, RiShirtLine, RiToolsLine, RiTyphoonLine } from 'react-icons/ri';
+import { RiArrowDownLine, RiArrowLeftLine, RiArrowUpLine, RiCheckLine, RiCloseLine, RiCrosshair2Line, RiEmotionLaughLine, RiEyeLine, RiHeart3Line, RiHome4Line, RiListCheck2, RiFlashlightLine, RiSearchEyeLine, RiShieldLine, RiShirtLine, RiToolsLine, RiTyphoonLine } from 'react-icons/ri';
 import { EMOTES, wheelAngle } from '../../../lib/emote';
 import { Arms, Cluster, Prompt, Reticle, Stick, TouchButton, Vitals, createFlightCluster, reticleState } from '../../../runtime/hud';
 import { enemyShare, heartsToHealth } from './vitalsOf';
@@ -11,6 +11,8 @@ import GuideCue from '../../guide/GuideCue';
 import Wardrobe from '../wardrobe/Wardrobe';
 import DimensionDial from './dimensions/DimensionDial';
 import { ROOMS } from './dimensions/vindicatorsRules';
+import { destinationById } from './dimensions/destinations';
+import { METER, kindOf } from './games/meter';
 import { listOf } from './planetMode';
 import { firstHint } from './portalGun';
 import { MEMORIES, MEMORY_COLORS } from './rules';
@@ -38,6 +40,9 @@ const EMOTE_NAME = { wave: 'Wave', cheer: 'Cheer', dance: 'Dance', taunt: 'Taunt
 
 // the gun in Morty's hand in a duel, on the kit's Arms (no rack: it never runs dry)
 const HAND_GUN = { name: 'Rick’s gun', line: 'primary', index: 0, ammo: 0, max: 0, filling: 0 };
+
+// a place's game's meter, its icon by the kind (./games/meter.js)
+const METER_ICON = { power: <RiFlashlightLine aria-hidden="true" />, deal: <RiSearchEyeLine aria-hidden="true" />, freeze: <RiEyeLine aria-hidden="true" /> };
 
 export default function RmHud({
   touch,
@@ -122,6 +127,8 @@ export default function RmHud({
   // the toast and the cruiser's caption sit just under it however tall the
   // objective or the chips make it, never over them.
   const top = useRef(null);
+  // (the game the place Morty's in runs, if any: its meter's name)
+  const meterKind = kindOf(destinationById(hud.area)) ?? 'power';
   // a duel: Morty's health and his gun on the HUD kit's cluster (his hearts
   // on the one scale: ./vitalsOf.js), written when the duel changes
   const footRef = useRef(null);
@@ -410,10 +417,10 @@ export default function RmHud({
           {onPower && <PowerBar ship="cruiser" reduced={false} barRef={powersRef} onPress={onPower} placement="cluster" picks={powerPicks} carry={carry} />}
         </Cluster>
       )}
-      {/* in a place run on power: the world's charge and the cells carried, the same kit's cluster (the frame loop writes it) */}
+      {/* in a place that runs a game (./games/meter.js): its meter, named by the kind (the world's charge and the cells carried; the deal's looks; who's looking), the same kit's cluster (the frame loop writes it) */}
       {chargeRef && (
-        <Cluster rootRef={chargeRef} className="rm-cluster" label="The world’s charge">
-          <Vitals label="Charge" icon={<RiFlashlightLine aria-hidden="true" />} className="rm-cluster-vitals">
+        <Cluster rootRef={chargeRef} className={`rm-cluster rm-meter rm-meter-${meterKind}`} label={METER[meterKind].title}>
+          <Vitals label={METER[meterKind].label} icon={METER_ICON[meterKind]} className="rm-cluster-vitals">
             <span ref={chargeLine} className="hud-line" />
           </Vitals>
         </Cluster>

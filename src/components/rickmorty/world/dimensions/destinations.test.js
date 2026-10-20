@@ -192,6 +192,65 @@ describe('a place that runs on power', () => {
   });
 });
 
+describe('a place that runs on a deal', () => {
+  it('sells its own things, each looked over and taken by its own spot, and only the game ticks its task', () => {
+    const dealing = DESTINATIONS.filter((d) => d.deal);
+    expect(dealing.map((d) => d.id)).toEqual(['needful']);
+    for (const d of dealing) {
+      const spots = d.hotspots.map((h) => h.id);
+      for (const id of d.deal.items) {
+        expect(spots, `${d.id}: ${id}`).toContain(id);
+        expect(d.say[id]?.text, `${d.id}: ${id} has a line`).toBeTruthy();
+        expect(d.acts[id]).toBe(`deal-${id}`);
+        // (its prompt reads as more than a look: a look over, and a take)
+        expect(d.hotspots.find((h) => h.id === id).verb).not.toBe('Look');
+      }
+      expect(d.tasks.map((t) => t.id)).toContain(d.deal.task);
+      expect(spots).toContain(d.goal);
+      expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(d.deal.task);
+      expect(d.deal.bad).toBeLessThan(d.deal.items.length);
+      expect(d.deal.lost.length).toBeGreaterThan(10);
+      expect(d.deal.lost).not.toMatch(/!/);
+      expect(d.deal.lost.split(/[.?]\s/)).toHaveLength(1);
+      // the loss is said by `who`, in their own voice (not of themselves by name)
+      expect(d.deal.lost).not.toContain(d.say[d.deal.who].who.split(' ')[0]);
+    }
+  });
+  it('is Mr. Needful’s five free things, all but one cursed, three looks and one to take', () => {
+    const shop = destinationById('needful');
+    expect(shop.deal).toMatchObject({ task: 'needful', items: ['typewriter', 'aftershave', 'cream', 'shopclock', 'shopmirror'], bad: 4, need: 1, looks: 3, who: 'needful' });
+    expect(shop.goal).toBe('needful');
+    expect(shop.unlock).toEqual({ needful: 'needful' });
+  });
+});
+
+describe('a place that runs on a freeze', () => {
+  it('has its lookouts and its spot to jump in at, and only the game ticks its task', () => {
+    const still = DESTINATIONS.filter((d) => d.freeze);
+    expect(still.map((d) => d.id)).toEqual(['vat']);
+    for (const d of still) {
+      const spot = d.hotspots.find((h) => h.id === d.freeze.spot);
+      expect(spot, d.id).toBeTruthy();
+      expect(spot.verb).not.toBe('Look');
+      expect(d.acts[d.freeze.spot]).toBe('freeze-in');
+      expect(d.tasks.map((t) => t.id)).toContain(d.freeze.task);
+      expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(d.freeze.task);
+      expect(d.collect?.task, `${d.id}: a collect ticks the task`).not.toBe(d.freeze.task);
+      expect(d.goal).toBe(d.freeze.spot);
+      expect(d.people.filter((p) => p.ai?.lookout).length).toBeGreaterThan(0);
+      expect(d.freeze.lost.length).toBeGreaterThan(10);
+      expect(d.freeze.lost).not.toMatch(/!/);
+      expect(d.freeze.lost.split(/[.?]\s/)).toHaveLength(1);
+    }
+  });
+  it('is the two Gromflomites at the vat of acid, and its win is the fake death’s achievement', () => {
+    const vat = destinationById('vat');
+    expect(vat.freeze).toMatchObject({ task: 'vat', spot: 'vatrim', unlock: 'vat' });
+    expect(vat.people.filter((p) => p.ai?.lookout).map((p) => p.id)).toEqual(['vgromflomite-a', 'vgromflomite-b']);
+    expect(vat.collect).toBe(null);
+  });
+});
+
 describe('Anatomy Park', () => {
   it('is a chase: the park map’s four pieces while the diseases hunt, then out through the portal on the clock', () => {
     const park = destinationById('anatomy');

@@ -589,6 +589,8 @@ export const PAGES = {
       ['The Microverse', 'Inside the car’s battery. Carry Zeep’s cells from his console to the gooble boxes, one at a time, before the world’s charge runs down; it runs from the first cell you take.'],
       ['Anatomy Park', 'Inside Ruben. Find the four pieces of the park map while the diseases hunt you, then get back through the portal before the clock runs out; caught, the pieces blow back where they were.'],
       ['The cruiser’s chase', 'Fly through the six rings over the street, in order, with the Federation ship shooting at you: three hits and it’s back to the first ring, and it can’t be shot down while it chases you.'],
+      ['Needful Things', 'Everything in Mr. Needful’s shop is free, and all but one of the free things are cursed. Look them over first, three looks at most, then take the one with no curse on it; take a cursed one and you’re back at the door.'],
+      ['The vat of acid', 'Rick’s fake death, sold to two Gromflomites. Move while their backs are turned and keep still while they look; jump in behind their backs, then play dead while they peer in. Seen moving, you’re back at the door.'],
     ],
   },
   // a Rick and Morty planet, landed on from the universe map (/c-137/<id>)
