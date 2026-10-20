@@ -31,7 +31,10 @@ const ERUPT = 3; // s into the eruption the Mountain is ablaze
 const DOWN = MARKS.eruption.hold; // s the Tower takes to go down
 const SWOOP = [0, 4, 8]; // s into the Eagles' beat: in, down to the rock, away
 const CARRY_END = 120; // m: on foot again at the Sammath Naur's door (the stage's modes)
-const ON_BACK = [0.28, 0.42]; // m behind Sam and up: Frodo on his back (the chapter's)
+// m behind Sam's place and up: Frodo on his back. The chapter has him 0.28 behind and 0.42
+// up, but on the cast the sat clip leans him back and the carry bends Sam forward, which
+// opened 0.6 m between his chest and Sam's back (a frame from lab/road/): so ahead of it
+const ON_BACK = [-0.25, 0.52];
 const COUNT = { high: 60, mid: 40, low: 24 };
 const PBR = ['roughness', 'metalness', 'envMap', 'envMapIntensity'];
 
