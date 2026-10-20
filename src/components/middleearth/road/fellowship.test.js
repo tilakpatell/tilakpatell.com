@@ -59,11 +59,14 @@ describe('the fellowship: who walks with you, and how', () => {
     expect(ids(at('minas-tirith', 0)).sort()).toEqual(['aragorn', 'arwen', 'frodo', 'gandalfwhite', 'gimli', 'legolas', 'merry', 'pippin', 'sam']);
   });
 
-  it('the Havens: five aboard, three staying', () => {
-    const w = at('havens', 0);
-    const by = (state) => ids(w.filter((x) => x.state === state)).sort();
-    expect(by('aboard')).toEqual(['bilbo', 'elrond', 'frodo', 'galadriel', 'gandalfwhite']);
-    expect(by('staying')).toEqual(['merry', 'pippin', 'sam']);
+  it('the Havens: four waiting aboard as the hobbits walk down; after the farewell, five aboard, three staying', () => {
+    const by = (w, state) => ids(w.filter((x) => x.state === state)).sort();
+    const down = at('havens', 0);
+    expect(by(down, 'aboard')).toEqual(['bilbo', 'elrond', 'galadriel', 'gandalfwhite']);
+    expect(by(down, 'walking')).toEqual(['frodo', 'merry', 'pippin', 'sam']);
+    const after = at('havens', 160);
+    expect(by(after, 'aboard')).toEqual(['bilbo', 'elrond', 'frodo', 'galadriel', 'gandalfwhite']);
+    expect(by(after, 'staying')).toEqual(['merry', 'pippin', 'sam']);
   });
 
   it('the table names only the cast, known states and real stages', () => {

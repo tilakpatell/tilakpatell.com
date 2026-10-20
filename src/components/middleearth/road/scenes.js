@@ -90,6 +90,7 @@ const SCENES = {
   ithilien: () => import('./stages/ithilien/index.js'),
   'cirith-ungol': () => import('./stages/cirith-ungol/index.js'),
   'minas-tirith': () => import('./stages/minas-tirith/index.js'),
+  havens: () => import('./stages/havens/index.js'),
 };
 
 export function createScenes({ rt, road, lands, weather, ambience, tier, sky = null }) {

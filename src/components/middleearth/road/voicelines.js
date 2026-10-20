@@ -63,6 +63,9 @@ export const LINES = {
   // (the White City: Pippin on the field, the King in the Court before the four bow)
   'minas-pippin': { who: 'pippin', text: 'There it is. I rode up all seven of those streets on Shadowfax, in the dark, with Gandalf.' },
   'minas-aragorn': aragorn('This city is yours as much as mine. Every one of you carried it here.'),
+  // (the Havens: Gandalf by the ship, Frodo to the three)
+  'havens-gandalf': { who: 'gandalfwhite', text: 'It is time, Frodo. The tide will not wait for us twice.' },
+  'havens-frodo': frodo('Go home, Sam. Rosie is waiting, and the little one. The Shire needs you more than I do.'),
 };
 
 export const VOICELINES = Object.values(LINES);

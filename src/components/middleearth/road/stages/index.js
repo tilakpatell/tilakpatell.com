@@ -370,7 +370,28 @@ export const STAGES = [
       },
     },
   },
-  { id: 'havens', name: 'The Grey Havens', date: '29 September 3021', length: 160, mode: 'walk', place: 'grey-havens' },
+  {
+    id: 'havens',
+    name: 'The Grey Havens',
+    date: '29 September 3021',
+    length: 300,
+    mode: 'walk',
+    place: 'grey-havens',
+    // the beach and the dunes running down into the Gulf of Lune (the sea's
+    // basin under the quay and the ship's way out, stages/havens/place.js)
+    ground: {
+      spec: {
+        seed: 26,
+        relief: [
+          { type: 'swell', scale: 200, height: 2 },
+          { type: 'hills', scale: 30, height: 1.2, gain: 0.4, octaves: 3 },
+          { type: 'island', at: [0, 210], r: 200, height: -14, core: 0.35, ragged: 0.12 },
+        ],
+      },
+    },
+    // (aboard her once she casts off)
+    modes: [{ at: 160, mode: 'ship' }],
+  },
 ];
 
 export const stageById = (id) => STAGES.find((s) => s.id === id) ?? null;
