@@ -6,7 +6,7 @@ import { local, useInView, useMediaQuery } from '../../../../lib/hooks';
 import { useTick } from '../../tick';
 import { engine } from '../../module';
 import { readPad, typing } from '../../../games/pad';
-import { Convo, QuestList, Stick, Travellers } from '../TownHud';
+import { Convo, QuestList, Stick, TownMenu, Travellers } from '../TownHud';
 import { keyDown, keyUp, moveOf, ownButton } from '../keys';
 import { readSide, recordSide } from '../side';
 import { newTalk, talkNode, talkOn } from '../talk';
@@ -791,6 +791,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave, again }) {
             </p>
           </div>
           <div className="shire-side">
+            <TownMenu chapter="edoras" />
             <button type="button" className="shire-chip" onClick={() => setList((v) => !v)} aria-expanded={list}>
               <b>{prog.done.length}</b> of {QUESTS.length} done {!touch && <kbd>M</kbd>}
             </button>

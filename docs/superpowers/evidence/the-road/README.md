@@ -217,3 +217,60 @@ Each stage 20 m in (`shots/<stage>-desktop.webp` and `-phone.webp`) and its film
 - `anduin-breaking-desktop.webp`: Frodo and Sam alone in one boat on the lake, Tol Brandir grey beyond.
 
 What still falls short, for R7: the white-out’s flakes do not show (the fog carries it); Frodo on the Watcher’s arm is small; the goblins are dark shapes on the pillars; the Balrog’s fire cards are the chapter shader’s to place, so here it is its sword, whip and red glow; the Seat’s pictures are hazy under the vision; the Uruks at the horn run outside the shot; Lothlórien’s seated rowers stand.
+
+## The look (2026-10-20)
+
+The Road made as rich as the chapters it rides through: every stage on its own soil (photo-scanned ground, a ground map in its colours, blades of grass standing round you), mountains on every horizon as the map has them, Hobbiton rebuilt on the Shire chapter’s builders, the older Stylized Nature Pack’s maples, birches and dead trees and the farm pack’s beasts brought in from tilakverse-assets, and the light done again: one key light that casts (the sun, the moon by night), the shade from the light there is, contact AO and a gentle grade. Measured in the container on `nodes-webgl` (no TRAA, so three’s PCF stands in for PCSS); **the WebGPU rows are the owner’s machines’ and are left empty**.
+
+### Each stage (high, settled)
+
+Each stage opened by its address in a fresh window and given twenty seconds to settle (its neighbours in), then the last frame read: its draws and triangles (`window.__ROAD__.info()`: the whole frame, the two shadow cascades’ draws in it) and the assets fetched from cold. The ride goes on while it waits, so a stage reads about 15 % either way from one run to the next.
+
+| stage | draws | triangles | assets MB |
+| --- | --- | --- | --- |
+| hobbiton | 430 | 1,589,996 | 9.1 |
+| shire-edge | 250 | 1,152,181 | 7.4 |
+| bree | 416 | 1,108,814 | 8.6 |
+| weathertop | 71 | 901,396 | 8.4 |
+| ford | 143 | 1,210,378 | 13.0 |
+| rivendell | 252 | 1,325,349 | 11.7 |
+| caradhras | 52 | 458,919 | 6.4 |
+| moria | 23 | 127,432 | 4.3 |
+| lorien | 147 | 751,573 | 10.1 |
+| anduin | 124 | 459,046 | 7.7 |
+| marshes | 71 | 1,038,318 | 4.7 |
+| ithilien | 93 | 888,353 | 8.7 |
+| cirith-ungol | 43 | 266,285 | 2.8 |
+| gorgoroth | 56 | 351,742 | 4.4 |
+| minas-tirith | 144 | 909,787 | 6.2 |
+| havens | 60 | 702,768 | 6.3 |
+
+- Against the site’s high budget (`src/lib/budgets.js`: 3,000,000 triangles, 700 draws) every stage is well under. Against the Road’s own design (1,200,000 and 350) most are under; Hobbiton (1.4 to 1.6 million, about 420 draws), Rivendell (1.3 million) and the Trollshaws (1.2 million) are over by a little, and Bree’s draws (about 415) too: the price of their woods, their props in bands and the two cascades.
+- Getting there from 2 to 3.6 million: only trees, bushes and rocks cast (`scatter.js`’s `CASTS`: the grass, flowers and pebbles had drawn into four cascades); two cascades out to 60 m (`video.cascades`, `shadowDistance`); statics merged a 60 m band at a time (`mergeStatics`’s `band`) and Hobbiton’s hedges and oaks the same, so a cascade or the view leaves out what it can’t see; Maggot’s wheat casts none; grass rows keep within 70 m of the road (a test holds it: the Havens’ dune grass across its width was four million alone); the woods new this lane trimmed where they weighed most.
+
+### What changed, and why it looked wrong before
+
+- **No shadows at all**: the cascades were there (`lib/three/light/sun.js`), but PCSS (`shadows.js`) drew none on the WebGL fallback, and its per-pixel noise is a grain without TRAA. PCSS is taken only where the chain ends in TRAA; three’s PCF at a small radius everywhere else. Only trees, bushes and rocks cast (`scatter.js`’s `CASTS`), out to 60 m.
+- **Shadows that barely read**: under a low sun the lit ground stood half in the house look’s shade already; the Road’s look turns to light sooner (`[0.1, 0.55]`), and the shade comes from the light there is (`daylight.js`’s `shadeOf`): a day’s pale lilac, a fainter blue under the moon (the day’s lilac made Bree’s lane violet), brown under the pall.
+- **Backs black, the Marshes and Mordor lost**: the sky light is the chapters’ strength (`skyLight`); the Marshes and Gorgoroth open their exposure; Mordor’s fires glow up from its ground (a soil’s `glow`).
+- **The grass**: grassNodes’ blades showed the camera their back, so three lit them from below and never by the sun (lime under a green ground light, dark under a high sun); the Road’s face the camera (`faceCamera`), lie down within 4.5 m of it (`near`), take the sun’s shadow on high, grow up the Hill (`ground.mounds`), and are tinted in slow patches. The AO is a short contact shadow: wider, it darkened a field a fifth.
+- **Bree**: the lamps lay warm pools on the wet street (`stages/parts.js`’s `lampPools`, one draw, no light added).
+
+### The pictures
+
+Each at a beat of its stage, desktop, looked at (taken before the triangles were trimmed: two cascades rather than four, and a little less of the new woods, since):
+
+- `look-hobbiton-40-desktop.webp`: Frodo on the lane, his shadow across it, the oak’s on the Hill, a hole with its fence, maples just turning amber, the grass light and patched.
+- `look-shire-edge-90-desktop.webp`: the hollow under the old tree’s roots, the hedges into the wood, the tree’s shade over the grass, the ferry ahead.
+- `look-bree-60-desktop.webp`: Bree’s street at night under the moon, blue, the lamps’ pools warm on the wet lane by the Pony.
+- `look-weathertop-30-desktop.webp`: the hill against the dusk, its stones and dead trees, the heath and the rocks readable.
+- `look-ford-120-desktop.webp`: Asfaloth and Frodo by the Bruinen, the Trollshaws’ maples red among the gold, the birches white, the mountains.
+- `look-rivendell-40-desktop.webp`: the bridge over the river, the pavilions and the lanterns, the gold trees, the mountains round the valley.
+- `look-lorien-40-desktop.webp`: the company climbing to the flet among the mallorns’ grey trunks, the gold grass short under them.
+- `look-marshes-60-desktop.webp`: the Dead Marshes grey and gloomy but seen: the reeds, the track, the Ephel Dúath beyond.
+- `look-ithilien-60-desktop.webp`: Ithilien’s woods in spring leaf, the flowering bushes, the road through.
+- `look-gorgoroth-60-desktop.webp`: Mount Doom aglow and Barad-dûr with the Eye, the hobbits on the ash in the fires’ red.
+- `look-minas-tirith-60-desktop.webp`: the company on the Pelennor’s road, the White Mountains grey under their snow.
+- `look-havens-60-desktop.webp`: Gandalf and Bilbo ahead in the dune grass, the pines, a maple red.
+
+What still falls short: Mordor is dark (on purpose, but the ash is near black away from the fires); the blades read a little darker than the field beyond them under a high sun; the galaxy’s and the Shire chapter’s grass still show their backs (`faceCamera` off: they were tuned so); the PCSS filter’s WebGL failure is noted in the hand-off, not fixed.

@@ -87,7 +87,7 @@
 .cw-door-stone .stone-dot { width: 0.7rem; height: 0.7rem; opacity: 0.45; }
 .cw-door-stone .stone-dot[data-on] { opacity: 1; }
 .cw-door .btn { margin-top: 0.35rem; }
-.cw-world .btn-primary, .cw-place .btn-primary { background: var(--cw-accent, var(--cw-cyan)); color: #06121c; border-color: transparent; }
+.cw-world .btn-primary, .cw-place .hq-screen .btn-primary { background: var(--cw-accent, var(--cw-cyan)); color: #06121c; border-color: transparent; } /* (a place’s own toys sit on the page, so they keep the theme’s button) */
 .cw-world .btn-ghost { background: rgba(255, 255, 255, 0.08); color: var(--cw-ink); border-color: rgba(255, 255, 255, 0.35); }
 .cw-cards-wrap .btn-ghost { background: transparent; color: inherit; border-color: var(--border); }
 .cw-cards-wrap .btn-primary { background: var(--btn-bg); color: var(--btn-ink); }

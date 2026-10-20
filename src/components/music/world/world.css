@@ -34,7 +34,7 @@ span.mw-chip:hover { background: rgba(20, 14, 30, 0.5); }
 .mw-stick > span { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 999px; background: rgba(255, 228, 190, 0.75); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35); transform: translate(calc(var(--sx, 0px) * 34 / 26), calc(var(--sy, 0px) * 34 / 26)); }
 
 /* an instrument, open: beside the courtyard on a wide screen, over its lower part on a phone */
-.mw-panel { position: absolute; top: 0.75rem; right: 0.75rem; bottom: 0.75rem; width: min(46rem, calc(100% - 1.5rem)); display: flex; flex-direction: column; border-radius: 16px; background: color-mix(in srgb, var(--bg, #fdf8f0) 94%, transparent); color: var(--text); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45); backdrop-filter: blur(10px); animation: mw-panel-in 0.3s var(--ease-smooth) both; }
+.mw-panel { position: absolute; top: 0.75rem; right: 0.75rem; bottom: 0.75rem; width: min(46rem, calc(100% - 1.5rem)); display: flex; flex-direction: column; border-radius: 16px; background: color-mix(in srgb, var(--bg, #fdf8f0) 94%, transparent); color: var(--text); box-shadow: var(--shadow-dialog); backdrop-filter: blur(10px); animation: mw-panel-in 0.3s var(--ease-smooth) both; }
 .mw-panel[hidden] { display: none; }
 .mw-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--border); }
 .mw-panel-head h3 { margin: 0; font: 400 1.5rem/1 'Yatra One', Georgia, serif; outline: none; }
