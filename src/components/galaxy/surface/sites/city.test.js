@@ -97,6 +97,15 @@ describe('cityOf: rings', () => {
     for (const t of deep) expect(Math.sin(t.yaw) * t.at[0] + Math.cos(t.yaw) * t.at[1]).toBeGreaterThan(0);
   });
 
+  it('cuts a ring’s lots long enough for every kind of its kit, whatever the seed', () => {
+    const kit = [
+      { kind: 'house', foot: [16, 15], weight: 3 },
+      { kind: 'tower', foot: [27, 30], weight: 0.4, scale: [0.5, 0.7] },
+    ];
+    for (const seed of [3, 5, 7171, 12])
+      expect(cityOf({ plan: 'rings', r: 160, block: 32, plaza: 88, kit }, { seed }).things.filter((t) => t.kind === 'house').length, `seed ${seed}`).toBeGreaterThan(10);
+  });
+
   it('walks and flies its ring streets', () => {
     const c = rings({ crowd: { kinds: ['villager'], n: 6 }, traffic: { kind: 'airspeeder', n: 2 } });
     expect(c.life.filter((a) => a.kind === 'villager')).toHaveLength(6);

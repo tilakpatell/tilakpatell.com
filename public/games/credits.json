@@ -4874,5 +4874,131 @@
       "Tilak Patel, with Meshy AI"
     ],
     "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/coronetblock": {
+    "source": "https://www.meshy.ai",
+    "id": "01a15a11-f2b4-72f6-a668-33efae9018f8",
+    "name": "the tenements of Coronet City, generated for this site with Meshy AI (scripts/meshy-galaxy-cities.mjs, drawn from words first)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/coronetshop": {
+    "source": "https://www.meshy.ai",
+    "id": "01a15a11-f741-7290-9604-4232e7c446fa",
+    "name": "the shops of Coronet City, generated for this site with Meshy AI (scripts/meshy-galaxy-cities.mjs, drawn from words first)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/worlportblock": {
+    "source": "https://www.meshy.ai",
+    "id": "01a15a11-fb3b-7611-bf3b-85bd8df4cfe1",
+    "name": "the tenements of Worlport, generated for this site with Meshy AI (scripts/meshy-galaxy-cities.mjs, drawn from words first)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/worlportmarket": {
+    "source": "https://www.meshy.ai",
+    "id": "01a15a11-ff78-76a4-a72f-44de1892d203",
+    "name": "the market halls of Worlport, generated for this site with Meshy AI (scripts/meshy-galaxy-cities.mjs, drawn from words first)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/kestrohouse": {
+    "source": "https://www.meshy.ai",
+    "id": "01a15a12-034b-7701-9b48-0ebeb2507c37",
+    "name": "the town houses of Kestro City, generated for this site with Meshy AI (scripts/meshy-galaxy-cities.mjs, drawn from words first)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/pauhouse": {
+    "source": "https://www.meshy.ai",
+    "id": "01a15a12-0742-716a-af6f-2b1e4807343a",
+    "name": "the dwellings of Pau City, generated for this site with Meshy AI (scripts/meshy-galaxy-cities.mjs, drawn from words first)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/mygeetoblock": {
+    "source": "https://www.meshy.ai",
+    "id": "01a15a12-0b89-7603-8b4b-86cfb347bd74",
+    "name": "the crystal blocks of Mygeeto, generated for this site with Meshy AI (scripts/meshy-galaxy-cities.mjs, drawn from words first)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/catohab": {
+    "source": "https://www.meshy.ai",
+    "id": "01a15a12-0ff3-74ab-91f4-563a39e4e782",
+    "name": "the residences of Cato Neimoidia, generated for this site with Meshy AI (scripts/meshy-galaxy-cities.mjs, drawn from words first)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/jedhahouse": {
+    "source": "https://www.meshy.ai",
+    "id": "01a15a12-13ef-71e5-98c9-0409e0f9c20a",
+    "name": "the houses of the Holy City, generated for this site with Meshy AI (scripts/meshy-galaxy-cities.mjs, drawn from words first)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/jedhatower": {
+    "source": "https://www.meshy.ai",
+    "id": "01a15a12-17ad-7498-b5b6-e2e1a1e4bce1",
+    "name": "the towers of the Holy City, generated for this site with Meshy AI (scripts/meshy-galaxy-cities.mjs, drawn from words first)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/plazirvilla": {
+    "source": "https://www.meshy.ai",
+    "id": "01a15a12-1b28-73fc-a1c5-939cfefc8ae9",
+    "name": "the villas of Plazir-15, generated for this site with Meshy AI (scripts/meshy-galaxy-cities.mjs, drawn from words first)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/kafreneshack": {
+    "source": "https://www.meshy.ai",
+    "id": "01a15a12-1eb3-712e-95d8-4bb688a45a66",
+    "name": "the habitation blocks of Kafrene, generated for this site with Meshy AI (scripts/meshy-galaxy-cities.mjs, drawn from words first)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/traskhall": {
+    "source": "https://www.meshy.ai",
+    "id": "01a15a12-22c4-72ba-ae9a-6f3b485561e7",
+    "name": "the fishing halls of Trask, generated for this site with Meshy AI (scripts/meshy-galaxy-cities.mjs, drawn from words first)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "meshy/lothalblock": {
+    "source": "https://www.meshy.ai",
+    "id": "01a15a12-26b5-738c-861e-61562121bedb",
+    "name": "the Imperial blocks of Capital City, generated for this site with Meshy AI (scripts/meshy-galaxy-cities.mjs, drawn from words first)",
+    "authors": [
+      "Tilak Patel, with Meshy AI"
+    ],
+    "license": "Meshy paid-plan output, owned by the site owner"
   }
 }

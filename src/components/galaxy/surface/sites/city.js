@@ -45,16 +45,22 @@ const pick = (rand, list) => {
 const touches = (c, x, z, h) => Math.hypot(Math.max(0, Math.abs(x - c.at[0]) - h), Math.max(0, Math.abs(z - c.at[1]) - h)) < c.r;
 const clearOf = (keep, x, z, r) => keep.every((c) => Math.hypot(x - c.at[0], z - c.at[1]) >= c.r + r);
 
-// whether any of the kit fits a lot `along` × `deep`
-const fitsIn = (kit, along, deep) => kit.some((k) => k.foot[0] <= along - 2 * GAP && k.foot[1] <= deep - 2 * GAP);
+// a kit entry's smallest size (its scale's lower end) fitting a lot `along` × `deep`
+const SCALE = [0.9, 1.15];
+const fitting = (k, along, deep) => {
+  const lo = (k.scale ?? SCALE)[0];
+  return k.foot[0] * lo <= along - 2 * GAP && k.foot[1] * lo <= deep - 2 * GAP;
+};
+const fitsIn = (kit, along, deep) => kit.some((k) => fitting(k, along, deep));
 
 // the building that fits a lot `along` × `deep` (metres along its street
-// and back from it), scaled to fill it a little at random; null for none
+// and back from it), scaled to fill it a little at random, never past
+// the lot; null for none
 function fit(rand, kit, along, deep) {
-  const fits = kit.filter((k) => k.foot[0] <= along - 2 * GAP && k.foot[1] <= deep - 2 * GAP);
+  const fits = kit.filter((k) => fitting(k, along, deep));
   if (!fits.length) return null;
   const k = pick(rand, fits);
-  const [lo, hi] = k.scale ?? [0.9, 1.15];
+  const [lo, hi] = k.scale ?? SCALE;
   const room = Math.min((along - 2 * GAP) / k.foot[0], (deep - 2 * GAP) / k.foot[1]);
   const scale = Math.min(room, lo + rand() * (hi - lo));
   return { k, scale };
@@ -149,7 +155,9 @@ function rings(spec, rand, keep) {
       : [['out', outer, 1]]) {
       const deep = two ? block / 2 : block;
       const mid = row === 'in' ? inner + deep / 2 : outer - deep / 2;
-      const len = 18 + rand() * 6;
+      // (a lot as long as the kit's widest front needs at its least, and a
+      // little more, so every kind of it can stand in any lot of the row)
+      const len = (Math.max(...kit.map((k) => k.foot[0] * (k.scale ?? SCALE)[0])) + 2 * GAP) * (1 + rand() * 0.3);
       const count = Math.max(4, Math.floor((2 * Math.PI * mid) / len));
       const spokes = Math.max(3, Math.round(count / 6));
       for (let i = 0; i < count; i++) {
