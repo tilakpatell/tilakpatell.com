@@ -151,7 +151,7 @@ export const SITES = {
       { id: 'forest', name: 'The burnt forest', at: [-200, -150], r: 60, about: 'Where Ahsoka Tano waited in the ash, and the magistrate’s men went out to find her and didn’t come back.', things: [...grove(95, 22, 6, 58, ['gnarltree', 'log'], [0.8, 1.6]), { kind: 'smoke', at: [10, 6], opts: { h: 40, n: 6, color: '#4a4846' } }] },
     ],
     scatter: [{ kind: 'gnarltree', n: 160, within: [40, 620], scale: [0.8, 1.6], opts: { color: '#3a3836' } }, { kind: 'log', model: NATURE.log, n: 60, within: [20, 500], scale: [0.7, 1.5] }, { kind: 'deadtree', model: 'kit:naturemega/DeadTree_2', n: 50, within: [60, 600], scale: [0.9, 1.3], clear: 25 }, { kind: 'deadtree', model: 'kit:naturemega/DeadTree_4', n: 40, within: [60, 600], scale: [0.9, 1.3], clear: 25 }],
-    flora: { biome: 'ash', tint: { Rocks: { recolour: '#3a3836' }, Bark_DeadTree: { recolour: '#2e2a28' } } },
+    flora: { biome: 'tundra', tint: { Bark_DeadTree: { recolour: '#2e2a28' } } },
     things: [{ kind: 'crates', at: [10, -8] }],
     life: [
       { kind: 'ahsoka', id: 'ahsoka', at: [-190, -140], still: true, face: 2.8, name: 'Ahsoka Tano', named: true, quest: 'magistrate', says: ['The Magistrate has been burning this world for her war.', 'Grogu? I can feel him. He’s been hidden a long time.'] },
@@ -236,7 +236,7 @@ export const SITES = {
     weather: [],
     land: { at: [0, 0], yaw: 5.2 },
     places: [
-      { id: 'temple', name: 'The temple ruins', at: [220, -100], r: 60, flat: { r: 46 }, about: 'Walls and stairs of a people nobody remembers, and under the floor, a chamber the Jedi never found, with a map in it that goes to another galaxy.', things: [{ kind: 'templestair', at: [-12, -16], yaw: 0.4 }, ...ring(6, 38, 0.5).map(([x, z, yaw], i) => ({ kind: 'seatosmonolith', at: [x, z], yaw, scale: [1, 0.8, 0.9, 1.1, 0.85, 0.95][i] }))] },
+      { id: 'temple', name: 'The temple ruins', at: [220, -100], r: 60, flat: { r: 46 }, about: 'Walls and stairs of a people nobody remembers, and under the floor, a chamber the Jedi never found, with a map in it that goes to another galaxy.', things: [...ring(6, 38, 0.5).map(([x, z, yaw], i) => ({ kind: 'seatosmonolith', at: [x, z], yaw, scale: [1, 0.8, 0.9, 1.1, 0.85, 0.95][i] }))] },
       { id: 'cliffs', name: 'The sea cliffs', at: [-280, 240], r: 46, about: 'Where the island falls into the sea, and the wind comes straight off the water at you.', things: grove(98, 8, 6, 36, ['needle'], [0.4, 0.8]) },
       { id: 'landing', name: 'The shuttle’s landing', at: [-140, -170], r: 40, flat: { r: 32 }, about: 'Where Baylan Skoll and Shin Hati set down, a step behind Ahsoka, as they would be all the way to Peridea.', things: [{ kind: 'mpad', at: [0, 0], opts: { r: 14 } }] },
     ],

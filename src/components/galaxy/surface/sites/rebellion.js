@@ -65,7 +65,7 @@ export const SITES = {
       { id: 'ridge', name: 'The sniper’s ridge', at: [80, 240], r: 36, about: 'The rock over the platform, where Cassian lay in the rain with his orders and his rifle.', things: grove(82, 10, 6, 30, ['needle'], [0.5, 0.8]) },
     ],
     scatter: [{ kind: 'basalt', n: 110, within: [20, 600], scale: [0.8, 2.6] }, { kind: 'rock', model: NATURE.rock, n: 90, within: [10, 500], scale: [0.6, 2.4], opts: { color: '#2e3032', sharp: 0.7 } }],
-    flora: { biome: 'ash', tint: { Rocks: { recolour: '#3a3c3e' } } },
+    flora: { biome: 'tundra' },
     things: [{ kind: 'crates', at: [-10, 8], opts: { color: '#4a4c50' } }],
     life: [
       { kind: 'cassian', id: 'cassian', at: [86, 230], still: true, face: 0.4, name: 'Cassian Andor', named: true, quest: 'sniper', says: ['I’ve been in this fight since I was six years old.', 'Stay with me.'] },
