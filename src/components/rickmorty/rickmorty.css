@@ -40,7 +40,7 @@
 .rm-cable { display: grid; justify-items: center; }
 .rm-tv { position: relative; width: min(100%, 640px); padding: 22px 22px 18px; border: 3px solid #1b1424; border-radius: 26px; background: linear-gradient(180deg, #9a6a3e, #6e4422); box-shadow: 0 8px 0 #1b1424, inset 0 2px 0 rgba(255, 255, 255, 0.25); }
 .rm-ears { position: absolute; left: 50%; top: -60px; width: 120px; height: 60px; translate: -50% 0; pointer-events: none; }
-.rm-ears::before, .rm-ears::after { content: ''; position: absolute; bottom: 0; left: 50%; width: 4px; height: 70px; background: #2a2a2a; transform-origin: bottom; }
+.rm-ears::before, .rm-ears::after { content: ''; position: absolute; bottom: 0; left: 50%; width: 4px; height: 70px; background: var(--muted); transform-origin: bottom; } /* (they stand on the page, not the set: the theme’s grey, so they show on a dark page too) */
 .rm-ears::before { transform: rotate(-32deg); }
 .rm-ears::after { transform: rotate(28deg); }
 .rm-screen { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border: 3px solid #1b1424; border-radius: 22px / 26px; background: #0c0c10; box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.7); }
@@ -127,14 +127,14 @@
    and shards of page lifting off round the edge (--open, --crack: 0…1) */
 .rm-rift { position: absolute; width: 0; height: 0; --open: 0; --crack: 0; }
 .rm-rift svg { position: absolute; overflow: visible; }
-.rm-rift-cracks path { fill: none; stroke: #1b1424; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 1; stroke-dashoffset: calc(1 - var(--crack)); opacity: 0.7; }
+.rm-rift-cracks path { fill: none; stroke: var(--text); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 1; stroke-dashoffset: calc(1 - var(--crack)); opacity: 0.7; }
 .rm-rift-gate { position: absolute; left: 0; top: 0; transform: scale(var(--open)); }
-.rm-rift-hole path { fill: #07120a; stroke: #1b1424; stroke-width: 3; stroke-linejoin: round; }
+.rm-rift-hole path { fill: #07120a; stroke: var(--text); stroke-width: 3; stroke-linejoin: round; }
 .rm-rift-swirl { position: absolute; }
 .rm-rift-fill.portal-gl { position: absolute; inset: 0; }
 .rm-rift-fill.portal-css { position: absolute; inset: 13%; }
 .rm-rift-shards { filter: drop-shadow(0 calc(var(--open) * 6px) calc(var(--open) * 4px) rgba(10, 14, 20, 0.3)); }
-.rm-rift-shards path { fill: var(--bg); stroke: #1b1424; stroke-width: 2; stroke-linejoin: round; transform-box: fill-box; transform-origin: center; transform: translate(calc(var(--sx) * var(--open) * 14px), calc(var(--sy) * var(--open) * 14px)) rotate(calc(var(--open) * var(--turn))); opacity: calc(var(--crack) * (0.35 + 0.65 * var(--open))); }
+.rm-rift-shards path { fill: var(--bg); stroke: var(--text); stroke-width: 2; stroke-linejoin: round; transform-box: fill-box; transform-origin: center; transform: translate(calc(var(--sx) * var(--open) * 14px), calc(var(--sy) * var(--open) * 14px)) rotate(calc(var(--open) * var(--turn))); opacity: calc(var(--crack) * (0.35 + 0.65 * var(--open))); }
 @media (prefers-reduced-motion: reduce) { .rm-cruiser-art, .rm-cruiser-flame { animation: none; } }
 
 /* how they do it: the plumbus factory */
@@ -153,9 +153,9 @@
 .rm-pf-step:focus-visible { outline: 3px solid var(--accent-text); outline-offset: 1px; }
 .rm-pf-step[data-done] { color: var(--text); }
 .rm-pf-step[data-now] { color: var(--text); font-weight: 650; }
-.rm-pf-num { display: grid; place-items: center; flex: none; width: 1.6rem; height: 1.6rem; border: 2px solid #1b1424; border-radius: 999px; background: var(--bg); color: #1b1424; font: 700 0.78rem/1 var(--font-mono); }
-.rm-pf-step[data-done] .rm-pf-num { background: #f5a3b0; }
-.rm-pf-step[data-now] .rm-pf-num { background: #ffe27a; }
+.rm-pf-num { display: grid; place-items: center; flex: none; width: 1.6rem; height: 1.6rem; border: 2px solid var(--text); border-radius: 999px; background: var(--bg); color: var(--text); font: 700 0.78rem/1 var(--font-mono); }
+.rm-pf-step[data-done] .rm-pf-num { background: #f5a3b0; color: #1b1424; }
+.rm-pf-step[data-now] .rm-pf-num { background: #ffe27a; color: #1b1424; }
 
 /* the butter robot */
 .rm-butter { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 2rem; align-items: center; padding: clamp(1.2rem, 0.8rem + 2vw, 2.2rem); }

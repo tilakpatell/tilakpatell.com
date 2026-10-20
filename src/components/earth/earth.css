@@ -138,7 +138,7 @@
 /* without 3D */
 .earth-cards-wrap { padding-block: calc(var(--nav-h, 64px) + 2rem) 1rem; }
 .earth-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 1rem; margin: 2rem 0 0; padding: 0; list-style: none; }
-.earth-cards a { display: grid; gap: 0.35rem; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--ink); padding-bottom: 0.8rem; }
+.earth-cards a { display: grid; gap: 0.35rem; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); padding-bottom: 0.8rem; }
 .earth-cards a > :not(img) { padding-inline: 0.8rem; }
 .earth-cards-name { font-weight: 700; }
 .earth-cards-km { color: var(--muted); font: 500 0.78rem/1.3 var(--font-mono); }
@@ -159,15 +159,15 @@
 
 /* the page under the world: the passport's postcards, and how the globe is made */
 .earth-shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 1rem; margin-inline: 0; margin-bottom: 0; padding: 0; list-style: none; }
-.earth-shelf a { display: grid; gap: 0.3rem; color: var(--ink); }
+.earth-shelf a { display: grid; gap: 0.3rem; color: var(--text); }
 .earth-shelf-photo { position: relative; display: block; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 10px; background: var(--surface-2, #ddd); filter: saturate(0.55) brightness(0.92); transition: filter 0.3s ease; }
 .earth-shelf li[data-got] .earth-shelf-photo, .earth-shelf a:hover .earth-shelf-photo { filter: none; }
 .earth-shelf-stamp { position: absolute; right: 0.5rem; bottom: 0.5rem; padding: 0.3rem 0.45rem; border: 2px double #1f5f99; border-radius: 6px; background: rgba(246, 239, 224, 0.9); color: #1f5f99; font: 700 0.64rem/1 var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; transform: rotate(-8deg); }
 .earth-shelf-name { margin-top: 0.3rem; font-weight: 700; }
 .earth-shelf-km { color: var(--muted); font: 500 0.78rem/1.3 var(--font-mono); }
 .earth-facts { display: grid; gap: 1rem; margin: 0; padding: 0; list-style: none; }
-.earth-facts li { padding-left: 1rem; border-left: 2px solid color-mix(in srgb, #1f5f99 60%, var(--border)); color: var(--body); line-height: 1.6; }
-.earth-facts b { color: var(--ink); }
+.earth-facts li { padding-left: 1rem; border-left: 2px solid color-mix(in srgb, var(--accent) 60%, var(--border)); color: var(--text-body); line-height: 1.6; }
+.earth-facts b { color: var(--text); }
 
 /* the controls, on the page */
-.earth-keys kbd { display: inline-block; padding: 0.1rem 0.4rem; border: 1px solid var(--border); border-radius: 4px; background: var(--surface-2); font: 500 0.78rem/1.4 var(--font-mono); color: var(--ink); }
+.earth-keys kbd { display: inline-block; padding: 0.1rem 0.4rem; border: 1px solid var(--border); border-radius: 4px; background: var(--surface-2); font: 500 0.78rem/1.4 var(--font-mono); color: var(--text); }

@@ -264,12 +264,12 @@ html[data-mode='dark'] .me-hub { --me-veil: rgba(10, 7, 5, 0.78); --me-ink: #f1e
 @media (max-width: 639px) { .me-record-kitchen small { display: none; } .me-record { padding: 0.75rem 0.8rem 0.8rem; } }
 .me-travellers { border-color: rgba(154, 184, 255, 0.55); }
 .me-travellers[data-on] { cursor: default; }
-.me-travellers b { color: #c9a95a; font-variant-numeric: tabular-nums; }
+.me-travellers b { color: var(--accent-text); font-variant-numeric: tabular-nums; }
 
 .me-bar { position: sticky; top: calc(var(--nav-h) + 10px); display: flex; align-items: center; gap: 0.75rem; margin-top: calc(var(--nav-h) + 18px); }
 .me-bar > * { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .me-bar-where { display: flex; align-items: baseline; gap: 0.6rem; margin: 0 auto 0 0.25rem; padding: 0.35rem 0.8rem; border-radius: 999px; background: color-mix(in srgb, var(--bg) 70%, transparent); }
-.me-bar-where b { font: 700 1rem/1 'Cinzel', Georgia, serif; letter-spacing: 0.04em; color: var(--text-ink, inherit); }
+.me-bar-where b { font: 700 1rem/1 'Cinzel', Georgia, serif; letter-spacing: 0.04em; color: var(--text); }
 .me-bar .btn { background: color-mix(in srgb, var(--bg) 78%, transparent); }
 @media (max-width: 639px) {
   .me-bar-next { display: none; }

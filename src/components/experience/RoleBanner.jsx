@@ -12,8 +12,9 @@ export default function RoleBanner({ role, className = '' }) {
     <figure ref={ref} className={`role-banner ${className}`}>
       <Photo id={`exp-${role}`} sizes="(min-width: 1280px) 1180px, 100vw" className="role-banner-img" />
       <span className="role-banner-shade" aria-hidden="true" />
+      {/* the chip is the dark island, not the figure, whose shade mixes the page’s own --bg */}
       {role === 'bose' && (
-        <figcaption className="role-banner-chip">
+        <figcaption className="role-banner-chip dark-scope">
           <button type="button" className="role-banner-play" onClick={() => import('../../lib/clips').then((c) => c.playClip('vader'))} aria-label="Now playing: “No, I am your father.” Play it">
             <span className="eq" aria-hidden="true">
               <i />
