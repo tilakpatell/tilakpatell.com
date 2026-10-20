@@ -6,31 +6,42 @@
 // (./outside.js), Sting on its peg; on the right the round green door, the
 // sign by it and the mithril coat on its stand; a lantern hung from the
 // beam. On the desk the candles, the pipe, the ink and quill, a jar of leaf.
-// Lit by the fire, the candles and the moon through the window.
 //
-//   createStudy({ mats, tier, size, rt }) → { group, things (meshes to pick, userData.room),
+// Lit by what is in it, so what is touched changes the light: the fire
+// (brighter for a while after a stir), the candles (out at a pinch), the
+// lantern (its light swings with it), Sting (drawn, it lights the room
+// blue, as it does when the Eye comes near) and the moon through the
+// window, over a low fill so the dark corners stay dark. The surfaces are
+// painted with their relief and their shine (./studyArt.js), and the metals
+// hold the room’s lights in them (`env`); on the low tier, colour alone.
+//
+//   createStudy({ mats, tier, size, rt, env }) → { group, things (meshes to pick, userData.room),
 //     outside, act(id, index) → what it told, tick(dt, { dread, vision, camera }), lower(level), dispose() }
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { uniform, vec4 } from 'three/tsl';
-import { makeCanvas } from '../../../lib/paint';
+import { float, positionWorld, smoothstep, texture, uniform, uv, vec2, vec3 } from 'three/tsl';
 import { paintMap } from '../mapPaint';
-import { canvasMap } from './mats';
+import { flameMaterial } from './flame';
+import { canvasMap, dataMap } from './mats';
 import { createOutside, WINDOW } from './outside';
-import { doorArt, floorArt, mithrilArt, panelArt, plasterArt, rugArt, shelfArt, signArt, stoneArt, vaultArt, woodArt } from './studyArt';
+import { beads, brass as brassArt, door as doorArt, floorboards, mithril as mithrilArt, paneArt, panels as panelArt, plaster as plasterArt, rainArt, reliefOf, rug as rugArt, runesArt, shelfArt, signArt, stones, vault as vaultArt, wood } from './studyArt';
 
 const R = 1.25; // the room’s half-width, and the vault’s radius
 const FLOOR = -0.75;
 const SPRING = 0.55; // where the walls turn into the vault
 const BACK = -0.75;
 const FRONT = 1.8;
+// Sting on its peg, and drawn: off the wall, upright, turned to the room
+const PEG = { at: [0.82, 0.45, BACK + 0.015], tilt: -0.5, turn: 0 };
+const DRAWN = { at: [0.7, 0.5, BACK + 0.24], tilt: -0.08, turn: 0.35 };
 
-export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
+export function createStudy({ mats, tier = 'high', size = 1, rt = null, env = null }) {
   const group = new THREE.Group();
   const made = [];
   const keep = (x) => (made.push(x), x);
   const low = tier === 'low';
+  const relief = !low;
   const px = (n) => Math.max(64, Math.round(n * size));
   const things = [];
   const thing = (mesh, id, index = 0) => {
@@ -39,11 +50,21 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
     things.push(mesh);
     return mesh;
   };
-  const tex = (canvas, repeat = null) => {
-    const t = keep(canvasMap(canvas, { repeat: Boolean(repeat), aniso: 8 }));
-    if (repeat) t.repeat.set(...repeat);
+  const repeated = (t, repeat) => {
+    if (!repeat) return t;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(...repeat);
     return t;
   };
+  const tex = (canvas, repeat = null) => repeated(keep(canvasMap(canvas, { aniso: 8 })), repeat);
+  // a painted surface’s maps, for lit(): its colour, relief and shine, at a repeat
+  const maps = (s, repeat = null) => ({
+    map: tex(s.map, repeat),
+    normalMap: s.normal ? repeated(keep(dataMap(s.normal, { aniso: 8 })), repeat) : null,
+    roughnessMap: s.rough ? repeated(keep(dataMap(s.rough, { aniso: 4 })), repeat) : null,
+  });
+  // the same maps again at another repeat (one picture on the card, many uses)
+  const again = (set, repeat) => Object.fromEntries(Object.entries(set).map(([k, t]) => [k, t ? repeated(keep(t.clone()), repeat) : null]));
   const box = (w, h, d, mat, [x, y, z], parent = group) => {
     const m = new THREE.Mesh(keep(new THREE.BoxGeometry(w, h, d)), mat);
     m.position.set(x, y, z);
@@ -52,11 +73,13 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
   };
 
   // ---------------------------------------------------------------- the room
-  const oak = tex(woodArt(px(512), px(256)));
-  box(1.7, 0.06, 0.95, mats.lit({ map: oak, roughness: 0.55 }), [0, -0.03, -0.12]);
-  const beamWood = tex(woodArt(px(256), px(64), { tone: [64, 40, 22], seed: 9 }), [4, 1]);
-  const beamMat = mats.lit({ map: beamWood, roughness: 0.8 });
-  for (const x of [-0.8, 0.8]) box(0.08, 0.7, 0.08, beamMat, [x, -0.4, -0.55]);
+  // the desk, waxed: it shines a little, and its grain only just stands up
+  box(1.7, 0.06, 0.95, mats.lit({ ...maps(wood(px(512), px(256), { tone: [70, 44, 26], rings: 9, boards: 3, varnish: true, relief })), roughness: 1, normalScale: 0.4 }), [0, -0.03, -0.12]);
+  const beamSet = maps(wood(px(256), px(64), { tone: [64, 40, 22], seed: 9, rings: 4, period: [2, 2], relief }), [4, 1]);
+  const beamMat = mats.lit({ ...beamSet, roughness: 1 });
+  // (the posts’ grain runs up them)
+  const postMat = mats.lit({ ...maps(wood(px(64), px(256), { tone: [64, 40, 22], seed: 10, rings: 4, upright: true, period: [2, 2], relief }), [1, 2]), roughness: 1 });
+  for (const x of [-0.8, 0.8]) box(0.08, 0.7, 0.08, postMat, [x, -0.4, -0.55]);
 
   // the back wall: plaster, the tunnel’s round head, the window’s hole in it
   const wall = new THREE.Shape();
@@ -68,23 +91,23 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
   const hole = new THREE.Path();
   hole.absarc(WINDOW.x, WINDOW.y, WINDOW.r, 0, Math.PI * 2, true);
   wall.holes.push(hole);
-  const plaster = tex(plasterArt(px(256)), [1, 1]);
-  plaster.wrapS = plaster.wrapT = THREE.RepeatWrapping;
-  const wallMat = mats.lit({ map: plaster, roughness: 0.95 });
-  const back = new THREE.Mesh(keep(new THREE.ShapeGeometry(wall, 48)), wallMat);
+  // (the back wall’s UVs are metres; the side walls’ are 0–1 along them)
+  const plasterSet = maps(plasterArt(px(256), { relief }), [0.9, 0.9]);
+  const back = new THREE.Mesh(keep(new THREE.ShapeGeometry(wall, 48)), mats.lit({ ...plasterSet, roughness: 1 }));
   back.position.z = BACK;
   group.add(back);
-  // the side walls, and the vault over all
   const sideLen = FRONT - BACK;
+  const sideMat = mats.lit({ ...again(plasterSet, [sideLen * 0.9, (SPRING - FLOOR) * 0.9]), roughness: 1 });
   for (const s of [-1, 1]) {
-    const m = new THREE.Mesh(keep(new THREE.PlaneGeometry(sideLen, SPRING - FLOOR)), wallMat);
+    const m = new THREE.Mesh(keep(new THREE.PlaneGeometry(sideLen, SPRING - FLOOR)), sideMat);
     m.rotation.y = -s * (Math.PI / 2);
     m.position.set(s * R, (SPRING + FLOOR) / 2, (BACK + FRONT) / 2);
     group.add(m);
   }
+  // the vault over all, its boards along the room
   const vaultGeo = keep(new THREE.CylinderGeometry(R, R, sideLen, 32, 1, true, Math.PI / 2, Math.PI));
   vaultGeo.rotateX(Math.PI / 2);
-  const vault = new THREE.Mesh(vaultGeo, mats.lit({ map: tex(vaultArt(px(512), px(256))), roughness: 0.85, side: THREE.BackSide }));
+  const vault = new THREE.Mesh(vaultGeo, mats.lit({ ...maps(vaultArt(px(512), px(256), { relief })), roughness: 1, side: THREE.BackSide }));
   vault.position.set(0, SPRING, (BACK + FRONT) / 2);
   group.add(vault);
   // oak arches across the vault, and down the walls to the floor
@@ -92,11 +115,10 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
     const arch = new THREE.Mesh(keep(new THREE.TorusGeometry(R - 0.03, 0.045, 6, 28, Math.PI)), beamMat);
     arch.position.set(0, SPRING, z);
     group.add(arch);
-    for (const s of [-1, 1]) box(0.09, SPRING - FLOOR, 0.09, beamMat, [s * (R - 0.03), (SPRING + FLOOR) / 2, z]);
+    for (const s of [-1, 1]) box(0.09, SPRING - FLOOR, 0.09, postMat, [s * (R - 0.03), (SPRING + FLOOR) / 2, z]);
   }
   // panelling under the plaster, round three walls
-  const panels = tex(panelArt(px(1024), px(256)));
-  const panelMat = mats.lit({ map: panels, roughness: 0.7 });
+  const panelMat = mats.lit({ ...maps(panelArt(px(1024), px(256), { relief })), roughness: 1 });
   const panelH = 0.62;
   const backPanel = new THREE.Mesh(keep(new THREE.PlaneGeometry(2 * R, panelH)), panelMat);
   backPanel.position.set(0, FLOOR + panelH / 2, BACK + 0.006);
@@ -107,14 +129,18 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
     m.position.set(s * (R - 0.006), FLOOR + panelH / 2, (BACK + FRONT) / 2);
     group.add(m);
   }
-  const floor = new THREE.Mesh(keep(new THREE.PlaneGeometry(2 * R, sideLen)), mats.lit({ map: tex(floorArt(px(512), px(512)), [2, 2]), roughness: 0.75 }));
+  const floor = new THREE.Mesh(keep(new THREE.PlaneGeometry(2 * R, sideLen)), mats.lit({ ...maps(floorboards(px(384), { relief }), [2, 2]), roughness: 1 }));
   floor.rotation.x = -Math.PI / 2;
   floor.position.set(0, FLOOR, (BACK + FRONT) / 2);
   group.add(floor);
-  const rug = new THREE.Mesh(keep(new THREE.CircleGeometry(0.7, 40)), mats.lit({ map: tex(rugArt(px(512))), roughness: 1 }));
+  const rug = new THREE.Mesh(keep(new THREE.CircleGeometry(0.7, 40)), mats.lit({ ...maps(rugArt(px(384), { relief })), roughness: 1 }));
   rug.rotation.x = -Math.PI / 2;
   rug.position.set(0.1, FLOOR + 0.004, 0.45);
   group.add(rug);
+  // brass, hammered, and steel: the room’s lights held in them
+  const brassSet = maps(brassArt(px(128), { relief }));
+  const brass = mats.lit({ ...brassSet, roughness: 1, metalness: 0.85, envMap: env, envMapIntensity: 0.9 });
+  const steel = mats.lit({ color: 0xd2d9e4, roughness: 0.24, metalness: 0.9, envMap: env, envMapIntensity: 1.1 });
 
   // ---------------------------------------------------------------- the window
   const win = new THREE.Group();
@@ -140,42 +166,66 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
   group.add(outside.group);
 
   // ---------------------------------------------------------------- the back wall
-  thing(box(0.72, 1.5, 0.24, mats.lit({ map: tex(shelfArt(px(512), px(1024))), roughness: 0.8 }), [-0.86, FLOOR + 0.75 + 0.02, BACK + 0.12]), 'books');
-  const looseBook = box(0.035, 0.2, 0.15, mats.lit({ color: 0x8a2a1a, roughness: 0.7 }), [-0.62, 0.59, BACK + 0.2]);
+  const shelf = shelfArt(px(512), px(1024));
+  const shelfRelief = relief ? reliefOf(shelf, 1.2) : null;
+  thing(box(0.72, 1.5, 0.24, mats.lit({ map: tex(shelf), normalMap: shelfRelief ? keep(dataMap(shelfRelief)) : null, roughness: 0.75 }), [-0.86, FLOOR + 0.75 + 0.02, BACK + 0.12]), 'books');
+  const looseBook = box(0.035, 0.2, 0.15, mats.lit({ color: 0x8a2a1a, roughness: 0.6 }), [-0.62, 0.59, BACK + 0.2]);
   thing(looseBook, 'books');
   const mapMesh = thing(new THREE.Mesh(keep(new THREE.PlaneGeometry(0.48, 0.336)), mats.lit({ map: tex(paintMap(px(1024))), roughness: 0.95 })), 'map');
   mapMesh.position.set(-0.2, 0.46, BACK + 0.008);
   mapMesh.rotation.z = 0.015;
   group.add(mapMesh);
-  // Sting on its peg, right of the window: it glows as the Eye nears, or when drawn
+
+  // Sting: a leaf of Elvish steel, its letters down the blade, a guard that
+  // curves to the point, a grip of leather. It glows as the Eye nears, and
+  // drawn it shines, lighting the room blue until it is put back.
   const sting = new THREE.Group();
-  sting.position.set(0.82, 0.45, BACK + 0.015);
-  sting.rotation.z = -0.5;
   const uSting = uniform(0);
-  const bladeMat = mats.lit({ color: 0xc8d0dc, roughness: 0.25, metalness: 0.8 });
-  bladeMat.emissiveNode = vec4(0.25, 0.55, 1, 1).rgb.mul(uSting);
-  const brass = mats.lit({ color: 0xb08a3a, roughness: 0.35, metalness: 0.7 });
-  thing(box(0.02, 0.42, 0.006, bladeMat, [0, 0, 0], sting), 'sting');
-  box(0.1, 0.014, 0.014, brass, [0, -0.21, 0], sting);
-  thing(box(0.018, 0.09, 0.018, mats.lit({ color: 0x3a2a1a }), [0, -0.26, 0], sting), 'sting');
+  const leaf = new THREE.Shape();
+  leaf.moveTo(-0.011, 0);
+  leaf.quadraticCurveTo(-0.015, 0.2, -0.008, 0.33);
+  leaf.lineTo(0, 0.4);
+  leaf.lineTo(0.008, 0.33);
+  leaf.quadraticCurveTo(0.015, 0.2, 0.011, 0);
+  leaf.closePath();
+  const bladeGeo = keep(new THREE.ExtrudeGeometry(leaf, { depth: 0.001, bevelEnabled: true, bevelThickness: 0.0016, bevelSize: 0.0032, bevelSegments: 2, curveSegments: 8 }));
+  bladeGeo.translate(0, -0.205, -0.0005);
+  const runes = tex(runesArt(px(64), px(512)));
+  const bladeMat = mats.lit({ color: 0xd8e0ec, roughness: 0.2, metalness: 0.92, envMap: env, envMapIntensity: 1.2 });
+  // (the blade’s UVs are its outline’s metres: the letters down its middle)
+  const letters = texture(runes, vec2(uv().x.add(0.015).div(0.03), uv().y.div(0.4))).r;
+  bladeMat.emissiveNode = vec3(0.3, 0.6, 1).mul(uSting).mul(letters.mul(1.6).add(0.3));
+  sting.add(thing(new THREE.Mesh(bladeGeo, bladeMat), 'sting'));
+  const guard = new THREE.Mesh(keep(new THREE.TorusGeometry(0.07, 0.0055, 6, 16, 1.0)), steel);
+  guard.rotation.z = -Math.PI / 2 - 0.5;
+  guard.position.y = -0.205 + 0.07;
+  sting.add(guard);
+  thing(box(0.018, 0.08, 0.018, mats.lit({ color: 0x3a2618, roughness: 0.85 }), [0, -0.25, 0], sting), 'sting');
+  const pommel = new THREE.Mesh(keep(new THREE.SphereGeometry(0.012, 12, 8)), steel);
+  pommel.position.y = -0.296;
+  sting.add(pommel);
   const stingGlow = new THREE.Sprite(mats.glow('#6fa8ff', 0));
-  stingGlow.scale.set(0.12, 0.5, 1);
+  stingGlow.scale.set(0.05, 0.44, 1);
+  stingGlow.position.y = 0.0;
   sting.add(stingGlow);
+  const stingLight = new THREE.PointLight(0x7aaeff, 0, 3, 1.5);
+  stingLight.position.set(0, 0.02, 0.12);
+  sting.add(stingLight);
   group.add(sting);
+  let stingOut = false;
+  let drawn = 0;
 
   // ---------------------------------------------------------------- the hearth, on the left wall
   const hearth = new THREE.Group();
   hearth.position.set(-R + 0.01, FLOOR, -0.05);
   hearth.rotation.y = Math.PI / 2;
-  const stoneMap = tex(stoneArt(px(512), px(512)));
+  const stoneSet = maps(stones(px(256), { relief }));
   // (each block its own repeat of the stones, so none is stretched into stripes)
-  const stonesOf = (w, h) => {
-    const t = keep(stoneMap.clone());
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(Math.max(0.3, w / 0.5), Math.max(0.3, h / 0.5));
-    return mats.lit({ map: t, roughness: 0.95 });
-  };
+  const stonesOf = (w, h) => mats.lit({ ...again(stoneSet, [Math.max(0.3, w / 0.5), Math.max(0.3, h / 0.5)]), roughness: 1 });
+  const uEmber = uniform(1);
+  // (the firebox: soot, glowing low down where the embers are)
   const soot = mats.lit({ color: 0x0e0806, roughness: 1 });
+  soot.emissiveNode = vec3(0.34, 0.09, 0.01).mul(uEmber).mul(float(1).sub(smoothstep(0.0, 0.4, positionWorld.y.sub(FLOOR))));
   const jambs = stonesOf(0.26, 0.92);
   for (const s of [-1, 1]) thing(box(0.2, 0.92, 0.26, jambs, [s * 0.46, 0.46, 0.13], hearth), 'hearth');
   thing(box(1.22, 0.16, 0.32, stonesOf(1.22, 0.16), [0, 0.98, 0.16], hearth), 'hearth');
@@ -184,20 +234,22 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
   const mouth = thing(new THREE.Mesh(keep(new THREE.PlaneGeometry(0.72, 0.9)), soot), 'hearth');
   mouth.position.set(0, 0.45, 0.02);
   hearth.add(mouth);
-  const logMat = mats.lit({ color: 0x3a2414, roughness: 0.9, emissive: 0x200800 });
+  const logMat = mats.lit({ ...again(beamSet, [1, 1]), roughness: 1 });
+  logMat.emissiveNode = vec3(0.5, 0.12, 0.02).mul(uEmber).mul(float(1).sub(smoothstep(0.02, 0.1, positionWorld.y.sub(FLOOR))));
   for (const [x, a] of [[-0.12, 0.3], [0.1, -0.25], [0, 0]]) {
     const log = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.045, 0.05, 0.42, 8)), logMat);
     log.rotation.set(0, a, Math.PI / 2);
     log.position.set(x, 0.1 + (x === 0 ? 0.07 : 0), 0.16);
     hearth.add(log);
   }
-  const flames = [];
-  for (let i = 0; i < 5; i++) {
-    const f = new THREE.Sprite(mats.glow(i % 2 ? '#ff7a2a' : '#ffb347', 0.9));
-    f.position.set((i - 2) * 0.08, 0.26, 0.2);
+  // the flames: three tongues of fire over the logs, and the embers’ glow under them
+  const uHeat = uniform(0);
+  const flames = [0, 1, 2].map((i) => {
+    const f = new THREE.Sprite(keep(flameMaterial({ seed: i * 2.3 + 1, heat: uHeat })));
+    f.position.set((i - 1) * 0.12, 0.3, 0.2);
     hearth.add(f);
-    flames.push(f);
-  }
+    return f;
+  });
   const embers = new THREE.Sprite(mats.glow('#ff5a1a', 0.7));
   embers.scale.set(0.6, 0.18, 1);
   embers.position.set(0, 0.1, 0.22);
@@ -209,7 +261,7 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
     hearth.add(s);
     return { s, v: new THREE.Vector3(), life: 0 };
   });
-  const fire = new THREE.PointLight(0xff9a50, 0.9, 3.6, 1.5);
+  const fire = new THREE.PointLight(0xff9a50, 1.25, 4.2, 1.5);
   fire.position.set(0, 0.4, 0.45);
   hearth.add(fire);
   // on the mantel: a pair of candlesticks and a little clock
@@ -223,7 +275,7 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
   const doorPivot = new THREE.Group();
   doorPivot.position.set(R - 0.012, -0.2, 0.25 + 0.55);
   doorPivot.rotation.y = -Math.PI / 2;
-  const door = thing(new THREE.Mesh(keep(new THREE.CircleGeometry(0.55, 40)), mats.lit({ map: tex(doorArt(px(512))), roughness: 0.6 })), 'door');
+  const door = thing(new THREE.Mesh(keep(new THREE.CircleGeometry(0.55, 40)), mats.lit({ ...maps(doorArt(px(384), { relief })), roughness: 1 })), 'door');
   door.position.set(0.55, 0, 0.004);
   doorPivot.add(door);
   group.add(doorPivot);
@@ -233,46 +285,79 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
   group.add(doorFrame);
   let doorOpen = 0;
   let doorWant = 0;
-  // the sign by the door, and the mithril coat on its stand in the corner
-  const sign = thing(new THREE.Mesh(keep(new THREE.PlaneGeometry(0.3, 0.16)), mats.lit({ map: tex(signArt(px(512), px(272))), roughness: 0.9 })), 'sign');
+  // the sign by the door
+  const signCanvas = signArt(px(512), px(272));
+  const signRelief = relief ? reliefOf(signCanvas, 0.8) : null;
+  const sign = thing(new THREE.Mesh(keep(new THREE.PlaneGeometry(0.3, 0.16)), mats.lit({ map: tex(signCanvas), normalMap: signRelief ? keep(dataMap(signRelief)) : null, roughness: 0.9 })), 'sign');
   sign.position.set(R - 0.03, -0.55, -0.42);
   sign.rotation.set(0, -Math.PI / 2, 0.06);
   group.add(sign);
+  // the mithril coat on its stand in the corner: ring on ring of silver-steel,
+  // a belt of pearls and crystals; touched, a gleam runs down it
   const stand = new THREE.Group();
   stand.position.set(0.98, FLOOR, -0.5);
-  box(0.03, 1.0, 0.03, beamMat, [0, 0.5, 0], stand);
+  box(0.03, 1.0, 0.03, postMat, [0, 0.5, 0], stand);
   box(0.4, 0.03, 0.03, beamMat, [0, 0.98, 0], stand);
-  const coatMat = mats.lit({ map: tex(mithrilArt(px(256), px(256)), [2, 2]), roughness: 0.3, metalness: 0.7, emissive: 0x1a1e26 });
+  const mail = maps(mithrilArt(px(256), { relief }), [10, 7]);
+  const uGleam = uniform(0);
+  const uGleamY = uniform(0);
+  const coatOf = (set) => {
+    const m = mats.lit({ ...set, color: 0xeef2fa, roughness: 1, metalness: 1, envMap: env, envMapIntensity: 1.3, side: THREE.DoubleSide });
+    const band = smoothstep(0.05, 0.0, positionWorld.y.sub(uGleamY).abs());
+    m.emissiveNode = vec3(0.7, 0.8, 1).mul(band).mul(uGleam).mul(1.2).add(vec3(0.012, 0.014, 0.018));
+    return m;
+  };
+  const coatMat = coatOf(mail);
   const tunic = [[0.05, 0.27], [0.1, 0.25], [0.17, 0.21], [0.165, 0.12], [0.15, 0.02], [0.135, -0.06], [0.15, -0.16], [0.175, -0.24]].map(([x, y]) => new THREE.Vector2(x, y));
-  const coat = thing(new THREE.Mesh(keep(new THREE.LatheGeometry(tunic, 24)), coatMat), 'mithril');
+  const coat = thing(new THREE.Mesh(keep(new THREE.LatheGeometry(tunic, 32)), coatMat), 'mithril');
   coat.position.set(0, 0.72, 0);
   coat.scale.z = 0.62;
-  coat.material.side = THREE.DoubleSide;
   stand.add(coat);
+  const sleeveMat = coatOf(again(mail, [5, 2]));
   for (const s of [-1, 1]) {
-    const sleeve = thing(new THREE.Mesh(keep(new THREE.CylinderGeometry(0.05, 0.065, 0.2, 12, 1, true)), coatMat), 'mithril');
+    const sleeve = thing(new THREE.Mesh(keep(new THREE.CylinderGeometry(0.05, 0.065, 0.2, 14, 1, true)), sleeveMat), 'mithril');
     sleeve.position.set(s * 0.2, 0.86, 0);
     sleeve.rotation.z = s * 0.7;
     stand.add(sleeve);
   }
+  const belt = new THREE.Mesh(keep(new THREE.TorusGeometry(0.142, 0.009, 8, 48)), mats.lit({ ...maps(beads(px(256), { relief }), [1, 1]), roughness: 1, envMap: env, envMapIntensity: 0.8 }));
+  belt.rotation.x = Math.PI / 2;
+  belt.position.set(0, 0.67, 0);
+  belt.scale.y = 0.62;
+  stand.add(belt);
   const coatGlint = new THREE.Sprite(mats.glow('#e8f0ff', 0));
-  coatGlint.scale.setScalar(0.5);
-  coatGlint.position.set(0, 0.75, 0.15);
+  coatGlint.scale.setScalar(0.3);
+  coatGlint.position.set(0.04, 0.78, 0.12);
   stand.add(coatGlint);
   group.add(stand);
   const glint = { sign: 0, mithril: 0, leaf: 0 };
 
   // ---------------------------------------------------------------- the lantern on the beam
+  // iron and horn, lit within; its light swings with it
   const lantern = new THREE.Group();
-  lantern.position.set(-0.05, SPRING + R - 0.05, 0.35);
-  const chain = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.004, 0.004, 0.6, 4)), brass);
-  chain.position.y = -0.3;
-  thing(box(0.09, 0.13, 0.09, mats.lit({ color: 0x2a2a2a, roughness: 0.4, metalness: 0.6, emissive: 0x6a4010 }), [0, -0.66, 0], lantern), 'lantern');
-  const lampGlow = new THREE.Sprite(mats.glow('#ffc070', 0.55));
-  lampGlow.scale.setScalar(0.32);
-  lampGlow.position.y = -0.66;
-  lantern.add(chain, lampGlow);
+  lantern.position.set(-0.08, SPRING + R - 0.05, -0.12);
+  const HANG = 0.95;
+  const chain = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.004, 0.004, HANG - 0.1, 4)), brass);
+  chain.position.y = -(HANG - 0.1) / 2;
+  const panes = paneArt(px(128));
+  const uLamp = uniform(1);
+  const paneMat = mats.lit({ map: tex(panes.map), roughness: 0.5, metalness: 0.3 });
+  paneMat.emissiveNode = texture(tex(panes.glow)).rgb.mul(uLamp).mul(1.3);
+  thing(box(0.09, 0.13, 0.09, paneMat, [0, -HANG, 0], lantern), 'lantern');
+  const cap = new THREE.Mesh(keep(new THREE.ConeGeometry(0.07, 0.06, 4)), mats.lit({ color: 0x2a2826, roughness: 0.45, metalness: 0.7, envMap: env, envMapIntensity: 0.6 }));
+  cap.rotation.y = Math.PI / 4;
+  cap.position.y = -HANG + 0.095;
+  const lampGlow = new THREE.Sprite(mats.glow('#ffc070', 0.45));
+  lampGlow.scale.setScalar(0.3);
+  lampGlow.position.y = -HANG;
+  lantern.add(chain, cap, lampGlow);
   thing(chain, 'lantern');
+  let lampLight = null;
+  if (!low) {
+    lampLight = new THREE.PointLight(0xffb468, 0.42, 2.6, 1.6);
+    lampLight.position.y = -HANG - 0.04;
+    lantern.add(lampLight);
+  }
   group.add(lantern);
   let swing = 0;
 
@@ -298,7 +383,7 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
     c.add(dish, stick, flame, halo, wisp);
     let light = null;
     if (lit) {
-      light = new THREE.PointLight(0xffb066, 0.34, 2.2, 1.7);
+      light = new THREE.PointLight(0xffb066, 0.42, 2.5, 1.7);
       light.position.y = flame.position.y + 0.02;
       c.add(light);
     }
@@ -309,7 +394,7 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
   const pipe = new THREE.Group();
   pipe.position.set(-0.46, 0, 0.16);
   pipe.rotation.y = 0.6;
-  const pipeMat = mats.lit({ color: 0x5a3a20, roughness: 0.5 });
+  const pipeMat = mats.lit({ ...again(beamSet, [1, 1]), color: 0xb08a6a, roughness: 0.6 });
   const bowl = thing(new THREE.Mesh(keep(new THREE.CylinderGeometry(0.014, 0.011, 0.03, 14)), pipeMat), 'pipe');
   bowl.position.y = 0.015;
   const stem = thing(new THREE.Mesh(keep(new THREE.CylinderGeometry(0.004, 0.004, 0.2, 8)), pipeMat), 'pipe');
@@ -325,12 +410,12 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
     return { m, t: -1, wait: 0 };
   });
   const bowlAt = new THREE.Vector3();
-  const ink = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.022, 0.026, 0.04, 16)), mats.lit({ color: 0x1a1a24, roughness: 0.2, metalness: 0.2 }));
+  const ink = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.022, 0.026, 0.04, 16)), mats.lit({ color: 0x1a1a24, roughness: 0.08, metalness: 0.1, envMap: env, envMapIntensity: 0.9 }));
   ink.position.set(0.31, 0.02, 0.14);
   const quill = new THREE.Mesh(keep(new THREE.ConeGeometry(0.008, 0.2, 6)), mats.lit({ color: 0xf2efe6, roughness: 0.8 }));
   quill.position.set(0.33, 0.11, 0.12);
   quill.rotation.set(0.2, 0, -0.35);
-  const jar = thing(new THREE.Mesh(keep(new THREE.CylinderGeometry(0.03, 0.032, 0.08, 16)), mats.lit({ color: 0x8a6a3a, roughness: 0.4, emissive: 0x100804 })), 'leaf');
+  const jar = thing(new THREE.Mesh(keep(new THREE.CylinderGeometry(0.03, 0.032, 0.08, 16)), mats.lit({ color: 0x8a6a3a, roughness: 0.25, emissive: 0x100804, envMap: env, envMapIntensity: 0.5 })), 'leaf');
   jar.position.set(0.7, 0.04, 0.06);
   const lid = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.033, 0.033, 0.012, 16)), brass);
   lid.position.set(0.7, 0.086, 0.06);
@@ -343,8 +428,9 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
   group.add(jarGlint);
 
   // ---------------------------------------------------------------- the light
-  const hemi = new THREE.HemisphereLight(0x6a7898, 0x2a1c12, 0.46);
-  const moon = new THREE.DirectionalLight(0x9fb4d8, 0.5);
+  // (a low fill: the room is lit by its fire, its candles, its lantern and the moon)
+  const hemi = new THREE.HemisphereLight(0x6a7898, 0x2a1c12, 0.3);
+  const moon = new THREE.DirectionalLight(0x9fb4d8, 0.42);
   moon.position.set(WINDOW.x, 1.2, -1.6);
   moon.target.position.set(0, 0, 0);
   // the reader’s own candle, out of sight by the reader’s hand: the light the
@@ -355,7 +441,9 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
 
   let t = 0;
   const camPos = new THREE.Vector3();
+  const coatAt = new THREE.Vector3();
   const told = [];
+  const lerp = (a, b, k) => a + (b - a) * k;
   return {
     group,
     win,
@@ -385,25 +473,31 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
             r.wait = k * 0.6;
             k += 1;
           }
-      } else if (id === 'sting') sting.userData.drawn = 3;
-      else if (id === 'lantern') swing = 1;
+      } else if (id === 'sting') {
+        stingOut = !stingOut;
+        told.push(stingOut ? 'drawn' : 'sheathed');
+      } else if (id === 'lantern') swing = 1;
       else if (id === 'books') looseBook.userData.tip = 1.6;
       else if (id === 'door') {
         doorWant = 1;
         told.push('door');
+      } else if (id === 'mithril') {
+        glint.mithril = 1;
+        uGleamY.value = coat.getWorldPosition(coatAt).y + 0.32;
       } else if (glint[id] != null) glint[id] = 1;
       return [...told];
     },
     tick(dt, { dread = 0, vision = 0, camera = null, view = 'book' } = {}) {
       t += dt;
       rainMat.opacity += ((view === 'window' ? 0.07 : 0.45) - rainMat.opacity) * Math.min(1, dt * 3);
-      if (camera) camera.getWorldPosition(camPos);
       rainMap.offset.y = (rainMap.offset.y + dt * 0.12) % 1;
       // the fire, flickering, brighter for a while after a stir
       stoke = Math.max(0, stoke - dt * 0.35);
       const f = 0.85 + 0.15 * Math.sin(t * 9.1) * Math.sin(t * 5.3 + 1.2) + 0.05 * Math.sin(t * 23);
-      fire.intensity = (0.9 + stoke * 1.2) * f * (1 - vision * 0.5);
-      flames.forEach((s, i) => s.scale.set(0.2 + Math.sin(t * 7 + i) * 0.02 + stoke * 0.08, (0.32 + stoke * 0.25) * (0.88 + 0.14 * Math.sin(t * 11 + i * 2)), 1));
+      fire.intensity = (1.25 + stoke * 1.6) * f * (1 - vision * 0.5);
+      uHeat.value = stoke * 1.6 + (f - 0.85) * 2;
+      uEmber.value = 0.8 + 0.2 * f + stoke * 0.6;
+      flames.forEach((s, i) => s.scale.set(0.24 + stoke * 0.08 + Math.sin(t * 2.1 + i) * 0.015, (0.42 + stoke * 0.3) * (0.92 + 0.1 * Math.sin(t * 3.3 + i * 2)), 1));
       embers.material.opacity = 0.6 + 0.15 * Math.sin(t * 3) + stoke * 0.3;
       for (const s of sparks) {
         if (s.life <= 0) continue;
@@ -419,13 +513,14 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
         c.halo.visible = c.on;
         c.flame.scale.set(0.035 * (0.95 + 0.05 * k), 0.06 * k, 1);
         c.halo.material.opacity = 0.35 * k;
-        if (c.light) c.light.intensity = c.on ? 0.34 * k * (1 - vision * 0.6) : 0;
+        if (c.light) c.light.intensity = c.on ? 0.42 * k * (1 - vision * 0.6) : 0;
         c.smoke = Math.max(0, c.smoke - dt * 0.5);
         c.wisp.material.opacity = c.smoke * 0.5;
         c.wisp.position.y = c.flame.position.y + 0.04 + (1 - c.smoke) * 0.1;
       }
       reader.intensity = 0.55 * (0.95 + 0.05 * Math.sin(t * 8.3)) * (1 - vision * 0.5);
       // the pipe’s rings, rising and widening into the beams
+      if (camera) camera.getWorldPosition(camPos);
       bowl.getWorldPosition(bowlAt);
       for (const r of smokeRings) {
         if (r.t < 0) continue;
@@ -446,18 +541,23 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
         r.m.material.opacity = 0.6 * (1 - k);
         if (camera) r.m.lookAt(camPos);
       }
-      // Sting: knowing the Eye, or drawn and shining
-      const drawn = Math.max(0, (sting.userData.drawn ?? 0) - dt);
-      sting.userData.drawn = drawn;
-      const out = Math.min(1, drawn * 2);
-      sting.position.z = BACK + 0.015 + out * 0.05;
-      uSting.value = Math.max(Math.max(0, (dread - 0.3) / 0.7) * 1.4, out * 1.2);
-      stingGlow.material.opacity = uSting.value * 0.6;
-      // the lantern swinging, settling
+      // Sting: off its peg and shining when drawn, or knowing the Eye
+      drawn += ((stingOut ? 1 : 0) - drawn) * Math.min(1, dt * 4);
+      const e = drawn * drawn * (3 - 2 * drawn);
+      sting.position.set(lerp(PEG.at[0], DRAWN.at[0], e), lerp(PEG.at[1], DRAWN.at[1], e), lerp(PEG.at[2], DRAWN.at[2], e));
+      sting.rotation.set(0, lerp(PEG.turn, DRAWN.turn, e), lerp(PEG.tilt, DRAWN.tilt, e));
+      const shine = Math.max(Math.max(0, (dread - 0.3) / 0.7) * 1.4, e * (1.05 + 0.08 * Math.sin(t * 5.3) + 0.04 * Math.sin(t * 17)));
+      uSting.value = shine;
+      stingGlow.material.opacity = shine * 0.22;
+      stingLight.intensity = shine * 1.5 * (1 - vision * 0.3);
+      // the lantern swinging, settling, its flame and its light with it
       swing = Math.max(0, swing - dt * 0.3);
       lantern.rotation.z = Math.sin(t * 3.2) * 0.25 * swing;
       lantern.rotation.x = Math.sin(t * 2.7) * 0.08 * swing;
-      lampGlow.material.opacity = 0.5 + 0.05 * Math.sin(t * 6);
+      const lamp = 0.9 + 0.06 * Math.sin(t * 6) + 0.04 * Math.sin(t * 15.7);
+      uLamp.value = lamp;
+      lampGlow.material.opacity = 0.45 * lamp;
+      if (lampLight) lampLight.intensity = 0.42 * lamp * (1 - vision * 0.6);
       // a book tipping out of the case and back
       const tip = Math.max(0, (looseBook.userData.tip ?? 0) - dt);
       looseBook.userData.tip = tip;
@@ -466,45 +566,25 @@ export function createStudy({ mats, tier = 'high', size = 1, rt = null }) {
       doorOpen += (doorWant - doorOpen) * Math.min(1, dt * 2.5);
       if (doorWant && doorOpen > 0.95) doorWant = 0;
       doorPivot.rotation.y = -Math.PI / 2 + doorOpen * 1.1;
-      // glints on silver, paper and glass
+      // glints on silver, paper and glass; a gleam down the mail, top to hem
       for (const k of Object.keys(glint)) glint[k] = Math.max(0, glint[k] - dt * 0.6);
-      coatGlint.material.opacity = glint.mithril * 0.8 + 0.06;
+      uGleam.value = glint.mithril > 0 ? Math.sin(glint.mithril * Math.PI) : 0;
+      uGleamY.value -= glint.mithril > 0 ? dt * 0.42 : 0;
+      coatGlint.material.opacity = glint.mithril * 0.6 + 0.04;
       jarGlint.material.opacity = glint.leaf * 0.7;
       sign.rotation.z = 0.06 + Math.sin(t * 20) * 0.03 * glint.sign;
       outside.tick(dt, { dread, camera });
     },
     lower(level) {
       glass.visible = level < 1 && !low;
-      if (level >= 2) for (const c of candles.slice(1)) if (c.light) c.light.visible = false;
+      if (level >= 2) {
+        for (const c of candles.slice(1)) if (c.light) c.light.visible = false;
+        if (lampLight) lampLight.visible = false;
+      }
     },
     dispose() {
       for (const x of made) x.dispose();
       outside.dispose();
     },
   };
-}
-
-// rain on the glass: streaks and beads, tiled, scrolled down
-function rainArt(w) {
-  const c = makeCanvas(w, w);
-  const ctx = c.getContext('2d');
-  ctx.strokeStyle = 'rgba(200, 214, 234, 0.55)';
-  ctx.lineWidth = Math.max(1, w / 256);
-  let s = 21;
-  const r = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
-  ctx.beginPath();
-  for (let i = 0; i < 90; i++) {
-    const x = r() * w;
-    const y = r() * w;
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + w * 0.004, y + w * 0.08);
-  }
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(223, 232, 244, 0.7)';
-  for (let i = 0; i < 50; i++) {
-    ctx.beginPath();
-    ctx.arc(r() * w, r() * w, w * (0.003 + r() * 0.003), 0, Math.PI * 2);
-    ctx.fill();
-  }
-  return c;
 }

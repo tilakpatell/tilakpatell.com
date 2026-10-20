@@ -426,7 +426,7 @@ export const PAGES = {
     tips: [
       ['The Red Book', 'Touch what stands up on a page: three to five things on each answer. Play it opens that place’s game; Walk it starts the Road there.'],
       ['The Palantír', 'The smoke parts on the Eye of Sauron, and it follows where you look. Hold it long and it speaks to you; longer, and it sees you.'],
-      ['The study', 'Bilbo’s study answers too: stir the fire, snuff a candle, draw Sting, blow smoke rings, take down a book. The round door opens on the Road, the map on the wall on the map.'],
+      ['The study', 'Bilbo’s study answers too, and its light with it: stir the fire, snuff a candle, knock the lantern, draw Sting and the room goes blue, blow smoke rings, take down a book. The round door opens on the Road, the map on the wall on the map.'],
       ['The window', 'Out of the round window: Gandalf at the gate, and over him Eru’s light and the Valar in the stars. Point at each to hear who they are.'],
       ['The One Ring', 'Touch it on the desk to take it up: put it on, or cast it into the fire and watch the letters come up on it.'],
       ['The Ring', 'In the study, it shows the moon-letters and one hidden thing on every page, until the Eye comes for it.'],

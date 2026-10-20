@@ -34,6 +34,16 @@ describe('seeded, tiling noise for painted textures', () => {
     }
   });
 
+  it('wraps at a period of its own each way, for grain long one way and fine the other', () => {
+    const n = makeNoise(13);
+    for (let t = 0; t < 3; t += 0.29) {
+      expect(n(0, t * 10, 3, 32)).toBeCloseTo(n(3, t * 10, 3, 32), 10);
+      expect(n(t, 0, 3, 32)).toBeCloseTo(n(t, 32, 3, 32), 10);
+      expect(fbm(n, t, 0, { period: 3, periodY: 32 })).toBeCloseTo(fbm(n, t, 32, { period: 3, periodY: 32 }), 10);
+    }
+    expect(n(0.5, 0.5, 3, 32)).not.toBeCloseTo(n(0.5, 3.5, 3, 32), 4);
+  });
+
   it('is smooth: nearby points are close', () => {
     const n = makeNoise(5);
     for (let i = 0; i < 200; i++) {

@@ -24,6 +24,13 @@ describe('the study’s things', () => {
     }
   });
 
+  it('says Sting is drawn, then put back, in turn with it', () => {
+    const sting = roomThing('sting');
+    expect(nextLine(sting, 0)).toMatch(/Drawn/);
+    expect(nextLine(sting, 1)).toMatch(/Back on its peg/);
+    expect(nextLine(sting, 2)).toBe(nextLine(sting, 0));
+  });
+
   it('turns the books’ pages one title at a time, round again', () => {
     const books = roomThing('books');
     expect(nextLine(books, 0)).not.toBe(nextLine(books, 1));

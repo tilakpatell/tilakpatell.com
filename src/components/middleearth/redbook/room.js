@@ -14,7 +14,14 @@ export const ROOM = [
   { id: 'hearth', name: 'The fire', act: 'stoke', sound: 'crackle', say: 'You stir the fire. Sparks go up the chimney, and the room grows warmer.' },
   { id: 'candles', name: 'The candles', act: 'snuff', sound: 'pop', say: 'A pinch, and the candle is out. Another, and it is lit again.' },
   { id: 'pipe', name: 'Bilbo’s pipe', act: 'rings', say: 'A pull of Old Toby, and a smoke ring sails up into the beams. Gandalf’s go through Bilbo’s.' },
-  { id: 'sting', name: 'Sting', act: 'draw', sound: 'clang', say: 'Bilbo’s little Elvish sword, found in a troll’s cave. Its blade shines blue when orcs are near.' },
+  {
+    id: 'sting',
+    name: 'Sting',
+    act: 'draw',
+    sound: 'clang',
+    // (drawn, then put back: the lines go in turn with it)
+    lines: ['Bilbo’s little Elvish sword, found in a troll’s cave. Drawn, its blade shines blue, as it does when orcs are near.', 'Back on its peg. The blue goes out of the blade, and the fire has the room again.'],
+  },
   { id: 'mithril', name: 'The mithril coat', act: 'glint', sound: 'ding', say: 'Light as a feather and as hard as dragon scales. Bilbo never said what it was worth: more than the Shire and everything in it.' },
   { id: 'lantern', name: 'The beam and its lantern', act: 'swing', sound: 'knock', say: 'The beam is low, the lantern swings. Gandalf always finds it with his head.' },
   {

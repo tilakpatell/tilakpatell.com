@@ -1,7 +1,8 @@
 // The Red Book’s look (components/worlds/looks.js): painted. Its pages are
 // card washed in watercolour and inked in code (./paint.js), the study’s
-// solids flat colours and painted canvases, under the house tone, with a
-// softer bloom than the house for the candles, the fire and the Eye.
+// solids painted in code with their relief and shine (./studyArt.js), under
+// the house tone, with a softer bloom than the house for the candles, the
+// fire, Sting and the Eye.
 
 export const LOOK = {
   art: 'painted',

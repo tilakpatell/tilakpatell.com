@@ -5,6 +5,7 @@
 // shows only as the vision rises; the moon-letters likewise, unlit.
 //
 //   createMats() → { uVision, card(map, opts), lit(opts), ghost(map), moon(map), glow(colour), dispose() }
+//   canvasMap(canvas, opts) → a colour texture; dataMap(canvas, opts) → a normal or roughness one
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial, SpriteNodeMaterial } from 'three/webgpu';
@@ -33,6 +34,15 @@ function glowTexture() {
 export function canvasMap(canvas, { repeat = false, aniso = 4 } = {}) {
   const t = new THREE.CanvasTexture(canvas);
   t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = aniso;
+  if (repeat) t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+// a map of numbers, not colours: a surface's relief (a normal map) or its roughness
+export function dataMap(canvas, { repeat = false, aniso = 4 } = {}) {
+  const t = new THREE.CanvasTexture(canvas);
+  t.colorSpace = THREE.NoColorSpace;
   t.anisotropy = aniso;
   if (repeat) t.wrapS = t.wrapT = THREE.RepeatWrapping;
   return t;
@@ -81,12 +91,23 @@ export function createMats() {
       m.opacityNode = t.a.mul(uVision);
       return keep(m);
     },
-    // a solid in the study: oak, wax, stone, leather
-    lit({ color = 0xffffff, map = null, roughness = 0.8, metalness = 0, emissive = null, side = THREE.FrontSide } = {}) {
+    // a solid in the study: oak, wax, stone, leather. `normalMap` its relief,
+    // `roughnessMap` where it shines (times `roughness`), `envMap` the room
+    // seen in it, for the metals
+    lit({ color = 0xffffff, map = null, roughness = 0.8, metalness = 0, emissive = null, side = THREE.FrontSide, normalMap = null, normalScale = 1, roughnessMap = null, envMap = null, envMapIntensity = 1 } = {}) {
       const m = new MeshStandardNodeMaterial({ roughness, metalness, side });
       const c = vec3(...new THREE.Color(color).toArray());
       m.colorNode = vec4(drain(map ? texture(map).rgb.mul(c) : c), 1);
       if (emissive) m.emissiveNode = vec3(...new THREE.Color(emissive).toArray());
+      if (normalMap) {
+        m.normalMap = normalMap;
+        m.normalScale.set(normalScale, normalScale);
+      }
+      if (roughnessMap) m.roughnessMap = roughnessMap;
+      if (envMap) {
+        m.envMap = envMap;
+        m.envMapIntensity = envMapIntensity;
+      }
       return keep(m);
     },
     // the soft shadow a standing card lays on its page (its opacity set as it stands)

@@ -21,20 +21,23 @@ function hash3(x, y, seed) {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
-// Value noise: n(x, y, period) in [0, 1], smooth, repeating every `period`
-// units in x and y (an integer; leave it out for no repeat).
+// Value noise: n(x, y, period, periodY) in [0, 1], smooth, repeating every
+// `period` units in x and `periodY` in y (integers, y's the same as x's
+// unless given; leave them out for no repeat). Two periods tile a texture
+// whose grain is long one way and fine the other, as wood's is.
 export function makeNoise(seed = 1) {
   const s = seed | 0;
-  return (x, y, period = 0) => {
+  return (x, y, period = 0, periodY = period) => {
     const xi = Math.floor(x);
     const yi = Math.floor(y);
     const fx = fade(x - xi);
     const fy = fade(y - yi);
     const p = period | 0;
+    const q = periodY | 0;
     const x0 = p ? wrap(xi, p) : xi;
-    const y0 = p ? wrap(yi, p) : yi;
+    const y0 = q ? wrap(yi, q) : yi;
     const x1 = p ? wrap(xi + 1, p) : xi + 1;
-    const y1 = p ? wrap(yi + 1, p) : yi + 1;
+    const y1 = q ? wrap(yi + 1, q) : yi + 1;
     const a = hash3(x0, y0, s);
     const b = hash3(x1, y0, s);
     const c = hash3(x0, y1, s);
@@ -44,14 +47,14 @@ export function makeNoise(seed = 1) {
 }
 
 // Octaves of noise, finer and fainter each time; still in [0, 1], and still
-// tiling when the period is an integer.
-export function fbm(noise, x, y, { period = 0, octaves = 4, gain = 0.5 } = {}) {
+// tiling when the periods are integers.
+export function fbm(noise, x, y, { period = 0, periodY = period, octaves = 4, gain = 0.5 } = {}) {
   let sum = 0;
   let amp = 1;
   let norm = 0;
   let f = 1;
   for (let o = 0; o < octaves; o++) {
-    sum += noise(x * f, y * f, period * f) * amp;
+    sum += noise(x * f, y * f, period * f, periodY * f) * amp;
     norm += amp;
     amp *= gain;
     f *= 2;

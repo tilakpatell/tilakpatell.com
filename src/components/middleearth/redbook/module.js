@@ -84,7 +84,7 @@ export default {
     const mats = createMats();
     const env = canvasMap(envArt(Math.round(512 * Math.max(0.5, size))));
     env.mapping = THREE.EquirectangularReflectionMapping;
-    const study = createStudy({ mats, tier, size, rt });
+    const study = createStudy({ mats, tier, size, rt, env });
     const book = createBook({ mats, size });
     const stoneArt = createPalantir({ mats, env });
     stoneArt.group.position.set(...STONE_AT);
@@ -646,7 +646,7 @@ export default {
         return view;
       },
       // (the checks’: open the book at a page at once, the Ring on or off, the stone up, a view)
-      set({ page, worn, stone: up, turning, view: v, ringHeld: rh, ringFire: rf, gaze } = {}) {
+      set({ page, worn, stone: up, turning, view: v, ringHeld: rh, ringFire: rf, gaze, aim, act } = {}) {
         frozen = false;
         if (turning) {
           const [from, to, t] = turning;
@@ -669,6 +669,9 @@ export default {
         if (v) setView(v);
         if (rh != null) world.holdRing(rh);
         if (rf) world.ringToFire();
+        // (the head turned, and a thing in the study touched)
+        if (aim) [look.yaw, look.pitch] = aim;
+        if (act) playRoom({ id: act, index: 0 });
         arrivalBurst = -1;
       },
       dispose() {
