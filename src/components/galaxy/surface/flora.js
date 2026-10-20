@@ -32,6 +32,7 @@
 
 import { REACH } from './terrain';
 import { gameRows } from './gameFlora';
+import { NATURE } from './nature';
 
 const PACK = 'kit:naturemega/';
 
@@ -47,6 +48,10 @@ const RINGS = { near: [4, 60], cover: [4, 160], mid: [20, 320], trees: [60, 560]
 const FLAT = 0.86; // (the ground's normal at least this upright: never on a cliff)
 const ABOVE = 0.4; // (metres over the water, where the world has some)
 const CLEAR = 25; // (metres a tree keeps from a place's flat)
+// The band round a place: 90 m wide past its flat, its cover one an 70 m²
+// and its mid one an 500 m², for the first four places past 150 m of the
+// landing (nearer, the landing's own rings reach it)
+const PLACE = { band: 90, cover: 70, mid: 500, skip: 150, most: 4 };
 
 // The kit's sizes, by family. Quaternius made its plants big (a flower
 // two metres tall, a clover a metre): scaled here so a grass clump comes to
@@ -72,6 +77,8 @@ const SIZE = [
   ['DeadTree_', [0.8, 1.3]],
   ['TwistedTree_', [0.8, 1.2]],
 ];
+// (the game's rocks, a metre or so as they come: knee-high to a man's height)
+const GAME_ROCK = [0.8, 2.4];
 const sizeOf = (name) => SIZE.find(([p]) => name.startsWith(p))?.[1] ?? [1, 1];
 
 // The kind a row stands in for when the kit won't load (the placer builds
@@ -123,15 +130,160 @@ export const BIOMES = {
     // (the kit painted its common bush's leaves autumn red: a meadow's are green)
     tint: { Leaves_TwistedTree: { recolour: '#587a34' } },
   },
-  // (filled a phase at a time: an empty biome lays nothing)
-  temperate: { near: [], cover: [], mid: [], trees: [] },
-  conifer: { near: [], cover: [], mid: [], trees: [] },
-  jungle: { near: [], cover: [], mid: [], trees: [] },
-  swamp: { near: [], cover: [], mid: [], trees: [] },
-  tropical: { near: [], cover: [], mid: [], trees: [] },
-  dry: { near: [], cover: [], mid: [], trees: [] },
-  ash: { near: [], cover: [], mid: [], trees: [] },
-  tundra: { near: [], cover: [], mid: [], trees: [] },
+  // (the rest as the living layer's design lists them, its table at
+  // docs/superpowers/specs/2026-10-09-galaxy-surfaces-living-layer-design.md:
+  // what each lays, band by band; a world tints them to its own ground. Their
+  // rocks are the game's scanned ones, nature.js, not the kit's faceted
+  // boulders: up close one of those beside a scanned wall shows the style
+  // clash the design warns of)
+  // Sorgan's woods, Tython's and Lah'mu's grass: ferns, clover and toadstools
+  // in the grass, big bushes and rocks, birches and pines
+  temperate: {
+    near: [
+      ['Clover_1', 0.35],
+      ['Fern_1', 0.35],
+      ['Mushroom_Common', 0.3],
+    ],
+    cover: [
+      ['Grass_Common_Short', 0.45],
+      ['Grass_Common_Tall', 0.35],
+      ['Pebble_Round_3', 0.2],
+    ],
+    mid: [
+      ['Bush_Large', 0.55],
+      [NATURE.rock, 0.45],
+    ],
+    trees: [
+      ['Birch_2', 0.5],
+      ['Pine_4', 0.5],
+    ],
+  },
+  // Endor's floor: ferns and toadstools, a dead tree here and there under the
+  // built redwoods
+  conifer: {
+    near: [
+      ['Mushroom_Common', 0.35],
+      ['Mushroom_RedCap', 0.25],
+      ['Plant_3', 0.4],
+    ],
+    cover: [
+      ['Fern_1', 0.5],
+      ['Fern_2', 0.3],
+      ['Pebble_Round_1', 0.2],
+    ],
+    mid: [
+      ['Bush_Large', 0.5],
+      [NATURE.rock, 0.5, [1, 2.8]],
+    ],
+    trees: [['DeadTree_3', 1]],
+    count: { trees: 40 },
+  },
+  // Yavin's and Morak's undergrowth: ferns and broad plants, long bushes,
+  // mossed rocks, a few twisted trees
+  jungle: {
+    near: [
+      ['Clover_2', 0.35],
+      ['Mushroom_Oyster', 0.25],
+      ['Plant_5', 0.4],
+    ],
+    cover: [
+      ['Fern_1', 0.3],
+      ['Plant_1_Big', 0.25],
+      ['Plant_2_Big', 0.25],
+      ['Plant_4', 0.2],
+    ],
+    mid: [
+      ['Bush_Long_1', 0.6],
+      [NATURE.rock, 0.4, [1, 2.8]],
+    ],
+    trees: [
+      ['TwistedTree_1', 0.5],
+      ['TwistedTree_3', 0.5],
+    ],
+    count: { trees: 60 },
+  },
+  // Dagobah's: fungus on the roots, low plants, dead and twisted trees
+  swamp: {
+    near: [
+      ['Mushroom_Laetiporus', 0.4],
+      ['Mushroom_Oyster', 0.6],
+    ],
+    cover: [
+      ['Plant_2', 0.4],
+      ['Plant_6', 0.3],
+      ['Fern_2', 0.3],
+    ],
+    mid: [[NATURE.stone, 1]],
+    trees: [
+      ['DeadTree_1', 0.5],
+      ['TwistedTree_2', 0.5],
+    ],
+    count: { trees: 60 },
+  },
+  // Scarif's and Pillio's shore: wispy grass, flowers, broad plants and
+  // flowering bushes (its palms are its trees)
+  tropical: {
+    near: [
+      ['Flower_7_Single', 0.5],
+      ['Pebble_Round_4', 0.5],
+    ],
+    cover: [
+      ['Grass_Wispy_Tall', 0.5],
+      ['Grass_Wispy_Short', 0.3],
+      ['Plant_1_Big', 0.2],
+    ],
+    mid: [['Bush_Common_Flowers', 1]],
+    trees: [],
+  },
+  // Tatooine's and Saleucami's scrub: pebbles, low scrub and dry tufts,
+  // rocks and boulders, no trees
+  dry: {
+    near: [
+      ['Pebble_Round_5', 0.4, [3, 6]],
+      ['Plant_7', 0.6, [2.5, 4]],
+    ],
+    cover: [
+      ['Plant_7_Big', 0.45, [2, 3.5]],
+      ['Grass_Wispy_Short', 0.35],
+      ['Pebble_Square_1', 0.2, [3, 6]],
+    ],
+    // (a scrub bush and the desert's mud rocks)
+    mid: [
+      ['Bush_Long_1', 0.55, [0.5, 0.9]],
+      [NATURE.mudrock, 0.45, [1, 2.8]],
+    ],
+    trees: [],
+    count: { cover: 1800 },
+    // (the scrub bush is the kit's long bush, its leaves the broad trees')
+    tint: { Leaves: { recolour: '#8a7c4e' }, Leaves_NormalTree: { recolour: '#7a6e44' }, Grass: { recolour: '#b4a070' }, PathRocks: { recolour: '#9a8a6a' } },
+  },
+  // Mustafar's and Sullust's: stones near black, the volcano's dark rocks,
+  // no plants
+  ash: {
+    near: [
+      ['Pebble_Square_2', 0.5, [3, 6]],
+      ['Pebble_Square_4', 0.5, [3, 6]],
+    ],
+    cover: [
+      ['Pebble_Square_1', 0.5, [3, 6]],
+      ['Pebble_Square_3', 0.5, [3, 6]],
+    ],
+    mid: [[NATURE.crater, 1]],
+    trees: [],
+    count: { cover: 900 },
+    tint: { PathRocks: { recolour: '#2c2926' } },
+  },
+  // Hoth's and Mygeeto's, and the grey yards, camps and burnt woods of
+  // Corellia, Fondor, Wobani, Eadu and Corvus: nothing green, outcrops of
+  // grey rock
+  // (no pebbles: on snow they read as dirt, and the design lays none where
+  // no ground shows)
+  tundra: {
+    near: [],
+    cover: [],
+    mid: [[NATURE.rock, 1, [1, 3]]],
+    trees: [],
+  },
   // Coruscant, Kamino, Bespin: no ground to grow on
   none: { near: [], cover: [], mid: [], trees: [] },
 };
@@ -149,7 +301,9 @@ export function floraRows(site) {
   const lay = (band, list, count, within, more = {}) => {
     for (const [name, share, scale] of list) {
       const n = Math.round(count * share * density);
-      if (n > 0) rows.push({ band, kind: kindOf(name), model: PACK + name, n, within, scale: scale ?? sizeOf(name), flat: FLAT, ...wet, ...more(name) });
+      // (a game's rock as it is, over the built rock: nature.js)
+      const game = name.startsWith('game:');
+      if (n > 0) rows.push({ band, kind: game ? 'rock' : kindOf(name), model: game ? name : PACK + name, n, within, scale: scale ?? (game ? GAME_ROCK : sizeOf(name)), flat: FLAT, ...wet, ...more(name) });
     }
   };
   // (the cover too low to throw a shadow worth its draws)
@@ -157,6 +311,18 @@ export function floraRows(site) {
   lay('cover', biome.near ?? [], count.cover * near, RINGS.near, () => ({ solid: false, shadow: false }));
   lay('cover', biome.cover, count.cover * (1 - near), RINGS.cover, () => ({ solid: false, shadow: false }));
   lay('mid', biome.mid, count.mid, RINGS.mid, () => ({ solid: true }));
+  // (and round each place out past the landing's rings, where its landmark
+  // stands: a band of the cover and the mid outside its flat, which the
+  // scene keeps clear, so a building stands in its world's ground and not
+  // on a bare patch)
+  for (const p of (site.places ?? []).filter((p) => Math.hypot(...p.at) > PLACE.skip).slice(0, PLACE.most)) {
+    const r0 = p.flat?.r ?? p.r * 0.6;
+    const within = [r0, r0 + PLACE.band];
+    const area = Math.PI * (within[1] ** 2 - r0 ** 2);
+    const at = { at: p.at };
+    lay('cover', biome.cover, area / PLACE.cover, within, () => ({ ...at, solid: false, shadow: false }));
+    lay('mid', biome.mid, area / PLACE.mid, within, () => ({ ...at, solid: true }));
+  }
   if (site.flora.trees !== false) {
     const within = [RINGS.trees[0], Math.min(RINGS.trees[1], reach)];
     lay('trees', biome.trees, count.trees, within, (name) => {
@@ -172,6 +338,9 @@ export function floraTint(site) {
   const biome = biomeOf(site);
   if (!biome) return null;
   const tint = { ...(biome.tint ?? {}), ...(site.flora.tint ?? {}) };
+  // (the pebbles, the kit's path stones, take a world's rock colour unless
+  // it gives them their own)
+  if (site.flora.tint?.Rocks && !site.flora.tint.PathRocks) tint.PathRocks = site.flora.tint.Rocks;
   return Object.keys(tint).length ? tint : null;
 }
 

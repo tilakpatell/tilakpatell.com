@@ -4,7 +4,7 @@
 // its episode’s moment. (sites/index.js has what a site is.)
 
 import { grove } from './stand';
-import { sky, palette, hostile, troops } from './outerKit';
+import { sky, palette, hostile, troops, NATURE } from './outerKit';
 
 // n spots evenly round a circle of radius r (a turn of `phase` first), each [x, z, yaw] facing the middle
 const ring = (n, r, phase = 0) =>
@@ -24,11 +24,12 @@ export const SITES = {
     weather: [{ kind: 'ash', count: 200 }],
     land: { at: [0, 0], yaw: 2.2 },
     places: [
-      { id: 'yards', name: 'The slipways', at: [250, 40], r: 80, flat: { r: 70 }, about: 'Hulls on the ways and cranes over them, droids working the night shift and the day shift too. Somewhere in here, a hyperspace ring is being built for someone who shouldn’t have one.', things: [{ kind: 'hangar', at: [0, 0], yaw: 1.6, opts: { w: 70, d: 40, h: 26 } }, { kind: 'works', at: [44, -36], yaw: 1 }, { kind: 'foundry', at: [-44, -30], yaw: 0.4, scale: 0.6 }, { kind: 'smoke', at: [44, -36], opts: { h: 80, n: 9, color: '#4a4440' } }, { kind: 'crates', at: [-20, 30] }] },
-      { id: 'coronet', name: 'Coronet City', at: [-220, -150], r: 70, flat: { r: 58 }, about: 'The capital: old stone and new towers, and spacers in every bar trading stories about the ships they flew out of here.', things: [{ kind: 'skyscraper', at: [0, 0], opts: { style: 0, h: 120, w: 20, seed: 31 } }, { kind: 'skyscraper', at: [32, 18], opts: { style: 2, h: 80, w: 16, seed: 32 } }, { kind: 'skyscraper', at: [-30, 22], opts: { style: 1, h: 100, w: 18, seed: 33 } }, { kind: 'plaza', at: [0, -30], opts: { w: 40, d: 24 } }, { kind: 'cantina', at: [-30, -24], yaw: 0.8 }] },
+      { id: 'yards', name: 'The slipways', at: [250, 40], r: 80, flat: { r: 70 }, about: 'Hulls on the ways and cranes over them, droids working the night shift and the day shift too. Somewhere in here, a hyperspace ring is being built for someone who shouldn’t have one.', things: [{ kind: 'coronettower', at: [0, -48], solid: false }, { kind: 'works', at: [50, -6], yaw: 1 }, { kind: 'smoke', at: [50, -6], opts: { h: 80, n: 9, color: '#4a4440' } }, { kind: 'crates', at: [-20, 30] }] },
+      { id: 'coronet', name: 'Coronet City', at: [-220, -150], r: 70, flat: { r: 58 }, about: 'The capital: old stone and new towers, and spacers in every bar trading stories about the ships they flew out of here.', things: [{ kind: 'coronetspire', at: [0, 10], yaw: 0.3 }, { kind: 'coronetspire', at: [44, 26], yaw: 1.2, scale: 0.6 }, { kind: 'coronetspire', at: [-40, 30], yaw: 2.6, scale: 0.75 }, { kind: 'plaza', at: [0, -30], opts: { w: 40, d: 24 } }, { kind: 'cantina', at: [-30, -24], yaw: 0.8 }] },
       { id: 'office', name: 'The yard office', at: [-120, 220], r: 40, flat: { r: 32 }, about: 'Where the yards keep their records: what was built, and who paid for it, and where it was delivered.', things: [{ kind: 'bunker', at: [0, 0], yaw: 4.4, opts: { w: 16, d: 10 } }, { kind: 'pad', at: [22, 10], opts: { r: 10 } }] },
     ],
-    scatter: [{ kind: 'rock', n: 40, within: [30, 560], scale: [0.6, 1.6], opts: { color: '#4a4642' } }],
+    scatter: [{ kind: 'rock', model: NATURE.stone, n: 50, within: [30, 560], scale: [0.6, 1.8], opts: { color: '#4a4642' } }],
+    flora: { biome: 'tundra' },
     things: [{ kind: 'barrels', at: [10, -10] }, { kind: 'crates', at: [-12, 10] }],
     life: [
       { kind: 'ahsoka', id: 'ahsoka', at: [-108, 210], still: true, face: 3.6, name: 'Ahsoka Tano', named: true, quest: ['records', 'droids'], says: ['I’m no Jedi.', 'Someone here built a hyperspace ring. I want to know who.'] },
@@ -55,11 +56,12 @@ export const SITES = {
     land: { at: [0, 0], yaw: 2.4 },
     places: [
       // (on the hilltop: the island in the ground's layers lifts it)
-      { id: 'stone', name: 'The seeing stone', at: [220, -160], r: 40, flat: { r: 22 }, about: 'A ring of standing stones round a flat rock on the hilltop, where a Jedi can call out to any other who will hear.', things: [...ring(8, 14, 0.2).map(([x, z, yaw]) => ({ kind: 'ruin', at: [x, z], yaw, scale: 0.6, opts: { seed: 30 } })), { kind: 'plinth', at: [0, 0], opts: { w: 6, d: 6, depth: 1, round: true } }] },
+      { id: 'stone', name: 'The seeing stone', at: [220, -160], r: 40, flat: { r: 30 }, about: 'A ring of standing stones round a flat rock on the hilltop, where a Jedi can call out to any other who will hear.', things: [{ kind: 'seeingstone', at: [0, 0], yaw: 0.2, sink: 5, solid: false }] },
       { id: 'temple', name: 'The temple ruins', at: [-210, 120], r: 50, flat: { r: 40 }, about: 'Older than the Jedi Order, from when the first of them came here to learn the Force: walls fallen into the grass, and steps up to nothing.', things: [{ kind: 'ruins', at: [0, 0], yaw: 0.8, opts: { seed: 11 } }, { kind: 'pillars', at: [18, -10], yaw: 1.4 }, { kind: 'statue', at: [-14, 12], opts: { h: 16 } }] },
       { id: 'landing', name: 'Where the Razor Crest stood', at: [60, 200], r: 36, flat: { r: 28 }, about: 'Where the Mandalorian set down his ship, before an Imperial cruiser turned it into a crater.', things: [{ kind: 'razorcrest', at: [0, 0], yaw: 2.1 }] },
     ],
-    scatter: [{ kind: 'rock', n: 90, within: [20, 560], scale: [0.6, 2.6], opts: { color: '#6a6a60' } }, { kind: 'tuft', n: 120, within: [6, 300], scale: [0.8, 1.4] }],
+    scatter: [{ kind: 'rock', model: NATURE.rock, n: 90, within: [20, 560], scale: [0.6, 2.8], opts: { color: '#6a6a60' } }],
+    flora: { biome: 'temperate', tint: { Rocks: { recolour: '#7a7a70' } } },
     things: [{ kind: 'crates', at: [10, 8] }],
     life: [
       { kind: 'mando', id: 'mando', at: [196, -140], still: true, face: 2.2, name: 'The Mandalorian', named: true, quest: 'tragedy', says: ['This is the Way.', 'He’s on the stone. Nobody touches him till he’s done.'] },
@@ -84,11 +86,11 @@ export const SITES = {
     land: { at: [0, 0], yaw: 0.4 },
     places: [
       { id: 'farm', name: 'Kuiil’s farm', at: [170, 120], r: 50, flat: { r: 40 }, about: 'An Ugnaught’s moisture farm, worked off a debt he paid years ago: vaporators, a shed for the speeder he rebuilt by hand, and the blurrgs in their pen.', things: [{ kind: 'homestead', at: [0, 0], yaw: 0.6 }, { kind: 'vaporator', at: [16, 10] }, { kind: 'vaporator', at: [-16, 12] }, { kind: 'vaporator', at: [10, -18] }, { kind: 'crates', at: [-10, -14] }] },
-      { id: 'compound', name: 'The Nikto compound', at: [-230, -160], r: 56, flat: { r: 46 }, about: 'Mercenaries guarding something small behind a wall of scrap: the bounty the Mandalorian came for, and nobody here knows what it is.', things: [{ kind: 'fortress', at: [0, 0], yaw: 0.4, scale: 0.3 }, { kind: 'barricade', at: [-24, 20], yaw: 0.4, opts: { len: 18 } }, { kind: 'barricade', at: [24, 20], yaw: 0.4, opts: { len: 18 } }, { kind: 'tent', at: [10, -18], opts: { r: 3.4, h: 2.8, sides: 6, color: '#6a5442' } }] },
+      { id: 'compound', name: 'The Nikto compound', at: [-230, -160], r: 56, flat: { r: 46 }, about: 'Mercenaries guarding something small behind a wall of scrap: the bounty the Mandalorian came for, and nobody here knows what it is.', things: [{ kind: 'niktocompound', at: [0, 0], yaw: 0.4, solid: false }] },
       { id: 'crawler', name: 'The Jawas’ sandcrawler', at: [-140, 230], r: 50, flat: { r: 40 }, about: 'Where the Jawas park their crawler and sell back what they took: the Razor Crest’s parts, for a price.', things: [{ kind: 'sandcrawler', at: [0, 0], yaw: 1.2 }, { kind: 'crates', at: [24, 10] }] },
       { id: 'cave', name: 'The Mudhorn’s cave', at: [300, -230], r: 40, about: 'A hollow in the cliff, a nest of hide and bone, and the Mudhorn that lives in it, who doesn’t want visitors.', things: grove(93, 10, 8, 32, ['needle'], [0.5, 0.9]) },
     ],
-    flora: { biome: 'none', game: 'badlands' },
+    flora: { biome: 'dry', game: 'badlands', tint: { Rocks: { recolour: '#9a7a5a' } } },
     things: [{ kind: 'razorcrest', at: [-20, -14], yaw: 0.8 }],
     life: [
       { kind: 'kuiil', id: 'kuiil', at: [176, 106], still: true, face: 3, name: 'Kuiil', named: true, quest: ['compound', 'parts'], says: ['I have spoken.', 'Your ship is in pieces, and the Jawas have the pieces.'] },
@@ -119,7 +121,8 @@ export const SITES = {
       { id: 'inn', name: 'The inn', at: [-150, -150], r: 40, flat: { r: 32 }, about: 'Where the Mandalorian ate chowder, and the Quarren tried to drown him for it.', things: [{ kind: 'cantina', at: [0, 0], yaw: 0.6 }, { kind: 'barrels', at: [14, 10] }] },
       { id: 'dock', name: 'The freighter dock', at: [-180, 180], r: 50, flat: { r: 40 }, about: 'Where an Imperial freighter took on weapons the Remnant shouldn’t have, and Bo-Katan’s Nite Owls came aboard to take them back.', things: [{ kind: 'dockingbay', at: [0, 0], opts: { r: 18, h: 7 } }, { kind: 'gr75', at: [0, 30], yaw: 1.4, scale: 0.4 }] },
     ],
-    scatter: [{ kind: 'reeds', n: 140, within: [30, 500], scale: [0.8, 1.6] }, { kind: 'rock', n: 50, within: [20, 500], scale: [0.6, 2], opts: { color: '#3a3c3a' } }],
+    scatter: [{ kind: 'reeds', n: 140, within: [30, 500], scale: [0.8, 1.6] }, { kind: 'rock', model: NATURE.rock, n: 60, within: [20, 500], scale: [0.6, 2.4], opts: { color: '#3a3c3a' } }],
+    flora: { biome: 'tundra', tint: { Rocks: { recolour: '#3a3c3a' } } },
     things: [{ kind: 'crates', at: [10, 8] }, { kind: 'barrel', at: [-8, 10] }],
     life: [
       { kind: 'bokatan', id: 'bokatan', at: [-170, 166], still: true, face: 3.4, name: 'Bo-Katan Kryze', named: true, quest: 'freighter', says: ['You’re a Child of the Watch, aren’t you?', 'We take the weapons. We take back Mandalore.'] },
@@ -143,16 +146,17 @@ export const SITES = {
     weather: [{ kind: 'ash', count: 700 }],
     land: { at: [0, 0], yaw: 0.9 },
     places: [
-      { id: 'calodan', name: 'Calodan', at: [250, 80], r: 80, flat: { r: 66 }, about: 'The city behind its walls, the forest burnt to the stumps round it to feed the magistrate’s works, and her guards on every gate.', things: [{ kind: 'palacegate', at: [0, -40], yaw: 0 }, { kind: 'barricade', at: [-34, -40], opts: { len: 24 } }, { kind: 'barricade', at: [34, -40], opts: { len: 24 } }, { kind: 'lookout', at: [-50, -44], opts: { h: 20 } }, { kind: 'lookout', at: [50, -44], opts: { h: 20 } }, { kind: 'plaza', at: [0, 20], opts: { w: 40, d: 30, fountain: true } }] },
+      { id: 'calodan', name: 'Calodan', at: [250, 80], r: 80, flat: { r: 66 }, about: 'The city behind its walls, the forest burnt to the stumps round it to feed the magistrate’s works, and her guards on every gate.', things: [{ kind: 'calodangate', at: [0, -40], yaw: Math.PI }, ...[[-36, 8, 1.57], [-36, 30, 1.57], [36, 8, -1.57], [36, 30, -1.57], [-30, 58, 2.4], [30, 58, -2.4]].map(([x, z, yaw], i) => ({ kind: 'calodanhouse', at: [x, z], yaw, scale: [1, 0.9, 1, 0.85, 0.95, 1][i] })), { kind: 'lookout', at: [-50, -44], opts: { h: 20 } }, { kind: 'lookout', at: [50, -44], opts: { h: 20 } }, { kind: 'plaza', at: [0, 20], opts: { w: 40, d: 30, fountain: true } }, { kind: 'calodanpagoda', at: [0, 46], yaw: Math.PI }] },
       { id: 'garden', name: 'The magistrate’s garden', at: [300, 170], r: 40, flat: { r: 30 }, about: 'The only green on Corvus: a garden walled in the city’s heart, where Morgan Elsbeth met Ahsoka with a staff of beskar.', things: [{ kind: 'jungletree', at: [0, 0] }, { kind: 'jungletree', at: [12, 10], scale: 0.8 }, { kind: 'pillars', at: [-14, 6], yaw: 1 }] },
       { id: 'forest', name: 'The burnt forest', at: [-200, -150], r: 60, about: 'Where Ahsoka Tano waited in the ash, and the magistrate’s men went out to find her and didn’t come back.', things: [...grove(95, 22, 6, 58, ['gnarltree', 'log'], [0.8, 1.6]), { kind: 'smoke', at: [10, 6], opts: { h: 40, n: 6, color: '#4a4846' } }] },
     ],
-    scatter: [{ kind: 'gnarltree', n: 160, within: [40, 620], scale: [0.8, 1.6], opts: { color: '#3a3836' } }, { kind: 'log', n: 60, within: [20, 500], scale: [0.6, 1.4] }],
+    scatter: [{ kind: 'gnarltree', n: 160, within: [40, 620], scale: [0.8, 1.6], opts: { color: '#3a3836' } }, { kind: 'log', model: NATURE.log, n: 60, within: [20, 500], scale: [0.7, 1.5] }, { kind: 'deadtree', model: 'kit:naturemega/DeadTree_2', n: 50, within: [60, 600], scale: [0.9, 1.3], clear: 25 }, { kind: 'deadtree', model: 'kit:naturemega/DeadTree_4', n: 40, within: [60, 600], scale: [0.9, 1.3], clear: 25 }],
+    flora: { biome: 'tundra', tint: { Bark_DeadTree: { recolour: '#2e2a28' } } },
     things: [{ kind: 'crates', at: [10, -8] }],
     life: [
       { kind: 'ahsoka', id: 'ahsoka', at: [-190, -140], still: true, face: 2.8, name: 'Ahsoka Tano', named: true, quest: 'magistrate', says: ['The Magistrate has been burning this world for her war.', 'Grogu? I can feel him. He’s been hidden a long time.'] },
       { kind: 'mando', at: [-178, -148], still: true, face: 3, name: 'The Mandalorian', says: ['Bo-Katan sent me.'] },
-      { kind: 'mercenary', at: [244, 40], still: true, face: 1, name: 'Lang', says: ['I’d think twice about it, friend.'] },
+      { kind: 'mercenary', at: [244, 22], still: true, face: 1, name: 'Lang', says: ['I’d think twice about it, friend.'] },
       { kind: 'civcity1', n: 4, at: [250, 80], spread: 30, roam: 12, speed: 0.6, name: 'Calodan villager', says: ['(They won’t meet your eyes. The guards are watching.)'] },
     ],
     quests: [
@@ -171,16 +175,17 @@ export const SITES = {
     weather: [{ kind: 'motes', count: 260 }],
     land: { at: [0, 0], yaw: 4.2 },
     places: [
-      { id: 'refinery', name: 'The refinery', at: [240, -140], r: 80, flat: { r: 66 }, about: 'Where the Empire, or what’s left of it, turns rhydonium into fuel: towers, tanks and a terminal in the officers’ mess with the Remnant’s records on it.', things: [{ kind: 'works', at: [0, 0], yaw: 2 }, { kind: 'foundry', at: [40, 30], yaw: 1, scale: 0.6 }, { kind: 'bunker', at: [-36, 26], yaw: 2, opts: { w: 18, d: 12 } }, { kind: 'turret', at: [-40, -30], yaw: 3, opts: { color: '#5e605c' } }, { kind: 'smoke', at: [0, 0], opts: { h: 70, n: 8, color: '#4a4844' } }] },
+      { id: 'refinery', name: 'The refinery', at: [240, -140], r: 80, flat: { r: 66 }, about: 'Where the Empire, or what’s left of it, turns rhydonium into fuel: towers, tanks and a terminal in the officers’ mess with the Remnant’s records on it.', things: [{ kind: 'morakrefinery', at: [24, -22], yaw: 0.4, scale: 0.7 }, { kind: 'bunker', at: [-36, 26], yaw: 2, opts: { w: 18, d: 12 } }, { kind: 'turret', at: [-40, -30], yaw: 3, opts: { color: '#5e605c' } }, { kind: 'smoke', at: [0, 0], opts: { h: 70, n: 8, color: '#4a4844' } }] },
       { id: 'road', name: 'The convoy road', at: [-60, 220], r: 50, flat: { r: 30 }, about: 'The road the juggernauts take out of the jungle, slow and careful: one wrong bump and a load of rhydonium goes up.', things: [{ kind: 'juggernaut', at: [0, 0], yaw: 1.2 }, { kind: 'crates', at: [14, -10] }] },
       { id: 'ridge', name: 'The pirates’ ridge', at: [-240, -60], r: 40, about: 'Where the pirates wait for the convoys, and where Mayfeld nearly lost the ride to the refinery.', things: grove(96, 10, 6, 34, ['jungletree'], [0.8, 1.4]) },
     ],
-    scatter: [{ kind: 'jungletree', n: 200, within: [40, 620], scale: [0.8, 1.6] }, { kind: 'fern', n: 140, within: [10, 400], scale: [0.8, 1.6], solid: false }, { kind: 'plant', n: 80, within: [10, 300], scale: [0.8, 1.4], solid: false }],
+    scatter: [{ kind: 'jungletree', n: 200, within: [40, 620], scale: [0.8, 1.6] }, { kind: 'fern', model: NATURE.bush, n: 120, within: [10, 400], scale: [0.8, 1.5], solid: false }, { kind: 'plant', model: NATURE.shrub, n: 120, within: [10, 300], scale: [1, 1.8], solid: false }],
+    flora: { biome: 'jungle' },
     things: [{ kind: 'crates', at: [-10, 8] }],
     life: [
       { kind: 'mercenary', id: 'mayfeld', at: [-48, 206], still: true, face: 3.4, name: 'Migs Mayfeld', named: true, quest: 'terminal', says: ['Everybody’s got a little Imperial in them.', 'We drive the juggernaut in, we walk out with the coordinates. Easy.'] },
       { kind: 'mando', at: [-36, 212], still: true, face: 3, name: 'The Mandalorian', says: ['I can’t take my helmet off. Not in front of people.'] },
-      { kind: 'stormtrooper', n: 4, at: [240, -140], spread: 40, roam: 16, speed: 1, name: 'Stormtrooper', says: ['Convoy’s late. Again.'] },
+      { kind: 'stormtrooper', n: 4, at: [216, -118], spread: 22, roam: 16, speed: 1, name: 'Stormtrooper', says: ['Convoy’s late. Again.'] },
       { kind: 'officer', at: [210, -116], still: true, face: 2, name: 'Valin Hess', says: ['Some say it’s freedom. Others say it’s chaos.'] },
     ],
     quests: [
@@ -200,7 +205,7 @@ export const SITES = {
     weather: [],
     land: { at: [0, 0], yaw: 3.2 },
     places: [
-      { id: 'palace', name: 'The Duchess’s palace', at: [240, -60], r: 70, flat: { r: 60 }, about: 'Pale stone and gardens: the seat of a government elected because nobody else wanted the job, where the Duchess holds court and the Captain keeps the peace.', things: [{ kind: 'skyscraper', at: [0, 0], opts: { style: 1, h: 70, w: 30, seed: 41 } }, { kind: 'plaza', at: [0, 40], opts: { w: 50, d: 30, fountain: true } }, { kind: 'statue', at: [-22, 40], opts: { h: 10 } }, { kind: 'statue', at: [22, 40], opts: { h: 10 } }] },
+      { id: 'palace', name: 'The Duchess’s palace', at: [240, -60], r: 70, flat: { r: 60 }, about: 'Pale stone and gardens: the seat of a government elected because nobody else wanted the job, where the Duchess holds court and the Captain keeps the peace.', things: [{ kind: 'plazirdome', at: [0, -14], scale: 0.7 }, { kind: 'plaza', at: [0, 40], opts: { w: 50, d: 30, fountain: true } }, { kind: 'statue', at: [-22, 40], opts: { h: 10 } }, { kind: 'statue', at: [22, 40], opts: { h: 10 } }] },
       { id: 'resistor', name: 'The Resistor', at: [-180, -160], r: 40, flat: { r: 32 }, about: 'A bar for droids, run by droids, and the one place on Plazir the droids say what they think.', things: [{ kind: 'club', at: [0, 0], yaw: 0.8 }, { kind: 'lamp', at: [12, 10], opts: { h: 4, light: '#ff7ad0' } }] },
       { id: 'docks', name: 'The droid docks', at: [-150, 220], r: 46, flat: { r: 38 }, about: 'Where the reprogrammed Separatist droids work the cargo, and where they started to go wrong.', things: [{ kind: 'dockingbay', at: [0, 0], opts: { r: 16, h: 6 } }, { kind: 'crates', at: [20, 10] }, { kind: 'crates', at: [-18, 12], yaw: 1 }] },
     ],
@@ -211,7 +216,7 @@ export const SITES = {
       { kind: 'villager', at: [250, -20], still: true, face: 3.4, name: 'Captain Bombardier', says: ['Everyone stays calm. That’s an order.'] },
       { kind: 'bokatan', at: [214, -24], still: true, face: 2.8, name: 'Bo-Katan Kryze', says: ['They want a favour. We want their help. Do the favour.'] },
       { kind: 'battledroid', n: 3, at: [-150, 220], spread: 18, roam: 10, speed: 0.8, name: 'Reprogrammed droid', says: ['I enjoy my work. I enjoy my work. I enjoy…'] },
-      { kind: 'civcity3', n: 4, at: [240, -60], spread: 40, roam: 14, speed: 0.6, name: 'Plazir citizen', says: ['Lovely weather. It’s always lovely weather. The dome sees to that.'] },
+      { kind: 'civcity3', n: 4, at: [240, -20], spread: 24, roam: 14, speed: 0.6, name: 'Plazir citizen', says: ['Lovely weather. It’s always lovely weather. The dome sees to that.'] },
     ],
     quests: [
       { id: 'droids', name: 'Guns for Hire', giver: 'duchess', intro: [['The Duchess', 'Some of our droids have gone wrong at the docks. Find out why, and fix it. Quietly.']], steps: [{ type: 'reach', at: [-180, -160], r: 24, text: 'Ask about it at the Resistor' }, { type: 'reach', at: [-150, 220], r: 30, text: 'Go to the droid docks' }, { type: 'shoot', tag: 'rogues', n: 5, text: 'Stop the droids that have gone wrong', spawn: { kind: 'battledroid', n: 5, at: [-140, 230], spread: 14, roam: 6, hp: 2, tag: 'rogues', hostile: hostile(38, 2.2, 6) } }], done: [['The Duchess', 'The commissioner, all along? How tiresome. Thank you.']] },
@@ -231,11 +236,12 @@ export const SITES = {
     weather: [],
     land: { at: [0, 0], yaw: 5.2 },
     places: [
-      { id: 'temple', name: 'The temple ruins', at: [220, -100], r: 60, flat: { r: 46 }, about: 'Walls and stairs of a people nobody remembers, and under the floor, a chamber the Jedi never found, with a map in it that goes to another galaxy.', things: [{ kind: 'ruins', at: [0, 0], yaw: 0.4, opts: { seed: 17 } }, { kind: 'pillars', at: [18, 14], yaw: 1.2 }, { kind: 'templestair', at: [-12, -16], yaw: 0.4 }, { kind: 'statue', at: [-24, 10], opts: { h: 18 } }] },
+      { id: 'temple', name: 'The temple ruins', at: [220, -100], r: 60, flat: { r: 46 }, about: 'Walls and stairs of a people nobody remembers, and under the floor, a chamber the Jedi never found, with a map in it that goes to another galaxy.', things: [...ring(6, 38, 0.5).map(([x, z, yaw], i) => ({ kind: 'seatosmonolith', at: [x, z], yaw, scale: [1, 0.8, 0.9, 1.1, 0.85, 0.95][i] }))] },
       { id: 'cliffs', name: 'The sea cliffs', at: [-280, 240], r: 46, about: 'Where the island falls into the sea, and the wind comes straight off the water at you.', things: grove(98, 8, 6, 36, ['needle'], [0.4, 0.8]) },
       { id: 'landing', name: 'The shuttle’s landing', at: [-140, -170], r: 40, flat: { r: 32 }, about: 'Where Baylan Skoll and Shin Hati set down, a step behind Ahsoka, as they would be all the way to Peridea.', things: [{ kind: 'mpad', at: [0, 0], opts: { r: 14 } }] },
     ],
-    scatter: [{ kind: 'rock', n: 80, within: [20, 460], scale: [0.6, 2.4], opts: { color: '#5a5a52' } }, { kind: 'tuft', n: 120, within: [6, 300], scale: [0.8, 1.4] }],
+    scatter: [{ kind: 'rock', model: NATURE.rock, n: 80, within: [20, 460], scale: [0.6, 2.6], opts: { color: '#5a5a52' } }],
+    flora: { biome: 'temperate', trees: false, tint: { Rocks: { recolour: '#5a5a52' } } },
     things: [{ kind: 'crates', at: [10, -8] }],
     life: [
       { kind: 'ahsoka', id: 'ahsoka', at: [200, -84], still: true, face: 3.2, name: 'Ahsoka Tano', named: true, quest: ['map', 'shin'], says: ['The map is here. I can feel it.', 'Huyang, keep the ship warm.'] },

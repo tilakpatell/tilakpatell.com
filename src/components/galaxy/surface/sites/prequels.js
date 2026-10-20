@@ -4,7 +4,7 @@
 // index.js has what a site is.)
 
 import { grove } from './stand';
-import { sky, palette, hostile } from './outerKit';
+import { sky, palette, hostile, NATURE } from './outerKit';
 
 // n spots evenly round a circle of radius r (a turn of `phase` first), each [x, z, yaw] facing the middle
 const ring = (n, r, phase = 0) =>
@@ -26,12 +26,12 @@ export const SITES = {
     land: { at: [0, 0], yaw: 0.6 },
     places: [
       // (the capital down the deepest sinkhole: a pit, its landing pads round the rim and a bridge across it)
-      { id: 'pau', name: 'Pau City', at: [250, 110], r: 90, pits: [{ at: [0, 0], r: 58, depth: 46 }], about: 'The capital, built down the walls of the deepest sinkhole, a landing platform on every level. General Grievous waited on the tenth.', things: [{ kind: 'skybridge', at: [0, 0], yaw: 0.3, opts: { len: 128, w: 5 } }, ...ring(5, 76, 0.4).map(([x, z, yaw]) => ({ kind: 'mpad', at: [x, z], yaw, opts: { r: 9 } })), { kind: 'lamp', at: [70, 20] }, { kind: 'crates', at: [64, -30] }] },
+      { id: 'pau', name: 'Pau City', at: [250, 110], r: 90, pits: [{ at: [0, 0], r: 58, depth: 46 }], about: 'The capital, built down the walls of the deepest sinkhole, a landing platform on every level. General Grievous waited on the tenth.', things: [{ kind: 'skybridge', at: [0, 0], yaw: 0.3, opts: { len: 128, w: 5 } }, ...ring(5, 76, 0.4).map(([x, z, yaw]) => ({ kind: 'mpad', at: [x, z], yaw, opts: { r: 9 } })), ...ring(5, 100, 1.03).slice(0, 3).map(([x, z, yaw], i) => ({ kind: 'pautower', at: [x, z], yaw, scale: [1, 0.85, 0.92][i] })), { kind: 'lamp', at: [70, 20] }, { kind: 'crates', at: [64, -30] }] },
       { id: 'pens', name: 'The varactyl pens', at: [-190, 150], r: 40, flat: { r: 34 }, about: 'Where the Pau’ans keep their mounts: varactyls, that run up sheer rock as if it were flat ground.', things: [{ kind: 'tent', at: [0, 0], opts: { r: 4, h: 3.4, sides: 6, color: '#7a6248' } }, { kind: 'tent', at: [12, 8], yaw: 1, opts: { r: 3, h: 3, sides: 6, color: '#86704e' } }, { kind: 'fire', at: [4, -6] }, { kind: 'crates', at: [-8, 6] }] },
       { id: 'command', name: 'The Separatist command post', at: [-160, -230], r: 46, flat: { r: 38 }, about: 'The Confederacy’s last headquarters before Mustafar: a bunker on the plateau, its guns on the sinkhole road.', things: [{ kind: 'bunker', at: [0, 0], yaw: 0.7, opts: { w: 18, d: 12 } }, { kind: 'turret', at: [16, 14], yaw: 2, opts: { color: '#8a7a64' } }, { kind: 'droidplatform', at: [-18, 8], yaw: 1.2 }, { kind: 'crates', at: [10, -14] }] },
       { id: 'rim', name: 'The windward rim', at: [80, -320], r: 40, about: 'The edge of the plateau, where the wind comes off the plains below and the rock is cut into fins.', things: grove(41, 9, 6, 36, ['needle'], [0.5, 0.9]) },
     ],
-    flora: { biome: 'none', game: 'badlands' },
+    flora: { biome: 'dry', game: 'badlands', tint: { Rocks: { recolour: '#a89c88' } } },
     things: [{ kind: 'crates', at: [-12, 8] }, { kind: 'barrel', at: [-9, 11], yaw: 0.4 }],
     life: [
       { kind: 'obiwan', id: 'kenobi', at: [232, 40], still: true, face: 2.6, name: 'Obi-Wan Kenobi', named: true, quest: 'grievous', says: ['Hello there.', 'The general’s on the tenth level. I’ll need the droids kept busy.'] },
@@ -57,12 +57,13 @@ export const SITES = {
     weather: [{ kind: 'snow', count: 900 }],
     land: { at: [0, 0], yaw: 2.4 },
     places: [
-      { id: 'towers', name: 'The crystal towers', at: [260, -80], r: 80, flat: { r: 64 }, about: 'The Muuns’ city: towers of the planet’s own crystal, grown up out of the ice, and glowing from inside where the power still runs.', things: [{ kind: 'skyscraper', at: [0, 0], opts: { style: 1, h: 160, w: 22, seed: 4 } }, { kind: 'skyscraper', at: [34, 22], opts: { style: 1, h: 120, w: 16, seed: 9 } }, { kind: 'skyscraper', at: [-30, 30], opts: { style: 1, h: 100, w: 14, seed: 13 } }, ...grove(72, 14, 40, 70, ['glassshard'], [1.4, 3.2])] },
+      { id: 'towers', name: 'The crystal towers', at: [260, -80], r: 80, flat: { r: 64 }, about: 'The Muuns’ city: towers of the planet’s own crystal, grown up out of the ice, and glowing from inside where the power still runs.', things: [{ kind: 'mygeetotower', at: [0, 0], yaw: 0.3 }, { kind: 'mygeetotower', at: [50, 34], yaw: 1.4, scale: 0.8 }, { kind: 'mygeetotower', at: [-44, 40], yaw: 2.2, scale: 0.66 }, ...grove(72, 14, 40, 70, ['glassshard'], [1.4, 3.2])] },
       { id: 'bridge', name: 'The broken bridge', at: [-60, -260], r: 50, flat: { r: 30 }, about: 'Where Ki-Adi-Mundi led the Galactic Marines across, and where his own men turned their guns on him.', things: [{ kind: 'skybridge', at: [0, 0], yaw: 1.1, opts: { len: 80, w: 7 } }, { kind: 'barricade', at: [-12, 18], yaw: 1.1, opts: { len: 12 } }, { kind: 'barricade', at: [14, -16], yaw: 1.1, opts: { len: 10 } }] },
       { id: 'vaults', name: 'The banking clan’s vaults', at: [-250, 120], r: 44, flat: { r: 36 }, about: 'The InterGalactic Banking Clan kept the Separatists’ money here, behind doors the clones were sent to open.', things: [{ kind: 'datavault', at: [0, 0], yaw: 0.6, opts: { hw: 10, hd: 22, h: 16 } }, ...grove(73, 8, 24, 40, ['glassshard'], [1.2, 2.4])] },
       { id: 'crags', name: 'The ice crags', at: [120, 300], r: 30, about: 'Shards of crystal as tall as a gunship, half buried in the ice. The wind sings through them.', things: grove(74, 12, 6, 30, ['glassshard'], [1.6, 3.6]) },
     ],
     scatter: [{ kind: 'glassshard', n: 140, within: [30, 620], scale: [0.8, 2.6], sink: 0.4, solid: 0.4 }, { kind: 'snowrock', n: 90, within: [20, 560], scale: [0.6, 2], sink: 0.4 }, { kind: 'iceblock', n: 24, at: [120, 300], within: [8, 70], scale: [1.4, 3], sink: 0.5 }, { kind: 'iceblock', n: 10, at: [-250, 120], within: [30, 60], scale: [1.2, 2.4], sink: 0.5 }],
+    flora: { biome: 'tundra', tint: { Rocks: { recolour: '#9aa6b4' } } },
     things: [{ kind: 'crates', at: [10, -12], opts: { color: '#6a7488' } }],
     life: [
       { kind: 'clone', id: 'bacara', at: [-52, -230], still: true, face: 3.4, name: 'Commander Bacara', named: true, quest: 'bridge', says: ['Galactic Marines, hold this line.', 'The bridge is ours by nightfall, General.'] },
@@ -87,10 +88,11 @@ export const SITES = {
     land: { at: [0, 0], yaw: 1.4 },
     places: [
       { id: 'grove', name: 'The fungus grove', at: [220, 160], r: 30, about: 'A clearing where the fungus grows thickest: domes and stalks taller than a house, in every colour the desert lacks. Stass Allie was riding through it when the order came.', things: grove(75, 6, 8, 26, ['karst'], [1.2, 2]) },
-      { id: 'crater', name: 'The crater city', at: [-200, -170], r: 60, flat: { r: 48 }, about: 'Saleucami’s towns are built in old craters, out of the wind: domed houses round a well.', things: [...ring(6, 26, 0.3).map(([x, z, yaw]) => ({ kind: 'adobe', at: [x, z], yaw, opts: { r: 5 } })), { kind: 'stall', at: [0, 8] }, { kind: 'vaporator', at: [-6, -4] }] },
+      { id: 'crater', name: 'The crater city', at: [-200, -170], r: 60, flat: { r: 48 }, about: 'Saleucami’s towns are built in old craters, out of the wind: domed houses round a well.', things: [...ring(5, 28, 0.3).map(([x, z, yaw], i) => ({ kind: 'lawquanefarm', at: [x, z], yaw, scale: [1, 0.85, 0.92, 1, 0.8][i] })), { kind: 'stall', at: [0, 8] }, { kind: 'vaporator', at: [-6, -4] }] },
       { id: 'scouts', name: 'The scouts’ camp', at: [-160, 220], r: 36, flat: { r: 28 }, about: 'Clone scouts camped with their bikes, out on the plain where the Separatists’ last droids hide.', things: [{ kind: 'tent', at: [0, 0], opts: { r: 3.4, h: 3, sides: 6, color: '#5a5e48' } }, { kind: 'speederbike', at: [8, 6], yaw: 1 }, { kind: 'speederbike', at: [10, -4], yaw: 1.4 }, { kind: 'crates', at: [-8, 4] }] },
     ],
-    scatter: [{ kind: 'fungus', n: 70, at: [220, 160], within: [10, 110], scale: [1.6, 3.8], solid: 0.5 }, { kind: 'fungus', n: 110, within: [40, 600], scale: [1, 3], solid: 0.5 }, { kind: 'rock', n: 50, within: [20, 560], scale: [0.6, 2], opts: { color: '#8a7458' } }],
+    scatter: [{ kind: 'fungus', n: 70, at: [220, 160], within: [10, 110], scale: [1.6, 3.8], solid: 0.5 }, { kind: 'fungus', n: 110, within: [40, 600], scale: [1, 3], solid: 0.5 }, { kind: 'rock', model: NATURE.mudrock, n: 70, within: [20, 560], scale: [0.8, 2.6], opts: { color: '#8a7458' } }, { kind: 'stones', model: NATURE.canyon, n: 90, within: [8, 360], scale: [0.5, 1.2], solid: false, opts: { color: '#8a7458' } }],
+    flora: { biome: 'dry', tint: { Rocks: { recolour: '#9a8262' } } },
     things: [{ kind: 'barrel', at: [12, 10] }],
     rides: [{ kind: 'speederbike', at: [14, -8], yaw: 1.6 }],
     life: [
@@ -114,11 +116,12 @@ export const SITES = {
     weather: [],
     land: { at: [0, 0], yaw: 3 },
     places: [
-      { id: 'bridgecity', name: 'The bridge city', at: [240, 60], r: 80, flat: { r: 56 }, about: 'A Neimoidian city hung from an arch of rock: halls and hangars on the span, and nothing under them but mist.', things: [{ kind: 'skybridge', at: [0, 0], yaw: 0.2, opts: { len: 140, w: 12 } }, { kind: 'needle', at: [-72, -14], scale: 2.6, opts: { color: '#5c5852', foot: '#4c4844' } }, { kind: 'needle', at: [72, 14], scale: 2.6, opts: { color: '#5c5852', foot: '#4c4844' } }, { kind: 'hangar', at: [0, 26], yaw: 0.2, opts: { w: 40, d: 28, h: 16 } }, { kind: 'skyscraper', at: [-20, -28], opts: { style: 3, h: 60, w: 16, seed: 5 } }] },
+      { id: 'bridgecity', name: 'The bridge city', at: [240, 60], r: 80, flat: { r: 56 }, about: 'A Neimoidian city hung from an arch of rock: halls and hangars on the span, and nothing under them but mist.', things: [{ kind: 'catobridge', at: [0, -16], yaw: 0.2, solid: false }] },
       { id: 'crash', name: 'Plo Koon’s crash', at: [-180, -200], r: 40, about: 'Where the Jedi Master’s starfighter came down, shot out of the sky by his own wingmen when Order 66 came.', things: [{ kind: 'probewreck', at: [0, 0], yaw: 0.8, scale: 1.4 }, { kind: 'wrecksmoke', at: [2, 0], opts: { h: 18 } }] },
-      { id: 'palace', name: 'The viceroy’s palace', at: [-220, 170], r: 50, flat: { r: 40 }, about: 'Nute Gunray’s seat on his homeworld, its treasury under it: the Federation’s wealth, and its droids standing over it.', things: [{ kind: 'skyscraper', at: [0, 0], opts: { style: 1, h: 90, w: 26, seed: 7 } }, { kind: 'plaza', at: [0, 34], opts: { w: 40, d: 24 } }, { kind: 'droidplatform', at: [26, 18], yaw: 2 }] },
+      { id: 'palace', name: 'The viceroy’s palace', at: [-220, 170], r: 50, flat: { r: 44 }, about: 'Nute Gunray’s seat on his homeworld, its treasury under it: the Federation’s wealth, and its droids standing over it.', things: [{ kind: 'catopalace', at: [0, -30] }, { kind: 'plaza', at: [0, 34], opts: { w: 40, d: 24 } }, { kind: 'droidplatform', at: [26, 18], yaw: 2 }] },
     ],
     scatter: [{ kind: 'karst', n: 60, within: [60, 600], scale: [2, 5], solid: 0.6 }, { kind: 'jungletree', n: 80, within: [40, 600], scale: [0.8, 1.4] }],
+    flora: { biome: 'temperate', trees: false, tint: { Rocks: { recolour: '#6a6658' } } },
     grass: { h: [0.3, 0.6], w: 0.05, root: '#3e4a2c', mid: '#5a6a3c', tip: '#8a9a5e', dry: '#8a8a5c', cover: 0.6, scale: 90, wind: 0.4 },
     things: [{ kind: 'crates', at: [-10, 10] }],
     life: [
@@ -144,11 +147,12 @@ export const SITES = {
     weather: [],
     land: { at: [0, 0], yaw: 1 },
     places: [
-      { id: 'station', name: 'The medical station', at: [230, 60], r: 60, flat: { r: 50 }, about: 'Where Padmé Amidala gave birth to the twins, and died. A white hall under the rock, and a hangar for the ships that came in secret.', things: [{ kind: 'hangar', at: [0, 0], yaw: 1.2, opts: { w: 44, d: 30, h: 14 } }, { kind: 'bunker', at: [30, 24], yaw: 1.2, opts: { w: 16, d: 12 } }, { kind: 'mpad', at: [-30, -22], opts: { r: 14 } }, { kind: 'lamp', at: [20, -16] }] },
+      { id: 'station', name: 'The medical station', at: [230, 60], r: 60, flat: { r: 50 }, about: 'Where Padmé Amidala gave birth to the twins, and died. A white hall under the rock, and a hangar for the ships that came in secret.', things: [{ kind: 'massabase', at: [14, 18], yaw: 1.2 }, { kind: 'mpad', at: [-30, -22], opts: { r: 14 } }, { kind: 'lamp', at: [20, -16] }] },
       { id: 'dig', name: 'The excavation', at: [-160, -170], r: 46, flat: { r: 32 }, about: 'The Polis Massans came to dig for the remains of their own lost homeworld: trenches, lamps and the finds laid out on tables.', things: [{ kind: 'tent', at: [0, 0], opts: { r: 4, h: 3, sides: 4, color: '#8a8478' } }, { kind: 'lamp', at: [8, 6] }, { kind: 'lamp', at: [-8, -6] }, { kind: 'crates', at: [10, -8] }, { kind: 'mining', at: [-22, 14], yaw: 1, scale: 0.4 }] },
       { id: 'crater', name: 'The great crater', at: [-150, 190], r: 50, about: 'Struck when the asteroid broke off its world. Nothing has moved in it since but the station’s survey droids.' },
     ],
-    scatter: [{ kind: 'rock', n: 120, within: [12, 600], scale: [0.4, 2.2], opts: { color: '#5a524a', sharp: 0.7 } }, { kind: 'stones', n: 80, within: [8, 300], scale: [0.6, 1.4], opts: { color: '#6a625a' } }],
+    scatter: [{ kind: 'rock', model: NATURE.rock, n: 120, within: [12, 600], scale: [0.5, 2.4], opts: { color: '#5a524a', sharp: 0.7 } }, { kind: 'stones', model: NATURE.stone, n: 80, within: [8, 300], scale: [0.6, 1.4], solid: false, opts: { color: '#6a625a' } }],
+    flora: { biome: 'tundra', tint: { Rocks: { recolour: '#6a625a' } } },
     things: [{ kind: 'crates', at: [12, -10], opts: { color: '#d8d4cc' } }],
     life: [
       { kind: 'droid', id: 'meddroid', at: [214, 44], still: true, face: 2, name: 'A medical droid', named: true, quest: 'supplies', says: ['The patient has lost the will to live.', 'Supplies are short. They always are, out here.'] },
@@ -174,8 +178,9 @@ export const SITES = {
     land: { at: [0, 0], yaw: 0.2 },
     places: [
       { id: 'course', name: 'The podrace course', at: [220, -120], r: 70, flat: { r: 56 }, about: 'The Malastare 100: grandstands on the hill, the start grid below, and a course that eats engines.', things: [{ kind: 'stall', at: [-20, -30] }, { kind: 'stall', at: [0, -34] }, { kind: 'stall', at: [20, -30] }, { kind: 'pillars', at: [0, 30], yaw: 0 }, { kind: 'podracer', at: [-10, 4], yaw: 1.6 }, { kind: 'podracer', at: [10, 4], yaw: 1.6 }] },
-      { id: 'works', name: 'The fuel works', at: [-240, -120], r: 56, flat: { r: 46 }, about: 'Malastare’s fuel, pumped out of the ground and sold to half the Republic. The Dugs run it, and run it hard.', things: [{ kind: 'works', at: [0, 0], yaw: 0.5 }, { kind: 'smoke', at: [6, -6], opts: { h: 70, n: 8, color: '#5a5650' } }, { kind: 'barrels', at: [24, 16] }] },
+      { id: 'works', name: 'The fuel works', at: [-240, -120], r: 56, flat: { r: 46 }, about: 'Malastare’s fuel, pumped out of the ground and sold to half the Republic. The Dugs run it, and run it hard.', things: [{ kind: 'malastareworks', at: [-28, 0], yaw: 0.5, scale: 0.8 }, { kind: 'barrels', at: [24, 16] }] },
       { id: 'village', name: 'The Dug village', at: [-120, 240], r: 46, flat: { r: 38 }, about: 'Round huts on the hillside, a market and a well. The Dugs walk on their hands and argue with them too.', things: [...ring(5, 18, 0.2).map(([x, z, yaw]) => ({ kind: 'adobe', at: [x, z], yaw, opts: { r: 4 } })), { kind: 'stall', at: [0, 0] }, { kind: 'fire', at: [6, -6] }] },
+      { id: 'palace', name: 'The Imperial palace', at: [280, 180], r: 60, flat: { r: 50 }, about: 'Where the Dug Council rules Malastare: black spires round one needle, lit amber at their foot, over the plain the Republic fought for.', things: [{ kind: 'dugpalace', at: [0, 0], yaw: 4.1 }] },
     ],
     flora: { biome: 'plains', trees: false },
     things: [{ kind: 'crates', at: [-10, 12] }, { kind: 'barrel', at: [-12, 14] }],

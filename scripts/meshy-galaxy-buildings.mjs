@@ -66,6 +66,7 @@ import { BUILDINGS as LIBRARY_LANE } from './meshy-galaxy-library.mjs';
 import { BUILDINGS as NEVARRO_LANE } from './meshy-galaxy-buildings-nevarro.mjs';
 import { BUILDINGS as AUDIT_LANE } from './meshy-galaxy-audit.mjs';
 import { BUILDINGS as ULTRA_LANE } from './meshy-galaxy-ultra.mjs';
+import { BUILDINGS as WORLDS_LANE } from './meshy-galaxy-worlds.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'public', 'models', 'galaxy', 'surface');
@@ -138,6 +139,8 @@ Object.assign(BUILDINGS, NEVARRO_LANE);
 // and the audit's remakes (scripts/meshy-galaxy-audit.mjs): last, so a kind
 // remade there takes over from its earlier lane's entry
 Object.assign(BUILDINGS, AUDIT_LANE);
+// and the new worlds' landmarks (scripts/meshy-galaxy-worlds.mjs)
+Object.assign(BUILDINGS, WORLDS_LANE);
 // and the ultra level's remakes (scripts/meshy-galaxy-ultra.mjs), last of all
 Object.assign(BUILDINGS, ULTRA_LANE);
 
@@ -304,6 +307,8 @@ async function inputs(n) {
 
 const steps = {
   async lift(names, s) {
+    // (every lift asked for first, then each waited for: Meshy makes them
+    // side by side)
     for (const n of pictured(names)) {
       s[n] ??= {};
       const raw = await pictures(n);
@@ -315,6 +320,10 @@ const steps = {
           s[n].lift[i] = result;
           await save(s);
         }
+      }
+    }
+    for (const n of pictured(names)) {
+      for (const i of s[n].lift.keys()) {
         const t = await wait('/v1/image-to-image', s[n].lift[i], `${n} lift ${i + 1}`);
         await download(t.image_urls[0], join(REVIEW, `${n}-lift${i ? `-${i + 1}` : ''}.png`));
         console.log(`lift     ${n.padEnd(13)} ${t.consumed_credits ?? '?'} credits`);
@@ -329,6 +338,8 @@ const steps = {
         s[n].image = result;
         await save(s);
       }
+    }
+    for (const n of prompted(names)) {
       const t = await wait('/v1/text-to-image', s[n].image, `${n} image`);
       await download(t.image_urls[0], join(REVIEW, `${n}.png`));
       console.log(`image    ${n.padEnd(13)} ${t.consumed_credits} credits`);

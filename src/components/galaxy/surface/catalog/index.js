@@ -19,6 +19,7 @@ import { MODELS as people } from './people';
 import { MODELS as quaternius } from './quaternius';
 import { MODELS as rebels } from './rebels';
 import { MODELS as three } from './three';
+import { MODELS as worlds } from './worlds';
 
 // Every surface model there is, by kind, with the group it came in with
 // (each group's catalogue is brought in by scripts/sketchfab-surface.mjs on
@@ -28,7 +29,7 @@ import { MODELS as three } from './three';
 // Sketchfab model; bf2017 and lane V's bf2017vehicles last, so a 2017 kind
 // takes over from both; the drop's object library after them, its kinds
 // `game:<name>` and so never the same as another's: catalog/bf2017-library.js)
-export const GROUPS = { common, desert, ice, forest, core, clonewars, edge, people, outer, rebels, three, quaternius, made, fill, library, audit, battlefront, bf2017, bf2017vehicles, library2017 };
+export const GROUPS = { common, desert, ice, forest, core, clonewars, edge, people, outer, rebels, three, quaternius, made, fill, library, audit, worlds, battlefront, bf2017, bf2017vehicles, library2017 };
 export const SURFACE_MODELS = Object.fromEntries(Object.entries(GROUPS).flatMap(([group, models]) => Object.entries(models).map(([kind, m]) => [kind, { ...m, group }])));
 export const surfaceUrl = (kind) => `/models/galaxy/surface/${kind}.glb`;
 export const surfaceLodUrl = (kind) => `/models/galaxy/surface/${kind}.lod1.glb`;

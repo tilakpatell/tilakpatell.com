@@ -10,7 +10,7 @@
 // game's maps and the films. (sites/index.js has what a site is.)
 
 import { grove } from './stand';
-import { sky, palette, hostile, troops } from './outerKit';
+import { sky, palette, hostile, troops, NATURE } from './outerKit';
 
 // n spots evenly round a circle of radius r (a turn of `phase` first), each [x, z, yaw] facing the middle
 const ring = (n, r, phase = 0) =>
@@ -80,8 +80,10 @@ export const SITES = {
       { id: 'grove', name: 'The great fungi', at: [220, 120], r: 30, about: 'A clearing among the biggest of Felucia’s fungus: caps wide as landing pads, stalks thick as towers, all of it glowing faintly at dusk.', things: grove(101, 6, 8, 26, ['cavetree'], [1.2, 2]) },
       { id: 'outpost', name: 'The 327th’s outpost', at: [-200, -150], r: 50, flat: { r: 40 }, about: 'Where Commander Bly’s clones held the line for General Aayla Secura, until the order came that ended it.', things: [{ kind: 'commandpost', at: [0, 0], yaw: 0.8 }, { kind: 'turret', at: [18, 14], yaw: 1, opts: { color: '#8a8a7a' } }, { kind: 'tent', at: [-14, 12], opts: { r: 3.4, h: 3, sides: 6, color: '#7a6a3a' } }, { kind: 'crates', at: [10, -14] }] },
       { id: 'pond', name: 'The sarlacc pond', at: [-120, 240], r: 40, about: 'Felucia’s sarlaccs live in its ponds as well as its sand: still water, and something under it that isn’t.', things: [{ kind: 'sarlacc', at: [0, 0], scale: 0.7 }] },
+      { id: 'farm', name: 'The nicillin farm', at: [150, -210], r: 40, flat: { r: 30 }, about: 'Where the farmers grow nicillin, the medicine half the galaxy wants: the farm that hired bounty hunters to hold it against Hondo Ohnaka’s pirates.', things: [{ kind: 'felwatertower', at: [0, 0], yaw: 0.6 }, { kind: 'felwatertower', at: [16, 10], yaw: 2, scale: 0.85 }, { kind: 'crates', at: [-8, 6] }] },
     ],
     scatter: [{ kind: 'fungus', n: 90, at: [220, 120], within: [10, 120], scale: [2, 4.4], solid: 0.5 }, { kind: 'fungus', n: 220, within: [30, 620], scale: [1.2, 4], solid: 0.5 }, { kind: 'jungletree', n: 90, within: [50, 620], scale: [0.8, 1.6] }, { kind: 'plant', n: 140, within: [6, 400], scale: [0.8, 1.6], solid: false }, { kind: 'fern', n: 120, within: [6, 400], scale: [0.8, 1.6], solid: false }],
+    flora: { biome: 'jungle', trees: false, tint: { Leaves: { recolour: '#8a9a34' }, Rocks: { recolour: '#6a5a3a' } } },
     things: [{ kind: 'crates', at: [10, 8] }],
     life: [
       { kind: 'clone', id: 'bly', at: [-186, -136], still: true, face: 3.4, name: 'Commander Bly', named: true, quest: 'separatists', says: ['327th Star Corps, hold the outpost.', 'The general’s out ahead. As usual.'] },
@@ -106,11 +108,12 @@ export const SITES = {
     weather: [{ kind: 'embers', count: 500 }, { kind: 'ash', count: 400 }],
     land: { at: [0, 0], yaw: 3.4 },
     places: [
-      { id: 'foundry', name: 'The SoroSuub foundry', at: [230, 60], r: 70, flat: { r: 56 }, about: 'Where the Sullustans pour the metal the Empire buys by the shipload: crucibles over the lava, machines that never stop, and stormtroopers watching the workers.', things: [{ kind: 'foundry', at: [0, 0], yaw: 1.2, scale: 0.7 }, { kind: 'game', model: SULLUST.bucket, at: [24, 18], yaw: 0.4 }, { kind: 'game', model: SULLUST.machine, at: [-22, 16], yaw: 2 }, { kind: 'game', model: SULLUST.container, at: [18, -24], yaw: 1 }, { kind: 'game', model: SULLUST.container, at: [-18, -26], yaw: 2.6 }, { kind: 'smoke', at: [0, 0], opts: { h: 80, n: 9, color: '#2a2220' } }] },
+      { id: 'foundry', name: 'The SoroSuub foundry', at: [230, 60], r: 70, flat: { r: 56 }, about: 'Where the Sullustans pour the metal the Empire buys by the shipload: crucibles over the lava, machines that never stop, and stormtroopers watching the workers.', things: [{ kind: 'sullustfactory', at: [0, -46] }, { kind: 'game', model: SULLUST.bucket, at: [24, 18], yaw: 0.4 }, { kind: 'game', model: SULLUST.machine, at: [-22, 16], yaw: 2 }, { kind: 'game', model: SULLUST.container, at: [18, -24], yaw: 1 }, { kind: 'game', model: SULLUST.container, at: [-18, -26], yaw: 2.6 }, { kind: 'smoke', at: [0, 0], opts: { h: 80, n: 9, color: '#2a2220' } }] },
       { id: 'collector', name: 'The lava collectors', at: [-180, -160], r: 50, flat: { r: 30 }, about: 'Long arms out over the lava, drawing the heat off for the works: the same kind the Separatists built on Mustafar.', things: [{ kind: 'lavacollector', at: [0, 0], yaw: 0.8 }] },
       { id: 'crater', name: 'The crater’s rim', at: [-120, 240], r: 46, about: 'The edge of the old crater, black rock and yellow sulphur, and the whole works below you in the smoke.', things: [{ kind: 'game', model: SULLUST.crater, at: [0, 0], yaw: 0.2, scale: 1.4 }, { kind: 'game', model: SULLUST.crater, at: [14, 10], yaw: 2, scale: 1.1 }] },
     ],
-    scatter: [{ kind: 'basalt', n: 120, within: [20, 600], scale: [0.8, 2.6] }, { kind: 'lavacrack', n: 40, within: [40, 500], scale: [0.8, 1.6] }],
+    scatter: [{ kind: 'rock', model: NATURE.crater, n: 120, within: [20, 600], scale: [0.6, 2.8], opts: { color: '#2a2422', sharp: 0.7 } }, { kind: 'stones', model: NATURE.sulphur, n: 200, within: [8, 420], scale: [0.25, 0.8], solid: false, opts: { color: '#2e2624' } }, { kind: 'lavacrack', n: 40, within: [40, 500], scale: [0.8, 1.6] }],
+    flora: { biome: 'ash' },
     things: [{ kind: 'game', model: EMPIRE.box, at: [10, -10], yaw: 0.4 }],
     life: [
       { kind: 'sullustan', id: 'foreman', at: [214, 40], still: true, face: 2.2, name: 'A Sullustan foreman', named: true, quest: 'sabotage', says: ['The Empire pays in promises. We work for real.', '(He clicks his tongue twice: a Sullustan curse, a polite one.)'] },
@@ -134,19 +137,20 @@ export const SITES = {
     weather: [],
     land: { at: [0, 0], yaw: 0.8 },
     places: [
-      { id: 'observatory', name: 'The Emperor’s observatory', at: [260, 180], r: 50, flat: { r: 36 }, about: 'Hidden under the island’s hill: one of Palpatine’s observatories, where he watched the Unknown Regions, and kept what he found there.', things: [{ kind: 'bunker', at: [0, 0], yaw: 3.4, opts: { w: 18, d: 12 } }, { kind: 'datavault', at: [0, 20], yaw: 3.4, opts: { hw: 6, hd: 12, h: 8 } }, { kind: 'turret', at: [18, -14], yaw: 2.4 }] },
+      { id: 'observatory', name: 'The Emperor’s observatory', at: [260, 180], r: 50, flat: { r: 36 }, about: 'Hidden under the island’s hill: one of Palpatine’s observatories, where he watched the Unknown Regions, and kept what he found there.', things: [{ kind: 'pilliovault', at: [0, 0] }, { kind: 'turret', at: [18, -14], yaw: 2.4 }] },
       { id: 'beach', name: 'The white beach', at: [-60, -180], r: 50, about: 'Sand as white as flour, water clear to the bottom, and the shrimp the size of a man wading in the shallows.', things: [{ kind: 'palm', at: [0, 0] }, { kind: 'palm', at: [10, 8], yaw: 1 }, { kind: 'palm', at: [-12, 6], yaw: 2 }] },
       { id: 'cove', name: 'The western island', at: [-280, -120], r: 50, about: 'A low island across the shallows, where the Empire’s garrison keeps its boats.', things: [{ kind: 'pad', at: [0, 0], opts: { r: 12 } }, { kind: 'crates', at: [12, 8] }] },
     ],
-    scatter: [{ kind: 'palm', n: 70, within: [20, 360], scale: [0.8, 1.4] }, { kind: 'rock', n: 50, within: [20, 400], scale: [0.6, 2], opts: { color: '#8a8a78' } }, { kind: 'tuft', n: 120, within: [6, 280], scale: [0.8, 1.4], opts: { color: '#6a9a4a' } }],
+    scatter: [{ kind: 'palm', n: 70, within: [20, 360], scale: [0.8, 1.4] }, { kind: 'rock', model: NATURE.rock, n: 50, within: [20, 400], scale: [0.6, 2.2], opts: { color: '#8a8a78' } }],
+    flora: { biome: 'tropical' },
     things: [{ kind: 'crates', at: [10, 8] }],
     life: [
       { kind: 'officer', id: 'meeko', at: [14, 10], still: true, face: 2.8, name: 'Del Meeko', named: true, quest: 'observatory', says: ['The Emperor had his secrets here. I want to know what they were.', 'Watch the shrimp. They bite.'] },
       { kind: 'pillioshrimp', n: 4, at: [-60, -190], spread: 20, roam: 18, speed: 0.6, r: 0.8 },
-      { kind: 'stormtrooper', n: 3, at: [250, 170], spread: 16, roam: 8, speed: 1, name: 'Stormtrooper', says: ['Restricted area.'] },
+      { kind: 'stormtrooper', n: 3, at: [238, 162], spread: 10, roam: 8, speed: 1, name: 'Stormtrooper', says: ['Restricted area.'] },
     ],
     quests: [
-      { id: 'observatory', name: 'The observatory', giver: 'meeko', intro: [['Del Meeko', 'The observatory’s on the east island. Get past the guard and into the vault.']], steps: [{ type: 'reach', at: [236, 160], r: 26, text: 'Cross to the east island' }, { type: 'shoot', tag: 'guard', n: 5, text: 'Get past the observatory’s guard', spawn: troops('guard', 5, [250, 172]) }, { type: 'use', id: 'vault', at: [260, 196], r: 6, prompt: 'Open the vault', text: 'Open the observatory’s vault', end: [{ say: [[null, '(A holoprojector, and a map of stars no Imperial chart ever showed.)']] }] }], done: [['Del Meeko', 'So that’s what he was watching. The Unknown Regions.']] },
+      { id: 'observatory', name: 'The observatory', giver: 'meeko', intro: [['Del Meeko', 'The observatory’s on the east island. Get past the guard and into the vault.']], steps: [{ type: 'reach', at: [236, 160], r: 26, text: 'Cross to the east island' }, { type: 'shoot', tag: 'guard', n: 5, text: 'Get past the observatory’s guard', spawn: troops('guard', 5, [240, 166]) }, { type: 'use', id: 'vault', at: [260, 196], r: 6, prompt: 'Open the vault', text: 'Open the observatory’s vault', end: [{ say: [[null, '(A holoprojector, and a map of stars no Imperial chart ever showed.)']] }] }], done: [['Del Meeko', 'So that’s what he was watching. The Unknown Regions.']] },
     ],
     flyovers: [{ kind: 'tie', n: 1, metres: 7, alt: 120, speed: 110, every: 100 }],
   },
@@ -162,7 +166,7 @@ export const SITES = {
     weather: [],
     land: { at: [0, 0], yaw: 2 },
     places: [
-      { id: 'capital', name: 'The capital', at: [240, -80], r: 80, flat: { r: 66 }, about: 'White towers stepped up the valley side, gardens on every terrace, and a garrison that never had to fire a shot. Iden Versio grew up here.', things: [{ kind: 'skyscraper', at: [0, 0], opts: { style: 1, h: 110, w: 22, seed: 51 } }, { kind: 'skyscraper', at: [30, 20], opts: { style: 2, h: 70, w: 16, seed: 52 } }, { kind: 'skyscraper', at: [-30, 18], opts: { style: 1, h: 80, w: 18, seed: 53 } }, { kind: 'plaza', at: [0, 40], opts: { w: 50, d: 26, fountain: true } }] },
+      { id: 'capital', name: 'The capital', at: [240, -80], r: 80, flat: { r: 66 }, about: 'White towers stepped up the valley side, gardens on every terrace, and a garrison that never had to fire a shot. Iden Versio grew up here.', things: [{ kind: 'kestrotower', at: [0, -14] }, { kind: 'plaza', at: [0, 40], opts: { w: 50, d: 26, fountain: true } }] },
       { id: 'falls', name: 'The falls', at: [-200, -150], r: 50, about: 'Where the river comes off the mountains in one long drop, and the mist off it waters the whole valley.', things: [{ kind: 'waterfall', at: [0, 0], yaw: 0.8, opts: { h: 40, w: 16, out: 8 } }] },
       { id: 'garrison', name: 'The garrison', at: [-120, 240], r: 46, flat: { r: 38 }, about: 'The Empire’s barracks on Vardos, proud of a world that never rebelled: until Operation Cinder came for it anyway.', things: [{ kind: 'bunker', at: [0, 0], yaw: 4.6, opts: { w: 20, d: 12 } }, { kind: 'turret', at: [18, 14], yaw: 4 }, { kind: 'pad', at: [-20, -14], opts: { r: 12 } }] },
     ],
@@ -170,7 +174,7 @@ export const SITES = {
     things: [{ kind: 'crates', at: [10, -8] }],
     life: [
       { kind: 'officer', id: 'versio', at: [226, -50], still: true, face: 2.6, name: 'Admiral Garrick Versio', named: true, quest: 'cinder', says: ['Vardos has always been loyal.', 'The Emperor’s orders stand. Even now.'] },
-      { kind: 'civcity1', n: 5, at: [240, -80], spread: 40, roam: 14, speed: 0.6, name: 'Vardos citizen', says: ['Those satellites over the city. What are they for?'] },
+      { kind: 'civcity1', n: 5, at: [240, -42], spread: 24, roam: 14, speed: 0.6, name: 'Vardos citizen', says: ['Those satellites over the city. What are they for?'] },
       { kind: 'stormtrooper', n: 3, at: [-120, 240], spread: 18, roam: 10, speed: 1, name: 'Stormtrooper', says: ['Vardos is loyal. Vardos is safe.'] },
     ],
     quests: [
@@ -189,11 +193,12 @@ export const SITES = {
     weather: [{ kind: 'ash', count: 160 }],
     land: { at: [0, 0], yaw: 4 },
     places: [
-      { id: 'slipway', name: 'The slipway', at: [260, 40], r: 80, flat: { r: 70 }, about: 'Where the Star Destroyers are built: a trench longer than a city street, gantries along it, and the hull overhead taking shape a plate at a time.', things: [{ kind: 'hangar', at: [0, 0], yaw: 1.6, opts: { w: 80, d: 44, h: 30 } }, { kind: 'works', at: [50, 40], yaw: 1 }, { kind: 'game', model: EMPIRE.container, at: [-40, 30], yaw: 0.2 }, { kind: 'game', model: EMPIRE.container, at: [-40, 46], yaw: 0.2 }, { kind: 'smoke', at: [50, 40], opts: { h: 70, n: 8, color: '#3e3a36' } }] },
-      { id: 'yardcity', name: 'The yard city', at: [-220, -140], r: 70, flat: { r: 58 }, about: 'Where the yard workers live: towers, canteens, a cantina where nobody talks about what they’re building.', things: [{ kind: 'skyscraper', at: [0, 0], opts: { style: 2, h: 90, w: 18, seed: 61 } }, { kind: 'skyscraper', at: [30, 20], opts: { style: 0, h: 110, w: 18, seed: 62 } }, { kind: 'cantina', at: [-24, 24], yaw: 1 }] },
+      { id: 'slipway', name: 'The slipway', at: [260, 40], r: 80, flat: { r: 70 }, about: 'Where the Star Destroyers are built: a trench longer than a city street, gantries along it, and the hull overhead taking shape a plate at a time.', things: [{ kind: 'fondorgantry', at: [-50, -10], yaw: 1.6 }, { kind: 'fondorgantry', at: [50, -10], yaw: 1.6 + Math.PI }, { kind: 'works', at: [50, 40], yaw: 1 }, { kind: 'game', model: EMPIRE.container, at: [-40, 30], yaw: 0.2 }, { kind: 'game', model: EMPIRE.container, at: [-40, 46], yaw: 0.2 }, { kind: 'smoke', at: [50, 40], opts: { h: 70, n: 8, color: '#3e3a36' } }] },
+      { id: 'yardcity', name: 'The yard city', at: [-220, -140], r: 70, flat: { r: 58 }, about: 'Where the yard workers live: towers, canteens, a cantina where nobody talks about what they’re building.', things: [{ kind: 'fondorblock', at: [0, 0], yaw: 0.4 }, { kind: 'fondorblock', at: [44, 26], yaw: 1.9, scale: 1.2 }, { kind: 'cantina', at: [-24, 24], yaw: 1 }] },
       { id: 'cranes', name: 'The crane field', at: [-120, 230], r: 50, flat: { r: 40 }, about: 'Where the hull plates wait to be lifted: stacks of them, and the cranes to lift them, and Ugnaughts to work the cranes.', things: [...ring(4, 22, 0.4).map(([x, z, yaw]) => ({ kind: 'game', model: EMPIRE.container, at: [x, z], yaw })), { kind: 'crates', at: [0, 0] }] },
     ],
-    scatter: [{ kind: 'rock', n: 40, within: [30, 560], scale: [0.6, 1.6], opts: { color: '#3e3c38' } }],
+    scatter: [{ kind: 'rock', model: NATURE.stone, n: 50, within: [30, 560], scale: [0.6, 1.8], opts: { color: '#3e3c38' } }],
+    flora: { biome: 'tundra' },
     skyships: [{ kind: 'destroyer', metres: 1600, at: [700, 520, 300], yaw: 1.6 }],
     things: [{ kind: 'game', model: EMPIRE.box, at: [12, -8], yaw: 0.8 }],
     life: [

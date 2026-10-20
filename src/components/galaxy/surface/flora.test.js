@@ -74,6 +74,35 @@ describe('floraRows: a world’s cover from its biome', () => {
     expect(floraRows(plains()).some((r) => 'above' in r)).toBe(false);
   });
 
+  it('lays a band of cover and mid round each place past the landing’s rings, outside its flat', () => {
+    const places = [
+      { id: 'far', at: [240, -60], r: 70, flat: { r: 50 } },
+      { id: 'unflat', at: [-200, 220], r: 50 },
+      { id: 'near', at: [60, 40], r: 30 },
+    ];
+    const rows = floraRows(plains({}, { places }));
+    const round = (id) => rows.filter((r) => r.at === places.find((p) => p.id === id).at);
+    expect(round('far').map((r) => r.band)).toEqual([...BIOMES.plains.cover.map(() => 'cover'), ...BIOMES.plains.mid.map(() => 'mid')]);
+    expect(round('far').every((r) => r.within[0] === 50 && r.within[1] === 140)).toBe(true);
+    expect(round('unflat').every((r) => r.within[0] === 30 && r.within[1] === 120)).toBe(true);
+    // (one an about 70 m² of cover, 500 of mid, over the band)
+    const area = Math.PI * (140 ** 2 - 50 ** 2);
+    expect(total(band(round('far'), 'cover'))).toBeCloseTo(area / 70, -1);
+    expect(total(band(round('far'), 'mid'))).toBeCloseTo(area / 500, -1);
+    expect(band(round('far'), 'cover').every((r) => r.solid === false && r.shadow === false)).toBe(true);
+    // (the landing's own rings reach a place near it)
+    expect(round('near')).toEqual([]);
+    // (the bands round the landing are as they were)
+    expect(total(band(rows.filter((r) => !r.at), 'cover'))).toBeCloseTo(2200, -2);
+  });
+
+  it('gives the pebbles a world’s rock colour unless it gives them their own', () => {
+    const rock = { recolour: '#6a625a' };
+    expect(floraTint({ flora: { biome: 'tundra', tint: { Rocks: rock } } }).PathRocks).toEqual(rock);
+    expect(floraTint({ flora: { biome: 'tundra', tint: { Rocks: rock, PathRocks: '#ffffff' } } }).PathRocks).toBe('#ffffff');
+    expect(floraTint({ flora: { biome: 'ash' } }).PathRocks).toEqual(BIOMES.ash.tint.PathRocks);
+  });
+
   it('stands in a built kind for each row, for when the kit won’t load', () => {
     const rows = floraRows(plains());
     const kindOf = (name) => rows.find((r) => r.model === `kit:naturemega/${name}`).kind;

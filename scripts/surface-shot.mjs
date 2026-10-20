@@ -1,11 +1,13 @@
-/* global window */
+/* global window, document */
 // Pictures of a galaxy world from where you choose to stand (the
 // checkpoints' before/after shots of the planets overhaul): each view is a
 // thing to look at, how far off to stand and from which side (degrees,
 // 0 = from +z), the player teleported there facing it, the world given a
 // few seconds to settle. Through the dev server (npx vite --port 5188).
 //
-//   OUT=lab/shots node scripts/surface-shot.mjs <world> <x,z,dist,deg[,label]> …
+//   OUT=lab/shots node scripts/surface-shot.mjs <world> <x,z,dist,deg[,label[,pitch]]> …
+//                  (pitch: the camera's, the scene's CAM.pitch range, below 0
+//                  to look up at something tall)
 //   QUALITY=low …  (the device tier)
 //   PHASE_WAIT=600000 …  (ms to wait for the landing: a level pack under
 //                  software rendering takes minutes)
@@ -69,6 +71,10 @@ await page.evaluate(() => window.__tpGuardOff?.());
 // (the floor's light baked, if the world has one: a shot before it lands is
 // the world without its shadows; one with no ground runs out the clock)
 await page.waitForFunction(() => Boolean(window.__surfaceScene?.api?.ground?.stats?.baked), null, { timeout: Number(process.env.BAKE_WAIT ?? 150000), polling: 1000 }).catch(() => {});
+// (the loading veil gone: its shader tuning can outlast the bake when the
+// machine is busy, and a shot through it is of the veil)
+const unveiled = () => page.waitForFunction(() => !document.querySelector('.loading-veil-card'), null, { timeout: Number(process.env.VEIL_WAIT ?? 300000), polling: 1000 }).catch(() => console.log('  (the loading veil still up: shot as it stands)'));
+await unveiled();
 if (process.env.WEATHER) console.log('weather', JSON.stringify(await page.evaluate((w) => window.__surfaceDo('weather', w, 0), process.env.WEATHER)));
 const zone = process.env.ZONE ?? null;
 let origin = [0, 0];
@@ -81,17 +87,18 @@ if (zone) {
   await page.waitForTimeout(4000);
 }
 for (const v of views) {
-  const [x0, z0, dist = 40, deg = 0, label] = v.split(',');
+  const [x0, z0, dist = 40, deg = 0, label, pitch] = v.split(',');
   const x = Number(x0) + origin[0];
   const z = Number(z0) + origin[1];
   const a = (Number(deg) * Math.PI) / 180;
   const sx = x + Math.sin(a) * Number(dist);
   const sz = z + Math.cos(a) * Number(dist);
   const yaw = Math.atan2(x - sx, z - sz);
-  await page.evaluate(([sx, sz, yaw]) => window.__surfaceDo('teleport', sx, sz, yaw), [sx, sz, yaw]);
+  await page.evaluate(([sx, sz, yaw, pitch]) => window.__surfaceDo('teleport', sx, sz, yaw, null, pitch), [sx, sz, yaw, pitch == null || pitch === '' ? null : Number(pitch)]);
   await page.waitForTimeout(7000);
   // (on a game level: its cells round the new spot streamed in, LEVEL_WAIT ms at most)
   await page.waitForFunction(() => window.__surfaceScene?.level?.()?.ready !== false, null, { timeout: Number(process.env.LEVEL_WAIT ?? 600000) }).catch(() => console.log('  (the level still streaming: shot as it stands)'));
+  await unveiled();
   const file = `${out}/${world}-${zone ? `${zone}-` : ''}${label ?? `${x0}_${z0}_${deg}`}-${quality}.png`;
   await page.screenshot({ path: file, timeout: 180000 });
   console.log(file);

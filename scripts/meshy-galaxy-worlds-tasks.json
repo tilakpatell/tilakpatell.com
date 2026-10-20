@@ -1,0 +1,164 @@
+{
+  "pautower": {
+    "lift": [
+      "01a157f1-825e-746a-9672-b319bc4f5e79"
+    ],
+    "model": "01a157f6-fa4f-74fe-81ae-b86aa8d09777"
+  },
+  "mygeetotower": {
+    "lift": [
+      "01a157f2-00b4-76e7-9531-3518ba855c30"
+    ],
+    "model": "01a157f6-fdb8-7145-88bb-cc9703b42828"
+  },
+  "calodanpagoda": {
+    "image": "01a157f3-29e8-7283-ba27-526bd3e82d2f",
+    "model": "01a157f6-e83e-77c1-802b-dce9a45f0989"
+  },
+  "wobanitower": {
+    "image": "01a157f3-2a3b-74e0-89f3-5b4025bf358e",
+    "model": "01a157f6-ebf3-74df-a98c-ce66958fa93a"
+  },
+  "plazirdome": {
+    "image": "01a157f3-2a9e-70ee-ae0c-cc3d047f44ef",
+    "model": "01a157f6-eefc-714e-8447-ff1b375004c9"
+  },
+  "pilliovault": {
+    "image": "01a157f3-2af6-7728-9c93-1bdfbc9a2018",
+    "model": "01a157f6-f2cb-74fb-8d84-0053d002fa30"
+  },
+  "fondorgantry": {
+    "image": "01a157f3-2b4f-7363-8943-5962b078fc77",
+    "model": "01a157f6-f67b-754e-a45f-58bf29f61fce"
+  },
+  "lawquanefarm": {
+    "lift": [
+      "01a157f4-4005-711a-b99c-9b6d6aa89916"
+    ],
+    "model": "01a157f7-00d6-7531-af72-808dfe80153f"
+  },
+  "catobridge": {
+    "lift": [
+      "01a157f4-42e8-7359-8cf0-ef6095529c4c"
+    ],
+    "model": "01a157f7-0470-7481-904d-21a27eb20848"
+  },
+  "massabase": {
+    "lift": [
+      "01a157f4-464c-7087-a02c-18750d4e2b34"
+    ],
+    "model": "01a157f7-0803-74a2-8964-811770ca561b"
+  },
+  "dugpalace": {
+    "lift": [
+      "01a157f4-4a2f-7292-8d2b-2561661f76c4"
+    ],
+    "model": "01a157f7-0b45-7613-89df-1c8a35a2cfec"
+  },
+  "kybertemple": {
+    "lift": [
+      "01a157f4-4d35-7236-aec9-b81373174557"
+    ],
+    "model": "01a157f7-0fff-7216-bd5c-8967ebf5424d"
+  },
+  "eadulab": {
+    "lift": [
+      "01a157f4-4f0d-7535-9876-8f1b9b798117"
+    ],
+    "model": "01a157f7-1328-7245-b621-f9a0295247b6"
+  },
+  "ersohome": {
+    "lift": [
+      "01a157f4-50cf-7479-b1e4-c5df48fc2e93"
+    ],
+    "model": "01a157f7-1662-7501-b3b2-3de3ddf92c8b"
+  },
+  "kafrenering": {
+    "lift": [
+      "01a157f4-5315-77c0-9cf9-3b6c845c0486"
+    ],
+    "model": "01a157f7-19c6-7693-a10f-f8a22e981a04"
+  },
+  "mantellpalace": {
+    "lift": [
+      "01a157f4-555e-71da-addb-cff490b402b9"
+    ],
+    "model": "01a157f7-1ca6-75ec-9ae8-71b24eda00c7"
+  },
+  "seeingstone": {
+    "lift": [
+      "01a157f4-5724-7051-95cc-7f1ba2d24034"
+    ],
+    "model": "01a157f7-1fb4-7032-88aa-fd1e87a6fcdb"
+  },
+  "niktocompound": {
+    "lift": [
+      "01a157f4-591a-752e-a9ac-10e7338a3d2c"
+    ],
+    "model": "01a157f7-2320-7639-989b-6417f51dc21c"
+  },
+  "morakrefinery": {
+    "lift": [
+      "01a157f4-5aaf-73b5-9dfa-87f1fa2381e4"
+    ],
+    "model": "01a157f7-25f0-71ff-a28a-bf1b82259197"
+  },
+  "seatosmonolith": {
+    "lift": [
+      "01a157f4-5cd9-707f-86c3-6efb37b95537"
+    ],
+    "model": "01a157f7-2932-72bf-aa58-f2349a3a6f11"
+  },
+  "felwatertower": {
+    "lift": [
+      "01a157f4-5e55-74f8-a934-434dd8058f03"
+    ],
+    "model": "01a157f7-2cd1-727c-9e81-e824a238515e"
+  },
+  "sullustfactory": {
+    "lift": [
+      "01a157f4-5fb5-7257-8526-ce91b76bc541"
+    ],
+    "model": "01a157f7-2fd2-7338-aa7d-f3fa43a44207"
+  },
+  "kestrotower": {
+    "lift": [
+      "01a157f4-622a-7444-a2e8-d4641695863a"
+    ],
+    "model": "01a157f7-3360-7088-9d4a-aad455d8e7ba"
+  },
+  "coronettower": {
+    "lift": [
+      "01a157f4-63b1-7251-8c42-a37053a5f06d"
+    ],
+    "model": "01a157f7-3692-77a2-8bef-d63f5ac67c4c"
+  },
+  "calodanhouse": {
+    "image": "01a1583c-4946-774d-9a98-a1afc91914fe",
+    "model": "01a1583f-9c8f-778c-bd8b-ed03b1125850"
+  },
+  "calodangate": {
+    "image": "01a1583c-49a6-7580-bc9a-686e9c90296c",
+    "model": "01a1583f-a1a4-72bc-9271-67b0daf6e6d5"
+  },
+  "fondorblock": {
+    "image": "01a1583c-4a07-7363-8769-579cba063d8c",
+    "model": "01a1583f-a5fc-71fe-9d03-e2eb796bef28"
+  },
+  "catopalace": {
+    "lift": [
+      "01a1583d-71d4-7099-bbdd-2cd805bf4638"
+    ],
+    "model": "01a1583f-ae1b-7517-be4f-e1350604da24"
+  },
+  "coronetspire": {
+    "lift": [
+      "01a1583d-743b-7433-bbab-0e14940f9bf1"
+    ],
+    "model": "01a1583f-b1e0-70ec-9935-635004b2aefb"
+  },
+  "malastareworks": {
+    "image": "01a1583e-99bf-7090-9748-dcf69732c0c6",
+    "model": "01a1583f-aa0b-7450-87bf-64b3e47aa74f"
+  }
+}
