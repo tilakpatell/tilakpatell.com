@@ -181,7 +181,7 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
         n.searchUntil = 0;
         // (one who's spotted him on his own says so: RmWorld's word and sound)
         if (!hunting && !h.always && !h.duel) {
-          state.emit?.('spotted', { area: id, who: n.id, text: h.spotted ?? words.spotted ?? 'They’ve seen you. Move.' });
+          state.emit?.('spotted', { area: id, who: n.id, name: n.who ?? n.name, text: h.spotted ?? words.spotted ?? 'They’ve seen you. Move.' });
           if (eyes) c.react?.('alert', { target: eyes });
         }
       }
@@ -198,7 +198,7 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
       look = eyes;
       if (h.duel && !n.duel) {
         n.duel = newDuel({ hp: h.duel.hp ?? 6, mortyHp: h.duel.mortyHp ?? 3 });
-        state.emit?.('duel', { area: id, who: n.id, hp: n.duel.hp, max: n.duel.max, mortyHp: n.duel.mortyHp, mortyMax: n.duel.mortyMax });
+        state.emit?.('duel', { area: id, who: n.id, name: n.who ?? n.name, hp: n.duel.hp, max: n.duel.max, mortyHp: n.duel.mortyHp, mortyMax: n.duel.mortyMax });
       }
       const face = faceM;
       const reach = h.duel ? STRIKE.reach : h.catchR;
@@ -212,13 +212,13 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
           n.struckAt = t;
           n.duel = strikeAt(n.duel);
           c.play?.('punch', { hold: 0.1 });
-          state.emit?.('strike', { area: id, who: n.id, hp: n.duel.hp, max: n.duel.max, mortyHp: n.duel.mortyHp, mortyMax: n.duel.mortyMax, beaten: n.duel.beaten, text: h.line ?? words.caught });
+          state.emit?.('strike', { area: id, who: n.id, name: n.who ?? n.name, hp: n.duel.hp, max: n.duel.max, mortyHp: n.duel.mortyHp, mortyMax: n.duel.mortyMax, beaten: n.duel.beaten, text: h.line ?? words.caught });
         }
       } else {
         turnTo(c, face, dt);
         if (!state.fading && t - (n.caughtAt ?? -1e9) > 3) {
           n.caughtAt = t;
-          state.emit?.('caught', { area: id, who: n.id, text: h.line ?? words.caught });
+          state.emit?.('caught', { area: id, who: n.id, name: n.who ?? n.name, text: h.line ?? words.caught });
           c.react?.('caught', { target: eyes });
         }
       }
@@ -294,7 +294,7 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
       n.barkAt = t;
       n.barkN = (n.barkN ?? -1) + 1;
       const text = ai.bark.lines[n.barkN % ai.bark.lines.length];
-      state.emit?.('bark', { area: id, who: n.who ?? n.id, text });
+      state.emit?.('bark', { area: id, who: n.id, name: n.who ?? n.name, text });
       c.react?.('say', { hold: lineHold(text), target: eyes });
       barked = true;
     }
@@ -343,10 +343,12 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
     }
   };
 
-  // a figure that does something: its brain, stepped by step()
-  const add = (c, { x, z, y = 0, face = 0, ai, id: nid = c.kind, who = null }) => {
+  // a figure that does something: its brain, stepped by step() (`who`: the
+  // name its own line gives it; `name`: its kind's, ./dimensions/names.js,
+  // so what it says is never captioned with its id)
+  const add = (c, { x, z, y = 0, face = 0, ai, id: nid = c.kind, who = null, name = null }) => {
     const seed = ((hash(`${id}:${nid}:${npcs.length}`) >>> 0) % 1000) / 1000;
-    const n = { c, ai, id: nid, who, home: { x, z }, y, y0: y, face, i: 0, waitTill: 0, hunting: false, key: npcs.length, seed, phase: seed, prev: null, looking: false, searchUntil: 0, talkUntil: 0, talkN: null, cheerAt: null, frame: { forward: new THREE.Vector3(0, 0, 1), up: UP } };
+    const n = { c, ai, id: nid, who, name, home: { x, z }, y, y0: y, face, i: 0, waitTill: 0, hunting: false, key: npcs.length, seed, phase: seed, prev: null, looking: false, searchUntil: 0, talkUntil: 0, talkN: null, cheerAt: null, frame: { forward: new THREE.Vector3(0, 0, 1), up: UP } };
     npcs.push(n);
     if (ai.clip) c.play?.(ai.clip, { loop: true });
     return n;

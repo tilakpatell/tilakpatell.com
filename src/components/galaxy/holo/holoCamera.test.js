@@ -5,7 +5,7 @@ import { FAR, HIGH, LOW, NEAR, WHOLE, ease, eye, fitTo, focus, lensOf, pan, pitc
 const near = (a, b, d = 1e-6) => a.every((v, i) => Math.abs(v - b[i]) < d);
 
 describe('the holotable’s camera', () => {
-  it('starts over the core, the north at the top, looking steeply down at the whole disc', () => {
+  it('starts over the core, the north at the top, looking straight down at the whole disc', () => {
     const p = WHOLE(16 / 9);
     // (at the bulged rings' middle: a little south of the core)
     expect(p.x).toBe(CORE[0]);
@@ -36,6 +36,33 @@ describe('the holotable’s camera', () => {
     const [cx, cy] = project(p, eye(p).look);
     expect(Math.abs(cx) + Math.abs(cy)).toBeLessThan(1e-9);
   });
+  it('shows the whole disc flat, from straight overhead: its near side drawn no bigger than its far', () => {
+    // (at 64° the near side loomed a third bigger than the far, and the names along the east and west lay on their sides)
+    for (const aspect of [16 / 9, 1108 / 900, 390 / 520]) {
+      const p = WHOLE(aspect);
+      expect(p.pitch).toBeCloseTo(Math.PI / 2, 2);
+      // (a grid square's width across the north rim and across the south, as drawn)
+      const across = (z) => project(p, [1, 0, z], { aspect })[0] - project(p, [-1, 0, z], { aspect })[0];
+      expect(across(10.6 * 1.18) / across(-10.6 * 0.82)).toBeCloseTo(1, 2);
+    }
+  });
+  it('fits the whole disc into a phone’s strip between its header and an opened sheet', () => {
+    // (390 × 844, a system picked: the header and the crumb down to 327 px, the sheet up from 432; fitted to a fifth of its
+    // frame at the least and from 90 squares off at the most, the disc spilled past the strip and Tatooine's YOU tag went unnamed)
+    const size = { w: 390, h: 844 };
+    const inset = { top: 327, bottom: 412 };
+    const f = lensOf(size, inset);
+    const p = WHOLE(f.aspect, undefined, f);
+    expect(p.dist).toBeLessThan(FAR);
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      const r = 10.6 * (1 + 0.18 * Math.sin(a));
+      const [, ny] = project(p, [Math.cos(a) * r, 0, Math.sin(a) * r], { aspect: f.aspect });
+      const y = ((1 - ny) / 2) * f.H - f.y;
+      expect(y).toBeGreaterThanOrEqual(inset.top);
+      expect(y).toBeLessThanOrEqual(size.h - inset.bottom);
+    }
+  });
   it('centres its frame on the part of the stage the panels leave free', () => {
     // (a side panel at the right: the frame wider by it, the stage its right part, so the frame's middle is the free part's)
     const side = lensOf({ w: 1440, h: 900 }, { right: 332 });
@@ -54,26 +81,28 @@ describe('the holotable’s camera', () => {
   it('looks at the point under the middle of the screen, and at nothing above the horizon', () => {
     const p = { ...WHOLE(), x: 14, z: 8 };
     expect(near(planeAt(p, 0, 0), [14, 8], 1e-9)).toBe(true);
-    expect(planeAt({ ...p, pitch: LOW }, 0, 5)).toBeNull();
+    // (a pose looking shallowly enough to see a horizon, which the hands never give the flat map)
+    expect(planeAt({ ...p, pitch: 0.4 }, 0, 5)).toBeNull();
   });
-  it('zooms about a point, closer and tilting toward the plane, held between its nearest and its furthest', () => {
+  it('zooms about a point, closer and as flat, held between its nearest and its furthest', () => {
     const p = WHOLE();
     const anchor = [16, 12];
     const z = zoomAt(p, 2, anchor);
     expect(z.dist).toBeCloseTo(p.dist / 2);
-    expect(z.pitch).toBeLessThan(p.pitch);
+    expect(z.pitch).toBe(p.pitch);
     // (its point slides half the way to the anchor: the anchor holds still on the screen)
     expect(near([z.x, z.z], [(p.x + anchor[0]) / 2, (p.z + anchor[1]) / 2], 1e-9)).toBe(true);
     expect(zoomAt(p, 1e6).dist).toBe(NEAR);
     expect(zoomAt(p, 1e-6).dist).toBe(FAR);
-    expect(pitchFor(NEAR)).toBeLessThan(pitchFor(30));
+    expect(pitchFor(NEAR)).toBe(pitchFor(30));
   });
-  it('turns round its point, and tips no further than its shallowest and steepest', () => {
+  it('turns round its point, and never tips the flat map', () => {
     const p = WHOLE();
     const t = turn(p, 0.5, 10);
     expect(t.yaw).toBeCloseTo(0.5);
     expect(t.pitch).toBe(HIGH);
     expect(turn(p, 0, -10).pitch).toBe(LOW);
+    expect(LOW).toBe(HIGH);
     expect([t.x, t.z]).toEqual([p.x, p.z]);
   });
   it('pans against the drag: the plane moves with the hand', () => {
@@ -102,8 +131,9 @@ describe('the holotable’s camera', () => {
     // (a narrower free part stands further off; one system alone, from its closest)
     expect(fitTo(p, ends, { aspect: 1108 / 900, fx: 0.5 }).dist).toBeGreaterThan(f.dist);
     expect(fitTo(p, [[17.6, 15.4]]).dist).toBeCloseTo(7);
-    // (a sector opened at a tilt of its own)
-    expect(fitTo(p, ends, { pitch: 0.84 }).pitch).toBeCloseTo(0.84);
+    // (a sector opened as flat as the rest, whatever tilt it's asked for)
+    expect(fitTo(p, ends).pitch).toBe(p.pitch);
+    expect(fitTo(p, ends, { pitch: 0.84 }).pitch).toBe(HIGH);
   });
   it('flies to a system, no further off than it asks, and eases there the short way round', () => {
     const p = WHOLE();

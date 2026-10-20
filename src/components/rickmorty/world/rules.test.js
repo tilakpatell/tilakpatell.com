@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { pushOut } from '../../middleearth/towns/walker';
 import { DESTINATIONS } from './dimensions/destinations';
+import { TOWN_TASKS } from './town/plan';
 import { createPress } from '../../../lib/press';
 import {
   AREAS,
@@ -191,8 +192,10 @@ const walk = (m, move, seconds, area = 'street', opts) => {
 
 // the built-in world, without the multiverse's destinations (./dimensions/destinations.test.js has those)
 const DEST = new Set(DESTINATIONS.map((d) => d.id));
-// (the rooms' own cast: not a destination's, and not the street's walkers, who roam and have no hotspot)
-const builtIn = (list) => list.filter((o) => !DEST.has(o.area) && !o.roams);
+// (the rooms' own cast: not a destination's, not the street's walkers, who
+// roam and have no hotspot, and not the town round the street's, which
+// ./town/plan.test.js has)
+const builtIn = (list) => list.filter((o) => !DEST.has(o.area) && !o.roams && !o.town);
 
 describe('C-137: the areas', () => {
   it('finds each area from its centre, and nothing between them', () => {
@@ -200,7 +203,9 @@ describe('C-137: the areas', () => {
     expect(areaAt(-200, 0)).toBe(null);
     expect(areaAt(200, 0)).toBe(null);
     expect(areaAt(-300, 50)).toBe(null);
-    expect(areaAt(0, 100)).toBe(null);
+    // (the town round the street runs out to its hedges, 150 m either side of the road)
+    expect(areaAt(0, 100)).toBe('street');
+    expect(areaAt(0, 200)).toBe(null);
     expect(areaAt(-300, 350)).toBe(null);
     expect(areaAt(-300, 450)).toBe(null);
     expect(areaAt(-300, 520)).toBe(null);
@@ -1418,7 +1423,8 @@ describe('C-137: the things to touch', () => {
   });
 
   it('lets Morty stand close enough to every hotspot, and walk there from the way in', () => {
-    for (const h of HOTSPOTS) {
+    // (the town round the street's, out to its hedges, ./town/plan.test.js walks to)
+    for (const h of HOTSPOTS.filter((o) => !o.town)) {
       let found = false;
       for (let dx = -h.r; dx <= h.r && !found; dx += 0.1) for (let dz = -h.r; dz <= h.r && !found; dz += 0.1) if (Math.hypot(dx, dz) <= h.r - 0.1 && free(h.area, h.x + dx, h.z + dz)) found = true;
       expect(found, `${h.id} can be stood at`).toBe(true);
@@ -1636,11 +1642,11 @@ describe('C-137: the President, the Federation, the Oval Office and Shoney’s',
     }
     expect(MOTORCADE.map((c) => c.id)).toEqual(['limo', 'president', 'secretservice']);
     // gone once he's met: not there, not in the way, nothing to talk to
-    const standing = (done) => peopleIn('street', done).filter((p) => !p.roams).map((p) => p.id);
+    const standing = (done) => peopleIn('street', done).filter((p) => !p.roams && !p.town).map((p) => p.id);
     expect(standing([])).toEqual(['president', 'secretservice', 'agent1', 'agent2', 'agent3']);
     expect(standing(['president'])).toEqual(['agent1', 'agent2', 'agent3']);
     // the walkers roam the sidewalks, and are never in the way
-    for (const p of peopleIn('street', []).filter((p) => p.roams)) {
+    for (const p of peopleIn('street', []).filter((p) => p.roams && !p.town)) {
       expect(p.ai?.wander?.length, p.id).toBeGreaterThan(1);
       for (const [, z] of p.ai.wander) expect(Math.abs(z) > ROAD.w / 2 && Math.abs(z) < ROAD.w / 2 + ROAD.sidewalk, `${p.id} on the sidewalk`).toBe(true);
       expect(solidIn('street', {}).some((c) => c.id === p.id), p.id).toBe(false);
@@ -1667,7 +1673,7 @@ describe('C-137: the President, the Federation, the Oval Office and Shoney’s',
   });
 
   it('posts three Federation agents on the sidewalks, each with a word to say, and in the way', () => {
-    const agents = PEOPLE.filter((p) => p.who === 'fedagent' && p.area === 'street');
+    const agents = PEOPLE.filter((p) => p.who === 'fedagent' && p.area === 'street' && !p.town);
     expect(agents.map((p) => p.id)).toEqual(['agent1', 'agent2', 'agent3']);
     for (const a of agents) {
       expect(Math.abs(a.z), a.id).toBeGreaterThan(ROAD.w / 2);
@@ -1731,6 +1737,25 @@ describe('C-137: the President, the Federation, the Oval Office and Shoney’s',
 });
 
 describe('C-137: the people', () => {
+  it('leaves no one in the way where a dial place’s crowd started, once they roam; who stands still stays solid', () => {
+    let roamers = 0;
+    for (const d of DESTINATIONS) {
+      // (a step off the middle: pushOut can't tell which way to push a point dead on a circle's centre)
+      const near = (e, o) => Math.hypot(o.x - e.x, o.z - e.z) < 2.5;
+      for (const e of d.extras) {
+        if (!e.roams) {
+          expect(free(d.id, e.x + 0.1, e.z), `${d.id}: ${e.kind} stands still`).toBe(false);
+          continue;
+        }
+        // (where nothing else stands near)
+        if (d.solids.some((o) => near(e, o)) || d.people.some((o) => near(e, o)) || d.extras.some((o) => o !== e && !o.roams && near(e, o))) continue;
+        roamers += 1;
+        expect(free(d.id, e.x + 0.1, e.z), `${d.id}: ${e.kind} roams`).toBe(true);
+      }
+    }
+    expect(roamers).toBeGreaterThan(10);
+  });
+
   // whose hotspot each is
   const HOTSPOT_OF = { jerry: 'jerry', beth: 'beth', summer: 'summer', rick: 'rick', teacher: 'quiz', drwong: 'therapy' };
   // the people behind a desk, across it from their hotspot
@@ -2199,7 +2224,7 @@ describe('C-137: the cruiser', () => {
 
 describe('C-137: what there is to do', () => {
   it('lists the seventeen things, in order, each with a name and a hint', () => {
-    expect(TASKS.filter((t) => !DESTINATIONS.some((d) => d.tasks.includes(t))).map((t) => t.id)).toEqual(['cable', 'butter', 'meeseeks', 'plumbus', 'portalpanic', 'quiz', 'fly', 'president', 'oval', 'diner', 'portal', 'basement', 'mindblowers', 'roy', 'roy55', 'rickall', 'wong']);
+    expect(TASKS.filter((t) => !DESTINATIONS.some((d) => d.tasks.includes(t)) && !TOWN_TASKS.includes(t)).map((t) => t.id)).toEqual(['cable', 'butter', 'meeseeks', 'plumbus', 'portalpanic', 'quiz', 'fly', 'president', 'oval', 'diner', 'portal', 'basement', 'mindblowers', 'roy', 'roy55', 'rickall', 'wong']);
     // meeting the President comes before his office, which his portal needs
     expect(TASKS.findIndex((t) => t.id === 'president')).toBeLessThan(TASKS.findIndex((t) => t.id === 'oval'));
     expect(TASKS.find((t) => t.id === 'basement')).toEqual({ id: 'basement', name: 'Find Rick’s secret lab', hint: 'There’s a hatch in the garage floor.' });
