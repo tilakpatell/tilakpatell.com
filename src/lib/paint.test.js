@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fbm, makeNoise, makeCells, smooth, mix, clamp01 } from './paint';
+import { fbm, fbmXY, makeNoise, makeNoiseXY, makeCells, smooth, mix, clamp01 } from './paint';
 
 describe('seeded, tiling noise for painted textures', () => {
   it('paints the same for the same seed, and differently for another', () => {
@@ -35,13 +35,15 @@ describe('seeded, tiling noise for painted textures', () => {
   });
 
   it('wraps at a period of its own each way, for grain long one way and fine the other', () => {
-    const n = makeNoise(13);
+    const n = makeNoiseXY(13);
     for (let t = 0; t < 3; t += 0.29) {
       expect(n(0, t * 10, 3, 32)).toBeCloseTo(n(3, t * 10, 3, 32), 10);
       expect(n(t, 0, 3, 32)).toBeCloseTo(n(t, 32, 3, 32), 10);
-      expect(fbm(n, t, 0, { period: 3, periodY: 32 })).toBeCloseTo(fbm(n, t, 32, { period: 3, periodY: 32 }), 10);
+      expect(fbmXY(n, t, 0, { px: 3, py: 32 })).toBeCloseTo(fbmXY(n, t, 32, { px: 3, py: 32 }), 10);
     }
     expect(n(0.5, 0.5, 3, 32)).not.toBeCloseTo(n(0.5, 3.5, 3, 32), 4);
+    // (and with one period both ways, it is the common noise)
+    expect(n(1.3, 2.7, 4, 4)).toBeCloseTo(makeNoise(13)(1.3, 2.7, 4), 10);
   });
 
   it('is smooth: nearby points are close', () => {

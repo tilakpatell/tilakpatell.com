@@ -13,7 +13,7 @@
 //   shelfArt(w, h), signArt(w, h), runesArt(w, h), rainArt(w) → a canvas;
 //   paneArt(w) → { map, glow }; reliefOf(canvas, strength) → its normal map
 
-import { clamp01, fbm, greyFromField, makeCanvas, makeCells, makeNoise, normalFromField, smooth } from '../../../lib/paint';
+import { clamp01, fbm, fbmXY, greyFromField, makeCanvas, makeCells, makeNoise, makeNoiseXY, normalFromField, smooth } from '../../../lib/paint';
 import { CARD, brush, oval, rand, shade, tint } from './brush';
 
 const TAU = Math.PI * 2;
@@ -63,8 +63,8 @@ const blend = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, 
 // a board) and nailed. It tiles
 // (`period`: the grain’s wander in u, v). `varnish` shines; bare wood is dull.
 export function wood(w, h, { tone = [66, 42, 26], seed = 17, rings = 7, boards = 0, seam: gap = 0.07, ends = 0, nails = false, upright = false, varnish = false, period = [2, 6], relief = true } = {}) {
-  const noise = makeNoise(seed);
-  const fibres = makeNoise(seed + 7);
+  const noise = makeNoiseXY(seed);
+  const fibres = makeNoiseXY(seed + 7);
   const [px, py] = period;
   // (each board’s own shade, grain, end joints and knot, worked out once)
   const plank = Array.from({ length: Math.max(1, boards) }, (_, id) => ({
@@ -90,9 +90,9 @@ export function wood(w, h, { tone = [66, 42, 26], seed = 17, rings = 7, boards =
         for (const at of plank[id].ends) seam = Math.min(seam, smooth(0, 0.06, Math.abs(wrapped(u - at, 1)) * across));
       }
       const b = plank[id];
-      const wander = fbm(noise, u * px, v * py, { period: px, periodY: py, octaves: 3 });
+      const wander = fbmXY(noise, u * px, v * py, { px, py, octaves: 3 });
       const ring = 0.5 + 0.5 * Math.sin(TAU * (bv * rings + wander * 2.4 + b.phase));
-      const fibre = fbm(fibres, u * px * 24, v * py * 3, { period: px * 24, periodY: py * 3, octaves: 2 });
+      const fibre = fbmXY(fibres, u * px * 24, v * py * 3, { px: px * 24, py: py * 3, octaves: 2 });
       const knot = b.knot >= 0 ? smooth(0.09, 0.0, Math.hypot(wrapped(u - b.knot, 1) * 6, (bv - 0.5) * 0.9)) : 0;
       const k = (0.68 + 0.24 * ring ** 1.6 + (fibre - 0.5) * 0.3) * b.shade * (1 - knot * 0.45);
       let c = scale(tone, k * (0.35 + 0.65 * seam));
