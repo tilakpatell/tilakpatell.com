@@ -75,6 +75,7 @@ import { seedsOf } from '../earn';
 import { ROOMS, newTrial, pick as pickRoom, retry as retryRooms } from './dimensions/vindicatorsRules';
 import { speak, stopSpeaking } from './shipVoice';
 import { ROOMS_SAY, SAY } from './say';
+import { gameGoal } from './dimensions/gameGoal';
 import { lineSaid } from './voicelines';
 import { preloadVoiced, sayVoiced, stopVoiced } from '../../../lib/voiced';
 import { useLooks } from '../wardrobe/useLooks';
@@ -227,16 +228,23 @@ const WAY = {
   annex: { arcade: 'arcade-door' },
 };
 const OUT = { upstairs: 'stairs-down', school: 'school-exit', annex: 'annex-portal', arcade: 'arcade-exit', basement: 'basement-ladder', mindblowers: 'mind-door', oval: 'oval-portal', diner: 'diner-exit', wong: 'wong-exit', ...Object.fromEntries(DESTINATIONS.map((d) => [d.id, `${d.id}-portal`])) };
-function goalOf(next, s, planet = null) {
+// (`act`: the world's api.act, for where a place's game has got to, and
+// `done` the tasks done: ./dimensions/gameGoal.js)
+function goalOf(next, s, planet = null, act = null, done = []) {
   if (s.flying) return null;
   // (on a planet with everything there done, or a clock running to get back out: its portal home; from C-137, a planet's not pointed at)
   if (!next || (planet && s.escape?.area === planet.id)) return planet ? PROMPT[`link:${planet.id}-portal`].link : null;
+  // (a place's clock running: its portal home, whatever's next)
+  if (s.escape?.area === s.area && PROMPT[`link:${s.area}-portal`]) return PROMPT[`link:${s.area}-portal`].link;
   if (!GOAL[next.id]) return null; // (a game the map has no spot for)
   const [to, key] = GOAL[next.id];
   if (isPlanet(to) && to !== s.area) return null;
   if (to === s.area) {
     if (key === 'cruiser') return { x: s.c.x, z: s.c.z };
-    const p = PROMPT[key];
+    // (a game under way: where it's got to, not where it began)
+    const d = destinationById(to);
+    const play = d && act && gameGoal(d, { used: s.used, done, power: d.power && act(to, 'power'), find: d.find && act(to, 'find'), deal: d.deal && act(to, 'deal') });
+    const p = (play && PROMPT[`spot:${play}`]) || PROMPT[key];
     return p.link ?? p.spot;
   }
   const id = WAY[s.area]?.[to] ?? OUT[s.area];
@@ -1805,7 +1813,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     if (++s.frame % 3 === 0) {
       // the place's people, for the map (stage.js's NPC layer says where they are)
       s.npcs = api.current?.act(s.area, 'npcs') ?? null;
-      drawMap(map.current, s, goalOf(markRef.current, s, planet) ?? (s.flying && !planet ? chaseGoal(s.chase) : null), s.t);
+      drawMap(map.current, s, goalOf(markRef.current, s, planet, (area, name) => api.current?.act(area, name), doneRef.current) ?? (s.flying && !planet ? chaseGoal(s.chase) : null), s.t);
       // (and a place's game, its meter: ./dimensions/stage.js's `meter`)
       const charge = api.current?.act(s.area, 'meter') ?? METER_OFF;
       chargeMeter.place(chargeRef.current, { on: charge.on, vitals: charge.vitals, arms: null });
