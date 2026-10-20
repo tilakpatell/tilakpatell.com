@@ -42,10 +42,10 @@ export const CHANGES = [
   // (Amon Hen: two go east)
   { stage: 'anduin', local: 140, remove: ['legolas', 'gimli', 'aragorn', 'boromir', 'merry', 'pippin'] },
   { stage: 'marshes', local: 40, add: ['gollum'], state: { gollum: 'leading' }, order: ['gollum', 'frodo', 'sam'] },
-  { stage: 'gorgoroth', local: 200, state: { sam: 'carrying', frodo: 'carried' } },
+  { stage: 'gorgoroth', local: 100, state: { sam: 'carrying', frodo: 'carried' } },
   // (the Cracks of Doom, then the two on the rock in the fire)
-  { stage: 'gorgoroth', local: 215, remove: ['gollum'], state: { sam: 'walking', frodo: 'walking' } },
-  { stage: 'gorgoroth', local: 230, state: { sam: 'lying', frodo: 'lying' } },
+  { stage: 'gorgoroth', local: 136, remove: ['gollum'], state: { sam: 'walking', frodo: 'walking' } },
+  { stage: 'gorgoroth', local: 156, state: { sam: 'lying', frodo: 'lying' } },
   { stage: 'minas-tirith', local: 0, add: ['merry', 'pippin', 'aragorn', 'arwen', 'gandalfwhite', 'legolas', 'gimli'], state: walking(['frodo', 'sam']), order: ['frodo', 'sam', 'merry', 'pippin', 'aragorn', 'arwen', 'gandalfwhite', 'legolas', 'gimli'] },
   {
     stage: 'havens',

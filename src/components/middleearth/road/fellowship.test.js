@@ -43,7 +43,7 @@ describe('the fellowship: who walks with you, and how', () => {
 
   it('Gollum leads from the Marshes; Sam carries Frodo on the Mountain; the two lie at its end', () => {
     expect(at('marshes', 40).find((x) => x.id === 'gollum').state).toBe('leading');
-    const carried = at('gorgoroth', 200);
+    const carried = at('gorgoroth', 100); // (the carry’s mark: stages/gorgoroth/beats.js)
     expect(carried.find((x) => x.id === 'sam').state).toBe('carrying');
     expect(carried.find((x) => x.id === 'frodo').state).toBe('carried');
     const lying = at('gorgoroth', last('gorgoroth'));
