@@ -35,4 +35,8 @@ describe('the Avengers page', () => {
     // with reduced motion there's no loop to play it: the page does it itself
     expect(titan).toMatch(/if \(status !== 'on' \|\| !v \|\| calm\.current\) return false;/);
   });
+  it('shows the locked snap as locked, as the interests card does', () => {
+    const css = readFileSync(new URL('../styles/lazy/avengers.css', import.meta.url), 'utf8');
+    expect(css).toContain('#thanos .btn[disabled] { opacity: 0.45; cursor: not-allowed; }');
+  });
 });
