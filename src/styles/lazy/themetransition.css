@@ -54,9 +54,40 @@
 .tt[data-id='bumblebee'] .tt-insignia { --tt-insignia: #f7c600; filter: drop-shadow(0 0 18px rgba(247, 198, 0, 0.4)); }
 .tt-insignia-dc { --tt-insignia: #8b5cf6; filter: drop-shadow(0 0 18px rgba(139, 92, 246, 0.45)); }
 
-/* the company colours: a clean wipe */
+/* a colour with no scene of its own: a clean wipe */
 .tt-wipe { position: absolute; inset: 0; background: var(--c); animation: tt-wipe var(--tt-len) cubic-bezier(0.7, 0, 0.2, 1) both; }
 .tt-wipe ~ .tt-words { text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35); }
+
+/* The companies: quiet. Their own dark (the brand bar's), their mark drawn
+   once in their light (CompanyMark.jsx), the name in white over it (12:1 or
+   more) and the role under it. */
+.tt[data-kind='company'] { --c: var(--saber); background: color-mix(in srgb, var(--nav-bg) 97%, transparent); }
+.tt[data-kind='company'][data-id='bose'] { --c: #e8ecef; background: rgb(19 19 23 / 0.97); }
+.tt[data-kind='company'] .tt-words blockquote { font-size: clamp(1.6rem, 1rem + 2.4vw, 2.5rem); letter-spacing: -0.015em; }
+.tt[data-kind='company'] figcaption { margin-top: 0.75rem; font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.8; }
+.tt-mark { display: block; width: 168px; height: 68px; margin: 0 auto 1.1rem; overflow: visible; fill: none; stroke: var(--c); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.tt-mark .tt-thin { stroke-width: 2; }
+.tt-mark .tt-faint { opacity: 0.45; }
+.tt-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: tt-draw calc(var(--tt-len) * 0.5) var(--ease-out) calc(var(--tt-len) * 0.12 + var(--i, 0) * 50ms) both; }
+.tt-draw.tt-late { animation-delay: calc(var(--tt-len) * 0.42); animation-duration: calc(var(--tt-len) * 0.2); }
+@keyframes tt-draw { to { stroke-dashoffset: 0; } }
+.tt-snap { opacity: 0; transform-box: fill-box; transform-origin: center; animation: tt-snap calc(var(--tt-len) * 0.22) var(--ease-spring) calc(var(--tt-len) * 0.1 + var(--i) * 60ms) both; }
+@keyframes tt-snap { from { opacity: 0; transform: scale(1.6); } to { opacity: 1; transform: none; } }
+.tt-ring-out { stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; animation: tt-ring-out calc(var(--tt-len) * 0.75) var(--ease-out) calc(var(--tt-len) * 0.08 + var(--i) * 140ms) both; }
+@keyframes tt-ring-out { 0% { opacity: 0.9; transform: scale(0.3); } 100% { opacity: 0; transform: scale(2.4); } }
+.tt-dot { fill: var(--c); stroke: none; opacity: 0; transform-box: fill-box; transform-origin: center; animation: tt-dot calc(var(--tt-len) * 0.25) var(--ease-spring) calc(var(--tt-len) * 0.35 + var(--i, 0) * 45ms) both; }
+.tt-dot.tt-lit { animation-delay: calc(var(--tt-len) * 0.62); }
+@keyframes tt-dot { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: none; } }
+.tt-sweep-arm { fill: color-mix(in srgb, var(--c) 45%, transparent); stroke: none; transform-box: view-box; transform-origin: 80px 32px; animation: tt-sweep var(--tt-len) linear both; }
+@keyframes tt-sweep { from { transform: rotate(-30deg); } to { transform: rotate(330deg); } }
+.tt-blip { animation-delay: calc(var(--tt-len) * 0.3); }
+
+/* the visitor's own colour: a wheel that turns and settles on theirs */
+.tt-wheel { position: relative; display: block; width: 104px; height: 104px; margin: 0 auto 1.2rem; border-radius: 50%; background: conic-gradient(#ff3b3b, #ffb13b, #f5ea3b, #3bdc6a, #3bc9ff, #5b5bff, #d43bff, #ff3b3b); animation: tt-wheel var(--tt-len) cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.tt-wheel::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px rgb(255 255 255 / 0.9), 0 0 40px color-mix(in srgb, var(--c) 60%, transparent); transform: scale(0); animation: tt-wheel-fill var(--tt-len) var(--ease-spring) both; }
+@keyframes tt-wheel { from { transform: rotate(-200deg) scale(0.7); } 55%, to { transform: none; } }
+@keyframes tt-wheel-fill { 0%, 45% { transform: scale(0); } 70%, 100% { transform: scale(0.82); } }
+.tt[data-kind='wheel'] figcaption { font-family: var(--font-mono); letter-spacing: 0.08em; }
 
 /* Middle-earth: each scene brings its own dark, centred on what it draws (a
    reaching inset, under the words), so the page can show through it at the end;

@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { audioContext } from '../../../lib/audio';
 import { use3D } from '../../../lib/gpu';
 import { local, prefersReducedMotion, useInView, useMediaQuery } from '../../../lib/hooks';
@@ -20,13 +21,15 @@ import { sayVoiced } from '../../../lib/voiced';
 import LoadingVeil from '../../worlds/LoadingVeil';
 import { useStage, useStageFrame } from '../hq/useStage';
 import compound from './module';
+import { HQ_HOME, backTarget, hqState, linkOf, placeOf } from './links';
 
 // The Avengers compound, the world: walk about the compound as Spider-Man,
 // and go into the buildings to play their games. Anyone else online here
 // shows as a hologram (as in the Middle-earth towns). The rules are in
 // ./rules.js, the drawing in ./scene.js; this is the walking, the HUD and the
-// doors. Each game opens over the page (./Place.jsx); leave it and you're
-// back outside its door. Without 3D, the compound is the drawing from the
+// doors. Each game opens over the page (./Place.jsx) at its own address
+// (./links.js: /avengers/gate and so on); Back, Esc or the button closes it,
+// and you're back outside its door. Without 3D, the compound is the drawing from the
 // air, and its pins open the games.
 
 const Place = lazy(() => import('./Place'));
@@ -67,7 +70,13 @@ export default function CompoundWorld({ onPortal }) {
   const [heist, setHeist] = useState(readHeist);
   const { unlocked } = useAchievements();
   const prog = progress(heist, unlocked);
-  const [inside, setInside] = useState(null);
+  // the building open is the route's (/avengers/<slug>), so a link opens it and Back closes it
+  const { place: slug } = useParams();
+  const inside = placeOf(slug);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const where = useRef(location);
+  where.current = location;
   const [gl, setGl] = useState('loading'); // loading | on | failed | lost
   const api = useRef(null);
 
@@ -81,23 +90,47 @@ export default function CompoundWorld({ onPortal }) {
     };
   }, []);
 
-  const enter = useCallback((id) => {
-    audioContext(); // in the key press or click, so the game can be heard
-    api.current?.fx('enter', { id });
-    setInside(id);
-  }, []);
+  // an address that is no building is the compound
+  useEffect(() => {
+    if (slug !== undefined && !inside) navigate(HQ_HOME, { replace: true });
+  }, [slug, inside, navigate]);
+  // out of a building however it happened (the browser's Back too), the stones
+  // read again: a half of the Soul Stone sends no tp:stones
+  useEffect(() => {
+    if (!inside) setHeist(readHeist());
+  }, [inside]);
+
+  const enter = useCallback(
+    (id) => {
+      const to = linkOf(id);
+      if (!to) return;
+      audioContext(); // in the key press or click, so the game can be heard
+      api.current?.fx('enter', { id });
+      navigate(to, { state: hqState });
+    },
+    [navigate],
+  );
+  // One way out: back in the page when a door here opened the game, else the
+  // compound in its place (./links.js backTarget). Once a move: a second Esc
+  // before the address has moved would go back twice, and off the page.
+  const leaving = useRef(null);
   const leave = useCallback(() => {
-    setInside(null);
-    setHeist(readHeist());
-  }, []);
-  // through the portal: out of the hangar (or out from under it) to Titan, down the page
+    const here = where.current;
+    if (!placeOf(here.pathname.split('/')[2]) || leaving.current === here.key) return;
+    leaving.current = here.key;
+    const to = backTarget(here);
+    if (to === -1) navigate(-1);
+    else navigate(to, { replace: true });
+  }, [navigate]);
+  // through the portal: out of the hangar (or out from under it) to Titan, down the
+  // page; only with the Space Stone, in every mode
   const portal = useCallback(() => {
+    if (!hasEarned('space')) return;
     audioContext();
-    setInside(null);
-    setHeist(readHeist());
+    leave();
     api.current?.fx('portal');
     onPortal?.();
-  }, [onPortal]);
+  }, [leave, onPortal]);
 
   const world = three.on && gl !== 'failed' && gl !== 'lost';
   return (
@@ -105,7 +138,7 @@ export default function CompoundWorld({ onPortal }) {
       {world ? <World api={api} prog={prog} inside={inside} enter={enter} portal={portal} gl={gl} setGl={setGl} /> : <Cards prog={prog} enter={enter} three={three} gl={gl} retry={() => setGl('loading')} />}
       {inside && (
         <Suspense fallback={null}>
-          <Place id={inside} onLeave={leave} onPortal={portal} />
+          <Place key={inside} id={inside} onLeave={leave} onPortal={portal} />
         </Suspense>
       )}
     </section>

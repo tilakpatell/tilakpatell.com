@@ -539,7 +539,7 @@ export const THINGS_TO_DO = [
   {
     id: 'thwip',
     title: 'Play Thwip!',
-    to: '/avengers',
+    to: '/avengers/gate',
     area: '/avengers',
     kind: 'game',
     audience: 'both',
