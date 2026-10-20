@@ -142,11 +142,11 @@ export const BIOMES = {
     // (streamed round you, living.js: per 100 m²)
     living: {
       near: [
-        ['Grass_Common_Short', 8, { clump: 8 }],
-        ['Grass_Wide_Short', 2],
-        ['Petal_3', 3],
-        ['Flower_2_Single', 1.5],
-        ['Clover_1', 1.2],
+        ['Grass_Common_Short', 14.4, { clump: 8, scale: [0.45, 0.75] }],
+        ['Grass_Wide_Short', 3.6],
+        ['Petal_3', 5.4],
+        ['Flower_2_Single', 2.7],
+        ['Clover_1', 2.2],
       ],
       cover: [
         ['Grass_Common_Short', 1.6],
@@ -200,11 +200,11 @@ export const BIOMES = {
     air: { flocks: { n: 3, count: 10 }, song: 0.7, pollen: '#f4f0d4' },
     living: {
       near: [
-        ['Grass_Common_Short', 7, { clump: 8 }],
-        ['Clover_1', 2],
-        ['Fern_2', 2],
-        ['Petal_3', 1.5],
-        ['Mushroom_Common', 0.3],
+        ['Grass_Common_Short', 12.6, { clump: 8, scale: [0.45, 0.75] }],
+        ['Clover_1', 3.6],
+        ['Fern_2', 3.6],
+        ['Petal_3', 2.7],
+        ['Mushroom_Common', 0.5],
       ],
       cover: [
         ['Grass_Common_Short', 1.5],
@@ -247,10 +247,10 @@ export const BIOMES = {
     air: { flocks: { n: 2, count: 8 }, song: 0.6 },
     living: {
       near: [
-        ['Fern_2', 4],
-        ['Fern_1', 2],
-        ['Plant_3', 1],
-        ['Mushroom_RedCap', 0.4],
+        ['Fern_2', 7.2],
+        ['Fern_1', 3.6],
+        ['Plant_3', 1.8],
+        ['Mushroom_RedCap', 0.7],
       ],
       cover: [
         ['Fern_1', 1.2],
@@ -290,10 +290,10 @@ export const BIOMES = {
     air: { flocks: { n: 2, count: 14, colour: '#3a2e24' }, song: 0.45, pollen: '#dcf5a8' },
     living: {
       near: [
-        ['Fern_2', 4],
-        ['Clover_2', 2],
-        ['Plant_5', 1.5],
-        ['Plant_4', 1],
+        ['Fern_2', 7.2],
+        ['Clover_2', 3.6],
+        ['Plant_5', 2.7],
+        ['Plant_4', 1.8],
       ],
       cover: [
         ['Fern_1', 1.2],
@@ -334,9 +334,9 @@ export const BIOMES = {
     air: { flocks: { n: 1, count: 6 }, song: 0.15 },
     living: {
       near: [
-        ['Plant_2', 2],
-        ['Plant_6', 2],
-        ['Fern_2', 2],
+        ['Plant_2', 3.6],
+        ['Plant_6', 3.6],
+        ['Fern_2', 3.6],
       ],
       cover: [
         ['Plant_2', 0.6],
@@ -369,9 +369,9 @@ export const BIOMES = {
     air: { flocks: { n: 3, count: 10, colour: '#e8e4dc', size: 0.7 }, song: 0.3 },
     living: {
       near: [
-        ['Grass_Wispy_Short', 4],
-        ['Grass_Common_Short', 4, { clump: 8 }],
-        ['Flower_7_Single', 1.5],
+        ['Grass_Wispy_Short', 7.2],
+        ['Grass_Common_Short', 7.2, { clump: 8, scale: [0.45, 0.75] }],
+        ['Flower_7_Single', 2.7],
       ],
       cover: [
         ['Grass_Wispy_Tall', 1],
@@ -409,9 +409,9 @@ export const BIOMES = {
     air: { flocks: { n: 1, count: 4, size: 1.1, height: 70, radius: 70 }, song: 0.12 },
     living: {
       near: [
-        ['Plant_7', 4, { scale: [2.5, 4] }],
-        ['Pebble_Round_5', 2, { scale: [3, 6] }],
-        ['Grass_Wispy_Short', 1.5, { on: 'any' }],
+        ['Plant_7', 7.2, { scale: [2.5, 4] }],
+        ['Pebble_Round_5', 3.6, { scale: [3, 6] }],
+        ['Grass_Wispy_Short', 2.7, { on: 'any' }],
       ],
       cover: [
         ['Plant_7', 1, { scale: [2.5, 4] }],
@@ -441,8 +441,8 @@ export const BIOMES = {
     tint: { PathRocks: { recolour: '#2c2926' } },
     living: {
       near: [
-        ['Pebble_Square_2', 3, { scale: [3, 6] }],
-        ['Pebble_Square_4', 3, { scale: [3, 6] }],
+        ['Pebble_Square_2', 5.4, { scale: [3, 6] }],
+        ['Pebble_Square_4', 5.4, { scale: [3, 6] }],
       ],
       cover: [
         ['Pebble_Square_2', 0.6, { scale: [3, 6] }],
