@@ -12,7 +12,7 @@ import { follow, onColor } from '../../../lib/three/hookNodes';
 import { sharpenMaterial } from '../../../lib/three/textures';
 import { RIM, lightRamp, meshyCastWith } from './meshyCastCore';
 
-export { BASE, FOLDERS, FOUND, MESHY, MESHY_ASSETS, RIGGED, SHARED_CLIPS, assetUrl, cullWithin, faceForward, heading } from './meshyCastCore';
+export { BASE, FOLDERS, FOUND, INK_TALLEST, MESHY, MESHY_ASSETS, RIGGED, SET_PIECES, SHARED_CLIPS, assetUrl, cullWithin, faceForward, heading } from './meshyCastCore';
 export { NO_CALLS, SEAT, animatorCalls, seedOf } from '../../../lib/three/figureCalls';
 
 const lit = (m) => {

@@ -279,6 +279,12 @@ export const RIGGED = new Set(['rick', 'morty', 'meeseeks', 'gromflomite', 'gazo
 // the models not in the cast's own folder, by name: where they are
 // (and Mortytown's two shopfronts, rickmorty/citadel/district.js)
 const MORTYTOWN_PROPS = ['mortymart', 'creepymorty'];
+// What the cast's line (`ink`) is never drawn round: the set pieces (the
+// buildings, the vehicles, the machines), which the show paints with its
+// backgrounds, and anything taller than INK_TALLEST metres, which a camera
+// can end up standing inside (the hull's back faces would fill the view)
+export const SET_PIECES = new Set(['birdperson-house', 'squanchy-house', 'frundleshouse', 'needful-shop', 'toasterhouse', 'mortymart', 'snakerocket', 'vindicators-ship', 'dirlycar', 'nuptiamachine', 'brainalyzer', 'omegadevice']);
+export const INK_TALLEST = 4;
 // the cast's figures found on Sketchfab rather than made, by their files
 export const FOUND = { krombopulos: '/games/meshy/krombopulos.glb' };
 export const FOLDERS = Object.fromEntries([...RICKALL_PROPS, ...FAMILY_PROPS, ...MORTYTOWN_PROPS, ...DEST_PROPS].map((a) => [a, '/models/c137/rm']));
@@ -442,7 +448,7 @@ function createMeshyCast({ kinds = MESHY, rigged = RIGGED, cull = false, ink = 0
     model.position.copy(src.offset).multiplyScalar(k);
     body.add(model);
     // (its line before the culling, so the line's culled with it)
-    const line = ink > 0 && inkHull ? inkHull(model, ink) : null;
+    const line = ink > 0 && inkHull && !SET_PIECES.has(spec.a) && spec.h <= INK_TALLEST ? inkHull(model, ink) : null;
     if (cull)
       model.traverse((o) => {
         if (o.isSkinnedMesh) cullWithin(o, group, spec.h);

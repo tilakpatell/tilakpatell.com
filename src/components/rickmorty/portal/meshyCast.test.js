@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { assetUrl, createMeshyCast, cullWithin, FOLDERS, heading } from './meshyCast';
+import { assetUrl, createMeshyCast, cullWithin, FOLDERS, heading, INK_TALLEST, SET_PIECES } from './meshyCast';
 import { meshyRig as fixtureRig, swingClip } from '../../../lib/three/meshyRig.fixture';
 
 // a skinned figure 1.8 m tall, as a Meshy rig arrives: its mesh under a
@@ -201,6 +201,18 @@ describe('a Meshy figure’s line', () => {
     for (const h of inks) h.material.addEventListener('dispose', () => (freed += 1));
     c.release();
     expect(freed).toBe(new Set(inks.map((h) => h.material)).size);
+    cast.dispose();
+  });
+
+  it('draws none round a set piece (a building, a vehicle, a machine) or anything taller than a storey', async () => {
+    const kinds = { house: { a: 'birdperson-house', h: 14 }, car: { a: 'dirlycar', h: 1.4 }, giant: { a: 'giant', h: 9 }, pickle: { a: 'pickle', h: 1.35 } };
+    const cast = createMeshyCast({ kinds, rigged: new Set(), loader: fakeLoader(), ink: 0.01 });
+    await cast.load(null, ['birdperson-house', 'dirlycar', 'giant', 'pickle']);
+    for (const k of ['house', 'car', 'giant']) expect(inksOf(cast.make(k)).inks, k).toHaveLength(0);
+    expect(inksOf(cast.make('pickle')).inks.length).toBeGreaterThan(0);
+    expect(SET_PIECES.has('birdperson-house')).toBe(true);
+    expect(SET_PIECES.has('pickle')).toBe(false);
+    expect(INK_TALLEST).toBe(4);
     cast.dispose();
   });
 

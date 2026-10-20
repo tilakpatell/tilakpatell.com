@@ -91,6 +91,29 @@ describe('the ghosts', () => {
     ghosts.dispose();
   });
 
+  it('hides a figure’s ink line instead of painting it pale, so a ghost is drawn once', () => {
+    const line = new THREE.MeshBasicMaterial({ side: THREE.BackSide });
+    let body = null;
+    let ink = null;
+    const ghosts = createGhosts({
+      make: () => {
+        const group = new THREE.Group();
+        body = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.6, 0.3), new THREE.MeshStandardMaterial());
+        ink = new THREE.Mesh(body.geometry, line);
+        ink.userData.ink = true;
+        group.add(body, ink);
+        return { group, top: 1.6 };
+      },
+      animate: () => {},
+    });
+    ghosts.update([{ id: 'abc', name: 'Sam', x: 0, z: 0, face: 0, moving: false }], 0, 1 / 60);
+    expect(body.material).not.toBe(line);
+    expect(body.material.transparent).toBe(true);
+    expect(ink.material).toBe(line);
+    expect(ink.visible).toBe(false);
+    ghosts.dispose();
+  });
+
   it('an older traveller’s message, without them, goes to the world as it came', () => {
     const got = [];
     const ghosts = createGhosts({ make, animate: (f, t, p) => got.push(p) });

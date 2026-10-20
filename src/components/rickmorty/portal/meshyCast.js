@@ -39,7 +39,7 @@ import { inkHull, rimToon } from '../../../lib/three/ink';
 import { sharpenMaterial } from '../../../lib/three/textures';
 import { RIM, lightRamp, meshyCastWith } from './meshyCastCore';
 
-export { BASE, FOLDERS, FOUND, MESHY, MESHY_ASSETS, RIGGED, SHARED_CLIPS, assetUrl, cullWithin, faceForward, heading } from './meshyCastCore';
+export { BASE, FOLDERS, FOUND, INK_TALLEST, MESHY, MESHY_ASSETS, RIGGED, SET_PIECES, SHARED_CLIPS, assetUrl, cullWithin, faceForward, heading } from './meshyCastCore';
 
 // The calls a figure on an animator answers (animatorCalls, NO_CALLS, seedOf,
 // SEAT) are lib/three/figureCalls.js's now, where every world's figures get

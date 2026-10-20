@@ -61,6 +61,16 @@ describe('inkHull', () => {
     expect(branch).toMatch(/transformedNormal/);
     expect(branch).toMatch(/#ifdef FLIP_SIDED\s*inkN = -inkN;\s*#endif/);
   });
+
+  it('draws nothing within a few hand-widths of the eye, so a camera inside a figure isn’t blacked out', () => {
+    const root = new THREE.Group();
+    root.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()));
+    const mat = inkHull(root, 0.02);
+    const shader = { vertexShader: THREE.ShaderLib.basic.vertexShader, fragmentShader: THREE.ShaderLib.basic.fragmentShader, uniforms: {} };
+    mat.onBeforeCompile(shader);
+    expect(shader.vertexShader).toMatch(/vInkZ = -mvPosition\.z;/);
+    expect(shader.fragmentShader).toMatch(/if \(vInkZ < 0\.6\d*\) discard;/);
+  });
 });
 
 describe('rimToon', () => {

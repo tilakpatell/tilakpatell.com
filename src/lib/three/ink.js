@@ -14,6 +14,7 @@
 import * as THREE from 'three';
 
 const INK = 0x1b1424;
+const NEAR = 0.6; // metres: no line drawn nearer the eye than this
 
 // `inkNormal` for a geometry (once: it's kept on the geometry, which clones
 // of a figure share). Returns the geometry.
@@ -84,7 +85,7 @@ export function inkHull(root, width, { clipY = null, color = INK } = {}) {
   const mat = new THREE.MeshBasicMaterial({ color, side: THREE.BackSide });
   mat.onBeforeCompile = (s) => {
     s.vertexShader = s.vertexShader
-      .replace('void main() {', 'attribute vec3 inkNormal;\nvarying float vInkY;\nvoid main() {')
+      .replace('void main() {', 'attribute vec3 inkNormal;\nvarying float vInkY;\nvarying float vInkZ;\nvoid main() {')
       // (a skinned mesh bends its normals with its bones: the ink's with them)
       .replace('#include <beginnormal_vertex>', 'vec3 objectNormal = inkNormal;\n#ifdef USE_TANGENT\nvec3 objectTangent = vec3( tangent.xyz );\n#endif')
       .replace(
@@ -103,10 +104,13 @@ export function inkHull(root, width, { clipY = null, color = INK } = {}) {
             vec3 inkN = normalize(normalMatrix * inkNormal);
           #endif
           mvPosition.xyz += inkN * ${width.toFixed(4)};
+          vInkZ = -mvPosition.z;
           gl_Position = projectionMatrix * mvPosition;
         }`,
       );
-    s.fragmentShader = s.fragmentShader.replace('void main() {', `varying float vInkY;\nvoid main() {\n${clipY == null ? '' : `if (vInkY > ${clipY.toFixed(5)}) discard;`}`);
+    // (none within NEAR metres of the eye: a camera passing through a figure
+    // would otherwise see the hull's back faces all round it, a screen of ink)
+    s.fragmentShader = s.fragmentShader.replace('void main() {', `varying float vInkY;\nvarying float vInkZ;\nvoid main() {\nif (vInkZ < ${NEAR.toFixed(2)}) discard;\n${clipY == null ? '' : `if (vInkY > ${clipY.toFixed(5)}) discard;`}`);
   };
   mat.customProgramCacheKey = () => `ink-${width.toFixed(4)}-${clipY}`;
   const meshes = [];

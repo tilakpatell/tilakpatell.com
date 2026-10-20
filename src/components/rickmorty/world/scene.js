@@ -295,7 +295,6 @@ export async function createRmWorld(rt, { looks = null, track: stages = null } =
     height: (x, z) => (shown === 'street' && Math.abs(z - ROAD.z) < ROAD.w / 2 ? ROAD_Y : 0),
     make: () => {
       const c = cast.make('morty');
-      c?.group.traverse((o) => o.userData.ink && (o.visible = false)); // (a ghost has no line)
       const fig = c ?? standInMorty();
       fig.group.scale.setScalar(MORTY_H / (fig.height ?? MORTY_H));
       fig.group.rotation.y = Math.PI / 2; // (a ghost's face, like Morty's, is measured from +x; a figure faces +z)
