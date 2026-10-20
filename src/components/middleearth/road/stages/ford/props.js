@@ -79,7 +79,10 @@ export function buildProps({ material, heightAt }) {
   clearingParts(heightAt, parts);
   const deck = bridgeParts(heightAt, parts);
   fordParts(heightAt, parts);
-  group.add(merged(parts, material, 'ford:statics'));
+  const statics = merged(parts, material, 'ford:statics');
+  // (it stands solid: the walkers step round it, the camera stops short of it)
+  if (statics) statics.userData.solid = true;
+  group.add(statics);
   return {
     group,
     deck,

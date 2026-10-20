@@ -7,9 +7,14 @@
 // carries GLSL; this is the same recipe on the node renderer.)
 //
 //   loadCast(names, rt) → Promise<{ ready: Set<name> }>
-//   walker(name, { height, seed }) → { group, ready, set({ base, speed }), tick(dt), dispose }
+//   walker(name, { height, seed }) → { group, ready, set({ base, speed }), tick(dt), tip(out), dispose }
 //     base: a looping clip in place of locomotion (sit.ground, tired, crawl…)
-//     or null; speed: metres a second over the ground, the feet paced to it
+//     or null; speed: metres a second over the ground, the feet paced to it;
+//     what the figure carries and wears (gear.js: Gandalf’s staff, Legolas’s
+//     bow, the swords at the hip) on it once it’s in, the held through
+//     lib/three/held.js (in the palm from the hand’s skin, a staff planted:
+//     the arm kept still under it, its head up); tip(out) → where the head
+//     of what it holds is in the world (a staff’s: Moria’s light), or null
 //   forgetCast(): the templates let go, as the Road goes
 //   heightOf(name) → metres, by kind (a hobbit, a man, an elf, a dwarf, a wizard)
 
@@ -18,7 +23,9 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import { createAnimator } from '../../../lib/three/animator';
 import { faceAhead, heading } from '../../../lib/three/clipLibrary';
 import { inkHull } from '../../../lib/three/inkNodes';
+import { holdItem } from '../../../lib/three/held';
 import { moveFor } from '../castRules';
+import { gearFor, makeGear, wear } from './gear';
 
 const DIR = '/models/middleearth/cast';
 const LOCO = ['idle', 'walk', 'run'];
@@ -97,13 +104,35 @@ export function walker(name, { height = heightOf(name), seed = 0, rt = null } = 
     model.scale.setScalar(k);
     model.position.y = -tpl.ground * k;
     group.add(model);
+    const inked = (rt?.quality?.tier ?? 'high') !== 'low';
     // (not on low: the hull draws a figure twice, and a figure is never culled)
-    if ((rt?.quality?.tier ?? 'high') !== 'low') materials.add(inkHull(model, INK / k));
+    if (inked) materials.add(inkHull(model, INK / k));
     group.updateMatrixWorld(true);
+    // what it wears on its bones, put on in its bind pose (gear.js); what it holds, kept for the animator
+    const items = [];
+    const toHold = [];
+    for (const g of gearFor(name)) {
+      const item = makeGear(g.kind, height);
+      if (!item) continue;
+      if (g.held) toHold.push({ g, item });
+      else if (wear(model, item, g, height)) items.push(item);
+      else disposeItem(item);
+    }
     const anim = createAnimator(model, { clips: tpl.own, hipsY: tpl.hipsY, up: tpl.up, key: `road:${name}:${k.toFixed(2)}`, seed, unit: k });
     const strides = anim.loco?.strides ?? {};
-    st = { model, anim, materials, walkV: strides.walk?.speed ?? 0.9 * k, runV: strides.run?.speed ?? 2.6 * k };
+    // (in the palm, from the hand’s own skin; a hand the grip can’t read leaves the thing out)
+    const holds = [];
+    for (const { g, item } of toHold) {
+      const h = holdItem({ model, anim }, item, g.as ?? g.kind, { hand: g.hand, curl: true });
+      if (h) {
+        holds.push(h);
+        items.push(item);
+      } else disposeItem(item);
+    }
+    if (inked) for (const item of items) materials.add(inkHull(item, INK / k));
+    st = { model, anim, materials, items, holds, walkV: strides.walk?.speed ?? 0.9 * k, runV: strides.run?.speed ?? 2.6 * k };
     anim.update(0);
+    for (const h of holds) h.update(0, { moving: false, busy: false });
     return true;
   });
   const frame = { forward: new THREE.Vector3(), up: new THREE.Vector3() };
@@ -125,18 +154,37 @@ export function walker(name, { height = heightOf(name), seed = 0, rt = null } = 
       const motion = { move: moveFor(speed, st.walkV, st.runV), speed, side: 0, turn: 0, down: 0, air: 0 };
       st.anim.locomote(motion);
       st.anim.update(dt);
+      // (what it holds carried over the walk: a staff’s arm still; a beat’s own clip, sat or down, has the arms)
+      for (const h of st.holds) h.update(dt, { moving: speed > 0.1, busy: Boolean(base) });
       group.getWorldQuaternion(q);
       frame.forward.set(0, 0, 1).applyQuaternion(q);
       frame.up.set(0, 1, 0).applyQuaternion(q);
       st.anim.after(dt, motion, frame);
+      for (const h of st.holds) h.after();
+    },
+    tip(out = new THREE.Vector3()) {
+      const tip = st?.items.find((o) => o.getObjectByName('tip'))?.getObjectByName('tip');
+      return tip ? tip.getWorldPosition(out) : null;
     },
     dispose() {
       gone = true;
       group.removeFromParent();
       if (!st) return;
+      for (const h of st.holds) h.release();
+      for (const item of st.items) disposeItem(item);
       st.anim.dispose();
       for (const m of st.materials) m.dispose();
       st = null;
     },
   };
+}
+
+// a thing of gear.js’s gone: off its bone, its own geometry and materials freed
+function disposeItem(item) {
+  item.removeFromParent();
+  item.traverse((o) => {
+    if (!o.isMesh) return;
+    o.geometry.dispose();
+    for (const m of [o.material].flat()) if (!o.userData.ink) m?.dispose();
+  });
 }

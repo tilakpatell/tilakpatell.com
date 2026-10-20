@@ -17,7 +17,7 @@ export const BEATS = [
   // the Ring goes on: the world drains, the five are kings, the blade
   { id: 'ring', kind: 'ring', at: 114, hold: 14, rig: 'seat', cut: 0, reach: 12, params: { at: [3.4, 2.7, 111], lookAt: [-0.5, 1.1, 126], above: true }, clip: 'nazgul', fx: [{ kind: 'vision', at: 1, seconds: 12 }] },
   // Aragorn with fire in both hands, the Riders burning and gone
-  { id: 'fire', kind: 'fire', at: 128, hold: 8, rig: 'follow', reach: 12 },
+  { id: 'fire', kind: 'fire', at: 128, hold: 8, rig: 'follow', reach: 12, deed: { verb: 'rhythm', label: 'Drive them back with fire', beats: 12 } },
   // Frodo on the ground, Aragorn kneeling over him: the Morgul blade
   // (low over them, looking down the slope at Frodo and the athelas: the plan’s low rig, placed, so the falling hill doesn’t leave it the sky)
   { id: 'kingsfoil', kind: 'kingsfoil', at: 146, hold: 10, rig: 'seat', reach: 14, params: { at: [2.7, 1.1, 143.6], lookAt: [0.3, 0.2, 147.4], above: true }, lines: ['weathertop-kingsfoil'] },

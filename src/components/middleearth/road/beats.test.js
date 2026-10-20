@@ -54,6 +54,17 @@ describe('a stage’s beats', () => {
     expect(j.since).toEqual({ a: Infinity, b: Infinity });
   });
 
+  it('a beat with its deed undone plays up to the deed’s moment and waits there; let go, it plays on', () => {
+    const waits = { b: 0.25 };
+    let r = stepBeats({ a: 1 }, B, { from: 39.5, to: 40, dt: 0.1, waits });
+    expect(r.fired).toEqual(['b']);
+    for (let i = 0; i < 6; i++) r = stepBeats(r.since, B, { from: 40, to: 40, dt: 0.1, waits });
+    expect(r.since.b).toBeCloseTo(0.25, 9);
+    expect(r.since.a).toBeCloseTo(1.7, 9);
+    r = stepBeats(r.since, B, { from: 40, to: 40, dt: 0.1 });
+    expect(r.since.b).toBeCloseTo(0.35, 9);
+  });
+
   it('the effects: a black veil whole, then lifting; the vision on for its seconds', () => {
     const beats = [
       { id: 'o', at: 0, fx: [{ kind: 'black', at: 0, seconds: 6 }] },

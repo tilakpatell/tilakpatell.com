@@ -27,7 +27,7 @@ export const BEATS = [
   // the fire behind them: Gandalf turns them out onto the bridge
   { id: 'run', kind: 'run', at: 94, hold: 0, rig: 'follow', reach: 10, clip: 'gandalfRun' },
   // the Bridge of Khazad-dûm: the Balrog, the staff down, the bridge breaks, the whip
-  { id: 'bridge', kind: 'bridge', at: 106, hold: 22, rig: 'seat', cut: 0, reach: 2, params: BRIDGE, clip: 'youShallNotPass', fx: [{ kind: 'shake', at: 11, seconds: 2 }] },
+  { id: 'bridge', kind: 'bridge', at: 106, hold: 22, rig: 'seat', cut: 0, reach: 2, params: BRIDGE, fx: [{ kind: 'shake', at: 11, seconds: 2 }], deed: { verb: 'hold', label: 'Hold the bridge with Gandalf', seconds: 3, at: 8, clip: 'youShallNotPass' } },
   // his last words from the edge, the same shot, as the hold ends
   { id: 'fly', kind: 'fly', at: 107, hold: 0, rig: 'seat', reach: 4, params: BRIDGE, clip: 'flyYouFools' },
   // out into the light: the Mirrormere, the eight grieving on the slope
