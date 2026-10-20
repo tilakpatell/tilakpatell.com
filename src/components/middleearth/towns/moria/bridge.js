@@ -128,7 +128,8 @@ export function bridge(K, len = 30) {
   const sg = new THREE.BufferGeometry();
   sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
   sg.setAttribute('aSeed', new THREE.BufferAttribute(ss, 4));
-  const sparks = new THREE.Points(sg, K.shaders.spark(U, K));
+  // (as the dust: sprites from a kit on the node renderer)
+  const sparks = K.shaders.sparkPoints ? K.shaders.sparkPoints(sg, U, K) : new THREE.Points(sg, K.shaders.spark(U, K));
   sparks.material.uniforms.uSpan.value.set(len * 1.3, DEPTH, 14);
   sparks.frustumCulled = false;
   sparks.renderOrder = 2;

@@ -29,7 +29,8 @@ import { GATE, ithildinCanvas, tentacle, tentacleCanvas, westGate } from './gate
 import { fork, hall, rubbleGeo, staffLight, stairs } from './halls';
 import { C, V3 } from './helpers';
 import { caveTroll, goblin, wartCanvas } from './orcs';
-import { abyssMaterial, beamMaterial, caveEnv, dustMaterial, fireSolidMaterial, flameMaterial, FOG_ADD, hide, nightEnv, revealable, smokeMaterial, sparkMaterial, sunlitMaterial, underglow, wingMaterial } from './shaders';
+import { abyssMaterial, balrogFire, beamMaterial, dustPoints, fireSolidMaterial, flameMaterial, hide, ithildinGlow, revealable, rippleMaterial, smokeMaterial, sparkPoints, sunlitMaterial, underglow, wingMaterial } from '../../nodes/towns/moria/propsShaders';
+import { caveEnv, nightEnv } from '../../nodes/towns/moria/env';
 
 // ── the kit ──
 
@@ -108,60 +109,12 @@ export function createMoriaKit(renderer) {
   tex.tentacleN = T(normalFromField(tskin, 256, 256, 3.5), { srgb: false, repeat: [1, 1.6] });
   Object.assign(mats, {
     tentacle: M({ vertexColors: true, normalMap: tex.tentacleN, normalScale: new THREE.Vector2(1.2, 1.2), roughness: 0.2, metalness: 0.05, envMap: night, envMapIntensity: 1.1 }),
-    ripple: new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 }, uK: { value: 0 } }]),
-      fog: true,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      vertexShader: `
-        varying vec2 vP;
-        #include <fog_pars_vertex>
-        void main() {
-          vP = position.xz;
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          gl_Position = projectionMatrix * mvPosition;
-          #include <fog_vertex>
-        }`,
-      fragmentShader: `
-        uniform float uTime;
-        uniform float uK;
-        varying vec2 vP;
-        #include <fog_pars_fragment>
-        void main() {
-          float d = length(vP);
-          float rings = 0.0;
-          for (int i = 0; i < 3; i++) {
-            float f = fract(uTime * 0.35 + float(i) / 3.0);
-            float rr = 0.6 + f * 2.3;
-            rings += smoothstep(0.09, 0.0, abs(d - rr)) * (1.0 - f);
-          }
-          float foam = smoothstep(0.95, 0.5, d) * 0.12;
-          float a = (rings * 0.22 + foam) * uK * smoothstep(3.0, 2.2, d);
-          gl_FragColor = vec4(vec3(0.62, 0.72, 0.85) * a, a);
-          ${FOG_ADD}
-        }`,
-    }),
+    ripple: rippleMaterial(),
   });
 
   // the ithildin: lit by the moon (uIthil), coming out line by line in a
   // shimmer as the light finds it
-  mats.ithildin.onBeforeCompile = (s) => {
-    s.uniforms.uIthil = U.uIthil;
-    s.uniforms.uTime = U.uTime;
-    s.uniforms.uNoise = U.uNoise;
-    s.fragmentShader = 'uniform float uIthil;\nuniform float uTime;\nuniform sampler2D uNoise;\n' + s.fragmentShader.replace(
-      '#include <emissivemap_fragment>',
-      `#include <emissivemap_fragment>
-      {
-        float nI = texture2D(uNoise, vEmissiveMapUv * vec2(2.0, 2.8)).r;
-        float on = smoothstep(nI - 0.2, nI + 0.05, uIthil * 1.35 - 0.15);
-        float shim = 0.88 + 0.12 * sin(uTime * 1.7 + nI * 23.0) * sin(uTime * 0.6 + nI * 9.0);
-        totalEmissiveRadiance *= on * shim * uIthil;
-      }`,
-    );
-  };
-  mats.ithildin.customProgramCacheKey = () => 'moria-ithildin';
+  mats.ithildin = ithildinGlow(mats.ithildin, U);
   // the Chamber of Mazarbul: the tomb, the dead and their gear, the book
   const tomb = tombCanvas();
   const mail = mailCanvas();
@@ -226,20 +179,7 @@ export function createMoriaKit(renderer) {
       bump: 1.3,
       shade: 0.45,
       key: 'moria-balrog',
-      uniforms: { uTime: U.uTime, uRage: U.uRage, uNoise: U.uNoise },
-      extra: `{
-        float cr = smoothstep(0.4, 0.95, hs.r);
-        float f1 = texture2D(uNoise, hp.xy * 0.45 + vec2(hp.z * 0.3, -uTime * 0.07)).r;
-        float f2 = texture2D(uNoise, hp.zy * 0.6 + vec2(uTime * 0.03, -uTime * 0.11)).g;
-        float pulse = 0.8 + 0.2 * sin(uTime * 2.3 + f1 * 12.0);
-        float heat = cr * (0.12 + 2.4 * f1 * f2) * pulse * (0.55 + 0.75 * uRage);
-        vec3 fire = mix(vec3(0.5, 0.06, 0.01), vec3(2.2, 0.7, 0.1), smoothstep(0.2, 0.8, heat));
-        fire = mix(fire, vec3(3.6, 2.0, 0.7), smoothstep(0.95, 1.4, heat));
-        totalEmissiveRadiance += fire * heat;
-        diffuseColor.rgb *= 1.0 - cr * 0.85;
-        float rim = pow(1.0 - abs(dot(normal, normalize(vViewPosition))), 3.0);
-        totalEmissiveRadiance += vec3(0.45, 0.07, 0.01) * rim * (0.25 + 0.5 * uRage) * (0.6 + 0.8 * f1);
-      }`,
+      ...balrogFire(U),
     }),
     horn: M({ color: 0x15110f, roughness: 0.35, metalness: 0.2, envMap: cave, envMapIntensity: 1 }),
     balrogEye: new THREE.MeshBasicMaterial({ color: hot(0xff8a24, 5) }),
@@ -259,7 +199,7 @@ export function createMoriaKit(renderer) {
   });
   for (const [k, m] of Object.entries(mats)) if (!m.name) m.name = k;
   // (the builders reach the shaders through the kit: their own files carry none)
-  const shaders = { beam: beamMaterial, sunlit: sunlitMaterial, dust: dustMaterial, abyss: abyssMaterial, spark: sparkMaterial, flame: flameMaterial, smoke: smokeMaterial };
+  const shaders = { beam: beamMaterial, sunlit: sunlitMaterial, dustPoints, abyss: abyssMaterial, sparkPoints, flame: flameMaterial, smoke: smokeMaterial };
   Object.assign(K, { U, night, cave, shaders, tex: { ...K.tex, ...tex } });
 
   return {

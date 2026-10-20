@@ -21,7 +21,6 @@ import { flightAt } from './mapFlight.js';
 import { framing } from './mapFraming.js';
 import { prefersReducedMotion } from '../../lib/hooks';
 import { budget, device, pixelRatio } from '../../lib/device';
-import { precompile } from '../../lib/three/renderer';
 
 const SCALE = 10; // sheet units to one of the scene's
 const at = (x, y) => [(x - SHEET.w / 2) / SCALE, (y - SHEET.h / 2) / SCALE];
@@ -53,7 +52,7 @@ export function createMapBackdrop(canvas, { onLost, me } = {}) {
 
   const map = new THREE.CanvasTexture(paintMap(2048));
   map.colorSpace = THREE.SRGBColorSpace;
-  map.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  map.anisotropy = Math.min(8, renderer.capabilities?.getMaxAnisotropy?.() ?? renderer.getMaxAnisotropy?.() ?? 1);
   const relief = new THREE.CanvasTexture(normalCanvas(paintRelief(1024), 5));
   relief.anisotropy = map.anisotropy;
   const W = SHEET.w / SCALE;
@@ -397,7 +396,8 @@ export function createMapBackdrop(canvas, { onLost, me } = {}) {
     // sent: the page waits for this before the first frame, so that frame
     // has the sheet in it (lib/three/frameGuard leaves out a material whose
     // pictures aren’t on the chip yet) and fades in over the flat one whole
-    ready: (me.views.enter(canvas), precompile(renderer, scene, camera)).then(() => {
+    // (compiled by the runtime's renderer, the node renderer's way)
+    ready: (me.views.enter(canvas), Promise.resolve(me.rt.gfx.compile?.(scene, camera, scene))).then(() => {
       if (lost) return;
       renderer.initTexture(map);
       renderer.initTexture(relief);

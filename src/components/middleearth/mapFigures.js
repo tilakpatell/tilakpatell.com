@@ -4,7 +4,7 @@
 // waving, talking, or just breathing and looking about).
 
 import * as THREE from 'three';
-import { hot } from '../../lib/stage3d';
+import { hot } from '../../lib/three/stage3dNodes';
 import { makeNoise } from '../../lib/paint';
 
 const mat = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.75, ...o });

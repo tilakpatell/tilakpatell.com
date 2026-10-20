@@ -23,9 +23,9 @@ const make = (rt = fakeRt()) => {
 };
 
 describe('the Middle-earth module', () => {
-  it('is a glsl module the runtime takes, with its size from the worlds’ table', () => {
+  it('is a nodes module the runtime takes, with its size from the worlds’ table', () => {
     const mod = validateModule(middleEarth);
-    expect(mod).toMatchObject({ id: 'middleearth', shading: 'glsl', mb: WORLD_MB['/middle-earth'], sharpness: 'own', calibrate: false });
+    expect(mod).toMatchObject({ id: 'middleearth', shading: 'nodes', mb: WORLD_MB['/middle-earth'], sharpness: 'own', calibrate: false });
     expect(mod.ratio).toBe(1.75);
   });
 
