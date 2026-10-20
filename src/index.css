@@ -822,6 +822,14 @@ html:not([data-mode='dark'])[data-theme='bose'] .dark-scope { --accent: #ffffff;
   will-change: transform;
 }
 .site-nav[data-hidden='true'] { transform: translateY(calc(-100% - 16px)); }
+/* A phone on its side playing a world (a page's stage marked
+   data-world-stage): the site's bar steps aside and the world has the whole
+   screen, as the map gives a ship it (universe/thumbs.css). The world's Menu
+   has the way out; a site tour keeps the bar, its stops being on it. */
+@media (pointer: coarse) and (max-height: 500px) {
+  :root:not([data-touring]):has(main [data-world-stage]) { --nav-h: 0px; }
+  :root:not([data-touring]):has(main [data-world-stage]) .site-nav { visibility: hidden; }
+}
 .site-nav .nav-bar { pointer-events: auto; }
 /* The bar lines up with the content column, clear of the scroll line in the left gutter */
 .nav-shell {
