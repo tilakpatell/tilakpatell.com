@@ -29,7 +29,7 @@
 //     holds every one to the manifest)
 //   `flora.game`: a recipe of the drop's own objects (gameFlora.js), laid
 //     after the kit's (biome 'none' for a world that wants only those)
-//   livingOn(site), livingRows(site) → { cover, mid, trees } | null: a
+//   livingOn(site), livingRows(site) → { near, cover, mid, trees } | null: a
 //     biome's `living` recipe ([Name, per100, more?] a band), streamed
 //     round you a tile at a time (living.js), in place of the cover, the
 //     kit's bushes and the trees floraRows would lay once
@@ -141,6 +141,13 @@ export const BIOMES = {
     air: { flocks: { n: 3, count: 12 }, song: 0.6, pollen: '#fff1c4' },
     // (streamed round you, living.js: per 100 m²)
     living: {
+      near: [
+        ['Grass_Common_Short', 8, { clump: 8 }],
+        ['Grass_Wide_Short', 2],
+        ['Petal_3', 3],
+        ['Flower_2_Single', 1.5],
+        ['Clover_1', 1.2],
+      ],
       cover: [
         ['Grass_Common_Short', 1.6],
         ['Grass_Wide_Short', 1],
@@ -192,6 +199,13 @@ export const BIOMES = {
     ],
     air: { flocks: { n: 3, count: 10 }, song: 0.7, pollen: '#f4f0d4' },
     living: {
+      near: [
+        ['Grass_Common_Short', 7, { clump: 8 }],
+        ['Clover_1', 2],
+        ['Fern_2', 2],
+        ['Petal_3', 1.5],
+        ['Mushroom_Common', 0.3],
+      ],
       cover: [
         ['Grass_Common_Short', 1.5],
         ['Grass_Common_Tall', 0.9],
@@ -232,6 +246,12 @@ export const BIOMES = {
     count: { trees: 40 },
     air: { flocks: { n: 2, count: 8 }, song: 0.6 },
     living: {
+      near: [
+        ['Fern_2', 4],
+        ['Fern_1', 2],
+        ['Plant_3', 1],
+        ['Mushroom_RedCap', 0.4],
+      ],
       cover: [
         ['Fern_1', 1.2],
         ['Fern_2', 0.8],
@@ -269,6 +289,12 @@ export const BIOMES = {
     count: { trees: 60 },
     air: { flocks: { n: 2, count: 14, colour: '#3a2e24' }, song: 0.45, pollen: '#dcf5a8' },
     living: {
+      near: [
+        ['Fern_2', 4],
+        ['Clover_2', 2],
+        ['Plant_5', 1.5],
+        ['Plant_4', 1],
+      ],
       cover: [
         ['Fern_1', 1.2],
         ['Clover_2', 0.6],
@@ -307,6 +333,11 @@ export const BIOMES = {
     count: { trees: 60 },
     air: { flocks: { n: 1, count: 6 }, song: 0.15 },
     living: {
+      near: [
+        ['Plant_2', 2],
+        ['Plant_6', 2],
+        ['Fern_2', 2],
+      ],
       cover: [
         ['Plant_2', 0.6],
         ['Plant_6', 0.5],
@@ -337,6 +368,11 @@ export const BIOMES = {
     // (gulls, white over the shore)
     air: { flocks: { n: 3, count: 10, colour: '#e8e4dc', size: 0.7 }, song: 0.3 },
     living: {
+      near: [
+        ['Grass_Wispy_Short', 4],
+        ['Grass_Common_Short', 4, { clump: 8 }],
+        ['Flower_7_Single', 1.5],
+      ],
       cover: [
         ['Grass_Wispy_Tall', 1],
         ['Grass_Wispy_Short', 0.8],
@@ -372,6 +408,11 @@ export const BIOMES = {
     // (a few big birds circling high over the scrub)
     air: { flocks: { n: 1, count: 4, size: 1.1, height: 70, radius: 70 }, song: 0.12 },
     living: {
+      near: [
+        ['Plant_7', 4, { scale: [2.5, 4] }],
+        ['Pebble_Round_5', 2, { scale: [3, 6] }],
+        ['Grass_Wispy_Short', 1.5, { on: 'any' }],
+      ],
       cover: [
         ['Plant_7', 1, { scale: [2.5, 4] }],
         ['Plant_7_Big', 0.5, { scale: [2, 3.5] }],
@@ -399,6 +440,10 @@ export const BIOMES = {
     count: { cover: 900 },
     tint: { PathRocks: { recolour: '#2c2926' } },
     living: {
+      near: [
+        ['Pebble_Square_2', 3, { scale: [3, 6] }],
+        ['Pebble_Square_4', 3, { scale: [3, 6] }],
+      ],
       cover: [
         ['Pebble_Square_2', 0.6, { scale: [3, 6] }],
         ['Pebble_Square_4', 0.6, { scale: [3, 6] }],
@@ -474,7 +519,7 @@ export const livingOn = (site) => {
   return Boolean(biome?.living && site.flora.living !== false && !site.noGround && !site.level);
 };
 
-// the streamed rows, band by band: { cover, mid, trees } of { model, kind,
+// the streamed rows, band by band: { near, cover, mid, trees } of { model, kind,
 // per100, clump, spread, scale, on?, woods?, solid?, canopy?, above?,
 // clear? } (null where nothing streams); a site's `flora.density` scales
 // every per100, and `trees: false` lays none
@@ -488,7 +533,7 @@ export function livingRows(site) {
       const canopy = band === 'trees' ? CANOPY[name.replace(/_.*$/, '')] : 0;
       return { band, kind: kindOf(name), model: PACK + name, per100: per100 * density, scale: sizeOf(name), ...liveOf(name), ...(canopy ? { canopy } : {}), ...(band === 'trees' ? { clear: CLEAR } : {}), ...wet, ...more };
     });
-  return { cover: rows('cover', living.cover), mid: rows('mid', living.mid), trees: site.flora.trees === false ? [] : rows('trees', living.trees) };
+  return { near: rows('near', living.near ?? []), cover: rows('cover', living.cover), mid: rows('mid', living.mid), trees: site.flora.trees === false ? [] : rows('trees', living.trees) };
 }
 
 export function floraRows(site) {

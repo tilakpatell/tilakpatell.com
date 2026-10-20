@@ -30,11 +30,23 @@ but:
   square tile from a seed and the tile's place, so the same tile is the same
   on every visit and every machine, and a ring of tiles can follow you
   anywhere: the core's 590 m or endless ground.
-- `src/components/galaxy/surface/living.js`: a ring of tiles round you (32 m
-  tiles out to a tier's reach), each tile's items handed to the kit's keyed
-  instanced pools (`lib/three/kitNodes` `createPool`: full near, LOD1 to
-  `mid`, a puff to twice that) under the tile's key, freed as you leave.
-  Nothing on a place's flat, in water, on a cliff or by the landing.
+- `src/components/galaxy/surface/living.js`: a ring of tiles round you,
+  each tile's items handed to the kit's keyed instanced pools
+  (`lib/three/kitNodes` `createPool`: full near, LOD1 to `mid`, a puff
+  beyond) under the tile's key, freed as you leave. Nothing on a place's
+  flat, in water, on a cliff or by the landing.
+- No ring you can see (the owner, the same day: "it should be a ring that
+  covers what the user can see. If the ring is too small it looks weird as
+  the player can see it change in real time"). The ring is as wide as the
+  view: the trees to `far`, a new budgets column (500 m on low to 1,200 on
+  ultra; 900 on high, past the core of a world), as their far stand-ins;
+  the bushes as far as theirs go (twice `mid`); the cover 40 m past the
+  kit's full band. Every pool shrinks its items away over the end of its
+  reach, as the 2017 game's scatter dissolves, so an item comes and goes at
+  no size, and a tile is laid where nothing of it shows yet. The pools are
+  Middle-earth's too, so the Road's stages fade at their edge. The game
+  levels' own scatter reaches further (64 m on high, from 40) and thins
+  toward its edge rather than everywhere once it is over its cap.
 - The biomes (`flora.js`) gain `living`: their cover and kit bushes at the
   Road's and the Shire's densities (8 to 12 an 100 m² on the green worlds,
   3 on the dry, 2 on the ash, none on snow). The scene lays the streamed

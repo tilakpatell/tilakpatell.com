@@ -156,8 +156,11 @@ describe('livingRows: the cover, the bushes and the trees that stream round you'
   });
 
   it('gives each row its density, its family’s clumping and its size', () => {
-    const { cover, mid, trees } = livingRows(lush());
+    const { near, cover, mid, trees } = livingRows(lush());
     const total = (rows) => rows.reduce((s, r) => s + r.per100, 0);
+    // (round you, the Shire's thickness: some 15 a 100 m², most of them tufts)
+    expect(total(near)).toBeGreaterThan(12);
+    expect(near.every((r) => r.band === 'near')).toBe(true);
     // (the Road's and the Shire's thickness: some 6 a 100 m² on a green world)
     expect(total(cover)).toBeGreaterThan(5);
     expect(total(cover)).toBeLessThan(8);
@@ -249,7 +252,7 @@ describe('floraNames', () => {
       const names = floraNames(floraRows({ flora: { biome, living: false }, reach: 590, ground: {} }));
       for (const name of names) expect(MANIFEST.models[name], `${biome}: ${name}`).toBeTruthy();
       const live = livingRows({ flora: { biome }, reach: 590, ground: {} });
-      for (const name of floraNames(live ? [...live.cover, ...live.mid, ...live.trees] : [])) expect(MANIFEST.models[name], `${biome} streamed: ${name}`).toBeTruthy();
+      for (const name of floraNames(live ? [...live.near, ...live.cover, ...live.mid, ...live.trees] : [])) expect(MANIFEST.models[name], `${biome} streamed: ${name}`).toBeTruthy();
     }
     expect(floraNames(floraRows(plains())).has('CommonTree_1')).toBe(true);
   });

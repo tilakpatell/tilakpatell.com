@@ -29,7 +29,9 @@ const cam = (x = 0, z = 0) => {
 describe('reachOf and shareOf', () => {
   it('lays each band out from the level’s kit bands, more on a higher level', () => {
     const high = reachOf('high');
-    expect(high).toEqual({ cover: budget('high').near + 40, mid: 2 * budget('high').mid, trees: budget('high').far });
+    expect(high).toEqual({ near: Math.round(budget('high').near * 0.6), cover: budget('high').near + 40, mid: 2 * budget('high').mid, trees: budget('high').far });
+    // (the thick cover round you fades into the rest well inside it)
+    expect(high.near).toBeLessThan(high.cover / 2);
     expect(reachOf('low').cover).toBeLessThan(high.cover);
     expect(reachOf('low').trees).toBeLessThan(high.trees);
     // (ultra's bushes kept to 600 m: its full meshes stand to 400)
@@ -109,8 +111,10 @@ describe('createLiving', () => {
     const before = living.stats.tiles;
     const trunks = solids.all.length;
     living.update(2000, 0, cam(2000, 0), 0.016);
-    // (all of the old ring gone at once; the new one laid over the frames to come)
+    // (all of the old ring gone at once; the new one laid over the frames to
+    // come, but for the tiles under you, laid at once)
     expect(living.stats.tiles).toBeLessThan(before);
+    expect(living.stats.tiles).toBeGreaterThanOrEqual(4);
     for (let i = 0; i < 400 && living.stats.queued; i++) living.update(2000, 0, cam(2000, 0), 0.016);
     expect(living.stats.queued).toBe(0);
     expect(living.stats.tiles).toBeGreaterThan(before * 0.9);

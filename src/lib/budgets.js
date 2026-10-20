@@ -32,8 +32,9 @@
 //
 // `near` and `mid` are a kit model's bands in metres (lib/three/kit's
 // pools): its full mesh within `near`, its LOD1 to `mid`, its far stand-in
-// (the puff) to twice `mid`, nothing beyond (ultra, with no LOD1, keeps the
-// full mesh in the LOD1 band). `leaves` is how many leaves fall at once.
+// (the puff) to twice `mid` unless a pool is given a reach of its own,
+// nothing beyond, each item shrinking away toward the end (ultra, with no
+// LOD1, keeps the full mesh in the LOD1 band). `leaves` is how many leaves fall at once.
 // `far` is how far a streamed wood's trees are drawn, as their far
 // stand-ins (a galaxy world's living ground, galaxy/surface/living.js): to
 // the edge of what you can see across a world, so no ring of trees is seen

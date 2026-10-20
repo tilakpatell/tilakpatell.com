@@ -7,10 +7,11 @@
 // as you leave it. (docs/superpowers/specs/2026-10-20-galaxy-living-free-roam-
 // design.md, 1)
 //
-//   SIZE: { cover, mid, trees } metres a side of a band's tile
-//   reachOf(level) → { cover, mid, trees }: metres a band is laid out to,
-//     and drawn to, from the level's row (lib/budgets): the cover a little
-//     past the kit's full band, the bushes as far as their far stand-ins
+//   SIZE: { near, cover, mid, trees } metres a side of a band's tile
+//   reachOf(level) → { near, cover, mid, trees }: metres a band is laid out
+//     to, and drawn to, from the level's row (lib/budgets): the thick cover
+//     round you (the Shire's) within most of the kit's full band, fading
+//     into the rest of the cover a little past it, the bushes as far as their far stand-ins
 //     go, the trees to `far`, the edge of what you can see across a world.
 //     Each shrinks away over the end of its reach (the pools' dissolve: the
 //     cover's longer), so no ring is seen, and a tile laid at the edge is
@@ -41,21 +42,23 @@ import { createKitScatter } from '../../../lib/three/kitScatter';
 import { HALF } from './terrain';
 import { pushOut } from './walker';
 
-export const SIZE = { cover: TILE, mid: 2 * TILE, trees: 4 * TILE };
-// the share of a band's reach its items shrink away over (kitNodes' dissolve)
-const DISSOLVE = { cover: 0.4, mid: 0.25, trees: 0.2 };
+export const SIZE = { near: TILE / 2, cover: TILE, mid: 2 * TILE, trees: 4 * TILE };
+// the share of a band's reach its items shrink away over (kitNodes' dissolve):
+// the near band's half of it, into the cover's
+const DISSOLVE = { near: 0.5, cover: 0.4, mid: 0.25, trees: 0.2 };
 const BUSHES = 600; // metres the bushes are drawn to at most (ultra keeps its full meshes to 400)
-const BANDS = ['cover', 'mid', 'trees'];
+const BANDS = ['near', 'cover', 'mid', 'trees'];
 // (each band's rows from their own numbers: a bush never stands on a tuft's clump)
-const SEEDS = { cover: 0, mid: 1009, trees: 2003 };
+const SEEDS = { near: 3001, cover: 0, mid: 1009, trees: 2003 };
 const STEP = 6; // metres you go before the ring's looked at again
 const SPEND = 2; // ms a frame laying tiles, at most
+const UNDER = 12; // metres: a tile this near is laid this frame, whatever it costs
 const EDGE = 12; // metres inside the ground's square nothing is laid past
 const WALL = 0.6; // metres a bush or a tuft keeps from a wall
 
 export function reachOf(level) {
   const { near, mid, far } = budget(level);
-  return { cover: near + 40, mid: Math.min(2 * mid, BUSHES), trees: far };
+  return { near: Math.round(near * 0.6), cover: near + 40, mid: Math.min(2 * mid, BUSHES), trees: far };
 }
 
 export function shareOf(level) {
@@ -158,7 +161,8 @@ export function createLiving({ rows, kitFor, level = 'high', seed = 1, height, k
     update(x, z, camera, dt) {
       if (!last || Math.hypot(x - last.x, z - last.z) > STEP) look(x, z);
       const t0 = performance.now();
-      while (queue.length && performance.now() - t0 < SPEND) {
+      // (the tiles under you and beside you at once, after a jump; the rest a few a frame)
+      while (queue.length && (queue[0][3] < UNDER || performance.now() - t0 < SPEND)) {
         const [band, tx, tz] = queue.shift();
         if (!tiles.has(keyOf(band, tx, tz))) lay(band, tx, tz);
       }

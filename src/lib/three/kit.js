@@ -5,8 +5,8 @@
 // placements to a pool under a key (`set`), takes them back when it goes
 // (`free`), and the pool draws every item of a model in a few instanced
 // draws, each item at the level its distance calls for: the full model
-// near, its LOD1 further off, a far stand-in (the puff) to twice that,
-// nothing beyond. (docs/superpowers/specs/2026-10-08-kit-worlds-design.md, 2)
+// near, its LOD1 further off, a far stand-in (the puff) to twice that or
+// a reach of the pool's own, nothing beyond, shrinking away toward its end. (docs/superpowers/specs/2026-10-08-kit-worlds-design.md, 2)
 //
 //   loadKit(pack, { load, base, house, wind, manifest, puffs = true,
 //     puffWind, tint }) → {
