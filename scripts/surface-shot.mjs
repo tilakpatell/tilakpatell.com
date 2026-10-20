@@ -5,7 +5,9 @@
 // 0 = from +z), the player teleported there facing it, the world given a
 // few seconds to settle. Through the dev server (npx vite --port 5188).
 //
-//   OUT=lab/shots node scripts/surface-shot.mjs <world> <x,z,dist,deg[,label]> …
+//   OUT=lab/shots node scripts/surface-shot.mjs <world> <x,z,dist,deg[,label[,pitch]]> …
+//                  (pitch: the camera's, the scene's CAM.pitch range, below 0
+//                  to look up at something tall)
 //   QUALITY=low …  (the device tier)
 //   PHASE_WAIT=600000 …  (ms to wait for the landing: a level pack under
 //                  software rendering takes minutes)
@@ -85,14 +87,14 @@ if (zone) {
   await page.waitForTimeout(4000);
 }
 for (const v of views) {
-  const [x0, z0, dist = 40, deg = 0, label] = v.split(',');
+  const [x0, z0, dist = 40, deg = 0, label, pitch] = v.split(',');
   const x = Number(x0) + origin[0];
   const z = Number(z0) + origin[1];
   const a = (Number(deg) * Math.PI) / 180;
   const sx = x + Math.sin(a) * Number(dist);
   const sz = z + Math.cos(a) * Number(dist);
   const yaw = Math.atan2(x - sx, z - sz);
-  await page.evaluate(([sx, sz, yaw]) => window.__surfaceDo('teleport', sx, sz, yaw), [sx, sz, yaw]);
+  await page.evaluate(([sx, sz, yaw, pitch]) => window.__surfaceDo('teleport', sx, sz, yaw, null, pitch), [sx, sz, yaw, pitch == null || pitch === '' ? null : Number(pitch)]);
   await page.waitForTimeout(7000);
   // (on a game level: its cells round the new spot streamed in, LEVEL_WAIT ms at most)
   await page.waitForFunction(() => window.__surfaceScene?.level?.()?.ready !== false, null, { timeout: Number(process.env.LEVEL_WAIT ?? 600000) }).catch(() => console.log('  (the level still streaming: shot as it stands)'));
