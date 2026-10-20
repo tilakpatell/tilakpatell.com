@@ -142,10 +142,10 @@ export default {
     // on mid, in two cascades (at 90 and four the cascades drew the Shire's
     // every hole and hedge four times over, a million and a half triangles
     // a frame; its statics are merged in bands, stages/parts.js, so each
-    // cascade leaves out what it can't see); none on low. PCSS (shadows.js) only where the chain ends in
-    // TRAA: its samples are scattered by a per-pixel noise only a temporal
-    // pass settles, a grain over every shadow without one; elsewhere three’s
-    // own PCF, a little softened (its five taps dither too: kept to an edge)
+    // cascade leaves out what it can't see); none on low. Three’s own PCF,
+    // a little softened, on every backend: PCSS (shadows.js) drew no shadow
+    // at all on the WebGL fallback, and its noise is a grain wherever no
+    // TRAA settles it (its five taps dither too: kept to an edge)
     const renderer = rt.gfx?.renderer ?? null;
     const shadowWas = renderer?.shadowMap ? { enabled: renderer.shadowMap.enabled, type: renderer.shadowMap.type } : null;
     const exposureWas = renderer?.toneMappingExposure ?? null;
@@ -155,12 +155,10 @@ export default {
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFShadowMap;
       sun.shadow.radius = 1.5;
-      Promise.all([import('../../../lib/three/light/sun'), import('../../../lib/three/light/shadows')])
-        .then(async ([{ castCascades }, { filterFor, readPcss, pcssFilter }]) => {
-          const soft = filterFor(tier, readPcss(null));
-          const filter = soft.kind === 'pcss' && has('traa') ? await pcssFilter(soft) : null;
+      import('../../../lib/three/light/sun')
+        .then(async ({ castCascades }) => {
           if (unlit) return;
-          const c = await castCascades(sun, null, { tier, filter, video: { shadowDistance: tier === 'mid' ? 40 : 60, cascades: 2 } });
+          const c = await castCascades(sun, null, { tier, filter: null, video: { shadowDistance: tier === 'mid' ? 40 : 60, cascades: 2 } });
           if (unlit) c?.dispose();
           else cascades = c;
         })
