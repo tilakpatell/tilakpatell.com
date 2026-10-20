@@ -75,7 +75,7 @@ import { audioContext } from '../../../lib/audio';
 import { SURFACE_MODELS } from './catalog';
 import { HALF, heightGrid, makeHeight } from './terrain';
 import { createRoam, roamGround, roamOn } from './roam';
-import { regionsAround, waysideAt } from './wayside';
+import { laidOn, regionsAround, waysideAt } from './wayside';
 import { createMarks, groundBuild, groundGeometry, groundMaterial, groundMesh } from './ground';
 import { lavaFilm } from './lavaFilm';
 import { floatPose } from './floats';
@@ -577,7 +577,7 @@ export async function create(canvas, ctx) {
           const key = `${rx},${rz}`;
           if (seen.has(key)) continue;
           seen.add(key);
-          for (const t of waysideAt(site, rx, rz)?.things ?? []) placer.put({ ...t, abs: true, y: height(t.at[0], t.at[1]) });
+          for (const t of waysideAt(site, rx, rz)?.things ?? []) placer.put(laidOn(t, height));
         }
       }
     : null;

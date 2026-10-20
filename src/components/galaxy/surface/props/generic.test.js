@@ -22,8 +22,9 @@ describe('a starfighter come down', () => {
       expect(Math.max(size.x, size.z)).toBeGreaterThan(metres * 0.6);
       // (a TIE's panels stand taller than it's long: rolled, they reach out further)
       expect(Math.max(size.x, size.z)).toBeLessThan(metres * 1.6);
-      // (part of it under the ground it stands on)
-      expect(new THREE.Box3().setFromObject(made.object).min.y).toBeLessThan(0);
+      // (its lowest point a twentieth of its length into the ground it stands on)
+      made.object.updateMatrixWorld(true);
+      expect(new THREE.Box3().setFromObject(made.object).min.y).toBeCloseTo(-metres * 0.05, 4);
       expect(made.solids[0].box[2]).toBeCloseTo(metres * 0.36, 6);
     });
 });

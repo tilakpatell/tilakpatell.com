@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { REGION, regionsAround, waysideAt } from './wayside';
+import * as THREE from 'three';
+import { REGION, laidOn, regionsAround, waysideAt } from './wayside';
 import { PROPS } from './props';
 import { SURFACE_MODELS } from './catalog';
 
@@ -44,7 +45,7 @@ describe('waysideAt', () => {
     expect([...kinds(green)].sort()).toEqual(['camp', 'ruin', 'wreck']);
     expect([...kinds(bare)].sort()).toEqual(['camp', 'outpost', 'wreck']);
     const ships = regions(bare).filter((w) => w?.kind === 'wreck').map((w) => w.things[0]);
-    expect(ships.every((t) => t.kind === 'downed' && Math.abs(t.opts.roll) >= 0.3)).toBe(true);
+    expect(ships.every((t) => t.kind === 'downed' && Math.abs(t.opts.roll) >= 0.3 && t.lie === t.opts.metres * 0.45)).toBe(true);
     expect(new Set(ships.map((t) => t.opts.ship))).toEqual(new Set(['xwing', 'ywing', 'tie']));
   });
 
@@ -61,5 +62,25 @@ describe('regionsAround', () => {
     expect(near).toContainEqual([5, -4]);
     expect(near.every(([i, j]) => Math.hypot((i + 0.5) * REGION - 5200, (j + 0.5) * REGION + 3100) <= 1600)).toBe(true);
     expect(near.length).toBeGreaterThan(4);
+  });
+});
+
+describe('laidOn', () => {
+  it('stands a thing on the land’s own height', () => {
+    expect(laidOn({ kind: 'tent', at: [10, 20] }, (x, z) => x + z)).toEqual({ kind: 'tent', at: [10, 20], abs: true, y: 30 });
+  });
+
+  it('lays a long thing along the slope under it, its nose up the hill and its side to the slope across', () => {
+    // (rising 0.4 a metre to +z and 0.2 to +x; the thing faced along +x)
+    const land = (x, z) => 0.2 * x + 0.4 * z;
+    const t = laidOn({ kind: 'downed', at: [0, 0], yaw: Math.PI / 2, lie: 10 }, land);
+    const o = new THREE.Object3D();
+    o.rotation.set(t.pitch, t.yaw, t.roll, 'YXZ');
+    o.updateMatrixWorld();
+    // (its nose, its +z, and its side, its +x, both lie in the land's plane)
+    for (const v of [new THREE.Vector3(0, 0, 1), new THREE.Vector3(1, 0, 0)]) {
+      const w = v.applyMatrix4(o.matrixWorld);
+      expect(w.y).toBeCloseTo(land(w.x, w.z), 6);
+    }
   });
 });

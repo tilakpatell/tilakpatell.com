@@ -166,15 +166,17 @@ export const PROPS = {
   },
 
   // a starfighter come down hard: the flight's own model (fleet.js), its
-  // length the ship's (`metres`), nose down, rolled onto a wing and dug in
-  downed(k, { ship = 'xwing', metres = 12.5, pitch = -0.14, roll = 0.45, sink = 0.5 } = {}) {
+  // length the ship's (`metres`), nose down, rolled onto a wing, its lowest
+  // point `sink` metres into the ground (a twentieth of its length)
+  downed(k, { ship = 'xwing', metres = 12.5, pitch = -0.14, roll = 0.45, sink = metres * 0.05 } = {}) {
     const m = buildGalaxyShip(ship);
     k.own({ dispose: () => m.dispose() });
     m.group.scale.setScalar(metres);
     m.group.rotation.set(pitch, 0, roll, 'YXZ');
-    m.group.position.y = metres * 0.12 - sink;
     const object = new THREE.Group();
     object.add(m.group);
+    object.updateMatrixWorld(true);
+    m.group.position.y = -sink - new THREE.Box3().setFromObject(object).min.y;
     return { object, solids: [{ box: [0, 0, metres * 0.36, metres * 0.44, 0] }], update: (t) => m.update?.(t) };
   },
 

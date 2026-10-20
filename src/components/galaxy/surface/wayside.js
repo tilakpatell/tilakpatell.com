@@ -9,7 +9,10 @@
 //
 //   REGION = 1000 (metres a side)
 //   waysideAt(site, rx, rz) → { id, kind, at: [x, z], things: [spec…] } | null
+//     (a thing's `lie`: metres each way the scene lays it along the land's slope)
 //   regionsAround(x, z, reach) → [[rx, rz]] whose middles are within reach
+//   laidOn(thing, height) → the thing on the land's own height (`abs`, `y`),
+//     one with a `lie` pitched and rolled to the land's slope under it
 
 import { seeded } from '../../../lib/seeded.js';
 
@@ -80,7 +83,8 @@ export function waysideAt(site, rx, rz) {
   const s = Math.sin(yaw);
   const things = KITS[kind].map(([k, dx, dz, more = {}]) => ({
     kind: k === '$ship' ? 'downed' : k,
-    ...(k === '$ship' ? { opts: { ship, metres, roll } } : {}),
+    // (a ship laid along the land under its length: `lie`)
+    ...(k === '$ship' ? { opts: { ship, metres, roll }, lie: metres * 0.45 } : {}),
     at: [x + dx * c + dz * s, z - dx * s + dz * c],
     ...more,
     yaw: yaw + (more.yaw ?? 0),
@@ -95,4 +99,19 @@ export function regionsAround(x, z, reach) {
   const cz = Math.floor(z / REGION);
   for (let i = cx - r; i <= cx + r; i++) for (let j = cz - r; j <= cz + r; j++) if (Math.hypot((i + 0.5) * REGION - x, (j + 0.5) * REGION - z) <= reach) out.push([i, j]);
   return out;
+}
+
+// (a long thing laid along the land, `lie` metres each way: pitched up the
+// slope ahead of it and rolled to the slope across it, so a downed ship's
+// ends neither hang over a drop nor dig in deep)
+export function laidOn(t, height) {
+  const [x, z] = t.at;
+  const out = { ...t, abs: true, y: height(x, z) };
+  const L = t.lie ?? 0;
+  if (!L) return out;
+  const f = [Math.sin(t.yaw ?? 0), Math.cos(t.yaw ?? 0)];
+  const slope = ([dx, dz]) => (height(x + dx * L, z + dz * L) - height(x - dx * L, z - dz * L)) / (2 * L);
+  const along = slope(f);
+  // (the roll turns about the pitched nose, so the slope across is foreshortened by the pitch)
+  return { ...out, pitch: (t.pitch ?? 0) - Math.atan(along), roll: (t.roll ?? 0) + Math.atan(slope([f[1], -f[0]]) / Math.hypot(1, along)) };
 }
