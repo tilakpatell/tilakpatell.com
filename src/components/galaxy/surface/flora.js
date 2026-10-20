@@ -32,6 +32,7 @@
 
 import { REACH } from './terrain';
 import { gameRows } from './gameFlora';
+import { NATURE } from './nature';
 
 const PACK = 'kit:naturemega/';
 
@@ -76,6 +77,8 @@ const SIZE = [
   ['DeadTree_', [0.8, 1.3]],
   ['TwistedTree_', [0.8, 1.2]],
 ];
+// (the game's rocks, a metre or so as they come: knee-high to a man's height)
+const GAME_ROCK = [0.8, 2.4];
 const sizeOf = (name) => SIZE.find(([p]) => name.startsWith(p))?.[1] ?? [1, 1];
 
 // The kind a row stands in for when the kit won't load (the placer builds
@@ -129,7 +132,10 @@ export const BIOMES = {
   },
   // (the rest as the living layer's design lists them, its table at
   // docs/superpowers/specs/2026-10-09-galaxy-surfaces-living-layer-design.md:
-  // what each lays, band by band; a world tints them to its own ground)
+  // what each lays, band by band; a world tints them to its own ground. Their
+  // rocks are the game's scanned ones, nature.js, not the kit's faceted
+  // boulders: up close one of those beside a scanned wall shows the style
+  // clash the design warns of)
   // Sorgan's woods, Tython's and Lah'mu's grass: ferns, clover and toadstools
   // in the grass, big bushes and rocks, birches and pines
   temperate: {
@@ -145,7 +151,7 @@ export const BIOMES = {
     ],
     mid: [
       ['Bush_Large', 0.55],
-      ['Rock_Medium_2', 0.45],
+      [NATURE.rock, 0.45],
     ],
     trees: [
       ['Birch_2', 0.5],
@@ -167,7 +173,7 @@ export const BIOMES = {
     ],
     mid: [
       ['Bush_Large', 0.5],
-      ['Rock_Big_1', 0.5],
+      [NATURE.rock, 0.5, [1, 2.8]],
     ],
     trees: [['DeadTree_3', 1]],
     count: { trees: 40 },
@@ -188,14 +194,13 @@ export const BIOMES = {
     ],
     mid: [
       ['Bush_Long_1', 0.6],
-      ['Rock_Big_2', 0.4],
+      [NATURE.rock, 0.4, [1, 2.8]],
     ],
     trees: [
       ['TwistedTree_1', 0.5],
       ['TwistedTree_3', 0.5],
     ],
     count: { trees: 60 },
-    tint: { Rocks: '#7a8a62' },
   },
   // Dagobah's: fungus on the roots, low plants, dead and twisted trees
   swamp: {
@@ -208,7 +213,7 @@ export const BIOMES = {
       ['Plant_6', 0.3],
       ['Fern_2', 0.3],
     ],
-    mid: [['Rock_Medium_3', 1]],
+    mid: [[NATURE.stone, 1]],
     trees: [
       ['DeadTree_1', 0.5],
       ['TwistedTree_2', 0.5],
@@ -242,12 +247,10 @@ export const BIOMES = {
       ['Grass_Wispy_Short', 0.35],
       ['Pebble_Square_1', 0.2, [3, 6]],
     ],
-    // (a scrub bush and a stone: the boulders are the game's scanned
-    // rocks on the site's own rows, which a faceted kit boulder near them
-    // would show up)
+    // (a scrub bush and the desert's mud rocks)
     mid: [
       ['Bush_Long_1', 0.55, [0.5, 0.9]],
-      ['Rock_Medium_1', 0.45],
+      [NATURE.mudrock, 0.45, [1, 2.8]],
     ],
     trees: [],
     count: { cover: 1800 },
@@ -264,10 +267,10 @@ export const BIOMES = {
       ['Pebble_Square_1', 0.5, [3, 6]],
       ['Pebble_Square_3', 0.5, [3, 6]],
     ],
-    mid: [['Rock_Medium_4', 1]],
+    mid: [[NATURE.crater, 1]],
     trees: [],
     count: { cover: 900 },
-    tint: { Rocks: { recolour: '#2c2926' }, PathRocks: { recolour: '#2c2926' } },
+    tint: { PathRocks: { recolour: '#2c2926' } },
   },
   // Hoth's and Mygeeto's: nothing green, outcrops of blue-grey rock
   // (no pebbles: on snow they read as dirt, and the design lays none where
@@ -275,12 +278,8 @@ export const BIOMES = {
   tundra: {
     near: [],
     cover: [],
-    mid: [
-      ['Rock_Medium_2', 0.5],
-      ['Rock_Big_2', 0.5],
-    ],
+    mid: [[NATURE.rock, 1, [1, 3]]],
     trees: [],
-    tint: { Rocks: { recolour: '#8a96a4' } },
   },
   // Coruscant, Kamino, Bespin: no ground to grow on
   none: { near: [], cover: [], mid: [], trees: [] },
@@ -299,7 +298,9 @@ export function floraRows(site) {
   const lay = (band, list, count, within, more = {}) => {
     for (const [name, share, scale] of list) {
       const n = Math.round(count * share * density);
-      if (n > 0) rows.push({ band, kind: kindOf(name), model: PACK + name, n, within, scale: scale ?? sizeOf(name), flat: FLAT, ...wet, ...more(name) });
+      // (a game's rock as it is, over the built rock: nature.js)
+      const game = name.startsWith('game:');
+      if (n > 0) rows.push({ band, kind: game ? 'rock' : kindOf(name), model: game ? name : PACK + name, n, within, scale: scale ?? (game ? GAME_ROCK : sizeOf(name)), flat: FLAT, ...wet, ...more(name) });
     }
   };
   // (the cover too low to throw a shadow worth its draws)
