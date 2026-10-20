@@ -46,7 +46,7 @@ describe('the address', () => {
 });
 
 // an input snapshot that holds nothing and presses `pressed` (codes) this frame
-const snap = (pressed = [], held = []) => ({ pressed: new Set(pressed), action: (n) => held.includes(n), pointer: { drag: null } });
+const snap = (pressed = [], held = [], keys = []) => ({ pressed: new Set(pressed), keys: new Set(keys), action: (n) => held.includes(n), pointer: { drag: null } });
 
 describe('the face’s wiring: keys, events, the save', () => {
   it('binds the Road’s keys', async () => {
@@ -118,9 +118,38 @@ describe('the face’s wiring: keys, events, the save', () => {
     const rt3 = fakeRt();
     const walked = await road.create(rt3, { at: null });
     walked.attached();
-    for (let i = 0; i < 400; i++) walked.step(1, snap([], ['run']));
+    // (running, and doing each deed on the way: E pressed and held; a word the company says after its wait)
+    for (let i = 0; i < 600; i++) walked.step(1, snap(['KeyE'], ['run'], ['KeyE']));
     walked.skipToEnd();
     expect(rt3.saves.get('tp-road')).toMatchObject({ s: 1, ridden: true });
+  });
+
+  it('the walk stops at a deed and waits; the page is told what to press; done, the walk goes on', async () => {
+    const rt = fakeRt();
+    const world = await road.create(rt, { at: 'hobbiton:140' });
+    world.attached();
+    world.setAuto(false);
+    const dragon = sOf(STAGES, 'hobbiton', BEATS_OF.hobbiton.find((b) => b.id === 'dragon').at);
+    for (let i = 0; i < 20; i++) world.step(1, snap([], ['run']));
+    expect(world.s).toBeCloseTo(dragon, 9);
+    const told = rt.emitted.filter((e) => e.type === 'deed').at(-1);
+    expect(told).toMatchObject({ label: 'Light the dragon', keys: 'E', verb: 'press' });
+    world.step(0.1, snap(['KeyE']));
+    expect(rt.emitted.filter((e) => e.type === 'deed').at(-1).label).toBeUndefined();
+    for (let i = 0; i < 4; i++) world.step(1, snap([], ['run']));
+    expect(world.s).toBeGreaterThan(dragon);
+  });
+
+  it('a word with the company: T has whoever walks with you say the next of the stage’s lines', async () => {
+    const rt = fakeRt();
+    const world = await road.create(rt, { at: 'bree:20' });
+    world.attached();
+    world.step(0.1, snap());
+    expect(rt.emitted.filter((e) => e.type === 'talk').at(-1)).toMatchObject({ who: 'frodo', name: 'Frodo' });
+    world.step(0.1, snap(['KeyT']));
+    const said = rt.emitted.filter((e) => e.type === 'line').at(-1);
+    expect(said).toMatchObject({ who: 'frodo' });
+    expect(said.text).toMatch(/Underhill/);
   });
 
   it('a finished ride, come back to, starts again rather than ending at once', async () => {

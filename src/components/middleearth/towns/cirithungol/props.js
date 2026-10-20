@@ -244,7 +244,7 @@ function shardGeo(seed, { detail = 1, planes = 7, cut = 0.55, amp = 0.5 } = {}) 
 
 // Rock, nearly white so the vertex colours give its hue: grain, joints and
 // hairline cracks, streaks down it. With its relief.
-function rockCanvas(S, seed) {
+export function rockCanvas(S, seed) {
   const n = makeNoise(seed);
   const cells = makeCells(seed + 5);
   const field = new Float32Array(S * S);
@@ -267,7 +267,7 @@ function rockCanvas(S, seed) {
 
 // Dressed black stone in courses: blocks of uneven length, the joints
 // deep, the faces chipped. With its relief.
-function blockCanvas(S, seed) {
+export function blockCanvas(S, seed) {
   const n = makeNoise(seed);
   const field = new Float32Array(S * S);
   const c = makeCanvas(S);
@@ -295,7 +295,7 @@ function blockCanvas(S, seed) {
 }
 
 // Flagstones for the court: big irregular slabs, worn, dark joints.
-function flagCanvas(S, seed) {
+export function flagCanvas(S, seed) {
   const n = makeNoise(seed);
   const cells = makeCells(seed + 2);
   const field = new Float32Array(S * S);
@@ -316,7 +316,7 @@ function flagCanvas(S, seed) {
 }
 
 // Smooth noise in three channels, tiling, for the shaders.
-function noiseCanvas(S = 128) {
+export function noiseCanvas(S = 128) {
   const n1 = makeNoise(3);
   const n2 = makeNoise(17);
   const n3 = makeNoise(29);
@@ -328,7 +328,7 @@ function noiseCanvas(S = 128) {
 }
 
 // A soft round glow.
-function glowCanvas(S = 128) {
+export function glowCanvas(S = 128) {
   const c = makeCanvas(S);
   const x = c.getContext('2d');
   const grd = x.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
@@ -343,7 +343,7 @@ function glowCanvas(S = 128) {
 }
 
 // Starlight: a hot point with long thin rays, for the phial.
-function starCanvas(S = 256) {
+export function starCanvas(S = 256) {
   const c = makeCanvas(S);
   const x = c.getContext('2d');
   const h = S / 2;
@@ -379,7 +379,7 @@ function starCanvas(S = 256) {
 
 // A torch flame: a ragged teardrop, white-gold at its heart; the material's
 // colour gives its heat.
-function flameCanvas() {
+export function flameCanvas() {
   const c = makeCanvas(64, 128);
   const n = makeNoise(41);
   paintPixels(c, (u, v, out) => {
@@ -400,7 +400,7 @@ function flameCanvas() {
 // Shelob's web in a sheet: threads every way, thick where they cross, holes
 // torn in it, fading to nothing at its edges. The right-hand strip is solid
 // thread, for strands to take their colour from.
-function webCanvas(S = 256) {
+export function webCanvas(S = 256) {
   const c = makeCanvas(S);
   const x = c.getContext('2d');
   const r = rng(91);
@@ -638,10 +638,11 @@ function statueGeo(seed) {
 // Morgulduin's gorge, pale statues writhing along it; the dark walls of the
 // valley rising either side. The gate is the origin, the bridge running out
 // from it along +z. update(t, { beam, glow }).
-function morgul(K) {
+export function morgul(K) {
   const { mats } = K;
   const U = { uTime: { value: 0 }, uGlow: { value: 1 }, uBeam: { value: 0 }, uNoise: K.U.uNoise, uGhost: { value: new THREE.Color(0.3, 1.0, 0.46) } };
-  const ghost = ghostMaterial(U);
+  // (a kit's own, where it gives one: the Road's, on its house look; else the chapter's)
+  const ghost = (K.shaders?.ghost ?? ghostMaterial)(U);
   const g = new THREE.Group();
   g.name = 'minasMorgul';
   const r = rng(1201);
@@ -937,10 +938,11 @@ function morgul(K) {
     beam.add(m);
     return m;
   };
-  layer(1.1, 1.7, beamMaterial(U, { k: 1, core: 5, edge: 1.2 }));
-  layer(3.0, 4.6, beamMaterial(U, { k: 0.8, core: 1.7, edge: 2.6 }));
-  layer(8, 13, beamMaterial(U, { k: 0.14, core: 0.8, edge: 1.6 }));
-  const splash = new THREE.Mesh(new THREE.CircleGeometry(110, 32).rotateX(Math.PI / 2), splashMaterial(U));
+  const shaft = K.shaders?.beam ?? beamMaterial;
+  layer(1.1, 1.7, shaft(U, { k: 1, core: 5, edge: 1.2 }));
+  layer(3.0, 4.6, shaft(U, { k: 0.8, core: 1.7, edge: 2.6 }));
+  layer(8, 13, shaft(U, { k: 0.14, core: 0.8, edge: 1.6 }));
+  const splash = new THREE.Mesh(new THREE.CircleGeometry(110, 32).rotateX(Math.PI / 2), (K.shaders?.splash ?? splashMaterial)(U));
   splash.position.y = H * 0.82;
   splash.renderOrder = 7;
   splash.frustumCulled = false;
@@ -1190,7 +1192,7 @@ function wingParts(K, s, n) {
 // two pale points of light in the dark under it. Faces +x.
 // animate(t, { flap, turn }): `turn` turns his head (radians, + to his
 // left), as he feels for the Ring.
-function witchKing(K) {
+export function witchKing(K) {
   const { mats } = K;
   const g = new THREE.Group();
   g.name = 'witchKing';
@@ -1604,7 +1606,7 @@ function orc(K, seed = 1, { big = false } = {}) {
 // One orc of the host on the march, his spear upright, as one
 // vertex-coloured geometry for a column (an InstancedMesh, under 600
 // triangles).
-function orcColumnGeo() {
+export function orcColumnGeo() {
   const root = new THREE.Group();
   const { b } = orcRig(root);
   orcPose(b, 0.25, { march: true, spear: true });
@@ -1646,7 +1648,7 @@ const ROCK = { base: C(0x4a4743), dark: C(0x141312), pale: C(0x6e6a63), wet: C(0
 
 // A jagged black boulder about 2 m across: broken flat-faced rock, a
 // little paler where its faces turn up. One geometry.
-function rockGeo(seed = 1) {
+export function rockGeo(seed = 1) {
   const n = makeNoise(seed + 5);
   const g = shardGeo(seed * 7 + 1, { detail: 2, planes: 9, cut: 0.5, amp: 0.6 });
   const p = g.attributes.position;
@@ -1946,7 +1948,7 @@ function stairs(K, { at, len = STAIRS.len, steps = 260 } = {}) {
 // top edge and sides anchored, its belly sagging out (+z) and down, torn
 // at its lower edge, a few thick cables along it. One geometry for
 // mats.web.
-function webGeo(seed = 1) {
+export function webGeo(seed = 1) {
   const r = rng(seed * 11 + 3);
   const n = makeNoise(seed + 21);
   const nu = 10;
@@ -2406,7 +2408,7 @@ const TARSUS = -1.25;
 // feet keep their hold on the ground at any pace, the stride lengthening as
 // she hurries; `walking` is no longer needed. Each is eased, so she doesn't
 // snap from one to the next.
-function shelob(K) {
+export function shelob(K) {
   const { mats } = K;
   const g = new THREE.Group();
   g.name = 'shelob';
@@ -2675,7 +2677,7 @@ function shelob(K) {
 
 // Galadriel's phial: a little crystal flask, 12 cm, the light of Eärendil
 // in it. set(k): 0 dark, 1 blazing white-blue, with rays like a star.
-function phial(K) {
+export function phial(K) {
   const g = new THREE.Group();
   g.name = 'phial';
   const prof2 = [[0, 0], [0.022, 0.002], [0.032, 0.014], [0.035, 0.034], [0.03, 0.056], [0.016, 0.072], [0.009, 0.082], [0.009, 0.098], [0.013, 0.102], [0.013, 0.11], [0.007, 0.114], [0.006, 0.12]];

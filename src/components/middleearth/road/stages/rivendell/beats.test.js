@@ -11,7 +11,7 @@ describe('Rivendell’s beats', () => {
     const by = Object.fromEntries(BEATS.map((b) => [b.id, b]));
     expect(by.reveal).toMatchObject({ rig: 'crane', hold: 12 });
     expect(by.council).toMatchObject({ rig: 'seat', hold: 20 });
-    expect(by.council.lines.map((l) => LINES[l].who)).toEqual(['elrond', 'boromir', 'frodo']);
+    expect([...by.council.lines, ...by.council.deed.lines].map((l) => LINES[l].who)).toEqual(['elrond', 'boromir', 'frodo']);
     // (the axe after the three voices: its own beat, just past the Council’s mark, the same shot)
     expect(by.axe).toMatchObject({ clip: 'andMyAxe', hold: 0, rig: 'seat' });
     expect(by.axe.at).toBeGreaterThan(by.council.at);

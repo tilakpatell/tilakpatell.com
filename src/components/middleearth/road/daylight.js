@@ -69,7 +69,8 @@ const TABLE = {
   // (the eye opened: under the pall the ash and the hobbits on it went black at 1)
   gorgoroth: [L({ el: 0.1, colour: RED, ambient: 0.12, fog: [0.3, 0.1, 0.05], density: 0.008, pall: 0.9, exposure: 1.65 }), { el: 0.2, ambient: 0.2, fog: [0.4, 0.3, 0.28], density: 0.006, pall: 0.5, exposure: 1.35 }],
   'minas-tirith': [L({ el: 1.0, colour: WHITE, ambient: 0.45, fog: [0.8, 0.86, 0.92], density: 0.0015 }), { el: 0.9, ambient: 0.45, fog: [0.8, 0.86, 0.92], density: 0.0015 }],
-  havens: [L({ el: 0.08, az: Math.PI, colour: GOLD, ambient: 0.3, fog: [0.9, 0.75, 0.6], density: 0.002 }), { el: -0.02, az: Math.PI, colour: RED, ambient: 0.22, fog: [0.85, 0.6, 0.5], density: 0.002 }],
+  // (the sun going down into the Sea ahead, where the ship sails)
+  havens: [L({ el: 0.08, az: 0.12, colour: GOLD, ambient: 0.3, fog: [0.9, 0.75, 0.6], density: 0.002 }), { el: -0.02, az: 0.12, colour: RED, ambient: 0.22, fog: [0.85, 0.6, 0.5], density: 0.002 }],
 };
 
 export const STORMS = {

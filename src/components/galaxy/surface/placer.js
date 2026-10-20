@@ -11,7 +11,9 @@
 // built things that move when something happens: a trapdoor, a gate),
 // setZone(inZone), ready (a promise: everything asked for so far is in),
 // kitFor(pack) (a nature kit in the world's wind, look and tint, once a
-// pack: the living ground draws in it too, living.js), dispose() }
+// pack: the living ground draws in it too, living.js), dispose() }; a
+// scatter item's `box` ([hw, hd] at its scale 1) makes it solid over that
+// box, turned with it, not a circle (a city's building: sites/city.js)
 //   `models`: the book of models kinds are looked up in (catalog's
 //   SURFACE_MODELS unless a page hands in its own); `props`, `scatter`:
 //   the builds (props/'s PROPS and SCATTER unless a page hands in its own).
@@ -590,7 +592,13 @@ export function createPlacer({ parent, kit, world, warm = (o) => Promise.resolve
           }
         const made = instanceParts(parts);
         nearAt = null; // (found again on the next update, these with them)
-        if (solid && radius) for (const x of mats) world.solids.circle(x.at[0], x.at[2], radius * x.s);
+        // (an item that says its footprint, a city's building, a box over it; the rest a circle)
+        if (solid && radius)
+          mats.forEach((x, i) => {
+            const box = items[i].box;
+            if (box) world.solids.box(x.at[0], x.at[2], box[0] * x.s, box[1] * x.s, x.yaw);
+            else world.solids.circle(x.at[0], x.at[2], radius * x.s);
+          });
         return made;
       };
       // (built, as a kind with no model is: SCATTER's, or a prop's parts;

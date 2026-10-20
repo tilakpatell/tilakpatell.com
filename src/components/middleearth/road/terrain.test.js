@@ -148,6 +148,14 @@ describe('the rivers’ water', () => {
     expect(wetBy([])(0, 60)).toBe(false);
   });
 
+  it('a stage’s sea: wet under its level, dry over it', () => {
+    const land = landFor('havens', { res: 4, wide: 512 });
+    expect(land.wet(0, 200)).toBe(true);
+    expect(land.wet(0, 10)).toBe(false);
+    // (the last stage: the Gulf runs on past its end, no seam to rise to)
+    expect(land.wet(0, 320)).toBe(true);
+  });
+
   it('a stage’s land carries its rivers, lines made, and wet', () => {
     const land = landFor('hobbiton', { res: 4, wide: 256 });
     expect(land.rivers.length).toBeGreaterThan(0);

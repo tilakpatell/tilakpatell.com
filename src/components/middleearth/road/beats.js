@@ -6,10 +6,12 @@
 //   left(beats, from, to) → ids crossed walking back (from > to), the mirror of entered
 //   rigAt(beats, local) → { id, rig, params, cut, since } of the beat whose rig holds the camera, or null
 //   holdsOf(beats) → seconds held in all
-//   stepBeats(since, beats, { from, to, dt, jumped }) → { since, fired }: the beats under way
+//   stepBeats(since, beats, { from, to, dt, jumped, waits }) → { since, fired }: the beats under way
 //     (since: { id: seconds since it began }); a step forward begins each beat it reaches
 //     (on its mark counts: the clock stops on it to hold), a step back undoes each it
-//     goes back over, a jump marks those behind as long done without playing them
+//     goes back over, a jump marks those behind as long done without playing them;
+//     one in `waits` ({ id: seconds }: its deed undone, deeds.js) plays up to those
+//     seconds and stays there until it's let go
 //   fxAt(beats, since) → { black (0…1), vision (bool), shake (0…1) }: the beats’ effects this moment
 
 export const REACH = 18; // m past its mark a beat keeps the camera, unless it says
@@ -29,7 +31,7 @@ export const holdsOf = (beats) => beats.reduce((a, b) => a + (b.hold ?? 0), 0);
 
 const ON = 1e-6; // m: on a beat’s mark is at it
 
-export function stepBeats(since, beats, { from, to, dt = 0, jumped = false }) {
+export function stepBeats(since, beats, { from, to, dt = 0, jumped = false, waits = null }) {
   const next = {};
   const fired = [];
   if (jumped) {
@@ -40,6 +42,8 @@ export function stepBeats(since, beats, { from, to, dt = 0, jumped = false }) {
       // (gone back over: undone, so walking on through it plays it again)
       if (to < from && b.at > to + ON) continue;
       next[b.id] = since[b.id] + dt;
+      // (its deed undone: the beat goes no further than the deed's moment)
+      if (waits?.[b.id] != null) next[b.id] = Math.min(next[b.id], Math.max(since[b.id], waits[b.id]));
     }
     if (to >= from)
       for (const b of beats)

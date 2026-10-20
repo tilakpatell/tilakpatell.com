@@ -11,7 +11,9 @@ describe('Bree’s beats', () => {
     const by = Object.fromEntries(BEATS.map((b) => [b.id, b]));
     expect(by.gate).toMatchObject({ rig: 'low', hold: 8 });
     expect(by.pony).toMatchObject({ rig: 'seat', hold: 12 });
-    expect(by.pony.lines.map((l) => LINES[l].who)).toEqual(['butterbur']);
+    // (Butterbur’s line once the name is given: the deed’s)
+    expect(by.pony.deed.lines.map((l) => LINES[l].who)).toEqual(['butterbur']);
+    expect(by.pony.deed.choices.find((c) => c.right).label).toBe('Underhill');
     expect(by.riders).toMatchObject({ rig: 'wide', cut: 0, clip: 'nazgul' });
     expect(by.dawn).toMatchObject({ rig: 'lead', hold: 0 });
     expect(by.dawn.lines.map((l) => LINES[l].who)).toEqual(['aragorn']);

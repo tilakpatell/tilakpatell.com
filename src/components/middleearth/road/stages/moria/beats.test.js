@@ -16,7 +16,9 @@ describe('Moria’s beats', () => {
     expect(by.dwarrowdelf).toMatchObject({ rig: 'crane' });
     expect(by.run).toMatchObject({ clip: 'gandalfRun', hold: 0 });
     // (the plan’s low rig behind the lead would look away from the Balrog: a fixed shot low on the far bank, back along the span)
-    expect(by.bridge).toMatchObject({ rig: 'seat', hold: 22, cut: 0, clip: 'youShallNotPass' });
+    // (the line once the visitor holds the bridge with him, before the staff comes down at 11 s)
+    expect(by.bridge).toMatchObject({ rig: 'seat', hold: 22, cut: 0, deed: { verb: 'hold', clip: 'youShallNotPass' } });
+    expect(by.bridge.deed.at + by.bridge.deed.seconds).toBeLessThanOrEqual(11);
     expect(by.bridge.params.at[1]).toBeLessThan(1.6);
     // (the fall’s last words after the hold, in the same shot)
     expect(by.fly).toMatchObject({ clip: 'flyYouFools', hold: 0, rig: 'seat' });
