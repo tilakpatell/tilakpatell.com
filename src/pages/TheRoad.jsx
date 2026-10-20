@@ -48,7 +48,8 @@ export default function TheRoad() {
   const [deed, setDeed] = useState(null);
   const [talk, setTalk] = useState(null);
   const [said, setSaid] = useState(null);
-  const lines = useRef([]);
+  const lines = useRef([]); // the lines waiting their turn
+  const saying = useRef(null); // the one shown
   const mark = useRef(null);
   const menu = useRef(null);
   const lastLore = useRef(null);
@@ -68,8 +69,12 @@ export default function TheRoad() {
     else if (e.type === 'talk') setTalk(e.who ? e : null);
     else if (e.type === 'line' && e.text) {
       // (queued: a beat's three voices are read one after another)
-      lines.current.push({ who: e.who, text: e.text, key: `${e.who}-${Date.now()}-${lines.current.length}` });
-      setSaid((was) => was ?? lines.current.shift());
+      const line = { who: e.who, text: e.text, key: `${e.who}-${Date.now()}-${lines.current.length}` };
+      if (saying.current) lines.current.push(line);
+      else {
+        saying.current = line;
+        setSaid(line);
+      }
     }
   }, [navigate]);
   const { host, status, rt } = useWorld(roadModule, { props, onEvent });
@@ -83,7 +88,10 @@ export default function TheRoad() {
   // each line its time to read, then the next
   useEffect(() => {
     if (!said) return undefined;
-    const t = setTimeout(() => setSaid(lines.current.shift() ?? null), saidFor(said.text));
+    const t = setTimeout(() => {
+      saying.current = lines.current.shift() ?? null;
+      setSaid(saying.current);
+    }, saidFor(said.text));
     return () => clearTimeout(t);
   }, [said]);
   useEffect(() => {
