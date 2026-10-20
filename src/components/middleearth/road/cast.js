@@ -30,6 +30,11 @@ import { gearFor, makeGear, wear } from './gear';
 const DIR = '/models/middleearth/cast';
 const LOCO = ['idle', 'walk', 'run'];
 const LOOPS = new Set(['idle', 'walk', 'run', 'jog', 'walk.formal']);
+// bases held at a moment of their clip rather than looped from its start:
+// the kneel is a clip of kneeling to work at something, turning as it goes,
+// held a little after it's down (as the Minas Tirith chapter holds it at the
+// crowning) and let creep on slowly so it still breathes
+const HELD = { 'kneel.fix': { at: 1.2, speed: 0.015 } };
 const INK = 0.012; // m: the ink line’s width round a figure
 
 export const HEIGHTS = { hobbit: 1.05, man: 1.8, elf: 1.85, dwarf: 1.35, wizard: 1.9 };
@@ -147,8 +152,12 @@ export function walker(name, { height = heightOf(name), seed = 0, rt = null } = 
       if (!st) return;
       const base = want.base && !LOOPS.has(want.base) ? want.base : null;
       if (base !== shownBase) {
+        if (HELD[shownBase]) st.anim.stop('full', 0.4);
         shownBase = base;
-        st.anim.base(base, { fade: 0.4 });
+        if (HELD[base]) {
+          st.anim.base(null, { fade: 0.4 });
+          st.anim.play(base, { layer: 'full', loop: true, fade: 0.4, ...HELD[base] });
+        } else st.anim.base(base, { fade: 0.4 });
       }
       const speed = base ? 0 : want.speed;
       const motion = { move: moveFor(speed, st.walkV, st.runV), speed, side: 0, turn: 0, down: 0, air: 0 };
