@@ -443,18 +443,39 @@ describe('what the simulation found', () => {
     for (const x of [a2, b]) expect(x.link.snapshot().party).toMatchObject({ leader: BRAVO, epoch: 3, members: [{ id: ALPHA }, { id: BRAVO }] });
   });
 
-  it('a removal heard after its sender’s goodbye: the leader you took over from, back, still puts you out', () => {
-    // (seed 1402: Alpha takes Bravo out and goes, and the goodbye reaches Bravo first, who takes over)
+  it('a removal that crossed your takeover: the leader you took over from, back, still puts you out', () => {
+    // (seed 1402: Alpha takes Bravo out and goes, and the goodbye reaches Bravo first, who takes over;
+    // seed 261: Alpha, back from the store, takes Bravo out before Bravo’s takeover reaches him)
     const store = createPartyStore();
     const { room, a, b } = pair({ a: { store } });
-    room.gone(ALPHA);
-    a.link.api.remove(BRAVO); // (heard by no one: Bravo has let him go)
     close(room, a);
     expect(b.link.snapshot().party).toMatchObject({ leader: BRAVO, epoch: 3 });
+    const elsewhere = createRoom(); // (what Alpha says there reaches no one here: his words lost behind his goodbye)
+    const a1 = elsewhere.join(ALPHA, 'Alpha', { store });
+    expect(a1.link.api.remove(BRAVO)).toBe(true);
+    close(elsewhere, a1);
     const a2 = room.join(ALPHA, 'Alpha', { store });
     room.meet();
     beats(room, [a2, b], 1);
     expect([ids(a2), ids(b)]).toEqual([[ALPHA], null]);
+    expect(b.seen.some((e) => e.text === 'You’re no longer in the party')).toBe(true);
+  });
+
+  it('one put out while away is told again a while on, whatever epoch they hold: the first was sent before they’d read the leader’s hello', () => {
+    // (seed 396: Bravo took over and went; Alpha, back, took him out at the same epoch; Bravo, back, never heard it)
+    const [sa, sb] = [createPartyStore(), createPartyStore()];
+    const { room, a, b } = pair({ a: { store: sa }, b: { store: sb } });
+    close(room, a);
+    close(room, b);
+    const a2 = room.join(ALPHA, 'Alpha', { store: sa });
+    expect(a2.link.api.remove(BRAVO)).toBe(true);
+    const b2 = room.join(BRAVO, 'Bravo', { store: sb });
+    expect(b2.link.snapshot().party).toMatchObject({ leader: BRAVO, epoch: 3 });
+    room.hello(b2); // (Alpha’s roster to him is lost, unread)
+    room.meet();
+    beats(room, [a2, b2], 1);
+    expect([ids(a2), ids(b2)]).toEqual([[ALPHA], null]);
+    expect(b2.seen.some((e) => e.text === 'You’re no longer in the party')).toBe(true);
   });
 
   it('the one who left tells a member back behind it, that visit: here, that they were put out', () => {

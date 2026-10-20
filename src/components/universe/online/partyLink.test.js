@@ -310,6 +310,13 @@ describe('leaving, removing and leading', () => {
     expect(c.link.api.remove(ALPHA)).toBe(true);
   });
 
+  it('the lead goes only to a member who’s here, as the dialog offers it: one away would come back to a lead they never had, and could take the party apart', () => {
+    const { room, a, c } = threeOf();
+    close(room, c);
+    expect(a.link.api.promote(CHARLIE)).toBe(false);
+    expect(a.link.api.promote(BRAVO)).toBe(true);
+  });
+
   it('the leader gone, the first here takes over; the old one back takes the newer roster', () => {
     const store = createPartyStore();
     const { room, b, c } = threeOf({ a: { store } });

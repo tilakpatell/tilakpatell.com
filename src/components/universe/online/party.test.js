@@ -250,6 +250,18 @@ describe('applyRoster', () => {
       expect(applyRoster(mine, ros(BRAVO, 2, [BRAVO, CHARLIE]), at(BRAVO, ALPHA)).why).toBe('ignored');
       expect(applyRoster(mine, ros(BRAVO, 4 + EPOCH_SPAN, [BRAVO, CHARLIE]), at(BRAVO, ALPHA)).why).toBe('ignored');
     });
+    it('a leader who took over is put out by the one they took over from, at that epoch or past it: their word crossed the takeover', () => {
+      // (Bravo took over from Alpha at 3, thinking him gone; Alpha, there all along, had taken Bravo out at 3)
+      const mine = freeze(takeOver(partyOf(ALPHA, BRAVO, CHARLIE), BRAVO));
+      const out = ros(ALPHA, 4, [ALPHA, CHARLIE]);
+      expect(applyRoster(mine, out, at(ALPHA, BRAVO, { present: here(BRAVO), ousted: ALPHA }))).toEqual({ party: null, why: 'removed' });
+      expect(applyRoster(mine, ros(ALPHA, 5, [ALPHA, CHARLIE]), at(ALPHA, BRAVO, { present: here(BRAVO), ousted: ALPHA })).why).toBe('removed');
+      // not from another member, nor once you’ve moved on past it, nor naming another leader, nor without the takeover
+      expect(applyRoster(mine, ros(CHARLIE, 4, [ALPHA, CHARLIE]), at(CHARLIE, BRAVO, { present: here(BRAVO), ousted: ALPHA })).why).toBe('ignored');
+      expect(applyRoster(freeze(removeMember(mine, CHARLIE)), out, at(ALPHA, BRAVO, { present: here(BRAVO), ousted: ALPHA })).why).toBe('ignored');
+      expect(applyRoster(mine, ros(CHARLIE, 4, [ALPHA, CHARLIE]), at(ALPHA, BRAVO, { present: here(BRAVO), ousted: ALPHA })).why).toBe('ignored');
+      expect(applyRoster(mine, out, at(ALPHA, BRAVO, { present: here(BRAVO) })).why).toBe('ignored');
+    });
     it('takes a member’s word at most EPOCH_SPAN past yours, so no one can push the epoch past every roster to come', () => {
       expect(EPOCH_SPAN).toBe(256);
       const mine = partyOf(ALPHA, BRAVO, CHARLIE); // (epoch 3)

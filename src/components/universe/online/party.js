@@ -32,8 +32,10 @@
 //   if it keeps you in it (only your own leader puts you out: or, while you
 //   lead as you were last visit, the member who took over from you, in a
 //   roster of theirs at your epoch or past it, since there’s no leader of
-//   yours to tell you) and is newer by at most EPOCH_SPAN, or, at the same
-//   epoch, wins the tie (beats). One
+//   yours to tell you; or, once you’ve taken over, the leader you took over
+//   from (`ousted`), leading in a roster at your epoch or past it: they
+//   weren’t gone, and their word crossed yours) and is newer by at most
+//   EPOCH_SPAN, or, at the same epoch, wins the tie (beats). One
 //   passing on another’s roster, only while your leader isn’t here to say it
 //   (`present`: a leader asks it of themselves, and is “not here” only while
 //   what they hold may be out of date, back from last visit, so the members
@@ -53,7 +55,7 @@
 // selfId) → party | null (not in it); each change null at EPOCH_MAX;
 // rosterMsg(party) → { t: 'ros', p, l, e, m: [{ id, name }] }; beats(a, b)
 // → bool (party a over b, at one epoch); applyRoster(party, msg, { fromId,
-// selfId, joining, now, present, prior }) → { party, why: 'joined' |
+// selfId, joining, now, present, prior, ousted }) → { party, why: 'joined' |
 // 'updated' | 'removed' | 'ignored' }
 
 import { cleanName } from './names';
@@ -133,16 +135,16 @@ export function beats(a, b) {
 }
 
 // whether `next` (the roster as read) is believed over your party, as above
-function believed(party, next, { fromId, selfId, present, prior }) {
+function believed(party, next, { fromId, selfId, present, prior, ousted }) {
   const listed = (id) => isMember(next, id);
   // (the leader you had, saying the one whose word you took is out)
   if (prior && fromId === prior.leader && next.epoch > prior.epoch && !listed(prior.from)) return true;
   if (fromId === party.leader) return next.epoch > party.epoch || (next.epoch === party.epoch && next.leader === party.leader && sameIds(party, next));
   if (!isMember(party, fromId) || !listed(fromId)) return false;
-  // (you out: only your own leader says so; or, while you lead it as you
-  // were last visit, the member who took over from you, in their own
-  // roster, at your epoch or past it: put out while you were away)
-  if (!listed(selfId)) return party.leader === selfId && !present(selfId) && next.leader === fromId && next.epoch >= party.epoch && next.epoch - party.epoch <= EPOCH_SPAN;
+  // (you out: only your own leader says so; or, while you lead it, in their
+  // own roster at your epoch or past it, the member who took over from you
+  // while you were away, or the one you took over from, who wasn’t gone)
+  if (!listed(selfId)) return party.leader === selfId && (!present(selfId) || fromId === ousted) && next.leader === fromId && next.epoch >= party.epoch && next.epoch - party.epoch <= EPOCH_SPAN;
   // (another’s roster passed on, while your own leader’s here to say it: theirs stands)
   if (next.leader !== fromId && present(party.leader)) return false;
   if (next.epoch > party.epoch) return next.epoch - party.epoch <= EPOCH_SPAN;
@@ -160,13 +162,13 @@ function wayIn(msg, fromId, joining) {
 
 const same = (a, b) => a.leader === b.leader && a.epoch === b.epoch && a.members.length === b.members.length && a.members.every((m, i) => m.id === b.members[i].id && m.name === b.members[i].name);
 
-export function applyRoster(party, msg, { fromId, selfId, joining = null, now, present = () => false, prior = null }) {
+export function applyRoster(party, msg, { fromId, selfId, joining = null, now, present = () => false, prior = null, ousted = null }) {
   const ignored = { party, why: 'ignored' };
   if (!wellFormed(msg)) return ignored;
   const ours = Boolean(party) && party.id === msg.p;
   const was = new Map(ours ? party.members.map((m) => [m.id, m.since]) : []);
   const next = { id: msg.p, leader: msg.l, epoch: msg.e, members: msg.m.map(({ id, name }) => ({ id, name: named(name), since: was.get(id) ?? now })) };
-  if (ours ? !believed(party, next, { fromId, selfId, present, prior }) : !wayIn(msg, fromId, joining)) return ignored;
+  if (ours ? !believed(party, next, { fromId, selfId, present, prior, ousted }) : !wayIn(msg, fromId, joining)) return ignored;
   // (a roster for a party you’re joining that hasn’t you in it yet crossed your yes)
   if (!isMember(next, selfId)) return ours ? { party: null, why: 'removed' } : ignored;
   if (!ours) return { party: next, why: 'joined' };
