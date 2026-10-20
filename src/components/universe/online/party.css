@@ -1,0 +1,140 @@
+/* The party (PartyDialog.jsx): its dialog, the calls a member gets (a summons,
+   the leader on the move) and the corner's way to it (Online.jsx). The house
+   kit draws the parts (.card, .btn, .switch, .notice, .dialog-title,
+   CloseButton), and the shell's one floating surface, .dialog, dresses it
+   as each colour dresses the settings and the guide (styles/dialogs.css);
+   this sheet only places them, in the theme's tokens, so a square theme
+   squares it and dark mode darkens it. Portalled to the body,
+   out of the map's dark scope: it wears the page's colours, not the map's. */
+
+/* the shade over the page, and the dialog in the middle of it */
+.party-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: var(--scrim);
+  animation: party-fade var(--t-fast) var(--ease-out);
+}
+.party-dialog {
+  position: relative; /* (the colour's dress is drawn on its ::before, inset to it) */
+  display: flex;
+  flex-direction: column;
+  width: min(30rem, 100%);
+  max-height: min(42rem, calc(100dvh - 2rem));
+  border-radius: var(--r-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-dialog);
+  overflow: hidden;
+  animation: party-rise var(--t-base) var(--ease-out);
+}
+.party-head { display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 0.9rem 0.75rem 1.1rem; border-bottom: 1px solid var(--border); }
+.party-head .dialog-title { flex: none; }
+.party-tabs { margin-right: auto; }
+.party-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1rem 1.1rem 1.2rem; color: var(--text-body); }
+
+/* a marker on a tab or a button: an invite or a line waits */
+.party-dot { flex: none; width: 0.5rem; height: 0.5rem; margin-left: 0.4rem; border-radius: 50%; background: var(--accent); }
+
+.party-section + .party-section { margin-top: 1.1rem; }
+.party-section > .label { margin-bottom: 0.4rem; }
+.party-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.4rem; }
+.party-title { color: var(--text); font-size: var(--fs-lg); font-weight: 650; line-height: 1.3; }
+.party-text { margin: 0.5rem 0 0; font-size: var(--fs-sm); line-height: 1.5; }
+.party-fine { margin: 0.75rem 0 0; color: var(--muted); font-size: var(--fs-xs); line-height: 1.5; }
+/* a status line with nothing to say yet takes no room, but stays in the page:
+   a live region hidden while it’s empty isn’t heard when it fills */
+.party-fine:empty { margin: 0; }
+.party-link { color: var(--accent-text); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+/* a member, an invite, a pilot to invite: a name and its line, the buttons after */
+.party-list { display: grid; gap: 0.4rem; margin: 0; padding: 0; list-style: none; }
+.party-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: var(--r-panel); background: var(--surface); }
+.party-row[data-you] { background: var(--surface-2); }
+.party-row[data-invite] { border-color: var(--accent); }
+.party-who { display: grid; flex: 1; min-width: 0; }
+.party-name { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
+.party-name b { overflow: hidden; color: var(--text); font-size: var(--fs-sm); font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+/* a mate, or an ally to invite: the ally green, as on the map's tags */
+.party-row:is([data-mate], [data-ally]) .party-name b { color: var(--ally); }
+/* someone not online: their name dims by colour, never by fading */
+.party-row[data-away] .party-name b { color: var(--muted); font-weight: 500; }
+.party-you { color: var(--muted); font-size: var(--fs-xs); }
+.party-sub { color: var(--muted); font-size: var(--fs-xs); line-height: 1.4; overflow-wrap: anywhere; }
+.party-row[data-away] .party-sub { font-style: italic; }
+/* (a present member's line starts with a dot in the all's-well colour) */
+.party-row:not([data-away]) .party-sub[data-where]::before { content: ''; display: inline-block; width: 0.45rem; height: 0.45rem; margin-right: 0.35rem; border-radius: 50%; background: var(--ok); vertical-align: 0.05em; }
+.party-acts { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.4rem; }
+.party-remove { color: var(--danger); }
+/* a button that does nothing now: dimmed by colour, and still a Tab stop when
+   it’s only aria-disabled (an Invite asked, Summon just sent) */
+.party-dialog .btn:is(:disabled, [aria-disabled='true']) { border-color: var(--border); background: var(--surface-2); color: var(--muted); cursor: default; transform: none; }
+.party-count { color: var(--muted); font-family: var(--font-mono); font-size: var(--fs-xs); white-space: nowrap; }
+
+.party-summon,
+.party-follow { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-top: 0.9rem; }
+.party-follow > span { display: grid; color: var(--text); font-size: var(--fs-sm); font-weight: 600; }
+.party-follow .party-sub { font-weight: 400; }
+.party-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+
+/* the chat: the lines, newest last, and the field under them */
+.party-lines { display: grid; gap: 0.6rem; max-height: 18rem; margin: 0; padding: 0 0.1rem 0 0; overflow-y: auto; overscroll-behavior: contain; list-style: none; }
+.party-line { padding: 0.45rem 0.65rem; border-left: 2px solid var(--ally); border-radius: var(--r-chip); background: var(--surface-2); }
+.party-line[data-mine] { border-left-color: var(--accent); }
+.party-line-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+.party-line-head b { color: var(--text); font-size: var(--fs-xs); font-weight: 650; }
+.party-line-head time { color: var(--muted); font-family: var(--font-mono); font-size: var(--fs-xs); }
+.party-line p { margin: 0.15rem 0 0; color: var(--text-body); font-size: var(--fs-sm); line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
+.party-say { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.9rem; }
+.party-input { flex: 1; min-width: 0; min-height: 40px; padding: 0 0.75rem; border: 1px solid var(--border-strong); border-radius: var(--r-panel); background: var(--surface); color: var(--text); font-size: var(--fs-md); }
+.party-input:focus { outline: 2px solid var(--accent-text); outline-offset: 1px; }
+.party-say .party-count[data-full] { color: var(--warn); }
+.party-join .party-input { width: 100%; margin-top: 0.35rem; }
+.party-join .label { display: block; margin-top: 0.9rem; }
+.party-alert { margin: 0.5rem 0 0; color: var(--danger); font-size: var(--fs-sm); }
+
+/* quick chat: the lines as a wrap of buttons */
+.party-quips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.9rem; }
+
+/* a summons, or the leader on the move: a notice top centre, under the bar */
+.party-calls { position: fixed; top: calc(var(--nav-h) + 0.75rem); left: 0; right: 0; z-index: var(--z-sheet); display: grid; justify-items: center; gap: 0.5rem; padding: 0 1rem; pointer-events: none; }
+.party-call { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; max-width: 28rem; padding: 0.6rem 0.7rem 0.6rem 1rem; overflow: hidden; font-size: var(--fs-sm); pointer-events: auto; animation: party-rise var(--t-base) var(--ease-out); }
+.party-call p { margin: 0; color: var(--text); }
+.party-call b { color: var(--ally); }
+/* the moment before the party sets off after its leader, running out */
+.party-call-time { position: absolute; left: 0; bottom: 0; width: 100%; height: 3px; background: var(--accent); transform-origin: left; animation: party-wait var(--wait, 5s) linear both; }
+
+/* the corner's way to it (Online.jsx), in the map's dark card */
+.universe-online-party { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-top: 0.7rem; color: var(--muted); font-size: 0.78rem; }
+.universe-online-party .universe-online-act { display: inline-flex; align-items: center; }
+
+@keyframes party-fade { from { opacity: 0; } }
+@keyframes party-rise { from { opacity: 0; translate: 0 8px; } }
+@keyframes party-wait { to { transform: scaleX(0); } }
+
+/* a phone: a sheet up from the bottom, the tabs a size down and the head's
+   name left to screen readers, so the three tabs and the X fit one row */
+@media (max-width: 639px) {
+  .party-scrim { place-items: end stretch; padding: 0; }
+  .party-dialog { width: 100%; max-height: min(85dvh, calc(100dvh - 3rem)); border-radius: var(--r-card) var(--r-card) 0 0; padding-bottom: env(safe-area-inset-bottom); }
+  .party-head { gap: 0.5rem; padding-left: 0.75rem; }
+  .party-head .dialog-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .party-tabs.switch > [role='tab'] { height: 32px; padding: 0 0.6rem; font-size: 0.8rem; }
+  .party-row { flex-wrap: wrap; }
+}
+/* a thumb: every target 44px */
+@media (pointer: coarse) {
+  .party-dialog .btn-sm,
+  .party-call .btn-sm,
+  .party-input { min-height: 44px; }
+  .party-link { display: inline-flex; align-items: center; min-height: 44px; }
+  .universe-online-party .universe-online-act { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .party-scrim,
+  .party-dialog,
+  .party-call { animation: none; }
+}
+html[data-motion='reduced'] :is(.party-scrim, .party-dialog, .party-call) { animation: none; }

@@ -149,6 +149,37 @@ describe('travellers', () => {
     c.leave();
   });
 
+  it('a quick-chat line of theirs (the site’s, by the same key) rides on list()’s rows while it shows', async () => {
+    const load = fakeRelay();
+    const now = () => 1000;
+    const said = new Map();
+    const a = createTravellers({ town: 'bree', name: 'Rosie', load, now });
+    const b = createTravellers({ town: 'bree', name: 'Fatty', load, now, quip: (id) => said.get(id) ?? null });
+    await settle();
+    await settle();
+    a.pose({ x: 1, z: 2, face: 0, speed: 3 });
+    const [rosie] = b.list();
+    expect(rosie.quip).toBeNull();
+    said.set(rosie.id, 'On my way');
+    expect(b.list()[0].quip).toBe('On my way');
+    // (asked each time: once it's old, the site says null, and so does the row)
+    said.delete(rosie.id);
+    expect(b.list()[0].quip).toBeNull();
+    // (only a line is a line)
+    said.set(rosie.id, 7);
+    expect(b.list()[0].quip).toBeNull();
+    said.set(rosie.id, '');
+    expect(b.list()[0].quip).toBeNull();
+    // (a world without the site's link: no one says anything)
+    const c = createTravellers({ town: 'bree', name: 'Nob', load, now });
+    await settle();
+    a.pose({ x: 1, z: 2, face: 0, speed: 3 }, {}, { force: true });
+    expect(c.list()[0].quip).toBeNull();
+    a.leave();
+    b.leave();
+    c.leave();
+  });
+
   it('a hidden traveller takes no place', async () => {
     const load = fakeRelay();
     const now = () => 1000;

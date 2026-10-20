@@ -61,7 +61,7 @@ function fakeDraw() {
   const d = { structures: new Map(), aims: new Map(), peers: [], bolts: [] };
   return Object.assign(d, {
     makeStructures: () => ({ set: (e) => d.structures.set(e.id, e), remove: (id) => d.structures.delete(id), has: (id) => d.structures.has(id), aim: (id, y, p) => d.aims.set(id, [y, p]), draw: () => {}, count: () => d.structures.size, dispose: () => {} }),
-    makePeers: () => ({ draw: (list, at, ally = () => false) => ((d.peers = list), (d.allies = list.filter((p) => ally(p.id)).map((p) => p.id))), count: () => d.peers.length, dispose: () => {} }),
+    makePeers: () => ({ draw: (list, at, ally = () => false, quip = () => null) => ((d.peers = list), (d.allies = list.filter((p) => ally(p.id)).map((p) => p.id)), (d.quips = list.map((p) => quip(p.id)))), count: () => d.peers.length, dispose: () => {} }),
     makeBolts: () => ({ draw: (list) => (d.bolts = list), dispose: () => {} }),
   });
 }
@@ -270,11 +270,37 @@ describe('the other pilots', () => {
     expect(w.draw.allies).toEqual(['b']);
   });
 
+  it('hand the drawing what each of them has just said, as it hands who’s an ally', async () => {
+    const w = world();
+    const said = new Map([['c', 'Watch out']]);
+    w.shared.join(null);
+    w.shared.join(
+      'Alpha',
+      () => false,
+      () => false,
+      (id) => said.get(id) ?? null,
+    );
+    await flush();
+    w.online.list = [
+      { id: 'b', name: 'Bravo', pose: { x: 1, y: 2, z: 3, pitch: 0, yaw: 0, roll: 0, speed: 100 } },
+      { id: 'c', name: 'Charlie', pose: { x: 9, y: 2, z: 3, pitch: 0, yaw: 0, roll: 0, speed: 100 } },
+    ];
+    w.shared.draw([0, 0, 0]);
+    expect(w.draw.quips).toEqual([null, 'Watch out']);
+    // (asked each frame: a line said in flight shows at once)
+    said.set('b', 'Hello');
+    w.shared.draw([0, 0, 0]);
+    expect(w.draw.quips).toEqual(['Hello', 'Watch out']);
+  });
+
   it('have no allies with no one to ask (joined as the older pages join)', async () => {
     const w = world();
     await flush();
     w.online.list = [{ id: 'b', name: 'Bravo', pose: { x: 1, y: 2, z: 3, pitch: 0, yaw: 0, roll: 0, speed: 100 } }];
     expect(w.shared.prompt(low())).toMatchObject({ others: 1, allies: 0 });
+    // (nor anything said)
+    w.shared.draw([0, 0, 0]);
+    expect(w.draw.quips).toEqual([null]);
   });
 
   it('go when you leave the room', async () => {

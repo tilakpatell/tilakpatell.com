@@ -23,3 +23,12 @@ export const shortcutLabel = () =>
 // Opens the settings panel (components/settings) from anywhere: the gear in
 // the nav, ⌘K's "Settings", a world's own panel.
 export const openSettings = () => window.dispatchEvent(new Event('tp:settings'));
+
+// Opens the party dialog (universe/online/PartyHost.jsx, always up inside
+// OnlineProvider) from anywhere: the online corner's Party, a world's players
+// chip, ⌘K's "Party", or on a tab ({ tab: 'quick' }: ⌘K's "Quick chat"). A
+// tab is read as the guide's is, so a click handed straight to onClick isn't one.
+export const openParty = (opts) => {
+  const detail = guideDetail(opts);
+  window.dispatchEvent(new CustomEvent('tp:party', detail ? { detail } : undefined));
+};

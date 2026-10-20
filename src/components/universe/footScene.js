@@ -29,10 +29,12 @@
 //
 // Other pilots' crews down on the same planet (multiplayer: the scene hands
 // them in each frame, guests()) walk about with yours, a tag over each with
-// who they are and whose crew; and where two of a person meet (your Rick
-// and theirs, or two pilots' Walts) the other one is that person from
-// another dimension: their dimension's code on the tag (dimensionOf, from
-// their pilot) and a tint of its own. crew() is yours, for sending.
+// who they are and whose crew, and what their pilot's just said (quick chat,
+// the row's `quip`) in a bubble over the lead's tag; and where two of a
+// person meet (your Rick and theirs, or two pilots' Walts) the other one is
+// that person from another dimension: their dimension's code on the tag
+// (dimensionOf, from their pilot) and a tint of its own. crew() is yours,
+// for sending.
 //
 // Each planet's own ground, sky and things round where you come down are
 // its landing's (landings/: the Shire on Middle-earth's, the desert and the
@@ -68,6 +70,7 @@
 
 import * as THREE from 'three';
 import { sharpen } from '../../lib/three/textures';
+import { createQuipSprite } from '../../lib/three/quipSprite';
 import { MESHY, createMeshyCast } from '../rickmorty/portal/meshyCast';
 import { preload } from '../../lib/three/clipLibrary';
 import { createBolts } from '../../lib/combat/bolt';
@@ -142,6 +145,31 @@ export function dimensionOf(id) {
   h >>>= 0;
   const code = `${String.fromCharCode(65 + (h % 26))}-${10 + ((h >>> 5) % 290)}${GREEK[(h >>> 14) % GREEK.length]}${(h >>> 19) % 10}`;
   return { code, hue: ((h >>> 9) % 360) / 360 };
+}
+// A guest crew’s tags, kept by setGuests each frame: each walker’s says who
+// they are (and their dimension, for a double), the lead’s whose crew too,
+// in how their pilot stands to you. A tag’s a canvas, drawn once, so it’s
+// made again when what it says changes, or a crew stood there as their
+// pilot joins your party (or leaves it, or is renamed) would keep the old
+// colour and words till they left. The new one stands where the old one did
+// till the next frame places it. make(text, colour) → a tag; drop(tag)
+const GUEST_ALLY = '#8dff9a';
+export function keepGuestTags(g, make, drop) {
+  g.walkers.forEach((wk, i) => {
+    if (!wk) return;
+    const who = `${wk.spec.name}${wk.alt ? ` of ${g.dim.code}` : ''}`;
+    const text = i === 0 ? `${who} · ${g.name ?? 'a pilot'}` : who;
+    const colour = g.ally ? GUEST_ALLY : wk.alt ? `hsl(${Math.round(g.dim.hue * 360)}, 90%, 72%)` : '#ffffff';
+    const says = `${colour} ${text}`;
+    if (wk.label && wk.says === says) return;
+    const was = wk.label;
+    wk.label = make(text, colour);
+    wk.says = says;
+    if (!was) return;
+    wk.label.position.copy(was.position);
+    wk.label.visible = was.visible;
+    drop(was);
+  });
 }
 const LAND = { down: 3.4, out: 1.3, board: 0.8, lift: 2.4, fall: 2.6, ready: 6, party: 2.5 }; // seconds
 const CAM = { dist: 3.4, up: 0.55, pitch: [-0.25, 0.75], look: 1.6 }; // metres, radians
@@ -1911,7 +1939,7 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
   };
 
   // ── other pilots' crews, down here too ──
-  const guests = new Map(); // pilot id → { name, ally, dim, walkers: [{ who, spec, fig, group, gun, label, w, to, alt }] }
+  const guests = new Map(); // pilot id → { name, ally, quip, bubble, dim, walkers: [{ who, spec, fig, group, gun, label, w, to, alt }] }
   const tagTexture = (text, colour) => {
     const c = document.createElement('canvas');
     c.width = 768;
@@ -1945,6 +1973,21 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     root.remove(sprite);
     sprite.material.map.dispose();
     sprite.material.dispose();
+  };
+  // (a guest walker’s tag, in the scene: keepGuestTags’s make)
+  const guestTag = (text, colour) => {
+    const sprite = tagFor(text, colour);
+    root.add(sprite);
+    return sprite;
+  };
+  // what a guest's pilot has just said, stood on their lead's tag: a card as
+  // tall as the tag's (0.024 of the view), its tail's tip a little over the
+  // tag's top (tagFor's: 0.029 up); the same size whatever the distance
+  const quipOver = () => {
+    const q = createQuipSprite({ height: 0.024, sizeAttenuation: false });
+    q.sprite.center.set(0.5, -0.032 / q.sprite.scale.y);
+    root.add(q.sprite);
+    return q;
   };
   // the same person from another dimension: everything they're made of in
   // that dimension's light
@@ -1991,6 +2034,7 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
   };
   const dropGuest = (g) => {
     g.walkers.forEach((wk, i) => wk && dropWalker(g, wk, i));
+    g.bubble?.dispose();
     guests.delete(g.id);
   };
   // who's here already, as people: yours, and every guest's met so far
@@ -2009,11 +2053,12 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
     for (const o of want.values()) {
       let g = guests.get(o.id);
       if (!g) {
-        g = { id: o.id, name: o.name, ally: o.ally, dim: dimensionOf(o.id), walkers: [null, null], said: false };
+        g = { id: o.id, name: o.name, ally: o.ally, quip: null, bubble: null, dim: dimensionOf(o.id), walkers: [null, null], said: false };
         guests.set(o.id, g);
       }
       g.name = o.name;
       g.ally = o.ally;
+      g.quip = o.quip ?? null;
       g.looks = o.looks ?? null; // (how they dress their Rick and Morty, their Walt and Jesse)
       g.ship = { n: o.foot.ship.n, r: 0.62 * 0.26 * (PARKED[o.foot.kind] ?? 1) * 0.55 };
       [o.foot.lead, o.foot.mate].forEach((to, i) => {
@@ -2023,16 +2068,12 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
           wk = g.walkers[i] = null;
         }
         if (!to || !SPEC[to.who]) return;
-        if (!wk) {
-          wk = g.walkers[i] = guestWalker(g, to.who, here(g).has(to.who));
-          const who = `${wk.spec.name}${wk.alt ? ` of ${g.dim.code}` : ''}`;
-          wk.label = tagFor(i === 0 ? `${who} · ${g.name ?? 'a pilot'}` : who, g.ally ? '#8dff9a' : wk.alt ? `hsl(${Math.round(g.dim.hue * 360)}, 90%, 72%)` : '#ffffff');
-          root.add(wk.label);
-        }
+        if (!wk) wk = g.walkers[i] = guestWalker(g, to.who, here(g).has(to.who));
         // (a new word from them: when it came, for an emote timed from then)
         if (wk.to !== to) wk.toAt = S.clock;
         wk.to = to;
       });
+      keepGuestTags(g, guestTag, dropTag);
       // your crew have something to say about who's turned up (once you're out)
       const first = g.walkers[0];
       if (!g.said && first && S.phase === 'walk') {
@@ -2093,6 +2134,14 @@ export function createFoot({ map, emit, reduced = false, small = false, planetOf
           wk.label.visible = show && Boolean(S.me) && apart(S.me, w, S.R) < GUEST_FAR * METRE;
         }
       });
+      // what their pilot's just said, over the lead's tag while it shows (the
+      // bubble made the first time they say something, hidden between lines)
+      const tag = g.walkers[0]?.label;
+      if (g.quip && !g.bubble) g.bubble = quipOver();
+      if (!g.bubble) continue;
+      const on = Boolean(tag?.visible);
+      g.bubble.set(on ? g.quip : null);
+      if (on) g.bubble.sprite.position.copy(tag.position);
     }
   };
   // (and what the body's doing, beside where it is: your emote, a flinch, a fall: footLife.js's walkerExtras)

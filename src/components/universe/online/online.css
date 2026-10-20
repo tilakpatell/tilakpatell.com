@@ -310,3 +310,58 @@
   .universe-online-note { animation: none; }
   .universe-online-dot[data-status='connecting'] { animation: none; }
 }
+
+/* Quick chat (quips.js): a line in a bubble over a pilot's tag, made and set
+   by quipBubble.js. Above the tag it's inside and out of its flow, so the tag
+   measures as it did (pilots.js keeps each tag in view by its size), and never
+   in the way of a tap on it. On glass at 0.9 (text over the 3D reads on 0.78
+   or more) in the scope's own surface and ink: dark on the map, which is a
+   dark scope, and the page's own colours over a page. Hidden, it fades out
+   with its words still in it (quipBubble.js keeps them), then goes. Over a
+   page pointer it moves across by --quip-shift (Presence.jsx), so a long line
+   over a tag at the screen’s edge isn’t cut off; a map tag is kept in view
+   whole instead, measured with its bubble. */
+.quip-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  translate: calc(-50% + var(--quip-shift, 0px)) 0;
+  margin-bottom: 9px; /* the tail's room, and a breath over the tag */
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-panel);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  color: var(--text);
+  box-shadow: var(--shadow-float);
+  font: 500 var(--fs-xs)/1.35 var(--font-sans);
+  letter-spacing: 0;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity var(--t-fast) var(--ease-out), visibility 0s;
+}
+/* the tail, the card’s own glass and edge, turned to point down at the tag:
+   moved back by the shift, so it’s still over the tag’s middle, though never
+   out past the card’s rounded corners (nor off the middle of a card too short
+   to have room between them) */
+.quip-bubble::after {
+  content: '';
+  position: absolute;
+  left: clamp(min(50%, var(--r-panel) + 6px), 50% - var(--quip-shift, 0px), max(50%, 100% - var(--r-panel) - 6px));
+  bottom: -4px; /* its middle a hair inside the card, so the card's edge doesn't run across its root */
+  width: 9px;
+  height: 9px;
+  border: solid var(--border);
+  border-width: 0 1px 1px 0;
+  background: inherit;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%); /* (the half under the card, so the glass isn't laid twice) */
+  translate: -50% 0;
+  rotate: 45deg;
+}
+.quip-bubble[hidden] {
+  display: block;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--t-fast) var(--ease-out), visibility 0s var(--t-fast);
+}
+/* a page pointer's tag isn't placed by itself: it is the bubble's anchor */
+.presence-tag:has(> .quip-bubble) { position: relative; }

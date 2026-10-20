@@ -3,6 +3,7 @@ import { LOOK_KEY, readLooks } from '../../rickmorty/wardrobe/looks';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { local } from '../../../lib/hooks';
 import { cleanName, randomCallsign } from './names';
+import { isFlight } from './where';
 import { LOADOUT_KEY, STOCK_LOADOUT, readLoadouts } from '../outfit';
 import { useEconomy } from '../EconomyProvider';
 
@@ -46,6 +47,23 @@ import { useEconomy } from '../EconomyProvider';
 // saved allies who aren't here as room.away); removeAlly(id) is the roster's
 // Remove on one of those, and isBlocked(id) says whether a block is kept
 // for a pilot (a world's travellers ask it too).
+//
+// Your party (partyLink.js, through the link; partyStore.js keeps it in this
+// browser, made with the allies' store and handed to the link the same way):
+// party is the link's snapshot of it (the party, the invites waiting, and
+// whether you follow the leader: followLeader, setFollowLeader(on)), or null
+// with no link; partyDo(name, …args) is one of its actions (start, invite,
+// accept, decline, leave, remove, promote, summon). Its chat is the last
+// CHAT_KEEP lines heard this visit (kept over a dropped link, never past the
+// tab), each stamped `seen` with this browser’s clock as it came, and with
+// the party it was sealed in by the link; `unread` counts the others’ in the
+// party you’re in now since markRead() (the dialog’s Chat tab, while it’s in
+// view), so the lines of one you’ve left aren’t the next one’s to read
+// (unreadIn); say(text) → whether it went. quip(i) says one of quips.js’s lines
+// over you. A summons from the leader waits as `summon` ({ from, name,
+// where }) till answerSummon(go) or SUMMON_MS: Go sets off after the leader
+// where you fly, and hands back where they called you, for the page to go to
+// (PartyHost.jsx).
 
 const ONLINE_KEY = 'tp-universe-online'; // 'on' once you've gone online
 const NAME_KEY = 'tp-universe-callsign';
@@ -55,10 +73,24 @@ const AWAY_MS = 120000; // a tab hidden this long leaves the room till you're ba
 const FEED_MS = 6000;
 const FEED_MAX = 4;
 const FOLLOW_MS = 60000; // a pilot to fly to, once the ship's in (follow): forgotten after this
+const CHAT_KEEP = 100; // the party's lines kept this visit
+const SUMMON_MS = 60000; // a summons not answered: let go after this
 const OFF = { status: 'off', self: null, peers: [], away: [] };
 
 export const OnlineContext = createContext(null);
 export const useOnline = () => useContext(OnlineContext);
+
+// The others’ lines in the party `id` heard since `from` (a line’s key, as
+// they’re counted this visit): the dot on its Chat tab and the corner’s Party.
+// Only that party’s: the chat isn’t emptied when the party changes (a dropped
+// link briefly reports none, and the lines are kept over it), so a line from
+// one you’ve left stays, and counts for that one alone.
+export function unreadIn(chat, id, from = 0) {
+  if (!id) return 0;
+  let n = 0;
+  for (const l of chat) if (!l.mine && l.party === id && l.key >= from) n++;
+  return n;
+}
 
 // A full-screen world is up (`up`): the site draws no page pointers over it
 // while it is (a pointer over a canvas means nothing). For a world's page
@@ -98,6 +130,11 @@ export function useOnlineState(where) {
   }, []);
   const [client, setClient] = useState(null);
   const allies = useRef(null); // (allies.js's store: one for the page, made the first time you're online)
+  const partyStore = useRef(null); // (partyStore.js's, made with it: your party, kept in this browser)
+  const [chat, setChat] = useState([]); // the party's lines this visit, the newest last
+  const heard = useRef(0); // (each line's key: counted over every link this visit, as the lines are kept over them)
+  const [readTo, setReadTo] = useState(0); // the key of the first line not yet read
+  const [summon, setSummon] = useState(null); // the leader's call, waiting for Go or Not now
   const [room, setRoom] = useState(OFF);
   const [feed, setFeed] = useState([]);
   const [attempt, setAttempt] = useState(0); // a retry makes a fresh link
@@ -166,15 +203,21 @@ export function useOnlineState(where) {
     const timers = new Set();
     let n = 0;
     setRoom({ ...OFF, status: 'connecting' });
-    Promise.all([import('./client'), import('./allies'), import('../../../runtime/local')])
-      .then(([{ createClient }, { createAllies }, { localSaves }]) => {
+    Promise.all([import('./client'), import('./allies'), import('./partyStore'), import('../../../runtime/local')])
+      .then(([{ createClient }, { createAllies }, { createPartyStore }, { localSaves }]) => {
         if (gone) return;
         allies.current ??= createAllies({ saves: localSaves() });
-        c = createClient({ ...latest.current, allies: allies.current });
+        partyStore.current ??= createPartyStore({ saves: localSaves() });
+        c = createClient({ ...latest.current, allies: allies.current, party: partyStore.current });
+        c.party?.setFollow(partyStore.current.follow());
         setClient(c);
         setRoom(c.snapshot());
         off = c.on((e) => {
-          if (e.type === 'status' || e.type === 'roster') setRoom(c.snapshot());
+          if (e.type === 'status' || e.type === 'roster' || e.type === 'party') setRoom(c.snapshot());
+          else if (e.type === 'chat' && e.line) {
+            const line = { ...e.line, key: heard.current++, seen: Date.now() };
+            setChat((lines) => [...lines.slice(1 - CHAT_KEEP), line]);
+          } else if (e.type === 'summon') setSummon({ from: e.from, name: e.name, where: e.where, key: n++ });
           else if (e.type === 'feed') {
             const item = { id: n++, text: e.text, tone: e.tone };
             setFeed((f) => [...f.slice(1 - FEED_MAX), item]);
@@ -203,8 +246,26 @@ export function useOnlineState(where) {
       setClient(null);
       setRoom(OFF);
       setFeed([]);
+      setSummon(null); // (a call heard on a link that's gone is gone with it)
     };
   }, [on, attempt, away]);
+
+  // a summons left alone is let go
+  useEffect(() => {
+    if (!summon) return undefined;
+    const t = setTimeout(() => setSummon(null), SUMMON_MS);
+    return () => clearTimeout(t);
+  }, [summon]);
+  const markRead = useCallback(() => setReadTo(heard.current), []);
+  const answerSummon = useCallback(
+    (go) => {
+      setSummon(null);
+      if (!go || !summon) return null;
+      if (isFlight(summon.where)) follow(summon.from); // (and after the leader, once the ship's in there)
+      return summon.where;
+    },
+    [summon, follow],
+  );
 
   // (marks() is read here, not each render: it counts up the war's points)
   useEffect(() => {
@@ -266,5 +327,26 @@ export function useOnlineState(where) {
     block: (id, yes) => client?.block(id, yes),
     removeAlly: (id) => allies.current?.dropAlly(id), // (a saved ally who isn't here: forgotten)
     isBlocked: (id) => Boolean(allies.current?.isBlocked(id)), // (a block of yours kept in this browser: for the worlds' travellers)
+    party: room.party ?? null, // { party, invites, follow }: the link's, or null with none
+    // (only the link's own actions, by name: start, invite, accept, decline, leave, remove, promote, summon)
+    partyDo: (name, ...args) => (client?.party && Object.hasOwn(client.party, name) ? client.party[name](...args) : undefined),
+    chat,
+    unread: unreadIn(chat, room.party?.party?.id, readTo),
+    markRead,
+    async say(text) {
+      try {
+        return Boolean(await client?.party?.say(text));
+      } catch {
+        return false; // (sealing went wrong, or the link went: it didn't go)
+      }
+    },
+    quip: (i) => client?.party?.quip(i),
+    summon,
+    answerSummon,
+    followLeader: Boolean(room.party?.follow),
+    setFollowLeader: (yes) => {
+      partyStore.current?.setFollow(yes);
+      client?.party?.setFollow(yes);
+    },
   };
 }

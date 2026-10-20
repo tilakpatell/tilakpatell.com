@@ -27,6 +27,12 @@
 // blizzard both see (./lib/storm-check.mjs):
 //   node scripts/online-check.mjs --fly
 // planet flight: end
+// or, the party (--party, ./lib/party-check.mjs): Alpha invites Bravo from
+// the party's dialog on the map, Bravo says yes, a line of chat each way (the
+// relay carrying it sealed), Alpha's quick-chat line over Alpha's tag on
+// Bravo's map in the ally green, then in Bree the chip counting the mate
+// and the quip heard (OUT has the shots: the bubble over the ghost):
+//   RELAY=fake node scripts/online-check.mjs --party
 // (BASE=http://127.0.0.1:5188/?quality=low# for a dev server elsewhere)
 // (behind a proxy: HTTPS_PROXY, and BRIDGE=1 NODE_USE_ENV_PROXY=1 if the
 // browser's WebSockets can't get through it)
@@ -41,6 +47,7 @@ import { fakeRelays } from './lib/fake-relays.mjs';
 import { fakeDurable } from './lib/fake-durable.mjs'; // planet flight
 import { flyCheck } from './lib/fly-check.mjs'; // planet flight
 import { stormCheck } from './lib/storm-check.mjs'; // planet flight
+import { partyCheck } from './lib/party-check.mjs';
 
 const args = process.argv.slice(2);
 const flag = (name, dflt) => {
@@ -52,7 +59,9 @@ if (universe) args.splice(args.indexOf('--universe'), 1);
 const ride = args.includes('--ride');
 if (ride) args.splice(args.indexOf('--ride'), 1);
 // a check with pages of its own: no --then, no world to start in
-let own = false;
+const party = args.includes('--party');
+if (party) args.splice(args.indexOf('--party'), 1);
+let own = party;
 // planet flight: begin
 const fly = args.includes('--fly');
 if (fly) args.splice(args.indexOf('--fly'), 1);
@@ -220,13 +229,13 @@ async function warm(path, ready) {
   }
   console.log(`${up ? 'ok  ' : 'warn'} warmed ${path} in ${((Date.now() - t) / 1000).toFixed(0)} s${up ? '' : ' (never settled: the run may reload)'}`);
 }
-if (universe || ride) await warm('/universe', () => typeof window.__universe === 'function' && Boolean(window.__universe().ship));
+if (universe || ride || party) await warm('/universe', () => typeof window.__universe === 'function' && Boolean(window.__universe().ship));
 else if (worlds[0]) await warm(worlds[0], () => Boolean(document.querySelector('canvas')));
 
-const a = await visitor('Alpha', universe || ride ? 'xwing' : null);
+const a = await visitor('Alpha', universe || ride || party ? 'xwing' : null);
 // (on the map, Bravo's window small: software drawing is slow, and Bravo's
 // poses must come often enough not to go stale on Alpha's screen)
-const b = await visitor('Bravo', universe || ride ? 'falcon' : null, universe ? { width: 480, height: 320 } : undefined);
+const b = await visitor('Bravo', universe || ride || party ? 'falcon' : null, universe ? { width: 480, height: 320 } : undefined);
 let failed = 0;
 const check = (ok, what) => {
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`);
@@ -511,6 +520,15 @@ if (fly) {
   }
 }
 // planet flight: end
+if (party) {
+  try {
+    console.log(`party: ${JSON.stringify(await partyCheck({ a, b, base: BASE, check, waitFor, chipText, start, out, relays }))}`);
+  } catch (e) {
+    failed++;
+    console.log(`FAIL ${e.message}`);
+    if (out) for (const [who, p] of [['Alpha', a], ['Bravo', b]]) await p.screenshot({ path: `${out}/fail-party-${who}.png` }).catch(() => {});
+  }
+}
 console.log(`errors: ${JSON.stringify(errors.slice(0, 10))}`);
 console.log(failed ? `${failed} FAILED` : 'ALL OK');
 await browser.close();

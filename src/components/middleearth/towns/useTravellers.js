@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useOnline } from '../../universe/online/useOnline';
+import { isMate } from '../../universe/shared/online';
 
 // A walkable town's other travellers (./travellers.js), while you're online
 // (the site's own switch and callsign) and the town is up. Returns { on,
 // ref (the link, or null), count (how many are here), allies (how many of
-// them are your allies: the roster's, allies.js, known by the same key in
-// every room; each of list()'s rows says `ally` too, for the drawing), join()
-// (go online, as the universe's map does, with your callsign or a new one) }.
+// them are on your side: your allies, the roster's, allies.js, and the mates
+// in your party, mates.js's isMate, known by the same key in every room; each
+// of list()'s rows says `ally` too, for the drawing, and `quip`, the
+// quick-chat line over them now, client.quip's), join() (go online, as the
+// universe's map does, with your callsign or a new one) }.
 // Each frame the town sends your step
 // with ref.current?.pose(h, flags) and draws ref.current?.list(). `opts`
 // go to the link (./travellers.js): `bound` for a town bigger than 200 m
@@ -42,9 +45,12 @@ export function useTravellers(town, up, { bound, motion, pointers = false } = {}
       // (the QA scripts can hand in a room of their own, in development only)
       const relay = import.meta.env.DEV && window.__TOWN_RELAY__ ? { load: window.__TOWN_RELAY__ } : {};
       const hidden = (id) => clientRef.current?.peers.get(id)?.blocked === true || Boolean(blockedRef.current?.(id));
-      // (an ally of yours, as the site's link has them now: an alliance made here shows at once)
-      const ally = (id) => clientRef.current?.peers.get(id)?.ally === 'ally';
-      link = createTravellers({ town, name: nameRef.current, ...(bound ? { bound } : {}), motion: Boolean(motion), hidden, ally, ...relay });
+      // (an ally or a mate of yours, as the site's link has them now: an
+      // alliance made here, or a party joined, shows at once)
+      const ally = (id) => isMate(clientRef.current?.peers.get(id));
+      // (and what they've just said: the site's room carries it, the town's doesn't)
+      const quip = (id) => clientRef.current?.quip?.(id) ?? null;
+      link = createTravellers({ town, name: nameRef.current, ...(bound ? { bound } : {}), motion: Boolean(motion), hidden, ally, quip, ...relay });
       ref.current = link;
     });
     // closing the tab: out of the room at once

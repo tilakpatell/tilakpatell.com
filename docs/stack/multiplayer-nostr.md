@@ -12,6 +12,7 @@ The census row is in [README.md](README.md). The files that import it:
 
 - `src/components/universe/online/nostr.js`: the room, its events and their signatures.
 - `src/components/universe/online/events.js`: the event shape.
+- `src/components/universe/online/partyCrypt.js`: a party’s chat, sealed for each member (`getSharedSecret`).
 
 Around them: `src/components/universe/online/client.js` (the site’s link, held by `OnlineProvider.jsx` above the pages), `src/components/universe/online/signer.worker.js` (signing and checking off the frames), and `scripts/online-check.mjs` (two browsers on the real relays).
 
@@ -23,6 +24,7 @@ Around them: `src/components/universe/online/client.js` (the site’s link, held
 - **Checked twice.** The relays check each signature, and anything that matters (a hello, a hit, an alliance, leaving) is checked again in the browser, so no one can speak as another pilot; an event much older than a pilot’s others is dropped.
 - **Heard by cell.** A room joined with `cells` (`nostr.js`’s header) asks the relays for `#g` too, the 3 × 3 grid cells round the pilot (`src/lib/net/cells.js`, `NET_CELL` 2,048 m), tags what it sends `['g', cell]`, and asks again under the same REQ id only when the set changes (`pool.js`’s `refresh()`); a message for one pilot carries their cell as well. A room joined without `cells` is unchanged.
 - **Off the frames.** Signing and checking run in `signer.worker.js` (`docs/architecture.md`, Graphics).
+- **ECDH for a party’s chat.** `getSharedSecret` agrees a key between two pilots’ signing keys (x-only, so `02` goes in front, and the secret’s x is the same whichever y); HKDF-SHA256 and AES-GCM-256 are the browser’s WebCrypto. A line goes out as a blob for each member present, sealed and opened in the signer worker, the room’s `seal` and `open` (`src/components/universe/online/partyCrypt.js`’s header; the design is `docs/superpowers/specs/2026-10-19-party-and-quick-chat-design.md`).
 
 ## What the site does not use, and why
 
@@ -45,7 +47,7 @@ npm run build
 node scripts/online-check.mjs
 ```
 
-Both files import `schnorr` from it (`keygen`, signing and checking); on a major version, read its changelog for that name first. Last upgrade: not recorded; record the next one here, with what it broke.
+`nostr.js` and `events.js` import `schnorr` from it (`keygen`, signing and checking), and `partyCrypt.js` imports `getSharedSecret` and `utils.isValidSecretKey`; on a major version, read its changelog for those names first (`partyCrypt.test.js` pins the chat’s construction by hand, so a change in what `getSharedSecret` returns fails there). Last upgrade: not recorded; record the next one here, with what it broke.
 
 ## Gotchas
 
