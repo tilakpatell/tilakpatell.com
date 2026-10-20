@@ -241,12 +241,159 @@ export const STAGES = [
     ],
     place: 'argonath',
   },
-  { id: 'marshes', name: 'The Dead Marshes', date: '1 March 3019', length: 210, mode: 'walk', place: 'dead-marshes' },
-  { id: 'ithilien', name: 'Ithilien', date: '7 March 3019', length: 230, mode: 'walk', place: 'minas-morgul' },
-  { id: 'cirith-ungol', name: 'Cirith Ungol', date: '12 March 3019', length: 180, mode: 'climb', place: 'cirith-ungol' },
-  { id: 'gorgoroth', name: 'Gorgoroth', date: '15 March 3019', length: 240, mode: 'walk', place: 'mount-doom' },
-  { id: 'minas-tirith', name: 'Minas Tirith', date: '1 May 3019', length: 160, mode: 'walk', place: 'minas-tirith' },
-  { id: 'havens', name: 'The Grey Havens', date: '29 September 3021', length: 160, mode: 'walk', place: 'grey-havens' },
+  {
+    id: 'marshes',
+    name: 'The Dead Marshes',
+    date: '1 March 3019',
+    length: 150,
+    mode: 'walk',
+    place: 'dead-marshes',
+    // down off the Emyn Muil (its cliff and spires are the props: a seam
+    // eases the land flat), out over the marsh, its pools sunk either side
+    // of the track, then the dry slag of Dagorlad up to the Gate, which
+    // stands off to the left in its mountains’ arms at the stage’s end
+    ground: {
+      spec: {
+        seed: 21,
+        relief: [
+          { type: 'swell', scale: 260, height: 1.5 },
+          { type: 'hills', scale: 40, height: 1.2, gain: 0.4, octaves: 3 },
+          { type: 'island', at: [-16, 70], r: 14, height: -1.6, core: 0.5, ragged: 0.4 },
+          { type: 'island', at: [14, 84], r: 12, height: -1.6, core: 0.5, ragged: 0.4 },
+          { type: 'island', at: [-12, 98], r: 11, height: -1.6, core: 0.5, ragged: 0.4 },
+          { type: 'mountains', scale: 140, height: 90, from: 260, to: 460 },
+        ],
+      },
+      paint: { greens: [0x4e4a30, 0x6a6440, 0x7a7048], dirt: 0x4a4436 },
+    },
+  },
+  {
+    id: 'ithilien',
+    name: 'Ithilien',
+    date: '7 March 3019',
+    length: 160,
+    mode: 'walk',
+    place: 'minas-morgul',
+    // green hills and a stream across the path by Henneth Annûn’s fall; the Haradrim road low on the right; then the Cross-
+    // roads, and the Morgul Vale opening on the left, the Mountains of
+    // Shadow behind it
+    ground: {
+      spec: {
+        seed: 22,
+        relief: [
+          { type: 'swell', scale: 200, height: 5 },
+          { type: 'hills', scale: 70, height: 6, gain: 0.42, octaves: 4 },
+          { type: 'island', at: [-44, 40], r: 30, height: -7, core: 0.6 },
+          { type: 'mountains', scale: 150, height: 110, from: 220, to: 420 },
+        ],
+      },
+      rivers: [{ points: [[-300, 0, 120], [-60, 0, 90], [-18, 0, 64], [0, 0, 60], [60, 0, 54], [300, 0, 50]], depth: 1, width: 4, bank: 3 }],
+      paint: { greens: [0x4a6a30, 0x6a8a3c, 0x8a9a52] },
+    },
+  },
+  {
+    id: 'cirith-ungol',
+    name: 'Cirith Ungol',
+    date: '12 March 3019',
+    length: 150,
+    mode: 'climb',
+    place: 'cirith-ungol',
+    // up the stair in the cliff (the land rising thirty metres to the
+    // tunnel’s mouth), through Shelob’s Lair (its rock is the props’), the
+    // tower above the pass on the left, and down onto the plain
+    ground: {
+      spec: {
+        seed: 23,
+        relief: [
+          { type: 'swell', scale: 180, height: 4 },
+          { type: 'ridges', scale: 80, height: 10, octaves: 4 },
+          { type: 'island', at: [0, 80], r: 70, height: 30, core: 0.7, ragged: 0.2 },
+          { type: 'mountains', scale: 120, height: 140, from: 120, to: 360 },
+        ],
+      },
+      paint: { greens: [0x3a3634, 0x4a4440, 0x5a524c], dirt: 0x3a3430 },
+    },
+    // (the tunnel on the level, the tower’s stair, out of the gate)
+    modes: [
+      { at: 56, mode: 'walk' },
+      { at: 108, mode: 'climb' },
+      { at: 122, mode: 'walk' },
+    ],
+  },
+  {
+    id: 'gorgoroth',
+    name: 'Gorgoroth',
+    date: '15 March 3019',
+    length: 180,
+    mode: 'walk',
+    place: 'mount-doom',
+    // the plain of ash, then the Mountain’s slope from the carry up to the
+    // Sammath Naur’s door (the Mountain itself and the Tower are the props)
+    ground: {
+      spec: {
+        seed: 24,
+        relief: [
+          { type: 'swell', scale: 260, height: 2 },
+          { type: 'hills', scale: 50, height: 2.5, gain: 0.45, octaves: 3 },
+          { type: 'island', at: [20, 150], r: 70, height: 26, core: 0.3, ragged: 0.3 },
+          { type: 'mountains', scale: 160, height: 90, from: 280, to: 480 },
+        ],
+      },
+      paint: { greens: [0x2a2422, 0x3a302a, 0x4a3a30], dirt: 0x2a2220 },
+    },
+    // (carried up the slope, on foot at the Cracks, and on the Eagles out)
+    modes: [
+      { at: 100, mode: 'carried' },
+      { at: 120, mode: 'walk' },
+      { at: 165, mode: 'eagle' },
+    ],
+  },
+  {
+    id: 'minas-tirith',
+    name: 'Minas Tirith',
+    date: '1 May 3019',
+    length: 160,
+    mode: 'walk',
+    place: 'minas-tirith',
+    // the Pelennor levelled under the city and its causeway (the city stands on
+    // its own levels, stages/minas-tirith/place.js), and Mindolluin rising behind it
+    ground: {
+      flats: [{ at: [0, 150], r: 150, edge: 40, h: 0 }],
+      spec: {
+        seed: 25,
+        relief: [
+          { type: 'swell', scale: 240, height: 3 },
+          { type: 'hills', scale: 90, height: 3, gain: 0.42, octaves: 3 },
+          { type: 'island', at: [0, 400], r: 220, height: 300, core: 0.2, ragged: 0.25 },
+          { type: 'mountains', scale: 180, height: 60, from: 360, to: 500 },
+        ],
+      },
+    },
+  },
+  {
+    id: 'havens',
+    name: 'The Grey Havens',
+    date: '29 September 3021',
+    length: 290,
+    mode: 'walk',
+    place: 'grey-havens',
+    // the beach and the dunes running down into the Gulf of Lune (the sea's
+    // basin under the quay and the ship's way out, stages/havens/place.js)
+    ground: {
+      spec: {
+        seed: 26,
+        relief: [
+          { type: 'swell', scale: 200, height: 2 },
+          { type: 'hills', scale: 30, height: 1.2, gain: 0.4, octaves: 3 },
+          { type: 'island', at: [0, 210], r: 200, height: -14, core: 0.35, ragged: 0.12 },
+        ],
+      },
+      // (the Gulf's level, place.js's WATER: nothing is planted under it)
+      sea: -2,
+    },
+    // (aboard her once she casts off)
+    modes: [{ at: 160, mode: 'ship' }],
+  },
 ];
 
 export const stageById = (id) => STAGES.find((s) => s.id === id) ?? null;

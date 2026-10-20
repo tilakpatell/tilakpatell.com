@@ -7,7 +7,7 @@
 //   LINES: { beatId: { who, text } }
 //   SPEAKERS: who may say one: the cast, and the few met on the road who
 //     do not walk it (Butterbur at his own bar, Saruman on the wind, Haldir
-//     on the Nimrodel)
+//     on the Nimrodel, Faramir in Ithilien)
 //
 // A line the site has recorded already is reused word for word, so its
 // voice is found (lib/voiced.js’s lineId reads the words): Strider’s at
@@ -15,7 +15,7 @@
 
 import { CAST } from './fellowship';
 
-export const SPEAKERS = [...CAST, 'butterbur', 'saruman', 'haldir'];
+export const SPEAKERS = [...CAST, 'butterbur', 'saruman', 'haldir', 'faramir'];
 
 const sam = (text) => ({ who: 'sam', text });
 const frodo = (text) => ({ who: 'frodo', text });
@@ -47,6 +47,28 @@ export const LINES = {
   // (Haldir on the Nimrodel, then the Lady on her dais)
   'lorien-haldir': { who: 'haldir', text: 'You breathe so loud we could have shot you in the dark. Come. The Lady has asked for you.' },
   'lorien-galadriel': { who: 'galadriel', text: 'Nine left Rivendell. Eight are here. Your quest stands on the edge of a knife.' },
+  // (before the Black Gate: Gollum’s other way)
+  'marshes-gollum': { who: 'gollum', text: 'Not this gate, master. They will catch you. There is another way, a secret way, up the dark stairs.' },
+  // (Ithilien: Sam at the mûmakil, Faramir out of the ferns)
+  'ithilien-sam': sam('An oliphaunt, Mr Frodo. Grey as a house, and nobody at home will ever believe me.'),
+  'ithilien-faramir': { who: 'faramir', text: 'You are no orcs, and no spies of the Enemy I know. Tell me what brings two halflings to Ithilien.' },
+  // (Cirith Ungol: Gollum in Frodo’s ear, then Sam alone over him)
+  'cirith-gollum': { who: 'gollum', text: 'The fat one eats the bread, master. He wants it for himself. Send him away.' },
+  'cirith-sam': sam('I won’t leave you to them, Mr Frodo. Not while I’ve breath in me.'),
+  // (the deeds’: said once the visitor has done them)
+  'marshes-faces': sam('Don’t look in the lights, Mr Frodo. Come away from the water.'),
+  'ithilien-crown': frodo('Look, Sam. Flowers round his head, a crown of them. The dark doesn’t win every time.'),
+  'ithilien-vale': sam('Not that way, Mr Frodo. Look at me, not at it.'),
+  'cirith-phial': sam('Galadriel’s light. Back to your hole, you, and stay there.'),
+  // (the White City: Pippin on the field, the King in the Court before the four bow)
+  'minas-pippin': { who: 'pippin', text: 'There it is. I rode up all seven of those streets on Shadowfax, in the dark, with Gandalf.' },
+  'minas-aragorn': aragorn('This city is yours as much as mine. Every one of you carried it here.'),
+  // (the Havens: Gandalf by the ship, Frodo to the three)
+  'havens-gandalf': { who: 'gandalfwhite', text: 'It is time, Frodo. The tide will not wait for us twice.' },
+  'havens-frodo': frodo('Go home, Sam. Rosie is waiting, and the little one. The Shire needs you more than I do.'),
+  // (Gorgoroth: still under the Eye's beam; Sam's hand at the Crack)
+  'gorgoroth-beam': sam('Don’t move, Mr Frodo. It can’t see us, not under these.'),
+  'gorgoroth-hand': sam('I’ve got you, Mr Frodo. Up you come. I won’t let you fall.'),
 };
 
 export const VOICELINES = Object.values(LINES);

@@ -12,7 +12,9 @@
 //   foothills(range) → the lower, greener band before a big range (null for a small one or a volcano)
 //   stageGeometry(stage, opts) → the stage’s ranges and their foothills in one geometry (null for none)
 //   towerGeometry({ height }) → Barad-dûr’s mass, its foot at 0 (EYE_AT: the Eye’s height, a share of it); pure
-//   createBackdrop({ road, tier, load }) → { mesh, at(stage), set(light), update(camera), dispose() }
+//   createBackdrop({ road, tier, load }) → { mesh, at(stage), set(light), update(camera), fall(k), eyeAt(out), dispose() }
+//     fall(k): the towers going down, 0 standing … 1 fallen, and the Eye out with them;
+//     eyeAt: where the Eye is in the world now (null on a stage without one)
 //     load(url) → a glTF (the runtime’s asset cache), for a landmark that is a model
 
 import * as THREE from 'three';
@@ -249,6 +251,8 @@ export function createBackdrop({ road = null, tier = 'high', load = null } = {})
   eyeMat.fog = false;
   // each stage’s landmarks, made the first time it’s walked
   const marks = new Map(); // stage → THREE.Group
+  const towers = []; // the Dark Tower's groups, to bring down
+  const EYE = new THREE.Color(3.2, 1.1, 0.25);
   const landmarks = (stage) => {
     const out = new THREE.Group();
     for (const l of landmarksOf(stage)) {
@@ -258,6 +262,8 @@ export function createBackdrop({ road = null, tier = 'high', load = null } = {})
       // (its face to the road)
       g.rotation.y = Math.atan2(-g.position.x, -g.position.z);
       if (l.kind === 'tower') {
+        g.userData.tower = { y: g.position.y, height: l.height };
+        towers.push(g);
         const tower = towerGeometry(l);
         const ball = new THREE.SphereGeometry(1, 12, 8);
         built.push(tower, ball);
@@ -313,6 +319,22 @@ export function createBackdrop({ road = null, tier = 'high', load = null } = {})
     },
     update(camera) {
       group.position.set(camera.position.x, 0, camera.position.z);
+    },
+    fall(k) {
+      const f = Math.min(1, Math.max(0, k));
+      for (const g of towers) {
+        const { y, height } = g.userData.tower;
+        g.position.y = y - height * 0.95 * f * f;
+        g.rotation.z = 0.22 * f;
+      }
+      eyeMat.color.copy(EYE).multiplyScalar(1 - f);
+    },
+    eyeAt(out = new THREE.Vector3()) {
+      const g = towers.find((t) => t.parent === marks.get(current));
+      if (!g) return null;
+      // (the group rides with the camera: where it is now)
+      out.set(0, g.userData.tower.height * EYE_AT, 0);
+      return g.localToWorld(out);
     },
     dispose() {
       for (const g of made.values()) g?.dispose();

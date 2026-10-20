@@ -10,20 +10,21 @@
 //     at(index, local, dt, { speed, jumped, waits }) → { since, fx, shot }  (fx: fxAt’s; shot: rigAt’s, or null;
 //       waits: the beats whose deed is undone, held at its moment till it’s done, doing.js’s)
 //     floor(index, x, z) → the height the stage’s scene stands the walkers on there, or null (the land’s)
-//     pose(index, id, { x, y, z, base, state }) → what the scene changes of a walker this frame
+//     pose(index, id, { x, y, z, base, state, lead }) → what the scene changes of a walker this frame
+//       (`lead`: { x, z }, the lead's place in the line this frame, whichever walker is asked first)
 //       ({ x, y, z, yaw, base, speed, hide }, each left out for the module’s own), or null
 //     solids(index) → the stage’s solids.js grid (in its land’s frame) once filled, or null
 //     dispose() }
 //
 // The grid is filled from what the build left standing (its merged statics,
 // `userData.solid`, and its opaque instanced dressing; never what a scene
-// moves, a gate or a raft, nor water, light or crop), a slice a frame as
+// moves, a gate or a raft or a marching column (`userData.moves`), nor water, light or crop), a slice a frame as
 // the stage comes, so the walk never waits on it.
 //
-// A build is given { road, heightAt, land, waters, rt, weather, ambience, tier, sky }
+// A build is given { road, heightAt, land, waters, rt, weather, ambience, tier, sky, backdrop }
 // (`land`: terrain.js’s, its rivers among it; `waters`: the land’s rivers’
 // water, water.js’s, in the same order; `sky`: sky.js’s, for a lake of
-// its own), and may answer `floor(x, z)`: what carries the walkers over the
+// its own; `backdrop`: backdrop.js’s, Barad-dûr's fall), and may answer `floor(x, z)`: what carries the walkers over the
 // land (the raft at the Brandywine), and
 // `pose(id, at)`: a walker as a beat has them (sat by Sam’s fire, Aragorn
 // with a torch, Frodo on Asfaloth’s back).
@@ -40,7 +41,7 @@ const PAST = 40; // m of the grid either side of the stage's ends
 const SOFT = /lantern|pool|corn|grass|flower|reed|water|falls|spray|vision|mist|cloud|light/i;
 
 // what stands solid in a build: its merged statics and its opaque instanced dressing
-const solid = (o) => o.isMesh && !o.isSkinnedMesh && !o.userData.ink && o.visible && (o.userData.solid || o.isInstancedMesh) && ![o.material].flat().some((m) => m?.transparent) && !SOFT.test(o.name);
+const solid = (o) => o.isMesh && !o.isSkinnedMesh && !o.userData.ink && !o.userData.moves && o.visible && (o.userData.solid || o.isInstancedMesh) && ![o.material].flat().some((m) => m?.transparent) && !SOFT.test(o.name);
 
 // the build's solid triangles into the grid, in the land's frame, a slice at a time
 function* fill(root, frame, grid) {
@@ -86,9 +87,15 @@ const SCENES = {
   moria: () => import('./stages/moria/index.js'),
   lorien: () => import('./stages/lorien/index.js'),
   anduin: () => import('./stages/anduin/index.js'),
+  marshes: () => import('./stages/marshes/index.js'),
+  ithilien: () => import('./stages/ithilien/index.js'),
+  'cirith-ungol': () => import('./stages/cirith-ungol/index.js'),
+  'minas-tirith': () => import('./stages/minas-tirith/index.js'),
+  gorgoroth: () => import('./stages/gorgoroth/index.js'),
+  havens: () => import('./stages/havens/index.js'),
 };
 
-export function createScenes({ rt, road, lands, weather, ambience, tier, sky = null }) {
+export function createScenes({ rt, road, lands, weather, ambience, tier, sky = null, backdrop = null }) {
   const made = new Map(); // index → { scene | null, group (the land’s it is in), gone }
   let current = -1;
   let last = 0;
@@ -104,7 +111,7 @@ export function createScenes({ rt, road, lands, weather, ambience, tier, sky = n
     SCENES[id]()
       .then(({ build }) => {
         if (entry.gone) return;
-        entry.scene = build({ road, heightAt: land.field, land, waters: lands.watersOf?.(i) ?? [], rt, weather, ambience, tier, sky });
+        entry.scene = build({ road, heightAt: land.field, land, waters: lands.watersOf?.(i) ?? [], rt, weather, ambience, tier, sky, backdrop });
         group.add(entry.scene.group);
         // (what it left standing, into its grid over the next frames)
         entry.grid = createSolids({ from: -PAST, to: STAGES[i].length + PAST, ground: land.field });
