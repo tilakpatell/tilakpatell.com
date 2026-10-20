@@ -521,10 +521,10 @@
 @media (pointer: coarse), (max-width: 767px) {
   .rm-cluster .rm-chase .hud-vitals-block { bottom: 262px; width: auto; max-width: 46vw; }
 }
-/* a place's game (./games/meter.js): a deal's looks and a freeze's beat as
+/* a place's game (./games/meter.js): a deal's looks, a freeze's beat and a find's clock as
    the bar, no percent; on a touch screen or a narrow one, its block wide
    enough for the line, as the chase's is */
-.rm-meter-deal .hud-vitals-n, .rm-meter-freeze .hud-vitals-n { display: none; }
+.rm-meter-deal .hud-vitals-n, .rm-meter-freeze .hud-vitals-n, .rm-meter-find .hud-vitals-n { display: none; }
 @media (pointer: coarse), (max-width: 767px) {
   .rm-cluster.rm-meter .hud-vitals-block { width: auto; max-width: 46vw; }
 }
