@@ -34,6 +34,7 @@ export default function RicochetFlat({ paused = false, onLive = null }) {
   const [angleShown, setAngleShown] = useState(0);
   const root = useRef(null);
   const svg = useRef(null);
+  const deg = useRef(null); // the bar's angle, kept up each frame (a mouse aims as it moves)
   const live = ui.phase === 'aim' || ui.phase === 'flying';
 
   useEffect(() => onLive?.(live), [live, onLive]);
@@ -127,6 +128,7 @@ export default function RicochetFlat({ paused = false, onLive = null }) {
         s.querySelector('[data-thrower]')?.setAttribute('transform', thrownAt(r.def.cap, ctl.angle));
         s.querySelector('[data-preview]')?.setAttribute('points', pointsOf(previewPath(r, ctl.angle, assistFor(r.index))));
       }
+      if (deg.current) deg.current.textContent = `${((ctl.angle * 180) / Math.PI).toFixed(1)}°`;
       if (ev.length) handle(ev);
     });
     return () => loop.stop();
@@ -206,7 +208,7 @@ export default function RicochetFlat({ paused = false, onLive = null }) {
           {ui.throws} throws · par {def.par} · max {limitFor(def)}
         </span>
         <span>{ui.left === 1 ? '1 bot left' : `${ui.left} bots left`}</span>
-        <span>{((angleShown * 180) / Math.PI).toFixed(1)}°</span>
+        <span ref={deg}>{((angleShown * 180) / Math.PI).toFixed(1)}°</span>
       </div>
       <div ref={svg} className="rf-stage" style={{ touchAction: live ? 'none' : 'auto' }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={() => ctl.cancel()} onLostPointerCapture={() => ctl.cancel()}>
         <RoomView room={ctl.room} angle={ctl.angle} assist={assistFor(index)} />

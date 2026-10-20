@@ -56,3 +56,13 @@ describe('the 2D view’s cards over the room', () => {
     expect(Math.min(...alphas)).toBeGreaterThanOrEqual(0.78);
   });
 });
+
+describe('the 2D view’s angle readout', () => {
+  it('follows the aim every frame, as the room’s moving parts do, so a mouse aiming as it moves reads true', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('./Flat.jsx', import.meta.url), 'utf8');
+    const loop = src.slice(src.indexOf('const loop = shownLoop('), src.indexOf('return () => loop.stop();'));
+    expect(loop).toMatch(/deg\.current\.textContent = `\$\{\(\(ctl\.angle \* 180\) \/ Math\.PI\)\.toFixed\(1\)\}°`/);
+    expect(src).toMatch(/<span ref=\{deg\}>/);
+  });
+});
