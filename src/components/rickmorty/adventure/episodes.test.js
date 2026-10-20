@@ -9,9 +9,9 @@ const stepsOf = (e) => e.steps.flatMap((s) => (s.type === 'all' ? [s, ...s.steps
 const allSteps = () => EPISODES.flatMap(stepsOf);
 
 describe('the adventure’s episodes', () => {
-  it('has thirteen episodes, the first six ready', () => {
+  it('has thirteen episodes, the first seven ready', () => {
     expect(EPISODES).toHaveLength(13);
-    expect(READY).toBe(6);
+    expect(READY).toBe(7);
     expect(new Set(EPISODES.map((e) => e.id)).size).toBe(13);
   });
 
@@ -118,5 +118,14 @@ describe('the adventure’s episodes', () => {
     expect(deals.steps[0]).toMatchObject({ type: 'task', id: 'needful', place: 'needful' });
     expect(deals.steps[1]).toMatchObject({ type: 'task', id: 'vat', place: 'vat' });
     expect(deals.unlocks).toEqual(['jerryboree', 'gloopynoops', 'prison']);
+  });
+
+  it('goes on with The Jerry problem: the Jerryboree, then St. Gloopy Noops', () => {
+    const jerry = EPISODES[6];
+    expect(jerry.title).toBe('The Jerry problem');
+    expect(jerry.steps.map((s) => s.id)).toEqual(['jerryboree', 'gloopynoops']);
+    expect(jerry.steps[0]).toMatchObject({ type: 'task', id: 'jerryboree', place: 'jerryboree' });
+    expect(jerry.steps[1]).toMatchObject({ type: 'task', id: 'gloopynoops', place: 'gloopynoops' });
+    expect(jerry.unlocks).toEqual(['cablestudio', 'schwifty', 'dream']);
   });
 });
