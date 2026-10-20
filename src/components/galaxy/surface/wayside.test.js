@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { REGION, regionsAround, waysideAt } from './wayside';
+import { PROPS } from './props';
+import { SURFACE_MODELS } from './catalog';
 
 const green = { reach: 590, ground: { seed: 92 }, flora: { biome: 'temperate' } };
 const bare = { reach: 590, ground: { seed: 71 }, flora: { biome: 'dry' } };
@@ -42,8 +44,14 @@ describe('waysideAt', () => {
     expect([...kinds(green)].sort()).toEqual(['camp', 'ruin', 'wreck']);
     expect([...kinds(bare)].sort()).toEqual(['camp', 'outpost', 'wreck']);
     const wreck = regions(bare).find((w) => w?.kind === 'wreck');
-    expect(['xwing', 'ywing', 'tie']).toContain(wreck.things[0].kind);
+    expect(['xwing', 'ywing', 'tiefighter']).toContain(wreck.things[0].kind);
     expect(wreck.things[0].roll).toBeGreaterThan(0);
+  });
+
+  it('stands only things the scene can place', () => {
+    const kinds = new Set([...regions(green), ...regions(bare)].filter(Boolean).flatMap((w) => w.things.map((t) => t.kind)));
+    expect(kinds.size).toBeGreaterThan(8);
+    for (const k of kinds) expect(Boolean(PROPS[k] || SURFACE_MODELS[k]), k).toBe(true);
   });
 });
 

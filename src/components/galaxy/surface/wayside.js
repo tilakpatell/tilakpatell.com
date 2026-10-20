@@ -47,7 +47,7 @@ const KITS = {
     ['statue', -9, 6, { scale: 0.6, roll: 0.3 }],
   ],
 };
-const SHIPS = ['xwing', 'ywing', 'tie'];
+const SHIPS = ['xwing', 'ywing', 'tiefighter'];
 // which a world's kind of land turns up, and how often
 const GREEN = { camp: 0.4, ruin: 0.35, wreck: 0.25 };
 const BARE = { wreck: 0.35, outpost: 0.35, camp: 0.3 };

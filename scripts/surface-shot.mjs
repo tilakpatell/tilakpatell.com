@@ -20,6 +20,8 @@
 //                  own light, for a before shot)
 //   WEATHER=<state> …  (clear, dusk, overcast, storm: the level's weather,
 //                  where the game lights the world, at once)
+//   MOVE_WAIT=<ms> … (how long the free roam's ground may take to move round
+//                  a view far out, and the living ground to grow in round it)
 // The clock is held and the random numbers seeded as galaxy-check does, so
 // two runs see the same.
 
@@ -98,6 +100,8 @@ for (const v of views) {
   await page.waitForTimeout(7000);
   // (in the free roam, far out: the ground moved round the new spot, MOVE_WAIT ms at most)
   await page.waitForFunction(() => !window.__surfaceScene?.roam?.()?.moving, null, { timeout: Number(process.env.MOVE_WAIT ?? 300000), polling: 1000 }).catch(() => console.log('  (the ground still moving: shot as it stands)'));
+  // (and the living ground grown in round the new spot)
+  await page.waitForFunction(() => !(window.__surfaceScene?.living?.()?.queued > 0), null, { timeout: Number(process.env.MOVE_WAIT ?? 300000), polling: 1000 }).catch(() => console.log('  (the living ground still growing: shot as it stands)'));
   // (on a game level: its cells round the new spot streamed in, LEVEL_WAIT ms at most)
   await page.waitForFunction(() => window.__surfaceScene?.level?.()?.ready !== false, null, { timeout: Number(process.env.LEVEL_WAIT ?? 600000) }).catch(() => console.log('  (the level still streaming: shot as it stands)'));
   await unveiled();
