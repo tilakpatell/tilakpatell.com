@@ -38,7 +38,10 @@ ephemeral: nothing is kept, a late arrival hears nothing said before.
   in your party. The invite names the party and its leader. Accepting sends
   `join` to the leader, who admits them (if there is room and the invite came
   from a member) and sends the roster with them in it. Accepting an invite
-  while in another party leaves that one first. An invite declined within a
+  while in another party keeps that one until the new leader’s roster lets
+  you in, then leaves it (handing over first if you led it): a yes that’s
+  never answered, or a leader who never asked you and says no, costs you
+  nothing but a “Couldn’t join” in the feed. An invite declined within a
   minute isn’t asked again (as an ally ask isn’t).
 - **Leave:** anyone. The leader leaving hands over first (see below).
 - **Remove:** the leader, from the roster; the removed pilot is told.
@@ -46,11 +49,26 @@ ephemeral: nothing is kept, a late arrival hears nothing said before.
 - **When the leader is gone** (offline, or quiet past the room’s 45 s): the
   first *present* member in roster order takes over and sends the roster with
   itself as leader at epoch + 1. Two who both think so: the higher epoch wins;
-  at the same epoch, the leader earlier in the roster order wins. A returning
-  old leader takes the newer roster like any member.
-- **Remembered:** your party (id, leader, members with names, epoch, the key
-  you flew: `as`, as allies keep it) is kept in this browser (`tp-party`,
-  version 1). Coming back online, you are in it again, alone until the others
+  at the same epoch, the roster with more members, then the lower leader id,
+  then the lower member ids (`party.js`’s `beats`: one order, so two forks
+  settle the same way everywhere and a stale fork never puts out a member the
+  live roster has). A returning old leader takes the newer roster like any
+  member. A party re-formed from the store doesn’t take over alone: it waits
+  for another of its members.
+- **Catching up:** the hello carries the epoch you hold (`pe`), and whoever
+  holds a newer roster sends it to a member behind them (a member passes on
+  the roster it holds; one taken on another member’s word isn’t passed on).
+  A pilot whose hello names the party but isn’t on the roster (removed while
+  away) is sent the roster, which says so. Only your own leader’s roster can
+  remove you; another member’s is believed at most 256 epochs past yours.
+- **Whom it trusts:** a party trusts its members, who were invited; a member
+  running a changed client can disrupt it. A stranger, who can read every
+  roster and hello, can’t join, be sealed a line, remove anyone, or make a
+  member leave.
+- **Remembered:** your party (id, leader, members with names, epoch) is kept
+  in this browser (`tp-party`, version 2), one entry for each key you fly
+  (`as`, as allies keep it; up to four), so a guest tab’s party never takes
+  the place of your own key’s. Coming back online, you are in it again, alone until the others
   come; a member’s hello naming the party (`pt`) brings them in view, and the
   roster flows again from whoever leads. Forgotten when you leave, are
   removed, after 14 days unseen, or when your key changes (guest tab, New
