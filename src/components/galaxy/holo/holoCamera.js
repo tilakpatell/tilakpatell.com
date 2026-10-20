@@ -32,7 +32,9 @@ import { CORE, RIM, edgeAt } from '../systems';
 
 export const FOV = 38; // (degrees, the vertical field of view)
 export const NEAR = 2.2; // (the nearest it comes, grid squares)
-export const FAR = 90; // (the furthest: a phone's narrow window, standing off to fit the disc's width)
+// (the furthest: as far as the whole disc needs to stand off to fit the least free part there is, a phone's strip about a
+// hundred pixels tall between its header and an opened sheet, which wants about 290; at 90 it spilled past it)
+export const FAR = 400;
 // (straight down, as the flat map is: round, its names upright, the near side no bigger than the far; a hair short of
 // it, so the camera's turn still says which way is up the screen)
 const FLAT = Math.PI / 2 - 0.002;
@@ -76,7 +78,9 @@ export function lensOf({ w, h }, { top = 0, right = 0, bottom = 0 } = {}) {
   const dy = top - bottom;
   const W = w + right;
   const H = h + Math.abs(dy);
-  return { W, H, x: right, y: dy < 0 ? -dy : 0, aspect: W / Math.max(1, H), fx: Math.max(0.2, (w - right) / W), fy: Math.max(0.2, (h - top - bottom) / H) };
+  // (a share no less than 0.08: a phone's strip between its header and an opened sheet is 0.11 of its frame, which a floor
+  // of 0.2 fitted the disc to nearly twice the height of, spilling it past the strip)
+  return { W, H, x: right, y: dy < 0 ? -dy : 0, aspect: W / Math.max(1, H), fx: Math.max(0.08, (w - right) / W), fy: Math.max(0.08, (h - top - bottom) / H) };
 }
 
 export function project(pose, [px, py, pz], { aspect = 16 / 9, fov = FOV } = {}) {

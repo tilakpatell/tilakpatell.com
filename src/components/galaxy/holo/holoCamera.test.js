@@ -46,6 +46,23 @@ describe('the holotable’s camera', () => {
       expect(across(10.6 * 1.18) / across(-10.6 * 0.82)).toBeCloseTo(1, 2);
     }
   });
+  it('fits the whole disc into a phone’s strip between its header and an opened sheet', () => {
+    // (390 × 844, a system picked: the header and the crumb down to 327 px, the sheet up from 432; fitted to a fifth of its
+    // frame at the least and from 90 squares off at the most, the disc spilled past the strip and Tatooine's YOU tag went unnamed)
+    const size = { w: 390, h: 844 };
+    const inset = { top: 327, bottom: 412 };
+    const f = lensOf(size, inset);
+    const p = WHOLE(f.aspect, undefined, f);
+    expect(p.dist).toBeLessThan(FAR);
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      const r = 10.6 * (1 + 0.18 * Math.sin(a));
+      const [, ny] = project(p, [Math.cos(a) * r, 0, Math.sin(a) * r], { aspect: f.aspect });
+      const y = ((1 - ny) / 2) * f.H - f.y;
+      expect(y).toBeGreaterThanOrEqual(inset.top);
+      expect(y).toBeLessThanOrEqual(size.h - inset.bottom);
+    }
+  });
   it('centres its frame on the part of the stage the panels leave free', () => {
     // (a side panel at the right: the frame wider by it, the stage its right part, so the frame's middle is the free part's)
     const side = lensOf({ w: 1440, h: 900 }, { right: 332 });
