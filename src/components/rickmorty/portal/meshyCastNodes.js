@@ -1,13 +1,13 @@
 // meshyCast.js on the node renderer: the same cast (./meshyCastCore.js),
 // painted in nodes: ./toonNodes.js's toon on the same light steps, the
-// rim of light from lib/three/inkNodes.js, and a Morty clone's shirt as a
+// rim of light and the line round a figure from lib/three/inkNodes.js, and a Morty clone's shirt as a
 // hook on his diffuse colour, with the same uniform (userData.shirt). The
 // same exports as meshyCast.js.
 
 import * as THREE from 'three';
 import { dot, min, mix, smoothstep, step, vec3 } from 'three/tsl';
 import { toon } from './toonNodes';
-import { rimToon } from '../../../lib/three/inkNodes';
+import { inkHull, rimToon } from '../../../lib/three/inkNodes';
 import { follow, onColor } from '../../../lib/three/hookNodes';
 import { sharpenMaterial } from '../../../lib/three/textures';
 import { RIM, lightRamp, meshyCastWith } from './meshyCastCore';
@@ -42,4 +42,4 @@ export function shirted(map, shirt) {
   return lit(m);
 }
 
-export const createMeshyCast = meshyCastWith({ paint, shirted });
+export const createMeshyCast = meshyCastWith({ paint, shirted, inkHull });

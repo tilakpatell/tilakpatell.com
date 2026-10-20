@@ -62,12 +62,12 @@ export { faceForward, heading } from './clips';
 // them; they're still to be had from here, as they always were.
 export { NO_CALLS, SEAT, animatorCalls, seedOf } from '../../../lib/three/figureCalls';
 
-// Meshy's textures carry their own shading, so the light steps stay lighter
-// than the shapes' (a third of the way down at most, not two thirds)
+// Meshy's textures carry their own shading, so the one step of shadow is
+// lighter than the shapes' (a sixth of the way down, not a third)
 let ramp = null;
 export const lightRamp = () => {
   if (ramp) return ramp;
-  ramp = new THREE.DataTexture(new Uint8Array([165, 165, 165, 255, 215, 215, 215, 255, 255, 255, 255, 255]), 3, 1, THREE.RGBAFormat);
+  ramp = new THREE.DataTexture(new Uint8Array([215, 215, 215, 255, 255, 255, 255, 255]), 2, 1, THREE.RGBAFormat);
   ramp.minFilter = ramp.magFilter = THREE.NearestFilter;
   ramp.generateMipmaps = false;
   ramp.needsUpdate = true;
@@ -302,15 +302,17 @@ export function cullWithin(mesh, frame, height) {
 }
 
 // createMeshyCast for a paint (`looks`): paint(map) the material a model's
-// mesh gets, shirted(map, shirt) a Morty clone's (./meshyCast.js's are
-// GLSL, ./meshyCastNodes.js's nodes). Its options:
+// mesh gets, shirted(map, shirt) a Morty clone's, inkHull(root, width) the
+// line round a figure (./meshyCast.js's are GLSL, ./meshyCastNodes.js's
+// nodes). Its options:
 // `kinds` and `rigged`: another game's table and its skinned models (the
 // Citadel's, rickmorty/citadel/people.js); Portal panic's by default.
 // `cull`: figures out of view aren’t drawn (a world with a lot of them);
-// `loader`: another GLTFLoader (a test’s)
+// `ink`: the width of the line round each figure, in metres (the show's one
+// line; none at 0); `loader`: another GLTFLoader (a test’s)
 export const meshyCastWith = (looks) => (opts) => createMeshyCast(opts, looks);
 
-function createMeshyCast({ kinds = MESHY, rigged = RIGGED, cull = false, loader: given = null } = {}, { paint, shirted }) {
+function createMeshyCast({ kinds = MESHY, rigged = RIGGED, cull = false, ink = 0, loader: given = null } = {}, { paint, shirted, inkHull = null }) {
   const loader = given ?? gltfLoader();
   const assets = new Map(); // name → { scene, height, offset, clips, rigged, hipsY, up, asking, faced }
   const models = new Map(); // name → Promise<asset | null>: each model fetched once, however many ask
@@ -439,12 +441,18 @@ function createMeshyCast({ kinds = MESHY, rigged = RIGGED, cull = false, loader:
     model.scale.setScalar(k);
     model.position.copy(src.offset).multiplyScalar(k);
     body.add(model);
+    // (its line before the culling, so the line's culled with it)
+    const line = ink > 0 && inkHull ? inkHull(model, ink) : null;
     if (cull)
       model.traverse((o) => {
         if (o.isSkinnedMesh) cullWithin(o, group, spec.h);
         else if (o.isMesh) o.frustumCulled = true;
       });
-    const mine = []; // (what's this figure's alone: a clone's shirt)
+    const mine = []; // (what's this figure's alone: its line, a clone's shirt)
+    if (line) {
+      owned.push(line);
+      mine.push(line);
+    }
     if (spec.shirts) {
       const shirt = spec.shirts[variant % spec.shirts.length];
       model.traverse((o) => {

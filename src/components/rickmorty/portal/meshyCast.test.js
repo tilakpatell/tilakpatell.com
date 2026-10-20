@@ -173,6 +173,44 @@ const clock = (c, move = 0) => {
   };
 };
 
+describe('a Meshy figure’s line', () => {
+  const inksOf = (c) => {
+    const meshes = [];
+    const inks = [];
+    c.group.traverse((o) => o.isMesh && (o.userData.ink ? inks : meshes).push(o));
+    return { meshes, inks };
+  };
+
+  it('has a line round it when the cast is asked for one: a hull on its own skeleton, culled with it, freed with it', async () => {
+    const cast = createMeshyCast({ kinds: KINDS, loader: fakeLoader(), cull: true, ink: 0.01 });
+    await cast.load(null, ['rick']);
+    const c = cast.make('rick');
+    const { meshes, inks } = inksOf(c);
+    expect(meshes.length).toBeGreaterThan(0);
+    expect(inks).toHaveLength(meshes.length);
+    for (const h of inks) {
+      const src = meshes.find((m) => m.geometry === h.geometry);
+      expect(src).toBeDefined();
+      expect(h.isSkinnedMesh).toBe(src.isSkinnedMesh);
+      if (src.isSkinnedMesh) expect(h.skeleton).toBe(src.skeleton);
+      expect(h.material.side).toBe(THREE.BackSide);
+      expect(h.frustumCulled).toBe(true);
+      if (src.isSkinnedMesh) expect(h.boundingSphere.equals(src.boundingSphere)).toBe(true);
+    }
+    let freed = 0;
+    for (const h of inks) h.material.addEventListener('dispose', () => (freed += 1));
+    c.release();
+    expect(freed).toBe(new Set(inks.map((h) => h.material)).size);
+    cast.dispose();
+  });
+
+  it('has none unless the cast is asked for one', async () => {
+    const { cast, c } = await castOf();
+    expect(inksOf(c).inks).toHaveLength(0);
+    cast.dispose();
+  });
+});
+
 describe('a Meshy figure’s one-shots', () => {
   it('replaying the clip that is playing restarts it, never cuts it', async () => {
     const { cast, c } = await castOf();

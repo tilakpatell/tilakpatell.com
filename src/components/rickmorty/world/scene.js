@@ -2,8 +2,9 @@
 // the rooms (registered in AREA_BUILDERS below) and the alien street (in LAZY,
 // built the first time it's entered), Morty
 // walking about as the rigged Meshy Morty, and Rick's space cruiser, parked
-// in the driveway or flown with Morty at the wheel. Toon-shaded and inked
-// like the show (portal/toon.js), on lib/stage3d's renderer with
+// in the driveway or flown with Morty at the wheel. Toon-shaded like the
+// show (portal/toon.js: flat colour, one step of shadow), a clean line round
+// the cast only and no film grade (./look.js), on lib/stage3d's renderer with
 // lib/device's budget, drawn less sharp while frames come late
 // (lib/three/pace).
 //
@@ -38,7 +39,7 @@ import { createStage, disposeTree } from '../stage';
 import { createHouse, shadowFor } from '../../../lib/three/house';
 import { budget, device } from '../../../lib/device';
 import { createPace } from '../../../lib/three/pace';
-import { InkPass, toon, toonify } from '../portal/toon';
+import { toon, toonify } from '../portal/toon';
 import { createMeshyCast } from '../portal/meshyCast';
 import { createGhosts } from '../../middleearth/towns/ghosts';
 import { groundWorld } from '../../../lib/three/groundwork';
@@ -64,7 +65,7 @@ import { createFeel, feelGroups } from '../../../lib/three/feel';
 import { wireImpacts } from '../../../lib/three/impacts';
 import { createImpacts, impactGroups } from '../../../lib/impact';
 import { createSpring, springGroups } from '../../../lib/spring';
-import { BLOOMS } from './look';
+import { BLOOMS, CAST_INK, PLAIN } from './look';
 
 export { kitMaterials };
 
@@ -73,9 +74,9 @@ export { kitMaterials };
 // ground, intensity], fog: [colour, near, far] | null, background }, dispose?,
 // actions?: { [name]: (...args) => any } } (or a promise of one). actions are
 // what the component can ask of an area once it's built, through
-// api.act(area, name, ...args) (the arcade's setBoard(best)). noInk is for what never stands in front of
-// anything inked (a sky, glows, marks on the floor): what the ink can't see,
-// it outlines what's behind straight through. Its group is drawn at the area's own place in
+// api.act(area, name, ...args) (the arcade's setBoard(best)). noInk is what the
+// street's ground-light bake passes by (a sky, glows, marks on the floor).
+// Its group is drawn at the area's own place in
 // rules.js's AREAS and shown only while Morty is there. An area with no
 // builder gets a plain lit room (or, outdoors, plain ground under a sky).
 // The kit: { renderer, models (the toon-painted GLBs by name), cast, need(names,
@@ -193,8 +194,7 @@ export async function createRmWorld(rt, { looks = null, track: stages = null } =
   // each area's sky light, and fog the colour of the sky where there's fog
   const house = createHouse();
   house.sky({ low: STREET_SKY.low, high: STREET_SKY.top, below: 1, sunDir: SUN_DIR });
-  stage.grade({ contrast: 0.06, saturation: 1.12, vignette: 0.12, grain: 0.008, shadow: [0, 0.004, 0.012], high: [0.012, 0.008, 0] });
-  const big = Math.min(window.screen?.width ?? 1280, window.screen?.height ?? 800) >= 700;
+  stage.grade(PLAIN);
 
   // ── light ──
   const hemi = new THREE.HemisphereLight(0xd6f0ff, 0x6a9a4a, 1.3);
@@ -215,7 +215,7 @@ export async function createRmWorld(rt, { looks = null, track: stages = null } =
   // ── the models and the cast ──
   const loader = gltfLoader();
   // (figures out of view aren't drawn: a skinned mesh's bounds don't follow its pose)
-  const cast = createMeshyCast(withWardrobe({ cull: true })); // (any body the wardrobe has, for Morty)
+  const cast = createMeshyCast(withWardrobe({ cull: true, ink: CAST_INK })); // (any body the wardrobe has, for Morty; the show's line round each)
   // what's still coming (an area being built, a figure being fetched), counted
   // so the QA scripts can wait till a place has all it loads: api.loading()
   let loads = 0;
@@ -295,6 +295,7 @@ export async function createRmWorld(rt, { looks = null, track: stages = null } =
     height: (x, z) => (shown === 'street' && Math.abs(z - ROAD.z) < ROAD.w / 2 ? ROAD_Y : 0),
     make: () => {
       const c = cast.make('morty');
+      c?.group.traverse((o) => o.userData.ink && (o.visible = false)); // (a ghost has no line)
       const fig = c ?? standInMorty();
       fig.group.scale.setScalar(MORTY_H / (fig.height ?? MORTY_H));
       fig.group.rotation.y = Math.PI / 2; // (a ghost's face, like Morty's, is measured from +x; a figure faces +z)
@@ -356,13 +357,6 @@ export async function createRmWorld(rt, { looks = null, track: stages = null } =
   for (const l of LINKS) fx.markAt(l.id, l.x, l.area === 'street' && Math.abs(l.z) < ROAD.w / 2 ? ROAD_Y : 0, l.z).userData.area = l.area;
   const marks = [...fx.marks];
   const hotspots = new Map(HOTSPOTS.map((h) => [h.id, h]));
-
-  // the ink: none on the effects, the exhaust or what each area leaves out
-  // (its sky), and thinning out into the distance as the show draws its
-  // backgrounds, with no line along the horizon
-  const unInked = {};
-  const ink = new InkPass(scene, camera, { hide: () => unInked[shown] ?? glows, width: big ? 1.35 : 1.05, fade: [110, 300] });
-  stage.composer.insertPass(ink, 1);
 
   // ── the camera ──
   const cam = { at: new THREE.Vector3(), look: new THREE.Vector3(), area: null, flying: null };
@@ -443,7 +437,6 @@ export async function createRmWorld(rt, { looks = null, track: stages = null } =
       return false;
     }
     for (const [k, a] of Object.entries(areas)) a.group.visible = k === id;
-    unInked[id] ??= [fx.group, ...glows, ...(areas[id].noInk ?? [])];
     const L = areas[id].light ?? (OUTDOOR.includes(id) ? ANNEX_LIGHT : ROOM_LIGHT);
     sun.color.set(L.sun[0]);
     sun.intensity = L.sun[1];
@@ -831,7 +824,6 @@ export async function createRmWorld(rt, { looks = null, track: stages = null } =
       for (const o of models.values()) if (o && !o.parent) disposeTree(o);
       fx.dispose();
       bolts.dispose();
-      ink.dispose(); // (the composer doesn't free its passes)
       glowMat.dispose();
       saucer?.traverse((o) => o.userData.glass?.dispose());
       cast.dispose();

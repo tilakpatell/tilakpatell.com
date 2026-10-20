@@ -1,5 +1,6 @@
 // Portal panic in WebGL: reads the game state and draws it, nothing more.
-// Toon-shaded and inked like the show. Each dimension is a painted floor in
+// Toon-shaded like the show, a line round the cast only and no film grade
+// (./look.js). Each dimension is a painted floor in
 // a ring (a picket fence, a ridge of flesh, rocks, a deck rail), its props
 // and backdrop from CC0 Kenney kits (toon-shaded), a cartoon sky, and its own
 // light. Portals are the show's green swirl; shots, bolts, seeds and sparks
@@ -20,12 +21,13 @@
 import * as THREE from 'three';
 import { canvasTexture, createStage } from '../../../lib/stage3d';
 import { houseOn } from '../../../lib/three/house';
-import { LOOK as PANIC_LOOK } from './look';
+import { CAST_INK, LOOK as PANIC_LOOK } from './look';
+import { PLAIN } from '../world/look';
 import { createModels } from '../../../lib/models';
 import { turn } from '../../../lib/three/gait';
 import { bodyFrom } from '../../../lib/ai/body';
 import { PANIC, butterRobots } from './rules';
-import { InkPass, releaf, releafMap, toon } from './toon';
+import { releaf, releafMap, toon } from './toon';
 import { animate, hull, makeCast, portalGun } from './cast';
 import { createMeshyCast } from './meshyCast';
 import { glowDot, paintFloor, paintFloorGlow, puff } from './paint';
@@ -354,14 +356,10 @@ export async function createPortal3D(canvas, { soft = false, hero: heroKind = 'r
   const progress = (k, label) => alive() && onProgress?.(k, label);
   progress(0.05, 'Opening a portal');
 
-  const fx = new THREE.Group(); // glows and sprites: no ink
-  const decals = new THREE.Group(); // marks on the ground: no ink
+  const fx = new THREE.Group(); // glows and sprites
+  const decals = new THREE.Group(); // marks on the ground
   scene.add(fx, decals);
   let sky = null;
-  if (!soft) {
-    const ink = new InkPass(scene, camera, { hide: () => [sky, fx, decals], width: big ? 1.2 : 1 });
-    stage.composer.insertPass(ink, 1);
-  }
 
   // light
   const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
@@ -393,7 +391,7 @@ export async function createPortal3D(canvas, { soft = false, hero: heroKind = 'r
     ),
   );
   // the cast and set pieces modelled for the site (./meshyCast.js)
-  const meshy = createMeshyCast();
+  const meshy = createMeshyCast({ ink: soft ? 0 : CAST_INK }); // (the show's line round each, but in software)
   await meshy.load((k) => progress(0.58 + k * 0.2, 'Bringing in the cast'));
   // a figure: the modelled one where it loaded, the shapes otherwise
   const figure = (kind, variant = 0) => meshy.make(kind, variant) ?? makeCast(kind, variant);
@@ -678,7 +676,7 @@ export async function createPortal3D(canvas, { soft = false, hero: heroKind = 'r
     renderer.toneMappingExposure = L.exposure * house.exposure;
     house.adopt(group);
     house.follow();
-    stage.grade?.({ contrast: 0.1, saturation: 1.12, vignette: 0.24, grain: 0.015 });
+    stage.grade?.(PLAIN);
     scene.add(group);
     dimGroup = group;
     dimIndex = g.dim;
@@ -737,7 +735,7 @@ export async function createPortal3D(canvas, { soft = false, hero: heroKind = 'r
     if (!c) {
       c = figure(kind, variant);
       c.variant = variant % 6;
-      if (soft && !c.meshy) hull(c, 0.03);
+      if (!c.meshy) hull(c, 0.03);
       scene.add(c.group);
       list.push(c);
     }
@@ -798,7 +796,7 @@ export async function createPortal3D(canvas, { soft = false, hero: heroKind = 'r
     }
     player = figure(h);
     heroAgain();
-    if (soft && !player.meshy) hull(player, 0.03);
+    if (!player.meshy) hull(player, 0.03);
     // a modelled hero holds the portal gun in the right hand
     if (player.hand) {
       player.group.updateMatrixWorld(true);
@@ -1206,7 +1204,7 @@ export async function createPortal3D(canvas, { soft = false, hero: heroKind = 'r
     if (b && b.id !== bossId) {
       if (bossCast) scene.remove(bossCast.group);
       bossCast = figure(BOSS_CAST[b.id]);
-      if (soft && !bossCast.meshy) hull(bossCast, 0.04);
+      if (!bossCast.meshy) hull(bossCast, 0.04);
       scene.add(bossCast.group);
       bossId = b.id;
     }
@@ -1276,7 +1274,7 @@ export async function createPortal3D(canvas, { soft = false, hero: heroKind = 'r
         if (!c) {
           c = figure('ally');
           c.off = allyN++ * 3;
-          if (soft && !c.meshy) hull(c, 0.025);
+          if (!c.meshy) hull(c, 0.025);
           scene.add(c.group);
         }
         allyFig.set(a, c);
@@ -1475,7 +1473,7 @@ export async function createPortal3D(canvas, { soft = false, hero: heroKind = 'r
     meshy.dispose();
     for (const t of leafMaps.values()) t.dispose();
   };
-  // the passes' shaders (bloom, the ink), linked before the game is shown; the
+  // the passes' shaders (bloom), linked before the game is shown; the
   // scene's wait for its first dimension (render, above)
   await stage.precompile(null);
   progress(1, 'Ready');

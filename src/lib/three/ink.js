@@ -1,6 +1,7 @@
-// The ink line round the cast, and a rim of light on them: the show's look
-// where there's no ink pass after the scene (the universe map, the flight
-// down the Rick and Morty page).
+// The ink line round the cast, and a rim of light on them: the show's one
+// line, round its figures (the Rick and Morty worlds' cast, the universe
+// map, the flight down the Rick and Morty page); nothing draws a line over
+// the whole picture.
 //
 // The line is an inverted hull: each mesh's back faces drawn again in ink,
 // pushed out along its normals. A Meshy model is split at every seam of its
@@ -93,6 +94,11 @@ export function inkHull(root, width, { clipY = null, color = INK } = {}) {
           vInkY = position.y;
           #ifdef USE_SKINNING
             vec3 inkN = normalize(transformedNormal);
+            // (three turns a back side's normal round: turned back, or the
+            // line would sink into the figure, out of sight)
+            #ifdef FLIP_SIDED
+              inkN = -inkN;
+            #endif
           #else
             vec3 inkN = normalize(normalMatrix * inkNormal);
           #endif

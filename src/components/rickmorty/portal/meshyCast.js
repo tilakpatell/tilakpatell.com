@@ -35,7 +35,7 @@
 
 import * as THREE from 'three';
 import { toon } from './toon';
-import { rimToon } from '../../../lib/three/ink';
+import { inkHull, rimToon } from '../../../lib/three/ink';
 import { sharpenMaterial } from '../../../lib/three/textures';
 import { RIM, lightRamp, meshyCastWith } from './meshyCastCore';
 
@@ -72,4 +72,4 @@ function shirted(map, shirt) {
   return lit(m);
 }
 
-export const createMeshyCast = meshyCastWith({ paint, shirted });
+export const createMeshyCast = meshyCastWith({ paint, shirted, inkHull });
