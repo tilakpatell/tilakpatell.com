@@ -10,8 +10,8 @@
 //     shade: [{ at: [x, z], r }]: the trees' crowns, under which the ground
 //     is darker (SHADE.colour of itself) and the grass thinner (SHADE.grass)
 //   site.paving: a city's streets and plaza (sites/city.js's paving, in the
-//     world), paved over the colour (the palette's `road`, or its low colour
-//     darkened and greyed) with no grass on them, their edges soft over a
+//     world), paved over the colour (the palette's `road`, or a grey at half
+//     its low colour's brightness) with no grass on them, their edges soft over a
 //     metre (EDGE)
 //   mapAreaOf() → { x0, z0, w, d }: the walkable square (±HALF, round the
 //     origin as the terrain grid lies), what the map covers
@@ -101,7 +101,11 @@ export function groundPainter(site, grid, { shade = [] } = {}) {
   const drySeed = seed + 101 + 13;
   const tmp = [0, 0, 0];
   const shadeAt = shade.length ? bucket(shade) : () => null;
-  const road = p.road ? col(p.road).toArray() : low.map((v) => v * 0.5 + 0.045);
+  // (a grey at half the low colour's brightness, a touch warm: the street
+  // another stuff from the ground round it, as the tone map and the haze
+  // take the difference down)
+  const lum = (low[0] * 0.2126 + low[1] * 0.7152 + low[2] * 0.0722) * 0.5;
+  const road = p.road ? col(p.road).toArray() : [lum * 1.04, lum, lum * 0.94];
   const pavingAt = site.paving?.length ? bucket(site.paving, paveBox) : () => null;
   return {
     height: (x, z) => grid.heightAt(x, z),

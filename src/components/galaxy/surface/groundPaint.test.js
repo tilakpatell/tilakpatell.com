@@ -77,7 +77,9 @@ describe('the ground painted as one function', () => {
     const paving = [{ a: [200, 300], b: [400, 300], w: 9 }, { at: [-300, 300], r: 60, w: 10 }, { at: [300, -300], r: 20 }];
     const open = groundPainter(site(), flat(5));
     const paved = groundPainter(site({ paving }), flat(5));
-    const road = lin(palette.low).map((v) => v * 0.5 + 0.045);
+    const [r, g, b] = lin(palette.low);
+    const lum = (r * 0.2126 + g * 0.7152 + b * 0.0722) * 0.5;
+    const road = [lum * 1.04, lum, lum * 0.94];
     for (const [x, z] of [[300, 302], [-300, 362], [305, -290]]) {
       const was = paintAt(open, x, z).out;
       const { out, grass } = paintAt(paved, x, z);

@@ -200,7 +200,7 @@ export const SITES = {
     sky: sky('#9ac2e2', '#f2e2d6', '#fff8ec', { hazeColor: '#f0e0d8', clouds: { cover: 0.15, color: '#ffffff', shade: '#d8c8c8', scale: 0.8, speed: 0.003 } }),
     fog: { color: '#e6dcd6', density: 0.0009 },
     light: { sun: 2.8, sky: '#d4dcea', ground: '#9aac7a', ambient: 0.9 },
-    ground: { detail: 'grass', detailLook: { color: 0.6, normal: 0.5 }, seed: 97, layers: [{ type: 'swell', scale: 500, height: 3 }, { type: 'hills', scale: 200, height: 3 }, { type: 'mountains', from: 650, to: 2400, height: 220, scale: 900 }], palette: palette('#88a462', '#9ab872', '#c4b4a8', '#d8c8b8', { mark: '#6a844a' }) },
+    ground: { detail: 'grass', detailLook: { color: 0.6, normal: 0.5 }, seed: 97, layers: [{ type: 'swell', scale: 500, height: 3 }, { type: 'hills', scale: 200, height: 3 }, { type: 'mountains', from: 650, to: 2400, height: 220, scale: 900 }], palette: palette('#88a462', '#9ab872', '#c4b4a8', '#d8c8b8', { mark: '#6a844a', road: '#d4ccc0' }) },
     grass: { h: [0.08, 0.16], w: 0.04, root: '#6a844a', mid: '#88a462', tip: '#a8c47e', dry: '#b4c48a', cover: 0.95, scale: 200, wind: 0.1 },
     weather: [],
     land: { at: [0, 0], yaw: 3.2 },

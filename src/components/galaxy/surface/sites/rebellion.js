@@ -21,7 +21,7 @@ export const SITES = {
     sky: sky('#98acc0', '#e4dac6', '#fff6e6', { hazeColor: '#e8dccc', clouds: { cover: 0.3, color: '#f2ece2', shade: '#a49c90', scale: 0.7, speed: 0.004 } }),
     fog: { color: '#d8ccb8', density: 0.0014 },
     light: { sun: 2.4, sky: '#c4ccd6', ground: '#a8987c', ambient: 0.85 },
-    ground: { detail: 'sand', detailLook: { color: 0.7, normal: 0.8, metres: 6 }, seed: 81, wind: 0.4, layers: [{ type: 'swell', scale: 420, height: 6 }, { type: 'mesas', scale: 460, height: 30, cover: 0.34, cliff: 0.05 }, { type: 'dunes', scale: 48, height: 3, wind: 0.4 }, { type: 'mountains', from: 700, to: 3000, height: 320, scale: 1200 }], palette: palette('#c2b296', '#d6c8ac', '#8a8070', '#a89a80', { mark: '#7a6e5c' }) },
+    ground: { detail: 'sand', detailLook: { color: 0.7, normal: 0.8, metres: 6 }, seed: 81, wind: 0.4, layers: [{ type: 'swell', scale: 420, height: 6 }, { type: 'mesas', scale: 460, height: 30, cover: 0.34, cliff: 0.05 }, { type: 'dunes', scale: 48, height: 3, wind: 0.4 }, { type: 'mountains', from: 700, to: 3000, height: 320, scale: 1200 }], palette: palette('#c2b296', '#d6c8ac', '#8a8070', '#a89a80', { mark: '#7a6e5c', road: '#d8d0c0' }) },
     weather: [{ kind: 'sand', count: 380 }],
     land: { at: [0, 0], yaw: 2 },
     places: [
