@@ -14,7 +14,8 @@
 //   areaAt([x, z]) → the ground map's square round (x, z)
 //   createRoam({ height, grid, gridOpts, map, onGrid, onMove, spend }) →
 //     (onGrid(next): the new grid sampled, before the map is painted from it)
-//     { update(x, z) → whether the ground moved this frame, centre, moving, stats }
+//     { update(x, z, budget?) → whether the ground moved this frame, centre, moving,
+//       stats: { moves, frames, swap: ms the last move's own frame took } }
 
 import { HALF, gridBuild } from './terrain';
 
@@ -32,7 +33,7 @@ export const areaAt = ([x, z]) => ({ x0: x - HALF, z0: z - HALF, w: 2 * HALF, d:
 export function createRoam({ height, grid, gridOpts = {}, map = null, onGrid, onMove, spend = SPEND }) {
   let current = grid;
   let job = null;
-  const stats = { moves: 0, frames: 0 };
+  const stats = { moves: 0, frames: 0, swap: 0 };
   return {
     get centre() {
       return current.centre;
@@ -41,7 +42,9 @@ export function createRoam({ height, grid, gridOpts = {}, map = null, onGrid, on
       return Boolean(job);
     },
     stats,
-    update(x, z) {
+    // (`budget`: ms of work this frame; Infinity moves the ground at once, as
+    // the shots' dev hook does under a software GL's few frames a second)
+    update(x, z, budget = spend) {
       if (!job) {
         const [cx, cz] = current.centre;
         if (Math.hypot(x - cx, z - cz) < MOVE) return false;
@@ -54,18 +57,21 @@ export function createRoam({ height, grid, gridOpts = {}, map = null, onGrid, on
       // (the grid first, then the map, a frame's share each: the map's own
       // swap and the grid's on one frame, the frame the map's last rows go in)
       if (!job.gridDone) {
-        job.gridDone = job.grid.step(spend);
+        job.gridDone = job.grid.step(budget);
         if (job.gridDone) {
           onGrid?.(job.grid.grid);
           job.map = map?.moveTo(areaAt(job.centre)) ?? null;
         }
         return false;
       }
-      if (job.map && !job.map.step(spend)) return false;
+      if (job.map && !job.map.step(budget)) return false;
       current = job.grid.grid;
       job = null;
       stats.moves++;
+      // (the frame the new ground goes in: its cost, the one hitch a move has)
+      const t0 = performance.now();
       onMove?.(current);
+      stats.swap = Math.round((performance.now() - t0) * 10) / 10;
       return true;
     },
   };

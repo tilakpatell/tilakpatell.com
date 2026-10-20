@@ -190,6 +190,31 @@ describe('createLiving', () => {
     living.dispose();
   });
 
+  it('still lays the tiles in again when you walk on before they are', async () => {
+    let lift = 0;
+    const kit = kitFor();
+    const living = createLiving({ rows: ROWS, kitFor: () => kit, seed: 3, height: () => lift, keep: () => true, solids: createSolids() });
+    living.fill(0, 0);
+    await living.ready;
+    lift = 5;
+    living.relay();
+    // (ten metres on at once: the ring is looked at again before any is in)
+    for (let i = 0; i < 2000 && living.stats.queued; i++) living.update(10, 0, cam(10, 0), 0.016);
+    expect(living.stats.queued).toBe(0);
+    // (the pools take their items a moment later, then draw them)
+    await new Promise((r) => setTimeout(r, 0));
+    living.update(10, 0, cam(10, 0), 1);
+    const ys = [];
+    living.group.traverse((o) => {
+      if (!o.isInstancedMesh || !o.count) return;
+      for (let i = 0; i < o.count; i++) ys.push(o.instanceMatrix.array[i * 16 + 13]);
+    });
+    // (each at the new ground's height, a rock's own half-metre over it)
+    expect(ys.length).toBeGreaterThan(100);
+    expect(ys.filter((y) => y < 5 - 1e-4)).toEqual([]);
+    living.dispose();
+  });
+
   it('keeps no bound or edge in the free roam', () => {
     const k = keepOf({ site: { reach: 590 }, heightAt: () => 0, avoid: [], bound: Infinity, edge: Infinity });
     expect(k(5000, -7000, { band: 'cover' })).toBe(true);

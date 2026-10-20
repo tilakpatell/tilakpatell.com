@@ -4276,6 +4276,17 @@ export async function create(canvas, ctx) {
       camInit = false;
       ctx.invalidate();
     },
+    // (the free roam's ground moved round you at once and the living ground
+    // laid on it, for the shots: a software GL draws a frame every few seconds)
+    roamNow() {
+      if (!import.meta.env.DEV || !roam) return null;
+      const p = me().st;
+      for (let i = 0; i < 3 && !roam.update(p.x, p.z, Infinity); i++);
+      p.y = groundAt(world, p.x, p.z, 1e4, 1e4);
+      living?.fill(p.x, p.z);
+      ctx.invalidate();
+      return { centre: roam.centre, ...roam.stats };
+    },
     // (for tests: where you are, what's going on)
     debug: () => ({ surfaces: { level: surfaces?.level ?? null, print: groundPrint, picks: [...picks] }, sky: { zenith: '#' + sky.uniforms.uZenith.value.getHexString(), horizon: '#' + sky.uniforms.uHorizon.value.getHexString() }, site: site.id, ship: { at: shipHolder.position.toArray().map((v) => +v.toFixed(1)), y: +ship.group.position.y.toFixed(2), box: [+shipBox.w.toFixed(1), +shipBox.l.toFixed(1)], visible: ship.group.visible }, ms: state.ms, frames: state.frames, t: +state.t.toFixed(1), phase: state.phase, you: { ...me().st }, body: body ? { ready: body.ready, pose: body.pose } : null, here: state.here, found: [...state.found], prompt: state.prompt, riding: state.riding?.kind ?? null, rideY: state.riding ? +state.riding.state.y.toFixed(2) : null, quest: state.quest, zone: state.zone?.id ?? null, zoneOrigin: state.zone?.origin ?? null, health: state.health, off: state.off, mission: chase?.view() ?? assault?.view() ?? run, who: me().spec.id, saber: me().saber ? { lit: me().saber.lit, busy: me().saber.busy, thrown: me().saber.thrown, stance: me().saber.stance?.name ?? null, color: me().spec.saber?.color ?? null, ...me().saber.view(state.t) } : null, mate: other().spec.id, mods: me().spec.mods ?? [], heat: +state.heat.value.toFixed(2), locked: state.heat.locked, lock: state.lock?.spec.kind ?? null, lockGuard: state.lock?.guard ?? null, lockHp: state.lock?.hp ?? null, lockStagger: state.lock?.stagger != null ? +state.lock.stagger.toFixed(1) : null, weapon: me().weapon?.name ?? null, dodging: Boolean(state.dodge), bombs: state.bombs.length, powers: abilitiesOf(me().spec), force: powers.debug(), jet: +state.jet.fuel.toFixed(2), sprinting: state.t < state.sprint, fight: activity.debug(), people: life.debug(), net: { ...net.progress(), pool: assetPool().progress() }, rides: rides.map((x) => ({ kind: x.kind, at: [+x.state.x.toFixed(1), +x.state.z.toFixed(1)], built: Boolean(x.fig || x.body?.children.length) })) }),
     dispose() {

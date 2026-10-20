@@ -98,7 +98,9 @@ for (const v of views) {
   const yaw = Math.atan2(x - sx, z - sz);
   await page.evaluate(([sx, sz, yaw, pitch]) => window.__surfaceDo('teleport', sx, sz, yaw, null, pitch), [sx, sz, yaw, pitch == null || pitch === '' ? null : Number(pitch)]);
   await page.waitForTimeout(7000);
-  // (in the free roam, far out: the ground moved round the new spot, MOVE_WAIT ms at most)
+  // (in the free roam, far out: the ground moved round the new spot at once,
+  // as it would over a second at a GPU's frame rate, then MOVE_WAIT ms at most)
+  if (await page.evaluate(() => Boolean(window.__surfaceScene?.roam?.()))) console.log('  roam', JSON.stringify(await page.evaluate(() => window.__surfaceDo('roamNow'))));
   await page.waitForFunction(() => !window.__surfaceScene?.roam?.()?.moving, null, { timeout: Number(process.env.MOVE_WAIT ?? 300000), polling: 1000 }).catch(() => console.log('  (the ground still moving: shot as it stands)'));
   // (and the living ground grown in round the new spot)
   await page.waitForFunction(() => !(window.__surfaceScene?.living?.()?.queued > 0), null, { timeout: Number(process.env.MOVE_WAIT ?? 300000), polling: 1000 }).catch(() => console.log('  (the living ground still growing: shot as it stands)'));

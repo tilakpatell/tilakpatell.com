@@ -118,6 +118,11 @@ export function createLiving({ rows, kitFor, level = 'high', seed = 1, height, k
   let queue = []; // [band, tx, tz, d, again?], nearest first
   let last = null; // where the ring was last looked at
   const keyOf = (band, tx, tz) => `${band}:${tx},${tz}`;
+  // metres from (x, z) to a band's tile
+  const off = (band, tx, tz, x, z) => {
+    const size = SIZE[band];
+    return Math.hypot(Math.max(tx * size, Math.min(x, (tx + 1) * size)) - x, Math.max(tz * size, Math.min(z, (tz + 1) * size)) - z);
+  };
 
   const lay = (band, tx, tz) => {
     const key = keyOf(band, tx, tz);
@@ -140,21 +145,18 @@ export function createLiving({ rows, kitFor, level = 'high', seed = 1, height, k
     scatter.free(key);
   };
   // the ring round (x, z): tiles past a band's reach (and a tile's slack) go,
-  // new ones within it queue, nearest first
+  // new ones within it queue, nearest first, and those still to lay again
+  // (relay) stay queued
   const look = (x, z) => {
     last = { x, z };
     const want = [];
     for (const band of BANDS) {
       if (!rows[band]?.length) continue;
       const size = SIZE[band];
-      for (const [key, t] of tiles) {
-        if (t.band !== band) continue;
-        const nx = Math.max(t.tx * size, Math.min(x, (t.tx + 1) * size));
-        const nz = Math.max(t.tz * size, Math.min(z, (t.tz + 1) * size));
-        if (Math.hypot(nx - x, nz - z) > reach[band] + size) drop(key);
-      }
+      for (const [key, t] of tiles) if (t.band === band && off(band, t.tx, t.tz, x, z) > reach[band] + size) drop(key);
       for (const [tx, tz, d] of tilesAround(x, z, reach[band], size)) if (!tiles.has(keyOf(band, tx, tz))) want.push([band, tx, tz, d]);
     }
+    for (const [band, tx, tz, , again] of queue) if (again && tiles.has(keyOf(band, tx, tz))) want.push([band, tx, tz, off(band, tx, tz, x, z) + UNDER, true]);
     queue = want.sort((a, b) => a[3] - b[3]);
   };
 
@@ -181,13 +183,8 @@ export function createLiving({ rows, kitFor, level = 'high', seed = 1, height, k
     },
     relay() {
       const at = last ?? { x: 0, z: 0 };
-      const again = [...tiles.values()].map((t) => {
-        const size = SIZE[t.band];
-        const nx = Math.max(t.tx * size, Math.min(at.x, (t.tx + 1) * size));
-        const nz = Math.max(t.tz * size, Math.min(at.z, (t.tz + 1) * size));
-        return [t.band, t.tx, t.tz, Math.hypot(nx - at.x, nz - at.z) + UNDER, true];
-      });
-      queue = [...queue, ...again].sort((a, b) => a[3] - b[3]);
+      const again = [...tiles.values()].map((t) => [t.band, t.tx, t.tz, off(t.band, t.tx, t.tz, at.x, at.z) + UNDER, true]);
+      queue = [...queue.filter((e) => !e[4]), ...again].sort((a, b) => a[3] - b[3]);
     },
     // (every model laid so far drawn)
     get ready() {

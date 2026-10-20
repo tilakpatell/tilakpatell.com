@@ -4,6 +4,12 @@ import { MOVE, areaAt, createRoam, roamGround, roamOn } from './roam';
 
 const land = (x, z) => Math.sin(x / 50) * 3 + Math.cos(z / 40) * 2;
 const OPTS = { n: 128, grow: 1.3 };
+// (frames till the ground has moved round (x, z))
+const settle = (roam, x, z) => {
+  let frames = 0;
+  while (!roam.update(x, z)) frames++;
+  return frames;
+};
 
 describe('roamOn and roamGround', () => {
   it('has no edge in free roam on ground of its own, and keeps it on a mission or the game’s level', () => {
@@ -45,16 +51,14 @@ describe('createRoam', () => {
   it('lays its new middle on the fine grid’s lattice, so the fine ground’s samples land where they were', () => {
     const fine = heightGrid(land, { n: 256, grow: 1.08 });
     const { roam, moved } = roamOf({ grid: fine, gridOpts: { n: 256, grow: 1.08 } });
-    while (!roam.update(301, -77)) {}
+    settle(roam, 301, -77);
     expect(roam.centre).toEqual([320, -80]);
     for (const [x, z] of [[300, -70], [100, 40], [-200, 200]]) expect(moved[0].heightAt(x, z)).toBeCloseTo(fine.heightAt(x, z), 9);
   });
 
   it('builds a grid round you over frames, then moves the ground there on one', () => {
     const { roam, moved } = roamOf();
-    let frames = 0;
-    while (!roam.update(MOVE + 30, 10)) frames++;
-    expect(frames).toBeGreaterThan(5);
+    expect(settle(roam, MOVE + 30, 10)).toBeGreaterThan(5);
     expect(moved).toHaveLength(1);
     // (on the fine grid's lattice, 16 cells: 160 m at 128 lines over ±640)
     expect(roam.centre).toEqual([320, 0]);
@@ -77,9 +81,18 @@ describe('createRoam', () => {
     expect(moved).toHaveLength(1);
   });
 
+  it('moves at once, on a budget with no end', () => {
+    const { roam, moved } = roamOf({ spend: 3 });
+    let calls = 1;
+    while (!roam.update(MOVE + 30, 10, Infinity)) calls++;
+    expect(calls).toBe(2);
+    expect(moved).toHaveLength(1);
+    expect(roam.stats.swap).toBeGreaterThanOrEqual(0);
+  });
+
   it('goes on as far as you go', () => {
     const { roam, moved } = roamOf();
-    for (const x of [500, 1000, 1500, 20000]) while (!roam.update(x, -x)) {}
+    for (const x of [500, 1000, 1500, 20000]) settle(roam, x, -x);
     expect(moved).toHaveLength(4);
     expect(roam.centre).toEqual([20000, -20000]);
   });
