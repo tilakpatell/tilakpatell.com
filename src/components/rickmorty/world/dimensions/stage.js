@@ -20,6 +20,7 @@ import { BOX, ceilings, makeRoom, tiledPaint, wallLine } from '../interiors/shel
 import { at, speckle } from '../kit';
 import { RIGGED } from '../../portal/meshyCast';
 import { destinationById } from './destinations';
+import { nameOf } from './names';
 import { createNpcs } from '../npc';
 import { attend } from '../living';
 import { TUNING as POWER, newPower, powerNews, powerReadout, stepPower } from '../games/power';
@@ -223,14 +224,14 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   // `person`: one of the place's people, who turns their head to Morty as he
   // comes up and talks with their hands when he talks to them (../living.js's
   // attend); null if it won't load
-  const make = (kind, { x, z, face = 0, h = null, y = 0, until = null, after = null, when = null, onPlace = null, ai = null, id = kind, who = null, person = false }) => {
+  const make = (kind, { x, z, face = 0, h = null, y = 0, until = null, after = null, when = null, onPlace = null, ai = null, id = kind, who = null, name = null, person = false }) => {
     const c = kit.cast?.make?.(kind);
     if (!c) return null;
     if (h) c.group.scale.setScalar(h / c.height);
     c.group.position.set(x, y, z);
     c.group.rotation.y = face + Math.PI / 2;
     R.group.add(c.group);
-    const n = ai ? N.add(c, { x, z, y, face, ai, id, who }) : null;
+    const n = ai ? N.add(c, { x, z, y, face, ai, id, who, name }) : null;
     const b = person ? {} : null;
     R.tick((t, dt, state) => {
       const done = state?.done ?? [];
@@ -252,8 +253,8 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   // what the crowd stands with, as `when` for a crowd that runs off; `who`:
   // more for a person by id, say a `when` of their own)
   const people = ({ extras = {}, who = {} } = {}) => {
-    for (const p of d.people) figure(p.who ?? p.id, { x: p.x, z: p.z, y: p.y ?? 0, face: p.face, until: p.until, after: p.after, ai: p.ai ?? null, id: p.id, who: d.say[p.id]?.who ?? null, person: true, ...(who[p.id] ?? {}) });
-    for (const [i, e] of d.extras.entries()) figure(e.kind, { x: e.x, z: e.z, y: e.y ?? 0, face: e.face, h: e.h ?? null, ai: e.ai ?? null, id: `${e.kind}-${i}`, ...extras });
+    for (const p of d.people) figure(p.who ?? p.id, { x: p.x, z: p.z, y: p.y ?? 0, face: p.face, until: p.until, after: p.after, ai: p.ai ?? null, id: p.id, who: d.say[p.id]?.who ?? null, name: nameOf(p.who ?? p.id), person: true, ...(who[p.id] ?? {}) });
+    for (const [i, e] of d.extras.entries()) figure(e.kind, { x: e.x, z: e.z, y: e.y ?? 0, face: e.face, h: e.h ?? null, ai: e.ai ?? null, id: `${e.kind}-${i}`, name: nameOf(e.kind), ...extras });
   };
 
   const done = (light, update) => {

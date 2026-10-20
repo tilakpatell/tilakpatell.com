@@ -205,7 +205,7 @@ export default function RmHud({
           {duel && (
             <div className="rm-fight" aria-live="polite">
               <div className="rm-fight-row">
-                <b>{SAY[duel.who]?.who ?? 'Them'}</b>
+                <b>{duel.name ?? SAY[duel.who]?.who ?? 'Them'}</b>
                 <span className="rm-fight-bar" style={{ '--v': enemyShare(duel.hp, duel.max) / 100 }} aria-hidden="true">
                   <i />
                 </span>

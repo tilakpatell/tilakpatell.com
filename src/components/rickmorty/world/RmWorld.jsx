@@ -1088,7 +1088,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         const d = destinationById(e.area);
         if (!d) return;
         stopVoiced(); // (a line still being said, the vat's say, is cut: the catch is what's said)
-        say({ kind: 'say', who: SAY[e.who]?.who ?? e.who ?? null, text: e.text ?? d.caught ?? 'Caught.' });
+        say({ kind: 'say', who: e.name ?? SAY[e.who]?.who ?? null, text: e.text ?? d.caught ?? 'Caught.' });
         sound('grab');
         api.current?.shake?.(0.3); // (the Citadel's caught, the same grab)
         api.current?.play('scared', { hold: 0.4, layer: 'auto' });
@@ -1110,7 +1110,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       } else if (name === 'bark') {
         if (s.t - (s.barkAt ?? -1e9) < 6) return;
         s.barkAt = s.t;
-        say({ kind: 'say', who: e.who, text: e.text });
+        say({ kind: 'say', who: e.name ?? SAY[e.who]?.who ?? null, text: e.text });
       } else if (name === 'done') {
         complete(e.task);
         if (e.unlock) unlock(e.unlock); // (a game whose win is an achievement: the vat's)
@@ -1120,21 +1120,21 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         if (s.t - (s.spottedAt ?? -1e9) < 8) return;
         s.spottedAt = s.t;
         sound('alarm');
-        say({ kind: 'say', who: SAY[e.who]?.who ?? null, text: e.text ?? 'They’ve seen you.' });
+        say({ kind: 'say', who: e.name ?? SAY[e.who]?.who ?? null, text: e.text ?? 'They’ve seen you.' });
       } else if (name === 'duel') {
         // the fight's on: the hearts show, and F fires (its bolts loaded now)
         loadShots();
-        s.duel = { who: e.who, hp: e.hp, max: e.max, mortyHp: e.mortyHp, mortyMax: e.mortyMax };
+        s.duel = { who: e.who, name: e.name ?? null, hp: e.hp, max: e.max, mortyHp: e.mortyHp, mortyMax: e.mortyMax };
         setDuel({ ...s.duel });
         sound('zap');
       } else if (name === 'strike') {
-        s.duel = { who: e.who, hp: e.hp, max: e.max, mortyHp: e.mortyHp, mortyMax: e.mortyMax };
+        s.duel = { who: e.who, name: e.name ?? null, hp: e.hp, max: e.max, mortyHp: e.mortyHp, mortyMax: e.mortyMax };
         setDuel({ ...s.duel });
         sound('thud');
         if (e.beaten) {
           // beaten: he goes down, and comes round at the way in; the fight's off till the next try
           api.current?.play('fall', { hold: 1.2 });
-          say({ kind: 'say', who: SAY[e.who]?.who ?? e.who ?? null, text: e.text ?? 'Beaten.' });
+          say({ kind: 'say', who: e.name ?? SAY[e.who]?.who ?? null, text: e.text ?? 'Beaten.' });
           const d = destinationById(e.area);
           s.fading = true;
           s.keys.clear();
