@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { assetUrl, createMeshyCast, cullWithin, FOLDERS, heading } from './meshyCast';
+import { assetUrl, createMeshyCast, cullWithin, FOLDERS, heading, INK_TALLEST, SET_PIECES } from './meshyCast';
 import { meshyRig as fixtureRig, swingClip } from '../../../lib/three/meshyRig.fixture';
 
 // a skinned figure 1.8 m tall, as a Meshy rig arrives: its mesh under a
@@ -172,6 +172,58 @@ const clock = (c, move = 0) => {
     }
   };
 };
+
+describe('a Meshy figure’s line', () => {
+  const inksOf = (c) => {
+    const meshes = [];
+    const inks = [];
+    c.group.traverse((o) => o.isMesh && (o.userData.ink ? inks : meshes).push(o));
+    return { meshes, inks };
+  };
+
+  it('has a line round it when the cast is asked for one: a hull on its own skeleton, culled with it, freed with it', async () => {
+    const cast = createMeshyCast({ kinds: KINDS, loader: fakeLoader(), cull: true, ink: 0.01 });
+    await cast.load(null, ['rick']);
+    const c = cast.make('rick');
+    const { meshes, inks } = inksOf(c);
+    expect(meshes.length).toBeGreaterThan(0);
+    expect(inks).toHaveLength(meshes.length);
+    for (const h of inks) {
+      const src = meshes.find((m) => m.geometry === h.geometry);
+      expect(src).toBeDefined();
+      expect(h.isSkinnedMesh).toBe(src.isSkinnedMesh);
+      if (src.isSkinnedMesh) expect(h.skeleton).toBe(src.skeleton);
+      expect(h.material.side).toBe(THREE.BackSide);
+      expect(h.frustumCulled).toBe(true);
+      if (src.isSkinnedMesh) expect(h.boundingSphere.equals(src.boundingSphere)).toBe(true);
+    }
+    // (and none drawn right at the eye: a camera passing through a figure sees through it)
+    expect(inks[0].material.customProgramCacheKey()).toContain('near-0.60');
+    let freed = 0;
+    for (const h of inks) h.material.addEventListener('dispose', () => (freed += 1));
+    c.release();
+    expect(freed).toBe(new Set(inks.map((h) => h.material)).size);
+    cast.dispose();
+  });
+
+  it('draws none round a set piece (a building, a vehicle, a machine) or anything taller than a storey', async () => {
+    const kinds = { house: { a: 'birdperson-house', h: 14 }, car: { a: 'dirlycar', h: 1.4 }, giant: { a: 'giant', h: 9 }, pickle: { a: 'pickle', h: 1.35 } };
+    const cast = createMeshyCast({ kinds, rigged: new Set(), loader: fakeLoader(), ink: 0.01 });
+    await cast.load(null, ['birdperson-house', 'dirlycar', 'giant', 'pickle']);
+    for (const k of ['house', 'car', 'giant']) expect(inksOf(cast.make(k)).inks, k).toHaveLength(0);
+    expect(inksOf(cast.make('pickle')).inks.length).toBeGreaterThan(0);
+    expect(SET_PIECES.has('birdperson-house')).toBe(true);
+    expect(SET_PIECES.has('pickle')).toBe(false);
+    expect(INK_TALLEST).toBe(4);
+    cast.dispose();
+  });
+
+  it('has none unless the cast is asked for one', async () => {
+    const { cast, c } = await castOf();
+    expect(inksOf(c).inks).toHaveLength(0);
+    cast.dispose();
+  });
+});
 
 describe('a Meshy figure’s one-shots', () => {
   it('replaying the clip that is playing restarts it, never cuts it', async () => {
