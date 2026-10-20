@@ -317,3 +317,58 @@ Gandalf's staff (the Grey's gnarled, a crystal in its head; the White's straight
 - `gear-fellowship.webp`: the five close (Caradhras' foot): Aragorn's side and front, Boromir's shield from behind and his front, Gandalf with his staff, Gimli with his axe, Legolas's quiver from behind and his bow.
 
 What still falls short: the six stages after the Anduin are not built (Minas Tirith among them: the next pull request); the new lines aren't voiced yet (`scripts/voices` on the owner's desktop); in the container a CSS fade begun after the 3D loop is busy never starts (the deed card has no backwards fill so it shows regardless).
+
+## The road to the Havens (2026-10-20)
+
+The owner again: the Road made no sense, there was no Minas Tirith, and it was no different from the chapters. The six stages after the Anduin are now built, each on its chapter's own builders under the Road's light, each with something to do; the ride ends at the Havens.
+
+### Each stage (`clock.test.js`'s ledger, on auto)
+
+| stage | length | holds | on auto |
+| --- | --- | --- | --- |
+| the Dead Marshes | 150 m | 42 s | 102 s |
+| Ithilien | 160 m | 62 s | 126 s |
+| Cirith Ungol | 150 m | 42 s | 102 s |
+| Gorgoroth | 180 m | 60 s | 132 s |
+| Minas Tirith | 160 m | 34 s | 98 s |
+| the Grey Havens | 290 m | 24 s | 140 s |
+
+The whole ride is 1,797 s on auto, the deeds' waits aside. The per-beat draws and triangles on both tiers, as R3 and R4 took them, are R7's still: the container draws a frame a second in software and the evidence below took most of the session's browser time.
+
+### What there is to do
+
+| stage | beat | deed | how |
+| --- | --- | --- | --- |
+| marshes | faces | Pull Frodo back from the water | hold E, 3 s |
+| ithilien | crossroads | Look up at the fallen king | E |
+| ithilien | vale | Keep hold of Frodo | hold E, 4 s |
+| cirith-ungol | shelob | Raise the Phial | E, 7.5 s in |
+| gorgoroth | beam | Keep still under the cloaks | hold E, 4 s |
+| gorgoroth | carry | Carry him up the Mountain | A and D in turn, 14 (Sam's clip after) |
+| gorgoroth | cracks | Reach for Frodo's hand | hold E, 3 s, 13 s in |
+| minas-tirith | court | Bow to the King | E, 9 s in (the court bows to the four) |
+| havens | farewell | Say goodbye | E (Frodo goes up into the ship by the gangway) |
+
+### What each stage is
+
+- **The Dead Marshes**: the rope down the Emyn Muil, Gollum tamed, the candles in the mist and the faces under the water (the deed pulls Frodo back from them), the fell beast's shadow, the Black Gate.
+- **Ithilien**: green again under the woods, the Haradrim and their mûmakil on the road below, Faramir's rangers, Henneth Annûn behind its falls, the fallen king at the Cross-roads, the Morgul Vale's tower lit and its host going out; Minas Tirith a white landmark on the horizon to the west.
+- **Cirith Ungol**: the stair up the cliff, Sam sent back, the tunnel with the Phial the one light, Shelob and Frodo stung, the tower and Frodo found, and out between the Watchers.
+- **Gorgoroth**: the Mount Doom chapter's own mountain ahead, its fire and its plume; the orc column marching with its driver's whip; the Eye's beam sweeping the plain over the two under their cloaks; Sam carrying Frodo on his back; the cut down into the Sammath Naur, Gollum's fall and Sam's hand; the Mountain breaking, Barad-dûr sinking and the Eye going out (the backdrop's fall); the rock in the fire and the Eagles.
+- **Minas Tirith**: the chapter's own city on its knee of Mindolluin, its seven walls up to the Citadel, its stone lifted white under the Road's light; the causeway, the Great Gate, then the Court of the Fountain and the White Tree flowering as the court bows to the four.
+- **The Grey Havens**: the Gulf at sunset, the long grey quay and its lamps, the white ship with the swan prow, those sailing aboard; the farewell, the gangway, and the ship away down the lane into the light, the three left on the quay.
+
+### Fixed on the way
+
+- The Havens' sea had trees and reeds standing in it: a stage's `ground.sea` now makes the land wet under it, so the scatter keeps to the beach; the last stage's land no longer rises back to the seam at its far end.
+- The four stood in the quay's coping (its top a tenth over the floor the scene gave them); Frodo went up into the ship through her side, not over it (now by a gangway).
+- After the bow at the Court the King's side turned their backs on the four: the kneel clip was looped from its start, not held at its kneel.
+- A whole city in the shadow pass threw on the WebGL fallback (`updateColor` reading `.r` of undefined): the city and Gorgoroth's props cast nothing into the cascades.
+
+### The pictures
+
+- `marshes-built-desktop.webp`, `ithilien-built-desktop.webp`, `cirith-ungol-built-desktop.webp`: the three stages R5's first session drew, merged in.
+- `minas-tirith-built-desktop.webp`: the Pelennor and the causeway up to the Great Gate, the city filling the sky.
+- `deed-minas-tirith-court.webp`: the Court of the Fountain, the King before the White Tree, the four before him, the deed's card.
+- `havens-built-desktop.webp`: the Gulf at sunset from the beach, the quay out to the white ship.
+- `havens-quay-desktop.webp`: out along the quay, the ship at its end.
