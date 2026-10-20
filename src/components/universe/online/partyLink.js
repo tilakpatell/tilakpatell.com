@@ -99,6 +99,7 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
   let held = false; // a member’s newer roster without you in it heard: you may have been put out
   let prior = null; // { leader, epoch, from }: the leader you had when you took a member’s word, till they speak
   let handover = null; // the roster you handed over with as you left, for a member of it back behind it
+  let lapsed = null; // the leader you hold, in the room at the last heartbeat with a hello that named no party or another
   const invites = new Map(); // from → { from, name, party, leader, at }
   const declined = new Map(); // from → when you said no
   const invited = new Map(); // id → { party, at }: whom you asked
@@ -178,7 +179,7 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
       asked.clear();
       added.clear();
       stale = held = false;
-      prior = null;
+      prior = lapsed = null;
     }
     if (party) keep();
     else forget();
@@ -186,10 +187,19 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
     mark();
     changed();
   };
-  // the leader gone and you next: you lead, and say so (not while what you hold may be behind)
-  const lead = () => {
+  // your leader in the room, their hello naming no party or another: they’ve left it
+  const leaderLeft = () => {
+    const p = peers.get(party.leader);
+    return Boolean(p) && p.name !== null && !p.blocked && p.pt !== party.id;
+  };
+  // The leader gone and you next: you lead, and say so. Not while what you
+  // hold may be behind, unless (`sure`) your leader has been here without
+  // the party two heartbeats running: then no one you know of is left to
+  // tell you more (a hand-over of theirs has had a heartbeat to reach you),
+  // and waiting would leave you in their party for good.
+  const lead = (sure = false) => {
     if (!party || held || isLeader(party, key()) || here(party.leader) || successor(party, here) !== key()) return;
-    if (stale && !party.members.some((m) => m.id !== key() && here(m.id))) return;
+    if (stale && !sure && !party.members.some((m) => m.id !== key() && here(m.id))) return;
     const next = takeOver(party, key());
     if (!next) return;
     change(next);
@@ -615,7 +625,11 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
         moved = true;
       }
       if (party) {
-        if (!isLeader(party, key())) lead();
+        if (!isLeader(party, key())) {
+          const out = leaderLeft() ? party.leader : null;
+          lead(out !== null && out === lapsed);
+          lapsed = out;
+        }
         else if (party.members.some((m) => m.id !== key() && here(m.id))) tell(rosterMsg(party));
         // (one of it still ahead a heartbeat on, past any roster on its way: they may hold a word yours puts right)
         for (const m of party.members) {
@@ -648,7 +662,7 @@ export function createPartyLink({ self, peers, emit, feed, roster, now, store = 
       party = null;
       joining = null;
       mine = null;
-      handover = prior = null;
+      handover = prior = lapsed = null;
       stale = held = false;
       for (const m of [invites, declined, invited, asked, added, caught, answered, turned]) m.clear();
     },

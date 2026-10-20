@@ -83,8 +83,10 @@ export function PartySheet({ online, request, onClose }) {
       const at = document.activeElement;
       // (a stop in the sheet that isn’t one of them takes the browser’s own
       // step: the chat’s list, once it scrolls, is one the browser makes, and
-      // sent back to the tabs from it, Tab would never reach the field)
-      if (sheet.current.contains(at) && !items.includes(at)) return;
+      // sent back to the tabs from it, Tab would never reach the field. Not a
+      // control gone dead under focus, as Send does while a line goes: where
+      // a browser leaves focus on it, its own step is out past the last stop)
+      if (sheet.current.contains(at) && !items.includes(at) && !at.disabled) return;
       const next = wrapFocus(items, at, e.shiftKey);
       if (!next) return;
       e.preventDefault();

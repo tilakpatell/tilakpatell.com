@@ -209,6 +209,21 @@ describe('the party dialog', () => {
     expect(tab.focus).toHaveBeenCalledTimes(2);
   });
 
+  it('takes Tab back from a control gone dead under focus, as Send is while a line goes', () => {
+    const { tree, heard } = sheetKeys();
+    const stop = (name, disabled = false) => ({ name, disabled, tabIndex: 0, getClientRects: () => [{}], focus: vi.fn() });
+    const [tab, close, say] = ['tab', 'close', 'say'].map((n) => stop(n));
+    const send = stop('send', true); // (pressed from the keyboard: focus still on it, in a browser that leaves it there)
+    const inside = [tab, close, say, send];
+    elements(tree).find((el) => el.props.role === 'dialog').props.ref.current = { contains: (el) => inside.includes(el), querySelectorAll: () => inside };
+    document.activeElement = send;
+    const e = { key: 'Tab', shiftKey: false, preventDefault: vi.fn(), stopPropagation: vi.fn() };
+    heard.keydown(e);
+    // (the browser’s own step from it is out of the sheet, past its last stop)
+    expect(e.preventDefault).toHaveBeenCalled();
+    expect(tab.focus).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps a key pressed in it from the world under it, but lets ⌘K and the like through', () => {
     const scrim = elements(sheetKeys().tree).find((el) => el.props.className === 'party-scrim');
     const key = (k, mod = null) => ({ key: k, metaKey: false, ctrlKey: false, altKey: false, ...(mod && { [mod]: true }), stopPropagation: vi.fn() });
