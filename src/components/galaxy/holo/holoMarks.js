@@ -1,24 +1,28 @@
-// The holotable's systems and the war's marks on them (./holoScene.js draws them): each system a bright bead at
-// its height over the plane (systems.js liftOf) on a thin pin down to it, a ring on the plane round its foot in
+// The holotable's systems and the war's marks on them (./holoScene.js draws them): each system a small lit globe
+// sitting on the plane (shaded by the scene's two lights, so it reads round and not as a flat disc; the map is seen
+// straight down, so a height over the plane, and a pin to it, would only shift it off its place), a ring round it in
 // its holder's colour; a contested one's ring pulsing in the colour of the side pushing there; the one picked
 // ringed in white, broken and turning, as Helldivers 2 rings a planet; where you are, a white pulse; and the war's
 // attacks and fronts (warMap.js opsOf) as arcs over the plane, a light running along each to where it's going.
 //
-//   createMarks({ small }) → { group, set(view), animate(t), dispose }
+//   createMarks({ small }) → { group, set(view), fit(perPx), animate(t), dispose }
+//   fit(perPx) the grid squares a pixel covers where the camera looks: zoomed in, a globe and its rings are drawn no
+//     bigger than a flat map's dot (SHOWN), so a name beside one starts clear of it; further off, their own size
 //   set({ war, ops, pick, current, lit, mine, only }) the war's table (with byId), its ops, the system picked, where you
 //     are, the systems lit by the era or the film (a Set, or null for all), the side you're sworn to and the systems drawn
 //     at all (a Set: the open sector's, none on the whole galaxy; null for all); where you are pulses whatever's drawn
 
 import * as THREE from 'three';
 import { SIDES } from '../sides';
-import { CORE, SYSTEMS, liftOf, systemById } from '../systems';
+import { CORE, SYSTEMS, systemById } from '../systems';
 
-export const LIFT_Y = 0.55; // (a system's height over the plane, grid squares a unit of liftOf)
-const BEAD = 0.13;
-const SMALL_BEAD = 0.075; // (a charted world's)
-const GLOW = 1.9; // (how far past white a bead's colour goes: the bloom picks it up)
+const BEAD = 0.12;
+const SMALL_BEAD = 0.07; // (a charted world's)
+const SHOWN = 5.5; // (the most a globe's radius is drawn at, px: its holder's ring then just inside where its name starts)
+const GLOW = 1.2; // (a bead's colour, before the scene's light: its lit side a little past white, so the bloom gives it a halo)
 
-export const worldOf = (s) => [s.pos[0] - CORE[0], liftOf(s) * LIFT_Y, s.pos[1] - CORE[1]];
+// (where a system's globe is: on the plane, its middle a globe's height over it)
+export const worldOf = (s) => [s.pos[0] - CORE[0], BEAD, s.pos[1] - CORE[1]];
 
 const ringGeo = (inner, outer, segs = 48) => new THREE.RingGeometry(inner, outer, segs).rotateX(-Math.PI / 2);
 
@@ -29,8 +33,8 @@ export function createMarks({ small = false } = {}) {
   const n = SYSTEMS.length;
 
   // the beads
-  const beadGeo = keep(new THREE.SphereGeometry(1, small ? 10 : 16, small ? 8 : 12));
-  const beadMat = keep(new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }));
+  const beadGeo = keep(new THREE.SphereGeometry(1, small ? 16 : 24, small ? 12 : 16));
+  const beadMat = keep(new THREE.MeshLambertMaterial({ color: 0xffffff }));
   const beads = new THREE.InstancedMesh(beadGeo, beadMat, n);
   const m = new THREE.Matrix4();
   SYSTEMS.forEach((s, i) => {
@@ -41,17 +45,6 @@ export function createMarks({ small = false } = {}) {
   });
   beads.renderOrder = 6;
   group.add(beads);
-
-  // the pins, from the plane up to each bead
-  const pinPos = new Float32Array(n * 6);
-  SYSTEMS.forEach((s, i) => {
-    const [x, y, z] = worldOf(s);
-    pinPos.set([x, 0, z, x, y, z], i * 6);
-  });
-  const pinGeo = keep(new THREE.BufferGeometry());
-  pinGeo.setAttribute('position', new THREE.BufferAttribute(pinPos, 3));
-  const pinMat = keep(new THREE.LineBasicMaterial({ color: 0x7fd6ff, transparent: true, opacity: 0.32, depthWrite: false }));
-  group.add(new THREE.LineSegments(pinGeo, pinMat));
 
   // the rings on the plane: one a system, its holder's (or none)
   const holdGeo = keep(ringGeo(0.17, 0.215));
@@ -127,6 +120,17 @@ void main() {
   };
 
   const beadColour = new THREE.Color();
+  const radius = new Float32Array(n); // (each globe's own, 0 for one not drawn)
+  let k = 1; // (the share of their own size the marks are drawn at: fit's)
+  const place = () => {
+    SYSTEMS.forEach((s, i) => {
+      const [x, y, z] = worldOf(s);
+      const r = radius[i] * k;
+      beads.setMatrixAt(i, m.makeScale(r, r, r).setPosition(x, y, z));
+    });
+    beads.instanceMatrix.needsUpdate = true;
+    for (const ring of [...holds, pickRing]) ring.scale.setScalar(k);
+  };
   return {
     group,
     set({ war, ops = [], pick = null, current = null, lit = null, mine = null, only = null }) {
@@ -136,11 +140,8 @@ void main() {
         const row = byId[s.id];
         const dim = lit && !lit.has(s.id);
         const show = shown(s.id);
-        // (one not drawn: its bead shrunk to nothing, its pin to a point)
-        const [x, y, z] = worldOf(s);
-        const r = show ? (s.charted ? SMALL_BEAD : BEAD) : 0;
-        beads.setMatrixAt(i, m.makeScale(r, r, r).setPosition(x, y, z));
-        pinPos.set([x, 0, z, x, show ? y : 0, z], i * 6);
+        // (one not drawn: its bead shrunk to nothing)
+        radius[i] = show ? (s.charted ? SMALL_BEAD : BEAD) : 0;
         beadColour.set(row ? SIDES[row.owner].colour : s.accent).multiplyScalar(dim ? 0.35 : GLOW);
         if (!row && !dim) beadColour.lerp(new THREE.Color(1, 1, 1), 0.25);
         beads.setColorAt(i, beadColour);
@@ -154,8 +155,7 @@ void main() {
         if (p.visible) p.material.color.set(by ? SIDES[by].colour : '#ffffff').multiplyScalar(1.6);
       });
       beads.instanceColor.needsUpdate = true;
-      beads.instanceMatrix.needsUpdate = true;
-      pinGeo.attributes.position.needsUpdate = true;
+      place();
       const picked = pick ? systemById(pick) : null;
       pickRing.visible = Boolean(picked) && shown(picked.id);
       if (picked) pickRing.position.set(...worldOf(picked).map((v, k) => (k === 1 ? 0.01 : v)));
@@ -190,16 +190,22 @@ void main() {
         arcItems.push({ geo, mat });
       }
     },
+    fit(perPx) {
+      const next = Math.min(1, (SHOWN * perPx) / BEAD);
+      if (Math.abs(next - k) < 0.01 * k) return;
+      k = next;
+      place();
+    },
     animate(t) {
       for (const p of pulses) {
         if (!p.visible) continue;
-        const k = (t * (p.userData.fast ? 1.4 : 0.8)) % 1;
-        p.scale.setScalar(1 + k * 0.9);
-        p.material.opacity = 0.9 * (1 - k);
+        const q = (t * (p.userData.fast ? 1.4 : 0.8)) % 1;
+        p.scale.setScalar(k * (1 + q * 0.9));
+        p.material.opacity = 0.9 * (1 - q);
       }
       pickRing.rotation.y = t * 0.6;
       const yk = (t * 0.7) % 1;
-      you.scale.setScalar(1 + yk * 0.6);
+      you.scale.setScalar(k * (1 + yk * 0.6));
       youMat.opacity = 0.85 * (1 - yk);
       for (const a of arcItems) a.mat.uniforms.uTime.value = t;
     },
