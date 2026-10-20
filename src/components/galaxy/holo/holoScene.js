@@ -350,9 +350,9 @@ export function createHoloScene({ small = false, reduced = false } = {}) {
   const made = [];
 
   // (the systems' globes are lit from the upper left, as the flat map's are, a cool fill round the rest)
-  const key = new THREE.DirectionalLight('#ffffff', 1.5);
-  key.position.set(-4, 10, 5);
-  scene.add(key, new THREE.AmbientLight('#b9d6ff', 0.55));
+  const sun = new THREE.DirectionalLight('#ffffff', 1.5);
+  sun.position.set(-4, 10, 5);
+  scene.add(sun, new THREE.AmbientLight('#b9d6ff', 0.55));
 
   const far = farStars(small);
   const sky = stars(small);
@@ -372,6 +372,8 @@ export function createHoloScene({ small = false, reduced = false } = {}) {
   scene.add(dial.mesh);
   made.push(dial.geo, dial.mat);
   const marks = createMarks({ small });
+  // (the systems' pins and rings over the sectors' fill and the names, not tinted under them)
+  marks.group.renderOrder = 5;
   scene.add(marks.group);
 
   // the regions' names, each in its ring's band, in a column down the south of the disc, where the curve has them the
