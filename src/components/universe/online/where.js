@@ -25,6 +25,10 @@ export function whereOf(pathname) {
     return place ? `${MIDDLE_EARTH}/${place}` : MIDDLE_EARTH;
   }
   if (pathname.startsWith('/experience')) return '/experience';
+  // a building's game opens over the compound, so the others still see you at
+  // Avengers HQ (gone indoors), and the roster doesn't say you left each time a
+  // game opens; matched here because universe/ may not import avengers/world/links.js
+  if (pathname.startsWith('/avengers/')) return '/avengers';
   return pathname;
 }
 

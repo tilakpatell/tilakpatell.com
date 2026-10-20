@@ -30,11 +30,11 @@ const LORE = {
   on: 'Everyone else online here shows as a hologram: they can’t touch your games, nor you theirs',
 };
 
-export default function CompoundHud({ touch, gl, prog, hud, sim, enter, portal, trav, list, setList, tuning, setTuning, photo, photoMode, changePhoto, onSavePhoto, settings, changeSettings, tourMsg, pack, trick, styleRef, tourRef, map, bubble, bubbleRef, tourBest, styleBest, found, toTour, travel, onStick }) {
+export default function CompoundHud({ touch, gl, prog, hud, sim, enter, portal, trav, list, setList, tuning, setTuning, photo, photoMode, changePhoto, onSavePhoto, settings, changeSettings, tourMsg, welcome, pack, trick, styleRef, tourRef, map, bubble, bubbleRef, tourBest, styleBest, found, toTour, travel, onStick }) {
   const { pathname } = useLocation();
   const here = hud.near ? prog.places.find((p) => p.id === hud.near) : null;
   const herePortal = hud.portal && !here;
-  const won = prog.places.filter((p) => p.done).length;
+  const won = prog.count;
   const openList = () => {
     setList((v) => !v);
     setTuning(false);
@@ -68,7 +68,7 @@ export default function CompoundHud({ touch, gl, prog, hud, sim, enter, portal, 
         tools={
           <div className="cw-side">
             <canvas ref={map} className="cw-map" width="150" height="150" aria-hidden="true" />
-            <p className="cw-chip cw-stones" aria-label={`${prog.stones} of 6 Infinity Stones won back`}>
+            <p key={welcome?.n ?? 0} className="cw-chip cw-stones" data-pulse={welcome ? '' : undefined} aria-label={`${prog.stones} of 6 Infinity Stones won back`}>
               {STONES.map((st) => (
                 <i key={st.id} className="stone-dot" data-on={prog.have.includes(st.id) || undefined} style={{ '--glow': st.color }} />
               ))}
@@ -195,7 +195,7 @@ export default function CompoundHud({ touch, gl, prog, hud, sim, enter, portal, 
         )}
 
         {/* what just happened (the tour), top centre under the top row */}
-        <Toast className="cw-tour-msg" toast={tourMsg ? { key: tourMsg, text: tourMsg } : null} />
+        <Toast className="cw-tour-msg" toast={tourMsg ? { key: tourMsg, text: tourMsg } : welcome ? { key: `back-${welcome.n}`, text: welcome.text } : null} />
 
         {photo && <PhotoBar photo={photo} onChange={changePhoto} onSave={onSavePhoto} onClose={() => photoMode(false)} touch={touch} />}
         {tuning && <Settings id="cw-settings" settings={settings} onChange={changeSettings} onClose={() => setTuning(false)} />}

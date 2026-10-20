@@ -1,6 +1,6 @@
 # The Rick and Morty adventure: the plan's index
 
-> **For agentic workers:** this is the index. Each phase has its own task-by-task plan, written when the phase starts (from the spec and what the phases before it landed), at `docs/superpowers/plans/2026-10-19-rm-adventure-p<N>-<slug>.md`. A phase's plan goes once its work is merged (P0's and P1's have); P2's is `2026-10-19-rm-adventure-p2-house-guests.md`. REQUIRED SUB-SKILL for a phase plan: superpowers:subagent-driven-development or superpowers:executing-plans.
+> **For agentic workers:** this is the index. Each phase has its own task-by-task plan, written when the phase starts (from the spec and what the phases before it landed), at `docs/superpowers/plans/2026-10-19-rm-adventure-p<N>-<slug>.md`. A phase's plan goes once its work is merged (P0's to P5's have); P6's is `2026-10-19-rm-adventure-p6-the-jerry-problem.md`. REQUIRED SUB-SKILL for a phase plan: superpowers:subagent-driven-development or superpowers:executing-plans.
 
 **Spec:** `docs/superpowers/specs/2026-10-19-rm-adventure-design.md`
 

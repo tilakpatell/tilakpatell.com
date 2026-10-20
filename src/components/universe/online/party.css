@@ -1,8 +1,10 @@
 /* The party (PartyDialog.jsx): its dialog, the calls a member gets (a summons,
    the leader on the move) and the corner's way to it (Online.jsx). The house
    kit draws the parts (.card, .btn, .switch, .notice, .dialog-title,
-   CloseButton); this sheet only places them, in the theme's tokens, so a
-   square theme squares it and dark mode darkens it. Portalled to the body,
+   CloseButton), and the shell's one floating surface, .dialog, dresses it
+   as each colour dresses the settings and the guide (styles/dialogs.css);
+   this sheet only places them, in the theme's tokens, so a square theme
+   squares it and dark mode darkens it. Portalled to the body,
    out of the map's dark scope: it wears the page's colours, not the map's. */
 
 /* the shade over the page, and the dialog in the middle of it */
@@ -17,6 +19,7 @@
   animation: party-fade var(--t-fast) var(--ease-out);
 }
 .party-dialog {
+  position: relative; /* (the colour's dress is drawn on its ::before, inset to it) */
   display: flex;
   flex-direction: column;
   width: min(30rem, 100%);

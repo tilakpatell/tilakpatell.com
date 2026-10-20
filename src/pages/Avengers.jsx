@@ -1,5 +1,4 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import HQBackdrop from '../components/avengers/HQBackdrop';
 import CompoundWorld from '../components/avengers/world/CompoundWorld';
 import Titan from '../components/avengers/titan/Titan';
@@ -60,8 +59,10 @@ const ON_DISPLAY = [
 const SCENES = ['marvelAssemble', 'marvelGroot', 'snap'];
 
 // Avengers HQ: the compound to walk about in 3D (components/avengers/world),
-// each building's game behind its door, an Infinity Stone won back from each;
-// the Tesseract opens the portal, and on the other side, down the page, Thanos.
+// each building's game behind its door and an Infinity Stone won back from
+// each, with the ops board under it (components/avengers/board); then the
+// worlds, Titan through the portal (the Tesseract opens it), and last the
+// Archive and the credits.
 export default function Avengers() {
   useDocumentTitle('Avengers HQ');
   const { snap } = useFun();
@@ -72,8 +73,6 @@ export default function Avengers() {
   const [have, setHave] = useState(earnedStones);
   const [portal, setPortal] = useState(false);
   const [arrived, setArrived] = useState(false);
-  const intro = useRef(null);
-  const [playing, setPlaying] = useState(false);
   const timers = useRef([]);
   // the page's own look (styles/extras.css), while the Stark theme is on
   useLayoutEffect(() => {
@@ -83,31 +82,10 @@ export default function Avengers() {
   }, []);
   useEffect(
     () => () => {
-      intro.current?.stop();
       timers.current.forEach(clearTimeout);
     },
     [],
   );
-
-  const playIntro = async () => {
-    if (!audioContext()) return;
-    if (intro.current) {
-      intro.current.stop();
-      intro.current = null;
-      setPlaying(false);
-      return;
-    }
-    const c = await import('../lib/clips');
-    const clip = await c.playClip('marvel');
-    if (!clip) return;
-    intro.current = clip;
-    setPlaying(true);
-    clip.ended.then(() => {
-      if (intro.current !== clip) return;
-      intro.current = null;
-      setPlaying(false);
-    });
-  };
 
   // The Space Stone opens the portal over the helipad; on the other side, Thanos.
   const openPortal = () => {
@@ -145,7 +123,7 @@ export default function Avengers() {
       }
       sfx().then((s) => s.thunder());
       unlock('whatever');
-      notify('I am Iron Man.', 'Every stone, won back on the compound. Thanos and his army are dust; this page is not.', 'note', 'whatever');
+      notify('I am Iron Man.', 'Every stone, won back on the compound. Thanos is dust; this page is not.', 'note', 'whatever');
     };
     if (titan.current?.snap(heist, after)) return;
     after(heist);
@@ -155,22 +133,6 @@ export default function Avengers() {
       <HQBackdrop />
       <CompoundWorld onPortal={openPortal} />
 
-      <section className="shell relative z-10 grid gap-6 pb-4 pt-10 md:grid-cols-[minmax(0,1fr)_auto] md:items-end" aria-label="About the compound">
-        <div>
-          <p className="eyebrow">The Avengers compound · Upstate New York</p>
-          <p className="lead mt-4 max-w-[62ch]">
-            Marvel, all of it. Walk the compound as Spider-Man: every building belongs to someone, and each one’s game wins back an Infinity Stone. Tony’s workshop, Mjolnir on the lawn, the training center, Clint’s range, Natasha’s operations room, Bruce’s lab, and the Tesseract in the hangar. Win the Space Stone and a portal opens over the helipad. Go online and everyone else walking it is a hologram.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button type="button" className="btn btn-ghost" onClick={playIntro} aria-pressed={playing}>
-            {playing ? 'Stop the intro' : 'Play the Marvel Studios intro'}
-          </button>
-          <Link to="/" className="btn btn-ghost">
-            Back to the site
-          </Link>
-        </div>
-      </section>
       <section className="shell relative z-10 pb-2">
         <WorldSwitcher />
       </section>
@@ -216,7 +178,7 @@ export default function Avengers() {
             </h2>
             <p className="lead mt-4 max-w-[46ch]">
               {heist
-                ? 'You took every stone back from the compound. Set them, and this time the snap is Tony’s: Thanos and his army turn to dust, and the page stays.'
+                ? 'You took every stone back from the compound. Set them, and this time the snap is Tony’s: Thanos turns to dust, and the page stays.'
                 : 'He has the gauntlet. Set all six stones, and the snap takes half this page for a few seconds. Win all six back on the compound, and the snap is Tony’s.'}
             </p>
             <ul className="stone-list mt-6" aria-label="Set the stones">
@@ -251,40 +213,46 @@ export default function Avengers() {
         </div>
       </section>
 
-      <section className="shell relative z-10 py-14" aria-labelledby="av-board-title">
-        <h2 id="av-board-title" className="title">
-          Soundboard
-        </h2>
-        <p className="lead mt-4 max-w-[54ch]">From the films, a line at a time.</p>
-        <ClipBoard className="mt-8" clips={BOARD} />
-      </section>
-
-      {hasScenes(SCENES) && (
-        <section className="shell relative z-10 py-14" aria-labelledby="av-scenes-title">
-          <h2 id="av-scenes-title" className="title">
-            From the films
+      <details className="hq-archive shell relative z-10 py-14 md:py-20">
+        <summary>
+          <h2 id="av-archive-title" className="title">
+            Archive
           </h2>
-          <div className="mt-8">
-            <Scenes names={SCENES} />
-          </div>
+          <span className="text-sm text-muted">The soundboard, scenes from the films and the props on display</span>
+        </summary>
+        <section className="mt-10" aria-labelledby="av-board-title">
+          <h3 id="av-board-title" className="title">
+            Soundboard
+          </h3>
+          <p className="lead mt-4 max-w-[54ch]">From the films, a line at a time.</p>
+          <ClipBoard className="mt-8" clips={BOARD} />
         </section>
-      )}
+        {hasScenes(SCENES) && (
+          <section className="mt-14" aria-labelledby="av-scenes-title">
+            <h3 id="av-scenes-title" className="title">
+              From the films
+            </h3>
+            <div className="mt-8">
+              <Scenes names={SCENES} />
+            </div>
+          </section>
+        )}
+        {hasPhotos(ON_DISPLAY) && (
+          <section className="mt-14" aria-labelledby="av-display-title">
+            <h3 id="av-display-title" className="title">
+              On display
+            </h3>
+            <p className="lead mt-4 max-w-[54ch]">Props, replicas and a theme park, out in the real world.</p>
+            <div className="mt-8">
+              <WorldPhotos items={ON_DISPLAY} />
+            </div>
+          </section>
+        )}
+      </details>
 
-      <section className="shell relative z-10 pb-6 pt-4">
+      <section id="av-credits" className="shell relative z-10 section-last pt-4">
         <ModelCredits where="avengers" line className="text-xs text-muted" />
       </section>
-
-      {hasPhotos(ON_DISPLAY) && (
-        <section className="shell relative z-10 pb-24 pt-10 md:pb-28" aria-labelledby="av-display-title">
-          <h2 id="av-display-title" className="title">
-            On display
-          </h2>
-          <p className="lead mt-4 max-w-[54ch]">Props, replicas and a theme park, out in the real world.</p>
-          <div className="mt-8">
-            <WorldPhotos items={ON_DISPLAY} />
-          </div>
-        </section>
-      )}
     </div>
   );
 }

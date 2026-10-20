@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { device, pixelRatio } from '../../lib/device';
 import { use3D } from '../../lib/gpu';
+import { prefersReducedMotion } from '../../lib/hooks';
 import { quiet, releaseContext } from '../../lib/three/renderer';
 import { createSky } from '../galaxy/sky';
 import { SYSTEMS } from '../galaxy/systems';
@@ -56,7 +57,7 @@ function start(canvas) {
   const sky = createSky({ small: Math.min(window.innerWidth, window.innerHeight) < 600, level: device().detail, renderer, beacons: false });
   sky.setSystem({ ...SYSTEMS.find((s) => s.id === 'kashyyyk'), suns: [] });
   scene.add(sky.group);
-  const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const still = prefersReducedMotion();
 
   let alive = true;
   let frame = 0;

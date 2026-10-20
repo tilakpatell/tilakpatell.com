@@ -17,9 +17,6 @@
 .cap-touch-throw:disabled { opacity: 0.4; }
 @media (hover: hover) and (pointer: fine) { .cap-touch { display: none; } }
 .cap-overlay .btn-ghost.cap-ghost { color: #fff; border-color: rgba(255, 255, 255, 0.4); }
-.cap-stars { display: flex; gap: 0.35rem; margin-top: 0.4rem; font-size: 2rem; line-height: 1; }
-.cap-stars span { color: rgba(255, 255, 255, 0.22); }
-.cap-stars span[data-on] { color: #ffd04a; text-shadow: 0 0 14px rgba(255, 190, 60, 0.6); }
 .cap-rooms { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.4rem; width: min(100%, 560px); margin-top: 1rem; }
 .cap-room-btn { display: grid; gap: 0.15rem; min-height: 54px; padding: 0.4rem 0.3rem; border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 8px; background: rgba(8, 12, 22, 0.5); color: #fff; text-align: center; }
 .cap-room-btn span { font: 700 1rem/1 var(--font-sans); }

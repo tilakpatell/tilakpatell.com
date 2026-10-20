@@ -41,6 +41,9 @@ export default function TranslatorStage() {
   const past = (id) => at >= ORDER.indexOf(id);
   const [hover, setHover] = useState(-1);
   const pair = (i) => ({ onMouseEnter: () => setHover(i), onMouseLeave: () => setHover(-1), onFocus: () => setHover(i), onBlur: () => setHover(-1), tabIndex: 0 });
+  // The two pages are paper in every mode, so their inks, rules, highlighter
+  // and OCR boxes stay printed colours: the window’s accent is set for its
+  // dark ground (white in Bose, a pale lime in Empowerreg) and would vanish on them.
   const lit = (i) => (hover === i ? { background: 'rgba(217,119,87,0.22)', borderRadius: 3 } : undefined);
 
   return (
@@ -53,7 +56,7 @@ export default function TranslatorStage() {
               className="mono rounded px-2 py-1 text-[0.7rem] transition-colors duration-200"
               style={{
                 background: i === at ? 'var(--accent)' : i < at ? 'color-mix(in srgb, var(--accent) 18%, transparent)' : 'var(--surface-2)',
-                color: i === at ? '#0f1111' : i < at ? 'var(--text)' : 'var(--muted)',
+                color: i === at ? 'var(--btn-ink)' : i < at ? 'var(--text)' : 'var(--muted)',
               }}
             >
               {s}
@@ -86,7 +89,7 @@ export default function TranslatorStage() {
                 {past('layout') && (
                   <span
                     className="mono absolute -top-2 right-0 rounded px-1 text-[0.6rem] uppercase tracking-wider"
-                    style={{ background: '#232f3e', color: '#ffffff' }}
+                    style={{ background: 'var(--surface-2)', color: 'var(--text)' }}
                     lang="en"
                   >
                     {TAG[l.kind]}
@@ -133,7 +136,7 @@ export default function TranslatorStage() {
                 {['PDF', 'EPUB', 'DOCX', 'HTML', 'MD'].map((f, i) => (
                   <span
                     key={f}
-                    className="stage-fade mono rounded bg-[#232f3e] px-2 py-1 text-[0.7rem] text-white"
+                    className="stage-fade mono rounded bg-[var(--surface-2)] px-2 py-1 text-[0.7rem] text-ink"
                     data-on="true"
                     style={{ transitionDelay: `${i * 90}ms` }}
                   >

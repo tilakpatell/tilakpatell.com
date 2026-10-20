@@ -37,10 +37,10 @@ export const CHANGES = [
     order: ['gandalf', 'legolas', 'gimli', 'aragorn', 'boromir', 'merry', 'pippin', 'sam', 'frodo'],
   },
   // (the Bridge of Khazad-dûm)
-  { stage: 'moria', local: 200, remove: ['gandalf'], state: { legolas: 'grieving', gimli: 'grieving', aragorn: 'grieving', boromir: 'grieving', merry: 'grieving', pippin: 'grieving', sam: 'grieving', frodo: 'grieving' } },
+  { stage: 'moria', local: 107, remove: ['gandalf'], state: { legolas: 'grieving', gimli: 'grieving', aragorn: 'grieving', boromir: 'grieving', merry: 'grieving', pippin: 'grieving', sam: 'grieving', frodo: 'grieving' } },
   { stage: 'lorien', local: 0, state: walking(['legolas', 'gimli', 'aragorn', 'boromir', ...HOBBITS]) },
   // (Amon Hen: two go east)
-  { stage: 'anduin', local: 200, remove: ['legolas', 'gimli', 'aragorn', 'boromir', 'merry', 'pippin'] },
+  { stage: 'anduin', local: 140, remove: ['legolas', 'gimli', 'aragorn', 'boromir', 'merry', 'pippin'] },
   { stage: 'marshes', local: 40, add: ['gollum'], state: { gollum: 'leading' }, order: ['gollum', 'frodo', 'sam'] },
   { stage: 'gorgoroth', local: 200, state: { sam: 'carrying', frodo: 'carried' } },
   // (the Cracks of Doom, then the two on the rock in the fire)

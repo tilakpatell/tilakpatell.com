@@ -75,6 +75,8 @@ import { seedsOf } from '../earn';
 import { ROOMS, newTrial, pick as pickRoom, retry as retryRooms } from './dimensions/vindicatorsRules';
 import { speak, stopSpeaking } from './shipVoice';
 import { ROOMS_SAY, SAY } from './say';
+import { gameGoal } from './dimensions/gameGoal';
+import { BANDSTAND, LOT, PARK, POND, POSTERS, ROADS, SHOPS, TOWN_HOUSES, TOWN_TREES } from './town/plan';
 import { lineSaid } from './voicelines';
 import { preloadVoiced, sayVoiced, stopVoiced } from '../../../lib/voiced';
 import { useLooks } from '../wardrobe/useLooks';
@@ -87,6 +89,8 @@ import LoadingVeil from '../../worlds/LoadingVeil';
 import { rmWorldModule } from './module';
 import { createLook } from '../../../runtime/look';
 import { createFlightCluster } from '../../../runtime/hud';
+import { METER_OFF } from './games/meter';
+import { chaseCalls, chaseGoal, chaseReadout, chaseStart, newChase, shaken, stepChase } from './games/chase';
 import { FRICTION, coneFor } from '../../../lib/combat/aim';
 import { createLockOn } from '../../../lib/combat/lockOn';
 import { stepRmLockOn } from './rmLockOn';
@@ -108,13 +112,25 @@ import { stepRmLockOn } from './rmLockOn';
 // Started on a planet of the universe map's Rick and Morty sector (`start`),
 // it's that planet alone, its portal the way back to space (./planetMode.js).
 
-const Roy = lazy(() => import('./roy/Roy').catch(() => ({ default: RoyDown })));
-const Sewer = lazy(() => import('./sewer/Sewer').catch(() => ({ default: RoyDown })));
-const Cabinet = lazy(() => import('./games/Cabinet.jsx').catch(() => ({ default: RoyDown })));
+// (each says what didn't load, and its way back to the room it was opened from)
+const Roy = lazy(() => import('./roy/Roy').catch(() => ({ default: placeDown('Roy’s headset', 'Back to the arcade') })));
+const Sewer = lazy(() => import('./sewer/Sewer').catch(() => ({ default: placeDown('The sewer', 'Back to the agency') })));
+const Cabinet = lazy(() => import('./games/Cabinet.jsx').catch(() => ({ default: placeDown('The cabinet', 'Back to the arcade') })));
 const sound = (name) =>
   import('../../games/gameAudio')
     .then((g) => g[name]?.())
     .catch(() => {});
+
+// what's said when a place's clock runs out before he's back through its portal
+const LATE = 'Out of time. Back to where you came in, and try it again.';
+
+// the missing-cat posters Morty's read, kept between visits (the `posters` thing to do)
+const POSTERS_READ = 'tp-c137-posters';
+const POSTER_IDS = new Set(POSTERS.map((p) => p.id));
+const postersRead = () => {
+  const r = local.get(POSTERS_READ, []);
+  return Array.isArray(r) ? r.filter((id) => POSTER_IDS.has(id)) : [];
+};
 
 const DONE = 'tp-c137-done';
 const ROY = 'tp-c137-roy';
@@ -178,6 +194,7 @@ const TALK_UNLOCK = { therapy: 'wong', ...Object.assign({}, ...DESTINATIONS.map(
 // the places left in a hurry (./dimensions/destinations.js's `escape`), by
 // the hotspot that starts the clock: the Purge Planet's siren, Customs'
 // scanner, the wedding's toast
+const FREEZE_SPOTS = new Set(DESTINATIONS.filter((d) => d.freeze).map((d) => d.freeze.spot));
 const ESCAPES = Object.fromEntries(DESTINATIONS.filter((d) => d.escape).map((d) => [d.escape.spot, { ...d.escape, area: d.id }]));
 // and what using a hotspot tells its place's builder
 const ACTS = Object.assign({}, ...DESTINATIONS.map((d) => Object.fromEntries(Object.entries(d.acts).map(([spot, name]) => [spot, [d.id, name]]))));
@@ -210,7 +227,7 @@ const WHEEL_R = 110;
 
 // Where the next thing to do is, for the map's marker: the area and the spot
 // in it, and from anywhere else, the way towards it.
-const GOAL = { cable: ['house', 'spot:cable'], butter: ['house', 'spot:butter'], meeseeks: ['garage', 'spot:meeseeks'], plumbus: ['garage', 'spot:plumbus'], portalpanic: ['garage', 'spot:portalpanic'], quiz: ['school', 'spot:quiz'], fly: ['street', 'cruiser'], portal: ['garage', 'link:garage-portal'], basement: ['garage', 'link:garage-hatch'], roy: ['arcade', 'spot:roy'], roy55: ['arcade', 'spot:roy'], president: ['street', 'spot:president'], oval: ['garage', 'link:garage-oval'], diner: ['street', 'link:diner-door'], mindblowers: ['mindblowers', 'spot:chair'], rickall: ['house', 'spot:egg'], wong: ['wong', 'spot:therapy'], ...Object.fromEntries(DESTINATIONS.flatMap((d) => d.tasks.map((t) => [t.id, [d.id, `spot:${Object.keys(d.done).find((k) => d.done[k] === t.id) ?? d.escape?.after ?? d.escape?.spot ?? d.goal}`]]))), sewer: ['agency', 'spot:sewer'], cabinet: ['arcade', 'spot:cabinet2'] };
+const GOAL = { cable: ['house', 'spot:cable'], butter: ['house', 'spot:butter'], meeseeks: ['garage', 'spot:meeseeks'], plumbus: ['garage', 'spot:plumbus'], portalpanic: ['garage', 'spot:portalpanic'], quiz: ['school', 'spot:quiz'], fly: ['street', 'cruiser'], portal: ['garage', 'link:garage-portal'], basement: ['garage', 'link:garage-hatch'], roy: ['arcade', 'spot:roy'], roy55: ['arcade', 'spot:roy'], president: ['street', 'spot:president'], oval: ['garage', 'link:garage-oval'], diner: ['street', 'link:diner-door'], mindblowers: ['mindblowers', 'spot:chair'], rickall: ['house', 'spot:egg'], wong: ['wong', 'spot:therapy'], ...Object.fromEntries(DESTINATIONS.flatMap((d) => d.tasks.map((t) => [t.id, [d.id, `spot:${Object.keys(d.done).find((k) => d.done[k] === t.id) ?? d.escape?.after ?? d.escape?.spot ?? d.goal}`]]))), sewer: ['agency', 'spot:sewer'], cabinet: ['arcade', 'spot:cabinet2'], chase: ['street', 'cruiser'], pond: ['street', 'spot:pond'], posters: ['street', 'spot:poster1'] };
 // (every destination but the planets is through the garage's portal: they're landed on from the universe map)
 const toDest = (via) => Object.fromEntries(DESTINATIONS.filter((d) => !isPlanet(d.id)).map((d) => [d.id, via]));
 const WAY = {
@@ -221,16 +238,30 @@ const WAY = {
   annex: { arcade: 'arcade-door' },
 };
 const OUT = { upstairs: 'stairs-down', school: 'school-exit', annex: 'annex-portal', arcade: 'arcade-exit', basement: 'basement-ladder', mindblowers: 'mind-door', oval: 'oval-portal', diner: 'diner-exit', wong: 'wong-exit', ...Object.fromEntries(DESTINATIONS.map((d) => [d.id, `${d.id}-portal`])) };
-function goalOf(next, s, planet = null) {
+// (`act`: the world's api.act, for where a place's game has got to, and
+// `done` the tasks done: ./dimensions/gameGoal.js)
+function goalOf(next, s, planet = null, act = null, done = []) {
   if (s.flying) return null;
   // (on a planet with everything there done, or a clock running to get back out: its portal home; from C-137, a planet's not pointed at)
   if (!next || (planet && s.escape?.area === planet.id)) return planet ? PROMPT[`link:${planet.id}-portal`].link : null;
+  // (a place's clock running: its portal home, whatever's next)
+  if (s.escape?.area === s.area && PROMPT[`link:${s.area}-portal`]) return PROMPT[`link:${s.area}-portal`].link;
   if (!GOAL[next.id]) return null; // (a game the map has no spot for)
   const [to, key] = GOAL[next.id];
   if (isPlanet(to) && to !== s.area) return null;
   if (to === s.area) {
     if (key === 'cruiser') return { x: s.c.x, z: s.c.z };
-    const p = PROMPT[key];
+    // (the posters: the nearest one not yet read)
+    if (next.id === 'posters') {
+      const read = postersRead();
+      const left = POSTERS.filter((p) => !read.includes(p.id));
+      const near = left.reduce((a, p) => (!a || Math.hypot(p.x - s.m.x, p.z - s.m.z) < Math.hypot(a.x - s.m.x, a.z - s.m.z) ? p : a), null);
+      if (near) return PROMPT[`spot:${near.id}`].spot;
+    }
+    // (a game under way: where it's got to, not where it began)
+    const d = destinationById(to);
+    const play = d && act && gameGoal(d, { used: s.used, done, power: d.power && act(to, 'power'), find: d.find && act(to, 'find'), deal: d.deal && act(to, 'deal') });
+    const p = (play && PROMPT[`spot:${play}`]) || PROMPT[key];
     return p.link ?? p.spot;
   }
   const id = WAY[s.area]?.[to] ?? OUT[s.area];
@@ -265,7 +296,7 @@ const newSim = (at = START, portal = false) => ({
   flying: false,
   landing: false,
   landT: 0,
-  boardAt: null,
+  chase: newChase(), // (the cruiser's, through the rings: ./games/chase.js)
   yaw: behindYaw(at.face) + (portal ? 0.85 : 0),
   pitch: PITCH,
   dragAt: portal ? 0 : -1e9,
@@ -486,6 +517,14 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const [cluster] = useState(createFlightCluster);
   const [vitals] = useState(() => ({ value: 100, max: 100, low: false }));
   const powersRef = useRef(null); // (its power tiles, in the cluster: PowerBar's)
+  // a place run on power: the world's charge and the cells carried, the same kit's cluster
+  const chargeRef = useRef(null);
+  const chargeLine = useRef(null);
+  const [chargeMeter] = useState(createFlightCluster);
+  // the cruiser's chase: the hits it can still take, in the cruiser's cluster
+  const chaseRef = useRef(null);
+  const chaseLine = useRef(null);
+  const [chaseMeter] = useState(createFlightCluster);
   const armsFor = useRef({ loadout, skillFx, powerPicks });
   armsFor.current = { loadout, skillFx, powerPicks };
   useEffect(() => {
@@ -562,6 +601,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
   const [list, setList] = useState(false);
   const listRef = useRef(list);
   listRef.current = list;
+  const cardRef = useRef(card);
+  cardRef.current = card;
   // the wardrobe: how Morty looks here (and Rick, wherever he turns up)
   const [looks, setLook] = useLooks();
   const looksRef = useRef(looks);
@@ -942,7 +983,6 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     const s = sim.current;
     s.flying = true;
     s.landing = false;
-    s.boardAt = { x: s.c.x, z: s.c.z };
     s.tookOff = false;
     s.fastT = 0;
     s.leftFrom = null;
@@ -968,6 +1008,17 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     s.leftFrom = { x: s.c.x, z: s.c.z };
     shipTalk('land');
   }, [api, shipTalk]);
+  // a chase lost: a blink, and the cruiser's before the first ring again, still
+  const chaseAgain = useCallback(() => {
+    const s = sim.current;
+    s.fading = true;
+    setFade('door');
+    later(() => {
+      s.c = { ...s.c, ...chaseStart(s.chase), speed: 0, vy: 0, bank: 0, bankV: 0 };
+      s.fading = false;
+      setFade(null);
+    }, FADE_MS);
+  }, [later]);
   const act = useCallback(() => {
     const s = sim.current;
     if (!api.current || s.fading || s.landing) return;
@@ -1017,6 +1068,9 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     } else if (n.id === 'dial') {
       openDial();
       tell({ type: 'use', id: 'dial' });
+    } else if (n.id === 'pond') {
+      // a stone picked up, or thrown (the street's: ./town/skip.js)
+      api.current?.act('street', 'skip');
     }
     else if (SAY[n.id]) {
       // (a place's clock starts only once what comes first is done: the
@@ -1024,7 +1078,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       const e = ESCAPES[n.id];
       const early = e?.after && !s.used?.has(e.after);
       const line = early ? e.before : SAY[n.id];
-      say({ kind: 'say', ...line });
+      // (a jump into a freeze's vat that'll be caught says nothing of its own: the catch is what's said)
+      if (!(FREEZE_SPOTS.has(n.id) && api.current?.act(s.area, 'freeze-takes') === false)) say({ kind: 'say', ...line });
       (s.used ??= new Set()).add(n.id);
       // someone to talk to: their head turns to him and their hands go while
       // the line plays (state.talk), his head on them; a wave from him first,
@@ -1045,6 +1100,13 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       }
       // (done once they've had their say: the President gets in his car then)
       if (TALK_DONE[n.id]) later(() => complete(TALK_DONE[n.id]), TALK_MS);
+      // a missing-cat poster read: kept, and the last of them is the thing done
+      if (POSTER_IDS.has(n.id) && !postersRead().includes(n.id)) {
+        const read = [...postersRead(), n.id];
+        local.set(POSTERS_READ, read);
+        if (POSTER_IDS.size === read.length) later(() => complete('posters'), TALK_MS);
+        else later(() => say({ kind: 'note', text: `${read.length} of ${POSTER_IDS.size} posters read` }), TALK_MS);
+      }
       if (COLLECT[n.id] && COLLECT[n.id].spots.every((id) => s.used.has(id))) {
         const c = COLLECT[n.id];
         // (the last one found: the place is told, and either it's done or the clock starts)
@@ -1067,7 +1129,8 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       if (name === 'caught') {
         const d = destinationById(e.area);
         if (!d) return;
-        say({ kind: 'say', who: SAY[e.who]?.who ?? e.who ?? null, text: e.text ?? d.caught ?? 'Caught.' });
+        stopVoiced(); // (a line still being said, the vat's say, is cut: the catch is what's said)
+        say({ kind: 'say', who: e.name ?? SAY[e.who]?.who ?? null, text: e.text ?? d.caught ?? 'Caught.' });
         sound('grab');
         api.current?.shake?.(0.3); // (the Citadel's caught, the same grab)
         api.current?.play('scared', { hold: 0.4, layer: 'auto' });
@@ -1088,29 +1151,40 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         }, FADE_MS);
       } else if (name === 'bark') {
         if (s.t - (s.barkAt ?? -1e9) < 6) return;
+        // (nor over what someone's saying to him while it's still being said)
+        if (s.talk && s.talk.area === s.area && s.t - s.talk.at < s.talk.hold) return;
         s.barkAt = s.t;
-        say({ kind: 'say', who: e.who, text: e.text });
-      } else if (name === 'done') complete(e.task);
+        say({ kind: 'say', who: e.name ?? SAY[e.who]?.who ?? null, text: e.text });
+      } else if (name === 'miss') sound('ouch');
+      else if (name === 'note') {
+        // what the street's stone said as it landed, and Morty's throw
+        say({ kind: 'note', text: e.text, bad: e.bad });
+        if (e.sound) sound(e.sound);
+      } else if (name === 'throw') api.current?.play('wave', { layer: 'upper' });
+      else if (name === 'done') {
+        complete(e.task);
+        if (e.unlock) unlock(e.unlock); // (a game whose win is an achievement: the vat's)
+      }
       else if (name === 'spotted') {
         // someone's seen him: a word and a sound, not too often
         if (s.t - (s.spottedAt ?? -1e9) < 8) return;
         s.spottedAt = s.t;
         sound('alarm');
-        say({ kind: 'say', who: SAY[e.who]?.who ?? null, text: e.text ?? 'They’ve seen you.' });
+        say({ kind: 'say', who: e.name ?? SAY[e.who]?.who ?? null, text: e.text ?? 'They’ve seen you.' });
       } else if (name === 'duel') {
         // the fight's on: the hearts show, and F fires (its bolts loaded now)
         loadShots();
-        s.duel = { who: e.who, hp: e.hp, max: e.max, mortyHp: e.mortyHp, mortyMax: e.mortyMax };
+        s.duel = { who: e.who, name: e.name ?? null, hp: e.hp, max: e.max, mortyHp: e.mortyHp, mortyMax: e.mortyMax };
         setDuel({ ...s.duel });
         sound('zap');
       } else if (name === 'strike') {
-        s.duel = { who: e.who, hp: e.hp, max: e.max, mortyHp: e.mortyHp, mortyMax: e.mortyMax };
+        s.duel = { who: e.who, name: e.name ?? null, hp: e.hp, max: e.max, mortyHp: e.mortyHp, mortyMax: e.mortyMax };
         setDuel({ ...s.duel });
         sound('thud');
         if (e.beaten) {
           // beaten: he goes down, and comes round at the way in; the fight's off till the next try
           api.current?.play('fall', { hold: 1.2 });
-          say({ kind: 'say', who: SAY[e.who]?.who ?? e.who ?? null, text: e.text ?? 'Beaten.' });
+          say({ kind: 'say', who: e.name ?? SAY[e.who]?.who ?? null, text: e.text ?? 'Beaten.' });
           const d = destinationById(e.area);
           s.fading = true;
           s.keys.clear();
@@ -1135,7 +1209,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         } else api.current?.play('hit', { layer: 'auto' });
       }
     },
-    [api, say, complete, later, loadShots],
+    [api, say, complete, unlock, later, loadShots],
   );
   boardRef.current = board;
   // Morty's shot in a duel (F): a bolt at the hunter if he's in the cone
@@ -1441,7 +1515,11 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     const a = api.current;
     if (!a || a.lost) return;
     const s = sim.current;
-    const dt = Math.min(0.05, ms / 1000);
+    // the world waits while the list of things to do, the wardrobe, the dial
+    // or an episode's card is open over it: it's drawn, but no clock runs
+    // (an escape's, a game's, the chase's), no hunter moves and nor does he
+    const held = Boolean(listRef.current || wardrobeRef.current || cardRef.current != null);
+    const dt = held ? 0 : Math.min(0.05, ms / 1000);
     s.t += dt;
     const k = s.keys;
     const raw = readPad();
@@ -1504,8 +1582,6 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           if (s.c.y <= CRUISER.hover + 0.01) touchDown();
         }
       }
-      // the first take-off: up off the driveway, or away along the street
-      if (s.flying && s.boardAt && !doneRef.current.includes('fly') && (s.c.y > CRUISER.hover + 1.5 || Math.hypot(s.c.x - s.boardAt.x, s.c.z - s.boardAt.z) > 5)) complete('fly');
       // the cruiser has something to say: up, fast, at the ceiling, the Federation behind
       if (s.flying && !s.landing) {
         if (!s.tookOff && s.c.y > CRUISER.hover + 2) {
@@ -1584,13 +1660,14 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     s.near = near ? PROMPT[near] : null;
     s.view.link = s.near?.kind === 'link' ? s.near.id : null;
     s.view.hotspot = s.near?.kind === 'spot' ? s.near.id : null;
-    // the Federation's patrol ship, round its loop or on the cruiser's tail
-    s.fed = stepFedShip(s.fed, s.c, s.flying, dt, fightRef.current?.ring() ?? null);
+    // the Federation's patrol ship, round its loop or on the cruiser's tail (kept off a while once shaken)
+    s.fed = stepFedShip(s.fed, s.c, s.flying && !shaken(s.chase), dt, fightRef.current?.ring() ?? null);
     // the fight over the street: the cruiser's guns (held F), the patrol's
     // laser, the deflectors, and the cluster that shows them
     const fight = planet ? null : fightRef.current;
     let fightHits = null;
     if (fight) {
+      let hurt = 0;
       if (s.firing && s.flying) fight.fire(s.t, s.c, s.fed, cruiser?.cadence ?? 1);
       for (const e of fight.step(dt, s.t, { cruiser: s.c, at: s.fed, flying: s.flying, stats: cruiser })) {
         if (e.type === 'hit') (fightHits ??= []).push(e.at);
@@ -1599,8 +1676,12 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           say({ kind: 'say', who: 'Rick', text: FIGHT_SAYS.down });
         } else if (e.type === 'provoked') say({ kind: 'say', who: 'Rick', text: FIGHT_SAYS.provoked });
         else if (e.type === 'grounded') say({ kind: 'note', bad: true, text: FIGHT_SAYS.grounded });
+        else if (e.type === 'hurt') hurt += 1;
       }
       s.fed.down = fight.patrol.mode === 'down';
+      // the cruiser's chase through the rings, on the patrol's hits (./games/chase.js)
+      s.chase = stepChase(s.chase, { at: s.c, flying: s.flying && !s.landing, hit: hurt, down: s.fed.down, grounded: fight.grounded(s.t) }, dt);
+      if (s.chase.events.length) chaseCalls(s.chase.events, { fight, now: s.t, ship: shipTalk, note: (text) => say({ kind: 'note', bad: true, text }), complete, tell, again: chaseAgain });
       vitals.value = fight.shield;
       vitals.low = fight.shield < 25;
       cluster.place(clusterRef.current, { on: s.flying, vitals, arms: fight.view() });
@@ -1614,7 +1695,14 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       clockRef.current = left;
       setClock(left);
     }
-    if (s.escape && left === 0) s.escape = null;
+    // (out of time before its task's done: the run's lost, as a catch is: back
+    // at the way in, the place settled, and a fresh go from the start)
+    if (s.escape && left === 0) {
+      const late = !doneRef.current.includes(s.escape.task) && !s.fading;
+      const area = s.escape.area;
+      s.escape = null;
+      if (late) fns.current.npc?.('caught', { area, who: null, text: LATE });
+    }
     // what the cruiser was about to say when it'd only just spoken
     if (s.shipNext) {
       if (s.t > s.shipNext.until || s.area !== 'street') s.shipNext = null;
@@ -1679,6 +1767,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
       a.render(
         {
           area: s.area,
+          held,
           morty: s.m,
           flying: s.flying,
           cruiser: s.c,
@@ -1687,6 +1776,7 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
           near: s.view,
           done: doneRef.current,
           fed: s.fed,
+          chase: s.chase,
           travellers: tv ? tv.list() : null,
           sight: sightLine,
           rickall: run?.game ? { game: run.game, aim: run.aim, hide: run.hide } : null,
@@ -1756,7 +1846,15 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
     if (++s.frame % 3 === 0) {
       // the place's people, for the map (stage.js's NPC layer says where they are)
       s.npcs = api.current?.act(s.area, 'npcs') ?? null;
-      drawMap(map.current, s, goalOf(markRef.current, s, planet), s.t);
+      drawMap(map.current, s, goalOf(markRef.current, s, planet, (area, name) => api.current?.act(area, name), doneRef.current) ?? (s.flying && !planet ? chaseGoal(s.chase) : null), s.t);
+      // (and a place's game, its meter: ./dimensions/stage.js's `meter`)
+      const charge = api.current?.act(s.area, 'meter') ?? METER_OFF;
+      chargeMeter.place(chargeRef.current, { on: charge.on, vitals: charge.vitals, arms: null });
+      if (chargeLine.current) chargeLine.current.textContent = charge.line;
+      // (and the cruiser's chase, its hits left)
+      const run = chaseReadout(s.flying ? s.chase : null);
+      chaseMeter.place(chaseRef.current, { on: run.on, vitals: run.vitals, arms: null });
+      if (chaseLine.current) chaseLine.current.textContent = run.line;
     }
   };
   const tickRef = useRef(tick);
@@ -1940,6 +2038,10 @@ function World({ api, done, open, openPlace, complete, unlock, gl, setGl, toast,
         onWardrobe={() => setWardrobe(true)}
         onHangar={onHangar ? () => onHangar() : null}
         clusterRef={clusterRef}
+        chargeRef={chargeRef}
+        chargeLine={chargeLine}
+        chaseRef={chaseRef}
+        chaseLine={chaseLine}
         onShipFire={(on) => {
           sim.current.firing = on;
         }}
@@ -1989,13 +2091,27 @@ const MAP_PX = 2; // canvas pixels to a CSS pixel
 const INK = '#1b1424';
 const css = (n) => `#${n.toString(16).padStart(6, '0')}`;
 const FLOORS = { garage: 0xa9b3a4, school: 0xa9c6e0, arcade: 0x3d2a5c };
+// the window the street's map shows: `wide` metres across round `at`, as
+// tall as the canvas has it (`aspect`, its width over its height), and
+// slid in from the hedges rather than past them
+function streetWindow(at, aspect, wide) {
+  const A = AREAS.street;
+  const w = Math.min(wide, A.x1 - A.x0);
+  const h = Math.min(w / aspect, A.z1 - A.z0);
+  const cx = Math.min(A.x1 - w / 2, Math.max(A.x0 + w / 2, at.x));
+  const cz = Math.min(A.z1 - h / 2, Math.max(A.z0 + h / 2, at.z));
+  return { x0: cx - w / 2, x1: cx + w / 2, z0: cz - h / 2, z1: cz + h / 2 };
+}
+
 function drawMap(c, s, goal, t) {
   const g = c?.getContext('2d');
   if (!g) return;
   const W = c.width;
   const H = c.height;
   const u = MAP_PX;
-  const A = AREAS[s.area];
+  // (the street, out to the town's hedges, is too big to show whole: a
+  // window on it round Morty, or the cruiser, kept inside the hedges)
+  const A = s.area === 'street' ? streetWindow(s.flying ? { x: s.c.x, z: s.c.z } : s.m, W / H, s.flying ? 220 : 130) : AREAS[s.area];
   const pad = 8 * u;
   const k = Math.min((W - pad * 2) / (A.x1 - A.x0), (H - pad * 2) / (A.z1 - A.z0));
   const ox = W / 2 - ((A.x0 + A.x1) / 2) * k;
@@ -2029,6 +2145,25 @@ function drawMap(c, s, goal, t) {
     g.fillRect(0, 0, W, H);
     g.fillStyle = '#6bb04b';
     for (const y of YARDS) rect(y.x0, y.x1, y.z0, y.z1);
+    // the town round the street: the park and its pond, the shops' lot, the side roads, its houses and shops
+    g.fillStyle = '#8ad06a';
+    rect(PARK.x0, PARK.x1, PARK.z0, PARK.z1);
+    g.fillStyle = '#4da6d8';
+    g.beginPath();
+    g.ellipse(X(POND.x), Z(POND.z), POND.rx * k, POND.rz * k, 0, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#7d8088';
+    rect(LOT.x0, LOT.x1, LOT.z0, LOT.z1);
+    for (const r of ROADS) {
+      g.fillStyle = r.kind === 'road' ? '#4b5060' : '#d8d1c1';
+      rect(r.x0, r.x1, r.z0, r.z1);
+    }
+    for (const tr of TOWN_TREES) disc(tr.x, tr.z, Math.max(1.8 * u, 1.7 * tr.s * k), '#3f8a35');
+    g.strokeStyle = INK;
+    g.lineWidth = 1 * u;
+    for (const h of TOWN_HOUSES) foot(h, css(h.tint));
+    for (const sh of SHOPS) foot(sh, css(sh.tint));
+    disc(BANDSTAND.x, BANDSTAND.z, BANDSTAND.r * k, '#f4f0e6', INK);
     g.fillStyle = '#d8d1c1';
     rect(A.x0 - 20, A.x1 + 20, ROAD.z - ROAD.w / 2 - ROAD.sidewalk, ROAD.z + ROAD.w / 2 + ROAD.sidewalk);
     g.fillStyle = '#4b5060';
@@ -2129,7 +2264,14 @@ function drawMap(c, s, goal, t) {
     }
   if (goal) {
     g.lineWidth = 2 * u;
-    disc(goal.x, goal.z, (6 + Math.sin(t * 4.5) * 1.6) * u, null, '#ffd23a');
+    // (off the window: at its edge, the way to go)
+    const pad = 7 * u;
+    const gx = Math.min(W - pad, Math.max(pad, X(goal.x)));
+    const gz = Math.min(H - pad, Math.max(pad, Z(goal.z)));
+    g.beginPath();
+    g.arc(gx, gz, (6 + Math.sin(t * 4.5) * 1.6) * u, 0, Math.PI * 2);
+    g.strokeStyle = '#ffd23a';
+    g.stroke();
   }
   // the cruiser, parked; or flying, as the arrow
   const arrow = (x, z, turn, fill) => {
@@ -2159,16 +2301,18 @@ function drawMap(c, s, goal, t) {
   if (!s.flying) arrow(s.m.x, s.m.z, Math.PI / 2 - s.m.face, '#f3d84b');
 }
 
-// Roy, if its code won't load (offline, or a deploy since the page opened)
-function RoyDown({ onLeave }) {
-  return (
-    <div className="rm-place-down" role="alert">
-      <p>Roy’s headset didn’t load. Check the connection, then reload the page to try again.</p>
-      <button type="button" className="rm-btn" onClick={() => onLeave?.(null, null)}>
-        Back to the arcade
-      </button>
-    </div>
-  );
+// An overlay, if its code won't load (offline, or a deploy since the page opened)
+function placeDown(what, back) {
+  return function PlaceDown({ onLeave }) {
+    return (
+      <div className="rm-place-down" role="alert">
+        <p>{what} didn’t load. Check the connection, then reload the page to try again.</p>
+        <button type="button" className="rm-btn" onClick={() => onLeave?.(null, null)}>
+          {back}
+        </button>
+      </div>
+    );
+  };
 }
 
 // ── what opens over the page ──

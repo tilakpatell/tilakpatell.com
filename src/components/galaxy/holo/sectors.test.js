@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CORE, REGIONS, SYSTEMS, edgeAt } from '../systems';
 import { warNow } from '../warState';
-import { RINGS, SECTORS, holders, middleOf, outline, rimNames, sectorById, sectorOf } from './sectors';
+import { RINGS, SECTORS, holders, middleOf, outline, rimNames, sectorById, sectorName, sectorOf, systemsIn } from './sectors';
 
 const TAU = Math.PI * 2;
 
@@ -86,4 +86,19 @@ describe('who holds each sector', () => {
     // (and none where a side's run is shorter than asked)
     expect(rimNames(holds, { least: TAU + 1 })).toEqual([]);
   });
+  it('know the systems in each sector, and name it for the canon sector most of them are in', () => {
+    // (every system in exactly one sector's list)
+    const listed = SECTORS.flatMap((sec) => systemsIn(sec.id).map((s) => s.id));
+    expect(listed.sort()).toEqual(SYSTEMS.map((s) => s.id).sort());
+    const of = (id) => sectorOf(SYSTEMS.find((s) => s.id === id).pos);
+    expect(systemsIn(of('tatooine')).map((s) => s.id)).toContain('tatooine');
+    // (Tatooine's shares Trask's Arkanis sector, and Scarif's Abrion is one against two)
+    expect(sectorName(of('tatooine'))).toBe('Arkanis sector');
+    expect(sectorName(of('hoth'))).toBe('Anoat sector');
+    // (a sector with none of the systems: its ring and its grid square)
+    const empty = SECTORS.find((sec) => !systemsIn(sec.id).length && sec.ring === 'wild');
+    expect(sectorName(empty.id)).toMatch(/^Wild Space · [A-Z]-\d+$/);
+    expect(sectorName('nowhere')).toBe('');
+  });
 });
+

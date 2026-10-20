@@ -43,7 +43,7 @@
 .tour-offer-pick:active { transform: translateY(1px) scale(0.98); }
 .tour-offer-pick:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .tour-offer-pick[data-main] { border-color: var(--btn-bg); background: var(--btn-bg); color: var(--btn-ink); }
-.tour-offer-pick[data-main]:hover { background: color-mix(in srgb, var(--btn-bg) 88%, #000); }
+.tour-offer-pick[data-main]:hover { background: color-mix(in srgb, var(--btn-bg) 88%, var(--btn-shade)); }
 .tour-offer-pick-label { font-size: var(--fs-sm); font-weight: 650; line-height: 1.25; }
 .tour-offer-pick-time { color: var(--muted); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
 .tour-offer-pick[data-main] .tour-offer-pick-time { color: inherit; }
@@ -69,6 +69,15 @@ body:has(.universe-page) .tour-offer { bottom: calc(128px + env(safe-area-inset-
    height + the nav, a laptop at 200%) */
 @media (min-width: 768px) and (max-height: 380px) {
   body:has(.universe-page) .tour-offer { top: calc(var(--nav-h) + 8px); bottom: auto; }
+}
+/* (a phone on its side, over the map: under the HUD's row along the top,
+   clear of the thumbs' grid in the corner: universe/thumbs.css; upright,
+   the same once a ship's flying and the row is there) */
+@media (pointer: coarse) and (max-height: 500px) {
+  body:has(.universe-page) .tour-offer { top: calc(var(--nav-h) + 60px); bottom: auto; max-height: calc(100dvh - var(--nav-h) - 72px); }
+}
+@media (pointer: coarse) and (max-width: 767px) {
+  body:has(.universe-map[data-ship]:not(.galaxy-map)) .tour-offer { top: calc(var(--nav-h) + 60px); bottom: auto; }
 }
 html[data-menu] .tour-offer { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .tour-offer { animation: none; } }

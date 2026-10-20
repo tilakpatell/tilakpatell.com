@@ -16,7 +16,7 @@
 // round him and whoever else stands about rather than through them.
 //
 //   createNpcs({ id, area, solids, words, others }) → { add(c, spot) → n, step(n, t, dt, state),
-//     calm(), hunt(on), fire(shot), list(), npcs, hunting }
+//     calm(), hunt(on), lookout(mode), fire(shot), list(), npcs, hunting }
 //
 // id: the area's; area: its box { x0, x1, z0, z1 }, kept to; solids: what's
 // in the way ({ x, z, w, d } boxes and { x, z, r } posts); words: { caught,
@@ -65,10 +65,15 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
   //         told when one lands; at nought he
   //         falls (the 'fall' clip), stays down, and `task` is done ('done'), with `won`
   //         said. The duel is told to RmWorld as 'duel' { hp, max } as it goes.
+  //   lookout: true        turned by the place's game (lookout(mode): the vat's
+  //         freeze, ./games/freeze.js): its back to the room ('away'), at Morty
+  //         with its head on him ('look'), started at him once ('seen'); no word
+  //         and no wave while it's turned; `null`, as it was (calm clears it)
   //   clip: a shared clip looped while standing (Evil Morty's crossed arms)
   //   home: kept where placed between behaviours; `calm` puts everyone back
   const npcs = [];
   let hunting = false;
+  let lookouts = null; // (the place's game turning its lookouts: 'away' | 'look' | 'seen' | null)
   const ROOM_PAD = 0.8;
   const clampIn = (o) => {
     o.x = Math.min(A.x1 - ROOM_PAD, Math.max(A.x0 + ROOM_PAD, o.x));
@@ -176,7 +181,7 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
         n.searchUntil = 0;
         // (one who's spotted him on his own says so: RmWorld's word and sound)
         if (!hunting && !h.always && !h.duel) {
-          state.emit?.('spotted', { area: id, who: n.id, text: h.spotted ?? words.spotted ?? 'They’ve seen you. Move.' });
+          state.emit?.('spotted', { area: id, who: n.id, name: n.who ?? n.name, text: h.spotted ?? words.spotted ?? 'They’ve seen you. Move.' });
           if (eyes) c.react?.('alert', { target: eyes });
         }
       }
@@ -186,13 +191,14 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
       }
     } else n.hunting = false;
     const talking = n.talkUntil > t && !n.hunting && m;
+    const turned = Boolean(ai.lookout && lookouts && m);
     if (n.dead) {
       // down for the count: nothing more from him
     } else if (n.hunting && m) {
       look = eyes;
       if (h.duel && !n.duel) {
         n.duel = newDuel({ hp: h.duel.hp ?? 6, mortyHp: h.duel.mortyHp ?? 3 });
-        state.emit?.('duel', { area: id, who: n.id, hp: n.duel.hp, max: n.duel.max, mortyHp: n.duel.mortyHp, mortyMax: n.duel.mortyMax });
+        state.emit?.('duel', { area: id, who: n.id, name: n.who ?? n.name, hp: n.duel.hp, max: n.duel.max, mortyHp: n.duel.mortyHp, mortyMax: n.duel.mortyMax });
       }
       const face = faceM;
       const reach = h.duel ? STRIKE.reach : h.catchR;
@@ -206,13 +212,13 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
           n.struckAt = t;
           n.duel = strikeAt(n.duel);
           c.play?.('punch', { hold: 0.1 });
-          state.emit?.('strike', { area: id, who: n.id, hp: n.duel.hp, max: n.duel.max, mortyHp: n.duel.mortyHp, mortyMax: n.duel.mortyMax, beaten: n.duel.beaten, text: h.line ?? words.caught });
+          state.emit?.('strike', { area: id, who: n.id, name: n.who ?? n.name, hp: n.duel.hp, max: n.duel.max, mortyHp: n.duel.mortyHp, mortyMax: n.duel.mortyMax, beaten: n.duel.beaten, text: h.line ?? words.caught });
         }
       } else {
         turnTo(c, face, dt);
         if (!state.fading && t - (n.caughtAt ?? -1e9) > 3) {
           n.caughtAt = t;
-          state.emit?.('caught', { area: id, who: n.id, text: h.line ?? words.caught });
+          state.emit?.('caught', { area: id, who: n.id, name: n.who ?? n.name, text: h.line ?? words.caught });
           c.react?.('caught', { target: eyes });
         }
       }
@@ -261,28 +267,39 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
         }
       }
       if (talking || (ai.watch && toM < ai.watch)) look = eyes;
+    } else if (turned) {
+      // the place's game turns it: its back to the room, or at Morty
+      if (lookouts === 'away') turnTo(c, n.face + Math.PI, dt, 4);
+      else {
+        turnTo(c, faceM, dt, 6);
+        look = eyes;
+        if (lookouts === 'seen' && !n.saw) {
+          n.saw = true;
+          c.react?.('alert', { target: eyes });
+        }
+      }
     } else if (ai.watch && m) {
       if (toM < ai.watch || talking) {
         turnTo(c, faceM, dt, 4);
         look = eyes;
       } else turnTo(c, n.face, dt, 2);
     }
-    if (!n.dead && !n.hunting) {
+    if (!n.dead && !n.hunting && !turned) {
       // a hunter that's lost him looks about; anyone else he's greeted, or who's talking to him, at him
       if (n.searchUntil > t) look = scanAt({ x: g.position.x, z: g.position.z, yaw: g.rotation.y }, t, { phase: n.phase });
       else if (talking || say?.look) look ??= eyes;
     }
     let barked = false;
-    if (ai.bark && m && toM < ai.bark.r && t > (n.barkAt ?? -1e9) + (ai.bark.every ?? 14) && !state.fading) {
+    if (ai.bark && m && !turned && toM < ai.bark.r && t > (n.barkAt ?? -1e9) + (ai.bark.every ?? 14) && !state.fading) {
       n.barkAt = t;
       n.barkN = (n.barkN ?? -1) + 1;
       const text = ai.bark.lines[n.barkN % ai.bark.lines.length];
-      state.emit?.('bark', { area: id, who: n.who ?? n.id, text });
+      state.emit?.('bark', { area: id, who: n.id, name: n.who ?? n.name, text });
       c.react?.('say', { hold: lineHold(text), target: eyes });
       barked = true;
     }
     // (the first time he comes up: a wave, unless it's just started talking to him, which is greeting enough)
-    if (say?.wave && !barked && !n.dead && !n.hunting && eyes) c.react?.('greet', { target: eyes });
+    if (say?.wave && !barked && !n.dead && !n.hunting && !turned && eyes) c.react?.('greet', { target: eyes });
     clampIn(g.position);
     g.position.y = n.y;
     // the feet, by the ground it covered this frame; the bones over the clips, once it's placed
@@ -299,8 +316,10 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
   };
   const calmNpcs = () => {
     hunting = false;
+    lookouts = null;
     for (const n of npcs) {
       n.hunting = false;
+      n.saw = false;
       // (a duel's hunter who's not been beaten gets up and goes home; one who has stays down)
       if (!n.dead) {
         n.duel = null;
@@ -324,10 +343,12 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
     }
   };
 
-  // a figure that does something: its brain, stepped by step()
-  const add = (c, { x, z, y = 0, face = 0, ai, id: nid = c.kind, who = null }) => {
+  // a figure that does something: its brain, stepped by step() (`who`: the
+  // name its own line gives it; `name`: its kind's, ./dimensions/names.js,
+  // so what it says is never captioned with its id)
+  const add = (c, { x, z, y = 0, face = 0, ai, id: nid = c.kind, who = null, name = null }) => {
     const seed = ((hash(`${id}:${nid}:${npcs.length}`) >>> 0) % 1000) / 1000;
-    const n = { c, ai, id: nid, who, home: { x, z }, y, y0: y, face, i: 0, waitTill: 0, hunting: false, key: npcs.length, seed, phase: seed, prev: null, looking: false, searchUntil: 0, talkUntil: 0, talkN: null, cheerAt: null, frame: { forward: new THREE.Vector3(0, 0, 1), up: UP } };
+    const n = { c, ai, id: nid, who, name, home: { x, z }, y, y0: y, face, i: 0, waitTill: 0, hunting: false, key: npcs.length, seed, phase: seed, prev: null, looking: false, searchUntil: 0, talkUntil: 0, talkN: null, cheerAt: null, frame: { forward: new THREE.Vector3(0, 0, 1), up: UP } };
     npcs.push(n);
     if (ai.clip) c.play?.(ai.clip, { loop: true });
     return n;
@@ -381,6 +402,9 @@ export function createNpcs({ id, area: A, solids = [], words = {}, others = null
     step,
     calm: calmNpcs,
     hunt,
+    lookout: (mode) => {
+      lookouts = mode;
+    },
     fire,
     bodies,
     hit,

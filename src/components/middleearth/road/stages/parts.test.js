@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { disposeBuilt, mergeStatics } from './parts';
+import { disposeBuilt, lampPools, mergeStatics, waterOn } from './parts';
+import { landFor } from '../terrain';
 
 const box = (mat, x, uv = true) => {
   const g = new THREE.BoxGeometry(1, 1, 1);
@@ -49,6 +50,32 @@ describe('mergeStatics', () => {
   });
 });
 
+describe('mergeStatics, by band', () => {
+  it('a material’s statics merged a band of the stage along z at a time, so a band out of view is left out', () => {
+    const a = new THREE.MeshBasicMaterial();
+    const root = new THREE.Group();
+    for (const z of [0, 10, 70, 75, 200]) {
+      const b = box(a, 0);
+      b.position.z = z;
+      root.add(b);
+    }
+    mergeStatics(root, { band: 60 });
+    const meshes = [];
+    root.traverse((o) => o.isMesh && meshes.push(o));
+    // (0 and 10 in the first band, 70 and 75 the second, 200 the fourth)
+    expect(meshes.map((o) => o.geometry.attributes.position.count).sort((x, y) => x - y)).toEqual([36, 72, 72]);
+    // (no band: one mesh, as before)
+    const whole = new THREE.Group();
+    for (const z of [0, 100]) {
+      const b = box(a, 0);
+      b.position.z = z;
+      whole.add(b);
+    }
+    mergeStatics(whole, { band: 0 });
+    expect(whole.children).toHaveLength(1);
+  });
+});
+
 describe('disposeBuilt', () => {
   it('frees the geometry and what a builder made, never the kit’s materials', () => {
     const kitMat = new THREE.MeshBasicMaterial();
@@ -64,5 +91,40 @@ describe('disposeBuilt', () => {
     expect(freed).not.toContain(kitMat);
     expect(freed.filter((x) => x.isBufferGeometry)).toHaveLength(3);
     expect(freed.filter((x) => x === own)).toHaveLength(1);
+  });
+});
+
+describe('waterOn', () => {
+  it('reads a river’s water where it runs, over its bed, and nothing off it', () => {
+    const land = landFor('anduin', { res: 8, wide: 256 });
+    const on = waterOn(land, 0);
+    const level = on(0, 40);
+    expect(level).toBeGreaterThan(land.field(0, 40));
+    expect(on(-60, 40)).toBeNull();
+    expect(waterOn(land, 7)(0, 40)).toBeNull();
+  });
+});
+
+describe('lampPools', () => {
+  it('a warm disc on the ground under each lamp, off its wall toward the lane, in one draw', () => {
+    const lamps = [new THREE.Vector3(6, 3, 10), new THREE.Vector3(-7, 3, 20), new THREE.Vector3(0.5, 3, 30)];
+    const pools = lampPools(lamps, () => 2, { radius: 3, toward: 1.4 });
+    expect(pools.mesh.isInstancedMesh).toBe(true);
+    expect(pools.mesh.count).toBe(3);
+    const m = new THREE.Matrix4();
+    const at = new THREE.Vector3();
+    const xs = [4.6, -5.6, 0];
+    for (let i = 0; i < 3; i++) {
+      pools.mesh.getMatrixAt(i, m);
+      at.setFromMatrixPosition(m);
+      expect(at.x).toBeCloseTo(xs[i], 6);
+      expect(at.y).toBeCloseTo(2.06, 6);
+      expect(at.z).toBe(lamps[i].z);
+    }
+    pools.set(0);
+    expect(pools.mesh.visible).toBe(false);
+    pools.set(1);
+    expect(pools.mesh.visible).toBe(true);
+    pools.dispose();
   });
 });

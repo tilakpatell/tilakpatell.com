@@ -5,6 +5,8 @@ import { prefersReducedMotion } from '../lib/hooks';
 import '@fontsource/cinzel/600.css';
 import AutobotMark from './AutobotMark';
 import DecepticonMark from './DecepticonMark';
+import CompanyMark, { ColourWheel } from './CompanyMark';
+import { roles } from '../data/roles';
 import PortalSwirl from './rickmorty/PortalSwirl';
 import { PORTAL_QUOTES } from './rickmorty/themeQuotes';
 import { THEME_QUOTES } from '../theme/quotes';
@@ -47,7 +49,18 @@ const SCENES = {
   beth: { kind: 'portal', color: '#8e2b48', ...PORTAL_QUOTES.beth, cue: 'portalOpen' },
 };
 
-const LENGTH = { saber: 1700, hud: 1700, pixels: 1500, tiles: 1700, memo: 1800, ripple: 1800, transform: 1800, door: 2400, eye: 2400, portal: 1800, wipe: 1300 };
+const LENGTH = { saber: 1700, hud: 1700, pixels: 1500, tiles: 1700, memo: 1800, ripple: 1800, transform: 1800, door: 2400, eye: 2400, portal: 1800, company: 1100, wheel: 1300, wipe: 1300 };
+
+// A company is quiet: its own dark, its mark drawn once, its name and the
+// role I had there, and no sound. The visitor's own colour: a wheel that
+// settles on it, and its hex.
+function sceneFor(id, custom) {
+  if (SCENES[id]) return SCENES[id];
+  const role = roles.find((r) => r.id === id);
+  if (role) return { kind: 'company', color: THEMES[id].swatch, quote: role.company, by: role.shortTitle };
+  if (id === 'custom') return { kind: 'wheel', color: custom, quote: THEMES.custom.company, by: String(custom).toUpperCase() };
+  return { kind: 'wipe', color: THEMES[id]?.swatch ?? 'var(--accent)', quote: THEMES[id]?.company ?? '', by: 'Site colours' };
+}
 
 function Scene({ kind, color }) {
   if (kind === 'saber')
@@ -449,6 +462,8 @@ function Badge({ kind, color, autobot, id }) {
       </b>
     );
   if (kind === 'ripple') return <Helm color={color} />;
+  if (kind === 'company') return <CompanyMark id={id} />;
+  if (kind === 'wheel') return <ColourWheel color={color} />;
   if (kind === 'transform') return autobot ? <AutobotMark className="tt-insignia" /> : <DecepticonMark className="tt-insignia tt-insignia-dc" />;
   // (the door and the Eye bring their own dark, centred on them, so the page can show through them at the end)
   if (kind === 'door') return <RoundDoor />;
@@ -456,8 +471,8 @@ function Badge({ kind, color, autobot, id }) {
   return null;
 }
 
-export default function ThemeTransition({ id, onDone }) {
-  const scene = SCENES[id] ?? { kind: 'wipe', color: THEMES[id]?.swatch ?? '#888888', quote: THEMES[id]?.company ?? '', by: 'Site colours' };
+export default function ThemeTransition({ id, custom, onDone }) {
+  const scene = sceneFor(id, custom);
   const reduced = prefersReducedMotion();
   const done = useRef(onDone);
   done.current = onDone;

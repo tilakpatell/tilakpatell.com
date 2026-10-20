@@ -19,5 +19,6 @@ export const BEATS = [
   // Aragorn with fire in both hands, the Riders burning and gone
   { id: 'fire', kind: 'fire', at: 128, hold: 8, rig: 'follow', reach: 12 },
   // Frodo on the ground, Aragorn kneeling over him: the Morgul blade
-  { id: 'kingsfoil', kind: 'kingsfoil', at: 146, hold: 10, rig: 'low', reach: 14, lines: ['weathertop-kingsfoil'] },
+  // (low over them, looking down the slope at Frodo and the athelas: the plan’s low rig, placed, so the falling hill doesn’t leave it the sky)
+  { id: 'kingsfoil', kind: 'kingsfoil', at: 146, hold: 10, rig: 'seat', reach: 14, params: { at: [2.7, 1.1, 143.6], lookAt: [0.3, 0.2, 147.4], above: true }, lines: ['weathertop-kingsfoil'] },
 ];

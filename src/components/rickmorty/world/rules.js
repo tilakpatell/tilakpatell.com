@@ -19,14 +19,16 @@ import { seeded } from '../../../lib/seeded';
 import { springStep } from '../../../lib/spring';
 import { makeWalker, pushOut } from '../../middleearth/towns/walker';
 import { DESTINATIONS, GARAGE_BACK, isBigPlanet, isPlanet } from './dimensions/destinations';
+import { CROSS, LANE, TOWN, TOWN_PEOPLE, TOWN_ROOFS, TOWN_SOLIDS, TOWN_SPOTS, TOWN_STANDING, TOWN_STEPS, TOWN_TASKS, TOWN_TREES, onRoad } from './town/plan';
 
 export { behindYaw, cameraMove } from '../../middleearth/towns/walker';
 
 // ── the areas ──
 
 export const AREAS = {
-  // (out to the hedges: the suburb's houses on along the road, and the yards behind)
-  street: { x0: -150, x1: 150, z0: -55, z1: 55 },
+  // (out to the hedges: the suburb's houses on along the road, the yards
+  // behind, and the town round them, ./town/plan.js)
+  street: TOWN,
   annex: { x0: 370, x1: 430, z0: -22, z1: 22 },
   // the Smith house, ground floor: the plan's rooms (PLAN) fill all of it but the
   // outside corner south-west
@@ -107,9 +109,12 @@ export const DINER = NEIGHBOURS.find((n) => n.look === 'diner');
 export const BUILDINGS = [HOUSE, GARAGE, SCHOOL, ...NEIGHBOURS];
 // The houses on along the road past the street's own, both sides, out to the
 // hedges at its ends: solid, and drawn as the neighbours are
+// (but where the town's cross roads come out: ./town/plan.js's CROSS)
 export const OUTSKIRTS = [68, 91, 114, 137].flatMap((d, i) =>
-  [-1, 1].flatMap((sx) => [-1, 1].map((sz) => ({ id: `out-${sx < 0 ? 'w' : 'e'}${sz < 0 ? 'n' : 's'}${i}`, x: sx * d, z: sz * 20, w: 12, d: 10, h: 5.5, roof: 8, look: (i + sx + sz) % 4 ? 'colonial' : 'ranch' }))),
+  CROSS.some((c) => Math.abs(Math.abs(c) - d) < 10) ? [] : [-1, 1].flatMap((sx) => [-1, 1].map((sz) => ({ id: `out-${sx < 0 ? 'w' : 'e'}${sz < 0 ? 'n' : 's'}${i}`, x: sx * d, z: sz * 20, w: 12, d: 10, h: 5.5, roof: 8, look: (i + sx + sz) % 4 ? 'colonial' : 'ranch' }))),
 );
+
+const LAID_OUT = [-91, 91].flatMap((x) => [-20, 20].map((z) => ({ x, z, w: 12, d: 10 })));
 
 // the driveway runs from the garage door to the sidewalk; the cruiser parks on it, nose south
 export const DRIVEWAY = { x0: -23, x1: -15, z0: -14, z1: -7 };
@@ -301,9 +306,13 @@ const LANES = LINKS.filter((l) => l.area === 'street').map((l) => [l.x, l.z, l.x
 // where Morty comes out in the street
 const LANDINGS = LINKS.filter((l) => l.to === 'street').map((l) => l.arrive);
 
+// (on the street as it was first laid out, LANE: the town round it plants its own)
 function treeFits(x, z) {
-  if (!inArea('street', x, z, -2) || Math.abs(z - ROAD.z) < VERGE + 0.5) return false;
-  if ([...BUILDINGS, ...OUTSKIRTS].some((b) => edgeDist(b, x, z) < 2)) return false;
+  if (x < LANE.x0 + 2 || x > LANE.x1 - 2 || z < LANE.z0 + 2 || z > LANE.z1 - 2 || Math.abs(z - ROAD.z) < VERGE + 0.5) return false;
+  // (the houses on along the road as they were first laid, the two where the
+  // cross roads now come out among them: so the trees keep their places)
+  if ([...BUILDINGS, ...OUTSKIRTS, ...LAID_OUT].some((b) => edgeDist(b, x, z) < 2)) return false;
+  if (onRoad(x, z, 1.5)) return false;
   if (rectDist(DRIVEWAY.x0, DRIVEWAY.x1, DRIVEWAY.z0, DRIVEWAY.z1, x, z) < 2) return false;
   if (LINKS.some((l) => l.area === 'street' && Math.hypot(x - l.x, z - l.z) < 2.5)) return false;
   if (LANDINGS.some((a) => Math.hypot(x - a.x, z - a.z) < 2.5)) return false;
@@ -321,9 +330,9 @@ const trunk = (t) => 0.45 * t.s;
 export const TREES = (() => {
   const rand = seeded(137);
   const out = [];
-  for (let tries = 0; out.length < 18 && tries < 4000; tries++) {
-    const x = AREAS.street.x0 + 3 + rand() * (AREAS.street.x1 - AREAS.street.x0 - 6);
-    const z = rand() < 0.4 ? (rand() < 0.5 ? -1 : 1) * (VERGE + 0.5 + rand() * 1.5) : AREAS.street.z0 + 3 + rand() * (AREAS.street.z1 - AREAS.street.z0 - 6);
+  for (let tries = 0; out.length < 20 && tries < 4000; tries++) {
+    const x = LANE.x0 + 3 + rand() * (LANE.x1 - LANE.x0 - 6);
+    const z = rand() < 0.4 ? (rand() < 0.5 ? -1 : 1) * (VERGE + 0.5 + rand() * 1.5) : LANE.z0 + 3 + rand() * (LANE.z1 - LANE.z0 - 6);
     if (!treeFits(x, z) || out.some((t) => Math.hypot(t.x - x, t.z - z) < 7)) continue;
     out.push({ x, z, s: 0.8 + rand() * 0.55, kind: Math.floor(rand() * 3), turn: rand() * Math.PI * 2 });
   }
@@ -608,6 +617,9 @@ export const PEOPLE = [
   { id: 'brad-walk', who: 'brad', area: 'street', x: -14, z: -6.6, face: 0, roams: true, ai: { wander: [[-14, -6.6], [28, -6.6], [28, -5.8], [-14, -5.8]], speed: 0.9, pause: 2.5, bark: { r: 4, every: 20, lines: ['Sup, Morty.', 'Jessica’s with me, Morty. Just so you know.'] } } },
   { id: 'goldenfold-walk', who: 'goldenfold', area: 'street', x: 12, z: 6.6, face: 0, roams: true, ai: { wander: [[12, 6.6], [40, 6.6], [40, 5.8], [12, 5.8]], speed: 0.7, pause: 3, bark: { r: 4, every: 18, lines: ['Morty! Pop quiz on Monday. Don’t tell anyone I told you.', 'Have you seen Mrs. Pancakes? No? Good. Neither have I.'] } } },
   { id: 'ethan-walk', who: 'ethan', area: 'street', x: DINER.x + 6, z: 6.6, face: Math.PI, roams: true, ai: { wander: [[DINER.x + 6, 6.6], [DINER.x - 10, 6.6], [DINER.x - 10, 5.8], [DINER.x + 6, 5.8]], speed: 0.8, pause: 3, bark: { r: 4, every: 22, lines: ['Hey, Morty. Summer around?', 'They do a breakfast here. The agent gets one every day.'] } } },
+  // the town round the street (./town/plan.js): who walks it, and the agent outside the cinema
+  ...TOWN_PEOPLE.map((p) => ({ ...p, area: 'street', roams: true, town: true })),
+  ...TOWN_STANDING.map((p) => ({ ...p, area: 'street', town: true })),
   // the Oval Office: the President behind the desk, a general either side of it
   { id: 'ovalpresident', who: 'president', area: 'oval', x: -300, z: 695.5, face: S },
   { id: 'general1', who: 'general', area: 'oval', x: -303.2, z: 696.8, face: S },
@@ -692,6 +704,11 @@ export const COLLIDERS = {
     ...DECOR.map(decorCollider),
     ...VEHICLES.map((v) => box(v.id, v.x, v.z, v.w, v.d, v.turn)),
     ...PEOPLE.filter((p) => p.area === 'street' && !p.until && !p.roams).map((p) => circle(p.id, p.x, p.z, PERSON)),
+    // the town round the street (./town/plan.js): its houses, shops, pond and
+    // the rest, the bandstand's floor a step up, and its trees
+    ...TOWN_SOLIDS.map((c) => (c.kind === 'box' ? box(c.id, c.x, c.z, c.w, c.d, c.turn) : circle(c.id, c.x, c.z, c.r))),
+    ...TOWN_STEPS.map((c) => ({ ...c })),
+    ...TOWN_TREES.map((t, i) => circle(`town-tree${i}`, t.x, t.z, trunk(t))),
   ],
   annex: [box('arcade', ARCADE.x, ARCADE.z, ARCADE.w, ARCADE.d)],
   // outside, south-west of the entry
@@ -706,8 +723,9 @@ export const COLLIDERS = {
   oval: furnished('oval'),
   diner: furnished('diner'),
   wong: furnished('wong'),
-  // each destination's buildings and fittings, and its people
-  ...Object.fromEntries(DESTINATIONS.map((d) => [d.id, [...d.solids.map((o) => (o.r ? circle(o.id, o.x, o.z, o.r) : box(o.id, o.x, o.z, o.w, o.d))), ...d.people.filter((o) => !o.roams).map((o) => circle(o.id, o.x, o.z, PERSON)), ...d.extras.map((o, n) => circle(`${d.id}-extra-${n}`, o.x, o.z, PERSON))]])),
+  // each destination's buildings and fittings, and its people (but those who
+  // roam, people or crowd: they're never where they started for long)
+  ...Object.fromEntries(DESTINATIONS.map((d) => [d.id, [...d.solids.map((o) => (o.r ? circle(o.id, o.x, o.z, o.r) : box(o.id, o.x, o.z, o.w, o.d))), ...d.people.filter((o) => !o.roams).map((o) => circle(o.id, o.x, o.z, PERSON)), ...d.extras.flatMap((o, n) => (o.roams ? [] : [circle(`${d.id}-extra-${n}`, o.x, o.z, PERSON)]))]])),
 };
 // Walls: the street's fences, the house's inner walls and the low banister up
 // the stairs' open side, and the balcony's low railing on its south edge. A
@@ -776,6 +794,8 @@ export const HOTSPOTS = [
   spot('agent1', 'street', -34.5, -5.9, 'Federation agent', 'Talk'),
   spot('agent2', 'street', DINER.x - 2, -6.1, 'Federation agent', 'Talk'),
   spot('agent3', 'street', 38.5, 5.9, 'Federation agent', 'Talk'),
+  // the town round the street: the park, the shops, the posters (./town/plan.js)
+  ...TOWN_SPOTS.map(([id, x, z, label, verb]) => spot(id, 'street', x, z, label, verb, { town: true })),
   // the Oval Office: across the desk from the President, and in front of each general
   spot('ovalpresident', 'oval', -300, 697.5, 'The President', 'Talk'),
   spot('general1', 'oval', -303.2, 697.1, 'A general', 'Talk'),
@@ -955,7 +975,8 @@ export const newCruiser = () => ({ x: BOARD.x, z: BOARD.z, y: CRUISER.hover, yaw
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 // what it flies over: each building's footprint, the school's as its parts (flat roofs at their own heights)
-const ROOFS = [...BUILDINGS.filter((b) => b !== SCHOOL), ...OUTSKIRTS, ...SCHOOL_PARTS.map((p) => ({ ...p, roof: p.h })), ...VEHICLES.map((v) => ({ ...v, roof: v.h }))];
+// (and the town's: its houses, its shops' parapets, the water tower's tank and the bandstand's roof)
+const ROOFS = [...BUILDINGS.filter((b) => b !== SCHOOL), ...OUTSKIRTS, ...SCHOOL_PARTS.map((p) => ({ ...p, roof: p.h })), ...VEHICLES.map((v) => ({ ...v, roof: v.h })), ...TOWN_ROOFS];
 // the buildings it is over: their footprints, and the cruiser's own width round
 const under = (x, z) => ROOFS.filter((b) => Math.abs(x - b.x) <= b.w / 2 + CRUISER.radius && Math.abs(z - b.z) <= b.d / 2 + CRUISER.radius);
 
@@ -1045,7 +1066,7 @@ export const TASKS = [
   { id: 'plumbus', name: 'See a plumbus made', hint: 'Watch the plumbus factory in Rick’s garage.' },
   { id: 'portalpanic', name: 'Play Portal panic', hint: 'Play the Portal panic cabinet in Rick’s garage.' },
   { id: 'quiz', name: 'Pass the pop quiz', hint: 'Sit Mr. Goldenfold’s pop quiz at Harry Herpson High, and get seven right.' },
-  { id: 'fly', name: 'Fly the cruiser', hint: 'Board Rick’s space cruiser in the driveway and take it up over the neighbourhood.' },
+  { id: 'fly', name: 'Fly the cruiser', hint: 'Board Rick’s space cruiser in the driveway, then fly it through the rings over the street with the Federation ship on your tail.' },
   { id: 'president', name: 'Meet the President', hint: 'The President’s limo is parked outside the Smith house, and he wants Rick.' },
   { id: 'oval', name: 'Visit the Oval Office', hint: 'Take the President’s portal by the garage door in Rick’s garage.' },
   { id: 'diner', name: 'Have breakfast at Shoney’s', hint: 'A Federation agent is waiting in a booth at Shoney’s, up the street from the Smiths’.' },
@@ -1059,6 +1080,8 @@ export const TASKS = [
   // (a big planet's box tasks are retired: it's a world of its own now, its
   // quests kept apart from these, so C-137 neither counts nor points to them)
   ...DESTINATIONS.filter((d) => !isBigPlanet(d.id)).flatMap((d) => d.tasks),
+  // (the town's, new on the end of the list)
+  ...TOWN_TASKS,
 ];
 
 // ── Morty's Mind Blowers ──

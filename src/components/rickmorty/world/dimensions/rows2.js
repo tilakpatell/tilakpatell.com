@@ -400,6 +400,10 @@ export const ROWS = [
     people: [
       { id: 'glipglop', dx: 4, dz: -6, face: S, ai: { wander: [[4, -6], [10, -4], [8, 2], [0, -2]], speed: 0.9, pause: 4, watch: 7, bark: { r: 5, every: 16, lines: ['The Jerry’s with you? Good. We just need a small part of him. Trust me, I’m Dr. Glip-Glop.', 'Shrimply Pibbles freed a billion people. Jerry Smith watched a lot of television. Weigh it.'] } } },
       { id: 'gjerry', who: 'jerry', dx: -12, dz: 4, face: E, ai: { watch: 6, bark: { r: 4, every: 16, lines: ['Morty, they want my… they want a thing. I said I’d think about it. Tell them I’m still thinking.'] } } },
+      // (the doctors on their rounds before the theatre: they hunt whoever comes for Jerry's things, till he's had them back)
+      { id: 'gdoctor-a', who: 'glipglop', dx: -14, dz: -4, face: E, ai: { wander: [[-14, -4], [-16, -12], [-8, -12], [-8, -2]], speed: 1.1, pause: 1.5, hunt: { speed: 3.0, catchR: 1.3, near: 4.5, lose: 8, until: 'gloopynoops' } } },
+      { id: 'gdoctor-b', who: 'glipglop', dx: -14, dz: -7, face: E, ai: { wander: [[-14, -7], [14, -7]], speed: 0.9, pause: 2, hunt: { speed: 2.8, catchR: 1.3, near: 4.5, lose: 8, until: 'gloopynoops' } } },
+      { id: 'gdoctor-c', who: 'glipglop', dx: 14, dz: -4, face: W, ai: { wander: [[14, -4], [18, -12], [10, -14], [10, -2]], speed: 1.2, pause: 1.2, hunt: { speed: 3.2, catchR: 1.3, near: 4.5, lose: 8, until: 'gloopynoops' } } },
     ],
     extras: [
       { kind: 'gloopnurse', dx: -4, dz: 6, face: N, ai: { wander: [[-4, 6], [-10, 10], [6, 10], [2, 4]], speed: 0.8, pause: 3 } },
@@ -412,6 +416,7 @@ export const ROWS = [
       { id: 'gjerry', dx: -12, dz: 4, label: 'Jerry', verb: 'Talk', r: 1.6 },
       { id: 'reception', dx: 12, dz: 12, label: 'Reception', verb: 'Ask', r: 1.8 },
       { id: 'vending', dx: -18, dz: 12, label: 'A vending machine', verb: 'Look', r: 1.6 },
+      { id: 'jerrysthings', dx: 2.6, dz: -13.2, label: 'Jerry’s things', verb: 'Take back' },
     ],
     solids: [
       { id: 'bed', dx: 0, dz: -13.6, w: 3, d: 4 },
@@ -421,16 +426,24 @@ export const ROWS = [
       { id: 'bench-b', dx: -6, dz: 14, w: 3, d: 1 },
       { id: 'cart', dx: 8, dz: -2, w: 1.2, d: 1.6 },
     ],
-    tasks: [{ id: 'gloopynoops', name: 'Visit Shrimply Pibbles', hint: 'Dial St. Gloopy Noops on the portal gun, ask at reception, and visit Shrimply Pibbles in his bed.' }],
+    tasks: [{ id: 'gloopynoops', name: 'Take back what’s Jerry’s', hint: 'Dial St. Gloopy Noops, get past the doctors to the theatre at the end of the ward, visit Shrimply Pibbles and take back Jerry’s things, then get back through the portal before the clock runs out.' }],
     say: {
       glipglop: { who: 'Dr. Glip-Glop', text: '“The boy. Good. Your father is being very brave, by which I mean he hasn’t run yet.” He checks a clipboard that is also a screen. “Visiting hours are now.”' },
       shrimply: { who: 'Shrimply Pibbles', text: 'A soft voice from the bed. “Child. Whatever your father decides, tell him I understand. I have been many things to many people. I can be one more.”' },
       gjerry: { who: 'Jerry', text: '“I keep saying I’m thinking about it and they keep nodding. I don’t know how to say no to a hero, Morty. I don’t know how to say no to anyone.”' },
       reception: { who: 'The receptionist', text: '“Pibbles? Room one. Everyone’s here for Pibbles.” She points down the ward without looking up.' },
       vending: { who: null, text: 'A vending machine. Row C is Jerry Smith branded, already. Somebody was confident.' },
+      jerrysthings: { who: null, text: 'A bag by the bed tagged SMITH, J., with Rick’s chip still sewn into the lining of Jerry’s wallet.' },
+      // (the doctors' names, for a catch's word)
+      'gdoctor-a': { who: 'A doctor', text: 'A doctor on his rounds, looking for a Jerry.' },
+      'gdoctor-b': { who: 'A doctor', text: 'A doctor between the beds, his clipboard out.' },
+      'gdoctor-c': { who: 'A doctor', text: 'A doctor by the doors, scrubbed and waiting.' },
     },
-    collect: { task: 'gloopynoops', spots: ['reception', 'shrimply'] },
-    goal: 'reception',
+    // (the game: Shrimply visited and Jerry's things taken back, then thirty seconds to the portal, every doctor after him)
+    collect: { task: 'gloopynoops', spots: ['shrimply', 'jerrysthings'], escape: { s: 30 } },
+    goal: 'jerrysthings',
+    spotted: 'His eyes swing round on their stalks, and he’s coming for you.',
+    caught: 'He takes you kindly by the elbow and walks you back to the portal, and your visit starts over.',
     kinds: ['glipglop', 'jerry', 'gloopnurse', 'shrimply'],
   }),
   place(23, {

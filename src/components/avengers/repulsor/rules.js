@@ -228,7 +228,9 @@ function hitPrime(s, e, part, dmg, ev) {
 // The spheres you can hit on an enemy: [x, y, z, r, part, crit]
 function spheres(e) {
   if (e.kind === 'sentry') return [[e.x, e.y + 0.42, e.z, RANGE.r.head, null, true], [e.x, e.y - 0.1, e.z, e.r, null, false], [e.x, e.y - 0.75, e.z, e.r * 0.8, null, false]];
-  if (e.kind === 'prime') return e.parts.filter((p) => p.hp > 0).map((p) => [e.x + p.dx, e.y + p.dy, e.z, p.r, p, false]);
+  // on its way in, Prime can't be hit: shots fly past it to whatever is behind,
+  // and the crosshair (RepulsorRange.jsx, which reads rayHit) doesn't light
+  if (e.kind === 'prime') return e.arrived ? e.parts.filter((p) => p.hp > 0).map((p) => [e.x + p.dx, e.y + p.dy, e.z, p.r, p, false]) : [];
   return [[e.x, e.y, e.z, e.r, null, false]];
 }
 
@@ -298,7 +300,7 @@ function beamStep(s, dt, ev) {
   for (const e of s.enemies) {
     if (e.dead) continue;
     if (e.kind === 'prime') {
-      for (const p of e.parts) if (p.hp > 0 && inBeam(e.x + p.dx, e.y + p.dy, e.z, p.r)) hitPrime(s, e, p, RANGE.beam.dps * dt, ev);
+      if (e.arrived) for (const p of e.parts) if (p.hp > 0 && inBeam(e.x + p.dx, e.y + p.dy, e.z, p.r)) hitPrime(s, e, p, RANGE.beam.dps * dt, ev);
     } else if (inBeam(e.x, e.y, e.z, e.r)) kill(s, e, ev);
   }
   s.bolts = s.bolts.filter((q) => !inBeam(q.x, q.y, q.z, 0.3));

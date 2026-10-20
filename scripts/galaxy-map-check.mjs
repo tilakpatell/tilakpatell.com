@@ -5,7 +5,7 @@
 // galaxy-map-check/suite.mjs) and then at phone widths (phone.mjs: 375x667 with the side panel, 375x667, 390x844 and 360x640 with
 // a touch screen's zoom buttons, 360x640). Shared parts are in galaxy-map-check/lib.mjs, the controls' checks (the find, Escape,
 // double clicks, the picked system's marks) in controls.mjs. Those are the flat map's (open() asks for it); the holotable's, the
-// map in 3D at 1440x900, 1024x768 and 390x844, are holo.mjs's, its header the list.
+// map in 3D at 1440x900, 1024x768, 768x1024 and 390x844, are holo.mjs's, its header the list.
 //   names: no two system names meet, none is out of the map, none is over another system's dot (whole, zoomed in twice over Hoth,
 //     framed on Endor; on a desktop window none at all, on a phone a graze of up to 5 px, each listed: Hoth's, Bespin's, Mustafar's
 //     and Nevarro's dots are a few px apart and no place round Bespin's is clear at 360 px); none is under the strip's board, the
@@ -46,7 +46,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 720
 for (const [viewport, opts] of [[{ width: 375, height: 667 }, { side: true }], [{ width: 375, height: 667 }, { touch: true }], [{ width: 390, height: 844 }, { touch: true }], [{ width: 360, height: 640 }, { touch: true }], [{ width: 360, height: 640 }, {}]]) {
   await phone(viewport, opts).catch((e) => stopped(`${viewport.width}x${viewport.height}${opts.touch ? ' touch' : ''}`, e));
 }
-for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 768 }, { width: 390, height: 844 }]) {
+for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
   await holo(viewport).catch((e) => stopped(`${viewport.width}x${viewport.height} 3D`, e));
 }
 await browser.close();

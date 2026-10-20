@@ -133,7 +133,7 @@ export function PartySheet({ online, request, onClose }) {
 
   return (
     <div className="party-scrim" onKeyDown={hold} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={sheet} className="party-dialog card" role="dialog" aria-modal="true" aria-labelledby={`${ids}-title`}>
+      <div ref={sheet} className="party-dialog card dialog" role="dialog" aria-modal="true" aria-labelledby={`${ids}-title`}>
         <div className="party-head">
           <h2 id={`${ids}-title`} className="dialog-title">
             {WORDS.party}

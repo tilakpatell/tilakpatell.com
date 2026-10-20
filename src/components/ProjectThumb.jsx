@@ -134,9 +134,10 @@ function TranslatorThumb() {
       {[24, 32, 40, 48, 56, 64].map((y, i) => (
         <rect key={y} x={i === 0 ? 30 : 22} y={y} width={i === 0 ? 28 : [44, 40, 30, 36, 24][i - 1]} height="3" rx="1.5" style={{ fill: '#5b4a36' }} />
       ))}
-      <rect x="88" y="14" width="56" height="72" rx="2" style={{ fill: '#ffffff', stroke: 'var(--border)' }} />
+      {/* the scan stays paper; the typeset page is the site’s own, so it turns with the mode */}
+      <rect x="88" y="14" width="56" height="72" rx="2" style={{ fill: 'var(--surface)', stroke: 'var(--border)' }} />
       {[24, 32, 40, 48, 56, 64].map((y, i) => (
-        <rect key={y} x={i === 0 ? 102 : 94} y={y} width={i === 0 ? 28 : [44, 38, 32, 40, 22][i - 1]} height="3" rx="1.5" style={{ fill: i === 2 ? '#d97757' : '#3d3d3a' }} />
+        <rect key={y} x={i === 0 ? 102 : 94} y={y} width={i === 0 ? 28 : [44, 38, 32, 40, 22][i - 1]} height="3" rx="1.5" style={{ fill: i === 2 ? '#d97757' : 'var(--border-strong)' }} />
       ))}
       <g transform="translate(80 50) scale(0.42) translate(-24 -24)">
         {rays.map((deg, i) => (

@@ -103,7 +103,8 @@
 :where(.hud-list-head p):not(hud-none), :where(.hud-list-flavour):not(hud-none) { margin: 0; }
 :where(.hud-list-flavour):not(hud-none) { margin: -0.2rem 0 0.6rem; color: var(--hud-muted); font-size: 0.82rem; }
 :where(.hud-list ul):not(hud-none) { display: grid; gap: 0.4rem; margin: 0; padding: 0; list-style: none; }
-:where(.hud-list li):not(hud-none) { display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0.7rem; border-radius: 9px; background: rgba(255, 255, 255, 0.05); }
+/* (each row a wash of the world’s ink, so it shows on a light skin’s glass too; white where a list sits in no skin) */
+:where(.hud-list li):not(hud-none) { display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0.7rem; border-radius: 9px; background: color-mix(in srgb, var(--hud-ink, #fff) 5%, transparent); }
 :where(.hud-list li[data-next]):not(hud-none) { box-shadow: inset 0 0 0 1px var(--hud-accent); }
 :where(.hud-list li:not([data-open])):not(hud-none) { color: var(--hud-muted); }
 :where(.hud-list li > div):not(hud-none) { flex: 1; min-width: 0; }

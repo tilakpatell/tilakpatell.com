@@ -17,7 +17,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { C, disposeBuilt, merged, part } from '../parts';
+import { C, canopy, disposeBuilt, merged, part } from '../parts';
 import { barn, barrelParts, cabbageGeo, fencePostGeo, fenceRailGeo, hayBaleParts, hedgeGeo, lanternParts, mergeAll, mushroomParts, parts, pumpkinGeo, rootTree, scarecrowParts, signpost, wheatGeo, wheelbarrowParts } from '../../../shire/build';
 
 export const SHIRE = 0.68; // the Road’s hobbit (1.05 m) over the chapter’s (1.55)
@@ -86,11 +86,18 @@ function lanes(K, heightAt, tier) {
   const wheat = new THREE.InstancedMesh(wheatGeo(), K.mats.wheat, clumps.length);
   clumps.forEach(([x, z], i) => wheat.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z), z), q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), (x * 13 + z) % 6.28), new THREE.Vector3(0.9, 0.85 + ((x * z) % 1) * 0.3, 0.9))));
   for (const mesh of [post, rail, hedge, wheat]) {
-    mesh.castShadow = true;
+    // (the wheat takes the fences’ and hedges’ shade but casts none: its own fell
+    // only among its clumps, and drawn into the cascades it was most of the stage’s triangles)
+    mesh.castShadow = mesh !== wheat;
     mesh.receiveShadow = true;
     out.push(mesh);
   }
   return out;
+}
+
+// the body of the crop behind the near clumps: a canopy a side (parts.js), its lane edge under the clumps
+function cropParts(heightAt, parts) {
+  for (const side of [1, -1]) parts.push(canopy(heightAt, { x: [side * (FENCE.x + 2.6), side * (FENCE.x + 34)], z: [FENCE.z[0] - 4, FENCE.z[1] + 2] }));
 }
 
 function ferryParts(heightAt, level, parts) {
@@ -155,6 +162,7 @@ export function buildProps({ K, material, heightAt, level, tier = 'high' }) {
   group.add(stand(signpost(K, ['Bucklebury Ferry', 'Stock', 'The Marish']).group, heightAt, -3.4, 118, Math.PI / 2, SHIRE * 1.1));
   for (const [x, z] of [[3.2, 122], [3.6, 123.2], [-3.1, 121.6]]) group.add(stand(bits((bk) => barrelParts(bk, K, { h: 0.9, r: 0.3 })), heightAt, x, z, z));
   const fp = [];
+  cropParts(heightAt, fp);
   const decks = ferryParts(heightAt, level, fp);
   group.add(merged(fp, material, 'shire-edge:ferry'));
   // Buckland’s lanterns on the far stage: the chapter’s lantern, lit
