@@ -68,4 +68,17 @@ export const BUILDINGS = {
   pilliovault: drawn('A low angular dark grey military bunker with sloped armoured walls and a heavy round vault door in its front, set into a mossy grey rock outcrop on a tropical island, small antenna and vents on its roof, hidden and secret.', 32, 'w', { tris: 30000, hero: true }),
   // Fondor: a construction gantry of the shipyards
   fondorgantry: drawn('A colossal starship construction gantry of a shipyard: a grey steel lattice tower with two long cantilevered crane arms reaching out at its top, gangways and stairs up its sides, work lights and cable reels, standing on a heavy concrete foot, industrial and imperial.', 90, 'h', { hero: true }),
+
+  // The worlds' other buildings that were built in code, their second lane
+  // Cato Neimoidia: the viceroy's palace and its landing pads (The Clone Wars' Great Vaults)
+  catopalace: lifted('File:LottDodPalace-SS.png', [0, 0, 1, 1], 'the palace (a long wall of dark grey stone with small square towers topped by little pagoda roofs, a tall narrow central tower with a gold-patterned panel up its face, and round landing pads on curved pedestals with glowing blue rims in front of it), without the city behind it or the sky', 90, 'w', { hero: true }),
+  // Corellia: a tall tower of Coronet City (a Solo still)
+  coronetspire: lifted('File:Coronet City.png', [0.08, 0.25, 0.14, 0.55], 'the tall dark grey stepped skyscraper (a plain slab tower of grimy dark glass and steel that steps in towards its top, antennae on its roof, an industrial block of pipes and tanks at its foot), without the haze or the water', 140, 'h', { hero: true }),
+  // Corvus: a town house of Calodan, and the town's gate
+  calodanhouse: drawn('A two-storey town house of dark weathered timber and grey stone, a wide curved roof of dark grey tiles flaring up at its corners, wooden lattice windows, a stone step at its door, old East Asian style, a grim town in a burnt forest.', 14, 'w', { tris: 20000 }),
+  calodangate: drawn('A fortified town gate of dark timber and grey stone: a squat stone gatehouse with a wide double timber door, a curved dark tiled roof on top, short stone walls running off either side, old East Asian style fortress, weathered and grim.', 32, 'w', { tris: 30000, hero: true }),
+  // Fondor: a tower block of the yard city
+  fondorblock: drawn('A tall grim grey worker tower block of a starship-yard city: stacked concrete storeys with rows of small lit windows, external pipes, stairs and gantries up its sides, antennae and vents on the roof, rust streaks, industrial and imperial.', 90, 'h', { hero: true }),
+  // Malastare: the fuel works
+  malastareworks: drawn('A fuel refinery of tall rust-red cylindrical storage tanks joined by pipes and catwalks, a pump house and a tall flare stack, on a cracked concrete pad, dusty and industrial, on an alien grassland world.', 60, 'w', { hero: true }),
 };

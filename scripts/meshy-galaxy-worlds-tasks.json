@@ -132,5 +132,17 @@
       "01a157f4-63b1-7251-8c42-a37053a5f06d"
     ],
     "model": "01a157f7-3692-77a2-8bef-d63f5ac67c4c"
+  },
+  "calodanhouse": {
+    "image": "01a1583c-4946-774d-9a98-a1afc91914fe"
+  },
+  "calodangate": {
+    "image": "01a1583c-49a6-7580-bc9a-686e9c90296c"
+  },
+  "fondorblock": {
+    "image": "01a1583c-4a07-7363-8769-579cba063d8c"
+  },
+  "malastareworks": {
+    "image": "01a1583c-4a63-74f9-a590-a66a7f66e8e3"
   }
 }
