@@ -501,7 +501,8 @@ export function chamber(K) {
   const dg = new THREE.BufferGeometry();
   dg.setAttribute('position', new THREE.BufferAttribute(mp, 3));
   dg.setAttribute('aSeed', new THREE.BufferAttribute(ms, 4));
-  const dust = new THREE.Points(dg, K.shaders.dust(U, K));
+  // (a kit on the node renderer draws its points as sprites, dustPoints: the node renderer's points are a pixel wide)
+  const dust = K.shaders.dustPoints ? K.shaders.dustPoints(dg, U, K) : new THREE.Points(dg, K.shaders.dust(U, K));
   dust.frustumCulled = false;
   dust.renderOrder = 5;
   bg.add(dust);

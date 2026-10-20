@@ -8,14 +8,15 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { createStage, hot } from './stage';
-import { houseOn } from '../../lib/three/house';
+import { createStage, hot } from './nodes/stage';
+import { houseOn } from '../../lib/three/houseNodes';
 import { fbm, makeNoise, mix } from '../../lib/paint';
 import { DUEL } from './duel';
-import { EMBER, FIRE, LIGHT, SMOKE, createParticles, lavaMaterial, makeBalrog, makeGandalf, skyDome, stoneTextures } from './kit';
+import { EMBER, FIRE, LIGHT, SMOKE, createParticles, lavaMaterial, makeBalrog, makeGandalf, skyDome, stoneTextures } from './nodes/kit';
 import { createShake } from './feel';
 import { BLOOMS } from './look';
 import { houseGroups } from '../../lib/three/houseTuning';
+import { wardMaterial } from './nodes/bridgeShaders';
 
 // the drawing's x (see duel.js) to the scene's
 const X = (svg) => (svg - 320) / 20;
@@ -234,23 +235,7 @@ export function createBridge3D(canvas, { soft = false, reduced = false, onLost }
   // the staff's ward: a shell of light, bright at its rim
   const dome = new THREE.Mesh(
     new THREE.SphereGeometry(1.5, 32, 18),
-    new THREE.ShaderMaterial({
-      uniforms: { opacity: { value: 0 } },
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      vertexShader: 'varying vec3 vN; varying vec3 vV; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
-      fragmentShader: `
-        uniform float opacity;
-        varying vec3 vN;
-        varying vec3 vV;
-        void main() {
-          float rim = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.2);
-          gl_FragColor = vec4(vec3(1.5, 2.1, 3.2) * (0.06 + rim), opacity);
-          #include <tonemapping_fragment>
-          #include <colorspace_fragment>
-        }`,
-    }),
+    wardMaterial(),
   );
   dome.visible = false;
   scene.add(dome);

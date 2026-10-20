@@ -28,18 +28,10 @@ import { fernGeo, flet, goldLeavesGeo, lantern, spiralStair } from './flets';
 import { C, fieldOf } from './helpers';
 import { mallorn, mallornFarGeo } from './mallorn';
 import { mirror } from './mirror';
-import { basinWaterMaterial, fallSheetMaterial, mirrorWaterMaterial } from './shaders';
+import { basinWaterMaterial, fallSheetMaterial, glowByColour, mirrorWaterMaterial } from '../../nodes/towns/lorien/propsShaders';
 
 // ── the kit ──
 
-// Leaves (and the far trees, and the flowers) glow softly in their own
-// colours, so a crown is luminous gold rather than lit lumps.
-function glowByColour(m) {
-  m.onBeforeCompile = (sh) => {
-    sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance *= vColor.rgb;\n#endif');
-  };
-  m.customProgramCacheKey = () => 'lorien-glow';
-}
 
 export function createLorienKit(renderer) {
   const kit = createShireKit(renderer);
@@ -102,7 +94,7 @@ export function createLorienKit(renderer) {
     water: basinWaterMaterial(K.water),
     fall: fallSheetMaterial(K.water),
   });
-  for (const m of [mats.canopy, mats.leafCard, mats.far, mats.petal]) glowByColour(m);
+  for (const k of ['canopy', 'leafCard', 'far', 'petal']) mats[k] = glowByColour(mats[k]);
   for (const [k, m] of Object.entries(mats)) if (!m.name) m.name = k;
   const shireNight = kit.setNight;
   // dusk and night: the lanterns brighten and their halos spread, the gold

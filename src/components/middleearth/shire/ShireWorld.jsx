@@ -70,7 +70,7 @@ import {
   stepFade,
   stepStride,
 } from './rules';
-import { SWATCH } from './fx';
+import { SWATCH } from '../nodes/shire/fx';
 import './shire.css';
 import '../../../styles/lazy/middleearth.css';
 import GuideCue from '../../guide/GuideCue';

@@ -15,7 +15,7 @@
 // this file makes the kit they are given, and keeps the figures and Bill.
 
 import * as THREE from 'three';
-import { hot } from '../../../../lib/stage3d';
+import { hot } from '../../../../lib/three/stage3dNodes';
 import { mix } from '../../../../lib/paint';
 import { STANCE, TROT, WALK, createStride, createTracker, ease, gaitOffsets, legSwing } from '../../creatures';
 import { makeToyFigure } from '../../mapFigures';

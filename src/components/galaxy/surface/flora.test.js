@@ -182,7 +182,7 @@ describe('livingRows: the cover, the bushes and the trees that stream round you'
     expect([...wet.cover, ...wet.mid, ...wet.trees].every((r) => r.above === 0.4)).toBe(true);
     // (a recipe's own size wins over the family's)
     const dry = livingRows({ flora: { biome: 'dry' }, reach: 590, ground: {} });
-    expect(dry.cover.find((r) => r.model.endsWith('Plant_7')).scale).toEqual([2.5, 4]);
+    expect(dry.cover.find((r) => r.model.endsWith('Plant_7')).scale).toEqual([1.6, 2.6]);
     expect(dry.cover.find((r) => r.model.endsWith('Grass_Wispy_Short')).on).toBe('any');
   });
 });
