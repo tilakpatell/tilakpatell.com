@@ -6,11 +6,11 @@
 // land. The quay's statics are one mesh; the ship is its own group, moved
 // by the scene. Drawing only (place.js says where).
 //
-//   buildProps({ road }) → { group, ship, sail, lamps, dispose }
+//   buildProps({ road }) → { group, ship, sail, gangway, lamps, dispose }
 
 import * as THREE from 'three';
 import { C, merged, part } from '../parts';
-import { QUAY, SHIP, WATER } from './place';
+import { GANGWAY, QUAY, SHIP, WATER } from './place';
 
 const STONE = [0x9a978f, 0x8e8b84, 0xa4a198, 0x878580];
 const COPING = 0xb4b0a6;
@@ -124,11 +124,12 @@ export function buildProps({ road }) {
   for (let z = z0, k = 0; z < z1; z += BLOCK, k++) {
     const len = Math.min(BLOCK, z1 - z);
     parts.push(part(new THREE.BoxGeometry(QUAY.x * 2, QUAY.top - foot, len - 0.04), C(STONE[k % STONE.length]), { at: [0, (QUAY.top + foot) / 2, z + len / 2] }));
-    parts.push(part(new THREE.BoxGeometry(QUAY.x * 2 + 0.3, 0.16, len), C(COPING), { at: [0, QUAY.top + 0.02, z + len / 2] }));
+    // (its top the quay's walking height: place.js's QUAY.top)
+    parts.push(part(new THREE.BoxGeometry(QUAY.x * 2 + 0.3, 0.16, len), C(COPING), { at: [0, QUAY.top - 0.08, z + len / 2] }));
   }
   // the ramp up onto it from the beach
   const ramp = new THREE.BoxGeometry(QUAY.x * 2, 0.3, Math.hypot(z0 - QUAY.from, QUAY.top - WATER));
-  parts.push(part(ramp, C(COPING), { at: [0, (QUAY.top + WATER) / 2, (z0 + QUAY.from) / 2], pitch: -Math.atan2(QUAY.top - WATER, z0 - QUAY.from) }));
+  parts.push(part(ramp, C(COPING), { at: [0, (QUAY.top + WATER) / 2 - 0.15, (z0 + QUAY.from) / 2], pitch: -Math.atan2(QUAY.top - WATER, z0 - QUAY.from) }));
   // bollards along the ship's side, and lamps on slender posts
   const lamps = [];
   for (let z = z0 + 6; z < z1; z += 12) {
@@ -154,6 +155,23 @@ export function buildProps({ road }) {
   lamps.forEach((p, i) => bulbs.setMatrixAt(i, m.makeTranslation(...p)));
   bulbs.name = 'havens:lamps';
   group.add(bulbs);
+  // the gangway: a plank of pale wood from the quay's edge up onto her gunwale, its cleats across it
+  // (its own mesh: taken in as she casts off)
+  const [fx, fy] = GANGWAY.foot;
+  const [hx, hy] = GANGWAY.head;
+  const run = Math.hypot(hx - fx, hy - fy);
+  const slope = Math.atan2(hy - fy, hx - fx);
+  const along = (f, lift = 0) => [fx + (hx - fx) * f - Math.sin(slope) * lift, fy + (hy - fy) * f + Math.cos(slope) * lift, GANGWAY.z];
+  const plank = [part(new THREE.BoxGeometry(run + 0.3, 0.07, 0.8), C(0xc9bba0), { at: along(0.5, -0.035), roll: slope })];
+  for (let f = 0.12; f < 1; f += 0.19) plank.push(part(new THREE.BoxGeometry(0.05, 0.04, 0.72), C(0xa8987c), { at: along(f, 0.02), roll: slope }));
+  // (and a silver rope rail along each side of it, on two posts)
+  for (const s of [-1, 1]) {
+    plank.push(part(new THREE.CylinderGeometry(0.02, 0.02, run, 5), C(SILVER), { at: [...along(0.5, 0.75).slice(0, 2), GANGWAY.z + s * 0.38], roll: slope - Math.PI / 2 }));
+    for (const f of [0.05, 0.95]) plank.push(part(new THREE.CylinderGeometry(0.025, 0.025, 0.75, 5), C(SILVER), { at: [...along(f, 0.37).slice(0, 2), GANGWAY.z + s * 0.38], roll: slope }));
+  }
+  const wood = road.material({ vertexColors: true });
+  const gangway = merged(plank, wood, 'havens:gangway');
+  group.add(gangway);
   const { ship, sail, materials } = buildShip(road);
   ship.position.set(SHIP.moor[0], WATER, SHIP.moor[1]);
   group.add(ship);
@@ -161,10 +179,11 @@ export function buildProps({ road }) {
     group,
     ship,
     sail,
+    gangway,
     lamps,
     dispose() {
       group.traverse((o) => o.geometry?.dispose());
-      for (const mat of [stone, glow, ...materials]) mat.dispose();
+      for (const mat of [stone, glow, wood, ...materials]) mat.dispose();
     },
   };
 }

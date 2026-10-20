@@ -16,11 +16,11 @@ import * as THREE from 'three';
 import { createWater } from '../../water';
 import { buildProps } from './props';
 import { BEATS } from './beats';
-import { DECK, FAREWELL, QUAY, SAIL, SHIP, STAYING, WATER, floorAt, shipAt } from './place';
+import { DECK, FAREWELL, QUAY, SAIL, SHIP, STAYING, WATER, boarding, floorAt, shipAt } from './place';
 
 const MARKS = Object.fromEntries(BEATS.map((b) => [b.id, b]));
 const ABOARD = ['bilbo', 'gandalfwhite', 'elrond', 'galadriel'];
-const BOARD = [MARKS.farewell.deed.at + 1.5, 3.5]; // s into the farewell Frodo starts up into her, and how long it takes
+const BOARD = [MARKS.farewell.deed.at + 1.5, 5]; // s into the farewell Frodo starts up into her, and how long it takes
 const BOB = 0.05; // m she rides up and down at her moorings
 
 const live = (t) => t != null && Number.isFinite(t);
@@ -69,6 +69,8 @@ export function build({ road, heightAt, sky = null }) {
       props.ship.rotation.z = Math.sin(clock * 0.7) * 0.012;
       // (a little more wind in the sail once she's out)
       props.sail.scale.z = 1 + 0.25 * s.k + Math.sin(clock * 1.3) * 0.04;
+      // (the gangway taken in as she casts off)
+      props.gangway.visible = local < SAIL;
     },
     // the quay under the walkers, and her deck once she sails under them
     floor: (x, z) => floorAt(x, z, seen.local),
@@ -83,14 +85,15 @@ export function build({ road, heightAt, sky = null }) {
       if (!atFarewell) return null;
       if (id === 'frodo') {
         const k = boarded();
-        const from = FAREWELL.frodo;
-        const to = onDeck('frodo');
-        const x = from[0] + (to[0] - from[0]) * k;
-        const z = from[1] + (to[1] - from[1]) * k;
-        const y = QUAY.top + (ship.y - QUAY.top) * k;
-        // (turned to the three, then up into her, then at her stern looking back)
-        const yaw = k <= 0 ? facing(from, FAREWELL.sam) : k < 1 ? facing(from, to) : Math.PI;
-        return { x, y, z, yaw, base: k > 0 && k < 1 ? 'walk' : 'idle', speed: k > 0 && k < 1 ? 1 : 0 };
+        // (aboard: at her stern, looking back, with her as she sails)
+        if (k >= 1) {
+          const [x, z] = onDeck('frodo');
+          return { x, y: ship.y, z, yaw: Math.PI, base: 'idle', speed: 0 };
+        }
+        // (turned to the three, then along the quay, up the gangway and down onto her deck)
+        const [x, y, z] = boarding(k);
+        const yaw = k <= 0 ? facing(FAREWELL.frodo, FAREWELL.sam) : Math.PI / 2;
+        return { x, y, z, yaw, base: k > 0 ? 'walk' : 'idle', speed: k > 0 ? 1 : 0 };
       }
       const place = (seen.local >= SAIL ? STAYING : FAREWELL)[id];
       if (!place) return null;

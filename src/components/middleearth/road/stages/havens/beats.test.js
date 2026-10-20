@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BEATS } from './beats';
 import { LORE } from './lore';
-import { DECK, FAREWELL, QUAY, SAIL, SHIP, STAYING, WATER, floorAt, shipAt } from './place';
+import { DECK, FAREWELL, GANGWAY, QUAY, SAIL, SHIP, STAYING, WATER, boarding, floorAt, shipAt } from './place';
 import { LINES } from '../../voicelines';
 import { CLIPS } from '../../../../../lib/clips';
 import { RIGS } from '../../director';
@@ -34,6 +34,23 @@ describe('the Grey Havens’ beats', () => {
     expect(mid).toBeGreaterThan(WATER);
     expect(mid).toBeLessThan(QUAY.top);
     expect(QUAY.top).toBeGreaterThan(WATER);
+  });
+
+  it('Frodo goes up into her by the gangway, over her side, not through it', () => {
+    expect(boarding(0)).toEqual([FAREWELL.frodo[0], QUAY.top, FAREWELL.frodo[1]]);
+    const end = boarding(1);
+    expect(end[0]).toBeCloseTo(SHIP.moor[0] + DECK.frodo[0], 6);
+    expect(end[1]).toBeCloseTo(SHIP.deck, 6);
+    expect(end[2]).toBeCloseTo(SHIP.moor[1] + DECK.frodo[1], 6);
+    // (the gangway's foot on the quay, its head over her rail)
+    expect(GANGWAY.foot[0]).toBeLessThanOrEqual(QUAY.x);
+    expect(GANGWAY.head[1]).toBeGreaterThan(SHIP.deck + 0.8);
+    // (his way never under the gunwale where her side stands, between the quay and her deck)
+    const side = SHIP.moor[0] - SHIP.beam / 2;
+    for (let k = 0; k <= 1; k += 0.01) {
+      const [x, y] = boarding(k);
+      if (x > QUAY.x && x < side + 0.6) expect(y).toBeGreaterThan(QUAY.top - 0.01);
+    }
   });
 
   it('the ship moored by the quay’s end, then out onto the lane carrying those aboard, never back', () => {
