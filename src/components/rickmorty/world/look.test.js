@@ -53,6 +53,14 @@ describe('the Rick and Morty worlds, drawn as the show is', () => {
     }
   });
 
+  it('draws a line round every scene’s characters: the modelled cast by its `ink`, Roy’s built figures by the shapes’ hull', () => {
+    for (const f of ['world/scene.js', 'world/sewer/scene.js', 'portal/Portal3D.js', 'citadel/people.js', 'citadel/townsfolk.js']) expect(readFileSync(join(ROOT, f), 'utf8'), f).toMatch(/ink: [^,}]*CAST_INK/);
+    // (a child of each part, so a part hidden as Roy ages, his hair, his beard, takes its line with it)
+    const roy = readFileSync(join(ROOT, 'world/roy/scene.js'), 'utf8');
+    expect(roy).toMatch(/hull\(\{ group: root \}, ROY_INK\);/);
+    expect(roy).toMatch(/import \{ hull \} from '\.\.\/\.\.\/portal\/cast';/);
+  });
+
   it('draws the cast’s line about two pixels wide at 720p from the indoor camera, thinner further off', () => {
     // (pixels = half the picture's height over tan(half the fov) × the
     // width over the distance: C-137's fov is 55°, the room camera 3.6 m off)

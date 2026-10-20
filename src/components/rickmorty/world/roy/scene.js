@@ -2,7 +2,8 @@
 // for each stage of the life (a backyard with a tire swing, a floodlit
 // field, the carpet store's aisles, a hospital room, then the store again or
 // the woods), toon-shaded like the show (portal/toon.js: flat colour, one
-// step of shadow, no film grade) on lib/stage3d's renderer, with Roy himself built in code: he grows up,
+// step of shadow, a line round the figures, no film grade) on
+// lib/stage3d's renderer, with Roy himself built in code: he grows up,
 // fills out, greys, loses his hair and stoops as the years go by.
 //
 // It draws the life it's handed and decides nothing (./rules.js plays it).
@@ -22,6 +23,7 @@ import { prefersReducedMotion as reduced } from '../../../../lib/hooks';
 import { Pass } from 'three/examples/jsm/postprocessing/Pass.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { toon } from '../../portal/toon';
+import { hull } from '../../portal/cast';
 import { at, batch, hipRoof, kitMaterials, paint, rng, speckle } from '../kit';
 import { makeSky } from '../sky';
 import { TUNING, ageOf, beatWindow, inBand } from './rules';
@@ -30,6 +32,10 @@ import { createFeel, feelGroups } from '../../../../lib/three/feel';
 import { BLOOMS, PLAIN } from '../look';
 
 const { kid: KID, football: FOOTBALL, carpet: CARPET, cancer: CANCER } = TUNING;
+// the show's line round each figure (../../portal/cast.js's hull, a child of
+// each part, so a part hidden as he ages takes its line with it), metres:
+// about two pixels at 720p from the camera's 4 or 5 m
+const ROY_INK = 0.012;
 const SWING = 0.62; // how far the tire swings either way at the end of its rope (radians)
 
 const INK = '#1b1424';
@@ -1196,6 +1202,7 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
     armR.hand.add(P.cane);
     for (const k of ['tache', 'beard', 'glasses', 'tufts', 'back', 'helmet', 'tie', 'tag', 'number', 'cane']) if (P[k]) P[k].visible = false;
     pads.forEach((p) => (p.visible = false));
+    hull({ group: root }, ROY_INK);
     rest(f);
     return f;
   }

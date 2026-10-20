@@ -20,7 +20,7 @@ The ink pass is gone from all five scenes, and the class with it. The modelled c
 
 - No second scene draw and no full-screen edge pass a frame; one extra draw per figure mesh for its hull.
 - The cast's lighter two-step ramp is the shared cast paint, so every Meshy figure on the site (the galaxy's, the universe's landings, the cruiser's crew, the wardrobe) shades the same way.
-- Roy's figures, built in code from many parts, have no line; the Citadel's instanced crowd, hats and gear have none either. Ghosts (the shared painter, `middleearth/towns/ghostsOf.js`), the basement hologram and the jar's Total Rickall ghost hide theirs (a projection has no outline).
+- Roy's figures, built in code from many parts, take the shapes' hull (`portal/cast.js`'s `hull`, a child of each part, so a part hidden as he ages takes its line with it); the Citadel's instanced crowd, hats and gear have none. Ghosts (the shared painter, `middleearth/towns/ghostsOf.js`), the basement hologram and the jar's Total Rickall ghost hide theirs (a projection has no outline).
 - The set pieces the cast places (`SET_PIECES`: the houses, the ships, the car, the machines) and anything taller than 4 m (`INK_TALLEST`) have no line, and no line is drawn within 0.6 m of the eye: a camera that ends up inside a figure or a house sees through it, as before, not a screen of ink.
 - Portal panic's shape fallback keeps its own hull on every tier.
 - The rooms' `noInk` lists stay: the street's ground-light bake still reads its own.
