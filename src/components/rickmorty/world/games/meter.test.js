@@ -9,6 +9,7 @@ import { powerReadout } from './power';
 describe('one meter for a place’s game', () => {
   it('knows which game a place runs, if any', () => {
     expect(kindOf(destinationById('microverse'))).toBe('power');
+    expect(kindOf(destinationById('jerryboree'))).toBe('find');
     expect(kindOf(destinationById('customs'))).toBe(null);
     expect(kindOf(null)).toBe(null);
   });

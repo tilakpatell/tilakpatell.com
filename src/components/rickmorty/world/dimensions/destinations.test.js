@@ -251,6 +251,49 @@ describe('a place that runs on a freeze', () => {
   });
 });
 
+describe('a place that runs on a find', () => {
+  it('has its candidates as people with spots of their own, each with a tell, and only the game ticks its task', () => {
+    const finding = DESTINATIONS.filter((d) => d.find);
+    expect(finding.map((d) => d.id)).toEqual(['jerryboree']);
+    for (const d of finding) {
+      const spots = d.hotspots.map((h) => h.id);
+      const people = d.people.map((p) => p.id);
+      for (const id of d.find.items) {
+        expect(people, `${d.id}: ${id} is someone`).toContain(id);
+        expect(spots, `${d.id}: ${id} has a spot`).toContain(id);
+        expect(d.say[id]?.text, `${d.id}: ${id} has a line`).toBeTruthy();
+        expect(d.acts[id]).toBe(`find-${id}`);
+        expect(d.hotspots.find((h) => h.id === id).verb).toBe('Talk');
+        const tell = d.find.tells[id];
+        expect(tell, `${d.id}: ${id} has a tell`).toBeTruthy();
+        expect(tell.length).toBeLessThanOrEqual(36);
+        expect(tell).not.toMatch(/[!:.]/);
+      }
+      expect(d.find.tells.ours.length).toBeLessThanOrEqual(36);
+      expect(d.find.tells.ours).not.toMatch(/[!:.]/);
+      const tells = [d.find.tells.ours, ...d.find.items.map((id) => d.find.tells[id])];
+      expect(new Set(tells).size).toBe(tells.length);
+      expect(d.tasks.map((t) => t.id)).toContain(d.find.task);
+      // the map's marker on a spot, never on a candidate (it would give ours away)
+      expect(spots).toContain(d.goal);
+      expect(d.find.items).not.toContain(d.goal);
+      expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(d.find.task);
+      expect(Object.values(d.unlock), `${d.id}: a talk gives the achievement`).not.toContain(d.find.unlock);
+      expect(d.find.lost).not.toMatch(/!/);
+      expect(d.find.lost).not.toContain('Rick');
+      expect(d.find.lost.split(/[.?]\s/)).toHaveLength(1);
+    }
+  });
+  it('is the Jerryboree’s six Jerrys standing still, ours dealt each run, forty-five seconds and fifteen a wrong pick', () => {
+    const daycare = destinationById('jerryboree');
+    expect(daycare.find).toMatchObject({ task: 'jerryboree', items: ['jerryreal', 'jerrytv', 'jerrygown', 'jerrytux', 'jerrytrack', 'jerryrobe'], s: 45, cost: 15, who: 'receptionist', unlock: 'jerryboree' });
+    expect(daycare.find.ours).toBe(undefined);
+    expect(daycare.goal).toBe('receptionist');
+    expect(daycare.done).toEqual({});
+    expect(daycare.unlock).toEqual({});
+  });
+});
+
 describe('Anatomy Park', () => {
   it('is a chase: the park map’s four pieces while the diseases hunt, then out through the portal on the clock', () => {
     const park = destinationById('anatomy');
