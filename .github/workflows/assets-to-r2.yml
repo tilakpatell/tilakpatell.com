@@ -19,8 +19,11 @@ name: Copy the buckets to R2
 #   SUPABASE_S3_ACCESS_KEY_ID, SUPABASE_S3_SECRET_ACCESS_KEY: Supabase →
 #     Project Settings → Storage → S3 Access Keys (delete it after the move)
 #   R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY: R2 → Manage API tokens, Object
-#     Read & Write on the two buckets
-# The R2 buckets are made by hand first, named as Supabase's.
+#     Read & Write on the buckets: the Access Key ID (32 hex characters) and
+#     the Secret Access Key (64) it shows once, not the token itself
+# The R2 buckets are made by hand first, named as Supabase's. Besides the
+# two the site reads, Supabase holds bf2-extract (empty on 2026-10-10) and
+# bf2-workspace-backup: named in `buckets`, they're copied too.
 
 on:
   workflow_dispatch:
@@ -53,15 +56,16 @@ jobs:
       RCLONE_CONFIG_SUPABASE_ENDPOINT: https://jzabcqboyemokwifmjmp.storage.supabase.co/storage/v1/s3
       RCLONE_CONFIG_SUPABASE_REGION: ${{ inputs.region }}
       RCLONE_CONFIG_SUPABASE_FORCE_PATH_STYLE: 'true'
-      RCLONE_CONFIG_SUPABASE_ACCESS_KEY_ID: ${{ secrets.SUPABASE_S3_ACCESS_KEY_ID }}
-      RCLONE_CONFIG_SUPABASE_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET_ACCESS_KEY }}
       RCLONE_CONFIG_R2_TYPE: s3
       RCLONE_CONFIG_R2_PROVIDER: Cloudflare
       # (the account's R2 address: wrangler.jsonc's account_id)
       RCLONE_CONFIG_R2_ENDPOINT: https://b12a527ca9fde882ef12c5c60f75f2e8.r2.cloudflarestorage.com
       RCLONE_CONFIG_R2_NO_CHECK_BUCKET: 'true'
-      RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      # (the keys as saved: the first step hands them to rclone)
+      SUPABASE_S3_ACCESS_KEY_ID: ${{ secrets.SUPABASE_S3_ACCESS_KEY_ID }}
+      SUPABASE_S3_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET_ACCESS_KEY }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       BUCKETS: ${{ inputs.buckets }}
     steps:
       # (one version, held to its published checksum)
@@ -72,13 +76,25 @@ jobs:
           unzip -q -j "$RUNNER_TEMP/rclone.zip" '*/rclone' -d "$RUNNER_TEMP/bin"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
+      # Each key to rclone (RCLONE_CONFIG_<remote>_<option>, for this step and
+      # the ones after) with any space or line break a paste left in it taken
+      # out: on 2026-10-21 the R2 key's id held one, and Go refused the header
+      # it went into ("invalid header field value for Authorization"). R2's
+      # are held to their shape, their lengths said when they're not.
       - name: The keys and the buckets
         run: |
-          for k in RCLONE_CONFIG_SUPABASE_ACCESS_KEY_ID RCLONE_CONFIG_SUPABASE_SECRET_ACCESS_KEY RCLONE_CONFIG_R2_ACCESS_KEY_ID RCLONE_CONFIG_R2_SECRET_ACCESS_KEY; do
-            [ -n "${!k}" ] || { echo "::error::a secret is missing (${k#RCLONE_CONFIG_}): see this workflow's header"; exit 1; }
+          for k in SUPABASE_S3_ACCESS_KEY_ID SUPABASE_S3_SECRET_ACCESS_KEY R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY; do
+            v=$(printf '%s' "${!k}" | tr -d '[:space:]')
+            [ -n "$v" ] || { echo "::error::a secret is missing ($k): see this workflow's header"; exit 1; }
+            echo "::add-mask::$v"
+            to="RCLONE_CONFIG_${k/_S3_/_}"
+            export "$to=$v"
+            echo "$to=$v" >> "$GITHUB_ENV"
           done
+          [[ $RCLONE_CONFIG_R2_ACCESS_KEY_ID =~ ^[0-9a-fA-F]{32}$ ]] || { echo "::error::R2_ACCESS_KEY_ID is ${#RCLONE_CONFIG_R2_ACCESS_KEY_ID} characters, not R2's 32 hex: see this workflow's header"; exit 1; }
+          [[ $RCLONE_CONFIG_R2_SECRET_ACCESS_KEY =~ ^[0-9a-fA-F]{64}$ ]] || { echo "::error::R2_SECRET_ACCESS_KEY is ${#RCLONE_CONFIG_R2_SECRET_ACCESS_KEY} characters, not R2's 64 hex: see this workflow's header"; exit 1; }
           for b in $BUCKETS; do
-            case "$b" in site-assets|bf2017-assets) ;; *) echo "::error::not one of the buckets: $b"; exit 1 ;; esac
+            case "$b" in site-assets|bf2017-assets|bf2-extract|bf2-workspace-backup) ;; *) echo "::error::not one of the buckets: $b"; exit 1 ;; esac
           done
           rclone lsd supabase:
           rclone lsd r2:
