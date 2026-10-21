@@ -1,7 +1,8 @@
 // The ground war played through in Node, on the rules alone (no three.js):
 // the population made round you, every soldier stepped by the fight at 30
-// Hz, their bolts flown, the far fights settled, the director's clock run,
-// for simulated minutes on real worlds. `npm run test:ai -- ground`.
+// Hz on the game's brain (brain.js, its navgrid round you on the world's own
+// ground), their bolts flown, the far fights settled, the director's clock
+// run, for simulated minutes on real worlds. `npm run test:ai -- ground`.
 import { describe, expect, test } from 'vitest';
 import { createTokens } from '../../../../lib/ai/squad';
 import { siteOf } from '../sites';
@@ -9,6 +10,7 @@ import { heightFor, standable } from '../sites/validity';
 import { weaponOf } from '../weaponRules';
 import { createBolts, farExchange } from './bolts';
 import { createDirector } from './director';
+import { flatMinds } from './fixtures/minds';
 import { aimError, fightStep, grudge, squadsOf } from './fight';
 import { covertFor } from './landing';
 import { createPopulation } from './population';
@@ -31,6 +33,8 @@ function playOn(id, effects, { seed = 11 } = {}) {
   const tokens = createTokens({ pools: { shot: 3, melee: 1 }, timeout: 0.9 });
   const bolts = createBolts({ speed: 90, life: 2 });
   const director = createDirector({ turfs, effects, tier: 'high', rand });
+  // (the brain's module and its navgrid on this world's ground, round you: as groundScene.js makes them)
+  const { minds, window: navWin } = flatMinds({ heightAt: kit.height, standable: ok, at: site.land.at });
   let t = 0;
   let squadAt = 0;
   const log = { atYou: 0, targetedYou: new Set(), events: [], kills: 0, bolts: 0, far: 0 };
@@ -42,12 +46,13 @@ function playOn(id, effects, { seed = 11 } = {}) {
   const step = (you) => {
     t += DT;
     pop.update({ x: you.x, z: you.z, heading: null });
+    navWin.update(you.x, you.z);
     const far = t - squadAt >= 0.5;
     if (far) squads.update(t - squadAt);
     const live = [...pop.soldiers.values()].filter((s) => s.alive);
-    const bodies = live.map((s) => ({ id: s.id, x: s.b.x, z: s.b.z, vel: null, side: s.side, kind: s.kind, squad: s.squad, firingAt: t - (s.firedAt ?? -9) < 1 ? s.firingAt : null }));
-    bodies.push({ id: 'you', x: you.x, z: you.z, vel: [0, 0], side: effects.side ?? null, kind: 'you', you: true });
-    const world = { t, war: effects.war, bodies, seesThrough: () => true, tokens, squads };
+    const bodies = live.map((s) => ({ id: s.id, x: s.b.x, y: kit.height(s.b.x, s.b.z) + 1.1, z: s.b.z, vel: null, side: s.side, kind: s.kind, squad: s.squad, firingAt: t - (s.firedAt ?? -9) < 1 ? s.firingAt : null }));
+    bodies.push({ id: 'you', x: you.x, y: kit.height(you.x, you.z) + 1.1, z: you.z, vel: [0, 0], side: effects.side ?? null, kind: 'you', you: true });
+    const world = { t, war: effects.war, bodies, seesThrough: () => true, tokens, squads, soldiers: pop.soldiers, minds };
     let seen = false;
     const settle = new Map();
     for (const s of live) {
@@ -68,21 +73,31 @@ function playOn(id, effects, { seed = 11 } = {}) {
         settle.set(s.squad, foe.squad);
         continue;
       }
+      // (its gun as the scene fires it: a bolt each time its brain fires, by the gun's own spread; lost, a burst where it last had it)
       s.cool = (s.cool ?? 0) - DT;
-      if (out.fire && s.cool <= 0 && !(s.burst > 0)) s.burst = burstOf(s.weapon);
-      if (!(s.burst > 0 && s.cool <= 0 && out.aim)) continue;
-      s.burst -= 1;
-      s.cool = s.burst > 0 ? Math.max(BURST.gap, weaponOf(s.weapon).every) : BURST.pause[0] + rand() * (BURST.pause[1] - BURST.pause[0]);
+      if (out.fire && out.suppressive && s.cool <= 0 && !(s.burst > 0)) {
+        s.burst = burstOf(s.weapon);
+        s.burstAt = { aim: out.aim, target: out.target };
+      }
+      let shot = null;
+      if (out.fire && !out.suppressive && out.aim) shot = { aim: out.aim, target: out.target, e: weaponOf(s.weapon).spread };
+      else if (s.burst > 0 && s.cool <= 0 && s.burstAt) {
+        s.burst -= 1;
+        s.cool = s.burst > 0 ? Math.max(BURST.gap, weaponOf(s.weapon).every) : BURST.pause[0] + rand() * (BURST.pause[1] - BURST.pause[0]);
+        const far = Math.hypot(s.burstAt.aim.x - s.b.x, s.burstAt.aim.z - s.b.z);
+        shot = { ...s.burstAt, e: aimError(s, foe ? { x: foe.b.x, z: foe.b.z, vel: null } : { vel: null }, far, { now: t }) * 2.5 };
+      }
+      if (!shot) continue;
       s.firedAt = t;
-      s.firingAt = out.target;
-      const dist = Math.hypot(out.aim.x - s.b.x, out.aim.z - s.b.z);
-      if (out.target === 'you') {
+      s.firingAt = shot.target;
+      const dist = Math.hypot(shot.aim.x - s.b.x, shot.aim.z - s.b.z);
+      if (shot.target === 'you') {
         log.atYou += 1;
         continue;
       }
-      const e = aimError(s, foe ? { x: foe.b.x, z: foe.b.z, vel: null } : { vel: null }, dist, { now: t }) * 2.5;
+      const e = shot.e;
       const l = dist || 1;
-      bolts.fire({ from: [s.b.x, 1.4, s.b.z], dir: [(out.aim.x - s.b.x) / l + (rand() - 0.5) * e * 2, 0, (out.aim.z - s.b.z) / l + (rand() - 0.5) * e * 2], side: s.side, owner: s.id, damage: damageOf(s.weapon, dist), range: weaponOf(s.weapon).range, target: out.target });
+      bolts.fire({ from: [s.b.x, 1.4, s.b.z], dir: [(shot.aim.x - s.b.x) / l + (rand() - 0.5) * e * 2, 0, (shot.aim.z - s.b.z) / l + (rand() - 0.5) * e * 2], side: s.side, owner: s.id, damage: damageOf(s.weapon, dist, s), range: weaponOf(s.weapon).range, target: shot.target });
       log.bolts += 1;
     }
     const targets = [...pop.soldiers.values()].filter((s) => s.alive).map((s) => ({ id: s.id, x: s.b.x, y: 0, z: s.b.z, r: 0.45, h: 1.8, side: s.side }));
@@ -110,6 +125,7 @@ function playOn(id, effects, { seed = 11 } = {}) {
     squads,
     director,
     log,
+    minds,
     play(secs, you) {
       for (let k = 0; k < secs / DT; k++) step(typeof you === 'function' ? you(t) : you);
       return log;
@@ -132,6 +148,8 @@ describe('the ground war, played through', () => {
     w.play(20, { x: pad[0] + 20, z: pad[1] + 20 });
     expect(w.log.targetedYou.size).toBeGreaterThan(0);
     expect(w.log.atYou).toBeGreaterThan(0);
+    // (the ones who fought you thought with the game's brain)
+    expect(w.minds.stats.thinks).toBeGreaterThan(0);
     expect(types(w.log)).toContain('hunt');
     w.play(40, { x: covert[0], z: covert[1] });
     expect(types(w.log)).toContain('calm');
@@ -166,6 +184,7 @@ describe('the ground war, played through', () => {
     w.play(1200, you);
     const seen = types(w.log);
     expect(seen).toContain('raid');
+    expect(w.minds.stats.thinks).toBeGreaterThan(0);
     expect(seen).toContain('post-lost');
     expect(seen.lastIndexOf('post-held')).toBeGreaterThan(seen.indexOf('post-lost'));
   });

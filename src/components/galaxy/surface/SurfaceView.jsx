@@ -27,7 +27,7 @@ const touchWord = (id) => TOUCH[id] ?? TOUCH[kindOf(id)] ?? ABILITIES[id].name;
 // A world outside the galaxy (the Rick and Morty planets) hands in its own
 // `site` (made whole), `missionSpec`, and its books of `models`, `rides`,
 // `props`, `scatter` and `figures` (scene.js's header) in place of `system`.
-export default function SurfaceView({ system = null, site = null, mission = null, missionSpec = null, models = null, rides = null, props: built = null, scatter = null, figures = null, ship, hero = null, loadout, build = null, found, done, compass, net = null, handle, onEvent, effects = null, skillFx = null, frozen = false }) {
+export default function SurfaceView({ system = null, site = null, mission = null, missionSpec = null, models = null, rides = null, props: built = null, scatter = null, figures = null, ship, hero = null, loadout, build = null, found, done, compass, net = null, handle, onEvent, effects = null, difficulty = null, skillFx = null, frozen = false }) {
   const saber = Boolean(hero && heroById(hero.id)?.weapon === 'saber');
   // (the hero's own two abilities, on the buttons: abilityRules.js)
   const powers = abilitiesOf(hero ? heroSpec(hero) : null);
@@ -47,7 +47,7 @@ export default function SurfaceView({ system = null, site = null, mission = null
   // (a hero picked goes on in the world as it is: scene.js's setHero; another
   // mission is another world, made again)
   const { host, on, meant, rt, progress } = useWorld(surfaceModule, {
-    props: { system, site, mission, missionSpec, models, rides, props: built, scatter, figures, ship, hero, loadout, build, found, done, compass, net, reduced, effects, skillFx, frozen },
+    props: { system, site, mission, missionSpec, models, rides, props: built, scatter, figures, ship, hero, loadout, build, found, done, compass, net, reduced, effects, difficulty, skillFx, frozen },
     // (another of the world's maps, a district, is another world, made again)
     rebuild: `${missionSpec?.id ?? mission ?? 'explore'}${site?.district ? `@${site.district}` : ''}`,
     onEvent: (e) => {

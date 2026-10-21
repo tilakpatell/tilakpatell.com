@@ -58,6 +58,7 @@ import { wornFiles } from '../components/rickmorty/wardrobe/looks';
 import { useLooks } from '../components/rickmorty/wardrobe/useLooks';
 import { toggleGuide } from '../lib/palette';
 import { Menu, MenuItem, Prompt, Reticle, reticleState } from '../runtime/hud';
+import { DIFFICULTY_KEY, difficultyFrom, difficultyLabel, nextDifficulty } from '../components/galaxy/surface/ground/difficulty';
 import { wayOut } from '../components/worlds/worlds';
 import GuideCue from '../components/guide/GuideCue';
 import { EMOTES, wheelAngle } from '../lib/emote';
@@ -160,6 +161,14 @@ export default function GalaxySurface() {
   // this world (warEffects.js: the troopers you meet are theirs); an assault
   // here is that war's, fought for one of its sides
   const [oathKept, setOathKept] = useState(() => readAllegiance(local.get(SIDE_KEY)));
+  // the ground war's one difficulty (its soldiers think with the game's brain: ground/difficulty.js), the Menu's, kept; ?difficulty= for a check
+  const [difficulty, setDifficulty] = useState(() => difficultyFrom(params.get('difficulty'), local.get(DIFFICULTY_KEY)));
+  const harder = () => {
+    const next = nextDifficulty(difficulty);
+    setDifficulty(next);
+    local.set(DIFFICULTY_KEY, next);
+    view.current?.input?.('difficulty', next);
+  };
   // (and, for the people's talk: the side you swore to, and your rank in it, as a step up its ladder)
   // (in the ground's war, its film's: siteWar.js)
   const effects = useMemo(() => groundEffects(id, oathKept, Date.now()), [id, oathKept]);
@@ -581,7 +590,7 @@ export default function GalaxySurface() {
       <h1 className="sr-only">
         {sys.name}: {site.place}
       </h1>
-      <SurfaceView system={id} site={site.district ? site : null} mission={mission?.id ?? null} ship={ship} hero={hero} loadout={loadout} build={build} found={found} done={done} compass={compass} net={online.client} handle={view} onEvent={onEvent} effects={effects} skillFx={skillFx} />
+      <SurfaceView system={id} site={site.district ? site : null} mission={mission?.id ?? null} ship={ship} hero={hero} loadout={loadout} build={build} found={found} done={done} compass={compass} net={online.client} handle={view} onEvent={onEvent} effects={effects} difficulty={difficulty} skillFx={skillFx} />
 
       {/* where you are, and how much of it you've found */}
       <div className="surface-where">
@@ -802,6 +811,9 @@ export default function GalaxySurface() {
         </button>
         <Menu className="surface-menu" todo={site.quests.length > 0 ? { onOpen: () => setList(true), done: done.length, total: site.quests.length } : null} way={wayOut(pathname)}>
           <MenuItem onClick={() => modes.setOpen(true)}>Change mode</MenuItem>
+          <MenuItem keep onClick={harder}>
+            Difficulty: {difficultyLabel(difficulty)}
+          </MenuItem>
           {looking && looking.mode !== 'touch' && (
             <MenuItem keep onClick={() => view.current?.input?.('lookMode', looking.mode === 'lock' ? 'drag' : 'lock')}>
               Look: {looking.mode === 'lock' ? 'Click to lock' : 'Drag'}

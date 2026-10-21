@@ -2,12 +2,17 @@ import { describe, expect, test } from 'vitest';
 import { createTokens } from '../../../../lib/ai/squad';
 import { WEAPONS } from '../weaponRules';
 import { FACING, GRUDGE, aimError, fightStep, grudge, indexBodies, squadsOf, suppress, threatOf, senseAll } from './fight';
+import { flatMinds } from './fixtures/minds';
 import { TROOPS, newSoldier } from './troops';
 
 let n = 0;
 const mk = (kind, side, x, z, yaw = 0, o = {}) => newSoldier({ id: o.id ?? `s${n++}`, kind, side, role: o.role ?? 'post', at: [x, z], yaw, home: o.home ?? [x, z], beat: o.beat, squad: o.squad ?? `q${n}` }, () => 0);
 const bodyOf = (s) => ({ id: s.id, x: s.b.x, z: s.b.z, vel: [0, 0], side: s.side, kind: s.kind, squad: s.squad, firingAt: s.firingAt ?? null });
-const worldOf = (soldiers, extra = [], o = {}) => ({ t: 0, war: 'gcw', bodies: [...soldiers.map(bodyOf), ...extra], seesThrough: o.seesThrough ?? (() => true), tokens: o.tokens ?? createTokens({ pools: { shot: 3, melee: 1 }, timeout: 0.9 }), squads: o.squads ?? null });
+// (each soldier thinks with the game's brain, on flat open ground: fixtures/minds.js)
+const worldOf = (soldiers, extra = [], o = {}) => {
+  const seesThrough = o.seesThrough ?? (() => true);
+  return { t: 0, war: 'gcw', bodies: [...soldiers.map(bodyOf), ...extra], seesThrough, tokens: o.tokens ?? createTokens({ pools: { shot: 3, melee: 1 }, timeout: 0.9 }), squads: o.squads ?? null, minds: flatMinds({ seesThrough }).minds };
+};
 const DT = 1 / 30;
 // step every soldier for `secs`, the world's bodies kept up to date; outs by id
 function run(soldiers, w, secs, { extra = () => [], moveYou = null } = {}) {

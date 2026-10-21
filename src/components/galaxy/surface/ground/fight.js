@@ -1,29 +1,38 @@
-// The fight: a soldier of any side senses everyone round it, picks its
-// threat among them by the war's sides, and fights it on hostiles.js's head
-// (hold, strafe, close, back, cover, flank, look, search), with the gates the
-// ground war adds: no shot without a line, none till it faces the target
-// within 25°, a target seen beyond range closed on, aim that misses more at
-// range, across, suppressed and on a burst's first shot, a mover in sight
-// led (where it'll be when the bolt gets there), the squad's nerve
-// choosing what it may do, and shot tokens per target. With nobody to fight
-// it walks its beat or holds its post. Pure, tested. The design:
-// docs/superpowers/specs/2026-10-08-ground-factions-design.md, section 6.
+// The fight: a soldier of any side senses everyone round it, knows its
+// enemies by the war's sides (and you by your oath, or by a grudge), and
+// fights with the game's brain (src/lib/battlefront/ai/soldierBrain.js,
+// through brain.js: the target the game's scores pick, its template's
+// tactics, cover, firing patterns and aim box). Round the brain the ground
+// war keeps what the brain has no part of: who is an enemy (the war's
+// relation, the grudge); shot tokens per target; the squad's nerve, its
+// confidence read into the brain's posture (a broken squad flees) and its
+// flankers sent round while it presses; the leash (a soldier keeps within
+// reach of its post or its beat, and lets be a target past it); a target
+// seen beyond its engage distance closed on; no shot till its body faces
+// the target within 25° (the brain turns at once, a body here turns at its
+// pace); and, lost, one burst where it last had it. With nobody to fight it
+// walks its beat or holds its post. Pure, tested. The design:
+// docs/superpowers/specs/2026-10-08-ground-factions-design.md, section 6,
+// and 2026-10-21-battlefront-by-default-design.md, decision 6.
 //
-// world: { t (seconds), war, bodies: [{ id, x, z, vel, side, kind, squad?,
-//   firingAt?, you? }], seesThrough(a, b), tokens (lib/ai/squad's), squads? }
+// world: { t (seconds), war, bodies: [{ id, x, y?, z, vel, side, kind,
+//   squad?, firingAt?, you? }], seesThrough(a, b), tokens (lib/ai/squad's),
+//   squads?, minds (brain.js's createMinds: without it, or before its
+//   navgrid is in, nobody fights and each keeps to its beat or its post) }
 // senseAll(s, world, dt); threatOf(s, world) → { id, x, z, vel, side,
-//   visible, seenAt } | null; aimError(s, target, dist, { first, now });
+//   visible, seenAt, you, shooting } | null; aimError(s, target, dist,
+//   { first, now }) (the far fights': bolts.js's farExchange);
 // grudge(s, squads, now, at?) (at: where you shot from: they know it);
-// fightStep(s, world, dt, rand) → { x, z, yaw, mode, moving, aim, fire,
-//   suppressive, guessed, target }; squadsOf(soldiers, { reach, war }) →
-//   { update(dt), died(id), of(id), membersOf(id), postureOf(id),
-//   confidenceOf(id), isFlanker(id) }; suppress(s, now); grudge(s, squads, now).
+// fightStep(s, world, dt, rand) → { x, z, yaw, mode, moving, aim, fire (a
+//   bolt this frame), suppressive, guessed, target, stuck };
+//   squadsOf(soldiers, { reach, war }) → { update(dt), died(id), of(id),
+//   membersOf(id), postureOf(id), confidenceOf(id), isFlanker(id) };
+//   suppress(s, now, value?) (value: the shooter's suppression, which fills
+//   the brain's to 1, where it hides).
 
 import { belief, createSenses, sense } from '../../../../lib/ai/perception';
-import { lead } from '../../../../lib/combat/accuracy';
-import { BOLT_SPEED } from '../../../../lib/combat/bolt';
 import { confidence, createSquads, frontline, flankers as flankersOf, morale, posture } from '../../../../lib/ai/squad';
-import { hostileStep, turnToward, walkTo } from '../hostiles';
+import { turnToward, walkTo } from '../hostiles';
 import { weaponOf } from '../weaponRules';
 import { relation, standingOf } from './standing';
 import { TROOPS } from './troops';
@@ -36,6 +45,10 @@ export const SENSE = 0.1; // seconds between a soldier's looks round
 const OUT_OF_REACH = 10; // seconds a soldier lets be a target its leash won't reach
 const ENGAGED = 20; // seconds a fight stretches the leash after the last sight
 const WALK = 0.42; // of its run, on a beat or going home
+const TURN = 3; // radians a second a body turns to where its brain looks (the ground's look's own pace)
+const FLANK = 12; // metres out to the side of its target a flanker makes for, by hand
+// the brain's tactic as the ground's bodies are posed for it (lib/ai/body's modes)
+const MODE = { attack: 'strafe', cover: 'cover', hide: 'cover', flee: 'back', close: 'close', advance: 'advance', objective: 'advance', follow: 'advance', interact: 'hold' };
 
 const P = (x, z) => ({ x, y: 0, z });
 const velOf = (v) => (Array.isArray(v) ? { x: v[0], y: 0, z: v[1] } : v ? { x: v.x ?? 0, y: 0, z: v.z ?? 0 } : null);
@@ -49,6 +62,8 @@ const enemyTo = (s, b, world) => {
   return relation(s.side, b.side, world.war) === 'enemy';
 };
 
+// (a soldier with a brain senses with the brain's senses, the game's sight:
+// brain.js puts them on it; one without, with its troop's)
 export function senseAll(s, world, dt) {
   const t = troopOf(s);
   s.senses ??= createSenses({ sight: { range: t.range * 1.3, cone: t.cone, far: 1.6 }, hearing: { range: t.range }, memory: 7, intuition: 2.5 });
@@ -56,11 +71,11 @@ export function senseAll(s, world, dt) {
   s.me.pos.x = s.b.x;
   s.me.pos.z = s.b.z;
   s.me.dir = { x: Math.sin(s.b.yaw), y: 0, z: Math.cos(s.b.yaw) };
-  const reach = t.range * 1.3;
+  const reach = s.senses.sight.range;
   const targets = [];
   for (const b of world.bodies) {
     if (b.id === s.id || Math.abs(b.x - s.b.x) > reach || Math.abs(b.z - s.b.z) > reach) continue;
-    targets.push({ id: b.id, at: P(b.x, b.z), vel: velOf(b.vel), hostile: enemyTo(s, b, world), faction: b.side ?? null });
+    targets.push({ id: b.id, at: { x: b.x, y: b.y ?? 0, z: b.z }, vel: velOf(b.vel), hostile: enemyTo(s, b, world), faction: b.side ?? null });
   }
   sense(s.senses, s.me, { targets }, dt, { seesThrough: world.seesThrough ?? null });
 }
@@ -118,7 +133,7 @@ export function threatOf(s, world) {
       if (b.id === s.target) score += 8;
       if (score > bestScore) {
         bestScore = score;
-        best = { id: b.id, x: bel.visible ? b.x : bel.at.x, z: bel.visible ? b.z : bel.at.z, vel: bel.visible ? velOf(b.vel) : bel.vel, side: b.side, visible: bel.visible, seenAt: bel.seenAt, you: Boolean(b.you) };
+        best = { id: b.id, x: bel.visible ? b.x : bel.at.x, z: bel.visible ? b.z : bel.at.z, vel: bel.visible ? velOf(b.vel) : bel.vel, side: b.side, visible: bel.visible, seenAt: bel.seenAt, you: Boolean(b.you), shooting: Boolean(shooting) };
       }
     }
   return best;
@@ -140,8 +155,12 @@ export function aimError(s, target, dist, { first = false, now = s.now ?? 0 } = 
   return w.spread * byRange * (1 + across / 6) * suppressed * (first ? 1.5 : 1);
 }
 
-export const suppress = (s, now) => {
+// a near miss: its head down a moment (the far fights' aim), and the
+// brain's suppression filled by the shooter's (its tactics' value, bots.js's
+// rule), fading over the soldier's own tactics' time (fightStep)
+export const suppress = (s, now, value = 0) => {
   s.suppressed = now + SUPPRESS.for;
+  if (value > 0) s.suppression = Math.min(1, (s.suppression ?? 0) + value);
 };
 
 // at: where you were when you shot (they know it, as if they'd heard it)
@@ -175,93 +194,130 @@ function about(s, dt) {
   return { x: s.b.x, z: s.b.z, yaw: turnToward(s.b.yaw, s.postYaw, 2 * dt), mode: 'post', moving: 0 };
 }
 
-const OPTIONS_BY = { retreat: ['back', 'cover'] };
+// the point a flanker makes for: out to the side of its target, the side it stands on
+function flankOf(s, threat) {
+  const ax = s.b.x - threat.x;
+  const az = s.b.z - threat.z;
+  const l = Math.hypot(ax, az) || 1;
+  const side = (s.id.length + Math.floor(s.home[0])) % 2 ? 1 : -1;
+  return [threat.x + (az / l) * FLANK * side + (ax / l) * FLANK * 0.5, threat.z - (ax / l) * FLANK * side + (az / l) * FLANK * 0.5];
+}
+
+// lost: one burst where it last had it, if it had a line there (the cover between takes it)
+function lostBurst(s, now, t, facing = true) {
+  if (!(s.lost && s.lost.line && !s.lost.shot && now - s.lost.at <= LOST && t.weapon && facing)) return null;
+  if (Math.hypot(s.lost.x - s.b.x, s.lost.z - s.b.z) > t.range) return null;
+  s.lost.shot = true;
+  return { aim: { x: s.lost.x, z: s.lost.z }, fire: true, suppressive: true, target: s.lost.id };
+}
 
 export function fightStep(s, world, dt, rand = Math.random) {
   const now = world.t;
   s.now = now;
   const t = troopOf(s);
+  const quiet = { aim: null, fire: false, suppressive: false, guessed: false, target: null, stuck: 0 };
+  const minds = world.minds ?? null;
+  // (no minds, or their navgrid not in yet: the beat and the post meanwhile)
+  if (!minds?.ready()) {
+    s.target = null;
+    return { ...about(s, dt), ...quiet };
+  }
+  // (what every soldier's world reads, gathered once a step: the scene's soldiers, or those with minds)
+  if (minds.at !== now) minds.frame({ bodies: world.bodies, soldiers: world.soldiers ?? null, war: world.war, t: now });
+  const m = minds.mindOf(s, rand);
+  // (its nerves settle over its own tactics' time, as the sim's bots' do: bots.js)
+  if (s.suppression) s.suppression = Math.max(0, s.suppression - dt / (m.brain.tactics.suppression?.time ?? 10));
   s.senseAcc = (s.senseAcc ?? s.mind?.sense ?? 0) + dt;
   if (s.senseAcc >= SENSE || !s.me) {
     senseAll(s, world, s.senseAcc);
     s.senseAcc = 0;
   }
   const threat = threatOf(s, world);
-  const quiet = { aim: null, fire: false, suppressive: false, guessed: false, target: null };
   if (!threat) {
     s.target = null;
+    m.engaged = false;
+    s.stuckFor = 0;
     // (a fight just over: home first, then the beat or the post)
-    if (s.engagedUntil > now && s.lost && now - s.lost.at <= LOST && !s.lost.shot && s.lost.line) {
-      s.lost.shot = true;
-      return { x: s.b.x, z: s.b.z, yaw: s.b.yaw, mode: 'look', moving: 0, ...quiet, aim: { x: s.lost.x, z: s.lost.z }, fire: true, suppressive: true, target: s.lost.id };
-    }
+    const burst = s.engagedUntil > now ? lostBurst(s, now, t) : null;
+    if (burst) return { x: s.b.x, z: s.b.z, yaw: s.b.yaw, mode: 'look', moving: 0, ...quiet, ...burst };
     return { ...about(s, dt), ...quiet };
   }
-  if (threat.visible) {
-    s.engagedUntil = now + ENGAGED;
-    s.lost = { id: threat.id, x: threat.x, z: threat.z, at: now, shot: false, line: false };
-  }
-  s.target = threat.id;
-  const reach = s.leash + t.range;
-  // the head hostiles.js's enemies think with, on this soldier's numbers
-  const head = (s.head ??= { b: s.b, hostile: { range: t.range, cone: t.cone }, spec: { roam: 6, speed: t.speed * WALK }, home: s.home, mind: { mode: 'wander', goal: null, thinkAt: s.mind?.phase ?? 0, clock: 0 } });
-  head.spec.leash = reach;
-  head.hp = s.hp;
-  head.hpMax = s.hpMax;
-  const target = threat.id;
-  const tokens = world.tokens ? { held: (kind, who) => world.tokens.held(kind, who, target) } : null;
+  // (where it last had a clear line to it: a sight the senses haven't caught up with, the line gone, keeps the last)
+  const line = !world.seesThrough || world.seesThrough(P(s.b.x, s.b.z), P(threat.x, threat.z));
+  if (threat.visible) s.engagedUntil = now + ENGAGED;
+  if (threat.visible && line) s.lost = { id: threat.id, x: threat.x, z: threat.z, at: now, shot: false, line: true };
   const posture = world.squads?.postureOf?.(s.id) ?? 'hold';
-  const options = OPTIONS_BY[posture] ?? (posture === 'press' && world.squads?.isFlanker?.(s.id) ? ['flank', 'look', 'search'] : null);
-  const allies = (indexOf(world).bySide.get(s.side) ?? []).filter((b) => b.id !== s.id && Math.abs(b.x - s.b.x) < 30 && Math.abs(b.z - s.b.z) < 30);
-  const you = { x: threat.x, z: threat.z, vel: threat.vel };
-  let out = hostileStep(head, { you, allies, seesThrough: world.seesThrough ?? null, tokens, who: s.id, options }, dt, rand);
-  // (known of, not seen by its head: it turns to where it is)
-  if (!head.belief) out = { ...out, yaw: turnToward(s.b.yaw, Math.atan2(threat.x - s.b.x, threat.z - s.b.z), 3 * dt), mode: out.mode === 'wander' ? 'look' : out.mode };
+  const reach = s.leash + t.range;
+  const fromHome = (x, z) => Math.hypot(x - s.home[0], z - s.home[1]);
   const d = Math.hypot(threat.x - s.b.x, threat.z - s.b.z);
-  const home = (x, z) => Math.hypot(x - s.home[0], z - s.home[1]) <= reach;
-  // close to range: seen beyond it, it walks in (never past the stretched leash)
-  if (d > t.range) {
-    const w = walkTo(s.b, { x: threat.x, z: threat.z }, t.speed * 0.7, dt);
-    // (out of its reach, or out of range with its squad's nerve gone)
-    if (posture === 'retreat' || !home(w.x, w.z)) {
+  const engage = Math.min(t.range, m.brain.tactics.engage?.distance ?? t.range);
+  if (d > engage) {
+    // seen beyond it, it walks in: never past its reach, never with its squad's nerve gone
+    const ux = (threat.x - s.b.x) / d;
+    const uz = (threat.z - s.b.z) / d;
+    if (posture === 'retreat' || fromHome(s.b.x + ux, s.b.z + uz) > Math.max(reach, fromHome(s.b.x, s.b.z))) {
       // out of its reach: it lets that one be a while, and goes back about its business
       s.ignore = { id: threat.id, until: now + OUT_OF_REACH };
       s.target = null;
-      world.tokens?.release('shot', s.id, target);
-      return { ...about(s, dt), aim: null, fire: false, suppressive: false, guessed: false, target: null };
+      world.tokens?.release('shot', s.id, threat.id);
+      m.engaged = false;
+      return { ...about(s, dt), ...quiet };
     }
-    out = { ...out, x: w.x, z: w.z, yaw: w.yaw, moving: w.moving, mode: 'advance' };
-  } else if (posture === 'retreat' && !['back', 'cover'].includes(out.mode)) {
-    // (nowhere to hide: it gives ground, facing what it's backing from)
-    const ax = s.b.x - threat.x;
-    const az = s.b.z - threat.z;
-    const l = Math.hypot(ax, az) || 1;
-    const nx = s.b.x + (ax / l) * t.speed * 0.5 * dt;
-    const nz = s.b.z + (az / l) * t.speed * 0.5 * dt;
-    const yaw = turnToward(s.b.yaw, Math.atan2(-ax, -az), 3 * dt);
-    out = home(nx, nz) ? { ...out, x: nx, z: nz, yaw, moving: 1, mode: 'back' } : { ...out, x: s.b.x, z: s.b.z, yaw, moving: 0, mode: 'back' };
   }
-  if (!home(out.x, out.z)) out = { ...out, x: s.b.x, z: s.b.z, moving: 0 };
-  // the gates: in range, a line to it, facing it, a token for this target
-  const line = !world.seesThrough || world.seesThrough(P(s.b.x, s.b.z), P(threat.x, threat.z));
-  if (s.lost && threat.visible) s.lost.line = line;
-  const facing = Math.abs(wrap(Math.atan2(threat.x - out.x, threat.z - out.z) - out.yaw)) <= FACING;
-  let fire = false;
-  let suppressive = false;
-  if (t.weapon && d <= t.range && facing) {
-    if (threat.visible && line) fire = world.tokens ? world.tokens.claim('shot', s.id, { target }) : true;
-    else if (s.lost && s.lost.line && !s.lost.shot && now - s.lost.at <= LOST) {
-      // lost: one short burst where it last had it, which the cover between takes
-      s.lost.shot = true;
-      fire = true;
-      suppressive = true;
-    }
-  } else if (world.tokens && !threat.visible) world.tokens.release('shot', s.id, target);
-  // (a mover in sight is led: where it'll be when the bolt gets there)
-  const v = threat.visible && !suppressive ? velOf(threat.vel) : null;
-  const led = v ? lead([threat.x, 0, threat.z], [v.x, 0, v.z], [out.x, 0, out.z], BOLT_SPEED) : null;
-  const aim = suppressive ? { x: s.lost.x, z: s.lost.z } : led ? { x: led[0], z: led[2] } : { x: threat.x, z: threat.z };
-  return { x: out.x, z: out.z, yaw: out.yaw, mode: out.mode, moving: out.moving, aim, fire, suppressive, guessed: !threat.visible, target };
+  // the brain: its world, a think on its own clock (and at once, on a fight just begun), a step
+  minds.sync(s);
+  const bw = minds.worldFor(s, { posture, squads: world.squads ?? null });
+  m.brain.assigned = threat.shooting ? threat.id : null;
+  if (!m.engaged || now >= m.thinkAt) minds.think(s, bw, now);
+  m.engaged = true;
+  const b = m.brain.intent;
+  const intent = { ...b };
+  let mode = MODE[b.mode] ?? b.mode;
+  let target = b.target;
+  if (d > engage) {
+    intent.mode = 'advance';
+    intent.goal = [threat.x, threat.z];
+    intent.fire = false;
+    intent.sprint = false;
+    intent.stance = 'stand';
+    mode = 'advance';
+    target = threat.id;
+  } else if (posture === 'press' && world.squads?.isFlanker?.(s.id) && (b.mode === 'attack' || b.mode === 'cover')) {
+    // (pressing, the squad sends its flankers round: they go, firing as they can)
+    intent.goal = flankOf(s, threat);
+    intent.stance = 'stand';
+    mode = 'flank';
+  }
+  // the trigger's gates: its body facing the target, a token for that target
+  const facing = Math.abs(wrap(Math.atan2(threat.x - s.b.x, threat.z - s.b.z) - s.b.yaw)) <= FACING;
+  let may = Boolean(intent.fire) && facing && target != null && Boolean(t.weapon);
+  if (may && world.tokens) may = world.tokens.claim('shot', s.id, { target });
+  else if (world.tokens && !threat.visible) world.tokens.release('shot', s.id, threat.id);
+  intent.fire = may;
+  const was = [s.b.x, s.b.z];
+  const shot = minds.act(s, intent, bw, dt, now);
+  const body = m.body;
+  let x = body.at[0];
+  let z = body.at[2];
+  // the leash: never further from home than it reaches, but for coming back
+  if (fromHome(x, z) > reach && fromHome(x, z) > fromHome(was[0], was[1])) {
+    x = was[0];
+    z = was[1];
+    body.at[0] = x;
+    body.at[2] = z;
+  }
+  const moved = Math.hypot(x - was[0], z - was[1]);
+  const yaw = turnToward(s.b.yaw, body.yaw, TURN * dt);
+  // (where it wanted to walk and couldn't: for the checks, scripts/assault-check.mjs)
+  s.stuckFor = intent.goal && Math.hypot(intent.goal[0] - x, intent.goal[1] - z) > 1 && moved < 0.1 * dt ? (s.stuckFor ?? 0) + dt : 0;
+  s.target = target;
+  const out = { x, z, yaw, mode, moving: body.moving ? 1 : 0, aim: null, fire: false, suppressive: false, guessed: !threat.visible, target, stuck: s.stuckFor };
+  if (shot) return { ...out, aim: { x: shot[0], y: shot[1], z: shot[2] }, fire: true };
+  // lost behind something: the one burst where it last had it
+  const burst = !threat.visible ? lostBurst(s, now, t, facing) : null;
+  if (burst) return { ...out, ...burst };
+  const aim = intent.aim ?? b.aim;
+  return { ...out, aim: target && aim ? { x: aim[0], y: aim[1], z: aim[2] } : null };
 }
 
 // ── squads: lib/ai/squad's, per side, on the soldiers ──

@@ -643,7 +643,7 @@ export async function create(canvas, ctx) {
   // (a battle fills the air with bolts: room for them)
   const blaster = createBlaster({ parent: scene, world, pool: BATTLES.has(mission?.kind) ? 72 : undefined });
   // the ground war: who holds which turf, and its soldiers, made round you as you go (ground/)
-  const groundWar = createGround({ parent: scene, world, site, effects: mission ? null : ctx.effects, tier, kit, warm, blaster, sparks: (at, c) => fx.sparks(new V(...at), UP, c, 8), standable: (p) => standable(site, p), seesThrough: (a, b) => lineClear(world.solids, a, b) });
+  const groundWar = createGround({ parent: scene, world, site, effects: mission ? null : ctx.effects, tier, kit, warm, blaster, sparks: (at, c) => fx.sparks(new V(...at), UP, c, 8), standable: (p) => standable(site, p), seesThrough: (a, b) => lineClear(world.solids, a, b), difficulty: ctx.difficulty ?? undefined });
   const boltPlay = createBoltPlay({ blaster, ground: groundWar });
   // what a shot does round the gun and where it lands (universe/gunfx.js),
   // and a light that flares with each muzzle flash: in the scene from the
@@ -4005,6 +4005,10 @@ export async function create(canvas, ctx) {
       },
       lookLock() {
         looker.request();
+      },
+      // the Menu's Difficulty: every soldier of the ground war's at once (ground/difficulty.js)
+      difficulty(name) {
+        groundWar.setDifficulty?.(name);
       },
       // the Lock button and L: the lock-on, on or off
       lockOn() {
