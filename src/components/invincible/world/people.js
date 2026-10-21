@@ -15,6 +15,7 @@ import { limb, rbox, taper } from '../../avengers/hq/kit/shapes';
 import { hot } from '../../avengers/hq/stage';
 import { POSES, figure, loadFigure } from '../../../lib/three/rig';
 import { CAST, asset } from '../cast';
+import { GUARDIANS, guardianOf } from './guardians';
 
 // ── one finish for the whole cast ──
 
@@ -286,6 +287,33 @@ const DRESS = {
   cecil: () => ({ suit: mat(0x23262d, { roughness: 0.55 }), shirt: mat(0xf3f3f0), tie: mat(0x1a1d24), shoe: mat(0x111214, { roughness: 0.3 }), skin: mat(0xd9a888), grey: mat(0x8f8b86), dark: mat(0x0d0d0f) }),
   allen: () => ({ suit: mat(0xdfe3e6, { roughness: 0.4 }), trim: mat(0x2b6b52, { roughness: 0.4 }), skin: mat(0x3e7fd4, { roughness: 0.5 }), white: mat(0xf4f4f0, { roughness: 0.2 }), dark: mat(0x0b0b10) }),
 };
+// ── the Guardians of the Globe (./guardians.js): each a body in the team's
+// tint with its trim on the gloves, boots and belt and a glowing badge on the
+// chest, until a model of their own lands (a gen3d issue each); Robot a
+// drone: a visor for a face, an aerial, no hair ──
+const guardianDress = (g) => ({ suit: mat(g.tint, { roughness: 0.5 }), trim: mat(g.trim, { roughness: 0.45 }), skin: mat(g.skin ?? 0xe0ac8a), hair: mat(g.hair ?? 0x2a1d17), dark: mat(0x1a1416), glow: new THREE.MeshBasicMaterial({ color: hot(g.trim, 1.8), toneMapped: false }) });
+STYLES.guardian = (add) => {
+  body(add, { top: 'suit', bottom: 'suit', shoe: 'trim', hand: 'trim', sleeve: 'suit' });
+  add('hips', 'trim', rbox(0.3, 0.05, 0.2, 0.012), { p: [0, 0.04, 0] }); // the belt
+  for (const el of ['elbowL', 'elbowR']) add(el, 'trim', limb(0.045, 0.12, 0.036), { p: [0, -0.24, 0] }); // the gloves
+  for (const kn of ['kneeL', 'kneeR']) add(kn, 'trim', limb(0.06, 0.22, 0.044), { p: [0, -0.44, 0] }); // the boots
+  add('chest', 'glow', ball(0.03, 12, 10), { p: [0, 0.17, 0.112], s: [1, 1, 0.5] }); // the badge
+  face(add);
+  add('head', 'hair', ball(0.094, 20, 14), { p: [0, 0.135, -0.014], s: [1.02, 0.8, 1.06] });
+};
+STYLES.robot = (add) => {
+  body(add, { top: 'suit', bottom: 'suit', shoe: 'trim', hand: 'trim', slim: false, sleeve: 'suit' });
+  add('chest', 'trim', rbox(0.3, 0.06, 0.24, 0.02), { p: [0, 0.27, 0] });
+  add('head', 'suit', ball(0.095, 22, 18), { p: [0, 0.1, 0.01], s: [0.92, 1.05, 1] });
+  add('head', 'glow', rbox(0.11, 0.03, 0.02, 0.008), { p: [0, 0.11, 0.085] }); // the visor
+  add('head', 'trim', limb(0.008, 0.12, 0.006, 6), { p: [0.05, 0.3, 0] }); // the aerial
+  add('head', 'glow', ball(0.014, 8, 6), { p: [0.05, 0.31, 0] });
+};
+for (const g of GUARDIANS) {
+  DRESS[g.id] = () => guardianDress(g);
+  STYLES[g.id] = g.id === 'robot' ? STYLES.robot : STYLES.guardian;
+}
+
 const TOPS = [0xc94b3a, 0x3a6fb5, 0x2f8a5f, 0xe2b13c, 0x7a4fa0, 0xe8e6e0, 0x2c2f36, 0xd67b3a, 0x4fa3b8];
 const BOTTOMS = [0x2c3a55, 0x3b3b3e, 0x6b5a45, 0x1d1f24, 0x8a7c66, 0x41556b];
 const SKINS = [0xf2cfb4, 0xe0ac8a, 0xc68863, 0x9b6747, 0x6e4632, 0xf5d7c2];
@@ -305,8 +333,9 @@ export function buildPerson(kind, seed = 0) {
       hair: mat(pick(HAIRS, 4)),
       dark: mat(0x1a1416),
     };
-  const joints = kind === 'cecil' || kind === 'allen' ? BROAD : SLIM;
-  const scale = { eve: 0.88, debbie: 0.88, cecil: 0.95, allen: 1.12 }[kind] ?? 0.86 + (seed % 5) * 0.03;
+  const g = guardianOf(kind);
+  const joints = kind === 'cecil' || kind === 'allen' || g?.broad ? BROAD : SLIM;
+  const scale = { eve: 0.88, debbie: 0.88, cecil: 0.95, allen: 1.12 }[kind] ?? (g ? (g.broad ? 1.02 : 0.94) : 0.86 + (seed % 5) * 0.03);
   const h = buildHumanoid({ style: STYLES[kind] ?? STYLES.person, materials, scale, joints });
   return { h, kind, height: h.height, materials, cast: castMaterial(h.root, { rim: castRim }) };
 }

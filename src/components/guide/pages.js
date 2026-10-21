@@ -2,6 +2,7 @@ import { ABOUT } from './abouts';
 import { GUIDES, guideKeyFor } from './routes';
 import { CYBERTRON_KEYS, CYBERTRON_TOUCH } from './cybertron';
 import { TRIBUTE_KEYS, TRIBUTE_PAD, TRIBUTE_TOUCH } from './mario64';
+import { HOGWARTS_KEYS, HOGWARTS_TOUCH } from './hogwarts';
 
 // What the guide says about each page: a line on what it is, its controls
 // (`keys` for a keyboard, `touch` for a phone; each a list of groups, a group
@@ -368,7 +369,11 @@ export const PAGES = {
           ['C', 'Down (and land)'],
           ['Shift', 'Flat out: past about 430 km/h the air breaks with a boom'],
           ['Drag / ← ↑ ↓ →', 'Look round'],
-          ['J / F / Click', 'Punch (a little way off, he lunges)'],
+          ['J / F / Click', 'Punch (a little way off, he lunges); held, he takes hold of a foe or a car, and lets go to throw it'],
+          ['Space, over a foe', 'Dive onto them, from 30 m up or more: the higher, the harder'],
+          ['Shift, on the ground', 'Block a swing; the punch after it counts double'],
+          ['C, on the ground', 'Pound the street: a ring that floors the small ones and rocks the big'],
+          ['G, in the air', 'Your power, flying as Eve (a wall, or a mend), Omni-Man (the line) or Thragg (the shout); Mark has none'],
           ['E', 'Go in at a place (Cecil, at the GDA, has a job)'],
           ['T', 'The time of day'],
           ['R', 'Take the radio’s call (a chase, a photo, Eve’s race)'],
@@ -404,6 +409,15 @@ export const PAGES = {
       ['The title card', 'Press it for the next episode. It has a rough season.'],
       ['The files', 'Drag a figure to turn him, or pick a pose: they’re the HD models the game uses.'],
       ['Things your father said', 'Every card does something.'],
+    ],
+  },
+  '/hogwarts': {
+    about: ABOUT['/hogwarts'],
+    keys: HOGWARTS_KEYS,
+    touch: HOGWARTS_TOUCH,
+    tips: [
+      ['The shore', 'You come in on the shingle as the light goes, the castle lit across the water. The jetty and its boats are down the shingle on your right: walk out to them.'],
+      ['Still being built', 'The boats, the Sorting, the castle’s rooms, the wand, the broom and the Map come as the world is made; Things to do, in the Menu, will hold the term’s quests.'],
     ],
   },
   '/middle-earth': {

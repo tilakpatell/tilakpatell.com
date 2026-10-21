@@ -13,6 +13,7 @@ export const ABOUT = {
   '/deathstar/inside': 'Still being built: both Death Stars, to walk room by room. For now the page says what’s coming.',
   '/caribbean': 'You’re Jack Sparrow at the Black Pearl’s helm in Dead Man’s Tide: sink the patrol, take the chests, then face the kraken.',
   '/invincible': 'The Graysons’ city, to fly about as Mark: race Dad’s rings, punch the Flaxans out of the sky, and climb to space.',
+  '/hogwarts': 'You’re a first-year at Hogwarts: cross the Black Lake, be sorted, then learn a wand, a broom and the Marauder’s Map.',
   '/middle-earth': 'Bag End’s study at night, the Red Book open on the desk. Turn its pages, look into the Palantír, or put on the Ring.',
   '/middle-earth/road': 'One ride from Bag End to the Grey Havens, the films’ moments round you. The games wait at its end.',
   '/middle-earth/place': 'Walk the place as Frodo, then cook in its kitchen, Overcooked-style, alone or with friends.',

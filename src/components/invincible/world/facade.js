@@ -31,7 +31,7 @@ export function towerMaterial(uniforms) {
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uNight = uniforms.uNight;
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec4 aStyle;\nvarying vec3 vCity;\nvarying vec3 vCityN;\nflat varying vec4 vStyle;')
+      .replace('#include <common>', '#include <common>\nattribute vec4 aStyle;\nattribute float aHurt;\nvarying vec3 vCity;\nvarying vec3 vCityN;\nflat varying vec4 vStyle;\nflat varying float vHurt;')
       .replace(
         '#include <project_vertex>',
         `#include <project_vertex>
@@ -43,6 +43,7 @@ export function towerMaterial(uniforms) {
           vCity = (im * vec4(transformed, 1.0)).xyz;
           vCityN = normalize(mat3(im) * objectNormal);
           vStyle = aStyle;
+          vHurt = aHurt;
         }`,
       );
     shader.fragmentShader = shader.fragmentShader
@@ -53,6 +54,7 @@ export function towerMaterial(uniforms) {
         varying vec3 vCity;
         varying vec3 vCityN;
         flat varying vec4 vStyle;
+        flat varying float vHurt;
         float cityHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
         float box(vec2 f, vec4 r) { return step(r.x, f.x) * step(f.x, r.y) * step(r.z, f.y) * step(f.y, r.w); }
         vec3 srgb(vec3 c) { return pow(c, vec3(2.2)); }
@@ -113,7 +115,18 @@ export function towerMaterial(uniforms) {
         vec3 daySky = mix(vec3(1.0), dayPane / max(dot(dayPane, vec3(0.2126, 0.7152, 0.0722)), 1e-3), ${num(WINDOWS.sky)} * glassK);
         vec3 roofC = srgb(vec3(0.36, 0.36, 0.37)) * (0.8 + 0.35 * cityHash(floor(vCity.xz * 0.4)));
         diffuseColor.rgb = mix(mix(wall, glass, win), roofC, roof);
-        float cityWin = win;`,
+        float cityWin = win;
+        // the damage (./demolish.js, 0 to 1): cracks and dark panes as it climbs,
+        // the roof and a band under it scorched once the top is gone
+        if (vHurt > 0.0) {
+          float crack = step(1.0 - vHurt * 0.55, cityHash(floor(vec2(u, vCity.y) * 0.7) + seed)) * (1.0 - roof);
+          float gone = smoothstep(0.55, 0.65, vHurt);
+          float soot = gone * smoothstep(top - 9.0, top - 1.0, vCity.y) * (1.0 - roof);
+          diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 0.35, crack);
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.03, 0.028, 0.026), max(soot, vHurt * win * 0.6));
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.1, 0.095, 0.09), roof * gone);
+          cityWin *= 1.0 - vHurt * 0.8;
+        }`,
       )
       .replace(
         '#include <roughnessmap_fragment>',
@@ -165,6 +178,7 @@ export function towerField(list, material) {
   // (no bottoms: nobody sees under a building)
   geo.setIndex(Array.from(geo.index.array).filter((_, i) => i < 18 || i >= 24));
   const style = new Float32Array(list.length * 4);
+  const hurt = new Float32Array(list.length); // the damage, 0 to 1 (./demolish.js; ./city.js writes it)
   const mesh = new THREE.InstancedMesh(geo, material, list.length);
   const m = new THREE.Matrix4();
   const s = new THREE.Vector3();
@@ -175,6 +189,7 @@ export function towerField(list, material) {
     style.set([b.kind, b.tone, b.seed, (b.y ?? 0) + b.h], i * 4);
   });
   geo.setAttribute('aStyle', new THREE.InstancedBufferAttribute(style, 4));
+  geo.setAttribute('aHurt', new THREE.InstancedBufferAttribute(hurt, 1));
   mesh.instanceMatrix.needsUpdate = true;
   mesh.computeBoundingSphere();
   return mesh;

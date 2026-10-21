@@ -2,8 +2,8 @@
 // Mega Seeds): a bright white hall with pale green lanes on the floor, two
 // scanner arches with a queue of travellers from other dimensions in the far
 // one, the Gromflomite agents at their desks past the arches, Krombopulos
-// Michael by a pillar, round portal pads with their swirls, and a long window
-// on a yellow alien city. Rick's seeds wait on a table by the way in; taken
+// Michael by a pillar, round portal pads with their swirls, and the north
+// wall glass, onto the spaceport and the alien city (its world, ./worlds.js). Rick's seeds wait on a table by the way in; taken
 // (the area's 'took'), they're gone from it; walked through the scanner
 // ('alarm'), the arch and the desks' lights go red and flash till Morty's
 // gone ('calm', as every place is told when he leaves it).
@@ -15,38 +15,6 @@ import { specks, stage } from './stage';
 const LIGHT = { sun: [0xf6fff6, 0.8], hemi: [0xf2fff4, 0x8aa094, 1.8], fog: null, background: 0x1a2a22 };
 const WHITE = 0xf2f4ef;
 const TRIM = 0xc8d0ca;
-
-// the alien city through the window: stalks, pods and towers on a yellow sky
-const CITY = (g, w, h) => {
-  const sky = g.createLinearGradient(0, 0, 0, h);
-  sky.addColorStop(0, '#f6d27a');
-  sky.addColorStop(1, '#fbeab2');
-  g.fillStyle = sky;
-  g.fillRect(0, 0, w, h);
-  g.fillStyle = '#e8a0b0';
-  g.beginPath();
-  g.arc(w * 0.48, h * 0.18, 10, 0, Math.PI * 2);
-  g.fill();
-  const shapes = [
-    ['#b8506a', 0.06, 0.55, 0.08],
-    ['#e07a3a', 0.2, 0.38, 0.05],
-    ['#a87a4a', 0.33, 0.2, 0.06],
-    ['#5a9ab8', 0.45, 0.5, 0.1],
-    ['#9ac85a', 0.55, 0.42, 0.06],
-    ['#b86a9a', 0.68, 0.3, 0.07],
-    ['#d8a04a', 0.82, 0.48, 0.06],
-    ['#6ab88a', 0.93, 0.36, 0.05],
-  ];
-  for (const [c, x, top, wide] of shapes) {
-    g.fillStyle = c;
-    g.fillRect((x - wide / 2) * w, top * h, wide * w, h);
-    g.beginPath();
-    g.ellipse(x * w, top * h, wide * w * 0.9, wide * w * 0.5, 0, 0, Math.PI * 2);
-    g.fill();
-    g.fillStyle = '#2a2a2a';
-    for (let k = 0; k < 3; k++) g.fillRect((x - 0.01) * w, (top + 0.12 + k * 0.12) * h, 0.02 * w, 0.04 * h);
-  }
-};
 
 // the signs over the arches, in the alien script (squiggles, not letters)
 const SIGN = (g, w, h) => {
@@ -136,9 +104,6 @@ export async function buildCustoms(kit) {
     swirls.push([sw, m]);
   }
 
-  // the long window on the city, across the north wall
-  R.cell('customscity', 512, 128, CITY);
-  R.frame(...P(0, -14.86), 0, { list: 'fixed' }).box(TRIM, 0, 2.2, 0, 30, 3.6, 0.12).decal('customscity', 0, 4, 0.08, 29, 3.2, { bright: true });
   // the screens on the east wall, in the alien script
   R.frame(...P(16.9, -4), -Math.PI / 2, { list: 'fixed' }).box(0x2a3a32, 0, 2.2, 0, 3, 1.8, 0.1).decal('customssign', 0, 3.1, 0.06, 2.8, 1.4, { bright: true });
 
@@ -157,6 +122,7 @@ export async function buildCustoms(kit) {
     lampMat.color.setHex(alarm && Math.sin(t * 9) > 0 ? 0xff2a1a : 0x7a2a2a);
   });
   area.actions = {
+    ...area.actions,
     took: () => {
       took = true;
     },
