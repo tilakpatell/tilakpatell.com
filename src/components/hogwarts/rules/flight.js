@@ -166,3 +166,88 @@ function pushOut(p, s) {
   ];
   return outs.reduce((a, b) => (Math.abs(a[0] + a[2]) <= Math.abs(b[0] + b[2]) ? a : b));
 }
+
+// The flying lesson (quest 2): on the lawn with Madam Hooch, the broom on
+// the grass beside you. E and “Up”: it jumps to your hand. E again: you’re
+// on it. Then three rings round the lawn, in order, and down again by her.
+// A ring is { p: [x, y, z] (its middle), yaw (the way through it faces),
+// r }; a rider goes through it when the step from `from` to `to` crosses
+// its plane inside it, either way.
+//
+//   LESSON, ringsRound(centre, { radius, height }) → three rings
+//   newLesson(rings) → { step: 'up' | 'mount' | 'rings' | 'land' | 'done', ring }
+//   lessonAct(lesson) → the lesson after E (Up, or mount)
+//   lessonFly(lesson, from, to, landed) → { lesson, what }
+//   through(ring, from, to) → whether that step went through it
+
+export const LESSON = { points: 10, ringR: 3.2, near: 12 };
+export const HOOCH = {
+  up: 'Right hand over your broom, and say it like you mean it.',
+  caught: 'Good. Now, mount, and grip with your knees.',
+  rings: 'Three rings round the lawn. In order, if you please.',
+  ring: 'Through. Next one.',
+  land: 'Lovely. Down you come, gently, by me.',
+  done: 'Well flown. Ten points, and the broom is yours to borrow.',
+};
+
+export function ringsRound([cx, cy, cz], { radius = 40, height = 8 } = {}) {
+  return [0, 1, 2].map((i) => {
+    const a = (i * 2 * Math.PI) / 3;
+    // (each ring faces along the circle, so the course is a lap)
+    return { p: [cx + Math.sin(a) * radius, cy + height + i * 3, cz + Math.cos(a) * radius], yaw: a + Math.PI / 2, r: LESSON.ringR };
+  });
+}
+
+export function through(ring, from, to) {
+  const n = [Math.sin(ring.yaw), 0, Math.cos(ring.yaw)];
+  const side = (p) => (p[0] - ring.p[0]) * n[0] + (p[2] - ring.p[2]) * n[2];
+  const a = side(from);
+  const b = side(to);
+  if (a === b || Math.sign(a) === Math.sign(b)) return false;
+  const k = a / (a - b);
+  const x = from[0] + (to[0] - from[0]) * k - ring.p[0];
+  const y = from[1] + (to[1] - from[1]) * k - ring.p[1];
+  const z = from[2] + (to[2] - from[2]) * k - ring.p[2];
+  return Math.hypot(x, y, z) <= ring.r;
+}
+
+export const newLesson = (rings) => ({ rings, step: 'up', ring: 0 });
+
+export function lessonAct(l) {
+  if (l.step === 'up') return { lesson: { ...l, step: 'mount' }, what: 'up', says: HOOCH.caught };
+  if (l.step === 'mount') return { lesson: { ...l, step: 'rings' }, what: 'mount', says: HOOCH.rings };
+  return { lesson: l, what: null, says: null };
+}
+
+export function lessonFly(l, from, to, landed = false) {
+  if (l.step === 'rings' && through(l.rings[l.ring], from, to)) {
+    const ring = l.ring + 1;
+    return ring >= l.rings.length ? { lesson: { ...l, ring, step: 'land' }, what: 'ring', says: HOOCH.land } : { lesson: { ...l, ring }, what: 'ring', says: HOOCH.ring };
+  }
+  if (l.step === 'land' && landed) return { lesson: { ...l, step: 'done' }, what: 'done', says: HOOCH.done };
+  return { lesson: l, what: null, says: null };
+}
+
+export const lessonResult = (l) => (l.step === 'done' ? { type: 'lesson', id: 'flying', done: true, points: LESSON.points } : null);
+
+// the bot’s line through the rings: to a point ten metres before the
+// next one, square on, then through it to ten metres past; then down
+export function lessonBot(l, rider) {
+  if (l.step === 'up' || l.step === 'mount') return { act: true };
+  if (l.step === 'done') return {};
+  if (l.step === 'land') return { fwd: rider.spd > 2 ? -1 : 0, down: 1 };
+  const g = l.rings[l.ring];
+  const n = [Math.sin(g.yaw), 0, Math.cos(g.yaw)];
+  const d = [rider.p[0] - g.p[0], rider.p[1] - g.p[1], rider.p[2] - g.p[2]];
+  const s = d[0] * n[0] + d[2] * n[2];
+  const side = s >= 0 ? 1 : -1;
+  const lateral = Math.hypot(d[0] - n[0] * s, d[2] - n[2] * s);
+  const lined = lateral < 1.2 && Math.abs(d[1]) < 1.5 && Math.abs(s) < 11;
+  const k = lined ? -side * 10 : side * 10;
+  const target = [g.p[0] + n[0] * k, g.p[1], g.p[2] + n[2] * k];
+  const to = [target[0] - rider.p[0], target[1] - rider.p[1], target[2] - rider.p[2]];
+  const diff = Math.atan2(Math.sin(Math.atan2(to[0], to[2]) - rider.yaw), Math.cos(Math.atan2(to[0], to[2]) - rider.yaw));
+  const flat = Math.hypot(to[0], to[2]);
+  const vert = Math.max(-1, Math.min(1, to[1] / 2));
+  return { fwd: Math.abs(diff) > 0.8 ? 0 : Math.min(1, flat / 20 + 0.25), side: Math.max(-1, Math.min(1, -diff * 2)), up: Math.max(0, vert), down: Math.max(0, -vert) };
+}

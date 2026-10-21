@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BROOM, KMH, forwardOf, hit, mount, stepBroom, velocity } from './flight';
+import { BROOM, KMH, LESSON, forwardOf, hit, lessonAct, lessonBot, lessonFly, lessonResult, mount, newLesson, ringsRound, stepBroom, through, velocity } from './flight';
 
 const still = { fwd: 0, side: 0, up: 0, down: 0, boost: false };
 // fly for t seconds, a frame at a time, gathering the events
@@ -112,5 +112,51 @@ describe('the broom', () => {
     // over its top, free
     const over = fly({ ...up(20), spd: 20 }, { ...still, fwd: 1, boost: true }, 2, { solids: [stand] }).h;
     expect(over.p[2]).toBeGreaterThan(25);
+  });
+});
+
+describe('the flying lesson', () => {
+  const rings = ringsRound([0, 0, 0], { radius: 40, height: 8 });
+  it('three rings round the lawn, each facing along the lap', () => {
+    expect(rings).toHaveLength(3);
+    for (const g of rings) expect(Math.hypot(g.p[0], g.p[2])).toBeCloseTo(40);
+  });
+  it('a step through a ring’s middle counts, beside it doesn’t', () => {
+    const g = { p: [0, 5, 0], yaw: 0, r: 3 };
+    expect(through(g, [0, 5, -1], [0, 5, 1])).toBe(true);
+    expect(through(g, [0, 5, 1], [0, 5, -1])).toBe(true);
+    expect(through(g, [4, 5, -1], [4, 5, 1])).toBe(false);
+    expect(through(g, [0, 5, 1], [0, 5, 2])).toBe(false);
+  });
+  it('goes Up, mount, the rings in order, and down by Madam Hooch', () => {
+    let l = newLesson(rings);
+    expect(lessonAct(l).what).toBe('up');
+    l = lessonAct(lessonAct(l).lesson).lesson;
+    expect(l.step).toBe('rings');
+    // the second ring first doesn’t count
+    const g1 = rings[1];
+    const n = [Math.sin(g1.yaw), 0, Math.cos(g1.yaw)];
+    const skip = lessonFly(l, [g1.p[0] - n[0], g1.p[1], g1.p[2] - n[2]], [g1.p[0] + n[0], g1.p[1], g1.p[2] + n[2]]);
+    expect(skip.lesson.ring).toBe(0);
+    expect(lessonResult(l)).toBe(null);
+  });
+  it('the bot flies it from the grass, inside a minute and a half, for ten points', () => {
+    let l = newLesson(rings);
+    let h = null;
+    let t = 0;
+    while (l.step !== 'done' && t < 90) {
+      const inp = lessonBot(l, h ?? { p: [0, 0, -50], yaw: 0, spd: 0 });
+      if (inp.act) {
+        l = lessonAct(l).lesson;
+        if (l.step === 'rings') h = mount({ x: 0, y: 0, z: -50 });
+      } else if (h) {
+        const from = h.p;
+        h = stepBroom(h, inp, 1 / 30, { floorAt: () => 0 });
+        l = lessonFly(l, from, h.p, h.mode === 'ground').lesson;
+      }
+      t += 1 / 30;
+    }
+    expect(l.step).toBe('done');
+    expect(lessonResult(l)).toEqual({ type: 'lesson', id: 'flying', done: true, points: LESSON.points });
   });
 });
