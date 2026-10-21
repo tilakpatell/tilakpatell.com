@@ -2,6 +2,7 @@ import { ABOUT } from './abouts';
 import { GUIDES, guideKeyFor } from './routes';
 import { CYBERTRON_KEYS, CYBERTRON_TOUCH } from './cybertron';
 import { TRIBUTE_KEYS, TRIBUTE_PAD, TRIBUTE_TOUCH } from './mario64';
+import { HOGWARTS_KEYS, HOGWARTS_TOUCH } from './hogwarts';
 
 // What the guide says about each page: a line on what it is, its controls
 // (`keys` for a keyboard, `touch` for a phone; each a list of groups, a group
@@ -404,6 +405,15 @@ export const PAGES = {
       ['The title card', 'Press it for the next episode. It has a rough season.'],
       ['The files', 'Drag a figure to turn him, or pick a pose: they’re the HD models the game uses.'],
       ['Things your father said', 'Every card does something.'],
+    ],
+  },
+  '/hogwarts': {
+    about: ABOUT['/hogwarts'],
+    keys: HOGWARTS_KEYS,
+    touch: HOGWARTS_TOUCH,
+    tips: [
+      ['The shore', 'You come in on the shingle as the light goes, the castle lit across the water. The jetty and its boats are down the shingle on your right: walk out to them.'],
+      ['Still being built', 'The boats, the Sorting, the castle’s rooms, the wand, the broom and the Map come as the world is made; Things to do, in the Menu, will hold the term’s quests.'],
     ],
   },
   '/middle-earth': {

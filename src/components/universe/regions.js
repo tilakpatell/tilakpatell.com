@@ -105,8 +105,18 @@ function clearOf(at) {
 // a world by its world's name (Middle-earth, not The Lord of the Rings), a wonder by its own
 const nameOf = (id) => byId(id)?.world ?? byId(id)?.label ?? wonderById(id)?.name ?? id;
 
+// The places put on the map after the regions were drawn (Hogwarts, on
+// 2026-10-21): left out of the clustering, so the regions, their hubs and
+// the beacons the fleet war's fronts are shared at stay where they were,
+// and each joins the region whose furthest member is nearest it (complete
+// linkage's own measure) as a member.
+export const LATE = new Set(['potter']);
+
 function build() {
-  const groups = cluster(FAR, REGION_COUNT)
+  const groups = cluster(
+    FAR.filter((p) => !LATE.has(p.id)),
+    REGION_COUNT,
+  )
     .map((g) => ({ g, mid: centroid(g) }))
     .sort((a, b) => Math.atan2(a.mid[2], a.mid[0]) - Math.atan2(b.mid[2], b.mid[0]));
   const rest = groups.map(({ g, mid }, i) => {
@@ -118,6 +128,10 @@ function build() {
     const lifted = [at[0], at[1] + (i % 2 ? -HUB_LIFT : HUB_LIFT), at[2]];
     return { id: biggest.id, name: `Near ${nameOf(biggest.id)}`, members: g.map((p) => p.id), hub: clearOf(lifted) };
   });
+  for (const p of FAR.filter((q) => LATE.has(q.id))) {
+    const span = (r) => Math.max(...r.members.map((id) => dist(p.at, FAR.find((q) => q.id === id).at)));
+    rest.reduce((a, b) => (span(b) < span(a) ? b : a)).members.push(p.id);
+  }
   const home = { id: 'home', name: 'The home system', members: STATIONS, hub: [0, 0, HOME_RADIUS + 240] };
   return [home, ...rest];
 }

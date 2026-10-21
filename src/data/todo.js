@@ -818,6 +818,20 @@ export const THINGS_TO_DO = [
     blurb: 'Four chapters: a flight lesson, the Flaxans, Omni-Man, then Thragg.',
     done: { achievement: 'thinkmark' },
   },
+
+  // Hogwarts
+  {
+    id: 'hogwarts',
+    title: 'Stand on the shore of the Black Lake',
+    to: '/hogwarts',
+    area: '/hogwarts',
+    kind: 'world',
+    audience: 'player',
+    seconds: 60,
+    phone: true,
+    blurb: 'The night the first-years come: the castle lit across the water, the boats waiting at the jetty.',
+    done: { visited: '/hogwarts' },
+  },
 ];
 
 // The rows for a tour's audience: a recruiter's and a player's lists share
