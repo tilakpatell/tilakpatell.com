@@ -150,11 +150,11 @@
 - Modify: `companions.js` (two Guardians join a fight), `foes.js` (the cavalry’s hits), `people.js` (eight stand-ins by tint, names over them), `landmarks.js` (the door), `InvWorld.jsx` (go in and out through the kit’s Exit), `lines.js` (thirty-two lines)
 - Test: `hallRules.test.js`, `companions.test.js`
 
-- [ ] Tests first: `pick(fight)` chooses Bulletproof for falling people, Black Samson for a crowd within 40 m, Rex for Maulers, Robot for an unknown foe, never the same two for one fight; each signature’s rule (Kate’s copies hold a foe 2 s; Monster Girl’s 12 s; Rae’s stagger); the room is a disc of radius 28 m with eight plinths and the door at (0, 21); going in sets the zone `hall` and out restores the street.
-- [ ] The modules, the stand-ins, the inside (code-built as `landmarks.js` is: the dome from within, the plinths, Cecil’s board moved here), the cavalry.
-- [ ] `gen3d` issues for the eight; a `voices` issue for the thirty-two lines.
-- [ ] Shot `hall` with `--metrics`; `guardians` achievement.
-- [ ] Checks; commit; pull request; merge.
+- [x] Tests first: `pick(fight)` chooses Bulletproof for falling people, Black Samson for a crowd within 40 m, Rex for Maulers, Robot for an unknown foe, never the same two for one fight; each signature’s rule (Kate’s copies hold a foe 2 s; Monster Girl’s 12 s; Rae’s stagger); the room is a disc of radius 28 m with eight plinths and the door at (0, 21); going in sets the zone `hall` and out restores the street.
+- [x] The modules, the stand-ins, the inside (code-built as `landmarks.js` is: the dome from within, the plinths, Cecil’s board moved here), the cavalry.
+- [x] `gen3d` issues for the eight; a `voices` issue for the thirty-two lines.
+- [x] Shot `hall` with `--metrics`; `guardians` achievement.
+- [x] Checks; commit; pull request; merge.
 
 ### Task 8: Angstrom Levy and the dimensions
 
