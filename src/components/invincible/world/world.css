@@ -177,6 +177,7 @@
 .iw-buttons button:active { background: var(--iw-blue); }
 .iw-buttons .iw-boost { background: var(--iw-yellow); color: #111; }
 .iw-buttons .iw-punch { background: var(--iw-blue); }
+.iw-buttons .iw-power { background: #ff5fd2; color: #111; } /* a hero's power (./powers.js): Eve's pink, the one colour of hers */
 
 /* without 3D */
 .iw-cards { padding-block: clamp(2rem, 6vw, 4rem); }

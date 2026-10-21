@@ -12,7 +12,7 @@
 //      then this); a held foe is `held`, a thrown one `thrown`, and
 //      ./foes.js leaves both to this module
 //   hero: ./flight.js's hero (p at his feet; chest 1 m up)
-//   input: { punchHeld, look, dive, block, pound, landed: the hero's
+//   input: { punchHeld, look, dive, block, pound, fists, landed: the hero's
 //      `land`, `slam` or `impact` event this step, if any }
 //   push: a velocity to give him (a dive); cap: the most he may fly while
 //   carrying (null for no cap)
@@ -99,6 +99,7 @@ export function diveTarget(foes, hero) {
 }
 
 export function stepBrawl(prev, prevFoes, hero, input = {}, rawDt, world = {}) {
+  const fists = input.fists ?? 1; // (a hero's blow, ./heroes.js)
   const dt = Math.min(0.05, Math.max(0, rawDt || 0));
   const b = { ...prev };
   const f = { ...prevFoes, foes: prevFoes.foes.map((e) => ({ ...e, p: [...e.p], v: [...e.v] })), cars: (prevFoes.cars ?? []).map((c) => ({ ...c, p: [...c.p], v: [...c.v] })), rings: (prevFoes.rings ?? []).map((q) => ({ ...q })) };
@@ -158,7 +159,7 @@ export function stepBrawl(prev, prevFoes, hero, input = {}, rawDt, world = {}) {
         if (b.held.what === 'foe') {
           for (let i = 0; i < BRAWL.slamHits && live(thing) && thing.state !== 'ko'; i++) {
             thing.state = 'approach';
-            hitFoe(thing, chest, ev, { slammed: true });
+            hitFoe(thing, chest, ev, { slammed: true }, fists);
           }
           if (live(thing) && thing.state !== 'ko') Object.assign(thing, { state: 'stagger', t: KINDS[thing.kind ?? 'flaxan'].stagger ?? 0.8, p: [at[0], floorAt(at[0], at[2]), at[2]] });
         } else Object.assign(thing, { held: null, away: true, v: [0, -5, 0], life: 0.5 });
@@ -187,7 +188,7 @@ export function stepBrawl(prev, prevFoes, hero, input = {}, rawDt, world = {}) {
       e.state = 'approach';
       const at = [...e.p];
       ev.push({ type: 'thrownLanded', id: e.id, kind: e.kind ?? 'flaxan', at });
-      hitFoe(e, [at[0] - e.v[0], at[1], at[2] - e.v[2]], ev, { thrown: true });
+      hitFoe(e, [at[0] - e.v[0], at[1], at[2] - e.v[2]], ev, { thrown: true }, fists);
       if (live(e) && e.state !== 'ko') Object.assign(e, { state: 'stagger', t: KINDS[e.kind ?? 'flaxan'].stagger ?? 0.8, v: [0, 0, 0] });
     }
   }
@@ -211,7 +212,7 @@ export function stepBrawl(prev, prevFoes, hero, input = {}, rawDt, world = {}) {
       ev.push({ type: 'crater', at: [at[0], floorAt(at[0], at[2]), at[2]], speed: BRAWL.diveSpeed });
       for (let i = 0; i < hits && live(e) && e.state !== 'ko'; i++) {
         if (e.state === 'stagger') e.state = 'approach';
-        hitFoe(e, chest, ev, { dived: true });
+        hitFoe(e, chest, ev, { dived: true }, fists);
       }
       b.dive = null;
     } else push = unit(sub(mid(e), chest)).map((c) => c * BRAWL.diveSpeed);

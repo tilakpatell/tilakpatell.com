@@ -118,11 +118,11 @@
 - `powers.js`: `stepPower(p, hero, input, mark, world, dt) → { p, out }` with outs `construct` (a wall’s pose, 6 s), `mend` (a tower id and 0.3), `linebreak` (a segment; the windows and the crowd under it), `shout` (a ring to 40 m).
 - `flight.js`: `stepFlight(state, input, dt, world, mult = ONE)`; `brawl.js` likewise.
 
-- [ ] Tests first: `canPlay('eve')` only with Eve’s race best set; `canPlay('omniman')` only with `truth`; `canPlay('thragg')` only with `regent`; an unknown id is Mark; top speed multiplies and a switch mid-flight clamps speed; `linebreak` floors the crowd within 60 m of its line and adds 0.05 to each tower it crosses; `mend` lowers a tower’s damage by 0.3 and not below 0; `shout` throws every foe and car within 40 m.
-- [ ] The modules, the hooks, the figure swap (the cast rows exist: `eve`, `omni-man`, `thragg`), the pink construct (a `MeshBasicMaterial` slab with Eve’s pink and a soft edge), the line-break’s glass sparkle (the existing impact debris in white), the shout’s ring.
-- [ ] A mission start switches to Mark with a toast (“This one is Mark’s.”) and back after.
-- [ ] Shots `eve omniman thragg` on the spawn street with `--metrics`.
-- [ ] Checks; commit; pull request; merge.
+- [x] Tests first: `canPlay('eve')` only with Eve’s race best set; `canPlay('omniman')` only with `truth`; `canPlay('thragg')` only with `regent`; an unknown id is Mark; top speed multiplies and a switch mid-flight clamps speed; `linebreak` floors the crowd within 60 m of its line and adds 0.05 to each tower it crosses; `mend` lowers a tower’s damage by 0.3 and not below 0; `shout` throws every foe and car within 40 m.
+- [x] The modules, the hooks, the figure swap (the cast rows exist: `eve`, `omni-man`, `thragg`), the pink construct (a `MeshBasicMaterial` slab with Eve’s pink and a soft edge), the line-break’s glass sparkle (the existing impact debris in white), the shout’s ring.
+- [x] A mission start switches to Mark with a toast (“This one is Mark’s.”) and back after.
+- [x] Shots `eve omniman thragg` on the spawn street with `--metrics`.
+- [x] Checks; commit; pull request; merge.
 
 ### Task 6: Episode 8, Where I Really Come From
 

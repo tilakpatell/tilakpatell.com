@@ -31,6 +31,10 @@ export function bindKeys(s, { act, cycleTime, startSound, release, abandon, open
       s.keys.add('punch'); // (held: a grab, ./brawl.js)
     } else if (e.code === 'KeyE' || e.key === 'Enter') {
       if (!(e.target instanceof HTMLButtonElement)) act();
+    } else if (e.code === 'KeyG') {
+      // the hero's power, held (./powers.js)
+      startSound();
+      s.keys.add('power');
     } else if (e.code === 'KeyT') cycleTime();
     // (H was the world's own list of keys: it's the site's guide now, which ? opens too)
     else if (e.code === 'KeyH') toggleGuide();
@@ -51,6 +55,7 @@ export function bindKeys(s, { act, cycleTime, startSound, release, abandon, open
     const k = CODES[e.code];
     if (k) s.keys.delete(k);
     if (e.code === 'KeyJ' || e.code === 'KeyF') s.keys.delete('punch');
+    if (e.code === 'KeyG') s.keys.delete('power');
     if (!e.shiftKey) s.keys.delete('boost');
   };
   const hidden = () => document.hidden && release();

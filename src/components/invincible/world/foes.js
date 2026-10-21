@@ -19,7 +19,7 @@
 // Nothing happens until something starts it (Cecil, a mission, or the
 // city's clock for the Flaxans).
 //
-// stepFoes(state, hero, { punch, look, eveHit }, dt, { cars, hangar }) →
+// stepFoes(state, hero, { punch, look, eveHit, block, fists }, dt, { cars, hangar }) →
 // { foes: state, ev, push, stun }: `push` a velocity to give him (a lunge,
 // a knock), `stun` a moment without control. `cars`: where the traffic's
 // cars are, for a Mauler to take one (`throw`'s `car` is its index there);
@@ -166,9 +166,10 @@ export function knockOut(e, from, ev, extra = {}) {
 }
 
 // a blow: a knock-out once it's had enough, a stagger before
-export function hitFoe(e, from, ev, extra = {}) {
+// (`weight`: a hero's fists, ./heroes.js: 1 is one of the foe's `hits`, 2 two)
+export function hitFoe(e, from, ev, extra = {}, weight = 1) {
   const K = KINDS[kindOf(e)];
-  e.hits = (e.hits ?? 0) + 1;
+  e.hits = (e.hits ?? 0) + weight;
   if (e.hits >= K.hits) return knockOut(e, from, ev, extra);
   const d = unit(sub(mid(e), from));
   ev.push({ type: 'hit', id: e.id, kind: kindOf(e), at: mid(e), dir: d, hits: e.hits, ...extra });
@@ -273,11 +274,11 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
         if (!best || dl < best.dl) best = { e, dl, d };
       }
       if (best && best.dl <= FIGHT.reach) {
-        hitFoe(best.e, chest, ev, { punched: true });
+        hitFoe(best.e, chest, ev, { punched: true }, input.fists ?? 1);
         // a counter: the punch after a blocked swing lands twice
         if (f.counter > 0) {
           f.counter = 0;
-          if (live(best.e)) hitFoe(best.e, chest, ev, { punched: true, counter: true });
+          if (live(best.e)) hitFoe(best.e, chest, ev, { punched: true, counter: true }, input.fists ?? 1);
         }
       } else if (best) {
         push = unit(best.d).map((c) => c * FIGHT.lungeSpeed);
@@ -290,7 +291,7 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
     f.lunge.t -= dt;
     const e = byId(f.lunge.id);
     if (e && live(e) && len(sub(mid(e), chest)) <= FIGHT.reach) {
-      hitFoe(e, chest, ev, { punched: true });
+      hitFoe(e, chest, ev, { punched: true }, input.fists ?? 1);
       f.lunge = null;
     } else if (!e || !live(e) || f.lunge.t <= 0) f.lunge = null;
   }

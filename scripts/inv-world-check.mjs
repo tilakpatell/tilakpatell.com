@@ -56,6 +56,10 @@ const SHOTS = {
   // the brawl (./brawl.js): a Mauler in his hands over downtown (['spawn'] calls the villains, ['held', i] puts the i-th in his hands)
   // the city that breaks (./demolish.js): the three towers nearest the plaza's east with their tops gone, at dusk (['ruin', [x, z], n, d] hits them through the hook)
   ruins: { drive: [['go', [110, 230, 175], Math.PI, 'air'], ['ruin', [110, 60], 3, 0.8], ['wait', 800]], time: 'dusk', pitch: -0.95 }, // (from high over them, looking down: the tops gone show best from above)
+  // who you fly as (./heroes.js; ['hero', id] swaps through the hook, earned or not)
+  heroEve: { drive: [['hero', 'eve'], ['go', [40, 18, 200], Math.PI, 'air'], ['wait', 600]], pitch: -0.22 },
+  heroOmni: { drive: [['hero', 'omniman'], ['go', [40, 18, 200], Math.PI, 'air'], ['wait', 600]], pitch: -0.22 },
+  heroThragg: { drive: [['hero', 'thragg'], ['go', [40, 18, 200], Math.PI, 'air'], ['wait', 600]], pitch: -0.22 },
   brawl: { drive: [['go', [50, 26, 40], Math.PI, 'air'], ['spawn', 'mauler', 1, [50, 0, 0]], ['wait', 300], ['held', 0], ['wait', 400]], pitch: -0.35 },
   curb: { p: [44, 3, 120], mode: 'air', yaw: Math.PI, pitch: -0.12 },
   streetnight: { p: [40, 18, 200], mode: 'air', yaw: Math.PI, pitch: -0.22, time: 'night' },
@@ -215,6 +219,7 @@ await page.evaluate(() => {
       } else if (k === 'feed') api.feed(a);
       else if (k === 'spawn') api.spawn(a, b, c);
       else if (k === 'ruin') api.ruin(a, b, c);
+      else if (k === 'hero') api.hero(a);
       else if (k === 'held') {
         const e = sim.foes.foes[a];
         if (e) {

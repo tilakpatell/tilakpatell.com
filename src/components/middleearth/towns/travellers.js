@@ -67,7 +67,8 @@ const lineOf = (v) => (typeof v === 'string' && v ? v : null); // (a quick-chat 
 // unless the speed's there too).
 const AREA = /^[a-z0-9-]{1,24}$/i;
 const extraOf = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : null);
-export const writeStep = (h, { inside = false, ring = false, ride = false, motion = false, area = null, emote = null, move = null } = {}) => {
+const HERO = /^[a-z]{1,12}$/;
+export const writeStep = (h, { inside = false, ring = false, ride = false, motion = false, area = null, emote = null, move = null, hero = null } = {}) => {
   const step = [r2(h.x), r2(h.z), r2(h.face), (h.speed ?? 0) > 0.4 ? 1 : 0, (inside ? 1 : 0) | (ring ? 2 : 0) | (ride ? 4 : 0)];
   if (motion) step.push(Math.round((h.speed ?? 0) * 10) / 10, r2(h.y ?? 0));
   else if (area) step.push(0, 0);
@@ -75,7 +76,9 @@ export const writeStep = (h, { inside = false, ring = false, ride = false, motio
   // (what goes out checked as what comes in is)
   const e = readEmoteWire(emote);
   const m = motionPacket(move);
-  if (e || m) step.push({ ...(e ? { e: [e.id, e.age] } : {}), ...(m ? { m } : {}) });
+  // (and who they fly as, a world with heroes: a short id, `h`)
+  const hh = typeof hero === 'string' && HERO.test(hero) ? hero : null;
+  if (e || m || hh) step.push({ ...(e ? { e: [e.id, e.age] } : {}), ...(m ? { m } : {}), ...(hh ? { h: hh } : {}) });
   return step;
 };
 export function readStep(data, bound = 200) {
@@ -98,6 +101,7 @@ export function readStep(data, bound = 200) {
     const m = readMotion(more.m);
     if (e) step.emote = e;
     if (m) step.motion = m;
+    if (typeof more.h === 'string' && HERO.test(more.h)) step.hero = more.h;
   }
   return step;
 }
