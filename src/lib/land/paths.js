@@ -19,7 +19,7 @@
 //   cutAlong(raw, path, { depth, width = 8, bank = width / 2 }) → (x, z) → metres
 //     (a river's channel: the land lowered by depth along the line, banked)
 
-import { smoothstep } from '../../components/galaxy/surface/noise.js';
+import { smoothstep } from '../noise.js';
 
 const STEP = 1; // m between the table's points
 
