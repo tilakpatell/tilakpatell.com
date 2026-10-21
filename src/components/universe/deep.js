@@ -302,7 +302,8 @@ export function nearestPlace(x, y, z) {
       place = p;
     }
   }
-  const home = Math.sqrt(x * x + z * z) - HOME_RADIUS;
+  // (the home system as a ball round the sun: far above or below it is open space)
+  const home = Math.sqrt(x * x + y * y + z * z) - HOME_RADIUS;
   return home < gap ? { place: null, gap: home } : { place, gap };
 }
 

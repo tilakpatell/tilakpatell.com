@@ -5,13 +5,14 @@
 // drifts along its flow. `uRise` swells a river into running crests (the
 // Bruinen at the Ford); `lava` is an emissive flow under a crust instead.
 //
-//   createWater({ area | along, level, flow = [0, 1], kind = 'river' | 'still' | 'lava', sky, ground, speed })
+//   createWater({ area | along, level, flow = [0, 1], kind = 'river' | 'still' | 'lava', sky, ground, speed, murk = 0 })
 //     → { mesh, uniforms: { uTime, uRise, uFlow }, set(light), update(dt), dispose }
 //
 // `area` is { x0, z0, w, d }, a flat sheet at `level`; `along` is
 // { line, width, level(m) } (terrain.js’s river and riverLevel), a ribbon
 // down the river’s line at its own heights, its flow the line’s tangent.
-// `ground(x, z)` is the land under it: each vertex keeps how deep it stands
+// `murk` (0…1) is water the colour of the bog it lies in, the sky dulled
+// off it (the Dead Marshes'). `ground(x, z)` is the land under it: each vertex keeps how deep it stands
 // (aDepth), so the shallows and the foam are read where the ground is, with
 // no texture to sample. `uFlow` is the speed along the flow, m/s.
 //
@@ -36,6 +37,8 @@ const WAVES = [
 ];
 const SHALLOW = new THREE.Color(0.17, 0.27, 0.2);
 const DEEP = new THREE.Color(0.03, 0.08, 0.1);
+const MUD = new THREE.Color(0.12, 0.11, 0.05); // (a murky water's shallows and its deep)
+const SILT = new THREE.Color(0.02, 0.025, 0.012);
 const FOAM = new THREE.Color(0.86, 0.9, 0.9);
 const HOT = new THREE.Color(1, 0.32, 0.04);
 const CRUST = new THREE.Color(0.06, 0.03, 0.025);
@@ -88,7 +91,7 @@ function geometryOf({ area, along, level = 0, flow = [0, 1], ground }) {
   return g;
 }
 
-export function createWater({ area = null, along = null, level = 0, flow = [0, 1], kind = 'river', sky = null, ground = null, speed = SPEED[kind] } = {}) {
+export function createWater({ area = null, along = null, level = 0, flow = [0, 1], kind = 'river', sky = null, ground = null, speed = SPEED[kind], murk = 0 } = {}) {
   const s = sky?.uniforms ?? {};
   const u = {
     uTime: uniform(0),
@@ -164,8 +167,12 @@ export function createWater({ area = null, along = null, level = 0, flow = [0, 1
     const zenith = mix(vec3(0.01, 0.015, 0.04), vec3(0.22, 0.42, 0.78), day);
     const skyCol = mix(horizon, zenith, pow(max(r.y, 0), 0.5));
     const glint = sunCol.mul(pow(max(dot(r, sunDir), 0), 220).mul(day).mul(5));
-    const body = mix(vec3(SHALLOW.r, SHALLOW.g, SHALLOW.b), vec3(DEEP.r, DEEP.g, DEEP.b), smoothstep(0.2, 1.6, depth)).mul(u.uLight);
-    const c = mix(body, skyCol, fres).add(glint).toVar();
+    const sink = smoothstep(0.2, 1.6, depth);
+    const clear = mix(vec3(SHALLOW.r, SHALLOW.g, SHALLOW.b), vec3(DEEP.r, DEEP.g, DEEP.b), sink);
+    const body = (murk > 0 ? mix(clear, mix(vec3(MUD.r, MUD.g, MUD.b), vec3(SILT.r, SILT.g, SILT.b), sink), murk) : clear).mul(u.uLight);
+    // (a murky pool gives back less of the sky, and greyer)
+    const given = murk > 0 ? mix(skyCol, horizon.mul(0.55), murk * 0.6).mul(1 - murk * 0.35) : skyCol;
+    const c = mix(body, given, murk > 0 ? fres.mul(1 - murk * 0.3) : fres).add(glint).toVar();
     // foam at the shallow edge, broken by the noise; and on the rise’s crests
     const edge = float(1).sub(smoothstep(0.02, 0.18, depth)).mul(smoothstep(0, 0.5, n0));
     const foam = edge.mul(0.55).add(u.uRise.mul(smoothstep(0.75, 1, w.crest))).clamp(0, 1);

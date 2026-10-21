@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EDGE, GOALS, OVERDRIVE, PLANETS, SHIP, SOLIDS, SPACE, STARTS, autopilot, boostAt, brakeAt, ceilingAt, clearPark, crashLoud, driveAt, forward, holdReach, inTrench, noseOf, orbiting, parkAt, spawn, startAt, step, turnAt } from './ship';
+import { EDGE, GOALS, OPEN_SPACE, OVERDRIVE, PLANETS, SHIP, SOLIDS, SPACE, STARTS, autopilot, boostAt, brakeAt, ceilingAt, clearPark, crashLoud, driveAt, forward, holdReach, inTrench, noseOf, orbiting, parkAt, spawn, startAt, step, turnAt } from './ship';
 import { DEEP, WONDERS, easeOpen, gapAlong, trenchBand } from './deep';
 import { MAW } from './maw';
 import { NOSE, UP, fromAngles, rotate } from './orient';
@@ -968,4 +968,124 @@ describe('autopilot', () => {
       expect(done, id).toBe(true);
     }
   }, LONG);
+});
+
+describe('open space', () => {
+  const up = (dir) => ({ ...spawn(null), pitch: dir * (Math.PI / 2 - 0.01) });
+  const climb = (s0, dir) => {
+    let s = s0, t = 0, edge = 0;
+    while (Math.abs(s.y) < 100000 && t < 600) {
+      const r = step(s, { throttle: 1, boost: true }, 1 / 20, SOLIDS, OPEN_SPACE);
+      edge += r.events.filter((e) => e.type === 'edge').length;
+      if (t > 1) expect(dir * (r.ship.y - s.y)).toBeGreaterThan(0);
+      s = r.ship; t += 1 / 20;
+    }
+    return { s, t, edge };
+  };
+  it('has no roof, and SPACE keeps its own', () => {
+    expect(OPEN_SPACE.roof).toBeNull();
+    expect(SPACE.roof).toBe(ceilingAt);
+    // (the drive is wide open far above home: no ceiling term in it)
+    expect(OPEN_SPACE.driveAt(0, 50000, 0)).toBe(1);
+    expect(SPACE.driveAt(0, 50000, 0)).toBeLessThan(1);
+  });
+  it('flies 100,000 straight up from home, and straight down, never turned back, on the pulse drive', () => {
+    for (const dir of [1, -1]) {
+      const { s, t, edge } = climb(up(dir), dir);
+      expect(edge).toBe(0);
+      expect(Math.abs(s.y)).toBeGreaterThanOrEqual(100000);
+      expect(t).toBeLessThan(600);
+      expect(s.speed).toBeGreaterThan(SHIP.boost * 2);
+    }
+  });
+  it('lets the autopilot climb to a park 30,000 above home', () => {
+    const high = { id: 'high', at: [0, 30000, 2000], r: 10, reach: 20 };
+    const space = { ...OPEN_SPACE, goals: { ...OPEN_SPACE.goals, high } };
+    // (parked off it on the side home is, level with it and facing it)
+    const park = { x: 0, y: 30000, z: high.at[2] + high.reach + 4, heading: 0 };
+    let s = spawn(null);
+    let done = false;
+    for (let t = 0; t < 600 && !done; t += 1 / 20) {
+      const a = autopilot(s, 'high', park, space);
+      done = a.done;
+      s = step(s, a.input, 1 / 20, SOLIDS, space).ship;
+    }
+    expect(done).toBe(true);
+    expect(Math.abs(s.y - 30000)).toBeLessThan(5);
+  });
+  it('flies the autopilot’s trips in the open universe too: from the edge to a universe, and the takeover from upside down', () => {
+    for (const [id, from] of [[ORDER[0], spawn(null)], [ORDER.at(-1), { ...spawn(null), pitch: -1.2, bank: Math.PI - 0.2, speed: SHIP.cruise }]]) {
+      let s = from;
+      const park = parkAt(id, [s.x, s.z]);
+      let done = false;
+      let bumps = 0;
+      for (let t = 0; t < 150 && !done; t += 1 / 60) {
+        const a = autopilot(s, id, park, OPEN_SPACE);
+        done = a.done;
+        const r = step(s, a.input, 1 / 60, SOLIDS, OPEN_SPACE);
+        s = r.ship;
+        bumps += r.events.filter((e) => e.type === 'bump' || e.type === 'crash').length;
+        expect(inside(s), `${id} at ${t.toFixed(2)}s`).toBe(false);
+      }
+      expect(done, id).toBe(true);
+      expect(bumps, id).toBe(0);
+      expect(Math.abs(s.pitch), id).toBeLessThan(0.1);
+      expect(Math.abs(s.bank), id).toBeLessThan(0.1);
+      expect(orbiting(s, null), id).toBe(id);
+    }
+  }, LONG);
+  it('keeps the ceiling of a space that has no roof key, the galaxy’s shape', () => {
+    // (galaxy/space.js's makeSpace gives ceilingAt and no roof: reading only
+    // `roof` would take its ceiling away)
+    const { roof, ...roofless } = SPACE;
+    expect(roof).toBe(ceilingAt);
+    expect('roof' in roofless).toBe(false);
+    for (const side of [1, -1]) {
+      let s = { ...up(side), x: 0, z: 0, speed: SHIP.boost };
+      let top = 0;
+      for (let t = 0; t < SHIP.ceiling / SHIP.boost + 2; t += 1 / 60) {
+        s = step(s, { throttle: 1, boost: true }, 1 / 60, [], roofless).ship;
+        top = Math.max(top, side * s.y);
+      }
+      expect(top).toBeLessThan(SHIP.ceiling + 1);
+      expect(top).toBeGreaterThan(SHIP.ceiling * 0.7);
+    }
+  });
+  it('walls the Rick and Morty pocket as a ball, both ways, and nothing above it', () => {
+    const RM = SECTORS.rickmorty;
+    const [ox, oy, oz] = RM.origin;
+    const fromMiddle = (s) => Math.hypot(s.x - ox, s.y - oy, s.z - oz);
+    // inside, from its middle, straight up: held in the ball, and turned back at it
+    let s = { ...up(1), x: ox, y: oy, z: oz, speed: 40 };
+    let edge = 0;
+    for (let t = 0; t < 60; t += 1 / 20) {
+      const r = step(s, { throttle: 1, boost: true }, 1 / 20, [], OPEN_SPACE);
+      edge += r.events.filter((e) => e.type === 'edge').length;
+      s = r.ship;
+      expect(fromMiddle(s)).toBeLessThanOrEqual(RM.edge + 1e-6);
+    }
+    expect(edge).toBeGreaterThan(0);
+    // outside, level 7,000 over its middle, flying across it: nothing up
+    // there turns it back, and it comes out over the far side
+    s = { ...spawn(null), x: ox, y: oy + 7000, z: oz + RM.edge + 500, heading: 0, speed: 40 };
+    edge = 0;
+    for (let t = 0; t < 200 && s.z > oz - RM.edge - 500; t += 1 / 20) {
+      const r = step(s, { throttle: 1, boost: true }, 1 / 20, [], OPEN_SPACE);
+      edge += r.events.filter((e) => e.type === 'edge').length;
+      s = r.ship;
+    }
+    expect(edge).toBe(0);
+    expect(s.z).toBeLessThan(oz - RM.edge - 500);
+    // outside, diving onto its top from 5,000 over its middle: held off the
+    // ball in 3D, just outside its wall, with one word of it
+    s = { ...up(-1), x: ox, y: oy + RM.edge + 5000, z: oz, speed: 40 };
+    edge = 0;
+    for (let t = 0; t < 120; t += 1 / 20) {
+      const r = step(s, { throttle: 1, boost: true }, 1 / 20, [], OPEN_SPACE);
+      edge += r.events.filter((e) => e.type === 'edge').length;
+      s = r.ship;
+      expect(fromMiddle(s)).toBeGreaterThanOrEqual(RM.edge + 2 - 1e-6);
+    }
+    expect(edge).toBe(1); // (one word of the wall, not one a frame while it slides off the ball)
+  });
 });

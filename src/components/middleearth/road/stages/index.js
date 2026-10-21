@@ -7,6 +7,8 @@
 // The lengths are the ledger’s: the ride on auto must be 20 to 30 minutes
 // (clock.test.js), so the briefs are binding and the lengths give.
 
+import { MERES, POOLS, clearOf, hollowsOf } from './marshes/water';
+
 export const MODES = ['walk', 'horse', 'climb', 'boat', 'carried', 'eagle', 'ship'];
 
 export const STAGES = [
@@ -258,13 +260,15 @@ export const STAGES = [
         relief: [
           { type: 'swell', scale: 260, height: 1.5 },
           { type: 'hills', scale: 40, height: 1.2, gain: 0.4, octaves: 3 },
-          { type: 'island', at: [-16, 70], r: 14, height: -1.6, core: 0.5, ragged: 0.4 },
-          { type: 'island', at: [14, 84], r: 12, height: -1.6, core: 0.5, ragged: 0.4 },
-          { type: 'island', at: [-12, 98], r: 11, height: -1.6, core: 0.5, ragged: 0.4 },
+          ...hollowsOf(POOLS, -1.6),
           { type: 'mountains', scale: 140, height: 90, from: 260, to: 460 },
+          // (the meres after the mountains, so the layers before keep their seeds)
+          ...hollowsOf(MERES, -1.1),
         ],
       },
       paint: { greens: [0x4e4a30, 0x6a6440, 0x7a7048], dirt: 0x4a4436 },
+      // (nothing planted in the water: marshes/water.js)
+      clear: clearOf([...POOLS, ...MERES]),
     },
   },
   {
