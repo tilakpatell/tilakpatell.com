@@ -240,6 +240,7 @@ export function fightStep(s, world, dt, rand = Math.random) {
     s.target = null;
     m.engaged = false;
     s.stuckFor = 0;
+    s.wanted = null;
     // (a fight just over: home first, then the beat or the post)
     const burst = s.engagedUntil > now ? lostBurst(s, now, t) : null;
     if (burst) return { x: s.b.x, z: s.b.z, yaw: s.b.yaw, mode: 'look', moving: 0, ...quiet, ...burst };
@@ -264,6 +265,7 @@ export function fightStep(s, world, dt, rand = Math.random) {
       s.target = null;
       world.tokens?.release('shot', s.id, threat.id);
       m.engaged = false;
+      s.wanted = null;
       return { ...about(s, dt), ...quiet };
     }
   }
@@ -298,7 +300,16 @@ export function fightStep(s, world, dt, rand = Math.random) {
   else if (world.tokens && !threat.visible) world.tokens.release('shot', s.id, threat.id);
   intent.fire = may;
   const was = [s.b.x, s.b.z];
+  // (the walker has the last word on where a body goes, groundScene.js's moved: pushed out of a solid
+  // the navgrid lacks (a tree streamed in since it was built) or kept off ground it can't stand on, the
+  // body is not where the brain walked it last. Told so, the brain finds its own way round:
+  // soldierBrain.js's stuck, which plans again after a second and steps aside after three)
+  const held = Boolean(s.wanted) && Math.hypot(s.wanted[0] - was[0], s.wanted[1] - was[1]) > 0.05;
+  const real = s.lastAt ? Math.hypot(was[0] - s.lastAt[0], was[1] - s.lastAt[1]) : Infinity;
+  s.lastAt = was;
+  const stuck = m.brain.stuck ?? 0;
   const shot = minds.act(s, intent, bw, dt, now);
+  if (held) m.brain.stuck = stuck + dt;
   const body = m.body;
   let x = body.at[0];
   let z = body.at[2];
@@ -309,10 +320,10 @@ export function fightStep(s, world, dt, rand = Math.random) {
     body.at[0] = x;
     body.at[2] = z;
   }
-  const moved = Math.hypot(x - was[0], z - was[1]);
   const yaw = turnToward(s.b.yaw, body.yaw, TURN * dt);
-  // (where it wanted to walk and couldn't: for the checks, scripts/assault-check.mjs)
-  s.stuckFor = intent.goal && Math.hypot(intent.goal[0] - x, intent.goal[1] - z) > 1 && moved < 0.1 * dt ? (s.stuckFor ?? 0) + dt : 0;
+  // (where it wanted to walk and, the last frame, didn't: for the checks, scripts/assault-check.mjs)
+  s.stuckFor = intent.goal && Math.hypot(intent.goal[0] - x, intent.goal[1] - z) > 1 && real < 0.1 * dt ? (s.stuckFor ?? 0) + dt : 0;
+  s.wanted = [x, z];
   s.target = target;
   const out = { x, z, yaw, mode, moving: body.moving ? 1 : 0, aim: null, fire: false, suppressive: false, guessed: !threat.visible, target, stuck: s.stuckFor };
   if (shot) return { ...out, aim: { x: shot[0], y: shot[1], z: shot[2] }, fire: true };

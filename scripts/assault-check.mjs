@@ -139,7 +139,8 @@ async function groundPass(id) {
         // (the holders face out from their turf's middle: the bearings across their sight first)
         const out = Math.atan2(post[0] - turf.at[0], post[1] - turf.at[1]);
         const ways = Array.from({ length: 9 }, (_, k) => out + ((k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI) / 8);
-        for (const r of [18, 25, 32, 12, 40])
+        // (nearer last: on a world of cliffs and mesas, Geonosis, the post's own ledge may be the only ground about its height)
+        for (const r of [18, 25, 32, 12, 40, 8, 5])
           for (const a of ways) {
             const p = [post[0] + Math.sin(a) * r, post[1] + Math.cos(a) * r];
             // (from just ahead of the post: its own sandbags are behind the holders, not between)

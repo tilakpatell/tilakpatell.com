@@ -211,6 +211,35 @@ describe('the fight', () => {
     run([t], w2, 30, { extra: (now) => [{ ...lure, z: range + 8 + now * 3 }] });
     expect(Math.hypot(t.b.x, t.b.z)).toBeLessThanOrEqual(t.leash + range + 0.5);
   });
+  test('a body the walker holds back is a stuck brain, which finds its own way round; one let go is not', () => {
+    const range = TROOPS.stormtrooper.range;
+    const foe = { id: 'r', x: 0, z: range + 8, vel: [0, 0], side: 'rebel', kind: 'rebel' };
+    const most = (hold) => {
+      const s = mk('stormtrooper', 'empire', 0, 0, 0);
+      const w = worldOf([s]);
+      let top = 0;
+      for (let t = 0; t < 3; t += DT) {
+        w.t += DT;
+        w.bodies = [bodyOf(s), foe];
+        const o = fightStep(s, w, DT, () => 0.5);
+        // (a wall the navgrid lacks, across its way in: the scene's walker keeps it where it was)
+        if (!hold || o.z < 2) {
+          s.b.x = o.x;
+          s.b.z = o.z;
+        }
+        s.b.yaw = o.yaw;
+        top = Math.max(top, s.bot?.brain.stuck ?? 0);
+      }
+      return { top, s };
+    };
+    const held = most(true);
+    // (held past a second, the brain plans again: its own `stuck`)
+    expect(held.top).toBeGreaterThan(1);
+    expect(held.s.stuckFor).toBeGreaterThan(1);
+    const free = most(false);
+    expect(free.top).toBeLessThan(0.5);
+    expect(free.s.b.z).toBeGreaterThan(5);
+  });
 });
 
 describe('the squads over a long visit', () => {
