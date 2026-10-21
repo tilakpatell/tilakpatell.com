@@ -589,6 +589,23 @@ export function covered(ctx, s) {
 export function stair(ctx, s) {
   const m = ctx.mesh;
   const w = s.width ?? 2.4;
+  // a lamp at each landing on the open side, lit before the castle’s windows:
+  // at dusk the stair is a line of lights up the cliff from the boats
+  if (s.lamps)
+    for (let i = 1; i < s.points.length - 1; i += 2) {
+      const [x, y, z] = s.points[i];
+      const [nx, , nz] = s.points[i + 1];
+      const turn = Math.atan2(nx - s.points[i - 1][0], nz - s.points[i - 1][2]) - Math.PI / 2;
+      const off = (s.open ?? 1) * (w / 2 + 0.25);
+      const at = [x + Math.sin(turn) * off, y, z + Math.cos(turn) * off];
+      m.tone(TONES.iron);
+      m.box('iron', { at, size: [0.12, 2.1, 0.12] });
+      m.tone(TONES.white).lit(0.01);
+      m.box('glass', { at: [at[0], y + 2.1, at[2]], size: [0.6, 0.8, 0.6], bottom: true });
+      m.lit(0);
+      m.tone(TONES.iron);
+      m.box('iron', { at: [at[0], y + 2.9, at[2]], size: [0.72, 0.1, 0.72] });
+    }
   for (let i = 1; i < s.points.length; i++) {
     const [x0, y0, z0] = s.points[i - 1];
     const [x1, y1, z1] = s.points[i];
@@ -728,6 +745,14 @@ export function boathouse(ctx, s) {
   }
   const front = P(len / 2, 0);
   m.box('rubble', { at: [front[0], base + h - 1.6, front[1]], size: [0.8, 1.6, w], turn });
+  // two small windows a side, lit early: someone is always down with the boats
+  for (const side of [1, -1])
+    for (const u of [-len / 4, len / 4]) {
+      const p = P(u, side * (w / 2 + 0.44));
+      m.tone(TONES.glass).lit(0.02 + ctx.rng() * 0.05);
+      m.shape('glass', { at: [p[0], base + 2.2, p[1]], turn: turn + (side > 0 ? 0 : Math.PI), outline: archOutline(1.2, 2, { pointed: false, segs: 3 }) });
+      m.lit(0);
+    }
   gable(ctx, { at: [s.at[0], base + h, s.at[1]], len: len + 0.8, w: w + 0.8, h: w * 0.42, turn, overhang: 0.6, tone: TONES.old });
   // the jetty out from the arch over the water, on its posts
   m.tone(TONES.timber);

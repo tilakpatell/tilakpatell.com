@@ -212,7 +212,10 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
     renderer.shadowMap.type = THREE.PCFShadowMap;
     sun.castShadow = true;
     sun.shadow.radius = 1.5;
-    import('../../../lib/three/light/sun')
+    // (waited for, a few seconds at most, before the grounds are shown: a
+    // shadow node coming in after the first frames remade every pipeline
+    // that takes it, and one still being made the old way then failed)
+    const made = import('../../../lib/three/light/sun')
       .then(async ({ castCascades }) => {
         if (unlit) return;
         const c = await castCascades(sun, null, { tier, filter: null, video: { shadowDistance: T.shadows, cascades: 2 } });
@@ -220,6 +223,7 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
         else cascades = c;
       })
       .catch(() => {});
+    await Promise.race([made, new Promise((r) => setTimeout(r, 3000))]);
   }
   if (house) house.adopt(scene);
 

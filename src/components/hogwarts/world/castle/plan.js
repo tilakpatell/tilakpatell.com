@@ -91,6 +91,7 @@ export const PLAN = [
     id: 'boathouse-stair',
     width: 2.4,
     open: 1,
+    lamps: true,
     points: [
       [-22, 1.2, 48],
       [-3, 12, 47],
