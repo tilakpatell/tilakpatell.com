@@ -19,7 +19,8 @@ const fixture = () =>
     spots: [{ id: 'thing', dx: 0, dz: -12, label: 'A thing', verb: 'Look' }],
   });
 const room = () => place(1, { id: 'hall', name: 'A hall', kind: 'room', deep: 30, wide: 34, ceiling: 8 });
-const TRIS = { 'zigerion': 9377, 'gearperson-b': 9227, 'gromflomite': 8356, 'magdalian-a': 9382, 'gearhead': 30000, 'crowd:cop': 3208 };
+// (each light: the heavy rule, a heavy kind at most twice, has a test of its own)
+const TRIS = { 'zigerion': 9377, 'gearperson-b': 9227, 'gromflomite': 8356, 'magdalian-a': 9382, 'gearhead': 9000, 'crowd:cop': 3208 };
 const opts = { tris: TRIS, tasks: ['squanch', 'wedding'], blocks: [{ id: 'pen', dx: -20, dz: 15, w: 6, d: 4, h: 1 }] };
 const ok = { look: {}, crowd: { walk: [{ kinds: ['zigerion'], n: { high: 4, mid: 2, low: 1 }, loop: [[-25, 15], [-5, 15], [-5, 20], [-25, 20]] }] } };
 const problems = (w, d = fixture()) => worldProblems(d, w, opts);
@@ -134,6 +135,13 @@ describe('a world record’s rules', () => {
     expect(worldProblems(room(), { outside: 'ground', bodies: [planet] }, opts)).toEqual([expect.stringMatching(/space/)]);
     expect(problems({ bodies: [planet] })).toEqual([expect.stringMatching(/space/)]);
     expect(worldProblems(room(), { outside: 'space', bodies: [{ ...planet, size: 40 }] }, opts)).toEqual([expect.stringMatching(/wide/)]);
+  });
+
+  it('stands a heavy figure (over 25k triangles: Zeep, Birdperson) at most twice in a place, on any level', () => {
+    const heavy = { ...TRIS, zeep: 41082 };
+    const zeeps = (n) => worldProblems(fixture(), { crowd: { gather: [{ kinds: ['zeep'], n, at: [0, -40], r: 2, face: [0, 0] }] } }, { ...opts, tris: heavy });
+    expect(zeeps({ high: 2, mid: 2, low: 0 })).toEqual([]);
+    expect(zeeps({ high: 3, mid: 2, low: 0 })).toEqual([expect.stringMatching(/zeep.*twice/)]);
   });
 
   it('lets a piece stand by its own spot (the siren by its pull), and only its own', () => {

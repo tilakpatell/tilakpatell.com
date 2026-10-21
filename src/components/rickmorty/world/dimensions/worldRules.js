@@ -3,7 +3,8 @@
 //
 // worldProblems(d, world, { tris, tasks, blocks }) → what's wrong, in words (none: [])
 //   - every crowd kind is in the cast (or one of the Citadel's light
-//     copies, `crowd:<name>`) and counted in `tris`;
+//     copies, `crowd:<name>`) and counted in `tris`; a heavy one (over 25k
+//     triangles) at most twice;
 //   - no copy of a place's hunters, lookouts or named people in its box:
 //     a hunter's or a lookout's kind stands 7 m beyond the edge at least, a
 //     named person's 30 m (a room's outside is behind its glass: any
@@ -27,6 +28,7 @@ import { QUATERNIUS } from './surround';
 
 const NEAR = { hunter: 7, named: 30 };
 const SKY = 20; // metres up: a landmark that high is over the box, not in it
+const HEAVY = 25000; // a crowd kind's triangles past which it stands at most twice
 const FAMILY = ['jerry-ship', 'spacebeth-ship', 'cruiser', 'gotron', 'dirlycar', 'vindicators-ship'];
 const SIDES = ['n', 'e', 's', 'w'];
 
@@ -66,6 +68,14 @@ export function worldProblems(d, world, { tris = {}, tasks = [], blocks = [] } =
     }
     for (const t of [c.until, c.after].filter(Boolean)) if (!tasks.includes(t)) out.push(`${what} is gated on ${t}, which is no task`);
   }
+
+  // a heavy figure (Zeep, Birdperson, the Glip-Glop) at most twice in a place, on any level
+  for (const tier of ['high', 'mid', 'low'])
+    for (const k of new Set([...entries, ...(world.stands ?? [])].flatMap((c) => c.kinds))) {
+      if (!(tris[k] > HEAVY)) continue;
+      const most = [...entries, ...(world.stands ?? [])].filter((c) => c.kinds.includes(k)).reduce((a, c) => a + Math.ceil((c.n?.[tier] ?? 0) / c.kinds.length), 0);
+      if (most > 2) out.push(`${k} is heavy (${tris[k]} triangles): it stands at most twice, not ${most} on ${tier}`);
+    }
 
   for (const st of world.stands ?? []) {
     // (a stand turns a quarter at a time to face what it watches: its footprint, and how far it is from the box)

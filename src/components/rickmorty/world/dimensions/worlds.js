@@ -252,7 +252,7 @@ export const WORLDS = {
     sky: { top: 0x2f8a52, mid: 0x8ae0a8, low: 0xe8fff0, sun: 0xf8fff0, clouds: 0.6, moons: 0 },
     ring: { n: { styles: ['spire', 'dome', 'tower'], rows: 2, h: [10, 22] }, e: null, s: null, w: null },
     far: { n: { styles: ['spire', 'tower'], h: [60, 110] } },
-    crowd: { gather: [{ kinds: ['zeep'], n: { high: 3, mid: 2, low: 0 }, at: [0, -40], r: 2, face: [0, -70], beat: 1 }] },
+    crowd: { gather: [{ kinds: ['zeep'], n: { high: 2, mid: 2, low: 0 }, at: [0, -40], r: 2, face: [0, -70], beat: 1 }] },
   },
 
   // Fantasy World: a village of Tudor houses round the square, hills and a
