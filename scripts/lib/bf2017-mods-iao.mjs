@@ -163,7 +163,9 @@ export function iaoRulebook({ load, list, vanilla, ai }) {
     if (!k || !keep(a.name) || !keep(k.kit) || (k.era && !keep(`Faction_${k.era}`))) continue;
     const key = templateKey(k);
     const t = key ? ai.skirmish?.templates?.[key] : null;
-    kits.push({ kit: short(k.kit), side: k.side, era: k.era, class: k.class, aiBody: short(k.aiBody), template: t ? key : null, tactics: t?.tactics ?? null, _source: k._source, ...(t ? { template_source: t._source } : {}) });
+    // (a row each, kept lean: the record and its object, whose WSFaction, Gameplay and AIBlueprint these are;
+    // the template's own source is its kitTemplates row's)
+    kits.push({ kit: short(k.kit), side: k.side, era: k.era, class: k.class, aiBody: short(k.aiBody), template: t ? key : null, tactics: t?.tactics ?? null, _source: `${a.name}#${a.root}` });
   }
   kits.sort((x, y) => (x.kit < y.kit ? -1 : 1));
   // (the same by era, side and class: what a bot's template is, the rows the sim reads, each the first
@@ -172,7 +174,7 @@ export function iaoRulebook({ load, list, vanilla, ai }) {
   for (const k of kits) {
     if (!k.era || !k.side || !k.template) continue;
     const at = ((kitTemplates[k.era] ??= {})[k.side] ??= {});
-    const row = (at[k.class] ??= { template: k.template, tactics: k.tactics, aiBody: k.aiBody, kits: 0, _source: k._source, template_source: k.template_source });
+    const row = (at[k.class] ??= { template: k.template, tactics: k.tactics, aiBody: k.aiBody, kits: 0, _source: k._source, template_source: ai.skirmish.templates[k.template]._source });
     if (row.template !== k.template) throw new Error(`${k.kit}: the ${k.era} ${k.side} ${k.class} kits play ${row.template} and ${k.template}`);
     row.kits++;
   }

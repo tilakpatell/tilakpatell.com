@@ -103,7 +103,11 @@ async function main(argv) {
   if (args.dry) return;
   const out = join(ROOT, typeof args.out === 'string' ? args.out : 'src/data/bf2017/mods');
   mkdirSync(out, { recursive: true });
-  writeFileSync(join(out, `${mod}.json`), JSON.stringify(book, null, 1) + '\n');
+  // (on one line, as the game's rulebooks are, and under 64 KB: the bots' logic imports it, and a record
+  // over that the build would inline is counted against `client-json-kb`, docs/health/RULES.md)
+  const text = JSON.stringify(book) + '\n';
+  if (text.length > 64 * 1024) throw new Error(`${mod}.json would be ${Math.round(text.length / 1024)} KB: over the 64 KB a statically imported record may be`);
+  writeFileSync(join(out, `${mod}.json`), text);
   console.log(`wrote ${relative(ROOT, join(out, `${mod}.json`))}`);
 }
 
