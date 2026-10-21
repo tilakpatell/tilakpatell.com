@@ -30,7 +30,7 @@
 //     [tx, tz] } | null (within twice the width there)
 //   lakeAt(rivers, x, z) → lake | null (within 1.1 × its radius)
 
-import { noise2 } from '../../components/galaxy/surface/noise.js';
+import { noise2 } from '../noise.js';
 import { seeded } from '../seeded.js';
 import { fieldAt } from './layers.js';
 

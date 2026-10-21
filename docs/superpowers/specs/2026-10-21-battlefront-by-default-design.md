@@ -1,0 +1,125 @@
+# Battlefront by default: the game’s bodies, ships and minds on every Star Wars surface of the site. The design
+
+Date: 2026-10-21. Status: **design, by an architecting session for implementation sessions, one lane each.** It sits on the Battlefront designs of 2026-10-10 (the game, the accuracy, the flow and the mods, the asset pipeline, the galaxy on the game) and the galaxy’s (the ground factions of 2026-10-08, the asset upgrade of 2026-10-08, the space hulls of 2026-10-14) and changes none of their decisions. Hand-offs: `docs/superpowers/HANDOFF-galaxy.md`, `HANDOFF-battlefront.md`, `HANDOFF-universe.md`. Plans: `docs/superpowers/plans/2026-10-21-bf-default-*.md`, one a lane.
+
+## What the owner asked
+
+“Architect improvements to the Star Wars galaxy, using its Battlefront models by default. These should be site-wide, as well as the AI logic from Battlefront or the mods. You have tilakpatell.com and the bf2-web repo.”
+
+Read as three asks:
+
+1. **The game’s models by default.** Wherever the site draws a Star Wars person, creature, droid, vehicle or ship, it draws the 2017 game’s own model of it when the game has one, in every world and page, not only on the galaxy’s surfaces. The site’s Meshy, Sketchfab and built figures stay only where the game has nothing.
+2. **The game’s minds by default.** Every soldier who fights on a Star Wars ground thinks with the game’s bot logic, as the Battlefront world’s bots already do, not with the galaxy’s hand rules. Where the game’s code or a mod’s says it better than the records read so far, that is the law.
+3. **Site-wide.** The galaxy map and flight, the surfaces and free roam, the universe map’s Star Wars side (its fleet and its people on foot), the Death Star’s inside, the cockpit page.
+
+## What was found (measured 2026-10-21 on `origin/main` at `616201b11`, the desktop)
+
+### The bodies: the galaxy has the game’s, the other worlds have the site’s
+
+- The galaxy’s cast table (`src/components/galaxy/surface/crewList.js`, `CREW`) has 111 rows. 77 are the 2017 game’s: 55 on the game’s skeleton (`rig: 'walrus'`, the heroes and their outfits, the trooper, pilot, officer and civilian kinds) and 22 on their own game rig (`rig: 'own'`: the astromechs, the Ewok, the probe, the B2, the tauntaun, the Gamorrean guard, the fauna). 34 are the site’s: Meshy or Sketchfab figures (Greedo, the Gamorrean, the Bith, Ahsoka, Jabba, Jango, Shaak Ti, the Mandalorian, the Tusken, the Twi’lek, the Ugnaught, the Senate guard, Lobot, the Wing Guard, Dex, the Neimoidian, Bib Fortuna, the Aqualish, Wuher, the mustafarian, the Jedi, Rex, Bo-Katan, Fennec, Cara Dune, Greef, the Rodian, the mercenary, the Inquisitor, the TIE pilot, Hondo, Ackbar, Qui-Gon) and the B1 (the 2005 remaster’s, rigged by Meshy, kept because the game’s B1 markings map was not in the bucket).
+- The galaxy’s catalogue (`surface/catalog/index.js`) orders its groups so a 2017 kind takes over from the same kind in every other group: that rule is right and stays. The 2017 vehicle rows (`catalog/bf2017-vehicles.js`) hold every ground vehicle, turret, fighter and cockpit the game has, 55 kinds with `.far` cuts.
+- The galaxy’s space (`src/components/galaxy/models.js`) flies the game’s cut for the capitals, the X-wing, the TIE interceptor, Slave I, the Scimitar, the TIE striker, the V-wing, the Hyena, the CR90 and the Providence, and **the site’s Sketchfab or Meshy model for thirteen kinds the game has**: the TIE fighter (`tie`), the TIE bomber, the TIE Advanced, the A-wing, the Y-wing, the U-wing, the ARC-170, the N-1, the vulture droid, the tri-fighter, the LAAT (not flown), the cloud car, the Falcon in flight (the game’s landmark, already). Each has a native row in `bf2017-vehicles.js` with a plain cut, a light cut and a far cut.
+- **The universe map** (`src/components/universe/`): its Star Wars side’s troops are the 2005 remaster’s stormtrooper and scout trooper rigged by Meshy (`sides.js` `troops`, `public/models/galaxy/troops/`); its crews on foot are Meshy’s Han and Luke and the cockpit’s Chewbacca (`footFigures.js` `PARTY`); its fleet (`glbFleet.js`) flies its own Star Destroyer, CR90 and Slave I, a gen3d TIE interceptor, and the galaxy’s old small cuts of the Y-wing, A-wing and TIE bomber. `footFigures.js` already loads a 2017 body (`loadWalrusBody`) when a party row names one, so the loader is there.
+- **The Death Star’s inside** (`src/components/deathstar/inside/rules/cast.js`, `scene/figures.js`): every person is on the site’s 24-bone skeleton (Meshy’s Vader, Leia, Luke, Han, the Emperor, the officer; the 2005 stormtrooper; old Ben and C-3PO moved onto it by transfer; the Senate guard dyed red as the Royal Guard). The loader has no path for the game’s skeleton.
+- **The cockpit page** (`src/components/cockpit/crew.js`): Chewbacca is Meshy’s.
+- Nothing else on the site draws a Star Wars figure: the hyperspace, hangar and ambience scenes draw ships of the universe’s and the galaxy’s, none of their own.
+
+### The kinds the game has that the site has not brought in (the local export, `C:\Users\tilak\Downloads\BF2_Extract\web\models.jsonl`)
+
+Yoda (`characters/hero/yoda/yoda_01/yoda_01_mesh`, 31,400 triangles, his own rig), General Grievous (`characters/hero/generalgrievous/generalgrievous_01/…`, 70,665, his own rig), Iden Versio (`characters/hero/iden/…` and `a3/characters/hero/iden/act3/iden_act3_01/iden_act3_01_mesh`, the humanoid skeleton; not the sequel era: the campaign’s act 3 is left out by the owner’s rule, so her act 1 body), the Jawa (`characters/npc/creatures/jawa/jawa_01/jawa_01_mesh`, 18,432, its own rig), the dewback (`characters/npc/creatures/dewback/dewback_01/…`, with its saddle), the bantha (`characters/npc/creatures/bantha/bantha_01/bantha_01_mesh`, 71,778), and the markings maps under `textures/characters/markings/` the bucket lacked (the B1’s among them). **The game has no Tusken** (only the cycler rifle and the Tusken camp’s props), no Twi’lek, Rodian, Ugnaught, Neimoidian or Jawa trader with a face of their own beyond the Jawa, and none of the shows’ people: those stay the site’s until a mod brings them.
+
+### The minds: three brains for one kind of soldier
+
+- `src/lib/battlefront/ai/` is the game’s bot as its records have it: `soldierBrain.js` (643 lines: a utility pick over the game’s tactics branches, the cover queries scored as their score assets score them, firing patterns, the aim box, the difficulties’ reaction and settle curves), `targeting.js` (the game’s distance scores), `squad.js`, `commander.js`, `heroBrain.js`, `vehicleBrain.js`, `creature.js`, `difficulty.js` (twelve rows), `botLogic.js` and `botLogicOverhaul.js` (the Instant Action Overhaul V2’s command-post logic, read from the mod’s own files), `autoPlayer.js`, `waves.js`. Its rulebook is `src/data/bf2017/ai.json` (10 templates, 16 tactics tables, 202 firing patterns, the cover constants, scores and 60 queries, the PvE system). It proves itself over seeds (`npm run test:ai -- src/lib/battlefront`).
+- The galaxy’s ground war (`src/components/galaxy/surface/ground/fight.js`, 341 lines, on `hostiles.js`’s heads: hold, strafe, close, back, cover, flank, look, search) is a hand brain with its own senses, aim error, squads and nerve, on `src/lib/ai/`’s toolkit. Its troops table (`ground/troops.js`) gives each kind a hand `hp`, weapon, range, pace and nerve. The quests’ hostiles (`activity/activity.js` on `hostileStep`), the garrison, and the older galaxy assault (`missions/assault.js`) are the same hand rules again. The hand-off already lists their migration onto one table as owed (its “ground war’s migrations”).
+- The universe map’s characters (`universe/npcRules.js`) and the Death Star’s minds (`deathstar/inside/rules/`) are their own worlds’ and not Battlefront soldiers: they are out of this design.
+- **The game’s own AI code is on this desktop**: `D:\Custom BFEngine\Source Code\Code\Extension\BattleAI\` (688 files; `Brain/Reason/Tactics.cpp` 291 lines, `TargetSelection.cpp` 142, `CombatReasoning.cpp` 287, `CoverEvaluator.cpp`, `Brain/Execute/WeaponControl.cpp` 587, `MoveControl.cpp` 642, `Brain/Gather/VisionInfo.cpp` 553, `Mindcraft/__Generated__/Soldier/SoldierBehavior.inl` 1,118) and `Extension/BrainFreezeAI/` (the campaign’s scripted NPC states). The site’s brains were written from the records and the exe’s strings (`bf2-re/findings/05-ai.md`, `28-npcs-and-ai.md`, `34-shooting-and-ai-usage.md`), with the scoring loops marked “pending the decompile”. The source answers what the records cannot: the order tactics are evaluated in, how a target is selected among the seen, when a pattern starts and stops, the cover evaluator’s exact terms. `bf2-web` (`D:\Custom BFEngine\bf2-web`) is the engine’s renderer and audio brought to the browser; it carries no gameplay AI and is not changed by this design.
+- **The mods on this machine**: the Instant Action Overhaul V2 is extracted at `C:\Users\tilak\source\repos\bf2-re\data\mods\iao-v2\` (3,443 records: `ebx/gameplay/gamemodes/mode9/prefabs/pve_botlogic.json`, `ebx/addons/mode1/gameplay/pf_bot_logic.json`, `ebx/s7_2/gameplay/kits/ai/`, its team paints, its HvV layers). Its command-post logic is read; its 34 AutoPlayer records and its AI kits are not. Battlefront Expanded, Saberfront and the HvV mods are **not on this machine any more** (the archives listed on 2026-10-10 are gone from `Downloads`); Frosty’s editor is at `Downloads\BF2_Extract\frosty\FrostyEditor`. The 2005 game’s extraction (`C:\Users\tilak\bf2-extract\`) has no AI output yet and its AI is a different game’s: out of scope.
+
+## Decisions
+
+1. **One cast table, below the worlds.** `src/lib/cast/bodies.js` (pure, no three.js, tested) holds every Star Wars figure kind the site draws, keyed as the galaxy keys them, each row `{ url, tall, rig, pack, ownRig, lod, far, full, fullMB, fullDL, faces, still, source }` where `source` is `'game'` (the 2017 game’s own), `'mod:<name>'` (a mod’s, brought in by the mods pipeline) or `'site'` (Meshy, Sketchfab, built or the 2005 remaster’s), and a `could` note on a site row naming the game’s or a mod’s kind that would replace it and what stops it today. `bodyOf(kind)` returns the row; `gameFirst(kinds)` the first kind of a list the game has. The galaxy’s `CREW` becomes a reader of it with the same exported names and shape, so nothing in the galaxy changes a pixel. The universe, the Death Star and the cockpit resolve their kinds through it. `scripts/cast-audit.mjs` prints the table (kind, source, file, could) and the count by source; the design’s number to move is the `'site'` count where `could` is not empty.
+2. **The game first, by rank, and compared.** A kind’s body is the game’s where the game has one, a mod’s where only a mod has one, the site’s otherwise. A swap from a site row to a game row is still a row change with a sheet (`scripts/clip-shot.mjs`, the asset upgrade’s rule: compare, never assume): the lane that swaps shoots both and says in the PR which is better and why. A game body that fails to load stands in as today (`surface/standIn.js`), never refused.
+3. **The ships are the game’s.** `galaxy/models.js` takes the game’s cut (`/models/galaxy/surface/<kind>.glb`, the far cut for the far copies, `bf2017-vehicles.js`’s rows) for every kind that has one, thirteen today, and keeps its nose, size and `fit.js` tuning rows measured again against the game’s file. The universe map’s fleet rows (`glbFleet.js`) take the same models in their light or far cuts through `src/components/galaxy/shared/models.js`, where today they fly the universe’s own; the universe’s own Star Destroyer and Venator stay where the hand-off says they stay (the holotable’s and the traffic’s). **The ship-customisation files are not touched** (`universe/shipModels.js`, `hulls.js`, `livery.js`, `modules.js`, `outfit.js`, `paint.js`, `Hangar.jsx`: the arsenal lane’s, by the owner’s rule), nor is the Death Star trench’s X-wing (gen3d’s by an earlier ruling).
+4. **Every person on the game’s skeleton where the game has them.** The universe’s crews on foot (Han, Luke, Chewbacca) and its Star Wars troops take their 2017 rows through the cast table (`footFigures.js` already loads a walrus body). The Death Star’s `figures.js` gains the walrus loader path (`lib/three/walrus.js`, `walrusCuts.js`, `ownRig.js`, as `footFigures.js` has it) and its `cast.js` names the game’s rows for the stormtrooper, the officer, the death trooper, Vader, the Emperor, Leia, Luke, Han, Chewbacca, C-3PO, R5, the gonk and the astromech; **its rooms, kit and stories stay as they were** (the owner’s rule). The Royal Guard stays the dyed Senate guard (the game has none), the IT-O and the dianoga stay built. The cockpit’s Chewbacca is the game’s.
+5. **The kinds the game has come in from the local export.** Yoda, Grievous, Iden (act 1), the Jawa, the dewback and the bantha, by `scripts/bf2017-import.mjs` from `C:\Users\tilak\Downloads\BF2_Extract\web` (the `--root`), each on its own rig (`ownRig.js`, `rigSets.js`, `bf2017-fauna.mjs`’s pattern) or the humanoid one; the B1’s markings from the same export so `battledroid` becomes the game’s B1. Each is a cast row with `source: 'game'`; each hero rigs or stays `soon` on the roster. Sizes by the owner’s rule (a surface model under 2.5 MB, 4 MB for a hero; the light cut committed, the full cut published by hash to the bucket).
+6. **One brain for every soldier on a Star Wars ground.** The galaxy’s ground war, its quests’ hostiles, its garrison and its older assault think with `src/lib/battlefront/ai/soldierBrain.js`, through one adapter, `src/components/galaxy/surface/ground/brain.js`, that hands the brain the `world` it expects (`nav` from the surface’s walker and solids, `lineClear` from the ground’s `seesThrough`, `squad` from the fight’s squads, `objective` and `task` from the director’s posts and raids, `enemies` and `others` from the population by the war’s sides, `shoot` and `roll` into the ground’s bolts and bodies) and reads its intent (`mode`, `target`, `goal`, `stance`, `fire`, `aim`) into the ground’s step. `troops.js` gives each kind its game template and tactics (`rifleman`, `heavy`, `officer`, `sniper`, `closerange`, `melee`; a droid’s nerve is the template’s), the kind’s health and weapon from the game’s rows where it has them (`classes.json`, `weapons.json`; a kind the game lacks keeps its hand row and says so). The difficulty is one setting in the world’s Menu (`difficulty.js`’s names, `normal` by default; the galaxy’s own `?difficulty=` for checks). The gates the ground war adds and the brain lacks (the war’s sides and grudge, the shot tokens, the nerve from the squad’s confidence) stay in `fight.js` as a wrapper round the brain; `hostiles.js`’s heads retire where the brain covers them and stay for the quests’ scripted beats (a duellist, a boss, a shield). Pure, tested over seeds as the Battlefront world’s bots are, and proven on the ground scenario (`ground.scenario.test.js`) and in a browser (`npm run test:ai -- ground`, `scripts/assault-check.mjs`).
+7. **The source is the law.** A lane reads the game’s AI code (`Extension/BattleAI/Brain/`) against the sim’s brain and corrects the brain where the records were read by hand: the tactic evaluation (`Tactics.cpp` `evaluateTactics`, its order and its tick limits), target selection (`TargetSelection.cpp` `selectTargets`), the combat reasoning, the cover evaluator’s terms, the weapon control’s pattern start and stop and its aim, the vision’s spotting and loss. Each correction is a tested rule and a row in `src/data/bf2017/NOTES.md` that cites the file and function (`source: "code"`, where it said `"hand"`). **Nothing of the engine’s source ships or is copied**: the rules are rewritten in the site’s JavaScript in the site’s words, the source is the reference, the owner holds it. The balance tables are run again (`scripts/battlefront-balance.mjs --skirmish`, `--assault`) and the PR says what moved and why.
+8. **The mods’ minds.** `scripts/bf2017-mods.mjs` reads a mod’s extracted records (`bf2-re/data/mods/<mod>/ebx/`) into `src/data/bf2017/mods/<mod>.json` with each number’s `_source`, as `bf2017-data.mjs` does for the game. For the Overhaul: its AI kits (`s7_2/gameplay/kits/ai/`) and its 34 AutoPlayer records, so `botLogicOverhaul.js` covers what the mod does to a bot (its five steps of aim, reaction and dodging; the adaptive difficulty’s ten scales every 15 s) and not only where it sends one. A round may ask for the Overhaul (`?bots=overhaul` today) and the galaxy’s ground war takes the Overhaul’s adaptive difficulty as the driver of its one setting when the player picks `adaptive`. **Battlefront Expanded waits on the owner**: the lane writes the exact steps (the Frosty profile, `bf2export` on `ModData\<Profile>`, the diff against the vanilla manifests, `bf2017-import.mjs` per hero) and the roster it would bring to the cast table (Ahsoka, Rex, Jango, Bo-Katan, Din Djarin, Qui-Gon, Mace, Greedo, Hera, Cad Bane, Ventress and the rest), each a `could` note on its site row until it lands.
+9. **Measured, not raised.** No world’s `WORLD_MB` row rises without the sentence and the measure; the bodies’ light cuts the site carries, the full cuts come from the bucket (`ASSET_BASE`); a swap that adds triangles says the count before and after (`renderer.info`); the frame on Hoth and Tatooine is probed before and after (`scripts/perf-probe.mjs`). The brain on the ground costs what the Battlefront world’s bots cost, measured on the same probe.
+10. **The standing rules hold.** No sequel era (Iden’s act 3, Kylo, Rey, Finn, Phasma, Jakku, Takodana, Starkiller and Crait are refused by `isSequel`); no model names in code, docs or commits; British spelling, curly quotes; pure rules tested beside their files; worlds are islands (the universe, the Death Star and the cockpit import from `src/lib/` and `src/components/galaxy/shared/` only); one lane a PR, CI green, a merge commit; never merge red, never force-push; the 2017 rig in full, the game’s textures as the game has them.
+
+## Architecture
+
+```
+src/lib/cast/bodies.js            the one cast table: kind → body row, source, could   (C1)
+src/lib/cast/bodies.test.js       every row loads to a file the site or the bucket has; every 'site' row with a game kind says why
+scripts/cast-audit.mjs            the table printed, the count by source                 (C1)
+
+src/components/galaxy/surface/crewList.js    CREW read from the cast table, same names   (C1)
+src/components/galaxy/models.js              the thirteen kinds on the game’s cuts        (C2)
+src/components/galaxy/shared/models.js       the fleet’s rows lent to the universe        (C2)
+src/components/universe/glbFleet.js          the Star Wars fleet on the game’s cuts       (C2)
+src/components/universe/sides.js             the troops’ rows from the cast table         (C3)
+src/components/universe/footFigures.js       PARTY’s Han, Luke, Chewbacca from it         (C3)
+src/components/deathstar/inside/rules/cast.js, scene/figures.js   the walrus path          (C3)
+src/components/cockpit/crew.js               Chewbacca from the cast table                (C3)
+
+scripts/bf2017-import.mjs (--root the export)  Yoda, Grievous, Iden, the Jawa, the dewback, the bantha, the B1’s markings   (C4)
+src/lib/three/rigSets.js, walrusSets/          their rigs and packs                        (C4)
+
+src/components/galaxy/surface/ground/brain.js   the adapter: the surface’s world for the sim’s brain   (A1)
+src/components/galaxy/surface/ground/fight.js   the war’s gates round the brain              (A1)
+src/components/galaxy/surface/ground/troops.js  template, tactics, the game’s rows           (A1)
+src/components/galaxy/surface/activity/activity.js, garrison.js, missions/assault.js   onto the brain   (A1, in order)
+
+src/lib/battlefront/ai/*.js                     corrected against the source, tested         (A2)
+src/data/bf2017/NOTES.md                        the rows: source: "code", file and function  (A2)
+
+scripts/bf2017-mods.mjs                         a mod’s records → src/data/bf2017/mods/<mod>.json   (A3)
+src/lib/battlefront/ai/botLogicOverhaul.js      the kits, the steps, the adaptive difficulty         (A3)
+docs/superpowers/plans/2026-10-21-bf-default-A4-expanded.md   the owner’s steps for Battlefront Expanded   (A3 writes it)
+```
+
+## Lanes
+
+Each lane is one implementation session in its own worktree, one branch `claude/bf-default-<lane>`, one PR to `main`, merged on CI green by the session that made it. Lanes in a wave run at once and touch different files; a lane that must read another lane’s result waits for its merge.
+
+| lane | what | depends on | wave |
+| --- | --- | --- | --- |
+| C1 | the cast table, the galaxy reading it, the audit | none | 1 |
+| C2 | the ships: the galaxy’s thirteen kinds and the universe’s fleet on the game’s cuts | none | 1 |
+| A1 | the ground’s soldiers on the game’s brain | none (reads `lib/battlefront/ai` as it is; merges A2 before its PR if A2 lands first) | 1 |
+| A2 | the source as the law: the sim’s brain corrected | none | 1 |
+| C3 | the universe, the Death Star and the cockpit on the game’s bodies | C1 merged | 2 |
+| C4 | Yoda, Grievous, Iden, the Jawa, the dewback, the bantha, the B1’s markings from the export | C1 merged (adds rows to the cast table) | 2 |
+| A3 | the Overhaul’s kits and adaptive difficulty; the Expanded steps written | A2 merged (shares `ai/` files) | 2 |
+
+Not a lane: `bf2-web`. It is the engine’s renderer and audio in the browser and holds no AI; the site reads the game’s data, not its engine (`docs/README.md`, “What is not here”).
+
+## Testing and gates
+
+- Every lane: `npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build`; no budget row raised without its sentence.
+- C1: the galaxy before and after at Tatooine’s landing and Hoth’s, the same pixels (`scripts/autopilot-check.mjs --before` / after, `scripts/surface-shot.mjs`); `scripts/cast-audit.mjs` run and its table in the PR.
+- C2: `scripts/galaxy-check.mjs`, `scripts/galaxy-war-check.mjs`, `scripts/universe-war-check.mjs`; the triangles and MB of a system’s arrival before and after; a shot of each swapped kind in flight beside the old.
+- C3: `scripts/deathstar-check.mjs` and `DS_AUTOPLAY=1 npx vitest run src/components/deathstar/inside/rules/play/autoplay.test.js`; the universe on foot (`scripts/universe-war-check.mjs`, a landing); a shot of each swapped person beside the old.
+- C4: each kind’s clip sheet (`scripts/clip-shot.mjs`), its size, its credit; `scripts/galaxy-check.mjs surface tatooine,geonosis` with the new kinds placed.
+- A1: `npm run test:ai -- ground`, `ground.scenario.test.js`, `scripts/assault-check.mjs` on Hoth, Geonosis, Scarif and Endor, stuck 0, a fight within 60 s of landing on a held world; `scripts/perf-probe.mjs` on Hoth’s surface before and after.
+- A2: the balance tables before and after; the bots’ seeds (`npm run test:ai -- src/lib/battlefront`) stuck 0; every NOTES row cited.
+- A3: twelve Supremacy seeds on the Overhaul as before (NOTES’ measured rows), the kits’ numbers in a table.
+
+## What this design does not do
+
+- No new engine, no dependency. No engine source copied or shipped.
+- No sequel-era kind, map or mode, whatever the mods carry.
+- No change to the Battlefront world’s own rules, modes or Hoth (`src/lib/battlefront/` changes only where A2 corrects a hand reading, with its test).
+- No change to the ship-customisation files, the Death Star’s rooms and stories, or the planet flight (an island).
+- No Meshy, Sketchfab or paid call: everything comes from the export, the bucket and the repo.
+- Battlefront Expanded’s bodies: written up for the owner, not brought in.
+
+## Open assumptions, marked
+
+- The import script reads the local export through `--root` as it reads the bucket’s fetch (`lab/assets/bf2017/` mirrors `web/`): C4 checks before it starts and, if not, adds the one path the script lacks.
+- `bf2017-vehicles.js`’s TIE fighter row is the game’s fighter in flight (not a landmark): C2 measures its span against `models.js`’s and `fit.js`’s rows.
+- The sim’s brain’s `world.nav` wants a navgrid (`nav.js`) or a navmesh (`meshNav.js`); the surfaces have neither, only the walker and the solids. A1 gives it a grid built from the level’s solids at 2 m (the ground’s `population.js` cells are the start) and measures the path cost; a mesh is not built.
+- The source tree under `D:\Custom BFEngine\Source Code\Code\Extension\BattleAI\` is the game’s version, not an older engine’s: A2 checks the tactic names against `ai.json`’s tables (Charge, Attack, Hide, Flee, CloseCombat, SquadMovement, SquadEngage in `Tactics.h` match the records’ settings classes) before trusting a line.
