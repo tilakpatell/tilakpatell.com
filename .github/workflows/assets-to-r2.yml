@@ -40,6 +40,11 @@ on:
         description: "The Supabase project's S3 region (Project Settings → Storage → S3 Connection)"
         required: true
         type: string
+      public-from:
+        description: "The public bucket's address to copy its manifests' files from by name (scripts/assets-mirror.mjs): Supabase's public URL, which its CDN answers where its S3 address said 429"
+        required: false
+        default: ''
+        type: string
       empty-supabase:
         description: "After the copy, delete every file from these Supabase buckets that R2 holds at its size (only once the site has read from R2)"
         required: false
@@ -167,7 +172,9 @@ jobs:
         run: |
           # (where a Supabase bucket lands on R2)
           to() { case "$1" in site-assets) echo tilak-assets ;; *) echo "$1" ;; esac; }
-          opts=(-M --transfers 64 --checkers 64 --retries 5 --low-level-retries 20 --timeout 30m --stats 60s --stats-one-line --stats-log-level NOTICE)
+          # (ten requests a second at most: at sixty-four at once Supabase's S3
+          # address answered every request 429, Too Many Requests)
+          opts=(-M --transfers 16 --checkers 16 --tpslimit 10 --tpslimit-burst 10 --retries 5 --low-level-retries 20 --timeout 30m --stats 60s --stats-one-line --stats-log-level NOTICE)
           for b in $BUCKETS; do
             echo "::group::$b"
             same=()
@@ -213,6 +220,30 @@ jobs:
             echo "$b on Supabase now: $(rclone size "supabase:$b" --fast-list --json)"
             echo "::endgroup::"
           done
+
+  # The public bucket's files the site asks for, by name, from a public
+  # address (Supabase's, through its CDN) to R2, when asked: on 2026-10-21
+  # Supabase's S3 address answered the copy 429 for every request.
+  public:
+    if: ${{ inputs.public-from != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            scripts
+            src/data
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      # (no npm ci: the mirror imports nothing but node's own and scripts/lib)
+      - name: The public bucket, by name
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          FROM: ${{ inputs.public-from }}
+        run: node scripts/assets-mirror.mjs --from "$FROM" --pool 32
 
   signed:
     # (after the copy, so there are keys to ask for)
