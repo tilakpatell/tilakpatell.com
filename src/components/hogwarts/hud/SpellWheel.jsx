@@ -17,6 +17,20 @@ import './spellWheel.css';
 //   <SpellWheel part="wheel" ref open active onChoose touch />   the wheel, over the view
 
 const R = 15; // the rings’ radius, in the glyphs’ 36-unit box
+// what each does, a line, said in the wheel’s middle as you point at it
+const DOES = {
+  lumos: 'Lights the wand. Again, and it’s Nox.',
+  leviosa: 'Lifts a thing for as long as you hold the key.',
+  alohomora: 'Opens a lock that may be opened.',
+  accio: 'Brings a thing to your hand from up to 20 m.',
+  incendio: 'Lights a torch, a fire or a cauldron.',
+  expelliarmus: 'Takes a wand from a hand. Wins a round.',
+  stupefy: 'Knocks a figure down for three seconds.',
+  protego: 'A shield for a second. On the beat, it sends a spell back.',
+  patronum: 'Silver, in your house’s shape. Once it’s learnt.',
+};
+// the name on the wheel: the word, or its short form where it is long
+const SHORT = { leviosa: 'Leviosa', patronum: 'Patronus' };
 const C = 2 * Math.PI * R;
 
 // the glyphs, 24 units square, drawn in the text’s colour
@@ -112,6 +126,7 @@ const SpellWheel = forwardRef(function SpellWheel({ part = 'card', open = false,
   }, [open, onChoose]);
 
   const spell = SPELLS.find((s) => s.id === active) ?? SPELLS[0];
+  const shown = SPELLS.find((s) => s.id === (aimed ?? active)) ?? spell;
   if (part === 'card') {
     return (
       <div className="hw-wand-card" style={{ '--spell': spell.colour }}>
@@ -142,24 +157,23 @@ const SpellWheel = forwardRef(function SpellWheel({ part = 'card', open = false,
               role="menuitem"
               className="hw-wheel-item"
               data-on={s.id === (aimed ?? active) || undefined}
-              style={{
-                '--x': `${Math.sin(a) * 8.6}rem`,
-                '--y': `${-Math.cos(a) * 8.6}rem`,
-                '--spell': s.colour,
-              }}
+              style={{ '--sx': Math.sin(a).toFixed(4), '--sy': (-Math.cos(a)).toFixed(4), '--spell': s.colour }}
+              aria-label={`${s.key} ${s.word}`}
               onPointerUp={() => onChoose(s.id)}
             >
               <span className="hw-wheel-glyph">
                 <Icon id={s.id} />
                 <Ring refFor={refFor(rings)} id={s.id} />
+                <kbd className="hud-cap hw-wheel-key">{s.key}</kbd>
               </span>
-              <span className="hw-wheel-word">
-                <kbd className="hud-cap">{s.key}</kbd> {s.word}
-              </span>
+              <span className="hw-wheel-word">{SHORT[s.id] ?? s.word}</span>
             </button>
           );
         })}
-        <p className="hw-wheel-middle">{SPELLS.find((s) => s.id === (aimed ?? active))?.word}</p>
+        <div className="hw-wheel-middle">
+          <p className="hw-wheel-name">{shown.word}</p>
+          <p className="hw-wheel-does">{DOES[shown.id]}</p>
+        </div>
       </div>
     )
   );

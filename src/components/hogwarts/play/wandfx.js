@@ -384,6 +384,15 @@ export function createWand({ rt, scene, camera, house, houseName = 'gryffindor',
         o.position.lerp(want, Math.min(1, dt * 6));
         o.rotation.y += dt * 0.6;
         if (Math.random() < dt * 20) sparkle(posOf(th), col('#b9e4ff', 2), 1, 0.3, 0.6, 0.05);
+        // the charm’s thread, tip to thing: motes along a line that sags a
+        // little and shivers, and a faint halo round what it holds
+        const at = posOf(th);
+        for (let k = 0; k < 3; k++) {
+          const f = Math.random();
+          const sag = Math.sin(f * Math.PI) * 0.12;
+          cards.spawn({ p: [tip.x + (at[0] - tip.x) * f, tip.y + (at[1] - tip.y) * f - sag, tip.z + (at[2] - tip.z) * f], v: [(Math.random() - 0.5) * 0.08, 0.04, (Math.random() - 0.5) * 0.08], life: 0.22, size: 0.035, colour: col('#b9e4ff', 2.4), grow: -1 });
+        }
+        if (Math.random() < dt * 12) cards.spawn({ p: at, v: [0, 0, 0], life: 0.5, size: (th.r ?? 0.3) * 3.2, colour: col('#9fd0ff', 0.16), grow: 0.3 });
       } else if (th.falling) {
         th.v[1] -= GRAVITY * dt;
         o.position.y += th.v[1] * dt;
