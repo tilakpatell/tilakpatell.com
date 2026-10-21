@@ -21,7 +21,6 @@
 //     each is drawn over what is behind it in the one draw
 
 import * as THREE from 'three';
-import { glslMaterial } from './material';
 import { FORMS, FORM_INDEX } from './rules';
 import { FOG_FRAG, FOG_VERT } from './shaders';
 
@@ -49,7 +48,7 @@ export function createFog({ volume, row }) {
     uCore: { value: 1 },
     uDepth: { value: 0 },
   };
-  const mat = glslMaterial({
+  const mat = new THREE.ShaderMaterial({
     vertexShader: FOG_VERT,
     fragmentShader: FOG_FRAG,
     uniforms,

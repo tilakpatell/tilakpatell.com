@@ -234,13 +234,14 @@ void main() {
   gl_Position = vec4(position.xy * at.w, at.z, at.w);
 }`;
 
-// One sample of the cloud's field per layer, at the layer's depth along the
+// One sample of the cloud’s field per layer, at the layer’s depth along the
 // ray; its thickness (in radii) sets how much it dims, Beer-Lambert as the
-// clouds, dust dimming without light. The ship's light is a warm white two
+// clouds, dust dimming without light. The ship’s light is a warm white two
 // units ahead of the eye (the chase view), scattered by the gas there.
 export const FOG_FRAG = /* glsl */ `
 ${FIELD}
 const float ABSORB_FOG = ${glf(FOG.ABSORB)};
+const float DUST_FOG = ${glf(GAS.DUST)}; // (dust weighs as it does in the clouds, so the same gas dims alike from inside and out)
 const vec3 GLOW = vec3(${FOG.GLOW.map(glf).join(', ')});
 uniform vec3 uCentre;
 uniform float uR;
@@ -258,7 +259,7 @@ void main() {
   vec3 tint;
   float dust;
   float gas = nebulaField(p, uSeed, uForm, uCore, 1.0, uCol0, uCol1, uCol2, tint, dust);
-  float sigma = gas + dust;
+  float sigma = gas + DUST_FOG * dust;
   if (sigma < 1e-4) discard;
   float alpha = 1.0 - exp(-ABSORB_FOG * sigma * vLayer.y / uR);
   vec3 light = tint * alpha * (gas / sigma);

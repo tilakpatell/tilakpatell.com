@@ -33,7 +33,6 @@
 import * as THREE from 'three';
 import { nebulaBudget } from './budget';
 import { createFog } from './fog';
-import { glslMaterial } from './material';
 import { FORMS, FORM_INDEX, LIMIT, checkDesc, detailAt, fogLayers, insideOf, placement, seedOf, stepsAt, youngStars } from './rules';
 import { CLOUD_FRAG, CLOUD_VERT } from './shaders';
 import { noiseVolume } from './volume';
@@ -102,7 +101,7 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
     uNear: { value: 0.1 },
     uScale: { value: 500 },
   };
-  const mat = glslMaterial({
+  const mat = new THREE.ShaderMaterial({
     vertexShader: CLOUD_VERT,
     fragmentShader: CLOUD_FRAG,
     uniforms,

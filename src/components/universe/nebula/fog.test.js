@@ -87,7 +87,9 @@ describe('the fog round the ship', () => {
     expect(reservedIn(m.vertexShader + m.fragmentShader)).toEqual([]);
   });
   it('keeps the fog and the ship’s light on it under the bloom’s line', () => {
-    // (a layer’s light is at most its colour at full strength, 1, plus the glow)
+    // (the layers inside a cloud sum to at most half its radius of gas, so their
+    // light stays near its colour at full strength, 1, plus the glow; a nursery’s
+    // heart tints brighter but over less of that thickness)
     expect(1 + Math.max(...FOG.GLOW)).toBeLessThan(LOOK.bloom.threshold);
   });
   it('forgives a second dispose and a show after it', () => {
