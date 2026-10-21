@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { BELT, POSITIONS, REACH, SUN } from './layout';
+import { WONDERS } from './deep';
+import { NEBULAE } from './landmarks';
 import { MAW } from './maw';
+import { insideOf } from './nebula/rules';
 import { SHIP } from './ship';
 import { POSE_NAMES, poseFor } from './poses';
 import { HOME_RADIUS } from './layout';
@@ -12,7 +15,7 @@ const dot = (a, b) => a.reduce((s, v, i) => s + v * b[i], 0);
 
 describe('the fixed poses', () => {
   it('knows every pose the spec names', () => {
-    expect(POSE_NAMES).toEqual(['overview', 'falcon-sun', 'middleearth-limb', 'rickmorty', 'gaming', 'caribbean', 'middleearth', 'breakingbad', 'office', 'belt', 'maw', 'landing-middleearth', 'station', 'far-rim']);
+    expect(POSE_NAMES).toEqual(['overview', 'falcon-sun', 'middleearth-limb', 'rickmorty', 'gaming', 'caribbean', 'middleearth', 'breakingbad', 'office', 'belt', 'maw', 'landing-middleearth', 'station', 'far-rim', 'in-nebula', 'veil-side']);
     for (const name of POSE_NAMES) expect(poseFor(name)).toBeTruthy();
     expect(poseFor('nowhere')).toBeNull();
   });
@@ -86,6 +89,30 @@ describe('the fixed poses', () => {
   it('says where the map view and the landing are', () => {
     expect(poseFor('overview').view).toBe('map');
     expect(poseFor('landing-middleearth').foot).toBe('middleearth');
+  });
+
+  it('puts in-nebula inside the Cradle’s gas, the eye too', () => {
+    const p = poseFor('in-nebula');
+    const cradle = NEBULAE.find((d) => d.id === 'cradle');
+    expect(insideOf([cradle], p.at).depth).toBeGreaterThan(0.5);
+    expect(insideOf([cradle], p.eye)).not.toBeNull();
+    // facing its heart
+    expect(p.look).toEqual(cradle.at);
+  });
+
+  it('puts veil-side 20,000 off, the Veil right of the middle, still in view 5,000 to the right', () => {
+    const p = poseFor('veil-side');
+    const veil = WONDERS.find((w) => w.id === 'veil').at;
+    expect(len(sub(p.at, veil))).toBeCloseTo(20000, 6);
+    const view = norm(sub(p.look, p.eye));
+    const off = Math.acos(dot(view, norm(sub(veil, p.eye))));
+    expect(off).toBeGreaterThan(0.08);
+    expect(off).toBeLessThan(0.13);
+    const right = norm([-view[2], 0, view[0]]);
+    // right of the middle: toward the view’s right
+    expect(dot(sub(veil, p.eye), right)).toBeGreaterThan(0);
+    const moved = p.eye.map((v, i) => v + right[i] * 5000);
+    expect(Math.acos(dot(view, norm(sub(veil, moved))))).toBeLessThan(0.45); // (inside the lens’s half-width at 16:9)
   });
 
   it('looks out from the home system’s edge at the furthest world', () => {

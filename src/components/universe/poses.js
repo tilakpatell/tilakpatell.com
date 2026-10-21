@@ -11,7 +11,12 @@
 // A planet pose puts the ship `dist` reaches out on the planet's sun side
 // (turned `off` radians round from the line to the sun, so a limb shows
 // its terminator), facing the planet, the camera just behind it: the day
-// side toward the camera, which is how a visitor should arrive.
+// side toward the camera, which is how a visitor should arrive. A nebula
+// pose is about one of deep space's clouds (deep.js's WONDERS, drawn by
+// nebula/): `inside` it, that share of its radius in from its middle on the
+// home side, facing its heart; or `out` from it, as the Maw pose looks at
+// the Maw (scripts/nebula-check.mjs measures it from there).
+import { WONDERS } from './deep';
 import { BELT, HOME_RADIUS, ORDER, POSITIONS, REACH, SUN } from './layout';
 import { MAW } from './maw';
 import { SHIP, parkAt } from './ship';
@@ -43,6 +48,11 @@ export const POSES = {
   // out at the furthest world, every world past where it's real a star
   // (farStars.js)
   'far-rim': { rim: 60, back: 1.6, rise: 0.3 },
+  // in the Cradle's gas, its fog round the ship, facing its bright heart
+  'in-nebula': { nebula: 'cradle', inside: 0.45, back: 1.6, rise: 0.3 },
+  // out on the home side of the Veil, looking a little to its left, so it
+  // sits about 6° right of the middle and stays in view 5,000 to the right
+  'veil-side': { nebula: 'veil', out: 20000, aside: 0.105, back: 1.6, rise: 0.3 },
 };
 export const POSE_NAMES = Object.keys(POSES);
 
@@ -63,6 +73,14 @@ const chase = (at, heading, { back = 1.6, rise = 0.3, look = null } = {}) => {
   const f = ahead(heading);
   return { eye: add(add(at, f, -back), UP, rise), look: look ?? add(at, f, 40) };
 };
+// `out` from a thing on its `home` side, level, facing a point `aside` (of
+// out) to its left, so the thing sits that far right of the middle
+const aside = (c, home, { out, aside: k, back, rise }) => {
+  const at = add(c, home, out);
+  const look = add(c, turnY(home, -Math.PI / 2), out * k);
+  const heading = headingOf(unit(sub(look, at)));
+  return { at, heading, ...chase(at, heading, { back, rise, look }) };
+};
 
 export function poseFor(name, { positions = POSITIONS, sun = SUN.at, reach = REACH } = {}) {
   const p = POSES[name];
@@ -77,6 +95,16 @@ export function poseFor(name, { positions = POSITIONS, sun = SUN.at, reach = REA
     return { name, planet: p.planet, dist: p.dist, foot: p.foot ?? null, at, heading, ...chase(at, heading, { back: 2.4, rise: 0.25, look: c }) };
   }
   if (p.view === 'map') return { name, view: 'map', at: p.at, heading: p.heading, eye: null, look: null };
+  if (p.nebula) {
+    const w = WONDERS.find((x) => x.id === p.nebula);
+    const home = unit([sun[0] - w.at[0], 0, sun[2] - w.at[2]]);
+    if (p.inside !== undefined) {
+      const at = add(w.at, home, p.inside * w.r);
+      const heading = headingOf([-home[0], 0, -home[2]]);
+      return { name, nebula: p.nebula, at, heading, ...chase(at, heading, { back: p.back, rise: p.rise, look: w.at }) };
+    }
+    return { name, nebula: p.nebula, ...aside(w.at, home, p) };
+  }
   if (name === 'falcon-sun') {
     // out from the sun a way, the eye further out on the same line (a
     // little aside), so the ship's against the sun
@@ -105,10 +133,5 @@ export function poseFor(name, { positions = POSITIONS, sun = SUN.at, reach = REA
     return { name, at, heading, ...chase(at, heading, p) };
   }
   // the Maw: out on the home side of it, level, facing a point to its left
-  const home = unit([sun[0] - MAW.at[0], 0, sun[2] - MAW.at[2]]);
-  const at = add(MAW.at, home, p.out);
-  const left = turnY(home, -Math.PI / 2);
-  const look = add(MAW.at, left, p.out * p.aside);
-  const heading = headingOf(unit(sub(look, at)));
-  return { name, at, heading, ...chase(at, heading, { back: p.back, rise: p.rise, look }) };
+  return { name, ...aside(MAW.at, unit([sun[0] - MAW.at[0], 0, sun[2] - MAW.at[2]]), p) };
 }

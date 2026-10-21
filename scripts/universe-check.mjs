@@ -28,7 +28,7 @@ import { chromium } from 'playwright-core';
 import sharp from 'sharp';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const POSES = ['overview', 'falcon-sun', 'middleearth-limb', 'rickmorty', 'gaming', 'caribbean', 'middleearth', 'breakingbad', 'office', 'belt', 'maw', 'landing-middleearth', 'station', 'far-rim'];
+const POSES = ['overview', 'falcon-sun', 'middleearth-limb', 'rickmorty', 'gaming', 'caribbean', 'middleearth', 'breakingbad', 'office', 'belt', 'maw', 'landing-middleearth', 'station', 'far-rim', 'in-nebula'];
 const TIERS = ['high', 'mid', 'low'];
 
 const args = {};
