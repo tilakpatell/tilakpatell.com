@@ -8,7 +8,7 @@
 // its file, and the prop is that model from then on: the swap is one line.
 //
 //   PROPS → { [kind]: { glb, make } }
-//   makeProp(kind, { house, rt }) → a THREE.Group (the stand-in at once;
+//   makeProp(kind, { house, rt, tint }) → a THREE.Group (the stand-in at once;
 //     the model swapped in when it comes), with userData.kind and, where a
 //     part moves, userData.parts (the Snitch’s wings, the chest’s lid, the
 //     brazier’s fire’s seat, the Mandrake’s root)
@@ -73,7 +73,7 @@ function chair(house) {
   return mesh(merged(parts), house);
 }
 
-function pumpkin(house, size = 0.5) {
+function pumpkin(house, { size = 0.5 } = {}) {
   // ridged: a sphere pushed in along its ribs
   const g = new THREE.SphereGeometry(size, 24, 14);
   const p = g.attributes.position;
@@ -171,6 +171,63 @@ function snitch() {
   return group;
 }
 
+// a player on a broom, for the match: the broom, a robe sitting astride it,
+// the head, and the house’s colour at the collar and on the robe’s hem
+// (`tint`). The cast lane’s students on the shared skeleton, seated, take
+// its place when they come.
+function rider(house, { tint = '#7f0909' } = {}) {
+  const shaft = new THREE.CylinderGeometry(0.018, 0.022, 1.7, 6).rotateX(Math.PI / 2).translate(0, 0, 0.2);
+  const twigs = new THREE.ConeGeometry(0.15, 0.55, 8, 1, true).rotateX(-Math.PI / 2).translate(0, 0, -0.85);
+  const robe = new THREE.ConeGeometry(0.3, 0.8, 10, 1, true).translate(0, 0.32, -0.3);
+  const hem = new THREE.CylinderGeometry(0.305, 0.31, 0.07, 10, 1, true).translate(0, -0.05, -0.3);
+  const shoulders = new THREE.SphereGeometry(0.17, 10, 6).scale(1.2, 0.7, 0.9).translate(0, 0.68, -0.28);
+  const collar = new THREE.TorusGeometry(0.1, 0.035, 6, 12).rotateX(Math.PI / 2).translate(0, 0.78, -0.27);
+  const head = new THREE.SphereGeometry(0.12, 12, 8).translate(0, 0.92, -0.26);
+  const hair = new THREE.SphereGeometry(0.125, 12, 6, 0, Math.PI * 2, 0, Math.PI * 0.55).translate(0, 0.94, -0.28);
+  // the hands on the shaft, ahead of the body
+  const hands = [-0.05, 0.05].map((x) => [new THREE.SphereGeometry(0.04, 6, 4).translate(x, 0.04, 0.12), '#e0b896']);
+  return mesh(
+    merged([
+      [shaft, '#6a4a2c'],
+      [twigs, '#8a6a3a'],
+      [robe, '#1e1c22'],
+      [hem, tint],
+      [shoulders, '#1e1c22'],
+      [collar, tint],
+      [head, '#e0b896'],
+      [hair, '#4a3222'],
+      ...hands,
+    ]),
+    house,
+  );
+}
+
+// someone standing in their robes, for a lesson with nobody of the cast
+// lane’s yet to stand there (the duel’s other side): robe, collar in the
+// house’s colour (`tint`), head and hair, the wand hand out in front.
+// The cast’s figures on the shared skeleton take its place when they come.
+function student(house, { tint = '#1a472a' } = {}) {
+  const robe = new THREE.ConeGeometry(0.3, 1.15, 12, 1, true).translate(0, 0.62, 0);
+  const shoulders = new THREE.SphereGeometry(0.19, 12, 8).scale(1.15, 0.7, 0.85).translate(0, 1.16, 0);
+  const collar = new THREE.TorusGeometry(0.1, 0.035, 6, 12).rotateX(Math.PI / 2).translate(0, 1.26, 0.01);
+  const head = new THREE.SphereGeometry(0.115, 14, 10).translate(0, 1.38, 0.01);
+  const hair = new THREE.SphereGeometry(0.12, 14, 6, 0, Math.PI * 2, 0, Math.PI * 0.5).translate(0, 1.4, -0.005);
+  const arm = new THREE.CylinderGeometry(0.045, 0.05, 0.5, 6).rotateX(Math.PI / 2 - 0.5).translate(0.2, 1.02, 0.2);
+  const hand = new THREE.SphereGeometry(0.045, 6, 4).translate(0.2, 0.9, 0.43);
+  return mesh(
+    merged([
+      [robe, '#1e1c22'],
+      [shoulders, '#1e1c22'],
+      [collar, tint],
+      [head, '#e6c4a6'],
+      [hair, '#e8dca0'],
+      [arm, '#1e1c22'],
+      [hand, '#e6c4a6'],
+    ]),
+    house,
+  );
+}
+
 const ball = (house, r, colour) => mesh(merged([[new THREE.SphereGeometry(r, 18, 12), colour]]), house);
 
 function cauldron(house) {
@@ -260,14 +317,16 @@ export const PROPS = {
   cauldron: { glb: null, make: cauldron }, // (models/hogwarts/props/cauldron.glb)
   mandrake: { glb: null, make: mandrakePot }, // (models/hogwarts/props/mandrake.glb)
   buckbeak: { glb: null, make: buckbeak }, // (models/hogwarts/props/buckbeak.glb)
+  rider: { glb: null, make: rider }, // a student, seated on a broom: Lane B’s cast
+  student: { glb: null, make: student }, // a student standing, wand out: Lane B’s cast
 };
 
-export function makeProp(kind, { house = null, rt = null } = {}) {
+export function makeProp(kind, { house = null, rt = null, tint } = {}) {
   const row = PROPS[kind];
   if (!row) throw new Error(`props: no '${kind}'`);
   const group = new THREE.Group();
   group.name = `hogwarts-${kind}`;
-  const stand = row.make(house);
+  const stand = row.make(house, { tint });
   group.add(stand);
   group.userData.kind = kind;
   group.userData.parts = stand.userData?.parts ?? null;
@@ -290,8 +349,8 @@ export function makeProp(kind, { house = null, rt = null } = {}) {
 
 // The wand’s first things, laid out beside a place (the shore by the
 // jetty, until the lessons’ rooms are in): two stones, a feather on a
-// chair, a pumpkin, a brazier to light and two chests, one that may be
-// opened and one of Filch’s that may not. `at` is [x, z], `yaw` the way
+// chair, a pumpkin, a brazier to light, a broom on the shingle and two
+// chests, one that may be opened and one of Filch’s that may not. `at` is [x, z], `yaw` the way
 // the place faces; each lies on the floor there.
 export function practiceSet({ at: [ax, az], yaw = 0, floorAt = () => 0, house = null, rt = null }) {
   const c = Math.cos(yaw);
@@ -307,6 +366,7 @@ export function practiceSet({ at: [ax, az], yaw = 0, floorAt = () => 0, house = 
     { id: 'pumpkin', kind: 'pumpkin', x: 4.8, z: 6.8, r: 0.55, mid: 0.36 },
     { id: 'brazier', kind: 'brazier', x: -2.6, z: 5.2, r: 0.35, mid: 1.15, burns: 'brazier' },
     { id: 'chest', kind: 'chest', x: -3.9, z: 4.2, r: 0.45, mid: 0.25, locked: true, allowed: true },
+    { id: 'broom', kind: 'broom', x: -1.4, z: 3.2, r: 0.5, mid: 0.06, lift: 0.12 },
     { id: 'filch-chest', kind: 'chest', x: -5.2, z: 5.6, r: 0.45, mid: 0.25, locked: true, allowed: false, why: 'Filch’s, by the padlock. It stays shut, and so had you better.' },
   ];
   return rows.map((r) => {
