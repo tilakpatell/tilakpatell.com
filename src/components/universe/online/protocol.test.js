@@ -205,6 +205,11 @@ describe('poses', () => {
     expect(readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'E:1,0,x']).sec).toBeUndefined();
     expect(readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'X:1,0']).sec).toBeUndefined();
   });
+  it('writes a pose whose position isn’t a number without throwing (its sector key parses as none), and that pose doesn’t read', () => {
+    const out = writePose({ ...ship, x: Infinity });
+    expect(out).toHaveLength(10); // (no sector on it)
+    expect(readPose(out)).toBeNull();
+  });
   it('reads a shot from far out, held to its pilot', () => {
     const from = { x: 500000, y: 0, z: 0, speed: 0 };
     expect(readShot([500000, 0, 0, 1, 0, 0], from)).not.toBeNull();

@@ -216,7 +216,10 @@ export function readCursor(data) {
 export function writePose(s, flags = 0, shield = 100) {
   const r = (v, k = 1000) => Math.round((v || 0) * k) / k;
   const sec = sectorOf(s.x || 0, s.y || 0, s.z || 0);
-  const o = inExpanse(sec) ? sectorCentre(...parseSectorKey(sec)) : null;
+  // (a position that isn't a number keys a sector nothing parses: that goes
+  // out as the map's, and readPose throws it out, rather than throwing here)
+  const at = inExpanse(sec) ? parseSectorKey(sec) : null;
+  const o = at && sectorCentre(...at);
   const out = [r(s.x - (o?.[0] ?? 0), 100), r(s.y - (o?.[1] ?? 0), 100), r(s.z - (o?.[2] ?? 0), 100), r(s.heading), r(s.pitch), r(wrap((s.bank || 0) + (s.lean || 0))), r(s.speed, 100), r(s.vy, 100), flags | 0, Math.round(shield)];
   if (o) out.push(sec);
   return out;

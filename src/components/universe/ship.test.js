@@ -1007,7 +1007,46 @@ describe('open space', () => {
       done = a.done;
       s = step(s, a.input, 1 / 20, SOLIDS, space).ship;
     }
+    expect(done).toBe(true);
     expect(Math.abs(s.y - 30000)).toBeLessThan(5);
+  });
+  it('flies the autopilot’s trips in the open universe too: from the edge to a universe, and the takeover from upside down', () => {
+    for (const [id, from] of [[ORDER[0], spawn(null)], [ORDER.at(-1), { ...spawn(null), pitch: -1.2, bank: Math.PI - 0.2, speed: SHIP.cruise }]]) {
+      let s = from;
+      const park = parkAt(id, [s.x, s.z]);
+      let done = false;
+      let bumps = 0;
+      for (let t = 0; t < 150 && !done; t += 1 / 60) {
+        const a = autopilot(s, id, park, OPEN_SPACE);
+        done = a.done;
+        const r = step(s, a.input, 1 / 60, SOLIDS, OPEN_SPACE);
+        s = r.ship;
+        bumps += r.events.filter((e) => e.type === 'bump' || e.type === 'crash').length;
+        expect(inside(s), `${id} at ${t.toFixed(2)}s`).toBe(false);
+      }
+      expect(done, id).toBe(true);
+      expect(bumps, id).toBe(0);
+      expect(Math.abs(s.pitch), id).toBeLessThan(0.1);
+      expect(Math.abs(s.bank), id).toBeLessThan(0.1);
+      expect(orbiting(s, null), id).toBe(id);
+    }
+  }, LONG);
+  it('keeps the ceiling of a space that has no roof key, the galaxy’s shape', () => {
+    // (galaxy/space.js's makeSpace gives ceilingAt and no roof: reading only
+    // `roof` would take its ceiling away)
+    const { roof, ...roofless } = SPACE;
+    expect(roof).toBe(ceilingAt);
+    expect('roof' in roofless).toBe(false);
+    for (const side of [1, -1]) {
+      let s = { ...up(side), x: 0, z: 0, speed: SHIP.boost };
+      let top = 0;
+      for (let t = 0; t < SHIP.ceiling / SHIP.boost + 2; t += 1 / 60) {
+        s = step(s, { throttle: 1, boost: true }, 1 / 60, [], roofless).ship;
+        top = Math.max(top, side * s.y);
+      }
+      expect(top).toBeLessThan(SHIP.ceiling + 1);
+      expect(top).toBeGreaterThan(SHIP.ceiling * 0.7);
+    }
   });
   it('walls the Rick and Morty pocket as a ball, both ways, and nothing above it', () => {
     const RM = SECTORS.rickmorty;

@@ -154,5 +154,9 @@ describe('the spread', () => {
     expect(sectorOf(4500, 4500, -66000)).toBe('E:0,-1');
     expect(sectorById('E:1,-2,3').origin).toEqual([120000, 360000, -240000]);
   });
+
+  it('reads a junk sector key as no sector, not the origin’s', () => {
+    for (const junk of ['E:1,0,x', 'E:', 'E:NaN,0', 'E:1', 'E:1,0,1,2']) expect(sectorById(junk), junk).toBeNull();
+  });
 });
 

@@ -70,11 +70,13 @@ export const inExpanse = (id) => typeof id === 'string' && id.startsWith('E:');
 // map's everywhere else (the Expanse is charted, sided and crewed as the
 // main map is: what goes by sector inside the edges reads this)
 export const mapSectorOf = (x, y, z) => (sectorOf(x, y, z) === 'rickmorty' ? 'rickmorty' : 'main');
-// a sector by id: one of SECTORS, or an Expanse sector (no edge: it goes on)
+// a sector by id: one of SECTORS, or an Expanse sector (no edge: it goes on);
+// null for anything else, an 'E:' key nothing parses among them (ids come
+// in off the network too, so junk is no sector rather than the origin's)
 export const sectorById = (id) => SECTORS[id] ?? (inExpanse(id) ? expanseSector(id) : null);
 function expanseSector(id) {
-  const [sx, sy, sz] = parseSectorKey(id) ?? [0, 0, 0];
-  return { id, origin: sectorCentre(sx, sy, sz), edge: Infinity, name: id, expanse: true };
+  const at = parseSectorKey(id);
+  return at && { id, origin: sectorCentre(...at), edge: Infinity, name: id, expanse: true };
 }
 // a point given in a sector's own frame, in the map's
 export const inSector = (sector, [x, y, z]) => {
@@ -83,7 +85,9 @@ export const inSector = (sector, [x, y, z]) => {
 };
 // how far (x, z) is out from its sector's middle, level, and that sector
 export function sectorOut(x, z) {
-  const sec = sectorById(sectorOf(x, 0, z));
+  // (sectorOf's keys are all known; only a position that isn't a number
+  // keys none, and that reads as the main map's rather than throwing)
+  const sec = sectorById(sectorOf(x, 0, z)) ?? SECTORS.main;
   return { sec, out: Math.hypot(x - sec.origin[0], z - sec.origin[2]) };
 }
 

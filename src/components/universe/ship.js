@@ -522,8 +522,9 @@ export function step(s, input, dt, solids = SOLIDS, space = SPACE) {
   // the sector it's in, by where it is in all three: layout.js's SECTORS,
   // each with an edge of its own; the main one's is space.edge, level, and
   // the Rick and Morty pocket's a ball round its middle, so over or under
-  // it is out of it)
-  const sec = sectorById(sectorOf(s.x, s.y, s.z));
+  // it is out of it; a position that isn't a number keys no sector, and
+  // reads as the main map's rather than throwing)
+  const sec = sectorById(sectorOf(s.x, s.y, s.z)) ?? SECTORS.main;
   const [ox, oy, oz] = sec.origin;
   const ball = sec.id === POCKET.id;
   const out = Math.hypot(s.x - ox, ball ? s.y - oy : 0, s.z - oz);
