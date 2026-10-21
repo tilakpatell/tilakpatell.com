@@ -98,21 +98,24 @@ export function roomFog(d, world, fogFar) {
 // eye) and as wide as it says (`size` degrees across), lit on one side
 // with one shade of shadow, as the show draws them
 const FAR = 400; // metres out a body hangs, inside the dome
+const STARS = 3500;
 function starDome(R, bodies = []) {
-  const W = 512;
-  const H = 256;
+  const W = 1024;
+  const H = 512;
   const data = new Uint8Array(W * H * 4);
   let s = 7;
   const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
   for (let i = 0; i < W * H; i++) data[i * 4 + 3] = 255;
-  for (let k = 0; k < 900; k++) {
+  // (many, most of them faint: a sky full of them through a window, not a few blocks)
+  for (let k = 0; k < STARS; k++) {
     const i = Math.floor(r() * W * H) * 4;
-    const b = 150 + Math.floor(r() * 105);
+    const b = 60 + Math.floor(r() ** 3 * 195);
     data[i] = b;
     data[i + 1] = b;
     data[i + 2] = Math.min(255, b + 20);
   }
   const map = R.own(new THREE.DataTexture(data, W, H));
+  map.magFilter = THREE.LinearFilter;
   map.needsUpdate = true;
   const dome = new THREE.Mesh(R.own(new THREE.SphereGeometry(450, 24, 12)), R.own(new THREE.MeshBasicMaterial({ map, side: THREE.BackSide, fog: false, depthWrite: false })));
   dome.renderOrder = -1;
