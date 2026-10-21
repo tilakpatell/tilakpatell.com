@@ -7,14 +7,22 @@
 // wonder of the sector in one Points, one draw. A system's planets are
 // built (galaxy/bodies.js, a look for each type) only when the camera comes
 // within PLANET_NEAR of it, the nearest system's alone, and let go again
-// past PLANET_NEAR × 1.3. The wonders are cheap: a nebula a cloud of soft
-// additive puffs, a pulsar a small bright sphere, a derelict or a rogue
-// world a small dark one. No textures.
+// past PLANET_NEAR × 1.3. The wonders are cheap: a pulsar a small bright
+// sphere, a derelict or a rogue world a small dark one. No textures.
+//
+// A nebula is not drawn here. It is handed to the one nebula renderer
+// (universe/nebula/, deep space's, lent through `nebulae`) on build and
+// taken back on dispose: a cloud fixed in the world, drawn in the map's
+// space, so the sector gives it the wonder's absolute place, not its own
+// frame's. It has no speck either; its cloud is its far self. Its
+// `wonder:<id>` object stays, an empty group at its place, so names and
+// picks find it. With no renderer a nebula isn't drawn at all.
 //
 // PLANET_NEAR, TYPE_LOOK: { [planet type]: LOOKS id }
-// createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = buildBody })
+// createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = buildBody, nebulae = null })
 //   → { group, sector, update(t, dt, camera), reanchor(at), dispose(), count() }
 //   The caller puts the group under a root at `at` and calls reanchor(at) whenever `at` moves.
+// nebulaOf(wonder) → the renderer's desc for a nebula wonder: { id, at, r, colors, seed }
 
 import * as THREE from 'three';
 import { buildBody } from '../../galaxy/bodies';
@@ -44,74 +52,21 @@ const WONDER = {
   derelict: { color: '#7a808c', r: 0.12, dark: '#2a2d33' },
   rogue: { color: '#6b5a50', r: 0.5, dark: '#1e1a18' },
 };
-const PUFFS = 48; // a nebula's
 
 // shared by every sector, never disposed
 const BALL = new THREE.SphereGeometry(1, 16, 12);
 
-const PUFF_VERT = /* glsl */ `
-  attribute float aSize;
-  attribute vec3 aColor;
-  uniform float uScale;
-  varying vec3 vColor;
-  void main() {
-    vec4 mv = modelViewMatrix * vec4(position, 1.0);
-    gl_Position = projectionMatrix * mv;
-    gl_PointSize = clamp(aSize * uScale / max(-mv.z, 1.0), 1.0, 512.0);
-    vColor = aColor;
-  }
-`;
-const PUFF_FRAG = /* glsl */ `
-  varying vec3 vColor;
-  void main() {
-    float d = length(gl_PointCoord * 2.0 - 1.0);
-    if (d > 1.0) discard;
-    float a = (1.0 - d) * (1.0 - d);
-    gl_FragColor = vec4(vColor * a * 0.35, 1.0);
-  }
-`;
-
-// a nebula: puffs scattered through a flattened ball `size` across, seeded
-function nebula(w, made) {
+// a nebula, as the renderer takes it: its place absolute (the renderer
+// draws in the map's space, not the sector's frame), its size its radius,
+// and its two colours: the nebula swatch and a hue of its own, the seed's
+// first draw, as the puffs it used to be were coloured
+export function nebulaOf(w) {
   const rng = rngOf(w.seed);
-  const pos = new Float32Array(PUFFS * 3);
-  const size = new Float32Array(PUFFS);
-  const col = new Float32Array(PUFFS * 3);
-  const a = new THREE.Color(WONDER.nebula.color);
-  const b = new THREE.Color().setHSL(rng(), 0.7, 0.55);
-  const c = new THREE.Color();
-  for (let i = 0; i < PUFFS; i++) {
-    const u = rng() * 2 - 1;
-    const th = rng() * Math.PI * 2;
-    const r = w.size * Math.cbrt(rng());
-    const s = Math.sqrt(1 - u * u);
-    pos.set([r * s * Math.cos(th), r * u * 0.4, r * s * Math.sin(th)], i * 3);
-    size[i] = w.size * (0.3 + rng() * 0.4);
-    c.copy(a).lerp(b, rng());
-    col.set([c.r, c.g, c.b], i * 3);
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  geo.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
-  geo.setAttribute('aColor', new THREE.BufferAttribute(col, 3));
-  const mat = new THREE.ShaderMaterial({
-    vertexShader: PUFF_VERT,
-    fragmentShader: PUFF_FRAG,
-    uniforms: { uScale: { value: 500 } },
-    blending: THREE.AdditiveBlending,
-    transparent: true,
-    depthWrite: false,
-  });
-  const points = new THREE.Points(geo, mat);
-  const px = new THREE.Vector2();
-  points.onBeforeRender = (renderer, scene, camera) => {
-    mat.uniforms.uScale.value = (renderer.getDrawingBufferSize(px).y / 2) * (camera.projectionMatrix.elements[5] || 1);
-  };
-  made.push(geo, mat);
-  return points;
+  const hue = new THREE.Color().setHSL(rng(), 0.7, 0.55);
+  return { id: w.id, at: [...w.at], r: w.size, colors: [WONDER.nebula.color, `#${hue.getHexString()}`], seed: w.seed };
 }
 
-export function createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = buildBody } = {}) {
+export function createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = buildBody, nebulae = null } = {}) {
   const o = sector.origin;
   const local = (p) => [p[0] - o[0], p[1] - o[1], p[2] - o[2]];
   const group = new THREE.Group();
@@ -144,24 +99,27 @@ export function createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = b
     return g;
   });
 
-  // the wonders
+  // the wonders: a nebula's is an empty group at its place, its cloud the
+  // nebula renderer's, held by its handle until dispose
+  const clouds = [];
   const wonders = sector.wonders.map((w) => {
     const look = WONDER[w.kind] ?? WONDER.rogue;
     let obj;
     if (w.kind === 'nebula') {
-      obj = nebula(w, made);
+      obj = new THREE.Group();
       obj.position.set(...local(w.at));
+      if (nebulae) clouds.push(nebulae.add(nebulaOf(w)));
     } else obj = ball('', local(w.at), w.size * look.r, look.dark ?? look.color);
     obj.name = `wonder:${w.id}`;
     group.add(obj);
     return obj;
   });
 
-  // every star and wonder as a speck, from far off
+  // every star and wonder as a speck, from far off (a nebula has none)
   const far = createFarStars(group, {
     places: [
       ...sector.systems.map((s, i) => ({ id: s.id, at: local(s.at), r: s.star.size, color: s.star.color, group: stars[i] })),
-      ...sector.wonders.map((w, i) => ({ id: w.id, at: local(w.at), r: w.size * 0.4, color: (WONDER[w.kind] ?? WONDER.rogue).color, group: wonders[i] })),
+      ...sector.wonders.flatMap((w, i) => (w.kind === 'nebula' ? [] : [{ id: w.id, at: local(w.at), r: w.size * 0.4, color: (WONDER[w.kind] ?? WONDER.rogue).color, group: wonders[i] }])),
     ],
     skyFar,
   });
@@ -219,6 +177,7 @@ export function createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = b
     },
     dispose() {
       letGo();
+      for (const h of clouds) nebulae.remove(h);
       far.dispose();
       group.clear();
       for (const m of made) m.dispose();

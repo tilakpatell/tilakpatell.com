@@ -167,7 +167,8 @@ float ign(vec2 px) {
 
 void main() {
   if (vSprite.z > 0.5) {
-    // a young star: the sparks' falloff (deepspaceShaders.js SPARK_FRAG), light only
+    // a young star: a tight core in a soft glow, the nebulae’s own falloff
+    // (the sparks it replaced drew it so), light only
     float r2 = dot(vSprite.xy, vSprite.xy);
     float a = exp(-r2 * 30.0) * 1.6 + exp(-r2 * 5.0) * 0.35;
     a *= 1.0 - smoothstep(0.6, 1.0, r2);

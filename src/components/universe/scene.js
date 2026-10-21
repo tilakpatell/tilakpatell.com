@@ -216,6 +216,7 @@ import { REMOVER, hitRemover, hpLeft, landingOpen, newRemover, stepRemover } fro
 import { NX5_LEN, createRemoverView } from './removerView';
 import { createMapSky } from './mapSky';
 import { createExpanse } from '../expanse/scene/expanse';
+import { createSector } from '../expanse/scene/sectors';
 import { UNIVERSE } from '../expanse/gen/seed';
 import { runtime } from '../../runtime';
 import { deedToEarn } from './economy';
@@ -725,6 +726,7 @@ export async function create(canvas, ctx) {
     origin,
     tier,
     reduced,
+    make: (s, o) => createSector(s, { ...o, nebulae: deep.nebulae }), // (a sector's nebulae go to deep space's one renderer)
     onSector: (id) => {
       if (inExpanse(id)) state.note = { text: `The Expanse · ${id}`, until: wall() + 3 };
     },

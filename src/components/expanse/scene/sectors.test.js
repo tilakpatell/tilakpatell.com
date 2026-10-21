@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { LOOKS } from '../../galaxy/bodies';
 import { SECTOR } from '../gen/grid';
 import { makeSector } from '../gen/sector';
 import { UNIVERSE } from '../gen/seed';
 import { PLANET_TYPES } from '../gen/tables';
-import { PLANET_NEAR, TYPE_LOOK, createSector } from './sectors';
+import { PLANET_NEAR, TYPE_LOOK, createSector, nebulaOf } from './sectors';
 
 const named = (group, prefix) => {
   const out = [];
@@ -145,5 +145,32 @@ describe('a generated sector, drawn', () => {
     expect(s.group.children).toHaveLength(0);
     expect(s.group.parent).toBeNull();
     expect(root.children).toHaveLength(0);
+  });
+
+  it('hands each nebula to the renderer at its own place, and takes it back', () => {
+    let h = 0;
+    const nebulae = { add: vi.fn(() => ++h), remove: vi.fn() };
+    const s = createSector(HAND, { nebulae });
+    expect(nebulae.add).toHaveBeenCalledTimes(1);
+    const d = nebulae.add.mock.calls[0][0];
+    expect(d).toMatchObject({ id: 'E:5,0:w0', at: [400000, 0, -20000], r: 400, seed: 1n });
+    expect(d.colors[0]).toBe('#b48cff');
+    expect(d.colors[1]).toMatch(/^#[0-9a-f]{6}$/);
+    expect(nebulaOf(HAND.wonders[0])).toEqual(d);
+    s.dispose();
+    expect(nebulae.remove).toHaveBeenCalledWith(1);
+  });
+
+  it('keeps a wonder for a nebula, with no Points in it and no speck for it', () => {
+    const s = createSector(HAND, { nebulae: { add: () => 1, remove() {} } });
+    const w = s.group.getObjectByName('wonder:E:5,0:w0');
+    expect(w.isPoints).toBeFalsy();
+    expect(w.children).toHaveLength(0);
+    expect(named(s.group, 'far-stars')[0].geometry.attributes.position.count).toBe(HAND.systems.length + HAND.wonders.length - 1);
+    s.dispose();
+  });
+
+  it('draws no nebula, and says nothing, with no renderer', () => {
+    expect(() => createSector(HAND).dispose()).not.toThrow();
   });
 });
