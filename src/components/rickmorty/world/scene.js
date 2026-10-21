@@ -50,6 +50,7 @@ import { ARCADE, AREAS, BUILDINGS, CEILING, CRUISER, FURNITURE, HOTSPOTS, LINKS,
 import { gentleRamp, kitMaterials } from './kit';
 import { ROAD_Y, STREET_LIGHT, buildStreet } from './street';
 import { ANNEX_LIGHT, ANNEX_SKY, STREET_SKY, SUN_DIR, makeSky } from './sky';
+import { houseSky } from './houseSky';
 import { createFx, portalMaterial } from './fx';
 import { createBoltMeshes } from '../../../lib/three/combat/bolts';
 import { buildArcade } from './arcade';
@@ -244,7 +245,7 @@ export async function createRmWorld(rt, { looks = null, track: stages = null } =
   const models = new Map(loaded);
 
   // ── the areas ──
-  const kit = { renderer, models, cast, need, track, mats, tier, camera, fit, portal: portalMaterial };
+  const kit = { renderer, models, cast, need, track, mats, tier, camera, fit, portal: portalMaterial, adopt: (o) => house.adopt(o) };
   const areas = {};
   // an area's builder (a lazy one's fetched first), and if it fails, or its
   // chunk won't load, a plain one in its place; null if the world's been
@@ -453,7 +454,7 @@ export async function createRmWorld(rt, { looks = null, track: stages = null } =
     scene.background = L.background != null ? new THREE.Color(L.background) : null;
     // the house look follows the area's light (and takes on whatever's
     // been built or brought in since: patched once each)
-    const sky = id === 'street' ? STREET_SKY : OUTDOOR.includes(id) ? ANNEX_SKY : null;
+    const sky = houseSky(id, areas[id], { outdoor: OUTDOOR, street: STREET_SKY, annex: ANNEX_SKY });
     if (sky) house.sky({ low: sky.low, high: sky.top, below: 1 });
     house.light({ sun, hemi });
     house.set({ shadow: shadowFor({ hemiSky: hemi.color.getHex(), hemi: hemi.intensity }), fogMix: L.fog && sky ? 1 : 0 });

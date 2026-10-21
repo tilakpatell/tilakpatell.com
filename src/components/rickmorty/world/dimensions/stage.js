@@ -15,7 +15,7 @@
 // runs, its `meter` action is the HUD's readout of it: ../games/meter.js)
 
 import * as THREE from 'three';
-import { makeSky } from '../sky';
+import { STREET_SKY, makeSky } from '../sky';
 import { BOX, ceilings, makeRoom, tiledPaint, wallLine } from '../interiors/shell';
 import { at, speckle } from '../kit';
 import { RIGGED } from '../../portal/meshyCast';
@@ -285,6 +285,8 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     // checks, its meter for the HUD, and, in development, a way for the
     // checks to set it)
     area.actions = { calm, npcs: N.list, fire: N.fire, bodies: N.bodies, hit: N.hit };
+    // (the sky the house look fogs it into: its own, not Blips and Chitz's)
+    if (d.kind === 'outdoor') area.skyLook = d.sky ?? STREET_SKY;
     if (run)
       Object.assign(area.actions, {
         'power-take': () => (asked.take = true),
