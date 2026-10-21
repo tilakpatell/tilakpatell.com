@@ -81,6 +81,8 @@ export const VIEWS = {
   pluto: { area: 'pluto', at: [-400, 1916, N], cam: [0, 0.2] },
   gearworld: { area: 'gearworld', at: [-400, 2016, N], cam: [0, 0.2] },
   vindicators: { area: 'vindicators', at: [-400, 2105.4, N], cam: [0, 0.3] },
+  // in the middle of the hall, turned to the long window on the stars, its planet and moon
+  vindicatorsout: { area: 'vindicators', at: [-398, 2100, 0], cam: [0, 0.05] },
   simulation: { area: 'simulation', at: [-400, 2215.4, N], cam: [0, 0.3] },
   storytrain: { area: 'storytrain', at: [-400, 2310.4, N], cam: [0, 0.2] },
   fortress: { area: 'fortress', at: [-400, 2413.4, N], cam: [0, 0.3] },
