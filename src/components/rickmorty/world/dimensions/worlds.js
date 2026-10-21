@@ -334,10 +334,11 @@ export const WORLDS = {
     hero: STAGE,
     vista: 0.5,
     forecourt: { path: { w: 4.5, color: 0x26262e } },
+    // (on low, the stands' few in the south one, behind the way in)
     stands: [
-      { at: [50, 0], w: 46, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 4 }, look: STANDS },
-      { at: [-50, 0], w: 46, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 4 }, look: STANDS },
-      { at: [0, 40], w: 64, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 4 }, look: STANDS },
+      { at: [50, 0], w: 46, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 0 }, look: STANDS },
+      { at: [-50, 0], w: 46, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 0 }, look: STANDS },
+      { at: [0, 40], w: 64, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 12 }, look: STANDS },
     ],
     crowd: {
       gather: [

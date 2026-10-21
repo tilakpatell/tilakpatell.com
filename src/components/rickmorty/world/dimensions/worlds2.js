@@ -388,14 +388,14 @@ export const WORLDS2 = {
       { model: 'q:Rock_Desert_1', h: 1.6, n: { high: 12, mid: 8, low: 4 }, r: [12, 90] },
     ],
     forecourt: { path: { w: 3, color: 0xb08048 }, props: [{ model: 'q:Rock_Desert_1', h: 0.6, n: 4 }, { model: 'q:Grass_Wispy_Short', h: 0.4, n: 3 }] },
-    // (the stands in the wrecks' own rust, steel blue and scrap)
+    // (the stands in the wrecks' own rust, steel blue and scrap; on low, the
+    // few Death Stalkers there's room for all in the north stand, behind the gate)
     stands: [
-      { at: [0, -37], w: 32, d: 8, h: 5, rows: 2, face: [0, -5], kinds: ['deathstalker-a', 'deathstalker-b'], n: { high: 6, mid: 5, low: 4 }, beat: 2.5, look: { walls: [0x8a5a2a, 0x5a6a8a, 0x6a5a4a], roofs: [0x3a3a3a, 0x4a4a4a], lit: [0xff8a3a], trim: 0x3a3a3a } },
-      { at: [47, -8], w: 26, d: 8, h: 4.5, rows: 2, face: [0, -5], kinds: ['deathstalker-b', 'deathstalker-a'], n: { high: 7, mid: 4, low: 2 }, beat: 2.5, look: { walls: [0x8a5a2a, 0x5a6a8a, 0x6a5a4a], roofs: [0x3a3a3a, 0x4a4a4a], lit: [0xff8a3a], trim: 0x3a3a3a } },
-      { at: [-47, -8], w: 26, d: 8, h: 4.5, rows: 2, face: [0, -5], kinds: ['deathstalker-a', 'deathstalker-b'], n: { high: 7, mid: 4, low: 2 }, beat: 2.5, look: { walls: [0x8a5a2a, 0x5a6a8a, 0x6a5a4a], roofs: [0x3a3a3a, 0x4a4a4a], lit: [0xff8a3a], trim: 0x3a3a3a } },
+      { at: [0, -37], w: 32, d: 8, h: 5, rows: 2, face: [0, -5], kinds: ['deathstalker-a', 'deathstalker-b'], n: { high: 6, mid: 5, low: 8 }, beat: 2.5, look: { walls: [0x8a5a2a, 0x5a6a8a, 0x6a5a4a], roofs: [0x3a3a3a, 0x4a4a4a], lit: [0xff8a3a], trim: 0x3a3a3a } },
+      { at: [47, -8], w: 26, d: 8, h: 4.5, rows: 2, face: [0, -5], kinds: ['deathstalker-b', 'deathstalker-a'], n: { high: 7, mid: 4, low: 0 }, beat: 2.5, look: { walls: [0x8a5a2a, 0x5a6a8a, 0x6a5a4a], roofs: [0x3a3a3a, 0x4a4a4a], lit: [0xff8a3a], trim: 0x3a3a3a } },
+      { at: [-47, -8], w: 26, d: 8, h: 4.5, rows: 2, face: [0, -5], kinds: ['deathstalker-a', 'deathstalker-b'], n: { high: 7, mid: 4, low: 0 }, beat: 2.5, look: { walls: [0x8a5a2a, 0x5a6a8a, 0x6a5a4a], roofs: [0x3a3a3a, 0x4a4a4a], lit: [0xff8a3a], trim: 0x3a3a3a } },
     ],
-    // a wreck at the south end of each side stand (a car 2.57 of its height long, 1.21 wide)
-    // (the two wrecks in the ring, the croncar's model on their solids)
+    // (the two wrecks in the ring, the croncar's model on their solids: 2.57 of its height long, 1.21 wide)
     pieces: [
       { model: '/models/c137/rm/croncar.glb', at: [24, 10], turn: 0.3, h: 1.9, w: 4.9, d: 2.3 },
       { model: '/models/c137/rm/croncar.glb', at: [-24, -10], turn: -0.4, h: 1.55, w: 4, d: 1.9 },
