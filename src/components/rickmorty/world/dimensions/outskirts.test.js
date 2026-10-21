@@ -157,6 +157,19 @@ describe('the outskirts of an outdoor place', () => {
     for (const r of rocks) expect(r.x <= A.x0 || r.x >= A.x1 || r.z <= A.z0 || r.z >= A.z1).toBe(true);
   });
 
+  it('draws a rocky or bushy edge no taller than a solid edge may be (0.9 m), however tall the record asks, corners and all', () => {
+    const d = outdoor();
+    for (const h of [undefined, 0.8, 1.2])
+      for (const kind of ['rocks', 'bushes']) {
+        const clumps = lay(d, world({ edge: { kind, h, models: ['q:Rock_Medium_1'] } })).props.filter((p) => p.edge);
+        expect(clumps.length).toBeGreaterThan(0);
+        // (drawn h × s tall: the model scaled to h, then by its own s)
+        for (const p of clumps) expect(p.h * p.s, `${kind} ${h}`).toBeLessThanOrEqual(0.9 + 1e-9);
+        // (and not all one size)
+        expect(new Set(clumps.map((p) => (p.h * p.s).toFixed(3))).size).toBeGreaterThan(3);
+      }
+  });
+
   it('leaves a side with no ring or skyline empty', () => {
     const d = outdoor();
     const L = lay(d, world({ ring: { n: null, e: ring(2), s: null, w: ring(2) }, far: { n: null, e: { styles: ['tower'], h: [40, 80] }, s: null, w: null } }));

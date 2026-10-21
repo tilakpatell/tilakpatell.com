@@ -85,6 +85,8 @@ function edgeOf(d, edge, r) {
   }
   if (edge.kind === 'rocks' || edge.kind === 'bushes') {
     const models = edge.models ?? [];
+    // (each drawn h × s tall: 0.7 to 1 of what the record says, never taller than a solid edge)
+    const tall = Math.min(edge.h ?? EDGE.solid.wall, EDGE.solid.wall);
     const clumps = [];
     // along each side every few metres, a little way out, and one at each corner
     for (const [x0, z0, x1, z1] of sides) {
@@ -95,10 +97,11 @@ function edgeOf(d, edge, r) {
       for (let i = 0; i <= n; i++) {
         const k = i / n;
         const out = within([0.6, 3], r());
-        clumps.push({ model: models[i % Math.max(1, models.length)] ?? null, x: x0 + (x1 - x0) * k + ox * out, z: z0 + (z1 - z0) * k + oz * out, turn: r() * Math.PI * 2, s: within([0.8, 1.3], r()), h: edge.h ?? 0.9, edge: true });
+        const s = within([0.8, 1.3], r());
+        clumps.push({ model: models[i % Math.max(1, models.length)] ?? null, x: x0 + (x1 - x0) * k + ox * out, z: z0 + (z1 - z0) * k + oz * out, turn: r() * Math.PI * 2, s, h: (tall * within([0.7, 1], r())) / s, edge: true });
       }
     }
-    for (const [x, z] of [[A.x0, A.z0], [A.x1, A.z0], [A.x0, A.z1], [A.x1, A.z1]]) clumps.push({ model: models[0] ?? null, x: x + Math.sign(x - d.centre.x) * 2, z: z + Math.sign(z - d.centre.z) * 2, turn: r() * Math.PI * 2, s: 1.4, h: edge.h ?? 0.9, edge: true });
+    for (const [x, z] of [[A.x0, A.z0], [A.x1, A.z0], [A.x0, A.z1], [A.x1, A.z1]]) clumps.push({ model: models[0] ?? null, x: x + Math.sign(x - d.centre.x) * 2, z: z + Math.sign(z - d.centre.z) * 2, turn: r() * Math.PI * 2, s: 1.4, h: tall / 1.4, edge: true });
     return { runs: [], clumps };
   }
   return { runs: [], clumps: [] };
