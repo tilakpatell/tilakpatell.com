@@ -179,7 +179,8 @@ export default {
 
     // the rooms behind the doors (Lane D, rooms/host.js): built far below as
     // you go in, the shore hidden and its lights down while you're inside
-    const rooms = createRoomHost({ rt, scene, camera, house, tier, reduced, outside: [sky.mesh, shore.group, lake.mesh, castle.group, boats.group], lights: [key, hemi], tell });
+    // (every room is told the house and the Sorting's password: the common rooms' doors ask for it)
+    const rooms = createRoomHost({ rt, scene, camera, house, tier, reduced, outside: [sky.mesh, shore.group, lake.mesh, castle.group, boats.group], lights: [key, hemi], tell, context: () => ({ house: arrival.save.house, password: arrival.save.password, hour: 21 }), out: () => world.out() });
 
     // the arrival (Lane D, world/arrival.js): the night of the first-years, on
     // rails, from the station to the Sorting; played on a first visit, from
@@ -360,8 +361,10 @@ export default {
         held = null;
         for (const [type, data] of was) rt.events?.emit?.(type, data);
       },
-      // the prompt's own button, and the touch stick
-      go,
+      // the prompt's own button (a room's door while you're in one), and the touch stick
+      go: () => (rooms.room ? rooms.act() : go()),
+      // a word typed into the HUD's card: a password, a riddle's answer
+      word: (text) => rooms.word(text),
       // into a room (rooms/host.js) and out again, back on the shore where you stood
       enter: (id, opts) => rooms.enter(id, opts),
       // the arrival: the Menu's “The arrival”, the Sorting card's answers, Enter's skip
@@ -370,6 +373,12 @@ export default {
       skip: () => arrival.skip(),
       arrival,
       leave() {
+        // (out of a room gone into from another: back into that one)
+        if (rooms.back()) return;
+        world.out();
+      },
+      // out of the castle to the grounds, whatever room you're in, back where you stood
+      out() {
         rooms.leave();
         walker.place([walker.state.x, walker.state.z], walker.state.yaw);
         relight();
