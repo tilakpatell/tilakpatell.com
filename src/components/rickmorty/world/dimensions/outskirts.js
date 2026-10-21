@@ -370,8 +370,12 @@ function extentOf(c) {
 }
 
 // ── the forecourt ──
-function forecourtOf(d, fc, hero, r) {
+function forecourtOf(d, fc, hero, loops = []) {
   if (!fc || d.kind === 'room') return { path: null, props: [] };
+  // (its own seed: the same props in the same places on every level)
+  const r = seeded(hashOf(`${d.id}:forecourt`));
+  // (and a metre off everyone's way round: the people's, and the crowd's own loops)
+  const ways = [...[...d.people, ...d.extras].filter((p) => p.ai?.wander).map((p) => p.ai.wander), ...loops];
   const from = [d.arrive.x, d.arrive.z - 1];
   const path = fc.path ? { pts: [from, hero], w: fc.path.w ?? 3, color: fc.path.color } : null;
   const props = [];
@@ -386,7 +390,7 @@ function forecourtOf(d, fc, hero, r) {
       const off = side * within([(fc.path?.w ?? 3) / 2 + 1.5, (fc.path?.w ?? 3) / 2 + 4], r());
       const x = from[0] + ux * k - uz * off;
       const z = from[1] + uz * k + ux * off;
-      if (!clearOf(d, x, z, 1.2)) continue;
+      if (!clearOf(d, x, z, 1.2) || ways.some((w) => loopGap(w, (lx, lz) => Math.hypot(lx - x, lz - z)) < 1.2)) continue;
       props.push({ model: p.model, x, z, turn: r() * Math.PI * 2, s: within([0.85, 1.15], r()), h });
     }
   }
@@ -418,7 +422,8 @@ export function outskirtsOf(d, world, { tier = 'high', fogFar = 300, tris = {} }
   setsIn(lots, world.ring, row.sets);
   const tallest = lots.reduce((a, l) => Math.max(a, l.h + l.y), 0);
   const skyline = outside === 'ground' ? skylineOf(d, world.far, row.far, tallest, fogFar, vista, r) : [];
-  const { path, props } = forecourtOf(d, world.forecourt, hero, r);
+  const loops = (world.crowd?.walk ?? []).filter((c) => Array.isArray(c.loop)).map((c) => c.loop.map(([dx, dz]) => [d.centre.x + dx, d.centre.z + dz]));
+  const { path, props } = forecourtOf(d, world.forecourt, hero, loops);
   const stands = outside === 'ground' ? standsOf(d, world.stands, tier, hero) : { lots: [], gathers: [] };
   const landmarks = outside === 'ground' ? landmarksOf(d, world.landmarks) : [];
   const pieces = piecesOf(d, world.pieces);

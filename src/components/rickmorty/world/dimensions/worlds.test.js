@@ -88,6 +88,36 @@ describe('the worlds round the places', () => {
     expect(bad).toEqual([]);
   });
 
+  it('lay the forecourt’s props off everyone’s way round, and the same on every level', () => {
+    // (from a point to a closed route, sampled every quarter metre)
+    const toRoute = (pts, x, z) => {
+      let best = Infinity;
+      for (let i = 0; i < pts.length; i++) {
+        const [ax, az] = pts[i];
+        const [bx, bz] = pts[(i + 1) % pts.length];
+        const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 0.25));
+        for (let k = 0; k <= n; k++) best = Math.min(best, Math.hypot(ax + ((bx - ax) * k) / n - x, az + ((bz - az) * k) / n - z));
+      }
+      return best;
+    };
+    const bad = [];
+    for (const [id, world] of Object.entries(WORLDS)) {
+      const d = destinationById(id);
+      const A = d.area;
+      const routes = [...d.people, ...d.extras].filter((p) => p.ai?.wander).map((p) => p.ai.wander);
+      const loops = (world.crowd?.walk ?? []).filter((c) => Array.isArray(c.loop)).map((c) => c.loop.map(([dx, dz]) => [d.centre.x + dx, d.centre.z + dz]));
+      const inBox = (p) => p.x >= A.x0 && p.x <= A.x1 && p.z >= A.z0 && p.z <= A.z1;
+      const laid = {};
+      for (const tier of ['high', 'mid', 'low']) {
+        const props = outskirtsOf(d, world, { tier, fogFar: 300, tris: TRIS }).props.filter(inBox);
+        laid[tier] = props.map((p) => `${p.model} ${p.x.toFixed(2)} ${p.z.toFixed(2)}`).join('; ');
+        for (const p of props) for (const r of [...routes, ...loops]) if (toRoute(r, p.x, p.z) < 1) bad.push(`${id} ${tier}: ${p.model} at ${p.x.toFixed(1)}, ${p.z.toFixed(1)} is ${toRoute(r, p.x, p.z).toFixed(2)} m off a way round`);
+      }
+      if (laid.high !== laid.mid || laid.mid !== laid.low) bad.push(`${id}: the forecourt moves between levels`);
+    }
+    expect(bad).toEqual([]);
+  });
+
   it('leave clear the sight lines a place says it keeps (the heads, from the mic)', () => {
     for (const [id, world] of Object.entries(WORLDS)) {
       const d = destinationById(id);
