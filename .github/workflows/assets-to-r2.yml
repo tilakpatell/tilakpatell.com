@@ -59,9 +59,34 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  copy:
+  # The buckets asked for, each held to the list, as a matrix: a job a
+  # bucket, side by side, each with its own six hours. (On 2026-10-21
+  # Supabase answered about five files a second to sixteen at once: the
+  # public bucket's 77,545 alone would have taken four hours, and the drop
+  # after it would have run out of time.)
+  plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    outputs:
+      buckets: ${{ steps.list.outputs.buckets }}
+    steps:
+      - id: list
+        env:
+          BUCKETS: ${{ inputs.buckets }}
+        run: |
+          for b in $BUCKETS; do
+            case "$b" in site-assets|bf2017-assets|bf2-extract|bf2-workspace-backup) ;; *) echo "::error::not one of the buckets: $b"; exit 1 ;; esac
+          done
+          echo "buckets=$(printf '%s\n' $BUCKETS | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
+
+  copy:
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix:
+        bucket: ${{ fromJSON(needs.plan.outputs.buckets) }}
+    runs-on: ubuntu-latest
+    # (a GitHub-hosted job's most is 360; a second run picks up where one stopped)
+    timeout-minutes: 355
     env:
       # (rclone reads its remotes from the environment: RCLONE_CONFIG_<remote>_<option>)
       RCLONE_CONFIG_SUPABASE_TYPE: s3
@@ -79,7 +104,7 @@ jobs:
       SUPABASE_S3_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET_ACCESS_KEY }}
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      BUCKETS: ${{ inputs.buckets }}
+      BUCKETS: ${{ matrix.bucket }}
     steps:
       # (one version, held to its published checksum)
       - name: rclone 1.70.3
@@ -130,7 +155,7 @@ jobs:
             echo "::group::$b"
             same=""
             [ "$b" = site-assets ] && same="--size-only"
-            rclone copy "supabase:$b" "r2:$(to "$b")" -M $same --fast-list --transfers 16 --checkers 32 --retries 5 --low-level-retries 20 --timeout 30m --stats 60s --stats-one-line
+            rclone copy "supabase:$b" "r2:$(to "$b")" -M $same --fast-list --transfers 64 --checkers 64 --retries 5 --low-level-retries 20 --timeout 30m --stats 60s --stats-one-line
             echo "::endgroup::"
           done
 
