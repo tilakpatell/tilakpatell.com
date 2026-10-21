@@ -5,12 +5,19 @@
 // scurriers, Kashyyyk's tachs, Naboo's pelikki and runyips, Endor's
 // profoggs, the Gamorrean guard on his bench, the treadwell and the gonk
 // in Echo Base, and Pillio's and Felucia's (the shrimp-moths, the sneep,
-// the stintarils, the birds and rippers) for those worlds when they come.
+// the stintarils, the birds and rippers) for those worlds when they come;
+// and Tatooine’s Jawas, dewbacks and banthas, brought in from the desktop’s
+// export (docs/superpowers/plans/2026-10-21-bf-default-C4-kinds-from-the-export.md).
 // Each row: { skeleton (the drop's, by its last part), body (crew/<body>.glb),
-// model (the drop's manifest name, for scripts/bf2017-fauna.mjs), set }.
+// model (the drop’s manifest name, for scripts/bf2017-fauna.mjs), set,
+// parts? (globs over the model’s folder for what it wears, the import’s
+// --parts: the dewback’s saddle), cuts? (the import’s --cuts, where the
+// chain’s light cut is too thin for a beast seen close), light? ({ tex, maps }:
+// the light cut’s map sizes, the import’s --lod1-tex and --lod1-maps, where
+// its maps and not its mesh are its weight) }.
 // A rig with one clip plays it as its idle. Pure.
 //
-//   FAUNA { rig: { skeleton, body, model, set } }
+//   FAUNA { rig: { skeleton, body, model, set, parts?, cuts?, light? } }
 
 const idles = (...xs) => (xs.length === 1 ? xs[0] : xs);
 
@@ -108,5 +115,46 @@ export const FAUNA = {
     model: 'characters/npc/droids/droidgonk/droidgonk_01/droidgonk_01_mesh',
     // (its two idles: the long one its own, the short one a look round)
     set: { idle: 'L_Gonk_Stand_Idle_01', 'idle.look': 'L_Gonk_Stand_Idle_02' },
+  },
+  // Tatooine’s: the Jawa (28 clips on its skeleton; its 10 s idle, not its
+  // 36 s one, which was two thirds of the pack), the dewback under its saddle (23;
+  // its A_ idles and its taunt are additive, a layer over a pose, not a
+  // clip of their own) and the bantha (17)
+  jawa: {
+    skeleton: 'Jawa_01_Ske',
+    body: 'jawa',
+    model: 'characters/npc/creatures/jawa/jawa_01/jawa_01_mesh',
+    set: {
+      idle: 'L_Jawa_Stand_Idle_02',
+      walk: 'C_Jawa_Walk_Fwd_Relaxed_01',
+      run: idles('C_Jawa_Run_Fwd_01', 'C_Jawa_Run_Fwd_03'),
+      'run.dodge': 'C_Jawa_Run_Fwd_Dodge_01',
+      stumble: 'C_Jawa_Run_Fwd_Stumble_01',
+      'turn.left': 'C_Jawa_Walk_Turn_Left_90_Blended',
+      'turn.right': 'C_Jawa_Walk_Turn_Right_90_Blended',
+    },
+  },
+  dewback: {
+    skeleton: 'Dewback_01_Ske',
+    body: 'dewback',
+    model: 'characters/npc/creatures/dewback/dewback_01/dewback_01_mesh',
+    parts: ['*_saddle_mesh'],
+    // (the chain’s first light enough, LOD4, is 1,224 triangles with its
+    // saddle: blocky on a beast four metres long; LOD3 is 3,488)
+    cuts: 'lod1=3',
+    set: { idle: 'L_Dewback_Stand_Idle_01', 'idle.look': 'L_Dewback_Stand_Idle_04', walk: 'C_Dewback_Stand_Walk_Fwd_01', 'walk.left': 'C_Dewback_Stand_Walk_Left_01', run: 'C_Dewback_Stand_Run_Fwd_01', 'hit.chest': 'A_Dewback_Stand_Hit_01' },
+  },
+  bantha: {
+    skeleton: 'Bantha_01_Ske',
+    body: 'bantha',
+    model: 'characters/npc/creatures/bantha/bantha_01/bantha_01_mesh',
+    // (no LOD of its chain is under the light cut’s 1,500 triangles, so the
+    // light and far cuts were both its last, LOD5; LOD4, 5,237, is the light
+    // one, and the far one keeps LOD5)
+    cuts: 'lod1=4',
+    // (its eleven maps at 1024 and 512 made that light cut 771 KB, the plain
+    // one’s weight: at 512 and 256 it is a light cut again)
+    light: { tex: 512, maps: 256 },
+    set: { idle: 'L_Bantha_Stand_Idle_04', 'idle.look': 'L_Bantha_Stand_Idle_03', walk: 'C_Bantha_Stand_Walk_Fwd_01', 'walk.left': 'C_Bantha_Stand_Walk_Fwd_Left_01', run: 'C_Bantha_Stand_Run_Fwd_01', 'hit.chest': 'A_Bantha_Stand_Idle_Hit_01' },
   },
 };
