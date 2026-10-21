@@ -77,7 +77,7 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
   }
   arch.computeVertexNormals();
   // (black and wet: the Cirith Ungol chapter's own rock, lit only by the Phial)
-  const lair = new THREE.Mesh(arch, road.material({ map: K.tex.rock ?? K.tex.stone, normalMap: K.tex.rockN ?? K.tex.stoneN, color: 0x403a34, roughness: 0.55, side: THREE.BackSide }));
+  const lair = new THREE.Mesh(arch, road.material({ map: K.tex.rock ?? K.tex.stone, normalMap: K.tex.rockN ?? K.tex.stoneN, color: 0x403a34, side: THREE.BackSide }));
   lair.position.set(0, heightAt(0, (LAIR.from + LAIR.to) / 2) - 0.4, (LAIR.from + LAIR.to) / 2);
   lair.name = 'cirith-ungol:lair';
   group.add(lair);

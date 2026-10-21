@@ -17,7 +17,7 @@ import { hall as buildHall, stairs as buildStairs } from '../../../towns/moria/h
 import { bridge as buildBridge } from '../../../towns/moria/bridge';
 import { balrog as buildBalrog } from '../../../towns/moria/balrog';
 import { goblin as buildGoblin } from '../../../towns/moria/orcs';
-import { mergeStatics } from '../parts';
+import { mergeStatics, roled } from '../parts';
 import { wearParts } from '../../partsWear';
 
 export const CHAMBER = { at: [-14, 24], door: 7.5 }; // Mazarbul, its doorway to the road (+x)
@@ -37,7 +37,7 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
   // opening onto the passage to the Chamber
   const stone = wearParts(road.material({ color: 0x3e4446, flatShading: true }), { tier });
   const wall = (x, z0, z1) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(1, WAY.h, z1 - z0), stone);
+    const m = new THREE.Mesh(roled(new THREE.BoxGeometry(1, WAY.h, z1 - z0), 'stone'), stone);
     m.position.set(x, heightAt(x, (z0 + z1) / 2) + WAY.h / 2 - 0.5, (z0 + z1) / 2);
     group.add(m);
   };
@@ -45,11 +45,11 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
   wall(-WAY.half, WAY.z[0], CHAMBER.at[1] - 3.5);
   wall(-WAY.half, CHAMBER.at[1] + 3.5, WAY.z[1]);
   for (const s of [-1, 1]) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(2.5, WAY.h, 0.8), stone);
+    const m = new THREE.Mesh(roled(new THREE.BoxGeometry(2.5, WAY.h, 0.8), 'stone'), stone);
     m.position.set(-WAY.half - 1.2, room + WAY.h / 2 - 0.5, CHAMBER.at[1] + s * 3.5);
     group.add(m);
   }
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(WAY.half * 2 + 1, 0.8, WAY.z[1] - WAY.z[0]), stone);
+  const roof = new THREE.Mesh(roled(new THREE.BoxGeometry(WAY.half * 2 + 1, 0.8, WAY.z[1] - WAY.z[0]), 'stone'), stone);
   roof.position.set(0, heightAt(0, (WAY.z[0] + WAY.z[1]) / 2) + WAY.h - 0.5, (WAY.z[0] + WAY.z[1]) / 2);
   group.add(roof);
 

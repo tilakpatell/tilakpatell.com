@@ -151,3 +151,23 @@ export function shadeOf(l, key = keyLight(l)) {
   const got = lumOf(c);
   return got > 0 ? c.map((v) => (v * want) / got) : [want, want, want];
 }
+
+// The full light the look measures a point against (houseNodes' uLookRef,
+// the sun's and the sky light's over pi), held at least to the light the
+// shade's floor stands for (the shade is SHADE.sun of its full light): under
+// Moria's black air the sky light is none, the reference fell to nothing,
+// and every glimmer on a wall read as full light, so the shade never came
+// and the deeps went black where the shade is meant to keep them shapes.
+// `c` a colour ({ r, g, b }, linear), lifted in place, its hue kept.
+export const REF_LEAST = SHADE.least / SHADE.sun;
+export function refFloor(c) {
+  const l = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+  if (l >= REF_LEAST) return c;
+  const k = l > 1e-6 ? REF_LEAST / l : 0;
+  if (k) {
+    c.r *= k;
+    c.g *= k;
+    c.b *= k;
+  } else c.r = c.g = c.b = REF_LEAST;
+  return c;
+}

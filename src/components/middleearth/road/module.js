@@ -24,7 +24,7 @@ import { PACE, newClock, step as stepClock } from './clock';
 import { SAVE, recent, resume, ridden as riddenOf, savedAt, shouldOffer } from './entry';
 import { carryFrom } from './carry';
 import { ABOVE_GROUND, LOOK_LIMIT, pose, settleLook } from './director';
-import { keyLight, light as lightAt, shadeOf, skyLight } from './daylight';
+import { keyLight, light as lightAt, refFloor, shadeOf, skyLight } from './daylight';
 import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
 import { createLands } from './lands';
@@ -42,6 +42,7 @@ import { clipFor, walkers as walkersAt } from './fellowship';
 import { STAGES, modeAt, stageById } from './stages/index';
 import { BEATS_OF } from './stages/registry';
 import { createScenes } from './scenes';
+import { createLamps } from './lamps';
 import { createDoing } from './doing';
 import { createClear, tooNear } from './clear';
 import { LINES } from './voicelines';
@@ -136,7 +137,9 @@ export default {
     // the stage’s sound, the beats’ clips and the cast’s lines, on the runtime’s bus
     const ambience = createAmbience(rt);
     // the written stages’ scenes and their beats (scenes.js)
-    const scenes = createScenes({ rt, road, lands, weather, ambience, tier, sky, backdrop: mountains });
+    // (their lamps through a pool of lights the scene always has, so no seam builds every shader again: lamps.js)
+    const lamps = createLamps(scene);
+    const scenes = createScenes({ rt, road, lands, weather, ambience, tier, sky, backdrop: mountains, lamps });
     // the black the Road’s first words are said over, lifting: a shell round the camera
     const veilMat = new MeshBasicNodeMaterial({ color: 0x000000, transparent: true, opacity: 0, depthTest: false, depthWrite: false, side: THREE.BackSide, fog: false });
     const veil = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), veilMat);
@@ -283,6 +286,8 @@ export default {
       scene.fog.density = l.fog.density * (1 + 0.35 * vision.amount * (1 + vision.pulse));
       house.sky({ low: scene.fog.color, high: scene.fog.color, sunDir });
       house.light({ sun, hemi });
+      // (never measured against less than the shade's floor stands for: daylight.js's refFloor)
+      refFloor(house.uniforms.uLookRef.value);
       // (the shade from the light there is: a clear day’s pale lilac, a fainter blue under the moon)
       house.set({ shadow: shade.setRGB(...shadeOf(l, key)) });
     };
@@ -393,6 +398,7 @@ export default {
       sun.target.position.copy(camera.position);
       cascades?.follow();
       cascades?.update(camera);
+      lamps.update(camera);
       sky.update(camera, dt);
       return here;
     };
@@ -602,6 +608,7 @@ export default {
         for (const k of kits.values()) k.dispose();
         sky.dispose();
         scenes.dispose();
+        lamps.dispose();
         weather.dispose();
         veil.geometry.dispose();
         veilMat.dispose();

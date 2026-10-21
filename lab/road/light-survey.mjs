@@ -68,7 +68,8 @@ for (const id of ids) {
     const name = `${id}-${metres}`;
     await sharp(png).webp({ quality: 78 }).toFile(`${out}/${name}.webp`);
     frames.push({ name, png });
-    const row = { at: `${id}:${metres}`, ...(await measure(png)) };
+    const { calls, triangles } = await page.evaluate(() => window.__ROAD__.info());
+    const row = { at: `${id}:${metres}`, ...(await measure(png)), calls, triangles };
     rows.push(row);
     console.log(JSON.stringify(row));
   }
