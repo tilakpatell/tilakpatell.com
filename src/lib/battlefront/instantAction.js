@@ -55,7 +55,9 @@
 // place of the commander's plan; a round that asks for it (`botLogic:
 // 'overhaul'`) has the Instant Action Overhaul V2's in the game's place
 // (ai/botLogicOverhaul.js: its deal, its six seconds, its steps and its
-// spread). Carried, not acted on: the vehicles' caps
+// spread), and its bots play the Skirmish templates and tactics its AI
+// kits' body binds (`round.pve`, the sim's `pve`: their aim, trigger and
+// evasion stay the AutoPlayer's). Carried, not acted on: the vehicles' caps
 // (no vehicle deploys yet), all-era heroes, the dodge roll.
 // Pure: no three.js, no DOM.
 //
@@ -360,6 +362,9 @@ export function roundFor(gs, choice = {}, { cap = MAX_SIDE, profile = null } = {
     // (the command posts' bot logic: the game's graph, ai/botLogic.js, or the mod's deal where it is asked for,
     // ai/botLogicOverhaul.js; an objective mode's bots are the commander's)
     botLogic: overhaul ? { kind: 'overhaul', radius: Overhaul.POST_RADIUS, spread } : cp ? { kind: 'game', timers: timersFor(gs), radius: POST_RADIUS } : null,
+    // (the templates the bots think with: the mod's AI kits bind the Skirmish soldier, so on its logic a bot
+    // plays its class's Skirmish template and PvE tactics; the game's AutoPlayers the multiplayer ones)
+    pve: overhaul && Overhaul.SKIRMISH,
     sources,
   };
 }
@@ -368,7 +373,8 @@ export function roundFor(gs, choice = {}, { cap = MAX_SIDE, profile = null } = {
 export function startInstantAction({ rulebook, gs, nav = null, seed = 1, spawns = null, teams = null, cap = MAX_SIDE, ...choice }) {
   const round = roundFor(gs, choice, { cap, profile: rulebook?.ai?.instantAction ?? null });
   // (AutoPlayers, not the Arcade's Skirmish bots: `pve` off; the difficulty's row is the multiplayer one of its
-  // name. The sim takes the round at its making: its rate, its length, its caps and its waves, sim.js's roundIn)
-  const sim = createSim({ rulebook, level: round.level, era: round.era, nav, seed, teams, spawns, bots: round.bots, mode: round.mode, difficulty: round.difficulty, pve: false, instantAction: round });
+  // name. The sim takes the round at its making: its rate, its length, its caps and its waves, sim.js's roundIn.
+  // On the Overhaul's logic `pve` is the round's: its kits' Skirmish templates, the AutoPlayers' own numbers kept)
+  const sim = createSim({ rulebook, level: round.level, era: round.era, nav, seed, teams, spawns, bots: round.bots, mode: round.mode, difficulty: round.difficulty, pve: round.pve, instantAction: round });
   return { sim, round };
 }

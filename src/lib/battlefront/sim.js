@@ -45,7 +45,8 @@ import { abilitiesFor } from './ai/skirmish.js';
 import { createBuckets, mayHurt } from './ai/buckets.js';
 import { createWaves, mayDeploy, stage as stageWaves, unitOpen } from './ai/waves.js';
 import { captured, createBotLogic, pickSlot, stepBotLogic } from './ai/botLogic.js';
-import { SPREAD, createDealer, dealFor, nextFor, ownerChanged, stepDealer } from './ai/botLogicOverhaul.js';
+import { createDealer, dealFor, nextFor, ownerChanged, stepDealer } from './ai/botLogicOverhaul.js';
+import { createAdaptive, stepAdaptive } from './ai/adaptive.js';
 import { fieldTo } from './navField.js';
 import { absorb, createKit, grenadesOf, hurtTurret, onAbility, onRoll, stepKit } from './kit.js';
 import { createGunner } from './ai/vehicleBrain.js';
@@ -232,8 +233,8 @@ function roundIn(sim) {
     // (the Overhaul's: one dealer for both sides, ai/botLogicOverhaul.js; no bot has a post before its first deal)
     if (postsOf(sim).length !== 5) throw new Error(`Instant Action: the Overhaul's table is of five posts, and ${sim.level} has ${postsOf(sim).length}`);
     sim.botLogic = { kind: 'overhaul', owners: ownersOf(sim), dealer: createDealer(sim.time) };
-    // (its spread: each side's aim noise scale, first drawn a tenth of a second in)
-    if (r.botLogic.spread) sim.aimSpread = { 1: 1, 2: 1, next: sim.time + 0.1 };
+    // (its spread: each side's aim noise scale, first drawn a tenth of a second in: ai/adaptive.js's driver)
+    if (r.botLogic.spread) sim.aimSpread = createAdaptive({ now: sim.time });
     for (const s of sim.entities.values()) if (s.bot && s.brain) s.brain.task = holdTask(sim, s);
     return;
   }
@@ -760,11 +761,7 @@ function stepMode(sim) {
   }
   if (sim.botLogic) botOrders(sim);
   // (the Overhaul's spread: each side's aim noise scale drawn again, evenly, one of its ten)
-  const sp = sim.aimSpread;
-  if (sp && sim.time + 1e-9 >= sp.next) {
-    for (const team of [1, 2]) sp[team] = SPREAD.scales[Math.floor(sim.rand() * SPREAD.scales.length)];
-    sp.next += SPREAD.every;
-  }
+  stepAdaptive(sim.aimSpread, sim.time, sim.rand);
 }
 
 export function drain(sim) {
