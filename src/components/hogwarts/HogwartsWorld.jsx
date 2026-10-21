@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useMediaQuery, useReducedMotion } from '../../lib/hooks';
 import { WorldHost, useWorld } from '../../runtime';
-import { Hud, Menu, Prompt, QuestList, Stick, Toast } from '../../runtime/hud';
+import { Hud, Menu, Prompt, QuestList, Stick, Toast, TouchButton } from '../../runtime/hud';
 import { wayOut } from '../worlds/worlds';
 import hogwartsModule from './module';
 import SpellWheel from './hud/SpellWheel';
