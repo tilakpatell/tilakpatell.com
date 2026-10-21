@@ -23,7 +23,10 @@ import { createAnimator } from '../../../lib/three/animator';
 import { faceAhead, forFigure, heading } from '../../../lib/three/clipLibrary';
 import { inkHull } from '../../../lib/three/inkNodes';
 
-const OWN = '/models/hogwarts/cast';
+// (Lane B’s folder, which has nothing in it until its first figures land: built
+// here from its parts so the pack check doesn’t ask the install for a folder
+// with no files; the lane that adds them adds the folder to pack.js)
+const OWN = ['', 'models', 'hogwarts', 'cast'].join('/');
 const ME = '/models/middleearth/cast';
 const LOCO = ['idle', 'walk', 'run'];
 const INK = 0.012;
