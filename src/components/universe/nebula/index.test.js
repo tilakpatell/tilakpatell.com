@@ -159,6 +159,13 @@ describe('the nebulae’s renderer', () => {
       expect(ray[0]).toBeCloseTo(want.x / -want.z, 9);
       expect(ray[1]).toBeCloseTo(want.y / -want.z, 9);
     }
+    // (without the shift the ray is the field of view’s own, the old uTan;
+    // with it, another ray: the two only agree on a camera with none)
+    const plain = cam([10, 20, 30], [400, -50, -1000]).projectionMatrix.elements;
+    const tan = Math.tan((34 / 2) * (Math.PI / 180));
+    expect(screenRay([1, 1], plain)[0]).toBeCloseTo(tan * (16 / 9), 9);
+    expect(screenRay([1, 1], plain)[1]).toBeCloseTo(tan, 9);
+    expect(Math.abs(screenRay([1, 1], e)[0] - screenRay([1, 1], plain)[0])).toBeGreaterThan(0.1);
     // the shader draws it from the same lines, for a cloud the camera is in
     const m = clouds(made().n).material;
     expect(SCREEN_RAY).toMatch(/\(ndc \+ vec2\(projectionMatrix\[2\]\[0\], projectionMatrix\[2\]\[1\]\)\) \/ vec2\(projectionMatrix\[0\]\[0\], projectionMatrix\[1\]\[1\]\)/);
