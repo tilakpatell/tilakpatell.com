@@ -45,7 +45,8 @@ page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
 // (--play's driver says how far it's got)
 page.on('console', (m) => m.text().startsWith('[play]') && console.log(m.text()));
 const t0 = Date.now();
-await page.goto(URL, { waitUntil: 'domcontentloaded' });
+// (a cold dev server transforms the whole module graph before the page's first script runs: minutes under load)
+await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 240000 });
 await page.waitForFunction(() => window.__INVWORLD__?.api && document.querySelector('.iw-canvas[data-on]'), null, { timeout: 240000 });
 console.log('city up in', ((Date.now() - t0) / 1000).toFixed(1), 's');
 
@@ -64,6 +65,11 @@ const SHOTS = {
   heroOmni: { drive: [['hero', 'omniman'], ['go', [40, 18, 200], Math.PI, 'air'], ['wait', 600]], pitch: -0.22 },
   heroThragg: { drive: [['hero', 'thragg'], ['go', [40, 18, 200], Math.PI, 'air'], ['wait', 600]], pitch: -0.22 },
   brawl: { drive: [['go', [50, 26, 40], Math.PI, 'air'], ['spawn', 'mauler', 1, [50, 0, 0]], ['wait', 300], ['held', 0], ['wait', 400]], pitch: -0.35 },
+  // the Guardians (./guardians.js): the hall's inside from its door (['hall', on] goes in or out through the hook); the two sent to four Maulers on the plaza
+  hall: { drive: [['hall', true], ['wait', 1500]], pitch: 0.1 },
+  // Angstrom's dimensions (./dimensions.js): the burnt city at night, from over the plaza (['dim', id] goes through the hook)
+  levy: { drive: [['dim', 'burnt'], ['go', [40, 60, 200], Math.PI, 'air'], ['wait', 1500]], time: 'night', pitch: -0.2 },
+  cavalry: { drive: [['go', [22, 9, 46], Math.PI, 'air'], ['spawn', 'mauler', 4, [22, 0, 24]], ['wait', 4500]], pitch: -0.22 },
   curb: { p: [44, 3, 120], mode: 'air', yaw: Math.PI, pitch: -0.12 },
   streetnight: { p: [40, 18, 200], mode: 'air', yaw: Math.PI, pitch: -0.22, time: 'night' },
   downtown: { p: [-300, 140, 600], mode: 'air', yaw: Math.PI * 0.9, pitch: -0.12 },
@@ -124,7 +130,7 @@ const SHOTS = {
 const args = process.argv.slice(2);
 const metrics = args.includes('--metrics');
 const at = args.indexOf('--play');
-const SEASON = ['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7'];
+const SEASON = ['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7', 'ep8', 'levy'];
 const plays = at < 0 ? [] : !args[at + 1] || args[at + 1].startsWith('--') || args[at + 1] === 'all' ? SEASON : args[at + 1].split(',');
 const want = args.filter((a, i) => !a.startsWith('--') && !(at >= 0 && i === at + 1));
 
@@ -223,6 +229,8 @@ await page.evaluate(() => {
       else if (k === 'spawn') api.spawn(a, b, c);
       else if (k === 'ruin') api.ruin(a, b, c);
       else if (k === 'hero') api.hero(a);
+      else if (k === 'hall') api.hall(a);
+      else if (k === 'dim') api.dimension(a);
       else if (k === 'held') {
         const e = sim.foes.foes[a];
         if (e) {
@@ -245,6 +253,9 @@ for (const [name, s] of Object.entries(SHOTS)) {
     sim.snap = true;
     // (a shot in the city after one out in space: down through the top of the sky first, the
     // way the game brings him home; otherwise he's placed by space's reckoning, over the Earth)
+    // (a shot after the hall's: out of it first, the way the game does)
+    if (api.zone === 'hall') api.hall(false);
+    if (api.dimension && sim.dim !== 'home') api.dimension('home');
     if (!s.space && api.zone === 'space') {
       sim.h = { ...sim.h, p: [0, 60000 + 7000, 0], v: [0, -300, 0], spd: 300, dir: [0, -1, 0], mode: 'air', perch: null, reentered: false };
       for (let i = 0; i < 40 && api.zone !== 'city'; i++) await new Promise((r) => setTimeout(r, 250));

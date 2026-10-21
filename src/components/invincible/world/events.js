@@ -10,7 +10,7 @@ import { getawayAt, newGetaway, stopGetaway } from './getaway';
 import { createHits } from './hits';
 import { WHAT, clock } from './hudFrame';
 import { QUESTS, STORY } from './keep';
-import { DAD_DRIVEN, RINGS_DONE } from './lines';
+import { DAD_DRIVEN, RINGS_DONE, ANGSTROM_LINES } from './lines';
 import { keepStory, missionOf, nextStory, placeOf as missionPlace } from './missions';
 import { CARDS, keepQuests } from './quests';
 
@@ -25,9 +25,11 @@ export const sound = (name, ...args) => import('./sounds').then((m) => m[name]?.
 const HANGAR = missionPlace('hangar');
 
 // what a step (or its end) asks for
-export function applyOuts(outs, { s, say, speak, unlock, clear, openCard, closeCard, shakeOff, beat = null, found = null }) {
+export function applyOuts(outs, { s, say, speak, unlock, clear, openCard, closeCard, shakeOff, beat = null, found = null, dimension = null }) {
   for (const o of outs) {
     if (o.type === 'step') {
+      // (a step played in another of Angstrom's dimensions: the world goes there as it begins)
+      if (o.dimension && o.dimension !== (s.dim ?? 'home')) dimension?.(o.dimension);
       // a step with a car: the getaway pulls out; the step after one: it's stopped where it is
       if (o.car) s.getaway = newGetaway({ from: o.car.from ?? [s.h.p[0], 0, s.h.p[2]], speed: o.car.speed, seed: 3 + o.i, away: s.h.p });
       else if (s.getaway && !s.getaway.stopped) s.getaway = stopGetaway(s.getaway);
@@ -73,6 +75,7 @@ export function applyOuts(outs, { s, say, speak, unlock, clear, openCard, closeC
         found?.(s.quests.cards.length);
       }
       speak(m.done);
+      if ((s.dim ?? 'home') !== 'home') dimension?.('home');
       if (s.getaway) s.getaway = stopGetaway(s.getaway);
       s.wave = null;
       s.guard = null;
@@ -83,6 +86,7 @@ export function applyOuts(outs, { s, say, speak, unlock, clear, openCard, closeC
       const id = s.mission.id;
       clear();
       s.mission = null;
+      if ((s.dim ?? 'home') !== 'home') dimension?.('home');
       if (o.why === 'abandoned') {
         closeCard();
         say('Called off.');
@@ -141,13 +145,20 @@ export function onFoeEvent(e, { s, say, feed, unlock, shakeOff }) {
   } else if (e.type === 'ko') {
     sfxHit('blast', 'ko', hits.foeForce(e.kind));
     feed({ type: 'ko', kind: e.kind ?? 'flaxan', id: e.id });
+    if (e.kind === 'angstrom') say(ANGSTROM_LINES.down, 3200, 'angstrom');
   } else if (e.type === 'swing' && e.on === 'hangar' && s.mission && s.guard) {
     // a Mauler's swing at the hangar while he's away: the hangar takes it (the last-but-one episode)
     s.hangarHp = Math.max(0, s.hangarHp - 10);
     sfx('crumble');
     feed({ type: 'hurt', what: 'hangar', hp: s.hangarHp });
   } else if (e.type === 'quake' && s.mission) shakeOff(missionOf(s.mission.id)?.steps[s.mission.step]);
-  else if (e.type === 'hit') sfxHit('thunk', 'foe', hits.foeForce(e.kind));
+  else if (e.type === 'portalIn') {
+    // Angstrom back through a portal of his own: a word the first two times
+    s.levyBack = (s.levyBack ?? 0) + 1;
+    sfx('hyperspace');
+    if (s.levyBack === 1) say(ANGSTROM_LINES.back, 3200, 'angstrom');
+    else if (s.levyBack === 2) say(ANGSTROM_LINES.again, 3200, 'angstrom');
+  } else if (e.type === 'hit') sfxHit('thunk', 'foe', hits.foeForce(e.kind));
   else if (e.type === 'bolt' || e.type === 'blast') sfx('laser');
   else if (e.type === 'hurt') sfx('hit');
   else if (e.type === 'spawn') sfx('pop');

@@ -29,7 +29,8 @@ const ko = (kind, n, from = 0) => Array.from({ length: n }, (_, i) => ({ type: '
 
 describe('the season', () => {
   it('has eight episodes in order, each with its people and its villains in the cast', () => {
-    expect(STORY).toEqual(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7', 'ep8']);
+    expect(STORY.slice(0, 8)).toEqual(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7', 'ep8']);
+    expect(STORY.slice(8).every((id) => missionOf(id).season === 2)).toBe(true); // (season two after it, ./season2.js)
     for (const m of MISSIONS) {
       expect(m.giver in CAST, `${m.id}'s giver`).toBe(true);
       if (m.start?.npc) expect(m.start.npc in CAST).toBe(true);

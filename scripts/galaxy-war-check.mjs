@@ -1,4 +1,4 @@
-/* global window */
+/* global window, requestAnimationFrame */
 // A browser check of the galaxy's wars (galaxy/gcw.js, warfront.js,
 // battles.js; the war table on the holotable). With the dev server up (npx
 // vite --port 5188):
@@ -12,8 +12,13 @@
 // takes the objectives down with the battle's own hit() (as your shots
 // would), checks the war's tally counted it for your side, and opens the war
 // table with your oath on it: screenshots as it goes (war-<n>-<what>.png).
+// It says what the battle's arrival weighs and draws (the `arrival:` line:
+// every model file the page fetched, a fresh context so nothing cached, and
+// one frame's calls and triangles in among the fighters), so a change to
+// the ships' files is measured before and after on the same battle.
 import { chromium } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
+import { MODEL_FILE } from './galaxy-budget.mjs';
 
 const out = process.env.OUT ?? '.';
 const quality = process.argv[3] ?? 'mid';
@@ -43,6 +48,15 @@ const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => m.type() === 'error' && !/GPU stall|swiftshader|WebGL/i.test(m.text()) && errors.push(m.text()));
+// (every .glb, .ktx2 and .bin it fetched, as galaxy-check.mjs counts a system's models)
+let modelBytes = 0;
+let modelFiles = 0;
+page.on('requestfinished', async (req) => {
+  if (!MODEL_FILE.test(req.url())) return;
+  const sizes = await req.sizes().catch(() => null);
+  modelBytes += sizes?.responseBodySize ?? 0;
+  modelFiles++;
+});
 let shot = 0;
 const snap = (what) => page.screenshot({ path: `${out}/war-${shot++}-${what}.png` });
 
@@ -114,6 +128,34 @@ await pin(`
 `);
 await page.waitForTimeout(6000);
 await snap('dogfight');
+// one whole frame's counts from here, read as galaxy-check.mjs reads them (a
+// frame asked for every tick, its counts taken and the count reset, the
+// busiest of a second's frames kept: the node renderer's draws are its
+// drawCalls, the classic one's its calls), and what the page has fetched by now
+const frame = await page.evaluate(
+  () =>
+    new Promise((done) => {
+      const info = window.__galaxyDebug.renderer.info;
+      const wasAuto = info.autoReset;
+      info.autoReset = false;
+      let most = { calls: 0, triangles: 0 };
+      const t0 = performance.now();
+      window.__RUNTIME__?.invalidate();
+      const tick = (now) => {
+        window.__RUNTIME__?.invalidate();
+        const f = { calls: info.render.drawCalls ?? info.render.calls, triangles: info.render.triangles };
+        if (f.calls > most.calls) most = f;
+        info.reset();
+        if ((now - t0 < 1500 || most.calls === 0) && now - t0 < 20000) requestAnimationFrame(tick);
+        else {
+          info.autoReset = wasAuto;
+          done(most);
+        }
+      };
+      requestAnimationFrame(tick);
+    }),
+);
+console.log(`arrival: models ${(modelBytes / 1e6).toFixed(2)} MB in ${modelFiles} files · the dogfight's frame: calls ${frame.calls}, triangles ${frame.triangles}`);
 const lock = await page.evaluate(() => (window.__galaxyDebug.war.targets ?? []).length);
 check(lock > 0, 'its fighters and objectives are there to lock on to');
 // one of the other side's fighters down, for your side

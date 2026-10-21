@@ -47,6 +47,7 @@ import { CALLS } from './lines';
 import { RINGS, LESSON_LIMIT } from './quests';
 import { COAST, rng } from './map';
 import { SPACE, BODIES } from './orbit';
+import { SEASON2 } from './season2';
 
 const MOON = BODIES.find((b) => b.id === 'moon');
 
@@ -280,6 +281,8 @@ export const MISSIONS = [
     done: [['cecil', 'Got it. Don’t quit your day job.']],
   })),
 ];
+// (season two's, ./season2.js, listed after season one's: the board shows them in order)
+MISSIONS.push(...SEASON2);
 const BY_ID = Object.fromEntries(MISSIONS.map((m) => [m.id, m]));
 export const missionOf = (id) => BY_ID[id] ?? null;
 export const STORY = MISSIONS.filter((m) => !m.side).map((m) => m.id);
@@ -303,7 +306,7 @@ export function startMission(id, now = 0) {
 }
 
 // the step's `out` entry as it begins (what it needs set up: who to spawn, a car)
-const begin = (m, i) => ({ type: 'step', i, text: m.steps[i].text, spawn: m.steps[i].spawn ?? null, car: m.steps[i].car ?? null, wave: m.steps[i].wave ?? null, upto: m.steps[i].upto ?? null });
+const begin = (m, i) => ({ type: 'step', i, text: m.steps[i].text, spawn: m.steps[i].spawn ?? null, car: m.steps[i].car ?? null, wave: m.steps[i].wave ?? null, upto: m.steps[i].upto ?? null, dimension: m.steps[i].dimension ?? null });
 // the same for the step under way (the first one, just after startMission)
 export const stepOf = (p) => (p && !p.done && !p.fail && BY_ID[p.id]?.steps[p.step] ? begin(BY_ID[p.id], p.step) : null);
 

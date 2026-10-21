@@ -12,16 +12,18 @@ const LIGHT = { sun: [0xfff4e0, 1.25], hemi: [0xbfe4ff, 0xc8b088, 1.4], fog: [0x
 
 export async function buildNimbus(kit) {
   const S = stage(kit, 'nimbus', { ground: specks('#f0dca8', ['#e8d09a', '#f6e4b8', '#d8c090'], 41, 1800, 1.6), groundTile: 5 });
-  const { R, P, A } = S;
+  const { R, P } = S;
 
-  // the sea, from the throne's line north to the horizon, its surface sliding
+  // the sea, from the throne's line north to the horizon (out past the
+  // world's ground and its fog, Atlantis standing in it), its surface sliding
+  const SEA = { w: 900, d: 600 };
   const seaMat = R.own(new THREE.MeshBasicMaterial({ color: 0x2a8ac8, transparent: true, opacity: 0.92 }));
-  const sea = new THREE.Mesh(R.own(new THREE.PlaneGeometry(A.x1 - A.x0 + 260, 150)), seaMat);
+  const sea = new THREE.Mesh(R.own(new THREE.PlaneGeometry(SEA.w, SEA.d)), seaMat);
   sea.rotation.x = -Math.PI / 2;
-  sea.position.set(P(0, 0)[0], 0.04, P(0, -19)[1] - 75);
+  sea.position.set(P(0, 0)[0], 0.04, P(0, -19)[1] - SEA.d / 2);
   R.add(sea, { ink: false });
   const foamMat = R.own(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 }));
-  const foam = new THREE.Mesh(R.own(new THREE.PlaneGeometry(A.x1 - A.x0 + 260, 1.2)), foamMat);
+  const foam = new THREE.Mesh(R.own(new THREE.PlaneGeometry(SEA.w, 1.2)), foamMat);
   foam.rotation.x = -Math.PI / 2;
   foam.position.set(P(0, 0)[0], 0.06, P(0, -19)[1]);
   R.add(foam, { ink: false });
@@ -65,7 +67,7 @@ export async function buildNimbus(kit) {
 
   S.people();
   return S.done(LIGHT, (t) => {
-    sea.position.z = P(0, -19)[1] - 75 + Math.sin(t * 0.5) * 0.6;
+    sea.position.z = P(0, -19)[1] - SEA.d / 2 + Math.sin(t * 0.5) * 0.6;
     foam.position.z = P(0, -19)[1] + Math.sin(t * 0.5) * 0.6;
     foamMat.opacity = 0.45 + 0.3 * Math.max(0, Math.sin(t * 0.5));
   });

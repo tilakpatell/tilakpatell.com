@@ -116,7 +116,7 @@ describe('the galaxy’s models', () => {
         expect(HIGH_CUTS[kind], kind).toEqual({ url: `/models/galaxy/surface/${file}.glb`, nose: 0 });
         expect(onSite(HIGH_CUTS[kind].url), kind).toBe(true);
         expect(bytesOf(HIGH_CUTS[kind].url), kind).toBeGreaterThan(bytesOf(`/models/galaxy/${kind}.glb`));
-        for (const detail of ['high', 'ultra']) expect(modelsAt(detail)[kind], `${detail} ${kind}`).toEqual({ ...MID[kind], url: HIGH_CUTS[kind].url, nose: 0 });
+        for (const detail of ['high', 'ultra']) expect(modelsAt(detail)[kind], `${detail} ${kind}`).toEqual({ ...MID[kind], url: HIGH_CUTS[kind].url, nose: 0, farNose: MID[kind].nose });
         for (const detail of ['low', 'mid']) expect(modelsAt(detail)[kind].url, `${detail} ${kind}`).toBe(`/models/galaxy/${kind}.glb`);
         expect(lodUrl(kind, modelsAt('high')), kind).toBe(`/models/galaxy/lod/${kind}.glb`);
       }
@@ -263,7 +263,7 @@ describe('the galaxy’s models', () => {
       for (const detail of ['high', 'ultra']) {
         const m = withHq(base, detail);
         expect(m.nebulon).toEqual({ url: '/models/galaxy/hq/nebulon.glb', nose: HQ.nebulon.nose, hq: true });
-        expect(m.tie).toEqual({ ...base.tie, url: HIGH_CUTS.tie.url, nose: 0 }); // (a desktop's TIE is the game's plain cut)
+        expect(m.tie).toEqual({ ...base.tie, url: HIGH_CUTS.tie.url, nose: 0, farNose: 0 }); // (a desktop's TIE is the game's plain cut, its far copy the fleet file's)
       }
     });
 
@@ -440,6 +440,28 @@ describe('the galaxy’s models', () => {
 
     it('puts the LOD where the model is, the same size', async () => {
       const { models, slot } = await loaded();
+      const [full, far] = lodIn(slot).levels.map((l) => l.object);
+      slot.holder.updateMatrixWorld(true);
+      const a = new THREE.Box3().setFromObject(full);
+      const b = new THREE.Box3().setFromObject(far);
+      for (const k of ['min', 'max']) for (const c of ['x', 'y', 'z']) expect(b[k][c]).toBeCloseTo(a[k][c], 5);
+      models.dispose();
+    });
+
+    // (lane C2: a desktop draws the U-wing's surface file, nose 0, and its far
+    // copy baked from the fleet's file, written turned back by the fleet row's
+    // π; the far copy takes that turn, or it flies tail first)
+    it('turns a desktop fighter’s far copy as the fleet file it was baked from, so it sits where the model is', async () => {
+      const turned = () => {
+        const m = fakeModel();
+        m.scene.rotation.y = -modelsAt('mid').uwing.nose;
+        return m;
+      };
+      const load = vi.fn(async (url) => (url === lodUrl('uwing') ? turned() : fakeModel()));
+      const models = createModels({ load });
+      const slot = models.slot('uwing', 0.3);
+      for (let i = 0; i < 5; i++) await settle();
+      expect(MODELS.uwing).toMatchObject({ nose: 0, farNose: Math.PI }); // (a test runs at ultra)
       const [full, far] = lodIn(slot).levels.map((l) => l.object);
       slot.holder.updateMatrixWorld(true);
       const a = new THREE.Box3().setFromObject(full);
