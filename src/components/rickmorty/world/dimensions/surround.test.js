@@ -115,6 +115,16 @@ describe('the world round a place', () => {
     expect(parts.some((p) => p.list === 'solid')).toBe(false);
   });
 
+  it('paints a lot with a look of its own in its own colours (a stand’s concrete under a city’s night)', () => {
+    const d = outdoor();
+    const { R, tiled } = fakeRoom();
+    const { kit, loader } = fakeKit();
+    const pale = { walls: [0xb8b4ac], roofs: [0x8a867e], lit: [0xffe24a], trim: 0x6a665e };
+    surround(ctx(R, kit, d, loader), { look: LOOK }, laidFor(d, { lots: [{ side: null, row: null, style: 'block', x: d.centre.x, z: d.area.z0 - 30, turn: 0, w: 10, d: 10, h: 10, y: 0, look: pale }], skyline: [], edge: [] }));
+    expect(tiled.length).toBeGreaterThan(0);
+    for (const t of tiled) expect(t.mat.name).toMatch(/b8b4ac/);
+  });
+
   it('tracks every load, so the place isn’t ready till it’s all stood', async () => {
     const d = outdoor();
     const { R } = fakeRoom();

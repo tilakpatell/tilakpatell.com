@@ -145,7 +145,18 @@ export function surround({ R, d, kit, loader = null, blocks = [] }, world, laid)
   // ── drawn now, in the room kit ──
   for (const run of laid.edge) edgeRun(R, run, look);
   const windows = laid.lots.length || laid.skyline.length ? windowPaints(R, look) : {};
-  for (const l of laid.lots) if (!l.model) lot(R, l, look, { windows, list: 'fixed' });
+  // (a lot may have a look of its own: a stand's concrete, under a city's night)
+  const own = new Map();
+  const looked = (l) => {
+    if (!l.look) return [look, windows];
+    if (!own.has(l.look)) own.set(l.look, windowPaints(R, l.look));
+    return [l.look, own.get(l.look)];
+  };
+  for (const l of laid.lots)
+    if (!l.model) {
+      const [lk, wins] = looked(l);
+      lot(R, l, lk, { windows: wins, list: 'fixed' });
+    }
   for (const s of laid.skyline) lot(R, { ...s, y: 0, turn: Math.atan2(d.centre.x - s.x, d.centre.z - s.z) }, look, { windows, list: 'fixed' });
   if (laid.path) {
     const [[x0, z0], [x1, z1]] = laid.path.pts;

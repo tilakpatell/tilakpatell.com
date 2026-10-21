@@ -121,6 +121,8 @@ export const TRIS = {
 // generic Earth figure light enough to pack a stadium with)
 const EARTH = ['crowd:cop'];
 const STAGE = [0, -14];
+// the stands' concrete, pale under the dusk so the audience reads on it
+const STANDS = { walls: [0xb8b4ac, 0x9a968e], roofs: [0x8a867e], lit: [0xffe24a], trim: 0x6a665e };
 
 // a day's sky, for a room's outside that hasn't one of its own
 const DAY = { top: 0x2a6ac8, mid: 0x8ac8f0, low: 0xe8f4f8, sun: 0xfff6d8, clouds: 1, moons: 0 };
@@ -266,9 +268,9 @@ export const WORLDS = {
     vista: 0.5,
     forecourt: { path: { w: 4.5, color: 0x26262e } },
     stands: [
-      { at: [50, 0], w: 46, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 8 } },
-      { at: [-50, 0], w: 46, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 8 } },
-      { at: [0, 40], w: 64, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 8 } },
+      { at: [50, 0], w: 46, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 8 }, look: STANDS },
+      { at: [-50, 0], w: 46, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 8 }, look: STANDS },
+      { at: [0, 40], w: 64, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 8 }, look: STANDS },
     ],
     crowd: {
       gather: [

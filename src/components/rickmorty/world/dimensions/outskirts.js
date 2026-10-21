@@ -229,7 +229,7 @@ function standsOf(d, stands, tier, hero) {
     const face = st.face === 'hero' ? hero : [d.centre.x + (st.face?.[0] ?? 0), d.centre.z + (st.face?.[1] ?? 0)];
     const turn = quarter(Math.atan2(face[0] - x, face[1] - z));
     const rows = st.rows ?? 3;
-    lots.push({ side: null, row: null, style: 'stand', x, z, turn, w: st.w, d: st.d, h: st.h, y: 0, steps: rows, stand: true });
+    lots.push({ side: null, row: null, style: 'stand', x, z, turn, w: st.w, d: st.d, h: st.h, y: 0, steps: rows, stand: true, look: st.look ?? null });
     const fx = Math.sin(turn);
     const fz = Math.cos(turn);
     const all = st.n?.[tier] ?? 0;
