@@ -40,7 +40,8 @@ describe('the heroes', () => {
       expect(ABILITIES[h.abilities.power], `${h.id} on G`).toBeTruthy();
       expect(ABILITIES[h.abilities.second], `${h.id} on V`).toBeTruthy();
       expect(['galaxy', 'elsewhere']).toContain(h.side);
-      expect(h.tall).toBeGreaterThan(1);
+      // (Yoda, at 0.87 m in the game, the one under a metre)
+      expect(h.tall, h.id).toBeGreaterThan(h.id === 'yoda' ? 0.6 : 1);
       expect(GUNS[h.weapon], `${h.id} carries ${h.weapon}`).toBeTruthy();
       if (h.weapon === 'saber') {
         expect(SABER_COLORS.some((c) => c.id === h.saber.color), h.id).toBe(true);
@@ -225,7 +226,8 @@ describe('the outfits', () => {
 describe('one saber path', () => {
   it('fields no saber hero who isn’t on the game’s rig: one not yet is `soon`, with why, and isn’t picked', () => {
     const off = HEROES.filter((h) => h.weapon === 'saber' && h.rig !== 'walrus');
-    expect(off.map((h) => h.id)).toEqual(['ahsoka']);
+    // (Yoda and Grievous are on the game’s rigs of their own, which do not fence yet)
+    expect(off.map((h) => h.id)).toEqual(['ahsoka', 'yoda', 'grievous']);
     for (const h of off) {
       expect(h.soon).toMatch(/game’s rig/);
       expect(readHero({ id: h.id }).id).not.toBe(h.id);
