@@ -5,9 +5,10 @@
 // ./destinations.js (and with it ./rules.js, loaded with the page) merges
 // these few rows and none of the records' palettes, rings and crowds.
 //
-// BLOCKS: { [placeId]: [{ id, dx, dz, w, d, h }] }  axis-aligned boxes in
+// BLOCKS: { [placeId]: [{ id, dx, dz, w, d, h, draw }] }  axis-aligned boxes in
 //   metres from the place's middle, `h` how tall they're drawn (≤ 1.2 m:
-//   the walking camera passes over them)
+//   the walking camera passes over them), `draw` how (./surround.js: a
+//   rail or a barrier round its edge, a box, or nothing)
 // blocksOf(d, list) → solids in the world ({ id, x, z, w, d, h, block })
 // withBlocks(rows, table) → the rows, each with its blocks on the end of its solids
 // blockProblems(d, solids) → what's wrong with them, in words (none: [])

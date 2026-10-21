@@ -8,8 +8,10 @@
 // place isn't ready till it's stood) and one that fails is left out: the
 // place goes on without it. stage.js calls it before the room kit builds.
 //
-// surround({ R, d, kit, loader }, world, laid) → { ready, actions: { hop,
+// surround({ R, d, kit, loader, blocks }, world, laid) → { ready, actions: { hop,
 //   turn, crowd } }
+//   blocks: the place's (./blocks.js), drawn as each says: a rail or a
+//   barrier round its edge, a box of its size, or nothing
 // wallOpenings(world, side, d) → a wall's openings for shell.js's wallLine
 // groundSize(d, reach) → [across, deep]   the outdoor ground's size
 // roomFog(d, world, fogFar) → [colour, near, far] | null   a room's, looking out
@@ -120,9 +122,25 @@ function groundRound(R, d, reach, color) {
   for (const [x0, x1, z0, z1] of strips) R.fixed((x0 + x1) / 2, (z0 + z1) / 2, 0).box(color, 0, -0.13, 0, x1 - x0, 0.1, z1 - z0);
 }
 
-export function surround({ R, d, kit, loader = null }, world, laid) {
+export function surround({ R, d, kit, loader = null, blocks = [] }, world, laid) {
   const look = world.look ?? LOOK;
   const room = d.kind === 'room';
+
+  // ── the blocks the crowd stands in ──
+  for (const b of blocks) {
+    const [x, z] = [d.centre.x + b.dx, d.centre.z + b.dz];
+    if (b.draw === 'box') R.frame(x, z, 0, { list: 'fixed' }).box(look.trim ?? 0x5a5a5a, 0, 0, 0, b.w, b.h, b.d);
+    else if (b.draw === 'rail' || b.draw === 'barrier') {
+      const [x0, x1, z0, z1] = [x - b.w / 2, x + b.w / 2, z - b.d / 2, z + b.d / 2];
+      for (const [a0, c0, a1, c1] of [
+        [x0, z0, x1, z0],
+        [x0, z1, x1, z1],
+        [x0, z0, x0, z1],
+        [x1, z0, x1, z1],
+      ])
+        edgeRun(R, { kind: b.draw, x0: a0, z0: c0, x1: a1, z1: c1, h: b.h }, look);
+    }
+  }
 
   // ── drawn now, in the room kit ──
   for (const run of laid.edge) edgeRun(R, run, look);

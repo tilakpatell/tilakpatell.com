@@ -197,6 +197,24 @@ describe('the world round a place', () => {
   });
 });
 
+describe('the blocks a crowd stands in', () => {
+  it('draws each as the rail, the barrier or the box it says, round its edge, no taller than it is', () => {
+    const d = outdoor();
+    const { R, parts } = fakeRoom();
+    const blocks = [
+      { id: 'pit', dx: -10, dz: 10, w: 12, d: 6, h: 1.1, draw: 'barrier' },
+      { id: 'dais', dx: 10, dz: 10, w: 4, d: 2, h: 0.6, draw: 'box' },
+      { id: 'quiet', dx: 0, dz: 0, w: 2, d: 2, h: 1, draw: 'none' },
+    ];
+    surround({ R, d, kit: fakeKit().kit, loader: fakeKit().loader, blocks }, { look: LOOK }, laidFor(d, { edge: [], lots: [], skyline: [], path: null, props: [], lanes: [] }));
+    // the barrier round the pit: boards on all four sides
+    const boards = parts.filter((p) => p.list === 'fixed' && p.geo === 'box');
+    expect(boards.length).toBeGreaterThan(8);
+    // the dais a box of its own size, standing on the ground
+    expect(parts.some((p) => p.geo === 'box' && p.a[4] === 4 && p.a[5] === 0.6 && p.a[6] === 2)).toBe(true);
+  });
+});
+
 describe('the walls, the ground and the fog a world asks of the stage', () => {
   it('cuts a room’s windows in the wall they’re on, where they are along it', () => {
     const d = room();

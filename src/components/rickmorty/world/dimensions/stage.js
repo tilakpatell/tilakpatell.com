@@ -28,6 +28,7 @@ import { curse, dealNews, dealReadout, newDeal, stepDeal } from '../games/deal';
 import { freezeEyes, freezeNews, freezeReadout, jumpSplashes, moving, newFreeze, stepFreeze } from '../games/freeze';
 import { findNews, findReadout, newFind, pickOurs, stepFind } from '../games/find';
 import { TRIS, WORLDS } from './worlds';
+import { BLOCKS } from './blocks';
 import { outskirtsOf } from './outskirts';
 import { groundSize, roomFog, surround, wallOpenings } from './surround';
 
@@ -281,7 +282,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         groundOut?.(laid.reach);
         const fog = d.kind === 'room' ? (world.fog ?? roomFog(d, world, fogFar)) : null;
         if (fog) light = { ...light, fog };
-        round = surround({ R, d, kit }, world, laid);
+        round = surround({ R, d, kit, blocks: BLOCKS[id] ?? [] }, world, laid);
       } catch (e) {
         groundOut?.(null);
         if (import.meta.env.DEV) console.warn('stage: no world round', id, e);
