@@ -2,7 +2,8 @@
 // bots all at once, by the mod's fixed table (its own records, read
 // 2026-10-13: NOTES.md, "The Overhaul's bot logic").
 import { describe, expect, it } from 'vitest';
-import { DEAL, POST_RADIUS, RESPAWN, SPREAD, TABLE, createDealer, dealFor, nextFor, ownerChanged, slotOrder, stepDealer } from './botLogicOverhaul.js';
+import book from '../../../data/bf2017/mods/iao-v2.json';
+import { DEAL, DEFAULT_STEP, POST_RADIUS, RESPAWN, SKIRMISH, SPREAD, SQUAD_SPAWN, STEPS, TABLE, TUNING, createDealer, dealFor, kitTemplate, nextFor, ownerChanged, slotOrder, stepDealer, tuned } from './botLogicOverhaul.js';
 
 // the owners of posts A to E by team (0 no one's), from the local slots a side holds
 const holding = (team, slots) => {
@@ -116,5 +117,58 @@ describe('when a deal is made', () => {
 
   it('is not before the start, whatever changes hands', () => {
     expect(run(createDealer(), 9, { 2: true, 5: true })).toEqual([8.2]);
+  });
+});
+
+// What the mod does to a bot (its records: mods/iao-v2.json, NOTES.md, "The Overhaul's records").
+describe('what the mod does to a bot', () => {
+  const AP = { noiseScale: 3, sideScale: 1.2, fov: 140, lofReaction: 0.05, dodgeRoll: 0.2, jump: 0, spawn: { squad: 0.5, hero: 1 } };
+
+  it('every number is the rulebook’s, each with the record it came from', () => {
+    expect(TABLE).toEqual(book.botLogic.table.entries);
+    expect(DEAL).toEqual({ hold: book.botLogic.hold.value, every: book.botLogic.every.value, limit: book.botLogic.limit.value, lag: book.botLogic.lag.value });
+    expect(POST_RADIUS).toBe(book.botLogic.defendRadius.value);
+    expect(RESPAWN).toBe(book.botLogic.respawn.value);
+    expect(SPREAD).toEqual({ every: book.adaptive.every, scales: book.adaptive.scales });
+    expect(SQUAD_SPAWN).toBe(book.squadSpawn.value);
+    for (const row of [book.botLogic.hold, book.botLogic.every, book.botLogic.limit, book.botLogic.lag, book.botLogic.defendRadius, book.botLogic.respawn, book.squadSpawn]) expect(row._source).toMatch(/#\d+\./);
+    for (const fields of Object.values(TUNING)) for (const values of Object.values(fields)) expect(values).toHaveLength(STEPS.length);
+    expect(Object.keys(TUNING)).toEqual(['aim', 'reaction', 'dodging', 'jumping']);
+  });
+
+  it('its five steps of aim: the noise scale in place of the rows’ and the side’s, and the tracker’s field of view', () => {
+    expect(STEPS).toEqual(['veryEasy', 'easy', 'medium', 'hard', 'veryHard']);
+    expect(STEPS.map((aim) => tuned(AP, { aim }).noiseScale)).toEqual([100, 5, 1, 0.5, 0.125]);
+    expect(STEPS.map((aim) => tuned(AP, { aim }).fov)).toEqual([40, 80, 110, 140, 180]);
+    for (const aim of STEPS) expect(tuned(AP, { aim }).sideScale).toBe(1);
+  });
+
+  it('its five steps of reaction and of dodging, and the jumping’s', () => {
+    expect(STEPS.map((reaction) => tuned(AP, { reaction }).lofReaction)).toEqual([0.5, 0.3, 0.1, 0.05, 0]);
+    expect(STEPS.map((dodging) => tuned(AP, { dodging }).dodgeRoll)).toEqual([0, 0.01, 0.05, 0.1, 1]);
+    expect(STEPS.map((jumping) => tuned(AP, { jumping }).jump)).toEqual([0, 0.01, 0.05, 0.1, 1]);
+  });
+
+  it('the middle step unless asked, its option’s own default', () => {
+    expect(DEFAULT_STEP).toBe('medium');
+    expect(tuned(AP)).toMatchObject({ noiseScale: 1, fov: 110, lofReaction: 0.1, dodgeRoll: 0.05, jump: 0.05 });
+  });
+
+  it('its squad-spawn probability: a fallen bot on a squadmate whenever one is free, the rest of the spawn left', () => {
+    expect(tuned(AP).spawn).toEqual({ squad: 1, hero: 1 });
+    expect(AP.spawn.squad).toBe(0.5);
+  });
+
+  it('its kits’ templates: each class’s Skirmish template and PvE tactics, the Separatists’ B1 theirs', () => {
+    expect(SKIRMISH).toBe(true);
+    for (const cls of ['assault', 'heavy', 'officer', 'specialist']) {
+      expect(kitTemplate(cls, { era: 'Orig', side: 'light' })).toMatchObject({ template: cls, aiBody: 'StormTrooperAI_Skirmish' });
+      expect(kitTemplate(cls, { era: 'Orig', side: 'dark' })).toMatchObject({ template: cls });
+      expect(kitTemplate(cls, { era: 'Preq', side: 'dark' })).toMatchObject({ template: `${cls}_separatist`, aiBody: 'StormTrooperAI_B1_Skirmish' });
+    }
+    expect(kitTemplate('heavy', { era: 'Orig', side: 'light' }).tactics).toBe('Heavy_PvE_Tactics');
+    // (the mod has no AI kit of the Republic's, nor of the sequel era: none is made up)
+    expect(kitTemplate('assault', { era: 'Preq', side: 'light' })).toBe(null);
+    expect(kitTemplate('assault', { era: 'NewEra', side: 'light' })).toBe(null);
   });
 });

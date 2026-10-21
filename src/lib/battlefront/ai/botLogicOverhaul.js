@@ -30,50 +30,87 @@
 //                bots' aim, reaction and dodging are each one of five steps,
 //                the middle unless asked (its own options' tables)
 //
+// And what it does to a bot, beside where it sends one (its records: NOTES.md,
+// "The Overhaul's records"):
+//
+//   the steps    each option's five steps set AutoPlayer settings in place of
+//                the game's rows (`tuned`): the aim its noise scale (100, 5,
+//                1, 0.5, 0.125) and its tracker's field of view (40, 80, 110,
+//                Hard none, 180), the reaction the line of fire's (0.5, 0.3,
+//                0.1, 0.05, 0), the dodging the roll's odds and the jumping the
+//                jump's (0, 0.01, 0.05, 0.1, 1 each; the jumping has no row on
+//                the screen, so it is the middle, and the brain does not jump)
+//   the squads   its hub's squad-spawn probability, 1: a fallen bot comes in
+//                on a squadmate whenever one is free (the game's row is 0.5)
+//   the spread   ai/adaptive.js, the driver the sim steps
+//   the kits     every trooper's AI kit binds the Skirmish soldier as its AI body, so a
+//                bot plays its class's Skirmish template and PvE tactics
+//                (`kitTemplate`; the sim's `pve`), the Separatists' B1 theirs
+//
+// Every number above is the rulebook's (src/data/bf2017/mods/iao-v2.json,
+// scripts/bf2017-mods.mjs), each with the record and field it came from.
+//
 // By hand: a table of twelve met by a thirteenth bot starts again from its
 // first entry (the mod's layout implies it; what the game's switch does past
 // its last output is its code's, not read); a bot that comes in between two
 // deals takes the table's next entry (whether the mod gives it any order is
-// not known); a post changing hands before the start asks for nothing. Pure.
+// not known); a post changing hands before the start asks for nothing; the
+// AI body's template is the class's Skirmish one by name (NOTES.md). Pure.
 //
 //   slotOrder(team) → the posts' indices, the side's slot 1 first
 //   createDealer(now) → dealer      stepDealer(dealer, now) → true when a deal is made this step
 //   ownerChanged(dealer, now)       (a post changed hands)
 //   dealFor(dealer, team, owners, count) → [post index a bot]   (owners: each post's team, 0 no one's)
 //   nextFor(dealer, team, owners) → post index    (one more bot of the side, after its last deal)
-//   tuned(ap, { aim, reaction, dodging }) → ap      (autoPlayer.js's numbers on the mod's steps)
+//   tuned(ap, { aim, reaction, dodging, jumping }) → ap      (autoPlayer.js's numbers on the mod's steps)
+//   kitTemplate(cls, { era, side }) → { template, tactics, aiBody } | null   (ai.json's skirmish keys)
+//   SKIRMISH: every kit's AI body is a Skirmish one (a round on the mod is the sim's `pve`)
 
-export const TABLE = ['X', 'Y', 'M', 'M', 'Y', 'X', 'M', 'X', 'Y', 'F', 'M', 'M'];
+import { botLogic, kitTemplates, squadSpawn, steps } from '../../../data/bf2017/mods/iao-v2.json';
+import { ADAPTIVE } from './adaptive.js';
+
+export const TABLE = [...botLogic.table.entries];
 // The deal's times, s: the hold after the start, the period, the least gap and the lag.
-export const DEAL = { hold: 8, every: 25, limit: 5, lag: 0.1 };
+export const DEAL = { hold: botLogic.hold.value, every: botLogic.every.value, limit: botLogic.limit.value, lag: botLogic.lag.value };
 // the tenth of a second between the hold's end and the start being told
-const START_LAG = 0.1;
-// How near its post a bot is sent, and then holds, m.
-export const POST_RADIUS = 10;
+const START_LAG = botLogic.startLag.value;
+// How near its post a bot is sent, and then holds, m (the move's and the defence's are the same).
+export const POST_RADIUS = botLogic.defendRadius.value;
 // A fallen bot's wait, s (the mod's RespawnDelay once the round has started).
-export const RESPAWN = 6;
+export const RESPAWN = botLogic.respawn.value;
 // The difficulty's spread: every so many seconds each side's aim noise scale is one of these, drawn evenly.
-export const SPREAD = { every: 15, scales: [0.15, 0.3, 0.6, 0.8, 1, 1.1, 1.35, 1.55, 1.95, 2.5] };
+export const SPREAD = { every: ADAPTIVE.every, scales: ADAPTIVE.scales };
+// The squad-spawn probability its hub sets: how often a fallen bot comes in on a squadmate.
+export const SQUAD_SPAWN = squadSpawn.value;
 
 // The mod's five steps, and what each of its options sets on an AutoPlayer by them. Its aim's scale is
 // in place of the settings' rows' (their scale and their row by side both: the side's is the spread's);
-// it holds a field of view for Hard, 150, and nothing applies it.
-export const STEPS = ['veryEasy', 'easy', 'medium', 'hard', 'veryHard'];
-export const TUNING = {
-  aim: { noiseScale: [100, 5, 1, 0.5, 0.125], fov: [40, 80, 110, null, 180] },
-  reaction: { lofReaction: [0.5, 0.3, 0.1, 0.05, 0] },
-  dodging: { dodgeRoll: [0, 0.01, 0.05, 0.1, 1] },
-};
+// it holds a field of view for Hard, 150, and nothing applies it. (By the mod's settings' names, read into
+// autoPlayer.js's fields; a step that sets no field, that Hard field of view, leaves the row's own.)
+export const STEPS = [...steps.aim.steps];
+export const DEFAULT_STEP = STEPS[steps.aim.default];
+const FIELDS = { AimNoiseScale: 'noiseScale', TargetTrackerFieldOfViewDegrees: 'fov', LofReactionTimeS: 'lofReaction', EvasiveManeuversDodgeRollProbability: 'dodgeRoll', EvasiveManeuversJumpProbability: 'jump' };
+const OPTIONS = ['aim', 'reaction', 'dodging', 'jumping'];
+export const TUNING = Object.fromEntries(OPTIONS.map((o) => [o, Object.fromEntries(Object.entries(steps[o].settings).map(([setting, row]) => [FIELDS[setting], [...row.values]]))]));
 
-export function tuned(ap, steps = {}) {
-  // (the mod's own base settings beside its steps: a fallen bot always comes in on a squadmate where one is free)
-  const out = { ...ap, sideScale: 1, spawn: { ...ap.spawn, squad: 1 } };
+export function tuned(ap, asked = {}) {
+  // (the mod's own base settings beside its steps: a fallen bot always comes in on a squadmate where one is
+  // free, its hub's squad-spawn probability being 1)
+  const out = { ...ap, sideScale: 1, spawn: { ...ap.spawn, squad: SQUAD_SPAWN } };
   for (const [option, rows] of Object.entries(TUNING)) {
-    const k = STEPS.indexOf(steps[option] ?? 'medium');
+    const k = STEPS.indexOf(asked[option] ?? DEFAULT_STEP);
     for (const [field, values] of Object.entries(rows)) if (values[k] !== null) out[field] = values[k];
   }
   return out;
 }
+
+// The Skirmish template and tactics a kit's AI body plays, by the kit's era, side and class (none for a
+// class the mod has no AI kit of)
+export const kitTemplate = (cls, { era = 'Orig', side = 'light' } = {}) => {
+  const row = kitTemplates[era]?.[side]?.[cls];
+  return row ? { template: row.template, tactics: row.tactics, aiBody: row.aiBody } : null;
+};
+export const SKIRMISH = Object.values(kitTemplates).every((era) => Object.values(era).every((side) => Object.values(side).every((row) => /_Skirmish$/.test(row.aiBody))));
 
 export const slotOrder = (team) => (team === 2 ? [4, 3, 2, 1, 0] : [0, 1, 2, 3, 4]);
 
