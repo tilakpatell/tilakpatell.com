@@ -120,6 +120,14 @@ describe('the rhythm kind: four lanes on the beat, the heads’ meter up to the 
     expect(stepRhythm(won, { hit: 0 }, 1)).toEqual({ ...won, events: [] });
   });
 
+  it('is lost when the heads come to empty by sums that leave a floating-point crumb', () => {
+    // (two greats, six notes let past, then wild swings: 0.5 + 0.1 − 0.48 is 0.12000000000000006, not 0.12)
+    let g = { ...at(9.3), heads: 0.12000000000000006 };
+    const empty = 2; // (no note in the third lane near 9.3 s)
+    for (let k = 0; k < 4 && g.phase === 'play'; k++) g = stepRhythm(g, { hit: empty }, 0);
+    expect(g).toMatchObject({ phase: 'lost', heads: 0 });
+  });
+
   it('counts a long frame as a tenth of a second at most', () => {
     expect(stepRhythm(newRhythm(), {}, 5).t).toBeCloseTo(0.1, 9);
   });

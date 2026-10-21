@@ -1,8 +1,9 @@
 // Where the browser check (../rm-story-check.mjs) stands Morty in a place
 // through the portal: its way in, its portal home and its spots, read from
 // the places' own data (src/components/rickmorty/world/dimensions/), so a
-// place laid out afresh moves the check with it. C-137's own spots (the
-// house, the garage, the arcade) are the scenarios' as written.
+// place laid out afresh moves the check with it. C-137's own places (the
+// street, the house, the garage, the arcade, Dr. Wong's office) are the
+// scenarios' as written.
 //
 //   stand(spot, face, off) → [x, z, face]   `off` metres back from a spot, facing it
 //   wayIn(d) → z                             where a catch puts him back

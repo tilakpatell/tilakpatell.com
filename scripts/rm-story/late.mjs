@@ -302,9 +302,10 @@ export const LATE = {
       page.waitForFunction((n) => window.__C137__.api.act('cablestudio', 'sequence').on === n, n, { timeout: 30000, polling: 100 }).catch(() => {
         throw new Error(what);
       });
-    // a set used before the countdown: nothing on, no clock
+    // a set used before the countdown: nothing on, no clock, and the studio says to start it
     const first = (await sets()).order[0];
     await switchOn(first);
+    await toast(page, 'The studio isn’t counting down yet');
     await page.waitForTimeout(1500);
     check((await sets()).phase === 'idle' && (await sets()).on === 0, 'a set went on before the countdown');
     // the countdown at the booth: the clock on and the meter up; the first two of the running order on

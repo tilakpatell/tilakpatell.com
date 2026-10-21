@@ -16,13 +16,14 @@ const play = (g, ...ids) => {
 const LABELS = { 'set-ants': 'Ants in my Eyes Johnson’s Electronics', 'set-sneezy': 'Mr. Sneezy', 'set-legs': 'Baby Legs and Regular Legs' };
 
 describe('the sequence kind: the sets on in the running order, against the clock', () => {
-  it('waits, the clock still, till the countdown’s started, and a set used first does nothing', () => {
+  it('waits, the clock still, till the countdown’s started, and a set used first only says to start it', () => {
     const g = game();
     expect(g).toMatchObject({ phase: 'idle', items: ITEMS, order: ORDER, on: 0, start: true, left: TUNING.s, len: TUNING.s, last: null, told: false, events: [] });
     expect(stepSequence(g, {}, 5)).toMatchObject({ phase: 'idle', left: TUNING.s });
     const early = stepSequence(g, { use: 'set-sneezy' }, 0);
     expect(early).toMatchObject({ phase: 'idle', on: 0, last: null });
-    expect(early.events).toEqual([]);
+    // (the place says to start the countdown first: a set pressed early isn't a set that does nothing)
+    expect(early.events).toEqual([{ type: 'early', id: 'set-sneezy' }]);
     const { g: run, seen } = play(g, 'start');
     expect(run).toMatchObject({ phase: 'run', on: 0 });
     expect(seen).toEqual([{ type: 'start' }]);

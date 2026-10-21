@@ -268,6 +268,9 @@ describe('a place that runs on a sequence', () => {
       expect(sq.items).not.toContain(sq.start);
       expect(d.acts[sq.start]).toBe('sequence-start');
       expect(d.goal).toBe(sq.start);
+      // (a set used before the countdown says to start it, one sentence)
+      expect(sq.early).toMatch(/^[A-Z][^!]*\.$/);
+      expect(sq.early.split(/[.?]\s/)).toHaveLength(1);
       expect(sq.need).toBeLessThanOrEqual(sq.items.length);
       expect(d.tasks.map((t) => t.id)).toContain(sq.task);
       expect(d.collect?.task, `${d.id}: a collect ticks the task`).not.toBe(sq.task);
@@ -282,6 +285,7 @@ describe('a place that runs on a sequence', () => {
     const studio = destinationById('cablestudio');
     expect(studio.sequence).toMatchObject({ task: 'cablestudio', start: 'cablebooth', items: ['set-ants', 'set-legs', 'set-sneezy', 'set-field', 'set-doors', 'set-bits', 'set-shmlo'], need: 5, s: 45, who: null, unlock: 'cablestudio' });
     expect(studio.sequence.order).toBe(undefined);
+    expect(studio.sequence.early).toBe('The studio isn’t counting down yet: start it at the control booth.');
     expect(studio.hotspots.find((h) => h.id === 'cablebooth').verb).toBe('Start the countdown');
     expect(studio.collect).toBe(null);
     expect(studio.done).toEqual({});

@@ -222,7 +222,8 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   // `sequence`): each set's spot queues a use (`sequence-<id>`), its start
   // spot a start (`sequence-start`), stepped at no time in the place's own
   // update, then the clock; said as power's run is, the win with its
-  // achievement, a set gone dark heard as a find's wrong pick is. Its running
+  // achievement, a set gone dark heard as a find's wrong pick is, a set used
+  // before the countdown answered with the place's `early`. Its running
   // order dealt afresh whenever the place calms; the builder's lamps
   // (`sequence({ lamps })`: a set's id to its glow) lit as their sets go on,
   // and every one once its task's done. ──
@@ -246,6 +247,8 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     for (const press of switched.splice(0)) {
       airing = stepSequence(airing, press, 0);
       if (airing.events.some((e) => e.type === 'dark')) state.emit?.('miss', { area: id });
+      // (a set used before the countdown says so, over its own line)
+      if (sq.early && airing.events.some((e) => e.type === 'early')) state.emit?.('note', { area: id, text: sq.early });
     }
     airing = stepSequence(airing, {}, dt);
     airing = told(sequenceNews(airing, { done, fading: false }), airing, sq, state);

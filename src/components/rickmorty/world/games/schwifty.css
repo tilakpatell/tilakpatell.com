@@ -30,6 +30,12 @@
   right: max(16px, env(safe-area-inset-right));
   z-index: 2;
 }
+/* (a finger's 44 px on a touch screen: the small button is the only way out mid-song) */
+@media (pointer: coarse) {
+  .schwifty-leave {
+    min-height: 44px;
+  }
+}
 
 /* the stage: the heads' meter across its top, the four lanes below */
 .schwifty-stage {
@@ -46,7 +52,8 @@
 }
 .schwifty-hud {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) 7.5em;
+  /* (the grade's column fits its longest word on one line, so a grade never moves the lanes) */
+  grid-template-columns: auto minmax(0, 1fr) 9em;
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
@@ -71,6 +78,8 @@
   background: var(--sch-pink);
 }
 .schwifty-grade {
+  white-space: nowrap;
+  overflow: hidden;
   text-align: right;
   font-family: 'Luckiest Guy', var(--rm-font, system-ui, sans-serif);
   font-size: 1rem;

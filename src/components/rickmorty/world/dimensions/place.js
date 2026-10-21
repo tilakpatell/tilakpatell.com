@@ -57,11 +57,11 @@ export const GARAGE_BACK = { x: -301.2, z: 101.4, face: 0 };
 // of time is `lost`, said by `who`. Each candidate's spot tells the stage
 // (`find-<id>`), which steps it.
 // `sequence`: the place run on the sequence kind (../games/sequence.js): {
-// task, start?, items, order?, need, s, who, lost, unlock }: its sets
+// task, start?, early?, items, order?, need, s, who, lost, unlock }: its sets
 // (`items`, each a spot of its own), `need` of them in a running order (dealt
 // afresh each run, or fixed), each switched on in its turn; a wrong one turns
 // them all dark again; the clock (`s`) runs from the `start` spot (or, with
-// none, the first set used); every one on is the task, and `unlock` its
+// none, the first set used; a set used before it says `early`); every one on is the task, and `unlock` its
 // achievement; out of time is `lost`, said by `who`. Each set's spot tells the
 // stage (`sequence-<id>`), and the start spot `sequence-start`.
 // `rhythm`: the place's song on the rhythm kind (../games/rhythm.js), played

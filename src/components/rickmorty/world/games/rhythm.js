@@ -55,7 +55,8 @@ export function stepRhythm(prev, { hit = null } = {}, dt = 1 / 60) {
   if (prev.phase !== 'play') return { ...prev, events: [] };
   const g = { ...prev, notes: [...prev.notes], events: [] };
   g.t += Math.min(dt, 0.1);
-  const heads = (by) => (g.heads = Math.min(1, Math.max(0, g.heads + by)));
+  // (kept to a millionth, so the sums of its gains and costs come to empty exactly: no crumb left to play on)
+  const heads = (by) => (g.heads = Math.round(Math.min(1, Math.max(0, g.heads + by)) * 1e6) / 1e6);
   // the beats passed, to the song's last note
   const beat = 60 / TUNING.bpm;
   const end = g.notes.at(-1)?.t ?? 0;

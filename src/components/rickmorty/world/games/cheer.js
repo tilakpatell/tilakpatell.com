@@ -10,7 +10,7 @@
 
 export const CHEER = Object.freeze({
   s: 6, // seconds the cheer lasts
-  beat: 0.5, // seconds between hops
+  beat: 1.5, // seconds between hops: one hop ripples through the biggest gathering first (a beat cuts a hop still in the air short)
 });
 
 export const newCheer = () => ({ seen: null, till: -1, next: 0, hop: false });

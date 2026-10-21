@@ -255,7 +255,7 @@ export const ROWS = [
       'set-shmlo': { who: null, text: 'Shmlonathan and Shmlangela have a shmlargument about the shmlo. You don’t follow it, but the audience does.' },
       cablebooth: { who: null, text: 'The control booth: a wall of screens, one for every channel in every dimension, and a Rick asleep in front of them with a bottle. Not ours.' },
     },
-    sequence: { task: 'cablestudio', start: 'cablebooth', items: ['set-ants', 'set-legs', 'set-sneezy', 'set-field', 'set-doors', 'set-bits', 'set-shmlo'], need: 5, s: 45, who: null, lost: 'The studio went live on dark sets: back to the door, and try the running order again.', unlock: 'cablestudio' },
+    sequence: { task: 'cablestudio', start: 'cablebooth', early: 'The studio isn’t counting down yet: start it at the control booth.', items: ['set-ants', 'set-legs', 'set-sneezy', 'set-field', 'set-doors', 'set-bits', 'set-shmlo'], need: 5, s: 45, who: null, lost: 'The studio went live on dark sets: back to the door, and try the running order again.', unlock: 'cablestudio' },
     goal: 'cablebooth',
     kinds: ['antsjohnson', 'babylegs', 'regularlegs', 'mrsneezy', 'gazorpazorpfield', 'shmlo', 'trunkperson', 'lilbits', 'tophatjones', 'realfakedoors'],
   }),

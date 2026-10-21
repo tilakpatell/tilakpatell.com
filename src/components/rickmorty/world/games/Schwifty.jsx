@@ -5,13 +5,13 @@ import { useFrameLoop, useMediaQuery, useReducedMotion } from '../../../../lib/h
 import { readPad } from '../../../games/pad';
 import { SAY } from '../say';
 import { LANES, inView, newRhythm, stepRhythm } from './rhythm';
-import { drawn, keyFor } from './schwiftyPlay';
+import { drawn, keyFor, padEdges, padFor, padLanes } from './schwiftyPlay';
 import './schwifty.css';
 
 // Get Schwifty, played at the mic: the song's four lanes over the page, as
 // the walkway cabinet's chutes are, under the heads' meter. The rules are
-// ./rhythm.js, stepped at a fixed 1/60 s with the presses since the last
-// step; this draws the lanes in the DOM, no WebGL.
+// ./rhythm.js, stepped at a fixed 1/60 s, one press a step (presses queue,
+// each judged on its own); this draws the lanes in the DOM, no WebGL.
 //
 // <Schwifty onWin={() => …} onLeave={() => …} /> fills its parent (the
 // world's overlay): onWin once a run, the moment the song's won; onLeave from
@@ -25,7 +25,6 @@ const MAX_STEPS = 6;
 const SETTLE_MS = 600; // an end card ignores keys, a pad and taps this long
 const FLASH_MS = 140;
 const NAMES = ['first', 'second', 'third', 'fourth'];
-const PAD = ['left', 'down', 'up', 'right'];
 const GRADE = { great: 'Great', good: 'Good', miss: 'Miss', whiff: 'Off the beat' };
 const sfx = () => import('../../../../lib/sfx');
 const play = (name) => sfx().then((s) => s[name]?.(), () => {});
@@ -56,7 +55,7 @@ export default function Schwifty({ onWin, onLeave }) {
   const meter = useRef(null);
   const grade = useRef(null);
   const shown = useRef(drawn(run.current));
-  const padWas = useRef({});
+  const padWas = useRef(null); // (null till the first frame: a button already down then is no press)
   const won = useRef(onWin);
   won.current = onWin;
 
@@ -156,13 +155,13 @@ export default function Schwifty({ onWin, onLeave }) {
   useEffect(() => {
     const down = (e) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const act = keyFor(phaseRef.current, e.key, !settledRef.current);
+      const act = keyFor(phaseRef.current, e.key, !settledRef.current, e.repeat);
       if (act == null) return;
       e.preventDefault();
       if (act === 'pause') setPhase('paused');
       else if (act === 'play') setPhase('play');
       else if (act === 'leave') leave();
-      else if (act.hit != null && !e.repeat) presses.current.push(act.hit);
+      else if (act.hit != null) presses.current.push(act.hit);
     };
     window.addEventListener('keydown', down);
     return () => window.removeEventListener('keydown', down);
@@ -178,24 +177,17 @@ export default function Schwifty({ onWin, onLeave }) {
   const tick = useCallback(
     (ms) => {
       const pad = readPad();
-      const was = padWas.current;
+      const pressed = padEdges(pad, padWas.current);
       padWas.current = pad ?? {};
-      const edge = (k) => pad?.[k] && !was[k];
       const p = phaseRef.current;
-      if (p === 'intro') {
-        if (edge('a')) start();
-        else if (edge('b')) leave();
-        return;
-      }
-      if (p === 'won' || p === 'lost') {
-        if (!settledRef.current) return;
-        if (edge('a')) again();
-        else if (edge('b')) leave();
-        return;
-      }
-      if (edge('start')) setPhase(p === 'play' ? 'paused' : 'play');
-      if (p !== 'play') return;
-      PAD.forEach((k, lane) => edge(k) && presses.current.push(lane));
+      const act = padFor(p, pressed, !settledRef.current);
+      if (act === 'start') start();
+      else if (act === 'again') again();
+      else if (act === 'leave') leave();
+      else if (act === 'pause') setPhase('paused');
+      else if (act === 'play') setPhase('play');
+      if (p !== 'play' || act === 'pause') return;
+      presses.current.push(...padLanes(pressed));
       acc.current += Math.min(0.1, ms / 1000);
       const steps = [];
       while (acc.current >= STEP && steps.length < MAX_STEPS) {

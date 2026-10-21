@@ -11,7 +11,7 @@
 //
 //   newSequence({ items, order, s, start, perks }) → game
 //   stepSequence(game, { use, start }, dt) → game   use: a set's id, or null; start: the start spot pressed
-//     events: start | on { id } | dark { id } | won | lost { why: 'time' }
+//     events: start | early { id } (a set used before the countdown) | on { id } | dark { id } | won | lost { why: 'time' }
 //   runningOrder(items, n, rand) → n of the sets, in a running order drawn by rand
 //   sequenceNews(game, { done, fading }) → 'done' | 'caught' | null   what the place says
 //   sequenceReadout(snapshot, labels, words) → { on, vitals, line }   for the HUD's meter
@@ -46,8 +46,9 @@ export function stepSequence(prev, { use = null, start = false } = {}, dt = 1 / 
     g.phase = 'run';
     g.events.push({ type: 'start' });
   }
-  // (a set before the countdown's started does nothing; with no start spot, the first set starts it)
-  if (g.items.includes(use) && (g.phase === 'run' || !g.start)) {
+  // (a set before the countdown's started does nothing but say so; with no start spot, the first set starts it)
+  if (g.items.includes(use) && g.phase === 'idle' && g.start) g.events.push({ type: 'early', id: use });
+  else if (g.items.includes(use)) {
     if (g.phase === 'idle') {
       g.phase = 'run';
       g.events.push({ type: 'start' });
