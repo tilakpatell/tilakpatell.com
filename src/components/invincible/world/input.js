@@ -12,7 +12,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const CODES = { KeyW: 'fwd', KeyS: 'back', KeyA: 'left', KeyD: 'right', Space: 'up', KeyC: 'down', KeyZ: 'down', ShiftLeft: 'boost', ShiftRight: 'boost', ArrowLeft: 'lookL', ArrowRight: 'lookR', ArrowUp: 'lookU', ArrowDown: 'lookD' };
 
 // the keys; returns the unbinding
-export function bindKeys(s, { act, cycleTime, startSound, release, abandon, openCard, closeCard, take, cardRef }) {
+export function bindKeys(s, { act, cycleTime, startSound, release, abandon, openCard, closeCard, take, cardRef, leave = null }) {
   const down = (e) => {
     if (typing(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
     const k = CODES[e.code];
@@ -48,7 +48,9 @@ export function bindKeys(s, { act, cycleTime, startSound, release, abandon, open
       if (cardRef.current?.kind === 'abandon') abandon();
       else if (s.mission && !cardRef.current) openCard({ kind: 'abandon', id: s.mission.id });
     } else if (e.key === 'Escape') {
+      // (a card first; then the hall, if he's in it: the kit's Exit says Esc)
       if (cardRef.current) closeCard();
+      else leave?.();
     }
   };
   const up = (e) => {

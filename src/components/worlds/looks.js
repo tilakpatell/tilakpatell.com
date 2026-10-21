@@ -72,6 +72,8 @@ export const LOOK_FOLDERS = [
   { folder: 'rickmorty/portal', routes: ['/c-137'] },
   { folder: 'rickmorty/wardrobe', routes: ['/c-137'] },
   { folder: 'caribbean/tide', routes: ['/caribbean'] },
+  { folder: 'hogwarts', routes: ['/hogwarts'] },
+  { folder: 'hogwarts/rooms', routes: ['/hogwarts'] },
   { folder: 'dotmatrix', routes: ['/dot-matrix'] },
   { folder: 'mario64', routes: ['/dot-matrix/64'] },
   { folder: 'minecraft', routes: ['/dot-matrix/minecraft'] },

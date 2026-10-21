@@ -114,7 +114,7 @@ function beacons(places, buildings) {
 }
 
 // lettering on a sign: dark on light or the other way, in the show's face
-function sign(text, { w = 1024, h = 160, bg = '#0e1a33', fg = '#ffd23a', font = 'Bebas Neue', size = 0.78, stroke = null } = {}) {
+export function sign(text, { w = 1024, h = 160, bg = '#0e1a33', fg = '#ffd23a', font = 'Bebas Neue', size = 0.78, stroke = null } = {}) {
   return canvasTexture(w, h, (x) => {
     x.fillStyle = bg;
     x.fillRect(0, 0, w, h);

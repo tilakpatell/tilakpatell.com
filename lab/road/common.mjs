@@ -10,11 +10,18 @@ export const STAGE_IDS = ['hobbiton', 'shire-edge', 'bree', 'weathertop', 'ford'
 
 export async function browser() {
   const exe = process.env.CHROME ?? readdirSync('/opt/pw-browsers').filter((n) => /^chromium-\d+$/.test(n)).map((n) => `/opt/pw-browsers/${n}/chrome-linux/chrome`).find(existsSync);
-  return chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });
+  // (GPU=webgpu: WebGPU on Dawn's SwiftShader adapter, the owner's own backend, in software;
+  // without Vulkan on SwiftShader too the device is lost within seconds, "A valid external
+  // Instance reference no longer exists")
+  const gpu = process.env.GPU === 'webgpu' ? ['--enable-unsafe-webgpu', '--use-webgpu-adapter=swiftshader', '--enable-features=Vulkan', '--use-vulkan=swiftshader', '--disable-gpu-watchdog'] : [];
+  return chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl', ...gpu] });
 }
 
-export async function open(b, path, { phone = false, quality = process.env.QUALITY ?? 'high' } = {}) {
-  const ctx = await b.newContext({ viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 900 }, hasTouch: phone, isMobile: phone, deviceScaleFactor: 1 });
+export async function open(b, path, { phone = false, quality = process.env.QUALITY ?? 'high', onPage = null } = {}) {
+  // (VIEW=960x600 for a smaller frame: WebGPU in software is slow)
+  const [vw, vh] = (process.env.VIEW ?? '').split('x').map(Number);
+  const viewport = phone ? { width: 390, height: 844 } : vw && vh ? { width: vw, height: vh } : { width: 1440, height: 900 };
+  const ctx = await b.newContext({ viewport, hasTouch: phone, isMobile: phone, deviceScaleFactor: 1 });
   await ctx.addInitScript((q) => {
     localStorage.setItem('tp-intro', '1');
     localStorage.setItem('tp-start', '"universe"');
@@ -24,7 +31,41 @@ export async function open(b, path, { phone = false, quality = process.env.QUALI
     localStorage.setItem('tp-worlds', JSON.stringify('load'));
     localStorage.removeItem('tp-road');
   }, quality);
+  // (GPU=webgpu: SwiftShader's adapter is a fallback one, which the runtime
+  // rightly refuses a visitor; here it's told otherwise, so the probe draws
+  // on the owner's backend. The site itself is untouched.)
+  if (process.env.GPU === 'webgpu')
+    await ctx.addInitScript(() => {
+      const gpu = navigator.gpu;
+      if (!gpu) return;
+      // (and --enable-unsafe-webgpu turns on an older, experimental shape of a view's `swizzle`, a
+      // dictionary, where three passes the string 'rgba': dropped here, as a visitor's Chrome ignores it)
+      const view = GPUTexture.prototype.createView;
+      GPUTexture.prototype.createView = function (d) {
+        if (d && typeof d.swizzle === 'string') {
+          const { swizzle, ...rest } = d;
+          return view.call(this, rest);
+        }
+        return view.call(this, d);
+      };
+      const not = (o) => o && Object.defineProperty(o, 'isFallbackAdapter', { value: false, configurable: true });
+      const ask = gpu.requestAdapter.bind(gpu);
+      gpu.requestAdapter = async (opts) => {
+        const a = await ask(opts);
+        if (!a) return a;
+        not(a);
+        not(a.info);
+        const make = a.requestDevice.bind(a);
+        a.requestDevice = async (d) => {
+          const device = await make(d);
+          not(device.adapterInfo);
+          return device;
+        };
+        return a;
+      };
+    });
   const page = await ctx.newPage();
+  onPage?.(page);
   // the assets' bytes as they arrive (the models come through workers and
   // the loaders' own fetches, which the page's resource timings miss; the
   // code is left out: on the dev server it's hundreds of unbundled modules)

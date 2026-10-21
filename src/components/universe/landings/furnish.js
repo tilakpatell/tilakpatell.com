@@ -76,6 +76,7 @@ const PLANETS = {
   travel: () => import('./travel.js'),
   caribbean: () => import('./caribbean.js'),
   invincible: () => import('./invincible.js'),
+  potter: () => import('./potter.js'),
   // the Rick and Morty sector's worlds, round the Citadel (universes.js's MOONS), one file between them
   gazorpazorp: () => import('./rmmoons.js'),
   squanch: () => import('./rmmoons.js'),

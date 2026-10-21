@@ -17,6 +17,7 @@
 
 import * as THREE from 'three';
 import { createMinasKit } from '../../../towns/minastirith/props';
+import { dress, rolesFor } from '../../../../../lib/three/coreNodes';
 import { COURT_Y, TREE } from '../../../towns/minastirith/layout';
 import { BEATS } from './beats';
 import { CITY, COURT, floorAt } from './place';
@@ -41,6 +42,9 @@ export function build({ rt, tier = 'high', weather = null }) {
   const renderer = rt?.gfx?.renderer ?? null;
   const kit = createMinasKit(renderer, { tier });
   for (const [k, lift] of Object.entries(WHITE)) kit.mats[k]?.color?.multiplyScalar(lift);
+  // (its stone, paving, wood and iron in the site's photo scans, as the chapter dresses them:
+  // undressed, the White City was plain colour, wall and street alike)
+  dress(kit.mats ?? {}, rolesFor(kit.mats ?? {}), { strength: 0.3, normal: 0.6, keep: true, tier }).catch(() => {});
 
   // the city, turned to face down the road, and the Tree in its Court
   const city = kit.city();
