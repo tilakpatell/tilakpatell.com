@@ -6,7 +6,8 @@
 //   EXPANSE → the thirteen Expanse rows the roster flies, in sector order
 //   moonRowOf(p, s, k) → a moon's row from the planet's moonList, or null
 //   expanseRow(id) → any Expanse planet's row, or null (a typed /fly/e:… URL
-//     reaches past the thirteen, as it always has)
+//     reaches past the thirteen, as it always has; a sector above or below the
+//     middle layer resolves through the 3D generator)
 //   PLANETS → the fifty, { id, name, type, seed }
 //   planetSpecOf(id) → the planet's spec, or null
 //   lifeOf(spec) → what lives on it
@@ -15,6 +16,7 @@
 import { canonicalId } from '../../../lib/land/flight/expanse';
 import { parseSpaceId } from '../../../lib/space/address';
 import { makeSector } from '../gen/sector.js';
+import { fullSector } from '../gen/space.js';
 import { addBodies } from '../gen/systems.js';
 import { UNIVERSE } from '../gen/seed.js';
 import { planetSpecOf as specWith, planetsOf } from '../../../lib/land/flight/planetSpec';
@@ -52,10 +54,14 @@ export function moonRowOf(p, s, k) {
 export function expanseRow(id) {
   const c = canonicalId(id);
   const a = c && parseSpaceId(c);
-  // (the other layers are the 3D generator's)
-  if (!a || a.sy !== 0) return null;
-  // a raw sector's planets have no moon rows: addBodies gives them moonList
-  const s = addBodies(makeSector(UNIVERSE, a.sx, a.sz)).systems[a.system];
+  if (!a) return null;
+  // The middle layer keeps today's path (the fixture and the seeded thirteen
+  // rest on it; a raw sector's planets have no moon rows, addBodies gives them
+  // moonList). The layers above and below are the 3D generator's, which
+  // composes that same path and appends its own systems, without the lattice
+  // of small things, which no planet row reads.
+  const sector = a.sy === 0 ? addBodies(makeSector(UNIVERSE, a.sx, a.sz)) : fullSector(UNIVERSE, a.sx, a.sy, a.sz, { things: false });
+  const s = sector.systems[a.system];
   const p = s?.planets[a.planet];
   if (!p) return null;
   return a.moon === undefined ? rowOf(p, s) : moonRowOf(p, s, a.moon);

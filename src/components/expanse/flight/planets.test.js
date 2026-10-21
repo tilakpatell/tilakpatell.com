@@ -4,6 +4,7 @@ import { hash64 as libHash } from '../../../lib/land/flight/hash.js';
 import { LIFE, expanseLife } from '../../../lib/land/flight/lifeTables';
 import { SITE_GROUND, SITE_LAYERS } from '../../../lib/land/flight/planetTables';
 import { makeSector } from '../gen/sector.js';
+import { fullSector } from '../gen/space.js';
 import { addBodies } from '../gen/systems.js';
 import { UNIVERSE, hash64 } from '../gen/seed.js';
 import { FIGURES, GALAXY_KINDS, SURFACE_MODELS } from '../../galaxy/shared/models';
@@ -69,6 +70,23 @@ describe('the flight’s planets, composed', () => {
   it('reads a planet id with its height written', () => {
     expect(expanseRow('E:1,0,0:0:1')).toEqual(expanseRow('e:1,0:0:1'));
     expect(expanseRow('e:1,0:0:1')).not.toBeNull();
+    expect(planetSpecOf('e:1,0,0:0:1')).toEqual(planetSpecOf('e:1,0:0:1'));
+  });
+
+  // the layers above and below the middle are the 3D generator's (lane 2's fullSector)
+  it('lands a planet above the middle layer through the 3D generator: its row, a round spec, one of its moons', () => {
+    const sector = fullSector(UNIVERSE, 1, 1, 0, { things: false });
+    const p = sector.systems.flatMap((s) => s.planets).find((q) => !['gas', 'ringed'].includes(q.type));
+    expect(p).toBeTruthy();
+    const id = p.id.toLowerCase();
+    expect(id.startsWith('e:1,0,1:')).toBe(true);
+    expect(expanseRow(id)).toMatchObject({ id, name: p.name, type: p.type, radius: p.radius, moons: p.moonList.length });
+    const spec = planetSpecOf(id.toUpperCase());
+    expect(spec).toMatchObject({ id, kind: 'planet', buildable: false });
+    expect(spec.round?.radius).toBeGreaterThanOrEqual(15000);
+    const withMoon = sector.systems.flatMap((s) => s.planets).find((q) => q.moonList?.length);
+    expect(expanseRow(`${withMoon.id}:0`)).toMatchObject({ id: `${withMoon.id.toLowerCase()}:0`, parent: withMoon.id.toLowerCase(), type: withMoon.moonList[0].type });
+    expect(planetSpecOf('e:1,0,1:999:0')).toBeNull();
   });
 
   it('reads an Expanse planet’s life from its system', () => {
