@@ -13,7 +13,7 @@
 //   - a crowd is gated only on tasks there are;
 //   - a window is in a room's wall, under its ceiling;
 //   - no family's own vehicle as traffic or a set piece; a set piece at most twice;
-//   - a place's own piece one of the set pieces' models, off every spot;
+//   - a place's own piece one of the set pieces' models, off every spot but its own (`own`);
 //   - a landmark of a style there is, beyond the edge (or outside a room's walls);
 //   - props, scatter and the edge only the town's kit models (`q:<node>`)
 // blocksSight(laid, from, to) → whether a lot or a skyline tower stands in
@@ -114,7 +114,9 @@ export function worldProblems(d, world, { tris = {}, tasks = [], blocks = [] } =
     // (a piece's footprint, a metre round at least, off every spot's reach)
     const [x, z] = W(p.at);
     const half = Math.max(1, Math.hypot(p.w ?? 0, p.d ?? 0) / 2);
-    for (const s of d.hotspots) if (Math.hypot(s.x - x, s.z - z) < (s.r ?? 1.4) + half) out.push(`a piece stands on the spot ${s.id}`);
+    // (but its own: the siren by its pull, the car by its look)
+    if (p.own && !d.hotspots.some((s) => s.id === p.own)) out.push(`a piece's own spot ${p.own} isn't there`);
+    for (const s of d.hotspots) if (s.id !== p.own && Math.hypot(s.x - x, s.z - z) < (s.r ?? 1.4) + half) out.push(`a piece stands on the spot ${s.id}`);
   }
   for (const side of SIDES)
     for (const s of world.ring?.[side]?.sets ?? []) {

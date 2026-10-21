@@ -318,6 +318,8 @@ export const WORLDS2 = {
       { model: '/models/c137/rm/purgecottage.glb', at: [22, 6], turn: -1.5708, h: 4 },
       { model: '/models/c137/rm/purgebarn.glb', at: [0, -19], turn: -1.5708, h: 9.3 },
       { model: '/models/c137/rm/purgewell.glb', at: [3, -3.4], turn: 0, h: 2.1 },
+      // (the siren on its pole, by its own pull)
+      { model: '/models/c137/rm/purgesiren.glb', at: [-11, -13.4], turn: 0, h: 6.9, own: 'siren' },
     ],
     crowd: {
       gather: [
@@ -352,7 +354,13 @@ export const WORLDS2 = {
     forecourt: { props: [{ model: 'q:Rock_Medium_1', h: 0.5, n: 4 }, { model: 'q:Grass_Wispy_Short', h: 0.45, n: 6 }] },
     // the house fills its solid (1.57 of its height across, 0.96 deep); the
     // car stays the builder's (its look spot is 2 m from its middle)
-    pieces: [{ model: '/models/c137/rm/cronhouse.glb', at: [-16, -20], turn: 0, h: 8.3 }],
+    pieces: [
+      { model: '/models/c137/rm/cronhouse.glb', at: [-16, -20], turn: 0, h: 8.3 },
+      // (the wreck on its solid, by its own look)
+      { model: '/models/c137/rm/croncar.glb', at: [16, 12], turn: 0.2, h: 1.6, w: 4.1, d: 1.9, own: 'wreckedcar' },
+    ],
+    // (Cronenbergs beyond the rubble, out past the hunters' 7 m, watching)
+    crowd: { gather: [{ kinds: ['cronenberg'], n: { high: 10, mid: 6, low: 4 }, at: [6, -42], r: 3, face: [0, 0] }] },
   },
 
   // the Blood Dome: the Death Stalkers on stands of scrap east, west and north

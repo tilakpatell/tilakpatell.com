@@ -20,9 +20,10 @@
 //   windows [{ wall, from, to, y0, h, mullion }], outside 'ground' | 'space',
 //     sky, fog, ground                         a room's
 //   sight [{ from: [dx, y, dz], to: [dx, y, dz] }]   lines nothing round it may stand in
-//   pieces [{ model, at: [dx, dz], turn, h, w, d, y, spin }]   the place's own
+//   pieces [{ model, at: [dx, dz], turn, h, w, d, y, spin, own }]   the place's own
 //     models where its code buildings stood (a set piece's file, by path),
-//     on every level, casting their shadows; `spin` radians a second
+//     on every level, casting their shadows; `spin` radians a second; `own`
+//     the spot that's its own (the siren's pull), which it may stand by
 // A crowd kind is one of the cast's (../../portal/meshyCastCore.js's MESHY)
 // or one of the Citadel's light copies (`crowd:<name>`, /games/meshy/crowd).
 // The rest of the places' records are ./worlds2.js's, merged in here.
@@ -77,6 +78,7 @@ export const TRIS = {
   meeseeks: 8311,
   gromflomite: 8356,
   gazorpian: 9380,
+  cronenberg: 9405,
   cop: 8309,
   fedagent: 10390,
   secretservice: 10350,

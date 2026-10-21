@@ -26,9 +26,8 @@ export async function buildCronenberg(kit) {
   R.frame(...P(6, -20), 0).box(0x6a5a5a, 0, 0, 0, 10, 2, 1);
   for (let k = 0; k < 8; k++) R.frame(...P(2 + k * 1.2, -19.4 + ((k * 3) % 2) * 0.3), k, { list: 'fixed' }).box(0x7a6a6a, 0, 2, 0, 0.9, 0.5, 0.6);
   R.frame(...P(12, -12), 0.4).box(0x3a2a1a, 0, 0.2, 0, 0.06, 1.5, 0.06, 0, 0, -0.3).box(0x6a6a6a, 0, 0, 0.1, 0.3, 0.4, 0.06, 0, 0, -0.3);
-  // a car on its side (still drawn here: its look spot is too near it for a
-  // piece, ./worldRules.js), a lamp post bent, dead trees
-  R.frame(...P(16, 12), 0.2).box(0x8a3a2a, 0, 0.6, 0, 4.4, 1.6, 1.4, 0, 0, 1.2).box(0x2a2a2a, 1.4, 1.8, 0.6, 0.6, 0.6, 0.2).box(0x2a2a2a, -1.4, 1.8, 0.6, 0.6, 0.6, 0.2);
+  // (the wrecked car is its model, the world's piece, on its solid), a lamp
+  // post bent, dead trees
   R.frame(...P(4, 6), 0).cyl(0x4a4a4a, 0, 0, 0, 0.12, 4, 0, 0.4).glow(BALL, 0xff9a4a, 0.6, 1.4, 3.8, 0, 0, 0.2);
   for (const [dx, dz] of [
     [-8, 4],

@@ -1,7 +1,7 @@
 // The Purge Planet ("Look Who's Purging Now"): a farming village of cat
-// people at dusk: cabins, a barn and a well with Arthricia by it (the
-// village's own models, stood by its world: ./worlds.js's pieces), lanterns
-// on posts, villagers about; and the purge siren on its pole. Pulled
+// people at dusk: cabins, a barn and a well with Arthricia by it, lanterns
+// on posts, villagers about, and the purge siren on its pole (the village's
+// own models, stood by its world: ./worlds2.js's pieces). Pulled
 // (the area's 'siren' action, from RmWorld), it howls and the sky goes red;
 // Morty has a minute to get back through the portal ('calm' once he's gone).
 
@@ -15,11 +15,8 @@ export async function buildPurge(kit) {
   const S = stage(kit, 'purge', { ground: specks('#6a7a3a', ['#5a6a32', '#7a8a46', '#6e6a3a'], 17), groundTile: 6 });
   const { R, P } = S;
 
-  // (the cabins, the barn and the well are the village's own models, its
-  // world's pieces, on their solids; the siren is still drawn here: its pull
-  // spot is too near its pole for a piece, ./worldRules.js)
-  // the siren: a tall pole with a big brass horn on top and a pull lever
-  R.frame(...P(-11, -13.4), 0).cyl(0x4a4a4a, 0, 0, 0, 0.14, 6).cyl(0xc8a24a, 0, 6, 0, 0.55, 0.9).box(0x8a2a2a, 0.3, 1.2, 0.2, 0.08, 0.6, 0.08);
+  // (the cabins, the barn, the well and the siren on its pole are the
+  // village's own models, its world's pieces, on their solids)
   // fences and lanterns along the lanes
   for (let dx = -18; dx <= 18; dx += 2.2) if (Math.abs(dx) > 3.5) R.frame(...P(dx, 13), 0, { list: 'fixed' }).box(0x6a4a2a, 0, 0, 0, 0.12, 1, 0.12).box(0x7a5a3a, 1.1, 0.7, 0, 2.2, 0.1, 0.06);
   for (const [dx, dz] of [

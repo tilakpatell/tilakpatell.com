@@ -127,6 +127,13 @@ describe('a world record’s rules', () => {
     // (the spot `thing` is at [0, -12]: a piece over it hides it)
     expect(piece({ model: '/models/c137/rm/purgewell.glb', at: [0, -11] })).toEqual([expect.stringMatching(/thing/)]);
   });
+
+  it('lets a piece stand by its own spot (the siren by its pull), and only its own', () => {
+    const piece = (o) => problems({ pieces: [{ model: '/models/c137/rm/purgesiren.glb', h: 6.9, at: [0, -13.4], ...o }] });
+    expect(piece({ own: 'thing' })).toEqual([]);
+    expect(piece({})).toEqual([expect.stringMatching(/thing/)]);
+    expect(piece({ own: 'nothing' })).toEqual([expect.stringMatching(/nothing/), expect.stringMatching(/thing/)]);
+  });
 });
 
 describe('a sight line', () => {
