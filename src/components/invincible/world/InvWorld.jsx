@@ -395,8 +395,14 @@ function World({ gl, setGl, thinkMark }) {
   // episode 8's beats (./missions.js), as its steps begin: the porch's panels, the
   // hit down the street, Dad as the foe, the tower's top on the plaza, the sky
   const ep8Beat = useCallback(
-    (i) => {
+    (id, i) => {
       const s = sim.current;
+      // (Battle Beast's lesson, before the fight: the same panels, Cecil's)
+      if (id === 'beast') {
+        if (i === 0) openPanels(PANELS.beast, () => missionApi.current.feed?.({ type: 'use', id: 'panels' }));
+        return;
+      }
+      if (id !== 'ep8') return;
       if (i === 0) openPanels(PANELS.porch, () => missionApi.current.feed?.({ type: 'use', id: 'panels' }));
       else if (i === 1) {
         // hit: a projectile down the street, east, into the river

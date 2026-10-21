@@ -251,6 +251,7 @@ export const ACHIEVEMENTS = {
   guardians: { name: 'Guardians of the Globe', desc: 'Met all eight Guardians on their plinths in their hall on the Graysons’ plaza' },
   levy: { name: 'Every version of you', desc: 'Went through Angstrom Levy’s three portals over the Graysons’ city, and came home to put him down' },
   sequids: { name: 'The Martian mission', desc: 'Carried the four astronauts to the ship on Mars, put the Sequids’ host down, and ran the gates home' },
+  beast: { name: 'Unworthy', desc: 'Took Battle Beast’s swing on the GDA’s pad, and hit him back until he left' },
   karman: { name: 'Neil Armstrong, eat your heart out', desc: 'Flew up out of the air over the Graysons’ city, into space' },
   moonwalk: { name: 'One small step', desc: 'Landed on the Moon as Invincible' },
   redplanet: { name: 'A long way from home', desc: 'Landed on Mars as Invincible' },

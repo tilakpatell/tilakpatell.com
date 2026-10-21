@@ -23,6 +23,10 @@ function foesText(f, up) {
   if (flax || f.foes.some((e) => (e.kind ?? 'flaxan').startsWith('flaxan'))) parts.push(`Flaxans over the river · ${flax} left`);
   if (maulers) parts.push(maulers > 1 ? `The Mauler twins · ${maulers} standing` : 'A Mauler · 1 standing');
   if (up.some((e) => e.kind === 'seismic')) parts.push('Doc Seismic over the school');
+  // season two's (./season2.js)
+  if (up.some((e) => e.kind === 'beast')) parts.push('Battle Beast');
+  if (up.some((e) => e.kind === 'angstrom')) parts.push('Angstrom Levy');
+  if (up.some((e) => e.kind === 'mirror')) parts.push('The other you');
   return parts.join(' · ');
 }
 
@@ -45,7 +49,8 @@ export function writeHud(H, { s, h, a, speed, alt, inSpace }) {
   // the villains (./foes.js): the portal while it's open, and the ones on the ground
   const up = standing(s.foes);
   if (portalOpen(s.foes)) marks.push({ x: PORTAL.p[0], z: PORTAL.p[2], color: '#d04dff', name: 'Portal' });
-  for (const e of up) if (e.kind === 'mauler' || e.kind === 'seismic') marks.push({ x: e.p[0], z: e.p[2], color: '#d04dff', name: e.kind === 'mauler' ? 'Mauler' : 'Doc Seismic' });
+  const NAMES = { mauler: 'Mauler', seismic: 'Doc Seismic', beast: 'Battle Beast', angstrom: 'Angstrom', mirror: 'The other you' };
+  for (const e of up) if (NAMES[e.kind]) marks.push({ x: e.p[0], z: e.p[2], color: '#d04dff', name: NAMES[e.kind] });
   if (q.rescue && !q.rescue.carried) marks.push({ x: q.rescue.p[0], z: q.rescue.p[2], color: '#ff3b30', name: 'Help' });
   // Robot's mark (./guardians.js): the strongest foe standing, for the team to go for
   if (s.cavalry?.marked != null) for (const e of up) if (e.id === s.cavalry.marked) marks.push({ x: e.p[0], z: e.p[2], color: '#4fa3b8', name: 'Marked' });

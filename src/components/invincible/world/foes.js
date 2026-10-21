@@ -79,6 +79,13 @@ export const KINDS = {
   // the mirror Mark: Mark's own row as a foe: flies at him at his cruise, a punch of
   // `hurt` within `reach` every `every` s that knocks him `knock` m, four blows down
   mirror: { h: 1.78, hits: 4, speed: 60, reach: 4.5, every: 1.1, hurt: 12, knock: 8, stagger: 0.6, orbit: 14 },
+  // Battle Beast (season two, ./season2.js): a boss at the GDA's pad. `hits` blows, a mace
+  // swing of `swing` in `reach` every `every` s (a block halves it and staggers him, as a
+  // Mauler's); a punch on him is parried unless he is staggered or Mark's counter window is
+  // open (block and counter, ./brawl.js, is the lesson); every `leapEvery` s with Mark within
+  // `leapFar` he leaps to him, craters where he lands and floors everyone within `leapR`; beaten,
+  // he leaves ("Unworthy.") rather than lie there
+  beast: { h: 2.6, hits: 14, reach: 3.6, every: 1.8, windup: 0.5, swing: 22, knock: 12, run: 9, stagger: 0.9, leapEvery: 7, leapNear: 12, leapFar: 30, leapR: 15, leapHurt: 16, leapTime: 0.7, floor: 1.4 },
   // the host under the Sequids on Mars (./offworld/mars.js steps it there; its row is here for the mission's `defeat`)
   host: { h: 1.9, hits: 12, reach: 3.2, every: 2, hurt: 10, stagger: 0.5 },
 };
@@ -109,6 +116,8 @@ export function spawnFoes(prev, kind, n, at = PORTAL.p) {
       Object.assign(e, { state: 'approach', p: [x, groundAt(x, z), z], cool: 1 + r(), throwCool: 1 + r() * 2 });
     } else if (kind === 'omniman') {
       Object.assign(e, { state: 'circle', p: [at[0], (at[1] ?? 0) + KINDS.omniman.over, at[2]], cool: 2, phase: r() * Math.PI * 2 });
+    } else if (kind === 'beast') {
+      Object.assign(e, { state: 'approach', p: [at[0], groundAt(at[0], at[2]), at[2]], cool: 2, leapCool: 4 });
     } else if (kind === 'angstrom' || kind === 'mirror') {
       Object.assign(e, { state: 'hover', p: [at[0], (at[1] ?? 0) + (kind === 'angstrom' ? 3 : 20), at[2]], cool: 1.5, phase: r() * Math.PI * 2 });
     } else if (kind === 'seismic') {
@@ -161,7 +170,7 @@ const unit = (v) => {
 // the middle of one (a Mauler's and Doc Seismic's `p` is at their feet)
 export function mid(e) {
   const k = kindOf(e);
-  const up = k === 'mauler' ? 1.3 : k === 'seismic' ? 0.9 : k === 'angstrom' || k === 'mirror' ? 0.9 : 0;
+  const up = k === 'mauler' ? 1.3 : k === 'beast' ? 1.4 : k === 'seismic' ? 0.9 : k === 'angstrom' || k === 'mirror' ? 0.9 : 0;
   return [e.p[0], e.p[1] + up, e.p[2]];
 }
 // how near the move a→b came to c
@@ -177,6 +186,13 @@ const turnY = (v, a) => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * 
 export function knockOut(e, from, ev, extra = {}) {
   const d = unit(sub(mid(e), from));
   const k = kindOf(e);
+  if (k === 'beast') {
+    // beaten, Battle Beast leaves: "Unworthy." He is down for the count and gone
+    e.state = 'down';
+    ev.push({ type: 'ko', id: e.id, kind: k, at: mid(e), dir: d, by: 'mark', ...extra });
+    ev.push({ type: 'leaves', id: e.id, kind: k, at: mid(e) });
+    return;
+  }
   e.state = 'ko';
   e.ko = 0;
   // the Flaxans go flying; the heavier ones are thrown back and fall
@@ -311,7 +327,10 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
         if (dl > FIGHT.reach && cos < 0.64) continue;
         if (!best || dl < best.dl) best = { e, dl, d };
       }
-      if (best && best.dl <= FIGHT.reach) {
+      if (best && best.dl <= FIGHT.reach && kindOf(best.e) === 'beast' && best.e.state !== 'stagger' && f.counter <= 0) {
+        // Battle Beast turns a blow aside unless he is staggered or the counter is open
+        ev.push({ type: 'parried', id: best.e.id, at: mid(best.e) });
+      } else if (best && best.dl <= FIGHT.reach) {
         hitFoe(best.e, chest, ev, { punched: true }, input.fists ?? 1);
         // a counter: the punch after a blocked swing lands twice
         if (f.counter > 0) {
@@ -480,6 +499,66 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
         for (const a of [0, 1, 2]) e.p[a] += e.v[a] * dt;
         e.cool -= dt;
         if (e.cool <= 0 && d < 400) Object.assign(e, { state: 'charge', t: 3 });
+      }
+    } else if (k === 'beast' && live(e)) {
+      const K = KINDS.beast;
+      const flat = [chest[0] - e.p[0], 0, chest[2] - e.p[2]];
+      const fd = Math.hypot(flat[0], flat[2]);
+      const d = len(sub(chest, mid(e)));
+      e.cool -= dt;
+      e.leapCool -= dt;
+      e.v = [0, 0, 0];
+      if (fd > 0.1) e.yaw = Math.atan2(flat[0], flat[2]);
+      if (e.state === 'stagger') {
+        e.t -= dt;
+        if (e.t <= 0) e.state = 'approach';
+      } else if (e.state === 'swing') {
+        e.t -= dt;
+        if (e.t <= 0) {
+          const hit = d <= K.reach + 0.6;
+          ev.push({ type: 'swing', id: e.id, at: mid(e), hit });
+          if (hit && input.block) {
+            hurt(K.swing, chest, { by: 'beast', blocked: true });
+            Object.assign(e, { state: 'stagger', t: K.stagger });
+            f.counter = FIGHT.counter;
+            ev.push({ type: 'blocked', id: e.id, at: mid(e) });
+          } else if (hit) {
+            hurt(K.swing, chest, { by: 'beast' });
+            const out = unit([flat[0], 0, flat[2]]);
+            push = [out[0] * knock(K.knock), 5, out[2] * knock(K.knock)];
+            stun = Math.max(stun, 0.4);
+          }
+          if (e.state === 'swing') e.state = 'approach';
+        }
+      } else if (e.state === 'leap') {
+        // in the air to where Mark was: the crater where he lands, everyone near it floored
+        e.t -= dt;
+        const k = 1 - Math.max(0, e.t) / K.leapTime;
+        e.p = [e.from[0] + (e.to[0] - e.from[0]) * k, e.from[1] + (e.to[1] - e.from[1]) * k + Math.sin(k * Math.PI) * 6, e.from[2] + (e.to[2] - e.from[2]) * k];
+        if (e.t <= 0) {
+          e.p = [...e.to];
+          e.state = 'approach';
+          e.cool = 0.6;
+          ev.push({ type: 'leap', id: e.id, at: [...e.to], r: K.leapR });
+          if (Math.hypot(hero.p[0] - e.to[0], hero.p[2] - e.to[2]) <= K.leapR && grounded) {
+            hurt(K.leapHurt, chest, { by: 'beast' });
+            push = [0, 7, 0];
+            stun = Math.max(stun, K.floor);
+            ev.push({ type: 'floored', at: [...hero.p] });
+          }
+        }
+      } else if (e.leapCool <= 0 && fd >= K.leapNear && fd <= K.leapFar) {
+        Object.assign(e, { state: 'leap', t: K.leapTime, leapCool: K.leapEvery, from: [...e.p], to: [hero.p[0], groundAt(hero.p[0], hero.p[2]), hero.p[2]] });
+        ev.push({ type: 'leapUp', id: e.id, at: mid(e) });
+      } else if (d <= K.reach && e.cool <= 0) {
+        Object.assign(e, { state: 'swing', t: K.windup, cool: K.every });
+      } else if (fd > K.reach * 0.8 && (fd < K.leapNear || fd > K.leapFar) && fd < 120) {
+        // (close, he walks in; a way off, he waits to leap; further still, he comes)
+        const go = Math.min(K.run * dt, Math.max(0, fd - K.reach * 0.8));
+        e.v = [(flat[0] / fd) * K.run, 0, (flat[2] / fd) * K.run];
+        e.p[0] += (flat[0] / fd) * go;
+        e.p[2] += (flat[2] / fd) * go;
+        e.p[1] = groundAt(e.p[0], e.p[2]);
       }
     } else if (k === 'angstrom' && live(e)) {
       const K = KINDS.angstrom;

@@ -104,6 +104,8 @@ const SHOTS = {
   mars: { space: 'mars', back: 90 },
   // the Sequids (./offworld/mars.js): the base at the site, the swarm on the host, from 40 m over the pad
   sequids: { space: 'site', back: 40 },
+  // Battle Beast (foes.js): on the GDA's pad, Mark before him on the ground (['spawn'] calls him)
+  beast: { drive: [['go', [1618, 0, -352], Math.PI, 'ground'], ['spawn', 'beast', 1, [1618, 0, -366]], ['wait', 2500]], pitch: 0.08 },
   thragg: { space: 'thragg', back: 18 },
   dusk: { p: [-300, 160, 700], mode: 'air', yaw: Math.PI * 0.9, pitch: -0.1, time: 'dusk' },
   night: { p: [-300, 160, 700], mode: 'air', yaw: Math.PI * 0.9, pitch: -0.1, time: 'night' },
@@ -132,7 +134,7 @@ const SHOTS = {
 const args = process.argv.slice(2);
 const metrics = args.includes('--metrics');
 const at = args.indexOf('--play');
-const SEASON = ['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7', 'ep8', 'levy', 'sequids'];
+const SEASON = ['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7', 'ep8', 'levy', 'sequids', 'beast'];
 const plays = at < 0 ? [] : !args[at + 1] || args[at + 1].startsWith('--') || args[at + 1] === 'all' ? SEASON : args[at + 1].split(',');
 const want = args.filter((a, i) => !a.startsWith('--') && !(at >= 0 && i === at + 1));
 

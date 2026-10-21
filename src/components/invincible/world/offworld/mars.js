@@ -117,8 +117,8 @@ export function stepMars(prev, hero, input, rawDt) {
     const toMark = sub(chest, [h.p[0], h.p[1] + 1, h.p[2]]);
     const d = len(toMark);
     h.yaw = Math.atan2(toMark[0], toMark[2]);
-    // (a blow: in reach, and he is looking at it: the way from him to it is his look)
-    if (punchAt && d < HOST.reach + 1.5 && dot(unit(toMark), look) < -0.5) {
+    // (a blow in reach lands: it is the only one there, and on the planet his look is the camera's turned frame)
+    if (punchAt && d < HOST.reach + 1.5) {
       h.hits += 1;
       if (h.hits >= HOST.hits) {
         h.state = 'down';

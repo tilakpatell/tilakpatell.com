@@ -33,6 +33,8 @@ export const BURNT_LEDGE = [106.9, 167, -80];
 // where the mirror Mark comes from, and where Angstrom waits (the hall's plaza)
 export const MIRROR_AT = [40, 60, -360];
 export const ANGSTROM_AT = [0, 0, 40];
+// where Battle Beast waits: the GDA's pad, its south side (the helicopter sits at its middle)
+export const BEAST_AT = [1618, 0, -366];
 
 export const SEASON2 = [
   {
@@ -81,5 +83,23 @@ export const SEASON2 = [
     ],
     done: [['cecil', 'Four back, and whatever was in them left on Mars. Good.']],
     achievement: 'sequids',
+  },
+  // Battle Beast (foes.js's beast): Cecil's call after the Machine Head business; the lesson in
+  // panels at the GDA's pad (the world feeds `use panels` as they end), then the fight on it
+  {
+    id: 'beast',
+    ep: 11,
+    season: 2,
+    title: 'Battle Beast',
+    colour: '#e8e6e0',
+    giver: 'cecil',
+    start: { npc: 'cecil', place: 'gda', after: ['ep8'] },
+    intro: [['cecil', 'Machine Head hired something. It is not from here. It’s on my pad, and it wants you.']],
+    steps: [
+      step('use', 'Cecil, on the block and the counter', { id: 'panels', marker: BEAST_AT }),
+      step('defeat', 'Battle Beast: take its swing, then hit it', { kind: 'beast', n: 1, spawn: [['beast', 1, BEAST_AT]], marker: { foe: true } }),
+    ],
+    done: [['cecil', 'It walked off. Walked. I’m going to pretend that’s a win.']],
+    achievement: 'beast',
   },
 ];

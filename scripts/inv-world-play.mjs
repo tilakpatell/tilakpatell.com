@@ -521,6 +521,44 @@ async function player() {
     await home();
   };
 
+  // Battle Beast: Cecil's panels on E, then on the ground before him with Shift held (a block)
+  // until his swing is blocked, then a punch in the counter's window; a leap floors Mark, who gets up
+  EPISODES.beast = async () => {
+    await fromCecil('beast');
+    await every(() => {
+      if (step() >= 1 || step() < 0) return true;
+      if (sim.panels && sim.panels.t > 0.3) press('KeyE', 'e');
+      return false;
+    }, 120000);
+    sim.speedup = 1; // (the counter's window is 0.6 s: judged a frame at a time)
+    let counterAt = 0;
+    await every(() => {
+      if (step() < 0) return true;
+      const e = sim.foes.foes.find((q) => q.kind === 'beast' && live(q));
+      if (!e) return false;
+      const m = midOf(e);
+      const d = len(sub(m, chest()));
+      if (sim.foes.counter > 0 && d < 5) {
+        // the window open: a punch
+        aim(m);
+        hold();
+        sim.punch = true;
+        counterAt = performance.now();
+      } else if (sim.h.mode === 'ground' && d < 5) {
+        // before him, blocking, facing him
+        aim(m);
+        hold('boost');
+      } else if (sim.h.mode !== 'ground') {
+        sim.pitch = -1.2;
+        sim.dragAt = 1e12;
+        hold('down');
+      } else steer([m[0], m[1] - 1, m[2]], 3.2);
+      return false;
+    }, 900000);
+    sim.speedup = 3;
+    void counterAt;
+  };
+
   window.__INV_PLAY__ = {
     async run(ep, budget) {
       const t0 = performance.now();

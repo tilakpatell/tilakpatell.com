@@ -10,7 +10,7 @@ import { getawayAt, newGetaway, stopGetaway } from './getaway';
 import { createHits } from './hits';
 import { WHAT, clock } from './hudFrame';
 import { QUESTS, STORY } from './keep';
-import { DAD_DRIVEN, RINGS_DONE, ANGSTROM_LINES } from './lines';
+import { DAD_DRIVEN, RINGS_DONE, ANGSTROM_LINES, BEAST_LINES } from './lines';
 import { keepStory, missionOf, nextStory, placeOf as missionPlace } from './missions';
 import { CARDS, keepQuests } from './quests';
 
@@ -55,7 +55,7 @@ export function applyOuts(outs, { s, say, speak, unlock, clear, openCard, closeC
         say(o.text, 2600);
       }
       // (episode 8's beats are the world's: the launch, the tower, the sky)
-      if (s.mission?.id === 'ep8') beat?.(o.i);
+      beat?.(s.mission?.id, o.i);
     } else if (o.type === 'shake') shakeOff(missionOf(s.mission?.id)?.steps[s.mission.step]);
     else if (o.type === 'driven') say(DAD_DRIVEN[Math.min(DAD_DRIVEN.length - 1, o.n - 1)], 2400);
     else if (o.type === 'count') sfx('coin');
@@ -139,6 +139,8 @@ export function onQuestEvent(e, { s, say, feed, unlock, setFound }) {
 // the villains' blows, and his on them
 export function onFoeEvent(e, { s, say, feed, unlock, shakeOff }) {
   if (e.type === 'hit') feed({ type: 'hit', kind: e.kind ?? 'flaxan', id: e.id }); // (a blow landed: episode 8 counts them)
+  if (e.type === 'hit' && e.kind === 'beast' && e.hits === 4) say(BEAST_LINES.hit, 2600, 'beast');
+  if (e.type === 'spawn' && e.kind === 'beast') say(BEAST_LINES.come, 3200, 'beast');
   if (e.type === 'punch') {
     s.punchT = 0.25;
     sfx('zip');
@@ -146,13 +148,29 @@ export function onFoeEvent(e, { s, say, feed, unlock, shakeOff }) {
     sfxHit('blast', 'ko', hits.foeForce(e.kind));
     feed({ type: 'ko', kind: e.kind ?? 'flaxan', id: e.id });
     if (e.kind === 'angstrom') say(ANGSTROM_LINES.down, 3200, 'angstrom');
+    if (e.kind === 'beast') s.beastSaid = false;
   } else if (e.type === 'swing' && e.on === 'hangar' && s.mission && s.guard) {
     // a Mauler's swing at the hangar while he's away: the hangar takes it (the last-but-one episode)
     s.hangarHp = Math.max(0, s.hangarHp - 10);
     sfx('crumble');
     feed({ type: 'hurt', what: 'hangar', hp: s.hangarHp });
   } else if (e.type === 'quake' && s.mission) shakeOff(missionOf(s.mission.id)?.steps[s.mission.step]);
-  else if (e.type === 'portalIn') {
+  else if (e.type === 'parried') {
+    // Battle Beast turned it aside: the lesson, said once
+    sfx('clang');
+    if (!s.beastSaid) {
+      s.beastSaid = true;
+      say(BEAST_LINES.parry, 3000, 'beast');
+    }
+  } else if (e.type === 'leaves') {
+    sfx('thud');
+    say(BEAST_LINES.leave, 3200, 'beast');
+  } else if (e.type === 'leapUp') sfx('thud');
+  else if (e.type === 'leap') sfxHit('crunch', 'leap', 1);
+  else if (e.type === 'blocked' && e.kind === undefined && s.foes.foes.find((q) => q.id === e.id)?.kind === 'beast') {
+    sfx('clang');
+    say('Staggered. Now.', 1600);
+  } else if (e.type === 'portalIn') {
     // Angstrom back through a portal of his own: a word the first two times
     s.levyBack = (s.levyBack ?? 0) + 1;
     sfx('hyperspace');

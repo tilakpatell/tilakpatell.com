@@ -92,8 +92,11 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
     omniman: () => castFoe('omniman'),
     // season two (./season2.js): the mirror Mark is Mark's own figure; Angstrom a kit figure in his green
     mirror: () => castFoe('mirror'),
-    angstrom: () => kitFoe({ armour: new THREE.MeshStandardMaterial({ color: 0x2f6b3a, roughness: 0.55 }), skin: new THREE.MeshStandardMaterial({ color: 0x9fb8a4, roughness: 0.7 }), glow: new THREE.MeshBasicMaterial({ color: hot(ANGSTROM_GREEN, 2.4), toneMapped: false }) }, KINDS.angstrom.h / 1.8),
+    beast: () => kitOwn({ armour: new THREE.MeshStandardMaterial({ color: 0x7a5a3a, roughness: 0.6, metalness: 0.3 }), skin: new THREE.MeshStandardMaterial({ color: 0xe8e6e0, roughness: 0.85 }), glow: new THREE.MeshBasicMaterial({ color: hot(0xffd27a, 1.6), toneMapped: false }) }, KINDS.beast.h / 1.8),
+    angstrom: () => kitOwn({ armour: new THREE.MeshStandardMaterial({ color: 0x2f6b3a, roughness: 0.55 }), skin: new THREE.MeshStandardMaterial({ color: 0x9fb8a4, roughness: 0.7 }), glow: new THREE.MeshBasicMaterial({ color: hot(ANGSTROM_GREEN, 2.4), toneMapped: false }) }, KINDS.angstrom.h / 1.8),
   };
+  // (a kind with no model of its own yet: the kit's figure, placed as the Flaxans are)
+  const kitOwn = (m, scale) => Object.assign(kitFoe(m, scale), { kit: true });
   function kitFoe(m, scale) {
     const h = buildHumanoid({ style: 'chitauri', materials: m, scale });
     const holder = new THREE.Group();
@@ -118,7 +121,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
   }
   // one drawn for each of a kind standing (or falling): made as they're
   // needed, handed out in the foes' order each frame
-  const pools = { flaxan: [], flaxanElite: [], mauler: [], seismic: [], omniman: [], mirror: [], angstrom: [] };
+  const pools = { flaxan: [], flaxanElite: [], mauler: [], seismic: [], omniman: [], mirror: [], angstrom: [], beast: [] };
 
   // their bolts
   const MAX = 64;
@@ -207,6 +210,12 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
       } else if (e.type === 'down') vfx.smoke(V(e.at), { size: 1.6, count: 3, life: 1.6, color: e.kind === 'mauler' ? 0x8a8070 : 0x6a4a8a, to: 0x9a8aa8, rise: 1 });
       else if (e.type === 'hurt') vfx.sparks(V(e.at), { count: 22, speed: 9, color: 0xffffff, to: e.by === 'car' || e.by === 'mauler' ? 0xffb070 : FLAX, life: 0.4 });
       else if (e.type === 'won') vfx.ring(V(PORTAL.p), { color: FLAX, from: PORTAL.r, to: PORTAL.r * 3, life: 0.9, normal: V(PORTAL.n) });
+      else if (e.type === 'leap') {
+        // Battle Beast come down: a crater's worth of dust and a ring along the ground
+        vfx.debris(V(e.at).add(new THREE.Vector3(0, 0.5, 0)), { count: 30, speed: 16, size: 0.3, dir: UP, spread: 0.9 });
+        vfx.ring(V(e.at).add(new THREE.Vector3(0, 0.3, 0)), { color: 0xffd27a, from: 1, to: e.r * 2, life: 0.6, normal: UP });
+        vfx.flash(V(e.at), { color: 0xffe2b0, intensity: 30, distance: 24, life: 0.2 });
+      } else if (e.type === 'parried') vfx.sparks(V(e.at), { count: 14, speed: 10, color: 0xffffff, to: 0xffd27a, life: 0.3 });
       else if (e.type === 'portalOut' || e.type === 'portalIn') {
         // Angstrom's own portal, his green, where he went and where he came back
         vfx.ring(V(e.at), { color: ANGSTROM_GREEN, from: 0.4, to: 4, life: 0.4, normal: UP });
@@ -232,11 +241,11 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
       portal.material.uniforms.uTime.value = t;
       chest.set(hero.p[0], hero.p[1] + 1, hero.p[2]);
 
-      const used = { flaxan: 0, flaxanElite: 0, mauler: 0, seismic: 0, omniman: 0, mirror: 0, angstrom: 0 };
+      const used = { flaxan: 0, flaxanElite: 0, mauler: 0, seismic: 0, omniman: 0, mirror: 0, angstrom: 0, beast: 0 };
       for (const e of f.foes) {
         const kind = e.kind ?? 'flaxan';
         // the Flaxans go once they're down; the Maulers and Doc Seismic lie there till it's over
-        const show = e.state !== 'waiting' && e.state !== 'away' && (e.state !== 'down' || (f.on && !kind.startsWith('flaxan')));
+        const show = e.state !== 'waiting' && e.state !== 'away' && (e.state !== 'down' || (f.on && !kind.startsWith('flaxan') && kind !== 'beast'));
         if (!show) continue;
         const pool = pools[kind];
         const i = used[kind]++;
@@ -259,7 +268,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
             // facing him, arm up at him when he's in range
             pos.copy(chest).sub(v.holder.position);
             v.holder.rotation.set(0, Math.atan2(pos.x, pos.z), 0);
-            poseHumanoid(v.h, { t: t + i, mode: v.kit && kind === 'mauler' ? 'idle' : 'hover', aim: pos.length() < FIGHT.range ? 1 : 0.3, lean: Math.min(1, Math.hypot(...e.v) / 20) * 0.6, flinch: e.state === 'held' ? 1 : 0 });
+            poseHumanoid(v.h, { t: t + i, mode: v.kit && (kind === 'mauler' || kind === 'beast') ? 'idle' : 'hover', aim: kind === 'beast' ? (e.state === 'swing' ? 1 : 0.2) : pos.length() < FIGHT.range ? 1 : 0.3, lean: Math.min(1, Math.hypot(...e.v) / 20) * 0.6, flinch: e.state === 'held' || e.state === 'stagger' ? 1 : 0 });
           }
         }
       }
