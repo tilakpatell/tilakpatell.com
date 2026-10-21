@@ -59,6 +59,7 @@ export const CLEAR = 22;
 export const SCATTER_MAX = 900;
 
 const sz = 0.6; // (a scatter scale range's spread, as a share of its base)
+const ROUND = Math.PI; // (a thing turned right round: the Black Lake’s boats, bows to the castle)
 const range = (k) => [k * (1 - sz / 2), k * (1 + sz / 2)];
 
 // The Quaternius kits' models (scripts/quaternius.mjs: baked to metres,
@@ -894,6 +895,88 @@ export const LANDINGS = {
         ],
       },
       { id: 'city' },
+    ],
+  },
+  // the Harry Potter world (scripts/planets/potter.mjs): the shore of the
+  // Black Lake, the castle across the water (./potter.js). Hagrid by the
+  // boats waits for the Hogwarts cast's figure: none of the site's own
+  // stands in for him.
+  potter: {
+    title: 'The shore of the Black Lake',
+    sub: 'Hogwarts · the night the first-years come',
+    ground: { style: 'grass', colors: ['#3e4a34', '#4f5a3e', '#77746c'] },
+    sky: { zenith: '#1a2446', horizon: '#e89a5a', sun: '#ffd0a0' },
+    wind: { strength: 0.3 },
+    models: {
+      pine: tree('Pine_5', { tall: 14, tint: '#9aa898' }),
+      pineTall: tree('Pine_4', { tall: 17, tint: '#8a9a8c' }),
+      tufts: grass('Grass_Common_Short', { tall: 0.55, tint: '#b8b490' }),
+      crag: rocks('Rock_Medium_1', { long: 1.4, tint: '#8a8a88' }),
+    },
+    things: [
+      { kind: 'loch', at: [0, 109], r: 0, face: false, strip: [150, 75], opts: { shore: -75, deep: 160 } },
+      { kind: 'castle', at: [12, 124], r: 60, solid: false },
+      { kind: 'boat', at: [-15, 34], r: 2.2, face: false, yaw: ROUND, opts: { seed: 1 } },
+      { kind: 'boat', at: [-9.5, 35.2], r: 2.2, face: false, yaw: ROUND - 0.08, opts: { seed: 2 } },
+      { kind: 'boat', at: [-4, 34.4], r: 2.2, face: false, yaw: ROUND + 0.06, opts: { seed: 3 } },
+      { kind: 'boat', at: [1.5, 35.6], r: 2.2, face: false, yaw: ROUND - 0.04, opts: { lantern: true, seed: 4 }, door: { label: 'Hogwarts', reach: 6 } },
+      { kind: 'lanternPost', at: [6.5, 31], r: 0.4 },
+      { kind: 'owlPost', at: [-21, 28], r: 0.4 },
+    ],
+    scatter: [
+      { kind: 'pine', n: 26, from: 40, to: 110, scale: range(1) },
+      { kind: 'pineTall', n: 12, from: 50, to: 110, scale: range(1) },
+      { kind: 'crag', n: 14, from: 24, to: 80, scale: range(1.2) },
+      { kind: 'shingle', n: 220, from: 3, to: 40, scale: range(1), solid: false },
+      { kind: 'tufts', n: 200, from: 6, to: 70, scale: range(1), solid: false },
+      { kind: 'heather', n: 60, from: 14, to: 80, scale: range(1), solid: false },
+    ],
+    // the world's own map: its seas and lochs; the Black Lake's shore by
+    // place (its middle where the bake prints it, its crag 2.4 degrees on);
+    // the Highlands' pinewoods; their moors of heather, bracken and rock;
+    // and the green country, the shore as above
+    biomes: [
+      { id: 'sea', sea: true, match: (c) => hue(c, 180, 240) && c.s > 0.15 && c.l < 0.45 },
+      { id: 'loch', near: [55.44, -20.0, 3] },
+      {
+        id: 'forest',
+        match: (c) => c.l < 0.21 && hue(c, 85, 175),
+        title: 'The forest’s edge',
+        sub: 'Hogwarts · where the Forbidden Forest begins, and the path goes no further',
+        ground: { style: 'grass', colors: ['#202a1c', '#2a3424', '#3a3428'] },
+        sky: { zenith: '#121a30', horizon: '#4a5060', sun: '#c8b8a0', haze: '#363c48' },
+        wind: { strength: 0.2 },
+        things: [
+          { kind: 'lanternPost', at: [-4, 26], r: 0.4, door: { label: 'Hogwarts', reach: 6 } },
+          { kind: 'glimmer', at: [18, 62], r: 0.5, solid: false },
+        ],
+        scatter: [
+          { kind: 'pine', n: 60, from: 24, to: 110, scale: range(1) },
+          { kind: 'pineTall', n: 40, from: 26, to: 110, scale: range(1.1) },
+          { kind: 'tufts', n: 120, from: 4, to: 60, scale: range(0.8), solid: false },
+        ],
+      },
+      {
+        id: 'moor',
+        // (and the bare tops, their rock and their snow)
+        match: (c) => ((hue(c, 280, 360) || hue(c, 0, 50)) && c.s >= 0.08 && c.l > 0.18 && c.l < 0.55) || (c.s < 0.1 && c.l > 0.3) || c.l > 0.75,
+        title: 'The moor',
+        sub: 'Hogwarts · heather and a stone circle, the castle far off',
+        ground: { style: 'grass', colors: ['#4a3e48', '#5a4a40', '#6a6a50'] },
+        sky: { zenith: '#1e2a50', horizon: '#d08860', sun: '#ffd0a0' },
+        wind: { strength: 0.5 },
+        things: [
+          { kind: 'stoneCircle', at: [-8, 42], r: 9 },
+          { kind: 'castle', at: [40, 150], r: 60, solid: false },
+          { kind: 'lanternPost', at: [8, 26], r: 0.4, door: { label: 'Hogwarts', reach: 6 } },
+        ],
+        scatter: [
+          { kind: 'heather', n: 260, from: 4, to: 90, scale: range(1.1), solid: false },
+          { kind: 'crag', n: 24, from: 24, to: 110, scale: range(1.4) },
+          { kind: 'tufts', n: 120, from: 4, to: 80, scale: range(0.9), solid: false },
+        ],
+      },
+      { id: 'loch' },
     ],
   },
   // ── the Rick and Morty system's moons, round the Citadel (universes.js's MOONS; ./rmmoons.js) ──

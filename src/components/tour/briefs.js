@@ -11,6 +11,7 @@
 
 import { ABOUT } from '../guide/abouts';
 import { CYBERTRON_TOUCH, cybertronRows } from '../guide/cybertron';
+import { HOGWARTS_KEYS, HOGWARTS_WALK } from '../guide/hogwarts';
 
 const help = (where) => ({
   id: 'help',
@@ -371,6 +372,38 @@ export const BRIEFS = {
       text: 'Dad’s rings start over the street outside the house: ten of them to the Guardians’ hall, against the clock. Cecil, at the GDA, has a job. Keep climbing and you reach space.',
     },
     help('the city'),
+  ],
+  '/hogwarts': [
+    {
+      id: 'hello',
+      title: 'Hogwarts',
+      text: `${ABOUT['/hogwarts']} For now it’s the shore, the night you arrive: the rest comes as the world is made.`,
+    },
+    {
+      id: 'walk',
+      title: 'Walking',
+      text: 'W A S D walks, Shift runs, a drag looks round. The jetty and the boats are down the shingle on your right.',
+      keys: HOGWARTS_WALK.slice(0, 3),
+      touch: WALK_TOUCH,
+    },
+    {
+      id: 'wand',
+      title: 'The wand',
+      text: 'Your wand comes at the first lesson. Hold Q for the wheel of nine spells, or press 1 to 9 for one straight off.',
+      keys: HOGWARTS_KEYS.find((g) => g.label.startsWith('The wand')).rows.slice(0, 3),
+    },
+    {
+      id: 'broom',
+      title: 'The broom',
+      text: 'After the flying lesson the broom is yours: W to lean on and go, A D to bank, Space up and C down, Shift flat out.',
+      keys: HOGWARTS_KEYS.find((g) => g.label.startsWith('The broom')).rows.slice(0, 4),
+    },
+    {
+      id: 'goal',
+      title: 'What to go for',
+      text: 'The House Cup: every lesson, quest and Snitch earns your house points, and a spell cast at a person outside a duel loses them. The Marauder’s Map (M) comes after the first week.',
+    },
+    help('Hogwarts'),
   ],
   '/middle-earth': [
     {

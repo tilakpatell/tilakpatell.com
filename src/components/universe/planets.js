@@ -39,6 +39,7 @@ import { bossMug, elementTile, glowingGems, shardCluster } from './props';
 import { keyHook } from '../../lib/three/keySun';
 import { mapSwapper, mapsOf, nearSet } from './planetMaps';
 import { LIGHT, RIM, airGlow, celShade, ditherShade, groundHooks, halo, styleFor } from './planetShading';
+import { potter } from './planetSkins';
 
 // (the planets' shading, moved out to keep this file under the size the
 // health check allows: planetShading.js; its exports are this file's as before)
@@ -237,6 +238,7 @@ function tengwar(g, w, h, b0, b1, rand) {
 // ── The fandoms ──
 
 const BUILDERS = {
+  potter, // (planetSkins.js)
   starwars(p, { u, T }) {
     const r = u.size;
     // not a planet: the way into a galaxy far, far away (galaxy/gateway.js),
