@@ -8,6 +8,9 @@ import hogwartsModule from './module';
 import SpellWheel from './hud/SpellWheel';
 import './hud/match.css';
 import MaraudersMap from './hud/MaraudersMap';
+import PointsChip from './hud/PointsChip';
+import Feast from './hud/Feast';
+import { useAchievements } from '../Achievements';
 import { parseWeek } from './rules/term';
 import '@fontsource/cinzel/600.css';
 import '@fontsource/cinzel/700.css';
@@ -58,6 +61,13 @@ export default function HogwartsWorld() {
   const [said, setSaid] = useState(null);
   const [next, setNext] = useState(1);
   const [objective, setObjective] = useState(null);
+  // the term's view (play/school.js): the week, the quests, the points; it changes now and then, not every frame
+  const [term, setTerm] = useState(null);
+  const [cup, setCup] = useState(null);
+  const chip = useRef(null);
+  const { unlock } = useAchievements();
+  const unlockRef = useRef(unlock);
+  unlockRef.current = unlock;
   const [choices, setChoices] = useState(null);
   const [ride, setRide] = useState(false);
   const menu = useRef(null);
@@ -75,6 +85,13 @@ export default function HogwartsWorld() {
     else if (e.type === 'wheel') setWheel(e.open);
     else if (e.type === 'broom') setRiding(e.riding);
     else if (e.type === 'objective') setObjective(e.text);
+    else if (e.type === 'school') {
+      setTerm(e);
+      chip.current?.readout(e);
+    } else if (e.type === 'cup') {
+      chip.current?.flash(e.delta);
+      chip.current?.readout({ ...e, standings: null });
+    } else if (e.type === 'achievement') unlockRef.current?.(e.id);
     else if (e.type === 'choices') setChoices(e.title ? e : null);
     else if (e.type === 'ride') setRide(e.on);
     else if (e.type === 'said') setSaid({ key: Date.now(), name: e.who, line: e.text });
@@ -93,6 +110,14 @@ export default function HogwartsWorld() {
   const { host, status, rt } = useWorld(hogwartsModule, { props, onEvent });
   const api = useCallback(() => (rt?.current?.module === hogwartsModule ? rt.current.world : null), [rt]);
   const night = useCallback(() => api()?.map?.() ?? null, [api]);
+  // the term as it stands when the world comes on (after that, its 'school' events)
+  useEffect(() => {
+    if (status !== 'on') return;
+    const v = api()?.school?.();
+    if (!v) return;
+    setTerm(v);
+    chip.current?.readout(v);
+  }, [status, api]);
   const choose = useCallback((id) => {
     api()?.choose(id);
     setSpell(id);
@@ -132,12 +157,16 @@ export default function HogwartsWorld() {
               <span className="hogwarts-brand-eyebrow">The shore of the Black Lake</span>
               <span className="hogwarts-brand-name">Hogwarts</span>
             </p>
-            {playing ? <Objective ref={line} className="hogwarts-objective" /> : objective && <Objective className="hogwarts-objective" text={objective} />}
+            {playing ? <Objective ref={line} className="hogwarts-objective" /> : (objective ?? term?.objective?.text) && <Objective className="hogwarts-objective" text={objective ?? term.objective.text} />}
           </>
         }
         tools={
-          <div ref={menu}>
-            <Menu className="hogwarts-menu" way={wayOut(pathname)} todo={{ onOpen: () => setList(true), done: 0, total: 0 }}>
+          <div ref={menu} className="hogwarts-tools">
+            <PointsChip ref={chip} house={term?.house ?? 'gryffindor'} />
+            <Menu className="hogwarts-menu" way={wayOut(pathname)} todo={{ onOpen: () => setList(true), done: term?.done ?? 0, total: term?.total ?? 0 }}>
+              {term?.leaving && (
+                <MenuItem onClick={() => setCup(api()?.feast() ?? null)}>The leaving feast</MenuItem>
+              )}
               <MenuItem onClick={() => map.current?.open()} aria-keyshortcuts="M">
                 The Marauder’s Map
               </MenuItem>
@@ -189,7 +218,7 @@ export default function HogwartsWorld() {
         }
       >
         <Toast toast={toast} className="hogwarts-toast" />
-        <MaraudersMap ref={map} source={night} touch={touch} narrow={narrow} reduced={reduced} />
+        <MaraudersMap ref={map} source={night} touch={touch} narrow={narrow} reduced={reduced} onOpen={() => unlock('hp-map')} />
         {said && <Bubble key={said.key} ref={onBubble} className="hogwarts-bubble" name={said.name} line={said.line} />}
         {choices && (
           <div className="hogwarts-choices" role="group" aria-label={choices.title}>
@@ -203,7 +232,17 @@ export default function HogwartsWorld() {
         )}
         <Letterbox on={ride} />
         <SpellWheel part="wheel" ref={ring} open={wheel} active={spell} onChoose={choose} touch={touch} />
-        {list && <QuestList className="hogwarts-list" title="Things to do" sub="Nothing yet: the term begins once you’re across the lake." quests={[]} next={null} onClose={() => setList(false)} onGo={() => {}} />}
+        {list && <QuestList className="hogwarts-list" title="Things to do" sub={term ? `${term.label}: ${term.done} of ${term.total} done.` : 'The term begins once you’re across the lake.'} quests={term?.list ?? []} next={term?.objective?.id ?? null} onClose={() => setList(false)} onGo={() => {}} />}
+        {cup && (
+          <Feast
+            cup={cup}
+            onClose={() => setCup(null)}
+            onNextYear={() => {
+              api()?.nextYear();
+              setCup(null);
+            }}
+          />
+        )}
       </Hud>
     </WorldHost>
   );

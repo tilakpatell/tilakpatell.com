@@ -74,6 +74,7 @@ import { createFeel } from '../../lib/three/feel';
 import { BOUNDS, CASTLE, DOOR, LEVEL, SPAWN, floorAt, heightAt, nearDoor } from './rules/shore';
 import { lightAt } from './rules/dusk';
 import { createNight } from './play/night';
+import { createSchool } from './play/school';
 
 export { KEYS };
 
@@ -119,28 +120,37 @@ export default {
     const ground = { floorAt, level: LEVEL, bounds: BOUNDS, solids: shore.solids };
     const walker = createWalker({ camera, world: ground, at: SPAWN.at, yaw: SPAWN.yaw, reduced });
 
-    // what's said before the page listens is held for it (fromScene's way)
+    // what's said before the page listens is held for it (fromScene's way);
+    // the term and the night hear everything on its way out (Lane F's `ears`)
     let held = [];
+    let ears = null;
     const tell = (type, data = {}) => {
+      ears?.(type, data);
       if (held) held.push([type, data]);
       else rt.events?.emit?.(type, data);
     };
 
+    // the term (Lane F, play/school.js): the week, the house points and the
+    // quests, kept in tp-hogwarts beside the Sorting's keys; it knows which
+    // spells you've learnt, so it's here before the wand
+    const hours = () => 19.9 + clock / 60;
+    const school = createSchool({ saves: rt.saves, tell, week: props.week ?? null });
+
     // the wand, and the things beside the jetty for it to take hold of;
     // the feel's knocks and punches on the camera after the walk has placed it
     const feel = createFeel({ baseFov: camera.fov, calm: reduced });
-    const wand = createWand({ rt, scene, camera, house, floorAt, tell, feel });
+    const wand = createWand({ rt, scene, camera, house, floorAt, tell, feel, learnt: school.learnt });
     wand.place(practiceSet({ at: SPAWN.at, yaw: SPAWN.yaw, floorAt, house, rt }));
 
     // the night half (Lane F, play/night.js): the castle’s people on their days
     // for the Marauder’s Map. The shore’s dusk is the arrival night’s, its clock
     // read as the world’s hours from 19:54 (Lane C’s rules/clock.js’s ARRIVE)
-    const week = props.week ?? 1;
     const night = createNight({
-      timeOf: () => 19.9 + clock / 60,
-      weekOf: () => week,
+      timeOf: hours,
+      weekOf: () => school.week,
       me: () => ({ x: walker.state.x + MAP_SHORE[0], z: walker.state.z + MAP_SHORE[1], yaw: walker.state.yaw, moving: walker.state.speed > 0.3, inside: null }),
     });
+    ears = (type, data) => school.hear(type, data);
     // the broom, and Quidditch on it; their motes and the Snitch's glint in a
     // pool of their own (the wand's is busy with its own sparks)
     const air = createCards({ count: 400, parent: scene });
@@ -283,6 +293,7 @@ export default {
         feel.update(dt, camera);
         wand.step(dt, input);
         night.step(dt);
+        school.step(dt, hours());
         air.update(dt, camera);
         clock += dt;
         // (the light moves slowly: a few times a second is plenty)
@@ -315,6 +326,10 @@ export default {
       wand,
       // the Marauder’s Map’s view of everyone (hud/MaraudersMap.jsx reads it every frame)
       map: () => night.view(),
+      // the term's view for the HUD, and the leaving feast held (the Menu's, until the Great Hall holds it)
+      school: () => school.view(),
+      feast: () => school.feast(),
+      nextYear: () => school.nextYear(Math.floor(hours() / 24)),
       // the wheel's pick, and the touch buttons held and let go
       choose: (id) => wand.choose(id),
       press(name, down) {
@@ -379,6 +394,9 @@ export default {
         cast: (spell, at) => wand.cast(spell, at),
         wand: () => wand.state(),
         night: () => night.view(),
+        school: () => school.view(),
+        term: (w) => school.setWeek(w),
+        hear: (type, data) => tell(type, data),
         fly: () => world.fly(),
         practice: () => world.practice(),
         match: (n) => world.match(n),
