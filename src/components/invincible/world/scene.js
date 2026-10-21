@@ -15,29 +15,29 @@ import { createFeel, feelGroups } from '../../avengers/hq/feel';
 import { createSpring, springGroups } from '../../../lib/spring';
 import { POSES, figure, loadFigure } from '../../../lib/three/rig';
 import { CAST, asset } from '../cast';
-import { createGhosts } from '../../middleearth/towns/ghosts';
 import { createChallenges } from './challenges';
 import { DAD, newDad, stepDad } from './companions';
 import { buildCity } from './city';
 import { anyOf, standing } from './foes';
 import { createVillains } from './villains';
-import { surfaceAt } from './flight';
 import { createFlightFx } from './fx';
 import { buildGround } from './ground';
 import { buildJet } from './jet';
 import { buildLandmarks } from './landmarks';
-import { buildLife, carGeometry } from './life';
+import { buildLife } from './life';
 import { LINES } from './lines';
 import { createNpcs } from './npcs';
 import { buildClouds, buildHaze, skyBands } from './sky';
 import { carAt, createTraffic, stepTraffic, takeCar } from './traffic';
-import { markerSize } from '../../../runtime/hud/hud';
-import { CITY, WATER_Y, WORLD, buildWorld, groundAt, near } from './map';
+import { CITY, WORLD, buildWorld, groundAt, near } from './map';
 import { BODIES, altitudeOf } from './orbit';
 import { castMaterial, loadCast, personFor, setCastRim } from './people';
 import { buildSpace } from './space';
 import { groundWorld } from '../../../lib/three/groundwork';
 import { LOOK as ART } from './look';
+import { createHolograms } from './holograms';
+import { createCourse, createMarker, loadProps } from './missionProps';
+import { CAM, LAND, LOOK, SPOT, SUIT, TIMES, rayBox } from './sceneLook';
 
 const FOV = 64;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -48,251 +48,9 @@ const Z = new THREE.Vector3(0, 0, 1);
 // what the villains do that's drawn and felt (./villains.js's fx)
 const VILLAIN_EV = new Set(['spawn', 'hit', 'ko', 'down', 'hurt', 'won', 'swing', 'throw', 'carHit', 'carAway', 'carDown', 'quake', 'blast', 'shake']);
 
-// the times of day: the sky, how it sits, the light, the haze, the night,
-// the light that follows Mark (`spot`) and the rim round the cast (`rim`).
-// The haze takes the sky photo's colour at the horizon (skyBands); a fog's
-// `tint` or `color` is only for a photo that can't be read.
-export const TIMES = ['noon', 'dusk', 'night'];
-const LOOK = {
-  noon: { sky: 'noon', rotate: 0.6, env: 1.15, bg: 1, sun: 4.2, fill: 0.3, fog: { density: 0.00026, tint: 0.95 }, night: 0, exposure: 1, spot: 0, rim: 0.35, cloud: { lit: [1, 1, 1], shade: [0.62, 0.66, 0.74] } },
-  dusk: { sky: 'dusk', rotate: 2.2, env: 0.62, bg: 1, sun: 2.6, sunColor: [1, 0.66, 0.4], fill: 0.16, fog: { density: 0.0003, tint: 0.7 }, night: 0.5, exposure: 1, spot: 20, rim: 0.7, cloud: { lit: [1, 0.74, 0.52], shade: [0.42, 0.36, 0.42] } },
-  night: { sky: 'night', rotate: 0, env: 0.22, bg: 0.2, sun: 0.7, sunDir: [-0.3, 0.75, -0.4], sunColor: [0.62, 0.72, 1], fill: 0.4, fog: { density: 0.00024, color: new THREE.Color(0.05, 0.06, 0.08) }, night: 1, exposure: 1, spot: 45, rim: 1.2, cloud: { lit: [0.14, 0.16, 0.22], shade: [0.06, 0.07, 0.1], opacity: 0.7 } },
-};
-
-// The camera hovering or standing: `back` metres behind him, `pull` more
-// flat out (the pull-back with speed, as it was), aimed so his feet sit
-// `feet` of the screen's height up from its bottom. Close enough that he's
-// a third of the frame tall, the one thing on it the player has to find
-// (at FOV 64 that's 3.6 m; from further his black and blue were a few
-// pixels wide against the street). Leaning into a flight, it aims `ahead`
-// metres past him instead, as it always has (his feet trail behind him then).
-const CAM = { back: 3.6, pull: 1.5, feet: 0.35, ahead: 4, over: 0.9, overFoot: 0.7 };
-
-// His suit: the atlas's black, raised to `floor` (people.js castMaterial),
-// the show's navy, which keeps his arms and legs on a dark street or at night.
-const SUIT = { floor: 0x2a3754 };
-
-// The light that follows him: from over the camera's shoulder, `back`
-// metres toward the camera and `up` over his chest, at his chest. Warm
-// white, `range` metres, so it lights him, and the street in a disc round
-// his feet when he's down near it, and not the city. Never off, only dark
-// (its intensity is the time's `spot`): a light switched on and off would
-// recompile every lit material in the city at the turn of the time.
-const SPOT = { color: 0xffeedd, range: 12, angle: 0.5, penumbra: 0.6, back: 2, up: 2.2, chest: 1.25 };
-
-// Down on one knee, a fist on the ground: how a hard landing ends.
-const LAND = {
-  thighL: [0.1, -0.3, 0.95],
-  calfL: [0.05, -1, -0.05],
-  footL: [0, -0.3, 1],
-  thighR: [-0.1, -1, -0.2],
-  calfR: [-0.05, -0.12, -1],
-  footR: [0, -0.2, -1],
-  armR: [-0.15, -1, 0.4],
-  foreR: [-0.05, -1, 0.1],
-  armL: [0.65, -0.15, -0.7],
-  foreL: [0.5, 0.15, -0.85],
-  torso: { pitch: 0.55, yaw: 0.1, roll: 0 },
-};
-
-// a ray against a box: how far along (0…1) it first goes in, or 1
-function rayBox(o, d, b) {
-  let t0 = 0;
-  let t1 = 1;
-  const lo = [b.x0, b.y0, b.z0];
-  const hi = [b.x1, b.y1, b.z1];
-  for (let a = 0; a < 3; a++) {
-    if (Math.abs(d[a]) < 1e-9) {
-      if (o[a] < lo[a] || o[a] > hi[a]) return 1;
-      continue;
-    }
-    let ta = (lo[a] - o[a]) / d[a];
-    let tb = (hi[a] - o[a]) / d[a];
-    if (ta > tb) [ta, tb] = [tb, ta];
-    t0 = Math.max(t0, ta);
-    t1 = Math.min(t1, tb);
-    if (t0 > t1) return 1;
-  }
-  return t0;
-}
-
-// ── the missions' props: the bank (CAST.bank) on its block east of the plaza,
-// and the getaway truck (CAST.truck) driven along the grid by ./getaway.js;
-// each a code stand-in if its model won't load ──
-async function loadProps(scene, world, { rim }) {
-  const group = new THREE.Group();
-  group.name = 'mission-props';
-  scene.add(group);
-  const casts = [];
-  const geos = [];
-  // a prop's model, stood on the ground at `h` metres tall (its front toward +z)
-  async function prop(name, h) {
-    try {
-      const t = await loadFigure(asset(CAST[name].file));
-      const m = t.scene.clone(true);
-      const box = new THREE.Box3().setFromObject(m);
-      const size = box.getSize(new THREE.Vector3());
-      const k = h / Math.max(1e-3, size.y);
-      m.scale.setScalar(k);
-      m.position.set(-((box.min.x + box.max.x) / 2) * k, -box.min.y * k, -((box.min.z + box.max.z) / 2) * k);
-      const holder = new THREE.Group();
-      holder.add(m);
-      casts.push(castMaterial(m, { rim }));
-      return holder;
-    } catch {
-      return null;
-    }
-  }
-  const bankAt = world.landmarks.find((l) => l.id === 'bank');
-  let bank = bankAt ? await prop('bank', CAST.bank.h) : null;
-  if (bankAt) {
-    if (!bank) {
-      // a stand-in: a stone box with a dark door, the size the map has it
-      bank = new THREE.Group();
-      const g = new THREE.BoxGeometry(bankAt.w, bankAt.h, bankAt.d);
-      const d = new THREE.BoxGeometry(0.4, 5, 6);
-      geos.push(g, d);
-      const wall = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0xd9d2c3, roughness: 0.75 }));
-      wall.position.y = bankAt.h / 2;
-      const door = new THREE.Mesh(d, new THREE.MeshStandardMaterial({ color: 0x1b2a36, roughness: 0.3, metalness: 0.6 }));
-      door.position.set(-bankAt.w / 2, 2.5, 0);
-      bank.add(wall, door);
-    }
-    bank.position.set(bankAt.x, groundAt(bankAt.x, bankAt.z), bankAt.z);
-    bank.rotation.y = -Math.PI / 2; // its front to the west: the hall across the street
-    group.add(bank);
-  }
-  let truck = await prop('truck', CAST.truck.h);
-  if (!truck) {
-    truck = new THREE.Group();
-    const g = carGeometry(3);
-    geos.push(g);
-    truck.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0x3a3f47, roughness: 0.5, metalness: 0.4, vertexColors: true })));
-  }
-  truck.visible = false;
-  group.add(truck);
-  return {
-    group,
-    update(g) {
-      truck.visible = Boolean(g);
-      if (!g) return;
-      truck.position.set(g.p[0], g.p[1], g.p[2]);
-      truck.rotation.y = g.yaw;
-    },
-    dispose() {
-      group.removeFromParent();
-      for (const c of casts) c.dispose();
-      for (const g of geos) g.dispose();
-    },
-  };
-}
-
-// ── the marker over a mission's target: a chevron pointing down at it,
-// bobbing, turning, in the mission's colour, the size the HUD's rules give
-// it (./hud.js markerSize: a 6 m chevron as the camera sees it, never under
-// 24 px); unlit, through anything in front of it ──
-function createMarker(scene) {
-  const holder = new THREE.Group();
-  holder.visible = false;
-  holder.renderOrder = 9;
-  const mat = new THREE.MeshBasicMaterial({ color: 0xffd23a, transparent: true, opacity: 0.92, depthTest: false, toneMapped: false });
-  const cone = new THREE.Mesh(new THREE.ConeGeometry(1.6, 3.2, 4), mat);
-  cone.rotation.x = Math.PI; // (point down)
-  cone.position.y = 1.6;
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.22, 6, 24), mat);
-  ring.rotation.x = Math.PI / 2;
-  ring.position.y = 3.6;
-  holder.add(cone, ring);
-  scene.add(holder);
-  const col = new THREE.Color();
-  return {
-    update(m, t, camera, screenH) {
-      holder.visible = Boolean(m);
-      if (!m) return;
-      const d = Math.max(1, camera.position.distanceTo(new THREE.Vector3(m.p[0], m.p[1], m.p[2])));
-      const px = markerSize(d, screenH, { fov: camera.fov });
-      // the chevron is 6 m tall as drawn; the size on screen is px of screenH
-      const want = (px * 2 * d * Math.tan((camera.fov * Math.PI) / 360)) / screenH;
-      const k = want / 6;
-      holder.scale.setScalar(k);
-      holder.position.set(m.p[0], m.p[1] + 3 * k + Math.sin(t * 2.4) * 0.4 * k, m.p[2]);
-      holder.rotation.y = t * 1.2;
-      if (m.color) mat.color.copy(col.set(m.color));
-    },
-    dispose() {
-      holder.removeFromParent();
-      cone.geometry.dispose();
-      ring.geometry.dispose();
-      mat.dispose();
-    },
-  };
-}
-
-// ── a race's gates (Eve's eight round downtown; the three home from the
-// Moon, in space's frame, which is the scene's) as rings, the next one
-// bright, the ones through gone; and a photo's frame: a rectangle to look
-// through, a few metres ahead of its spot, the way it faces ──
-function createCourse(scene) {
-  const group = new THREE.Group();
-  group.visible = false;
-  scene.add(group);
-  const ringGeo = new THREE.TorusGeometry(1, 0.06, 8, 48);
-  const rings = Array.from({ length: 8 }, () => {
-    const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xf5c518, transparent: true, opacity: 0.3, toneMapped: false }));
-    m.visible = false;
-    group.add(m);
-    return m;
-  });
-  const frame = new THREE.Group();
-  const bar = new THREE.BoxGeometry(1, 1, 1);
-  // (the radio's yellow, through anything: the hall's columns are white too)
-  const frameMat = new THREE.MeshBasicMaterial({ color: 0xf5c518, transparent: true, opacity: 0.9, depthTest: false, toneMapped: false });
-  for (const [x, y, w, h] of [
-    [0, 2, 6.4, 0.22],
-    [0, -2, 6.4, 0.22],
-    [3.1, 0, 0.22, 4.2],
-    [-3.1, 0, 0.22, 4.2],
-  ]) {
-    const m = new THREE.Mesh(bar, frameMat);
-    m.position.set(x, y, 0);
-    m.scale.set(w, h, 0.22);
-    m.renderOrder = 8;
-    frame.add(m);
-  }
-  frame.visible = false;
-  group.add(frame);
-  return {
-    update(gates, photo, t) {
-      group.visible = Boolean(gates || photo);
-      rings.forEach((m, i) => {
-        const g = gates?.list[i];
-        m.visible = Boolean(g) && i >= (gates.next ?? 0);
-        if (!m.visible) return;
-        const next = i === gates.next;
-        m.position.set(g[0], g[1], g[2]);
-        m.scale.setScalar(gates.r * (next ? 1 + Math.sin(t * 4) * 0.04 : 1));
-        m.material.opacity = next ? 0.95 : 0.3;
-        // (facing the one before it, or him: a ring stands across the way)
-        const from = gates.list[i - 1] ?? [g[0], g[1], g[2] + 1];
-        m.lookAt(from[0], from[1], from[2]);
-      });
-      frame.visible = Boolean(photo);
-      if (photo) {
-        const d = [Math.sin(photo.face), 0, Math.cos(photo.face)];
-        frame.position.set(photo.p[0] + d[0] * 9, photo.p[1] + 1.2, photo.p[2] + d[2] * 9);
-        frame.rotation.set(0, photo.face, 0);
-      }
-    },
-    dispose() {
-      group.removeFromParent();
-      ringGeo.dispose();
-      bar.dispose();
-      frameMat.dispose();
-      for (const m of rings) m.material.dispose();
-    },
-  };
-}
-
+// the times of day and their light, the camera, the suit, the light that
+// follows him, the hard landing and a ray against a box: ./sceneLook.js
+export { TIMES };
 export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   const engine = createStage(rt, { exposure: 1, fov: FOV, near: 0.3, far: 26000, bloom: ART.bloom, onSlow });
   const { scene, camera } = engine;
@@ -733,65 +491,8 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     }
   }
 
-  // ── other players online, in their own worlds, as holograms ──
-  // (as the Middle-earth towns show theirs: ../../middleearth/towns/ghosts.js)
-  // each a pale, shimmering Mark with his name over him: walking, hanging in
-  // the air, flat out, or stood on the Moon. Nothing here touches them, nor
-  // they anything here. InvWorld's placeOf says where: in the city, x and z
-  // and how high over the land or the water; in space, just where (and
-  // which way's up there, and how high over it)
-  const gAt = new THREE.Vector3();
-  const gUp = new THREE.Vector3();
-  const gYaw = new THREE.Quaternion();
-  const gQ = new THREE.Quaternion();
-  const ghosts = createGhosts({
-    height: (x, z) => (zone === 'city' ? Math.max(groundAt(x, z), WATER_Y) : 0),
-    make: () => {
-      const f = figure(markT, CAST.mark); // (he faces +z, as a ghost's face has it)
-      f.snap(POSES.stand);
-      const group = new THREE.Group();
-      group.add(f.holder);
-      return { group, top: CAST.mark.h, fig: f, gait: 0, at: null, v: new THREE.Vector3(), dispose: () => f.dispose() };
-    },
-    animate: (f, gt, p, gdt) => {
-      const fig = f.fig;
-      const speed = p.speed ?? 0;
-      // off the ground: over the land, the water or a roof (or the Moon, or Mars)
-      const y = p.over == null ? Math.max(groundAt(p.x, p.z), WATER_Y) + (p.y ?? 0) : 0;
-      const air = (p.over ?? y - surfaceAt(world, p.x, p.z, y + 0.3).y) > 0.8;
-      // which way they're going, from how the ghost itself moves (the room says how fast, not where)
-      f.group.updateWorldMatrix(true, false);
-      gAt.setFromMatrixPosition(f.group.matrixWorld);
-      if (f.at && gdt > 0) f.v.lerp(gUp.subVectors(gAt, f.at).divideScalar(gdt), 1 - Math.exp(-4 * gdt));
-      f.at = (f.at ?? new THREE.Vector3()).copy(gAt);
-      // stood up the way that's up where they are (on the Moon, away from it), turned the way they face
-      gYaw.setFromAxisAngle(Y, -f.group.rotation.y);
-      if (!air && p.up) gUp.fromArray(p.up);
-      else gUp.copy(Y);
-      fig.holder.position.copy(gUp).applyQuaternion(gYaw).multiplyScalar(fig.hipHeight);
-      // in the air: upright when still, along the way they're going when fast (as Mark is)
-      const k = air ? clamp((f.v.length() - 8) / 30, 0, 1) : 0;
-      gAt.copy(f.v.lengthSq() > 0.01 ? f.v : Y).normalize();
-      gAt.lerpVectors(Y, gAt, k).normalize().applyQuaternion(gYaw);
-      fig.body.quaternion.slerp(gQ.setFromUnitVectors(Y, gAt), 1 - Math.exp(-8 * gdt));
-      fig.holder.quaternion.setFromUnitVectors(Y, gUp).premultiply(gYaw).multiply(gYaw.invert());
-      // (Mark's clips where they fit; flat out, posed, as the lean above wants)
-      if (air) {
-        if (k > 0.45) fig.pose(POSES.fly(), gdt, 9);
-        else fig.act('hover', { fade: 0.4 }) || fig.pose(POSES.hover(gt), gdt, 9);
-      } else {
-        f.gait += speed * gdt * 1.55;
-        if (speed > 4.5) fig.act('run', { speed: clamp(speed / 5.5, 0.7, 1.6) }) || fig.pose(POSES.stride(f.gait, 1, clamp((speed - 4) / 5, 0, 1)), gdt, 14);
-        else if (speed > 0.3) fig.act('walk', { speed: clamp(speed / 1.4, 0.6, 2.2) }) || fig.pose(POSES.stride(f.gait, clamp(speed / 2, 0, 1), 0), gdt, 14);
-        else fig.act('idle') || fig.pose(POSES.stand, gdt, 14);
-      }
-      fig.tick(gdt);
-    },
-    tag: 0.5,
-    halo: 1.3,
-    snap: 150, // (flying, they're tens of metres on from one pose to the next)
-  });
-  scene.add(ghosts.group);
+  // ── other players online, in their own worlds, as holograms (./holograms.js) ──
+  const ghosts = createHolograms({ scene, world, markT, zoneOf: () => zone });
 
   // ── every frame ──
   let t = 0;

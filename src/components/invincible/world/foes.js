@@ -6,7 +6,9 @@
 // - The Mauler twins are on the street: they run at him when he's on the
 //   ground or low, swing at him when they're close, and when he's up out of
 //   reach they pull a car out of the traffic and throw it at him (a punch
-//   sends it back).
+//   sends it back). Given something to wreck (`world.hangar`, the last-but-
+//   one episode's), they go for it instead while he's away from them or
+//   high over them, and swing at it.
 // - Doc Seismic hovers over the school's quad in a slow circle, sending a
 //   quake ring along the ground every few seconds (it knocks Mark over if
 //   he's standing on it) and blasting him when he comes near.
@@ -17,10 +19,11 @@
 // Nothing happens until something starts it (Cecil, a mission, or the
 // city's clock for the Flaxans).
 //
-// stepFoes(state, hero, { punch, look, eveHit }, dt, { cars }) →
+// stepFoes(state, hero, { punch, look, eveHit }, dt, { cars, hangar }) →
 // { foes: state, ev, push, stun }: `push` a velocity to give him (a lunge,
 // a knock), `stun` a moment without control. `cars`: where the traffic's
-// cars are, for a Mauler to take one (`throw`'s `car` is its index there).
+// cars are, for a Mauler to take one (`throw`'s `car` is its index there);
+// `hangar`: a point on the street the Maulers wreck when he's not about.
 // A step is never longer than a twentieth of a second, whatever `dt` says
 // (a tab hidden for a minute comes back as one step).
 
@@ -54,7 +57,9 @@ export const KINDS = {
   flaxanElite: { hits: 2, volley: 3, hurt: 16 },
   // low: he's under this (m over the ground), they run at him; above it and
   // within `far`, they throw a car (one within `grab` of them, if there is)
-  mauler: { h: 2.6, hits: 3, run: 8, reach: 3, every: 1.4, windup: 0.4, swing: 18, knock: 10, low: 6, far: 60, grab: 30, car: 35, carHurt: 22, throwEvery: 4, hold: 0.6, stagger: 0.8 },
+  // (and with something to wreck: they go for it while he's over `away` m
+  // off or `up` m over the ground)
+  mauler: { h: 2.6, hits: 3, run: 8, reach: 3, every: 1.4, windup: 0.4, swing: 18, knock: 10, low: 6, far: 60, grab: 30, car: 35, carHurt: 22, throwEvery: 4, hold: 0.6, stagger: 0.8, away: 60, up: 30 },
   seismic: { h: 1.8, hits: 5, over: 20, circle: 30, quake: 6, ring: 30, ringTo: 160, blast: 40, blastHurt: 14, knock: 15, blastEvery: 3, stagger: 0.8 },
 };
 const FLAXANS = new Set(['flaxan', 'flaxanElite']);
@@ -87,6 +92,24 @@ export function spawnFoes(prev, kind, n, at = PORTAL.p) {
     foes.push(e);
   }
   return { ...prev, on: true, foes, next, gate: prev.on ? prev.gate : 0.6 };
+}
+
+// more of a kind until there are `total` of them in all, the ones already
+// beaten counted (a mission that wants six beaten can't be left wanting)
+export function spawnUpTo(prev, kind, total, at) {
+  const have = prev.foes.filter((e) => kindOf(e) === kind).length;
+  return have >= total ? prev : spawnFoes(prev, kind, total - have, at);
+}
+
+// What a Mauler goes for: him, or, given something to wreck, that while
+// he's away from it or high over the street (episode 6's hangar). Plain:
+// the Mauler's p, his feet, the point to wreck or null.
+export function pickTarget(e, hero, hangar) {
+  if (!hangar) return 'mark';
+  const K = KINDS.mauler;
+  const up = hero.p[1] - Math.max(groundAt(hero.p[0], hero.p[2]), WATER_Y);
+  const away = Math.hypot(hero.p[0] - e.p[0], hero.p[2] - e.p[2]);
+  return away > K.away || up > K.up ? 'hangar' : 'mark';
 }
 
 // the Flaxans' invasion: a dozen through the portal
@@ -291,32 +314,50 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
       const flat = [chest[0] - e.p[0], 0, chest[2] - e.p[2]];
       const fd = Math.hypot(flat[0], flat[2]);
       const d = len(sub(chest, mid(e)));
+      // what it's after: him, or the thing to wreck while he's not about
+      e.target = pickTarget(e, hero, world.hangar ?? null);
+      const wreck = e.target === 'hangar';
+      const goal = wreck ? [world.hangar[0] - e.p[0], 0, world.hangar[2] - e.p[2]] : flat;
+      const gd = Math.hypot(goal[0], goal[2]);
       e.cool -= dt;
       e.throwCool -= dt;
       e.v = [0, 0, 0];
-      if (fd > 0.1) e.yaw = Math.atan2(flat[0], flat[2]);
+      if (gd > 0.1) e.yaw = Math.atan2(goal[0], goal[2]);
       if (e.state === 'stagger') {
         e.t -= dt;
         if (e.t <= 0) e.state = 'approach';
       } else if (e.state === 'swing') {
-        // the blow lands at the end of the wind-up, if he's still there
+        // the blow lands at the end of the wind-up, if he's still there (or on the thing it's wrecking)
         e.t -= dt;
         if (e.t <= 0) {
-          const hit = d <= K.reach + 0.5;
-          ev.push({ type: 'swing', id: e.id, at: mid(e), hit });
-          if (hit) {
-            hurt(K.swing, chest, { by: 'mauler' });
-            const out = unit([flat[0], 0, flat[2]]);
-            push = [out[0] * knock(K.knock), 4, out[2] * knock(K.knock)];
-            stun = Math.max(stun, 0.3);
+          if (e.swingAt === 'hangar') ev.push({ type: 'swing', id: e.id, at: mid(e), hit: false, on: 'hangar' });
+          else {
+            const hit = d <= K.reach + 0.5;
+            ev.push({ type: 'swing', id: e.id, at: mid(e), hit });
+            if (hit) {
+              hurt(K.swing, chest, { by: 'mauler' });
+              const out = unit([flat[0], 0, flat[2]]);
+              push = [out[0] * knock(K.knock), 4, out[2] * knock(K.knock)];
+              stun = Math.max(stun, 0.3);
+            }
           }
           e.state = 'approach';
         }
       } else if (e.state === 'throw') {
         e.t -= dt;
         if (e.t <= 0) e.state = 'approach';
+      } else if (wreck) {
+        // at the thing to wreck, along the street, and a swing at it once there
+        if (gd <= K.reach && e.cool <= 0) Object.assign(e, { state: 'swing', t: K.windup, cool: K.every, swingAt: 'hangar' });
+        else if (gd > 0.1) {
+          const go = Math.min(K.run * dt, Math.max(0, gd - 2));
+          e.v = [(goal[0] / gd) * K.run, 0, (goal[2] / gd) * K.run];
+          e.p[0] += (goal[0] / gd) * go;
+          e.p[2] += (goal[2] / gd) * go;
+          e.p[1] = groundAt(e.p[0], e.p[2]);
+        }
       } else if (d <= K.reach && e.cool <= 0) {
-        Object.assign(e, { state: 'swing', t: K.windup, cool: K.every });
+        Object.assign(e, { state: 'swing', t: K.windup, cool: K.every, swingAt: 'mark' });
       } else if (alt >= K.low && fd >= K.low && d <= K.far && e.throwCool <= 0) {
         // he's up out of reach: a car (the nearest of the traffic's, or one off the street)
         let car = null;
