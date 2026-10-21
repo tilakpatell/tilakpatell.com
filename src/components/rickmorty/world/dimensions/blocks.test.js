@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { BLOCKS, MORTY_R, blockProblems, blocksOf } from './blocks';
+import { BLOCKS, MORTY_R, blockProblems, blocksOf, withBlocks } from './blocks';
 import { MORTY } from '../rules';
 import { E, N, place } from './place';
 import { DESTINATIONS } from './destinations';
+import { ROWS as ROWS1 } from './rows1';
+import { ROWS as ROWS2 } from './rows2';
+import { ROWS as ROWS3 } from './rows3';
 
 // a place to try blocks on: row 0's spot, a person who stands, one who
 // wanders, and a spot to use
@@ -67,5 +70,30 @@ describe('a place’s blocks', () => {
 
   it('are clear of everything in every real place', () => {
     for (const d of DESTINATIONS) expect(blockProblems(d, blocksOf(d, BLOCKS[d.id] ?? [])), d.id).toEqual([]);
+  });
+});
+
+describe('the destinations’ solids', () => {
+  it('are each row’s own and then its world’s blocks, nothing else', () => {
+    const rows = [...ROWS1, ...ROWS2, ...ROWS3];
+    for (const d of DESTINATIONS) {
+      const row = rows.find((r) => r.id === d.id);
+      expect(d.solids, d.id).toEqual([...row.solids, ...blocksOf(row)]);
+    }
+  });
+  it('take a place’s blocks on the end of its own solids', () => {
+    const rows = [{ id: 'a', centre: { x: 10, z: 20 }, solids: [{ id: 'crate', x: 0, z: 0, w: 1, d: 1 }] }, { id: 'b', centre: { x: 0, z: 0 }, solids: [] }];
+    const out = withBlocks(rows, { a: [{ id: 'pen', dx: 1, dz: -2, w: 3, d: 2, h: 1 }] });
+    expect(out[0].solids.map((o) => o.id)).toEqual(['crate', 'a-pen']);
+    expect(out[0].solids[1]).toMatchObject({ x: 11, z: 18 });
+    expect(out[1].solids).toEqual([]);
+    // (the rows themselves as they were)
+    expect(rows[0].solids).toHaveLength(1);
+  });
+
+  it('take a block in as a solid the walker and the NPCs know (a box, no turn)', () => {
+    const solids = blocksOf({ id: 'x', centre: { x: 0, z: 0 } }, [{ id: 'pen', dx: 1, dz: 2, w: 3, d: 4, h: 1 }]);
+    expect(solids[0]).toMatchObject({ id: 'x-pen', x: 1, z: 2, w: 3, d: 4 });
+    expect(solids[0].r).toBeUndefined();
   });
 });

@@ -9,6 +9,7 @@
 //   metres from the place's middle, `h` how tall they're drawn (≤ 1.2 m:
 //   the walking camera passes over them)
 // blocksOf(d, list) → solids in the world ({ id, x, z, w, d, h, block })
+// withBlocks(rows, table) → the rows, each with its blocks on the end of its solids
 // blockProblems(d, solids) → what's wrong with them, in words (none: [])
 
 export const BLOCKS = {};
@@ -17,6 +18,8 @@ export const BLOCKS = {};
 export const MORTY_R = 0.4;
 
 export const blocksOf = (d, list = BLOCKS[d.id] ?? []) => list.map((b) => ({ id: `${d.id}-${b.id}`, x: d.centre.x + b.dx, z: d.centre.z + b.dz, w: b.w, d: b.d, h: b.h, block: true }));
+
+export const withBlocks = (rows, table = BLOCKS) => rows.map((d) => (table[d.id]?.length ? { ...d, solids: [...d.solids, ...blocksOf(d, table[d.id])] } : d));
 
 const TALLEST = 1.2;
 const CLEAR = { spot: MORTY_R + 0.5, ends: 1.5, people: 1 };
