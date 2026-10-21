@@ -5,7 +5,8 @@ import { HELD, handSkinCount, skinStep } from '../src/lib/three/held.js';
 import { strideOf } from '../src/lib/three/locomotion.js';
 import { meshyRig, withHands } from '../src/lib/three/meshyRig.fixture.js';
 import { findBones } from '../src/lib/three/rig.js';
-import { failing, rowOf, table } from './cast-audit.mjs';
+import { BODIES, fileOf } from '../src/lib/cast/bodies.js';
+import { castCounts, castRows, castTable, failing, rowOf, table } from './cast-audit.mjs';
 
 const lib = { findBones, strideOf, HELD, skinStep };
 
@@ -126,5 +127,37 @@ describe('the cast audit', () => {
     expect(failing([row], lib)).toEqual([]);
     const gone = rowOf({ name: 'frodo', file: '/x/frodo.glb' }, { doc: null }, lib);
     expect(failing([gone], lib)).toEqual([{ name: 'frodo', why: 'missing /x/frodo.glb' }]);
+  });
+});
+
+describe('the cast table’s audit', () => {
+  // one of each: the game’s, a mod’s, a site’s with nothing to replace it and
+  // more faces, and a site’s that could be replaced
+  const ROWS = {
+    trooper: { url: '/models/galaxy/bf2017/crew/trooper.glb', tall: 1.83, rig: 'walrus', source: 'game' },
+    hero: { url: '/models/galaxy/bf2017/crew/hero.glb', tall: 1.8, rig: 'walrus', source: 'mod:expanded' },
+    knight: { url: '/x/knight.glb', tall: 1.75, faces: [{ url: '/x/knight2.glb', tall: 1.8 }], source: 'site', could: null },
+    alien: { name: 'alien', tall: 1.7, source: 'site', could: 'the game’s alien | not imported yet' },
+  };
+
+  it('lists every kind with its source, file and could, then the counts', () => {
+    const rows = castRows(ROWS, fileOf);
+    expect(rows.map((r) => r.kind)).toEqual(['trooper', 'hero', 'knight', 'alien']);
+    expect(rows[2]).toEqual({ kind: 'knight', source: 'site', file: '/x/knight.glb', faces: 1, could: null });
+    expect(castCounts(rows)).toEqual({ kinds: 4, by: { game: 1, 'mod:expanded': 1, site: 2 }, site: 2, could: 1 });
+    const md = castTable(rows);
+    expect(md).toMatch(/\| trooper \| game \| \/models\/galaxy\/bf2017\/crew\/trooper\.glb \| {2}\|/);
+    expect(md).toMatch(/\| knight \| site \| \/x\/knight\.glb and 1 more face \| — \(none has it\) \|/);
+    // (a bar in a note can’t end its cell)
+    expect(md).toMatch(/\| alien \| site \| \/models\/galaxy\/crew\/alien\.glb \| the game’s alien \\\| not imported yet \|/);
+    expect(md).toMatch(/4 kinds: 1 game, 1 mod:expanded, 2 site\./);
+    expect(md).toMatch(/Site rows with a `could`: 1 of 2\./);
+  });
+
+  it('counts the site’s own table, every kind once', () => {
+    const c = castCounts(castRows(BODIES, fileOf));
+    expect(c.kinds).toBe(Object.keys(BODIES).length);
+    expect(Object.values(c.by).reduce((a, b) => a + b, 0)).toBe(c.kinds);
+    expect(c.could).toBeLessThanOrEqual(c.site);
   });
 });

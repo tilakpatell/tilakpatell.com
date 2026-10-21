@@ -1,6 +1,7 @@
 // Everywhere on the universe map, in map order: the site's own pages first,
-// as stations round the sun in the middle (kind 'core'), then the ten
-// fandoms as planets further out, in the order Home always showed them.
+// as stations round the sun in the middle (kind 'core'), then the fandoms
+// as planets further out, in the order Home always showed them (a new one
+// goes on the end, so none of the others moves).
 // Pure data: the map, the mini-map, the world pages' links and the guide all
 // read this list.
 //
@@ -265,6 +266,21 @@ const FANDOMS = [
     rim: '#e8743a', // Viltrum's own air, not the suit's yellow
     size: 0.64,
     palette: { base: '#a8482a', dark: '#4a1a10', light: '#e6a05a', glow: '#ffd23a' },
+  },
+  {
+    id: 'potter',
+    // a cold northern world of lochs and moor, one castle lit on its crag
+    // (scripts/planets/potter.mjs): the air a Highland evening's, pale blue
+    // with a warm sunset at its edge
+    air: { colour: '#b8c8e8', density: 2.2, top: 1.06, sunset: '#f0a060' },
+    label: 'Harry Potter',
+    world: 'Hogwarts',
+    place: 'Hogwarts',
+    to: '/hogwarts',
+    swatch: '#c8102e', // Gryffindor's scarlet on the chart
+    accent: '#f6c343', // and its gold for the page (the scarlet reads 3.5:1 on the dark: the gold 12.5)
+    size: 0.64,
+    palette: { base: '#3f5a3a', dark: '#1a2a30', light: '#9fb09a', glow: '#f6c343' },
   },
 ].map((u) => ({ ...u, size: u.size * (u.portal ? GATE : PLANET), kind: 'fandom', place: u.place ?? u.world }));
 

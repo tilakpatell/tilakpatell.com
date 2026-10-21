@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HOME_RADIUS, MAP_RADIUS, ORDER, POSITIONS, REACH, RIM, SECTORS, SUN, keyStep, mapSectorOf, next, nextWorld, parseId, prev, sectorById, sectorOf } from './layout';
+import { HOME_RADIUS, MAP_RADIUS, ORDER, POSITIONS, REACH, RIM, SECTORS, SUN, keyStep, mapSectorOf, next, nextWorld, parseId, prev, sectorById, sectorOf, sectorOut } from './layout';
 import { byId } from './universes';
 import { DEEP, WONDERS } from './deep';
 
@@ -44,10 +44,11 @@ describe('the map layout', () => {
     expect(next('starwars')).toBe('music');
     expect(next('travel')).toBe('caribbean');
     expect(next('caribbean')).toBe('invincible');
-    expect(next('invincible')).toBe('home');
-    expect(prev('home')).toBe('invincible');
+    expect(next('invincible')).toBe('potter');
+    expect(next('potter')).toBe('home');
+    expect(prev('home')).toBe('potter');
     expect(next(null)).toBe('home');
-    expect(prev(null)).toBe('invincible');
+    expect(prev(null)).toBe('potter');
   });
 
   it('keeps the sun clear of everything', () => {
@@ -65,7 +66,8 @@ describe('the map layout', () => {
     expect(nextWorld('gaming').id).toBe('travel');
     expect(nextWorld('travel').id).toBe('caribbean');
     expect(nextWorld('caribbean').id).toBe('invincible');
-    expect(nextWorld('invincible').id).toBe('starwars');
+    expect(nextWorld('invincible').id).toBe('potter');
+    expect(nextWorld('potter').id).toBe('starwars');
     expect(nextWorld('starwars').id).toBe('music');
     expect(nextWorld('albuquerque')?.id).toBe('starwars'); // not an id: starts from the top
     expect(nextWorld(null).id).toBe('starwars');
@@ -76,9 +78,9 @@ describe('the map layout', () => {
     expect(keyStep('ArrowRight', 'starwars')).toBe('music');
     expect(keyStep('ArrowDown', 'starwars')).toBe('music');
     expect(keyStep('ArrowLeft', 'starwars')).toBe('terminal');
-    expect(keyStep('ArrowUp', null)).toBe('invincible');
+    expect(keyStep('ArrowUp', null)).toBe('potter');
     expect(keyStep('Home', 'office')).toBe('home');
-    expect(keyStep('End', 'office')).toBe('invincible');
+    expect(keyStep('End', 'office')).toBe('potter');
     expect(keyStep('Enter', 'office')).toBeUndefined();
     expect(keyStep('a', 'office')).toBeUndefined();
   });
@@ -144,6 +146,21 @@ describe('the spread', () => {
     expect(sec.edge).toBe(Infinity);
     expect(sectorById('main')).toBe(SECTORS.main);
     expect(sectorById('nowhere')).toBeNull();
+  });
+
+  it('keys sectors in 3D: layers above and below, and the pocket a ball', () => {
+    expect(sectorOf(0, 70000, 0)).toBe('E:0,0,1');
+    expect(sectorOf(0, 50000, 0)).toBe('main');
+    expect(sectorOf(0, 5000, -66000)).toBe('rickmorty');
+    expect(sectorOf(0, 6500, -66000)).toBe('E:0,-1');
+    expect(sectorOf(4500, 4500, -66000)).toBe('E:0,-1');
+    expect(sectorById('E:1,-2,3').origin).toEqual([120000, 360000, -240000]);
+  });
+
+  it('reads a junk sector key as no sector, not the origin’s', () => {
+    for (const junk of ['E:1,0,x', 'E:', 'E:NaN,0', 'E:1', 'E:1,0,1,2']) expect(sectorById(junk), junk).toBeNull();
+    // (a position that isn't a number reads as the main map's, never throws)
+    expect(sectorOut(NaN, NaN).sec).toBe(SECTORS.main);
   });
 });
 

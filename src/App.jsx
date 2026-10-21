@@ -34,6 +34,7 @@ const Feed = lazy(() => import('./components/feed/Feed.jsx'));
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
 const Caribbean = lazy(() => import('./pages/Caribbean'));
 const Invincible = lazy(() => import('./pages/Invincible'));
+const Hogwarts = lazy(() => import('./pages/Hogwarts'));
 const Terminal = lazy(() => import('./pages/Terminal'));
 const DeathStar = lazy(() => import('./pages/DeathStar'));
 const DeathStarInside = lazy(() => import('./pages/DeathStarInside'));
@@ -454,6 +455,7 @@ function Shell() {
                 <Route path="/travel" element={<Feed />} />
                 <Route path="/caribbean" element={<Caribbean />} />
                 <Route path="/invincible" element={<Invincible />} />
+                <Route path="/hogwarts" element={<Hogwarts />} />
                 <Route path="/terminal" element={<Terminal />} />
                 <Route path="/deathstar" element={<DeathStar />} />
                 <Route path="/deathstar/inside" element={<DeathStarInside />} />
