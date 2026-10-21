@@ -78,7 +78,7 @@ export { KEYS };
 export default {
   id: 'hogwarts',
   shading: 'nodes',
-  mb: 2,
+  mb: 21,
   label: 'Hogwarts: the shore of the Black Lake at dusk, the castle lit across the water',
   create(rt, props = {}) {
     const reduced = Boolean(props.reduced);
