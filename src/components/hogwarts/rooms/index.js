@@ -13,9 +13,9 @@
 //   loadRoom(id) → Promise<the room’s module>, rejects for an id not registered
 //
 // A room’s module (its default export):
-//   { build(rt, ctx) → Promise<{ group, spawn: { at: [x, y, z], yaw }, colliders, floors, doors, places }> | the same,
-//     step?(dt, input, ctx), dispose?() }
-//   ctx: { house, tier, from (the door’s id it was entered by), leave() (out the way you came), say(text) (a toast) }
+//   { build(rt, house, ctx) → Promise<{ group, spawn: { at: [x, y, z] | [x, z], yaw }, floorAt?(x, z), colliders, floors, doors, places, step?(dt, { at, act, hour }), dispose?() }> | the same }
+//   house: the world’s look (houseNodes), for the room’s materials
+//   ctx: { tier, renderer, from (the door’s id it was entered by), origin (ROOM_ORIGIN), hour (the world’s), leave() (out the way you came) }
 //   group: the room, drawn where it is built (rooms are built at ROOM_ORIGIN, far below the grounds, so
 //     a room never stands in the grounds’ shadow cascades or their fog);
 //   spawn: where you stand in it as you come in; colliders and floors: plan.js’s shapes;
