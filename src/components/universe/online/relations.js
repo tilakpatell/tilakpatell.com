@@ -9,7 +9,9 @@
 //   that side), war, oath (galaxy/sides.js: the side they swore to in the
 //   war they fight in), rank (galaxy/ranks.js: on the oath's side) }
 // relation(me, peer) → 'ally' | 'friend' | 'foe' | 'none' (each { ally,
-//   factions }: me.ally, whether they're your ally); factionText(factions)
+//   factions }: me.ally, whether they're your ally; the peer as the client
+//   has them, an ally or a mate in your party: mates.js's isMate, so the two
+//   read alike on the tags and in the roster); factionText(factions)
 //   → 'Rebellion · Captain · Wanted by the Empire', or ''; factionsFrom(side,
 //   marks) → your own factions, from the side your ship is from (sides.js's
 //   sideOf, which the caller asks: the universe's data stays out of the
@@ -18,13 +20,14 @@
 import { SIDES as WAR_SIDES, warOfSide } from '../../galaxy/sides';
 import { RANKS } from '../../galaxy/ranks';
 import { WHO } from '../standing';
+import { isMate } from './mates';
 
 export const NO_FACTIONS = Object.freeze({ side: null, standing: null, war: null, oath: null, rank: null });
 
 const isAlly = (a) => a === true || a === 'ally';
 
 export function relation(me, peer) {
-  if (isAlly(me?.ally) || isAlly(peer?.ally)) return 'ally';
+  if (isAlly(me?.ally) || isMate(peer)) return 'ally';
   const a = me?.factions ?? NO_FACTIONS;
   const b = peer?.factions ?? NO_FACTIONS;
   // (two sides of different wars aren't fighting each other)

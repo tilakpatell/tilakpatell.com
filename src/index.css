@@ -41,6 +41,23 @@
      --text, so they darken with the theme's ink rather than a fixed black. */
   --shadow-float: 0 18px 40px -20px color-mix(in srgb, var(--text) 60%, transparent);
   --shadow-dialog: 0 24px 50px -24px color-mix(in srgb, var(--text) 55%, transparent);
+  /* What a colour says, set once here and once for the dark, so every theme
+     has them and a theme may set its own: all's well (online, sent), wait or
+     take care, gone wrong or for good (a form's error, Remove), and the ally
+     green (your allies and your party, as the map's tags have them). Each
+     reads 4.5:1 as text on every theme's grounds. (The shade under a dialog,
+     --scrim, is the colour's own: styles/dialogs.css.) */
+  --ok: #116329;
+  --warn: #7a5100;
+  --danger: #b42318;
+  --ally: #0b6e3a;
+  /* The ink a drop shadow is mixed from (each keeps its own size and depth),
+     the ink on a saber ground (a selection), and what a primary button turns
+     toward under the pointer. Read here, on the page's root, they take the
+     theme's own ink; a theme whose saber or button is the ink sets its own. */
+  --shadow-ink: var(--text);
+  --saber-ink: #0f1111;
+  --btn-shade: #000;
 
   /* Depth, bottom to top. Every page-level layer names one of these; a layer
      a step above or below its kind's neighbour says so with a calc and why.
@@ -138,6 +155,7 @@
   --marker: polygon(50% 0, 100% 100%, 0 100%);
   --r-card: 4px;
   --r-panel: 2px;
+  --r-btn: 2px;
   --r-chip: 2px;
   --r-photo: 4px;
 }
@@ -157,6 +175,10 @@
   --btn-bg: #131317;
   --btn-ink: #ffffff;
   --saber: #131317;
+  /* (its saber and its button are the bass black, so a selection is white on
+     it and a button lightens under the pointer) */
+  --saber-ink: #ffffff;
+  --btn-shade: #ffffff;
   --route-plan: #c9cfd5;
   --route-dash: 2px;
   --route-gap: 5px;
@@ -175,7 +197,7 @@
   --bg-deep: #f2f5f9;
   --surface-2: #eef3f8;
   --border: #d6dee8;
-  --border-strong: #8fa3bd;
+  --border-strong: #8294ac;
   --text: #000f22;
   --text-body: #1d2f47;
   --muted: #4a5d78;
@@ -201,7 +223,7 @@
   --bg-deep: #eefaff;
   --surface-2: #eefaff;
   --border: #d3e3f2;
-  --border-strong: #8ea7cc;
+  --border-strong: #7e95b6;
   --text: #081730;
   --text-body: #1b2a4a;
   --muted: #4a5875;
@@ -227,7 +249,7 @@
   --bg-deep: #f2f6f9;
   --surface-2: #eef3f7;
   --border: #d5dfe8;
-  --border-strong: #8fa1b8;
+  --border-strong: #8494a9;
   --text: #1b2536;
   --text-body: #2c3a4f;
   --muted: #4b5b6e;
@@ -257,12 +279,12 @@
   --surface: #ffffff;
   --surface-2: #f0eee6;
   --border: #e8e6dc;
-  --border-strong: #b0aea5;
+  --border-strong: #929089;
   --text: #141413;
   --text-body: #3d3d3a;
   --muted: #6b6a64;
   --accent: #d97757;
-  --accent-text: #b4573a;
+  --accent-text: #a95237;
   --btn-bg: #d97757;
   --btn-ink: #141413;
   --nav-bg: #141413;
@@ -286,7 +308,7 @@ html[data-mode='dark'] {
   --surface: #121215;
   --surface-2: #1b1c20;
   --border: #222428;
-  --border-strong: #4a4e56;
+  --border-strong: #60636a; /* a ghost button’s edge, 3:1 on the darkest of the dark grounds */
   --text: #f6f6f4;
   --text-body: #d7dae0;
   --muted: #9aa0a9;
@@ -299,6 +321,15 @@ html[data-mode='dark'] {
   /* in the dark a shadow is darkness, never a pale glow of the ink */
   --shadow-float: 0 18px 40px -20px rgb(0 0 0 / 0.7);
   --shadow-dialog: 0 24px 50px -24px rgb(0 0 0 / 0.75);
+  /* (the states lifted to read on the near black; the ally green is the map's
+     own) */
+  --ok: #5cd98a;
+  --warn: #ffd35c;
+  --danger: #ff8a8a;
+  --ally: #8dffad;
+  --shadow-ink: #000;
+  --saber-ink: #0f1111;
+  --btn-shade: #000;
   /* the site's easing, one family: out for anything arriving or settling, smooth
      for a change of state, spring for a bounce, in for anything leaving */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -315,53 +346,53 @@ html[data-mode='dark'][data-theme='claude'] { --bg: #141413; --bg-deep: #0f0f0e;
 
 /* ─── Project themes (each project page) ─────────────────────────────────── */
 [data-theme='gameboy'] {
-  --bg: #f6f5f2; --bg-deep: #ebe9e5; --surface: #ffffff; --surface-2: #edebe7; --border: #dcd9d4; --border-strong: #a19c96;
+  --bg: #f6f5f2; --bg-deep: #ebe9e5; --surface: #ffffff; --surface-2: #edebe7; --border: #dcd9d4; --border-strong: #918c87;
   --text: #1c1d2e; --text-body: #2e3047; --muted: #5d5f73;
   --accent: #9b2257; --accent-text: #9b2257; --btn-bg: #9b2257; --btn-ink: #ffffff; --saber: #8bc11a;
   --route-plan: #c9c5bf; --route-dash: 4px; --route-gap: 4px; --marker: inset(0 round 2px);
   --r-card: 12px; --r-panel: 8px; --r-chip: 4px; --r-photo: 12px;
 }
 [data-theme='devspace'] {
-  --bg-deep: #f3f6fb; --surface-2: #eef3fa; --border: #d6e0ee; --border-strong: #8ea2bf;
+  --bg-deep: #f3f6fb; --surface-2: #eef3fa; --border: #d6e0ee; --border-strong: #8193ae;
   --text: #0d1726; --text-body: #22324a; --muted: #4d607a;
   --accent: #007acc; --accent-text: #006bb3; --btn-bg: #007acc; --btn-ink: #ffffff; --saber: #3fb6ff;
-  --route-plan: #b8c7dc; --marker: inset(0 round 2px); --r-card: 10px; --r-panel: 6px; --r-btn: 8px; --r-chip: 4px;
+  --route-plan: #b8c7dc; --marker: inset(0 round 2px); --r-card: 10px; --r-photo: 10px; --r-panel: 6px; --r-btn: 8px; --r-chip: 4px;
 }
 [data-theme='github'] {
-  --bg-deep: #f6f8fa; --surface-2: #f6f8fa; --border: #d1d9e0; --border-strong: #8c959f;
+  --bg-deep: #f6f8fa; --surface-2: #f6f8fa; --border: #d1d9e0; --border-strong: #8b949d;
   --text: #1f2328; --text-body: #2f363d; --muted: #59636e;
   --accent: #8250df; --accent-text: #8250df; --btn-bg: #1f883d; --btn-ink: #ffffff; --saber: #a371f7;
-  --route-plan: #c8d1da; --marker: circle(50%); --r-card: 12px; --r-panel: 6px; --r-btn: 6px; --r-chip: 999px;
+  --route-plan: #c8d1da; --marker: circle(50%); --r-card: 12px; --r-photo: 12px; --r-panel: 6px; --r-btn: 6px; --r-chip: 999px;
 }
 [data-theme='shell'] {
-  --bg-deep: #f4f6f3; --surface-2: #eef2ec; --border: #d7ddd3; --border-strong: #8d9888;
+  --bg-deep: #f4f6f3; --surface-2: #eef2ec; --border: #d7ddd3; --border-strong: #8c9687;
   --text: #111611; --text-body: #263024; --muted: #556052;
   --accent: #2f8a1f; --accent-text: #2b7a1d; --btn-bg: #111611; --btn-ink: #ffffff; --saber: #4eaa25;
-  --route-plan: #c3cbbf; --route-dash: 3px; --route-gap: 3px; --marker: inset(0); --r-card: 6px; --r-panel: 4px; --r-btn: 4px; --r-chip: 2px;
+  --route-plan: #c3cbbf; --route-dash: 3px; --route-gap: 3px; --marker: inset(0); --r-card: 6px; --r-photo: 6px; --r-panel: 4px; --r-btn: 4px; --r-chip: 2px;
 }
 [data-theme='fuse'] {
-  --bg-deep: #faf6f0; --surface-2: #f6efe4; --border: #e6dccd; --border-strong: #a8957a;
+  --bg-deep: #faf6f0; --surface-2: #f6efe4; --border: #e6dccd; --border-strong: #a39176;
   --text: #1d150c; --text-body: #3a2c1b; --muted: #6b5843;
   --accent: #b45309; --accent-text: #a14a08; --btn-bg: #b45309; --btn-ink: #ffffff; --saber: #f59e0b;
-  --route-plan: #d8cab5; --marker: inset(0 round 1px); --r-card: 6px; --r-panel: 4px; --r-btn: 6px; --r-chip: 3px;
+  --route-plan: #d8cab5; --marker: inset(0 round 1px); --r-card: 6px; --r-photo: 6px; --r-panel: 4px; --r-btn: 6px; --r-chip: 3px;
 }
 [data-theme='finance'] {
-  --bg-deep: #f2f8f4; --surface-2: #ecf6ef; --border: #d2e5d8; --border-strong: #86a891;
+  --bg-deep: #f2f8f4; --surface-2: #ecf6ef; --border: #d2e5d8; --border-strong: #7b9b85;
   --text: #0c1a12; --text-body: #1f3428; --muted: #4c6455;
-  --accent: #0f9d58; --accent-text: #0b7a44; --btn-bg: #0f9d58; --btn-ink: #ffffff; --saber: #34d399;
-  --route-plan: #b9d6c3; --marker: polygon(50% 0, 100% 100%, 0 100%); --r-card: 12px; --r-chip: 999px;
+  --accent: #0f9d58; --accent-text: #0b7a44; --btn-bg: #0d874c; --btn-ink: #ffffff; --saber: #34d399;
+  --route-plan: #b9d6c3; --marker: polygon(50% 0, 100% 100%, 0 100%); --r-card: 12px; --r-photo: 12px; --r-chip: 999px;
 }
 [data-theme='pytorch'] {
-  --bg-deep: #fbf4f2; --surface-2: #f9ece8; --border: #eed8d1; --border-strong: #b98f84;
+  --bg-deep: #fbf4f2; --surface-2: #f9ece8; --border: #eed8d1; --border-strong: #b2897f;
   --text: #1f100c; --text-body: #3b211a; --muted: #6e4f46;
-  --accent: #ee4c2c; --accent-text: #c8391d; --btn-bg: #ee4c2c; --btn-ink: #ffffff; --saber: #ff6f4c;
-  --route-plan: #e0c2b9; --marker: circle(50%); --r-card: 14px; --r-chip: 999px;
+  --accent: #ee4c2c; --accent-text: #c6381d; --btn-bg: #d44427; --btn-ink: #ffffff; --saber: #ff6f4c;
+  --route-plan: #e0c2b9; --marker: circle(50%); --r-card: 14px; --r-photo: 14px; --r-chip: 999px;
 }
 [data-theme='nvidia'] {
-  --bg-deep: #f5f8ef; --surface-2: #eef4e3; --border: #dbe5c8; --border-strong: #93a478;
+  --bg-deep: #f5f8ef; --surface-2: #eef4e3; --border: #dbe5c8; --border-strong: #899970;
   --text: #11160a; --text-body: #263016; --muted: #556143;
   --accent: #5e9400; --accent-text: #4a7a00; --btn-bg: #76b900; --btn-ink: #0f1111; --saber: #76b900;
-  --route-plan: #c7d4ae; --marker: inset(0); --r-card: 4px; --r-panel: 2px; --r-btn: 4px; --r-chip: 2px;
+  --route-plan: #c7d4ae; --marker: inset(0); --r-card: 4px; --r-photo: 4px; --r-panel: 2px; --r-btn: 4px; --r-chip: 2px;
 }
 html[data-mode='dark'][data-theme='gameboy'] { --bg: #070806; --surface: #10120d; --surface-2: #191c14; --border: #262b1e; --bg-deep: #050604; }
 html[data-mode='dark'][data-theme='github'] { --bg: #0a0d12; --surface: #0d1117; --surface-2: #161b22; --border: #30363d; --bg-deep: #010409; }
@@ -387,6 +418,16 @@ html[data-mode='dark'][data-theme='devspace'] { --surface: #070c14; --surface-2:
   /* in the dark a shadow is darkness, never a pale glow of the ink */
   --shadow-float: 0 18px 40px -20px rgb(0 0 0 / 0.7);
   --shadow-dialog: 0 24px 50px -24px rgb(0 0 0 / 0.75);
+  /* the states as the dark mode has them, so an error or the ally green reads
+     on a dark island in a light page too; a shadow's ink is darkness here,
+     and a var() in a token takes the value where it is set, so it is set again */
+  --ok: #5cd98a;
+  --warn: #ffd35c;
+  --danger: #ff8a8a;
+  --ally: #8dffad;
+  --shadow-ink: #000;
+  --saber-ink: #0f1111;
+  --btn-shade: #000;
   /* the site's easing, one family: out for anything arriving or settling, smooth
      for a change of state, spring for a bounce, in for anything leaving */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -396,6 +437,10 @@ html[data-mode='dark'][data-theme='devspace'] { --surface: #070c14; --surface-2:
   color: var(--text-body);
   color-scheme: dark;
 }
+/* Bose's light saber is its "bass" black, which the dark scope would make its
+   accent and its buttons on near-black: there, as in Bose's own dark mode,
+   white buttons and the cool grey (a planet's inline accent still wins) */
+html:not([data-mode='dark'])[data-theme='bose'] .dark-scope { --accent: #ffffff; --accent-text: #ffffff; --btn-bg: #ffffff; --btn-ink: #131317; --saber: #b4bec7; }
 
 /* A theme change is one restyle: no colour transitions while it happens */
 .theme-switching *, .theme-switching *::before, .theme-switching *::after { transition: none !important; }
@@ -431,7 +476,7 @@ html[data-mode='dark'][data-theme='devspace'] { --surface: #070c14; --surface-2:
     text-wrap: balance;
   }
   p { text-wrap: pretty; }
-  ::selection { background: var(--saber); color: #0f1111; }
+  ::selection { background: var(--saber); color: var(--saber-ink); }
   :focus { outline: none; }
   :focus-visible {
     outline: 2px solid var(--accent-text);
@@ -518,7 +563,7 @@ html[data-mode='dark'][data-theme='devspace'] { --surface: #070c14; --surface-2:
   }
   .btn:active { transform: translateY(1px) scale(0.98); }
   .btn-primary { background: var(--btn-bg); color: var(--btn-ink); }
-  .btn-primary:hover { background: color-mix(in srgb, var(--btn-bg) 88%, #000); }
+  .btn-primary:hover { background: color-mix(in srgb, var(--btn-bg) 88%, var(--btn-shade)); }
   .btn-ghost { background: var(--surface); border-color: var(--border-strong); color: var(--text); }
   .btn-ghost:hover { background: var(--surface-2); }
   .btn-sm { min-height: 36px; padding: 0 0.9rem; font-size: var(--fs-sm); }
@@ -560,7 +605,7 @@ html[data-mode='dark'][data-theme='devspace'] { --surface: #070c14; --surface-2:
   .card-tint { background: color-mix(in srgb, var(--accent) 6%, var(--surface)); }
   a.card:hover, .card-hover:hover {
     border-color: var(--border-strong);
-    box-shadow: 0 1px 2px rgba(15, 17, 17, 0.06), 0 18px 40px -20px color-mix(in srgb, var(--text) 30%, transparent);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 6%, transparent), 0 18px 40px -20px color-mix(in srgb, var(--shadow-ink) 30%, transparent);
   }
   html[data-mode='dark'] a.card:hover { box-shadow: 0 18px 40px -24px color-mix(in srgb, var(--accent) 35%, transparent); }
 
@@ -746,7 +791,7 @@ html[data-mode='dark'][data-theme='devspace'] { --surface: #070c14; --surface-2:
 .switch { display: inline-flex; flex: none; align-items: center; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-2); }
 .switch > :is(button, [role='tab']) { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-width: 32px; height: 30px; padding: 0 0.6rem; border-radius: 999px; color: var(--muted); font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; transition: background-color var(--t-fast) var(--ease-smooth), color var(--t-fast) var(--ease-smooth), box-shadow var(--t-fast) var(--ease-smooth); }
 .switch > :is(button, [role='tab']):hover { color: var(--text); }
-.switch > :is([aria-pressed='true'], [aria-selected='true']) { background: var(--bg); color: var(--text); box-shadow: 0 1px 2px rgba(15, 17, 17, 0.08), 0 0 0 1px var(--border); }
+.switch > :is([aria-pressed='true'], [aria-selected='true']) { background: var(--bg); color: var(--text); box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 8%, transparent), 0 0 0 1px var(--border); }
 .switch > :is(button, [role='tab']):focus-visible { outline: 2px solid var(--accent-text); outline-offset: 1px; }
 .switch[data-size='sm'] > :is(button, [role='tab']) { height: 28px; gap: 0.3rem; font-size: 0.75rem; }
 .switch[data-size='md'] > :is(button, [role='tab']) { height: 34px; padding: 0 0.85rem; font-size: 0.85rem; }
@@ -791,7 +836,7 @@ html[data-mode='dark'][data-theme='devspace'] { --surface: #070c14; --surface-2:
 .nav-bar {
   background: color-mix(in srgb, var(--bg) 94%, transparent);
   border: 1px solid var(--border);
-  box-shadow: 0 1px 2px rgba(15, 17, 17, 0.04), 0 10px 30px -18px rgba(15, 17, 17, 0.35);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 4%, transparent), 0 10px 30px -18px color-mix(in srgb, var(--shadow-ink) 35%, transparent);
 }
 html[data-mode='dark'] .nav-bar { box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.9); }
 .wordmark {
@@ -955,11 +1000,10 @@ html[data-mode='dark'] .saber-progress .blade { background: #ffffff; box-shadow:
   padding: 10% 12%;
   border: 1px solid var(--border);
   border-radius: calc(var(--r-card) + 6px);
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 17, 17, 0.06), 0 30px 60px -30px color-mix(in srgb, var(--accent) 55%, transparent);
+  background: var(--surface);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 6%, transparent), 0 30px 60px -30px color-mix(in srgb, var(--accent) 55%, transparent);
   animation: logo-in 0.6s var(--ease-smooth) backwards;
 }
-html[data-mode='dark'] .hero-logo-card { background: var(--surface); }
 .chapter-logo-card.is-small { width: clamp(150px, 16vw, 200px); }
 .chapter-logo-card {
   display: flex;
@@ -970,7 +1014,7 @@ html[data-mode='dark'] .hero-logo-card { background: var(--surface); }
   border: 1px solid var(--border);
   border-radius: calc(var(--r-card) + 4px);
   background: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 17, 17, 0.06), 0 24px 48px -28px color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 6%, transparent), 0 24px 48px -28px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 .reveal.chapter-logo-card:not([data-in='true']) { opacity: 0; transform: scale(0.9) translateY(14px); }
 .aws-logo .aws-letters { fill: #252f3e; animation: hero-up 0.6s var(--ease-smooth) 0.15s backwards; }

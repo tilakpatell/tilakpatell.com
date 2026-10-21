@@ -171,7 +171,7 @@ export function CpuStage() {
                 >
                   <span className="text-muted">{hex(ins.addr, 4)}</span>
                   <span className="text-muted">{ins.bytes.map((b) => hex(b)).join(' ')}</span>
-                  <span className={on ? 'text-white' : 'text-body'}>{ins.asm}</span>
+                  <span className={on ? 'text-ink' : 'text-body'}>{ins.asm}</span>
                   <span className="hidden truncate text-muted sm:inline">; {ins.note}</span>
                 </li>
               );
@@ -182,7 +182,7 @@ export function CpuStage() {
               {regs.map(([k, v]) => (
                 <div key={k} className="flex justify-between gap-3">
                   <dt className="text-muted">{k}</dt>
-                  <dd className="text-white tabular">{v}</dd>
+                  <dd className="text-ink tabular">{v}</dd>
                 </div>
               ))}
             </dl>
@@ -191,7 +191,7 @@ export function CpuStage() {
                 <span
                   key={k}
                   className="mono grid h-8 w-8 place-items-center rounded text-sm"
-                  style={{ background: v ? 'var(--accent)' : 'var(--surface-2)', color: v ? '#0f1111' : 'var(--muted)' }}
+                  style={{ background: v ? 'var(--accent)' : 'var(--surface-2)', color: v ? 'var(--btn-ink)' : 'var(--muted)' }}
                 >
                   {k}
                 </span>
@@ -211,10 +211,10 @@ export function CpuStage() {
             <p className="mono text-xs text-muted">{s.halted ? 'HALT: waiting for an interrupt' : s.fast && s.i < 7 ? 'fast-forwarding the loop…' : auto ? 'running' : 'paused: step it yourself'}</p>
             <div className="flex flex-wrap gap-2">
               <button type="button" className="btn btn-sm btn-primary" onClick={stepOnce}>Step</button>
-              <button type="button" className="btn btn-sm border border-[var(--border-strong)] text-white hover:bg-[var(--surface-2)]" onClick={() => setAuto((a) => !a)}>
+              <button type="button" className="btn btn-sm border border-[var(--border-strong)] text-ink hover:bg-[var(--surface-2)]" onClick={() => setAuto((a) => !a)}>
                 {auto ? 'Pause' : 'Run'}
               </button>
-              <button type="button" className="btn btn-sm text-muted hover:text-white" onClick={reset}>Reset</button>
+              <button type="button" className="btn btn-sm text-muted hover:text-ink" onClick={reset}>Reset</button>
             </div>
           </div>
         </div>
@@ -224,6 +224,11 @@ export function CpuStage() {
 }
 
 // ─── PPU: draw a frame one scanline at a time ───────────────────────────────
+// The blank screen is the dark island’s --bg. A canvas can’t read a var(), so
+// it asks for the token’s value (a plain colour in a .dark-scope) and keeps
+// the old dark when there is none to read (a test’s DOM).
+const lcdOff = (el) => (el && getComputedStyle(el).getPropertyValue('--bg').trim()) || '#0f141a';
+
 export function PpuStage() {
   const [ref, inView] = useInView({ rootMargin: '0px' });
   const reduced = useReducedMotion();
@@ -243,7 +248,7 @@ export function PpuStage() {
     source.current = src;
     const ctx = canvasRef.current?.getContext('2d');
     if (ctx) {
-      ctx.fillStyle = '#0f141a';
+      ctx.fillStyle = lcdOff(canvasRef.current);
       ctx.fillRect(0, 0, W, H);
       if (reduced) ctx.drawImage(src, 0, 0);
     }
@@ -262,7 +267,7 @@ export function PpuStage() {
       if (y < H) ctx.drawImage(src, 0, y, W, 1, 0, y, W, 1);
       ly.current = (y + 1) % 154;
       if (ly.current === 0) {
-        ctx.fillStyle = '#0f141a';
+        ctx.fillStyle = lcdOff(canvasRef.current);
         ctx.fillRect(0, 0, W, H);
       }
       changed = true;

@@ -65,4 +65,8 @@ describe('the surface made from the galaxy', () => {
     window.localStorage.setItem('tp-galaxy-hero', 'nonsense');
     expect(surfaceProps('hoth', { ship: 'falcon' }).hero).toMatchObject({ id: 'han', gun: 'blaster' });
   });
+  it('dresses them in the crew’s own style, the page’s (lib/crew/crewStyle.js’s tp-crew)', () => {
+    window.localStorage.setItem('tp-galaxy-hero', JSON.stringify({ id: 'han', gun: 'ee3' }));
+    expect(surfaceProps('hoth', { ship: 'falcon', crew: { han: { gun: 'rifle' } } }).hero).toMatchObject({ id: 'han', gun: 'rifle' });
+  });
 });

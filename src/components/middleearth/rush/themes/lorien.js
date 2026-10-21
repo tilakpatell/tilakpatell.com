@@ -3,7 +3,7 @@
 // forest floor far below (the '~' tiles here are the drop, not water).
 
 import * as THREE from 'three';
-import { hot } from '../../../../lib/stage3d';
+import { hot } from '../../../../lib/three/stage3dNodes';
 import { B, cyl } from '../../shire/props';
 import { V, basin, fountain, lampsAt, motes } from './common';
 

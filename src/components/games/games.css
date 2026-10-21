@@ -1,5 +1,7 @@
 /* ─── The 3D games' shared frame: the hardware acceleration gate, HUD bits ─── */
 
+/* (the gate is a dark island in any mode, ./GpuGate.jsx gives it .dark-scope:
+   its ink, its ground and its buttons are the dark tokens) */
 .gate {
   position: relative;
   display: grid;
@@ -9,39 +11,39 @@
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 12px;
-  color: #e9edf3;
+  color: var(--text-body);
   background:
-    radial-gradient(70% 60% at 50% 0%, rgba(120, 140, 170, 0.18), transparent 70%),
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 28px 28px,
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 28px 28px,
-    #07090e;
+    radial-gradient(70% 60% at 50% 0%, color-mix(in srgb, var(--muted) 18%, transparent), transparent 70%),
+    linear-gradient(color-mix(in srgb, var(--text) 3.5%, transparent) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(90deg, color-mix(in srgb, var(--text) 3.5%, transparent) 1px, transparent 1px) 0 0 / 28px 28px,
+    var(--bg-deep);
 }
 /* (max-width: a game's own aspect ratio and the min-height together would
    otherwise make the box wider than a phone) */
 @media (max-width: 639px) { .gate { aspect-ratio: auto; min-height: 420px; max-width: 100%; } }
 .gate-card { width: min(100%, 40rem); }
-.gate-icon { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: rgba(255, 255, 255, 0.07); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); font-size: 22px; color: var(--saber); }
-.gate-title { margin-top: 1rem; font-size: clamp(1.25rem, 1rem + 1.1vw, 1.75rem); font-weight: 650; line-height: 1.2; letter-spacing: -0.01em; color: #fff; text-wrap: balance; }
-.gate-lede { margin-top: 0.6rem; max-width: 60ch; font-size: 0.95rem; line-height: 1.6; color: rgba(233, 237, 243, 0.82); }
-.gate-how { margin-top: 1rem; font: 600 0.72rem/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: rgba(233, 237, 243, 0.6); }
-.gate-list { margin-top: 0.5rem; padding-left: 1.25rem; list-style: decimal; font-size: 0.92rem; line-height: 1.55; color: #f3f5f8; }
+.gate-icon { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--border); font-size: 22px; color: var(--saber); }
+.gate-title { margin-top: 1rem; font-size: clamp(1.25rem, 1rem + 1.1vw, 1.75rem); font-weight: 650; line-height: 1.2; letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
+.gate-lede { margin-top: 0.6rem; max-width: 60ch; font-size: 0.95rem; line-height: 1.6; color: var(--text-body); }
+.gate-how { margin-top: 1rem; font: 600 0.72rem/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.gate-list { margin-top: 0.5rem; padding-left: 1.25rem; list-style: decimal; font-size: 0.92rem; line-height: 1.55; color: var(--text); }
 .gate-list li + li { margin-top: 0.25rem; }
 .gate-list li::marker { color: var(--saber); font-weight: 600; }
-.gate-addr { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; margin-top: 0.8rem; font-size: 0.85rem; color: rgba(233, 237, 243, 0.75); }
-.gate-addr code { padding: 0.15rem 0.4rem; border-radius: 6px; background: rgba(255, 255, 255, 0.08); font: 500 0.8rem/1.4 var(--font-mono); color: #fff; }
-.gate-copy { display: inline-flex; align-items: center; gap: 0.3rem; min-height: 32px; padding: 0 0.6rem; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.22); font: 500 0.75rem/1 var(--font-mono); color: #fff; }
-.gate-copy:hover { background: rgba(255, 255, 255, 0.08); }
+.gate-addr { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; margin-top: 0.8rem; font-size: 0.85rem; color: var(--muted); }
+.gate-addr code { padding: 0.15rem 0.4rem; border-radius: 6px; background: var(--surface-2); font: 500 0.8rem/1.4 var(--font-mono); color: var(--text); }
+.gate-copy { display: inline-flex; align-items: center; gap: 0.3rem; min-height: 32px; padding: 0 0.6rem; border-radius: 999px; border: 1px solid var(--border-strong); font: 500 0.75rem/1 var(--font-mono); color: var(--text); }
+.gate-copy:hover { background: var(--surface-2); }
 .gate-copy:focus-visible, .gate-more summary:focus-visible { outline: 2px solid var(--saber); outline-offset: 2px; }
-.gate-more { margin-top: 0.9rem; font-size: 0.85rem; color: rgba(233, 237, 243, 0.75); }
-.gate-more summary { cursor: pointer; width: max-content; font-weight: 600; color: #fff; }
+.gate-more { margin-top: 0.9rem; font-size: 0.85rem; color: var(--muted); }
+.gate-more summary { cursor: pointer; width: max-content; font-weight: 600; color: var(--text); }
 .gate-other { margin-top: 0.4rem; }
 .gate-other .gate-how { margin-top: 0.6rem; }
 .gate-other p:last-child { margin-top: 0.2rem; line-height: 1.5; }
 .gate-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.25rem; }
 .gate-actions .btn { display: inline-flex; align-items: center; gap: 0.4rem; }
-.gate-actions .btn-ghost, .g3 .btn-ghost { background: rgba(255, 255, 255, 0.06); color: #fff; border-color: rgba(255, 255, 255, 0.32); }
-.gate-actions .btn-ghost:hover, .g3 .btn-ghost:hover { background: rgba(255, 255, 255, 0.14); }
-.gate-note { min-height: 1.4em; margin-top: 0.6rem; font-size: 0.85rem; color: #ffd28c; }
+.g3 .btn-ghost { background: rgba(255, 255, 255, 0.06); color: #fff; border-color: rgba(255, 255, 255, 0.32); }
+.g3 .btn-ghost:hover { background: rgba(255, 255, 255, 0.14); }
+.gate-note { min-height: 1.4em; margin-top: 0.6rem; font-size: 0.85rem; color: var(--warn); }
 
 /* ─── A game screen: the WebGL canvas with the HUD laid over it ─── */
 .g3 { position: relative; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: #05060a; outline: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }

@@ -76,11 +76,14 @@ export async function buildVat(kit) {
     }
     acidMat.color.setHex(age < 1 ? 0x9aff6a : 0x6aff3a);
   });
-  area.actions = {
-    ...area.actions,
+  // (its splash, when Morty jumps in: the stage's freeze says when)
+  S.freeze({
     splash: () => {
       splashAt = now;
     },
+  });
+  area.actions = {
+    ...area.actions,
     calm: () => {
       splashAt = null;
       S.calm();

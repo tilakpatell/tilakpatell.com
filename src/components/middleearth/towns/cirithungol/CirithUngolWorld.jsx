@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAchievements } from '../../../Achievements';
 import { audioContext } from '../../../../lib/audio';
 import { use3D } from '../../../../lib/gpu';
-import { local, useFrameLoop, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { local, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { useTick } from '../../tick';
+import { engine } from '../../module';
 import { sayVoiced, stopVoiced } from '../../../../lib/voiced';
 import { readPad, typing } from '../../../games/pad';
-import { Convo, QuestList, Stick, Travellers } from '../TownHud';
+import { Convo, QuestList, Stick, TownMenu, Travellers } from '../TownHud';
 import { useTravellers } from '../useTravellers';
 import { SideList } from '../SideList';
 import { readSide, recordSide } from '../side';
@@ -139,7 +141,9 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
+    // (its code first, then the world: made in the order the code came, as before)
     import('./scene')
+      .then((m) => engine().then(() => m))
       .then(({ createCirithUngolWorld }) => {
         if (dead || !canvas.current) return null;
         return createCirithUngolWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
@@ -445,7 +449,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
   }, [box, live, talkOnward, doAct, doStab, doDodge, doBrush, leaveCrumbs, startCrumbs]);
 
   // ── every frame ──
-  useFrameLoop((ms) => {
+  useTick((ms) => {
     const a = api.current;
     if (!a || a.lost) return;
     const s = sim.current;
@@ -693,7 +697,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
       setHud({ zone: s.zone, mode: s.mode, near: s.near, moved: s.moved, talking: s.talking, line: s.talk?.at ?? null, morgul: m ? { pull: m.pull, pausing: m.pausing, gaze: m.gaze } : null, climb: c ? { s: c.s, stamina: c.stamina, spent: c.spent, ledge: onLedge(c.s), crumbling: crumbling(c.s) } : null, phial: ph ? { charge: ph.charge, on: ph.on } : null, hunted: ['alert', 'chase'].includes(s.shelob?.list?.[0]?.mode), duel: du ? { phase: du.phase, wounds: du.wounds, hearts: du.hearts } : null, spotted: Boolean(s.orcs?.list.some((w) => w.mode === 'alert' || w.mode === 'chase')), crumbs: cr ? { state: cr.state, left: cr.left, time: crumbsLeft(cr), stirred: cr.stirred, say: s.said } : null });
     }
     if (++s.frame % 120 === 0 && s.mode === 'walk' && (s.zone === 'lair' || s.zone === 'tower')) local.set(AT, { zone: s.zone, x: s.h.x, z: s.h.z, face: s.h.face });
-  }, live);
+  }, live, { canvas });
 
   // look round by dragging; the stick on touch
   const drag = useRef(null);
@@ -765,6 +769,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
             </p>
           </div>
           <div className="shire-side">
+            <TownMenu chapter="cirith-ungol" />
             <button type="button" className="shire-chip" onClick={() => setList((v) => !v)} aria-expanded={list}>
               <b>{prog.done.length}</b> of {QUESTS.length} done {!touch && <kbd>M</kbd>}
             </button>

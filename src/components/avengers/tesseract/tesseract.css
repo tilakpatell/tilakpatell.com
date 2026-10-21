@@ -48,23 +48,12 @@
 .tr-leg-name span { color: rgba(255, 255, 255, 0.6); font-variant-numeric: tabular-nums; }
 @media (max-height: 560px), (max-width: 760px) { .tr-menu .hq-keys { display: none; } .tr-menu .hq-overlay-title { font-size: 1.7rem; } .tr-menu .hq-overlay-text { font-size: 0.8rem; } }
 
-/* the result of a leg: a card low on the screen, so the scene still shows */
-.tr-card { position: absolute; z-index: 5; left: 50%; bottom: 12px; display: grid; justify-items: center; gap: 0.15rem; width: min(calc(100% - 24px), 440px); padding: 0.75rem 1rem 0.85rem; border: 1px solid rgba(108, 200, 255, 0.35); border-radius: 16px; translate: -50% 0; background: rgba(5, 9, 15, 0.78); color: #fff; text-align: center; backdrop-filter: blur(8px); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45); animation: tr-rise 0.45s var(--ease-smooth) both; }
-@keyframes tr-rise { from { opacity: 0; translate: -50% 16px; } }
-.tr-card[data-won] { border-color: rgba(108, 200, 255, 0.8); box-shadow: 0 0 60px rgba(61, 139, 255, 0.35), 0 10px 40px rgba(0, 0, 0, 0.45); }
-.tr-card-kicker { font: 700 0.68rem/1.2 var(--font-sans); font-stretch: 125%; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tr-blue); }
-.tr-card-title { font: 800 clamp(1.15rem, 0.95rem + 1vw, 1.55rem)/1.15 var(--font-sans); font-stretch: 112%; }
-.tr-card-score { margin-left: 0.3rem; color: var(--tr-blue); font-variant-numeric: tabular-nums; }
-.tr-card-best { font-size: 0.72rem; color: rgba(255, 255, 255, 0.65); }
-.tr-card-text { max-width: 48ch; font-size: 0.82rem; line-height: 1.45; color: rgba(255, 255, 255, 0.82); text-wrap: pretty; }
-.tr-score { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; width: 100%; margin: 0.35rem 0 0.1rem; }
+.tr-score { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; width: min(100%, 26rem); margin: 0.35rem 0 0.1rem; }
 .tr-score div { display: grid; gap: 1px; padding: 0.25rem 0.2rem; border-radius: 8px; background: rgba(255, 255, 255, 0.06); }
 .tr-score dt { font-size: 0.62rem; font-weight: 700; font-stretch: 125%; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.6); }
 .tr-score dd { margin: 0; font-size: 0.95rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-.tr-card-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 0.45rem; }
-.tr-card .hq-stone { margin-top: 0.35rem; padding: 0.3rem 0.7rem; font-size: 0.76rem; }
-.tr-card .btn-ghost, .tr-overlay .btn-ghost { background: rgba(255, 255, 255, 0.06); color: #fff; border-color: rgba(255, 255, 255, 0.4); }
-.tr-card .btn-ghost:hover, .tr-overlay .btn-ghost:hover { background: rgba(255, 255, 255, 0.14); }
+.tr-overlay .btn-ghost { background: rgba(255, 255, 255, 0.06); color: #fff; border-color: rgba(255, 255, 255, 0.4); }
+.tr-overlay .btn-ghost:hover { background: rgba(255, 255, 255, 0.14); }
 
 @media (max-width: 760px) {
   .tr-leg { top: 10px; left: 12px; max-width: 56%; }
@@ -73,10 +62,8 @@
   .tr-fuel-bar { width: 84px; }
   .tr-fuel-label { display: none; }
     .tr-message { width: 88%; font-size: 0.76rem; }
-  .tr-card { padding: 0.8rem 0.9rem 0.9rem; }
   .tr-score dd { font-size: 0.85rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .tr-fuel[data-low] .tr-fuel-n, .tr-fuel[data-low] .tr-fuel-label { animation: none; }
-  .tr-card { animation: none; }
 }

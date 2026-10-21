@@ -11,8 +11,8 @@
 .office3d-pin:hover { scale: 1.12; }
 .office3d-pin[aria-pressed='true'] { scale: 1.18; }
 .office3d-controls { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 6px; }
-.office3d-controls button { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid rgba(0, 0, 0, 0.12); border-radius: 999px; background: rgba(255, 255, 255, 0.88); color: #1d2129; font-size: 1.15rem; box-shadow: 0 6px 14px -8px rgba(0, 0, 0, 0.4); }
-.office3d-controls button:hover { background: #fff; }
+.office3d-controls button { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 999px; background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--text); font-size: 1.15rem; box-shadow: 0 6px 14px -8px color-mix(in srgb, var(--shadow-ink) 40%, transparent); } /* (its own lift, not the float’s: that one’s spread is wider than this little button) */
+.office3d-controls button:hover { background: var(--surface); }
 .office3d-controls button:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .office3d-note { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; margin-top: 0.75rem; font-size: 0.85rem; color: var(--muted); }
 @media (max-width: 639px) { .office3d { aspect-ratio: 4 / 3; } .office3d-pin { width: 22px; height: 22px; font-size: 0.6rem; } .office3d-controls button { width: 40px; height: 40px; } }
@@ -47,11 +47,11 @@
 .toss-power span { display: block; height: 100%; background: linear-gradient(90deg, #6fc36b, #f2c230 60%, #e8453c); transform-origin: left; }
 .toss-hint { position: absolute; left: 50%; bottom: 14%; translate: -50% 0; margin: 0; padding: 0.3rem 0.7rem; border-radius: 999px; background: rgba(20, 22, 26, 0.62); color: #fff; font-size: 0.85rem; pointer-events: none; animation: toss-hint 1.6s ease-in-out infinite alternate; }
 @keyframes toss-hint { to { transform: translateY(-6px); } }
-.toss-card { position: absolute; left: 50%; top: 50%; translate: -50% -50%; display: grid; justify-items: center; gap: 0.5rem; width: min(88%, 26rem); padding: clamp(1rem, 0.6rem + 2vw, 1.75rem); border-radius: 16px; background: rgba(250, 249, 245, 0.95); color: #1d2129; text-align: center; box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.55); }
-.toss-card-kicker { margin: 0; font: 700 0.75rem/1.2 var(--font-sans); letter-spacing: 0.12em; text-transform: uppercase; color: #5b6170; }
+.toss-card { position: absolute; left: 50%; top: 50%; translate: -50% -50%; display: grid; justify-items: center; gap: 0.5rem; width: min(88%, 26rem); padding: clamp(1rem, 0.6rem + 2vw, 1.75rem); border-radius: 16px; background: color-mix(in srgb, var(--surface) 95%, transparent); color: var(--text); text-align: center; box-shadow: var(--shadow-dialog); }
+.toss-card-kicker { margin: 0; font: 700 0.75rem/1.2 var(--font-sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .toss-card-title { margin: 0; font: 800 clamp(1.6rem, 1.2rem + 2vw, 2.4rem)/1.05 'Courier Prime', var(--font-mono); }
-.toss-card-body { margin: 0 0 0.4rem; font-size: 0.95rem; line-height: 1.45; color: #3b404a; }
-.toss-card-best { margin: 0; font-size: 0.85rem; color: #5b6170; }
+.toss-card-body { margin: 0 0 0.4rem; font-size: 0.95rem; line-height: 1.45; color: var(--text-body); }
+.toss-card-best { margin: 0; font-size: 0.85rem; color: var(--muted); }
 .toss-card .btn-primary { color: var(--btn-ink); }
 .toss-medal { width: 64px; height: 64px; border-radius: 50%; box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18), 0 6px 16px -6px rgba(0, 0, 0, 0.45); }
 .toss-medal-gold { background: radial-gradient(circle at 35% 30%, #fff6cf, #f2c94c 45%, #b8862b); }
@@ -69,7 +69,7 @@
 .fc-pips li[data-done] { background: var(--border-strong); }
 .fc-pips li[data-now] { background: var(--accent); }
 .fc-answer { position: relative; }
-.fc-stamp { position: absolute; right: 0; top: -0.4rem; padding: 0.15rem 0.6rem; border: 3px solid #b3261e; border-radius: 6px; color: #b3261e; font: 700 1.05rem/1.2 'Courier Prime', var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; rotate: -8deg; opacity: 0.85; animation: fc-stamp 0.32s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
-.fc-stamp[data-right] { border-color: #1f6b3a; color: #1f6b3a; }
+.fc-stamp { position: absolute; right: 0; top: -0.4rem; padding: 0.15rem 0.6rem; border: 3px solid var(--danger); border-radius: 6px; color: var(--danger); font: 700 1.05rem/1.2 'Courier Prime', var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; rotate: -8deg; opacity: 0.85; animation: fc-stamp 0.32s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+.fc-stamp[data-right] { border-color: var(--ok); color: var(--ok); }
 @keyframes fc-stamp { from { transform: scale(1.8); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .fc-stamp { animation: none; } }

@@ -1,0 +1,217 @@
+// The holotable's systems and the war's marks on them (./holoScene.js draws them): each system a small lit globe
+// sitting on the plane (shaded by the scene's two lights, so it reads round and not as a flat disc; the map is seen
+// straight down, so a height over the plane, and a pin to it, would only shift it off its place), a ring round it in
+// its holder's colour; a contested one's ring pulsing in the colour of the side pushing there; the one picked
+// ringed in white, broken and turning, as Helldivers 2 rings a planet; where you are, a white pulse; and the war's
+// attacks and fronts (warMap.js opsOf) as arcs over the plane, a light running along each to where it's going.
+//
+//   createMarks({ small }) → { group, set(view), fit(perPx), animate(t), dispose }
+//   fit(perPx) the grid squares a pixel covers where the camera looks: zoomed in, a globe and its rings are drawn no
+//     bigger than a flat map's dot (SHOWN), so a name beside one starts clear of it; further off, their own size
+//   set({ war, ops, pick, current, lit, mine, only }) the war's table (with byId), its ops, the system picked, where you
+//     are, the systems lit by the era or the film (a Set, or null for all), the side you're sworn to and the systems drawn
+//     at all (a Set: the open sector's, none on the whole galaxy; null for all); where you are pulses whatever's drawn
+
+import * as THREE from 'three';
+import { SIDES } from '../sides';
+import { CORE, SYSTEMS, systemById } from '../systems';
+
+const BEAD = 0.12;
+const SMALL_BEAD = 0.07; // (a charted world's)
+const SHOWN = 5.5; // (the most a globe's radius is drawn at, px: its holder's ring then just inside where its name starts)
+const GLOW = 1.2; // (a bead's colour, before the scene's light: its lit side a little past white, so the bloom gives it a halo)
+
+// (where a system's globe is: on the plane, its middle a globe's height over it)
+export const worldOf = (s) => [s.pos[0] - CORE[0], BEAD, s.pos[1] - CORE[1]];
+
+const ringGeo = (inner, outer, segs = 48) => new THREE.RingGeometry(inner, outer, segs).rotateX(-Math.PI / 2);
+
+export function createMarks({ small = false } = {}) {
+  const group = new THREE.Group();
+  const made = [];
+  const keep = (...xs) => (made.push(...xs), xs[0]);
+  const n = SYSTEMS.length;
+
+  // the beads
+  const beadGeo = keep(new THREE.SphereGeometry(1, small ? 16 : 24, small ? 12 : 16));
+  const beadMat = keep(new THREE.MeshLambertMaterial({ color: 0xffffff }));
+  const beads = new THREE.InstancedMesh(beadGeo, beadMat, n);
+  const m = new THREE.Matrix4();
+  SYSTEMS.forEach((s, i) => {
+    const [x, y, z] = worldOf(s);
+    const r = s.charted ? SMALL_BEAD : BEAD;
+    beads.setMatrixAt(i, m.makeScale(r, r, r).setPosition(x, y, z));
+    beads.setColorAt(i, new THREE.Color(s.accent));
+  });
+  beads.renderOrder = 6;
+  group.add(beads);
+
+  // the rings on the plane: one a system, its holder's (or none)
+  const holdGeo = keep(ringGeo(0.17, 0.215));
+  const holdMats = new Map(); // colour → material
+  const holdMat = (hex, opacity) => {
+    const key = `${hex}:${opacity}`;
+    if (!holdMats.has(key)) holdMats.set(key, keep(new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(1.4), transparent: true, opacity, depthWrite: false, toneMapped: false })));
+    return holdMats.get(key);
+  };
+  const holds = SYSTEMS.map((s) => {
+    const ring = new THREE.Mesh(holdGeo, holdMat('#7fd6ff', 0));
+    const [x, , z] = worldOf(s);
+    ring.position.set(x, 0.006, z);
+    ring.visible = false;
+    group.add(ring);
+    return ring;
+  });
+
+  // a contested system's pulse, the pick's broken ring, where you are
+  const pulseGeo = keep(ringGeo(0.24, 0.3));
+  const pulses = SYSTEMS.map((s) => {
+    const mesh = new THREE.Mesh(pulseGeo, keep(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, toneMapped: false })));
+    const [x, , z] = worldOf(s);
+    mesh.position.set(x, 0.008, z);
+    mesh.visible = false;
+    group.add(mesh);
+    return mesh;
+  });
+  const pickRing = new THREE.Group();
+  const arcMat = keep(new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 1.6, 1.6), transparent: true, opacity: 0.95, depthWrite: false, toneMapped: false, side: THREE.DoubleSide }));
+  for (let q = 0; q < 4; q++) {
+    const g = keep(new THREE.RingGeometry(0.34, 0.39, 16, 1, (q * Math.PI) / 2 + 0.18, Math.PI / 2 - 0.36).rotateX(-Math.PI / 2));
+    pickRing.add(new THREE.Mesh(g, arcMat));
+  }
+  pickRing.visible = false;
+  group.add(pickRing);
+  const youGeo = keep(ringGeo(0.3, 0.33, 40));
+  const youMat = keep(new THREE.MeshBasicMaterial({ color: new THREE.Color(1.4, 1.4, 1.4), transparent: true, opacity: 0.8, depthWrite: false, toneMapped: false }));
+  const you = new THREE.Mesh(youGeo, youMat);
+  you.visible = false;
+  group.add(you);
+
+  // the war's arcs
+  const arcs = new THREE.Group();
+  group.add(arcs);
+  const ARC_VERT = /* glsl */ `
+attribute float aT;
+varying float vT;
+void main() {
+  vT = aT;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`;
+  const ARC_FRAG = /* glsl */ `
+uniform vec3 uColour;
+uniform float uTime;
+uniform float uProgress;
+varying float vT;
+void main() {
+  // (dashes running from the attacker toward its target, brighter toward the end; a light where it's got to)
+  float dash = step(0.45, fract(vT * 14.0 - uTime * 1.2));
+  float head = exp(-pow((vT - uProgress) * 22.0, 2.0)) * 2.4;
+  float a = (0.25 + 0.55 * dash) * smoothstep(0.0, 0.08, vT) + head;
+  gl_FragColor = vec4(uColour * (1.0 + head), min(1.0, a));
+}`;
+  let arcItems = [];
+  const clearArcs = () => {
+    for (const a of arcItems) {
+      a.geo.dispose();
+      a.mat.dispose();
+    }
+    arcs.clear();
+    arcItems = [];
+  };
+
+  const beadColour = new THREE.Color();
+  const radius = new Float32Array(n); // (each globe's own, 0 for one not drawn)
+  let k = 1; // (the share of their own size the marks are drawn at: fit's)
+  const place = () => {
+    SYSTEMS.forEach((s, i) => {
+      const [x, y, z] = worldOf(s);
+      const r = radius[i] * k;
+      beads.setMatrixAt(i, m.makeScale(r, r, r).setPosition(x, y, z));
+    });
+    beads.instanceMatrix.needsUpdate = true;
+    for (const ring of [...holds, pickRing]) ring.scale.setScalar(k);
+  };
+  return {
+    group,
+    set({ war, ops = [], pick = null, current = null, lit = null, mine = null, only = null }) {
+      const byId = war?.byId ?? {};
+      const shown = (id) => !only || only.has(id);
+      SYSTEMS.forEach((s, i) => {
+        const row = byId[s.id];
+        const dim = lit && !lit.has(s.id);
+        const show = shown(s.id);
+        // (one not drawn: its bead shrunk to nothing)
+        radius[i] = show ? (s.charted ? SMALL_BEAD : BEAD) : 0;
+        beadColour.set(row ? SIDES[row.owner].colour : s.accent).multiplyScalar(dim ? 0.35 : GLOW);
+        if (!row && !dim) beadColour.lerp(new THREE.Color(1, 1, 1), 0.25);
+        beads.setColorAt(i, beadColour);
+        const ring = holds[i];
+        ring.visible = show && Boolean(row) && !dim;
+        if (row) ring.material = holdMat(SIDES[row.owner].colour, row.owner === mine ? 0.55 : 0.85);
+        const p = pulses[i];
+        const by = row?.attack?.by ?? (row?.front || row?.battle ? (ops.find((o) => o.to === s.id)?.by ?? null) : null);
+        p.visible = show && Boolean(row && (row.attack || row.front || row.battle)) && !dim;
+        p.userData.fast = Boolean(row?.attack || row?.battle?.fighting);
+        if (p.visible) p.material.color.set(by ? SIDES[by].colour : '#ffffff').multiplyScalar(1.6);
+      });
+      beads.instanceColor.needsUpdate = true;
+      place();
+      const picked = pick ? systemById(pick) : null;
+      pickRing.visible = Boolean(picked) && shown(picked.id);
+      if (picked) pickRing.position.set(...worldOf(picked).map((v, k) => (k === 1 ? 0.01 : v)));
+      const here = current ? systemById(current) : null;
+      you.visible = Boolean(here);
+      if (here) you.position.set(...worldOf(here).map((v, k) => (k === 1 ? 0.01 : v)));
+      // the arcs, made again with the war
+      clearArcs();
+      for (const op of ops) {
+        const a = systemById(op.from);
+        const b = systemById(op.to);
+        if (!a || !b || !(shown(a.id) || shown(b.id))) continue;
+        const pa = new THREE.Vector3(...worldOf(a));
+        const pb = new THREE.Vector3(...worldOf(b));
+        const lift = 0.35 + pa.distanceTo(pb) * 0.22;
+        const mid = pa.clone().add(pb).multiplyScalar(0.5).add(new THREE.Vector3(0, lift, 0));
+        const curve = new THREE.QuadraticBezierCurve3(pa, mid, pb);
+        const pts = curve.getPoints(48);
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        geo.setAttribute('aT', new THREE.BufferAttribute(new Float32Array(pts.map((_, k) => k / (pts.length - 1))), 1));
+        const mat = new THREE.ShaderMaterial({
+          vertexShader: ARC_VERT,
+          fragmentShader: ARC_FRAG,
+          uniforms: { uColour: { value: new THREE.Color(op.colour).multiplyScalar(1.5) }, uTime: { value: 0 }, uProgress: { value: 0.2 + 0.75 * (op.progress ?? 0) } },
+          transparent: true,
+          depthWrite: false,
+          toneMapped: false,
+        });
+        const line = new THREE.Line(geo, mat);
+        line.renderOrder = 5;
+        arcs.add(line);
+        arcItems.push({ geo, mat });
+      }
+    },
+    fit(perPx) {
+      const next = Math.min(1, (SHOWN * perPx) / BEAD);
+      if (Math.abs(next - k) < 0.01 * k) return;
+      k = next;
+      place();
+    },
+    animate(t) {
+      for (const p of pulses) {
+        if (!p.visible) continue;
+        const q = (t * (p.userData.fast ? 1.4 : 0.8)) % 1;
+        p.scale.setScalar(k * (1 + q * 0.9));
+        p.material.opacity = 0.9 * (1 - q);
+      }
+      pickRing.rotation.y = t * 0.6;
+      const yk = (t * 0.7) % 1;
+      you.scale.setScalar(k * (1 + yk * 0.6));
+      youMat.opacity = 0.85 * (1 - yk);
+      for (const a of arcItems) a.mat.uniforms.uTime.value = t;
+    },
+    dispose() {
+      clearArcs();
+      for (const x of made) x.dispose?.();
+    },
+  };
+}

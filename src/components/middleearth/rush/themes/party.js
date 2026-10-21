@@ -6,7 +6,7 @@
 // Hill, and Gandalf's fireworks going up over it all.
 
 import * as THREE from 'three';
-import { hot } from '../../../../lib/stage3d';
+import { hot } from '../../../../lib/three/stage3dNodes';
 import { B, ball, cyl } from '../../shire/props';
 import { dotTexture } from '../../towns/bake';
 import { V, lampsAt, sign, skyBehind } from './common';

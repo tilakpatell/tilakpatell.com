@@ -5,7 +5,8 @@
 /* Sitar: a teak neck, arched brass frets, the gourd and its bridge */
 .sitar-visual { height: 200px; background: radial-gradient(120% 90% at 30% 0%, #2a1a10, #120b06); }
 .sitar-svg { display: block; width: 100%; height: 100%; cursor: pointer; touch-action: none; outline: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-.sitar-svg:focus-visible { outline: 2px solid #ffd27a; outline-offset: -3px; }
+/* the sitar’s svg is a .dark-scope (MusicCard.jsx), so its ring is the saber as the teak reads it */
+.sitar-svg:focus-visible { outline: 2px solid var(--accent-text); outline-offset: -3px; }
 .sitar-slot { fill: transparent; transition: fill 0.2s ease; }
 .sitar-slot:hover { fill: rgba(255, 210, 122, 0.08); }
 .sitar-slot[data-lit] { fill: rgba(255, 210, 122, 0.16); }

@@ -1,6 +1,7 @@
-// The ink line round the cast, and a rim of light on them: the show's look
-// where there's no ink pass after the scene (the universe map, the flight
-// down the Rick and Morty page).
+// The ink line round the cast, and a rim of light on them: the show's one
+// line, round its figures (the Rick and Morty worlds' cast, the universe
+// map, the flight down the Rick and Morty page); nothing draws a line over
+// the whole picture.
 //
 // The line is an inverted hull: each mesh's back faces drawn again in ink,
 // pushed out along its normals. A Meshy model is split at every seam of its
@@ -78,12 +79,15 @@ export function smoothNormals(geometry) {
 // faces drawn flat, pushed out along `inkNormal` once posed, in view space
 // (so `width` is in the scene's units whatever scale the model or its
 // skeleton has). None above `clipY`, in the meshes' own units (the
-// cruiser's glass). Returns the material, for the caller to dispose.
-export function inkHull(root, width, { clipY = null, color = INK } = {}) {
+// cruiser's glass), and none nearer the eye than `near`, in the scene's
+// units (a camera that passes through a figure would otherwise see the
+// hull's back faces all round it, a screen of ink). Returns the material,
+// for the caller to dispose.
+export function inkHull(root, width, { clipY = null, color = INK, near = 0 } = {}) {
   const mat = new THREE.MeshBasicMaterial({ color, side: THREE.BackSide });
   mat.onBeforeCompile = (s) => {
     s.vertexShader = s.vertexShader
-      .replace('void main() {', 'attribute vec3 inkNormal;\nvarying float vInkY;\nvoid main() {')
+      .replace('void main() {', 'attribute vec3 inkNormal;\nvarying float vInkY;\nvarying float vInkZ;\nvoid main() {')
       // (a skinned mesh bends its normals with its bones: the ink's with them)
       .replace('#include <beginnormal_vertex>', 'vec3 objectNormal = inkNormal;\n#ifdef USE_TANGENT\nvec3 objectTangent = vec3( tangent.xyz );\n#endif')
       .replace(
@@ -93,16 +97,22 @@ export function inkHull(root, width, { clipY = null, color = INK } = {}) {
           vInkY = position.y;
           #ifdef USE_SKINNING
             vec3 inkN = normalize(transformedNormal);
+            // (three turns a back side's normal round: turned back, or the
+            // line would sink into the figure, out of sight)
+            #ifdef FLIP_SIDED
+              inkN = -inkN;
+            #endif
           #else
             vec3 inkN = normalize(normalMatrix * inkNormal);
           #endif
           mvPosition.xyz += inkN * ${width.toFixed(4)};
+          vInkZ = -mvPosition.z;
           gl_Position = projectionMatrix * mvPosition;
         }`,
       );
-    s.fragmentShader = s.fragmentShader.replace('void main() {', `varying float vInkY;\nvoid main() {\n${clipY == null ? '' : `if (vInkY > ${clipY.toFixed(5)}) discard;`}`);
+    s.fragmentShader = s.fragmentShader.replace('void main() {', `varying float vInkY;\nvarying float vInkZ;\nvoid main() {\n${near > 0 ? `if (vInkZ < ${near.toFixed(2)}) discard;` : ''}\n${clipY == null ? '' : `if (vInkY > ${clipY.toFixed(5)}) discard;`}`);
   };
-  mat.customProgramCacheKey = () => `ink-${width.toFixed(4)}-${clipY}`;
+  mat.customProgramCacheKey = () => `ink-${width.toFixed(4)}-${clipY}${near > 0 ? `-near-${near.toFixed(2)}` : ''}`;
   const meshes = [];
   root.traverse((o) => {
     if (o.isMesh && !o.userData.ink) meshes.push(o);

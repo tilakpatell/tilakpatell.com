@@ -50,15 +50,18 @@ const pageHelpers = () => {
   };
 };
 
-// a galaxy at Tatooine, flown in an X-wing, the map open
-export const open = async (viewport) => {
+// a galaxy at Tatooine, flown in an X-wing, the map open: the flat one, unless `view` is '3d' (the holotable, holo.mjs)
+export const open = async (viewport, { view = 'flat' } = {}) => {
   const ctx = await browser.newContext({ viewport });
-  await ctx.addInitScript(() => {
+  await ctx.addInitScript((v) => {
+    window.localStorage.setItem('tp-galaxy-map-view', JSON.stringify(v)); // (HoloMap.jsx's VIEW_KEY)
     window.localStorage.setItem('tp-3d', 'on');
     window.localStorage.setItem('tp-intro', '1');
     window.localStorage.setItem('tp-sound', 'off');
     window.sessionStorage.setItem('tp-galaxy-intro', '1');
-  });
+    window.localStorage.setItem('tp-worlds', JSON.stringify('load')); // (the 3D, without the gate's asking)
+    window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: the cloud's software GL)
+  }, view);
   await ctx.addInitScript(pageHelpers);
   const page = await ctx.newPage();
   const errors = [];
@@ -122,7 +125,9 @@ export const namesProblems = (page) =>
   J(page, () => {
     const map = window.__mc.map();
     const tol = 0.5;
+    // (a charted world's name that's hidden, or tucked away with its dot, labelPlace.js's optional: not drawn, so not measured)
     const rows = [...document.querySelectorAll('.holomap-name[data-id]')]
+      .filter((el) => el.checkVisibility({ visibilityProperty: true }))
       .map((el) => ({ id: el.dataset.id, r: el.getBoundingClientRect(), d: window.__mc.dot(el.dataset.id) }))
       .filter((n) => n.d.x >= map.left && n.d.x <= map.right && n.d.y >= map.top && n.d.y <= map.bottom);
     const meets = [];
@@ -136,6 +141,7 @@ export const namesProblems = (page) =>
     const onMap = (r) => r.left + r.width / 2 >= map.left && r.left + r.width / 2 <= map.right && r.top + r.height / 2 >= map.top && r.top + r.height / 2 <= map.bottom;
     const dots = [];
     for (const el of document.querySelectorAll('.holomap-dot')) {
+      if (!el.checkVisibility({ visibilityProperty: true })) continue;
       const d = el.getBoundingClientRect();
       const owner = el.closest('li').querySelector('.holomap-name').dataset.id;
       if (!onMap(d)) continue;

@@ -9,7 +9,7 @@
 //   SABER_COLORS, HILTS      what a saber can be: { id, name, hex } and { id, name, ... }
 //   SKINS, skinsOf(id)       a 2017 hero's outfits, the one they wear first and then the game's others: { id, name, kind (surface/crewList.js's CREW row) }
 //   HERO_KEY                 the localStorage key
-//   readHero(raw, ship)      the choice, made good: { id, skin, color, hilt, stance, gun, mods, perks, kind? (a trooper class's body: surface/troopers.js) } (skin null for a hero with no outfits) (the ship's own lead when nothing's kept, it's nonsense or the hero's `soon`; the stance is the hero's own, one blade or a staff, the gun and mods weaponRules.js's)
+//   readHero(raw, ship, crew, arms)  the choice, made good (the crew's own style, lib/crew/crewStyle.js's, first where the hero can wear it; a unique gun only while `arms`, the skill tree's fx.arms, has it): { id, skin, color, hilt, stance, gun, mods, perks, kind? (a trooper class's body: surface/troopers.js) } (skin null for a hero with no outfits) (the ship's own lead when nothing's kept, it's nonsense or the hero's `soon`; the stance is the hero's own, one blade or a staff, the gun and mods weaponRules.js's)
 //   heroSpec(hero, ship)     the party spec for them (universe/footScene.js's PARTY shape), the saber (with its stance) on it where they carry one, else the gun they picked with its mods
 //   partyFor(spec, crew)     the two who walk: the hero, and the ship's crewmate who isn't them (the crew as it is with no hero)
 //   loadoutLine(hero)        the choice in a line: a Jedi's blade, hilt and stance, or the gun and its mods; the perks counted
@@ -18,7 +18,7 @@
 //   leanText(lean)           a hero's lean, for their card (or null)
 
 import { STANCE_IDS, STANCE_NAMES } from './surface/combatRules';
-import { MODS, MAX_MODS, PICKABLE, WEAPONS } from './surface/weaponRules';
+import { MODS, MAX_MODS, WEAPONS, pickableWith } from './surface/weaponRules';
 import { readPerks } from './perks';
 import { CREW, fileOf } from './surface/crewList';
 import { TROOPERS } from './surface/troopers';
@@ -128,7 +128,7 @@ const LEADS = { xwing: 'luke', falcon: 'han', cruiser: 'rick', rv: 'walt' };
 export const defaultHeroId = (ship) => LEADS[ship] ?? 'luke';
 
 // the choice, from what's kept (a JSON string, an object, or nothing)
-export function readHero(raw, ship = 'xwing') {
+export function readHero(raw, ship = 'xwing', crew = {}, arms = []) {
   let v = raw;
   if (typeof raw === 'string') {
     try {
@@ -139,15 +139,21 @@ export function readHero(raw, ship = 'xwing') {
   }
   const kept = BY_ID[v?.id];
   const hero = kept && !kept.soon ? kept : BY_ID[defaultHeroId(ship)];
-  const color = SABER_COLORS.some((c) => c.id === v?.color) ? v.color : (hero.saber?.color ?? 'blue');
-  const hilt = HILTS.some((h) => h.id === v?.hilt) ? v.hilt : (hero.saber?.hilt ?? 'skywalker');
+  // (the crew's own style, lib/crew/crewStyle.js's tp-crew, first where it's something this hero can wear; the galaxy's own choice after)
+  const own = crew?.[hero.id] ?? {};
+  const colorOf = (id) => SABER_COLORS.some((c) => c.id === id);
+  const color = colorOf(own.saber?.color) ? own.saber.color : colorOf(v?.color) ? v.color : (hero.saber?.color ?? 'blue');
+  const hiltOf = (id) => HILTS.some((h) => h.id === id);
+  const hilt = hiltOf(own.saber?.hilt) ? own.saber.hilt : hiltOf(v?.hilt) ? v.hilt : (hero.saber?.hilt ?? 'skywalker');
   // (the hero's own: the game's heroes hold one blade or a staff, and fence by their own strokes)
   const stance = hero.saber?.stance ?? 'single';
-  // (a gun hero carries their own, or one of the pickable ones; a Jedi's gun is their saber)
-  const gun = hero.weapon !== 'saber' && (v?.gun === hero.weapon || PICKABLE.includes(v?.gun)) && WEAPONS[v.gun] ? v.gun : hero.weapon;
+  // (a gun hero carries their own, or one of the pickable ones, the skill tree's opened among them; a Jedi's gun is their saber)
+  const carries = (g) => hero.weapon !== 'saber' && (g === hero.weapon || pickableWith(arms).includes(g)) && Boolean(WEAPONS[g]);
+  const gun = carries(own.gun) ? own.gun : carries(v?.gun) ? v.gun : hero.weapon;
   const mods = Array.isArray(v?.mods) ? [...new Set(v.mods.filter((m) => MODS[m]))].slice(0, MAX_MODS) : [];
   const looks = skinsOf(hero.id);
-  const skin = looks.some((l) => l.id === v?.skin) ? v.skin : (looks[0]?.id ?? null);
+  const wears = (id) => looks.some((l) => l.id === id);
+  const skin = wears(own.skin) ? own.skin : wears(v?.skin) ? v.skin : (looks[0]?.id ?? null);
   // (a trooper's body, the world's own kit of their side: a snowtrooper on Hoth)
   const kind = hero.trooper && CREW[v?.kind] ? v.kind : (hero.trooper?.kind ?? null);
   return { id: hero.id, skin, color, hilt, stance, gun, mods, perks: readPerks(v?.perks), ...(hero.trooper ? { kind } : {}) };

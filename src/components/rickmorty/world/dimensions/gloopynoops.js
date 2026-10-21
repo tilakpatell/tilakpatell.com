@@ -2,7 +2,9 @@
 // a hospital ward in white and mint, a bed at the far end with Shrimply
 // Pibbles in it (a model), curtains, a reception desk, benches, a vending
 // machine, a cart, and the hospital's staff on their rounds (models,
-// ./destinations.js). Jerry waits on a bench.
+// ./destinations.js). Jerry waits on a bench. The bed's bay is the theatre,
+// its sign over the bed; the doctors keep the way to it, and once Jerry's
+// things are taken back every one of them is after Morty.
 
 import { BALL, BOX, fitText } from '../interiors/shell';
 import { specks, stage } from './stage';
@@ -22,6 +24,13 @@ export async function buildGloopynoops(kit) {
   const [bx, bz] = P(0, -13.6);
   R.frame(bx, bz, 0, { list: 'fixed' }).box(0x9aa8a0, 0, 2.6, 2.4, 7, 0.06, 0.06);
   for (const u of [-3.2, 3.2]) R.frame(bx + u, bz + 2.4, 0, { list: 'fixed' }).box(0xa8d8c8, 0, 0.1, 0, 1.2, 2.5, 0.08);
+  // the theatre's sign, over the bed
+  R.cell('theatresign', 192, 48, (g, w, h) => {
+    g.fillStyle = '#6ab8a0';
+    g.fillRect(0, 0, w, h);
+    fitText(g, 'THEATRE', w / 2, h / 2, w - 12, 18, { color: '#ffffff' });
+  });
+  R.frame(...P(0, -(A.z1 - A.z0) / 2 + 0.14), 0, { list: 'fixed' }).decal('theatresign', 0, 3.4, 0.06, 4, 1);
   // a monitor by the bed
   R.frame(bx + 2.2, bz - 1, 0).box(0xd8e0dc, 0, 0, 0, 0.6, 1.2, 0.6).box(0x0a1a14, 0, 1.2, 0, 0.7, 0.5, 0.1, 0, -0.2).glow(BOX, 0x6aff9a, 1.5, 0, 1.45, 0.06, 0, 0.6, 0.36, 0.02, -0.2);
   // reception, benches, the vending machine, a cart
@@ -45,5 +54,8 @@ export async function buildGloopynoops(kit) {
   for (const dz of [-6, 2, 10]) R.frame(A.x1 - 0.12, P(0, dz)[1], -Math.PI / 2, { list: 'fixed' }).box(0x6ab8a0, 0, 0, 0, 1.2, 2.2, 0.08).glow(BALL, 0xff6a6a, 1.4, 0, 2.4, 0.06, 0, 0.1);
 
   S.people();
-  return S.done(LIGHT, () => {});
+  const area = S.done(LIGHT, () => {});
+  // (Jerry's things taken back: every doctor after him)
+  area.actions = { ...area.actions, collected: () => S.hunt(true) };
+  return area;
 }

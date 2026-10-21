@@ -26,7 +26,9 @@ npx vitest run scripts/kit scripts/kit-check.test.mjs      # the pure half, the 
   tilakverse-assets clone); any name not in `SOURCES` is read from `--from`
   itself, as the test fixture is.
 - **Import.** Where each pack keeps its glTF is `SOURCES` in `import.mjs`
-  (`naturemega` and `nature`: `glTF/`; `space`: `{Characters,Environment,Items,Vehicles}/GLTF/`;
+  (`naturemega` and `nature`: `glTF/`, the older `nature` pack's trees named
+  `BirchTree_1`, `MapleTree_1` … and painting no wind weight, so `sway`
+  marks its trees' and bushes' materials as bending by height alone; `space`: `{Characters,Environment,Items,Vehicles}/GLTF/`;
   `city`: `Exports/glTF (Godot)/`). The FBX packs (`farm`, `street`,
   `furniture`) are converted first, by `scripts/kit/fbx.mjs` (below), into
   `lab/assets/<pack>-glb/`, which the import then reads. The same pack

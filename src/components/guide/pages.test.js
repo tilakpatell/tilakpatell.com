@@ -19,6 +19,7 @@ describe('which guide a page gets', () => {
   });
 
   it('gives a section’s deeper pages their own kind of guide', () => {
+    expect(guideFor('/avengers/gate').key).toBe('/avengers');
     expect(guideFor('/experience/aws').key).toBe('/experience');
     expect(guideFor('/projects/gameboy').key).toBe('/project');
     expect(guideFor('/galaxy/hoth').key).toBe('/galaxy');
@@ -44,6 +45,7 @@ describe('which guide a page gets', () => {
   });
 
   it('has none for a page it doesn’t know', () => {
+    expect(guideFor('/avengers/gate/deeper')).toBe(null);
     expect(guideFor('/nowhere')).toBe(null);
     expect(guideFor('/galaxy/hoth/surface/deeper')).toBe(null);
   });
@@ -112,15 +114,26 @@ describe('what the guide says', () => {
     expect(JSON.stringify(PAGES['/universe'])).not.toMatch(/R to climb|C to dive/);
   });
 
-  it('tells the galaxy’s real flying keys: no weapons to switch, and the crew’s powers on G and X', () => {
-    const flying = PAGES['/galaxy'].keys.find((g) => g.label === 'Flying').rows;
-    const does = (k) => flying.find(([keys]) => keys === k)?.[1] ?? '';
-    expect(flying.map(([k]) => k)).not.toContain('R / 1 2 3');
-    expect(JSON.stringify(PAGES['/galaxy'])).not.toMatch(/heavy ordnance/);
-    expect(does('G')).toMatch(/power/i);
-    expect(does('X')).toMatch(/charged/i);
-    const touch = PAGES['/galaxy'].touch.flatMap((g) => g.rows.map(([k]) => k));
-    expect(touch).toEqual(expect.arrayContaining(['Power', 'Big one']));
+  it('tells the same flying keys on both maps: the three lines on R and 1 2 3, the crew’s powers on G and X', () => {
+    for (const page of ['/universe', '/galaxy']) {
+      const flying = PAGES[page].keys.find((g) => g.label === 'Flying').rows;
+      const does = (k) => flying.find(([keys]) => keys === k)?.[1] ?? '';
+      expect(does('R / 1 2 3')).toMatch(/heavy ordnance/);
+      expect(does('G')).toMatch(/power/i);
+      expect(does('X')).toMatch(/charged/i);
+      const touch = PAGES[page].touch.flatMap((g) => g.rows.map(([k]) => k));
+      expect(touch).toEqual(expect.arrayContaining(['Weapon', 'Power', 'Big one']));
+    }
+    expect(JSON.stringify(PAGES['/galaxy'])).not.toMatch(/universe map only/);
+  });
+
+  it('says H opens the Hangar and C its crew, on both maps', () => {
+    for (const page of ['/universe', '/galaxy']) {
+      const flying = PAGES[page].keys.find((g) => g.label === 'Flying').rows;
+      const does = (k) => flying.find(([keys]) => keys === k)?.[1] ?? '';
+      expect(does('H')).toMatch(/^The Hangar/);
+      expect(does('C')).toMatch(/Hangar.*crew/);
+    }
   });
 
   it('has the site’s own shortcuts and tips', () => {

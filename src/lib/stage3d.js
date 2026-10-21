@@ -19,7 +19,11 @@ import { debugOn, debugPanel } from './debugPanel';
 import { guard } from './three/frameGuard';
 import { prepareScene, warmDraw } from './three/gpuWork';
 import { precompile as compileFor, precompilePasses, quiet, releaseContext } from './three/renderer';
-import { sharpen } from './three/textures';
+import { canvasTexture, hot } from './three/canvasTexture';
+
+// (written in ./three/canvasTexture.js, free of this file's post chain, so a
+// node world may paint a canvas too; here for the scenes that import them from here)
+export { canvasTexture, hot };
 import { BLOOM } from './three/bloom';
 import { LOOK } from './three/house';
 
@@ -56,14 +60,6 @@ export const GRADE = {
       gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
     }`,
 };
-
-// Bright colours for things that glow: above 1, so bloom picks them up.
-export const hot = (hex, k = 1) => new THREE.Color(hex).multiplyScalar(k);
-
-// A canvas as a texture, repeating, sharp at a glancing angle.
-export function canvasTexture(canvas, renderer, { repeat = [1, 1], srgb = true, wrap = true } = {}) {
-  return sharpen(new THREE.CanvasTexture(canvas), { renderer, color: srgb ? true : undefined, wrap: Boolean(wrap), repeat });
-}
 
 // Free a whole tree: geometries, materials and every texture they hold.
 export function disposeTree(root) {

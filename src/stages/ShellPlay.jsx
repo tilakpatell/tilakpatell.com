@@ -234,7 +234,7 @@ export default function ShellPlay() {
       <StageWindow title="tsh · try it">
         <div ref={scroller} className="stage-code h-[19rem] overflow-y-auto px-4 py-3" onClick={() => inputRef.current?.focus({ preventScroll: true })}>
           {log.map((l, i) => (
-            <p key={i} className={`whitespace-pre-wrap break-words ${l.kind === 'err' ? 'text-[#ff8a8a]' : l.kind === 'sys' ? 'text-muted' : l.kind === 'cmd' ? 'text-white' : 'text-body'}`}>
+            <p key={i} className={`whitespace-pre-wrap break-words ${l.kind === 'err' ? 'text-[color:var(--danger)]' : l.kind === 'sys' ? 'text-muted' : l.kind === 'cmd' ? 'text-ink' : 'text-body'}`}>
               {l.kind === 'cmd' && <span className="text-accent">{prompt} </span>}
               {l.text}
             </p>
@@ -249,7 +249,7 @@ export default function ShellPlay() {
               value={value}
               onChange={(e) => setValue(e.target.value)}
               onKeyDown={onKeyDown}
-              className="min-w-0 flex-1 border-0 bg-transparent p-0 text-white caret-[color:var(--accent)] outline-none focus-visible:outline-none"
+              className="min-w-0 flex-1 border-0 bg-transparent p-0 text-ink caret-[color:var(--accent)] outline-none focus-visible:outline-none"
               autoComplete="off"
               autoCapitalize="off"
               autoCorrect="off"

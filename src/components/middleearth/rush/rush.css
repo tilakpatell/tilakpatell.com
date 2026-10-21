@@ -14,7 +14,7 @@
 }
 .rush-head { display: grid; gap: 0.5rem; margin-bottom: 1rem; }
 .rush-title { margin: 0; font: 600 clamp(1.6rem, 1.1rem + 2vw, 2.6rem)/1.1 'Cinzel', Georgia, serif; letter-spacing: 0.03em; }
-.rush-lead { margin: 0; max-width: 62ch; color: var(--color-muted, inherit); }
+.rush-lead { margin: 0; max-width: 62ch; color: var(--muted); }
 .rush-no3d { padding-block: 2rem; }
 .rush-stage { background: radial-gradient(ellipse at 50% 40%, #3a2414 0%, #1a120c 70%); scroll-margin-top: calc(var(--nav-h, 64px) + 4.5rem); }
 .rush { scroll-margin-top: calc(var(--nav-h, 64px) + 3.5rem); }
@@ -72,7 +72,7 @@
 .rush-recipes { display: flex; flex-wrap: wrap; gap: 0.5rem 1.2rem; margin: 0.9rem auto 0; padding: 0; list-style: none; font: 400 0.9rem/1.4 var(--font-sans); }
 .rush-recipes li { display: inline-flex; align-items: center; gap: 0.4rem; }
 .rush-recipe-icon { font-size: 1.2rem; }
-.rush-recipes span:last-child { color: var(--color-muted, inherit); }
+.rush-recipes span:last-child { color: var(--muted); }
 
 @media (max-width: 639px) {
   .rush-orders { right: 6.2rem; gap: 0.35rem; }

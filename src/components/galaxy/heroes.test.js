@@ -127,6 +127,17 @@ describe('the stance, the gun and the mods', () => {
   });
 });
 
+describe('the skill tree’s guns in a hero’s hand', () => {
+  it('keeps a unique gun only while its node is taken, the hero’s own after a reset', () => {
+    expect(readHero({ id: 'han', gun: 'particle' }).gun).toBe('blaster');
+    expect(readHero({ id: 'han', gun: 'particle' }, 'falcon', {}, ['particle']).gun).toBe('particle');
+    expect(readHero({ id: 'han' }, 'falcon', { han: { gun: 'm60' } }, ['m60']).gun).toBe('m60');
+    expect(readHero({ id: 'han' }, 'falcon', { han: { gun: 'm60' } }, []).gun).toBe('blaster');
+    // (a Jedi's hand is his blade's, whatever's opened)
+    expect(readHero({ id: 'luke', gun: 'amban' }, 'xwing', {}, ['amban']).gun).not.toBe('amban');
+  });
+});
+
 describe('the perks', () => {
   it('ride with the choice, three at most, nonsense dropped', () => {
     expect(readHero({ id: 'luke', perks: ['focus', 'nope', 'nimble', 'nimble', 'survivor', 'riposte'] }).perks).toEqual(['focus', 'nimble', 'survivor']);
@@ -219,5 +230,28 @@ describe('one saber path', () => {
       expect(h.soon).toMatch(/game’s rig/);
       expect(readHero({ id: h.id }).id).not.toBe(h.id);
     }
+  });
+});
+
+describe('the crew’s own style (lib/crew/crewStyle.js’s tp-crew)', () => {
+  const hoth = skinsOf('han').some((l) => l.id === 'hanhoth');
+  it.runIf(hoth)('dresses the hero picked in it, over the galaxy’s own choice', () => {
+    const h = readHero(JSON.stringify({ id: 'han', skin: 'han', gun: 'blaster' }), 'falcon', { han: { skin: 'hanhoth', gun: 'rifle' } });
+    expect(h.skin).toBe('hanhoth');
+    expect(h.gun).toBe('rifle');
+  });
+  it('falls back where the style is something the hero can’t wear', () => {
+    const h = readHero(JSON.stringify({ id: 'han', gun: 'shotgun' }), 'falcon', { han: { gun: 'nope', skin: 'nope' } });
+    expect(h.gun).toBe('shotgun');
+    expect(skinsOf('han').map((l) => l.id).concat([null])).toContain(h.skin);
+  });
+  it('gives a Jedi the blade in the style', () => {
+    const h = readHero(JSON.stringify({ id: 'luke' }), 'xwing', { luke: { saber: { color: 'purple', hilt: 'temple' } } });
+    expect(h.color).toBe('purple');
+    expect(h.hilt).toBe('temple');
+  });
+  it('ignores another hero’s style', () => {
+    const plain = readHero(JSON.stringify({ id: 'han', gun: 'shotgun' }), 'falcon');
+    expect(readHero(JSON.stringify({ id: 'han', gun: 'shotgun' }), 'falcon', { luke: { saber: { color: 'red', hilt: 'vader' } } })).toEqual(plain);
   });
 });

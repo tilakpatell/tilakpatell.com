@@ -304,23 +304,32 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
   // passes, module.js's `sharpness: 'own'`: its canvas keeps its size)
   const ratioFor = (mod) => (quality.ratioUnder ? quality.ratioUnder(mod?.ratio, { unscaled: mod?.sharpness === 'own' }) : quality.ratio);
 
+  // (a module that says `antialias` has the canvas multisampled or not as
+  // it says, on the classic kind: Middle-earth's stages drew on canvases of
+  // their own without, and in software one draws straight to the canvas.
+  // Asked otherwise than the canvas up was made, a new one is made)
+  const aaOf = (module) => (typeof module.antialias === 'boolean' ? module.antialias : null);
+  let madeAa = null; // what the backend up was made with
   const backendFor = async (module) => {
     const want = pickBackend({ gpu, shading: module.shading, override, lost: lostWebGPU });
-    if (gfx && kind === want && !gfx.lost) return gfx;
+    const aa = aaOf(module);
+    if (gfx && kind === want && !gfx.lost && aa === madeAa) return gfx;
     // one of this kind on its way already: a mount meanwhile waits for that
     // one (React's second run of an effect mounts again at once, and a second
     // backend was a second WebGL context never let go, and the one kept
     // wasn't always the one the build had set the ratio on)
-    if (coming?.kind === want) return coming.promise;
+    if (coming?.kind === want && coming.aa === aa) return coming.promise;
     // (a backend of the other kind can't share the canvas: the old one goes)
     if (gfx) {
       gfx.dispose();
       gfx = null;
     }
     kind = want;
-    const asked = { kind: want, promise: null };
+    madeAa = aa;
+    const asked = { kind: want, aa, promise: null };
     coming = asked;
-    asked.promise = new Promise((resolve) => resolve(makeBackend(want, { budget: quality.budget, onLost: (loss) => rt.lost(loss), hdr: rt.video?.hdr === 'on' }))).then(
+    const budget = aa === null ? quality.budget : { ...quality.budget, antialias: aa };
+    asked.promise = new Promise((resolve) => resolve(makeBackend(want, { budget, onLost: (loss) => rt.lost(loss), hdr: rt.video?.hdr === 'on' }))).then(
       (made) => {
         // another kind asked for since (or the runtime let go): this one goes too
         if (coming !== asked) {
@@ -747,7 +756,9 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
       // (the budget first: a world mounted next is built at the new level)
       quality.retune?.(level);
       if (!current || rt.loading) return 'idle';
-      if (gfx) gfx.setRatio?.(ratioFor(current.module));
+      // (a module that keeps its canvas, `sharpness: 'own'`, softens through
+      // its own passes: a resize here, outside a frame, showed it cleared)
+      if (gfx && current.module.sharpness !== 'own') gfx.setRatio?.(ratioFor(current.module));
       const { world, module } = current;
       const tune = world.onQuality ? () => world.onQuality(level) : module.onQuality ? () => module.onQuality(level, world, rt) : null;
       if (!tune) return 'reload';
@@ -787,7 +798,7 @@ export function createRuntime({ makeBackend, loop: makeLoop = createLoop, input,
     sharpen(k) {
       quality.setSharpness?.(k);
       if (gfx && current) {
-        gfx.setRatio?.(ratioFor(current.module));
+        if (current.module.sharpness !== 'own') gfx.setRatio?.(ratioFor(current.module));
         loop.kick();
       }
     },

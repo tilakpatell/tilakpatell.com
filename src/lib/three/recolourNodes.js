@@ -8,7 +8,7 @@
 //   recolour(material, colour, { ref }) → the node material (a classic one comes back as its twin)
 
 import * as THREE from 'three';
-import { clamp, dot, materialReference, uniform, vec3 } from 'three/tsl';
+import { clamp, dot, materialReference, uniform, vec3, vec4 } from 'three/tsl';
 import { asNode, keyed } from './hookNodes';
 
 export const REF = 0.25; // (a map's mean until it's measured: a mid leaf green's)
@@ -41,10 +41,11 @@ export function recolour(material, colour, { ref = REF } = {}) {
   // (the map read for its brightness alone, over its mean, in the
   // colour: the material's colour node while it has a map, so three's
   // vertex and instance colours still multiply in after, as color_fragment
-  // did after the GLSL's line)
+  // did after the GLSL's line; the map's alpha kept, as the GLSL's rgb
+  // alone was, or a leaf's cut-out would stand as a dark card round it)
   const m = asNode(material);
   const map = materialReference('map', 'texture');
-  const node = uniforms.uRecolour.mul(clamp(dot(map.rgb, vec3(0.2126, 0.7152, 0.0722)).div(uniforms.uRecolourRef), 0, 2));
+  const node = vec4(uniforms.uRecolour.mul(clamp(dot(map.rgb, vec3(0.2126, 0.7152, 0.0722)).div(uniforms.uRecolourRef), 0, 2)), map.a);
   const before = m.setupDiffuseColor;
   m.setupDiffuseColor = function (builder) {
     const own = this.colorNode;
