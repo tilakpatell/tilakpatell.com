@@ -299,6 +299,29 @@ describe('a place that runs on a sequence', () => {
   });
 });
 
+describe('a place that plays a rhythm', () => {
+  it('has its song at a spot of its own, with its line, and only the song ticks its task', () => {
+    const singing = DESTINATIONS.filter((d) => d.rhythm);
+    expect(singing.map((d) => d.id)).toEqual(['schwifty']);
+    for (const d of singing) {
+      const spot = d.hotspots.find((h) => h.id === d.rhythm.spot);
+      expect(spot, `${d.id}: ${d.rhythm.spot} is a spot`).toBeTruthy();
+      expect(d.say[spot.id]?.text, `${d.id}: its spot has a line`).toBeTruthy();
+      expect(d.goal).toBe(spot.id);
+      expect(d.tasks.map((t) => t.id)).toContain(d.rhythm.task);
+      expect(d.collect?.task, `${d.id}: a collect ticks the task`).not.toBe(d.rhythm.task);
+      expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(d.rhythm.task);
+      expect(Object.values(d.unlock), `${d.id}: a talk gives the achievement`).not.toContain(d.rhythm.unlock);
+    }
+  });
+  it('is Get Schwifty’s mic, its achievement handed over by the stage', () => {
+    const show = destinationById('schwifty');
+    expect(show.rhythm).toEqual({ task: 'schwifty', spot: 'mic', unlock: 'schwifty' });
+    expect(show.hotspots.find((h) => h.id === 'mic').verb).toBe('Get schwifty');
+    expect(show.collect).toBe(null);
+  });
+});
+
 describe('a place that runs on a find', () => {
   it('has its candidates as people with spots of their own, each with a tell, and only the game ticks its task', () => {
     const finding = DESTINATIONS.filter((d) => d.find);

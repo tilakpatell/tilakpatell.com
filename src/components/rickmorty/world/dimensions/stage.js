@@ -28,6 +28,7 @@ import { curse, dealNews, dealReadout, newDeal, stepDeal } from '../games/deal';
 import { freezeEyes, freezeNews, freezeReadout, jumpSplashes, moving, newFreeze, stepFreeze } from '../games/freeze';
 import { findNews, findReadout, newFind, pickOurs, stepFind } from '../games/find';
 import { litSets, newSequence, runningOrder, sequenceNews, sequenceReadout, stepSequence } from '../games/sequence';
+import { newCheer, stepCheer } from '../games/cheer';
 import { TRIS, WORLDS } from './worlds';
 import { BLOCKS } from './blocks';
 import { outskirtsOf } from './outskirts';
@@ -120,7 +121,8 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     return { ...game, told: true };
   };
   // and a place's achievement handed over once while its task is done (done
-  // before its game was built: the vat's, the cable studio's), said as a win
+  // before its game was built: the vat's, the cable studio's; or won over the
+  // page: Get Schwifty's), said as a win
   const granted = new Set();
   const grant = ({ task, unlock = null }, done, state) => {
     if (!done || !unlock || granted.has(task) || state.fading) return;
@@ -249,6 +251,15 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     airing = told(sequenceNews(airing, { done, fading: false }), airing, sq, state);
   };
 
+  // ── a place whose song is played over the page (place.js's `rhythm`):
+  // its achievement handed over once its task's done; and any place's crowd
+  // cheering its game won (../games/cheer.js): its gatherings hop on a beat
+  // a while from the frame the game's task is done (the show's, once it
+  // closes), started afresh whenever the place calms ──
+  const rh = d.rhythm;
+  const gameTask = (d.power ?? d.deal ?? d.freeze ?? d.find ?? d.sequence ?? rh)?.task ?? null;
+  let cheer = newCheer();
+
   // (calmed: its people home, and its game started afresh)
   const calm = () => {
     N.calm();
@@ -272,6 +283,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       airing = aired();
       switched = [];
     }
+    cheer = newCheer();
   };
 
   // one of the cast at (x, z) facing `face`, `h` tall (its own height if not
@@ -341,6 +353,11 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         if (still && state && cast) freezing(dt, state);
         if (search && state && cast) finding(dt, state);
         if (airing && state && cast) sequencing(dt, state);
+        if (rh && state) grant(rh, (state.done ?? []).includes(rh.task), state);
+        if (round && gameTask && state) {
+          cheer = stepCheer(cheer, { done: (state.done ?? []).includes(gameTask), t });
+          if (cheer.hop) round.actions.hop();
+        }
         // (its crowd turns to Morty while the place hunts him)
         if (round && state) round.actions.turn(watchOf(world, { hunting: N.hunting || N.npcs.some((n) => n.hunting), morty: state.morty }));
         update?.(t, dt, state, camera);

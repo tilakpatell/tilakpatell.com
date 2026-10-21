@@ -119,7 +119,7 @@ export const ACHIEVEMENTS = {
   nuptia: { name: 'Love, scanned', desc: 'Took the test on Nuptia 4, and kept clear of the mythologs' },
   gloopynoops: { name: 'Visiting hours', desc: 'Visited Shrimply Pibbles at St. Gloopy Noops' },
   resort: { name: 'Out of the field', desc: 'Rode the Whirly Dirly at the Immortality Field Resort' },
-  schwifty: { name: 'I like what you got', desc: 'Took the mic at the Get Schwifty show' },
+  schwifty: { name: 'I like what you got', desc: 'Kept the heads’ meter up to the end of the song at the Get Schwifty show' },
   evilrick: { name: 'Close Rick-counters', desc: 'Freed the dome’s Mortys and beat Evil Rick in his lair' },
   evilmorty: { name: 'The one behind him', desc: 'Spoke to the Morty with the eyepatch before his yellow portal took him' },
   cronenberg: { name: 'Rick Potion #9', desc: 'Took the shovel and spoke to the Beth who stayed in Cronenberg World' },
