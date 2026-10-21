@@ -71,7 +71,41 @@ function worldBoxes(parts, tiled) {
   }
   return out;
 }
-const LOOK = { walls: [0xe8d8b8, 0xc8b898], roofs: [0x8a5a3a], lit: [0xffe08a], trim: 0x5a4a3a };
+// every flat face of every part that faces along an axis: the axis, which way
+// it faces, its plane and its rectangle (read off the triangles, not the box
+// round the part: a ball's box and its drum's share a side where only an edge
+// of each touches)
+function axisFaces(parts, tiled) {
+  const out = [];
+  const shapes = [...parts.filter((p) => p.matrix).map((p) => [p.unit, p.matrix]), ...tiled.map((t) => [t.geo, t.matrix])];
+  shapes.forEach(([unit, matrix], part) => {
+    const g = unit.clone().applyMatrix4(matrix);
+    const pos = (g.index ? g.toNonIndexed() : g).attributes.position;
+    const faces = new Map();
+    const [a, b, c] = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+    for (let i = 0; i < pos.count; i += 3) {
+      a.fromBufferAttribute(pos, i);
+      b.fromBufferAttribute(pos, i + 1);
+      c.fromBufferAttribute(pos, i + 2);
+      const n = b.clone().sub(a).cross(c.clone().sub(a));
+      const len = n.length();
+      const k = [0, 1, 2].find((j) => Math.abs(n.getComponent(j)) > len * (1 - 1e-6));
+      if (len < 1e-12 || k === undefined) continue;
+      const s = Math.sign(n.getComponent(k));
+      const key = `${k}${s}${Math.round(a.getComponent(k) * 1e6)}`;
+      const face = faces.get(key) ?? { part, k, s, plane: a.getComponent(k), min: [Infinity, Infinity], max: [-Infinity, -Infinity] };
+      for (const p of [a, b, c])
+        [(k + 1) % 3, (k + 2) % 3].forEach((j, m) => {
+          face.min[m] = Math.min(face.min[m], p.getComponent(j));
+          face.max[m] = Math.max(face.max[m], p.getComponent(j));
+        });
+      faces.set(key, face);
+    }
+    out.push(...faces.values());
+  });
+  return out;
+}
+const LOOK ={ walls: [0xe8d8b8, 0xc8b898], roofs: [0x8a5a3a], lit: [0xffe08a], trim: 0x5a4a3a };
 
 describe('the code buildings', () => {
   for (const style of STYLES) {
@@ -110,6 +144,31 @@ describe('the code buildings', () => {
     const door = worldBoxes(parts, []).find((b) => Math.abs(b.max.x - b.min.x - L.w * 0.6) < 1e-6 && b.max.z - b.min.z < 0.2);
     expect(door).toBeTruthy();
     expect(door.max.z - front).toBeGreaterThanOrEqual(0.005);
+  });
+
+  it('lays no two parts’ faces in the one plane, where they’d flicker, in any style', () => {
+    const clashes = [];
+    for (const style of STYLES)
+      for (const night of [false, true]) {
+        const { R, parts, tiled } = fakeRoom();
+        const look = { ...LOOK, night };
+        lot(R, { x: 100, z: -40, turn: 0, w: 12, d: 9, h: 14, y: 1.5, style }, look, { windows: windowPaints(R, look), list: 'fixed' });
+        const faces = axisFaces(parts, tiled);
+        const same = (p, q) => p.k === q.k && Math.abs(p.plane - q.plane) < 1e-4;
+        const found = [];
+        for (const [i, p] of faces.entries())
+          for (const q of faces.slice(i + 1)) {
+            if (p.part === q.part || p.s !== q.s || !same(p, q)) continue;
+            const lo = [0, 1].map((m) => Math.max(p.min[m], q.min[m]));
+            const hi = [0, 1].map((m) => Math.min(p.max[m], q.max[m]));
+            if (hi[0] - lo[0] < 1e-6 || hi[1] - lo[1] < 1e-6) continue;
+            // (two faces both under a third part's face, back to back with them, never show: a floor on its plinth, a wall's top under its roof)
+            const under = faces.some((o) => o.s !== p.s && same(o, p) && [0, 1].every((m) => o.min[m] <= lo[m] + 1e-6 && o.max[m] >= hi[m] - 1e-6));
+            if (!under) found.push(`parts ${p.part} and ${q.part} facing ${'xyz'[p.k]}${p.s > 0 ? '+' : '-'} at ${p.plane.toFixed(3)}`);
+          }
+        if (found.length) clashes.push(`${style}${night ? ' at night' : ''}: ${found.length} pairs, the first ${found[0]}`);
+      }
+    expect(clashes).toEqual([]);
   });
 
   it('paints its walls with windows that tile in the world, one paint a wall colour', () => {

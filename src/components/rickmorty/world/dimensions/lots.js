@@ -4,9 +4,9 @@
 // everything else the place draws, so a street of them costs a draw or two.
 // Their walls are a paint of windows that tiles in the world (a storey and a
 // bay to a repeat, ../kit.js's batch), one paint a wall colour; at night
-// (`look.night`) a few windows a face are lit instead, as glows. Only boxes,
-// eight-sided drums, cones and balls (BALL8: the sixteen-sided ball merges
-// at thirty times a box).
+// (`look.night`) only the block and the tower light any, a few panes a face,
+// as glows. Only boxes, eight-sided drums, cones and balls (BALL8: the
+// sixteen-sided ball merges at thirty times a box).
 //
 // STYLES: the styles lot() draws
 // lot(R, { x, z, turn, w, d, h, y, style }, look, { windows, list })
@@ -76,7 +76,8 @@ export function windowPaints(R, look) {
 
 // a wall of windows: a box w × h × d standing on y0, painted
 const facade = (R, f, paint, u, y0, v, w, h, d) => R.tiled.add(BOX, paint, f.mat(u, y0 + h / 2, v, 0, w, h, d));
-// at night, a few of a face's windows lit (the front and the back), as the paint's bays fall
+// at night, a few lit panes on a face (the front and the back): not set on the
+// paint's bays, which tile in the world, so they needn't line up with them
 function litWindows(f, look, u0, y0, w, h, d, seed) {
   if (!look.night) return;
   const cols = Math.max(1, Math.floor(w / (TILE / 2)));
@@ -130,21 +131,23 @@ const DRAW = {
   tudor(R, f, L, look, paint, wall, roof) {
     const { w, d, h } = L;
     const walls = h * 0.6;
-    f.box(wall, 0, 0, 0, w, walls, d);
+    // (the walls a hair inside the timbers, and the rails a hair behind the posts: no two faces in one plane)
+    f.box(wall, 0, 0, 0, w, walls, d - 0.08);
     const beam = look.trim ?? 0x3a2a22;
     // the timbers, front and back: posts, a rail at the floor, a cross
     for (const s of [1, -1]) {
       const v = s * (d / 2 - 0.03);
       for (let u = -w / 2 + 0.15; u <= w / 2 - 0.15 + 1e-9; u += Math.max(1.2, (w - 0.3) / 6)) f.box(beam, u, 0, v, 0.22, walls, 0.06);
-      f.box(beam, 0, walls * 0.5, v, w - 0.1, 0.2, 0.06);
-      f.box(beam, 0, walls - 0.2, v, w - 0.1, 0.2, 0.06);
+      f.box(beam, 0, walls * 0.5, v - s * 0.02, w - 0.1, 0.2, 0.06);
+      f.box(beam, 0, walls - 0.2, v - s * 0.02, w - 0.1, 0.2, 0.06);
     }
     f.part(GABLE, roof, 0, walls + (h - walls) / 2, 0, 0, w, h - walls, d);
   },
   house(R, f, L, look, paint, wall, roof) {
     const { w, d, h } = L;
     const walls = h * 0.58;
-    facade(R, f, paint, 0, 0, 0, w, walls, d);
+    // (the walls a hair inside the door, so the door stands proud of them)
+    facade(R, f, paint, 0, 0, 0, w, walls, d - 0.04);
     f.part(GABLE, roof, 0, walls + (h - walls) * 0.4, 0, 0, w, (h - walls) * 0.8, d);
     f.box(look.trim ?? 0x5a3a2a, 0, 0, d / 2 - 0.05, Math.min(1.1, w * 0.2), Math.min(2.1, walls * 0.8), 0.1);
     f.box(roof, w * 0.28, walls, -d * 0.2, Math.min(0.9, w * 0.12), h - walls, Math.min(0.9, d * 0.12));
@@ -195,9 +198,10 @@ const DRAW = {
     const { w, d, h } = L;
     const walls = h * 0.6;
     const r = Math.min(w / 2, h * 0.4);
-    // (the walls a hair inside the door, so the door stands proud of them)
+    // (the walls a hair inside the door, so the door stands proud of them, and
+    // the roof's ends a hair inside the walls, its lower half hidden in them)
     facade(R, f, paint, 0, 0, 0, w, walls, d - 0.04);
-    f.cyl(roof, 0, walls, 0, r, d, Math.PI / 2, 0, CYL8);
+    f.cyl(roof, 0, walls, 0, r, d - 0.08, Math.PI / 2, 0, CYL8);
     f.box(look.trim ?? 0x2a2a30, 0, 0, d / 2 - 0.05, w * 0.6, walls * 0.85, 0.1);
   },
   mast(R, f, L, look, paint, wall) {
