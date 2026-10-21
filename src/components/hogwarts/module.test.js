@@ -125,6 +125,8 @@ describe('Hogwarts, the world module', () => {
     const disposed = vi.fn();
     registerRoom('test-hall', { name: 'A hall for the test', load: async () => ({ default: { build: () => ({ group: new Group(), start: { at: [0, 0, 5], yaw: 0 }, floorAt: () => -1999, colliders: [], dispose: disposed }) } }) });
     world.walker.place([30, 30], 1);
+    // (what was showing outside: the wand's and the broom's own hidden things stay hidden)
+    const showing = world.scene.children.filter((o) => o.visible);
     expect(await world.enter('test-hall', 'great-doors')).toBe(true);
     expect(world.room).toBe('test-hall');
     expect(rt.emitted.at(-1)).toMatchObject({ type: 'enter', room: 'test-hall', name: 'A hall for the test' });
@@ -134,7 +136,8 @@ describe('Hogwarts, the world module', () => {
     expect(world.room).toBeNull();
     expect(disposed).toHaveBeenCalled();
     expect(world.walker.state.x).toBe(30);
-    expect(world.scene.children.every((o) => o.visible)).toBe(true);
+    expect(showing.every((o) => o.visible)).toBe(true);
+    expect(world.scene.children.filter((o) => o.visible)).toHaveLength(showing.length);
     expect(await world.enter('no-such-room')).toBe(false);
     expect(rt.emitted.at(-1)).toMatchObject({ type: 'toast' });
     delete ROOMS['test-hall'];

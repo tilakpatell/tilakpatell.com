@@ -12,7 +12,7 @@ export const WORLDS = UNIVERSES.filter((u) => u.world).flatMap((u) => [{ to: u.t
 // A world on the world runtime (src/runtime) says the same in its module's
 // `mb` (its test checks they agree).
 export const WORLD_MB = {
-  '/universe': 6, // not a world (nothing gates it), but the map's own download, for the tour's "Open the universe map · N MB" on a phone: the planets' textures, the stations and ships, from /home at a phone's size (5.8 measured)
+  '/universe': 6, // not a world (nothing gates it), but the map's own download, for the tour's "Open the universe map · N MB" on a phone: the planets' textures, the stations and ships, from /home at a phone's size (5.7 MB measured 2026-10-21, lane C2: 6.9 before the Star Wars fleet's gen3d interceptor, 746 KB, and Meshy Slave I, 477 KB, gave way to the game's far copies, 16 KB each)
   '/caribbean': 16, // Dead Man's Tide's ships and sea creatures
   '/invincible': 4, // the three HD figures and the city's three skies
   '/hogwarts': 9, // a guess until Lane G measures it from a walk: the grounds' MegaKit files, the castle's three scans and the ground's, the page; the rooms and the cast add theirs as they come

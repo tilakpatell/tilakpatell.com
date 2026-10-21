@@ -5,7 +5,8 @@
 // bin that fails hullOf’s checks): that ship keeps today’s sphere, and the
 // failure is logged once, never thrown. The Nebulon-B drawn from its close-up
 // cut (models.js: a row with `hq: true`) has the hull of that cut, hq/nebulon;
-// the hunters’ Slave I is hunter/slave1, asked for by that key.
+// a hunter drawn as none of the galaxy’s cuts would be hunter/<kind>, asked
+// for by that key (none since lane C2: the hunters’ Slave I is the galaxy’s).
 //
 // createHulls({ load, models }) → { want(kinds), get(kind) → Hull | null, dispose() }
 //   load: loadBytes’s shape (path, { signal }) → Promise<ArrayBuffer>;
