@@ -1,9 +1,9 @@
 // The tactics’ own rules as the game’s AI source has them, written again in the
 // site’s words for the soldier brain (`soldierBrain.js`): which tactics a bot
-// has, when close combat is entered, held and left, how long a hide lasts once
-// its cause has gone. The source is BattleAI’s soldier (an earlier build than
-// the 2017 game’s; `docs/superpowers/evidence/bf-ai-source/README.md` sets every rule
-// against it): the numbers are the tactics rows’ (ai.json), and the few the
+// has, and when close combat is entered, held and left. The source is
+// BattleAI’s soldier (an earlier build than the 2017 game’s;
+// `docs/superpowers/evidence/bf-ai-source/README.md` sets every rule against
+// it): the numbers are the tactics rows’ (ai.json), and the few the
 // code holds as constants are named here with the file and function they come
 // from (NOTES.md, “The bots’ minds against the AI source”). Pure.
 //
@@ -12,8 +12,6 @@
 //     k: { since, now, inCover, toCover, seen, lineOfFire, sinceSeen, ahead, height, turn, inVehicle }
 //   aheadOf(at, vel, seen) → [x, y, z]   the target’s place close combat measures to
 //   turnFrom(vel, to) → degrees          the angle between the way a bot moves and the way to its target
-//   hideHold(row, rand) → seconds        a hide’s drawn hold
-//   hideClock(clock, { cause, was, now, row, rand })     stillHiding(clock, { cause, was, now }) → bool
 
 // A tactic is open to a bot only where its template’s tactics row holds its
 // settings (`Reason/Tactics.cpp`, `TacticInfo`’s constructor sets a tactic’s
@@ -60,21 +58,3 @@ export function turnFrom(vel, to) {
   const c = ((vel[0] / v) * to[0] + (vel[2] / v) * to[1]) / t;
   return (Math.acos(Math.max(-1, Math.min(1, c))) * 180) / Math.PI;
 }
-
-// A hide draws its hold between the row’s `MinimumTimeActive` and
-// `MaximumTimeActive` when it begins (`Reason/Tactics.cpp`, `TacticInfo::set`);
-// `Brain/AISystem.cpp` pushes the limit on for as long as the cause holds, and
-// `useTactic` drops the tactic once past it: so a bot hides while its cause
-// holds and the drawn hold more.
-export const hideHold = (row, rand) => {
-  const lo = row?.MinimumTimeActive ?? 0;
-  const hi = row?.MaximumTimeActive ?? lo;
-  return lo + rand() * (hi - lo);
-};
-
-export function hideClock(clock, { cause, was, now, row, rand }) {
-  if (!was) clock.hold = hideHold(row, rand);
-  if (cause) clock.until = now + clock.hold;
-}
-
-export const stillHiding = (clock, { cause, was, now }) => !!cause || (!!was && now <= (clock.until ?? -Infinity));

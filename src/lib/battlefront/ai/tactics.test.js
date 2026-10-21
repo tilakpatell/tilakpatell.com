@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { seeded } from '../../seeded.js';
 import { aiOf, loadRulebook } from '../rulebook.js';
-import { CLOSE_HOLD, aheadOf, available, closeCombat, hideClock, hideHold, stillHiding, turnFrom } from './tactics.js';
+import { CLOSE_HOLD, aheadOf, available, closeCombat, turnFrom } from './tactics.js';
 
 const ai = aiOf(loadRulebook());
 const rifle = ai.tactics.Rifleman_Tactics.closeCombat;
@@ -64,30 +63,5 @@ describe('close combat, by the source’s test', () => {
     expect(turnFrom([0, 0, 3], [0, 5])).toBeCloseTo(0, 6);
     expect(turnFrom([3, 0, 0], [0, 5])).toBeCloseTo(90, 6);
     expect(turnFrom([0, 0, -3], [0, 5])).toBeCloseTo(180, 6);
-  });
-});
-
-describe('a hide’s time', () => {
-  it('draws its hold between the row’s least and most time active', () => {
-    const row = ai.tactics.Rifleman_Tactics.hide;
-    const rand = seeded(3);
-    for (let i = 0; i < 50; i++) {
-      const h = hideHold(row, rand);
-      expect(h).toBeGreaterThanOrEqual(5);
-      expect(h).toBeLessThanOrEqual(10);
-    }
-  });
-
-  it('lasts while its cause holds and the drawn hold after', () => {
-    const row = { MinimumTimeActive: 6, MaximumTimeActive: 6 };
-    const clock = {};
-    hideClock(clock, { cause: true, was: false, now: 0, row, rand: () => 0.5 });
-    expect(stillHiding(clock, { cause: true, was: true, now: 3 })).toBe(true);
-    hideClock(clock, { cause: true, was: true, now: 3, row, rand: () => 0.5 });
-    // (the cause gone at 3 s: six seconds more)
-    expect(stillHiding(clock, { cause: false, was: true, now: 8.9 })).toBe(true);
-    expect(stillHiding(clock, { cause: false, was: true, now: 9.1 })).toBe(false);
-    // (a bot not hiding is not kept hiding by an old clock)
-    expect(stillHiding(clock, { cause: false, was: false, now: 4 })).toBe(false);
   });
 });

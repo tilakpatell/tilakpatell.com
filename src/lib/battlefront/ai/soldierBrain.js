@@ -18,8 +18,8 @@
 // Where the game's own AI code answers a rule (`tactics.js`, and the sheet in
 // docs/superpowers/evidence/bf-ai-source/README.md), it is the law: a tactic
 // only where the template's row has it; close combat tried first, by the
-// source's test, held 3 s and left by its limits; a hide that outlasts its
-// cause by the row's drawn time, firing from its cover once there.
+// source's test, held 3 s and left by its limits; a hiding bot firing from its
+// cover once there.
 //
 //   createBrain(s, { ai, role, rand, aimScale, system, difficulty, pve, ap }) → brain   (aimScale widens the aim box: a
 //     mode's lethality lever; system: the AI system row, ai.system by default, AISystem_PvE for a pve bot;
@@ -45,7 +45,7 @@ import { pickCover, queryFor } from './cover.js';
 import { pickTarget } from './targeting.js';
 import { queryFor as gameQuery, runQuery } from './coverQuery.js';
 import { skirmishRole, pressAbility } from './skirmish.js';
-import { aheadOf, available, closeCombat, hideClock, stillHiding, turnFrom } from './tactics.js';
+import { aheadOf, available, closeCombat, turnFrom } from './tactics.js';
 import { AHEAD, FACING, TARGET, aimPoint, burstStep, createAim, createBurst, createEvasion, createLof, crouched, groundOk, lofStep, mayFire, noiseOf, strafeSide, takeRoll, viewMiss, viewPoint, viewStep, weaponClass } from './autoPlayer.js';
 
 // a walkable spot near a place: on the level's navmesh at the soldier's height where the battle has
@@ -136,9 +136,8 @@ export function createBrain(s, { ai, role: given = null, rand = Math.random, aim
     current: null,
     pattern: null,
     frame: 0,
-    // (when its close combat began, and its hide's drawn hold and end: tactics.js)
+    // (when its close combat began: tactics.js)
     closeSince: null,
-    hiding: {},
     cover: null,
     coverSince: 0,
     coverStay: 0,
@@ -236,8 +235,8 @@ export function aimAt(brain, from, belief, now, who = null) {
 }
 
 // (close combat first, then flee and hide, as the behaviour tree tries them: `combat_Tactics`. Each is
-// offered only where the template's row holds it, and close combat and a hide's end are the source's
-// tests, worked out in think: tactics.js)
+// offered only where the template's row holds it, and close combat is the source's test, worked out in
+// think: tactics.js)
 const OPTIONS = [
   { id: 'close', rank: 6, considerations: [(c) => (c.closeCombat ? 1 : 0)] },
   { id: 'flee', rank: 5, considerations: [(c) => (c.canFlee && c.target && c.posture === 'retreat' ? 1 : 0)] },
@@ -425,9 +424,6 @@ export function think(brain, world, now) {
   // (the line of fire to a target in sight, asked once: close combat's test and the trigger both read it,
   // and neither asks it of one out of sight)
   const clear = !!b?.visible && world.lineClear(from, v3(b));
-  // the hide's cause, still the site's (the sheet's T6); how long it lasts is the source's (tactics.js)
-  const hideCause = !!b && (s.suppressed >= SUPPRESSED || s.hp / s.hpMax < HIDE_HEALTH);
-  const wasHiding = brain.current === 'hide';
   const ctx = {
     task: !!task,
     away: !!task && fromTask > (task.radius ?? 0) + TASK_SLACK,
@@ -437,7 +433,8 @@ export function think(brain, world, now) {
     engage: brain.tactics.engage?.distance ?? 40,
     closeCombat: !!b && available(brain.tactics, 'closeCombat') && closeCombat(brain.tactics.closeCombat, closeInput(brain, world, b, { me, tgt, clear, now })),
     canFlee: available(brain.tactics, 'flee'),
-    hide: !!b && available(brain.tactics, 'hide') && stillHiding(brain.hiding, { cause: hideCause, was: wasHiding, now }),
+    // (the hide's cause is still the site's, and so is its end with its cause: the sheet's T6 and T7 go together)
+    hide: !!b && available(brain.tactics, 'hide') && (s.suppressed >= SUPPRESSED || s.hp / s.hpMax < HIDE_HEALTH),
     posture: world.squad?.posture ?? 'hold',
     suppressed: s.suppressed,
     health: s.hp / s.hpMax,
@@ -445,10 +442,9 @@ export function think(brain, world, now) {
   };
   const choice = pick(OPTIONS, ctx, { current: brain.current, rank: (o) => o.rank });
   let mode = choice?.id ?? 'follow';
-  // (close combat's clock starts as it begins; a hide draws its hold as it begins and runs it from its cause)
+  // (close combat's clock starts as it begins)
   if (mode === 'close' && brain.current !== 'close') brain.closeSince = now;
   if (mode !== 'close') brain.closeSince = null;
-  if (mode === 'hide') hideClock(brain.hiding, { cause: hideCause, was: wasHiding, now, row: brain.tactics.hide, rand: brain.rand });
   brain.current = mode;
   const intent = { mode, target: b?.id ?? null, goal: null, stance: 'stand', fire: false, aim: null, sprint: false, interact: false };
   const range = brain.s.weapon?.range ?? 200;

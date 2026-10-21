@@ -1,6 +1,6 @@
 // The soldier brain against the game’s AI source (tactics.js has the rules;
 // docs/superpowers/evidence/bf-ai-source/README.md the sheet): the tactics’
-// order and close combat, a hide’s time and its fire.
+// order and close combat, a hide’s fire.
 import { describe, expect, it } from 'vitest';
 import { seeded } from '../../seeded.js';
 import { aiOf, classOf, loadRulebook, weaponOf } from '../rulebook.js';
@@ -75,19 +75,7 @@ describe('the tactics’ order and close combat', () => {
   });
 });
 
-describe('a hide’s time and its fire', () => {
-  it('outlasts its cause by the drawn five to ten seconds, then the bot fights again', () => {
-    const b = bot([0, 0, -50]);
-    b.s.suppressed = 1;
-    see(b, 'them', [0, 1.2, -20]);
-    const w = world({ squad: { centre: [-10, -60], posture: 'hold' } });
-    expect(think(b, w, 1).mode).toBe('hide');
-    b.s.suppressed = 0;
-    expect(think(b, w, 2).mode).toBe('hide');
-    expect(think(b, w, 5.9).mode).toBe('hide');
-    expect(think(b, w, 11.5).mode).not.toBe('hide');
-  });
-
+describe('a hide’s fire', () => {
   it('fires from its cover once in it, and not on the way there', () => {
     const slot = { at: [0, 0, -10], normal: [0, 1], height: 'stand' };
     const fire = (at) => {
