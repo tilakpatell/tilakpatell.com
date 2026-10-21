@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { EYE_AT, createBackdrop, depthOf, foothills, rangeGeometry, stageGeometry, towerGeometry } from './backdrop';
+import { EYE_AT, createBackdrop, depthOf, foothills, rangeGeometry, stageGeometry, thickness, towerGeometry } from './backdrop';
+import { LIGHTS, STORMS } from './daylight';
 import { LANDMARKS, RANGES, landmarksOf, rangesOf } from './stages/ranges';
 import { STAGES } from './stages/index';
 
@@ -115,3 +116,16 @@ describe('the mountains on the horizon', () => {
     b.dispose();
   });
 });
+
+describe('a storm takes the ranges', () => {
+  it('none in any stage’s own air, all in Caradhras’ snow and Moria’s dark', () => {
+    for (const id of Object.keys(LIGHTS)) {
+      expect(thickness(LIGHTS[id].start.fog.density)).toBe(0);
+      expect(thickness(LIGHTS[id].end.fog.density)).toBe(0);
+    }
+    expect(thickness(STORMS.caradhras.density)).toBe(1);
+    expect(thickness(STORMS.moria.density)).toBeGreaterThan(0.8);
+    expect(thickness()).toBe(0);
+  });
+});
+

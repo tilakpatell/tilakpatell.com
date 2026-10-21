@@ -1,17 +1,20 @@
 // Eve and Dad, going about with Mark: rules only (./npcs.js draws Eve and
-// ./scene.js Dad, from these). Plain [x, y, z] arrays, metres; each step at
-// most 0.05 s, so a hidden tab is one short step.
+// ./scene.js Dad, from these). Plain [x, y, z] arrays, metres; a frame is
+// stepped whole, in steps of at most 0.05 s (the dev clock runs the game at
+// several times real, and they keep their speed against it); a frame over a
+// second, a hidden tab's, is one short step.
 //
 // Eve: `patrol` (her loop round downtown); `intercept` (he's hung about
 // still within 300 m of her for 4 s: she comes over to 6 m from him, and
 // says so); `escort` (he flies off from beside her: she holds 8 m off his
 // left for 40 s, then peels back to her loop); `fight` (a foe within 400 m:
-// she goes for it, knocking one out every 8 s); `talk` (E beside her: a
-// line, and she waits). She never leads; she helps.
+// she goes for it, with a word if he's near, knocking one out every 8 s);
+// `talk` (E beside her: a line, and she waits). She never leads; she helps.
 //
 // Dad: `watch` (over downtown); `lesson` (Dad's rings: 50 m behind him and
 // 20 m up, a word at each of the first three rings, impatient after 90 s);
-// `home` (dusk and night, on the porch by Debbie); `spar` (the last
+// `home` (dusk and night, on the porch by Debbie, with a word when Mark
+// comes up to it); `spar` (the last
 // episode: he flies ahead through his points, waiting at each until Mark's
 // within 20 m).
 //
@@ -23,12 +26,29 @@ import { COMPANION } from './lines';
 // (she waits `patience` s beside him, then flies on, and doesn't come over
 // again until he's been off past `spot`: he can't keep her in the air for ever)
 export const EVE = { still: 4, spot: 300, beside: 6, left: 8, escort: 40, foe: 400, every: 8, talkR: 6, talk: 5, fast: 70, off: 8, patience: 45, over: 20 };
-export const DAD = { watch: [40, 150, -60], fast: 60, follow: 90, behind: 50, above: 20, slow: 90, slowEvery: 30, sparR: 20 };
+// (home: a word when Mark comes within `greet` m of the porch, again once he's been past `gone`)
+export const DAD = { watch: [40, 150, -60], fast: 60, follow: 90, behind: 50, above: 20, slow: 90, slowEvery: 30, sparR: 20, greet: 12, gone: 40 };
 
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const len = (v) => Math.hypot(v[0], v[1], v[2]);
 const dist = (a, b) => len(sub(a, b));
-const clampDt = (dt) => Math.min(0.05, Math.max(0, dt || 0));
+const STEP = 0.05;
+const HIDDEN = 1; // s: a frame longer than this is a hidden tab's
+const clampDt = (dt) => Math.min(STEP, Math.max(0, dt || 0));
+// a frame's whole `dt` as steps of at most STEP through `once` (the rules for
+// one step), the events of all of them in order
+function whole(prev, sense, dt, once, key) {
+  const span = dt > HIDDEN ? STEP : Math.max(0, dt || 0);
+  const n = Math.max(1, Math.ceil(span / STEP - 1e-9));
+  let cur = prev;
+  const ev = [];
+  for (let i = 0; i < n; i++) {
+    const r = once(cur, sense, span / n);
+    cur = r[key];
+    ev.push(...r.ev);
+  }
+  return { [key]: cur, ev };
+}
 
 // `p` moved toward `to` at no more than `speed`
 function toward(p, to, speed, dt) {
@@ -60,7 +80,8 @@ export function newEve(loop) {
   return { state: 'patrol', loop, s: 0, p, v: [0, 0, 0], still: 0, t: 0, hit: 0, said: 0, dir: [0, 0, 1], done: false };
 }
 
-export function stepEve(prev, sense, rawDt) {
+export const stepEve = (prev, sense, dt) => whole(prev, sense, dt, stepEveOnce, 'eve');
+function stepEveOnce(prev, sense, rawDt) {
   const dt = clampDt(rawDt);
   const e = { ...prev, p: [...prev.p] };
   const ev = [];
@@ -81,7 +102,10 @@ export function stepEve(prev, sense, rawDt) {
   if (sense.talk && d < EVE.talkR && e.state !== 'fight' && e.state !== 'talk') {
     ev.push(line('eve', COMPANION.eveMeet, e.said++));
     Object.assign(e, { state: 'talk', t: EVE.talk });
-  } else if (foe >= 0 && e.state !== 'fight') Object.assign(e, { state: 'fight', hit: 0 });
+  } else if (foe >= 0 && e.state !== 'fight') {
+    Object.assign(e, { state: 'fight', hit: 0 });
+    if (d < EVE.spot) ev.push(line('eve', COMPANION.eveFight, e.said++));
+  }
 
   let to = e.p;
   let speed = EVE.fast;
@@ -148,7 +172,8 @@ export function newDad({ watch = DAD.watch, porch = null } = {}) {
   return { state: 'watch', watch, porch, p: [...watch], v: [0, 0, 0], ring: null, slowAt: -1, next: 0, said: 0, dir: [0, 0, 1] };
 }
 
-export function stepDad(prev, sense, rawDt) {
+export const stepDad = (prev, sense, dt) => whole(prev, sense, dt, stepDadOnce, 'dad');
+function stepDadOnce(prev, sense, rawDt) {
   const dt = clampDt(rawDt);
   const d = { ...prev, p: [...prev.p] };
   const ev = [];
@@ -186,6 +211,11 @@ export function stepDad(prev, sense, rawDt) {
   } else if ((sense.time === 'dusk' || sense.time === 'night') && d.porch) {
     d.state = 'home';
     to = d.porch;
+    const by = dist(hero, d.porch);
+    if (by < DAD.greet && !d.greeted && dist(d.p, d.porch) < 1) {
+      d.greeted = true;
+      ev.push(line('omni', COMPANION.dadHome, d.said++));
+    } else if (by > DAD.gone) d.greeted = false;
   } else d.state = 'watch';
   if (d.state !== 'lesson') d.ring = null;
 

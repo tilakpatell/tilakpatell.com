@@ -13,13 +13,14 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial, SpriteNodeMaterial } from 'three/webgpu';
-import { uniform, uv, vec3, fract } from 'three/tsl';
+import { float, fract, mix, pow, sin, smoothstep, uniform, uv, vec3 } from 'three/tsl';
 import { hot } from '../../../../../lib/three/canvasTexture';
 import { morgul as buildMorgul, orcColumnGeo, rockGeo } from '../../../towns/cirithungol/props';
 import { columnGeo } from '../../../towns/marshes/props';
 import { BEACONS } from '../../beacons';
 import { C, merged, mergeStatics, part } from '../parts';
 
+const THREADS = [360, 140]; // the fall's threads of water across its width, fine and coarse (a few cm each, the camera a metre and a half off)
 export const FALL = { x: -9, z: 70.5, w: 8, h: 6 }; // the curtain across the hollow’s mouth (the camera inside it, at z 72)
 export const KING = { at: [-6, 92] }; // the seated king by the Cross-roads, on the right
 export const MORGUL = { at: [150, 166], scale: 0.42 }; // the dead city in its vale on the left
@@ -45,10 +46,19 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
   group.add(merged(rocks, material, 'ithilien:henneth'));
   const tFall = uniform(0);
   const fallMat = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
-  // (streaks falling down the sheet)
-  const streak = fract(uv().y.mul(3).add(tFall.mul(1.6)).add(uv().x.mul(7).sin().mul(0.3)));
-  fallMat.colorNode = vec3(0.78, 0.86, 0.92);
-  fallMat.opacityNode = streak.mul(0.35).add(0.35);
+  // (threads of water falling down the sheet, in two layers, fine and coarse, each thread at its
+  // own pace and phase; thinner between them, so the light beyond shows through; white foam at its foot)
+  const at = uv();
+  const threads = (n, seed, length, sharp) => {
+    const col = at.x.mul(n).floor();
+    const rnd = fract(sin(col.mul(12.9898).add(seed)).mul(43758.5453));
+    const run = pow(fract(at.y.mul(length).add(tFall.mul(rnd.mul(0.8).add(1.4))).add(rnd.mul(7))), sharp);
+    return run.mul(sin(fract(at.x.mul(n)).mul(Math.PI)));
+  };
+  const sheet = threads(THREADS[0], 0, 1.4, 2).mul(0.7).add(threads(THREADS[1], 3.7, 2.2, 3).mul(0.5)).clamp(0, 1);
+  const foam = smoothstep(0.18, 0, at.y);
+  fallMat.colorNode = mix(vec3(0.66, 0.74, 0.8), vec3(0.97, 0.98, 1), sheet.add(foam).clamp(0, 1));
+  fallMat.opacityNode = float(0.3).add(sheet.mul(0.55)).add(foam.mul(0.3)).clamp(0, 0.95);
   const fall = new THREE.Mesh(new THREE.PlaneGeometry(FALL.w, FALL.h, 1, 1), fallMat);
   fall.position.set(FALL.x, y0 + FALL.h / 2, FALL.z);
   group.add(fall);

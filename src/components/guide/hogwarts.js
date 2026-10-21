@@ -62,7 +62,7 @@ export const HOGWARTS_TOUCH = [
     rows: [
       ['Stick', 'Walk (push it all the way to run)'],
       ['Swipe', 'Look round'],
-      ['Go in', 'Do what the prompt says'],
+      ['Tap', 'The prompt, to do what it says'],
     ],
   },
   {

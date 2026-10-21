@@ -1,12 +1,13 @@
 // Evil Rick's lair ("Close Rick-counters of the Rick Kind"): a dark hangar
-// of green-black steel, the dome along the north wall painted with hundreds
-// of wired Mortys, five pods with Mortys of their own in glass (the cast's
-// Morty clones, in their shirts), Evil Rick's console with its screen of
-// tracked Ricks, and the chair at the back where the Morty with the eyepatch
-// sits with his arms crossed. The three pods with plugs are freed one by one
-// (the area's 'freed1'…'freed3'); all three freed ('collected'), Evil Rick
-// comes for Morty, and the fight is stage.js's duel (./duel.js). Spoken to
-// after, Evil Morty leaves through a yellow portal ('leave').
+// of green-black steel, its north wall glazed onto the dome of wired Mortys
+// (the place's world, ./worlds.js), five pods with Mortys of their own in
+// glass (the cast's Morty clones, in their shirts), Evil Rick's console with
+// its screen of tracked Ricks, and the chair at the back where the Morty
+// with the eyepatch sits with his arms crossed. The three pods with plugs are
+// freed one by one (the area's 'freed1'…'freed3'); all three freed
+// ('collected'), Evil Rick comes for Morty, and the fight is stage.js's duel
+// (./duel.js). Spoken to after, Evil Morty leaves through a yellow portal
+// ('leave').
 
 import * as THREE from 'three';
 import { BALL, BOX, fitText } from '../interiors/shell';
@@ -15,38 +16,6 @@ import { specks, stage } from './stage';
 const LIGHT = { sun: [0xbfe8d0, 0.9], hemi: [0x9ad8b8, 0x2a3a30, 2.1], fog: null, background: 0x060c08 };
 const STEEL = 0x2a3a30;
 const DARK = 0x121a14;
-
-// the dome: rows of Morty faces, wired, on black
-const DOME = (g, w, h) => {
-  g.fillStyle = '#0a120c';
-  g.fillRect(0, 0, w, h);
-  const cols = 16;
-  const rows = 6;
-  for (let r = 0; r < rows; r++)
-    for (let c = 0; c < cols; c++) {
-      const x = (c + 0.5) * (w / cols);
-      const y = (r + 0.5) * (h / rows);
-      g.strokeStyle = '#4aff7a';
-      g.lineWidth = 1;
-      g.beginPath();
-      g.moveTo(x, y - 9);
-      g.lineTo(x, 0);
-      g.stroke();
-      g.fillStyle = '#8a5a2a';
-      g.beginPath();
-      g.arc(x, y - 4, 7, Math.PI, 0);
-      g.fill();
-      g.fillStyle = '#f2c8a0';
-      g.beginPath();
-      g.arc(x, y, 7, 0, Math.PI * 2);
-      g.fill();
-      g.fillStyle = '#111';
-      g.fillRect(x - 3, y - 1, 2, 2);
-      g.fillRect(x + 1, y - 1, 2, 2);
-      g.fillStyle = (r * 7 + c * 3) % 5 ? '#f3d84b' : '#7fc77a';
-      g.fillRect(x - 6, y + 8, 12, 6);
-    }
-};
 
 export async function buildEvilrick(kit) {
   const S = stage(kit, 'evilrick', { floor: specks('#1e2a22', ['#18231c', '#243028'], 21, 900, 2), floorTile: 3, wall: STEEL, ceiling: DARK, skirt: DARK });
@@ -57,9 +26,6 @@ export async function buildEvilrick(kit) {
   // ribs and strip lights
   for (let dz = -18; dz <= 18; dz += 4) for (const x of [A.x0 + 0.2, A.x1 - 0.2]) R.frame(x, P(0, dz)[1], 0, { list: 'fixed' }).box(DARK, 0, 0, 0, 0.4, H, 0.5);
   for (let dz = -14; dz <= 14; dz += 7) R.frame(...P(0, dz), 0, { list: 'fixed' }).box(DARK, 0, H - 0.4, 0, W - 1, 0.3, 0.5).glow(BOX, 0x4aff7a, 1.2, 0, H - 0.44, 0, 0, W - 2, 0.04, 0.2);
-  // the dome, across the north wall, over the console
-  R.cell('evildome', 512, 192, DOME);
-  R.frame(...P(0, -(A.z1 - A.z0) / 2 + 0.14), 0, { list: 'fixed' }).box(0x0a120c, 0, 2.4, 0, W - 2, 6.4, 0.1).decal('evildome', 0, 5.6, 0.07, W - 2.4, 6, { bright: true });
   // his console and its screen
   const [cx, cz] = P(0, -14);
   const C = R.frame(cx, cz, 0);

@@ -26,8 +26,8 @@ const lineFor = (text) => Math.max(2800, 900 + text.length * 52);
 // do, empty until the term starts; the arrival again; Controls, the site's
 // guide; the way out by the view you came from), the one Prompt (at the
 // boats, Enter to skip the arrival once it has been seen, Esc out of a
-// room), a toast, and on touch the stick and the button that does what the
-// prompt says. The arrival (Lane D) adds the letterbox, its subtitles, the
+// room; on touch it is the button itself, as the kit has it), a toast, and
+// on touch the stick. The arrival (Lane D) adds the letterbox, its subtitles, the
 // Sorting's card and the wand's; once sorted, the frame takes the house's
 // colours and its scarf hangs in the corner.
 export default function HogwartsWorld() {
@@ -153,14 +153,7 @@ export default function HogwartsWorld() {
               </TouchButton>
             ) : null
           ) : (
-            <>
-              <Stick className="hogwarts-stick" onMove={(x, y) => api()?.stick(x, y)} label="Walk" />
-              {door && (
-                <TouchButton size={76} onPress={() => api()?.go()} aria-label={`Go in: ${door.label}`}>
-                  Go in
-                </TouchButton>
-              )}
-            </>
+            <Stick className="hogwarts-stick" onMove={(x, y) => api()?.stick(x, y)} label="Walk" />
           )
         }
       >

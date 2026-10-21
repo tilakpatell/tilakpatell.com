@@ -25,6 +25,17 @@
 //     missing; lib: { findBones, strideOf, HELD, skinStep } (held.js's)
 //   failing(rows, lib) → [{ name, why }]: the rows that fail the audit
 //   table(rows, world) → Markdown
+//
+// With no --world it prints the site’s cast table instead (src/lib/cast/
+// bodies.js): every kind, whose body it is, its file and what could replace
+// it, then the count by source and the site rows with a `could`, the number
+// the Battlefront-by-default design moves (its decision 1).
+//
+//   node scripts/cast-audit.mjs [--md out]
+//
+//   castRows(BODIES, fileOf) → [{ kind, source, file, faces, could }]  (pure)
+//   castCounts(rows) → { kinds, by: { [source]: n }, site, could }      (pure)
+//   castTable(rows) → Markdown: the table, then the counts              (pure)
 
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
@@ -197,6 +208,38 @@ export function table(rows, world = '') {
   return lines.join('\n') + '\n';
 }
 
+// ── the cast table: whose body each kind is ──
+
+export const castRows = (BODIES, fileOf) =>
+  Object.entries(BODIES).map(([kind, row]) => ({ kind, source: row.source ?? null, file: fileOf(row), faces: row.faces?.length ?? 0, could: row.could ?? null }));
+
+export function castCounts(rows) {
+  const by = {};
+  for (const r of rows) by[r.source] = (by[r.source] ?? 0) + 1;
+  const site = rows.filter((r) => r.source === 'site');
+  return { kinds: rows.length, by, site: site.length, could: site.filter((r) => typeof r.could === 'string').length };
+}
+
+// the game’s first, then the mods’, then the site’s, as the table ranks them
+const order = (s) => (s === 'game' ? 0 : String(s).startsWith('mod:') ? 1 : 2);
+export function castTable(rows) {
+  const c = castCounts(rows);
+  const cell = (s) => String(s).replace(/\|/g, '\\|');
+  const lines = ['# The cast table', '', 'Every Star Wars figure kind the site draws (`src/lib/cast/bodies.js`), whose body it is, and what could replace a site’s body.', ''];
+  lines.push('| kind | source | file | could |', '|---|---|---|---|');
+  for (const r of rows) {
+    const file = r.faces ? `${r.file} and ${r.faces} more ${r.faces === 1 ? 'face' : 'faces'}` : r.file;
+    const could = r.source === 'site' ? (r.could ?? '— (none has it)') : '';
+    lines.push(`| ${r.kind} | ${r.source} | ${cell(file)} | ${cell(could)} |`);
+  }
+  const by = Object.entries(c.by)
+    .sort(([a], [b]) => order(a) - order(b) || a.localeCompare(b))
+    .map(([s, n]) => `${n} ${s}`)
+    .join(', ');
+  lines.push('', `${c.kinds} kinds: ${by}.`, `Site rows with a \`could\`: ${c.could} of ${c.site}.`);
+  return lines.join('\n') + '\n';
+}
+
 // ── the worlds' manifests (through Vite: they import as the site does) ──
 
 // what Middle-earth's toys carry, by who plays them (the towns' looks' `item`)
@@ -242,9 +285,21 @@ async function manifest(world, load) {
   throw new Error(`no world ${world}: middleearth, rickmorty or galaxy`);
 }
 
+// the cast table needs no Vite: the file imports nothing
+async function castMain() {
+  const { BODIES, fileOf } = await import('../src/lib/cast/bodies.js');
+  const md = castTable(castRows(BODIES, fileOf));
+  const out = opt('--md');
+  if (out) {
+    await mkdir(dirname(out), { recursive: true });
+    await writeFile(out, md);
+  }
+  console.log(md);
+}
+
 async function main() {
   const world = opt('--world');
-  if (!world) throw new Error('--world middleearth|rickmorty|galaxy');
+  if (!world) return castMain();
   await MeshoptDecoder.ready;
   const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
   const read = async (url) => (url && existsSync(pub(url)) ? io.read(pub(url)) : null);

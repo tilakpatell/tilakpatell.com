@@ -51,6 +51,13 @@ export const STAGES = [
         { at: [0, 118], r: 22, edge: 14 },
       ],
       spec: { seed: 13, relief: [{ type: 'swell', scale: 220, height: 5 }, { type: 'hills', scale: 80, height: 6, gain: 0.4, octaves: 3 }, { type: 'island', at: [-140, 90], r: 110, height: 38 }] },
+      // (the town's streets and yards: no grass standing up through the cobbles; the fields
+      // before the gate and Bree-hill keep theirs)
+      bare: [
+        { at: [0, 40], r: 15 },
+        { at: [0, 80], r: 15 },
+        { at: [0, 118], r: 15 },
+      ],
     },
   },
   {

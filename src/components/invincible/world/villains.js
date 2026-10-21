@@ -88,6 +88,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
     flaxanElite: () => kitFoe(mats.flaxanElite, 0.92),
     mauler: () => castFoe('mauler'),
     seismic: () => castFoe('seismic'),
+    omniman: () => castFoe('omniman'),
   };
   function kitFoe(m, scale) {
     const h = buildHumanoid({ style: 'chitauri', materials: m, scale });
@@ -105,7 +106,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
       v.kit = true;
       return v;
     }
-    const f = figure(t, CAST[kind]);
+    const f = figure(t, CAST[kind] ?? CAST.omni); // (Omni-Man's row is `omni`)
     f.snap(POSES.stand);
     group.add(f.holder);
     casts.push(castMaterial(f.model, { rim }));
@@ -113,7 +114,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
   }
   // one drawn for each of a kind standing (or falling): made as they're
   // needed, handed out in the foes' order each frame
-  const pools = { flaxan: [], flaxanElite: [], mauler: [], seismic: [] };
+  const pools = { flaxan: [], flaxanElite: [], mauler: [], seismic: [], omniman: [] };
 
   // their bolts
   const MAX = 64;
@@ -162,9 +163,13 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
     const f = v.f;
     const moving = Math.hypot(e.v[0], e.v[2]) > 1;
     if (e.kind === 'mauler') {
-      const clip = { swing: 'swing', throw: 'throw', stagger: 'hit', ko: 'down', down: 'down' }[e.state] ?? (moving ? 'charge' : 'idle');
+      const clip = { swing: 'swing', throw: 'throw', stagger: 'hit', held: 'hit', thrown: 'hit', ko: 'down', down: 'down' }[e.state] ?? (moving ? 'charge' : 'idle');
       const once = clip !== 'idle' && clip !== 'charge';
       if (!f.act(clip, { once, fade: 0.15 })) f.pose(moving ? POSES.stride(t * 1.6, 1, 1) : e.state === 'swing' ? POSES.punch([0, 0.2, 1]) : POSES.stand, dt, 14);
+    } else if (e.kind === 'omniman') {
+      // Dad, in the fight: flat out on a charge, hanging there between, hit when hit
+      const clip = { stagger: 'hit', charge: 'fly' }[e.state] ?? 'hover';
+      if (!f.act(clip, { once: clip === 'hit', fade: 0.2 })) f.pose(clip === 'fly' ? POSES.fly() : POSES.hover(t), dt, 9);
     } else {
       const clip = { stagger: 'hit', ko: 'down', down: 'down' }[e.state] ?? (e.quakeT > 0 ? 'quake' : e.blastT > 0 ? 'blast' : 'hover');
       const once = clip !== 'hover';
@@ -213,7 +218,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
       portal.material.uniforms.uTime.value = t;
       chest.set(hero.p[0], hero.p[1] + 1, hero.p[2]);
 
-      const used = { flaxan: 0, flaxanElite: 0, mauler: 0, seismic: 0 };
+      const used = { flaxan: 0, flaxanElite: 0, mauler: 0, seismic: 0, omniman: 0 };
       for (const e of f.foes) {
         const kind = e.kind ?? 'flaxan';
         // the Flaxans go once they're down; the Maulers and Doc Seismic lie there till it's over
@@ -232,7 +237,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
           act(v, { ...e, kind, quakeT: l?.quake ?? 0, blastT: l?.blast ?? 0 }, dt, t);
         } else if (kind === 'flaxan' || kind === 'flaxanElite' || v.kit) {
           v.holder.position.set(e.p[0], e.p[1] + (v.kit ? KINDS[kind].h * 0.53 : 0), e.p[2]);
-          if (e.state === 'ko') {
+          if (e.state === 'ko' || e.state === 'thrown') {
             v.spin += dt * 9;
             v.holder.rotation.set(v.spin, v.spin * 0.6, 0);
             poseHumanoid(v.h, { t, mode: 'hover', flinch: 1 });
@@ -240,7 +245,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
             // facing him, arm up at him when he's in range
             pos.copy(chest).sub(v.holder.position);
             v.holder.rotation.set(0, Math.atan2(pos.x, pos.z), 0);
-            poseHumanoid(v.h, { t: t + i, mode: v.kit && kind === 'mauler' ? 'idle' : 'hover', aim: pos.length() < FIGHT.range ? 1 : 0.3, lean: Math.min(1, Math.hypot(...e.v) / 20) * 0.6 });
+            poseHumanoid(v.h, { t: t + i, mode: v.kit && kind === 'mauler' ? 'idle' : 'hover', aim: pos.length() < FIGHT.range ? 1 : 0.3, lean: Math.min(1, Math.hypot(...e.v) / 20) * 0.6, flinch: e.state === 'held' ? 1 : 0 });
           }
         }
       }

@@ -9,7 +9,10 @@
 //   createShore({ house, kitFor, tier }) → { group, scatter, solids, update(camera, dt), dispose }
 
 import * as THREE from 'three';
+import { cameraPosition, distance, dot, float, max, mix, positionWorld, smoothstep, uniform, vec3 } from 'three/tsl';
 import { createKitScatter } from '../../../lib/three/kitScatter';
+import { onColor } from '../../../lib/three/hookNodes';
+import { noiseWith } from '../../../lib/three/noiseNodes';
 import { GROUND, heightAt, inland, scatterOf, solidsOf } from '../rules/shore';
 
 // the shore's colours, sRGB: the wet stones at the water's edge, the dry
@@ -46,6 +49,34 @@ function colourAt(x, z, out) {
 
 // the ground as a grid fine where you walk (`step` metres) and coarse out
 // along the hills either side, where it's only seen far off
+// The stones of the shingle, up close: the ground's colour broken into
+// pebbles a hand across and the bigger stones among them, each lighter on
+// top and darker in the gaps, fading out with distance (where it would only
+// shimmer) and on the grass, where it reads as tussocks instead
+function stones(material) {
+  const uSeed = uniform(new THREE.Vector3(3.7, 8.1, 1.9));
+  const { noise } = noiseWith(uSeed, { octaves: 2 });
+  onColor(
+    material,
+    (d) => {
+      const p = positionWorld.xz;
+      const small = noise(vec3(p.mul(6.5), 0.5), uSeed).mul(0.5).add(0.5);
+      const big = noise(vec3(p.mul(1.7), 2.5), uSeed).mul(0.5).add(0.5);
+      // (a stone's crown catches the light, the gaps between hold the dark)
+      const crown = smoothstep(0.35, 0.75, small).mul(0.6).add(smoothstep(0.45, 0.8, big).mul(0.4));
+      const near = float(1).sub(smoothstep(12, 60, distance(positionWorld, cameraPosition)));
+      // (grey ground, the shingle, takes it whole; the greens a third of it)
+      const grey = float(1).sub(smoothstep(0.02, 0.12, max(d.g.sub(d.r), d.r.sub(d.b))));
+      const k = near.mul(mix(0.35, 1, grey));
+      const lum = dot(d.rgb, vec3(0.2126, 0.7152, 0.0722));
+      return mix(d.rgb, d.rgb.mul(crown.mul(0.9).add(0.6)).add(lum.mul(crown).mul(0.12)), k);
+    },
+    'hogwarts:stones',
+    { uSeed },
+  );
+  return material;
+}
+
 function groundGeometry(step) {
   const xs = [];
   for (let x = GROUND.x0; x < -260; x += 40) xs.push(x);
@@ -121,7 +152,7 @@ function hillsGeometry({ centre = [0, -650], inner = 1250, outer = 1700, segment
 export function createShore({ house, kitFor, tier = 'high' } = {}) {
   const group = new THREE.Group();
   group.name = 'shore';
-  const groundMat = house.material({ vertexColors: true });
+  const groundMat = stones(house.material({ vertexColors: true }));
   const ground = new THREE.Mesh(groundGeometry(tier === 'low' ? 4 : 2), groundMat);
   ground.name = 'shore:ground';
   ground.receiveShadow = true;
