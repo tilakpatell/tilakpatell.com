@@ -15,7 +15,7 @@
 //     their reach, the lake’s reflection, the ink line round the cast, the near castle’s reach
 
 import * as THREE from 'three';
-import { clamp, dot, float, length, mix, pow, renderOutput, screenUV, vec2, vec3, vec4 } from 'three/tsl';
+import { clamp, dot, float, length, mix, pow, renderOutput, screenUV, smoothstep, vec2, vec3, vec4 } from 'three/tsl';
 import { createHouse } from '../../../lib/three/houseNodes';
 import { CANNOT } from '../../../lib/three/light/post';
 import { BLOOM } from '../../../lib/three/bloom';
@@ -50,8 +50,9 @@ export function gradeNode(tex, uNight) {
   // at night the dark leans a little bluer (a moonlit lawn, not a dim day), the warm lights left warm
   // (and its colour drained toward a cold blue, as an eye sees by moonlight: a moonlit lawn grey-blue,
   // not green; the windows and the lamps, bright, keep theirs)
-  const dim = uNight.mul(float(1).sub(clamp(lum.mul(2.5), 0, 1)));
-  const moonlit = mix(graded, vec3(0.62, 0.72, 1.0).mul(dot(graded, LUMA)).mul(1.15), dim.mul(0.62));
+  // (up to the mid-greys a moonlit lawn reaches under the night's lifted exposure; a lit window is far over them)
+  const dim = uNight.mul(float(1).sub(smoothstep(0.35, 0.85, lum)));
+  const moonlit = mix(graded, vec3(0.62, 0.72, 1.0).mul(dot(graded, LUMA)), dim.mul(0.7));
   const night = mix(moonlit, moonlit.mul(vec3(0.86, 0.95, 1.12)), dim.mul(0.6));
   const vignette = float(1).sub(pow(length(off.mul(vec2(1.1, 1))).mul(1.25), 2.6).mul(0.24));
   return vec4(clamp(night.mul(vignette), 0, 1), 1);
