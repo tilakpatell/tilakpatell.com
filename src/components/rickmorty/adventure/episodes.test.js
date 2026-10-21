@@ -9,9 +9,9 @@ const stepsOf = (e) => e.steps.flatMap((s) => (s.type === 'all' ? [s, ...s.steps
 const allSteps = () => EPISODES.flatMap(stepsOf);
 
 describe('the adventure’s episodes', () => {
-  it('has thirteen episodes, the first seven ready', () => {
+  it('has thirteen episodes, the first eight ready', () => {
     expect(EPISODES).toHaveLength(13);
-    expect(READY).toBe(7);
+    expect(READY).toBe(8);
     expect(new Set(EPISODES.map((e) => e.id)).size).toBe(13);
   });
 
@@ -127,5 +127,14 @@ describe('the adventure’s episodes', () => {
     expect(jerry.steps[0]).toMatchObject({ type: 'task', id: 'jerryboree', place: 'jerryboree' });
     expect(jerry.steps[1]).toMatchObject({ type: 'task', id: 'gloopynoops', place: 'gloopynoops' });
     expect(jerry.unlocks).toEqual(['cablestudio', 'schwifty', 'dream']);
+  });
+
+  it('goes on with Prime time: the cable studio, then Get Schwifty', () => {
+    const prime = EPISODES[7];
+    expect(prime.title).toBe('Prime time');
+    expect(prime.steps.map((s) => s.id)).toEqual(['cablestudio', 'schwifty']);
+    expect(prime.steps[0]).toMatchObject({ type: 'task', id: 'cablestudio', place: 'cablestudio' });
+    expect(prime.steps[1]).toMatchObject({ type: 'task', id: 'schwifty', place: 'schwifty' });
+    expect(prime.unlocks).toEqual(['fantasy', 'froopyland', 'dim35c']);
   });
 });

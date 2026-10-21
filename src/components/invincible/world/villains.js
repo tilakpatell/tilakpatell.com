@@ -17,6 +17,7 @@ import { buildHumanoid, poseHumanoid } from '../../avengers/hq/kit/humanoid';
 import { POSES, figure } from '../../../lib/three/rig';
 import { CAST } from '../cast';
 import { FIGHT, KINDS, PORTAL, portalOpen } from './foes';
+import { ANGSTROM_GREEN } from './dimensions';
 import { carGeometry } from './life';
 import { castMaterial } from './people';
 
@@ -89,6 +90,9 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
     mauler: () => castFoe('mauler'),
     seismic: () => castFoe('seismic'),
     omniman: () => castFoe('omniman'),
+    // season two (./season2.js): the mirror Mark is Mark's own figure; Angstrom a kit figure in his green
+    mirror: () => castFoe('mirror'),
+    angstrom: () => kitFoe({ armour: new THREE.MeshStandardMaterial({ color: 0x2f6b3a, roughness: 0.55 }), skin: new THREE.MeshStandardMaterial({ color: 0x9fb8a4, roughness: 0.7 }), glow: new THREE.MeshBasicMaterial({ color: hot(ANGSTROM_GREEN, 2.4), toneMapped: false }) }, KINDS.angstrom.h / 1.8),
   };
   function kitFoe(m, scale) {
     const h = buildHumanoid({ style: 'chitauri', materials: m, scale });
@@ -106,7 +110,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
       v.kit = true;
       return v;
     }
-    const f = figure(t, CAST[kind] ?? CAST.omni); // (Omni-Man's row is `omni`)
+    const f = figure(t, CAST[kind] ?? (kind === 'mirror' ? CAST.mark : CAST.omni)); // (Omni-Man's row is `omni`, the mirror's Mark's)
     f.snap(POSES.stand);
     group.add(f.holder);
     casts.push(castMaterial(f.model, { rim }));
@@ -114,7 +118,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
   }
   // one drawn for each of a kind standing (or falling): made as they're
   // needed, handed out in the foes' order each frame
-  const pools = { flaxan: [], flaxanElite: [], mauler: [], seismic: [], omniman: [] };
+  const pools = { flaxan: [], flaxanElite: [], mauler: [], seismic: [], omniman: [], mirror: [], angstrom: [] };
 
   // their bolts
   const MAX = 64;
@@ -122,6 +126,10 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
   bolts.frustumCulled = false;
   bolts.count = 0;
   group.add(bolts);
+  const gbolts = new THREE.InstancedMesh(new THREE.SphereGeometry(0.4, 10, 8), new THREE.MeshBasicMaterial({ color: hot(ANGSTROM_GREEN, 3), toneMapped: false }), MAX);
+  gbolts.frustumCulled = false;
+  gbolts.count = 0;
+  group.add(gbolts);
   const m4 = new THREE.Matrix4();
 
   // the thrown cars: a saloon, tumbling
@@ -166,10 +174,11 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
       const clip = { swing: 'swing', throw: 'throw', stagger: 'hit', held: 'hit', thrown: 'hit', ko: 'down', down: 'down' }[e.state] ?? (moving ? 'charge' : 'idle');
       const once = clip !== 'idle' && clip !== 'charge';
       if (!f.act(clip, { once, fade: 0.15 })) f.pose(moving ? POSES.stride(t * 1.6, 1, 1) : e.state === 'swing' ? POSES.punch([0, 0.2, 1]) : POSES.stand, dt, 14);
-    } else if (e.kind === 'omniman') {
-      // Dad, in the fight: flat out on a charge, hanging there between, hit when hit
-      const clip = { stagger: 'hit', charge: 'fly' }[e.state] ?? 'hover';
-      if (!f.act(clip, { once: clip === 'hit', fade: 0.2 })) f.pose(clip === 'fly' ? POSES.fly() : POSES.hover(t), dt, 9);
+    } else if (e.kind === 'omniman' || e.kind === 'mirror') {
+      // Dad, in the fight: flat out on a charge, hanging there between, hit when hit (the mirror Mark the same, fast at him)
+      const fast = e.kind === 'mirror' && Math.hypot(...e.v) > 12;
+      const clip = { stagger: 'hit', charge: 'fly', ko: 'down', down: 'down' }[e.state] ?? (fast ? 'fly' : 'hover');
+      if (!f.act(clip, { once: clip === 'hit' || clip === 'down', fade: 0.2 })) f.pose(clip === 'fly' ? POSES.fly() : clip === 'down' ? POSES.stand : POSES.hover(t), dt, 9);
     } else {
       const clip = { stagger: 'hit', ko: 'down', down: 'down' }[e.state] ?? (e.quakeT > 0 ? 'quake' : e.blastT > 0 ? 'blast' : 'hover');
       const once = clip !== 'hover';
@@ -198,6 +207,11 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
       } else if (e.type === 'down') vfx.smoke(V(e.at), { size: 1.6, count: 3, life: 1.6, color: e.kind === 'mauler' ? 0x8a8070 : 0x6a4a8a, to: 0x9a8aa8, rise: 1 });
       else if (e.type === 'hurt') vfx.sparks(V(e.at), { count: 22, speed: 9, color: 0xffffff, to: e.by === 'car' || e.by === 'mauler' ? 0xffb070 : FLAX, life: 0.4 });
       else if (e.type === 'won') vfx.ring(V(PORTAL.p), { color: FLAX, from: PORTAL.r, to: PORTAL.r * 3, life: 0.9, normal: V(PORTAL.n) });
+      else if (e.type === 'portalOut' || e.type === 'portalIn') {
+        // Angstrom's own portal, his green, where he went and where he came back
+        vfx.ring(V(e.at), { color: ANGSTROM_GREEN, from: 0.4, to: 4, life: 0.4, normal: UP });
+        vfx.flash(V(e.at), { color: ANGSTROM_GREEN, intensity: 22, distance: 16, life: 0.2 });
+      }
       else if (e.type === 'carHit' || e.type === 'carDown') {
         vfx.debris(V(e.at), { count: 14, speed: 10, size: 0.22, color: 0x8a2a22, spread: 1 });
         vfx.smoke(V(e.at), { size: 2.2, count: 4, life: 1.4, color: 0x8a8070, to: 0xb0a898, rise: 1.2 });
@@ -218,11 +232,11 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
       portal.material.uniforms.uTime.value = t;
       chest.set(hero.p[0], hero.p[1] + 1, hero.p[2]);
 
-      const used = { flaxan: 0, flaxanElite: 0, mauler: 0, seismic: 0, omniman: 0 };
+      const used = { flaxan: 0, flaxanElite: 0, mauler: 0, seismic: 0, omniman: 0, mirror: 0, angstrom: 0 };
       for (const e of f.foes) {
         const kind = e.kind ?? 'flaxan';
         // the Flaxans go once they're down; the Maulers and Doc Seismic lie there till it's over
-        const show = e.state !== 'waiting' && (e.state !== 'down' || (f.on && !kind.startsWith('flaxan')));
+        const show = e.state !== 'waiting' && e.state !== 'away' && (e.state !== 'down' || (f.on && !kind.startsWith('flaxan')));
         if (!show) continue;
         const pool = pools[kind];
         const i = used[kind]++;
@@ -251,13 +265,22 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
       }
       for (const k of Object.keys(pools)) for (let i = used[k]; i < pools[k].length; i++) pools[k][i].holder.visible = false;
 
-      bolts.count = Math.min(MAX, f.bolts.length);
+      const purple = f.bolts.filter((b) => !b.green);
+      const green = f.bolts.filter((b) => b.green);
+      bolts.count = Math.min(MAX, purple.length);
       for (let i = 0; i < bolts.count; i++) {
-        const b = f.bolts[i];
+        const b = purple[i];
         bolts.setMatrixAt(i, m4.makeTranslation(...b.p));
         if (!calm) vfx.trail(V(b.p), { size: 0.75, life: 0.25, color: 0xe070ff, to: 0x300060, a: 0.7 });
       }
       bolts.instanceMatrix.needsUpdate = true;
+      gbolts.count = Math.min(MAX, green.length);
+      for (let i = 0; i < gbolts.count; i++) {
+        const b = green[i];
+        gbolts.setMatrixAt(i, m4.makeTranslation(...b.p));
+        if (!calm) vfx.trail(V(b.p), { size: 0.8, life: 0.25, color: 0xb8ff7a, to: 0x0a3a10, a: 0.7 });
+      }
+      gbolts.instanceMatrix.needsUpdate = true;
 
       // the cars: over his head, then tumbling at Mark
       const list = f.cars ?? [];

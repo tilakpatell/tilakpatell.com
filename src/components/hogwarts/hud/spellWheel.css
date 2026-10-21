@@ -1,0 +1,136 @@
+/* The wand's card at the foot and the wheel of nine (SpellWheel.jsx), on
+   the world's parchment (hogwarts.css's --hud-* skin). Each spell's colour
+   is --spell, the ring and the glyph's glow; the ink stays the ink. */
+
+.hw-wand-card {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.35rem 0.8rem 0.35rem 0.4rem;
+  border: var(--hud-border);
+  border-radius: var(--hud-radius);
+  background: var(--hud-glass);
+  color: var(--hud-ink);
+  box-shadow: var(--hud-shadow);
+  pointer-events: none;
+}
+.hw-wand-glyph,
+.hw-wheel-glyph {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  border-radius: 50%;
+  /* the spell's colour in the middle, as the wand's tip shows it (a dark
+     ring under it, so a pale colour still reads on the parchment) */
+  background: radial-gradient(circle, color-mix(in srgb, var(--spell) 55%, transparent) 0 38%, rgb(42 29 18 / 0.85) 40% 100%);
+  color: #fff8e6;
+}
+.hw-glyph {
+  width: 1.3rem;
+  height: 1.3rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hw-ring {
+  position: absolute;
+  inset: -3px;
+  width: calc(100% + 6px);
+  height: calc(100% + 6px);
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+.hw-ring circle { fill: none; stroke-width: 2.5; }
+.hw-ring-track { stroke: color-mix(in srgb, var(--spell) 70%, #2a1d12); }
+/* the cooldown: the dark arc that empties as the spell comes ready */
+.hw-ring-cool { stroke: rgb(20 14 8 / 0.9); transition: stroke-dashoffset 120ms linear; }
+.hw-wand-words { display: grid; gap: 0.1rem; }
+.hw-wand-word { font: 700 0.95rem/1.15 var(--hud-title-face); letter-spacing: 0.02em; }
+.hw-wand-keys { font-size: 0.72rem; color: var(--hud-muted); }
+
+/* the wheel: nine round the middle of the view while Q is held, on one
+   disc of parchment that holds every word (text over the view sits on
+   glass); --wheel-r is the ring the spells stand on */
+.hw-wheel {
+  --wheel-r: 8.9rem;
+  --wheel-disc: 11.7rem;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 6;
+  width: 0;
+  height: 0;
+  pointer-events: auto;
+}
+.hw-wheel::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--wheel-disc));
+  top: calc(-1 * var(--wheel-disc));
+  width: calc(2 * var(--wheel-disc));
+  height: calc(2 * var(--wheel-disc));
+  border: var(--hud-border);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 0 60%, rgb(42 29 18 / 0.08) 61%, transparent 62%),
+    var(--hud-glass);
+  box-shadow: var(--hud-shadow);
+  pointer-events: none;
+}
+.hw-wheel-item {
+  position: absolute;
+  left: calc(var(--sx) * var(--wheel-r));
+  top: calc(var(--sy) * var(--wheel-r));
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  width: 6rem;
+  transform: translate(-50%, -50%);
+  padding: 0.3rem 0.1rem;
+  border: 0;
+  border-radius: var(--hud-radius);
+  background: transparent;
+  color: var(--hud-ink);
+  font: inherit;
+  cursor: pointer;
+  transition: transform var(--t-fast, 120ms) ease-out;
+}
+.hw-wheel-item[data-on] { transform: translate(-50%, -50%) scale(1.12); }
+.hw-wheel-item[data-on] .hw-wheel-glyph { box-shadow: 0 0 0 2px var(--hud-accent), 0 0 18px color-mix(in srgb, var(--spell) 80%, transparent); }
+/* the key, the house cap on the glyph's shoulder, in ink on the parchment */
+.hw-wheel-key {
+  position: absolute;
+  right: -0.55rem;
+  top: -0.4rem;
+  color: var(--hud-ink);
+  background: var(--hud-glass-hi);
+}
+.hw-wheel-word { font: 600 0.75rem/1.15 var(--hud-title-face); text-align: center; white-space: nowrap; }
+.hw-wheel-middle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  gap: 0.3rem;
+  width: 10rem;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: var(--hud-ink);
+  pointer-events: none;
+}
+.hw-wheel-middle p { margin: 0; }
+.hw-wheel-name { font: 700 1.05rem/1.2 var(--hud-title-face); }
+.hw-wheel-does { font-size: 0.78rem; line-height: 1.35; color: var(--hud-muted); }
+@media (max-width: 520px) {
+  /* a phone: the glyphs round a smaller disc, the name in the middle */
+  .hw-wheel { --wheel-r: 7.1rem; --wheel-disc: 9.3rem; }
+  .hw-wheel-item { width: 3.4rem; }
+  .hw-wheel-word { display: none; }
+  .hw-wheel-middle { width: 8.5rem; }
+  .hw-wand-keys { display: none; }
+}

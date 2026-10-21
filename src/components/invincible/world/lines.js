@@ -41,6 +41,18 @@ export const GUARDIAN_LINES = {
   bulletproof: ['Fastest one here. Not bragging. Measuring.', 'If someone’s falling, they’re already in my arms.', 'You’re quick. I’m quicker. Together we’re early.', 'Race you to the river. Don’t bother, I’m back.'],
 };
 
+// Angstrom Levy (./season2.js), six lines: one as each of his dimensions opens
+// round Mark, one as he first comes back through a portal of his own, one as
+// he comes back again, one as he goes down. The site's own words.
+export const ANGSTROM_LINES = {
+  burnt: 'This one lost. Look at what you’d have been.',
+  drowned: 'Here you never came. The water did.',
+  mirror: 'And here you’re the other way round. Every way round, Mark, you break things.',
+  back: 'A door I can open is a door I can close. Behind you.',
+  again: 'Every version of me is tired of every version of you.',
+  down: 'There are other doors. There are always other doors.',
+};
+
 // And what's said in passing, over the HUD (./InvWorld.jsx's say): who says
 // it (one of the people above) and the line as it's shown.
 export const CALLS = {
