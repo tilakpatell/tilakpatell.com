@@ -194,7 +194,8 @@ const DRAW = {
     const { w, d, h } = L;
     const walls = h * 0.6;
     const r = Math.min(w / 2, h * 0.4);
-    facade(R, f, paint, 0, 0, 0, w, walls, d);
+    // (the walls a hair inside the door, so the door stands proud of them)
+    facade(R, f, paint, 0, 0, 0, w, walls, d - 0.04);
     f.cyl(roof, 0, walls, 0, r, d, Math.PI / 2, 0, CYL8);
     f.box(look.trim ?? 0x2a2a30, 0, 0, d / 2 - 0.05, w * 0.6, walls * 0.85, 0.1);
   },

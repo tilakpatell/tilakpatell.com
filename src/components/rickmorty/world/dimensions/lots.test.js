@@ -102,6 +102,16 @@ describe('the code buildings', () => {
     });
   }
 
+  it('stands a hangar’s door proud of its front, so the two never flicker in the one plane', () => {
+    const { R, parts, tiled } = fakeRoom();
+    const L = { x: 0, z: 0, turn: 0, w: 12, d: 9, h: 14, y: 0, style: 'hangar' };
+    lot(R, L, LOOK, { windows: windowPaints(R, LOOK), list: 'fixed' });
+    const front = Math.max(...worldBoxes([], tiled).map((b) => b.max.z));
+    const door = worldBoxes(parts, []).find((b) => Math.abs(b.max.x - b.min.x - L.w * 0.6) < 1e-6 && b.max.z - b.min.z < 0.2);
+    expect(door).toBeTruthy();
+    expect(door.max.z - front).toBeGreaterThanOrEqual(0.005);
+  });
+
   it('paints its walls with windows that tile in the world, one paint a wall colour', () => {
     const { R, tiled } = fakeRoom();
     const paints = windowPaints(R, LOOK);
