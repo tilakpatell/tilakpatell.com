@@ -68,7 +68,7 @@ export const HOGWARTS_TOUCH = [
   {
     label: 'The arrival and the Sorting',
     rows: [
-      ['Skip', 'Straight to the castle, once you’ve seen the arrival whole'],
+      ['Straight to the castle', 'Skip the arrival, once you’ve seen it whole'],
       ['Tap an answer', 'Answer the Sorting Hat'],
     ],
   },

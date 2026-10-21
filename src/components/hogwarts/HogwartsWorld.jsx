@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useMediaQuery, useReducedMotion } from '../../lib/hooks';
 import { WorldHost, useWorld } from '../../runtime';
-import { Bubble, Hud, Letterbox, Menu, MenuItem, Prompt, QuestList, Stick, Toast, TouchButton, letterbox } from '../../runtime/hud';
+import { Bubble, Hud, Letterbox, Menu, MenuItem, Prompt, QuestList, Stick, Toast, letterbox } from '../../runtime/hud';
 import { wayOut } from '../worlds/worlds';
 import hogwartsModule from './module';
 import SortingCard from './hud/SortingCard';
@@ -145,17 +145,7 @@ export default function HogwartsWorld() {
           </div>
         }
         foot={foot}
-        thumbs={
-          onRide ? (
-            arrival.skippable ? (
-              <TouchButton size={64} onPress={() => api()?.skip()} aria-label="Straight to the castle">
-                Skip
-              </TouchButton>
-            ) : null
-          ) : (
-            <Stick className="hogwarts-stick" onMove={(x, y) => api()?.stick(x, y)} label="Walk" />
-          )
-        }
+        thumbs={onRide ? null : <Stick className="hogwarts-stick" onMove={(x, y) => api()?.stick(x, y)} label="Walk" />}
       >
         <Scarf house={house} />
         <Toast toast={toast} className="hogwarts-toast" />
