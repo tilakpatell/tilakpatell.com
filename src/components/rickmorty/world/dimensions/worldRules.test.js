@@ -1,0 +1,103 @@
+import { describe, expect, it } from 'vitest';
+import { blocksSight, worldProblems } from './worldRules';
+import { E, N, S, place } from './place';
+
+// a place with a hunter, a lookout and a named person, a spot, and a block
+const fixture = () =>
+  place(0, {
+    id: 'trial',
+    name: 'A trial',
+    kind: 'outdoor',
+    deep: 50,
+    wide: 70,
+    people: [{ id: 'boss', who: 'gearhead', dx: 0, dz: -15, face: S }],
+    extras: [
+      { kind: 'gromflomite', dx: 10, dz: -10, face: N, ai: { hunt: { speed: 3, catchR: 1 } } },
+      { kind: 'magdalian-a', dx: -10, dz: -10, face: N, ai: { lookout: true } },
+      { kind: 'plutonian-a', dx: -20, dz: 0, face: E },
+    ],
+    spots: [{ id: 'thing', dx: 0, dz: -12, label: 'A thing', verb: 'Look' }],
+  });
+const room = () => place(1, { id: 'hall', name: 'A hall', kind: 'room', deep: 30, wide: 34, ceiling: 8 });
+const TRIS = { 'zigerion': 9377, 'gearperson-b': 9227, 'gromflomite': 8356, 'magdalian-a': 9382, 'gearhead': 30000, 'crowd:cop': 3208 };
+const opts = { tris: TRIS, tasks: ['squanch', 'wedding'], blocks: [{ id: 'pen', dx: -20, dz: 15, w: 6, d: 4, h: 1 }] };
+const ok = { look: {}, crowd: { walk: [{ kinds: ['zigerion'], n: { high: 4, mid: 2, low: 1 }, loop: [[-25, 15], [-5, 15], [-5, 20], [-25, 20]] }] } };
+const problems = (w, d = fixture()) => worldProblems(d, w, opts);
+
+describe('a world record’s rules', () => {
+  it('passes a record that keeps them', () => {
+    expect(problems(ok)).toEqual([]);
+  });
+
+  it('knows every crowd kind: in the cast or one of the light copies, and counted', () => {
+    expect(problems({ crowd: { walk: [{ ...ok.crowd.walk[0], kinds: ['nobody'] }] } })).toEqual([expect.stringMatching(/nobody/)]);
+    expect(problems({ crowd: { walk: [{ ...ok.crowd.walk[0], kinds: ['zeep'] }] } })).toEqual([expect.stringMatching(/zeep.*triangles/)]);
+  });
+
+  it('puts no copy of a hunter, a lookout or a named person in the box', () => {
+    for (const k of ['gromflomite', 'magdalian-a']) expect(problems({ crowd: { walk: [{ ...ok.crowd.walk[0], kinds: [k] }] } }), k).toEqual([expect.stringMatching(new RegExp(k))]);
+    // a named person's kind gathered in the box
+    expect(problems({ crowd: { gather: [{ kinds: ['gearhead'], n: { high: 2 }, at: [-20, 15], r: 1.5, block: 'pen' }] } })).toEqual([expect.stringMatching(/gearhead/)]);
+  });
+
+  it('lets a hunter’s kind stand 7 m beyond the edge, a named person’s 30 m, and not nearer', () => {
+    const gather = (kinds, at) => ({ crowd: { gather: [{ kinds, n: { high: 4 }, at, r: 2 }] } });
+    expect(problems(gather(['gromflomite'], [0, -25 - 10]))).toEqual([]);
+    expect(problems(gather(['gromflomite'], [0, -25 - 4]))).toEqual([expect.stringMatching(/gromflomite/)]);
+    // (the street's walkers go round 4 m out: too near for a hunter's kind)
+    expect(problems({ crowd: { walk: [{ kinds: ['gromflomite'], n: { high: 4 }, loop: 'street' }] } })).toEqual([expect.stringMatching(/gromflomite/)]);
+    expect(problems(gather(['gearhead'], [0, -25 - 32]))).toEqual([]);
+    expect(problems(gather(['gearhead'], [0, -25 - 12]))).toEqual([expect.stringMatching(/gearhead/)]);
+  });
+
+  it('lets a room’s hunters’ kinds stand outside its walls, behind the glass', () => {
+    const d = room();
+    expect(worldProblems(d, { outside: 'ground', crowd: { gather: [{ kinds: ['gromflomite'], n: { high: 4 }, at: [0, -15 - 10], r: 2 }] } }, opts)).toEqual([]);
+  });
+
+  it('keeps a walker’s loop in the box off everything there', () => {
+    expect(problems({ crowd: { walk: [{ kinds: ['zigerion'], n: { high: 2 }, loop: [[-5, -12], [5, -12]] }] } })).toEqual([expect.stringMatching(/thing/)]);
+  });
+
+  it('stands a gathering on its block, and only on a block that’s there', () => {
+    const on = { crowd: { gather: [{ kinds: ['zigerion'], n: { high: 6 }, at: [-20, 15], r: 1.5, block: 'pen' }] } };
+    expect(problems(on)).toEqual([]);
+    expect(problems({ crowd: { gather: [{ ...on.crowd.gather[0], r: 4 }] } })).toEqual([expect.stringMatching(/off its block/)]);
+    expect(problems({ crowd: { gather: [{ ...on.crowd.gather[0], block: 'nowhere' }] } })).toEqual([expect.stringMatching(/nowhere/)]);
+    // a gathering in the box with no block: Morty would walk through people standing still
+    expect(problems({ crowd: { gather: [{ ...on.crowd.gather[0], block: null }] } })).toEqual([expect.stringMatching(/block/)]);
+  });
+
+  it('gates a crowd only on tasks there are', () => {
+    expect(problems({ crowd: { walk: [{ ...ok.crowd.walk[0], until: 'squanch' }] } })).toEqual([]);
+    expect(problems({ crowd: { walk: [{ ...ok.crowd.walk[0], after: 'nothing' }] } })).toEqual([expect.stringMatching(/nothing/)]);
+  });
+
+  it('cuts a window only in its wall, under the ceiling', () => {
+    const d = room();
+    const w = (o) => worldProblems(d, { outside: 'ground', windows: [{ wall: 'n', from: -5, to: 5, y0: 1, h: 3, ...o }] }, opts);
+    expect(w({})).toEqual([]);
+    expect(w({ wall: 'up' })).toEqual([expect.stringMatching(/wall/)]);
+    expect(w({ from: -20, to: 5 })).toEqual([expect.stringMatching(/off its wall/)]);
+    expect(w({ h: 9 })).toEqual([expect.stringMatching(/ceiling/)]);
+    // an outdoor place has no windows
+    expect(problems({ windows: [{ wall: 'n', from: -5, to: 5, y0: 1, h: 3 }] })).toEqual([expect.stringMatching(/outdoor/)]);
+  });
+
+  it('never flies a family’s own vehicle, and stands a set piece at most twice', () => {
+    expect(problems({ fliers: [{ model: '/models/c137/rm/jerry-ship.glb', n: { high: 1 } }] })).toEqual([expect.stringMatching(/jerry-ship/)]);
+    expect(problems({ ring: { n: { styles: ['block'], sets: [{ model: '/models/c137/rm/purgecottage.glb', h: 7, n: 3 }] } } })).toEqual([expect.stringMatching(/twice/)]);
+    expect(problems({ ring: { n: { styles: ['block'], sets: [{ model: '/models/c137/rm/spacebeth-ship.glb', h: 3, n: 1 }] } } })).toEqual([expect.stringMatching(/spacebeth-ship/)]);
+  });
+});
+
+describe('a sight line', () => {
+  const laid = { lots: [{ x: 0, z: -60, w: 10, d: 10, h: 20, y: 0, turn: 0 }], skyline: [] };
+  it('is blocked by a building it passes through, below the building’s top', () => {
+    expect(blocksSight(laid, [0, 1.6, 0], [0, 15, -120])).toBe(true);
+  });
+  it('clears a building it passes over or beside', () => {
+    expect(blocksSight(laid, [0, 1.6, 0], [0, 80, -120])).toBe(false);
+    expect(blocksSight(laid, [0, 1.6, 0], [40, 15, -120])).toBe(false);
+  });
+});

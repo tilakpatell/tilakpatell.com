@@ -221,7 +221,7 @@ function lanesOf(d, fliers, { tier, row, room, outside, fogFar }, r) {
     left -= n;
     const a = r() * Math.PI * 2;
     const y = within(f.y ?? [30, 60], r());
-    out.push({ key: `lane-${i}`, model: f.model, n, y, from: [d.centre.x - Math.cos(a) * R, d.centre.z - Math.sin(a) * R], to: [d.centre.x + Math.cos(a) * R, d.centre.z + Math.sin(a) * R], speed: f.speed ?? 16 });
+    out.push({ key: `lane-${i}`, model: f.model, h: f.h ?? null, n, y, from: [d.centre.x - Math.cos(a) * R, d.centre.z - Math.sin(a) * R], to: [d.centre.x + Math.cos(a) * R, d.centre.z + Math.sin(a) * R], speed: f.speed ?? 16 });
   }
   return out;
 }
