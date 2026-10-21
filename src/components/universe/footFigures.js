@@ -14,13 +14,14 @@
 //
 //   figuresWith(wear) → { loadModel, loadParty, partyUrl }
 //   loadSharedFigure(url, tall, { seed, from }), templateIn(models, url)
+//   castSpec(kind), warmGameFigure(spec): a cast table's row as a spec, and its files fetched ahead
 //   rigged, rigScene, built, seedFor, lookFor, HAND_GUNS, getLoader
 
 import * as THREE from 'three';
 import { gltfLoader } from '../../lib/three/gltf';
 import { NO_CALLS, animatorCalls, seedOf } from '../../lib/three/figureCalls';
 import { createAnimator } from '../../lib/three/animator';
-import { cutsToLoad, loadWalrusBody, packUrls, richClips, swapBody } from '../../lib/three/walrus';
+import { cutsToLoad, loadWalrusBody, loadWalrusPacks, packUrls, richClips, swapBody } from '../../lib/three/walrus';
 import { createCutter, cutUrl } from '../../lib/three/walrusCuts';
 import { withStance } from '../../lib/three/walrusStance';
 import { createAdditiveLayer } from '../../lib/three/additiveLayer';
@@ -35,15 +36,28 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import { RICK_HIPS, borrowClips, faceForward, heading as headingOf, retarget } from '../rickmorty/portal/clips';
 import { EVERYONE, LOOK_KEY, defaultLook, readLooks, writeLook } from '../rickmorty/wardrobe/looks';
 import { local } from '../../lib/hooks';
+import { bodyOf, cutsOf } from '../../lib/cast/bodies';
 import { smoothNormals } from '../cockpit/crew';
 import { FOOT, METRE } from './foot';
 
 const V = THREE.Vector3;
 
+// A Star Wars kind on the 2017 game's own body: its row of the site's one
+// cast table (lib/cast/bodies.js), as a figure's spec reads it (the file,
+// how tall, the game's skeleton and the pack of its clips), so the map's
+// crews are the same people the galaxy's worlds draw
+// (docs/superpowers/specs/2026-10-21-battlefront-by-default-design.md,
+// decision 4)
+export const castSpec = (kind) => {
+  const row = bodyOf(kind);
+  return { tall: row.tall, src: { url: row.url }, rig: row.rig, pack: row.pack ?? null, ownRig: row.ownRig ?? null, cuts: cutsOf(row) };
+};
+
 // who steps out of each ship: the one you play first, and who comes along
 // (tall in metres; src: a Portal panic figure, a model of the site's, or
-// one built here; the gun they carry (gunplay.js's GUNS), and the colour of
-// its bolts)
+// one built here; the Falcon's and the X-wing's people the game's, by
+// castSpec; the gun they carry (gunplay.js's GUNS), and the colour of its
+// bolts)
 export const PARTY = {
   cruiser: [
     { id: 'rick', name: 'Rick', tall: 1.88, src: { meshy: 'rick' }, gun: 'portal', bolt: '#8dff5a' },
@@ -54,11 +68,11 @@ export const PARTY = {
     { id: 'jesse', name: 'Jesse', tall: 1.73, src: { url: '/models/albuquerque/jesse.glb' }, gun: 'pistol', bolt: '#ffd36b' },
   ],
   falcon: [
-    { id: 'chewie', name: 'Chewie', tall: 2.28, src: { url: '/models/cockpit/chewie.glb' }, gun: 'bowcaster', bolt: '#ff4a3d' },
-    { id: 'han', name: 'Han', tall: 1.85, src: { url: '/models/galaxy/crew/han.glb' }, gun: 'blaster', bolt: '#ff4a3d' },
+    { id: 'chewie', name: 'Chewie', ...castSpec('chewie'), gun: 'bowcaster', bolt: '#ff4a3d' },
+    { id: 'han', name: 'Han', ...castSpec('han'), gun: 'blaster', bolt: '#ff4a3d' },
   ],
   xwing: [
-    { id: 'luke', name: 'Luke', tall: 1.72, src: { url: '/models/galaxy/crew/luke.glb' }, gun: 'blaster', bolt: '#ff3b30' },
+    { id: 'luke', name: 'Luke', ...castSpec('luke'), gun: 'blaster', bolt: '#ff3b30' },
     { id: 'artoo', name: 'Artoo', tall: 1.09, src: { built: 'artoo' }, gun: null, bolt: null },
   ],
 };
@@ -176,6 +190,17 @@ async function walrusFigure(spec) {
   const packs = spec.packs ?? packUrls(spec.pack, { extras: rich });
   // (and the stance of the weapon it takes up: lib/three/walrusStance.js)
   return withStance(await gameFigure(spec, (url) => loadWalrusBody(url, { packs })), { enabled: rich });
+}
+
+// What a 2017 figure on the game's skeleton asks for first (its light cut,
+// and its packs at the device's level), fetched into the page's cache
+// (gltfCache) ahead of it: a landing's crew and the troops made the frame
+// they're first needed are then a copy from memory, not a fetch.
+export function warmGameFigure(spec) {
+  if (spec.rig !== 'walrus' || !spec.src?.url) return Promise.resolve(null);
+  const level = detailLevel();
+  const first = spec.cuts?.full ? cutUrl(spec.src.url, spec.cuts.lod ? 'lod1' : 'plain') : cutsToLoad(spec.src.url, level, { lowData: Boolean(device().saveData) })[0];
+  return Promise.all([loadGLTF(first), loadWalrusPacks(spec.packs ?? packUrls(spec.pack, { extras: richClips(level) }))]).catch(() => null);
 }
 
 // A 2017 droid or beast on a skeleton of its own (lib/three/ownRig.js: the
@@ -425,9 +450,11 @@ export function figuresWith({ bodyAsset, bodyKind, dress }) {
   }
 
   // the model a party member's figure is, where it's one of the site's (their
-  // look's body: Heisenberg's is Walt's own figure, the lab suit Jesse's)
+  // look's body: Heisenberg's is Walt's own figure, the lab suit Jesse's);
+  // none for one on the game's own skeleton, which is never a copy made on
+  // Rick's clips (warmGameFigure fetches theirs)
   const partyUrl = (spec, looks = null) => {
-    if (!spec.src.url) return null;
+    if (!spec.src.url || spec.rig) return null;
     const look = lookFor(spec.id, looks);
     return look ? bodyAsset(look) : spec.src.url;
   };
