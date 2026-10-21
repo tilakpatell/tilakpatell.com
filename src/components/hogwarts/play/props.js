@@ -202,6 +202,32 @@ function rider(house, { tint = '#7f0909' } = {}) {
   );
 }
 
+// someone standing in their robes, for a lesson with nobody of the cast
+// lane’s yet to stand there (the duel’s other side): robe, collar in the
+// house’s colour (`tint`), head and hair, the wand hand out in front.
+// The cast’s figures on the shared skeleton take its place when they come.
+function student(house, { tint = '#1a472a' } = {}) {
+  const robe = new THREE.ConeGeometry(0.3, 1.15, 12, 1, true).translate(0, 0.62, 0);
+  const shoulders = new THREE.SphereGeometry(0.19, 12, 8).scale(1.15, 0.7, 0.85).translate(0, 1.16, 0);
+  const collar = new THREE.TorusGeometry(0.1, 0.035, 6, 12).rotateX(Math.PI / 2).translate(0, 1.26, 0.01);
+  const head = new THREE.SphereGeometry(0.115, 14, 10).translate(0, 1.38, 0.01);
+  const hair = new THREE.SphereGeometry(0.12, 14, 6, 0, Math.PI * 2, 0, Math.PI * 0.5).translate(0, 1.4, -0.005);
+  const arm = new THREE.CylinderGeometry(0.045, 0.05, 0.5, 6).rotateX(Math.PI / 2 - 0.5).translate(0.2, 1.02, 0.2);
+  const hand = new THREE.SphereGeometry(0.045, 6, 4).translate(0.2, 0.9, 0.43);
+  return mesh(
+    merged([
+      [robe, '#1e1c22'],
+      [shoulders, '#1e1c22'],
+      [collar, tint],
+      [head, '#e6c4a6'],
+      [hair, '#e8dca0'],
+      [arm, '#1e1c22'],
+      [hand, '#e6c4a6'],
+    ]),
+    house,
+  );
+}
+
 const ball = (house, r, colour) => mesh(merged([[new THREE.SphereGeometry(r, 18, 12), colour]]), house);
 
 function cauldron(house) {
@@ -292,6 +318,7 @@ export const PROPS = {
   mandrake: { glb: null, make: mandrakePot }, // (models/hogwarts/props/mandrake.glb)
   buckbeak: { glb: null, make: buckbeak }, // (models/hogwarts/props/buckbeak.glb)
   rider: { glb: null, make: rider }, // a student, seated on a broom: Lane B’s cast
+  student: { glb: null, make: student }, // a student standing, wand out: Lane B’s cast
 };
 
 export function makeProp(kind, { house = null, rt = null, tint } = {}) {
