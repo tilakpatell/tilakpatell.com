@@ -1,9 +1,9 @@
-// The browser check's scenarios for episodes 5 to 7 (../rm-story-check.mjs):
+// The browser check's scenarios for episodes 5 to 8 (../rm-story-check.mjs):
 // the cruiser's chase and the Gromflomite base, Needful Things and the vat,
-// the Jerryboree and St. Gloopy Noops.
+// the Jerryboree and St. Gloopy Noops, the cable studio and Get Schwifty.
 /* global window */
 import { COURSE, chaseStart, newChase } from '../../src/components/rickmorty/world/games/chase.js';
-import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf } from './helpers.mjs';
+import { BASE, OUT, N, check, done, built, goto, use, story, reads, WIPED, SMALL, HEAT, DEALS, JERRY, throughPortal, toast, inArea, cardFor, at, opens, warpUse, caught, before, chasing, playTo, game, homeOf, spotAt, wayInOf, place, PRIME } from './helpers.mjs';
 
 export const LATE = {
   // a new visitor plays episode 5: the cruiser's chase (taking off ticks
@@ -269,8 +269,124 @@ export const LATE = {
     // (the episode's last step: its closing line is the toast, and the way out earns its achievement)
     await toast(page, JERRY.outro[0][1]);
     check((await page.evaluate(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]'))).includes('gloopynoops'), 'the hospital’s achievement wasn’t earned');
+    // and on into episode 8: its card, the places episode 7 opened, the next ones still shut
+    await cardFor(page, 7);
     await at(page, 7, 0, 'after St. Gloopy Noops');
-    await opens(page, [...JERRY.unlocks, 'citadel', 'squanch', 'evilrick'], true, 'after episode 7');
+    await opens(page, JERRY.unlocks, true, 'after episode 7');
+    await opens(page, PRIME.unlocks, false, 'after episode 7');
+    await reads(page, PRIME.steps[0].text);
+  },
+  // a new visitor plays episode 8: the cable studio's running order (a set
+  // before the countdown does nothing; two on, then a wrong one and all dark;
+  // the clock run out and back at the door; then every set in its turn) and
+  // Get Schwifty's song at the mic (lost once, then won: counted while the
+  // show's up, the episode's end told once it closes)
+  async 'episode-8'(page) {
+    await playTo(page, 7, ['cabinet', 'chase']);
+    await at(page, 7, 0, 'at episode 8');
+    await reads(page, PRIME.steps[0].text);
+    check((await page.evaluate(() => window.__C137__.dial('cablestudio'))) === 'cablestudio', 'the dial wouldn’t take the cable studio');
+    await throughPortal(page);
+    await inArea(page, 'cablestudio');
+    // (each set faces the floor: the flats and the doors from the south, the counter and the couch from the north)
+    const FACE = { 'set-ants': N, 'set-legs': N, 'set-sneezy': N, 'set-field': N, 'set-doors': N, 'set-bits': -N, 'set-shmlo': -N };
+    const sets = () => game(page, 'cablestudio', 'sequence');
+    const switchOn = (id) => warpUse(page, 'cablestudio', id, ...spotAt('cablestudio', id, FACE[id]));
+    const countdown = async () => {
+      await warpUse(page, 'cablestudio', 'cablebooth', ...spotAt('cablestudio', 'cablebooth', -N, 1));
+      await page.waitForFunction(() => window.__C137__.api.act('cablestudio', 'sequence').phase === 'run', null, { timeout: 30000, polling: 100 }).catch(() => {
+        throw new Error('the booth didn’t start the countdown');
+      });
+    };
+    const on = (n, what) =>
+      page.waitForFunction((n) => window.__C137__.api.act('cablestudio', 'sequence').on === n, n, { timeout: 30000, polling: 100 }).catch(() => {
+        throw new Error(what);
+      });
+    // a set used before the countdown: nothing on, no clock
+    const first = (await sets()).order[0];
+    await switchOn(first);
+    await page.waitForTimeout(1500);
+    check((await sets()).phase === 'idle' && (await sets()).on === 0, 'a set went on before the countdown');
+    // the countdown at the booth: the clock on and the meter up; the first two of the running order on
+    await countdown();
+    await page.locator('.rm-cluster[aria-label="Going live"][data-on]').waitFor({ timeout: 10000 }).catch(() => {
+      throw new Error('no countdown meter on the HUD');
+    });
+    const { order } = await sets();
+    for (const id of order.slice(0, 2)) await switchOn(id);
+    await on(2, 'the first two sets of the running order didn’t go on');
+    if (OUT) await page.screenshot({ path: `${OUT}/episode-8-cablestudio.png` });
+    // a wrong set: every one dark again, nothing done
+    await switchOn(Object.keys(FACE).find((id) => !order.slice(0, 3).includes(id)));
+    await on(0, 'a wrong set didn’t turn them all dark');
+    check(!(await done(page)).includes('cablestudio'), 'a wrong set counted');
+    // out of time: back at the door, the studio idle, nothing done
+    await page.evaluate(() => window.__C137__.api.act('cablestudio', 'setSequence', { left: 0.05 }));
+    await caught(page, wayInOf('cablestudio'));
+    check((await sets()).phase === 'idle' && !(await done(page)).includes('cablestudio'), 'a countdown run out counted');
+    // the countdown again (a running order dealt afresh), and every set in its turn
+    await countdown();
+    for (const id of (await sets()).order) await switchOn(id);
+    await toast(page, 'Put the channels on air');
+    check((await page.evaluate(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]'))).includes('cablestudio'), 'the studio’s achievement wasn’t earned');
+    await at(page, 7, 1, 'after the cable studio');
+    await reads(page, PRIME.steps[1].text);
+    await warpUse(page, 'cablestudio', 'cablestudio-portal', ...homeOf('cablestudio'));
+    await inArea(page, 'garage');
+    // Get Schwifty: the mic opens the show over the page, and opening it counts nothing
+    check((await page.evaluate(() => window.__C137__.dial('schwifty'))) === 'schwifty', 'the dial wouldn’t take Get Schwifty');
+    await throughPortal(page);
+    await inArea(page, 'schwifty');
+    await warpUse(page, 'schwifty', 'mic', ...spotAt('schwifty', 'mic', N, 1));
+    const show = place(page, 'mic');
+    await show.waitFor({ timeout: 60000 }).catch(() => {
+      throw new Error('the mic didn’t open the show');
+    });
+    await page.waitForFunction(() => window.__SCHWIFTY__, null, { timeout: 60000 });
+    check(!(await done(page)).includes('schwifty'), 'the show counted as it opened');
+    // a run one miss from empty, the note let past: disqualified, nothing counted
+    await page.evaluate(() => {
+      const S = window.__SCHWIFTY__;
+      const n = S.state.notes[0];
+      S.set({ ...S.state, t: n.t + 0.125, heads: 0.05 });
+      S.step({});
+    });
+    await show.getByRole('button', { name: 'Again', exact: true }).waitFor({ timeout: 5000 });
+    check((await show.locator('.schwifty-card').textContent()).includes('DISQUALIFIED.'), 'a lost song wasn’t disqualified');
+    check(!(await done(page)).includes('schwifty'), 'a lost song counted');
+    await page.waitForTimeout(700);
+    await show.getByRole('button', { name: 'Again', exact: true }).click();
+    if (OUT) {
+      // (a song part-way, set rather than played: a headless browser draws a few frames a second)
+      await page.evaluate(() => {
+        const S = window.__SCHWIFTY__;
+        S.set({ ...S.state, t: 21.2, heads: 0.72, notes: S.state.notes.map((n) => (n.t < 21 ? { ...n, hit: 'great' } : n)) });
+      });
+      await page.screenshot({ path: `${OUT}/episode-8-schwifty.png` });
+    }
+    // the song at its last note: one press wins, and the task counts while the show's still up
+    await page.evaluate(() => {
+      const S = window.__SCHWIFTY__;
+      const last = S.state.notes.at(-1);
+      S.set({ ...S.state, t: last.t - 1 / 60, heads: 0.6, notes: S.state.notes.map((n) => (n === last ? n : { ...n, hit: 'great' })) });
+      S.step({ hit: last.lane });
+    });
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-c137-done') ?? '[]').includes('schwifty'), null, { timeout: 10000 }).catch(() => {
+      throw new Error('the song’s win didn’t count');
+    });
+    check(await show.isVisible(), 'the show closed on the win');
+    check((await page.locator('.rm-toast', { hasText: PRIME.outro[0][1] }).count()) === 0, 'the closing line was said under the show');
+    check((await page.locator('.rm-episode').count()) === 0, 'a card showed under the show');
+    await page.waitForTimeout(700);
+    await show.locator('.schwifty-card').getByRole('button', { name: 'Leave', exact: true }).click();
+    await show.waitFor({ state: 'detached', timeout: 10000 });
+    // (the episode's last step: its closing line is the toast, and the song won earns its achievement once the show's closed)
+    await toast(page, PRIME.outro[0][1]);
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]').includes('schwifty'), null, { timeout: 30000, polling: 250 }).catch(() => {
+      throw new Error('the song’s achievement wasn’t earned');
+    });
+    await at(page, 8, 0, 'after Get Schwifty');
+    await opens(page, [...PRIME.unlocks, 'citadel', 'squanch', 'evilrick'], true, 'after episode 8');
     await page.waitForTimeout(1500);
     check((await page.locator('.rm-episode').count()) === 0, 'a card showed for an episode that isn’t built');
     await reads(page, 'Go into the Smith house and put interdimensional cable on the TV.');

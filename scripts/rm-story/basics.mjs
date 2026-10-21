@@ -120,8 +120,16 @@ export const BASICS = {
       await page.evaluate(() => ['find-jerrytv', 'find-jerrytv'].forEach((a) => window.__C137__.api.act('jerryboree', a)));
       await page.waitForTimeout(1000);
       check((await game(page, 'jerryboree', 'find')).phase === 'idle' && !(await page.locator('.rm-cluster[aria-label="Pick-up time"][data-on]').count()), 'a returner’s Jerryboree started its game again');
+      // the channels watched before the countdown was built: the booth starts nothing, no meter shows, and its achievement comes on the visit
+      await goto(page, 'cablestudio', ...arriveOf('cablestudio'));
+      await page.waitForFunction(() => JSON.parse(localStorage.getItem('tp-achievements') ?? '[]').includes('cablestudio'), null, { timeout: 30000, polling: 250 }).catch(() => {
+        throw new Error('a returner who’d watched the channels never got the studio’s achievement');
+      });
+      await page.evaluate(() => window.__C137__.api.act('cablestudio', 'sequence-start'));
+      await page.waitForTimeout(1000);
+      check((await game(page, 'cablestudio', 'sequence')).phase === 'idle' && !(await page.locator('.rm-cluster[aria-label="Going live"][data-on]').count()), 'a returner’s cable studio started its game again');
     },
-    { seed: { 'tp-c137-done': ['cable', 'vat', 'jerryboree'] } },
+    { seed: { 'tp-c137-done': ['cable', 'vat', 'jerryboree', 'cablestudio'] } },
   ),
   // the Citadel tells the story where it is and what's done there (episode 10
   // isn't built yet, so on Free roam nothing moves), and its steps still save
