@@ -116,6 +116,7 @@ import { stepRmLockOn } from './rmLockOn';
 const Roy = lazy(() => import('./roy/Roy').catch(() => ({ default: placeDown('Roy’s headset', 'Back to the arcade') })));
 const Sewer = lazy(() => import('./sewer/Sewer').catch(() => ({ default: placeDown('The sewer', 'Back to the agency') })));
 const Cabinet = lazy(() => import('./games/Cabinet.jsx').catch(() => ({ default: placeDown('The cabinet', 'Back to the arcade') })));
+const Schwifty = lazy(() => import('./games/Schwifty.jsx').catch(() => ({ default: placeDown('The show', 'Back to the stage') })));
 const sound = (name) =>
   import('../../games/gameAudio')
     .then((g) => g[name]?.())
@@ -169,6 +170,7 @@ const PLACES = {
   roy: { title: 'Roy: A Life Well Lived', where: 'Blips and Chitz', full: true },
   sewer: { title: 'Pickle Rick’s sewer run', where: 'The agency', full: true, wait: 'Down the drain…' },
   cabinet2: { title: 'Plumbus Smash', where: 'Blips and Chitz', full: true, wait: 'Switching the cabinet on…' },
+  mic: { title: 'Get Schwifty', where: 'The Get Schwifty show', task: 'schwifty', full: true, wait: 'The heads are tuning in…' },
 };
 const AREA_NAME = {
   street: 'The Smiths’ street',
@@ -2317,7 +2319,7 @@ function placeDown(what, back) {
 
 // ── what opens over the page ──
 // Its component, and the way back to the room (Esc, the button, or B on a
-// controller). Roy, the sewer and the cabinet fill the screen and have their own ways out.
+// controller). Roy, the sewer, the cabinet and the show fill the screen and have their own ways out.
 function Place({ id, onClose, onQuiz, onRoy, onSewer, onWin, onTask }) {
   const p = PLACES[id];
   const used = () => p.task && onTask(p.task);
@@ -2387,6 +2389,7 @@ function Place({ id, onClose, onQuiz, onRoy, onSewer, onWin, onTask }) {
       </GpuGate>
     ),
     cabinet2: <Cabinet game="cabinet2" onWin={onWin} onLeave={onClose} />,
+    mic: <Schwifty onWin={used} onLeave={onClose} />,
   }[id];
   return createPortal(
     <div ref={shell} className="rm-place" data-full={p.full || undefined} data-place={id} role="dialog" aria-modal="true" aria-label={p.full ? p.title : undefined} aria-labelledby={p.full ? undefined : 'rm-place-title'} tabIndex={-1}>
