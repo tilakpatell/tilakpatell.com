@@ -3,10 +3,12 @@
 // after GitHub Pages (docs/decisions/2026-10-21-cloudflare-for-the-site.md).
 // A path with no file answers with dist/404.html, as GitHub Pages does; a
 // folder's index.html answers at its path with the slash; public/_headers
-// holds the cache rule.
+// holds the cache rule and lets any site read the files, as GitHub does.
 {
   "name": "tilakpatell-com",
-  "compatibility_date": "2026-10-21",
+  // (the newest the pinned wrangler's local runtime knows: a Worker of files
+  // alone runs no code of its own, so the date changes nothing it does)
+  "compatibility_date": "2026-10-13",
   "workers_dev": true,
   // (one address, the workers.dev one: no address for each version uploaded)
   "preview_urls": false,

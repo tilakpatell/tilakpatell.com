@@ -11,12 +11,13 @@ The owner asked whether moving off GitHub Pages was worth it and what it costs, 
 - The owner made a Worker, `tilakpatell-com` (account `b12a527c…`, its address `tilakpatell-com.tilakny.workers.dev`), from the dashboard's "Hello world" with Cloudflare's own build on `main`. The build was cancelled; it would have run `npx wrangler deploy` with no config and without the bucket's address.
 - `main`'s build with the bucket's address (as the deploy has it) took 68 s here; uploaded to the Worker as files alone, 11,362 files in 229 s, then answered: pages 200, `/universe` 307 to `/universe/`, an unknown path the site's `404.html` at 404, `/assets/` a year and `immutable`, the rest `max-age=0, must-revalidate`, brotli.
 - The free plan: 20,000 files a Worker and 25 MiB a file (wrangler counted 12,279; none over); requests for files alone are not counted against the Worker's daily ones.
+- GitHub Pages sends `access-control-allow-origin: *` on every file and Cloudflare sends none unless told. The Minecraft player, framed from its own origin (`tilakpatell.github.io`, `src/components/eagler/load.js`), fetches the game's sealed file from `tilakpatell.com/eagler/` (`public/eagler-player/index.html`): without the header the game would not open once the domain is Cloudflare's. The game keeps its saves in that origin's storage.
 - The domain's DNS is Namecheap's, with Namecheap's email forwarding (its MX and SPF records), which by Namecheap's account works only while its own DNS answers for the domain.
 - Cross-origin isolation (COOP `same-origin` and COEP), which `SharedArrayBuffer` and threaded WebAssembly need (`docs/stack/webassembly.md`), tried on the Worker: 13 pages (home, the universe, the galaxy, projects, experience, travel, music, Hogwarts, Middle-earth, N64, mc, Battlefront, eagler) came up isolated with no error the plain deploy didn't have. The N64 player and its emulator's CDN load under `credentialless`. The Minecraft player, framed from `tilakpatell.github.io` on purpose (`src/components/eagler/load.js`), is refused (`ERR_BLOCKED_BY_RESPONSE`): GitHub Pages can't send it the header. Under `require-corp` the bucket's pictures fetched as plain images (the Battlefront screens' posters, `runtime/hud/ScreenCanvas.jsx`) would be refused too: the bucket sends CORS, not CORP.
 
 ## Decision
 
-The deploy sends the same `dist/` to the Worker after GitHub Pages, once the repository has the account's variable and the token; until then the step is skipped. Cloudflare's own build of the repository is removed: two deploys of each merge would overwrite each other, and its build had none of the deploy's checks or settings. `public/_headers` gives `/assets/*` a year and `immutable`, and nothing else a cache header. No isolation headers yet. The domain is pointed at the Worker by the owner, its email forwarding moved to Cloudflare's Email Routing first.
+The deploy sends the same `dist/` to the Worker after GitHub Pages, once the repository has the account's variable and the token; until then the step is skipped. Cloudflare's own build of the repository is removed: two deploys of each merge would overwrite each other, and its build had none of the deploy's checks or settings. `public/_headers` gives `/assets/*` a year and `immutable`, and nothing else a cache header; every file says any site may read it, as on GitHub. No isolation headers yet. The domain is pointed at the Worker by the owner, its email forwarding moved to Cloudflare's Email Routing first.
 
 ## Consequences
 
@@ -28,6 +29,6 @@ The deploy sends the same `dist/` to the Worker after GitHub Pages, once the rep
 
 ## Revisit when
 
-- The Minecraft player is served from an origin that sends COEP (a Worker of its own, or a subdomain on Cloudflare once the domain moves): then isolation with `credentialless` for the whole site, and the physics worker's poses in shared memory.
+- The Minecraft player is served from an origin that sends COEP (its saves stay with the old origin: a player exports their worlds first, as EPK files, and loads them in the new one) (a Worker of its own, or a subdomain on Cloudflare once the domain moves): then isolation with `credentialless` for the whole site, and the physics worker's poses in shared memory.
 - `dist/` nears 20,000 files: a paid plan.
 - The heavy assets' egress bill grows: the bucket to R2, in an entry of its own.
