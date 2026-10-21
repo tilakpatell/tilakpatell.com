@@ -10,7 +10,8 @@
 //     off steep ground and out of the water, `reach` metres either side of
 //     the road at most; low halves the counts and drops the grass, mid thins it;
 //     a row with `z: [z0, z1]` or `x: [x0, x1]` keeps to that band of the stage;
-//     nothing inside the land’s `clear` circles, [{ at: [x, z], r }]: a town, a garden)
+//     nothing inside the land’s `clear` circles, [{ at: [x, z], r }]: a town, a garden;
+//     a row with `at: [[x, z, scale], …]` stands at those places alone, its scale × the row's first)
 //   rowsFor(id) → the stage’s rows
 //   rngOf(seed) → () → 0…1, the same for the same seed
 //   createScatter({ kitFor, tier }) → { group, set(key, items, dz), free(key), update(camera, dt), stats, dispose }
@@ -56,6 +57,11 @@ export function placements(rows, land, road, rng, { tier = 'high', reach = REACH
   const z1 = land.z0 + land.d;
   const out = [];
   for (const row of rows) {
+    // (a row at its own places, `at: [[x, z, scale], …]`: the stage's own trees, where its builder put them)
+    if (row.at) {
+      for (const [x, z, s = 1] of row.at) out.push({ model: row.model, x, y: field(x, z), z, yaw: rng() * Math.PI * 2, scale: s * (row.scale?.[0] ?? 1), tint: row.tint ?? null, ...(row.pack ? { pack: row.pack } : {}) });
+      continue;
+    }
     // (a row’s own band, inside the stage’s: a field of corn, a wood)
     const bx0 = Math.max(x0, row.x?.[0] ?? x0);
     const bx1 = Math.min(x1, row.x?.[1] ?? x1);

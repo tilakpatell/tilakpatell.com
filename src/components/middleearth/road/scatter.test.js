@@ -89,13 +89,24 @@ describe('the scatter’s placements', () => {
     expect(placements([tree], flat, road, rngOf(11))).toEqual(placements([tree], flat, road, rngOf(11)));
   });
 
+  it('stands a row with places of its own at those places alone, scaled by its own', () => {
+    const land = { x0: -100, w: 200, z0: 0, d: 200, field: () => 2 };
+    const out = placements([{ model: 'CommonTree_1', at: [[-22, 18, 1.1], [44, 150]], scale: [2, 2] }], land, roadOf([[0, 0, 0], [0, 0, 200]]), rngOf(3));
+    expect(out.map((o) => [o.x, o.y, o.z, o.scale])).toEqual([
+      [-22, 2, 18, 2.2],
+      [44, 2, 150, 2],
+    ]);
+  });
+
   it('every stage has rows, each a model of its kit by its name', () => {
     for (const st of STAGES) {
       const rows = rowsFor(st.id);
       expect(Array.isArray(rows)).toBe(true);
       for (const r of rows) {
         expect(kitOf(r)?.models[r.model], `${r.pack ?? 'naturemega'}/${r.model}`).toBeTruthy();
-        expect(r.per100).toBeGreaterThan(0);
+        // (a density, or places of its own)
+        if (r.at) expect(r.at.length).toBeGreaterThan(0);
+        else expect(r.per100).toBeGreaterThan(0);
       }
     }
     expect(SCATTER.hobbiton.length).toBeGreaterThan(0);

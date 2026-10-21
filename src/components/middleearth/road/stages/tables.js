@@ -63,6 +63,10 @@ const SPRING = { MapleTree_Leaves: { recolour: '#6f9a3e' }, BirchTree_Leaves: { 
 // tufts were millions of triangles, the Havens’ dune grass four)
 export const SCATTER = {
   hobbiton: [
+    // the great oaks by the lane, where the stage's builder stood the Shire chapter's round ones
+    { model: 'CommonTree_1', at: [[-22, 18, 1.1], [-28, 82, 1.2], [44, 150, 1.3], [8, 230, 1.0]], scale: [1.75, 1.75], tint: OAK },
+    { model: 'CommonTree_2', at: [[24, 30, 0.9], [27, 96, 1.0], [-11, 204, 0.9], [48, 60, 1.2]], scale: [1.75, 1.75], tint: OAK },
+    { model: 'CommonTree_5', at: [[14, 168, 1.1], [-33, 132, 1.0], [-40, 54, 1.1], [36, 196, 1.0]], scale: [1.75, 1.75], tint: OAK },
     // (oaks: the common tree at its broadest, in the hedgerows’ clumps)
     { model: 'CommonTree_1', per100: 0.038, clump: 3, spread: 10, scale: [1.1, 1.6], tint: OAK },
     { model: 'CommonTree_2', per100: 0.026, clump: 2, spread: 8, scale: [1.0, 1.5], tint: OAK },

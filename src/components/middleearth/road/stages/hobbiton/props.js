@@ -6,7 +6,8 @@
 // mill on the Water with its wheel turning, the Green Dragon, a vegetable
 // patch with its scarecrow, beehives, a washing line, sheep, a dog,
 // signposts at the turnings and lamp-posts down the lane, the chapter’s
-// oaks and hedges, and at the stage’s end the corn where Sam stops. In the
+// hedges, and at the stage’s end the corn where Sam stops (its great oaks
+// are the nature kit's, stages/tables.js's). In the
 // stage’s frame: the lane along +z from 0, +x on the walker’s left.
 //
 //   buildProps({ K, material, heightAt, tier }) → { group, wheel, chimneys, update(dt), dispose }
@@ -20,7 +21,7 @@ import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { BAND, C, canopy, disposeBuilt, merged, mergeStatics, part } from '../parts';
 import { moundTop } from '../../ground';
 import { STAGES } from '../index';
-import { bagEnd, barrelParts, beehiveParts, benchParts, bush, cabbageGeo, cart, dog, flowerBed, greenDragon, hayBaleParts, hedgeGeo, hole, lampParts, mailboxParts, mill, oaks, partyTree, parts, pavilion, pumpkinGeo, scarecrowParts, sheep, signpost, washingLine, wheatGeo, wheelbarrowParts } from '../../../shire/build';
+import { bagEnd, barrelParts, beehiveParts, benchParts, bush, cabbageGeo, cart, dog, flowerBed, greenDragon, hayBaleParts, hedgeGeo, hole, lampParts, mailboxParts, mill, partyTree, parts, pavilion, pumpkinGeo, scarecrowParts, sheep, signpost, washingLine, wheatGeo, wheelbarrowParts } from '../../../shire/build';
 
 export const SHIRE = 0.68; // the Road’s hobbit (1.05 m) over the chapter’s (1.55)
 // the Hill: a turf dome on terrain.js’s rise, the doors round its foot (the
@@ -58,7 +59,6 @@ const PAVILION = [21, 146, Math.PI];
 const PATCH = { x: [19, 27], z: [30, 41], crow: [23.5, 35.5] }; // the vegetable patch and its scarecrow
 const CORN = { z: [198, 226], x: [5.5, 8.6], far: 30 }; // the field’s edge either side: clumps by the lane, the canopy behind to `far`
 const HEDGES = [[1, 56, 68], [1, 78, 104], [1, 150, 184], [-1, 58, 88], [-1, 104, 112], [-1, 120, 140], [-1, 160, 170], [-1, 182, 196]]; // side, z from, z to
-const OAKS = [[-22, 18, 1.1], [24, 30, 0.9], [-28, 82, 1.2], [27, 96, 1.0], [44, 150, 1.3], [-11, 204, 0.9], [14, 168, 1.1], [-33, 132, 1.0], [8, 230, 1.0], [48, 60, 1.2], [-40, 54, 1.1], [36, 196, 1.0]];
 const SHEEP = [[-36, 178], [-40, 183], [-33, 188], [-44, 190], [-38, 195], [-31, 200]];
 
 const CLOTH = C(0xe8dfc8);
@@ -241,10 +241,11 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   const [dx, dz] = before(bag.x, bag.z, bag.yaw, 3.2, -1.6);
   group.add(stand(dog(K).group, heightAt, dx, dz, bag.yaw + 1.2));
 
-  // the chapter’s oaks, instanced, and its hedges along the lane, each a
-  // band of the stage at a time (parts.js’s BAND: the view and the sun’s
-  // cascades leave out a band they can’t see; one mesh the lane’s length,
-  // the hedges were drawn whole into every cascade)
+  // the chapter’s hedges along the lane, each a band of the stage at a
+  // time (parts.js’s BAND: the view and the sun’s cascades leave out a band
+  // they can’t see; one mesh the lane’s length, the hedges were drawn whole
+  // into every cascade; its round oaks were the kit's leafy ones by the lane
+  // from 2026-10-21, stages/tables.js)
   const bandOf = (z) => Math.floor(z / BAND);
   const banded = (list, z) => {
     const by = new Map();
@@ -255,17 +256,6 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
     }
     return by.values();
   };
-  for (const [k, oak] of oaks().entries()) {
-    for (const list of banded(OAKS.filter((_, i) => i % 3 === k), (o) => o[1])) {
-      for (const [geo, mat] of [[oak.trunk, K.mats.trunk], [oak.crown, K.mats.crown]]) {
-        const inst = new THREE.InstancedMesh(geo, mat, list.length);
-        list.forEach(([x, z, s], i) => inst.setMatrixAt(i, m.compose(new THREE.Vector3(x, heightAt(x, z) - 0.1, z), q.setFromAxisAngle(up, x + z), new THREE.Vector3(s, s, s).multiplyScalar(SHIRE * 1.6))));
-        inst.computeBoundingSphere();
-        inst.castShadow = true;
-        group.add(inst);
-      }
-    }
-  }
   const blocks = [];
   for (const [side, z0, z1] of HEDGES) for (let z = z0; z < z1; z += 0.95) blocks.push([side * 4.6, z]);
   const along = new THREE.Quaternion().setFromAxisAngle(up, R);
