@@ -125,7 +125,7 @@ export const ACHIEVEMENTS = {
   cronenberg: { name: 'Rick Potion #9', desc: 'Took the shovel and spoke to the Beth who stayed in Cronenberg World' },
   blooddome: { name: 'A man now', desc: 'Beat Hemorrhage in the Blood Dome' },
   prison: { name: 'Nine more seasons', desc: 'Sprang Rick from the Brainalyzer without a guard seeing' },
-  cablestudio: { name: 'Between takes', desc: 'Watched three channels being made at the cable studio' },
+  cablestudio: { name: 'Between takes', desc: 'Put the channels on air before the cable studio went live' },
   dream: { name: 'Scary Terry night', desc: 'Found three things in Mr. Goldenfold’s dream with Scary Terry on your heels' },
   agency: { name: 'Pickle Riiick', desc: 'Sprang Jaguar from his cell at the agency' },
   meeseeksgolf: { name: 'Caaan do', desc: 'Pressed the Meeseeks box on the golf course and got home before they got you' },
