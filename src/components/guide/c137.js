@@ -12,6 +12,7 @@ export const C137 = {
     { label: 'Total Rickall', rows: [['Mouse', 'Aim (click first to hold the pointer)'], ['E', 'Remember the one in the crosshair'], ['F / Click', 'Shoot them'], ['Tab', 'Lock on: the crosshair stays on them as you move'], ['Esc', 'Stop the game']] },
     { label: 'Through the portal', rows: [['E', 'Talk, take, look, free: whatever the prompt says'], ['F', 'Fire, in a fight (Evil Rick’s lair, the Blood Dome)'], ['Tab', 'Lock on, in a fight: Morty turns to face them'], ['Run', 'From whoever’s after you: the map shows them red']] },
     { label: 'Plumbus Smash', rows: [['← ↓ → / A S D', 'Smash the left, middle or right chute'], ['P / Esc', 'Pause']] },
+    { label: 'Get Schwifty', rows: [['← ↓ ↑ → / D F J K', 'Hit the first, second, third or fourth lane'], ['P / Esc', 'Pause']] },
     { label: 'Pickle Rick’s sewer run', rows: [['← → / A D', 'Change lanes'], ['Space / ↑ / W', 'Hop'], ['F / Enter', 'Fire, once three screws make the laser'], ['P / Esc', 'Pause']] },
   ],
   touch: [
@@ -19,6 +20,7 @@ export const C137 = {
     { label: 'Total Rickall', rows: [['Swipe', 'Aim'], ['Tap', 'Shoot the one in the crosshair (or Remember and Shoot, on their buttons)'], ['Lock', 'The crosshair stays on them as you move']] },
     { label: 'Through the portal', rows: [['Tap', 'The star fires, in a fight'], ['Lock', 'Face whoever you’re fighting (on by itself when they come close)']] },
     { label: 'Plumbus Smash', rows: [['Tap', 'Smash a chute']] },
+    { label: 'Get Schwifty', rows: [['Tap', 'Hit a lane']] },
     { label: 'Pickle Rick’s sewer run', rows: [['Tap', 'Left, Hop, Fire and Right, on their buttons']] },
   ],
   tips: [
@@ -39,5 +41,7 @@ export const C137 = {
     ['The vat of acid', 'Rick’s fake death, sold to two Gromflomites. Move while their backs are turned and keep still while they look; jump in behind their backs, then play dead while they peer in. Seen moving, you’re back at the door.'],
     ['The Jerryboree', 'A daycare for Jerrys, and one of them is ours. Talk to them: ours offers you an apple, as he does at home, and talking to him again takes him. A wrong pick costs time, and when the clock runs out you’re back at the door.'],
     ['St. Gloopy Noops', 'The hospital in space, where the doctors want something of Jerry’s. Get past them to the theatre at the end of the ward, visit Shrimply Pibbles and take back Jerry’s things, then get out through the portal before the clock runs out; caught, you’re back at the door.'],
+    ['The cable studio', 'Every channel’s set on one floor, and the studio about to go live. Start the countdown at the control booth, then switch the sets on in the running order the meter gives; a wrong set turns them all dark, and when the clock runs out you’re back at the door.'],
+    ['Get Schwifty', 'Take the mic and the heads want a song. Hit each note as it reaches the line, on the beat; a miss or a wild swing costs the heads’ meter, and if it empties before the end of the song you’re disqualified.'],
   ],
 };
