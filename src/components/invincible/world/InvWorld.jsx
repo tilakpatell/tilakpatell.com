@@ -30,6 +30,8 @@ import Cards from './Cards';
 import { applyOuts, hits, onBrawlEvent, onFoeEvent, onHeroEvent, onPowerEvent, onQuestEvent, sfx } from './events';
 import { newBrawl, stepBrawl } from './brawl';
 import { newCavalry } from './guardians';
+import { dimensionOf, enter as enterDimension, savesHere, worldFor } from './dimensions';
+import { ANGSTROM_LINES } from './lines';
 import { atHallDoor, goIn, goOut, hallAct, hallNear, hallTalk, inHall, stepCavalryWorld, stepInside } from './inside';
 import { DEFAULT as MARK_ID, ORDER, canPlay, hero as heroOf, keptHero, lockLine } from './heroes';
 import { newPower, stepPower } from './powers';
@@ -108,7 +110,7 @@ function World({ gl, setGl, thinkMark }) {
   if (!sim.current) {
     // (he's put on the lawn for now: where he really starts waits on the
     // world, which the scene makes, and nothing moves before it's there)
-    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null, ruins: keptRuins(), dadGone: keptStory().done.includes('ep8'), panels: null, sky: null, launchWatch: false, hero: heroOf(MARK_ID), power: newPower(), heroBack: null, touchPower: false, brawl: newBrawl(), pound: false, dive: false, touchPunch: false, mouseDown: false, cavalry: newCavalry(), cavalryCalled: false, cavalryBlows: [], inside: null };
+    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null, ruins: keptRuins(), dadGone: keptStory().done.includes('ep8'), panels: null, sky: null, launchWatch: false, hero: heroOf(MARK_ID), power: newPower(), heroBack: null, touchPower: false, brawl: newBrawl(), pound: false, dive: false, touchPunch: false, mouseDown: false, cavalry: newCavalry(), cavalryCalled: false, cavalryBlows: [], inside: null, dim: 'home', dimWorld: null };
   }
 
   // the hero: the sim's numbers, the scene's figure, and kept for next time
@@ -197,6 +199,7 @@ function World({ gl, setGl, thinkMark }) {
       hook.story = () => sim.current.story;
       hook.hero = (id) => setHeroId(keptHero(id)); // (any of them, earned or not: for the shots)
       hook.hall = (on) => (on ? enter() : leave()); // (the Guardians' hall: in, or out)
+      hook.dimension = (id) => goDimension(id); // (one of Angstrom's dimensions, or home)
       // (and the city's damage: the n buildings nearest [x, z], hit for d)
       hook.ruin = ([x, z], n = 3, d = 0.8) => {
         const bs = [...sim.current.world.buildings].sort((p, q) => Math.hypot(p.x - x, p.z - z) - Math.hypot(q.x - x, q.z - z)).slice(0, n);
@@ -255,7 +258,7 @@ function World({ gl, setGl, thinkMark }) {
       // down never overwrites one it wouldn't)
       const keep = { x: s.h.p[0], y: s.h.p[1], z: s.h.p[2], face: s.h.face };
       if (s.world && s.h.zone !== 'space' && s.h.zone !== 'hall' && s.h.mode === 'ground' && Number.isFinite(keep.face) && isSafeStart(s.world, keep)) local.set(AT, keep);
-      if (s.ruins.damage.size || local.get(RUINSKEY, null)) local.set(RUINSKEY, keepRuins(s.ruins));
+      if (savesHere(s.dim) && (s.ruins.damage.size || local.get(RUINSKEY, null))) local.set(RUINSKEY, keepRuins(s.ruins)); // (only home keeps its damage)
       wind.current?.stop();
       wind.current = null;
       api.current = null;
@@ -463,7 +466,25 @@ function World({ gl, setGl, thinkMark }) {
   };
 
   // what a step (or its end) asks for (./events.js)
-  const setup = useCallback((outs) => applyOuts(outs, { s: sim.current, say, speak, unlock, clear, openCard, closeCard, shakeOff, beat: ep8Beat, found: setFound }), [say, speak, unlock, clear, openCard, closeCard, shakeOff, ep8Beat]);
+  // Angstrom's dimensions (./dimensions.js): the rules into one, the scene drawn as it
+  const goDimension = useCallback(
+    (id) => {
+      const s = sim.current;
+      if (!s.world || (s.dim ?? 'home') === id) return;
+      const r = enterDimension(id, s.h, s.foes);
+      s.dim = r.dim;
+      s.h = r.h;
+      s.foes = r.foes;
+      s.dimWorld = worldFor(s.world, r.dim);
+      api.current?.setDimension(r.dim);
+      sfx('hyperspace');
+      say(r.dim === 'home' ? 'Home.' : `${dimensionOf(r.dim).name}.`, 2600);
+      // (Angstrom's word on each of his, after the name)
+      if (ANGSTROM_LINES[r.dim]) setTimeout(() => say(ANGSTROM_LINES[r.dim], 3600, 'angstrom'), 2000);
+    },
+    [say],
+  );
+  const setup = useCallback((outs) => applyOuts(outs, { s: sim.current, say, speak, unlock, clear, openCard, closeCard, shakeOff, beat: ep8Beat, found: setFound, dimension: goDimension }), [say, speak, unlock, clear, openCard, closeCard, shakeOff, ep8Beat, goDimension]);
   const feed = useCallback(
     (ev) => {
       const s = sim.current;
@@ -717,7 +738,7 @@ function World({ gl, setGl, thinkMark }) {
       s.dragAt = s.t;
       if (s.h.mode === 'ground') s.intro = false;
     }
-    s.h = s.h.zone === 'space' ? stepSpace(s.h, input, dt) : s.h.zone === 'hall' ? stepInside(s, input, dt, s.hero.flight) : stepHero(s.h, input, dt, s.world, s.hero.flight);
+    s.h = s.h.zone === 'space' ? stepSpace(s.h, input, dt) : s.h.zone === 'hall' ? stepInside(s, input, dt, s.hero.flight) : stepHero(s.h, input, dt, s.dimWorld ?? s.world, s.hero.flight);
     s.jump = false;
     s.free = false;
     // up through the top of the sky, or back down into it: the other world takes over

@@ -30,6 +30,7 @@ import { createNpcs } from './npcs';
 import { buildHall } from './hall';
 import { createCavalryScene } from './cavalryScene';
 import { hallTalkers } from './inside';
+import { DIMENSIONS, dimensionOf } from './dimensions';
 import { buildClouds, buildHaze, skyBands } from './sky';
 import { carAt, createTraffic, stepTraffic, takeCar } from './traffic';
 import { CITY, WORLD, buildWorld, groundAt, near } from './map';
@@ -56,6 +57,7 @@ const VILLAIN_EV = new Set(['spawn', 'hit', 'ko', 'down', 'hurt', 'won', 'swing'
 // the times of day and their light, the camera, the suit, the light that
 // follows him, the hard landing and a ray against a box: ./sceneLook.js
 export { TIMES };
+const UPV = new THREE.Vector3(0, 1, 0);
 export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   const engine = createStage(rt, { exposure: 1, fov: FOV, near: 0.3, far: 26000, bloom: ART.bloom, onSlow });
   const { scene, camera } = engine;
@@ -208,6 +210,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   let look = null;
   let haze = 1;
   let timeName = 'noon';
+  let dim = DIMENSIONS.home; // (which of Angstrom's dimensions is drawn: its look is the time's, below)
   let zone = 'city';
   const fogBase = new THREE.Color();
   // The haze's colours, from the sky photo: along the horizon (`fogBase`,
@@ -245,7 +248,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     return turn;
   }
   async function putUpTime() {
-    const L = LOOK[timeName];
+    const L = LOOK[dim.look ?? timeName]; // (a dimension has its own time of day)
     // (the cast's rim is the time's, the crowd's too, and out in space)
     setCastRim(L.rim);
     if (zone === 'space') {
@@ -285,6 +288,21 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     haze = NaN; // (the next frame puts the haze up, the house's with it)
   }
   await setTime('noon');
+
+  // ── Angstrom's dimensions (./dimensions.js): the same city drawn another way ──
+  // (the mirror city: the map's groups reflected in x; the rules see the reflection through near)
+  const mirrored = () => [ground.group, city.group, landmarks.group, life.group, ruins.group, challenges.group];
+  async function setDimension(id) {
+    const d = dimensionOf(id);
+    if (d === dim) return;
+    dim = d;
+    ground.setDimension({ water: d.water, tint: d.tint });
+    city.setDimension({ ruins: d.ruins, tint: d.tint });
+    for (const g of mirrored()) if (g) g.scale.x = d.mirror ? -1 : 1;
+    npcs.setHidden(d.crowd === 'none');
+    look = null;
+    await setTime(timeName);
+  }
 
   // ── the city or space: one or the other is drawn ──
   const cityOnly = [ground.group, city.group, landmarks.group, clouds.mesh, hazeSky.mesh, jet.group, life.group, challenges.group, villains.group, omni.holder];
@@ -554,7 +572,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     // what happened this frame (and what sends the people and the traffic running)
     const scare = [];
     // and what the townspeople make of it (./brains.js)
-    const crowd = { slam: null, hit: null, fight: Boolean(sim.foes?.on), won: false, time: timeName, lesson: sim.quests?.lesson ?? null, mission: sim.mission?.id ?? null };
+    const crowd = { slam: null, hit: null, fight: Boolean(sim.foes?.on), won: false, time: timeName, lesson: sim.quests?.lesson ?? null, mission: sim.mission?.id ?? null, backwards: dim.crowd === 'backwards' };
     // (Eve goes for the foes still standing)
     crowd.talk = Boolean(sim.talkEve);
     sim.talkEve = false;
@@ -749,10 +767,13 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       }
       props.update(sim.getaway, frameDt);
       // (no traffic to speak of from up where the clouds are)
-      if (h.p[1] < 2200 || scare.length) {
+      life.group.visible = dim.crowd !== 'none'; // (the burnt and the drowned city: no traffic, nobody on the pavements)
+      if ((h.p[1] < 2200 || scare.length) && life.group.visible) {
         traffic = stepTraffic(traffic, frameDt, { cx: camera.position.x, cz: camera.position.z, yaw: sim.yaw, scare });
         life.update(traffic, frameDt, camera, look?.night ?? 0);
       }
+      // the burnt city's embers, up off the street round him
+      if (dim.embers && !calm && stride++ % 5 === 0) fx.vfx.sparks(new THREE.Vector3(h.p[0] + (Math.random() - 0.5) * 60, Math.max(h.p[1] - 20, groundAt(h.p[0], h.p[2])) + 1, h.p[2] + (Math.random() - 0.5) * 60), { count: 4, speed: 2.5, color: 0xffa040, to: 0x401000, life: 2.4, size: 0.16, dir: UPV, spread: 0.6, gravity: -0.6 });
       clouds.update(t, scene.fog);
       hazeSky.update(camera);
     } else if (zone === 'hall') hall.update(t, h, frameDt);
@@ -815,6 +836,10 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     jetDistance,
     setZone,
     setHero,
+    setDimension,
+    get dim() {
+      return dim.id;
+    },
     // a tower's or a house's damage, drawn (./demolish.js; `mending`: Cecil's crews on it)
     setDamage(key, d, mending = false) {
       if (city.setDamage(key, d)) ruins.mark(key, d, city.boxOf(key), mending);

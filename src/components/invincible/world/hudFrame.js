@@ -68,7 +68,7 @@ export function writeHud(H, { s, h, a, speed, alt, inSpace }) {
       if (!inSpace) marks.push({ x: mk[0], z: mk[2], color: m.colour, name: 'Mission' });
     }
     // the race's gates, and a photo's frame, for the scene to draw
-    s.gates = stepDef.type === 'race' && !stepDef.ring ? { list: stepDef.gates, next: s.mission.count, r: stepDef.r } : null;
+    s.gates = stepDef.type === 'race' && !stepDef.ring ? { list: stepDef.gates, next: s.mission.count, r: stepDef.r } : stepDef.type === 'through' && stepDef.portal ? { list: [stepDef.at], next: 0, r: stepDef.r, color: m.colour } : null;
     s.photo = stepDef.type === 'use' && stepDef.id === 'photo' ? { p: stepDef.at, face: stepDef.face, r: stepDef.r } : null;
   } else {
     s.marker = null;

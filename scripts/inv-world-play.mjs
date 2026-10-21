@@ -34,7 +34,7 @@ async function player() {
   const add = (a, b, k = 1) => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
   const len = (v) => Math.hypot(v[0], v[1], v[2]);
   const live = (e) => !['waiting', 'ko', 'down'].includes(e.state);
-  const midOf = (e) => [e.p[0], e.p[1] + (e.kind === 'mauler' ? 1.3 : e.kind === 'seismic' ? 0.9 : 0), e.p[2]];
+  const midOf = (e) => [e.p[0], e.p[1] + (e.kind === 'mauler' ? 1.3 : e.kind === 'seismic' || e.kind === 'angstrom' || e.kind === 'mirror' ? 0.9 : 0), e.p[2]];
   const chest = () => [sim.h.p[0], sim.h.p[1] + 1, sim.h.p[2]];
   const inSpace = () => sim.h.zone === 'space';
   const step = () => sim.mission?.step ?? -1;
@@ -414,6 +414,53 @@ async function player() {
         return false;
       }, 600000);
     },
+  };
+
+  // season two: Angstrom's three portals (each flown through flat out, from 160 m south of
+  // it), the one on the ledge in the burnt city, the five gates over the drowned city, the
+  // mirror Mark, and Angstrom at the hall, who is wherever he last came back
+  EPISODES.levy = async () => {
+    await fromCecil('levy');
+    const m = M.missionOf('levy');
+    const through = async (i) => {
+      const at = m.steps[i].at;
+      await travel([at[0], at[1], at[2] + 160], 12, { done: () => step() !== i });
+      sim.speedup = 1; // (the portal's 22 m, judged a frame at a time)
+      for (let tries = 0; tries < 6 && step() === i; tries++) {
+        await go([at[0], at[1], at[2] + 160], 12);
+        await every(() => {
+          if (step() !== i || sim.h.p[2] < at[2] - 80) return true;
+          aim([at[0], at[1], at[2] - 300], sim.h.p);
+          hold('fwd', 'boost');
+          return false;
+        }, 30000);
+      }
+      sim.speedup = 3;
+    };
+    await through(0);
+    await every(() => {
+      if (step() >= 2 || step() < 0) return true;
+      const q = sim.quests.rescue;
+      if (q?.source === 'mission' && !q.carried) steer(q.p, 0.6);
+      else steer([100, 180, -80], 5);
+      return false;
+    }, 300000);
+    if (step() === 2) await land(); // (whoever was caught, set down)
+    await through(2);
+    const gates = m.steps[3].gates;
+    for (let i = 0; i < gates.length; i++) await go(gates[i], 10, { pass: true, done: () => step() !== 3 || (sim.mission?.count ?? 0) > i, ms: 120000 });
+    await through(4);
+    await every(() => {
+      if (step() >= 6 || step() < 0) return true;
+      if (!fight((e) => e.kind === 'mirror')) steer([40, 80, -360], 6);
+      return false;
+    }, 300000);
+    await through(6);
+    await every(() => {
+      if (step() < 0) return true;
+      if (!fight((e) => e.kind === 'angstrom')) steer([0, 6, 40], 6);
+      return false;
+    }, 300000);
   };
 
   window.__INV_PLAY__ = {

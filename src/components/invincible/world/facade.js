@@ -30,6 +30,8 @@ export function towerMaterial(uniforms) {
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, metalness: 0 });
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uNight = uniforms.uNight;
+    shader.uniforms.uBurn = uniforms.uBurn;
+    shader.uniforms.uTint = uniforms.uTint;
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec4 aStyle;\nattribute float aHurt;\nvarying vec3 vCity;\nvarying vec3 vCityN;\nflat varying vec4 vStyle;\nflat varying float vHurt;')
       .replace(
@@ -51,6 +53,8 @@ export function towerMaterial(uniforms) {
         '#include <common>',
         `#include <common>
         uniform float uNight;
+        uniform float uBurn;
+        uniform vec3 uTint;
         varying vec3 vCity;
         varying vec3 vCityN;
         flat varying vec4 vStyle;
@@ -118,15 +122,18 @@ export function towerMaterial(uniforms) {
         float cityWin = win;
         // the damage (./demolish.js, 0 to 1): cracks and dark panes as it climbs,
         // the roof and a band under it scorched once the top is gone
-        if (vHurt > 0.0) {
-          float crack = step(1.0 - vHurt * 0.55, cityHash(floor(vec2(u, vCity.y) * 0.7) + seed)) * (1.0 - roof);
-          float gone = smoothstep(0.55, 0.65, vHurt);
+        // (uBurn: a dimension where every tower is hurt this much, ./dimensions.js)
+        float hurt = max(vHurt, uBurn);
+        if (hurt > 0.0) {
+          float crack = step(1.0 - hurt * 0.55, cityHash(floor(vec2(u, vCity.y) * 0.7) + seed)) * (1.0 - roof);
+          float gone = smoothstep(0.55, 0.65, hurt);
           float soot = gone * smoothstep(top - 9.0, top - 1.0, vCity.y) * (1.0 - roof);
           diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 0.35, crack);
-          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.03, 0.028, 0.026), max(soot, vHurt * win * 0.6));
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.03, 0.028, 0.026), max(soot, hurt * win * 0.6));
           diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.1, 0.095, 0.09), roof * gone);
-          cityWin *= 1.0 - vHurt * 0.8;
-        }`,
+          cityWin *= 1.0 - hurt * 0.8;
+        }
+        diffuseColor.rgb *= uTint;`,
       )
       .replace(
         '#include <roughnessmap_fragment>',
