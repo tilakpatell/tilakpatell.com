@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useMediaQuery, useReducedMotion } from '../../lib/hooks';
 import { WorldHost, useWorld } from '../../runtime';
-import { Hud, Menu, Prompt, QuestList, Stick, Toast, TouchButton } from '../../runtime/hud';
+import { Hud, Menu, Prompt, QuestList, Stick, Toast } from '../../runtime/hud';
 import { wayOut } from '../worlds/worlds';
 import hogwartsModule from './module';
 import SpellWheel from './hud/SpellWheel';
@@ -19,10 +19,11 @@ const TOAST_FOR = 4000; // ms
 // Hogwarts' face: the HUD from the kit over the world (module.js), skinned
 // as parchment and ink (hogwarts.css). The title, the one Menu (Things to
 // do, empty until the term starts; Controls, the site's guide; the way out
-// by the view you came from), the one Prompt at the boats, a toast, and on
-// touch the stick and the button that does what the prompt says. The wand's
-// card at the foot and its wheel over the view (hud/SpellWheel.jsx), its
-// toasts in the one toast, and on touch a Cast button and a Spells one.
+// by the view you came from), the one Prompt at the boats (on touch it is
+// the button itself, as the kit has it), a toast, and on touch the stick.
+// The wand's card at the foot and its wheel over the view
+// (hud/SpellWheel.jsx), its toasts in the one toast, and on touch a Cast
+// button and a Spells one.
 export default function HogwartsWorld() {
   const { pathname } = useLocation();
   const reduced = useReducedMotion();
@@ -90,15 +91,9 @@ export default function HogwartsWorld() {
         thumbs={
           <>
             <Stick className="hogwarts-stick" onMove={(x, y) => api()?.stick(x, y)} label="Walk" />
-            {door ? (
-              <TouchButton size={76} onPress={() => api()?.go()} aria-label={`Go in: ${door.label}`}>
-                Go in
-              </TouchButton>
-            ) : (
-              <TouchButton size={76} onPress={() => api()?.press('cast', true)} onRelease={() => api()?.press('cast', false)} aria-label="Cast the spell on the wand">
-                Cast
-              </TouchButton>
-            )}
+            <TouchButton size={76} onPress={() => api()?.press('cast', true)} onRelease={() => api()?.press('cast', false)} aria-label="Cast the spell on the wand">
+              Cast
+            </TouchButton>
             <TouchButton size={52} onPress={() => setWheel((w) => !w)} aria-label="Spells">
               Spells
             </TouchButton>

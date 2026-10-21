@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { CAST } from '../cast';
 import { KINDS, PORTAL } from './foes';
 import { CITY, buildWorld, near } from './map';
-import { MISSIONS, PHOTO_SPOTS, RADIO, STORY, feedMission, keepStory, loadStory, markerOf, missionOf, newRadio, nextRadioCall, nextStory, placeOf, startMission, stepOf } from './missions';
+import { MISSIONS, PHOTO_SPOTS, RADIO, RADIO_CALLS, STORY, feedMission, keepStory, loadStory, markerOf, missionOf, newRadio, nextRadioCall, nextStory, placeOf, startMission, stepOf } from './missions';
 import { RINGS } from './quests';
+import { SPACE } from './orbit';
 
 const W = buildWorld();
 const inside = (b, p, pad = 0) => p[0] > b.x0 - pad && p[0] < b.x1 + pad && p[2] > b.z0 - pad && p[2] < b.z1 + pad && p[1] > b.y0 - pad && p[1] < b.y1 + pad;
@@ -22,10 +23,13 @@ function feed(p, events) {
 const ticks = (seconds, dt = 0.05) => Array.from({ length: Math.ceil(seconds / dt) }, () => ({ type: 'tick', dt }));
 const at = (p, extra = {}) => ({ type: 'at', p, mode: 'air', speed: 0, ...extra });
 const types = (out) => out.map((o) => o.type);
+const caught = () => ({ type: 'caught', source: 'mission' });
+// n knock-outs of a kind, each its own foe (ids from `from`)
+const ko = (kind, n, from = 0) => Array.from({ length: n }, (_, i) => ({ type: 'ko', kind, id: from + i }));
 
 describe('the season', () => {
-  it('has seven episodes in order, each with its people and its villains in the cast', () => {
-    expect(STORY).toEqual(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7']);
+  it('has eight episodes in order, each with its people and its villains in the cast', () => {
+    expect(STORY).toEqual(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7', 'ep8']);
     for (const m of MISSIONS) {
       expect(m.giver in CAST, `${m.id}'s giver`).toBe(true);
       if (m.start?.npc) expect(m.start.npc in CAST).toBe(true);
@@ -84,6 +88,11 @@ describe('each episode, end to end', () => {
     const q = feed(startMission('ep1'), [{ type: 'ring', i: 3 }]);
     expect(q.p.count).toBe(0);
   });
+  it('ep1 counts the first ring as the lesson starts, from its ring or its start', () => {
+    const rest = RINGS.slice(1).map((_, i) => ({ type: 'ring', i: i + 1 }));
+    expect(feed(startMission('ep1'), [{ type: 'lesson-start' }, { type: 'ring', i: 0 }, ...rest]).p.done).toBe(true);
+    expect(feed(startMission('ep1'), [{ type: 'lesson-start' }, ...rest]).p.done).toBe(true);
+  });
   it('ep1 fails when the time runs out', () => {
     const r = feed(startMission('ep1'), [{ type: 'ring', i: 0 }, ...ticks(241)]);
     expect(r.p.fail).toBe('time');
@@ -108,7 +117,7 @@ describe('each episode, end to end', () => {
     expect(r.p.done).toBe(true);
     expect(r.out.at(-1)).toMatchObject({ type: 'done', achievement: 'maulers' });
   });
-  it('ep3: the school, four students caught, Doc Seismic down', () => {
+  it('ep3: the school, then four students caught and Doc Seismic down, in either order', () => {
     const p0 = startMission('ep3');
     expect(stepOf(p0)).toMatchObject({ type: 'step', i: 0, spawn: [['seismic', 1, [-2610, 0, -418]]] });
     let r = feed(p0, [at([-2610, 40, -395])]);
@@ -116,13 +125,37 @@ describe('each episode, end to end', () => {
     expect(r.out[0]).toMatchObject({ type: 'step', i: 1, spawn: null });
     expect(markerOf(r.p, {})).toEqual([-2610, 12, -418]);
     expect(markerOf(r.p, { faller: [-2600, 8, -418] })).toEqual([-2600, 8, -418]);
-    r = feed(r.p, [{ type: 'caught' }, { type: 'caught' }, { type: 'caught' }]);
+    const school = r.p;
+    // the students first, then him
+    r = feed(school, [caught(), caught(), caught()]);
     expect(r.p.count).toBe(3);
-    r = feed(r.p, [{ type: 'caught' }]);
-    expect(r.p.step).toBe(2);
+    r = feed(r.p, [caught()]);
+    expect(r.p.step).toBe(1); // (four caught, and he's still up)
     expect(markerOf(r.p, { foes: [[-2600, 20, -400]] })).toEqual([-2600, 20, -400]);
-    r = feed(r.p, [{ type: 'ko', kind: 'seismic' }]);
+    r = feed(r.p, [{ type: 'ko', kind: 'seismic', id: 7 }]);
     expect(r.p.done).toBe(true);
+    // him first, then the students
+    r = feed(school, [{ type: 'ko', kind: 'seismic', id: 7 }]);
+    expect(r.p.done).toBe(false);
+    r = feed(r.p, [caught(), caught(), caught(), caught()]);
+    expect(r.p.done).toBe(true);
+  });
+  it('ep3 counts only its own students: a rescue somewhere else in the city is not one', () => {
+    let r = feed(startMission('ep3'), [at([-2610, 40, -395])]);
+    r = feed(r.p, [{ type: 'caught', source: 'city' }, { type: 'caught' }, caught()]);
+    expect(r.p.count).toBe(1);
+  });
+  it('ep3 with Doc Seismic down: the roof still shakes a student off every 6 s until all four are caught', () => {
+    let r = feed(startMission('ep3'), [at([-2610, 40, -395]), caught()]);
+    // (while he's up, his quakes do it: the mission asks for none)
+    expect(types(feed(r.p, ticks(13)).out)).not.toContain('shake');
+    r = feed(r.p, [{ type: 'ko', kind: 'seismic', id: 3 }, ...ticks(13)]);
+    const shakes = r.out.filter((o) => o.type === 'shake');
+    expect(shakes).toHaveLength(2);
+    expect(shakes[0].at).toEqual(placeOf('roof').p);
+    r = feed(r.p, [caught(), caught(), caught(), ...ticks(13)]);
+    expect(r.p.done).toBe(true);
+    expect(types(r.out)).not.toContain('shake');
   });
   it('ep4: land on the Moon, talk to Allen, three gates home within the time', () => {
     const m = missionOf('ep4');
@@ -140,6 +173,14 @@ describe('each episode, end to end', () => {
     expect(r.p.done).toBe(true);
     const late = feed(feed(startMission('ep4'), [{ type: 'land', body: 'moon' }, { type: 'talk', npc: 'allen' }]).p, ticks(151));
     expect(late.p.fail).toBe('time');
+  });
+  it('ep4’s race home stays out of the air: every gate, and the straight line between each', () => {
+    // (under SPACE.reentry he's back in the city's air, where space's gates can't be flown through)
+    const gates = missionOf('ep4').steps[2].gates;
+    const over = (p) => Math.hypot(...p) - SPACE.RE;
+    const lowest = (a, b) => Math.min(...Array.from({ length: 101 }, (_, k) => over(a.map((v, i) => v + (b[i] - v) * (k / 100)))));
+    for (const g of gates) expect(over(g)).toBeGreaterThan(SPACE.reentry);
+    for (let i = 1; i < gates.length; i++) expect(lowest(gates[i - 1], gates[i])).toBeGreaterThan(SPACE.reentry);
   });
   it('ep5: two waves of Flaxans, then through the portal faster than 120 m/s', () => {
     expect(stepOf(startMission('ep5')).spawn).toEqual([['flaxan', 12, PORTAL.p]]);
@@ -161,20 +202,48 @@ describe('each episode, end to end', () => {
     expect(r.p.hp).toBe(90);
     r = feed(r.p, ticks(31));
     expect(r.p.step).toBe(1);
-    r = feed(r.p, Array.from({ length: 6 }, () => ({ type: 'ko', kind: 'mauler' })));
+    // (the step asks for Maulers up to six in all, so none it wants can be missing)
+    expect(r.out.find((o) => o.type === 'step')?.upto).toEqual(['mauler', 6, [1560, 0, -440]]);
+    r = feed(r.p, ko('mauler', 6));
     expect(r.p.done).toBe(true);
     const lost = feed(startMission('ep6'), [{ type: 'hurt', what: 'hangar', hp: 50 }, { type: 'hurt', what: 'cecil', hp: 0 }, { type: 'hurt', what: 'hangar', hp: 0 }]);
     expect(lost.p.fail).toBe('lost');
+  });
+  it('ep6 counts a Mauler beaten during the hold toward the six', () => {
+    let r = feed(startMission('ep6'), [...ko('mauler', 1), ...ticks(91)]);
+    expect(r.p.step).toBe(1);
+    expect(r.p.count).toBe(1);
+    r = feed(r.p, ko('mauler', 5, 10));
+    expect(r.p.done).toBe(true);
+    // all six down before the ninety seconds are up: done as the hold ends
+    r = feed(startMission('ep6'), [...ko('mauler', 6), ...ticks(91)]);
+    expect(r.p.done).toBe(true);
+  });
+  it('a knock-out counts once, however often it is said', () => {
+    const r = feed(startMission('ep2'), [at([50, 30, 0]), at([310, 20, 0], { car: [300, 0, 0] }), { type: 'land', speed: 30, p: [310, 0, 0] }, { type: 'ko', kind: 'mauler', id: 4 }, { type: 'ko', kind: 'mauler', id: 4 }]);
+    expect(r.p.step).toBe(2);
+    expect(r.p.count).toBe(1);
+  });
+  it('a later wave counts only its own: ep5’s second wave isn’t done by the first', () => {
+    const r = feed(startMission('ep5'), ko('flaxan', 12));
+    expect(r.p.step).toBe(1);
+    expect(r.p.count).toBe(0);
   });
   it('ep7: follow Dad over his four points, land at home, and Think, Mark!', () => {
     const m = missionOf('ep7');
     expect(m.start.after).toEqual(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6']);
     let p = startMission('ep7');
     const pts = m.steps.slice(0, 4).map((s) => s.to);
-    for (const to of pts) {
-      const r = feed(p, [at([to[0] + 10, to[1], to[2]], { npcs: { omni: to } }), ...ticks(1)]);
+    // (over the city, not through it: the three in the air clear the tallest tower)
+    for (const to of pts.slice(0, 3)) expect(to[1]).toBeGreaterThan(360);
+    pts.forEach((to, i) => {
+      // beside him at his point is not the step done: he says when (companions.js's dadAt, once Mark is close)
+      let r = feed(p, [at([to[0] + 10, to[1], to[2]], { npcs: { omni: to } }), ...ticks(1)]);
+      expect(r.p.step).toBe(i);
+      r = feed(r.p, [{ type: 'dadAt', i }]);
+      expect(r.p.step).toBe(i + 1);
       p = r.p;
-    }
+    });
     expect(p.step).toBe(4);
     let r = feed(p, [{ type: 'land', speed: 3, p: [-2050, 0, 258] }]);
     expect(r.p.step).toBe(5);
@@ -225,7 +294,12 @@ describe('the radio', () => {
       expect(calls[i].t - calls[i - 1].t).toBeLessThanOrEqual(RADIO.every[1] + 0.1);
       expect(calls[i].call).not.toBe(calls[i - 1].call);
     }
-    for (const c of calls) expect(missionOf(c.call)?.side).toBe(true);
+    for (const c of calls) expect(Boolean(missionOf(c.call)?.side || RADIO_CALLS[c.call])).toBe(true);
+  });
+  it('offers Cecil’s portal call while nothing’s fighting, and never during a fight', () => {
+    expect(RADIO_CALLS.portal.who).toBe('cecil');
+    expect(run(newRadio(), 1200, { mission: null, zone: 'city', fight: false }).calls.some((c) => c.call === 'portal')).toBe(true);
+    expect(run(newRadio(), 1200, { mission: null, zone: 'city', fight: true }).calls.some((c) => c.call === 'portal')).toBe(false);
   });
   it('says nothing while a story mission is on, or out in space, and offers Eve’s race only beside her', () => {
     expect(run(newRadio(), 300, { mission: 'ep2', zone: 'city' }).calls).toEqual([]);
@@ -263,5 +337,47 @@ describe('the radio', () => {
     expect(r.p.done).toBe(false);
     r = feed(r.p, [at([q.p[0] + 5, q.p[1], q.p[2]], { face: q.face + 0.2 }), { type: 'use', id: 'photo' }]);
     expect(r.p.done).toBe(true);
+  });
+});
+
+describe('episode 8, Where I Really Come From', () => {
+  const ep8 = () => startMission('ep8');
+  it('waits for the whole season, from Dad at home at dusk or night', () => {
+    const m = missionOf('ep8');
+    expect(m.start).toEqual({ npc: 'omni', place: 'home', time: ['dusk', 'night'], after: ['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7'] });
+    expect(m.achievement).toBe('truth');
+    expect(nextStory(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7'])).toBe('ep8');
+  });
+  it('goes porch, the hit, three blows, the plaza, the sky; the world says when the hit and the sky are over', () => {
+    let r = feed(ep8(), [{ type: 'use', id: 'panels' }]);
+    expect(r.p.step).toBe(1);
+    r = feed(r.p, [{ type: 'sky' }]); // (the wrong event: nothing)
+    expect(r.p.step).toBe(1);
+    r = feed(r.p, [{ type: 'recover' }]);
+    expect(r.p.step).toBe(2);
+    r = feed(r.p, [{ type: 'hit', kind: 'mauler', id: 1 }, { type: 'hit', kind: 'omniman', id: 7 }, { type: 'hit', kind: 'omniman', id: 7 }]);
+    expect(r.p.count).toBe(2);
+    expect(r.out.filter((o) => o.type === 'driven')).toHaveLength(2);
+    r = feed(r.p, [{ type: 'hit', kind: 'omniman', id: 7 }]);
+    expect(r.p.step).toBe(3);
+  });
+  it('the plaza shakes a faller down every so often, and ends on its time without failing', () => {
+    let r = feed(ep8(), [{ type: 'use', id: 'panels' }, { type: 'recover' }, ...Array.from({ length: 3 }, () => ({ type: 'hit', kind: 'omniman', id: 7 }))]);
+    expect(r.p.step).toBe(3);
+    r = feed(r.p, ticks(3));
+    expect(r.out.some((o) => o.type === 'shake')).toBe(true);
+    r = feed(r.p, Array.from({ length: 5 }, () => ({ type: 'caught', source: 'mission' })));
+    expect(r.p.count).toBe(5);
+    r = feed(r.p, ticks(61));
+    expect(r.p.fail).toBeNull();
+    expect(r.p.step).toBe(4);
+    r = feed(r.p, [{ type: 'sky' }]);
+    expect(r.p.done).toBe(true);
+    expect(r.out.find((o) => o.type === 'done').achievement).toBe('truth');
+  });
+  it('twelve caught ends the plaza early', () => {
+    let r = feed(ep8(), [{ type: 'use', id: 'panels' }, { type: 'recover' }, ...Array.from({ length: 3 }, () => ({ type: 'hit', kind: 'omniman', id: 7 }))]);
+    r = feed(r.p, Array.from({ length: 12 }, () => ({ type: 'caught', source: 'mission' })));
+    expect(r.p.step).toBe(4);
   });
 });

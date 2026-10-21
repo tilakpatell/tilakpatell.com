@@ -14,23 +14,36 @@
 // - land   at, r         touch down there (`at` can be `{ npc }`, `{ car }`)
 // - slam   at, r, speed  land harder than `speed` there
 // - talk   npc           E beside them
-// - catch  n             rescues (./quests.js's `caught`)
-// - defeat kind, n       knock-outs (./foes.js's `ko`); `spawn` says who comes
+// - catch  n             rescues (./quests.js's `caught`; with `source`, only
+//                        that kind: a mission's own, not the city's); with
+//                        `beat: { kind, n }` those knocked out too, in either
+//                        order; with `shake` and `every`, once they're down the
+//                        mission asks for one more rescue there every so often
+// - defeat kind, n       knock-outs (./foes.js's `ko`, each foe once); `spawn`
+//                        says who comes; `since` counts from that step on (its
+//                        own, unless it says); `upto` asks for that many in all
 // - race   gates, r, time   the gates in order within the time (`ring`
 //                        events from ./quests.js's course, or flying through)
-// - escort npc, to, r, within   stay with them until they're at `to`
+// - escort npc, to, within, grace   stay within `within` of them (over `grace` s away fails) until they say they're at `to` and moving on (`dadAt`)
 // - protect what, time   `what`'s hp (from `hurt`) stays above 0 for `time`
 // - through at, r, speed fly through it faster than `speed`
 // - use    id            E somewhere (Think, Mark!, a photo)
+// - event  on            the world says so ({ type: on }: the launch's end, the sky's)
+// - hits   kind, n       blows landed on a kind (./foes.js's `hit`, counted, not knock-outs)
+//   a catch step with `soft` and a time ends when the time is up instead of failing
+//   (episode 8's plaza: the ones not caught are the standing's loss, not Mark's)
 //
 // The events: { type: 'at', p, mode, speed, face, npcs?, car? } each frame
 // (where he is, and where the people and the car the step cares about are),
-// { type: 'tick', dt }, { type: 'talk', npc }, { type: 'caught' },
-// { type: 'ko', kind }, { type: 'ring', i }, { type: 'hurt', what, hp },
+// { type: 'tick', dt }, { type: 'talk', npc }, { type: 'caught', source },
+// { type: 'ko', kind, id }, { type: 'ring', i } (and 'lesson-start', the
+// first ring as the lesson starts), { type: 'hurt', what, hp },
 // { type: 'use', id, won? }, { type: 'land', speed, p, body? },
+// { type: 'hit', kind, id } (a blow landed), { type: <a step's `on`> },
 // { type: 'abandon' }.
 
 import { PORTAL } from './foes';
+import { CALLS } from './lines';
 import { RINGS, LESSON_LIMIT } from './quests';
 import { COAST, rng } from './map';
 import { SPACE, BODIES } from './orbit';
@@ -50,16 +63,22 @@ const PLACES = {
   downtown: { p: [40, 150, -60] }, // where Dad watches from
   river: { p: [1150, 120, -420] }, // over the river, by where the portal opens
   bridge: { p: [1150, 12, -440] }, // the middle bridge's deck
+  plaza: { p: [24, 0, 27] }, // on the plaza before the hall (open ground), where the top of a tower comes down (episode 8)
+  pad: { p: [1618, 0, -384] }, // the GDA's pad, where the world catches him (episode 8)
   coast: { p: [0, 30, COAST - 120] },
   sky: { p: [0, 2000, 1200] }, // the city from 2 km
 };
 export const placeOf = (id) => PLACES[id] ?? null;
 
 // the way back from the Moon: three gates, a gentle curve to the top of
-// the city's air (space's frame)
+// the city's air (space's frame). Each, and the line between each, stays
+// over the height where he'd fall back into the city's air: the middle one
+// is 30 km up, a third of the way round from over the city toward the Moon
+// (it was once inside the Earth, and the race couldn't be won).
+const MOON_WAY = [MOON.c[0], 0, MOON.c[2]].map((v) => v / Math.hypot(MOON.c[0], MOON.c[2]));
 const HOME_GATES = [
   MOON.c.map((v) => v * 0.68),
-  MOON.c.map((v, i) => v * 0.34 + [0, SPACE.RE * 0.25, 0][i]),
+  [MOON_WAY[0] * 0.5 * (SPACE.RE + 30000), Math.cos(Math.PI / 6) * (SPACE.RE + 30000), MOON_WAY[2] * 0.5 * (SPACE.RE + 30000)],
   [0, SPACE.RE + 12000, 0],
 ];
 // Eve's race round downtown, a loop of eight
@@ -74,8 +93,15 @@ const EVE_GATES = [
   [-200, 60, 200],
   [-360, 50, -40],
 ];
-// Dad's four points for the talk, in the order he leads them
-const DAD_POINTS = [PLACES.downtown.p, PLACES.river.p, [-2610, 90, -418], [-2050.2, 40, 264]];
+// Dad's four points for the talk, in the order he leads them: over downtown,
+// the river and the school above the skyline (the tallest tower is 360 m; he
+// flies straight from one to the next, over the city, not through it), then home
+const DAD_POINTS = [
+  [40, 380, -60],
+  [1150, 380, -420],
+  [-2610, 380, -418],
+  [-2050.2, 40, 264],
+];
 // the photo spots: where to hover (a 20 m sphere), and the way to face
 const PHOTOS = [
   { id: 'photo1', name: 'The Guardians’ hall from the plaza', p: [24, 3, 27], face: -2.4 },
@@ -129,8 +155,8 @@ export const MISSIONS = [
     intro: [['cecil', 'Doc Seismic. Your school. He’s shaking it and there are kids on the roof.']],
     steps: [
       reach(PLACES.school.door, 30, 'Get to the school', { y: null, spawn: [['seismic', 1, PLACES.school.p]] }),
-      step('catch', 'Catch the students he shakes off the roof', { n: 4, shake: PLACES.roof.p, marker: { faller: true } }),
-      step('defeat', 'Put Doc Seismic down', { kind: 'seismic', n: 1, marker: { foe: true } }),
+      // (one step, in either order: beaten first, he shakes nobody off, so the roof does it every 6 s)
+      step('catch', 'Catch the students off the roof and put Doc Seismic down', { n: 4, source: 'mission', beat: { kind: 'seismic', n: 1, name: 'Doc Seismic' }, shake: PLACES.roof.p, every: 6, marker: { faller: true, foe: true } }),
     ],
     done: [['cecil', 'Four for four. Go and get the glass out of your hair.']],
     achievement: 'seismic',
@@ -177,7 +203,8 @@ export const MISSIONS = [
     intro: [['cecil', 'The Maulers made more Maulers. They’re coming up the river bank for the hangar. Hold it.']],
     steps: [
       step('protect', 'Hold the hangar for ninety seconds', { what: 'hangar', hp: 100, time: 90, at: PLACES.hangar.p, spawn: [['mauler', 2, [1560, 0, -440]]], wave: { kind: 'mauler', n: 2, every: 30, of: 6 }, marker: PLACES.hangar.door }),
-      step('defeat', 'Put every clone down', { kind: 'mauler', n: 6, marker: { foe: true } }),
+      // (the ones beaten while he held it count; any not yet come, come now)
+      step('defeat', 'Put every clone down', { kind: 'mauler', n: 6, since: 0, upto: ['mauler', 6, [1560, 0, -440]], marker: { foe: true } }),
     ],
     done: [['cecil', 'Six Maulers. There are days I think you’re worth the noise.']],
     achievement: 'gda',
@@ -191,12 +218,35 @@ export const MISSIONS = [
     start: { npc: 'omni', place: 'home', time: ['dusk', 'night'], after: ['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6'] },
     intro: [['omni', 'Walk with me, Mark. Fly, I mean.']],
     steps: [
-      ...DAD_POINTS.map((p, i) => step('escort', ['Follow Dad over downtown', 'Follow Dad over the river', 'Follow Dad over the school', 'Follow Dad home'][i], { npc: 'omni', to: p, r: 30, within: 200, grace: 10, marker: { npc: 'omni' } })),
+      ...DAD_POINTS.map((p, i) => step('escort', ['Follow Dad over downtown', 'Follow Dad over the river', 'Follow Dad over the school', 'Follow Dad home'][i], { npc: 'omni', to: p, within: 200, grace: 10, marker: { npc: 'omni' } })),
       step('land', 'Land at home', { at: PLACES.home.door, r: 12, marker: PLACES.home.door }),
       step('use', 'Think, Mark!', { id: 'thinkmark', marker: PLACES.home.door }),
     ],
     done: [['omni', 'Then we’ll talk again. Go inside, your mother’s waiting.']],
     achievement: 'season',
+  },
+  {
+    id: 'ep8',
+    ep: 8,
+    title: 'Where I Really Come From',
+    colour: '#c1121f',
+    giver: 'omni',
+    start: { npc: 'omni', place: 'home', time: ['dusk', 'night'], after: ['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7'] },
+    intro: [['omni', 'Mark. There’s something I should have told you a long time ago.']],
+    steps: [
+      // 1. the porch: what he is, in panels (the world feeds `use panels` as they end)
+      step('use', 'Listen to Dad', { id: 'panels', marker: PLACES.home.door }),
+      // 2. the hit: Mark a projectile down the street into the river (the world feeds `recover` as he comes up)
+      step('event', 'Get up', { on: 'recover', marker: PLACES.river.p }),
+      // 3. the chase: three blows on Dad across downtown, each answered
+      step('hits', 'Hit him. Three times.', { kind: 'omniman', n: 3, spawn: [['omniman', 1, 'hero']], marker: { npc: 'omni' } }),
+      // 4. the people: the top of a tower comes down on the plaza; twelve to catch, one after another, in a minute
+      step('catch', 'Catch them', { n: 12, source: 'mission', shake: PLACES.plaza.p, every: 2.5, time: 60, soft: true, marker: PLACES.plaza.p }),
+      // 5. the sky: up through the clouds, the five hundred years, and Dad gone (the world feeds `sky`)
+      step('event', 'Say it', { on: 'sky', marker: { npc: 'omni' } }),
+    ],
+    done: [['cecil', 'He’s gone. Get some rest, kid. We’ll talk in the morning.']],
+    achievement: 'truth',
   },
   // the radio's side calls (`side`): one at a time, when nothing else is on
   {
@@ -216,7 +266,7 @@ export const MISSIONS = [
     colour: '#f5c518',
     giver: 'eve',
     intro: [['eve', 'Eight gates round downtown. Beat my time and I’ll admit you can fly.']],
-    steps: [step('race', 'Eve’s gates: all eight, in order', { gates: EVE_GATES, r: 12, time: 60, marker: { gate: true }, ghost: 'eve' })],
+    steps: [step('race', 'Eve’s gates: all eight, in order', { gates: EVE_GATES, r: 12, time: 60, marker: { gate: true } })],
     done: [['eve', 'Fine. You can fly. A bit.']],
   },
   ...PHOTOS.map((q) => ({
@@ -248,32 +298,46 @@ const turn = (a, b) => Math.abs(((((a - b) % (Math.PI * 2)) + Math.PI * 3) % (Ma
 export function startMission(id, now = 0) {
   const m = BY_ID[id];
   if (!m) return null;
-  return { id, step: 0, count: 0, t: 0, stepT: 0, hp: m.steps[0].hp ?? null, best: null, started: now, seen: { npcs: {}, car: null, p: null }, away: 0, done: false, fail: null };
+  // (kos: who's been knocked out since it began, by foe id, and in which step)
+  return { id, step: 0, count: 0, t: 0, stepT: 0, shakeT: 0, hp: m.steps[0].hp ?? null, best: null, started: now, seen: { npcs: {}, car: null, p: null }, kos: {}, away: 0, done: false, fail: null };
 }
 
 // the step's `out` entry as it begins (what it needs set up: who to spawn, a car)
-const begin = (m, i) => ({ type: 'step', i, text: m.steps[i].text, spawn: m.steps[i].spawn ?? null, car: m.steps[i].car ?? null, wave: m.steps[i].wave ?? null });
+const begin = (m, i) => ({ type: 'step', i, text: m.steps[i].text, spawn: m.steps[i].spawn ?? null, car: m.steps[i].car ?? null, wave: m.steps[i].wave ?? null, upto: m.steps[i].upto ?? null });
 // the same for the step under way (the first one, just after startMission)
 export const stepOf = (p) => (p && !p.done && !p.fail && BY_ID[p.id]?.steps[p.step] ? begin(BY_ID[p.id], p.step) : null);
+
+// how many of `kind` (one or a list) have been knocked out since step `since`
+const isKind = (want, kind) => (Array.isArray(want) ? want.includes(kind) : want === kind);
+const beaten = (p, kind, since) => Object.values(p.kos ?? {}).filter((k) => k.step >= since && isKind(kind, k.kind)).length;
 
 export function feedMission(prev, ev) {
   if (!prev || prev.done || prev.fail) return { progress: prev, out: [] };
   const m = BY_ID[prev.id];
-  const p = { ...prev, seen: { ...prev.seen, npcs: { ...prev.seen.npcs } } };
+  const p = { ...prev, kos: { ...prev.kos }, seen: { ...prev.seen, npcs: { ...prev.seen.npcs } } };
   const out = [];
   const s = m.steps[p.step];
+  // a catch step's knock-outs to go with its rescues (counted from the start)
+  const beatDone = (q) => !q.beat || beaten(p, q.beat.kind, q.beat.since ?? 0) >= q.beat.n;
   const next = () => {
     p.step++;
     p.count = 0;
     p.stepT = 0;
+    p.shakeT = 0;
     p.away = 0;
     if (p.step >= m.steps.length) {
       p.done = true;
       p.best = p.t;
       out.push({ type: 'done', time: p.t, achievement: m.achievement ?? null });
     } else {
-      p.hp = m.steps[p.step].hp ?? p.hp;
+      const q = m.steps[p.step];
+      p.hp = q.hp ?? p.hp;
       out.push(begin(m, p.step));
+      // a defeat step that counts from an earlier one may be part done, or done, already
+      if (q.type === 'defeat') {
+        p.count = beaten(p, q.kind, q.since ?? p.step);
+        if (p.count >= q.n) next();
+      }
     }
   };
   const fail = (why) => {
@@ -297,8 +361,18 @@ export function feedMission(prev, ev) {
       p.stepT += dt;
       if (s.type === 'protect') {
         if (p.stepT >= s.time) next();
-      } else if (s.time != null && p.stepT > s.time) fail(s.type === 'race' ? 'time' : 'late');
-      else if (s.type === 'escort' && p.seen.p && p.seen.npcs[s.npc]) {
+      } else if (s.time != null && p.stepT > s.time) {
+        if (s.soft) next();
+        else fail(s.type === 'race' ? 'time' : 'late');
+      }
+      else if (s.type === 'catch' && s.shake && (!s.beat || beatDone(s)) && p.count < s.n) {
+        // no quakes left to shake them off: the roof gives one up every so often
+        p.shakeT += dt;
+        if (p.shakeT >= s.every) {
+          p.shakeT -= s.every;
+          out.push({ type: 'shake', at: [...s.shake] });
+        }
+      } else if (s.type === 'escort' && p.seen.p && p.seen.npcs[s.npc]) {
         // too far from them for too long
         p.away = dist(p.seen.p, p.seen.npcs[s.npc]) > s.within ? p.away + dt : 0;
         if (p.away >= s.grace) fail('left');
@@ -319,14 +393,18 @@ export function feedMission(prev, ev) {
         }
       } else if (s.type === 'through' && within(ev.p, s.at, s.r)) {
         if ((ev.speed ?? 0) > s.speed) next();
-      } else if (s.type === 'escort') {
-        const d = p.seen.npcs[s.npc];
-        if (d && within(d, s.to, s.r) && within(ev.p, d, s.within)) next();
       }
       break;
     }
+    case 'dadAt':
+      // (Dad at his point and moving on, which he does once Mark is close by
+      // him: the step is done when he says so, so the two never disagree)
+      if (s.type === 'escort' && s.npc === 'omni') next();
+      break;
+    case 'lesson-start':
     case 'ring':
-      if (s.type === 'race' && s.ring && ev.i === p.count) {
+      // (the lesson's start is its first ring: either says so, the other then doesn't count again)
+      if (s.type === 'race' && s.ring && (ev.type === 'ring' ? ev.i : 0) === p.count) {
         count();
         if (p.count >= s.gates.length) next();
       }
@@ -344,22 +422,38 @@ export function feedMission(prev, ev) {
       if (s.type === 'talk' && ev.npc === s.npc) next();
       break;
     case 'caught':
-      if (s.type === 'catch') {
+      if (s.type === 'catch' && (!s.source || ev.source === s.source)) {
         count();
-        if (p.count >= s.n) next();
+        if (p.count >= s.n && beatDone(s)) next();
       }
       break;
-    case 'ko':
-      if (s.type === 'defeat' && (Array.isArray(s.kind) ? s.kind.includes(ev.kind) : ev.kind === s.kind)) {
-        count();
+    case 'ko': {
+      // each foe once (one with no id is its own), with the step it went down in
+      const key = ev.id ?? `n${Object.keys(p.kos).length}`;
+      if (p.kos[key]) break;
+      p.kos[key] = { kind: ev.kind, step: p.step };
+      if (s.type === 'defeat' && isKind(s.kind, ev.kind)) {
+        p.count = beaten(p, s.kind, s.since ?? p.step);
+        out.push({ type: 'count', count: p.count, of: s.n });
         if (p.count >= s.n) next();
+      } else if (s.type === 'catch' && s.beat && isKind(s.beat.kind, ev.kind)) {
+        out.push({ type: 'count', count: p.count, of: s.n });
+        if (p.count >= s.n && beatDone(s)) next();
       }
       break;
+    }
     case 'hurt':
       if (s.type === 'protect' && ev.what === s.what) {
         p.hp = ev.hp;
         out.push({ type: 'hp', hp: p.hp });
         if (p.hp <= 0) fail('lost');
+      }
+      break;
+    case 'hit':
+      if (s.type === 'hits' && isKind(s.kind, ev.kind)) {
+        count();
+        out.push({ type: 'driven', n: p.count, of: s.n }); // (Dad answers each one)
+        if (p.count >= s.n) next();
       }
       break;
     case 'use':
@@ -370,6 +464,7 @@ export function feedMission(prev, ev) {
       }
       break;
     default:
+      if (s.type === 'event' && ev.type === s.on) next();
       break;
   }
   return { progress: p, out };
@@ -377,14 +472,18 @@ export function feedMission(prev, ev) {
 
 // ── the radio: a side call every 60–120 s while no mission is on and he's
 // in the city: a chase, a photo spot not yet taken (the five in turn, then
-// any), or Eve's race while she's flying beside him (never the same call
-// twice running; nothing while a story mission is on, or out in space) ──
+// any), Eve's race while she's flying beside him, or Cecil's portal while
+// nothing's fighting (never the same call twice running; nothing while a
+// story mission is on, or out in space) ──
 export const RADIO = { every: [60, 120], offer: 20 }; // seconds between calls; how long one waits before it's dropped
+// the calls that aren't missions: taken, the Flaxans come through over the
+// river (./foes.js's invasion), Cecil's recorded line said as they do
+export const RADIO_CALLS = { portal: CALLS.portal };
 export function newRadio(seed = 11) {
   const r = rng(seed);
   return { t: 0, next: RADIO.every[0] + r() * (RADIO.every[1] - RADIO.every[0]), n: 0, last: null, seed };
 }
-// state: { mission: id | null, zone: 'city' | 'space', eve: true while she's beside him, done: [ids] }
+// state: { mission: id | null, zone: 'city' | 'space', eve: true while she's beside him, fight: true while foes are up, done: [ids] }
 export function nextRadioCall(prev, dt, state = {}) {
   const radio = { ...prev };
   const step = Math.min(0.05, Math.max(0, dt || 0));
@@ -403,6 +502,7 @@ export function nextRadioCall(prev, dt, state = {}) {
   const photo = photos.find((id) => id !== radio.last) ?? (photos.length ? null : PHOTOS.map((q) => q.id).find((id) => id !== radio.last));
   if (photo) pool.push(photo);
   if (state.eve && radio.last !== 'everace') pool.push('everace');
+  if (!state.fight && radio.last !== 'portal') pool.push('portal');
   const call = pool[Math.floor(r() * pool.length)] ?? null;
   radio.last = call;
   return { radio, call };
@@ -427,8 +527,9 @@ export function markerOf(progress, scene = {}) {
   if (mk.gate) return s.gates[progress.count] ? [...s.gates[progress.count]] : null;
   if (mk.npc) return scene.npcs?.[mk.npc] ? [...scene.npcs[mk.npc]] : (progress.seen.npcs[mk.npc] ?? null);
   if (mk.car) return scene.car ? [...scene.car] : (progress.seen.car ?? null);
+  // (a catch-and-beat step: the one falling, until all are caught; then him)
+  if (mk.faller && !(mk.foe && progress.count >= (s.n ?? 0))) return scene.faller ? [...scene.faller] : [...PLACES.roof.p];
   if (mk.foe) return scene.foes?.length ? [...scene.foes[0]] : null;
-  if (mk.faller) return scene.faller ? [...scene.faller] : [...PLACES.roof.p];
   if (mk.body) return scene.bodies?.[mk.body] ? [...scene.bodies[mk.body]] : null;
   return null;
 }

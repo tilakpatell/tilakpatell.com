@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { FIGHT, KINDS, PORTAL, foeAt, knock, newFoes, portalOpen, spawnFoes, startInvasion, stepFoes } from './foes';
+import { FIGHT, KINDS, PORTAL, foeAt, knock, newFoes, pickTarget, portalOpen, spawnFoes, spawnUpTo, startInvasion, stepFoes } from './foes';
 import { groundAt } from './map';
 
 const hero = (p, v = [0, 0, 0]) => ({ p: [...p], v: [...v], mode: 'air' });
 const idle = { punch: false, look: [0, 0, -1] };
-function run(f, h, t, input = idle, dt = 1 / 30) {
+function run(f, h, t, input = idle, dt = 1 / 30, world = {}) {
   const ev = [];
   let push = null;
   for (let s = 0; s < t; s += dt) {
-    const r = stepFoes(f, typeof h === 'function' ? h(s, f) : h, typeof input === 'function' ? input(s, f) : input, dt);
+    const r = stepFoes(f, typeof h === 'function' ? h(s, f) : h, typeof input === 'function' ? input(s, f) : input, dt, world);
     f = r.foes;
     ev.push(...r.ev);
     push = r.push ?? push;
@@ -329,5 +329,83 @@ describe('the villains', () => {
     expect(later.foes[0].state).toBe('down');
     expect(ev.some((e) => e.type === 'down')).toBe(true);
     expect(later.foes[0].p[1]).toBeLessThanOrEqual(y + 5);
+  });
+  // ── a Mauler with something to wreck (the hangar, episode 6) ──
+  it('a Mauler goes for the hangar when Mark is over 60 m away or over 30 m up, and for him otherwise', () => {
+    const e = only('mauler').foes[0];
+    const hangar = [AT[0] + 40, G, AT[2]];
+    expect(pickTarget(e, onGround(0, 61), hangar)).toBe('hangar');
+    expect(pickTarget(e, onGround(0, 10, 31), hangar)).toBe('hangar');
+    expect(pickTarget(e, onGround(0, 59), hangar)).toBe('mark');
+    expect(pickTarget(e, onGround(0, 10, 29), hangar)).toBe('mark');
+    expect(pickTarget(e, onGround(0, 200), null)).toBe('mark'); // (nothing to wreck: him)
+  });
+  it('left alone, a Mauler runs to the hangar and swings at it every 1.4 s', () => {
+    const hangar = [AT[0] + 30, G, AT[2]];
+    const { ev, f } = run(only('mauler', { cool: 0 }), far, 10, idle, 1 / 30, { hangar });
+    const e = f.foes[0];
+    expect(Math.hypot(e.p[0] - hangar[0], e.p[2] - hangar[2])).toBeLessThan(KINDS.mauler.reach + 0.5);
+    const swings = ev.filter((q) => q.type === 'swing' && q.on === 'hangar');
+    expect(swings.length).toBeGreaterThanOrEqual(3);
+    expect(ev.some((q) => q.type === 'hurt')).toBe(false);
+  });
+  it('spawns up to a total, counting the ones already beaten', () => {
+    let f = spawnFoes(newFoes(), 'mauler', 2, AT);
+    f = { ...f, foes: f.foes.map((e, i) => (i === 0 ? { ...e, state: 'down' } : e)) };
+    f = spawnUpTo(f, 'mauler', 6, AT);
+    expect(f.foes.filter((e) => e.kind === 'mauler')).toHaveLength(6);
+    expect(spawnUpTo(f, 'mauler', 6, AT).foes).toHaveLength(6);
+    expect(spawnUpTo(f, 'mauler', 3, AT)).toBe(f);
+  });
+});
+
+const STREET = [50, 0, 0];
+const onStreet = (dz = 0) => ({ p: [STREET[0], groundAt(STREET[0], STREET[2] + dz), STREET[2] + dz], v: [0, 0, 0], mode: 'ground' });
+
+describe('a block', () => {
+  it('halves a Mauler’s swing, knocks nobody back, staggers the Mauler and opens a counter', () => {
+    const f = spawnFoes(newFoes(), 'mauler', 1, [STREET[0], 0, STREET[2] - 2]);
+    const h = onStreet();
+    const blocked = run(f, h, 3, { punch: false, look: [0, 0, -1], block: true }, 0.05);
+    const swing = blocked.ev.find((e) => e.type === 'swing' && e.hit);
+    expect(swing).toBeTruthy();
+    expect(blocked.ev.some((e) => e.type === 'blocked')).toBe(true);
+    const hurt = blocked.ev.find((e) => e.type === 'hurt');
+    expect(FIGHT.hp - hurt.hp).toBeCloseTo(KINDS.mauler.swing * FIGHT.blockHalf);
+    const open = run(f, h, 3, { punch: false, look: [0, 0, -1], block: false }, 0.05);
+    const hurtOpen = open.ev.find((e) => e.type === 'hurt');
+    expect(FIGHT.hp - hurtOpen.hp).toBeCloseTo(KINDS.mauler.swing);
+  });
+  it('the punch inside the window lands twice', () => {
+    const f = spawnFoes(newFoes(), 'mauler', 1, [STREET[0], 0, STREET[2] - 2]);
+    const h = onStreet();
+    let seen = false;
+    const r = run(f, h, 4, (s, st) => {
+      const swung = st.counter > 0 && !seen;
+      if (swung) seen = true;
+      return { punch: swung, look: [0, 0, -1], block: !swung };
+    }, 0.05);
+    const hits = r.ev.filter((e) => e.type === 'hit' && e.punched);
+    expect(hits.length).toBeGreaterThanOrEqual(2);
+    expect(hits.some((e) => e.counter)).toBe(true);
+  });
+});
+
+describe('Omni-Man (episode 8)', () => {
+  const sky = (p) => ({ p: [...p], v: [0, 0, 0], mode: 'air' });
+  it('circles him, charges every few seconds, hurts him and drives him off along the charge, and is never knocked out', () => {
+    const f = spawnFoes(newFoes(), 'omniman', 1, [50, 60, 0]);
+    expect(f.foes[0].state).toBe('circle');
+    const h = sky([50, 60, 0]);
+    const { f: f2, ev } = run(f, h, 8, { punch: false, look: [0, 0, -1] }, 0.05);
+    const driven = ev.filter((e) => e.type === 'driven');
+    expect(driven.length).toBeGreaterThanOrEqual(1);
+    const hurt = ev.find((e) => e.type === 'hurt' && e.by === 'omniman');
+    expect(FIGHT.hp - hurt.hp).toBeCloseTo(KINDS.omniman.hurt);
+    // a blow on him is a hit, never a knock-out
+    const punched = run(f2, { ...h, p: [...f2.foes[0].p] }, 1, (s) => ({ punch: s < 0.05, look: [0, 0, -1], fists: 2 }), 0.05);
+    expect(punched.ev.some((e) => e.type === 'hit' && e.kind === 'omniman')).toBe(true);
+    expect(punched.ev.some((e) => e.type === 'ko')).toBe(false);
+    expect(punched.f.foes[0].state).toBe('stagger');
   });
 });
