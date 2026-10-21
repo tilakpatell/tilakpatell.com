@@ -5,7 +5,7 @@
 // hill is. The flight's planets add a wind to the ridges, a range with no
 // `to` and the blocks of a city (the planet flight's).
 //
-// Pure: imports nothing but the galaxy's noise (galaxy/surface/noise.js, a
+// Pure: imports nothing but the ground's noise (lib/noise.js, a
 // pure module), and runs in Node and in a worker.
 //
 //   LAYERS[type](x, z, layer, seed) → metres
@@ -17,7 +17,7 @@
 //     game's records say), a hole NaN
 //   imageLayerFrom(record, nearPixels, farPixels) → an `image` layer
 
-import { fbm, hash2, noise2, ridged, smoothstep } from '../../components/galaxy/surface/noise.js';
+import { fbm, hash2, noise2, ridged, smoothstep } from '../noise.js';
 
 export { noise2 };
 
