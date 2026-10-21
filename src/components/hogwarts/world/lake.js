@@ -78,11 +78,11 @@ export function createLake({ sky, ground = null, level = 0, area = { x0: -1600, 
     const toEye = cameraPosition.sub(p);
     const dist = length(toEye);
     // the fine ripple, a breath of wind on it, gone to glass far out
-    const q = p.xz.mul(0.9).add(vec2(u.uTime.mul(0.12), u.uTime.mul(0.05)));
+    const q = p.xz.mul(2.2).add(vec2(u.uTime.mul(0.25), u.uTime.mul(0.1)));
     const n0 = noise(vec3(q, u.uTime.mul(0.2)), u.uSeed);
     const nx = noise(vec3(q.add(vec2(0.2, 0)), u.uTime.mul(0.2)), u.uSeed).sub(n0);
     const nz = noise(vec3(q.add(vec2(0, 0.2)), u.uTime.mul(0.2)), u.uSeed).sub(n0);
-    const fine = float(0.9).mul(float(1).sub(smoothstep(30, 260, dist))).add(0.12);
+    const fine = float(0.32).mul(float(1).sub(smoothstep(20, 220, dist))).add(0.05);
     const n = normalize(vec3(nx.mul(fine).negate(), 1, nz.mul(fine).negate()));
     const view = normalize(toEye);
     const fres = pow(max(dot(n, view), 0).oneMinus(), 5).mul(0.9).add(0.04);
@@ -92,8 +92,8 @@ export function createLake({ sky, ground = null, level = 0, area = { x0: -1600, 
     // the moon's path: its glint stretched into a broken road across the water
     const moonR = max(dot(r, normalize(s.moonDir)), 0);
     const moonPath = pow(moonR, 90).mul(1.6).add(pow(moonR, 900).mul(4)).mul(s.moon);
-    // the sunset's last light on the water, while it lasts
-    const sunPath = pow(max(dot(r, normalize(s.sunDir)), 0), 60).mul(s.sunUp).mul(1.4);
+    // the sunset's glow on the water, under where it hangs in the sky
+    const sunPath = pow(max(dot(r, normalize(s.sunDir)), 0), 6).mul(smoothstep(0.25, 0.0, r.y)).mul(0.9);
     // the castle's windows: a column of warm light on the water between you
     // and the crag, as wide as the castle, brighter toward it, broken into
     // the long dashes lit windows make on a loch with a breath of wind on it
@@ -108,12 +108,12 @@ export function createLake({ sky, ground = null, level = 0, area = { x0: -1600, 
     const inLine = smoothstep(float(castle.wide * 0.4).div(far), 0.0, side).mul(step(0, dot(c0, f0)));
     const t = near.div(far);
     const run = smoothstep(0.03, 0.5, t).mul(float(1).sub(smoothstep(0.86, 0.97, t)));
-    const broken = smoothstep(0.5, 0.8, noise(vec3(p.x.mul(0.18), p.z.mul(1.4), u.uTime.mul(0.5)), u.uSeed).mul(0.5).add(0.5));
-    const lights = vec3(WARM.r, WARM.g, WARM.b).mul(inLine.mul(run).mul(broken).mul(u.uWindows).mul(1.1));
+    const broken = smoothstep(0.42, 0.72, noise(vec3(p.x.mul(0.18), p.z.mul(1.4), u.uTime.mul(0.5)), u.uSeed).mul(0.5).add(0.5));
+    const lights = vec3(WARM.r, WARM.g, WARM.b).mul(inLine.mul(run).mul(broken).mul(u.uWindows).mul(2.2));
     // the body: near black out deep, a little lighter where the shingle shows through
     const sink = smoothstep(0.1, 2.2, depth);
     const body = mix(vec3(SHALLOW.r, SHALLOW.g, SHALLOW.b), vec3(BODY.r, BODY.g, BODY.b), sink).mul(u.uLight);
-    const c = mix(body, skyCol, fres).add(vec3(1.0, 0.97, 0.9).mul(moonPath)).add(s.sunCol.mul(sunPath)).add(lights).toVar();
+    const c = mix(body, skyCol, fres).add(vec3(1.0, 0.97, 0.9).mul(moonPath)).add(s.glow.mul(sunPath)).add(lights).toVar();
     // foam where it laps at the shingle, a thin broken line
     const edge = float(1).sub(smoothstep(0.02, 0.14, depth)).mul(smoothstep(0.2, 0.7, n0.mul(0.5).add(0.5)));
     c.assign(mix(c, vec3(FOAM.r, FOAM.g, FOAM.b).mul(u.uLight.add(0.2)), edge.mul(0.6)));

@@ -13,7 +13,7 @@
 // Esc.
 // The world adds: go() (the prompt's button), stick(x, y) (the touch
 // stick), and `scene`, `walker` for the checks. In development,
-// window.__HOGWARTS__ = { state(), world }.
+// window.__HOGWARTS__ = { state(), place(x, z, yaw), dusk(s), world }.
 //
 // Where the rest hooks in (the lanes after this one): the grounds and the
 // near castle add to the scene beside the shore (Lane C: world/terrain.js
@@ -86,6 +86,9 @@ export default {
     let clock = 0;
     let light = null;
     const keyDir = new THREE.Vector3();
+    const sunDir = new THREE.Vector3();
+    const haze = new THREE.Color();
+    const shade = new THREE.Color();
     const relight = () => {
       light = lightAt(clock, { reduced });
       sky.set(light);
@@ -99,10 +102,13 @@ export default {
       hemi.intensity = light.hemi.intensity;
       scene.fog.color.setRGB(...light.fog.colour, THREE.SRGBColorSpace);
       scene.fog.density = light.fog.density;
-      // (the house's fog takes the sky's own colours: the horizon low, the zenith high)
-      house.sky({ low: sky.uniforms.horizon.value, high: sky.uniforms.zenith.value, sunDir: keyDir });
+      // (the house's fog takes the sky's own colours: the horizon low, the zenith
+      // high, and the sunset's glow toward where the sun went down)
+      sunDir.set(...light.sun.dir);
+      house.sky({ low: sky.uniforms.horizon.value, high: sky.uniforms.zenith.value, sunDir, halo: haze.copy(sky.uniforms.glow.value).multiplyScalar(0.6) });
       house.light({ sun: key, hemi });
-      house.set({ shadow: new THREE.Color().setRGB(...light.hemi.sky, THREE.SRGBColorSpace).multiplyScalar(0.55) });
+      // (the shade: the sky's own blue, lifted toward the horizon's, so what the low light misses still reads)
+      house.set({ shadow: shade.setRGB(...light.hemi.sky, THREE.SRGBColorSpace).lerp(sky.uniforms.horizon.value, 0.4).multiplyScalar(0.95) });
       if (renderer) renderer.toneMappingExposure = light.exposure;
     };
 
@@ -192,7 +198,12 @@ export default {
         const s = walker.state;
         return { at: [s.x, floorAt(s.x, s.z), s.z].map((v) => Math.round(v * 100) / 100), yaw: s.yaw, pitch: s.pitch, speed: s.speed, near, clock, dusk: light?.k ?? 0, tier, calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0 };
       };
-      window.__HOGWARTS__ = { world, state, place: (x, z, yaw) => walker.place([x, z], yaw) };
+      // (place(x, z, yaw): stand somewhere; dusk(s): the light s seconds into the dusk, 240 its night)
+      const dusk = (sec) => {
+        clock = sec;
+        relight();
+      };
+      window.__HOGWARTS__ = { world, state, place: (x, z, yaw) => walker.place([x, z], yaw), dusk };
     }
     return world;
   },
