@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boxOf, declutter } from './declutter';
+import { SIDES, boxOf, declutter } from './declutter';
 
 const bounds = { x0: 0, y0: 0, x1: 1000, y1: 1000 };
 const L = (id, x, y, priority, w = 120, h = 24) => ({ id, x, y, w, h, priority });
@@ -20,6 +20,9 @@ describe('declutter', () => {
   it('keeps a name off another place’s dot', () => {
     expect(declutter([L('a', 500, 500, 1)], { bounds, dots: [{ x: 560, y: 500 }] }).get('a')).toBe('left');
   });
+  it('is never blocked by its own dot', () => {
+    expect(declutter([L('a', 500, 500, 1)], { bounds, dots: [{ x: 500, y: 500 }, { x: 503, y: 498 }] }).get('a')).toBe('right');
+  });
   it('keeps names inside round bounds: a corner that fits the square but not the circle turns the name', () => {
     const round = { cx: 500, cy: 500, r: 500 };
     // (up and right of the middle, near the rim: the right-hand box's far corner is past the circle)
@@ -27,8 +30,31 @@ describe('declutter', () => {
     expect(declutter([L('d', 830, 170, 1, 50)], { bounds: round }).get('d')).toBe('left');
     expect(declutter([L('out', 995, 500, 1)], { bounds: round }).get('out')).toBeNull();
   });
+  it('keeps a name inside a round chart given as its square with `round`', () => {
+    // (at the top right of the square, where a square's bounds would have it right)
+    const l = L('rim', 640, 60, 1);
+    expect(declutter([l], { bounds }).get('rim')).toBe('right');
+    expect(declutter([l], { bounds, round: true }).get('rim')).toBe('left');
+  });
   it('can be held to one side, as the mini-map’s names hang under their dots', () => {
     const s = declutter([L('a', 300, 150, 2), L('b', 302, 150, 1)], { bounds, sides: ['under'] });
     expect([s.get('a'), s.get('b')]).toEqual(['under', null]);
+  });
+  it('goes over a dot when right, left and under are taken', () => {
+    const dots = [{ x: 540, y: 470 }, { x: 460, y: 470 }];
+    const s = declutter([L('a', 500, 500, 2, 260), L('b', 500, 470, 1, 60)], { bounds, sides: SIDES, dots });
+    expect(s.get('a')).toBe('right');
+    expect(s.get('b')).toBe('over');
+  });
+  it('lets a name keep to its own sides', () => {
+    const s = declutter([{ ...L('front', 500, 500, 1), sides: ['left'] }], { bounds });
+    expect(s.get('front')).toBe('left');
+    expect(declutter([{ ...L('front', 60, 500, 1), sides: ['left'] }], { bounds }).get('front')).toBe(null);
+  });
+  it('gives the same answer whatever order the names come in', () => {
+    const pile = [L('x', 400, 400, 1), L('y', 410, 404, 1), L('z', 420, 396, 1), L('w', 405, 420, 3)];
+    const a = declutter(pile, { bounds });
+    const b = declutter([...pile].reverse(), { bounds });
+    expect([...b.entries()].sort()).toEqual([...a.entries()].sort());
   });
 });

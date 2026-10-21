@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { RiArrowLeftLine, RiArrowRightLine, RiCloseLine, RiEyeLine, RiFlashlightFill, RiLinkM, RiRocket2Fill, RiRouteLine, RiSearchLine, RiSpeedUpFill } from 'react-icons/ri';
-import { CHART_VIEWS, DESTINATIONS, DRIVES, KINDS, destinationById, distanceTo, driveById, findDestinations, formatDistance, formatTime, goalOf, legOf, speedWord, tripTime } from './nav';
+import { CHART_VIEWS, DESTINATIONS, DRIVES, KINDS, destinationById, distanceTo, driveById, findDestinations, formatDistance, formatTime, goalOf, legOf, shortDistance, speedWord, tripTime } from './nav';
 import { mapSectorOf } from './layout';
 import { LENGTH } from './scale';
 import { sectorAt } from '../../lib/space/address';
@@ -34,11 +34,26 @@ import './navmap.css';
 // in the other sector is gone to through the portal between them, and its
 // course is drawn to that portal.
 //
+// Kept calm on purpose: the header holds only the charts and the ways out,
+// the list's search and filters live with the list, and the drives come up
+// with a place picked, beside the button that uses them. On the chart a
+// world reads as a lit planet and a wonder as a small diamond, and only the
+// names with room show (chart/declutter.js, in priority order: the place
+// picked, where you are, the regions, the worlds, the wonders); the rest come
+// up on hover and focus, and the list has them all.
+//
 // Drawn into <body> over everything, as a dialog. `where()` is the scene's
 // (scene.js), read a few times a second while it's open.
 
 const ICONS = { hyper: RiFlashlightFill, super: RiSpeedUpFill, cruise: RiRocket2Fill };
 const WHY = { interdicted: JAMMED.short, charging: 'Charging' };
+
+// a key, as the house draws one (index.css's .kbd)
+const Key = ({ k }) => (
+  <kbd className="kbd" data-size="sm">
+    {k}
+  </kbd>
+);
 
 // where the ship is, as the chart's bar says it: its sector, and how far
 // above or below the disc
@@ -68,13 +83,14 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
   const shipSector = now?.ship ? mapSectorOf(now.ship.x, now.ship.y ?? 0, now.ship.z) : 'main';
   const picked = pick ? destinationById(pick) : null;
   const flying = Boolean(now?.ship);
-  const shown = useMemo(() => new Set(findDestinations(kind, query).map((d) => d.id)), [kind, query]);
   const list = useMemo(() => findDestinations(kind, query), [kind, query]);
+  const shown = useMemo(() => new Set(list.map((d) => d.id)), [list]);
   // the chart's places, and the ones the filter and the search leave out
   const marks = useMemo(() => [...HAND_MARKS, ...liveMarks(now)], [now]);
   const dim = useMemo(() => new Set(HAND_MARKS.filter((m) => m.pickable && !shown.has(m.id)).map((m) => m.id)), [shown]);
   // a place picked from the list or the search: the chart zooms and moves till it's on it
-  const showOnChart = (d) => {
+  const pickFromList = (d) => {
+    setPick(d.id);
     const m = markById(d.via ?? d.id);
     if (m) chart.show(m);
   };
@@ -168,7 +184,8 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
   const goingTo = now?.going ? destinationById(now.going.id) : null;
   const course = picked && !at(picked.id) ? picked : goingTo;
   // the course is drawn to where the trip goes first: the place (its gate, for a star system), or the portal on the way
-  const courseTo = course && now?.ship ? destinationById(legOf(now.ship, course.id))?.at : null;
+  const firstLeg = course && now?.ship ? legOf(now.ship, course.id) : null;
+  const courseTo = firstLeg ? destinationById(firstLeg)?.at : null;
   const preset = presetOf(view);
   const toAll = () => chart.setView(presetView('all', now?.ship));
   // the way back out of the home system or the Curve (in the Curve with a ship: back through the portal)
@@ -197,24 +214,28 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
     }, fail);
   };
 
+  // the list, in sections by kind while it's every place
+  const groups = kind === 'all' && !query.trim() ? KINDS.filter((k) => k.id !== 'all').map((k) => ({ k, items: list.filter((d) => d.kind === k.id) })).filter((g) => g.items.length) : [{ k: null, items: list }];
+  const jumpLine = hyper.ready || hyper.why === 'charging' ? jumpState(hyper.ready, hyper.wait) : WHY[hyper.why];
+
   return createPortal(
     <div className="navmap dark-scope" role="dialog" aria-modal="true" aria-labelledby="navmap-title" style={{ '--pick': picked?.color ?? '#9fd8ff' }}>
       <div className="navmap-frame">
         <header className="navmap-head">
-          <div>
+          <div className="navmap-headline">
             <p className="navmap-kicker">{NAV.kicker}</p>
             <h2 id="navmap-title" className="navmap-title">
               Where to?
             </h2>
           </div>
+          <div className="navmap-views" role="group" aria-label={NAV.view}>
+            {Object.values(CHART_VIEWS).map((c) => (
+              <button key={c.id} type="button" aria-pressed={preset === c.id} onClick={() => chart.setView(presetView(c.id, now?.ship))}>
+                {c.name}
+              </button>
+            ))}
+          </div>
           <div className="navmap-head-tools">
-            <div className="navmap-views" role="group" aria-label={NAV.view}>
-              {Object.values(CHART_VIEWS).map((c) => (
-                <button key={c.id} type="button" aria-pressed={preset === c.id} onClick={() => chart.setView(presetView(c.id, now?.ship))}>
-                  {c.name}
-                </button>
-              ))}
-            </div>
             {live && flying && onWhole && (
               <button type="button" className="navmap-tool" onClick={onWhole} title="Pull back over the map in 3D">
                 <RiEyeLine className="h-4 w-4" aria-hidden="true" /> <span>{NAV.back}</span>
@@ -231,40 +252,13 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
           </div>
         </header>
 
-        <div className="navmap-filters">
-          <div className="navmap-kinds" role="group" aria-label="Show">
-            {KINDS.map((k) => (
-              <button key={k.id} type="button" aria-pressed={kind === k.id} onClick={() => setKind(k.id)}>
-                {k.name}
-              </button>
-            ))}
-          </div>
-          <label className="navmap-search">
-            <RiSearchLine className="h-4 w-4" aria-hidden="true" />
-            <span className="sr-only">Find a place</span>
-            <input
-              ref={search}
-              type="search"
-              value={query}
-              placeholder="Find a place…"
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && list[0]) {
-                  e.preventDefault();
-                  setPick(list[0].id);
-                  showOnChart(list[0]);
-                }
-              }}
-            />
-          </label>
-        </div>
-
         <div className="navmap-body">
           <NavChart
             view={view}
             marks={marks}
             ship={now?.ship ?? null}
-            course={courseTo ? { to: courseTo, drive: goingTo && course === goingTo ? now.going.drive : 'plot' } : null}
+            // (no sight on a course that ends on the place picked itself: its name's chip marks it already)
+            course={courseTo ? { to: courseTo, drive: goingTo && course === goingTo ? now.going.drive : 'plot', sight: !(course === picked && firstLeg === picked.id) } : null}
             front={now?.front ?? null}
             onFront={() => onTravel('front', drive)}
             frontOff={!canFly}
@@ -282,19 +276,21 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
             boxRef={box}
           />
 
-          <aside className="navmap-side" aria-live="polite">
+          <aside className="navmap-side">
             {/* the ship */}
-            <div className="navmap-status">
+            <div className="navmap-status" aria-live="polite">
               {flying ? (
                 <>
-                  <p className="navmap-kicker">Your ship</p>
+                  <div className="navmap-status-top">
+                    <p className="navmap-kicker">Your ship</p>
+                    <p className="navmap-jump" data-warn={!hyper.ready || undefined}>
+                      {jumpLine}
+                    </p>
+                  </div>
                   <p className="navmap-where">{atId ? `At ${destinationById(atId).name}` : here ? `${formatDistance(here.gap)} from ${here.d.name}` : 'Deep space'}</p>
                   <p className="navmap-meta">
                     {now.foot ? 'You’re out on foot' : speedWord(now.ship.speed)}
                     {goingTo && !now.foot ? `, ${now.going.drive === 'hyper' ? 'jumping' : 'on the way'} to ${goingTo.name}` : ''}
-                  </p>
-                  <p className="navmap-meta" data-warn={!hyper.ready || undefined}>
-                    {hyper.ready || hyper.why === 'charging' ? jumpState(hyper.ready, hyper.wait) : WHY[hyper.why]}
                   </p>
                 </>
               ) : (
@@ -305,32 +301,18 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
               )}
             </div>
 
-            {/* the drives */}
-            <div className="navmap-drives" role="radiogroup" aria-label="Drive">
-              {DRIVES.map((d) => {
-                const Icon = ICONS[d.id];
-                const t = picked && flying && !at(picked.id) ? times[d.id] : undefined;
-                return (
-                  <button key={d.id} type="button" role="radio" aria-checked={drive === d.id} className="navmap-drive" data-drive={d.id} onClick={() => onDrive(d.id)} title={d.about}>
-                    <Icon className="navmap-drive-icon" aria-hidden="true" />
-                    <span className="navmap-drive-name">{d.name}</span>
-                    <span className="navmap-drive-time">{t === undefined ? (d.id === 'hyper' ? 'instant' : d.id === 'super' ? '3×' : '1×') : t === null ? '—' : formatTime(t)}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="navmap-drive-about">{driveById(drive).about}</p>
-            {fallsBack && flying && <p className="navmap-note">{hyper.why === 'charging' ? `The jump is charging (${Math.ceil(hyper.wait)} s)` : JAMMED.long.replace(/\.[^.]*\.$/, '')}: till it’s ready, you’ll go at super speed.</p>}
-
             {picked ? (
-              <div className="navmap-pick">
+              <div className="navmap-pick" aria-live="polite" style={{ '--c': picked.color }}>
                 <button type="button" className="navmap-back" onClick={() => setPick(null)}>
                   <RiArrowLeftLine className="h-3.5 w-3.5" aria-hidden="true" /> All places
                 </button>
-                <p className="navmap-kicker">{picked.type}</p>
-                <h3 className="navmap-place-name" style={{ color: picked.color }}>
-                  {picked.name}
-                </h3>
+                <div className="navmap-pick-head">
+                  <span className="navmap-orb" data-kind={picked.kind} aria-hidden="true" />
+                  <div>
+                    <p className="navmap-kicker">{picked.type}</p>
+                    <h3 className="navmap-place-name">{picked.name}</h3>
+                  </div>
+                </div>
                 <p className="navmap-about">{picked.about}</p>
                 {flying && (
                   <dl className="navmap-stats">
@@ -343,6 +325,26 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
                       <dd>{at(picked.id) ? 'You’re here' : formatTime(times[fallsBack ? 'super' : drive])}</dd>
                     </div>
                   </dl>
+                )}
+                {/* the drives, beside the button that goes by them */}
+                {flying && (
+                  <>
+                    <div className="navmap-drives" role="radiogroup" aria-label="Drive">
+                      {DRIVES.map((d) => {
+                        const Icon = ICONS[d.id];
+                        const t = !at(picked.id) ? times[d.id] : undefined;
+                        return (
+                          <button key={d.id} type="button" role="radio" aria-checked={drive === d.id} className="navmap-drive" data-drive={d.id} onClick={() => onDrive(d.id)} title={d.about}>
+                            <Icon className="navmap-drive-icon" aria-hidden="true" />
+                            <span className="navmap-drive-name">{d.name}</span>
+                            <span className="navmap-drive-time">{t === undefined ? (d.id === 'hyper' ? 'instant' : d.id === 'super' ? '3×' : '1×') : t === null ? '—' : formatTime(t)}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="navmap-drive-about">{driveById(drive).about}</p>
+                    {fallsBack && <p className="navmap-note">{hyper.why === 'charging' ? `The jump is charging (${Math.ceil(hyper.wait)} s)` : JAMMED.long.replace(/\.[^.]*\.$/, '')}: till it’s ready, you’ll go at super speed.</p>}
+                  </>
                 )}
                 <button type="button" className="btn btn-primary navmap-go" onClick={() => go()} disabled={!goable(picked)}>
                   {verb(picked)} {goable(picked) && <RiArrowRightLine className="h-4 w-4" aria-hidden="true" />}
@@ -360,34 +362,60 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
               </div>
             ) : (
               <div className="navmap-list-box">
-                <p className="navmap-kicker">{list.length === DESTINATIONS.length ? 'Every place' : `${list.length} ${list.length === 1 ? 'place' : 'places'}`}</p>
-                {list.length ? (
-                  <ul className="navmap-list">
-                    {list.map((d) => (
-                      <li key={d.id}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPick(d.id);
-                            showOnChart(d);
-                          }}
-                          style={{ '--c': d.color }}
-                          aria-current={at(d.id) ? 'location' : undefined}
-                        >
-                          <span className="navmap-dot" aria-hidden="true" />
-                          <span className="navmap-list-name">{d.name}</span>
-                          <span className="navmap-list-meta">{at(d.id) ? 'Here' : flying ? formatDistance(distanceTo(now.ship, d.id)) : d.type}</span>
-                        </button>
-                      </li>
+                <div className="navmap-find">
+                  <label className="navmap-search">
+                    <RiSearchLine className="h-4 w-4" aria-hidden="true" />
+                    <span className="sr-only">Find a place</span>
+                    <input
+                      ref={search}
+                      type="search"
+                      value={query}
+                      placeholder={NAV.find}
+                      onChange={(e) => setQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && list[0]) {
+                          e.preventDefault();
+                          pickFromList(list[0]);
+                        }
+                      }}
+                    />
+                  </label>
+                  <div className="navmap-kinds" role="group" aria-label="Show">
+                    {KINDS.map((k) => (
+                      <button key={k.id} type="button" aria-pressed={kind === k.id} onClick={() => setKind(k.id)}>
+                        {k.name}
+                      </button>
                     ))}
-                  </ul>
+                  </div>
+                </div>
+                <div className="navmap-list-head">
+                  <p className="navmap-kicker">{list.length === DESTINATIONS.length ? 'Every place' : `${list.length} ${list.length === 1 ? 'place' : 'places'}`}</p>
+                  {flying && list.length > 0 && <p className="navmap-kicker navmap-unit">{NAV.lengths}</p>}
+                </div>
+                {list.length ? (
+                  groups.map(({ k, items }) => (
+                    <section key={k?.id ?? 'found'} className="navmap-group" aria-label={k?.name}>
+                      {k && <p className="navmap-group-name">{k.name}</p>}
+                      <ul className="navmap-list">
+                        {items.map((d) => (
+                          <li key={d.id} data-kind={d.kind}>
+                            <button type="button" onClick={() => pickFromList(d)} style={{ '--c': d.color }} aria-current={at(d.id) ? 'location' : undefined}>
+                              <span className="navmap-dot" aria-hidden="true" />
+                              <span className="navmap-list-name">{d.name}</span>
+                              <span className="navmap-list-meta">{at(d.id) ? 'Here' : flying ? shortDistance(distanceTo(now.ship, d.id)) : d.type}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ))
                 ) : (
                   <p className="navmap-meta">Nothing by that name. Try a world (Marvel), a page (Projects) or a kind of thing (nebula).</p>
                 )}
               </div>
             )}
             <p className="navmap-keys">
-              <kbd>M</kbd> opens and closes the nav map. Flying, <kbd>J</kbd> jumps to the place picked. <kbd>+</kbd> <kbd>−</kbd> {CHART_WORDS.keys.zoom}, <kbd>0</kbd> {CHART_WORDS.keys.back}
+              <Key k="M" /> opens and closes the nav map. Flying, <Key k="J" /> jumps to the place picked. <Key k="+" /> <Key k="−" /> {CHART_WORDS.keys.zoom}, <Key k="0" /> {CHART_WORDS.keys.back}
             </p>
           </aside>
         </div>
@@ -396,4 +424,3 @@ export default function NavMap({ where, drive, onDrive, selected = null, live = 
     document.body,
   );
 }
-

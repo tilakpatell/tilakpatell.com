@@ -15,6 +15,8 @@ export const NAV = {
   view: 'Nav map view', // the chart's group, for a screen reader
   back: 'Universe view', // the button that closes it
   out: 'Out to the universe', // from a star system or the Curve back to the whole chart
+  lengths: 'Ship-lengths', // over the list's distances, which are written short (“129k”)
+  find: 'Find a place…',
 };
 
 // The flight round every stop, nearest first (not "the tour": that is the

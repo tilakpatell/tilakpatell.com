@@ -2,15 +2,18 @@
 @import './hud.css';
 @import './thumbs.css';
 
-/* The flat map: Home's teaser and the 3D-off map */
+/* The flat map: Home's teaser and the 3D-off map (MiniMap.jsx), on the nav
+   map's chart projection. Each place is a shaded planet and a round hit on
+   it, and its name sits to the side declutter.js gave it (`data-side`),
+   `--pad` from the planet's middle; with no room (`data-quiet`), the name
+   comes up on hover and focus, on glass. */
 .minimap { position: relative; width: 100%; aspect-ratio: 2 / 1; }
 .minimap-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .minimap-stem { stroke: rgb(159 216 255 / 0.45); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .minimap-stem[data-dir='down'] { stroke-dasharray: 2 3; }
 .minimap-ship { fill: #fff; filter: drop-shadow(0 0 3px #9fd8ff); }
-/* the wonders and moons are dots like the rest, a little quieter than the worlds */
+/* the wonders and moons are planets like the rest, a little quieter than the worlds */
 .minimap-planet[data-kind='wonder'] { opacity: 0.8; }
-.minimap-item[data-quiet] .minimap-name { display: none; }
 .minimap[data-interactive] { touch-action: none; }
 /* zoomed in, the belt's band and the stems run past the box: clip them (the teaser keeps its overflow) */
 .minimap[data-interactive] .minimap-svg { overflow: hidden; }
@@ -29,37 +32,51 @@
 @media (pointer: coarse) {
   .minimap-tools .chip { width: 44px; height: 44px; }
 }
-.minimap-labels { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
+.minimap-labels { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; font-size: 0.72rem; }
 .minimap-item { position: absolute; width: 0; height: 0; }
+.minimap-item:is(:hover, :focus-within) { z-index: 2; }
 .minimap-hit {
   position: absolute;
   left: 0;
   top: 0;
   translate: -50% -50%;
-  display: grid;
-  justify-items: center;
-  min-width: 44px;
-  min-height: 44px;
-  padding-top: 30px;
-  border-radius: 999px;
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  line-height: 1.2;
-  letter-spacing: 0.02em;
-  text-align: center;
-  white-space: nowrap;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--text);
   text-decoration: none;
-  transition: color 0.2s;
 }
-.minimap-hit:hover,
-.minimap-hit[aria-pressed='true'] { color: var(--swatch); }
-.minimap-hit:focus-visible { outline: 2px solid var(--swatch); outline-offset: 2px; }
-.minimap-name { pointer-events: none; }
+.minimap-hit:focus-visible { outline: 2px solid var(--swatch); outline-offset: -6px; }
+.minimap-name {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% calc(var(--pad) - 6px); /* (under, the default: declutter.js's box) */
+  padding: 0 0.3rem;
+  border-radius: 6px;
+  color: var(--text);
+  font-weight: 500;
+  line-height: 18px;
+  white-space: nowrap;
+  text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg);
+  pointer-events: none;
+  transition: color var(--t-fast);
+}
+.minimap-item[data-side='over'] .minimap-name { translate: -50% calc(-100% - var(--pad) + 6px); }
+.minimap-item[data-side='right'] .minimap-name { left: 50%; translate: calc(var(--pad) - 0.3rem) -50%; }
+.minimap-item[data-side='left'] .minimap-name { left: 50%; translate: calc(-100% - var(--pad) + 0.3rem) -50%; }
+.minimap-item:is([data-kind='station'], [data-kind='wonder'], [data-kind='moon']) .minimap-name { color: var(--muted); font-size: 0.94em; }
+.minimap-hit:hover .minimap-name,
+.minimap-hit:focus-visible .minimap-name,
+.minimap-hit[aria-pressed='true'] .minimap-name { color: color-mix(in srgb, var(--swatch) 55%, var(--text)); }
+/* no room for its name: the planet alone (its button keeps the name for a screen reader), and the name on hover or focus, on glass */
+.minimap-item[data-quiet] .minimap-name { display: none; }
+.minimap-item[data-quiet]:is(:hover, :focus-within) .minimap-name { display: block; background: color-mix(in srgb, var(--bg) 88%, transparent); text-shadow: none; box-shadow: 0 0 0 1px var(--border); }
 @media (max-width: 640px) {
-  .minimap-hit { font-size: 0.58rem; padding-top: 24px; }
-  /* on a phone the long names crowd: the teaser keeps the dots, the map keeps the selected name */
-  .minimap-teaser .minimap-name { display: none; }
+  .minimap-labels { font-size: 0.62rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .minimap-name { transition: none; }
 }
 
 /* Home's teaser */

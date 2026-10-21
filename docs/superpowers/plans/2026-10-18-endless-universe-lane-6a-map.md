@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Since written (2026-10-20):** Task 4's `chart/declutter.js` is on `main`, with `over` in `SIDES`, a `round` option (the chart's disc) and a label's own `sides`. `NavMap.jsx` and `navmap.css` were redesigned at the owner's ask (the search and filters moved to the side panel, the drives into the place picked): the line numbers below into them are stale; read the files.
+
 **Goal:** One pure chart projection, used by both the nav map and the no-3D mini-map. It is centred on the ship, zooms smoothly from a system out to the universe, pans, and tilts and turns into 3D with every mark on a stem. Labels thin out by priority, and the ship's marker, height and sector are always on the chart.
 
 **Architecture:**

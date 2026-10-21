@@ -8,15 +8,23 @@ import { REGIONS } from './marks';
 import { placeMarks, placeShip, ringOn, sectorGrid } from './place';
 import { FRAMES, levelOf, project, ringsFor, toFrame, warp } from './projection';
 
-// The nav map's chart (NavMap.jsx keeps the header, the filters and the side
-// panel): a canvas of stars under an SVG of the rings, the sectors, the
-// regions, every mark's stem and glyph, the war, the course, the pilots and
-// fights and the ship, with a button per place over that (Tab through, Enter
-// to pick, Enter again to go). Under the circle, a bar: where the ship is
-// (its sector and its height) and the chart's tools. Everything goes through
-// the chart's one projection (projection.js, place.js), centred on the ship
-// unless the visitor has panned; the hands on it are useChartView's, spread
-// on the circle as `handlers`.
+// The nav map's chart (NavMap.jsx keeps the header and the side panel): a
+// canvas of stars under an SVG of the bezel, the rings, the sectors, the
+// regions, every mark's stem and glyph, the war, the course (and a sight on
+// its end), the pilots and fights and the ship with its heading, with a
+// button per place over that (Tab through, Enter to pick, Enter again to
+// go). Under the circle, a bar: where the ship is (its sector and its
+// height) and the chart's tools. Everything goes through the chart's one
+// projection (projection.js, place.js), centred on the ship unless the
+// visitor has panned; the hands on it are useChartView's, spread on the
+// circle as `handlers`.
+//
+// Only the names with room show (declutter.js, through placeMarks: the place
+// picked and where you are first, then the regions, the worlds, the wonders,
+// the fights); a name with none comes up on hover and focus (navmap.css). A
+// place the filter or the search leaves out (`dim`) is a grey dot with no
+// name. The ship, the course, the pilots, the bursts and the sight are drawn
+// in screen pixels, so they read the same on a phone as on a desk.
 
 const F = FRAMES.nav;
 const V = F.w; // the SVG's units across
@@ -38,10 +46,18 @@ const points = (uvs) =>
 // the two places that stand for a region: a button each, to that preset
 const REGION_PRESET = { 'chart:home': 'home', 'chart:curve': 'rickmorty' };
 const GLYPHS = new Set(['sun', 'cloud', 'hole', 'star', 'portal']);
-// (before the chart is measured, and in a server render: a 1000 px chart at the names' 0.7rem, the wonders named)
-const UNMEASURED = { scale: 1, fontPx: 11, wonders: true };
+// (before the chart is measured, and in a server render: a 1000 px chart at the names' 0.74rem)
+const UNMEASURED = { scale: 1, fontPx: 11 };
 // (a stem shorter than this is the dot itself)
 const STEM_MIN = 1.5;
+// the bezel round the chart's rim: a tick every 5°, a longer one every 45°
+const TICKS = Array.from({ length: 72 }, (_, i) => {
+  const a = (i / 72) * Math.PI * 2;
+  const major = i % 9 === 0;
+  const r0 = major ? 476 : 481;
+  const r1 = 488;
+  return { d: `M${n2(F.cx + Math.cos(a) * r0)} ${n2(F.cy + Math.sin(a) * r0)} L${n2(F.cx + Math.cos(a) * r1)} ${n2(F.cy + Math.sin(a) * r1)}`, major };
+});
 
 function paintStars(canvas) {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -56,17 +72,19 @@ function paintStars(canvas) {
   g.fillStyle = '#03050d';
   g.fillRect(0, 0, w, h);
   const glow = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.min(w, h) * 0.55);
-  glow.addColorStop(0, 'rgba(255,200,130,0.16)');
-  glow.addColorStop(0.18, 'rgba(120,150,255,0.07)');
+  glow.addColorStop(0, 'rgba(255,200,130,0.14)');
+  glow.addColorStop(0.2, 'rgba(110,140,255,0.06)');
   glow.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = glow;
   g.fillRect(0, 0, w, h);
+  // the stars: fewer and fainter than a sky, so the places are what reads
   let s = 271828;
   const rand = () => (s = (s * 16807) % 2147483647) / 2147483647;
-  for (let i = 0; i < 900; i++) {
-    const b = 0.15 + rand() * 0.55;
+  const n = Math.round((w * h) / 900);
+  for (let i = 0; i < n; i++) {
+    const b = 0.08 + rand() * rand() * 0.5;
     g.fillStyle = `rgba(${200 + Math.round(rand() * 55)},${210 + Math.round(rand() * 40)},255,${b.toFixed(3)})`;
-    const r = rand() < 0.05 ? 1.2 : 0.6;
+    const r = rand() < 0.04 ? 1.1 : 0.6;
     g.fillRect(rand() * w, rand() * h, r, r);
   }
 }
@@ -99,7 +117,7 @@ function Glyph({ p, dim }) {
   const y = n2(p.y);
   const r = n2(Math.max(6, p.size));
   const style = { color: p.mark.color };
-  const opacity = dim ? 0.35 : 1;
+  const opacity = dim ? 0.3 : 1;
   switch (p.mark.shape) {
     case 'sun':
       return <circle cx={x} cy={y} r={n2(Math.max(9, p.size * 1.8))} fill="url(#navmap-sun)" />;
@@ -109,7 +127,7 @@ function Glyph({ p, dim }) {
       return (
         <g opacity={opacity}>
           <circle cx={x} cy={y} r={r} className="navmap-pull" />
-          <ellipse cx={x} cy={y} rx={n2(r * 0.55)} ry={n2(r * 0.22)} fill="none" stroke="#ffb070" strokeWidth="2.5" />
+          <ellipse cx={x} cy={y} rx={n2(r * 0.55)} ry={n2(r * 0.22)} fill="none" stroke="#ffb070" strokeWidth="2" strokeOpacity="0.8" />
           <circle cx={x} cy={y} r={n2(r * 0.22)} fill="#000" stroke="#ffd9a8" strokeWidth="1" />
         </g>
       );
@@ -146,28 +164,27 @@ export default function NavChart({
   const canvas = useRef(null);
   const [fit, setFit] = useState(UNMEASURED);
 
-  // the stars, and the chart's px width, its names' font size and whether
-  // the wonders' names show (a phone hides them: navmap.css), for which names
-  // fit; once, and again on a resize
+  // the stars, and the chart's px width and its names' font size, for which
+  // names fit; once, and again on a resize
   useEffect(() => {
     const c = canvas.current;
     const box = c?.parentElement;
     if (!c || !box) return undefined;
     const measure = () => {
       paintStars(c);
-      // (a place's own name: a region's, a fight's or the front's runs smaller; only a place's button has an aria-label)
-      const name = box.querySelector('.navmap-place[aria-label] .navmap-name');
+      // (a place's own name, not a wonder's smaller one; a region's, a fight's or the front's runs smaller too, and only a place's button has an aria-label)
+      const name = box.querySelector('li:not([data-kind="wonder"]) .navmap-place[aria-label] .navmap-name') ?? box.querySelector('.navmap-place[aria-label] .navmap-name');
       const fontPx = name ? parseFloat(window.getComputedStyle(name).fontSize) : NaN;
       const scale = box.clientWidth / V;
-      const wonders = window.getComputedStyle(box).getPropertyValue('--wonder-names').trim() !== '0';
       setFit((f) => {
-        const next = { scale: scale > 0 ? scale : f.scale, fontPx: fontPx > 0 ? fontPx : f.fontPx, wonders };
-        return next.scale === f.scale && next.fontPx === f.fontPx && next.wonders === f.wonders ? f : next;
+        const next = { scale: scale > 0 ? scale : f.scale, fontPx: fontPx > 0 ? fontPx : f.fontPx };
+        return next.scale === f.scale && next.fontPx === f.fontPx ? f : next;
       });
     };
     measure();
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
     ro?.observe(box);
+    document.fonts?.ready?.then(measure, () => {});
     return () => ro?.disconnect();
   }, []);
 
@@ -176,17 +193,23 @@ export default function NavChart({
   // panel re-renders.
   const level = levelOf(view.range);
   const pitched = view.pitch > 0 || view.yaw !== 0;
+  const unit = n2(1 / fit.scale); // (SVG units a screen pixel: marks drawn at one size on any screen)
   const shipAt = useMemo(() => (ship ? placeShip(view, ship, F) : null), [view, ship]);
   // (the front's button stays on the chart, at its rim when the front is further than the chart reaches)
   const frontAt = useMemo(() => (front ? onFrame(view, front.at, true) : null), [view, front]);
   const names = useMemo(() => new Map(marks.map((m) => [m.id, m.name])), [marks]);
+  // the place picked stays on, named (a star system: its gate)
+  const keep = useMemo(() => (pick ? [pick, destinationById(pick)?.via].filter(Boolean) : []), [pick]);
   const placed = useMemo(() => {
-    // the place picked stays on, named (a star system: its gate)
-    const keep = pick ? [pick, destinationById(pick)?.via].filter(Boolean) : [];
-    // (where the wonders' names are hidden, bar the one picked, they hold no room from the others')
-    const labelled = fit.wonders ? marks : marks.map((m) => (m.kind === 'wonder' && !keep.includes(m.id) ? { ...m, name: '' } : m));
+    // where you are says its name before any other; a place filtered out holds no room for a name it doesn't show
+    const labelled = marks.map((m) => {
+      if (keep.includes(m.id)) return m;
+      if (m.id === here) return { ...m, priority: Infinity };
+      if (m.name && dim?.has(m.id)) return { ...m, name: '' };
+      return m;
+    });
     return placeMarks(view, labelled, F, { level: levelOf(view.range), keep, fontPx: fit.fontPx, scale: fit.scale, avoid: [shipAt, frontAt].filter(Boolean) });
-  }, [view, marks, pick, fit, shipAt, frontAt]);
+  }, [view, marks, keep, here, dim, fit, shipAt, frontAt]);
   const glyphs = useMemo(() => placed.filter((p) => GLYPHS.has(p.mark.shape)).sort((a, b) => a.depth - b.depth), [placed]); // (far first)
   const courseTo = shipAt && course ? onFrame(view, course.to, true) : null;
 
@@ -218,12 +241,12 @@ export default function NavChart({
       <g className="navmap-war">
         <polyline points={at.map((q) => `${n2(q.x)},${n2(q.y)}`).join(' ')} className="navmap-war-line" />
         {front.sectors.map((sec, i) => (
-          <circle key={sec.id} cx={n2(at[i].x)} cy={n2(at[i].y)} r={i === front.contested ? 7 : 4.5} fill={front.colours[sec.owner]} className="navmap-war-sector" />
+          <circle key={sec.id} cx={n2(at[i].x)} cy={n2(at[i].y)} r={n2((i === front.contested ? 6 : 4) * unit)} fill={front.colours[sec.owner]} className="navmap-war-sector" />
         ))}
-        <circle cx={n2(frontAt.x)} cy={n2(frontAt.y)} r="14" className="navmap-war-front" />
+        <circle cx={n2(frontAt.x)} cy={n2(frontAt.y)} r={n2(11 * unit)} className="navmap-war-front" />
       </g>
     );
-  }, [view, front, frontAt]);
+  }, [view, front, frontAt, unit]);
 
   const dimmed = (id) => Boolean(dim?.has(id));
   const spot = (x, y) => ({ left: pc(x, F.w), top: pc(y, F.h) });
@@ -232,21 +255,28 @@ export default function NavChart({
     const name = names.get(p.id) ?? m.name;
     const region = REGION_PRESET[p.id];
     if (!m.pickable && !region && m.kind !== 'fight') return null; // (the sun and the pilots: the SVG's alone)
-    const quiet = p.side === null;
+    // the place picked and where you are always say theirs: with no room, to the right, on glass over their neighbours (`data-forced`)
+    const mine = m.pickable && (keep.includes(p.id) || p.id === here);
+    const side = p.side ?? (mine ? 'right' : null);
+    const quiet = side === null;
     // (a region or a fight is its name alone: with no room for it, it isn't drawn)
     if (quiet && !m.pickable) return null;
     const attrs = {
       'data-id': p.id,
       'data-kind': m.kind,
-      'data-side': p.side === 'left' || p.side === 'under' ? p.side : undefined,
+      'data-side': side !== 'right' ? side : undefined,
       'data-quiet': quiet || undefined,
       'data-dim': dimmed(p.id) || undefined,
+      'data-mine': mine || undefined,
+      'data-forced': (mine && p.side === null) || undefined,
       style: { ...spot(p.x, p.y), '--c': m.color },
     };
+    // (a region's and a fight's dot is the glyph the SVG draws: the span only holds the name clear of it)
     if (region)
       return (
         <li key={p.id} {...attrs}>
           <button type="button" className={region === 'home' ? 'navmap-place navmap-homebtn' : 'navmap-place'} onClick={() => onRegion?.(region)}>
+            <span className="navmap-dot" aria-hidden="true" />
             <span className="navmap-name">{name}</span>
           </button>
         </li>
@@ -255,6 +285,7 @@ export default function NavChart({
       return (
         <li key={p.id} {...attrs}>
           <span className="navmap-place navmap-fightname">
+            <span className="navmap-dot" aria-hidden="true" />
             <span className="navmap-name">{name}</span>
           </span>
         </li>
@@ -286,16 +317,26 @@ export default function NavChart({
         <svg className="navmap-svg" viewBox={`0 0 ${V} ${V}`} aria-hidden="true">
           <defs>
             <radialGradient id="navmap-cloud">
-              <stop offset="0" stopColor="currentColor" stopOpacity="0.5" />
-              <stop offset="0.6" stopColor="currentColor" stopOpacity="0.18" />
+              <stop offset="0" stopColor="currentColor" stopOpacity="0.42" />
+              <stop offset="0.6" stopColor="currentColor" stopOpacity="0.14" />
               <stop offset="1" stopColor="currentColor" stopOpacity="0" />
             </radialGradient>
             <radialGradient id="navmap-sun">
               <stop offset="0" stopColor="#fff4d6" />
-              <stop offset="0.35" stopColor="#ffbf5e" />
+              <stop offset="0.3" stopColor="#ffc56e" />
               <stop offset="1" stopColor="#ff8a3d" stopOpacity="0" />
             </radialGradient>
+            <linearGradient id="navmap-cone" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stopColor="#cfe9ff" stopOpacity="0.32" />
+              <stop offset="1" stopColor="#cfe9ff" stopOpacity="0" />
+            </linearGradient>
           </defs>
+          {/* the bezel */}
+          <g className="navmap-bezel">
+            {TICKS.map((t, i) => (
+              <path key={i} d={t.d} data-major={t.major || undefined} />
+            ))}
+          </g>
           {backdrop}
           {/* every mark's stem, from level with the ship up or down to it */}
           {placed.map((p) =>
@@ -308,37 +349,51 @@ export default function NavChart({
             <Glyph key={p.id} p={p} dim={dimmed(p.id)} />
           ))}
           {war}
-          {/* the course: where it's going (and how), or to the place picked */}
-          {courseTo && <line x1={n2(shipAt.x)} y1={n2(shipAt.y)} x2={n2(courseTo.x)} y2={n2(courseTo.y)} className="navmap-course" data-drive={course.drive} />}
+          {/* the course: where it's going (and how), or to the place picked, and a sight on its end (both in screen pixels, so the dashes and weight are the same on a phone as on a desk) */}
+          {courseTo && (
+            <>
+              <g transform={`scale(${unit})`}>
+                <line x1={n2(shipAt.x / unit)} y1={n2(shipAt.y / unit)} x2={n2(courseTo.x / unit)} y2={n2(courseTo.y / unit)} className="navmap-course" data-drive={course.drive} />
+              </g>
+              {course.sight !== false && (
+                <g className="navmap-target" transform={`translate(${n2(courseTo.x)} ${n2(courseTo.y)}) scale(${unit})`}>
+                  <circle r="13" />
+                  <path d="M0 -19 V-14 M0 14 V19 M-19 0 H-14 M14 0 H19" />
+                </g>
+              )}
+            </>
+          )}
           {/* the other pilots online, and someone's fight out in deep space (farFights.js), seen from afar */}
           {placed.map((p) => {
             const x = n2(p.x);
             const y = n2(p.y);
-            if (p.mark.shape === 'pilot') return <rect key={p.id} x={x - 4} y={y - 4} width="8" height="8" className="navmap-pilot" transform={`rotate(45 ${x} ${y})`} />;
+            if (p.mark.shape === 'pilot') return <rect key={p.id} x="-4" y="-4" width="8" height="8" className="navmap-pilot" transform={`translate(${x} ${y}) scale(${unit}) rotate(45)`} />;
             if (p.mark.shape === 'fight')
               return (
-                <g key={p.id} transform={`translate(${x} ${y})`} className="navmap-fight">
-                  <circle r="9" className="navmap-fight-ring" />
-                  <path d="M-4 -4 L4 4 M4 -4 L-4 4" />
+                <g key={p.id} transform={`translate(${x} ${y}) scale(${unit})`} className="navmap-fight">
+                  <circle r="8" className="navmap-fight-ring" />
+                  <path d="M-3.5 -3.5 L3.5 3.5 M3.5 -3.5 L-3.5 3.5" />
                 </g>
               );
             return null;
           })}
-          {/* you: always on the chart, pinned to its rim when you're further than it reaches */}
+          {/* you: always on the chart, pinned to its rim when you're further than it reaches, your heading a cone */}
           {shipAt && (
-            <g className="navmap-ship" transform={`translate(${n2(shipAt.x)} ${n2(shipAt.y)}) rotate(${n2(shipAt.angle)})`} data-edge={shipAt.edge || undefined}>
-              <circle r="16" className="navmap-ship-halo" />
-              <path d="M13 0 L-8 -7.5 L-4 0 L-8 7.5 Z" />
+            <g className="navmap-ship" transform={`translate(${n2(shipAt.x)} ${n2(shipAt.y)}) rotate(${n2(shipAt.angle)}) scale(${unit})`} data-edge={shipAt.edge || undefined}>
+              <path d="M0 0 L64 -20 A67 67 0 0 1 64 20 Z" className="navmap-ship-cone" />
+              <circle r="14" className="navmap-ship-halo" />
+              <path d="M11 0 L-7 -7 L-3.5 0 L-7 7 Z" className="navmap-ship-mark" />
             </g>
           )}
         </svg>
         {/* the places, as buttons over the chart */}
         <ul className="navmap-places" aria-label="Places">
           {placed.map(place)}
-          {/* the war's front: to the left of its dot (the wonders round it have their names to the right) */}
+          {/* the war's front: to the left of its ring (the wonders round it have their names to the right) */}
           {front && (
             <li style={{ ...spot(frontAt.x, frontAt.y), '--c': '#ffb347' }} data-kind="front" data-side="left">
               <button type="button" className="navmap-place navmap-frontbtn" disabled={frontOff} onClick={onFront} title={frontTitle}>
+                <span className="navmap-dot" aria-hidden="true" />
                 <span className="navmap-name">The front · {front.name}</span>
               </button>
             </li>
