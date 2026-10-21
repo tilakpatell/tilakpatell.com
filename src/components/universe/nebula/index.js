@@ -102,6 +102,7 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
     uScale: { value: 500 },
   };
   const mat = new THREE.ShaderMaterial({
+    name: 'nebula-clouds',
     vertexShader: CLOUD_VERT,
     fragmentShader: CLOUD_FRAG,
     uniforms,

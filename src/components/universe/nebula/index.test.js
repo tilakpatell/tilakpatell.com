@@ -23,6 +23,8 @@ describe('the nebulae’s renderer', () => {
     expect(n.group.name).toBe('nebulae');
     expect(clouds(n).visible).toBe(false);
     expect(n.group.getObjectByName('nebula-fog')).toBeTruthy();
+    // (named, so a shader error or a renderer’s program list says whose it is)
+    expect(['nebula-clouds', 'nebula-fog'].map((k) => n.group.getObjectByName(k).material.name)).toEqual(['nebula-clouds', 'nebula-fog']);
     n.update(cam([0, 0, 0], [0, 0, -1]));
     expect(clouds(n).visible).toBe(false);
   });

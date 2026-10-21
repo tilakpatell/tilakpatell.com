@@ -49,6 +49,7 @@ export function createFog({ volume, row }) {
     uDepth: { value: 0 },
   };
   const mat = new THREE.ShaderMaterial({
+    name: 'nebula-fog',
     vertexShader: FOG_VERT,
     fragmentShader: FOG_FRAG,
     uniforms,
