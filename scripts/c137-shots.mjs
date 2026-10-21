@@ -137,7 +137,8 @@ page.on('pageerror', (e) => errors.push(String(e)));
 // (a file that won't load, by its address: the console's own line doesn't say which)
 page.on('console', (m) => m.type() === 'error' && !m.text().startsWith('Failed to load resource') && errors.push(m.text()));
 page.on('response', (r) => r.status() >= 400 && errors.push(`${r.status()} ${r.url()}`));
-await page.goto(`${BASE}/${QUALITY}#/c-137`, { waitUntil: 'domcontentloaded' });
+// (a cold dev server takes a while to serve the first page)
+await page.goto(`${BASE}/${QUALITY}#/c-137`, { waitUntil: 'domcontentloaded', timeout: 600000 });
 // the hook's there once the world's built; if it couldn't start, the page shows cards instead
 await page.waitForFunction(() => window.__C137__?.goto || document.querySelector('.rm-world')?.dataset.mode === 'cards', null, { timeout: 600000, polling: 1000 });
 if (!(await page.evaluate(() => Boolean(window.__C137__?.goto)))) throw new Error(`the 3D world didn't start (${errors.slice(0, 3).join('; ') || 'no errors'})`);
