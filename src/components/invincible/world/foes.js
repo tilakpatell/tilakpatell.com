@@ -6,7 +6,9 @@
 // - The Mauler twins are on the street: they run at him when he's on the
 //   ground or low, swing at him when they're close, and when he's up out of
 //   reach they pull a car out of the traffic and throw it at him (a punch
-//   sends it back).
+//   sends it back). Given something to wreck (`world.hangar`, the last-but-
+//   one episode's), they go for it instead while he's away from them or
+//   high over them, and swing at it.
 // - Doc Seismic hovers over the school's quad in a slow circle, sending a
 //   quake ring along the ground every few seconds (it knocks Mark over if
 //   he's standing on it) and blasting him when he comes near.
@@ -17,10 +19,11 @@
 // Nothing happens until something starts it (Cecil, a mission, or the
 // city's clock for the Flaxans).
 //
-// stepFoes(state, hero, { punch, look, eveHit }, dt, { cars }) →
+// stepFoes(state, hero, { punch, look, eveHit, cavalry, block, fists }, dt, { cars, hangar }) →
 // { foes: state, ev, push, stun }: `push` a velocity to give him (a lunge,
 // a knock), `stun` a moment without control. `cars`: where the traffic's
-// cars are, for a Mauler to take one (`throw`'s `car` is its index there).
+// cars are, for a Mauler to take one (`throw`'s `car` is its index there);
+// `hangar`: a point on the street the Maulers wreck when he's not about.
 // A step is never longer than a twentieth of a second, whatever `dt` says
 // (a tab hidden for a minute comes back as one step).
 
@@ -41,6 +44,11 @@ export const FIGHT = {
   lungeSpeed: 70,
   ram: 45, // flying into one faster than this hits it
   hp: 100,
+  // a block (./brawl.js says when he's blocking): a blow's share of its hurt, the
+  // stagger of whoever swung, and the window after it in which a punch counts double
+  blockHalf: 0.5,
+  blockStagger: 0.8,
+  counter: 0.6,
 };
 
 // A knock that carries him `m` metres before he's stopped (./flight.js
@@ -54,12 +62,22 @@ export const KINDS = {
   flaxanElite: { hits: 2, volley: 3, hurt: 16 },
   // low: he's under this (m over the ground), they run at him; above it and
   // within `far`, they throw a car (one within `grab` of them, if there is)
-  mauler: { h: 2.6, hits: 3, run: 8, reach: 3, every: 1.4, windup: 0.4, swing: 18, knock: 10, low: 6, far: 60, grab: 30, car: 35, carHurt: 22, throwEvery: 4, hold: 0.6, stagger: 0.8 },
+  // (and with something to wreck: they go for it while he's over `away` m
+  // off or `up` m over the ground)
+  mauler: { h: 2.6, hits: 3, run: 8, reach: 3, every: 1.4, windup: 0.4, swing: 18, knock: 10, low: 6, far: 60, grab: 30, car: 35, carHurt: 22, throwEvery: 4, hold: 0.6, stagger: 0.8, away: 60, up: 30 },
   seismic: { h: 1.8, hits: 5, over: 20, circle: 30, quake: 6, ring: 30, ringTo: 160, blast: 40, blastHurt: 14, knock: 15, blastEvery: 3, stagger: 0.8 },
+  // Omni-Man (episode 8): never knocked out (the episode counts blows on him, ./missions.js);
+  // circles Mark `circle` m off and `over` up, and every `every` s charges him at `charge` m/s:
+  // a blow of `hurt`, and Mark driven off along the charge at `drive` m/s (a wall stops him,
+  // and marks it: ./demolish.js); staggered by a blow for `stagger`
+  // (and after a charge lands he hangs there `recover` s, open to a blow: the show's rhythm, a hit and a word)
+  omniman: { h: 1.95, hits: 1e9, circle: 40, over: 12, every: 5, charge: 320, hurt: 25, drive: 150, reach: 3, stagger: 1.2, speed: 30, recover: 1.6 },
 };
 const FLAXANS = new Set(['flaxan', 'flaxanElite']);
 const kindOf = (e) => e.kind ?? 'flaxan';
-const live = (e) => e.state !== 'waiting' && e.state !== 'ko' && e.state !== 'down';
+export const live = (e) => e.state !== 'waiting' && e.state !== 'ko' && e.state !== 'down';
+// in Mark's hands or thrown out of them (./brawl.js has them meanwhile)
+const busy = (e) => e.state === 'held' || e.state === 'thrown';
 
 export function newFoes(seed = 77) {
   return { on: false, t: 0, seed, foes: [], next: 0, gate: 0, spawned: 0, bolts: [], cars: [], carN: 0, rings: [], hp: FIGHT.hp, cool: 0, lunge: null, won: 0 };
@@ -80,6 +98,8 @@ export function spawnFoes(prev, kind, n, at = PORTAL.p) {
       const x = at[0] + (n > 1 ? Math.cos(a) * 4 : 0);
       const z = at[2] + (n > 1 ? Math.sin(a) * 4 : 0);
       Object.assign(e, { state: 'approach', p: [x, groundAt(x, z), z], cool: 1 + r(), throwCool: 1 + r() * 2 });
+    } else if (kind === 'omniman') {
+      Object.assign(e, { state: 'circle', p: [at[0], (at[1] ?? 0) + KINDS.omniman.over, at[2]], cool: 2, phase: r() * Math.PI * 2 });
     } else if (kind === 'seismic') {
       const home = [at[0], groundAt(at[0], at[2]), at[2]];
       Object.assign(e, { state: 'drift', home, p: [home[0] + Math.cos(e.phase) * K.circle, home[1] + K.over, home[2] + Math.sin(e.phase) * K.circle], cool: K.quake, blast: K.blastEvery });
@@ -87,6 +107,24 @@ export function spawnFoes(prev, kind, n, at = PORTAL.p) {
     foes.push(e);
   }
   return { ...prev, on: true, foes, next, gate: prev.on ? prev.gate : 0.6 };
+}
+
+// more of a kind until there are `total` of them in all, the ones already
+// beaten counted (a mission that wants six beaten can't be left wanting)
+export function spawnUpTo(prev, kind, total, at) {
+  const have = prev.foes.filter((e) => kindOf(e) === kind).length;
+  return have >= total ? prev : spawnFoes(prev, kind, total - have, at);
+}
+
+// What a Mauler goes for: him, or, given something to wreck, that while
+// he's away from it or high over the street (episode 6's hangar). Plain:
+// the Mauler's p, his feet, the point to wreck or null.
+export function pickTarget(e, hero, hangar) {
+  if (!hangar) return 'mark';
+  const K = KINDS.mauler;
+  const up = hero.p[1] - Math.max(groundAt(hero.p[0], hero.p[2]), WATER_Y);
+  const away = Math.hypot(hero.p[0] - e.p[0], hero.p[2] - e.p[2]);
+  return away > K.away || up > K.up ? 'hangar' : 'mark';
 }
 
 // the Flaxans' invasion: a dozen through the portal
@@ -110,7 +148,7 @@ const unit = (v) => {
   return [v[0] / l, v[1] / l, v[2] / l];
 };
 // the middle of one (a Mauler's and Doc Seismic's `p` is at their feet)
-function mid(e) {
+export function mid(e) {
   const k = kindOf(e);
   const up = k === 'mauler' ? 1.3 : k === 'seismic' ? 0.9 : 0;
   return [e.p[0], e.p[1] + up, e.p[2]];
@@ -125,7 +163,7 @@ function nearest(a, b, c) {
 // `v` turned `a` radians about the upright
 const turnY = (v, a) => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * Math.sin(a) + v[2] * Math.cos(a)];
 
-function knockOut(e, from, ev, extra = {}) {
+export function knockOut(e, from, ev, extra = {}) {
   const d = unit(sub(mid(e), from));
   const k = kindOf(e);
   e.state = 'ko';
@@ -136,9 +174,10 @@ function knockOut(e, from, ev, extra = {}) {
 }
 
 // a blow: a knock-out once it's had enough, a stagger before
-function hitFoe(e, from, ev, extra = {}) {
+// (`weight`: a hero's fists, ./heroes.js: 1 is one of the foe's `hits`, 2 two)
+export function hitFoe(e, from, ev, extra = {}, weight = 1) {
   const K = KINDS[kindOf(e)];
-  e.hits = (e.hits ?? 0) + 1;
+  e.hits = (e.hits ?? 0) + weight;
   if (e.hits >= K.hits) return knockOut(e, from, ev, extra);
   const d = unit(sub(mid(e), from));
   ev.push({ type: 'hit', id: e.id, kind: kindOf(e), at: mid(e), dir: d, hits: e.hits, ...extra });
@@ -189,8 +228,9 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
   const byId = (id) => f.foes.find((q) => q.id === id);
   let push = null;
   let stun = 0;
+  // (blocking, he takes half of any blow)
   const hurt = (n, at, extra = {}) => {
-    f.hp -= n;
+    f.hp -= input.block ? n * FIGHT.blockHalf : n;
     ev.push({ type: 'hurt', at: [...at], hp: f.hp, ...extra });
   };
 
@@ -218,9 +258,29 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
     }
   }
 
+  // the Guardians' blows (./guardians.js names a foe by its id): a blow of
+  // so many of its `hits`; Dupli-Kate's hold and Shrinking Rae's blink are a
+  // stagger of their length (a staggered foe neither swings nor fires); Rex's
+  // blast is a blow on everyone standing within its reach of where it landed
+  for (const b of input.cavalry ?? []) {
+    const e = byId(b.foe);
+    if (b.type === 'gBlast') {
+      for (const q of f.foes) if (live(q) && !busy(q) && len(sub(q.p, b.at)) <= b.r) hitFoe(q, [b.at[0], b.at[1] - 1, b.at[2]], ev, { by: b.who, blast: true }, b.hits ?? 1);
+      continue;
+    }
+    if (!e || !live(e) || busy(e)) continue;
+    const from = [e.p[0], e.p[1] - 1, e.p[2] - 1];
+    if (b.type === 'gHit') hitFoe(e, from, ev, { by: b.who }, b.hits ?? 1);
+    else if ((b.type === 'gHold' || b.type === 'gStagger') && e.state !== 'ko') {
+      Object.assign(e, { state: 'stagger', t: Math.max(e.state === 'stagger' ? e.t : 0, b.for ?? FIGHT.blockStagger), heldBy: b.type === 'gHold' ? b.who : null });
+      ev.push({ type: b.type === 'gHold' ? 'held' : 'staggered', id: e.id, kind: kindOf(e), at: mid(e), by: b.who, for: b.for });
+    }
+  }
+
   // his punch: a car coming at him first (back it goes), then whoever's in
   // front of him and near, or a lunge to whoever's a little way off
   f.cool = Math.max(0, f.cool - dt);
+  f.counter = Math.max(0, (f.counter ?? 0) - dt);
   if (input.punch && f.cool <= 0) {
     f.cool = 0.35;
     ev.push({ type: 'punch' });
@@ -232,7 +292,7 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
     } else {
       let best = null;
       for (const e of f.foes) {
-        if (!live(e)) continue;
+        if (!live(e) || busy(e)) continue;
         const d = sub(mid(e), chest);
         const dl = len(d);
         if (dl > FIGHT.lunge) continue;
@@ -240,8 +300,14 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
         if (dl > FIGHT.reach && cos < 0.64) continue;
         if (!best || dl < best.dl) best = { e, dl, d };
       }
-      if (best && best.dl <= FIGHT.reach) hitFoe(best.e, chest, ev, { punched: true });
-      else if (best) {
+      if (best && best.dl <= FIGHT.reach) {
+        hitFoe(best.e, chest, ev, { punched: true }, input.fists ?? 1);
+        // a counter: the punch after a blocked swing lands twice
+        if (f.counter > 0) {
+          f.counter = 0;
+          if (live(best.e)) hitFoe(best.e, chest, ev, { punched: true, counter: true }, input.fists ?? 1);
+        }
+      } else if (best) {
         push = unit(best.d).map((c) => c * FIGHT.lungeSpeed);
         f.lunge = { id: best.e.id, t: 0.4 };
         ev.push({ type: 'lunge', id: best.e.id });
@@ -252,7 +318,7 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
     f.lunge.t -= dt;
     const e = byId(f.lunge.id);
     if (e && live(e) && len(sub(mid(e), chest)) <= FIGHT.reach) {
-      hitFoe(e, chest, ev, { punched: true });
+      hitFoe(e, chest, ev, { punched: true }, input.fists ?? 1);
       f.lunge = null;
     } else if (!e || !live(e) || f.lunge.t <= 0) f.lunge = null;
   }
@@ -260,13 +326,20 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
   const toHero = len(sub(PORTAL.p, chest));
   for (const e of f.foes) {
     const k = kindOf(e);
+    if (busy(e)) continue;
     // flying into one fast (a stagger's a moment's grace: one pass, one blow)
     if (live(e) && e.state !== 'stagger' && heroSpeed > FIGHT.ram && nearest(was, chest, mid(e)) < (k === 'mauler' ? 3 : 2.8)) {
       if (k === 'seismic') hitFoe(e, chest, ev, { rammed: true });
       else knockOut(e, chest, ev, { rammed: true });
       continue;
     }
-    if (e.state === 'fight') {
+    if (e.state !== 'stagger') e.heldBy = null;
+    if (FLAXANS.has(k) && e.state === 'stagger') {
+      // held or staggered by a Guardian: it hangs there till that's over
+      e.t -= dt;
+      e.v = [0, 0, 0];
+      if (e.t <= 0) e.state = 'fight';
+    } else if (e.state === 'fight') {
       // a Flaxan: round him, or round the portal if he's nowhere near it
       const K = KINDS[k];
       e.phase += dt * 0.6;
@@ -291,32 +364,56 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
       const flat = [chest[0] - e.p[0], 0, chest[2] - e.p[2]];
       const fd = Math.hypot(flat[0], flat[2]);
       const d = len(sub(chest, mid(e)));
+      // what it's after: him, or the thing to wreck while he's not about
+      e.target = pickTarget(e, hero, world.hangar ?? null);
+      const wreck = e.target === 'hangar';
+      const goal = wreck ? [world.hangar[0] - e.p[0], 0, world.hangar[2] - e.p[2]] : flat;
+      const gd = Math.hypot(goal[0], goal[2]);
       e.cool -= dt;
       e.throwCool -= dt;
       e.v = [0, 0, 0];
-      if (fd > 0.1) e.yaw = Math.atan2(flat[0], flat[2]);
+      if (gd > 0.1) e.yaw = Math.atan2(goal[0], goal[2]);
       if (e.state === 'stagger') {
         e.t -= dt;
         if (e.t <= 0) e.state = 'approach';
       } else if (e.state === 'swing') {
-        // the blow lands at the end of the wind-up, if he's still there
+        // the blow lands at the end of the wind-up, if he's still there (or on the thing it's wrecking)
         e.t -= dt;
         if (e.t <= 0) {
-          const hit = d <= K.reach + 0.5;
-          ev.push({ type: 'swing', id: e.id, at: mid(e), hit });
-          if (hit) {
-            hurt(K.swing, chest, { by: 'mauler' });
-            const out = unit([flat[0], 0, flat[2]]);
-            push = [out[0] * knock(K.knock), 4, out[2] * knock(K.knock)];
-            stun = Math.max(stun, 0.3);
+          if (e.swingAt === 'hangar') ev.push({ type: 'swing', id: e.id, at: mid(e), hit: false, on: 'hangar' });
+          else {
+            const hit = d <= K.reach + 0.5;
+            ev.push({ type: 'swing', id: e.id, at: mid(e), hit });
+            if (hit && input.block) {
+              // blocked: half the hurt, no knock, and the Mauler is open for a moment
+              hurt(K.swing, chest, { by: 'mauler', blocked: true });
+              Object.assign(e, { state: 'stagger', t: FIGHT.blockStagger });
+              f.counter = FIGHT.counter;
+              ev.push({ type: 'blocked', id: e.id, at: mid(e) });
+            } else if (hit) {
+              hurt(K.swing, chest, { by: 'mauler' });
+              const out = unit([flat[0], 0, flat[2]]);
+              push = [out[0] * knock(K.knock), 4, out[2] * knock(K.knock)];
+              stun = Math.max(stun, 0.3);
+            }
           }
           e.state = 'approach';
         }
       } else if (e.state === 'throw') {
         e.t -= dt;
         if (e.t <= 0) e.state = 'approach';
+      } else if (wreck) {
+        // at the thing to wreck, along the street, and a swing at it once there
+        if (gd <= K.reach && e.cool <= 0) Object.assign(e, { state: 'swing', t: K.windup, cool: K.every, swingAt: 'hangar' });
+        else if (gd > 0.1) {
+          const go = Math.min(K.run * dt, Math.max(0, gd - 2));
+          e.v = [(goal[0] / gd) * K.run, 0, (goal[2] / gd) * K.run];
+          e.p[0] += (goal[0] / gd) * go;
+          e.p[2] += (goal[2] / gd) * go;
+          e.p[1] = groundAt(e.p[0], e.p[2]);
+        }
       } else if (d <= K.reach && e.cool <= 0) {
-        Object.assign(e, { state: 'swing', t: K.windup, cool: K.every });
+        Object.assign(e, { state: 'swing', t: K.windup, cool: K.every, swingAt: 'mark' });
       } else if (alt >= K.low && fd >= K.low && d <= K.far && e.throwCool <= 0) {
         // he's up out of reach: a car (the nearest of the traffic's, or one off the street)
         let car = null;
@@ -338,6 +435,40 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
           e.p[2] += (flat[2] / fd) * go;
           e.p[1] = groundAt(e.p[0], e.p[2]);
         }
+      }
+    } else if (k === 'omniman' && live(e)) {
+      const K = KINDS.omniman;
+      const toMark = sub(chest, mid(e));
+      const d = len(toMark);
+      e.yaw = Math.atan2(toMark[0], toMark[2]);
+      if (e.state === 'stagger') {
+        e.t -= dt;
+        e.v = [0, 0, 0];
+        if (e.t <= 0) e.state = 'circle';
+      } else if (e.state === 'charge') {
+        // straight at him; the blow where he reaches him, and off Mark goes
+        const u = unit(toMark);
+        e.v = u.map((c) => c * K.charge);
+        for (const a of [0, 1, 2]) e.p[a] += e.v[a] * dt;
+        e.t -= dt;
+        if (d <= K.reach + K.charge * dt) {
+          hurt(K.hurt, chest, { by: 'omniman' });
+          push = [u[0] * K.drive, Math.max(2, u[1] * K.drive), u[2] * K.drive];
+          stun = Math.max(stun, 0.4);
+          ev.push({ type: 'driven', id: e.id, at: mid(e), dir: u });
+          Object.assign(e, { state: 'stagger', t: K.recover, cool: K.every });
+        } else if (e.t <= 0) Object.assign(e, { state: 'circle', cool: K.every });
+      } else {
+        // round him, a little over him, and a charge every so often
+        e.phase += dt * 0.5;
+        const want = [chest[0] + Math.cos(e.phase) * K.circle, chest[1] + K.over, chest[2] + Math.sin(e.phase) * K.circle];
+        const dw = sub(want, e.p);
+        const go = unit(dw).map((x) => x * Math.min(K.speed, len(dw) * 1.5));
+        const kk = 1 - Math.exp(-2 * dt);
+        for (const a of [0, 1, 2]) e.v[a] += (go[a] - e.v[a]) * kk;
+        for (const a of [0, 1, 2]) e.p[a] += e.v[a] * dt;
+        e.cool -= dt;
+        if (e.cool <= 0 && d < 400) Object.assign(e, { state: 'charge', t: 3 });
       }
     } else if (k === 'seismic' && live(e)) {
       const K = KINDS.seismic;
@@ -398,6 +529,11 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
   // the cars: held up, then thrown straight at him; punched back, they fall
   const flying = [];
   for (const c of f.cars) {
+    if (c.held === 'mark') {
+      // (in his hands: ./brawl.js carries it)
+      flying.push(c);
+      continue;
+    }
     if (c.held != null) {
       const m = byId(c.held);
       if (m && live(m) && m.state !== 'stagger') {
@@ -445,6 +581,11 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
   // the quake rings: out along the ground, knocking him over if he's on it
   const rings = [];
   for (const q of f.rings) {
+    if (q.mine) {
+      // (his own, from a ground pound: ./brawl.js runs it)
+      rings.push(q);
+      continue;
+    }
     const was = q.r;
     q.r += KINDS.seismic.ring * dt;
     const d = Math.hypot(hero.p[0] - q.at[0], hero.p[2] - q.at[2]);

@@ -13,6 +13,11 @@ export const PACK = {
     '/models/quaternius/nature/flowers.glb',
     '/models/quaternius/nature/trees.glb',
     '/models/quaternius/nature/rocks.glb',
+    // (and the dimensions' worlds' grass, mushrooms, city and space props: world/dimensions/surround.js's QUATERNIUS)
+    '/models/quaternius/nature/grass.glb',
+    '/models/quaternius/nature/mushrooms.glb',
+    '/models/quaternius/props/city.glb',
+    '/models/quaternius/props/space.glb',
     '/audio/clips/what-is-my-purpose.mp3',
     '/audio/clips/im-mr-meeseeks.mp3',
     '/audio/clips/wubba-lubba-dub-dub.mp3',

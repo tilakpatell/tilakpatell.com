@@ -5,7 +5,8 @@
 // air’s colour mixed over their light: the scene’s fog would have taken
 // them whole). The band is kept round the camera, as the sky is: a range two
 // kilometres off doesn’t come nearer for the metres walked. Under it at night
-// they are black against the stars; in Moria’s dark, nothing.
+// they are black against the stars; in Moria’s dark, nothing; in a storm,
+// gone into its fog (thickness(density), 0…1).
 //
 //   rangeGeometry(range, { segments, rows }) → BufferGeometry (position, color, aHaze, aGlow); pure
 //     (a volcano’s width is its footprint’s, whatever its row says; its glow the fire at its crater and down a flank)
@@ -19,7 +20,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial, MeshLambertNodeMaterial } from 'three/webgpu';
-import { attribute, float, uniform, vec3 } from 'three/tsl';
+import { attribute, float, mix, uniform, vec3 } from 'three/tsl';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { noise2 } from '../../../lib/land/layers.js';
 import { landmarksOf, rangesOf } from './stages/ranges';
@@ -28,6 +29,8 @@ const DEG = Math.PI / 180;
 const SNOW = new THREE.Color(0xffffff);
 const CREVICE = 0.62; // the gullies’ shade of the rock
 const HAZE_FAR = 5200; // m: the distance the haze is two thirds of everything at
+const THIN = 0.014; // the fog's density the ranges begin to go at (the Marshes' mist is under it)
+const THICK = 0.034; // and are gone by (Caradhras' snow is over it)
 
 // ridged noise from the value noise: sharp crests, soft hollows (0…1)
 function ridged(x, y, seed, octaves = 5) {
@@ -175,6 +178,13 @@ export function stageGeometry(stage, opts) {
   return g;
 }
 
+// How far a storm's fog has taken the ranges, 0…1, by its density: none
+// in any stage's own air, all in a storm (the snow on Caradhras, Moria's dark)
+export function thickness(density = 0) {
+  const k = Math.min(1, Math.max(0, (density - THIN) / (THICK - THIN)));
+  return k * k * (3 - 2 * k);
+}
+
 export const EYE_AT = 0.93;
 
 export function towerGeometry({ height: h }) {
@@ -216,10 +226,12 @@ export function towerGeometry({ height: h }) {
 export function createBackdrop({ road = null, tier = 'high', load = null } = {}) {
   const opts = tier === 'low' ? { segments: 110, rows: 14 } : { segments: 220, rows: 28 };
   const uHaze = uniform(new THREE.Color(0.75, 0.8, 0.85));
+  // (a storm's fog over the haze: the ranges gone into it, rather than standing over a hill it has taken)
+  const uThick = uniform(0);
   const material = road ? road.material({ vertexColors: true }) : new MeshLambertNodeMaterial({ vertexColors: true });
   material.fog = false;
   // (the air’s colour over their light, by how far off they are: their own light lessened, the haze’s added)
-  const h = attribute('aHaze', 'float');
+  const h = mix(attribute('aHaze', 'float'), float(1), uThick);
   material.colorNode = vec3(1).mul(h.oneMinus());
   // (and a volcano’s fire, glowing through its own haze)
   material.emissiveNode = uHaze.mul(h).add(vec3(2.2, 0.6, 0.1).mul(attribute('aGlow', 'float')).mul(h.oneMinus().mul(0.6).add(0.4)));
@@ -239,7 +251,7 @@ export function createBackdrop({ road = null, tier = 'high', load = null } = {})
   const stoneOf = (colour, dist) => {
     const m = road ? road.material({ color: colour }) : new MeshLambertNodeMaterial({ color: colour });
     m.fog = false;
-    const h = float(1 - Math.exp(-dist / HAZE_FAR));
+    const h = mix(float(1 - Math.exp(-dist / HAZE_FAR)), float(1), uThick);
     // (the colour node is the whole of its colour: the stone’s own, lessened by the haze)
     m.colorNode = uniform(new THREE.Color(colour)).mul(h.oneMinus());
     m.emissiveNode = uHaze.mul(h);
@@ -316,6 +328,7 @@ export function createBackdrop({ road = null, tier = 'high', load = null } = {})
     // the day’s air: the haze is the fog’s colour (black in Moria’s dark and at night: a silhouette)
     set(light) {
       uHaze.value.setRGB(...light.fog.colour);
+      uThick.value = thickness(light.fog.density);
     },
     update(camera) {
       group.position.set(camera.position.x, 0, camera.position.z);

@@ -37,9 +37,7 @@ export async function buildBlooddome(kit) {
     [8, 6],
   ]) R.frame(...P(dx, dz), 0).cyl(0x5a4a3a, 0, 0, 0, 0.5, 3.5).glow(BALL, 0xff8a3a, 1.8, 0, 3.9, 0, 0, 0.5);
   R.frame(...P(0, -17), 0).box(0x4a4a4a, 0, 0, 0, 6, 4.4, 0.6).box(0x6a2a2a, 0, 4.4, 0, 7, 0.6, 1);
-  // wrecked cars as stands, east and west
-  R.frame(...P(24, 10), 0.3).box(0x8a5a2a, 0, 0, 0, 5, 1.6, 2.4).box(0x3a3a3a, 0, 1.6, 0, 3, 1, 2.2);
-  R.frame(...P(-24, -10), -0.4).box(0x5a6a8a, 0, 0, 0, 4, 1.4, 2.4).box(0x3a3a3a, 0, 1.4, 0, 2.6, 1, 2.2);
+  // (the wrecked cars east and west are the croncar's model, the world's pieces, on their solids)
   // the sign
   R.cell('bloodsign', 192, 80, (g, w, h) => {
     g.fillStyle = '#3a2a1a';

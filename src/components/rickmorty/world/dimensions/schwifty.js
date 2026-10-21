@@ -1,8 +1,9 @@
 // The Get Schwifty show ("Get Schwifty"): a stage in a stadium at dusk, amps
-// and light towers, the mic at the front, a crowd's lights out past the
-// barriers, and the Cromulon heads filling the sky (the site's own cromulon
-// model, three times, far off and huge: ./destinations.js's extras). Water-T
-// and Ice-T are models placed from the data.
+// and light towers, the mic at the front, and the Cromulon heads filling the
+// sky (the site's own cromulon model, far off and huge: ./destinations.js's
+// extras). Water-T and Ice-T are models placed from the data. The stadium
+// round it, its stands and the audience packed into the pit either side of
+// the aisle, are its world's (./worlds.js).
 
 import { BALL, BOX, fitText } from '../interiors/shell';
 import { specks, stage } from './stage';
@@ -31,10 +32,6 @@ export async function buildSchwifty(kit) {
     f.box(0x3a3a44, 0, 0, 0, 0.8, 12, 0.8);
     for (let k = 0; k < 4; k++) f.glow(BALL, [0xff6ab0, 0xffe24a, 0x6ad8ff, 0x9aff6a][k], 1.8, -0.9 + k * 0.6, 11.4, 0.5, 0, 0.3);
   }
-  // barriers and the crowd's lights beyond
-  for (let dx = -28; dx <= 28; dx += 4) R.frame(...P(dx, 6), 0, { list: 'fixed' }).box(0x9a9aa8, 0, 0, 0, 3.6, 1.1, 0.1);
-  for (let k = 0; k < 60; k++) R.frame(...P(-32 + (k * 17) % 64, 9 + ((k * 11) % 16)), 0, { list: 'fixed' }).glow(BALL, k % 3 ? 0xfff0c0 : 0x6ad8ff, 1.3, 0, 1.6 + ((k * 3) % 5) * 0.1, 0, 0, 0.08);
-
   S.people();
   return S.done(LIGHT, () => {});
 }

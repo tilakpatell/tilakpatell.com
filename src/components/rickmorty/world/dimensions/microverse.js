@@ -48,25 +48,6 @@ export async function buildMicroverse(kit) {
   const gb = R.frame(gx, gz, 0);
   for (let i = 0; i < 4; i++) gb.box(0x8a9a90, 0, 0, -1.6 + i * 1.07, 1.2, i === 2 ? 0.55 : 0.8, 0.9).cyl(0x3fd46a, 0, i === 2 ? 0.55 : 0.8, -1.6 + i * 1.07, 0.18, 0.06);
 
-  // the window on the Microverse city: white towers against a green sky
-  R.cell('microcity', 256, 96, (g, w, h) => {
-    const sky = g.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, '#2f8a52');
-    sky.addColorStop(1, '#bff2c8');
-    g.fillStyle = sky;
-    g.fillRect(0, 0, w, h);
-    for (let i = 0; i < 18; i++) {
-      const x = (i * 37) % w;
-      const tw = 10 + ((i * 13) % 14);
-      const th = 30 + ((i * 29) % 50);
-      g.fillStyle = i % 3 ? '#f2f6f2' : '#dbe8de';
-      g.fillRect(x, h - th, tw, th);
-      g.fillStyle = '#3fb46a';
-      g.fillRect(x + 2, h - th + 4, tw - 4, 2);
-    }
-  });
-  R.frame(...P(0, -7.86), 0, { list: 'fixed' }).box(0xd8e2da, 0, 1.4, 0, 9.4, 2.2, 0.12).decal('microcity', 0, 2.5, 0.08, 9, 2, { bright: true });
-
   S.people();
   return S.done(LIGHT);
 }

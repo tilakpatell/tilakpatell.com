@@ -445,3 +445,50 @@ Looked at in the page (the node renderer on WebGL 2, in software): a fresh visit
 - `hub-ridden-desktop.webp`: after the ride, Now walk it yourself, and the road so far with the Road's row.
 - `redbook-home-desktop.webp`: the end on the desk, the book at the Shire with walk it yourself.
 
+## The Dead Marshes, wet (2026-10-21)
+
+At 60 m the Marshes read as a dark grass field (`look-marshes-60-desktop.webp`): the three pools were the only water, and the ground's grass grew in them over the water.
+
+- **The water, for the ground and the props alike**: `stages/marshes/water.js`, pure. It holds the three pools with the candles and the faces, and eleven meres between them, either side of the track from 40 m to 118 m, each kept 4 m or more off it.
+- **The ground** sinks a hollow for each (its relief, the meres after the mountains so the layers before keep their seeds) and plants nothing in any of them (its `clear`, a little inside the hollow's edge so the rim is grown).
+- **The props** stand reeds round every pool's and mere's edge (in the reeds' one draw), and a candle over every other mere on high. On low, the far meres are left dry: their water is a draw each.
+- **The water** is murky now: `water.js`'s new `murk` gives a pool the bog's own colour and dulls the sky off it (0.85 in the Marshes).
+- `stages/marshes/water.test.js` holds the meres off the track and off one another, over the whole marsh, and the ground's hollows and clear rings to the list.
+
+- `marshes-meres-candles-desktop.webp`: the candles' beat at 60 m, the meres either side with their reeds and two candles over them.
+- `marshes-meres-desktop.webp`: walking at 79 m, Gollum leading, the water lying all the way out to the Gate's mountains.
+
+## Gorgoroth's plain (2026-10-21)
+
+The plain before the Mountain was bare dark ground near the road (`look-gorgoroth-60-desktop.webp`). Now it's dressed as the films have it (`stages/gorgoroth/plain.js`, its places pure in `place.js`):
+
+- **Ash boulders and fangs of rock** either side of the road: three boulder shapes and the fangs from the Mount Doom chapter's kit, 186 on high (a draw a shape), thick near the road and thinning out. They're off the lane and the column's road, clear of the camps and short of the Mountain's slope. Those within the solid grid's reach stand solid: the camera and the walkers keep out of them.
+- **Two orc camps** off the road, their fires burning (the chapter's `camp`; one on low).
+- **Cracks in the plain** with the fire under it showing through: 28 on high, one mesh. Each is a ribbon dark at its edges and white-hot down its middle, added, over 1 so the house bloom takes it, breathing slowly. `plain.test.js` holds the strewing and the cracks off the lane, and the same on every load.
+
+- `gorgoroth-plain-desktop.webp`: the plain's beat, the cracks glowing under the Mountain, the fangs and the column.
+- `gorgoroth-plain-column-desktop.webp`: walking beside the column, boulders and fangs either side, a camp's fire far off.
+- `gorgoroth-plain-cracks-desktop.webp`: at 51 m, before the Eye's beam, the cracks round the two.
+
+## Shelob's Lair, and Carry on (2026-10-21)
+
+- **The Lair** was big flat grey facets (`cirith-ungol-built-desktop.webp`). Now:
+  - It is the Cirith Ungol chapter's own black rock, tiled a metre and a half over the arch and along it, and darker.
+  - It is lumpier, with a third octave for the knobs and drips, and finer on high (24 round, a row every 1.5 m).
+  - It has 30 webs on high, every third one slung across the roof's corner overhead, and thicker the deeper in.
+  - `cirith-ungol-lair-desktop.webp` shows it at 70 m, the Phial ahead, the webs on the walls and the roof.
+- **Carry on** (the resume card) picks the ride up a few metres before a moment it was left inside, so the moment plays again rather than the camera holding on what's over (`carry.js`, its test and the module's).
+
+## A walk through every stage, and what it found (2026-10-21)
+
+Twelve stages were pictured mid-walk afresh (`lab/road/shots.mjs`), and four things fixed from them:
+
+- **Caradhras' snow**: a piece of the far range stood over the white in the blizzard, its foot taken by the fog and its top not. `backdrop.js`'s new `thickness(density)` lets a storm's fog take the ranges and landmarks with it: none in any stage's own air, all in Caradhras' snow (`backdrop.test.js` holds it to every stage's light and both storms). `caradhras-storm-before-desktop.webp`, `caradhras-storm-desktop.webp`.
+- **Bree's streets**: the blade grass stood up through the cobbles, black spikes under the lamps. A stage's ground may now name `bare` places (its paved ones: the paint is its dirt and grows no grass, easing back over 3 m), and Bree's town is three; the fields before the gate keep their grass. `bree-street-before-desktop.webp`, `bree-street-desktop.webp`.
+- **Moria's stair**: going down it Gandalf is 16 m ahead and 11 m under them, and the staff's light stops short of the ones behind; they were nothing. A faint cold light over Frodo, the staff's off the walls, makes them dim shapes. `moria-stair-before-desktop.webp`, `moria-stair-desktop.webp`.
+- **The rivers**: two regular swells seen at a slant flipped the water between the sky and the deep in white stripes (Rivendell, the Ford, the Anduin). The swell is lower (0.05 m, from 0.08), calmed off into the distance from 6 m, and running water gives back at most 0.7 of the sky. `rivendell-river-before-desktop.webp`, `rivendell-river-desktop.webp`.
+
+## Henneth Annûn's fall (2026-10-21)
+
+From behind the fall, at Faramir's window, the fall read as a pale fog: three broad bands falling down a sheet. It is now threads of water, in two layers (360 and 140 across its 8 m, a few centimetres each with the camera a metre and a half off), each thread at its own pace and phase. They are thinner between, so the light beyond shows through, with white foam at its foot. `ithilien-henneth-before-desktop.webp`, `ithilien-henneth-desktop.webp` (walked into, 3 s in).
+

@@ -2,7 +2,8 @@
 // classroom that is also nowhere, three dreams down. A floor in a checker
 // that doesn't quite line up, walls in a violet that breathes, a melting
 // clock, his desk with a quiz on it, a bed to hide under, a wardrobe, a
-// piano, doors painted on the walls that go nowhere. Scary Terry hunts
+// piano, doors painted on the walls that go nowhere, and windows on the
+// dream city outside (the place's world, ./worlds.js). Scary Terry hunts
 // from the start (./destinations.js; stage.js's NPC behaviour), Mrs.
 // Pancakes and Mr. Goldenfold are models placed from the data.
 
@@ -55,7 +56,7 @@ export async function buildDream(kit) {
   const Pn = R.frame(...P(16, -2), -Math.PI / 2);
   Pn.box(0x1a1a1e, 0, 0, 0, 1.6, 1.3, 2.6).box(0xf6f6f6, 0, 0.9, 0, 1.3, 0.06, 0.1);
   for (let k = 0; k < 10; k++) Pn.box(k % 2 ? 0x111111 : 0xf6f6f6, -0.6 + k * 0.13, 0.93, -0.05 - (k % 2) * 0.1, 0.1, 0.02, k % 2 ? 0.3 : 0.5);
-  // doors painted on the walls, going nowhere; a window on a sky that's the floor
+  // doors painted on the walls, going nowhere
   R.cell('dreamdoor', 64, 128, (g, w, h) => {
     g.fillStyle = '#3a2a1a';
     g.fillRect(0, 0, w, h);
@@ -71,8 +72,6 @@ export async function buildDream(kit) {
     [A.x1 - 0.14, P(0, 8)[1], -Math.PI / 2],
     [P(-8, 0)[0], A.z0 + 0.14, 0],
   ]) R.frame(x, z, turn, { list: 'fixed' }).decal('dreamdoor', 0, 1.1, 0.06, 1, 2.2);
-  R.cell('dreamwindow', 128, 96, CHECKER);
-  R.frame(...P(6, -(A.z1 - A.z0) / 2 + 0.14), 0, { list: 'fixed' }).box(0xf6f6f6, 0, 1.4, 0, 2.2, 1.6, 0.1).decal('dreamwindow', 0, 2.2, 0.07, 2, 1.4, { bright: true });
   // the ceiling breathes: a violet light that swells
   const breath = new THREE.PointLight(0xb87aff, 0.6, 30, 1.5);
   breath.position.set(P(0, 0)[0], H - 1, P(0, 0)[1]);

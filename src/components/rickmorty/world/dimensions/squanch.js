@@ -1,8 +1,9 @@
 // Planet Squanch ("The Wedding Squanchers"): red grass under a teal sky with
 // a ringed planet low over it, Squanchy's cat-tree house (Meshy) and two
-// more like it, built here, suckulents in fat teal clumps, and the wedding:
-// a white arch of flowers, two blocks of white chairs with the aisle between,
-// lanterns, and the long table where the toast is given. Raised (the area's
+// more like it, built here, the suckulents (their model, stood by the place's
+// world, ./worlds.js), and the wedding: a white arch of flowers, two blocks
+// of white chairs with the aisle between, lanterns, and the long table where
+// the toast is given. Raised (the area's
 // 'raid'), Federation portals open round the arch, Gromflomite agents step
 // out, the arch goes over and the guests are gone; the wedding stays over
 // once Morty's got away (the `squanch` thing done).
@@ -58,25 +59,8 @@ export async function buildSquanch(kit) {
   catTree(R, ...P(22, -14), -0.5, 7.5);
   catTree(R, ...P(-25, 4), 1.2, 6.5);
 
-  // the suckulents: fat teal leaves in clumps, all round the edges
-  const clump = (dx, dz, s) => {
-    const f = R.frame(...P(dx, dz), dx * 0.7);
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2;
-      f.ball(i % 2 ? 0x3aa8a0 : 0x2a8a84, Math.cos(a) * 0.45 * s, 0.35 * s, Math.sin(a) * 0.45 * s, 0.4 * s, 1.5);
-    }
-    f.ball(0x6ad2c0, 0, 0.6 * s, 0, 0.3 * s, 1.3).ball(0xd84a6a, 0, 0.95 * s, 0, 0.12 * s);
-  };
-  clump(-19, 11, 1.4);
-  for (const [dx, dz, s] of [
-    [-28, -8, 1.1],
-    [27, 2, 1.2],
-    [-8, 19, 0.9],
-    [28, 17, 1],
-    [-30, 16, 1.3],
-    [14, 20, 0.8],
-  ])
-    clump(dx, dz, s);
+  // (the suckulents round the edges are the world record's pieces: the row's
+  // solid keeps Morty off the big one)
 
   // the red grass in tufts, blades of three reds
   const blade = R.own(new THREE.ConeGeometry(0.06, 1, 3));
@@ -180,13 +164,18 @@ export async function buildSquanch(kit) {
     }
     glare.intensity = raiding ? 2 + Math.sin(t * 7) : 0;
   });
+  // (the world's guests, ./worlds2.js's, scatter with the row's)
+  const guests = (on) => area.actions.show?.('all', on);
   area.actions = {
+    ...area.actions,
     raid: () => {
       raiding = true;
+      guests(false);
       S.hunt(true); // the agents out of their portals, after him
     },
     calm: () => {
       raiding = false;
+      guests(true);
       S.calm();
     },
   };

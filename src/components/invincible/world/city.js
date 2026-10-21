@@ -11,6 +11,7 @@ import { hot } from '../../avengers/hq/stage';
 import { SKIN, WINDOWS, towerField, towerMaterial } from './facade';
 import { BRIDGES, COAST, BEACH, RIVER, groundAt, rng } from './map';
 import { LAND } from './ground';
+import { STAGES, heightOf } from './demolish';
 
 const M4 = new THREE.Matrix4();
 const Q = new THREE.Quaternion();
@@ -58,13 +59,14 @@ function houseMaterial(uniforms) {
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uNight = uniforms.uNight;
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec4 aHouse;\nvarying vec3 vH;\nvarying vec3 vHN;\nflat varying vec4 vHouse;')
+      .replace('#include <common>', '#include <common>\nattribute vec4 aHouse;\nattribute float aHurt;\nvarying vec3 vH;\nvarying vec3 vHN;\nflat varying vec4 vHouse;\nflat varying float vHurt;')
       .replace(
         '#include <begin_vertex>',
         `#include <begin_vertex>
         vH = position * vec3(aHouse.x, aHouse.y, aHouse.z);
         vHN = normal;
-        vHouse = aHouse;`,
+        vHouse = aHouse;
+        vHurt = aHurt;`,
       );
     sh.fragmentShader = sh.fragmentShader
       .replace(
@@ -74,6 +76,7 @@ function houseMaterial(uniforms) {
         varying vec3 vH;
         varying vec3 vHN;
         flat varying vec4 vHouse;
+        flat varying float vHurt;
         float hh(float n) { return fract(sin(n * 91.7) * 43758.5); }
         float box2(vec2 f, vec4 r) { return step(r.x, f.x) * step(f.x, r.y) * step(r.z, f.y) * step(f.y, r.w); }`,
       )
@@ -113,6 +116,11 @@ function houseMaterial(uniforms) {
         // the bottom: a band of brick or stone
         c = mix(c, vec3(0.45, 0.32, 0.26), step(y, 0.45) * (1.0 - door) * (1.0 - garage));
         diffuseColor.rgb = pow(c, vec3(2.2));
+        // the damage (./demolish.js): cracked siding, dark panes
+        if (vHurt > 0.0) {
+          float crack = step(1.0 - vHurt * 0.5, hh(floor(u * 1.3) * 7.0 + floor(y * 1.3) * 3.0 + seed)) * (1.0 - step(0.6, n.y));
+          diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 0.3, max(crack, vHurt * win * 0.7));
+        }
         float houseWin = win;
         float houseCol = floor(cu);`,
       )
@@ -138,8 +146,10 @@ export function buildCity(world, { small = false } = {}) {
   // ── the towers ──
   const facade = towerMaterial(uniforms);
   const list = [];
+  const index = new Map(); // `b:<id>` → its instances in `list` (the base first, a top piece after)
   for (const b of world.buildings) {
     const style = { kind: SKIN[b.kind], tone: b.tone, seed: (b.id * 0.6180339) % 1 };
+    index.set(`b:${b.id}`, b.top ? [list.length, list.length + 1] : [list.length]);
     list.push({ x: b.x, z: b.z, w: b.w, d: b.d, h: b.h, ...style });
     if (b.top) list.push({ x: b.x, y: b.h, z: b.z, w: b.top.w, d: b.top.d, h: b.top.h, ...style });
   }
@@ -216,6 +226,7 @@ export function buildCity(world, { small = false } = {}) {
   const hattr = new Float32Array(houses.length * 4);
   houses.forEach((h, i) => hattr.set([h.w, h.h, h.d, h.home ? 0.137 : h.tone], i * 4));
   hgeo.setAttribute('aHouse', new THREE.InstancedBufferAttribute(hattr, 4));
+  hgeo.setAttribute('aHurt', new THREE.InstancedBufferAttribute(new Float32Array(houses.length), 1));
   const houseMesh = instances(group, hgeo, houseMaterial(uniforms), houses, (h, m) => m.compose(P.set(h.x, h.h / 2, h.z), Q.setFromAxisAngle(UP, h.yaw), S.set(h.w, h.h, h.d)));
   houseMesh.name = 'houses';
   const roofColors = [0x3b3b3e, 0x4a3a30, 0x2f3a44, 0x5a4636, 0x45474a, 0x6a3b2e];
@@ -312,9 +323,58 @@ export function buildCity(world, { small = false } = {}) {
   }
 
   let blink = 0;
+  // a thing's damage, drawn (./demolish.js): the facade's cracks and soot from
+  // `aHurt`, the top lowered by heightOf through the bite (a top piece goes
+  // with it), the style's roof height following; a house cracks only
+  const QI = new THREE.Quaternion();
+  function setDamage(key, d) {
+    if (key.startsWith('b:')) {
+      const idx = index.get(key);
+      if (!idx) return false;
+      const hurt = towers.geometry.attributes.aHurt;
+      const style = towers.geometry.attributes.aStyle;
+      const k = heightOf(d);
+      idx.forEach((i, n) => {
+        const b = list[i];
+        const kk = n === 0 ? k : d >= STAGES[0] ? 0.001 : 1;
+        hurt.setX(i, d);
+        hurt.addUpdateRange(i, 1);
+        towers.setMatrixAt(i, M4.compose(P.set(b.x, b.y ?? 0, b.z), QI, S.set(b.w, b.h * kk, b.d)));
+        towers.instanceMatrix.addUpdateRange(i * 16, 16);
+        style.setW(i, (b.y ?? 0) + b.h * kk);
+        style.addUpdateRange(i * 4, 4);
+      });
+      hurt.needsUpdate = true;
+      style.needsUpdate = true;
+      towers.instanceMatrix.needsUpdate = true;
+      return true;
+    }
+    if (key.startsWith('h:')) {
+      const i = Number(key.slice(2));
+      if (!houses[i]) return false;
+      const hurt = hgeo.attributes.aHurt;
+      hurt.setX(i, d);
+      hurt.addUpdateRange(i, 1);
+      hurt.needsUpdate = true;
+      return true;
+    }
+    return false;
+  }
+  // where a thing stands and how big it is, for ./ruins.js
+  function boxOf(key) {
+    if (key.startsWith('b:')) {
+      const idx = index.get(key);
+      return idx ? list[idx[0]] : null;
+    }
+    const hh = houses[Number(key.slice(2))];
+    return hh ? { x: hh.x, z: hh.z, w: hh.w, d: hh.d, h: hh.h } : null;
+  }
+
   return {
     group,
     uniforms,
+    setDamage,
+    boxOf,
     // 0 by day, 1 at night: the windows, the houses' lights
     setNight(k) {
       uniforms.uNight.value = k;
