@@ -463,6 +463,64 @@ async function player() {
     }, 300000);
   };
 
+  // the Sequids on Mars: to the planet flat out and down on the site, each astronaut carried to
+  // the ship, the host punched down (the swarm scattered as it comes), the three gates home
+  EPISODES.sequids = async () => {
+    await fromCecil('sequids');
+    const MR = await import('/src/components/invincible/world/offworld/mars.js');
+    await every(() => {
+      if (inSpace()) return true;
+      sim.pitch = 1.5;
+      sim.dragAt = 1e12;
+      if (sim.h.mode === 'ground') hold('up');
+      else hold('fwd', 'boost');
+      return false;
+    }, 240000);
+    await go([0, O.SPACE.RE + 40000, 0], 3000, { done: () => len(sim.h.p) - O.SPACE.RE > 35000 || !inSpace() });
+    // down onto the site: at its ship's pad
+    const pad = MR.toWorld([MR.BASE.ship[0] + 14, MR.groundAt(MR.BASE.ship[0] + 14, MR.BASE.ship[2]), MR.BASE.ship[2]]);
+    await every(() => {
+      if (sim.h.mode === 'perch') return true;
+      steer(pad, 1);
+      return false;
+    }, 300000);
+    await until(() => step() >= 1, 10000);
+    sim.speedup = 1; // (the astronauts within 3 m, the host's reach: judged a frame at a time)
+    const local = (l) => MR.toWorld([l[0], MR.groundAt(l[0], l[2]) + 1.5, l[2]]);
+    await every(() => {
+      if (step() !== 1) return true;
+      const m = sim.mars;
+      if (!m) return false;
+      const carried = m.astronauts.find((q) => q.state === 'carried');
+      if (carried) steer(local(MR.BASE.ship), 3);
+      else {
+        const lost = m.astronauts.filter((q) => q.state === 'lost');
+        if (!lost.length) return false;
+        const me = MR.toLocal(sim.h.p);
+        const a = lost.reduce((p, q) => (Math.hypot(q.p[0] - me[0], q.p[2] - me[2]) < Math.hypot(p.p[0] - me[0], p.p[2] - me[2]) ? q : p));
+        steer(local(a.p), 1.2);
+      }
+      return false;
+    }, 600000);
+    await every(() => {
+      if (step() !== 2) return true;
+      const m = sim.mars;
+      if (!m) return false;
+      const hp = MR.toWorld([m.host.p[0], m.host.p[1] + 1, m.host.p[2]]);
+      const d = len(sub(hp, chest()));
+      if (d < 3) {
+        aim(hp);
+        hold();
+        sim.punch = true;
+      } else steer(MR.toWorld([m.host.p[0], m.host.p[1] + 1.2, m.host.p[2] + 2.2]), 1);
+      return false;
+    }, 600000);
+    sim.speedup = 3;
+    const gates = M.missionOf('sequids').steps[3].gates;
+    for (let i = 0; i < gates.length; i++) await go(gates[i], 120, { pass: true, done: () => step() !== 3 || (sim.mission?.count ?? 0) > i, ms: 180000 });
+    await home();
+  };
+
   window.__INV_PLAY__ = {
     async run(ep, budget) {
       const t0 = performance.now();

@@ -6,6 +6,7 @@
 // `portal` is one of Angstrom's green portals, drawn as a ring.
 
 import { PORTAL_R, PORTAL_SPEED } from './dimensions';
+import { GATES as MARS_GATES, GATE_R as MARS_GATE_R } from './offworld/mars';
 
 const step = (type, text, extra = {}) => ({ type, text, ...extra });
 const portal = (text, at, dimension) => step('through', text, { at, r: PORTAL_R, speed: PORTAL_SPEED, portal: true, marker: at, dimension });
@@ -59,5 +60,26 @@ export const SEASON2 = [
     ],
     done: [['cecil', 'Every version of you came home. Levy didn’t. That’s a win, kid.']],
     achievement: 'levy',
+  },
+  // the Sequids on Mars (./offworld/mars.js runs it while he is there): land at the base, the
+  // four astronauts carried to the ship one at a time (each aboard is a `caught` from Mars),
+  // the host under the swarm put down (a `ko` of kind host), and the gates home at speed
+  {
+    id: 'sequids',
+    ep: 10,
+    season: 2,
+    title: 'The Martian mission',
+    colour: '#c8553d',
+    giver: 'cecil',
+    start: { npc: 'cecil', place: 'gda', after: ['ep8'] },
+    intro: [['cecil', 'The Mars crew stopped answering. Something up there is wearing them. Go and get them back.']],
+    steps: [
+      step('land', 'Fly to Mars and land at the base', { body: 'mars', marker: { body: 'mars' } }),
+      step('catch', 'Carry the four astronauts to the ship, one at a time', { n: 4, source: 'mars', marker: { npc: 'astro' } }),
+      step('defeat', 'Put the host down: the Martian under the swarm', { kind: 'host', n: 1, marker: { npc: 'host' } }),
+      step('race', 'The ship home: three gates over Mars, flat out', { gates: MARS_GATES, r: MARS_GATE_R, time: 120, marker: { gate: true } }),
+    ],
+    done: [['cecil', 'Four back, and whatever was in them left on Mars. Good.']],
+    achievement: 'sequids',
   },
 ];

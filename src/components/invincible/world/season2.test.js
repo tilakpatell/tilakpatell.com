@@ -19,9 +19,9 @@ function feed(p, events) {
 
 describe('season two', () => {
   it('is listed after season one, and the board’s next after episode 8 is Angstrom', () => {
-    expect(SEASON2.map((m) => m.id)).toEqual(['levy']);
-    expect(MISSIONS.at(-1).id).toBe('levy');
-    expect(STORY.at(-1)).toBe('levy');
+    expect(SEASON2.map((m) => m.id)).toEqual(['levy', 'sequids']);
+    expect(MISSIONS.at(-1).id).toBe('sequids');
+    expect(STORY.slice(-2)).toEqual(['levy', 'sequids']);
     expect(nextStory(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7', 'ep8'])).toBe('levy');
     expect(missionOf('levy').start.after).toContain('ep8');
   });

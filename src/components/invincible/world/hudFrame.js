@@ -3,6 +3,7 @@
 // compass's marks, the mission's marker and the objective line. Moved from
 // InvWorld.jsx's frame loop as it was, so that file stays under the size
 // rule; nothing shown changed.
+import { nearestLost, toWorld as marsWorld } from './offworld/mars';
 import { objectiveText } from '../../../runtime/hud';
 import { FLY } from './flight';
 import { PORTAL, portalOpen, standing } from './foes';
@@ -61,7 +62,7 @@ export function writeHud(H, { s, h, a, speed, alt, inSpace }) {
       .sort((e1, e2) => Math.hypot(e1.p[0] - h.p[0], e1.p[2] - h.p[2]) - Math.hypot(e2.p[0] - h.p[0], e2.p[2] - h.p[2]))
       .map((e) => e.p);
     const moon = a.debug.bodies.find((b) => b.id === 'moon');
-    const mk = markerOf(s.mission, { npcs: { omni: a.debug.dad().p, allen: a.debug.allen }, car: getawayAt(s.getaway), foes, faller: q.rescue && !q.rescue.carried ? q.rescue.p : null, bodies: { moon: moon?.c } });
+    const mk = markerOf(s.mission, { npcs: { omni: a.debug.dad().p, allen: a.debug.allen, astro: s.mars ? nearestLost(s.mars, h.p) : null, host: s.mars ? marsWorld(s.mars.host.p) : null }, car: getawayAt(s.getaway), foes, faller: q.rescue && !q.rescue.carried ? q.rescue.p : null, bodies: { moon: moon?.c } });
     s.marker = mk ? { p: mk, color: m.colour } : null;
     if (mk) {
       mdist = Math.hypot(mk[0] - h.p[0], mk[1] - h.p[1], mk[2] - h.p[2]);

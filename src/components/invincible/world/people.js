@@ -309,6 +309,23 @@ STYLES.robot = (add) => {
   add('head', 'trim', limb(0.008, 0.12, 0.006, 6), { p: [0.05, 0.3, 0] }); // the aerial
   add('head', 'glow', ball(0.014, 8, 6), { p: [0.05, 0.31, 0] });
 };
+// Mars (./offworld/marsScene.js): an astronaut in a white suit with a gold visor, and the
+// host, a Martian in grey-green with the Sequids' purple on him (kit figures, each with a gen3d issue)
+DRESS.astronaut = () => ({ suit: mat(0xf2f2ee, { roughness: 0.5 }), trim: mat(0x9aa3ad, { roughness: 0.4 }), skin: mat(0xf0c4a8), hair: mat(0x2a1d17), dark: mat(0x1a1416), glow: new THREE.MeshBasicMaterial({ color: hot(0xe6b84a, 1.4), toneMapped: false }) });
+DRESS.host = () => ({ suit: mat(0x5f7a66, { roughness: 0.7 }), trim: mat(0x6a3a9a, { roughness: 0.5 }), skin: mat(0x8fa892), hair: mat(0x3a2a4a), dark: mat(0x1a1416), glow: new THREE.MeshBasicMaterial({ color: hot(0xb04dff, 2), toneMapped: false }) });
+STYLES.astronaut = (add) => {
+  body(add, { top: 'suit', bottom: 'suit', shoe: 'trim', hand: 'trim', slim: false, sleeve: 'suit' });
+  add('chest', 'trim', rbox(0.3, 0.2, 0.12, 0.03), { p: [0, 0.12, -0.14] }); // the pack
+  add('head', 'suit', ball(0.12, 20, 16), { p: [0, 0.1, 0] }); // the helmet
+  add('head', 'glow', ball(0.1, 16, 12), { p: [0, 0.1, 0.03], s: [0.85, 0.8, 0.6] }); // its visor
+};
+STYLES.host = (add) => {
+  body(add, { top: 'suit', bottom: 'suit', shoe: 'trim', hand: 'skin', slim: false, sleeve: 'suit' });
+  for (const sd of [-1, 1]) add('chest', 'glow', ball(0.04, 10, 8), { p: [sd * 0.12, 0.22, 0.08] }); // the Sequids on him
+  add('head', 'skin', ball(0.1, 20, 16), { p: [0, 0.1, 0], s: [1, 1.2, 1] });
+  for (const sd of [-1, 1]) add('head', 'dark', ball(0.016, 8, 6), { p: [sd * 0.035, 0.12, 0.085] });
+  add('head', 'glow', ball(0.05, 10, 8), { p: [0, 0.22, -0.02], s: [1.6, 0.6, 1.2] }); // one riding his crown
+};
 for (const g of GUARDIANS) {
   DRESS[g.id] = () => guardianDress(g);
   STYLES[g.id] = g.id === 'robot' ? STYLES.robot : STYLES.guardian;
@@ -334,7 +351,7 @@ export function buildPerson(kind, seed = 0) {
       dark: mat(0x1a1416),
     };
   const g = guardianOf(kind);
-  const joints = kind === 'cecil' || kind === 'allen' || g?.broad ? BROAD : SLIM;
+  const joints = kind === 'cecil' || kind === 'allen' || kind === 'astronaut' || kind === 'host' || g?.broad ? BROAD : SLIM;
   const scale = { eve: 0.88, debbie: 0.88, cecil: 0.95, allen: 1.12 }[kind] ?? (g ? (g.broad ? 1.02 : 0.94) : 0.86 + (seed % 5) * 0.03);
   const h = buildHumanoid({ style: STYLES[kind] ?? STYLES.person, materials, scale, joints });
   return { h, kind, height: h.height, materials, cast: castMaterial(h.root, { rim: castRim }) };

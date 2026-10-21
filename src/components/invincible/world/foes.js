@@ -79,6 +79,8 @@ export const KINDS = {
   // the mirror Mark: Mark's own row as a foe: flies at him at his cruise, a punch of
   // `hurt` within `reach` every `every` s that knocks him `knock` m, four blows down
   mirror: { h: 1.78, hits: 4, speed: 60, reach: 4.5, every: 1.1, hurt: 12, knock: 8, stagger: 0.6, orbit: 14 },
+  // the host under the Sequids on Mars (./offworld/mars.js steps it there; its row is here for the mission's `defeat`)
+  host: { h: 1.9, hits: 12, reach: 3.2, every: 2, hurt: 10, stagger: 0.5 },
 };
 const FLAXANS = new Set(['flaxan', 'flaxanElite']);
 const kindOf = (e) => e.kind ?? 'flaxan';

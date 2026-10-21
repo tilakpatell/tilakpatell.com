@@ -31,6 +31,8 @@ import { buildHall } from './hall';
 import { createCavalryScene } from './cavalryScene';
 import { hallTalkers } from './inside';
 import { DIMENSIONS, dimensionOf } from './dimensions';
+import { RANGE as MARS_RANGE, SITE as MARS_SITE, SWARM_N, nearMars, toLocal as marsLocal } from './offworld/mars';
+import { buildMarsScene } from './offworld/marsScene';
 import { buildClouds, buildHaze, skyBands } from './sky';
 import { carAt, createTraffic, stepTraffic, takeCar } from './traffic';
 import { CITY, WORLD, buildWorld, groundAt, near } from './map';
@@ -183,6 +185,9 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   space.group.add(allenHolder);
   thragg.holder.removeFromParent();
   space.group.add(thragg.holder);
+  // Mars's site (./offworld/marsScene.js): built when he is within 30 km of the planet, let go when he is further
+  let marsSite = null;
+  const swarmN = engine.tier === 'low' ? SWARM_N.low : engine.tier === 'high' ? SWARM_N.high : SWARM_N.mid;
   const spaceTalk = [
     { id: 'allen', name: 'Allen', p: ALLEN, r: 70, lines: LINES.allen },
     { id: 'thragg', name: 'Thragg', p: THRAGG, r: 90, lines: LINES.thragg },
@@ -778,6 +783,18 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       hazeSky.update(camera);
     } else if (zone === 'hall') hall.update(t, h, frameDt);
     else {
+      // Mars's ground, when he is near it (and gone again when he is not)
+      if (!marsSite && nearMars(h.p)) {
+        marsSite = buildMarsScene(space.group, { n: swarmN, calm });
+        marsSite.attachFx(fx.vfx);
+      } else if (marsSite && !nearMars(h.p, MARS_RANGE.drop)) {
+        marsSite.dispose();
+        marsSite = null;
+      }
+      if (marsSite) {
+        marsSite.update(sim.mars, frameDt, t, marsLocal(h.p));
+        for (const e of sim.events) if (e.mars) marsSite.fx(e);
+      }
       // Allen, waiting by the Moon; Thragg over Mars
       allen.pose({ mode: 'hover', t }, dt);
       carry(thragg, [THRAGG[0], THRAGG[1] + Math.sin(t * 0.6), THRAGG[2]], Math.atan2(-THRAGG[0], -THRAGG[2]), [0, 0, 0], dt, { lean: 0 });
@@ -855,6 +872,9 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       bodies: BODIES,
       allen: ALLEN,
       thragg: THRAGG,
+      marsSite: MARS_SITE,
+      // the renderer's counts (a place loaded and let go leaves them as they were)
+      memory: () => ({ ...engine.renderer.info.memory, marsSite: Boolean(marsSite) }),
       // Dad's rules, and (given a place, and the way he's facing) Dad put there
       dad: (p, dir) => {
         if (p) dad = { ...dad, p: [...p], dir: dir ?? dad.dir };
@@ -877,6 +897,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       marker.dispose();
       course.dispose();
       ghosts.dispose();
+      marsSite?.dispose();
       for (const c of casts) c.dispose();
       for (const f of Object.values(heroFigs)) if (f !== mark) f.dispose();
       wallMesh.geometry.dispose();
