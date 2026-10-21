@@ -52,7 +52,8 @@
         out.spine = spine.map((b) => b.name);
         const hips = model.getObjectByName('Hips');
         const up = new THREE.Vector3(0, 1, 0).applyQuaternion(hips.parent.getWorldQuaternion(new THREE.Quaternion()).invert());
-        const hipsY = hips.position.y;
+        // (the hips' height for the library's clips: cast.json's, which stands this figure's soles on the floor, else its bone's)
+        const hipsY = Number(q.get('hips')) || hips.position.y;
         const key = `rig-check:${q.get('url')}`;
         // the soles: the vertices within 3 cm of the floor at rest
         const meshes = [];

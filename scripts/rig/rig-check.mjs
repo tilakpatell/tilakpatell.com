@@ -27,18 +27,19 @@
 //
 //   verdict(result) → { ok, problems: [sentence], numbers } (pure: tested in rig-check.test.mjs)
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
-import { dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { browserPath, LIMIT, toeDrift } from '../anim-check.mjs';
+import { browserPath, LIMIT, PLANT, toeDrift } from '../anim-check.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const CLIPS = ['idle', 'walk', 'run', 'cast', 'sit.down', 'knockdown'];
 export const SHEET = ['idle', 'walk', 'cast'];
 export const FLOOR = 0.04; // the most the walk's lowest sole may be off the floor (m)
 export const STAND = 0.02; // and the idle's
+export const LUKE_HIPS = 95.5; // the hips' height of the skeleton the clips were made on (cm)
 export const ROLES = ['hips', 'head', 'armL', 'foreL', 'handL', 'armR', 'foreR', 'handR', 'thighL', 'calfL', 'footL', 'toeL', 'thighR', 'calfR', 'footR', 'toeR'];
 
 const worst = (ys) => Math.max(...ys.map((y) => Math.abs(y)));
@@ -76,7 +77,11 @@ export function verdict(r, { floor = FLOOR, stand = STAND, limit = LIMIT, clips 
     if (off > stand) problems.push(`idle: the soles come ${(off * 100).toFixed(1)} cm off the floor (at most ${stand * 100})`);
   }
   if (r.walked) {
-    const drifts = r.walked.series.map((s) => toeDrift(s).drift).filter((d) => d != null);
+    // (a toe is down within PLANT of its lowest, 3 cm on a figure Luke's size; a small figure's swing foot
+    // clears the ground by less, so the bar is its own size: the hips' height against Luke's 95.5 cm)
+    const plant = PLANT * Math.min(1, (r.rest?.hipsY ?? LUKE_HIPS) / LUKE_HIPS);
+    const drifts = r.walked.series.map((s) => toeDrift(s, { plant }).drift).filter((d) => d != null);
+    numbers.plant = plant;
     numbers.walkSpeed = r.walked.speed;
     numbers.drift = drifts.length ? Math.max(...drifts) : null;
     if (!(r.walked.speed > 0)) problems.push('walk: no stride measured (the toes never plant)');
@@ -123,6 +128,11 @@ export async function check(file, { base, browser, clips = CLIPS, sheet = null, 
     page.on('pageerror', (e) => errors.push(String(e)));
     const q = new URLSearchParams({ url, clips: clips.join(','), w: String(w), h: String(h) });
     if (own) q.set('own', own);
+    // (the hips' height its manifest gives the library's clips, when it has one beside it)
+    const manifest = join(dirname(file), 'cast.json');
+    const name = basename(file).replace(/(\.hq|\.lo)?\.glb$/, '');
+    const hipsY = existsSync(manifest) ? JSON.parse(readFileSync(manifest, 'utf8')).figures?.[name]?.hipsY : null;
+    if (hipsY) q.set('hips', String(hipsY));
     if (sheet) q.set('sheet', sheet.join(','));
     for (const [k, v] of Object.entries(query)) q.set(k, v);
     // (the dev server's first visit bundles three and the site's libraries: slow)

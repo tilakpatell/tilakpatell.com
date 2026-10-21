@@ -28,9 +28,9 @@ Look at every sheet before a figure ships. A figure that reads wrong (the propor
 
 - `NAME.glb`, `NAME.hq.glb`, `NAME.lo.glb`: the three cuts (`lib/device`’s mid, high and low detail);
 - `NAME-idle.glb`, `NAME-walk.glb`, `NAME-run.glb`: its own idle, walk and run, as Meshy’s figures have theirs;
-- `cast.json`: each shipped figure’s `height` (metres, crown to sole), `kind`, `house`, `tall` (a figure far over a person’s height: Hagrid), its cuts and clips, and its hips’ height in the rig’s centimetres.
+- `cast.json`: each shipped figure’s `height` (metres, crown to sole), `kind`, `house`, `tall` (a figure far over a person’s height: Hagrid), its cuts and clips, and `hipsY`: the hips’ height (the rig’s centimetres) to give `createAnimator` for the library’s clips, which stands a standing clip’s soles on the floor (scripts/rig/README.md, the feet on the floor).
 
-A world loads a figure as the Road’s `src/components/middleearth/road/cast.js` does (the model and its three clips through `rt.assets`, `createAnimator` with them, scaled to `height`), and plays every other clip through `lib/three/clipLibrary.js`’s `forFigure`.
+A world loads a figure as the Road’s `src/components/middleearth/road/cast.js` does (the model and its three clips through `rt.assets`, `createAnimator` with them and `hipsY`, scaled to `height`), and plays every other clip through `lib/three/clipLibrary.js`’s `forFigure`.
 
 ## The budget
 

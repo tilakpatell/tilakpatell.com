@@ -88,9 +88,33 @@ starts a dev server of its own (or `--base`), loads the figure with
 the soles more than 4 cm off the floor at any frame of the walk or 2 cm of
 the idle, or a planted toe sliding faster than `scripts/anim-check.mjs`’s
 LIMIT (0.15 m/s) as `createAnimator` and locomotion walk it at its own
-stride. It plays idle, walk, run, `ual-cast`, `act-sit.down` and
+stride. A toe counts as down within anim-check’s 3 cm of its lowest on a
+figure Luke’s size, and within its own share of that on a smaller one (the
+hips’ height against Luke’s 95.5 cm): a toy’s swing foot clears the ground
+by a centimetre or two, and at 3 cm it reads as planted while it swings. The
+library’s clips get the hips cast.json gives the figure (`hips`, below),
+read from the manifest beside it. It plays idle, walk, run, `ual-cast`, `act-sit.down` and
 `act-knockdown`, and reports how low each takes the body. `--sheet` draws four
 views of the figure in its idle, its walk and the cast (or `--rows`).
+
+## The feet on the floor
+
+A clip turns each bone as it turned Luke’s and scales the hips by the hips’
+heights, which stands a figure on the floor only if its legs are Luke’s in
+small. A toy’s aren’t (short thighs, big shoes), so as made the first four
+sank 2 to 6 cm into the floor standing and up to 13 walking. `clips.mjs`
+measures it on the figure’s own soles (its vertices within 3 cm of the floor
+at rest, skinned as three.js skins them) frame by frame:
+
+- **its own idle and walk** have the hips raised or lowered each frame by
+  what puts the lowest sole back where it stands at rest, so one foot is
+  always down and never in the floor;
+- **its own run** is moved by one amount, so its lowest frame meets the
+  floor and its flight is kept;
+- **every other clip** (`forFigure`) gets the hips’ height cast.json gives
+  (`hipsY`): the bone’s own, lifted by what the idle sinks on average. A
+  world passes it to `createAnimator`; the bone’s own sinks a standing clip
+  by those centimetres.
 
 ## Clips on auto-weighted figures
 

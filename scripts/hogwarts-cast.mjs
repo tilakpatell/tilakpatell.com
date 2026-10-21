@@ -94,12 +94,12 @@ export function manifest(state, table = FIGURES) {
       ...(f.tint ? { tint: f.tint } : {}),
       cuts: Object.fromEntries(Object.entries(CUTS).map(([t, c]) => [t, `${name}${c.suffix}.glb`])),
       clips: Object.fromEntries(['idle', 'walk', 'run'].map((c) => [c, `${name}-${c}.glb`])),
-      hipsY: state[name].skin?.hipsY ?? null,
+      hipsY: state[name].cut?.hipsY ?? state[name].skin?.hipsY ?? null,
     };
   }
   return {
     about:
-      'Hogwarts’ cast on the site’s shared skeleton (Meshy’s 24 bones, under an Armature scaled to metres), made by scripts/hogwarts-cast.mjs. Load a figure as src/components/middleearth/road/cast.js loads one: NAME.glb (or the cut for the device’s detail: hq for high, plain for mid, lo for low) and its own idle, walk and run beside it; every other clip through lib/three/clipLibrary.js’s forFigure with the figure’s hips. Scale it to `height` metres, crown to sole. `tall` marks a figure far over a person’s height (2.6 m): give it the doors, seats and camera distance of its size, never squeeze it to a person’s. A `tint` is applied to the base colour as its entry says.',
+      'Hogwarts’ cast on the site’s shared skeleton (Meshy’s 24 bones, under an Armature scaled to metres), made by scripts/hogwarts-cast.mjs. Load a figure as src/components/middleearth/road/cast.js loads one: NAME.glb (or the cut for the device’s detail: hq for high, plain for mid, lo for low) and its own idle, walk and run beside it; every other clip through lib/three/clipLibrary.js’s forFigure, with `hipsY` given to createAnimator (it stands a standing clip’s soles on the floor; the Hips bone’s own height sinks them a few centimetres). Scale it to `height` metres, crown to sole. `tall` marks a figure far over a person’s height (2.6 m): give it the doors, seats and camera distance of its size, never squeeze it to a person’s. A `tint` is applied to the base colour as its entry says.',
     figures,
     ...(Object.values(figures).some((f) => f.tint) ? { tints: TINTS } : {}),
   };
@@ -241,14 +241,15 @@ const steps = {
       log(`${tier}: ${Math.round(after)} triangles, ${kb(file)}`);
     }
     const { ownClips } = await import('./rig/clips.mjs');
-    const clips = await ownClips(join(OUT, `${name}.glb`));
+    const { files: clips, hipsY } = await ownClips(join(OUT, `${name}.glb`));
     for (const f of Object.values(clips)) log(`${relative(ROOT, f)}: ${kb(f)}`);
+    log(`the hips for the library's clips: ${hipsY} cm`);
     const creditsFile = join(ROOT, 'public', 'games', 'credits.json');
     const credits = JSON.parse(readFileSync(creditsFile, 'utf8'));
     credits[`hogwarts/cast/${name}`] = credit(name);
     credits['hogwarts/cast-clips'] = CLIPS_CREDIT;
     writeFileSync(creditsFile, `${JSON.stringify(credits, null, 2)}\n`);
-    record(s, name, 'cut', key, { sizes });
+    record(s, name, 'cut', key, { sizes, hipsY });
     writeFileSync(join(OUT, 'cast.json'), `${JSON.stringify(manifest({ ...load(), [name]: s[name] }), null, 2)}\n`);
   },
 
@@ -256,7 +257,9 @@ const steps = {
   async sheet(name, s, { fresh, log }) {
     const file = join(OUT, `${name}.glb`);
     const out = join(SHEETS, `${name}.webp`);
-    const key = await digestOf(readFileSync(file), readFileSync(join(ROOT, 'scripts', 'rig', 'rig-check.html')));
+    // (the figure, its own clips, the hips its manifest gives the library's, and the page that checks them)
+    const own = ['idle', 'walk', 'run'].map((c) => join(OUT, `${name}-${c}.glb`)).filter((p) => existsSync(p)).map((p) => readFileSync(p));
+    const key = await digestOf(readFileSync(file), ...own, String(s[name]?.cut?.hipsY ?? ''), readFileSync(join(ROOT, 'scripts', 'rig', 'rig-check.html')), readFileSync(join(ROOT, 'scripts', 'rig', 'rig-check.mjs')));
     if (!due(s, name, 'sheet', key, { fresh }) && existsSync(out)) return log('sheet as it was');
     mkdirSync(SHEETS, { recursive: true });
     const { execFileSync } = await import('node:child_process');
