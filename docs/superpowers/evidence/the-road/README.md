@@ -458,3 +458,15 @@ At 60 m the Marshes read as a dark grass field (`look-marshes-60-desktop.webp`):
 - `marshes-meres-candles-desktop.webp`: the candles' beat at 60 m, the meres either side with their reeds and two candles over them.
 - `marshes-meres-desktop.webp`: walking at 79 m, Gollum leading, the water lying all the way out to the Gate's mountains.
 
+## Gorgoroth's plain (2026-10-21)
+
+The plain before the Mountain was bare dark ground near the road (`look-gorgoroth-60-desktop.webp`). Now it's dressed as the films have it (`stages/gorgoroth/plain.js`, its places pure in `place.js`):
+
+- **Ash boulders and fangs of rock** either side of the road: three boulder shapes and the fangs from the Mount Doom chapter's kit, 186 on high (a draw a shape), thick near the road and thinning out. They're off the lane and the column's road, clear of the camps and short of the Mountain's slope. Those within the solid grid's reach stand solid: the camera and the walkers keep out of them.
+- **Two orc camps** off the road, their fires burning (the chapter's `camp`; one on low).
+- **Cracks in the plain** with the fire under it showing through: 28 on high, one mesh. Each is a ribbon dark at its edges and white-hot down its middle, added, over 1 so the house bloom takes it, breathing slowly. `plain.test.js` holds the strewing and the cracks off the lane, and the same on every load.
+
+- `gorgoroth-plain-desktop.webp`: the plain's beat, the cracks glowing under the Mountain, the fangs and the column.
+- `gorgoroth-plain-column-desktop.webp`: walking beside the column, boulders and fangs either side, a camp's fire far off.
+- `gorgoroth-plain-cracks-desktop.webp`: at 51 m, before the Eye's beam, the cracks round the two.
+

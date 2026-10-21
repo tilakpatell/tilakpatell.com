@@ -169,15 +169,6 @@ export const nowMonth = () => {
 
 export const currentRole = roles.find((r) => !r.end);
 
-export const careerStats = () => {
-  const first = Math.min(...roles.map((r) => monthIndex(r.start)));
-  return {
-    roles: roles.length,
-    months: nowMonth() - first + 1,
-    states: new Set(roles.map((r) => r.state).filter(Boolean)).size,
-  };
-};
-
 // `track` on each role: 'pm' for technical program management, 'eng' for
 // software, AI and ML engineering
 export const TRACKS = [
