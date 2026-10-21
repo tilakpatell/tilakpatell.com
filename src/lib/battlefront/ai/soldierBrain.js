@@ -19,7 +19,10 @@
 // docs/superpowers/evidence/bf-ai-source/README.md), it is the law: a tactic
 // only where the template's row has it; close combat tried first, by the
 // source's test, held 3 s and left by its limits; a hiding bot firing from its
-// cover once there.
+// cover once there; a bot sent to hide only by a target its weapon cannot hurt,
+// and hiding the row's drawn time after; patterns of the AI weapon's own
+// class, High until the first shot and Medium after, drawn afresh each burst,
+// a bit a thirtieth of a second, a single pattern pulling once a press.
 //
 //   createBrain(s, { ai, role, rand, aimScale, system, difficulty, pve, ap }) → brain   (aimScale widens the aim box: a
 //     mode's lethality lever; system: the AI system row, ai.system by default, AISystem_PvE for a pve bot;
@@ -45,7 +48,7 @@ import { pickCover, queryFor } from './cover.js';
 import { pickTarget } from './targeting.js';
 import { queryFor as gameQuery, runQuery } from './coverQuery.js';
 import { skirmishRole, pressAbility } from './skirmish.js';
-import { aheadOf, available, closeCombat, turnFrom } from './tactics.js';
+import { TICK, aheadOf, available, closeCombat, hideClock, intensityFor, patternWeapon, pulls, stillHiding, turnFrom, validAgainst } from './tactics.js';
 import { AHEAD, FACING, TARGET, aimPoint, burstStep, createAim, createBurst, createEvasion, createLof, crouched, groundOk, lofStep, mayFire, noiseOf, strafeSide, takeRoll, viewMiss, viewPoint, viewStep, weaponClass } from './autoPlayer.js';
 
 // a walkable spot near a place: on the level's navmesh at the soldier's height where the battle has
@@ -55,6 +58,8 @@ const spotNear = (nav, x, z, r, y) => (nav?.mesh ? meshNearest(nav, x, z, r, y) 
 // The class a soldier plays → the game's AI template for it.
 export const ROLES = { assault: 'rifleman', heavy: 'heavy', officer: 'officer', specialist: 'sniper' };
 // A weapon family → the AI weapon row (aim box, preferred range) and the firing patterns' weapon.
+// (the patterns' weapon is the AI row's own class where it has one, as the source has it: tactics.js;
+// the family's is kept for a row with none)
 const AI_WEAPONS = { rifle: 'AI_Rifle', heavy: 'AI_Heavy', pistol: 'AI_Pistol_Officer', sniper: 'AI_Sniper', hero: 'AI_Rifle', special: 'AI_Rifle' };
 const PATTERN_WEAPONS = { rifle: 'AssaultRifle', heavy: 'MachineGun', pistol: 'Pistol', sniper: 'SniperRifle', hero: 'AssaultRifle', special: 'AssaultRifle' };
 
@@ -64,8 +69,10 @@ export const CONE = 0.25; // the cosine of a bot's half view angle (about 75° e
 const HEARING = 40; // metres a shot is heard
 export const AIM_SETTLE = 2; // seconds on one target for the aim box to shrink from its max to its min
 export const REPLAN = 1.5; // seconds a path is kept before it is planned again
-export const HIDE_HEALTH = 0.4; // the share of health under which a bot hides
-const SUPPRESSED = 1; // the suppression a bot hides at (near misses fill it by the shooter's SuppressionValue)
+// (the share of health under which a bot hid, by hand, until the source showed that no tactic reads health
+// and only a target its weapon cannot hurt sends a bot to hide: tactics.js. Kept for its readers; the brain
+// no longer hides by it, nor by suppression, which the same rule retired)
+export const HIDE_HEALTH = 0.4;
 export const STRAFE = 4; // metres a bot attacking in the open steps aside
 const WANDER = 30; // metres round the objective a bot with nothing to do searches
 const NEAR_GOAL = 0.8;
@@ -98,7 +105,7 @@ export function createBrain(s, { ai, role: given = null, rand = Math.random, aim
   const family = s.weapon?.family ?? 'rifle';
   const pveWeapon = pveTemplate ? ai.skirmish.weapons[`AI_${pveRole[0].toUpperCase()}${pveRole.slice(1)}_PvE`] : null;
   const aiWeapon = pveWeapon?.accuracyHitBox ? pveWeapon : ai.weapons[AI_WEAPONS[family] ?? 'AI_Rifle'];
-  const patterns = ai.patterns.filter((p) => p.weapon === (PATTERN_WEAPONS[family] ?? 'AssaultRifle'));
+  const patterns = ai.patterns.filter((p) => p.weapon === (patternWeapon(pveWeapon ?? aiWeapon) ?? PATTERN_WEAPONS[family] ?? 'AssaultRifle'));
   return {
     s,
     role,
@@ -136,8 +143,15 @@ export function createBrain(s, { ai, role: given = null, rand = Math.random, aim
     current: null,
     pattern: null,
     frame: 0,
-    // (when its close combat began: tactics.js)
+    // (when its close combat began, and its hide's drawn hold and end: tactics.js)
     closeSince: null,
+    hiding: {},
+    // (the source's firing state, tactics.js: the pattern ticks owed to the next step, whether the trigger
+    // was down at the last tick, whether the bot has fired since it deployed, the intensity it draws at)
+    ticks: 0,
+    held: false,
+    fired: false,
+    intensity: 'High',
     cover: null,
     coverSince: 0,
     coverStay: 0,
@@ -160,21 +174,26 @@ const d2 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const v3 = (b) => [b.at.x, b.at.y, b.at.z];
 
 // the firing pattern's next frame: its bits, then its delay of frames with none
+// (a frame is an AI tick, tactics.js's TICK: act runs the ticks that fall in a sim step)
 export function patternStep(brain) {
-  if (!brain.pattern) brain.pattern = brain.patterns[Math.floor(brain.rand() * brain.patterns.length)];
+  if (!brain.pattern) drawPattern(brain);
   const p = brain.pattern;
   const f = brain.frame;
   brain.frame = (f + 1) % (p.bits.length + (p.delay ?? 0));
-  if (brain.frame === 0) brain.pattern = brain.patterns[Math.floor(brain.rand() * brain.patterns.length)];
+  // (the burst and its delay done: the next burst draws its own, at the intensity it starts in)
+  if (brain.frame === 0) brain.pattern = null;
   return f < p.bits.length && p.bits[f];
 }
 
-// the pattern's intensity by range (the patterns' own names), chosen when an attack starts
-function choosePattern(brain, dist) {
-  const want = dist < 15 ? 'High' : dist < 35 ? 'Medium' : 'Low';
-  const list = brain.patterns.filter((p) => p.intensity === want);
-  const from = list.length ? list : brain.patterns;
-  brain.pattern = from[Math.floor(brain.rand() * from.length)];
+// A burst's pattern, drawn at random among the weapon's patterns of the bot's
+// intensity (`WeaponControl.cpp`, `findRandomFiringPattern`); with none of that
+// intensity, a single shot, the source's own default. (It replaced the
+// pattern's intensity by range, chosen when an attack started: under 15 m
+// High, under 35 m Medium, else Low.)
+const SINGLE = { bits: [true], delay: 0, single: true };
+function drawPattern(brain) {
+  const list = brain.patterns.filter((p) => p.intensity === brain.intensity);
+  brain.pattern = list.length ? list[Math.floor(brain.rand() * list.length)] : SINGLE;
   brain.frame = 0;
 }
 
@@ -424,6 +443,11 @@ export function think(brain, world, now) {
   // (the line of fire to a target in sight, asked once: close combat's test and the trigger both read it,
   // and neither asks it of one out of sight)
   const clear = !!b?.visible && world.lineClear(from, v3(b));
+  // (the hide's one cause, the source's: a target the bot's AI weapon is not valid against. No AI weapon row
+  // of the game's is so made, so only a row given its own `validAgainst` meets it: tactics.js)
+  const e = b ? (world.who?.(b.id) ?? null) : null;
+  const hideCause = !!e && !validAgainst(brain.aiWeapon?.validAgainst, { inVehicle: e.kind != null && e.kind !== 'soldier', shielded: !!e.shielded });
+  const wasHiding = brain.current === 'hide';
   const ctx = {
     task: !!task,
     away: !!task && fromTask > (task.radius ?? 0) + TASK_SLACK,
@@ -433,8 +457,8 @@ export function think(brain, world, now) {
     engage: brain.tactics.engage?.distance ?? 40,
     closeCombat: !!b && available(brain.tactics, 'closeCombat') && closeCombat(brain.tactics.closeCombat, closeInput(brain, world, b, { me, tgt, clear, now })),
     canFlee: available(brain.tactics, 'flee'),
-    // (the hide's cause is still the site's, and so is its end with its cause: the sheet's T6 and T7 go together)
-    hide: !!b && available(brain.tactics, 'hide') && (s.suppressed >= SUPPRESSED || s.hp / s.hpMax < HIDE_HEALTH),
+    // (hiding while its cause holds and the row's drawn hold after: the sheet's T6 and T7 together)
+    hide: !!b && available(brain.tactics, 'hide') && stillHiding(brain.hiding, { cause: hideCause, was: wasHiding, now }),
     posture: world.squad?.posture ?? 'hold',
     suppressed: s.suppressed,
     health: s.hp / s.hpMax,
@@ -442,7 +466,8 @@ export function think(brain, world, now) {
   };
   const choice = pick(OPTIONS, ctx, { current: brain.current, rank: (o) => o.rank });
   let mode = choice?.id ?? 'follow';
-  // (close combat's clock starts as it begins)
+  // (close combat's clock starts as it begins; a hide draws its hold as it begins and runs it from its cause)
+  if (mode === 'hide') hideClock(brain.hiding, { cause: hideCause, was: wasHiding, now, row: brain.tactics.hide, rand: brain.rand });
   if (mode === 'close' && brain.current !== 'close') brain.closeSince = now;
   if (mode !== 'close') brain.closeSince = null;
   brain.current = mode;
@@ -489,7 +514,6 @@ export function think(brain, world, now) {
   } else if (mode === 'close') {
     intent.goal = tgt;
   } else if (mode === 'attack') {
-    if (brain.pattern === null || brain.aimTarget !== b.id) choosePattern(brain, dist);
     const here = brain.cover;
     const stale = here && (now - brain.coverSince > brain.coverStay || !world.shields(here, tgt));
     let slot = here && !stale ? here : null;
@@ -687,9 +711,40 @@ export function act(brain, intent, s, dt, world, now) {
   if (look) s.yaw = Math.atan2(look[0] - s.at[0], look[2] - s.at[2]);
   s.aim = aim;
   s.interact = !!intent.interact && !!intent.goal && d2(flat(s.at), intent.goal) < NEAR_GOAL + 2;
-  // (an AutoPlayer's cadence is its burst's, above; the other bots' is their firing pattern's)
-  const firing = brain.ap ? true : patternStep(brain);
   // (a flashed bot fires nothing for the flash's 5 s: kit.js)
   const flashed = (s.flashedUntil ?? -Infinity) > now;
-  if (fire && firing && !flashed) world.shoot(s, kickAim(s.gun, from, aim));
+  // (an AutoPlayer's cadence is its burst's, above; the other bots' is their firing pattern's)
+  const firing = brain.ap ? true : patternFire(brain, intent, fire && !flashed, dt);
+  if (fire && firing && !flashed) {
+    brain.fired = true;
+    world.shoot(s, kickAim(s.gun, from, aim));
+  }
+}
+
+// A bot's firing pattern over a sim step, as `WeaponControl.cpp` runs it (tactics.js): a bit an AI tick,
+// the step running the ticks that fall in it; a bit holds the trigger down, a single pattern asking the gun
+// for a shot at each press and an automatic one at every held tick, the gun's own rate deciding what fires;
+// each burst's pattern drawn at the intensity it starts in. A bot that does not or may not fire ends its
+// burst, so its next shot opens a fresh pattern (`soldierAimAndShoot`).
+function patternFire(brain, intent, fire, dt) {
+  if (!fire) {
+    brain.pattern = null;
+    brain.frame = 0;
+    brain.ticks = 0;
+    brain.held = false;
+    return false;
+  }
+  brain.intensity = intensityFor({ fired: brain.fired, attacking: intent.mode === 'attack' || intent.mode === 'cover', tactics: brain.template.tactics });
+  brain.ticks += dt / TICK;
+  let any = false;
+  // (a hair under one: a step of 0.05 s is 1.5 ticks in floating point, and must give one tick, then two)
+  while (brain.ticks >= 1 - 1e-6) {
+    brain.ticks -= 1;
+    if (!brain.pattern) drawPattern(brain);
+    const p = brain.pattern;
+    const bit = patternStep(brain);
+    if (pulls(p, bit, brain.held)) any = true;
+    brain.held = bit;
+  }
+  return any;
 }
