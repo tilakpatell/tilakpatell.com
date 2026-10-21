@@ -4,6 +4,7 @@ import { useDocumentTitle, useMediaQuery, useReducedMotion } from '../lib/hooks'
 import { WorldHost, useWorld } from '../runtime';
 import { Hud, Letterbox, Menu, MenuItem, Prompt, TouchButton, letterbox } from '../runtime/hud';
 import { wayOut } from '../components/worlds/worlds';
+import { useAchievements } from '../components/Achievements';
 import roadModule from '../components/middleearth/road/module';
 import { STAGES } from '../components/middleearth/road/stages/index';
 import Ribbon from '../components/middleearth/road/Ribbon';
@@ -35,6 +36,7 @@ export default function TheRoad() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const reduced = useReducedMotion();
+  const { unlock } = useAchievements();
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const portrait = useMediaQuery('(orientation: portrait)');
   // (the address is read once: the world keeps the ride after that)
@@ -64,7 +66,11 @@ export default function TheRoad() {
       setAt((was) => (was.stage === e.stage ? was : { s: e.s, stage: e.stage }));
     } else if (e.type === 'lore') setLore(lastLore.current);
     else if (e.type === 'menu') menu.current?.querySelector('.hud-btn')?.click();
-    else if (e.type === 'end') navigate('/middle-earth');
+    else if (e.type === 'end') {
+      // (the end is the desk: Bag End's study, the book open, and walk it yourself)
+      if (e.ridden) unlock('lotrRoad');
+      navigate('/middle-earth?from=road');
+    }
     else if (e.type === 'deed') setDeed(e.label ? e : null);
     else if (e.type === 'talk') setTalk(e.who ? e : null);
     else if (e.type === 'line' && e.text) {
@@ -76,7 +82,7 @@ export default function TheRoad() {
         setSaid(line);
       }
     }
-  }, [navigate]);
+  }, [navigate, unlock]);
   const { host, status, rt } = useWorld(roadModule, { props, onEvent });
   const api = useCallback(() => (rt?.current?.module === roadModule ? rt.current.world : null), [rt]);
 

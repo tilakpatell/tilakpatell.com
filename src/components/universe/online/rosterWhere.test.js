@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { rosterWhere } from './rosterWhere';
 import { UNIVERSE } from './where';
 import { makeSector } from '../../expanse/gen/sector';
+import { fullSector } from '../../expanse/gen/space';
 import { UNIVERSE as SHARED } from '../../expanse/gen/seed';
 
 import { POSITIONS } from '../layout';
@@ -29,5 +30,9 @@ describe('rosterWhere', () => {
     expect(rosterWhere(UNIVERSE, { x: x + 50, y, z, sec: 'E:1,0' })).toBe(`Universe · E:1,0 · ${sec.systems[0].name}`);
     expect(rosterWhere(UNIVERSE, { x: 120000 + 59000, y: 0, z: 59000, sec: 'E:1,0' })).toMatch(/^Universe · E:1,0/);
   });
+  it('names the nearest system of a sector above the middle layer', () => {
+    const sec = fullSector(SHARED, 1, 1, 0, { things: false });
+    const [x, y, z] = sec.systems[0].at;
+    expect(rosterWhere(UNIVERSE, { x: x + 50, y, z, sec: 'E:1,0,1' })).toBe(`Universe · E:1,0,1 · ${sec.systems[0].name}`);
+  });
 });
-

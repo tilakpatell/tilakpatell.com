@@ -18,7 +18,7 @@ export const BEATS = [
   // ashore at Parth Galen, up to the Seat: the vision across the western sky, behind Frodo
   { id: 'seat', kind: 'seat', at: 112, hold: 12, rig: 'seat', cut: 0, reach: 10, params: { at: [-3.5, 3.8, 115], lookAt: [-60, 26, 122], above: true }, fx: [{ kind: 'vision', at: 2, seconds: 8 }] },
   // three notes of the horn, the Uruks through the trees
-  { id: 'horn', kind: 'horn', at: 124, hold: 8, rig: 'follow', reach: 12, clip: 'meatsBack' },
+  { id: 'horn', kind: 'horn', at: 124, hold: 8, rig: 'follow', reach: 12, clip: 'meatsBack', deed: { verb: 'press', label: 'Run to the horn', at: 2, lines: ['anduin-horn'] } },
   // Frodo to the boat, Sam into the water after him, hauled in
-  { id: 'breaking', kind: 'breaking', at: 140, hold: 10, rig: 'side', reach: 20 },
+  { id: 'breaking', kind: 'breaking', at: 140, hold: 10, rig: 'side', reach: 20, deed: { verb: 'hold', label: 'Pull Sam into the boat', seconds: 3, at: 3, lines: ['anduin-promise'] } },
 ];

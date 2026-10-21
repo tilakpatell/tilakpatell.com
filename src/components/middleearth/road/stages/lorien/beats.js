@@ -11,7 +11,7 @@ export const BEATS = [
   // the stream under the first mallorns, gold leaves on the water
   { id: 'nimrodel', kind: 'nimrodel', at: 10, hold: 0, rig: 'side', reach: 14 },
   // Haldir out of the trees, bow in hand
-  { id: 'haldir', kind: 'haldir', at: 28, hold: 6, rig: 'seat', reach: 10, params: { at: [4, 1.7, 24], lookAt: [-1.5, 1.6, 33], above: true }, lines: ['lorien-haldir'] },
+  { id: 'haldir', kind: 'haldir', at: 28, hold: 6, rig: 'seat', reach: 10, params: { at: [4, 1.7, 24], lookAt: [-1.5, 1.6, 33], above: true }, lines: ['lorien-haldir'], deed: { verb: 'choose', label: 'Greet Haldir', at: 1, choices: [{ label: 'Mae govannen', right: true }, { label: 'Mellon', line: { who: 'haldir', text: 'Friend? Perhaps. The Lady will decide that, not you.' } }, { label: 'Edro', line: { who: 'haldir', text: 'There are no doors in these woods to open, little one.' } }], lines: ['lorien-greeting'] } },
   // up the stair round the great tree
   { id: 'climb', kind: 'climb', at: 46, hold: 0, rig: 'follow', reach: 28 },
   // the dais on the flet round the great tree, 18 m up: the Lady and the Lord
@@ -20,5 +20,5 @@ export const BEATS = [
   // drain: the Eye’s fire is to be the one colour in the frame)
   { id: 'mirror', kind: 'mirror', at: 100, hold: 14, rig: 'seat', cut: 0, reach: 10, params: { at: [-2.6, 3.9, 98.6], lookAt: [-6, 0.4, 103.2], above: true }, deed: { verb: 'press', label: 'Look into the Mirror', clip: 'taskAppointed' } },
   // the hythe and the swan-boat; away down the Silverlode
-  { id: 'boats', kind: 'boats', at: 128, hold: 6, rig: 'lead', reach: 22 },
+  { id: 'boats', kind: 'boats', at: 128, hold: 6, rig: 'lead', reach: 22, deed: { verb: 'press', label: 'Take the Lady’s gift', at: 2, lines: ['lorien-phial'] } },
 ];

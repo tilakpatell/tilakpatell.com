@@ -1,4 +1,4 @@
-// Minas Tirith, made in code: the kit the hidden chapter is built from. The
+// Minas Tirith, made in code: the kit the chapter is built from. The
 // white city of seven levels on the knee of Mount Mindolluin: the levels
 // paved in pale flags, the seven walls (the first of black stone, the rest
 // white) with their crenels and gate towers, the Great Gate with its dark

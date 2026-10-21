@@ -12,14 +12,17 @@ import { newTalk, talkNode, talkOn } from '../talk';
 import { useTravellers } from '../useTravellers';
 import { behindYaw, cameraMove, makeWalker, newWalker } from '../walker';
 import { ARAGORN, BEREGOND, COURT_COLLIDERS, COURT_IN, CROWN_COLLIDERS, DENETHOR, GATES, HALL_COLLIDERS, HALL_DOOR, HALL_EXIT, HALL_IN, HALL_WALLS, OVERLOOK, PILE, ROAD_LEN, SLOTS, TOMATOES, onCourt, validAt } from './layout';
-import { CONVOS, FOUND, QUESTS, SEAL, SPEAKERS, minasProgress } from './story';
+import { CONVOS, FOUND, QUESTS, SEAL, SIDE, SPEAKERS, minasProgress, sideBest } from './story';
+import { BeaconsPanel } from './BeaconsPanel';
+import { SideList } from '../SideList';
+import { readSide, recordSide } from '../side';
 import { RIDE, SIEGE, flightOf, lightBeacon, loose, newRide, newSiege, newSneak, rangeOf, stepRide, stepSiege, stepSneak } from './rules';
 import '../../shire/shire.css';
 import '../bree/bree.css';
 import './minastirith.css';
 import '../../../../styles/lazy/middleearth.css';
 
-// Minas Tirith, found off the road: Pippin in the city of the kings. The
+// Minas Tirith, the road's last chapter: Pippin in the city of the kings. The
 // ride up through the seven gates on Shadowfax, the Court of the Fountain
 // and Beregond, the Steward in the hall of the kings, the beacon, the siege
 // by night, and the morning the White Tree flowered. The places are in
@@ -30,6 +33,7 @@ import '../../../../styles/lazy/middleearth.css';
 const DONE = 'tp-minastirith-done';
 const AT = 'tp-minastirith-at';
 const TOMATO = 'tp-minastirith-tomato';
+const SIDE_KEY = 'tp-minastirith-side';
 const CHAIN_T = 15;
 const GATE_NAMES = ['the Great Gate', 'the second gate', 'the third gate', 'the fourth gate', 'the fifth gate', 'the sixth gate', 'the seventh gate'];
 const sounds = () => import('./sounds');
@@ -58,8 +62,13 @@ export default function MinasTirithWorld({ onLeave }) {
   const prog = minasProgress(done);
   const [gl, setGl] = useState('loading');
   const { unlock } = useAchievements();
-  // finding the city at all is worth something
-  useEffect(() => unlock(FOUND), [unlock]);
+  // finding the city at all is worth something; and what was done before the
+  // chapter had a seal for each thing wins it now
+  const before = useRef(done);
+  useEffect(() => {
+    unlock(FOUND);
+    for (const id of before.current) if (SEAL[id]) unlock(SEAL[id]);
+  }, [unlock]);
   const complete = useCallback(
     (id) => {
       setDone((d) => {
@@ -69,6 +78,19 @@ export default function MinasTirithWorld({ onLeave }) {
         return next;
       });
       if (SEAL[id]) unlock(SEAL[id]);
+    },
+    [unlock],
+  );
+  // the beacons' names, on the side: kept apart from the story's progress
+  const [side, setSide] = useState(() => readSide(local.get(SIDE_KEY, null)));
+  const recordGo = useCallback(
+    (go) => {
+      setSide((was) => {
+        const { won, best } = recordSide(was, go, { low: true });
+        local.set(SIDE_KEY, { won, best });
+        return { won, best };
+      });
+      if (go.won) unlock(SIDE.seal);
     },
     [unlock],
   );
@@ -83,7 +105,7 @@ export default function MinasTirithWorld({ onLeave }) {
   const world = three.on && gl !== 'failed' && gl !== 'lost';
   return (
     <section className="shire-world minas-world" aria-labelledby="minas-title" data-mode={world ? '3d' : 'cards'}>
-      {world ? <World key={round} prog={prog} complete={complete} gl={gl} setGl={setGl} onLeave={onLeave} again={again} /> : <Cards prog={prog} three={three} gl={gl} retry={() => setGl('loading')} />}
+      {world ? <World key={round} prog={prog} complete={complete} side={side} recordGo={recordGo} gl={gl} setGl={setGl} onLeave={onLeave} again={again} /> : <Cards prog={prog} three={three} gl={gl} retry={() => setGl('loading')} />}
     </section>
   );
 }
@@ -91,7 +113,7 @@ export default function MinasTirithWorld({ onLeave }) {
 const seed = () => Math.floor(Math.random() * 100000) + 1;
 const freshRide = () => newRide(seed(), { slots: SLOTS, gates: GATES.map((g) => g.s), len: ROAD_LEN });
 
-function World({ prog, complete, gl, setGl, onLeave, again }) {
+function World({ prog, complete, side, recordGo, gl, setGl, onLeave, again }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.3 });
   const canvas = useRef(null);
@@ -113,6 +135,20 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
   const hudKey = useRef('');
   const [toast, setToast] = useState(null);
   const [list, setList] = useState(false);
+  // the beacons' names, on the side: while it's open the walk waits (its own mode)
+  const [beacons, setBeacons] = useState(0);
+  const openSide = useCallback(() => {
+    const s = sim.current;
+    if (s.mode !== 'walk') return;
+    s.mode = 'side';
+    setList(false);
+    setBeacons(seed());
+  }, []);
+  const closeSide = useCallback(() => {
+    const s = sim.current;
+    if (s.mode === 'side') s.mode = 'walk';
+    setBeacons(0);
+  }, []);
   const say = useCallback((text, bad = false) => setToast({ text, bad, at: Date.now() }), []);
   const timers = useRef(new Set());
   const later = useCallback((fn, ms) => {
@@ -701,7 +737,8 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
   };
 
   const here = hud.near ? PROMPT[hud.near] : null;
-  const mode = hud.mode;
+  const sideTask = { ...SIDE, open: prog.done.includes(SIDE.needs), done: side.won, best: side.best != null ? sideBest(side.best) : null };
+  const mode = beacons > 0 ? 'side' : hud.mode;
   const walking = mode === 'walk';
   const convo = hud.talking ? CONVOS[hud.talking] : null;
   const node = convo && hud.line ? convo.nodes[hud.line] : convo ? convo.nodes[convo.start] : null;
@@ -859,7 +896,12 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
         </div>
       )}
       {walking && touch && <Stick onMove={onStick} />}
-      {list && <QuestList title="Things to do in Minas Tirith" quests={prog.quests} next={prog.next} onClose={() => setList(false)} />}
+      {beacons > 0 && <BeaconsPanel seed={beacons} best={side.best != null ? sideBest(side.best) : null} onDone={recordGo} onClose={closeSide} />}
+      {list && (
+        <QuestList title="Things to do in Minas Tirith" quests={prog.quests} next={prog.next} onClose={() => setList(false)}>
+          <SideList tasks={[sideTask]} onGo={openSide} canGo={(t) => t.open && sim.current.mode === 'walk'} />
+        </QuestList>
+      )}
     </div>
   );
 }

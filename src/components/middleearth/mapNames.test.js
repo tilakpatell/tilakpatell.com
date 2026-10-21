@@ -14,7 +14,7 @@ describe('the names on the sheet', () => {
   });
 
   it('names every great place, and the lands, forests and seas', () => {
-    for (const t of ['Grey Havens', 'Isengard', 'Edoras', 'Helm’s Deep', 'Minas Tirith', 'Barad-dûr', 'Erebor', 'Dol Guldur']) expect(of(t)?.kind, t).toBe('great');
+    for (const t of ['Grey Havens', 'Isengard', 'Edoras', 'Helm’s Deep', 'Barad-dûr', 'Erebor', 'Dol Guldur']) expect(of(t)?.kind, t).toBe('great');
     for (const t of ['ERIADOR', 'THE SHIRE', 'RHOVANION', 'ROHAN', 'GONDOR', 'MORDOR', 'MIRKWOOD', 'FANGORN', 'The Great Sea']) expect(of(t), t).toBeTruthy();
   });
 

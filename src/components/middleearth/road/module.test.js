@@ -105,8 +105,8 @@ describe('the face’s wiring: keys, events, the save', () => {
     const world = await road.create(rt, { at: null });
     world.attached();
     world.skipToEnd();
-    expect(rt.emitted.some((e) => e.type === 'end')).toBe(true);
-    expect(rt.saves.get('tp-road')).toMatchObject({ v: 1, s: 1, ridden: false });
+    expect(rt.emitted.find((e) => e.type === 'end')).toMatchObject({ ridden: false });
+    expect(rt.saves.get('tp-road')).toMatchObject({ v: 1, s: 1, ridden: false, on: null });
     // (jumped most of the way and walked a little is not ridden; two thirds walked is)
     const rt2 = fakeRt();
     const jumped = await road.create(rt2, { at: null });
@@ -122,6 +122,12 @@ describe('the face’s wiring: keys, events, the save', () => {
     for (let i = 0; i < 600; i++) walked.step(1, snap(['KeyE'], ['run'], ['KeyE']));
     walked.skipToEnd();
     expect(rt3.saves.get('tp-road')).toMatchObject({ s: 1, ridden: true });
+    expect(rt3.emitted.filter((e) => e.type === 'end').at(-1)).toMatchObject({ ridden: true });
+    // (the day it was ridden is kept, and starting again doesn't unride it)
+    const on = rt3.saves.get('tp-road').on;
+    expect(Number.isFinite(on)).toBe(true);
+    walked.restart();
+    expect(rt3.saves.get('tp-road')).toMatchObject({ s: 0, ridden: true, on });
   });
 
   it('the walk stops at a deed and waits; the page is told what to press; done, the walk goes on', async () => {

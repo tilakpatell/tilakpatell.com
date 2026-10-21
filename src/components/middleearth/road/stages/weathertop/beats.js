@@ -11,7 +11,7 @@ export const BEATS = [
   // the Lone-lands: the walkers small under a wide dusk, the hill ahead
   { id: 'lonelands', kind: 'lonelands', at: 20, hold: 0, rig: 'wide', reach: 24, params: { at: [22, 9, 4], lookAt: [-4, 2, 60], above: true } },
   // the dell under the summit: Sam’s fire, the pans, the dark coming down
-  { id: 'dell', kind: 'dell', at: 66, hold: 8, rig: 'seat', reach: 14, params: { at: [4.5, 1.3, 74], lookAt: [-1.5, 0.8, 66], above: true } },
+  { id: 'dell', kind: 'dell', at: 66, hold: 8, rig: 'seat', reach: 14, params: { at: [4.5, 1.3, 74], lookAt: [-1.5, 0.8, 66], above: true }, deed: { verb: 'press', label: 'Stamp out Sam’s fire', at: 3, lines: ['weathertop-fire-out'] } },
   // five on the skyline above the dell
   { id: 'summit', kind: 'summit', at: 100, hold: 6, rig: 'crane', reach: 12, params: { seconds: 6, top: 9, lookAt: [0, 6, 122], above: true } },
   // the Ring goes on: the world drains, the five are kings, the blade
@@ -20,5 +20,5 @@ export const BEATS = [
   { id: 'fire', kind: 'fire', at: 128, hold: 8, rig: 'follow', reach: 12, deed: { verb: 'rhythm', label: 'Drive them back with fire', beats: 12 } },
   // Frodo on the ground, Aragorn kneeling over him: the Morgul blade
   // (low over them, looking down the slope at Frodo and the athelas: the plan’s low rig, placed, so the falling hill doesn’t leave it the sky)
-  { id: 'kingsfoil', kind: 'kingsfoil', at: 146, hold: 10, rig: 'seat', reach: 14, params: { at: [2.7, 1.1, 143.6], lookAt: [0.3, 0.2, 147.4], above: true }, lines: ['weathertop-kingsfoil'] },
+  { id: 'kingsfoil', kind: 'kingsfoil', at: 146, hold: 10, rig: 'seat', reach: 14, params: { at: [2.7, 1.1, 143.6], lookAt: [0.3, 0.2, 147.4], above: true }, lines: ['weathertop-kingsfoil'], deed: { verb: 'hold', label: 'Hold Frodo still for Aragorn', seconds: 3, at: 2, lines: ['weathertop-hold'] } },
 ];

@@ -379,3 +379,94 @@ The whole ride is 1,797 s on auto, the deeds' waits aside. The per-beat draws an
 - `gorgoroth-column-desktop.webp`: the two among the orc column, the driver with his whip.
 - `gorgoroth-carry-desktop.webp`: from beside on the slope, Sam bent under Frodo on his back.
 - `gorgoroth-eruption-desktop.webp`: the Mountain breaking, fire out of its cone and down its streams, from the slope's top.
+
+## Minas Tirith on the map, and fifty-one things to do (2026-10-21)
+
+The owner: make the Road perfect, with a lot of interactions, and put Minas Tirith on the map.
+
+### Minas Tirith, a chapter
+
+It was a hidden place, found only by clicking the white city. Now it's the road's twelfth stop and last chapter, after Mount Doom (`road.js`, `chapters.js`; the way home to the crowning, 1 May 3019, about 145 miles on in `geography.js`'s `ROAD_MILES`), with its pin over the city, its chip at the end of the route row, and "On to Minas Tirith" from Mordor; a tap on the city itself goes where its pin does. Its five quests each win a seal (the seven gates, a Guard of the Citadel, the beacons lit, the siege of Gondor, the Return of the King), and progress made before wins them on the next visit (the court's toast: "A Guard of the Citadel"). Like every chapter it has a game on the side, "Gondor calls for aid" (`towns/minastirith/beacons.js`, `BeaconsPanel.jsx`: the seven beacons from Amon Dîn to Halifirien catching west along the White Mountains, named back in order, three to seven), and a kitchen, the Houses of Healing (`rush/levels/houses.js`, `themes/houses.js`: athelas steeped in the kettles, bread, and water from the cistern, Beregond calling the orders, in a white hall of beds with the King going among them).
+
+### What there is to do
+
+Twenty-nine new deeds, fifty-one in all, two or more on every stage (`stages/deeds.test.js` holds it); each has a line after it in the site's own words, and a choice has a word back for each wrong answer.
+
+| stage | the deeds |
+| --- | --- |
+| Hobbiton | Light the dragon; dance the jig at the party (A D); take Sam past the corn |
+| The Shire's edge | catch the mushrooms; keep still under the roots; pole the ferry across (A D) |
+| Bree | knock at the West-gate; the name at the Pony; lie still while they search the beds (hold); follow Strider out the back way |
+| Weathertop | stamp out Sam's fire (it goes out); drive them back with fire (A D); hold Frodo still for Aragorn (hold) |
+| The Ford | look up at the stone trolls; take Arwen's hand; ride for the Ford (A D); call up the river |
+| Rivendell | stand up and say you'll carry it; touch the shards of Narsil; take Sting from Bilbo |
+| Caradhras | hide under the rocks from the crebain (hold); push on through the snow (A D); speak, friend, and enter; hack at the Watcher's arm while it holds Frodo up (A D) |
+| Moria | read the Book of Mazarbul; bar the door; hold the bridge with Gandalf (hold) |
+| Lothlórien | greet Haldir (Mae govannen, Mellon or Edro); look into the Mirror; take the Lady's gift |
+| The Anduin | paddle under the Pillars (A D); run to the horn; pull Sam into the boat (hold) |
+| The Dead Marshes | let Sméagol off the rope; pull Frodo back from the water (hold); down in the water under the fell beast (hold) |
+| Ithilien | keep down in the ferns from the Southrons (hold); tell Faramir who you are (three names); look up at the fallen king; keep hold of Frodo (hold) |
+| Cirith Ungol | brush the crumbs off Sam's cloak; raise the Phial; fight up the stair to Frodo (A D) |
+| Gorgoroth | keep still under the cloaks (hold); carry him up the Mountain (A D); reach for Frodo's hand (hold) |
+| Minas Tirith | look up at the White City; walk in through the Great Gate; bow to the King |
+| The Grey Havens | say goodbye; wave to the three on the quay |
+
+The keep-still deeds have the company crouch with the visitor while it's held, and through the beat's hold once done (`doing.js`'s `stance`). Letting the road walk, the company does a deed after 10 s (20 s across fifty-one deeds was a quarter of an hour of waiting). In the page: Haldir's wrong word gets his answer and the right one, after it, lets them on; Sam's fire dies once it's stamped out (its light 5.2 at the stamp, falling as the beat runs on past the deed: the scene reads `since.dell > deed.at`).
+
+### The pictures
+
+- `map-minas-tirith-desktop.webp`: the map with Minas Tirith's pin over the white city, and its chip last in the route row.
+- `minas-tirith-beacons-desktop.webp`: Gondor calls for aid in the Court, the seven peaks and the names shuffled to give back.
+- `deed-lorien-haldir.webp`: Greet Haldir, under the mallorns, Mellon struck through.
+
+### Fixed on the way
+
+- The Cracks' shot stood on the ash over the Sammath Naur: the director lifts every camera over the land, and a placed shot may now say it's `under` it. On a jump into the middle of the Cracks the chamber wasn't drawn (its beat long done): it is now while the walker is within the beat's reach.
+- The Eagles' shot sat at the ground looking into the White City's green Pelennor, drawn beside Mordor's ash: Minas Tirith is now a stage the Road cuts to (`cut`), its land never drawn beside Gorgoroth's (its trees given back while hidden); the Eagles' shot looks down from the slope (clear of its crest, which hid the rock from further up) on the two lying on their rock, a fire light on it now (the chapter's red glow is its own shader); the Eagles come down over the camera, and it goes to black, and the White City opens out of black on the Pelennor.
+
+- `gorgoroth-cracks-desktop.webp`: the Sammath Naur, the spur over the fire, Frodo at its tip and Sam behind.
+- `minas-tirith-pelennor-desktop.webp`: the White City from the Pelennor as the stage opens, the causeway up to the Great Gate.
+- `gorgoroth-eagles-desktop.webp`: the Eagles down over the rock in the fire, lit orange by it, the two just taken up.
+
+## The end, on the desk (2026-10-21)
+
+Task 33 on the site as it is now: `/middle-earth` is the Red Book on Bilbo's desk (the book's design), and the map is `/middle-earth/map`.
+
+- **The end is the desk.** The Havens' white goes to `/middle-earth?from=road`, the Red Book open at its first page with "Back at Bag End. The Road goes ever on. Now walk it yourself: Play it opens the Shire." (`RedBook.jsx`'s `HOME`, read once, the address put back to `/middle-earth`).
+- **The achievement**: `lotrRoad`, "The Road, ridden" (walked the Ring's road from Bag End to the Grey Havens), won at the end when two thirds of it were walked (`'end'` now says `{ ridden }`; `TheRoad.jsx` unlocks it). Skipping to the end wins nothing.
+- **The hub's first step** (`hub/hubState.js`'s `firstStep` and `ghost`, wired for the first time): someone new is offered **Ride the Road**, Begin at the Shire beside it; once ridden with nothing won, **Now walk it yourself · Begin at the Shire**, Ride the Road again beside it; part-way, Carry on as before, the Road beside it. The lead says "Ride the Road first, or pick a place on it and go there" until it's ridden.
+- **Watch the passage**: beside "Enter" when Frodo reaches a place, the Road from that place's stage (`redbook/routes.js`'s `walkFor`).
+- **The journal**: "The road so far" opens on the Road's row, "The Road · ridden 21 October 2026" (or not ridden yet) and a way to ride it (`record.js`'s `roadRidden`). The save keeps the day it was first ridden (`on`), and starting again no longer forgets a ride made the same visit.
+- Not wired: `entry.js`'s `firstVisitRides` (a first visit sent down the Road). The Red Book is the front door now and opens itself as you arrive; the hub offers the ride first instead.
+
+Looked at in the page (the node renderer on WebGL 2, in software): a fresh visitor's head reads Ride the Road and Begin at the Shire; one with a ridden save reads Now walk it yourself and Ride the Road again, the journal's row with its day; the Road opened at the Havens and skipped to the end lands on the book with its words, and `lotrRoad` is won; no page errors.
+
+- `hub-ride-first-desktop.webp`: a first visit's map, Ride the Road the first step.
+- `hub-ridden-desktop.webp`: after the ride, Now walk it yourself, and the road so far with the Road's row.
+- `redbook-home-desktop.webp`: the end on the desk, the book at the Shire with walk it yourself.
+
+## The Dead Marshes, wet (2026-10-21)
+
+At 60 m the Marshes read as a dark grass field (`look-marshes-60-desktop.webp`): the three pools were the only water, and the ground's grass grew in them over the water.
+
+- **The water, for the ground and the props alike**: `stages/marshes/water.js`, pure. It holds the three pools with the candles and the faces, and eleven meres between them, either side of the track from 40 m to 118 m, each kept 4 m or more off it.
+- **The ground** sinks a hollow for each (its relief, the meres after the mountains so the layers before keep their seeds) and plants nothing in any of them (its `clear`, a little inside the hollow's edge so the rim is grown).
+- **The props** stand reeds round every pool's and mere's edge (in the reeds' one draw), and a candle over every other mere on high. On low, the far meres are left dry: their water is a draw each.
+- **The water** is murky now: `water.js`'s new `murk` gives a pool the bog's own colour and dulls the sky off it (0.85 in the Marshes).
+- `stages/marshes/water.test.js` holds the meres off the track and off one another, over the whole marsh, and the ground's hollows and clear rings to the list.
+
+- `marshes-meres-candles-desktop.webp`: the candles' beat at 60 m, the meres either side with their reeds and two candles over them.
+- `marshes-meres-desktop.webp`: walking at 79 m, Gollum leading, the water lying all the way out to the Gate's mountains.
+
+## Gorgoroth's plain (2026-10-21)
+
+The plain before the Mountain was bare dark ground near the road (`look-gorgoroth-60-desktop.webp`). Now it's dressed as the films have it (`stages/gorgoroth/plain.js`, its places pure in `place.js`):
+
+- **Ash boulders and fangs of rock** either side of the road: three boulder shapes and the fangs from the Mount Doom chapter's kit, 186 on high (a draw a shape), thick near the road and thinning out. They're off the lane and the column's road, clear of the camps and short of the Mountain's slope. Those within the solid grid's reach stand solid: the camera and the walkers keep out of them.
+- **Two orc camps** off the road, their fires burning (the chapter's `camp`; one on low).
+- **Cracks in the plain** with the fire under it showing through: 28 on high, one mesh. Each is a ribbon dark at its edges and white-hot down its middle, added, over 1 so the house bloom takes it, breathing slowly. `plain.test.js` holds the strewing and the cracks off the lane, and the same on every load.
+
+- `gorgoroth-plain-desktop.webp`: the plain's beat, the cracks glowing under the Mountain, the fangs and the column.
+- `gorgoroth-plain-column-desktop.webp`: walking beside the column, boulders and fangs either side, a camp's fire far off.
+- `gorgoroth-plain-cracks-desktop.webp`: at 51 m, before the Eye's beam, the cracks round the two.
+

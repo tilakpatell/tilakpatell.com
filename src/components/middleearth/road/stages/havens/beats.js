@@ -32,5 +32,5 @@ export const BEATS = [
   // she casts off: the quay falling behind, the three small on it
   { id: 'sail', kind: 'sail', at: SAIL, hold: 0, rig: 'lead', reach: 70, clip: 'lotr' },
   // away into the light, from the quay’s end
-  { id: 'away', kind: 'away', at: SAIL + 70, hold: 6, rig: 'wide', reach: 80, params: { at: [-1.2, QUAY.top + 2.2, QUAY.z[1] - 6], lookAt: [0, 2, 420] } },
+  { id: 'away', kind: 'away', at: SAIL + 70, hold: 6, rig: 'wide', reach: 80, params: { at: [-1.2, QUAY.top + 2.2, QUAY.z[1] - 6], lookAt: [0, 2, 420] }, deed: { verb: 'press', label: 'Wave to the three on the quay', at: 2, lines: ['havens-wave'] } },
 ];

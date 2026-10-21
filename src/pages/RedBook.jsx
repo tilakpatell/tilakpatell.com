@@ -31,6 +31,8 @@ const VIEW_LINE = {
   look: 'Bilbo’s study. Drag to look round, and touch anything: the fire, the pipe, Sting, the books, the door.',
   window: 'The night over Hobbiton, Gandalf at the gate, and the Valar in the stars over him. Point at them.',
 };
+// what the book says to one back from the Road's end, open at the Shire
+const HOME = { name: 'Back at Bag End', say: 'The Road goes ever on. Now walk it yourself: Play it opens the Shire.' };
 const readMusic = () => {
   try {
     return window.localStorage.getItem(MUSIC_KEY) !== 'off';
@@ -74,6 +76,8 @@ export default function RedBook() {
   const fell = useRef(false);
   const fellT = useRef(0);
   const alive = useRef(true);
+  // (come from the Road's end: the book's first words are walk it yourself)
+  const fromRoad = useRef(params.get('from') === 'road');
 
   const note = useCallback((text, bad = false) => setToast({ key: `${Date.now()}-${text}`, text, bad }), []);
   const play = useCallback((name) => sfx().then((s) => s[name]?.()).catch(() => {}), []);
@@ -83,7 +87,8 @@ export default function RedBook() {
     (e) => {
       if (e.type === 'page') {
         setAt({ index: e.index, id: e.id });
-        setSaid(null);
+        setSaid(fromRoad.current ? HOME : null);
+        fromRoad.current = false;
         setAsking(false);
         setParams(e.index === 0 ? {} : { page: e.id }, { replace: true });
       } else if (e.type === 'toy') {
