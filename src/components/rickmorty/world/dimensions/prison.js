@@ -51,25 +51,15 @@ export async function buildPrison(kit) {
     R.add(lamp, { ink: false });
     lamps[i] = lamp;
   }
-  // Cornvelious Daniel's console, and the screen behind the chair
+  // Cornvelious Daniel's console (behind the chair, the north wall's window
+  // onto space: its world's, ./worlds.js)
   const [cx, cz] = P(4, -15.6);
   R.frame(cx, cz, 0).box(DARK, 0, 0, 0, 4, 1.1, 1.4).box(STEEL, 0, 1.1, 0, 4.1, 0.08, 1.5).glow(BOX, 0x9affc0, 1.3, 0, 1.3, -0.4, 0, 3.4, 0.6, 0.02, -0.4);
-  R.cell('prisonscreen', 192, 96, (g, w, h) => {
-    g.fillStyle = '#061008';
-    g.fillRect(0, 0, w, h);
-    fitText(g, 'SUBJECT: SANCHEZ, R.', w / 2, 18, w - 12, 12, { color: '#9affc0' });
-    g.strokeStyle = '#9affc0';
-    g.lineWidth = 2;
-    g.beginPath();
-    for (let x = 8; x < w - 8; x += 3) g.lineTo(x, h * 0.6 + Math.sin(x * 0.3) * 10 * ((x % 17) / 17));
-    g.stroke();
-    fitText(g, 'szechuan sauce ???', w / 2, h - 14, w - 12, 10, { color: '#ff5a3a', weight: '400' });
-  });
-  R.frame(...P(0, -(A.z1 - A.z0) / 2 + 0.14), 0, { list: 'fixed' }).box(0x0a140e, 0, 2.6, 0, 8, 3.4, 0.1).decal('prisonscreen', 0, 4.3, 0.07, 7.6, 3, { bright: true });
-  // the cells down the west wall
+  // the cells down the west wall: a back, two sides and a roof behind the
+  // bars, room in them for who's inside (its world's inmates, ./worlds.js)
   for (let dz = 8; dz <= 16; dz += 2.5) {
     const f = R.frame(...P(-18.6, dz), Math.PI / 2, { list: 'fixed' });
-    f.box(DARK, 0, 0, 0, 2.2, 3, 1.2);
+    f.box(DARK, 0, 0, -0.5, 2.2, 3, 0.2).box(DARK, -1.05, 0, 0, 0.1, 3, 1.2).box(DARK, 1.05, 0, 0, 0.1, 3, 1.2).box(DARK, 0, 2.9, 0, 2.2, 0.1, 1.2);
     for (let u = -0.9; u <= 0.9; u += 0.3) f.cyl(0x8a9a90, u, 0, 0.62, 0.03, 2.6);
   }
   // the Federation's mark over the door

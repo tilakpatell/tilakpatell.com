@@ -14,23 +14,6 @@ const PANEL = 0xeef2f8;
 const BLUE = 0x2a4a8a;
 const ORANGE = 0xf08a2a;
 
-// the stars through the windows
-const STARS = (g, w, h) => {
-  g.fillStyle = '#060a1a';
-  g.fillRect(0, 0, w, h);
-  for (let i = 0; i < 160; i++) {
-    g.fillStyle = i % 7 ? '#dfe8ff' : '#ffd8a0';
-    const r = i % 11 ? 0.8 : 1.6;
-    g.beginPath();
-    g.arc((i * 97) % w, (i * 53) % h, r, 0, Math.PI * 2);
-    g.fill();
-  }
-  const neb = g.createRadialGradient(w * 0.7, h * 0.4, 4, w * 0.7, h * 0.4, h * 0.6);
-  neb.addColorStop(0, 'rgba(160,90,220,0.5)');
-  neb.addColorStop(1, 'rgba(160,90,220,0)');
-  g.fillStyle = neb;
-  g.fillRect(0, 0, w, h);
-};
 // the team's emblem: an orange V in a ring
 const EMBLEM = (g, w, h) => {
   g.fillStyle = '#1a2a4a';
@@ -103,9 +86,7 @@ export async function buildVindicators(kit) {
     const dx = (n < 3 ? -7.6 : 2.6) + (n % 3) * 2.5;
     R.frame(...P(dx, -9.86), 0, { list: 'fixed' }).box(0xc8d2e0, 0, 2.6, 0, 1.6, 2, 0.06).decal(`vind-${id}`, 0, 3.6, 0.05, 1.4, 1.8);
   }
-  // long windows on the stars, east and south of the door
-  R.cell('vindstars', 256, 96, STARS);
-  R.frame(...P(11.86, 0), -Math.PI / 2, { list: 'fixed' }).box(0xc8d2e0, 0, 1.6, 0, 14, 2.6, 0.08).decal('vindstars', 0, 2.9, 0.06, 13.6, 2.3, { bright: true });
+  // (the long window on the stars, in the east wall, is its world's: ./worlds.js)
 
   // the door to Rick's rooms, on the west wall, his scrawl taped over it
   R.cell('ricksrooms', 160, 64, (g, w, h) => {

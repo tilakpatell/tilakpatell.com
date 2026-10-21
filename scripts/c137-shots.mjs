@@ -13,7 +13,13 @@
 // CHROME the browser (else the sandbox's Chromium, else a local Edge or
 // Chrome), W and H the window (1280 × 720), FRAMES how many frames to wait
 // once it's ready. Headless browsers draw in software (SwiftShader), slowly:
-// the first view waits for the whole world to build.
+// the first view waits for the whole world to build. BACK=1 shoots each view
+// turned round too (<name>-back.png); INFO=1 prints, a line a view, what the
+// frame cost (the renderer's calls, triangles, geometries and textures, every
+// pass), how long the place took to be ready, and how many of its crowd
+// stand; QUALITY=low|mid|high|ultra draws at that level (?quality=, lib/device:
+// headless is low otherwise); STRICT=1 exits 1 on a page error, a file that
+// won't load, or a place slower than READY_S seconds (150) to be ready.
 import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync } from 'node:fs';
 
@@ -22,6 +28,11 @@ const OUT = process.env.OUT ?? '.';
 const W = Number(process.env.W ?? 1280);
 const H = Number(process.env.H ?? 720);
 const FRAMES = Number(process.env.FRAMES ?? 12);
+const INFO = Boolean(process.env.INFO);
+const BACK = Boolean(process.env.BACK);
+const STRICT = Boolean(process.env.STRICT);
+const READY_S = Number(process.env.READY_S ?? 150);
+const QUALITY = process.env.QUALITY ? `?quality=${process.env.QUALITY}` : '';
 const N = Math.PI / 2; // facing north (rules.js: a heading turns +x round to (cos face, -sin face))
 
 // Where Morty stands for each view, as rules.js measures it: the area, and
@@ -70,6 +81,8 @@ export const VIEWS = {
   pluto: { area: 'pluto', at: [-400, 1916, N], cam: [0, 0.2] },
   gearworld: { area: 'gearworld', at: [-400, 2016, N], cam: [0, 0.2] },
   vindicators: { area: 'vindicators', at: [-400, 2105.4, N], cam: [0, 0.3] },
+  // in the middle of the hall, turned to the long window on the stars, its planet and moon
+  vindicatorsout: { area: 'vindicators', at: [-398, 2100, 0], cam: [0, 0.05] },
   simulation: { area: 'simulation', at: [-400, 2215.4, N], cam: [0, 0.3] },
   storytrain: { area: 'storytrain', at: [-400, 2310.4, N], cam: [0, 0.2] },
   fortress: { area: 'fortress', at: [-400, 2413.4, N], cam: [0, 0.3] },
@@ -126,7 +139,8 @@ page.on('pageerror', (e) => errors.push(String(e)));
 // (a file that won't load, by its address: the console's own line doesn't say which)
 page.on('console', (m) => m.type() === 'error' && !m.text().startsWith('Failed to load resource') && errors.push(m.text()));
 page.on('response', (r) => r.status() >= 400 && errors.push(`${r.status()} ${r.url()}`));
-await page.goto(`${BASE}/#/c-137`, { waitUntil: 'domcontentloaded' });
+// (a cold dev server takes a while to serve the first page)
+await page.goto(`${BASE}/${QUALITY}#/c-137`, { waitUntil: 'domcontentloaded', timeout: 600000 });
 // the hook's there once the world's built; if it couldn't start, the page shows cards instead
 await page.waitForFunction(() => window.__C137__?.goto || document.querySelector('.rm-world')?.dataset.mode === 'cards', null, { timeout: 600000, polling: 1000 });
 if (!(await page.evaluate(() => Boolean(window.__C137__?.goto)))) throw new Error(`the 3D world didn't start (${errors.slice(0, 3).join('; ') || 'no errors'})`);
@@ -138,7 +152,10 @@ for (const name of names.length ? names : Object.keys(VIEWS)) {
   const { area, at, cam, game, fly } = VIEWS[name];
   await page.waitForFunction(() => window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
   if (!(await page.evaluate(([a, x, z, f]) => window.__C137__.goto(a, x, z, f), [area, ...at]))) throw new Error(`${name}: Morty wouldn't go`);
+  const asked = Date.now();
   await page.waitForFunction(() => window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
+  const readyS = (Date.now() - asked) / 1000;
+  if (STRICT && readyS > READY_S) errors.push(`${name}: ${readyS.toFixed(0)} s to be ready (over ${READY_S})`);
   if (game) {
     if (!(await page.evaluate((seed) => window.__C137__.rickall(seed), game))) throw new Error(`${name}: Total Rickall wouldn't start`);
     await page.waitForFunction(() => window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
@@ -164,6 +181,22 @@ for (const name of names.length ? names : Object.keys(VIEWS)) {
   await page.waitForTimeout(1500);
   await page.locator('.rm-world-canvas').screenshot({ path: `${OUT}/${name}.png`, timeout: 120000 });
   console.log(`${OUT}/${name}.png`);
+  if (INFO) {
+    const info = await page.evaluate((a) => ({ ...window.__C137__.api.info(), crowd: window.__C137__.api.act?.(a, 'crowd') ?? null }), area);
+    console.log(JSON.stringify({ view: name, readyS: Math.round(readyS), calls: info.calls, triangles: info.triangles, geometries: info.geometries, textures: info.textures, quality: info.quality, tier: info.tier, crowd: info.crowd }));
+  }
+  if (BACK) {
+    await page.evaluate(() => {
+      const s = window.__C137__.sim;
+      s.yaw += Math.PI;
+      s.dragAt = s.t;
+    });
+    const f1 = await page.evaluate(() => window.__C137__.sim.frame);
+    await page.waitForFunction((f) => window.__C137__.sim.frame >= f, f1 + FRAMES, { timeout: 120000, polling: 100 });
+    await page.locator('.rm-world-canvas').screenshot({ path: `${OUT}/${name}-back.png`, timeout: 120000 });
+    console.log(`${OUT}/${name}-back.png`);
+  }
 }
 if (errors.length) console.log('errors', errors.slice(0, 8));
 await browser.close();
+if (STRICT && errors.length) process.exit(1);

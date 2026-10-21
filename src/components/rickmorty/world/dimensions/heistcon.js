@@ -1,6 +1,7 @@
 // Heist-Con ("One Crew over the Crewcoo's Morty"): a convention hall in
-// black and gold, a stage with the con's banner over it where Heistotron
-// gives the keynote, booths down the sides, a badge table by the way in,
+// black and gold, a stage where Heistotron gives the keynote, glass behind it
+// onto a casino strip at night (its world, ./worlds.js) and the con's banner
+// over the glass, booths down the sides, a badge table by the way in,
 // and heisters milling about (./destinations.js; stage.js's NPC behaviour).
 // Miles Knightly is assembling a crew.
 
@@ -28,7 +29,8 @@ export async function buildHeistcon(kit) {
     fitText(g, 'HEIST-CON', w / 2, h * 0.42, w - 30, 30, { color: '#d8b25a' });
     fitText(g, 'the con is the heist', w / 2, h * 0.78, w - 30, 12, { color: '#f6e8c8', weight: '400' });
   });
-  R.frame(...P(0, -(A.z1 - A.z0) / 2 + 0.14), 0, { list: 'fixed' }).box(BLACK, 0, 3.2, 0, 12, 3.2, 0.1).decal('heistbanner', 0, 4.8, 0.07, 11.6, 2.9, { bright: true });
+  // (over the glass behind the stage, which shows the strip outside: ./worlds.js)
+  R.frame(...P(0, -(A.z1 - A.z0) / 2 + 0.14), 0, { list: 'fixed' }).box(BLACK, 0, 6.15, 0, 7.2, 1.7, 0.1).decal('heistbanner', 0, 7.0, 0.07, 6.8, 1.7, { bright: true });
   for (const dx of [-5, 0, 5]) R.frame(...P(dx, -8), 0, { list: 'fixed' }).cyl(BLACK, 0, H - 0.6, 0, 0.2, 0.6).glow(BALL, 0xffe0a0, 1.6, 0, H - 0.7, 0, 0, 0.4);
   // the booths: a counter, a back board, a lamp
   for (const [dx, dz, turn] of [
