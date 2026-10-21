@@ -287,6 +287,14 @@ describe('a landmark and a scatter round a place', () => {
       expect(m[0].turn).toBeCloseTo(0, 9);
     }
   });
+  it('lifts a landmark into the sky where the record says, in its own look (a castle on a cloud)', () => {
+    const d = outdoor();
+    const stone = { walls: [0x9a9a9a], roofs: [0x5a5a6a] };
+    const L = lay(d, world({ landmarks: [{ at: [-20, -18], y: 56, style: 'tower', w: 14, d: 14, h: 22, look: stone }] }));
+    const [m] = L.lots.filter((l) => l.landmark);
+    expect(m).toMatchObject({ y: 56, look: stone });
+  });
+
   it('scatters its models out round the place, as many as the level says, clear of the box and the buildings', () => {
     const d = outdoor();
     const w = world({ scatter: [{ model: 'q:CommonTree_3', h: 9.4, n: { high: 30, mid: 15, low: 6 }, r: [20, 130] }] });

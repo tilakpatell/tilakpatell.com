@@ -157,7 +157,7 @@ function landmarksOf(d, list) {
   return (list ?? []).map((m) => {
     const x = d.centre.x + m.at[0];
     const z = d.centre.z + m.at[1];
-    return { side: null, row: null, style: m.style, x, z, turn: quarter(Math.atan2(d.centre.x - x, d.centre.z - z)), w: m.w, d: m.d, h: m.h, y: 0, landmark: true };
+    return { side: null, row: null, style: m.style, x, z, turn: quarter(Math.atan2(d.centre.x - x, d.centre.z - z)), w: m.w, d: m.d, h: m.h, y: m.y ?? 0, landmark: true, look: m.look ?? null };
   });
 }
 // models scattered out round the place (trees, rocks): as many as the level says, clear of the box and the buildings

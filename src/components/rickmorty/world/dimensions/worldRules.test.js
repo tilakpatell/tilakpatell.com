@@ -87,6 +87,8 @@ describe('a world record’s rules', () => {
     expect(problems({ landmarks: [lm] })).toEqual([]);
     expect(problems({ landmarks: [{ ...lm, at: [0, -30] }] })).toEqual([expect.stringMatching(/landmark/)]);
     expect(problems({ landmarks: [{ ...lm, style: 'castle' }] })).toEqual([expect.stringMatching(/castle/)]);
+    // (one high in the sky over the box is over everyone's head)
+    expect(problems({ landmarks: [{ ...lm, at: [0, 0], y: 40 }] })).toEqual([]);
   });
 
   it('names only the kit’s models for its props, its scatter and its edge', () => {

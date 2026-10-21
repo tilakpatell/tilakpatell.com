@@ -24,6 +24,7 @@ import { STYLES } from './lots';
 import { QUATERNIUS } from './surround';
 
 const NEAR = { hunter: 7, named: 30 };
+const SKY = 20; // metres up: a landmark that high is over the box, not in it
 const FAMILY = ['jerry-ship', 'spacebeth-ship', 'cruiser', 'gotron', 'dirlycar', 'vindicators-ship'];
 const SIDES = ['n', 'e', 's', 'w'];
 
@@ -98,7 +99,8 @@ export function worldProblems(d, world, { tris = {}, tasks = [], blocks = [] } =
     if (!STYLES.includes(m.style)) out.push(`a landmark's style ${m.style} is no style`);
     const [x, z] = W(m.at);
     const near = Math.hypot(Math.max(A.x0 - (x + m.w / 2), x - m.w / 2 - A.x1, 0), Math.max(A.z0 - (z + m.d / 2), z - m.d / 2 - A.z1, 0));
-    if (near < (room ? 1 : 8)) out.push(`a landmark stands within ${room ? 'the room' : '8 m of the edge'}`);
+    // (one high in the sky is over everyone's head, wherever it is)
+    if ((m.y ?? 0) < SKY && near < (room ? 1 : 8)) out.push(`a landmark stands within ${room ? 'the room' : '8 m of the edge'}`);
   }
   const kitModel = (m) => m?.startsWith('q:') && QUATERNIUS[m.slice(2)];
   for (const m of [...(world.scatter ?? []).map((o) => o.model), ...(world.forecourt?.props ?? []).map((o) => o.model), ...(world.edge?.models ?? [])]) if (!kitModel(m)) out.push(`${m} is none of the kit's models`);

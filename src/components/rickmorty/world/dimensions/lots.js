@@ -219,7 +219,8 @@ export function lot(R, L, look, { windows, list = 'fixed' } = {}) {
   if (!draw) return;
   const wall = pick(look.walls, L.x, L.z, 1);
   const roof = pick(look.roofs ?? look.walls, L.x, L.z, 2);
-  if (L.y > 0.01) R.frame(L.x, L.z, L.turn, { list }).box(look.trim ?? wall, 0, 0, 0, L.w, L.y, L.d);
+  // (on a plinth up to its floor; one up in the sky, a castle on its cloud, on none)
+  if (L.y > 0.01 && !L.landmark) R.frame(L.x, L.z, L.turn, { list }).box(look.trim ?? wall, 0, 0, 0, L.w, L.y, L.d);
   const f = R.frame(L.x, L.z, L.turn, { y: L.y, list });
   draw(R, f, L, look, windows[wall], wall, roof);
 }

@@ -239,6 +239,57 @@ export const WORLDS = {
     crowd: { gather: [{ kinds: ['zeep'], n: { high: 3, mid: 2, low: 0 }, at: [0, -40], r: 2, face: [0, -70], beat: 1 }] },
   },
 
+  // Fantasy World: a village of Tudor houses round the square, hills and a
+  // castle's towers beyond, woods out to the fog, and up the beanstalk, on a
+  // cloud, the giants' castle: P8's climb on screen from the way in
+  fantasy: {
+    look: { walls: [0xf2e8d0, 0xe8dcc0, 0xf6eedc], roofs: [0x8a5a3a, 0x6a4a3a, 0x7a6a4a], lit: [0xffe08a], trim: 0x4a3020 },
+    edge: { kind: 'fence', h: 1.2, color: 0x7a5a3a },
+    ring: { e: { styles: ['tudor'], rows: 2, h: [7, 11] }, w: { styles: ['tudor'], rows: 2, h: [7, 11] }, s: { styles: ['tudor', 'hut'], rows: 1, h: [6, 9] }, n: { styles: ['tudor'], rows: 1, h: [7, 10] } },
+    far: { n: { styles: ['berm', 'spire'], h: [32, 60] }, e: { styles: ['berm'], h: [32, 50] }, w: { styles: ['berm', 'spire'], h: [32, 60] }, s: { styles: ['berm'], h: [32, 50] } },
+    hero: [-6, -19],
+    vista: 0.26,
+    landmarks: [
+      { at: [-22, -24], y: 52, style: 'dome', w: 28, d: 22, h: 7, look: { walls: [0xffffff], roofs: [0xf2f6ff], lit: [0xffffff], trim: 0xe8eef8 } },
+      { at: [-22, -24], y: 56, style: 'tower', w: 14, d: 14, h: 22, look: { walls: [0xb8b4a8, 0xa8a49a], roofs: [0x6a5a7a], lit: [0xffe08a], trim: 0x5a5650 } },
+    ],
+    scatter: [
+      { model: 'q:CommonTree_4', h: 9.4, n: { high: 30, mid: 18, low: 8 }, r: [20, 170] },
+      { model: 'q:Pine_4', h: 10.2, n: { high: 20, mid: 12, low: 6 }, r: [30, 190] },
+    ],
+    forecourt: { path: { w: 2.6, color: 0x9a9080 }, props: [{ model: 'q:Flower_1_Single', h: 0.5, n: 8 }, { model: 'q:Rock_Medium_2', h: 0.6, n: 4 }] },
+  },
+
+  // Froopyland: mushroom houses and candy domes round the meadow, Beth's
+  // castle to the north, candy hills beyond; the Froopylanders (its
+  // hunters) out past the hedge only
+  froopyland: {
+    look: { walls: [0xff9ad8, 0xa8e8ff, 0xfff09a, 0xb8ffb0, 0xffc090], roofs: [0xff6ab0, 0x6ad8ff, 0xffd84a, 0xa86aff], lit: [0xffffff], trim: 0xffffff },
+    edge: { kind: 'bushes', h: 0.9, models: ['q:Bush_Common_Flowers'] },
+    ring: { e: { styles: ['mushroom', 'dome'], rows: 2, h: [6, 12] }, w: { styles: ['mushroom', 'dome'], rows: 2, h: [6, 12] }, s: { styles: ['mushroom'], rows: 1, h: [6, 10] }, n: null },
+    far: { n: { styles: ['dome', 'mushroom'], h: [32, 60] }, e: { styles: ['dome'], h: [32, 55] }, w: { styles: ['dome'], h: [32, 55] }, s: { styles: ['dome'], h: [32, 50] } },
+    hero: [0, -60],
+    landmarks: [{ at: [0, -60], style: 'tower', w: 16, d: 16, h: 26, look: { walls: [0xfff2fa, 0xffd8ee], roofs: [0xff6ab0], lit: [0xffffff], trim: 0xffb8e0 } }],
+    crowd: { gather: [{ kinds: ['froopy-a', 'froopy-b'], n: { high: 8, mid: 5, low: 3 }, at: [-34, -44], r: 4, face: [0, 0] }] },
+  },
+
+  // Dimension 35-C: the forest of Mega Trees out to the fog, roots and rocks
+  // for an edge, ferns under them; Federation patrols over the canopy, its
+  // agents (its hunters) out past the roots only
+  dim35c: {
+    look: { walls: [0x6a4a2a], roofs: [0x3a6a3a], lit: [0x9dffb8], trim: 0x4a3420 },
+    edge: { kind: 'rocks', h: 0.8, models: ['q:Rock_Medium_1', 'q:Rock_Medium_2', 'q:Rock_Medium_4'] },
+    ring: { n: null, e: null, s: null, w: null },
+    far: null,
+    scatter: [
+      { model: 'q:Pine_4', h: 56, n: { high: 28, mid: 16, low: 8 }, r: [34, 200] },
+      { model: 'q:CommonTree_4', h: 44, n: { high: 22, mid: 12, low: 6 }, r: [30, 180] },
+      { model: 'q:Fern_2', h: 1.4, n: { high: 40, mid: 24, low: 10 }, r: [12, 50] },
+    ],
+    crowd: { gather: [{ kinds: ['gromflomite'], n: { high: 4, mid: 3, low: 2 }, at: [30, -40], r: 3, face: [0, 0] }] },
+    fliers: [{ model: FEDSHIP, n: { high: 2, mid: 1, low: 1 }, y: [60, 80], speed: 14, h: 4.5 }],
+  },
+
   // the Gromflomite base: hangar windows either side of the cell, onto
   // Federation ships docked on the apron, gantries, ground crew out past the
   // glass (the guards' kind, and theirs only there), patrols overhead
