@@ -1,8 +1,9 @@
 // Each place's world: what stands round it and who's about in it, for
 // ./outskirts.js to lay out and ./surround.js to draw (stage.js reads a
 // place's record by its id). Imported only by stage.js and the places'
-// builders, so the records never reach the page's first download (the
-// solids a gathering stands on are ./blocks.js's, which the rules read).
+// builders, so the records never reach the page's first download (a
+// gathering in the box stands on one of ./blocks.js's blocks, which the
+// destinations merge, or on one of the place's own solids: a walkway, a pen).
 //
 // A record (the spec's "A world record",
 // docs/superpowers/specs/2026-10-21-rm-worlds-not-rooms-design.md):
@@ -13,9 +14,16 @@
 //   far { n, e, s, w }: { styles, h } | null    the skyline
 //   vista, hero [dx, dz]                       the open view north from the
 //                                             way in, and what it's on
+//   landmarks [{ at: [dx, dz], style, w, d, h, y, look }]   a building of the
+//                                             record's own, where it says (`y`: up in the sky)
+//   scatter [{ model, h, n: { high, mid, low }, r: [near, far] }]   kit models out round it
 //   forecourt { path: { w, color }, props: [{ model, h, n }] }
+//   stands [{ at, w, d, h, rows, face, kinds, n, beat, look, always }]   seats facing
+//                                             what they watch, their people in rows up them
 //   crowd { walk: [{ kinds, n: { high, mid, low }, loop: 'street' | [[dx, dz]…], speed, until, after }],
-//           gather: [{ kinds, n, at: [dx, dz], r, face: 'hero' | [dx, dz], block, until, after }] }
+//           gather: [{ kinds, n, at: [dx, dz], r, row, y, beat, face: 'hero' | [dx, dz], block, until, after, always }] }
+//     (`row`: its people along a row that long; `y`: how high they stand; `beat`:
+//     seconds between hops; a heavy kind, over 25k triangles, at most twice)
 //     (a room's crowd outside goes on low, but one marked `always`, a gathering's
 //     or a stand's: the view itself, a dome of Mortys)
 //   fliers [{ model, n, y: [lo, hi], speed, h, climb: [dx, dz] }]   (climb: straight
@@ -30,8 +38,9 @@
 //                                             while the place hunts him
 //   pieces [{ model, at: [dx, dz], turn, h, w, d, y, spin, own }]   the place's own
 //     models where its code buildings stood (a set piece's file, by path),
-//     on every level, casting their shadows; `spin` radians a second; `own`
-//     the spot that's its own (the siren's pull), which it may stand by
+//     on every level, casting their shadows (but never into a room from
+//     outside it); `spin` radians a second; `own` the spot that's its own
+//     (the siren's pull), which it may stand by
 // A crowd kind is one of the cast's (../../portal/meshyCastCore.js's MESHY)
 // or one of the Citadel's light copies (`crowd:<name>`, /games/meshy/crowd).
 // The rest of the places' records are ./worlds2.js's, merged in here.

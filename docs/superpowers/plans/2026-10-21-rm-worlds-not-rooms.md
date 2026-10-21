@@ -24,7 +24,7 @@
 - **No new:** shader material, `onBeforeCompile` site, light, `requestAnimationFrame`, renderer, `eslint-disable`, JSON over 64 KB, or import of `lib/three/core`, `lib/cc0`, `galaxy/surface` or `rickmorty/planets/props`.
 - **File size:** no file past 800 lines grows except `scene.js`, by its two wiring lines. `RmWorld.jsx` is not touched.
 - **Budgets by `kit.fit.tier`:**
-  - crowd triangles 360k / 200k / 80k;
+  - crowd triangles 360k / 220k / 150k (mid and low raised from 200k and 80k by a ledgered ruling, measured at Get Schwifty);
   - crowd kinds 6 / 4 / 3;
   - extra set copies 4 / 2 / 0;
   - traffic 3 / 2 / 1;

@@ -311,8 +311,7 @@ export const WORLDS2 = {
     // the village's own, where the code ones stood, each filling its solid's
     // footprint (a cottage 1.66 of its height long and 1.49 wide, turned to
     // face the lane; the barn 0.96 long and 0.75 wide, its side to the way in;
-    // the well as wide as it's high); the siren stays the builder's (its pull
-    // spot is 1.4 m from its pole, inside any piece's reach)
+    // the well as wide as it's high; the siren on its pole, by its own pull)
     pieces: [
       { model: '/models/c137/rm/purgecottage.glb', at: [-22, -10], turn: 1.5708, h: 4 },
       { model: '/models/c137/rm/purgecottage.glb', at: [-22, 6], turn: 1.5708, h: 4 },
@@ -355,7 +354,7 @@ export const WORLDS2 = {
     ],
     forecourt: { props: [{ model: 'q:Rock_Medium_1', h: 0.5, n: 4 }, { model: 'q:Grass_Wispy_Short', h: 0.45, n: 6 }] },
     // the house fills its solid (1.57 of its height across, 0.96 deep); the
-    // car stays the builder's (its look spot is 2 m from its middle)
+    // wrecked car on its own, by its own look spot
     pieces: [
       { model: '/models/c137/rm/cronhouse.glb', at: [-16, -20], turn: 0, h: 8.3 },
       // (the wreck on its solid, by its own look)

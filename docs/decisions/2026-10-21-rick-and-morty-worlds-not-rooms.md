@@ -17,16 +17,16 @@ The owner's word: "make sure Rick and Morty worlds are amazing, populated and do
 Each place has a record of what stands round it and who's about (`WORLDS`), laid out by a pure, seeded function and drawn into the place's own room kit before it builds:
 
 - **Buildings** round outdoor places and outside rooms' windows are code (fourteen styles in `lots.js`, a few primitives merged into the kit's batches, windows a tiled paint), because no model of those kinds exists. Where a place's own building has a model (Purge's cottages, barn, well and siren; Cronenberg's house and car; the Frundles' house; Bird World's perch; Gear World's big gear and cogs; Squanch's suckulents; the Blood Dome's wrecks), the model stands: as a ring's set piece, or as the place's own `pieces` where its code twin used to be.
-- **People** are instanced copies of the cast that's on disk: the unrigged Meshy kinds, the Citadel's light copies (`crowd:<name>`), and the light rigged kinds stood in a clip's pose by `bakePose`. No copy of a place's hunters', lookouts' or named people's kinds stands in its box, and none nearer than 7 m beyond its edge (30 m for a named person's). They walk, queue, gather on blocks (the only solids a world adds, ≤ 1.2 m), hop on a beat, turn to Morty while the place hunts him, and go with the story.
+- **People** are instanced copies of the cast that's on disk: the unrigged Meshy kinds, the Citadel's light copies (`crowd:<name>`), and the light rigged kinds stood in a clip's pose by `bakePose`. No copy of a place's hunters', lookouts' or named people's kinds stands in its box, and none nearer than 7 m beyond its edge (30 m for a named person's); a room's outside, behind its glass, may hold a hunter's kind at any distance, a named person's still no nearer than 30 m. A heavy figure (over 25k triangles: Zeep, Birdperson) stands at most twice. They walk, queue, gather on blocks (the only solids a world adds, ≤ 1.2 m) or on the place's own solids (a walkway, a pen), hop on a beat, turn to Morty while the place hunts him, and go with the story.
 - **Traffic** is the Federation's ship, the Zigerion mothership and the snakes' rocket, never a family's vehicle.
 - **Rooms** get windows where their painted panels hung, onto ground (a city, a yard, a dome of Mortys) or space (stars, planets and moons).
 - **Budgets** by the device's level (`kit.fit.tier`): crowd triangles 360k, 220k and 150k (a room half), kinds 6/4/3, set copies 4/2/0, traffic 3/2/1, lots 40 + 34, 30 + 24, 20 + 14.
 
 ## Consequences
 
-- Every place has buildings to the fog and people in it; the arrival half of each outdoor frame has a forecourt or a crowd in it.
+- Every place has buildings to the fog; most have people in it, and most outdoor arrivals a forecourt or a crowd ahead (Froopyland, Dimension 35-C and the Frundles' street open on their view instead: their only people beyond the edge are the place's hunters' kinds).
 - The crowd has no line and no shadow, as the Citadel's has none. Its kinds repeat: no lighter copies are made (the owner's call, `scripts/crowd.mjs`).
-- Pieces stand on every level, low too: Gear World's eleven come to about 99k triangles there.
+- Pieces stand on every level, low too: Gear World's eleven come to about 99k triangles there, Purge's six about 243k (over the low row's 250k of extras with its crowd; the frame stays under its 800k).
 - Each place's fog is its own sky's; a room's outside is fogged past its own depth.
 - The records live outside the page's first download (`destinations.js` merges only `blocks.js`'s few rows).
 - `worldRules.js` and `worlds.test.js` hold every record to the rules (kinds counted from the GLB headers, no look-alikes near, blocks clear of spots and routes, sight lines kept, budgets on every level).

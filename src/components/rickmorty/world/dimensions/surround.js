@@ -4,17 +4,19 @@
 // they load, the place's own set pieces, the props (the Quaternius models
 // the town stands) and the traffic, each model one instanced mesh a part,
 // and the crowd (./crowd.js). A room with a world outside gets the ground
-// round its walls, or stars round it in space. Every load is tracked (the
+// round its walls, or stars, planets and moons round it in space. Every load is tracked (the
 // place isn't ready till it's stood) and one that fails is left out: the
 // place goes on without it. stage.js calls it before the room kit builds.
 //
 // surround({ R, d, kit, loader, blocks }, world, laid) → { ready, actions: { hop,
-//   turn, crowd } }
+//   turn, show, crowd } }   (show(key | 'all', on): a crowd entry, or all of it, hidden or shown)
 //   blocks: the place's (./blocks.js), drawn as each says: a rail or a
 //   barrier round its edge, a box of its size, or nothing
 // wallOpenings(world, side, d) → a wall's openings for shell.js's wallLine
 // groundSize(d, reach) → [across, deep]   the outdoor ground's size
 // roomFog(d, world, fogFar) → [colour, near, far] | null   a room's, looking out
+// watchOf(world, { hunting, morty }) → [x, z] | null   where the crowd looks: at
+//   Morty while the place hunts him (or always, `watch: 'morty'`)
 // QUATERNIUS: { node: [file, metres tall] }   the town's kit models, by node
 
 import * as THREE from 'three';
