@@ -43,6 +43,7 @@ export default function HogwartsWorld() {
   const [playing, setPlaying] = useState(false);
   const [said, setSaid] = useState(null);
   const [next, setNext] = useState(1);
+  const [objective, setObjective] = useState(null);
   const menu = useRef(null);
   const line = useRef(null);
   const bubble = useRef(null);
@@ -56,6 +57,7 @@ export default function HogwartsWorld() {
     else if (e.type === 'toast') setToast({ key: Date.now(), text: e.text });
     else if (e.type === 'wheel') setWheel(e.open);
     else if (e.type === 'broom') setRiding(e.riding);
+    else if (e.type === 'objective') setObjective(e.text);
     else if (e.type === 'said') setSaid({ key: Date.now(), name: e.who, line: e.text });
     else if (e.type === 'match') {
       // (the score written straight in, a few times a second; only its coming and going re-renders)
@@ -110,13 +112,14 @@ export default function HogwartsWorld() {
               <span className="hogwarts-brand-eyebrow">The shore of the Black Lake</span>
               <span className="hogwarts-brand-name">Hogwarts</span>
             </p>
-            {playing && <Objective ref={line} className="hogwarts-objective" />}
+            {playing ? <Objective ref={line} className="hogwarts-objective" /> : objective && <Objective className="hogwarts-objective" text={objective} />}
           </>
         }
         tools={
           <div ref={menu}>
             <Menu className="hogwarts-menu" way={wayOut(pathname)} todo={{ onOpen: () => setList(true), done: 0, total: 0 }}>
               {!riding && <MenuItem onClick={() => api()?.fly()}>Fly</MenuItem>}
+              <MenuItem onClick={() => api()?.lesson('flying')}>The flying lesson</MenuItem>
               <MenuItem onClick={() => api()?.practice()}>Snitch practice</MenuItem>
               <MenuItem onClick={() => api()?.match(next)}>Quidditch: match {next} of 3</MenuItem>
             </Menu>

@@ -18,45 +18,28 @@
 //   gives ([{ from, to, house }] rows in the pitch’s frame) or, failing
 //   that, where the stand-ins’ would be.
 
-import * as THREE from "three";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { MeshBasicNodeMaterial } from "three/webgpu";
-import {
-  abs,
-  float,
-  instancedBufferAttribute,
-  length,
-  max,
-  mix,
-  positionLocal,
-  sin,
-  smoothstep,
-  step,
-  time,
-  uniform,
-  uv,
-  varying,
-  vec2,
-  vec3,
-} from "three/tsl";
-import { PITCH } from "../rules/quidditch";
+import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { abs, float, instancedBufferAttribute, length, max, mix, positionLocal, sin, smoothstep, step, time, uniform, uv, varying, vec2, vec3 } from 'three/tsl';
+import { PITCH } from '../rules/quidditch';
 
 // the houses’ colours, robe and trim (the crowd’s scarves and the drapes)
 export const COLOURS = {
-  gryffindor: ["#7f0909", "#d3a625"],
-  slytherin: ["#1a472a", "#aaaaaa"],
-  ravenclaw: ["#0e1a40", "#946b2d"],
-  hufflepuff: ["#ecb939", "#372e29"],
-  staff: ["#3a2f48", "#c8b88a"],
+  gryffindor: ['#7f0909', '#d3a625'],
+  slytherin: ['#1a472a', '#aaaaaa'],
+  ravenclaw: ['#0e1a40', '#946b2d'],
+  hufflepuff: ['#ecb939', '#372e29'],
+  staff: ['#3a2f48', '#c8b88a'],
 };
 // the six stands round the oval: where (an angle round it), whose
 const STANDS = [
-  { a: Math.PI * 0.5 - 0.42, house: "gryffindor", box: true },
-  { a: Math.PI * 0.5 + 0.42, house: "staff" },
-  { a: -Math.PI * 0.5 - 0.42, house: "slytherin" },
-  { a: -Math.PI * 0.5 + 0.42, house: "ravenclaw" },
-  { a: 0.05, house: "hufflepuff" },
-  { a: Math.PI + 0.05, house: "gryffindor" },
+  { a: Math.PI * 0.5 - 0.42, house: 'gryffindor', box: true },
+  { a: Math.PI * 0.5 + 0.42, house: 'staff' },
+  { a: -Math.PI * 0.5 - 0.42, house: 'slytherin' },
+  { a: -Math.PI * 0.5 + 0.42, house: 'ravenclaw' },
+  { a: 0.05, house: 'hufflepuff' },
+  { a: Math.PI + 0.05, house: 'gryffindor' },
 ];
 const RX = PITCH.length / 2 + 16; // the oval the stands stand on
 const RZ = PITCH.width / 2 + 13;
@@ -74,12 +57,11 @@ function standAt(a) {
 
 function paint(g, colour) {
   const p = g.index ? g.toNonIndexed() : g;
-  for (const name of Object.keys(p.attributes))
-    if (name !== "position" && name !== "normal") p.deleteAttribute(name);
+  for (const name of Object.keys(p.attributes)) if (name !== 'position' && name !== 'normal') p.deleteAttribute(name);
   const c = new THREE.Color().setStyle(colour, THREE.SRGBColorSpace);
   const a = new Float32Array(p.attributes.position.count * 3);
   for (let i = 0; i < a.length; i += 3) a.set([c.r, c.g, c.b], i);
-  p.setAttribute("color", new THREE.BufferAttribute(a, 3));
+  p.setAttribute('color', new THREE.BufferAttribute(a, 3));
   return p;
 }
 
@@ -91,76 +73,18 @@ function standGeometry(colours) {
   for (let i = 0; i < TIERS; i++) {
     const y = 4 + i * 2.6;
     // each tier a step back and up
-    parts.push(
-      paint(
-        new THREE.BoxGeometry(WIDE, 0.4, 2.4).translate(0, y, -i * 2.2),
-        "#5a4330",
-      ),
-    );
-    parts.push(
-      paint(
-        new THREE.BoxGeometry(WIDE, 2.6, 0.2).translate(
-          0,
-          y + 1.3,
-          -i * 2.2 - 1.2,
-        ),
-        "#4a3626",
-      ),
-    );
+    parts.push(paint(new THREE.BoxGeometry(WIDE, 0.4, 2.4).translate(0, y, -i * 2.2), '#5a4330'));
+    parts.push(paint(new THREE.BoxGeometry(WIDE, 2.6, 0.2).translate(0, y + 1.3, -i * 2.2 - 1.2), '#4a3626'));
   }
   // the drape down the front, the house’s colour, its trim along the top
-  parts.push(
-    paint(new THREE.BoxGeometry(WIDE, 3.8, 0.15).translate(0, 1.9, 1.1), robe),
-  );
-  parts.push(
-    paint(
-      new THREE.BoxGeometry(WIDE, 0.35, 0.18).translate(0, 3.7, 1.12),
-      trim,
-    ),
-  );
+  parts.push(paint(new THREE.BoxGeometry(WIDE, 3.8, 0.15).translate(0, 1.9, 1.1), robe));
+  parts.push(paint(new THREE.BoxGeometry(WIDE, 0.35, 0.18).translate(0, 3.7, 1.12), trim));
   // the legs and the back
-  for (const x of [-WIDE / 2, 0, WIDE / 2])
-    parts.push(
-      paint(
-        new THREE.BoxGeometry(0.5, TALL + 2, 0.5).translate(
-          x,
-          (TALL + 2) / 2,
-          -TIERS * 2.2,
-        ),
-        "#3e2e22",
-      ),
-    );
-  parts.push(
-    paint(
-      new THREE.BoxGeometry(WIDE, TALL + 2, 0.3).translate(
-        0,
-        (TALL + 2) / 2,
-        -TIERS * 2.2 - 0.3,
-      ),
-      "#4a3626",
-    ),
-  );
+  for (const x of [-WIDE / 2, 0, WIDE / 2]) parts.push(paint(new THREE.BoxGeometry(0.5, TALL + 2, 0.5).translate(x, (TALL + 2) / 2, -TIERS * 2.2), '#3e2e22'));
+  parts.push(paint(new THREE.BoxGeometry(WIDE, TALL + 2, 0.3).translate(0, (TALL + 2) / 2, -TIERS * 2.2 - 0.3), '#4a3626'));
   // a banner down the back, the house's
-  parts.push(
-    paint(
-      new THREE.BoxGeometry(WIDE * 0.3, TALL * 0.8, 0.1).translate(
-        0,
-        TALL * 0.55,
-        -TIERS * 2.2 - 0.5,
-      ),
-      robe,
-    ),
-  );
-  parts.push(
-    paint(
-      new THREE.BoxGeometry(WIDE * 0.3, 0.5, 0.12).translate(
-        0,
-        TALL * 0.95,
-        -TIERS * 2.2 - 0.5,
-      ),
-      trim,
-    ),
-  );
+  parts.push(paint(new THREE.BoxGeometry(WIDE * 0.3, TALL * 0.8, 0.1).translate(0, TALL * 0.55, -TIERS * 2.2 - 0.5), robe));
+  parts.push(paint(new THREE.BoxGeometry(WIDE * 0.3, 0.5, 0.12).translate(0, TALL * 0.95, -TIERS * 2.2 - 0.5), trim));
   // the roof, a long tent in the colour
   const roof = new THREE.CylinderGeometry(0.01, 1, 1, 4, 1)
     .rotateY(Math.PI / 4)
@@ -188,35 +112,15 @@ function turfGeometry() {
         .translate(0, y, 0),
       colour,
     );
-  return mergeGeometries([
-    oval(RX + 14, RZ + 12, 0, "#3f5f2c"),
-    ring(PITCH.length / 2, PITCH.width / 2, 0.5, 0.02, "#8fae6a"),
-    ring(9, 9, 0.4, 0.02, "#8fae6a"),
-  ]);
+  return mergeGeometries([oval(RX + 14, RZ + 12, 0, '#3f5f2c'), ring(PITCH.length / 2, PITCH.width / 2, 0.5, 0.02, '#8fae6a'), ring(9, 9, 0.4, 0.02, '#8fae6a')]);
 }
 function hoopsGeometry() {
   const parts = [];
   for (const end of [-1, 1])
     for (const h of PITCH.hoops) {
       const x = end * PITCH.hoopX;
-      parts.push(
-        paint(
-          new THREE.CylinderGeometry(0.12, 0.16, h.y - h.r, 8).translate(
-            x,
-            (h.y - h.r) / 2,
-            h.z,
-          ),
-          "#b48a3c",
-        ),
-      );
-      parts.push(
-        paint(
-          new THREE.TorusGeometry(h.r, 0.1, 6, 28)
-            .rotateY(Math.PI / 2)
-            .translate(x, h.y, h.z),
-          "#e0b04a",
-        ),
-      );
+      parts.push(paint(new THREE.CylinderGeometry(0.12, 0.16, h.y - h.r, 8).translate(x, (h.y - h.r) / 2, h.z), '#b48a3c'));
+      parts.push(paint(new THREE.TorusGeometry(h.r, 0.1, 6, 28).rotateY(Math.PI / 2).translate(x, h.y, h.z), '#e0b04a'));
     }
   return mergeGeometries(parts);
 }
@@ -226,9 +130,9 @@ function hoopsGeometry() {
 function crowdMaterial(u, a) {
   const m = new MeshBasicNodeMaterial({ side: THREE.DoubleSide });
   // (each card's own: read a card at a time, not a corner at a time)
-  const phase = instancedBufferAttribute(a.phase, "float");
-  const arm = instancedBufferAttribute(a.arm, "float");
-  const colour = instancedBufferAttribute(a.colour, "vec3");
+  const phase = instancedBufferAttribute(a.phase, 'float');
+  const arm = instancedBufferAttribute(a.arm, 'float');
+  const colour = instancedBufferAttribute(a.colour, 'vec3');
   // the bob, done to the quad (in the vertex stage), louder with the cheer
   const bob = sin(time.mul(float(3).add(u.cheer.mul(6))).add(phase.mul(6.283)))
     .mul(float(0.06).add(u.cheer.mul(0.45)))
@@ -238,14 +142,9 @@ function crowdMaterial(u, a) {
   const vArm = varying(arm);
   const p = uv();
   const head = step(length(p.sub(vec2(0.5, 0.8))), float(0.15));
-  const body = step(
-    length(p.sub(vec2(0.5, 0.26)).mul(vec2(1 / 0.36, 1 / 0.42))),
-    float(1),
-  );
+  const body = step(length(p.sub(vec2(0.5, 0.26)).mul(vec2(1 / 0.36, 1 / 0.42))), float(1));
   // the arm, from the shoulder up, swinging with the cheer
-  const sway = sin(time.mul(7).add(vPhase.mul(6.283))).mul(
-    u.cheer.mul(0.08).add(0.01),
-  );
+  const sway = sin(time.mul(7).add(vPhase.mul(6.283))).mul(u.cheer.mul(0.08).add(0.01));
   const ax = abs(p.x.sub(float(0.8).add(sway.mul(p.y.sub(0.5).max(0)).mul(3))));
   const armOn = step(ax, float(0.055))
     .mul(smoothstep(0.42, 0.46, p.y))
@@ -256,25 +155,16 @@ function crowdMaterial(u, a) {
   m.alphaTest = 0.5;
   // the colour: the instance’s (robe or scarf), the head a face, all in the light there is
   const faceOn = head.mul(step(float(0.2), vPhase.fract()));
-  m.colorNode = mix(varying(colour), vec3(0.85, 0.66, 0.52), faceOn).mul(
-    u.shade,
-  );
+  m.colorNode = mix(varying(colour), vec3(0.85, 0.66, 0.52), faceOn).mul(u.shade);
   m.fog = true;
   return m;
 }
 
-export function createStands({
-  house = null,
-  tier = "high",
-  pitch = null,
-  standIn = true,
-} = {}) {
+export function createStands({ house = null, tier = 'high', pitch = null, standIn = true } = {}) {
   const group = new THREE.Group();
-  group.name = "hogwarts-stands";
+  group.name = 'hogwarts-stands';
   const disposables = [];
-  const mat = house?.material
-    ? house.material({ vertexColors: true })
-    : new THREE.MeshLambertMaterial({ vertexColors: true });
+  const mat = house?.material ? house.material({ vertexColors: true }) : new THREE.MeshLambertMaterial({ vertexColors: true });
   disposables.push(mat);
   let box = new THREE.Vector3(0, 14, RZ);
 
@@ -303,10 +193,7 @@ export function createStands({
     const side = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
     if (!pitch?.seats)
       for (let i = 0; i < TIERS; i++) {
-        const mid = new THREE.Vector3(x, 4.4 + i * 2.6, z).addScaledVector(
-          fwd,
-          -i * 2.2 - 0.4,
-        );
+        const mid = new THREE.Vector3(x, 4.4 + i * 2.6, z).addScaledVector(fwd, -i * 2.2 - 0.4);
         rows.push({
           from: mid.clone().addScaledVector(side, -WIDE / 2 + 0.8),
           to: mid.clone().addScaledVector(side, WIDE / 2 - 0.8),
@@ -329,7 +216,7 @@ export function createStands({
   }
 
   // the crowd: so many to a row by the tier, each a card facing the middle
-  const per = tier === "low" ? 12 : tier === "mid" ? 20 : 28;
+  const per = tier === 'low' ? 12 : tier === 'mid' ? 20 : 28;
   const n = rows.length * per;
   const quad = new THREE.PlaneGeometry(0.62, 1.05).translate(0, 0.52, 0);
   const phase = new Float32Array(n);
@@ -352,10 +239,7 @@ export function createStands({
   const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   for (const r of rows) {
     const [robe, trim] = COLOURS[r.house] ?? COLOURS.staff;
-    const toMid = Math.atan2(
-      -(r.from.x + r.to.x) / 2,
-      -(r.from.z + r.to.z) / 2,
-    );
+    const toMid = Math.atan2(-(r.from.x + r.to.x) / 2, -(r.from.z + r.to.z) / 2);
     q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), toMid);
     for (let k = 0; k < per; k++) {
       p.lerpVectors(r.from, r.to, (k + 0.5) / per + (rand() - 0.5) * 0.02);
@@ -366,14 +250,7 @@ export function createStands({
       arm[i] = rand() < 0.5 ? 1 : 0;
       // robes mostly, a scarf’s colour now and then, a few in their own clothes
       const pick = rand();
-      c.setStyle(
-        pick < 0.55
-          ? robe
-          : pick < 0.85
-            ? trim
-            : ["#5a6a7a", "#7a5a4a", "#4a4a52"][Math.floor(rand() * 3)],
-        THREE.SRGBColorSpace,
-      );
+      c.setStyle(pick < 0.55 ? robe : pick < 0.85 ? trim : ['#5a6a7a', '#7a5a4a', '#4a4a52'][Math.floor(rand() * 3)], THREE.SRGBColorSpace);
       colour.set([c.r, c.g, c.b], i * 3);
       i++;
     }

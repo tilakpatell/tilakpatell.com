@@ -20,11 +20,11 @@
 //   { landed: [x, z], yaw } as you come down onto the floor (the walk takes
 //   over there); show() draws a rider something else flies (the match).
 
-import * as THREE from "three";
-import { BROOM, mount as mountRider, stepBroom } from "../rules/flight";
-import { makeProp } from "./props";
+import * as THREE from 'three';
+import { BROOM, mount as mountRider, stepBroom } from '../rules/flight';
+import { makeProp } from './props';
 
-export const BROOM_KEYS = { rise: ["Space"], sink: ["KeyC"] };
+export const BROOM_KEYS = { rise: ['Space'], sink: ['KeyC'] };
 
 const EYE = 0.78; // m over the seat: a first-year sitting up
 const BACK = 0.12; // and this far behind it
@@ -39,19 +39,13 @@ export function inputOf(snap, touch = { x: 0, y: 0 }) {
   const sx = touch?.x ?? 0;
   const sy = touch?.y ?? 0;
   return {
-    fwd: Math.max(
-      -1,
-      Math.min(1, (on("forward") ? 1 : 0) - (on("back") ? 1 : 0) - sy),
-    ),
-    side: Math.max(
-      -1,
-      Math.min(1, (on("right") ? 1 : 0) - (on("left") ? 1 : 0) + sx),
-    ),
+    fwd: Math.max(-1, Math.min(1, (on('forward') ? 1 : 0) - (on('back') ? 1 : 0) - sy)),
+    side: Math.max(-1, Math.min(1, (on('right') ? 1 : 0) - (on('left') ? 1 : 0) + sx)),
     // (on touch, the Up and Down buttons and Catch, held: `touch.rise`, `.sink`, `.catch`)
-    up: on("rise") || touch?.rise ? 1 : 0,
-    down: on("sink") || touch?.sink ? 1 : 0,
-    boost: on("run") || Math.hypot(sx, sy) > STICK_FAST,
-    catch: on("act") || Boolean(touch?.catch),
+    up: on('rise') || touch?.rise ? 1 : 0,
+    down: on('sink') || touch?.sink ? 1 : 0,
+    boost: on('run') || Math.hypot(sx, sy) > STICK_FAST,
+    catch: on('act') || Boolean(touch?.catch),
   };
 }
 
@@ -63,7 +57,7 @@ function createWind(rt) {
   const start = () => {
     const ac = rt?.audio?.context?.();
     const out = rt?.audio?.bus?.();
-    if (!ac || !out || ac.state === "closed" || src) return;
+    if (!ac || !out || ac.state === 'closed' || src) return;
     const n = ac.sampleRate * 2;
     const buf = ac.createBuffer(1, n, ac.sampleRate);
     const d = buf.getChannelData(0);
@@ -79,7 +73,7 @@ function createWind(rt) {
     src.buffer = buf;
     src.loop = true;
     filter = ac.createBiquadFilter();
-    filter.type = "bandpass";
+    filter.type = 'bandpass';
     filter.Q.value = 0.7;
     filter.frequency.value = 300;
     gain = ac.createGain();
@@ -108,19 +102,7 @@ function createWind(rt) {
   };
 }
 
-export function createBroom({
-  rt,
-  scene,
-  camera,
-  house,
-  floorAt = () => 0,
-  level = -Infinity,
-  solids = [],
-  bounds = null,
-  feel = null,
-  reduced = false,
-  cards = null,
-} = {}) {
+export function createBroom({ rt, scene, camera, house, floorAt = () => 0, level = -Infinity, solids = [], bounds = null, feel = null, reduced = false, cards = null } = {}) {
   let rider = null;
   let hop = 0; // s into the hop up
   let fromEye = null; // where the eye was as you got on
@@ -133,32 +115,27 @@ export function createBroom({
   // the broom you sit on: the stand-in (or Lane B’s model, props.js), its
   // seat at the group’s origin, the handle forward
   const group = new THREE.Group();
-  const broom = makeProp("broom", { house, rt });
+  const broom = makeProp('broom', { house, rt });
   broom.position.z = 0.3;
   group.add(broom);
   group.visible = false;
   scene.add(group);
-  const solidsOf = solids.map((s) =>
-    s.at ? { x: s.at[0], z: s.at[1], r: s.r } : s,
-  );
+  const solidsOf = solids.map((s) => (s.at ? { x: s.at[0], z: s.at[1], r: s.r } : s));
   // the floor to the broom: the ground, or the water’s top (you skim a lake, you don’t land in it)
   const floor = (x, z) => Math.max(floorAt(x, z), level + 0.2);
   const wet = (x, z) => floorAt(x, z) < level - 0.25;
 
-  const e = new THREE.Euler(0, 0, 0, "YXZ");
+  const e = new THREE.Euler(0, 0, 0, 'YXZ');
   const eye = new THREE.Vector3();
   function show(r, dt) {
     group.visible = true;
     // the broom: its yaw, the nose down as you lean, rolled into the bank
     // (the broom’s right is −x as it faces +z: a bank right is a roll up of +x)
-    e.set(r.lean * 0.6, r.yaw, r.bank * 0.7 + (r.roll ?? 0), "YXZ");
+    e.set(r.lean * 0.6, r.yaw, r.bank * 0.7 + (r.roll ?? 0), 'YXZ');
     group.quaternion.setFromEuler(e);
     group.position.set(r.p[0], r.p[1], r.p[2]);
     // the eye, over the seat and a little behind, rolled with the broom
-    eye
-      .set(0, EYE, -BACK)
-      .applyQuaternion(group.quaternion)
-      .add(group.position);
+    eye.set(0, EYE, -BACK).applyQuaternion(group.quaternion).add(group.position);
     hop = Math.min(HOP, hop + dt);
     if (fromEye && hop < HOP) {
       const k = hop / HOP;
@@ -172,17 +149,11 @@ export function createBroom({
       lookPitch *= k;
     }
     camera.position.copy(eye);
-    e.set(
-      -0.1 - r.lean * 0.35 + lookPitch,
-      r.yaw + Math.PI + lookYaw,
-      reduced ? 0 : -r.bank * 0.45 + (r.roll ?? 0),
-      "YXZ",
-    );
+    e.set(-0.1 - r.lean * 0.35 + lookPitch, r.yaw + Math.PI + lookYaw, reduced ? 0 : -r.bank * 0.45 + (r.roll ?? 0), 'YXZ');
     camera.quaternion.setFromEuler(e);
     // the view opens with the pace, the wind rises with it
     const k = Math.min(1, r.spd / BROOM.top);
-    if (feel?.setBaseFov)
-      feel.setBaseFov(baseFov + (reduced ? 0 : FOV_GAIN * k));
+    if (feel?.setBaseFov) feel.setBaseFov(baseFov + (reduced ? 0 : FOV_GAIN * k));
     else {
       camera.fov = baseFov + (reduced ? 0 : FOV_GAIN * k);
       camera.updateProjectionMatrix();
@@ -198,11 +169,7 @@ export function createBroom({
         const fx = Math.sin(r.yaw);
         const fz = Math.cos(r.yaw);
         cards.spawn({
-          p: [
-            r.p[0] + fx * ahead + fz * side,
-            r.p[1] + 0.8 + up,
-            r.p[2] + fz * ahead - fx * side,
-          ],
+          p: [r.p[0] + fx * ahead + fz * side, r.p[1] + 0.8 + up, r.p[2] + fz * ahead - fx * side],
           v: [0, 0, 0],
           life: 1.4,
           size: 0.035,
@@ -254,20 +221,15 @@ export function createBroom({
         const p = rider.p;
         const x = Math.max(bounds.x0, Math.min(bounds.x1, p[0]));
         const z = Math.max(bounds.z0, Math.min(bounds.z1, p[2]));
-        if (x !== p[0] || z !== p[2])
-          rider = { ...rider, p: [x, p[1], z], spd: rider.spd * 0.9 };
+        if (x !== p[0] || z !== p[2]) rider = { ...rider, p: [x, p[1], z], spd: rider.spd * 0.9 };
       }
-      if (rider.mode === "ground") {
+      if (rider.mode === 'ground') {
         // down on the water: up again, you skim it
         if (wet(rider.p[0], rider.p[2]))
           rider = {
             ...rider,
-            mode: "air",
-            p: [
-              rider.p[0],
-              floor(rider.p[0], rider.p[2]) + BROOM.clear,
-              rider.p[2],
-            ],
+            mode: 'air',
+            p: [rider.p[0], floor(rider.p[0], rider.p[2]) + BROOM.clear, rider.p[2]],
           };
         else {
           const out = {

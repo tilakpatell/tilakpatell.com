@@ -32,6 +32,14 @@
 // press(name, down) takes 'rise', 'sink' and 'catch' too. The development
 // hook adds fly(), practice(), match(n) and quidditch() (the match's state).
 //
+// The lessons (play/lessons.js): one at a time, started by lesson(id) (the
+// Menu's, until the term's lane sends you to them), held where you stand
+// until the grounds and the rooms give each its place; they have the E key
+// while they run, say what to do next ('objective' { id, text }) and what
+// a teacher says ('said', the speaker play/said.js moves over them), and
+// when one is done 'lesson' { type: 'lesson', id, quest, done } and its
+// 'points'. The development hook adds lesson(id) and lessons() (its state).
+//
 // Where the rest hooks in (the lanes after this one): the grounds and the
 // near castle add to the scene beside the shore (Lane C: world/terrain.js
 // and world/castle/ take over from rules/shore.js and the far castle within
@@ -54,6 +62,8 @@ import { WAND_KEYS, createWand } from './play/wandfx';
 import { BROOM_KEYS, createBroom } from './play/broom';
 import { createQuidditch } from './play/snitch';
 import { createCards } from './play/glow';
+import { createSaid } from './play/said';
+import { createLessons } from './play/lessons';
 import { practiceSet } from './play/props';
 import { createFeel } from '../../lib/three/feel';
 import { BOUNDS, CASTLE, DOOR, LEVEL, SPAWN, floorAt, heightAt, nearDoor } from './rules/shore';
@@ -118,7 +128,8 @@ export default {
     const broom = createBroom({ rt, scene, camera, house, floorAt, level: LEVEL, solids: shore.solids, bounds: { x0: BOUNDS.x0 - 150, x1: BOUNDS.x1 + 150, z0: BOUNDS.z0 - 60, z1: BOUNDS.z1 + 400 }, feel, reduced, cards: air });
     // (no pitch on the shore: a match is played on a stand-in one out on the
     // lake, the castle behind it, until the grounds' lane builds the real one)
-    const quidditch = createQuidditch({ rt, scene, camera, house, broom, cards: air, feel, tier, tell, stage: { at: [0, LEVEL + 0.15, -200], yaw: 0 } });
+    const said = createSaid({ rt, camera, tell });
+    const quidditch = createQuidditch({ rt, scene, camera, house, broom, cards: air, feel, tier, tell, said, stage: { at: [0, LEVEL + 0.15, -200], yaw: 0 } });
     const BROOM_REACH = 2.4; // m: near enough the broom on the ground to get on it
     const broomThing = () => wand.things.get('broom');
     const nearBroom = () => {
@@ -150,6 +161,8 @@ export default {
       }
       tell('broom', { riding: false });
     };
+    const lessons = createLessons({ rt, scene, camera, house, houseName: 'gryffindor', wand, broom, walker, floorAt, tell, said, cards: air, figure: null, fly });
+    const lesson = (id) => lessons.start(id, { p: [walker.state.x, floorAt(walker.state.x, walker.state.z), walker.state.z], yaw: walker.state.yaw });
 
     let clock = 0;
     let light = null;
@@ -182,6 +195,7 @@ export default {
 
     // the one prompt: the broom at your feet before the boats' way in
     let near = null;
+    const heldAct = new Set(); // (E's codes held last step: a lesson hears it let go)
     const promptNow = () => {
       if (broom.riding) return null;
       if (nearBroom()) return 'broom';
@@ -219,14 +233,25 @@ export default {
         if (pressed('menu')) tell('menu');
         const stick = input?.stick ?? touch;
         const pad = { x: stick.x || touch.x, y: stick.y || touch.y, rise: touch.rise, sink: touch.sink, catch: touch.catch };
+        // (a lesson has E while it runs; let go of it is its too)
+        const act = pressed('act') && lessons.act(true);
+        if (lessons.active && KEYS.act.some((c) => input?.pressed && !input.keys?.has?.(c) && heldAct.has(c))) lessons.act(false);
+        heldAct.clear();
+        for (const c of KEYS.act) if (input?.keys?.has?.(c)) heldAct.add(c);
+        let landedAt = null;
         if (quidditch.playing) quidditch.step(dt, input, pad);
         else if (broom.riding) {
           const r = broom.step(dt, input, pad);
-          if (r?.landed) landed(r.landed, r.yaw);
+          if (r?.landed) {
+            landed(r.landed, r.yaw);
+            landedAt = r.landed;
+          }
         } else {
-          if (pressed('act')) go();
+          if (pressed('act') && !act) go();
           walker.step(dt, input, pad);
         }
+        lessons.step(dt, input, pad, { rider: broom.rider, landed: landedAt });
+        said.update();
         feel.update(dt, camera);
         wand.step(dt, input);
         air.update(dt, camera);
@@ -274,7 +299,9 @@ export default {
         if (!broom.riding) fly();
         quidditch.start({ n });
       },
-      bubble: (el) => quidditch.bubble(el),
+      bubble: (el) => said.bubble(el),
+      lesson,
+      lessons,
       broom,
       quidditch,
       stick(x, y) {
@@ -291,6 +318,7 @@ export default {
         boats.dispose();
         wand.dispose();
         quidditch.dispose();
+        lessons.dispose();
         broom.dispose();
         air.dispose();
         kit?.dispose();
@@ -321,6 +349,8 @@ export default {
         fly: () => world.fly(),
         practice: () => world.practice(),
         match: (n) => world.match(n),
+        lesson: (id) => world.lesson(id),
+        lessons: () => lessons.state(),
         quidditch: () => ({ ...quidditch.state(), rider: broom.rider && { p: broom.rider.p.map((v) => Math.round(v * 10) / 10), spd: Math.round(broom.rider.spd * 3.6), mode: broom.rider.mode } }),
       };
     }

@@ -10,43 +10,35 @@
 // at: [x, y, z], yaw, seats?, built }), or until they do on a stand-in
 // pitch at `stage` ({ at, yaw }), or failing that in front of you.
 //
-//   createQuidditch({ rt, scene, camera, house, houseName, broom, cards, feel, tier, tell, pitch })
+//   createQuidditch({ rt, scene, camera, house, houseName, broom, cards, feel, tier, tell, said, pitch, stage })
 //     → { start({ n, practice, at, yaw }), step(dt, snapshot, touch) → playing,
-//         stop(), bubble(el), playing, state(), dispose() }
+//         stop(), playing, state(), dispose() }
 //
 // What it tells the page (`tell(type, data)`): 'said' { who, text } (the
-// commentator: the page shows it in the kit’s Bubble, which bubble(el)
-// lets this move over his box), 'match' { us, them, home, away, practice,
+// commentator, through `said` (play/said.js), which moves the kit’s Bubble
+// over his box), 'match' { us, them, home, away, practice,
 // t, near } four times a second while it’s on, 'toast' { text }; and for
 // the term’s lane, at the end of a match, rules/quidditch.js’s result {
 // type: 'match', n, house, against, us, them, caught, won, draw, seconds }
 // and, for a Snitch caught in a match, { type: 'points', house, delta,
 // why: 'snitch' }.
 
-import * as THREE from "three";
-import {
-  PITCH,
-  lineFor,
-  newMatch,
-  playersAt,
-  quaffleAt,
-  result,
-  stepMatch,
-} from "../rules/quidditch";
-import { inputOf } from "./broom";
-import { makeProp } from "./props";
-import { COLOURS, createStands } from "./stands";
+import * as THREE from 'three';
+import { PITCH, lineFor, newMatch, playersAt, quaffleAt, result, stepMatch } from '../rules/quidditch';
+import { inputOf } from './broom';
+import { makeProp } from './props';
+import { COLOURS, createStands } from './stands';
 
 export const SNITCH_POINTS_TO_HOUSE = 10; // what catching it in a match is worth to the Cup
 const READOUT = 0.25; // s between the scores to the HUD
 const SAY_GAP = 5; // s at least between two of the commentator’s lines
 const NAMES = {
-  gryffindor: "Gryffindor",
-  hufflepuff: "Hufflepuff",
-  ravenclaw: "Ravenclaw",
-  slytherin: "Slytherin",
+  gryffindor: 'Gryffindor',
+  hufflepuff: 'Hufflepuff',
+  ravenclaw: 'Ravenclaw',
+  slytherin: 'Slytherin',
 };
-const COMMENTATOR = "Lee Jordan";
+const COMMENTATOR = 'Lee Jordan';
 
 // the Snitch’s hum: a buzz of wings, louder and higher the nearer you are
 function createHum(rt) {
@@ -57,12 +49,12 @@ function createHum(rt) {
     start() {
       const ac = rt?.audio?.context?.();
       const out = rt?.audio?.bus?.();
-      if (!ac || !out || ac.state === "closed" || osc) return;
+      if (!ac || !out || ac.state === 'closed' || osc) return;
       osc = ac.createOscillator();
-      osc.type = "sawtooth";
+      osc.type = 'sawtooth';
       osc.frequency.value = 180;
       const f = ac.createBiquadFilter();
-      f.type = "bandpass";
+      f.type = 'bandpass';
       f.frequency.value = 900;
       f.Q.value = 2;
       gain = ac.createGain();
@@ -103,7 +95,7 @@ function createHum(rt) {
 function roar(rt, big = 1) {
   const ac = rt?.audio?.context?.();
   const out = rt?.audio?.bus?.();
-  if (!ac || !out || ac.state === "closed") return;
+  if (!ac || !out || ac.state === 'closed') return;
   const t = ac.currentTime;
   const n = Math.floor(ac.sampleRate * 2.6);
   const buf = ac.createBuffer(1, n, ac.sampleRate);
@@ -118,7 +110,7 @@ function roar(rt, big = 1) {
   const src = ac.createBufferSource();
   src.buffer = buf;
   const f = ac.createBiquadFilter();
-  f.type = "bandpass";
+  f.type = 'bandpass';
   f.frequency.value = 700;
   f.Q.value = 0.5;
   const g = ac.createGain();
@@ -130,20 +122,7 @@ function roar(rt, big = 1) {
   src.stop(t + 2.6);
 }
 
-export function createQuidditch({
-  rt,
-  scene,
-  camera,
-  house,
-  houseName = "gryffindor",
-  broom,
-  cards = null,
-  feel = null,
-  tier = "high",
-  tell = () => {},
-  pitch = null,
-  stage = null,
-} = {}) {
+export function createQuidditch({ rt, scene, camera, house, houseName = 'gryffindor', broom, cards = null, feel = null, tier = 'high', tell = () => {}, said: speaker = null, pitch = null, stage = null } = {}) {
   let m = null; // the rules’ match
   let frame = null; // { at: Vector3, yaw }: the pitch’s frame in the world
   let root = null; // the drawn match, in the pitch’s frame
@@ -151,15 +130,13 @@ export function createQuidditch({
   let readout = 0;
   let said = -SAY_GAP;
   let k = 0; // lines said, for the commentator’s turn
-  let bubbleEl = null;
   let ending = 0; // s the stands keep cheering after the catch
   const hum = createHum(rt);
   const q = new THREE.Quaternion();
   const up = new THREE.Vector3(0, 1, 0);
 
   // the pitch’s frame and the world’s
-  const toWorld = (p, out = new THREE.Vector3()) =>
-    out.set(p[0], p[1], p[2]).applyQuaternion(q).add(frame.at);
+  const toWorld = (p, out = new THREE.Vector3()) => out.set(p[0], p[1], p[2]).applyQuaternion(q).add(frame.at);
   const riderInWorld = (r) => {
     const w = toWorld(r.p);
     return { ...r, p: [w.x, w.y, w.z], yaw: r.yaw + frame.yaw };
@@ -167,31 +144,31 @@ export function createQuidditch({
 
   function build() {
     root = new THREE.Group();
-    root.name = "hogwarts-match";
+    root.name = 'hogwarts-match';
     root.position.copy(frame.at);
     root.quaternion.copy(q);
     scene.add(root);
-    const snitch = makeProp("snitch", { house, rt });
+    const snitch = makeProp('snitch', { house, rt });
     snitch.scale.setScalar(1.6);
     root.add(snitch);
     view = { snitch, players: [], bludgers: [], quaffle: null, stands: null };
     if (m.practice) return;
-    const us = COLOURS[houseName]?.[0] ?? "#7f0909";
-    const them = COLOURS[m.against]?.[0] ?? "#1a472a";
+    const us = COLOURS[houseName]?.[0] ?? '#7f0909';
+    const them = COLOURS[m.against]?.[0] ?? '#1a472a';
     for (const pl of playersAt(m)) {
-      const o = makeProp("rider", {
+      const o = makeProp('rider', {
         house,
         rt,
-        tint: pl.team === "us" ? us : them,
+        tint: pl.team === 'us' ? us : them,
       });
       root.add(o);
       view.players.push(o);
     }
-    view.quaffle = makeProp("quaffle", { house, rt });
+    view.quaffle = makeProp('quaffle', { house, rt });
     view.quaffle.scale.setScalar(1.6);
     root.add(view.quaffle);
     for (let i = 0; i < 2; i++) {
-      const b = makeProp("bludger", { house, rt });
+      const b = makeProp('bludger', { house, rt });
       b.scale.setScalar(1.8);
       root.add(b);
       view.bludgers.push(b);
@@ -209,8 +186,7 @@ export function createQuidditch({
     if (!root) return;
     view?.stands?.dispose();
     root.traverse((o) => {
-      if (o.isMesh && o.geometry && !o.geometry.userData?.shared)
-        o.geometry.dispose();
+      if (o.isMesh && o.geometry && !o.geometry.userData?.shared) o.geometry.dispose();
     });
     scene.remove(root);
     root = null;
@@ -220,7 +196,8 @@ export function createQuidditch({
   const say = (text) => {
     if (!text || m.t - said < SAY_GAP) return;
     said = m.t;
-    tell("said", { who: COMMENTATOR, text });
+    if (speaker) speaker.say(COMMENTATOR, text, boxAt);
+    else tell('said', { who: COMMENTATOR, text });
   };
 
   function start({ n = 1, practice = false, at = null, yaw = null } = {}) {
@@ -229,27 +206,11 @@ export function createQuidditch({
     // where: the pitch if the grounds have one and this is a match; else
     // round where you are, the long axis the way you face
     const here = broom.rider?.p ?? camera.position.toArray();
-    const facing = broom.rider
-      ? broom.rider.yaw
-      : Math.atan2(-Math.sin(camera.rotation.y), -Math.cos(camera.rotation.y));
-    const place = practice
-      ? null
-      : pitch?.at
-        ? pitch
-        : stage?.at
-          ? stage
-          : null;
+    const facing = broom.rider ? broom.rider.yaw : Math.atan2(-Math.sin(camera.rotation.y), -Math.cos(camera.rotation.y));
+    const place = practice ? null : pitch?.at ? pitch : stage?.at ? stage : null;
     const fyaw = yaw ?? (place ? (place.yaw ?? 0) : facing - Math.PI / 2);
     q.setFromAxisAngle(up, fyaw);
-    const centre =
-      at ??
-      (place
-        ? place.at
-        : [
-            here[0] + Math.sin(facing) * (practice ? 30 : PITCH.hoopX - 12),
-            Math.max(0, here[1] - 8),
-            here[2] + Math.cos(facing) * (practice ? 30 : PITCH.hoopX - 12),
-          ]);
+    const centre = at ?? (place ? place.at : [here[0] + Math.sin(facing) * (practice ? 30 : PITCH.hoopX - 12), Math.max(0, here[1] - 8), here[2] + Math.cos(facing) * (practice ? 30 : PITCH.hoopX - 12)]);
     frame = { at: new THREE.Vector3(...centre), yaw: fyaw };
     // a match starts with you at your end; practice, where you are
     m = newMatch({
@@ -259,16 +220,14 @@ export function createQuidditch({
       seed: Math.floor(Math.random() * 1e6),
     });
     if (broom.rider && practice) {
-      const local = new THREE.Vector3(...broom.rider.p)
-        .sub(frame.at)
-        .applyQuaternion(q.clone().invert());
+      const local = new THREE.Vector3(...broom.rider.p).sub(frame.at).applyQuaternion(q.clone().invert());
       m = {
         ...m,
         you: {
           ...broom.rider,
           p: [local.x, Math.max(2, local.y), local.z],
           yaw: broom.rider.yaw - fyaw,
-          mode: "air",
+          mode: 'air',
           ev: [],
         },
       };
@@ -277,11 +236,11 @@ export function createQuidditch({
     hum.start();
     said = -SAY_GAP;
     if (!practice) {
-      say(lineFor({ type: "start" }, m, k++));
+      say(lineFor({ type: 'start' }, m, k++));
       roar(rt, 0.6);
     } else
-      tell("toast", {
-        text: "The Snitch is away. Find the glint, and E when it’s in reach.",
+      tell('toast', {
+        text: 'The Snitch is away. Find the glint, and E when it’s in reach.',
       });
     return m;
   }
@@ -292,7 +251,7 @@ export function createQuidditch({
     m = null;
     hum.stop();
     clear();
-    tell("match", null);
+    tell('match', null);
   }
 
   const v = new THREE.Vector3();
@@ -302,10 +261,7 @@ export function createQuidditch({
     // the Snitch: its wings a blur, a glint that stays the size of a star however far
     view.snitch.position.set(...m.snitch.p);
     const wings = view.snitch.userData.parts?.wings;
-    if (wings)
-      wings.forEach(
-        (wg, i) => (wg.rotation.x = Math.sin(t * 70 + i * Math.PI) * 1.1),
-      );
+    if (wings) wings.forEach((wg, i) => (wg.rotation.x = Math.sin(t * 70 + i * Math.PI) * 1.1));
     toWorld(m.snitch.p, w);
     const far = camera.position.distanceTo(w);
     if (cards) {
@@ -314,13 +270,11 @@ export function createQuidditch({
         v: [0, 0, 0],
         life: 0.06,
         size: 0.18 + far * 0.012,
-        colour: new THREE.Color(1, 0.8, 0.35).multiplyScalar(
-          1.6 + Math.sin(t * 9) * 0.5,
-        ),
+        colour: new THREE.Color(1, 0.8, 0.35).multiplyScalar(1.6 + Math.sin(t * 9) * 0.5),
         grow: 0,
       });
       // (a fleck of gold behind it when it darts)
-      if (m.snitch.mode === "dart")
+      if (m.snitch.mode === 'dart')
         cards.spawn({
           p: [w.x, w.y, w.z],
           v: [0, 0, 0],
@@ -364,24 +318,23 @@ export function createQuidditch({
     broom.show(riderInWorld(m.you), dt);
     draw(dt);
     for (const e of m.ev) {
-      if (e.type === "goal") {
-        view.stands?.cheer(e.side === "us" ? 1 : 0.55);
-        roar(rt, e.side === "us" ? 1 : 0.6);
+      if (e.type === 'goal') {
+        view.stands?.cheer(e.side === 'us' ? 1 : 0.55);
+        roar(rt, e.side === 'us' ? 1 : 0.6);
         say(lineFor(e, m, k++));
-      } else if (e.type === "bludger") {
+      } else if (e.type === 'bludger') {
         feel?.trauma?.(0.7);
         feel?.hitstop?.(80);
         said = -SAY_GAP;
         say(lineFor(e, m, k++));
-      } else if (e.type === "dart" || e.type === "near" || e.type === "knock")
-        say(lineFor(e, m, k++));
-      else if (e.type === "caught") finish(e);
+      } else if (e.type === 'dart' || e.type === 'near' || e.type === 'knock') say(lineFor(e, m, k++));
+      else if (e.type === 'caught') finish(e);
     }
     if (!m) return false;
     readout -= dt;
     if (readout <= 0) {
       readout = READOUT;
-      tell("match", {
+      tell('match', {
         us: m.score.us,
         them: m.score.them,
         home: NAMES[houseName],
@@ -391,34 +344,28 @@ export function createQuidditch({
         near: Math.round(camera.position.distanceTo(toWorld(m.snitch.p, w))),
       });
     }
-    placeBubble();
     return true;
   }
 
   function finish(e) {
     const r = result(m);
-    if (m.practice)
-      tell("toast", { text: `Caught, in ${Math.round(m.t)} seconds.` });
+    if (m.practice) tell('toast', { text: `Caught, in ${Math.round(m.t)} seconds.` });
     else {
       said = -SAY_GAP;
       say(lineFor(e, m, k++));
-      view.stands?.cheer(e.by === "you" ? 1 : 0.4);
-      roar(rt, e.by === "you" ? 1.3 : 0.5);
-      const won = r.won
-        ? `${NAMES[houseName]} win`
-        : r.draw
-          ? "A draw"
-          : `${NAMES[m.against]} win`;
-      tell("toast", {
+      view.stands?.cheer(e.by === 'you' ? 1 : 0.4);
+      roar(rt, e.by === 'you' ? 1.3 : 0.5);
+      const won = r.won ? `${NAMES[houseName]} win` : r.draw ? 'A draw' : `${NAMES[m.against]} win`;
+      tell('toast', {
         text: `${won}, ${Math.max(r.us, r.them)} to ${Math.min(r.us, r.them)}.`,
       });
-      tell("result", r);
-      if (e.by === "you")
-        tell("points", {
-          type: "points",
+      tell('result', r);
+      if (e.by === 'you')
+        tell('points', {
+          type: 'points',
           house: houseName,
           delta: SNITCH_POINTS_TO_HOUSE,
-          why: "snitch",
+          why: 'snitch',
         });
     }
     // the stands keep cheering a moment; then back to flying free
@@ -426,25 +373,14 @@ export function createQuidditch({
     m = { ...m, over: true, ev: [] };
   }
 
-  // the commentator’s bubble over his box (the kit’s Bubble: moved to the
-  // point, shown by its opacity)
-  function placeBubble() {
-    if (!bubbleEl || !view?.stands) return;
-    toWorld(view.stands.box.toArray(), w).project(camera);
-    const box = rt?.host?.getBoundingClientRect?.();
-    const on = w.z < 1 && Math.abs(w.x) < 1.1 && Math.abs(w.y) < 1.1 && box;
-    bubbleEl.style.opacity = on ? "1" : "0";
-    if (on)
-      bubbleEl.style.transform = `translate(${Math.round(((w.x + 1) / 2) * box.width)}px, ${Math.round(((1 - w.y) / 2) * box.height)}px)`;
-  }
+  // the commentator’s box in the world, for his bubble (read a frame at a time)
+  const box = new THREE.Vector3();
+  const boxAt = () => (view?.stands ? toWorld(view.stands.box.toArray(), box) : null);
 
   return {
     start,
     step,
     stop,
-    bubble(el) {
-      bubbleEl = el;
-    },
     get playing() {
       return Boolean(m);
     },
@@ -463,14 +399,7 @@ export function createQuidditch({
             caught: m.caught,
             snitch: m.snitch.p.map((x) => Math.round(x)),
             you: m.you.p.map((x) => Math.round(x)),
-            near:
-              Math.round(
-                Math.hypot(
-                  m.you.p[0] - m.snitch.p[0],
-                  m.you.p[1] - m.snitch.p[1],
-                  m.you.p[2] - m.snitch.p[2],
-                ) * 10,
-              ) / 10,
+            near: Math.round(Math.hypot(m.you.p[0] - m.snitch.p[0], m.you.p[1] - m.snitch.p[1], m.you.p[2] - m.snitch.p[2]) * 10) / 10,
           }
         : null,
     get match() {
