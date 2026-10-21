@@ -2,6 +2,7 @@
 // their stars). Each level says which chapter it belongs to (`town`).
 import { AMON_HEN } from './amonhen';
 import { CORMALLEN } from './cormallen';
+import { HOUSES } from './houses';
 import { ITHILIEN } from './ithilien';
 import { LORIEN } from './lorien';
 import { MORIA } from './moria';
@@ -11,7 +12,7 @@ import { RIVENDELL } from './rivendell';
 import { TOWER } from './tower';
 import { WEATHERTOP } from './weathertop';
 
-export const LEVELS = { pony: PONY, rivendell: RIVENDELL, moria: MORIA, lorien: LORIEN, amonhen: AMON_HEN, party: PARTY, weathertop: WEATHERTOP, ithilien: ITHILIEN, tower: TOWER, cormallen: CORMALLEN };
+export const LEVELS = { pony: PONY, rivendell: RIVENDELL, moria: MORIA, lorien: LORIEN, amonhen: AMON_HEN, party: PARTY, weathertop: WEATHERTOP, ithilien: ITHILIEN, tower: TOWER, cormallen: CORMALLEN, houses: HOUSES };
 
 // the kitchen of a chapter (its town), if it has one
 export const levelOf = (town) => Object.values(LEVELS).find((l) => l.town === town) ?? null;

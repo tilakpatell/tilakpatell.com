@@ -2,12 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAchievements } from '../../Achievements';
 import { audioContext } from '../../../lib/audio';
 import { use3D } from '../../../lib/gpu';
-import { local, prefersReducedMotion, useFrameLoop, useInView, useMediaQuery } from '../../../lib/hooks';
+import { local, prefersReducedMotion, useInView, useMediaQuery } from '../../../lib/hooks';
+import { useTick } from '../tick';
+import { engine } from '../module';
 import { sayVoiced, stopVoiced } from '../../../lib/voiced';
 import { useVoiced } from '../../../lib/useVoiced';
 import { readPad, typing } from '../../games/pad';
 import { keyDown, keyUp, moveOf, ownButton } from '../towns/keys';
-import { Bubble, QuestList, Stick, Travellers } from '../towns/TownHud';
+import { Bubble, QuestList, Stick, TownMenu, Travellers } from '../towns/TownHud';
 import { useTravellers } from '../towns/useTravellers';
 import {
   CAST,
@@ -68,7 +70,7 @@ import {
   stepFade,
   stepStride,
 } from './rules';
-import { SWATCH } from './fx';
+import { SWATCH } from '../nodes/shire/fx';
 import './shire.css';
 import '../../../styles/lazy/middleearth.css';
 import GuideCue from '../../guide/GuideCue';
@@ -203,7 +205,9 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
+    // (its code first, then the world: made in the order the code came, as before)
     import('./scene')
+      .then((m) => engine().then(() => m))
       .then(({ createShireWorld }) => {
         if (dead || !canvas.current) return null;
         // (with motion turned down, the leaves lie as they fell)
@@ -428,7 +432,7 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
   }, [box, live, near, enter, leave, act, putRing]);
 
   // ── every frame ──
-  useFrameLoop((ms) => {
+  useTick((ms) => {
     const a = api.current;
     if (!a || a.lost) return;
     const s = sim.current;
@@ -760,7 +764,7 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
     }
     if (++s.frame % 4 === 0) drawMap(map.current, s.h, markers, p, s.spoons ? lobelia : null);
     if (s.frame % 120 === 0) local.set(AT, { x: s.h.x, z: s.h.z, face: s.h.face });
-  }, live);
+  }, live, { canvas });
 
   // the world's own pointer: drag to look round; in an activity, aim and act
   const drag = useRef(null);
@@ -844,6 +848,7 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
             </p>
           </div>
           <div className="shire-side">
+            <TownMenu chapter="shire" />
             <canvas ref={map} className="shire-map" width="150" height="150" aria-hidden="true" />
             <button type="button" className="shire-chip" onClick={() => setList((v) => !v)} aria-expanded={list}>
               <b>{count}</b> of {QUESTS.length} done {!touch && <kbd>M</kbd>}

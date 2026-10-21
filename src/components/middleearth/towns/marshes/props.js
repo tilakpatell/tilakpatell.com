@@ -17,10 +17,11 @@
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
-import { canvasTexture, hot } from '../../../../lib/stage3d';
+import { canvasTexture, hot } from '../../../../lib/three/stage3dNodes';
 import { clamp01, fbm, makeCanvas, makeCells, makeNoise, mix, normalFromField, paintPixels, smooth } from '../../../../lib/paint';
 import { blob, boxUV, createShireKit, parts, rng, tf, tube } from '../../shire/props';
 import { createStride, ease, footAt } from '../../creatures';
+import { faceMaterial } from '../../nodes/towns/marshes/propsShaders';
 
 const TAU = Math.PI * 2;
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
@@ -210,7 +211,7 @@ const bone = (name, parent, p = [0, 0, 0]) => {
 
 // Grey rock, nearly white so vertex colours give its hue: grain, joints
 // and hairline cracks, rain streaks down it. With its relief.
-function rockCanvas(S, seed) {
+export function rockCanvas(S, seed) {
   const n = makeNoise(seed);
   const cells = makeCells(seed + 5);
   const field = new Float32Array(S * S);
@@ -233,7 +234,7 @@ function rockCanvas(S, seed) {
 
 // Black iron in great plates: seams, rivets along them, pitting and rust
 // run down from the joints. With its relief.
-function ironCanvas(S, seed) {
+export function ironCanvas(S, seed) {
   const n = makeNoise(seed);
   const field = new Float32Array(S * S);
   const c = makeCanvas(S);
@@ -263,7 +264,7 @@ function ironCanvas(S, seed) {
 }
 
 // A soft round glow.
-function glowCanvas() {
+export function glowCanvas() {
   const c = makeCanvas(64);
   const x = c.getContext('2d');
   const grd = x.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -277,7 +278,7 @@ function glowCanvas() {
 }
 
 // A candle flame: a teardrop, white at its heart.
-function flameCanvas() {
+export function flameCanvas() {
   const c = makeCanvas(32, 64);
   paintPixels(c, (u, v, out) => {
     const dy = v - 0.66;
@@ -294,7 +295,7 @@ function flameCanvas() {
 
 // Gollum's eye, wrapped on a ball: the iris at its +x, huge and pale blue,
 // a small black pupil, a sallow white with red threads.
-function eyeCanvas() {
+export function eyeCanvas() {
   const c = makeCanvas(128, 64);
   const x = c.getContext('2d');
   x.fillStyle = '#d6d6c2';
@@ -333,7 +334,7 @@ function eyeCanvas() {
 }
 
 // The elven rope's twist: silver-grey with darker strands winding round.
-function ropeCanvas() {
+export function ropeCanvas() {
   const c = makeCanvas(32, 32);
   paintPixels(c, (u, v, out) => {
     const s = (u + v * 2) % 0.25;
@@ -348,7 +349,7 @@ function ropeCanvas() {
 // A drowned face for the marsh pools, pale on clear: `kind` 0 a Man of the
 // Last Alliance under his helm, 1 an Elf, her hair spread in the water, 2
 // an Orc.
-function faceCanvas(kind) {
+export function faceCanvas(kind) {
   const S = 128;
   const c = makeCanvas(S);
   const x = c.getContext('2d');
@@ -500,7 +501,7 @@ const ROCK = { base: C(0xaeaeaa), dark: C(0x3a3c40), wet: C(0x606268), pale: C(0
 
 // A razor spire of rock, about 3 m: a few blade-thin shards leaning
 // together, flat-faced and sharp. One geometry for instancing.
-function spikeGeo(seed = 1) {
+export function spikeGeo(seed = 1) {
   const r = rng(seed * 13 + 1);
   const n = makeNoise(seed + 3);
   const list = [];
@@ -570,7 +571,7 @@ function spurGeo(seed, cx, cy, side, out = 0.8) {
 // jagged rim and rock crowding behind it. Down the middle (x = 0 ± 3) it
 // is kept smooth and flush with z = 0 for the rope and for Gollum, but for
 // the spurs in `outcrops`.
-function cliff(K, { w = 60, h = 34, outcrops = [] } = {}) {
+export function cliff(K, { w = 60, h = 34, outcrops = [] } = {}) {
   const { mats } = K;
   const g = new THREE.Group();
   g.name = 'cliff';
@@ -716,7 +717,7 @@ function cliff(K, { w = 60, h = 34, outcrops = [] } = {}) {
 
 // Sam's elven rope: thin, silver-grey, a tube that set([a, b]) lays from a
 // to b with a little sag, rewritten in place.
-function rope(K) {
+export function rope(K) {
   const SEG = 28;
   const RAD = 6;
   const R = 0.026;
@@ -1252,7 +1253,7 @@ function bladeGeo(root, dir, len, wid, droop, segs, colour) {
 
 // A tussock of marsh grass, about 0.7 m: a dark mound bristling with dull
 // khaki blades, dead straw at their tips. One geometry.
-function tussockGeo(seed = 1) {
+export function tussockGeo(seed = 1) {
   const r = rng(seed * 7 + 2);
   const list = [];
   const mound = lump(0.26, { p: [0, 0.02, 0], s: [1.2, 0.45, 1.1] }, { detail: 1, amp: 0.2, seed });
@@ -1272,7 +1273,7 @@ function tussockGeo(seed = 1) {
 
 // Reeds, up to 2 m: dead brown-green stalks, a few bent and snapped, some
 // with their brown heads, leaves trailing from their feet. One geometry.
-function reedsGeo(seed = 1) {
+export function reedsGeo(seed = 1) {
   const r = rng(seed * 5 + 9);
   const list = [];
   for (let i = 0; i < 16; i++) {
@@ -1307,7 +1308,7 @@ function reedsGeo(seed = 1) {
 
 // A drowned tree, about 4 m: a twisted bare snag, black and wet below,
 // silver-grey above, limbs broken short, the top snapped. One geometry.
-function deadTreeGeo(seed = 1) {
+export function deadTreeGeo(seed = 1) {
   const r = rng(seed * 7 + 3);
   const n = makeNoise(seed + 17);
   const list = [];
@@ -1379,7 +1380,7 @@ const _kc2 = new THREE.Color();
 // group's origin (the scene sets it 0.2 over the water), its soft green-white
 // glow, and the glow lying on the water under it. update(t) flickers and
 // bobs it.
-function wisp(K) {
+export function wisp(K) {
   const g = new THREE.Group();
   g.name = 'wisp';
   const sprite = (map, colour, opacity, sx, sy) => {
@@ -1416,44 +1417,7 @@ function wisp(K) {
 // half there. Drawn where it lies, but tested for depth as if `lift` m
 // higher, so the opaque water over it (up to 0.7 m above) doesn't hide it.
 // update(t, k): k 0..1 how clearly it shows.
-const FACE_VERT = /* glsl */ `
-  #include <fog_pars_vertex>
-  uniform float uTime, uLift;
-  varying vec2 vUv;
-  varying vec3 vN;
-  void main() {
-    vUv = uv;
-    vec3 p = position;
-    p.xz += vec2(sin(uTime * 0.7 + p.z * 9.0), cos(uTime * 0.6 + p.x * 8.0)) * 0.006;
-    vec4 wp = modelMatrix * vec4(p, 1.0);
-    vN = normalize(mat3(modelMatrix) * normal);
-    vec4 mvPosition = viewMatrix * wp;
-    gl_Position = projectionMatrix * mvPosition;
-    vec3 ray = wp.xyz - cameraPosition;
-    float dist = length(ray);
-    ray /= dist;
-    float lift = min(uLift / max(0.15, -ray.y), dist * 0.8);
-    vec4 cl = projectionMatrix * (viewMatrix * vec4(wp.xyz - ray * lift, 1.0));
-    gl_Position.z = cl.z / cl.w * gl_Position.w;
-    #include <fog_vertex>
-  }`;
-const FACE_FRAG = /* glsl */ `
-  #include <fog_pars_fragment>
-  uniform sampler2D uMap;
-  uniform float uK, uTime;
-  uniform vec3 uTint;
-  varying vec2 vUv;
-  varying vec3 vN;
-  void main() {
-    vec2 uv = vUv + vec2(sin(uTime * 1.3 + vUv.y * 18.0), cos(uTime * 1.1 + vUv.x * 15.0)) * 0.006;
-    vec4 c = texture2D(uMap, uv);
-    float lit = 0.62 + 0.38 * max(dot(normalize(vN), normalize(vec3(0.3, 1.0, -0.4))), 0.0);
-    gl_FragColor = vec4(c.rgb * uTint * lit, c.a * uK);
-    #include <tonemapping_fragment>
-    #include <colorspace_fragment>
-    #include <fog_fragment>
-  }`;
-function faceGeo() {
+export function faceGeo() {
   const g = new THREE.PlaneGeometry(0.46, 0.46, 14, 14);
   const p = g.attributes.position;
   const uv = g.attributes.uv;
@@ -1470,13 +1434,13 @@ function faceGeo() {
   g.computeVertexNormals();
   return g.rotateX(-Math.PI / 2);
 }
-function face(K, seed = 1) {
+export function face(K, seed = 1) {
   const kind = ((seed % 3) + 3) % 3;
   const g = new THREE.Group();
   g.name = 'face';
-  const uniforms = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 }, uK: { value: 0 }, uLift: { value: 0.72 }, uTint: { value: new THREE.Color(0xa4c4b8) } }]);
-  uniforms.uMap = { value: K.tex.faces[kind] };
-  const m = new THREE.ShaderMaterial({ uniforms, vertexShader: FACE_VERT, fragmentShader: FACE_FRAG, transparent: true, depthWrite: false, fog: true });
+  // (a kit's own, where it gives one: the Road's, on its house look; else the chapter's)
+  const m = (K.shaders?.face ?? faceMaterial)(K.tex.faces[kind]);
+  const { uniforms } = m;
   const mesh = new THREE.Mesh(K.faceGeo, m);
   mesh.rotation.y = ((seed * 1.7) % 1) * TAU;
   mesh.renderOrder = 3;
@@ -1617,7 +1581,7 @@ function wingParts(K, s, n, r) {
 // snaking neck, a hooked beak of a reptile's head with horns swept back, a
 // long tail, talons tucked under; on its shoulders the black rider, hooded
 // and faceless, his cloak streaming. Faces +x. animate(t, { flap }).
-function fellBeast(K) {
+export function fellBeast(K) {
   const { mats } = K;
   const g = new THREE.Group();
   g.name = 'fellBeast';
@@ -1890,7 +1854,7 @@ function gateLeafGeo(sigma, seed) {
 // running off to bastions and into the jagged mountains either side. Its
 // front faces +z, the leaves hinged at x = ±30 and swinging in (to −z):
 // open(k) 0 shut, 1 open. Built to be seen from 100–200 m.
-function blackGate(K) {
+export function blackGate(K) {
   const { mats } = K;
   const g = new THREE.Group();
   g.name = 'blackGate';
@@ -2195,7 +2159,7 @@ function easterling(K, seed = 1) {
 
 // One Easterling mid-stride with his spear upright, as one vertex-coloured
 // geometry for a marching column (under 800 triangles).
-function columnGeo() {
+export function columnGeo() {
   const root = new THREE.Group();
   const b = eastRig(root);
   eastPose(b, Math.PI / 2 / 6.2, { marching: true });
@@ -2206,7 +2170,7 @@ function columnGeo() {
 
 // A boulder of the ash slope, about 2 m across: broken flat-faced rock,
 // dark, ash lying grey on whatever faces up. One geometry.
-function ashRockGeo(seed = 1) {
+export function ashRockGeo(seed = 1) {
   const r = rng(seed);
   const n = makeNoise(seed + 5);
   let g = new THREE.IcosahedronGeometry(1, 2);

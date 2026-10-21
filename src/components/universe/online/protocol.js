@@ -7,10 +7,11 @@
 // (and only ever set as text), numbers are checked and clamped, each pilot
 // may send only so much of each kind of message (createLimiter: past that
 // it's dropped, and a flood gets them muted), and a hit is believed only
-// from someone who isn't an ally, fired a shot that would have passed near
-// you a moment ago (aimedAt), was close enough, and isn't hitting faster
-// than the guns fire; a ram only from someone who isn't an ally and was last
-// seen touching you, as hard as both your speeds allow (ramCounts). The
+// from someone who isn't an ally or a mate in your party (mates.js), fired
+// a shot that would have passed near you a moment ago (aimedAt), was close
+// enough, and isn't hitting faster than the guns fire; a ram only from
+// someone who isn't either and was last seen touching you, as hard as both
+// your speeds allow (ramCounts). The
 // hunters after a pilot are theirs to fly: what they
 // say of them is only drawn, and a hit on one of yours by someone else is
 // believed only from a pilot who's here, has just fired and is close to it
@@ -27,8 +28,9 @@
 //           r: rank on that side (galaxy/ranks.js) } or none; a build older
 //           than these sends neither: level 1, nobody's }  on joining, and on any change
 //   pose  [x, y, z, heading, pitch, bank, speed, vy, flags, shields, sec?]  ten times a second while flying
-//         (sec: out in the Expanse, its sector, 'E:sx,sz', and x and z then
-//         from that sector's middle; without it, the authored map's, as ever)
+//         (sec: out in the Expanse, its sector, 'E:sx,sz' or, off the middle
+//         layer, 'E:sx,sz,sy', and x, y and z then from that sector's middle;
+//         without it, the authored map's, as ever)
 //         (flags: hidden, boosting, safe: just back, your hits don't count, and
 //         lane, from when there were hyperlanes: read by nothing now)
 //   shot  [x, y, z, vx, vy, vz, w?]                      a bolt fired (for drawing it); w: the
@@ -64,6 +66,13 @@
 //                                                       (x from the middle of the window, y
 //                                                       down the page, in px), or with touch
 //                                                       where you're reading
+//   party { t, p, … }                                  a party's word (partyWire.js): an invite,
+//                                                       a yes or a no to one pilot, the leader's
+//                                                       roster, leaving, removing one, a summons
+//   psay  { b: [blob, …] }                             a line of party chat, sealed for each mate
+//                                                       there (partyCrypt.js), and nothing else
+//   quip  { q }                                        a quick-chat line, its index in quips.js's
+//                                                       QUIPS, to everyone
 
 import { parseShip } from '../crews';
 import { FOOT, METRE } from '../foot';
@@ -75,7 +84,7 @@ import { KINDS as HUNTERS } from '../../galaxy/hunted';
 import { fromAngles, slerp, toAngles } from '../orient';
 import { cleanWhere } from './where';
 import { inExpanse, sectorOf } from '../layout';
-import { SECTOR, parseSector, sectorCentre } from '../../expanse/gen/grid';
+import { SECTOR, parseSectorKey, sectorCentre, sectorKey } from '../../../lib/space/address';
 import { cleanName } from './names';
 import { LEVELS as XP_LEVELS } from '../economy';
 import { SIDES } from '../sides';
@@ -84,6 +93,7 @@ import { SIDES as WAR_SIDES, WARS, warOfSide } from '../../galaxy/sides';
 import { RANKS } from '../../galaxy/ranks';
 import { STANCE_IDS } from '../../galaxy/surface/combatRules';
 import { NO_FACTIONS } from './relations';
+import { isMate } from './mates';
 import { motionPacket, readEmoteWire, readMotion } from '../../../lib/emote';
 import { WEAPONS, byCode } from '../weaponTable';
 import { CONTACT } from '../../../lib/combat/contact';
@@ -115,7 +125,7 @@ export const GUARD = {
 };
 export const RAM_MAX = 600; // a closing speed, at most (two ships head on, on the pulse drive)
 // how many of each message one pilot may send: [a second, at most at once]
-export const RATES = { pose: [20, 30], foot: [20, 30], walk: [20, 30], cur: [25, 40], shot: [10, 12], hit: [10, 12], ram: [3, 4], siege: [2, 6], war: [0.5, 3], fight: [2, 6], hi: [1, 4], ally: [0.5, 3], down: [0.4, 2], pack: [8, 12], hhit: [10, 12] }; // (the X-wing fires 8 a second)
+export const RATES = { pose: [20, 30], foot: [20, 30], walk: [20, 30], cur: [25, 40], shot: [10, 12], hit: [10, 12], ram: [3, 4], siege: [2, 6], war: [0.5, 3], fight: [2, 6], hi: [1, 4], ally: [0.5, 3], down: [0.4, 2], pack: [8, 12], hhit: [10, 12], party: [1, 6], psay: [1, 4], quip: [0.5, 3] }; // (the X-wing fires 8 a second; a quip one every two seconds, three at once)
 export const FLOOD = { denied: 60, window: 5000 }; // turned away this often in this long: muted
 export const FLAG = { hidden: 1, boost: 2, safe: 4, lane: 8 };
 // how far out a pilot can be, level, and how fast they can go: the universe
@@ -206,28 +216,34 @@ export function readCursor(data) {
 export function writePose(s, flags = 0, shield = 100) {
   const r = (v, k = 1000) => Math.round((v || 0) * k) / k;
   const sec = sectorOf(s.x || 0, s.y || 0, s.z || 0);
-  const o = inExpanse(sec) ? sectorCentre(...parseSector(sec)) : null;
-  const out = [r(s.x - (o?.[0] ?? 0), 100), r(s.y, 100), r(s.z - (o?.[2] ?? 0), 100), r(s.heading), r(s.pitch), r(wrap((s.bank || 0) + (s.lean || 0))), r(s.speed, 100), r(s.vy, 100), flags | 0, Math.round(shield)];
+  // (a position that isn't a number keys a sector nothing parses: that goes
+  // out as the map's, and readPose throws it out, rather than throwing here)
+  const at = inExpanse(sec) ? parseSectorKey(sec) : null;
+  const o = at && sectorCentre(...at);
+  const out = [r(s.x - (o?.[0] ?? 0), 100), r(s.y - (o?.[1] ?? 0), 100), r(s.z - (o?.[2] ?? 0), 100), r(s.heading), r(s.pitch), r(wrap((s.bank || 0) + (s.lean || 0))), r(s.speed, 100), r(s.vy, 100), flags | 0, Math.round(shield)];
   if (o) out.push(sec);
   return out;
 }
-// how far from its sector's middle an Expanse pose may be (its half and a margin)
+// how far from its sector's middle an Expanse pose may be, up and down too
+// (its half and a margin); a sectorless pose's height gets the same room
 const SEC_FAR = SECTOR / 2 + 2000;
 
 // a pose as it came in: { x, y, z, heading, pitch, bank, speed, vy, hidden,
 // boost, safe, lane, shield, sec? }, or null if it isn't one (out past deep space's
 // edge, it's clamped; an older pilot's never has the lane bit, so reads not riding).
-// x and z are the map's: an Expanse pose's are put back from its sector's
-// middle (and `sec` kept); one without a sector is the authored map's.
+// x, y and z are the map's: an Expanse pose's are put back from its sector's
+// middle (and `sec` kept, in sectorKey's form); one without a sector is the
+// authored map's.
 export function readPose(data) {
   if (!Array.isArray(data) || data.length < 9) return null;
-  const at = data.length > 10 ? parseSector(data[10]) : null;
-  const sec = at && inExpanse(data[10]) ? data[10] : null;
-  const o = sec ? sectorCentre(...at) : null;
+  const at = data.length > 10 ? parseSectorKey(data[10]) : null;
+  const sec = at ? sectorKey(...at) : null;
+  const o = at ? sectorCentre(...at) : null;
   const lx = o ? num(data[0], -SEC_FAR, SEC_FAR) : num(data[0], -FAR, FAR);
-  const y = num(data[1], -1300, 1300);
+  const ly = num(data[1], -SEC_FAR, SEC_FAR);
   const lz = o ? num(data[2], -SEC_FAR, SEC_FAR) : num(data[2], -FAR, FAR);
   const x = lx === null ? null : lx + (o?.[0] ?? 0);
+  const y = ly === null ? null : ly + (o?.[1] ?? 0);
   const z = lz === null ? null : lz + (o?.[2] ?? 0);
   const heading = num(data[3], -100, 100);
   if (x === null || y === null || z === null || heading === null) return null;
@@ -261,7 +277,7 @@ export const writeShot = (p, v, w = 0) => {
 export function readShot(data, from = null) {
   if (!Array.isArray(data) || data.length < 6) return null;
   // (anywhere in the universe; its speed's checked just below)
-  const n = data.slice(0, 6).map((v, i) => (i < 3 ? num(v, -FAR, FAR) : num(v, -7500, 7500)));
+  const n = data.slice(0, 6).map((v, i) => (i < 3 ? num(v, -1e12, 1e12) : num(v, -7500, 7500)));
   if (n.some((v) => v === null)) return null;
   if (Math.hypot(n[3], n[4], n[5]) > 800) return null;
   // (as far as it could have gone since that pose, on the pulse drive)
@@ -282,14 +298,14 @@ export function readRam(data) {
   return v === null ? null : v;
 }
 
-// Should a ram from this pilot count, and how hard? They're not blocked or
-// an ally, were last seen close enough to have touched you (more room the
-// faster you both go: their pose is a moment old), and it's not sooner after
-// their last than a contact counts again (the law's `cool`). The closing
-// speed believed is theirs (`into`), but never more than both your speeds
-// together; null when it doesn't count.
+// Should a ram from this pilot count, and how hard? They're not blocked, an
+// ally or a party mate (isMate), were last seen close enough to have touched
+// you (more room the faster you both go: their pose is a moment old), and
+// it's not sooner after their last than a contact counts again (the law's
+// `cool`). The closing speed believed is theirs (`into`), but never more
+// than both your speeds together; null when it doesn't count.
 export function ramCounts(peer, me, into, now) {
-  if (!peer || !me || peer.blocked || peer.ally === 'ally') return null;
+  if (!peer || !me || peer.blocked || isMate(peer)) return null;
   const p = peer.pose;
   if (!p || now - (peer.ramAt ?? -Infinity) < CONTACT.cool * 1000) return null;
   const both = Math.abs(p.speed ?? 0) + Math.abs(me.speed ?? 0);
@@ -495,11 +511,11 @@ export function aimedAt(shots, me, now) {
 }
 
 // Should a hit from this pilot count? `peer` is what's known of them: { ally,
-// blocked, shots (their last few, as they came in), hitAt (ms, their last
-// hit that counted), pose (where they were) }; `me` is where you are (or
-// null, not flying); `now` in ms.
+// mate (in your party), blocked, shots (their last few, as they came in),
+// hitAt (ms, their last hit that counted), pose (where they were) }; `me` is
+// where you are (or null, not flying); `now` in ms.
 export function hitCounts(peer, me, now) {
-  if (!peer || !me || peer.blocked || peer.ally === 'ally') return false;
+  if (!peer || !me || peer.blocked || isMate(peer)) return false;
   if (!aimedAt(peer.shots, me, now)) return false;
   if (now - (peer.hitAt ?? -Infinity) < GUARD.gap) return false;
   const p = peer.pose;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COOL_WAIT, MAX_MODS, MODS, MOD_IDS, PICKABLE, SHOW_KILLS, VENT, WEAPONS, WEAPON_IDS, heatShot, heatStep, spreadAt, vent, ventSpot, weaponOf, withMods } from './weaponRules';
+import { COOL_WAIT, MAX_MODS, MODS, MOD_IDS, PICKABLE, SHOW_KILLS, UNIQUE_HAND, VENT, WEAPONS, WEAPON_IDS, heatShot, heatStep, pickableWith, spreadAt, vent, ventSpot, weaponOf, withMods } from './weaponRules';
 import { GUNS } from '../../universe/gunplay';
 
 describe('the weapons', () => {
@@ -22,11 +22,13 @@ describe('the weapons', () => {
     }
     for (const id of PICKABLE) expect(WEAPONS[id], id).toBeTruthy();
   });
-  it('offers Rick’s three guns, whose kills are a show (a portal, the ice, the shrink)', () => {
-    for (const id of SHOW_KILLS) {
+  it('offers every gun whose kills are a show: Rick’s three (a portal, the ice, the shrink) to anyone, the unique ones with their nodes', () => {
+    for (const id of ['portal', 'freeze', 'shrink']) {
+      expect(SHOW_KILLS, id).toContain(id);
       expect(PICKABLE, id).toContain(id);
       expect(WEAPONS[id].side, id).toBe('elsewhere');
     }
+    for (const id of SHOW_KILLS) expect(pickableWith(Object.keys(UNIQUE_HAND)), id).toContain(id);
   });
   it('a stream of light bolts and a slow heavy shot come out near each other over a second', () => {
     const dps = (w) => (w.damage * (w.burst ?? 1) * (w.pellets ?? 1)) / w.every;

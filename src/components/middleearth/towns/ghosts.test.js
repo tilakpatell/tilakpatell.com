@@ -1,14 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { createGhosts } from './ghosts';
+import { ALLY_HALO, GHOST_HALO, createGhosts } from './ghosts';
 import { releaseCast, setCastSource, tickCast } from '../cast3d';
 import { makePerson } from '../shire/people';
 import { meshyRig } from '../../../lib/three/meshyRig.fixture';
 
-// The name cards are drawn on a canvas; Node has none, so a card that measures
-// and draws nothing stands in for it.
+// The name cards (and a quick-chat bubble's card and tail) are drawn on a
+// canvas; Node has none, so a card that measures and draws nothing stands in
+// for it.
 beforeAll(() => {
-  const pen = { measureText: () => ({ width: 60 }), beginPath() {}, roundRect() {}, fill() {}, fillText() {} };
+  const pen = { measureText: () => ({ width: 60 }), beginPath() {}, roundRect() {}, fill() {}, fillText() {}, clearRect() {}, moveTo() {}, lineTo() {}, arcTo() {}, closePath() {}, stroke() {} };
   vi.stubGlobal('document', { createElement: () => ({ width: 0, height: 0, getContext: () => pen }) });
 });
 afterAll(() => vi.unstubAllGlobals());
@@ -73,6 +74,86 @@ describe('the ghosts', () => {
     p.emote = null;
     ghosts.update([p], 0.4, dt);
     expect(got.at(-1).emote).toBeNull();
+    ghosts.dispose();
+  });
+
+  it('an ally’s ghost wears the ally green, and a stranger’s the pale blue, as the roster changes', () => {
+    const ghosts = createGhosts({ make, animate: () => {} });
+    const p = { id: 'abc', name: 'Sam', x: 0, z: 0, face: 0, moving: false, ally: false };
+    ghosts.update([p], 0, 0.1);
+    const halo = ghosts.group.children[0].children.find((o) => o.geometry?.type === 'RingGeometry');
+    expect(halo.material.color.getHex()).toBe(GHOST_HALO);
+    p.ally = true;
+    ghosts.update([p], 0.1, 0.1);
+    expect(halo.material.color.getHex()).toBe(ALLY_HALO);
+    p.ally = false;
+    ghosts.update([p], 0.2, 0.1);
+    expect(halo.material.color.getHex()).toBe(GHOST_HALO);
+    ghosts.dispose();
+  });
+
+  it('a quick-chat line (the row’s quip) shows over the name while they say it, fades with them and goes with them', () => {
+    const ghosts = createGhosts({ make, animate: () => {} });
+    const p = { id: 'abc', name: 'Sam', x: 0, z: 0, face: 0, moving: false, quip: null };
+    ghosts.update([p], 0, 0.1);
+    const root = ghosts.group.children[0];
+    // (nothing said, nothing made: a town of quiet ghosts draws no bubbles)
+    expect(root.getObjectByName('quip')).toBeUndefined();
+    p.quip = 'On my way';
+    ghosts.update([p], 0.1, 0.1);
+    const bubble = root.getObjectByName('quip');
+    expect(bubble?.isSprite).toBe(true);
+    expect(bubble.visible).toBe(true);
+    // over the name card, not on it
+    const tag = root.children.find((o) => o.isSprite && o !== bubble);
+    expect(bubble.position.y).toBeGreaterThan(tag.position.y + tag.scale.y / 2);
+    // as faded in as they are
+    expect(bubble.material.opacity).toBeCloseTo(tag.material.opacity / 0.95, 5);
+    // a jump: the bubble goes up with the name
+    const over = bubble.position.y - tag.position.y;
+    const low = tag.position.y;
+    p.y = 3;
+    for (let i = 0; i < 30; i++) ghosts.update([p], 0.2 + i * 0.1, 0.1);
+    expect(tag.position.y).toBeGreaterThan(low + 2);
+    expect(bubble.position.y - tag.position.y).toBeCloseTo(over, 5);
+    // the line's old: hidden, kept for the next
+    p.quip = null;
+    ghosts.update([p], 3.5, 0.1);
+    expect(root.getObjectByName('quip')).toBe(bubble);
+    expect(bubble.visible).toBe(false);
+    // they go: it fades with them, then it's let go of with them
+    p.quip = 'Bye for now';
+    ghosts.update([p], 3.6, 0.1);
+    expect(bubble.visible).toBe(true);
+    const was = bubble.material.opacity;
+    ghosts.update([], 3.7, 0.1);
+    expect(bubble.material.opacity).toBeLessThan(was);
+    for (let i = 0; i < 20; i++) ghosts.update([], 3.8 + i * 0.1, 0.1);
+    expect(ghosts.count).toBe(0);
+    expect(bubble.parent).toBeNull();
+    ghosts.dispose();
+  });
+
+  it('hides a figure’s ink line instead of painting it pale, so a ghost is drawn once', () => {
+    const line = new THREE.MeshBasicMaterial({ side: THREE.BackSide });
+    let body = null;
+    let ink = null;
+    const ghosts = createGhosts({
+      make: () => {
+        const group = new THREE.Group();
+        body = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.6, 0.3), new THREE.MeshStandardMaterial());
+        ink = new THREE.Mesh(body.geometry, line);
+        ink.userData.ink = true;
+        group.add(body, ink);
+        return { group, top: 1.6 };
+      },
+      animate: () => {},
+    });
+    ghosts.update([{ id: 'abc', name: 'Sam', x: 0, z: 0, face: 0, moving: false }], 0, 1 / 60);
+    expect(body.material).not.toBe(line);
+    expect(body.material.transparent).toBe(true);
+    expect(ink.material).toBe(line);
+    expect(ink.visible).toBe(false);
     ghosts.dispose();
   });
 

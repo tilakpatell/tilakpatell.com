@@ -226,6 +226,24 @@ describe('frameGuard', () => {
     expect(g.pending()).toBe(0);
   });
 
+  it('gates a buffer named as a frame’s after the guard was made (frames(fn): a view sharing the renderer), and stops when let go', async () => {
+    const buffer = { width: 50, height: 30 };
+    const { r, g, scene } = setup({ linkAfter: 1 });
+    const off = g.frames((t) => t === buffer);
+    const m = new THREE.MeshStandardMaterial();
+    scene.add(new THREE.Mesh(new THREE.BoxGeometry(), m));
+    r.target = buffer;
+    await frames(r, scene);
+    expect(r.draws).toEqual([]);
+    await frames(r, scene, 3);
+    expect(r.draws).toEqual([m]);
+    off();
+    const late = new THREE.MeshStandardMaterial({ color: 3 });
+    scene.add(new THREE.Mesh(new THREE.BoxGeometry(), late));
+    await frames(r, scene);
+    expect(r.draws).toContain(late);
+  });
+
   it('never gates the shadow pass', () => {
     const { r, scene } = setup();
     const m = new THREE.MeshStandardMaterial();

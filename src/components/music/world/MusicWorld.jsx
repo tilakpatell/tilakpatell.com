@@ -11,7 +11,7 @@ import '../../../styles/lazy/music.css';
 import GuideCue from '../../guide/GuideCue';
 import { useTravellers } from '../../middleearth/towns/useTravellers';
 import LoadingVeil from '../../worlds/LoadingVeil';
-import { Stick } from '../../../runtime/hud';
+import { Stick, alliesText } from '../../../runtime/hud';
 import { throttled } from '../../worlds/loadingSteps';
 
 // others online in the courtyard (middleearth/towns/useTravellers), as lamps
@@ -342,8 +342,9 @@ function Listeners({ trav }) {
       </button>
     );
   return (
-    <span className="mw-chip" title="Everyone else online in the courtyard shows as a floating lamp: they hear their own instruments, you yours">
+    <span className="mw-chip" data-allies={trav.allies > 0 ? trav.allies : undefined} title="Everyone else online in the courtyard shows as a floating lamp: they hear their own instruments, you yours">
       <b>{trav.count}</b> {trav.count === 1 ? 'listener' : 'listeners'} here
+      {trav.allies > 0 && <em className="town-allies"> · {alliesText(trav.allies, trav.count)}</em>}
     </span>
   );
 }

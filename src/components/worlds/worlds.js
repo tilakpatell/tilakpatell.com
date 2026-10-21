@@ -17,7 +17,7 @@ export const WORLD_MB = {
   '/invincible': 4, // the three HD figures and the city's three skies
   '/cybertron': 38, // Iacon at war's robots, Metroplex and the city's kit (the world at the top), and below it Roll out's cast, scanned ground, rocks and sky, the statues, and Optimus's transformation; and Rapier (1.7 MB) for Iacon's loose crates, on a computer that loads it (never a phone)
   '/avengers': 13, // the walkable compound's sky, scanned ground and trees, Spider-Man and the people from Sketchfab (each building's game more as you go in); and Rapier (1.7 MB) for the lawn's props, on a computer that loads it (never a phone)
-  '/c-137': 16, // about: the Smiths' street, the house, the school and Blips and Chitz, the Smiths and the cruiser; Portal panic's cast; the Citadel inside, its cast, the Council and the crowd's light copies (partly added up from the files). Mortytown is about 11 more, fetched when the lift goes down
+  '/c-137': 18, // about: the Smiths' street, the house, the school and Blips and Chitz, the Smiths and the cruiser; Portal panic's cast; the Citadel inside, its cast, the Council and the crowd's light copies (partly added up from the files); the town round the street, 2.3 more (Quaternius's street lights, signs, flowers, bushes and rocks, the bronze Reverse Giraffe, and the principal, a Meeseeks, a Gromflomite and a policeman walking it). Mortytown is about 11 more, fetched when the lift goes down
   '/albuquerque': 22, // the town's buildings, cars, the RV and the cast, and Metherria's cast and lab; and Rapier (1.7 MB) for the street's props, on a computer that loads it (never a phone)
   '/scranton': 5, // the office cast and set (the walkable office and the one from above share them)
   '/galaxy': 19, // (17 until the 2017 cast, phase 2: Hoth's models at a phone's level went from 18.1 to 19.3 MB with its troopers', pilots', droids' and tauntauns' light cuts and their packs, galaxy-check's measure; 10 until the 2017 heroes: a world with Luke and Vader adds their light cuts and the game's clip packs, 7 MB at mid, measured on Hoth when the light cuts carried 1024 maps; at 512 they are 0.6 and 0.7 MB, so the true figure is lower and 17 holds; at high their plain files, 1.9 and 2.4 MB) drawn in code (its planets, most of its ships), but for the big ships, the Death Star and its trench, Slave I and the Falcon; and down on a world, its models (its people, walkers, landmarks: a few MB a world); and Rapier (1.7 MB) for the loose crates by a site's stacks, on a computer that loads it (never a phone)
@@ -30,7 +30,8 @@ export const WORLD_MB = {
   '/fly': 22,
   // planet flight: end
   '/deathstar/inside': 6, // aboard the station: the first room's kit and textures at phone size, and the cast it starts with (people, guns, the borrowed clips)
-  '/middle-earth': 1, // drawn in code too, but for two places on the map (under a tenth of an MB)
+  '/middle-earth/road': 8, // the Road: a guess until the measure (lab/road/measure.mjs, the Road’s Task 10) reads it from a ride
+  '/middle-earth': 1, // the Red Book is drawn in code; Gandalf through its window is the cast’s model and its three clips, 0.52 MB, fetched the first time the window is looked through (the map hub’s two places are under a tenth of an MB)
   '/music': 7, // the music planet's courtyard: its instruments, chhatri, lamps and gaddi (Meshy models), sandstone, a dusk sky
   '/dot-matrix': 1, // drawn in code
   '/dot-matrix/64': 7, // the castle's and Bob-omb Ridge's texture sets at phone size, two skies, and Mario, the cast and the props (fan-made Sketchfab models, 2 MB)

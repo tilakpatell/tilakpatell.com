@@ -1,19 +1,20 @@
 /* The flight record (Record.jsx): in the hangar's place, or the roster's,
-   so it carries its own styles to any page the roster is on */
+   so it carries its own styles to any page the roster is on. Its hairlines
+   and washes are the scope's own ink, thinned: both places are dark scopes */
 .universe-record { display: grid; gap: 0.6rem; }
 .universe-record-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .universe-record-head h3 { margin: 0; color: var(--muted); font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
-.universe-record-back { min-height: 32px; padding: 0 0.75rem; border: 1px solid rgb(255 255 255 / 0.24); border-radius: 999px; color: var(--text); font-size: 0.76rem; }
-.universe-record-back:hover { border-color: rgb(255 255 255 / 0.45); }
+.universe-record-back { min-height: 32px; padding: 0 0.75rem; border: 1px solid color-mix(in srgb, var(--text) 24%, transparent); border-radius: 999px; color: var(--text); font-size: 0.76rem; }
+.universe-record-back:hover { border-color: color-mix(in srgb, var(--text) 45%, transparent); }
 .universe-record-back:focus-visible { outline: 2px solid var(--engine, #e8eefc); outline-offset: 1px; }
 .universe-record-level { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
 .universe-record-level p { margin: 0; font-size: 0.9rem; }
 .universe-record-credits { color: var(--engine, #e8eefc); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-.universe-record-bar { height: 6px; border-radius: 3px; background: rgb(255 255 255 / 0.12); overflow: hidden; }
+.universe-record-bar { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--text) 12%, transparent); overflow: hidden; }
 .universe-record-bar > i { display: block; width: calc(var(--to, 0) * 100%); height: 100%; border-radius: 3px; background: var(--engine, #e8eefc); }
 .universe-record-note { margin: 0; color: var(--muted); font-size: 0.72rem; line-height: 1.35; }
 .universe-record-tally { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; margin: 0; }
-.universe-record-tally > div { display: grid; gap: 0.1rem; padding: 0.4rem 0.5rem; border: 1px solid rgb(255 255 255 / 0.12); border-radius: 8px; }
+.universe-record-tally > div { display: grid; gap: 0.1rem; padding: 0.4rem 0.5rem; border: 1px solid color-mix(in srgb, var(--text) 12%, transparent); border-radius: 8px; }
 .universe-record-tally dt { color: var(--muted); font-size: 0.66rem; }
 .universe-record-tally dd { margin: 0; font-family: var(--font-mono); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
 .universe-record-sides { display: grid; gap: 0.45rem; margin: 0; padding: 0; list-style: none; }

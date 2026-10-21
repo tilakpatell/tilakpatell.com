@@ -92,3 +92,42 @@ li[data-fresh] button { background: rgba(127, 216, 255, 0.12); }
   .hq-screen[data-alarm]::after { animation: none; opacity: 0.8; }
   li[data-fresh] .iw-file-words, .iw-alert { animation: none; }
 }
+
+/* Infiltration in 2D (widow/Flat.jsx): the facility from above. The colours
+   are the holotable's (the guards' rim, the arrows, the table's glow) and the
+   red above; stroke widths are in tiles, the SVG's units. */
+.iwf { --iwf-floor: #0c1622; --iwf-line: rgba(79, 200, 255, 0.18); --iwf-wall: #24364a; --iwf-block: #3a4d63; --iwf-guard: #ff5a3a; --iwf-arrow: #ffa060; --iwf-glow: #4fc8ff; --iwf-file: #f4f7fb; --iwf-exit: #7be3a0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; gap: 0.5rem; height: min(78vh, 760px); /* the 3D screen's own cap, so the grid's row has a height to share */ max-height: none; padding: 0.75rem; aspect-ratio: auto; color: #fff; }
+.iwf-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.25rem 1rem; font: 600 0.78rem/1.3 var(--font-sans); font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, 0.86); }
+.iwf-stage { min-height: 0; display: grid; }
+.iwf-grid { width: 100%; height: 100%; min-height: 0; }
+.iwf-grid [data-tile='floor'] { fill: var(--iwf-floor); stroke: var(--iwf-line); stroke-width: 0.02; }
+.iwf-grid [data-tile='wall'] { fill: var(--iwf-wall); }
+.iwf-grid [data-tile='block'] { fill: var(--iwf-block); }
+.iwf-grid [data-tile='glass'] { fill: var(--iwf-floor); stroke: var(--iwf-glow); stroke-width: 0.05; stroke-dasharray: 0.12 0.08; }
+.iwf-grid [data-tile='desk'] { fill: var(--iwf-block); }
+.iwf-grid [data-cone='guard'] { fill: color-mix(in srgb, var(--iwf-guard) 22%, transparent); }
+.iwf-grid [data-cone='camera'] { fill: color-mix(in srgb, var(--iw-red) 18%, transparent); }
+.iwf-grid [data-laser] { stroke: var(--iw-red); stroke-width: 0.1; stroke-linecap: round; }
+.iwf-grid [data-laser='warn'] { animation: iwf-blink var(--t-base) steps(2) infinite alternate; }
+.iwf-grid [data-laser='off'] { stroke-opacity: 0.25; stroke-dasharray: 0.04 0.12; }
+@keyframes iwf-blink { to { stroke-opacity: 0.25; } }
+.iwf-grid [data-terminal] rect { fill: none; stroke: var(--iwf-glow); stroke-width: 0.05; }
+.iwf-grid [data-terminal] line { stroke: var(--iwf-glow); stroke-width: 0.05; }
+.iwf-grid [data-terminal][data-used] { opacity: 0.4; }
+.iwf-grid [data-file] { fill: var(--iwf-file); }
+.iwf-grid [data-exit] rect { fill: none; stroke: var(--iwf-exit); stroke-width: 0.06; }
+.iwf-grid [data-exit] line { stroke: var(--iwf-exit); stroke-width: 0.06; }
+.iwf-grid [data-exit]:not([data-open]) { opacity: 0.45; }
+.iwf-grid [data-guard] { fill: var(--iwf-guard); }
+.iwf-grid [data-guard][data-down] { fill: #5a6270; }
+.iwf-grid [data-guard] ~ circle { fill: var(--iwf-glow); }
+.iwf-grid [data-intent] { fill: none; stroke: var(--iwf-arrow); stroke-width: 0.04; stroke-dasharray: 0.08 0.06; }
+.iwf-grid [data-camera] { fill: var(--iw-red); }
+.iwf-grid [data-camera][data-off] { fill: #5a6270; }
+.iwf-grid [data-target] { stroke: var(--hq-accent); stroke-width: 0.06; }
+.iwf-grid [data-preview='danger'] { fill: color-mix(in srgb, var(--iw-red) 55%, transparent); }
+.iwf-grid [data-preview='safe'] { fill: none; stroke: var(--hq-accent); stroke-width: 0.05; stroke-dasharray: 0.1 0.08; }
+.iwf-line { margin: 0; font-size: 0.78rem; line-height: 1.4; color: rgba(255, 255, 255, 0.8); }
+.iwf-tools { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
+.iwf-tools .iw-pad-btn { min-width: 44px; min-height: 44px; padding: 0 0.75rem; }
+@media (prefers-reduced-motion: reduce) { .iwf-grid [data-laser='warn'] { animation: none; stroke-dasharray: 0.2 0.12; } }

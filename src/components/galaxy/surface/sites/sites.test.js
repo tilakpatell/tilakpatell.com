@@ -26,13 +26,13 @@ const placeable = (kind) => Boolean(PROPS[kind] || SURFACE_MODELS[kind]);
 // kit, so a typo in its name fails here and not in a browser)
 const KIT = JSON.parse(readFileSync(new URL('../../../../../public/kit/naturemega/index.json', import.meta.url), 'utf8')).models;
 const kitName = (model) => (typeof model === 'string' && model.startsWith('kit:naturemega/') ? model.slice('kit:naturemega/'.length) : null);
-const WEATHER = ['sand', 'snow', 'rain', 'ash', 'embers', 'motes', 'spray'];
+const WEATHER = ['sand', 'snow', 'rain', 'ash', 'embers', 'motes', 'spray', 'pollen'];
 
 describe('the worlds you can land on', () => {
-  it('are the galaxy’s systems with somewhere to stand (Alderaan’s gone)', () => {
+  it('are every one of the galaxy’s systems but Alderaan (it’s gone): each planet has a world to land on', () => {
     for (const id of Object.keys(SITES)) expect(SYSTEMS.some((s) => s.id === id), id).toBe(true);
     expect(LANDABLE).not.toContain('alderaan');
-    expect(LANDABLE).toContain('tatooine');
+    expect(LANDABLE).toEqual(SYSTEMS.filter((s) => s.id !== 'alderaan').map((s) => s.id));
   });
 
   for (const id of Object.keys(SITES)) {

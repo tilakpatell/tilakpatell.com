@@ -42,7 +42,7 @@ export function govPortal(R, x, z, turn, { open = () => true } = {}) {
   spill.rotation.x = -Math.PI / 2;
   spill.position.set(0, 0.013, 0.9);
   spill.scale.set(2.4, 2.0, 1);
-  // (the plate inked like the frame; the glows not)
+  // (the plate with the frame; the glows apart, kept out of the light bake)
   const place = (...things) => {
     const g = new THREE.Group();
     g.position.set(x, 0, z);

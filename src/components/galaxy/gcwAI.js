@@ -155,8 +155,9 @@ export function frontPace({ id, owner, liberator, rate, supply, holders }) {
 
 // the liberator's order: the front it weighs highest by its doctrine, one
 // it can move (not one stuck, nor a last stand), and not its last order
-// over again (c: { liberator, border, owner, control, rates, might,
-// capitals, supply, previous, rand, holders?, holdsOut? })
+// over again; with only last stands left, one that moves over one that's
+// stuck (c: { liberator, border, owner, control, rates, might, capitals,
+// supply, previous, rand, holders?, holdsOut? })
 export function orderTarget({ liberator, border, owner, control, rates, might, capitals, supply, previous, rand, holders, holdsOut }) {
   const d = DOCTRINE[liberator];
   let best = null;
@@ -168,7 +169,8 @@ export function orderTarget({ liberator, border, owner, control, rates, might, c
       (1 - control[id]) * W.weak * d.weak +
       cutOff(owner, id, capitals[owner[id]]) * d.cut +
       areaWhole(owner, id, liberator) * W.area * d.area +
-      (pace > GCW.stuck && !holdsOut?.has(id) ? pace * W.pace : W.cannot) -
+      (pace > GCW.stuck ? pace * W.pace : W.cannot) +
+      (holdsOut?.has(id) ? W.cannot : 0) -
       (id === previous ? W.again : 0) +
       rand() * d.jitter;
     if (u > bestU) (best = id), (bestU = u);

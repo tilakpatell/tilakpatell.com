@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAchievements } from '../../../Achievements';
 import { audioContext } from '../../../../lib/audio';
 import { use3D } from '../../../../lib/gpu';
-import { local, useFrameLoop, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { local, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { useTick } from '../../tick';
+import { engine } from '../../module';
 import { sayVoiced, stopVoiced } from '../../../../lib/voiced';
 import { readPad, typing } from '../../../games/pad';
-import { Convo, QuestList, Stick, Travellers } from '../TownHud';
+import { Convo, QuestList, Stick, TownMenu, Travellers } from '../TownHud';
 import { SideList } from '../SideList';
 import { readSide, recordSide } from '../side';
 import { useTravellers } from '../useTravellers';
@@ -153,7 +155,9 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
+    // (its code first, then the world: made in the order the code came, as before)
     import('./scene')
+      .then((m) => engine().then(() => m))
       .then(({ createMarshesWorld }) => {
         if (dead || !canvas.current) return null;
         return createMarshesWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
@@ -457,7 +461,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
   }, [box, live, talkOnward, doAct, hop, leaveWay, startWay]);
 
   // ── every frame ──
-  useFrameLoop((ms) => {
+  useTick((ms) => {
     const a = api.current;
     if (!a || a.lost) return;
     const s = sim.current;
@@ -705,7 +709,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
       setHud({ zone: s.zone, mode: s.mode, near: s.near, moved: s.moved, talking: s.talking, line: s.talk?.at ?? null, hiding, rope: d ? { y: d.y, knocks: d.knocks } : null, creep: c ? { d: c.d, phase: c.phase } : null, lure: s.lure?.k ?? 0, fell: s.fell?.phase ?? null, leading: Boolean(s.lead), hunted: Boolean(s.scouts?.list.some((x) => x.mode === 'alert' || x.mode === 'chase')), way: w ? { phase: w.phase, row: w.row, slips: w.slips, state: w.state, say: s.said } : null });
     }
     if (++s.frame % 120 === 0 && s.mode === 'walk' && !s.lead) local.set(AT, { zone: s.zone, x: s.h.x, z: s.h.z, face: s.h.face });
-  }, live);
+  }, live, { canvas });
 
   // look round by dragging; the stick on touch
   const drag = useRef(null);
@@ -778,6 +782,7 @@ function World({ prog, complete, side, recordGo, gl, setGl, onLeave }) {
             </p>
           </div>
           <div className="shire-side">
+            <TownMenu chapter="dead-marshes" />
             <button type="button" className="shire-chip" onClick={() => setList((v) => !v)} aria-expanded={list}>
               <b>{prog.done.length}</b> of {QUESTS.length} done {!touch && <kbd>M</kbd>}
             </button>

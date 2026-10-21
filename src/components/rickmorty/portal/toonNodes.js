@@ -1,9 +1,8 @@
-// toon.js on the node renderer: the same paint (flat colour in two or three
-// steps of light, a Kenney model's materials turned toon, the leaf greens
+// toon.js on the node renderer: the same paint (flat colour, lit and one
+// step of shadow, a Kenney model's materials turned toon, the leaf greens
 // recoloured), its materials MeshToonNodeMaterials, with the same names
-// and arguments. The ink pass is not here: it is an EffectComposer pass, a
-// classic post chain the node renderer hasn't got, and a world on nodes
-// draws its line, if it has one, in its own TSL post.
+// and arguments. A world on nodes draws its cast's line as the GLSL one
+// does, with a hull (lib/three/inkNodes.js).
 //
 //   gradient() → the light steps
 //   toon(color, extra) → a MeshToonNodeMaterial on them

@@ -3,7 +3,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useDocumentTitle, useMediaQuery } from '../lib/hooks';
 import { PLANETS, planetSpecOf } from '../components/expanse/flight/planets';
 import { WorldHost, useWorld } from '../runtime';
-import { useOnline } from '../components/universe/online/useOnline';
+import { useInWorld, useOnline } from '../components/universe/online/useOnline';
+import { isMate } from '../components/universe/online/mates';
 import { wayOut } from '../components/worlds/worlds';
 import FlightHud from '../components/expanse/flight/FlightHud';
 import flightModule from '../components/expanse/flight/module';
@@ -42,18 +43,32 @@ function Flight({ spec }) {
       if (n.alt) n.alt.textContent = String(Math.max(0, Math.round(e.alt)));
     } else if (e.type === 'toast') setToast({ key: Date.now(), text: e.text, bad: true });
     // (the shared world's prompt: a render only when what it says changes)
-    else if (e.type === 'shared') setShared((was) => (was && was.build === e.build && was.unbuild === e.unbuild && was.others === e.others ? was : e));
+    else if (e.type === 'shared') setShared((was) => (was && was.build === e.build && was.unbuild === e.unbuild && was.others === e.others && was.allies === e.allies ? was : e));
   }, []);
   const { host, status, rt } = useWorld(flightModule, { props, onEvent });
   const api = useCallback(() => (rt?.current?.module === flightModule ? rt.current.world : null), [rt]);
   const [shared, setShared] = useState(null);
   // the other pilots, while you're online (the site's switch and callsign, as the towns'); the roster's blocks aren't shown
   const online = useOnline();
+  useInWorld(); // (the other pilots are ships over the planet: no page pointers over the canvas)
   const callsign = online?.on ? (online.name ?? null) : null;
   const blocked = useRef(null);
   blocked.current = (id) => online?.client?.peers?.get(id)?.blocked === true || Boolean(online?.isBlocked?.(id));
+  // (and your allies and party mates, as the site's link has them now: an
+  // alliance made or a party joined in flight shows at once)
+  const allied = useRef(null);
+  allied.current = (id) => isMate(online?.client?.peers?.get(id));
+  // (and what each has just said: the site's quick chat, over their wedge)
+  const quipOf = useRef(null);
+  quipOf.current = (id) => online?.client?.quip?.(id) ?? null;
   useEffect(() => {
-    if (status === 'on') api()?.shared?.join(callsign, (id) => blocked.current(id));
+    if (status === 'on')
+      api()?.shared?.join(
+        callsign,
+        (id) => blocked.current(id),
+        (id) => allied.current(id),
+        (id) => quipOf.current(id),
+      );
   }, [status, callsign, api]);
   const mapProps = useMemo(() => ({ spec, source: api }), [spec, api]);
 

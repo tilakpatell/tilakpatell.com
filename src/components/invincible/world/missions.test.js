@@ -234,10 +234,16 @@ describe('each episode, end to end', () => {
     expect(m.start.after).toEqual(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6']);
     let p = startMission('ep7');
     const pts = m.steps.slice(0, 4).map((s) => s.to);
-    for (const to of pts) {
-      const r = feed(p, [at([to[0] + 10, to[1], to[2]], { npcs: { omni: to } }), ...ticks(1)]);
+    // (over the city, not through it: the three in the air clear the tallest tower)
+    for (const to of pts.slice(0, 3)) expect(to[1]).toBeGreaterThan(360);
+    pts.forEach((to, i) => {
+      // beside him at his point is not the step done: he says when (companions.js's dadAt, once Mark is close)
+      let r = feed(p, [at([to[0] + 10, to[1], to[2]], { npcs: { omni: to } }), ...ticks(1)]);
+      expect(r.p.step).toBe(i);
+      r = feed(r.p, [{ type: 'dadAt', i }]);
+      expect(r.p.step).toBe(i + 1);
       p = r.p;
-    }
+    });
     expect(p.step).toBe(4);
     let r = feed(p, [{ type: 'land', speed: 3, p: [-2050, 0, 258] }]);
     expect(r.p.step).toBe(5);

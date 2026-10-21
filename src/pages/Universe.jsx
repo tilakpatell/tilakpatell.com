@@ -11,7 +11,7 @@ import { FLY_PAST } from '../components/universe/words';
 import { SHIP_KEY, crewById, parseShip } from '../components/universe/crews';
 import { useShipyardPage } from '../components/universe/shipyard/useShipyardPage';
 import { useAchievements } from '../components/Achievements';
-import { saveStart } from '../lib/view';
+import { VIEW_EVENT, saveStart } from '../lib/view';
 import { useView } from '../components/ViewSwitch';
 import { portalSound } from '../components/universe/sounds';
 import { jumpEvent } from '../components/jumps/styles';
@@ -22,10 +22,10 @@ import Comms from '../components/universe/Comms';
 import StartChoice from '../components/universe/StartChoice';
 import Rain from '../components/universe/Rain';
 import Online from '../components/universe/online/Online';
-import Wardrobe from '../components/rickmorty/wardrobe/Wardrobe';
-const Shipyard = lazy(() => import('../components/universe/shipyard/Shipyard'));
-import { useLooks } from '../components/rickmorty/wardrobe/useLooks';
-import { CASTS, castOfCrew } from '../components/rickmorty/wardrobe/looks';
+// the Hangar (the crew, the arms, the powers and the shipyard), in its own chunk: opened with H, or C on the crew
+const HangarPanel = lazy(() => import('../components/hangar/HangarPanel'));
+import { TAB_KEY, readTab } from '../components/hangar/hangarRules';
+import { useSkills } from '../components/hangar/skills/useSkills';
 import { useOnline } from '../components/universe/online/useOnline';
 import EarnNote from '../components/universe/EarnNote';
 import { useEarn } from '../components/universe/useEarn';
@@ -33,6 +33,7 @@ import { goodStanding } from '../components/universe/economy';
 import { createPayLedger } from '../components/universe/earnRules';
 import { pocketOf, registerPocket } from '../components/expanse/pocket';
 import { createRegistry } from '../components/worlds/registry';
+import { useTouring } from '../components/tour/useTouring';
 import { worldStore } from '../runtime';
 
 const PORTAL = '#97ce4c';
@@ -44,6 +45,12 @@ const NavMap = lazy(() => import('../components/universe/NavMap'));
 const SAFFRON = '#ff9a2a';
 const PHONE_MS = 700;
 const PANEL_KEY = 'tp-universe-panel'; // 'tucked' once the panel's been put away
+// a phone whose touch buttons wait for the panel to be put away: one held
+// upright, or a small one on its side (universe/thumbs.css hides them by the
+// same numbers). A wider one on its side has them beside the open panel, so
+// a launch may come from a held Boost: folding then would move them from
+// under the thumb
+const PHONE_FLIGHT = '(pointer: coarse) and (max-width: 767px) and (min-height: 501px), (pointer: coarse) and (max-height: 500px) and (max-width: 739px)';
 // (the page you go into knows you came from the map, so its way out can be
 // back to space: the Citadel's)
 const FROM_MAP = { state: { from: 'universe' } };
@@ -108,14 +115,15 @@ export default function Universe({ ask = false }) {
   const { unlocked, unlock } = useAchievements();
   // (the loadouts, hulls and garage builds, the Shipyard's door and what Apply and a sale do: shipyard/useShipyardPage.js, which the galaxy uses too)
   const { loadout, build, tune, garage, dropped, yard, setYard, applyDraft, sellPart, yardNote, live, yardSaves } = useShipyardPage({ ship, unlocked });
+  const { fx: skillFx, picks: powerPicks } = useSkills(); // (the skill tree's effects and the powers picked, the Hangar's: on the ship as its loadout is)
   useEffect(() => setLoadout(loadout), [setLoadout, loadout]);
   useEffect(() => tellBuild?.(build), [tellBuild, build]);
-  // the wardrobe, from the shipyard: how the cruiser’s Rick and Morty look,
-  // or the RV’s Walt and Jesse (whichever crew’s flying)
-  const [looks, setLook] = useLooks();
-  const dressing = castOfCrew(ship) ?? 'rickmorty';
-  const [wardrobe, setWardrobe] = useState(false);
-  const closeWardrobe = useCallback(() => setWardrobe(false), []);
+  // the Hangar's tab, the one last used (this browser's: hangarRules.js's TAB_KEY)
+  const [hangarTab, setHangarTabState] = useState(() => readTab(local.get(TAB_KEY)));
+  const setHangarTab = useCallback((t) => {
+    setHangarTabState(t);
+    local.set(TAB_KEY, t);
+  }, []);
   // the nav map, and the drive picked on it (kept between visits)
   const [charting, setCharting] = useState(false);
   const [phone, setPhone] = useState(false); // the phone out past the belt, picked up: its lock screen
@@ -129,13 +137,19 @@ export default function Universe({ ask = false }) {
   };
   const jumped = useRef(false); // the crew's had their say about a jump this visit
   const [leaving, setLeaving] = useState(null); // { id, mode } once Enter is pressed
-  const [asking, setAsking] = useState(ask); // the front door's choice, on a first arrival
+  // the front door's choice, on a first arrival; never under the intro (the
+  // welcome asks it, and a dialog hidden under the cover would take its focus)
+  const [asking, setAsking] = useState(() => ask && !['covered', 'intro'].some((k) => k in document.documentElement.dataset));
   // the panel, put away to give the map the room (remembered between visits)
   const [tucked, setTucked] = useState(() => local.get(PANEL_KEY) === 'tucked');
   const tuck = (on) => {
     setTucked(on);
     local.set(PANEL_KEY, on ? 'tucked' : 'open');
   };
+  // (a site tour brings the panel out, put away or not, and the page makes
+  // room for it as the panel does: UniversePanel.jsx)
+  const siteTour = useTouring();
+  const tuckedNow = tucked && !siteTour;
   const timer = useRef(0);
   const trip = useRef(null); // a jump out (jumps/jumpOut.js): this page gone first, its dark coming late changes nothing
   useEffect(
@@ -208,11 +222,16 @@ export default function Universe({ ask = false }) {
       setShip(id);
       setAsking(false);
     };
+    // a pick made anywhere else (the first visit's welcome, the view switch)
+    // answers the front door's choice
+    const picked = () => setAsking(false);
     window.addEventListener('tp:arrive', arrive);
     window.addEventListener('tp:board', board);
+    window.addEventListener(VIEW_EVENT, picked);
     return () => {
       window.removeEventListener('tp:arrive', arrive);
       window.removeEventListener('tp:board', board);
+      window.removeEventListener(VIEW_EVENT, picked);
     };
   }, []);
 
@@ -323,7 +342,8 @@ export default function Universe({ ask = false }) {
   // the front door's choice: fly, or the home page; kept if asked to
   const start = (where, remember) => {
     if (remember) saveStart(where);
-    if (where === 'home') navigate('/home');
+    // (kept, / sends you on to /home from now on: Back to it would only come back)
+    if (where === 'home') navigate('/home', remember ? { replace: true } : undefined);
     else setAsking(false);
   };
   const { switchTo } = useView();
@@ -341,6 +361,9 @@ export default function Universe({ ask = false }) {
       pay(e.what, e.n, e.side);
       return;
     }
+    // on a phone the panel folds away once the ship's flown: its buttons
+    // wait for it, and the sheet hides half the map
+    if (e.type === 'launch' && !tucked && window.matchMedia?.(PHONE_FLIGHT).matches) tuck(true);
     // (the hello says what you are to the others: useOnline.js reads it again)
     if (e.type === 'event' && e.id === 'standing') window.dispatchEvent(new Event('tp:standing'));
     if (e.type === 'event' && e.id === 'standing' && goodStanding(e.sub) && stood.once(`${e.side}:${e.sub}`)) pay('standingUp', 1, e.side);
@@ -478,7 +501,7 @@ export default function Universe({ ask = false }) {
   const fade = leaving?.mode === 'phone' ? SAFFRON : leaving?.mode === 'portal' ? PORTAL : leaving?.mode === 'beyond' ? '#000' : leaving?.mode === 'dive' || leaving?.mode === 'crash' ? byId(leaving.id).palette.base : undefined;
 
   return (
-    <div className="dark-scope universe-page" style={accent} data-leaving={leaving?.mode} data-card={universe ? '' : undefined} data-tucked={tucked ? '' : undefined}>
+    <div className="dark-scope universe-page" style={accent} data-leaving={leaving?.mode} data-card={universe ? '' : undefined} data-tucked={tuckedNow ? '' : undefined}>
       <h1 className="sr-only">Tilak Patel: the whole site as a universe</h1>
       <p className="sr-only" aria-live="polite">
         {universe ? `${universe.label}: selected` : ''}
@@ -495,6 +518,8 @@ export default function Universe({ ask = false }) {
         loadout={loadout}
         build={build}
         tune={tune}
+        skillFx={skillFx}
+        powerPicks={powerPicks}
         canFit={Boolean(ship)}
         hangar={yard}
         onHangar={setYard}
@@ -526,10 +551,12 @@ export default function Universe({ ask = false }) {
       {!leaving && <EarnNote note={yardNote ?? earned} />}
       {ship && !leaving && (
         <Suspense fallback={null}>
-          <Shipyard
+          <HangarPanel
             open={yard}
             onOpen={setYard}
-            enabled={!charting && !wardrobe}
+            tab={hangarTab}
+            onTab={setHangarTab}
+            enabled={!charting}
             ship={ship}
             shipName={crew?.ship ?? ''}
             live={live}
@@ -538,14 +565,9 @@ export default function Universe({ ask = false }) {
             dropped={dropped}
             onApply={applyDraft}
             onSell={sellPart}
-            onCrew={() => {
-              setYard(false);
-              setWardrobe(true);
-            }}
           />
         </Suspense>
       )}
-      <Wardrobe open={wardrobe} onClose={closeWardrobe} looks={looks} onLook={setLook} cast={dressing} who={CASTS[dressing][0]} returnTo=".universe-hangar-btn" />
       {!asking && !leaving && <Online online={online} ship={ship} />}
       <UniversePanel
         universe={universe}
@@ -559,7 +581,10 @@ export default function Universe({ ask = false }) {
         loadout={loadout}
         build={build}
         onShip={pickShip}
-        onHangar={() => setYard(true)}
+        onHangar={() => {
+          setHangarTab('shipyard');
+          setYard(true);
+        }}
         onClassic={() => switchTo('classic')}
         tucked={tucked}
         onTuck={tuck}

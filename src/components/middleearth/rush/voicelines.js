@@ -16,6 +16,7 @@ export const HOST_VOICE = {
   Sam: 'sam',
   Shagrat: 'shagrat',
   Gandalf: 'gandalf',
+  Beregond: 'beregond',
 };
 
 // a level's lines, whichever way they're kept: a list, or lists by dish

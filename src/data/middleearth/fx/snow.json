@@ -1,0 +1,123 @@
+{
+  "kind": "quad",
+  "loop": true,
+  "duration": 1,
+  "gravity": {
+    "g": 0,
+    "random": 0
+  },
+  "drag": 0.4,
+  "wind": 0.6,
+  "color": [
+    1,
+    1,
+    1
+  ],
+  "sizeY": null,
+  "alpha": {
+    "exponent": 1,
+    "curve": 1
+  },
+  "rotation": {
+    "poly": [
+      0,
+      0,
+      120,
+      0
+    ]
+  },
+  "transparency": {
+    "poly": [
+      0,
+      -1,
+      0,
+      1
+    ],
+    "min": 0,
+    "max": 1,
+    "scale": 1
+  },
+  "uv": {
+    "frames": 4,
+    "grid": [
+      4,
+      1
+    ],
+    "fps": 0,
+    "randomStart": true,
+    "overLife": false
+  },
+  "alignment": "screen",
+  "stretch": null,
+  "lightWrap": 0.5,
+  "soft": null,
+  "additive": false,
+  "exposure": 0,
+  "maxSpawnDistance": 0,
+  "cullingFactor": 1,
+  "follow": {
+    "source": false,
+    "velocity": false
+  },
+  "mesh": null,
+  "ribbon": null,
+  "name": "snow: the Road’s, flakes drifting down on the wind (Caradhras)",
+  "sheet": "flake",
+  "maxCount": 1500,
+  "lifetime": {
+    "random": [
+      10,
+      14
+    ]
+  },
+  "spawn": {
+    "rate": 125,
+    "burst": 0,
+    "size": {
+      "random": [
+        0.05,
+        0.11
+      ]
+    },
+    "speed": {
+      "random": [
+        0.8,
+        1.4
+      ]
+    },
+    "rotation": {
+      "random": [
+        0,
+        360
+      ]
+    },
+    "direction": {
+      "box": {
+        "min": [
+          -0.3,
+          -1,
+          -0.3
+        ],
+        "max": [
+          0.3,
+          -0.8,
+          0.3
+        ]
+      }
+    },
+    "position": {
+      "box": {
+        "center": [
+          0,
+          14,
+          0
+        ],
+        "size": [
+          40,
+          0,
+          40
+        ]
+      }
+    }
+  }
+}

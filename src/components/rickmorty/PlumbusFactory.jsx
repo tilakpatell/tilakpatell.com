@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { audioContext } from '../../lib/audio';
 
 // How they do it: a plumbus made a step at a time, the drawing gaining a
@@ -17,8 +17,10 @@ const STEPS = [
 
 const INK = '#1b1424';
 
-export default function PlumbusFactory() {
+// `onUsed`: called once, the first time a plumbus comes off the end of the line (C-137 ticks its task then)
+export default function PlumbusFactory({ onUsed }) {
   const [at, setAt] = useState(0); // how many steps are done
+  const used = useRef(false);
   const done = at >= STEPS.length;
   const has = (part) => STEPS.findIndex((s) => s.part === part) < at;
   const go = (n) => {
@@ -26,6 +28,10 @@ export default function PlumbusFactory() {
     if (n === STEPS.length) {
       audioContext();
       import('../games/gameAudio').then((m) => m.plumbus?.());
+      if (!used.current) {
+        used.current = true;
+        onUsed?.();
+      }
     }
   };
   const now = STEPS[Math.min(at, STEPS.length - 1)];

@@ -164,6 +164,23 @@ describe('on foot', () => {
     expect(solids.near(100, 100, 1)).not.toContain(box);
   });
 
+  it('takes a solid back: gone from every cell it spanned, and the rest as they were', () => {
+    const solids = createSolids();
+    const wide = solids.box(0, 0, 20, 2);
+    const tree = solids.circle(3, 0, 0.5);
+    solids.remove(wide);
+    expect(solids.all).toEqual([tree]);
+    expect(solids.near(-18, 0, 1)).toEqual([]);
+    expect(solids.near(3, 0, 1)).toEqual([tree]);
+    // (twice, or one it never had: nothing)
+    solids.remove(wide);
+    solids.remove({ type: 'circle' });
+    expect(solids.all).toEqual([tree]);
+    const s = walker(3, -3);
+    run(s, { x: 0, y: 1, heading: 0 }, 2, flat(0, { solids }));
+    expect(Math.hypot(s.x - 3, s.z)).toBeGreaterThanOrEqual(0.5 + WALK.radius - 1e-6);
+  });
+
   it('stands on a floor over the land, and falls off its edge', () => {
     const world = flat(-50, { floors: [{ x: 0, z: 0, r: 10, y: 3 }] });
     expect(groundAt(world, 0, 0, 3)).toBe(3);

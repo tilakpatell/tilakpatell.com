@@ -5,6 +5,7 @@ import { playClip, playFile } from '../../lib/clips';
 import { useMouth } from '../../lib/mouth';
 import { preloadVoiced, voiceOf, voicedSrc } from '../../lib/voiced';
 import { retold } from './callers';
+import { shipSound } from './uniqueSounds';
 import { alarmSound, arrivalSound, boomSound, boostSound, bumpSound, crashSound, drySound, enemyFireSound, fallSound, fireSound, flareSound, flybySound, gadgetSound, gunSound, hitSound, impactSound, interdictSound, jumpSound, launchSound, popSound, portalSound, powerSound, respawnSound, riftSound, shieldSound, speak, switchSound } from './sounds';
 import Face from './Faces';
 import { WEAPONS } from './weaponTable';
@@ -200,8 +201,11 @@ export default function Comms({ crew, reduced, control }) {
           // on foot, the gun in hand (yours, or your crewmate's further off); in the ship, its guns
           if (e.gun) {
             if (soundOnce(e.soft ? 'mateFire' : 'fire', 90, now)) gunSound(e.gun, { soft: e.soft });
-          } else if (WEAPONS[e.weapon]?.heavy) launchSound(crew?.id); // (any ordnance rack's round)
+          } else if (WEAPONS[e.weapon]?.unique) shipSound(e.weapon, 'fire'); // (the skill tree's four: uniqueSounds.js)
+          else if (WEAPONS[e.weapon]?.heavy) launchSound(crew?.id); // (any ordnance rack's round)
           else if (soundOnce('fire', 150, now)) fireSound(crew?.id);
+        } else if (e.type === 'unique') {
+          if (soundOnce(`unique:${e.what}`, 90, now)) shipSound(e.id, e.what); // (a seismic ring, a cluster's burst, an arc: uniqueArms.js)
         } else if (e.type === 'impact') {
           if (soundOnce('impact', 70, now)) impactSound(e.near);
         } else if (e.type === 'weapon') {
