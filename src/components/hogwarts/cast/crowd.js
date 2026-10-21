@@ -387,8 +387,11 @@ export function createCrowd({ rt = null, spots = [], bodies = ['student'], clips
       }
       const cap = Math.max(2, places.filter((p) => p.body === body).length + 1);
       const mesh = new THREE.InstancedMesh(morphOf(baked), mats.get(body), cap);
-      // (the influences the renderer falls back on, all nothing: the instances’ own come from the texture)
-      mesh.morphTargetInfluences = new Array(baked.frames.length - 1).fill(0);
+      // (no influences of its own: the instances’ come from the texture, and the
+      // targets are relative, so the base needs none either. An array here
+      // the node renderer makes a uniform array of that the texture’s path
+      // never sets up, and its update then fails every frame on a null buffer)
+      mesh.morphTargetInfluences = null;
       const n = baked.frames.length;
       // (the base’s column, then one for each moment after the first)
       const len = n;
