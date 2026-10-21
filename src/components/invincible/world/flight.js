@@ -101,9 +101,11 @@ export function newHero({ x, y, z, face = 0 }) {
 // water (`water` true), a roof or a bridge.
 const scratch = [];
 export function surfaceAt(world, x, z, below) {
-  const g = groundAt(x, z);
-  let y = Math.max(g, WATER_Y);
-  let water = g < WATER_Y;
+  // (a dimension's world: its own water level, and the land reflected with the map)
+  const g = groundAt(world?.mirror ? -x : x, z);
+  const wy = world?.water ?? WATER_Y;
+  let y = Math.max(g, wy);
+  let water = g < wy;
   for (const b of near(world, x, z, 0, scratch)) {
     if (x < b.x0 || x > b.x1 || z < b.z0 || z > b.z1 || b.y1 > below || b.y1 < y) continue;
     y = b.y1;

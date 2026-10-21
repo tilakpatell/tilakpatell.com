@@ -249,6 +249,7 @@ export const ACHIEVEMENTS = {
   season: { name: 'We need to talk', desc: 'Flew the whole first season of the Graysons’ city, and went home to talk' },
   truth: { name: 'Where I really come from', desc: 'Heard what Dad is, fought him over the Graysons’ city, and still had him' },
   guardians: { name: 'Guardians of the Globe', desc: 'Met all eight Guardians on their plinths in their hall on the Graysons’ plaza' },
+  levy: { name: 'Every version of you', desc: 'Went through Angstrom Levy’s three portals over the Graysons’ city, and came home to put him down' },
   karman: { name: 'Neil Armstrong, eat your heart out', desc: 'Flew up out of the air over the Graysons’ city, into space' },
   moonwalk: { name: 'One small step', desc: 'Landed on the Moon as Invincible' },
   redplanet: { name: 'A long way from home', desc: 'Landed on Mars as Invincible' },
