@@ -82,6 +82,24 @@ but:
   Pau City, Mygeeto's crystal city, Cato Neimoidia's bridge city, NiJedha,
   Plazir-15, Kafrene's Ring, Fondor's yard city, Saleucami's crater town and
   Trask's harbour.
+- Coronet City again (2026-10-21, the owner: it "looks so bad", make it an
+  actual city): a third plan, `plan: 'blocks'` (`sites/cityBlocks.js`), from
+  the Downtown City MegaKit (`public/kit/city/`, its pack in R2:
+  `docs/assets/city-packs.md`). Blocks 84 × 48 m built round wall to wall
+  with brick tenements facing their four streets: the large one, whose
+  side is a front too, at each corner, those between scaled together
+  (0.8 to 1.25) to fill the side exactly; taller to the middle (a zone's
+  weights and `stretch`). The streets are the kit's tiles, a two-lane street
+  every 6 m, an asphalt square where two cross, a rounded kerb at each of
+  its corners and a crosswalk over each way in, bollards, lamps every 24 m,
+  a manhole a street; their kerbs kept a fifth as high (`stretch` 0.2) and
+  lifted so the road stands 2 cm over the ground, so you walk the pavement
+  as the road. A block that holds a landmark, or the middle, is a square
+  paved from kerb to kerb with planters round it: Coronet's three spires
+  each stand in one. A building's box sits off its origin (its front wall)
+  by `[hw, hd, ox, oz]` (placer.js), and a row's items carry their own
+  `stretch` (scene.js). 191 buildings and some 540 street tiles; the far
+  ones are their LOD1s.
 
 ### 3. Endless free roam
 
@@ -106,8 +124,17 @@ but:
   mountains `ranges`). The living ground is laid again on the moved ground,
   and the grass hides if you outrun the map. Far places: one or none a
   kilometre square (`surface/wayside.js`), a camp, a downed starfighter, an
-  outpost or a ruin by the kind of world, on the land's own height; the
-  small towns are not built yet.
+  outpost or a ruin by the kind of world, on the land's own height.
+- Small towns (2026-10-21, `surface/town.js`): a quarter of the far places.
+  One street, houses down each side facing in and a bigger one across its
+  end, things stood out front, lamps where the land is settled and a truck
+  parked. The houses are the world's own where it has a city of them (its
+  city's kit, those 22 m wide or less, or a site's `town`: Corellia's are
+  Coronet's old Meshy shops and tenements), else its ground's: domes and
+  adobe and a cantina on sand, white houses and stilt huts on green ground,
+  rock houses and prefabs on grey and snow. Each house is stood on the
+  lowest of the land round it (`laidOn`'s `seat`), so no corner hangs over
+  a slope. Nobody lives in them yet: the far places are things, not life.
 
 ## Order and checks
 

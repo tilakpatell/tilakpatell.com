@@ -146,7 +146,7 @@ const SPREAD = 0.3; // the share of a crowd's spread kept clear round its middle
 const STEP = 12; // metres at most kept round a quest's spot (a `reach` step's ring is wider: you walk in among the houses)
 function cityIn(p, i, raw) {
   const spec = p.city;
-  const kit = spec.kit.map((k) => (typeof k === 'string' ? { kind: k } : k)).map((k) => ({ foot: FOOT[k.kind], ...k })).filter((k) => k.foot);
+  const kit = (spec.kit ?? []).map((k) => (typeof k === 'string' ? { kind: k } : k)).map((k) => ({ foot: FOOT[k.kind], ...k })).filter((k) => k.foot);
   const local = (at) => turn(minus(at, p.at), -(p.yaw ?? 0));
   const near = (at) => at && Math.hypot(at[0] - p.at[0], at[1] - p.at[1]) < spec.r + 20;
   const steps = (raw.quests ?? []).flatMap((q) => q.steps.filter((st) => !st.zone));
@@ -159,10 +159,10 @@ function cityIn(p, i, raw) {
     ...(raw.places ?? []).filter((q) => q !== p && near(q.at)).map((q) => ({ at: local(q.at), r: q.flat?.r ?? q.r * 0.6 })),
   ];
   const own = (p.things ?? []).map((t) => ({ at: t.at ?? [0, 0], r: FOOT[t.kind] ? (Math.hypot(FOOT[t.kind][0], FOOT[t.kind][1]) / 2) * (t.scale ?? 1) + 3 : 6 }));
-  const built = cityOf({ ...spec, kit, keep: [...own, ...spots, ...(spec.keep ?? [])] }, { seed: (raw.ground?.seed ?? 1) * 101 + i });
+  const built = cityOf({ ...spec, kit, marks: own, keep: [...own, ...spots, ...(spec.keep ?? [])] }, { seed: (raw.ground?.seed ?? 1) * 101 + i });
   const world = (q) => plus(p.at, turn(q, p.yaw));
   return {
-    rows: rowsOf(built.things, FOOT).map((r) => ({ ...r, items: r.items.map((it) => ({ ...it, at: world(it.at), yaw: it.yaw + (p.yaw ?? 0) })) })),
+    rows: [...rowsOf(built.things, FOOT), ...(built.rows ?? [])].map((r) => ({ ...r, items: r.items.map((it) => ({ ...it, at: world(it.at), yaw: it.yaw + (p.yaw ?? 0) })) })),
     life: built.life.map((a) => ({ ...a, path: a.path.map(world) })),
     flat: { ...(p.flat ?? {}), r: Math.max(p.flat?.r ?? 0, built.flat.r) },
     paving: built.paving.map((s) => (s.a ? { ...s, a: world(s.a), b: world(s.b) } : { ...s, at: world(s.at) })),
