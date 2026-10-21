@@ -27,6 +27,9 @@ import { buildLandmarks } from './landmarks';
 import { buildLife } from './life';
 import { LINES } from './lines';
 import { createNpcs } from './npcs';
+import { buildHall } from './hall';
+import { createCavalryScene } from './cavalryScene';
+import { hallTalkers } from './inside';
 import { buildClouds, buildHaze, skyBands } from './sky';
 import { carAt, createTraffic, stepTraffic, takeCar } from './traffic';
 import { CITY, WORLD, buildWorld, groundAt, near } from './map';
@@ -63,6 +66,9 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   const city = buildCity(world, { small });
   const landmarks = await buildLandmarks(world, city.uniforms);
   scene.add(ground.group, city.group, landmarks.group);
+  // the hall's inside (./hall.js), drawn in its own zone at the plaza's place
+  const hall = buildHall();
+  scene.add(hall.group);
   // who's about, the clouds, and the airliner going round
   // (the HD figures for those the cast has; the kit's people for the rest)
   const people = await loadCast(['eve', 'debbie', 'cecil', 'allen', 'civA', 'civB', 'civC', 'mauler', 'seismic']);
@@ -185,6 +191,8 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
   // what a broken tower leaves (./ruins.js; ./demolish.js says how broken)
   const ruins = createRuins(scene, { level: small ? 'low' : 'high' });
   const villains = createVillains(scene, fx.vfx, { calm, templates: { mauler: people.mauler, seismic: people.seismic, omniman: omniT }, rim: LOOK.noon.rim });
+  // the two Guardians at a fight (./cavalryScene.js)
+  const cavalry = createCavalryScene(scene, fx.vfx);
   // the missions' things (./missions.js, run by InvWorld.jsx): the bank on
   // its block, the getaway truck on the grid, the marker over the step's target
   const props = await loadProps(scene, world, { rim: LOOK.noon.rim });
@@ -260,6 +268,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     ground.setNight(L.night);
     city.setNight(L.night);
     landmarks.setNight(L.night);
+    hall.setNight(L.night);
     clouds.setLook(L.cloud);
     spot.intensity = L.spot;
     // the haze is the sky's colour along the horizon as it's drawn (the
@@ -295,6 +304,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     if (z === zone) return;
     zone = z;
     for (const g of cityOnly) g.visible = z === 'city';
+    hall.group.visible = z === 'hall';
     for (const n of npcs.all) n.holder.visible = z === 'city' && n.out !== false;
     space.group.visible = z === 'space';
     if (z === 'space') {
@@ -442,7 +452,12 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     t = Math.max(0.08, t);
     const pos = new THREE.Vector3(anchor[0] + back[0] * t, anchor[1] + back[1] * t, anchor[2] + back[2] * t);
     if (zone === 'city') pos.y = Math.max(pos.y, groundAt(pos.x, pos.z) + 0.5, -2);
-    else
+    else if (zone === 'hall') {
+      // in the room: never through its wall or its dome, nor under its floor
+      const r = Math.hypot(pos.x, pos.z);
+      if (r > 26) pos.multiply(new THREE.Vector3(26 / r, 1, 26 / r));
+      pos.y = clamp(pos.y, 0.6, 12.5);
+    } else
       for (const b of BODIES) {
         // (and never inside the Moon)
         const d = pos.clone().sub(new THREE.Vector3(...b.c));
@@ -723,6 +738,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       if (sim.quests) challenges.update(sim.quests, frameDt, t);
       if (sim.foes) {
         villains.update(sim.foes, frameDt, t, h);
+        cavalry.update(sim.cavalry, frameDt, t, sim.events);
         ruins.update(frameDt, fx.vfx, calm);
         // (where the traffic's cars are, for a Mauler or Mark to take one; a car taken is nowhere)
         sim.cars = traffic.cars.map((c) => {
@@ -739,7 +755,8 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       }
       clouds.update(t, scene.fog);
       hazeSky.update(camera);
-    } else {
+    } else if (zone === 'hall') hall.update(t, h, frameDt);
+    else {
       // Allen, waiting by the Moon; Thragg over Mars
       allen.pose({ mode: 'hover', t }, dt);
       carry(thragg, [THRAGG[0], THRAGG[1] + Math.sin(t * 0.6), THRAGG[2]], Math.atan2(-THRAGG[0], -THRAGG[2]), [0, 0, 0], dt, { lean: 0 });
@@ -774,6 +791,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
         .filter((q) => q.d < q.r)
         .sort((a, b) => a.d - b.d);
     }
+    if (zone === 'hall') return hallTalkers(h);
     const out = npcs.talkers(h);
     const d = Math.hypot(h.p[0] - dad.p[0], h.p[1] - dad.p[1], h.p[2] - dad.p[2]);
     if (d < 45) out.push({ id: 'omni', role: 'omni', name: 'Dad', lines: LINES.omni, head: [dad.p[0], dad.p[1] + 1.2, dad.p[2]], d });
@@ -827,6 +845,8 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       skyLight?.dispose();
       fx.dispose();
       villains.dispose();
+      cavalry.dispose();
+      hall.dispose();
       ruins.dispose();
       props.dispose();
       marker.dispose();

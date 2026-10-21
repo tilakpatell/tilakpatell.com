@@ -214,3 +214,6 @@
 .iw-cards-list span { font-size: 0.88rem; color: var(--text-body); }
 
 @media (prefers-reduced-motion: reduce) { .iw-lines { animation: none; } .iw-flash { animation-duration: 0.01s; } .iw-mcard-title, .iw-mcard-ep, .iw-panel { animation: none; } .iw-shutter { animation-duration: 0.3s; } }
+
+/* the way out of the hall (the kit's Exit), at the top right under the brand */
+.iw-stage .iw-exit { position: absolute; top: 4.2rem; right: 0.75rem; z-index: 6; padding: 0.45rem 0.9rem; border: 2px solid #000; border-radius: 999px; background: var(--iw-yellow); color: #111; font: 400 1.1rem/1 'Bebas Neue', Impact, sans-serif; letter-spacing: 0.05em; box-shadow: 3px 3px 0 #000; cursor: pointer; }

@@ -409,3 +409,41 @@ describe('Omni-Man (episode 8)', () => {
     expect(punched.f.foes[0].state).toBe('stagger');
   });
 });
+
+describe('the Guardians’ blows (./guardians.js)', () => {
+  const near = hero([50, 1, 4]);
+  it('Dupli-Kate’s hold keeps a Mauler still two seconds, then it comes on again', () => {
+    const f = spawnFoes(newFoes(), 'mauler', 1, [50, 0, 0]);
+    const id = f.foes[0].id;
+    const held = run(f, near, 0.1, (s) => ({ ...idle, cavalry: s === 0 ? [{ type: 'gHold', who: 'kate', foe: id, for: 2 }] : [] }));
+    expect(held.f.foes[0].state).toBe('stagger');
+    expect(held.f.foes[0].heldBy).toBe('kate');
+    expect(held.ev.some((e) => e.type === 'held' && e.by === 'kate')).toBe(true);
+    const later = run(held.f, near, 1.5);
+    expect(later.f.foes[0].state).toBe('stagger');
+    const after = run(later.f, near, 1);
+    expect(after.f.foes[0].state).not.toBe('stagger');
+    expect(after.f.foes[0].heldBy).toBeNull();
+  });
+  it('a held Flaxan hangs there and fights again after', () => {
+    let f = startInvasion(spawnFoes(newFoes(), 'flaxan', 1));
+    f = run(f, hero([PORTAL.p[0] - 30, PORTAL.p[1], PORTAL.p[2]]), 2).f;
+    const e = f.foes[0];
+    expect(e.state).toBe('fight');
+    const held = run(f, far, 0.1, (s) => ({ ...idle, cavalry: s === 0 ? [{ type: 'gHold', who: 'kate', foe: e.id, for: 2 }] : [] }));
+    expect(held.f.foes[0].state).toBe('stagger');
+    expect(run(held.f, far, 2.5).f.foes[0].state).toBe('fight');
+  });
+  it('Rex’s blast is a blow on everyone standing within its reach', () => {
+    const f = spawnFoes(newFoes(), 'mauler', 2, [50, 0, 0]);
+    const r = run(f, far, 0.1, (s) => ({ ...idle, cavalry: s === 0 ? [{ type: 'gBlast', who: 'rex', foe: f.foes[0].id, at: [50, 0, 0], r: 10, hits: 1 }] : [] }));
+    const hits = r.ev.filter((e) => e.type === 'hit' && e.by === 'rex');
+    expect(hits).toHaveLength(2);
+    expect(hits.every((e) => e.blast)).toBe(true);
+  });
+  it('a blow of three is three of a foe’s hits: a Mauler goes down to one', () => {
+    const f = spawnFoes(newFoes(), 'mauler', 1, [50, 0, 0]);
+    const r = run(f, far, 0.1, (s) => ({ ...idle, cavalry: s === 0 ? [{ type: 'gHit', who: 'monster', foe: f.foes[0].id, hits: 3 }] : [] }));
+    expect(r.ev.some((e) => e.type === 'ko' && e.by === 'monster')).toBe(true);
+  });
+});

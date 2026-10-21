@@ -64,6 +64,9 @@ const SHOTS = {
   heroOmni: { drive: [['hero', 'omniman'], ['go', [40, 18, 200], Math.PI, 'air'], ['wait', 600]], pitch: -0.22 },
   heroThragg: { drive: [['hero', 'thragg'], ['go', [40, 18, 200], Math.PI, 'air'], ['wait', 600]], pitch: -0.22 },
   brawl: { drive: [['go', [50, 26, 40], Math.PI, 'air'], ['spawn', 'mauler', 1, [50, 0, 0]], ['wait', 300], ['held', 0], ['wait', 400]], pitch: -0.35 },
+  // the Guardians (./guardians.js): the hall's inside from its door (['hall', on] goes in or out through the hook); the two sent to four Maulers on the plaza
+  hall: { drive: [['hall', true], ['wait', 1500]], pitch: 0.1 },
+  cavalry: { drive: [['go', [30, 14, 70], -2.4, 'air'], ['spawn', 'mauler', 4, [40, 0, 40]], ['wait', 4000]], pitch: -0.3 },
   curb: { p: [44, 3, 120], mode: 'air', yaw: Math.PI, pitch: -0.12 },
   streetnight: { p: [40, 18, 200], mode: 'air', yaw: Math.PI, pitch: -0.22, time: 'night' },
   downtown: { p: [-300, 140, 600], mode: 'air', yaw: Math.PI * 0.9, pitch: -0.12 },
@@ -223,6 +226,7 @@ await page.evaluate(() => {
       else if (k === 'spawn') api.spawn(a, b, c);
       else if (k === 'ruin') api.ruin(a, b, c);
       else if (k === 'hero') api.hero(a);
+      else if (k === 'hall') api.hall(a);
       else if (k === 'held') {
         const e = sim.foes.foes[a];
         if (e) {
@@ -245,6 +249,8 @@ for (const [name, s] of Object.entries(SHOTS)) {
     sim.snap = true;
     // (a shot in the city after one out in space: down through the top of the sky first, the
     // way the game brings him home; otherwise he's placed by space's reckoning, over the Earth)
+    // (a shot after the hall's: out of it first, the way the game does)
+    if (api.zone === 'hall') api.hall(false);
     if (!s.space && api.zone === 'space') {
       sim.h = { ...sim.h, p: [0, 60000 + 7000, 0], v: [0, -300, 0], spd: 300, dir: [0, -1, 0], mode: 'air', perch: null, reentered: false };
       for (let i = 0; i < 40 && api.zone !== 'city'; i++) await new Promise((r) => setTimeout(r, 250));
