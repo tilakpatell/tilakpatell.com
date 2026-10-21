@@ -143,7 +143,7 @@ The shared world over a planet is `src/components/expanse/flight/shared.js`, com
 
 ## Hosting
 
-**The site is static, and Cloudflare serves it** ([the decision](decisions/2026-10-21-cloudflare-for-the-site.md), [the page](stack/cloudflare.md)). `.github/workflows/deploy.yml` lints, tests and builds `main` once, publishes `dist/` to GitHub Pages, then uploads the same files to the Worker `tilakpatell-com` (`wrangler.jsonc`: its files and nothing else, so no request runs code or is billed). Cloudflare's DNS points tilakpatell.com at the Worker; GitHub Pages gets every deploy until it is switched off. The headers are `public/_headers`'. The heavy assets are still the Supabase bucket's (above) until they move to R2.
+**The site is static, and Cloudflare serves it** ([the decision](decisions/2026-10-21-cloudflare-for-the-site.md), [the page](stack/cloudflare.md)). `.github/workflows/deploy.yml` lints, tests and builds `main`, then uploads `dist/` to the Worker `tilakpatell-com`, tilakpatell.com's custom domain (`wrangler.jsonc`: its files, with code for `/audio/*` alone, `cloudflare/worker.js`, which answers a `Range`). The headers are `public/_headers`'. GitHub Pages served the site until 2026-10-21. The heavy assets are still the Supabase bucket's (above) until they move to R2.
 
 ## Tests
 

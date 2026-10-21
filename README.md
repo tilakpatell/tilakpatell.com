@@ -104,7 +104,7 @@ The front door is a map of the site: the portfolio’s pages are stations round 
 - **[three.js](https://threejs.org/)** r186 for every scene, on WebGPU where the browser has it and WebGL 2 otherwise
 - **[Tailwind CSS 3](https://tailwindcss.com/)** with a theme for each company and world
 - **[Nostr](https://nostr.com/)** public relays for multiplayer, every event signed: no backend
-- **[Vitest](https://vitest.dev/)** and ESLint; **GitHub Actions** and **GitHub Pages** to deploy
+- **[Vitest](https://vitest.dev/)** and ESLint; **GitHub Actions** to deploy, and **Cloudflare** to serve it
 - Every library has a page in [`docs/stack/`](docs/stack/README.md)
 
 ### Run it
@@ -152,7 +152,7 @@ public/            models, textures, audio and photos
 - **Multiplayer without a server.** Pilots meet in rooms on public Nostr relays, each event signed with a per-visit key in a worker; pilots never see each other’s IP addresses.
 - **No runtime calls to asset services.** Every model and texture is made or fetched ahead and committed or published, so the site loads only its own files.
 
-**Deployment.** Every push to `main` runs [`deploy.yml`](.github/workflows/deploy.yml): lint, tests and the build, then `dist/` to GitHub Pages at the domain in `public/CNAME`, with the heavy assets on a storage bucket by hash. Each route also gets a prerendered page with its own title and preview card (`scripts/prerender.mjs`).
+**Deployment.** Every push to `main` runs [`deploy.yml`](.github/workflows/deploy.yml): lint, tests and the build, then `dist/` to the Cloudflare Worker that serves tilakpatell.com ([`wrangler.jsonc`](wrangler.jsonc), [the page](docs/stack/cloudflare.md)), with the heavy assets on a storage bucket by hash. Each route also gets a prerendered page with its own title and preview card (`scripts/prerender.mjs`).
 
 **The autopilot.** A scheduled Claude Code session makes one improvement at a time, checks it in a browser (`scripts/autopilot-check.mjs`), merges it once CI is green and logs it on [`/changes`](https://tilakpatell.com/changes), where any change can be undone. The protocol is [`.claude/skills/autopilot/SKILL.md`](.claude/skills/autopilot/SKILL.md); the queue and switches are in [`docs/autopilot/`](docs/autopilot/README.md).
 

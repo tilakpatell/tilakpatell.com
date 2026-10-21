@@ -5,7 +5,8 @@
 // s. A near miss fills the target's suppression by the shooter's
 // `SuppressionValue` and it fades over the target's `SuppressionTime`; a
 // hit or a near miss tells the target where the shot came from; a first
-// sight of an enemy is passed to the squad as an alert; what the mode makes
+// sight of an enemy is passed to the squad as an alert, and alerts its whole
+// side, whose bots then see by the wider alerted cone; what the mode makes
 // heard (its `sounds`: a fuel charge's keypad while one holds it) is a
 // stimulus to the senses of that one's enemies. Every bot has a name
 // from the game's lists (`names.js`, by its team's faction and the sim's
@@ -76,6 +77,9 @@ export function createBrains(sim) {
     nextSquad: sim.rand() * SQUAD,
     objective,
     taken: new Map(),
+    // (each side's combat group, alerted together the moment any of its bots sees an enemy, and so for the
+    // round: the game's AI code, sensing.js)
+    alerted: { 1: false, 2: false },
     add() {},
     remove(id) {
       const b = brains.get(id);
@@ -116,6 +120,7 @@ function worldFor(sim, b, s) {
       return true;
     },
     who: (id) => sim.entities.get(id) ?? null,
+    alerted: !!sim.brains.alerted?.[s.team],
   };
 }
 
@@ -129,6 +134,7 @@ function perceive(sim, b, s) {
   const heard = (sim.cache.stims?.[s.team] ?? []).filter((n) => Math.hypot(eye[0] - n.sounds.x, eye[1] - n.sounds.y, eye[2] - n.sounds.z) <= n.radius).map((n) => ({ ...n, radius: Infinity }));
   sense(b.senses, b.me, { targets: sim.cache.targets[s.team], stims: heard }, SENSE, { seesThrough: (a, c) => lineClear(sim.nav, [a.x, a.y, a.z], [c.x, c.y, c.z]) });
   for (const [id, belief] of Object.entries(b.me.beliefs)) {
+    if (belief.visible && belief.hostile && sim.brains.alerted) sim.brains.alerted[s.team] = true;
     if (!belief.visible || before.has(id) || b.alerted.has(id)) continue;
     b.alerted.add(id);
     alert(sim.brains.squads, s, { id, at: [belief.at.x, belief.at.y, belief.at.z] }, sim.time);

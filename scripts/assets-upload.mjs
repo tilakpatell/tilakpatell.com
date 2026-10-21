@@ -13,7 +13,7 @@
 // The key is the owner's, read from their shell and from nowhere else (no
 // file, no workflow); it is never printed. The script refuses to run in CI.
 // The project's URL is read from .env.local's VITE_SUPABASE_URL (or the
-// shell's). `public/` stays whole: GitHub Pages still serves every file,
+// shell's). `public/` stays whole: the site still serves every file,
 // and the bucket is where the site asks first when VITE_ASSET_BASE is set.
 
 import { spawnSync } from 'node:child_process';
