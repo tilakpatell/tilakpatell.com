@@ -27,9 +27,9 @@
 
 import * as THREE from 'three';
 import { MeshLambertNodeMaterial } from 'three/webgpu';
-import { attribute, float, mix, normalWorld, positionWorld, sin, smoothstep, texture, uniform, uv, vec3 } from 'three/tsl';
+import { attribute, cameraViewMatrix, cross, float, floor, mix, normalWorld, normalize, positionWorld, sin, smoothstep, texture, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { loadCore, wear } from '../../../../lib/three/coreNodes';
-import { onColor } from '../../../../lib/three/hookNodes';
+import { onColor, onNormal } from '../../../../lib/three/hookNodes';
 import { noiseWith } from '../../../../lib/three/noiseNodes';
 import { CASTLE_FLOOR } from '../../rules/places';
 
@@ -43,8 +43,8 @@ export const TONES = {
   old: lin(0x847e74),
   plinth: lin(0x6f6a62),
   pier: lin(0x7a7469),
-  slate: lin(0x5d636c),
-  slateDark: lin(0x4a4f57),
+  slate: lin(0x56585b),
+  slateDark: lin(0x45474a),
   lead: lin(0x5a6068),
   timber: lin(0x5a3f2a),
   oak: lin(0x3e2a1c),
@@ -64,7 +64,7 @@ const blank = (r, g, b) => {
 
 export function createCastleMaterials({ house = null, tier = 'high' } = {}) {
   const uniforms = { uNight: uniform(0), uSnow: uniform(0), uWet: uniform(0), uTime: uniform(0), uSeed: uniform(new THREE.Vector3(2.7, 8.1, 4.4)) };
-  const { noise } = noiseWith(uniforms.uSeed, { octaves: 2 });
+  const { noise, hash13 } = noiseWith(uniforms.uSeed, { octaves: 2 });
   const made = [];
   const lambert = (opts) => {
     const m = house ? house.material({ vertexColors: true, ...opts }) : new MeshLambertNodeMaterial({ vertexColors: true, ...opts });
@@ -74,7 +74,7 @@ export function createCastleMaterials({ house = null, tier = 'high' } = {}) {
   const scans = tier !== 'low';
 
   // the weather on stone: a damp foot, streaks, grime, the snow on what faces up, the wet
-  const weathered = (m, { streaks = 1, snowy = 1 } = {}) => {
+  const weathered = (m, { streaks = 1, snowy = 1, blocks = 1 } = {}) => {
     onColor(
       m,
       (d) => {
@@ -83,7 +83,10 @@ export function createCastleMaterials({ house = null, tier = 'high' } = {}) {
         const foot = smoothstep(2.5, 0, p.y.sub(CASTLE_FLOOR)).max(smoothstep(4, 0, p.y)).mul(0.22);
         const grime = noise(p.mul(vec3(0.05, 0.09, 0.05)), uniforms.uSeed).mul(0.5).add(0.5);
         const streak = noise(p.mul(vec3(0.9, 0.035, 0.9)), uniforms.uSeed).mul(0.5).add(0.5);
-        const dark = float(1).sub(foot).sub(grime.mul(0.16)).sub(smoothstep(0.55, 0.9, streak).mul(0.14 * streaks));
+        // (each block a shade of its own, a block the size the ashlar’s are: from across the lake,
+        // where the scan’s courses are a pixel, the wall still reads as built of stones)
+        const block = hash13(floor(p.mul(vec3(0.8, 1.6, 0.8))), uniforms.uSeed).sub(0.5).mul(0.16 * blocks);
+        const dark = float(1).sub(foot).sub(grime.mul(0.16)).sub(smoothstep(0.55, 0.9, streak).mul(0.14 * streaks)).add(block);
         const c = d.rgb.mul(dark).mul(mix(float(1), float(0.72), uniforms.uWet));
         const up = smoothstep(0.55, 0.85, normalWorld.y).mul(uniforms.uSnow).mul(snowy);
         return mix(c, vec3(0.86, 0.88, 0.92), up.mul(smoothstep(0.2, 0.5, grime.add(0.25))));
@@ -103,26 +106,45 @@ export function createCastleMaterials({ house = null, tier = 'high' } = {}) {
     weathered(m);
     return { m, role };
   };
-  const ashlar = stone('ashlar', { metres: 2.5, strength: 0.8, normal: 0.9 });
-  const rubble = stone('rubble', { metres: 2.5, strength: 0.85, normal: 1 });
+  const ashlar = stone('ashlar', { metres: 2.5, strength: 0.85, normal: 1.3 });
+  const rubble = stone('rubble', { metres: 2.5, strength: 0.9, normal: 1.4 });
 
   // the slate along the roof’s own metres (mesh.js’s uv), its courses level
   const slateMap = texture(blank(131, 131, 131));
-  const slateK = uniform(new THREE.Vector2(1 / 3, 0.74 ** 2.2));
+  const slateNormal = texture(blank(128, 128, 255));
+  const slateK = uniform(new THREE.Vector3(1 / 3, 0.74 ** 2.2, 0));
   const slate = lambert({ color: 0xffffff });
-  if (scans)
+  if (scans) {
     onColor(
       slate,
       (d) => {
         const s = slateMap.sample(uv().mul(slateK.x)).rgb.div(slateK.y.max(0.05));
-        return d.rgb.mul(mix(vec3(1), s, 0.85));
+        // (a slate here and there a little lighter or darker, by its course and its place in it)
+        const one = hash13(vec3(floor(uv().mul(vec2(3.2, 5.5))), 1), uniforms.uSeed).sub(0.5).mul(0.22).add(1);
+        return d.rgb.mul(mix(vec3(1), s, 0.95)).mul(one);
       },
       'castle:slate',
       { slateMap, slateK },
     );
-  weathered(slate, { streaks: 0.4, snowy: 1.4 });
+    // the slates’ relief along the roof: its normal map read in a frame whose across is level
+    // (round a cone, along a gable’s eave) and whose up runs up the slope, as the courses do
+    onNormal(
+      slate,
+      (normal) => {
+        const n = normalize(normalWorld);
+        const across = normalize(cross(vec3(0, 1, 0), n).add(vec3(1e-4, 0, 0)));
+        const upSlope = cross(n, across);
+        const t = slateNormal.sample(uv().mul(slateK.x)).xyz.mul(2).sub(1).mul(slateK.z).mul(1.2);
+        const shift = across.mul(t.x).add(upSlope.mul(t.y));
+        return normalize(normal.add(cameraViewMatrix.mul(vec4(shift, 0)).xyz));
+      },
+      'castle:slate:n',
+      { slateNormal, slateK },
+    );
+  }
+  weathered(slate, { streaks: 0.4, snowy: 1.4, blocks: 0 });
 
-  const lead = weathered(lambert({ color: 0xffffff }), { streaks: 0.6 });
+  const lead = weathered(lambert({ color: 0xffffff }), { streaks: 0.6, blocks: 0 });
   const timber = lambert({ color: 0xffffff });
   const iron = lambert({ color: 0xffffff });
 
@@ -153,6 +175,10 @@ export function createCastleMaterials({ house = null, tier = 'high' } = {}) {
         .then(() => loadCore('slate'))
         .then((got) => {
           if (got?.map) slateMap.value = got.map;
+          if (got?.normalMap) {
+            slateNormal.value = got.normalMap;
+            slateK.value.z = 1;
+          }
         })
         .catch(() => {})
     : Promise.resolve();

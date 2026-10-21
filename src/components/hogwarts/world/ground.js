@@ -242,13 +242,19 @@ export function createGroundMaterial({ house = null, groundMap, coverMap, tier =
         detail.assign(mix(detail, flat('floor', xz), smoothstep(0.3, 0.8, cv.x)));
         detail.assign(mix(detail, flat('way', xz), smoothstep(0.2, 0.7, cv.z)));
         const rocky = steepOf().max(cv.w.mul(0.8));
-        detail.assign(mix(detail, tri('steep', positionWorld), rocky));
+        // (the rock at its own size and at a third of it turned, multiplied: no tile repeats on a cliff)
+        const rock = tri('steep', positionWorld).mul(tri('steep', positionWorld.mul(0.33).add(vec3(17.3, 5.1, 9.7)))).mul(0.95);
+        detail.assign(mix(detail, rock, rocky));
         c = c.mul(mix(vec3(1), detail, near().mul(0.85)));
         // (a cliff seen from across the water: the rock’s scan at seven times its size, never faded,
         // and its strata, so a crag reads as rock at any distance and not as a grey slope)
         const big = tri('steep', positionWorld.mul(0.14));
         const strata = sin(positionWorld.y.mul(0.85).add(big.x.mul(3))).mul(0.12).add(1);
         c = c.mul(mix(vec3(1), big.mul(strata).mul(1.05), rocky.mul(0.85)));
+        // (and the lawns the same way: the grass’s scan at five times its size, never faded, so a lawn
+        // a hundred metres off is mown turf in patches and not a flat green)
+        const sward = flat('grass', xz.mul(0.2));
+        c = c.mul(mix(vec3(1), sward, float(1).sub(rocky).mul(smoothstep(0.3, 0.8, cv.x).oneMinus()).mul(0.6)));
       }
       // the wet: darker; the snow: lying on what is level and above the water, thin where it is steep
       c = c.mul(mix(float(1), float(0.78), uWet));
@@ -269,7 +275,24 @@ export function createGroundMaterial({ house = null, groundMap, coverMap, tier =
         const read = (key) => u[key].normal.sample(xz.mul(u[key].k.x)).xyz.mul(2).sub(1).mul(u[key].k.z);
         const t = mix(mix(read('grass'), read('floor'), smoothstep(0.3, 0.8, cv.x)), read('way'), smoothstep(0.2, 0.7, cv.z));
         const k = near().mul(near()).mul(steepOf().oneMinus()).mul(0.5).mul(uSnow.oneMinus());
-        return normalize(normal.add(cameraViewMatrix.mul(vec4(t.x.mul(k), 0, t.y.mul(k), 0)).xyz));
+        const flatN = cameraViewMatrix.mul(vec4(t.x.mul(k), 0, t.y.mul(k), 0)).xyz;
+        // the rock’s relief on what is steep, triplanar (Ben Golus’s whiteout blend), near at its own
+        // size and, never faded, at seven times it, so a cliff takes the light as broken rock
+        const n = normalize(normalWorldGeometry);
+        const w = pow(abs(n), vec3(4)).toVar();
+        w.divAssign(w.x.add(w.y).add(w.z));
+        const udn = (p, s) => {
+          const unpack = (at) => u.steep.normal.sample(at).xyz.mul(2).sub(1).mul(u.steep.k.z);
+          const q = p.mul(u.steep.k.x);
+          const tx = unpack(q.zy);
+          const ty = unpack(q.xz);
+          const tz = unpack(q.xy);
+          return normalize(vec3(tx.xy.mul(s).add(n.zy), n.x).zyx.mul(w.x).add(vec3(ty.xy.mul(s).add(n.xz), n.y).xzy.mul(w.y)).add(vec3(tz.xy.mul(s).add(n.xy), n.z).mul(w.z)));
+        };
+        const rocky = steepOf().max(cv.w.mul(0.8)).mul(uSnow.mul(0.6).oneMinus());
+        const rockN = udn(positionWorld, near().mul(0.9)).add(udn(positionWorld.mul(0.14), float(0.7))).sub(n.mul(2));
+        const steepN = cameraViewMatrix.mul(vec4(rockN.mul(rocky), 0)).xyz;
+        return normalize(normal.add(flatN).add(steepN));
       },
       'grounds:relief',
       nodes,
