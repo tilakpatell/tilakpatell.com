@@ -46,9 +46,10 @@ describe('cover queries in the game’s selection form', () => {
     const cls = classOf(rb, 'l-orig-assault');
     const s = newSoldier(cls, { id: 'me', team: 1, at: [0, 0, -50], weapon: weaponOf(rb, cls.weapon), rand: seeded(1) });
     const b = createBrain(s, { ai, rand: seeded(1) });
-    s.suppressed = 1;
+    // (hiding, by the source’s one cause: a target its weapon cannot hurt, tactics.js)
+    b.aiWeapon = { ...b.aiWeapon, validAgainst: 'Soldiers' };
     b.me.beliefs.them = { id: 'them', at: { x: 0, y: 1.2, z: -20 }, vel: { x: 0, y: 0, z: 0 }, confidence: 1, visible: true, seenAt: 0, hostile: true };
-    const i = think(b, { nav: open, lineClear: (a, c) => lineClear(open, a, c), shields, squad: null, objective: null, enemies: [[0, -20]], taken: new Map() }, 1);
+    const i = think(b, { nav: open, lineClear: (a, c) => lineClear(open, a, c), shields, squad: null, objective: null, enemies: [[0, -20]], taken: new Map(), who: () => ({ kind: 'walker', shielded: true, alive: true }) }, 1);
     expect(i.mode).toBe('hide');
     expect(i.goal).not.toBe(null);
     expect(Math.hypot(i.goal[0] - 0, i.goal[1] + 50)).toBeGreaterThan(1);
