@@ -7,6 +7,8 @@ The WebAssembly modules (Rapier, the Basis transcoder, meshopt) and the site’s
 
 WebAssembly is the browser’s own, not a package, and so has no row; its page is [webassembly.md](webassembly.md) (Rapier’s two builds, the Basis transcoder, the meshopt decoder).
 
+Cloudflare R2, the bucket the raw city packs are kept in, is S3’s API signed by `scripts/r2-packs.mjs` with Node’s own `crypto`, not a package, and so has no row; its page is [../assets/city-packs.md](../assets/city-packs.md).
+
 <!-- census:start -->
 | package | version | page | files |
 | --- | --- | --- | --- |
