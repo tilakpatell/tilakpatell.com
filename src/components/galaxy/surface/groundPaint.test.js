@@ -73,6 +73,26 @@ describe('the ground painted as one function', () => {
     expect(mapAreaOf()).toEqual({ x0: -HALF, z0: -HALF, w: 2 * HALF, d: 2 * HALF });
   });
 
+  it('paves a city’s streets, ring streets and plaza over the colour, with no grass on them, soft at the edge', () => {
+    const paving = [{ a: [200, 300], b: [400, 300], w: 9 }, { at: [-300, 300], r: 60, w: 10 }, { at: [300, -300], r: 20 }];
+    const open = groundPainter(site(), flat(5));
+    const paved = groundPainter(site({ paving }), flat(5));
+    const [r, g, b] = lin(palette.low);
+    const lum = (r * 0.2126 + g * 0.7152 + b * 0.0722) * 0.5;
+    const road = [lum * 1.04, lum, lum * 0.94];
+    for (const [x, z] of [[300, 302], [-300, 362], [305, -290]]) {
+      const was = paintAt(open, x, z).out;
+      const { out, grass } = paintAt(paved, x, z);
+      expect(grass).toBe(0);
+      for (let i = 0; i < 3; i++) expect(out[i]).toBeCloseTo(was[i] + (road[i] - was[i]) * 0.9, 4);
+    }
+    for (const [x, z] of [[300, 310], [-300, 368], [300, -330], [-300, 300]]) expect(paintAt(paved, x, z)).toEqual(paintAt(open, x, z));
+    // (half paved on its edge, and the palette's own road colour where it has one)
+    expect(paintAt(paved, 300, 304.5).grass).toBeCloseTo(paintAt(open, 300, 304.5).grass * 0.5, 4);
+    const own = groundPainter(site({ paving, ground: { seed: 3, palette: { ...palette, road: '#202024' } } }), flat(5));
+    expect(near(paintAt(own, 300, 300).out, paintAt(open, 300, 300).out.map((v, i) => v + (lin('#202024')[i] - v) * 0.9), 0.005)).toBe(true);
+  });
+
   it('finds a shade among hundreds by its cell, not by looking at them all', () => {
     const shade = Array.from({ length: 600 }, (_, i) => ({ at: [((i * 37) % 800) - 600, ((i * 91) % 1200) - 600], r: 8 }));
     shade.push({ at: [300, 300], r: 20 });

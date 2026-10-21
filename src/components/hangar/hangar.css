@@ -10,7 +10,7 @@
   .hangar-panel { animation: yard-in 0.2s ease-out; }
 }
 .hangar-pilot { display: flex; align-items: center; gap: 0.6rem; color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
-.hangar-xp { position: relative; display: block; width: 120px; height: 6px; overflow: hidden; border-radius: 4px; background: rgb(255 255 255 / 0.1); }
+.hangar-xp { position: relative; display: block; width: 120px; height: 6px; overflow: hidden; border-radius: 4px; background: color-mix(in srgb, var(--text) 10%, transparent); }
 .hangar-xp > span { position: absolute; inset: 0; background: var(--engine, #e8eefc); transform-origin: left; scale: var(--v, 0) 1; }
 .hangar-credits { color: var(--text); font-family: var(--font-mono); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
 /* (the skill points free: a way to the Skills tab, lit while there are some) */
@@ -22,7 +22,7 @@
 
 .hangar-tabs { display: flex; gap: 0.25rem; padding: 0.4rem 0.75rem; overflow-x: auto; border-bottom: 1px solid var(--yard-line); scrollbar-width: none; }
 .hangar-tabs [role='tab'] { flex: none; min-height: 36px; padding: 0 1rem; border-radius: 999px; color: var(--muted); font-size: 0.82rem; }
-.hangar-tabs [role='tab']:hover { color: var(--text); background: rgb(255 255 255 / 0.05); }
+.hangar-tabs [role='tab']:hover { color: var(--text); background: color-mix(in srgb, var(--text) 5%, transparent); }
 .hangar-tabs [role='tab'][aria-selected='true'] { color: var(--text); background: color-mix(in srgb, var(--engine, #e8eefc) 20%, transparent); }
 @media (pointer: coarse) {
   .hangar-tabs [role='tab'] { min-height: 44px; }
@@ -87,7 +87,7 @@
 .hangar-blade { display: inline-block; width: 1.6rem; height: 0.3rem; border-radius: 2px; vertical-align: middle; background: var(--blade); box-shadow: 0 0 8px var(--blade); }
 .hangar-swatches { gap: 0.5rem; margin-bottom: 0.5rem; }
 .hangar-chips .hangar-swatch { width: 36px; min-height: 36px; padding: 0; border: 2px solid var(--yard-line); border-radius: 50%; background: var(--swatch); }
-.hangar-chips .hangar-swatch[aria-pressed='true'] { border-color: #fff; background: var(--swatch); box-shadow: 0 0 0 2px var(--swatch); }
+.hangar-chips .hangar-swatch[aria-pressed='true'] { border-color: var(--text); background: var(--swatch); box-shadow: 0 0 0 2px var(--swatch); }
 @media (pointer: coarse) {
   .hangar-chips .hangar-swatch { width: 44px; min-height: 44px; }
 }
@@ -104,6 +104,12 @@
 @media (pointer: coarse) {
   .hangar-lines button { min-height: 44px; }
 }
+/* the unique weapons: the hand's in green, a locked one's name dimmed, its button the way to the skill tree */
+.hangar-unique li[data-line='hand'] .hangar-line-name { color: #c9ff9a; }
+.hangar-unique li[data-open='false'] .hangar-line-name { color: var(--muted); }
+.hangar-unique .hangar-unique-lock { color: var(--muted); }
+.hangar-unique-open { grid-area: go; color: var(--muted); font-size: 0.78rem; }
+.hangar-chips button[data-unique] { border-color: #c9ff9a; }
 @media (max-width: 719px) {
   .hangar-lines li { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'key' 'name' 'does' 'go'; }
   .hangar-lines button { justify-self: start; }

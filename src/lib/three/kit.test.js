@@ -559,7 +559,8 @@ describe('createPool', () => {
   it('turns the puff’s instances to face the camera at each sort, about up only, the nearer levels keeping their own turn', async () => {
     ({ kit } = await kitOf()); // (the kit's puffs on: a puff handed over still wins)
     const puff = { geometry: new THREE.BufferGeometry(), material: new THREE.MeshLambertMaterial() };
-    const pool = await poolOf('Birch_1', { puff });
+    // (none shrinking toward the reach's end: the turn alone)
+    const pool = await poolOf('Birch_1', { puff, dissolve: 0 });
     expect(meshesAt(pool, 2).map((m) => m.geometry)).toEqual([puff.geometry]);
     const items = [...ring(6, 10, 100, 0), ...ring(6, 100, 100, 0), ...ring(6, 300, 100, 0)].map((it, i) => ({ ...it, yaw: it.yaw + 0.4, scale: 1 + (i % 3) * 0.25 }));
     pool.set('a', items);
@@ -584,6 +585,31 @@ describe('createPool', () => {
     // a shift moves the items and the camera they face together
     pool.shift(-1000, 0);
     facing(pool, { x: cam.position.x - 1000, z: cam.position.z });
+  });
+
+  it('shrinks its items away over the last quarter of its reach, and draws the puff to a reach of its own', async () => {
+    const pool = await poolOf('Birch_1');
+    const size = (level) => columns(pool, level)[0].map(({ y }) => y.y);
+    // (high's bands: 70, 220, the puff to 440; whole to 330, gone by 440)
+    pool.set('a', [...ring(4, 10), ...ring(4, 300), ...ring(4, 385)]);
+    pool.update(camAt(0, 0), 0);
+    expect(pool.stats.levels).toEqual([4, 0, 8]);
+    expect(size(0).every((y) => Math.abs(y - 1) < 1e-6)).toBe(true);
+    const far = size(2);
+    expect(far.filter((y) => Math.abs(y - 1) < 1e-6)).toHaveLength(4);
+    expect(far.filter((y) => y > 0.3 && y < 0.7)).toHaveLength(4);
+    // (a wood's trees to the edge of what you can see: the puff out to 900 m)
+    const wide = await poolOf('Birch_1', { reach: 900 });
+    wide.set('a', [...ring(4, 10), ...ring(4, 600)]);
+    wide.update(camAt(0, 0), 0);
+    expect(wide.stats.levels).toEqual([4, 0, 4]);
+    expect(columns(wide, 2)[0].every(({ y }) => Math.abs(y.y - 1) < 1e-6)).toBe(true);
+    wide.setBands([30, 90]);
+    wide.update(camAt(0, 0), 0);
+    expect(wide.bands).toEqual([30, 90]);
+    expect(wide.stats.levels).toEqual([4, 0, 4]);
+    pool.dispose();
+    wide.dispose();
   });
 
   it('keeps an item’s own turn at level 2 when the LOD1 stands in there', async () => {

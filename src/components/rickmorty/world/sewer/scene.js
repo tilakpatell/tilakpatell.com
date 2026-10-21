@@ -2,19 +2,21 @@
 // camera, ribbed concrete walls, a channel of green water down the middle,
 // lamps every so often, the rats (the cast's sewer rat), the grates (gaps
 // in the floor) and the screws, and Pickle Rick himself (the cast's pickle,
-// which hops as it rolls), seen from behind and a little above. It draws
-// the run it's handed and decides nothing (./rules.js).
+// which hops as it rolls), seen from behind and a little above, drawn as the
+// show is (flat colour, one step of shadow, a line round the cast only, no
+// film grade: ../look.js). It draws the run it's handed and decides nothing
+// (./rules.js).
 //
 // createSewerScene(canvas, { onLost }) resolves to { render(run, ms),
 // resize(w, h), dispose(), lost }.
 
 import * as THREE from 'three';
 import { createStage, disposeTree } from '../../../../lib/stage3d';
-import { InkPass, toon } from '../../portal/toon';
+import { toon } from '../../portal/toon';
 import { createMeshyCast } from '../../portal/meshyCast';
 import { TUNING, laneX } from './rules';
 import { createFeel, feelGroups } from '../../../../lib/three/feel';
-import { BLOOMS } from '../look';
+import { BLOOMS, CAST_INK, PLAIN } from '../look';
 
 const SEG = 12; // metres of drain per segment
 const SEGS = 7; // segments ahead of him
@@ -25,10 +27,9 @@ const RAT_RUN = Object.freeze({ speed: TUNING.rat, side: 0, turn: 0 }); // (a ra
 export async function createSewerScene(canvas, { onLost } = {}) {
   const stage = createStage(canvas, { shadows: false, fov: 55, near: 0.1, far: 160, exposure: 1.05, bloom: BLOOMS.sewer, onLost });
   const { scene, camera } = stage;
+  stage.grade(PLAIN);
   scene.background = new THREE.Color(0x0a1410);
   scene.fog = new THREE.Fog(0x0a1410, 30, 90);
-  const ink = new InkPass(scene, camera, { color: 0x101810 });
-  stage.composer.insertPass(ink, 1);
   scene.add(new THREE.HemisphereLight(0xa8ffd0, 0x1a2a1a, 1.6));
   const sun = new THREE.DirectionalLight(0xdfffe8, 0.9);
   sun.position.set(4, 10, -6);
@@ -84,7 +85,7 @@ export async function createSewerScene(canvas, { onLost } = {}) {
   }
 
   // ── the cast: Pickle Rick and the rats ──
-  const cast = createMeshyCast();
+  const cast = createMeshyCast({ ink: CAST_INK });
   await cast.load(null, ['pickle', 'sewerrat']).catch(() => {});
   const pickle = cast.make('pickle');
   const hero = new THREE.Group();

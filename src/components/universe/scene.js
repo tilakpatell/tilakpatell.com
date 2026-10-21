@@ -194,12 +194,14 @@ import { JAMMED, jumpState } from './words';
 import { CORE, GENS, citadelGeometry, createSiege, segmentSphere } from './siege';
 import { createCitadelSiege } from './citadelSiege';
 import { GUARD, STALE_MS } from './online/protocol';
+import { isMate } from './online/mates';
 import { createLook } from '../../runtime/look';
 import { reticleState } from '../../runtime/hud/reticle';
 import { createFlightCluster } from '../../runtime/hud/cluster.js';
 import { clusterView } from './clusterView';
 import { createRounds } from './rounds';
 import { createGalaxyPowers } from './powers';
+import { createUniqueArms } from './uniqueArms';
 import { chargeFor, picksFor } from './shipPowers';
 import { canPower, mixPost } from './powerSeams';
 import { createBolts, createFlashes } from '../galaxy/shared/fx';
@@ -817,10 +819,11 @@ export async function create(canvas, ctx) {
   const foot = standIn(footCode, { props: { phase: null, id: null, debug: null, spots: null }, methods: { begin: () => (footCode.want(), false) } });
   const onFoot = () => Boolean(foot.phase);
   // the other pilots whose crews are down on a planet now (the scene hands
-  // the ones on yours to the foot scene)
+  // the ones on yours to the foot scene): an ally or a party mate is `ally`
+  // (mates.js), and `quip` is what one's just said (net.quip: quick chat)
   const guestsOnFoot = (now) => {
     const out = [];
-    for (const p of net?.peers?.values() ?? []) if (!p.blocked && p.name && p.foot && now - p.foot.at < STALE_MS) out.push({ id: p.id, name: p.name, ally: p.ally === 'ally', foot: p.foot, looks: p.looks ?? null });
+    for (const p of net?.peers?.values() ?? []) if (!p.blocked && p.name && p.foot && now - p.foot.at < STALE_MS) out.push({ id: p.id, name: p.name, ally: isMate(p), quip: net.quip?.(p.id) ?? null, foot: p.foot, looks: p.looks ?? null });
     return out;
   };
   // everyone else out here (none with reduced motion), and the pops when a shot hits one
@@ -1265,13 +1268,22 @@ export async function create(canvas, ctx) {
   const measure = () => {
     const box = (ctx.rt.host ?? ctx.el).getBoundingClientRect();
     const panel = panelEl()?.getBoundingClientRect();
-    const nav = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 68;
+    // (0 is a real answer: a phone on its side, flying, has no bar: thumbs.css)
+    const navRead = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'));
+    const nav = Number.isFinite(navRead) ? navRead : 68;
     let side = 0;
     let sheet = 0;
     if (panel && panel.width > 0) {
       // put away on a desktop, it's a bar up in the corner: the map has the width
       if (panel.width >= box.width * 0.75) sheet = Math.max(0, box.bottom - panel.top);
       else if (!panelEl().hasAttribute('data-tucked')) side = Math.max(0, box.right - panel.left);
+    }
+    // a touch screen held upright: the thumbs' grid fills the foot of the
+    // map (UniverseMap.jsx, thumbs.css), so the open part stops over it and
+    // the ship flies above the buttons, not under them (no box on a desktop)
+    if (box.height > box.width) {
+      const thumbs = (ctx.rt.host ?? ctx.el).closest('.universe-page')?.querySelector('.universe-thumbs')?.getBoundingClientRect();
+      if (thumbs?.height > 0) sheet = Math.max(sheet, box.bottom - thumbs.top + 12);
     }
     state.rect = cover({ w: size.w, h: size.h, panel: side, sheet, top: Math.max(0, nav - box.top) });
     state.overview = overviewPose(size, state.rect);
@@ -1786,6 +1798,7 @@ export async function create(canvas, ctx) {
       const dz = park.z - s.z;
       const l = Math.hypot(dx, dy, dz) || 1;
       powers.cancel();
+      unique.clear();
       state.jump = { id, park, phase: 'align', age: 0, dir: [dx / l, dy / l, dz / l], at: Infinity, name: pose?.name ?? null };
     } else {
       if (hyper) {
@@ -2301,6 +2314,8 @@ export async function create(canvas, ctx) {
   // (the room a portal's way out needs: the map's solids as this frame has them; no wall at the edge, the Expanse goes on)
   Object.defineProperty(state, 'space', { get: () => ({ solids: solidsNow, edge: Infinity, ceilingAt: OPEN_SPACE.ceilingAt }) });
   const powers = createGalaxyPowers({ parent: map, reduced, hunters, war: null, bolts: powerBolts, flashes: powerFlashes, crashFx, pops, post: powerPost, state, emit, controls, strike: (...a) => powerStrike(...a), scored: (...a) => powerScored(...a), teleport: (pose) => powerTeleport(pose) });
+  // the skill tree's four ship weapons (uniqueArms.js): fired as the guns are, played out beside the powers
+  const unique = createUniqueArms({ parent: map, reduced, hunters, war: null, bolts: powerBolts, flashes: powerFlashes, state, emit, strike: (...a) => powerStrike(...a), scored: (...a) => powerScored(...a) });
   // the big one charged by what the guns hit (a power's own hits, `by` it, charge nothing)
   const charge = (hh) => powers.gain(chargeFor(hh, { war: false, ace: FACTIONS_ALL[hh.faction]?.ace === hh.kind }), `hunters:${hh.id}`);
   // G or X: on, if a power may be played now (in flight only), and whether it went
@@ -2380,9 +2395,11 @@ export async function create(canvas, ctx) {
       shotAt.set(s.x + dir[0] * 0.16 - fz * side, s.y + dir[1] * 0.16, s.z + dir[2] * 0.16 + fx * side);
     }
     const speed = AIM.bolt * w.speed + Math.max(0, s.speed);
-    if (w.heavy) launch(shotAt, dir, speed, w, g);
+    let v = [dir[0] * speed, dir[1] * speed, dir[2] * speed];
+    if (w.unique) v = unique.fire(arm.id, shotAt, dir, speed, w, (g.punch ?? 1) * w.punch);
+    else if (w.heavy) launch(shotAt, dir, speed, w, g);
     else for (const d of fan(dir, w.count, w.cone, jitter)) spawnBolt(shotAt, d, speed, w, g);
-    net?.shot(shotAt, [dir[0] * speed, dir[1] * speed, dir[2] * speed], w.code);
+    net?.shot(shotAt, v, w.code);
     emit({ type: 'fire', weapon: arm.id });
     ctx.invalidate();
   };
@@ -3004,6 +3021,7 @@ export async function create(canvas, ctx) {
   // ── A crash: into something too fast ──
   const startCrash = (e) => {
     powers.cancel();
+    unique.clear();
     const s = state.ship;
     const solid = solidsNow.find((o) => o.id === e.id) ?? SOLIDS.find((o) => o.id === e.id);
     const center = new THREE.Vector3(...solid.at);
@@ -3070,6 +3088,7 @@ export async function create(canvas, ctx) {
   // last of the shields ──
   const startDestroyed = (by = null, rammed = false) => {
     powers.cancel();
+    unique.clear();
     const s = state.ship;
     const from = new THREE.Vector3(s.x, s.y, s.z);
     state.crash = {
@@ -3827,6 +3846,7 @@ export async function create(canvas, ctx) {
     const live = flying() && !onFoot() && !state.crash && !state.dive && !props.frozen ? state.ship : null;
     if (hunters) for (const e of hunters.update(dt * powers.mods.slow, t, powers.shipFor(live))) onHunters(e);
     powers.frame(dt, live);
+    unique.frame(dt);
     if (law) law.step(dt, live, { heat: state.heat });
     else wanted.side(sideOf(state.kind));
     if (wingmen) helpFrom(dt, t, live);
@@ -4573,6 +4593,7 @@ export async function create(canvas, ctx) {
   const startFoot = ({ id = state.landable, entry = null } = {}) => {
     if (!flying() || onFoot() || state.crash || state.dive || props.frozen || !state.model) return false;
     powers.cancel(); // (a power is the ship's: out of it, whatever's on stops)
+    unique.clear();
     if (!id) {
       emit({ type: 'foot', id: 'nowhere' });
       return false;
@@ -4825,6 +4846,9 @@ export async function create(canvas, ctx) {
     el.toggleAttribute('data-on', Boolean(text));
     el.toggleAttribute('data-say', Boolean(say));
     el.toggleAttribute('data-plain', plain);
+    // (which key: a touch screen leaves J's line out, the Jump button saying it)
+    if (text && !plain && !say) el.dataset.key = cap;
+    else delete el.dataset.key;
   };
 
   // ── Frames ──
@@ -6107,6 +6131,11 @@ export async function create(canvas, ctx) {
       heard();
       setSeat(state.seat === 'cockpit' ? 'chase' : 'cockpit');
     },
+    // the touch buttons' grid came, went or changed size: the open part again
+    refit() {
+      measure();
+      ctx.invalidate();
+    },
     // the phone's climb and dive buttons: 1 held to climb, −1 to dive, 0 let go
     climb(way) {
       heard();
@@ -6168,6 +6197,7 @@ export async function create(canvas, ctx) {
     dive(id) {
       if (reduced || !planetOf[id] || !state.pose) return 0;
       powers.cancel();
+      unique.clear();
       state.dive = { id, start: performance.now(), from: { ...state.pose, target: [...state.pose.target] } };
       state.flight = null;
       engine?.set({ speed: SHIP.boost, boost: true });
@@ -6178,6 +6208,7 @@ export async function create(canvas, ctx) {
       disposed = true;
       powers.keep(); // (the big one's charge, kept in the session for the next take-off)
       powers.dispose();
+      unique.dispose();
       powerBolts.dispose();
       powerFlashes.dispose();
       stopVoiced(); // (anyone down on a planet, mid-line)

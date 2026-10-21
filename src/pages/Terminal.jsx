@@ -642,7 +642,7 @@ export default function Terminal() {
   const tone = {
     sys: 'text-muted',
     ok: 'text-accent',
-    err: 'text-[#ff8a8a]',
+    err: 'text-[color:var(--danger)]',
     head: 'font-semibold text-ink',
     dim: 'text-muted',
     ascii: 'text-body',
@@ -655,8 +655,8 @@ export default function Terminal() {
       <p className="eyebrow">Imperial terminal</p>
       <h1 className="sr-only">Terminal</h1>
       <div
-        className="dark-scope mt-5 overflow-hidden rounded-card border border-line-strong shadow-2xl shadow-black/30"
-        style={{ background: 'var(--bg)' }}
+        className="dark-scope mt-5 overflow-hidden rounded-card border border-line-strong"
+        style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-dialog)' }}
         onClick={() => inputRef.current?.focus({ preventScroll: true })}
       >
         <div className="flex items-center gap-3 border-b border-line px-4 py-2.5" style={{ background: 'var(--surface)' }}>

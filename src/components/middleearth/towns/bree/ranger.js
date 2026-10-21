@@ -12,7 +12,7 @@
 // head towards `watch`. `bowl` is where the pipe's light goes.
 
 import * as THREE from 'three';
-import { hot } from '../../../../lib/stage3d';
+import { hot } from '../../../../lib/three/stage3dNodes';
 import { fbm, makeCanvas, makeNoise, normalFromField, paintPixels } from '../../../../lib/paint';
 import { B, ball, lathe, parts, tube } from '../../shire/props';
 import { sharpen } from '../../../../lib/three/textures';
@@ -41,7 +41,7 @@ function clothTextures(renderer, { base = [46, 56, 44], seed = 5, size = 256 } =
     const t = new THREE.CanvasTexture(canvas);
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     t.repeat.set(2, 2);
-    t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    t.anisotropy = Math.min(8, renderer.capabilities?.getMaxAnisotropy?.() ?? renderer.getMaxAnisotropy?.() ?? 1);
     if (srgb) t.colorSpace = THREE.SRGBColorSpace;
     return t;
   };

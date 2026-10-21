@@ -19,4 +19,5 @@ export const STOPS = [
   { id: 'black-gate', name: 'The Black Gate', ...xy('black-gate'), text: 'Shut, and watched. There is another way in.' },
   { id: 'cirith-ungol', name: 'Cirith Ungol', ...xy('cirith-ungol'), text: 'The stairs, the pass, and Shelob’s lair at the top.' },
   { id: 'mount-doom', name: 'Mount Doom', ...xy('mount-doom'), text: 'Across the plain of Gorgoroth to the fire where the Ring was made.' },
+  { id: 'minas-tirith', name: 'Minas Tirith', ...xy('minas-tirith'), text: 'The King comes back to his city, and the White Tree flowers. The four bow to no one.' },
 ];

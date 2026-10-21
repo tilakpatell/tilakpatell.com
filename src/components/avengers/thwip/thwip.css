@@ -16,7 +16,7 @@
 .tw-hearts span[data-on] { background: #ff3b4e; filter: drop-shadow(0 0 4px rgba(255, 60, 80, 0.6)); }
 .tw-quip { position: absolute; left: 50%; bottom: 16px; width: min(84%, 52ch); translate: -50% 0; padding: 0.45rem 0.8rem; border-radius: 10px; background: rgba(8, 10, 18, 0.55); font-size: 0.84rem; font-weight: 600; line-height: 1.35; text-align: center; text-shadow: none; }
 .tw-overlay .btn-ghost { color: #fff; border-color: rgba(255, 255, 255, 0.4); }
-.tw-title { color: #fff; text-shadow: 3px 3px 0 #c8102e, 0 6px 26px rgba(0, 0, 0, 0.5); }
+.tw-overlay .hq-overlay-title { color: #fff; text-shadow: 3px 3px 0 #c8102e, 0 6px 26px rgba(0, 0, 0, 0.5); }
 @media (max-width: 760px) {
   .tw-left { font-size: 1.3rem; }
   .tw-track { width: 120px; }

@@ -16,8 +16,8 @@ describe('the fellowship: who walks with you, and how', () => {
   });
 
   it('Merry and Pippin from Maggot’s crop; Strider from Bree’s last beat', () => {
-    expect(ids(at('shire-edge', 59))).toEqual(['frodo', 'sam']);
-    expect(ids(at('shire-edge', 60))).toEqual(['frodo', 'sam', 'merry', 'pippin']);
+    expect(ids(at('shire-edge', 25))).toEqual(['frodo', 'sam']);
+    expect(ids(at('shire-edge', 26))).toEqual(['frodo', 'sam', 'merry', 'pippin']);
     expect(ids(at('bree', 0))).not.toContain('aragorn');
     expect(ids(at('bree', last('bree')))).toContain('aragorn');
   });
@@ -43,7 +43,7 @@ describe('the fellowship: who walks with you, and how', () => {
 
   it('Gollum leads from the Marshes; Sam carries Frodo on the Mountain; the two lie at its end', () => {
     expect(at('marshes', 40).find((x) => x.id === 'gollum').state).toBe('leading');
-    const carried = at('gorgoroth', 200);
+    const carried = at('gorgoroth', 100); // (the carry’s mark: stages/gorgoroth/beats.js)
     expect(carried.find((x) => x.id === 'sam').state).toBe('carrying');
     expect(carried.find((x) => x.id === 'frodo').state).toBe('carried');
     const lying = at('gorgoroth', last('gorgoroth'));
@@ -59,11 +59,14 @@ describe('the fellowship: who walks with you, and how', () => {
     expect(ids(at('minas-tirith', 0)).sort()).toEqual(['aragorn', 'arwen', 'frodo', 'gandalfwhite', 'gimli', 'legolas', 'merry', 'pippin', 'sam']);
   });
 
-  it('the Havens: five aboard, three staying', () => {
-    const w = at('havens', 0);
-    const by = (state) => ids(w.filter((x) => x.state === state)).sort();
-    expect(by('aboard')).toEqual(['bilbo', 'elrond', 'frodo', 'galadriel', 'gandalfwhite']);
-    expect(by('staying')).toEqual(['merry', 'pippin', 'sam']);
+  it('the Havens: four waiting aboard as the hobbits walk down; after the farewell, five aboard, three staying', () => {
+    const by = (w, state) => ids(w.filter((x) => x.state === state)).sort();
+    const down = at('havens', 0);
+    expect(by(down, 'aboard')).toEqual(['bilbo', 'elrond', 'galadriel', 'gandalfwhite']);
+    expect(by(down, 'walking')).toEqual(['frodo', 'merry', 'pippin', 'sam']);
+    const after = at('havens', 160);
+    expect(by(after, 'aboard')).toEqual(['bilbo', 'elrond', 'frodo', 'galadriel', 'gandalfwhite']);
+    expect(by(after, 'staying')).toEqual(['merry', 'pippin', 'sam']);
   });
 
   it('the table names only the cast, known states and real stages', () => {

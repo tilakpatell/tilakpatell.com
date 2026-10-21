@@ -18,7 +18,7 @@ const FACE = [
   [level, ['createLevelLoader', 'createLevelPhysics', 'createLevelScene', 'createLevelStream', 'imageLayerOf', 'instancesOf', 'packBytes', 'packUrl', 'tierTexture', 'wantsEngine', 'wanted']],
   [stage, ['HeroStage', 'stageFor']],
   [fx, ['LASER', 'createBolts', 'createFlashes']],
-  [arms, ['HAND_WEAPONS', 'HERO_KEY', 'HILTS', 'PICKABLE', 'SABER_COLORS', 'heroById', 'readCrewStyle', 'skinsOf']],
+  [arms, ['HAND_WEAPONS', 'HERO_KEY', 'HILTS', 'PICKABLE', 'SABER_COLORS', 'heroById', 'pickableWith', 'readCrewStyle', 'skinsOf']],
 ];
 
 describe('galaxy/shared', () => {

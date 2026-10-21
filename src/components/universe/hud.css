@@ -54,7 +54,7 @@
   border-radius: 14px;
   background: var(--hud-sheet-bg);
   color: var(--text);
-  box-shadow: 0 18px 40px rgb(0 0 0 / 0.45);
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--shadow-ink) 45%, transparent);
 }
 
 /* The flight cluster (the HUD kit's: runtime/hud/cluster.css), in the
@@ -77,9 +77,10 @@
   .universe-page:not(.galaxy-page) .universe-hint { bottom: max(24px, calc(var(--hud-pad-b, 12px) + 20px + var(--hud-cluster-h, 0px))); }
 }
 
-/* A sentence over the map: the first-flight hint, a multiplayer note. */
-.universe-hint,
-.universe-online-note {
+/* A sentence over the map: the first-flight hint. (A multiplayer note wears
+   the online corner’s glass instead, the colour’s, as the pill it rises
+   over: online/online.css.) */
+.universe-hint {
   border-radius: 14px;
   background: rgb(3 4 10 / 0.85);
 }
@@ -96,7 +97,7 @@
    shipyard's hull. Columns come from each one's own rule. */
 .universe-seg,
 .universe-hangar-slots,
-.universe-yard-hull { display: grid; border: 1px solid rgb(255 255 255 / 0.2); border-radius: 8px; overflow: hidden; }
+.universe-yard-hull { display: grid; border: 1px solid color-mix(in srgb, var(--text) 20%, transparent); border-radius: 8px; overflow: hidden; }
 :is(.universe-seg, .universe-hangar-slots, .universe-yard-hull) button { min-height: 34px; color: var(--muted); font-size: 0.78rem; transition: background-color 0.15s, color 0.15s; }
 :is(.universe-seg, .universe-hangar-slots, .universe-yard-hull) button:hover { color: var(--text); }
 :is(.universe-seg, .universe-hangar-slots, .universe-yard-hull) button[aria-pressed='true'] { background: color-mix(in srgb, var(--engine, #e8eefc) 22%, transparent); color: var(--text); }

@@ -1,9 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// (the lands are lands.test.js's; the wiring here walks over a flat stand-in,
+// as building a stage's ground at every jump would take the test seconds)
+vi.mock('./lands', () => ({
+  createLands: () => ({ at() {}, step() {}, water() {}, follow() {}, life() {}, groupOf: () => null, landOf: () => null, heightAt: () => 0, ready: () => true, current: null, dispose() {} }),
+}));
 import { validateModule } from '../../../runtime/module';
 import { WORLD_MB } from '../../worlds/worlds';
 import road, { KEYS, sFromAddress } from './module';
 import { sOf } from './line';
 import { STAGES } from './stages/index';
+import { BEATS_OF } from './stages/registry';
 import { fakeRt } from './fixtures/rt';
 
 describe('the Road, the world module', () => {
@@ -39,7 +46,7 @@ describe('the address', () => {
 });
 
 // an input snapshot that holds nothing and presses `pressed` (codes) this frame
-const snap = (pressed = [], held = []) => ({ pressed: new Set(pressed), action: (n) => held.includes(n), pointer: { drag: null } });
+const snap = (pressed = [], held = [], keys = []) => ({ pressed: new Set(pressed), keys: new Set(keys), action: (n) => held.includes(n), pointer: { drag: null } });
 
 describe('the face’s wiring: keys, events, the save', () => {
   it('binds the Road’s keys', async () => {
@@ -98,8 +105,8 @@ describe('the face’s wiring: keys, events, the save', () => {
     const world = await road.create(rt, { at: null });
     world.attached();
     world.skipToEnd();
-    expect(rt.emitted.some((e) => e.type === 'end')).toBe(true);
-    expect(rt.saves.get('tp-road')).toMatchObject({ v: 1, s: 1, ridden: false });
+    expect(rt.emitted.find((e) => e.type === 'end')).toMatchObject({ ridden: false });
+    expect(rt.saves.get('tp-road')).toMatchObject({ v: 1, s: 1, ridden: false, on: null });
     // (jumped most of the way and walked a little is not ridden; two thirds walked is)
     const rt2 = fakeRt();
     const jumped = await road.create(rt2, { at: null });
@@ -111,9 +118,44 @@ describe('the face’s wiring: keys, events, the save', () => {
     const rt3 = fakeRt();
     const walked = await road.create(rt3, { at: null });
     walked.attached();
-    for (let i = 0; i < 400; i++) walked.step(1, snap([], ['run']));
+    // (running, and doing each deed on the way: E pressed and held; a word the company says after its wait)
+    for (let i = 0; i < 600; i++) walked.step(1, snap(['KeyE'], ['run'], ['KeyE']));
     walked.skipToEnd();
     expect(rt3.saves.get('tp-road')).toMatchObject({ s: 1, ridden: true });
+    expect(rt3.emitted.filter((e) => e.type === 'end').at(-1)).toMatchObject({ ridden: true });
+    // (the day it was ridden is kept, and starting again doesn't unride it)
+    const on = rt3.saves.get('tp-road').on;
+    expect(Number.isFinite(on)).toBe(true);
+    walked.restart();
+    expect(rt3.saves.get('tp-road')).toMatchObject({ s: 0, ridden: true, on });
+  });
+
+  it('the walk stops at a deed and waits; the page is told what to press; done, the walk goes on', async () => {
+    const rt = fakeRt();
+    const world = await road.create(rt, { at: 'hobbiton:140' });
+    world.attached();
+    world.setAuto(false);
+    const dragon = sOf(STAGES, 'hobbiton', BEATS_OF.hobbiton.find((b) => b.id === 'dragon').at);
+    for (let i = 0; i < 20; i++) world.step(1, snap([], ['run']));
+    expect(world.s).toBeCloseTo(dragon, 9);
+    const told = rt.emitted.filter((e) => e.type === 'deed').at(-1);
+    expect(told).toMatchObject({ label: 'Light the dragon', keys: 'E', verb: 'press' });
+    world.step(0.1, snap(['KeyE']));
+    expect(rt.emitted.filter((e) => e.type === 'deed').at(-1).label).toBeUndefined();
+    for (let i = 0; i < 4; i++) world.step(1, snap([], ['run']));
+    expect(world.s).toBeGreaterThan(dragon);
+  });
+
+  it('a word with the company: T has whoever walks with you say the next of the stage’s lines', async () => {
+    const rt = fakeRt();
+    const world = await road.create(rt, { at: 'bree:20' });
+    world.attached();
+    world.step(0.1, snap());
+    expect(rt.emitted.filter((e) => e.type === 'talk').at(-1)).toMatchObject({ who: 'frodo', name: 'Frodo' });
+    world.step(0.1, snap(['KeyT']));
+    const said = rt.emitted.filter((e) => e.type === 'line').at(-1);
+    expect(said).toMatchObject({ who: 'frodo' });
+    expect(said.text).toMatch(/Underhill/);
   });
 
   it('a finished ride, come back to, starts again rather than ending at once', async () => {
@@ -149,12 +191,32 @@ describe('the face’s wiring: keys, events, the save', () => {
     expect(rt.saves.get('tp-road').s).toBeGreaterThan(sOf(STAGES, 'shire-edge', 0));
   });
 
-  it('under reduced motion Next steps to the next stage while there are no beats, never to the end', async () => {
+  it('a first ride holds on Bag End’s mark for the first words, then walks', async () => {
+    const rt = fakeRt();
+    const world = await road.create(rt, { at: null });
+    world.attached();
+    for (let i = 0; i < 5 * 60; i++) world.step(1 / 60, snap([]));
+    expect(world.s).toBe(0);
+    for (let i = 0; i < 2 * 60; i++) world.step(1 / 60, snap([]));
+    expect(world.s).toBeGreaterThan(0);
+  });
+
+  it('under reduced motion Next steps from beat to beat, to the next stage where a stage has none, never to the end', async () => {
     const rt = fakeRt();
     const world = await road.create(rt, { at: null, reduced: true });
     world.attached();
     world.step(1 / 60, snap(['Enter']));
-    expect(world.s).toBeCloseTo(sOf(STAGES, 'shire-edge', 0), 9);
+    expect(world.s).toBeCloseTo(sOf(STAGES, 'hobbiton', 40), 9);
+    world.set(sOf(STAGES, 'bree', 10));
+    world.step(1 / 60, snap(['Enter']));
+    expect(world.s).toBeCloseTo(sOf(STAGES, 'bree', BEATS_OF.bree[0].at), 9);
+    // (a stage not yet written steps to the next stage’s start, while there is one)
+    const bare = STAGES.findIndex((st, i) => !BEATS_OF[st.id] && i < STAGES.length - 1);
+    if (bare >= 0) {
+      world.set(sOf(STAGES, STAGES[bare].id, 10));
+      world.step(1 / 60, snap(['Enter']));
+      expect(world.s).toBeCloseTo(sOf(STAGES, STAGES[bare + 1].id, 0), 9);
+    }
     expect(rt.emitted.some((e) => e.type === 'end')).toBe(false);
   });
 

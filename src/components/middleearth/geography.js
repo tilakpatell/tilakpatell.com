@@ -246,7 +246,10 @@ export const LABELS = [
   { name: 'HARAD', east: 880, south: 760 },
 ];
 
-// Note §4: Fonstad’s cumulative road miles from Hobbiton, a stop each.
+// Note §4: Fonstad’s cumulative road miles from Hobbiton, a stop each; and
+// the way home after the Mountain to the crowning at Minas Tirith, where
+// the map’s road now ends (derived: the eagles to Ithilien and the host up
+// the Anduin, about the straight 145 miles between the two places, ±25).
 export const ROAD_MILES = {
   hobbiton: 0,
   bree: 135,
@@ -259,6 +262,7 @@ export const ROAD_MILES = {
   'black-gate': 1475,
   'cirith-ungol': 1613,
   'mount-doom': 1779,
+  'minas-tirith': 1924,
 };
 
 // Note §4: the Tale of Years (Shire Reckoning), when the Ring reached each stop.
@@ -274,4 +278,5 @@ export const DATES = {
   'black-gate': '5 March 3019',
   'cirith-ungol': '13 March 3019',
   'mount-doom': '25 March 3019',
+  'minas-tirith': '1 May 3019',
 };

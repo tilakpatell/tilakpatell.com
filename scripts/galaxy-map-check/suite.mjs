@@ -16,14 +16,16 @@ export const suite = async (viewport, { full = true } = {}) => {
   };
   const names = async (when, all = false) => {
     const r = await namesProblems(page);
-    // (every film world's name; a charted world's only where it has room, labelPlace.js's optional, so those are counted, not held)
+    // (every film world's name; a charted world's only where it has room, labelPlace.js's optional, so those are counted, not held,
+    // and the 2017 game's worlds' (data-game: Sullust, Pillio, Vardos, Fondor) on a phone's whole map, HoloMap.jsx's ROOMY_AT)
     const v = await J(page, () => {
       const shown = (el) => el.checkVisibility({ visibilityProperty: true });
-      const films = [...document.querySelectorAll('.holomap-systems > li:not([data-charted]) .holomap-name[data-id]')];
+      const films = [...document.querySelectorAll('.holomap-systems > li:not([data-charted], [data-game]) .holomap-name[data-id]')];
+      const game = [...document.querySelectorAll('.holomap-systems > li[data-game] .holomap-name[data-id]')];
       const charted = [...document.querySelectorAll('.holomap-systems > li[data-charted] .holomap-name[data-id]')];
-      return { films: films.length, filmsShown: films.filter(shown).length, charted: charted.length, chartedShown: charted.filter(shown).length };
+      return { films: films.length, filmsShown: films.filter(shown).length, game: game.length, gameShown: game.filter(shown).length, charted: charted.length, chartedShown: charted.filter(shown).length };
     });
-    say(all ? v.filmsShown === v.films : r.n >= 3, `${when}: ${r.n} names on view (the films’ ${v.filmsShown} of ${v.films}, the charted worlds’ ${v.chartedShown} of ${v.charted})`);
+    say(all ? v.filmsShown === v.films : r.n >= 3, `${when}: ${r.n} names on view (the films’ ${v.filmsShown} of ${v.films}, the game’s ${v.gameShown} of ${v.game}, the charted worlds’ ${v.chartedShown} of ${v.charted})`);
     say(r.meets.length === 0, `${when}: no two names meet${r.meets.length ? ` (${r.meets.slice(0, 6).join(', ')})` : ''}`);
     const dots = dotsCheck(r.dots, viewport.width);
     say(dots.ok, `${when}: no name over another system's dot${viewport.width <= 560 ? ` deeper than ${PHONE_GRAZE} px` : ''}${dots.text}`);

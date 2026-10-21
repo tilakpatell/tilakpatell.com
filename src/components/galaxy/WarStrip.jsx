@@ -8,8 +8,9 @@ import { strengthLine } from './warText';
 // marked, the one you fight in, which changes from the war card, WarCard.jsx),
 // and each of its powers' systems, share of the galaxy's worth and which way
 // it's gone in six hours (gcw.js's strength), with a bar of the three: the
-// liberator, the Hutts between, the raider. A memo: it changes with the war,
-// not with the zoom or the pan.
+// liberator, the Hutts between, the raider. One row, each side by its crest
+// (its name on a hover, and to a screen reader). A memo: it changes with the
+// war, not with the zoom or the pan.
 const WarStrip = memo(function WarStrip({ table, fighting }) {
   const w = WARS[table.war];
   const sides = [w.liberator, 'hutt', w.raider];
@@ -27,7 +28,7 @@ const WarStrip = memo(function WarStrip({ table, fighting }) {
             if (!r) return null;
             const trend = r.trend6h > 0 ? 'up' : r.trend6h < 0 ? 'down' : undefined;
             return (
-              <li key={side} style={{ '--side': SIDES[side].colour }}>
+              <li key={side} style={{ '--side': SIDES[side].colour }} title={`${SIDES[side].short}: ${strengthLine(table, side)}`}>
                 <Emblem side={side} />
                 <span className="holomap-strip-name" aria-hidden="true">
                   {SIDES[side].short}

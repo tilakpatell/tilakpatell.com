@@ -1,0 +1,111 @@
+{
+  "kind": "quad",
+  "loop": true,
+  "duration": 1,
+  "gravity": {
+    "g": 0,
+    "random": 0
+  },
+  "drag": 0,
+  "wind": 0,
+  "color": [
+    1.3,
+    1.15,
+    0.8
+  ],
+  "sizeY": null,
+  "alpha": {
+    "exponent": 1,
+    "curve": 1
+  },
+  "rotation": 0,
+  "transparency": {
+    "poly": [
+      0,
+      -4.9,
+      4.9,
+      0.01
+    ],
+    "min": 0,
+    "max": 1,
+    "scale": 1
+  },
+  "uv": {
+    "frames": 4,
+    "grid": [
+      4,
+      1
+    ],
+    "fps": 0,
+    "randomStart": true,
+    "overLife": false
+  },
+  "alignment": "screen",
+  "stretch": null,
+  "lightWrap": 0.5,
+  "soft": null,
+  "additive": true,
+  "exposure": 0.5,
+  "maxSpawnDistance": 0,
+  "cullingFactor": 1,
+  "follow": {
+    "source": false,
+    "velocity": false
+  },
+  "mesh": null,
+  "ribbon": null,
+  "name": "motes: the Road’s, dust and pollen hanging in the light (Lothlórien, the Shire’s evening)",
+  "sheet": "mote",
+  "maxCount": 300,
+  "lifetime": {
+    "random": [
+      6,
+      9
+    ]
+  },
+  "spawn": {
+    "rate": 40,
+    "burst": 0,
+    "size": {
+      "random": [
+        0.03,
+        0.07
+      ]
+    },
+    "speed": {
+      "random": [
+        0.05,
+        0.2
+      ]
+    },
+    "rotation": 0,
+    "direction": {
+      "box": {
+        "min": [
+          -1,
+          -0.3,
+          -1
+        ],
+        "max": [
+          1,
+          0.4,
+          1
+        ]
+      }
+    },
+    "position": {
+      "box": {
+        "center": [
+          0,
+          3,
+          0
+        ],
+        "size": [
+          24,
+          5,
+          24
+        ]
+      }
+    }
+  }
+}

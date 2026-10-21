@@ -1,8 +1,9 @@
 // The places on the map that aren't on the road: no pin, no "on to", no
 // seal on the map. Each is found only by looking (Orthanc: click the tower
-// itself, standing black in its ring at Isengard; Minas Tirith: click the
-// white city on its mountain; Edoras: click the golden hall on its hill),
-// and opens like a chapter, at its own address (#/middle-earth/orthanc).
+// itself, standing black in its ring at Isengard; Edoras: click the golden
+// hall on its hill), and opens like a chapter, at its own address
+// (#/middle-earth/orthanc). Minas Tirith was one, and is a chapter now: the
+// road comes to it after Mount Doom.
 // `at` is on the 800×560 sheet, where Tolkien's geography puts it
 // (./sheet.js); `reach` how near a click on the flat map (no graphics chip,
 // so no tower to click) has to land.
@@ -10,7 +11,6 @@ import { placeAt } from './sheet';
 
 export const HIDDEN = [
   { id: 'orthanc', name: 'Orthanc', title: 'Inside the tower of Isengard', at: placeAt('isengard'), reach: 12 },
-  { id: 'minas-tirith', name: 'Minas Tirith', title: 'The city of the kings', at: placeAt('minas-tirith'), reach: 14 },
   { id: 'edoras', name: 'Edoras', title: 'The court of Rohan', at: placeAt('edoras'), reach: 12 },
 ];
 

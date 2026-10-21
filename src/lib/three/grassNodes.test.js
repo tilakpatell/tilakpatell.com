@@ -29,4 +29,12 @@ describe('grassNodes, the twin of grass', () => {
     for (const k of Object.keys(a.uniforms)) expect(n.uniforms[k].value?.toArray?.() ?? n.uniforms[k].value).toEqual(a.uniforms[k].value?.toArray?.() ?? a.uniforms[k].value);
     expect(n.material.customProgramCacheKey()).toContain('grass');
   });
+
+  it('laid down near the camera only when asked: the same uniforms either way', () => {
+    const ground = createGroundMap({ area: AREA, size: 4, paint });
+    const a = nodes.createGrass({ ground, wind: createWind(), side: 6, size: 3 });
+    const b = nodes.createGrass({ ground, wind: createWind(), side: 6, size: 3, near: 4 });
+    expect(Object.keys(b.uniforms).sort()).toEqual(Object.keys(a.uniforms).sort());
+    expect(b.mesh).toMatchObject({ name: 'grass', castShadow: false, receiveShadow: false });
+  });
 });

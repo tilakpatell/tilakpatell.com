@@ -82,8 +82,8 @@ describe('the geography, in miles from Hobbiton', () => {
     expect(LABELS.map((l) => l.name)).toEqual(expect.arrayContaining(['ERIADOR', 'THE SHIRE', 'RHOVANION', 'ROHAN', 'GONDOR', 'MORDOR', 'HARAD', 'RHÛN', 'LINDON', 'ENEDWAITH']));
   });
 
-  it('walks the Ring’s road in increasing miles, every stop a place with a date', () => {
-    const order = ['hobbiton', 'bree', 'weathertop', 'rivendell', 'moria', 'lorien', 'amon-hen', 'dead-marshes', 'black-gate', 'cirith-ungol', 'mount-doom'];
+  it('walks the Ring’s road in increasing miles, every stop a place with a date, and home by Minas Tirith', () => {
+    const order = ['hobbiton', 'bree', 'weathertop', 'rivendell', 'moria', 'lorien', 'amon-hen', 'dead-marshes', 'black-gate', 'cirith-ungol', 'mount-doom', 'minas-tirith'];
     expect(Object.keys(ROAD_MILES)).toEqual(order);
     const miles = order.map((id) => ROAD_MILES[id]);
     for (let i = 1; i < miles.length; i++) expect(miles[i]).toBeGreaterThan(miles[i - 1]);

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { NEIGHBOURS, WAR_SYSTEMS, seeded, warTable, GCW } from './gcw';
 import { CORE, RIM, systemById } from './systems';
 import { CELLS, EDGES, bordersOf, capOf, cellsOf, clashOf, contains, linksOf } from './territory';
+import { FIT, onView } from './mapView';
 
 const posOf = (id) => systemById(id).pos;
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -53,6 +54,9 @@ describe('the war’s territory: a cell round each system, as far as its reach',
     expect(past).toEqual(['kamino']); // (past the rim, where the canon atlas has it: a pocket of its own)
     for (const c of CELLS) if (!past.includes(c.id)) for (const p of c.poly) expect(dist(p, CORE), c.id).toBeLessThanOrEqual(RIM + 1e-9);
     for (const p of CELLS.find((c) => c.id === 'kamino').poly) expect(dist(p, posOf('kamino'))).toBeLessThanOrEqual(capOf('kamino') + 1e-9);
+    // (and none of it, the pocket either, off the map: mapView.js's square)
+    for (const c of CELLS) for (const p of c.poly) expect(onView(FIT, p, { pad: 0.005 }), `${c.id} ${p}`).toBe(true);
+    expect(Math.max(...CELLS.find((c) => c.id === 'kamino').poly.map((p) => dist(p, CORE)))).toBeGreaterThan(RIM + 0.1);
   });
 
   it('tags each edge with the neighbour it’s shared with (or nobody: the edge of its reach)', () => {

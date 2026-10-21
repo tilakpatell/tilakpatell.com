@@ -7,7 +7,8 @@
 // Three hits in a row earn a trick arrow: explosive (everything near the hit),
 // EMP (stops everything moving for a few seconds) or split (three at once).
 // A half draw (the lob) holds the string partway, for arcing over a wall.
-// Three rounds, each against the clock and the quiver.
+// Three rounds against the clock (the quiver holds more than the quickest hand
+// can loose in one).
 //
 // Metres: x right, y up, z towards you; you stand at the origin, EYE up.
 
@@ -24,17 +25,25 @@ export const BOW = {
   gravity: 9.81,
 };
 const TRICKS = ['explosive', 'emp', 'split'];
-export const STONE_SCORE = 250; // across the three rounds, for Clint's half of the Soul Stone
+// across the three rounds, for Clint's half of the Soul Stone: a fair archer (the
+// tests' at noise 0.0125) scores 518 to 704 over seeds 1 to 40 (median 616) and
+// passes 625 on 16 of them, so about one try in two or three
+export const STONE_SCORE = 625;
 
 // ring colours from the outside in, two rings each: white, black, blue, red, gold
 export const RINGS = ['#f2efe6', '#f2efe6', '#24272b', '#24272b', '#2f6fd0', '#2f6fd0', '#d03a2c', '#d03a2c', '#f2c12e', '#f2c12e'];
+
+// The quiver holds more than the quickest hand looses in a round (the tests'
+// archer looses at most 40 in 45 s over 40 seeds at noise 0 to 0.03), so a
+// round lasts its clock.
+const QUIVER = 44;
 
 // The rounds: targets, clays, drones, wind, time and arrows.
 export const ROUNDS = [
   {
     title: 'Warm-up',
     time: 45,
-    arrows: 10,
+    arrows: QUIVER,
     wind: [0, 0.5],
     targets: [
       { kind: 'board', x: -4, z: -18, r: 0.4 },
@@ -47,7 +56,7 @@ export const ROUNDS = [
   {
     title: 'Movers',
     time: 50,
-    arrows: 12,
+    arrows: QUIVER,
     wind: [0.6, 1.2],
     targets: [
       { kind: 'mover', x: -7, z: -26, r: 0.45, to: 7, speed: 3.2 },
@@ -60,7 +69,7 @@ export const ROUNDS = [
   {
     title: 'Trick shots',
     time: 55,
-    arrows: 12,
+    arrows: QUIVER,
     wind: [1, 1.6],
     targets: [
       { kind: 'board', x: 0, z: -40, r: 0.5, behind: { x0: -3, x1: 3, h: 2.6, z: -32 } },

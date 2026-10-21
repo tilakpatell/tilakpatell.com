@@ -28,7 +28,7 @@ export const TYPE = {
 
 // The places named beside their dots: the great ones (cities, fortresses,
 // havens the story turns on) and the minor ones (named if there is room).
-const GREAT = ['grey-havens', 'isengard', 'edoras', 'helms-deep', 'minas-tirith', 'barad-dur', 'erebor', 'dol-guldur'];
+const GREAT = ['grey-havens', 'isengard', 'edoras', 'helms-deep', 'barad-dur', 'erebor', 'dol-guldur'];
 const MINOR = ['fornost', 'annuminas', 'tharbad', 'lond-daer', 'carrock', 'high-pass', 'dale', 'esgaroth', 'osgiliath', 'cair-andros', 'henneth-annun', 'minas-morgul', 'pelargir', 'dol-amroth', 'dunharrow', 'umbar'];
 
 // the names that lie across an area: the forests Tolkien’s map letters

@@ -408,8 +408,29 @@ export const PAGES = {
   },
   '/middle-earth': {
     about: ABOUT['/middle-earth'],
+    keys: [
+      {
+        label: 'In the study',
+        rows: [
+          ['← →', 'Turn the pages'],
+          ['L', 'Look round the study, or back to the book'],
+          ['W', 'Look out of the window, or back to the book'],
+          ['B', 'Back to the book'],
+          ['R', 'Put on the Ring, or take it off'],
+          ['F', 'With the Ring in your hand: cast it into the fire'],
+          ['P', 'Look into the Palantír, or look away'],
+          ['Esc', 'The Menu; or look away, put the Ring down, back to the book'],
+        ],
+      },
+    ],
     tips: [
-      ['The map', 'Pick a place and the camera flies down to it. The map button takes you back up. A wax seal marks each place you’ve won.'],
+      ['The Red Book', 'Touch what stands up on a page: three to five things on each answer. Play it opens that place’s game; Walk it starts the Road there.'],
+      ['The Palantír', 'The smoke parts on the Eye of Sauron, and it follows where you look. Hold it long and it speaks to you; longer, and it sees you.'],
+      ['The study', 'Bilbo’s study answers too: stir the fire, snuff a candle, draw Sting, blow smoke rings, take down a book. The round door opens on the Road, the map on the wall on the map.'],
+      ['The window', 'Out of the round window: Gandalf at the gate, and over him Eru’s light and the Valar in the stars. Point at each to hear who they are.'],
+      ['The One Ring', 'Touch it on the desk to take it up: put it on, or cast it into the fire and watch the letters come up on it.'],
+      ['The Ring', 'In the study, it shows the moon-letters and one hidden thing on every page, until the Eye comes for it.'],
+      ['The map', 'Middle-earth’s map, from the Menu or the stone: pick a place and the camera flies down to it. A wax seal marks each place you’ve won.'],
       ['The Doors of Durin', 'Move your pointer over the cliff to light the lines, or call the moon. Then say the word: read the arch.'],
       ['The bridge', 'Face the Balrog. Raise the staff (Space) as the whip falls; strike the bridge (Enter) with it right over the deep for a perfect.'],
       ['Gorgoroth', 'Hold to walk (Space or →). Let go when the Eye’s light comes close: standing still, the elven cloaks hide you. Rest before the Ring gets too heavy.'],
@@ -471,9 +492,10 @@ export const PAGES = {
     tips: [
       ['Swinging', 'Let go on the upswing for a perfect release. Hold on with nothing to catch for web wings. Race the swing tour’s rings round the compound.'],
       ['The stones', 'Win a building’s game and its stone hangs over the door. The Space Stone opens a portal over the helipad: walk under it to Titan.'],
+      ['A link to each game', 'Each game has an address of its own, #/avengers/ and its building: workshop, lawn, training, range, operations, lab, gate or hangar. It opens at once over the compound; Esc or Back closes it.'],
       ['Other players', 'See other players goes online: everyone else on the compound shows as a hologram with their name over them.'],
       ['The gate: Thwip!', 'Spider-Man, late for school. Hold to web the wall ahead and swing, let go to fly; let go on the upswing for a perfect. Grab Peter’s backpacks, beat the bell, keep off the street.'],
-      ['Without 3D', 'The compound is drawn from the air, and its pins open each game in its simple version.'],
+      ['Without 3D', 'The compound is drawn from the air. Pick a pin to find its building on the ops board below, where Play opens its game.'],
     ],
   },
   '/scranton': {
@@ -545,16 +567,20 @@ export const PAGES = {
   '/c-137': {
     about: ABOUT['/c-137'],
     keys: [
-      { label: 'Walking', rows: [['W A S D / ← ↑ ↓ →', 'Walk'], ['Shift', 'Run'], ['Space', 'Jump'], ['Click, then the mouse', 'Look round (Esc lets go)'], ['E', 'Doors, the cruiser, the games, the portal gun on Rick’s bench'], ['P', 'The portal gun, from anywhere'], ['M', 'Things to do']] },
-      { label: 'In the cruiser', rows: [['W A S D', 'Fly'], ['Space', 'Climb'], ['Shift', 'Drop'], ['E', 'Land (slow, over open ground)']] },
+      { label: 'Walking', rows: [['W A S D / ← ↑ ↓ →', 'Walk'], ['Shift', 'Run'], ['Space', 'Jump'], ['Click, then the mouse', 'Look round (Esc lets go)'], ['E', 'Doors, the cruiser, the games, the portal gun on Rick’s bench'], ['P', 'The portal gun, from anywhere'], ['M', 'Things to do'], ['H', 'The Hangar: the crew’s looks, and the cruiser’s arms, powers, skills and shipyard'], ['C', 'The Hangar, on the crew']] },
+      { label: 'In the cruiser', rows: [['W A S D', 'Fly'], ['Space', 'Climb'], ['Shift', 'Drop'], ['F', 'Fire (held, it keeps firing): the guns turn onto the Federation patrol, which fights back once it’s hit'], ['R / Shift+R', 'Next or last weapon'], ['1 2 3', 'Pick a weapon'], ['G', 'Power: the portal gun (or the one picked in the Hangar)'], ['X', 'The big one, once your hits have charged it'], ['E', 'Land (slow, over open ground)']] },
       { label: 'Portal panic', rows: [['W A S D', 'Move'], ['Mouse', 'Aim: the gun fires on its own'], ['F', 'Auto-fire off (then hold the mouse to fire)'], ['Space / Shift', 'Portal-dash'], ['1 2 3', 'Take a gadget'], ['P', 'Pause']] },
       { label: 'Total Rickall', rows: [['Mouse', 'Aim (click first to hold the pointer)'], ['E', 'Remember the one in the crosshair'], ['F / Click', 'Shoot them'], ['Tab', 'Lock on: the crosshair stays on them as you move'], ['Esc', 'Stop the game']] },
       { label: 'Through the portal', rows: [['E', 'Talk, take, look, free: whatever the prompt says'], ['F', 'Fire, in a fight (Evil Rick’s lair, the Blood Dome)'], ['Tab', 'Lock on, in a fight: Morty turns to face them'], ['Run', 'From whoever’s after you: the map shows them red']] },
+      { label: 'Plumbus Smash', rows: [['← ↓ → / A S D', 'Smash the left, middle or right chute'], ['P / Esc', 'Pause']] },
+      { label: 'Pickle Rick’s sewer run', rows: [['← → / A D', 'Change lanes'], ['Space / ↑ / W', 'Hop'], ['F / Enter', 'Fire, once three screws make the laser'], ['P / Esc', 'Pause']] },
     ],
     touch: [
       { rows: [['Stick', 'Walk, or fly'], ['Swipe', 'Look round'], ['Tap', 'Jump, climb, drop and act, on their buttons'], ['Portal gun', 'Its button at the top: pick where the garage portal goes']] },
       { label: 'Total Rickall', rows: [['Swipe', 'Aim'], ['Tap', 'Shoot the one in the crosshair (or Remember and Shoot, on their buttons)'], ['Lock', 'The crosshair stays on them as you move']] },
       { label: 'Through the portal', rows: [['Tap', 'The star fires, in a fight'], ['Lock', 'Face whoever you’re fighting (on by itself when they come close)']] },
+      { label: 'Plumbus Smash', rows: [['Tap', 'Smash a chute']] },
+      { label: 'Pickle Rick’s sewer run', rows: [['Tap', 'Left, Hop, Fire and Right, on their buttons']] },
     ],
     tips: [
       ['The portal gun', 'It’s on Rick’s bench in the garage: E there, or P (its button on a phone) anywhere, and pick a place. Then step through the portal on the garage’s west wall: twenty-six places from the show, and Blips and Chitz. Everyone in them does something; some of them come for you, and caught, you’re back at the door. Three slips to spot, a ticket to find, a cell to open, a ring to step into.'],
@@ -565,6 +591,15 @@ export const PAGES = {
       ['Interdimensional cable', 'Turn the dial.'],
       ['A look through', 'Past the street, the page’s Fire the portal gun button shows you another dimension. It’s only a look: the gun that takes you is Rick’s, on his bench (P).'],
       ['The Smiths', 'Four of them are site colours. Jerry can ask.'],
+      ['Plumbus Smash', 'The walkway cabinet at Blips and Chitz. Smash each plumbus at the foot of its chute; a swing at an empty chute sticks the stick. Somebody’s high score is all nines.'],
+      ['Pickle Rick’s sewer run', 'The hole in the agency’s floor. Roll down the drain to the agency: hop the grates, hop onto the rats, and three screws make the rat-suit’s laser. Three bites and you’re a snack.'],
+      ['The Microverse', 'Inside the car’s battery. Carry Zeep’s cells from his console to the gooble boxes, one at a time, before the world’s charge runs down; it runs from the first cell you take.'],
+      ['Anatomy Park', 'Inside Ruben. Find the four pieces of the park map while the diseases hunt you, then get back through the portal before the clock runs out; caught, the pieces blow back where they were.'],
+      ['The cruiser’s chase', 'Fly through the six rings over the street, in order, with the Federation ship shooting at you: three hits and it’s back to the first ring, and it can’t be shot down while it chases you.'],
+      ['Needful Things', 'Everything in Mr. Needful’s shop is free, and all but one of the free things are cursed. Look them over first, three looks at most, then take the one with no curse on it; take a cursed one and you’re back at the door.'],
+      ['The vat of acid', 'Rick’s fake death, sold to two Gromflomites. Move while their backs are turned and keep still while they look; jump in behind their backs, then play dead while they peer in. Seen moving, you’re back at the door.'],
+      ['The Jerryboree', 'A daycare for Jerrys, and one of them is ours. Talk to them: ours offers you an apple, as he does at home, and talking to him again takes him. A wrong pick costs time, and when the clock runs out you’re back at the door.'],
+      ['St. Gloopy Noops', 'The hospital in space, where the doctors want something of Jerry’s. Get past them to the theatre at the end of the ward, visit Shrimply Pibbles and take back Jerry’s things, then get out through the portal before the clock runs out; caught, you’re back at the door.'],
     ],
   },
   // a Rick and Morty planet, landed on from the universe map (/c-137/<id>)
@@ -581,6 +616,7 @@ export const PAGES = {
           ['F', 'Fire the portal gun (on a planet the cruiser landed on)'],
           ['M', 'Things to do'],
           ['B', 'Hold for the emote wheel'],
+          ['H', 'The Hangar: the crew’s looks, and the cruiser’s arms, powers, skills and shipyard (C, on a small planet, opens it on the crew)'],
           ['Esc', 'Back to the cruiser and up to space'],
         ],
       },
@@ -607,7 +643,7 @@ export const PAGES = {
   },
   '/c-137/citadel': {
     about: ABOUT['/c-137/citadel'],
-    keys: [{ rows: [...WALK, ['1 2 3 4', 'Answer'], ['Space', 'Drop a wafer (Simple Rick’s)'], ['Esc', 'Leave a scene']] }],
+    keys: [{ rows: [...WALK, ['1 2 3 4', 'Answer'], ['Space', 'Drop a wafer (Simple Rick’s)'], ['Esc', 'Leave a scene'], ['H', 'The Hangar: the crew’s looks, and the cruiser’s arms, powers, skills and shipyard'], ['C', 'The Hangar, on the crew']] }],
     touch: [{ rows: [...WALK_TOUCH, ['Tap', 'The prompt, and the answers']] }],
     tips: [
       ['Morty Day Care', 'Six Mortys are loose. They run from you, so come at them from the far side and drive them through the gate.'],

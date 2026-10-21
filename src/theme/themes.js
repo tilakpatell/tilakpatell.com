@@ -6,7 +6,7 @@ export const THEMES = {
   rtx: { id: 'rtx', label: 'RTX', company: 'RTX Corporation', swatch: '#CE1126' },
   bose: { id: 'bose', label: 'Bose', company: 'Bose Corporation', swatch: '#131317' },
   pendar: { id: 'pendar', label: 'Pendar', company: 'Pendar Technologies', swatch: '#4DA3DC' },
-  empowerreg: { id: 'empowerreg', label: 'Empowerreg', company: 'Empowerreg AI', swatch: '#7BC043' },
+  empowerreg: { id: 'empowerreg', label: 'Empowerreg', company: 'Empowerreg AI', swatch: '#DBE64C' },
   src: { id: 'src', label: 'SRC', company: 'SRC, Inc.', swatch: '#002C77' },
   // project themes
   gameboy: { id: 'gameboy', label: 'Game Boy', company: 'Game Boy', swatch: '#9B2257' },
@@ -104,9 +104,10 @@ export const ROUTE_THEMES = {
   '/earth': 'travel',
 };
 
-// Worlds whose inner pages wear the world’s colours. Only Middle-earth’s
-// chapters do: the Citadel, the 64 and a project’s sub-pages keep the house’s.
-export const ROUTE_PREFIX_THEMES = { '/middle-earth': 'shire' };
+// Worlds whose inner pages wear the world’s colours: Middle-earth’s chapters,
+// and Avengers HQ’s buildings (a game opens over the compound at its own
+// address). The Citadel, the 64 and a project’s sub-pages keep the house’s.
+export const ROUTE_PREFIX_THEMES = { '/middle-earth': 'shire', '/avengers': 'stark' };
 
 // A page’s colours by its address: its own first, else its world’s. A prefix
 // ends at a ‘/’, so /middle-earth/bree is the Shire’s and /middle-earthly isn’t.

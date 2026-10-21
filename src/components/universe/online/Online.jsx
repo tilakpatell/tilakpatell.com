@@ -8,7 +8,11 @@ import { crewById } from '../crews';
 import { paintById } from '../paint';
 import Face from '../Faces';
 import { factionText, relation } from './relations';
+import { isMate } from './mates';
+import { openParty } from '../../../lib/palette';
+import { WORDS } from '../../../lib/words';
 import './online.css';
+import './party.css';
 
 // Multiplayer, in the bottom-left corner (of the universe map, or, once
 // you're online, of every other page: `floating`): a button that says how
@@ -39,6 +43,13 @@ import './online.css';
 // in this browser): those online, with everything a row has, then those
 // saved and away (room.away), each with when they were last seen and
 // Remove.
+//
+// Your party comes before them (partyLink.js, as useOnline's `party`): a line
+// saying whose party you're in and who of it is online, with Party, the way
+// to its dialog (PartyDialog.jsx, through lib/palette's openParty), marked
+// while an invite or an unread line waits; the invites themselves, to accept
+// or turn down here; and the members online, first of all, in the ally green.
+// An invite counts on the corner's badge as an ally's ask does.
 
 const TONE = { join: 'join', ally: 'ally', kill: 'kill', info: 'info' };
 const WHERE_MS = 2000; // how often the roster looks again at where everyone on the map is
@@ -77,7 +88,7 @@ export default function Online({ online, ship = null, floating = false }) {
   }, []);
   const count = on ? room.peers.filter((p) => !p.blocked).length + 1 : 0;
   const here = room.peers.filter((p) => !p.blocked && p.where === online.where).length;
-  const asks = room.peers.filter((p) => p.ally === 'got' && !p.blocked).length;
+  const asks = room.peers.filter((p) => p.ally === 'got' && !p.blocked).length + (online.party?.invites?.length ?? 0);
   const label = !on ? 'Multiplayer' : room.status === 'connecting' ? 'Connecting…' : room.status === 'failed' ? 'Couldn’t connect' : `${count} ${count === 1 ? 'pilot' : 'pilots'} online${floating && here ? ` · ${here} here` : ''}`;
   const short = !on ? 'Join' : room.status === 'online' ? String(count) : room.status === 'failed' ? '!' : '…'; // (a phone's corner is tight)
 
@@ -170,10 +181,14 @@ function Roster({ online, ship, floating, focus, onClose }) {
   const [name, setName] = useState(online.name ?? '');
   const id = useId();
   const others = room.peers;
-  // your allies first: those here, then those saved and away
+  // your party first (those of it online), then your allies: those here, then those saved and away
+  const members = new Set((online.party?.party?.members ?? []).map((m) => m.id));
+  const inParty = (p) => !p.blocked && (p.mate === true || members.has(p.id));
   const isAlly = (p) => p.ally === 'ally' && !p.blocked;
-  const allies = others.filter(isAlly);
-  const rest = others.filter((p) => !isAlly(p));
+  const mates = others.filter(inParty);
+  const allies = others.filter((p) => isAlly(p) && !inParty(p));
+  const rest = others.filter((p) => !isAlly(p) && !inParty(p));
+  const invites = online.party?.invites ?? [];
   const away = room.away ?? [];
   // (poses come in ten times a second, not as roster news: while anyone's
   // out on the map, the regions they're in are read again now and then)
@@ -237,6 +252,43 @@ function Roster({ online, ship, floating, focus, onClose }) {
         <p className="universe-online-text">Looking for other pilots…</p>
       ) : (
         <>
+          <PartyLine online={online} />
+          {invites.length > 0 && (
+            <section className="universe-online-allies" aria-label="Party invites">
+              <p className="universe-online-label">Invites</p>
+              <ul className="universe-online-list">
+                {invites.map((inv) => (
+                  <li key={inv.from} className="universe-online-pilot" data-ally="">
+                    <span className="universe-online-face" aria-hidden="true" />
+                    <span className="universe-online-who">
+                      <span className="universe-online-name">
+                        <b>{inv.name}</b>
+                      </span>
+                      <span>asks you to their party</span>
+                    </span>
+                    <span className="universe-online-acts">
+                      <button type="button" className="universe-online-act" data-yes="" onClick={() => online.partyDo('accept', inv.from)} aria-label={`Join ${inv.name}’s party`}>
+                        Accept
+                      </button>
+                      <button type="button" className="universe-online-act" onClick={() => online.partyDo('decline', inv.from)} aria-label={`Turn down ${inv.name}’s invite`}>
+                        Decline
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {mates.length > 0 && (
+            <section className="universe-online-allies" aria-label="Your party">
+              <p className="universe-online-label">Your party</p>
+              <ul className="universe-online-list">
+                {mates.map((p) => (
+                  <Pilot key={p.id} p={p} online={online} ship={ship} mine={room.self?.factions ?? null} focus={focus === p.id} mate />
+                ))}
+              </ul>
+            </section>
+          )}
           {(allies.length > 0 || away.length > 0) && (
             <section className="universe-online-allies" aria-label="Allies">
               <p className="universe-online-label">Allies</p>
@@ -274,6 +326,27 @@ function Roster({ online, ship, floating, focus, onClose }) {
         Go offline
       </button>
     </Card>
+  );
+}
+
+// Your party in a line (whose, and how many of it are online), and Party:
+// the dialog, with a dot while an invite or a line you haven't read waits
+function PartyLine({ online }) {
+  const party = online.party?.party ?? null;
+  const invites = online.party?.invites?.length ?? 0;
+  const unread = online.unread ?? 0;
+  const lead = party?.members.find((m) => m.leader) ?? null;
+  const on = party ? party.members.filter((m) => m.present).length : 0;
+  const says = !party ? 'Not in a party' : `${lead?.you ? 'Your party' : `${lead?.name ?? 'Their'}’s party`} · ${on} of ${party.members.length} online`;
+  const waits = [invites && `${invites} ${invites === 1 ? 'invite' : 'invites'}`, unread && `${unread} unread`].filter(Boolean).join(', ');
+  return (
+    <div className="universe-online-party">
+      <span>{says}</span>
+      <button type="button" className="universe-online-act" aria-haspopup="dialog" aria-label={waits ? `${WORDS.party}: ${waits}` : undefined} onClick={() => openParty()}>
+        {WORDS.party}
+        {waits && <span className="party-dot" aria-hidden="true" />}
+      </button>
+    </div>
   );
 }
 
@@ -340,7 +413,7 @@ function Identity({ online }) {
   );
 }
 
-function Pilot({ p, online, ship, mine, focus }) {
+function Pilot({ p, online, ship, mine, focus, mate = false }) {
   const navigate = useNavigate();
   const row = useRef(null);
   useEffect(() => {
@@ -362,8 +435,10 @@ function Pilot({ p, online, ship, mine, focus }) {
     navigate(p.where === UNIVERSE ? '/universe' : p.where);
   };
   const sides = factionText(p.factions);
+  // (an ally or a mate in your party: the ally green, as their tag over the map has it)
+  const friend = isMate(p) || (mate && !p.blocked);
   return (
-    <li ref={row} className="universe-online-pilot" data-focus={focus || undefined} data-ally={p.ally === 'ally' || undefined} data-blocked={p.blocked || undefined} data-relation={p.blocked ? undefined : relation({ ally: p.ally === 'ally', factions: mine }, p)}>
+    <li ref={row} className="universe-online-pilot" data-focus={focus || undefined} data-ally={friend || undefined} data-blocked={p.blocked || undefined} data-relation={p.blocked ? undefined : relation({ ally: friend, factions: mine }, p)}>
       {who ? <Face who={who} className="universe-online-face" /> : <span className="universe-online-face" aria-hidden="true" />}
       <span className="universe-online-who">
         <span className="universe-online-name">
@@ -376,6 +451,7 @@ function Pilot({ p, online, ship, mine, focus }) {
           {!p.blocked && at}
           {!p.blocked && p.kills ? ` · ${p.kills} ${p.kills === 1 ? 'kill' : 'kills'}` : ''}
           {p.ally === 'ally' && !p.blocked ? ' · ally' : ''}
+          {mate && !p.blocked ? ' · in your party' : ''}
         </span>
       </span>
       <span className="universe-online-acts">

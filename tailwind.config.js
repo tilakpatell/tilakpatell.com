@@ -1,6 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
+  // a hover: style only where there is hover, so a tapped thing doesn't stay lit on a phone
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {
       fontFamily: {

@@ -6,8 +6,13 @@
 // wobbling all the way down; a hop or two on the spot, a squeak, and a pop.
 // World-agnostic, like portalFx.js: the universe map's foot combat and the
 // galaxy's worlds both draw it.
+// The skill tree's guns have theirs too. The Amban rifle: a flash through
+// them, white-blue, and they're gone in motes of light rising. The particle
+// beam: an ember glow through them, then dark, and they crumble to ash that
+// falls. The repulsor gauntlet: thrown back off their feet, turning over in
+// the air, down on their back a way off, and gone a moment later.
 //
-// createGadgetFx({ parent }) → { freeze(opts), shrink(opts), update(dt), count, dispose }
+// createGadgetFx({ parent }) → { freeze(opts), shrink(opts), light(opts), thrown(opts), update(dt), count, dispose }
 //   parent: the Object3D the effects go under; every figure must be a child
 //     of it (positions are in its space, sizes in its units).
 //   freeze({ root, tall, up, push, seed, on }) → handle
@@ -17,6 +22,8 @@
 //     'shatter'. handle: { done, shards() (the debris' places, the ice's
 //     own space: y up from the feet), dispose() }.
 //   shrink({ root, tall, up, seed, on }) → handle; on: 'squeak', 'pop'.
+//   light({ root, tall, up, ash, seed, on }) → handle (ash: the beam's, else the Amban's); on: 'gone'.
+//   thrown({ root, tall, up, push, seed, on }) → handle; on: 'land'.
 //   update(dt): once a frame. A handle owns the root from the moment it's
 //     made (the caller stops posing it); dispose() puts back its materials,
 //     scale and visibility.
@@ -26,6 +33,11 @@ import * as THREE from 'three';
 const V = THREE.Vector3;
 const FREEZE = { frost: 0.35, grow: 0.45, hold: 1.5, shake: 0.28, fly: 1.35 };
 const SHRINK = { down: 0.5, to: 0.1, squeak: 0.52, pop: 1.15, fade: 0.45 };
+const LIGHT = { flash: 0.12, gone: 0.45, motes: 0.9 }; // seconds: the flash through them, till they're gone, the motes' drift
+const THROWN = { speed: 9, lift: 4.5, rest: 1.1, fade: 0.4 }; // m/s out and up, seconds down before they go
+const PALE = new THREE.Color('#d8f0ff');
+const EMBER = new THREE.Color('#ff7a2a');
+const SOOT = new THREE.Color('#2a2420');
 const ICE = new THREE.Color('#cdeeff');
 const ICE_GLOW = new THREE.Color('#2f86ff');
 const PINK = new THREE.Color('#ff4fd8');
@@ -396,9 +408,148 @@ export function createGadgetFx({ parent }) {
     return h;
   }
 
+  function light({ root, tall, up, ash = false, seed = Math.random() * 10, on = null }) {
+    if (!root || !tall) return null;
+    const rand = stream(seed);
+    const owned = [];
+    const start = { at: root.position.clone(), scale: root.scale.clone() };
+    const mats = swapMaterials(root, (c) => {
+      c.userData.from = c.color?.clone() ?? null;
+      if (c.emissive) c.emissive = c.emissive.clone();
+      return c;
+    });
+    const g = frameAt(root, up, null);
+    const glow = ash ? EMBER : PALE;
+    const motes = sprites(g, 18, ash ? '#9a8f86' : '#e8f6ff', owned);
+    motes.forEach((sp) => {
+      const a = rand() * Math.PI * 2;
+      const r = rand() * 0.22 * tall;
+      sp.userData = { from: new V(Math.cos(a) * r, (0.1 + rand() * 0.85) * tall, Math.sin(a) * r), vel: new V((rand() - 0.5) * 0.4, ash ? -0.2 - rand() * 0.4 : 0.6 + rand() * 0.9, (rand() - 0.5) * 0.4).multiplyScalar(tall), size: (0.03 + rand() * 0.04) * tall };
+    });
+    const flash = sprites(g, 1, ash ? '#ffb070' : '#ffffff', owned)[0];
+    let t = 0;
+    let gone = false;
+    const h = {
+      done: false,
+      step(dt) {
+        if (this.done) return;
+        t += dt;
+        // through them: the light (or the ember), then for ash the dark as it cools
+        const k = clamp01(t / LIGHT.flash);
+        const cool = ash ? clamp01((t - LIGHT.flash) / (LIGHT.gone - LIGHT.flash)) : 0;
+        for (const c of mats.list) {
+          if (c.emissive) c.emissive.copy(glow).multiplyScalar((ash ? 1.6 : 3) * k * (1 - cool));
+          if (c.userData.from && c.color) c.color.copy(c.userData.from).lerp(ash ? SOOT : PALE, Math.max(k * 0.6, cool));
+        }
+        // (the Amban's swell as it takes them; the ash sinks a little as it goes)
+        const swell = ash ? 1 - 0.08 * cool : 1 + 0.06 * k;
+        root.scale.set(start.scale.x * swell, start.scale.y * (ash ? 1 - 0.12 * cool : 1), start.scale.z * swell);
+        if (flash) {
+          const f = t / (LIGHT.gone + 0.2);
+          flash.visible = f < 1;
+          flash.position.set(0, 0.55 * tall, 0);
+          flash.scale.setScalar(tall * (ash ? 0.8 : 1.4) * easeOut(clamp01(f * 2)));
+          flash.material.opacity = (ash ? 0.5 : 0.9) * (1 - f);
+        }
+        if (t >= LIGHT.gone && !gone) {
+          gone = true;
+          root.visible = false;
+          on?.('gone');
+        }
+        const q = (t - LIGHT.gone * 0.7) / LIGHT.motes;
+        for (const sp of motes) {
+          const d = sp.userData;
+          sp.visible = q > 0 && q < 1;
+          if (!sp.visible) continue;
+          sp.position.copy(d.from).addScaledVector(d.vel, q * LIGHT.motes);
+          sp.scale.setScalar(d.size * (1 - q * 0.5));
+          sp.material.opacity = Math.sin(Math.PI * q) * (ash ? 0.8 : 1);
+        }
+        if (q >= 1) this.done = true;
+      },
+      dispose() {
+        live.delete(h);
+        parent.remove(g);
+        mats.restore();
+        root.position.copy(start.at);
+        root.scale.copy(start.scale);
+        root.visible = true;
+        for (const o of owned) o.dispose();
+      },
+    };
+    live.add(h);
+    return h;
+  }
+
+  function thrown({ root, tall, up, push, seed = Math.random() * 10, on = null }) {
+    if (!root || !tall) return null;
+    const rand = stream(seed);
+    const owned = [];
+    const m = tall / 1.8; // (a metre, where they stand)
+    const start = { at: root.position.clone(), q: root.quaternion.clone(), scale: root.scale.clone() };
+    const U = up.clone().normalize();
+    const P = (push ?? new V(0, 0, 1)).clone().addScaledVector(U, -(push ?? new V(0, 0, 1)).dot(U));
+    if (P.lengthSq() < 1e-6) P.set(1, 0, 0);
+    P.normalize();
+    const side = new V().crossVectors(U, P).normalize();
+    const g = frameAt(root, up, push);
+    const flash = sprites(g, 1, '#bfefff', owned)[0];
+    const speed = THROWN.speed * (0.85 + rand() * 0.3) * m;
+    const lift = THROWN.lift * m;
+    const grav = 9.8 * m;
+    const air = (2 * lift) / grav; // (up and back down to where they stood)
+    const turn = new THREE.Quaternion();
+    let t = 0;
+    let landed = false;
+    const h = {
+      done: false,
+      step(dt) {
+        if (this.done) return;
+        t += dt;
+        const ta = Math.min(t, air);
+        // out along the push and up, falling back (a skid on landing); over backwards once
+        // and a quarter in the air, to land on their back (the head the way they went)
+        root.position.copy(start.at).addScaledVector(P, speed * ta + (t > air ? speed * 0.3 * Math.min(0.25, t - air) : 0)).addScaledVector(U, Math.max(0, lift * ta - 0.5 * grav * ta * ta));
+        turn.setFromAxisAngle(side, Math.PI * 2.5 * (ta / air));
+        root.quaternion.copy(start.q).premultiply(turn);
+        if (t >= air && !landed) {
+          landed = true;
+          on?.('land');
+        }
+        if (flash) {
+          const f = t / 0.3;
+          flash.visible = f < 1;
+          flash.position.set(0, 0.5 * tall, 0);
+          flash.scale.setScalar(0.9 * tall * easeOut(clamp01(f)));
+          flash.material.opacity = 1 - f;
+        }
+        // down a while, then gone
+        const k = clamp01((t - air - THROWN.rest) / THROWN.fade);
+        root.scale.copy(start.scale).multiplyScalar(Math.max(0.0001, 1 - k));
+        if (k >= 1) {
+          root.visible = false;
+          this.done = true;
+        }
+      },
+      dispose() {
+        live.delete(h);
+        parent.remove(g);
+        root.position.copy(start.at);
+        root.quaternion.copy(start.q);
+        root.scale.copy(start.scale);
+        root.visible = true;
+        for (const o of owned) o.dispose();
+      },
+    };
+    live.add(h);
+    return h;
+  }
+
   return {
     freeze,
     shrink,
+    light,
+    thrown,
     get count() {
       return live.size;
     },

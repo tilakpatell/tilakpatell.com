@@ -128,8 +128,18 @@ export default function GalaxySurface() {
   useDocumentTitle(site ? (mission ? `${mission.name} · ${sys.name}` : `${site.place} · ${sys.name}`) : 'A galaxy far, far away');
   const reduced = useReducedMotion();
   const [ship] = useState(() => parseShip(local.get(SHIP_KEY)) ?? 'xwing');
+  // the skill tree (the Hangar's): its unique guns opened, for the hero's hand; its ground branch on your perks, below
+  const { fx: skills } = useSkills();
   // who you play as down here (heroes.js), kept across worlds, in the crew's own style (the Hangar's: heroStyle.js)
-  const [hero, setHero] = useState(() => readHero(local.get(HERO_KEY), parseShip(local.get(SHIP_KEY)) ?? 'xwing', readCrewStyle(localSaves(), local.get(HERO_KEY))));
+  const [hero, setHero] = useState(() => readHero(local.get(HERO_KEY), parseShip(local.get(SHIP_KEY)) ?? 'xwing', readCrewStyle(localSaves(), local.get(HERO_KEY)), skills.arms));
+  // (the skill tree read again, once the wallet's in or a node's taken or reset: a unique gun kept, or put back as the hero's own)
+  const armsKey = skills.arms.join();
+  useEffect(() => {
+    setHero((h) => {
+      const again = readHero(local.get(HERO_KEY), parseShip(local.get(SHIP_KEY)) ?? 'xwing', readCrewStyle(localSaves(), local.get(HERO_KEY)), armsKey ? armsKey.split(',') : []);
+      return again.gun === h.gun ? h : { ...h, gun: again.gun };
+    });
+  }, [armsKey]);
   const [picking, setPicking] = useState(false);
   // (what's on in the world: the scene says so as a pick goes on, its
   // 'hero' event; a pick whose figure wouldn't load goes back to this)
@@ -189,7 +199,6 @@ export default function GalaxySurface() {
   const build = useMemo(() => (ship && readHulls(local.get(HULL_KEY), CREWS.map((c) => c.id))[ship]) || null, [ship]);
   // the skill tree's ground branch (the Hangar's), on your perks: not in the
   // Battlefront battles, which stay as the game has them
-  const { fx: skills } = useSkills();
   const skillFx = BATTLES.has(mission?.kind) ? null : skills;
   const tune = useMemo(() => (ship && readTunes(local.get(TUNE_KEY), CREWS.map((c) => c.id))[ship]) || null, [ship]); // (the crew's own ship, tuned: its parts must still be ones its plant runs)
   // (the hero's two abilities by id, for the game's icons on the HUD's buttons)
@@ -802,7 +811,7 @@ export default function GalaxySurface() {
         <ModelCredits where="galaxy-surface" only={kinds} className="surface-credits-corner" />
       </div>
       {modes.open && !picking && <ModeMenu place={sys.name} cards={modes.cards} onPick={playMode} onDeploy={() => setPicking(true)} onClose={() => modes.setOpen(false)} ask={modes.ask} onAsk={modes.setAsk} />}
-      {picking && <DeployPanel hero={hero} onChange={pickHero} onClose={() => setPicking(false)} system={id} era={eraOf(sys)} stoodIn={stood} />}
+      {picking && <DeployPanel hero={hero} onChange={pickHero} onClose={() => setPicking(false)} system={id} era={eraOf(sys)} stoodIn={stood} arms={skills.arms} />}
       {crew && talkCrew && <Comms control={comms} crew={talkCrew} reduced={reduced} />}
       {!leaving && <Online online={online} ship={ship} />}
       <div className="surface-fade" aria-hidden="true" />

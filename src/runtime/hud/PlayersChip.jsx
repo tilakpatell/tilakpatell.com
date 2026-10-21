@@ -1,4 +1,5 @@
 import { alliesText, othersText } from './hud';
+import { openParty } from '../../lib/palette';
 
 // The other players online in this world: "N others here", or a way to see
 // them. Plain values, from the world's own link (its useTravellers): `count`,
@@ -9,7 +10,11 @@ import { alliesText, othersText } from './hud';
 // other drivers"); once you're in they're "others" everywhere. `lore`: { off,
 // on }, the world's own words for how the others show (a ghost Aztek, a pale
 // Mark), as the tooltips. `item`: drawn as a Menu entry rather than a chip.
-export default function PlayersChip({ count = 0, allies = 0, on = true, onJoin = null, available = true, noun = 'players', lore = null, item = false, className = '' }) {
+// Once you're in, the chip is the way to your party (invites, its chat, quick
+// chat): a button that calls `onOpen`, lib/palette's openParty unless a world
+// hands its own, with no click passed on (a click isn't a tab); `onOpen` null
+// keeps it the plain count it was, a status.
+export default function PlayersChip({ count = 0, allies = 0, on = true, onJoin = null, onOpen = openParty, available = true, noun = 'players', lore = null, item = false, className = '' }) {
   if (!available) return null;
   const cls = item ? className : `hud-chip hud-players ${className}`.trim();
   if (!on)
@@ -18,15 +23,30 @@ export default function PlayersChip({ count = 0, allies = 0, on = true, onJoin =
         See other {noun}
       </button>
     ) : null;
+  const shown = {
+    className: cls || undefined,
+    'data-on': true,
+    'data-allies': count > 0 && allies > 0 ? allies : undefined,
+    'aria-label': othersText(count, allies) ?? 'No one else here',
+    title: lore?.on ?? (onOpen ? 'Everyone else online here: open your party to invite them, chat or say a quick line' : 'Everyone else online here: nothing passes between you but where each of you is'),
+  };
+  const words =
+    count > 0 ? (
+      <>
+        <b>{count}</b> {count === 1 ? 'other' : 'others'} here{allies > 0 ? ` · ${alliesText(allies, count)}` : ''}
+      </>
+    ) : (
+      'No one else here'
+    );
+  if (!onOpen)
+    return (
+      <span {...shown} role={item ? undefined : 'status'}>
+        {words}
+      </span>
+    );
   return (
-    <span className={cls || undefined} role={item ? undefined : 'status'} data-on data-allies={count > 0 && allies > 0 ? allies : undefined} aria-label={othersText(count, allies) ?? 'No one else here'} title={lore?.on ?? 'Everyone else online here: nothing passes between you but where each of you is'}>
-      {count > 0 ? (
-        <>
-          <b>{count}</b> {count === 1 ? 'other' : 'others'} here{allies > 0 ? ` · ${alliesText(allies, count)}` : ''}
-        </>
-      ) : (
-        'No one else here'
-      )}
-    </span>
+    <button type="button" {...shown} aria-haspopup="dialog" onClick={() => onOpen()}>
+      {words}
+    </button>
   );
 }

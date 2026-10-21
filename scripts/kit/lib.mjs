@@ -40,7 +40,8 @@ export function familyOf(name) {
 // The spec's kinds, each with the families that are it; any other family
 // is a prop.
 const KINDS = {
-  tree: ['birch', 'cherryblossom', 'commontree', 'deadtree', 'giantpine', 'pine', 'tallthick', 'twistedtree', 'tree'],
+  // (the older Stylized Nature Pack names its trees BirchTree_1, MapleTree_1 …)
+  tree: ['birch', 'birchtree', 'cherryblossom', 'commontree', 'deadtree', 'giantpine', 'mapletree', 'palmtree', 'pine', 'tallthick', 'twistedtree', 'tree'],
   bush: ['bush'],
   grass: ['grass'],
   flower: ['flower', 'petal'],

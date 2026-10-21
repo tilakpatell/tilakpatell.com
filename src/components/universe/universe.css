@@ -1,5 +1,6 @@
 /* ─── The universe map ───────────────────────────────────────────────────── */
 @import './hud.css';
+@import './thumbs.css';
 
 /* The flat map: Home's teaser and the 3D-off map */
 .minimap { position: relative; width: 100%; aspect-ratio: 2 / 1; }
@@ -147,11 +148,12 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 1.25rem;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--saber) 22%, var(--border));
   border-radius: var(--r-card);
   /* (no blur behind it: over a map that's redrawn every frame, a blur is
-     worked out afresh every frame, and at this opacity it barely shows) */
-  background: rgb(6 8 16 / 0.93);
+     worked out afresh every frame, and at this opacity it barely shows. The
+     glass is the colour's own dark: styles/dialogs.css) */
+  background: var(--glass);
 }
 /* hide (in the panel's corner) and show (the whole bar, once it's away) */
 .universe-tuck {
@@ -169,7 +171,7 @@
   color: var(--muted);
   transition: color 0.2s, background-color 0.2s;
 }
-.universe-tuck:hover { color: var(--text); background: rgb(255 255 255 / 0.06); }
+.universe-tuck:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
 .universe-tuck:focus-visible,
 .universe-untuck:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .universe-panel[data-tucked] { display: flex; overflow: hidden; padding: 0; }
@@ -179,7 +181,7 @@
 .universe-panel > .universe-tuck ~ :is(.eyebrow, .universe-links):first-of-type { padding-right: 4.75rem; }
 .universe-panel > .universe-tuck ~ .universe-links { min-height: 34px; }
 .universe-guide-tucked { display: grid; flex: none; place-items: center; width: 48px; border-left: 1px solid var(--border); color: var(--muted); transition: color 0.15s, background-color 0.15s; }
-.universe-guide-tucked:hover { color: var(--text); background: rgb(255 255 255 / 0.06); }
+.universe-guide-tucked:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
 .universe-guide-tucked:focus-visible { outline: 2px solid var(--accent-text); outline-offset: -2px; }
 body:has(.universe-panel) .guide-btn { display: none; }
 .universe-untuck {
@@ -195,7 +197,7 @@ body:has(.universe-panel) .guide-btn { display: none; }
   text-align: left;
   transition: background-color 0.2s;
 }
-.universe-untuck:hover { background: rgb(255 255 255 / 0.05); }
+.universe-untuck:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
 .universe-untuck .eyebrow { min-width: 0; margin: 0; }
 .universe-untuck-say { display: inline-flex; flex: none; align-items: center; gap: 0.4rem; color: var(--muted); font-family: var(--font-mono); font-size: 0.72rem; }
 .universe-untuck:hover .universe-untuck-say { color: var(--text); }
@@ -238,7 +240,7 @@ body:has(.universe-panel) .guide-btn { display: none; }
 .universe-card .fun-card { min-height: 0; }
 .station-list { display: grid; gap: 0.15rem; margin: 0; padding: 0; list-style: none; }
 .station-list a { display: grid; gap: 0.05rem; padding: 0.45rem 0.6rem; margin: 0 -0.6rem; border-radius: 10px; font-size: 0.88rem; line-height: 1.3; transition: background-color 0.2s; }
-.station-list a:hover { background: rgb(255 255 255 / 0.05); }
+.station-list a:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
 .station-list a span:last-child { font-size: 0.8rem; }
 .station-term { margin-bottom: 0; padding: 0.75rem 0.9rem; border-radius: 10px; background: #05080a; color: #7dff9a; font-family: var(--font-mono); font-size: 0.8rem; white-space: pre-wrap; }
 .universe-fade { position: absolute; z-index: 3; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.6s var(--ease-in); }
@@ -816,10 +818,10 @@ body:has(.universe-panel) .guide-btn { display: none; }
   gap: 0.6em;
   min-height: 44px;
   padding: 0.45rem 0.6rem 0.45rem 1.1rem;
-  border: 1.5px solid var(--accent, #7fe3ff);
+  border: 1.5px solid var(--accent);
   border-radius: 999px;
   background: rgb(3 4 10 / 0.78);
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent, #7fe3ff) 55%, transparent), 0 6px 22px rgb(0 0 0 / 0.45);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent), 0 6px 22px rgb(0 0 0 / 0.45);
   color: #fff;
   font-family: var(--font-sans);
   font-size: 0.92rem;
@@ -831,12 +833,12 @@ body:has(.universe-panel) .guide-btn { display: none; }
 }
 .universe-wayin[hidden] { display: none; }
 .universe-wayin:hover,
-.universe-wayin:focus-visible { background: color-mix(in srgb, var(--accent, #7fe3ff) 24%, rgb(3 4 10 / 0.86)); }
+.universe-wayin:focus-visible { background: color-mix(in srgb, var(--accent) 24%, rgb(3 4 10 / 0.86)); }
 .universe-wayin:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 .universe-wayin-key { font-weight: 400; color: rgb(255 255 255 / 0.75); }
 @media (pointer: coarse) { .universe-wayin-key { display: none; } .universe-wayin { padding-right: 1.1rem; } }
 @keyframes universe-wayin-in { from { opacity: 0; transform: translateY(8px); } }
-@keyframes universe-wayin-glow { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent, #7fe3ff) 0%, transparent), 0 6px 22px rgb(0 0 0 / 0.45); } }
+@keyframes universe-wayin-glow { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent), 0 6px 22px rgb(0 0 0 / 0.45); } }
 @media (prefers-reduced-motion: reduce) { .universe-wayin { animation: none; } }
 /* the place's name, as you come down on a planet */
 .universe-arrive {
@@ -1031,7 +1033,7 @@ body:has(.universe-panel) .guide-btn { display: none; }
   transition: border-color 0.2s, background-color 0.2s;
 }
 .universe-ship:hover { border-color: var(--muted); }
-.universe-ship[aria-pressed='true'] { border-color: var(--accent-text); background: rgb(255 255 255 / 0.05); }
+.universe-ship[aria-pressed='true'] { border-color: var(--accent-text); background: color-mix(in srgb, var(--text) 5%, transparent); }
 .universe-ship:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .universe-ship-faces { display: flex; flex: none; }
 .universe-ship-face { width: 38px; height: 38px; }
@@ -1060,7 +1062,7 @@ body:has(.universe-panel) .guide-btn { display: none; }
   padding: 0.6rem 1rem 0.6rem 0.6rem;
   border: 1px solid color-mix(in srgb, var(--who) 40%, transparent);
   border-radius: 16px;
-  background: rgb(6 8 16 / 0.9); /* (no blur: see .universe-panel) */
+  background: var(--hud-sheet-bg); /* (no blur: see .universe-panel) */
 }
 .universe-comms[data-motion] .universe-line { animation: universe-line 0.25s ease-out; }
 @keyframes universe-line {
@@ -1116,7 +1118,7 @@ body:has(.universe-panel) .guide-btn { display: none; }
   margin: -6px -8px -6px 0;
   color: var(--muted);
 }
-.universe-settings-close:hover { color: var(--text); background: rgb(255 255 255 / 0.08); }
+.universe-settings-close:hover { color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); }
 .universe-settings-close:focus-visible,
 .universe-settings-reset:focus-visible { outline: 2px solid var(--engine, #e8eefc); outline-offset: 1px; }
 .universe-setting { display: grid; gap: 0.3rem; margin: 0; padding: 0; border: 0; min-width: 0; }
@@ -1138,9 +1140,9 @@ body:has(.universe-panel) .guide-btn { display: none; }
 .universe-setting input[type='range']::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
-  background: linear-gradient(90deg, var(--engine, #e8eefc) var(--fill), rgb(255 255 255 / 0.16) var(--fill));
+  background: linear-gradient(90deg, var(--engine, #e8eefc) var(--fill), color-mix(in srgb, var(--text) 16%, transparent) var(--fill));
 }
-.universe-setting input[type='range']::-moz-range-track { height: 4px; border-radius: 2px; background: rgb(255 255 255 / 0.16); }
+.universe-setting input[type='range']::-moz-range-track { height: 4px; border-radius: 2px; background: color-mix(in srgb, var(--text) 16%, transparent); }
 .universe-setting input[type='range']::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--engine, #e8eefc); }
 .universe-setting input[type='range']::-webkit-slider-thumb {
   width: 16px;
@@ -1161,9 +1163,9 @@ body:has(.universe-panel) .guide-btn { display: none; }
   width: 38px;
   height: 22px;
   margin: 0;
-  border: 1.5px solid rgb(255 255 255 / 0.3);
+  border: 1.5px solid color-mix(in srgb, var(--text) 30%, transparent);
   border-radius: 11px;
-  background: rgb(255 255 255 / 0.06);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
@@ -1185,7 +1187,7 @@ body:has(.universe-panel) .guide-btn { display: none; }
 .universe-setting-row input[type='checkbox']:focus-visible { outline: 2px solid var(--engine, #e8eefc); outline-offset: 2px; }
 .universe-seg { grid-template-columns: repeat(3, 1fr); }
 .universe-seg-4 { grid-template-columns: repeat(4, 1fr); }
-.universe-seg button + button { border-left: 1px solid rgb(255 255 255 / 0.2); }
+.universe-seg button + button { border-left: 1px solid color-mix(in srgb, var(--text) 20%, transparent); }
 .universe-settings-reset { justify-self: start; padding: 0.2rem 0; text-decoration: underline; }
 .universe-settings-reset:hover { color: var(--text); }
 
@@ -1234,40 +1236,6 @@ body:has(.universe-panel) .guide-btn { display: none; }
 .universe-navmap-btn:hover { border-color: #9fd8ff; background: rgb(159 216 255 / 0.1); }
 .universe-navmap-btn:focus-visible { outline: 2px solid #9fd8ff; outline-offset: 2px; }
 .universe-page[data-leaving] .universe-navmap-btn { display: none; }
-/* the Shipyard's power cells and read-out bars (shipyard/YardBill.jsx) */
-.universe-hangar-label,
-.universe-hangar-num { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; }
-.universe-hangar-num { color: var(--muted); text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
-.universe-hangar-power { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.6rem; }
-.universe-hangar-cells { display: flex; gap: 3px; }
-.universe-hangar-cells i { flex: 1; height: 8px; border-radius: 2px; background: rgb(255 255 255 / 0.12); }
-.universe-hangar-cells i[data-on] { background: var(--engine, #e8eefc); box-shadow: 0 0 6px color-mix(in srgb, var(--engine, #e8eefc) 60%, transparent); }
-.universe-hangar-power[data-full] .universe-hangar-num { color: var(--hud-warn); }
-/* the cruiser's crew: to the wardrobe */
-/* the shipyard: the hull switch, the roll, the code, a row of modules a slot */
-.universe-hangar-stats { display: grid; gap: 0.35rem; margin: 0; }
-.universe-hangar-stat { display: grid; grid-template-columns: 8.2rem 1fr; align-items: center; gap: 0.6rem; }
-.universe-hangar-stat dt { font-size: 0.74rem; }
-.universe-hangar-stat dd { display: grid; grid-template-columns: 1fr 3.4em; align-items: center; gap: 0.5rem; margin: 0; }
-.universe-hangar-bar { position: relative; height: 6px; border-radius: 3px; background: rgb(255 255 255 / 0.12); overflow: hidden; }
-.universe-hangar-bar > i,
-.universe-hangar-bar > b { position: absolute; inset: 0 auto 0 0; border-radius: 3px; }
-.universe-hangar-bar > i { width: calc(var(--now) * 100%); background: var(--engine, #e8eefc); }
-.universe-hangar-bar > b { width: calc(var(--then) * 100%); background: transparent; }
-.universe-hangar-bar[data-up] > b { background: #6ee7a0; }
-.universe-hangar-bar[data-up] > i { z-index: 1; }
-.universe-hangar-bar[data-down] > b { z-index: 1; background: var(--engine, #e8eefc); }
-.universe-hangar-bar[data-down] > i { background: #ff7a6b; }
-.universe-hangar-change { color: var(--muted); font-family: var(--font-mono); font-size: 0.7rem; font-variant-numeric: tabular-nums; text-align: right; }
-/* the shop's price pill on each of the Shipyard's rows (Owned, 400 ¢, the
-   price dimmed and how short you are, or the lock's sentence) */
-.universe-price { display: inline-flex; align-items: center; justify-self: start; gap: 0.35rem; max-width: 100%; padding: 0.1rem 0.5rem; border: 1px solid rgb(255 255 255 / 0.16); border-radius: 999px; color: var(--muted); font-size: 0.68rem; line-height: 1.4; font-variant-numeric: tabular-nums; }
-.universe-price[data-kind='owned'] { border-color: rgb(110 231 160 / 0.4); color: #6ee7a0; }
-.universe-price[data-kind='buy'] { border-color: var(--engine, #e8eefc); color: var(--text); background: color-mix(in srgb, var(--engine, #e8eefc) 14%, transparent); font-weight: 600; }
-.universe-price[data-kind='short'] { color: var(--hud-warn); }
-.universe-price-was { color: var(--muted); opacity: 0.6; }
-.universe-hangar-change[data-up] { color: #6ee7a0; }
-.universe-hangar-change[data-down] { color: #ff7a6b; }
 
 @media (max-width: 767px) {
   .universe-panel {
@@ -1313,7 +1281,6 @@ body:has(.universe-panel) .guide-btn { display: none; }
   .universe-hangar-btn { left: calc(var(--hud-edge) + 50px); bottom: calc(var(--sheet-h) + 66px); }
   .universe-navmap-btn { left: var(--hud-edge); bottom: calc(var(--sheet-h) + 66px); }
   .universe-navmap-btn[data-ship] { left: calc(var(--hud-edge) + 100px); }
-  .universe-hangar-stat { grid-template-columns: 7rem 1fr; }
   .universe-comms { right: 16px; left: 16px; }
   /* the bar keeps clear of the guide's button in the corner */
   .universe-panel[data-tucked] { padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -1344,7 +1311,7 @@ body:has(.universe-panel) .guide-btn { display: none; }
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: calc(var(--nav-h) + 16px) 16px max(16px, env(safe-area-inset-bottom));
-  background: radial-gradient(ellipse at 40% 50%, rgb(3 4 10 / 0.45), rgb(3 4 10 / 0.8));
+  background: radial-gradient(ellipse at 40% 50%, color-mix(in srgb, var(--scrim-ink) 45%, transparent), color-mix(in srgb, var(--scrim-ink) 80%, transparent));
   animation: start-in var(--t-slow) var(--ease-out) both;
 }
 /* (from the width the panel stops being the phone's sheet: beside it, never on it) */
@@ -1353,9 +1320,9 @@ body:has(.universe-panel) .guide-btn { display: none; }
   width: min(600px, 100%);
   margin: auto;
   padding: clamp(1.25rem, 3.5vh, 2rem);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--saber) 22%, var(--border));
   border-radius: var(--r-card);
-  background: rgb(6 8 16 / 0.94);
+  background: var(--glass);
   box-shadow: var(--shadow-dialog);
 }
 .start-title { color: var(--text); font-size: clamp(1.35rem, min(2.6vw, 4.6vh), 1.8rem); font-stretch: 112%; font-weight: 650; letter-spacing: -0.015em; line-height: 1.2; }
@@ -1428,7 +1395,7 @@ body:has(.universe-panel) .guide-btn { display: none; }
    middle, clear of the stack of prompts and buttons over the hint, in the
    map's own glass; a click on it locks the pointer too */
 .universe-look {
-  --hud-ink: var(--ink, #f2efe8);
+  --hud-ink: #f2efe8; /* (its own: the site sets no --ink, and a light page’s ink would be dark on this glass) */
   --hud-muted: var(--muted);
   --hud-glass-hi: rgb(3 4 10 / 0.85);
   --hud-border: 1px solid rgb(255 255 255 / 0.16);
