@@ -7,6 +7,7 @@
 
 import { PACK as caribbean } from '../caribbean/pack.js';
 import { PACK as invincible } from '../invincible/pack.js';
+import { PACK as hogwarts } from '../hogwarts/pack.js';
 import { PACK as cybertron } from '../cybertron/pack.js';
 import { PACK as avengers } from '../avengers/pack.js';
 import { PACK as c137 } from '../rickmorty/pack.js';
@@ -26,7 +27,7 @@ import { PACK as fly } from '../expanse/flight/pack.js'; // planet flight (scrip
 
 export const PACKS = Object.fromEntries(
   [
-    ...[caribbean, invincible, cybertron, avengers, c137, albuquerque, scranton, galaxy, deathstar, deathstarInside, middleEarth, road, music, dotMatrix, mario64, earth, minecraft],
+    ...[caribbean, invincible, hogwarts, cybertron, avengers, c137, albuquerque, scranton, galaxy, deathstar, deathstarInside, middleEarth, road, music, dotMatrix, mario64, earth, minecraft],
     fly, // planet flight
   ].map((p) => [p.id, p]),
 );
