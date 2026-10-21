@@ -62,6 +62,7 @@ export async function buildPurge(kit) {
     veil.material.opacity = Math.min(0.45, veil.material.opacity + dt * 0.3);
   });
   area.actions = {
+    ...area.actions,
     siren: () => {
       purging = true;
       S.hunt(true); // the villagers turn on him

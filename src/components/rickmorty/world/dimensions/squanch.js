@@ -181,6 +181,7 @@ export async function buildSquanch(kit) {
     glare.intensity = raiding ? 2 + Math.sin(t * 7) : 0;
   });
   area.actions = {
+    ...area.actions,
     raid: () => {
       raiding = true;
       S.hunt(true); // the agents out of their portals, after him

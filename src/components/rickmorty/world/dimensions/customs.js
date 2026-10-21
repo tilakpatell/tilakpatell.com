@@ -157,6 +157,7 @@ export async function buildCustoms(kit) {
     lampMat.color.setHex(alarm && Math.sin(t * 9) > 0 ? 0xff2a1a : 0x7a2a2a);
   });
   area.actions = {
+    ...area.actions,
     took: () => {
       took = true;
     },

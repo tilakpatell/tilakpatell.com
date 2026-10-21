@@ -27,6 +27,9 @@ import { TUNING as POWER, newPower, powerNews, powerReadout, stepPower } from '.
 import { curse, dealNews, dealReadout, newDeal, stepDeal } from '../games/deal';
 import { freezeEyes, freezeNews, freezeReadout, jumpSplashes, moving, newFreeze, stepFreeze } from '../games/freeze';
 import { findNews, findReadout, newFind, pickOurs, stepFind } from '../games/find';
+import { TRIS, WORLDS } from './worlds';
+import { outskirtsOf } from './outskirts';
+import { groundSize, roomFog, surround, wallOpenings } from './surround';
 
 // a speckled paint for a floor or the ground
 export const specks = (base, specks, seed = 7, n = 1600, size = 2) => (g, w, h) => speckle(g, w, h, { base, specks, n, size, seed });
@@ -38,14 +41,22 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   const { x: cx, z: cz } = d.centre;
   const P = (dx, dz) => [cx + dx, cz + dz];
   let sky = null;
+  // the world round it (./worlds.js): what stands round it, who's about
+  const world = WORLDS[id] ?? null;
+  let groundOut = null; // (with a world, the ground's laid once its reach is known: at done())
 
   if (d.kind === 'outdoor') {
     sky = makeSky(560, d.sky);
     R.group.add(sky.dome);
     R.noInk.push(sky.dome);
-    // the ground, out well past the box to the horizon's fog
+    // the ground, out well past the box to the horizon's fog (and past the fog, with a world round it)
     const mat = tiledPaint(kit.mats, `c137-${id}-ground`, 256, groundTile, ground ?? specks('#7a9a52', ['#6a8a46', '#8aaa5e']), { color: 0xffffff });
-    R.tiled.add(BOX, mat, at(cx, -0.05, cz, 0, A.x1 - A.x0 + 260, 0.1, A.z1 - A.z0 + 260));
+    groundOut = (reach) => {
+      const [gw, gd] = groundSize(d, reach);
+      R.tiled.add(BOX, mat, at(cx, -0.05, cz, 0, gw, 0.1, gd));
+      groundOut = null;
+    };
+    if (!world) groundOut(null);
   } else {
     const H = d.ceiling;
     const mat = tiledPaint(kit.mats, `c137-${id}-floor`, 256, floorTile, floor ?? specks('#bfb6a6', ['#b0a796', '#cbc3b4']), { color: 0xffffff });
@@ -53,10 +64,17 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     ceilings(R, [[A.x0 - 0.2, A.x1 + 0.2, A.z0 - 0.2, A.z1 + 0.2]], H, ceiling);
     const w = { color: wall, skirt, h: wallH ?? H, ...(dado && { dado }) };
     const F = R.fixed;
-    wallLine(R, F, [A.x0, A.z0 - 0.2], [A.x0, A.z1 + 0.2], { ...w, into: [1, 0] });
-    wallLine(R, F, [A.x1, A.z0 - 0.2], [A.x1, A.z1 + 0.2], { ...w, into: [-1, 0] });
-    wallLine(R, F, [A.x0 - 0.2, A.z0], [A.x1 + 0.2, A.z0], { ...w, into: [0, 1] });
-    wallLine(R, F, [A.x0 - 0.2, A.z1], [A.x1 + 0.2, A.z1], { ...w, into: [0, -1] });
+    // (with windows where its world has them: the world outside shows through)
+    wallLine(R, F, [A.x0, A.z0 - 0.2], [A.x0, A.z1 + 0.2], { ...w, into: [1, 0] }, wallOpenings(world, 'w', d));
+    wallLine(R, F, [A.x1, A.z0 - 0.2], [A.x1, A.z1 + 0.2], { ...w, into: [-1, 0] }, wallOpenings(world, 'e', d));
+    wallLine(R, F, [A.x0 - 0.2, A.z0], [A.x1 + 0.2, A.z0], { ...w, into: [0, 1] }, wallOpenings(world, 'n', d));
+    wallLine(R, F, [A.x0 - 0.2, A.z1], [A.x1 + 0.2, A.z1], { ...w, into: [0, -1] }, wallOpenings(world, 's', d));
+    // and a sky out there, for a room with a world outside
+    if (world?.outside === 'ground') {
+      sky = makeSky(560, world.sky);
+      R.group.add(sky.dome);
+      R.noInk.push(sky.dome);
+    }
   }
 
   // ── the portal home, turned to the camera, shrinking away while the camera's on it ──
@@ -254,6 +272,21 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   };
 
   const done = (light, update) => {
+    // the world round it, drawn before the room kit builds; a failure leaves the place as it was
+    let round = null;
+    if (world) {
+      const fogFar = (d.kind === 'room' ? world.fog?.[2] : light?.fog?.[2]) ?? 300;
+      try {
+        const laid = outskirtsOf(d, world, { tier: kit.fit?.tier ?? kit.tier ?? 'high', fogFar, tris: TRIS });
+        groundOut?.(laid.reach);
+        const fog = d.kind === 'room' ? (world.fog ?? roomFog(d, world, fogFar)) : null;
+        if (fog) light = { ...light, fog };
+        round = surround({ R, d, kit }, world, laid);
+      } catch (e) {
+        groundOut?.(null);
+        if (import.meta.env.DEV) console.warn('stage: no world round', id, e);
+      }
+    }
     const area = R.build({
       light,
       update: (t, dt, state, camera) => {
@@ -285,8 +318,11 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     // checks, its meter for the HUD, and, in development, a way for the
     // checks to set it)
     area.actions = { calm, npcs: N.list, fire: N.fire, bodies: N.bodies, hit: N.hit };
-    // (the sky the house look fogs it into: its own, not Blips and Chitz's)
+    // (the sky the house look fogs it into: its own, not Blips and Chitz's; a room's outside's)
     if (d.kind === 'outdoor') area.skyLook = d.sky ?? STREET_SKY;
+    else if (world?.outside === 'ground') area.skyLook = world.sky ?? STREET_SKY;
+    // (its crowd's doings: a hop on a beat, a turn to look, how many stand)
+    if (round) Object.assign(area.actions, round.actions);
     if (run)
       Object.assign(area.actions, {
         'power-take': () => (asked.take = true),
