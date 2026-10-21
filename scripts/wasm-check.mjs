@@ -5,7 +5,7 @@
 // the build's own hashed name (Vite's `<name>-<8 characters>.wasm`) is
 // there. (A bare name in a chunk is a library's default it never fetches
 // here: three's KTX2 loader's transcoder path. Rapier's two binaries are
-// hashed assets since lane X3, so they are among the files checked.) GitHub Pages serves .wasm as application/wasm (what
+// hashed assets since lane X3, so they are among the files checked.) The Worker serves .wasm as application/wasm (what
 // WebAssembly.instantiateStreaming asks for); the bucket's publish types it
 // so too (assets-publish.mjs).
 //
