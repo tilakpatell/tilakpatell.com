@@ -8,8 +8,8 @@ name: Copy the buckets to R2
 # project's storage out (docs/guides/self-hosting/copy-from-platform-s3):
 # provider Other, the /storage/v1/s3 endpoint, path-style. Nothing is
 # written to the runner's disk: each file streams from one to the other,
-# with its content type and cache header (-M). It only copies: nothing is
-# deleted on either side, and a file R2 holds already at its size is skipped,
+# with its content type and cache header (-M). It only copies (unless
+# empty-supabase is asked: the last step), and a file R2 holds already at its size is skipped,
 # so a second run sends only what was published to Supabase since (the
 # public bucket's paths are content hashes, never overwritten: --size-only;
 # the working bucket's are compared by size and time as well). Last, both
@@ -40,6 +40,11 @@ on:
         description: "The Supabase project's S3 region (Project Settings → Storage → S3 Connection)"
         required: true
         type: string
+      empty-supabase:
+        description: "After the copy, delete every file from these Supabase buckets that R2 holds at its size (only once the site has read from R2)"
+        required: false
+        default: false
+        type: boolean
       buckets:
         description: "Which of Supabase's buckets, space-separated (site-assets lands in tilak-assets)"
         required: false
@@ -143,6 +148,24 @@ jobs:
             [ "$n_to" -ge "$n_from" ] || { echo "::error::$b: R2 holds $n_to files of Supabase's $n_from"; short=1; }
           done
           exit $short
+
+      # The owner's ask: Supabase emptied once R2 has it all. Only when asked
+      # (empty-supabase), and only after the counts: each bucket is held to
+      # R2 first, every file of Supabase's there at its size (rclone check
+      # --one-way), and a bucket that fails it is left whole. The files go;
+      # the empty buckets stay, which cost nothing.
+      - name: Supabase emptied
+        if: ${{ inputs.empty-supabase }}
+        run: |
+          # (where a Supabase bucket lands on R2)
+          to() { case "$1" in site-assets) echo tilak-assets ;; *) echo "$1" ;; esac; }
+          for b in $BUCKETS; do
+            echo "::group::$b"
+            rclone check "supabase:$b" "r2:$(to "$b")" --one-way --size-only --fast-list --checkers 32 || { echo "::error::$b: not every file is on R2 at its size; nothing deleted from it"; exit 1; }
+            rclone delete "supabase:$b" --fast-list --checkers 32 --retries 5 --stats 60s --stats-one-line
+            echo "$b on Supabase now: $(rclone size "supabase:$b" --fast-list --json)"
+            echo "::endgroup::"
+          done
 
   signed:
     # (after the copy, so there are keys to ask for)
