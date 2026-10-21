@@ -8,6 +8,7 @@
 //   node scripts/bucket-check.mjs <bucket> […]
 //
 // probe(fetch, bucket) → { ok, keys, first, status, bytes } | { ok: false, error }
+//   (an empty bucket listed is ok: the listing's 200 is the signing proved)
 
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,7 +17,7 @@ import { NO_KEYS, bucketEnv, list, objectUrl } from './lib/bucket.mjs';
 export async function probe(fetchImpl, bucket) {
   try {
     const { files } = await list(fetchImpl, bucket, '', { pages: 1 });
-    if (!files.length) return { ok: false, error: 'no keys listed' };
+    if (!files.length) return { ok: true, keys: 0 };
     const first = files[0];
     const res = await fetchImpl(objectUrl(bucket, first.key), { method: 'HEAD' });
     const bytes = Number(res.headers.get('content-length'));
@@ -41,7 +42,7 @@ async function main() {
   for (const b of buckets) {
     const r = await probe(env.fetch, b);
     if (!r.ok) bad++;
-    console.log(r.error ? `${b}: failed, ${r.error}` : `${b}: ${r.keys} keys on the first page; ${r.first} HTTP ${r.status}, ${r.bytes} bytes${r.ok ? '' : ' (not the listing’s size)'}`);
+    console.log(r.error ? `${b}: failed, ${r.error}` : !r.keys ? `${b}: listed, empty` : `${b}: ${r.keys} keys on the first page; ${r.first} HTTP ${r.status}, ${r.bytes} bytes${r.ok ? '' : ' (not the listing’s size)'}`);
   }
   return bad ? 1 : 0;
 }

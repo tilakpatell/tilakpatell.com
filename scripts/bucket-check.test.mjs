@@ -14,9 +14,9 @@ describe('probe', () => {
     expect(asked.map(([m]) => m)).toEqual(['GET', 'HEAD']);
   });
 
-  it('says a refusal, an empty bucket and a size that differs', async () => {
+  it('says a refusal and a size that differs, and takes an empty bucket listed as signed right', async () => {
     expect(await probe(async () => new Response('no', { status: 403 }), 'b')).toMatchObject({ ok: false, error: 'list b/: HTTP 403' });
-    expect(await probe(async () => new Response(page([])), 'b')).toMatchObject({ ok: false, error: 'no keys listed' });
+    expect(await probe(async () => new Response(page([])), 'b')).toEqual({ ok: true, keys: 0 });
     const short = async (url) => (url.includes('list-type') ? new Response(page([['k', 9]])) : new Response(null, { headers: { 'content-length': '3' } }));
     expect(await probe(short, 'b')).toMatchObject({ ok: false, bytes: 3 });
   });

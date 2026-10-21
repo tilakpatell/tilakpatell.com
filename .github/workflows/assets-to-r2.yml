@@ -145,6 +145,8 @@ jobs:
           exit $short
 
   signed:
+    # (after the copy, so there are keys to ask for)
+    needs: copy
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
