@@ -36,6 +36,7 @@ import { buildSpace } from './space';
 import { groundWorld } from '../../../lib/three/groundwork';
 import { LOOK as ART } from './look';
 import { createHolograms } from './holograms';
+import { createRuins } from './ruins';
 import { createCourse, createMarker, loadProps } from './missionProps';
 import { CAM, LAND, LOOK, SPOT, SUIT, TIMES, rayBox } from './sceneLook';
 
@@ -153,6 +154,8 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
 
   const fx = createFlightFx(scene, { calm, small });
   const challenges = createChallenges(scene, world, fx.vfx);
+  // what a broken tower leaves (./ruins.js; ./demolish.js says how broken)
+  const ruins = createRuins(scene, { level: small ? 'low' : 'high' });
   const villains = createVillains(scene, fx.vfx, { calm, templates: { mauler: people.mauler, seismic: people.seismic }, rim: LOOK.noon.rim });
   // the missions' things (./missions.js, run by InvWorld.jsx): the bank on
   // its block, the getaway truck on the grid, the marker over the step's target
@@ -547,7 +550,14 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
           splashed.speed = e.speed;
         }
       } else if (e.type === 'takeoff') fx.takeoff(e.at);
-      else if (e.type === 'crater') {
+      else if (e.type === 'rubble') {
+        // a face hit hard enough to mark it (./demolish.js): chunks and dust off it
+        const at = new THREE.Vector3(...e.at);
+        fx.vfx.debris(at, { count: Math.round(10 + e.delta * 60), speed: 9 + e.delta * 18, size: 0.3 + e.delta * 0.5, dir: new THREE.Vector3(...(e.n ?? [0, 1, 0])), spread: 0.9, color: 0x8e8a82 });
+        fx.vfx.smoke(at, { size: 3 + e.delta * 6, count: 5, life: 2.2, color: 0x6e6a64, to: 0x9a958c, rise: 1, opacity: 0.6 });
+        feel.trauma(clamp(0.2 + e.delta, 0.2, 0.8));
+        scare.push({ x: e.at[0], z: e.at[2], r: 30 });
+      } else if (e.type === 'crater') {
         // a slam with something in hand, or a dive onto someone: the street takes it
         fx.slam(e.at, e.speed);
         feel.trauma(clamp(e.speed / 150, 0.3, 1));
@@ -664,6 +674,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       if (sim.quests) challenges.update(sim.quests, frameDt, t);
       if (sim.foes) {
         villains.update(sim.foes, frameDt, t, h);
+        ruins.update(frameDt, fx.vfx, calm);
         // (where the traffic's cars are, for a Mauler or Mark to take one; a car taken is nowhere)
         sim.cars = traffic.cars.map((c) => {
           if (c.gone) return [1e9, 0, 1e9];
@@ -736,6 +747,10 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
     talkers,
     jetDistance,
     setZone,
+    // a tower's or a house's damage, drawn (./demolish.js; `mending`: Cecil's crews on it)
+    setDamage(key, d, mending = false) {
+      if (city.setDamage(key, d)) ruins.mark(key, d, city.boxOf(key), mending);
+    },
     get zone() {
       return zone;
     },
@@ -762,6 +777,7 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       skyLight?.dispose();
       fx.dispose();
       villains.dispose();
+      ruins.dispose();
       props.dispose();
       marker.dispose();
       course.dispose();

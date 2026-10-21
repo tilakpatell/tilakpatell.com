@@ -99,12 +99,12 @@
 - `city.js`: `setDamage(id, d)` writes one float into the instance attribute and lowers the instance’s top by `stage`’s fraction, marking `needsUpdate` over the one range.
 - `ruins.js`: `createRuins(parent, world, level)` with `rubble(id)`, `scaffold(id, on)`, `update(dt)`, `dispose()`: two instanced draws, capped at 400 each; a smoke sprite a stub at high tier only.
 
-- [ ] Tests first: `hitTower` adds by force and clamps at 1; stages at 0.3 and 0.6; `repair` heals 0.25 a day and never below 0; `serialise` keeps the 400 most damaged; `parse` of garbage, an unknown id or a damage of 7 gives no ruins; the stand-in `fxPlan` count by tier.
-- [ ] The shader: cracks and dark glass from 0 (a crack mask by hash of the instance id, in `facade.js`’s palette pass), the top lowered from 0.3, the stub from 0.6.
-- [ ] Hits land on towers from `brawl.js` (slam, throw), `foes.js` (a thrown car, a Mauler’s swing within 3 m of a face, a foe knocked into one), `flight.js` (Mark over 150 m/s into a wall: the existing `impact` carries its speed).
-- [ ] Chunks and dust through `fx.js`; rubble and scaffolding through `ruins.js`; the save and the daily repair; the collateral count into a stub `standing` until Task 12.
-- [ ] A shot `ruins` (three towers at stage 3 downtown at dusk) with `--metrics`; low tier triangles recorded.
-- [ ] Checks; commit; pull request; merge.
+- [x] Tests first: `hitTower` adds by force and clamps at 1; stages at 0.3 and 0.6; `repair` heals 0.25 a day and never below 0; `serialise` keeps the 400 most damaged; `parse` of garbage, an unknown id or a damage of 7 gives no ruins; the stand-in `fxPlan` count by tier.
+- [x] The shader: cracks and dark glass from 0 (a crack mask by hash of the instance id, in `facade.js`’s palette pass), the top lowered from 0.3, the stub from 0.6.
+- [x] Hits land on towers from `brawl.js` (slam, throw), `foes.js` (a thrown car, a Mauler’s swing within 3 m of a face, a foe knocked into one), `flight.js` (Mark over 150 m/s into a wall: the existing `impact` carries its speed).
+- [x] Chunks and dust through `fx.js`; rubble and scaffolding through `ruins.js`; the save and the daily repair; the collateral count into a stub `standing` until Task 12.
+- [x] A shot `ruins` (three towers at stage 3 downtown at dusk) with `--metrics`; low tier triangles recorded.
+- [x] Checks; commit; pull request; merge.
 
 ### Task 5: Who you fly as
 
