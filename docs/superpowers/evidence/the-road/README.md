@@ -422,7 +422,8 @@ The keep-still deeds have the company crouch with the visitor while it's held, a
 ### Fixed on the way
 
 - The Cracks' shot stood on the ash over the Sammath Naur: the director lifts every camera over the land, and a placed shot may now say it's `under` it. On a jump into the middle of the Cracks the chamber wasn't drawn (its beat long done): it is now while the walker is within the beat's reach.
-- The Eagles' shot sat at the ground looking into the White City's green Pelennor, drawn beside Mordor's ash: Minas Tirith is now a stage the Road cuts to (`cut`), its land never drawn beside Gorgoroth's (its trees given back while hidden); the Eagles' shot cranes up behind the two, the Mountain ahead, and goes to black, and the White City opens out of black on the Pelennor.
+- The Eagles' shot sat at the ground looking into the White City's green Pelennor, drawn beside Mordor's ash: Minas Tirith is now a stage the Road cuts to (`cut`), its land never drawn beside Gorgoroth's (its trees given back while hidden); the Eagles' shot looks down from the slope (clear of its crest, which hid the rock from further up) on the two lying on their rock, a fire light on it now (the chapter's red glow is its own shader); the Eagles come down over the camera, and it goes to black, and the White City opens out of black on the Pelennor.
 
 - `gorgoroth-cracks-desktop.webp`: the Sammath Naur, the spur over the fire, Frodo at its tip and Sam behind.
 - `minas-tirith-pelennor-desktop.webp`: the White City from the Pelennor as the stage opens, the causeway up to the Great Gate.
+- `gorgoroth-eagles-desktop.webp`: the Eagles down over the rock in the fire, lit orange by it, the two just taken up.
