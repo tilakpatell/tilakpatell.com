@@ -87,6 +87,17 @@ describe('a rigged figure stood in a pose as plain geometry', () => {
     expect(chest.quaternion.equals(new THREE.Quaternion())).toBe(true);
   });
 
+  it('leaves out the ink hull: the body once, not twice', () => {
+    const { root, mesh } = figure();
+    // (a hull as ink.js makes one: the body's own geometry on its skeleton, marked ink)
+    const hull = new THREE.SkinnedMesh(mesh.geometry, new THREE.MeshBasicMaterial());
+    hull.bind(mesh.skeleton, mesh.bindMatrix);
+    hull.userData.ink = true;
+    root.add(hull);
+    const geo = bakePose(root, null);
+    expect(geo.attributes.position.count).toBe(mesh.geometry.attributes.position.count);
+  });
+
   it('gives nothing for a model with no skinned mesh', () => {
     const root = new THREE.Group().add(new THREE.Mesh(new THREE.BoxGeometry()));
     expect(bakePose(root, null)).toBeNull();

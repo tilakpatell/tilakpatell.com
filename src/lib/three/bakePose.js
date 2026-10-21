@@ -3,7 +3,9 @@
 // it (positions, and normals turned with them), in the space of `root`. So
 // a crowd can draw a rigged figure as still copies, instanced, without a
 // skeleton per copy and without a model file of its own. The figure is
-// left as it was found: its bones go back to where they stood.
+// left as it was found: its bones go back to where they stood. An ink hull
+// (userData.ink, from ink.js) is left out: it's a line, not the body, and
+// baked in it would draw the body twice over.
 //
 // bakePose(root, clip, t = 0) → BufferGeometry | null
 //   root: the figure (its bones and skinned meshes under it); clip: an
@@ -17,7 +19,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 export function bakePose(root, clip, t = 0) {
   const skinned = [];
   root.traverse((o) => {
-    if (o.isSkinnedMesh) skinned.push(o);
+    if (o.isSkinnedMesh && !o.userData.ink) skinned.push(o);
   });
   if (!skinned.length) return null;
 
