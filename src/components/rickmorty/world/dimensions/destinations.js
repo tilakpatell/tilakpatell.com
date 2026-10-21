@@ -19,11 +19,13 @@ import { GARAGE_BACK } from './place';
 import { ROWS as ROWS1 } from './rows1';
 import { ROWS as ROWS2 } from './rows2';
 import { ROWS as ROWS3 } from './rows3';
+import { withBlocks } from './blocks';
 
 export { DEST_COL, DEST_X, GARAGE_BACK, destArea, destZ } from './place';
 
-// every place, in the dial's order (the rows' files, ./place.js's shape; the planets are off the dial)
-export const DESTINATIONS = [...ROWS1, ...ROWS2, ...ROWS3];
+// every place, in the dial's order (the rows' files, ./place.js's shape; the planets are off the dial),
+// each with its world's blocks among its solids (./blocks.js: what a gathering stands on)
+export const DESTINATIONS = withBlocks([...ROWS1, ...ROWS2, ...ROWS3]);
 
 export const destinationById = (id) => DESTINATIONS.find((d) => d.id === id) ?? null;
 

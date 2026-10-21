@@ -19,7 +19,7 @@
 // Nothing happens until something starts it (Cecil, a mission, or the
 // city's clock for the Flaxans).
 //
-// stepFoes(state, hero, { punch, look, eveHit, block, fists }, dt, { cars, hangar }) →
+// stepFoes(state, hero, { punch, look, eveHit, cavalry, block, fists }, dt, { cars, hangar }) →
 // { foes: state, ev, push, stun }: `push` a velocity to give him (a lunge,
 // a knock), `stun` a moment without control. `cars`: where the traffic's
 // cars are, for a Mauler to take one (`throw`'s `car` is its index there);
@@ -72,6 +72,13 @@ export const KINDS = {
   // and marks it: ./demolish.js); staggered by a blow for `stagger`
   // (and after a charge lands he hangs there `recover` s, open to a blow: the show's rhythm, a hit and a word)
   omniman: { h: 1.95, hits: 1e9, circle: 40, over: 12, every: 5, charge: 320, hurt: 25, drive: 150, reach: 3, stagger: 1.2, speed: 30, recover: 1.6 },
+  // Angstrom Levy (season two, ./season2.js): hangs `off` m before Mark at chest height and
+  // throws a green bolt every `every` s; a blow staggers him, and staggered he portals away
+  // for `gone` s and is back `back` m behind Mark; six blows and he is down
+  angstrom: { h: 1.9, hits: 6, off: 7, every: 2.4, bolt: 55, hurt: 14, speed: 22, stagger: 0.3, gone: 0.8, back: 8 },
+  // the mirror Mark: Mark's own row as a foe: flies at him at his cruise, a punch of
+  // `hurt` within `reach` every `every` s that knocks him `knock` m, four blows down
+  mirror: { h: 1.78, hits: 4, speed: 60, reach: 4.5, every: 1.1, hurt: 12, knock: 8, stagger: 0.6, orbit: 14 },
 };
 const FLAXANS = new Set(['flaxan', 'flaxanElite']);
 const kindOf = (e) => e.kind ?? 'flaxan';
@@ -100,6 +107,8 @@ export function spawnFoes(prev, kind, n, at = PORTAL.p) {
       Object.assign(e, { state: 'approach', p: [x, groundAt(x, z), z], cool: 1 + r(), throwCool: 1 + r() * 2 });
     } else if (kind === 'omniman') {
       Object.assign(e, { state: 'circle', p: [at[0], (at[1] ?? 0) + KINDS.omniman.over, at[2]], cool: 2, phase: r() * Math.PI * 2 });
+    } else if (kind === 'angstrom' || kind === 'mirror') {
+      Object.assign(e, { state: 'hover', p: [at[0], (at[1] ?? 0) + (kind === 'angstrom' ? 3 : 20), at[2]], cool: 1.5, phase: r() * Math.PI * 2 });
     } else if (kind === 'seismic') {
       const home = [at[0], groundAt(at[0], at[2]), at[2]];
       Object.assign(e, { state: 'drift', home, p: [home[0] + Math.cos(e.phase) * K.circle, home[1] + K.over, home[2] + Math.sin(e.phase) * K.circle], cool: K.quake, blast: K.blastEvery });
@@ -150,7 +159,7 @@ const unit = (v) => {
 // the middle of one (a Mauler's and Doc Seismic's `p` is at their feet)
 export function mid(e) {
   const k = kindOf(e);
-  const up = k === 'mauler' ? 1.3 : k === 'seismic' ? 0.9 : 0;
+  const up = k === 'mauler' ? 1.3 : k === 'seismic' ? 0.9 : k === 'angstrom' || k === 'mirror' ? 0.9 : 0;
   return [e.p[0], e.p[1] + up, e.p[2]];
 }
 // how near the move a→b came to c
@@ -258,6 +267,25 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
     }
   }
 
+  // the Guardians' blows (./guardians.js names a foe by its id): a blow of
+  // so many of its `hits`; Dupli-Kate's hold and Shrinking Rae's blink are a
+  // stagger of their length (a staggered foe neither swings nor fires); Rex's
+  // blast is a blow on everyone standing within its reach of where it landed
+  for (const b of input.cavalry ?? []) {
+    const e = byId(b.foe);
+    if (b.type === 'gBlast') {
+      for (const q of f.foes) if (live(q) && !busy(q) && len(sub(q.p, b.at)) <= b.r) hitFoe(q, [b.at[0], b.at[1] - 1, b.at[2]], ev, { by: b.who, blast: true }, b.hits ?? 1);
+      continue;
+    }
+    if (!e || !live(e) || busy(e)) continue;
+    const from = [e.p[0], e.p[1] - 1, e.p[2] - 1];
+    if (b.type === 'gHit') hitFoe(e, from, ev, { by: b.who }, b.hits ?? 1);
+    else if ((b.type === 'gHold' || b.type === 'gStagger') && e.state !== 'ko') {
+      Object.assign(e, { state: 'stagger', t: Math.max(e.state === 'stagger' ? e.t : 0, b.for ?? FIGHT.blockStagger), heldBy: b.type === 'gHold' ? b.who : null });
+      ev.push({ type: b.type === 'gHold' ? 'held' : 'staggered', id: e.id, kind: kindOf(e), at: mid(e), by: b.who, for: b.for });
+    }
+  }
+
   // his punch: a car coming at him first (back it goes), then whoever's in
   // front of him and near, or a lunge to whoever's a little way off
   f.cool = Math.max(0, f.cool - dt);
@@ -314,7 +342,13 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
       else knockOut(e, chest, ev, { rammed: true });
       continue;
     }
-    if (e.state === 'fight') {
+    if (e.state !== 'stagger') e.heldBy = null;
+    if (FLAXANS.has(k) && e.state === 'stagger') {
+      // held or staggered by a Guardian: it hangs there till that's over
+      e.t -= dt;
+      e.v = [0, 0, 0];
+      if (e.t <= 0) e.state = 'fight';
+    } else if (e.state === 'fight') {
       // a Flaxan: round him, or round the portal if he's nowhere near it
       const K = KINDS[k];
       e.phase += dt * 0.6;
@@ -444,6 +478,72 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
         for (const a of [0, 1, 2]) e.p[a] += e.v[a] * dt;
         e.cool -= dt;
         if (e.cool <= 0 && d < 400) Object.assign(e, { state: 'charge', t: 3 });
+      }
+    } else if (k === 'angstrom' && live(e)) {
+      const K = KINDS.angstrom;
+      const toMark = sub(chest, mid(e));
+      e.yaw = Math.atan2(toMark[0], toMark[2]);
+      if (e.state === 'stagger') {
+        // hit: away through a portal of his own, back behind Mark
+        e.t -= dt;
+        e.v = [0, 0, 0];
+        if (e.t <= 0) {
+          Object.assign(e, { state: 'away', t: K.gone });
+          ev.push({ type: 'portalOut', id: e.id, at: mid(e) });
+        }
+      } else if (e.state === 'away') {
+        e.t -= dt;
+        if (e.t <= 0) {
+          const look = unit(input.look ?? hero.dir ?? [0, 0, 1]);
+          const g = groundAt(hero.p[0] - look[0] * K.back, hero.p[2] - look[2] * K.back);
+          e.p = [hero.p[0] - look[0] * K.back, Math.max(hero.p[1], g + 1), hero.p[2] - look[2] * K.back];
+          Object.assign(e, { state: 'hover', cool: 1 });
+          ev.push({ type: 'portalIn', id: e.id, at: mid(e) });
+        }
+      } else {
+        // before him, at chest height, a bolt every so often
+        const d = len(toMark) || 1;
+        const want = [chest[0] - (toMark[0] / d) * K.off, chest[1], chest[2] - (toMark[2] / d) * K.off];
+        const go = sub(want, e.p);
+        const step = Math.min(len(go), K.speed * dt);
+        const u = unit(go);
+        e.v = dt > 0 ? u.map((c) => (c * step) / dt) : [0, 0, 0];
+        for (const a of [0, 1, 2]) e.p[a] += u[a] * step;
+        e.cool -= dt;
+        if (e.cool <= 0 && d < 60) {
+          e.cool = K.every;
+          f.bolts.push({ p: [...mid(e)], v: unit(sub(chest, mid(e))).map((x) => x * K.bolt), life: 2.5, hurt: K.hurt, green: true });
+          ev.push({ type: 'bolt', id: e.id, at: mid(e), n: 1 });
+        }
+      }
+    } else if (k === 'mirror' && live(e)) {
+      const K = KINDS.mirror;
+      const toMark = sub(chest, mid(e));
+      const d = len(toMark) || 1;
+      e.yaw = Math.atan2(toMark[0], toMark[2]);
+      if (e.state === 'stagger') {
+        e.t -= dt;
+        e.v = [0, 0, 0];
+        if (e.t <= 0) e.state = 'hover';
+      } else {
+        // at him, flat out, a punch when he is in reach; round him between punches
+        e.cool -= dt;
+        e.phase += dt * 1.2;
+        const near = d < K.reach;
+        if (near && e.cool <= 0) {
+          e.cool = K.every;
+          const dir = unit(toMark);
+          hurt(K.hurt, chest, { by: 'mirror' });
+          push = dir.map((c) => c * knock(K.knock));
+          stun = Math.max(stun, 0.3);
+          ev.push({ type: 'swing', id: e.id, at: mid(e), hit: true });
+        }
+        const want = e.cool > 0.3 ? [chest[0] + Math.cos(e.phase) * K.orbit, chest[1] + 3, chest[2] + Math.sin(e.phase) * K.orbit] : chest;
+        const go = sub(want, e.p);
+        const step = Math.min(len(go), K.speed * dt);
+        const u = unit(go);
+        e.v = dt > 0 ? u.map((c) => (c * step) / dt) : [0, 0, 0];
+        for (const a of [0, 1, 2]) e.p[a] += u[a] * step;
       }
     } else if (k === 'seismic' && live(e)) {
       const K = KINDS.seismic;

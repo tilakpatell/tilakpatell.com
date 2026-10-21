@@ -336,18 +336,23 @@ export function buildWorld(seed = 11) {
   return { seed, buildings, houses, shops, trees, landmarks, boxes, places, grid, stamp: new Uint32Array(boxes.length), visit: { n: 0 } };
 }
 
-// The boxes that might be within r of (x, z) (some a little further).
+// The boxes that might be within r of (x, z) (some a little further). In
+// the mirror city (./dimensions.js: a world with `mirror`), the map is
+// reflected in x: the boxes round (−x, z), each given back reflected (made
+// once each, kept on the world by the box's id).
 export function near(world, x, z, r, out = []) {
   out.length = 0;
   const v = ++world.visit.n;
-  for (let gx = Math.floor((x - r) / 100); gx <= Math.floor((x + r) / 100); gx++)
+  const mx = world.mirror ? -x : x;
+  const flip = world.mirror ? (world.mirrored ??= []) : null;
+  for (let gx = Math.floor((mx - r) / 100); gx <= Math.floor((mx + r) / 100); gx++)
     for (let gz = Math.floor((z - r) / 100); gz <= Math.floor((z + r) / 100); gz++) {
       const list = world.grid.get(gx * 1000 + gz);
       if (!list) continue;
       for (const b of list) {
         if (world.stamp[b.id] === v) continue;
         world.stamp[b.id] = v;
-        out.push(b);
+        out.push(flip ? (flip[b.id] ??= { ...b, x0: -b.x1, x1: -b.x0, x: b.x == null ? undefined : -b.x }) : b);
       }
     }
   return out;
