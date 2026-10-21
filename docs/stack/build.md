@@ -13,7 +13,7 @@ These are tools, so the census counts few importing files; the rows are in [READ
 - `vite.config.js`: the plugins, the test run’s excludes, the build’s manifest and its `vendor` chunk.
 - `tailwind.config.js` and `postcss.config.js`: the classes, the shell’s font families and the theme’s radii.
 - `eslint.config.js`: the rules for `src/` and the rules for `scripts/`.
-- `.github/workflows/ci.yml` and `.github/workflows/deploy.yml`: lint, test, build on every pull request and on `main`; the deploy to GitHub Pages.
+- `.github/workflows/ci.yml` and `.github/workflows/deploy.yml`: lint, test, build on every pull request and on `main`; the deploy to GitHub Pages, and to Cloudflare Pages once its project is set (`docs/decisions/2026-10-21-cloudflare-pages-for-the-site.md`).
 - Scripts that start a Vite server of their own for a check (the census lists them under `scripts`).
 
 ## How the site uses it
@@ -26,7 +26,7 @@ These are tools, so the census counts few importing files; the rows are in [READ
 
 ## What the site does not use, and why
 
-- **A server.** The site is static: `vite build` writes `dist/`, and GitHub Pages serves it (`.github/workflows/deploy.yml`).
+- **A server.** The site is static: `vite build` writes `dist/`, and GitHub Pages serves it, or Cloudflare Pages with `public/_headers`' cache rule (`.github/workflows/deploy.yml`).
 - **TypeScript.** The site is JavaScript; there is no TypeScript config, and the React types serve editors only ([react.md](react.md)).
 - **CSS-in-JS.** Styles are Tailwind classes and plain CSS files with tokens.
 - **`react/prop-types`** is off in `eslint.config.js`: nothing checks props at run time.
