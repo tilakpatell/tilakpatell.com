@@ -488,3 +488,7 @@ Twelve stages were pictured mid-walk afresh (`lab/road/shots.mjs`), and four thi
 - **Moria's stair**: going down it Gandalf is 16 m ahead and 11 m under them, and the staff's light stops short of the ones behind; they were nothing. A faint cold light over Frodo, the staff's off the walls, makes them dim shapes. `moria-stair-before-desktop.webp`, `moria-stair-desktop.webp`.
 - **The rivers**: two regular swells seen at a slant flipped the water between the sky and the deep in white stripes (Rivendell, the Ford, the Anduin). The swell is lower (0.05 m, from 0.08), calmed off into the distance from 6 m, and running water gives back at most 0.7 of the sky. `rivendell-river-before-desktop.webp`, `rivendell-river-desktop.webp`.
 
+## Henneth Annûn's fall (2026-10-21)
+
+From behind the fall, at Faramir's window, the fall read as a pale fog: three broad bands falling down a sheet. It is now threads of water, in two layers (360 and 140 across its 8 m, a few centimetres each with the camera a metre and a half off), each thread at its own pace and phase. They are thinner between, so the light beyond shows through, with white foam at its foot. `ithilien-henneth-before-desktop.webp`, `ithilien-henneth-desktop.webp` (walked into, 3 s in).
+
