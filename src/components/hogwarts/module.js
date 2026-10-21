@@ -161,8 +161,17 @@ export default {
       }
       tell('broom', { riding: false });
     };
-    const lessons = createLessons({ rt, scene, camera, house, houseName: 'gryffindor', wand, broom, walker, floorAt, tell, said, cards: air, figure: null, fly });
-    const lesson = (id) => lessons.start(id, { p: [walker.state.x, floorAt(walker.state.x, walker.state.z), walker.state.z], yaw: walker.state.yaw });
+    // (Buckbeak's ride goes out over the lake and round the far castle)
+    const places = { lake: [CASTLE.at[0] * 0.4, LEVEL, CASTLE.at[1] * 0.4], castle: [CASTLE.at[0], 40, CASTLE.at[1]] };
+    const lessons = createLessons({ rt, scene, camera, house, houseName: 'gryffindor', wand, broom, walker, floorAt, tell, said, cards: air, feel, figure: null, fly, places });
+    // where a lesson is held: until the grounds and the rooms give each its
+    // place, a stretch of the shingle by the jetty, looking along the shore
+    // (so a duel or a ride's start isn't out on the water); you're put there
+    const STATION = { at: [SPAWN.at[0] + 2, SPAWN.at[1] + 5], yaw: -Math.PI / 2 };
+    const lesson = (id) => {
+      walker.place(STATION.at, STATION.yaw);
+      return lessons.start(id, { p: [STATION.at[0], floorAt(...STATION.at), STATION.at[1]], yaw: STATION.yaw });
+    };
 
     let clock = 0;
     let light = null;
@@ -246,7 +255,7 @@ export default {
             landed(r.landed, r.yaw);
             landedAt = r.landed;
           }
-        } else {
+        } else if (!lessons.holds) {
           if (pressed('act') && !act) go();
           walker.step(dt, input, pad);
         }
@@ -302,6 +311,7 @@ export default {
       bubble: (el) => said.bubble(el),
       lesson,
       lessons,
+      pick: (n) => lessons.pick(n),
       broom,
       quidditch,
       stick(x, y) {
