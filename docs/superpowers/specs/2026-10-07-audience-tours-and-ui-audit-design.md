@@ -27,8 +27,8 @@ Non-goals: new worlds, new games, new content in `src/data/` (roles, projects, r
 
 | Audience | Who | What the tour shows | Length |
 | --- | --- | --- | --- |
-| `recruiter` (shown as **the hiring tour**) | I’m hiring | The work: pages, projects, the résumé, and the engineering under the site (the map, multiplayer, the autopilot, the terminal). Every stop is on a light route. | about 5 min, 8 chapters |
-| `player` (**the player’s tour**) | I’m here to play | The map and the ship, the galaxy, the worlds and what to do in each, the games, multiplayer, achievements, the checklist. | about 7 min, 10 chapters |
+| `recruiter` (shown as **the hiring tour**) | To hire | The work: pages, projects, the résumé, and the engineering under the site (the map, multiplayer, the autopilot, the terminal). Every stop is on a light route. | about 5 min, 8 chapters |
+| `player` (**the player’s tour**) | To play | The map and the ship, the galaxy, the worlds and what to do in each, the games, multiplayer, achievements, the checklist. | about 7 min, 10 chapters |
 | `mixed` (**the whole tour**) | Both | The recruiter spine with the player's chapters folded in after the universe chapter. Not a third set of copy: a composition. | about 10 min |
 
 The existing `universe` and `classic` tours stay as they are and become the first chapter ("The shell") of every audience tour, picked by the view the visitor is in when the tour starts.
@@ -37,7 +37,7 @@ The existing `universe` and `classic` tours stay as they are and become the firs
 
 A **tour** is an ordered list of **chapters**. A **chapter** is `{ id, title, path, stops }`: one route, and the stops on it. A **stop** keeps the shape it has today (`id`, `title`, `text` as a string or a function of `{ key }`, optional `at` naming a `data-tour` target, optional `keys`/`touch` rows) and gains:
 
-- `actions?: [{ label, to?, href?, download?, tour? }]` (at most four, rendered as their own row above the buttons): `to` is a route, `href` an outside link or the PDF, `tour` an audience to start next. A `to` into a world or the galaxy **ends the tour** with the progress saved at that chapter (the tour never loads a world by itself; it offers). A `to` on a light route is an **excursion**: the tour goes there, drops its veil, and a notice says "Carry on the tour · chapter 5 of 8" with Carry on and Stop.
+- `actions?: [{ label, to?, href?, download?, tour? }]` (at most four, rendered as their own row above the buttons): `to` is a route, `href` an outside link or the PDF, `tour` an audience to start next. A `to` into a world or the galaxy **ends the tour** with the progress saved at that chapter (the tour never loads a world by itself; it offers). A `to` on a light route is an **excursion**: the tour goes there, drops its veil, and a notice says "Carry on the tour · chapter 5 of 8" with Carry on and Stop. (Revised 2026-10-18: the note's title names the tour and the chapter is the line under it; Stop stays a visible button and the × is Not now. `docs/decisions/2026-10-18-one-question-on-arrival.md`.)
 - `todo?: string`: the id of the catalogue item this stop shows (section 4), so the card can show a tick when it is done and the checklist can start the tour at this stop.
 - `release?: ['?', 'palette']`: the keys the tour lets through at this stop so the visitor can try them (`keys` and `touch` stay the key-table rows).
 - `wait?: true`: the stop's target mounts late (a lazy section); the tour waits for it rather than dropping the stop.
@@ -71,7 +71,7 @@ Finishing an audience tour unlocks `tour` (as today) and a new achievement per a
 
 ### 3.5 Entry points
 
-- **The first-arrival offer** (`TourHost.jsx`): "New here? Here to hire, here to play, or both?" with three buttons (Hire, Play, Both) and "Not now". Same timing and gates as today. On a phone the three buttons wrap.
+- **The first-arrival offer** (`TourHost.jsx`): "New here? I’ll show you round" and "Here to hire, to play or both?", with three buttons side by side (To hire, To play, Both), each with its length from `TOUR_MINUTES`, and an × for "Not now". Same timing and gates as today. (Revised 2026-10-18: `docs/decisions/2026-10-18-one-question-on-arrival.md`.)
 - **⌘K**: "Take the recruiter's tour", "Take the player's tour", "Take the whole tour", in the Actions group, replacing the one item.
 - **The guide's "The site" tab** (`GuidePanel.jsx`): the three tours as buttons, the chapters of each listed under a disclosure so any chapter can be taken alone, and "Carry on…" when one is unfinished.
 - **The terminal**: `tour` (as today), `tour recruiter`, `tour player`, `tour all`; `help` lists them.
@@ -261,7 +261,7 @@ A three-lens review (engineering, a hiring manager, a player) found 62 defects, 
 
 - C1. The `kbd-styles` metric walks `src/**/*.css` itself (the health context lists no CSS), excludes `src/runtime/hud/hud.css` until D's rule is deleted, and is budgeted only after both C's `.kbd` and D's deletion have merged.
 - C2. Glossary rows added: "The checklist" (the guide's site-wide tab) and "Things to do (`M`)" (a world's own list); and "The way out of a world" reads `viewOf(pathname, readStart())`: "Universe map" or "Classic site".
-- C3. The visitor-facing names: "the hiring tour", "the player's tour", "the whole tour"; the offer's buttons "I'm hiring", "I'm here to play", "Both".
+- C3. The visitor-facing names: "the hiring tour", "the player's tour", "the whole tour"; the offer's buttons "To hire", "To play", "Both" (revised 2026-10-18 from "I'm hiring", "I'm here to play": `docs/decisions/2026-10-18-one-question-on-arrival.md`).
 
 **World HUD kit (D)**
 

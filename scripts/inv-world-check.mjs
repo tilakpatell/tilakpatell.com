@@ -28,7 +28,10 @@ const errors = [];
 const ctx = await browser.newContext({ viewport: { width: W, height: H }, hasTouch: W < 600, isMobile: W < 600 });
 await ctx.addInitScript(([q, intro]) => {
   window.localStorage.setItem('tp-intro', '1');
-  window.localStorage.setItem('tp-3d', '"on"');
+  // (the bare word, as lib/gpu.js keeps it: quoted, it reads as auto, and a
+  // game that is not forced on goes down to its no-3D card when the software
+  // renderer's frames fall past the watchdog's floor)
+  window.localStorage.setItem('tp-3d', 'on');
   window.localStorage.setItem('tp-worlds', '"load"');
   window.localStorage.setItem('tp-software', '"on"'); // (past the Star Wars worlds' GPU gate, lib/fit)
   window.localStorage.setItem('tp-quality', JSON.stringify(q));

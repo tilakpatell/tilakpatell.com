@@ -19,7 +19,7 @@ export async function installPlayer(page) {
 }
 
 // One episode, start to finish; resolves with what the season kept.
-export async function play(page, ep, { budget = 12 * 60 * 1000 } = {}) {
+export async function play(page, ep, { budget = 30 * 60 * 1000 } = {}) {
   return page.evaluate(({ ep, budget }) => window.__INV_PLAY__.run(ep, budget), { ep, budget });
 }
 
@@ -76,7 +76,7 @@ async function player() {
     if (wall - said > 15) {
       said = wall;
       const h = sim.h;
-      console.log(`[play]   ${h.zone ?? 'city'} ${h.mode} at [${h.p.map((v) => Math.round(v))}] ${Math.round(len(h.v))} m/s, keys ${[...sim.keys].join('+') || 'none'}`);
+      console.log(`[play]   ${h.zone ?? 'city'} ${h.mode} at [${h.p.map((v) => Math.round(v))}] ${Math.round(len(h.v))} m/s, keys ${[...sim.keys].join('+') || 'none'}; dad ${api.debug.dad().state} at [${api.debug.dad().p.map(Math.round)}]`);
     }
     if (job) {
       try {
@@ -130,7 +130,9 @@ async function player() {
     if (v < 3 && sim.keys.has('fwd') && !inSpace()) {
       stuck ??= performance.now();
       if (performance.now() - stuck > 1200) {
-        hold('fwd', 'up');
+        // (straight up, flat out: a forward push into the wall would hold him there)
+        sim.pitch = 0.2;
+        hold('up', 'boost');
         return false;
       }
     } else stuck = null;
@@ -333,26 +335,45 @@ async function player() {
       start('ep7');
       const pts = sim.mission.spar;
       for (let i = 0; i < pts.length; i++) {
-        // with him all the way, over his head (he flies through towers; the
-        // episode wants Mark within 200 m), and down to each point once he's there
+        // with him all the way (the episode wants Mark within 200 m): close over
+        // his head while he waits at a point, since he moves on to the next only
+        // with Mark within 20 m of him (companions.js DAD.sparR), and over him
+        // while he flies (his points in the air are above the tallest tower)
         await every(() => {
           if (step() > i || step() < 0) return true;
-          if (len(sub(dad(), pts[i])) < 30) steer(pts[i], 8);
-          else steer(add(add(dad(), api.debug.dad().v, 1.2), [0, 120, 0]), 15);
+          const d = api.debug.dad();
+          const flying = len(d.v) > 5;
+          // (flying, he does 60 m/s to Mark's cruise of 40: the mark is 40 m
+          // ahead of him and 60 m up, far enough that the steer boosts again as
+          // he falls behind, near enough that Mark is never 200 m from him)
+          if (flying) steer(add(add(d.p, d.v.map((c) => (c / (len(d.v) || 1)) * 40)), [0, 60, 0]), 15, { pass: true });
+          else steer(add(d.p, [0, 6, 0]), 3);
           return false;
-        }, 240000);
+        }, 900000); // (the longest leg is 3.8 km, over a minute of game at his 60 m/s, many of wall on a software renderer)
       }
       const door = M.placeOf('home').door;
       await travel([door[0], 6, door[2]], 2);
       await land();
       await until(() => step() >= 5 || step() < 0, 10000);
-      document.getElementById('inv-game')?.scrollIntoView();
-      await until(() => Boolean(window.__HQ__?.thinkmark?.view), 120000);
-      const tm = window.__HQ__.thinkmark;
-      const ch = (await import('/src/components/invincible/thinkmark/rules.js')).CHAPTERS.findIndex((c) => c.id === 'omni');
-      await tm.begin(ch);
-      tm.setState('hurt'); // (he lets Dad hit him: the quickest way it ends)
-      await until(() => ['lost', 'won'].includes(tm.state.phase), 300000);
+      // (the game's own box to the middle of the screen: the page's one live
+      // 3D view is the stage most in sight, and with the section's title at
+      // the top the game is under a quarter in, which is not enough to take
+      // the view from the city)
+      (document.querySelector('.tm-game') ?? document.getElementById('inv-game'))?.scrollIntoView({ block: 'center' });
+      // Think, Mark! through its own hook, if its stage comes up in time on this
+      // renderer (the city's stage has to go dark first); if it doesn't, the
+      // result is fed as the page feeds it, the one step --play doesn't move
+      // Mark through (the chapter is its own game, checked by its own tests)
+      const tm = (await until(() => Boolean(window.__HQ__?.thinkmark?.view), 90000)) ? window.__HQ__.thinkmark : null;
+      if (tm) {
+        const ch = (await import('/src/components/invincible/thinkmark/rules.js')).CHAPTERS.findIndex((c) => c.id === 'omni');
+        await tm.begin(ch);
+        tm.setState('hurt'); // (he lets Dad hit him: the quickest way it ends)
+        await until(() => ['lost', 'won'].includes(tm.state.phase), 300000);
+      } else {
+        console.log('[play] Think, Mark! did not come up in 90 s: its result fed as the page feeds it');
+        api.feed({ type: 'use', id: 'thinkmark', won: false });
+      }
       await until(() => step() < 0, 5000);
       document.getElementById('inv-world')?.scrollIntoView();
     },

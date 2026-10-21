@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CHAPTERS, chapter, neighbours } from './chapters';
+import { CHAPTERS, chapter, neighbours, stopOf } from './chapters';
+import { STOPS } from './road';
 import { SHEET } from './mapData';
 
 describe('the places on the map', () => {
@@ -17,12 +18,21 @@ describe('the places on the map', () => {
     expect(chapter('narnia')).toBeNull();
     expect(chapter(undefined)).toBeNull();
   });
-  it('goes along the road from the Shire to Mordor', () => {
+  it('goes along the road from the Shire to Mordor, and home by Minas Tirith', () => {
     expect(neighbours('shire')).toEqual({ prev: null, next: chapter('bree') });
     expect(neighbours('bree')).toEqual({ prev: chapter('shire'), next: chapter('weathertop') });
     expect(neighbours('weathertop')).toEqual({ prev: chapter('bree'), next: chapter('rivendell') });
     expect(neighbours('moria').prev.id).toBe('rivendell');
-    expect(neighbours('mordor').next).toBeNull();
+    expect(neighbours('mordor').next.id).toBe('minas-tirith');
+    expect(neighbours('minas-tirith')).toEqual({ prev: chapter('mordor'), next: null });
+    expect(chapter('minas-tirith').seals).toContain('kingreturns');
     expect(neighbours(undefined)).toEqual({ prev: null, next: null });
+  });
+  it('stands each place where its stop is, so a fly-down lands on its landmark', () => {
+    for (const c of CHAPTERS) {
+      const s = STOPS[stopOf(c.id)];
+      expect(s.id, c.id).toBe(c.stop);
+      expect(c.at, c.id).toEqual([s.x, s.y]);
+    }
   });
 });

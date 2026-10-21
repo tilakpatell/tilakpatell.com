@@ -1,9 +1,13 @@
 // Anatomy Park ("Anatomy Park"): inside Ruben, a red fleshy cavern with ribs
 // arching overhead and red lamps glowing in it; the park's walkway of white
-// rails, a kiosk, the Spleen Mountain sign; the five diseases in their pens
-// along the north (Meshy, every one), Dr. Xenon Bloom at the entrance, Poncho
-// and Annie on the walkway, and the gate of Pirates of the Pancreas, the
-// last ride, at the east end.
+// rails, a kiosk, the Spleen Mountain sign; the five diseases' pens along the
+// north (Meshy, every one), four of them got out and hunting the park (the
+// row's people) and the plague still in its own; Dr. Xenon Bloom at the
+// entrance, Poncho and Annie on the walkway, and the gate of Pirates of the
+// Pancreas, the last ride, at the east end. The game is the row's: the park
+// map's four pieces found while the diseases hunt, then out through the
+// portal on the clock; the last piece found sets every one of them after
+// Morty (as the simulation's last slip does).
 
 import { BALL, CYL, fitText } from '../interiors/shell';
 import { specks, stage } from './stage';
@@ -51,13 +55,15 @@ export async function buildAnatomy(kit) {
   rail(ox - 17, oz + 4.6, ox - 4, oz + 4.6);
   R.frame(ox, oz, 0, { list: 'fixed' }).box(0xd8c8b8, -2, 0, 0, 30, 0.03, 8);
 
-  // the pens: low glass walls on pink stone, each disease inside its own
+  // the pens: low glass walls on pink stone, each disease inside its own,
+  // but the ones that got out (the row's hunters, by kind)
+  const loose = new Map(S.d.people.filter((p) => p.ai?.hunt).map((p) => [p.who, p.id]));
   for (const [kind, dx, h] of PENS) {
     const [x, z] = P(dx, -10);
     const f = R.frame(x, z, 0);
     f.box(0xd88a90, 0, 0, 0, 5.6, 0.5, 3.6);
     f.glow(CYL, 0xbfe8ff, 0.7, 0, 1.2, 1.8, 0, 5.4, 1.4, 0.04);
-    S.figure(kind, { x, z: z - 0.2, face: -Math.PI / 2, h, y: 0.5 });
+    if (!loose.has(kind)) S.figure(kind, { x, z: z - 0.2, face: -Math.PI / 2, h, y: 0.5 });
   }
 
   // the kiosk and the Spleen Mountain sign
@@ -85,6 +91,13 @@ export async function buildAnatomy(kit) {
   // red lamps hung under the ribs
   for (let i = 0; i < 5; i++) R.frame(...P(-14 + i * 7, -2), 0, { list: 'fixed' }).glow(BALL, 0xff6a6a, 1.4, 0, H - 1.2, 0, 0, 0.5);
 
-  S.people();
-  return S.done(LIGHT);
+  // (the loose ones as tall as they stood in their pens)
+  S.people({ who: Object.fromEntries(PENS.filter(([kind]) => loose.has(kind)).map(([kind, , h]) => [loose.get(kind), { h }])) });
+  const area = S.done(LIGHT);
+  area.actions = {
+    ...area.actions,
+    // the last piece of the map found: every one of them after him
+    collected: () => S.hunt(true),
+  };
+  return area;
 }

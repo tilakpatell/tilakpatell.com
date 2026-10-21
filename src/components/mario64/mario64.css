@@ -91,6 +91,11 @@
   justify-items: end;
   padding-right: 52px;
 }
+/* the others online: the kit's chip, in the counters' own type, a tap for "See other Marios" */
+.m64-players {
+  pointer-events: auto;
+  font-family: inherit;
+}
 .m64-count {
   display: flex;
   align-items: center;

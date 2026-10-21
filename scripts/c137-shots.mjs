@@ -29,7 +29,9 @@ const N = Math.PI / 2; // facing north (rules.js: a heading turns +x round to (c
 // `cam` swings it round as a drag would: [turn (radians, from behind him),
 // pitch (the game's is 0.17; up to 0.95)]. `game`: Total Rickall started there
 // with that seed, through the hook (__C137__.rickall), the camera behind his
-// shoulder as the game has it.
+// shoulder as the game has it. `fly`: in the street, the cruiser boarded and
+// stood in the air at [x, y, z, yaw] (its nose (sin yaw, cos yaw)), the
+// camera behind it as the game has it (the chase's rings show in flight).
 // (Indoors the game's camera sits 3.6 m back and is pulled in at a wall, so
 // in the small rooms Morty stands where there's room behind him, and the
 // camera looks down over his head.)
@@ -74,6 +76,8 @@ export const VIEWS = {
   froopyland: { area: 'froopyland', at: [-400, 2518, N], cam: [0, 0.2] },
   nimbus: { area: 'nimbus', at: [-400, 2618, N], cam: [0, 0.2] },
   gromflomites: { area: 'gromflomites', at: [-400, 2713.4, N], cam: [0, 0.3] },
+  // the cruiser over the street, the chase's first rings ahead of it
+  chase: { area: 'street', at: [-19, -8.3, N], fly: [-30, 11, -2, Math.PI / 2] },
   heistcon: { area: 'heistcon', at: [-400, 2812.4, N], cam: [0, 0.3] },
   snakeplanet: { area: 'snakeplanet', at: [-400, 2918, N], cam: [0, 0.2] },
   nuptia: { area: 'nuptia', at: [-400, 3018, N], cam: [0, 0.2] },
@@ -91,6 +95,10 @@ export const VIEWS = {
   vat: { area: 'vat', at: [-400, 4207.4, N], cam: [0, 0.3] },
   dim35c: { area: 'dim35c', at: [-400, 4318, N], cam: [0, 0.2] },
   frundles: { area: 'frundles', at: [-400, 4418, N], cam: [0, 0.2] },
+  // on Blips and Chitz's walkway, before the cabinet that plays: Plumbus Smash
+  arcade: { area: 'arcade', at: [-295.5, 300, 0], cam: [0, 0.25] },
+  // the agency, west of the hole in its floor and facing it: the sewer run's way in
+  agencyhole: { area: 'agency', at: [-417.6, 4011.4, -1.02], cam: [0, 0.3] },
 };
 
 const names = process.argv.slice(2);
@@ -127,7 +135,7 @@ await page.evaluate(() => document.querySelector('.rm-world')?.scrollIntoView({ 
 if (!process.env.HUD) await page.addStyleTag({ content: '.rm-world-stage > :not(.rm-world-canvas), .guide-btn, .guide-nudge { visibility: hidden !important; }' });
 
 for (const name of names.length ? names : Object.keys(VIEWS)) {
-  const { area, at, cam, game } = VIEWS[name];
+  const { area, at, cam, game, fly } = VIEWS[name];
   await page.waitForFunction(() => window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
   if (!(await page.evaluate(([a, x, z, f]) => window.__C137__.goto(a, x, z, f), [area, ...at]))) throw new Error(`${name}: Morty wouldn't go`);
   await page.waitForFunction(() => window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
@@ -135,6 +143,12 @@ for (const name of names.length ? names : Object.keys(VIEWS)) {
     if (!(await page.evaluate((seed) => window.__C137__.rickall(seed), game))) throw new Error(`${name}: Total Rickall wouldn't start`);
     await page.waitForFunction(() => window.__C137__.ready(), null, { timeout: 300000, polling: 250 });
   }
+  if (fly)
+    await page.evaluate(([x, y, z, yaw]) => {
+      const c = window.__C137__;
+      c.board();
+      c.sim.c = { ...c.sim.c, x, y, z, yaw, speed: 0, vy: 0 };
+    }, fly);
   if (cam)
     await page.evaluate(([turn, pitch]) => {
       const s = window.__C137__.sim;

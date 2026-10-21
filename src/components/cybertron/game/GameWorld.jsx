@@ -10,6 +10,8 @@ import { AREAS } from './areas';
 import { createSim } from './sim';
 import { JUMP, setJump } from './rules';
 import { createSounds } from './sounds';
+import { stepOf } from './ghosts';
+import { useTravellers } from '../../middleearth/shared/travellers';
 import { useVoiced } from '../../../lib/useVoiced';
 import { Exit, Menu, Prompt, Stick, Toast, TouchButton } from '../../../runtime/hud';
 import { wayOut } from '../../worlds/worlds';
@@ -63,10 +65,18 @@ const SIDES = {
 };
 const sideOf = (areaId) => (AREAS[areaId]?.side === 'decepticon' ? 'decepticon' : 'autobot');
 
+// others online (middleearth/towns/useTravellers), as pale heroes of the
+// area you're both in (./ghosts.js): each area's its own (only those in it
+// are listed), Jasper's desert the furthest out at 600 m from its middle; a
+// section of a page you scroll, so the page's pointers stay
+const ROOM = { bound: Math.max(...Object.values(AREAS).map((a) => Math.max(a.bounds.maxX, a.bounds.maxZ))) + 20, motion: true, pointers: true };
+const LORE = { off: 'Go online, and see everyone else in the area you’re in as a pale Optimus or Megatron, with their name over him', on: 'Everyone else online in the area you’re in, as pale heroes: nothing passes between you but where each of you is' };
+
 function World({ gl, setGl, side }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const { pathname } = useLocation();
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.2 });
+  const trav = useTravellers('cybertron', gl === 'on', ROOM);
   const canvas = useRef(null);
   const api = useRef(null);
   const { unlock } = useAchievements();
@@ -410,7 +420,11 @@ function World({ gl, setGl, side }) {
       const m = s.missions.active ? s.area.missions.concat(...Object.values(AREAS).map((x) => x.missions)).find((x) => x.id === s.missions.active) : null;
       const st = m?.steps[s.missions.step];
       const drive = st?.type === 'drive' && (st.area ?? m.area ?? s.area.id) === s.area.id ? { gates: st.gates, next: s.missions.count } : null;
-      a.render(s, { ...c.view, firing, throttle: input.throttle, hud: { target: h.target, drive } }, dt, now);
+      // others online: where you are to them (only those in the same area
+      // see you), and where they are
+      const tv = trav.ref.current;
+      if (tv) tv.pose(...stepOf(p, s.area.id));
+      a.render(s, { ...c.view, firing, throttle: input.throttle, hud: { target: h.target, drive }, travellers: tv?.list() ?? [] }, dt, now);
       // the HUD, redrawn only when something on it changes
       const key = JSON.stringify([h, step, Math.round(h.hp * 50), Math.round(h.boost * 20)]);
       if (key !== hudKey.current) {
@@ -421,7 +435,7 @@ function World({ gl, setGl, side }) {
     };
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [gl, inView, playing, cross, save, unlock]);
+  }, [gl, inView, playing, cross, save, unlock, trav.ref]);
 
   // the compass: which way the target is from where the camera looks
   const bearing = hud.target ? Math.atan2(hud.target.x - hud.px, hud.target.z - hud.pz) : null;
@@ -438,7 +452,7 @@ function World({ gl, setGl, side }) {
   const hold = (flag) => ({ onPress: () => (ctl.current[flag] = true), onRelease: () => (ctl.current[flag] = false) });
 
   return (
-    <section ref={box} className="cyw" data-playing={playing ? '' : undefined} aria-label={`Cybertron: walk and drive as ${SIDES[playingSide].name}`}>
+    <section ref={box} className="cyw" data-travellers data-playing={playing ? '' : undefined} aria-label={`Cybertron: walk and drive as ${SIDES[playingSide].name}`}>
       <canvas ref={canvas} className="cyw-canvas" tabIndex={-1} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onContextMenu={(e) => e.preventDefault()} />
       {gl !== 'on' && (
         <div className="cyw-loading" role="status">
@@ -512,7 +526,7 @@ function World({ gl, setGl, side }) {
           )}
           {/* top right: the one Menu, a way out while the world has the whole screen, the energon (on a phone, stacked the other way up, so the Menu opens under them all) */}
           <div className="cyw-tools">
-            <Menu className="cyw-menu" todo={{ label: 'Missions', done: hud.done, total: hud.total, onOpen: () => setList(true) }} way={wayOut(pathname)} />
+            <Menu className="cyw-menu" todo={{ label: 'Missions', done: hud.done, total: hud.total, onOpen: () => setList(true) }} players={{ available: trav.available, on: trav.on, count: trav.count, allies: trav.allies, onJoin: trav.join }} lore={LORE} way={wayOut(pathname)} />
             {playing && touch && <Exit className="cyw-leave" onLeave={stopPlaying} touch />}
             <div className="cyw-stats">
               <span className="cyw-energon" title="Energon">◆ {hud.energon}</span>

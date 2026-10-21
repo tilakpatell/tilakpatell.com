@@ -13,7 +13,7 @@
 //
 //   flatten(raw, flats = []) → (x, z) → metres
 
-import { smoothstep } from '../../components/galaxy/surface/noise.js';
+import { smoothstep } from '../noise.js';
 
 export function flatten(raw, flats = []) {
   const pads = flats.map((f) => {

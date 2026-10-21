@@ -1,0 +1,64 @@
+/* ─── The companies and the projects at night ─────────────────────────────
+   Each keeps a ground of its own in dark mode, as the fan colours do
+   (fan-dark-themes.css), rather than the house’s shared near-black, and its
+   own accent on the buttons where the house’s dark block would put the
+   --saber. The projects’ nights show on their own pages. Every pair is held
+   to its floor by styles/colours.test.js; the values stay plain hex, which
+   travel/Globe.jsx reads raw. */
+
+/* AWS: the console’s squid ink, Smile Orange on the buttons */
+html[data-mode='dark'][data-theme='aws'] {
+  --bg: #0f141a; --bg-deep: #0b0f14; --surface: #161d26; --surface-2: #1f2833; --border: #2a3441; --border-strong: #5d6b7a;
+  --text: #f4f6f8; --text-body: #d5dbe1; --muted: #9ba6b2;
+  --accent: #ff9900; --accent-text: #ffac33; --btn-bg: #ff9900; --btn-ink: #0f1111; --saber: #ff9900; --route-plan: #2a3441;
+}
+/* RTX: black, and its red */
+html[data-mode='dark'][data-theme='rtx'] {
+  --bg: #0b0b0b; --bg-deep: #070707; --surface: #141414; --surface-2: #1d1d1d; --border: #2a2a2a; --border-strong: #6a6a6a;
+  --text: #f5f5f5; --text-body: #d6d6d6; --muted: #9e9e9e;
+  --accent: #ff2b3d; --accent-text: #ff5866; --btn-bg: #ff2b3d; --btn-ink: #0b0b0b; --saber: #ff2b3d; --route-plan: #2a2a2a;
+}
+/* Bose: its own black (the rest of its night is the house’s, index.css) */
+html[data-mode='dark'][data-theme='bose'] { --bg: #0a0a0c; --bg-deep: #060608; }
+/* Pendar, Empowerreg, SRC: a ground under the navy surfaces they already had */
+html[data-mode='dark'][data-theme='pendar'] { --bg: #020810; --bg-deep: #01050c; }
+html[data-mode='dark'][data-theme='empowerreg'] { --bg: #030914; --bg-deep: #02060e; }
+html[data-mode='dark'][data-theme='src'] { --bg: #040912; --bg-deep: #03060c; }
+
+/* The Game Boy keeps its magenta at night (the scroll bar stays green) */
+html[data-mode='dark'][data-theme='gameboy'] { --accent: #e0679b; --accent-text: #ef86b3; --btn-bg: #e0679b; --btn-ink: #1a0610; }
+/* DevSpace: the editor’s dark, its blue */
+html[data-mode='dark'][data-theme='devspace'] {
+  --bg: #070b12; --bg-deep: #05080d; --surface: #0c121c; --surface-2: #131b28; --border: #1c2636; --border-strong: #536179;
+  --accent: #3fb6ff; --accent-text: #5cc2ff; --btn-bg: #3fb6ff; --btn-ink: #04101a; --saber: #3fb6ff; --route-plan: #1c2636;
+}
+/* Shell: a terminal’s green on black */
+html[data-mode='dark'][data-theme='shell'] {
+  --bg: #0a0f0a; --bg-deep: #070b07; --surface: #101810; --surface-2: #172217; --border: #1f2d1f; --border-strong: #567056;
+  --text: #e8f5e4; --text-body: #c5d8c0; --muted: #8fa589;
+  --accent: #5fd23a; --accent-text: #6fe048; --btn-bg: #5fd23a; --btn-ink: #061006; --saber: #5fd23a; --route-plan: #1f2d1f;
+}
+/* FUSE: amber on a dark disk */
+html[data-mode='dark'][data-theme='fuse'] {
+  --bg: #110c06; --bg-deep: #0c0804; --surface: #19120a; --surface-2: #23190e; --border: #33261a; --border-strong: #76624a;
+  --text: #f8f1e7; --text-body: #dccfbd; --muted: #a8977f;
+  --accent: #f59e0b; --accent-text: #fbb13c; --btn-bg: #f59e0b; --btn-ink: #1a1004; --saber: #f59e0b; --route-plan: #33261a;
+}
+/* Finance: a trading screen’s green dark */
+html[data-mode='dark'][data-theme='finance'] {
+  --bg: #06110b; --bg-deep: #040c08; --surface: #0b1a11; --surface-2: #112419; --border: #1a3324; --border-strong: #4d7360;
+  --text: #ecf7f0; --text-body: #c6dccd; --muted: #8ea898;
+  --accent: #34d399; --accent-text: #4ade9f; --btn-bg: #34d399; --btn-ink: #04140c; --saber: #34d399; --route-plan: #1a3324;
+}
+/* PyTorch: an ember-warm dark, its flame orange */
+html[data-mode='dark'][data-theme='pytorch'] {
+  --bg: #120907; --bg-deep: #0d0605; --surface: #1b0f0c; --surface-2: #261612; --border: #36211b; --border-strong: #7a5d55;
+  --text: #fbefeb; --text-body: #e0cbc4; --muted: #ab948d;
+  --accent: #ff6f4c; --accent-text: #ff8a6b; --btn-bg: #ff6f4c; --btn-ink: #1a0702; --saber: #ff6f4c; --route-plan: #36211b;
+}
+/* NVIDIA: true black, and its green */
+html[data-mode='dark'][data-theme='nvidia'] {
+  --bg: #050505; --bg-deep: #020202; --surface: #0e0e0e; --surface-2: #171717; --border: #262626; --border-strong: #666666;
+  --text: #f5f5f5; --text-body: #d4d4d4; --muted: #9e9e9e;
+  --accent: #76b900; --accent-text: #8fd400; --btn-bg: #76b900; --btn-ink: #000000; --saber: #76b900; --route-plan: #262626;
+}

@@ -13,6 +13,8 @@
 // clock, so where they are depends on when you throw.
 
 export const SHIELD = { r: 0.38, speed: 17, bounces: 5, reach: 130, catch: 1.0 };
+// the step both views step a room at, whatever the frame rate
+export const STEP = 1 / 120;
 const BOT_R = 0.45;
 
 const W = (a, b, kind = 'steel', id) => ({ a, b, kind, id });

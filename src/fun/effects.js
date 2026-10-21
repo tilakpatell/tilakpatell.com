@@ -1,6 +1,6 @@
 // Page-wide effects for the easter eggs. Loaded only when one is triggered.
 
-const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+import { prefersReducedMotion as reduced } from '../lib/hooks';
 
 const onScreen = (el) => {
   const r = el.getBoundingClientRect();

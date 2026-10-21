@@ -8,7 +8,7 @@
 // round goes on, her children come creeping along the top of the wall.
 
 import * as THREE from 'three';
-import { hot } from '../../../../lib/stage3d';
+import { hot } from '../../../../lib/three/stage3dNodes';
 import { B, ball, cyl, lathe } from '../../shire/props';
 import { V, motes, webTexture } from './common';
 import { sharpen } from '../../../../lib/three/textures';

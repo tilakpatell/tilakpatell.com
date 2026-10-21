@@ -16,7 +16,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { clamp01, fbm, makeCanvas, makeNoise, mix, paintPixels, smooth } from '../../lib/paint';
-import { FIRE } from './kit';
+import { FIRE } from './nodes/kit';
 import { paintEdge } from './mapPaint';
 import { REGIONS, SHEET } from './mapData';
 

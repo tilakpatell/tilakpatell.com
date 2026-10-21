@@ -32,7 +32,7 @@ describe('the universes', () => {
     expect(WORLDS.map((w) => w.to)).toEqual([
       ...['/galaxy', '/deathstar', '/deathstar/inside'],
       '/fly', // planet flight (scripts/flight-island.mjs removes this row)
-      ...['/music', '/middle-earth', '/cybertron', '/avengers', '/albuquerque', '/scranton', '/c-137', '/dot-matrix', '/dot-matrix/64', '/dot-matrix/minecraft', '/earth', '/caribbean', '/invincible'],
+      ...['/music', '/middle-earth', '/middle-earth/road', '/cybertron', '/avengers', '/albuquerque', '/scranton', '/c-137', '/dot-matrix', '/dot-matrix/64', '/dot-matrix/minecraft', '/earth', '/caribbean', '/invincible'],
     ]);
     expect(WORLDS[0]).toMatchObject({ to: '/galaxy', label: 'A galaxy far, far away', from: 'Star Wars' });
     expect(WORLDS[1]).toMatchObject({ to: '/deathstar', label: 'Death Star', from: 'Star Wars' });

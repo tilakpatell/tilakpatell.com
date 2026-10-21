@@ -6,7 +6,7 @@ export const THEMES = {
   rtx: { id: 'rtx', label: 'RTX', company: 'RTX Corporation', swatch: '#CE1126' },
   bose: { id: 'bose', label: 'Bose', company: 'Bose Corporation', swatch: '#131317' },
   pendar: { id: 'pendar', label: 'Pendar', company: 'Pendar Technologies', swatch: '#4DA3DC' },
-  empowerreg: { id: 'empowerreg', label: 'Empowerreg', company: 'Empowerreg AI', swatch: '#7BC043' },
+  empowerreg: { id: 'empowerreg', label: 'Empowerreg', company: 'Empowerreg AI', swatch: '#DBE64C' },
   src: { id: 'src', label: 'SRC', company: 'SRC, Inc.', swatch: '#002C77' },
   // project themes
   gameboy: { id: 'gameboy', label: 'Game Boy', company: 'Game Boy', swatch: '#9B2257' },
@@ -43,7 +43,7 @@ export const THEMES = {
   summer: { id: 'summer', label: 'Summer', company: 'Summer Smith', swatch: '#E2557F', fan: true },
   beth: { id: 'beth', label: 'Beth', company: 'Beth Smith', swatch: '#8E2B48', fan: true },
   // the visitor's own colour (see theme/custom.js); its swatch follows their pick
-  custom: { id: 'custom', label: 'Yours', company: 'Your color', swatch: 'var(--custom-accent, #7c3aed)' },
+  custom: { id: 'custom', label: 'Yours', company: 'Your colour', swatch: 'var(--custom-accent, #7c3aed)' },
 };
 
 // Fan themes and the achievement that unlocks each. The hint shows on the
@@ -94,6 +94,7 @@ export const ROUTE_THEMES = {
   '/caribbean': 'tortuga',
   '/music': 'raga',
   '/middle-earth': 'shire',
+  '/middle-earth/mordor': 'mordor',
   '/avengers': 'stark',
   '/scranton': 'dunder',
   '/cybertron': 'optimus',
@@ -102,3 +103,17 @@ export const ROUTE_THEMES = {
   '/dot-matrix': 'gameboy',
   '/earth': 'travel',
 };
+
+// Worlds whose inner pages wear the world’s colours: Middle-earth’s chapters,
+// and Avengers HQ’s buildings (a game opens over the compound at its own
+// address). The Citadel, the 64 and a project’s sub-pages keep the house’s.
+export const ROUTE_PREFIX_THEMES = { '/middle-earth': 'shire', '/avengers': 'stark' };
+
+// A page’s colours by its address: its own first, else its world’s. A prefix
+// ends at a ‘/’, so /middle-earth/bree is the Shire’s and /middle-earthly isn’t.
+export function routeTheme(pathname) {
+  if (!pathname) return undefined;
+  if (ROUTE_THEMES[pathname]) return ROUTE_THEMES[pathname];
+  const world = Object.keys(ROUTE_PREFIX_THEMES).find((p) => pathname.startsWith(`${p}/`));
+  return world && ROUTE_PREFIX_THEMES[world];
+}

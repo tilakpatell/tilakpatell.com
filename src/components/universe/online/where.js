@@ -25,6 +25,10 @@ export function whereOf(pathname) {
     return place ? `${MIDDLE_EARTH}/${place}` : MIDDLE_EARTH;
   }
   if (pathname.startsWith('/experience')) return '/experience';
+  // a building's game opens over the compound, so the others still see you at
+  // Avengers HQ (gone indoors), and the roster doesn't say you left each time a
+  // game opens; matched here because universe/ may not import avengers/world/links.js
+  if (pathname.startsWith('/avengers/')) return '/avengers';
   return pathname;
 }
 
@@ -42,7 +46,7 @@ export function cleanWhere(raw) {
   return raw;
 }
 
-const NAMES = { [AWAY]: 'somewhere else', [UNIVERSE]: 'the universe', [GALAXY]: 'a galaxy far, far away', '/deathstar': 'the Death Star', '/deathstar/inside': 'the Death Star’s corridors', '/projects': 'Projects', '/travel': 'Travel', '/resume': 'the résumé', '/c-137/citadel': 'the Citadel' };
+const NAMES = { [AWAY]: 'somewhere else', [UNIVERSE]: 'the universe', [GALAXY]: 'a galaxy far, far away', '/deathstar': 'the Death Star', '/deathstar/inside': 'the Death Star’s corridors', '/projects': 'Projects', '/travel': 'Travel', '/resume': 'the résumé', '/c-137/citadel': 'the Citadel', '/middle-earth/road': 'the Road' };
 
 export function placeName(where) {
   if (!where) return 'somewhere';

@@ -24,8 +24,8 @@
 //       at once, at a spot’s name or a room’s id when `at` names one; without, the start screen
 //     world: the runtime’s (step, draw, resize, wants, lowerQuality, attached, dispose), and the
 //       page’s: start({ station, side, hero, mode, fresh }), pause(on), set({ view | sound |
-//       subtitles }), quit(), map(open), choose(i), look(dx, dy), stick(x, y), press(name, down);
-//       `game` for the checks
+//       subtitles }), quit(), map(open), choose(i), look(dx, dy), stick(x, y), press(name, down),
+//       online(() => link | null) (the others online: rules/online.js); `game` for the checks
 //   In development, window.__deathstar: { g, teleport(where, x, z), do(name, arg), info() }:
 //     do calls one of the page’s calls by name, or presses an action (use, helmet…) for a step;
 //     info() → { calls, triangles, room, mode } of the last frame drawn
@@ -37,6 +37,7 @@ import { WHO } from './rules/talk';
 import { routeTo, targetOf } from './rules/route';
 import { heardOf } from './scene/hear';
 import { LOOK } from './look';
+import { createStepper, floorOf } from './rules/online';
 
 export const KEYS = {
   forward: ['KeyW', 'ArrowUp'],
@@ -119,6 +120,11 @@ export default {
     let bound = null;
     let aiming = false;
     let drawn = { calls: 0, triangles: 0 };
+    // the others online aboard (the page's useTravellers, handed in by
+    // online()): where you are goes to them each step you play, and those in
+    // your room are drawn (rules/online.js)
+    let others = null;
+    const stepOf = createStepper();
     let gone = false;
     const was = { autoReset: renderer.info?.autoReset };
 
@@ -491,6 +497,7 @@ export default {
             news(e);
           }
           if (grew && g.seen.size !== save[g.station].seen.length) keep();
+          others?.()?.pose(...stepOf(g.you, g.station, dt, floorOf(view.layout.rooms.get(g.you.room))));
           listen();
         } else acc = 0;
         bind(mode === 'play' ? KEYS : MENU_KEYS);
@@ -504,7 +511,8 @@ export default {
           was.autoReset = r.info?.autoReset;
           makePost();
         }
-        view.sync(g, mode === 'play' ? acc / STEP : 1, { yaw: look.yaw, pitch: look.pitch, view: save.settings.view, aim: aiming });
+        const travellers = mode === 'play' ? (others?.()?.list() ?? []) : [];
+        view.sync(g, mode === 'play' ? acc / STEP : 1, { yaw: look.yaw, pitch: look.pitch, view: save.settings.view, aim: aiming, travellers });
         // (after the camera has taken this frame's place)
         mark();
         // counted over the whole frame (bloom draws several times), for the budget checks
@@ -535,6 +543,11 @@ export default {
       // ── from the page ──
       start(choice) {
         begin(choice);
+      },
+      // the link to the others online, as a getter (it comes and goes with the
+      // page's switch; null while offline)
+      online(get) {
+        others = typeof get === 'function' ? get : null;
       },
       pause(on) {
         if (on && mode === 'play') mode = 'pause';

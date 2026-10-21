@@ -1,5 +1,6 @@
 import { Link as RouterLink } from 'react-router-dom';
-import { RiArrowLeftLine, RiCheckLine } from 'react-icons/ri';
+import { RiArrowLeftLine, RiCheckLine, RiHome4Line } from 'react-icons/ri';
+import { homeLink } from '../adventure/ways';
 import { progress } from './rules';
 import { WAY_HOME, hereHint, inLine } from './planetMode';
 
@@ -101,6 +102,9 @@ export default function Cards({ done, openPlace, three, gl, toast, retry, planet
             <div className="rm-card-acts">
               <RouterLink to={`/universe/${planet.id}`} replace className="rm-card-btn">
                 <RiArrowLeftLine aria-hidden="true" /> {WAY_HOME}
+              </RouterLink>
+              <RouterLink to={homeLink(planet).to} state={homeLink(planet).state} className="rm-card-btn">
+                <RiHome4Line aria-hidden="true" /> {homeLink(planet).label}
               </RouterLink>
             </div>
           </li>

@@ -30,7 +30,6 @@
 .universe-hint kbd,
 .universe-keys kbd,
 .universe-keymap kbd,
-.universe-arms-keys kbd,
 .universe-tour kbd,
 .universe-portalgun kbd,
 .universe-wayin-key {
@@ -55,12 +54,33 @@
   border-radius: 14px;
   background: var(--hud-sheet-bg);
   color: var(--text);
-  box-shadow: 0 18px 40px rgb(0 0 0 / 0.45);
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--shadow-ink) 45%, transparent);
 }
 
-/* A sentence over the map: the first-flight hint, a multiplayer note. */
-.universe-hint,
-.universe-online-note {
+/* The flight cluster (the HUD kit's: runtime/hud/cluster.css), in the
+   galaxy's place and glass, so the two read as one: bottom centre of the
+   space between the corner's buttons (the settings', the shipyard's and the
+   multiplayer pill, 176px) and the panel. (The galaxy's page is a universe
+   page too: flight.css places its own.) */
+.universe-page:not(.galaxy-page) {
+  --hud-cluster-left: 176px;
+  --hud-cluster-right: calc(var(--panel-w, 0px) + 24px);
+}
+/* (what sits bottom centre over it, a desktop's: the scene's prompt, the way
+   into a world and the jump, each where it was or over the cluster's
+   measured height, whichever is higher; a touch screen keeps its own places) */
+@media (pointer: fine) and (min-width: 768px) {
+  .universe-page:not(.galaxy-page) .universe-prompt { bottom: max(72px, calc(var(--hud-pad-b, 12px) + 20px + var(--hud-cluster-h, 0px))); }
+  .universe-page:not(.galaxy-page) .universe-wayin { bottom: max(116px, calc(var(--hud-pad-b, 12px) + 64px + var(--hud-cluster-h, 0px))); }
+  .universe-page:not(.galaxy-page) .universe-jump { bottom: max(150px, calc(var(--hud-pad-b, 12px) + 98px + var(--hud-cluster-h, 0px))); }
+  /* (the first-flight line and the keys on foot share its band: over it too) */
+  .universe-page:not(.galaxy-page) .universe-hint { bottom: max(24px, calc(var(--hud-pad-b, 12px) + 20px + var(--hud-cluster-h, 0px))); }
+}
+
+/* A sentence over the map: the first-flight hint. (A multiplayer note wears
+   the online corner’s glass instead, the colour’s, as the pill it rises
+   over: online/online.css.) */
+.universe-hint {
   border-radius: 14px;
   background: rgb(3 4 10 / 0.85);
 }
@@ -77,7 +97,7 @@
    shipyard's hull. Columns come from each one's own rule. */
 .universe-seg,
 .universe-hangar-slots,
-.universe-yard-hull { display: grid; border: 1px solid rgb(255 255 255 / 0.2); border-radius: 8px; overflow: hidden; }
+.universe-yard-hull { display: grid; border: 1px solid color-mix(in srgb, var(--text) 20%, transparent); border-radius: 8px; overflow: hidden; }
 :is(.universe-seg, .universe-hangar-slots, .universe-yard-hull) button { min-height: 34px; color: var(--muted); font-size: 0.78rem; transition: background-color 0.15s, color 0.15s; }
 :is(.universe-seg, .universe-hangar-slots, .universe-yard-hull) button:hover { color: var(--text); }
 :is(.universe-seg, .universe-hangar-slots, .universe-yard-hull) button[aria-pressed='true'] { background: color-mix(in srgb, var(--engine, #e8eefc) 22%, transparent); color: var(--text); }

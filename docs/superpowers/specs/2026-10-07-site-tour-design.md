@@ -1,6 +1,6 @@
 # The site tour
 
-A first visit gets a welcome (what the site is), the intro, and the front door's choice (the universe or the home page). Then it is left on its own with a 3D map, a nav full of switches and a "?" in the corner. The guide answers "what are this page's controls?", but nothing yet shows a newcomer round the site itself: where the pages are, what the Universe and Classic switch does, that ⌘K goes anywhere, that the colours are companies, that "?" has the rest. The tour does that, once, in under a minute, and is there to take again.
+A first visit gets a welcome (what the site is, and its one question: the intro, the universe or the classic site), then the intro if it was asked for; the front door's choice is the welcome's answer (`docs/decisions/2026-10-18-one-question-on-arrival.md`). Then it is left on its own with a 3D map, a nav full of switches and a "?" in the corner. The guide answers "what are this page's controls?", but nothing yet shows a newcomer round the site itself: where the pages are, what the Universe and Classic switch does, that ⌘K goes anywhere, that the colours are companies, that "?" has the rest. The tour does that, once, in under a minute, and is there to take again.
 
 ## What it is
 

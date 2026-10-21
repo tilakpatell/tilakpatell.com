@@ -45,6 +45,40 @@ describe('inkHull', () => {
     expect(mesh.geometry.attributes.inkNormal).toBeDefined();
     expect(mat.side).toBe(THREE.BackSide);
   });
+
+  it('pushes a skinned mesh’s line out, not in: the back side’s flipped normal turned back', () => {
+    const root = new THREE.Group();
+    root.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()));
+    const mat = inkHull(root, 0.02);
+    const shader = { vertexShader: THREE.ShaderLib.basic.vertexShader, fragmentShader: THREE.ShaderLib.basic.fragmentShader, uniforms: {} };
+    mat.onBeforeCompile(shader);
+    // (three negates transformedNormal under FLIP_SIDED, which a BackSide
+    // material defines: a skinned line pushed along it would sink into the
+    // figure, out of sight)
+    expect(THREE.ShaderChunk.defaultnormal_vertex).toMatch(/#ifdef FLIP_SIDED\s*transformedNormal = - transformedNormal;/);
+    const skinned = shader.vertexShader.slice(shader.vertexShader.indexOf('#ifdef USE_SKINNING', shader.vertexShader.indexOf('#include <project_vertex>')));
+    const branch = skinned.slice(0, skinned.indexOf('#else'));
+    expect(branch).toMatch(/transformedNormal/);
+    expect(branch).toMatch(/#ifdef FLIP_SIDED\s*inkN = -inkN;\s*#endif/);
+  });
+
+  it('draws nothing nearer the eye than `near`, when asked, so a camera inside a figure isn’t blacked out', () => {
+    const compiled = (opts) => {
+      const root = new THREE.Group();
+      root.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()));
+      const mat = inkHull(root, 0.02, opts);
+      const shader = { vertexShader: THREE.ShaderLib.basic.vertexShader, fragmentShader: THREE.ShaderLib.basic.fragmentShader, uniforms: {} };
+      mat.onBeforeCompile(shader);
+      return { mat, shader };
+    };
+    const near = compiled({ near: 0.6 });
+    expect(near.shader.vertexShader).toMatch(/vInkZ = -mvPosition\.z;/);
+    expect(near.shader.fragmentShader).toMatch(/if \(vInkZ < 0\.6\d*\) discard;/);
+    // (by default none: a scene in other units, the cruiser's showroom, keeps its whole line)
+    const plain = compiled();
+    expect(plain.shader.fragmentShader).not.toMatch(/vInkZ < [\d.]+\) discard/);
+    expect(near.mat.customProgramCacheKey()).not.toBe(plain.mat.customProgramCacheKey());
+  });
 });
 
 describe('rimToon', () => {
