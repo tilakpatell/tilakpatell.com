@@ -19,11 +19,19 @@ The lane that carries out `docs/superpowers/specs/2026-10-18-invincible-world-3-
 
 PLAYTIMES
 
+### Task 2: the splits, by the repair recipe (2026-10-18)
+
+- **`InvWorld.jsx` 1,337 → 720 lines.** What moved, as it was: the keys and the drag to `input.js` (`bindKeys`, `pointerHandlers`); a mission’s outs and the quests’, foes’ and his own events, with the sounds, to `events.js` (`applyOuts`, `onQuestEvent`, `onFoeEvent`, `onHeroEvent`, `sfx`, `sfxHit`, `sound`, `hits`); the HUD’s numbers and words to `hudFrame.js` (`writeHud`); the compass and map canvases to `hudCanvas.js`; what is kept between visits and where he starts to `keep.js`; the room’s encoding for the other players to `online.js`; the no-3D cards to `Cards.jsx`.
+- **`world/scene.js` 1,054 → 755.** The times of day, the camera’s seat, the suit, the spotlight, the landing pose and `rayBox` to `sceneLook.js` (`TIMES` still exported from the scene); the bank, the truck, the marker and the course to `missionProps.js`; the other players’ holograms to `holograms.js` (`createHolograms`, with `zoneOf` reading the scene’s zone). Not the spec’s `spaceScene.js` and `villainScene.js`: the space and villain drawing are interleaved with the frame and would not move without touching behaviour; what moved is what was self-contained.
+- **`thinkmark/rules.js` 1,065 → 619.** The numbers, the vectors, the city, the collisions, the rings and what an attack reaching Mark does to `core.js` (283 lines); Omni-Man’s and Thragg’s chapters to `bosses.js` (193). `rules.js` re-exports every name the page and the tests had from it, so no caller changed; `bosses.js` reads `core.js` only, so there is no cycle (the health measure’s `cycles` stays at 5).
+- **No pixel changed.** Shots `spawn street downtown streetnight high porch maulers seismic` before and after, compared with `scripts/inv-world-diff.mjs`: the six still shots differ in under 1 % of pixels (the traffic and the clouds move between any two runs: spawn 0.21 %, street 0.35 %, streetnight 0.60 %, high 0.62 %, porch 0.91 %, downtown 0.93 %); the two mission shots differ 29 % and 36 %, and two runs of the same tree differ 32 % and 39 % (the title card’s camera swing is at a different phase each run), so they say nothing about the split. Draw calls and triangles are identical before and after in every shot.
+- **The tests.** 250 in 18 files under `src/components/invincible`; `thinkmark/rules.test.js`’s 17 run unchanged through the barrel.
+
 ## Left, in order
 
 The plan’s tasks 2 to 14, as written there; done for each is its boxes ticked and its pull request merged.
 
-2. The splits by the repair recipe: `InvWorld.jsx` (1,3xx lines) into `input.js`, `events.js`, `online.js`; `scene.js` into `spaceScene.js`, `villainScene.js`; `thinkmark/rules.js` into `bosses.js`; shots before and after with no pixel changed; the four over-budget low-tier shots (`maulers seismic everace photo`) under 1.5 M triangles.
+2. The low tier’s triangle budget: `maulers` 1.64 M on low against the 1.5 M budget; `photo` 1.49 M, `seismic` 1.49 M, `street` 1.48 M and `everace` 1.32 M are under it. Measure what each thing in the `maulers` shot costs before pulling a lever.
 3. The brawl (`brawl.js`: grab, throw, carry-slam, dive, block and counter, ground pound).
 4. The city that breaks (`demolish.js`, `ruins.js`, the facade’s damage attribute, `tp-inv-world-ruins`).
 5. Who you fly as (`heroes.js`, `powers.js`: Eve, Omni-Man, Thragg).
@@ -48,6 +56,8 @@ Still open from part 2: Eve’s ghost on the line at her best time and Allen fly
 - Dev hook `window.__INVWORLD__ = { api, sim }`: `sim.h` the hero, `sim.yaw`/`sim.pitch` the camera, `sim.keys` what is held, `sim.punch` a punch, `sim.speedup` the dev clock, `sim.snap`, `sim.hold`; `api.setTime`, `api.zone`/`api.setZone`, `api.debug` (`npcs jet villains world bodies allen thragg dad`), `api.spawn(kind, n, at)`, `api.mission(id)`, `api.feed(event)` (framing only), `api.story()`. Think, Mark!: `window.__HQ__.thinkmark` (`state`, `view`, `begin(i)`, `setState(name)`).
 
 ## Deviations from the part-3 spec
+
+- **Task 2’s triangle budget is not met in Task 2.** The split is a repair and changes no pixel; the budget is a change that does. On low tier the trees are already at their least (an icosahedron of 20 triangles, 60 % of the yards’), so the overage in `maulers` (1.64 M against 1.5 M; `downtown` under it at 1.34 M; `everace` and `photo` under it too, at 1.32 M and 1.49 M) is the fight’s own figures: two Maulers at 31 k each, the truck and the bank. It needs a per-object measurement before a lever is pulled, and is the first item under Left.
 
 - **The engine.** The spec says the world stays on the HQ games’ engine (`avengers/hq/engine.js`). Pull request #1021 (engine floor FL2, merged just before this lane began) moved Invincible onto the runtime and deleted that file; the world is a runtime module (`world/module.js`) drawn on the HQ stage. Nothing in this lane moves it further.
 - **The hand-off’s file.** This file had been folded into `HANDOFF-worlds.md` on 2026-10-15. It is back as the lane’s own record, and `HANDOFF-worlds.md`’s Invincible paragraph points here.
