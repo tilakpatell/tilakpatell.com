@@ -18,7 +18,8 @@
 // The world adds: look(dx, dy), press(name, down) (forward…, jump, sneak,
 // attack, use), stick(x, y), scroll(dir), select(slot), click(where) on a
 // screen, closeScreen(), icon(item) → a picture's URL, start(), pause(on),
-// newWorld(seed), toTitle(), tune() (the ?debug panel's groups), and `game`,
+// newWorld(seed), toTitle(), tune() (the ?debug panel's groups), online(() =>
+// link | null) (the others online in your world: rules/online.js), and `game`,
 // `scene`, `debug` for the checks; in development, view(name) and settled()
 // for the parity check (VIEWS). The sim's events are heard (./sounds.js).
 
@@ -36,6 +37,7 @@ import { createStore } from '../../runtime/store.js';
 import { createRegistry } from '../worlds/registry.js';
 import { holdWorld, keepWorld, openWorld, randomSeed } from './worlds.js';
 import { createSounds } from './sounds.js';
+import { stepOf } from './rules/online.js';
 
 export { SAVE, SAVE_VERSION };
 
@@ -137,6 +139,7 @@ export default {
     const sounds = createSounds(); // what the sim's events sound like (./sounds.js)
     let mode = 'title';
     let held = false; // a development view, held still (VIEWS)
+    let others = null; // () => the link to the others online (the page's, through online())
     let screen = null;
     let gone = false;
     rt.workers.define(WORKER, () => new Worker(new URL('./worker.js', import.meta.url), { type: 'module' }));
@@ -447,6 +450,8 @@ export default {
             else if (e.type === 'no_sleep') tell('say', { text: 'You can only sleep at night' });
             else if (e.type === 'sleep') tell('say', { text: 'Respawn point set', sleep: true });
           }
+          // where you are, to the others online in this world (./rules/online.js)
+          others?.()?.pose(...stepOf(p, g.gen.height, g.seed));
           remesh();
           saveAt += dt;
           if (saveAt > SAVE_EVERY) {
@@ -465,7 +470,7 @@ export default {
       },
       draw(frame) {
         take(frame?.renderer ?? rt.gfx.renderer);
-        scene.sync(g, mode === 'play' || mode === 'dead' || SCREENS.has(mode) ? acc / TICK : 1);
+        scene.sync(g, mode === 'play' || mode === 'dead' || SCREENS.has(mode) ? acc / TICK : 1, mode === 'title' ? [] : (others?.()?.list() ?? []));
         scene.render(renderer);
       },
       wants: () => true,
@@ -480,6 +485,11 @@ export default {
       look(dx, dy) {
         look.dx += dx;
         look.dy += dy;
+      },
+      // the link to the others online, as a getter (it comes and goes with
+      // the page's switch; null while offline)
+      online(get) {
+        others = typeof get === 'function' ? get : null;
       },
       press(name, down) {
         if (down) {

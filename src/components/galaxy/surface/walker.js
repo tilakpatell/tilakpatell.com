@@ -35,19 +35,24 @@ export const turnToward = (from, to, max) => from + clamp(wrapAngle(to - from), 
 // wall, a hut), in a grid of cells for finding the ones near you. `top`:
 // how high it stands (you can jump onto something low; null for as high as
 // you like); `base`: where it starts (something over your head, on the
-// floor above: a throne over a rancor's pit).
+// floor above: a throne over a rancor's pit). `remove` takes one back (a
+// streamed tree's, as its tile goes: living.js).
 export function createSolids(cell = 16) {
   const cells = new Map();
   const all = [];
   const key = (i, j) => i * 73856093 + j * 19349663;
+  const span = new WeakMap(); // (each solid's cells, for taking it back)
   const put = (s, minX, minZ, maxX, maxZ) => {
     all.push(s);
+    const ks = [];
     for (let i = Math.floor(minX / cell); i <= Math.floor(maxX / cell); i++)
       for (let j = Math.floor(minZ / cell); j <= Math.floor(maxZ / cell); j++) {
         const k = key(i, j);
         if (!cells.has(k)) cells.set(k, []);
         cells.get(k).push(s);
+        ks.push(k);
       }
+    span.set(s, ks);
     return s;
   };
   const found = [];
@@ -65,6 +70,17 @@ export function createSolids(cell = 16) {
       const ex = Math.abs(hw * c) + Math.abs(hd * s);
       const ez = Math.abs(hw * s) + Math.abs(hd * c);
       return put({ type: 'box', x, z, hw, hd, c, s, top, base, tag }, x - ex, z - ez, x + ex, z + ez);
+    },
+    remove(s) {
+      const i = all.indexOf(s);
+      if (i < 0) return;
+      all.splice(i, 1);
+      for (const k of span.get(s) ?? []) {
+        const list = cells.get(k);
+        list.splice(list.indexOf(s), 1);
+        if (!list.length) cells.delete(k);
+      }
+      span.delete(s);
     },
     // those whose cells reach within r of (x, z)
     near(x, z, r) {

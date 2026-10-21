@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import HQFrame from '../hq/HQFrame';
+import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
+import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
-import { earnStone, hasEarned } from '../hq/stones';
+import { earnStone, hasEarned, recordTry } from '../hq/stones';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
-import { use3D } from '../../../lib/gpu';
+import { useGame3D } from '../hq/useGame3D';
 import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
 import { useSays } from '../hq/useSays';
-import { LAWN, LIFT, WAVES, callLightning, liftInput, newLawn, recallHammer, setMove, skipLift, startLawn, stepLawn, throwHammer } from './rules';
+import { LAWN, LIFT, WAVES, callLightning, liftInput, newLawn, recallHammer, setMove, skipLift, startAtBoss, startLawn, stepLawn, throwHammer } from './rules';
 import { LINES, READY, SAYS, SPOKEN } from './lines';
 import './lawn.css';
 import '../../../styles/lazy/avengers.css';
@@ -26,6 +27,7 @@ const buzz = (ms) => {
 };
 const BEST = 'tp-hq-lawn-best';
 const LIFTED = 'tp-hq-lawn-lifted';
+const BOSS = 'tp-hq-lawn-boss'; // true once Cull Obsidian’s wave has been reached
 const STEP = 1 / 120;
 const fmt = (n) => Math.round(n).toLocaleString('en-US');
 const media = (q) => (typeof window !== 'undefined' ? window.matchMedia?.(q) : null);
@@ -60,8 +62,8 @@ function urgent(g) {
 }
 
 export default function HoldTheLawn({ fallback }) {
-  const three = use3D();
-  const stage = useStage(gameModule, { enabled: three.on, id: 'lawn', forced: three.mode === 'on' });
+  const three = useGame3D('lawn');
+  const stage = useStage(gameModule, { enabled: three.on, id: 'lawn', forced: three.mode === 'on', own3D: true });
   const { unlock } = useAchievements();
   const game = useRef(newLawn({ seed: 1 }));
   const hud = useRef(null);
@@ -70,6 +72,7 @@ export default function HoldTheLawn({ fallback }) {
   const fxState = useRef({ popups: [], hurt: 0, lastUi: 0, taught: new Set() });
   const [best, setBest] = useState(() => Number(local.get(BEST, 0)) || 0);
   const [lifted, setLifted] = useState(() => !!local.get(LIFTED, false));
+  const [checkpoint, setCheckpoint] = useState(() => local.get(BOSS, false) === true);
   const [ui, setUi] = useState({ phase: 'ready', wave: 1, title: WAVES[0].title, hp: LAWN.hearts, score: 0, charge: 0, hammer: 'held', message: '', result: null, lift: 0, liftX: 0, holding: false });
   const [paused, setPaused] = useState(false);
   const playing = ui.phase === 'wave' || ui.phase === 'break';
@@ -82,17 +85,24 @@ export default function HoldTheLawn({ fallback }) {
 
   const focus = useCallback(() => stage.wrap.current?.querySelector('.hq-screen')?.focus({ preventScroll: true }), [stage.wrap]);
 
-  const start = useCallback(() => {
-    audioContext(); // in the click, so the thunder can be heard
-    game.current = newLawn({ seed: newSeed() });
-    const ev = startLawn(game.current);
-    acc.current = 0;
-    fxState.current.popups = [];
-    setPaused(false);
-    stage.view.current?.fx(ev, game.current);
-    sync({ message: '', result: null });
-    focus();
-  }, [focus, stage.view, sync]);
+  // a new game opened by `open`: startLawn (the lift) or startAtBoss (the checkpoint)
+  const begin = useCallback(
+    (open) => {
+      audioContext(); // in the click, so the thunder can be heard
+      recordTry('thor');
+      game.current = newLawn({ seed: newSeed() });
+      const ev = open(game.current);
+      acc.current = 0;
+      fxState.current.popups = [];
+      setPaused(false);
+      stage.view.current?.fx(ev, game.current);
+      sync({ message: '', result: null });
+      focus();
+    },
+    [focus, stage.view, sync],
+  );
+  const start = useCallback(() => begin(startLawn), [begin]);
+  const startBoss = useCallback(() => begin(startAtBoss), [begin]);
 
   const skip = useCallback(() => {
     skipLift(game.current);
@@ -112,6 +122,7 @@ export default function HoldTheLawn({ fallback }) {
         },
         start,
         skip,
+        checkpoint: startBoss,
         lift: (holding, push) => liftInput(game.current, holding, push),
         aim(x, z) {
           input.current.aim = { x, z };
@@ -153,7 +164,7 @@ export default function HoldTheLawn({ fallback }) {
           return { state: name };
         },
       }),
-    [start, skip, stage.view, sync],
+    [start, skip, startBoss, stage.view, sync],
   );
 
   // the events of a step: sound, haptics, popups and the HUD
@@ -181,6 +192,13 @@ export default function HoldTheLawn({ fallback }) {
           case 'wave':
             play('drum');
             important = { message: LINES[e.n - 1] ?? '' };
+            if (e.boss && !checkpoint) {
+              setCheckpoint(true);
+              local.set(BOSS, true);
+            }
+            break;
+          case 'checkpoint':
+            play('thunder');
             break;
           case 'throw':
             play('zip');
@@ -274,7 +292,7 @@ export default function HoldTheLawn({ fallback }) {
         sync();
       }
     },
-    [best, lifted, sync, unlock],
+    [best, checkpoint, lifted, sync, unlock],
   );
 
   // ── the loop ──
@@ -449,8 +467,17 @@ export default function HoldTheLawn({ fallback }) {
   const res = ui.result;
   const lifting = ui.phase === 'lift';
   const zone = Math.abs(ui.liftX) < LIFT.green ? 'green' : Math.abs(ui.liftX) < 0.7 ? 'amber' : 'red';
+  // the bar's Pause, and a hidden tab: as Esc does
+  const pause = (p) => {
+    input.current.keys.clear();
+    setPaused(p);
+  };
   return (
-    <HQFrame
+    <HQGame
+      game="lawn"
+      playing={playing || lifting}
+      paused={paused}
+      onPause={pause}
       stage={stage}
       three={three}
       fallback={fallback}
@@ -542,42 +569,41 @@ export default function HoldTheLawn({ fallback }) {
           </button>
         </div>
       )}
-      {(!(playing || lifting) || paused) && (
-        <div className="hq-overlay tl-overlay">
-          {paused ? (
-            <>
-              <p className="hq-overlay-title">Paused</p>
-              <p className="hq-overlay-text">
-                Wave {ui.wave} of {WAVES.length}. {ui.hp} hearts left.
-              </p>
-              <button type="button" className="btn btn-primary mt-4" onClick={() => (setPaused(false), focus())}>
-                Resume
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="hq-overlay-kicker">The front lawn · a storm</p>
-              <p className="hq-overlay-title">{res?.won ? 'Cull Obsidian is down.' : res ? 'The line broke.' : 'Hold the Lawn'}</p>
-              <p className="hq-overlay-text">
-                {res?.won
-                  ? `The lawn held, with ${res.bonus / 500} ${res.bonus === 500 ? 'heart' : 'hearts'} to spare.`
-                  : res
-                    ? `On wave ${res.wave} of ${WAVES.length}. Keep the hammer in hand when they’re shooting, and get it behind the shields.`
-                    : 'The Chitauri are coming across the lawn. Lift the hammer, then throw it through them and call it back through them, and bring down the lightning. Seven waves, then Cull Obsidian.'}
-              </p>
-              {res && (
-                <p className="hq-overlay-score">
-                  {fmt(res.score)}
-                  <small>{res.newBest ? 'a new best' : best ? `best ${fmt(best)}` : 'points'}</small>
+      {(!(playing || lifting) || paused) &&
+        (res && !paused ? (
+          <Results
+            className="tl-overlay"
+            won={res.won}
+            kicker="The front lawn · a storm"
+            title={res.won ? 'Cull Obsidian is down.' : 'The line broke.'}
+            line={res.won ? `The lawn held, with ${res.bonus / 500} ${res.bonus === 500 ? 'heart' : 'hearts'} to spare.` : `On wave ${res.wave} of ${WAVES.length}. Keep the hammer in hand when they’re shooting, and get it behind the shields.`}
+            score={res.score}
+            best={best}
+            newBest={res.newBest}
+            stone={res.won && res.stone ? 'reality' : null}
+            stoneText="The Reality Stone is yours, out of the Aether."
+            onAgain={start}
+            onward={!res.won && checkpoint ? { label: 'Restart at the boss', onClick: startBoss } : null}
+            againLabel={!res.won && checkpoint ? 'From wave 1' : undefined}
+          />
+        ) : (
+          <div className="hq-overlay tl-overlay">
+            {paused ? (
+              <>
+                <p className="hq-overlay-title">Paused</p>
+                <p className="hq-overlay-text">
+                  Wave {ui.wave} of {WAVES.length}. {ui.hp} hearts left.
                 </p>
-              )}
-              {res?.won && res.stone && (
-                <p className="hq-stone" style={{ '--glow': '#e0242a' }}>
-                  <span className="stone-dot" aria-hidden="true" />
-                  The Reality Stone is yours, out of the Aether.
-                </p>
-              )}
-              {!res && (
+                <button type="button" className="btn btn-primary mt-4" onClick={() => (setPaused(false), focus())}>
+                  Resume
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="hq-overlay-kicker">The front lawn · a storm</p>
+                <p className="hq-overlay-title">Hold the Lawn</p>
+                <p className="hq-overlay-text">The Chitauri are coming across the lawn. Lift the hammer, then throw it through them and call it back through them, and bring down the lightning. Seven waves, then Cull Obsidian.</p>
+                <StartNote />
                 <ul className="hq-keys">
                   <li>
                     <kbd>Mouse</kbd> aim, click to throw, click to recall
@@ -593,19 +619,19 @@ export default function HoldTheLawn({ fallback }) {
                     <kbd>Space</kbd> throw at the nearest
                   </li>
                 </ul>
-              )}
-              <button type="button" className="btn btn-primary mt-5" onClick={start}>
-                {res ? 'Again' : 'Lift the hammer'}
-              </button>
-              {!res && best > 0 && <p className="hq-overlay-best">Best {fmt(best)}</p>}
-            </>
-          )}
-        </div>
-      )}
+                <TouchHelp game="lawn" />
+                <button type="button" className="btn btn-primary mt-5" onClick={start}>
+                  Lift the hammer
+                </button>
+                {best > 0 && <p className="hq-overlay-best">Best {fmt(best)}</p>}
+              </>
+            )}
+          </div>
+        ))}
       <p className="sr-only" role="status">
         {playing ? `Wave ${ui.wave}. ${ui.hp} hearts. ${ui.message}` : lifting ? `Lifting: ${Math.round(ui.lift * 100)} percent. ${ui.message}` : ''}
       </p>
-    </HQFrame>
+    </HQGame>
   );
 }
 

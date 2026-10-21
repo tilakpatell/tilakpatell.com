@@ -14,22 +14,23 @@
 // screenOf(kind, id), resize, dispose, lost, info }.
 
 import * as THREE from 'three';
-import { createStage, disposeTree } from '../../../../lib/stage3d';
-import { createHouse } from '../../../../lib/three/house';
-import { dress, rolesFor } from '../../../../lib/three/core';
+import { createStage, disposeTree } from '../../nodes/stage';
+import { createHouse } from '../../../../lib/three/houseNodes';
+import { dress, rolesFor } from '../../../../lib/three/coreNodes';
 import { device } from '../../../../lib/device';
 import { fbm, makeNoise, smooth } from '../../../../lib/paint';
 import { pose } from '../../mapFigures';
-import { createParticles } from '../../kit';
-import { instances } from '../../shire/ground';
+import { createParticles } from '../../nodes/kit';
+import { instances } from '../../nodes/shire/ground';
 import { LOOKS, sit } from '../../shire/people';
-import { makeAtmosphere, makeSky } from '../../shire/sky';
-import { createFx } from '../../shire/fx';
-import { createGhosts } from '../ghosts';
-import { makeTerrain } from '../ground';
+import { makeAtmosphere, makeSky } from '../../nodes/shire/sky';
+import { createFx } from '../../nodes/shire/fx';
+import { createGhosts } from '../../nodes/towns/ghosts';
+import { makeTerrain } from '../../nodes/towns/ground';
 import { FIGURE, groundTown } from '../grounded';
 import { makeFolk } from '../bree/props';
 import { createLorienKit } from './props';
+import { waterMaterial } from '../../nodes/towns/lorien/sceneShaders';
 import { createGollum } from '../marshes/props';
 import { AMBUSH, BANK, BOARDS, BUTTS, CAST, CITY, COLLIDERS, GALADHRIM, LANDING, MALLORNS, MIRROR, PATHS, RANGE, RIVER_Y, STAIR, TABLE, TREE, WOOD, groundHeight, nearPath, streamX, woodHeight } from './layout';
 import { RIVER, aimDir, riverBend, riverWide } from './rules';
@@ -101,46 +102,6 @@ const MOODS = {
   night: { top: 0x060c22, horizon: 0x1c2c52, sun: [0.3, 0.6, -0.4], sunColour: 0x9ab4f0, sunPower: 0.55, hemiSky: 0x4a62a8, hemiGround: 0x101820, hemi: 0.9, fog: 0x101c34, fogNear: 22, fogFar: 150, cloud: 0.15, cloudColour: 0x2a3a60, stars: 0.9, exposure: 1.45, water: 0x2a3a5a, deep: 0x060a14 },
   dawn: { top: 0x8aaad0, horizon: 0xf2ece0, sun: [0.7, 0.28, -0.2], sunColour: 0xfff0d8, sunPower: 1.8, hemiSky: 0xe8ecf0, hemiGround: 0x5a5a3a, hemi: 1.05, fog: 0xd2d8d0, fogNear: 45, fogFar: 280, cloud: 0.35, cloudColour: 0xffffff, stars: 0, exposure: 0.98, water: 0xa0b8c0, deep: 0x30444a },
 };
-
-// Water: a slow ripple and the sky in it; `flow` runs it along +x.
-function waterMaterial(water, flow = 0) {
-  const m = new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 }, uFlow: { value: flow } }]),
-    fog: true,
-    vertexShader: `
-      #include <fog_pars_vertex>
-      varying vec3 vWorld;
-      void main() {
-        vec4 wp = modelMatrix * vec4(position, 1.0);
-        vWorld = wp.xyz;
-        vec4 mvPosition = viewMatrix * wp;
-        gl_Position = projectionMatrix * mvPosition;
-        #include <fog_vertex>
-      }`,
-    fragmentShader: `
-      #include <fog_pars_fragment>
-      uniform float uTime, uFlow;
-      uniform vec3 uSky, uDeep, uSun, uSunColor;
-      varying vec3 vWorld;
-      float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-      float noise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y); }
-      void main() {
-        vec2 p = vWorld.xz * 0.35 - vec2(uTime * uFlow, 0.0);
-        float n = noise(p + uTime * 0.06) * 0.5 + noise(p * 2.3 - uTime * 0.09) * 0.5;
-        vec3 nrm = normalize(vec3((n - 0.5) * 0.3, 1.0, (noise(p * 1.6 + 3.0) - 0.5) * 0.3));
-        vec3 view = normalize(cameraPosition - vWorld);
-        float fres = pow(1.0 - max(dot(nrm, view), 0.0), 3.0);
-        vec3 col = mix(uDeep, uSky, 0.25 + fres * 0.7);
-        col += uSunColor * pow(max(dot(reflect(-normalize(uSun), nrm), view), 0.0), 90.0) * 1.6;
-        // a little white where it runs fast
-        col += vec3(0.8) * smoothstep(0.82, 0.95, noise(p * 4.0 - uTime * uFlow * 0.5)) * min(uFlow, 1.0) * 0.25;
-        gl_FragColor = vec4(col, 1.0);
-        #include <fog_fragment>
-      }`,
-  });
-  for (const k of ['uSky', 'uDeep', 'uSun', 'uSunColor']) m.uniforms[k] = water.uniforms[k];
-  return m;
-}
 
 // Every mesh of a model, instanced at each place in `list` ({ x, y, z, s,
 // turn }): a whole tree in a handful of draw calls.

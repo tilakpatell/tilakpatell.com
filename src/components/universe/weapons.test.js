@@ -1,9 +1,29 @@
 import { describe, expect, it } from 'vitest';
 import { DAMAGE_MAX } from './online/protocol';
+import { WEAPONS as TABLE } from '../../lib/arms/ship';
 import { STOCK_LOADOUT } from './outfit';
-import { ARSENAL, LINES, WEAPONS, byCode, createArmory, fan, steer } from './weapons';
+import { ARSENAL, LINES, WEAPONS, armsView, byCode, createArmory, fan, steer } from './weapons';
+
+describe('the armoury, as the HUD shows it', () => {
+  it('names the line picked, with the ordnance rack whichever it is (it’s the one count of the rounds)', () => {
+    const a = createArmory('xwing');
+    expect(armsView(a)).toEqual({ name: 'Laser cannons', line: 'primary', index: 0, ammo: 4, max: 4, filling: 0 });
+    a.select(2);
+    expect(armsView(a)).toMatchObject({ name: 'Proton torpedoes', line: 'ordnance', index: 2, ammo: 4, max: 4 });
+  });
+  it('fills the record it’s handed', () => {
+    const a = createArmory('falcon');
+    const out = armsView(a);
+    a.select(1);
+    expect(armsView(a, out)).toBe(out);
+    expect(out.name).toBe('Flak burst');
+  });
+});
 
 describe('weapons', () => {
+  it('reads the one table every world flies by (lib/arms/ship.js)', () => {
+    expect(WEAPONS).toBe(TABLE);
+  });
   it('every ship names all three lines', () => {
     for (const a of Object.values(ARSENAL)) expect(a.names).toHaveLength(LINES.length);
   });
@@ -128,5 +148,66 @@ describe('weapons', () => {
     expect(Math.atan2(v[0], -v[2])).toBeCloseTo(0.5, 1);
     for (let i = 0; i < 20; i++) steer(v, [1, 0, 0], 1, 0.5);
     expect(v[0]).toBeCloseTo(10);
+  });
+});
+
+describe('the armoury with the skill tree’s guns (hangar/skills’ fx)', () => {
+  it('racks one more round with deep racks, and brings them back sooner with a fast loader', () => {
+    const a = createArmory('xwing', STOCK_LOADOUT, { ammo: 1, reload: 0.8 });
+    a.select(2);
+    expect(a.ammoMax).toBe(WEAPONS.heavy.ammo + 1);
+    expect(a.weapon.reload).toBeCloseTo(WEAPONS.heavy.reload * 0.8);
+  });
+  it('fires one more shot a burst with a wide scatter', () => {
+    const a = createArmory('xwing', STOCK_LOADOUT, { shots: 1 });
+    a.select(1);
+    expect(a.weapon.count).toBe(WEAPONS.spread.count + 1);
+  });
+  it('homes harder and flies further with smart rounds', () => {
+    const a = createArmory('xwing', STOCK_LOADOUT, { homing: 1.3, life: 1.25 });
+    a.select(2);
+    expect(a.weapon.homing).toBeCloseTo(WEAPONS.heavy.homing * 1.3);
+    expect(a.weapon.life).toBeCloseTo(WEAPONS.heavy.life * 1.25);
+  });
+  it('fires a unique weapon only while the skill tree has it open, stock’s line otherwise', () => {
+    const fitted = { ...STOCK_LOADOUT, secondary: 'energon', ordnance: 'seismic' };
+    const shut = createArmory('xwing', fitted);
+    shut.select(1);
+    expect(shut.id).toBe('spread');
+    expect(shut.name).toBe('Ion scatter');
+    shut.select(2);
+    expect(shut.id).toBe('heavy');
+    const open = createArmory('xwing', fitted, { arms: ['seismic', 'energon'] });
+    open.select(1);
+    expect(open.id).toBe('energon');
+    expect(open.name).toBe('Energon arc');
+    open.select(2);
+    expect(open.id).toBe('seismic');
+    expect(open.ammoMax).toBe(2);
+    // (a reset: the refit with the node gone puts the stock rack back, no more rounds than it holds)
+    open.refit(fitted, { arms: ['energon'] });
+    expect(open.id).toBe('heavy');
+    expect(open.ammo).toBeLessThanOrEqual(WEAPONS.heavy.ammo);
+  });
+  it('is the armoury as it was with no skills, the table untouched', () => {
+    const a = createArmory('xwing', STOCK_LOADOUT);
+    a.select(2);
+    expect(a.ammoMax).toBe(WEAPONS.heavy.ammo);
+    expect(a.weapon).toEqual(WEAPONS.heavy);
+    createArmory('xwing', STOCK_LOADOUT, { ammo: 3 });
+    expect(WEAPONS.heavy.ammo).toBe(4);
+  });
+  it('takes new skills on a refit, keeping the line and the rounds left, and keeps them on a new loadout', () => {
+    const a = createArmory('xwing');
+    a.select(2);
+    a.fired(0);
+    a.refit(STOCK_LOADOUT, { ammo: 2 });
+    expect(a.index).toBe(2);
+    expect(a.ammoMax).toBe(WEAPONS.heavy.ammo + 2);
+    expect(a.ammo).toBe(WEAPONS.heavy.ammo - 1);
+    a.refit({ ...STOCK_LOADOUT, ordnance: 'mk2' });
+    expect(a.ammoMax).toBe(WEAPONS.mk2.ammo + 2);
+    a.refit(STOCK_LOADOUT, {});
+    expect(a.ammoMax).toBe(WEAPONS.heavy.ammo);
   });
 });

@@ -1,13 +1,14 @@
 import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { DEFAULT_THEME, ROUTE_THEMES, THEMES } from './themes';
+import { DEFAULT_THEME, THEMES, routeTheme } from './themes';
 import { CUSTOM_DEFAULT, CUSTOM_KEY, customTokens, isHex } from './custom';
 import { usePageActive } from '../lib/page';
 
 const ThemeTransition = lazy(() => import('../components/ThemeTransition'));
 
-// Fan themes bring their own type (see the end of styles/extras.css). The
-// fonts load the first time their theme is on, not before.
+// Fan themes bring their own type (see the end of styles/extras.css, and the
+// Caribbean’s and Middle-earth’s own sheets beside it). The fonts load the
+// first time their theme is on, not before.
 const both = (...loaders) => () => Promise.all(loaders.map((l) => l()));
 const newsCycle = both(
   () => import('@fontsource/news-cycle/400.css'),
@@ -97,7 +98,7 @@ export function ThemeProvider({ children }) {
     }
   });
 
-  const active = pinned || scrollTheme || ROUTE_THEMES[pathname] || DEFAULT_THEME;
+  const active = pinned || scrollTheme || routeTheme(pathname) || DEFAULT_THEME;
 
   // A new page starts from its own theme until one of its sections takes over.
   useEffect(() => {
@@ -124,9 +125,18 @@ export function ThemeProvider({ children }) {
     return () => cancelAnimationFrame(raf);
   }, [active]);
 
+  // The browser’s bar wears the page’s colour, read from <html> once the new
+  // colours have landed (after the two switching frames above); the house
+  // paper or night if a colour gives no --bg.
   useEffect(() => {
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', mode === 'dark' ? '#09090b' : '#fdfdfc');
-  }, [mode]);
+    let raf = requestAnimationFrame(() => {
+      raf = requestAnimationFrame(() => {
+        const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg || (mode === 'dark' ? '#09090b' : '#fdfdfc'));
+      });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [active, mode]);
 
   // Until the visitor picks a mode, follow the system's light or dark setting.
   useEffect(() => {
@@ -207,7 +217,7 @@ export function ThemeProvider({ children }) {
         {children}
         {switching && (
           <Suspense fallback={null}>
-            <ThemeTransition key={switching.key} id={switching.id} onDone={() => setSwitching(null)} />
+            <ThemeTransition key={switching.key} id={switching.id} custom={customColor} onDone={() => setSwitching(null)} />
           </Suspense>
         )}
       </ThemeContext.Provider>

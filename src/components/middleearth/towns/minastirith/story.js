@@ -60,10 +60,28 @@ export const QUESTS = [
   },
 ];
 
-// the seal won at the end (../../../Achievements.jsx); finding the city at
-// all wins its own, as soon as you're in
-export const SEAL = { crown: 'kingreturns' };
+// the seals the chapter wins (../../../Achievements.jsx), one for each thing
+// done but finding Beregond; coming to the city at all wins its own, as
+// soon as you're in
+export const SEAL = { ride: 'sevengates', steward: 'guardofthecitadel', beacon: 'beaconslit', walls: 'siegeofgondor', crown: 'kingreturns' };
 export const FOUND = 'minastirith';
+
+// ── on the side ──
+// Gondor calls for aid: once the beacon over the Citadel is lit, the fire
+// runs west along the White Mountains to Rohan; watch the beacons catch,
+// and name them back in order (./beacons.js). Nothing the story needs. Its
+// own record is kept apart from the story's (../side.js), and its star is
+// an achievement of its own, not one of the chapter's seals.
+export const SIDE = {
+  id: 'beacons',
+  name: 'Gondor calls for aid',
+  where: 'The beacons of the White Mountains',
+  blurb: 'The fire runs west to Rohan, beacon by beacon. Watch them catch, then name them in order, more each time, up to all seven.',
+  locked: 'Once the beacon is lit.',
+  needs: 'beacon',
+  seal: 'callsforaid',
+};
+export const sideBest = (slips) => (slips === 0 ? 'Your best: all seven, without a slip.' : `Your best: all seven, with ${slips} ${slips === 1 ? 'slip' : 'slips'}.`);
 
 // What's next, the objective, where you are, the time of day, and whether
 // Pippin wears the black and silver of the Tower yet.

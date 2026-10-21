@@ -13,22 +13,22 @@
 // fx(type), screenOf(), resize, dispose, lost, info }.
 
 import * as THREE from 'three';
-import { createStage, disposeTree } from '../../../../lib/stage3d';
-import { createHouse } from '../../../../lib/three/house';
-import { dress, rolesFor } from '../../../../lib/three/core';
+import { createStage, disposeTree } from '../../nodes/stage';
+import { createHouse } from '../../../../lib/three/houseNodes';
+import { dress, rolesFor } from '../../../../lib/three/coreNodes';
 import { device } from '../../../../lib/device';
 import { fbm, makeNoise, smooth } from '../../../../lib/paint';
 import { pose } from '../../mapFigures';
-import { createParticles } from '../../kit';
-import { instances } from '../../shire/ground';
+import { createParticles } from '../../nodes/kit';
+import { instances } from '../../nodes/shire/ground';
 import { LOOKS, sit } from '../../shire/people';
-import { lookFrom, makeSky } from '../../shire/sky';
-import { createFx } from '../../shire/fx';
-import { makeTerrain } from '../ground';
+import { lookFrom, makeSky } from '../../nodes/shire/sky';
+import { createFx } from '../../nodes/shire/fx';
+import { makeTerrain } from '../../nodes/towns/ground';
 import { FIGURE, groundTown } from '../grounded';
 import { makeFolk } from '../bree/props';
 import { createGollum } from '../marshes/props';
-import { createGhosts } from '../ghosts';
+import { createGhosts } from '../../nodes/towns/ghosts';
 import { createCirithKit } from './props';
 import { BRAWL, BRIDGE, CITY_YAW, COURT, HIDE, LAIR_OUT, MORGUL_ROAD, PASS, TOWER_DOOR, TOWER_PILLARS, TUNNELS, roughHeight, stairAt } from './layout';
 import { CRUMBS, PHIAL, STAIRS, cloakLift } from './rules';

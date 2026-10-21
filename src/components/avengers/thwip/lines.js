@@ -9,7 +9,6 @@ export const SAYS = {
   start: 'Okay. Two kilometres. The bell goes in a hundred seconds. No problem.',
   pack: 'My backpack! I’ve been looking for that.',
   street: 'Sorry! Sorry! Get up, get up.',
-  bell: 'That’s the bell. Okay. Still going.',
 };
 
 // the ones that are the same every time, and so can be said in his own voice (lib/voiced.js)

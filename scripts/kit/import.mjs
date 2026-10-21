@@ -44,10 +44,12 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 // Where each pack keeps its glTF (folders under lab/assets/<pack>/; the FBX
 // packs' are converted beside it by scripts/kit/fbx.mjs), what it is called
 // in the credit, and how it is read: `wind` turns COLOR_0 into the wind
-// weight, `atlas` names the one palette material every model wears.
+// weight, `sway` bends a pack's trees and bushes that paint none by their
+// height alone (the loader gives such a part a weight of one a vertex),
+// `atlas` names the one palette material every model wears.
 export const SOURCES = {
   naturemega: { dirs: ['glTF'], ext: ['.gltf'], title: 'Stylized Nature MegaKit', wind: true },
-  nature: { dirs: ['glTF'], ext: ['.gltf'], title: 'Stylized Nature Pack' },
+  nature: { dirs: ['glTF'], ext: ['.gltf'], title: 'Stylized Nature Pack', sway: true },
   space: { dirs: ['Characters/GLTF', 'Environment/GLTF', 'Items/GLTF', 'Vehicles/GLTF'], ext: ['.gltf'], title: 'Ultimate Space Kit', atlas: 'Atlas' },
   city: { dirs: ['Exports/glTF (Godot)'], title: 'Downtown City MegaKit' },
   farm: { dirs: ['../farm-glb'], ext: ['.glb'], title: 'Farm Animals' },
@@ -208,7 +210,7 @@ async function settleMaterials(models, source) {
       const part = def?.leaf ? 'leaves' : CROWNED.has(m.kind) && !m.rigged ? 'bark' : 'main';
       prim.setExtras({ ...prim.getExtras(), part });
       if (!def) continue;
-      if (prim.getAttribute('_WIND')) def.wind = true;
+      if (prim.getAttribute('_WIND') || (source.sway && CROWNED.has(m.kind) && !m.rigged)) def.wind = true;
       def.worn = [...new Set([...def.worn, m.rigged ? 'character' : m.kind])].sort(byName);
     }
   }

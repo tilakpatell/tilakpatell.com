@@ -72,8 +72,8 @@ const PARTS = [
   ['radar', '.fc-radar'],
   ['ship', '.fc-ship'],
   ['target', '.fc-target'],
-  ['power G', '.ship-power[data-slot="primary"]'],
-  ['power X', '.ship-power[data-slot="ultimate"]'],
+  ['power G', '.hud-power[data-slot="primary"]'],
+  ['power X', '.hud-power[data-slot="ultimate"]'],
   ['jump', '.galaxy-jumpbtn:not([data-course])'],
   ['galaxy map', '.galaxy-mapbtn'],
   ['keys chip', '.galaxy-keysbtn'],
@@ -234,7 +234,7 @@ async function run(viewport, touch) {
     const small = await smallText(page, '.fc');
     say(small.length === 0, `nothing in the cluster is under 0.7 rem${small.length ? ` (${small.slice(0, 4).join('; ')})` : ''}`);
     const clicks = await G(() =>
-      [...document.querySelectorAll('.ship-power')].map((t) => {
+      [...document.querySelectorAll('.hud-power')].map((t) => {
         const a = t.getBoundingClientRect();
         const hit = document.elementFromPoint(a.x + a.width / 2, a.y + a.height / 2);
         return Boolean(hit && t.contains(hit));
@@ -242,15 +242,15 @@ async function run(viewport, touch) {
     );
     say(clicks.length === 2 && clicks.every(Boolean), 'a click at each power tile\'s middle lands on it');
     if (!touch) {
-      const words = await G(() => [...document.querySelectorAll('.ship-power-state')].map((e) => e.textContent));
+      const words = await G(() => [...document.querySelectorAll('.hud-power-state')].map((e) => e.textContent));
       say(words.length === 2 && words.every(Boolean), `each power says where it stands (${words.join(' / ')})`);
       // (a press on a power that isn't ready: the big one while it charges, else the crew's own, pressed twice, the second while it's on)
       const centre = (slot) =>
         G((sl) => {
-          const a = document.querySelector(`.ship-power[data-slot="${sl}"]`).getBoundingClientRect();
+          const a = document.querySelector(`.hud-power[data-slot="${sl}"]`).getBoundingClientRect();
           return { x: a.x + a.width / 2, y: a.y + a.height / 2 };
         }, slot);
-      let slot = (await G(() => [...document.querySelectorAll('.ship-power')].find((t) => t.dataset.phase !== 'ready')?.dataset.slot)) ?? null;
+      let slot = (await G(() => [...document.querySelectorAll('.hud-power')].find((t) => t.dataset.phase !== 'ready')?.dataset.slot)) ?? null;
       if (!slot) {
         const c = await centre('primary');
         await page.mouse.click(c.x, c.y);
@@ -261,12 +261,12 @@ async function run(viewport, touch) {
       await page.mouse.click(c.x, c.y);
       await settle(page, 300);
       const no = await G((sl) => {
-        const t = document.querySelector(`.ship-power[data-slot="${sl}"]`);
-        return { denied: t.hasAttribute('data-denied'), word: t.querySelector('.ship-power-state').textContent };
+        const t = document.querySelector(`.hud-power[data-slot="${sl}"]`);
+        return { denied: t.hasAttribute('data-denied'), word: t.querySelector('.hud-power-state').textContent };
       }, slot);
       say(no.denied && no.word.length > 0, `a press on a power that isn't ready (${slot}) is refused and says why (${no.word})`);
     }
-    const n = await G(() => ({ shield: document.querySelector('.fc-shield-n')?.textContent, kills: document.querySelector('.fc-kills-n')?.textContent, speed: document.querySelector('.fc-speed-n')?.textContent }));
+    const n = await G(() => ({ shield: document.querySelector('.hud-vitals-n')?.textContent, kills: document.querySelector('.fc-kills-n')?.textContent, speed: document.querySelector('.fc-speed-n')?.textContent }));
     say(/^\d+%$/.test(n.shield ?? ''), `the deflectors read a percentage (${n.shield})`);
     say(/^\d+$/.test(n.kills ?? ''), `and the kills a number (${n.kills})`);
     await page.screenshot({ path: `${out}/hud-${file}${touch ? '-touch' : ''}.png` });

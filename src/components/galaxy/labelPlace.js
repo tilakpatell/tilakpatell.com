@@ -11,10 +11,27 @@
 // in a cluster are tried in every place together (a search that takes the
 // best of them, up to a budget). In screen pixels, at the map's zoom (the
 // names keep their size while the map scales, so zoomed in they part).
+// With `hideUnder` (the map zoomed in, where a pan brings it out), a dot
+// under a control is out of sight: its name is null, as an optional one's
+// with no room, and it's placed round by no one.
+//
+// An item may be `optional`: a charted world's (charted/index.js), unless
+// it's where you are or the one picked, and a landmark's name (landmarks.js,
+// with no dot). The other names are placed as if it weren't there, then one
+// over its dot moves to a place that covers nothing at all if it has one,
+// and never otherwise; an optional dot a name still covers is HIDDEN, name
+// and all, till the map's zoomed in enough to part them. The rest get their
+// names last, each only in a place that covers nothing at all (no name, no
+// dot, no control, not the edge), or none: null, its dot alone. So the
+// films' worlds keep their names at every zoom, and the charted ones come in
+// as there's room. An item's `dot` is its dot's radius, where it isn't the
+// map's own (a charted world's is SMALL_DOT, a landmark's 0).
 
 export const PLACES = ['r', 'l', 't', 'b', 'tr', 'br', 'tl', 'bl', 'bs', 'be', 'ts', 'te'];
 export const GAP = 9; // (the dot's radius, 7, and 2 more)
 export const DOT = 7;
+export const SMALL_DOT = 4; // (a charted world's dot, galaxy.css's)
+export const HIDDEN = 'none'; // (an optional item's place when a name covers its dot)
 export const CORNER = GAP * 0.6; // (how far a corner place's box is off the dot's middle, across and up or down)
 
 export function boxAt(place, x, y, w, h) {
@@ -71,18 +88,29 @@ export function overlapArea(boxes) {
 const COST = { name: 10, dot: 14, block: 14, edge: 20 };
 const LATER = 0.02; // (what each place past the right costs, so a tie keeps the earlier one: no more than a graze's worth, whatever the number of names)
 const PASSES = 8;
+const GRAZE = 0.5; // (px a name may graze an optional dot by and leave it shown: the browser check's own tolerance)
+const shrunk = (b) => ({ x0: b.x0 + GRAZE, y0: b.y0 + GRAZE, x1: b.x1 - GRAZE, y1: b.y1 - GRAZE });
 const NODES = 6000; // (the most places the cluster search tries: a crowd with no clear answer isn't searched for ever, a pan's frame has 16 ms)
 const REACH = 2 * GAP; // (a name's box reaches its own size and a gap past its dot's middle, so two meet only within both sizes and this)
 
-export function placeLabels(items, { dot = DOT, bounds = null, blocks = [] } = {}) {
-  const order = [...items].sort((a, b) => b.prio - a.prio || (a.id < b.id ? -1 : 1));
+export function placeLabels(items, { dot = DOT, bounds = null, blocks = [], hideUnder = false } = {}) {
+  const dotOf = (o) => {
+    const r = o.dot ?? dot;
+    return { x0: o.x - r, y0: o.y - r, x1: o.x + r, y1: o.y + r };
+  };
+  const byPrio = (a, b) => b.prio - a.prio || (a.id < b.id ? -1 : 1);
+  // (a dot under a control is out of sight, where asked: its name goes unsaid, and takes no room from its neighbours')
+  const under = (it) => hideUnder && blocks.some((k) => it.x > k.x0 && it.x < k.x1 && it.y > k.y0 && it.y < k.y1);
+  const unseen = items.filter(under);
+  const inSight = items.filter((it) => !under(it));
+  const order = inSight.filter((it) => !it.optional).sort(byPrio);
   const boxes = {}; // id → its box in each place
   const base = {}; // id → what each place costs of what stays put: the dots, the controls, the edge (and a little for each place past the right, so a tie keeps the earlier one: right, as the map always had it)
   for (const it of order) {
     boxes[it.id] = PLACES.map((p) => boxAt(p, it.x, it.y, it.w, it.h));
     base[it.id] = boxes[it.id].map((b, n) => {
       let c = n * LATER;
-      for (const o of items) if (o.id !== it.id) c += area(b, { x0: o.x - dot, y0: o.y - dot, x1: o.x + dot, y1: o.y + dot }) * COST.dot;
+      for (const o of order) if (o.id !== it.id) c += area(b, dotOf(o)) * COST.dot;
       for (const k of blocks) c += area(b, k) * COST.block;
       if (bounds) c += outside(b, bounds) * COST.edge;
       return c;
@@ -161,5 +189,29 @@ export function placeLabels(items, { dot = DOT, bounds = null, blocks = [] } = {
     search(0, 0);
     if (pick) Object.assign(at, pick);
   }
-  return Object.fromEntries(order.map((it) => [it.id, PLACES[at[it.id]]]));
+  // the optional ones, last: a name over one's dot moves off it to a place that covers nothing, where it has one
+  const optional = inSight.filter((o) => o.optional).sort(byPrio);
+  const onDot = (b) => optional.some((o) => area(shrunk(b), dotOf(o)) > 0);
+  for (const it of lowest) {
+    if (!onDot(boxes[it.id][at[it.id]])) continue;
+    const n = PLACES.findIndex((_, k) => cost(it, k) - k * LATER <= 1e-9 && !onDot(boxes[it.id][k]));
+    if (n >= 0) at[it.id] = n;
+  }
+  const out = Object.fromEntries([...order.map((it) => [it.id, PLACES[at[it.id]]]), ...unseen.map((it) => [it.id, null])]);
+  // then a dot still under a name is hidden; the rest are named in the first place that covers nothing, or not (null)
+  const down = order.map((it) => boxes[it.id][at[it.id]]);
+  const shown = optional.filter((it) => !down.some((d) => area(shrunk(d), dotOf(it)) > 0));
+  for (const it of optional) out[it.id] = HIDDEN;
+  const dots = [...order, ...shown];
+  for (const it of shown) {
+    out[it.id] = null;
+    for (const place of PLACES) {
+      const b = boxAt(place, it.x, it.y, it.w, it.h);
+      if ((bounds && outside(b, bounds) > 0) || blocks.some((k) => area(b, k) > 0) || down.some((d) => area(b, d) > 0) || dots.some((o) => o !== it && area(b, dotOf(o)) > 0)) continue;
+      out[it.id] = place;
+      down.push(b);
+      break;
+    }
+  }
+  return out;
 }

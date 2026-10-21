@@ -1,15 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { CHAPTERS } from '../chapters';
-import { firstStep, nextUnfinished } from './hubState';
+import { firstStep, ghost, nextUnfinished } from './hubState';
+
+const RIDE = { kind: 'ride', to: '/middle-earth/road', label: 'Ride the Road' };
+const AGAIN = { kind: 'ride-again', to: '/middle-earth/road', label: 'Ride the Road again' };
+const BEGIN = { kind: 'begin', id: 'shire', label: 'Begin at the Shire' };
 
 describe('the first step the hub offers', () => {
-  it('begins at the Shire with nothing won', () => {
-    expect(firstStep([])).toEqual({ kind: 'begin', id: 'shire', label: 'Begin at the Shire' });
-    expect(firstStep()).toEqual({ kind: 'begin', id: 'shire', label: 'Begin at the Shire' });
+  it('offers the Road first with nothing won and nothing ridden, the Shire beside it', () => {
+    expect(firstStep([])).toEqual(RIDE);
+    expect(firstStep()).toEqual(RIDE);
+    expect(ghost([])).toEqual(BEGIN);
     expect(nextUnfinished([])).toBe('shire');
+  });
+  it('once the Road is ridden, says walk it yourself, and the Road is ridden again beside it', () => {
+    expect(firstStep([], { ridden: true })).toEqual({ ...BEGIN, label: 'Now walk it yourself · Begin at the Shire' });
+    expect(ghost([], { ridden: true })).toEqual(AGAIN);
   });
   it('carries on at the first chapter not won, even when a later one has seals', () => {
     expect(firstStep(['eagles'])).toEqual({ kind: 'carry', id: 'shire', label: 'Carry on · The Shire' });
+    expect(firstStep(['eagles'], { ridden: true })).toEqual({ kind: 'carry', id: 'shire', label: 'Carry on · The Shire' });
+    expect(ghost(['eagles'])).toEqual(RIDE);
+    expect(ghost(['eagles'], { ridden: true })).toEqual(AGAIN);
     expect(nextUnfinished(['eagles'])).toBe('shire');
   });
   it('carries on to Bree once the Shire is won', () => {

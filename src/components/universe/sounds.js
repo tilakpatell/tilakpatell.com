@@ -6,21 +6,13 @@
 // when you reach a world, from the site's own clips where it has one. All
 // through the site's master volume, so the sound setting mutes them. Plain
 // functions: the scene drives the engine each frame and the comms box calls
-// the rest.
+// the rest. (The skill tree's unique weapons' are uniqueSounds.js's.)
 
 import { audioContext, loadBuffer, output, voiceOutput, voicesOn } from '../../lib/audio';
 import { playClip } from '../../lib/clips';
 import { speech } from '../../lib/speech';
-
-let noiseBuf = null;
-function noise(ac) {
-  if (noiseBuf) return noiseBuf;
-  const n = ac.sampleRate * 2;
-  noiseBuf = ac.createBuffer(1, n, ac.sampleRate);
-  const d = noiseBuf.getChannelData(0);
-  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
-  return noiseBuf;
-}
+import { blip, burst, noise, tones, whoosh } from './synth';
+import { handShowSound, handSound, isUniqueGun } from './uniqueSounds';
 
 // Each ship's engine is a recording, looped (public/audio/engines, credited
 // in the README there): the X-wing's and the Falcon's from the films, a
@@ -93,27 +85,6 @@ export function shipEngine(kind) {
       setTimeout(() => master.disconnect(), 700);
     },
   };
-}
-
-function blip(ac, out, { type, f, at, dur, gain, glide = 1, filter = 0 }) {
-  const o = ac.createOscillator();
-  o.type = type;
-  o.frequency.setValueAtTime(f, at);
-  o.frequency.exponentialRampToValueAtTime(Math.max(30, f * glide), at + dur);
-  const g = ac.createGain();
-  g.gain.setValueAtTime(0.0001, at);
-  g.gain.exponentialRampToValueAtTime(gain, at + Math.min(0.015, dur / 3));
-  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-  let node = o.connect(g);
-  if (filter) {
-    const lp = ac.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = filter;
-    node = node.connect(lp);
-  }
-  node.connect(out);
-  o.start(at);
-  o.stop(at + dur + 0.05);
 }
 
 const VOICES = {
@@ -200,35 +171,6 @@ function growl(ac, out, t) {
     n.start(t);
     n.stop(t + dur + 0.05);
   });
-}
-
-function tones(list, { type = 'square', gain = 0.05 } = {}) {
-  const ac = audioContext();
-  const out = ac ? output() : null;
-  if (!ac || !out) return;
-  const t = ac.currentTime + 0.02;
-  for (const [f, at, dur] of list) blip(ac, out, { type, f, at: t + at, dur, gain });
-}
-
-function whoosh(dur, from, to, gain) {
-  const ac = audioContext();
-  const out = ac ? output() : null;
-  if (!ac || !out) return;
-  const t = ac.currentTime;
-  const src = ac.createBufferSource();
-  src.buffer = noise(ac);
-  const f = ac.createBiquadFilter();
-  f.type = 'bandpass';
-  f.Q.value = 1.1;
-  f.frequency.setValueAtTime(from, t);
-  f.frequency.exponentialRampToValueAtTime(to, t + dur);
-  const g = ac.createGain();
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(gain, t + dur * 0.3);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  src.connect(f).connect(g).connect(out);
-  src.start(t);
-  src.stop(t + dur + 0.05);
 }
 
 // A portal opening: a rising swirl
@@ -714,22 +656,6 @@ export function shieldSound() {
 }
 
 // ── Guns on foot ──
-// A burst of noise through a filter: the crack and the tail of a gunshot
-function burst(ac, out, { at, dur, gain, type = 'highpass', f = 1500, q = 0.7, decay = 1 }) {
-  const src = ac.createBufferSource();
-  src.buffer = noise(ac);
-  const flt = ac.createBiquadFilter();
-  flt.type = type;
-  flt.frequency.value = f;
-  flt.Q.value = q;
-  const g = ac.createGain();
-  g.gain.setValueAtTime(0.0001, at);
-  g.gain.exponentialRampToValueAtTime(gain, at + 0.004);
-  g.gain.setTargetAtTime(0.0001, at + 0.004, dur / (4 * decay));
-  src.connect(flt).connect(g).connect(out);
-  src.start(at, Math.random() * 1.5);
-  src.stop(at + dur + 0.1);
-}
 
 // A shot from a gun on foot (gunplay.js's kinds), `soft` for your crewmate's
 // (a little further off): a powder gun's crack, its thump and the street
@@ -737,6 +663,7 @@ function burst(ac, out, { at, dur, gain, type = 'highpass', f = 1500, q = 0.7, d
 // shot (Han's DL-44), heavier for Chewie's bowcaster; the portal gun's; and
 // Morty's laser, a quick falling zap.
 export function gunSound(gun, { soft = false } = {}) {
+  if (isUniqueGun(gun)) return handSound(gun, { soft }); // (the skill tree's four: uniqueSounds.js)
   const ac = audioContext();
   const out = ac ? output() : null;
   if (!ac || !out) return;
@@ -802,6 +729,7 @@ export function gunSound(gun, { soft = false } = {}) {
 // the kill's moment: the freeze ray's 'hit' (the ice cracking over them) and
 // 'shatter'; the shrink ray's 'hit' (a falling whistle), 'squeak' and 'pop'
 export function gadgetSound(gun, ev) {
+  if (isUniqueGun(gun)) return handShowSound(gun, ev);
   const ac = audioContext();
   const out = ac ? output() : null;
   if (!ac || !out) return;

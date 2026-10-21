@@ -524,6 +524,9 @@ export function createActivity({ parent, world, warm = (o) => Promise.resolve(o)
             if (t.mark) t.mark.visible = false;
             if (t.how === 'freeze') t.show = gfx.freeze({ root: t.holder, tall, up, push, on });
             else if (t.how === 'shrink') t.show = gfx.shrink({ root: t.holder, tall, up, on });
+            // (the skill tree's guns: the Amban's light, the beam's ash, the gauntlet's throw)
+            else if (t.how === 'amban' || t.how === 'particle') t.show = gfx.light({ root: t.holder, tall, up, ash: t.how === 'particle', on });
+            else if (t.how === 'gauntlet') t.show = gfx.thrown({ root: t.holder, tall, up, push, on });
             else t.show = pfx.swallow({ root: t.holder, tall, up, push, joints: looks().meshyJoints(t.holder, 1, tall), on });
             t.holder.userData.show = t.show; // (for the QA scripts: the show's handle)
             onShow?.(t.how, 'hit');

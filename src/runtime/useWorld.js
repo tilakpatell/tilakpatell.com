@@ -29,10 +29,11 @@
 // a town's stage, the kitchen, the bridge, the Ring) mounts one module, in
 // the box the size of the largest (the map's, fixed to the window), and
 // its world draws each picture as a view of the one canvas (./views.js):
-// the busiest view has the canvas, the others a copy of what was drawn for
-// them. A second useWorld on the same page would take the runtime from the
-// first (a mount lets go of the world that was up), and a second renderer
-// is a second context: neither is how a page shows two pictures.
+// the view on screen drawing the biggest buffer has the canvas, the others
+// a copy of what was drawn for them. A second useWorld on the same page
+// would take the runtime from the first (a mount lets go of the world that
+// was up), and a second renderer is a second context: neither is how a
+// page shows two pictures.
 // (The universe map's shipyard showroom, a ship on a turntable over the
 // map held still behind it, is such a picture: a view of the map's world,
 // and of the galaxy's where the yard opens there, once the views are on
@@ -52,6 +53,8 @@ export const madeFor = new WeakMap();
 // (`mine`: the world lost was this page's module, so a page opened while
 // another's is lost does not mount twice: the review's minor 4)
 export const recoverNow = ({ status, recoverable, tried, mine }) => status === 'lost' && Boolean(recoverable) && !tried && Boolean(mine);
+// A page with a 3D switch of its own (an HQ game, hq/useGame3D.js) decides with `enabled` alone; every other page still asks the site.
+export const wants3D = (enabled, siteOn, own3D = false) => Boolean(enabled && (own3D || siteOn));
 // Told once when `el` comes within `margin` of the viewport (or at once:
 // no margin, or no IntersectionObserver to ask); → stop()
 export function watchNear(el, margin, onNear, { IO = typeof IntersectionObserver !== 'undefined' ? IntersectionObserver : undefined } = {}) {
@@ -104,7 +107,7 @@ export function usePrepareProgress(module) {
   return progress;
 }
 
-export function useWorld(module, { props, enabled = true, onEvent = null, attempt = 0, rebuild = null, near = null } = {}) {
+export function useWorld(module, { props, enabled = true, onEvent = null, attempt = 0, rebuild = null, near = null, own3D = false } = {}) {
   const host = useRef(null);
   const world = useRef(null);
   const three = use3D();
@@ -121,7 +124,7 @@ export function useWorld(module, { props, enabled = true, onEvent = null, attemp
     if (close || !el) return undefined;
     return watchNear(el, near, () => setClose(true));
   }, [close, near]);
-  const wanted = enabled && three.on;
+  const wanted = wants3D(enabled, three.on, own3D);
   const on = wanted && close;
   // (bumped once after a loss the runtime can come back from: the mount below runs again)
   const [again, setAgain] = useState(0);

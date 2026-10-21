@@ -24,6 +24,7 @@
 
 import * as THREE from 'three';
 import { toon } from '../portal/toon';
+import { lightRamp } from '../portal/meshyCastCore'; // (Meshy's textures carry their own shading: the cast's light ramp)
 import { BOOTH, crowdFor } from './layout';
 import { gltfLoader } from '../../../lib/three/gltf';
 import { seeded } from '../../../lib/seeded';
@@ -45,15 +46,6 @@ const PICK_EVERY = 0.4; // seconds between looks at who's nearest
 const HOP = { len: 0.6, high: 0.11, spread: 0.7 }; // a cheer's bounce: seconds, metres, and how far it ripples (s)
 const EYES = 1.72;
 
-// Meshy's textures carry their own shading: a light ramp, as the cast has
-let ramp = null;
-const lightRamp = () => {
-  if (ramp) return ramp;
-  ramp = new THREE.DataTexture(new Uint8Array([165, 165, 165, 255, 215, 215, 215, 255, 255, 255, 255, 255]), 3, 1, THREE.RGBAFormat);
-  ramp.minFilter = ramp.magFilter = THREE.NearestFilter;
-  ramp.needsUpdate = true;
-  return ramp;
-};
 const hash = (i, k = 0) => (((Math.sin(i * 91.345 + k * 47.853) * 43758.5453) % 1) + 1) % 1;
 
 // a figure's geometry in the world, standing on the floor at `height`

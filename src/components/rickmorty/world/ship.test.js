@@ -6,7 +6,7 @@ const DT = 1 / 30;
 
 describe('C-137: the cruiser’s voice', () => {
   it('has a few lines for everything it reacts to, in its own manner', () => {
-    expect(Object.keys(SHIP_LINES).sort()).toEqual(['board', 'ceiling', 'fast', 'hello', 'idle', 'land', 'leave', 'refuse', 'tail', 'takeoff']);
+    expect(Object.keys(SHIP_LINES).sort()).toEqual(['board', 'ceiling', 'chase', 'fast', 'hello', 'idle', 'land', 'leave', 'refuse', 'shaken', 'tail', 'takeoff']);
     for (const [event, lines] of Object.entries(SHIP_LINES)) {
       expect(lines.length, event).toBeGreaterThanOrEqual(2);
       expect(COOLDOWN[event], event).toBeGreaterThan(GAP);
@@ -144,5 +144,30 @@ describe('C-137: the Federation’s patrol ship', () => {
       expect(Math.abs(Math.atan2(Math.sin(g.yaw - f.yaw), Math.cos(g.yaw - f.yaw)))).toBeLessThanOrEqual(FED.turn * DT + 1e-9);
       f = g;
     }
+  });
+});
+
+describe('the patrol in a fight (patrolRules.js turns it on you)', () => {
+  it('rings the cruiser at a distance, where it is round the ring, not on its flank', () => {
+    const c = { x: 0, z: 0, y: 12, yaw: 0 };
+    let f = { ...newFedShip(), x: 30, z: 0, y: 19 };
+    for (let i = 0; i < 240; i++) f = stepFedShip(f, c, true, 1 / 30, { angle: Math.PI / 2 });
+    expect(f.mode).toBe('fight');
+    expect(f.x).toBeCloseTo(0, 0);
+    expect(f.z).toBeCloseTo(FED.ring, 0);
+  });
+  it('flies its loop again with no fight, or the cruiser landed', () => {
+    const c = { x: 0, z: 0, y: 1.2, yaw: 0 };
+    const f = stepFedShip({ ...newFedShip(), mode: 'fight' }, c, false, 1 / 30, { angle: 0 });
+    expect(f.mode).toBe('loop');
+  });
+});
+
+describe('a patrol shot down (patrolRules.js’s down: hidden till the next comes)', () => {
+  it('goes back round its loop, off the cruiser’s tail, and says nothing’s behind you', () => {
+    const c = { x: 0, z: 0, y: 12, yaw: 0 };
+    const near = { ...newFedShip(), x: 4, z: -2, y: 14, mode: 'tail', down: true };
+    expect(stepFedShip(near, c, true, 1 / 30).mode).toBe('loop');
+    expect(onTail(near, c)).toBe(false);
   });
 });

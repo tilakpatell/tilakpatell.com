@@ -9,7 +9,8 @@
 //   createGroundMap({ area, size, heightSize, paint, height }) → { texture, heightTexture,
 //     uniforms (uGroundMap, uGroundHeight, uGroundRect: nodes), groundColour(xz),
 //     groundGrass(xz), groundHeight(xz), groundUv(xz), colourAt, grassAt, heightAt,
-//     paint(material) → the node material, dispose() }
+//     paint(material) → the node material, moveTo(area) → { step(ms) → done },
+//     dispose() }
 //   paintGround({ area, size, paint }) → RGBA bytes (pure)
 //   groundFns(uniforms) → { groundUv, groundColour, groundGrass, groundHeight }
 
@@ -142,6 +143,52 @@ export function createGroundMap({ area, size = 512, heightSize = size, paint, he
       onColor(m, (d) => d.rgb.mul(fns.groundColour(positionWorld.xz)), 'groundPaint', uniforms);
       m.userData.groundPaint = uniforms;
       return m;
+    },
+    moveTo(next) {
+      const fresh = new Uint8Array(px.length);
+      const lifted = heights ? new Float32Array(heights.length) : null;
+      const out = [0, 0, 0];
+      let row = 0;
+      let hrow = 0;
+      let done = false;
+      return {
+        step(ms = Infinity) {
+          if (done) return true;
+          const t0 = performance.now();
+          while (row < size) {
+            const z = next.z0 + ((row + 0.5) / size) * next.d;
+            for (let i = 0; i < size; i++) {
+              const x = next.x0 + ((i + 0.5) / size) * next.w;
+              const g = paint(x, z, out);
+              const k = (row * size + i) * 4;
+              fresh[k] = Math.round(toSrgb(clamp01(out[0])) * 255);
+              fresh[k + 1] = Math.round(toSrgb(clamp01(out[1])) * 255);
+              fresh[k + 2] = Math.round(toSrgb(clamp01(out[2])) * 255);
+              fresh[k + 3] = Math.round(clamp01(g) * 255);
+            }
+            row++;
+            if (performance.now() - t0 >= ms) return false;
+          }
+          while (lifted && hrow < hs) {
+            for (let i = 0; i < hs; i++) lifted[hrow * hs + i] = height(next.x0 + ((i + 0.5) / hs) * next.w, next.z0 + ((hrow + 0.5) / hs) * next.d);
+            hrow++;
+            if (performance.now() - t0 >= ms) return false;
+          }
+          // (all of it in at once: the texels, the heights, where it lies)
+          px.set(fresh);
+          texture.needsUpdate = true;
+          if (lifted) {
+            heights.set(lifted);
+            const half = heightTexture.image.data;
+            for (let i = 0; i < lifted.length; i++) half[i] = THREE.DataUtils.toHalfFloat(lifted[i]);
+            heightTexture.needsUpdate = true;
+          }
+          Object.assign(area, next);
+          uniforms.uGroundRect.value.set(area.x0, area.z0, 1 / area.w, 1 / area.d);
+          done = true;
+          return true;
+        },
+      };
     },
     dispose() {
       texture.dispose();

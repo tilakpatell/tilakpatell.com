@@ -37,8 +37,9 @@
 // joinRoom({ appId, relays, WebSocket, pool, keys }, roomId) → { selfId, ready (resolves
 // once a relay's listening, rejects if none answer), makeAction(ns) →
 // { send(data, { target }), onMessage(data, { peerId, tag }) }, onPeerJoin(id),
-// onPeerLeave(id), onStatus('online' | 'connecting'), leave() }: what
-// client.js takes. (Other games pass `latest`, the kinds of message of
+// onPeerLeave(id), onStatus('online' | 'connecting'), seal(to, party, text)
+// → the blobs, open(from, party, blobs) → the line or null (a party's chat,
+// below), leave() }: what client.js takes. (Other games pass `latest`, the kinds of message of
 // which only the newest in a bundle matters, and `cheap`, those trusted to
 // the relays' own check of the signature.)
 //
@@ -60,6 +61,7 @@
 import { schnorr } from '@noble/secp256k1';
 import { KIND, checkEvent, hex, signEvent } from './events';
 import { createIdentity } from './identity';
+import { openFrom, sealFor } from './partyCrypt';
 import { poolFor } from './pool';
 import { localSaves } from '../../../runtime/local';
 import { sameCells } from '../../../lib/net/cells';
@@ -150,6 +152,20 @@ const offPage = (op, payload, here) => {
 };
 const signAway = (key, pubkey, ev) => offPage('sign', { key, pubkey, ev }, () => signEvent(key, pubkey, ev));
 const checkAway = (ev) => offPage('check', { ev }, () => checkEvent(ev));
+
+// A party's chat, sealed for each mate and opened (partyCrypt.js), off the
+// page as well: each mate's pair key is a sum on big numbers like a
+// signature's. The pair keys are kept where the work's done (the worker's
+// own, or `pairs` here when there's no worker), and dropped when a room
+// leaves, so a secret agreed with a mate lasts no longer than you're there
+// (another room on the same key makes them again, once).
+const pairs = new Map();
+const sealAway = (key, pubkey, party, to, text) => offPage('seal', { key, pubkey, party, to, text }, () => sealFor({ secretKey: key, selfPub: pubkey, to, party, text, cache: pairs }));
+const openAway = (key, pubkey, party, from, blobs) => offPage('open', { key, pubkey, party, from, blobs }, () => openFrom({ secretKey: key, selfPub: pubkey, from, party, blobs, cache: pairs }));
+const forgetPairs = () => {
+  pairs.clear();
+  if (worker) offPage('forget', {}, () => true);
+};
 
 export function joinRoom({ appId, relays = RELAYS, WebSocket = globalThis.WebSocket, pool = poolFor(WebSocket, relays), flushMs = FLUSH_MS, readyMs = READY_MS, latest = LATEST, cheap = CHEAP, keys = schnorr.keygen(), cells = null }, roomId) {
   const { secretKey, publicKey } = keys;
@@ -372,6 +388,12 @@ export function joinRoom({ appId, relays = RELAYS, WebSocket = globalThis.WebSoc
       }, 0);
     },
     stats: () => ({ offCell }),
+    // the party's chat on the room's own key: a line sealed for each of `to`
+    // (their ids) → the blobs; a mate's blobs opened → the line, or null.
+    // Junk is null, never a throw (it may have come from anyone), and so is
+    // anything asked once the room's left
+    seal: (to, party, text) => (left ? Promise.resolve(null) : sealAway(secretKey, self, party, to, text).catch(() => null)),
+    open: (from, party, blobs) => (left ? Promise.resolve(null) : openAway(secretKey, self, party, from, blobs).catch(() => null)),
     leave() {
       if (left) return Promise.resolve();
       left = true;
@@ -381,6 +403,7 @@ export function joinRoom({ appId, relays = RELAYS, WebSocket = globalThis.WebSoc
       if (bye) broadcast(bye);
       sub.close();
       known.clear();
+      forgetPairs();
       return Promise.resolve();
     },
   };

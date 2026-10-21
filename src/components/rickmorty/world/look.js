@@ -1,5 +1,6 @@
 // C-137’s world’s look (components/worlds/looks.js): painted. The show’s
-// flat colours on a toon ramp with ink (../portal/toon.js) are its art; the
+// flat colours on a two-step toon ramp (../portal/toon.js), a clean line
+// round the cast only and no film grade are its art; the
 // palette is the kit’s own (./kit.js: the walls, the floors, the wood, the
 // metal, the glass, the portal’s green), and Morty’s and Rick’s clothes
 // from the wardrobe (../wardrobe/) are the one mixed thing, on purpose.
@@ -27,3 +28,13 @@ export const LOOK = {
     bloom: 'Roy’s life and the sewer’s run keep their own blooms (BLOOMS); the sewer’s is under white, its laser and screws the light in a dark drain',
   },
 };
+
+// The grade every Rick and Morty scene takes (../stage.js's and
+// lib/stage3d's grade): none. The show has no grain, no vignette, no
+// contrast curve and no tint, and with these values the grade changes nothing.
+export const PLAIN = Object.freeze({ contrast: 0, saturation: 1, vignette: 0, grain: 0, shadow: Object.freeze([0, 0, 0]), high: Object.freeze([0, 0, 0]) });
+
+// The line round the cast (lib/three/ink.js's hull, the cast's `ink`), in
+// metres: about two pixels at 720p from the rooms' camera 3.6 m off, and
+// thinner further away, as the show draws a wide shot.
+export const CAST_INK = 0.01;

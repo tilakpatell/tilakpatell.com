@@ -576,7 +576,8 @@ export function animate(c, t, move = 0, hit = 0, opts = {}) {
   if (c.head) c.head.rotation.z = Math.sin(t * 1.3) * 0.04;
 }
 
-// Software WebGL has no ink pass: give the cast an inverted-hull outline.
+// The shapes' outline, an inverted hull (the modelled cast's is the cast's
+// own `ink`, ./meshyCastCore.js).
 export function hull(c, width = 0.03, ink = 0x14101a) {
   const m = new THREE.MeshBasicMaterial({ color: ink, side: THREE.BackSide });
   m.onBeforeCompile = (s) => {

@@ -74,7 +74,7 @@ function Steps({ status }) {
 
 function Card({ title, children, actions, className = '' }) {
   return (
-    <div className={`gate ${className}`} role="group" aria-label={title}>
+    <div className={`gate dark-scope ${className}`} role="group" aria-label={title}>
       <div className="gate-card">
         <span className="gate-icon" aria-hidden="true">
           <RiCpuLine />
@@ -95,7 +95,7 @@ function Waiting({ className, onNear }) {
   useEffect(() => {
     if (near) onNear();
   }, [near, onNear]);
-  return <div ref={frame} className={`gate ${className}`} aria-hidden="true" />;
+  return <div ref={frame} className={`gate dark-scope ${className}`} aria-hidden="true" />;
 }
 
 export default function GpuGate({ children, className = '', extra = null }) {

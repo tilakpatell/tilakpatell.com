@@ -11,7 +11,7 @@
 // Each pass, in the chain's order, takes the colour so far:
 // - ssgi: colour × its AO (unless an `ao` pass follows) + diffuse × its GI;
 //   `denoise` after it filters the GI and composites again;
-// - ao: GTAO at half resolution, denoised unless TRAA follows, multiplied in;
+// - ao: GTAO at half resolution, denoised unless TRAA follows (or `denoise`), multiplied in;
 // - ssr: its reflection added (rgb already weighted; non-metals left out, SSRNode's default; and, lane N3, anything at or over the row's roughnessCutoff, its metalness masked);
 // - volumes: the level's volumetric cones and glows (volumetrics.js), their
 //   quarter-resolution pass brought up over the depth and added;
@@ -177,7 +177,7 @@ export const attachmentCost = (textures) => textures.reduce((sum, t) => sum + (t
 export async function buildChain(renderer, passes) {
   const kinds = new Set(passes.map((p) => p.kind));
   // (GTAO without TRAA is filtered by DenoiseNode, as three's AO example does)
-  if (kinds.has('ao') && !kinds.has('traa')) kinds.add('denoise');
+  if (kinds.has('ao') && (!kinds.has('traa') || passes.some((p) => p.kind === 'ao' && p.denoise))) kinds.add('denoise');
   // the internal resolution: the upscale's scale, else the screen's
   const up = passes.find((p) => p.kind === 'upscale' && p.enabled !== false && p.scale < 1) ?? null;
   const under = up ? up.scale : 1;
@@ -310,7 +310,8 @@ export async function buildChain(renderer, passes) {
         if (p.scale != null) ao.scale.value = p.scale;
         if (p.falloff != null) ao.distanceFallOff.value = p.falloff;
         let occlusion = ao.getTextureNode();
-        if (!kinds.has('traa')) {
+        // (denoised where no TRAA follows, or where the chain asks: TRAA can't settle the noise on what moves in its vertices, grass in the wind)
+        if (!kinds.has('traa') || p.denoise) {
           const dn = keep(mods.denoise.denoise(occlusion, g.depth, g.normal, p.camera ?? g.camera));
           if (p.blur != null) dn.radius.value = p.blur;
           occlusion = dn;

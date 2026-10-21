@@ -404,8 +404,9 @@ export const ROWS = [
     ceiling: 7,
     people: [
       { id: 'vrick', who: 'rick', dx: -6, dz: -8, face: E, ai: { watch: 10, bark: { r: 6, every: 12, lines: ['It’s a vat of fake acid, Morty. You jump in, you lie on the bottom, they leave. It’s elegant.', 'Don’t breathe through the straw where they can see you. That’s the one rule.'] } } },
-      { id: 'vgromflomite-a', who: 'gromflomite', dx: 6, dz: -8, face: W, ai: { watch: 8, bark: { r: 5, every: 15, lines: ['Where is the crystal, Sanchez? Nobody leaves till we have the crystal.'] } } },
-      { id: 'vgromflomite-b', who: 'gromflomite', dx: 8, dz: -4, face: W, ai: { watch: 8 } },
+      // (the buyers: their backs turned and their looks by turns, the game's: ../games/freeze.js)
+      { id: 'vgromflomite-a', who: 'gromflomite', dx: 6, dz: -8, face: W, ai: { watch: 8, lookout: true, bark: { r: 5, every: 15, lines: ['Where is the crystal, Sanchez? Nobody leaves till we have the crystal.'] } } },
+      { id: 'vgromflomite-b', who: 'gromflomite', dx: 8, dz: -4, face: W, ai: { watch: 8, lookout: true } },
     ],
     spots: [
       { id: 'vatrim', dx: 0, dz: -2, label: 'The vat', verb: 'Jump in', r: 2.2 },
@@ -420,16 +421,16 @@ export const ROWS = [
       { id: 'barrel-a', dx: 9, dz: 6, r: 0.6 },
       { id: 'barrel-b', dx: 10, dz: 4.4, r: 0.6 },
     ],
-    tasks: [{ id: 'vat', name: 'Fake your death in the vat', hint: 'Dial the vat of acid on the portal gun, talk to Rick, and jump in. Lie still.' }],
+    tasks: [{ id: 'vat', name: 'Fake your death in the vat', hint: 'Dial the vat of acid. Move while the Gromflomites’ backs are turned and keep still while they look; jump in behind their backs, then play dead.' }],
     say: {
       vrick: { who: 'Rick', text: '“Here’s the plan, Morty. We jump in, we lie at the bottom, we breathe through the straws, they think we dissolved, they leave. Don’t make the face. I know you’re going to make the face.”' },
       vatrim: { who: null, text: 'You jump. It’s warm and green and tastes of lime. You lie on the bottom with a straw in your mouth while fake bones float past. The Gromflomites peer in, say “gross”, and go. Rick says, muffled, “Told you.”' },
       vatcrystal: { who: null, text: 'The crystal everyone’s here about, in a glass case marked PROPERTY OF R. SANCHEZ, which is how Rick says “stolen”.' },
       vatbones: { who: null, text: 'Bones on a shelf by the vat, foam ones, painted. A little sign says BONES (FAKE) in Rick’s handwriting. He’s very proud of the bones.' },
     },
-    collect: { task: 'vat', spots: ['vrick', 'vatrim'] },
-    acts: { vatrim: 'splash' },
-    goal: 'vrick',
+    // (the game: play dead behind the buyers' backs, then in the vat; its win is the fake bones' achievement)
+    freeze: { task: 'vat', spot: 'vatrim', who: null, lost: 'A Gromflomite sees you move, and you’re marched back to the door.', unlock: 'vat' },
+    goal: 'vatrim',
     kinds: ['rick', 'gromflomite'],
   }),
   place(34, {

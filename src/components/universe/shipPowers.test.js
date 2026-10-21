@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHARGE, CREW_POWERS, KEPT_KEY, POWERS, POWER_KEYS, aimHelp, beamOf, blastPunch, cancel, chargeFor, clearOfSolids, createPowers, crossesShell, finish, firstAlong, gain, hasten, isObjective, jinkStep, mods, pickTargets, portalExit, powersOf, press, pullStep, readCooling, readKept, shotAt, step, turretPick, view, writeKept } from './shipPowers';
+import { CHARGE, CREW_POWERS, KEPT_KEY, POWERS, POWER_KEYS, aimHelp, beamOf, blastPunch, cancel, chargeFor, clearOfSolids, createPowers, crossesShell, finish, firstAlong, gain, hasten, isObjective, jinkStep, mods, pickTargets, portalExit, picksFor, powersOf, press, pullStep, readCooling, readKept, retune, shotAt, step, turretPick, view, writeKept } from './shipPowers';
 import { CREWS } from './crews';
 import { spawn, step as fly } from './ship';
 import { makeSpace } from '../galaxy/space';
@@ -446,5 +446,79 @@ describe('the crews’ ship powers', () => {
     for (const bad of [null, '', '{bad', '[]', '3', JSON.stringify({ crew: 'xwing', charge: 'lots' }), JSON.stringify({ crew: 'nope', charge: 1 })]) expect(readKept(bad, bad?.includes('nope') ? 'nope' : 'xwing'), String(bad)).toBe(0);
     expect(readKept(JSON.stringify({ crew: 'rv', charge: 7 }), 'rv')).toBe(1);
     expect(writeKept(null)).toBeNull();
+  });
+});
+
+describe('a crew carrying another crew’s powers (the skill tree’s borrowed pairs)', () => {
+  it('carries its own pair by default', () => {
+    expect(picksFor('xwing', {}, [])).toEqual({ primary: 'focus', ultimate: 'salvo' });
+    expect(picksFor('xwing', null, null)).toEqual({ primary: 'focus', ultimate: 'salvo' });
+  });
+  it('carries a borrowed one only where it may, and only in its own slot', () => {
+    expect(picksFor('xwing', { xwing: { primary: 'portal' } }, [])).toEqual({ primary: 'focus', ultimate: 'salvo' });
+    expect(picksFor('xwing', { xwing: { primary: 'portal' } }, ['cruiser'])).toEqual({ primary: 'portal', ultimate: 'salvo' });
+    expect(picksFor('xwing', { xwing: { ultimate: 'portal' } }, ['cruiser'])).toEqual({ primary: 'focus', ultimate: 'salvo' });
+    expect(picksFor('xwing', { xwing: { primary: 'nope' } }, ['cruiser'])).toEqual({ primary: 'focus', ultimate: 'salvo' });
+  });
+  it('plays the picks it’s handed', () => {
+    const st = createPowers('xwing', { picks: { primary: 'portal', ultimate: 'wubba' } });
+    expect(st.primary.id).toBe('portal');
+    expect(st.ultimate.id).toBe('wubba');
+  });
+});
+
+describe('the powers with the skill tree’s (hangar/skills’ fx)', () => {
+  it('cools down sooner with quick recovery, and lasts longer with overdrive', () => {
+    const st = createPowers('xwing', { fx: { powerCool: 0.85, powerDur: 1.2 } });
+    press(st, 'primary');
+    expect(st.primary.left).toBeCloseTo(POWERS.focus.dur * 1.2);
+    step(st, POWERS.focus.dur * 1.2 + 0.01);
+    expect(st.primary.phase).toBe('cooling');
+    expect(st.primary.left).toBeCloseTo(POWERS.focus.cool * 0.85, 1);
+  });
+  it('charges the big one quicker, and more from a pickup with a scavenger', () => {
+    const st = createPowers('xwing', { fx: { charge: 1.2, pickup: 1.5 } });
+    gain(st, 'kill');
+    expect(st.ultimate.charge).toBeCloseTo(CHARGE.kill * 1.2);
+    gain(st, 'pickup');
+    expect(st.ultimate.charge).toBeCloseTo(CHARGE.kill * 1.2 + CHARGE.pickup * 1.2 * 1.5);
+  });
+  it('reads its ring against the lengths it has, not the cards’', () => {
+    const st = createPowers('xwing', { fx: { powerDur: 2 } });
+    press(st, 'primary');
+    step(st, POWERS.focus.dur);
+    expect(view(st).primary.k).toBeCloseTo(0.5, 2);
+  });
+  it('is as the cards have it with no skills', () => {
+    const st = createPowers('xwing');
+    press(st, 'primary');
+    expect(st.primary.left).toBe(POWERS.focus.dur);
+  });
+});
+
+describe('the powers retuned for the same crew (new skills or picks in the Hangar)', () => {
+  it('keeps a power that’s on running, its new lengths for after', () => {
+    const st = createPowers('xwing');
+    press(st, 'primary');
+    step(st, 1);
+    const left = st.primary.left;
+    expect(retune(st, { fx: { powerCool: 0.5 } }).cut).toBe(false);
+    expect(st.primary.phase).toBe('active');
+    expect(st.primary.left).toBeCloseTo(left);
+    step(st, left + 0.01);
+    expect(st.primary.left).toBeCloseTo(POWERS.focus.cool * 0.5, 1);
+  });
+  it('keeps the big one’s charge, and puts the new pick in an idle slot', () => {
+    const st = createPowers('xwing', { charge: 0.4 });
+    expect(retune(st, { picks: { primary: 'portal', ultimate: 'salvo' } }).cut).toBe(false);
+    expect(st.primary).toMatchObject({ id: 'portal', phase: 'ready' });
+    expect(st.ultimate.charge).toBeCloseTo(0.4);
+  });
+  it('ends a power that’s on when its slot is given another, cooling as the new one does', () => {
+    const st = createPowers('xwing');
+    press(st, 'primary');
+    expect(retune(st, { picks: { primary: 'portal', ultimate: 'salvo' } }).cut).toBe(true);
+    expect(st.primary).toMatchObject({ id: 'portal', phase: 'cooling' });
+    expect(st.primary.left).toBeCloseTo(POWERS.portal.cool);
   });
 });

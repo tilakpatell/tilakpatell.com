@@ -792,29 +792,12 @@
   transform: rotate(45deg);
 }
 
-/* A story's scene (scene/cinematics.js): black bars top and bottom, and the
-   HUD's panels out of the way; the objective and the subtitles stay. */
-.ds-letterbox::before,
-.ds-letterbox::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 11%;
-  background: #000;
-  z-index: 3;
-  animation: ds-bars 0.5s ease-out both;
-}
-.ds-letterbox::before {
-  top: 0;
-}
-.ds-letterbox::after {
-  bottom: 0;
-}
-@keyframes ds-bars {
-  from {
-    transform: scaleY(0);
-  }
+/* A story's scene (scene/cinematics.js): the kit's letterbox (runtime/hud's
+   Letterbox), its bars the station's deeper 11 % coming in over 0.5 s, and
+   the HUD's panels out of the way; the objective and the subtitles stay. */
+.ds-hud {
+  --hud-bar: 11%;
+  --hud-bar-in: 0.5s;
 }
 .ds-hud[data-scene] .ds-vitals,
 .ds-hud[data-scene] .ds-where,
@@ -823,12 +806,6 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s;
-}
-@media (prefers-reduced-motion: reduce) {
-  .ds-letterbox::before,
-  .ds-letterbox::after {
-    animation: none;
-  }
 }
 
 /* a story's end (ui/End.jsx) */

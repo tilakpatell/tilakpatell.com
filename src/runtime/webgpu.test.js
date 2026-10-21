@@ -5,7 +5,14 @@ import * as THREE from 'three';
 const made = [];
 let fallBack = false; // (three's renderer, finding no adapter, on its WebGL 2 backend)
 let software = false; // (a fallback adapter: WebGPU drawn on the CPU)
+// (three's observer of what changed between draws: the runtime teaches it textures' places, ./textureWatch.js)
+class NodeMaterialObserver {
+  equals() {
+    return true;
+  }
+}
 vi.mock('three/webgpu', () => ({
+  NodeMaterialObserver,
   WebGPURenderer: class {
     constructor(options) {
       this.options = options;
@@ -32,7 +39,7 @@ vi.mock('../lib/settle', () => ({ settle: (p) => p }));
 const built = [];
 vi.mock('../lib/three/light/passes.js', () => ({
   buildChain: vi.fn(async (renderer, passes) => {
-    const chain = { pipeline: { render: vi.fn() }, dispose: vi.fn(), passes };
+    const chain = { pipeline: { render: vi.fn() }, dispose: vi.fn(), passes, parts: { scenePass: null, bloom: null } };
     built.push(chain);
     return chain;
   }),
@@ -168,6 +175,18 @@ describe('createWebGPU', () => {
   });
 });
 
+describe('the node renderer’s observer', () => {
+  it('is taught textures’ places when a renderer is made', async () => {
+    await createWebGPU(fakeCanvas());
+    const map = new THREE.Texture();
+    const ro = { material: new THREE.MeshBasicMaterial({ map }) };
+    const o = new NodeMaterialObserver();
+    o.equals(ro);
+    map.offset.x = 0.5;
+    expect(o.equals(ro)).toBe(false);
+  });
+});
+
 describe('buildPostProcessing', () => {
   it('a chain with the game light’s passes is built by lib/three/light, drawn and disposed through it', async () => {
     const passes = [{ kind: 'render' }, { kind: 'ssgi' }, { kind: 'ao' }, { kind: 'traa' }, { kind: 'output' }];
@@ -175,6 +194,7 @@ describe('buildPostProcessing', () => {
     await post.ready;
     const chain = built.at(-1);
     expect(chain.passes).toBe(passes);
+    expect(post.parts).toBe(chain.parts);
     post.render();
     expect(chain.pipeline.render).toHaveBeenCalledTimes(1);
     post.dispose();

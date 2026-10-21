@@ -1,5 +1,6 @@
-import { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useLocation } from 'react-router-dom';
 import ArcReactor from '../ArcReactor';
 import Mjolnir from '../Mjolnir';
 import ShieldThrow from '../ShieldThrow';
@@ -7,18 +8,22 @@ import Range from '../Range';
 import Dossier from '../Dossier';
 import HulkLab from '../HulkLab';
 import WebShooter from '../WebShooter';
-import { STONES } from '../../interests/stones';
+import { HALF_OF, stoneFor } from './labels';
 import { audioContext } from '../../../lib/audio';
 import { sayVoiced, stopVoiced } from '../../../lib/voiced';
-import { hasEarned } from '../hq/stones';
+import { GameBar, GameScreen } from '../hq/HQGame';
+import { nextFor } from '../hq/gameScreen';
+import { SOUL_HALVES, earnedStones, hasEarned } from '../hq/stones';
 import { REACTOR } from './reactor';
-import { placeById } from './rules';
+import { linkOf } from './links';
+import { placeById, progress } from './rules';
 import '../../../styles/lazy/avengers.css';
 
-// A building's game (or Spider-Man's, at the gate), open over the page: what the place is, the game itself
-// (each keeps its own 3D, and its old toy for a browser without it), and the
-// way back out to the compound. Loaded with the first door you go through,
-// so walking about never fetches a game.
+// A building's game (or Spider-Man's, at the gate), open over the page and
+// full screen: the place hands its game the game screen (hq/HQGame: its name,
+// line and stone, and the way back out to the compound), and each game keeps
+// its own 3D, and its old toy for a browser without it. Loaded with the first
+// door you go through, so walking about never fetches a game.
 
 const RepulsorRange = lazy(() => import('../repulsor/RepulsorRange'));
 const HoldTheLawn = lazy(() => import('../lawn/HoldTheLawn'));
@@ -76,7 +81,8 @@ function ReactorToy() {
 }
 
 // The hangar without 3D: the Tesseract in its case, and the Space Stone's portal.
-function TesseractToy({ onPortal }) {
+// (the portal needs the Space Stone in every mode, and it's won in the 3D game)
+function TesseractToy({ onPortal, space }) {
   const [open, setOpen] = useState(false);
   return (
     <div>
@@ -114,7 +120,7 @@ function TesseractToy({ onPortal }) {
       <button
         type="button"
         className="btn btn-primary mt-6"
-        disabled={open}
+        disabled={open || !space}
         onClick={() => {
           setOpen(true);
           onPortal?.();
@@ -122,7 +128,7 @@ function TesseractToy({ onPortal }) {
       >
         Space
       </button>
-      <p className="mt-3 text-sm text-muted">The Space Stone opens a portal. Thanos is on the other side.</p>
+      <p className="mt-3 text-sm text-muted">{space ? 'The Space Stone opens a portal. Thanos is on the other side.' : 'The Space Stone opens a portal, and it’s won in the 3D game. Thanos is on the other side.'}</p>
     </div>
   );
 }
@@ -144,17 +150,17 @@ function Game({ id, onPortal }) {
     case 'spidey':
       return <Thwip fallback={<WebShooter />} />;
     case 'vault':
-      return <TesseractRun onPortal={onPortal} fallback={<TesseractToy onPortal={onPortal} />} />;
+      return <TesseractRun onPortal={onPortal} fallback={<TesseractToy onPortal={onPortal} space={hasEarned('space')} />} />;
     default:
       return null;
   }
 }
 
-const STONE_OF = { 'soul-clint': 'soul', 'soul-natasha': 'soul' };
 
 export default function Place({ id, onLeave, onPortal }) {
   const p = placeById(id);
-  const back = useRef(null);
+  const location = useLocation();
+  const back = useRef(null); // the bar's Back while a cold game's code loads
   const leaveRef = useRef(onLeave);
   leaveRef.current = onLeave;
   useEffect(() => {
@@ -172,42 +178,41 @@ export default function Place({ id, onLeave, onPortal }) {
       if (before instanceof HTMLElement) before.focus({ preventScroll: true });
     };
   }, []);
+  const state = location.state;
+  const screen = useMemo(() => {
+    if (!p) return null;
+    const st = stoneFor(p);
+    return {
+      id,
+      name: p.name,
+      blurb: p.blurb,
+      accent: p.accent,
+      stone: st && { id: p.stone, name: st.name, color: st.color, half: HALF_OF[p.stone] ?? null },
+      onBack: () => leaveRef.current(),
+      // the next stone not yet won (never this building), read as the card shows;
+      // the entry's state rides along, so Back still goes back in the page after Next
+      next: () => {
+        const n = nextFor(progress([...earnedStones(), ...SOUL_HALVES.filter(hasEarned)]), id, linkOf);
+        return n && { ...n, state };
+      },
+    };
+  }, [p, id, state]);
   if (!p) return null;
-  const stone = p.stone ? STONES.find((s) => s.id === (STONE_OF[p.stone] ?? p.stone)) : null;
-  const won = p.stone ? hasEarned(p.stone) : false;
-  const half = p.stone?.startsWith('soul-') ? (p.id === 'hawkeye' ? 'Clint’s half of the ' : 'Natasha’s half of the ') : 'the ';
   // on the body, so nothing on the page (the nav, a transition) sits over it
   return createPortal(
-    <div className="cw-place" role="dialog" aria-modal="true" aria-labelledby="cw-place-title" style={{ '--cw-accent': p.accent }}>
-      <header className="cw-place-head">
-        <div>
-          <p className="cw-place-sub">{p.where}</p>
-          <h2 id="cw-place-title" className="cw-place-title">
-            {p.name}
-          </h2>
-        </div>
-        <button ref={back} type="button" className="btn btn-ghost" onClick={onLeave}>
-          Back to the compound <kbd>Esc</kbd>
-        </button>
-      </header>
-      <div className="cw-place-body">
-        <div className="shell py-6 md:py-8">
-          <div className="cw-place-intro">
-            <p className="lead max-w-[62ch]">{p.blurb}</p>
-            {stone && (
-              <p className="cw-place-stone" data-won={won || undefined} style={{ '--glow': stone.color }}>
-                <i className="stone-dot" aria-hidden="true" />
-                {won ? `You won ${half}${stone.name} back here.` : `Win it, and ${half}${stone.name} comes back to the compound.`}
-              </p>
-            )}
-          </div>
-          <div className="mt-6">
-            <Suspense fallback={<p className="text-muted">Opening the door…</p>}>
-              <Game id={id} onPortal={onPortal} />
-            </Suspense>
-          </div>
-        </div>
-      </div>
+    <div className="cw-place" role="dialog" aria-modal="true" aria-labelledby="hq-bar-title" style={{ '--cw-accent': p.accent }}>
+      <GameScreen.Provider value={screen}>
+        <Suspense
+          fallback={
+            <>
+              <GameBar name={p.name} onBack={onLeave} backRef={back} />
+              <p className="shell py-6 text-muted">Opening the door…</p>
+            </>
+          }
+        >
+          <Game id={id} onPortal={onPortal} />
+        </Suspense>
+      </GameScreen.Provider>
     </div>,
     document.body,
   );

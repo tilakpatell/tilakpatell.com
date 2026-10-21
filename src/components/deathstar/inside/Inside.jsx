@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useAchievements } from '../../Achievements';
 import { useMediaQuery } from '../../../lib/hooks';
 import { WorldHost, useWorld } from '../../../runtime';
+import { useTravellers } from '../../middleearth/shared/travellers';
 import module from './module';
 import Hud, { Pause } from './ui/Hud';
 import End from './ui/End';
@@ -50,6 +51,7 @@ import './inside.css';
 //   stick(x, y) (−1…1, y forward), press(name, down): fire, aim, use, jump, crouch
 
 const SAY = 4; // seconds a subtitle stays when the world doesn’t say
+const ROOM = { motion: true }; // (the others online: rules/online.js)
 
 export default function Inside({ mode = 'page', onExit }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
@@ -91,6 +93,15 @@ export default function Inside({ mode = 'page', onExit }) {
   const { host, status, rt } = useWorld(module, { props, onEvent });
   // (every call into the world is optional: one it lacks is left alone, not the page failing on it)
   const api = useCallback(() => (rt?.current?.module === module ? rt.current.world : null), [rt]);
+  // the others online aboard (middleearth/towns/useTravellers), in the room
+  // you're in: the world sends where you are and draws them (rules/online.js),
+  // through the link it's handed (people jump and climb: their height goes
+  // too); while the station's up the page draws no pointers
+  const trav = useTravellers('deathstar', status === 'on', ROOM);
+  const travRef = trav.ref;
+  useEffect(() => {
+    if (status === 'on') api()?.online?.(() => travRef.current);
+  }, [status, api, travRef]);
 
   // (only while the world is on: after a lost context the last 'ui' event still says play, map open)
   const shown = layers(status, ui);
@@ -216,6 +227,7 @@ export default function Inside({ mode = 'page', onExit }) {
             hit={hit}
             touch={touch}
             playing={playing}
+            players={{ available: trav.available, on: trav.on, count: trav.count, allies: trav.allies, onJoin: trav.join }}
             onMap={() => api()?.map?.(true)}
             onPause={() => api()?.pause?.(true)}
             onChoose={(i) => api()?.choose?.(i)}

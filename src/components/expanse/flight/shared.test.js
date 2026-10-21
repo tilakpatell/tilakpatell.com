@@ -61,7 +61,7 @@ function fakeDraw() {
   const d = { structures: new Map(), aims: new Map(), peers: [], bolts: [] };
   return Object.assign(d, {
     makeStructures: () => ({ set: (e) => d.structures.set(e.id, e), remove: (id) => d.structures.delete(id), has: (id) => d.structures.has(id), aim: (id, y, p) => d.aims.set(id, [y, p]), draw: () => {}, count: () => d.structures.size, dispose: () => {} }),
-    makePeers: () => ({ draw: (list) => (d.peers = list), count: () => d.peers.length, dispose: () => {} }),
+    makePeers: () => ({ draw: (list, at, ally = () => false, quip = () => null) => ((d.peers = list), (d.allies = list.filter((p) => ally(p.id)).map((p) => p.id)), (d.quips = list.map((p) => quip(p.id)))), count: () => d.peers.length, dispose: () => {} }),
     makeBolts: () => ({ draw: (list) => (d.bolts = list), dispose: () => {} }),
   });
 }
@@ -239,6 +239,68 @@ describe('the other pilots', () => {
     expect(w.shared.built().map((e) => [e.id, e.type, e.x, e.z])).toEqual([['t1', 'turret', 5, 6]]);
     w.shared.join(null);
     expect(w.shared.pilots()).toEqual([]);
+  });
+
+  it('count your allies among them on the prompt, as the roster has them now', async () => {
+    const w = world();
+    const allies = new Set(['b']);
+    w.shared.join(null);
+    w.shared.join('Alpha', () => false, (id) => allies.has(id));
+    await flush();
+    w.online.list = [
+      { id: 'b', name: 'Bravo', pose: { x: 1, y: 2, z: 3, pitch: 0, yaw: 0, roll: 0, speed: 100 } },
+      { id: 'c', name: 'Charlie', pose: { x: 9, y: 2, z: 3, pitch: 0, yaw: 0, roll: 0, speed: 100 } },
+    ];
+    expect(w.shared.prompt(low())).toMatchObject({ others: 2, allies: 1 });
+    // (an alliance made while you're both here counts at once)
+    allies.add('c');
+    expect(w.shared.prompt(low()).allies).toBe(2);
+  });
+
+  it('hand the drawing who of them is an ally, so their wedges wear the ally green', async () => {
+    const w = world();
+    w.shared.join(null);
+    w.shared.join('Alpha', () => false, (id) => id === 'b');
+    await flush();
+    w.online.list = [
+      { id: 'b', name: 'Bravo', pose: { x: 1, y: 2, z: 3, pitch: 0, yaw: 0, roll: 0, speed: 100 } },
+      { id: 'c', name: 'Charlie', pose: { x: 9, y: 2, z: 3, pitch: 0, yaw: 0, roll: 0, speed: 100 } },
+    ];
+    w.shared.draw([0, 0, 0]);
+    expect(w.draw.allies).toEqual(['b']);
+  });
+
+  it('hand the drawing what each of them has just said, as it hands who’s an ally', async () => {
+    const w = world();
+    const said = new Map([['c', 'Watch out']]);
+    w.shared.join(null);
+    w.shared.join(
+      'Alpha',
+      () => false,
+      () => false,
+      (id) => said.get(id) ?? null,
+    );
+    await flush();
+    w.online.list = [
+      { id: 'b', name: 'Bravo', pose: { x: 1, y: 2, z: 3, pitch: 0, yaw: 0, roll: 0, speed: 100 } },
+      { id: 'c', name: 'Charlie', pose: { x: 9, y: 2, z: 3, pitch: 0, yaw: 0, roll: 0, speed: 100 } },
+    ];
+    w.shared.draw([0, 0, 0]);
+    expect(w.draw.quips).toEqual([null, 'Watch out']);
+    // (asked each frame: a line said in flight shows at once)
+    said.set('b', 'Hello');
+    w.shared.draw([0, 0, 0]);
+    expect(w.draw.quips).toEqual(['Hello', 'Watch out']);
+  });
+
+  it('have no allies with no one to ask (joined as the older pages join)', async () => {
+    const w = world();
+    await flush();
+    w.online.list = [{ id: 'b', name: 'Bravo', pose: { x: 1, y: 2, z: 3, pitch: 0, yaw: 0, roll: 0, speed: 100 } }];
+    expect(w.shared.prompt(low())).toMatchObject({ others: 1, allies: 0 });
+    // (nor anything said)
+    w.shared.draw([0, 0, 0]);
+    expect(w.draw.quips).toEqual([null]);
   });
 
   it('go when you leave the room', async () => {
