@@ -1,4 +1,0 @@
-Merge origin/main into the 2.2 branch: the generator (PR 2.1) for rosterWhere
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01PJqkNSL8smFuirsPmEJGyM
