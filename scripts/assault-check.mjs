@@ -1,4 +1,4 @@
-/* global window */
+/* global window, document */
 // A browser check of a galactic assault (missions/assault.js) on a world
 // (/galaxy/:id/surface?mission=assault): loads the page fresh, waits for the
 // scene, then plays the battle through its dev hooks the way the HUD would:
@@ -56,6 +56,7 @@ const prepare = async (ctx) =>
 // the modes a soldier walks in (the fight's, fight.js; its post's and beat's)
 const WALKING = new Set(['advance', 'close', 'flank', 'back', 'patrol']);
 const STUCK = 10; // seconds walking under a metre that make a soldier stuck
+const BRAINS = 120; // metres round you inside which soldiers are stepped (ground/groundScene.js)
 
 async function groundPass(id) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
@@ -102,29 +103,67 @@ async function groundPass(id) {
     return ctx.close();
   }
   await page.waitForFunction(() => (window.__surfaceScene?.groundWar?.posts?.length ?? 0) > 0, null, { timeout: 60000 }).catch(() => {});
+  // (the world on: the veil gone, the scene the runtime's, so `advance` steps it. A level whose pack
+  // holds a step (a file the bucket lacks) offers "Go in anyway" after a while: taken, as a player would)
+  let held = null;
+  for (let k = 0; k < 120; k++) {
+    if (await page.evaluate(() => Boolean(window.__surface?.()))) break;
+    held = await page.evaluate(() => document.querySelector('.loading-veil')?.textContent?.replace(/\s+/g, ' ').trim().slice(0, 160) ?? null);
+    const skip = page.locator('.loading-veil-skip');
+    if (await skip.count()) await skip.first().click().catch(() => {});
+    await page.waitForTimeout(2000);
+  }
+  if (!(await page.evaluate(() => Boolean(window.__surface?.())))) {
+    fail(id, `the world never came on (the veil: ${held ?? 'none'})`);
+    return ctx.close();
+  }
+  if (held) console.log(`${id}: went in past the veil (${held})`);
   // (down from the ship once the landing has begun: out of it, where the post's holders face)
   await page.waitForFunction(() => ['landing', 'out', 'walk'].includes(window.__surfaceScene?.you?.()?.phase), null, { timeout: 240000, polling: 500 }).catch(() => {});
-  const at = await page.evaluate(() => {
+  // (the landing played out to its end, so it doesn't set you back by the ship once you're put down)
+  for (let k = 0; k < 90 && (await page.evaluate(() => window.__surfaceScene.you().phase)) !== 'walk'; k++) await page.evaluate(() => window.__surfaceDo('advance', 1));
+  // (a spot the holders of one of its posts face, not far over or under them (the soldiers'
+  // line is walker.js's lineClear, flat: the ground hides nobody, but a rock between does, whatever
+  // the heights), clear of the world's solids and with a clear line to them)
+  const at = await page.evaluate(async () => {
     const s = window.__surfaceScene;
-    const turf = s.groundWar.turfs[0];
-    const post = turf?.posts?.[0];
-    if (!post) return null;
-    const l = Math.hypot(post[0] - turf.at[0], post[1] - turf.at[1]) || 1;
-    const p = [post[0] + ((post[0] - turf.at[0]) / l) * 20, post[1] + ((post[1] - turf.at[1]) / l) * 20];
-    s.put(p[0], p[1]);
-    return p;
+    const { lineClear, pushOut } = await import('/src/components/galaxy/surface/walker.js');
+    const owner = s.groundWar.turfs[0]?.side;
+    const why = { posts: 0, height: 0, inside: 0, line: 0 };
+    for (const turf of s.groundWar.turfs.filter((t) => t.side === owner))
+      for (const post of turf.posts ?? []) {
+        why.posts += 1;
+        const near = s.solidsNear(post[0], post[1], 60);
+        const solids = { near: () => near };
+        const h = s.heightAt(post[0], post[1]);
+        // (the holders face out from their turf's middle: the bearings across their sight first)
+        const out = Math.atan2(post[0] - turf.at[0], post[1] - turf.at[1]);
+        const ways = Array.from({ length: 9 }, (_, k) => out + ((k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI) / 8);
+        for (const r of [18, 25, 32, 12, 40])
+          for (const a of ways) {
+            const p = [post[0] + Math.sin(a) * r, post[1] + Math.cos(a) * r];
+            // (from just ahead of the post: its own sandbags are behind the holders, not between)
+            const eye = { x: post[0] + Math.sin(a) * 1.5, z: post[1] + Math.cos(a) * 1.5 };
+            if (Math.abs(s.heightAt(p[0], p[1]) - h) > 12 && ++why.height) continue;
+            if (near.some((o) => pushOut(o, p[0], p[1], 0.6)) && ++why.inside) continue;
+            if (!lineClear(solids, eye, { x: p[0], z: p[1] }) && ++why.line) continue;
+            s.put(p[0], p[1]);
+            return { p, post, r };
+          }
+      }
+    return { why };
   });
+  if (!at.p) {
+    fail(id, `held by ${sworn.owner}, but no post of its has a spot in its holders' line on ground about their own (${JSON.stringify(at.why)})`);
+    return ctx.close();
+  }
   await page.evaluate(() => window.__surfaceDo('advance', 0.5));
-  const phase = await page.evaluate(() => window.__surfaceScene.you().phase);
-  if (phase !== 'walk') {
-    fail(id, `not on foot after setting down (${phase})`);
+  const now = await page.evaluate(() => window.__surfaceScene.you());
+  if (now.phase !== 'walk' || Math.hypot(now.x - at.p[0], now.z - at.p[1]) > 4) {
+    fail(id, `not on foot where set down (${now.phase} at [${Math.round(now.x)}, ${Math.round(now.z)}])`);
     return ctx.close();
   }
-  if (!at) {
-    fail(id, `held by ${sworn.owner} but its ground war has no post`);
-    return ctx.close();
-  }
-  console.log(`${id}: held by ${sworn.owner} (${sworn.war}), sworn ${sworn.side}; set down at [${at.map(Math.round)}], 20 m out from its first post, in its holders' sight`);
+  console.log(`${id}: held by ${sworn.owner} (${sworn.war}), sworn ${sworn.side}; set down at [${at.p.map(Math.round)}], ${at.r} m from its post at [${at.post.map(Math.round)}], in its holders' sight and line`);
   const seen = new Map(); // id → [{ t, at, mode }]
   let fight = null;
   let atYou = null;
@@ -134,11 +173,23 @@ async function groundPass(id) {
   let ms = 0;
   for (let t = 1; t <= 60; t++) {
     await page.evaluate(() => window.__surfaceDo('advance', 1));
-    const rows = await page.evaluate(() => window.__surfaceScene.groundWar.debug());
+    const { rows, you } = await page.evaluate(() => ({ rows: window.__surfaceScene.groundWar.debug(), you: window.__surfaceScene.you() }));
     ms = await page.evaluate(() => window.__surfaceScene.groundWar.ms);
     most = Math.max(most, rows.length);
+    // (GROUND_DEBUG=1: what the nearest believe of you, now and then)
+    if (process.env.GROUND_DEBUG && t % 10 === 1)
+      console.log(JSON.stringify(await page.evaluate((y) => {
+        const g = window.__surfaceScene.groundWar;
+        const near = g.debug().sort((a, b) => Math.hypot(a.at[0] - y.x, a.at[1] - y.z) - Math.hypot(b.at[0] - y.x, b.at[1] - y.z)).slice(0, 2);
+        return { t: window.__surface?.()?.t ?? null, near: near.map((r) => ({ id: r.id, mode: r.mode, at: r.at, probe: g.probe?.(r.id) })) };
+      }, you)));
     for (const r of rows) {
       if (r.down) continue;
+      // (only those being stepped, inside the brains' reach of you: groundScene.js's BRAINS; the rest stand as they were left)
+      if (Math.hypot(r.at[0] - you.x, r.at[1] - you.z) > BRAINS) {
+        seen.delete(r.id);
+        continue;
+      }
       if (r.target && fight === null) fight = t;
       if (r.target === 'you' && atYou === null) atYou = t;
       if ((r.stuck ?? 0) >= STUCK) brainStuck.add(r.id);
@@ -153,7 +204,7 @@ async function groundPass(id) {
   const brains = await page.evaluate(() => window.__surfaceScene.groundWar.brains?.() ?? null);
   const modes = {};
   for (const h of seen.values()) for (const p of h) modes[p.mode] = (modes[p.mode] ?? 0) + 1;
-  console.log(`${id}: ${most} soldiers at most; first fight at ${fight ?? '-'} s, first at you at ${atYou ?? '-'} s; stuck ${stuck.size} (walking under a metre in ${STUCK} s)${brainStuck.size ? `, ${brainStuck.size} by their brains` : ''}; the war's update ${ms.toFixed(2)} ms${brains?.loaded ? ` (the brains: ${brains.thinks} thinks ${brains.think} ms, ${brains.acts} steps ${brains.act} ms; the navgrid built ${brains.nav?.builds} times, the last in ${brains.nav?.ms} ms; ${brains.difficulty})` : ''}; modes ${Object.entries(modes)
+  console.log(`${id}: ${most} soldiers at most; first fight at ${fight ?? '-'} s, first at you at ${atYou ?? '-'} s; stuck ${stuck.size} (walking under a metre in ${STUCK} s)${brainStuck.size ? `, ${brainStuck.size} by their brains` : ''}; the war's update ${ms.toFixed(2)} ms${brains?.loaded ? ` (the brains: ${brains.thinks} thinks ${brains.think} ms, ${brains.acts} steps ${brains.act} ms; the navgrid built ${brains.nav?.builds} times, the last in ${brains.nav?.ms} ms over frames, ${brains.nav?.worst} ms at most in one; ${brains.difficulty})` : ''}; modes ${Object.entries(modes)
     .sort((a, b) => b[1] - a[1])
     .map(([m, n]) => `${m} ${n}`)
     .join(', ')}`);

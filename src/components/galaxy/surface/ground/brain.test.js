@@ -22,7 +22,7 @@ describe('the navgrid from the walker’s ground and solids', () => {
     // (no top: it stands well over a soldier, from under the ground)
     expect(c.half[0]).toBe(1.5);
     expect(c.at[1] + c.half[1]).toBeGreaterThan(10);
-    const w = createNavWindow({ lib, heightAt: () => 0, solids });
+    const w = createNavWindow({ lib, heightAt: () => 0, solids, slice: Infinity });
     w.update(0, 0);
     // every point the walker would push a soldier out of is no ground for the brain either
     for (let x = 4; x <= 16; x += 0.5)
@@ -32,7 +32,7 @@ describe('the navgrid from the walker’s ground and solids', () => {
     expect(tree.r).toBe(1.5);
   });
   test('the window: 2 m cells round where it was built, the sea shut, built again once you go far enough', () => {
-    const w = createNavWindow({ lib, heightAt: (x) => (x > 50 ? -3 : 1), standable: ([x]) => x <= 50 });
+    const w = createNavWindow({ lib, heightAt: (x) => (x > 50 ? -3 : 1), standable: ([x]) => x <= 50, slice: Infinity });
     expect(w.update(0, 0)).toBe(true);
     expect(w.nav.cell).toBe(2);
     expect(w.nav.cols * w.nav.cell).toBe(2 * NAV.half);
@@ -42,6 +42,31 @@ describe('the navgrid from the walker’s ground and solids', () => {
     expect(w.update(NAV.again + 1, 0)).toBe(true);
     expect(w.builds).toBe(2);
     expect(w.ms).toBeGreaterThanOrEqual(0);
+  });
+  test('a window is made a slice of a frame at a time, the last one walked on meanwhile', () => {
+    let asked = 0;
+    const heightAt = () => {
+      asked += 1;
+      return 0;
+    };
+    // (no time at all for a frame's slice: a chunk of 256 cells a frame, the least it takes)
+    const w = createNavWindow({ lib, heightAt, slice: 0 });
+    const cells = Math.ceil((2 * NAV.half) / NAV.cell) ** 2;
+    let frames = 1;
+    while (!w.update(0, 0)) frames += 1;
+    expect(frames).toBe(Math.ceil(cells / 256));
+    expect(w.nav).toBeTruthy();
+    const first = w.nav;
+    // (gone far enough: the next is begun, and the first stays the one walked on till it is in)
+    expect(w.update(NAV.again + 5, 0)).toBe(false);
+    expect(w.making()).toBe(true);
+    expect(w.nav).toBe(first);
+    while (!w.update(NAV.again + 5, 0)) frames += 1;
+    expect(w.nav).not.toBe(first);
+    expect(w.centre).toEqual([NAV.again + 5, 0]);
+    expect(w.making()).toBe(false);
+    // (each cell's height asked once a window, never again by the build)
+    expect(asked).toBe(2 * cells);
   });
 });
 

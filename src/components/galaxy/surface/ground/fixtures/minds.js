@@ -11,7 +11,7 @@ import { createMinds, createNavWindow } from '../brain';
 
 export function flatMinds({ seesThrough = null, heightAt = () => 0, standable = null, solids = null, at = [0, 0], half = undefined, difficulty = 'normal' } = {}) {
   const ai = lib.aiRows();
-  const window = createNavWindow({ lib, heightAt, standable, solids, cover: ai.coverConstants, ...(half ? { half } : {}) });
+  const window = createNavWindow({ lib, heightAt, standable, solids, cover: ai.coverConstants, slice: Infinity, ...(half ? { half } : {}) });
   window.update(at[0], at[1]);
   const minds = createMinds({ lib, ai, difficulty, nav: () => window.nav, seesThrough });
   return { minds, window, lib, ai };

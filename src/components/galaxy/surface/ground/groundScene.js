@@ -217,13 +217,21 @@ export function createGround({ parent, world, site, effects, tier = 'high', kit 
     // (for the QA scripts: who's out, where, doing what; the director's posts)
     debug: () => [...figures.all()].map((t) => ({ id: t.id, kind: t.soldier.kind, side: t.soldier.side, role: t.soldier.role, hp: t.soldier.hp, down: t.down > 0, rag: Boolean(t.rag), fig: Boolean(t.fig), at: [+t.soldier.b.x.toFixed(1), +t.soldier.b.z.toFixed(1)], mode: t.soldier.fightMode ?? null, brain: t.soldier.bot?.brain.current ?? null, stuck: +(t.soldier.stuckFor ?? 0).toFixed(1), target: t.soldier.target ?? null, mark: t.pose?.mark ?? null })),
     posted: () => [...director.posts.values()].map((p) => ({ key: p.key, holder: p.holder, lost: p.lost })),
+    // (for the QA scripts: what a soldier believes of you, and whether its line to you is clear)
+    probe(id) {
+      const s = pop?.soldiers.get(id);
+      if (!s || !lastYou) return null;
+      const b = s.me?.beliefs?.you ?? null;
+      const you = bodies.find((o) => o.id === 'you');
+      return { side: s.side, yaw: +s.b.yaw.toFixed(2), belief: b ? { confidence: +b.confidence.toFixed(2), visible: b.visible, hostile: b.hostile } : null, beliefs: Object.keys(s.me?.beliefs ?? {}).length, eye: s.me?.pos ?? null, you: you ? { x: you.x, y: you.y, z: you.z, side: you.side } : null, line: seesThrough ? seesThrough({ x: s.b.x, z: s.b.z }, lastYou) : true, sight: s.senses?.sight ?? null, engaged: Boolean(s.bot?.engaged), mode: s.fightMode ?? null, acc: s.senseAcc, now: s.now, ready: fw.minds?.ready?.() ?? null, fwT: fw.t };
+    },
     // the one difficulty (the Menu's: lib/battlefront/ai/difficulty.js's names), every brain at once
     setDifficulty(name) {
       brainName = name;
       minds?.setDifficulty(name);
     },
     // (for the QA scripts: what the brains have cost, in milliseconds since the start, and the navgrid's last build)
-    brains: () => ({ loaded: Boolean(minds), difficulty: brainName, ...(minds ? { think: +minds.stats.think.toFixed(1), act: +minds.stats.act.toFixed(1), thinks: minds.stats.thinks, acts: minds.stats.acts } : {}), nav: navWin ? { builds: navWin.builds, ms: +navWin.ms.toFixed(1) } : null }),
+    brains: () => ({ loaded: Boolean(minds), difficulty: brainName, ...(minds ? { think: +minds.stats.think.toFixed(1), act: +minds.stats.act.toFixed(1), thinks: minds.stats.thinks, acts: minds.stats.acts } : {}), nav: navWin ? { builds: navWin.builds, ms: +navWin.ms.toFixed(1), worst: +navWin.worst.toFixed(1) } : null }),
     dispose() {
       disposed = true;
       figures.dispose();
@@ -250,7 +258,7 @@ export function createGround({ parent, world, site, effects, tier = 'high', kit 
     const far = time - squadAt >= SQUADS;
     if (far) squads.update(time - squadAt);
     bodies.length = 0;
-    for (const s of p.soldiers.values()) if (s.alive) bodies.push(Object.assign(bodyOf(s.id), { x: s.b.x, y: world.heightAt(s.b.x, s.b.z) + CHEST, z: s.b.z, vel: s.vel ?? null, side: s.side, kind: s.kind, squad: s.squad, firingAt: time - (s.firedAt ?? -9) < 1 ? s.firingAt : null }));
+    for (const s of p.soldiers.values()) if (s.alive) bodies.push(Object.assign(bodyOf(s.id), { x: s.b.x, y: (s.y = world.heightAt(s.b.x, s.b.z) + CHEST), z: s.b.z, vel: s.vel ?? null, side: s.side, kind: s.kind, squad: s.squad, firingAt: time - (s.firedAt ?? -9) < 1 ? s.firingAt : null }));
     bodies.push(Object.assign(bodyOf('you'), { x: you.x, y: (you.y ?? world.heightAt(you.x, you.z)) + CHEST, z: you.z, vel: [you.vx ?? 0, you.vz ?? 0], side: effects.side ?? null, kind: 'you', you: true }));
     if (mate) bodies.push(Object.assign(bodyOf('mate'), { x: mate.x, y: (mate.y ?? world.heightAt(mate.x, mate.z)) + CHEST, z: mate.z, vel: [mate.vx ?? 0, mate.vz ?? 0], side: effects.side ?? null, kind: 'mate', you: true }));
     if (far) for (const id of kept.keys()) if (id !== 'you' && id !== 'mate' && !p.soldiers.get(id)?.alive) kept.delete(id);

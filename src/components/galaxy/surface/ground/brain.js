@@ -24,10 +24,12 @@
 // Pure: the brain's module comes in as `lib` (brainLib.js); tested with a
 // fixture world (brain.test.js).
 //
-//   NAV { cell, half, again, radius }
+//   NAV { cell, half, again, radius, slice }
 //   navSolids(solids, heightAt) → nav.js's boxes for the walker's solids
-//   createNavWindow({ lib, heightAt, standable, solids, cover })
-//     → { nav, builds, ms, update(x, z) → true when it was built again }
+//   createNavWindow({ lib, heightAt, standable, solids, cover, slice })
+//     → { nav, centre, builds, ms (the last window's whole cost), worst (the
+//       most one frame of making them took), making(), update(x, z) → true
+//       when a new one is in }
 //   familyOf(troop) → the brain's weapon family for a soldier's gun
 //   taskOf(s) → { at, spot, radius, reach }: its errand, as a commander's task
 //   createMinds({ lib, ai, difficulty, nav: () => nav, seesThrough })
@@ -46,8 +48,12 @@ import { GAME_GUNS, TROOPS } from './troops';
 // the brains' reach (groundScene.js's BRAINS, 120 m) and `again` more, and
 // is built again once you are `again` from where it was, so a soldier being
 // stepped never stands off it; a soldier's radius is the scene's (0.4 m,
-// the one it is pushed out of solids by).
-export const NAV = { cell: 2, half: 180, again: 60, radius: 0.4 };
+// the one it is pushed out of solids by). A window is made over frames,
+// `slice` milliseconds of a frame for its heights and its ground, then built
+// on them in one (a level world's ground is slow to ask: all at once,
+// Geonosis's window took over a second, a hitch), the last one walked on
+// meanwhile.
+export const NAV = { cell: 2, half: 180, again: 60, radius: 0.4, slice: 2 };
 // A solid with no top stands this far over the ground for the navgrid (a
 // line over it is stopped by the ground's own seesThrough, not by this), by hand.
 const TALL = 20;
@@ -69,28 +75,61 @@ export function navSolids(solids, heightAt) {
   return out;
 }
 
-export function createNavWindow({ lib, heightAt, standable = null, solids = null, cover = {}, half = NAV.half, cell = NAV.cell, again = NAV.again }) {
+export function createNavWindow({ lib, heightAt, standable = null, solids = null, cover = {}, half = NAV.half, cell = NAV.cell, again = NAV.again, slice = NAV.slice }) {
+  const n = Math.ceil((2 * half) / cell);
+  const clamp = (v) => Math.min(n - 1, Math.max(0, v));
+  // the window being made: its cells' heights and ground, sampled a slice of a frame at a time
+  let next = null;
+  const begin = (x, z) => ({ x, z, origin: [x - half, z - half], heights: new Float32Array(n * n), dry: new Uint8Array(n * n), i: 0, ms: 0 });
+  const sample = (p, until) => {
+    const all = n * n;
+    while (p.i < all) {
+      const end = Math.min(all, p.i + 256);
+      for (; p.i < end; p.i++) {
+        const c = p.i % n;
+        const r = (p.i - c) / n;
+        const x = p.origin[0] + (c + 0.5) * cell;
+        const z = p.origin[1] + (r + 0.5) * cell;
+        p.heights[p.i] = heightAt(x, z);
+        p.dry[p.i] = !standable || standable([x, z]) ? 1 : 0;
+      }
+      if (clock() >= until) break;
+    }
+    return p.i >= all;
+  };
+  // built on what was sampled (nav.js asks a cell's middle; a solid's middle off the window takes its nearest cell's)
+  const build = (p) => {
+    const at = (x, z) => p.heights[clamp(Math.floor((z - p.origin[1]) / cell)) * n + clamp(Math.floor((x - p.origin[0]) / cell))];
+    const near = solids?.near ? [...solids.near(p.x, p.z, half)] : (solids ?? []);
+    const nav = lib.buildNav({ heightAt: at, bounds: { min: p.origin, max: [p.origin[0] + n * cell, p.origin[1] + n * cell] }, cell, solids: navSolids(near, at), cover, radius: NAV.radius });
+    // (the walker's ground: a cell it can't stand in, the sea's, is no way)
+    for (let i = 0; i < n * n; i++) if (!p.dry[i]) nav.walk[i] = 0;
+    return nav;
+  };
   const w = {
     nav: null,
     centre: null,
     builds: 0,
+    // (the last window's whole cost, and the most one frame of it took)
     ms: 0,
+    worst: 0,
+    making: () => Boolean(next),
     update(x, z) {
-      if (w.nav && Math.hypot(x - w.centre[0], z - w.centre[1]) < again) return false;
       const t0 = clock();
-      const near = solids?.near ? [...solids.near(x, z, half)] : (solids ?? []);
-      const nav = lib.buildNav({ heightAt, bounds: { min: [x - half, z - half], max: [x + half, z + half] }, cell, solids: navSolids(near, heightAt), cover, radius: NAV.radius });
-      // (the walker's ground: a cell it can't stand in, the sea's, is no way)
-      if (standable)
-        for (let r = 0; r < nav.rows; r++)
-          for (let c = 0; c < nav.cols; c++) {
-            const i = r * nav.cols + c;
-            if (nav.walk[i] && !standable([nav.origin[0] + (c + 0.5) * cell, nav.origin[1] + (r + 0.5) * cell])) nav.walk[i] = 0;
-          }
-      w.nav = nav;
-      w.centre = [x, z];
-      w.builds += 1;
-      w.ms = clock() - t0;
+      if (!next && (!w.nav || Math.hypot(x - w.centre[0], z - w.centre[1]) >= again)) next = begin(x, z);
+      if (!next) return false;
+      const full = sample(next, t0 + slice);
+      if (full) {
+        w.nav = build(next);
+        w.centre = [next.x, next.z];
+        w.builds += 1;
+      }
+      const spent = clock() - t0;
+      next.ms += spent;
+      w.worst = Math.max(w.worst, spent);
+      if (!full) return false;
+      w.ms = next.ms;
+      next = null;
       return true;
     },
   };

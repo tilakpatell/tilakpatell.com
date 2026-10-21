@@ -70,6 +70,9 @@ export function senseAll(s, world, dt) {
   s.me ??= { pos: P(s.b.x, s.b.z), dir: null, beliefs: {}, now: 0 };
   s.me.pos.x = s.b.x;
   s.me.pos.z = s.b.z;
+  // (its eyes at its own chest’s height, as the bodies it looks at are
+  // sensed at theirs: the scene’s `y`; on level ground, none)
+  s.me.pos.y = s.y ?? 0;
   s.me.dir = { x: Math.sin(s.b.yaw), y: 0, z: Math.cos(s.b.yaw) };
   const reach = s.senses.sight.range;
   const targets = [];
