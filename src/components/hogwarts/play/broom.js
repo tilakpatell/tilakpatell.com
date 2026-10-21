@@ -104,6 +104,7 @@ function createWind(rt) {
 
 export function createBroom({ rt, scene, camera, house, floorAt = () => 0, level = -Infinity, solids = [], bounds = null, feel = null, reduced = false, cards = null } = {}) {
   let rider = null;
+  let driven = null; // a bot’s input, in place of the keys’ (drive())
   let hop = 0; // s into the hop up
   let fromEye = null; // where the eye was as you got on
   let lookYaw = 0;
@@ -212,7 +213,7 @@ export function createBroom({ rt, scene, camera, house, floorAt = () => 0, level
       if (!rider) return null;
       const drag = snap?.pointer?.drag;
       if (drag && (drag.dx || drag.dy)) this.look(drag.dx, drag.dy);
-      rider = stepBroom(rider, inputOf(snap, touch), dt, {
+      rider = stepBroom(rider, driven ?? inputOf(snap, touch), dt, {
         floorAt: floor,
         solids: solidsOf,
       });
@@ -245,8 +246,13 @@ export function createBroom({ rt, scene, camera, house, floorAt = () => 0, level
       return { ev: rider.ev };
     },
     // off the broom: it is put away (the play lays one where you stand)
+    // the check’s bot flies it: rules/flight.js’s input, or null for the keys again
+    drive(input) {
+      driven = input;
+    },
     off() {
       rider = null;
+      driven = null;
       group.visible = false;
       wind.stop();
       if (feel?.setBaseFov) feel.setBaseFov(baseFov);
