@@ -55,10 +55,11 @@ export async function buildPrison(kit) {
   // onto space: its world's, ./worlds.js)
   const [cx, cz] = P(4, -15.6);
   R.frame(cx, cz, 0).box(DARK, 0, 0, 0, 4, 1.1, 1.4).box(STEEL, 0, 1.1, 0, 4.1, 0.08, 1.5).glow(BOX, 0x9affc0, 1.3, 0, 1.3, -0.4, 0, 3.4, 0.6, 0.02, -0.4);
-  // the cells down the west wall
+  // the cells down the west wall: a back, two sides and a roof behind the
+  // bars, room in them for who's inside (its world's inmates, ./worlds.js)
   for (let dz = 8; dz <= 16; dz += 2.5) {
     const f = R.frame(...P(-18.6, dz), Math.PI / 2, { list: 'fixed' });
-    f.box(DARK, 0, 0, 0, 2.2, 3, 1.2);
+    f.box(DARK, 0, 0, -0.5, 2.2, 3, 0.2).box(DARK, -1.05, 0, 0, 0.1, 3, 1.2).box(DARK, 1.05, 0, 0, 0.1, 3, 1.2).box(DARK, 0, 2.9, 0, 2.2, 0.1, 1.2);
     for (let u = -0.9; u <= 0.9; u += 0.3) f.cyl(0x8a9a90, u, 0, 0.62, 0.03, 2.6);
   }
   // the Federation's mark over the door
