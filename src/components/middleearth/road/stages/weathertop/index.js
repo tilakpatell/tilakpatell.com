@@ -28,6 +28,7 @@ const STUCK = [-1.4, 145.8]; // the brand Aragorn stands in the verge by Frodo a
 const EMBER = new THREE.Color(0xff8a3a);
 const PALE = new THREE.Color(0xc8d4ff);
 const MARKS = Object.fromEntries(BEATS.map((b) => [b.id, b]));
+const EMBERS = 1.6; // s the fire's glow takes to die once it's stamped out
 
 const smooth = (x) => {
   const k = Math.min(1, Math.max(0, x));
@@ -108,11 +109,14 @@ export function build({ road, heightAt, rt, weather }) {
         midges.stop();
         midges = null;
       }
-      // Sam’s fire: lit from the dell’s beat, burning on behind the walker
-      const lit = since.dell != null;
+      // Sam’s fire: lit from the dell’s beat, till the visitor stamps it out (the
+      // dell's deed): its flames gone at once, the embers' glow dying after them
+      const d = since.dell;
+      const out = d === Infinity ? 1 : d != null ? smooth((d - MARKS.dell.deed.at) / EMBERS) : 0;
+      const lit = d != null && out < 0.02;
       flicker += dt;
       const glow = 5 + Math.sin(flicker * 11) * 0.5 + Math.sin(flicker * 17.3) * 0.3;
-      fireLight.intensity = lit ? glow : 0;
+      fireLight.intensity = d != null ? glow * (1 - out) : 0;
       fireLight.position.set(FIRE[0], heightAt(...FIRE) + 0.8, FIRE[1]);
       fireLight.color.copy(EMBER);
       fireLight.distance = 14;

@@ -17,9 +17,9 @@ export const BEATS = [
   // in from the Doors: black, the staff’s light the only light
   { id: 'dark', kind: 'dark', at: 6, hold: 0, rig: 'follow', reach: 14 },
   // the Chamber of Mazarbul: the shaft of light on Balin’s tomb
-  { id: 'tomb', kind: 'tomb', at: 22, hold: 10, rig: 'seat', reach: 8, params: { at: [-8.2, 1.7, 21], lookAt: [-14, 1.3, 24.5], above: true }, lines: ['moria-gimli'] },
+  { id: 'tomb', kind: 'tomb', at: 22, hold: 10, rig: 'seat', reach: 8, params: { at: [-8.2, 1.7, 21], lookAt: [-14, 1.3, 24.5], above: true }, lines: ['moria-gimli'], deed: { verb: 'press', label: 'Read the Book of Mazarbul', at: 3, lines: ['moria-book'] } },
   // the drums in the deep; goblins down the pillars ahead
-  { id: 'drums', kind: 'drums', at: 34, hold: 6, rig: 'follow', reach: 12, fx: [{ kind: 'shake', at: 0, seconds: 1.4 }] },
+  { id: 'drums', kind: 'drums', at: 34, hold: 6, rig: 'follow', reach: 12, fx: [{ kind: 'shake', at: 0, seconds: 1.4 }], deed: { verb: 'press', label: 'Bar the door', at: 1, lines: ['moria-door'] } },
   // the Dwarrowdelf’s pillars going on into the dark
   { id: 'dwarrowdelf', kind: 'dwarrowdelf', at: 50, hold: 8, rig: 'crane', reach: 18, params: { seconds: 7, top: 12, lookAt: [0, 6, 74], above: true } },
   // down the broken stair to the abyss

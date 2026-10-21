@@ -12,11 +12,11 @@ export { entered, left } from '../../beats';
 
 export const BEATS = [
   // the city white in the sun across the field, the company small on the road to it
-  { id: 'pelennor', kind: 'pelennor', at: 6, hold: 6, rig: 'wide', reach: 22, params: { at: [-16, 3, 2], lookAt: [0, 48, 250], above: true }, lines: ['minas-pippin'] },
+  { id: 'pelennor', kind: 'pelennor', at: 6, hold: 6, rig: 'wide', reach: 22, params: { at: [-16, 3, 2], lookAt: [0, 48, 250], above: true }, lines: ['minas-pippin'], deed: { verb: 'press', label: 'Look up at the White City', at: 2, lines: ['minas-city'] } },
   // up the causeway, the walls rising over them
   { id: 'causeway', kind: 'causeway', at: 48, hold: 0, rig: 'crane', reach: 30, params: { seconds: 12, top: 16, lookAt: [0, 40, 240] } },
   // under the Great Gate, looking up
-  { id: 'gate', kind: 'gate', at: GATE - 12, hold: 4, rig: 'low', reach: 14 },
+  { id: 'gate', kind: 'gate', at: GATE - 12, hold: 4, rig: 'low', reach: 14, deed: { verb: 'press', label: 'Walk in through the Great Gate', at: 1, lines: ['minas-gate'] } },
   // the Court of the Fountain: the King crowned before the Tree; the four bow,
   // and are stopped; the court bows to them (the rest of the stage holds here)
   {

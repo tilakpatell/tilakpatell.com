@@ -13,9 +13,9 @@ export const BEATS = [
   // the woods of bay and cedar, streams across the path
   { id: 'woods', kind: 'woods', at: 10, hold: 0, rig: 'follow', reach: 14 },
   // the Haradrim column on the road below, two mûmakil in it
-  { id: 'mumakil', kind: 'mumakil', at: 28, hold: 12, rig: 'wide', reach: 16, params: { at: [3, 1.8, 24], lookAt: [-34, 2, 46], above: true }, lines: ['ithilien-sam'] },
+  { id: 'mumakil', kind: 'mumakil', at: 28, hold: 12, rig: 'wide', reach: 16, params: { at: [3, 1.8, 24], lookAt: [-34, 2, 46], above: true }, lines: ['ithilien-sam'], deed: { verb: 'hold', label: 'Keep down in the ferns', seconds: 3, at: 4, lines: ['ithilien-ferns'] } },
   // Faramir’s rangers up out of the ferns round the three
-  { id: 'rangers', kind: 'rangers', at: 50, hold: 6, rig: 'seat', reach: 10, params: { at: [3.5, 1.5, 45], lookAt: [-1, 1.2, 53], above: true }, lines: ['ithilien-faramir'] },
+  { id: 'rangers', kind: 'rangers', at: 50, hold: 6, rig: 'seat', reach: 10, params: { at: [3.5, 1.5, 45], lookAt: [-1, 1.2, 53], above: true }, lines: ['ithilien-faramir'], deed: { verb: 'choose', label: 'Tell Faramir who you are', at: 2, choices: [{ label: 'Frodo, son of Drogo', right: true }, { label: 'Mr Underhill', line: { who: 'faramir', text: 'That is the name you gave in Bree, I think. Again, and truly.' } }, { label: 'A friend of Sméagol', line: { who: 'faramir', text: 'Then you keep poor company. Your own name, please.' } }], lines: ['ithilien-name'] } },
   // inside Henneth Annûn, looking out through its falling water at the sunset
   { id: 'henneth', kind: 'henneth', at: 66, hold: 8, rig: 'seat', reach: 10, params: { at: [-9, 2.2, 72], lookAt: [-9, 2.6, 60], above: true } },
   // the Cross-roads: the seated king, his head fallen and crowned with flowers

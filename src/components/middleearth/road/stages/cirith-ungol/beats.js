@@ -12,7 +12,7 @@ export const BEATS = [
   // the first stair, straight up the cliff in the dark
   { id: 'stair', kind: 'stair', at: 0, hold: 0, rig: 'follow', reach: 30 },
   // near the top: Gollum’s word in Frodo’s ear, Sam sent back down
-  { id: 'betrayal', kind: 'betrayal', at: 40, hold: 8, rig: 'seat', reach: 10, params: { at: [2.2, 1.6, 36], lookAt: [-0.5, 1.2, 42], above: true }, lines: ['cirith-gollum'] },
+  { id: 'betrayal', kind: 'betrayal', at: 40, hold: 8, rig: 'seat', reach: 10, params: { at: [2.2, 1.6, 36], lookAt: [-0.5, 1.2, 42], above: true }, lines: ['cirith-gollum'], deed: { verb: 'press', label: 'Brush the crumbs off Sam’s cloak', at: 3, lines: ['cirith-crumbs'] } },
   // into the tunnel: the webs, the Phial lit
   { id: 'tunnel', kind: 'tunnel', at: 62, hold: 0, rig: 'follow', reach: 14 },
   // Shelob out of the side passage; the sting; Sam with the light, and she goes
@@ -20,7 +20,7 @@ export const BEATS = [
   // the orcs’ torches round Frodo where he fell; Sam alone in the dark, looking back
   { id: 'taken', kind: 'taken', at: 100, hold: 8, rig: 'seat', reach: 10, params: { at: [-2.5, 1.5, 90], lookAt: [0.6, 0.4, 83], above: true }, lines: ['cirith-sam'] },
   // up the tower’s stair; Frodo found, sitting up
-  { id: 'tower', kind: 'tower', at: 118, hold: 10, rig: 'seat', reach: 10, params: { at: [2.5, 1.5, 116], lookAt: [-1.5, 0.7, 121], above: true } },
+  { id: 'tower', kind: 'tower', at: 118, hold: 10, rig: 'seat', reach: 10, params: { at: [2.5, 1.5, 116], lookAt: [-1.5, 0.7, 121], above: true }, deed: { verb: 'rhythm', label: 'Fight up the stair to Frodo', beats: 12, at: 1, lines: ['cirith-stair'] } },
   // out through the gate between the Watchers, onto the plain
   { id: 'gate', kind: 'gate', at: 132, hold: 0, rig: 'follow', reach: 10 },
 ];
