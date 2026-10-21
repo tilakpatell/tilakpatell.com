@@ -17,7 +17,7 @@ The owner asked whether moving off GitHub Pages was worth it and what it costs, 
 
 ## Decision
 
-The deploy sends the same `dist/` to the Worker after GitHub Pages, once the repository has the account's variable and the token; until then the step is skipped. Cloudflare's own build of the repository is removed: two deploys of each merge would overwrite each other, and its build had none of the deploy's checks or settings. `public/_headers` gives `/assets/*` a year and `immutable`, and nothing else a cache header; every file says any site may read it, as on GitHub. No isolation headers yet. The domain is pointed at the Worker by the owner, its email forwarding moved to Cloudflare's Email Routing first.
+The deploy sends the same `dist/` to the Worker after GitHub Pages, once the repository has the token (the account's id is in `wrangler.jsonc`: the first deploy, waiting for it as a variable, skipped the upload); until then the step is skipped. Cloudflare's own build of the repository is removed: two deploys of each merge would overwrite each other, and its build had none of the deploy's checks or settings. `public/_headers` gives `/assets/*` a year and `immutable`, and nothing else a cache header; every file says any site may read it, as on GitHub. No isolation headers yet. The domain is pointed at the Worker by the owner, its email forwarding moved to Cloudflare's Email Routing first.
 
 ## Consequences
 
