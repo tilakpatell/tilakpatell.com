@@ -15,7 +15,11 @@
 //   WAND_KEYS → the codes the wand binds, beside the walk’s
 //   createWand({ rt, scene, camera, house, houseName, learnt, floorAt, tell, feel, people })
 //     → { step(dt, input), cast(id, at), choose(id), place(things), add(thing),
-//         things, state(), body(), dispose() }
+//         things, state(), body(), take(fn), flourish(id), tip(), dispose() }
+//   take(fn): a lesson that has the wand’s keys (the duel, the boggart): a
+//     cast key pressed asks fn(id) first, and if it says it has it the
+//     wand only flourishes (the move, the flash, the sound, Protego’s dome)
+//     and the lesson does the rest; take(null) gives the keys back
 //
 // A thing: { id, kind, object (a THREE.Object3D, its feet at its
 // position), r, locked, allowed, why, lit, fire (an Object3D, the flame’s
@@ -58,6 +62,7 @@ export function createWand({ rt, scene, camera, house, houseName = 'gryffindor',
   let readout = 0;
   let click = null; // a press of the pointer that may be a click
   let touchHeld = false; // the touch Cast button, held
+  let taker = null; // a lesson that has the cast keys: fn(id) → it took the cast
   const sounds = createSpellSounds(rt);
   const things = new Map();
 
@@ -111,9 +116,31 @@ export function createWand({ rt, scene, camera, house, houseName = 'gryffindor',
     }
   };
 
+  // the cast’s look and sound, nothing more: a lesson’s own spell
+  function flourish(id) {
+    const spell = spellById(id);
+    if (!spell) return;
+    active = id;
+    move = { kind: spell.move, t: 0 };
+    flash = 1;
+    flashColour = col(spell.colour);
+    sounds.cast(spell);
+    tell('spell', { id, word: spell.word });
+    if (spell.kind === 'shield') {
+      camera.getWorldDirection(aim);
+      domeLeft = SHIELD.up;
+      ripple = 0;
+      dome.set({ alpha: 1, ripple: 0, at: aim });
+    }
+  }
+
   function cast(id, target = undefined) {
     const spell = spellById(id);
     if (!spell) return null;
+    if (taker && target === undefined && taker(id)) {
+      flourish(id);
+      return null;
+    }
     active = id;
     camera.getWorldPosition(eye);
     camera.getWorldDirection(aim);
@@ -570,6 +597,12 @@ export function createWand({ rt, scene, camera, house, houseName = 'gryffindor',
     setDuel(on) {
       wand = { ...wand, duel: on };
     },
+    take(fn) {
+      taker = fn ?? null;
+    },
+    flourish,
+    // where the tip is now, in the world
+    tip: () => tip.clone(),
     visible(on) {
       grip.visible = on;
     },

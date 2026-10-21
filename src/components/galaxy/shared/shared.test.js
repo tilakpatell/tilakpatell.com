@@ -11,7 +11,7 @@ import * as arms from './arms';
 // The galaxy's face: exactly these names and nothing else, so a world that
 // reads the galaxy through it knows what it may lean on
 const FACE = [
-  [models, ['FIGURES', 'GALAXY_KINDS', 'GROUPS', 'PROPS', 'SURFACE_MODELS', 'buildFigure', 'buildGalaxyShip', 'clusterSpecs', 'createKit', 'createPlacer', 'isGame', 'loadModel', 'lodUrlFor', 'modelUrlFor', 'usesModel', 'wantsLod']],
+  [models, ['FIGURES', 'GALAXY_KINDS', 'GROUPS', 'PROPS', 'SURFACE_MODELS', 'buildFigure', 'buildGalaxyShip', 'clusterSpecs', 'createKit', 'createPlacer', 'farCut', 'isGame', 'loadModel', 'lodUrlFor', 'modelUrlFor', 'usesModel', 'wantsLod']],
   [ground, ['SITES', 'makeHeight', 'siteOf']],
   [fight, ['sensesFor', 'startBurst', 'stepBurst', 'strafeStep']],
   [weather, ['createWeather', 'strikeAt']],
