@@ -46,7 +46,7 @@ export function SchedulerStage() {
                     data-on={s === 'hidden' ? 'false' : 'true'}
                   >
                     <span className="h-2.5 w-2.5 flex-none rounded-full" style={{ background: j.color }} />
-                    <span className="text-white">{j.file}</span>
+                    <span className="text-ink">{j.file}</span>
                     <span className="ml-auto text-xs text-muted">{s === 'hidden' ? '' : s}</span>
                   </li>
                 );
@@ -107,14 +107,14 @@ export function RecoveryStage() {
         <div className="stage-code min-h-[12rem] px-4 py-4">
           {lines.map(([icon, text, step]) => (
             <p key={step} className="stage-fade flex gap-3" data-on={at >= step ? 'true' : 'false'}>
-              <span className="w-4 text-center" style={{ color: icon === '✕' ? '#ff8a8a' : icon === '✓' ? 'var(--accent)' : 'var(--muted)' }}>
+              <span className="w-4 text-center" style={{ color: icon === '✕' ? 'var(--danger)' : icon === '✓' ? 'var(--accent)' : 'var(--muted)' }}>
                 {icon}
               </span>
-              <span className={icon === '✕' ? 'text-[#ff8a8a]' : 'text-body'}>{text}</span>
+              <span className={icon === '✕' ? 'text-[color:var(--danger)]' : 'text-body'}>{text}</span>
             </p>
           ))}
           <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-[var(--surface-2)]">
-            <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${((at + 1) / RECOVERY.length) * 100}%`, background: at === 1 ? '#ff8a8a' : 'var(--accent)' }} />
+            <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${((at + 1) / RECOVERY.length) * 100}%`, background: at === 1 ? 'var(--danger)' : 'var(--accent)' }} />
           </div>
         </div>
       </StageWindow>
@@ -148,7 +148,7 @@ export function PipelineStage() {
           <div className="grid items-center gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr]">
             {procs.map((p, i) => [
               <div key={p.pid} className="rounded-md border border-line p-3 text-center">
-                <p className="mono text-sm text-white">{p.cmd}</p>
+                <p className="mono text-sm text-ink">{p.cmd}</p>
                 <p className="mono mt-1 text-xs text-muted">pid {p.pid}</p>
               </div>,
               i < procs.length - 1 && (
@@ -172,7 +172,7 @@ export function PipelineStage() {
           <p className="mono mt-8 text-sm text-body">
             <span className="text-accent">tsh&gt;</span> ls src | grep &quot;\.c$&quot; | wc -l
           </p>
-          <p className="mono text-sm text-white">3</p>
+          <p className="mono text-sm text-ink">3</p>
         </div>
       </StageWindow>
     </div>
@@ -251,7 +251,7 @@ export function FlamegraphStage() {
                       left: `${b.x}%`,
                       width: `calc(${b.w}% - 2px)`,
                       background: `color-mix(in srgb, var(--accent) ${40 + ((r * 13 + k * 17) % 50)}%, #e8742c)`,
-                      color: '#0f1111',
+                      color: 'var(--btn-ink)',
                       transform: inView ? 'scaleX(1)' : 'scaleX(0)',
                       transformOrigin: 'left',
                       transition: `transform 0.5s var(--ease-smooth) ${(FLAME.length - r) * 120 + k * 60}ms`,
@@ -295,7 +295,7 @@ export function KernelPlay() {
           <pre className="stage-code whitespace-pre-wrap text-body">
             <span className="text-accent">__global__ void</span> op(int *a, int *b, int *c) {'{'}
             {'\n'}  int i = threadIdx.x;
-            {'\n'}  c[i] = <span className="text-white">{expr}</span>;
+            {'\n'}  c[i] = <span className="text-ink">{expr}</span>;
             {'\n'}{'}'}
           </pre>
           <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -303,17 +303,17 @@ export function KernelPlay() {
             {Object.keys(OPS).map((k) => (
               <button key={k} type="button" onClick={() => setOp(k)} aria-pressed={op === k}
                 className="mono rounded px-3 py-1 text-sm"
-                style={{ background: op === k ? 'var(--accent)' : 'var(--surface-2)', color: op === k ? '#0f1111' : 'var(--text-body)' }}>
+                style={{ background: op === k ? 'var(--accent)' : 'var(--surface-2)', color: op === k ? 'var(--btn-ink)' : 'var(--text-body)' }}>
                 {k}
               </button>
             ))}
           </div>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <label className="mono text-xs text-muted">a[]
-              <input value={a} onChange={(e) => setA(e.target.value)} className="mt-1 w-full rounded border border-line bg-[var(--bg-deep)] px-2 py-1.5 text-sm text-white outline-none focus:border-[var(--accent)]" />
+              <input value={a} onChange={(e) => setA(e.target.value)} className="mt-1 w-full rounded border border-line bg-[var(--bg-deep)] px-2 py-1.5 text-sm text-ink outline-none focus:border-[var(--accent)]" />
             </label>
             <label className="mono text-xs text-muted">b[]
-              <input value={b} onChange={(e) => setB(e.target.value)} className="mt-1 w-full rounded border border-line bg-[var(--bg-deep)] px-2 py-1.5 text-sm text-white outline-none focus:border-[var(--accent)]" />
+              <input value={b} onChange={(e) => setB(e.target.value)} className="mt-1 w-full rounded border border-line bg-[var(--bg-deep)] px-2 py-1.5 text-sm text-ink outline-none focus:border-[var(--accent)]" />
             </label>
           </div>
           <button type="button" className="btn btn-sm btn-primary mt-4" onClick={go}>Run on the Jetson</button>
@@ -327,7 +327,7 @@ export function KernelPlay() {
                 <div key={`${i}-${run?.t}`} className="rounded-md border p-2 text-center transition-colors duration-300"
                   style={{ borderColor: on ? 'var(--accent)' : 'var(--border)', background: on ? 'color-mix(in srgb, var(--accent) 16%, transparent)' : 'transparent', transitionDelay: `${i * 70}ms` }}>
                   <p className="mono text-[0.65rem] text-muted">t{i}</p>
-                  <p className="mono text-sm text-white tabular">{on ? run.out[i] : '·'}</p>
+                  <p className="mono text-sm text-ink tabular">{on ? run.out[i] : '·'}</p>
                 </div>
               );
             })}

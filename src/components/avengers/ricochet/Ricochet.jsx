@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import HQFrame from '../hq/HQFrame';
+import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
+import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
-import { earnStone, hasEarned } from '../hq/stones';
+import { earnStone, hasEarned, recordTry } from '../hq/stones';
 import { useAchievements } from '../../Achievements';
-import { use3D } from '../../../lib/gpu';
-import { local } from '../../../lib/hooks';
+import { useGame3D } from '../hq/useGame3D';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
-import { ROOMS, botsLeft, limitFor, newRoom, stepRoom, throwShield } from './rules';
+import { ROOMS, STEP, botsLeft, limitFor, newRoom, stepRoom, throwShield } from './rules';
+import { clearReward, loadSave, saveClear } from './save';
+import { roomEnd } from './ends';
+import Rooms from './Rooms';
+import RicochetFlat from './Flat';
 import './ricochet.css';
 import '../../../styles/lazy/avengers.css';
 
@@ -21,27 +25,25 @@ const buzz = (ms) => {
     /* no vibration */
   }
 };
-const SAVE = 'tp-hq-ricochet';
-const STEP = 1 / 120;
 const deg = (r) => (r * 180) / Math.PI;
 
-function loadSave() {
-  const s = local.get(SAVE, null);
-  const stars = Array.isArray(s?.stars) ? s.stars.map((n) => Math.max(0, Math.min(3, Number(n) || 0))) : [];
-  return { reached: Math.max(1, Math.min(ROOMS.length, Number(s?.reached) || 1)), stars };
-}
-
 export default function Ricochet({ fallback }) {
-  const three = use3D();
-  const stage = useStage(gameModule, { enabled: three.on, id: 'ricochet', forced: three.mode === 'on' });
+  const three = useGame3D('ricochet');
+  const stage = useStage(gameModule, { enabled: three.on, id: 'ricochet', forced: three.mode === 'on', own3D: true });
   const { unlock } = useAchievements();
   const [save, setSave] = useState(loadSave);
+  // (the 2D view writes the same save, so the 3D menu reads it again on the way back)
+  useEffect(() => {
+    if (three.on) setSave(loadSave());
+  }, [three.on]);
   const [index, setIndex] = useState(() => Math.min(loadSave().reached, ROOMS.length) - 1);
   const room = useRef(newRoom(index));
   const aim = useRef({ angle: 0, pointer: false });
   const acc = useRef(0);
   const [ui, setUi] = useState({ phase: 'menu', throws: 0, left: botsLeft(room.current), result: null });
   const [angleShown, setAngleShown] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [flatLive, setFlatLive] = useState(false); // the 2D view's room in play
 
   const sync = useCallback((extra = {}) => {
     const r = room.current;
@@ -51,10 +53,12 @@ export default function Ricochet({ fallback }) {
   const enter = useCallback(
     (i) => {
       audioContext(); // in the click, so the clangs can be heard
+      recordTry('cap');
       room.current = newRoom(i);
       setIndex(i);
       aim.current.angle = 0;
       acc.current = 0;
+      setPaused(false);
       setUi({ phase: 'aim', throws: 0, left: botsLeft(room.current), result: null });
       stage.wrap.current?.querySelector('.hq-screen')?.focus({ preventScroll: true });
     },
@@ -63,14 +67,14 @@ export default function Ricochet({ fallback }) {
 
   const doThrow = useCallback(() => {
     const r = room.current;
-    if (r.phase !== 'aim') return;
+    if (r.phase !== 'aim' || paused) return;
     audioContext();
     if (throwShield(r, aim.current.angle)) {
       stage.view.current?.startThrow();
       play('zip');
       sync();
     }
-  }, [stage.view, sync]);
+  }, [paused, stage.view, sync]);
 
   useEffect(
     () =>
@@ -132,17 +136,12 @@ export default function Ricochet({ fallback }) {
           case 'cleared': {
             play('ding');
             const i = room.current.index;
-            setSave((s) => {
-              const stars = [...s.stars];
-              stars[i] = Math.max(stars[i] ?? 0, e.stars);
-              const next = { reached: Math.max(s.reached, Math.min(ROOMS.length, i + 2)), stars };
-              local.set(SAVE, next);
-              return next;
-            });
+            setSave((s) => saveClear(s, i, e.stars));
             let stone = false;
-            if (i === ROOMS.length - 1) {
-              unlock('captain');
-              stone = earnStone('mind') || hasEarned('mind');
+            const reward = clearReward(i);
+            if (reward) {
+              unlock(reward.achievement);
+              stone = earnStone(reward.stone) || hasEarned(reward.stone);
               play('victory');
             }
             sync({ phase: 'cleared', result: { stars: e.stars, throws: e.throws, catches: e.catches, stone } });
@@ -164,7 +163,7 @@ export default function Ricochet({ fallback }) {
       if (!view) return;
       const r = room.current;
       const dt = Math.min(0.05, dtMs / 1000);
-      const live = ui.phase === 'aim' || ui.phase === 'flying';
+      const live = (ui.phase === 'aim' || ui.phase === 'flying') && !paused;
       if (live) {
         acc.current += dt * view.timeScale(dt);
         const events = [];
@@ -180,7 +179,7 @@ export default function Ricochet({ fallback }) {
       }
       view.render(r, dt, { angle: live && r.phase === 'aim' ? aim.current.angle : null, assist: index < 3 });
     },
-    [handle, index, stage.view, sync, ui.phase],
+    [handle, index, paused, stage.view, sync, ui.phase],
   );
   useStageFrame(stage, tick, stage.status === 'on' && stage.visible);
 
@@ -199,11 +198,11 @@ export default function Ricochet({ fallback }) {
   };
   const live = ui.phase === 'aim' || ui.phase === 'flying';
   const onPointerMove = (e) => {
-    if (!live) return;
+    if (!live || paused) return;
     if (e.pointerType === 'mouse' || aim.current.pointer) setFromPointer(e);
   };
   const onPointerDown = (e) => {
-    if (!live || e.target.closest('button')) return;
+    if (!live || paused || e.target.closest('button')) return;
     capturePointer(e);
     aim.current.pointer = true;
     setFromPointer(e);
@@ -216,7 +215,7 @@ export default function Ricochet({ fallback }) {
   };
   const onKeyDown = (e) => {
     const k = e.key.toLowerCase();
-    if (!live) return;
+    if (!live || paused) return;
     const step = e.shiftKey ? 0.002 : 0.012;
     if (k === 'arrowleft' || k === 'a') {
       e.preventDefault();
@@ -236,9 +235,18 @@ export default function Ricochet({ fallback }) {
   };
 
   const def = ROOMS[index];
-  const totalStars = save.stars.reduce((a, b) => a + (b || 0), 0);
+  // the bar's Pause, and a hidden tab: as Esc does
+  const pause = (p) => {
+    aim.current.pointer = false;
+    setPaused(p);
+  };
   return (
-    <HQFrame
+    <HQGame
+      game="ricochet"
+      playing={live || flatLive}
+      paused={paused}
+      onPause={pause}
+      flat={<RicochetFlat paused={paused} onLive={setFlatLive} />}
       stage={stage}
       three={three}
       fallback={fallback}
@@ -266,7 +274,7 @@ export default function Ricochet({ fallback }) {
           <span className="cap-angle">{deg(angleShown).toFixed(1)}°</span>
         </div>
       )}
-      {live && (
+      {live && !paused && (
         <div className="cap-touch" onPointerDown={(e) => e.stopPropagation()}>
           <button type="button" className="cap-touch-btn" onClick={() => enter(index)} aria-label="Restart the room">
             ↺
@@ -276,75 +284,55 @@ export default function Ricochet({ fallback }) {
           </button>
         </div>
       )}
-      {!live && (
-        <div className="hq-overlay cap-overlay">
-          {ui.phase === 'cleared' ? (
-            <>
-              <p className="hq-overlay-kicker">Room {index + 1} clear</p>
-              <p className="hq-overlay-title">{['', 'Done.', 'Nice throwing.', 'He could do this all day.'][ui.result.stars]}</p>
-              <p className="cap-stars" aria-label={`${ui.result.stars} of 3 stars`}>
-                {[1, 2, 3].map((n) => (
-                  <span key={n} data-on={n <= ui.result.stars || undefined}>
-                    ★
-                  </span>
-                ))}
-              </p>
-              <p className="hq-overlay-text">
-                {ui.result.throws === 1 ? 'One throw' : `${ui.result.throws} throws`}, par {def.par}
-                {ui.result.catches ? ` · caught it ${ui.result.catches === 1 ? 'once' : `${ui.result.catches} times`}` : ''}.
-              </p>
-              {ui.result.stone && (
-                <p className="hq-stone" style={{ '--glow': '#ffd400' }}>
-                  <span className="stone-dot" aria-hidden="true" />
-                  The Mind Stone is yours, out of Loki’s sceptre.
+      {(!live || paused) &&
+        (!paused && ui.phase === 'cleared' ? (
+          <Results
+            className="cap-overlay"
+            {...roomEnd('cleared', ui.result, index)}
+            onAgain={() => enter(index)}
+            onward={index < ROOMS.length - 1 ? { label: 'Next room', onClick: () => enter(index + 1) } : null}
+            more={{ label: 'All rooms', onClick: () => setUi((u) => ({ ...u, phase: 'menu' })) }}
+          />
+        ) : !paused && ui.phase === 'failed' ? (
+          <Results
+            className="cap-overlay"
+            {...roomEnd('failed', ui.result, index)}
+            onAgain={() => enter(index)}
+          />
+        ) : (
+          <div className="hq-overlay cap-overlay">
+            {paused ? (
+              <>
+                <p className="hq-overlay-title">Paused</p>
+                <p className="hq-overlay-text">
+                  Room {index + 1} of {ROOMS.length}, {def.name}.
                 </p>
-              )}
-              <div className="mt-5 flex flex-wrap justify-center gap-3">
-                {index < ROOMS.length - 1 && (
-                  <button type="button" className="btn btn-primary" onClick={() => enter(index + 1)}>
-                    Next room
-                  </button>
-                )}
-                <button type="button" className="btn btn-ghost cap-ghost" onClick={() => enter(index)}>
-                  Again
+                <button
+                  type="button"
+                  className="btn btn-primary mt-4"
+                  onClick={() => {
+                    setPaused(false);
+                    stage.wrap.current?.querySelector('.hq-screen')?.focus({ preventScroll: true });
+                  }}
+                >
+                  Resume
                 </button>
-                <button type="button" className="btn btn-ghost cap-ghost" onClick={() => setUi((u) => ({ ...u, phase: 'menu' }))}>
-                  All rooms
-                </button>
-              </div>
-            </>
-          ) : ui.phase === 'failed' ? (
-            <>
-              <p className="hq-overlay-kicker">Room {index + 1}</p>
-              <p className="hq-overlay-title">{ui.result.reason === 'hostage' ? 'You hit the hostage.' : 'Out of throws.'}</p>
-              <p className="hq-overlay-text">{ui.result.reason === 'hostage' ? 'The orange dummy is a hostage. Find a way around it.' : `Par is ${def.par}; you get ${limitFor(def)}. ${def.tip}`}</p>
-              <button type="button" className="btn btn-primary mt-5" onClick={() => enter(index)}>
-                Try again
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="hq-overlay-kicker">Training center · shield work</p>
-              <p className="hq-overlay-title">Ricochet</p>
-              <p className="hq-overlay-text">Twelve rooms. Throw the shield, bounce it off the steel, and put every training bot down in as few throws as you can. Blue mats stop it, glass breaks, switches open doors. If it comes back past you, you catch it.</p>
-              <div className="cap-rooms" role="group" aria-label="Rooms">
-                {ROOMS.map((r, i) => (
-                  <button key={r.name} type="button" className="cap-room-btn" disabled={i >= save.reached} onClick={() => enter(i)} aria-label={`Room ${i + 1}, ${r.name}${save.stars[i] ? `, ${save.stars[i]} stars` : ''}`}>
-                    <span>{i + 1}</span>
-                    <small>{save.stars[i] ? '★'.repeat(save.stars[i]) : i < save.reached ? r.name : '—'}</small>
-                  </button>
-                ))}
-              </div>
-              <p className="hq-overlay-best">
-                {totalStars} of {ROOMS.length * 3} stars
-              </p>
-            </>
-          )}
-        </div>
-      )}
+              </>
+            ) : (
+              <>
+                <p className="hq-overlay-kicker">Training center · shield work</p>
+                <p className="hq-overlay-title">Ricochet</p>
+                <p className="hq-overlay-text">Twelve rooms. Throw the shield, bounce it off the steel, and put every training bot down in as few throws as you can. Blue mats stop it, glass breaks, switches open doors. If it comes back past you, you catch it.</p>
+                <StartNote />
+                <TouchHelp game="ricochet" />
+                <Rooms save={save} onPick={enter} />
+              </>
+            )}
+          </div>
+        ))}
       <p className="sr-only" role="status">
         {live ? `Room ${index + 1}, ${def.name}. ${ui.left} bots left. ${ui.throws} throws.` : ''}
       </p>
-    </HQFrame>
+    </HQGame>
   );
 }

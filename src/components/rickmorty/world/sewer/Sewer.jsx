@@ -13,12 +13,15 @@ import './sewer.css';
 // and reach the end with a point left. The rules are ./rules.js, stepped at
 // a fixed 1/60 s with the presses since the last step; ./scene.js draws.
 //
-// <Sewer onLeave={(won) => …} /> fills its parent (the world's overlay):
-// onLeave(true) once the run's won and the player leaves, onLeave(false)
-// otherwise.
+// <Sewer onLeave={(won) => …} onWin={() => …} /> fills its parent (the
+// world's overlay): onWin the moment a run's first won, so a win counts
+// however the player leaves (or doesn't); onLeave(true) once a run's won and
+// the player leaves, onLeave(false) otherwise. It owns Esc on every card: a
+// pause while rolling, the way out otherwise.
 
 const STEP = 1 / 60;
 const MAX_STEPS = 6;
+const SETTLE_MS = 600; // an end card ignores the keys this long, as the cabinet's does
 const KEYS = {
   left: ['ArrowLeft', 'a', 'A'],
   right: ['ArrowRight', 'd', 'D'],
@@ -28,7 +31,7 @@ const KEYS = {
 const sfx = () => import('../../../../lib/sfx');
 const play = (name) => sfx().then((s) => s[name]?.(), () => {});
 
-export default function Sewer({ onLeave }) {
+export default function Sewer({ onLeave, onWin }) {
   const wrap = useRef(null);
   const api = useRef(null);
   const run = useRef(null);
@@ -44,6 +47,9 @@ export default function Sewer({ onLeave }) {
   const [hud, setHud] = useState({ hp: TUNING.hp, screws: 0, laser: false, kills: 0, pct: 0 });
   const touch = useMediaQuery('(pointer: coarse)');
   const wonRef = useRef(false);
+  const endAt = useRef(0); // when the end card came up: a key held through the end doesn't leave it (SETTLE_MS)
+  const winRef = useRef(onWin);
+  winRef.current = onWin;
 
   // ── the renderer ──
   useEffect(() => {
@@ -113,7 +119,7 @@ export default function Sewer({ onLeave }) {
           e.preventDefault();
           if (p === 'intro' && (name === 'hop' || name === 'fire')) setPhase('play');
           else if (p === 'play' && !e.repeat) press(name);
-          else if ((p === 'won' || p === 'lost') && (name === 'hop' || name === 'fire')) onLeave(wonRef.current);
+          else if ((p === 'won' || p === 'lost') && (name === 'hop' || name === 'fire') && !e.repeat && performance.now() - endAt.current > SETTLE_MS) onLeave(wonRef.current);
         }
       }
     };
@@ -156,9 +162,14 @@ export default function Sewer({ onLeave }) {
           const pct = Math.round(progress(r) * 100);
           if (r.hp !== hud.hp || r.screws !== hud.screws || r.laser !== hud.laser || r.kills !== hud.kills || pct !== hud.pct) setHud({ hp: r.hp, screws: r.screws, laser: r.laser, kills: r.kills, pct });
           if (r.phase === 'won') {
+            if (!wonRef.current) winRef.current?.();
             wonRef.current = true;
+            endAt.current = performance.now();
             setPhase('won');
-          } else if (r.phase === 'lost') setPhase('lost');
+          } else if (r.phase === 'lost') {
+            endAt.current = performance.now();
+            setPhase('lost');
+          }
         }
       }
       a.render(view.current, ms);
@@ -177,8 +188,28 @@ export default function Sewer({ onLeave }) {
   };
   const leave = () => onLeave(wonRef.current);
 
+  // (the checks drive it: rm-story-check.mjs)
+  useEffect(() => {
+    if (!import.meta.env.DEV) return undefined;
+    window.__SEWER__ = {
+      get state() {
+        return run.current;
+      },
+      get phase() {
+        return phaseRef.current;
+      },
+      set(r) {
+        run.current = r;
+        view.current = r;
+      },
+    };
+    return () => {
+      delete window.__SEWER__;
+    };
+  }, []);
+
   return (
-    <div ref={wrap} className="sewer" data-owns-escape={phase === 'play' || phase === 'paused' || undefined}>
+    <div ref={wrap} className="sewer" data-owns-escape="">
       <button type="button" className="btn btn-ghost btn-sm sewer-leave" onClick={leave} aria-label="Leave the sewer">
         <RiCloseLine aria-hidden="true" /> Leave
       </button>

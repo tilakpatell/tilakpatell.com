@@ -40,7 +40,7 @@ export function SummarizerPlay() {
           <ol className="mt-4 grid gap-2">
             {result.scored.map((x) => (
               <li key={x.i} className="grid grid-cols-[1fr_4.5rem] items-center gap-3 text-sm">
-                <span className={x.keep ? 'text-white' : 'text-muted'}>{x.s}</span>
+                <span className={x.keep ? 'text-ink' : 'text-muted'}>{x.s}</span>
                 <span className="h-2 overflow-hidden rounded-full bg-[var(--surface-2)]">
                   <span className="block h-full rounded-full transition-[width] duration-300" style={{ width: `${Math.round(x.norm * 100)}%`, background: x.keep ? 'var(--accent)' : 'var(--muted)' }} />
                 </span>
@@ -58,7 +58,7 @@ export function SummarizerPlay() {
       }>
         <div className="p-4 text-sm leading-relaxed">
           {result.summary.map((s, i) => (
-            <p key={i} className="mb-2 text-white">{s}</p>
+            <p key={i} className="mb-2 text-ink">{s}</p>
           ))}
           <p className="mono mt-4 text-xs text-muted">Runs in your browser with word-frequency scoring. The project itself scores sentences with a BERT model.</p>
         </div>
@@ -77,7 +77,7 @@ const SLICE_META = [
   { label: 'US equities', color: 'var(--accent)' },
   { label: 'International', color: '#7cc8ff' },
   { label: 'Bonds', color: '#c38bff' },
-  { label: 'Cash', color: '#a7afb9' },
+  { label: 'Cash', color: 'var(--muted)' },
 ];
 const mixAt = (risk) => {
   const [a, b] = risk <= 50 ? [MIXES[0], MIXES[1]] : [MIXES[1], MIXES[2]];
@@ -118,7 +118,7 @@ export function PortfolioPlay() {
               <li key={s.label} className="flex items-center gap-3 text-sm">
                 <span className="h-3 w-3 rounded-sm" style={{ background: s.color }} />
                 <span className="text-body">{s.label}</span>
-                <span className="mono ml-auto text-white tabular">{split[i]}%</span>
+                <span className="mono ml-auto text-ink tabular">{split[i]}%</span>
               </li>
             ))}
           </ul>
@@ -181,7 +181,7 @@ export function InodePlay() {
         <div>
           <div className="flex flex-wrap gap-2">
             {[['touch', touch], ['mkdir', mkdir], ['write 16 KB', write], ['rm', rm]].map(([l, fn]) => (
-              <button key={l} type="button" onClick={fn} className="btn btn-sm border border-[var(--border-strong)] font-mono text-white hover:bg-[var(--surface-2)]">
+              <button key={l} type="button" onClick={fn} className="btn btn-sm border border-[var(--border-strong)] font-mono text-ink hover:bg-[var(--surface-2)]">
                 {l}
               </button>
             ))}
@@ -195,10 +195,10 @@ export function InodePlay() {
             <tbody>
               {files.map((f) => (
                 <tr key={f.ino}>
-                  <td className="pr-3 text-white">{f.ino}</td>
+                  <td className="pr-3 text-ink">{f.ino}</td>
                   <td className="pr-3 tabular text-body">{f.dir ? 4096 : f.size}</td>
                   <td className="pr-3 text-accent">{f.blocks.join(',')}</td>
-                  <td className="text-white">{f.name}</td>
+                  <td className="text-ink">{f.name}</td>
                 </tr>
               ))}
             </tbody>
@@ -209,7 +209,7 @@ export function InodePlay() {
           <div className="mt-3 grid gap-1" style={{ gridTemplateColumns: 'repeat(8, minmax(0, 1fr))' }}>
             {Array.from({ length: BLOCKS }).map((_, b) => (
               <span key={b} className="mono grid aspect-square place-items-center rounded-sm text-[0.6rem] transition-colors duration-200"
-                style={{ background: b < RESERVED ? 'var(--muted)' : used.has(b) ? 'var(--accent)' : 'var(--surface-2)', color: b < RESERVED || used.has(b) ? '#0f1111' : 'var(--muted)' }}>
+                style={{ background: b < RESERVED ? 'var(--muted)' : used.has(b) ? 'var(--accent)' : 'var(--surface-2)', color: b < RESERVED || used.has(b) ? 'var(--btn-ink)' : 'var(--muted)' }}>
                 {b}
               </span>
             ))}

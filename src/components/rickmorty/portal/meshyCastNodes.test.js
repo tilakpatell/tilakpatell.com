@@ -44,6 +44,25 @@ describe('meshyCastNodes, the twin of meshyCast', () => {
     n.cast.dispose();
   });
 
+  it('draws the same line round a figure when asked, in a basic node material', async () => {
+    const inksOf = async (M) => {
+      const cast = M.createMeshyCast({ kinds: { pickle: { a: 'pickle', h: 1.35 } }, rigged: new Set(), loader, ink: 0.01 });
+      await cast.load(null, ['pickle']);
+      const inks = [];
+      cast.make('pickle').group.traverse((o) => o.userData.ink && inks.push(o));
+      return { cast, inks };
+    };
+    const a = await inksOf(glsl);
+    const n = await inksOf(nodes);
+    expect(a.inks).toHaveLength(1);
+    expect(n.inks).toHaveLength(a.inks.length);
+    expect(n.inks[0].material.isMeshBasicNodeMaterial).toBe(true);
+    expect(n.inks[0].material.side).toBe(THREE.BackSide);
+    expect(n.inks[0].material.side).toBe(a.inks[0].material.side);
+    a.cast.dispose();
+    n.cast.dispose();
+  });
+
   it('gives a Morty clone his shirt, its uniform where the GLSL kept it, on a program of its own', () => {
     const m = nodes.shirted(new THREE.Texture(), 0x7fc77a);
     expect(m.isMeshToonNodeMaterial).toBe(true);

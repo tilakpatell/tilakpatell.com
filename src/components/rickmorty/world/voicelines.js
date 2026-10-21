@@ -75,6 +75,10 @@ export const VOICE = {
   jerryreal: 'jerry',
   receptionist: 'rick',
   jerrytv: 'jerry',
+  jerrygown: 'jerry',
+  jerrytux: 'jerry',
+  jerrytrack: 'jerry',
+  jerryrobe: 'jerry',
   arthricia: 'arthricia',
   // Pluto (Morty at the podium), Gear World, the Vindicators' ship, the simulation
   flippynips: 'flippynips',

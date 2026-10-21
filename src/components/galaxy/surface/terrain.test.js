@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HALF, heightGrid, makeHeight } from './terrain';
+import { HALF, gridBuild, heightGrid, makeHeight } from './terrain';
 
 describe('the ground outside the walkable square', () => {
   // a land whose height is easy to know: rising 1 m every 10 m east
@@ -59,5 +59,35 @@ describe('the fine relief at ultra', () => {
       const step = Math.abs(g.heightAt(HALF - 0.01, z) - g.heightAt(HALF + 0.01, z));
       expect(step).toBeLessThan(0.05);
     }
+  });
+});
+
+describe('the grid laid somewhere else (the free roam’s, round you)', () => {
+  const land = (x, z) => Math.sin(x / 37) * 4 + Math.cos(z / 29) * 3 + x * 0.002;
+
+  it('reads the world’s height wherever it lies, as the origin’s grid reads its own', () => {
+    const home = heightGrid(land, { n: 64, grow: 1.2 });
+    const away = heightGrid(land, { n: 64, grow: 1.2, centre: [5000, -3000] });
+    expect(away.centre).toEqual([5000, -3000]);
+    expect(home.centre).toEqual([0, 0]);
+    // (on its lines it is the land itself; between them, the triangles' read of it)
+    const cell = (2 * HALF) / 64;
+    expect(away.heightAt(5000 + cell * 3, -3000 - cell * 5)).toBeCloseTo(land(5000 + cell * 3, -3000 - cell * 5), 3);
+    // (and anywhere, near or far, as a grid at the origin over the land moved there)
+    const moved = heightGrid((x, z) => land(x + 5000, z - 3000), { n: 64, grow: 1.2 });
+    for (const [x, z] of [[7.3, 11.1], [-400, 250], [3 * HALF, -2 * HALF], [9000, 9000]]) expect(away.heightAt(5000 + x, -3000 + z)).toBeCloseTo(moved.heightAt(x, z), 6);
+    expect(home.heightAt(7.3, 11.1)).not.toBeCloseTo(away.heightAt(5007.3, -2988.9), 1);
+  });
+
+  it('builds a few rows at a time, the same grid at the end', () => {
+    const build = gridBuild(land, { n: 64, grow: 1.2, centre: [800, 800] });
+    expect(build.grid).toBeNull();
+    let steps = 0;
+    while (!build.step(0)) steps++;
+    expect(steps).toBeGreaterThan(10);
+    expect(build.progress).toBe(1);
+    const whole = heightGrid(land, { n: 64, grow: 1.2, centre: [800, 800] });
+    expect(Array.from(build.grid.heights)).toEqual(Array.from(whole.heights));
+    expect(build.grid.heightAt(830, 790)).toBe(whole.heightAt(830, 790));
   });
 });

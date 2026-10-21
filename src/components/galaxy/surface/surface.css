@@ -848,7 +848,7 @@
 .surface-heroes .surface-hero.is-picked, .surface-heroes .surface-hilt.is-picked { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
 .surface-heroes .surface-hero-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.4rem; }
 .surface-heroes .surface-hero-name { font-size: 0.84rem; font-weight: 700; line-height: 1.25; color: #f2efe8; }
-.surface-heroes .surface-hero-on { flex: none; padding: 0.1rem 0.35rem; border-radius: 4px; background: var(--accent); color: #03040a; font-size: 0.6rem; font-weight: 700; line-height: 1.2; letter-spacing: 0.08em; text-transform: uppercase; }
+.surface-heroes .surface-hero-on { flex: none; padding: 0.1rem 0.35rem; border-radius: 4px; background: var(--accent); color: var(--btn-ink); font-size: 0.6rem; font-weight: 700; line-height: 1.2; letter-spacing: 0.08em; text-transform: uppercase; }
 .surface-heroes .surface-hero-arm { font-size: 0.72rem; font-weight: 600; line-height: 1.3; color: var(--accent); }
 .surface-heroes .surface-hero-powers { display: flex; flex-wrap: wrap; gap: 0.2rem 0.6rem; font-size: 0.7rem; line-height: 1.4; color: rgba(242, 239, 232, 0.85); }
 .surface-heroes .surface-hero-powers span { font-size: inherit; color: inherit; white-space: nowrap; }
@@ -891,7 +891,7 @@
 .surface-heroes .surface-hero-summary b { overflow: hidden; font-size: 0.8rem; white-space: nowrap; text-overflow: ellipsis; }
 .surface-heroes .surface-hero-summary span { overflow: hidden; font-size: 0.68rem; line-height: 1.35; white-space: nowrap; text-overflow: ellipsis; color: rgba(242, 239, 232, 0.65); }
 .surface-heroes .surface-hero-actions button { display: inline-block; width: auto; min-height: 36px; padding: 0.4rem 0.85rem; border-radius: 8px; font-size: 0.78rem; font-weight: 600; text-align: center; }
-.surface-heroes .surface-hero-play:not(:disabled) { border-color: var(--accent); background: var(--accent); color: #03040a; }
+.surface-heroes .surface-hero-play:not(:disabled) { border-color: var(--accent); background: var(--btn-bg); color: var(--btn-ink); }
 .surface-heroes .surface-hero-play:not(:disabled):hover { filter: brightness(1.12); }
 .surface-heroes .surface-hero-play:disabled { opacity: 0.5; cursor: default; }
 @media (max-width: 420px) {

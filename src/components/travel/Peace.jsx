@@ -58,7 +58,8 @@ export default memo(function Peace() {
         <div className="relative">
           <Waypoint top="0.9rem" />
         </div>
-        <div className="mx-auto max-w-3xl text-center">
+        {/* the dark island is the column, not the section: the shade fades to the page’s own --bg */}
+        <div className="dark-scope mx-auto max-w-3xl text-center">
           <h2 id="peace-title" className="title !text-white">
             A message of peace
           </h2>

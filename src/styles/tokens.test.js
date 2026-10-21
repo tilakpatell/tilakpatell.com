@@ -21,6 +21,10 @@ const TOKENS = [
 const SHEETS = [
   'index.css',
   'styles/extras.css',
+  'styles/middleearth-themes.css',
+  'styles/dialogs.css',
+  'styles/feel.css',
+  'styles/lazy/settings.css',
   'styles/lazy/commandpalette.css',
   'styles/lazy/experience.css',
   'styles/lazy/home.css',
@@ -36,6 +40,7 @@ const SHEETS = [
   'components/universe/universe.css',
   'components/universe/navmap.css',
   'components/universe/online/online.css',
+  'components/universe/online/party.css',
 ];
 
 // A bare number of 10 or more is a page-level layer and must name its depth;
@@ -78,5 +83,27 @@ describe('the shell’s stylesheets', () => {
 
   it.each(SHEETS)('%s names every page-level depth', (path) => {
     expect(bareDepths(read(path))).toEqual([]);
+  });
+});
+
+// The states and the inks a theme can't do without: set on the page, again for
+// the dark, and again in a dark island on a light page (a var() in a token
+// takes its value where it is set, and a light page's error red is 2.6:1 on
+// the island's ground), so a reader never meets one unset or the wrong mode's.
+describe('the states and the inks', () => {
+  const block = (selector) => {
+    const at = css.indexOf(`${selector} {`);
+    return css.slice(at, css.indexOf('}', at));
+  };
+  const STATES = ['--ok', '--warn', '--danger', '--ally', '--shadow-ink', '--saber-ink', '--btn-shade'];
+
+  it.each(['\n:root', "html[data-mode='dark']", '\n.dark-scope'])('%s sets every one', (selector) => {
+    const text = block(selector);
+    for (const token of STATES) expect(text, token).toMatch(new RegExp(`\\s${token}:`));
+  });
+
+  it('a dark island takes the dark mode’s values', () => {
+    const value = (selector, token) => block(selector).match(new RegExp(`\\s${token}:\\s*([^;]+);`))[1];
+    for (const token of STATES) expect(value('\n.dark-scope', token), token).toBe(value("html[data-mode='dark']", token));
   });
 });

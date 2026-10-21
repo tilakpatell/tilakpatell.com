@@ -10,7 +10,7 @@
 // the placer through ./index.js (modelUrlFor, wantsLod, on lib/budgets);
 // this file holds the cut's numbers for the importers and the tests.
 
-import { budget } from '../../../../lib/budgets';
+import { budget } from '../../../../lib/budgets.js';
 
 export const ULTRA = { factor: 4, tex: 8192, bytes: 24 * 1024 * 1024 };
 

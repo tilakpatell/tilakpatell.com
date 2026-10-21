@@ -13,20 +13,20 @@
 // data), screenOf(kind, id), resize, dispose, lost, info }.
 
 import * as THREE from 'three';
-import { createStage, disposeTree } from '../../../../lib/stage3d';
-import { createHouse } from '../../../../lib/three/house';
-import { dress, rolesFor } from '../../../../lib/three/core';
+import { createStage, disposeTree } from '../../nodes/stage';
+import { createHouse } from '../../../../lib/three/houseNodes';
+import { dress, rolesFor } from '../../../../lib/three/coreNodes';
 import { device } from '../../../../lib/device';
 import { fbm, makeNoise, smooth } from '../../../../lib/paint';
 import { pose } from '../../mapFigures';
-import { instances } from '../../shire/ground';
-import { makeAtmosphere, makeSky } from '../../shire/sky';
-import { createFx } from '../../shire/fx';
+import { instances } from '../../nodes/shire/ground';
+import { makeAtmosphere, makeSky } from '../../nodes/shire/sky';
+import { createFx } from '../../nodes/shire/fx';
 import { bake, farTree } from '../bake';
-import { createGhosts } from '../ghosts';
-import { makePuddles, makeTerrain, makeTufts } from '../ground';
+import { createGhosts } from '../../nodes/towns/ghosts';
+import { makePuddles, makeTerrain, makeTufts } from '../../nodes/towns/ground';
 import { FIGURE, groundTown } from '../grounded';
-import { makeRain } from '../rain';
+import { makeRain } from '../../nodes/towns/rain';
 import { createWraithKit } from '../wraiths';
 import { createBreeKit, makeFolk } from './props';
 import { NAZGUL } from './story';
@@ -62,6 +62,7 @@ import { turn } from '../../../../lib/three/gait';
 import { byFrame, createShake } from '../../feel';
 import { BLOOMS } from '../look';
 import { houseGroups } from '../../../../lib/three/houseTuning';
+import { sightMaterial } from '../../nodes/towns/bree/sceneShaders';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const faceTo = (obj, face) => {
@@ -375,30 +376,7 @@ export function createBreeWorld(canvas, { onLost } = {}) {
   const cones = nazgul.map((_, i) => {
     const m = new THREE.Mesh(
       fanGeo(),
-      new THREE.ShaderMaterial({
-        uniforms: { uColor: { value: new THREE.Color(0x8aa0d8) }, uOpacity: { value: 0.3 }, uTime: { value: 0 }, uSight: { value: NAZGUL.sight }, uCone: { value: NAZGUL.cone }, uSeed: { value: i * 3.7 } },
-        transparent: true,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-        vertexShader: 'attribute vec2 local; varying vec2 vP; void main() { vP = local; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-        fragmentShader: `
-          uniform vec3 uColor;
-          uniform float uOpacity, uTime, uSight, uCone, uSeed;
-          varying vec2 vP;
-          float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-          float noise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y); }
-          void main() {
-            float r = length(vP) / uSight;
-            float a = abs(atan(-vP.y, vP.x)) / uCone;
-            float edge = 1.0 - smoothstep(0.62, 1.12, a);
-            float reach = pow(1.0 - smoothstep(0.0, 1.0, r), 1.4) * smoothstep(0.0, 0.08, r);
-            vec2 q = vP * 0.55 + vec2(uTime * 0.35 + uSeed, -uTime * 0.22);
-            float mist = 0.55 + 0.45 * noise(q) * noise(q * 2.3 + 4.1);
-            float ripple = 0.85 + 0.15 * sin(r * 22.0 - uTime * 3.0);
-            float alpha = edge * reach * mist * ripple * uOpacity;
-            gl_FragColor = vec4(uColor * (0.7 + 0.5 * (1.0 - r)), alpha);
-          }`,
-      }),
+      sightMaterial(NAZGUL, i),
     );
     m.renderOrder = 2;
     m.visible = false;

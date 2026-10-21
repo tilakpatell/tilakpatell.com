@@ -22,10 +22,23 @@
 //                  (placed relative to it) }
 //   things         placed things (placer.js's specs), at world positions
 //   scatter        [{ kind, n, within: [r0, r1], scale: [a, b], solid?,
-//                  opts?, flat? (on level ground only) }]
-//   flora          { biome, tint?, density?, trees? }: the nature kit's
-//                  cover, middle layer and trees by a recipe (flora.js),
-//                  its rows added after the scatter's own
+//                  opts?, flat? (on level ground only), at? (the middle
+//                  of its ring, the world's 0, 0 unless said: a stand
+//                  round a place, its clearing kept) }]
+//   places' city   a place that is a city says how its streets go (city.js's
+//                  cityOf: plan, r, street, block, plaza, kit (kinds, or
+//                  { kind, weight, scale, face }), lamps, clutter, crowd,
+//                  traffic): its buildings, lamps and clutter laid as
+//                  scatter rows (instanced, each building solid over its
+//                  footprint, footprints.json), its crowd and traffic added
+//                  to the life, its flat widened to the city's, its own
+//                  things, its people and its quests' spots kept clear
+//   flora          { biome, tint?, density?, trees?, living? }: the nature
+//                  kit's cover, middle layer and trees by a recipe
+//                  (flora.js), its rows added after the scatter's own (or
+//                  streamed round you, living.js); and its biome's `air`:
+//                  pollen after the weather's own, and `air` { song,
+//                  flocks } (sounds.js's birdsong, flocks.js's birds)
 //   life           actors.js's
 //   rides          [{ kind (rides.js's), at, yaw }]
 //   flyovers       [{ kind (a galaxy ship), n, metres, alt, speed, every }]
@@ -73,7 +86,9 @@
 
 import { SYSTEMS } from '../../systems';
 import { REACH } from '../terrain';
-import { floraRows } from '../flora';
+import { airOf, floraRows } from '../flora';
+import { cityOf, rowsOf } from './city';
+import FOOT from './footprints.json';
 import { SITES as desert } from './desert';
 import { SITES as ice } from './ice';
 import { SITES as forest } from './forest';
@@ -84,10 +99,13 @@ import { SITE as bespin } from './bespin';
 import { SITES as edge } from './edge';
 import { SITES as outer } from './outer';
 import { SITES as drop } from './drop';
+import { SITES as prequels } from './prequels';
+import { SITES as rebellion } from './rebellion';
+import { SITES as shows } from './shows';
 import { EXTRA } from './quests';
 import { turnSite } from './turnSite';
 
-export const SITES = { ...desert, ...ice, ...forest, yavin, ...core, coruscant, ...edge, bespin, ...outer, ...drop };
+export const SITES = { ...desert, ...ice, ...forest, yavin, ...core, coruscant, ...edge, bespin, ...outer, ...drop, ...prequels, ...rebellion, ...shows };
 
 // the systems with somewhere to land, in the galaxy's own order
 export const LANDABLE = SYSTEMS.filter((s) => SITES[s.id]).map((s) => s.id);
@@ -118,6 +136,38 @@ export function withDistrict(site, id) {
 
 const turn = ([x, z], yaw = 0) => [x * Math.cos(yaw) + z * Math.sin(yaw), -x * Math.sin(yaw) + z * Math.cos(yaw)];
 const plus = (a, b) => [a[0] + b[0], a[1] + b[1]];
+const minus = (a, b) => [a[0] - b[0], a[1] - b[1]];
+
+// A place's city (city.js), laid in the place's frame: its kit's footprints
+// from the table, its own things and the spots of the site's people and
+// quests near it kept clear; then into the world, rows and life and flat.
+const KEPT = 4; // metres kept round a person or a quest's spot
+const SPREAD = 0.3; // the share of a crowd's spread kept clear round its middle
+const STEP = 12; // metres at most kept round a quest's spot (a `reach` step's ring is wider: you walk in among the houses)
+function cityIn(p, i, raw) {
+  const spec = p.city;
+  const kit = spec.kit.map((k) => (typeof k === 'string' ? { kind: k } : k)).map((k) => ({ foot: FOOT[k.kind], ...k })).filter((k) => k.foot);
+  const local = (at) => turn(minus(at, p.at), -(p.yaw ?? 0));
+  const near = (at) => at && Math.hypot(at[0] - p.at[0], at[1] - p.at[1]) < spec.r + 20;
+  const steps = (raw.quests ?? []).flatMap((q) => q.steps.filter((st) => !st.zone));
+  const spots = [
+    // (a crowd's middle, not all it roams: townsfolk walk the streets)
+    ...(raw.life ?? []).filter((a) => !a.zone && near(a.at)).map((a) => ({ at: local(a.at), r: KEPT + (a.spread ?? 0) * SPREAD })),
+    ...steps.filter((st) => near(st.at)).map((st) => ({ at: local(st.at), r: Math.min(STEP, Math.max(KEPT, st.r ?? 0)) })),
+    ...steps.flatMap((st) => [].concat(st.spawn ?? [])).filter((sp) => near(sp.at)).map((sp) => ({ at: local(sp.at), r: KEPT + (sp.spread ?? 0) * SPREAD })),
+    // (and the other places it reaches: a garden inside the walls)
+    ...(raw.places ?? []).filter((q) => q !== p && near(q.at)).map((q) => ({ at: local(q.at), r: q.flat?.r ?? q.r * 0.6 })),
+  ];
+  const own = (p.things ?? []).map((t) => ({ at: t.at ?? [0, 0], r: FOOT[t.kind] ? (Math.hypot(FOOT[t.kind][0], FOOT[t.kind][1]) / 2) * (t.scale ?? 1) + 3 : 6 }));
+  const built = cityOf({ ...spec, kit, keep: [...own, ...spots, ...(spec.keep ?? [])] }, { seed: (raw.ground?.seed ?? 1) * 101 + i });
+  const world = (q) => plus(p.at, turn(q, p.yaw));
+  return {
+    rows: rowsOf(built.things, FOOT).map((r) => ({ ...r, items: r.items.map((it) => ({ ...it, at: world(it.at), yaw: it.yaw + (p.yaw ?? 0) })) })),
+    life: built.life.map((a) => ({ ...a, path: a.path.map(world) })),
+    flat: { ...(p.flat ?? {}), r: Math.max(p.flat?.r ?? 0, built.flat.r) },
+    paving: built.paving.map((s) => (s.a ? { ...s, a: world(s.a), b: world(s.b) } : { ...s, at: world(s.at) })),
+  };
+}
 
 // A galaxy site made whole, named for its system.
 export function siteOf(id) {
@@ -143,8 +193,10 @@ export function siteOf(id) {
 export function siteFrom(raw, id, { name, accent } = {}) {
   // (a site laid out another way than its game map turns to it: turnSite.js)
   raw = turnSite(raw, raw.turn);
-  const places = (raw.places ?? []).map((p) => ({
+  const cities = (raw.places ?? []).map((p, i) => (p.city ? cityIn(p, i, raw) : null));
+  const places = (raw.places ?? []).map((p, i) => ({
     ...p,
+    ...(cities[i] ? { flat: cities[i].flat } : {}),
     things: (p.things ?? []).map((t) => ({ ...t, at: plus(p.at, turn(t.at, p.yaw)), yaw: (t.yaw ?? 0) + (p.yaw ?? 0), place: p.id })),
     pits: (p.pits ?? []).map((q) => ({ ...q, at: plus(p.at, turn(q.at, p.yaw)) })),
   }));
@@ -172,6 +224,7 @@ export function siteFrom(raw, id, { name, accent } = {}) {
   const zoneLife = zones.flatMap((z) => (z.life ?? []).map((a) => ({ ...a, zone: z.id, at: a.at && inZone(z.id, a.at), path: a.path?.map((q) => inZone(z.id, q)), level: a.level != null ? z.origin[1] + a.level : undefined })));
   // (and the places in them its people go to, where they are)
   const zoneWants = zones.flatMap((z) => (z.wants ?? []).map((w) => ({ ...w, zone: z.id, at: inZone(z.id, w.at), ...(w.spots ? { spots: w.spots.map((q) => inZone(z.id, q)) } : {}) })));
+  const air = airOf({ ...raw, places });
   const levelIn = (id, y) => (y == null ? undefined : zones.find((q) => q.id === id).origin[1] + y);
   const quests = (raw.quests ?? []).map((q) => ({
     ...q,
@@ -187,7 +240,6 @@ export function siteFrom(raw, id, { name, accent } = {}) {
     name: name ?? id,
     accent: accent ?? '#ffffff',
     reach: REACH,
-    weather: [],
     things: [],
     rides: [],
     flyovers: [],
@@ -195,12 +247,16 @@ export function siteFrom(raw, id, { name, accent } = {}) {
     floors: [],
     ...raw,
     // (the site's own rows, then its flora's: the recipe adds, never replaces)
-    scatter: [...(raw.scatter ?? []), ...floraRows(raw)],
+    scatter: [...(raw.scatter ?? []), ...cities.flatMap((c) => c?.rows ?? []), ...floraRows({ ...raw, places })],
+    weather: [...(raw.weather ?? []), ...air.weather],
+    air: { song: air.song, flocks: air.flocks },
     land,
     places,
     zones,
     quests,
-    life: [...(raw.life ?? []), ...zoneLife],
+    life: [...(raw.life ?? []), ...cities.flatMap((c) => c?.life ?? []), ...zoneLife],
+    // (the cities' streets, paved into the ground: groundPaint.js)
+    paving: [...(raw.paving ?? []), ...cities.flatMap((c) => c?.paving ?? [])],
     wants: [...(raw.wants ?? []), ...zoneWants],
     ground: { ...raw.ground, flats, pits },
     things_all: [...(raw.things ?? []), ...places.flatMap((p) => p.things)],

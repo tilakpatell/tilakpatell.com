@@ -25,6 +25,24 @@ describe('groundmapNodes, the twin of groundmap', () => {
     expect(n.texture.colorSpace).toBe(THREE.SRGBColorSpace);
   });
 
+  it('moves to another area a few rows at a time, all of it in at once, as its twin does', () => {
+    const at = (map) => ({ data: Array.from(map.texture.image.data), rect: map.uniforms.uGroundRect.value.toArray(), h: map.heightAt(101, 212), c: map.colourAt(101, 212).toArray() });
+    const maps = [glsl, nodes].map((m) => m.createGroundMap({ area: { ...AREA }, size: 8, paint, height: (x, z) => x + z }));
+    const before = at(maps[1]);
+    const moves = maps.map((m) => m.moveTo({ x0: 98, z0: 210, w: 4, d: 8 }));
+    // (part of the way: nothing in yet)
+    expect(moves[1].step(0)).toBe(false);
+    expect(at(maps[1])).toEqual(before);
+    for (const mv of moves) while (!mv.step(0));
+    const [a, n] = maps.map(at);
+    expect(n).toEqual(a);
+    expect(n.rect).toEqual([98, 210, 1 / 4, 1 / 8]);
+    expect(n.h).toBeCloseTo(101 + 212, 0);
+    expect(n.data).toEqual(Array.from(nodes.paintGround({ area: { x0: 98, z0: 210, w: 4, d: 8 }, size: 8, paint })));
+    expect(maps[1].area).toEqual({ x0: 98, z0: 210, w: 4, d: 8 });
+    expect(moves[1].step(0)).toBe(true);
+  });
+
   it('the same uniforms, as nodes, and the shader’s reads as functions', () => {
     const a = glsl.createGroundMap({ area: AREA, size: 4, paint });
     const n = nodes.createGroundMap({ area: AREA, size: 4, paint });

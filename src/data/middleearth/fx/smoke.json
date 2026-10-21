@@ -1,0 +1,134 @@
+{
+  "kind": "quad",
+  "loop": true,
+  "duration": 1,
+  "gravity": {
+    "g": -0.2,
+    "random": 0.3
+  },
+  "drag": 0.3,
+  "wind": 0.8,
+  "color": [
+    0.42,
+    0.42,
+    0.45
+  ],
+  "sizeY": null,
+  "alpha": {
+    "exponent": 1,
+    "curve": 1
+  },
+  "rotation": {
+    "poly": [
+      0,
+      0,
+      40,
+      0
+    ]
+  },
+  "transparency": {
+    "poly": [
+      0,
+      -1.2,
+      0.7,
+      0.5
+    ],
+    "min": 0,
+    "max": 1,
+    "scale": 1
+  },
+  "uv": {
+    "frames": 4,
+    "grid": [
+      4,
+      1
+    ],
+    "fps": 0,
+    "randomStart": true,
+    "overLife": false
+  },
+  "alignment": "screen",
+  "stretch": null,
+  "lightWrap": 0.5,
+  "soft": null,
+  "additive": false,
+  "exposure": 0,
+  "maxSpawnDistance": 0,
+  "cullingFactor": 1,
+  "follow": {
+    "source": false,
+    "velocity": false
+  },
+  "mesh": null,
+  "ribbon": null,
+  "name": "smoke: the Road’s, a column rising and spreading (chimneys, the Mountain)",
+  "sheet": "puff",
+  "maxCount": 90,
+  "lifetime": {
+    "random": [
+      5,
+      8
+    ]
+  },
+  "spawn": {
+    "rate": 14,
+    "burst": 0,
+    "size": {
+      "random": [
+        0.8,
+        1.6
+      ]
+    },
+    "speed": {
+      "random": [
+        0.6,
+        1.2
+      ]
+    },
+    "rotation": {
+      "random": [
+        0,
+        360
+      ]
+    },
+    "direction": {
+      "box": {
+        "min": [
+          -0.15,
+          0.8,
+          -0.15
+        ],
+        "max": [
+          0.15,
+          1,
+          0.15
+        ]
+      }
+    },
+    "position": {
+      "box": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "size": [
+          0.5,
+          0,
+          0.5
+        ]
+      }
+    }
+  },
+  "size": {
+    "poly": [
+      0,
+      0,
+      2.2,
+      1
+    ],
+    "min": 0,
+    "max": 4,
+    "scale": 1
+  }
+}

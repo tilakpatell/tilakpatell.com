@@ -78,6 +78,11 @@ const CLASS = {
   smg: 'rifle',
   sniper: 'long',
   dlt19: 'heavy',
+  // (the skill tree's four: the Amban a long rifle, the M60 a heavy, the gauntlet's palm held as a pistol)
+  amban: 'long',
+  particle: 'rifle',
+  m60: 'heavy',
+  gauntlet: 'pistol',
 };
 export const weaponClassOf = (gun) => CLASS[gun] ?? null;
 

@@ -11,6 +11,7 @@ import { chapter as findChapter, neighbours, stopOf } from '../components/middle
 import { hidden as hiddenPlace } from '../components/middleearth/hidden';
 import { shouldOpen } from '../components/middleearth/opening';
 import { STOPS } from '../components/middleearth/road';
+import { bookPageFor } from '../components/middleearth/redbook/routes';
 import WorldSwitcher from '../components/worlds/WorldSwitcher';
 import WorldPhotos from '../components/worlds/WorldPhotos';
 import Scenes from '../components/worlds/Scenes';
@@ -23,6 +24,8 @@ import { prefersReducedMotion, useDocumentTitle } from '../lib/hooks';
 import '@fontsource/cinzel/600.css';
 import ScriptToggle from '../components/ScriptToggle';
 import ClipBoard from '../components/worlds/ClipBoard';
+import { useWorld } from '../runtime';
+import middleEarth, { askAgain, refuse } from '../components/middleearth/module';
 import '../styles/lazy/middleearth.css';
 
 const sfx = () => import('../lib/sfx');
@@ -100,6 +103,17 @@ export default function MiddleEarth() {
   const navigate = useNavigate();
   useDocumentTitle(here ? `${here.name} · Middle-earth` : 'Middle-earth');
   useSectionThemes();
+  // the one renderer and loop every picture on the page draws with (the
+  // runtime's), in the map's box; without it the pictures show their drawings
+  const world = useWorld(middleEarth);
+  // (refused only for good: no 3D at all, or this page's own mount failed
+  // or was lost, not a status left over from the page before)
+  const tried = useRef(false);
+  useEffect(() => {
+    if (world.status === 'loading') tried.current = true;
+    if (world.meant) askAgain();
+    else if (world.status === 'idle' || tried.current) refuse();
+  }, [world.meant, world.status]);
   const api = useRef(null);
   const frame = useRef(null);
   const [hover, setHover] = useState(null);
@@ -192,8 +206,9 @@ export default function MiddleEarth() {
     flight.current = setTimeout(arrived, walk);
     return undefined;
   };
+  // (the map hub's own address since the Red Book took /middle-earth)
   const toMap = () => {
-    navigate('/middle-earth');
+    navigate('/middle-earth/map');
     window.scrollTo(0, 0);
   };
   // a place in the address that isn't on the map: the map itself
@@ -217,6 +232,7 @@ export default function MiddleEarth() {
   return (
     <div className="me-page relative" data-opening={opening || undefined} data-chapter={here?.id} data-flying={flying || undefined}>
       <MapBackdrop
+        host={world.host}
         api={api}
         onFrame={() => frame.current?.()}
         spot={spotAt}
@@ -238,8 +254,11 @@ export default function MiddleEarth() {
 
       {here && (
         <div className="me-bar shell relative z-20">
-          <button type="button" className="btn btn-ghost btn-sm me-bar-back" onClick={toMap}>
-            <span aria-hidden="true">←</span> The map
+          <button type="button" className="btn btn-ghost btn-sm me-bar-back" onClick={() => navigate(`/middle-earth?page=${bookPageFor(here.id)}`)}>
+            <span aria-hidden="true">←</span> The Red Book
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm me-bar-map" onClick={toMap}>
+            The map
           </button>
           <p className="me-bar-where">
             <span className="eyebrow">Middle-earth</span> <b>{here.name}</b>
@@ -355,7 +374,7 @@ export default function MiddleEarth() {
           </h2>
           <p className="lead mt-4 max-w-[56ch]">The road the Ring took, from a party in Hobbiton to the fire it was made in. Step along it.</p>
           <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.6fr)] lg:gap-12">
-            <figure className="me-map-frame m-0" data-tour="me-map">
+            <figure className="me-map-frame m-0">
               <MiddleEarthMap step={step} />
             </figure>
             <div className="me-road card">
@@ -532,6 +551,12 @@ export default function MiddleEarth() {
         </Suspense>
       )}
 
+      {here?.id === 'minas-tirith' && (
+        <Suspense fallback={null}>
+          <Rush level="houses" />
+        </Suspense>
+      )}
+
       {here?.id === 'edoras' && (
         <Suspense fallback={<div className="shire-stage" aria-hidden="true" />}>
           <EdorasWorld onLeave={toMap} />
@@ -562,6 +587,9 @@ export default function MiddleEarth() {
                   The map
                 </button>
               )}
+              <button type="button" className="btn btn-ghost" onClick={() => navigate(`/middle-earth?page=${bookPageFor(here.id)}`)}>
+                The Red Book
+              </button>
             </div>
             <WorldSwitcher className="mt-8" />
           </div>

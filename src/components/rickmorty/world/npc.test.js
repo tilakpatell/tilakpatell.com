@@ -82,10 +82,11 @@ describe('a hunter’s body', () => {
   it('tells RmWorld what it always told it, and shows it: seen, then caught', () => {
     const N = createNpcs({ id: 'x', area: AREA, words: { caught: 'Got you.', spotted: 'There!' } });
     const c = figure();
-    const n = N.add(c, { x: 0, z: 0, face: 0, ai: { hunt: { speed: 3, catchR: 1.1, near: 6 } }, id: 'guard' });
+    const n = N.add(c, { x: 0, z: 0, face: 0, ai: { hunt: { speed: 3, catchR: 1.1, near: 6 } }, id: 'guard', name: 'A guard' });
     const { events } = run(N, [n], 4, () => ({ x: 3, z: 0 }));
-    expect(events[0]).toEqual(['spotted', { area: 'x', who: 'guard', text: 'There!' }]);
-    expect(events.some(([name, e]) => name === 'caught' && e.text === 'Got you.' && e.who === 'guard')).toBe(true);
+    // (its id, and the name its kind gives it for the caption: never the id)
+    expect(events[0]).toEqual(['spotted', { area: 'x', who: 'guard', name: 'A guard', text: 'There!' }]);
+    expect(events.some(([name, e]) => name === 'caught' && e.text === 'Got you.' && e.who === 'guard' && e.name === 'A guard')).toBe(true);
     expect(reacts(c, 'alert').length).toBe(1);
     expect(reacts(c, 'caught').length).toBeGreaterThan(0);
     expect(reacts(c, 'greet').length).toBe(0); // (a hunter doesn't wave)
@@ -119,7 +120,7 @@ describe('a local’s body', () => {
     const n = local(N, c);
     const { events } = run(N, [n], 1, () => ({ x: 3, z: 0 }));
     const bark = events.find(([name]) => name === 'bark');
-    expect(bark[1]).toEqual({ area: 'x', who: 'jessica', text: 'Oh, hey, Morty. Brad’s around somewhere.' });
+    expect(bark[1]).toEqual({ area: 'x', who: 'jessica', name: null, text: 'Oh, hey, Morty. Brad’s around somewhere.' });
     const says = reacts(c, 'say');
     expect(says.length).toBe(1);
     expect(says[0][1].hold).toBeCloseTo(lineHold(bark[1].text), 6);
@@ -212,5 +213,56 @@ describe('a place settling', () => {
     expect(c.log.look.at(-1)).toBe(null);
     run(N, [n], 1 / 60, () => ({ x: 20, z: 0 }), { t0: 5 });
     expect(last(c).opts.motion.speed).toBeLessThan(1); // (put back home: no stride across the room)
+  });
+});
+
+describe('a lookout (the vat’s buyers, turned by ./games/freeze.js)', () => {
+  // a Gromflomite facing west, Morty's way
+  const lookout = () => {
+    const N = createNpcs({ id: 'vat', area: AREA });
+    const c = figure();
+    c.group.rotation.y = Math.PI + Math.PI / 2;
+    const n = N.add(c, { x: 0, z: 0, face: Math.PI, ai: { watch: 8, lookout: true, bark: { r: 5, every: 1, lines: ['Where is the crystal, Sanchez?'] } }, id: 'g' });
+    return { N, c, n };
+  };
+  const off = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+  const barks = (events) => events.filter(([name]) => name === 'bark');
+
+  it('turns its back on the room while it’s told away, its head off Morty, with no word', () => {
+    const { N, c, n } = lookout();
+    N.lookout('away');
+    const { events } = run(N, [n], 3, () => ({ x: -3, z: 0 }));
+    expect(off(c.group.rotation.y, Math.PI + Math.PI + Math.PI / 2)).toBeLessThan(0.05);
+    expect(c.log.look.filter(Boolean)).toEqual([]);
+    expect(barks(events)).toEqual([]);
+    expect(reacts(c, 'greet')).toEqual([]);
+  });
+
+  it('faces Morty with its head on him while it’s told to look', () => {
+    const { N, c, n } = lookout();
+    N.lookout('look');
+    run(N, [n], 3, () => ({ x: 0, z: 3 }));
+    expect(off(c.group.rotation.y, -Math.PI / 2 + Math.PI / 2)).toBeLessThan(0.05);
+    expect(c.log.look.at(-1)).toEqual({ x: 0, z: 3 });
+  });
+
+  it('starts at him, once, when it’s seen him move', () => {
+    const { N, c, n } = lookout();
+    N.lookout('seen');
+    run(N, [n], 2, () => ({ x: 0, z: 3 }));
+    expect(reacts(c, 'alert')).toHaveLength(1);
+  });
+
+  it('watches as it always did when it’s told nothing, and once calmed', () => {
+    const plain = lookout();
+    const { events } = run(plain.N, [plain.n], 3, () => ({ x: 0, z: 3 }));
+    expect(off(plain.c.group.rotation.y, 0)).toBeLessThan(0.05);
+    expect(barks(events).length).toBeGreaterThan(0);
+    const calmed = lookout();
+    calmed.N.lookout('away');
+    calmed.N.calm();
+    const after = run(calmed.N, [calmed.n], 3, () => ({ x: 0, z: 3 }));
+    expect(off(calmed.c.group.rotation.y, 0)).toBeLessThan(0.05);
+    expect(barks(after.events).length).toBeGreaterThan(0);
   });
 });

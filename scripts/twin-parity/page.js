@@ -4,7 +4,8 @@
 // chain its renderer has (a TSL pass, an EffectComposer with an OutputPass),
 // or a case's own `render`. A case with `compare` returns numbers instead.
 import * as THREE from 'three';
-import { WebGPURenderer, PostProcessing } from 'three/webgpu';
+import { WebGPURenderer, PostProcessing, NodeMaterialObserver } from 'three/webgpu';
+import { watchTextures } from '../../src/runtime/textureWatch.js';
 import { pass } from 'three/tsl';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -19,6 +20,8 @@ const cases = (await import('./cases.js')).default;
 // (?gpu=webgpu draws the node side on WebGPU, where the browser has it; WebGL 2 otherwise)
 const node = new WebGPURenderer({ canvas: document.getElementById('a'), forceWebGL: !location.search.includes('gpu=webgpu'), antialias: false });
 await node.init();
+// (the node renderer as the runtime makes it: textures' places watched, src/runtime/textureWatch.js)
+watchTextures(NodeMaterialObserver);
 const classic = new THREE.WebGLRenderer({ canvas: document.getElementById('b'), antialias: false, preserveDrawingBuffer: true });
 for (const r of [node, classic]) { r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace; }
 const world = () => {
@@ -30,6 +33,7 @@ const world = () => {
   const sun = new THREE.DirectionalLight(0xffffff, 2); sun.position.set(3, 5, 2); scene.add(sun);
   return { THREE, scene, camera, sun };
 };
+const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
 window.names = Object.keys(cases);
 window.runCase = async (name) => {
   cur = name;
@@ -42,13 +46,16 @@ window.runCase = async (name) => {
     a.renderer = node;
     const ta = (await (c.node ?? c)(a)) ?? {};
     const post = new PostProcessing(node); post.outputNode = pass(a.scene, a.camera).getTextureNode();
-    for (let i = 0; i < 3; i++) { ta.tick?.(i); if (ta.render) ta.render(); else post.render(); }
+    // (a frame apart, as a page's are: three's node renderer draws a scene
+    // pass, and runs a frame's updates, once a frame, its count moved on
+    // by its own animation frame)
+    for (let i = 0; i < 3; i++) { if (i) await frame(); ta.tick?.(i); if (ta.render) ta.render(); else post.render(); }
     if (c.classic) {
       const b = world();
       b.renderer = classic;
       const tb = (await c.classic(b)) ?? {};
       const comp = new EffectComposer(classic); comp.addPass(new RenderPass(b.scene, b.camera)); comp.addPass(new OutputPass());
-      for (let i = 0; i < 3; i++) { tb.tick?.(i); if (tb.render) tb.render(); else comp.render(); }
+      for (let i = 0; i < 3; i++) { if (i) await frame(); tb.tick?.(i); if (tb.render) tb.render(); else comp.render(); }
       res.classic = true;
     }
     res.status = out.log.filter((l) => l[0] === 'error').length === before ? 'ok' : 'errors';

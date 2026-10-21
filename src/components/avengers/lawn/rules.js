@@ -54,6 +54,8 @@ export const WAVES = [
   { title: 'Siege', groups: [{ kind: 'soldier', n: 10, every: 1.6, shooters: 4 }, { kind: 'brute', n: 3, every: 7, at: 2 }, { kind: 'chariot', n: 2, every: 10, at: 6 }] },
   { title: 'Cull Obsidian', boss: true, groups: [{ kind: 'cull', n: 1, every: 1 }, { kind: 'soldier', n: 4, every: 2, at: 3 }, { kind: 'chariot', n: 1, every: 1, at: 12 }] },
 ];
+// the boss's wave, where the checkpoint starts
+export const BOSS_WAVE = WAVES.findIndex((w) => w.boss);
 
 // ── the lift ──
 // The needle falls away from the middle (it's balancing an upright hammer);
@@ -99,6 +101,18 @@ export function skipLift(g) {
   g.phase = 'break';
   g.breakT = 1.2;
   g.queue.push({ type: 'lifted', skipped: true });
+}
+
+// Start again at the boss's wave, once it's been reached: the lift is already
+// done; five hearts, lightning empty, nothing carried over from the game lost.
+export function startAtBoss(g) {
+  g.score = 0;
+  reset(g);
+  g.wave = g.next = BOSS_WAVE;
+  g.phase = 'break';
+  g.breakT = 1.2;
+  g.queue.push({ type: 'checkpoint', n: BOSS_WAVE + 1 });
+  return g.queue.splice(0);
 }
 
 // Hold (or let go of) the hammer in the lift, pushing the needle -1..1.

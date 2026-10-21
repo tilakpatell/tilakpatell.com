@@ -6,7 +6,8 @@ import { useTheme } from '../theme/ThemeProvider';
 // form: a lightsaber for the house and company themes, Sting for Middle-earth,
 // a paper airplane for Dunder Mifflin, an energon gauge for the Transformers,
 // the Infinity Stones for Stark, a test tube for Heisenberg, a sitar string for
-// the raga, and pixels for the arcade.
+// the raga, pixels for the arcade, a spyglass for the Caribbean and the portal
+// gun for Rick and Morty (styles/feel.css).
 //
 // Where the browser can tie an animation to the scroll position (Chrome, Edge,
 // Safari 26), the bar is drawn by the browser itself, in step with the page:
@@ -27,6 +28,13 @@ const KIND = {
   raga: 'string',
   arcade: 'pixels',
   gameboy: 'pixels',
+  tortuga: 'spyglass',
+  pearl: 'spyglass',
+  dutchman: 'spyglass',
+  portal: 'portalgun',
+  morty: 'portalgun',
+  summer: 'portalgun',
+  beth: 'portalgun',
 };
 
 export default function ScrollSaber() {
@@ -98,6 +106,12 @@ export default function ScrollSaber() {
             <path d="M13 0 L-12 6 L-7 0 Z" fill="#e3e9f2" stroke="#8a96a8" strokeWidth="0.8" />
             <path d="M-4 -4.5 L4 -2.5" stroke="#1f4e8c" strokeWidth="1.4" />
           </svg>
+        </span>
+      )}
+      {kind === 'spyglass' && <span ref={tip} className="progress-tip progress-lens" />}
+      {kind === 'portalgun' && (
+        <span ref={tip} className="progress-tip progress-portal">
+          <i />
         </span>
       )}
       {kind === 'stones' &&

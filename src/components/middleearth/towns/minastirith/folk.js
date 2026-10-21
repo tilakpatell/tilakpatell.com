@@ -13,7 +13,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { hot } from '../../../../lib/stage3d';
+import { hot } from '../../../../lib/three/stage3dNodes';
 import { clamp01, makeNoise, mix, smooth } from '../../../../lib/paint';
 import { makeToyFigure } from '../../mapFigures';
 import { LOOKS } from '../../shire/people';

@@ -1,0 +1,117 @@
+{
+  "kind": "quad",
+  "loop": true,
+  "duration": 1,
+  "gravity": {
+    "g": -0.8,
+    "random": 0.4
+  },
+  "drag": 0.6,
+  "wind": 0.4,
+  "color": [
+    2.0,
+    0.75,
+    0.18
+  ],
+  "sizeY": null,
+  "alpha": {
+    "exponent": 1,
+    "curve": 1
+  },
+  "rotation": 0,
+  "transparency": {
+    "poly": [
+      0,
+      -1,
+      0,
+      1
+    ],
+    "min": 0,
+    "max": 1,
+    "scale": 1
+  },
+  "uv": {
+    "frames": 4,
+    "grid": [
+      4,
+      1
+    ],
+    "fps": 0,
+    "randomStart": true,
+    "overLife": false
+  },
+  "alignment": "screen",
+  "stretch": null,
+  "lightWrap": 0.5,
+  "soft": null,
+  "additive": true,
+  "exposure": 1,
+  "maxSpawnDistance": 0,
+  "cullingFactor": 1,
+  "follow": {
+    "source": false,
+    "velocity": false
+  },
+  "mesh": null,
+  "ribbon": null,
+  "name": "embers: the Road’s, sparks rising off a fire, glowing",
+  "sheet": "mote",
+  "maxCount": 120,
+  "lifetime": {
+    "random": [
+      1.6,
+      3.2
+    ]
+  },
+  "spawn": {
+    "rate": 45,
+    "burst": 0,
+    "size": {
+      "random": [
+        0.03,
+        0.06
+      ]
+    },
+    "speed": {
+      "random": [
+        0.6,
+        1.6
+      ]
+    },
+    "rotation": 0,
+    "direction": {
+      "dir": [
+        0,
+        1,
+        0
+      ],
+      "from": 0,
+      "spread": 30
+    },
+    "position": {
+      "box": {
+        "center": [
+          0,
+          0.3,
+          0
+        ],
+        "size": [
+          0.8,
+          0.2,
+          0.8
+        ]
+      }
+    }
+  },
+  "size": {
+    "poly": [
+      0,
+      0,
+      -0.6,
+      1
+    ],
+    "min": 0,
+    "max": 1,
+    "scale": 1
+  }
+}

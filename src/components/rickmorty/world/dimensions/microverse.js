@@ -3,9 +3,14 @@
 // Miniverse battery, a glowing green cylinder, in the middle with Kyle beside
 // it till he's been met; Zeep at his console; the gooble boxes the people
 // stomp on to make the power, against the west wall; and a long window on
-// the Microverse city's white towers.
+// the Microverse city's white towers. It's a game of the power kind
+// (../games/power.js, the row's `power`): Zeep's cells carried to the gooble
+// boxes before the world's charge runs down, the battery's glow dimming with
+// the charge.
 
+import * as THREE from 'three';
 import { BALL, CYL } from '../interiors/shell';
+import { mergeParts } from '../kit';
 import { specks, stage } from './stage';
 
 const LIGHT = { sun: [0xeafff0, 0.75], hemi: [0xeafff2, 0x5a7a66, 1.8], fog: null, background: 0x0c1a12 };
@@ -19,14 +24,18 @@ export async function buildMicroverse(kit) {
   for (const z of [A.z0 + 0.12, A.z1 - 0.12]) for (const y of [1.1, H - 0.6]) R.frame((A.x0 + A.x1) / 2, z, 0, { list: 'fixed' }).box(0x3fb46a, 0, y, 0, A.x1 - A.x0 - 0.24, 0.14, 0.06);
   for (const x of [A.x0 + 0.12, A.x1 - 0.12]) for (const y of [1.1, H - 0.6]) R.frame(x, (A.z0 + A.z1) / 2, 0, { list: 'fixed' }).box(0x3fb46a, 0, y, 0, 0.06, 0.14, A.z1 - A.z0);
 
-  // the battery: a glass cylinder of green light on a white plinth, cabled to the ceiling
+  // the battery: a glass cylinder of green light on a white plinth, cabled to
+  // the ceiling; its light (and inside it the world it holds, a tiny green
+  // planet) in a mesh of its own, for the charge to dim
   const [bx, bz] = P(2, -2.7);
   const b = R.frame(bx, bz, 0);
   b.cyl(0xf2f6f2, 0, 0, 0, 1.25, 0.5).cyl(0xd8e2da, 0, H - 0.4, 0, 1.0, 0.4);
-  b.glow(CYL, 0x6dff8a, 1.8, 0, 2.1, 0, 0, 1.6, 3.2, 1.6);
   for (const a of [0, 2.1, 4.2]) b.cyl(0x2a3a30, Math.cos(a) * 0.9, 3.8, Math.sin(a) * 0.9, 0.06, H - 3.8);
-  // inside it, the world it holds: a tiny green planet
-  b.glow(BALL, 0xb6ffb0, 2.4, 0, 2.1, 0, 0, 0.7);
+  const lit = [];
+  R.frame(bx, bz, 0, { glows: lit }).glow(CYL, 0x6dff8a, 1.8, 0, 2.1, 0, 0, 1.6, 3.2, 1.6).glow(BALL, 0xb6ffb0, 2.4, 0, 2.1, 0, 0, 0.7);
+  const charge = new THREE.Mesh(R.own(mergeParts(lit)), R.own(new THREE.MeshBasicMaterial({ vertexColors: true })));
+  R.add(charge, { ink: false });
+  S.power({ glow: charge });
 
   // Zeep's console: a long desk of screens
   const [kx, kz] = P(-1.5, -6.6);
