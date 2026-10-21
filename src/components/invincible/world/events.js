@@ -145,6 +145,7 @@ export function onFoeEvent(e, { s, say, feed, unlock, shakeOff }) {
   } else if (e.type === 'ko') {
     sfxHit('blast', 'ko', hits.foeForce(e.kind));
     feed({ type: 'ko', kind: e.kind ?? 'flaxan', id: e.id });
+    if (e.kind === 'angstrom') say(ANGSTROM_LINES.down, 3200, 'angstrom');
   } else if (e.type === 'swing' && e.on === 'hangar' && s.mission && s.guard) {
     // a Mauler's swing at the hangar while he's away: the hangar takes it (the last-but-one episode)
     s.hangarHp = Math.max(0, s.hangarHp - 10);
@@ -157,8 +158,7 @@ export function onFoeEvent(e, { s, say, feed, unlock, shakeOff }) {
     sfx('hyperspace');
     if (s.levyBack === 1) say(ANGSTROM_LINES.back, 3200, 'angstrom');
     else if (s.levyBack === 2) say(ANGSTROM_LINES.again, 3200, 'angstrom');
-  } else if (e.type === 'ko' && e.kind === 'angstrom') say(ANGSTROM_LINES.down, 3200, 'angstrom');
-  else if (e.type === 'hit') sfxHit('thunk', 'foe', hits.foeForce(e.kind));
+  } else if (e.type === 'hit') sfxHit('thunk', 'foe', hits.foeForce(e.kind));
   else if (e.type === 'bolt' || e.type === 'blast') sfx('laser');
   else if (e.type === 'hurt') sfx('hit');
   else if (e.type === 'spawn') sfx('pop');

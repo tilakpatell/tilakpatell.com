@@ -162,10 +162,10 @@
 - Create: `src/components/invincible/world/dimensions.js`, `dimensions.test.js`, `season2.js` (season two’s missions as data, the engine stays in `missions.js`), `season2.test.js`
 - Modify: `scene.js` (redraw the city on a dimension change: palettes, water, sky, crowd), `foes.js` (Angstrom, the mirror Mark), `ground.js` (the water level as a uniform), `map.js` (a reflected `near` for the mirror), `InvWorld.jsx`
 
-- [ ] Tests first: four dimensions with their numbers; `enter(dim)` keeps Mark’s position and clears foes; the mirror maps `x` to `−x` in `near`; only `home` serialises ruins and standing; Angstrom portals away on a hit and returns 8 m behind Mark; the mission’s three portals and the thing in each.
-- [ ] The modules and the drawing (a dimension swap re-uploads palettes and the water uniform; no new geometry).
-- [ ] `--play levy`; shot `levy` (the burnt city at night) with `--metrics`; `gen3d` issue for Angstrom; `voices` issue for his six lines.
-- [ ] Checks; commit; pull request; merge.
+- [x] Tests first: four dimensions with their numbers; `enter(dim)` keeps Mark’s position and clears foes; the mirror maps `x` to `−x` in `near`; only `home` serialises ruins and standing; Angstrom portals away on a hit and returns 8 m behind Mark; the mission’s three portals and the thing in each.
+- [x] The modules and the drawing (a dimension swap re-uploads palettes and the water uniform; no new geometry).
+- [x] `--play levy`; shot `levy` (the burnt city at night) with `--metrics`; `gen3d` issue for Angstrom; `voices` issue for his six lines.
+- [x] Checks; commit; pull request; merge.
 
 ### Task 9: The Sequids on Mars
 
