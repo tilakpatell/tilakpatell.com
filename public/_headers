@@ -1,4 +1,4 @@
-# Cloudflare Pages' header rules (docs/decisions/2026-10-21-cloudflare-pages-for-the-site.md).
+# Cloudflare's header rules for the site's files (docs/decisions/2026-10-21-cloudflare-for-the-site.md).
 # Vite names every file under /assets/ by its content's hash, so a file
 # there never changes: a year, and the browser never asks again. Everything
 # else keeps Cloudflare's default (asked again each visit, a 304 when it's

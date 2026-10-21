@@ -100,20 +100,18 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v5
 
-      # The same build to Cloudflare Pages, once the repository has the
-      # variables CLOUDFLARE_PROJECT and CLOUDFLARE_ACCOUNT_ID and the secret
-      # CLOUDFLARE_API_TOKEN (Cloudflare Pages: Edit), docs/decisions/
-      # 2026-10-21-cloudflare-pages-for-the-site.md. After GitHub Pages, so
-      # a failure here never holds the site back while the domain still
-      # points there. The project is made on the first run (its `create`
-      # fails harmlessly after), and wrangler sends only the files the last
-      # deployment didn't have. (Its free plan takes 20,000 files a site,
-      # 25 MiB a file: dist/ had 11,540 files and none over on 2026-10-21.)
-      - if: ${{ vars.CLOUDFLARE_PROJECT != '' }}
+      # The same build to Cloudflare, the Worker tilakpatell-com
+      # (wrangler.jsonc: the files and nothing else), once the repository
+      # has the variable CLOUDFLARE_ACCOUNT_ID and the secret
+      # CLOUDFLARE_API_TOKEN (Workers Scripts: Edit), docs/decisions/
+      # 2026-10-21-cloudflare-for-the-site.md. After GitHub Pages, so a
+      # failure here never holds the site back while the domain still points
+      # there. Wrangler sends only the files the Worker doesn't hold already
+      # (the first time, 11,362 files in under four minutes). (Its free plan
+      # takes 20,000 files and 25 MiB a file: on 2026-10-21 wrangler counted
+      # 12,279 of dist/'s 11,565, and none over.)
+      - if: ${{ vars.CLOUDFLARE_ACCOUNT_ID != '' }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          PROJECT: ${{ vars.CLOUDFLARE_PROJECT }}
-        run: |
-          npx --yes wrangler@4.149.0 pages project create "$PROJECT" --production-branch main || echo "the project $PROJECT is there already"
-          npx --yes wrangler@4.149.0 pages deploy dist --project-name "$PROJECT" --branch main --commit-dirty=true
+        run: npx --yes wrangler@4.149.0 deploy
