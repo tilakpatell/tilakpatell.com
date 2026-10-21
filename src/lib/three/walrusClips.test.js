@@ -74,7 +74,16 @@ describe('the own rigs’ sets', () => {
     for (const rig of ['birdtheed', 'chicken', 'scurrier', 'tach', 'pelikki', 'runyip', 'profogg', 'sneep', 'stintarils', 'pillioshrimp', 'felbird', 'felripper', 'gamorrean', 'treadwell', 'gonk']) expect(RIG_SET(rig)?.idle, rig).toBeTruthy();
     expect(OWN_RIGS.chicken.skeleton).toBe('Chicken_01_Ske');
     expect(RIG_SET('gonk')['idle.look']).toBe('L_Gonk_Stand_Idle_02');
-    // (none of the cast left's: lane B's beasts, lane Y's heroes)
-    for (const rig of ['dewback', 'bantha', 'eopie', 'ronto', 'jawa', 'aiwha', 'yoda', 'grievous']) expect(OWN_RIGS[rig], rig).toBeUndefined();
+    // (Tatooine's Jawa, dewback and bantha, from the desktop's export, lane C4's)
+    for (const rig of ['jawa', 'dewback', 'bantha']) {
+      expect(RIG_SET(rig).walk, rig).toBeTruthy();
+      expect(OWN_RIGS[rig].skeleton, rig).toBe(`${rig[0].toUpperCase()}${rig.slice(1)}_01_Ske`);
+    }
+    // (and Yoda and Grievous, the heroes on skeletons of their own, from the same export)
+    expect(OWN_RIGS.yoda.skeleton).toBe('Yoda_01_Ske');
+    expect(OWN_RIGS.grievous.skeleton).toBe('GeneralGrievous_01_Ske');
+    for (const rig of ['yoda', 'grievous']) expect(RIG_SET(rig)['hit.chest'], rig).toBeTruthy();
+    // (none of the rest of the cast left's: lane B's other beasts)
+    for (const rig of ['eopie', 'ronto', 'aiwha']) expect(OWN_RIGS[rig], rig).toBeUndefined();
   });
 });
