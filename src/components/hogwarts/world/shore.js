@@ -15,7 +15,7 @@ import { GROUND, heightAt, inland, scatterOf, solidsOf } from '../rules/shore';
 // the shore's colours, sRGB: the wet stones at the water's edge, the dry
 // shingle, the grass, the heather and the bracken of the moor
 const C = Object.fromEntries(
-  Object.entries({ bed: '#2d2c2a', wet: '#3f3d39', shingle: '#77746c', shingleHi: '#8f8b81', sand: '#6e6658', grass: '#3d5530', grassHi: '#4f6838', heather: '#5b3f55', bracken: '#6a5634', moss: '#33452a' }).map(([k, v]) => [k, new THREE.Color().setStyle(v, THREE.SRGBColorSpace)]),
+  Object.entries({ bed: '#2d2c2a', wet: '#3f3d39', shingle: '#857f74', shingleHi: '#9a948a', sand: '#6e6658', grass: '#3d5530', grassHi: '#4f6838', heather: '#5b3f55', bracken: '#6a5634', moss: '#33452a' }).map(([k, v]) => [k, new THREE.Color().setStyle(v, THREE.SRGBColorSpace)]),
 );
 
 const hash = (x, z) => {

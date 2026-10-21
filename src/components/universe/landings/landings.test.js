@@ -29,6 +29,7 @@ const FILES = {
   travel: () => import('./travel.js'),
   caribbean: () => import('./caribbean.js'),
   invincible: () => import('./invincible.js'),
+  potter: () => import('./potter.js'),
   gazorpazorp: () => import('./rmmoons.js'),
   squanch: () => import('./rmmoons.js'),
   birdworld: () => import('./rmmoons.js'),
@@ -46,7 +47,7 @@ const PLACES = Object.entries(LANDINGS).flatMap(([id, l]) => [[id, id, l], ...(l
 
 describe('planet landings', () => {
   it('give every planet you can land on its own place: a name, a ground and a sky', () => {
-    expect(LANDABLE.length).toBe(21);
+    expect(LANDABLE.length).toBe(22);
     const titles = new Set();
     for (const id of LANDABLE) {
       const l = landingOf(id);
