@@ -95,16 +95,25 @@ export function createLands({ scene, house = null, tier = 'high', budget = 6, wi
     scene.add(value.group);
     place();
   };
+  // (a stage the Road cuts to, `cut`, far from the one before it: neither is
+  // drawn beside the other, its trees and grass given back while it's hidden)
+  const apart = (i) => Math.abs(i - current) > 1 || (i === current + 1 && STAGES[i]?.cut) || (i === current - 1 && STAGES[current]?.cut);
   // each built stage at its offset from the current one, along +z
   const place = () => {
     for (const [i, b] of built) {
       let z = 0;
       if (i > current) for (let k = current; k < i; k++) z += built.get(k)?.land.end ?? STAGES[k].length;
       else for (let k = i; k < current; k++) z -= built.get(k)?.land.end ?? STAGES[k].length;
-      if (b.group.position.z !== z || !b.placed) scatter?.set(STAGES[i].id, b.items, z);
-      b.placed = true;
+      const shown = !apart(i);
+      if (shown && (b.group.position.z !== z || !b.placed)) {
+        scatter?.set(STAGES[i].id, b.items, z);
+        b.placed = true;
+      } else if (!shown && b.placed) {
+        scatter?.free(STAGES[i].id);
+        b.placed = false;
+      }
       b.group.position.z = z;
-      b.group.visible = Math.abs(i - current) <= 1;
+      b.group.visible = shown;
     }
   };
   const drop = (i) => {

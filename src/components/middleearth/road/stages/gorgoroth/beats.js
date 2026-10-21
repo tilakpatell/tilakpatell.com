@@ -25,10 +25,12 @@ export const BEATS = [
   // (from beside: from behind, Frodo on his back hid Sam; from over them, the frame was ash)
   { id: 'carry', kind: 'carry', at: 100, hold: 6, rig: 'side', reach: 14, deed: { verb: 'rhythm', label: 'Carry him up the Mountain', beats: 14, at: 0.5, clip: 'carryYou' } },
   // the Cracks of Doom: the ledge, the Ring on, Gollum, the finger, over
-  { id: 'cracks', kind: 'cracks', at: 126, hold: 20, rig: 'seat', cut: 0, reach: 12, params: { at: CRACKS.camera, lookAt: CRACKS.look }, clip: 'myPrecious', fx: [{ kind: 'vision', at: 4, seconds: 6 }], deed: { verb: 'hold', label: 'Reach for Frodo’s hand', seconds: 3, at: 13, lines: ['gorgoroth-hand'] } },
+  { id: 'cracks', kind: 'cracks', at: 126, hold: 20, rig: 'seat', cut: 0, reach: 12, params: { at: CRACKS.camera, lookAt: CRACKS.look, under: true }, clip: 'myPrecious', fx: [{ kind: 'vision', at: 4, seconds: 6 }], deed: { verb: 'hold', label: 'Reach for Frodo’s hand', seconds: 3, at: 13, lines: ['gorgoroth-hand'] } },
   // the Mountain breaks, Barad-dûr falls, the Eye goes out
   // (from the slope's top, 3 m over it, looking up the lane between the Mountain, 9° right, and the Tower, 31°)
   { id: 'eruption', kind: 'eruption', at: 146, hold: 8, rig: 'wide', reach: 14, params: { at: [-10, 27.5, 138], lookAt: [23.6, 46.6, 230.2] }, clip: 'oneRing', fx: [{ kind: 'shake', at: 0.5, seconds: 4 }] },
   // the Eagles: up and away west over the ruin
-  { id: 'eagles', kind: 'eagles', at: 166, hold: 8, rig: 'ride', reach: 14, params: { offset: [0, 2.2, -5] } },
+  // (rising behind them as the Eagles take them, the Mountain ablaze ahead; then black: the Road
+  // cuts to the White City, its land never drawn beside Mordor's, stages/index.js's `cut`)
+  { id: 'eagles', kind: 'eagles', at: 166, hold: 8, rig: 'crane', reach: 14, params: { seconds: 7, top: 34, lookAt: [60, 100, 620] }, fx: [{ kind: 'black', at: 6.8, seconds: 3 }] },
 ];

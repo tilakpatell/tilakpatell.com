@@ -37,4 +37,27 @@ describe('the lands under the ride', () => {
     expect(scene.getObjectByName('road:shire-edge').position.z).toBeCloseTo(-STAGES[1].length, 6);
     lands.dispose();
   });
+
+  it('never draws a stage the Road cuts to beside the one before it, and gives its trees back meanwhile', () => {
+    const scene = new THREE.Scene();
+    const sets = new Map();
+    const scatter = { set: (id, items) => sets.set(id, items), free: (id) => sets.delete(id) };
+    const lands = createLands({ scene, tier: 'low', budget: 1e6, wide: 256, scatter });
+    const gor = STAGES.findIndex((s) => s.id === 'gorgoroth');
+    expect(STAGES[gor + 1]).toMatchObject({ id: 'minas-tirith', cut: true });
+    lands.at(gor);
+    lands.step();
+    expect(lands.ready(gor + 1)).toBe(true);
+    expect(scene.getObjectByName('road:minas-tirith').visible).toBe(false);
+    expect(scene.getObjectByName('road:cirith-ungol').visible).toBe(true);
+    expect(sets.has('minas-tirith')).toBe(false);
+    // (over the cut: the White City's drawn, Mordor's not)
+    lands.at(gor + 1);
+    lands.step();
+    expect(scene.getObjectByName('road:minas-tirith').visible).toBe(true);
+    expect(scene.getObjectByName('road:gorgoroth').visible).toBe(false);
+    expect(sets.has('minas-tirith')).toBe(true);
+    expect(sets.has('gorgoroth')).toBe(false);
+    lands.dispose();
+  });
 });

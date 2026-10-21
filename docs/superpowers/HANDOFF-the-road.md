@@ -79,6 +79,12 @@ A session takes the next lane whose state allows it, runs until its budget, merg
 - **A sea**: a stage’s `ground.sea` is a level the land is wet under, so the scatter keeps out of it; the last stage’s land doesn’t ease back to the seam at its far end (there is no stage after it), so the Gulf runs on.
 - **What moves isn’t solid**: a mesh a scene moves sets `userData.moves` (the orc columns) and the solid grid leaves it out.
 
+## Minas Tirith a chapter, and fifty-one deeds (2026-10-21)
+
+- **Minas Tirith is a chapter**, no longer a hidden place: the twelfth stop on `road.js` (the way home after the Mountain), the last of `chapters.js`, with five seals, a side game (`towns/minastirith/beacons.js`) and a kitchen (`rush/levels/houses.js`), as every chapter has (`record.test.js` holds a side and a kitchen to each). `hidden.js` is Orthanc and Edoras now. `ROAD_MILES` and `DATES` run on to it; `roadFraction` still measures the Ring's road to the Mountain.
+- **Two deeds or more a stage** (`stages/deeds.test.js`): a new beat that asks nothing should be the exception. A deed's `lines` follow it; a choice's wrong answers each carry a `line`; no `!` or straight quotes in either. `stance: 'crouch'` on a keep-still deed has the company down with the visitor (`doing.js`'s `stance`, read in `module.js`'s walker loop where the scene doesn't pose them).
+- **A scene can answer a deed**: `since[beat]` stays at `deed.at` while it's undone, so `since[beat] > deed.at` is the deed done (Weathertop's fire put out, `EMBERS`).
+
 ## The Road’s look, since R3 (for every lane after)
 
 - **Every stage on its own soil**: `stages/soils.js` gives a stage its ground colours, its rock, its road and three photo scans (`public/cc0/galaxy/`’s roles: grass, gravel, mud, snow, rock, stone, ash, leaves…). `ground.js` paints the map with them (rock where the land is steep) and `soil.js` lays the scans over it close up. A new stage’s row there is all it needs; there is a test that every stage has one.
