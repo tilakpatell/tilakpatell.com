@@ -98,7 +98,7 @@ export function roomFog(d, world, fogFar) {
 // eye) and as wide as it says (`size` degrees across), lit on one side
 // with one shade of shadow, as the show draws them
 const FAR = 400; // metres out a body hangs, inside the dome
-const STARS = 3500;
+const STARS = 9000;
 function starDome(R, bodies = []) {
   const W = 1024;
   const H = 512;
