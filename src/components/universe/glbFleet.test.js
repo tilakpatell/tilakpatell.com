@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { createFleet } from './glbFleet';
+import { existsSync } from 'node:fs';
+import { farCut } from '../galaxy/shared/models';
+import { GLB, createFleet } from './glbFleet';
 
 // a model as GLTFLoader gives one: twice as wide as it is long, off centre
 const wide = () => {
@@ -68,5 +70,21 @@ describe('the fleet’s models, fitted to their size', () => {
     const made = fleet.make('tie');
     expect(made.fit).toBeCloseTo(1);
     fleet.dispose();
+  });
+});
+
+// (lane C2 of the Battlefront-by-default design: the map's Star Wars fighters
+// are the game's, as the galaxy has them, never a gen3d or Meshy model)
+describe('the Star Wars fleet on the map', () => {
+  it('flies the game’s fighters in the galaxy’s far copies, lent through its face', () => {
+    for (const kind of ['interceptor', 'slave1', 'ywing', 'awing', 'tiebomber']) {
+      expect(GLB[kind], kind).toEqual({ ...farCut(kind), built: kind !== 'slave1' });
+      expect(GLB[kind].url, kind).toBe(`/models/galaxy/lod/${kind}.glb`);
+      expect(existsSync(new URL(`../../../public${GLB[kind].url}`, import.meta.url)), kind).toBe(true);
+    }
+    // (the X-wing keeps the game's light cut; the Star Destroyer and the corvette stay the map's own)
+    expect(GLB.xwing.url).toBe('/models/galaxy/surface/xwing.lod1.glb');
+    expect([GLB.destroyer.url, GLB.corvette.url]).toEqual(['/models/universe/star-destroyer.glb', '/models/universe/cr90.glb']);
+    for (const row of Object.values(GLB)) expect(row.url).not.toMatch(/gen3d|universe\/slave1/);
   });
 });

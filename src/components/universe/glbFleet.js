@@ -1,10 +1,11 @@
 // The ships that are models rather than built: the game's X-wing in its light
 // cut (Battlefront II (2017), lane V's import; lane S1 put it here over the
-// gen3d one), the site owner's Meshy Slave I, and the Star Wars models they
-// sent for the map: a TIE interceptor, a Star Destroyer and a Corellian
-// corvette (the Tantive IV)
-// (scripts/build-universe.py cuts them down for it); and the galaxy's
-// Y-wing, A-wing and TIE bomber, each over a built one. Each is loaded the
+// gen3d one); the game's TIE interceptor, Slave I, Y-wing, A-wing and TIE
+// bomber in the galaxy's far copies (lane C2 of the Battlefront-by-default
+// design, over a gen3d interceptor and the site owner's Meshy Slave I); and
+// the Star Wars models the owner sent for the map, a Star Destroyer and a
+// Corellian corvette (the Tantive IV) (scripts/build-universe.py cuts them
+// down for it). Each is loaded the
 // first time it's wanted, then copied, sharing its geometry and textures,
 // for every ship of its kind; until it's come, the kind is built
 // (trafficModels.js: the X-wing, the interceptor, the Star Destroyer and the
@@ -32,7 +33,7 @@
 
 import * as THREE from 'three';
 import { cloneScene, loadGLTF } from '../../lib/three/gltfCache';
-import { gen3dUrl } from '../../lib/three/gen3d';
+import { farCut } from '../galaxy/shared/models';
 import { fitScale } from './shipFit';
 import { buildTraffic } from './trafficModels';
 
@@ -44,15 +45,20 @@ export const GLB = {
   // is a few pixels long, as its Y-wing and A-wing below are their far copies;
   // the galaxy flies the plain cut, galaxy/models.js)
   xwing: { url: '/models/galaxy/surface/xwing.lod1.glb', nose: 0, built: true },
-  slave1: { url: '/models/universe/slave1.glb', nose: 0, built: false },
-  interceptor: { url: gen3dUrl('tie-interceptor'), nose: 0, built: true }, // made here from the old one's render
   destroyer: { url: '/models/universe/star-destroyer.glb', nose: Math.PI, built: true },
   corvette: { url: '/models/universe/cr90.glb', nose: 0, built: true },
-  // the galaxy's own, in their small cuts (public/models/galaxy/lod/: a
-  // tenth of the size, and a fighter on this map is a few pixels long)
-  ywing: { url: '/models/galaxy/lod/ywing.glb', nose: 0, built: true },
-  awing: { url: '/models/galaxy/lod/awing.glb', nose: 0, built: true },
-  tiebomber: { url: '/models/galaxy/lod/tiebomber.glb', nose: 0, built: true },
+  // the game's fighters as the galaxy flies them, in its far copies
+  // (galaxy/models.js's farCut, lent through galaxy/shared/models.js: each
+  // one mesh of about 1,500 triangles, its look baked into vertex colours,
+  // 13 to 17 KB, `_source`: public/models/galaxy/lod/), with the turn each
+  // was baked with: a fighter on this map is a few pixels long. The
+  // interceptor and Slave I were a gen3d model (746 KB on a phone to 3.4 MB
+  // on a desktop) and the owner's Meshy one (477 KB) till lane C2.
+  slave1: { ...farCut('slave1'), built: false },
+  interceptor: { ...farCut('interceptor'), built: true },
+  ywing: { ...farCut('ywing'), built: true },
+  awing: { ...farCut('awing'), built: true },
+  tiebomber: { ...farCut('tiebomber'), built: true },
 };
 
 // (`build` makes a built one: the universe's own, unless another fleet's

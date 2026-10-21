@@ -35,14 +35,14 @@ The rest of the site reaches it through `src/lib/physics/`:
 - **The `-compat` builds** (`@dimforge/rapier3d-compat`, `-simd-compat`): they inline the wasm as base64 so that no bundler plugin is needed, at the cost above; the site’s own plugin (`scripts/rapier-wasm.mjs`, a dozen lines on a tested rule) gives the bare builds the same ease, in the build, the dev server and Vitest alike. No third-party wasm plugin: the two packages are left out of the dependency optimizer (`optimizeDeps.exclude`) and processed by Vite in SSR (`ssr.noExternal`) so the tests and `scripts/x2-profile.mjs` load the real engine the way a visitor does.
 - **Rapier’s debug renderer**: `src/lib/physics/` has no three.js and no DOM; a world draws its bodies from `position()` and `quaternion()`.
 - **A static import**: nothing imports Rapier at module scope, so no page but the one driving downloads it; and of the two builds, only the one chosen.
-- **The threaded builds**: they need a cross-origin-isolated page (COOP and COEP headers), which GitHub Pages can’t send ([webassembly.md](webassembly.md)).
+- **The threaded builds**: they need a cross-origin-isolated page (COOP and COEP headers), which the site doesn’t send yet: Cloudflare could, but the Minecraft player’s frame is refused under them ([webassembly.md](webassembly.md), [cloudflare.md](cloudflare.md)).
 
 ## Rules
 
 - Import Rapier only in `src/lib/physics/engine.js`, dynamically, and by its files (`@dimforge/rapier3d/rapier.js`: the packages carry only a `module` entry, which Node’s resolution does not read), plus the two shims under `src/lib/physics/raw/` (its header; nothing measures this, `node scripts/stack-census.mjs` shows the count). The worker (`worker.js`) imports `world.js`, which reaches it through `engine.js` and `lib/wasm/load` like the page: one import site still.
 - The shim is the only `WebAssembly.instantiate` of Rapier; a world never instantiates it (`src/lib/wasm/instantiate.test.js`, `src/lib/physics/engine.test.js`).
 - The worker stays off until a world’s step is measured over 2 ms a frame on the laptop (`worker.js`’s header); the measure is `node scripts/x2-profile.mjs --breaks 100`.
-- No SharedArrayBuffer: the poses cross by transfer (GitHub Pages can’t isolate the page; the npm build is single-threaded anyway).
+- No SharedArrayBuffer: the poses cross by transfer (the page isn’t isolated, [cloudflare.md](cloudflare.md); the npm build is single-threaded anyway).
 - The two builds move together: `src/lib/physics/engine.test.js` runs one scene through both and holds them to the same numbers.
 - `src/lib/physics/` stays pure: no three.js, no DOM, tested against the real engine in Node (`src/lib/physics/world.test.js` and the tests beside each file; `docs/health/RULES.md`, “Logic apart from drawing”).
 - A world that loads Rapier counts it in its download size (`WORLD_MB` in `src/components/worlds/worlds.js`, the autopilot’s standing rules).
