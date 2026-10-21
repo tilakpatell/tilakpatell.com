@@ -151,7 +151,7 @@ export function estimate(points, { slices = 80, shares = {} } = {}) {
 
   // the crotch: going up from the soles, where the legs (a run each side of
   // the middle, none over it) become one; only where they're seen for a
-  // good way (a robe to the shins shows the shoes alone)
+  // good way (a robe to the shins shows the shoes alone: 20 % of the height)
   let crotch = null;
   if ('crotch' in shares) crotch = shares.crotch === null ? null : at(shares.crotch);
   else {
@@ -165,7 +165,17 @@ export function estimate(points, { slices = 80, shares = {} } = {}) {
         shut = 0;
       } else if (cuts[k].rs.length && ++shut > 0.04 * slices) break;
     }
-    if (top / slices >= 0.15) crotch = at(top / slices);
+    // where they become one, a crotch is as wide as the two legs; a robe's
+    // hem, the legs going on up inside it, flares well wider (the second
+    // figure's open robe met its legs at 15 % of its height, a crotch at a
+    // third: its legs came out a third as long as they are)
+    const span = (k) => {
+      const rs = cuts[k]?.rs ?? [];
+      return rs.length ? rs[rs.length - 1][1] - rs[0][0] : 0;
+    };
+    const above = Math.min(slices - 1, top + 1);
+    const hem = top > 0 && span(above) > 1.25 * span(top - 1);
+    if (top / slices >= 0.2 && !hem) crotch = at(top / slices);
   }
 
   // the head: the widest the body gets high up, and the neck under it, where

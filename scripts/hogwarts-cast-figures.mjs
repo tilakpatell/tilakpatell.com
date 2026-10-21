@@ -19,6 +19,7 @@ export const POSE =
 const ROBE = 'a black school robe with narrow fitted sleeves, open at the front and ending at the knees';
 const scarf = (a, b) => `a ${a}-and-${b} striped knitted scarf round the neck`;
 const tie = (a, b) => `a white shirt and a ${a}-and-${b} striped tie`;
+const cap = (t) => `${t[0].toUpperCase()}${t.slice(1)}`;
 
 export const FIGURES = {
   // ── the three friends, and the keeper of the grounds (B2) ──
@@ -27,7 +28,7 @@ export const FIGURES = {
     kind: 'student',
     house: 'gryffindor',
     seed: 11,
-    look: `A twelve-year-old schoolboy with untidy jet-black hair, round wire-rimmed glasses and green eyes. ${ROBE[0].toUpperCase()}${ROBE.slice(1)}, over a grey V-neck jumper, ${tie('red', 'gold')}, a red-and-gold striped knitted scarf round his neck, black trousers, black shoes.`,
+    look: `A twelve-year-old schoolboy with untidy jet-black hair, round wire-rimmed glasses and green eyes. ${cap(ROBE)}, over a grey V-neck jumper, ${tie('red', 'gold')}, a red-and-gold striped knitted scarf round his neck, black trousers, black shoes.`,
   },
   ron: {
     height: 1.52,
@@ -40,7 +41,7 @@ export const FIGURES = {
     height: 1.42,
     kind: 'student',
     house: 'gryffindor',
-    look: `A twelve-year-old schoolgirl with a big mane of very bushy wavy brown hair and brown eyes. ${ROBE[0].toUpperCase()}${ROBE.slice(1)}, over a grey V-neck jumper, ${tie('red', 'gold')}, a grey pleated skirt to the knee, grey knee socks, black shoes, a brown leather satchel on a strap across her body, bulging with books.`,
+    look: `A twelve-year-old schoolgirl with a big mane of very bushy wavy brown hair and brown eyes. ${cap(ROBE)}, over a grey V-neck jumper, ${tie('red', 'gold')}, a grey pleated skirt to the knee, grey knee socks, black shoes, a brown leather satchel on a strap across her body, bulging with books.`,
   },
   hagrid: {
     height: 2.6,
@@ -105,6 +106,125 @@ export const FIGURES = {
     build: 'a curvy body, rounded arms and legs',
     look: 'A curvy, pretty, smiling innkeeper with wavy chestnut hair piled up on her head and rosy cheeks. A fitted burgundy bodice dress with a full skirt to the ankles, a white barmaid’s apron, sturdy brown shoes.',
   },
+
+  // ── the students and the others (B4) ──
+  malfoy: {
+    height: 1.5,
+    kind: 'student',
+    house: 'slytherin',
+    look: `A pale, pointed-faced twelve-year-old schoolboy with sleek slicked-back white-blond hair, cold grey eyes and a sneer. ${cap(ROBE)}, over a grey V-neck jumper, ${tie('green', 'silver')}, ${scarf('green', 'silver')}, black trousers, polished black shoes.`,
+  },
+  crabbe: {
+    height: 1.6,
+    kind: 'student',
+    house: 'slytherin',
+    build: 'a big heavy body, thick arms and legs',
+    look: `A big, heavy, thick-necked twelve-year-old schoolboy with a dark pudding-bowl haircut, small eyes and a dull look. ${cap(ROBE)}, straining over a grey V-neck jumper, ${tie('green', 'silver')}, black trousers, black shoes.`,
+  },
+  goyle: {
+    height: 1.62,
+    kind: 'student',
+    house: 'slytherin',
+    build: 'a big burly body, long thick arms and thick legs',
+    look: `A big, burly twelve-year-old schoolboy with short bristly dark hair, a low brow and long thick arms. ${cap(ROBE)}, over a grey V-neck jumper, ${tie('green', 'silver')}, ${scarf('green', 'silver')}, black trousers, black shoes.`,
+  },
+  neville: {
+    height: 1.45,
+    kind: 'student',
+    house: 'gryffindor',
+    build: 'a small round body, short sturdy arms and legs',
+    look: `A round-faced, shy, kind twelve-year-old schoolboy with neat light-brown hair, rosy cheeks and a nervous smile. ${cap(ROBE)}, over a grey V-neck jumper, ${tie('red', 'gold')}, ${scarf('red', 'gold')}, grey trousers, black shoes.`,
+  },
+  luna: {
+    height: 1.43,
+    kind: 'student',
+    house: 'ravenclaw',
+    look: `A dreamy twelve-year-old schoolgirl with long straggly dirty-blonde hair to her waist, pale silvery wide-open eyes, earrings shaped like little orange radishes and a necklace of bottle corks. ${cap(ROBE)}, over a grey V-neck jumper, ${tie('blue', 'bronze')}, a grey pleated skirt, mismatched socks, black shoes.`,
+  },
+  cedric: {
+    height: 1.75,
+    kind: 'student',
+    house: 'hufflepuff',
+    build: 'a tall athletic body, long arms and legs',
+    look: `A tall, handsome, friendly seventeen-year-old schoolboy with neat short brown hair, grey eyes and an easy smile. ${cap(ROBE)}, over a grey V-neck jumper, ${tie('yellow', 'black')}, ${scarf('yellow', 'black')}, black trousers, black shoes.`,
+  },
+  ginny: {
+    height: 1.4,
+    kind: 'student',
+    house: 'gryffindor',
+    look: `An eleven-year-old schoolgirl with long straight bright red hair, freckles and brown eyes. ${cap(ROBE)}, over a grey V-neck jumper, ${tie('red', 'gold')}, a grey pleated skirt to the knee, grey knee socks, black shoes.`,
+  },
+  // (one model, two tints: the world colours the jumper of each)
+  twin: {
+    height: 1.65,
+    kind: 'student',
+    house: 'gryffindor',
+    build: 'a small lanky body, long thin arms and legs',
+    tint: { magenta: 'jumper' },
+    look: `A tall, grinning sixteen-year-old schoolboy with ginger-red hair, a freckled face and a mischievous look. A hand-knitted bright magenta jumper under ${ROBE}, grey trousers, brown shoes.`,
+  },
+  // (two bodies, four tints: the world colours the scarf and the tie by house)
+  student: {
+    height: 1.48,
+    kind: 'student',
+    tint: { magenta: 'house', cyan: 'house2' },
+    look: `A friendly twelve-year-old schoolboy with short tidy brown hair. ${cap(ROBE)}, over a grey V-neck jumper, a white shirt and a bright magenta-and-cyan striped tie, a bright magenta-and-cyan striped knitted scarf round his neck, black trousers, black shoes.`,
+  },
+  studentgirl: {
+    height: 1.44,
+    kind: 'student',
+    tint: { magenta: 'house', cyan: 'house2' },
+    look: `A friendly twelve-year-old schoolgirl with a dark plait over one shoulder. ${cap(ROBE)}, over a grey V-neck jumper, a white shirt and a bright magenta-and-cyan striped tie, a bright magenta-and-cyan striped knitted scarf round her neck, a grey pleated skirt to the knee, grey socks, black shoes.`,
+  },
+  // (never touches the floor: the world lifts it and plays act-dance.* in the air)
+  peeves: {
+    height: 1.2,
+    kind: 'other',
+    look: 'A small, wicked, grinning poltergeist imp with dark slanted eyes and a wide grin, in a bright orange-and-yellow jester’s costume hung with little brass bells, a floppy bell-tipped jester’s hat and curly-toed bell-tipped shoes.',
+  },
+  // (the four ghosts: shipped opaque, the world draws them translucent)
+  nick: {
+    height: 1.8,
+    kind: 'ghost',
+    look: 'A gentleman from the sixteenth century with a neat pointed beard and moustache, long wavy hair, a big white pleated ruff round his neck, a padded doublet with puffed sleeves, short breeches over hose, a short cape and buckled shoes.',
+  },
+  greylady: {
+    height: 1.78,
+    kind: 'ghost',
+    build: 'a tall slender body, long arms',
+    look: 'A tall, beautiful, sad young noblewoman from the Middle Ages with very long straight hair to her waist, in a long flowing medieval gown to the floor with long trailing sleeves and a thin girdle at her waist.',
+  },
+  friar: {
+    height: 1.65,
+    kind: 'ghost',
+    build: 'a short round stout body, short arms and legs',
+    look: 'A stout, jolly monk with a round tonsured head, a fringe of hair and a broad smile, in a plain hooded monk’s habit to the ankles tied with a rope belt, and sandals.',
+  },
+  baron: {
+    height: 1.85,
+    kind: 'ghost',
+    build: 'a tall gaunt body, long arms and legs',
+    look: 'A gaunt, haughty nobleman from the Middle Ages with a long black beard, hollow staring eyes and a high-collared dark doublet under long dark robes, heavy iron chains wrapped round his body and arms.',
+  },
+  elf: {
+    height: 0.9,
+    kind: 'other',
+    build: 'a tiny skinny body, thin little arms and legs',
+    look: 'A small, skinny house-elf creature with huge bat-like ears, big round green eyes, a long pencil-thin nose and thin limbs, wearing an old tea towel tied like a toga, bare feet.',
+  },
+};
+
+// how a world applies a figure's `tint`: the base colour's texels near a key
+// colour (magenta, cyan) given a colour of the house's, their lightness kept
+export const TINTS = {
+  how: 'For each texel of the base colour map whose hue is within 25° of the key’s (magenta 300°, cyan 180°) and whose saturation is over 0.35, the colour named is put in its place at the texel’s own lightness (new = colour × lightness ÷ the key’s lightness, 0.5): the stripes and the knit kept, the colour changed. A shader can do it as the colour is read, or a canvas once as the texture loads.',
+  houses: {
+    gryffindor: { house: '#7f0909', house2: '#d3a625' },
+    slytherin: { house: '#1a472a', house2: '#aaaaaa' },
+    ravenclaw: { house: '#0e1a40', house2: '#946b2d' },
+    hufflepuff: { house: '#ecb939', house2: '#372e29' },
+  },
+  jumpers: { a: '#7a1f2b', b: '#1f3a7a' },
 };
 
 // the words that must never reach the picture step: who the figures are

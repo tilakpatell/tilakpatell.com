@@ -30,7 +30,7 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FIGURES, NAMES_NEVER, prompt } from './hogwarts-cast-figures.mjs';
+import { FIGURES, NAMES_NEVER, prompt, TINTS } from './hogwarts-cast-figures.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const TASKS = join(ROOT, 'scripts', 'hogwarts-cast-tasks.json');
@@ -101,6 +101,7 @@ export function manifest(state, table = FIGURES) {
     about:
       'Hogwarts’ cast on the site’s shared skeleton (Meshy’s 24 bones, under an Armature scaled to metres), made by scripts/hogwarts-cast.mjs. Load a figure as src/components/middleearth/road/cast.js loads one: NAME.glb (or the cut for the device’s detail: hq for high, plain for mid, lo for low) and its own idle, walk and run beside it; every other clip through lib/three/clipLibrary.js’s forFigure with the figure’s hips. Scale it to `height` metres, crown to sole. `tall` marks a figure far over a person’s height (2.6 m): give it the doors, seats and camera distance of its size, never squeeze it to a person’s. A `tint` is applied to the base colour as its entry says.',
     figures,
+    ...(Object.values(figures).some((f) => f.tint) ? { tints: TINTS } : {}),
   };
 }
 

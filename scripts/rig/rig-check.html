@@ -157,7 +157,8 @@
         // the sheet: a row a clip, four views across, each at a telling moment of it
         if (sheet.length) {
           const VIEWS = { front: [0, 0.12, 1], three: [0.75, 0.2, 0.85], side: [1, 0.12, 0], back: [-0.2, 0.12, -1] };
-          const AT = { idle: 0.3, walk: 0.25, run: 0.25, cast: 0.55, 'cast.idle': 0.5, 'sit.down': 1, knockdown: 1 };
+          // (a once-through clip held near its end: at its very end a looping action is back at its start)
+          const AT = { idle: 0.3, walk: 0.25, run: 0.25, cast: 0.55, 'cast.idle': 0.5, 'sit.down': 0.97, knockdown: 0.97 };
           const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
           const cols = Object.keys(VIEWS);
           renderer.setSize(W * cols.length, H * sheet.length);

@@ -18,15 +18,16 @@ function bound(from) {
   const pos = [];
   const joints = [];
   const weights = [];
-  const e = [];
+  // (an array apiece: getElement fills the one it's given, and a VEC4 left in a VEC3's would push four)
+  const [e3, ej, ew] = [[], [], []];
   for (const mesh of from.getRoot().listMeshes())
     for (const prim of mesh.listPrimitives()) {
       const [p, j, w] = ['POSITION', 'JOINTS_0', 'WEIGHTS_0'].map((s) => prim.getAttribute(s));
       if (!p || !j || !w) continue;
       for (let i = 0; i < p.getCount(); i++) {
-        pos.push(...p.getElement(i, e));
-        joints.push(...j.getElement(i, e));
-        weights.push(...w.getElement(i, e));
+        pos.push(...p.getElement(i, e3));
+        joints.push(...j.getElement(i, ej));
+        weights.push(...w.getElement(i, ew));
       }
     }
   return { pos: Float32Array.from(pos), joints: Uint8Array.from(joints), weights: Float32Array.from(weights) };

@@ -94,26 +94,30 @@ views of the figure in its idle, its walk and the cast (or `--rows`).
 
 ## Clips on auto-weighted figures
 
-Heat weights spread a limb’s pull a little into what’s next to it, and a robe
-has no legs inside it to follow, so some clips read worse on these figures
-than on Meshy’s rigged ones. From the Hogwarts cast’s sheets:
+Heat weights spread a limb’s pull a little into what’s next to it, a robe has
+no legs inside it to follow, and these figures’ heads are a third of their
+height where Luke’s, which the clips were made on, is an eighth. From the
+first figure’s sheets (`rig-check.mjs --rows`), for the worlds that play them:
 
-- **A robe to the floor walks as a bell.** The hem is weighted to the shins,
-  so it swings with each leg and stretches between them; the formal walk’s
-  short stride keeps it tidy, the sprint and the jogs pull the hem into a
-  point between the knees. Hogwarts’ robed staff should run as little as
-  their dignity suggests.
-- **`act-sit.down`, `ual-sit.*` and `ual-crouch`** fold the thigh up through
-  the robe’s front: the cloth over the lap is weighted to the thighs and the
-  hips together, and it creases into the belly. Seated figures read best from
-  the front and the side, not from above.
-- **`act-knockdown` and the deaths** end on the floor as they should, but a
-  wide sleeve folds through the chest as the arms go across; the falls want
-  a camera that isn’t close.
-- **`ual-cast` and the other arm clips** read well: the A-pose arms are clear
-  of the body, so the heat gives the sleeve to the arm, and the hand leads.
-- **Big beards** (the giant’s, the headmaster’s) are weighted to the head and
-  the neck: a look down pushes the beard into the chest a little.
+- **The walk (`ual-walk.formal`), the idle (`ual-idle.calm`) and `ual-cast`
+  read well.** The A-pose keeps the arms clear of the body, so the heat gives
+  each sleeve to its arm, and a planted toe slides 0.11 m/s (the bar 0.15).
+  Rick’s walk, every Meshy figure’s default, slides 0.35 on these
+  proportions: that is why each figure ships the UAL’s clips as its own.
+- **Falls (`act-knockdown`, the deaths) sink the head into the floor.** The
+  clip lays Luke’s small head on the ground; a head three times the size goes
+  20 to 30 cm under it (the check measures the body down to −29 cm). Lift the
+  figure by about a tenth of its height while it’s down, or let the floor’s
+  clutter hide it.
+- **Sitting (`act-sit.down`, `ual-sit.*`) folds the robe’s back through the
+  seat.** The skirt behind is weighted to the thighs, and it pokes out behind
+  as a lump where a chair would be. A bench or a chair hides it; from the
+  front it reads.
+- **Crouching (`ual-crouch`) puts the face to the floor.** The clip drops
+  Luke’s head forward, and the 20° the head is bound up by isn’t enough for
+  a crouch: turn the head up with the animator’s `look` while crouched.
+- **The sprint (the figure’s own run) leans hard forward,** the big head well
+  ahead of the feet: right for a dash, too much for a trot (`ual-jog` for that).
 
 ## Tests
 

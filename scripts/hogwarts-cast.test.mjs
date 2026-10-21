@@ -62,6 +62,16 @@ describe('what ships', () => {
     expect(m.about).toMatch(/forFigure/);
   });
 
+  it('says in cast.json how a tint is applied once a tinted figure ships, and not before', () => {
+    expect(manifest({ harry: { cut: { key: 'k' } } }).tints).toBeUndefined();
+    const m = manifest({ student: { cut: { key: 'k' } }, twin: { cut: { key: 'k' } } });
+    expect(m.figures.student.tint).toEqual({ magenta: 'house', cyan: 'house2' });
+    expect(m.figures.twin.tint).toEqual({ magenta: 'jumper' });
+    expect(m.tints.how).toMatch(/lightness/);
+    expect(Object.keys(m.tints.houses)).toEqual(['gryffindor', 'slytherin', 'ravenclaw', 'hufflepuff']);
+    for (const h of Object.values(m.tints.houses)) expect(Object.keys(h)).toEqual(['house', 'house2']);
+  });
+
   it('credits each figure as made here from a concept picture, and the clips once', () => {
     const c = credit('hermione');
     expect(c.name).toMatch(/^Hermione, a big-headed toy figure/);
