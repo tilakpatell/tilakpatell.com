@@ -7,6 +7,8 @@ The WebAssembly modules (Rapier, the Basis transcoder, meshopt) and the site’s
 
 WebAssembly is the browser’s own, not a package, and so has no row; its page is [webassembly.md](webassembly.md) (Rapier’s two builds, the Basis transcoder, the meshopt decoder).
 
+Cloudflare (the DNS, the Worker that serves the site, and wrangler, run with `npx` by the deploy) is no package either; its page is [cloudflare.md](cloudflare.md), with what it costs.
+
 <!-- census:start -->
 | package | version | page | files |
 | --- | --- | --- | --- |

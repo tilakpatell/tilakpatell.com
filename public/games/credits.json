@@ -5000,5 +5000,45 @@
       "Tilak Patel, with Meshy AI"
     ],
     "license": "Meshy paid-plan output, owned by the site owner"
+  },
+  "hogwarts/cast/harry": {
+    "source": "https://github.com/microsoft/TRELLIS.2",
+    "name": "Harry, a big-headed toy figure for the Hogwarts world, made on the site owner's machine from a concept picture drawn there (FLUX.1-schnell, scripts/gen3d/picture.mjs) with TRELLIS.2 (trellis.cpp), baked in Blender and skinned on Meshy's skeleton by scripts/rig/skin.mjs (scripts/hogwarts-cast.mjs)",
+    "authors": [
+      "Tilak Patel, with Microsoft TRELLIS.2"
+    ],
+    "license": "Generated for this site; TRELLIS.2 is MIT, FLUX.1-schnell Apache 2.0"
+  },
+  "hogwarts/cast-clips": {
+    "source": "https://quaternius.com/packs/universalanimationlibrary.html",
+    "name": "The Hogwarts cast's own idle, walk and run beside each figure in public/models/hogwarts/cast/ (NAME-idle.glb, -walk.glb, -run.glb): the Universal Animation Library's calm idle, formal walk and sprint, baked on the site's skeleton and retargeted to each figure by scripts/rig/clips.mjs",
+    "authors": [
+      "Quaternius"
+    ],
+    "license": "CC0 1.0"
+  },
+  "hogwarts/cast/ron": {
+    "source": "https://github.com/microsoft/TRELLIS.2",
+    "name": "Ron, a big-headed toy figure for the Hogwarts world, made on the site owner's machine from a concept picture drawn there (FLUX.1-schnell, scripts/gen3d/picture.mjs) with TRELLIS.2 (trellis.cpp), baked in Blender and skinned on Meshy's skeleton by scripts/rig/skin.mjs (scripts/hogwarts-cast.mjs)",
+    "authors": [
+      "Tilak Patel, with Microsoft TRELLIS.2"
+    ],
+    "license": "Generated for this site; TRELLIS.2 is MIT, FLUX.1-schnell Apache 2.0"
+  },
+  "hogwarts/cast/hermione": {
+    "source": "https://github.com/microsoft/TRELLIS.2",
+    "name": "Hermione, a big-headed toy figure for the Hogwarts world, made on the site owner's machine from a concept picture drawn there (FLUX.1-schnell, scripts/gen3d/picture.mjs) with TRELLIS.2 (trellis.cpp), baked in Blender and skinned on Meshy's skeleton by scripts/rig/skin.mjs (scripts/hogwarts-cast.mjs)",
+    "authors": [
+      "Tilak Patel, with Microsoft TRELLIS.2"
+    ],
+    "license": "Generated for this site; TRELLIS.2 is MIT, FLUX.1-schnell Apache 2.0"
+  },
+  "hogwarts/cast/hagrid": {
+    "source": "https://github.com/microsoft/TRELLIS.2",
+    "name": "Hagrid, a big-headed toy figure for the Hogwarts world, made on the site owner's machine from a concept picture drawn there (FLUX.1-schnell, scripts/gen3d/picture.mjs) with TRELLIS.2 (trellis.cpp), baked in Blender and skinned on Meshy's skeleton by scripts/rig/skin.mjs (scripts/hogwarts-cast.mjs)",
+    "authors": [
+      "Tilak Patel, with Microsoft TRELLIS.2"
+    ],
+    "license": "Generated for this site; TRELLIS.2 is MIT, FLUX.1-schnell Apache 2.0"
   }
 }
