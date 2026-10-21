@@ -12,7 +12,7 @@
 // 'mode' { auto, mode, holding } when the clock’s changes, 'progress'
 // { s, stage, local } four times a second, 'resume' { id, name } when a
 // save past the first stage is there to carry on from (the ride waits for
-// the answer), 'menu' {} and 'lore' {} on their keys, 'end' {} at the Havens,
+// the answer), 'menu' {} and 'lore' {} on their keys, 'end' { ridden } at the Havens,
 // 'line' { who, text, at } as one of the cast says something (ambience.js).
 // The world adds: goTo(stageId), setAuto(on), press(name, down) (the touch
 // buttons), carryOn(), restart(), skipToEnd(); and set(s), `s`, `scene` for the checks.
@@ -199,6 +199,7 @@ export default {
     let fxVision = false;
     let shook = 0; // s the frame has been shaken, for the jolt’s phase
     let wasRidden = riddenOf(saved);
+    let riddenOn = saved?.on ?? null; // (the day it was first ridden, for the journal)
     // (the share walked, not jumped: what makes the ride ridden)
     let walked = byAddress || !back.s ? 0 : (saved?.walked ?? 0);
     // (a ride opened by its address writes nothing over the visitor's own
@@ -415,12 +416,16 @@ export default {
       if (clock.s >= 1 && !ended) {
         ended = true;
         save();
-        tell('end');
+        tell('end', { ridden: wasRidden });
       } else if (clock.s < 1) ended = false;
     };
     const save = () => {
       sinceSave = 0;
-      if (!offerOpen && saving) rt.saves?.set?.(SAVE.key, savedAt(clock.s, now(), wasRidden, walked));
+      if (!offerOpen && saving) {
+        const next = savedAt(clock.s, now(), wasRidden, walked, riddenOn);
+        riddenOn = next.on;
+        rt.saves?.set?.(SAVE.key, next);
+      }
     };
     let offerOpen = offer;
     const jump = (s) => {
@@ -554,7 +559,8 @@ export default {
       restart() {
         offerOpen = false;
         saving = true;
-        wasRidden = riddenOf(saved);
+        // (a ride made this visit stays ridden: starting again only starts the count again)
+        wasRidden ||= riddenOf(saved);
         walked = 0;
         stageId = null;
         clock = newClock({ s: 0, reduced: clock.reduced });

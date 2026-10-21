@@ -137,6 +137,7 @@ export const ACHIEVEMENTS = {
   gorgoroth: { name: 'Unseen', desc: 'Crossed Gorgoroth without the Eye seeing you' },
   ringbearer: { name: 'Ring-bearer', desc: 'Cast the One Ring into the fire' },
   palantir: { name: 'Seeing-stone', desc: 'Looked into the Palantír until the Eye looked back' },
+  lotrRoad: { name: 'The Road, ridden', desc: 'Walked the Ring’s road from Bag End to the Grey Havens' },
   wraithworld: { name: 'The other world', desc: 'Wore the Ring in Bag End until a Nazgûl tore it away' },
   redbook: { name: 'Westmarch scholar', desc: 'Found all fifteen things that show only under the Ring in the Red Book' },
   ainur: { name: 'The Music of the Ainur', desc: 'Named every one of the Valar in the stars over Bag End' },

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHAPTERS, stopOf } from './chapters';
 import { ACHIEVEMENTS } from '../Achievements';
 import { LEVELS, levelOf } from './rush/levels';
-import { HIDDEN_SEALS, SIDE_SEALS, chapterRecord, hiddenHints, kitchenStars, offRoad, roadInked, roadRecord } from './record';
+import { HIDDEN_SEALS, SIDE_SEALS, chapterRecord, hiddenHints, kitchenStars, offRoad, roadInked, roadRecord, roadRidden } from './record';
 import { HIDDEN } from './hidden';
 
 describe('the road so far', () => {
@@ -98,5 +98,18 @@ describe('when the hidden places hint', () => {
   });
   it('stops hinting at a place once it’s found', () => {
     expect(hiddenHints([...oneOfEach, 'orthanc'])).toEqual(HIDDEN.map((h) => h.id).filter((id) => id !== 'orthanc'));
+  });
+});
+
+describe('the Road in the journal', () => {
+  it('reads the browser’s save, wrapped by the runtime or not, and the day it was first ridden', () => {
+    expect(roadRidden(null)).toEqual({ ridden: false, on: null });
+    expect(roadRidden({ v: 1, data: { s: 0.4, walked: 0.3, on: null } })).toEqual({ ridden: false, on: null });
+    expect(roadRidden({ v: 1, data: { s: 1, ridden: true, walked: 0.9, on: 1760000000000 } })).toEqual({ ridden: true, on: 1760000000000 });
+    // (two thirds walked is ridden; a save from before the day was kept has none)
+    expect(roadRidden({ s: 1, walked: 0.7 })).toEqual({ ridden: true, on: null });
+  });
+  it('has the Road’s own achievement', () => {
+    expect(ACHIEVEMENTS.lotrRoad?.name).toBe('The Road, ridden');
   });
 });

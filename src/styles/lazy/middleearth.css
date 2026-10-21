@@ -179,7 +179,9 @@ html[data-mode='dark'] .me-hub { --me-veil: rgba(10, 7, 5, 0.78); --me-ink: #f1e
 .me-hub .eyebrow { color: var(--me-ink-soft); }
 .me-hub-title { margin-top: 0.8rem; font-size: clamp(2.2rem, 1.2rem + 3.2vw, 4rem); line-height: 1; color: var(--me-ink); }
 .me-hub-lead { margin-top: 0.9rem; max-width: 34ch; font-size: 1.06rem; line-height: 1.55; color: var(--me-ink-soft); }
-.me-hub-book { margin-top: 1rem; justify-self: start; } /* (the way back to the book, the front door, under the lead) */
+/* the first step, the other way in beside it (the Road or the Shire), and the way back to the book, the front door, under the lead */
+.me-hub-steps { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+@media (min-width: 1024px) { .me-hub-steps { justify-content: flex-end; } }
 
 .me-pins { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 .me-areas { position: fixed; inset: 0; z-index: 0; pointer-events: auto; touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; }
@@ -195,7 +197,8 @@ html[data-mode='dark'] .me-hub { --me-veil: rgba(10, 7, 5, 0.78); --me-ink: #f1e
 @keyframes me-bubble-in { from { opacity: 0; scale: 0.6; } }
 /* Frodo is at a place: go in */
 .me-prompt { position: fixed; left: 0; top: 0; z-index: 3; will-change: transform; }
-.me-prompt .btn { position: absolute; left: 0; bottom: 0; translate: -50% 0; white-space: nowrap; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3); animation: me-bubble-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4) both; }
+.me-prompt-row { position: absolute; left: 0; bottom: 0; translate: -50% 0; display: flex; gap: 0.4rem; white-space: nowrap; animation: me-bubble-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4) both; }
+.me-prompt .btn { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3); }
 .me-prompt kbd { margin-left: 0.35rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 4px; font-size: 0.72rem; opacity: 0.8; }
 .me-hint { width: 100%; margin: 0 0 0.25rem; font-size: 0.8rem; color: var(--me-ink-soft); }
 .me-credit { order: 9; width: 100%; margin: 0; font-size: 0.7rem; line-height: 1.4; color: var(--me-ink-soft); }
@@ -245,6 +248,10 @@ html[data-mode='dark'] .me-hub { --me-veil: rgba(10, 7, 5, 0.78); --me-ink: #f1e
 .me-record-head .eyebrow { margin: 0; }
 .me-record-totals { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; margin: 0 auto 0 0; font-size: 0.82rem; color: var(--me-ink-soft); }
 .me-record-totals b { color: var(--me-ink); font-variant-numeric: tabular-nums; }
+/* the Road's row, over the chapters': ridden, and the day */
+.me-record-ride { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.8rem; margin: 0; font-size: 0.9rem; color: var(--me-ink-soft); }
+.me-record-ride b { color: var(--me-ink); }
+.me-record-ride[data-on] b { color: var(--me-wax); }
 .me-record-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 0.1rem 1.4rem; margin: 0; padding: 0; list-style: none; counter-reset: none; }
 .me-record-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 0.6rem; padding: 0.35rem 0; border-bottom: 1px dashed color-mix(in srgb, var(--me-ink) 18%, transparent); }
 .me-record-name { padding: 0; border: 0; background: none; text-align: left; font: 600 0.86rem/1.2 'Cinzel', Georgia, serif; letter-spacing: 0.04em; color: var(--me-ink); cursor: pointer; }
