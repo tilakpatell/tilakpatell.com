@@ -225,7 +225,7 @@ export const WORLDS = {
   // the agency at night: windows north and east on the city's lit towers;
   // rats running the west wall's skirting; the guards' kind only out past the glass
   agency: {
-    look: { walls: [0x2a2a38, 0x34344a, 0x22222e], roofs: [0x1a1a24], lit: [0xffe08a, 0x9ad8ff, 0xff8a5a], trim: 0x101018, night: true },
+    look: { walls: [0x3e3e56, 0x4a4a66, 0x34344a], roofs: [0x22222e], lit: [0xffe08a, 0x9ad8ff, 0xff8a5a], trim: 0x101018, night: true },
     windows: [
       { wall: 'n', from: -21, to: -8, y0: 1.4, h: 4, mullion: 2.2 },
       { wall: 'n', from: 5, to: 21, y0: 1.4, h: 4, mullion: 2.2 },
@@ -233,7 +233,7 @@ export const WORLDS = {
     ],
     outside: 'ground',
     ground: 0x1e1e26,
-    sky: { top: 0x05050f, mid: 0x14143a, low: 0x3a2a5a, sun: 0xb0b0ff, clouds: 0, moons: 1 },
+    sky: { top: 0x05050f, mid: 0x1e1e4a, low: 0x4a3a6a, sun: 0xb0b0ff, clouds: 0, moons: 1 },
     ring: { n: { styles: ['tower', 'block'], rows: 2, h: [14, 30] }, e: { styles: ['tower', 'block'], rows: 2, h: [14, 30] }, s: null, w: null },
     far: { n: { styles: ['tower'], h: [80, 140] }, e: { styles: ['tower'], h: [80, 140] } },
     crowd: {
@@ -335,16 +335,16 @@ export const WORLDS = {
     vista: 0.5,
     forecourt: { path: { w: 4.5, color: 0x26262e } },
     stands: [
-      { at: [50, 0], w: 46, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 8 }, look: STANDS },
-      { at: [-50, 0], w: 46, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 8 }, look: STANDS },
-      { at: [0, 40], w: 64, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 8 }, look: STANDS },
+      { at: [50, 0], w: 46, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 4 }, look: STANDS },
+      { at: [-50, 0], w: 46, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 4 }, look: STANDS },
+      { at: [0, 40], w: 64, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 24, mid: 14, low: 4 }, look: STANDS },
     ],
     crowd: {
       gather: [
-        { kinds: EARTH, n: { high: 14, mid: 9, low: 5 }, at: [-9, 14], r: 5.5, face: STAGE, block: 'pit-w' },
-        { kinds: EARTH, n: { high: 14, mid: 9, low: 5 }, at: [-23.5, 14], r: 5.5, face: STAGE, block: 'pit-w' },
-        { kinds: EARTH, n: { high: 14, mid: 9, low: 5 }, at: [9, 14], r: 5.5, face: STAGE, block: 'pit-e' },
-        { kinds: EARTH, n: { high: 14, mid: 9, low: 5 }, at: [23.5, 14], r: 5.5, face: STAGE, block: 'pit-e' },
+        { kinds: EARTH, n: { high: 14, mid: 9, low: 8 }, at: [-9, 14], r: 5.5, face: STAGE, block: 'pit-w' },
+        { kinds: EARTH, n: { high: 14, mid: 9, low: 8 }, at: [-23.5, 14], r: 5.5, face: STAGE, block: 'pit-w' },
+        { kinds: EARTH, n: { high: 14, mid: 9, low: 8 }, at: [9, 14], r: 5.5, face: STAGE, block: 'pit-e' },
+        { kinds: EARTH, n: { high: 14, mid: 9, low: 8 }, at: [23.5, 14], r: 5.5, face: STAGE, block: 'pit-e' },
       ],
     },
     // the heads, seen from the mic: nothing round the stadium stands in the way
