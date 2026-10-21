@@ -45,18 +45,21 @@ const AUTUMN = { Leaves_NormalTree: { recolour: '#eeae5c' }, Leaves_Birch: { rec
 
 // The older Stylized Nature Pack’s trees (kit `nature`, public/kit/nature/,
 // from tilakverse-assets; Quaternius, CC0): maples in red and orange leaf,
-// birches yellow on white bark, ten dead trees, their bark `NormalTree_Bark`.
-// Sized to the MegaKit’s: its trees stand about half as tall at scale 1.
+// ten dead trees, their bark `NormalTree_Bark`. Sized to the MegaKit’s: its
+// trees stand about half as tall at scale 1.
 const NATURE = 'nature';
 const maples = (per100, o = {}) => ['MapleTree_1', 'MapleTree_2', 'MapleTree_3', 'MapleTree_5'].map((model) => ({ model, pack: NATURE, per100: per100 / 4, clump: 2, spread: 8, scale: [1.1, 1.5], ...o }));
-const birches = (per100, o = {}) => ['BirchTree_1', 'BirchTree_2', 'BirchTree_3', 'BirchTree_5'].map((model) => ({ model, pack: NATURE, per100: per100 / 4, clump: 3, spread: 6, scale: [1.4, 1.9], ...o }));
+// the birches, yellow on white bark: the MegaKit’s, its crowns in leaf (the
+// older pack’s were balls of yellow on a stick), 13 m at scale 1
+const BIRCH = { Leaves_Birch: { recolour: '#e2b84a' } };
+const birches = (per100, o = {}) => ['Birch_1', 'Birch_2', 'Birch_3', 'Birch_4', 'Birch_5'].map((model) => ({ model, per100: per100 / 5, clump: 3, spread: 6, scale: [0.7, 0.95], tint: BIRCH, ...o }));
 // the dead trees, standing (snags: the two small ones)
 const deadwood = (per100, o = {}) => ['DeadTree_1', 'DeadTree_2', 'DeadTree_4', 'DeadTree_6', 'DeadTree_7', 'DeadTree_8', 'DeadTree_10'].map((model) => ({ model, pack: NATURE, per100: per100 / 7, clump: 1, spread: 1, scale: [0.8, 1.2], ...o }));
 const snags = (per100, o = {}) => ['DeadTree_5', 'DeadTree_9'].map((model) => ({ model, pack: NATURE, per100: per100 / 2, clump: 2, spread: 6, scale: [0.8, 1.2], ...o }));
 // (the maples just turning, amber over their green: the Shire in late September)
 const TURNING = { MapleTree_Leaves: { recolour: '#b8903e' } };
 // (the maples and birches green: spring in Ithilien)
-const SPRING = { MapleTree_Leaves: { recolour: '#6f9a3e' }, BirchTree_Leaves: { recolour: '#8fb04a' } };
+const SPRING = { MapleTree_Leaves: { recolour: '#6f9a3e' }, Leaves_Birch: { recolour: '#8fb04a' } };
 
 // (a grass row with no band of its own keeps within 70 m of the road: the
 // blades cover the ground near it, and across a stage’s whole width the
@@ -174,9 +177,10 @@ export const SCATTER = {
     { model: 'CommonTree_1', per100: 0.05, clump: 3, spread: 9, scale: [1.0, 1.4], tint: AUTUMN },
     { model: 'Birch_2', per100: 0.05, clump: 3, spread: 8, scale: [0.8, 1.1], tint: AUTUMN },
     { model: 'DeadTree_1', per100: 0.008, clump: 2, spread: 8, scale: [0.8, 1.1] },
-    // the maples red and orange, the birches yellow
+    // the maples red and orange, the birches yellow (and thick by the road, where the chapter's stood)
     ...maples(0.06, { clump: 3 }),
     ...birches(0.04),
+    ...birches(0.08, { x: [-41, 41] }),
     ...snags(0.01),
     { model: 'Pine_1', per100: 0.03, clump: 3, spread: 9, scale: [0.9, 1.3], slope: 0.9 },
     { model: 'Rock_Big_1', per100: 0.012, clump: 2, spread: 8, scale: [0.6, 1.3], slope: 1.4, tint: OAK },
@@ -193,6 +197,12 @@ export const SCATTER = {
     { model: 'Pebble_Round_3', per100: 2, clump: 6, spread: 2.5, scale: [2.5, 5], z: [150, 186], x: [-50, 50], tint: OAK },
   ],
   rivendell: [
+    // the golden birches through the valley by the road, where the chapter's round ones stood
+    { model: 'Birch_1', at: [[9, 24, 1.0], [10, 80, 1.1], [-16, 140, 0.95]], scale: [0.72, 0.72], tint: GOLD },
+    { model: 'Birch_2', at: [[-8, 30, 1.05], [14, 102, 0.9], [18, 50, 1.1]], scale: [0.72, 0.72], tint: GOLD },
+    { model: 'Birch_3', at: [[12, 62, 0.95], [-7, 116, 1.0], [-30, 52, 1.15]], scale: [0.72, 0.72], tint: GOLD },
+    { model: 'Birch_4', at: [[-14, 58, 1.0], [12, 136, 1.05], [-40, 128, 1.1]], scale: [0.72, 0.72], tint: GOLD },
+    { model: 'Birch_5', at: [[22, 116, 0.9], [-20, 108, 1.0]], scale: [0.72, 0.72], tint: GOLD },
     // autumn gold on the valley’s trees, pines above on the slopes
     { model: 'CommonTree_5', per100: 0.09, clump: 3, spread: 9, scale: [1.0, 1.5], tint: GOLD },
     { model: 'Birch_3', per100: 0.055, clump: 3, spread: 7, scale: [0.9, 1.2], tint: GOLD },
@@ -233,7 +243,7 @@ export const SCATTER = {
     { model: 'Pine_3', per100: 0.02, clump: 3, spread: 8, scale: [0.7, 1.1], z: [136, 200], slope: 0.9 },
   ],
   // (young mallorns at the wood’s edge: birches in their gold, grown tall)
-  lorien: [...GREEN, ...birches(0.06, { scale: [1.8, 2.4] })],
+  lorien: [...GREEN, ...birches(0.06, { scale: [0.9, 1.2] })],
   // (February on the Great River: trees bare on the banks, as dead ones stand)
   anduin: [...ROUGH, ...deadwood(0.012)],
   // the Dead Marshes: dead reeds and rushes over the pools, rotten stumps, the tussocks between

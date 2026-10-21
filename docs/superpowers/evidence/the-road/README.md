@@ -504,3 +504,17 @@ The owner's backend is WebGPU, and every picture here till now was the node rend
 
 Under TRAA every edge crawled: the hills and the trees against the sky, Bag End's roof and its fence (`grain-hobbiton-traa-webgpu.webp`). A view of the velocity buffer showed why the grass did. The hills read still, but the wind's blades were moving fast every frame, so TRAA took them nearly whole, jitter and all. High and ultra end in SMAA now, as they did on WebGL 2. What still changes is what moves: Frodo, and the grass in the wind (`grain-hobbiton-smaa-webgpu.webp`; the frame, `hobbiton-smaa-webgpu.webp`).
 
+## A road underfoot, grass in blades, the kit's trees (2026-10-21)
+
+Toward the owner's "focus more on the foliage and look of the world … making the roads better. Adding texture".
+
+- **The road**: it was the ground map's paint, a metre a texel, so a soft brown band. `track.js` lays a ribbon down it, shaded in the road's own frame, with a row for each of twelve stages (`stages/tracks.js`):
+  - The Shire's lanes have two wheel ruts and the grass down the crown.
+  - The wild's paths have one trodden line, packed pale.
+  - All have stones with the shade at their foot, an edge broken into the verge, and water in Bree's ruts.
+  - The first version drew nothing: wound face down, it was culled from every camera, as Gorgoroth's cracks were. `track.test.js` holds every triangle face up.
+  - Pictures: `road-lane-before-desktop.webp`, `road-lane-desktop.webp` (Hobbiton's lane at eye height, `lab/road/probe-look.mjs`), `road-lane-field-desktop.webp`.
+- **The grass**: one broad triangle a blade, spread evenly, was a carpet of green cones at every verge. Each is now a curved blade tapering to its tip, four to a tuft, leaning its own way, a tip yellow here and there (grassNodes' `shape: 'blade'`, `tufts`).
+- **The trees**: the chapters' round ones by the lane are the nature kit's leafy ones, where they stood: Hobbiton's twelve oaks and Rivendell's fourteen birches. The older pack's birches, balls of yellow on a stick, are the kit's `Birch_1` to `Birch_5` everywhere.
+- **The far ground**: the photo scans end at 80 m, from 120. A two-metre scan's repeat showed as a lattice on Weathertop's hill at dusk.
+
