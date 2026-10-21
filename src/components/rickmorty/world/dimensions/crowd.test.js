@@ -196,6 +196,20 @@ describe('a place’s crowd', () => {
     expect(top).toBeGreaterThan(0.05);
   });
 
+  it('packs a small gathering close, as a group, not thin across its whole disc or row', async () => {
+    const { kit, R, ticks } = fakes();
+    const few = [
+      { ...laid().gathers[0], key: 'gather-0', n: 4, r: 6 },
+      { ...laid().gathers[0], key: 'gather-1', n: 4, row: 20, at: [60, 30], face: [60, 0] },
+    ];
+    await createCrowd(kit, R, laid({ gathers: few, extents: { ...laid().extents, 'gather-1': { x: 60, y: 1, z: 30, r: 12 } } }), { loader: copyLoader() }).ready;
+    tick(ticks, 1);
+    const [disc] = instances(R).filter((m) => m.userData.crowd === 'gather-0');
+    const [row] = instances(R).filter((m) => m.userData.crowd === 'gather-1');
+    for (let i = 0; i < 4; i++) expect(Math.hypot(at(disc, i).x - 30, at(disc, i).z - 30)).toBeLessThan(2.5);
+    for (let i = 0; i < 4; i++) expect(Math.abs(at(row, i).x - 60)).toBeLessThan(3);
+  });
+
   it('turns a gathering to look at someone, and back', async () => {
     const { kit, R, ticks } = fakes();
     const crowd = createCrowd(kit, R, laid(), { loader: copyLoader() });

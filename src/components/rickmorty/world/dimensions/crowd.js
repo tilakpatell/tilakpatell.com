@@ -34,6 +34,9 @@ const COPIES = '/games/meshy/crowd';
 const copyTall = (name) => (name.includes('morty') ? 1.5 : 1.85);
 const IDLE_AT = 0.4; // seconds into the idle a rigged kind is stood at
 const HOPS = 1.2; // seconds a hop takes to ripple through a gathering
+// how much room each of a gathering takes: along a row, and in a disc (its radius grows as the root)
+const ROW_EACH = 1.1;
+const DISC_EACH = 0.75;
 
 const isOn = (e, state, shown) => {
   if (shown.get(e.key) === false) return false;
@@ -155,7 +158,8 @@ export function createCrowd(kit, R, laid, { loader = null } = {}) {
         v.set(pose.x, pose.bob, pose.z);
         eul.set(0, pose.yaw + Math.PI / 2, pose.sway);
       } else {
-        const g = e.row ? rowAt(e.at, e.row, j, e.n, watch ?? e.face, 1.7) : gatherAt(e.at, e.r, j, e.n, watch ?? e.face, 1.7);
+        // (a few stand close, as a group: as wide as there are people for, never wider than it's given)
+        const g = e.row ? rowAt(e.at, Math.min(e.row, e.n * ROW_EACH), j, e.n, watch ?? e.face, 1.7) : gatherAt(e.at, Math.min(e.r, DISC_EACH * Math.sqrt(e.n) + 0.6), j, e.n, watch ?? e.face, 1.7);
         v.set(g.x, (e.y ?? 0) + hopOf(t, rec.since, j), g.z);
         eul.set(0, g.yaw + Math.PI / 2, 0);
       }
