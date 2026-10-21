@@ -25,7 +25,7 @@ The names and the fields agree wherever both hold a class, so the tree is the ga
 
 ## The sheet
 
-Verdicts: **same** (the site does what the source does), **differs** (corrected, with the commit’s row; or left, with why), **silent** (the source does not hold the rule; the records’ reading stands). “Fixed (1)” is this branch’s first pull request; “next” is the follow-up lane named at the end.
+Verdicts: **same** (the site does what the source does), **differs** (corrected, with the commit’s row; or left, with why), **silent** (the source does not hold the rule; the records’ reading stands). “Fixed (1)” is this lane’s first pull request; “next (2)” its second, whose work is ready and waiting on the hero test below; “next lane” a later pull request, in the order at the end.
 
 ### The tactics: which, in what order, for how long
 
@@ -35,9 +35,9 @@ Verdicts: **same** (the site does what the source does), **differs** (corrected,
 | T2 | the order the tactics are tried | a utility pick by rank: flee, hide, interact, close combat, attack, advance, follow | `Mindcraft/__Generated__/Soldier/SoldierBehavior.inl`, `combat_Tactics`: close combat first, then a scripted path, suppressed in cover, vehicle, flee, hide, charge, attack, and plain firing last | differs, fixed (1): close combat above flee and hide |
 | T3 | entering close combat | the target nearer than the row’s `Distance` | `Mindcraft/SoldierBehaviorInterface.h`, `isCloseCombatValid` (its inputs from `Brain/AISystem.cpp`’s knowledge update): the target seen, a line of fire, the target’s place 1.5 s ahead on its velocity nearer than `Distance`, the height apart under `HeightDistance`, not moving away from it (under 90°), not in cover and not on the way to a good one | differs, fixed (1) |
 | T4 | staying in close combat | re-picked every think; no hold | the same function: held at least 3 s; then kept while the place ahead is inside `DistanceLimit`, the target seen with a line of fire or unseen for under `LostVisibilityTimeout`, and the bot not moving away (under 95°) | differs, fixed (1) |
-| T5 | what close combat does | walks at the target | `SoldierBehavior.inl`, `combat_CloseCombat`: stands still and fires, in the pose of `PoseSettings` (standing in every row a template plays; only `AIRebelSoldierTactics`, which no template takes, crouches) | differs, fixed (1) |
+| T5 | what close combat does | walks at the target | `SoldierBehavior.inl`, `combat_CloseCombat`: stands still and fires, in the pose of `PoseSettings` (standing in every row a template plays; only `AIRebelSoldierTactics`, which no template takes, crouches) | differs, kept: the 2017 records give close combat move settings of its own (a run, and a melee projectile out to 1 m), a later build’s, and the site’s walk at the target stands for that; the melee is not modelled |
 | T6 | what makes a bot hide | suppression at 1, or health under 40 % (by hand) | `Brain/AISystem.cpp` (the knowledge update) and `Gather/AiProperties.cpp`: hiding is asked only of a soldier that cannot damage its target with the weapon in hand (a target in a shielded seat); health is read by no tactic | differs, left for the next lane: the sim has no shielded seat, so the source’s cause never fires and hiding would end; it goes with T9 and U1 |
-| T7 | how long a hide lasts | as long as its cause | `Reason/Tactics.cpp`, `TacticInfo::set` draws a limit between `MinimumTimeActive` and `MaximumTimeActive`; `Brain/AISystem.cpp` pushes it on while the cause holds; `SoldierBehaviorInterface.h`, `useTactic` drops the tactic past it: a bot hides while the cause holds and the drawn 5 to 10 s more | differs, fixed (1) |
+| T7 | how long a hide lasts | as long as its cause | `Reason/Tactics.cpp`, `TacticInfo::set` draws a limit between `MinimumTimeActive` and `MaximumTimeActive`; `Brain/AISystem.cpp` pushes it on while the cause holds; `SoldierBehaviorInterface.h`, `useTactic` drops the tactic past it: a bot hides while the cause holds and the drawn 5 to 10 s more | differs, next lane with T6 and U1: written and tested, then held back, because on the site’s cause by hand (which a heavy’s single near miss sets, under the suppression reading U1 marks wrong) the hold kept so many bots hiding that Galactic Assault’s seed-1 round ran its 25 minutes with no result |
 | T8 | firing while hiding or fleeing | never | `SoldierBehavior.inl`, `combatHide_Hide` and `combatFlee_Hide`: once in its cover a hiding or fleeing bot fires if it may (`attackElseIdle`); on the way there it fires only by the tactic’s move settings (`attackWhileMoving`; every multiplayer flee row says no, no hide row has any) | differs, fixed (1); the Skirmish heavy’s flee, which fires inside 30 m on the way, goes with G14 |
 | T9 | what makes a bot flee | its squad’s posture turned to retreat (by hand) | `SoldierBehaviorInterface.h`, `isFleeValid`; `Gather/AIPlayerInfo.cpp`, `updateWeaponSuppression` and the grenade handler: a bot flees when it panics (suppressed over its row’s `SuppressionValue` for `ContinuousSuppressionTime`, a grenade inside its blast, a superior vehicle near); the records’ multiplayer difficulty rows switch panic on for grenades alone, for 2 s | differs, left for the next lane with U1 (the suppression meter must first be read right) |
 | T10 | how a flee ends | in the cover its query chose, it hides there | `isFleeValid`: in its flee cover for over 2 s the flee is done and hiding takes over; a bot not panicking that has not reached cover in 2 s gives the flee up | differs in its times; next lane, with T9 |
@@ -72,12 +72,12 @@ Verdicts: **same** (the site does what the source does), **differs** (corrected,
 
 | # | rule | the site before | the source | verdict |
 | --- | --- | --- | --- | --- |
-| P1 | which weapon’s patterns | by the gun’s family (a rifle takes `AssaultRifle`) | `Reason/WeaponFiringInfo.cpp`, `getWeaponFiringInfo`: the AI weapon row’s own `FiringWeaponClass` (`AI_Rifle` is `SMG`, `AI_Heavy` `MachineGun`, `AI_Sniper` `SniperRifle`) | differs, fixed (1) |
-| P2 | which intensity | by distance when an attack starts: under 15 m High, under 35 m Medium, else Low | `getWeaponFiringInfo` and `Reason/CombatIntensity.cpp`, `updateCombatIntensity`: High until the bot has fired once, then its combat group’s intensity, Medium while alerted; `Brain/AISystem.cpp` lets the attack row’s `CombatIntensity` override it while the bot attacks (High in `Heavy_Tactics`, `Imperial_Grunt_Heavy_Tactics` and every Skirmish row, none in the rest) | differs, fixed (1); the override is transcribed from the records, as `ai.json` drops the field |
-| P3 | the next pattern | any of the weapon’s, whatever its intensity | `Execute/WeaponControl.cpp`, `updateWeaponControlState` with `findRandomFiringPattern`: a fresh pattern of the same class and intensity at every burst’s start | differs, fixed (1) |
+| P1 | which weapon’s patterns | by the gun’s family (a rifle takes `AssaultRifle`) | `Reason/WeaponFiringInfo.cpp`, `getWeaponFiringInfo`: the AI weapon row’s own `FiringWeaponClass` (`AI_Rifle` is `SMG`, `AI_Heavy` `MachineGun`, `AI_Sniper` `SniperRifle`) | differs, next (2) |
+| P2 | which intensity | by distance when an attack starts: under 15 m High, under 35 m Medium, else Low | `getWeaponFiringInfo` and `Reason/CombatIntensity.cpp`, `updateCombatIntensity`: High until the bot has fired once, then its combat group’s intensity, Medium while alerted; `Brain/AISystem.cpp` lets the attack row’s `CombatIntensity` override it while the bot attacks (High in `Heavy_Tactics`, `Imperial_Grunt_Heavy_Tactics` and every Skirmish row, none in the rest) | differs, next (2); the override is transcribed from the records, as `ai.json` drops the field |
+| P3 | the next pattern | any of the weapon’s, whatever its intensity | `Execute/WeaponControl.cpp`, `updateWeaponControlState` with `findRandomFiringPattern`: a fresh pattern of the same class and intensity at every burst’s start | differs, next (2) |
 | P4 | a pattern’s length | its bits to the highest set one, then its delay | `updateWeaponControlState`: the same | same |
-| P5 | when the bot is not firing | the pattern runs on | `soldierAimAndShoot`: a bot that does not want to fire ends its burst, one that may not mid-burst starts again; either way the next shot opens a fresh pattern | differs, fixed (1) |
-| P6 | a bit’s length | one sim step (0.05 s) | one AI update tick, whose rate the tree does not hold | silent |
+| P5 | when the bot is not firing | the pattern runs on | `soldierAimAndShoot`: a bot that does not want to fire ends its burst, one that may not mid-burst starts again; either way the next shot opens a fresh pattern | differs, next (2) |
+| P6 | a bit’s length | one sim step (0.05 s) | `Shared/FiringPatternData.ddf` gives a pattern’s delay in ticks of a thirtieth of a second, and `updateWeaponControlState` steps one bit a tick | differs, next (2): 30 bits a second |
 
 ### What a bot sees and hears
 
@@ -97,7 +97,7 @@ Verdicts: **same** (the site does what the source does), **differs** (corrected,
 | --- | --- | --- | --- | --- |
 | S1 | the squad’s alert | a wave at the template’s `AlertPropagationSpeed` | `Reason/CombatReasoning.cpp`, `updateCombatGroupAlertState`: a combat group (by default the whole side) alerted at once when any member sees its target | silent: the propagation speed is the records’ later field |
 | S2 | the squad’s confidence and posture | the site’s (`lib/ai/squad`), which turns flee on | none: the tree has no posture | differs, next lane with T9 |
-| S3 | the combat intensity | none | `Reason/CombatIntensity.cpp`, `updateCombatIntensity`: Medium for an alerted group, none otherwise | fixed (1) with P2 |
+| S3 | the combat intensity | none | `Reason/CombatIntensity.cpp`, `updateCombatIntensity`: Medium for an alerted group, none otherwise | differs, next (2), with P2 |
 | U1 | suppression | a near miss adds the shooter’s `SuppressionValue`, faded over the target’s `ContinuousSuppressionTime` | `Gather/AIPlayerInfo.cpp`, `AIPlayerInfo::updateWeaponSuppression`: `SuppressionValue` is the level a soldier’s own suppression must stay over for `ContinuousSuppressionTime` before it panics (so the heavy’s 1 means never); the meter is the soldier’s, outside BattleAI | differs, next lane: the soldier’s suppression records are read first |
 | U2 | `EngageSettings.SuppressionValue` | unused | `updateCombatGroupEngagedState`: over it a soldier counts as shot at, which only marks it engaged | same in effect |
 | C1 | the selection-form cover queries (`coverQuery.js`) | the records’ scores | not in the tree | silent |
@@ -116,10 +116,53 @@ The AutoPlayers (`autoPlayer.js`, `soldierBrain.js`’s `thinkAutoPlayer`: the o
 
 ## The corrections in the first pull request
 
-Each is a tested rule in `src/lib/battlefront/ai/` and a row in NOTES (“The bots’ minds against the AI source”).
+Each is a tested rule in `src/lib/battlefront/ai/tactics.js` and `soldierBrain.js` (`tactics.test.js`, `soldierBrain.source.test.js`) and a row in NOTES (“The bots’ minds against the AI source”).
 
-1. **The tactics’ order and close combat** (T1 to T5): `soldierBrain.js` offers a tactic only when the template’s row holds it, tries close combat before flee and hide, enters it by the source’s test, holds it at least 3 s and leaves it by the source’s limits, and stands to fire in it. A sniper (`Sniper_Tactics`: 50 m, to 55 m) now stands and shoots at a target inside 50 m where it walked at it.
-2. **Hiding’s time and its fire** (T7, T8): a hide lasts as long as its cause and a drawn 5 to 10 s more; a hiding or fleeing bot fires from its cover once it is in it, and not on the way.
-3. **The firing pattern** (P1, P2, P3, P5, S3): the patterns are the AI weapon’s own class; High until the bot first fires, Medium after; a fresh pattern of that class and intensity every burst; a burst ends when the bot stops firing.
+1. **The tactics’ order and close combat** (T1 to T4): a tactic only when the template’s row holds it; close combat tried before flee and hide, entered by the source’s test, held at least 3 s and left by its limits. A hurt rifleman with an enemy at arm’s length now fights it rather than turning its back to hide; a Skirmish bot no longer hides at all. One reading by hand, said in NOTES: a bot sidestepping in the open counts as standing for the test’s turn, as the source has that bot standing (`attack_Fire`); without it a sidestepping trooper never closed with a hero at arm’s length.
+2. **A hiding bot’s fire** (T8): a hiding or fleeing bot fires from its cover once it is in it, and not on the way. (A hide’s drawn hold, T7, was written with it and is held back: see T7’s row.)
 
-The balance before and after, and what moved, follows once the runs are in.
+## What is left, in order
+
+- **(2) The firing pattern** (P1, P2, P3, P5, P6, S3): the patterns of the AI weapon’s own class (`AI_Rifle` is an SMG), High until the bot first fires and Medium after (High while a heavy or a Skirmish bot attacks), drawn afresh each burst, ended when the bot stops firing, a bit a thirtieth of a second. Written and tested; held back from the first pull request because it lifts a rifle bot’s trigger pulls from about 2 a second to about 7 (the patterns’ own bits: `AssaultRifle` Medium 2.2 a second at a bit a step, `SMG` Medium 7.4 at a bit a thirtieth), and at that rate the hero test’s three troopers die of Luke’s deflected bolts and his push before he reaches them (`heroBrain.test.js`, “Luke runs down three troopers and cuts them”: no cut in 60 s, on seed 5 or six others), so it goes with its own balance run and that test looked at on its own.
+- **Targeting** (G1, G3, G4, G10, G11, G12): the seen-within-a-second candidates and the 2 m slack, `TargetLostTimer`, `VisibleTargetLimit` as seconds, the keep-firing time as the source uses it (its test rewritten with it), the reacquire hold, the AI weapon’s range.
+- **Vision** (V1, V2, V5, V6): the sensing cone and ranges from the records’ difficulty rows by the alerted state, the last known place frozen, a shot heard at 120 m.
+- **Flee, hiding and suppression** (T6, T7, T9, T10, S2, U1): the hide’s cause (a target the bot cannot damage) and its drawn hold together, panic as the trigger of flee (a grenade, in the multiplayer rows), suppression read as the panic threshold once the soldier’s own suppression records are read.
+- **Aim and fire on the move** (G7, G14): the eye less 0.25 m; the move settings’ fire rule, transcribed, as `ai.json` drops the move settings.
+- **Cover** (C2 to C5): a negative older-form score rejects; the reference direction (the extractor first); the attack cover kept until out of range or the target lost; a turned hide cover given up.
+
+
+## The balance before and after
+
+`node scripts/battlefront-balance.mjs --skirmish` and `--assault` (the defaults: 20 a side; ten Skirmish runs of 180 s on Hoth’s arena navgrid, twenty Galactic Assault rounds of up to 25 minutes), on `main` (`06d673d9c`; the sim and the brain are the same at `99b366d58`, which this branch merged) and on the branch. The runs are seeded, so a row moves only where the brain does. The milliseconds are the desktop’s under other sessions’ load, and the branch’s assault ran in four processes (`--jobs 4`), so they are not compared.
+
+Skirmish, kills a side and the bots alive at the end:
+
+| seed | main | branch |
+| --- | --- | --- |
+| 1 | 13 – 15, 5 – 7 alive | 16 – 13, 7 – 4 |
+| 2 | 19 – 16, 4 – 1 | 9 – 19, 1 – 11 |
+| 3 | 17 – 8, 12 – 3 | 6 – 20, 0 – 14 |
+| 4 | 14 – 13, 7 – 6 | 19 – 5, 15 – 1 |
+| 5 | 13 – 15, 5 – 7 | 9 – 15, 5 – 11 |
+| 6 | 16 – 12, 8 – 4 | 18 – 12, 8 – 2 |
+| 7 | 15 – 12, 8 – 5 | 17 – 10, 10 – 3 |
+| 8 | 14 – 16, 4 – 6 | 9 – 16, 4 – 11 |
+| 9 | 18 – 12, 8 – 2 | 18 – 7, 13 – 2 |
+| 10 | 20 – 4, 16 – 0 | 11 – 18, 2 – 9 |
+| mean | kills 15.9 to 12.3; more alive: Rebels 7, Empire 3 | kills 13.2 to 13.5; Rebels 5, Empire 5 |
+
+Stuck 0 and off the navgrid 0 in both.
+
+Galactic Assault (the Empire attacks):
+
+| | main | branch |
+| --- | --- | --- |
+| results | the Rebels 15 (all by wiping the Empire’s reinforcements), the Empire 0, none in 25 minutes 5 | the Rebels 14, the Empire 0, none 6 |
+| median round | 20 min | 19.6 min |
+| kills | 154.0 (Rebels) to 202.1 (Empire) | 156.9 to 195.6 |
+| seed 1 (the arena test’s round) | the Rebels at 18.7 min, 150 – 204 | the Rebels at 18.6 min, 149 – 197 |
+| stuck, off the navgrid | 0, 0 | 0, 0 |
+
+What moved, and why it should have: a bot no longer turns its back to hide from an enemy at arm’s length but closes with it and holds the fight 3 s, and a hiding or fleeing bot in its cover fires where before it only crouched. Both give a bot under pressure a few more shots and its enemy a few fewer clear ones. In Galactic Assault the Rebels defend from cover and hide there more, so their kills rise by about 3 a round and the attacking Empire’s fall by about 6 and a half; in Skirmish, where both sides cross the open, the two sides’ kills come together (from 15.9 – 12.3 to 13.2 – 13.5) and the round’s total falls by one and a half. The single seeds swing more than the means (a battle is chaotic: one change early moves every shot after it), and no mean moves past the spread between seeds. The round the arena test plays ends as it did, a minute’s tenth sooner.
+
+The bots’ seeds (`npm run test:ai -- src/lib/battlefront`, the Skirmish and Galactic Assault arena tests): on `main` 20 of 20 (stuck 0); on the branch the same, stuck 0 and every round ending in its result, but for the arena test’s timing of seed 1 (“inside 90 s of Node”), which on this desktop under other sessions’ load took 165 s on the branch and 101 s on `main` in one such run; the same round alone took 68 and 77 s on the branch and 92 s on `main`, so the round is no slower. CI runs the test on its own machine.
