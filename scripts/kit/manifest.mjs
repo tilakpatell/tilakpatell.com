@@ -11,7 +11,9 @@
 //     families: [{ family, file, models, materials }]
 //       models: [{ name, positions, bark?, parts: [{ part, material, tris, tris1? }], rig? }]
 //         (positions every vertex where it stands; bark the bark parts' alone)
-//       materials: { [name]: { leaf, wind, worn?, maps: { colour: [w, h], normal?: [w, h] }, pixels?: { rgba, w, h } } }
+//       materials: { [name]: { leaf, wind, worn?, far?, maps: { colour: [w, h], normal?: [w, h] }, pixels?: { rgba, w, h } } }
+//         (far: a LOD1's own, a building's facade, worn by no model's parts
+//         and listed all the same)
 //   checkManifest(manifest, files: { [file]: bytes }) → string[]   (empty when clean)
 //   byName(a, b) → -1 | 0 | 1      (code-unit order, every sort's)
 //   sortByName(object) → object   (its keys in that order)
@@ -85,9 +87,9 @@ export function buildManifest(pack, families, { title = pack } = {}) {
 
   const materials = {};
   for (const name of Object.keys(defs).sort(byName)) {
-    if (!kinds[name]) continue;
+    if (!kinds[name] && !defs[name].far) continue;
     const { leaf, wind, maps } = defs[name];
-    const worn = new Set([...kinds[name], ...(defs[name].worn ?? [])]);
+    const worn = new Set([...(kinds[name] ?? []), ...(defs[name].worn ?? [])]);
     materials[name] = {
       alpha: leaf ? 'mask' : 'opaque',
       leaf: Boolean(leaf),

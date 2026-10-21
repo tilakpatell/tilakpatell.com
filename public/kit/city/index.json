@@ -21,7 +21,7 @@
         "main"
       ],
       "tris": 27519,
-      "tris1": 5923,
+      "tris1": 10,
       "radius": 13.259,
       "height": 28,
       "trunk": 13.206,
@@ -45,7 +45,7 @@
         "main"
       ],
       "tris": 25612,
-      "tris1": 5191,
+      "tris1": 10,
       "radius": 9.964,
       "height": 24.998,
       "trunk": 9.489,
@@ -70,7 +70,7 @@
         "main"
       ],
       "tris": 18344,
-      "tris1": 3569,
+      "tris1": 10,
       "radius": 9.573,
       "height": 17.014,
       "trunk": 9.573,
@@ -666,6 +666,30 @@
     }
   },
   "materials": {
+    "Building_Large_2_Facade": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024"
+      }
+    },
+    "Building_Medium_2_001_Facade": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024"
+      }
+    },
+    "Building_Small_1_Facade": {
+      "alpha": "opaque",
+      "leaf": false,
+      "wind": null,
+      "maps": {
+        "colour": "1024x1024"
+      }
+    },
     "MI_Asphalt": {
       "alpha": "opaque",
       "leaf": false,

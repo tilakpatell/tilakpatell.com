@@ -23,7 +23,7 @@
 // order, each as full as fits; only a model over it on its own has its bark
 // colour halved, in every family that wears that bark.
 //
-//   SOURCES[pack] → { dirs, ext?, title, wind?, atlas?, lod? } (lod: { <kind>: { ratio, error } } over LOD's)
+//   SOURCES[pack] → { dirs, ext?, title, wind?, atlas?, lod? } (lod: { <kind>: { ratio, error } } over LOD's, or { facade: true }: a box wearing its pictures, facade.mjs)
 //   importPack({ pack, from, out, families, log, dry, cap }) → manifest   (cap: a file's bytes, BUDGET.file)
 
 import { Document, Logger, NodeIO, PropertyType } from '@gltf-transform/core';
@@ -31,6 +31,7 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { compressTexture, dedup, dequantize, meshopt, mergeDocuments, prune, resample, simplifyPrimitive, unpartition, weld } from '@gltf-transform/functions';
 import { MeshoptDecoder, MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
+import { facadeOf } from './facade.mjs';
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync } from 'node:fs';
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
@@ -51,7 +52,7 @@ export const SOURCES = {
   naturemega: { dirs: ['glTF'], ext: ['.gltf'], title: 'Stylized Nature MegaKit', wind: true },
   nature: { dirs: ['glTF'], ext: ['.gltf'], title: 'Stylized Nature Pack', sway: true },
   space: { dirs: ['Characters/GLTF', 'Environment/GLTF', 'Items/GLTF', 'Vehicles/GLTF'], ext: ['.gltf'], title: 'Ultimate Space Kit', atlas: 'Atlas' },
-  city: { dirs: ['Exports/glTF (Godot)'], title: 'Downtown City MegaKit', lod: { building: { ratio: 0.15, error: 0.01 } } },
+  city: { dirs: ['Exports/glTF (Godot)'], title: 'Downtown City MegaKit', lod: { building: { facade: true } } },
   farm: { dirs: ['../farm-glb'], ext: ['.glb'], title: 'Farm Animals' },
   street: { dirs: ['../street-glb'], ext: ['.glb'], title: 'Street Pack' },
   furniture: { dirs: ['../furniture-glb'], ext: ['.glb'], title: 'Furniture Pack' },
@@ -245,11 +246,11 @@ function thinned(doc, prim, seed) {
 // stops at 80-96 %; let across seams ('Permissive', an error of 0.1-0.4 %
 // of the tree's size there) it reaches the quarter. Through gltf-transform's
 // simplifyPrimitive, which passes meshopt no flags but LockBorder.
-// A pack may ask a kind for its own (`lod` in SOURCES: the city's buildings,
-// seen by the hundred past 60 m, toward a sixth of themselves but held to a
-// hundredth of their size in error: at a twentieth and 0.3 the simplifier
-// tore their walls open, and kept whole by their borders they stay at
-// four fifths).
+// A pack may ask a kind for its own (`lod` in SOURCES): the city's buildings,
+// seen by the hundred past 60 m, are each a box wearing pictures of itself
+// (`facade`, addFacade below): simplified as a tree is, to a twentieth, the
+// simplifier tore their walls open, and kept whole by their borders they
+// stayed at four fifths.
 const PERMISSIVE = { ...MeshoptSimplifier, simplify: (i, p, s, n, e, flags = []) => MeshoptSimplifier.simplify(i, p, s, n, e, [...flags, 'Permissive']) };
 function simplified(prim, lod = LOD) {
   const out = prim.clone();
@@ -285,6 +286,56 @@ function addLod1(doc, scene, model, aim = LOD) {
   };
   scene.addChild(copy(model.node, `${model.name}.lod1`));
   return tris1;
+}
+
+// A building's LOD1 as a box wearing pictures of its faces (facade.mjs):
+// `<node>.lod1` holding one mesh, its material `<Name>_Facade` wearing the
+// atlas, a new one among the pack's. Its triangles all on the model's first
+// part, for the manifest.
+async function addFacade(doc, scene, model, defs, named) {
+  const tris = [];
+  const maps = new Map(); // (each texture decoded once)
+  for (const n of subtree(model.node)) {
+    const m = n.getWorldMatrix();
+    const at = (pos, i) => {
+      const [x, y, z] = pos.getElement(i, []);
+      return [m[0] * x + m[4] * y + m[8] * z + m[12], m[1] * x + m[5] * y + m[9] * z + m[13], m[2] * x + m[6] * y + m[10] * z + m[14]];
+    };
+    for (const prim of n.getMesh()?.listPrimitives() ?? []) {
+      const mat = prim.getMaterial();
+      const texture = mat?.getBaseColorTexture() ?? null;
+      if (texture && !maps.has(texture)) maps.set(texture, await decode(texture.getImage()));
+      const tex = texture ? maps.get(texture) : null;
+      const colour = mat?.getBaseColorFactor() ?? [1, 1, 1, 1];
+      const cut = mat && mat.getAlphaMode() !== 'OPAQUE' ? mat.getAlphaCutoff() : null;
+      const pos = prim.getAttribute('POSITION');
+      const uv = prim.getAttribute('TEXCOORD_0');
+      const idx = prim.getIndices();
+      const count = idx ? idx.getCount() : pos.getCount();
+      for (let k = 0; k + 2 < count; k += 3) {
+        const ids = [0, 1, 2].map((j) => (idx ? idx.getScalar(k + j) : k + j));
+        tris.push({ p: ids.flatMap((i) => at(pos, i)), uv: ids.flatMap((i) => (uv ? uv.getElement(i, []) : [0, 0])), tex, colour, cut });
+      }
+    }
+  }
+  const { rgba, size, box } = facadeOf(tris);
+  const name = `${model.name}_Facade`;
+  const png = await sharp(Buffer.from(rgba.buffer), { raw: { width: size, height: size, channels: 4 } }).png().toBuffer();
+  const material = doc.createMaterial(name).setBaseColorTexture(doc.createTexture(name).setImage(png).setMimeType('image/png')).setMetallicFactor(0).setRoughnessFactor(1);
+  const buffer = doc.getRoot().listBuffers()[0];
+  const accessor = (type, array) => doc.createAccessor().setType(type).setArray(array).setBuffer(buffer);
+  const prim = doc
+    .createPrimitive()
+    .setMaterial(material)
+    .setAttribute('POSITION', accessor('VEC3', box.positions))
+    .setAttribute('NORMAL', accessor('VEC3', box.normals))
+    .setAttribute('TEXCOORD_0', accessor('VEC2', box.uvs))
+    .setIndices(accessor('SCALAR', box.indices))
+    .setExtras({ part: 'main' });
+  scene.addChild(doc.createNode(`${model.name}.lod1`).setMesh(doc.createMesh(`${model.name}.lod1`).addPrimitive(prim)));
+  named.set(name, material);
+  defs[name] = { leaf: false, wind: false, worn: [model.kind], far: true, maps: {} };
+  return primsOf(model.node).map((_, i) => (i ? 0 : box.indices.length / 3));
 }
 
 // Every vertex of a model where it stands (its nodes' transforms applied),
@@ -353,7 +404,8 @@ async function buildFile(io, group, defs, source, halve) {
   const models = [];
   for (const model of group.models) {
     const prims = primsOf(model.node);
-    const tris1 = model.rigged ? [] : addLod1(doc, scene, model, { ...LOD, ...source.lod?.[model.kind] });
+    const aim = { ...LOD, ...source.lod?.[model.kind] };
+    const tris1 = model.rigged ? [] : aim.facade ? await addFacade(doc, scene, model, defs, named) : addLod1(doc, scene, model, aim);
     models.push({
       name: model.name,
       positions: positionsOf(model.node),
