@@ -307,6 +307,7 @@ export const nearOctaves = ({ tier, pxTall: px }) => ((tier === 'high' || tier =
 export const pxTall = ({ r, dist, fov, height }) => (dist <= r ? Infinity : ((2 * Math.asin(r / dist)) / ((fov * Math.PI) / 180)) * height);
 const bufferSize = new THREE.Vector2();
 const bodyAt = new THREE.Vector3();
+const skinAt = new THREE.Vector3(); // (update's: where the body is, outside the draw, as the camera it's given is)
 const SHIELD_R = 1.12;
 const DUNE_DIR = new THREE.Vector3(0.62, 0.32, 0.72).normalize();
 
@@ -448,18 +449,25 @@ export function buildBody(look, { r = 40, small = false, tier = typeof document 
   const geo = new THREE.SphereGeometry(r, ws, hs);
   const mat = new THREE.ShaderMaterial({ vertexShader: SURFACE_VERT, fragmentShader: surfaceFrag(L.family, FAMILIES[L.family].slots, { skin: painted }), uniforms, defines });
   const surface = new THREE.Mesh(geo, mat);
-  // (how tall it is on the screen, as it's drawn: the near octaves eased
-  // toward what that asks for, a frame at a time)
-  if (!small) {
-    surface.onBeforeRender = (renderer, scene, camera) => {
-      if (!camera?.isPerspectiveCamera) return;
-      renderer.getDrawingBufferSize(bufferSize);
-      surface.getWorldPosition(bodyAt);
-      const want = nearOctaves({ tier, pxTall: pxTall({ r, dist: camera.position.distanceTo(bodyAt), fov: camera.fov, height: bufferSize.y }) });
-      const n = uniforms.uNearOct;
-      n.value += Math.max(-NEAR_EASE, Math.min(NEAR_EASE, want - n.value));
-    };
-  }
+  // Where the body is and how it's turned, set as it's drawn, from the
+  // group's matrix then: the ground and the air march from its middle
+  // against the shader's cameraPosition. The universe is drawn round the
+  // camera (universe/relative.js: the map moved for the draw alone), so set
+  // in update() it would be where the body is with the camera left out, and
+  // the air drawn about the wrong middle. (Its air sets the middle too, as
+  // it's drawn: lib/three/atmosphere.js. The galaxy never moves: there it's
+  // what update() set.) Then, not small, how tall it is on the screen: the
+  // near octaves eased toward what that asks for, a frame at a time
+  surface.onBeforeRender = (renderer, scene, camera) => {
+    shared.uCenter.value.setFromMatrixPosition(group.matrixWorld);
+    shared.uRot.value.setFromMatrix4(group.matrixWorld);
+    if (small || !camera?.isPerspectiveCamera) return;
+    renderer.getDrawingBufferSize(bufferSize);
+    surface.getWorldPosition(bodyAt);
+    const want = nearOctaves({ tier, pxTall: pxTall({ r, dist: camera.position.distanceTo(bodyAt), fov: camera.fov, height: bufferSize.y }) });
+    const n = uniforms.uNearOct;
+    n.value += Math.max(-NEAR_EASE, Math.min(NEAR_EASE, want - n.value));
+  };
   group.add(surface);
   made.push(geo, mat);
 
@@ -521,10 +529,8 @@ export function buildBody(look, { r = 40, small = false, tier = typeof document 
       shared.uTime.value = t;
       if (shield && shield.material.uniforms.uHit.value > 0) shield.material.uniforms.uHit.value = Math.max(0, shield.material.uniforms.uHit.value - dt * 1.1); // (a bump's flash dies away in about a second)
       group.updateWorldMatrix(true, false);
-      shared.uCenter.value.setFromMatrixPosition(group.matrixWorld);
-      shared.uRot.value.setFromMatrix4(group.matrixWorld);
       if (painted && camera?.position) {
-        const k = skinOn * skinMixAt(camera.position.distanceTo(shared.uCenter.value) / r, atmo?.top ?? 1.05);
+        const k = skinOn * skinMixAt(camera.position.distanceTo(skinAt.setFromMatrixPosition(group.matrixWorld)) / r, atmo?.top ?? 1.05);
         uniforms.uSkinMix.value = k;
         if (atmoSkin) {
           shared.uAtmo.value.lerpColors(atmoBase.color, atmoSkin.color, k);

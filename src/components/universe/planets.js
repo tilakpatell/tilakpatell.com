@@ -1274,7 +1274,6 @@ export function buildPlanet(u, T = {}, { sun = null, tier = 'high', key = null }
   // (with real air round it, the air draws the limb: the rim in its ground goes)
   const rimGlow = () => p.body.material?.userData?.air;
   if (shell && rimGlow()) rimGlow().uRimStrength.value = 0;
-  const centre = new THREE.Vector3();
   // a station's big sign, over it
   const sign = u.sign ? bigSign(u) : null;
   if (sign) {
@@ -1359,8 +1358,7 @@ export function buildPlanet(u, T = {}, { sun = null, tier = 'high', key = null }
     update(t, camera, live = true) {
       t0 = t;
       body.rotation.y = held ?? turn0 + t * spin;
-      // (the air's march is about the planet's middle, in the world: it moves with the map)
-      if (shell?.mesh.visible) shell.update(group.getWorldPosition(centre));
+      // (the air finds the planet's middle itself, as it's drawn: lib/three/atmosphere.js)
       // (where the clouds have turned to over the ground: on the ground, or turning on their own)
       if (ground && cloudMesh) ground.uCloudTurn.value = (cloudMesh.rotation.y - (cloudMesh.parent === body ? 0 : body.rotation.y)) / (Math.PI * 2);
       for (const o of p.orbits) o.set(t);

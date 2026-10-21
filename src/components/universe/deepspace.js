@@ -45,7 +45,8 @@
 //   of tumbling rocks in the open space between the wonders.
 //
 // Lit things are lit in world space from where their light is (the home sun
-// at the map's middle, or their own star), so the map can turn under them.
+// at the map's middle, or their own star), so the map can turn under them;
+// where it is is set as each is drawn, so it's right drawn round the camera.
 //
 // buildDeepSpace({ small, tier }) → { group, update(t, camera, cam, { names }), lens(), dispose() }
 // cam is the camera's position in the map's space (the group's own).
@@ -552,11 +553,19 @@ export function buildDeepSpace({ small = false, tier = 'high' } = {}) {
   };
   const ticks = []; // per-frame work: (t, dt, cam) => void
   const uTime = { value: 0 };
-  const homeW = { value: new THREE.Vector3() }; // the home sun, in world space
-  const lightOf = new Map(); // a wonder's id → its star's world position, for its planets
+  // where each light is, in the world as it's drawn: set in the draw, by
+  // each mesh it lights (mesh(), below), from the matrix then of the group
+  // at its middle (the home sun at the map's middle, which is the deep's
+  // own; a wonder's star at its wonder's). The map is moved round the camera
+  // for the draw alone (relative.js), so a light set before it would be
+  // where the star is with the camera left out
+  const homeW = { value: new THREE.Vector3() }; // the home sun
+  const lightAt = new Map([[homeW, group]]); // a light → the group at its middle
   const mesh = (geo, mat, parent, order = 0) => {
     const m = new THREE.Mesh(own(geo), own(mat));
     m.renderOrder = order;
+    const light = mat.uniforms?.uLight;
+    if (lightAt.has(light)) m.onBeforeRender = () => light.value.setFromMatrixPosition(lightAt.get(light).matrixWorld);
     parent.add(m);
     return m;
   };
@@ -663,7 +672,7 @@ export function buildDeepSpace({ small = false, tier = 'high' } = {}) {
     const g = place(w);
     const color = new THREE.Color(w.color);
     const light = { value: new THREE.Vector3() };
-    lightOf.set(w.id, light);
+    lightAt.set(light, g);
     const surface = mesh(new THREE.SphereGeometry(w.r, seg(96, 56), seg(64, 36)), shader(WORLD_VERT, STAR_FRAG, { uColor: { value: color }, uSeed: { value: w.r * 0.37 } }), g);
     const reach = 13;
     facingQuad(w.r * reach, GLOW_FRAG, { uR: { value: w.r }, uColor: { value: color }, uSeed: { value: w.r }, uReach: { value: reach } }, g);
@@ -1112,7 +1121,7 @@ export function buildDeepSpace({ small = false, tier = 'high' } = {}) {
     const g = place(w);
     const color = new THREE.Color(w.color);
     const light = { value: new THREE.Vector3() };
-    lightOf.set(w.id, light);
+    lightAt.set(light, g);
     const star = mesh(new THREE.SphereGeometry(w.r, seg(32, 20), seg(20, 14)), shader(WORLD_VERT, STAR_FRAG, { uColor: { value: color.clone().multiplyScalar(1.5) }, uSeed: { value: 9.1 } }), g);
     const reach = 30;
     const beams = facingQuad(w.r * reach, PULSAR_FRAG, { uR: { value: w.r * reach }, uT: { value: 0 }, uK: { value: 1.2 } }, g);
@@ -1128,7 +1137,7 @@ export function buildDeepSpace({ small = false, tier = 'high' } = {}) {
   const binary = (w) => {
     const g = place(w);
     const light = { value: new THREE.Vector3() };
-    lightOf.set(w.id, light);
+    lightAt.set(light, g);
     // (the two going round each other: deep.js's binaryAt, the same clock
     // that moves their solids, so the bridge of gas turns with them)
     const suns = [
@@ -1195,7 +1204,7 @@ export function buildDeepSpace({ small = false, tier = 'high' } = {}) {
     const g = place(w);
     const c = new THREE.Color(w.color);
     const light = { value: new THREE.Vector3() };
-    lightOf.set(w.id, light);
+    lightAt.set(light, g);
     const dwarf = mesh(new THREE.SphereGeometry(w.r, seg(48, 28), seg(32, 20)), shader(WORLD_VERT, STAR_FRAG, { uColor: { value: c.clone().multiplyScalar(1.3) }, uSeed: { value: 2.7 } }), g);
     const reach = 9;
     facingQuad(w.r * reach, GLOW_FRAG, { uR: { value: w.r }, uColor: { value: c }, uSeed: { value: w.r }, uReach: { value: reach } }, g);
@@ -1443,9 +1452,6 @@ mat3 tumble(float id) {
       const dt = lastT === null ? 1 : Math.min(0.1, Math.max(0, t - lastT));
       lastT = t;
       uTime.value = t;
-      group.updateWorldMatrix(true, false);
-      homeW.value.setFromMatrixPosition(group.matrixWorld);
-      for (const [id, light] of lightOf) light.value.copy(wonderGroups[id].position).applyMatrix4(group.matrixWorld);
       for (const tick of ticks) tick(t, dt, cam);
       for (const sort of nebulae) sort(cam);
       if (cam) {

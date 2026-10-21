@@ -13,7 +13,8 @@
 //   falloff, density, glow, sunset }
 // createAtmosphere({ radius, top, colour, density, falloff, sunset, glow,
 //   suns, segments, steps, inner, flat, uniforms }) → { mesh, set({ suns, strength }),
-//   params, update(center), dispose }: `uniforms`, a body's own, shares its
+//   params, dispose }: the shell centred on the planet, which it finds as
+//   it's drawn (its own middle); `uniforms`, a body's own, shares its
 //   sun and air with the shell (the galaxy's ground and air read one sun);
 //   `inner`, how far in the ground starts (its sphere's facets: a little
 //   under 1); `flat`, the air in two flat bands of its colour, as a cartoon
@@ -150,6 +151,11 @@ export function createAtmosphere({ radius, top = DEFAULTS.top, colour = '#000000
   const geo = new THREE.SphereGeometry(radius * top, segments[0], segments[1]);
   const mat = new THREE.ShaderMaterial({ vertexShader: SHELL_VERT, fragmentShader: flat ? `#define FLAT\n${SHELL_FRAG}` : SHELL_FRAG, uniforms: u, defines: { STEPS: steps }, side: THREE.BackSide, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false });
   const mesh = new THREE.Mesh(geo, mat);
+  // where the planet's middle is, in the world as it's drawn: the shell's
+  // own, set in the draw. A world drawn round its camera (the universe's,
+  // universe/relative.js) moves its map for the draw alone, and a middle set
+  // before it would be where the planet is with the camera left out
+  mesh.onBeforeRender = () => u.uCenter.value.setFromMatrixPosition(mesh.matrixWorld);
   const set = ({ suns: list = null, strength = null } = {}) => {
     if (list) {
       for (let i = 0; i < 2; i++) {
@@ -167,10 +173,6 @@ export function createAtmosphere({ radius, top = DEFAULTS.top, colour = '#000000
     mesh,
     params: p,
     set,
-    // where the planet's middle is, in the world (each frame: it moves with its map)
-    update(center) {
-      u.uCenter.value.copy(center);
-    },
     dispose() {
       geo.dispose();
       mat.dispose();

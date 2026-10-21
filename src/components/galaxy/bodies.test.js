@@ -100,6 +100,38 @@ describe('buildBody', () => {
     expect(buildBody('hoth', { r: 36 }).hit(new THREE.Vector3(0, 0, 40))).toBe(false);
   });
 
+  it('says where it is as it’s drawn, so it’s right drawn round the camera (universe/relative.js)', () => {
+    // updated where the map is, then the map moved for the draw alone, as
+    // the universe draws: the middle its ground and air march from is the
+    // moved one, whichever of the two is drawn first (and the ground's turn,
+    // which the air doesn't read, as it was)
+    const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.05, 9000);
+    camera.position.set(0, 0, 200);
+    const renderer = { getDrawingBufferSize: (v) => v.set(1920, 1080) };
+    for (const small of [false, true]) {
+      for (const first of ['surface', 'air']) {
+        const scene = new THREE.Scene();
+        const map = new THREE.Group();
+        scene.add(map);
+        const b = buildBody('hoth', { r: 40, small });
+        b.group.position.set(1000, 20, -300);
+        b.group.rotation.y = 0.7;
+        map.add(b.group);
+        scene.updateMatrixWorld();
+        b.update(0, camera);
+        map.position.set(-1e6, 0, 0);
+        scene.updateMatrixWorld();
+        const air = b.group.children.find((o) => o !== b.surface && o.material?.uniforms?.uCenter);
+        (first === 'surface' ? b.surface : air).onBeforeRender(renderer, scene, camera);
+        const u = b.surface.material.uniforms;
+        expect(u.uCenter.value.toArray(), `${small} ${first}`).toEqual([1000 - 1e6, 20, -300]);
+        if (first === 'surface') expect(u.uRot.value.elements[0], `${small}`).toBeCloseTo(Math.cos(0.7), 12);
+        expect(air.material.uniforms.uCenter, `${small} ${first}`).toBe(u.uCenter);
+        b.dispose();
+      }
+    }
+  });
+
   it('hands back the mesh a crash can mark', () => {
     for (const small of [false, true]) {
       const b = buildBody('hoth', { r: 20, small });

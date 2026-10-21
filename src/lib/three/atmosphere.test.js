@@ -48,6 +48,23 @@ describe('the atmosphere shell', () => {
     expect(a.mesh.material.uniforms.uSunDir).toBe(shared.uSunDir);
   });
 
+  it('finds the planet’s middle as it’s drawn, so it’s right drawn round the camera (universe/relative.js)', () => {
+    // a planet's shell where the map is, then the map moved for the draw alone
+    const scene = new THREE.Scene();
+    const map = new THREE.Group();
+    const planet = new THREE.Group();
+    planet.position.set(15000, -520, -9000);
+    const a = createAtmosphere({ radius: 90, colour: '#9fc4ff' });
+    planet.add(a.mesh);
+    map.add(planet);
+    scene.add(map);
+    map.position.set(-15200, 500, 9100);
+    scene.updateMatrixWorld();
+    a.mesh.onBeforeRender(null, scene, null);
+    expect(a.mesh.material.uniforms.uCenter.value.toArray()).toEqual([-200, -20, 100]);
+    a.dispose();
+  });
+
   it('a flat air is two bands', () => {
     expect(createAtmosphere({ radius: 1, colour: '#b8ff5a', flat: true }).mesh.material.fragmentShader).toContain('#define FLAT');
     expect(createAtmosphere({ radius: 1, colour: '#b8ff5a' }).mesh.material.fragmentShader).not.toContain('#define FLAT');
