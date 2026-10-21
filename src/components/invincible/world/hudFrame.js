@@ -46,6 +46,8 @@ export function writeHud(H, { s, h, a, speed, alt, inSpace }) {
   if (portalOpen(s.foes)) marks.push({ x: PORTAL.p[0], z: PORTAL.p[2], color: '#d04dff', name: 'Portal' });
   for (const e of up) if (e.kind === 'mauler' || e.kind === 'seismic') marks.push({ x: e.p[0], z: e.p[2], color: '#d04dff', name: e.kind === 'mauler' ? 'Mauler' : 'Doc Seismic' });
   if (q.rescue && !q.rescue.carried) marks.push({ x: q.rescue.p[0], z: q.rescue.p[2], color: '#ff3b30', name: 'Help' });
+  // Robot's mark (./guardians.js): the strongest foe standing, for the team to go for
+  if (s.cavalry?.marked != null) for (const e of up) if (e.id === s.cavalry.marked) marks.push({ x: e.p[0], z: e.p[2], color: '#4fa3b8', name: 'Marked' });
   if (q.lesson.on) marks.push({ x: RINGS[q.lesson.next].p[0], z: RINGS[q.lesson.next].p[2], color: '#ffd23a', name: `Ring ${q.lesson.next + 1}` });
   // the mission's marker (./missions.js markerOf): a point, or whatever's there now
   const m = s.mission ? missionOf(s.mission.id) : null;

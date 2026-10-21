@@ -19,7 +19,7 @@
 // Nothing happens until something starts it (Cecil, a mission, or the
 // city's clock for the Flaxans).
 //
-// stepFoes(state, hero, { punch, look, eveHit, block, fists }, dt, { cars, hangar }) →
+// stepFoes(state, hero, { punch, look, eveHit, cavalry, block, fists }, dt, { cars, hangar }) →
 // { foes: state, ev, push, stun }: `push` a velocity to give him (a lunge,
 // a knock), `stun` a moment without control. `cars`: where the traffic's
 // cars are, for a Mauler to take one (`throw`'s `car` is its index there);
@@ -258,6 +258,25 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
     }
   }
 
+  // the Guardians' blows (./guardians.js names a foe by its id): a blow of
+  // so many of its `hits`; Dupli-Kate's hold and Shrinking Rae's blink are a
+  // stagger of their length (a staggered foe neither swings nor fires); Rex's
+  // blast is a blow on everyone standing within its reach of where it landed
+  for (const b of input.cavalry ?? []) {
+    const e = byId(b.foe);
+    if (b.type === 'gBlast') {
+      for (const q of f.foes) if (live(q) && !busy(q) && len(sub(q.p, b.at)) <= b.r) hitFoe(q, [b.at[0], b.at[1] - 1, b.at[2]], ev, { by: b.who, blast: true }, b.hits ?? 1);
+      continue;
+    }
+    if (!e || !live(e) || busy(e)) continue;
+    const from = [e.p[0], e.p[1] - 1, e.p[2] - 1];
+    if (b.type === 'gHit') hitFoe(e, from, ev, { by: b.who }, b.hits ?? 1);
+    else if ((b.type === 'gHold' || b.type === 'gStagger') && e.state !== 'ko') {
+      Object.assign(e, { state: 'stagger', t: Math.max(e.state === 'stagger' ? e.t : 0, b.for ?? FIGHT.blockStagger), heldBy: b.type === 'gHold' ? b.who : null });
+      ev.push({ type: b.type === 'gHold' ? 'held' : 'staggered', id: e.id, kind: kindOf(e), at: mid(e), by: b.who, for: b.for });
+    }
+  }
+
   // his punch: a car coming at him first (back it goes), then whoever's in
   // front of him and near, or a lunge to whoever's a little way off
   f.cool = Math.max(0, f.cool - dt);
@@ -314,7 +333,13 @@ export function stepFoes(prev, hero, input = {}, rawDt, world = {}) {
       else knockOut(e, chest, ev, { rammed: true });
       continue;
     }
-    if (e.state === 'fight') {
+    if (e.state !== 'stagger') e.heldBy = null;
+    if (FLAXANS.has(k) && e.state === 'stagger') {
+      // held or staggered by a Guardian: it hangs there till that's over
+      e.t -= dt;
+      e.v = [0, 0, 0];
+      if (e.t <= 0) e.state = 'fight';
+    } else if (e.state === 'fight') {
       // a Flaxan: round him, or round the portal if he's nowhere near it
       const K = KINDS[k];
       e.phase += dt * 0.6;
