@@ -19,13 +19,13 @@ export const SIDE_SEALS = {
   'dead-marshes': { seal: 'safeway', name: 'Sméagol’s safe way' },
   'cirith-ungol': { seal: 'notacrumb', name: 'Crumbs on Sam’s cloak' },
   mordor: { seal: 'remembertheshire', name: 'Do you remember the Shire?' },
+  'minas-tirith': { seal: 'callsforaid', name: 'Gondor calls for aid' },
 };
 
 // the places off the road (./hidden.js): the seal for finding each, and
 // the one for seeing it through
 export const HIDDEN_SEALS = {
   orthanc: { found: 'orthanc', end: 'windlord' },
-  'minas-tirith': { found: 'minastirith', end: 'kingreturns' },
   edoras: { found: 'edoras', end: 'rohanwillanswer' },
 };
 // The places off the road, as far as they're known: one not found yet is

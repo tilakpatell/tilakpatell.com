@@ -353,6 +353,9 @@ export const STAGES = [
     name: 'Minas Tirith',
     date: '1 May 3019',
     length: 160,
+    // (the Eagles carry them out of Mordor and the Road cuts here: its land
+    // never drawn beside Gorgoroth's, lands.js)
+    cut: true,
     mode: 'walk',
     place: 'minas-tirith',
     // the Pelennor levelled under the city and its causeway (the city stands on

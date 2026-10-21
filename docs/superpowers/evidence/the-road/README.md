@@ -379,3 +379,51 @@ The whole ride is 1,797 s on auto, the deeds' waits aside. The per-beat draws an
 - `gorgoroth-column-desktop.webp`: the two among the orc column, the driver with his whip.
 - `gorgoroth-carry-desktop.webp`: from beside on the slope, Sam bent under Frodo on his back.
 - `gorgoroth-eruption-desktop.webp`: the Mountain breaking, fire out of its cone and down its streams, from the slope's top.
+
+## Minas Tirith on the map, and fifty-one things to do (2026-10-21)
+
+The owner: make the Road perfect, with a lot of interactions, and put Minas Tirith on the map.
+
+### Minas Tirith, a chapter
+
+It was a hidden place, found only by clicking the white city. Now it's the road's twelfth stop and last chapter, after Mount Doom (`road.js`, `chapters.js`; the way home to the crowning, 1 May 3019, about 145 miles on in `geography.js`'s `ROAD_MILES`), with its pin over the city, its chip at the end of the route row, and "On to Minas Tirith" from Mordor; a tap on the city itself goes where its pin does. Its five quests each win a seal (the seven gates, a Guard of the Citadel, the beacons lit, the siege of Gondor, the Return of the King), and progress made before wins them on the next visit (the court's toast: "A Guard of the Citadel"). Like every chapter it has a game on the side, "Gondor calls for aid" (`towns/minastirith/beacons.js`, `BeaconsPanel.jsx`: the seven beacons from Amon Dîn to Halifirien catching west along the White Mountains, named back in order, three to seven), and a kitchen, the Houses of Healing (`rush/levels/houses.js`, `themes/houses.js`: athelas steeped in the kettles, bread, and water from the cistern, Beregond calling the orders, in a white hall of beds with the King going among them).
+
+### What there is to do
+
+Twenty-nine new deeds, fifty-one in all, two or more on every stage (`stages/deeds.test.js` holds it); each has a line after it in the site's own words, and a choice has a word back for each wrong answer.
+
+| stage | the deeds |
+| --- | --- |
+| Hobbiton | Light the dragon; dance the jig at the party (A D); take Sam past the corn |
+| The Shire's edge | catch the mushrooms; keep still under the roots; pole the ferry across (A D) |
+| Bree | knock at the West-gate; the name at the Pony; lie still while they search the beds (hold); follow Strider out the back way |
+| Weathertop | stamp out Sam's fire (it goes out); drive them back with fire (A D); hold Frodo still for Aragorn (hold) |
+| The Ford | look up at the stone trolls; take Arwen's hand; ride for the Ford (A D); call up the river |
+| Rivendell | stand up and say you'll carry it; touch the shards of Narsil; take Sting from Bilbo |
+| Caradhras | hide under the rocks from the crebain (hold); push on through the snow (A D); speak, friend, and enter; hack at the Watcher's arm while it holds Frodo up (A D) |
+| Moria | read the Book of Mazarbul; bar the door; hold the bridge with Gandalf (hold) |
+| Lothlórien | greet Haldir (Mae govannen, Mellon or Edro); look into the Mirror; take the Lady's gift |
+| The Anduin | paddle under the Pillars (A D); run to the horn; pull Sam into the boat (hold) |
+| The Dead Marshes | let Sméagol off the rope; pull Frodo back from the water (hold); down in the water under the fell beast (hold) |
+| Ithilien | keep down in the ferns from the Southrons (hold); tell Faramir who you are (three names); look up at the fallen king; keep hold of Frodo (hold) |
+| Cirith Ungol | brush the crumbs off Sam's cloak; raise the Phial; fight up the stair to Frodo (A D) |
+| Gorgoroth | keep still under the cloaks (hold); carry him up the Mountain (A D); reach for Frodo's hand (hold) |
+| Minas Tirith | look up at the White City; walk in through the Great Gate; bow to the King |
+| The Grey Havens | say goodbye; wave to the three on the quay |
+
+The keep-still deeds have the company crouch with the visitor while it's held, and through the beat's hold once done (`doing.js`'s `stance`). Letting the road walk, the company does a deed after 10 s (20 s across fifty-one deeds was a quarter of an hour of waiting). In the page: Haldir's wrong word gets his answer and the right one, after it, lets them on; Sam's fire dies once it's stamped out (its light 5.2 at the stamp, falling as the beat runs on past the deed: the scene reads `since.dell > deed.at`).
+
+### The pictures
+
+- `map-minas-tirith-desktop.webp`: the map with Minas Tirith's pin over the white city, and its chip last in the route row.
+- `minas-tirith-beacons-desktop.webp`: Gondor calls for aid in the Court, the seven peaks and the names shuffled to give back.
+- `deed-lorien-haldir.webp`: Greet Haldir, under the mallorns, Mellon struck through.
+
+### Fixed on the way
+
+- The Cracks' shot stood on the ash over the Sammath Naur: the director lifts every camera over the land, and a placed shot may now say it's `under` it. On a jump into the middle of the Cracks the chamber wasn't drawn (its beat long done): it is now while the walker is within the beat's reach.
+- The Eagles' shot sat at the ground looking into the White City's green Pelennor, drawn beside Mordor's ash: Minas Tirith is now a stage the Road cuts to (`cut`), its land never drawn beside Gorgoroth's (its trees given back while hidden); the Eagles' shot looks down from the slope (clear of its crest, which hid the rock from further up) on the two lying on their rock, a fire light on it now (the chapter's red glow is its own shader); the Eagles come down over the camera, and it goes to black, and the White City opens out of black on the Pelennor.
+
+- `gorgoroth-cracks-desktop.webp`: the Sammath Naur, the spur over the fire, Frodo at its tip and Sam behind.
+- `minas-tirith-pelennor-desktop.webp`: the White City from the Pelennor as the stage opens, the causeway up to the Great Gate.
+- `gorgoroth-eagles-desktop.webp`: the Eagles down over the rock in the fire, lit orange by it, the two just taken up.

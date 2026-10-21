@@ -315,6 +315,8 @@ export default {
       const lead = Math.max(0, line.findIndex((w) => w.id === 'frodo'));
       const ahead = line.filter((_, i) => i !== lead);
       const leadAt = { x: -ABREAST, z: here.local };
+      // (keeping still at a deed: the company down with the visitor, where the beat isn't placing them itself)
+      const stance = doing.stance();
       for (const w of line) {
         const fig = cast.get(w.id);
         const rank = w.order === lead ? 0 : ahead.length - ahead.indexOf(w);
@@ -334,7 +336,7 @@ export default {
         fig.group.visible = !o.hide;
         fig.group.position.set(o.x ?? free, o.y ?? y, o.z ?? z);
         fig.group.rotation.y = o.yaw ?? 0;
-        fig.set({ base: o.base !== undefined ? o.base : base, speed: o.speed ?? clock.speed });
+        fig.set({ base: o.base !== undefined ? o.base : (stance ?? base), speed: stance && o.base === undefined ? 0 : (o.speed ?? clock.speed) });
         fig.tick(dt);
       }
       // the stage’s scene and its beats; the camera on the beat’s rig, eased into it unless it cuts

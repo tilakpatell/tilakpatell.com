@@ -88,6 +88,11 @@ describe('the director: the film’s grammar as camera rigs', () => {
     }
   });
 
+  it('but for a placed shot down in the land (a chamber under the plain), stood where it says', () => {
+    const p = pose(base({ rig: 'seat', heightAt: () => 24, params: { at: [-2.6, -198, 127], lookAt: [0, -199, 133], under: true } }));
+    expect(p.at[1]).toBeCloseTo(-198, 9);
+  });
+
   it('eases between two rigs’ poses', () => {
     const a = pose(base());
     const b = pose(base({ rig: 'lead' }));

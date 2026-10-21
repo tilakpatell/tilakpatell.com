@@ -4,7 +4,7 @@ import { useAchievements } from '../Achievements';
 import ModelCredits from '../ModelCredits';
 import { local, storage } from '../../lib/hooks';
 import { useVoiced } from '../../lib/useVoiced';
-import { CHAPTERS } from './chapters';
+import { CHAPTERS, chapter as chapterOf } from './chapters';
 import { hidden as hiddenPlace, hiddenAt } from './hidden';
 import { SPOKEN } from './mapCast';
 import { roadRecord } from './record';
@@ -228,8 +228,9 @@ export default function MapHub({ api, hover, onHover, onGo, leaving, hidden, fra
     if (drag.current.moved <= 6) {
       // a tap: someone to talk to, a place to go, or ground to walk to
       const hit = a?.tap?.(e.clientX, e.clientY);
-      // a hidden place (the tower at Isengard): no pin, no label, just itself
-      if (hit?.who && hiddenPlace(hit.who)) return onGo(hit.who);
+      // a hidden place (the tower at Isengard): no pin, no label, just itself;
+      // and a chapter's own landmark (the white city) goes where its pin does
+      if (hit?.who && (hiddenPlace(hit.who) || chapterOf(hit.who))) return onGo(hit.who);
       if (hit?.who) return a.say(hit.who);
       const found = !hit && secret(e.clientX, e.clientY);
       if (found) return onGo(found.id);

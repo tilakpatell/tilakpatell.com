@@ -94,6 +94,11 @@ export function build({ road, heightAt, rt, tier = 'high', backdrop = null }) {
   const rockY = heightAt(...REFUGE);
   refuge.group.position.set(REFUGE[0], rockY, REFUGE[1]);
   group.add(refuge.group);
+  // the fire come round the rock, lighting it and the two on it from below (the chapter's rock
+  // glows by its own shader, which the Road's house material hasn't: a light does it here)
+  const fireLight = new THREE.PointLight(0xff6a2a, 0, 18, 1.6);
+  fireLight.position.set(REFUGE[0] + 1.2, rockY + 1.2, REFUGE[1] - 1.5);
+  group.add(fireLight);
   const eagles = [kit.eagle(), kit.eagle()];
   for (const e of eagles) {
     e.group.visible = false;
@@ -116,7 +121,13 @@ export function build({ road, heightAt, rt, tier = 'high', backdrop = null }) {
   const up = new THREE.Vector3(0, 1, 0);
   const dir = new THREE.Vector3();
   const lashAt = new THREE.Vector3();
-  const inCracks = () => live(seen.since.cracks) && seen.local >= MARKS.cracks.at - 0.5 && seen.local < MARKS.eruption.at;
+  // (in the Sammath Naur from the cut till the eruption, and on a jump into the middle of it too: its
+  // beat long done, but the camera's still in the chamber while the walker is within its reach)
+  const inCracks = () => {
+    const t = seen.since.cracks;
+    if (t == null || seen.local < MARKS.cracks.at - 0.5 || seen.local >= MARKS.eruption.at) return false;
+    return live(t) || (t === Infinity && seen.local <= MARKS.cracks.at + (MARKS.cracks.reach ?? 0));
+  };
 
   return {
     group,
@@ -186,6 +197,7 @@ export function build({ road, heightAt, rt, tier = 'high', backdrop = null }) {
       });
       // the rock lit red from below as the fire comes round it
       refuge.glow(live(e) || e === Infinity ? 0.6 + 0.4 * erupt : 0);
+      fireLight.intensity = live(e) || e === Infinity ? (5 + 3 * erupt) * (1 + Math.sin(clock * 9.3) * 0.08 + Math.sin(clock * 14.1) * 0.05) : 0;
     },
     pose(id, at) {
       // (Gollum's figure is this stage's own: the line's is never drawn)

@@ -90,7 +90,8 @@ export function pose(ctx) {
   const seat = rig === 'seat';
   const yaw = clamp(look.yaw, seat ? LOOK_LIMIT.seat : LOOK_LIMIT.yaw);
   const pitch = clamp(look.pitch, seat ? LOOK_LIMIT.seat : LOOK_LIMIT.pitch);
-  const floor = (heightAt?.(at[0], at[2]) ?? -Infinity) + CLEAR;
+  // (kept over the land, but for a placed shot down in it: a chamber under the plain, `under`)
+  const floor = ctx.params?.under ? -Infinity : (heightAt?.(at[0], at[2]) ?? -Infinity) + CLEAR;
   const lifted = at[1] < floor ? floor - at[1] : 0;
   const stand = [at[0], at[1] + lifted, at[2]];
   const aim = looked(stand, [lookAt[0], lookAt[1] + lifted, lookAt[2]], yaw, pitch);

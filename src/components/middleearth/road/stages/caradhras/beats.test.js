@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BEATS } from './beats';
 import { sweepBeats } from '../fixtures/beats';
 import { LINES } from '../../voicelines';
+import { GRAB } from '../../creatures/watcher.rules';
 
 describe('Caradhras’ beats', () => {
   sweepBeats('caradhras', BEATS);
@@ -20,5 +21,8 @@ describe('Caradhras’ beats', () => {
     expect(by.doors.deed.choices.find((c) => c.right).label).toBe('Mellon');
     expect(by.doors.deed.lines.map((l) => LINES[l].who)).toEqual(['gandalf']);
     expect(by.watcher).toMatchObject({ rig: 'seat', cut: 0 });
+    // (the visitor hacks at the arm while it holds Frodo up, before Aragorn's cut)
+    expect(by.watcher.deed.at).toBeGreaterThanOrEqual(GRAB.lift);
+    expect(by.watcher.deed.at).toBeLessThan(GRAB.cut);
   });
 });

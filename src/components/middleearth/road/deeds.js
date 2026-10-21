@@ -18,7 +18,7 @@
 //     whose deed is undone (deeds: { beatId: state }): where the walk stops
 
 export const VERBS = ['press', 'hold', 'rhythm', 'choose'];
-export const WAIT = 20; // s the company waits for you, letting the road walk
+export const WAIT = 10; // s the company waits for you, letting the road walk (fifty-one deeds: at 20 s, a quarter of an hour of waiting)
 export const HOLD = 3; // s a hold takes, unless it says
 export const BEATS = 10; // strokes a rhythm takes, unless it says
 export const FADE = 0.35; // of a hold's progress lost a second, let go (a rhythm's, half that, once it stops)
