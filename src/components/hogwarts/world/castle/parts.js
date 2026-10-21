@@ -528,19 +528,31 @@ export function viaduct(ctx, s) {
 }
 
 // The covered bridge: a timber deck on trestles, posts both sides with
-// braces between, a slate roof on top; it creaks and sways (grounds/bridge.js
-// moves it), so it is laid out along +x from its own origin and the plan
-// places it
+// braces between, a slate roof on top. It is laid along +x from its own
+// origin (`from`), turned and tilted to `to` (coveredFrame): baked into the
+// mesh’s frame for the far castle, or left local (`ctx.local`) for its own
+// group, which grounds/bridge.js sways as you cross
+export function coveredFrame({ from, to }) {
+  const dx = to[0] - from[0];
+  const dz = to[2] - from[2];
+  const run = Math.hypot(dx, dz);
+  return { yaw: Math.atan2(-dz, dx), pitch: Math.atan2(to[1] - from[1], run), len: Math.hypot(run, to[1] - from[1]) };
+}
+
 export function covered(ctx, s) {
   const m = ctx.mesh;
-  const L = s.len;
+  const { yaw, pitch, len: L } = coveredFrame(s);
+  if (!ctx.local) m.frame({ origin: s.from, yaw, pitch });
   const w = s.width ?? 3.6;
   const posts = Math.max(2, Math.round(L / 3));
   const step = L / posts;
   const H = s.height ?? 3.2;
-  const P = (u, v, y) => [u, y, v];
+  // a point along the deck in the world: for the trestles’ ground
+  const along = (u) => {
+    const k = u / L;
+    return [s.from[0] + (s.to[0] - s.from[0]) * k, s.from[1] + (s.to[1] - s.from[1]) * k, s.from[2] + (s.to[2] - s.from[2]) * k];
+  };
   m.tone(TONES.timber);
-  // the deck, planked
   m.box('timber', { at: [L / 2, -0.35, 0], size: [L, 0.35, w], turn: 0 });
   for (let i = 0; i <= posts; i++) {
     const u = i * step;
@@ -548,27 +560,27 @@ export function covered(ctx, s) {
       m.tone(TONES.oak);
       m.box('timber', { at: [u, 0, (side * w) / 2], size: [0.28, H, 0.28] });
       if (i < posts && !ctx.far) {
-        // a rail at hand height and a brace across each bay, as the films’ bridge is open-sided
+        // a rail at hand height and a brace across each bay, the films’ bridge being open at its sides
         m.box('timber', { at: [u + step / 2, 1.0, (side * w) / 2], size: [step, 0.16, 0.18] });
-        m.beam('timber', P(u + 0.15, (side * w) / 2, 1.1), P(u + step - 0.15, (side * w) / 2, H - 0.25), 0.14, 0.18);
+        m.beam('timber', [u + 0.15, 1.1, (side * w) / 2], [u + step - 0.15, H - 0.25, (side * w) / 2], 0.14, 0.18);
       }
     }
-    // the trestle under it, every other post, down to the ground (or the water)
-    if (i % 2 === 0 && s.ground) {
-      const [gx, gz] = s.ground.at(u);
-      const g = ctx.ground(gx, gz);
-      const drop = s.ground.deck(u) - g;
+    // the trestle under it, every other post, down to the ground (or the gully’s floor)
+    if (i % 2 === 0) {
+      const [gx, gy, gz] = along(u);
+      const drop = gy - ctx.ground(gx, gz);
       if (drop > 0.6) {
         m.tone(TONES.oak);
-        for (const side of [1, -1]) m.box('timber', { at: [u, -drop - 0.5, (side * (w / 2 - 0.3))], size: [0.4, drop + 0.2, 0.4] });
+        for (const side of [1, -1]) m.box('timber', { at: [u, -drop - 0.8, side * (w / 2 - 0.3)], size: [0.4, drop + 0.5, 0.4] });
         m.box('timber', { at: [u, -1.2, 0], size: [0.3, 0.3, w], turn: 0 });
+        if (drop > 6 && !ctx.far) for (const side of [1, -1]) m.beam('timber', [u, -1.2, side * (w / 2 - 0.3)], [u, -drop * 0.6, -side * (w / 2 - 0.3)], 0.2);
       }
     }
   }
-  // the roof: tie beams, then a low slate gable over it all
   m.tone(TONES.oak);
   if (!ctx.far) for (let i = 0; i <= posts; i += 2) m.box('timber', { at: [i * step, H, 0], size: [0.22, 0.25, w + 0.3] });
   gable(ctx, { at: [L / 2, H + 0.2, 0], len: L, w: w + 0.4, h: 1.5, turn: 0, overhang: 0.5, ends: 'timber', tone: TONES.timber });
+  if (!ctx.local) m.frame(null);
 }
 
 // Flights of steps between landings [[x, y, z], …], `w` wide, a parapet on

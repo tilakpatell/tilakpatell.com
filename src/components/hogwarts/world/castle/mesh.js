@@ -13,6 +13,8 @@
 //
 //   createMesh() → {
 //     tone(rgb) / lit(k)    the tone and threshold the next faces take
+//     frame({ origin, yaw, pitch }) / frame(null)   a frame the next faces are laid in
+//                           (a bridge built along +x, placed): Euler 'YZX', as a group turned so
 //     quad(mat, a, b, c, d, { u, v })   four corners (counter-clockwise seen
 //                           from outside), uv spans in metres
 //     tri(mat, a, b, c)
@@ -25,7 +27,9 @@
 //                           (a window’s pane, a gable) standing up, facing +z turned by `turn`
 //     beam(mat, a, b, w, h)   a square-sectioned beam between two points (a brace, a rod)
 //     count(mat) → triangles so far
-//     geometries() → { [mat]: BufferGeometry }  }
+//     geometries() → { [mat]: BufferGeometry }
+//     merged({ glass }) → one BufferGeometry of every bucket (the far castle’s),
+//                           aLit kept for the `glass` materials and 2 (never lit) for the rest  }
 //   archOutline(w, h, { pointed, segs }) → the outline of an arched opening, [x, y] from its sill
 
 import * as THREE from 'three';
@@ -39,7 +43,21 @@ export function createMesh() {
     if (!b) buckets.set(mat, (b = { p: [], n: [], uv: [], c: [], lit: [] }));
     return b;
   };
+  // (a frame the next faces are laid in: turned by `pitch` about local z, then `yaw` about y, then moved to `origin`)
+  let frame = null;
+  const place = (v, move) => {
+    const { origin, cp, sp, cy, sy } = frame;
+    const x = v[0] * cp - v[1] * sp;
+    const y = v[0] * sp + v[1] * cp;
+    const z = v[2];
+    const out = [x * cy + z * sy, y, -x * sy + z * cy];
+    return move ? [out[0] + origin[0], out[1] + origin[1], out[2] + origin[2]] : out;
+  };
   const push = (b, p, n, uv) => {
+    if (frame) {
+      p = place(p, true);
+      n = place(n, false);
+    }
     b.p.push(p[0], p[1], p[2]);
     b.n.push(n[0], n[1], n[2]);
     b.uv.push(uv[0], uv[1]);
@@ -61,6 +79,11 @@ export function createMesh() {
     },
     lit(k) {
       lit = k;
+      return api;
+    },
+    // the frame the next faces are laid in (null: the world’s): a group’s, baked in
+    frame(f) {
+      frame = f ? { origin: f.origin ?? [0, 0, 0], cp: Math.cos(f.pitch ?? 0), sp: Math.sin(f.pitch ?? 0), cy: Math.cos(f.yaw ?? 0), sy: Math.sin(f.yaw ?? 0) } : null;
       return api;
     },
     tri(mat, a, b, c, uvs = [[0, 0], [1, 0], [0, 1]]) {
@@ -200,6 +223,33 @@ export function createMesh() {
     count: (mat) => (buckets.get(mat)?.p.length ?? 0) / 9,
     get materials() {
       return [...buckets.keys()];
+    },
+    merged({ glass = ['glass'] } = {}) {
+      let n = 0;
+      for (const b of buckets.values()) n += b.lit.length;
+      const p = new Float32Array(n * 3);
+      const nn = new Float32Array(n * 3);
+      const uv = new Float32Array(n * 2);
+      const c = new Float32Array(n * 3);
+      const lt = new Float32Array(n);
+      let k = 0;
+      for (const [mat, b] of buckets) {
+        p.set(b.p, k * 3);
+        nn.set(b.n, k * 3);
+        uv.set(b.uv, k * 2);
+        c.set(b.c, k * 3);
+        const shines = glass.includes(mat);
+        for (let i = 0; i < b.lit.length; i++) lt[k + i] = shines ? b.lit[i] : 2;
+        k += b.lit.length;
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+      g.setAttribute('normal', new THREE.BufferAttribute(nn, 3));
+      g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+      g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+      g.setAttribute('aLit', new THREE.BufferAttribute(lt, 1));
+      g.computeBoundingSphere();
+      return g;
     },
     geometries() {
       const out = {};

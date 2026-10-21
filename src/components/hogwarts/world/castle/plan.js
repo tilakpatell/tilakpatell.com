@@ -20,6 +20,7 @@
 //   DOORS: [{ id, place, at: [x, z], y, faces, w, h, leaves, room?, kind: 'room' | 'gate' }]
 //   footprints() → [{ id, kind: 'circle', at, r } | { id, kind: 'box', at, w, d, turn }]: what you can’t walk through
 //   floors() → [{ id, line: [[x, y, z], …], width }]: what you walk on that isn’t the ground (bridges, stairs)
+//   floorAt(floors, x, z, y) → the deck or step under a point near that height, or null
 
 import { CASTLE_FLOOR, placeById } from '../../rules/places';
 
@@ -35,7 +36,7 @@ export const BRIDGES = {
   viaduct: { from: [64, F, -115], to: [214, 38.4, -232] },
   covered: { from: [-117, F, -60], to: [-204, 37.4, -80] },
 };
-const across = ({ from, to }) => Math.atan2(to[0] - from[0], to[2] - from[2]) - Math.PI; // (a gate across the way: its towers either side)
+const across = ({ from, to }) => Math.atan2(to[0] - from[0], to[2] - from[2]) - Math.PI; // (a gate across the way: its towers either side; it faces along it, away from the castle)
 
 export const CLOCK = { at: [74, -40], w: 13, h: 46, face: { y: 36, r: 4.2, faces: ['right', 'left'] }, bay: { y: 15, w: 5.2, h: 15, faces: ['right'] } };
 
@@ -83,6 +84,7 @@ export const PLAN = [
   { kind: 'gatehouse', id: 'viaduct-gate', at: [BRIDGES.viaduct.from[0] - 3, BRIDGES.viaduct.from[2] + 2.3], turn: across(BRIDGES.viaduct), gap: 5.4, h: 16, arch: 8 },
   { kind: 'viaduct', id: 'viaduct', from: BRIDGES.viaduct.from, to: BRIDGES.viaduct.to, width: 5.4, span: 13 },
   { kind: 'gatehouse', id: 'bridge-gate', at: [BRIDGES.covered.from[0] + 3, BRIDGES.covered.from[2] + 0.7], turn: across(BRIDGES.covered), gap: 4.2, h: 14, arch: 6 },
+  { kind: 'covered', id: 'covered-bridge', from: BRIDGES.covered.from, to: BRIDGES.covered.to, width: 3.6, height: 3.2 },
   // the boathouse under the cliff and its stair up the face
   { kind: 'boathouse', id: 'boathouse', at: [-25, 55], len: 14, w: 9, h: 6, turn: -E, base: 1.2, jetty: 10 },
   {
@@ -115,9 +117,9 @@ const door = (id, o) => ({ id, place: o.place ?? id, at: o.at, y: o.y ?? F, face
 export const DOORS = [
   door('great-doors', { at: [50.2, 8], faces: E, w: 5, h: 9, room: 'greatHall' }),
   door('courtyard-door', { at: [13.2, -24], faces: E, w: 3.2, h: 5.6, room: 'staircase' }),
-  door('viaduct-gate', { at: [BRIDGES.viaduct.from[0] - 3, BRIDGES.viaduct.from[2] + 2.3], faces: across(BRIDGES.viaduct) + Math.PI / 2, w: 5.2, h: 7.4 }),
-  door('bridge-gate', { at: [BRIDGES.covered.from[0] + 3, BRIDGES.covered.from[2] + 0.7], faces: across(BRIDGES.covered) - Math.PI / 2, w: 4, h: 5.6 }),
-  door('boathouse', { at: [-25, 50.6], y: 1.2, faces: Math.PI, w: 2, h: 3, leaves: 1, room: 'boathouse' }),
+  door('viaduct-gate', { at: [BRIDGES.viaduct.from[0] - 3, BRIDGES.viaduct.from[2] + 2.3], faces: across(BRIDGES.viaduct) + Math.PI, w: 5.2, h: 7.4 }),
+  door('bridge-gate', { at: [BRIDGES.covered.from[0] + 3, BRIDGES.covered.from[2] + 0.7], faces: across(BRIDGES.covered) + Math.PI, w: 4, h: 5.6 }),
+  door('boathouse', { at: [-25, 47.4], y: 1.2, faces: Math.PI, w: 2, h: 3, leaves: 1, room: 'boathouse' }),
   door('owlery', { at: [-30, -262.4], y: 50, faces: S, w: 1.6, h: 3, leaves: 1, room: 'owlery' }),
   door('greenhouse-door', { at: [150, 29], y: null, faces: Math.PI, w: 1.8, h: 2.6 }),
 ].map((d) => ({ ...d, name: placeById(d.place)?.door ?? d.id }));
@@ -164,3 +166,32 @@ export function floors(plan = PLAN) {
 }
 
 export const partById = (id) => PLAN.find((p) => p.id === id) ?? null;
+
+// The floor under a point at about height `y`: the deck or the stair whose
+// line passes over it (within its width) nearest that height, or null. A
+// figure on the viaduct walks its deck, one under it walks the ravine.
+export function floorAt(list, x, z, y, { above = 1.2, below = 3 } = {}) {
+  let best = null;
+  let bestGap = Infinity;
+  for (const f of list)
+    for (let i = 1; i < f.line.length; i++) {
+      const [ax, ay, az] = f.line[i - 1];
+      const [bx, by, bz] = f.line[i];
+      const dx = bx - ax;
+      const dz = bz - az;
+      const l2 = dx * dx + dz * dz;
+      if (l2 < 1e-6) continue;
+      const t = ((x - ax) * dx + (z - az) * dz) / l2;
+      if (t < 0 || t > 1) continue;
+      const off = Math.hypot(x - ax - dx * t, z - az - dz * t);
+      if (off > f.width / 2) continue;
+      const h = ay + (by - ay) * t;
+      if (h > y + above || h < y - below) continue;
+      const gap = Math.abs(h - y);
+      if (gap < bestGap) {
+        bestGap = gap;
+        best = h;
+      }
+    }
+  return best;
+}
