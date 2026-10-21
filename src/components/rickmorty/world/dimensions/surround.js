@@ -274,5 +274,5 @@ export function surround({ R, d, kit, loader = null, blocks = [] }, world, laid)
   const crowd = createCrowd(kit, R, laid, { loader: gltf });
   const ready = Promise.all([...jobs, crowd.ready]).then(() => true);
   kit.track?.(ready);
-  return { ready, actions: { hop: () => crowd.hop(), turn: (to) => crowd.turn(to), crowd: () => crowd.counts() } };
+  return { ready, actions: { hop: () => crowd.hop(), turn: (to) => crowd.turn(to), show: (key, on) => crowd.show(key, on), crowd: () => crowd.counts() } };
 }

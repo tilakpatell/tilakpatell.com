@@ -247,7 +247,8 @@ describe('the world round a place', () => {
     const { R } = fakeRoom();
     const { kit, loader } = fakeKit();
     const s = surround(ctx(R, kit, d, loader), { look: LOOK }, laidFor(d));
-    expect(Object.keys(s.actions)).toEqual(expect.arrayContaining(['hop', 'turn', 'crowd']));
+    expect(Object.keys(s.actions)).toEqual(expect.arrayContaining(['hop', 'turn', 'show', 'crowd']));
+    s.actions.show('all', false);
     s.actions.hop();
     s.actions.turn([0, 0]);
     expect(s.actions.crowd()).toEqual({});

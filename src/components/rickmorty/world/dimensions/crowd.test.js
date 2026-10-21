@@ -245,6 +245,19 @@ describe('a place’s crowd', () => {
     expect(g.visible).toBe(false);
   });
 
+  it('goes all at once as the place says (a raid scatters the guests), and comes back', async () => {
+    const { kit, R, ticks } = fakes();
+    const crowd = createCrowd(kit, R, laid(), { loader: copyLoader() });
+    await crowd.ready;
+    crowd.show('all', false);
+    tick(ticks, 1, { done: [] });
+    expect(instances(R).length).toBeGreaterThan(1);
+    for (const m of instances(R)) expect(m.visible, m.userData.crowd).toBe(false);
+    crowd.show('all', true);
+    tick(ticks, 2, { done: [] });
+    for (const m of instances(R)) expect(m.visible, m.userData.crowd).toBe(true);
+  });
+
   it('holds each mesh to the bounds its layout gives, so a walker never pops out of view', async () => {
     const { kit, R } = fakes();
     await createCrowd(kit, R, laid(), { loader: copyLoader() }).ready;

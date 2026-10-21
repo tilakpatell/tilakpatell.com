@@ -164,14 +164,18 @@ export async function buildSquanch(kit) {
     }
     glare.intensity = raiding ? 2 + Math.sin(t * 7) : 0;
   });
+  // (the world's guests, ./worlds2.js's, scatter with the row's)
+  const guests = (on) => area.actions.show?.('all', on);
   area.actions = {
     ...area.actions,
     raid: () => {
       raiding = true;
+      guests(false);
       S.hunt(true); // the agents out of their portals, after him
     },
     calm: () => {
       raiding = false;
+      guests(true);
       S.calm();
     },
   };

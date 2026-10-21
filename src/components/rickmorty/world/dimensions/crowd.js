@@ -17,7 +17,7 @@
 // a place's people do) and the place (`show`).
 //
 // createCrowd(kit, R, laid, { loader }) → { ready, hop(), turn(to | null),
-//   show(key, on), counts() }
+//   show(key | 'all', on), counts() }
 //   kit: the world's (need, track, cast, adopt); R: the place's room kit
 //   (its group, own, tick); laid: outskirtsOf's
 
@@ -39,7 +39,7 @@ const ROW_EACH = 1.1;
 const DISC_EACH = 0.75;
 
 const isOn = (e, state, shown) => {
-  if (shown.get(e.key) === false) return false;
+  if (shown.get('all') === false || shown.get(e.key) === false) return false;
   const done = state?.done ?? [];
   if (e.when) return e.when(state);
   return (!e.until || !done.includes(e.until)) && (!e.after || done.includes(e.after));
