@@ -95,6 +95,7 @@ A session takes the next lane whose state allows it, runs until its budget, merg
 - **A stage's pools** go in a pure list its ground and its props both read (the Marshes': `stages/marshes/water.js`): the ground sinks an `island` hollow for each and `clear`s it (scatter.js plants nothing in a clear ring), the props set each one's level just under its rim, the scene lays a `createWater` sheet at it. Without the `clear` the grass grows up through the water and the pool is lost.
 - A new relief layer goes after the ones a stage already has: each layer's seed is its place in the list, so one put in the middle moves every layer after it.
 - `createWater({ murk })` for a bog's water; 0 is the clear water every other stage has.
+- **A ribbon on the ground** (Gorgoroth's cracks, `stages/gorgoroth/plain.js`) is wound to face up and lifted a little over the land: the drawn ground reads the land a few centimetres off it, and a face turned down is culled from every camera.
 
 ## The Road’s look, since R3 (for every lane after)
 
