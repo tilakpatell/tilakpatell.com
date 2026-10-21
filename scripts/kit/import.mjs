@@ -23,7 +23,7 @@
 // order, each as full as fits; only a model over it on its own has its bark
 // colour halved, in every family that wears that bark.
 //
-//   SOURCES[pack] → { dirs, ext?, title, wind?, atlas? }
+//   SOURCES[pack] → { dirs, ext?, title, wind?, atlas?, lod? } (lod: { <kind>: { ratio, error } } over LOD's)
 //   importPack({ pack, from, out, families, log, dry, cap }) → manifest   (cap: a file's bytes, BUDGET.file)
 
 import { Document, Logger, NodeIO, PropertyType } from '@gltf-transform/core';
@@ -51,7 +51,7 @@ export const SOURCES = {
   naturemega: { dirs: ['glTF'], ext: ['.gltf'], title: 'Stylized Nature MegaKit', wind: true },
   nature: { dirs: ['glTF'], ext: ['.gltf'], title: 'Stylized Nature Pack', sway: true },
   space: { dirs: ['Characters/GLTF', 'Environment/GLTF', 'Items/GLTF', 'Vehicles/GLTF'], ext: ['.gltf'], title: 'Ultimate Space Kit', atlas: 'Atlas' },
-  city: { dirs: ['Exports/glTF (Godot)'], title: 'Downtown City MegaKit' },
+  city: { dirs: ['Exports/glTF (Godot)'], title: 'Downtown City MegaKit', lod: { building: { ratio: 0.05, error: 0.3 } } },
   farm: { dirs: ['../farm-glb'], ext: ['.glb'], title: 'Farm Animals' },
   street: { dirs: ['../street-glb'], ext: ['.glb'], title: 'Street Pack' },
   furniture: { dirs: ['../furniture-glb'], ext: ['.glb'], title: 'Furniture Pack' },
@@ -245,10 +245,12 @@ function thinned(doc, prim, seed) {
 // stops at 80-96 %; let across seams ('Permissive', an error of 0.1-0.4 %
 // of the tree's size there) it reaches the quarter. Through gltf-transform's
 // simplifyPrimitive, which passes meshopt no flags but LockBorder.
+// A pack may ask a kind for less (`lod` in SOURCES: the city's buildings, seen
+// by the hundred past 60 m, a twentieth of themselves).
 const PERMISSIVE = { ...MeshoptSimplifier, simplify: (i, p, s, n, e, flags = []) => MeshoptSimplifier.simplify(i, p, s, n, e, [...flags, 'Permissive']) };
-function simplified(prim) {
+function simplified(prim, lod = LOD) {
   const out = prim.clone();
-  simplifyPrimitive(out, { simplifier: PERMISSIVE, ratio: LOD.ratio, error: LOD.error, lockBorder: false });
+  simplifyPrimitive(out, { simplifier: PERMISSIVE, ratio: lod.ratio, error: lod.error, lockBorder: false });
   if (out.getIndices().getCount() >= 3) return out;
   out.dispose();
   return null;
@@ -257,7 +259,7 @@ function simplified(prim) {
 // A model's LOD1 beside it: its node tree again (`<node>.lod1`, the same
 // transforms), each mesh `<name>.lod1` with its parts thinner. Returns the
 // LOD1 parts' triangles in the order of the model's parts.
-function addLod1(doc, scene, model) {
+function addLod1(doc, scene, model, aim = LOD) {
   const tris1 = [];
   let part = 0;
   const copy = (node, name) => {
@@ -267,7 +269,7 @@ function addLod1(doc, scene, model) {
       const out = doc.createMesh(`${model.name}.lod1`);
       for (const prim of mesh.listPrimitives()) {
         const leafy = prim.getExtras().part === 'leaves' && CROWNED.has(model.kind);
-        const p = leafy ? thinned(doc, prim, seedOf(model.name) + part) : simplified(prim);
+        const p = leafy ? thinned(doc, prim, seedOf(model.name) + part) : simplified(prim, aim);
         part++;
         tris1.push(p ? trisOf(p) : 0);
         if (p) out.addPrimitive(p);
@@ -348,7 +350,7 @@ async function buildFile(io, group, defs, source, halve) {
   const models = [];
   for (const model of group.models) {
     const prims = primsOf(model.node);
-    const tris1 = model.rigged ? [] : addLod1(doc, scene, model);
+    const tris1 = model.rigged ? [] : addLod1(doc, scene, model, { ...LOD, ...source.lod?.[model.kind] });
     models.push({
       name: model.name,
       positions: positionsOf(model.node),
