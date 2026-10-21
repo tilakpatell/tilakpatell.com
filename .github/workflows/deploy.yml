@@ -33,9 +33,11 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      # (whether the repository holds the Cloudflare token: a step's `if`
-      # can't read a secret, and this says only true or false)
+      # (whether the repository holds the Cloudflare token: an `if` can't
+      # read a secret, and this says only true or false)
       CLOUDFLARE_ON: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+    outputs:
+      cloudflare: ${{ env.CLOUDFLARE_ON }}
     steps:
       - uses: actions/checkout@v7
 
@@ -104,19 +106,43 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v5
 
-      # The same build to Cloudflare, the Worker tilakpatell-com
-      # (wrangler.jsonc: the files and nothing else, and the account), once
-      # the repository has the secret CLOUDFLARE_API_TOKEN (Workers Scripts:
-      # Edit), docs/decisions/2026-10-21-cloudflare-for-the-site.md. (Until
-      # 2026-10-21 it waited for a variable with the account's id too, and a
-      # repository given the id another way skipped the upload: the id is in
-      # wrangler.jsonc now.) After GitHub Pages, so a failure here never holds
-      # the site back while the domain still points there. Wrangler sends
-      # only the files the Worker doesn't hold already (the first time,
-      # 11,362 files in under four minutes). (Its free plan takes 20,000
-      # files and 25 MiB a file: on 2026-10-21 wrangler counted 12,279 of
-      # dist/'s 11,565, and none over.)
-      - if: ${{ env.CLOUDFLARE_ON == 'true' }}
-        env:
+  # The same build to Cloudflare, the Worker tilakpatell-com (wrangler.jsonc:
+  # the files and nothing else, and the account), in a job of its own so the
+  # repository's Deployments list shows each upload under `cloudflare`, as it
+  # shows GitHub Pages', with the site's address
+  # (docs/decisions/2026-10-21-cloudflare-for-the-site.md). It runs once the
+  # repository has the secret CLOUDFLARE_API_TOKEN, and after GitHub Pages,
+  # so a failure here never holds that back. The files are the ones GitHub
+  # Pages was sent (its artifact, `github-pages`, the build's dist/ as a tar):
+  # built once, sent twice. Wrangler sends only the files the Worker doesn't
+  # hold already (the first time, 11,362 files in under four minutes; after,
+  # 27 s). (Its free plan takes 20,000 files and 25 MiB a file: on 2026-10-21
+  # wrangler counted 12,279 of dist/'s 11,565, and none over.)
+  cloudflare:
+    needs: build-and-deploy
+    if: ${{ needs.build-and-deploy.outputs.cloudflare == 'true' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: cloudflare
+      url: https://tilakpatell.com
+    steps:
+      # (wrangler.jsonc alone: the site's files come from the artifact)
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: wrangler.jsonc
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: github-pages
+          path: ${{ runner.temp }}/pages
+
+      - run: mkdir -p dist && tar -xf "$RUNNER_TEMP/pages/artifact.tar" -C dist
+
+      - env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: npx --yes wrangler@4.149.0 deploy
