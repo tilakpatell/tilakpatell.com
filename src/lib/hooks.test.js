@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { watchVisible } from './hooks';
+import { prefersReducedMotion, watchAskedOnSite, watchVisible } from './hooks';
 
 // a document as far as page visibility goes
 function page(hidden = false) {
@@ -33,5 +33,32 @@ describe('watching whether the page is showing', () => {
     stop();
     doc.flip(true);
     expect(seen).toEqual([true]);
+  });
+});
+
+describe('reduced motion', () => {
+  // (tests run with no browser: a page is a stand-in <html>)
+  const withPage = (dataset, fn) => {
+    globalThis.document = { documentElement: { dataset } };
+    try {
+      fn();
+    } finally {
+      delete globalThis.document;
+    }
+  };
+
+  it('follows the visitor’s own setting on the site as well as the system’s', () => {
+    withPage({ motion: 'reduced' }, () => expect(prefersReducedMotion()).toBe(true));
+    withPage({}, () => expect(prefersReducedMotion()).toBe(false));
+  });
+
+  it('is off with no page at all', () => {
+    expect(prefersReducedMotion()).toBe(false);
+  });
+
+  it('lets a watcher go', () => {
+    const stop = watchAskedOnSite(() => {});
+    expect(typeof stop).toBe('function');
+    stop();
   });
 });

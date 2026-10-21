@@ -22,7 +22,7 @@ export default function StartChoice({ onPick }) {
   }, []);
   return (
     <div className="start-choice" role="dialog" aria-modal="true" aria-labelledby="start-title">
-      <div className="start-card">
+      <div className="start-card dialog">
         <h2 id="start-title" className="start-title">
           How would you like to look around?
         </h2>

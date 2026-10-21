@@ -1,10 +1,11 @@
 // The way into the Road: the save, the resume card and the first visit.
 // Pure, beside the module and the page that use it.
 //
-//   SAVE: the store’s key and shape version; a save is { v, s, ridden, at, walked }
+//   SAVE: the store’s key and shape version; a save is { v, s, ridden, at, walked, on }
 //     (walked: the share of the Road walked, not jumped by the ribbon or
-//     skipped, so skipping to the end doesn’t count as riding it)
-//   savedAt(s, now, ridden, walked) → the save to write
+//     skipped, so skipping to the end doesn’t count as riding it; on: when
+//     it was first ridden, for the journal, kept from then on)
+//   savedAt(s, now, ridden, walked, on) → the save to write
 //   resume(save, now) → { s, showTitle }: a world mounted again within a
 //     minute of its last save (a lost context put back) carries on without
 //     its stage’s title card a second time; a ride saved at its end starts
@@ -27,7 +28,7 @@ const RESUME_QUIET = 60_000; // ms
 const OFFER_FROM = sOf(STAGES, 'hobbiton', 40);
 const RIDDEN = 2 / 3;
 
-export const savedAt = (s, now, wasRidden, walked = 0) => ({ v: SAVE.version, s, ridden: Boolean(wasRidden), at: now, walked });
+export const savedAt = (s, now, wasRidden, walked = 0, on = null) => ({ v: SAVE.version, s, ridden: Boolean(wasRidden), at: now, walked, on: wasRidden ? (on ?? now) : null });
 
 export function resume(save, now) {
   // (none, or a ride that reached the Havens: Bag End again)

@@ -14,6 +14,7 @@ import Gauntlet from './Gauntlet';
 import AutobotMark from '../AutobotMark';
 import DecepticonMark from '../DecepticonMark';
 import { audioContext } from '../../lib/audio';
+import { ellipseLength } from '../../lib/ellipse';
 import { STONES, VIEW } from './stones';
 import { DIMENSIONS } from '../rickmorty/dimensions';
 import PortalSwirl from '../rickmorty/PortalSwirl';
@@ -94,6 +95,10 @@ function StarWars() {
 }
 
 const RING_WORDS = 'Ash nazg durbatulûk · ash nazg gimbatul · ash nazg thrakatulûk · agh burzum-ishi krimpatul ·';
+// once round the band from its left: told the band’s length, the whole line fits
+const RING_BAND = [104, 46];
+const RING_PATH = `M ${-RING_BAND[0]} 0 A ${RING_BAND[0]} ${RING_BAND[1]} 0 1 1 ${RING_BAND[0]} 0 A ${RING_BAND[0]} ${RING_BAND[1]} 0 1 1 ${-RING_BAND[0]} 0`;
+const RING_LENGTH = ellipseLength(...RING_BAND).toFixed(1);
 
 function MiddleEarth() {
   const { speakFriend } = useFun();
@@ -124,13 +129,15 @@ function MiddleEarth() {
                 <stop offset="0.7" stopColor="#a8741f" />
                 <stop offset="1" stopColor="#f6d27a" />
               </linearGradient>
-              <path id="card-ring-path" d="M -104 0 A 104 46 0 1 1 104 0 A 104 46 0 1 1 -104 0" />
+              <path id="card-ring-path" d={RING_PATH} />
             </defs>
             <ellipse cx="0" cy="5" rx="114" ry="54" fill="none" stroke="#000" strokeOpacity="0.3" strokeWidth="15" />
             <ellipse cx="0" cy="0" rx="114" ry="54" fill="none" stroke="url(#card-ring-gold)" strokeWidth="15" />
             <ellipse cx="0" cy="-3" rx="109" ry="49" fill="none" stroke="#fff6d6" strokeWidth="1.2" opacity="0.55" />
             <text className="card-ring-text">
-              <textPath href="#card-ring-path">{RING_WORDS}</textPath>
+              <textPath href="#card-ring-path" textLength={RING_LENGTH} lengthAdjust="spacingAndGlyphs">
+                {RING_WORDS}
+              </textPath>
             </text>
           </svg>
         </div>

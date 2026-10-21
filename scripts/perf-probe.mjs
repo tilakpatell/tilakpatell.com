@@ -92,8 +92,10 @@ function recorder() {
       } finally {
         const ms = performance.now() - t0;
         cur.glMs += ms;
-        // (the slowest call of the frame, named: what a stall waited in)
-        if (ms > 20 && !cur.slow.includes(name)) cur.slow += `${name} ${Math.round(ms)}ms `;
+        // (the slowest call of the frame, named: what a stall waited in, and
+        // whose canvas it was, where the page draws on more than one)
+        const who = this?.canvas?.className ? `@${String(this.canvas.className).split(' ')[0]}` : '';
+        if (ms > 20 && !cur.slow.includes(`${name}${who} `)) cur.slow += `${name}${who} ${Math.round(ms)}ms `;
         // (who asked, for the slow ones: the stack's first frames outside three)
         if (ms > 20) {
           const at = (new Error().stack ?? '')
@@ -103,7 +105,7 @@ function recorder() {
             .filter((l) => !l.includes('recorder') && !l.includes('three.core') && !l.includes('deps/three.js'))
             .slice(0, 3)
             .join(' < ');
-          const key = `${name}: ${at}`;
+          const key = `${name}${who}: ${at}`;
           stacks.set(key, (stacks.get(key) ?? 0) + ms);
         }
         add?.(a);
@@ -430,6 +432,42 @@ const JOURNEYS = {
     mark('end');
   },
   // planet flight: end
+  // a first visit's intro, from the address: the welcome, the crawl (CRAWL
+  // seconds of it, 12 by default, then skipped), the cockpit (INTRO_RIDE
+  // picks the vehicle: falcon, xwing, cruiser, rv) sat in and looked about,
+  // the launch through the flash, and the universe map it comes out on
+  async intro(page, mark) {
+    mark('load');
+    await page.goto(`${this.base}/${this.q}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.welcome .btn-primary', { timeout: 120000 });
+    mark('welcome');
+    await wait(page, 2500);
+    await page.click('.welcome .btn-primary');
+    mark('crawl');
+    await wait(page, Number(process.env.CRAWL ?? 12) * 1000);
+    await page.keyboard.press('Escape');
+    mark('board');
+    await page.waitForSelector('.cockpit', { timeout: 240000 });
+    if (process.env.INTRO_RIDE) {
+      const n = ['falcon', 'xwing', 'cruiser', 'rv'].indexOf(process.env.INTRO_RIDE) + 1;
+      if (n > 0) await page.keyboard.press(String(n));
+    }
+    await page.waitForSelector('.cockpit[data-ready]', { timeout: 240000 });
+    mark('seated');
+    await wait(page, 3000);
+    mark('look');
+    for (let i = 0; i <= 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      await page.mouse.move(vw / 2 + Math.cos(a) * vw * 0.35, vh / 2 + Math.sin(a) * vh * 0.25);
+      await wait(page, 120);
+    }
+    mark('launch');
+    await page.keyboard.press('Space');
+    await page.waitForSelector('.cockpit', { state: 'detached', timeout: 120000 });
+    mark('out');
+    await wait(page, 6000);
+    mark('end');
+  },
   async universe(page, mark) {
     mark('load');
     await page.goto(`${this.base}/${this.q}#/universe`, { waitUntil: 'domcontentloaded' });
@@ -732,9 +770,10 @@ try {
     const ctx = await browser.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: vdpr || 1 });
     // (Vite's first transform of the whole site, on a busy machine, runs past Playwright's 30 s)
     ctx.setDefaultNavigationTimeout(240000);
-    await ctx.addInitScript(() => {
+    await ctx.addInitScript((firstVisit) => {
       const set = (k, v) => window.localStorage.setItem(k, v);
-      set('tp-intro', '1');
+      // (the intro's journey is a first visit: the intro not yet seen)
+      if (!firstVisit) set('tp-intro', '1');
       set('tp-start', '"universe"');
       set('tp-sound', 'off');
       set('tp-worlds', JSON.stringify('load'));
@@ -748,7 +787,7 @@ try {
       // a software GL, which it otherwise leaves out for the flat one)
       window.sessionStorage.setItem('tp-me-opening', '1');
       set('tp-map3d', 'force');
-    });
+    }, name === 'intro');
     if (trace) await ctx.addInitScript(() => (window.__probeTrace = true));
     await ctx.addInitScript(recorder);
     const page = await ctx.newPage();

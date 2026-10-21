@@ -11,6 +11,7 @@ import { chapter as findChapter, neighbours, stopOf } from '../components/middle
 import { hidden as hiddenPlace } from '../components/middleearth/hidden';
 import { shouldOpen } from '../components/middleearth/opening';
 import { STOPS } from '../components/middleearth/road';
+import { bookPageFor } from '../components/middleearth/redbook/routes';
 import WorldSwitcher from '../components/worlds/WorldSwitcher';
 import WorldPhotos from '../components/worlds/WorldPhotos';
 import Scenes from '../components/worlds/Scenes';
@@ -205,8 +206,9 @@ export default function MiddleEarth() {
     flight.current = setTimeout(arrived, walk);
     return undefined;
   };
+  // (the map hub's own address since the Red Book took /middle-earth)
   const toMap = () => {
-    navigate('/middle-earth');
+    navigate('/middle-earth/map');
     window.scrollTo(0, 0);
   };
   // a place in the address that isn't on the map: the map itself
@@ -252,8 +254,11 @@ export default function MiddleEarth() {
 
       {here && (
         <div className="me-bar shell relative z-20">
-          <button type="button" className="btn btn-ghost btn-sm me-bar-back" onClick={toMap}>
-            <span aria-hidden="true">←</span> The map
+          <button type="button" className="btn btn-ghost btn-sm me-bar-back" onClick={() => navigate(`/middle-earth?page=${bookPageFor(here.id)}`)}>
+            <span aria-hidden="true">←</span> The Red Book
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm me-bar-map" onClick={toMap}>
+            The map
           </button>
           <p className="me-bar-where">
             <span className="eyebrow">Middle-earth</span> <b>{here.name}</b>
@@ -369,7 +374,7 @@ export default function MiddleEarth() {
           </h2>
           <p className="lead mt-4 max-w-[56ch]">The road the Ring took, from a party in Hobbiton to the fire it was made in. Step along it.</p>
           <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.6fr)] lg:gap-12">
-            <figure className="me-map-frame m-0" data-tour="me-map">
+            <figure className="me-map-frame m-0">
               <MiddleEarthMap step={step} />
             </figure>
             <div className="me-road card">
@@ -546,6 +551,12 @@ export default function MiddleEarth() {
         </Suspense>
       )}
 
+      {here?.id === 'minas-tirith' && (
+        <Suspense fallback={null}>
+          <Rush level="houses" />
+        </Suspense>
+      )}
+
       {here?.id === 'edoras' && (
         <Suspense fallback={<div className="shire-stage" aria-hidden="true" />}>
           <EdorasWorld onLeave={toMap} />
@@ -576,6 +587,9 @@ export default function MiddleEarth() {
                   The map
                 </button>
               )}
+              <button type="button" className="btn btn-ghost" onClick={() => navigate(`/middle-earth?page=${bookPageFor(here.id)}`)}>
+                The Red Book
+              </button>
             </div>
             <WorldSwitcher className="mt-8" />
           </div>

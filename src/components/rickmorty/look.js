@@ -1,7 +1,8 @@
 // The Rick and Morty pages’ look outside their worlds (components/worlds/
 // looks.js): the cruiser flying down the page (./cruiser3d.js), the galaxy
 // behind it (./GalaxyBackdrop.jsx) and the planets. Painted, as the worlds
-// are: the show’s flat colours, toon-shaded and inked; the palette the
+// are: the show’s flat colours, toon-shaded, the cruiser and its crew
+// outlined by the hull (lib/three/ink.js); the palette the
 // cruiser’s and the backdrop’s. Each is a small renderer of its own with no
 // tone mapper and no bloom: its colours are written as they are to be seen,
 // over the page.

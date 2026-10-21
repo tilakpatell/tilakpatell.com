@@ -2,7 +2,7 @@
 // clock, a ghost its fire flies through and Walt's magnet holding the other
 // side's fighters. Pure (no three.js), so it's tested in Node; the galaxy's
 // war (galaxy/warfront.js) steps its battle through stepBattle, and the
-// galaxy's powers (galaxy/powers.js) hold fighters with holdFighters and
+// galaxy's powers (powers.js) hold fighters with holdFighters and
 // land their own shots through the battle's own hit() (shipPowers.js's
 // shotAt), so a power's damage on a battle is a shot's: its objectives'
 // shared tally, its shields and its aces all as the guns find them.

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { RiSwordFill } from 'react-icons/ri';
 import Emblem from './Emblem';
 import { SIDES, WARS } from './sides';
-import { ago, areaLines, battleLine, campaignLine, feedOf, newsLine, nextOpLine, oathOf, orderLine, partLine, recordLine, resultLine, standing, whose } from './warText';
+import { ago, areaLines, battleLine, campaignLine, feedOf, newsLine, nextOpLine, oathOf, orderAim, orderLeft, orderLine, partLine, recordLine, resultLine, standing, whose } from './warText';
 import { nearestBattle } from './warMap';
 import { templateFor } from './battles';
 import { groundBattle } from './gameLevels';
@@ -14,11 +14,15 @@ import { jumpSeconds, systemById } from './systems';
 // your crew or hero would pick outlined) and your rank, record and part in
 // it, and a way to fight in it if it isn't your war already; then its phase
 // and the next offensive, the campaign's result once it's in (or the one
-// before's, early in the next), each side's order and its deadline, the nearest battle to join, what's happened (what's
-// new since you last looked marked), the battles on now, and who holds each
-// area. And, for one system, its place in the war with the battle on there
-// and the ground battle to fight it on. The words are warText.js's; the page
-// keeps the oath (allegiance.js).
+// before's, early in the next), each side's order and its deadline (one card
+// where both name the same system), the nearest battle to join, the latest of
+// what's happened (what's new since you last looked marked; the rest folded
+// away), and, folded under 'The war in full', the battles on now and who holds
+// each area. And, for one system, its place in the war with the battle on
+// there and the ground battle to fight it on. The words are warText.js's; the
+// page keeps the oath (allegiance.js).
+
+const FEED_SHOWN = 3; // (what's happened, the latest: the rest under a fold)
 
 // the oath to a side of a war, for both
 export function Oath({ oath, suggested, record, onSwear }) {
@@ -58,6 +62,32 @@ export default function WarCard({ table, now, oath, viewOath, suggested, record,
   const near = yours ? nearestBattle(table, current, side) : null;
   const feed = feedOf(table.events);
   const fresh = seen == null ? 0 : feed.filter((e) => e.at > seen).length;
+  // each side's order, and whether the two name one system (their card one, its bar and its standing once)
+  const orders = [w.liberator, w.raider].flatMap((s) => {
+    const o = table.orders?.[s];
+    return o && byId[o.sys] ? [{ s, o, row: byId[o.sys] }] : [];
+  });
+  const shared = orders.length === 2 && orders[0].o.sys === orders[1].o.sys;
+  const sameTime = shared && Math.abs(orders[0].o.until - orders[1].o.until) < 60e3;
+  const news = (e) => {
+    const line = (
+      <>
+        <span>{newsLine(e)}</span>
+        <time dateTime={new Date(e.at).toISOString()}>{ago(now - e.at)}</time>
+      </>
+    );
+    return (
+      <li key={`${e.k}:${e.type}:${e.sys ?? e.area ?? e.phase}`} data-new={(seen != null && e.at > seen) || undefined} style={{ '--side': SIDES[e.by]?.colour }}>
+        {e.sys && byId[e.sys] ? (
+          <button type="button" onClick={() => onPick(e.sys)}>
+            {line}
+          </button>
+        ) : (
+          <p>{line}</p>
+        )}
+      </li>
+    );
+  };
   return (
     <section className="holomap-warcard" aria-label={w.name}>
       <Oath oath={viewOath} suggested={yours ? suggested : null} record={record} onSwear={onSwear} />
@@ -85,28 +115,44 @@ export default function WarCard({ table, now, oath, viewOath, suggested, record,
         </div>
       )}
 
-      {[w.liberator, w.raider].some((s) => table.orders?.[s]) && (
+      {shared && (
         <ul className="holomap-orders" aria-label="Each side’s order">
-          {[w.liberator, w.raider].map((s) => {
-            const o = table.orders?.[s];
-            const row = o && byId[o.sys];
-            if (!row) return null;
-            return (
-              <li key={s} data-yours={s === side || undefined}>
-                <button type="button" className="holomap-order" onClick={() => onPick(row.id)} style={pushOf(row, w.liberator)}>
-                  <span className="holomap-order-k" style={{ '--side': SIDES[s].colour }}>
-                    <Emblem side={s} /> {s === side ? 'Your order' : `${whose(s)} order`}
-                    {row.major && ' · ★ major order'}
-                  </span>
-                  <span className="holomap-order-t">{orderLine(o, now)}</span>
-                  <span className="holomap-order-bar" aria-hidden="true">
-                    <span />
-                  </span>
-                  <span className="holomap-order-n">{standing(row, now)}</span>
-                </button>
-              </li>
-            );
-          })}
+          <li data-yours={orders.some((x) => x.s === side) || undefined}>
+            <button type="button" className="holomap-order" onClick={() => onPick(orders[0].row.id)} style={pushOf(orders[0].row, w.liberator)}>
+              <span className="holomap-order-k">{orders[0].row.major ? '★ Both sides’ major order' : 'Both sides’ order'}</span>
+              {orders.map(({ s, o }) => (
+                <span key={s} className="holomap-order-t holomap-order-side" data-yours={s === side || undefined} style={{ '--side': SIDES[s].colour }}>
+                  <Emblem side={s} />
+                  <span className="sr-only">{s === side ? 'Your order' : `${whose(s)} order`}: </span>
+                  {sameTime ? orderAim(o) : orderLine(o, now)}
+                </span>
+              ))}
+              {sameTime && <span className="holomap-order-n">{orderLeft(orders[0].o, now)}</span>}
+              <span className="holomap-order-bar" aria-hidden="true">
+                <span />
+              </span>
+              <span className="holomap-order-n">{standing(orders[0].row, now)}</span>
+            </button>
+          </li>
+        </ul>
+      )}
+      {!shared && orders.length > 0 && (
+        <ul className="holomap-orders" aria-label="Each side’s order">
+          {orders.map(({ s, o, row }) => (
+            <li key={s} data-yours={s === side || undefined}>
+              <button type="button" className="holomap-order" onClick={() => onPick(row.id)} style={pushOf(row, w.liberator)}>
+                <span className="holomap-order-k" style={{ '--side': SIDES[s].colour }}>
+                  <Emblem side={s} /> {s === side ? 'Your order' : `${whose(s)} order`}
+                  {row.major && ' · ★ major order'}
+                </span>
+                <span className="holomap-order-t">{orderLine(o, now)}</span>
+                <span className="holomap-order-bar" aria-hidden="true">
+                  <span />
+                </span>
+                <span className="holomap-order-n">{standing(row, now)}</span>
+              </button>
+            </li>
+          ))}
         </ul>
       )}
 
@@ -129,53 +175,44 @@ export default function WarCard({ table, now, oath, viewOath, suggested, record,
             What’s happened{fresh > 0 && <span className="holomap-new">{fresh} new since you last looked</span>}
           </p>
           <ol aria-live="polite" aria-relevant="additions">
-            {feed.map((e) => {
-              const line = (
-                <>
-                  <span>{newsLine(e)}</span>
-                  <time dateTime={new Date(e.at).toISOString()}>{ago(now - e.at)}</time>
-                </>
-              );
-              return (
-                <li key={`${e.k}:${e.type}:${e.sys ?? e.area ?? e.phase}`} data-new={(seen != null && e.at > seen) || undefined} style={{ '--side': SIDES[e.by]?.colour }}>
-                  {e.sys && byId[e.sys] ? (
-                    <button type="button" onClick={() => onPick(e.sys)}>
-                      {line}
-                    </button>
-                  ) : (
-                    <p>{line}</p>
-                  )}
-                </li>
-              );
-            })}
+            {feed.slice(0, FEED_SHOWN).map(news)}
           </ol>
+          {feed.length > FEED_SHOWN && (
+            <details className="holomap-fold">
+              <summary>{feed.length - FEED_SHOWN} earlier</summary>
+              <ol>{feed.slice(FEED_SHOWN).map(news)}</ol>
+            </details>
+          )}
         </section>
       )}
 
-      {battles.length > 0 && (
-        <ul className="holomap-battles" aria-label="The battles on now">
-          {battles.map((row) => (
-            <li key={row.id} data-attack={row.attack ? '' : undefined}>
-              <button type="button" onClick={() => onGo(row.id)}>
-                <span className="holomap-battles-t">
-                  {templateFor(row.id, table.war).name}
-                  {row.id === current ? ' (here)' : yours ? ` · ${jumpSeconds(systemById(current), systemById(row.id)).toFixed(1)} s` : ''}
-                </span>
-                <span className="holomap-battles-n">{battleLine(row, now, side)}</span>
-                <span className="holomap-battles-n">{standing(row, now)}</span>
-              </button>
+      <details className="holomap-fold holomap-full">
+        <summary>The war in full</summary>
+        {battles.length > 0 && (
+          <ul className="holomap-battles" aria-label="The battles on now">
+            {battles.map((row) => (
+              <li key={row.id} data-attack={row.attack ? '' : undefined}>
+                <button type="button" onClick={() => onGo(row.id)}>
+                  <span className="holomap-battles-t">
+                    {templateFor(row.id, table.war).name}
+                    {row.id === current ? ' (here)' : yours ? ` · ${jumpSeconds(systemById(current), systemById(row.id)).toFixed(1)} s` : ''}
+                  </span>
+                  <span className="holomap-battles-n">{battleLine(row, now, side)}</span>
+                  <span className="holomap-battles-n">{standing(row, now)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <ul className="galaxy-areas" aria-label="Who holds each area">
+          {areaLines(table.areas, side).map((a) => (
+            <li key={a.id} data-yours={a.yours || undefined}>
+              <span>{a.name}</span> <span>{a.text}</span>
             </li>
           ))}
         </ul>
-      )}
-      <ul className="galaxy-areas" aria-label="Who holds each area">
-        {areaLines(table.areas, side).map((a) => (
-          <li key={a.id} data-yours={a.yours || undefined}>
-            <span>{a.name}</span> <span>{a.text}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="holomap-meta">What you do in a battle counts for the side you swore to, here, for everyone online.</p>
+        <p className="holomap-meta">What you do in a battle counts for the side you swore to, here, for everyone online.</p>
+      </details>
     </section>
   );
 }

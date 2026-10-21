@@ -1,10 +1,11 @@
-// The show's toon paint without its ink line: the stepped light, a Kenney
-// model's materials turned toon, and the leaf greens recoloured. No
-// shaders of its own, so a world on three's node renderer can have it:
-// ./toon.js (the GLSL ink pass besides) and ./toonNodes.js are both made
-// from it, each with its own `toon`.
+// The show's toon paint: the stepped light, a Kenney model's materials
+// turned toon, and the leaf greens recoloured. No shaders of its own, so a
+// world on three's node renderer can have it: ./toon.js and ./toonNodes.js
+// are both made from it, each with its own `toon`.
 //
-//   gradient() → the light steps (one texture, shared)
+//   gradient() → the light steps: lit, and one shade of shadow with a hard
+//     edge where the surface turns from the light, as the show shades
+//     (one texture, shared)
 //   toonWith(Kind) → toon(color, extra): a toon material of that class
 //   toon(color, extra) → a MeshToonMaterial on the steps
 //   toonifyWith(toon) → toonify(root, { tint, mix, glow, gradientMap, aniso, dispose })
@@ -15,8 +16,8 @@ import * as THREE from 'three';
 let steps = null;
 export function gradient() {
   if (steps) return steps;
-  const d = new Uint8Array([90, 90, 90, 255, 170, 170, 170, 255, 255, 255, 255, 255]);
-  steps = new THREE.DataTexture(d, 3, 1, THREE.RGBAFormat);
+  const d = new Uint8Array([170, 170, 170, 255, 255, 255, 255, 255]);
+  steps = new THREE.DataTexture(d, 2, 1, THREE.RGBAFormat);
   steps.minFilter = steps.magFilter = THREE.NearestFilter;
   steps.generateMipmaps = false;
   steps.needsUpdate = true;

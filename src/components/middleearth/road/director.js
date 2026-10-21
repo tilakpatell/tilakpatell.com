@@ -17,7 +17,18 @@ export const FOV = { walk: 50, seat: 38, eagle: 62 };
 const CLEAR = 0.4; // m over the ground at least
 const EYE = 1; // m: the height on a walker the rigs look at
 const LOW_TILT = (20 * Math.PI) / 180;
+const LOW_SIDE = 0.9; // m to the lead's left the low shot stands
 const CRANE_TOP = 30;
+// the follow: over the lead's left shoulder, so the lead stands to one side
+// of the frame (the right of it: the camera's on their left) and the road
+// ahead is open (straight behind, a toy's big head filled the middle of
+// it); aimed a little up, so the lead stands clear of the HUD's foot
+const BEHIND = 3.4;
+const SHOULDER = 0.75; // m to the lead's left
+const OVER = 1.6; // m up
+const AHEAD = 7; // m ahead it looks
+const AIM = 0.35; // m to the lead's left it looks
+const AIM_UP = 0.35; // m over the eye it looks
 const SETTLE = 2; // 1/s: e^-4 of a look is left after two seconds
 
 const add = (a, b, k = 1) => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
@@ -32,20 +43,23 @@ function framing({ rig, params = {}, lead, tangent, t = 0 }) {
   const f = [Math.sin(h), 0, Math.cos(h)];
   const right = [-Math.cos(h), 0, Math.sin(h)];
   const eye = add(lead.at, [0, EYE, 0]);
-  const follow = () => ({ at: add(add(lead.at, f, -3.2), [0, 1.7, 0]), lookAt: add(eye, tangent, 6) });
+  const left = [-right[0], 0, -right[2]];
+  const follow = () => ({ at: add(add(add(lead.at, f, -BEHIND), left, SHOULDER), [0, OVER, 0]), lookAt: add(add(add(eye, tangent, AHEAD), left, AIM), [0, AIM_UP, 0]) });
   switch (rig) {
     case 'lead':
       return { at: add(add(lead.at, f, 4), [0, 1.5, 0]), lookAt: eye };
     case 'side':
       return { at: add(add(lead.at, right, 4), [0, 1.4, 0]), lookAt: eye };
     case 'low': {
-      const at = add(add(lead.at, f, -2), [0, 0.5, 0]);
+      // (beside the lead's left knee, not behind its head: what it looks up at is in the frame)
+      const at = add(add(add(lead.at, f, -2), [-right[0], 0, -right[2]], LOW_SIDE), [0, 0.5, 0]);
       return { at, lookAt: add(at, [f[0] * Math.cos(LOW_TILT), Math.sin(LOW_TILT), f[2] * Math.cos(LOW_TILT)], 10) };
     }
     case 'crane': {
       const from = follow();
       const k = smooth(t / (params.seconds ?? 8));
-      return { at: [from.at[0], from.at[1] + (lead.at[1] + CRANE_TOP - from.at[1]) * k, from.at[2]], lookAt: from.lookAt };
+      // (rising from behind the lead; looking ahead, or at what the beat gives it)
+      return { at: [from.at[0], from.at[1] + (lead.at[1] + (params.top ?? CRANE_TOP) - from.at[1]) * k, from.at[2]], lookAt: params.lookAt ? [...params.lookAt] : from.lookAt };
     }
     case 'wide':
     case 'seat':
@@ -76,7 +90,8 @@ export function pose(ctx) {
   const seat = rig === 'seat';
   const yaw = clamp(look.yaw, seat ? LOOK_LIMIT.seat : LOOK_LIMIT.yaw);
   const pitch = clamp(look.pitch, seat ? LOOK_LIMIT.seat : LOOK_LIMIT.pitch);
-  const floor = (heightAt?.(at[0], at[2]) ?? -Infinity) + CLEAR;
+  // (kept over the land, but for a placed shot down in it: a chamber under the plain, `under`)
+  const floor = ctx.params?.under ? -Infinity : (heightAt?.(at[0], at[2]) ?? -Infinity) + CLEAR;
   const lifted = at[1] < floor ? floor - at[1] : 0;
   const stand = [at[0], at[1] + lifted, at[2]];
   const aim = looked(stand, [lookAt[0], lookAt[1] + lifted, lookAt[2]], yaw, pitch);

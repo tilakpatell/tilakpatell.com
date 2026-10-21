@@ -5,6 +5,8 @@ import { AchievementProvider, useAchievements } from './components/Achievements'
 import { FunProvider } from './fun/FunProvider';
 import OnlineProvider from './components/universe/online/OnlineProvider';
 import EconomyProvider from './components/universe/EconomyProvider';
+import { inHq } from './components/avengers/world/links';
+import SkillsProvider from './components/hangar/skills/SkillsProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import Nav from './components/Nav';
 import Footer from './components/Footer';
@@ -42,6 +44,7 @@ const GalaxySurface = lazy(() => import('./pages/GalaxyLanding'));
 const Music = lazy(() => import('./pages/Music'));
 const MiddleEarth = lazy(() => import('./pages/MiddleEarth'));
 const TheRoad = lazy(() => import('./pages/TheRoad'));
+const RedBook = lazy(() => import('./pages/RedBook'));
 const Scranton = lazy(() => import('./pages/Scranton'));
 const Avengers = lazy(() => import('./pages/Avengers'));
 const Cybertron = lazy(() => import('./pages/Cybertron'));
@@ -83,20 +86,25 @@ function ScrollToTop() {
   const { pathname, search } = location;
   // the feed (components/feed) moves the address as you scroll: not a new page
   const feed = isFeedMove(location, navType);
+  // a game opening or closing over Avengers HQ (/avengers to /avengers/gate and
+  // back) is the same page: no jump to the top, and the page's clips play on;
+  // a load or a reload has was === pathname, so its scroll is as before
+  const was = useRef(pathname);
+  const hq = was.current !== pathname && inHq(pathname) && inHq(was.current);
   // a link to one role (/experience/aws) lands on that role, not the top
-  const top = !feed && !search.includes('role=') && !/^\/(experience|universe)\/[^/]+$/.test(pathname);
+  const top = !hq && !feed && !search.includes('role=') && !/^\/(experience|universe)\/[^/]+$/.test(pathname);
   // Both only on a new path, read through a ref: a page's own search params
   // (a filter, a tab) change neither. As dependencies, a filter picked after
   // the feed had moved the address flipped them, which threw the visitor to
   // the top of the feed (the page it started on) and stopped the page's music.
-  const now = useRef({ top, feed });
-  now.current = { top, feed };
+  const now = useRef({ top, feed, hq });
+  now.current = { top, feed, hq };
   useEffect(() => {
     if (now.current.top) window.scrollTo(0, 0);
   }, [pathname]);
   // a page's music and lines stop when you leave it
   useEffect(() => {
-    if (!now.current.feed) import('./lib/clips').then((c) => c.stopPageClips());
+    if (!now.current.feed && !now.current.hq) import('./lib/clips').then((c) => c.stopPageClips());
   }, [pathname]);
   // every page shown, the feed's included, for the guide's checklist: the
   // page, and its guide's key when that's another (a place in a world ticks
@@ -107,6 +115,9 @@ function ScrollToTop() {
     let list = addVisited(local.get(VISITED_KEY, []), pathname);
     if (key && key !== pathname) list = addVisited(list, key);
     local.set(VISITED_KEY, list);
+  }, [pathname]);
+  useEffect(() => {
+    was.current = pathname;
   }, [pathname]);
   return null;
 }
@@ -342,6 +353,8 @@ function PaletteHost() {
 // (/middle-earth/moria) keep one page the same way, so its map stays up,
 // and so do the galaxy's systems (/galaxy/hoth), so a jump from one to the
 // next keeps the one scene (its missions' briefings are pages of their own).
+// Avengers HQ's buildings (/avengers/gate) keep one page the same way, so the
+// compound stays loaded while a game opens and closes over it.
 // The portfolio's six pages are one feed (components/feed): reach the end of
 // one and the next begins under it, with the address following the scroll, so
 // they share a key too.
@@ -350,7 +363,9 @@ const pageKey = (pathname) =>
     ? '/universe'
     : pathname.startsWith('/middle-earth')
       ? '/middle-earth'
-      : /^\/galaxy(\/[a-z0-9-]+)?$/.test(pathname)
+      : inHq(pathname)
+        ? '/avengers'
+        : /^\/galaxy(\/[a-z0-9-]+)?$/.test(pathname)
         ? '/galaxy'
         : categoryAt(pathname)
           ? '/feed'
@@ -414,6 +429,7 @@ function Shell() {
   return (
     // (the wallet outside the link to the other pilots: the roster reads it too)
     <EconomyProvider>
+    <SkillsProvider>
     <OnlineProvider>
       <div className="backdrop" aria-hidden="true" />
       <Ambience />
@@ -447,9 +463,11 @@ function Shell() {
                 <Route path="/fly/:planet?" element={<Fly />} /> {/* planet flight */}
                 <Route path="/music" element={<Music />} />
                 <Route path="/middle-earth/road" element={<TheRoad />} />
-                <Route path="/middle-earth/:place?" element={<MiddleEarth />} />
+                <Route path="/middle-earth" element={<RedBook />} />
+                <Route path="/middle-earth/map" element={<MiddleEarth />} />
+                <Route path="/middle-earth/:place" element={<MiddleEarth />} />
                 <Route path="/scranton" element={<Scranton />} />
-                <Route path="/avengers" element={<Avengers />} />
+                <Route path="/avengers/:place?" element={<Avengers />} />
                 <Route path="/cybertron" element={<Cybertron />} />
                 <Route path="/albuquerque" element={<Albuquerque />} />
                 <Route path="/c-137" element={<RickMorty />} />
@@ -483,6 +501,7 @@ function Shell() {
         <IntroJump />
       </ErrorBoundary>
     </OnlineProvider>
+    </SkillsProvider>
     </EconomyProvider>
   );
 }

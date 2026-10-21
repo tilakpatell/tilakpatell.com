@@ -7,7 +7,12 @@
 // moves (protocol.js's `motion`: their clips paced to it, as yours are, so
 // their feet don't skate) and what the lead's doing (an `emote`, timed from
 // when it came in and played once: lib/emote.js); an older pilot's, without
-// them, walks as it always did.
+// them, walks as it always did. An ally's callsign (the roster's: peer.ally),
+// or a party mate's (mates.js's isMate), is in the site's ally green, as their
+// tag is on the universe map. What a pilot's just said (net.quip(id): the
+// site's quick chat, a set line or null once it's old) is a bubble over
+// their callsign (lib/three/quipSprite.js), made the first time they say
+// something and hidden between lines, so a quiet crew draws no more.
 //
 // createPeers({ parent, placer, getCast, rides?, models? }) → { update(net, siteId, dt, eye),
 // dispose() } (eye: the camera's position, their lit blades' light out past
@@ -27,7 +32,9 @@ import { createGunplay } from '../../universe/gunplay';
 import { createSaber } from './saber';
 import { HILTS } from '../heroes';
 import { sharpen } from '../../../lib/three/textures';
+import { createQuipSprite } from '../../../lib/three/quipSprite';
 import { applyEmote, heardEmote, readEmote } from '../../../lib/emote';
+import { isMate } from '../../universe/shared/online';
 
 const CREW_MODELS = { artoo: 'r2d2' }; // (scene.js's)
 
@@ -35,18 +42,23 @@ const QUIET = 3000; // ms with nothing from them: gone
 // (the crews, and the heroes anyone may be playing as: heroes.js)
 const SPECS = Object.fromEntries([...Object.values(PARTY).flat(), ...HEROES.map((h) => heroSpec({ id: h.id, color: h.saber?.color ?? 'blue', hilt: h.saber?.hilt ?? 'skywalker' }))].map((s) => [s.id, s]));
 
-function nameTag(text) {
+const ALLY_INK = '#8dffad'; // the site's ally green (universe/online/online.css)
+const TAG_UP = 2.45; // the callsign's middle, over the lead's feet
+// (the callsign's card is 0.38 tall about its middle: a quick-chat bubble's
+// tail stands a little over its top)
+const QUIP_UP = TAG_UP + 0.3;
+function nameTag(text, ally = false) {
   const c = document.createElement('canvas');
   c.width = 256;
   c.height = 64;
   const g = c.getContext('2d');
   g.font = '600 30px system-ui, sans-serif';
   const w = Math.min(248, g.measureText(text).width + 28);
-  g.fillStyle = 'rgba(6, 8, 14, 0.62)';
+  g.fillStyle = ally ? 'rgba(10, 36, 22, 0.66)' : 'rgba(6, 8, 14, 0.62)';
   g.beginPath();
   g.roundRect((256 - w) / 2, 10, w, 44, 22);
   g.fill();
-  g.fillStyle = '#ffffff';
+  g.fillStyle = ally ? ALLY_INK : '#ffffff';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.fillText(text, 128, 33);
@@ -63,7 +75,7 @@ export function createPeers({ parent, placer, getCast, rides: RIDES = GALAXY_RID
   const group = new THREE.Group();
   group.name = 'peers';
   parent.add(group);
-  const shown = new Map(); // peer id → { walkers: [{ who, holder, fig, st }], ride, tag, name }
+  const shown = new Map(); // peer id → { walkers: [{ who, holder, fig, st }], ride, tag, quip, name }
   let dead = false;
 
   // (looks: how that pilot dresses their Rick and Morty; the show's if they've sent none)
@@ -108,6 +120,7 @@ export function createPeers({ parent, placer, getCast, rides: RIDES = GALAXY_RID
     e.tag.material.map.dispose();
     e.tag.material.dispose();
     e.tag.removeFromParent();
+    e.quip?.dispose();
     shown.delete(id);
   };
   const rideOf = (kind) => {
@@ -161,11 +174,21 @@ export function createPeers({ parent, placer, getCast, rides: RIDES = GALAXY_RID
         const w = p.walk;
         if (p.blocked || !w || w.world !== siteId || now - w.at > QUIET) continue;
         live.add(p.id);
+        const ally = isMate(p);
         let e = shown.get(p.id);
         if (!e) {
-          e = { walkers: [], ride: null, tag: nameTag(p.name ?? 'Pilot'), name: p.name };
+          e = { walkers: [], ride: null, tag: nameTag(p.name ?? 'Pilot', ally), quip: null, name: p.name, ally };
           group.add(e.tag);
           shown.set(p.id, e);
+        } else if (e.name !== p.name || e.ally !== ally) {
+          // a new callsign, or an alliance (or a party) made or ended down here: a new tag
+          group.remove(e.tag);
+          e.tag.material.map.dispose();
+          e.tag.material.dispose();
+          e.tag = nameTag(p.name ?? 'Pilot', ally);
+          group.add(e.tag);
+          e.name = p.name;
+          e.ally = ally;
         }
         const want = [w.lead, w.mate].filter(Boolean);
         // (a new crew, or a swap: the figures follow who's who)
@@ -257,7 +280,18 @@ export function createPeers({ parent, placer, getCast, rides: RIDES = GALAXY_RID
           lead.seat = null;
           lead.fig?.base?.(null)?.catch?.(() => {});
         }
-        if (lead) e.tag.position.set(lead.st.x, lead.st.y + 2.45, lead.st.z);
+        if (lead) e.tag.position.set(lead.st.x, lead.st.y + TAG_UP, lead.st.z);
+        // what they've just said, over the callsign
+        const line = net.quip?.(p.id) ?? null;
+        if (line && !e.quip) {
+          e.quip = createQuipSprite();
+          e.quip.sprite.renderOrder = e.tag.renderOrder + 1; // (where the two meet, the line's on top)
+          group.add(e.quip.sprite);
+        }
+        if (e.quip) {
+          e.quip.set(lead ? line : null);
+          if (lead) e.quip.sprite.position.set(lead.st.x, lead.st.y + QUIP_UP, lead.st.z);
+        }
       }
       for (const id of [...shown.keys()]) if (!live.has(id)) drop(id);
     },

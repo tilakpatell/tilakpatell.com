@@ -122,6 +122,11 @@ export function createCrowd(R, kit, flat) {
     c.group.position.y = GHOST.y;
     c.group.traverse((o) => {
       if (!o.isMesh) return;
+      // (a ghost in a jar has no line)
+      if (o.userData.ink) {
+        o.visible = false;
+        return;
+      }
       // (lit by his own texture, so his eyes and mouth stay dark as the rest of him glows)
       const map = o.material.map ?? null;
       o.material = own(toon(0xffffff, { map, emissive: map ? 0xffffff : MINT, emissiveMap: map, emissiveIntensity: 0.75 }));

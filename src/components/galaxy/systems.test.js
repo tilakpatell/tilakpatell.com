@@ -4,7 +4,7 @@ import { CLIPS } from '../../lib/clips';
 import { SYSTEM_MARKS, SYSTEM_NAMES, inGalaxyFlight, systemOfPath } from './names';
 import { CORE, ERAS, RIM, FILMS, FILM_ORDER, FIRST, GRID, LANES, REGIONS, SYSTEMS, arrival, goalsOf, bearing, coreBearing, courseTo, liftOf, starAhead, eraOf, erasOf, filmLabel, filmShort, filmsOf, gridAt, inEra, jumpSeconds, kindsIn, lightYears, parseSystem, reachAt, reachOf, regionAt, systemById, wantsDeathStar, yearLabel, hazardsOf, TRACTOR_REACH } from './systems';
 
-const LOOKS = ['tatooine', 'geonosis', 'mandalore', 'hoth', 'endor', 'endor-giant', 'yavin', 'yavin4', 'kashyyyk', 'dagobah', 'naboo', 'lothal', 'sorgan', 'coruscant', 'mustafar', 'nevarro', 'kamino', 'scarif', 'bespin', 'felucia', 'kessel', 'sullust', 'pillio', 'vardos', 'fondor', 'moon-grey', 'moon-ice', 'moon-dust', 'moon-rust'];
+const LOOKS = ['tatooine', 'geonosis', 'mandalore', 'hoth', 'endor', 'endor-giant', 'yavin', 'yavin4', 'kashyyyk', 'dagobah', 'naboo', 'lothal', 'sorgan', 'coruscant', 'mustafar', 'nevarro', 'kamino', 'scarif', 'bespin', 'felucia', 'kessel', 'sullust', 'pillio', 'vardos', 'fondor', 'utapau', 'mygeeto', 'saleucami', 'catoneimoidia', 'polismassa', 'malastare', 'jedha', 'najedha', 'eadu', 'lahmu', 'wobani', 'kafrene', 'dantooine', 'ordmantell', 'corellia', 'tython', 'arvala', 'trask', 'koliben', 'corvus', 'morak', 'plazir', 'seatos', 'moon-grey', 'moon-ice', 'moon-dust', 'moon-rust'];
 const PIECES = ['chase', 'fleet', 'escape', 'cannon', 'rocks', 'station', 'battle', 'deathstar', 'stream', 'patrol', 'depart', 'lanes', 'liftoff', 'shield', 'superlaser'];
 const len = (v) => Math.hypot(...v);
 

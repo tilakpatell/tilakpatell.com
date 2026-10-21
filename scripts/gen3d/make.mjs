@@ -20,13 +20,14 @@ import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, writ
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { bake, blender } from './bake.mjs';
-import { generate, pixal3dReady } from './generate.mjs';
+import { generate, pixal3dReady, lying } from './generate.mjs';
 import { sheet } from './judge.mjs';
 import { picture } from './picture.mjs';
 import { prepare } from './prepare.mjs';
 import { ready as vlmReady } from './vlm.mjs';
 import { TIERS, cutsFor } from './budget.mjs';
-import { publish } from './web.mjs';
+import { upright } from './upright.mjs';
+import { io, publish } from './web.mjs';
 import { digest, once } from './steps.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -92,22 +93,35 @@ export async function make(name, { image, prompt, what, faces = TIERS.hq.faces, 
   );
   if (g.reused) g.engine = existsSync(join(dir, 'raw.json')) ? JSON.parse(readFileSync(join(dir, 'raw.json'), 'utf8')).engine : (engine ?? 'trelliscpp');
   log(g.reused ? `raw model from the last run (${g.engine})` : `raw model with ${g.engine}${faithful ? ' (Pixal3D)' : ''} in ${g.seconds.toFixed(0)}s`);
-  let low = raw;
+  // Pixal3D's model lies along Z and glTF and the site are Y up (upright.mjs): stood up before anything is made from it, or a
+  // building lies on its side and a picture's relief faces the sky
+  let stood = raw;
+  let stoodKey = rawKey;
+  if (lying(g.engine, faithful)) {
+    stood = join(dir, 'upright.glb');
+    stoodKey = digest(rawKey, 'y-up');
+    const u = await once(stood, stoodKey, async () => {
+      const nio = await io();
+      await nio.write(stood, await upright(await nio.read(raw)));
+    }, { fresh });
+    log(u.reused ? 'stood up in the last run (Pixal3D lies along Z)' : 'stood up: Pixal3D lies along Z');
+  }
+  let low = stood;
   if (!noBake && blender()) {
     low = join(dir, 'baked.glb');
     // (at the top cut's size, the ultra cut's where one is asked for: the other cuts are simplified and downsampled from it)
     const top = ultra ? cutsFor(faces, tex, { ultra }).ultra : { faces, tex };
-    const b = await once(low, digest(rawKey, top.faces, top.tex), () => bake(raw, low, { faces: top.faces, tex: top.tex }), { fresh });
+    const b = await once(low, digest(stoodKey, top.faces, top.tex), () => bake(stood, low, { faces: top.faces, tex: top.tex }), { fresh });
     log(b.reused ? `baked model from the last run (${top.faces} faces)` : `baked to ${top.faces} faces in ${b.seconds.toFixed(0)}s`);
   } else log(noBake ? 'no bake: the web cut simplifies the raw mesh' : 'no Blender here: the web cut simplifies the raw mesh');
   const made = g.engine === 'hunyuan' ? 'Hunyuan3D-2 multi-view' : g.engine === 'trellis2' ? 'TRELLIS.2' : faithful ? 'Pixal3D (trellis.cpp)' : 'TRELLIS.2 (trellis.cpp)';
-  const w = await publish(low, name, { what: what ?? name, match, engine: low === raw ? made : `${made}, baked in Blender`, top: { faces, tex }, ultra });
+  const w = await publish(low, name, { what: what ?? name, match, engine: low === stood ? made : `${made}, baked in Blender`, top: { faces, tex }, ultra });
   for (const [t, c] of Object.entries(w.cuts)) log(`${t}: ${Math.round(c.after)} triangles, ${(c.bytes / 1024).toFixed(0)} KB → ${c.out}`);
   const result = { name, what: what ?? name, engine: made, seed, cuts: Object.fromEntries(Object.entries(w.cuts).map(([t, c]) => [t, { triangles: Math.round(c.after), bytes: c.bytes, file: c.out }])) };
   writeFileSync(join(dir, 'result.json'), JSON.stringify(result, null, 2));
   if (process.env.CHROME || process.env.GEN3D_SHEET === 'fake') {
     const out = join(dir, 'sheet.png');
-    await sheet(out, [raw, w.cuts?.hq?.out ?? w.out]);
+    await sheet(out, [stood, w.cuts?.hq?.out ?? w.out]);
     log(`judge: ${out}`);
     // the model's eyes on the sheet: a miss is made again, once, with the next seed (and the next-best concept)
     if (judge && vlmReady()) {

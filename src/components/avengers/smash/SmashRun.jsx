@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import HQFrame from '../hq/HQFrame';
+import HQGame, { StartNote, TouchHelp } from '../hq/HQGame';
+import Results from '../hq/Results';
 import { register, useStage, useStageFrame } from '../hq/useStage';
 import gameModule from './module';
-import { earnStone, hasEarned } from '../hq/stones';
+import { earnStone, hasEarned, recordTry } from '../hq/stones';
 import { newSeed } from '../hq/rng';
 import { useAchievements } from '../../Achievements';
-import { use3D } from '../../../lib/gpu';
+import { useGame3D } from '../hq/useGame3D';
 import { local, prefersReducedMotion } from '../../../lib/hooks';
 import { audioContext } from '../../../lib/audio';
 import { capturePointer } from '../../../lib/pointer';
@@ -49,8 +50,8 @@ function warp(g, to) {
 }
 
 export default function SmashRun({ fallback }) {
-  const three = use3D();
-  const stage = useStage(gameModule, { enabled: three.on, id: 'smash', forced: three.mode === 'on' });
+  const three = useGame3D('smash');
+  const stage = useStage(gameModule, { enabled: three.on, id: 'smash', forced: three.mode === 'on', own3D: true });
   const { unlock } = useAchievements();
   const game = useRef(newRun({ seed: 1 }));
   const hud = useRef(null);
@@ -72,6 +73,7 @@ export default function SmashRun({ fallback }) {
 
   const start = useCallback(() => {
     audioContext(); // in the click, so the first smash can be heard
+    recordTry('banner');
     game.current = newRun({ seed: newSeed() });
     const ev = startRun(game.current);
     acc.current = 0;
@@ -335,8 +337,14 @@ export default function SmashRun({ fallback }) {
 
   const res = ui.result;
   const toStone = Math.min(1, ui.d / STONE_AT);
+  // the bar's Pause, and a hidden tab: as Esc does
+  const pause = (p) => setPaused(p);
   return (
-    <HQFrame
+    <HQGame
+      game="smash"
+      playing={playing}
+      paused={paused}
+      onPause={pause}
       stage={stage}
       three={three}
       fallback={fallback}
@@ -384,42 +392,40 @@ export default function SmashRun({ fallback }) {
           <p className="sr-message">{ui.message}</p>
         </div>
       )}
-      {(!playing || paused) && (
-        <div className="hq-overlay sr-overlay">
-          {paused ? (
-            <>
-              <p className="hq-overlay-title">Paused</p>
-              <p className="hq-overlay-text">
-                {fmt(ui.d)} m down the avenue. {ui.hp} {ui.hp === 1 ? 'heart' : 'hearts'} left.
-              </p>
-              <button type="button" className="btn btn-primary mt-4" onClick={() => (setPaused(false), focus())}>
-                Resume
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="hq-overlay-kicker">Midtown · 2012 · the portal is open</p>
-              <p className="hq-overlay-title">{res ? 'Banner’s back.' : 'Smash Run'}</p>
-              <p className="hq-overlay-text">
-                {res
-                  ? res.d >= STONE_AT
-                    ? `${fmt(res.d)} m through the Chitauri, past the Time Stone. ${res.smashes} smashed, ${res.perfects} of them perfect.`
-                    : `${fmt(res.d)} m down the avenue, ${fmt(STONE_AT - res.d)} m short of the Time Stone. Smash a little late for a perfect, and save the leap for craters and fire.`
-                  : 'The Chitauri are pouring out of the sky over Stark Tower. Charge down the avenue: smash what’s in your lane, leap what you can’t, and go round what even you can’t break. Every smash feeds the rage. The Time Stone is 2,000 m away.'}
-              </p>
-              {res && (
-                <p className="hq-overlay-score">
-                  {fmt(res.d)} m
-                  <small>{res.newBest ? 'a new best' : best ? `best ${fmt(best)} m` : `${fmt(res.score)} points`}</small>
+      {(!playing || paused) &&
+        (res && !paused ? (
+          <Results
+            className="sr-overlay"
+            won={Boolean(res.stone)}
+            kicker="Midtown · 2012 · the portal is open"
+            title="Banner’s back."
+            line={res.d >= STONE_AT ? `${fmt(res.d)} m through the Chitauri, past the Time Stone. ${res.smashes} smashed, ${res.perfects} of them perfect.` : `${fmt(res.d)} m down the avenue, ${fmt(STONE_AT - res.d)} m short of the Time Stone. Smash a little late for a perfect, and save the leap for craters and fire.`}
+            score={res.d}
+            format={(n) => `${fmt(n)} m`}
+            best={best}
+            newBest={res.newBest}
+            stone={res.stone ? 'time' : null}
+            stoneText="The Time Stone is yours."
+            onAgain={start}
+          />
+        ) : (
+          <div className="hq-overlay sr-overlay">
+            {paused ? (
+              <>
+                <p className="hq-overlay-title">Paused</p>
+                <p className="hq-overlay-text">
+                  {fmt(ui.d)} m down the avenue. {ui.hp} {ui.hp === 1 ? 'heart' : 'hearts'} left.
                 </p>
-              )}
-              {res?.stone && (
-                <p className="hq-stone" style={{ '--glow': '#2adf6a' }}>
-                  <span className="stone-dot" aria-hidden="true" />
-                  The Time Stone is yours.
-                </p>
-              )}
-              {!res && (
+                <button type="button" className="btn btn-primary mt-4" onClick={() => (setPaused(false), focus())}>
+                  Resume
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="hq-overlay-kicker">Midtown · 2012 · the portal is open</p>
+                <p className="hq-overlay-title">Smash Run</p>
+                <p className="hq-overlay-text">The Chitauri are pouring out of the sky over Stark Tower. Charge down the avenue: smash what’s in your lane, leap what you can’t, and go round what even you can’t break. Every smash feeds the rage. The Time Stone is 2,000 m away.</p>
+                <StartNote />
                 <ul className="hq-keys">
                   <li>
                     <kbd>←</kbd>
@@ -431,21 +437,20 @@ export default function SmashRun({ fallback }) {
                   <li>
                     <kbd>Space</kbd> or click: smash
                   </li>
-                  <li>Touch: swipe, tap</li>
                 </ul>
-              )}
-              <button type="button" className="btn btn-primary mt-5" onClick={start}>
-                {res ? 'Again' : 'Hulk out'}
-              </button>
-              {!res && best > 0 && <p className="hq-overlay-best">Best {fmt(best)} m</p>}
-            </>
-          )}
-        </div>
-      )}
+                <TouchHelp game="smash" />
+                <button type="button" className="btn btn-primary mt-5" onClick={start}>
+                  Hulk out
+                </button>
+                {best > 0 && <p className="hq-overlay-best">Best {fmt(best)} m</p>}
+              </>
+            )}
+          </div>
+        ))}
       <p className="sr-only" role="status">
         {playing ? `${fmt(ui.d)} metres. ${ui.hp} hearts. ${ui.message}` : ''}
       </p>
-    </HQFrame>
+    </HQGame>
   );
 }
 

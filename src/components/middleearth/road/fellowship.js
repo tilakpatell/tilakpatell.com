@@ -22,38 +22,42 @@ export const CHANGES = [
   { stage: 'hobbiton', local: 0, add: ['frodo'] },
   // (the field’s edge: the last 40 m of the lane)
   { stage: 'hobbiton', local: STAGES[0].length - 40, add: ['sam'] },
-  { stage: 'shire-edge', local: 60, add: ['merry', 'pippin'] },
+  // (Maggot’s crop: the two out of the corn at the mushrooms’ beat)
+  { stage: 'shire-edge', local: 26, add: ['merry', 'pippin'] },
   // (Bree’s last beat: Strider leads them out the back way at dawn)
-  { stage: 'bree', local: 150, add: ['aragorn'] },
+  { stage: 'bree', local: 134, add: ['aragorn'] },
   // (the Ford: Arwen out of the trees, Frodo on Asfaloth with her)
-  { stage: 'ford', local: 120, add: ['arwen'], state: { frodo: 'riding', arwen: 'riding' } },
+  { stage: 'ford', local: 72, add: ['arwen'], state: { frodo: 'riding', arwen: 'riding' } },
   { stage: 'rivendell', local: 0, remove: ['arwen'], state: { frodo: 'walking' } },
   // (the morning they leave: nine under the arch, the film’s order)
   {
     stage: 'rivendell',
-    local: 150,
+    local: 138,
     add: ['gandalf', 'legolas', 'gimli', 'boromir'],
     order: ['gandalf', 'legolas', 'gimli', 'aragorn', 'boromir', 'merry', 'pippin', 'sam', 'frodo'],
   },
   // (the Bridge of Khazad-dûm)
-  { stage: 'moria', local: 200, remove: ['gandalf'], state: { legolas: 'grieving', gimli: 'grieving', aragorn: 'grieving', boromir: 'grieving', merry: 'grieving', pippin: 'grieving', sam: 'grieving', frodo: 'grieving' } },
+  { stage: 'moria', local: 107, remove: ['gandalf'], state: { legolas: 'grieving', gimli: 'grieving', aragorn: 'grieving', boromir: 'grieving', merry: 'grieving', pippin: 'grieving', sam: 'grieving', frodo: 'grieving' } },
   { stage: 'lorien', local: 0, state: walking(['legolas', 'gimli', 'aragorn', 'boromir', ...HOBBITS]) },
   // (Amon Hen: two go east)
-  { stage: 'anduin', local: 200, remove: ['legolas', 'gimli', 'aragorn', 'boromir', 'merry', 'pippin'] },
+  { stage: 'anduin', local: 140, remove: ['legolas', 'gimli', 'aragorn', 'boromir', 'merry', 'pippin'] },
   { stage: 'marshes', local: 40, add: ['gollum'], state: { gollum: 'leading' }, order: ['gollum', 'frodo', 'sam'] },
-  { stage: 'gorgoroth', local: 200, state: { sam: 'carrying', frodo: 'carried' } },
+  { stage: 'gorgoroth', local: 100, state: { sam: 'carrying', frodo: 'carried' } },
   // (the Cracks of Doom, then the two on the rock in the fire)
-  { stage: 'gorgoroth', local: 215, remove: ['gollum'], state: { sam: 'walking', frodo: 'walking' } },
-  { stage: 'gorgoroth', local: 230, state: { sam: 'lying', frodo: 'lying' } },
+  { stage: 'gorgoroth', local: 136, remove: ['gollum'], state: { sam: 'walking', frodo: 'walking' } },
+  { stage: 'gorgoroth', local: 156, state: { sam: 'lying', frodo: 'lying' } },
   { stage: 'minas-tirith', local: 0, add: ['merry', 'pippin', 'aragorn', 'arwen', 'gandalfwhite', 'legolas', 'gimli'], state: walking(['frodo', 'sam']), order: ['frodo', 'sam', 'merry', 'pippin', 'aragorn', 'arwen', 'gandalfwhite', 'legolas', 'gimli'] },
+  // (the Havens: the four who sail wait aboard; the four hobbits walk down the quay)
   {
     stage: 'havens',
     local: 0,
     add: ['bilbo', 'elrond', 'galadriel'],
     remove: ['aragorn', 'arwen', 'legolas', 'gimli'],
-    state: { frodo: 'aboard', bilbo: 'aboard', gandalfwhite: 'aboard', elrond: 'aboard', galadriel: 'aboard', sam: 'staying', merry: 'staying', pippin: 'staying' },
+    state: { bilbo: 'aboard', gandalfwhite: 'aboard', elrond: 'aboard', galadriel: 'aboard', ...walking(HOBBITS) },
     order: ['frodo', 'bilbo', 'gandalfwhite', 'elrond', 'galadriel', 'sam', 'merry', 'pippin'],
   },
+  // (the farewell: Frodo goes aboard, the three stay)
+  { stage: 'havens', local: 152, state: { frodo: 'aboard', sam: 'staying', merry: 'staying', pippin: 'staying' } },
 ];
 
 // each change’s place on the whole road, in metres from Bag End

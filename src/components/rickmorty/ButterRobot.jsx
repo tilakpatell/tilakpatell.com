@@ -13,10 +13,12 @@ const cue = (name) => import('../games/gameAudio').then((m) => m[name]?.());
 // it asks in its own voice
 const ask = () => import('../../lib/clips').then((m) => m.playClip('purpose', { when: 0.3 }));
 
-export default function ButterRobot() {
+// `onUsed`: called once, the first time the butter's passed (C-137 ticks its task then)
+export default function ButterRobot({ onUsed }) {
   const [scene, setScene] = useState('off');
   const [butter, setButter] = useState('dish'); // dish, held, plate
   const timers = useRef([]);
+  const used = useRef(false);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   const later = (fn, ms) => timers.current.push(setTimeout(fn, ms));
   const s = SCENES[scene];
@@ -42,6 +44,10 @@ export default function ButterRobot() {
       setScene('served');
       cue('portalHop');
       ask();
+      if (!used.current) {
+        used.current = true;
+        onUsed?.();
+      }
     }, trip * 2 + (quick ? 0 : 500));
   };
   const tell = () => setScene('told');

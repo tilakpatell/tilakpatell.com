@@ -705,10 +705,12 @@ describe('history', () => {
   });
   it('comes to the same from a checkpoint all through the first six hours, a capture partway through a step and all', () => {
     // (the trend in the first six hours is measured against the opening: the
-    // twenty moments above missed that window, and the two ways differed in it)
+    // twenty moments above missed that window, and the two ways differed in it.
+    // The tallies' seeds are ones that capture partway through a step on the
+    // map as it is: the plain ones stopped when Scarif, Lothal and Kamino moved)
     let partway = 0;
     for (const war of WAR_IDS) {
-      const t = busyTally(war, `first-hours-${war}`);
+      const t = busyTally(war, `first-hours-${war}-c`);
       const v = (k) => t.value(k);
       const run = campaignRun(war, 0, v);
       for (let k = 0; k <= GCW.window; k++) {
@@ -842,10 +844,12 @@ describe('warTable', () => {
     // (supply ran from the capital alone, so 7 of the Separatists' 8 systems
     // opened cut off, and the Hutts' Nevarro in every war. Now what's left is
     // the Empire's Bespin and Mustafar, ringed by the Rebels' Hoth and the
-    // Hutts' Nevarro, and two of the Remnant's holdouts in the New Republic's
-    // space: none with a stronghold or a way through their own to one)
+    // Hutts' Nevarro, and the Remnant's holdout Mustafar in the New Republic's
+    // space: none with a stronghold or a way through their own to one. The
+    // Remnant's Geonosis was another till Scarif went to its square in the
+    // canon atlas, beside it: a stronghold of the Remnant's own to join)
     const cut = Object.fromEntries(WAR_IDS.map((war) => [war, history(war, 0, at(0, 0), none).cut]));
-    expect(cut).toEqual({ clone: [], gcw: ['bespin', 'mustafar'], remnant: ['mustafar', 'geonosis'] });
+    expect(cut).toEqual({ clone: [], gcw: ['bespin', 'mustafar'], remnant: ['mustafar'] });
     for (const war of WAR_IDS) for (const id of cut[war]) expect(NEIGHBOURS[id].every((o) => opening(war).owner[o] !== opening(war).owner[id] || cut[war].includes(o)), `${war} ${id}`).toBe(true);
   });
   it('gives each battle its effective rate, the one that applies', () => {

@@ -6,6 +6,8 @@
 //
 //   smoothNormals(geometry) → geometry (its `inkNormal`)
 //   inkHull(root, width, { clipY, color }) → the hull's MeshBasicNodeMaterial
+//     (ink.js's `near`, no line right at the eye, isn't here yet: no world on
+//     nodes draws a cast's line where its camera can pass through a figure)
 //   rimToon(material, { color, power, strength }) → the node material
 
 import * as THREE from 'three';

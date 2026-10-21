@@ -101,12 +101,12 @@ export function bricks(g, w, h, { base = '#8e2f25', mortar = '#5c1d18', rows = 8
 }
 
 // The light steps for a Meshy model toon-painted (portal/toon.js's toonify
-// with this as its gradientMap): its texture carries its own shading, so the
-// steps are gentle (two thirds of the way down at most).
+// with this as its gradientMap): its texture carries its own shading, so its
+// one step of shadow is gentle (a fifth of the way down).
 let gentle = null;
 export function gentleRamp() {
   if (gentle) return gentle;
-  gentle = new THREE.DataTexture(new Uint8Array([150, 150, 150, 255, 205, 205, 205, 255, 255, 255, 255, 255]), 3, 1, THREE.RGBAFormat);
+  gentle = new THREE.DataTexture(new Uint8Array([205, 205, 205, 255, 255, 255, 255, 255]), 2, 1, THREE.RGBAFormat);
   gentle.minFilter = gentle.magFilter = THREE.NearestFilter;
   gentle.generateMipmaps = false;
   gentle.needsUpdate = true;

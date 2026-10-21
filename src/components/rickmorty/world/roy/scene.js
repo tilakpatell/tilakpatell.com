@@ -1,7 +1,8 @@
 // Roy: A Life Well Lived, the Blips and Chitz VR game, in WebGL: a vignette
 // for each stage of the life (a backyard with a tire swing, a floodlit
 // field, the carpet store's aisles, a hospital room, then the store again or
-// the woods), toon-shaded and inked like the show (portal/toon.js) on
+// the woods), toon-shaded like the show (portal/toon.js: flat colour, one
+// step of shadow, a line round the figures, no film grade) on
 // lib/stage3d's renderer, with Roy himself built in code: he grows up,
 // fills out, greys, loses his hair and stoops as the years go by.
 //
@@ -18,17 +19,23 @@ import * as THREE from 'three';
 import { createStage, disposeTree, hot } from '../../../../lib/stage3d';
 import { houseOn } from '../../../../lib/three/house';
 import { budget, device } from '../../../../lib/device';
+import { prefersReducedMotion as reduced } from '../../../../lib/hooks';
 import { Pass } from 'three/examples/jsm/postprocessing/Pass.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { InkPass, toon } from '../../portal/toon';
+import { toon } from '../../portal/toon';
+import { hull } from '../../portal/cast';
 import { at, batch, hipRoof, kitMaterials, paint, rng, speckle } from '../kit';
 import { makeSky } from '../sky';
 import { TUNING, ageOf, beatWindow, inBand } from './rules';
 import { sharpen } from '../../../../lib/three/textures';
 import { createFeel, feelGroups } from '../../../../lib/three/feel';
-import { BLOOMS } from '../look';
+import { BLOOMS, PLAIN } from '../look';
 
 const { kid: KID, football: FOOTBALL, carpet: CARPET, cancer: CANCER } = TUNING;
+// the show's line round each figure (../../portal/cast.js's hull, a child of
+// each part, so a part hidden as he ages takes its line with it), metres:
+// about two pixels at 720p from the camera's 4 or 5 m
+const ROY_INK = 0.012;
 const SWING = 0.62; // how far the tire swings either way at the end of its rope (radians)
 
 const INK = '#1b1424';
@@ -51,7 +58,6 @@ const smooth = (a, b, v) => {
 const damp = (dt, rate) => 1 - Math.exp(-dt * rate);
 const easeOut = (k) => 1 - (1 - clamp(k, 0, 1)) ** 3;
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
-const reduced = () => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 
 // ── canvas painting ──
 
@@ -629,8 +635,8 @@ function starGeometry() {
   return g;
 }
 
-// Things in the world that read as UI (bubbles, the beat ring): drawn after
-// the ink, over the picture, so no line from behind shows through them.
+// Things in the world that read as UI (bubbles, the beat ring): drawn over
+// the picture, its depth cleared, so nothing in the world hides them.
 class OverPass extends Pass {
   constructor(scene, camera) {
     super();
@@ -894,9 +900,8 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
   const stage = createStage(canvas, { shadows: true, fov: 50, near: 0.1, far: 520, exposure: 1, bloom: BLOOMS.roy, onLost });
   const { renderer, scene, camera } = stage;
   // (the stage's Neutral keeps the show's flat bright colours bright: ../look.js)
-  stage.grade({ contrast: 0.06, saturation: 1.1, vignette: 0.16, grain: 0.01, shadow: [0, 0.004, 0.012], high: [0.012, 0.008, 0] });
+  stage.grade(PLAIN);
   renderer.info.autoReset = false; // counted over the whole frame, every pass
-  const big = Math.min(window.screen?.width ?? 1280, window.screen?.height ?? 800) >= 700;
   const mats = kitMaterials(renderer);
   const owned = []; // textures and geometries swapped in and out, freed at the end
   const tex = (w, h, draw, opts = {}) => {
@@ -919,19 +924,14 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
   scene.fog = new THREE.Fog(0xffffff, 300, 500);
   const background = new THREE.Color(0x101010);
 
-  const noInk = [sky.dome];
   const fx = new THREE.Group();
   fx.name = 'fx';
   scene.add(fx);
-  noInk.push(fx);
-  const inkSkip = []; // this frame's things too far off for a line (a stage fills it)
-  const ink = new InkPass(scene, camera, { hide: () => (inkSkip.length ? noInk.concat(inkSkip) : noInk), width: big ? 1.25 : 1 });
-  stage.composer.insertPass(ink, 1);
   const over = new THREE.Scene();
   const overSun = new THREE.DirectionalLight(0xffffff, 1.5);
   overSun.position.set(2, 4, 5);
   over.add(new THREE.HemisphereLight(0xffffff, 0x8a96a8, 2), overSun);
-  stage.composer.insertPass(new OverPass(over, camera), 2);
+  stage.composer.insertPass(new OverPass(over, camera), 1);
   const overlay = () => {
     const o = new THREE.Group();
     o.visible = false;
@@ -983,7 +983,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
     m.scale.set(r * 2, 1, r * 2);
     m.renderOrder = 1;
     parent.add(m);
-    noInk.push(m);
     return m;
   };
 
@@ -1193,7 +1192,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
     P.number.position.set(0, -0.15, -0.13);
     P.number.rotation.y = Math.PI;
     chest.add(P.number);
-    noInk.push(P.number);
     P.cane = new THREE.Group();
     const stick = new THREE.Mesh(G.cyl, toon(0x6b4226));
     stick.scale.set(0.014, 0.82, 0.014);
@@ -1204,6 +1202,7 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
     armR.hand.add(P.cane);
     for (const k of ['tache', 'beard', 'glasses', 'tufts', 'back', 'helmet', 'tie', 'tag', 'number', 'cane']) if (P[k]) P[k].visible = false;
     pads.forEach((p) => (p.visible = false));
+    hull({ group: root }, ROY_INK);
     rest(f);
     return f;
   }
@@ -1461,7 +1460,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
     g.add(target);
     const targetOn = hot(0x9dff5a, 1.6);
     const targetOff = new THREE.Color(0xffffff).multiplyScalar(0.35);
-    noInk.push(target);
     // the bucket of balls, the balls thrown, the one in the air
     const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.19, 0.32, 14), mats.toon(0xc9a066));
     bucket.position.set(0.85, 0.16, 0.35);
@@ -1678,7 +1676,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
             bank.setMatrixAt(bi++, at(s * 39.95, 25.6 + r2 * 0.75, -f - 1.5 + c * 1, s > 0 ? -Math.PI / 2 : Math.PI / 2));
           }
     field.add(bank);
-    noInk.push(bank);
     const beamMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xdfe8ff).multiplyScalar(0.035), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false });
     for (const s of [-1, 1])
       for (const f of [25, 62, 99]) {
@@ -1687,7 +1684,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
         beam.position.set(s * 30, 13, -f);
         beam.rotation.z = s * 0.55;
         field.add(beam);
-        noInk.push(beam);
       }
     const zone = new THREE.Mesh(new THREE.PlaneGeometry(48.8, 10).rotateX(-Math.PI / 2), mats.toon(0xffffff, { map: tex(1024, 256, endZone) }));
     zone.position.set(0, 0.008, -105);
@@ -1710,9 +1706,8 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
     const numbers = new THREE.Mesh(mergeGeometries(nums), numMat);
     nums.forEach((n) => n.dispose());
     field.add(numbers);
-    noInk.push(numbers);
     // the crowd: two halves bobbing out of step, each fan a few triangles (a body
-    // and a head), sat closer together the more the device can afford, and no ink
+    // and a head), sat closer together the more the device can afford
     const crowdGeo = (() => {
       const torsoGeo = new THREE.CylinderGeometry(0.19, 0.25, 0.6, 5, 1).translate(0, 0.3, 0).toNonIndexed();
       const headGeo = new THREE.OctahedronGeometry(0.15).translate(0, 0.76, 0);
@@ -1741,7 +1736,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
     crowds.forEach((m, i) => {
       m.count = counts[i];
       field.add(m);
-      noInk.push(m);
     });
     // the clock on the board
     const boardCanvas = document.createElement('canvas');
@@ -1754,7 +1748,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
     const board = new THREE.Mesh(new THREE.PlaneGeometry(13, 6.5), new THREE.MeshBasicMaterial({ map: boardTex, color: new THREE.Color(1, 1, 1).multiplyScalar(1.25) }));
     board.position.set(0, 8.6, -130.4);
     field.add(board);
-    noInk.push(board);
     let boardKey = '';
     const drawBoard = (secs, home) => {
       const k = `${secs}|${home}`;
@@ -1773,7 +1766,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
       const warn = new THREE.Mesh(G.flat, new THREE.MeshBasicMaterial({ map: spot, color: hot(0xff3b2f, 1.2), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
       warn.scale.set(2.2, 1, 2.2);
       g.add(warn);
-      noInk.push(warn);
       return { f, warn, shadow: blob(g, 0.45) };
     });
     let royX = 0;
@@ -1840,8 +1832,7 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
             st.rotation.set(t * 3, a, 0);
           });
         }
-        // the tacklers, by where the rules have them (no ink on the far ones, too small for a line)
-        inkSkip.length = 0;
+        // the tacklers, by where the rules have them
         tacklers.forEach((tk, i) => {
           const k = s.tacklers[i] && s.tacklers[i].z > -0.8 ? s.tacklers[i] : null;
           tk.f.root.visible = Boolean(k);
@@ -1849,7 +1840,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
           tk.shadow.visible = Boolean(k);
           if (!k) return;
           const x = laneX(k.lane, LANE.field);
-          if (k.z > 18) inkSkip.push(tk.f.root);
           rest(tk.f);
           tk.f.root.position.set(x, 0, -k.z);
           tk.f.root.rotation.y = 0;
@@ -1939,7 +1929,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
     let pi = 0;
     for (let k = 0; k < 3; k++) for (let i = 0; i < 9; i++) panels.setMatrixAt(pi++, at(laneX(k, LANE.store), 5.48, 2 - i * 4.2));
     g.add(panels);
-    noInk.push(panels);
     // signs: the store's, each aisle's (lit for the one Roy's at), the employee of the month
     const sign = new THREE.Mesh(G.plane, new THREE.MeshBasicMaterial({ map: tex(1024, 128, storeSign) }));
     sign.scale.set(14, 1.75, 1);
@@ -1968,7 +1957,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
     const pick = new THREE.Mesh(G.flat, new THREE.MeshBasicMaterial({ map: spot, color: hot(0x9dff5a, 0.9), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
     pick.scale.set(3.2, 1, 4.2);
     g.add(pick);
-    noInk.push(pick);
     // the customers: one at the counter, one leaving
     const people = [0, 1].map(() => {
       const f = makeFigure();
@@ -2033,7 +2021,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
       halo.scale.set(2.8, 1, 1.7);
       halo.visible = false;
       g.add(halo);
-      noInk.push(halo);
       return { grp, spin, k, halo, shadow: blob(g, 0.6 * r) };
     };
     const rolls = Array.from({ length: 18 }, (_, i) => makeRoll(i % 3));
@@ -2044,7 +2031,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
     warn.scale.set(1.6, 1, 3.2);
     g.add(warn);
     const stool = seat(g, false);
-    noInk.push(warn);
     let royX = 0;
     let finale = false;
     let shrugT = 9;
@@ -2436,7 +2422,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
     const pick = new THREE.Mesh(G.flat, new THREE.MeshBasicMaterial({ map: spot, color: hot(0x9dff5a, 0.9), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
     pick.scale.set(3, 1, 3);
     camp.add(pick);
-    noInk.push(pick);
     // a fish, berries or a log carried to the cabin
     const items = [
       (() => {
@@ -2489,7 +2474,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
       halo.scale.set(2.8, 1, 1.7);
       halo.visible = false;
       hill.add(halo);
-      noInk.push(halo);
       return { grp, spin, halo, shadow: blob(hill, 0.6 * r) };
     };
     const logs = Array.from({ length: 12 }, () => makeLog());
@@ -2499,7 +2483,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
     const warn = new THREE.Mesh(G.flat, new THREE.MeshBasicMaterial({ map: tex(128, 256, chevrons), color: hot(0xff3b2f, 1.3), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
     warn.scale.set(1.6, 1, 3.2);
     hill.add(warn);
-    noInk.push(warn);
     let royX = 0;
     let finale = false;
     let shrugT = 9;
@@ -2781,7 +2764,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
     screen.position.set(-1.55 + Math.sin(0.5) * 0.16, 1.63, -2.2 + Math.cos(0.5) * 0.16);
     screen.rotation.y = 0.5;
     g.add(screen);
-    noInk.push(screen);
     const trace = new Float32Array(128);
     let head = 0;
     let lastBeatT = 0;
@@ -3047,7 +3029,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
     scene.fog.far = L.fog[2];
     renderer.toneMappingExposure = L.exposure ?? 1;
     lightKey = key;
-    inkSkip.length = 0;
     confetti.clear();
     dust.clear();
     glow.clear();
@@ -3136,7 +3117,6 @@ export async function createRoyScene(canvas, { onLost, calm = reduced() } = {}) 
 
   const dispose = () => {
     disposeTree(over);
-    ink.dispose();
     stage.dispose();
     mats.dispose();
     for (const o of owned) o.dispose?.();

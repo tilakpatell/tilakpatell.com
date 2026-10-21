@@ -4,7 +4,7 @@
 // tripod, and five dark shapes coming up the slope as the night goes on.
 
 import * as THREE from 'three';
-import { hot } from '../../../../lib/stage3d';
+import { hot } from '../../../../lib/three/stage3dNodes';
 import { B, ball, cyl, lathe } from '../../shire/props';
 import { campfire } from './common';
 

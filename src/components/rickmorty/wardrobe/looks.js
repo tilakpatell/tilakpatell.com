@@ -21,6 +21,8 @@
 // Wardrobe.jsx offers it.
 
 export const LOOK_KEY = 'tp-wardrobe';
+// each one's name, as the wardrobe's tabs say it
+export const NAME = { rick: 'Rick', morty: 'Morty', walt: 'Walt', jesse: 'Jesse' };
 // each cast, and which crew (universe/crews.js) flies it
 export const CASTS = { rickmorty: ['rick', 'morty'], breakingbad: ['walt', 'jesse'] };
 export const CREW_CAST = { cruiser: 'rickmorty', rv: 'breakingbad' };
