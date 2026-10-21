@@ -7,7 +7,8 @@ import gs from '../../data/bf2017/gameSettings.json';
 import { fire } from './bolts.js';
 import { buildNav } from './nav.js';
 import { startInstantAction } from './instantAction.js';
-import { SPREAD } from './ai/botLogicOverhaul.js';
+import { SPREAD, kitTemplate } from './ai/botLogicOverhaul.js';
+import book from '../../data/bf2017/mods/iao-v2.json';
 import { aiOf, loadLevel, loadRulebook, mapOf, teamsFor } from './rulebook.js';
 import { step } from './sim.js';
 import { TIME_FOR_CORPSE } from './soldier.js';
@@ -160,5 +161,66 @@ describe('a round on the Overhaul’s logic', () => {
     expect(sim.botLogic.kind).toBe('game');
     expect(sim.botLogic[1].team).toBe(1);
     expect(sim.aimSpread).toBeUndefined();
+  });
+});
+
+// What the mod does to a bot, read through the round's sim (its records: mods/iao-v2.json): its steps on
+// the AutoPlayer's numbers each bot is made with (bots.js's `ap`), its squad-spawn probability, its
+// adaptive difficulty as the driver the sim steps (ai/adaptive.js), and its kits' Skirmish templates.
+describe('a bot on the Overhaul', () => {
+  const ai = aiOf(rb);
+  const cosOf = (deg) => Math.cos((deg * Math.PI) / 180);
+
+  it('is made with the steps asked: its aim noise scale, field of view, reaction and dodge roll', () => {
+    const { sim } = start({ overhaul: { aim: 'veryHard', reaction: 'easy', dodging: 'veryEasy' } });
+    for (const team of [1, 2])
+      for (const s of bots(sim, team)) {
+        expect(s.brain.ap).toMatchObject({ noiseScale: book.steps.aim.settings.AimNoiseScale.values[4], fov: 180, lofReaction: book.steps.reaction.settings.LofReactionTimeS.values[1], dodgeRoll: 0 });
+        // (its tracker sees as wide as the step's field of view; its noise is its class's × the step's scale)
+        expect(s.brain.senses.sight.cone).toBeCloseTo(cosOf(180), 9);
+        expect(s.brain.apNoise).toBeCloseTo(s.brain.ap.noise[s.brain.apClass] * 0.125, 9);
+      }
+  });
+
+  it('is made with the middle steps unless asked', () => {
+    const { sim } = start();
+    const s = bots(sim, 1)[0];
+    expect(s.brain.ap).toMatchObject({ noiseScale: 1, fov: 110, lofReaction: 0.1, dodgeRoll: 0.05, jump: 0.05 });
+    expect(s.brain.senses.sight.cone).toBeCloseTo(cosOf(110), 9);
+  });
+
+  it('comes in on a squadmate whenever one is free: the hub’s squad-spawn probability, where the game’s is a half', () => {
+    const { sim } = start();
+    expect(book.squadSpawn.value).toBe(1);
+    for (const team of [1, 2]) expect(sim.instantAction.ap[team].spawn.squad).toBe(book.squadSpawn.value);
+    expect(start({ botLogic: 'game' }).sim.instantAction.ap[1].spawn.squad).toBe(0.5);
+  });
+
+  it('fights at its side’s adaptive scale: the sim steps the mod’s driver, one of its ten every fifteen seconds', () => {
+    const { sim } = start();
+    expect(sim.aimSpread).toMatchObject({ 1: 1, 2: 1, rule: { every: book.adaptive.every, scales: book.adaptive.scales } });
+    until(sim, () => sim.time >= 0.15, 1);
+    for (const team of [1, 2]) expect(book.adaptive.scales).toContain(sim.aimSpread[team]);
+    expect(sim.aimSpread.next).toBeCloseTo(15.1, 6);
+  });
+
+  it('plays its class’s Skirmish template and tactics: its kit’s AI body is the Skirmish soldier', () => {
+    const { sim, round } = start();
+    expect(round.pve).toBe(true);
+    expect(sim.pve).toBe(true);
+    for (const team of [1, 2])
+      for (const s of bots(sim, team)) {
+        const kit = kitTemplate(s.cls.cls, { era: 'Orig', side: team === 1 ? 'light' : 'dark' });
+        expect(kit.template).toBe(s.cls.cls);
+        expect(s.brain.template).toBe(ai.skirmish.templates[kit.template]);
+        expect(s.brain.tactics).toBe(ai.skirmish.tactics[kit.tactics]);
+        // (and still an AutoPlayer: its aim, trigger and evasion are the mod's numbers, not the template's)
+        expect(s.brain.ap).not.toBe(null);
+      }
+    // (the game's logic keeps the multiplayer templates)
+    const game = start({ botLogic: 'game' });
+    expect(game.sim.pve).toBe(false);
+    const one = bots(game.sim, 1)[0];
+    expect(one.brain.template).not.toBe(ai.skirmish.templates[one.cls.cls]);
   });
 });
