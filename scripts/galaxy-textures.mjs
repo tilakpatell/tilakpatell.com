@@ -37,6 +37,8 @@ import sharp from 'sharp';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'public', 'cc0', 'galaxy');
+// (the castle's own go in a folder of their own: CASTLE_ROLES, below)
+const CASTLE_OUT = join(ROOT, 'public', 'cc0', 'castle');
 
 // kit role → Poly Haven id, how much of its colour to keep (0 grey … 1 all),
 // and the brightness its detail map is centred on (sRGB, 0…1)
@@ -86,11 +88,12 @@ export const ROLES = {
 
 // Hogwarts’ castle’s own (hogwarts/world/castle/materials.js): its walls’
 // dressed blocks, the rough stacked stone of its plinths, piers and the
-// Owlery, and the dark Highland slate of its roofs and cones. Fetched into
-// the same set and index, but kept out of ROLES: those are the surfaces the
-// galaxy’s worlds are dressed by, each with a source in the game’s own maps
-// for a Star Wars world (lib/bf2017-roles.mjs), and no Star Wars world
-// wears a Scottish castle’s stone.
+// Owlery, and the dark Highland slate of its roofs and cones. Made the same
+// way into a folder and an index of their own (public/cc0/castle/), kept
+// out of ROLES and the galaxy's set: those are the surfaces the galaxy’s
+// worlds are dressed by, each swapped for a source in the game’s own maps
+// on a Star Wars world (lib/bf2017-roles.mjs, lib/three/scans.js), and no
+// Star Wars world wears a Scottish castle’s stone.
 export const CASTLE_ROLES = {
   ashlar: { id: 'stone_brick_wall_001', keep: 0.15, mean: 0.78 },
   rubble: { id: 'castle_wall_slates', keep: 0.2, mean: 0.76 },
@@ -139,24 +142,24 @@ async function xlMap(img, dir, file, role) {
   return kind;
 }
 
-async function roleXl(name, spec) {
+async function roleXl(name, spec, out = OUT) {
   const files = await get(`https://api.polyhaven.com/files/${spec.id}`);
   const url = (k) => (files[k]?.['8k'] ?? files[k]?.['4k'])?.png?.url ?? (files[k]?.['8k'] ?? files[k]?.['4k'])?.jpg?.url;
   const [color, normal] = await Promise.all(['Diffuse', 'nor_gl'].map((k) => (url(k) ? get(url(k), 'buffer') : null)));
   if (!color || !normal) throw new Error(`${spec.id}: no 8K or 4K colour or normal map`);
-  const dir = join(OUT, name);
+  const dir = join(out, name);
   await mkdir(dir, { recursive: true });
   const kind = await xlMap((await detail(color, XL, spec)), dir, 'color', 'color');
   await xlMap(sharp(normal, { limitInputPixels: false }).resize(XL, XL, { fit: 'fill' }), dir, 'normal', 'normal');
   return kind;
 }
 
-async function role(name, spec) {
+async function role(name, spec, out = OUT) {
   const [files, info] = await Promise.all([get(`https://api.polyhaven.com/files/${spec.id}`), get(`https://api.polyhaven.com/info/${spec.id}`)]);
   const url = (k) => files[k]?.['1k']?.jpg?.url ?? files[k]?.['1k']?.png?.url;
   const [color, normal, arm] = await Promise.all(['Diffuse', 'nor_gl', 'arm'].map((k) => (url(k) ? get(url(k), 'buffer') : null)));
   if (!color || !normal) throw new Error(`${spec.id}: no 1K colour or normal map`);
-  const dir = join(OUT, name);
+  const dir = join(out, name);
   await mkdir(dir, { recursive: true });
   await (await detail(color, 1024, spec)).webp({ quality: 82, effort: 6 }).toFile(join(dir, 'color.webp'));
   await sharp(normal).resize(1024, 1024, { fit: 'fill' }).webp({ quality: 82, effort: 6 }).toFile(join(dir, 'normal.webp'));
@@ -170,22 +173,26 @@ async function main() {
   const args = process.argv.slice(2);
   const ultra = args.includes('--ultra');
   const only = args.filter((a) => !a.startsWith('--'));
-  const indexFile = join(OUT, 'index.json');
-  const index = existsSync(indexFile) ? JSON.parse(await readFile(indexFile, 'utf8')) : {};
-  for (const [name, spec] of Object.entries({ ...ROLES, ...CASTLE_ROLES })) {
-    if (only.length && !only.includes(name)) continue;
-    try {
-      if (ultra) {
-        // (the 8192 set beside a 1K set: the 1K set first, where there's none)
-        if (!index[name]) index[name] = await role(name, spec);
-        index[name].xl = await roleXl(name, spec);
-      } else index[name] = { ...(await role(name, spec)), ...(index[name]?.xl ? { xl: index[name].xl } : {}) };
-      console.log(`${name.padEnd(10)} ${spec.id.padEnd(28)} ${index[name].metres} m${index[name].arm ? '' : ' (no arm map)'}${index[name].xl ? ` · 8192 ${index[name].xl}` : ''}`);
-    } catch (e) {
-      console.log(`${name.padEnd(10)} ${spec.id.padEnd(28)} skipped: ${e.message}`);
+  // (each set into its own folder and index: the galaxy's surfaces, and the castle's own)
+  for (const [roles, out] of [[ROLES, OUT], [CASTLE_ROLES, CASTLE_OUT]]) {
+    const indexFile = join(out, 'index.json');
+    const index = existsSync(indexFile) ? JSON.parse(await readFile(indexFile, 'utf8')) : {};
+    for (const [name, spec] of Object.entries(roles)) {
+      if (only.length && !only.includes(name)) continue;
+      try {
+        if (ultra) {
+          // (the 8192 set beside a 1K set: the 1K set first, where there's none)
+          if (!index[name]) index[name] = await role(name, spec, out);
+          index[name].xl = await roleXl(name, spec, out);
+        } else index[name] = { ...(await role(name, spec, out)), ...(index[name]?.xl ? { xl: index[name].xl } : {}) };
+        console.log(`${name.padEnd(10)} ${spec.id.padEnd(28)} ${index[name].metres} m${index[name].arm ? '' : ' (no arm map)'}${index[name].xl ? ` · 8192 ${index[name].xl}` : ''}`);
+      } catch (e) {
+        console.log(`${name.padEnd(10)} ${spec.id.padEnd(28)} skipped: ${e.message}`);
+      }
+      // (written as it goes: an 8192 run is long, and one stopped keeps what it made)
+      await mkdir(out, { recursive: true });
+      await writeFile(indexFile, `${JSON.stringify(index, null, 2)}\n`);
     }
-    // (written as it goes: an 8192 run is long, and one stopped keeps what it made)
-    await writeFile(indexFile, `${JSON.stringify(index, null, 2)}\n`);
   }
 }
 

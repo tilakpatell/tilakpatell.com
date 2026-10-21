@@ -1,0 +1,39 @@
+{
+  "ashlar": {
+    "source": "https://polyhaven.com/a/stone_brick_wall_001",
+    "id": "stone_brick_wall_001",
+    "name": "Stone Brick Wall 001",
+    "authors": [
+      "Dimitrios Savva",
+      "Rico Cilliers"
+    ],
+    "license": "CC0 1.0",
+    "metres": 2.5,
+    "mean": 0.78,
+    "arm": true
+  },
+  "rubble": {
+    "source": "https://polyhaven.com/a/castle_wall_slates",
+    "id": "castle_wall_slates",
+    "name": "Castle Wall Slates",
+    "authors": [
+      "Rob Tuytel"
+    ],
+    "license": "CC0 1.0",
+    "metres": 2.5,
+    "mean": 0.76,
+    "arm": true
+  },
+  "slate": {
+    "source": "https://polyhaven.com/a/roof_slates_03",
+    "id": "roof_slates_03",
+    "name": "Roof Slates 03",
+    "authors": [
+      "Rob Tuytel"
+    ],
+    "license": "CC0 1.0",
+    "metres": 3,
+    "mean": 0.74,
+    "arm": true
+  }
+}

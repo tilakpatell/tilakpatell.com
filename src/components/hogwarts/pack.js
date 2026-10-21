@@ -7,6 +7,6 @@ export const PACK = {
   urls: ['/kit/naturemega/index.json', '/kit/naturemega/rock.glb', '/kit/naturemega/pebble.glb', '/kit/naturemega/grass.glb', '/kit/naturemega/fern.glb', '/kit/naturemega/pine.glb'],
   // the weather's particle sheets (world/weather.js, the Road's, the site's own), and the photo scans the
   // grounds and the castle wear (world/ground.js, world/castle/materials.js: by role, so named by the index)
-  globs: ['/models/middleearth/fx/*', '/cc0/galaxy/grass/*', '/cc0/galaxy/needles/*', '/cc0/galaxy/gravel/*', '/cc0/galaxy/rock/*', '/cc0/galaxy/ashlar/*', '/cc0/galaxy/rubble/*', '/cc0/galaxy/slate/*'],
-  computed: ['/kit'], // (the kit's files are named by its manifest, not the source)
+  globs: ['/models/middleearth/fx/*', '/cc0/galaxy/grass/*', '/cc0/galaxy/needles/*', '/cc0/galaxy/gravel/*', '/cc0/galaxy/rock/*', '/cc0/castle/ashlar/*', '/cc0/castle/rubble/*', '/cc0/castle/slate/*'],
+  computed: ['/kit', '/cc0/castle'], // (the kit's files are named by its manifest, the castle's scans by their role: not the source)
 };

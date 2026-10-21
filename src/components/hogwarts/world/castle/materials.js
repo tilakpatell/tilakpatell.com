@@ -33,6 +33,14 @@ import { onColor, onNormal } from '../../../../lib/three/hookNodes';
 import { noiseWith } from '../../../../lib/three/noiseNodes';
 import { CASTLE_FLOOR } from '../../rules/places';
 
+// The castle’s own scans (Poly Haven, CC0; public/cc0/castle/, fetched by
+// scripts/galaxy-textures.mjs’s CASTLE_ROLES and credited in
+// public/cc0/README.md): a folder of their own, not the galaxy’s surfaces,
+// which a Star Wars world swaps role for role for the game’s own maps.
+// Their sizes and centred brightness are index.json’s; these are what the
+// loader asks (each has its packed map).
+export const CASTLE_SCANS = { base: '/cc0/castle', index: { ashlar: { arm: true }, rubble: { arm: true }, slate: { arm: true } } };
+
 const lin = (hex) => new THREE.Color(hex).toArray();
 // the castle’s palette (sRGB in, linear out): a pale grey stone warmed by
 // lichen, the plinths and the piers darker, a few towers paler or older,
@@ -164,7 +172,7 @@ export function createCastleMaterials({ house = null, tier = 'high' } = {}) {
   const ready = scans
     ? Promise.all(
         [ashlar, rubble].map(({ m, role }) =>
-          loadCore(role).then((got) => {
+          loadCore(role, CASTLE_SCANS).then((got) => {
             const u = m.userData.core;
             if (!got || !u) return;
             u.uCoreMap.value = got.map;
@@ -172,7 +180,7 @@ export function createCastleMaterials({ house = null, tier = 'high' } = {}) {
           }),
         ),
       )
-        .then(() => loadCore('slate'))
+        .then(() => loadCore('slate', CASTLE_SCANS))
         .then((got) => {
           if (got?.map) slateMap.value = got.map;
           if (got?.normalMap) {
