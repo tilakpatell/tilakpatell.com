@@ -58,6 +58,7 @@ function houseMaterial(uniforms) {
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85 });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uNight = uniforms.uNight;
+    sh.uniforms.uTint = uniforms.uTint;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec4 aHouse;\nattribute float aHurt;\nvarying vec3 vH;\nvarying vec3 vHN;\nflat varying vec4 vHouse;\nflat varying float vHurt;')
       .replace(
@@ -73,6 +74,7 @@ function houseMaterial(uniforms) {
         '#include <common>',
         `#include <common>
         uniform float uNight;
+        uniform vec3 uTint;
         varying vec3 vH;
         varying vec3 vHN;
         flat varying vec4 vHouse;
@@ -130,7 +132,8 @@ function houseMaterial(uniforms) {
         `#include <emissivemap_fragment>
         float lit = step(0.45, hh(houseCol * 3.1 + seed * 17.0 + step(3.0, y) * 5.0)) * houseWin * uNight;
         totalEmissiveRadiance += lit * vec3(1.0, 0.72, 0.42) * ${(0.6 * WINDOWS.light).toFixed(3)};
-        diffuseColor.rgb *= 1.0 - 0.4 * uNight * (1.0 - houseWin);`,
+        diffuseColor.rgb *= 1.0 - 0.4 * uNight * (1.0 - houseWin);
+        diffuseColor.rgb *= uTint;`,
       );
   };
   m.customProgramCacheKey = () => 'inv-house';
@@ -140,7 +143,7 @@ function houseMaterial(uniforms) {
 export function buildCity(world, { small = false } = {}) {
   const group = new THREE.Group();
   group.name = 'city';
-  const uniforms = { uNight: { value: 0 } };
+  const uniforms = { uNight: { value: 0 }, uBurn: { value: 0 }, uTint: { value: new THREE.Vector3(1, 1, 1) } };
   const r = rng(29);
 
   // ── the towers ──
@@ -376,6 +379,11 @@ export function buildCity(world, { small = false } = {}) {
     setDamage,
     boxOf,
     // 0 by day, 1 at night: the windows, the houses' lights
+    // a dimension's look (./dimensions.js): every tower hurt `ruins`, the city in a tint
+    setDimension({ ruins = 0, tint = null } = {}) {
+      uniforms.uBurn.value = ruins;
+      uniforms.uTint.value.set(...(tint ?? [1, 1, 1]));
+    },
     setNight(k) {
       uniforms.uNight.value = k;
     },

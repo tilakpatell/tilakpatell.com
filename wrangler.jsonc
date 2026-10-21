@@ -1,0 +1,22 @@
+// The site on Cloudflare: the Worker tilakpatell-com, nothing but the build's
+// files (no script of its own), uploaded by .github/workflows/deploy.yml
+// after GitHub Pages (docs/decisions/2026-10-21-cloudflare-for-the-site.md).
+// A path with no file answers with dist/404.html, as GitHub Pages does; a
+// folder's index.html answers at its path with the slash; public/_headers
+// holds the cache rule and lets any site read the files, as GitHub does.
+{
+  "name": "tilakpatell-com",
+  // (the owner's account: an id, not a key, so it can be read here; the token
+  // is the repository's secret CLOUDFLARE_API_TOKEN)
+  "account_id": "b12a527ca9fde882ef12c5c60f75f2e8",
+  // (the newest the pinned wrangler's local runtime knows: a Worker of files
+  // alone runs no code of its own, so the date changes nothing it does)
+  "compatibility_date": "2026-10-13",
+  "workers_dev": true,
+  // (one address, the workers.dev one: no address for each version uploaded)
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  }
+}

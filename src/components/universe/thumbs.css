@@ -191,7 +191,8 @@
     --thumbs-r: calc(var(--panel-w) + var(--hud-edge) + 12px);
     --thumbs-b: var(--hud-pad-b);
   }
-  :root .universe-page:not(.galaxy-page)[data-tucked] { --panel-w: 0px; --thumbs-r: var(--hud-edge); }
+  /* (its bar names nothing but itself, below: the words and the guide's cell fit in 230px) */
+  :root .universe-page:not(.galaxy-page)[data-tucked] { --panel-w: 0px; --tab-w: 230px; --thumbs-r: var(--hud-edge); }
   :root .universe-page:not(.galaxy-page) .universe-panel {
     top: calc(var(--nav-h) + 8px);
     left: auto;
@@ -204,7 +205,6 @@
     border-radius: var(--r-card);
   }
   :root .universe-page:not(.galaxy-page) .universe-panel[data-tucked] { top: calc(var(--nav-h) + 8px); width: var(--tab-w); height: 44px; padding-bottom: 0; }
-  :root .universe-page:not(.galaxy-page) .universe-untuck { padding-right: 1rem; }
   :root .universe-page:not(.galaxy-page) :is(.universe-flat, .loading-veil.universe-loading) { right: calc(var(--panel-w) + 24px); bottom: 0; }
   :root .universe-page:not(.galaxy-page) .universe-comms { left: var(--hud-edge); right: calc(var(--panel-w) + var(--hud-edge) + 12px); }
   /* with a ship: the whole screen. The site's bar steps aside (the panel,

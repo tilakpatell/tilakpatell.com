@@ -166,6 +166,7 @@ export function createCourse(scene) {
         m.position.set(g[0], g[1], g[2]);
         m.scale.setScalar(gates.r * (next ? 1 + Math.sin(t * 4) * 0.04 : 1));
         m.material.opacity = next ? 0.95 : 0.3;
+        m.material.color.set(gates.color ?? 0xf5c518);
         // (facing the one before it, or him: a ring stands across the way)
         const from = gates.list[i - 1] ?? [g[0], g[1], g[2] + 1];
         m.lookAt(from[0], from[1], from[2]);

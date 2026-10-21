@@ -88,6 +88,8 @@ export const STAGES = [
         { points: [[-540, 0, 60], [-200, 0, 54], [0, 0, 52], [220, 0, 49], [540, 0, 44]], depth: 3.2, width: 9, bank: 4 },
         { points: [[-540, 0, 160], [-240, 0, 166], [0, 0, 168], [260, 0, 171], [540, 0, 164]], depth: 1.1, width: 16, bank: 5 },
       ],
+      // (nothing planted in the trolls' clearing, ford/index.js's CLEARING)
+      clear: [{ at: [9.5, 40], r: 8 }],
     },
   },
   {
