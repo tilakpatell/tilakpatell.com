@@ -619,6 +619,7 @@ function World({ gl, setGl, thinkMark }) {
     for (const e of s.companion ?? []) {
       if (e.type === 'line') say(e.text, 3200, e.who);
       else if (e.type === 'eveHit' && e.foe != null) s.eveHit = e.foe;
+      else if (e.type === 'dadAt') feed({ type: 'dadAt', i: e.i }); // (episode 7: Dad at a point and moving on)
     }
     if (s.companion) s.companion.length = 0;
 

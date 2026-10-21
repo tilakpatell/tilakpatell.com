@@ -66,7 +66,8 @@
 /* the other players online, by the tools: how many, or a way to see them */
 .dt-players { display: inline-flex; align-items: center; gap: 0.35rem; height: 36px; padding: 0 0.8rem; border: 1px solid rgba(201, 162, 90, 0.55); border-radius: 10px; background: rgba(6, 8, 14, 0.78); color: var(--dt-paper); font: 600 0.72rem/1 var(--font-mono); white-space: nowrap; }
 .dt-players b { color: #c9dcff; font-variant-numeric: tabular-nums; }
-button.dt-players { border-style: dashed; cursor: pointer; }
+button.dt-players { cursor: pointer; }
+button.dt-players:not([data-on]) { border-style: dashed; } /* (the way in alone: once you’re in, the count that opens your party is a button too, and mustn’t pass for it) */
 button.dt-players:hover { background: rgba(34, 38, 48, 0.86); } /* (lighter on hover, never thinner than the glass: its words sit over the live sea) */
 button.dt-players:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 @media (max-width: 699px) {

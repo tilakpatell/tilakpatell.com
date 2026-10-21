@@ -13,23 +13,24 @@
 // screenOf(kind, id), aimAt(x, y), resize, dispose, lost, info }.
 
 import * as THREE from 'three';
-import { createStage, disposeTree } from '../../../../lib/stage3d';
-import { createHouse } from '../../../../lib/three/house';
-import { dress, rolesFor } from '../../../../lib/three/core';
+import { createStage, disposeTree } from '../../nodes/stage';
+import { createHouse } from '../../../../lib/three/houseNodes';
+import { dress, rolesFor } from '../../../../lib/three/coreNodes';
 import { device } from '../../../../lib/device';
 import { fbm, makeNoise, smooth } from '../../../../lib/paint';
 import { pose } from '../../mapFigures';
-import { EMBER, FIRE as FLAME, createParticles } from '../../kit';
-import { instances } from '../../shire/ground';
-import { makeAtmosphere, makeSky } from '../../shire/sky';
-import { createFx } from '../../shire/fx';
+import { EMBER, FIRE as FLAME, createParticles } from '../../nodes/kit';
+import { instances } from '../../nodes/shire/ground';
+import { makeAtmosphere, makeSky } from '../../nodes/shire/sky';
+import { createFx } from '../../nodes/shire/fx';
 import { bake } from '../bake';
-import { createGhosts } from '../ghosts';
-import { makeTerrain, makeTufts } from '../ground';
+import { createGhosts } from '../../nodes/towns/ghosts';
+import { makeTerrain, makeTufts } from '../../nodes/towns/ground';
 import { FIGURE, groundTown } from '../grounded';
 import { makeFolk } from '../bree/props';
 import { createWraithKit } from '../wraiths';
 import { createWeathertopKit } from './props';
+import { riverMaterial } from '../../nodes/towns/weathertop/sceneShaders';
 import { ARWEN_AT, BED, CAST, COLLIDERS, CRAGS, DELL, FIRE_AT, GAPS, HILL, PATCHES, PLANTS, ROCKS, RUIN, SPOTS, STAIR, STAIR_W, STAND, TREES, TROLLS, WALLS, WORLD, WOUNDED, height, pathAmount, stairNear } from './layout';
 import { BRAND, MARK_LINES, OBSTACLES, RIDE, glowOf, roadBend, roadTurn } from './rules';
 import { sharpen } from '../../../../lib/three/textures';
@@ -474,48 +475,7 @@ export function createWeathertopWorld(canvas, { onLost } = {}) {
     if (stones.length) ride.add(instances(kit.rocks[0], mats.rock, stones, { shadow: false }));
   }
   // the river at the ford, flowing across the road under the moon
-  const riverMat = new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 }, uFlood: { value: 0 }, uSky: water.uniforms.uSky, uDeep: water.uniforms.uDeep, uSun: water.uniforms.uSun, uSunColor: water.uniforms.uSunColor }]),
-    fog: true,
-    transparent: true,
-    depthWrite: false,
-    vertexShader: `
-      #include <fog_pars_vertex>
-      varying vec3 vWorld;
-      void main() {
-        vec4 wp = modelMatrix * vec4(position, 1.0);
-        vWorld = wp.xyz;
-        vec4 mvPosition = viewMatrix * wp;
-        gl_Position = projectionMatrix * mvPosition;
-        #include <fog_vertex>
-      }`,
-    fragmentShader: `
-      #include <fog_pars_fragment>
-      uniform float uTime, uFlood;
-      uniform vec3 uSky, uDeep, uSun, uSunColor;
-      varying vec3 vWorld;
-      float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-      float noise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y); }
-      void main() {
-        // it flows across the road, to +z; faster and whiter in the flood
-        float speed = 1.2 + uFlood * 5.0;
-        vec2 p = vec2(vWorld.x * 0.35, vWorld.z * 0.12 - uTime * speed);
-        float n = noise(p * 2.0) * 0.6 + noise(p * 5.3 + 3.1) * 0.4;
-        vec3 view = normalize(cameraPosition - vWorld);
-        vec3 nrm = normalize(vec3((n - 0.5) * 0.35, 1.0, (noise(p * 3.1 + 7.0) - 0.5) * 0.35));
-        float fres = pow(1.0 - max(dot(nrm, view), 0.0), 3.0);
-        vec3 col = mix(uDeep, uSky, 0.35 + fres * 0.65);
-        vec3 h = normalize(normalize(uSun) + view);
-        col += uSunColor * pow(max(dot(nrm, h), 0.0), 120.0) * 2.4;
-        // foam over the stones of the ford, and all of it in the flood
-        float foam = smoothstep(0.62 - uFlood * 0.5, 0.9, noise(p * 3.7 + uTime * 0.6));
-        col = mix(col, vec3(0.9, 0.97, 1.08), foam * (0.3 + uFlood * 0.45));
-        gl_FragColor = vec4(col, 0.86);
-        #include <fog_fragment>
-      }`,
-  });
-  // (merge copies its uniforms: the sky's water colours are shared back in)
-  for (const k of ['uSky', 'uDeep', 'uSun', 'uSunColor']) riverMat.uniforms[k] = water.uniforms[k];
+  const riverMat = riverMaterial(water);
   const river = new THREE.Mesh(new THREE.PlaneGeometry(FORD[1] - FORD[0] + 10, 260, 1, 1).rotateX(-Math.PI / 2), riverMat);
   roadAt(FORD_MID, 0, river.position);
   river.position.y = -0.55;

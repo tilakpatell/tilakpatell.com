@@ -5,6 +5,7 @@
 // tests can check it.
 import { CHAPTERS, stopOf } from './chapters';
 import { HIDDEN } from './hidden';
+import { ridden } from './road/entry';
 import { levelOf } from './rush/levels';
 
 // the achievement each chapter's side game wins
@@ -19,13 +20,13 @@ export const SIDE_SEALS = {
   'dead-marshes': { seal: 'safeway', name: 'Sméagol’s safe way' },
   'cirith-ungol': { seal: 'notacrumb', name: 'Crumbs on Sam’s cloak' },
   mordor: { seal: 'remembertheshire', name: 'Do you remember the Shire?' },
+  'minas-tirith': { seal: 'callsforaid', name: 'Gondor calls for aid' },
 };
 
 // the places off the road (./hidden.js): the seal for finding each, and
 // the one for seeing it through
 export const HIDDEN_SEALS = {
   orthanc: { found: 'orthanc', end: 'windlord' },
-  'minas-tirith': { found: 'minastirith', end: 'kingreturns' },
   edoras: { found: 'edoras', end: 'rohanwillanswer' },
 };
 // The places off the road, as far as they're known: one not found yet is
@@ -54,6 +55,16 @@ export function hiddenHints(unlocked = []) {
   const have = new Set(unlocked);
   if (!CHAPTERS.every((c) => c.seals.some((s) => have.has(s)))) return [];
   return HIDDEN.filter((h) => !have.has(HIDDEN_SEALS[h.id]?.found)).map((h) => h.id);
+}
+
+// The Road, as the journal has it: whether it was ridden (two thirds of it
+// walked, ./road/entry.js) and the day it first was (ms, or null for a ride
+// saved before the day was kept). `stored` is what the browser keeps under
+// the Road's key: the runtime's { v, data }, or a save from before that.
+export function roadRidden(stored) {
+  const save = stored && typeof stored === 'object' && 'data' in stored ? stored.data : stored;
+  const yes = ridden(save);
+  return { ridden: yes, on: yes && Number.isFinite(save.on) ? save.on : null };
 }
 
 // how many stars `coins` come to in a kitchen played alone (its own marks)

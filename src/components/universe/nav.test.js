@@ -103,6 +103,8 @@ describe('the drives', () => {
   it('lets the hyperdrive jump once it has charged, and never while interdicted', () => {
     expect(hyperState()).toEqual({ ready: true, wait: 0, why: null });
     expect(hyperState({ last: 100, now: 103 })).toMatchObject({ ready: false, why: 'charging', wait: HYPER.recharge - 3 });
+    // (a hot drive's quicker recharge: the skill tree's)
+    expect(hyperState({ last: 100, now: 103, recharge: HYPER.recharge * 0.75 }).wait).toBeCloseTo(HYPER.recharge * 0.75 - 3);
     expect(hyperState({ last: 100, now: 100 + HYPER.recharge }).ready).toBe(true);
     expect(hyperState({ interdicted: true })).toMatchObject({ ready: false, why: 'interdicted' });
   });

@@ -6,7 +6,7 @@
 // letters show, and out again with the tongs.
 
 import * as THREE from 'three';
-import { canvasTexture, hot } from '../../../lib/stage3d';
+import { canvasTexture, hot } from '../../../lib/three/stage3dNodes';
 import { fbm, makeCanvas, makeNoise, paintPixels } from '../../../lib/paint';
 import { rng } from '../../../lib/texture';
 import { makePerson } from './people';

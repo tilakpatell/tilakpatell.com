@@ -15,6 +15,8 @@
 // the scroll position come eased (k.pointer, k.scroll). It draws at 30 frames
 // a second at a low pixel ratio (a background is soft and slow), nothing
 // while the tab is hidden, and one still frame with reduced motion.
+// `opts.antialias`: a scene with a solid model in it (Mordor’s tower) asks
+// for its edges smoothed; a strong computer gets it, nothing else does.
 
 import * as THREE from 'three';
 import { createRenderer, disposeTree, precompile } from '../../lib/three/renderer';
@@ -39,9 +41,9 @@ export const lift = (c) =>
 // Something you can click without it being a burst on the page.
 const ACTIVE = 'a, button, input, textarea, select, label, summary, video, iframe, canvas, [role="button"], [role="tab"], [contenteditable], .card, .panel';
 
-export function ambience(canvas, ctx, build) {
+export function ambience(canvas, ctx, build, opts = {}) {
   const tier = device().tier;
-  const gl = createRenderer(canvas, { alpha: true, antialias: false, ratio: tier === 'high' ? 1 : 0.75, onLost: ctx.onLost, onSlow: ctx.onSlow });
+  const gl = createRenderer(canvas, { alpha: true, antialias: !!opts.antialias && tier === 'high', ratio: tier === 'high' ? 1 : 0.75, onLost: ctx.onLost, onSlow: ctx.onSlow });
   const { renderer } = gl;
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -2000, 2000);

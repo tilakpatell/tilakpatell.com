@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import * as glsl from './pilots';
 import * as nodes from './pilotsNodes';
 import { STOCK_LOADOUT } from '../outfit';
@@ -77,5 +77,147 @@ describe('pilotsNodes, the twin of pilots', () => {
     const { parent, pilots } = make(nodes);
     pilots.dispose();
     expect(parent.children).toHaveLength(0);
+  });
+});
+
+// The tags are the page's: an element that keeps what's written to it
+// stands in for each (Node has no DOM), and a view that puts everyone in
+// the middle of an 800 × 600 box, near.
+function fakeEl(tag) {
+  const el = {
+    tag,
+    className: '',
+    textContent: '',
+    hidden: false,
+    title: '',
+    kids: [],
+    attrs: {},
+    dataset: {},
+    style: { transform: '', setProperty() {} },
+    offsetWidth: 90,
+    offsetHeight: 22,
+    clientWidth: 800,
+    clientHeight: 600,
+    append: (...kids) => el.kids.push(...kids),
+    setAttribute: (k, v) => (el.attrs[k] = String(v)),
+    toggleAttribute: (k, on) => (on ? (el.attrs[k] = '') : delete el.attrs[k]),
+    addEventListener() {},
+    remove() {},
+  };
+  return el;
+}
+const view = (tags, extra = {}) => ({ tags, project: (x, y, z, out) => Object.assign(out, { x: 400, y: 300, z: 5 }), locked: null, footOn: null, me: null, factions: null, ...extra });
+// where a tag was put: translate3d(x, y) out of its transform
+const placed = (tag) => tag.style.transform.match(/translate3d\(([-\d.]+)px, ([-\d.]+)px/).slice(1).map(Number);
+
+describe('the tags, in both', () => {
+  beforeAll(() => vi.stubGlobal('document', { createElement: fakeEl }));
+  afterAll(() => vi.unstubAllGlobals());
+
+  it('hold a bubble with what the pilot’s just said, while it shows (client.quip)', () => {
+    for (const P of [glsl, nodes]) {
+      const said = new Map();
+      const tags = fakeEl('div');
+      const pilots = P.createPilots(new THREE.Group(), { fleet: fleet(), kinds: HUNTER_KINDS });
+      const client = { peers: new Map([['ann', peer('ann')]]), takeShots: () => [], quip: (id) => said.get(id) ?? null };
+      pilots.update(1 / 60, 150, client, view(tags));
+      const [tag] = tags.kids;
+      const bubble = tag.kids.find((k) => k.className === 'quip-bubble');
+      expect(bubble.hidden).toBe(true);
+      said.set('ann', 'Nice one');
+      pilots.update(1 / 60, 166, client, view(tags));
+      expect(bubble.hidden).toBe(false);
+      expect(bubble.textContent).toBe('Nice one');
+      // the line's old: hidden again
+      said.delete('ann');
+      pilots.update(1 / 60, 182, client, view(tags));
+      expect(bubble.hidden).toBe(true);
+      // (a client without quick chat, an older one: nothing said)
+      pilots.update(1 / 60, 198, { ...client, quip: undefined }, view(tags));
+      expect(bubble.hidden).toBe(true);
+      pilots.dispose();
+    }
+  });
+
+  it('come back over the pilot the guns are locked on while they have a line, so it isn’t lost', () => {
+    for (const P of [glsl, nodes]) {
+      const said = new Map();
+      const tags = fakeEl('div');
+      const pilots = P.createPilots(new THREE.Group(), { fleet: fleet(), kinds: HUNTER_KINDS });
+      const client = { peers: new Map([['ann', peer('ann')]]), takeShots: () => [], quip: (id) => said.get(id) ?? null };
+      const locked = view(tags, { locked: 'ann' });
+      pilots.update(1 / 60, 150, client, locked);
+      // (a stranger, there for the guns: the lock’s bracket has her name, so her tag gives way)
+      expect(pilots.targets.map((t) => t.peer)).toEqual(['ann']);
+      const [tag] = tags.kids;
+      const bubble = tag.kids.find((k) => k.className === 'quip-bubble');
+      expect('data-on' in tag.attrs).toBe(false);
+      said.set('ann', 'Watch out');
+      pilots.update(1 / 60, 166, client, locked);
+      expect('data-on' in tag.attrs).toBe(true);
+      expect(bubble.hidden).toBe(false);
+      expect(bubble.textContent).toBe('Watch out');
+      // the line’s old: the tag gives way to the bracket again
+      said.delete('ann');
+      pilots.update(1 / 60, 182, client, locked);
+      expect('data-on' in tag.attrs).toBe(false);
+      pilots.dispose();
+    }
+  });
+
+  it('keep a line’s bubble inside the box too, measured with the tag it’s over', () => {
+    for (const P of [glsl, nodes]) {
+      const said = new Map();
+      const tags = fakeEl('div');
+      const pilots = P.createPilots(new THREE.Group(), { fleet: fleet(), kinds: HUNTER_KINDS });
+      const client = { peers: new Map([['ann', peer('ann')]]), takeShots: () => [], quip: (id) => said.get(id) ?? null };
+      // a ship in the top right corner of the 800 × 600 box
+      const corner = view(tags, { project: (x, y, z, out) => Object.assign(out, { x: 795, y: 10, z: 5 }) });
+      let now = 150;
+      const frames = (n) => {
+        for (let i = 0; i < n; i++) pilots.update(1 / 60, (now += 16), client, corner);
+      };
+      frames(3);
+      const [tag] = tags.kids;
+      const bubble = tag.kids.find((k) => k.className === 'quip-bubble');
+      // (24 tall, its bottom 9 over the tag’s top: online.css’s margin)
+      Object.assign(bubble, { offsetWidth: 150, offsetHeight: 24, offsetTop: -(24 + 9) });
+      // the tag alone (90 × 22): its middle 49 in from the edge, its top 4 down
+      expect(placed(tag)).toEqual([800 - 45 - 4, 22 + 4]);
+      said.set('ann', 'See you at the map');
+      frames(3);
+      // with the line over it (150 wide; 24 tall, 9 over the tag): all of it in
+      expect(placed(tag)).toEqual([800 - 75 - 4, 22 + 9 + 24 + 4]);
+      // the line’s gone: the tag alone again
+      said.delete('ann');
+      frames(3);
+      expect(placed(tag)).toEqual([800 - 45 - 4, 22 + 4]);
+      pilots.dispose();
+    }
+  });
+
+  it('wear the ally green for a mate in your party, who is spared as an ally is', () => {
+    for (const P of [glsl, nodes]) {
+      const tags = fakeEl('div');
+      const pilots = P.createPilots(new THREE.Group(), { fleet: fleet(), kinds: HUNTER_KINDS });
+      const ann = peer('ann');
+      const client = { peers: new Map([['ann', ann]]), takeShots: () => [] };
+      pilots.update(1 / 60, 150, client, view(tags));
+      const [tag] = tags.kids;
+      expect('data-ally' in tag.attrs).toBe(false);
+      expect(tag.dataset.relation).toBe('none');
+      expect(pilots.targets.map((t) => t.peer)).toEqual(['ann']);
+      ann.mate = true;
+      pilots.update(1 / 60, 166, client, view(tags));
+      expect('data-ally' in tag.attrs).toBe(true);
+      expect(tag.dataset.relation).toBe('ally');
+      expect(pilots.targets).toEqual([]);
+      expect(pilots.mates.map((m) => m.id)).toEqual(['ann']);
+      // (blocked, no one's mate)
+      ann.blocked = true;
+      pilots.update(1 / 60, 182, client, view(tags));
+      expect(pilots.mates).toEqual([]);
+      pilots.dispose();
+    }
   });
 });

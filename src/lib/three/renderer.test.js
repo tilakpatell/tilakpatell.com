@@ -61,6 +61,19 @@ describe('watchdog', () => {
     expect(seen.slow).toBe(0);
   });
 
+  it('steps from a ratio its owner set, not from the sharper one it began at', () => {
+    const steps = [];
+    const dog = watchdog({ ratio: 2, set: (r) => steps.push(r) });
+    dog.rebase(1.5);
+    let now = 1000;
+    for (let i = 0; i < 600; i++) {
+      dog.watch(now);
+      now += 40; // slow frames, at any sharpness
+    }
+    expect(steps[0]).toBe(1.25);
+    expect(Math.max(...steps)).toBeLessThanOrEqual(1.5);
+  });
+
   it('at the floor and still slow, tells the scene once', () => {
     const seen = run({ ratio: 1, frameMs: (r) => 18 + 30 * r * r, beat: 0, seconds: 60 });
     expect(seen.ratio).toBe(0.75);

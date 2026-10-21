@@ -101,12 +101,47 @@ export function gridLines(n, grow) {
 
 // The heights on the grid, and the height anywhere inside it read back off
 // its triangles. Each cell (i, j) to (i + 1, j + 1) is two triangles split
-// from (i, j + 1) to (i + 1, j), as ground.js draws them.
-export function heightGrid(height, { n = 256, grow = 1.08 } = {}) {
+// from (i, j + 1) to (i + 1, j), as ground.js draws them. `centre` is where
+// the grid lies (the origin; the free roam's moves it round you: roam.js),
+// its `lines` round it and its `centre` kept, so the height at (x, z) is
+// the world's wherever it lies.
+export function heightGrid(height, { n = 256, grow = 1.08, centre = [0, 0] } = {}) {
+  const build = gridBuild(height, { n, grow, centre });
+  build.step(Infinity);
+  return build.grid;
+}
+
+// The same grid sampled a few rows at a time: `step(ms)` samples rows till
+// `ms` milliseconds have gone (Infinity: all of them) and says whether it's
+// done; `grid` is the grid once it is (null till then), `progress` 0…1.
+export function gridBuild(height, { n = 256, grow = 1.08, centre = [0, 0] } = {}) {
   const lines = gridLines(n, grow);
   const w = lines.length;
+  const [cx, cz] = centre;
   const heights = new Float32Array(w * w);
-  for (let j = 0; j < w; j++) for (let i = 0; i < w; i++) heights[j * w + i] = height(lines[i], lines[j]);
+  let row = 0;
+  const build = {
+    grid: null,
+    get progress() {
+      return row / w;
+    },
+    step(ms = Infinity) {
+      const t0 = performance.now();
+      while (row < w) {
+        for (let i = 0; i < w; i++) heights[row * w + i] = height(cx + lines[i], cz + lines[row]);
+        row++;
+        if (performance.now() - t0 >= ms) break;
+      }
+      if (row >= w && !build.grid) build.grid = gridOf(lines, heights, n, centre);
+      return Boolean(build.grid);
+    },
+  };
+  return build;
+}
+
+function gridOf(lines, heights, n, centre) {
+  const w = lines.length;
+  const [cx, cz] = centre;
   const first = lines.indexOf(-HALF);
   const cell = (2 * HALF) / n;
   const at = (i, j) => heights[j * w + i];
@@ -136,13 +171,16 @@ export function heightGrid(height, { n = 256, grow = 1.08 } = {}) {
     heights,
     size: w,
     cell,
+    centre: [cx, cz],
     // the drawn height at (x, z); outside the walkable square, read off the
     // grid's growing lines out to the horizon (cheap: the zones' rooms, far
     // out, ask every frame), held at its edge past them
     heightAt(x, z) {
-      const gx = (x + HALF) / cell;
-      const gz = (z + HALF) / cell;
-      if (gx < 0 || gz < 0 || gx >= n || gz >= n) return far(x, z);
+      const lx = x - cx;
+      const lz = z - cz;
+      const gx = (lx + HALF) / cell;
+      const gz = (lz + HALF) / cell;
+      if (gx < 0 || gz < 0 || gx >= n || gz >= n) return far(lx, lz);
       const i = Math.floor(gx);
       const j = Math.floor(gz);
       const fx = gx - i;

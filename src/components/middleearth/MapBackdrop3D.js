@@ -7,6 +7,9 @@
 // light; at night (dark mode) a candle lights it, and it flickers. In Mordor
 // the light turns to fire. It draws only while something is moving, or the
 // candle is lit; under a chapter's town, less often (./mapCover.js).
+// It draws on the runtime's renderer, a view of its canvas (Middle-earth's
+// world, ./module.js; runtime/views.js) with its own look: ACES at 1.15,
+// its shadows, sharp to 1.5.
 
 import * as THREE from 'three';
 import { normalCanvas } from '../../lib/texture';
@@ -15,34 +18,41 @@ import { mapFont, paintMap, paintRelief } from './mapPaint';
 import { buildDiorama } from './mapDiorama';
 import { buildRoom } from './mapRoom.js';
 import { flightAt } from './mapFlight.js';
+import { framing } from './mapFraming.js';
 import { prefersReducedMotion } from '../../lib/hooks';
 import { budget, device, pixelRatio } from '../../lib/device';
-import { guard } from '../../lib/three/frameGuard';
-import { precompile, quiet, releaseContext } from '../../lib/three/renderer';
 
 const SCALE = 10; // sheet units to one of the scene's
 const at = (x, y) => [(x - SHEET.w / 2) / SCALE, (y - SHEET.h / 2) / SCALE];
+const HUB = framing();
 
 export { mapFont };
 
-export function createMapBackdrop(canvas, { onLost } = {}) {
-  const renderer = quiet(new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', stencil: false }));
-  // (what arrives late is held back until it's ready, not waited for: lib/three/frameGuard)
-  guard(renderer);
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+// (`me`: Middle-earth's world, up: ./module.js)
+export function createMapBackdrop(canvas, { onLost, me } = {}) {
+  const renderer = me.renderer;
   // lib/device: less sharp, and no shadows, on a weak device
-  renderer.setPixelRatio(pixelRatio(1.5));
-  renderer.shadowMap.enabled = budget().shadows;
-  renderer.shadowMap.type = THREE.PCFShadowMap;
+  // (what arrives late is held back by the runtime renderer's frame guard)
+  const view = me.views.add(canvas, {
+    ratio: pixelRatio(1.5),
+    // (its own canvas had no alpha)
+    opaque: true,
+    state: {
+      toneMapping: THREE.ACESFilmicToneMapping,
+      toneMappingExposure: 1.15,
+      outputColorSpace: THREE.SRGBColorSpace,
+      shadows: { enabled: budget().shadows, type: THREE.PCFShadowMap },
+      clear: { color: new THREE.Color(0x000000), alpha: 1 },
+      infoReset: true,
+    },
+  });
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x140d08);
   const camera = new THREE.PerspectiveCamera(34, 16 / 9, 1, 400);
 
   const map = new THREE.CanvasTexture(paintMap(2048));
   map.colorSpace = THREE.SRGBColorSpace;
-  map.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  map.anisotropy = Math.min(8, renderer.capabilities?.getMaxAnisotropy?.() ?? renderer.getMaxAnisotropy?.() ?? 1);
   const relief = new THREE.CanvasTexture(normalCanvas(paintRelief(1024), 5));
   relief.anisotropy = map.anisotropy;
   const W = SHEET.w / SCALE;
@@ -90,13 +100,14 @@ export function createMapBackdrop(canvas, { onLost } = {}) {
   const fire = { ambient: new THREE.Color(0x8a5a44), candle: new THREE.Color(0xff8648), low: new THREE.Color(0xff9a66) };
   const tint = new THREE.Color();
 
+  // (the context is the runtime's: its loss disposes the world, which says so here)
   let lost = false;
-  const onContextLost = (e) => {
-    e.preventDefault();
-    lost = true;
-    onLost?.();
-  };
-  canvas.addEventListener('webglcontextlost', onContextLost);
+  const off = me.stage({
+    lose: () => {
+      lost = true;
+      onLost?.();
+    },
+  });
 
   // where the camera is, and where it is going: a point on the sheet, a
   // height (1 is close, about 3 the whole sheet), how far into Mordor, how
@@ -126,13 +137,13 @@ export function createMapBackdrop(canvas, { onLost } = {}) {
   //   alive: the candle flickers (it keeps drawing), lean: [-1..1, -1..1] the
   //   pointer, hover: [x, y] a place to lean towards }
   const setView = ({ at: spot = null, zoom = null, mordor = false, dark = false, alive: live = false, lean = [0, 0], hover = null }) => {
-    // the whole map is framed a little east of its middle, so Mordor is in
-    const [x, z] = at(...(spot || [452, 322]));
+    // the whole map is framed on the road's stops, Hobbiton to Barad-dûr (./mapFraming.js)
+    const [x, z] = at(...(spot || HUB.at));
     const [hx, hz] = hover ? at(...hover) : [x, z];
     want.x = x + (hx - x) * 0.04;
     want.z = z + (hz - z) * 0.04;
     // a tall screen can't hold the whole sheet: show its middle, bigger
-    want.zoom = zoom ?? (spot ? 1.45 : camera.aspect < 1 ? 0.8 : 3.05);
+    want.zoom = zoom ?? (spot ? 1.45 : camera.aspect < 1 ? 0.8 : HUB.zoom);
     want.m = mordor ? 1 : 0;
     want.n = dark ? 1 : 0;
     want.lx = lean[0];
@@ -173,7 +184,7 @@ export function createMapBackdrop(canvas, { onLost } = {}) {
 
   const resize = (w, h) => {
     size = { w: Math.max(1, w), h: Math.max(1, h) };
-    renderer.setSize(Math.max(1, Math.round(w)), Math.max(1, Math.round(h)), false);
+    view.resize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     wide = Math.max(1, 1.25 / camera.aspect); // a tall screen stands further back
@@ -261,12 +272,13 @@ export function createMapBackdrop(canvas, { onLost } = {}) {
     }
     since = 0;
     behind = false;
-    renderer.render(scene, camera);
+    view.draw(() => renderer.render(scene, camera));
     return true;
   };
 
   const dispose = () => {
-    canvas.removeEventListener('webglcontextlost', onContextLost);
+    off();
+    view.dispose();
     world.dispose();
     room.dispose();
     map.dispose();
@@ -275,8 +287,6 @@ export function createMapBackdrop(canvas, { onLost } = {}) {
       o.geometry?.dispose();
       o.material?.dispose();
     });
-    renderer.dispose();
-    releaseContext(renderer); // (lib/three/renderer: once nothing is compiling)
   };
 
   return {
@@ -386,7 +396,8 @@ export function createMapBackdrop(canvas, { onLost } = {}) {
     // sent: the page waits for this before the first frame, so that frame
     // has the sheet in it (lib/three/frameGuard leaves out a material whose
     // pictures aren’t on the chip yet) and fades in over the flat one whole
-    ready: precompile(renderer, scene, camera).then(() => {
+    // (compiled by the runtime's renderer, the node renderer's way)
+    ready: (me.views.enter(canvas), Promise.resolve(me.rt.gfx.compile?.(scene, camera, scene))).then(() => {
       if (lost) return;
       renderer.initTexture(map);
       renderer.initTexture(relief);

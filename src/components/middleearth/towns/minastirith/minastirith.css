@@ -47,3 +47,16 @@
   .minas-game { left: 0.7rem; transform: none; width: calc(100% - 1.4rem); top: 0.7rem; bottom: auto; }
   .minas-end { left: 0.7rem; transform: none; width: calc(100% - 1.4rem); }
 }
+
+/* On the side: Gondor calls for aid. The mountains as a strip, the seven beacons catching along it, then their names to give back. */
+.minas-beacons[data-wrong] { border-color: rgba(255, 120, 40, 0.85); }
+.minas-beacon-row { position: relative; display: flex; justify-content: space-between; align-items: flex-end; height: 4.6rem; margin: 0.5rem 0 0.6rem; padding: 0 0.4rem; background: linear-gradient(to top, rgba(40, 36, 44, 0.9), rgba(20, 18, 28, 0.2)); border-radius: 0.5rem; }
+.minas-beacon { position: relative; display: flex; flex-direction: column; align-items: center; width: 13%; }
+.minas-beacon i { display: block; width: 0; height: 0; border-left: 0.9rem solid transparent; border-right: 0.9rem solid transparent; border-bottom: 2.4rem solid #4a4652; }
+.minas-beacon i::after { content: ''; position: absolute; left: 50%; top: -0.45rem; width: 0.55rem; height: 0.7rem; margin-left: -0.28rem; border-radius: 50% 50% 40% 40%; background: transparent; }
+.minas-beacon[data-lit] i::after { background: radial-gradient(circle at 50% 70%, #fff2b0, #ff9a2a 55%, rgba(255, 90, 20, 0)); box-shadow: 0 0 0.9rem 0.3rem rgba(255, 150, 50, 0.55); }
+.minas-beacon[data-new] i::after { animation: minas-catch 0.5s ease-out both; }
+.minas-beacon b { position: absolute; top: -1.3rem; white-space: nowrap; color: #ffe8c0; font: 600 0.62rem/1 var(--font-sans); }
+.minas-beacon-names { display: flex; flex-wrap: wrap; gap: 0.35rem; justify-content: center; }
+@keyframes minas-catch { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .minas-beacon[data-new] i::after { animation: none; } }

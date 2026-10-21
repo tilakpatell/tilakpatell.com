@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Letterbox, PlayersChip } from '../../../../runtime/hud';
 import { MiniMap } from './Map';
 import { bladeName, doubtLine, gunName, promptLine, sectionName, security } from './state';
 
@@ -23,6 +24,8 @@ import { bladeName, doubtLine, gunName, promptLine, sectionName, security } from
 //   <Pause ui touch onResume onSet onQuit onExit />   onSet({ view | sound | subtitles | guide })
 
 const LOW = 30; // health at which the bar goes red
+// how the others online show aboard, for the players chip's tooltips
+const PLAYERS_LORE = { off: 'Go online, and see everyone else in the room you’re in as a pale trooper, with their name over them', on: 'Everyone else online in the room you’re in, as pale troopers: nothing passes between you but where each of you is' };
 const TIPS_FOR = 30; // seconds the first game's tips stay up
 // the few keys that matter first, and the touch screen's
 const TIPS = [
@@ -103,7 +106,7 @@ function Tips({ touch, story, onDone }) {
   );
 }
 
-export default function Hud({ ui, hud, say, hurt = null, hit = 0, touch, playing, onMap, onPause, onChoose, onSet }) {
+export default function Hud({ ui, hud, say, hurt = null, hit = 0, touch, playing, players = null, onMap, onPause, onChoose, onSet }) {
   // the tips: up from the first moment of a game, for a while, until you say you have them
   const [tipsUp, setTipsUp] = useState(false);
   const wantTips = playing && ui.settings?.tips !== false;
@@ -140,7 +143,7 @@ export default function Hud({ ui, hud, say, hurt = null, hit = 0, touch, playing
   );
   return (
     <div className="ds-hud" data-touch={touch || undefined} data-start={ui.mode === 'start' || ui.mode === 'loading' || undefined} data-scene={(playing && ui.scene) || undefined}>
-      {playing && ui.scene && <div className="ds-letterbox" aria-hidden="true" />}
+      {playing && ui.scene && <Letterbox />}
       {wantTips && tipsUp && !ui.talk && !ui.map?.open && <Tips touch={touch} story={ui.play === 'story'} onDone={() => onSet?.({ tips: false })} />}
       <div className="ds-top">
         <div className="ds-top-left">
@@ -171,6 +174,8 @@ export default function Hud({ ui, hud, say, hurt = null, hit = 0, touch, playing
             </section>
           )}
           <MiniMap station={station} seen={ui.map?.seen ?? []} here={aboard ? hud?.room : null} at={aboard ? hud?.at : null} route={aboard ? hud?.route : null} onOpen={onMap} />
+          {/* (the others online in the room you're in, pale troopers: the kit's chip on the station's glass) */}
+          {playing && players && <PlayersChip className="ds-panel ds-players" {...players} lore={PLAYERS_LORE} />}
         </div>
         {playing && (
           <button type="button" className="ds-pause-btn" aria-label="Pause" onClick={onPause}>

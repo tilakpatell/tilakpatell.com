@@ -4,8 +4,10 @@
 // city's hum; frogs and insects in a swamp or a jungle), your footsteps on
 // whatever's underfoot, and a speeder's whine rising with its speed.
 //
-// site.sound: { wind 0…1, rain, sea, lava, city, critters (0…1 each),
-// ground: 'sand' | 'snow' | 'grass' | 'stone' | 'metal' | 'mud' }
+// site.sound: { wind 0…1, rain, sea, lava, city, critters, song (0…1
+// each), ground: 'sand' | 'snow' | 'grass' | 'stone' | 'metal' | 'mud' };
+// `song`, the birds', is the biome's (site.air.song, flora.js) unless the
+// sound says its own.
 //
 // And somewhere's band (music(name): a tune of the site's own, played on
 // made-up instruments: a cantina's swing, a Hutt's court's slow groove), a
@@ -113,6 +115,8 @@ export function createSounds(site) {
   let started = false;
   let t = 0;
   let nextCritter = 2;
+  const song = s.song ?? site.air?.song ?? 0;
+  let nextSong = 1.5;
   let tune = null; // { name, song, beat (the next to schedule), at (when beat 0 was), bus }
   let wanted = null; // a tune asked for before the sound could start
 
@@ -397,6 +401,41 @@ export function createSounds(site) {
     o.stop(now + 0.35);
   };
 
+  // a bird's phrase, now and then: a few whistled notes, each a quick
+  // sweep, in one of a few songs (a rising trill, a two-note call, a
+  // falling warble), somewhere a little off to one side
+  const SONGS = [
+    { notes: 6, f: [3200, 4200], up: 1.25, gap: 0.07, len: 0.05 },
+    { notes: 2, f: [2600, 3400], up: 0.8, gap: 0.22, len: 0.16 },
+    { notes: 4, f: [3800, 5200], up: 0.7, gap: 0.12, len: 0.09 },
+  ];
+  const sing = () => {
+    const now = ac.currentTime;
+    const kind = SONGS[Math.floor(Math.random() * SONGS.length)];
+    const pan = ac.createStereoPanner ? ac.createStereoPanner() : null;
+    if (pan) pan.pan.value = Math.random() * 1.6 - 0.8;
+    const bus = ac.createGain();
+    bus.gain.value = 0.018 * song * (0.5 + Math.random() * 0.5);
+    if (pan) bus.connect(pan).connect(out);
+    else bus.connect(out);
+    let f = kind.f[0] + Math.random() * (kind.f[1] - kind.f[0]);
+    for (let i = 0; i < kind.notes; i++) {
+      const at = now + i * kind.gap;
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f, at);
+      o.frequency.exponentialRampToValueAtTime(f * kind.up, at + kind.len);
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(1, at + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + kind.len);
+      o.connect(g).connect(bus);
+      o.start(at);
+      o.stop(at + kind.len + 0.02);
+      f *= kind.up > 1 ? 1.03 : 0.97;
+    }
+  };
+
   // a blaster shot: a falling zap, with a crack of noise under it
   const blast = () => {
     if (!started) return;
@@ -576,6 +615,10 @@ export function createSounds(site) {
       if (s.critters && t > nextCritter) {
         critter();
         nextCritter = t + 0.3 + Math.random() * 3;
+      }
+      if (song && t > nextSong) {
+        sing();
+        nextSong = t + (1.5 + Math.random() * 6) / song;
       }
       // the speeder: a saw through a filter, up with the speed
       if (riding > 0.5 && !hum) {

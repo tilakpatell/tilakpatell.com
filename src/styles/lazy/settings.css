@@ -1,16 +1,18 @@
 /* The settings panel (components/settings/Settings.jsx): a calm sheet over
    the page, a dialog on a desktop and a sheet from the bottom on a phone.
    Loaded with the panel. No backdrop blur: blurring the whole page is slow
-   without a GPU (as the palette). */
+   without a GPU (as the palette). The sheet is the house .card and .dialog,
+   so it wears the colour's frame, corners and title face (styles/dialogs.css),
+   as the palette and the guide do. */
 .settings-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 85;
+  z-index: calc(var(--z-dialog) + 5); /* over the palette and the guide, which open it */
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgba(6, 8, 10, 0.5);
+  background: var(--scrim);
   animation: fade-in 0.15s ease;
 }
 .settings-sheet {
@@ -18,20 +20,14 @@
   flex-direction: column;
   width: min(100%, 460px);
   max-height: min(86vh, 760px);
-  border: 1px solid var(--border);
-  border-radius: var(--r-panel, 16px);
-  background: var(--surface);
   color: var(--text);
-  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-dialog);
   animation: settings-in 0.22s var(--ease-out, ease-out);
 }
 @keyframes settings-in {
   from { opacity: 0; transform: translateY(8px) scale(0.985); }
 }
 .settings-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 14px 10px 20px; border-bottom: 1px solid var(--border); }
-.settings-head h2 { font-size: 1rem; font-weight: 650; letter-spacing: 0.01em; }
-.settings-close { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 999px; color: var(--muted); font-size: 1.15rem; }
-.settings-close:hover { background: var(--surface-2); color: var(--text); }
 .settings-body { overflow-y: auto; overscroll-behavior: contain; padding: 4px 20px 20px; }
 .settings-body section { padding: 14px 0 6px; }
 .settings-body section + section { border-top: 1px solid var(--border); }
@@ -44,12 +40,12 @@
 .settings-row-head { margin-bottom: 8px; }
 
 /* a segmented control: the choices in one pill, the chosen one lifted */
-.settings-seg { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 999px; background: var(--surface-2); }
-.settings-seg-btn { flex: 1 1 auto; min-height: 32px; padding: 0 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 550; color: var(--muted); white-space: nowrap; transition: background 0.15s, color 0.15s; }
+.settings-seg { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: var(--r-btn); background: var(--surface-2); }
+.settings-seg-btn { flex: 1 1 auto; min-height: 32px; padding: 0 12px; border-radius: var(--r-btn); font-size: 0.8rem; font-weight: 550; color: var(--muted); white-space: nowrap; transition: background 0.15s, color 0.15s; }
 .settings-seg-btn:hover { color: var(--text); }
 .settings-seg-btn:disabled { cursor: not-allowed; opacity: 0.55; }
-.settings-seg-btn[aria-checked='true'] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14), inset 0 -2px 0 var(--accent); }
-.settings-seg-btn:focus-visible, .settings-close:focus-visible, .settings-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.settings-seg-btn[aria-checked='true'] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px color-mix(in srgb, var(--shadow-ink) 14%, transparent), inset 0 -2px 0 var(--accent); }
+.settings-seg-btn:focus-visible, .settings-link:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 
 .settings-slider { display: grid; grid-template-columns: 6.5rem 1fr 3.2rem; align-items: center; gap: 10px; padding: 6px 0; font-size: 0.84rem; }
 .settings-slider input { width: 100%; accent-color: var(--accent); }
@@ -80,7 +76,7 @@
 /* a phone: a sheet from the bottom */
 @media (max-width: 640px) {
   .settings-backdrop { align-items: flex-end; padding: 0; }
-  .settings-sheet { width: 100%; max-height: 88vh; border-radius: 18px 18px 0 0; border-bottom: 0; padding-bottom: env(safe-area-inset-bottom); animation-name: settings-up; }
+  .settings-sheet { width: 100%; max-height: 88vh; border-radius: min(var(--r-card), 18px) min(var(--r-card), 18px) 0 0; border-bottom: 0; padding-bottom: env(safe-area-inset-bottom); animation-name: settings-up; }
   .settings-head::before { content: ''; position: absolute; left: 50%; width: 36px; height: 4px; margin-top: -10px; border-radius: 4px; background: var(--border-strong, var(--border)); transform: translateX(-50%); }
   .settings-head { position: relative; }
   .settings-slider { grid-template-columns: 5.5rem 1fr 3rem; }

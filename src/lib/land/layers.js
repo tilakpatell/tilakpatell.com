@@ -5,7 +5,7 @@
 // hill is. The flight's planets add a wind to the ridges, a range with no
 // `to` and the blocks of a city (the planet flight's).
 //
-// Pure: imports nothing but the galaxy's noise (galaxy/surface/noise.js, a
+// Pure: imports nothing but the ground's noise (lib/noise.js, a
 // pure module), and runs in Node and in a worker.
 //
 //   LAYERS[type](x, z, layer, seed) → metres
@@ -17,7 +17,7 @@
 //     game's records say), a hole NaN
 //   imageLayerFrom(record, nearPixels, farPixels) → an `image` layer
 
-import { fbm, hash2, noise2, ridged, smoothstep } from '../../components/galaxy/surface/noise.js';
+import { fbm, hash2, noise2, ridged, smoothstep } from '../noise.js';
 
 export { noise2 };
 
@@ -55,11 +55,18 @@ export const LAYERS = {
     return ridged((x * c - z * s) / (l.scale * 4), (x * s + z * c) / l.scale, { octaves: l.octaves ?? 5, seed }) * l.height;
   },
   // mountains round the horizon, rising from `from` metres out to their full
-  // height by `to`; with no `to`, a range at its full height everywhere
+  // height by `to`; with no `to`, a range at its full height everywhere.
+  // With `ranges` (metres, the free roam's: galaxy/surface/roam.js), past
+  // `to` they break into ranges that wide lowlands run between, a low noise
+  // that scale across choosing which, eased in over half `to` again
   mountains: (x, z, l, seed) => {
     const r = Math.hypot(x, z);
     if (r < l.from) return 0;
-    const k = l.to === undefined ? 1 : smoothstep(l.from, l.to, r);
+    let k = l.to === undefined ? 1 : smoothstep(l.from, l.to, r);
+    if (l.ranges && l.to !== undefined && r > l.to) {
+      const range = smoothstep(-0.2, 0.35, fbm(x / l.ranges, z / l.ranges, { octaves: 2, seed: seed + 5 }));
+      k *= 1 - smoothstep(l.to, l.to * 1.5, r) * (1 - range);
+    }
     return k * (0.3 + 0.7 * ridged(x / l.scale, z / l.scale, { octaves: 6, seed })) * l.height;
   },
   // rivers (of water, lava, salt): channels `depth` deep where the noise crosses zero

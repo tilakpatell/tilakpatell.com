@@ -171,7 +171,7 @@ describe('poses', () => {
     expect(p.x).toBe(54000);
     expect(p.z).toBe(-70000);
     expect(p.speed).toBe(4000);
-    expect(readPose([0, 1e9, 0, 0, 0, 0, 0, 0, 0]).y).toBe(1300); // (the height is as it was)
+    expect(readPose([0, 1e9, 0, 0, 0, 0, 0, 0, 0]).y).toBe(62000); // (the height clamp is gone: sectorless poses reach SEC_FAR up)
   });
   it('carries the sector out in the Expanse, with x and z from its middle, and reads one without as the authored map', () => {
     const out = writePose({ ...ship, x: 185184.78, y: 5, z: -121500 });
@@ -190,6 +190,30 @@ describe('poses', () => {
     expect(readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'main']).sec).toBeUndefined();
     // (an Expanse pose is kept near its own sector)
     expect(readPose([1e9, 0, 0, 0, 0, 0, 0, 0, 0, 100, 'E:1,0']).x).toBe(120000 + 62000);
+  });
+  it('carries the sector in 3D, and a two-number pose from an older build reads as before', () => {
+    const out = writePose({ ...ship, x: 185184.78, y: 70000, z: -121500 });
+    expect(out[10]).toBe('E:2,-1,1');
+    expect(out[1]).toBeCloseTo(-50000, 1);
+    const p = readPose(out);
+    expect(p.y).toBeCloseTo(70000, 1);
+    expect(p.sec).toBe('E:2,-1,1');
+    expect(readPose(writePose({ ...ship, y: 50000 })).y).toBe(50000);
+    expect(readPose(writePose({ ...ship, y: 50000 })).sec).toBeUndefined();
+    const old = readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'E:2,-1']);
+    expect([old.x, old.y, old.z]).toEqual([240001, 2, -119997]);
+    expect(readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'E:1,0,x']).sec).toBeUndefined();
+    expect(readPose([1, 2, 3, 0, 0, 0, 5, 0, 2, 100, 'X:1,0']).sec).toBeUndefined();
+  });
+  it('writes a pose whose position isn’t a number without throwing (its sector key parses as none), and that pose doesn’t read', () => {
+    const out = writePose({ ...ship, x: Infinity });
+    expect(out).toHaveLength(10); // (no sector on it)
+    expect(readPose(out)).toBeNull();
+  });
+  it('reads a shot from far out, held to its pilot', () => {
+    const from = { x: 500000, y: 0, z: 0, speed: 0 };
+    expect(readShot([500000, 0, 0, 1, 0, 0], from)).not.toBeNull();
+    expect(readShot([501000, 0, 0, 1, 0, 0], from)).toBeNull();
   });
   it('says when a pilot is riding a lane, and an old pose says they are not', () => {
     expect(FLAG.lane).toBe(8);
@@ -288,8 +312,11 @@ describe('shots', () => {
   });
   it('carries the weapon, and reads an unknown one as the blaster', () => {
     expect(readShot(writeShot({ x: 1, y: 2, z: 3 }, [0, 0, -20], 2)).w).toBe(2);
-    expect(readShot([1, 2, 3, 0, 0, -20, 7]).w).toBe(0);
+    expect(readShot([1, 2, 3, 0, 0, -20, 15]).w).toBe(0);
     expect(readShot([1, 2, 3, 0, 0, -20, 'x']).w).toBe(0);
+  });
+  it('carries the skill tree’s four by their own codes', () => {
+    for (const w of [7, 8, 9, 10]) expect(readShot([1, 2, 3, 0, 0, -20, w]).w).toBe(w);
   });
 
   it('a shot code past the table reads as the blaster', () => {
@@ -307,7 +334,7 @@ describe('shots', () => {
   it('reads a shot fired anywhere in the spread universe', () => {
     const s = readShot(writeShot({ x: 45000, y: 0, z: -70000 }, [0, 0, -20]));
     expect(s.p).toEqual([45000, 0, -70000]);
-    expect(readShot([1e9, 0, 0, 0, 0, -20]).p[0]).toBe(90000);
+    expect(readShot([1e13, 0, 0, 0, 0, -20]).p[0]).toBe(1e12); // (the bound is 1e12 now, not FAR)
   });
 });
 
@@ -339,6 +366,10 @@ describe('rams', () => {
     expect(ramCounts(peer({ ramAt: 900 }), me, 8, 900 + CONTACT.cool * 1000)).toBe(8);
     expect(ramCounts(peer(), null, 8, 1000)).toBeNull();
   });
+  it('ignores a mate in your party, as it does an ally (mates.js)', () => {
+    expect(ramCounts(peer({ mate: true }), me, 8, 1000)).toBeNull();
+    expect(ramCounts(peer({ mate: false }), me, 8, 1000)).toBe(8);
+  });
 });
 
 describe('hits', () => {
@@ -357,6 +388,10 @@ describe('hits', () => {
     expect(hitCounts(peer({ ally: 'ally' }), me, 1200)).toBe(false);
     expect(hitCounts(peer({ blocked: true }), me, 1200)).toBe(false);
     expect(hitCounts(peer(), me, 1000 + GUARD.shotWindow + 1)).toBe(false);
+  });
+  it('ignores a mate in your party, as it does an ally (mates.js)', () => {
+    expect(hitCounts(peer({ mate: true }), me, 1200)).toBe(false);
+    expect(hitCounts(peer({ mate: false }), me, 1200)).toBe(true);
   });
   it('ignores a hit from a shot that went nowhere near you', () => {
     const wide = { p: [5, 0, 0], v: [0, 0, -18], at: 1000 }; // fired off to the side

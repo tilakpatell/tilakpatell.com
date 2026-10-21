@@ -108,6 +108,7 @@ export function createRenderer(canvas, { alpha = true, antialias = true, ratio =
     // fitted to the chip like the watchdog's
     setRatio(r) {
       pixelRatio = r;
+      dog.rebase(r);
       fit();
     },
     size,
@@ -189,7 +190,13 @@ export function watchdog({ ratio, set, onSlow, floor = 0.75, slow = 22 }) {
       onSlow?.();
     }
   };
-  return { watch };
+  // (the owner set the ratio itself: its steps go from there, not from a
+  // sharper one it no longer draws at)
+  const rebase = (r) => {
+    pixelRatio = r;
+    tried = null;
+  };
+  return { watch, rebase };
 }
 
 // Free every geometry, material and texture under `root`.

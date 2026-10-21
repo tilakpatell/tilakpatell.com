@@ -203,4 +203,16 @@ describe('Dad', () => {
     expect(r.ev).toContainEqual({ type: 'dadAt', i: 0 });
     expect(r.dad.next).toBe(1);
   });
+
+  it('flies a whole frame of the dev clock, in steps: 0.15 s is 9 m at 60 m/s', () => {
+    const d = newDad({ watch: [0, 100, 0] });
+    const { dad } = stepDad(d, sense({ mission: 'ep7', spar: [[600, 100, 0]], hero: [0, 100, 0] }), 0.15);
+    expect(d3(dad.p, d.p)).toBeCloseTo(DAD.fast * 0.15, 3);
+  });
+
+  it('takes a minute away as one short step', () => {
+    const d = newDad({ watch: [0, 100, 0] });
+    const { dad } = stepDad(d, sense({ mission: 'ep7', spar: [[600, 100, 0]], hero: [0, 100, 0] }), 60);
+    expect(d3(dad.p, d.p)).toBeLessThanOrEqual(DAD.fast * 0.05 + 1e-6);
+  });
 });

@@ -174,7 +174,7 @@ jobs:
   online:
     name: Multiplayer
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30 # (four checks in two browsers drawing in software)
     continue-on-error: true
     steps:
       - uses: actions/checkout@v7
@@ -224,6 +224,15 @@ jobs:
           RELAY=fake CHROME="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" node scripts/online-check.mjs --fly 2>&1 | tee fly-check.log
       # planet flight: end
 
+      # the party (online-check.mjs --party): Alpha invites Bravo from the
+      # party's dialog, Bravo says yes, a line of chat each way that the relay
+      # carries sealed, a quick-chat line over Alpha's tag on Bravo's map, and
+      # in Bree the chip counting the mate and the quip heard
+      - if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          RELAY=fake CHROME="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" node scripts/online-check.mjs --party 2>&1 | tee party-check.log
+
       # what each said, as a note on the check (readable where the log isn't)
       - if: always()
         shell: bash
@@ -231,6 +240,6 @@ jobs:
           for log in *-check.log; do
             [ -f "$log" ] || continue
             check="${log%.log}"
-            lines=$(grep -E '^(ok|FAIL|note|fly:|errors:|ALL OK|[0-9]+ FAILED|     )' "$log" | cut -c1-300 | sed -e 's/%/%25/g' | awk 'NR <= 40 { printf "%s%%0A", $0 }' || true)
+            lines=$(grep -E '^(ok|FAIL|note|fly:|party:|errors:|ALL OK|[0-9]+ FAILED|     )' "$log" | cut -c1-300 | sed -e 's/%/%25/g' | awk 'NR <= 40 { printf "%s%%0A", $0 }' || true)
             echo "::notice title=${check}::${lines}"
           done

@@ -173,7 +173,10 @@ export function nextOpLine({ nextOp }, now) {
   return `Next ${what} ${nextOp.at > now ? `in ${soon(nextOp.at - now)}` : 'any moment'}`;
 }
 
-export const orderLine = (order, now) => (order ? `${VERBS[order.verb] ?? order.verb} ${nameOf(order.sys)} · ${span(order.until - now)} left` : null);
+// an order's aim (Liberate Hoth) and its time left, apart for a card both sides' orders share, and together
+export const orderAim = (order) => `${VERBS[order.verb] ?? order.verb} ${nameOf(order.sys)}`;
+export const orderLeft = (order, now) => `${span(order.until - now)} left`;
+export const orderLine = (order, now) => (order ? `${orderAim(order)} · ${orderLeft(order, now)}` : null);
 
 // the campaign's result: who leads in its last step, who won once it's over,
 // or the campaign before's at the start of the next (table.previous, kept in

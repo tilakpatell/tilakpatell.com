@@ -41,6 +41,11 @@
 // is always in front of whatever is out there and its lights glow too); null
 // takes it off again.
 //
+// view(scene, camera) draws another scene in the first's place, from its own
+// camera (the galaxy's holotable, while the map is open: the bloom and the
+// grade as the flight has them, and nothing of the flight drawn); null puts
+// the first back.
+//
 // The finish (the universe map asks for it; the galaxy and its surfaces,
 // which draw through here too, keep their picture as it was): a blue-noise
 // dither after the sRGB encode, a fraction of a step, so the dark gradients
@@ -314,7 +319,9 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
   const samples = ratio >= 1.75 ? 0 : small ? 2 : 4;
   const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples, depthTexture: new THREE.DepthTexture(1, 1) });
   const composer = new EffectComposer(renderer, target);
-  composer.addPass(new RenderPass(scene, camera));
+  const main = new RenderPass(scene, camera);
+  composer.addPass(main);
+  let eye = camera; // (the camera the depth's read through: the scene's, or a view's)
   // whatever's drawn over the scene (the cockpit), with a fresh depth
   const over = new RenderPass(scene, camera);
   over.clear = false;
@@ -382,7 +389,7 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
     // watchdog trades sharpness for speed)
     render(w, h) {
       if (!on) {
-        renderer.render(scene, camera);
+        renderer.render(main.scene, main.camera);
         if (over.enabled) {
           const was = renderer.autoClear;
           renderer.autoClear = false;
@@ -409,12 +416,18 @@ export function createPost(renderer, scene, camera, { small = false, bloom: look
       }
       // the scene draws into the composer's read buffer, and the last pass reads it there
       grade.uniforms.tDepth.value = composer.readBuffer.depthTexture;
-      grade.uniforms.uNear.value = camera.near;
-      grade.uniforms.uFar.value = camera.far;
+      grade.uniforms.uNear.value = eye.near;
+      grade.uniforms.uFar.value = eye.far;
       // (the grain somewhere else in the tile each frame; the dither keeps its place)
       frame = (frame + 1) % 997;
       grade.uniforms.uFrame.value.set((frame * 37) % noiseSize, (frame * 23) % noiseSize);
       composer.render();
+    },
+    // another scene drawn in the first's place, from `cam` (null: the first again)
+    view(s, cam) {
+      main.scene = s ?? scene;
+      main.camera = cam ?? camera;
+      eye = main.camera;
     },
     // a scene drawn over the first, from `cam` (null: nothing)
     overlay(s, cam) {

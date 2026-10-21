@@ -60,6 +60,10 @@ describe('mapKeys', () => {
     expect(mapKeyAction(k('='), { typing: false })).toBe('zoomIn');
     expect(mapKeyAction(k('-'), { typing: false })).toBe('zoomOut');
     expect(mapKeyAction(k('0'), { typing: false })).toBe('fit');
+    // (and Q and E turn the 3D map, unless it's a field being typed in)
+    expect(mapKeyAction(k('q'), { typing: false })).toBe('turnLeft');
+    expect(mapKeyAction(k('E'), { typing: false })).toBe('turnRight');
+    expect(mapKeyAction(k('e'), { typing: true })).toBeNull();
     expect(mapKeyAction(k('m', { meta: true }), { typing: false })).toBeNull();
     expect(mapKeyAction(k('+'), { typing: true })).toBeNull();
   });

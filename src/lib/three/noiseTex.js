@@ -6,7 +6,7 @@
 // wears the same shader.)
 
 import * as THREE from 'three';
-import { hash2 } from '../../components/galaxy/surface/noise.js';
+import { hash2 } from '../noise.js';
 
 const N = 256;
 let shared = null;

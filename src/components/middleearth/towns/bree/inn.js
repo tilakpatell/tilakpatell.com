@@ -13,7 +13,7 @@
 // table, singing, and the room clapping along).
 
 import * as THREE from 'three';
-import { hot } from '../../../../lib/stage3d';
+import { hot } from '../../../../lib/three/stage3dNodes';
 import { pose } from '../../mapFigures';
 import { calm, dance, makePerson, sit } from '../../shire/people';
 import { castDo } from '../../cast3d';

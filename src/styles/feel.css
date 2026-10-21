@@ -1,0 +1,197 @@
+/* ─── Every press answers ────────────────────────────────────────────────────
+   Each family’s hover and press, on top of the house’s (index.css: a button
+   pressed 1px in, a card lifted 3px). Transform and opacity only, and a
+   colour; nothing filtered that moves; never a layout change. Under reduced
+   motion (the system’s or the site’s) the house’s rule makes each of these
+   instant, so only the change of colour or place is left. Middle-earth’s are
+   in its own sheet. Eager, after dialogs.css. */
+
+/* A hover stays with the pointer: on a touch screen a tapped card no longer
+   stays lifted after the finger has gone. */
+@media (hover: none) {
+  .card-lift:hover, a.card:hover, .card-hover:hover { transform: none; }
+}
+
+/* The button’s glow eases in with its colour */
+.btn { transition: background-color var(--t-fast) var(--ease-smooth), border-color var(--t-fast) var(--ease-smooth), color var(--t-fast) var(--ease-smooth), transform var(--t-fast) var(--ease-smooth), box-shadow var(--t-fast) var(--ease-smooth); }
+
+/* In the dark a lit button glows as you reach for it, where the house’s
+   hover darkened it (a glowing blade dimmed): its own colour, kept, with a
+   ring and a halo of it. (Its label keeps the contrast it had. The colours
+   with a hover of their own keep theirs.) */
+html[data-mode='dark']:not([data-theme='shire'], [data-theme='mordor'], [data-theme='portal'], [data-theme='morty'], [data-theme='summer'], [data-theme='beth'], [data-theme='arcade'], [data-theme='heisenberg']) .btn-primary:hover {
+  background: var(--btn-bg);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--btn-bg) 70%, #fff), 0 8px 24px -10px color-mix(in srgb, var(--btn-bg) 75%, transparent);
+}
+
+/* ─── The companies: a mark of the accent under the label ────────────────── */
+:is([data-theme='aws'], [data-theme='rtx'], [data-theme='bose'], [data-theme='pendar'], [data-theme='empowerreg'], [data-theme='src']) .btn-primary { position: relative; }
+:is([data-theme='aws'], [data-theme='rtx'], [data-theme='bose'], [data-theme='pendar'], [data-theme='empowerreg'], [data-theme='src']) .btn-primary::after {
+  content: '';
+  position: absolute;
+  left: 1.1rem;
+  right: 1.1rem;
+  bottom: 7px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.55;
+  transform: scaleX(0);
+  transition: transform var(--t-base) var(--ease-out);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  :is([data-theme='aws'], [data-theme='rtx'], [data-theme='bose'], [data-theme='pendar'], [data-theme='empowerreg'], [data-theme='src']) .btn-primary:is(:hover, :focus-visible)::after { transform: scaleX(1); }
+}
+
+/* ─── Star Wars: a blade ignites along the button’s foot ─────────────────── */
+:is([data-theme='jedi'], [data-theme='sith']) .btn-primary { position: relative; }
+:is([data-theme='jedi'], [data-theme='sith']) .btn-primary::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -4px;
+  height: 2px;
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: 0 0 4px 1px var(--saber), 0 0 12px 2px color-mix(in srgb, var(--saber) 60%, transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.22s var(--ease-out);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  :is([data-theme='jedi'], [data-theme='sith']) .btn-primary:is(:hover, :focus-visible)::after { transform: scaleX(1); }
+  /* the Sith’s blade is unstable: it catches once as it lights */
+  [data-theme='sith'] .btn-primary:is(:hover, :focus-visible)::after { animation: feel-catch 0.24s steps(2, end) 1; }
+}
+@keyframes feel-catch { 50% { opacity: 0.35; } }
+
+/* ─── The Caribbean: a card rides a swell ────────────────────────────────── */
+@media (hover: hover) {
+  :is([data-theme='tortuga'], [data-theme='pearl'], [data-theme='dutchman']) :is(a.card, .card-lift):hover { animation: feel-swell 2.6s ease-in-out infinite; }
+}
+@keyframes feel-swell {
+  0%, 100% { transform: translateY(-3px) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(-0.35deg); }
+}
+
+/* ─── The Transformers: the plate’s cut deepens, and it clunks home ──────── */
+@supports (corner-shape: bevel) {
+  :is([data-theme='optimus'], [data-theme='megatron'], [data-theme='bumblebee'], [data-theme='shockwave'], [data-theme='soundwave']) .btn { transition: background-color var(--t-fast) var(--ease-smooth), border-color var(--t-fast) var(--ease-smooth), color var(--t-fast) var(--ease-smooth), transform var(--t-fast) var(--ease-smooth), box-shadow var(--t-fast) var(--ease-smooth), border-radius var(--t-base) var(--ease-out); }
+  @media (hover: hover) {
+    :is([data-theme='optimus'], [data-theme='megatron'], [data-theme='bumblebee'], [data-theme='shockwave'], [data-theme='soundwave']) .btn:hover { border-radius: 13px 0; }
+  }
+}
+:is([data-theme='optimus'], [data-theme='megatron'], [data-theme='bumblebee'], [data-theme='shockwave'], [data-theme='soundwave']) .btn:active { transform: translateY(2px); transition-duration: 60ms; }
+
+/* ─── Rick and Morty: the inked thing leans in, and presses flat ─────────── */
+:is([data-theme='portal'], [data-theme='morty'], [data-theme='summer'], [data-theme='beth']) { --feel-ink: #1b1424; }
+html[data-mode='dark']:is([data-theme='portal'], [data-theme='morty'], [data-theme='summer'], [data-theme='beth']) { --feel-ink: color-mix(in srgb, var(--accent) 55%, #000); }
+@media (hover: hover) {
+  html:is([data-theme='portal'], [data-theme='morty'], [data-theme='summer'], [data-theme='beth']) .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 0 var(--feel-ink); }
+  html:is([data-theme='portal'], [data-theme='morty'], [data-theme='summer'], [data-theme='beth']) :is(a.card, .card-lift):hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--feel-ink); }
+}
+html:is([data-theme='portal'], [data-theme='morty'], [data-theme='summer'], [data-theme='beth']) .btn-primary:active { transform: translateY(3px); box-shadow: 0 0 0 var(--feel-ink); transition-duration: 60ms; }
+html:is([data-theme='portal'], [data-theme='morty'], [data-theme='summer'], [data-theme='beth']) :is(a.card, .card-lift):active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--feel-ink); transition-duration: 60ms; }
+
+/* ─── Stark: the HUD’s brackets close in on a card ───────────────────────── */
+[data-theme='stark'] :is(a.card, .card-lift)::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  z-index: 1;
+  border-radius: inherit;
+  background:
+    linear-gradient(var(--saber) 0 0) left top / 16px 2px no-repeat,
+    linear-gradient(var(--saber) 0 0) left top / 2px 16px no-repeat,
+    linear-gradient(var(--saber) 0 0) right top / 16px 2px no-repeat,
+    linear-gradient(var(--saber) 0 0) right top / 2px 16px no-repeat,
+    linear-gradient(var(--saber) 0 0) left bottom / 16px 2px no-repeat,
+    linear-gradient(var(--saber) 0 0) left bottom / 2px 16px no-repeat,
+    linear-gradient(var(--saber) 0 0) right bottom / 16px 2px no-repeat,
+    linear-gradient(var(--saber) 0 0) right bottom / 2px 16px no-repeat;
+  opacity: 0;
+  transform: scale(1.04);
+  transition: opacity var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  [data-theme='stark'] :is(a.card, .card-lift):is(:hover, :focus-visible)::before { opacity: 0.9; transform: none; }
+}
+
+/* ─── Dunder Mifflin: pressed like a stamp ───────────────────────────────── */
+[data-theme='dunder'] .btn:active { transform: translateY(1px) scale(0.96) rotate(-1.5deg); transition-duration: 60ms; }
+
+/* ─── The arcade: a cabinet’s button, down into its shadow ───────────────── */
+[data-theme='arcade'] .btn-primary { box-shadow: 4px 4px 0 color-mix(in srgb, var(--text) 82%, transparent); }
+html[data-mode='dark'][data-theme='arcade'] .btn-primary { box-shadow: 4px 4px 0 color-mix(in srgb, var(--accent) 45%, #000); }
+[data-theme='arcade'] .btn-primary:active,
+html[data-mode='dark'][data-theme='arcade'] .btn-primary:active { transform: translate(4px, 4px); box-shadow: 0 0 0 transparent; transition-duration: 40ms; }
+
+/* ─── The raga: a ring spreads from the button, like a plucked string’s ──── */
+[data-theme='raga'] .btn-primary { position: relative; }
+[data-theme='raga'] .btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border: 2px solid var(--accent);
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+}
+@media (hover: hover) {
+  [data-theme='raga'] .btn-primary:hover::after { animation: feel-ripple 0.9s var(--ease-out) 1; }
+}
+@keyframes feel-ripple {
+  from { opacity: 0.7; transform: none; }
+  to { opacity: 0; transform: scale(1.1, 1.45); }
+}
+
+/* ─── Heisenberg: the button’s edge goes lab green ───────────────────────── */
+@media (hover: hover) {
+  [data-theme='heisenberg'] .btn-primary:hover { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px #3fae5c; }
+}
+
+/* ─── Two new scroll bars (components/ScrollSaber.jsx) ──────────────────── */
+/* The Caribbean: a spyglass, drawn out as you read. A brass eyepiece for the
+   hilt, the drawn tubes for the blade (their collars spread as it opens), a
+   lens at the tip; on the Black Pearl gold on black, on the Dutchman green
+   with the sea and barnacled. */
+.saber-progress[data-kind='spyglass'] { --spy-brass: linear-gradient(#f6dc8f, #c99a36 48%, #7a5414); --spy-band: rgb(40 24 6 / 0.55); }
+[data-theme='pearl'] .saber-progress[data-kind='spyglass'] { --spy-brass: linear-gradient(#ffe7a2, #e0aa38 48%, #8a5a12); --spy-band: rgb(10 8 4 / 0.8); }
+[data-theme='dutchman'] .saber-progress[data-kind='spyglass'] { --spy-brass: radial-gradient(circle at 30% 40%, rgb(236 255 246 / 0.55) 0 1px, transparent 1.6px) 0 0 / 9px 8px, linear-gradient(#9ff5d6, #3aa585 48%, #1d5e4c); --spy-band: rgb(3 30 24 / 0.6); }
+.saber-progress[data-kind='spyglass'] .hilt { width: 30px; height: 12px; top: -4px; border-radius: 4px 1px 1px 4px; background: repeating-linear-gradient(90deg, transparent 0 5px, var(--spy-band) 5px 6px) 4px 0 / 16px 100% no-repeat, var(--spy-brass); box-shadow: 0 1px 2px rgb(0 0 0 / 0.3); }
+.saber-progress[data-kind='spyglass'] .hilt::after { display: none; }
+.saber-progress[data-kind='spyglass'] .blade,
+html[data-mode='dark'] .saber-progress[data-kind='spyglass'] .blade {
+  top: -2px;
+  height: 8px;
+  border-radius: 0 2px 2px 0;
+  background: linear-gradient(90deg, transparent 0 calc(33.3% - 2px), var(--spy-band) calc(33.3% - 2px) 33.3%, transparent 33.3% calc(66.6% - 2px), var(--spy-band) calc(66.6% - 2px) 66.6%, transparent 66.6%), var(--spy-brass);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+}
+.progress-tip.progress-lens { left: -5px; top: -4px; width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffffff 0 1.5px, rgb(170 220 235 / 0.95) 2.5px, rgb(40 90 110 / 0.95) 70%), #2a5a6a; box-shadow: 0 0 0 2px #b8862a, 0 1px 3px rgb(0 0 0 / 0.35); filter: none; }
+[data-theme='dutchman'] .progress-tip.progress-lens { box-shadow: 0 0 0 2px #3aa585, 0 0 8px rgb(93 242 192 / 0.6); }
+
+/* Rick and Morty: the portal gun. A grey body with its green bulb, a beam of
+   portal fluid with bubbles in it, and a small portal turning at the tip. */
+.saber-progress[data-kind='portalgun'] .hilt { width: 30px; height: 12px; top: -4px; border-radius: 3px 6px 6px 3px; background: linear-gradient(#eef1f3, #a7b0b8 60%, #6d757d); box-shadow: inset -9px 0 0 #5c636a, 0 1px 2px rgb(0 0 0 / 0.3); }
+.saber-progress[data-kind='portalgun'] .hilt::after { right: 10px; top: -4px; width: 8px; height: 8px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #f3ffd0, #97ce4c 55%, #3f7a14); box-shadow: 0 0 6px #97ce4c; }
+.saber-progress[data-kind='portalgun'] .blade,
+html[data-mode='dark'] .saber-progress[data-kind='portalgun'] .blade {
+  height: 4px;
+  top: 0;
+  border-radius: 0 2px 2px 0;
+  background: radial-gradient(circle, rgb(240 255 200 / 0.9) 0 0.9px, transparent 1.4px) 0 0 / 11px 4px, linear-gradient(#e6f27a, #97ce4c 45%, #2f8a1e);
+  box-shadow: 0 0 6px rgb(151 206 76 / 0.7);
+}
+.progress-tip.progress-portal { left: -7px; top: -6px; width: 14px; height: 14px; filter: none; }
+.progress-portal > i { display: block; width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(closest-side, #f3ffd0 0 18%, rgb(151 206 76 / 0) 60%), repeating-conic-gradient(#2f8a1e 0 40deg, #9bd83c 40deg 80deg), #6cc32a; box-shadow: 0 0 0 1.5px #c9ef6a, 0 0 8px rgb(140 230 70 / 0.7); animation: feel-spin 1.4s linear infinite; }
+@keyframes feel-spin { to { rotate: 1turn; } }
+
+@media (forced-colors: active) {
+  .saber-progress:is([data-kind='spyglass'], [data-kind='portalgun']) .blade { background: Highlight; box-shadow: none; }
+  .progress-tip:is(.progress-lens, .progress-portal) { display: none; }
+}

@@ -151,6 +151,7 @@ const FANDOMS = [
     label: 'The Lord of the Rings',
     world: 'Middle-earth',
     to: '/middle-earth',
+    pages: [{ to: '/middle-earth/road', world: 'The Road through Middle-earth' }],
     swatch: '#d9b45a',
     accent: '#d9b45a',
     size: 0.66,

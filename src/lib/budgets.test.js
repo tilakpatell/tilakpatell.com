@@ -21,6 +21,7 @@ describe('how much each quality level draws', () => {
     expect(LEVELS.map((l) => budget(l).near)).toEqual([30, 45, 70, 110]);
     expect(LEVELS.map((l) => budget(l).mid)).toEqual([90, 140, 220, 400]);
     expect(LEVELS.map((l) => budget(l).leaves)).toEqual([0, 256, 1024, 2048]);
+    expect(LEVELS.map((l) => budget(l).far)).toEqual([500, 650, 900, 1200]);
     // (lane N4: the boot slice's bytes and a visit's, in megabytes)
     expect(LEVELS.map((l) => budget(l).bootMB)).toEqual([3, 6, 12, 12]);
     expect(LEVELS.map((l) => budget(l).visitMB)).toEqual([40, 120, 400, 1200]);
@@ -30,9 +31,13 @@ describe('how much each quality level draws', () => {
     for (const level of LEVELS) expect(budget(level).visitMB, level).toBeGreaterThan(budget(level).bootMB);
   });
 
-  it('has fourteen columns, the kit’s three last', () => {
-    expect(COLUMNS.length).toBe(14);
-    expect(COLUMNS.slice(-3)).toEqual(['near', 'mid', 'leaves']);
+  it('has fifteen columns, the kit’s four last', () => {
+    expect(COLUMNS.length).toBe(15);
+    expect(COLUMNS.slice(-4)).toEqual(['near', 'mid', 'leaves', 'far']);
+  });
+
+  it('draws a wood further than a kit model’s far stand-in reaches by itself', () => {
+    for (const level of LEVELS) expect(budget(level).far, level).toBeGreaterThan(2 * budget(level).mid);
   });
 
   it('ends a kit model’s full band before its LOD1 band', () => {

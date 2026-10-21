@@ -23,7 +23,7 @@
 // counter's top at the origin, +z towards the floor in front of it.
 
 import * as THREE from 'three';
-import { hot } from '../../../../lib/stage3d';
+import { hot } from '../../../../lib/three/stage3dNodes';
 import { B, ball, barrelParts, cyl, lathe } from '../../shire/props';
 import { dotTexture } from '../../towns/bake';
 import { sharpen } from '../../../../lib/three/textures';
