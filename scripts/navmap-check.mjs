@@ -31,6 +31,10 @@ const check = (ok, what) => {
 };
 // (something seen and worth saying, that isn't a pass or a fail)
 const note = (what) => console.log('note', what);
+// ms: a page's first load. A cold dev server transforms the universe's few hundred modules on the first ask (a
+// second or more each for the big ones), and DOMContentLoaded waits for every one of the entry's imports: minutes
+// on a busy machine
+const COLD = 300000;
 
 async function open(viewport, ship) {
   const ctx = await browser.newContext({ viewport, hasTouch: viewport.width < 600 });
@@ -43,9 +47,8 @@ async function open(viewport, ship) {
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  await page.goto(URL, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => typeof window.__universe === 'function' && window.__universe().ship, null, { timeout: 120000 });
-  await page.waitForTimeout(2000);
+  await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: COLD });
+  await page.waitForFunction(() => typeof window.__universe === 'function' && window.__universe().ship, null, { timeout: COLD });
   await page.waitForSelector('.universe-navmap-btn', { state: 'attached', timeout: 120000 });
   return page;
 }
@@ -58,9 +61,18 @@ const click = (page, sel, nth = 0) =>
     },
     [sel, nth],
   );
-const shot = (page, name) => page.screenshot({ path: `${out}/${name}.png`, timeout: 120000 });
+// (a picture of the scene as much as the map, the jump's and the flight's, is a JPEG at 80: as a PNG it can pass the
+// 1 MB a committed picture may be, RULES.md's “Evidence is pictures on the bucket”)
+const shot = (page, name, { jpeg = false } = {}) => page.screenshot({ path: `${out}/${name}.${jpeg ? 'jpg' : 'png'}`, timeout: 120000, ...(jpeg ? { type: 'jpeg', quality: 80 } : {}) });
 const state = (page) => page.evaluate(() => ({ ...window.__universe(), hash: window.location.hash }));
 const navOpen = (page) => page.waitForSelector('.navmap', { timeout: 60000 });
+const navShut = (page) => page.waitForSelector('.navmap', { state: 'detached', timeout: 30000 }).catch(() => null);
+// a wait on a condition in the page: true when it came, false when it didn't (the check after says what it was)
+const till = (page, fn, arg = null, timeout = 30000) => page.waitForFunction(fn, arg, { timeout }).then(() => true, () => false);
+// the chart's drawn: a place's button is on it
+const chartDrawn = (page) => till(page, () => document.querySelectorAll('.navmap-place').length > 0, null, 60000);
+// the go button says the place picked (the pick's card is up in the side panel)
+const goSays = (page, words) => till(page, (w) => document.querySelector('.navmap-go')?.textContent.includes(w) ?? false, words);
 const pickByName = (page, name) => page.evaluate((n) => [...document.querySelectorAll('.navmap-list button')].find((b) => b.textContent.includes(n))?.click(), name);
 
 // the chart: its level, and what it says the ship's sector is (the minus as the chart writes it)
@@ -76,10 +88,11 @@ const changes = (page, sel, attr, was) =>
     .waitForFunction(([s, a, w]) => [...document.querySelectorAll(s)].map((e) => e.getAttribute(a)).join(' ') !== w, [sel, attr, was], { timeout: 30000 })
     .then(() => true, () => false);
 const RINGS = ['.navmap-chart .navmap-ring', 'rx'];
-// press (a key, a wheel's turn, a tap) till the chart's level is `want`, at most `most` times, each waiting for the zoom
+// press (a key, a wheel's turn, a tap) till the chart's level is `want` (a name, or a test of the level), at most `most` times, each waiting for the zoom
 async function zoomTill(page, press, want, { sel = '.navmap-chart', sig = RINGS, most = 12 } = {}) {
+  const there = typeof want === 'function' ? want : (lv) => lv === want;
   let n = 0;
-  while ((await level(page, sel)) !== want && n < most) {
+  while (!there(await level(page, sel)) && n < most) {
     const was = await attrs(page, ...sig);
     await press();
     n += 1;
@@ -134,6 +147,16 @@ const shipNear = (page, [dx, dy], within) =>
     .then(() => true, () => false);
 const off = (at, [dx, dy] = [0, 0]) => Math.hypot(at.x - (at.cx + dx), at.y - (at.cy + dy));
 
+// the names showing on the chart, and the pairs of them that meet (by over half a pixel)
+const namesMeet = (page) =>
+  page.evaluate(() => {
+    const names = [...document.querySelectorAll('.navmap-chart .navmap-name')].map((n) => ({ t: n.textContent, b: n.getBoundingClientRect() })).filter((n) => n.b.width > 0);
+    const hit = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
+    const pairs = [];
+    names.forEach((a, i) => names.slice(i + 1).forEach((b) => hit(a.b, b.b) && pairs.push(`${a.t} / ${b.t}`)));
+    return { n: names.length, pairs };
+  });
+
 // The chart's own steps on the desktop: opening on the ship, the names, the
 // wheel, the search's keys, a drag from a name, Shift-drag.
 async function chartSteps(page) {
@@ -147,13 +170,7 @@ async function chartSteps(page) {
   check(at.readout?.startsWith(sectorWords(ship)), `the bar says the ship’s sector (“${at.readout}”, for ${sectorWords(ship).trim()})`);
 
   // no two names on each other
-  const meet = await page.evaluate(() => {
-    const names = [...document.querySelectorAll('.navmap-chart .navmap-name')].map((n) => ({ t: n.textContent, b: n.getBoundingClientRect() })).filter((n) => n.b.width > 0);
-    const hit = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
-    const pairs = [];
-    names.forEach((a, i) => names.slice(i + 1).forEach((b) => hit(a.b, b.b) && pairs.push(`${a.t} / ${b.t}`)));
-    return { n: names.length, pairs };
-  });
+  const meet = await namesMeet(page);
   check(meet.n > 0 && meet.pairs.length === 0, `no two of the ${meet.n} names on the chart meet${meet.pairs.length ? ` (${meet.pairs.join('; ')})` : ''}`);
 
   // the wheel zooms in about the middle, to a system
@@ -249,7 +266,7 @@ if (run('desktop')) {
   const page = await open({ width: 1440, height: 900 }, 'falcon');
   await click(page, '.universe-navmap-btn');
   await navOpen(page);
-  await page.waitForTimeout(800);
+  await chartDrawn(page);
   await shot(page, '1-navmap');
   // the labels that used to sit on their neighbours
   const boxes = await page.evaluate(() => {
@@ -269,17 +286,36 @@ if (run('desktop')) {
   check(!squashed, 'the place list doesn’t run under the key hints');
   await chartSteps(page);
 
-  // a world: the go button says how
+  // a world: the go button says how (the drives come up with the place picked, a trip time each from the ship's physics)
   await pickByName(page, 'Avengers HQ');
-  await page.waitForTimeout(1500);
+  await goSays(page, 'Race to Avengers HQ');
+  // (the times are in once no drive shows its stand-in: instant, 3×, 1×)
+  await till(page, () => {
+    const t = [...document.querySelectorAll('.navmap-drive-time')];
+    return t.length > 0 && t.every((e) => /s$|^—$/.test(e.textContent));
+  });
   check((await page.textContent('.navmap-go')).includes('Race to Avengers HQ'), 'the go button reads “Race to Avengers HQ”');
   const times = await page.$$eval('.navmap-drive-time', (els) => els.map((e) => e.textContent));
-  check(times.every((t) => /s$/.test(t)), `a trip time for every drive (${times.join(', ')})`);
+  // (nav.js's tripTime flies a trip on the ship's physics for at most 150 s and has no time past that, which the
+  // drive shows as “—”. A new ship starts at one of 31 spots (ship.js's STARTS), and from 9 of them the cruise to
+  // Avengers HQ is longer than that, on main as here (where the old check, a time for every drive, failed from
+  // those 9): so every drive has a time where nav.js has one, the jump and super speed always, and “—” just where
+  // it hasn't. Long trips' times are lane 6b's, with nav.js)
+  const timed = await page.evaluate(async () => {
+    const nav = await import('/src/components/universe/nav.js');
+    const s = window.__universe().ship;
+    return nav.DRIVES.map((d) => ({ id: d.id, known: nav.tripTime(s, 'marvel', d.id) !== null }));
+  });
+  const fits = times.length === timed.length && times.every((t, i) => (timed[i].known ? /s$/.test(t) : t === '—'));
+  check(fits && timed[0].known && timed[1].known, `a trip time for every drive nav.js can time, the jump and super speed always (${times.join(', ')})`);
+  const untimed = timed.filter((d) => !d.known).map((d) => d.id);
+  if (untimed.length) note(`no time for ${untimed.join(', ')} from this start: past the 150 s nav.js’s tripTime flies a trip for, so it reads “—” (long trips’ times are lane 6b’s)`);
   await shot(page, '2-picked');
 
   // the URL picks Marvel first, so the panel has a world's card to lose
   await page.evaluate(() => (window.location.hash = '#/universe/marvel'));
-  await page.waitForTimeout(3000);
+  // (the world's card is up once the panel has lost the map's own title)
+  await till(page, () => window.location.hash === '#/universe/marvel' && Boolean(document.querySelector('.universe-panel')) && !document.querySelector('.universe-panel .universe-title'), null, 60000);
   // a jump to a main-sector wonder picked by name (the first the ship didn't start by), timed on the wall clock
   const start = (await state(page)).ship;
   const wonders = await page.evaluate(() => window.__universeDebug.wonders);
@@ -289,14 +325,14 @@ if (run('desktop')) {
   const goal = wonder.name;
   const near = wonder.reach + 600; // (out at it: the jump parks the ship just past its reach)
   await click(page, '.navmap-close');
-  await page.waitForTimeout(500);
+  await navShut(page);
   await page.keyboard.press('m');
   await navOpen(page);
   await click(page, '.navmap-back').catch(() => {});
   await pickByName(page, goal);
-  await page.waitForTimeout(800);
+  await goSays(page, goal);
   await click(page, '.navmap-drive[data-drive="hyper"]');
-  await page.waitForTimeout(300);
+  await till(page, () => document.querySelector('.navmap-drive[data-drive="hyper"]')?.getAttribute('aria-checked') === 'true');
   check((await page.textContent('.navmap-go')).includes(`Jump to ${goal}`), `the go button reads “Jump to ${goal}”`);
   // (every frame, in the page: when the jump was due and how far the ship is
   // from the wonder. Software GL is slow, so what's checked is that it's out
@@ -315,18 +351,27 @@ if (run('desktop')) {
     [wonder.at, near],
   );
   await click(page, '.navmap-go');
+  // (the ship out at the wonder, looked for a quarter second at a time, the flash's canvas looked for between)
   let overlay = false;
   for (let i = 0; i < 80; i++) {
     overlay ||= await page.evaluate(() => Boolean(document.querySelector('.hyperspace-canvas, canvas[class*="hyper"]')));
-    const s = await state(page);
-    if (s.ship && gap(s.ship, wonder) < near) break;
-    if (i === 2) await shot(page, '3-jumping');
-    await page.waitForTimeout(250);
+    const there = await till(
+      page,
+      ([[x, y, z], n]) => {
+        const s = window.__universe().ship;
+        return Boolean(s) && Math.hypot(s.x - x, (s.y ?? 0) - y, s.z - z) < n;
+      },
+      [wonder.at, near],
+      250,
+    );
+    if (there) break;
+    if (i === 2) await shot(page, '3-jumping', { jpeg: true });
   }
   check(overlay, 'the site’s jump plays over the map');
   const timing = await page.evaluate(() => {
     const log = window.__jumpLog;
-    const due = log.find((r) => r[1] !== null)?.[1];
+    // (when the flash is due: the jump's `at` once it spools; while the ship comes round onto it, it's Infinity)
+    const due = log.find((r) => Number.isFinite(r[1]))?.[1];
     const i = log.findIndex((r) => r[3]);
     if (due === undefined || i < 1) return null;
     return { late: log[i][0] - due, frame: log[i][0] - log[i - 1][0], before: log[i - 1][0] - due };
@@ -335,35 +380,35 @@ if (run('desktop')) {
   const after = await state(page);
   check(after.hash === '#/universe', `the world’s card is cleared from the panel (${after.hash})`);
   check(Boolean(await page.$('.universe-panel .universe-title')), 'the panel’s back to the map’s own');
-  await page.waitForTimeout(2500);
-  await shot(page, '4-after-jump');
+  await page.waitForSelector('.hyperspace-canvas', { state: 'detached', timeout: 60000 }).catch(() => null); // (the flash over)
+  await shot(page, '4-after-jump', { jpeg: true });
 
   // straight away again: the hyperdrive's charging, so it goes at super speed
   // (as if it had only just jumped: here the frames are slow enough for it to charge meanwhile)
   await page.evaluate(() => (window.__universeDebug.state.hyperAt = performance.now() / 1000 + 60)); // (a minute to go: the frames here are slow)
   await page.keyboard.press('m');
   await navOpen(page);
-  await page.waitForTimeout(600);
+  await till(page, (g) => new RegExp(`At ${g}`).test(document.querySelector('.navmap-status')?.textContent ?? ''), goal);
   const status = await page.textContent('.navmap-status');
   check(new RegExp(`At ${goal}`).test(status) && /charging/.test(status), `the map says where you are and that the drive's charging (${status.replace(/\s+/g, ' ').trim()})`);
   await pickByName(page, 'Aurelia');
-  await page.waitForTimeout(800);
+  await goSays(page, 'Race to Aurelia');
   check(Boolean(await page.$('.navmap-note')) && (await page.textContent('.navmap-go')).includes('Race to Aurelia'), 'with the drive charging, it says so and goes at super speed');
   await shot(page, '5-charging');
   await click(page, '.navmap-go');
-  await page.waitForTimeout(4000);
+  await till(page, () => window.__universe().auto === 'aurelia', null, 60000);
   const going = await state(page);
   check(going.auto === 'aurelia', `still on its way out to Aurelia with the selection cleared (${going.auto})`);
-  await shot(page, '6-super-to-aurelia');
+  await shot(page, '6-super-to-aurelia', { jpeg: true });
 
   // the home system, and Escape
   await page.keyboard.press('m');
   await navOpen(page);
   await click(page, '.navmap-views button', 1);
-  await page.waitForTimeout(500);
+  await till(page, () => document.querySelectorAll('.navmap-views button')[1]?.getAttribute('aria-pressed') === 'true');
   await shot(page, '7-home-system');
   await page.keyboard.press('Escape');
-  await page.waitForTimeout(800);
+  await navShut(page);
   check((await page.$('.navmap')) === null, 'Escape closes the map');
   await page.context().close();
 }
@@ -382,7 +427,7 @@ if (run('phone')) {
   await navOpen(page);
   // (a phone's coarse pointer: the chart tools at 44 px)
   const coarse = await asTouch(page, '.navmap-tool');
-  await page.waitForTimeout(800);
+  await chartDrawn(page);
   await shot(page, '9-phone-navmap');
   const fits = await page.evaluate(() => {
     const f = document.querySelector('.navmap-frame').getBoundingClientRect();
@@ -392,7 +437,7 @@ if (run('phone')) {
   });
   check(fits.frame && fits.chart && fits.side, `on a phone the chart sits over the list, all on the screen (${JSON.stringify(fits)})`);
   await pickByName(page, 'Earth');
-  await page.waitForTimeout(1500);
+  await goSays(page, 'Earth');
   await shot(page, '10-phone-picked');
   await click(page, '.navmap-back');
   await page.waitForSelector('.navmap-list', { timeout: 30000 });
@@ -428,24 +473,31 @@ if (run('phone')) {
     return { can, top, h: s.clientHeight, all: s.scrollHeight };
   });
   check(!scroll.can || scroll.top > 0, `the side panel scrolls (${scroll.all} px in ${scroll.h}, scrolled to ${scroll.top})`);
-  // a wonder's name is off the phone's chart till it's picked from the list
-  const wonder = await page.evaluate(() => {
-    const li = [...document.querySelectorAll('.navmap-places > li[data-kind="wonder"]')].find((l) => l.querySelector('.navmap-place[aria-label]'));
-    const shown = [...document.querySelectorAll('.navmap-places > li[data-kind="wonder"] .navmap-name')].filter((n) => n.getBoundingClientRect().width > 0).length;
-    return li && { id: li.dataset.id, name: li.querySelector('.navmap-place').getAttribute('aria-label').split(',')[0], shown };
-  });
-  check(Boolean(wonder) && wonder.shown === 0, `the wonders on the phone’s chart have no names showing (${wonder?.shown ?? 'no wonder on the chart'})`);
-  if (wonder) {
-    await pickByName(page, wonder.name);
-    const named = await page
-      .waitForFunction((id) => document.querySelector(`.navmap-places > li[data-id="${id}"] .navmap-name`)?.getBoundingClientRect().width > 0, wonder.id, { timeout: 30000 })
-      .then(() => true, () => false);
-    const others = await page.evaluate((id) => [...document.querySelectorAll(`.navmap-places > li[data-kind="wonder"]:not([data-id="${id}"]) .navmap-name`)].filter((n) => n.getBoundingClientRect().width > 0).length, wonder.id);
-    check(named && others === 0, `picked from the list, ${wonder.name}’s name shows, and only its (${others} others)`);
-  }
-  // a tap on zoom in zooms
+  // the wonders' names on the phone's chart, by the chart's one declutter: a name shows only where it has room; a
+  // wonder with none (data-quiet) shows no name till it's picked from the list (or hovered, or focused)
+  const wonders = () =>
+    page.evaluate(() => {
+      const shows = (l) => (l.querySelector('.navmap-name')?.getBoundingClientRect().width ?? 0) > 0;
+      const lis = [...document.querySelectorAll('.navmap-places > li[data-kind="wonder"]')].filter((l) => l.querySelector('.navmap-place[aria-label]'));
+      const quiet = lis.filter((l) => l.hasAttribute('data-quiet'));
+      const named = (l) => ({ id: l.dataset.id, name: l.querySelector('.navmap-place').getAttribute('aria-label').split(',')[0] });
+      return { all: lis.length, roomy: lis.filter((l) => !l.hasAttribute('data-quiet') && shows(l)).length, quiet: quiet.map(named), quietNamed: quiet.filter(shows).map(named) };
+    });
+  const seen = await wonders();
+  const meetPhone = await namesMeet(page);
+  check(seen.all > 0 && seen.quietNamed.length === 0, `the phone’s chart has ${seen.all} wonders, ${seen.roomy} named where there’s room and ${seen.quiet.length} quiet, with no name showing${seen.quietNamed.length ? ` (but: ${seen.quietNamed.map((w) => w.name).join(', ')})` : ''}`);
+  check(meetPhone.n > 0 && meetPhone.pairs.length === 0, `every name on the phone’s chart has its room: no two of the ${meetPhone.n} meet${meetPhone.pairs.length ? ` (${meetPhone.pairs.join('; ')})` : ''}`);
+  const quiet = seen.quiet[0];
+  if (quiet) {
+    await pickByName(page, quiet.name);
+    const named = await till(page, (id) => (document.querySelector(`.navmap-places > li[data-id="${id}"] .navmap-name`)?.getBoundingClientRect().width ?? 0) > 0, quiet.id);
+    const then = await wonders();
+    const others = then.quietNamed.filter((w) => w.id !== quiet.id);
+    check(named && others.length === 0, `picked from the list, ${quiet.name}’s name shows, and no other quiet wonder’s (${others.length ? others.map((w) => w.name).join(', ') : 'none'}; ${then.roomy} with room named)`);
+  } else note('no wonder is quiet on the phone’s chart at 390 × 844: each has room for its name, and no two names meet (above)');
+  // a tap on zoom in zooms (to whatever level is next in: the pick above may have zoomed the chart to its wonder)
   const was = await level(page);
-  const tapped = await zoomTill(page, () => tool(page, 'Zoom in').tap({ timeout: 60000 }), was === 'system' ? 'neighbourhood' : 'system');
+  const tapped = await zoomTill(page, () => tool(page, 'Zoom in').tap({ timeout: 60000 }), (lv) => lv !== was);
   check(tapped.level !== was, `tapping zoom in changes the chart’s level (${was} → ${tapped.level}, ${tapped.n} taps)`);
   await shot(page, '14-phone-zoomed');
 
@@ -476,8 +528,9 @@ if (run('minimap')) {
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  await page.goto(URL, { waitUntil: 'domcontentloaded' });
-  const flat = await page.waitForSelector('.universe-flat .minimap', { timeout: 120000 });
+  await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: COLD });
+  const flat = await page.waitForSelector('.universe-flat .minimap', { timeout: COLD });
+  const flatBox = (await flat.boundingBox()) ?? { width: 0, height: 0 };
   await flat.screenshot({ path: `${out}/11-minimap-flat.png`, timeout: 120000 });
   // the chart's marks: a wonder, a nebula and a moon on it, and no orbit rings
   const on = await page.evaluate(() => {
@@ -520,21 +573,27 @@ if (run('minimap')) {
     { sel: '.universe-flat .minimap', sig: ['.universe-flat .minimap-svg polyline', 'points'] },
   );
   check(plus.level !== flatLevel, `+ with the focus in the flat map zooms it (${flatLevel} → ${plus.level}, ${plus.n} presses)`);
+  // the home page is the feed's first page at #/home (feed/Feed.jsx); its teaser is in the Interests section at its
+  // foot, mounted only once that's scrolled near (Home's LazyMount, then its lazy chunk): so scroll to the foot of
+  // the home page and wait for the teaser, and again if the page grew under the scroll
   await page.evaluate(() => (window.location.hash = '#/home'));
-  // the section mounts only when scrolled near, so scroll down a screen at a time until it's there
-  await page.waitForFunction(
-    () => {
-      if (document.querySelector('.minimap-teaser')) return true;
-      window.scrollBy(0, window.innerHeight * 0.8);
-      return false;
-    },
-    null,
-    { timeout: 120000, polling: 'raf' },
-  );
-  const teaser = await page.waitForSelector('.minimap-teaser', { timeout: 120000 });
+  await page.waitForSelector('.feed-page[data-feed-page="home"]', { timeout: 120000 });
+  let teaser = null;
+  for (let i = 0; i < 12 && !teaser; i++) {
+    await page.evaluate(() => {
+      const home = document.querySelector('.feed-page[data-feed-page="home"]');
+      if (home) window.scrollTo(0, window.scrollY + home.getBoundingClientRect().bottom - window.innerHeight);
+    });
+    teaser = await page.waitForSelector('.minimap-teaser', { timeout: 10000 }).catch(() => null);
+  }
+  if (!teaser) throw new Error('no .minimap-teaser on the home page');
   await teaser.scrollIntoViewIfNeeded();
   await teaser.screenshot({ path: `${out}/12-minimap-teaser.png`, timeout: 120000 });
-  check(true, 'the flat mini-map and the home teaser both drew');
+  const drew = await page.evaluate(() => {
+    const b = document.querySelector('.minimap-teaser')?.getBoundingClientRect();
+    return { w: Math.round(b?.width ?? 0), h: Math.round(b?.height ?? 0), items: document.querySelectorAll('.minimap-teaser .minimap-item').length };
+  });
+  check(flatBox.width > 0 && flatBox.height > 0 && drew.w > 0 && drew.h > 0 && drew.items > 0, `the flat mini-map (${Math.round(flatBox.width)} × ${Math.round(flatBox.height)}) and the home teaser (${drew.w} × ${drew.h}, ${drew.items} places) both drew`);
   const worlds = await page.evaluate(() => [...document.querySelectorAll('.minimap-teaser [data-id]')].map((e) => [e.dataset.id, e.dataset.kind]));
   const odd = worlds.filter(([, k]) => k !== 'world');
   check(worlds.length > 0 && odd.length === 0, `the teaser has only worlds (${worlds.length}${odd.length ? `; not: ${odd.map(([id]) => id).join(', ')}` : ''})`);
@@ -550,7 +609,8 @@ if (run('far')) {
   await page.waitForFunction(() => window.__universe().ship.x > 200000, null, { timeout: 120000 });
   await page.keyboard.press('m');
   await navOpen(page);
-  await page.waitForFunction(() => document.querySelectorAll('.navmap-place').length > 0, null, { timeout: 60000 });
+  // (the chart's drawn round the ship: its marker and the bar's words. Out here no place may be near enough to be on it)
+  await till(page, () => Boolean(document.querySelector('.navmap-chart .navmap-ship')) && /^Sector /.test(document.querySelector('.navmap-readout')?.textContent ?? ''), null, 60000);
   await shot(page, '13-far-ship');
   const far = await shipOnChart(page);
   const ship = (await state(page)).ship;
@@ -563,13 +623,14 @@ if (run('far')) {
     await page.waitForSelector('.navmap-ship[data-edge]', { state: 'attached', timeout: 30000 }).catch(() => null);
   }
   const pinned = await shipMarker(page);
-  // (the arrow and its halo's widest ping, 16 × 1.6 chart units, all inside the circle)
+  // (the arrow, .navmap-ship-mark, and its halo's widest ping, 16 × 1.6 chart units, all inside the circle; the
+  // view cone ahead of it is light drawn on the chart, not the marker, and fades out at its tip)
   const whole = await page.evaluate(() => {
     const c = document.querySelector('.navmap-chart').getBoundingClientRect();
     const [cx, cy, r] = [c.left + c.width / 2, c.top + c.height / 2, c.width / 2];
     const g = document.querySelector('.navmap-chart .navmap-ship');
     const m = g.getScreenCTM();
-    const b = g.querySelector('path').getBoundingClientRect();
+    const b = g.querySelector('.navmap-ship-mark').getBoundingClientRect();
     const corners = [[b.left, b.top], [b.right, b.top], [b.left, b.bottom], [b.right, b.bottom]];
     const halo = 16 * 1.6 * Math.hypot(m.a, m.b);
     return { arrow: Math.max(...corners.map(([x, y]) => Math.hypot(x - cx, y - cy))), halo: Math.hypot(m.e - cx, m.f - cy) + halo, r };

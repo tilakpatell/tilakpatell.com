@@ -1,7 +1,8 @@
 /* global window, document */
 // A browser check of deep space's wonders (deepspace.js): with the dev server
 // up (npx vite --port 5173) and Chrome at $CHROME:
-//   OUT=/tmp/shots node scripts/wonders-check.mjs [id …]
+//   OUT=/tmp/shots [BASE=http://localhost:5173] node scripts/wonders-check.mjs [id …]
+// BASE is where the dev server is.
 // It jumps to each wonder named (every one, given none) from the nav map at
 // hyperspeed, checks the ship comes out parked by it, and takes a picture.
 import { chromium } from 'playwright-core';
@@ -25,7 +26,7 @@ await ctx.addInitScript(() => {
 const page = await ctx.newPage();
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-await page.goto('http://localhost:5173/?quality=low#/universe', { waitUntil: 'domcontentloaded' });
+await page.goto(`${process.env.BASE ?? 'http://localhost:5173'}/?quality=low#/universe`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => typeof window.__universe === 'function' && window.__universe().ship, null, { timeout: 180000 });
 await page.waitForTimeout(2000);
 const click = (sel) =>

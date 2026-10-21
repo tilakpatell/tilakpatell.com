@@ -1,7 +1,8 @@
 /* global window, document */
 // A browser check of the Rick and Morty sector (universe/portals.js). With
 // the dev server up (npx vite --port 5173):
-//   OUT=/tmp/shots node scripts/sector-check.mjs [--ship cruiser]
+//   OUT=/tmp/shots [BASE=http://localhost:5173] node scripts/sector-check.mjs [--ship cruiser]
+// BASE is where the dev server is.
 // It looks at the portal by the Rick and Morty planet, has the autopilot fly
 // from the home system to Gazorpazorp (through the portal on the way, out by
 // the Citadel, on from there on super speed), opens the nav map there, sets
@@ -23,7 +24,7 @@ const ship = flag('--ship', 'cruiser');
 const out = process.env.OUT ?? join(tmpdir(), 'sector-check');
 mkdirSync(out, { recursive: true });
 console.log('shots in', out);
-const URL = 'http://localhost:5173/?quality=low#/universe';
+const URL = `${process.env.BASE ?? 'http://localhost:5173'}/?quality=low#/universe`;
 const browser = await chromium.launch({ executablePath: process.env.CHROME ?? '/opt/pw-browsers/chromium', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
 const errors = [];
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });

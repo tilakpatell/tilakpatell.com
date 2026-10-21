@@ -1,7 +1,8 @@
 /* global window, document */
 // A browser check of the map's connections (Universe.jsx, NavMap.jsx): with
 // the dev server up (npx vite --port 5173) and Chrome at $CHROME:
-//   OUT=/tmp/shots node scripts/links-check.mjs
+//   OUT=/tmp/shots [BASE=http://localhost:5173] node scripts/links-check.mjs
+// BASE is where the dev server is.
 // A link out to a wonder starts the ship beside it; a star system picked on
 // the nav map goes to the gate and on through into the galaxy; the grand
 // tour starts, says where it's up to, and Escape stops it.
@@ -27,7 +28,7 @@ const open = async (hash, drive = 'hyper') => {
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  await page.goto(`http://localhost:5173/?quality=low#${hash}`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${process.env.BASE ?? 'http://localhost:5173'}/?quality=low#${hash}`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => typeof window.__universe === 'function' && window.__universe().ship, null, { timeout: 180000 });
   await page.waitForTimeout(2000);
   return page;
