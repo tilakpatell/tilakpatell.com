@@ -1,0 +1,69 @@
+{
+  "about": "Hogwarts’ cast on the site’s shared skeleton (Meshy’s 24 bones, under an Armature scaled to metres), made by scripts/hogwarts-cast.mjs. Load a figure as src/components/middleearth/road/cast.js loads one: NAME.glb (or the cut for the device’s detail: hq for high, plain for mid, lo for low) and its own idle, walk and run beside it; every other clip through lib/three/clipLibrary.js’s forFigure, with `hipsY` given to createAnimator (it stands a standing clip’s soles on the floor; the Hips bone’s own height sinks them a few centimetres). Scale it to `height` metres, crown to sole. `tall` marks a figure far over a person’s height (2.6 m): give it the doors, seats and camera distance of its size, never squeeze it to a person’s. A `tint` is applied to the base colour as its entry says.",
+  "figures": {
+    "harry": {
+      "height": 1.45,
+      "kind": "student",
+      "house": "gryffindor",
+      "cuts": {
+        "hq": "harry.hq.glb",
+        "mid": "harry.glb",
+        "lo": "harry.lo.glb"
+      },
+      "clips": {
+        "idle": "harry-idle.glb",
+        "walk": "harry-walk.glb",
+        "run": "harry-run.glb"
+      },
+      "hipsY": 49.4
+    },
+    "ron": {
+      "height": 1.52,
+      "kind": "student",
+      "house": "gryffindor",
+      "cuts": {
+        "hq": "ron.hq.glb",
+        "mid": "ron.glb",
+        "lo": "ron.lo.glb"
+      },
+      "clips": {
+        "idle": "ron-idle.glb",
+        "walk": "ron-walk.glb",
+        "run": "ron-run.glb"
+      },
+      "hipsY": 52.7
+    },
+    "hermione": {
+      "height": 1.42,
+      "kind": "student",
+      "house": "gryffindor",
+      "cuts": {
+        "hq": "hermione.hq.glb",
+        "mid": "hermione.glb",
+        "lo": "hermione.lo.glb"
+      },
+      "clips": {
+        "idle": "hermione-idle.glb",
+        "walk": "hermione-walk.glb",
+        "run": "hermione-run.glb"
+      },
+      "hipsY": 33.8
+    },
+    "hagrid": {
+      "height": 2.6,
+      "kind": "staff",
+      "tall": true,
+      "cuts": {
+        "hq": "hagrid.hq.glb",
+        "mid": "hagrid.glb",
+        "lo": "hagrid.lo.glb"
+      },
+      "clips": {
+        "idle": "hagrid-idle.glb",
+        "walk": "hagrid-walk.glb",
+        "run": "hagrid-run.glb"
+      },
+      "hipsY": 91.2
+    }
+  }
+}

@@ -1,0 +1,210 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Rig check</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #1a2029;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- A figure skinned by scripts/rig/skin.mjs, loaded with the site's loader
+         and played the way a world plays it (lib/three/clipLibrary.js's
+         forFigure, lib/three/animator.js and locomotion.js), for
+         scripts/rig/rig-check.mjs through the dev server:
+         ?url=/models/hogwarts/cast/harry.glb&own=/models/hogwarts/cast/harry
+           &clips=idle,walk,run,cast,sit.down,knockdown&sheet=idle,walk,cast&w=300&h=400
+         own: where its own idle, walk and run are (NAME-idle.glb…), else the
+         library's. window.__rig, once done: what was found and measured. -->
+    <script type="module">
+      import * as THREE from 'three';
+      import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+      import { gltfLoader } from '/src/lib/three/gltf.js';
+      import { findBones } from '/src/lib/three/rig.js';
+      import { faceAhead, forFigure } from '/src/lib/three/clipLibrary.js';
+      import { createAnimator } from '/src/lib/three/animator.js';
+      import { MESHY_BONES } from '/src/lib/three/meshyRig.fixture.js';
+
+      const q = new URLSearchParams(location.search);
+      const W = Number(q.get('w') ?? 300);
+      const H = Number(q.get('h') ?? 400);
+      const names = (q.get('clips') ?? 'idle,walk,run,cast,sit.down,knockdown').split(',');
+      const sheet = (q.get('sheet') ?? '').split(',').filter(Boolean);
+      const out = { errors: [] };
+      try {
+        const g = await gltfLoader().loadAsync(q.get('url'));
+        const model = g.scene;
+        model.traverse((o) => {
+          if (o.isMesh) o.frustumCulled = false; // (a skinned mesh's bounds don't follow its pose)
+        });
+        model.updateMatrixWorld(true);
+        // every bone by name, and every role lib/three/rig.js looks for
+        out.missing = MESHY_BONES.map(([n]) => n).filter((n) => !model.getObjectByName(n)?.isBone);
+        const { bones: roles, spine } = findBones(model);
+        out.roles = Object.keys(roles).filter((k) => roles[k]);
+        out.spine = spine.map((b) => b.name);
+        const hips = model.getObjectByName('Hips');
+        const up = new THREE.Vector3(0, 1, 0).applyQuaternion(hips.parent.getWorldQuaternion(new THREE.Quaternion()).invert());
+        // (the hips' height for the library's clips: cast.json's, which stands this figure's soles on the floor, else its bone's)
+        const hipsY = Number(q.get('hips')) || hips.position.y;
+        const key = `rig-check:${q.get('url')}`;
+        // the soles: the vertices within 3 cm of the floor at rest
+        const meshes = [];
+        model.traverse((o) => o.isSkinnedMesh && meshes.push(o));
+        const v = new THREE.Vector3();
+        const soles = [];
+        let lowest = Infinity;
+        let height = -Infinity;
+        for (const m of meshes) {
+          const pos = m.geometry.attributes.position;
+          for (let i = 0; i < pos.count; i++) {
+            m.getVertexPosition(i, v).applyMatrix4(m.matrixWorld);
+            lowest = Math.min(lowest, v.y);
+            height = Math.max(height, v.y);
+          }
+        }
+        // (and a share of all the others, for how low the body goes in a fall)
+        const some = [];
+        for (const m of meshes) {
+          const pos = m.geometry.attributes.position;
+          for (let i = 0; i < pos.count; i++) {
+            m.getVertexPosition(i, v).applyMatrix4(m.matrixWorld);
+            if (v.y < lowest + 0.03) soles.push([m, i]);
+            else if (i % 25 === 0) some.push([m, i]);
+          }
+        }
+        out.rest = { lowest, height, hipsY, soles: soles.length };
+        const lowOf = (list) => {
+          let lo = Infinity;
+          for (const [m, i] of list) lo = Math.min(lo, m.getVertexPosition(i, v).applyMatrix4(m.matrixWorld).y);
+          return lo;
+        };
+        // its own idle, walk and run (beside it, as Meshy's figures have theirs), else the library's
+        const own = {};
+        const ownAt = q.get('own');
+        // (loco=a,b,c: other library clips for the idle, the walk and the run, to try them)
+        const loco = (q.get('loco') ?? 'idle,walk,run').split(',');
+        for (const [k, n] of ['idle', 'walk', 'run'].entries()) {
+          if (ownAt) {
+            const f = await gltfLoader().loadAsync(`${ownAt}-${n}.glb`).catch(() => null);
+            if (f?.animations?.[0]) own[n] = f.animations[0];
+          } else own[n] = await forFigure(loco[k], { hipsY, up, key });
+        }
+        out.own = Object.keys(own).filter((n) => own[n]);
+        if (own.walk) faceAhead(own, up);
+        const clipOf = async (n) => own[n] ?? (await forFigure(n, { hipsY, up, key }));
+        // each clip played through on its own: the lowest the soles and the body go, frame by frame
+        const mixer = new THREE.AnimationMixer(model);
+        out.clips = {};
+        const bones = new Set();
+        model.traverse((o) => o.isBone && bones.add(o.name));
+        for (const n of names) {
+          const clip = await clipOf(n);
+          if (!clip) {
+            out.clips[n] = { missing: true };
+            continue;
+          }
+          const lost = clip.tracks.map((t) => t.name.split('.')[0]).filter((b) => !bones.has(b));
+          mixer.stopAllAction();
+          const a = mixer.clipAction(clip);
+          a.reset().play();
+          const frames = Math.max(12, Math.round(clip.duration * 30));
+          const soleY = [];
+          const bodyY = [];
+          let nan = false;
+          for (let f = 0; f <= frames; f++) {
+            mixer.setTime((clip.duration * f) / frames);
+            model.updateMatrixWorld(true);
+            soleY.push(lowOf(soles));
+            bodyY.push(Math.min(soleY.at(-1), lowOf(some)));
+            if (!Number.isFinite(soleY.at(-1))) nan = true;
+          }
+          out.clips[n] = { duration: clip.duration, lost: [...new Set(lost)], nan, soleY, bodyY };
+          a.stop();
+        }
+        // the walk as a world walks it: locomotion pacing the feet to the ground covered, the toes followed
+        mixer.stopAllAction();
+        mixer.uncacheRoot(model);
+        const group = new THREE.Group();
+        group.add(model);
+        const anim = createAnimator(model, { clips: own, hipsY, up, key, seed: 1 });
+        const speed = anim.loco?.strides?.walk?.speed ?? 0;
+        out.stride = anim.loco?.strides?.walk ?? null;
+        const toes = ['LeftToeBase', 'RightToeBase'].map((n) => model.getObjectByName(n));
+        const frame = { forward: new THREE.Vector3(0, 0, 1), up: new THREE.Vector3(0, 1, 0) };
+        const series = [[], []];
+        const dt = 1 / 30;
+        const motion = { move: 0.42, speed, side: 0, turn: 0, down: 0, air: 0 };
+        for (let f = 0; f < 150; f++) {
+          anim.locomote(motion);
+          anim.update(dt);
+          group.position.z += speed * dt;
+          group.updateMatrixWorld(true);
+          anim.after(dt, motion, frame);
+          group.updateMatrixWorld(true);
+          toes.forEach((t, k) => series[k].push({ t: f * dt, p: t.getWorldPosition(v).toArray() }));
+        }
+        out.walked = { speed, series };
+        anim.dispose();
+        group.remove(model);
+
+        // the sheet: a row a clip, four views across, each at a telling moment of it
+        if (sheet.length) {
+          const VIEWS = { front: [0, 0.12, 1], three: [0.75, 0.2, 0.85], side: [1, 0.12, 0], back: [-0.2, 0.12, -1] };
+          // (a once-through clip held near its end: at its very end a looping action is back at its start)
+          const AT = { idle: 0.3, walk: 0.25, run: 0.25, cast: 0.55, 'cast.idle': 0.5, 'sit.down': 0.97, knockdown: 0.97 };
+          const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+          const cols = Object.keys(VIEWS);
+          renderer.setSize(W * cols.length, H * sheet.length);
+          renderer.setScissorTest(true);
+          renderer.toneMapping = THREE.ACESFilmicToneMapping;
+          document.body.appendChild(renderer.domElement);
+          const scene = new THREE.Scene();
+          scene.background = new THREE.Color('#1a2029');
+          const pm = new THREE.PMREMGenerator(renderer);
+          scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+          scene.environmentIntensity = 0.5;
+          const sun = new THREE.DirectionalLight('#fff4e6', 2.6);
+          sun.position.set(3, 4, 2);
+          scene.add(sun, new THREE.HemisphereLight('#bbccdd', '#332211', 0.4));
+          const floor = new THREE.Mesh(new THREE.CircleGeometry(height * 0.6, 48), new THREE.MeshBasicMaterial({ color: '#2c3644' }));
+          floor.rotation.x = -Math.PI / 2;
+          scene.add(floor, model);
+          model.position.set(0, 0, 0);
+          const cam = new THREE.PerspectiveCamera(28, W / H, 0.01, 100);
+          const dist = (height * 0.62) / Math.tan(THREE.MathUtils.degToRad(14));
+          const play = new THREE.AnimationMixer(model);
+          for (const [row, n] of sheet.entries()) {
+            const clip = await clipOf(n);
+            play.stopAllAction();
+            if (clip) {
+              const a = play.clipAction(clip);
+              a.reset().play();
+              play.setTime(clip.duration * (AT[n] ?? 0.5));
+            }
+            model.updateMatrixWorld(true);
+            cols.forEach((view, col) => {
+              cam.position.set(...VIEWS[view]).normalize().multiplyScalar(dist).add(new THREE.Vector3(0, height * 0.5, 0));
+              cam.lookAt(0, height * 0.48, 0);
+              const y = (sheet.length - 1 - row) * H;
+              renderer.setViewport(col * W, y, W, H);
+              renderer.setScissor(col * W, y, W, H);
+              renderer.render(scene, cam);
+            });
+          }
+          out.sheet = { rows: sheet, cols, w: W, h: H };
+        }
+      } catch (e) {
+        out.errors.push(String(e?.stack ?? e));
+      }
+      window.__rig = out;
+    </script>
+  </body>
+</html>
