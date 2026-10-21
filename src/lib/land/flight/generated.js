@@ -15,7 +15,10 @@
 //   there: the first half of FIB_512 (a hemisphere, evenly), turned by a
 //   seeded rotation and read in a seeded order, so a planet's places are its
 //   own and a kind that finds no spot is left out. The chart starts at the
-//   first place, so a ship lands beside it.
+//   first place, so a ship lands beside it; that place is chosen for the
+//   relief in reach of it (reliefAt), because a dry, gentle spot is most
+//   often the flat belt between a basin and its hills, and a landing on a
+//   flat featureless plane is one of the spec's failures.
 // - Charts. A POI's `at` is where the current chart puts it (what the
 //   flight's flats, clutter and occurrences read); chartedAt makes the chart
 //   again round another spot, as a landing far from the first place will.
@@ -29,6 +32,8 @@
 //     from 18 to 70 and clamped; 15,000 for a moon or a row with no radius
 //   POI_NAMES[kind] → a place's name, by its kind
 //   generatedSpecOf(row, family) → spec (planetSpec.js's seventeen fields and ROSTER_EXTRA's)
+//   reliefAt(spec, dir) → metres: the height span round a spot of a round spec, read at
+//     the spot and on eight headings 1.5 km and 3 km out (the spot's own pads left out)
 //   chartedAt(spec, dir) → the round spec charted round dir; a plane spec as it is
 
 import { seeded } from '../../seeded.js';
@@ -108,6 +113,12 @@ const DRY = 4;
 const GENTLE = 0.12;
 // radians between two places
 const APART = 0.3;
+// the landing spot's relief is read this far out, on this many headings
+const REACH = [1500, 3000];
+const HEADINGS = 8;
+// and it is chosen among this many gentle dry candidates (in seeded order):
+// enough to find hills near one, few enough that a spec is still quick to make
+const POOL = 24;
 
 // 0…n−1, Fisher–Yates
 function shuffle(n, rnd) {
@@ -138,9 +149,36 @@ function rotationOf(rnd) {
 // (+ 0: no −0 in a spec, which JSON would bring back as 0)
 const turn = (m, d) => unit(m.map((row) => row[0] * d[0] + row[1] * d[1] + row[2] * d[2] + 0));
 
-// The places, and where the chart starts: each kind takes the first
-// candidate that is dry, gentle and apart, and the chart starts at the first
-// place, else at the first dry, gentle candidate, else the first candidate.
+// the height span round a spot: the spot and HEADINGS headings at each REACH
+function reliefOf(field, dir, radius) {
+  const c = chartOf(dir, radius);
+  let lo = Infinity;
+  let hi = -Infinity;
+  const take = (h) => {
+    if (h < lo) lo = h;
+    if (h > hi) hi = h;
+  };
+  take(field.heightAt(dir));
+  for (const d of REACH) {
+    for (let k = 0; k < HEADINGS; k++) {
+      const a = (k * 2 * Math.PI) / HEADINGS;
+      take(field.heightAt(c.toDir(d * Math.cos(a), d * Math.sin(a))));
+    }
+  }
+  return hi - lo;
+}
+
+export function reliefAt(spec, dir) {
+  if (!spec.round) return 0;
+  // (the ground as it lies, not as a pad flattens it)
+  return reliefOf(sphereField({ ...spec, pois: [] }), unit(dir), spec.round.radius);
+}
+
+// The places, and where the chart starts: the first place, where a ship
+// lands, is the one of the first POOL dry, gentle candidates with the most
+// relief in reach (ties to the earlier); each later kind takes the first
+// candidate that is dry, gentle and apart. The chart starts at the first
+// place, else at the landing spot the same rule finds, else at candidate 0.
 // A candidate's sample is read once, whichever kind asks.
 function placesOf(spec0, kinds) {
   const rnd = seeded(spec0.seed ^ PLACES);
@@ -156,20 +194,34 @@ function placesOf(spec0, kinds) {
     }
     return good.get(i);
   };
+  // the landing spot's candidate, or −1 when no candidate is dry and gentle
+  const landing = () => {
+    let best = -1;
+    let most = -Infinity;
+    for (let i = 0, seen = 0; i < dirs.length && seen < POOL; i++) {
+      if (!isGood(i)) continue;
+      seen++;
+      const relief = reliefOf(field, dirs[i], spec0.round.radius);
+      if (relief > most) {
+        most = relief;
+        best = i;
+      }
+    }
+    return best;
+  };
   const pois = [];
   for (const kind of kinds) {
     // (drawn whether or not the kind finds a spot, so one left out moves no other)
     const r = Math.round(60 + 80 * rnd());
     const edge = Math.round(80 + 40 * rnd());
-    for (let i = 0; i < dirs.length; i++) {
-      if (pois.some((p) => angleBetween(p.dir, dirs[i]) < APART) || !isGood(i)) continue;
-      pois.push({ id: `poi-${pois.length}`, name: POI_NAMES[kind], kind, dir: dirs[i], r, edge });
-      break;
-    }
+    let i = -1;
+    if (!pois.length) i = landing();
+    else for (let j = 0; j < dirs.length && i < 0; j++) if (isGood(j) && !pois.some((p) => angleBetween(p.dir, dirs[j]) < APART)) i = j;
+    if (i >= 0) pois.push({ id: `poi-${pois.length}`, name: POI_NAMES[kind], kind, dir: dirs[i], r, edge });
   }
   if (pois.length) return { pois, origin: pois[0].dir };
-  for (let i = 0; i < dirs.length; i++) if (isGood(i)) return { pois, origin: dirs[i] };
-  return { pois, origin: dirs[0] };
+  const i = landing();
+  return { pois, origin: dirs[i >= 0 ? i : 0] };
 }
 
 // ── the spec ──

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { POI_NAMES, chartedAt, groundRadius } from './generated';
+import { POI_NAMES, chartedAt, groundRadius, reliefAt } from './generated';
 import { sphereField } from './sphereField';
 import { angleBetween, dirOfUv } from './sphere';
 import { planetSpecOf as specWith } from './planetSpec';
-import { MOONS, lookupOf, randomSystems } from './fixtures/generated';
+import { MOONS, SHEET_RIDGES, lookupOf, randomSystems } from './fixtures/generated';
 import { PLANETS, planetSpecOf } from './fixtures/expanse.js';
 
 // every key a roster spec has (its 17 and ROSTER_EXTRA's)
@@ -42,6 +42,22 @@ describe('generatedSpecOf', () => {
       });
       if (s.pois.length) expect(Math.hypot(...s.pois[0].at)).toBe(0);
     }
+  });
+
+  // Before the first place was chosen for its relief, these two ridges planets
+  // landed on the flat belt between basin and hills: 96 m and 308 m of height
+  // within 3 km (41 m and 89 m across the sheet's 3 km tile). The rule as
+  // written gives 682 m and 699 m; the bound sits under both, not at them.
+  it('lands a ridges planet where the ground has relief, on a spot still dry and gentle', () => {
+    for (const r of SHEET_RIDGES) {
+      const s = specWith(r.id, { expanse: [r] });
+      expect(s.character.kind, r.id).toBe('ridges');
+      expect(reliefAt(s, s.round.at), r.id).toBeGreaterThanOrEqual(600);
+      const spot = sphereField({ ...s, pois: [] }).sample(s.round.at);
+      expect(spot.h).toBeGreaterThan((s.water?.level ?? -Infinity) + 4);
+      expect(spot.slope).toBeLessThan(0.12);
+    }
+    expect(reliefAt({ round: null }, [0, 1, 0])).toBe(0);
   });
 
   it('gives the seeded thirteen no new places', () => {

@@ -14,6 +14,8 @@
 // pure layer may not import a component.
 //
 //   MOONS → two moon rows of 'e:3,-2:1:0' as the generator will give them (rocky, then icy)
+//   SHEET_RIDGES → two ridges planets' rows from the contact sheet (scripts/planet-contact-sheet.mjs,
+//     tiles 4 and 15), whose landing spot was a flat plane before the first place was chosen for relief
 //   randomDirs(n, seed) → n unit [x, y, z] arrays
 //   roundSpec({ type = 'rock', kind = 'craters', seed = 7, radius = 20000, sea, peaks }) → spec
 //   randomSystems(planets, seed) → [[row…]…], systems until there are `planets` rows,
@@ -55,6 +57,12 @@ const SYSTEM = { faction: null, traffic: 0.2, hazard: null };
 export const MOONS = [
   { id: 'e:3,-2:1:0:0', name: 'Ostra I', type: 'rocky', seed: '12345', system: SYSTEM, parent: 'e:3,-2:1:0' },
   { id: 'e:3,-2:1:0:1', name: 'Ostra II', type: 'icy', seed: '67890', system: SYSTEM, parent: 'e:3,-2:1:0' },
+];
+
+// the generator's rows for e:6,18:2:1 and e:27,-22:14:0, as expanseRow gives them
+export const SHEET_RIDGES = [
+  { id: 'e:6,18:2:1', name: 'Vouvowom', type: 'rock', seed: '12120064596203740373', radius: 29, moons: 2, rings: false, system: { faction: { id: 'E:6,18:f0' }, traffic: 0.05, hazard: 'storm' } },
+  { id: 'e:27,-22:14:0', name: 'Miooo', type: 'ice', seed: '7329199095134414442', radius: 44, moons: 2, rings: false, system: { faction: { id: 'independent' }, traffic: 0.05, hazard: 'storm' } },
 ];
 
 // [type, weight, radius]: the generator's (expanse/gen/tables.js:25-90)
