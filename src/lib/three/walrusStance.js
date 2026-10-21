@@ -36,7 +36,8 @@ export function withStance(fig, { model = fig.model, clips = fig.clips ?? {}, lo
     const token = ++ask;
     if (key === now) return now;
     if (!STANCE_KEYS.includes(key) || !enabled) {
-      const held = STANCE_KEYS.includes(key) ? clips[HELD[key]] : null;
+      // (the pack's own pose, never a copy of the idle standing in for it: walrus.js's fallbacks)
+      const held = STANCE_KEYS.includes(key) && !clips[HELD[key]]?.userData?.fallback ? clips[HELD[key]] : null;
       const idle = held ? Object.assign(held.clone(), { name: 'idle', userData: { ...held.userData, stance: key } }) : null;
       fig.anim?.restance({ ...own(laid), ...(idle ? { idle } : {}) });
       laid = idle ? ['idle'] : [];

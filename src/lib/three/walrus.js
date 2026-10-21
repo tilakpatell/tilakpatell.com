@@ -159,12 +159,14 @@ export function clipsFor(body, clips) {
     for (const [id, [bone, path]] of moved) if (!has.has(id)) c.tracks.push(restTrack(bone, path, c.duration));
   }
   // (each its own copy: the mixer keeps one action a clip, so a fallback
-  // sharing the idle's would have a dodge stop the idle for good)
+  // sharing the idle's would have a dodge stop the idle for good; marked
+  // with the clip it stands in for, so a caller wanting the pack's own can
+  // tell: walrusStance.js's held pose)
   for (const [name, to] of Object.entries(CLIP_FALLBACK))
     if (!own[name] && own[to]) {
       own[name] = own[to].clone();
       own[name].name = name;
-      own[name].userData = { ...own[to].userData };
+      own[name].userData = { ...own[to].userData, fallback: to };
     }
   return own;
 }

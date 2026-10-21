@@ -35,9 +35,13 @@ describe('a 2017 figure’s stance at a phone’s level, where no stance pack is
     expect(actions.idle.clip).toBe(clips.idle);
   });
 
-  it('keeps the humanoid’s idle where the pack has no held pose for the weapon', async () => {
+  it('keeps the humanoid’s idle where the pack has no held pose for the weapon, or only the idle standing in for one', async () => {
     const { fig, clips, actions } = figure(['idle', 'walk', 'run']);
     withStance(fig, { clips, enabled: false });
+    expect(await fig.stance('t')).toBe('humanoid');
+    expect(actions.idle.clip).toBe(clips.idle);
+    // (walrus.js's copy of the idle under the pose's name, marked as one)
+    clips['aim.rifle'] = Object.assign(clips.idle.clone(), { name: 'aim.rifle', userData: { fallback: 'idle' } });
     expect(await fig.stance('t')).toBe('humanoid');
     expect(actions.idle.clip).toBe(clips.idle);
   });
