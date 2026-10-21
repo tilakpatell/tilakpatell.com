@@ -26,6 +26,8 @@
 //                                             degrees round from north to the east,
 //                                             up over the eye, and across
 //   sight [{ from: [dx, y, dz], to: [dx, y, dz] }]   lines nothing round it may stand in
+//   watch 'morty'                              its crowd watches Morty always, not only
+//                                             while the place hunts him
 //   pieces [{ model, at: [dx, dz], turn, h, w, d, y, spin, own }]   the place's own
 //     models where its code buildings stood (a set piece's file, by path),
 //     on every level, casting their shadows; `spin` radians a second; `own`

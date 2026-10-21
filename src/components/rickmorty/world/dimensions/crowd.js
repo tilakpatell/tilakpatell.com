@@ -34,6 +34,7 @@ const COPIES = '/games/meshy/crowd';
 const copyTall = (name) => (name.includes('morty') ? 1.5 : 1.85);
 const IDLE_AT = 0.4; // seconds into the idle a rigged kind is stood at
 const HOPS = 1.2; // seconds a hop takes to ripple through a gathering
+const FOLLOW = 0.25; // metres someone watched moves before the crowd turns again
 // how much room each of a gathering takes: along a row, and in a disc (its radius grows as the root)
 const ROW_EACH = 1.1;
 const DISC_EACH = 0.75;
@@ -195,7 +196,11 @@ export function createCrowd(kit, R, laid, { loader = null } = {}) {
   return {
     ready,
     hop: () => (hopAt = last),
-    turn: (to) => (watch = to),
+    // (someone moving is followed from a quarter metre on, not every step)
+    turn: (to) => {
+      if (!to) watch = null;
+      else if (!watch || Math.hypot(to[0] - watch[0], to[1] - watch[1]) > FOLLOW) watch = [to[0], to[1]];
+    },
     show: (key, on) => shown.set(key, on),
     // how many of each walker and gathering stand (for the checks)
     counts: () => records.reduce((o, r) => ({ ...o, [r.e.key]: (o[r.e.key] ?? 0) + r.mesh.count }), {}),

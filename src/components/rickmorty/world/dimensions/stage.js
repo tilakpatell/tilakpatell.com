@@ -30,7 +30,7 @@ import { findNews, findReadout, newFind, pickOurs, stepFind } from '../games/fin
 import { TRIS, WORLDS } from './worlds';
 import { BLOCKS } from './blocks';
 import { outskirtsOf } from './outskirts';
-import { groundSize, roomFog, surround, wallOpenings } from './surround';
+import { groundSize, roomFog, surround, wallOpenings, watchOf } from './surround';
 
 // a speckled paint for a floor or the ground
 export const specks = (base, specks, seed = 7, n = 1600, size = 2) => (g, w, h) => speckle(g, w, h, { base, specks, n, size, seed });
@@ -298,6 +298,8 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         if (deal && state && cast) dealing(state);
         if (still && state && cast) freezing(dt, state);
         if (search && state && cast) finding(dt, state);
+        // (its crowd turns to Morty while the place hunts him)
+        if (round && state) round.actions.turn(watchOf(world, { hunting: N.hunting || N.npcs.some((n) => n.hunting), morty: state.morty }));
         update?.(t, dt, state, camera);
       },
     });

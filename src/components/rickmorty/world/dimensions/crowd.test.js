@@ -230,6 +230,27 @@ describe('a place’s crowd', () => {
     expect(yawOf()).toBeCloseTo(watching, 6);
   });
 
+  it('follows someone it watches as they move, but not every step: from a quarter metre on', async () => {
+    const { kit, R, ticks } = fakes();
+    const crowd = createCrowd(kit, R, laid(), { loader: copyLoader() });
+    await crowd.ready;
+    const [g] = instances(R).filter((m) => m.userData.crowd === 'gather-0');
+    const yawOf = () => {
+      const m = new THREE.Matrix4();
+      g.getMatrixAt(0, m);
+      return new THREE.Euler().setFromRotationMatrix(m, 'YXZ').y;
+    };
+    crowd.turn([60, 30]);
+    tick(ticks, 1);
+    const a = yawOf();
+    crowd.turn([60.1, 30]);
+    tick(ticks, 1.1);
+    expect(yawOf()).toBe(a);
+    crowd.turn([30, -40]);
+    tick(ticks, 1.2);
+    expect(Math.abs(yawOf() - a)).toBeGreaterThan(0.3);
+  });
+
   it('goes and comes with the story, and as the place says', async () => {
     const { kit, R, ticks } = fakes();
     const crowd = createCrowd(kit, R, laid({ gathers: [{ ...laid().gathers[0], until: 'squanch' }] }), { loader: copyLoader() });

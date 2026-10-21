@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { at } from '../kit';
-import { QUATERNIUS, groundSize, roomFog, surround, wallOpenings } from './surround';
+import { QUATERNIUS, groundSize, roomFog, surround, wallOpenings, watchOf } from './surround';
 import { place } from './place';
 
 // the room kit as surround draws in it: frames recording their list, the
@@ -340,6 +340,14 @@ describe('the walls, the ground and the fog a world asks of the stage', () => {
     expect(groundSize(d, 320)).toEqual([640, 640]);
     expect(groundSize(d, 50)).toEqual([70 + 260, 50 + 260]);
     expect(groundSize(d, null)).toEqual([70 + 260, 50 + 260]);
+  });
+
+  it('turns the crowd to Morty while the place hunts him, or always if it says so (a dome watching him walk in)', () => {
+    const morty = { x: 12, z: -3 };
+    expect(watchOf({}, { hunting: false, morty })).toBeNull();
+    expect(watchOf({}, { hunting: true, morty })).toEqual([12, -3]);
+    expect(watchOf({ watch: 'morty' }, { hunting: false, morty })).toEqual([12, -3]);
+    expect(watchOf({ watch: 'morty' }, { hunting: false, morty: null })).toBeNull();
   });
 
   it('fogs a room’s outside only past the room, in the outside’s own sky', () => {

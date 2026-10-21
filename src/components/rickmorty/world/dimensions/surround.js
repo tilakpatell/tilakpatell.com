@@ -74,6 +74,12 @@ export function wallOpenings(world, side, d) {
       draw: (f, u, wl) => opening(f, u, wl, { w: o.to - o.from, y0: o.y0, h: o.h, mullion: o.mullion ?? 0, frame: o.frame }),
     }));
 }
+// where a place's crowd looks: at Morty while the place hunts him, or
+// always if its world says so (`watch: 'morty'`); else where it was set to
+export function watchOf(world, { hunting, morty }) {
+  if (!morty || !(hunting || world?.watch === 'morty')) return null;
+  return [morty.x, morty.z];
+}
 export function groundSize(d, reach) {
   const w = d.area.x1 - d.area.x0 + 260;
   const dd = d.area.z1 - d.area.z0 + 260;

@@ -574,6 +574,8 @@ export const WORLDS2 = {
     sky: { top: 0x020604, mid: 0x0a1a10, low: 0x1e3a28, sun: 0x9affc0, clouds: 0, moons: 0 },
     ring: { n: null, e: null, s: null, w: null },
     far: { n: { styles: ['tower', 'block'], h: [40, 70] } },
+    // (every Morty in it watching Morty, wherever he goes in the lair)
+    watch: 'morty',
     // (the dome's tiers, behind the console, facing the way in)
     stands: [{ at: [0, -29], w: 14, d: 12, h: 9, rows: 5, face: [0, 15.4], kinds: ['crowd:morty'], n: { high: 55, mid: 34, low: 23 }, always: true }],
   },
