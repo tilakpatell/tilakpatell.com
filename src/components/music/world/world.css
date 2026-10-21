@@ -1,7 +1,8 @@
 /* The music planet's courtyard: the stage, its HUD, and the panels the
    instruments open in. The HUD sits over the 3D; only its controls take the pointer. */
 .mw { position: relative; z-index: 10; padding-top: var(--nav-h); }
-.mw-stage { position: relative; height: clamp(30rem, calc(100svh - var(--nav-h)), 56rem); overflow: hidden; background: radial-gradient(120% 90% at 50% 100%, #c8734a 0%, #4b2f5c 55%, #16173a 100%); outline: none; }
+/* (66rem: a 1080p laptop's screen under the bar, filled: at 56 a band of the page showed under the world) */
+.mw-stage { position: relative; height: clamp(30rem, calc(100svh - var(--nav-h)), 66rem); overflow: hidden; background: radial-gradient(120% 90% at 50% 100%, #c8734a 0%, #4b2f5c 55%, #16173a 100%); outline: none; }
 .mw-stage:focus-visible { box-shadow: inset 0 0 0 3px var(--accent-text); }
 .mw-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; opacity: 0; transition: opacity 0.9s ease; cursor: grab; touch-action: pan-y; }
 .mw-canvas:active { cursor: grabbing; }
