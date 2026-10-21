@@ -11,6 +11,11 @@
   --shire-line: rgba(111, 243, 255, 0.38);
 }
 .citadel-world .btn-primary { background: #6ff3ff; color: #0c1626; }
+/* (the Shire's stage, borrowed, takes Middle-earth's chapter bar off its
+   height: the Citadel has none, so it stopped short of the screen's foot and
+   the page showed in a band under it at every laptop size. Its own height,
+   as Scranton's: office/world/world.css) */
+.shire-stage.citadel-stage { height: clamp(30rem, calc(100svh - var(--nav-h, 64px)), 66rem); }
 .citadel-stage { background: radial-gradient(120% 80% at 50% 20%, #33406a 0%, #141c34 55%, #070a14 100%); }
 .citadel-stage .shire-loading { color: #cfefff; font-family: 'Orbitron', var(--font-sans); font-size: 1rem; }
 .citadel-stage .shire-title,
