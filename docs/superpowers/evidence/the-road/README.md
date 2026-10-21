@@ -515,6 +515,8 @@ Toward the owner's "focus more on the foliage and look of the world … making t
   - The first version drew nothing: wound face down, it was culled from every camera, as Gorgoroth's cracks were. `track.test.js` holds every triangle face up.
   - Pictures: `road-lane-before-desktop.webp`, `road-lane-desktop.webp` (Hobbiton's lane at eye height, `lab/road/probe-look.mjs`), `road-lane-field-desktop.webp`.
 - **The grass**: one broad triangle a blade, spread evenly, was a carpet of green cones at every verge. Each is now a curved blade tapering to its tip, four to a tuft, leaning its own way, a tip yellow here and there (grassNodes' `shape: 'blade'`, `tufts`).
-- **The trees**: the chapters' round ones by the lane are the nature kit's leafy ones, where they stood: Hobbiton's twelve oaks and Rivendell's fourteen birches. The older pack's birches, balls of yellow on a stick, are the kit's `Birch_1` to `Birch_5` everywhere.
+- **The trees**: the chapters' round ones by the lane are the nature kit's leafy ones, where they stood: Hobbiton's twelve oaks, Rivendell's fourteen birches and the Ford's thirty. The older pack's birches, balls of yellow on a stick, are the kit's `Birch_1` to `Birch_5` everywhere. Rivendell from its bridge, before and after: `rivendell-birches-before-desktop.webp`, `rivendell-birches-desktop.webp`.
+- **The verges**: nothing grew nearer a road's middle than 6 m. A row may line the road now (`verge`), so the Shire's lanes have long tufts, flowers, clover and stones by them, the wild's paths heath and stones, Lothlórien elanor, Ithilien its herbs.
+- **The White City and the Mountain** wear the site's photo scans, as their chapters dress them. The Road built both undressed.
 - **The far ground**: the photo scans end at 80 m, from 120. A two-metre scan's repeat showed as a lattice on Weathertop's hill at dusk.
 
