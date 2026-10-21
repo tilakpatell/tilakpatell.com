@@ -53,7 +53,10 @@ describe('the surfaces’ crew', () => {
     }
     expect(CREW.iden).toMatchObject({ rig: 'walrus', lod: true, far: true });
     for (const kind of ['yoda', 'grievous', 'iden']) for (const cut of ['', '.lod1', '.far']) expect(existsSync(at(`/models/galaxy/bf2017/crew/${kind}${cut}.glb`)), `${kind}${cut}`).toBe(true);
-    // (the B1 waits for its markings map: the remaster's, rigged with Meshy)
-    expect(CREW.battledroid).toEqual({ url: '/models/galaxy/troops/battledroid.glb', tall: 1.91 });
+    // (the B1 is the game's on its own rig, its skin's tan on its grey map,
+    // over the remaster's rigged with Meshy: its light and far cuts and its
+    // pack committed, its full cut waiting on the bucket)
+    expect(CREW.battledroid).toMatchObject({ url: '/models/galaxy/bf2017/crew/battledroid.glb', rig: 'own', ownRig: 'b1', lod: true, far: true });
+    for (const file of ['crew/battledroid.glb', 'crew/battledroid.lod1.glb', 'crew/battledroid.far.glb', 'clips-b1.glb']) expect(existsSync(at(`/models/galaxy/bf2017/${file}`)), file).toBe(true);
   });
 });
