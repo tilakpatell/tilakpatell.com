@@ -7,6 +7,7 @@
 //     crown: 0…1, the grass down a lane's middle
 //     stones: 0…1, how thick the stones lie in it
 //     puddles: 0…1, the water standing in its ruts (or its trodden line)
+//     dirt?: its own colour, where the soil's (stages/soils.js) is too pale for a road worn into it
 //   }
 //   (none for a stage walked on what it builds, or on snow: Caradhras, Moria,
 //   the River, Cirith Ungol; its ground's paint is its road, as before)
@@ -28,7 +29,8 @@ export const TRACKS = {
   // the orcs' road over the plain, its ash stamped hard
   gorgoroth: { kind: 'path', width: 3.2, stones: 0.9, puddles: 0 },
   // the road over the Pelennor to the Gate, its ruts the carts' and the wains'
-  'minas-tirith': { kind: 'lane', width: 4.8, ruts: 0.95, crown: 0.15, stones: 0.5, puddles: 0 },
+  // (its earth darker than the Pelennor's pale soil: in that, the road read as sand and its ruts not at all)
+  'minas-tirith': { kind: 'lane', width: 4.8, ruts: 0.95, crown: 0.15, stones: 0.5, puddles: 0, dirt: 0x8e7e62 },
   // down the beach to the quay
   havens: { kind: 'path', width: 2.4, stones: 0.55, puddles: 0 },
 };

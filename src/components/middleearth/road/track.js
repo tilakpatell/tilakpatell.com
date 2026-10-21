@@ -110,7 +110,7 @@ export function* trackJob(land, row, { house = null, soil = null, tier = 'high' 
   const m = asNode(raw);
   const lane = row.kind === 'lane';
   const u = {
-    uDirt: uniform(linear(soil?.dirt ?? 0xb59d72)),
+    uDirt: uniform(linear(row.dirt ?? soil?.dirt ?? 0xb59d72)),
     uGrass: uniform(linear(soil?.greens?.[1] ?? 0x5c8f3a).multiplyScalar(0.8)),
     uStoneLight: uniform(STONE.light.clone()),
     uStoneDark: uniform(STONE.dark.clone()),
