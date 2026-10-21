@@ -15,6 +15,11 @@
 // stick), and `scene`, `walker` for the checks. In development,
 // window.__HOGWARTS__ = { state(), place(x, z, yaw), dusk(s), world }.
 //
+// The night half (play/night.js, Lane F) keeps the castle’s people on their
+// days (rules/people.js) and the world adds map(): the Marauder’s Map’s
+// view of everyone and you, on the Map’s frame, read every frame by
+// hud/MaraudersMap.jsx; the development hook adds night() for the same.
+//
 // The wand (play/wandfx.js) is stepped beside the walker: its events
 // ('spell', 'toast', 'points', 'wand', 'wheel' and the rest it lists) go to
 // the page the same way, and the world adds choose(id) (the wheel's pick)

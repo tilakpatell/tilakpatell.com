@@ -275,9 +275,10 @@ const P1 = [0, 0];
 
 // Where a figure stands at a spot: its own place in it, so a lawn has
 // people across it and a table has them along it, not all on one point
-function homeOf(id, spotId) {
+function homeOf(id, spotId, rest = false) {
   const s = spotById(spotId);
-  const [ox, oz] = inDisc(hash(id, spotId), s.r * (s.r > 4 ? WANDER.share : 0.4));
+  // (a bed is anywhere in the dormitory; standing about, nearer the middle of a big place, near the point of a small one)
+  const [ox, oz] = inDisc(hash(id, spotId), s.r * (rest ? 0.9 : s.r > 4 ? WANDER.share : 0.4));
   return [s.at[0] + ox, s.at[1] + oz];
 }
 
@@ -347,7 +348,7 @@ function legsOf(id, day, week, depth = 1) {
   } else {
     const first = list[0][1];
     const s = typeof first === 'string' ? first : first.round ? ROUNDS[first.round][0] : 'filch-office';
-    const [x, z] = typeof first === 'string' ? homeOf(id, s) : spotById(s).at;
+    const [x, z] = typeof first === 'string' ? homeOf(id, s, Boolean(list[0][2]?.rest)) : spotById(s).at;
     from = { x, z, prev: s, next: s };
   }
   const ctx = { id, day, week };
@@ -383,7 +384,7 @@ function makeLeg(f, id, t0, where, opts = {}, from, ctx) {
   const round = where?.round ?? null;
   const goal = round ? ROUNDS[round][0] : where;
   const ids = glides(f) ? [goal] : (route(from.next, goal) ?? [goal]);
-  const home = round ? spotById(goal).at : homeOf(id, goal);
+  const home = round ? spotById(goal).at : homeOf(id, goal, rest);
   const path = timed(pathOf(ids, [from.x, from.z], from.prev, home), pace);
   return { t0, kind: round ? 'round' : 'spot', where: goal, round, lead: where?.lead ?? 0, rest, path, home, pace, slow: ROUND_PACE[round] ?? pace, arrive: t0 + path.dur / HOUR_S, seed: hash(id, goal, t0) };
 }

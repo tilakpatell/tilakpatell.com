@@ -27,7 +27,7 @@ export const INK = {
   paper: '#ecdcb6',
   lantern: 'rgba(196, 120, 30, 0.16)',
 };
-export const SCALES = { castle: 2.6, grounds: 0.42, disc: 1.15 };
+export const SCALES = { castle: 2.6, near: 0.85, grounds: 0.42, disc: 1.15 };
 
 const TAU = Math.PI * 2;
 const HAND = (px, weight = 'italic 600') => `${weight} ${px}px Georgia, 'Times New Roman', serif`;
@@ -237,8 +237,9 @@ function drawCastle(ctx, v, close) {
 }
 
 // inside, at the castle’s zoom: the passages as double lines (broken below
-// stairs), and every room’s name
-function drawInside(ctx, v) {
+// stairs) between the buildings, drawn first so a room’s floor covers its
+// own stretch of them
+function drawPassages(ctx, v) {
   for (const c of corridors()) {
     const [ax, ay] = project(v, c.from[0], c.from[1]);
     const [bx, by] = project(v, c.to[0], c.to[1]);
@@ -257,9 +258,13 @@ function drawInside(ctx, v) {
     ctx.stroke();
   }
   ctx.setLineDash([]);
+}
+
+// and every room’s name, over its floor
+function drawRooms(ctx, v) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = HAND(Math.min(13, 4.2 * v.scale));
+  ctx.font = HAND(Math.min(12, 4 * v.scale));
   for (const r of ROOMS) {
     if (!inView(v, r.at[0], r.at[1])) continue;
     const [px, py] = project(v, r.at[0], r.at[1]);
@@ -398,8 +403,9 @@ export function drawInk(ctx, v, { reveal = 1 } = {}) {
   drawPaths(ctx, v);
   drawGrounds(ctx, v);
   drawVillage(ctx, v);
+  if (close) drawPassages(ctx, v);
   drawCastle(ctx, v, close);
-  if (close) drawInside(ctx, v);
+  if (close) drawRooms(ctx, v);
   drawLabels(ctx, v);
   if (reveal < 1) {
     const r = Math.hypot(v.w, v.h) * 0.6 * reveal;

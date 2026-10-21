@@ -75,7 +75,7 @@
   to { opacity: 0; filter: blur(1.5px); }
 }
 
-.hogwarts-map-title { position: absolute; left: 0.75rem; top: 0.55rem; display: grid; gap: 0.05rem; margin: 0; color: #3a2314; pointer-events: none; }
+.hogwarts-map-title { position: absolute; left: 0.6rem; top: 0.5rem; display: grid; gap: 0.05rem; margin: 0; padding: 0.3rem 0.6rem; border: 1px solid rgb(58 35 20 / 0.45); border-radius: 2px; background: rgb(240 226 192 / 0.9); color: #3a2314; pointer-events: none; }
 .hogwarts-map-title span:first-child { font: 700 0.95rem/1.1 'Cinzel', Georgia, serif; letter-spacing: 0.06em; }
 .hogwarts-map-hour { font: italic 600 0.78rem/1.2 Georgia, serif; font-variant-numeric: tabular-nums; }
 .hogwarts-map[data-phase='swear'] .hogwarts-map-title { visibility: hidden; }

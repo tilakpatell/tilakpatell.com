@@ -183,8 +183,10 @@ export function lakeOutline() {
       const l = Math.hypot(qx - px, qz - pz) || 1;
       const nx = -(qz - pz) / l;
       const nz = (qx - px) / l;
-      const rag = 1 + 0.05 * Math.sin(i * 1.7 + s) + 0.03 * Math.sin(i * 4.3 + s * 2);
-      return [x + nx * w * s * rag, z + nz * w * s * rag];
+      // (a shore that wanders, as a hand draws one: long bays and points, a little roughness)
+      const rag = 1 + 0.035 * Math.sin(i * 0.31 + s * 1.3) + 0.02 * Math.sin(i * 0.83 + s);
+      const rough = 1.2 * Math.sin(i * 2.9 + s * 5);
+      return [x + nx * (w * s * rag + rough), z + nz * (w * s * rag + rough)];
     });
   const [hx, hz, hw] = LOCH[LOCH.length - 1];
   const [px, pz] = LOCH[LOCH.length - 2];

@@ -26,6 +26,19 @@ const TIMES = { words: 1.25, bloom: 1.3, managed: 1.1 }; // s
 const LIFE_MS = 33; // the footprints at about thirty a second
 const ZOOM = [0.3, 4.5]; // px a metre, the Map’s widest and closest
 const GROUNDS_MIDDLE = [40, -60]; // (the castle a little left of the middle, the village in the top corner)
+const CASTLE_MIDDLE = [-6, -34];
+const IN_CASTLE = 150; // m from the castle’s middle: the Map opens on the castle’s plan, else on the grounds round you
+
+// the view the Map opens on, from where you are
+function frameFor(me, w, h) {
+  const far = Math.hypot(me.x - CASTLE_MIDDLE[0], me.z - CASTLE_MIDDLE[1]);
+  if (far < IN_CASTLE) return { cx: me.x, cz: me.z, scale: SCALES.castle, follow: true };
+  // (the box round you and the castle’s rock together, a margin round it)
+  const [x0, x1] = [Math.min(me.x - 40, CASTLE_MIDDLE[0] - 120), Math.max(me.x + 40, CASTLE_MIDDLE[0] + 120)];
+  const [z0, z1] = [Math.min(me.z - 40, CASTLE_MIDDLE[1] - 100), Math.max(me.z + 40, CASTLE_MIDDLE[1] + 90)];
+  const scale = Math.min(w / (x1 - x0), h / (z1 - z0)) * 0.92;
+  return { cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, scale: Math.min(SCALES.near, Math.max(SCALES.grounds, scale)), follow: false };
+}
 
 const clampView = (v) => {
   v.scale = Math.min(ZOOM[1], Math.max(ZOOM[0], v.scale));
@@ -117,7 +130,7 @@ function Sheet({ source, phase, reduced, narrow, onShut }) {
   const ink = useRef(null);
   const life = useRef(null);
   const title = useRef(null);
-  const view = useRef({ cx: 0, cz: 0, scale: SCALES.castle, w: 0, h: 0, follow: true, dirty: true });
+  const view = useRef({ cx: 0, cz: 0, scale: SCALES.near, w: 0, h: 0, follow: true, dirty: true });
   const trails = useRef(createTrails());
   const drag = useRef(null);
   const since = useRef(performance.now());
@@ -129,9 +142,11 @@ function Sheet({ source, phase, reduced, narrow, onShut }) {
   }, [phase]);
 
   useEffect(() => {
-    // (where the Map first opens: on you, close enough to read the castle by)
+    // (where the Map first opens: in the castle, on you and close enough to read
+    // its plan by; out on the grounds, on you and the castle both)
     const s = source();
-    if (s?.me) Object.assign(view.current, { cx: s.me.x, cz: s.me.z });
+    const box = ink.current?.getBoundingClientRect();
+    if (s?.me) Object.assign(view.current, frameFor(s.me, box?.width || 800, box?.height || 560));
     let raf = 0;
     let last = -Infinity;
     const tick = (t) => {
@@ -227,7 +242,11 @@ function Sheet({ source, phase, reduced, narrow, onShut }) {
         </p>
       </div>
       <div className="hogwarts-map-tools">
-        <button type="button" className="hogwarts-map-btn" onClick={() => zoomTo(SCALES.castle, true)}>
+        <button type="button" className="hogwarts-map-btn" onClick={() => {
+            const me = source()?.me;
+            const inside = me && Math.hypot(me.x - CASTLE_MIDDLE[0], me.z - CASTLE_MIDDLE[1]) < IN_CASTLE;
+            zoomTo(SCALES.castle, Boolean(inside), inside ? null : CASTLE_MIDDLE);
+          }}>
           The castle
         </button>
         <button type="button" className="hogwarts-map-btn" onClick={() => zoomTo(SCALES.grounds, false, GROUNDS_MIDDLE)}>
