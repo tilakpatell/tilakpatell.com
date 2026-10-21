@@ -11,7 +11,8 @@
 //   - a walker's loop in the box keeps off everything there (outskirts.js's
 //     loopProblems); a gathering in the box stands on a block that's there;
 //   - a crowd is gated only on tasks there are;
-//   - a window is in a room's wall, under its ceiling;
+//   - a window is in a room's wall, under its ceiling; a planet or a moon
+//     only in a room looking out on space, no wider than 30°;
 //   - no family's own vehicle as traffic or a set piece; a set piece at most twice;
 //   - a place's own piece one of the set pieces' models, off every spot but its own (`own`);
 //   - a landmark of a style there is, beyond the edge (or outside a room's walls);
@@ -106,6 +107,10 @@ export function worldProblems(d, world, { tris = {}, tasks = [], blocks = [] } =
   const kitModel = (m) => m?.startsWith('q:') && QUATERNIUS[m.slice(2)];
   for (const m of [...(world.scatter ?? []).map((o) => o.model), ...(world.forecourt?.props ?? []).map((o) => o.model), ...(world.edge?.models ?? [])]) if (!kitModel(m)) out.push(`${m} is none of the kit's models`);
 
+  for (const b of world.bodies ?? []) {
+    if (!room || world.outside !== 'space') out.push('a planet or a moon hangs only in a room looking out on space');
+    if (!(b.size > 0 && b.size <= 30)) out.push(`a body ${b.size}° wide: no wider than 30°`);
+  }
   const family = (model) => FAMILY.find((f) => model?.includes(f));
   for (const f of world.fliers ?? []) if (family(f.model)) out.push(`${family(f.model)} is a family's own: never traffic`);
   for (const p of world.pieces ?? []) {

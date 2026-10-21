@@ -128,6 +128,14 @@ describe('a world record’s rules', () => {
     expect(piece({ model: '/models/c137/rm/purgewell.glb', at: [0, -11] })).toEqual([expect.stringMatching(/thing/)]);
   });
 
+  it('hangs a planet or a moon only in a room looking out on space, no wider than a fifth of the sky', () => {
+    const planet = { bearing: 90, up: 2, size: 7, color: 0x4a6ac8 };
+    expect(worldProblems(room(), { outside: 'space', bodies: [planet] }, opts)).toEqual([]);
+    expect(worldProblems(room(), { outside: 'ground', bodies: [planet] }, opts)).toEqual([expect.stringMatching(/space/)]);
+    expect(problems({ bodies: [planet] })).toEqual([expect.stringMatching(/space/)]);
+    expect(worldProblems(room(), { outside: 'space', bodies: [{ ...planet, size: 40 }] }, opts)).toEqual([expect.stringMatching(/wide/)]);
+  });
+
   it('lets a piece stand by its own spot (the siren by its pull), and only its own', () => {
     const piece = (o) => problems({ pieces: [{ model: '/models/c137/rm/purgesiren.glb', h: 6.9, at: [0, -13.4], ...o }] });
     expect(piece({ own: 'thing' })).toEqual([]);

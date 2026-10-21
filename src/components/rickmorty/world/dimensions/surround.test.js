@@ -264,6 +264,33 @@ describe('the world round a place', () => {
     expect(b.parts.some((p) => p.geo === 'box' && p.list === 'fixed' && p.a[2] === 0 && p.a[1] === 0 && p.a[0] === 0x6a8a4a)).toBe(false);
   });
 
+  it('hangs a planet and a moon in a space room’s sky where the record says, as wide as it says, wherever Morty goes', () => {
+    const d = room();
+    const { R, group, ticks } = fakeRoom();
+    const bodies = [
+      { bearing: 90, up: 0, size: 8, color: 0x4a6ac8 },
+      { bearing: 0, up: 10, size: 2, color: 0xc8c8d0 },
+    ];
+    surround(ctx(R, fakeKit().kit, d, fakeKit().loader), { look: LOOK, outside: 'space', bodies }, laidFor(d, { edge: [], lots: [], skyline: [], path: null, props: [], lanes: [] }));
+    const found = group.children.filter((o) => o.userData.body != null).sort((a, b) => a.userData.body - b.userData.body);
+    expect(found).toHaveLength(2);
+    const camera = new THREE.PerspectiveCamera();
+    camera.position.set(d.centre.x + 3, 1.6, d.centre.z - 4);
+    ticks.forEach((fn) => fn(1, 1 / 60, { done: [] }, camera));
+    const seen = (o) => new THREE.Vector3().subVectors(o.getWorldPosition(new THREE.Vector3()), camera.position);
+    // east, level with the eye; north, ten degrees up
+    const east = seen(found[0]).normalize();
+    expect(east.x).toBeCloseTo(1, 5);
+    const north = seen(found[1]).normalize();
+    expect(north.z).toBeCloseTo(-Math.cos(Math.PI / 18), 5);
+    expect(north.y).toBeCloseTo(Math.sin(Math.PI / 18), 5);
+    // (its angular size: twice the angle its radius subtends)
+    found[0].geometry.computeBoundingSphere();
+    const across = 2 * Math.atan((found[0].geometry.boundingSphere.radius * found[0].scale.x) / seen(found[0]).length());
+    expect((across * 180) / Math.PI).toBeCloseTo(8, 1);
+    for (const o of found) expect(o.material.fog).toBe(false);
+  });
+
   it('gives the place its crowd’s doings: a hop, a turn, and how many stand', async () => {
     const d = outdoor();
     const { R } = fakeRoom();

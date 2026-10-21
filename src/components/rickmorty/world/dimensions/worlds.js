@@ -20,6 +20,9 @@
 //                                             up from that pad instead of across)
 //   windows [{ wall, from, to, y0, h, mullion }], outside 'ground' | 'space',
 //     sky, fog, ground                         a room's
+//   bodies [{ bearing, up, size, color }]      a space room's planets and moons:
+//                                             degrees round from north to the east,
+//                                             up over the eye, and across
 //   sight [{ from: [dx, y, dz], to: [dx, y, dz] }]   lines nothing round it may stand in
 //   pieces [{ model, at: [dx, dz], turn, h, w, d, y, spin, own }]   the place's own
 //     models where its code buildings stood (a set piece's file, by path),

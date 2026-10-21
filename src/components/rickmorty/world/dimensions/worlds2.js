@@ -530,6 +530,11 @@ export const WORLDS2 = {
   vindicators: {
     windows: [{ wall: 'e', from: -7, to: 7, y0: 1.3, h: 3.4, mullion: 2.8, frame: 0xc8d2e0 }],
     outside: 'space',
+    // (a blue planet, and its moon, out past the long window)
+    bodies: [
+      { bearing: 100, up: 2, size: 7, color: 0x4a6ac8 },
+      { bearing: 75, up: 6, size: 1.5, color: 0xc8c8d0 },
+    ],
     // (black, from past the hall's own depth: a ship comes and goes in it)
     fog: [0x000000, 45, 360],
     fliers: [{ model: '/models/c137/fedship.glb', n: { high: 1, mid: 1, low: 0 }, y: [9, 12], speed: 18, h: 4.5 }],
@@ -543,6 +548,8 @@ export const WORLDS2 = {
   fortress: {
     windows: [{ wall: 'n', from: -14, to: 14, y0: 1.6, h: 7, mullion: 4, frame: 0x2a2e38 }],
     outside: 'space',
+    // (Rick Prime's moon, hanging in the long window beside him)
+    bodies: [{ bearing: -10, up: 5, size: 7, color: 0x8a8a92 }],
     crowd: {
       gather: [
         { kinds: ['primedrone'], n: { high: 1, mid: 1, low: 0 }, at: [-12, -19.2], row: 1, y: 4.4, face: [-12, 0] },

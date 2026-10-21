@@ -86,8 +86,13 @@ export function roomFog(d, world, fogFar) {
 }
 
 // stars all round, for a room in space: a dome that follows the camera,
-// its stars dotted on a texture made here (no canvas, no shader of its own)
-function starDome(R) {
+// its stars dotted on a texture made here (no canvas, no shader of its own);
+// and the record's planets and moons hung in it, each where it says
+// (`bearing` degrees round from north to the east, `up` degrees over the
+// eye) and as wide as it says (`size` degrees across), lit on one side
+// with one shade of shadow, as the show draws them
+const FAR = 400; // metres out a body hangs, inside the dome
+function starDome(R, bodies = []) {
   const W = 512;
   const H = 256;
   const data = new Uint8Array(W * H * 4);
@@ -106,7 +111,31 @@ function starDome(R) {
   const dome = new THREE.Mesh(R.own(new THREE.SphereGeometry(450, 24, 12)), R.own(new THREE.MeshBasicMaterial({ map, side: THREE.BackSide, fog: false, depthWrite: false })));
   dome.renderOrder = -1;
   R.add(dome, { ink: false });
-  R.tick((t, dt, state, camera) => camera && dome.position.copy(camera.position));
+  const hung = bodies.map((b, i) => {
+    const deg = Math.PI / 180;
+    const dir = new THREE.Vector3(Math.sin(b.bearing * deg) * Math.cos(b.up * deg), Math.sin(b.up * deg), -Math.cos(b.bearing * deg) * Math.cos(b.up * deg));
+    // (lit from over its shoulder: one shade of shadow, a hard edge)
+    const light = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0)).add(new THREE.Vector3(0, 0.6, 0)).normalize();
+    const geo = R.own(new THREE.SphereGeometry(1, 24, 16));
+    const lit = new THREE.Color(b.color);
+    const dark = lit.clone().multiplyScalar(0.55);
+    const n = geo.attributes.normal;
+    const colors = new Float32Array(n.count * 3);
+    const nv = new THREE.Vector3();
+    for (let k = 0; k < n.count; k++) (nv.fromBufferAttribute(n, k).dot(light) > -0.15 ? lit : dark).toArray(colors, k * 3);
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const body = new THREE.Mesh(geo, R.own(new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, depthWrite: false })));
+    body.scale.setScalar(FAR * Math.tan((b.size * deg) / 2));
+    body.renderOrder = -1;
+    body.userData.body = i;
+    R.add(body, { ink: false });
+    return { body, dir };
+  });
+  R.tick((t, dt, state, camera) => {
+    if (!camera) return;
+    dome.position.copy(camera.position);
+    for (const { body, dir } of hung) body.position.copy(camera.position).addScaledVector(dir, FAR);
+  });
 }
 
 // the ground round a room's walls (its floor is its own): four strips, just under the floor
@@ -163,7 +192,7 @@ export function surround({ R, d, kit, loader = null, blocks = [] }, world, laid)
     R.fixed((x0 + x1) / 2, (z0 + z1) / 2, Math.atan2(x1 - x0, z1 - z0)).box(laid.path.color ?? look.path ?? 0xc8b898, 0, 0, 0, laid.path.w, 0.02, Math.hypot(x1 - x0, z1 - z0));
   }
   if (room && world.outside === 'ground') groundRound(R, d, laid.reach, world.ground ?? 0x7a9a52);
-  if (room && world.outside === 'space') starDome(R);
+  if (room && world.outside === 'space') starDome(R, world.bodies);
 
   // ── stood as they load ──
   let gltf = loader;
