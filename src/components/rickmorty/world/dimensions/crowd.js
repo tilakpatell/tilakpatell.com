@@ -27,7 +27,7 @@ import { MESHY, RIGGED, lightRamp } from '../../portal/meshyCastCore';
 import { breathing, standing } from '../../portal/crowdPaint';
 import { bakePose } from '../../../../lib/three/bakePose';
 import { gltfLoader } from '../../../../lib/three/gltf';
-import { gatherAt, hopOf, loopLengths, walkerAt } from './crowdPose';
+import { gatherAt, hopOf, loopLengths, rowAt, walkerAt } from './crowdPose';
 
 const COPIES = '/games/meshy/crowd';
 // how tall a light copy stands (the Citadel's: a Morty 1.5 m, the rest 1.85)
@@ -155,8 +155,8 @@ export function createCrowd(kit, R, laid, { loader = null } = {}) {
         v.set(pose.x, pose.bob, pose.z);
         eul.set(0, pose.yaw + Math.PI / 2, pose.sway);
       } else {
-        const g = gatherAt(e.at, e.r, j, e.n, watch ?? e.face, 1.7);
-        v.set(g.x, hopOf(t, rec.since, j), g.z);
+        const g = e.row ? rowAt(e.at, e.row, j, e.n, watch ?? e.face, 1.7) : gatherAt(e.at, e.r, j, e.n, watch ?? e.face, 1.7);
+        v.set(g.x, (e.y ?? 0) + hopOf(t, rec.since, j), g.z);
         eul.set(0, g.yaw + Math.PI / 2, 0);
       }
       mesh.setMatrixAt(i, m4.compose(v, q.setFromEuler(eul), one));
@@ -175,7 +175,9 @@ export function createCrowd(kit, R, laid, { loader = null } = {}) {
         continue;
       }
       // a gathering moves only to hop, or to turn
-      if (hopAt != null && rec.since !== hopAt) rec.since = hopAt;
+      // (on its own beat, if it keeps one; or when it's asked)
+      if (rec.e.beat) rec.since = Math.floor(t / rec.e.beat) * rec.e.beat;
+      else if (hopAt != null && rec.since !== hopAt) rec.since = hopAt;
       const hopping = rec.since != null && t - rec.since < HOPS;
       if (hopping || rec.faced !== watch || rec.settle) {
         place(rec, t);

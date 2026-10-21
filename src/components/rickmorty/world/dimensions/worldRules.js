@@ -50,12 +50,30 @@ export function worldProblems(d, world, { tris = {}, tasks = [], blocks = [] } =
     }
     if (c.walk && Array.isArray(c.loop)) for (const p of loopProblems(d, c.loop)) out.push(`${what}'s loop: ${p}`);
     if (!c.walk && away <= 0) {
-      const b = blocks.find((o) => o.id === c.block);
+      // (a block of the world's, or one of the place's own solids: a walkway, a stage)
+      const own = d.solids.find((o) => o.id === c.block && o.w != null);
+      const b = blocks.find((o) => o.id === c.block) ?? (own && { dx: own.x - d.centre.x, dz: own.z - d.centre.z, w: own.w, d: own.d });
       if (!c.block) out.push(`a gathering in the box stands on no block`);
       else if (!b) out.push(`a gathering's block ${c.block} isn't there`);
-      else if (Math.abs(c.at[0] - b.dx) + (c.r ?? 0) > b.w / 2 + 1e-9 || Math.abs(c.at[1] - b.dz) + (c.r ?? 0) > b.d / 2 + 1e-9) out.push(`a gathering is off its block ${c.block}`);
+      else if (!footOn(c, b)) out.push(`a gathering is off its block ${c.block}`);
     }
     for (const t of [c.until, c.after].filter(Boolean)) if (!tasks.includes(t)) out.push(`${what} is gated on ${t}, which is no task`);
+  }
+
+  for (const st of world.stands ?? []) {
+    // (a stand turns a quarter at a time to face what it watches: its footprint, and how far it is from the box)
+    const face = st.face === 'hero' ? (world.hero ?? [0, 0]) : (st.face ?? [0, 0]);
+    const across = Math.abs(Math.sin(Math.round(Math.atan2(face[0] - st.at[0], face[1] - st.at[1]) / (Math.PI / 2)) * (Math.PI / 2))) > 0.5;
+    const [x, z] = W(st.at);
+    const hx = (across ? st.d : st.w) / 2;
+    const hz = (across ? st.w : st.d) / 2;
+    const near = Math.hypot(Math.max(A.x0 - (x + hx), x - hx - A.x1, 0), Math.max(A.z0 - (z + hz), z - hz - A.z1, 0));
+    if (!room && near < NEAR.hunter) out.push(`a stand stands within ${NEAR.hunter} m of the edge`);
+    for (const k of st.kinds) {
+      if (!k.startsWith('crowd:') && !MESHY[k]) out.push(`a stand: ${k} is not in the cast`);
+      else if (!tris[k]) out.push(`a stand: ${k} has no triangles counted`);
+      if (named.has(k) && near < NEAR.named) out.push(`a stand: ${k} is one of the place's people: never nearer than ${NEAR.named} m beyond the edge`);
+    }
   }
 
   for (const w of world.windows ?? []) {
@@ -80,6 +98,16 @@ export function worldProblems(d, world, { tris = {}, tasks = [], blocks = [] } =
       if ((s.n ?? 0) > 2) out.push(`${s.model}: a set piece stands at most twice`);
     }
   return out;
+}
+
+// does a gathering stand on its block: a disc inside it, or a row's two ends?
+function footOn(c, b) {
+  const inside = (x, z, pad) => Math.abs(x - b.dx) + pad <= b.w / 2 + 1e-9 && Math.abs(z - b.dz) + pad <= b.d / 2 + 1e-9;
+  if (!c.row) return inside(c.at[0], c.at[1], c.r ?? 0);
+  const face = Array.isArray(c.face) ? c.face : [0, 0];
+  const a = Math.atan2(face[1] - c.at[1], face[0] - c.at[0]) + Math.PI / 2;
+  const u = c.row / 2;
+  return inside(c.at[0] + Math.cos(a) * u, c.at[1] + Math.sin(a) * u, 0) && inside(c.at[0] - Math.cos(a) * u, c.at[1] - Math.sin(a) * u, 0);
 }
 
 // does the segment from `from` to `to` pass through a building, below its top?

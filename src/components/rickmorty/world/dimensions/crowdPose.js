@@ -9,6 +9,9 @@
 // gatherAt(at, r, i, n, face, seed) → { x, z, yaw }
 //   the i-th of a gathering of n in a disc of radius r round `at`, turned to
 //   `face` (a point it watches), each looking a little off it
+// rowAt(at, len, i, n, face, seed) → { x, z, yaw }
+//   the i-th of n along a row `len` long through `at`, across the way to
+//   `face` (a gallery's, a stand's), each looking a little off it
 // hopOf(t, since, i) → metres   a hop on the beat at `since`, rippling out by i
 
 export const STEP = 0.55; // seconds a step: two to a stride
@@ -49,6 +52,16 @@ export function gatherAt(at, r, i, n, face, seed) {
   const x = at[0] + Math.cos(a) * d;
   const z = at[1] + Math.sin(a) * d;
   const yaw = Math.atan2(-(face[1] - z), face[0] - x) + (hash(i, seed) - 0.5) * 0.5;
+  return { x, z, yaw };
+}
+
+export function rowAt(at, len, i, n, face, seed) {
+  // (across: square to the line from the row's middle to what it watches)
+  const a = Math.atan2(face[1] - at[1], face[0] - at[0]) + Math.PI / 2;
+  const u = (len * (i + 0.5)) / Math.max(1, n) - len / 2 + (hash(i, seed) - 0.5) * 0.2;
+  const x = at[0] + Math.cos(a) * u;
+  const z = at[1] + Math.sin(a) * u;
+  const yaw = Math.atan2(-(face[1] - z), face[0] - x) + (hash(i, seed + 1) - 0.5) * 0.4;
   return { x, z, yaw };
 }
 

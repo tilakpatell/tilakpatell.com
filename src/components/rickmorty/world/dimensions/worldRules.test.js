@@ -68,6 +68,20 @@ describe('a world record’s rules', () => {
     expect(problems({ crowd: { gather: [{ ...on.crowd.gather[0], block: null }] } })).toEqual([expect.stringMatching(/block/)]);
   });
 
+  it('stands a gathering on one of the place’s own solids too (a walkway, a stage)', () => {
+    const d = place(0, { id: 'deck', name: 'A deck', kind: 'room', deep: 30, wide: 34, ceiling: 9, solids: [{ id: 'walkway', dx: 0, dz: -12, w: 30, d: 4 }] });
+    const on = { crowd: { gather: [{ kinds: ['zigerion'], n: { high: 6 }, at: [0, -12], row: 20, y: 3.2, block: 'walkway' }] } };
+    expect(worldProblems(d, on, opts)).toEqual([]);
+    expect(worldProblems(d, { crowd: { gather: [{ ...on.crowd.gather[0], row: 34 }] } }, opts)).toEqual([expect.stringMatching(/off its block/)]);
+  });
+
+  it('stands the stands round an outdoor place beyond the edge', () => {
+    const stand = { at: [55, 0], w: 30, d: 12, h: 6, rows: 3, face: [0, 0], kinds: ['zigerion'], n: { high: 10 } };
+    expect(problems({ stands: [stand] })).toEqual([]);
+    expect(problems({ stands: [{ ...stand, at: [44, 0] }] })).toEqual([expect.stringMatching(/stand/)]);
+    expect(problems({ stands: [{ ...stand, kinds: ['gearhead'] }] })).toEqual([expect.stringMatching(/gearhead/)]);
+  });
+
   it('gates a crowd only on tasks there are', () => {
     expect(problems({ crowd: { walk: [{ ...ok.crowd.walk[0], until: 'squanch' }] } })).toEqual([]);
     expect(problems({ crowd: { walk: [{ ...ok.crowd.walk[0], after: 'nothing' }] } })).toEqual([expect.stringMatching(/nothing/)]);

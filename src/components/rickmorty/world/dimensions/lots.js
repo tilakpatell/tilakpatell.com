@@ -185,7 +185,7 @@ const DRAW = {
   },
   stand(R, f, L, look, paint, wall, roof) {
     const { w, d, h } = L;
-    const k = 5;
+    const k = L.steps ?? 5;
     // rising away from the front: the first row lowest, nearest
     for (let i = 0; i < k; i++) f.box(i % 2 ? roof : wall, 0, 0, d / 2 - (i + 0.5) * (d / k), w, ((i + 1) * h) / k, d / k);
   },

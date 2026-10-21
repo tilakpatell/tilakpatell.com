@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { STEP, gatherAt, hopOf, loopLengths, walkerAt } from './crowdPose';
+import { STEP, gatherAt, hopOf, loopLengths, rowAt, walkerAt } from './crowdPose';
 
 const SQUARE = [
   [0, 0],
@@ -99,5 +99,22 @@ describe('a hop on the beat', () => {
     expect(hopOf(10, 5, 0)).toBe(0);
     // someone further along starts a little later
     expect(hopOf(5.05, 5, 0)).toBeGreaterThan(hopOf(5.05, 5, 9));
+  });
+});
+
+describe('a row (a gallery’s, a stand’s)', () => {
+  it('stands its people along the row, evenly, all facing what they watch', () => {
+    const at = [10, -4];
+    const face = [10, -30];
+    const all = Array.from({ length: 8 }, (_, i) => rowAt(at, 7, i, 8, face, 2));
+    for (const p of all) {
+      // along the row (across the way to what they watch), within its length
+      expect(Math.abs(p.z - at[1])).toBeLessThan(0.25);
+      expect(Math.abs(p.x - at[0])).toBeLessThanOrEqual(3.5);
+      const want = Math.atan2(-(face[1] - p.z), face[0] - p.x);
+      expect(Math.abs(Math.atan2(Math.sin(p.yaw - want), Math.cos(p.yaw - want)))).toBeLessThan(0.35);
+    }
+    const xs = all.map((p) => p.x).sort((a, b) => a - b);
+    for (let i = 1; i < xs.length; i++) expect(xs[i] - xs[i - 1]).toBeGreaterThan(0.6);
   });
 });

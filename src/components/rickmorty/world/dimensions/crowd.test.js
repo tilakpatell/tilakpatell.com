@@ -174,6 +174,28 @@ describe('a place’s crowd', () => {
     expect(at(g, 0).y).toBe(0);
   });
 
+  it('stands a gathering up where it’s raised, along its row if it has one, and hops it on its own beat', async () => {
+    const { kit, R, ticks } = fakes();
+    const g0 = { ...laid().gathers[0], y: 3.2, row: 8, beat: 1.5, at: [0, 0], face: [0, -20] };
+    await createCrowd(kit, R, laid({ gathers: [g0], extents: { ...laid().extents, 'gather-0': { x: 0, y: 4, z: 0, r: 8 } } }), { loader: copyLoader() }).ready;
+    const [g] = instances(R).filter((m) => m.userData.crowd === 'gather-0');
+    tick(ticks, 0.75);
+    for (let i = 0; i < g.count; i++) {
+      const p = at(g, i);
+      expect(p.y).toBeGreaterThanOrEqual(3.2);
+      // along the row, across the way to what they watch
+      expect(Math.abs(p.z)).toBeLessThan(0.25);
+      expect(Math.abs(p.x)).toBeLessThanOrEqual(4);
+    }
+    // on its beat, with no one asking
+    let top = 0;
+    for (let t = 1.5; t < 2.1; t += 0.05) {
+      tick(ticks, t);
+      top = Math.max(top, at(g, 0).y - 3.2);
+    }
+    expect(top).toBeGreaterThan(0.05);
+  });
+
   it('turns a gathering to look at someone, and back', async () => {
     const { kit, R, ticks } = fakes();
     const crowd = createCrowd(kit, R, laid(), { loader: copyLoader() });

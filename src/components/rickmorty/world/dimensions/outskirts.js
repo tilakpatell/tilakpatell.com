@@ -11,7 +11,9 @@
 //   path: { pts: [[x, z]…], w } | null      the forecourt's way to the hero
 //   props: [{ model, x, z, turn, s, h, edge? }]   rocks, bushes, lamps…: models
 //   walkers: [{ key, kinds, n, loop: [[x, z]…], speed, out }]
-//   gathers: [{ key, kinds, n, at: [x, z], r, face: [x, z], block, until, after, when, out }]
+//   gathers: [{ key, kinds, n, at: [x, z], r, row, y, beat, face: [x, z], block, until, after, when, out }]
+//                             (`row`: its people along a row that long, not in a disc;
+//                             `y`: how high they stand; `beat`: seconds between hops)
 //   lanes: [{ key, model, n, y, from: [x, z], to: [x, z], speed }]
 //   extents: { [key]: { x, y, z, r } }      a bounding sphere for each crowd and lane
 // }
@@ -175,11 +177,38 @@ const street = (A) => [
   [A.x1 + STREET, A.z1 + STREET],
   [A.x0 - STREET, A.z1 + STREET],
 ];
-function crowdOf(d, crowd, { tier, row, room, outside, tris, hero }) {
+// a stand's seats (a lot) and its people, a row a step, up from the front
+const quarter = (a) => {
+  const q = Math.round(a / (Math.PI / 2)) * (Math.PI / 2);
+  return Math.atan2(Math.sin(q), Math.cos(q));
+};
+function standsOf(d, stands, tier, hero) {
+  const lots = [];
+  const gathers = [];
+  for (const [i, st] of (stands ?? []).entries()) {
+    const x = d.centre.x + st.at[0];
+    const z = d.centre.z + st.at[1];
+    const face = st.face === 'hero' ? hero : [d.centre.x + (st.face?.[0] ?? 0), d.centre.z + (st.face?.[1] ?? 0)];
+    const turn = quarter(Math.atan2(face[0] - x, face[1] - z));
+    const rows = st.rows ?? 3;
+    lots.push({ side: null, row: null, style: 'stand', x, z, turn, w: st.w, d: st.d, h: st.h, y: 0, steps: rows, stand: true });
+    const fx = Math.sin(turn);
+    const fz = Math.cos(turn);
+    const all = st.n?.[tier] ?? 0;
+    for (let r = 0; r < rows; r++) {
+      const back = st.d / 2 - (r + 0.5) * (st.d / rows);
+      const n = Math.floor(all / rows) + (r < all % rows ? 1 : 0);
+      gathers.push({ key: `stand-${i}-${r}`, kinds: st.kinds, n, at: [x + fx * back, z + fz * back], r: 0, row: st.w * 0.9, y: ((r + 1) * st.h) / rows, beat: st.beat ?? null, face, block: null, until: st.until ?? null, after: st.after ?? null, when: null, out: true });
+    }
+  }
+  return { lots, gathers };
+}
+
+function crowdOf(d, crowd, { tier, row, room, outside, tris, hero, extra = [] }) {
   const A = d.area;
   const W = (p) => [d.centre.x + p[0], d.centre.z + p[1]];
   // the kinds, the first `row.kinds` named
-  const kinds = [...new Set([...(crowd?.walk ?? []), ...(crowd?.gather ?? [])].flatMap((c) => c.kinds))].slice(0, row.kinds);
+  const kinds = [...new Set([...(crowd?.walk ?? []), ...(crowd?.gather ?? []), ...extra].flatMap((c) => c.kinds))].slice(0, row.kinds);
   const keep = (c) => ({ ...c, kinds: c.kinds.filter((k) => kinds.includes(k)) });
   let walkers = (crowd?.walk ?? []).map((c, i) => {
     const out = c.loop === 'street';
@@ -188,8 +217,9 @@ function crowdOf(d, crowd, { tier, row, room, outside, tris, hero }) {
   let gathers = (crowd?.gather ?? []).map((c, i) => {
     const at = W(c.at);
     const face = c.face === 'hero' ? hero : c.face ? W(c.face) : [d.centre.x, d.centre.z];
-    return { key: `gather-${i}`, ...keep(c), n: c.n?.[tier] ?? 0, at, r: c.r ?? 3, face, block: c.block ?? null, until: c.until ?? null, after: c.after ?? null, when: c.when ?? null, out: outOf(A, ...at) > 0 };
+    return { key: `gather-${i}`, ...keep(c), n: c.n?.[tier] ?? 0, at, r: c.r ?? 3, row: c.row ?? null, y: c.y ?? 0, beat: c.beat ?? null, face, block: c.block ?? null, until: c.until ?? null, after: c.after ?? null, when: c.when ?? null, out: outOf(A, ...at) > 0 };
   });
+  gathers.push(...extra.map(keep));
   // a room: no one outside it with nothing outside, or on low
   if (room) {
     const none = !outside || tier === 'low';
@@ -232,7 +262,7 @@ function extentOf(c) {
   const x = (Math.min(...xs) + Math.max(...xs)) / 2;
   const z = (Math.min(...zs) + Math.max(...zs)) / 2;
   const far = Math.max(...pts.map(([px, pz]) => Math.hypot(px - x, pz - z)));
-  return { x, y: c.y ?? 1, z, r: far + (c.r ?? 0) + (c.from ? 15 : 2.5) };
+  return { x, y: c.from ? c.y : (c.y ?? 0) + 1, z, r: far + (c.r ?? 0) + (c.row ?? 0) / 2 + (c.from ? 15 : 2.5) };
 }
 
 // ── the forecourt ──
@@ -285,10 +315,11 @@ export function outskirtsOf(d, world, { tier = 'high', fogFar = 300, tris = {} }
   const tallest = lots.reduce((a, l) => Math.max(a, l.h + l.y), 0);
   const skyline = outside === 'ground' ? skylineOf(d, world.far, row.far, tallest, fogFar, vista, r) : [];
   const { path, props } = forecourtOf(d, world.forecourt, hero, r);
-  const { walkers, gathers } = crowdOf(d, world.crowd, { tier, row, room, outside, tris, hero });
+  const stands = outside === 'ground' ? standsOf(d, world.stands, tier, hero) : { lots: [], gathers: [] };
+  const { walkers, gathers } = crowdOf(d, world.crowd, { tier, row, room, outside, tris, hero, extra: stands.gathers });
   const lanes = outside ? lanesOf(d, world.fliers, { tier, row, room, outside, fogFar }, r) : [];
   const extents = Object.fromEntries([...walkers, ...gathers, ...lanes].map((c) => [c.key, extentOf(c)]));
-  return { reach: fogFar + 20, edge: runs, lots, skyline, path, props: [...clumps, ...props], walkers, gathers, lanes, extents };
+  return { reach: fogFar + 20, edge: runs, lots: [...lots, ...stands.lots], skyline, path, props: [...clumps, ...props], walkers, gathers, lanes, extents };
 }
 
 // ── a walker's loop in the box, checked ──

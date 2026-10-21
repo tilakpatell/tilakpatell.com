@@ -227,6 +227,44 @@ describe('the outskirts of an outdoor place', () => {
   });
 });
 
+describe('a stand round a place', () => {
+  const stand = { at: [55, 0], w: 30, d: 12, h: 6, rows: 3, face: [0, 0], kinds: ['zigerion'], n: { high: 30, mid: 18, low: 6 } };
+  it('is a lot of seats facing what it watches, its people in rows up its steps', () => {
+    const d = outdoor();
+    const L = lay(d, world({ stands: [stand] }));
+    const seats = L.lots.filter((l) => l.style === 'stand');
+    expect(seats).toHaveLength(1);
+    const s = seats[0];
+    expect(s).toMatchObject({ x: d.centre.x + 55, z: d.centre.z, w: 30, d: 12, h: 6, steps: 3, y: 0 });
+    // (facing west, back at the box)
+    expect(s.turn).toBeCloseTo(-Math.PI / 2, 9);
+    const rows = L.gathers.filter((g) => g.key.startsWith('stand-0'));
+    expect(rows).toHaveLength(3);
+    expect(rows.map((r) => r.y)).toEqual([2, 4, 6]);
+    // each row further back than the one before, along the stand, inside it
+    expect(rows[0].at[0]).toBeLessThan(rows[1].at[0]);
+    for (const r of rows) {
+      expect(r.row).toBeGreaterThan(20);
+      expect(Math.abs(r.at[0] - s.x)).toBeLessThanOrEqual(6);
+      expect(r.face).toEqual([d.centre.x, d.centre.z]);
+    }
+    expect(rows.reduce((a, r) => a + r.n, 0)).toBeLessThanOrEqual(30);
+  });
+  it('takes its people from the crowd’s allowance, with the rest', () => {
+    const d = outdoor();
+    for (const tier of ['high', 'mid', 'low']) {
+      const L = lay(d, world({ stands: [{ ...stand, n: { high: 90, mid: 90, low: 90 } }] }), tier);
+      const tris = [...L.walkers, ...L.gathers].reduce((a, c) => a + c.n * Math.max(...c.kinds.map((k) => TRIS[k])), 0);
+      expect(tris).toBeLessThanOrEqual(LEVELS[tier].crowd);
+    }
+  });
+  it('keeps a gathering’s height, its row, and its beat', () => {
+    const d = outdoor();
+    const L = lay(d, world({ crowd: { gather: [{ kinds: ['zigerion'], n: { high: 6 }, at: [0, -38], row: 8, y: 3.2, beat: 1.2, face: 'hero' }] } }));
+    expect(L.gathers[0]).toMatchObject({ y: 3.2, row: 8, beat: 1.2 });
+  });
+});
+
 describe('the outskirts of a room', () => {
   const w = world({ edge: null, outside: 'ground', windows: [{ wall: 'n', from: -10, to: 10, y0: 1, h: 4 }] });
   it('has no edge (its walls are its edge), and its buildings stand outside its walls', () => {
