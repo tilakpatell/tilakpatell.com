@@ -88,6 +88,25 @@ describe('the worlds round the places', () => {
     expect(bad).toEqual([]);
   });
 
+  it('stand each of a place’s own pieces in its box on the solid it stands by, so Morty stops at the model, not inside it', () => {
+    const bad = [];
+    for (const [id, world] of Object.entries(WORLDS)) {
+      const d = destinationById(id);
+      const A = d.area;
+      for (const p of world.pieces ?? []) {
+        const [x, z] = [d.centre.x + p.at[0], d.centre.z + p.at[1]];
+        if (x < A.x0 || x > A.x1 || z < A.z0 || z > A.z1) continue;
+        // (the solid it stands by: the nearest within 2 m; its middle on the solid's)
+        const near = d.solids
+          .map((o) => ({ o, gap: o.r != null ? Math.hypot(o.x - x, o.z - z) - o.r : Math.hypot(Math.max(Math.abs(o.x - x) - o.w / 2, 0), Math.max(Math.abs(o.z - z) - o.d / 2, 0)) }))
+          .filter((n) => n.gap < 2)
+          .sort((a, b) => a.gap - b.gap)[0];
+        if (near && Math.hypot(near.o.x - x, near.o.z - z) > 0.25) bad.push(`${id}: ${p.model} at ${p.at} stands ${Math.hypot(near.o.x - x, near.o.z - z).toFixed(2)} m off the middle of its solid ${near.o.id}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
   it('fly Customs’ Zigerion mothership over it on high, and the Federation’s ship on mid', () => {
     const d = destinationById('customs');
     const fly = (tier) => outskirtsOf(d, WORLDS.customs, { tier, fogFar: 300, tris: TRIS }).lanes.map((l) => l.model);

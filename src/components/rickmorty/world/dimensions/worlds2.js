@@ -20,7 +20,8 @@ export const WORLDS2 = {
     hero: [6, -12.6],
     vista: 0.3,
     pieces: [
-      { model: '/models/c137/rm/sm/suckulent.glb', at: [-19, 12.1], turn: 0.4, h: 1.8 },
+      // (the big one on its solid, by its own Look spot)
+      { model: '/models/c137/rm/sm/suckulent.glb', at: [-19, 11], turn: 0.4, h: 1.8, own: 'suckulents' },
       { model: '/models/c137/rm/sm/suckulent.glb', at: [-28, -8], turn: 2.1, h: 1.4 },
       { model: '/models/c137/rm/sm/suckulent.glb', at: [27, 2], turn: 5.3, h: 1.55 },
       { model: '/models/c137/rm/sm/suckulent.glb', at: [-8, 19], turn: 0.7, h: 1.15 },
