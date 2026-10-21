@@ -686,7 +686,7 @@ export async function skin(input, out, { height = null, turn = 0, proxy = 'auto'
   assemble(got, bones);
   mkdirSync(dirname(resolve(out)), { recursive: true });
   await io.write(out, got);
-  log?.(`${out}: ${bones.length} bones, ${joints.found.crotch ? 'legs parted' : 'legs under a robe'}, ${joints.found.neck ? 'neck found' : 'neck by share'}${report ? `, ${(report.bare * 100).toFixed(1)}% bare after heat${report.proxied ? ' (weighted on a closed proxy)' : ''}` : ''}`);
+  log?.(`${out}: ${bones.length} bones, ${joints.found.crotch ? 'legs parted' : 'legs under a robe'}, ${joints.found.neck ? 'neck found' : 'neck by share'}${report ? `, weighted by heat on ${report.on}${report.bare ? `, ${(report.bare * 100).toFixed(1)}% filled from neighbours` : ''}` : ''}`);
   if (!keep) rmSync(dir, { recursive: true, force: true });
   return { joints, bones, turn, report };
 }
