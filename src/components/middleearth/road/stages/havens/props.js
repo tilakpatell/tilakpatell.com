@@ -6,11 +6,12 @@
 // land. The quay's statics are one mesh; the ship is its own group, moved
 // by the scene. Drawing only (place.js says where).
 //
-//   buildProps({ road }) → { group, ship, sail, gangway, lamps, dispose }
+//   buildProps({ road, tier }) → { group, ship, sail, gangway, lamps, dispose }
 
 import * as THREE from 'three';
 import { C, merged, part } from '../parts';
 import { GANGWAY, QUAY, SHIP, WATER } from './place';
+import { wearParts } from '../../partsWear';
 
 const STONE = [0x9a978f, 0x8e8b84, 0xa4a198, 0x878580];
 const COPING = 0xb4b0a6;
@@ -118,10 +119,10 @@ function buildShip(road) {
   return { ship, sail, materials: [white, cloth] };
 }
 
-export function buildProps({ road }) {
+export function buildProps({ road, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'havens:props';
-  const stone = road.material({ vertexColors: true });
+  const stone = wearParts(road.material({ vertexColors: true }), { tier });
   const parts = [];
   const [z0, z1] = QUAY.z;
   const foot = WATER - 1.2;
@@ -174,7 +175,7 @@ export function buildProps({ road }) {
     plank.push(part(new THREE.CylinderGeometry(0.02, 0.02, run, 5), C(SILVER), { at: [...along(0.5, 0.75).slice(0, 2), GANGWAY.z + s * 0.38], roll: slope - Math.PI / 2 }));
     for (const f of [0.05, 0.95]) plank.push(part(new THREE.CylinderGeometry(0.025, 0.025, 0.75, 5), C(SILVER), { at: [...along(f, 0.37).slice(0, 2), GANGWAY.z + s * 0.38], roll: slope }));
   }
-  const wood = road.material({ vertexColors: true });
+  const wood = wearParts(road.material({ vertexColors: true }), { tier });
   const gangway = merged(plank, wood, 'havens:gangway');
   group.add(gangway);
   const { ship, sail, materials } = buildShip(road);

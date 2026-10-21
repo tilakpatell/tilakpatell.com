@@ -14,6 +14,7 @@
 import * as THREE from 'three';
 import { rockGeo, webGeo } from '../../../towns/cirithungol/props';
 import { C, merged, mergeStatics, part } from '../parts';
+import { wearParts } from '../../partsWear';
 
 export const STAIR = { from: 2, to: 54, step: 0.55 }; // m along the road: the steps
 export const LAIR = { from: 58, to: 112, r: 3.4, side: [5, 88] }; // the tunnel over the road; her side passage’s mouth [x, z]
@@ -29,7 +30,7 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'cirith-ungol:props';
   const low = tier === 'low';
-  const material = road.material({ vertexColors: true, flatShading: true });
+  const material = wearParts(road.material({ vertexColors: true, flatShading: true }), { tier });
   const { mats } = K;
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();

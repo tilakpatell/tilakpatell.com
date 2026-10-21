@@ -30,10 +30,10 @@ const smooth = (x) => {
 };
 const facing = (from, to) => Math.atan2(to[0] - from[0], to[1] - from[1]);
 
-export function build({ road, heightAt, sky = null }) {
+export function build({ road, heightAt, sky = null, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'stage:havens';
-  const props = buildProps({ road });
+  const props = buildProps({ road, tier });
   group.add(props.group);
 
   // the sea, the whole Gulf: the beach stands over it where it rises

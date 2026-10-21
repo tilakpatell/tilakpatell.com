@@ -15,6 +15,7 @@ import { walker } from '../../cast';
 import { createTownKit } from '../../townKit';
 import { ARCH, BRIDGE, FALLS, buildProps } from './props';
 import { BEATS } from './beats';
+import { wearParts } from '../../partsWear';
 
 const MARKS = Object.fromEntries(BEATS.map((b) => [b.id, b]));
 // the court’s chairs (props.js’s, the chapter’s ten from its way in round): who sits where, Elrond at the head across from the road
@@ -26,7 +27,7 @@ const GONE = MARKS.narsil.at; // m: the Council’s guests are left in the garde
 export function build({ road, heightAt, rt, weather, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'stage:rivendell';
-  const material = road.material({ vertexColors: true, flatShading: true });
+  const material = wearParts(road.material({ vertexColors: true, flatShading: true }), { tier });
   const town = createTownKit(road, rt?.gfx?.renderer ?? null, { elven: true });
   const props = buildProps({ K: town.K, material, heightAt, tier });
   const chairAt = (i) => props.chairs[i];

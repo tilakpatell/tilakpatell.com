@@ -18,6 +18,7 @@ import { bridge as buildBridge } from '../../../towns/moria/bridge';
 import { balrog as buildBalrog } from '../../../towns/moria/balrog';
 import { goblin as buildGoblin } from '../../../towns/moria/orcs';
 import { mergeStatics } from '../parts';
+import { wearParts } from '../../partsWear';
 
 export const CHAMBER = { at: [-14, 24], door: 7.5 }; // Mazarbul, its doorway to the road (+x)
 export const HALL = { at: [4.5, 56], w: 45, d: 36, top: 22 }; // the Dwarrowdelf, z 38 to 74, its pillars clear of the road
@@ -34,7 +35,7 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
 
   // the way in: walls of dark stone either side and a roof, the right wall
   // opening onto the passage to the Chamber
-  const stone = road.material({ color: 0x3e4446, flatShading: true });
+  const stone = wearParts(road.material({ color: 0x3e4446, flatShading: true }), { tier });
   const wall = (x, z0, z1) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(1, WAY.h, z1 - z0), stone);
     m.position.set(x, heightAt(x, (z0 + z1) / 2) + WAY.h / 2 - 0.5, (z0 + z1) / 2);

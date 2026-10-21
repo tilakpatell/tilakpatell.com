@@ -24,6 +24,7 @@ import { GATE, PONY, WING, buildProps } from './props';
 import { lampPools } from '../parts';
 import { BEATS } from './beats';
 import { STAGES } from '../index';
+import { wearParts } from '../../partsWear';
 
 const LENGTH = STAGES.find((s) => s.id === 'bree').length;
 const MARKS = Object.fromEntries(BEATS.map((b) => [b.id, b]));
@@ -53,7 +54,7 @@ const smooth = (x) => {
 export function build({ road, heightAt, rt, weather, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'stage:bree';
-  const material = road.material({ vertexColors: true, flatShading: true });
+  const material = wearParts(road.material({ vertexColors: true, flatShading: true }), { tier });
   // the town kit on a wet night, as the Bree chapter has it (towns/bree/props.js’s createBreeKit)
   const town = createTownKit(road, rt?.gfx?.renderer ?? null);
   const { mats } = town;

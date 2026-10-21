@@ -2,8 +2,13 @@
 // in one colour moved into place (its colour in its vertices, so a stage’s
 // statics merge into one mesh on one material), and that merge.
 //
-//   part(geometry, colour, { at, yaw, pitch, roll, scale }) → BufferGeometry
-//   merged(parts, material, name) → THREE.Mesh, or null for no parts
+//   part(geometry, colour, { at, yaw, pitch, roll, scale, role }) → BufferGeometry
+//     its `aRole` what it is made of, for ../partsWear.js's scans: `role`
+//     ('stone', 'wood', 'rock', 'none'), else roleOf its shape and colour
+//   roleOf(geometry, colour) → ROLE: a rough shape (a stone of a ford, a
+//     boulder) rock; a built one brown wood, grey stone; anything bright none
+//   merged(parts, material, name) → THREE.Mesh, or null for no parts (a part
+//     with no `aRole`, made some other way, wears none)
 //   mergeStatics(root, { keep, band }) → root: the chapters’ builders make a
 //     mesh a material a building (a Bree house is a dozen); this merges
 //     every still mesh under root into one a material (and a set of
@@ -44,12 +49,25 @@ const e = new THREE.Euler();
 const p = new THREE.Vector3();
 const s = new THREE.Vector3();
 
-export function part(geometry, colour, { at = [0, 0, 0], yaw = 0, pitch = 0, roll = 0, scale = [1, 1, 1] } = {}) {
+export const ROLE = { stone: 0, wood: 1, rock: 2, none: 3 };
+const ROUGH = new Set(['DodecahedronGeometry', 'IcosahedronGeometry', 'OctahedronGeometry', 'TetrahedronGeometry']);
+const hsl = {};
+export function roleOf(geometry, colour) {
+  colour.getHSL(hsl, THREE.SRGBColorSpace); // (as it's painted: in linear light a dark grey reads saturated)
+  if (hsl.l > 0.82 || (hsl.s > 0.55 && hsl.l > 0.3)) return ROLE.none;
+  if (ROUGH.has(geometry?.type)) return ROLE.rock;
+  if (hsl.s > 0.16 && hsl.h > 0.02 && hsl.h < 0.14) return ROLE.wood;
+  return hsl.s < 0.24 ? ROLE.stone : ROLE.none;
+}
+
+export function part(geometry, colour, { at = [0, 0, 0], yaw = 0, pitch = 0, roll = 0, scale = [1, 1, 1], role = null } = {}) {
+  const r = role ? ROLE[role] : roleOf(geometry, colour);
   const g = geometry.index ? geometry.toNonIndexed() : geometry;
   const n = g.attributes.position.count;
   const c = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) colour.toArray(c, i * 3);
   g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+  g.setAttribute('aRole', new THREE.BufferAttribute(new Float32Array(n).fill(r), 1));
   g.deleteAttribute('uv');
   m.compose(p.set(...at), q.setFromEuler(e.set(pitch, yaw, roll, 'YXZ')), s.set(...scale));
   return g.applyMatrix4(m);
@@ -57,6 +75,9 @@ export function part(geometry, colour, { at = [0, 0, 0], yaw = 0, pitch = 0, rol
 
 export function merged(parts, material, name) {
   if (!parts.length) return null;
+  // (a part made some other way, a field's canopy beside a wall's stones: it wears nothing, and merges with them)
+  if (parts.some((g) => g.attributes.aRole))
+    for (const g of parts) if (!g.attributes.aRole) g.setAttribute('aRole', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count).fill(ROLE.none), 1));
   const mesh = new THREE.Mesh(mergeGeometries(parts), material);
   mesh.name = name;
   mesh.castShadow = true;
@@ -64,7 +85,7 @@ export function merged(parts, material, name) {
   return mesh;
 }
 
-const SHARED = ['position', 'normal', 'uv', 'color'];
+const SHARED = ['position', 'normal', 'uv', 'color', 'aRole'];
 
 export const BAND = 60; // m along z: a merged mesh of statics spans no more than this
 

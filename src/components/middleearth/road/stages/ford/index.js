@@ -18,6 +18,7 @@ import { rngOf } from '../../scatter';
 import { createNazgulKit } from '../../creatures/nazgul';
 import { BRIDGE, FORD, buildProps } from './props';
 import { BEATS } from './beats';
+import { wearParts } from '../../partsWear';
 
 const MARKS = Object.fromEntries(BEATS.map((b) => [b.id, b]));
 const RIDE = MARKS.ride.at; // m: Frodo up behind Arwen from here
@@ -38,7 +39,7 @@ const smooth = (x) => {
 export function build({ road, heightAt, waters = [], rt, weather, tier = 'high' }) {
   const group = new THREE.Group();
   group.name = 'stage:ford';
-  const material = road.material({ vertexColors: true, flatShading: true });
+  const material = wearParts(road.material({ vertexColors: true, flatShading: true }), { tier });
   const town = createTownKit(road, rt?.gfx?.renderer ?? null, { wild: true });
   const props = buildProps({ material, heightAt });
   group.add(props.group);
