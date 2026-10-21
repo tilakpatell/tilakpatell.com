@@ -36,6 +36,7 @@ const LOT = { w: [8, 16], d: [8, 12], alley: [2, 6], row: 18, step: 1.5, rise: 0
 const SKY = { near: 100, far: 0.8, w: [10, 24], over: 2.5 };
 const EDGE = { solid: { wall: 0.9, kerb: 0.15 }, see: { rail: 1.4, fence: 1.4, barrier: 1.4 }, clump: 3.5 };
 const SETS = { most: 2, apart: 40 };
+const LANE = 1.1; // a lane's ends, in the fog's far edges
 const FACING = { n: 0, s: Math.PI, e: -Math.PI / 2, w: Math.PI / 2 };
 const CLEAR = { solid: 1, people: 1, spot: 2, ends: 2 };
 
@@ -211,7 +212,8 @@ function crowdOf(d, crowd, { tier, row, room, outside, tris, hero }) {
 function lanesOf(d, fliers, { tier, row, room, outside, fogFar }, r) {
   if (room && (!outside || tier === 'low')) return [];
   let left = room ? Math.floor(row.traffic / 2) || (tier === 'low' ? 0 : 1) : row.traffic;
-  const R = SKY.far * fogFar;
+  // (from past the fog to past it again: a ship comes and goes in the sky's own colour)
+  const R = LANE * fogFar;
   const out = [];
   for (const [i, f] of (fliers ?? []).entries()) {
     const n = Math.min(f.n?.[tier] ?? 0, left);

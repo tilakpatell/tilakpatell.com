@@ -213,7 +213,7 @@ describe('the outskirts of an outdoor place', () => {
     }
   });
 
-  it('flies the traffic across the sky, inside the fog', () => {
+  it('flies the traffic across the sky from out past the fog to out past it again, so it comes and goes unseen', () => {
     const d = outdoor();
     const L = lay(d, world());
     expect(L.lanes).toHaveLength(1);
@@ -221,7 +221,9 @@ describe('the outskirts of an outdoor place', () => {
     expect(l.model).toBe('fedship');
     expect(l.y).toBeGreaterThanOrEqual(40);
     expect(l.y).toBeLessThanOrEqual(70);
-    for (const [x, z] of [l.from, l.to]) expect(Math.hypot(x - d.centre.x, z - d.centre.z)).toBeLessThanOrEqual(0.8 * FOG + 1e-9);
+    for (const [x, z] of [l.from, l.to]) expect(Math.hypot(x - d.centre.x, z - d.centre.z)).toBeGreaterThan(FOG);
+    // straight across, through the place's sky
+    expect(Math.hypot((l.from[0] + l.to[0]) / 2 - d.centre.x, (l.from[1] + l.to[1]) / 2 - d.centre.z)).toBeLessThan(1e-6);
   });
 });
 
