@@ -29,7 +29,7 @@ import { attribute } from 'three/tsl';
 
 const attributeOf = (name) => attribute(name, 'vec3');
 import { MeshLambertNodeMaterial } from 'three/webgpu';
-import { cameraPosition, cos, floor, fract, length, mix, modelWorldMatrix, normalLocal, normalize, positionGeometry, sin, smoothstep, step, uniform, varyingProperty, vec2, vec3, vec4 } from 'three/tsl';
+import { cameraPosition, cos, floor, fract, length, max, mix, modelWorldMatrix, normalLocal, normalize, positionGeometry, positionWorld, sin, smoothstep, step, uniform, varyingProperty, vec2, vec3, vec4 } from 'three/tsl';
 import { onColor, onLight, onPosition } from './hookNodes';
 
 // GLSL's mod (floored)
@@ -148,7 +148,9 @@ export function createGrass({ ground, wind, tracks = null, side = 280, size = 40
     { ...u, ...(ground.uniforms ?? {}), ...(wind.uniforms ?? {}), ...(tracks?.uniforms ?? {}) },
   );
   onColor(material, (d) => d.rgb.mul(vColour), 'grass:colour');
-  onLight(material, (light) => light.mul(mix(u.uGrassRoot, 1, vTip)), 'grass:root');
+  // (a curved blade's root shade gone by 20 m: tuft by tuft, far off, the darker roots were a speckle over the field)
+  const far = curved ? smoothstep(8, 20, length(positionWorld.sub(cameraPosition))) : null;
+  onLight(material, (light) => light.mul(mix(u.uGrassRoot, 1, far ? max(vTip, far) : vTip)), 'grass:root');
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = 'grass';
   // (placed in the shader, so the mesh's own bounds mean nothing)

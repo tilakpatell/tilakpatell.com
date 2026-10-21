@@ -23,11 +23,12 @@ export function createBlades({ groundMap, wind, soil, tier = 'high' }) {
   // (thinner grass: fewer blades over the same patch)
   const side = Math.round(patch.side * Math.sqrt(soil.blades));
   // (laid down within NEAR of the camera: a few blades right under a low camera stood as spikes across the picture;
-  // their roots a little dark, not much: a strong one speckled the field, light tip by dark root;
+  // their roots a little dark, not much: a strong one speckled the field, light tip by dark root (0.72 did, tufted,
+  // on Lothlórien's gold floor);
   // each turned to face the camera, so it's lit from above, by the sun: its back seen, it was lit from below)
   // (each a curved blade tapering to its tip, grown four to a tuft: one broad triangle
   // apiece, evenly spread, the verges were a carpet of green cones)
-  const grass = createGrass({ ground: groundMap, wind, side, size: patch.size, height: soil.blade ?? 0.45, width: 0.048, root: 0.72, near: NEAR, faceCamera: true, shape: 'blade', tufts: true });
+  const grass = createGrass({ ground: groundMap, wind, side, size: patch.size, height: soil.blade ?? 0.45, width: 0.048, root: 0.84, near: NEAR, faceCamera: true, shape: 'blade', tufts: true });
   grass.mesh.name = 'road:blades';
   // the map’s colour a little greyed (at full colour, lit from below by the
   // sky light’s green ground half, they stood lime over the photo-scanned
