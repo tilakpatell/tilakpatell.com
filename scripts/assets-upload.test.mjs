@@ -156,9 +156,9 @@ describe('the asset upload', () => {
     await b.upload('def/kit/b.glb', Buffer.from('x'), 'model/gltf-binary');
     await b.remove(['abc/kit/a.glb', 'ghi/kit/c.glb']);
     expect(asked.slice(1).map(([m, u]) => [m, u])).toEqual([
-      ['PUT', `${ENDPOINT}/site-assets/def/kit/b.glb`],
-      ['DELETE', `${ENDPOINT}/site-assets/abc/kit/a.glb`],
-      ['DELETE', `${ENDPOINT}/site-assets/ghi/kit/c.glb`],
+      ['PUT', `${ENDPOINT}/tilak-assets/def/kit/b.glb`],
+      ['DELETE', `${ENDPOINT}/tilak-assets/abc/kit/a.glb`],
+      ['DELETE', `${ENDPOINT}/tilak-assets/ghi/kit/c.glb`],
     ]);
     expect(asked[1][2]).toEqual({ 'content-type': 'model/gltf-binary', 'cache-control': 'public, max-age=31536000, immutable' });
   });

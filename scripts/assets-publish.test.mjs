@@ -26,7 +26,7 @@ function fakePool(stored = {}, { refuse = [] } = {}) {
     stored,
     run: async (job) => {
       asked.push([job.method, job.url, job.fetch]);
-      const key = decodeURIComponent(job.url.split(/\/site-assets\//)[1]);
+      const key = decodeURIComponent(job.url.split(/\/tilak-assets\//)[1]);
       if (job.method === 'HEAD') return key in stored ? { status: 'fetched', headers: new Headers({ 'content-length': String(stored[key]) }) } : { status: 'missing' };
       if (refuse.some((r) => key.includes(r))) return { status: 'failed', error: 'HTTP 413' };
       stored[key] = job.body.length;
@@ -47,9 +47,9 @@ describe('the publish', () => {
     expect(r.there).toBe(1);
     expect(r.failed.map((x) => x.path)).toEqual(['models/galaxy/crew/c.glb']);
     expect(Object.keys(r.manifest).sort()).toEqual(['models/galaxy/crew/a.glb', 'models/galaxy/crew/b.glb', 'models/galaxy/crew/old.glb']);
-    expect(pool.asked.filter(([m]) => m === 'PUT').map(([, u]) => u)).toEqual([`${ENDPOINT}/site-assets/111111111111/models/galaxy/crew/a.glb`, `${ENDPOINT}/site-assets/333333333333/models/galaxy/crew/c.glb`]);
+    expect(pool.asked.filter(([m]) => m === 'PUT').map(([, u]) => u)).toEqual([`${ENDPOINT}/tilak-assets/111111111111/models/galaxy/crew/a.glb`, `${ENDPOINT}/tilak-assets/333333333333/models/galaxy/crew/c.glb`]);
     // (asked of R2 itself, signed, whether it is there: never the public domain, whose cache would keep a "not there")
-    expect(pool.asked.filter(([m]) => m === 'HEAD').every(([, u, fetch]) => u.startsWith(`${ENDPOINT}/site-assets/`) && fetch === signs)).toBe(true);
+    expect(pool.asked.filter(([m]) => m === 'HEAD').every(([, u, fetch]) => u.startsWith(`${ENDPOINT}/tilak-assets/`) && fetch === signs)).toBe(true);
     expect(pool.asked.every(([, , fetch]) => fetch === signs)).toBe(true);
   });
 
@@ -66,10 +66,10 @@ describe('the publish', () => {
   it('asks R2 the bucket is there, and says so when it isn’t', async () => {
     const calls = [];
     const fetch = async (url, init = {}) => (calls.push([init.method, url]), new Response(null, { status: 200 }));
-    await ensureBucket('site-assets', fetch);
-    expect(calls).toEqual([['HEAD', `${ENDPOINT}/site-assets`]]);
-    await expect(ensureBucket('site-assets', async () => new Response(null, { status: 404 }))).rejects.toThrow(/isn't on R2/);
-    await expect(ensureBucket('site-assets', async () => new Response(null, { status: 403 }))).rejects.toThrow(/HTTP 403/);
+    await ensureBucket('tilak-assets', fetch);
+    expect(calls).toEqual([['HEAD', `${ENDPOINT}/tilak-assets`]]);
+    await expect(ensureBucket('tilak-assets', async () => new Response(null, { status: 404 }))).rejects.toThrow(/isn't on R2/);
+    await expect(ensureBucket('tilak-assets', async () => new Response(null, { status: 403 }))).rejects.toThrow(/HTTP 403/);
   });
 });
 

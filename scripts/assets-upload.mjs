@@ -1,4 +1,4 @@
-// The heavy assets to the public bucket site-assets on R2, by content hash: each
+// The heavy assets to the public bucket on R2 (tilak-assets; site-assets on Supabase until 2026-10-21), by content hash: each
 // file under REMOTE of a heavy kind and 64 KB or more goes to
 // `<hash12>/<path>` once, with a year's cache, never overwritten (a changed
 // file is a new path, so a visitor on the old build still gets the old one),
@@ -25,7 +25,7 @@ import { NO_KEYS, assetBase, bucketEnv, list, put, remove } from './lib/bucket.m
 
 // (the site's one public bucket: the game-derived files are published there
 // too, by scripts/assets-publish.mjs, so one ASSET_BASE serves both)
-export const BUCKET = 'site-assets';
+export const BUCKET = 'tilak-assets';
 // (textures/galaxy/bf2017/<role>/ and textures/galaxy/sky/: lane W's, the
 // game's ground and trim maps and the levels' skies, mirrored once they land;
 // textures/galaxy/planets/: lane K's planet skins)

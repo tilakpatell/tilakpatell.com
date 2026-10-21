@@ -1,6 +1,7 @@
 // The asset buckets on Cloudflare R2, for the scripts (docs/stack/cloudflare.md):
 // the private bf2017-assets the 2017 drop sits in, and the public
-// site-assets the site reads its heavy files from. R2 speaks S3, so each
+// tilak-assets the site reads its heavy files from (site-assets on Supabase,
+// the name the scripts' comments still call it by). R2 speaks S3, so each
 // request carries AWS's Signature Version 4, made here with node:crypto (one
 // hash and five HMACs, held to AWS's own worked examples in the test), and
 // nothing is installed for it. Until 2026-10-21 both buckets were on

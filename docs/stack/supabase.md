@@ -21,7 +21,7 @@ Around them: `src/lib/durable/entityLoader.js` (a planet’s built things, cell 
 
 ## How the site uses it
 
-- **Storage, until 2026-10-21.** The heavy models and textures, the game-derived files and the 2017 drop were in Storage buckets ([the entry](../decisions/2026-10-09-heavy-assets-mirrored-on-supabase-storage.md)); they moved to Cloudflare R2 under the same names and paths ([the move](../decisions/2026-10-21-heavy-assets-on-r2.md), `docs/stack/cloudflare.md`), and Storage is emptied once R2 has served them. Nothing in the repository calls Storage now but the copy, `.github/workflows/assets-to-r2.yml`.
+- **Storage, until 2026-10-21.** The heavy models and textures, the game-derived files and the 2017 drop were in Storage buckets ([the entry](../decisions/2026-10-09-heavy-assets-mirrored-on-supabase-storage.md)); they moved to Cloudflare R2 with the same paths, the public one as `tilak-assets` ([the move](../decisions/2026-10-21-heavy-assets-on-r2.md), `docs/stack/cloudflare.md`), and Storage is emptied once R2 has served them. Nothing in the repository calls Storage now but the copy, `.github/workflows/assets-to-r2.yml`.
 <!-- planet flight: begin -->
 - **One client, made in one file.** The client is made in `src/lib/durable/supabase.js` alone, once a page, from `import.meta.env.VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`; either empty, and it is `null`.
 - **Anonymous sign-in for ownership.** The same file’s `signIn` gives each browser a user id (the session it has, else `signInAnonymously`); RLS makes a row its owner’s to change.

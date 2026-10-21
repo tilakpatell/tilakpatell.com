@@ -1,4 +1,4 @@
-// The site's game-derived files to the public bucket `site-assets`, by
+// The site's game-derived files to the public bucket (`tilak-assets` on R2; `site-assets` on Supabase until 2026-10-21), by
 // content hash, and the manifest that says so (src/data/galaxyAssets.json).
 // The files are what the 2017 pipeline made (scripts/bf2017-import.mjs: a
 // kind's GLB and its .lod1, .far and .ultra cuts, credited to the game, the
@@ -12,7 +12,7 @@
 // .gitignore's marked block is rewritten (scripts/assets-ignore.mjs), so the
 // published files leave git.
 //
-//   node scripts/assets-publish.mjs [--dry] [--only '<glob over site paths>'] [--bucket site-assets]
+//   node scripts/assets-publish.mjs [--dry] [--only '<glob over site paths>'] [--bucket tilak-assets]
 //     [--manifest <file>] [--files '<glob>']
 //
 //   dry       what would go, and nothing sent
@@ -40,7 +40,7 @@ import { KINDS } from './assets-upload.mjs';
 import { NO_KEYS, assetBase, bucketEnv, objectUrl } from './lib/bucket.mjs';
 import { createPool } from './lib/pool.mjs';
 
-export const BUCKET = 'site-assets';
+export const BUCKET = 'tilak-assets';
 // A year, and never changed: the path's hash is what makes the file
 // immutable. R2 keeps the header as it is sent and answers with it. (Until
 // 2026-10-21 Supabase kept only the max-age and served `public,
