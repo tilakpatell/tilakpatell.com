@@ -53,6 +53,8 @@ console.log('city up in', ((Date.now() - t0) / 1000).toFixed(1), 's');
 const SHOTS = {
   spawn: { at: null, time: 'noon' },
   street: { p: [40, 18, 200], mode: 'air', yaw: Math.PI, pitch: -0.22 },
+  // the brawl (./brawl.js): a Mauler in his hands over downtown (['spawn'] calls the villains, ['held', i] puts the i-th in his hands)
+  brawl: { drive: [['go', [50, 26, 40], Math.PI, 'air'], ['spawn', 'mauler', 1, [50, 0, 0]], ['wait', 300], ['held', 0], ['wait', 400]], pitch: -0.35 },
   curb: { p: [44, 3, 120], mode: 'air', yaw: Math.PI, pitch: -0.12 },
   streetnight: { p: [40, 18, 200], mode: 'air', yaw: Math.PI, pitch: -0.22, time: 'night' },
   downtown: { p: [-300, 140, 600], mode: 'air', yaw: Math.PI * 0.9, pitch: -0.12 },
@@ -209,6 +211,15 @@ await page.evaluate(() => {
         await until(() => Boolean(sim.mission?.seen?.car)); // (a frame first: the mission sees the car where it is)
         api.feed({ type: 'land', speed: a, p: [...(sim.getaway?.p ?? at)] });
       } else if (k === 'feed') api.feed(a);
+      else if (k === 'spawn') api.spawn(a, b, c);
+      else if (k === 'held') {
+        const e = sim.foes.foes[a];
+        if (e) {
+          e.state = 'held';
+          sim.brawl.held = { what: 'foe', id: e.id };
+          sim.keys.add('punch'); // (the punch held: let go and he throws it)
+        }
+      }
       else if (k === 'ticks') for (let t = 0; t < a; t += 0.05) api.feed({ type: 'tick', dt: 0.05 });
     }
     // (held still for the shot: the clock stops, so nothing drives off or knocks him about)
@@ -243,8 +254,9 @@ for (const [name, s] of Object.entries(SHOTS)) {
       sim.yaw = Math.PI / 2 - 0.15;
       sim.pitch = 0.12;
       sim.dragAt = 1e9;
-    } else if (s.mission) {
-      await window.__INV_DRIVE__(s.mission, s.drive, s, true);
+    } else if (s.mission || s.drive) {
+      // (a shot with `drive` and no mission: the ops alone, nothing started)
+      await window.__INV_DRIVE__(s.mission ?? null, s.drive, s, true);
     } else if (s.space) {
       // up through the top of the sky, if he isn't out there already
       if (api.zone !== 'space') {
@@ -362,6 +374,8 @@ for (const [name, s] of Object.entries(SHOTS)) {
   const png = await page.screenshot({ path: `${out}/inv-${name}.png`, timeout: 180000 });
   const info = await page.evaluate(() => window.__INVWORLD__.api.info());
   console.log(name, 'calls', info.calls, 'tris', info.triangles, 'tier', info.tier);
+  // (DUMP=1: what the fight and the brawl hold, for reading a shot that shows something odd)
+  if (process.env.DUMP) console.log(name, await page.evaluate(() => JSON.stringify({ rings: window.__INVWORLD__.sim.foes.rings, foes: window.__INVWORLD__.sim.foes.foes.map((e) => [e.id, e.kind, e.state, e.p.map(Math.round)]), brawl: window.__INVWORLD__.sim.brawl, gates: window.__INVWORLD__.sim.gates, marker: window.__INVWORLD__.sim.marker, quests: { lesson: window.__INVWORLD__.sim.quests.lesson.on, rescue: Boolean(window.__INVWORLD__.sim.quests.rescue) } })));
   if (s.mission) {
     // (where the shot found him and the step's marker, for reading the shot)
     const w = await page.evaluate(() => {

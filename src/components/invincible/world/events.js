@@ -161,6 +161,25 @@ export function onFoeEvent(e, { s, say, feed, unlock, shakeOff }) {
   }
 }
 
+// the brawl (./brawl.js): a hold, a hurl, a slam, a dive, a pound, a block
+export function onBrawlEvent(e, { s, say }) {
+  if (e.type === 'grab') {
+    sfx('thunk');
+    if (!s.grabSaid) {
+      s.grabSaid = true;
+      say(e.what === 'car' ? 'Got the car. Let go of the punch to throw it; come down hard to slam it.' : 'Got them. Let go to throw; come down hard to slam.', 3600);
+    }
+  } else if (e.type === 'hurl' || e.type === 'dive') sfx('zip');
+  else if (e.type === 'carrySlam') sfxHit('crumble', 'slam', e.speed);
+  else if (e.type === 'crater') sfx('boom');
+  else if (e.type === 'diveHit') sfxHit('blast', 'dive', 60 + e.hits * 50);
+  else if (e.type === 'pound') sfxHit('thunk', 'pound', 120);
+  else if (e.type === 'blocked') {
+    sfx('thunk');
+    say('Blocked. Hit back now: it counts double.', 2000);
+  } else if (e.type === 'thrownLanded') sfx('crumble');
+}
+
 // his own flying: landings, the boom, walls, the water
 export function onHeroEvent(e, { s, say, feed, unlock }) {
   if (e.type === 'land' || e.type === 'slam') feed({ type: 'land', speed: e.speed, p: e.at, body: e.body ?? null });

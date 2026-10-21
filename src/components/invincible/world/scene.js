@@ -18,7 +18,7 @@ import { CAST, asset } from '../cast';
 import { createChallenges } from './challenges';
 import { DAD, newDad, stepDad } from './companions';
 import { buildCity } from './city';
-import { anyOf, standing } from './foes';
+import { standing } from './foes';
 import { createVillains } from './villains';
 import { createFlightFx } from './fx';
 import { buildGround } from './ground';
@@ -547,6 +547,26 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
           splashed.speed = e.speed;
         }
       } else if (e.type === 'takeoff') fx.takeoff(e.at);
+      else if (e.type === 'crater') {
+        // a slam with something in hand, or a dive onto someone: the street takes it
+        fx.slam(e.at, e.speed);
+        feel.trauma(clamp(e.speed / 150, 0.3, 1));
+        scare.push({ x: e.at[0], z: e.at[2], r: 30 });
+      } else if (e.type === 'carrySlam' || e.type === 'diveHit') {
+        feel.hitstop(90);
+        feel.trauma(0.6);
+      } else if (e.type === 'pound') {
+        feel.trauma(0.5);
+        fx.vfx.ring(new THREE.Vector3(e.at[0], e.at[1] + 0.3, e.at[2]), { color: 0xffd23a, from: 1, to: 12, life: 0.5, normal: Y });
+      } else if (e.type === 'blocked') {
+        feel.hitstop(50);
+        fx.vfx.ring(new THREE.Vector3(...e.at), { color: 0xffffff, from: 0.4, to: 3, life: 0.25, normal: Y });
+      } else if (e.type === 'grab') {
+        fx.vfx.flash(new THREE.Vector3(...e.at), { color: 0xffffff, intensity: 14, distance: 10, life: 0.1 });
+        // (a car of the traffic's, taken off the street)
+        if (e.car != null && traffic.cars[e.car]) traffic = takeCar(traffic, traffic.cars[e.car].id);
+      } else if (e.type === 'hurl') fx.vfx.ring(new THREE.Vector3(...e.at), { color: 0xf5c518, from: 0.5, to: 4, life: 0.3, normal: new THREE.Vector3(...e.v).normalize() });
+      else if (e.type === 'thrownLanded') fx.vfx.smoke(new THREE.Vector3(...e.at), { size: 2, count: 4, life: 1.2, color: 0x8a8070, to: 0xb0a898, rise: 1 });
       else if (VILLAIN_EV.has(e.type)) {
         // the villains (./foes.js): coming through, hit, knocked out, hitting him
         villains.fx(e);
@@ -592,6 +612,8 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       stride += flat * frameDt * 1.55;
       carry(mark, h.p, h.face, [0, 0, 0], dt, { lean: 0, lift: h.crouch > 0 ? -mark.hipHeight * 0.42 : 0 });
       if (h.crouch > 0) mark.pose(LAND, dt, 18);
+      else if (sim.brawl?.held) mark.pose(POSES.punch([0, 0.35, 1]), dt, 20); // (something in hand, held out)
+      else if (sim.brawl?.blocking) mark.pose(POSES.punch([0, 1, 0.35]), dt, 20); // (fists up)
       else if (sim.punchT > 0) mark.pose(POSES.punch([0, 0.1, 1]), dt, 30);
       else if (flat > 4.5) mark.act('run', { speed: clamp(flat / 5.5, 0.7, 1.6) }) || mark.pose(POSES.stride(stride, 1, clamp((flat - 4) / 5, 0, 1)), dt, 14);
       else if (flat > 0.3) mark.act('walk', { speed: clamp(flat / 1.4, 0.6, 2.2) }) || mark.pose(POSES.stride(stride, clamp(flat / 2, 0, 1), 0), dt, 14);
@@ -604,7 +626,8 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       const fast = clamp((Math.hypot(...h.v) - 8) / 30, 0, 1) > 0.45 && mark.clips.includes('fly');
       const k = carry(mark, h.p, h.face, h.v, dt, { lean: 1, ahead: fast });
       // a punch thrown hanging in the air (flat out, the fly pose's fist is already ahead)
-      if (sim.punchT > 0 && !fast) mark.pose(POSES.punch([0, 0.1, 1]), dt, 30);
+      if (sim.brawl?.held) mark.pose(POSES.punch([0, 0.35, 1]), dt, 20);
+      else if (sim.punchT > 0 && !fast) mark.pose(POSES.punch([0, 0.1, 1]), dt, 30);
       else if (k > 0.45) mark.act('fly', { fade: 0.4 }) || mark.pose(POSES.fly(), dt, 9);
       else mark.act('hover', { fade: 0.4 }) || mark.pose(POSES.hover(t), dt, 9);
     }
@@ -641,14 +664,12 @@ export async function createInvWorld(rt, { onSlow, calm = false } = {}) {
       if (sim.quests) challenges.update(sim.quests, frameDt, t);
       if (sim.foes) {
         villains.update(sim.foes, frameDt, t, h);
-        // (a Mauler about: where the traffic's cars are, for him to take one; a car he's taken is nowhere)
-        sim.cars = anyOf(sim.foes, 'mauler')
-          ? traffic.cars.map((c) => {
-              if (c.gone) return [1e9, 0, 1e9];
-              const [x, z] = carAt(c);
-              return [x, 0, z];
-            })
-          : null;
+        // (where the traffic's cars are, for a Mauler or Mark to take one; a car taken is nowhere)
+        sim.cars = traffic.cars.map((c) => {
+          if (c.gone) return [1e9, 0, 1e9];
+          const [x, z] = carAt(c);
+          return [x, 0, z];
+        });
       }
       props.update(sim.getaway, frameDt);
       // (no traffic to speak of from up where the clouds are)

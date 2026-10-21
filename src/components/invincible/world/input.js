@@ -19,7 +19,8 @@ export function bindKeys(s, { act, cycleTime, startSound, release, abandon, open
     if (k) {
       e.preventDefault();
       startSound();
-      if (k === 'up' && !e.repeat) s.jump = true;
+      if (k === 'up' && !e.repeat) s.jump = s.dive = true; // (over a foe, a dive: ./brawl.js)
+      if (k === 'down' && !e.repeat && s.h?.mode === 'ground') s.pound = true; // (on the ground: a pound)
       s.keys.add(k);
       s.moved = true;
       return;
@@ -27,6 +28,7 @@ export function bindKeys(s, { act, cycleTime, startSound, release, abandon, open
     if ((e.code === 'KeyJ' || e.code === 'KeyF') && !e.repeat) {
       startSound();
       s.punch = true;
+      s.keys.add('punch'); // (held: a grab, ./brawl.js)
     } else if (e.code === 'KeyE' || e.key === 'Enter') {
       if (!(e.target instanceof HTMLButtonElement)) act();
     } else if (e.code === 'KeyT') cycleTime();
@@ -48,6 +50,7 @@ export function bindKeys(s, { act, cycleTime, startSound, release, abandon, open
   const up = (e) => {
     const k = CODES[e.code];
     if (k) s.keys.delete(k);
+    if (e.code === 'KeyJ' || e.code === 'KeyF') s.keys.delete('punch');
     if (!e.shiftKey) s.keys.delete('boost');
   };
   const hidden = () => document.hidden && release();
@@ -70,12 +73,15 @@ export function pointerHandlers({ sim, drag, host, startSound }) {
     if (e.pointerType === 'touch' && e.clientX < (host.current?.getBoundingClientRect().left ?? 0) + (host.current?.clientWidth ?? 0) * 0.4) return; // the left of a phone's screen is the stick
     startSound();
     drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, at: performance.now() };
+    // (the mouse held still: a grab; moved, it's a look)
+    if (e.pointerType === 'mouse' && e.button === 0) sim.current.mouseDown = true;
     e.currentTarget.setPointerCapture?.(e.pointerId);
   };
   const onPointerMove = (e) => {
     const d = drag.current;
     if (!d || d.id !== e.pointerId) return;
     const s = sim.current;
+    if (Math.hypot(e.clientX - d.x0, e.clientY - d.y0) > 6) sim.current.mouseDown = false;
     const k = e.pointerType === 'touch' ? 0.007 : 0.0045;
     s.yaw -= (e.clientX - d.x) * k;
     s.pitch = clamp(s.pitch - (e.clientY - d.y) * k, -1.35, 1.25);
@@ -84,6 +90,7 @@ export function pointerHandlers({ sim, drag, host, startSound }) {
     d.y = e.clientY;
   };
   const onPointerUp = (e) => {
+    sim.current.mouseDown = false;
     const d = drag.current;
     if (d?.id !== e.pointerId) return;
     // a click (not a drag) with the mouse: a punch

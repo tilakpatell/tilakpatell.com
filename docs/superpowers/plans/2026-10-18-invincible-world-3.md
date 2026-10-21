@@ -61,13 +61,13 @@
 - Modify: `InvWorld.jsx`, `world/scene.js`, `thinkmark/rules.js` (each under 800 lines after)
 - Test: `thinkmark/rules.test.js` keeps passing through the barrel; `imports.test.js` (`src/imports.test.js`) still green
 
-- [ ] `node scripts/autopilot-check.mjs --before --routes /invincible` and the shots `spawn street downtown streetnight high porch maulers seismic` with `--metrics`: the “before”.
-- [ ] Move the keys, pad and touch handling to `input.js` (`bindInput(el, handlers) → unbind`), the mission `out` handling and achievements to `events.js` (`handleOut(out, ctx)`), the travellers to `online.js`; `InvWorld.jsx` keeps the component, the clock and the HUD.
-- [ ] Move the space drawing (Earth, Moon, Mars, stars, Allen, Thragg) to `spaceScene.js` and the villains’ drawing calls to `villainScene.js`; `scene.js` composes.
-- [ ] Move Omni-Man’s and Thragg’s chapters from `thinkmark/rules.js` to `bosses.js`; `rules.js` re-exports the same names.
-- [ ] The same shots after; compare; a changed pixel means the split is wrong.
+- [x] `node scripts/autopilot-check.mjs --before --routes /invincible` and the shots `spawn street downtown streetnight high porch maulers seismic` with `--metrics`: the “before”.
+- [x] Move the keys, pad and touch handling to `input.js` (`bindInput(el, handlers) → unbind`), the mission `out` handling and achievements to `events.js` (`handleOut(out, ctx)`), the travellers to `online.js`; `InvWorld.jsx` keeps the component, the clock and the HUD.
+- [x] Move the space drawing (Earth, Moon, Mars, stars, Allen, Thragg) to `spaceScene.js` and the villains’ drawing calls to `villainScene.js`; `scene.js` composes.
+- [x] Move Omni-Man’s and Thragg’s chapters from `thinkmark/rules.js` to `bosses.js`; `rules.js` re-exports the same names.
+- [x] The same shots after; compare; a changed pixel means the split is wrong.
 - [ ] Bring the four over-budget low-tier shots (`maulers seismic everace photo`) under 1.5 M triangles: figures posed only within 260 m, the crowd at the low count. Record the numbers.
-- [ ] Checks; commit; pull request; merge.
+- [x] Checks; commit; pull request; merge.
 
 ### Task 3: The brawl
 
@@ -80,12 +80,12 @@
 - `brawl.js`: `BRAWL` (the table in the spec’s section 2), `newBrawl()`, `stepBrawl(b, input, mark, world, dt) → { b, out: [{ kind, target, force, at }] }` with kinds `punch grab throw slam dive block counter pound`; `canGrab(mark, thing)`, `diveDamage(height)`, `counterOpen(b)`.
 - `foes.js`: a foe `held` by Mark follows his hand; a `thrown` foe flies its arc, lands for a hit, staggers 0.8 s. A Mauler can be grabbed; Doc Seismic cannot (he is airborne).
 
-- [ ] Tests first: a 0.25 s hold within reach grabs the nearest grabbable; release throws at Mark’s speed plus 30; a carry-slam into ground over 40 m/s gives the held thing two hits and a crater event; `diveDamage(30) === 1`, `diveDamage(200) === 3`, between is linear and floored; a block halves damage and a blocked swing staggers the foe and opens a 0.6 s counter window; a pound floors Flaxans within 40 m and staggers Maulers; every step with `dt = 60` moves nothing more than 0.05 s would.
-- [ ] `brawl.js`, then the hooks into `foes.js`, `flight.js`, `brains.js` and the input.
-- [ ] Drawing: the carried thing on Mark’s hand (the rig’s hand bone, `lib/three/rig.js`), the throw arc, the dive’s streak and crater, the block pose (the `hit` clip held at its first frame), the pound’s ring (the quake ring’s shader, Mark’s colour). The 70 ms hit-stop and trauma by force as today.
-- [ ] A shot `brawl` (a Mauler carried over downtown) with `--metrics`.
-- [ ] Guide: the keys in `src/components/guide/pages.js` (the one place keys are written).
-- [ ] Checks; commit; pull request; merge.
+- [x] Tests first: a 0.25 s hold within reach grabs the nearest grabbable; release throws at Mark’s speed plus 30; a carry-slam into ground over 40 m/s gives the held thing two hits and a crater event; `diveDamage(30) === 1`, `diveDamage(200) === 3`, between is linear and floored; a block halves damage and a blocked swing staggers the foe and opens a 0.6 s counter window; a pound floors Flaxans within 40 m and staggers Maulers; every step with `dt = 60` moves nothing more than 0.05 s would.
+- [x] `brawl.js`, then the hooks into `foes.js`, `flight.js`, `brains.js` and the input.
+- [x] Drawing: the carried thing on Mark’s hand (the rig’s hand bone, `lib/three/rig.js`), the throw arc, the dive’s streak and crater, the block pose (the `hit` clip held at its first frame), the pound’s ring (the quake ring’s shader, Mark’s colour). The 70 ms hit-stop and trauma by force as today.
+- [x] A shot `brawl` (a Mauler carried over downtown) with `--metrics`.
+- [x] Guide: the keys in `src/components/guide/pages.js` (the one place keys are written).
+- [x] Checks; commit; pull request; merge.
 
 ### Task 4: The city that breaks
 

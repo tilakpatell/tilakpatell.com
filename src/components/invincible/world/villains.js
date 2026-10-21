@@ -162,7 +162,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
     const f = v.f;
     const moving = Math.hypot(e.v[0], e.v[2]) > 1;
     if (e.kind === 'mauler') {
-      const clip = { swing: 'swing', throw: 'throw', stagger: 'hit', ko: 'down', down: 'down' }[e.state] ?? (moving ? 'charge' : 'idle');
+      const clip = { swing: 'swing', throw: 'throw', stagger: 'hit', held: 'hit', thrown: 'hit', ko: 'down', down: 'down' }[e.state] ?? (moving ? 'charge' : 'idle');
       const once = clip !== 'idle' && clip !== 'charge';
       if (!f.act(clip, { once, fade: 0.15 })) f.pose(moving ? POSES.stride(t * 1.6, 1, 1) : e.state === 'swing' ? POSES.punch([0, 0.2, 1]) : POSES.stand, dt, 14);
     } else {
@@ -232,7 +232,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
           act(v, { ...e, kind, quakeT: l?.quake ?? 0, blastT: l?.blast ?? 0 }, dt, t);
         } else if (kind === 'flaxan' || kind === 'flaxanElite' || v.kit) {
           v.holder.position.set(e.p[0], e.p[1] + (v.kit ? KINDS[kind].h * 0.53 : 0), e.p[2]);
-          if (e.state === 'ko') {
+          if (e.state === 'ko' || e.state === 'thrown') {
             v.spin += dt * 9;
             v.holder.rotation.set(v.spin, v.spin * 0.6, 0);
             poseHumanoid(v.h, { t, mode: 'hover', flinch: 1 });
@@ -240,7 +240,7 @@ export function createVillains(scene, vfx, { calm = false, templates = {}, rim =
             // facing him, arm up at him when he's in range
             pos.copy(chest).sub(v.holder.position);
             v.holder.rotation.set(0, Math.atan2(pos.x, pos.z), 0);
-            poseHumanoid(v.h, { t: t + i, mode: v.kit && kind === 'mauler' ? 'idle' : 'hover', aim: pos.length() < FIGHT.range ? 1 : 0.3, lean: Math.min(1, Math.hypot(...e.v) / 20) * 0.6 });
+            poseHumanoid(v.h, { t: t + i, mode: v.kit && kind === 'mauler' ? 'idle' : 'hover', aim: pos.length() < FIGHT.range ? 1 : 0.3, lean: Math.min(1, Math.hypot(...e.v) / 20) * 0.6, flinch: e.state === 'held' ? 1 : 0 });
           }
         }
       }
