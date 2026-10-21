@@ -81,6 +81,19 @@ describe('the face’s wiring: keys, events, the save', () => {
     expect(world.s).toBeGreaterThan(was);
   });
 
+  it('carries on from a few metres before a moment the ride was left inside, so it plays again', async () => {
+    const rt = fakeRt();
+    const tomb = BEATS_OF.moria.find((b) => b.id === 'tomb');
+    rt.saves.set('tp-road', { v: 1, s: sOf(STAGES, 'moria', tomb.at + 4), ridden: false, at: 0 });
+    const world = await road.create(rt, { at: null });
+    world.attached();
+    world.carryOn();
+    expect(world.s).toBeCloseTo(sOf(STAGES, 'moria', tomb.at - 4), 6);
+    // (walked on, the tomb's moment is reached and held again)
+    for (let i = 0; i < 4; i++) world.step(1, snap());
+    expect(world.s).toBeCloseTo(sOf(STAGES, 'moria', tomb.at), 4);
+  });
+
   it('a lost context put back within a minute carries on with no card and no offer', async () => {
     const rt = fakeRt();
     rt.saves.set('tp-road', { v: 1, s: sOf(STAGES, 'moria', 10), ridden: false, at: Date.now() - 5000 });

@@ -10,10 +10,10 @@ const app = readFileSync(new URL('../../App.jsx', import.meta.url), 'utf8');
 const ROUTES = [...app.matchAll(/<Route path="([^"]+)"/g)].map((m) => m[1]).filter((p) => p !== '*');
 
 describe('the universes', () => {
-  it('are the site’s six pages and twelve fandoms, each with its own id', () => {
+  it('are the site’s six pages and thirteen fandoms, each with its own id', () => {
     expect(UNIVERSES.filter((u) => u.kind === 'core').map((u) => u.to)).toEqual(['/home', '/experience', '/projects', '/resume', '/contact', '/terminal']);
-    expect(UNIVERSES.filter((u) => u.kind === 'fandom')).toHaveLength(12);
-    expect(new Set(UNIVERSES.map((u) => u.id)).size).toBe(18);
+    expect(UNIVERSES.filter((u) => u.kind === 'fandom')).toHaveLength(13);
+    expect(new Set(UNIVERSES.map((u) => u.id)).size).toBe(19);
     for (const u of UNIVERSES) expect(u.place, u.id).toBeTruthy();
   });
 
@@ -32,7 +32,7 @@ describe('the universes', () => {
     expect(WORLDS.map((w) => w.to)).toEqual([
       ...['/galaxy', '/deathstar', '/deathstar/inside'],
       '/fly', // planet flight (scripts/flight-island.mjs removes this row)
-      ...['/music', '/middle-earth', '/middle-earth/road', '/cybertron', '/avengers', '/albuquerque', '/scranton', '/c-137', '/dot-matrix', '/dot-matrix/64', '/dot-matrix/minecraft', '/earth', '/caribbean', '/invincible'],
+      ...['/music', '/middle-earth', '/middle-earth/road', '/cybertron', '/avengers', '/albuquerque', '/scranton', '/c-137', '/dot-matrix', '/dot-matrix/64', '/dot-matrix/minecraft', '/earth', '/caribbean', '/invincible', '/hogwarts'],
     ]);
     expect(WORLDS[0]).toMatchObject({ to: '/galaxy', label: 'A galaxy far, far away', from: 'Star Wars' });
     expect(WORLDS[1]).toMatchObject({ to: '/deathstar', label: 'Death Star', from: 'Star Wars' });

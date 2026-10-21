@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AREAS, HOTSPOTS, LINKS, PEOPLE, ROOM_IDS, TASKS } from '../rules';
+import { AREAS, HOTSPOTS, LINKS, MORTY, PEOPLE, ROOM_IDS, TASKS } from '../rules';
 import { DEST_COL, DESTINATIONS, DIAL, GARAGE_BACK, PLANETS, destArea, destinationById, isBigPlanet, isPlanet, isWayHome, linkTarget, pageOf, planetStart, portalTarget, validArrive } from './destinations';
 
 const inside = (a, x, z, pad = 0) => x >= a.x0 + pad && x <= a.x1 - pad && z >= a.z0 + pad && z <= a.z1 - pad;
@@ -248,6 +248,81 @@ describe('a place that runs on a freeze', () => {
     expect(vat.freeze).toMatchObject({ task: 'vat', spot: 'vatrim', unlock: 'vat' });
     expect(vat.people.filter((p) => p.ai?.lookout).map((p) => p.id)).toEqual(['vgromflomite-a', 'vgromflomite-b']);
     expect(vat.collect).toBe(null);
+  });
+});
+
+describe('a place that runs on a sequence', () => {
+  it('has its sets as spots of their own, the countdown at a spot apart, and only the game ticks its task', () => {
+    const running = DESTINATIONS.filter((d) => d.sequence);
+    expect(running.map((d) => d.id)).toEqual(['cablestudio']);
+    for (const d of running) {
+      const sq = d.sequence;
+      const spots = d.hotspots.map((h) => h.id);
+      for (const id of sq.items) {
+        expect(spots, `${d.id}: ${id} has a spot`).toContain(id);
+        expect(d.say[id]?.text, `${d.id}: ${id} has a line`).toBeTruthy();
+        expect(d.acts[id]).toBe(`sequence-${id}`);
+        expect(d.hotspots.find((h) => h.id === id).verb).toBe('Switch on');
+      }
+      expect(spots).toContain(sq.start);
+      expect(sq.items).not.toContain(sq.start);
+      expect(d.acts[sq.start]).toBe('sequence-start');
+      expect(d.goal).toBe(sq.start);
+      // (a set used before the countdown says to start it, one sentence)
+      expect(sq.early).toMatch(/^[A-Z][^!]*\.$/);
+      expect(sq.early.split(/[.?]\s/)).toHaveLength(1);
+      expect(sq.need).toBeLessThanOrEqual(sq.items.length);
+      expect(d.tasks.map((t) => t.id)).toContain(sq.task);
+      expect(d.collect?.task, `${d.id}: a collect ticks the task`).not.toBe(sq.task);
+      expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(sq.task);
+      expect(Object.values(d.unlock), `${d.id}: a talk gives the achievement`).not.toContain(sq.unlock);
+      expect(sq.lost).not.toMatch(/!/);
+      expect(sq.lost).not.toContain('Rick');
+      expect(sq.lost.split(/[.?]\s/)).toHaveLength(1);
+    }
+  });
+  it('is the cable studio’s seven sets, five in a running order dealt each run, forty-five seconds from the booth', () => {
+    const studio = destinationById('cablestudio');
+    expect(studio.sequence).toMatchObject({ task: 'cablestudio', start: 'cablebooth', items: ['set-ants', 'set-legs', 'set-sneezy', 'set-field', 'set-doors', 'set-bits', 'set-shmlo'], need: 5, s: 45, who: null, unlock: 'cablestudio' });
+    expect(studio.sequence.order).toBe(undefined);
+    expect(studio.sequence.early).toBe('The studio isn’t counting down yet: start it at the control booth.');
+    expect(studio.hotspots.find((h) => h.id === 'cablebooth').verb).toBe('Start the countdown');
+    expect(studio.collect).toBe(null);
+    expect(studio.done).toEqual({});
+    expect(studio.unlock).toEqual({});
+  });
+  it('deals no running order that can’t be walked at a run in sixty per cent of the clock', () => {
+    for (const d of DESTINATIONS.filter((p) => p.sequence)) {
+      const sq = d.sequence;
+      const at = (id) => d.hotspots.find((h) => h.id === id);
+      // (straight lines from the start spot through every ordered `need` of the sets: the longest)
+      const longest = (from, left, n) => (n === 0 ? 0 : Math.max(...left.map((id) => Math.hypot(at(id).x - from.x, at(id).z - from.z) + longest(at(id), left.filter((o) => o !== id), n - 1))));
+      const far = longest(at(sq.start), sq.items, sq.need);
+      expect(far, `${d.id}: ${far.toFixed(1)} m`).toBeLessThanOrEqual(0.6 * sq.s * MORTY.run);
+    }
+  });
+});
+
+describe('a place that plays a rhythm', () => {
+  it('has its song at a spot of its own, with its line, and only the song ticks its task', () => {
+    const singing = DESTINATIONS.filter((d) => d.rhythm);
+    expect(singing.map((d) => d.id)).toEqual(['schwifty']);
+    for (const d of singing) {
+      const spot = d.hotspots.find((h) => h.id === d.rhythm.spot);
+      expect(spot, `${d.id}: ${d.rhythm.spot} is a spot`).toBeTruthy();
+      expect(d.say[spot.id]?.text, `${d.id}: its spot has a line`).toBeTruthy();
+      expect(d.goal).toBe(spot.id);
+      expect(d.tasks.map((t) => t.id)).toContain(d.rhythm.task);
+      expect(d.collect?.task, `${d.id}: a collect ticks the task`).not.toBe(d.rhythm.task);
+      expect(Object.values(d.done), `${d.id}: a talk ticks the task`).not.toContain(d.rhythm.task);
+      expect(Object.values(d.unlock), `${d.id}: a talk gives the achievement`).not.toContain(d.rhythm.unlock);
+    }
+  });
+  it('is Get Schwifty’s mic, its achievement handed over by the stage', () => {
+    const show = destinationById('schwifty');
+    expect(show.rhythm).toEqual({ task: 'schwifty', spot: 'mic', unlock: 'schwifty' });
+    expect(show.hotspots.find((h) => h.id === 'mic').verb).toBe('Get schwifty');
+    expect(show.collect).toBe(null);
   });
 });
 

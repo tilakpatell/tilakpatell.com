@@ -1,0 +1,204 @@
+/* Get Schwifty's show over the page (Schwifty.jsx): the lanes, the heads'
+   meter, the cards. It's the stage at dusk under the light towers, so its
+   colours are the show's (the towers' four lights, the sky behind the heads),
+   not the site's theme, as the cabinet's are the marquee's. Its key caps are
+   the world's (.rm-place kbd in world.css). */
+.schwifty {
+  --sch-pink: #ff6ab0;
+  --sch-yellow: #ffe24a;
+  --sch-cyan: #6ad8ff;
+  --sch-green: #9aff6a;
+  --sch-ink: #1a1a22;
+  --sch-text: #f4ecff;
+  --sch-dim: #c9bde0;
+  --sch-glass: rgba(16, 10, 30, 0.84);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  padding: max(64px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: linear-gradient(#1a1a4a, #4a3a8a 55%, #d86a4a);
+  color: var(--sch-text);
+  font-family: var(--rm-font, system-ui, sans-serif);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.schwifty-leave {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 2;
+}
+/* (a finger's 44 px on a touch screen: the small button is the only way out mid-song) */
+@media (pointer: coarse) {
+  .schwifty-leave {
+    min-height: 44px;
+  }
+}
+
+/* the stage: the heads' meter across its top, the four lanes below */
+.schwifty-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100%);
+  height: min(720px, 100%);
+  border: 6px solid var(--sch-ink);
+  border-radius: 18px;
+  background: var(--sch-glass);
+  box-shadow: 0 0 0 2px var(--sch-pink), 0 0 28px rgba(255, 106, 176, 0.35);
+  overflow: hidden;
+}
+.schwifty-hud {
+  display: grid;
+  /* (the grade's column fits its longest word on one line, so a grade never moves the lanes) */
+  grid-template-columns: auto minmax(0, 1fr) 9em;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  color: var(--sch-dim);
+}
+.schwifty-heads {
+  position: relative;
+  height: 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+.schwifty-heads-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 6px;
+  background: var(--sch-green);
+}
+.schwifty-heads[data-low] .schwifty-heads-fill {
+  background: var(--sch-pink);
+}
+.schwifty-grade {
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: right;
+  font-family: 'Luckiest Guy', var(--rm-font, system-ui, sans-serif);
+  font-size: 1rem;
+  color: var(--sch-yellow);
+}
+.schwifty-lanes {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 10px 10px;
+  min-height: 0;
+}
+.schwifty-lane {
+  --lane: var(--sch-pink);
+  position: relative;
+  min-height: 44px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--lane) 45%, transparent);
+  border-radius: 10px;
+  background: linear-gradient(rgba(255, 255, 255, 0.03), color-mix(in srgb, var(--lane) 14%, transparent));
+  color: inherit;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.schwifty-lane[data-lane='1'] {
+  --lane: var(--sch-yellow);
+}
+.schwifty-lane[data-lane='2'] {
+  --lane: var(--sch-cyan);
+}
+.schwifty-lane[data-lane='3'] {
+  --lane: var(--sch-green);
+}
+.schwifty-lane:active,
+.schwifty-lane[data-flash='great'],
+.schwifty-lane[data-flash='good'] {
+  border-color: var(--lane);
+  background: linear-gradient(rgba(255, 255, 255, 0.03), color-mix(in srgb, var(--lane) 40%, transparent));
+}
+.schwifty-lane[data-flash='miss'],
+.schwifty-lane[data-flash='whiff'] {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+/* the line the notes are hit on, 36 px above a lane's foot */
+.schwifty-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 34px;
+  height: 4px;
+  background: var(--lane);
+  box-shadow: 0 0 12px var(--lane);
+  pointer-events: none;
+}
+.schwifty-note {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  height: 24px;
+  border: 3px solid var(--sch-ink);
+  border-radius: 12px;
+  background: var(--lane);
+  pointer-events: none;
+}
+
+/* the cards: the heads' call, a pause, the verdict */
+.schwifty-card {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--sch-glass);
+  text-align: center;
+}
+.schwifty-card > div {
+  max-width: 440px;
+}
+.schwifty-card h2 {
+  margin: 0 0 8px;
+  font-family: 'Luckiest Guy', var(--rm-font, system-ui, sans-serif);
+  font-weight: 400;
+  font-size: clamp(28px, 6vw, 44px);
+  letter-spacing: 1px;
+  color: var(--sch-pink);
+  text-shadow: 3px 3px 0 var(--sch-ink);
+}
+.schwifty-card p {
+  margin: 0 0 14px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--sch-text);
+}
+.schwifty-card .schwifty-shout {
+  font-family: 'Luckiest Guy', var(--rm-font, system-ui, sans-serif);
+  font-size: 1.3rem;
+  letter-spacing: 1px;
+  color: var(--sch-yellow);
+}
+.schwifty-card h2.schwifty-shout {
+  font-size: clamp(24px, 5vw, 36px);
+}
+.schwifty-card .schwifty-keys {
+  font-size: 0.8rem;
+  color: var(--sch-dim);
+}
+.schwifty-card .btn + .btn {
+  margin-left: 8px;
+}
+@media (max-width: 640px) {
+  .schwifty-hud {
+    font-size: 0.72rem;
+  }
+}
+/* (an end card that has only just come up: a tap meant for a lane lands on nothing) */
+.schwifty-card[data-settling] {
+  pointer-events: none;
+}

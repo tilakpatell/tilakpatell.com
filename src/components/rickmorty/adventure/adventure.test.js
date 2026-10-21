@@ -144,9 +144,13 @@ describe('the adventure’s store', () => {
     expect(a.dialOpen('gloopynoops')).toBe(true);
     expect(a.dialOpen('cablestudio')).toBe(false); // (episode 7 is built too)
     a.jump(7);
-    expect(a.dialOpen('cablestudio')).toBe(true); // (past the last ready episode)
+    expect(a.dialOpen('cablestudio')).toBe(true);
+    expect(a.dialOpen('schwifty')).toBe(true);
+    expect(a.dialOpen('fantasy')).toBe(false); // (episode 8 is built too)
+    a.jump(8);
+    expect(a.dialOpen('fantasy')).toBe(true); // (past the last ready episode)
     a.jump(99);
-    expect(a.get().episode).toBe(7);
+    expect(a.get().episode).toBe(8);
     a.reset();
     expect(a.get()).toEqual(fresh());
   });
@@ -164,7 +168,7 @@ describe('the adventure’s store', () => {
     // part-way through one, past the built ones, or on free roam: none
     at({ episode: 1, step: 1 });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
-    at({ episode: 7, step: 0 });
+    at({ episode: 8, step: 0 });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
     at({ episode: 1, step: 0, freeRoam: true });
     expect(createAdventure({ saves, read: none }).intro()).toBe(null);
@@ -272,10 +276,32 @@ describe('the adventure’s store', () => {
     const visited = createAdventure({ saves, read: knowing(['gloopynoops']) });
     expect(visited.get()).toMatchObject({ episode: 6, step: 0 });
     expect(visited.intro()).toBe(6);
-    // both: episode 7 finishes as the visit loads, with no card (episode 8 isn't built)
+    // both: episode 7 finishes as the visit loads
     at({ episode: 6, step: 0 });
     const both = createAdventure({ saves, read: knowing(['jerryboree', 'gloopynoops']) });
     expect(both.get()).toMatchObject({ episode: 7, step: 0 });
+    expect(both.intro()).toBe(7); // (episode 8's card: it's built now)
+  });
+
+  it('opens episode 8 for a visitor who finished episode 7 before it was built', () => {
+    const at = (data) => store.setItem(STORY_KEY, JSON.stringify({ v: 1, data: { ...fresh(), ...data } }));
+    const knowing = (tasks) => ({ tasks: () => tasks, citadel: () => [] });
+    at({ episode: 7, step: 0 });
+    expect(createAdventure({ saves, read: none }).intro()).toBe(7);
+    // the cable studio done already: caught up to Get Schwifty, still episode 8's card
+    at({ episode: 7, step: 0 });
+    const aired = createAdventure({ saves, read: knowing(['cablestudio']) });
+    expect(aired.get()).toMatchObject({ episode: 7, step: 1 });
+    expect(aired.intro()).toBe(7);
+    // Get Schwifty done already, the cable studio not: it waits at the cable studio, with episode 8's card
+    at({ episode: 7, step: 0 });
+    const sung = createAdventure({ saves, read: knowing(['schwifty']) });
+    expect(sung.get()).toMatchObject({ episode: 7, step: 0 });
+    expect(sung.intro()).toBe(7);
+    // both: episode 8 finishes as the visit loads, with no card (episode 9 isn't built)
+    at({ episode: 7, step: 0 });
+    const both = createAdventure({ saves, read: knowing(['cablestudio', 'schwifty']) });
+    expect(both.get()).toMatchObject({ episode: 8, step: 0 });
     expect(both.intro()).toBe(null);
   });
 });

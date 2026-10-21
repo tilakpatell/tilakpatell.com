@@ -128,7 +128,6 @@ const GLSL_CONST = `
   #define SCZ ${SUBURB.cz.toFixed(1)}
   #define SST ${SUBURB.street.toFixed(1)}
   #define WHALF ${WORLD.half.toFixed(1)}
-  #define WATERY ${WATER_Y.toFixed(2)}
   #define FARNEAR ${FAR.near.toFixed(1)}
   #define FARFAR ${FAR.far.toFixed(1)}
   #define FARWIDE ${FAR.wide.toFixed(2)}
@@ -157,6 +156,8 @@ function landMaterial(kinds, subs, uniforms) {
         `#include <common>
         ${GLSL_CONST}
         uniform float uNight;
+        uniform float uWater;
+        uniform vec3 uTint;
         uniform sampler2D uKinds, uSub, uNoise;
         uniform vec4 uKindsBox, uSubBox;
         varying vec3 vW;
@@ -208,7 +209,7 @@ function landMaterial(kinds, subs, uniforms) {
           rough = mix(0.95, 0.5, smoothstep(0.45, 0.7, t));
           // the waterline: the pixel of sand just above the sea, surf white
           // (lit as well, as the sand round it is as bright: FAR)
-          float above = (vW.y - WATERY) / wpx;
+          float above = (vW.y - uWater) / wpx;
           shore = step(0.0, above) * (1.0 - smoothstep(1.0, 2.0, above)) * smoothstep(EDGEFROM.x, EDGEFROM.y, camD);
           col = mix(col, vec3(0.95, 0.97, 1.0), shore);
         } else if (p.x > RX0 - 15.0 && p.x < RX1 + 15.0 && p.y > CZ0 - 120.0) {
@@ -345,6 +346,7 @@ function landMaterial(kinds, subs, uniforms) {
       .replace(
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
+        diffuseColor.rgb *= uTint;
         totalEmissiveRadiance += vec3(1.0, 0.72, 0.42) * landLamp * uNight * 0.16;
         totalEmissiveRadiance += EDGEC * landShore * mix(EDGEDAY, EDGENIGHT, uNight);`,
       );
@@ -360,10 +362,11 @@ function waterMaterial(uniforms) {
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uTime = uniforms.uTime;
     sh.uniforms.uNight = uniforms.uNight;
+    sh.uniforms.uWater = uniforms.uWater;
     sh.uniforms.uNoise = { value: noiseTexture() };
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vW;').replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', `#include <common>\n${GLSL_CONST}\nuniform float uTime;\nuniform float uNight;\nuniform sampler2D uNoise;\nvarying vec3 vW;`)
+      .replace('#include <common>', `#include <common>\n${GLSL_CONST}\nuniform float uTime;\nuniform float uNight;\nuniform float uWater;\nuniform sampler2D uNoise;\nvarying vec3 vW;`)
       .replace(
         '#include <normal_fragment_maps>',
         `#include <normal_fragment_maps>
@@ -399,7 +402,7 @@ function waterMaterial(uniforms) {
 export function buildGround(world, { small = false } = {}) {
   const group = new THREE.Group();
   group.name = 'ground';
-  const uniforms = { uNight: { value: 0 }, uTime: { value: 0 } };
+  const uniforms = { uNight: { value: 0 }, uTime: { value: 0 }, uWater: { value: WATER_Y }, uTint: { value: new THREE.Vector3(1, 1, 1) } };
 
   // the land: a disc of rings round the city, 45 m apart over the world and
   // further apart beyond it, out to 40 km (the mountains round the basin,
@@ -454,6 +457,13 @@ export function buildGround(world, { small = false } = {}) {
     uniforms,
     setNight(k) {
       uniforms.uNight.value = k;
+    },
+    // a dimension's water level and palette (./dimensions.js)
+    setDimension({ water = WATER_Y, tint = null } = {}) {
+      uniforms.uWater.value = water;
+      sea.position.y = water;
+      river.position.y = water;
+      uniforms.uTint.value.set(...(tint ?? [1, 1, 1]));
     },
     update(t) {
       uniforms.uTime.value = t;

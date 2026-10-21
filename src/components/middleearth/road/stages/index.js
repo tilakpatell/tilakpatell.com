@@ -51,6 +51,13 @@ export const STAGES = [
         { at: [0, 118], r: 22, edge: 14 },
       ],
       spec: { seed: 13, relief: [{ type: 'swell', scale: 220, height: 5 }, { type: 'hills', scale: 80, height: 6, gain: 0.4, octaves: 3 }, { type: 'island', at: [-140, 90], r: 110, height: 38 }] },
+      // (the town's streets and yards: no grass standing up through the cobbles; the fields
+      // before the gate and Bree-hill keep theirs)
+      bare: [
+        { at: [0, 40], r: 15 },
+        { at: [0, 80], r: 15 },
+        { at: [0, 118], r: 15 },
+      ],
     },
   },
   {
@@ -81,6 +88,8 @@ export const STAGES = [
         { points: [[-540, 0, 60], [-200, 0, 54], [0, 0, 52], [220, 0, 49], [540, 0, 44]], depth: 3.2, width: 9, bank: 4 },
         { points: [[-540, 0, 160], [-240, 0, 166], [0, 0, 168], [260, 0, 171], [540, 0, 164]], depth: 1.1, width: 16, bank: 5 },
       ],
+      // (nothing planted in the trolls' clearing, ford/index.js's CLEARING)
+      clear: [{ at: [9.5, 40], r: 8 }],
     },
   },
   {

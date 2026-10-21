@@ -4,7 +4,8 @@
 // up (soil.js), its grass standing round you (blades.js), under the
 // house’s look.
 //
-//   createGround(land, { house, tier, soil, own, mounds, wind, paint, from, to }) → { mesh, groundMap, blades, update(x, z), dispose }
+//   createGround(land, { house, tier, soil, own, mounds, wind, paint, track, from, to }) → { mesh, groundMap, blades, track, update(x, z), dispose }
+//     track: the stage's road underfoot (stages/tracks.js), laid by track.js
 //     own: the stage’s `ground.paint`, over its soil’s colours
 //     mounds: the stage’s `ground.mounds` (the Hill at Hobbiton): their
 //       blades grow over them too, from a small map of their own
@@ -31,6 +32,7 @@ import { noise2 } from '../../../lib/land/layers.js';
 import { run } from './terrain';
 import { soilHook } from './soil';
 import { createBlades } from './blades';
+import { trackJob } from './track';
 import { boundsOf, distanceTo } from '../../../lib/land/paths.js';
 
 export const NEAR = 60; // m either side of the road
@@ -41,8 +43,10 @@ const COARSE = 2; // the far grid takes every other sample
 // stage’s own (its `ground.paint`) gives its greens and its dirt as hex over
 // the soil’s, and may lay snow over the land above a height: `snow: [foot,
 // top]`, none under the foot, whole over the top, the line wandering with the
-// noise, trodden grey on the road. `out` takes the linear colour; the return
-// is the grass, 0…1 (none on rock, road or snow).
+// noise, trodden grey on the road. Its paved places (the land's `bare`
+// circles, a town's streets and yards) are its dirt with no grass. `out`
+// takes the linear colour; the return is the grass, 0…1 (none on rock,
+// road, paving or snow).
 const C = (hex) => new THREE.Color(hex).toArray();
 const GRASS = C(0x5c8f3a);
 const DEEP = C(0x3d6e2b);
@@ -53,7 +57,9 @@ const SNOW = C(0xf4f4f2);
 const TRODDEN = C(0xb8bec8);
 const BARE = C(0x5e6068); // (the rock through the snow)
 const linear = (c) => (typeof c === 'number' ? C(c) : c);
-export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT, rock = ROCK, snow = null } = {}) {
+const BARE_EDGE = 3; // m a stage's paved places ease into its grass over
+const WORN = 2.8; // m off the road's middle its dirt reaches, where a stage has no track
+export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT, rock = ROCK, snow = null, wear = null } = {}) {
   greens = greens.map(linear);
   dirt = linear(dirt);
   rock = linear(rock);
@@ -79,6 +85,15 @@ export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT, rock 
     o[2] = a[2] + (b[2] - a[2]) * t;
   };
   const white = [0, 0, 0];
+  const bare = land.bare ?? [];
+  const bareAt = (x, z) => {
+    let k = 0;
+    for (const b of bare) {
+      const f = Math.hypot(x - b.at[0], z - b.at[1]);
+      if (f < b.r + BARE_EDGE) k = Math.max(k, Math.min(1, (b.r + BARE_EDGE - f) / BARE_EDGE));
+    }
+    return k;
+  };
   return (x, z, out) => {
     const h = land.heightAt(x, z);
     const n = noise2(x / 37, z / 37, 3) * 0.5 + noise2(x / 9, z / 9, 5) * 0.25;
@@ -91,8 +106,16 @@ export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT, rock 
     const steep = Math.min(1, Math.max(0, (Math.hypot(sx, sz) / 2 - 0.55 + noise2(x / 7, z / 7, 4) * 0.2) / 0.35));
     if (steep > 0) mix(out, out, rock, steep);
     let grass = 1 - steep;
+    // (a paved place, a town's streets and yards: its dirt, and no grass, its edge eased over BARE_EDGE)
+    const paved = bareAt(x, z);
+    if (paved) {
+      mix(out, out, dirt, paved);
+      grass *= 1 - paved;
+    }
     const d = dAt(x, z);
-    const worn = d < 2.8 ? Math.min(1, (2.8 - d) / 1.2) * (0.85 + noise2(x / 3, z / 3, 9) * 0.15) : 0;
+    // (worn WORN wide, eased over a metre and a fifth; a stage with a track (track.js) only
+    // as wide as it, eased over half a metre inside its edge, so the verge's grass comes up to it)
+    const worn = wear ? (d < wear ? Math.min(1, (wear - d) / 0.5) : 0) : d < WORN ? Math.min(1, (WORN - d) / 1.2) * (0.85 + noise2(x / 3, z / 3, 9) * 0.15) : 0;
     if (worn) {
       mix(out, out, dirt, worn);
       grass = Math.min(grass, 1 - worn);
@@ -280,11 +303,13 @@ function moundBlades(land, mounds, colour, { wind, soil, tier }) {
   };
 }
 
-export function* groundJob(land, { house = null, tier = 'high', soil = null, own = null, mounds = null, wind = null, paint = null, from, to } = {}) {
+export function* groundJob(land, { house = null, tier = 'high', soil = null, own = null, mounds = null, wind = null, paint = null, track = null, from, to } = {}) {
   const geometry = yield* geometryJob(land, { tier, from, to });
   const area = { x0: land.x0, z0: land.z0, w: land.w, d: land.d };
   const size = tier === 'low' ? 512 : 1024;
-  const colours = { ...(soil ? { greens: soil.greens, dirt: soil.dirt, rock: soil.rock } : {}), ...(own ?? {}) };
+  // (the road laid as a ribbon where the stage has a track, and the paint worn only under it)
+  const laid = yield* trackJob(land, track, { house, soil, tier });
+  const colours = { ...(soil ? { greens: soil.greens, dirt: soil.dirt, rock: soil.rock } : {}), ...(own ?? {}), ...(laid ? { wear: track.width / 2 + 0.25 } : {}) };
   const painted = yield* paintJob(area, size, paint ?? paintFor(land, colours));
   // (heights only where blades will stand on them)
   const grows = Boolean(wind && soil?.blades > 0 && tier !== 'low');
@@ -321,6 +346,7 @@ export function* groundJob(land, { house = null, tier = 'high', soil = null, own
     mesh,
     groundMap,
     blades,
+    track: laid,
     update(x, z) {
       blades?.update(x, z);
     },
@@ -329,6 +355,7 @@ export function* groundJob(land, { house = null, tier = 'high', soil = null, own
       material.dispose();
       if (raw !== material) raw.dispose();
       blades?.dispose();
+      laid?.dispose();
       groundMap.dispose();
     },
   };

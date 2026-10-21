@@ -43,8 +43,25 @@ export const FLY = {
   R: 0.45, // how wide he is, from his middle
   H: 1.8, // how tall
   step: 0.6, // what he steps up onto on foot
+  turn: 1, // how quickly his flight comes round (a multiplier on the swing)
 };
 const STEP = 1 / 120;
+// The numbers a step reads: FLY's, or FLY's scaled by a hero's multipliers
+// (./heroes.js: { top: 1.6, … }), set by stepHero from its argument for the
+// step and its slices, never kept between calls. A scaled table is made once
+// per multiplier object.
+let F = FLY;
+const scaled = new WeakMap();
+export function flyWith(mult) {
+  if (!mult || !Object.keys(mult).length) return FLY;
+  let f = scaled.get(mult);
+  if (!f) {
+    f = { ...FLY };
+    for (const k of Object.keys(mult)) if (k in FLY) f[k] = FLY[k] * mult[k];
+    scaled.set(mult, f);
+  }
+  return f;
+}
 
 // The jump’s press (lib/press.js): pressed up to `buffer` before he can go
 // (still in the air, or getting up from a slam) it goes when he can; up to
@@ -84,9 +101,11 @@ export function newHero({ x, y, z, face = 0 }) {
 // water (`water` true), a roof or a bridge.
 const scratch = [];
 export function surfaceAt(world, x, z, below) {
-  const g = groundAt(x, z);
-  let y = Math.max(g, WATER_Y);
-  let water = g < WATER_Y;
+  // (a dimension's world: its own water level, and the land reflected with the map)
+  const g = groundAt(world?.mirror ? -x : x, z);
+  const wy = world?.water ?? WATER_Y;
+  let y = Math.max(g, wy);
+  let water = g < wy;
   for (const b of near(world, x, z, 0, scratch)) {
     if (x < b.x0 || x > b.x1 || z < b.z0 || z > b.z1 || b.y1 > below || b.y1 < y) continue;
     y = b.y1;
@@ -166,7 +185,7 @@ function collide(h, prev, world) {
     h.p[2] += n[2] * depth;
     const into = -(h.v[0] * n[0] + h.v[2] * n[2]);
     if (into > 0) {
-      if (!hit || into > hit.into) hit = { n, into, at: [h.p[0], h.p[1] + H / 2, h.p[2]] };
+      if (!hit || into > hit.into) hit = { n, into, at: [h.p[0], h.p[1] + H / 2, h.p[2]], box: b };
       h.v[0] += n[0] * into;
       h.v[2] += n[2] * into;
     }
@@ -184,11 +203,11 @@ function stepAir(h, input, dt, world) {
     S = 0;
   } else if (input.boost) {
     D = m > 0.05 ? [mx / m, my / m, mz / m] : f;
-    S = FLY.top;
+    S = F.top;
   } else if (m > 0.05) {
     D = [mx / m, my / m, mz / m];
     const flat = Math.hypot(mx, mz);
-    S = flat < 0.05 ? (my > 0 ? FLY.climb : FLY.descend) * Math.min(1, m) : FLY.cruise * Math.min(1, m);
+    S = flat < 0.05 ? (my > 0 ? F.climb : F.descend) * Math.min(1, m) : F.cruise * Math.min(1, m);
   }
   // just off the ground: the jump carries him up before he settles into a hover
   if (h.lift > 0) {
@@ -197,16 +216,16 @@ function stepAir(h, input, dt, world) {
   }
   // the direction swings round, slower the faster he's going; from a hover, at once
   if (h.spd < 2) h.dir = [D[0], D[1], D[2]];
-  else if (S > 0) h.dir = turn(h.dir, D, (4 - 2.6 * Math.min(1, h.spd / FLY.top)) * dt);
-  if (h.spd < S) h.spd = Math.min(S, h.spd + (input.boost ? FLY.boostAccel : FLY.accel) * dt);
-  else h.spd = Math.max(S, h.spd - (S === 0 ? FLY.stop : FLY.brake) * dt);
+  else if (S > 0) h.dir = turn(h.dir, D, (4 - 2.6 * Math.min(1, h.spd / F.top)) * F.turn * dt);
+  if (h.spd < S) h.spd = Math.min(S, h.spd + (input.boost ? F.boostAccel : F.accel) * dt);
+  else h.spd = Math.max(S, h.spd - (S === 0 ? F.stop : F.brake) * dt);
   h.v = [h.dir[0] * h.spd, h.dir[1] * h.spd, h.dir[2] * h.spd];
 
   // the sound barrier
-  if (!h.boomed && h.spd > FLY.barrier) {
+  if (!h.boomed && h.spd > F.barrier) {
     h.boomed = true;
     h.ev.push({ type: 'boom', at: [...h.p], dir: [...h.dir] });
-  } else if (h.boomed && h.spd < FLY.rearm) h.boomed = false;
+  } else if (h.boomed && h.spd < F.rearm) h.boomed = false;
 
   const prev = [...h.p];
   h.p[0] += h.v[0] * dt;
@@ -214,11 +233,12 @@ function stepAir(h, input, dt, world) {
   h.p[2] += h.v[2] * dt;
   const hit = collide(h, prev, world);
   if (hit) {
-    if (hit.into > FLY.impact && h.stun <= 0) {
+    if (hit.into > F.impact && h.stun <= 0) {
       // a crash: thrown back off it (what was along the wall half gone), and a moment to get his bearings
-      for (const a of [0, 1, 2]) h.v[a] = h.v[a] * 0.5 + hit.n[a] * hit.into * FLY.bounce;
-      h.stun = FLY.stun;
-      h.ev.push({ type: 'impact', speed: hit.into, at: hit.at, n: hit.n });
+      for (const a of [0, 1, 2]) h.v[a] = h.v[a] * 0.5 + hit.n[a] * hit.into * F.bounce;
+      h.stun = F.stun;
+      // (whose wall: a tower's building id or a house's index, for ./demolish.js)
+      h.ev.push({ type: 'impact', speed: hit.into, at: hit.at, n: hit.n, building: hit.box.building ?? null, house: hit.box.house ?? null });
     }
     h.spd = len(h.v[0], h.v[1], h.v[2]);
     if (h.spd > 1e-6) h.dir = [h.v[0] / h.spd, h.v[1] / h.spd, h.v[2] / h.spd];
@@ -230,8 +250,8 @@ function stepAir(h, input, dt, world) {
     h.p[1] = s.y;
     const down = -h.v[1];
     const flat = Math.hypot(h.v[0], h.v[2]);
-    const hard = down > FLY.slam;
-    const soft = !hard && flat < FLY.skim && (down > 0.5 || (input.down ?? 0) > 0);
+    const hard = down > F.slam;
+    const soft = !hard && flat < F.skim && (down > 0.5 || (input.down ?? 0) > 0);
     if (s.water && (hard || soft)) {
       // the splash only on the way down onto it; once he's at its surface,
       // holding down or a boost into it just goes nowhere (no splash every step)
@@ -270,9 +290,18 @@ function splash(h) {
 function land(h, type) {
   h.ev.push({ type, at: [...h.p], speed: h.spd });
   h.mode = 'ground';
-  h.crouch = type === 'slam' ? FLY.crouch : 0;
+  h.crouch = type === 'slam' ? F.crouch : 0;
   h.spd = 0;
   h.v = [0, 0, 0];
+}
+
+// Hit, and sent flying: a projectile at `speed` along `dir` with no say in
+// it for `hold` seconds (episode 8's first blow, ./missions.js); the walls
+// and the water stop him as they do, and the hit's events say what he hit.
+export function launch(hero, dir, speed, hold = 1.2) {
+  const l = Math.hypot(dir[0], dir[1], dir[2]) || 1;
+  const d = [dir[0] / l, dir[1] / l, dir[2] / l];
+  return { ...hero, mode: 'air', crouch: 0, lift: 0, dir: d, spd: speed, v: [d[0] * speed, d[1] * speed, d[2] * speed], launched: hold, stun: 0 };
 }
 
 // up off the ground (or the water, or out of a fall off an edge just now)
@@ -281,8 +310,8 @@ function takeoff(h, input) {
   const m = Math.hypot(mx, mz);
   h.mode = 'air';
   h.dir = m > 0.05 ? norm([mx / m, 1.6, mz / m]) : [0, 1, 0];
-  h.spd = FLY.takeoff;
-  h.lift = FLY.lift;
+  h.spd = F.takeoff;
+  h.lift = F.lift;
   h.v = [h.dir[0] * h.spd, h.dir[1] * h.spd, h.dir[2] * h.spd];
   h.ev.push({ type: 'takeoff', at: [...h.p] });
   h.p[1] += 0.05;
@@ -306,7 +335,7 @@ function stepGround(h, input, dt, world, press) {
   }
   const [mx, , mz] = wish(input, false);
   const m = Math.min(1, Math.hypot(mx, mz));
-  const top = input.run || input.boost ? FLY.run : FLY.walk;
+  const top = input.run || input.boost ? F.run : F.walk;
   const want = m > 0.05 ? [(mx / Math.hypot(mx, mz)) * top * m, (mz / Math.hypot(mx, mz)) * top * m] : [0, 0];
   const k = 1 - Math.exp(-12 * dt);
   h.v[0] += (want[0] - h.v[0]) * k;
@@ -316,12 +345,12 @@ function stepGround(h, input, dt, world, press) {
   h.p[0] += h.v[0] * dt;
   h.p[2] += h.v[2] * dt;
   // (lifted a step's height for the walls, so a kerb or a low roof's edge is stepped onto)
-  h.p[1] += FLY.step;
-  prev[1] += FLY.step;
+  h.p[1] += F.step;
+  prev[1] += F.step;
   collide(h, prev, world);
-  h.p[1] -= FLY.step;
-  const s = surfaceAt(world, h.p[0], h.p[2], h.p[1] + FLY.step);
-  if (s.water || s.y < h.p[1] - FLY.step) {
+  h.p[1] -= F.step;
+  const s = surfaceAt(world, h.p[0], h.p[2], h.p[1] + F.step);
+  if (s.water || s.y < h.p[1] - F.step) {
     // off the edge (or out over the water): he doesn't fall, he flies
     h.mode = 'air';
     h.spd = Math.hypot(h.v[0], h.v[2]);
@@ -335,12 +364,19 @@ function norm(v) {
   return [v[0] / l, v[1] / l, v[2] / l];
 }
 
-// One step of `dt` seconds (any length: it's taken in slices of 1/120 s).
-export function stepHero(hero, input, dt, world) {
+// One step of `dt` seconds (any length: it's taken in slices of 1/120 s);
+// `mult`: a hero's multipliers on FLY (./heroes.js), or none for Mark's.
+export function stepHero(hero, input, dt, world, mult = null) {
+  F = flyWith(mult);
   const h = { ...hero, p: [...hero.p], v: [...hero.v], dir: [...hero.dir], ev: [] };
   const n = Math.max(1, Math.ceil(dt / STEP - 1e-9));
   const sub = dt / n;
   const press = pressOf(input);
+  // launched (launch): no say in it while it lasts: the keys read as nothing held
+  if (h.launched > 0) {
+    h.launched = Math.max(0, h.launched - dt);
+    input = { ...input, fwd: 0, side: 0, up: 0, down: 0, boost: false, run: false, jump: false, free: false, press: null };
+  }
   // R: off the water, as if from the ground (else he hangs there until up or forward)
   if (input.free && onWater(h, world)) takeoff(h, input);
   for (let i = 0; i < n; i++) {

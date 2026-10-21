@@ -470,3 +470,56 @@ The plain before the Mountain was bare dark ground near the road (`look-gorgorot
 - `gorgoroth-plain-column-desktop.webp`: walking beside the column, boulders and fangs either side, a camp's fire far off.
 - `gorgoroth-plain-cracks-desktop.webp`: at 51 m, before the Eye's beam, the cracks round the two.
 
+## Shelob's Lair, and Carry on (2026-10-21)
+
+- **The Lair** was big flat grey facets (`cirith-ungol-built-desktop.webp`). Now:
+  - It is the Cirith Ungol chapter's own black rock, tiled a metre and a half over the arch and along it, and darker.
+  - It is lumpier, with a third octave for the knobs and drips, and finer on high (24 round, a row every 1.5 m).
+  - It has 30 webs on high, every third one slung across the roof's corner overhead, and thicker the deeper in.
+  - `cirith-ungol-lair-desktop.webp` shows it at 70 m, the Phial ahead, the webs on the walls and the roof.
+- **Carry on** (the resume card) picks the ride up a few metres before a moment it was left inside, so the moment plays again rather than the camera holding on what's over (`carry.js`, its test and the module's).
+
+## A walk through every stage, and what it found (2026-10-21)
+
+Twelve stages were pictured mid-walk afresh (`lab/road/shots.mjs`), and four things fixed from them:
+
+- **Caradhras' snow**: a piece of the far range stood over the white in the blizzard, its foot taken by the fog and its top not. `backdrop.js`'s new `thickness(density)` lets a storm's fog take the ranges and landmarks with it: none in any stage's own air, all in Caradhras' snow (`backdrop.test.js` holds it to every stage's light and both storms). `caradhras-storm-before-desktop.webp`, `caradhras-storm-desktop.webp`.
+- **Bree's streets**: the blade grass stood up through the cobbles, black spikes under the lamps. A stage's ground may now name `bare` places (its paved ones: the paint is its dirt and grows no grass, easing back over 3 m), and Bree's town is three; the fields before the gate keep their grass. `bree-street-before-desktop.webp`, `bree-street-desktop.webp`.
+- **Moria's stair**: going down it Gandalf is 16 m ahead and 11 m under them, and the staff's light stops short of the ones behind; they were nothing. A faint cold light over Frodo, the staff's off the walls, makes them dim shapes. `moria-stair-before-desktop.webp`, `moria-stair-desktop.webp`.
+- **The rivers**: two regular swells seen at a slant flipped the water between the sky and the deep in white stripes (Rivendell, the Ford, the Anduin). The swell is lower (0.05 m, from 0.08), calmed off into the distance from 6 m, and running water gives back at most 0.7 of the sky. `rivendell-river-before-desktop.webp`, `rivendell-river-desktop.webp`.
+
+## Henneth Annûn's fall (2026-10-21)
+
+From behind the fall, at Faramir's window, the fall read as a pale fog: three broad bands falling down a sheet. It is now threads of water, in two layers (360 and 140 across its 8 m, a few centimetres each with the camera a metre and a half off), each thread at its own pace and phase. They are thinner between, so the light beyond shows through, with white foam at its foot. `ithilien-henneth-before-desktop.webp`, `ithilien-henneth-desktop.webp` (walked into, 3 s in).
+
+## The grain on WebGPU (2026-10-21)
+
+The owner's backend is WebGPU, and every picture here till now was the node renderer on WebGL 2. The lab draws on WebGPU now (`GPU=webgpu`, `lab/road/common.mjs`), and `lab/road/probe-grain.mjs` measures the flicker: six frames of Hobbiton at 40 m on high, the walk stopped, each pixel's change from frame to frame.
+
+| WebGPU, high | mean | pixels over 6 | the sky and hills |
+| --- | --- | --- | --- |
+| TRAA (before) | 1.19 | 4.21% | 0.32 |
+| none | 0.60 | 1.99% | 0.01 |
+| SMAA (after) | 0.68 | 2.30% | 0.01 |
+
+Under TRAA every edge crawled: the hills and the trees against the sky, Bag End's roof and its fence (`grain-hobbiton-traa-webgpu.webp`). A view of the velocity buffer showed why the grass did. The hills read still, but the wind's blades were moving fast every frame, so TRAA took them nearly whole, jitter and all. High and ultra end in SMAA now, as they did on WebGL 2. What still changes is what moves: Frodo, and the grass in the wind (`grain-hobbiton-smaa-webgpu.webp`; the frame, `hobbiton-smaa-webgpu.webp`).
+
+## A road underfoot, grass in blades, the kit's trees (2026-10-21)
+
+Toward the owner's "focus more on the foliage and look of the world … making the roads better. Adding texture".
+
+- **The road**: it was the ground map's paint, a metre a texel, so a soft brown band. `track.js` lays a ribbon down it, shaded in the road's own frame, with a row for each of twelve stages (`stages/tracks.js`):
+  - The Shire's lanes have two wheel ruts and the grass down the crown.
+  - The wild's paths have one trodden line, packed pale.
+  - All have stones with the shade at their foot, an edge broken into the verge, and water in Bree's ruts.
+  - The first version drew nothing: wound face down, it was culled from every camera, as Gorgoroth's cracks were. `track.test.js` holds every triangle face up.
+  - Pictures:
+    - Hobbiton at 60 m, before and after: `road-lane-before-desktop.webp`, `road-lane-desktop.webp`. The kit's oaks and the verge's tufts are in the after too.
+    - Its lane at eye height: `road-lane-eye-desktop.webp`, from `lab/road/probe-look.mjs`, which holds the camera over a road's middle.
+    - The Shire's edge: `road-lane-field-desktop.webp`.
+- **The grass**: one broad triangle a blade, spread evenly, was a carpet of green cones at every verge. Each is now a curved blade tapering to its tip, four to a tuft, leaning its own way, a tip yellow here and there (grassNodes' `shape: 'blade'`, `tufts`).
+- **The trees**: the chapters' round ones by the lane are the nature kit's leafy ones, where they stood: Hobbiton's twelve oaks, Rivendell's fourteen birches and the Ford's thirty. The older pack's birches, balls of yellow on a stick, are the kit's `Birch_1` to `Birch_5` everywhere. Rivendell from its bridge, before and after: `rivendell-birches-before-desktop.webp`, `rivendell-birches-desktop.webp`.
+- **The verges**: nothing grew nearer a road's middle than 6 m. A row may line the road now (`verge`), so the Shire's lanes have long tufts, flowers, clover and stones by them, the wild's paths heath and stones, Lothlórien elanor, Ithilien its herbs.
+- **The White City and the Mountain** wear the site's photo scans, as their chapters dress them. The Road built both undressed. The city from the Pelennor, before and after: `minas-tirith-dressed-before-desktop.webp`, `minas-tirith-dressed-desktop.webp`. Its road has its own darker earth (a track row's `dirt`): in the Pelennor's pale soil it read as sand.
+- **The far ground**: the photo scans end at 80 m, from 120. A two-metre scan's repeat showed as a lattice on Weathertop's hill at dusk.
+

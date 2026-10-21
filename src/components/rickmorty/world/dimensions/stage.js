@@ -10,12 +10,12 @@
 //
 // stage(kit, id, opts) → { R, d, A, cx, cz, P(dx, dz) (a spot in the world
 // from the place's middle), figure(kind, at), people(), done(light, update),
-// hunt(on), calm(), power({ glow }), freeze({ splash }) } (and the NPC behaviour below: anyone
+// hunt(on), calm(), power({ glow }), freeze({ splash }), sequence({ lamps }) } (and the NPC behaviour below: anyone
 // placed with `ai`; and a place run on power, below; whichever game a place
 // runs, its `meter` action is the HUD's readout of it: ../games/meter.js)
 
 import * as THREE from 'three';
-import { makeSky } from '../sky';
+import { STREET_SKY, makeSky } from '../sky';
 import { BOX, ceilings, makeRoom, tiledPaint, wallLine } from '../interiors/shell';
 import { at, speckle } from '../kit';
 import { RIGGED } from '../../portal/meshyCast';
@@ -27,6 +27,12 @@ import { TUNING as POWER, newPower, powerNews, powerReadout, stepPower } from '.
 import { curse, dealNews, dealReadout, newDeal, stepDeal } from '../games/deal';
 import { freezeEyes, freezeNews, freezeReadout, jumpSplashes, moving, newFreeze, stepFreeze } from '../games/freeze';
 import { findNews, findReadout, newFind, pickOurs, stepFind } from '../games/find';
+import { litSets, newSequence, runningOrder, sequenceNews, sequenceReadout, stepSequence } from '../games/sequence';
+import { newCheer, stepCheer } from '../games/cheer';
+import { TRIS, WORLDS } from './worlds';
+import { BLOCKS } from './blocks';
+import { outskirtsOf } from './outskirts';
+import { groundSize, roomFog, surround, wallOpenings, watchOf } from './surround';
 
 // a speckled paint for a floor or the ground
 export const specks = (base, specks, seed = 7, n = 1600, size = 2) => (g, w, h) => speckle(g, w, h, { base, specks, n, size, seed });
@@ -38,14 +44,22 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   const { x: cx, z: cz } = d.centre;
   const P = (dx, dz) => [cx + dx, cz + dz];
   let sky = null;
+  // the world round it (./worlds.js): what stands round it, who's about
+  const world = WORLDS[id] ?? null;
+  let groundOut = null; // (with a world, the ground's laid once its reach is known: at done())
 
   if (d.kind === 'outdoor') {
     sky = makeSky(560, d.sky);
     R.group.add(sky.dome);
     R.noInk.push(sky.dome);
-    // the ground, out well past the box to the horizon's fog
+    // the ground, out well past the box to the horizon's fog (and past the fog, with a world round it)
     const mat = tiledPaint(kit.mats, `c137-${id}-ground`, 256, groundTile, ground ?? specks('#7a9a52', ['#6a8a46', '#8aaa5e']), { color: 0xffffff });
-    R.tiled.add(BOX, mat, at(cx, -0.05, cz, 0, A.x1 - A.x0 + 260, 0.1, A.z1 - A.z0 + 260));
+    groundOut = (reach) => {
+      const [gw, gd] = groundSize(d, reach);
+      R.tiled.add(BOX, mat, at(cx, -0.05, cz, 0, gw, 0.1, gd));
+      groundOut = null;
+    };
+    if (!world) groundOut(null);
   } else {
     const H = d.ceiling;
     const mat = tiledPaint(kit.mats, `c137-${id}-floor`, 256, floorTile, floor ?? specks('#bfb6a6', ['#b0a796', '#cbc3b4']), { color: 0xffffff });
@@ -53,10 +67,17 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     ceilings(R, [[A.x0 - 0.2, A.x1 + 0.2, A.z0 - 0.2, A.z1 + 0.2]], H, ceiling);
     const w = { color: wall, skirt, h: wallH ?? H, ...(dado && { dado }) };
     const F = R.fixed;
-    wallLine(R, F, [A.x0, A.z0 - 0.2], [A.x0, A.z1 + 0.2], { ...w, into: [1, 0] });
-    wallLine(R, F, [A.x1, A.z0 - 0.2], [A.x1, A.z1 + 0.2], { ...w, into: [-1, 0] });
-    wallLine(R, F, [A.x0 - 0.2, A.z0], [A.x1 + 0.2, A.z0], { ...w, into: [0, 1] });
-    wallLine(R, F, [A.x0 - 0.2, A.z1], [A.x1 + 0.2, A.z1], { ...w, into: [0, -1] });
+    // (with windows where its world has them: the world outside shows through)
+    wallLine(R, F, [A.x0, A.z0 - 0.2], [A.x0, A.z1 + 0.2], { ...w, into: [1, 0] }, wallOpenings(world, 'w', d));
+    wallLine(R, F, [A.x1, A.z0 - 0.2], [A.x1, A.z1 + 0.2], { ...w, into: [-1, 0] }, wallOpenings(world, 'e', d));
+    wallLine(R, F, [A.x0 - 0.2, A.z0], [A.x1 + 0.2, A.z0], { ...w, into: [0, 1] }, wallOpenings(world, 'n', d));
+    wallLine(R, F, [A.x0 - 0.2, A.z1], [A.x1 + 0.2, A.z1], { ...w, into: [0, -1] }, wallOpenings(world, 's', d));
+    // and a sky out there, for a room with a world outside
+    if (world?.outside === 'ground') {
+      sky = makeSky(560, world.sky);
+      R.group.add(sky.dome);
+      R.noInk.push(sky.dome);
+    }
   }
 
   // ── the portal home, turned to the camera, shrinking away while the camera's on it ──
@@ -98,6 +119,15 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     if (news !== 'caught') return game;
     state.emit?.('caught', { area: id, who, text: lost });
     return { ...game, told: true };
+  };
+  // and a place's achievement handed over once while its task is done (done
+  // before its game was built: the vat's, the cable studio's; or won over the
+  // page: Get Schwifty's), said as a win
+  const granted = new Set();
+  const grant = ({ task, unlock = null }, done, state) => {
+    if (!done || !unlock || granted.has(task) || state.fading) return;
+    granted.add(task);
+    state.emit?.('done', { area: id, task, unlock });
   };
 
   // ── a place run on power (../games/power.js, place.js's `power`): its run,
@@ -152,15 +182,11 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   let still = fz ? newFreeze() : null;
   let jumped = false;
   let splash = null;
-  let granted = false;
   let finished = false; // (its task done: the vat's just a vat to jump in)
   const freezing = (dt, state) => {
     const done = (state.done ?? []).includes(fz.task);
     finished = done;
-    if (done && fz.unlock && !granted && !state.fading) {
-      granted = true;
-      state.emit?.('done', { area: id, task: fz.task, unlock: fz.unlock });
-    }
+    grant(fz, done, state);
     if (!done && !state.fading) {
       still = stepFreeze(still, { moving: moving(state.morty), jumped }, dt);
       still = told(freezeNews(still, { done, fading: false }), still, fz, state);
@@ -192,6 +218,51 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     search = told(findNews(search, { done, fading: false }), search, fd, state);
   };
 
+  // ── a place run on a sequence (../games/sequence.js, place.js's
+  // `sequence`): each set's spot queues a use (`sequence-<id>`), its start
+  // spot a start (`sequence-start`), stepped at no time in the place's own
+  // update, then the clock; said as power's run is, the win with its
+  // achievement, a set gone dark heard as a find's wrong pick is, a set used
+  // before the countdown answered with the place's `early`. Its running
+  // order dealt afresh whenever the place calms; the builder's lamps
+  // (`sequence({ lamps })`: a set's id to its glow) lit as their sets go on,
+  // and every one once its task's done. ──
+  const sq = d.sequence;
+  const aired = () => newSequence({ items: sq.items, order: sq.order ?? runningOrder(sq.items, sq.need, Math.random), s: sq.s, start: Boolean(sq.start) });
+  let airing = sq ? aired() : null;
+  let switched = [];
+  let lamps = null;
+  const labels = Object.fromEntries(d.hotspots.map((h) => [h.id, h.label]));
+  const sequencing = (dt, state) => {
+    const done = (state.done ?? []).includes(sq.task);
+    grant(sq, done, state);
+    if (lamps) {
+      const lit = litSets(airing, done);
+      for (const [set, lamp] of Object.entries(lamps)) lamp.material.color.setScalar(lit.includes(set) ? 1 : 0.15);
+    }
+    if (done || state.fading) {
+      switched = [];
+      return;
+    }
+    for (const press of switched.splice(0)) {
+      airing = stepSequence(airing, press, 0);
+      if (airing.events.some((e) => e.type === 'dark')) state.emit?.('miss', { area: id });
+      // (a set used before the countdown says so, over its own line)
+      if (sq.early && airing.events.some((e) => e.type === 'early')) state.emit?.('note', { area: id, text: sq.early });
+    }
+    airing = stepSequence(airing, {}, dt);
+    airing = told(sequenceNews(airing, { done, fading: false }), airing, sq, state);
+  };
+
+  // ── a place whose song is played over the page (place.js's `rhythm`):
+  // its achievement handed over once its task's done; and any place's crowd
+  // cheering its game won (../games/cheer.js): its gatherings hop on a beat
+  // a while from the frame the game's task is done (the show's, once it
+  // closes), started afresh whenever the place calms ──
+  const rh = d.rhythm;
+  const gameTask = (d.power ?? d.deal ?? d.freeze ?? d.find ?? d.sequence ?? rh)?.task ?? null;
+  let cheer = newCheer();
+
   // (calmed: its people home, and its game started afresh)
   const calm = () => {
     N.calm();
@@ -211,6 +282,11 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       search = sought();
       asks = [];
     }
+    if (sq) {
+      airing = aired();
+      switched = [];
+    }
+    cheer = newCheer();
   };
 
   // one of the cast at (x, z) facing `face`, `h` tall (its own height if not
@@ -254,6 +330,21 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   };
 
   const done = (light, update) => {
+    // the world round it, drawn before the room kit builds; a failure leaves the place as it was
+    let round = null;
+    if (world) {
+      const fogFar = (d.kind === 'room' ? world.fog?.[2] : light?.fog?.[2]) ?? 300;
+      try {
+        const laid = outskirtsOf(d, world, { tier: kit.fit?.tier ?? kit.tier ?? 'high', fogFar, tris: TRIS });
+        groundOut?.(laid.reach);
+        const fog = d.kind === 'room' ? (world.fog ?? roomFog(d, world, fogFar)) : null;
+        if (fog) light = { ...light, fog };
+        round = surround({ R, d, kit, blocks: BLOCKS[id] ?? [] }, world, laid);
+      } catch (e) {
+        groundOut?.(null);
+        if (import.meta.env.DEV) console.warn('stage: no world round', id, e);
+      }
+    }
     const area = R.build({
       light,
       update: (t, dt, state, camera) => {
@@ -264,6 +355,14 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         if (deal && state && cast) dealing(state);
         if (still && state && cast) freezing(dt, state);
         if (search && state && cast) finding(dt, state);
+        if (airing && state && cast) sequencing(dt, state);
+        if (rh && state) grant(rh, (state.done ?? []).includes(rh.task), state);
+        if (round && gameTask && state) {
+          cheer = stepCheer(cheer, { done: (state.done ?? []).includes(gameTask), t });
+          if (cheer.hop) round.actions.hop();
+        }
+        // (its crowd turns to Morty while the place hunts him)
+        if (round && state) round.actions.turn(watchOf(world, { hunting: N.hunting || N.npcs.some((n) => n.hunting), morty: state.morty }));
         update?.(t, dt, state, camera);
       },
     });
@@ -281,10 +380,15 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     // builder adds its own actions to these. `npcs`: where everyone is, for
     // the QA scripts; `fire`, `bodies` and `hit`: Morty's shot in a duel,
     // where it aims, what it can hit, and what it did when it landed.)
-    // (a place run on power, a deal, a freeze or a find: its spots, where its game is for the
+    // (a place run on power, a deal, a freeze, a find or a sequence: its spots, where its game is for the
     // checks, its meter for the HUD, and, in development, a way for the
     // checks to set it)
     area.actions = { calm, npcs: N.list, fire: N.fire, bodies: N.bodies, hit: N.hit };
+    // (the sky the house look fogs it into: its own, not Blips and Chitz's; a room's outside's)
+    if (d.kind === 'outdoor') area.skyLook = d.sky ?? STREET_SKY;
+    else if (world?.outside === 'ground') area.skyLook = world.sky ?? STREET_SKY;
+    // (its crowd's doings: a hop on a beat, a turn to look, how many stand)
+    if (round) Object.assign(area.actions, round.actions);
     if (run)
       Object.assign(area.actions, {
         'power-take': () => (asked.take = true),
@@ -321,9 +425,17 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         meter: () => findReadout(search, fd.tells),
         ...(import.meta.env.DEV && { setFind: (patch) => (search = { ...search, ...patch }) }),
       });
+    if (airing)
+      Object.assign(area.actions, {
+        ...Object.fromEntries(sq.items.map((u) => [`sequence-${u}`, () => switched.push({ use: u })])),
+        'sequence-start': () => switched.push({ start: true }),
+        sequence: () => ({ phase: airing.phase, order: [...airing.order], on: airing.on, left: airing.left, len: airing.len, last: airing.last }),
+        meter: () => sequenceReadout(airing, labels),
+        ...(import.meta.env.DEV && { setSequence: (patch) => (airing = { ...airing, ...patch }) }),
+      });
     return area;
   };
   // (`taken()`: what a deal's had off the shelves this run, for the builder to take away)
-  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null), freeze: (o) => (splash = o.splash ?? null), taken: () => deal?.taken ?? [] };
+  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null), freeze: (o) => (splash = o.splash ?? null), sequence: (o) => (lamps = o.lamps ?? null), taken: () => deal?.taken ?? [] };
 
 }

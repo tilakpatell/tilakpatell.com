@@ -28,7 +28,7 @@ describe('a landing’s biome, from the colour of the map under it', () => {
     expect(pick('middleearth', '#23331c')).toBe('forest');
   });
 
-  it('finds New Mexico’s, the Caribbean’s, Invincible’s, C-137’s and Earth’s', () => {
+  it('finds New Mexico’s, the Caribbean’s, Invincible’s, Hogwarts’, C-137’s and Earth’s', () => {
     expect(pick('breakingbad', '#d8b07e')).toBe('desert');
     expect(pick('breakingbad', '#f4f2ec')).toBe('sands');
     expect(pick('breakingbad', '#5c5a52')).toBe('mountains');
@@ -41,6 +41,14 @@ describe('a landing’s biome, from the colour of the map under it', () => {
     expect(pick('caribbean', '#41c3c6')).toBe('reef');
     expect(pick('invincible', '#e8b088')).toBe('badlands');
     expect(pick('invincible', '#4a1e14')).toBe('city');
+    expect(pick('potter', '#1c3022')).toBe('forest');
+    expect(pick('potter', '#5d4258')).toBe('moor');
+    expect(pick('potter', '#eef2f4')).toBe('moor');
+    expect(pick('potter', '#163548')).toBe('sea');
+    expect(pick('potter', '#4b6a36')).toBe('loch');
+    // (the Black Lake's shore by where it is, whatever the moor or the pines read there)
+    expect(pick('potter', '#5d4258', [55.44, -20])).toBe('loch');
+    expect(pick('potter', '#1c3022', [57.5, -17.1])).toBe('loch');
     expect(pick('rickmorty', '#7a4ab0')).toBe('hills');
     expect(pick('rickmorty', '#2a9a9a')).toBe('street');
     expect(pick('travel', '#eef2f6')).toBe('ice');

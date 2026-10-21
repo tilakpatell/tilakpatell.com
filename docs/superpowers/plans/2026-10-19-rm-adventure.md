@@ -1,6 +1,6 @@
 # The Rick and Morty adventure: the plan's index
 
-> **For agentic workers:** this is the index. Each phase has its own task-by-task plan, written when the phase starts (from the spec and what the phases before it landed), at `docs/superpowers/plans/2026-10-19-rm-adventure-p<N>-<slug>.md`. A phase's plan goes once its work is merged (P0's to P6's have). REQUIRED SUB-SKILL for a phase plan: superpowers:subagent-driven-development or superpowers:executing-plans.
+> **For agentic workers:** this is the index. Each phase has its own task-by-task plan, written when the phase starts (from the spec and what the phases before it landed), at `docs/superpowers/plans/2026-10-19-rm-adventure-p<N>-<slug>.md`. A phase's plan goes once its work is merged (P0's to P6's have; P7's is `2026-10-19-rm-adventure-p7-prime-time.md`). REQUIRED SUB-SKILL for a phase plan: superpowers:subagent-driven-development or superpowers:executing-plans.
 
 **Spec:** `docs/superpowers/specs/2026-10-19-rm-adventure-design.md`
 
@@ -9,7 +9,7 @@
 ## How the phases go
 
 - One pull request a phase, from its own branch off `main`, merged before the next phase starts.
-- Each phase raises `READY` in `src/components/rickmorty/adventure/episodes.js` by one, to the episode it makes playable, and adds that episode to `scripts/rm-story-check.mjs`.
+- Each phase raises `READY` in `src/components/rickmorty/adventure/episodes.js` by one, to the episode it makes playable, and adds that episode to the story check (`scripts/rm-story/`, run by `scripts/rm-story-check.mjs`).
 - Each phase's plan opens by reading what the phases before it changed (`git log -- src/components/rickmorty/adventure`), so its names match what's there, not what this index guessed.
 - Done for a phase: its episode played start to finish on a fresh save by `scripts/rm-story-check.mjs`; every new rule tested; shots of its places before and after (`scripts/c137-shots.mjs`); `npm run lint`, `npm test`, `npm run build`, `node scripts/health.mjs --check --skip build` green.
 
