@@ -392,6 +392,16 @@ describe('the outskirts of a room', () => {
     }
   });
 
+  it('keeps on low a gathering outside that is the view itself (a dome of Mortys), within the room’s half', () => {
+    const d = room();
+    const dome = (always) => ({ ...w, crowd: null, stands: [{ at: [0, -40], w: 14, d: 12, h: 9, rows: 3, face: [0, 0], kinds: ['cop'], n: { high: 60, mid: 40, low: 30 }, always }] });
+    const heads = (L) => L.gathers.reduce((a, c) => a + c.n, 0);
+    expect(heads(lay(d, dome(false), 'low'))).toBe(0);
+    const kept = lay(d, dome(true), 'low');
+    expect(heads(kept)).toBe(Math.min(30, Math.floor(LEVELS.low.crowd / 2 / TRIS.cop)));
+    expect(heads(kept)).toBeGreaterThan(0);
+  });
+
   it('looking out on space has no buildings and no skyline, only traffic', () => {
     const L = lay(room(), { ...w, outside: 'space' });
     expect(L.lots).toEqual([]);

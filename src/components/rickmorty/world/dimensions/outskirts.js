@@ -244,7 +244,7 @@ function standsOf(d, stands, tier, hero) {
     for (let r = 0; r < rows; r++) {
       const back = st.d / 2 - (r + 0.5) * (st.d / rows);
       const n = Math.floor(all / rows) + (r < all % rows ? 1 : 0);
-      gathers.push({ key: `stand-${i}-${r}`, kinds: st.kinds, n, at: [x + fx * back, z + fz * back], r: 0, row: st.w * 0.9, y: ((r + 1) * st.h) / rows, beat: st.beat ?? null, face, block: null, until: st.until ?? null, after: st.after ?? null, when: null, out: true });
+      gathers.push({ key: `stand-${i}-${r}`, kinds: st.kinds, n, at: [x + fx * back, z + fz * back], r: 0, row: st.w * 0.9, y: ((r + 1) * st.h) / rows, beat: st.beat ?? null, face, block: null, until: st.until ?? null, after: st.after ?? null, when: null, out: true, always: st.always ?? false });
     }
   }
   return { lots, gathers };
@@ -266,11 +266,12 @@ function crowdOf(d, crowd, { tier, row, room, outside, tris, hero, extra = [] })
     return { key: `gather-${i}`, ...keep(c), n: c.n?.[tier] ?? 0, at, r: c.r ?? 3, row: c.row ?? null, y: c.y ?? 0, beat: c.beat ?? null, face, block: c.block ?? null, until: c.until ?? null, after: c.after ?? null, when: c.when ?? null, out: outOf(A, ...at) > 0 };
   });
   gathers.push(...extra.map(keep));
-  // a room: no one outside it with nothing outside, or on low
+  // a room: no one outside it with nothing outside, or on low (but the
+  // view itself, marked `always`: a dome of Mortys)
   if (room) {
-    const none = !outside || tier === 'low';
-    walkers = walkers.map((c) => (c.out && none ? { ...c, n: 0 } : c));
-    gathers = gathers.map((c) => (c.out && none ? { ...c, n: 0 } : c));
+    const gone = (c) => c.out && (!outside || (tier === 'low' && !c.always));
+    walkers = walkers.map((c) => (gone(c) ? { ...c, n: 0 } : c));
+    gathers = gathers.map((c) => (gone(c) ? { ...c, n: 0 } : c));
   }
   const all = [...walkers, ...gathers].filter((c) => c.kinds.length && c.n > 0);
   // the triangles: a room half a place's

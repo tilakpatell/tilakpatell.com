@@ -575,7 +575,7 @@ export const WORLDS2 = {
     ring: { n: null, e: null, s: null, w: null },
     far: { n: { styles: ['tower', 'block'], h: [40, 70] } },
     // (the dome's tiers, behind the console, facing the way in)
-    stands: [{ at: [0, -29], w: 14, d: 12, h: 9, rows: 5, face: [0, 15.4], kinds: ['crowd:morty'], n: { high: 55, mid: 34, low: 0 } }],
+    stands: [{ at: [0, -29], w: 14, d: 12, h: 9, rows: 5, face: [0, 15.4], kinds: ['crowd:morty'], n: { high: 55, mid: 34, low: 23 }, always: true }],
   },
 
   // Mr. Goldenfold's dream: three windows on the north wall, each at a height

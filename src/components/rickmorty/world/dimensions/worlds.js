@@ -16,6 +16,8 @@
 //   forecourt { path: { w, color }, props: [{ model, h, n }] }
 //   crowd { walk: [{ kinds, n: { high, mid, low }, loop: 'street' | [[dx, dz]…], speed, until, after }],
 //           gather: [{ kinds, n, at: [dx, dz], r, face: 'hero' | [dx, dz], block, until, after }] }
+//     (a room's crowd outside goes on low, but one marked `always`, a gathering's
+//     or a stand's: the view itself, a dome of Mortys)
 //   fliers [{ model, n, y: [lo, hi], speed, h, climb: [dx, dz] }]   (climb: straight
 //                                             up from that pad instead of across)
 //   windows [{ wall, from, to, y0, h, mullion }], outside 'ground' | 'space',
