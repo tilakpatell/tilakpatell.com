@@ -195,7 +195,8 @@ export function surround({ R, d, kit, loader = null, blocks = [] }, world, laid)
       file(url)
         .then((g) => {
           const parts = partsOf(g.scene.clone(), { node, tall });
-          if (parts) stand(model, parts, props.map((p) => ({ x: p.x, z: p.z, turn: p.turn, s: p.s })));
+          // (each at the height it's laid at: the model's own scaled to it)
+          if (parts) stand(model, parts, props.map((p) => ({ x: p.x, z: p.z, turn: p.turn, s: p.s * (p.h ? p.h / tall : 1) })));
         })
         .catch(warn(model)),
     );

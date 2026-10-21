@@ -117,4 +117,40 @@ export const TRIS = {
   "crowd:wizardrick": 3226,
 };
 
-export const WORLDS = {};
+// (an Earth audience: the Citadel's light copy of a police officer, the only
+// generic Earth figure light enough to pack a stadium with)
+const EARTH = ['crowd:cop'];
+const STAGE = [0, -14];
+
+export const WORLDS = {
+  // Get Schwifty: a stadium at dusk round the stage, Earth's towers beyond;
+  // north left to the stage, the light towers and the heads
+  schwifty: {
+    look: { walls: [0x3a3a48, 0x4a4a5a, 0x2e2e3a], roofs: [0x5a5a6a, 0x6a4a5a], lit: [0xff6ab0, 0xffe24a, 0x6ad8ff, 0xfff0c0], trim: 0x9a9aa8, night: true },
+    edge: { kind: 'barrier', h: 1.1 },
+    ring: { n: null, e: null, s: null, w: null },
+    far: { n: null, e: { styles: ['tower', 'block'], h: [45, 95] }, s: { styles: ['tower', 'block'], h: [45, 95] }, w: { styles: ['tower', 'block'], h: [45, 95] } },
+    hero: STAGE,
+    vista: 0.5,
+    forecourt: { path: { w: 4.5, color: 0x26262e } },
+    stands: [
+      { at: [50, 0], w: 46, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 22, mid: 12, low: 4 } },
+      { at: [-50, 0], w: 46, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 22, mid: 12, low: 4 } },
+      { at: [0, 40], w: 64, d: 12, h: 7, rows: 4, face: STAGE, kinds: EARTH, n: { high: 22, mid: 12, low: 4 } },
+    ],
+    crowd: {
+      gather: [
+        { kinds: EARTH, n: { high: 12, mid: 8, low: 4 }, at: [-9, 14], r: 5.5, face: STAGE, block: 'pit-w' },
+        { kinds: EARTH, n: { high: 12, mid: 8, low: 4 }, at: [-23.5, 14], r: 5.5, face: STAGE, block: 'pit-w' },
+        { kinds: EARTH, n: { high: 12, mid: 8, low: 4 }, at: [9, 14], r: 5.5, face: STAGE, block: 'pit-e' },
+        { kinds: EARTH, n: { high: 12, mid: 8, low: 4 }, at: [23.5, 14], r: 5.5, face: STAGE, block: 'pit-e' },
+      ],
+    },
+    // the heads, seen from the mic: nothing round the stadium stands in the way
+    sight: [
+      { from: [0, 1.6, -9.4], to: [0, 22, -60] },
+      { from: [0, 1.6, -9.4], to: [-40, 22, -56] },
+      { from: [0, 1.6, -9.4], to: [40, 22, -58] },
+    ],
+  },
+};

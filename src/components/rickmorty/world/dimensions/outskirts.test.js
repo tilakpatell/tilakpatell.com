@@ -265,6 +265,39 @@ describe('a stand round a place', () => {
   });
 });
 
+describe('a landmark and a scatter round a place', () => {
+  it('stands a landmark where the record says, facing the place, whatever the vista or the level', () => {
+    const d = outdoor();
+    for (const tier of ['high', 'low']) {
+      const L = lay(d, world({ landmarks: [{ at: [0, -60], style: 'hut', w: 20, d: 14, h: 12 }] }), tier);
+      const m = L.lots.filter((l) => l.landmark);
+      expect(m).toHaveLength(1);
+      expect(m[0]).toMatchObject({ style: 'hut', x: d.centre.x, z: d.centre.z - 60, w: 20, d: 14, h: 12, y: 0 });
+      expect(m[0].turn).toBeCloseTo(0, 9);
+    }
+  });
+  it('scatters its models out round the place, as many as the level says, clear of the box and the buildings', () => {
+    const d = outdoor();
+    const w = world({ scatter: [{ model: 'q:CommonTree_3', h: 9.4, n: { high: 30, mid: 15, low: 6 }, r: [20, 130] }] });
+    for (const [tier, n] of [['high', 30], ['mid', 15], ['low', 6]]) {
+      const L = lay(d, w, tier);
+      const trees = L.props.filter((p) => p.model === 'q:CommonTree_3');
+      expect(trees, tier).toHaveLength(n);
+      for (const t of trees) {
+        expect(outside(d.area, { ...t, w: 0, d: 0, turn: 0 })).toBeGreaterThanOrEqual(8);
+        expect(Math.hypot(t.x - d.centre.x, t.z - d.centre.z)).toBeLessThanOrEqual(130);
+        expect(t.h).toBe(9.4);
+        for (const l of L.lots) {
+          const across = Math.abs(Math.sin(l.turn)) > 0.5;
+          const inX = Math.abs(t.x - l.x) < (across ? l.d : l.w) / 2 + 1;
+          const inZ = Math.abs(t.z - l.z) < (across ? l.w : l.d) / 2 + 1;
+          expect(inX && inZ).toBe(false);
+        }
+      }
+    }
+  });
+});
+
 describe('the outskirts of a room', () => {
   const w = world({ edge: null, outside: 'ground', windows: [{ wall: 'n', from: -10, to: 10, y0: 1, h: 4 }] });
   it('has no edge (its walls are its edge), and its buildings stand outside its walls', () => {

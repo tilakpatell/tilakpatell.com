@@ -13,7 +13,13 @@
 // withBlocks(rows, table) → the rows, each with its blocks on the end of its solids
 // blockProblems(d, solids) → what's wrong with them, in words (none: [])
 
-export const BLOCKS = {};
+export const BLOCKS = {
+  // the pit, either side of the aisle from the way in to the stage
+  schwifty: [
+    { id: 'pit-w', dx: -16.25, dz: 14, w: 27.5, d: 12, h: 1.1, draw: 'barrier' },
+    { id: 'pit-e', dx: 16.25, dz: 14, w: 27.5, d: 12, h: 1.1, draw: 'barrier' },
+  ],
+};
 // Morty's radius (../rules.js's MORTY.radius, which imports this file's
 // importer: the test holds the two to each other)
 export const MORTY_R = 0.4;

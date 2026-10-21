@@ -82,6 +82,19 @@ describe('a world record’s rules', () => {
     expect(problems({ stands: [{ ...stand, kinds: ['gearhead'] }] })).toEqual([expect.stringMatching(/gearhead/)]);
   });
 
+  it('stands a landmark beyond the edge, or outside a room’s walls', () => {
+    const lm = { at: [0, -50], style: 'hut', w: 20, d: 14, h: 12 };
+    expect(problems({ landmarks: [lm] })).toEqual([]);
+    expect(problems({ landmarks: [{ ...lm, at: [0, -30] }] })).toEqual([expect.stringMatching(/landmark/)]);
+    expect(problems({ landmarks: [{ ...lm, style: 'castle' }] })).toEqual([expect.stringMatching(/castle/)]);
+  });
+
+  it('names only the kit’s models for its props, its scatter and its edge', () => {
+    expect(problems({ scatter: [{ model: 'q:CommonTree_3', n: { high: 4 } }], forecourt: { props: [{ model: 'q:Rock_Medium_1', n: 2 }] }, edge: { kind: 'rocks', models: ['q:Rock_Medium_2'] } })).toEqual([]);
+    expect(problems({ scatter: [{ model: 'q:Palm', n: { high: 4 } }] })).toEqual([expect.stringMatching(/Palm/)]);
+    expect(problems({ edge: { kind: 'rocks', models: ['rock'] } })).toEqual([expect.stringMatching(/rock/)]);
+  });
+
   it('gates a crowd only on tasks there are', () => {
     expect(problems({ crowd: { walk: [{ ...ok.crowd.walk[0], until: 'squanch' }] } })).toEqual([]);
     expect(problems({ crowd: { walk: [{ ...ok.crowd.walk[0], after: 'nothing' }] } })).toEqual([expect.stringMatching(/nothing/)]);

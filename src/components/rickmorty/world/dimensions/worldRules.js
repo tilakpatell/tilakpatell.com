@@ -12,12 +12,16 @@
 //     loopProblems); a gathering in the box stands on a block that's there;
 //   - a crowd is gated only on tasks there are;
 //   - a window is in a room's wall, under its ceiling;
-//   - no family's own vehicle as traffic or a set piece; a set piece at most twice
+//   - no family's own vehicle as traffic or a set piece; a set piece at most twice;
+//   - a landmark of a style there is, beyond the edge (or outside a room's walls);
+//   - props, scatter and the edge only the town's kit models (`q:<node>`)
 // blocksSight(laid, from, to) → whether a lot or a skyline tower stands in
 //   the line from `from` to `to` ([x, y, z])
 
 import { MESHY } from '../../portal/meshyCastCore';
 import { loopProblems } from './outskirts';
+import { STYLES } from './lots';
+import { QUATERNIUS } from './surround';
 
 const NEAR = { hunter: 7, named: 30 };
 const FAMILY = ['jerry-ship', 'spacebeth-ship', 'cruiser', 'gotron', 'dirlycar', 'vindicators-ship'];
@@ -89,6 +93,15 @@ export function worldProblems(d, world, { tris = {}, tasks = [], blocks = [] } =
     if (w.from < -half || w.to > half || w.from >= w.to) out.push(`a window is off its wall ${w.wall}`);
     if (w.y0 < 0 || w.y0 + w.h > (d.ceiling ?? Infinity)) out.push(`a window goes through the ceiling`);
   }
+
+  for (const m of world.landmarks ?? []) {
+    if (!STYLES.includes(m.style)) out.push(`a landmark's style ${m.style} is no style`);
+    const [x, z] = W(m.at);
+    const near = Math.hypot(Math.max(A.x0 - (x + m.w / 2), x - m.w / 2 - A.x1, 0), Math.max(A.z0 - (z + m.d / 2), z - m.d / 2 - A.z1, 0));
+    if (near < (room ? 1 : 8)) out.push(`a landmark stands within ${room ? 'the room' : '8 m of the edge'}`);
+  }
+  const kitModel = (m) => m?.startsWith('q:') && QUATERNIUS[m.slice(2)];
+  for (const m of [...(world.scatter ?? []).map((o) => o.model), ...(world.forecourt?.props ?? []).map((o) => o.model), ...(world.edge?.models ?? [])]) if (!kitModel(m)) out.push(`${m} is none of the kit's models`);
 
   const family = (model) => FAMILY.find((f) => model?.includes(f));
   for (const f of world.fliers ?? []) if (family(f.model)) out.push(`${family(f.model)} is a family's own: never traffic`);

@@ -135,6 +135,17 @@ describe('the world round a place', () => {
     expect(loader.loadAsync).toHaveBeenCalledWith('/models/quaternius/nature/rocks.glb');
   });
 
+  it('stands each prop at the height it’s laid at, whatever height its model stands', async () => {
+    const d = outdoor();
+    const { R, group } = fakeRoom();
+    const { kit, loader } = fakeKit();
+    await surround(ctx(R, kit, d, loader), { look: LOOK }, laidFor(d, { props: [{ model: 'q:Rock_Medium_1', x: d.centre.x, z: d.centre.z, turn: 0, s: 1, h: 1.4 }], lots: [], lanes: [] })).ready;
+    const [rock] = instances(group).filter((m) => m.userData.surround === 'q:Rock_Medium_1');
+    rock.computeBoundingBox();
+    // (the rock's model stands 0.7 m in the kit: laid at 1.4, it stands twice that)
+    expect(rock.boundingBox.max.y - rock.boundingBox.min.y).toBeCloseTo(1.4, 2);
+  });
+
   it('flies its traffic along its lanes at their height', async () => {
     const d = outdoor();
     const { R, group, ticks } = fakeRoom();
