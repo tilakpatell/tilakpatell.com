@@ -12,7 +12,7 @@
 //   heightOf(name) → metres
 //   loadFigure(name, rt) → Promise<template | null>
 //   figure(name, { rt, height, seed, ink, material }) → { group, ready, set({ base, speed }),
-//     play(clip, opts), look(target), tick(dt), dispose() }
+//     play(clip, opts), look(target), bone(name), tick(dt), dispose() }
 //     base: a looping state in place of locomotion ('sit.idle', 'lantern', 'cast.idle'…) or null;
 //     speed: metres a second over the ground; material(m) → a material in place of each of its own (the ghosts)
 //   forgetFigures(): the templates let go, as the world goes
@@ -28,7 +28,7 @@ const ME = '/models/middleearth/cast';
 const LOCO = ['idle', 'walk', 'run'];
 const INK = 0.012;
 
-// TODO(hogwarts cast): each line goes once Lane B’s figure of that name is in cast.json
+// (the stand-ins for the Hogwarts cast: each line goes once Lane B’s figure of that name is in cast.json)
 export const STAND_IN = {
   harry: 'frodo',
   ron: 'pippin',
@@ -200,6 +200,10 @@ export function figure(name, { rt = null, height = heightOf(name), seed = 0, ink
     },
     look(target, opts) {
       st?.anim.look(target, opts);
+    },
+    // a bone of its rig by name ('RightHand'…), once it has loaded: what it carries hangs from it
+    bone(name) {
+      return st?.model.getObjectByName(name) ?? null;
     },
     tick(dt) {
       if (!st) return;

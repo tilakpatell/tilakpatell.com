@@ -8,7 +8,7 @@
 // instanced by the room itself; what the walk can’t pass is a collider.
 //
 //   MATS: { name: { colour, scan, metres, strength, rough, metal, glow } }
-//   createRoomKit({ house, tier }) → kit
+//   createRoomKit({ tier }) → kit (the house’s look goes on when the room’s group is adopted)
 //     kit.mat(name) → the material (made once a kit; a scan worn when it loads)
 //     kit.paint(hex, opts) → a plain material in the look, by colour (cloth, paint)
 //     kit.glow(hex, k) → an unlit material for flames and lit glass
@@ -54,7 +54,7 @@ export const MATS = {
 
 const TIER_SCANS = { low: false, mid: true, high: true, ultra: true };
 
-export function createRoomKit({ house = null, tier = 'high' } = {}) {
+export function createRoomKit({ tier = 'high' } = {}) {
   const mats = new Map();
   const buckets = new Map(); // material → [geometry]
   const owned = new Set(); // materials the kit made (freed with it)

@@ -5,7 +5,7 @@
 // four boats, and a shingle shore to walk. The rules are pure files under
 // rules/; this file composes the drawing (world/) and the player (play/).
 //
-// Props: { reduced }.
+// Props: { reduced, at } (at: an arrival beat or part, 'hall' among them: the arrival opened there).
 //
 // Events to the page (rt.events): 'near' { door: { label } | null } as the
 // way in at the boats comes into reach or goes, 'go' { door } when it's
@@ -34,7 +34,11 @@ import { createFarCastle } from './world/castle/far';
 import { CRAG, SIZE } from './world/castle/silhouette';
 import { KEYS, createWalker } from './play/walk';
 import { BOUNDS, CASTLE, DOOR, LEVEL, SPAWN, floorAt, heightAt, nearDoor } from './rules/shore';
-import { lightAt } from './rules/dusk';
+import { DUSK, lightAt } from './rules/dusk';
+import { ROOM_ORIGIN as ROOM_AT, createRoomHost } from './rooms/host';
+import { createArrival } from './world/arrival';
+import { ANCHORS_A } from './world/arrival/shots';
+import { BEATS, PARTS } from './rules/arrival';
 
 export { KEYS };
 
@@ -83,6 +87,40 @@ export default {
       else rt.events?.emit?.(type, data);
     };
 
+    // the rooms behind the doors (Lane D, rooms/host.js): built far below as
+    // you go in, the shore hidden and its lights down while you're inside
+    const rooms = createRoomHost({ rt, scene, camera, house, tier, reduced, outside: [sky.mesh, shore.group, lake.mesh, castle.group, boats.group], lights: [key, hemi], tell });
+
+    // the arrival (Lane D, world/arrival.js): the night of the first-years, on
+    // rails, from the station to the Sorting; played on a first visit, from
+    // the boats when you take them after that, and from its beat for ?at=
+    const mooring = [boats.group.getObjectByName('boats:hulls'), boats.group.children.find((c) => c.type === 'Group')];
+    const arrival = createArrival({
+      rt,
+      scene,
+      camera,
+      house,
+      tier,
+      reduced,
+      anchors: ANCHORS_A,
+      heightAt,
+      sky,
+      lake: [shore.group, lake.mesh, castle.group, boats.group],
+      hide: mooring,
+      rooms,
+      tell,
+      saves: rt.saves,
+      night: () => {
+        clock = Math.max(clock, DUSK.length + 30);
+        relight();
+      },
+      dim: (k) => {
+        lightK = k;
+        relight();
+      },
+    });
+    let lightK = 1; // (the arrival's: the moon's light down where it can't reach)
+
     let clock = 0;
     let light = null;
     const keyDir = new THREE.Vector3();
@@ -96,10 +134,10 @@ export default {
       castle.set(light);
       keyDir.set(...light.key.dir);
       key.color.setRGB(...light.key.colour, THREE.SRGBColorSpace);
-      key.intensity = light.key.intensity;
+      key.intensity = light.key.intensity * lightK;
       hemi.color.setRGB(...light.hemi.sky, THREE.SRGBColorSpace);
       hemi.groundColor.setRGB(...light.hemi.ground, THREE.SRGBColorSpace);
-      hemi.intensity = light.hemi.intensity;
+      hemi.intensity = light.hemi.intensity * lightK;
       scene.fog.color.setRGB(...light.fog.colour, THREE.SRGBColorSpace);
       scene.fog.density = light.fog.density;
       // (the house's fog takes the sky's own colours: the horizon low, the zenith
@@ -116,6 +154,8 @@ export default {
     const go = () => {
       if (!nearDoor(walker.state.x, walker.state.z)) return;
       tell('go', { door: { label: DOOR.label } });
+      // (the boats: the arrival from the push off; Enter skips it to the steps once it has been seen)
+      arrival.start('pushoff');
     };
     const frame = (dt) => {
       key.position.copy(camera.position).addScaledVector(keyDir, 200);
@@ -131,6 +171,8 @@ export default {
 
     relight();
     frame(0);
+    const known = (at) => Boolean(at) && (PARTS.includes(at) || BEATS.some((b) => b.id === at));
+    if (known(props.at) || !arrival.save.arrived) arrival.start(known(props.at) ? props.at : null);
 
     let since = 0;
     const world = {
@@ -141,6 +183,29 @@ export default {
       },
       step(dt, input) {
         const pressed = (name) => KEYS[name].some((c) => input?.pressed?.has?.(c));
+        // (the arrival on its rails: the night held, the shore drawn where it's on the lake)
+        if (arrival.active) {
+          clock += dt;
+          // (the night's light, but not while the arrival is in a room: the room has its own)
+          if (!rooms.room && (since += dt) > 0.25) {
+            since = 0;
+            relight();
+          }
+          arrival.step(dt, (name) => (name === 'skip' ? input?.pressed?.has?.('Enter') : pressed(name)));
+          if (!rooms.room) {
+            windTime.value += dt;
+            lake.update(dt);
+            boats.update(clock);
+            frame(dt);
+          }
+          return;
+        }
+        // (inside a room: its walk and its life; Esc is the way out, back where you came in)
+        if (rooms.room) {
+          if (pressed('menu')) world.leave();
+          else rooms.step(dt, input, touch, pressed);
+          return;
+        }
         if (pressed('menu')) tell('menu');
         if (pressed('act')) go();
         const stick = input?.stick ?? touch;
@@ -173,11 +238,26 @@ export default {
       },
       // the prompt's own button, and the touch stick
       go,
+      // into a room (rooms/host.js) and out again, back on the shore where you stood
+      enter: (id, opts) => rooms.enter(id, opts),
+      // the arrival: the Menu's “The arrival”, the Sorting card's answers, Enter's skip
+      arrive: (at = null) => arrival.start(at),
+      answer: (i) => arrival.answer(i),
+      skip: () => arrival.skip(),
+      arrival,
+      leave() {
+        rooms.leave();
+        walker.place([walker.state.x, walker.state.z], walker.state.yaw);
+        relight();
+      },
+      rooms,
       stick(x, y) {
         touch.x = x;
         touch.y = y;
       },
       dispose() {
+        arrival.dispose();
+        rooms.dispose();
         rt.input?.unbind?.();
         if (exposureWas != null) renderer.toneMappingExposure = exposureWas;
         sky.dispose();
@@ -203,7 +283,19 @@ export default {
         clock = sec;
         relight();
       };
-      window.__HOGWARTS__ = { world, state, place: (x, z, yaw) => walker.place([x, z], yaw), dusk };
+      // (room(id): go in; view(pose): stand at one of the room's named views, its eye and where it looks; info(): the room's own count)
+      const room = (id, opts) => rooms.enter(id, opts).then((r) => r?.info?.() ?? null);
+      const view = (name) => {
+        const p = rooms.room?.poses?.[name];
+        if (!p) return null;
+        rooms.walker && (rooms.walker.place([p.at[0], p.at[2]], 0));
+        camera.position.set(p.at[0] + ROOM_AT[0], p.at[1] + ROOM_AT[1], p.at[2] + ROOM_AT[2]);
+        camera.lookAt(p.look[0] + ROOM_AT[0], p.look[1] + ROOM_AT[1], p.look[2] + ROOM_AT[2]);
+        rooms.hold = true;
+        return p;
+      };
+      // (arrive(at): the arrival from a beat; arrival(): where it is)
+      window.__HOGWARTS__ = { world, state, place: (x, z, yaw) => walker.place([x, z], yaw), dusk, room, view, info: () => rooms.room?.info?.() ?? null, arrive: (at) => arrival.start(at), arrival: () => arrival.info(), answer: (i) => arrival.answer(i) };
     }
     return world;
   },

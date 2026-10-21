@@ -17,7 +17,7 @@ export const HALL = {
   wall: 13, // m to where the vault springs
   peak: 21, // m to the vault’s crown
   dais: { z: -21, height: 0.9, steps: 3 }, // the dais from z −28 to −21
-  table: { length: 38, width: 1.1, top: 0.78, from: -18 },
+  table: { length: 35, width: 1.1, top: 0.78, from: -15 }, // (the Sorting’s stool stands clear of their ends)
   bench: { off: 0.95, width: 0.36, top: 0.46 },
   seat: 0.62, // m of bench a student takes
   doors: { width: 6, height: 8.5 },

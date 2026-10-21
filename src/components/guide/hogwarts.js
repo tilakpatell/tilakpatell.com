@@ -18,6 +18,15 @@ export const HOGWARTS_WALK = [
 export const HOGWARTS_KEYS = [
   { label: 'On foot', rows: HOGWARTS_WALK },
   {
+    label: 'The arrival and the Sorting',
+    rows: [
+      ['Enter', 'Straight to the castle, once you’ve seen the arrival whole'],
+      ['1 2 3 4', 'Answer the Sorting Hat'],
+      ['← → / ↑ ↓, Enter', 'Pick an answer and give it'],
+    ],
+  },
+  { label: 'In the castle', rows: [['Esc', 'Leave the room you’re in, back the way you came']] },
+  {
     label: 'The wand (from your first lesson)',
     rows: [
       ['hold Q', 'The spell wheel: point at a spell and let go'],
@@ -54,6 +63,13 @@ export const HOGWARTS_TOUCH = [
       ['Stick', 'Walk (push it all the way to run)'],
       ['Swipe', 'Look round'],
       ['Go in', 'Do what the prompt says'],
+    ],
+  },
+  {
+    label: 'The arrival and the Sorting',
+    rows: [
+      ['Skip', 'Straight to the castle, once you’ve seen the arrival whole'],
+      ['Tap an answer', 'Answer the Sorting Hat'],
     ],
   },
 ];

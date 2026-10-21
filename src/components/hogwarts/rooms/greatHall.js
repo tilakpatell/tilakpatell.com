@@ -7,10 +7,10 @@
 // hour, the great doors, the four hourglasses counting the points and, in
 // Christmas week, the twelve trees. The room’s plan is ./plan/greatHall.js.
 //
-// A room for rooms/index.js: { id, name, build(rt, house, opts) → room }
-//   opts: { tier, renderer, points, christmas, feast, sky, load(url) }
-//   room: { group, colliders, bounds, floorAt, doors, places, start, plan,
-//     step(dt, ctx), set(props), info(), dispose() }
+// A room for rooms/index.js (./host.js says the shape): { id, name, build(rt, ctx) → room }
+//   ctx: { house, tier, renderer, props: { points, christmas, feast, sky, hour, people }, load(url) }
+//   room: { id, name, group, spawn, colliders, floors, doors, places, bounds, floorAt,
+//     plan, poses, cheer(house), step(dt, ctx), set(props), info(), dispose() }
 //   set({ points, christmas, feast, sky, hour }): what changes while you are in it
 //   (sky: ceiling.js’s skyAt() shape, from the grounds’ clock; hour alone works too)
 
@@ -247,9 +247,11 @@ function people(rt, plan, { tier }) {
   };
 }
 
-function build(rt, house, opts = {}) {
-  const tier = opts.tier ?? rt?.quality?.tier ?? 'high';
-  const renderer = opts.renderer ?? rt?.gfx?.renderer ?? null;
+function build(rt, ctx = {}) {
+  const house = ctx.house ?? null;
+  const opts = { ...(ctx.props ?? {}), load: ctx.load };
+  const tier = ctx.tier ?? rt?.quality?.tier ?? 'high';
+  const renderer = ctx.renderer ?? rt?.gfx?.renderer ?? null;
   const plan = hallPlan({ tier });
   const group = new THREE.Group();
   group.name = 'room:greatHall';
@@ -300,13 +302,20 @@ function build(rt, house, opts = {}) {
   hourglasses.jump(points);
   const room = {
     id: 'greatHall',
+    name: 'The Great Hall',
     group,
     plan,
-    colliders: plan.colliders,
+    // (the registry’s shapes, rooms/index.js: circles the walk goes round, the dais and its steps as floors)
+    colliders: plan.colliders.map((c) => ({ kind: 'circle', ...c })),
+    floors: [
+      { id: 'dais', line: [[-HALL.width / 2, HALL.dais.height, (HALL.dais.z - L) / 2], [HALL.width / 2, HALL.dais.height, (HALL.dais.z - L) / 2]], width: L + HALL.dais.z },
+      { id: 'dais-steps', line: [[0, 0, HALL.dais.z + 1.2], [0, HALL.dais.height, HALL.dais.z]], width: HALL.width - 1 },
+    ],
     bounds: plan.bounds,
     floorAt: plan.floorAt,
     doors: plan.doors,
     places: plan.places,
+    spawn: { at: [plan.start.at[0], 0, plan.start.at[1]], yaw: plan.start.yaw },
     start: plan.start,
     statics,
     // (the checks’ and the arrival’s named views: where the eye stands, where it looks)
@@ -349,7 +358,7 @@ function build(rt, house, opts = {}) {
         daylight.intensity = up * 1.2;
         // (by day the candles burn low; at night they are the light)
         candles.set({ dim: 1 - up * 0.45 });
-        hemi.intensity = 0.32 + up * 0.6;
+        hemi.intensity = 0.55 + up * 0.5;
       }
     },
     info: () => ({ ...countOf(group), candles: candles.count, hourglasses: hourglasses.shown(), crowd: folk?.crowd.info() ?? null }),
