@@ -17,7 +17,7 @@ NODE_USE_ENV_PROXY=1 node scripts/r2-packs.mjs upload <source>/<pack> <file…> 
 
 | pack | licence | what | for |
 | --- | --- | --- | --- |
-| `quaternius/downtown-city-megakit` | CC0 | Downtown City MegaKit (standard): brick and metal facades, three whole tenements of four to eight storeys, two- and four-lane streets with kerbs, sidewalks, crosswalks and corners, road decals, AC units, bollards, planters (zipped from the assets repo's copy, `tilakpatell/tilakverse-assets`) | Coronet City's streets and blocks |
+| `quaternius/downtown-city-megakit` | CC0 | Downtown City MegaKit (standard): brick and metal facades, three whole tenements of four to eight storeys, two- and four-lane streets with kerbs, sidewalks, crosswalks and corners, road decals, AC units, bollards, planters (zipped from the assets repo's copy, `tilakpatell/tilakverse-assets`) | Coronet City's streets and blocks: imported as `public/kit/city/` (`scripts/kit/import.mjs`), laid by `sites/cityBlocks.js` |
 | `quaternius/modular-scifi-megakit` | CC0 | Modular Sci-Fi MegaKit (standard, OpenGameArt): sci-fi walls, floors, doors, columns, platforms, props | sci-fi street furniture and outposts |
 | `kenney/city-kit-commercial` | CC0 | City Kit (Commercial): office blocks, skyscrapers, shops, in Kenney's flat toy colours | distant skylines, recoloured |
 | `kenney/city-kit-industrial` | CC0 | City Kit (Industrial): factories, warehouses, chimneys, tanks | industrial yards, recoloured |

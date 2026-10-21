@@ -402,7 +402,7 @@ export async function create(canvas, ctx) {
   // (on a world drawn from the game's level, what the game places itself is left to it)
   const scattered = site.scatter.filter((s) => !(site.level && s.game)).map((s) => {
     // (a row that says where each stands, a city's: city.js)
-    if (s.items) return { s, items: s.items.map((it) => ({ at: it.at, yaw: it.yaw ?? 0, scale: it.scale ?? 1, sink: s.sink ?? 0.1, stretch: 1, ...(it.box ? { box: it.box } : {}) })) };
+    if (s.items) return { s, items: s.items.map((it) => ({ at: it.at, yaw: it.yaw ?? 0, scale: it.scale ?? 1, sink: s.sink ?? 0.1, stretch: it.stretch ?? 1, ...(it.box ? { box: it.box } : {}) })) };
     const items = [];
     const [r0, r1] = s.within ?? [20, site.reach];
     const [cx, cz] = s.at ?? [0, 0]; // (a row round a place: its own clearing is still kept)
