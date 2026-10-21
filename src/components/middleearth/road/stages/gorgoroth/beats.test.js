@@ -30,7 +30,7 @@ describe('Gorgoroth’s beats', () => {
     expect(look).toBeGreaterThan(bearing(MOUNT.at[0], MOUNT.at[2]));
     expect(look).toBeLessThan(bearing(...towerAt));
     expect(bearing(...towerAt) - bearing(MOUNT.at[0], MOUNT.at[2])).toBeLessThan(50);
-    expect(by.eagles).toMatchObject({ rig: 'crane' });
+    expect(by.eagles).toMatchObject({ rig: 'wide' });
     // (out of Mordor by a cut, the black at the beat's end: the White City's land is never beside it)
     expect(by.eagles.fx).toEqual(expect.arrayContaining([expect.objectContaining({ kind: 'black' })]));
     expect(stageById('minas-tirith').cut).toBe(true);
