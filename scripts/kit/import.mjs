@@ -51,7 +51,7 @@ export const SOURCES = {
   naturemega: { dirs: ['glTF'], ext: ['.gltf'], title: 'Stylized Nature MegaKit', wind: true },
   nature: { dirs: ['glTF'], ext: ['.gltf'], title: 'Stylized Nature Pack', sway: true },
   space: { dirs: ['Characters/GLTF', 'Environment/GLTF', 'Items/GLTF', 'Vehicles/GLTF'], ext: ['.gltf'], title: 'Ultimate Space Kit', atlas: 'Atlas' },
-  city: { dirs: ['Exports/glTF (Godot)'], title: 'Downtown City MegaKit', lod: { building: { ratio: 0.05, error: 0.3 } } },
+  city: { dirs: ['Exports/glTF (Godot)'], title: 'Downtown City MegaKit', lod: { building: { ratio: 0.15, error: 0.01 } } },
   farm: { dirs: ['../farm-glb'], ext: ['.glb'], title: 'Farm Animals' },
   street: { dirs: ['../street-glb'], ext: ['.glb'], title: 'Street Pack' },
   furniture: { dirs: ['../furniture-glb'], ext: ['.glb'], title: 'Furniture Pack' },
@@ -245,8 +245,11 @@ function thinned(doc, prim, seed) {
 // stops at 80-96 %; let across seams ('Permissive', an error of 0.1-0.4 %
 // of the tree's size there) it reaches the quarter. Through gltf-transform's
 // simplifyPrimitive, which passes meshopt no flags but LockBorder.
-// A pack may ask a kind for less (`lod` in SOURCES: the city's buildings, seen
-// by the hundred past 60 m, a twentieth of themselves).
+// A pack may ask a kind for its own (`lod` in SOURCES: the city's buildings,
+// seen by the hundred past 60 m, toward a sixth of themselves but held to a
+// hundredth of their size in error: at a twentieth and 0.3 the simplifier
+// tore their walls open, and kept whole by their borders they stay at
+// four fifths).
 const PERMISSIVE = { ...MeshoptSimplifier, simplify: (i, p, s, n, e, flags = []) => MeshoptSimplifier.simplify(i, p, s, n, e, [...flags, 'Permissive']) };
 function simplified(prim, lod = LOD) {
   const out = prim.clone();
