@@ -253,13 +253,13 @@ export const PROPS = {
   pumpkin: { glb: null, make: pumpkin },
   brazier: { glb: null, make: brazier },
   chest: { glb: null, make: chest },
-  broom: { glb: null, make: broom }, // '/models/hogwarts/props/broom.glb'
-  snitch: { glb: null, make: snitch }, // '/models/hogwarts/props/snitch.glb'
-  quaffle: { glb: null, make: (h) => ball(h, 0.16, '#8a2a22') }, // '/models/hogwarts/props/quaffle.glb'
-  bludger: { glb: null, make: (h) => ball(h, 0.13, '#1c1c1e') }, // '/models/hogwarts/props/bludger.glb'
-  cauldron: { glb: null, make: cauldron }, // '/models/hogwarts/props/cauldron.glb'
-  mandrake: { glb: null, make: mandrakePot }, // '/models/hogwarts/props/mandrake.glb'
-  buckbeak: { glb: null, make: buckbeak }, // '/models/hogwarts/props/buckbeak.glb'
+  broom: { glb: null, make: broom }, // (models/hogwarts/props/broom.glb)
+  snitch: { glb: null, make: snitch }, // (models/hogwarts/props/snitch.glb)
+  quaffle: { glb: null, make: (h) => ball(h, 0.16, '#8a2a22') }, // (models/hogwarts/props/quaffle.glb)
+  bludger: { glb: null, make: (h) => ball(h, 0.13, '#1c1c1e') }, // (models/hogwarts/props/bludger.glb)
+  cauldron: { glb: null, make: cauldron }, // (models/hogwarts/props/cauldron.glb)
+  mandrake: { glb: null, make: mandrakePot }, // (models/hogwarts/props/mandrake.glb)
+  buckbeak: { glb: null, make: buckbeak }, // (models/hogwarts/props/buckbeak.glb)
 };
 
 export function makeProp(kind, { house = null, rt = null } = {}) {
