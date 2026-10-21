@@ -4,6 +4,7 @@ import { hash64 as libHash } from '../../../lib/land/flight/hash.js';
 import { LIFE, expanseLife } from '../../../lib/land/flight/lifeTables';
 import { SITE_GROUND, SITE_LAYERS } from '../../../lib/land/flight/planetTables';
 import { makeSector } from '../gen/sector.js';
+import { addBodies } from '../gen/systems.js';
 import { UNIVERSE, hash64 } from '../gen/seed.js';
 import { FIGURES, GALAXY_KINDS, SURFACE_MODELS } from '../../galaxy/shared/models';
 import { SITES } from '../../galaxy/shared/ground';
@@ -50,6 +51,19 @@ describe('the flight’s planets, composed', () => {
   it('reads a moon from the generator’s moon rows', () => {
     const system = { faction: null, traffic: 0.2, hazard: null };
     expect(moonRowOf({ id: 'E:3,-2:1:0', moonList: [{ name: 'Ostra', type: 'rocky', seed: 12345n }] }, system, 0)).toEqual({ id: 'e:3,-2:1:0:0', name: 'Ostra', type: 'rocky', seed: '12345', system, parent: 'e:3,-2:1:0' });
+  });
+
+  // lane 2's rows: { id, k, name, type: 'rocky' | 'icy', seed: bigint, radius, orbit, phase, revs, tilt }
+  it('lands a real moon by its id: the generator’s row, a round moon spec, its planet named', () => {
+    const p = addBodies(makeSector(UNIVERSE, 3, -2)).systems.flatMap((s) => s.planets).find((q) => q.moonList?.length);
+    expect(p).toBeTruthy();
+    const m = p.moonList[0];
+    const id = `${p.id.toLowerCase()}:0`;
+    expect(expanseRow(id)).toMatchObject({ id, name: m.name, type: m.type, seed: String(m.seed), radius: m.radius, parent: p.id.toLowerCase() });
+    const spec = planetSpecOf(id.toUpperCase());
+    expect(spec).toMatchObject({ id, kind: 'moon', parent: p.id.toLowerCase(), type: m.type === 'icy' ? 'ice' : 'rock', buildable: false });
+    expect(spec.round?.radius).toBe(15000);
+    expect(planetSpecOf(`${p.id.toLowerCase()}:${p.moonList.length}`)).toBeNull();
   });
 
   it('reads a planet id with its height written', () => {

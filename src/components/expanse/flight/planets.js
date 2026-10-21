@@ -15,6 +15,7 @@
 import { canonicalId } from '../../../lib/land/flight/expanse';
 import { parseSpaceId } from '../../../lib/space/address';
 import { makeSector } from '../gen/sector.js';
+import { addBodies } from '../gen/systems.js';
 import { UNIVERSE } from '../gen/seed.js';
 import { planetSpecOf as specWith, planetsOf } from '../../../lib/land/flight/planetSpec';
 import { lifeFor } from '../../../lib/land/flight/lifeTables';
@@ -53,7 +54,8 @@ export function expanseRow(id) {
   const a = c && parseSpaceId(c);
   // (the other layers are the 3D generator's)
   if (!a || a.sy !== 0) return null;
-  const s = makeSector(UNIVERSE, a.sx, a.sz).systems[a.system];
+  // a raw sector's planets have no moon rows: addBodies gives them moonList
+  const s = addBodies(makeSector(UNIVERSE, a.sx, a.sz)).systems[a.system];
   const p = s?.planets[a.planet];
   if (!p) return null;
   return a.moon === undefined ? rowOf(p, s) : moonRowOf(p, s, a.moon);
