@@ -164,9 +164,10 @@ export const WORLDS = {
         { kinds: ['gearperson-b', 'zigerion-b'], n: { high: 8, mid: 5, low: 0 }, at: [6, -40], r: 5, face: [6, -70] },
       ],
     },
+    // (a room flies one lane on high and mid: the mothership on high, high and slow, the Federation's on mid)
     fliers: [
+      { model: '/models/c137/rm/zigerion-ship.glb', n: { high: 1, mid: 0, low: 0 }, y: [95, 115], speed: 5, h: 40 },
       { model: FEDSHIP, n: { high: 2, mid: 1, low: 0 }, y: [40, 70], speed: 18, h: 4 },
-      { model: '/models/c137/rm/zigerion-ship.glb', n: { high: 1, mid: 1, low: 0 }, y: [95, 115], speed: 5, h: 40 },
     ],
   },
 

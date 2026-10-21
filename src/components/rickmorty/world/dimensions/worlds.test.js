@@ -88,6 +88,13 @@ describe('the worlds round the places', () => {
     expect(bad).toEqual([]);
   });
 
+  it('fly Customs’ Zigerion mothership over it on high, and the Federation’s ship on mid', () => {
+    const d = destinationById('customs');
+    const fly = (tier) => outskirtsOf(d, WORLDS.customs, { tier, fogFar: 300, tris: TRIS }).lanes.map((l) => l.model);
+    expect(fly('high')).toContain('/models/c137/rm/zigerion-ship.glb');
+    expect(fly('mid')).toContain('/models/c137/fedship.glb');
+  });
+
   it('lay the forecourt’s props off everyone’s way round, and the same on every level', () => {
     // (from a point to a closed route, sampled every quarter metre)
     const toRoute = (pts, x, z) => {
