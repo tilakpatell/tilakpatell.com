@@ -25,6 +25,9 @@
 //     on every level, casting their shadows; `spin` radians a second
 // A crowd kind is one of the cast's (../../portal/meshyCastCore.js's MESHY)
 // or one of the Citadel's light copies (`crowd:<name>`, /games/meshy/crowd).
+// The rest of the places' records are ./worlds2.js's, merged in here.
+
+import { WORLDS2 } from './worlds2';
 
 // each crowd kind's triangles (its model's own, held to the file by
 // ./worlds.test.js): what a level's crowd allowance is counted in
@@ -341,4 +344,6 @@ export const WORLDS = {
       { from: [0, 1.6, -9.4], to: [40, 22, -58] },
     ],
   },
+
+  ...WORLDS2,
 };

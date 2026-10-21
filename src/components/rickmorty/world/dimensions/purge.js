@@ -1,12 +1,12 @@
 // The Purge Planet ("Look Who's Purging Now"): a farming village of cat
-// people at dusk, thatched cottages, a barn, a well with Arthricia by it,
-// lanterns on posts, villagers about; and the purge siren on its pole. Pulled
+// people at dusk: cabins, a barn and a well with Arthricia by it (the
+// village's own models, stood by its world: ./worlds.js's pieces), lanterns
+// on posts, villagers about; and the purge siren on its pole. Pulled
 // (the area's 'siren' action, from RmWorld), it howls and the sky goes red;
 // Morty has a minute to get back through the portal ('calm' once he's gone).
 
 import * as THREE from 'three';
 import { BALL } from '../interiors/shell';
-import { gablePrism } from '../kit';
 import { specks, stage } from './stage';
 
 const LIGHT = { sun: [0xffc890, 1.2], hemi: [0xb89ad8, 0x4a3a2a, 1.25], fog: [0x8a6a8a, 50, 260] };
@@ -15,21 +15,9 @@ export async function buildPurge(kit) {
   const S = stage(kit, 'purge', { ground: specks('#6a7a3a', ['#5a6a32', '#7a8a46', '#6e6a3a'], 17), groundTile: 6 });
   const { R, P } = S;
 
-  // the cottages: white plaster, brown timbers, thick thatch
-  for (const [dx, dz, turn] of [
-    [-22, -10, Math.PI / 2],
-    [-22, 6, Math.PI / 2],
-    [18, -13, -Math.PI / 2],
-    [22, 6, -Math.PI / 2],
-  ]) {
-    const f = R.frame(...P(dx, dz), turn);
-    f.box(0xf2ead6, 0, 0, 0, 7, 3.2, 6).part(gablePrism(8, 7, 3.4), 0xc8a24a, 0, 3.2, 0);
-    f.box(0x5a3a22, 0, 0, 3.02, 1.1, 2.1, 0.08).box(0xffc070, -2.2, 1.3, 3.02, 0.9, 0.8, 0.05).box(0xffc070, 2.2, 1.3, 3.02, 0.9, 0.8, 0.05);
-  }
-  // the barn, red, at the top of the village
-  R.frame(...P(0, -19), 0).box(0x9a3a2a, 0, 0, 0, 10, 4.4, 7).part(gablePrism(10.6, 7.6, 3), 0x5a3a2a, 0, 4.4, 0).box(0x5a2a1a, 0, 0, 3.52, 3, 3.2, 0.08);
-  // the well
-  R.frame(...P(3, -3.4), 0).cyl(0x8a8478, 0, 0, 0, 1.05, 0.9).box(0x5a3a22, -0.9, 0, 0, 0.14, 2, 0.14).box(0x5a3a22, 0.9, 0, 0, 0.14, 2, 0.14).part(gablePrism(2.3, 1.5, 0.6), 0xc8a24a, 0, 2, 0);
+  // (the cabins, the barn and the well are the village's own models, its
+  // world's pieces, on their solids; the siren is still drawn here: its pull
+  // spot is too near its pole for a piece, ./worldRules.js)
   // the siren: a tall pole with a big brass horn on top and a pull lever
   R.frame(...P(-11, -13.4), 0).cyl(0x4a4a4a, 0, 0, 0, 0.14, 6).cyl(0xc8a24a, 0, 6, 0, 0.55, 0.9).box(0x8a2a2a, 0.3, 1.2, 0.2, 0.08, 0.6, 0.08);
   // fences and lanterns along the lanes

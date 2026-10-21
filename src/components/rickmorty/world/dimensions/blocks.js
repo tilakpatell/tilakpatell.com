@@ -23,6 +23,26 @@ export const BLOCKS = {
     { id: 'pit-w', dx: -16.25, dz: 14, w: 27.5, d: 12, h: 1.1, draw: 'barrier' },
     { id: 'pit-e', dx: 16.25, dz: 14, w: 27.5, d: 12, h: 1.1, draw: 'barrier' },
   ],
+  // the guests' pen by the arch (a low rail), and the dance floor ahead of the way in
+  squanch: [
+    { id: 'pen', dx: 17.4, dz: -9.25, w: 4, d: 4.5, h: 0.9, draw: 'rail' },
+    { id: 'floor', dx: -11, dz: 3.5, w: 6, d: 4, h: 0.3, draw: 'box' },
+  ],
+  // the riser the rally stands on, west of the way to the podium (one of the
+  // plain's smallest mushrooms is under it, out of sight)
+  pluto: [{ id: 'rally', dx: -11.5, dz: 4.5, w: 6, d: 6, h: 0.45, draw: 'box' }],
+  // the drop-off line's rail, along the east wall by the desk
+  jerryboree: [{ id: 'dropoff', dx: 10, dz: 4.65, w: 1.8, d: 6.3, h: 1, draw: 'rail' }],
+  // the badge queue's rope pen, between the badge table and the way in
+  heistcon: [{ id: 'badgequeue', dx: -4.1, dz: 14.9, w: 3.4, d: 3.8, h: 1, draw: 'rail' }],
+  // the vestibules' standing room, a brass rail round each corner either side
+  // of the door at the far end and the portal home at the near one
+  storytrain: [
+    { id: 'vestibule-nw', dx: -3.75, dz: -13.05, w: 2.3, d: 3.7, h: 1, draw: 'rail' },
+    { id: 'vestibule-ne', dx: 3.75, dz: -13.05, w: 2.3, d: 3.7, h: 1, draw: 'rail' },
+    { id: 'vestibule-sw', dx: -3.75, dz: 13.05, w: 2.3, d: 3.7, h: 1, draw: 'rail' },
+    { id: 'vestibule-se', dx: 3.75, dz: 13.05, w: 2.3, d: 3.7, h: 1, draw: 'rail' },
+  ],
 };
 // Morty's radius (../rules.js's MORTY.radius, which imports this file's
 // importer: the test holds the two to each other)

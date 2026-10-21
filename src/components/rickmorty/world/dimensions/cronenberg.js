@@ -6,7 +6,6 @@
 // hunting whoever comes close) are placed from ./destinations.js.
 
 import { BALL, fitText } from '../interiors/shell';
-import { gablePrism } from '../kit';
 import { specks, stage } from './stage';
 
 const LIGHT = { sun: [0xffc8a0, 0.9], hemi: [0x8a7a8a, 0x3a2a2a, 1.3], fog: [0x8a6a6a, 50, 240] };
@@ -18,12 +17,8 @@ export async function buildCronenberg(kit) {
   // the road, cracked, across the middle
   R.frame(...P(0, 0), 0, { list: 'fixed' }).box(0x4a4a4a, 0, 0.01, 0, A.x1 - A.x0 + 40, 0.04, 7);
   for (let k = 0; k < 14; k++) R.frame(...P(-30 + k * 4.6, -2 + ((k * 7) % 5)), 0.3 + k, { list: 'fixed' }).box(0x2a2a2a, 0, 0.03, 0, 1.6, 0.02, 0.12);
-  // the house, boarded, with a fence of spears round the yard
-  const [hx, hz] = P(-16, -20);
-  const Hs = R.frame(hx, hz, 0);
-  Hs.box(0xb8a890, 0, 0, 0, 14, 4.4, 8).part(gablePrism(15, 9, 3), 0x5a4a4a, 0, 4.4, 0);
-  for (const u of [-4.5, 0, 4.5]) Hs.box(0x3a2a1a, u, 1.4, 4.02, 1.4, 1.2, 0.08).box(0x6a4a2a, u, 1.0, 4.04, 1.8, 0.2, 0.06, 0, 0, 0.2).box(0x6a4a2a, u, 2.0, 4.04, 1.8, 0.2, 0.06, 0, 0, -0.25);
-  Hs.box(0x3a2a1a, 0, 0, 4.02, 1.2, 2.2, 0.08);
+  // the house (its model, the world's piece, on its solid: ./worlds.js), and
+  // a fence of spears round the yard
   for (let dx = -24; dx <= -6; dx += 1.5) R.frame(...P(dx, -14), 0, { list: 'fixed' }).cyl(0x5a4a3a, 0, 0, 0, 0.05, 1.8).ball(0x9a9a9a, 0, 1.85, 0, 0.08, 1.6);
   // two graves
   for (const dx of [-21, -19]) R.frame(...P(dx, -17.6), 0).box(0x5a4a3a, 0, 0, 0, 1.2, 0.3, 2.2).box(0x8a8a8a, 0, 0, -1.2, 0.8, 0.9, 0.1);
@@ -31,7 +26,8 @@ export async function buildCronenberg(kit) {
   R.frame(...P(6, -20), 0).box(0x6a5a5a, 0, 0, 0, 10, 2, 1);
   for (let k = 0; k < 8; k++) R.frame(...P(2 + k * 1.2, -19.4 + ((k * 3) % 2) * 0.3), k, { list: 'fixed' }).box(0x7a6a6a, 0, 2, 0, 0.9, 0.5, 0.6);
   R.frame(...P(12, -12), 0.4).box(0x3a2a1a, 0, 0.2, 0, 0.06, 1.5, 0.06, 0, 0, -0.3).box(0x6a6a6a, 0, 0, 0.1, 0.3, 0.4, 0.06, 0, 0, -0.3);
-  // a car on its side, a lamp post bent, dead trees
+  // a car on its side (still drawn here: its look spot is too near it for a
+  // piece, ./worldRules.js), a lamp post bent, dead trees
   R.frame(...P(16, 12), 0.2).box(0x8a3a2a, 0, 0.6, 0, 4.4, 1.6, 1.4, 0, 0, 1.2).box(0x2a2a2a, 1.4, 1.8, 0.6, 0.6, 0.6, 0.2).box(0x2a2a2a, -1.4, 1.8, 0.6, 0.6, 0.6, 0.2);
   R.frame(...P(4, 6), 0).cyl(0x4a4a4a, 0, 0, 0, 0.12, 4, 0, 0.4).glow(BALL, 0xff9a4a, 0.6, 1.4, 3.8, 0, 0, 0.2);
   for (const [dx, dz] of [
