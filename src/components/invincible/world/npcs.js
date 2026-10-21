@@ -101,6 +101,12 @@ export function createNpcs(scene, world, cast = {}) {
     for (const n of all) if (n.spot) n.out = n.n < crowdCount(SPOTS[n.spot], name, { school: n.spot === 'school' });
   }
   const r = seeded(17);
+  // (a dimension with nobody about, ./dimensions.js: everyone hidden, Eve too)
+  let hidden = false;
+  function setHidden(h) {
+    hidden = h;
+    for (const n of all) n.holder.visible = !h && n.out !== false;
+  }
 
   // `crowd`: what the townspeople sense besides him (./brains.js's sense):
   // { slam: [x, z] | null, hit: [x, z] | null, fight, won, time }
@@ -108,6 +114,7 @@ export function createNpcs(scene, world, cast = {}) {
     // (a tab hidden a minute and back is one short step, as the rules' are)
     const dt = Math.min(frameDt, 0.05);
     const ev = [];
+    if (hidden) return ev;
     const hp = hero.p;
     const sense = { hero: hp, heroMode: hero.mode, heroSpeed: Math.hypot(...hero.v), slam: crowd.slam ?? null, hit: crowd.hit ?? null, fight: Boolean(crowd.fight), won: Boolean(crowd.won), time: crowd.time ?? 'noon' };
     for (const n of all) {
@@ -118,7 +125,8 @@ export function createNpcs(scene, world, cast = {}) {
         n.brain = stepBrain(n.brain, sense, dt, r);
         n.holder.position.x = n.brain.at[0];
         n.holder.position.z = n.brain.at[1];
-        n.holder.rotation.y = n.brain.yaw;
+        // (the mirror city's crowd walks backwards: facing away from where it goes)
+        n.holder.rotation.y = n.brain.yaw + (crowd.backwards ? Math.PI : 0);
         // (the manager keeps his arms folded while there's nothing to do)
         const pose = poseOf(n.brain);
         n.person.pose({ mode: pose === 'idle' && n.base === 'arms' ? 'arms' : pose, t, phase: n.phase }, dt);
@@ -179,5 +187,5 @@ export function createNpcs(scene, world, cast = {}) {
     return out.sort((a, b) => a.d - b.d);
   }
 
-  return { all, eve, update, talkers, setTime };
+  return { all, eve, update, talkers, setTime, setHidden };
 }

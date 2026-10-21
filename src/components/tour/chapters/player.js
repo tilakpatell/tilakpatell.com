@@ -35,6 +35,7 @@ const ROW = {
   '/earth': 'earth',
   '/caribbean': 'dead-mans-tide',
   '/invincible': 'invincible',
+  '/hogwarts': 'hogwarts',
 };
 const card = (w, go) => worldStop(w, ABOUT[w.to], WORLD_MB[w.to], go, ROW[w.to]);
 export const worldCards = () => WORLDS.filter((w) => !starWars(w)).map((w) => card(w));
@@ -110,7 +111,7 @@ export const PLAYER = [
     stops: [
       {
         id: 'worlds-hello',
-        title: 'Fourteen more worlds',
+        title: 'Fifteen more worlds',
         text: 'Each is its own game. The tour walks into eight of them next; Go there leaves it for any, and when you’re back, the guide carries on where you left off.',
       },
       ...worldCards(),
