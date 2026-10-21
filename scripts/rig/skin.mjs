@@ -635,12 +635,16 @@ export function assemble(doc, bones) {
 
 // The command line for one skinning, given where Blender is (bake.mjs's
 // blender(): Windows, or Linux in WSL), so it's testable without one.
-export async function command(input, jobFile, out, { where } = {}) {
+export const command = (input, jobFile, out, opts = {}) => blenderCommand(join(HERE, 'skin.py'), [input, jobFile, out], opts);
+
+// Any of this folder's Blender scripts run headless, with its arguments (a
+// Windows path turned for WSL's Blender): [exe, ...args], or null with no Blender.
+export async function blenderCommand(script, rest, { where } = {}) {
   const gen3d = await import('../gen3d/bake.mjs');
   const { wslPath, WSL } = await import('../gen3d/generate.mjs');
   where ??= gen3d.blender();
   if (!where) return null;
-  const args = ['--background', '--python', join(HERE, 'skin.py'), '--', input, jobFile, out];
+  const args = ['--background', '--python', script, '--', ...rest.map(String)];
   if (where.kind === 'windows') return /\.mjs$/i.test(where.exe) ? [process.execPath, where.exe, ...args] : [where.exe, ...args];
   const q = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;
   const run = `export LD_LIBRARY_PATH=~/miniforge3/envs/x11libs/lib:$LD_LIBRARY_PATH; ${q(where.exe)} ${args.map((a) => q(/^[A-Za-z]:[\\/]/.test(a) ? wslPath(a) : a)).join(' ')}`;
@@ -658,17 +662,29 @@ async function nodeIO() {
 // A static figure in, the same figure on the site's skeleton out.
 // opts: height (metres, crown to sole), turn (degrees about +y, or 'auto'),
 // proxy ('auto' | 'always' | 'never'), shares (SHARES overridden, for a
-// figure whose shape misleads), keep (a folder to leave the job and Blender's
-// GLB in, for looking at). → { joints, bones, turn, report }
-export async function skin(input, out, { height = null, turn = 0, proxy = 'auto', shares, keep, log = console.log } = {}) {
+// figure whose shape misleads), joints (estimate's, from another cut of the
+// same figure, so its cuts share one skeleton), like (that cut's skinned GLB:
+// its weights taken by nearest vertex, transfer.mjs, and no Blender), keep (a folder to leave the
+// job and Blender's GLB in, for looking at). → { joints, bones, turn, report }
+export async function skin(input, out, { height = null, turn = 0, proxy = 'auto', shares, joints: given = null, like = null, keep, log = console.log } = {}) {
   const io = await nodeIO();
   const doc = await io.read(input);
   if (turn === 'auto') turn = facing(pointsOf(await stand(doc), { samples: 30000 }));
   await stand(doc, { turn, height });
   // (plain for Blender: its importer reads no meshopt)
   for (const ext of doc.getRoot().listExtensionsUsed()) if (/meshopt|quantization/i.test(ext.extensionName)) ext.dispose();
-  const joints = estimate(pointsOf(doc, { samples: 60000 }), { shares });
+  // (joints given: another cut of the same figure's, so every cut has one skeleton)
+  const joints = given ?? estimate(pointsOf(doc, { samples: 60000 }), { shares });
   const bones = fit(joints);
+  if (like) {
+    // weighted as another cut of it already is (transfer.mjs), no Blender
+    const { weightsLike } = await import('./transfer.mjs');
+    assemble(weightsLike(doc, await io.read(like)), bones);
+    mkdirSync(dirname(resolve(out)), { recursive: true });
+    await io.write(out, doc);
+    log?.(`${out}: ${bones.length} bones, weighted like ${like}`);
+    return { joints, bones, turn, report: { on: 'another cut', bare: 0 } };
+  }
   const dir = keep ? resolve(keep) : mkdtempSync(join(tmpdir(), 'skin-'));
   mkdirSync(dir, { recursive: true });
   const plain = join(dir, 'figure.glb');

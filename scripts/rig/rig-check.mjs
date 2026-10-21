@@ -22,7 +22,8 @@
 //     [--base http://127.0.0.1:5297] [--chrome edge|PATH] [--json OUT.json]
 //   (no --base: a dev server of its own is started on a free port)
 //   --sheet: four views of the figure in its idle, its walk and a cast
-//     (`ual-cast`), a row each, as a WebP under 1 MB (one figure only)
+//     (`ual-cast`), a row each, as a WebP under 1 MB (one figure only);
+//     --rows a,b,c: other clips for the rows (to see how a clip reads on it)
 //
 //   verdict(result) → { ok, problems: [sentence], numbers } (pure: tested in rig-check.test.mjs)
 
@@ -144,6 +145,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     return i >= 0 ? args.splice(i, 2)[1] : d;
   };
   const sheetOut = flag('sheet');
+  const rows = flag('rows', SHEET.join(',')).split(',');
   const clips = flag('clips', CLIPS.join(',')).split(',');
   const jsonOut = flag('json');
   const exe = browserPath(flag('chrome'), process.env, ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome']);
@@ -159,7 +161,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const all = {};
   try {
     for (const file of files) {
-      const { result, png } = await check(file, { base, browser, clips, sheet: sheetOut ? SHEET : null });
+      const { result, png } = await check(file, { base, browser, clips, sheet: sheetOut ? rows : null });
       const v = verdict(result, { clips });
       all[file] = { verdict: v, own: result.own, rest: result.rest };
       const n = v.numbers;

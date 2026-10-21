@@ -139,7 +139,12 @@ def stand_in(voxel=None):
         rm.mode = "VOXEL"
         rm.voxel_size = voxel
         bpy.ops.object.modifier_apply(modifier="remesh")
+    whole = len(proxy.data.vertices)
     kept = biggest(proxy)
+    if not voxel and kept / max(1, whole) <= 0.9:
+        # (the figure in pieces: its arms would take the body's weights, so no heat spent on it)
+        print(f"the figure itself is in pieces (its biggest {kept} of {whole} vertices): a remesh instead", flush=True)
+        return proxy, 1.0, "the figure itself", kept / max(1, whole)
     bpy.ops.object.select_all(action="DESELECT")
     proxy.select_set(True)
     arm.select_set(True)
@@ -147,16 +152,19 @@ def stand_in(voxel=None):
     bpy.ops.object.parent_set(type="ARMATURE_AUTO")
     left = len(bare(proxy)) / max(1, len(proxy.data.vertices))
     what = f"remeshed at {voxel * 1000:.1f} mm" if voxel else "the figure itself"
-    print(f"heat on {what}: its biggest piece of {kept} vertices, {left:.2%} bare", flush=True)
-    return proxy, left, what
+    print(f"heat on {what}: its biggest piece, {kept} of {whole} vertices, {left:.2%} bare", flush=True)
+    return proxy, left, what, kept / max(1, whole)
 
 
 tries = [None] if job.get("proxy") != "always" else []
 voxel = job.get("voxel", 0.014)
 tries += [voxel * 1.5**k for k in range(4)]
 for i, v in enumerate(tries):
-    proxy, left, how = stand_in(v)
-    if left < 0.01 or i == len(tries) - 1:
+    proxy, left, how, share = stand_in(v)
+    # (the figure itself only when its biggest piece is nearly all of it: a
+    # figure made of parts, or cracked along its seams, has its arms in
+    # other pieces, and they'd take the weights of the body they're nearest)
+    if (left < 0.01 and (v or share > 0.9)) or i == len(tries) - 1:
         break
     bpy.data.objects.remove(proxy)
 
