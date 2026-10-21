@@ -378,6 +378,20 @@ describe('the outskirts of a room', () => {
     expect(low.lanes).toEqual([]);
     expect(low.walkers.filter((c) => c.loop === 'street' || c.out).length).toBe(0);
   });
+  it('flies its traffic across its widest window’s view, out past the wall and along it', () => {
+    const d = room();
+    const A = d.area;
+    for (const [wall, check] of [
+      ['n', (l) => l.from[1] === l.to[1] && l.from[1] < A.z0 - 20],
+      ['e', (l) => l.from[0] === l.to[0] && l.from[0] > A.x1 + 20],
+    ]) {
+      const L = lay(d, { ...w, outside: 'space', windows: [{ wall: 'n', from: -2, to: 2, y0: 1, h: 3 }, { wall, from: -12, to: 12, y0: 1, h: 4 }].slice(wall === 'n' ? 1 : 0) });
+      const [l] = L.lanes;
+      expect(check(l), wall).toBe(true);
+      for (const [x, z] of [l.from, l.to]) expect(Math.hypot(x - d.centre.x, z - d.centre.z)).toBeGreaterThan(FOG);
+    }
+  });
+
   it('looking out on space has no buildings and no skyline, only traffic', () => {
     const L = lay(room(), { ...w, outside: 'space' });
     expect(L.lots).toEqual([]);

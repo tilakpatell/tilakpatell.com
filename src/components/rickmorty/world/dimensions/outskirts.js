@@ -46,6 +46,7 @@ const SKY = { near: 100, far: 0.8, w: [10, 24], over: 2.5 };
 const EDGE = { solid: { wall: 0.9, kerb: 0.15 }, see: { rail: 1.4, fence: 1.4, barrier: 1.4 }, clump: 3.5 };
 const SETS = { most: 2, apart: 40 };
 const LANE = 1.1; // a lane's ends, in the fog's far edges
+const LANE_OUT = [40, 90]; // metres past a room's wall its traffic flies along it
 const FACING = { n: 0, s: Math.PI, e: -Math.PI / 2, w: Math.PI / 2 };
 const CLEAR = { solid: 1, people: 1, spot: 2, ends: 2 };
 
@@ -294,7 +295,7 @@ function crowdOf(d, crowd, { tier, row, room, outside, tris, hero, extra = [] })
 }
 
 // ── the traffic ──
-function lanesOf(d, fliers, { tier, row, room, outside, fogFar }, r) {
+function lanesOf(d, fliers, { tier, row, room, outside, fogFar, windows }, r) {
   if (room && (!outside || tier === 'low')) return [];
   let left = room ? Math.floor(row.traffic / 2) || (tier === 'low' ? 0 : 1) : row.traffic;
   // (from past the fog to past it again: a ship comes and goes in the sky's own colour)
@@ -308,6 +309,19 @@ function lanesOf(d, fliers, { tier, row, room, outside, fogFar }, r) {
     if (f.climb) {
       const pad = [d.centre.x + f.climb[0], d.centre.z + f.climb[1]];
       out.push({ key: `lane-${i}`, model: f.model, h: f.h ?? null, n, y: 0, y1: R, from: pad, to: pad, speed: f.speed ?? 16 });
+      continue;
+    }
+    // (a room's, along its widest window's wall, out past it: across the view)
+    const glass = room ? [...(windows ?? [])].sort((p, q) => q.to - q.from - (p.to - p.from))[0] : null;
+    if (glass) {
+      const A = d.area;
+      const off = within(LANE_OUT, r());
+      const y = within(f.y ?? [30, 60], r());
+      const ns = glass.wall === 'n' || glass.wall === 's';
+      const at = { n: A.z0 - off, s: A.z1 + off, e: A.x1 + off, w: A.x0 - off }[glass.wall];
+      const ends = ns ? [[d.centre.x - R, at], [d.centre.x + R, at]] : [[at, d.centre.z - R], [at, d.centre.z + R]];
+      if (r() < 0.5) ends.reverse();
+      out.push({ key: `lane-${i}`, model: f.model, h: f.h ?? null, n, y, y1: y, from: ends[0], to: ends[1], speed: f.speed ?? 16 });
       continue;
     }
     const a = r() * Math.PI * 2;
@@ -384,7 +398,7 @@ export function outskirtsOf(d, world, { tier = 'high', fogFar = 300, tris = {} }
   const pieces = piecesOf(d, world.pieces);
   const scattered = outside === 'ground' ? scatterOf(d, world.scatter, tier, [...lots, ...stands.lots, ...landmarks, ...pieces], r) : [];
   const { walkers, gathers } = crowdOf(d, world.crowd, { tier, row, room, outside, tris, hero, extra: stands.gathers });
-  const lanes = outside ? lanesOf(d, world.fliers, { tier, row, room, outside, fogFar }, r) : [];
+  const lanes = outside ? lanesOf(d, world.fliers, { tier, row, room, outside, fogFar, windows: world.windows }, r) : [];
   const extents = Object.fromEntries([...walkers, ...gathers, ...lanes].map((c) => [c.key, extentOf(c)]));
   return { reach: fogFar + 20, edge: runs, lots: [...lots, ...stands.lots, ...landmarks, ...pieces], skyline, path, props: [...clumps, ...props, ...scattered], walkers, gathers, lanes, extents };
 }
