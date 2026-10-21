@@ -30,8 +30,8 @@ export const BEATS = [
   // (from the slope's top, 3 m over it, looking up the lane between the Mountain, 9° right, and the Tower, 31°)
   { id: 'eruption', kind: 'eruption', at: 146, hold: 8, rig: 'wide', reach: 14, params: { at: [-10, 27.5, 138], lookAt: [23.6, 46.6, 230.2] }, clip: 'oneRing', fx: [{ kind: 'shake', at: 0.5, seconds: 4 }] },
   // the Eagles: up and away west over the ruin
-  // (from up the slope behind the rock, looking down on it, the Mountain's glow over it; the
-  // Eagles come in over the camera, take the two and climb away; then black: the Road cuts to
+  // (from up the slope behind the rock, 3 m over it, looking down on the two lying on it: the
+  // Eagles come down into the frame over the camera, take them and climb out of it; then black: the Road cuts to
   // the White City, its land never drawn beside Mordor's, stages/index.js's `cut`)
-  { id: 'eagles', kind: 'eagles', at: 166, hold: 8, rig: 'wide', reach: 14, params: { at: [-8, 3, 128], lookAt: [8, 16, 178], above: true }, fx: [{ kind: 'black', at: 6.8, seconds: 3 }] },
+  { id: 'eagles', kind: 'eagles', at: 166, hold: 8, rig: 'wide', reach: 14, params: { at: [-8, 27, 128], lookAt: [6, 14, 175] }, fx: [{ kind: 'black', at: 6.8, seconds: 3 }] },
 ];
