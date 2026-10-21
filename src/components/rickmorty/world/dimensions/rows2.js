@@ -503,6 +503,8 @@ export const ROWS = [
       { kind: 'cromulon', dx: -40, dz: -56, face: S + 0.3, y: 10, h: 24 },
       { kind: 'cromulon', dx: 40, dz: -58, face: S - 0.3, y: 10, h: 24 },
       { kind: 'icet', dx: 8, dz: -13, face: S },
+      { kind: 'cromulon', dx: -95, dz: -105, face: S + 0.6, y: 30, h: 40 },
+      { kind: 'cromulon', dx: 100, dz: -110, face: S - 0.6, y: 34, h: 44 },
     ],
     spots: [
       { id: 'watert', dx: -4, dz: -10.4, label: 'Water-T', verb: 'Talk' },

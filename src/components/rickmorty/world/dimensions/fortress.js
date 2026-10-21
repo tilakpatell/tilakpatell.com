@@ -10,7 +10,7 @@
 // few seconds (the area's 'gone').
 
 import * as THREE from 'three';
-import { BALL, BOX, CYL, fitText } from '../interiors/shell';
+import { BALL, BOX, CYL } from '../interiors/shell';
 import { stage } from './stage';
 
 const LIGHT = { sun: [0xdfe8ff, 0.9], hemi: [0xc8d8f0, 0x3a3e4a, 2.3], fog: null, background: 0x0a0c12 };
@@ -38,7 +38,6 @@ export async function buildFortress(kit) {
   const { R, P, A } = S;
   const H = S.d.ceiling;
   const W = A.x1 - A.x0;
-  const L = A.z1 - A.z0;
 
   // ribs up the walls, and strip lights across the ceiling
   for (let dz = -16; dz <= 16; dz += 4) for (const x of [A.x0 + 0.2, A.x1 - 0.2]) R.frame(x, P(0, dz)[1], 0, { list: 'fixed' }).box(DARK, 0, 0, 0, 0.4, H, 0.6);
@@ -87,26 +86,7 @@ export async function buildFortress(kit) {
   C.box(0x0a0a10, 0, 1.2, -0.5, 6.4, 1.6, 0.14, 0, -0.35);
   C.glow(BOX, 0x4aff7a, 1.3, 0, 1.6, -0.42, 0, 6, 1.2, 0.02, -0.35);
   for (let k = 0; k < 10; k++) C.glow(BALL, k % 3 ? 0x4aff7a : 0xff5a3a, 1.6, -2.7 + k * 0.6, 1.16, 0.5, 0, 0.08);
-  // the big screen on the north wall over it: the Curve, and the dimensions he's done with
-  R.cell('prime-screen', 256, 128, (g, w, h) => {
-    g.fillStyle = '#060a08';
-    g.fillRect(0, 0, w, h);
-    g.strokeStyle = '#4aff7a';
-    g.lineWidth = 2;
-    g.beginPath();
-    g.ellipse(w / 2, h / 2, w * 0.42, h * 0.38, 0, 0, Math.PI * 2);
-    g.stroke();
-    g.fillStyle = '#4aff7a';
-    for (let k = 0; k < 60; k++) {
-      const a = (k / 60) * Math.PI * 2;
-      const r = 0.5 + ((k * 37) % 11) / 24;
-      g.fillRect(w / 2 + Math.cos(a) * w * 0.42 * r, h / 2 + Math.sin(a) * h * 0.38 * r, 2, 2);
-    }
-    g.fillStyle = '#ff5a3a';
-    for (let k = 0; k < 9; k++) g.fillRect(w * (0.2 + (k * 0.07) % 0.6), h * (0.3 + ((k * 0.13) % 0.4)), 4, 4);
-    fitText(g, 'CENTRAL FINITE CURVE', w / 2, h - 12, w - 20, 11, { color: '#4aff7a' });
-  });
-  R.frame(...P(0, -(L / 2) + 0.14), 0, { list: 'fixed' }).box(0x0a0a10, 0, 2.6, 0, 10, 5, 0.1).decal('prime-screen', 0, 5.1, 0.07, 9.6, 4.6, { bright: true });
+  // (over it, the north wall's long window onto space: its world's, ./worlds.js)
   // the picture on the east wall: a garage, a family, two faces scribbled out
   R.cell('prime-picture', 96, 72, (g, w, h) => {
     g.fillStyle = '#2a1a0a';

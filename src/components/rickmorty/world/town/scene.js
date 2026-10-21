@@ -15,11 +15,11 @@
 //   building materials; load(): fetches the models, after the street's up
 
 import * as THREE from 'three';
-import { at, coloured, gentleRamp, rng, speckle } from '../kit';
+import { at, coloured, rng, speckle } from '../kit';
 import { canvasTexture } from '../../stage';
 import { fitText } from '../interiors/shell';
-import { toonify } from '../../portal/toon';
 import { gltfLoader } from '../../../../lib/three/gltf';
+import { instanced, partsOf, stoodOn } from '../models';
 import { BANDSTAND, CROSS, FLOWERBEDS, LIGHTS, LOT, LOT_CARS, PATHS, PATH_RING, POND, POSTERS, ROCKS, ROADS, SHOPS, SIDE, SIGNS, STATUE, WATER_TOWER } from './plan';
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
@@ -567,55 +567,4 @@ function ellipseStrip(cx, cz, rx, rz, w, seg) {
     g.computeVertexNormals();
   }
   return g;
-}
-
-// A kit model's meshes from its family's file: the node's, toon-painted,
-// each with its place under the node, the node scaled to `tall` and stood on
-// the ground at the origin. null if the file hasn't it.
-function partsOf(scene, { node, tall }) {
-  const root = scene.getObjectByName(node);
-  if (!root) return null;
-  toonify(root, { gradientMap: gentleRamp() });
-  root.updateWorldMatrix(true, true);
-  const box = new THREE.Box3().setFromObject(root);
-  const k = tall / Math.max(1e-6, box.max.y - box.min.y);
-  const mid = box.getCenter(new THREE.Vector3());
-  // (from the scene's frame to the model's own: its foot's middle at the origin, `tall` high)
-  const to = new THREE.Matrix4().makeScale(k, k, k).multiply(new THREE.Matrix4().makeTranslation(-mid.x, -box.min.y, -mid.z));
-  const parts = [];
-  root.traverse((o) => {
-    if (o.isMesh) parts.push({ geometry: o.geometry, material: o.material, local: to.clone().multiply(o.matrixWorld) });
-  });
-  return parts;
-}
-// each part as an instanced mesh, one instance a placement { x, z, turn, s }
-function instanced(parts, list, { shadows }) {
-  if (!list.length) return [];
-  const m = new THREE.Matrix4();
-  const q = new THREE.Quaternion();
-  const up = new THREE.Vector3(0, 1, 0);
-  return parts.map((p) => {
-    const mesh = new THREE.InstancedMesh(p.geometry, p.material, list.length);
-    list.forEach((o, i) => {
-      const s = o.s ?? 1;
-      m.compose(new THREE.Vector3(o.x, 0, o.z), q.setFromAxisAngle(up, o.turn ?? 0), new THREE.Vector3(s, s, s));
-      mesh.setMatrixAt(i, m.clone().multiply(p.local));
-    });
-    mesh.castShadow = shadows;
-    mesh.receiveShadow = true;
-    mesh.computeBoundingSphere();
-    return mesh;
-  });
-}
-// a model stood `h` tall on (x, z) at height y, turned `turn`
-function stoodOn(model, { x, z, y = 0, h, turn = 0 }) {
-  const holder = new THREE.Group();
-  model.rotation.y = turn;
-  holder.add(model);
-  holder.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(holder);
-  const k = h / Math.max(1e-6, box.max.y - box.min.y);
-  holder.scale.setScalar(k);
-  holder.position.set(x - ((box.min.x + box.max.x) / 2) * k, y - box.min.y * k, z - ((box.min.z + box.max.z) / 2) * k);
-  return holder;
 }

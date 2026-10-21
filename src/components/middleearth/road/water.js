@@ -26,10 +26,12 @@ import { Fn, attribute, cameraPosition, cos, dot, float, length, max, mix, model
 import { noiseWith } from '../../../lib/three/noiseNodes';
 
 const STEP = 2; // m between a sheet’s or a ribbon’s rows
-const AMP = { river: 0.08, still: 0.01, lava: 0 };
+const AMP = { river: 0.05, still: 0.01, lava: 0 };
 const SPEED = { river: 0.6, still: 0, lava: 0.08 };
 const FINE = { river: 1, still: 0.25, lava: 0 }; // the fine ripple’s share: a still pool is nearly a mirror
 const RISE = 2.4; // m a full rise lifts the river
+const CALM = 0.7; // the share of the swell's slope gone by 60 m off
+const SHEEN = { river: 0.7, still: 0.95 }; // the most of the sky the water gives back, over the least
 // the two octaves: wavelength (m), a share of the amplitude, the angle off the flow
 const WAVES = [
   { length: 6.5, share: 1, angle: 0.35 },
@@ -160,9 +162,13 @@ export function createWater({ area = null, along = null, level = 0, flow = [0, 1
     // (faded out with distance, where it would only sparkle in the pixels)
     const toEye = cameraPosition.sub(worldV.add(vec3(0, w.y, 0)));
     const fine = amp.mul(1.5).add(0.004).mul(25 * (FINE[kind] ?? 1)).mul(float(1).sub(smoothstep(25, 140, length(toEye))));
-    const n = normalize(vec3(w.sx.add(nx.mul(fine)).negate(), 1, w.sz.add(nz.mul(fine)).negate()));
+    // (the swell calmed off into the distance: seen at a slant, its slopes flip the far water between
+    // the sky and the deep in stripes, where the eye sees only a sheen)
+    const calm = float(1).sub(smoothstep(6, 60, length(toEye)).mul(CALM));
+    const n = normalize(vec3(w.sx.mul(calm).add(nx.mul(fine)).negate(), 1, w.sz.mul(calm).add(nz.mul(fine)).negate()));
     const view = normalize(toEye);
-    const fres = pow(max(dot(n, view), 0).oneMinus(), 5).mul(0.95).add(0.05);
+    // (running water gives back less of the sky than a still pool: it never whites out)
+    const fres = pow(max(dot(n, view), 0).oneMinus(), 5).mul(SHEEN[kind] ?? 0.95).add(0.05);
     const r = reflect(view.negate(), n);
     const zenith = mix(vec3(0.01, 0.015, 0.04), vec3(0.22, 0.42, 0.78), day);
     const skyCol = mix(horizon, zenith, pow(max(r.y, 0), 0.5));

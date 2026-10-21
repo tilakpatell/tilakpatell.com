@@ -8,21 +8,30 @@
 // straight where they're going). Headless Chrome draws in software, slowly.
 // --metrics prints, after each shot, `name band=… mark=…` (see measure);
 // BOX=1 with it also writes inv-<name>.box.png, the box and ring drawn on.
+// --play ep1,ep2,… (or --play all) plays those episodes through by moving
+// Mark (./inv-world-play.mjs) and fails unless each is done; with --play
+// only the shots named are taken.
 import { chromium } from 'playwright-core';
 import sharp from 'sharp';
+import { installPlayer, play } from './inv-world-play.mjs';
 
 const out = process.env.OUT ?? '.';
 const W = Number(process.env.W ?? 960);
 const H = Number(process.env.H ?? 540);
 const Q = process.env.Q ?? 'low';
-const URL = `http://localhost:5173/?quality=${Q}#/invincible`;
+// (BASE: another dev server than the default one, e.g. a worktree's own port)
+const BASE = process.env.BASE ?? 'http://localhost:5173';
+const URL = `${BASE}/?quality=${Q}#/invincible`;
 const chrome = process.env.CHROME ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const browser = await chromium.launch({ executablePath: chrome, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const errors = [];
 const ctx = await browser.newContext({ viewport: { width: W, height: H }, hasTouch: W < 600, isMobile: W < 600 });
 await ctx.addInitScript(([q, intro]) => {
   window.localStorage.setItem('tp-intro', '1');
-  window.localStorage.setItem('tp-3d', '"on"');
+  // (the bare word, as lib/gpu.js keeps it: quoted, it reads as auto, and a
+  // game that is not forced on goes down to its no-3D card when the software
+  // renderer's frames fall past the watchdog's floor)
+  window.localStorage.setItem('tp-3d', 'on');
   window.localStorage.setItem('tp-worlds', '"load"');
   window.localStorage.setItem('tp-software', '"on"'); // (past the Star Wars worlds' GPU gate, lib/fit)
   window.localStorage.setItem('tp-quality', JSON.stringify(q));
@@ -33,8 +42,11 @@ await ctx.addInitScript(([q, intro]) => {
 const page = await ctx.newPage();
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+// (--play's driver says how far it's got)
+page.on('console', (m) => m.text().startsWith('[play]') && console.log(m.text()));
 const t0 = Date.now();
-await page.goto(URL, { waitUntil: 'domcontentloaded' });
+// (a cold dev server transforms the whole module graph before the page's first script runs: minutes under load)
+await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 240000 });
 await page.waitForFunction(() => window.__INVWORLD__?.api && document.querySelector('.iw-canvas[data-on]'), null, { timeout: 240000 });
 console.log('city up in', ((Date.now() - t0) / 1000).toFixed(1), 's');
 
@@ -42,6 +54,20 @@ console.log('city up in', ((Date.now() - t0) / 1000).toFixed(1), 's');
 const SHOTS = {
   spawn: { at: null, time: 'noon' },
   street: { p: [40, 18, 200], mode: 'air', yaw: Math.PI, pitch: -0.22 },
+  // the brawl (./brawl.js): a Mauler in his hands over downtown (['spawn'] calls the villains, ['held', i] puts the i-th in his hands)
+  // the city that breaks (./demolish.js): the three towers nearest the plaza's east with their tops gone, at dusk (['ruin', [x, z], n, d] hits them through the hook)
+  ruins: { drive: [['go', [110, 230, 175], Math.PI, 'air'], ['ruin', [110, 60], 3, 0.8], ['wait', 800]], time: 'dusk', pitch: -0.95 }, // (from high over them, looking down: the tops gone show best from above)
+  // episode 8 (./missions.js): Dad on the porch at dusk as it starts; the sky at 8 km at night, Dad beside him (the world steps the beats; ['feed'] moves the rules)
+  ep8porch: { mission: 'ep8', drive: [['go', [-2050.2, 0, 251], Math.PI, 'ground'], ['wait', 1200]], time: 'dusk', pitch: 0.12 },
+  ep8sky: { mission: 'ep8', drive: [['feed', { type: 'use', id: 'panels' }], ['feed', { type: 'recover' }], ...Array.from({ length: 3 }, () => ['feed', { type: 'hit', kind: 'omniman', id: 7 }]), ['ticks', 61], ['wait', 300], ['go', [0, 8000, -400], 0, 'air'], ['wait', 2500]], time: 'night', pitch: -0.5 },
+  // who you fly as (./heroes.js; ['hero', id] swaps through the hook, earned or not)
+  heroEve: { drive: [['hero', 'eve'], ['go', [40, 18, 200], Math.PI, 'air'], ['wait', 600]], pitch: -0.22 },
+  heroOmni: { drive: [['hero', 'omniman'], ['go', [40, 18, 200], Math.PI, 'air'], ['wait', 600]], pitch: -0.22 },
+  heroThragg: { drive: [['hero', 'thragg'], ['go', [40, 18, 200], Math.PI, 'air'], ['wait', 600]], pitch: -0.22 },
+  brawl: { drive: [['go', [50, 26, 40], Math.PI, 'air'], ['spawn', 'mauler', 1, [50, 0, 0]], ['wait', 300], ['held', 0], ['wait', 400]], pitch: -0.35 },
+  // the Guardians (./guardians.js): the hall's inside from its door (['hall', on] goes in or out through the hook); the two sent to four Maulers on the plaza
+  hall: { drive: [['hall', true], ['wait', 1500]], pitch: 0.1 },
+  cavalry: { drive: [['go', [22, 9, 46], Math.PI, 'air'], ['spawn', 'mauler', 4, [22, 0, 24]], ['wait', 4500]], pitch: -0.22 },
   curb: { p: [44, 3, 120], mode: 'air', yaw: Math.PI, pitch: -0.12 },
   streetnight: { p: [40, 18, 200], mode: 'air', yaw: Math.PI, pitch: -0.22, time: 'night' },
   downtown: { p: [-300, 140, 600], mode: 'air', yaw: Math.PI * 0.9, pitch: -0.12 },
@@ -101,7 +127,10 @@ const SHOTS = {
 };
 const args = process.argv.slice(2);
 const metrics = args.includes('--metrics');
-const want = args.filter((a) => !a.startsWith('--'));
+const at = args.indexOf('--play');
+const SEASON = ['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7'];
+const plays = at < 0 ? [] : !args[at + 1] || args[at + 1].startsWith('--') || args[at + 1] === 'all' ? SEASON : args[at + 1].split(',');
+const want = args.filter((a, i) => !a.startsWith('--') && !(at >= 0 && i === at + 1));
 
 // How a shot reads, from the screenshot itself and on the canvas only (the
 // site's header is above it; the HUD over it is counted, as a player sees it):
@@ -195,6 +224,18 @@ await page.evaluate(() => {
         await until(() => Boolean(sim.mission?.seen?.car)); // (a frame first: the mission sees the car where it is)
         api.feed({ type: 'land', speed: a, p: [...(sim.getaway?.p ?? at)] });
       } else if (k === 'feed') api.feed(a);
+      else if (k === 'spawn') api.spawn(a, b, c);
+      else if (k === 'ruin') api.ruin(a, b, c);
+      else if (k === 'hero') api.hero(a);
+      else if (k === 'hall') api.hall(a);
+      else if (k === 'held') {
+        const e = sim.foes.foes[a];
+        if (e) {
+          e.state = 'held';
+          sim.brawl.held = { what: 'foe', id: e.id };
+          sim.keys.add('punch'); // (the punch held: let go and he throws it)
+        }
+      }
       else if (k === 'ticks') for (let t = 0; t < a; t += 0.05) api.feed({ type: 'tick', dt: 0.05 });
     }
     // (held still for the shot: the clock stops, so nothing drives off or knocks him about)
@@ -203,12 +244,14 @@ await page.evaluate(() => {
 });
 await page.waitForTimeout(3000); // (a few frames first, so everyone's somewhere)
 for (const [name, s] of Object.entries(SHOTS)) {
-  if (want.length && !want.includes(name)) continue;
+  if ((want.length || plays.length) && !want.includes(name)) continue;
   await page.evaluate(async (s) => {
     const { api, sim } = window.__INVWORLD__;
     sim.snap = true;
     // (a shot in the city after one out in space: down through the top of the sky first, the
     // way the game brings him home; otherwise he's placed by space's reckoning, over the Earth)
+    // (a shot after the hall's: out of it first, the way the game does)
+    if (api.zone === 'hall') api.hall(false);
     if (!s.space && api.zone === 'space') {
       sim.h = { ...sim.h, p: [0, 60000 + 7000, 0], v: [0, -300, 0], spd: 300, dir: [0, -1, 0], mode: 'air', perch: null, reentered: false };
       for (let i = 0; i < 40 && api.zone !== 'city'; i++) await new Promise((r) => setTimeout(r, 250));
@@ -229,8 +272,9 @@ for (const [name, s] of Object.entries(SHOTS)) {
       sim.yaw = Math.PI / 2 - 0.15;
       sim.pitch = 0.12;
       sim.dragAt = 1e9;
-    } else if (s.mission) {
-      await window.__INV_DRIVE__(s.mission, s.drive, s, true);
+    } else if (s.mission || s.drive) {
+      // (a shot with `drive` and no mission: the ops alone, nothing started)
+      await window.__INV_DRIVE__(s.mission ?? null, s.drive, s, true);
     } else if (s.space) {
       // up through the top of the sky, if he isn't out there already
       if (api.zone !== 'space') {
@@ -348,6 +392,8 @@ for (const [name, s] of Object.entries(SHOTS)) {
   const png = await page.screenshot({ path: `${out}/inv-${name}.png`, timeout: 180000 });
   const info = await page.evaluate(() => window.__INVWORLD__.api.info());
   console.log(name, 'calls', info.calls, 'tris', info.triangles, 'tier', info.tier);
+  // (DUMP=1: what the fight and the brawl hold, for reading a shot that shows something odd)
+  if (process.env.DUMP) console.log(name, await page.evaluate(() => JSON.stringify({ rings: window.__INVWORLD__.sim.foes.rings, foes: window.__INVWORLD__.sim.foes.foes.map((e) => [e.id, e.kind, e.state, e.p.map(Math.round)]), brawl: window.__INVWORLD__.sim.brawl, gates: window.__INVWORLD__.sim.gates, marker: window.__INVWORLD__.sim.marker, quests: { lesson: window.__INVWORLD__.sim.quests.lesson.on, rescue: Boolean(window.__INVWORLD__.sim.quests.rescue) }, ruins: [...window.__INVWORLD__.sim.ruins.damage].map(([k, d]) => [k, Math.round(d * 100) / 100, window.__INVWORLD__.sim.world.buildings.find((q) => `b:${q.id}` === k)?.x, window.__INVWORLD__.sim.world.buildings.find((q) => `b:${q.id}` === k)?.z]), towers: (() => { const m = window.__INVWORLD__.api.engine?.scene?.getObjectByName('towers'); if (!m) return 'no towers mesh'; const h = m.geometry.attributes.aHurt; if (!h) return 'no aHurt'; const out = []; for (let i = 0; i < h.count; i++) if (h.array[i] > 0) out.push([i, h.array[i], Math.round(m.instanceMatrix.array[i * 16 + 5] * 10) / 10, m.geometry.attributes.aStyle.array[i * 4 + 3]]); return out; })() })));
   if (s.mission) {
     // (where the shot found him and the step's marker, for reading the shot)
     const w = await page.evaluate(() => {
@@ -377,5 +423,17 @@ for (const [name, s] of Object.entries(SHOTS)) {
     if (process.env.BOX) await boxed(png, `${out}/inv-${name}.box.png`, at);
   }
 }
+// the season, played (./inv-world-play.mjs): each episode moved through by Mark, then judged by the story kept
+let failed = 0;
+if (plays.length) {
+  await installPlayer(page);
+  for (const ep of plays) {
+    const r = await play(page, ep);
+    if (!r.done) failed++;
+    console.log(`play ${ep}`, r.done ? `done in ${r.best?.toFixed(1)} s of game, ${r.wall.toFixed(0)} s here` : `NOT done (${r.why ?? 'stopped'}${r.left ? `, step ${r.left.step}, ${r.left.count} counted` : ''}) after ${r.wall.toFixed(0)} s`);
+    if (process.env.PLAYSHOTS) await page.screenshot({ path: `${out}/play-${ep}.png` });
+  }
+}
 console.log(errors.length ? `errors:\n${errors.slice(0, 12).join('\n')}` : 'no page errors');
 await browser.close();
+if (failed || (plays.length && errors.length)) process.exit(1);

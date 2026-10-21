@@ -33,7 +33,8 @@ describe('the ring course', () => {
     };
     const { q: done, ev } = run(q, path, 22);
     q = done;
-    expect(ev.filter((e) => e.type === 'ring')).toHaveLength(RINGS.length - 1);
+    // (the first ring too, as the lesson starts: a mission counts it as one)
+    expect(ev.filter((e) => e.type === 'ring').map((e) => e.n)).toEqual(RINGS.map((_, i) => i));
     expect(ev.some((e) => e.type === 'lesson-start')).toBe(true);
     const end = ev.find((e) => e.type === 'lesson-done');
     expect(end).toBeTruthy();
@@ -95,6 +96,13 @@ describe('rescues', () => {
     expect(ev.some((e) => e.type === 'saved')).toBe(true);
     expect(after.rescue).toBe(null);
     expect(after.saved).toBe(1);
+  });
+  it('says whose rescue a catch was: the city’s own, or one a mission put there', () => {
+    let q = until(newQuests(), hero([0, 200, 600]), 'emergency');
+    const grab = (qq) => run(qq, (_, x) => hero(x.rescue ? [x.rescue.p[0], x.rescue.p[1] - 1, x.rescue.p[2]] : [0, 0, 0]), 0.5).ev.find((e) => e.type === 'caught');
+    expect(grab(q)).toMatchObject({ type: 'caught', source: 'city' });
+    q = { ...q, rescue: { ...q.rescue, source: 'mission' } };
+    expect(grab(q)).toMatchObject({ type: 'caught', source: 'mission' });
   });
   it('goes wrong if nobody catches them', () => {
     const q = until(newQuests(), hero([0, 200, 600]), 'emergency');

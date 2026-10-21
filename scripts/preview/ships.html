@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Ships</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #05070b;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- The galaxy's ships as its battles draw them, for scripts/galaxy-ships-shot.mjs
+         (through the dev server): galaxy/models.js's own slots (its files for
+         this tier, ?quality=, its tune, its fit by length and its far copy),
+         a row a kind, each seen from the same pose close (the model in
+         flight) and past LOD_NEAR times its length (its far copy, through a
+         long lens so it fills the frame):
+         ?kinds=tie,ywing&quality=mid&w=320&h=240 -->
+    <script type="module">
+      import * as THREE from 'three';
+      import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+      import { LOD_NEAR, MODELS, createModels } from '/src/components/galaxy/models.js';
+
+      const q = new URLSearchParams(location.search);
+      const kinds = (q.get('kinds') ?? 'tie').split(',');
+      const W = Number(q.get('w') ?? 320);
+      const H = Number(q.get('h') ?? 240);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      renderer.setSize(W * 2, H * kinds.length);
+      renderer.setScissorTest(true);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      document.body.appendChild(renderer.domElement);
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color('#05070b');
+      const pm = new THREE.PMREMGenerator(renderer);
+      scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+      scene.environmentIntensity = 0.45;
+      const sun = new THREE.DirectionalLight('#fff4e6', 2.6);
+      sun.position.set(3, 4, 2);
+      scene.add(sun, new THREE.HemisphereLight('#bbccdd', '#332211', 0.3));
+
+      const models = createModels();
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      const slots = kinds.map((kind) => models.slot(kind, 1));
+      // each until its model and its far copy are both here (a kind with none
+      // flies its built stand-in, and says so)
+      const t0 = performance.now();
+      while (performance.now() - t0 < 120000 && slots.some((s) => MODELS[s.kind] && !(s.real && s.lod))) await wait(250);
+      const said = slots.map((s) => ({ kind: s.kind, url: MODELS[s.kind]?.url ?? null, real: s.real, lod: s.lod }));
+
+      // the pose: a three-quarter view from ahead and above the nose's left
+      // (nose along +z), the same for every kind and both distances
+      const dir = new THREE.Vector3(-0.9, 0.45, 1.25).normalize();
+      const near = 2.4;
+      const far = LOD_NEAR * 1.35;
+      slots.forEach((s, row) => {
+        for (const o of slots) o.holder.visible = o === s;
+        for (const [col, d] of [near, far].entries()) {
+          // (the long lens keeps the frame filled: the LOD picks by distance, not by size on screen)
+          const cam = new THREE.PerspectiveCamera((32 * near) / d, W / H, d / 50, d * 4);
+          cam.position.copy(dir).multiplyScalar(d);
+          cam.lookAt(0, 0, 0);
+          cam.updateMatrixWorld(true);
+          const y = (kinds.length - 1 - row) * H;
+          renderer.setViewport(col * W, y, W, H);
+          renderer.setScissor(col * W, y, W, H);
+          scene.add(s.holder);
+          renderer.render(scene, cam);
+        }
+      });
+      // what each row drew: the far level shown, its file and its triangles
+      for (const [i, s] of slots.entries()) {
+        const lod = s.inner.children.find((c) => c.isLOD);
+        let tris = 0;
+        lod?.levels[1]?.object.traverse((o) => o.isMesh && (tris += (o.geometry.index?.count ?? o.geometry.attributes.position.count) / 3));
+        said[i].farTris = tris;
+      }
+      document.title = JSON.stringify(said);
+      window.__done = true;
+    </script>
+  </body>
+</html>
