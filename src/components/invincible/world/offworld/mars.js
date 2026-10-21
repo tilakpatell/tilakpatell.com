@@ -28,7 +28,7 @@ const clampDt = (dt) => Math.min(0.05, Math.max(0, dt || 0));
 // the site's frame: up is away from Mars toward the Earth; x and z lie along the ground
 const N = unit(MARS.c.map((v) => -v));
 const E1 = unit(cross(N, [0, 1, 0]));
-const E2 = cross(N, E1);
+const E2 = cross(E1, N); // (right-handed: x × y = z, so the frame is a turn, not a mirror)
 export const FRAME = { n: N, e1: E1, e2: E2 };
 export const SITE = MARS.c.map((v, i) => v + N[i] * MARS.r);
 export const toLocal = (p) => {

@@ -62,6 +62,11 @@ export function buildMarsScene(parent, { n = 800, calm = false } = {}) {
   b.add('dark', box(2.4, 0.2, 9), { p: [sx, gs + 2.2, sz + 7.5], r: [0.5, 0, 0] });
   b.add('lamp', new THREE.SphereGeometry(0.4, 10, 8), { p: [sx, gs + 24, sz] });
   group.add(b.build(mats));
+  // (no shadows received: at 400 km from the origin the shadow map's depth has no precision left,
+  // and everything here would shade itself black; the site casts Mark's shadow still)
+  group.traverse((o) => {
+    if (o.isMesh) o.receiveShadow = false;
+  });
 
   // the astronauts, the host: the kit's stand-ins at their hips
   const stand = (kind, seed) => {
