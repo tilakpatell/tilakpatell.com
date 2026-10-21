@@ -149,7 +149,9 @@ const bakes = new Map(); // key → Promise<{ frames, hips }>
 const BUDGET = 5; // ms of baking a frame
 let queue = Promise.resolve();
 let sliceStart = 0;
-const nextFrame = () => new Promise((r) => (typeof requestAnimationFrame === 'function' ? requestAnimationFrame(() => r()) : setTimeout(r, 0)));
+// (a timer, not a frame callback: the runtime is the only frame loop, and a
+// task boundary lets the browser draw the frame that's due before the next slice)
+const nextFrame = () => new Promise((r) => setTimeout(r, 4));
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 async function slice() {
   if (now() - sliceStart < BUDGET) return;
