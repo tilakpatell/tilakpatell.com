@@ -186,6 +186,14 @@ export const plumbus = () => {
   whoosh(0.25, 400, 120, 0.12);
 };
 export const showMe = () => tone([196, 247, 294, 392], { type: 'sawtooth', dur: 1.2, gain: 0.045, delay: 0.03 });
+// Get Schwifty's show (rickmorty/world/games/Schwifty.jsx): a lane's note, as
+// the bassline below plays them, and the kick on the beat
+const SCHWIFTY_NOTES = [110, 131, 147, 165];
+export const schwiftyNote = (lane) => {
+  const f = SCHWIFTY_NOTES[lane] ?? SCHWIFTY_NOTES[0];
+  tone([f, f * 2], { type: 'square', dur: 0.16, gain: 0.05, delay: 0 });
+};
+export const kick = () => tone([90], { type: 'sine', dur: 0.14, gain: 0.12, glide: 0.4 });
 export const schwifty = () => {
   [110, 110, 131, 110, 147, 131, 110, 98, 110, 110, 165, 147].forEach((f, i) => setTimeout(() => tone([f, f * 2], { type: 'square', dur: 0.16, gain: 0.05, delay: 0 }), i * 190));
 };
