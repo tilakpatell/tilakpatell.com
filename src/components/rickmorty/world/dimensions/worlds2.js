@@ -365,8 +365,8 @@ export const WORLDS2 = {
   },
 
   // the Blood Dome: the Death Stalkers on stands of scrap east, west and north
-  // of the ring, behind a wall of tyres, cheering on a beat, a wreck at the end
-  // of each side stand and more of them milling outside the wall; buttes and
+  // of the ring, behind a wall of tyres, cheering on a beat, and more of them
+  // milling outside the wall; the ring's wrecks the croncar itself; buttes and
   // mesas out across the wasteland, a trampled way from the way in to the ring
   blooddome: {
     look: { walls: [0xb8743a, 0xa8642e, 0xc8844a], roofs: [0x8a4a22, 0xd8945a], lit: [0x8a5a2a, 0xff8a3a], trim: 0x1a1a1a },
@@ -395,9 +395,10 @@ export const WORLDS2 = {
       { at: [-47, -8], w: 26, d: 8, h: 4.5, rows: 2, face: [0, -5], kinds: ['deathstalker-a', 'deathstalker-b'], n: { high: 7, mid: 4, low: 2 }, beat: 2.5, look: { walls: [0x8a5a2a, 0x5a6a8a, 0x6a5a4a], roofs: [0x3a3a3a, 0x4a4a4a], lit: [0xff8a3a], trim: 0x3a3a3a } },
     ],
     // a wreck at the south end of each side stand (a car 2.57 of its height long, 1.21 wide)
+    // (the two wrecks in the ring, the croncar's model on their solids)
     pieces: [
-      { model: '/models/c137/rm/croncar.glb', at: [47, 9], turn: 1.9, h: 1.6, w: 4.1, d: 1.9 },
-      { model: '/models/c137/rm/croncar.glb', at: [-47, 9], turn: -1.3, h: 1.6, w: 4.1, d: 1.9 },
+      { model: '/models/c137/rm/croncar.glb', at: [24, 10], turn: 0.3, h: 1.9, w: 4.9, d: 2.3 },
+      { model: '/models/c137/rm/croncar.glb', at: [-24, -10], turn: -0.4, h: 1.55, w: 4, d: 1.9 },
     ],
     crowd: { walk: [{ kinds: ['deathstalker-a', 'deathstalker-b'], n: { high: 4, mid: 2, low: 0 }, loop: 'street', speed: 1.2 }] },
   },
