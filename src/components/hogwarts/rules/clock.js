@@ -196,7 +196,7 @@ export function keyLight(l) {
   if (day > 0 || night === 0) return { dir: [Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)], colour: [...colour], intensity: 2.4 * day, moon: false };
   const mel = Math.max(0.35, l.moon.el);
   const maz = l.moon.el > 0.1 ? l.moon.az : az + Math.PI;
-  return { dir: [Math.sin(maz) * Math.cos(mel), Math.sin(mel), Math.cos(maz) * Math.cos(mel)], colour: [...MOON], intensity: 0.85 * night, moon: true };
+  return { dir: [Math.sin(maz) * Math.cos(mel), Math.sin(mel), Math.cos(maz) * Math.cos(mel)], colour: [...MOON], intensity: 0.6 * night, moon: true };
 }
 
 export const skyLight = (l) => 0.4 + l.ambient * 1.8;

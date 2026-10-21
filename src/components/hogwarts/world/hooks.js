@@ -48,7 +48,11 @@ export function gradeNode(tex, uNight) {
   const split = mix(vec3(0.965, 0.99, 1.045), vec3(1.04, 1.0, 0.95), clamp(lum.mul(1.6).sub(0.3), 0, 1));
   const graded = rich.mul(split);
   // at night the dark leans a little bluer (a moonlit lawn, not a dim day), the warm lights left warm
-  const night = mix(graded, graded.mul(vec3(0.86, 0.95, 1.12)), uNight.mul(float(1).sub(clamp(lum.mul(3), 0, 1))).mul(0.6));
+  // (and its colour drained toward a cold blue, as an eye sees by moonlight: a moonlit lawn grey-blue,
+  // not green; the windows and the lamps, bright, keep theirs)
+  const dim = uNight.mul(float(1).sub(clamp(lum.mul(2.5), 0, 1)));
+  const moonlit = mix(graded, vec3(0.62, 0.72, 1.0).mul(dot(graded, LUMA)).mul(1.15), dim.mul(0.62));
+  const night = mix(moonlit, moonlit.mul(vec3(0.86, 0.95, 1.12)), dim.mul(0.6));
   const vignette = float(1).sub(pow(length(off.mul(vec2(1.1, 1))).mul(1.25), 2.6).mul(0.24));
   return vec4(clamp(night.mul(vignette), 0, 1), 1);
 }

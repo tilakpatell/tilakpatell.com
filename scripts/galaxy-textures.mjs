@@ -82,9 +82,16 @@ export const ROLES = {
   moss: { id: 'forrest_ground_01', keep: 0.3, mean: 0.74 },
   swampmud: { id: 'brown_mud_02', keep: 0.25, mean: 0.72 },
   paving: { id: 'concrete_floor_02', keep: 0.1, mean: 0.82 },
-  // Hogwarts’ castle (hogwarts/world/castle/materials.js): its walls’ dressed
-  // blocks, the rough stacked stone of its plinths, piers and the Owlery,
-  // and the dark Highland slate of its roofs and cones
+};
+
+// Hogwarts’ castle’s own (hogwarts/world/castle/materials.js): its walls’
+// dressed blocks, the rough stacked stone of its plinths, piers and the
+// Owlery, and the dark Highland slate of its roofs and cones. Fetched into
+// the same set and index, but kept out of ROLES: those are the surfaces the
+// galaxy’s worlds are dressed by, each with a source in the game’s own maps
+// for a Star Wars world (lib/bf2017-roles.mjs), and no Star Wars world
+// wears a Scottish castle’s stone.
+export const CASTLE_ROLES = {
   ashlar: { id: 'stone_brick_wall_001', keep: 0.15, mean: 0.78 },
   rubble: { id: 'castle_wall_slates', keep: 0.2, mean: 0.76 },
   slate: { id: 'roof_slates_03', keep: 0.1, mean: 0.74 },
@@ -165,7 +172,7 @@ async function main() {
   const only = args.filter((a) => !a.startsWith('--'));
   const indexFile = join(OUT, 'index.json');
   const index = existsSync(indexFile) ? JSON.parse(await readFile(indexFile, 'utf8')) : {};
-  for (const [name, spec] of Object.entries(ROLES)) {
+  for (const [name, spec] of Object.entries({ ...ROLES, ...CASTLE_ROLES })) {
     if (only.length && !only.includes(name)) continue;
     try {
       if (ultra) {
