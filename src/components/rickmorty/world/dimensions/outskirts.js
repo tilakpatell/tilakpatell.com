@@ -30,8 +30,10 @@ import { seeded } from '../../../../lib/seeded';
 // pieces beyond its own, the traffic, the ring's lots and the skyline's
 export const LEVELS = {
   high: { crowd: 360000, kinds: 6, sets: 4, traffic: 3, near: 40, far: 34 },
-  mid: { crowd: 200000, kinds: 4, sets: 2, traffic: 2, near: 30, far: 24 },
-  low: { crowd: 80000, kinds: 3, sets: 0, traffic: 1, near: 20, far: 14 },
+  mid: { crowd: 220000, kinds: 4, sets: 2, traffic: 2, near: 30, far: 24 },
+  // (low: what the browser checks draw on, measured at Get Schwifty at 329k
+  // triangles a frame all told with its world; the level's whole frame is 800k)
+  low: { crowd: 150000, kinds: 3, sets: 0, traffic: 1, near: 20, far: 14 },
 };
 
 const GAP = 8; // from the edge to the ring's first row: the street (and the walking camera's 5.6 m)
@@ -265,9 +267,21 @@ function crowdOf(d, crowd, { tier, row, room, outside, tris, hero, extra = [] })
   const all = [...walkers, ...gathers].filter((c) => c.kinds.length && c.n > 0);
   // the triangles: a room half a place's
   const allow = room ? row.crowd / 2 : row.crowd;
-  const cost = (c) => c.n * Math.max(...c.kinds.map((k) => tris[k] ?? Infinity));
+  const each = (c) => Math.max(...c.kinds.map((k) => tris[k] ?? Infinity));
+  const cost = (c) => c.n * each(c);
   const total = all.reduce((a, c) => a + cost(c), 0);
-  if (total > allow) for (const c of all) c.n = Math.floor((c.n * allow) / total);
+  if (total > allow) {
+    // (shared out by the largest remainder: every head the allowance holds is placed, a row of one included)
+    const k = allow / total;
+    const want = all.map((c) => c.n * k);
+    for (const [i, c] of all.entries()) c.n = Math.floor(want[i]);
+    let left = allow - all.reduce((a, c) => a + cost(c), 0);
+    for (const i of all.map((c, i) => i).sort((a, b) => want[b] - Math.floor(want[b]) - (want[a] - Math.floor(want[a])))) {
+      if (each(all[i]) > left || all[i].n >= Math.ceil(want[i])) continue;
+      all[i].n += 1;
+      left -= each(all[i]);
+    }
+  }
   const kept = all.filter((c) => c.n > 0 && Number.isFinite(cost(c)));
   return { walkers: kept.filter((c) => c.loop), gathers: kept.filter((c) => !c.loop) };
 }

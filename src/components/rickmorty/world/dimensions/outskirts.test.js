@@ -185,6 +185,17 @@ describe('the outskirts of an outdoor place', () => {
     expect(lay(d, world(), 'high').lots.length).toBeGreaterThan(lay(d, world(), 'low').lots.length);
   });
 
+  it('shares a tight allowance out fairly, so a small row isn’t left empty while there’s room for it', () => {
+    const d = outdoor();
+    // ten rows of one and one gathering of thirty, at 9,400 a head: the level's allowance holds about eight and a half on low
+    const gather = [{ kinds: ['zigerion'], n: { low: 30 }, at: [0, -45], r: 6 }, ...Array.from({ length: 10 }, (_, i) => ({ kinds: ['zigerion'], n: { low: 1 }, at: [-40 + i * 8, 45], r: 1 }))];
+    const L = lay(d, world({ crowd: { gather } }), 'low');
+    const heads = L.gathers.reduce((a, g) => a + g.n, 0);
+    expect(heads * 9400).toBeLessThanOrEqual(LEVELS.low.crowd);
+    // every head the allowance holds is placed
+    expect(heads).toBe(Math.floor(LEVELS.low.crowd / 9400));
+  });
+
   it('lays a place the same every time', () => {
     expect(lay(outdoor(), world())).toEqual(lay(outdoor(), world()));
   });

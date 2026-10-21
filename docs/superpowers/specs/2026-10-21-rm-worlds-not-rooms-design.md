@@ -150,11 +150,11 @@ WORLDS.<id> = {
 | level | crowd triangles | crowd kinds | set copies (beyond the place's own) | traffic | lots (near + skyline) | extra draw calls | extra triangles |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | high | 360k | 6 | 4 (may cast shadows) | 3 | 40 + 34 | ≤ 24 | ≤ 800k |
-| mid | 200k | 4 | 2 (no shadow) | 2 | 30 + 24 | ≤ 16 | ≤ 400k |
-| low | 80k | 3 | 0 | 1 (fedship only) | 20 + 14 | ≤ 10 | ≤ 160k |
+| mid | 220k | 4 | 2 (no shadow) | 2 | 30 + 24 | ≤ 16 | ≤ 400k |
+| low | 150k | 3 | 0 | 1 (fedship only) | 20 + 14 | ≤ 12 | ≤ 250k |
 
 - **Rooms** take half the crowd and traffic allowance. On low, a room's outside is lots and skyline only.
-- **Whole frame:** never over the low row of `lib/budgets.js` (0.8M triangles, 350 calls) at low.
+- **Whole frame:** never over the low row of `lib/budgets.js` (0.8M triangles, 350 calls) at low. (Low's crowd allowance went from 80k to 150k once measured: Get Schwifty with its world draws 329k triangles in 28 calls a frame at low, so 80k left its stands empty.)
 - **Low is what the browser checks run on.** `c137-shots.mjs`'s `INFO=1` prints, for each view:
   - calls, triangles (each layer's own too), textures and geometries;
   - the ready wait.

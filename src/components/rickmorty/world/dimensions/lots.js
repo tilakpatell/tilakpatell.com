@@ -42,6 +42,7 @@ const GABLE = (() => {
 const ADOBE = new THREE.CylinderGeometry(0.38, 0.5, 1, 8);
 
 const TILE = 6; // metres to the windows' repeat: two storeys, two bays
+const LIT = 6; // a face's lit windows at night, at most
 const hashOf = (x, z, k = 0) => (((Math.sin(x * 12.9898 + z * 78.233 + k * 37.719) * 43758.5453) % 1) + 1) % 1;
 const pick = (list, x, z, k) => list[Math.floor(hashOf(x, z, k) * list.length) % list.length];
 const hex = (c) => `#${new THREE.Color(c).getHexString()}`;
@@ -82,8 +83,8 @@ function litWindows(f, look, u0, y0, w, h, d, seed) {
   const rows = Math.max(1, Math.floor(h / (TILE / 2)));
   for (const side of [1, -1]) {
     let n = 0;
-    for (let r = 0; r < rows && n < 12; r++)
-      for (let c = 0; c < cols && n < 12; c++) {
+    for (let r = 0; r < rows && n < LIT; r++)
+      for (let c = 0; c < cols && n < LIT; c++) {
         if (hashOf(seed + c, r, side) > 0.45) continue;
         n += 1;
         const u = u0 - w / 2 + (c + 0.5) * (w / cols);

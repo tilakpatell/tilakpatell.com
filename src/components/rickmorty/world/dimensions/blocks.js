@@ -14,6 +14,10 @@
 // blockProblems(d, solids) → what's wrong with them, in words (none: [])
 
 export const BLOCKS = {
+  // the queue's pen, behind the ropes west of the far arch
+  customs: [{ id: 'queue', dx: -12.5, dz: 7, w: 6, d: 8, h: 1, draw: 'rail' }],
+  // the gallery the studio audience stands on, along the east wall's south end
+  cablestudio: [{ id: 'gallery', dx: 18, dz: 15.5, w: 8, d: 3, h: 1, draw: 'box' }],
   // the pit, either side of the aisle from the way in to the stage
   schwifty: [
     { id: 'pit-w', dx: -16.25, dz: 14, w: 27.5, d: 12, h: 1.1, draw: 'barrier' },
