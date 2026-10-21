@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { seeded } from '../../seeded.js';
 import { aiOf, loadRulebook } from '../rulebook.js';
-import { CLOSE_HOLD, aheadOf, available, closeCombat, turnFrom } from './tactics.js';
+import { CLOSE_HOLD, TICK, aheadOf, available, closeCombat, hideClock, hideHold, intensityFor, patternWeapon, pulls, stillHiding, turnFrom, validAgainst } from './tactics.js';
 
 const ai = aiOf(loadRulebook());
 const rifle = ai.tactics.Rifleman_Tactics.closeCombat;
@@ -63,5 +64,74 @@ describe('close combat, by the source’s test', () => {
     expect(turnFrom([0, 0, 3], [0, 5])).toBeCloseTo(0, 6);
     expect(turnFrom([3, 0, 0], [0, 5])).toBeCloseTo(90, 6);
     expect(turnFrom([0, 0, -3], [0, 5])).toBeCloseTo(180, 6);
+  });
+});
+
+describe('what sends a bot to hide, and for how long', () => {
+  it('is a target its AI weapon is not valid against, which a weapon valid against all never meets', () => {
+    const foot = { inVehicle: false, shielded: false };
+    const tank = { inVehicle: true, shielded: true };
+    expect(validAgainst('All', tank)).toBe(true);
+    expect(validAgainst(undefined, tank)).toBe(true);
+    expect(validAgainst('Soldiers', foot)).toBe(true);
+    expect(validAgainst('Soldiers', tank)).toBe(false);
+    expect(validAgainst('SoldiersAndUnshieldedVehicles', { inVehicle: true, shielded: false })).toBe(true);
+    expect(validAgainst('SoldiersAndUnshieldedVehicles', tank)).toBe(false);
+    expect(validAgainst('AllVehicles', foot)).toBe(false);
+    expect(validAgainst('Nothing', foot)).toBe(false);
+  });
+
+  it('draws its hold between the row’s least and most time active', () => {
+    const row = ai.tactics.Rifleman_Tactics.hide;
+    const rand = seeded(3);
+    for (let i = 0; i < 50; i++) {
+      const h = hideHold(row, rand);
+      expect(h).toBeGreaterThanOrEqual(5);
+      expect(h).toBeLessThanOrEqual(10);
+    }
+  });
+
+  it('lasts while its cause holds and the drawn hold after', () => {
+    const row = { MinimumTimeActive: 6, MaximumTimeActive: 6 };
+    const clock = {};
+    hideClock(clock, { cause: true, was: false, now: 0, row, rand: () => 0.5 });
+    expect(stillHiding(clock, { cause: true, was: true, now: 3 })).toBe(true);
+    hideClock(clock, { cause: true, was: true, now: 3, row, rand: () => 0.5 });
+    // (the cause gone after 3 s: six seconds more)
+    expect(stillHiding(clock, { cause: false, was: true, now: 8.9 })).toBe(true);
+    expect(stillHiding(clock, { cause: false, was: true, now: 9.1 })).toBe(false);
+    // (a bot not hiding is not kept hiding by an old clock)
+    expect(stillHiding(clock, { cause: false, was: false, now: 4 })).toBe(false);
+  });
+});
+
+describe('the firing patterns a bot draws', () => {
+  it('are its AI weapon row’s own class, and the rulebook has patterns of each', () => {
+    expect(patternWeapon(ai.weapons.AI_Rifle)).toBe('SMG');
+    expect(patternWeapon(ai.weapons.AI_SMG)).toBe('AssaultRifle');
+    expect(patternWeapon(ai.weapons.AI_Heavy)).toBe('MachineGun');
+    expect(patternWeapon(ai.weapons.AI_Sniper)).toBe('SniperRifle');
+    expect(patternWeapon(ai.weapons.AI_Pistol_Officer)).toBe('Pistol');
+    expect(patternWeapon(null)).toBe(null);
+    for (const w of ['SMG', 'MachineGun', 'SniperRifle', 'Pistol']) expect(ai.patterns.some((p) => p.weapon === w && p.intensity === 'Medium')).toBe(true);
+  });
+
+  it('are High until the bot has fired, then Medium, or its attack row’s own while it attacks', () => {
+    expect(intensityFor({ fired: false, attacking: true, tactics: 'Rifleman_Tactics' })).toBe('High');
+    expect(intensityFor({ fired: true, attacking: true, tactics: 'Rifleman_Tactics' })).toBe('Medium');
+    expect(intensityFor({ fired: true, attacking: true, tactics: 'Heavy_Tactics' })).toBe('High');
+    expect(intensityFor({ fired: true, attacking: false, tactics: 'Heavy_Tactics' })).toBe('Medium');
+    expect(intensityFor({ fired: true, attacking: true, tactics: 'Assault_PvE_Tactics' })).toBe('High');
+  });
+
+  it('run a bit a thirtieth of a second, a single pattern pulling once a press and an automatic one while held', () => {
+    expect(TICK).toBeCloseTo(1 / 30, 12);
+    const single = { single: true };
+    const auto = { single: false };
+    // (held over three bits: one pull single, three automatic, the gun’s rate deciding the shots)
+    const bits = [true, true, true, false];
+    const run = (p) => bits.map((b, i) => pulls(p, b, i > 0 && bits[i - 1]));
+    expect(run(single)).toEqual([true, false, false, false]);
+    expect(run(auto)).toEqual([true, true, true, false]);
   });
 });

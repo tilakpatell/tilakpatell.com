@@ -76,7 +76,11 @@ describe('a bot with no numbers', () => {
     const b = bot([0, 0, -50]);
     expect(b.ap).toBeNull();
     expect(b.apAim).toBeNull();
-    expect(b.senses.sight.cone).toBe(CONE);
+    // (its own: the BattleAI soldier's, the difficulty row's 60° either side before its side is alerted,
+    // sensing.js; CONE, the hand cone it had before the game's AI code was read, is the fallback of a world
+    // with no rows)
+    expect(b.senses.sight.cone).toBeCloseTo(Math.cos(Math.PI / 3), 9);
+    expect(b.senses.sight.cone).not.toBe(CONE);
   });
 });
 
