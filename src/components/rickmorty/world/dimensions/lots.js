@@ -88,7 +88,8 @@ function litWindows(f, look, u0, y0, w, h, d, seed) {
         if (hashOf(seed + c, r, side) > 0.45) continue;
         n += 1;
         const u = u0 - w / 2 + (c + 0.5) * (w / cols);
-        f.glow(BOX, pick(look.lit ?? [0xffe08a], c, r, side), 1.6, u, y0 + (r + 0.55) * (h / rows), (side * d) / 2 - side * 0.03, 0, (w / cols) * 0.5, (h / rows) * 0.45, 0.04);
+        // (on the face, a hair proud of it: a basic material behind the wall is hidden by it)
+        f.glow(BOX, pick(look.lit ?? [0xffe08a], c, r, side), 1.6, u, y0 + (r + 0.55) * (h / rows), (side * d) / 2 + side * 0.025, 0, (w / cols) * 0.5, (h / rows) * 0.45, 0.04);
       }
   }
 }

@@ -129,6 +129,20 @@ describe('the code buildings', () => {
     expect(glows.length).toBeGreaterThan(4);
     expect(glows.length).toBeLessThanOrEqual(48);
   });
+
+  it('stands each lit pane on its face, in front of the wall, so the wall never hides it', () => {
+    const { R, parts, tiled } = fakeRoom();
+    const night = { ...LOOK, night: true };
+    lot(R, { x: 0, z: 0, turn: 0, w: 14, d: 10, h: 30, y: 0, style: 'tower' }, night, { windows: windowPaints(R, night), list: 'fixed' });
+    const walls = worldBoxes([], tiled);
+    const panes = worldBoxes(parts.filter((p) => p.list === 'glow'), []);
+    expect(panes.length).toBeGreaterThan(0);
+    // (no pane's middle inside any wall: each is on its own tier's face, in front of it)
+    for (const b of panes) {
+      const mid = b.getCenter(new THREE.Vector3());
+      expect(walls.some((w) => w.containsPoint(mid))).toBe(false);
+    }
+  });
 });
 
 describe('the edge', () => {
