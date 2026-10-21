@@ -10,10 +10,15 @@ import { WORLD_MB } from '../worlds/worlds';
 import hogwarts, { KEYS } from './module';
 import { DOOR, SPAWN } from './rules/shore';
 
-const fakeRt = () => {
+// (`saved`: what tp-hogwarts holds; a visitor who has seen the arrival starts on the shore)
+const ARRIVED = { v: 1, data: { house: 'gryffindor', arrived: 1 } };
+const fakeRt = (saved = ARRIVED) => {
   const emitted = [];
+  const store = new Map(saved ? [['tp-hogwarts', saved.data]] : []);
   return {
     emitted,
+    store,
+    saves: { register: vi.fn(), get: (k, fallback = null) => (store.has(k) ? store.get(k) : fallback), set: (k, v) => store.set(k, v) },
     events: { emit: (type, data) => emitted.push({ type, ...data }) },
     input: { bind: vi.fn(), unbind: vi.fn() },
     quality: { tier: 'high' },
@@ -56,12 +61,21 @@ describe('Hogwarts, the world module', () => {
     world.step(1 / 60, snap());
     expect(rt.emitted.filter((e) => e.type === 'near').at(-1)).toMatchObject({ door: { label: 'Hogwarts' } });
     world.step(1 / 60, snap([], ['KeyE']));
-    expect(rt.emitted.at(-1)).toMatchObject({ type: 'go', door: { label: 'Hogwarts' } });
-    // (and walked back up the shingle, it goes)
-    world.walker.place(SPAWN.at, SPAWN.yaw);
+    expect(rt.emitted.find((e) => e.type === 'go')).toMatchObject({ type: 'go', door: { label: 'Hogwarts' } });
+    // (taken, the boats are the arrival from the push off, from its next frame)
     world.step(1 / 60, snap());
-    expect(rt.emitted.filter((e) => e.type === 'near').at(-1)).toMatchObject({ door: null });
+    expect(rt.emitted.filter((e) => e.type === 'arrival').at(-1)).toMatchObject({ on: true, part: 'boats' });
     world.dispose();
+    // (and walked back up the shingle without taking it, it goes)
+    const again = fakeRt();
+    const w2 = await hogwarts.create(again, {});
+    w2.attached();
+    w2.walker.place(DOOR.at, 0);
+    w2.step(1 / 60, snap());
+    w2.walker.place(SPAWN.at, SPAWN.yaw);
+    w2.step(1 / 60, snap());
+    expect(again.emitted.filter((e) => e.type === 'near').at(-1)).toMatchObject({ door: null });
+    w2.dispose();
   });
 
   it('holds what it says till the page listens', async () => {
@@ -72,5 +86,19 @@ describe('Hogwarts, the world module', () => {
     world.attached();
     expect(rt.emitted.map((e) => e.type)).toContain('menu');
     world.dispose();
+  });
+
+  it('plays the arrival on a first visit, from the station, and opens at its beat for ?at=', async () => {
+    const rt = fakeRt(null);
+    const world = await hogwarts.create(rt, {});
+    world.attached();
+    expect(rt.emitted.find((e) => e.type === 'arrival')).toMatchObject({ on: true, part: 'station' });
+    world.dispose();
+    const back = fakeRt();
+    const hall = await hogwarts.create(back, { at: 'hall' });
+    hall.attached();
+    hall.step(1 / 60, snap());
+    expect(back.emitted.find((e) => e.type === 'arrival')).toMatchObject({ on: true, beat: 'hall' });
+    hall.dispose();
   });
 });
