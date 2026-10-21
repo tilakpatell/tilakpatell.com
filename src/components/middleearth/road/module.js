@@ -17,13 +17,13 @@
 // The world adds: goTo(stageId), setAuto(on), press(name, down) (the touch
 // buttons), carryOn() (from a few metres before a moment the ride was left
 // inside: ./carry.js), restart(), skipToEnd(); and set(s), `s`, `scene` for the checks.
-// In development, window.__ROAD__ = { set(s), info(), world, weather, ambience, vision(on), fast(k) }.
+// In development, window.__ROAD__ = { set(s), info(), world, weather, ambience, vision(on), fast(k), grid(), group(), land() }.
 
 import * as THREE from 'three';
 import { PACE, newClock, step as stepClock } from './clock';
 import { SAVE, recent, resume, ridden as riddenOf, savedAt, shouldOffer } from './entry';
 import { carryFrom } from './carry';
-import { LOOK_LIMIT, pose, settleLook } from './director';
+import { ABOVE_GROUND, LOOK_LIMIT, pose, settleLook } from './director';
 import { keyLight, light as lightAt, shadeOf, skyLight } from './daylight';
 import { at as lineAt, sOf, total } from './line';
 import { createSky } from './sky';
@@ -365,6 +365,10 @@ export default {
       const eye = inLand([leader.at[0], leader.at[1] + 1.1, leader.at[2]]);
       const stand = clear.camera(inLand(p.at), eye, { rig: b?.rig ?? 'follow', lookAt: inLand(p.lookAt) }, grid, dt);
       camera.position.set(stand[0] + landAt.x, stand[1] + landAt.y, stand[2] + landAt.z);
+      // (and over the land, whatever eased it or pulled it in: the director keeps the shot it wants
+      // over it, but an ease between two shots, or a boom pulled in across a crest, went under a
+      // hill, its faces culled from below; a shot placed down in the land, `under`, aside)
+      if (!b?.params?.under) camera.position.y = Math.max(camera.position.y, lands.heightAt(camera.position.x, camera.position.z) + ABOVE_GROUND);
       camera.lookAt(...p.lookAt);
       // (nor in a figure: one the camera comes into is not drawn while it's there)
       const eyeAt = camera.position.toArray();
@@ -615,7 +619,9 @@ export default {
         const r = rt.gfx.renderer?.info?.render ?? {};
         return { calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0, vision: vision.amount, shot: shot?.key ?? null, mode: clock.mode, s: clock.s, stage: lineAt(STAGES, clock.s).stage, walkers: cast.size, lands: lands.stats, scatter: scatter.stats, since: lastSince, solids: scenes.solids(lineAt(STAGES, clock.s).index)?.filled() ?? null, boom: clear.boom, camera: camera.position.toArray().map((v) => Math.round(v * 100) / 100) };
       };
-      window.__ROAD__ = { world, set: (s) => world.set(s), info, weather, ambience, vision: (on) => void (visionOn = Boolean(on)), passes, fast: (k = 1) => void (labPace = Math.max(0, k)) };
+      // (and the stage the ride is in: its solid grid and its group, for lab/road/probe-walls.mjs)
+      const here = () => lineAt(STAGES, clock.s).index;
+      window.__ROAD__ = { world, set: (s) => world.set(s), info, weather, ambience, vision: (on) => void (visionOn = Boolean(on)), passes, fast: (k = 1) => void (labPace = Math.max(0, k)), grid: () => scenes.solids(here()), group: () => lands.groupOf(here()), land: () => lands.landOf(here()) };
     }
     return world;
   },

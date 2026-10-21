@@ -46,7 +46,14 @@ const solid = (o) => o.isMesh && !o.isSkinnedMesh && !o.userData.ink && !o.userD
 // the build's solid triangles into the grid, in the land's frame, a slice at a time
 function* fill(root, frame, grid) {
   const meshes = [];
-  root.traverse((o) => solid(o) && meshes.push(o));
+  // (nothing hidden, nor under a hidden group or one that moves: a beat's figure or prop, not yet
+  // shown, was a wall no one could see; the grid is filled once, from what stands)
+  const walk = (o) => {
+    if (!o.visible || o.userData.moves) return;
+    if (solid(o)) meshes.push(o);
+    for (const c of o.children) walk(c);
+  };
+  walk(root);
   const inv = new THREE.Matrix4();
   const m = new THREE.Matrix4();
   const one = new THREE.Matrix4();

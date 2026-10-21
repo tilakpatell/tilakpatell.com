@@ -56,6 +56,8 @@ export function build({ road, heightAt, rt, weather, tier = 'high' }) {
   gandalf.group.rotation.y = Math.PI;
   gandalf.set({ base: 'sit.ground', speed: 0 });
   cart.add(gandalf.group);
+  // (it comes down the lane: nothing of it stands in the stage's solid grid)
+  cart.userData.moves = true;
   group.add(cart);
 
   // the dancers on the field, round the tree (four on low)

@@ -17,7 +17,7 @@ import { coreOf, loadCore } from '../../../lib/three/coreNodes';
 import { onColor } from '../../../lib/three/hookNodes';
 import { ROLE } from './stages/parts';
 
-const ROLES = ['stone', 'wood', 'rock']; // (ROLE's first three, in its order)
+const ROLES = ['stone', 'wood', 'rock']; // (ROLE's, none aside)
 const FADE = [60, 160]; // m: the grain whole to the first, gone by the second
 const HUE = 0.3; // how much of a scan's own colour comes through (the rest its light and shade)
 const LUMA = vec3(0.2126, 0.7152, 0.0722);

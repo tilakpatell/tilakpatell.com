@@ -150,6 +150,8 @@ describe('lampPools', () => {
     const roles = mesh.geometry.getAttribute('aRole').array;
     expect(roles.length).toBe(mesh.geometry.getAttribute('position').count);
     expect(new Set(roles)).toEqual(new Set([ROLE.stone, ROLE.none]));
+    // (and on its own, all of it none)
+    expect(new Set(merged([plain.clone()], new THREE.MeshBasicMaterial(), 'alone').geometry.getAttribute('aRole').array)).toEqual(new Set([ROLE.none]));
   });
 
   it('keeps a part’s role through the statics’ merge', () => {
