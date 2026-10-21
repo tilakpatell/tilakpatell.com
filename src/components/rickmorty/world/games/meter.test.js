@@ -5,11 +5,13 @@ import { dealReadout } from './deal';
 import { findReadout } from './find';
 import { freezeReadout } from './freeze';
 import { powerReadout } from './power';
+import { sequenceReadout } from './sequence';
 
 describe('one meter for a place’s game', () => {
   it('knows which game a place runs, if any', () => {
     expect(kindOf(destinationById('microverse'))).toBe('power');
     expect(kindOf(destinationById('jerryboree'))).toBe('find');
+    expect(kindOf(destinationById('cablestudio'))).toBe('sequence');
     expect(kindOf(destinationById('customs'))).toBe(null);
     expect(kindOf(null)).toBe(null);
   });
@@ -23,6 +25,8 @@ describe('one meter for a place’s game', () => {
     expect(new Set(KINDS.map((k) => METER[k].title)).size).toBe(KINDS.length);
     expect(METER.power).toEqual({ title: 'The world’s charge', label: 'Charge' });
     expect(METER.find).toEqual({ title: 'Pick-up time', label: 'Time' });
+    expect(KINDS).toContain('sequence');
+    expect(METER.sequence).toEqual({ title: 'Going live', label: 'Time' });
   });
 
   it('is off as each game’s readout is off, when no game runs', () => {
@@ -30,5 +34,6 @@ describe('one meter for a place’s game', () => {
     expect(METER_OFF).toEqual(dealReadout(null));
     expect(METER_OFF).toEqual(freezeReadout(null));
     expect(METER_OFF).toEqual(findReadout(null));
+    expect(METER_OFF).toEqual(sequenceReadout(null));
   });
 });

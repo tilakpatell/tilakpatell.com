@@ -112,6 +112,7 @@ import { BELT, BODIES, ORDER, POSITIONS, REACH, RIM, RING, SECTORS, SECTOR_OF, S
 import { HOME_SPREAD } from './scale';
 import { MODEL_PLANETS, buildPlanet, loadModel, loadModels, loadTextures } from './planets';
 import { createLazy, standIn, wanted as nearEnough } from './nearby';
+import { loadSteps } from './loadSteps';
 import { buildSun } from './sun';
 import { MAP_LENS, aberrationFor, createPost, spaceEnvironment } from './post';
 import { grainFor } from '../../lib/three/noise';
@@ -639,7 +640,11 @@ export async function create(canvas, ctx) {
   // nearer stars thinned out
   const tier = device().tier;
   const small = tier !== 'high' || Math.min(window.innerWidth, window.innerHeight) < 600;
-  const T = await loadTextures({ small });
+  // how far it's got, for the map's loading screen, from the first map in
+  // (./loadSteps.js; the runtime's 'prepare' events, which the runtime only
+  // starts to pass on at the prepare, after the shaders made before it)
+  const steps = loadSteps((value, step) => !disposed && ctx.rt?.events?.emit?.('prepare', { module: 'universe', value, step }));
+  const T = await loadTextures({ small, onStep: steps.maps });
 
   // what metal reflects, and the passes after the scene (post.js)
   let env = spaceEnvironment(renderer, T['sky-glow']);
@@ -922,9 +927,9 @@ export async function create(canvas, ctx) {
   // that's part of the shader made; and for the map, the house look, which
   // house.follow puts on everything in it within half a second: put on
   // after, it made each of these shaders again)
-  const warm = (root, cam = camera, target = scene) => {
+  const warm = (root, cam = camera, target = scene, onStep = null) => {
     if (target === scene) house.adopt(root);
-    return precompile(renderer, singlePass(root), cam, target, post.on ? post.composer.readBuffer : undefined);
+    return precompile(renderer, singlePass(root), cam, target, post.on ? post.composer.readBuffer : undefined, { onStep });
   };
   fleet.prepare = (o) => warm(o); // (the fleet's models too: none is made before the first frame)
   // a landing (footScene's), readied before it's shown: the look on, its
@@ -5749,7 +5754,7 @@ export async function create(canvas, ctx) {
   // put on at the first frame instead, it changed every lit shader after
   // they were compiled, and they were all compiled again in that frame
   house.follow({ adopt: true });
-  const ready = Promise.all([warm(scene), post.composer ? precompilePasses(renderer, post.composer, camera) : null]).then(() => {
+  const ready = Promise.all([warm(scene, camera, scene, steps.shaders), post.composer ? precompilePasses(renderer, post.composer, camera) : null]).then(() => {
     // made: out of the scene (so nothing walks them each frame), and the
     // ships on to the fleet, ready to fly (the first of each kind isn't
     // built in the middle of a frame)
@@ -5928,10 +5933,26 @@ export async function create(canvas, ctx) {
   // counts, not the picture, and the first real frame sizes them back up.
   let calibrated = null; // (the level the prepare found, till the first frame has it)
   const prepare = async (onProgress, { alive = () => true } = {}) => {
-    onProgress?.(0, 'load');
     // (the models of the planets near where the map opens: the rest come as
-    // each comes near, nearby.js)
-    await settleWithin(Promise.all([ready, nearNow()]), 20000);
+    // each comes near, nearby.js. Once the shaders are made the bar tells
+    // these as each comes in, and the steps below follow in the rest of
+    // it: ./loadSteps.js)
+    const near = nearNow();
+    const coming = [...nearLoading];
+    let landed = 0;
+    let made = false;
+    const tellNear = () => made && landed < coming.length && steps.near(landed / coming.length);
+    const land = () => {
+      landed += 1;
+      tellNear();
+    };
+    const madeAll = () => {
+      made = true;
+      tellNear();
+    };
+    for (const job of coming) job.then(land);
+    ready.then(madeAll, () => {});
+    await settleWithin(Promise.all([ready, near]), 20000);
     if (!alive() || disposed) return;
     await prepareScene({
       renderer,
@@ -5940,7 +5961,7 @@ export async function create(canvas, ctx) {
       camera,
       target: post.target,
       render: () => borrowed.during(() => post.render(64, 64)),
-      onProgress,
+      onProgress: steps.prepare,
       // (gpuWork chains frame().then(frame): what one resolves with is never an option of the next)
       frame: () => prepFrame(),
       alive: () => alive() && !disposed,

@@ -39,30 +39,58 @@ const DUNE = { Grass: { recolour: '#b8b07a' } };
 // (the holly’s bark grey, as the Trollshaws’: the kit’s oak bark is a red-brown)
 const HOLLY = { Leaves_NormalTree: { recolour: '#1f3a1c' }, Leaves: { recolour: '#22401f' }, Bark_NormalTree: { recolour: '#6a6458' } };
 const HEATH_GRASS = { Grass: { recolour: '#8a8458' } };
+
+// The verges: what lines a road, `verge: [near, far]` metres off its middle
+// (scatter.js's verge), outside its track (stages/tracks.js; the test holds
+// each stage's): flowers and long tufts by a lane, stones at a path's edge.
+// (the kit's flowers stand one and a half to two metres at scale 1, its
+// tufts a metre, its pebbles ten centimetres)
+const lane = (tint = null) => [
+  { model: 'Grass_Wispy_Short', verge: [2.1, 4.4], per100: 9, clump: 4, spread: 0.9, scale: [0.42, 0.62], kind: 'grass', ...(tint ? { tint } : {}) },
+  { model: 'Flower_3_Group', verge: [2.2, 4.2], per100: 3, clump: 2, spread: 0.7, scale: [0.18, 0.26] },
+  { model: 'Flower_1_Group', verge: [2.2, 4.2], per100: 2.5, clump: 2, spread: 0.7, scale: [0.2, 0.27] },
+  { model: 'Clover_1', verge: [2.0, 4.0], per100: 3, clump: 3, spread: 0.8, scale: [0.18, 0.24] },
+  { model: 'Pebble_Round_2', verge: [1.9, 2.6], per100: 5, clump: 2, spread: 0.5, scale: [0.3, 0.55], tint: OAK },
+  { model: 'Pebble_Square_3', verge: [1.9, 2.7], per100: 3, clump: 2, spread: 0.5, scale: [0.3, 0.5], tint: OAK },
+];
+const path = (near, { grass = HEATH_GRASS, stone = STONE, tufts = 7 } = {}) => [
+  { model: 'Grass_Wispy_Short', verge: [near + 0.3, near + 3], per100: tufts, clump: 4, spread: 0.9, scale: [0.4, 0.6], kind: 'grass', ...(grass ? { tint: grass } : {}) },
+  { model: 'Pebble_Round_4', verge: [near, near + 1.2], per100: 6, clump: 3, spread: 0.6, scale: [0.35, 0.7], tint: stone },
+  { model: 'Pebble_Square_2', verge: [near, near + 1.4], per100: 4, clump: 2, spread: 0.5, scale: [0.35, 0.65], tint: stone },
+];
 const SNOWED = { Leaves_Pine: { recolour: '#e8eef2' } };
 // (the kit’s oak bark is a red-brown: the Trollshaws’ a warm grey, so it isn’t violet under a grey sky)
 const AUTUMN = { Leaves_NormalTree: { recolour: '#eeae5c' }, Leaves_Birch: { recolour: '#f2c86a' }, Leaves: { recolour: '#b07a3e' }, Bark_NormalTree: { recolour: '#806c50' } };
 
 // The older Stylized Nature Pack’s trees (kit `nature`, public/kit/nature/,
 // from tilakverse-assets; Quaternius, CC0): maples in red and orange leaf,
-// birches yellow on white bark, ten dead trees, their bark `NormalTree_Bark`.
-// Sized to the MegaKit’s: its trees stand about half as tall at scale 1.
+// ten dead trees, their bark `NormalTree_Bark`. Sized to the MegaKit’s: its
+// trees stand about half as tall at scale 1.
 const NATURE = 'nature';
 const maples = (per100, o = {}) => ['MapleTree_1', 'MapleTree_2', 'MapleTree_3', 'MapleTree_5'].map((model) => ({ model, pack: NATURE, per100: per100 / 4, clump: 2, spread: 8, scale: [1.1, 1.5], ...o }));
-const birches = (per100, o = {}) => ['BirchTree_1', 'BirchTree_2', 'BirchTree_3', 'BirchTree_5'].map((model) => ({ model, pack: NATURE, per100: per100 / 4, clump: 3, spread: 6, scale: [1.4, 1.9], ...o }));
+// the birches, yellow on white bark: the MegaKit’s, its crowns in leaf (the
+// older pack’s were balls of yellow on a stick), 13 m at scale 1
+const BIRCH = { Leaves_Birch: { recolour: '#e2b84a' } };
+const birches = (per100, o = {}) => ['Birch_1', 'Birch_2', 'Birch_3', 'Birch_4', 'Birch_5'].map((model) => ({ model, per100: per100 / 5, clump: 3, spread: 6, scale: [0.7, 0.95], tint: BIRCH, ...o }));
 // the dead trees, standing (snags: the two small ones)
 const deadwood = (per100, o = {}) => ['DeadTree_1', 'DeadTree_2', 'DeadTree_4', 'DeadTree_6', 'DeadTree_7', 'DeadTree_8', 'DeadTree_10'].map((model) => ({ model, pack: NATURE, per100: per100 / 7, clump: 1, spread: 1, scale: [0.8, 1.2], ...o }));
 const snags = (per100, o = {}) => ['DeadTree_5', 'DeadTree_9'].map((model) => ({ model, pack: NATURE, per100: per100 / 2, clump: 2, spread: 6, scale: [0.8, 1.2], ...o }));
 // (the maples just turning, amber over their green: the Shire in late September)
 const TURNING = { MapleTree_Leaves: { recolour: '#b8903e' } };
 // (the maples and birches green: spring in Ithilien)
-const SPRING = { MapleTree_Leaves: { recolour: '#6f9a3e' }, BirchTree_Leaves: { recolour: '#8fb04a' } };
+const SPRING = { MapleTree_Leaves: { recolour: '#6f9a3e' }, Leaves_Birch: { recolour: '#8fb04a' } };
 
 // (a grass row with no band of its own keeps within 70 m of the road: the
 // blades cover the ground near it, and across a stage’s whole width the
 // tufts were millions of triangles, the Havens’ dune grass four)
 export const SCATTER = {
   hobbiton: [
+    // the lane's verges: long tufts, flowers and clover by the hedges, stones at its edge
+    ...lane(),
+    // the great oaks by the lane, where the stage's builder stood the Shire chapter's round ones
+    { model: 'CommonTree_1', at: [[-22, 18, 1.1], [-28, 82, 1.2], [44, 150, 1.3], [8, 230, 1.0]], scale: [1.75, 1.75], tint: OAK },
+    { model: 'CommonTree_2', at: [[24, 30, 0.9], [27, 96, 1.0], [-11, 204, 0.9], [48, 60, 1.2]], scale: [1.75, 1.75], tint: OAK },
+    { model: 'CommonTree_5', at: [[14, 168, 1.1], [-33, 132, 1.0], [-40, 54, 1.1], [36, 196, 1.0]], scale: [1.75, 1.75], tint: OAK },
     // (oaks: the common tree at its broadest, in the hedgerows’ clumps)
     { model: 'CommonTree_1', per100: 0.038, clump: 3, spread: 10, scale: [1.1, 1.6], tint: OAK },
     { model: 'CommonTree_2', per100: 0.026, clump: 2, spread: 8, scale: [1.0, 1.5], tint: OAK },
@@ -91,6 +119,7 @@ export const SCATTER = {
     ...maples(0.012, { tint: TURNING }),
   ],
   'shire-edge': [
+    ...lane(),
     // Maggot’s crop either side of the lane at the stage’s start: ears over
     // the stage’s canopy of corn, a little above a hobbit’s head (the kit’s
     // wheat is red-brown and 1.75 m: recoloured to standing corn in a low sun)
@@ -145,6 +174,7 @@ export const SCATTER = {
     { model: 'Plant_1', per100: 0.5, clump: 4, spread: 2, scale: [0.8, 1.2], z: [24, 140], x: [-22, 22] },
   ],
   weathertop: [
+    ...path(1.15),
     // the Lone-lands: heath and stone, a thorn or a dead tree, almost nothing tall
     { model: 'Grass_Wispy_Tall', per100: 2, clump: 7, spread: 4, scale: [0.7, 1.1], x: [-90, 90], kind: 'grass' },
     { model: 'Grass_Wispy_Short', per100: 2.4, clump: 7, spread: 4, scale: [0.8, 1.2], x: [-60, 60], kind: 'grass' },
@@ -165,14 +195,16 @@ export const SCATTER = {
     { model: 'Pebble_Round_4', per100: 1, clump: 5, spread: 2, scale: [2, 4], x: [-8, 8], tint: STONE },
   ],
   ford: [
+    ...path(1.4, { grass: null, stone: OAK }),
     // the Trollshaws: grey autumn woods on broken hills, the leaves turned
     { model: 'CommonTree_3', per100: 0.1, clump: 4, spread: 10, scale: [1.0, 1.5], tint: AUTUMN },
     { model: 'CommonTree_1', per100: 0.05, clump: 3, spread: 9, scale: [1.0, 1.4], tint: AUTUMN },
     { model: 'Birch_2', per100: 0.05, clump: 3, spread: 8, scale: [0.8, 1.1], tint: AUTUMN },
     { model: 'DeadTree_1', per100: 0.008, clump: 2, spread: 8, scale: [0.8, 1.1] },
-    // the maples red and orange, the birches yellow
+    // the maples red and orange, the birches yellow (and thick by the road, where the chapter's stood)
     ...maples(0.06, { clump: 3 }),
     ...birches(0.04),
+    ...birches(0.08, { x: [-41, 41] }),
     ...snags(0.01),
     { model: 'Pine_1', per100: 0.03, clump: 3, spread: 9, scale: [0.9, 1.3], slope: 0.9 },
     { model: 'Rock_Big_1', per100: 0.012, clump: 2, spread: 8, scale: [0.6, 1.3], slope: 1.4, tint: OAK },
@@ -189,6 +221,14 @@ export const SCATTER = {
     { model: 'Pebble_Round_3', per100: 2, clump: 6, spread: 2.5, scale: [2.5, 5], z: [150, 186], x: [-50, 50], tint: OAK },
   ],
   rivendell: [
+    ...path(1.5, { grass: null, stone: OAK, tufts: 3 }),
+    { model: 'Flower_7_Group', verge: [1.8, 3.6], per100: 3, clump: 2, spread: 0.6, scale: [0.18, 0.26] },
+    // the golden birches through the valley by the road, where the chapter's round ones stood
+    { model: 'Birch_1', at: [[9, 24, 1.0], [10, 80, 1.1], [-16, 140, 0.95]], scale: [0.72, 0.72], tint: GOLD },
+    { model: 'Birch_2', at: [[-8, 30, 1.05], [14, 102, 0.9], [18, 50, 1.1]], scale: [0.72, 0.72], tint: GOLD },
+    { model: 'Birch_3', at: [[12, 62, 0.95], [-7, 116, 1.0], [-30, 52, 1.15]], scale: [0.72, 0.72], tint: GOLD },
+    { model: 'Birch_4', at: [[-14, 58, 1.0], [12, 136, 1.05], [-40, 128, 1.1]], scale: [0.72, 0.72], tint: GOLD },
+    { model: 'Birch_5', at: [[22, 116, 0.9], [-20, 108, 1.0]], scale: [0.72, 0.72], tint: GOLD },
     // autumn gold on the valley’s trees, pines above on the slopes
     { model: 'CommonTree_5', per100: 0.09, clump: 3, spread: 9, scale: [1.0, 1.5], tint: GOLD },
     { model: 'Birch_3', per100: 0.055, clump: 3, spread: 7, scale: [0.9, 1.2], tint: GOLD },
@@ -229,7 +269,8 @@ export const SCATTER = {
     { model: 'Pine_3', per100: 0.02, clump: 3, spread: 8, scale: [0.7, 1.1], z: [136, 200], slope: 0.9 },
   ],
   // (young mallorns at the wood’s edge: birches in their gold, grown tall)
-  lorien: [...GREEN, ...birches(0.06, { scale: [1.8, 2.4] })],
+  // (and elanor, the gold star-flower, on the floor by the path)
+  lorien: [...GREEN, ...birches(0.06, { scale: [0.9, 1.2] }), ...path(1.1, { grass: null, stone: OAK, tufts: 0 }).filter((r) => r.model !== 'Grass_Wispy_Short'), { model: 'Flower_6', verge: [1.2, 4], per100: 5, clump: 3, spread: 0.8, scale: [0.5, 0.8] }],
   // (February on the Great River: trees bare on the banks, as dead ones stand)
   anduin: [...ROUGH, ...deadwood(0.012)],
   // the Dead Marshes: dead reeds and rushes over the pools, rotten stumps, the tussocks between
@@ -246,6 +287,11 @@ export const SCATTER = {
   ],
   // Ithilien: the garden of Gondor gone wild, cedars and pines, herbs and flowers in the long grass
   ithilien: [
+    // the herbs and flowers of Ithilien thick by the path
+    ...path(1.1, { grass: null, stone: OAK, tufts: 5 }),
+    { model: 'Flower_4_Group', verge: [1.3, 3.4], per100: 4, clump: 2, spread: 0.6, scale: [0.14, 0.2] },
+    { model: 'Flower_7_Group', verge: [1.3, 3.4], per100: 4, clump: 2, spread: 0.6, scale: [0.16, 0.24] },
+    { model: 'Plant_6', verge: [1.4, 3.6], per100: 2.5, clump: 2, spread: 0.6, scale: [0.4, 0.6] },
     { model: 'CommonTree_4', per100: 0.08, clump: 3, spread: 10, scale: [1.0, 1.5], tint: OAK },
     { model: 'Pine_2', per100: 0.05, clump: 3, spread: 9, scale: [0.9, 1.3] },
     { model: 'GiantPine_3', per100: 0.008, clump: 1, spread: 1, scale: [0.6, 0.8] },
@@ -272,6 +318,8 @@ export const SCATTER = {
   ],
   // Gorgoroth: cinders and slag, the rocks black, dead wood where anything once grew
   gorgoroth: [
+    // the orcs' road's rubble
+    ...path(1.9, { grass: null, stone: BLACK, tufts: 0 }).filter((r) => r.model !== 'Grass_Wispy_Short'),
     { model: 'Rock_Big_2', per100: 0.03, clump: 3, spread: 8, scale: [0.6, 1.3], tint: BLACK },
     { model: 'Rock_Medium_3', per100: 0.1, clump: 5, spread: 5, scale: [0.4, 1.0], tint: BLACK },
     { model: 'Pebble_Round_5', per100: 1.6, clump: 8, spread: 3, scale: [2, 4.5], x: [-30, 30], tint: BLACK },
@@ -281,6 +329,7 @@ export const SCATTER = {
   ],
   // the Pelennor: farms and fields under the walls, orchards, the road between low walls
   'minas-tirith': [
+    ...lane().filter((r) => r.model.startsWith('Grass') || r.model.startsWith('Pebble')).map((r) => ({ ...r, verge: [r.verge[0] + 0.8, r.verge[1] + 0.8] })),
     { model: 'CommonTree_5', per100: 0.05, clump: 6, spread: 12, scale: [0.8, 1.1], tint: OAK },
     { model: 'CommonTree_2', per100: 0.03, clump: 3, spread: 9, scale: [1.0, 1.4], tint: OAK },
     { model: 'Bush_Long_1', per100: 0.12, clump: 6, spread: 6, scale: [1.0, 1.3] },
@@ -292,6 +341,7 @@ export const SCATTER = {
   ],
   // the Havens: dune grass and thrift to the sand, wind-bent pines, pebbles at the water
   havens: [
+    ...path(1.5, { grass: DUNE, stone: STONE }),
     { model: 'Grass_Wispy_Tall', per100: 2.4, clump: 8, spread: 4, scale: [0.8, 1.2], x: [-70, 70], kind: 'grass', tint: DUNE },
     { model: 'Grass_Wispy_Short', per100: 2, clump: 8, spread: 4, scale: [0.7, 1.1], x: [-70, 70], kind: 'grass', tint: DUNE },
     { model: 'Pine_5', per100: 0.03, clump: 3, spread: 9, scale: [0.8, 1.2] },

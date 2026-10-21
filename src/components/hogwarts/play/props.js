@@ -302,7 +302,7 @@ function buckbeak(house) {
 
 // What the cast lane is making as a model, and where it will be: until it
 // is in, null, and the stand-in below draws it.
-// TODO(hogwarts props): Lane B’s models, one line each as they land
+// (hogwarts props) Lane B’s models go in here, one line each as they land
 export const PROPS = {
   feather: { glb: null, make: feather },
   stone: { glb: null, make: stone },

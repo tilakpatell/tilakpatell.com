@@ -14,12 +14,14 @@ export async function buildNuptia(kit) {
   const S = stage(kit, 'nuptia', { ground: specks('#8a6ab8', ['#7a5aa8', '#9a7ac8', '#a88ad0'], 19, 1400, 2), groundTile: 6 });
   const { R, P, A } = S;
 
-  // the cloud beyond the edge, a soft white plane below the cliff's lip
-  const cloud = new THREE.Mesh(R.own(new THREE.PlaneGeometry(A.x1 - A.x0 + 260, 120)), R.own(new THREE.MeshBasicMaterial({ color: 0xf6f0ff })));
+  // the cloud beyond the edge, a soft white plane from the rail out past the
+  // fog (over the world's ground, which runs out under it), and the cliff's lip
+  const CLOUD = { w: 900, d: 600 };
+  const cloud = new THREE.Mesh(R.own(new THREE.PlaneGeometry(CLOUD.w, CLOUD.d)), R.own(new THREE.MeshBasicMaterial({ color: 0xf6f0ff })));
   cloud.rotation.x = -Math.PI / 2;
-  cloud.position.set(P(0, 0)[0], -3, P(0, -22)[1] - 60);
+  cloud.position.set(P(0, 0)[0], 0.03, A.z0 - CLOUD.d / 2);
   R.add(cloud, { ink: false });
-  R.frame(...P(0, -21.6), 0, { list: 'fixed' }).box(0x6a4a8a, 0, -3, 0, A.x1 - A.x0 + 260, 3, 0.6);
+  R.frame(...P(0, -21.6), 0, { list: 'fixed' }).box(0x6a4a8a, 0, 0, 0, A.x1 - A.x0, 0.12, 0.6);
   // the pillars, white with a lamp each
   for (const [dx, dz] of [
     [-12, -16],

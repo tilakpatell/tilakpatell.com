@@ -21,7 +21,7 @@ import { VOICE } from './voicelines';
 import InvHud from './InvHud';
 import MissionCard from './MissionCard';
 import Panels from './Panels';
-import { titleMode } from '../../../runtime/hud';
+import { Exit, titleMode } from '../../../runtime/hud';
 import './world.css';
 import LoadingVeil from '../../worlds/LoadingVeil';
 import { useStage, useStageFrame } from '../../avengers/shared/runtime';
@@ -29,6 +29,10 @@ import city from './module';
 import Cards from './Cards';
 import { applyOuts, hits, onBrawlEvent, onFoeEvent, onHeroEvent, onPowerEvent, onQuestEvent, sfx } from './events';
 import { newBrawl, stepBrawl } from './brawl';
+import { newCavalry } from './guardians';
+import { dimensionOf, enter as enterDimension, savesHere, worldFor } from './dimensions';
+import { ANGSTROM_LINES } from './lines';
+import { atHallDoor, goIn, goOut, hallAct, hallNear, hallTalk, inHall, stepCavalryWorld, stepInside } from './inside';
 import { DEFAULT as MARK_ID, ORDER, canPlay, hero as heroOf, keptHero, lockLine } from './heroes';
 import { newPower, stepPower } from './powers';
 import { drawMap, fitHud } from './hudCanvas';
@@ -106,7 +110,7 @@ function World({ gl, setGl, thinkMark }) {
   if (!sim.current) {
     // (he's put on the lawn for now: where he really starts waits on the
     // world, which the scene makes, and nothing moves before it's there)
-    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null, ruins: keptRuins(), dadGone: keptStory().done.includes('ep8'), panels: null, sky: null, launchWatch: false, hero: heroOf(MARK_ID), power: newPower(), heroBack: null, touchPower: false, brawl: newBrawl(), pound: false, dive: false, touchPunch: false, mouseDown: false };
+    sim.current = { intro: false, kept: local.get(AT, null), quests: keptQuests(), foes: newFoes(), cars: null, mission: null, story: keptStory(), getaway: null, wave: null, swing: null, marker: null, gates: null, photo: null, hangarHp: 100, radio: newRadio(), call: null, punch: false, punchT: 0, invadeAt: 240, h: newHero(SPAWN), keys: new Set(), stick: { x: 0, y: 0 }, touchUp: false, touchDown: false, touchBoost: false, yaw: SPAWN.face, pitch: -0.05, dragAt: -1e9, t: 0, jump: false, press: jumpPress(), free: false, events: [], companion: [], eveHit: null, frame: 0, padBefore: null, moved: false, world: null, ruins: keptRuins(), dadGone: keptStory().done.includes('ep8'), panels: null, sky: null, launchWatch: false, hero: heroOf(MARK_ID), power: newPower(), heroBack: null, touchPower: false, brawl: newBrawl(), pound: false, dive: false, touchPunch: false, mouseDown: false, cavalry: newCavalry(), cavalryCalled: false, cavalryBlows: [], inside: null, dim: 'home', dimWorld: null };
   }
 
   // the hero: the sim's numbers, the scene's figure, and kept for next time
@@ -194,6 +198,8 @@ function World({ gl, setGl, thinkMark }) {
       hook.feed = (ev) => missionApi.current.feed?.(ev);
       hook.story = () => sim.current.story;
       hook.hero = (id) => setHeroId(keptHero(id)); // (any of them, earned or not: for the shots)
+      hook.hall = (on) => (on ? enter() : leave()); // (the Guardians' hall: in, or out)
+      hook.dimension = (id) => goDimension(id); // (one of Angstrom's dimensions, or home)
       // (and the city's damage: the n buildings nearest [x, z], hit for d)
       hook.ruin = ([x, z], n = 3, d = 0.8) => {
         const bs = [...sim.current.world.buildings].sort((p, q) => Math.hypot(p.x - x, p.z - z) - Math.hypot(q.x - x, q.z - z)).slice(0, n);
@@ -251,8 +257,8 @@ function World({ gl, setGl, thinkMark }) {
       // only somewhere placeHero will take back, so a place it would turn
       // down never overwrites one it wouldn't)
       const keep = { x: s.h.p[0], y: s.h.p[1], z: s.h.p[2], face: s.h.face };
-      if (s.world && s.h.zone !== 'space' && s.h.mode === 'ground' && Number.isFinite(keep.face) && isSafeStart(s.world, keep)) local.set(AT, keep);
-      if (s.ruins.damage.size || local.get(RUINSKEY, null)) local.set(RUINSKEY, keepRuins(s.ruins));
+      if (s.world && s.h.zone !== 'space' && s.h.zone !== 'hall' && s.h.mode === 'ground' && Number.isFinite(keep.face) && isSafeStart(s.world, keep)) local.set(AT, keep);
+      if (savesHere(s.dim) && (s.ruins.damage.size || local.get(RUINSKEY, null))) local.set(RUINSKEY, keepRuins(s.ruins)); // (only home keeps its damage)
       wind.current?.stop();
       wind.current = null;
       api.current = null;
@@ -460,7 +466,25 @@ function World({ gl, setGl, thinkMark }) {
   };
 
   // what a step (or its end) asks for (./events.js)
-  const setup = useCallback((outs) => applyOuts(outs, { s: sim.current, say, speak, unlock, clear, openCard, closeCard, shakeOff, beat: ep8Beat, found: setFound }), [say, speak, unlock, clear, openCard, closeCard, shakeOff, ep8Beat]);
+  // Angstrom's dimensions (./dimensions.js): the rules into one, the scene drawn as it
+  const goDimension = useCallback(
+    (id) => {
+      const s = sim.current;
+      if (!s.world || (s.dim ?? 'home') === id) return;
+      const r = enterDimension(id, s.h, s.foes);
+      s.dim = r.dim;
+      s.h = r.h;
+      s.foes = r.foes;
+      s.dimWorld = worldFor(s.world, r.dim);
+      api.current?.setDimension(r.dim);
+      sfx('hyperspace');
+      say(r.dim === 'home' ? 'Home.' : `${dimensionOf(r.dim).name}.`, 2600);
+      // (Angstrom's word on each of his, after the name)
+      if (ANGSTROM_LINES[r.dim]) setTimeout(() => say(ANGSTROM_LINES[r.dim], 3600, 'angstrom'), 2000);
+    },
+    [say],
+  );
+  const setup = useCallback((outs) => applyOuts(outs, { s: sim.current, say, speak, unlock, clear, openCard, closeCard, shakeOff, beat: ep8Beat, found: setFound, dimension: goDimension }), [say, speak, unlock, clear, openCard, closeCard, shakeOff, ep8Beat, goDimension]);
   const feed = useCallback(
     (ev) => {
       const s = sim.current;
@@ -543,8 +567,45 @@ function World({ gl, setGl, thinkMark }) {
     [],
   );
 
+  // the Guardians' hall (./inside.js): in at its door on the plaza with E,
+  // out by the kit's Exit or Esc, back on its steps
+  const enter = useCallback(() => {
+    const s = sim.current;
+    if (inHall(s) || !api.current) return;
+    goIn(s);
+    s.keys.clear();
+    api.current.setZone('hall');
+    setZoneUi('hall');
+    sfx('knock');
+    say('The Guardians’ hall. The eight on their plinths; Cecil’s board at the back. E speaks to one.', 4200);
+  }, [say]);
+  const leave = useCallback(() => {
+    const s = sim.current;
+    if (!inHall(s) || !api.current) return;
+    goOut(s);
+    s.keys.clear();
+    api.current.setZone('city');
+    setZoneUi('city');
+    sfx('knock');
+  }, []);
+
   const act = useCallback(() => {
     const s = sim.current;
+    // in the hall: the door out, Cecil's board, or one of the eight
+    if (inHall(s)) {
+      const w = hallAct(s);
+      if (w === 'leave') leave();
+      else if (w === 'board') {
+        sfx('ding');
+        openCard({ kind: 'board' });
+      } else if (w?.plinth != null) hallTalk(s, w.plinth, { say, unlock });
+      return;
+    }
+    // at the hall's door: in
+    if (atHallDoor(s)) {
+      enter();
+      return;
+    }
     // a panel up: the next one
     if (s.panels) {
       advancePanels();
@@ -588,15 +649,10 @@ function World({ gl, setGl, thinkMark }) {
     }
     const p = s.near;
     if (!p) return;
-    // at the GDA: Cecil's board, the season on it
-    if (p.id === 'gda') {
-      sfx('ding');
-      openCard({ kind: 'board' });
-      return;
-    }
+    // (Cecil's board, the season on it, is in the hall now)
     sfx('ding');
     say(`${p.name}: ${p.line}`, 3200);
-  }, [say, feed, startMission, openCard, snap, advancePanels]);
+  }, [say, feed, startMission, openCard, snap, advancePanels, enter, leave, unlock]);
 
   // Everything held, let go: the keys, the stick, the touch buttons and a
   // drag. A blur or a hidden tab (another app, a call) can swallow the
@@ -613,8 +669,8 @@ function World({ gl, setGl, thinkMark }) {
   // the keys (./input.js)
   useEffect(() => {
     if (!live) return undefined;
-    return bindKeys(sim.current, { act, cycleTime, startSound, release, abandon, openCard, closeCard, take, cardRef });
-  }, [live, act, cycleTime, startSound, release, abandon, openCard, closeCard, take]);
+    return bindKeys(sim.current, { act, cycleTime, startSound, release, abandon, openCard, closeCard, take, cardRef, leave });
+  }, [live, act, cycleTime, startSound, release, abandon, openCard, closeCard, take, leave]);
   // scrolled away (Think, Mark! is under it), and would leave it rushing.
   useEffect(() => {
     const hush = () => wind.current?.hush(!live || document.hidden);
@@ -682,7 +738,7 @@ function World({ gl, setGl, thinkMark }) {
       s.dragAt = s.t;
       if (s.h.mode === 'ground') s.intro = false;
     }
-    s.h = s.h.zone === 'space' ? stepSpace(s.h, input, dt) : stepHero(s.h, input, dt, s.world, s.hero.flight);
+    s.h = s.h.zone === 'space' ? stepSpace(s.h, input, dt) : s.h.zone === 'hall' ? stepInside(s, input, dt, s.hero.flight) : stepHero(s.h, input, dt, s.dimWorld ?? s.world, s.hero.flight);
     s.jump = false;
     s.free = false;
     // up through the top of the sky, or back down into it: the other world takes over
@@ -705,6 +761,7 @@ function World({ gl, setGl, thinkMark }) {
     }
     const h = s.h;
     const inSpace = h.zone === 'space';
+    const inside = h.zone === 'hall'; // (in the Guardians' hall: the city goes on without him, as in space)
     const speed = Math.hypot(h.v[0], h.v[1], h.v[2]);
     // the camera swings round behind him when he's going somewhere fast (and you're not looking about)
     if (h.mode === 'air' && speed > 18 && s.t - s.dragAt > 1.2) {
@@ -720,18 +777,21 @@ function World({ gl, setGl, thinkMark }) {
     for (const e of s.quests.ev) onQuestEvent(e, { s, say, feed, unlock, setFound });
     // the Flaxans: four minutes in if nobody's started them sooner
     s.punchT = Math.max(0, s.punchT - dt);
-    if (!inSpace) {
+    if (!inSpace && !inside) {
       if (!s.invaded && s.t > s.invadeAt) invade('auto');
+      // the Guardians' cavalry (./inside.js): called to a big fight, their blows land in the villains' step
+      s.cavalryBlows = stepCavalryWorld(s, dt, { say });
       // (in the rules' own steps: stepFoes takes at most 0.05 s a step, so the
       // dev clock's speed-up runs it several times; the punch counts once. The
       // scene says where the traffic's cars are while a Mauler's about)
       let r = { foes: s.foes, ev: [], push: null, stun: 0 };
       for (let left = dt, first = true; left > 1e-6; left -= 0.05, first = false) {
-        const q = stepFoes(r.foes, h, { punch: first && s.punch, look, eveHit: first ? s.eveHit : null, block: s.brawl.blocking, fists: s.hero.fists }, Math.min(0.05, left), { cars: s.cars ?? [], hangar: s.guard ?? null });
+        const q = stepFoes(r.foes, h, { punch: first && s.punch, look, eveHit: first ? s.eveHit : null, cavalry: first ? s.cavalryBlows : [], block: s.brawl.blocking, fists: s.hero.fists }, Math.min(0.05, left), { cars: s.cars ?? [], hangar: s.guard ?? null });
         r = { foes: q.foes, ev: [...r.ev, ...q.ev], push: q.push ?? r.push, stun: Math.max(r.stun ?? 0, q.stun ?? 0) };
       }
       s.foes = r.foes;
       s.eveHit = null;
+      s.cavalryBlows = [];
       if (r.push) {
         const l = Math.hypot(...r.push) || 1;
         s.h = { ...s.h, mode: 'air', crouch: 0, v: r.push, spd: l, dir: r.push.map((c) => c / l) };
@@ -744,7 +804,7 @@ function World({ gl, setGl, thinkMark }) {
     }
     s.punch = false;
     // the brawl (./brawl.js), after the villains' step: a hold, a hurl, a slam, a dive, a block, a pound
-    if (!inSpace) {
+    if (!inSpace && !inside) {
       const landed = h.ev.find((e) => e.type === 'land' || e.type === 'slam' || e.type === 'impact') ?? null;
       const punchHeld = k.has('punch') || s.touchPunch || s.mouseDown || Boolean(pad?.x);
       const heldBefore = Boolean(s.brawl.held);
@@ -770,7 +830,7 @@ function World({ gl, setGl, thinkMark }) {
     s.pound = false;
     s.dive = false;
     // the hero's power (./powers.js): G held in the air
-    if (!inSpace && s.hero.power) {
+    if (!inSpace && !inside && s.hero.power) {
       const rp = stepPower(s.power, s.hero, { power: k.has('power') || s.touchPower, look }, s.h, s.foes, dt, { ruins: s.ruins, towersNear: (p, r) => towersNear(s.world, p, r) });
       s.power = rp.p;
       s.foes = rp.foes;
@@ -847,7 +907,7 @@ function World({ gl, setGl, thinkMark }) {
       setRadio(null);
     }
     // the mission under way: where he is, and where what its step cares about is; then the clock
-    if (s.mission) {
+    if (s.mission && !inside) {
       const dadP = a.debug.dad().p;
       feed({ type: 'at', p: h.p, mode: h.mode, speed, face: h.face, npcs: { omni: dadP, allen: a.debug.allen }, car: getawayAt(s.getaway) });
       for (let left = dt; left > 1e-6 && s.mission; left -= 0.05) feed({ type: 'tick', dt: Math.min(0.05, left) });
@@ -867,8 +927,11 @@ function World({ gl, setGl, thinkMark }) {
     // he's nearest: on the Moon, it's the Moon's ground under him)
     const alt = inSpace ? over(h.p, nearest(h.p)) : h.p[1] - groundAt(h.p[0], h.p[2]);
     let nearP = null;
-    if (alt < 12 && !inSpace) for (const p of s.world.places) if (Math.hypot(h.p[0] - p.door[0], h.p[2] - p.door[1]) < p.r + 6) nearP = p;
-    if (nearP !== s.near) {
+    if (inside) nearP = hallNear(s);
+    else if (alt < 12 && !inSpace) for (const p of s.world.places) if (Math.hypot(h.p[0] - p.door[0], h.p[2] - p.door[1]) < p.r + 6) nearP = p;
+    // (the hall's door on the plaza: the prompt says it goes in)
+    if (nearP?.id === 'guardians' && atHallDoor(s)) nearP = { ...nearP, name: 'Go in · Guardians’ hall' };
+    if ((nearP?.id ?? null) !== (s.near?.id ?? null) || nearP?.name !== s.near?.name) {
       s.near = nearP;
       setNear(nearP ? { id: nearP.id, name: nearP.name } : null);
     }
@@ -882,7 +945,7 @@ function World({ gl, setGl, thinkMark }) {
         setChip(true);
       }
     }
-    if (s.frame % 4 === 0 && mapRef.current && H.mapBox && !inSpace) drawMap(mapRef.current, H.mapBox, h, s.yaw, alt, s.world, s.marks);
+    if (s.frame % 4 === 0 && mapRef.current && H.mapBox && !inSpace && !inside) drawMap(mapRef.current, H.mapBox, h, s.yaw, alt, s.world, s.marks);
     // who's talking to him: a bubble over the nearest, a new line every few seconds
     if (s.frame % 3 === 0) {
       const t0 = s.panels ? null : (a.talkers(h)[0] ?? null); // (a panel up: no bubble over it)
@@ -957,6 +1020,7 @@ function World({ gl, setGl, thinkMark }) {
       <MissionCard card={mcard} story={sim.current.story} onClose={closeCard} onAgain={() => startMission(mcard?.id)} onStart={startMission} onAbandon={abandon} />
 
       <InvHud hud={hud} mapRef={mapRef} time={time} heroId={heroId} heroes={heroes} pickHero={pickHero} power={Boolean(sim.current.hero.power)} cycleTime={cycleTime} chip={chip} trav={trav} found={found} cards={CARDS.length} near={near} act={act} toast={toast} radio={radio} take={take} touch={touch} onStick={onStick} startSound={startSound} hold={hold} />
+      {zone === 'hall' && <Exit className="iw-exit" label="Leave the hall" onLeave={leave} touch={touch} />}
       {shutter && <div className="iw-shutter" key={shutter} aria-hidden="true" onAnimationEnd={() => setShutter(null)} />}
 
     </div>
