@@ -9,7 +9,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { HOOCH, LESSON, lessonAct, lessonFly, lessonResult, newLesson, ringsRound } from '../../rules/flight';
+import { HOOCH, LESSON, lessonAct, lessonBot, lessonFly, lessonResult, newLesson, ringsRound } from '../../rules/flight';
 import { makeProp } from '../props';
 import { createSpellSounds } from '../spellSounds';
 
@@ -19,6 +19,16 @@ const UP_TIME = 0.35; // s the broom takes to jump to your hand
 const AFTER = 4; // s the lesson stays once done (her last word, the rings going)
 
 const ahead = (yaw) => [-Math.sin(yaw), -Math.cos(yaw)]; // (the walk’s yaw)
+const HOME = 5; // m from her the bot comes down within (the lesson asks for twelve)
+// the way to a point, as the broom’s keys: turn for it, go when it’s ahead
+function homeward(rider, [x, y, z]) {
+  const to = [x - rider.p[0], y - rider.p[1], z - rider.p[2]];
+  const want = Math.atan2(to[0], to[2]);
+  const diff = Math.atan2(Math.sin(want - rider.yaw), Math.cos(want - rider.yaw));
+  const flat = Math.hypot(to[0], to[2]);
+  const vert = Math.max(-1, Math.min(1, to[1] / 2));
+  return { fwd: Math.abs(diff) > 0.8 ? 0 : Math.min(1, flat / 20 + 0.2), side: Math.max(-1, Math.min(1, -diff * 2)), up: Math.max(0, vert), down: Math.max(0, -vert) };
+}
 
 export function create(ctx, at) {
   const { scene, camera, house, rt, floorAt = () => 0, said, cards } = ctx;
@@ -167,6 +177,21 @@ export function create(ctx, at) {
       return up >= 0 && up < UP_TIME;
     },
     state: () => ({ step: l.step, ring: l.ring, rings: l.rings.map((r) => r.p.map((v) => Math.round(v * 10) / 10)), hooch: [hp.x, hp.z].map((v) => Math.round(v * 10) / 10), broom: broom.position.toArray().map((v) => Math.round(v * 10) / 10) }),
+    // the check’s bot: rules/flight.js’s, its hands on the broom (E for
+    // “Up” and to get on, then the rings), and once they’re flown, back to
+    // her before it comes down: the lesson wants you landed by her
+    bot() {
+      const broomOf = ctx.broom;
+      const rider = broomOf?.rider ?? null;
+      const want = lessonBot(l, rider ?? { p: [ax, 0, az], yaw: 0, spd: 0 });
+      if (want.act) return self.act(true);
+      if (!rider) return false;
+      let input = want;
+      const far = Math.hypot(rider.p[0] - hp.x, rider.p[2] - hp.z);
+      if (l.step === 'land' && far > HOME) input = homeward(rider, [hp.x, hp.y + 4, hp.z]);
+      broomOf.drive?.(input);
+      return true;
+    },
     // the bot’s view (the check’s): the rings and where she stands
     get lesson() {
       return l;
