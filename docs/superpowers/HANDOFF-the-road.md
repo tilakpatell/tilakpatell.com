@@ -90,6 +90,13 @@ A session takes the next lane whose state allows it, runs until its budget, merg
 - **The end is the Red Book**, which is `/middle-earth` now: `'end'` `{ ridden }` → `/middle-earth?from=road`, the book at the Shire with walk it yourself; `lotrRoad` is won there when two thirds were walked. The hub (`/middle-earth/map`) offers the Road by `hub/hubState.js`'s `firstStep(unlocked, { ridden })` and `ghost`, read from the Road's save by `record.js`'s `roadRidden` (the browser's `{ v, data }`); the save's `on` is the day it was first ridden, for the journal's row.
 - `entry.js`'s `firstVisitRides` is still wired to nothing: the Red Book's design made the book the first visit. Sending a first visitor down the Road instead is the owner's call.
 
+## Water a stage keeps (2026-10-21)
+
+- **A stage's pools** go in a pure list its ground and its props both read (the Marshes': `stages/marshes/water.js`): the ground sinks an `island` hollow for each and `clear`s it (scatter.js plants nothing in a clear ring), the props set each one's level just under its rim, the scene lays a `createWater` sheet at it. Without the `clear` the grass grows up through the water and the pool is lost.
+- A new relief layer goes after the ones a stage already has: each layer's seed is its place in the list, so one put in the middle moves every layer after it.
+- `createWater({ murk })` for a bog's water; 0 is the clear water every other stage has.
+- **A ribbon on the ground** (Gorgoroth's cracks, `stages/gorgoroth/plain.js`) is wound to face up and lifted a little over the land: the drawn ground reads the land a few centimetres off it, and a face turned down is culled from every camera.
+
 ## The Road’s look, since R3 (for every lane after)
 
 - **Every stage on its own soil**: `stages/soils.js` gives a stage its ground colours, its rock, its road and three photo scans (`public/cc0/galaxy/`’s roles: grass, gravel, mud, snow, rock, stone, ash, leaves…). `ground.js` paints the map with them (rock where the land is steep) and `soil.js` lays the scans over it close up. A new stage’s row there is all it needs; there is a test that every stage has one.

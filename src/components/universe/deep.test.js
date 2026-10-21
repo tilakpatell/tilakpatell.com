@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEEP, DEEP_SOLIDS, PLACES, STARS, WONDERS, beyondOf, binaryAt, moveBinaries, nearestStar, openness, parseWonder, planetAt, reachOf, wonderById } from './deep';
+import { DEEP, DEEP_SOLIDS, PLACES, STARS, WONDERS, beyondOf, binaryAt, moveBinaries, nearestPlace, nearestStar, openness, parseWonder, planetAt, reachOf, wonderById } from './deep';
 import { GOALS } from './ship';
 import { HOME_RADIUS, ORDER, POSITIONS, REACH, SECTORS, SECTOR_OF, inSector, sectorOf } from './layout';
 import { MOONS, byId } from './universes';
@@ -116,6 +116,11 @@ describe('deep space', () => {
     const mid = openness(Math.cos(clear) * half, 0, Math.sin(clear) * half);
     expect(mid).toBeGreaterThan(0.4);
     expect(mid).toBeLessThan(0.6);
+  });
+
+  it('measures the home system as a ball: far over it, it’s open space', () => {
+    expect(openness(0, 50000, 0)).toBe(1);
+    expect(Math.abs(nearestPlace(0, 50000, 0).gap - (50000 - HOME_RADIUS))).toBeLessThan(1);
   });
 
   it('turns a binary’s suns round the point their masses balance at, apart by the same all the way round', () => {
