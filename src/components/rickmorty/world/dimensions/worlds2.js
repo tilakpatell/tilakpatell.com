@@ -272,7 +272,8 @@ export const WORLDS2 = {
         { kinds: ['snakeastronaut'], n: { high: 4, mid: 3, low: 2 }, at: [8, -36], r: 2, face: [12, -17] },
       ],
     },
-    fliers: [{ model: '/models/c137/rm/snakerocket.glb', n: { high: 1, mid: 1, low: 0 }, y: [70, 110], speed: 8, h: 10 }],
+    // (a rocket off the pad between the launch towers, climbing out of sight)
+    fliers: [{ model: '/models/c137/rm/snakerocket.glb', n: { high: 1, mid: 1, low: 0 }, climb: [70, -59], speed: 9, h: 10 }],
   },
 
   // the Purge Planet: the village's own cottages, barn and well (their models,

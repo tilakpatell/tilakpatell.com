@@ -18,7 +18,8 @@
 //   gathers: [{ key, kinds, n, at: [x, z], r, row, y, beat, face: [x, z], block, until, after, when, out }]
 //                             (`row`: its people along a row that long, not in a disc;
 //                             `y`: how high they stand; `beat`: seconds between hops)
-//   lanes: [{ key, model, n, y, from: [x, z], to: [x, z], speed }]
+//   lanes: [{ key, model, n, y, y1, from: [x, z], to: [x, z], speed }]   (y1: the far end's
+//                             height; a climber's lane goes straight up from its pad)
 //   extents: { [key]: { x, y, z, r } }      a bounding sphere for each crowd and lane
 // }
 // `tier`: the renderer row's level (high, mid, low: kit.fit.tier); `fogFar`:
@@ -303,9 +304,15 @@ function lanesOf(d, fliers, { tier, row, room, outside, fogFar }, r) {
     const n = Math.min(f.n?.[tier] ?? 0, left);
     if (n <= 0) continue;
     left -= n;
+    // (a climber goes straight up from its pad, out past the fog: a rocket launched)
+    if (f.climb) {
+      const pad = [d.centre.x + f.climb[0], d.centre.z + f.climb[1]];
+      out.push({ key: `lane-${i}`, model: f.model, h: f.h ?? null, n, y: 0, y1: R, from: pad, to: pad, speed: f.speed ?? 16 });
+      continue;
+    }
     const a = r() * Math.PI * 2;
     const y = within(f.y ?? [30, 60], r());
-    out.push({ key: `lane-${i}`, model: f.model, h: f.h ?? null, n, y, from: [d.centre.x - Math.cos(a) * R, d.centre.z - Math.sin(a) * R], to: [d.centre.x + Math.cos(a) * R, d.centre.z + Math.sin(a) * R], speed: f.speed ?? 16 });
+    out.push({ key: `lane-${i}`, model: f.model, h: f.h ?? null, n, y, y1: y, from: [d.centre.x - Math.cos(a) * R, d.centre.z - Math.sin(a) * R], to: [d.centre.x + Math.cos(a) * R, d.centre.z + Math.sin(a) * R], speed: f.speed ?? 16 });
   }
   return out;
 }
@@ -318,7 +325,8 @@ function extentOf(c) {
   const x = (Math.min(...xs) + Math.max(...xs)) / 2;
   const z = (Math.min(...zs) + Math.max(...zs)) / 2;
   const far = Math.max(...pts.map(([px, pz]) => Math.hypot(px - x, pz - z)));
-  return { x, y: c.from ? c.y : (c.y ?? 0) + 1, z, r: far + (c.r ?? 0) + (c.row ?? 0) / 2 + (c.from ? 15 : 2.5) };
+  const rise = c.from ? Math.abs((c.y1 ?? c.y) - c.y) / 2 : 0;
+  return { x, y: c.from ? (c.y + (c.y1 ?? c.y)) / 2 : (c.y ?? 0) + 1, z, r: far + rise + (c.r ?? 0) + (c.row ?? 0) / 2 + (c.from ? 15 : 2.5) };
 }
 
 // ── the forecourt ──

@@ -238,7 +238,8 @@ export function surround({ R, d, kit, loader = null, blocks = [] }, world, laid)
             kit.adopt?.(mesh);
             return { mesh, local: p.local };
           });
-          lanes.push({ lane, meshes, len: Math.hypot(lane.to[0] - lane.from[0], lane.to[1] - lane.from[1]), yaw: Math.atan2(lane.to[0] - lane.from[0], lane.to[1] - lane.from[1]) });
+          const rise = (lane.y1 ?? lane.y) - lane.y;
+          lanes.push({ lane, meshes, rise, len: Math.hypot(lane.to[0] - lane.from[0], lane.to[1] - lane.from[1], rise), yaw: Math.atan2(lane.to[0] - lane.from[0], lane.to[1] - lane.from[1]) });
         })
         .catch(warn(lane.model)),
     );
@@ -258,11 +259,11 @@ export function surround({ R, d, kit, loader = null, blocks = [] }, world, laid)
       });
       for (const { mesh } of meshes) mesh.instanceMatrix.needsUpdate = true;
     }
-    for (const { lane, meshes, len, yaw } of lanes) {
+    for (const { lane, meshes, len, rise, yaw } of lanes) {
       q.setFromAxisAngle(up, yaw);
       for (let j = 0; j < lane.n; j++) {
         const k = ((t * lane.speed) / len + j / lane.n) % 1;
-        v.set(lane.from[0] + (lane.to[0] - lane.from[0]) * k, lane.y, lane.from[1] + (lane.to[1] - lane.from[1]) * k);
+        v.set(lane.from[0] + (lane.to[0] - lane.from[0]) * k, lane.y + rise * k, lane.from[1] + (lane.to[1] - lane.from[1]) * k);
         m4.compose(v, q, one);
         for (const { mesh, local } of meshes) mesh.setMatrixAt(j, each.copy(m4).multiply(local));
       }

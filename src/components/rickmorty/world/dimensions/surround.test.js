@@ -175,6 +175,28 @@ describe('the world round a place', () => {
     expect(where().x - a.x).toBeCloseTo(20, 0);
   });
 
+  it('climbs a climbing lane straight up from its pad', async () => {
+    const d = outdoor();
+    const { R, group, ticks } = fakeRoom();
+    const { kit, loader } = fakeKit();
+    const pad = [d.centre.x + 70, d.centre.z - 59];
+    const lanes = [{ key: 'lane-0', model: '/models/c137/rm/snakerocket.glb', n: 1, y: 0, y1: 330, from: pad, to: pad, speed: 10 }];
+    await surround(ctx(R, kit, d, loader), { look: LOOK }, laidFor(d, { lanes, extents: { 'lane-0': { x: pad[0], y: 165, z: pad[1], r: 180 } } })).ready;
+    const [rocket] = instances(group).filter((m) => m.userData.surround === '/models/c137/rm/snakerocket.glb');
+    const where = () => {
+      const m = new THREE.Matrix4();
+      rocket.getMatrixAt(0, m);
+      return new THREE.Vector3().setFromMatrixPosition(m);
+    };
+    ticks.forEach((fn) => fn(3, 1 / 60, { done: [] }, null));
+    const a = where();
+    ticks.forEach((fn) => fn(4, 1 / 60, { done: [] }, null));
+    const b = where();
+    expect(b.y - a.y).toBeCloseTo(10, 3);
+    expect([b.x, b.z]).toEqual([a.x, a.z]);
+    expect(Math.hypot(a.x - pad[0], a.z - pad[1])).toBeLessThan(1);
+  });
+
   it('leaves the place standing when a load fails', async () => {
     const d = outdoor();
     const { R, group } = fakeRoom();

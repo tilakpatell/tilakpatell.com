@@ -242,6 +242,19 @@ describe('the outskirts of an outdoor place', () => {
     // straight across, through the place's sky
     expect(Math.hypot((l.from[0] + l.to[0]) / 2 - d.centre.x, (l.from[1] + l.to[1]) / 2 - d.centre.z)).toBeLessThan(1e-6);
   });
+
+  it('flies a climbing flier straight up from its pad out past the fog (a rocket launched), its extent holding the climb', () => {
+    const d = outdoor();
+    const L = lay(d, world({ fliers: [{ model: 'snakerocket', n: { high: 1, mid: 1, low: 0 }, climb: [70, -59], speed: 8, h: 10 }] }));
+    const [l] = L.lanes;
+    expect(l.from).toEqual([d.centre.x + 70, d.centre.z - 59]);
+    expect(l.to).toEqual(l.from);
+    expect(l.y).toBe(0);
+    expect(l.y1).toBeGreaterThan(FOG);
+    const x = L.extents[l.key];
+    expect(x.y - x.r).toBeLessThanOrEqual(0);
+    expect(x.y + x.r).toBeGreaterThanOrEqual(l.y1);
+  });
 });
 
 describe('a stand round a place', () => {
