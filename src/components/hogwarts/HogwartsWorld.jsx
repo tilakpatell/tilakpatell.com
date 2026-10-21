@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useMediaQuery, useReducedMotion } from '../../lib/hooks';
 import { WorldHost, useWorld } from '../../runtime';
-import { Bubble, Hud, Menu, MenuItem, Objective, Prompt, QuestList, Stick, Toast, TouchButton } from '../../runtime/hud';
+import { Bubble, Hud, Letterbox, Menu, MenuItem, Objective, Prompt, QuestList, Stick, Toast, TouchButton } from '../../runtime/hud';
 import { wayOut } from '../worlds/worlds';
 import hogwartsModule from './module';
 import SpellWheel from './hud/SpellWheel';
@@ -29,6 +29,15 @@ const TOAST_FOR = 4000; // ms
 // Snitch is), the commentator in the kit's Bubble over his box, and on
 // touch Up, Down and Catch.
 const SAID_FOR = 5000; // ms a commentator's line stays up
+// the classes on the Menu, until the term's lane sends you to them in their rooms
+const LESSON_ITEMS = [
+  ['charms', 'Charms: the feather'],
+  ['potions', 'Potions: a Cure for Boils'],
+  ['herbology', 'Herbology: the Mandrakes'],
+  ['buckbeak', 'Buckbeak'],
+  ['duel', 'The duelling club'],
+  ['boggart', 'The boggart'],
+];
 export default function HogwartsWorld() {
   const { pathname } = useLocation();
   const reduced = useReducedMotion();
@@ -44,6 +53,8 @@ export default function HogwartsWorld() {
   const [said, setSaid] = useState(null);
   const [next, setNext] = useState(1);
   const [objective, setObjective] = useState(null);
+  const [choices, setChoices] = useState(null);
+  const [ride, setRide] = useState(false);
   const menu = useRef(null);
   const line = useRef(null);
   const bubble = useRef(null);
@@ -58,6 +69,8 @@ export default function HogwartsWorld() {
     else if (e.type === 'wheel') setWheel(e.open);
     else if (e.type === 'broom') setRiding(e.riding);
     else if (e.type === 'objective') setObjective(e.text);
+    else if (e.type === 'choices') setChoices(e.title ? e : null);
+    else if (e.type === 'ride') setRide(e.on);
     else if (e.type === 'said') setSaid({ key: Date.now(), name: e.who, line: e.text });
     else if (e.type === 'match') {
       // (the score written straight in, a few times a second; only its coming and going re-renders)
@@ -120,6 +133,11 @@ export default function HogwartsWorld() {
             <Menu className="hogwarts-menu" way={wayOut(pathname)} todo={{ onOpen: () => setList(true), done: 0, total: 0 }}>
               {!riding && <MenuItem onClick={() => api()?.fly()}>Fly</MenuItem>}
               <MenuItem onClick={() => api()?.lesson('flying')}>The flying lesson</MenuItem>
+              {LESSON_ITEMS.map(([id, name]) => (
+                <MenuItem key={id} onClick={() => api()?.lesson(id)}>
+                  {name}
+                </MenuItem>
+              ))}
               <MenuItem onClick={() => api()?.practice()}>Snitch practice</MenuItem>
               <MenuItem onClick={() => api()?.match(next)}>Quidditch: match {next} of 3</MenuItem>
             </Menu>
@@ -162,6 +180,17 @@ export default function HogwartsWorld() {
       >
         <Toast toast={toast} className="hogwarts-toast" />
         {said && <Bubble key={said.key} ref={onBubble} className="hogwarts-bubble" name={said.name} line={said.line} />}
+        {choices && (
+          <div className="hogwarts-choices" role="group" aria-label={choices.title}>
+            <p className="hogwarts-choices-title">{choices.title}</p>
+            {choices.options.map((o) => (
+              <button key={o.n} type="button" className="hogwarts-choice" onClick={() => api()?.pick(o.n)}>
+                <kbd className="hud-cap">{o.n}</kbd> {o.text}
+              </button>
+            ))}
+          </div>
+        )}
+        <Letterbox on={ride} />
         <SpellWheel part="wheel" ref={ring} open={wheel} active={spell} onChoose={choose} touch={touch} />
         {list && <QuestList className="hogwarts-list" title="Things to do" sub="Nothing yet: the term begins once you’re across the lake." quests={[]} next={null} onClose={() => setList(false)} onGo={() => {}} />}
       </Hud>
