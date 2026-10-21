@@ -353,6 +353,9 @@ export const WORLDS = {
       { from: [0, 1.6, -9.4], to: [0, 22, -60] },
       { from: [0, 1.6, -9.4], to: [-40, 22, -56] },
       { from: [0, 1.6, -9.4], to: [40, 22, -58] },
+      // (and the two higher and farther: their middles)
+      { from: [0, 1.6, -9.4], to: [-95, 50, -105] },
+      { from: [0, 1.6, -9.4], to: [100, 56, -110] },
     ],
   },
 

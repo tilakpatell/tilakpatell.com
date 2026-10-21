@@ -26,6 +26,8 @@
 // where the place's fog is whole; `tris`: each crowd kind's triangles
 // (./worlds.js's TRIS), which the crowd's allowance is counted in.
 // loopProblems(d, loop) → what's wrong with a walker's loop in the box ([dx, dz] points)
+// blocksSight(laid, from, to) → whether a lot or a skyline tower stands in the
+//   line from `from` to `to` ([x, y, z]); a record's `sight` lines are kept clear
 
 import { seeded } from '../../../../lib/seeded';
 
@@ -424,7 +426,11 @@ export function outskirtsOf(d, world, { tier = 'high', fogFar = 300, tris = {} }
   lots = lots.slice(0, row.near);
   setsIn(lots, world.ring, row.sets);
   const tallest = lots.reduce((a, l) => Math.max(a, l.h + l.y), 0);
-  const skyline = outside === 'ground' ? skylineOf(d, world.far, row.far, tallest, fogFar, vista, r) : [];
+  let skyline = outside === 'ground' ? skylineOf(d, world.far, row.far, tallest, fogFar, vista, r) : [];
+  // (nothing in the ring or the skyline stands in a line the record keeps clear: the heads, from the mic)
+  const sights = (world.sight ?? []).map(({ from, to }) => [[d.centre.x + from[0], from[1], d.centre.z + from[2]], [d.centre.x + to[0], to[1], d.centre.z + to[2]]]);
+  lots = lots.filter((l) => !sights.some(([a, b]) => inSight({ ...l, top: l.y + l.h }, a, b)));
+  skyline = skyline.filter((s) => !sights.some(([a, b]) => inSight({ ...s, top: s.h, turn: 0 }, a, b)));
   const loops = (world.crowd?.walk ?? []).filter((c) => Array.isArray(c.loop)).map((c) => c.loop.map(([dx, dz]) => [d.centre.x + dx, d.centre.z + dz]));
   const { path, props } = forecourtOf(d, world.forecourt, hero, loops);
   const stands = outside === 'ground' ? standsOf(d, world.stands, tier, hero) : { lots: [], gathers: [] };
@@ -435,6 +441,25 @@ export function outskirtsOf(d, world, { tier = 'high', fogFar = 300, tris = {} }
   const lanes = outside ? lanesOf(d, world.fliers, { tier, row, room, outside, fogFar, windows: world.windows }, r) : [];
   const extents = Object.fromEntries([...walkers, ...gathers, ...lanes].map((c) => [c.key, extentOf(c)]));
   return { reach: fogFar + 20, edge: runs, lots: [...lots, ...stands.lots, ...landmarks, ...pieces], skyline, path, props: [...clumps, ...props, ...scattered], walkers, gathers, lanes, extents };
+}
+
+// does the segment from `from` to `to` pass through a building, below its top?
+const STEPS = 200;
+function inSight(b, from, to) {
+  const across = Math.abs(Math.sin(b.turn ?? 0)) > 0.5;
+  const hw = (across ? b.d : b.w) / 2;
+  const hd = (across ? b.w : b.d) / 2;
+  for (let i = 0; i <= STEPS; i++) {
+    const k = i / STEPS;
+    const x = from[0] + (to[0] - from[0]) * k;
+    const y = from[1] + (to[1] - from[1]) * k;
+    const z = from[2] + (to[2] - from[2]) * k;
+    if (Math.abs(x - b.x) <= hw && Math.abs(z - b.z) <= hd && y <= b.top) return true;
+  }
+  return false;
+}
+export function blocksSight(laid, from, to) {
+  return [...laid.lots.map((l) => ({ ...l, top: l.y + l.h })), ...laid.skyline.map((s) => ({ ...s, top: s.h, turn: 0 }))].some((b) => inSight(b, from, to));
 }
 
 // ── a walker's loop in the box, checked ──

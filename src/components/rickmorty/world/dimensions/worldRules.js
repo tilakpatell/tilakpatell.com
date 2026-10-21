@@ -21,7 +21,7 @@
 //   the line from `from` to `to` ([x, y, z])
 
 import { MESHY } from '../../portal/meshyCastCore';
-import { loopProblems } from './outskirts';
+import { blocksSight, loopProblems } from './outskirts';
 import { STYLES } from './lots';
 import { QUATERNIUS } from './surround';
 
@@ -141,21 +141,4 @@ function footOn(c, b) {
   return inside(c.at[0] + Math.cos(a) * u, c.at[1] + Math.sin(a) * u, 0) && inside(c.at[0] - Math.cos(a) * u, c.at[1] - Math.sin(a) * u, 0);
 }
 
-// does the segment from `from` to `to` pass through a building, below its top?
-export function blocksSight(laid, from, to) {
-  const things = [...laid.lots.map((l) => ({ ...l, top: l.y + l.h })), ...laid.skyline.map((s) => ({ ...s, top: s.h, turn: 0 }))];
-  const steps = 200;
-  for (const b of things) {
-    const across = Math.abs(Math.sin(b.turn ?? 0)) > 0.5;
-    const hw = (across ? b.d : b.w) / 2;
-    const hd = (across ? b.w : b.d) / 2;
-    for (let i = 0; i <= steps; i++) {
-      const k = i / steps;
-      const x = from[0] + (to[0] - from[0]) * k;
-      const y = from[1] + (to[1] - from[1]) * k;
-      const z = from[2] + (to[2] - from[2]) * k;
-      if (Math.abs(x - b.x) <= hw && Math.abs(z - b.z) <= hd && y <= b.top) return true;
-    }
-  }
-  return false;
-}
+export { blocksSight };
