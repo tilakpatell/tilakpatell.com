@@ -27,7 +27,7 @@ Nothing under `src/` knows about Cloudflare. Three files do:
 The owner's ceiling, 2026-10-21: **$20 to $30 a month** for Cloudflare. A paid plan or a script is fine where it buys something the site needs; past the ceiling is not.
 
 - **Now: nothing.** DNS, the Worker's files and their bandwidth are on the free plan.
-- **R2, once the heavy assets move there** (80 to 90 GB, the owner's count): $0.015 a GB-month past 10 GB, so about $1 to $2 a month; reads $0.36 a million past 10 million a month; writes $4.50 a million past 1 million a month; nothing for bytes sent out. Through a custom domain (not `r2.dev`, which is rate-limited and uncached) with a cache rule, a file read again comes from Cloudflare's cache and costs no read.
+- **R2, once the heavy assets move there** (80 to 90 GB, the owner's count; the copy is `.github/workflows/assets-to-r2.yml`, run by hand, as Cloudflare's own copy won't take Supabase's address): $0.015 a GB-month past 10 GB, so about $1 to $2 a month; reads $0.36 a million past 10 million a month; writes $4.50 a million past 1 million a month; nothing for bytes sent out. Through a custom domain (not `r2.dev`, which is rate-limited and uncached) with a cache rule, a file read again comes from Cloudflare's cache and costs no read.
 - **Workers Paid, if a script or more files is ever needed:** $5 a month, with 10 million Worker requests a month in it and the 100,000-file limit.
 - **What would break or bill unnoticed:** a script on the Worker on the free plan (each page view and file a request: past 100,000 a day the site stops answering), R2 read without the cache (a read for every file, every visit), Workers KV, D1 or Durable Objects (none used).
 
