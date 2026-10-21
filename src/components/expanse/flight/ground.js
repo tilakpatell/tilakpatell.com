@@ -1,7 +1,8 @@
 // The flight's ground in three.js: the sink ./groundCore.js drives. A leaf's
-// transferred buffers are wrapped as a BufferGeometry (no normals worked out
-// here: the worker's are already right at the edges), its bounds set from
-// its square and its heights, under one root group the floating origin moves.
+// transferred buffers go into a slot of one batch (./leafBatch.js: the
+// ground one object to the renderer; no normals worked out here: the
+// worker's are already right at the edges), under one root group the
+// floating origin moves.
 // One material for the whole planet: the walkable surfaces' own
 // (lib/three/groundLook.js), the planet's palette by height and slope, its
 // photo-scanned surface (sand, snow, needles, ash…) close up and seen from
@@ -11,16 +12,19 @@
 // hides.
 //
 //   createGround(scene, { rt, spec, tier, palette, warn }) → { update(ship),
-//     heightUnder(x, z), stats() (groundCore's, and `geometries`: made and
-//     not yet disposed), setTier(tier), materials, dispose() }
+//     heightUnder(x, z), stats() (groundCore's, and `geometries`: the leaves
+//     in the batch, not yet freed), setTier(tier), materials, dispose() }
 
 import * as THREE from 'three';
 import { pool } from '../../../lib/three/pool';
-import { groundMaterial as shadeGround } from '../../../lib/three/groundLook';
-import { SKIRT, CLUTTER_KINDS, SOLID } from '../../../lib/land/flight/leafMesh';
+import { groundMaterial as shadeGround } from '../../../lib/three/groundLookNodes';
+import { MeshLambertNodeMaterial } from 'three/webgpu';
+import { cityMaterial } from './nodes';
+import { CLUTTER_KINDS, SOLID } from '../../../lib/land/flight/leafMesh';
 import { MAX_DEPTH } from '../../../lib/land/flight/quadtree';
 import { WORKER, createGroundCore } from './groundCore';
 import { createKitClutter } from './kitClutter';
+import { createLeafBatch } from './leafBatch';
 
 // slots a kind, at most (halved on low)
 export const CAP = { rock: 4000, spire: 600, debris: 2000, trunk: 3000, hive: 300, crystal: 800, block: 2000, tower: 6000, slab: 4000, needle: 4000, hero: 300 };
@@ -134,62 +138,6 @@ function merge(parts) {
   return out;
 }
 
-// A city's facades: lit windows read from where a face is in the world, so
-// every tower's windows are 4 × 3.5 m however tall it's scaled, and about a
-// third of them lit, warm, at the city's dusk
-export function cityMaterial(colour) {
-  const m = new THREE.MeshStandardMaterial({ color: colour, roughness: 0.7, metalness: 0.15 });
-  m.name = 'flight-city';
-  m.onBeforeCompile = (sh) => {
-    sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vCityW;\nvarying vec3 vCityN;')
-      .replace(
-        '#include <project_vertex>',
-        `#include <project_vertex>
-#ifdef USE_INSTANCING
-vCityW = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
-vCityN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * objectNormal);
-#else
-vCityW = (modelMatrix * vec4(transformed, 1.0)).xyz;
-vCityN = normalize(mat3(modelMatrix) * objectNormal);
-#endif`,
-      );
-    sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vCityW;\nvarying vec3 vCityN;\nfloat cityHash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }')
-      .replace(
-        '#include <color_fragment>',
-        `#include <color_fragment>
-{
-  // each tower its own stone: a tint by the lot it stands on
-  float t = cityHash(floor(vCityW.xz / 150.0) + 7.3);
-  diffuseColor.rgb *= mix(vec3(0.82, 0.8, 0.84), vec3(1.18, 1.12, 1.04), t);
-}`,
-      )
-      .replace(
-        '#include <emissivemap_fragment>',
-        `#include <emissivemap_fragment>
-{
-  // floors 3.5 m apart, panes 4 m wide, lit in runs along a floor (an
-  // office lit, the next dark) as the films' towers are at dusk; where a
-  // pane is smaller than a pixel the pattern gives way to its average, so a
-  // far tower glows evenly instead of shimmering
-  float side = 1.0 - abs(vCityN.y);
-  float u = abs(vCityN.x) > 0.5 ? vCityW.z : vCityW.x;
-  vec2 cell = vec2(u / 4.0, vCityW.y / 3.5);
-  vec2 f = fract(cell);
-  float pane = step(0.14, f.x) * step(f.x, 0.86) * step(0.25, f.y) * step(f.y, 0.8);
-  float run = cityHash(vec2(floor(cell.x / 6.0), floor(cell.y)) + floor(vCityW.xz / 150.0));
-  float lit = step(0.72, run) * step(0.25, cityHash(floor(cell)));
-  float near = clamp(1.6 - max(fwidth(cell.x), fwidth(cell.y)) * 2.0, 0.0, 1.0);
-  float glow = mix(0.13, pane * lit, near);
-  totalEmissiveRadiance += vec3(1.0, 0.74, 0.46) * glow * side * 1.4;
-  diffuseColor.rgb *= 1.0 - pane * side * 0.25 * near;
-}`,
-      );
-  };
-  m.customProgramCacheKey = () => 'flight-city';
-  return m;
-}
 
 // the film-made tower (galaxy/surface/catalog's corutower) as one geometry
 // standing on y = 0, 100 m tall, its material as made; null if it has none
@@ -273,7 +221,7 @@ function counted(p) {
   return p;
 }
 
-function three(scene, spec, tier, palette, kitsOf) {
+function three(scene, spec, tier, palette, kitsOf, house) {
   const root = new THREE.Group();
   root.name = 'flight-ground';
   scene.add(root);
@@ -286,24 +234,28 @@ function three(scene, spec, tier, palette, kitsOf) {
   const cap = (kind) => (tier === 'low' ? CAP[kind] / 2 : CAP[kind]);
   const pools = CLUTTER_KINDS.map((kind) => {
     if (!named.has(kind)) return null;
-    const material = SOLID[kind] ? city : new THREE.MeshLambertMaterial({ color: colours[kind], flatShading: true });
+    const material = SOLID[kind] ? city : new MeshLambertNodeMaterial({ color: colours[kind], flatShading: true });
     const p = counted(pool(clutterGeometry(kind), material, cap(kind), `flight-${kind}`));
     p.mesh.castShadow = p.mesh.receiveShadow = false;
     root.add(p.mesh);
     return p;
   });
   // the kits' models for the kinds the planet names one for (./kitClutter.js): the rest stay code-built
-  const kits = kitsOf?.(root, { spec, tier }) ?? null;
+  const kits = kitsOf?.(root, { spec, tier, house }) ?? null;
   // the film-made tower, once it's in (heroTower): the city's nearest leaves wear it
   let hero = null;
   // (the pool reads plain arrays)
   const pos = [0, 0, 0];
   const q = [0, 0, 0, 1];
 
-  let live = 0; // geometries made and not yet disposed
+  // (the leaves one object, ./leafBatch.js: the node renderer pays its
+  // per-object cost once for the whole ground; 192 slots hold the 149 to
+  // 160 leaves Hoth's start keeps at High, so the batch is not made again
+  // mid-flight, a frame's whole-ground copy, on the tiers that stream most)
+  const leaves = createLeafBatch(material, { slots: 192, parent: root });
   return {
     root,
-    live: () => live,
+    live: () => leaves.live(),
     materials: [material, ...new Set(pools.filter(Boolean).map((p) => p.mesh.material))],
     // the film-made tower's geometry and material (heroOf's): from now on the
     // city's nearest leaves stand it in for their towers and needles
@@ -315,36 +267,13 @@ function three(scene, spec, tier, palette, kitsOf) {
       return hero.mesh;
     },
     add(leaf, a) {
-      const g = new THREE.BufferGeometry();
-      g.setAttribute('position', new THREE.BufferAttribute(a.positions, 3));
-      g.setAttribute('normal', new THREE.BufferAttribute(a.normals, 3));
-      g.setIndex(new THREE.BufferAttribute(a.indices, 1));
-      let lo = Infinity, hi = -Infinity;
-      for (const h of a.heights) {
-        if (h < lo) lo = h;
-        if (h > hi) hi = h;
-      }
-      lo -= SKIRT;
-      const half = leaf.size / 2, mid = (hi - lo) / 2;
-      g.boundingSphere = new THREE.Sphere(new THREE.Vector3(half, lo + mid, half), Math.hypot(half, half, mid));
-      g.boundingBox = new THREE.Box3(new THREE.Vector3(0, lo, 0), new THREE.Vector3(leaf.size, hi, leaf.size));
-      const mesh = new THREE.Mesh(g, material);
-      mesh.name = leaf.key;
-      mesh.position.set(leaf.x0, 0, leaf.z0);
-      mesh.matrixAutoUpdate = false;
-      mesh.updateMatrix();
-      mesh.visible = false;
-      root.add(mesh);
-      live++;
-      return mesh;
+      return leaves.add(leaf, a);
     },
-    show(mesh, on) {
-      mesh.visible = on;
+    show(slot, on) {
+      leaves.show(slot, on);
     },
-    remove(mesh) {
-      root.remove(mesh);
-      mesh.geometry.dispose();
-      live--;
+    remove(slot) {
+      leaves.remove(slot);
     },
     clutterAdd(all, leaf) {
       const slots = [];
@@ -384,6 +313,7 @@ function three(scene, spec, tier, palette, kitsOf) {
       for (const p of new Set(pools)) p?.dispose();
       // (the hero's geometry is ours, its material the loaded model's: the asset cache's to free)
       if (hero) hero.mesh.geometry.dispose();
+      leaves.dispose();
       material.dispose();
     },
   };
@@ -392,9 +322,9 @@ function three(scene, spec, tier, palette, kitsOf) {
 // (the kits' maps are read on a canvas: with no page, in Node, the clutter stays code-built)
 const pageKits = (root, opts) => (typeof document === 'undefined' ? null : createKitClutter(root, opts));
 
-export function createGround(scene, { rt, spec, tier = 'mid', palette, warn, kits = pageKits }) {
+export function createGround(scene, { rt, spec, tier = 'mid', palette, warn, kits = pageKits, house = null }) {
   rt.workers.define(WORKER, () => new Worker(new URL('./terrain.worker.js', import.meta.url), { type: 'module' }));
-  const sink = three(scene, spec, tier, palette, kits);
+  const sink = three(scene, spec, tier, palette, kits, house);
   const core = createGroundCore({ workers: rt.workers, sink, spec, tier, warn });
   core.origin(rt.origin?.at ?? [0, 0, 0]);
   return {

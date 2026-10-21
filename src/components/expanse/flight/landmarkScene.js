@@ -13,7 +13,8 @@
 // model that comes in after the landmark has gone is freed as it lands.
 //
 //   createLandmark(scene, { list, placer: (group) → placer, origin })
-//     → { group, ready, stats() → { placed, standIns }, update(t, dt),
+//     → { group, ready, stats() → { placed, standIns }, update(t, dt) (its
+//         still meshes merged a second's frames after it is in: ./landmarkMerge.js),
 //         reanchor(at), dispose() }
 //   galaxyPlacer({ kit, house, create }) → (group) → a galaxy placer over it, its
 //     things stood at their own heights (`abs`), nothing solid
@@ -30,6 +31,7 @@ import { SURFACE_MODELS, clusterSpecs, createKit, createPlacer, loadModel, usesM
 import { planetField } from '../../../lib/land/flight/field';
 import { placementsFor } from './landmarks';
 import { landmarkPlan } from './landmarkStream';
+import { createMerge } from './landmarkMerge';
 
 const users = new Map(); // geometry → how many live landmarks draw it
 
@@ -64,6 +66,7 @@ export function createLandmark(scene, { list, placer: makePlacer, origin = [0, 0
   const missing = new Set(); // the kinds blocks stand in for, to name in the warning
   let block = null; // { geometry, material }, made at the first stand-in
   let gone = false;
+  let merge = null; // (its still meshes merged once all its things are in: ./landmarkMerge.js)
 
   const standIn = (p) => {
     if (gone) return;
@@ -97,6 +100,7 @@ export function createLandmark(scene, { list, placer: makePlacer, origin = [0, 0
     ),
   ).then(() => {
     if (stats.standIns && !gone) console.warn(`${name}: ${stats.standIns} of ${list.length} things won't load (${[...missing].join(', ')}); blocks stand in`);
+    if (!gone) merge = createMerge(group);
   });
 
   return {
@@ -104,13 +108,16 @@ export function createLandmark(scene, { list, placer: makePlacer, origin = [0, 0
     ready,
     stats: () => ({ ...stats }),
     update(t, dt) {
-      if (!gone) placer.update?.(t, dt);
+      if (gone) return;
+      placer.update?.(t, dt);
+      merge?.tick();
     },
     reanchor,
     dispose() {
       if (gone) return;
       gone = true;
       placer.dispose?.();
+      merge?.dispose();
       group.removeFromParent();
       letGo(geometries);
       geometries.length = 0;
@@ -171,7 +178,8 @@ export function createLandmarks(scene, { spec, heightAt = null, placer = null, p
   let makePlacer = placer;
   // (the prop kit paints its maps on a canvas: with no page, in Node, nothing is drawn)
   const drawable = Boolean(placer) || typeof document !== 'undefined';
-  const placerOf = () => (makePlacer ??= galaxyPlacer({ kit: (kit = createKit({ seed: 31, scans: false })), house }));
+  // (the house, or a getter of it: the flight makes its house after its scene)
+  const placerOf = () => (makePlacer ??= galaxyPlacer({ kit: (kit = createKit({ seed: 31, scans: false })), house: typeof house === 'function' ? house() : house }));
   let t = 0;
 
   return {

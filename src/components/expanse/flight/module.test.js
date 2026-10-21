@@ -29,8 +29,9 @@ function fakeRt() {
 const snap = (axes = {}) => ({ axis: (n) => axes[n] ?? 0, stick: { x: 0, y: 0 } });
 
 describe('the flight module', () => {
-  it('is whole: glsl, its download as WORLD_MB says', () => {
-    expect(flight).toMatchObject({ id: 'flight', shading: 'glsl', mb: WORLD_MB['/fly'] });
+  // (on the node renderer since lane P1: every shader it reaches a TSL twin, shading.test holds its closure to it)
+  it('is whole: nodes, its download as WORLD_MB says', () => {
+    expect(flight).toMatchObject({ id: 'flight', shading: 'nodes', mb: WORLD_MB['/fly'] });
     expect(WORLD_MB['/fly']).toBe(22);
   });
 
