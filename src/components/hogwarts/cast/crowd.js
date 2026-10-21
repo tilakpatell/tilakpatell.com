@@ -127,8 +127,10 @@ const FRAMES = { low: 4, mid: 6, high: 8, ultra: 10 };
 // hall (its seams let go), and within NEAR metres of the eye (its seams kept,
 // so a face at the next table is a face)
 const CUT = { low: 700, mid: 1100, high: 1500, ultra: 2600 };
-const CUT_NEAR = { low: 0, mid: 3500, high: 4500, ultra: 7000 };
-const NEAR = 7.5; // m
+const CUT_NEAR = { low: 0, mid: 3200, high: 3800, ultra: 7000 };
+// (within the next table but one: at 7.5 m and 4,500 the hall's crowd alone
+// came to 415,000 triangles on high, half the room's budget)
+const NEAR = 6; // m
 const RELOD = 0.4; // s between looks at who is near
 const cuts = new Map(); // `${body}|${triangles}` → Promise<[geometry]> (each skinned mesh’s, cut)
 

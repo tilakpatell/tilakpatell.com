@@ -222,14 +222,15 @@ function christmas(plan, { load }) {
 
 // the school at its tables (a share of the places, by the tier: the crowd is
 // the hall’s heaviest thing) and the staff at the high table, sat and talking
-const FILL = { low: 0.22, mid: 0.4, high: 0.58, ultra: 0.72 };
+const FILL = { low: 0.22, mid: 0.4, high: 0.5, ultra: 0.72 };
 function people(rt, plan, { tier }) {
   const fill = FILL[tier] ?? FILL.high;
   const hash = (i) => ((Math.sin(i * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1;
   const spots = plan.seats.filter((s, i) => hash(i) < fill).map((s) => ({ at: s.at, yaw: s.yaw, tag: s.house }));
   const crowd = createCrowd({ rt, spots, bodies: CROWD, clips: { idle: 'sit.idle', cheer: 'sit.cheer' }, tier });
   const staff = plan.staff.map((s, i) => {
-    const f = figure(s.who, { rt, seed: i + 3 });
+    // (no ink hull up here: it draws each figure twice, and from the hall’s floor the line doesn’t read)
+    const f = figure(s.who, { rt, seed: i + 3, ink: false });
     f.group.position.set(s.at[0], HALL.dais.height, s.at[2] + 0.12);
     f.set({ base: i % 3 === 1 ? 'sit.talk' : 'sit.idle' });
     return f;
