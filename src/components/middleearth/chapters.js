@@ -117,6 +117,17 @@ export const CHAPTERS = [
     theme: 'mordor',
     seals: ['maggots', 'gorgoroth', 'carryyou', 'ringbearer', 'eagles'],
   },
+  {
+    id: 'minas-tirith',
+    stop: 'minas-tirith',
+    lift: 3.6,
+    name: 'Minas Tirith',
+    title: 'The city of the kings',
+    blurb: 'Pippin in the White City: up its seven gates on Shadowfax, sworn to the Steward, the beacon lit, the siege held, and the King crowned under the White Tree.',
+    at: placeAt('minas-tirith'),
+    theme: 'shire',
+    seals: ['sevengates', 'guardofthecitadel', 'beaconslit', 'siegeofgondor', 'kingreturns'],
+  },
 ];
 
 export const chapter = (id) => CHAPTERS.find((c) => c.id === id) || null;

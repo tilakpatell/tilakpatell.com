@@ -551,6 +551,12 @@ export default function MiddleEarth() {
         </Suspense>
       )}
 
+      {here?.id === 'minas-tirith' && (
+        <Suspense fallback={null}>
+          <Rush level="houses" />
+        </Suspense>
+      )}
+
       {here?.id === 'edoras' && (
         <Suspense fallback={<div className="shire-stage" aria-hidden="true" />}>
           <EdorasWorld onLeave={toMap} />

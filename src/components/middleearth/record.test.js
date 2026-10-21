@@ -59,9 +59,8 @@ describe('the places off the road', () => {
     const none = offRoad([]);
     expect(none.length).toBe(HIDDEN.length);
     expect(none.every((h) => h.name === null && !h.found)).toBe(true);
-    const some = offRoad(['minastirith']);
-    const mt = some.find((h) => h.id === 'minas-tirith');
-    expect(mt).toMatchObject({ found: true, name: 'Minas Tirith', done: false });
+    const some = offRoad(['edoras']);
+    expect(some.find((h) => h.id === 'edoras')).toMatchObject({ found: true, name: 'Edoras', done: false });
     expect(some.find((h) => h.id === 'orthanc').name).toBe(null);
     expect(offRoad(['orthanc', 'windlord']).find((h) => h.id === 'orthanc').done).toBe(true);
   });
