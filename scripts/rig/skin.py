@@ -9,12 +9,15 @@ metres, and whether it deforms), and reads OUT.glb back for its weights
 alone: the skeleton the site plays on is built in JavaScript to Luke's frames,
 so Blender's bone rolls and axes never reach the site. Only the weights do.
 
-Heat weighting wants a closed surface. A generated figure is mostly one, but
-a scarf end, a pair of glasses or a robe's hem can leave islands the heat
-never reaches; when more than --proxy-at of the vertices come out with no
-weight (or --proxy always), the weights are made on a voxel remesh of the
-figure (one closed skin) and carried over to the real mesh by nearest face.
-Whatever is still bare after that takes its nearest weighted neighbour's.
+Heat weighting wants a closed surface, and a baked figure isn't one: bake.py
+decimates the generated mesh chart by chart, so it comes apart along every
+UV seam (a figure of 30,000 faces has some 35,000 open edges), and the
+solver gives up on all of it. When more than proxyAt of the vertices come
+out with no weight (or proxy is "always"), the weights are made on a voxel
+remesh of the figure instead (one closed skin over the cracks), coarser
+each time the solver still fails, and carried over to the real mesh by
+nearest face. Whatever is still bare after that takes its nearest weighted
+neighbour's.
 """
 
 import json
@@ -96,8 +99,10 @@ missing = bare(fig)
 share = len(missing) / max(1, len(fig.data.vertices))
 print(f"heat weights: {len(missing)} of {len(fig.data.vertices)} vertices bare ({share:.2%})", flush=True)
 proxied = False
-if job.get("proxy") == "always" or (job.get("proxy") != "never" and share > job.get("proxyAt", 0.005)):
-    # one closed skin round the whole figure, weighted, its weights carried over
+
+
+def remeshed(voxel):
+    # one closed skin round the whole figure, weighted
     proxy = fig.copy()
     proxy.data = fig.data.copy()
     proxy.name = "proxy"
@@ -111,10 +116,22 @@ if job.get("proxy") == "always" or (job.get("proxy") != "never" and share > job.
     proxy.select_set(True)
     rm = proxy.modifiers.new("remesh", "REMESH")
     rm.mode = "VOXEL"
-    rm.voxel_size = job.get("voxel", 0.012)
+    rm.voxel_size = voxel
     bpy.ops.object.modifier_apply(modifier="remesh")
     bind(proxy)
-    print(f"proxy: {len(proxy.data.vertices)} vertices, {len(bare(proxy))} bare", flush=True)
+    left = len(bare(proxy)) / max(1, len(proxy.data.vertices))
+    print(f"proxy at {voxel * 1000:.1f} mm: {len(proxy.data.vertices)} vertices, {left:.2%} bare", flush=True)
+    return proxy, left
+
+
+if job.get("proxy") == "always" or (job.get("proxy") != "never" and share > job.get("proxyAt", 0.005)):
+    # (a voxel too fine leaves the cracks open and the solver fails again: coarser, up to three times)
+    voxel = job.get("voxel", 0.012)
+    for attempt in range(3):
+        proxy, left = remeshed(voxel * 1.5**attempt)
+        if left < 0.01 or attempt == 2:
+            break
+        bpy.data.objects.remove(proxy)
     for g in list(fig.vertex_groups):
         fig.vertex_groups.remove(g)
     for name in deform:

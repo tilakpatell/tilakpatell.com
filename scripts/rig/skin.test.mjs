@@ -102,7 +102,7 @@ describe('reading the joints off a figure', () => {
 
 describe('fitting the bones', () => {
   it('gives Luke back when fitted to his own joints', () => {
-    const bones = fit(lukeJoints());
+    const bones = fit(lukeJoints(), { headUp: 0 });
     expect(bones.map((b) => b.name)).toEqual(NAMES);
     BONES.forEach((b, i) => {
       const q = new THREE.Quaternion(...bones[i].local.q);
@@ -141,6 +141,16 @@ describe('fitting the bones', () => {
     const swing = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0).applyQuaternion(luke.LeftArm.q), along);
     expect(Math.abs(swing.multiply(luke.LeftArm.q).dot(q))).toBeGreaterThan(0.9999);
   });
+
+  it('binds the head pitched forward of the head it moves, so clips carry it higher', async () => {
+    const J = estimate(await surface({ H: 1.4 }));
+    const head = (o) => new THREE.Vector3(0, 1, 0).applyQuaternion(new THREE.Quaternion(...fit(J, o).find((b) => b.name === 'Head').world.q));
+    const level = head({ headUp: 0 });
+    const lifted = head({ headUp: 20 });
+    expect((level.angleTo(lifted) * 180) / Math.PI).toBeCloseTo(20, 3);
+    // (forward: toward +z)
+    expect(lifted.z - level.z).toBeGreaterThan(0.2);
+  });
 });
 
 describe('what Blender is told', async () => {
@@ -153,7 +163,7 @@ describe('what Blender is told', async () => {
     expect(j.bones.filter((b) => !b.deform).map((b) => b.name)).toEqual(['head_end', 'headfront']);
     // the head's bone runs to the crown, so the whole head is its
     expect(j.bones.find((b) => b.name === 'Head').tail[1]).toBeCloseTo(1.4, 3);
-    expect(j.voxel).toBeCloseTo(1.4 / 150, 3);
+    expect(j.voxel).toBeCloseTo(1.4 / 100, 3);
     expect(job(bones, { proxy: 'always' }).proxy).toBe('always');
   });
 

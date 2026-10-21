@@ -351,7 +351,13 @@ const Y = new THREE.Vector3(0, 1, 0);
 // turned as Luke's is at rest and then swung (no twist) to point where this
 // figure's limb points. → [{ name, parent, head, tail (metres, the figure's
 // frame), deform, world: { p, q }, local: { t (cm), q } }] in the table's order.
-export function fit(J, { table = BONES } = {}) {
+// headUp (degrees): the head bound pitched that far forward of the head it
+// moves, so every clip carries the head that much higher. The library's
+// clips hold the head 20° to 25° further forward than Luke's rest does
+// (Luke himself looks at the ground in the UAL's idle); on a head a third of
+// the figure's height, that reads as a figure staring at its feet.
+export const HEAD_UP = 20;
+export function fit(J, { table = BONES, headUp = HEAD_UP } = {}) {
   const luke = rest(table);
   const at = places(J);
   const aim = aims(J);
@@ -368,6 +374,8 @@ export function fit(J, { table = BONES } = {}) {
       // a marker, or a bone with nowhere to point: its turn on its parent as Luke's is
       q = world[b.parent].q.clone().multiply(new THREE.Quaternion(...b.turn).normalize());
     } else q = luke[b.name].q.clone();
+    // (a turn about the figure's left, +x, takes +y toward +z: forward)
+    if (b.name === 'Head' && headUp) q.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), (headUp * Math.PI) / 180));
     world[b.name] = { p, q };
     const up = b.parent ? world[b.parent] : null;
     const inv = up ? up.q.clone().invert() : new THREE.Quaternion();
@@ -393,8 +401,8 @@ export function job(bones, { proxy = 'auto', proxyAt = 0.005, voxel } = {}) {
     }),
     proxy,
     proxyAt,
-    // (a voxel a hundred and fiftieth of the height: fine enough for fingers, coarse enough to close a scarf's gaps)
-    voxel: voxel ?? Math.max(0.004, H / 150),
+    // (a voxel a hundredth of the height: fine enough for fingers, coarse enough to close the bake's cracks)
+    voxel: voxel ?? Math.max(0.004, H / 100),
   };
 }
 
