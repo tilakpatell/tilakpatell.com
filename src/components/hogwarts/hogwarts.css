@@ -1,0 +1,43 @@
+/* Hogwarts (pages/Hogwarts.jsx, HogwartsWorld.jsx): the stage under the nav,
+   as the other worlds' stages, and the kit's HUD skinned as parchment and
+   ink: a cream glass, a brown-black ink, Cinzel for the titles (already in
+   the stack, the Road's), the scarlet of the planet's chart as the accent
+   until a house is chosen. */
+.hogwarts-stage {
+  --hw-parchment: rgb(244 234 210 / 0.82);
+  --hw-parchment-hi: rgb(248 240 220 / 0.94);
+  --hw-ink: #2a1d12;
+  position: relative;
+  height: calc(100svh - var(--nav-h, 64px));
+  overflow: hidden;
+  background: #0b0e1a;
+  user-select: none;
+}
+.hogwarts-stage .world-canvas { position: absolute; inset: 0; touch-action: none; }
+.hogwarts-loading { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: #e9dcbc; font: 600 var(--fs-sm)/1.4 'Cinzel', Georgia, serif; letter-spacing: 0.04em; }
+
+/* the HUD's skin (runtime/hud) */
+.hogwarts-hud {
+  --hud-ink: var(--hw-ink);
+  --hud-muted: #5b4632;
+  --hud-glass: var(--hw-parchment);
+  --hud-glass-hi: var(--hw-parchment-hi);
+  --hud-line: rgb(42 29 18 / 0.28);
+  --hud-accent: #8f1d24;
+  --hud-accent-ink: #f8efdc;
+  --hud-bad: #8f1d24;
+  --hud-radius: 6px;
+  --hud-title-face: 'Cinzel', Georgia, serif;
+  --hud-shadow: 0 6px 22px rgb(0 0 0 / 0.35);
+  --hud-key-face: #f8efdc;
+  --hud-key-border: 1px solid rgb(42 29 18 / 0.45);
+}
+.hogwarts-brand { display: grid; gap: 0.1rem; margin: 0; padding: 0.45rem 0.85rem; border: var(--hud-border); border-radius: var(--hud-radius); background: var(--hud-glass); color: var(--hud-ink); box-shadow: var(--hud-shadow); }
+.hogwarts-brand-eyebrow { font: 600 0.72rem/1.15 var(--hud-title-face); letter-spacing: 0.12em; text-transform: uppercase; color: var(--hud-muted); }
+.hogwarts-brand-name { font: 700 var(--fs-lg)/1.15 var(--hud-title-face); letter-spacing: 0.03em; }
+
+/* the parchment's things: the prompt's verb in the title face, the toast and the list on it */
+.hogwarts-hud .hud-prompt { box-shadow: var(--hud-shadow); }
+.hogwarts-hud .hud-prompt-verb { font-family: var(--hud-title-face); font-weight: 700; letter-spacing: 0.02em; }
+.hogwarts-toast { font-family: var(--hud-title-face); font-weight: 600; letter-spacing: 0.02em; box-shadow: var(--hud-shadow); }
+.hogwarts-list .hud-list-head p { font-family: var(--hud-title-face); font-weight: 700; }

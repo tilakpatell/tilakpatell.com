@@ -44,10 +44,11 @@ describe('the map layout', () => {
     expect(next('starwars')).toBe('music');
     expect(next('travel')).toBe('caribbean');
     expect(next('caribbean')).toBe('invincible');
-    expect(next('invincible')).toBe('home');
-    expect(prev('home')).toBe('invincible');
+    expect(next('invincible')).toBe('potter');
+    expect(next('potter')).toBe('home');
+    expect(prev('home')).toBe('potter');
     expect(next(null)).toBe('home');
-    expect(prev(null)).toBe('invincible');
+    expect(prev(null)).toBe('potter');
   });
 
   it('keeps the sun clear of everything', () => {
@@ -65,7 +66,8 @@ describe('the map layout', () => {
     expect(nextWorld('gaming').id).toBe('travel');
     expect(nextWorld('travel').id).toBe('caribbean');
     expect(nextWorld('caribbean').id).toBe('invincible');
-    expect(nextWorld('invincible').id).toBe('starwars');
+    expect(nextWorld('invincible').id).toBe('potter');
+    expect(nextWorld('potter').id).toBe('starwars');
     expect(nextWorld('starwars').id).toBe('music');
     expect(nextWorld('albuquerque')?.id).toBe('starwars'); // not an id: starts from the top
     expect(nextWorld(null).id).toBe('starwars');
@@ -76,9 +78,9 @@ describe('the map layout', () => {
     expect(keyStep('ArrowRight', 'starwars')).toBe('music');
     expect(keyStep('ArrowDown', 'starwars')).toBe('music');
     expect(keyStep('ArrowLeft', 'starwars')).toBe('terminal');
-    expect(keyStep('ArrowUp', null)).toBe('invincible');
+    expect(keyStep('ArrowUp', null)).toBe('potter');
     expect(keyStep('Home', 'office')).toBe('home');
-    expect(keyStep('End', 'office')).toBe('invincible');
+    expect(keyStep('End', 'office')).toBe('potter');
     expect(keyStep('Enter', 'office')).toBeUndefined();
     expect(keyStep('a', 'office')).toBeUndefined();
   });
