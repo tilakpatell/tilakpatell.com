@@ -105,7 +105,30 @@ function edgeOf(d, edge, r) {
 }
 
 // ── the ring ──
-function ringOf(d, ring, vista, r) {
+// (what the ring keeps clear of: the record's crowds outside the box, a metre
+// round as far as they may spread, and its stands', landmarks' and pieces'
+// footprints; the same on every level)
+function keepOuts(d, world) {
+  const W = (p) => [d.centre.x + p[0], d.centre.z + p[1]];
+  const discs = [];
+  for (const c of world.crowd?.gather ?? []) {
+    const [x, z] = W(c.at);
+    if (outOf(d.area, x, z) <= 0) continue;
+    discs.push({ x, z, r: (c.row ? c.row / 2 : (c.r ?? 3)) + 1 });
+  }
+  const rects = [...(world.stands ?? []), ...(world.landmarks ?? []).filter((m) => (m.y ?? 0) < 20), ...(world.pieces ?? []).filter((p) => p.w || p.d)].map((o) => {
+    const [x, z] = W(o.at);
+    // (a stand turns to what it watches, a landmark to the place: either may swap its width and depth)
+    const half = Math.max(o.w ?? 0, o.d ?? 0) / 2;
+    return { x, z, hw: half, hd: half };
+  });
+  return { discs, rects };
+}
+const clearOfKeepOuts = (keep, x, z, hw, hd) =>
+  !keep.discs.some((c) => Math.hypot(Math.max(Math.abs(c.x - x) - hw, 0), Math.max(Math.abs(c.z - z) - hd, 0)) < c.r) &&
+  !keep.rects.some((o) => Math.abs(o.x - x) < o.hw + hw + 1 && Math.abs(o.z - z) < o.hd + hd + 1);
+
+function ringOf(d, ring, vista, r, keep = { discs: [], rects: [] }) {
   const A = d.area;
   const lots = [];
   for (const side of ['n', 'e', 's', 'w']) {
@@ -126,6 +149,8 @@ function ringOf(d, ring, vista, r) {
         const out = GAP + row * LOT.row + dd / 2;
         const [x, z] = side === 'n' ? [u, A.z0 - out] : side === 's' ? [u, A.z1 + out] : side === 'e' ? [A.x1 + out, u] : [A.x0 - out, u];
         if (offNorth(d, x, z) < vista) continue;
+        const across = side === 'e' || side === 'w';
+        if (!clearOfKeepOuts(keep, x, z, (across ? dd : w) / 2, (across ? w : dd) / 2)) continue;
         const h = within(spec.h ?? [6, 14], r()) * (1 + row * LOT.rise);
         const style = spec.styles[Math.floor(r() * spec.styles.length)];
         lots.push({ side, row, style, x, z, turn: FACING[side], w, d: dd, h, y: row * LOT.step });
@@ -387,7 +412,7 @@ export function outskirtsOf(d, world, { tier = 'high', fogFar = 300, tris = {} }
 
   const { runs, clumps } = edgeOf(d, world.edge, r);
   // the ring: only where there's ground outside; the first rows first, nearest first, up to the level's count
-  let lots = outside === 'ground' ? ringOf(d, world.ring, vista, r) : [];
+  let lots = outside === 'ground' ? ringOf(d, world.ring, vista, r, keepOuts(d, world)) : [];
   lots.sort((a, b) => a.row - b.row || Math.hypot(a.x - d.centre.x, a.z - d.centre.z) - Math.hypot(b.x - d.centre.x, b.z - d.centre.z));
   lots = lots.slice(0, row.near);
   setsIn(lots, world.ring, row.sets);

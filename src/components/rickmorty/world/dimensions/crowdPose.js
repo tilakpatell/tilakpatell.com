@@ -13,6 +13,9 @@
 //   the i-th of n along a row `len` long through `at`, across the way to
 //   `face` (a gallery's, a stand's), each looking a little off `look`
 // hopOf(t, since, i) → metres   a hop on the beat at `since`, rippling out by i
+// standAt(e, j, look) → { x, z, yaw }   the j-th of a laid gathering `e` (outskirts.js's),
+//   packed as close as its people are (a disc no wider than they fill, a row
+//   no longer), looking at `look` (or what it faces)
 
 export const STEP = 0.55; // seconds a step: two to a stride
 const BOB = 0.035; // metres up and down
@@ -71,4 +74,10 @@ export function hopOf(t, since, i) {
   const k = (t - since - i * HOP.spread) / HOP.len;
   if (k <= 0 || k >= 1) return 0;
   return Math.sin(k * Math.PI) * HOP.high;
+}
+
+// (how close a gathering's people stand: a disc as wide as they fill, a row as long)
+export const PACK = { disc: 0.75, row: 1.1 };
+export function standAt(e, j, look = e.face) {
+  return e.row ? rowAt(e.at, Math.min(e.row, e.n * PACK.row), j, e.n, e.face, 1.7, look) : gatherAt(e.at, Math.min(e.r, PACK.disc * Math.sqrt(e.n) + 0.6), j, e.n, look, 1.7);
 }

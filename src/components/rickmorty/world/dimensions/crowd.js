@@ -27,7 +27,7 @@ import { MESHY, RIGGED, lightRamp } from '../../portal/meshyCastCore';
 import { breathing, standing } from '../../portal/crowdPaint';
 import { bakePose } from '../../../../lib/three/bakePose';
 import { gltfLoader } from '../../../../lib/three/gltf';
-import { gatherAt, hopOf, loopLengths, rowAt, walkerAt } from './crowdPose';
+import { hopOf, loopLengths, standAt, walkerAt } from './crowdPose';
 
 const COPIES = '/games/meshy/crowd';
 // how tall a light copy stands (the Citadel's: a Morty 1.5 m, the rest 1.85)
@@ -35,9 +35,6 @@ const copyTall = (name) => (name.includes('morty') ? 1.5 : 1.85);
 const IDLE_AT = 0.4; // seconds into the idle a rigged kind is stood at
 const HOPS = 1.2; // seconds a hop takes to ripple through a gathering
 const FOLLOW = 0.25; // metres someone watched moves before the crowd turns again
-// how much room each of a gathering takes: along a row, and in a disc (its radius grows as the root)
-const ROW_EACH = 1.1;
-const DISC_EACH = 0.75;
 
 const isOn = (e, state, shown) => {
   if (shown.get('all') === false || shown.get(e.key) === false) return false;
@@ -159,9 +156,9 @@ export function createCrowd(kit, R, laid, { loader = null } = {}) {
         v.set(pose.x, pose.bob, pose.z);
         eul.set(0, pose.yaw + Math.PI / 2, pose.sway);
       } else {
-        // (a few stand close, as a group: as wide as there are people for, never wider than it's given)
-        // (turned to someone, a row keeps its line: only its people turn)
-        const g = e.row ? rowAt(e.at, Math.min(e.row, e.n * ROW_EACH), j, e.n, e.face, 1.7, watch ?? e.face) : gatherAt(e.at, Math.min(e.r, DISC_EACH * Math.sqrt(e.n) + 0.6), j, e.n, watch ?? e.face, 1.7);
+        // (a few stand close, as a group: as wide as there are people for, never wider than it's given;
+        // turned to someone, a row keeps its line: only its people turn)
+        const g = standAt(e, j, watch ?? e.face);
         v.set(g.x, (e.y ?? 0) + hopOf(t, rec.since, j), g.z);
         eul.set(0, g.yaw + Math.PI / 2, 0);
       }

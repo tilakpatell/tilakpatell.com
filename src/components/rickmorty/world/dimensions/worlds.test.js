@@ -9,6 +9,7 @@ import { blocksSight, worldProblems } from './worldRules';
 import { LEVELS, outskirtsOf } from './outskirts';
 import { destinationById } from './destinations';
 import { MESHY, assetUrl } from '../../portal/meshyCastCore';
+import { standAt } from './crowdPose';
 import { TASKS } from '../rules';
 
 // a GLB's triangles, from its header (its index counts)
@@ -56,6 +57,35 @@ describe('the worlds round the places', () => {
         expect(sum, `${id} ${tier}`).toBeLessThanOrEqual(d.kind === 'room' ? LEVELS[tier].crowd / 2 : LEVELS[tier].crowd);
       }
     }
+  });
+
+  it('stand no one of a place’s crowd inside a building round it, and no building in another, on any level', () => {
+    // (a footprint as drawn, turned a quarter at a time, grown by `pad`)
+    const box = (l, pad = 0) => {
+      const across = Math.abs(Math.sin(l.turn ?? 0)) > 0.5;
+      return { x: l.x, z: l.z, hw: (across ? l.d : l.w) / 2 + pad, hd: (across ? l.w : l.d) / 2 + pad };
+    };
+    const inBox = (b, x, z) => Math.abs(x - b.x) < b.hw && Math.abs(z - b.z) < b.hd;
+    const meet = (a, b) => Math.abs(a.x - b.x) < a.hw + b.hw && Math.abs(a.z - b.z) < a.hd + b.hd;
+    const bad = [];
+    for (const [id, world] of Object.entries(WORLDS)) {
+      const d = destinationById(id);
+      for (const tier of ['high', 'mid', 'low']) {
+        const L = outskirtsOf(d, world, { tier, fogFar: 300, tris: TRIS });
+        const grounded = L.lots.filter((l) => (l.y ?? 0) < 20 && (l.w || l.d));
+        const buildings = [...grounded.filter((l) => !l.stand), ...L.skyline.map((s) => ({ ...s, turn: 0 }))];
+        for (const g of L.gathers.filter((c) => c.out && !c.key.startsWith('stand-')))
+          for (let j = 0; j < g.n; j++) {
+            const p = standAt(g, j);
+            const inside = buildings.find((b) => inBox(box(b, 0.3), p.x, p.z));
+            if (inside) bad.push(`${id} ${tier}: ${g.key} #${j} inside a ${inside.style ?? 'skyline'} at ${inside.x.toFixed(1)}, ${inside.z.toFixed(1)}`);
+          }
+        const ring = grounded.filter((l) => l.side);
+        for (const o of grounded.filter((l) => !l.side))
+          for (const l of ring) if (meet(box(o), box(l))) bad.push(`${id} ${tier}: a ${l.style} of the ring in the ${o.stand ? 'stand' : o.piece ? 'piece' : 'landmark'} at ${o.x.toFixed(1)}, ${o.z.toFixed(1)}`);
+      }
+    }
+    expect(bad).toEqual([]);
   });
 
   it('leave clear the sight lines a place says it keeps (the heads, from the mic)', () => {
