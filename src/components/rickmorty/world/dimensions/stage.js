@@ -10,7 +10,7 @@
 //
 // stage(kit, id, opts) → { R, d, A, cx, cz, P(dx, dz) (a spot in the world
 // from the place's middle), figure(kind, at), people(), done(light, update),
-// hunt(on), calm(), power({ glow }), freeze({ splash }) } (and the NPC behaviour below: anyone
+// hunt(on), calm(), power({ glow }), freeze({ splash }), sequence({ lamps }) } (and the NPC behaviour below: anyone
 // placed with `ai`; and a place run on power, below; whichever game a place
 // runs, its `meter` action is the HUD's readout of it: ../games/meter.js)
 
@@ -27,6 +27,8 @@ import { TUNING as POWER, newPower, powerNews, powerReadout, stepPower } from '.
 import { curse, dealNews, dealReadout, newDeal, stepDeal } from '../games/deal';
 import { freezeEyes, freezeNews, freezeReadout, jumpSplashes, moving, newFreeze, stepFreeze } from '../games/freeze';
 import { findNews, findReadout, newFind, pickOurs, stepFind } from '../games/find';
+import { litSets, newSequence, runningOrder, sequenceNews, sequenceReadout, stepSequence } from '../games/sequence';
+import { newCheer, stepCheer } from '../games/cheer';
 import { TRIS, WORLDS } from './worlds';
 import { BLOCKS } from './blocks';
 import { outskirtsOf } from './outskirts';
@@ -118,6 +120,15 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     state.emit?.('caught', { area: id, who, text: lost });
     return { ...game, told: true };
   };
+  // and a place's achievement handed over once while its task is done (done
+  // before its game was built: the vat's, the cable studio's; or won over the
+  // page: Get Schwifty's), said as a win
+  const granted = new Set();
+  const grant = ({ task, unlock = null }, done, state) => {
+    if (!done || !unlock || granted.has(task) || state.fading) return;
+    granted.add(task);
+    state.emit?.('done', { area: id, task, unlock });
+  };
 
   // ── a place run on power (../games/power.js, place.js's `power`): its run,
   // stepped in the place's own update; its spots tell it (`power-take`,
@@ -171,15 +182,11 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
   let still = fz ? newFreeze() : null;
   let jumped = false;
   let splash = null;
-  let granted = false;
   let finished = false; // (its task done: the vat's just a vat to jump in)
   const freezing = (dt, state) => {
     const done = (state.done ?? []).includes(fz.task);
     finished = done;
-    if (done && fz.unlock && !granted && !state.fading) {
-      granted = true;
-      state.emit?.('done', { area: id, task: fz.task, unlock: fz.unlock });
-    }
+    grant(fz, done, state);
     if (!done && !state.fading) {
       still = stepFreeze(still, { moving: moving(state.morty), jumped }, dt);
       still = told(freezeNews(still, { done, fading: false }), still, fz, state);
@@ -211,6 +218,51 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     search = told(findNews(search, { done, fading: false }), search, fd, state);
   };
 
+  // ── a place run on a sequence (../games/sequence.js, place.js's
+  // `sequence`): each set's spot queues a use (`sequence-<id>`), its start
+  // spot a start (`sequence-start`), stepped at no time in the place's own
+  // update, then the clock; said as power's run is, the win with its
+  // achievement, a set gone dark heard as a find's wrong pick is, a set used
+  // before the countdown answered with the place's `early`. Its running
+  // order dealt afresh whenever the place calms; the builder's lamps
+  // (`sequence({ lamps })`: a set's id to its glow) lit as their sets go on,
+  // and every one once its task's done. ──
+  const sq = d.sequence;
+  const aired = () => newSequence({ items: sq.items, order: sq.order ?? runningOrder(sq.items, sq.need, Math.random), s: sq.s, start: Boolean(sq.start) });
+  let airing = sq ? aired() : null;
+  let switched = [];
+  let lamps = null;
+  const labels = Object.fromEntries(d.hotspots.map((h) => [h.id, h.label]));
+  const sequencing = (dt, state) => {
+    const done = (state.done ?? []).includes(sq.task);
+    grant(sq, done, state);
+    if (lamps) {
+      const lit = litSets(airing, done);
+      for (const [set, lamp] of Object.entries(lamps)) lamp.material.color.setScalar(lit.includes(set) ? 1 : 0.15);
+    }
+    if (done || state.fading) {
+      switched = [];
+      return;
+    }
+    for (const press of switched.splice(0)) {
+      airing = stepSequence(airing, press, 0);
+      if (airing.events.some((e) => e.type === 'dark')) state.emit?.('miss', { area: id });
+      // (a set used before the countdown says so, over its own line)
+      if (sq.early && airing.events.some((e) => e.type === 'early')) state.emit?.('note', { area: id, text: sq.early });
+    }
+    airing = stepSequence(airing, {}, dt);
+    airing = told(sequenceNews(airing, { done, fading: false }), airing, sq, state);
+  };
+
+  // ── a place whose song is played over the page (place.js's `rhythm`):
+  // its achievement handed over once its task's done; and any place's crowd
+  // cheering its game won (../games/cheer.js): its gatherings hop on a beat
+  // a while from the frame the game's task is done (the show's, once it
+  // closes), started afresh whenever the place calms ──
+  const rh = d.rhythm;
+  const gameTask = (d.power ?? d.deal ?? d.freeze ?? d.find ?? d.sequence ?? rh)?.task ?? null;
+  let cheer = newCheer();
+
   // (calmed: its people home, and its game started afresh)
   const calm = () => {
     N.calm();
@@ -230,6 +282,11 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
       search = sought();
       asks = [];
     }
+    if (sq) {
+      airing = aired();
+      switched = [];
+    }
+    cheer = newCheer();
   };
 
   // one of the cast at (x, z) facing `face`, `h` tall (its own height if not
@@ -298,6 +355,12 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         if (deal && state && cast) dealing(state);
         if (still && state && cast) freezing(dt, state);
         if (search && state && cast) finding(dt, state);
+        if (airing && state && cast) sequencing(dt, state);
+        if (rh && state) grant(rh, (state.done ?? []).includes(rh.task), state);
+        if (round && gameTask && state) {
+          cheer = stepCheer(cheer, { done: (state.done ?? []).includes(gameTask), t });
+          if (cheer.hop) round.actions.hop();
+        }
         // (its crowd turns to Morty while the place hunts him)
         if (round && state) round.actions.turn(watchOf(world, { hunting: N.hunting || N.npcs.some((n) => n.hunting), morty: state.morty }));
         update?.(t, dt, state, camera);
@@ -317,7 +380,7 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
     // builder adds its own actions to these. `npcs`: where everyone is, for
     // the QA scripts; `fire`, `bodies` and `hit`: Morty's shot in a duel,
     // where it aims, what it can hit, and what it did when it landed.)
-    // (a place run on power, a deal, a freeze or a find: its spots, where its game is for the
+    // (a place run on power, a deal, a freeze, a find or a sequence: its spots, where its game is for the
     // checks, its meter for the HUD, and, in development, a way for the
     // checks to set it)
     area.actions = { calm, npcs: N.list, fire: N.fire, bodies: N.bodies, hit: N.hit };
@@ -362,9 +425,17 @@ export function stage(kit, id, { ground, groundTile = 4, floor, floorTile = 2, w
         meter: () => findReadout(search, fd.tells),
         ...(import.meta.env.DEV && { setFind: (patch) => (search = { ...search, ...patch }) }),
       });
+    if (airing)
+      Object.assign(area.actions, {
+        ...Object.fromEntries(sq.items.map((u) => [`sequence-${u}`, () => switched.push({ use: u })])),
+        'sequence-start': () => switched.push({ start: true }),
+        sequence: () => ({ phase: airing.phase, order: [...airing.order], on: airing.on, left: airing.left, len: airing.len, last: airing.last }),
+        meter: () => sequenceReadout(airing, labels),
+        ...(import.meta.env.DEV && { setSequence: (patch) => (airing = { ...airing, ...patch }) }),
+      });
     return area;
   };
   // (`taken()`: what a deal's had off the shelves this run, for the builder to take away)
-  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null), freeze: (o) => (splash = o.splash ?? null), taken: () => deal?.taken ?? [] };
+  return { R, d, A, cx, cz, P, figure, people, done, hunt: N.hunt, npcs: N.npcs, calm, power: (o) => (glow = o.glow ?? null), freeze: (o) => (splash = o.splash ?? null), sequence: (o) => (lamps = o.lamps ?? null), taken: () => deal?.taken ?? [] };
 
 }

@@ -13,7 +13,7 @@ import { dot, mix, positionWorld, smoothstep, vec3 } from 'three/tsl';
 import { onColor } from '../../../lib/three/hookNodes';
 
 // (fewer and broader than the galaxy’s: thin blades at this density shimmered, a grain over the fields)
-export const BLADES = { ultra: { side: 240, size: 46 }, high: { side: 220, size: 44 }, mid: { side: 160, size: 38 }, low: null };
+export const BLADES = { ultra: { side: 270, size: 46 }, high: { side: 250, size: 44 }, mid: { side: 170, size: 38 }, low: null };
 export const NEAR = 4.5; // m: no blades standing closer to the camera than about this
 const LUMA = vec3(0.2126, 0.7152, 0.0722);
 
@@ -23,9 +23,12 @@ export function createBlades({ groundMap, wind, soil, tier = 'high' }) {
   // (thinner grass: fewer blades over the same patch)
   const side = Math.round(patch.side * Math.sqrt(soil.blades));
   // (laid down within NEAR of the camera: a few blades right under a low camera stood as spikes across the picture;
-  // their roots a little dark, not much: a strong one speckled the field, light tip by dark root;
+  // their roots a little dark, not much: a strong one speckled the field, light tip by dark root (0.72 did, tufted,
+  // on Lothlórien's gold floor);
   // each turned to face the camera, so it's lit from above, by the sun: its back seen, it was lit from below)
-  const grass = createGrass({ ground: groundMap, wind, side, size: patch.size, height: soil.blade ?? 0.45, width: 0.09, root: 0.72, near: NEAR, faceCamera: true });
+  // (each a curved blade tapering to its tip, grown four to a tuft: one broad triangle
+  // apiece, evenly spread, the verges were a carpet of green cones)
+  const grass = createGrass({ ground: groundMap, wind, side, size: patch.size, height: soil.blade ?? 0.45, width: 0.048, root: 0.84, near: NEAR, faceCamera: true, shape: 'blade', tufts: true });
   grass.mesh.name = 'road:blades';
   // the map’s colour a little greyed (at full colour, lit from below by the
   // sky light’s green ground half, they stood lime over the photo-scanned
