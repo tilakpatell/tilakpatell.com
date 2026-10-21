@@ -22,6 +22,14 @@ describe('the seasons', () => {
 });
 
 describe('the weather', () => {
+  it('opens fair: nothing falls on the first day of the term', () => {
+    for (let hour = 0; hour < 24; hour += 0.5) {
+      const w = weatherAt({ week: 1, day: 0, hour });
+      expect(w.rain).toBe(0);
+      expect(w.snow).toBe(0);
+    }
+  });
+
   it('is the same day and hour every time it is asked', () => {
     expect(weatherAt({ week: 3, day: 9, hour: 14.5 })).toEqual(weatherAt({ week: 3, day: 9, hour: 14.5 }));
     expect(spellOf(4, 'autumn')).toEqual(spellOf(4, 'autumn'));

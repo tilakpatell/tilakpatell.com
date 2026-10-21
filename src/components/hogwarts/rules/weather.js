@@ -68,8 +68,10 @@ const clamp01 = (x) => Math.min(1, Math.max(0, x));
 
 export function weatherAt({ week = 1, day = 0, hour = 12 } = {}) {
   const season = seasonOf(week);
-  const today = spellOf(day, season);
-  const yesterday = spellOf(day - 1, season);
+  // (the term opens fair: the first-years come on a clear night, nothing falling the whole first day)
+  const DRY = { on: false };
+  const today = day <= 0 ? DRY : spellOf(day, season);
+  const yesterday = day <= 1 ? DRY : spellOf(day - 1, season);
   const falling = Math.max(inSpell(today, hour), inSpell(yesterday, hour + 24));
   // the cloud comes in an hour or two before a spell and lingers after it;
   // a dry day has a cover of its own, broken

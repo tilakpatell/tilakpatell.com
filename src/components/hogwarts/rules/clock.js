@@ -148,7 +148,9 @@ export function light(hour, { week = 1, day = 0, weather = null } = {}) {
   const clear = ramp3(FOG, el);
   const grey = lumOf(clear);
   const fog = mix3(clear, [grey * 0.92, grey * 0.96, grey * 1.04], cloud * 0.75);
-  const density = 0.0011 * (1 + 2.2 * cloud + 3 * murk) + 0.0006 * smooth(clamp01(-el / 0.3)) + 0.004 * clamp01(weather?.mist ?? 0);
+  // (the castle across the lake, half a kilometre, stays a shape in the worst of it: a clear day sees
+  // it whole, rain greys it to a third; the mist on the water is weather.js’s own, a little of it in the air)
+  const density = 0.0007 * (1 + 0.7 * cloud + 1.6 * murk) + 0.0004 * smooth(clamp01(-el / 0.3)) + 0.0008 * clamp01(weather?.mist ?? 0);
   return {
     sun: { az: sun.az, el, colour: mix3(ramp3(SUN, el), [0.85, 0.87, 0.9], cloud * 0.7) },
     ambient: ramp1(AMBIENT, el) * (1 + 0.25 * cloud),

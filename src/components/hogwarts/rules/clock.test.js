@@ -106,7 +106,7 @@ describe('the light', () => {
   it('greys and thickens under cloud, and hides the stars', () => {
     const clear = light(0);
     const cloudy = light(0, { weather: { cloud: 1, rain: 1 } });
-    expect(cloudy.fog.density).toBeGreaterThan(clear.fog.density * 3);
+    expect(cloudy.fog.density).toBeGreaterThan(clear.fog.density * 1.8);
     expect(cloudy.stars).toBe(0);
   });
 

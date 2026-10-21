@@ -18,8 +18,8 @@
 // The world adds: go() (the prompt’s own button: what E does), stick(x, y)
 // (the touch stick), enter(roomId, from) and leave() (a room in and out; a
 // door does it itself), and `scene`, `walker`, `grounds` for the checks. In
-// development, window.__HOGWARTS__ = { state(), place(x, z, yaw), go(placeId),
-// time(hour), term(week), dusk(s), world }.
+// development, window.__HOGWARTS__ = { state(), place(x, z, yaw), view(at, look),
+// go(placeId), time(hour), term(week), dusk(s), world }.
 //
 // Where the rest hooks in (the lanes after the grounds): the arrival
 // (Lane D) is a ride before the walk; the rooms register in rooms/index.js
@@ -119,6 +119,7 @@ export default {
     };
 
     let shown = null; // the prompt the page has
+    let fixed = null; // { at, look }: the development hook’s view, for the checks’ poses
     let act = false;
     let busy = false; // (a room loading: the doors wait)
     const go = () => {
@@ -176,7 +177,11 @@ export default {
         const s0 = walker.state;
         ground.solids = near(room ? walls : [...walls, ...solidsOf(grounds.doors?.colliders() ?? [])], s0.x, s0.z);
         const stick = input?.stick ?? touch;
-        walker.step(dt, input, { x: stick.x || touch.x, y: stick.y || touch.y });
+        // (a check’s fixed view holds the camera where it was put; the walk waits)
+        if (fixed) {
+          camera.position.set(...fixed.at);
+          camera.lookAt(...fixed.look);
+        } else walker.step(dt, input, { x: stick.x || touch.x, y: stick.y || touch.y });
         const s = walker.state;
         lastY = ground.floorAt(s.x, s.z);
         const awake = Boolean(input?.pressed?.size || input?.pointer?.drag);
@@ -247,8 +252,14 @@ export default {
       };
       window.__HOGWARTS__ = {
         world,
+        renderer,
         state,
-        place: (x, z, yaw) => walker.place([x, z], yaw),
+        place: (x, z, yaw) => {
+          fixed = null;
+          walker.place([x, z], yaw);
+        },
+        // (a camera put anywhere, a boat on the lake among them, looking at a point; view(null) gives the walk back)
+        view: (at, look) => void (fixed = at ? { at, look } : null),
         go: goTo,
         time: (h) => grounds.setHour(parseAt(h) ?? Number(h)),
         term: (w) => grounds.setWeek(w),

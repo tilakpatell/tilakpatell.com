@@ -5,7 +5,7 @@
 // glint of the sun or the moon). Its sky is the sky’s own function
 // (sky.js’s colourAt, along the reflected ray), so the water and the dome
 // never disagree, stars and moon and all. On high it mirrors what stands
-// over it (three’s reflector, a half-size picture of the castle, the hills
+// over it (its own mirror, a half-size picture of the castle, the hills
 // and the far ground, nothing else: those are on REFLECTED’s layer), broken
 // by the ripple. How deep it stands is read off the ground map’s heights,
 // so the strand fades the water out with no seam.
@@ -22,7 +22,7 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial, MeshLambertNodeMaterial } from 'three/webgpu';
-import { Fn, cameraPosition, dot, float, length, max, mix, normalize, positionWorld, pow, reflect, reflector, smoothstep, uniform, vec2, vec3, vec4 } from 'three/tsl';
+import { Fn, cameraPosition, dot, float, length, max, mix, normalize, positionWorld, pow, reflect, screenUV, smoothstep, texture, uniform, vec2, vec3, vec4 } from 'three/tsl';
 import { noiseWith } from '../../../lib/three/noiseNodes';
 import { HALF, LAKE } from './terrain';
 
@@ -50,6 +50,90 @@ export function squidAt(t) {
   return { up: up * up * (3 - 2 * up), k, spot, turn: cycle * 2.4, cycle };
 }
 
+// The lake’s mirror: the camera turned over the water’s plane, what is on
+// REFLECTED’s layer drawn from there into a picture half the screen’s size,
+// the near side of the water cut away by an oblique near plane (Lengyel’s,
+// as three’s reflector has it), read back on the water by where it is on
+// the screen. Its own picture and its own texture node, set once: three’s
+// reflector node swaps its node’s texture as it draws, and on the world
+// runtime’s chain the water went on sampling the empty picture it started with.
+function createMirror({ scale = 0.5 } = {}) {
+  const target = new THREE.RenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: true });
+  const map = texture(target.texture);
+  const uv = screenUV.flipX();
+  const cam = new THREE.PerspectiveCamera();
+  cam.layers.set(REFLECTED);
+  const size = new THREE.Vector2();
+  const eye = new THREE.Vector3();
+  const look = new THREE.Vector3();
+  const rot = new THREE.Matrix4();
+  const plane = new THREE.Plane();
+  const clip = new THREE.Vector4();
+  const q = new THREE.Vector4();
+  const row = new THREE.Vector4();
+  const inv = new THREE.Matrix4();
+  const N = new THREE.Vector3(0, 1, 0);
+  const ON_WATER = new THREE.Vector3(0, LAKE, 0);
+  return {
+    map,
+    uv,
+    draw(renderer, scene, camera) {
+      renderer.getDrawingBufferSize(size);
+      const w = Math.max(1, Math.round(size.x * scale));
+      const h = Math.max(1, Math.round(size.y * scale));
+      if (target.width !== w || target.height !== h) target.setSize(w, h);
+      camera.updateMatrixWorld();
+      // the eye and where it looks, turned over the plane y = LAKE
+      eye.setFromMatrixPosition(camera.matrixWorld);
+      if (eye.y <= LAKE) return;
+      rot.extractRotation(camera.matrixWorld);
+      look.set(0, 0, -1).applyMatrix4(rot).add(eye);
+      cam.position.set(eye.x, 2 * LAKE - eye.y, eye.z);
+      cam.up.set(0, 1, 0).applyMatrix4(rot).reflect(N);
+      cam.lookAt(look.x, 2 * LAKE - look.y, look.z);
+      cam.near = camera.near;
+      cam.far = camera.far;
+      // (the main camera’s depth and coordinates, so the renderer never makes this projection again over ours)
+      cam.coordinateSystem = camera.coordinateSystem;
+      cam._reversedDepth = camera.reversedDepth;
+      cam.updateMatrixWorld();
+      cam.projectionMatrix.copy(camera.projectionMatrix);
+      // the near plane laid along the water, so nothing under it is drawn:
+      // the third row made the fourth’s at the near plane’s depth plus the
+      // water’s plane, scaled so the frustum’s far corner stays on the far
+      // plane (Lengyel’s, for any depth: a reversed buffer’s near is 1)
+      plane.setFromNormalAndCoplanarPoint(N, ON_WATER).applyMatrix4(cam.matrixWorldInverse);
+      clip.set(plane.normal.x, plane.normal.y, plane.normal.z, plane.constant);
+      const e = cam.projectionMatrix.elements;
+      const reversed = camera.reversedDepth === true;
+      const nearZ = reversed ? 1 : camera.coordinateSystem === THREE.WebGPUCoordinateSystem ? 0 : -1;
+      const farZ = reversed ? 0 : 1;
+      inv.copy(cam.projectionMatrix).invert();
+      q.set(Math.sign(clip.x), Math.sign(clip.y), farZ, 1).applyMatrix4(inv);
+      row.set(e[3], e[7], e[11], e[15]);
+      const a = ((farZ - nearZ) * row.dot(q)) / clip.dot(q);
+      e[2] = nearZ * row.x + a * clip.x;
+      e[6] = nearZ * row.y + a * clip.y;
+      e[10] = nearZ * row.z + a * clip.z;
+      e[14] = nearZ * row.w + a * clip.w;
+      cam.projectionMatrixInverse.copy(cam.projectionMatrix).invert();
+      const was = renderer.getRenderTarget();
+      const mrt = renderer.getMRT?.() ?? null;
+      const clear = renderer.autoClear;
+      renderer.setMRT?.(null);
+      renderer.setRenderTarget(target);
+      renderer.autoClear = true;
+      renderer.render(scene, cam);
+      renderer.setRenderTarget(was);
+      renderer.setMRT?.(mrt);
+      renderer.autoClear = clear;
+    },
+    dispose() {
+      target.dispose();
+    },
+  };
+}
+
 const DEEP = new THREE.Color(0.012, 0.02, 0.018);
 const BODY = new THREE.Color(0.035, 0.05, 0.035);
 const SHALLOW = new THREE.Color(0.12, 0.13, 0.09);
@@ -75,10 +159,7 @@ export function createLake({ camera = null, sky = null, groundMap = null, tier =
     uSeed: uniform(new THREE.Vector3(5.3, 1.7, 9.1)),
   };
   const { noise } = noiseWith(u.uSeed, { octaves: 2 });
-  const mirror = reflection ? reflector({ resolutionScale: 0.5, generateMipmaps: false, depth: false, bounces: false }) : null;
-  // (drawn by reflect(), before the frame’s chain: drawn from inside the
-  // chain’s scene pass, its picture came out black on every backend tried)
-  if (mirror) mirror.reflector.updateBeforeType = 'none';
+  const mirror = reflection ? createMirror() : null;
 
   const material = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
   const colour = Fn(() => {
@@ -104,10 +185,8 @@ export function createLake({ camera = null, sky = null, groundMap = null, tier =
     const skyCol = sky ? sky.colourAt(vec3(r.x, max(r.y, 0.02), r.z)) : mix(vec3(0.4, 0.45, 0.5), vec3(0.2, 0.35, 0.6), r.y);
     let above = skyCol;
     if (mirror) {
-      // (the mirror’s picture, shifted by the ripple: the castle’s lights break into streaks)
-      // (the node itself, its own coordinates moved: a sample() of it is a copy the reflector never updates)
-      mirror.uvNode = mirror.uvNode.add(vec2(sx, sz).mul(rough).mul(0.06));
-      const m = mirror;
+      // (the mirror’s picture, shifted by the ripple: the castle’s lights break into streaks down the water)
+      const m = mirror.map.sample(mirror.uv.add(vec2(sx.mul(0.4), sz).mul(rough).mul(0.05)));
       above = mix(skyCol, m.rgb, m.a.max(0).min(1));
     }
     // how deep it stands, from the ground map (none known past the ground: deep)
@@ -127,14 +206,7 @@ export function createLake({ camera = null, sky = null, groundMap = null, tier =
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = 'hogwarts:lake';
   mesh.renderOrder = 1;
-  let target = null;
-  if (mirror) {
-    target = mirror.target;
-    target.rotation.x = -Math.PI / 2;
-    target.position.y = LAKE;
-    // (what the mirror draws: only what is on REFLECTED’s layer)
-    if (camera) mirror.reflector.getVirtualCamera(camera).layers.set(REFLECTED);
-  }
+  const target = null;
 
   // the squid’s arm: a tapered tube along a curl, rising and sinking at its spot, and its ring of ripples
   const squid = new THREE.Group();
@@ -182,6 +254,7 @@ export function createLake({ camera = null, sky = null, groundMap = null, tier =
   return {
     mesh,
     target,
+    mirror,
     squid,
     set(light, { wind = 0.3, rain = 0 } = {}) {
       const { az, el, colour: c } = light.sun;
@@ -200,7 +273,7 @@ export function createLake({ camera = null, sky = null, groundMap = null, tier =
     // the mirror’s picture for this frame, drawn before the frame’s chain (the module’s draw calls it)
     reflect(renderer, scene, cam = camera) {
       if (!mirror || !renderer || !cam || !mesh.visible) return;
-      mirror.reflector.updateBefore({ renderer, scene, camera: cam, material });
+      mirror.draw(renderer, scene, cam);
     },
     update(dt) {
       t += dt;
