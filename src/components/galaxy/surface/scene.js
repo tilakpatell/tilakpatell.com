@@ -74,7 +74,9 @@ import { buildGalaxyShip } from '../fleet';
 import { audioContext } from '../../../lib/audio';
 import { SURFACE_MODELS } from './catalog';
 import { HALF, heightGrid, makeHeight } from './terrain';
-import { createMarks, groundMaterial, groundMesh } from './ground';
+import { createRoam, roamGround, roamOn } from './roam';
+import { laidOn, regionsAround, waysideAt } from './wayside';
+import { createMarks, groundBuild, groundGeometry, groundMaterial, groundMesh } from './ground';
 import { lavaFilm } from './lavaFilm';
 import { floatPose } from './floats';
 import { adoptLater, exposureOf, groundPieces, lookOf } from './look';
@@ -375,13 +377,17 @@ export async function create(canvas, ctx) {
   // ── The land ──
   // (a world on the game's level: its heightmaps decoded first, so the grid
   // is the game's ground; any other world's ground is as it was)
-  const height = makeHeight(await levelGround(site.ground), { relief: amounts.relief });
+  // (free roam with no mission: no edge, the ground moving round you, its
+  // mountain rings breaking into ranges past them: roam.js)
+  const roaming = roamOn(site, mission);
+  const height = makeHeight(roaming ? roamGround(await levelGround(site.ground)) : await levelGround(site.ground), { relief: amounts.relief });
   // (and what the map itself places: its creatures, droids and vehicles where the game stood them)
   const placed = await levelPlaced(site);
   // (and the cells its pieces fill, which the world's own solid scatter keeps out of)
   const busy = await levelBusy(site);
   const inBusy = (x, z) => busy.size > 0 && busy.has(`${Math.floor(x / 128)},${Math.floor(z / 128)}`);
-  const grid = heightGrid(height, amounts.grid);
+  let grid = heightGrid(height, amounts.grid);
+  let paintGrid = grid;
   // (water you wade in: not lava, not cloud, and not a sea far under a
   // platform with nothing else under it, which you'd fall into)
   const wade = site.water && !site.noGround && site.water.kind !== 'clouds' && site.water.kind !== 'lava' ? site.water.level : null;
@@ -391,6 +397,8 @@ export async function create(canvas, ctx) {
   const avoid = [...site.places.map((p) => ({ at: p.at, r: p.flat?.r ?? p.r * 0.6 })), { at: site.land.at, r: 30 }];
   // (on a world drawn from the game's level, what the game places itself is left to it)
   const scattered = site.scatter.filter((s) => !(site.level && s.game)).map((s) => {
+    // (a row that says where each stands, a city's: city.js)
+    if (s.items) return { s, items: s.items.map((it) => ({ at: it.at, yaw: it.yaw ?? 0, scale: it.scale ?? 1, sink: s.sink ?? 0.1, stretch: 1, ...(it.box ? { box: it.box } : {}) })) };
     const items = [];
     const [r0, r1] = s.within ?? [20, site.reach];
     const [cx, cz] = s.at ?? [0, 0]; // (a row round a place: its own clearing is still kept)
@@ -426,7 +434,8 @@ export async function create(canvas, ctx) {
       return canopy ? items.map((it) => ({ at: it.at, r: canopy * it.scale })) : [];
     });
     if (live) shade.push(...shadeOf(live.trees, { level, seed: liveSeed, height: grid.heightAt, keep: keepOf({ site, heightAt: grid.heightAt, avoid, busy: inBusy, wade }), half: HALF }));
-    const painter = groundPainter(site, grid, { shade });
+    // (the grid it paints from read where it is now: the free roam moves it, roam.js)
+    const painter = groundPainter(site, { heightAt: (x, z) => paintGrid.heightAt(x, z), normalAt: (x, z, e) => paintGrid.normalAt(x, z, e) }, { shade });
     const mapSize = amounts.map;
     groundMap = createGroundMap({ area: mapAreaOf(), size: mapSize, heightSize: mapSize / 2, paint: painter.paint, height: painter.height });
     if (pieces.bounce) house.ground(groundMap);
@@ -451,7 +460,7 @@ export async function create(canvas, ctx) {
   if (!site.noGround) scene.add(ground);
   // (Mustafar's rivers flow with the game's lava film on high and ultra: lavaFilm.js)
   const lava = lavaFilm(site, { level, reduced });
-  const water = site.water ? createWater(site, sunDir, site.sky.suns?.[0]?.color ?? '#ffffff', { heightAt: site.noGround ? null : grid.heightAt, small, id: site.id, rings: amounts.rings, depthN: amounts.depthN, foam: amounts.splat, flow: lava?.texture, flipped: lava?.flipped }) : null;
+  const water = site.water ? createWater(site, sunDir, site.sky.suns?.[0]?.color ?? '#ffffff', { heightAt: site.noGround ? null : (x, z) => grid.heightAt(x, z), small, id: site.id, rings: amounts.rings, depthN: amounts.depthN, foam: amounts.splat, flow: lava?.texture, flipped: lava?.flipped }) : null;
   if (water) {
     scene.add(water.mesh);
     if (water.glow) scene.add(water.glow);
@@ -462,7 +471,7 @@ export async function create(canvas, ctx) {
     normalAt: site.noGround ? () => [0, 1, 0] : (x, z) => grid.normalAt(x, z),
     solids: createSolids(),
     floors: [...(site.floors ?? [])],
-    reach: site.reach,
+    reach: roaming ? Infinity : site.reach,
     water: wade,
     // (how deep the water can be before you're turned back: the lagoon on Kashyyyk)
     wadeMax: wade != null ? site.water.wadeMax : undefined,
@@ -524,12 +533,57 @@ export async function create(canvas, ctx) {
   // placer's kit; nothing where your ship comes down (`clearings`, once known)
   const clearings = [];
   const living = live
-    ? createLiving({ rows: live, kitFor: placer.kitFor, level, seed: liveSeed, height: world.heightAt, keep: keepOf({ site, heightAt: world.heightAt, solids: world.solids, avoid, clearings, busy: inBusy, wade }), cover: site.grass ? (x, z) => coverAt(grid, site, x, z) : null, solids: world.solids })
+    ? createLiving({ rows: live, kitFor: placer.kitFor, level, seed: liveSeed, height: (x, z) => world.heightAt(x, z), keep: keepOf({ site, heightAt: (x, z) => world.heightAt(x, z), solids: world.solids, avoid, clearings, busy: inBusy, wade, ...(roaming ? { bound: Infinity, edge: Infinity } : {}) }), cover: site.grass ? (x, z) => coverAt(grid, site, x, z) : null, solids: world.solids })
     : null;
   if (living) {
     scene.add(living.group);
     living.fill(...site.land.at);
   }
+  // the ground round you as you go, in the free roam (roam.js): the grid,
+  // its mesh, the walker's ground, the map and the look's square moved on
+  // one frame, the living ground laid on it again
+  const roam = roaming
+    ? createRoam({
+        height,
+        grid,
+        gridOpts: amounts.grid,
+        map: groundMap,
+        // (the mesh made over the move's frames, not on the frame it goes in)
+        build: groundBuild,
+        onGrid(next) {
+          paintGrid = next;
+        },
+        onMove(next, made) {
+          grid = next;
+          world.heightAt = next.heightAt;
+          const was = ground.geometry;
+          ground.geometry = made?.geometry ?? groundGeometry(next);
+          was.dispose();
+          gmat.uniforms.uCentre?.value.set(...next.centre);
+          marks.moveTo(...next.centre);
+          living?.relay();
+        },
+      })
+    : null;
+  // and what you come on out there (wayside.js): each region's place put in
+  // as it comes within sight, on the land's own height (the ground as it
+  // will be drawn when you get there), never taken back
+  const SIGHT = 1600;
+  const seen = new Set();
+  const came = []; // (what's been put in, for the dev hook)
+  let looked = null;
+  const comeOn = roaming
+    ? (x, z) => {
+        if (looked && Math.hypot(x - looked[0], z - looked[1]) < 100) return;
+        looked = [x, z];
+        for (const [rx, rz] of regionsAround(x, z, SIGHT)) {
+          const key = `${rx},${rz}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          for (const t of waysideAt(site, rx, rz, height)?.things ?? []) placer.put(laidOn(t, height)).then((o) => o && came.push({ kind: t.kind, at: t.at, o }));
+        }
+      }
+    : null;
   // (and its biome's birds, over its places: flocks.js)
   const flocks = createFlocks(site.air?.flocks, { heightAt: world.heightAt, reduced });
   if (flocks) scene.add(flocks.group);
@@ -1850,7 +1904,7 @@ export async function create(canvas, ctx) {
     const z = state.zone;
     if (!z) return;
     state.zone = null;
-    world.reach = site.reach;
+    world.reach = roaming ? Infinity : site.reach;
     const [bx, bz] = z.back ?? z.door.at;
     const yaw = state.outside?.[2] ?? 0;
     putAt(me().st, bx, bz, yaw + Math.PI);
@@ -3584,6 +3638,8 @@ export async function create(canvas, ctx) {
     state.aim = Math.max(0, state.aim - dt / 2.5);
     life.update(dt, state.phase === 'walk' ? me().st : null, state.phase === 'walk' || state.phase === 'ride' ? me().st : camera.position);
     placer.update(t, dt, me().st);
+    roam?.update(me().st.x, me().st.z);
+    comeOn?.(me().st.x, me().st.z);
     living?.update(me().st.x, me().st.z, camera, dt);
     flocks?.update(dt);
     gameLevel?.update([me().st.x, me().st.z]);
@@ -3595,7 +3651,11 @@ export async function create(canvas, ctx) {
     if (grass) {
       camera.getWorldDirection(grassAhead).setY(0);
       if (grassAhead.lengthSq() < 1e-6) grassAhead.set(0, 0, -1);
-      grass.update(grassAt.set(me().st.x, 0, me().st.z).addScaledVector(grassAhead.normalize(), amounts.grass.size * 0.3));
+      grassAt.set(me().st.x, 0, me().st.z).addScaledVector(grassAhead.normalize(), amounts.grass.size * 0.3);
+      // (none past the map's square: run on ahead of the free roam's move,
+      // the blades would stand at its edge's height)
+      grass.mesh.visible = !roam || Math.max(Math.abs(grassAt.x - roam.centre[0]), Math.abs(grassAt.z - roam.centre[1])) + amounts.grass.size / 2 < HALF;
+      grass.update(grassAt);
     }
     wind.update(dt);
     stepDust(dt);
@@ -3765,6 +3825,9 @@ export async function create(canvas, ctx) {
       level: () => (gameLevel ? { ...gameLevel.stats(), ready: gameLevel.ready(), progress: gameLevel.progress() } : null),
       surfaces: () => ({ level: surfaces?.level ?? null, print: groundPrint, picks: [...picks] }),
       living: () => living?.stats ?? null,
+      roam: () => (roam ? { centre: roam.centre, moving: roam.moving, ...roam.stats } : null),
+      // (the wayside's things put in: each one's lowest point against the drawn ground under it)
+      wayside: () => came.map(({ kind, at, o }) => ({ kind, at: at.map(Math.round), y: +o.position.y.toFixed(2), low: +new THREE.Box3().setFromObject(o).min.y.toFixed(2), ground: +world.heightAt(...at).toFixed(2) })),
       solidsNear: (x, z, r = 60) => world.solids.near(x, z, r).map(({ type, x: sx, z: sz, r: sr, hw, hd, c, s, top, base, tag }) => ({ type, x: sx, z: sz, r: sr, hw, hd, c, s, top, base, tag })),
       shoot: (from, to) => blaster.fire(new V(...from), new V(...to).sub(new V(...from)).normalize(), [], boltOf(me()), 90, null, { yours: true, push: new V() }),
       // (a stroke now, as the button makes one, for the QA scripts: { heavy, dir, lock } as saber.js takes them)
@@ -4223,6 +4286,17 @@ export async function create(canvas, ctx) {
       if (pitch != null) state.cam.pitch = clamp(pitch, CAM.pitch[0], CAM.pitch[1]);
       camInit = false;
       ctx.invalidate();
+    },
+    // (the free roam's ground moved round you at once and the living ground
+    // laid on it, for the shots: a software GL draws a frame every few seconds)
+    roamNow() {
+      if (!import.meta.env.DEV || !roam) return null;
+      const p = me().st;
+      for (let i = 0; i < 4 && !roam.update(p.x, p.z, Infinity); i++);
+      p.y = groundAt(world, p.x, p.z, 1e4, 1e4);
+      living?.fill(p.x, p.z);
+      ctx.invalidate();
+      return { centre: roam.centre, ...roam.stats };
     },
     // (for tests: where you are, what's going on)
     debug: () => ({ surfaces: { level: surfaces?.level ?? null, print: groundPrint, picks: [...picks] }, sky: { zenith: '#' + sky.uniforms.uZenith.value.getHexString(), horizon: '#' + sky.uniforms.uHorizon.value.getHexString() }, site: site.id, ship: { at: shipHolder.position.toArray().map((v) => +v.toFixed(1)), y: +ship.group.position.y.toFixed(2), box: [+shipBox.w.toFixed(1), +shipBox.l.toFixed(1)], visible: ship.group.visible }, ms: state.ms, frames: state.frames, t: +state.t.toFixed(1), phase: state.phase, you: { ...me().st }, body: body ? { ready: body.ready, pose: body.pose } : null, here: state.here, found: [...state.found], prompt: state.prompt, riding: state.riding?.kind ?? null, rideY: state.riding ? +state.riding.state.y.toFixed(2) : null, quest: state.quest, zone: state.zone?.id ?? null, zoneOrigin: state.zone?.origin ?? null, health: state.health, off: state.off, mission: chase?.view() ?? assault?.view() ?? run, who: me().spec.id, saber: me().saber ? { lit: me().saber.lit, busy: me().saber.busy, thrown: me().saber.thrown, stance: me().saber.stance?.name ?? null, color: me().spec.saber?.color ?? null, ...me().saber.view(state.t) } : null, mate: other().spec.id, mods: me().spec.mods ?? [], heat: +state.heat.value.toFixed(2), locked: state.heat.locked, lock: state.lock?.spec.kind ?? null, lockGuard: state.lock?.guard ?? null, lockHp: state.lock?.hp ?? null, lockStagger: state.lock?.stagger != null ? +state.lock.stagger.toFixed(1) : null, weapon: me().weapon?.name ?? null, dodging: Boolean(state.dodge), bombs: state.bombs.length, powers: abilitiesOf(me().spec), force: powers.debug(), jet: +state.jet.fuel.toFixed(2), sprinting: state.t < state.sprint, fight: activity.debug(), people: life.debug(), net: { ...net.progress(), pool: assetPool().progress() }, rides: rides.map((x) => ({ kind: x.kind, at: [+x.state.x.toFixed(1), +x.state.z.toFixed(1)], built: Boolean(x.fig || x.body?.children.length) })) }),

@@ -69,6 +69,8 @@ export function groundMaterial(site, { small = false, map = null, splat: layered
     uMarks: { value: null },
     uMarkColor: { value: col(p.mark, '#000000') },
     uHalf: { value: half },
+    // (where the square lies: the origin, or round you in the free roam, galaxy/surface/roam.js)
+    uCentre: { value: new THREE.Vector2() },
     uNoise: { value: noiseTexture() },
     // the scan underfoot: its maps, repeats a metre, how strongly its colour
     // and its normal show, where it fades (near, far), and the linear
@@ -124,7 +126,7 @@ export function groundMaterial(site, { small = false, map = null, splat: layered
   // shader's own toward the square's edge and beyond)
   const fromMap = map
     ? `
-  vec2 mq = abs(xz) / uHalf;
+  vec2 mq = abs(xz - uCentre) / uHalf;
   c = mix(c, groundColour(xz), 1.0 - smoothstep(0.88, 1.0, max(mq.x, mq.y)));`
     : '';
   mat.onBeforeCompile = (shader) => {
@@ -143,6 +145,7 @@ uniform vec4 uHeights, uRipple, uWet, uScanK;
 uniform vec2 uScanFade;
 uniform sampler2D uMarks, uScan, uScanN;
 uniform float uHalf;
+uniform vec2 uCentre;
 #ifdef SPLAT
 uniform sampler2D uMacro, uSteep, uSteepN, uDecal;
 uniform vec2 uLayerK[3];
@@ -213,7 +216,7 @@ ${NOISE}`,
   }
 #endif
   // where things have been
-  vec2 muv = xz / (2.0 * uHalf) + 0.5;
+  vec2 muv = (xz - uCentre) / (2.0 * uHalf) + 0.5;
   if (muv.x > 0.0 && muv.x < 1.0 && muv.y > 0.0 && muv.y < 1.0) c = mix(c, uMarkColor, texture2D(uMarks, muv).r);
   diffuseColor.rgb *= c;
 }`,

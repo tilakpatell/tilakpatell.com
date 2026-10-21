@@ -18,9 +18,11 @@
 //     laid where nothing of it shows yet
 //   shareOf(level) → (row) → the share of a row's count the level lays (its
 //     `props`; on low no grass clumps, the blades being its grass)
-//   keepOf({ site, heightAt, solids, avoid, clearings, busy, wade }) →
+//   keepOf({ site, heightAt, solids, avoid, clearings, busy, wade, bound, edge }) →
 //     keep(x, z, row): nothing on a place's flat or by the landing (`avoid`,
-//     the scene's), in the water, in a wall or past the ground's edge; a
+//     the scene's), in the water, in a wall or past the ground's edge (`bound`
+//     metres from the origin, the world's reach and a little; `edge` across
+//     the ground's square; both Infinity in the free roam, roam.js); a
 //     row's `clear` metres kept off a flat (a tree's 25). The trees take no
 //     notice of the walls or of `clearings` (where your ship came down,
 //     read each call), so the ground map's shade under them is laid before
@@ -29,12 +31,14 @@
 //     streamed trees' crowns over the ground map's square (groundPaint.js
 //     shades the grass under them, as under a tree row's)
 //   createLiving({ rows, kitFor, level, seed, height, keep, cover, solids })
-//     → { group, update(x, z, camera, dt), fill(x, z), refresh(), ready,
+//     → { group, update(x, z, camera, dt), fill(x, z), refresh(), relay(), ready,
 //       stats: { tiles, queued, pools, total }, dispose() }
 //     kitFor(pack) the placer's (the world's tint and wind); cover(x, z)
 //     the ground's grass, 0…1 (null: every row on any ground); fill lays
 //     every tile round (x, z) at once (the landing's, before you see it);
-//     refresh lays every tile in again (once the walls are in)
+//     refresh lays every tile in again (once the walls are in); relay lays
+//     them in again over the frames to come, nearest first (the free roam's
+//     ground moved: its far items onto the ground as it's now drawn)
 
 import { budget } from '../../../lib/budgets';
 import { TILE, coverTile, tilesAround } from '../../../lib/land/cover';
@@ -66,9 +70,7 @@ export function shareOf(level) {
   return (row) => (level === 'low' && row.kind === 'grassclump' ? 0 : props);
 }
 
-export function keepOf({ site, heightAt, solids = null, avoid, clearings = [], busy = () => false, wade = null }) {
-  const edge = HALF - EDGE;
-  const bound = (site.reach ?? HALF) + 40;
+export function keepOf({ site, heightAt, solids = null, avoid, clearings = [], busy = () => false, wade = null, bound = (site.reach ?? HALF) + 40, edge = HALF - EDGE }) {
   return (x, z, row) => {
     if (Math.abs(x) > edge || Math.abs(z) > edge || Math.hypot(x, z) > bound) return false;
     const pad = row.clear ?? 4;
@@ -113,9 +115,14 @@ export function createLiving({ rows, kitFor, level = 'high', seed = 1, height, k
   };
   const scatter = createKitScatter({ kitFor: (tint, pack) => kitFor(pack ?? 'naturemega'), tier: level, name: 'galaxy:living', poolOptions });
   const tiles = new Map(); // key → { band, tx, tz, trunks }
-  let queue = []; // [band, tx, tz, d], nearest first
+  let queue = []; // [band, tx, tz, d, again?], nearest first
   let last = null; // where the ring was last looked at
   const keyOf = (band, tx, tz) => `${band}:${tx},${tz}`;
+  // metres from (x, z) to a band's tile
+  const off = (band, tx, tz, x, z) => {
+    const size = SIZE[band];
+    return Math.hypot(Math.max(tx * size, Math.min(x, (tx + 1) * size)) - x, Math.max(tz * size, Math.min(z, (tz + 1) * size)) - z);
+  };
 
   const lay = (band, tx, tz) => {
     const key = keyOf(band, tx, tz);
@@ -138,21 +145,18 @@ export function createLiving({ rows, kitFor, level = 'high', seed = 1, height, k
     scatter.free(key);
   };
   // the ring round (x, z): tiles past a band's reach (and a tile's slack) go,
-  // new ones within it queue, nearest first
+  // new ones within it queue, nearest first, and those still to lay again
+  // (relay) stay queued
   const look = (x, z) => {
     last = { x, z };
     const want = [];
     for (const band of BANDS) {
       if (!rows[band]?.length) continue;
       const size = SIZE[band];
-      for (const [key, t] of tiles) {
-        if (t.band !== band) continue;
-        const nx = Math.max(t.tx * size, Math.min(x, (t.tx + 1) * size));
-        const nz = Math.max(t.tz * size, Math.min(z, (t.tz + 1) * size));
-        if (Math.hypot(nx - x, nz - z) > reach[band] + size) drop(key);
-      }
+      for (const [key, t] of tiles) if (t.band === band && off(band, t.tx, t.tz, x, z) > reach[band] + size) drop(key);
       for (const [tx, tz, d] of tilesAround(x, z, reach[band], size)) if (!tiles.has(keyOf(band, tx, tz))) want.push([band, tx, tz, d]);
     }
+    for (const [band, tx, tz, , again] of queue) if (again && tiles.has(keyOf(band, tx, tz))) want.push([band, tx, tz, off(band, tx, tz, x, z) + UNDER, true]);
     queue = want.sort((a, b) => a[3] - b[3]);
   };
 
@@ -163,8 +167,9 @@ export function createLiving({ rows, kitFor, level = 'high', seed = 1, height, k
       const t0 = performance.now();
       // (the tiles under you and beside you at once, after a jump; the rest a few a frame)
       while (queue.length && (queue[0][3] < UNDER || performance.now() - t0 < SPEND)) {
-        const [band, tx, tz] = queue.shift();
-        if (!tiles.has(keyOf(band, tx, tz))) lay(band, tx, tz);
+        const [band, tx, tz, , again] = queue.shift();
+        const key = keyOf(band, tx, tz);
+        if (again ? tiles.has(key) : !tiles.has(key)) lay(band, tx, tz);
       }
       scatter.update(camera, dt);
     },
@@ -175,6 +180,11 @@ export function createLiving({ rows, kitFor, level = 'high', seed = 1, height, k
     },
     refresh() {
       for (const t of [...tiles.values()]) lay(t.band, t.tx, t.tz);
+    },
+    relay() {
+      const at = last ?? { x: 0, z: 0 };
+      const again = [...tiles.values()].map((t) => [t.band, t.tx, t.tz, off(t.band, t.tx, t.tz, at.x, at.z) + UNDER, true]);
+      queue = [...queue.filter((e) => !e[4]), ...again].sort((a, b) => a[3] - b[3]);
     },
     // (every model laid so far drawn)
     get ready() {

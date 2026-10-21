@@ -1,0 +1,58 @@
+{
+  "coronetblock": {
+    "image": "01a15a10-11c4-73cc-88b6-adc19e93e9e5",
+    "model": "01a15a11-f2b4-72f6-a668-33efae9018f8"
+  },
+  "coronetshop": {
+    "image": "01a15a11-4600-7635-8785-22a89fb9bb10",
+    "model": "01a15a11-f741-7290-9604-4232e7c446fa"
+  },
+  "worlportblock": {
+    "image": "01a15a10-1279-7260-abb9-8935fabc4d57",
+    "model": "01a15a11-fb3b-7611-bf3b-85bd8df4cfe1"
+  },
+  "worlportmarket": {
+    "image": "01a15a10-12d6-70ee-ab00-e3fe6c1414c6",
+    "model": "01a15a11-ff78-76a4-a72f-44de1892d203"
+  },
+  "kestrohouse": {
+    "image": "01a15a10-1325-7494-96f3-44d87e5e04a4",
+    "model": "01a15a12-034b-7701-9b48-0ebeb2507c37"
+  },
+  "pauhouse": {
+    "image": "01a15a11-4655-7433-951f-cbbd563b543f",
+    "model": "01a15a12-0742-716a-af6f-2b1e4807343a"
+  },
+  "mygeetoblock": {
+    "image": "01a15a10-13b9-710d-9a16-84f45b4cd650",
+    "model": "01a15a12-0b89-7603-8b4b-86cfb347bd74"
+  },
+  "catohab": {
+    "image": "01a15a10-140d-72d9-a2eb-3a9cd5d40155",
+    "model": "01a15a12-0ff3-74ab-91f4-563a39e4e782"
+  },
+  "jedhahouse": {
+    "image": "01a15a10-1463-7318-bba4-989b637dd276",
+    "model": "01a15a12-13ef-71e5-98c9-0409e0f9c20a"
+  },
+  "jedhatower": {
+    "image": "01a15a10-14b6-71c8-9340-9d31d71c9afa",
+    "model": "01a15a12-17ad-7498-b5b6-e2e1a1e4bce1"
+  },
+  "plazirvilla": {
+    "image": "01a15a10-1504-745f-8a5e-67effb44b33c",
+    "model": "01a15a12-1b28-73fc-a1c5-939cfefc8ae9"
+  },
+  "kafreneshack": {
+    "image": "01a15a10-1557-75ae-a8a1-e8e33bc20da8",
+    "model": "01a15a12-1eb3-712e-95d8-4bb688a45a66"
+  },
+  "traskhall": {
+    "image": "01a15a10-159f-7169-b8a1-c430ea7de1dc",
+    "model": "01a15a12-22c4-72ba-ae9a-6f3b485561e7"
+  },
+  "lothalblock": {
+    "image": "01a15a11-46a3-77a6-8592-333692b03934",
+    "model": "01a15a12-26b5-738c-861e-61562121bedb"
+  }
+}
