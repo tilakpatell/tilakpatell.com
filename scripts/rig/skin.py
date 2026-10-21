@@ -1,0 +1,233 @@
+"""A standing figure's mesh bound to Meshy's 24 bones with Blender's automatic
+(heat) weights, headless:
+
+    blender --background --python scripts/rig/skin.py -- IN.glb JOB.json OUT.glb
+
+skin.mjs writes IN.glb (the figure, plain: no meshopt, feet on y = 0, facing
++z) and JOB.json (each bone's name, parent, head and tail in the glTF's
+metres, and whether it deforms), and reads OUT.glb back for its weights
+alone: the skeleton the site plays on is built in JavaScript to Luke's frames,
+so Blender's bone rolls and axes never reach the site. Only the weights do.
+
+Heat weighting wants one closed surface, and its solver gives up on the
+whole figure (every vertex bare) when it gets anything else: a mesh in
+pieces, or loose bits beside the body (a pair of glasses, a scarf's tassel,
+a shoe a hair's breadth from the leg). So the weights are made on a stand-in
+and carried over to the real mesh by nearest face, which also gives each
+loose bit the weights of the body it sits on:
+  1. the figure welded and cut down to its biggest piece;
+  2. failing that, a voxel remesh of the whole figure (one skin over every
+     gap), its biggest piece, coarser each time the solver still fails.
+Whatever is still bare after that takes its nearest weighted neighbour's.
+"""
+
+import json
+import sys
+
+import bmesh
+import bpy
+from mathutils import Vector, kdtree
+
+argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
+src, job_file, out = argv[:3]
+with open(job_file, encoding="utf-8") as f:
+    job = json.load(f)
+
+bpy.ops.wm.read_factory_settings(use_empty=True)
+bpy.ops.import_scene.gltf(filepath=src, merge_vertices=True)
+scene = bpy.context.scene
+layer = bpy.context.view_layer
+meshes = [o for o in scene.objects if o.type == "MESH"]
+if not meshes:
+    sys.exit("no mesh in the GLB")
+bpy.ops.object.select_all(action="DESELECT")
+for o in meshes:
+    o.select_set(True)
+layer.objects.active = meshes[0]
+if len(meshes) > 1:
+    bpy.ops.object.join()
+fig = layer.objects.active
+fig.name = "figure"
+fig.parent = None
+bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+for o in [o for o in scene.objects if o.type != "MESH"]:
+    bpy.data.objects.remove(o)
+
+
+def blend(p):
+    # glTF's y up and +z ahead as Blender has them: z up, -y ahead
+    return Vector((p[0], -p[2], p[1]))
+
+
+data = bpy.data.armatures.new("Armature")
+arm = bpy.data.objects.new("Armature", data)
+scene.collection.objects.link(arm)
+bpy.ops.object.select_all(action="DESELECT")
+layer.objects.active = arm
+arm.select_set(True)
+bpy.ops.object.mode_set(mode="EDIT")
+edit = {}
+for b in job["bones"]:
+    e = data.edit_bones.new(b["name"])
+    e.head = blend(b["head"])
+    e.tail = blend(b["tail"])
+    e.use_deform = bool(b["deform"])
+    edit[b["name"]] = e
+for b in job["bones"]:
+    if b["parent"]:
+        edit[b["name"]].parent = edit[b["parent"]]
+        edit[b["name"]].use_connect = False
+bpy.ops.object.mode_set(mode="OBJECT")
+deform = [b["name"] for b in job["bones"] if b["deform"]]
+
+
+def only(obj):
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    layer.objects.active = obj
+
+
+def bare(obj):
+    # the vertices no deforming bone has any of
+    groups = {g.index for g in obj.vertex_groups if g.name in deform}
+    return [v.index for v in obj.data.vertices if sum(g.weight for g in v.groups if g.group in groups) < 1e-6]
+
+
+def biggest(obj):
+    # the object's mesh cut down to its biggest connected piece, welded
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=job.get("weld", 1e-5))
+    bm.verts.ensure_lookup_table()
+    seen = set()
+    best = []
+    for v in bm.verts:
+        if v.index in seen:
+            continue
+        piece = []
+        stack = [v]
+        seen.add(v.index)
+        while stack:
+            u = stack.pop()
+            piece.append(u)
+            for e in u.link_edges:
+                w = e.other_vert(u)
+                if w.index not in seen:
+                    seen.add(w.index)
+                    stack.append(w)
+        if len(piece) > len(best):
+            best = piece
+    keep = {v.index for v in best}
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.index not in keep], context="VERTS")
+    bm.to_mesh(obj.data)
+    bm.free()
+    return len(keep)
+
+
+def stand_in(voxel=None):
+    # a copy of the figure (remeshed when `voxel` is given), its biggest piece, weighted by heat
+    proxy = fig.copy()
+    proxy.data = fig.data.copy()
+    proxy.name = "proxy"
+    scene.collection.objects.link(proxy)
+    proxy.vertex_groups.clear()
+    for m in list(proxy.modifiers):
+        proxy.modifiers.remove(m)
+    only(proxy)
+    if voxel:
+        rm = proxy.modifiers.new("remesh", "REMESH")
+        rm.mode = "VOXEL"
+        rm.voxel_size = voxel
+        bpy.ops.object.modifier_apply(modifier="remesh")
+    whole = len(proxy.data.vertices)
+    kept = biggest(proxy)
+    if not voxel and kept / max(1, whole) <= 0.9:
+        # (the figure in pieces: its arms would take the body's weights, so no heat spent on it)
+        print(f"the figure itself is in pieces (its biggest {kept} of {whole} vertices): a remesh instead", flush=True)
+        return proxy, 1.0, "the figure itself", kept / max(1, whole)
+    bpy.ops.object.select_all(action="DESELECT")
+    proxy.select_set(True)
+    arm.select_set(True)
+    layer.objects.active = arm
+    bpy.ops.object.parent_set(type="ARMATURE_AUTO")
+    left = len(bare(proxy)) / max(1, len(proxy.data.vertices))
+    what = f"remeshed at {voxel * 1000:.1f} mm" if voxel else "the figure itself"
+    print(f"heat on {what}: its biggest piece, {kept} of {whole} vertices, {left:.2%} bare", flush=True)
+    return proxy, left, what, kept / max(1, whole)
+
+
+tries = [None] if job.get("proxy") != "always" else []
+voxel = job.get("voxel", 0.014)
+tries += [voxel * 1.5**k for k in range(4)]
+for i, v in enumerate(tries):
+    proxy, left, how, share = stand_in(v)
+    # (the figure itself only when its biggest piece is nearly all of it: a
+    # figure made of parts, or cracked along its seams, has its arms in
+    # other pieces, and they'd take the weights of the body they're nearest)
+    if (left < 0.01 and (v or share > 0.9)) or i == len(tries) - 1:
+        break
+    bpy.data.objects.remove(proxy)
+
+# the weights carried over to the real mesh, face by nearest face
+for g in list(fig.vertex_groups):
+    fig.vertex_groups.remove(g)
+for name in deform:
+    fig.vertex_groups.new(name=name)
+only(fig)
+dt = fig.modifiers.new("weights", "DATA_TRANSFER")
+dt.object = proxy
+dt.use_vert_data = True
+dt.data_types_verts = {"VGROUP_WEIGHTS"}
+dt.vert_mapping = "POLYINTERP_NEAREST"
+dt.layers_vgroup_select_src = "ALL"
+dt.layers_vgroup_select_dst = "NAME"
+bpy.ops.object.modifier_apply(modifier="weights")
+proxy.parent = None
+bpy.data.objects.remove(proxy)
+missing = bare(fig)
+
+# what's still bare takes the weights of its nearest weighted vertex
+if missing and len(missing) < len(fig.data.vertices):
+    gone = set(missing)
+    tree = kdtree.KDTree(len(fig.data.vertices) - len(gone))
+    for v in fig.data.vertices:
+        if v.index not in gone:
+            tree.insert(v.co, v.index)
+    tree.balance()
+    names = {g.index: g.name for g in fig.vertex_groups}
+    for i in missing:
+        _, j, _ = tree.find(fig.data.vertices[i].co)
+        for g in fig.data.vertices[j].groups:
+            if names.get(g.group) in deform and g.weight > 0:
+                fig.vertex_groups[names[g.group]].add([i], g.weight, "REPLACE")
+    print(f"filled {len(missing)} bare vertices from their neighbours", flush=True)
+
+only(fig)
+bpy.ops.object.vertex_group_limit_total(group_select_mode="ALL", limit=4)
+bpy.ops.object.vertex_group_normalize_all(group_select_mode="ALL", lock_active=False)
+# bound to the armature (the weights are made: no more heat), for the exporter's skin
+bpy.ops.object.select_all(action="DESELECT")
+fig.select_set(True)
+arm.select_set(True)
+layer.objects.active = arm
+bpy.ops.object.parent_set(type="ARMATURE")
+
+bpy.ops.object.select_all(action="DESELECT")
+fig.select_set(True)
+arm.select_set(True)
+bpy.ops.export_scene.gltf(
+    filepath=out,
+    export_format="GLB",
+    use_selection=True,
+    export_yup=True,
+    export_skins=True,
+    export_animations=False,
+    export_influence_nb=4,
+    export_all_influences=False,
+    export_def_bones=True,
+    export_image_format="WEBP",
+    export_image_quality=92,
+)
+# what skin.mjs reports: what the weights were made on, and how much was left bare
+with open(out + ".json", "w", encoding="utf-8") as f:
+    json.dump({"vertices": len(fig.data.vertices), "on": how, "bare": len(missing) / max(1, len(fig.data.vertices))}, f)

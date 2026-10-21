@@ -1,0 +1,18 @@
+/* The match's face (HogwartsWorld.jsx, play/snitch.js): the line under the
+   title (the score, or how far the Snitch is) and the commentator's bubble,
+   on the world's parchment (hogwarts.css's --hud-* skin). */
+
+.hogwarts-objective {
+  margin: 0.4rem 0 0;
+  padding: 0.4rem 0.8rem;
+  border: var(--hud-border);
+  border-radius: var(--hud-radius);
+  background: var(--hud-glass);
+  color: var(--hud-ink);
+  box-shadow: var(--hud-shadow);
+  font: 600 0.85rem/1.3 var(--hud-face);
+}
+/* his name in ink, not the accent's faint gold */
+.hogwarts-bubble {
+  --hud-bubble-name: var(--hud-muted);
+}
