@@ -12,8 +12,9 @@
 // shows its loading screen while `create` is awaited), each step handing
 // the browser back its turn, so the page never freezes.
 //
-//   createGrounds(rt, { scene, camera, tier, house, hour, week, day, rate, onBuild }) → Promise<{
+//   createGrounds(rt, { scene, camera, tier, house, hour, week, day, rate, onBuild, skip }) → Promise<{
 //     step(dt, { at: [x, y, z], act, awake }) → { prompt, enter, toast }   (a door’s prompt, a room to go into, a line to show)
+//     beforeDraw(renderer)   called by the module’s draw before its chain renders (the lake’s mirror)
 //     groundAt(x, z, y) → the height a figure stands at there (the ground, or a deck or a stair near y)
 //     colliders() → what can’t be walked through (plan.js’s footprints, the shut gates)
 //     places, hour, light, weather, clock,
@@ -24,6 +25,7 @@
 import * as THREE from 'three';
 import { uniform } from 'three/tsl';
 import { loadKit } from '../../../lib/three/kitNodes';
+import { loadGltf } from '../../../lib/three/gltf';
 import { createWind } from '../../../lib/three/windNodes';
 import { createGrass } from '../../../lib/three/grassNodes';
 import { onColor } from '../../../lib/three/hookNodes';
@@ -51,6 +53,28 @@ const LIGHT_EVERY = 0.1; // s between the light’s updates (a world minute is a
 const BLADES = { mid: { side: 160, size: 38 }, high: { side: 220, size: 44 }, ultra: { side: 240, size: 46 } };
 const LUMA = vec3(0.2126, 0.7152, 0.0722);
 
+// The kit’s models with every packed vertex attribute widened to floats:
+// the MegaKit’s files are meshopt-quantized (positions as 16-bit triples,
+// the wind’s weight as a byte), which WebGL reads and WebGPU has no vertex
+// format for, so on WebGPU no tree drew. Widened once, in the page’s cached
+// model (a few hundred kilobytes more on the graphics chip).
+function widened(root) {
+  root?.traverse?.((o) => {
+    const g = o.geometry;
+    if (!g || g.userData.widened) return;
+    for (const [name, a] of Object.entries(g.attributes)) {
+      if (!a.isInterleavedBufferAttribute && a.array instanceof Float32Array) continue;
+      const out = new Float32Array(a.count * a.itemSize);
+      const get = [a.getX, a.getY, a.getZ, a.getW];
+      for (let i = 0; i < a.count; i++) for (let k = 0; k < a.itemSize; k++) out[i * a.itemSize + k] = get[k].call(a, i);
+      g.setAttribute(name, new THREE.BufferAttribute(out, a.itemSize));
+    }
+    g.userData.widened = true;
+  });
+  return root;
+}
+const loadWide = (url) => loadGltf(url).then((got) => (got ? (widened(got.scene), got) : got));
+
 // a turn back to the browser between the build’s steps
 const breathe = () => new Promise((r) => setTimeout(r, 0));
 async function runSliced(job, ms = 30) {
@@ -65,8 +89,13 @@ async function runSliced(job, ms = 30) {
   }
 }
 
-export async function createGrounds(rt, { scene, camera, tier = 'high', house = null, hour = ARRIVE, week = 1, day = 0, rate = 1, onBuild = () => {} } = {}) {
-  const T = tierOf(tier);
+export async function createGrounds(rt, { scene, camera, tier = 'high', house = null, hour = ARRIVE, week = 1, day = 0, rate = 1, onBuild = () => {}, skip = [] } = {}) {
+  // (`skip`: parts left out, for the checks that measure what each costs: 'reflection', 'blades', 'shadows', or a pass of the chain by its kind)
+  const off = new Set(skip);
+  const T = { ...tierOf(tier) };
+  if (off.has('reflection')) T.reflection = false;
+  if (off.has('blades')) T.blades = false;
+  if (off.has('shadows')) T.shadows = 0;
   const renderer = rt?.gfx?.renderer ?? null;
   const t0 = performance.now();
   const timings = {};
@@ -101,7 +130,7 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
   const kitFor = (tint, pack = null) => {
     const kit = pack ?? 'naturemega';
     const key = `${kit}|${tint ? JSON.stringify(tint) : ''}`;
-    if (!kits.has(key)) kits.set(key, loadKit(kit, { house, wind: { time: windTime }, tint }));
+    if (!kits.has(key)) kits.set(key, loadKit(kit, { house, wind: { time: windTime }, tint, ...(rt?.gfx?.backend === 'webgpu' ? { load: loadWide } : {}) }));
     return kits.get(key);
   };
   const scatter = createScatter({ kitFor, tier });
@@ -134,13 +163,16 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
   sun.name = 'hogwarts:sun';
   const hemi = new THREE.HemisphereLight(0xdfe8ff, 0x3d4a2c, 0.6);
   scene.add(sky.mesh, sun, sun.target, hemi);
+  // (the lights on the mirror’s layer too: what it draws is lit)
+  sun.layers.enable(REFLECTED);
+  hemi.layers.enable(REFLECTED);
   if (!scene.fog) scene.fog = new THREE.FogExp2(0x9aa4b0, 0.0015);
   const daylight = createDaylight({ scene, renderer, house, sky, sun, hemi });
   const lake = createLake({ camera, sky, groundMap: maps.groundMap, tier, reflection: T.reflection });
   scene.add(lake.mesh, lake.squid);
   if (lake.target) scene.add(lake.target);
   const uNight = uniform(0);
-  const passes = chainFor(tier, rt?.gfx?.backend, { scene, camera, grade: (tex) => gradeNode(tex, uNight) });
+  const passes = chainFor(tier, rt?.gfx?.backend, { scene, camera, grade: (tex) => gradeNode(tex, uNight) }).filter((p) => !off.has(p.kind));
   const has = (kind) => passes.some((p) => p.kind === kind);
   const weather = createWeather(renderer, { tier, outputs: [has('ao') && 'normal', has('traa') && 'velocity'].filter(Boolean), groundMap: maps.groundMap });
   scene.add(weather.group);
@@ -257,6 +289,10 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
       return floorAt(castle.floors, x, z, y) ?? g;
     },
     colliders: () => [...castle.colliders, ...doors.colliders()],
+    // (before the frame’s chain draws: the lake’s mirror, on high)
+    beforeDraw(renderer) {
+      lake.reflect(renderer ?? rt?.gfx?.renderer, scene, camera);
+    },
     step(dt, { at = null, act = false, awake = false } = {}) {
       const was = clock.t;
       clock = stepClock(clock, dt);

@@ -33,6 +33,7 @@
 import { CASTLE_FLOOR, HALF, placeById } from '../rules/places';
 
 export const LAKE = 0;
+export { HALF }; // (the ground’s half-width, rules/places.js’s: the land is laid out over it)
 export const SKIRT = 1300; // m past the middle the land runs, under the far hills (ground.js draws to here)
 
 const at = (id) => placeById(id).at;

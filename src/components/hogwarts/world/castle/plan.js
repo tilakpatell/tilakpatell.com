@@ -26,7 +26,6 @@ import { CASTLE_FLOOR, placeById } from '../../rules/places';
 
 const F = CASTLE_FLOOR;
 const E = Math.PI / 2;
-const W = -Math.PI / 2;
 const S = 0;
 
 // the bridges’ ends: the viaduct from its gate on the crag’s north-east

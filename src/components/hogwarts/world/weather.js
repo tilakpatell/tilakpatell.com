@@ -125,6 +125,7 @@ export function createWeather(renderer, { tier = 'high', outputs = [], groundMap
       g.dispose();
     }
     mistGeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    mistGeo.setAttribute('normal', new THREE.Float32BufferAttribute(Array.from({ length: pos.length }, (_, i) => (i % 3 === 1 ? 1 : 0)), 3));
   }
   const mist = new THREE.Mesh(mistGeo, mistMat);
   mist.name = 'hogwarts:mist';

@@ -15,7 +15,8 @@
 // of ripples where it went (squidAt: pure, by the clock).
 //
 //   REFLECTED: the layer the reflection draws
-//   createLake({ camera, sky, groundMap, tier, reflection }) → { mesh, target, squid, set(light, { wind, rain }), update(dt), dispose }
+//   createLake({ camera, sky, groundMap, tier, reflection }) → { mesh, target, squid, set(light, { wind, rain }),
+//     reflect(renderer, scene, camera) (the mirror drawn: before the frame’s chain), update(dt), dispose }
 //   squidAt(t) → { up: 0…1, spot: [x, z], turn, cycle } | null (t seconds of the world)
 //   SQUID_SPOTS, SQUID_EVERY
 
@@ -75,6 +76,9 @@ export function createLake({ camera = null, sky = null, groundMap = null, tier =
   };
   const { noise } = noiseWith(u.uSeed, { octaves: 2 });
   const mirror = reflection ? reflector({ resolutionScale: 0.5, generateMipmaps: false, depth: false, bounces: false }) : null;
+  // (drawn by reflect(), before the frame’s chain: drawn from inside the
+  // chain’s scene pass, its picture came out black on every backend tried)
+  if (mirror) mirror.reflector.updateBeforeType = 'none';
 
   const material = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
   const colour = Fn(() => {
@@ -101,7 +105,9 @@ export function createLake({ camera = null, sky = null, groundMap = null, tier =
     let above = skyCol;
     if (mirror) {
       // (the mirror’s picture, shifted by the ripple: the castle’s lights break into streaks)
-      const m = mirror.sample(mirror.uvNode.add(vec2(sx, sz).mul(rough).mul(0.06)));
+      // (the node itself, its own coordinates moved: a sample() of it is a copy the reflector never updates)
+      mirror.uvNode = mirror.uvNode.add(vec2(sx, sz).mul(rough).mul(0.06));
+      const m = mirror;
       above = mix(skyCol, m.rgb, m.a.max(0).min(1));
     }
     // how deep it stands, from the ground map (none known past the ground: deep)
@@ -190,6 +196,11 @@ export function createLake({ camera = null, sky = null, groundMap = null, tier =
       u.uGlint.value = (1 - (light.cloud ?? 0) * 0.85) * (el > 0 ? Math.min(1, up * 4) : 0.6);
       u.uLight.value = Math.min(1.2, 0.3 + (light.ambient ?? 0.3) * 1.1 + up * 0.6);
       u.uRough.value = 0.22 + wind * 0.5 + rain * 0.3;
+    },
+    // the mirror’s picture for this frame, drawn before the frame’s chain (the module’s draw calls it)
+    reflect(renderer, scene, cam = camera) {
+      if (!mirror || !renderer || !cam || !mesh.visible) return;
+      mirror.reflector.updateBefore({ renderer, scene, camera: cam, material });
     },
     update(dt) {
       t += dt;
