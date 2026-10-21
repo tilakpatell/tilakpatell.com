@@ -26,6 +26,7 @@ export const GUIDES = {
   '/battlefront': { title: 'Battlefront' },
   '/caribbean': { title: 'The Caribbean', nudge: true },
   '/invincible': { title: 'Invincible', nudge: true },
+  '/hogwarts': { title: 'Hogwarts', nudge: true },
   '/middle-earth': { title: 'Middle-earth' },
   '/middle-earth/place': { title: 'A stop on the road', nudge: true },
   '/middle-earth/road': { title: 'The Road', nudge: true },

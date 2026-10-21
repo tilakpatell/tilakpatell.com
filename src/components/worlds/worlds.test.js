@@ -30,6 +30,7 @@ describe('the worlds', () => {
     expect(wayOut('/invincible', 'universe')).toEqual({ label: 'Universe map', to: '/universe/invincible' });
     expect(wayOut('/invincible', null)).toEqual({ label: 'Universe map', to: '/universe/invincible' });
     expect(wayOut('/invincible', 'home')).toEqual({ label: 'Classic site', to: '/home' });
+    expect(wayOut('/hogwarts', 'universe')).toEqual({ label: 'Universe map', to: '/universe/potter' });
   });
 
   // (the owner's word, 2026-10-13: the Star Wars worlds need a real GPU, their assets are so heavy)

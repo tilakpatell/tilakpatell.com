@@ -29,8 +29,6 @@
   --hud-radius: 6px;
   --hud-title-face: 'Cinzel', Georgia, serif;
   --hud-shadow: 0 6px 22px rgb(0 0 0 / 0.35);
-  --hud-key-face: #f8efdc;
-  --hud-key-border: 1px solid rgb(42 29 18 / 0.45);
 }
 .hogwarts-brand { display: grid; gap: 0.1rem; margin: 0; padding: 0.45rem 0.85rem; border: var(--hud-border); border-radius: var(--hud-radius); background: var(--hud-glass); color: var(--hud-ink); box-shadow: var(--hud-shadow); }
 .hogwarts-brand-eyebrow { font: 600 0.72rem/1.15 var(--hud-title-face); letter-spacing: 0.12em; text-transform: uppercase; color: var(--hud-muted); }
