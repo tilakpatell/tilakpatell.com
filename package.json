@@ -19,7 +19,6 @@
     "deploy": "gh-pages -d dist",
     "prebuild": "node scripts/github-snapshot.mjs",
     "photos": "node scripts/photos.mjs",
-    "paint": "node scripts/paint.mjs",
     "globe": "node scripts/build-globe.mjs",
     "manifest": "node scripts/build-manifest.mjs",
     "credits": "node scripts/credits.mjs",

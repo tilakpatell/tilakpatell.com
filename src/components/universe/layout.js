@@ -19,7 +19,7 @@
 
 import { MOONS, UNIVERSES, byId } from './universes';
 import { HOME_SPREAD, SPREAD } from './scale';
-import { sectorAt, sectorCentre, sectorId } from '../expanse/gen/grid';
+import { parseSectorKey, sectorAt, sectorCentre, sectorKey } from '../../lib/space/address';
 
 const GOLDEN = Math.PI * (3 - Math.sqrt(5)); // ≈ 137.5°
 // (the first two by scale.js's SPREAD; the height stays as it was at the
@@ -54,25 +54,29 @@ export const SECTORS = {
 };
 const SECTOR_SPLIT = (-SECTORS.main.edge + SECTORS.rickmorty.origin[2] + SECTORS.rickmorty.edge) / 2;
 // Past both edges is the Expanse (expanse/gen): a grid of generated sectors,
-// each 'E:sx,sz' (grid.js). Inside an edge it's that edge's sector, as it
+// each 'E:sx,sz' on the middle layer, 'E:sx,sz,sy' above or below it
+// (lib/space/address.js). Inside an edge it's that edge's sector, as it
 // always was; the Rick and Morty sector is its own pocket, walled from the
-// Expanse round it (ship.js), so only what's inside its edge is its own.
+// Expanse round it (ship.js), so only what's inside its edge (a ball) is its own.
 const RM = SECTORS.rickmorty;
 export const sectorOf = (x, y, z) => {
-  if (z < SECTOR_SPLIT && Math.hypot(x - RM.origin[0], z - RM.origin[2]) <= RM.edge + 1) return 'rickmorty';
-  if (Math.hypot(x, z) <= SECTORS.main.edge + 1) return 'main';
-  return sectorId(...sectorAt(x, z));
+  if (z < SECTOR_SPLIT && Math.hypot(x - RM.origin[0], y - RM.origin[1], z - RM.origin[2]) <= RM.edge + 1) return 'rickmorty';
+  const at = sectorAt(x, y, z);
+  if (at[0] === 0 && at[1] === 0 && at[2] === 0 && Math.hypot(x, z) <= SECTORS.main.edge + 1) return 'main';
+  return sectorKey(...at);
 };
 export const inExpanse = (id) => typeof id === 'string' && id.startsWith('E:');
 // the map's own sector for a point: the Rick and Morty pocket, or the main
 // map's everywhere else (the Expanse is charted, sided and crewed as the
 // main map is: what goes by sector inside the edges reads this)
 export const mapSectorOf = (x, y, z) => (sectorOf(x, y, z) === 'rickmorty' ? 'rickmorty' : 'main');
-// a sector by id: one of SECTORS, or an Expanse sector (no edge: it goes on)
+// a sector by id: one of SECTORS, or an Expanse sector (no edge: it goes on);
+// null for anything else, an 'E:' key nothing parses among them (ids come
+// in off the network too, so junk is no sector rather than the origin's)
 export const sectorById = (id) => SECTORS[id] ?? (inExpanse(id) ? expanseSector(id) : null);
 function expanseSector(id) {
-  const [sx, sz] = id.slice(2).split(',').map(Number);
-  return { id, origin: sectorCentre(sx, sz), edge: Infinity, name: id, expanse: true };
+  const at = parseSectorKey(id);
+  return at && { id, origin: sectorCentre(...at), edge: Infinity, name: id, expanse: true };
 }
 // a point given in a sector's own frame, in the map's
 export const inSector = (sector, [x, y, z]) => {
@@ -81,7 +85,9 @@ export const inSector = (sector, [x, y, z]) => {
 };
 // how far (x, z) is out from its sector's middle, level, and that sector
 export function sectorOut(x, z) {
-  const sec = sectorById(sectorOf(x, 0, z));
+  // (sectorOf's keys are all known; only a position that isn't a number
+  // keys none, and that reads as the main map's rather than throwing)
+  const sec = sectorById(sectorOf(x, 0, z)) ?? SECTORS.main;
   return { sec, out: Math.hypot(x - sec.origin[0], z - sec.origin[2]) };
 }
 

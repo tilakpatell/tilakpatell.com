@@ -9,9 +9,9 @@
 
 import { regionAt } from '../regions';
 import { SECTORS, inExpanse, mapSectorOf } from '../layout';
-import { makeSector } from '../../expanse/gen/sector';
+import { fullSector } from '../../expanse/gen/space';
 import { UNIVERSE as SHARED } from '../../expanse/gen/seed';
-import { parseSector } from '../../expanse/gen/grid';
+import { parseSectorKey } from '../../../lib/space/address';
 import { UNIVERSE, placeName } from './where';
 
 // (mid-sentence, a leading “The” goes small: “the home system”)
@@ -22,7 +22,7 @@ const small = (name) => name.replace(/^The /, 'the ');
 export function rosterWhere(where, pose) {
   if (where !== UNIVERSE || !pose) return placeName(where);
   const { x, y, z } = pose;
-  if (inExpanse(pose.sec)) return `Universe · ${pose.sec}${nearest(pose.sec, x, z)}`;
+  if (inExpanse(pose.sec)) return `Universe · ${pose.sec}${nearest(pose.sec, x, y, z)}`;
   // (the Rick and Morty sector is through its portal: none of the regions reach it;
   // a pose without a sector is the authored map's, wherever it says)
   const sector = mapSectorOf(x, y, z);
@@ -30,20 +30,22 @@ export function rosterWhere(where, pose) {
   return `Universe · ${small(area)}`;
 }
 
-// ' · <name>' of the system in the sector nearest (x, z), within NEAR of it
+// ' · <name>' of the system in the sector nearest (x, y, z), within NEAR of it
 const NEAR = 12000;
 const SEEN = new Map(); // sector id → its systems (the last few)
-function nearest(id, x, z) {
+function nearest(id, x, y, z) {
   let systems = SEEN.get(id);
   if (!systems) {
-    systems = makeSector(SHARED, ...parseSector(id)).systems;
+    const at = parseSectorKey(id);
+    if (!at) return ''; // (a key inExpanse took that doesn't parse: no sector, no system)
+    systems = fullSector(SHARED, ...at, { things: false }).systems;
     if (SEEN.size > 16) SEEN.clear();
     SEEN.set(id, systems);
   }
   let best = null;
   let d = NEAR;
   for (const s of systems) {
-    const k = Math.hypot(s.at[0] - x, s.at[2] - z);
+    const k = Math.hypot(s.at[0] - x, s.at[1] - y, s.at[2] - z);
     if (k < d) [best, d] = [s, k];
   }
   return best ? ` · ${best.name}` : '';
