@@ -67,15 +67,22 @@ describe('everyone’s day', () => {
   it('sends Filch on his rounds after curfew with Mrs Norris a step ahead', () => {
     const h = MON + CURFEW + 1.5;
     expect(whereIs('filch', h, 4).round).toBe('filch');
-    for (let t = h; t < h + 2; t += 0.25) {
+    // (nine metres on along his way: less as the crow flies where the way turns a corner)
+    let sum = 0;
+    let ahead = 0;
+    const looks = 24;
+    for (let i = 0; i < looks; i++) {
+      const t = h + i / 12;
       const f = at('filch', t);
       const n = at('norris', t);
       const d = Math.hypot(f.x - n.x, f.z - n.z);
-      expect(d, `at ${t}`).toBeGreaterThan(3);
-      expect(d, `at ${t}`).toBeLessThan(14);
-      // (ahead: the way he is going)
-      expect((n.x - f.x) * f.dx + (n.z - f.z) * f.dz).toBeGreaterThan(-2);
+      expect(d, `at ${t}`).toBeGreaterThan(0.3);
+      expect(d, `at ${t}`).toBeLessThan(9.5);
+      sum += d;
+      if ((n.x - f.x) * f.dx + (n.z - f.z) * f.dz > 0) ahead++;
     }
+    expect(sum / looks).toBeGreaterThan(5);
+    expect(ahead / looks).toBeGreaterThan(0.75);
     // (by day he keeps his office and the halls)
     expect(whereIs('filch', MON + 7, 4).place).toBe('filch-office');
   });

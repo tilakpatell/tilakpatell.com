@@ -42,7 +42,7 @@ const WANDER = { slot: 0.2, pace: 0.6, share: 0.55, r: 2.4 };
 
 // m/s going somewhere (a world hour is a real minute, so a walk across the castle takes one), and walking a round
 const PACE = { student: 2.4, prefect: 2.4, staff: 2.0, hagrid: 2.9, filch: 1.4, cat: 1.7, ghost: 1.6, peeves: 4.5 };
-const ROUND_PACE = { filch: 1.3, prefects: 1.5, snape: 1.6, baron: 1.2 };
+const ROUND_PACE = { filch: 1.6, prefects: 1.5, snape: 1.6, baron: 1.2 };
 
 export const dayKind = (day) => ((((Math.floor(day) % 3) + 3) % 3) === 2 ? 'weekend' : 'weekday');
 const NAMES = ['Monday', 'Tuesday', 'Saturday'];
@@ -56,7 +56,8 @@ export const HOGSMEADE_FROM = 3;
 
 // Filch’s rounds after curfew, the prefects’ on the staircase, Snape’s in the dungeons
 export const ROUNDS = {
-  filch: ['filch-office', 'entrance', 'staircase', 'corridor-west', 'charms', 'corridor-west', 'staircase', 'staffroom', 'corridor-north', 'library', 'restricted', 'library', 'corridor-north', 'defence', 'corridor-north', 'requirement', 'corridor-north', 'staffroom', 'staircase', 'entrance', 'below', 'dungeons', 'potions', 'dungeons', 'below', 'entrance'],
+  // (the library and the seventh floor twice a night: the dungeons are Snape’s, the staircase the prefects’)
+  filch: ['filch-office', 'entrance', 'staircase', 'staffroom', 'corridor-north', 'library', 'restricted', 'library', 'corridor-north', 'defence', 'corridor-north', 'requirement', 'corridor-north', 'staffroom', 'staircase', 'entrance'],
   prefects: ['staircase', 'fat-lady', 'staircase', 'witch', 'staircase', 'courtyard-door'],
   snape: ['potions', 'dungeons', 'below', 'entrance', 'below', 'dungeons'],
   baron: ['slytherin', 'potions', 'dungeons', 'below', 'kitchens', 'below', 'dungeons', 'potions'],
