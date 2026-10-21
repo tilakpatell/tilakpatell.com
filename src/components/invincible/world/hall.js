@@ -25,15 +25,16 @@ export function buildHall() {
   group.visible = false;
   const b = new PartBuilder();
   const mats = {
-    floor: new THREE.MeshStandardMaterial({ color: 0xcfc6b4, roughness: 0.55 }),
+    // (a room, not a street: darker stone than the outside's, and little of the sky in it)
+    floor: new THREE.MeshStandardMaterial({ color: 0x6e675c, roughness: 0.6, envMapIntensity: 0.25 }),
     ring: new THREE.MeshStandardMaterial({ color: 0x1d2b4a, roughness: 0.6 }),
-    stone: new THREE.MeshStandardMaterial({ color: 0xd9d2c3, roughness: 0.75 }),
-    stoneDark: new THREE.MeshStandardMaterial({ color: 0x8f877a, roughness: 0.85 }),
-    gold: new THREE.MeshStandardMaterial({ color: 0xe6b84a, roughness: 0.28, metalness: 1 }),
+    stone: new THREE.MeshStandardMaterial({ color: 0x9a9385, roughness: 0.75, envMapIntensity: 0.25 }),
+    stoneDark: new THREE.MeshStandardMaterial({ color: 0x4e4942, roughness: 0.85, envMapIntensity: 0.25 }),
+    gold: new THREE.MeshStandardMaterial({ color: 0xe6b84a, roughness: 0.28, metalness: 1, envMapIntensity: 0.5 }),
     // (seen from within: their backs face the room)
-    wall: new THREE.MeshStandardMaterial({ color: 0xbfb6a3, roughness: 0.8, side: THREE.BackSide }),
-    dome: new THREE.MeshStandardMaterial({ color: 0x35506b, roughness: 0.5, metalness: 0.2, side: THREE.BackSide }),
-    glass: new THREE.MeshStandardMaterial({ color: 0x6f94b4, roughness: 0.1, metalness: 0.6, side: THREE.BackSide, transparent: true, opacity: 0.6 }),
+    wall: new THREE.MeshStandardMaterial({ color: 0x5f5a52, roughness: 0.8, side: THREE.BackSide, envMapIntensity: 0.2 }),
+    dome: new THREE.MeshStandardMaterial({ color: 0x1c2a3c, roughness: 0.6, metalness: 0.1, side: THREE.BackSide, envMapIntensity: 0.2 }),
+    glass: new THREE.MeshStandardMaterial({ color: 0x3a5670, roughness: 0.15, metalness: 0.5, side: THREE.BackSide, transparent: true, opacity: 0.6, envMapIntensity: 0.3 }),
     lamp: new THREE.MeshBasicMaterial({ color: hot(0xfff1c8, 1.8), toneMapped: false }),
     sky: new THREE.MeshBasicMaterial({ color: hot(0xdff1ff, 1.6), toneMapped: false, side: THREE.BackSide }),
   };

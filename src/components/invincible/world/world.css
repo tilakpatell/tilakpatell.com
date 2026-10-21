@@ -120,9 +120,9 @@
 .iw-flash[data-kind='in'] { background: radial-gradient(circle at 50% 55%, #fff6d8 0%, #ff9a3c 40%, rgba(120, 20, 0, 0.85) 100%); }
 @keyframes iw-flash { from { opacity: 1; } to { opacity: 0; } }
 /* in space there's no city to map */
-.iw-stage[data-zone='space'] .iw-map { display: none; }
+.iw-stage[data-zone='space'] .iw-map, .iw-stage[data-zone='hall'] .iw-map { display: none; }
 /* (the compass keeps its place in the stack, so the objective under it stays put) */
-.iw-stage[data-zone='space'] .iw-compass { visibility: hidden; }
+.iw-stage[data-zone='space'] .iw-compass, .iw-stage[data-zone='hall'] .iw-compass { visibility: hidden; }
 .iw-stage[data-zone='space'] { background: #02030a; }
 
 /* who's talking: a speech balloon over their head */

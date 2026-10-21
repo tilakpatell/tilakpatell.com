@@ -67,7 +67,7 @@ const SHOTS = {
   brawl: { drive: [['go', [50, 26, 40], Math.PI, 'air'], ['spawn', 'mauler', 1, [50, 0, 0]], ['wait', 300], ['held', 0], ['wait', 400]], pitch: -0.35 },
   // the Guardians (./guardians.js): the hall's inside from its door (['hall', on] goes in or out through the hook); the two sent to four Maulers on the plaza
   hall: { drive: [['hall', true], ['wait', 1500]], pitch: 0.1 },
-  cavalry: { drive: [['go', [30, 14, 70], -2.4, 'air'], ['spawn', 'mauler', 4, [40, 0, 40]], ['wait', 4000]], pitch: -0.3 },
+  cavalry: { drive: [['go', [22, 9, 46], Math.PI, 'air'], ['spawn', 'mauler', 4, [22, 0, 24]], ['wait', 4500]], pitch: -0.22 },
   curb: { p: [44, 3, 120], mode: 'air', yaw: Math.PI, pitch: -0.12 },
   streetnight: { p: [40, 18, 200], mode: 'air', yaw: Math.PI, pitch: -0.22, time: 'night' },
   downtown: { p: [-300, 140, 600], mode: 'air', yaw: Math.PI * 0.9, pitch: -0.12 },
