@@ -116,7 +116,13 @@ export function build({ road, heightAt, rt, tier = 'high', backdrop = null }) {
   const up = new THREE.Vector3(0, 1, 0);
   const dir = new THREE.Vector3();
   const lashAt = new THREE.Vector3();
-  const inCracks = () => live(seen.since.cracks) && seen.local >= MARKS.cracks.at - 0.5 && seen.local < MARKS.eruption.at;
+  // (in the Sammath Naur from the cut till the eruption, and on a jump into the middle of it too: its
+  // beat long done, but the camera's still in the chamber while the walker is within its reach)
+  const inCracks = () => {
+    const t = seen.since.cracks;
+    if (t == null || seen.local < MARKS.cracks.at - 0.5 || seen.local >= MARKS.eruption.at) return false;
+    return live(t) || (t === Infinity && seen.local <= MARKS.cracks.at + (MARKS.cracks.reach ?? 0));
+  };
 
   return {
     group,
