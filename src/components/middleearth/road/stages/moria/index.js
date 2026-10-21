@@ -65,6 +65,10 @@ export function build({ road, heightAt, rt, tier = 'high', sky = null }) {
   const halo = new THREE.Sprite(glowMat);
   halo.scale.setScalar(1.2);
   group.add(halo);
+  // the staff's light off the walls round the ones behind him, so they are dim shapes and
+  // not nothing (he goes on ahead down a stair, and the staff's own light stops short of them)
+  const fill = new THREE.PointLight(0x9aa8c8, 0, 12, 1.5);
+  group.add(fill);
   // the grey daylight down the shaft onto Balin’s tomb
   const shaft = new THREE.PointLight(0xdfe6f0, 0, 14, 1.2);
   shaft.position.set(CHAMBER.at[0], props.room + 5, CHAMBER.at[1]);
@@ -82,6 +86,7 @@ export function build({ road, heightAt, rt, tier = 'high', sky = null }) {
 
   let clock = 0;
   let gandalf = null; // where the line has him this frame (pose)
+  let frodo = null; // and Frodo, the near ones round him
   const seen = { since: {}, local: 0 };
 
   const bridgeT = () => {
@@ -115,7 +120,10 @@ export function build({ road, heightAt, rt, tier = 'high', sky = null }) {
         else staff.position.set(gandalf.x + 0.35, gandalf.y + 2.1, gandalf.z + 0.2);
         halo.position.copy(staff.position);
       }
+      fill.intensity = lit && frodo ? 12 : 0;
+      if (frodo) fill.position.set(frodo.x, frodo.y + 2.6, frodo.z - 0.6);
       gandalf = null;
+      frodo = null;
 
       // the goblins down the pillars on the drums, and running on the floor after
       const d = since.drums;
@@ -155,6 +163,7 @@ export function build({ road, heightAt, rt, tier = 'high', sky = null }) {
     // while it holds, Gandalf on the span facing the Balrog, and over the edge
     pose(id, at) {
       if (id === 'gandalf') gandalf = at;
+      if (id === 'frodo') frodo = at;
       const held = (beat) => {
         const b = MARKS[beat];
         const t = seen.since[beat];

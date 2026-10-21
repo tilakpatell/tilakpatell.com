@@ -41,8 +41,10 @@ const COARSE = 2; // the far grid takes every other sample
 // stage’s own (its `ground.paint`) gives its greens and its dirt as hex over
 // the soil’s, and may lay snow over the land above a height: `snow: [foot,
 // top]`, none under the foot, whole over the top, the line wandering with the
-// noise, trodden grey on the road. `out` takes the linear colour; the return
-// is the grass, 0…1 (none on rock, road or snow).
+// noise, trodden grey on the road. Its paved places (the land's `bare`
+// circles, a town's streets and yards) are its dirt with no grass. `out`
+// takes the linear colour; the return is the grass, 0…1 (none on rock,
+// road, paving or snow).
 const C = (hex) => new THREE.Color(hex).toArray();
 const GRASS = C(0x5c8f3a);
 const DEEP = C(0x3d6e2b);
@@ -53,6 +55,7 @@ const SNOW = C(0xf4f4f2);
 const TRODDEN = C(0xb8bec8);
 const BARE = C(0x5e6068); // (the rock through the snow)
 const linear = (c) => (typeof c === 'number' ? C(c) : c);
+const BARE_EDGE = 3; // m a stage's paved places ease into its grass over
 export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT, rock = ROCK, snow = null } = {}) {
   greens = greens.map(linear);
   dirt = linear(dirt);
@@ -79,6 +82,15 @@ export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT, rock 
     o[2] = a[2] + (b[2] - a[2]) * t;
   };
   const white = [0, 0, 0];
+  const bare = land.bare ?? [];
+  const bareAt = (x, z) => {
+    let k = 0;
+    for (const b of bare) {
+      const f = Math.hypot(x - b.at[0], z - b.at[1]);
+      if (f < b.r + BARE_EDGE) k = Math.max(k, Math.min(1, (b.r + BARE_EDGE - f) / BARE_EDGE));
+    }
+    return k;
+  };
   return (x, z, out) => {
     const h = land.heightAt(x, z);
     const n = noise2(x / 37, z / 37, 3) * 0.5 + noise2(x / 9, z / 9, 5) * 0.25;
@@ -91,6 +103,12 @@ export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT, rock 
     const steep = Math.min(1, Math.max(0, (Math.hypot(sx, sz) / 2 - 0.55 + noise2(x / 7, z / 7, 4) * 0.2) / 0.35));
     if (steep > 0) mix(out, out, rock, steep);
     let grass = 1 - steep;
+    // (a paved place, a town's streets and yards: its dirt, and no grass, its edge eased over BARE_EDGE)
+    const paved = bareAt(x, z);
+    if (paved) {
+      mix(out, out, dirt, paved);
+      grass *= 1 - paved;
+    }
     const d = dAt(x, z);
     const worn = d < 2.8 ? Math.min(1, (2.8 - d) / 1.2) * (0.85 + noise2(x / 3, z / 3, 9) * 0.15) : 0;
     if (worn) {

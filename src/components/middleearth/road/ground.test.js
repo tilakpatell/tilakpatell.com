@@ -14,6 +14,13 @@ const at = (paint, x, z) => {
 };
 
 describe('a stage’s ground paint', () => {
+  it('grows no grass in a paved place, easing back into it at the edge', () => {
+    const paved = { ...land, bare: [{ at: [60, 40], r: 5 }] };
+    expect(at(paintFor(paved), 60, 40).grass).toBe(0);
+    expect(at(paintFor(paved), 66.5, 40).grass).toBeGreaterThan(0);
+    expect(at(paintFor(paved), 66.5, 40).grass).toBeLessThan(1);
+    expect(at(paintFor(paved), 70, 40).grass).toBe(1);
+  });
   it('is the default greens with no paint of its own', () => {
     const { out, grass } = at(paintFor(land), 60, 40);
     expect(out[1]).toBeGreaterThan(out[0]);

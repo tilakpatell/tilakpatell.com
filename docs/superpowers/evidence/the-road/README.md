@@ -479,3 +479,12 @@ The plain before the Mountain was bare dark ground near the road (`look-gorgorot
   - `cirith-ungol-lair-desktop.webp` shows it at 70 m, the Phial ahead, the webs on the walls and the roof.
 - **Carry on** (the resume card) picks the ride up a few metres before a moment it was left inside, so the moment plays again rather than the camera holding on what's over (`carry.js`, its test and the module's).
 
+## A walk through every stage, and what it found (2026-10-21)
+
+Twelve stages were pictured mid-walk afresh (`lab/road/shots.mjs`), and four things fixed from them:
+
+- **Caradhras' snow**: a piece of the far range stood over the white in the blizzard, its foot taken by the fog and its top not. `backdrop.js`'s new `thickness(density)` lets a storm's fog take the ranges and landmarks with it: none in any stage's own air, all in Caradhras' snow (`backdrop.test.js` holds it to every stage's light and both storms). `caradhras-storm-before-desktop.webp`, `caradhras-storm-desktop.webp`.
+- **Bree's streets**: the blade grass stood up through the cobbles, black spikes under the lamps. A stage's ground may now name `bare` places (its paved ones: the paint is its dirt and grows no grass, easing back over 3 m), and Bree's town is three; the fields before the gate keep their grass. `bree-street-before-desktop.webp`, `bree-street-desktop.webp`.
+- **Moria's stair**: going down it Gandalf is 16 m ahead and 11 m under them, and the staff's light stops short of the ones behind; they were nothing. A faint cold light over Frodo, the staff's off the walls, makes them dim shapes. `moria-stair-before-desktop.webp`, `moria-stair-desktop.webp`.
+- **The rivers**: two regular swells seen at a slant flipped the water between the sky and the deep in white stripes (Rivendell, the Ford, the Anduin). The swell is lower (0.05 m, from 0.08), calmed off into the distance from 6 m, and running water gives back at most 0.7 of the sky. `rivendell-river-before-desktop.webp`, `rivendell-river-desktop.webp`.
+

@@ -96,6 +96,8 @@ A session takes the next lane whose state allows it, runs until its budget, merg
 - A new relief layer goes after the ones a stage already has: each layer's seed is its place in the list, so one put in the middle moves every layer after it.
 - `createWater({ murk })` for a bog's water; 0 is the clear water every other stage has.
 - **Carry on** (the resume card) picks the ride up a few metres before a moment it was left inside (a beat that holds or takes the camera: `carry.js`'s `carryFrom`), so the moment plays again rather than the camera holding on what's over. A lost context put back within the minute still lands exactly where it was (`entry.js`'s `resume`), with no card.
+- **A paved place** (a town's streets and yards) is a stage's `ground.bare` circles: the paint is the dirt there and grows no grass, so no blade stands through the cobbles. `ground.clear` is only the scatter's.
+- **A storm takes the horizon**: `backdrop.js`'s `thickness(density)` from the day's fog; a new storm over 0.034 hides the ranges whole, and none of the stages' own air comes near 0.014.
 - **A ribbon on the ground** (Gorgoroth's cracks, `stages/gorgoroth/plain.js`) is wound to face up and lifted a little over the land: the drawn ground reads the land a few centimetres off it, and a face turned down is culled from every camera.
 
 ## The Road’s look, since R3 (for every lane after)
