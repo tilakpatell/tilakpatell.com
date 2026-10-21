@@ -138,6 +138,12 @@ describe('the outskirts of an outdoor place', () => {
     expect(Math.max(...lay(d, world({ edge: { kind: 'fence', h: 3 } })).edge.map((r) => r.h))).toBe(1.4);
   });
 
+  it('draws the edge in the record’s own colour, or the look’s trim when it names none', () => {
+    const d = outdoor();
+    for (const run of lay(d, world({ edge: { kind: 'fence', h: 1.2, color: 0x7a5a3a } })).edge) expect(run.color).toBe(0x7a5a3a);
+    for (const run of lay(d, world({ edge: { kind: 'kerb', h: 0.15 } })).edge) expect(run.color).toBeNull();
+  });
+
   it('sets a rocky or bushy edge as clusters every few metres round the box, corners and all', () => {
     const d = outdoor();
     const L = lay(d, world({ edge: { kind: 'rocks', models: ['quaternius:Rock_Medium_1'] } }));

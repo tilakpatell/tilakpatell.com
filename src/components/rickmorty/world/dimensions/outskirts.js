@@ -4,7 +4,7 @@
 //
 // outskirtsOf(d, world, { tier, fogFar, tris }) → {
 //   reach                     the ground, metres from the middle (past the fog)
-//   edge: [{ kind, x0, z0, x1, z1, h, see }]   runs along the box's four sides
+//   edge: [{ kind, x0, z0, x1, z1, h, see, color }]   runs along the box's four sides (color: the record's, or null)
 //   lots: [{ side, row, style, x, z, turn, w, d, h, y, model?, steps?, stand?, landmark?, piece?, spin? }]
 //                             the ring of buildings, facing in (a model: a set piece),
 //                             the stands and the landmarks the record names, and the
@@ -79,7 +79,7 @@ function edgeOf(d, edge, r) {
     const see = edge.kind in EDGE.see;
     const top = see ? EDGE.see[edge.kind] : EDGE.solid[edge.kind];
     const h = Math.min(edge.h ?? top, top);
-    return { runs: sides.map(([x0, z0, x1, z1]) => ({ kind: edge.kind, x0, z0, x1, z1, h, see })), clumps: [] };
+    return { runs: sides.map(([x0, z0, x1, z1]) => ({ kind: edge.kind, x0, z0, x1, z1, h, see, color: edge.color ?? null })), clumps: [] };
   }
   if (edge.kind === 'rocks' || edge.kind === 'bushes') {
     const models = edge.models ?? [];
