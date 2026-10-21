@@ -14,6 +14,9 @@
 //     step(dt, input, { s, stage, since, present, auto }): the deed on the mark,
 //       played once its beat has reached its moment (`since`: the beats', last frame)
 //     choosing() → whether a word is to be chosen now (the digit keys pick it, not a stage)
+//     stance() → the clip the company takes this frame for a deed with a `stance` (keep
+//       still: 'crouch'), while the visitor holds it and through its beat's hold once
+//       done, or null
 //     talk(stage, present): the next of the company's lines, said
 //     press(name, down) (act, left, right: the touch buttons), pick(i) }
 //
@@ -35,6 +38,8 @@ export function createDoing({ stages, beatsOf, lines = {}, tell, say, clip = () 
   const touch = { act: false, acted: false, left: false, right: false, pick: null };
   const said = new Set();
   let told = null; // the deed the page has, and how far
+  let stanceNow = null; // the company's stance this frame
+  let stanced = null; // the deed done whose stance they keep through its beat
   let talkTold;
   const done = (m) => Boolean(states.get(m.key)?.done);
   const on = (s) => marks.find((m) => Math.abs(m.s - s) < ON && !done(m)) ?? null;
@@ -91,7 +96,13 @@ export function createDoing({ stages, beatsOf, lines = {}, tell, say, clip = () 
         states.set(m.key, st);
         if (st.done) after(m.beat.deed);
         show(st.done ? null : m, st);
+        if (st.done && m.beat.deed.stance) stanced = m;
       } else show(null);
+      // (keep still: the company down with the visitor while it's held, and till the danger's past)
+      const holding = ready && !states.get(m.key)?.done && (states.get(m.key)?.progress ?? 0) > 0;
+      const kept = stanced && since[stanced.beat.id] != null && since[stanced.beat.id] < (stanced.beat.hold ?? 0);
+      if (!kept) stanced = null;
+      stanceNow = holding ? (m.beat.deed.stance ?? null) : kept ? stanced.beat.deed.stance : null;
       touch.acted = false;
       touch.left = false;
       touch.right = false;
@@ -108,6 +119,7 @@ export function createDoing({ stages, beatsOf, lines = {}, tell, say, clip = () 
       const m = told ? marks.find((x) => x.key === told.key) : null;
       return m?.beat.deed.verb === 'choose';
     },
+    stance: () => stanceNow,
     talk(stage, present) {
       const next = nextLine(stage, present, said);
       if (!next) return null;

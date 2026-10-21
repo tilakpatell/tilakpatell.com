@@ -18,7 +18,7 @@ export const BEATS = [
   // the orc column on the road, the whip; the two pressed among it
   { id: 'column', kind: 'column', at: 30, hold: 8, rig: 'side', reach: 14 },
   // the Eye’s beam across the plain; the two under their cloaks
-  { id: 'beam', kind: 'beam', at: 52, hold: 10, rig: 'wide', cut: 0, reach: 14, params: { at: [-5, 1.4, 46], lookAt: [6, 3, 58], above: true }, deed: { verb: 'hold', label: 'Keep still under the cloaks', seconds: 4, at: 2.5, lines: ['gorgoroth-beam'] } },
+  { id: 'beam', kind: 'beam', at: 52, hold: 10, rig: 'wide', cut: 0, reach: 14, params: { at: [-5, 1.4, 46], lookAt: [6, 3, 58], above: true }, deed: { verb: 'hold', label: 'Keep still under the cloaks', stance: 'crouch', seconds: 4, at: 2.5, lines: ['gorgoroth-beam'] } },
   // the wind from the west: the sky brightening behind
   { id: 'wind', kind: 'wind', at: 74, hold: 0, rig: 'follow', reach: 14 },
   // Frodo can go no further: Sam carries him up the slope

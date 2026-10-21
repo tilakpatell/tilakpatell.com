@@ -13,7 +13,7 @@ export const BEATS = [
   // looks back from among the nine walking ahead of Frodo)
   { id: 'hollin', kind: 'hollin', at: 12, hold: 0, rig: 'side', reach: 16 },
   // the flock over the ridge and back; the walkers under the rocks
-  { id: 'crebain', kind: 'crebain', at: 32, hold: 8, rig: 'wide', reach: 12, params: { at: [-9, 2.2, 22], lookAt: [6, 9, 52], above: true }, deed: { verb: 'hold', label: 'Hide under the rocks', seconds: 3, at: 1.5, lines: ['caradhras-crebain'] } },
+  { id: 'crebain', kind: 'crebain', at: 32, hold: 8, rig: 'wide', reach: 12, params: { at: [-9, 2.2, 22], lookAt: [6, 9, 52], above: true }, deed: { verb: 'hold', label: 'Hide under the rocks', stance: 'crouch', seconds: 3, at: 1.5, lines: ['caradhras-crebain'] } },
   // the Redhorn in snow, the wind at full, Saruman’s voice on it
   { id: 'snow', kind: 'snow', at: 64, hold: 10, rig: 'wide', reach: 12, params: { at: [7, 4, 50], lookAt: [-1, 1.5, 70], above: true }, lines: ['caradhras-saruman'], deed: { verb: 'rhythm', label: 'Push on through the snow', beats: 12, at: 1 } },
   // the slab slides off the ridge above: a white burst, the frame shaken

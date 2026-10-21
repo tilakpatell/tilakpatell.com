@@ -12,7 +12,7 @@ export const BEATS = [
   { id: 'mushrooms', kind: 'mushrooms', at: 24, hold: 6, rig: 'side', reach: 20, clip: 'secondBreakfast', deed: { verb: 'press', label: 'Catch the mushrooms', at: 1.5, lines: ['shire-mushrooms'] } },
   // under the roots: a hard cut into the hollow, low, looking out and up at
   // the Rider over it, the sniffing, the Ring pulling twice
-  { id: 'roots', kind: 'roots', at: 92, hold: 16, rig: 'seat', cut: 0, reach: 12, params: { at: [2.95, 0.5, 93.4], lookAt: [-0.6, 1.7, 95.8], above: true }, fx: [{ kind: 'vision', at: 6, seconds: 0.12 }, { kind: 'vision', at: 10, seconds: 0.12 }], deed: { verb: 'hold', label: 'Keep still, and keep the Ring off', seconds: 4, at: 6.5 } },
+  { id: 'roots', kind: 'roots', at: 92, hold: 16, rig: 'seat', cut: 0, reach: 12, params: { at: [2.95, 0.5, 93.4], lookAt: [-0.6, 1.7, 95.8], above: true }, fx: [{ kind: 'vision', at: 6, seconds: 0.12 }, { kind: 'vision', at: 10, seconds: 0.12 }], deed: { verb: 'hold', label: 'Keep still, and keep the Ring off', stance: 'crouch', seconds: 4, at: 6.5 } },
   // the run for the ferry as the rain comes on, the lane coming at you
   { id: 'run', kind: 'run', at: 106, hold: 0, rig: 'lead', reach: 22 },
   // on the raft, the Rider at the landing behind them, reining in at the water
