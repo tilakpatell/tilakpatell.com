@@ -3,24 +3,23 @@
 // Marshes kit: the last cliff of the Emyn Muil on the left of the road, its
 // spires round it and Sam’s rope down its face; the marsh’s tussocks, reeds
 // and drowned snags, three still pools with the candles over them and the
-// dead faces under; the ash-grey boulders of Dagorlad; and the Morannon off
+// dead faces under, the meres between with reeds round them and a candle
+// over some (./water.js); the ash-grey boulders of Dagorlad; and the Morannon off
 // to the left at the stage’s end, its gate in its wall between the Towers of
 // the Teeth, with the road up to it for the Easterlings’ column. In the
 // stage’s frame: the road along +z from 0, +x on the walker’s left.
 //
-//   buildProps({ K, heightAt, tier }) → { group, rope, pools, wisps, faces, gate, column, dispose }
+//   buildProps({ K, heightAt, tier }) → { group, rope, pools, meres, wisps, faces, gate, column, dispose }
 //   CLIFF, POOLS, GATE, COLUMN: where they stand, for the beats and the scene
 
 import * as THREE from 'three';
 import { ashRockGeo, blackGate, cliff as buildCliff, columnGeo, deadTreeGeo, face as buildFace, reedsGeo, rope as buildRope, spikeGeo, tussockGeo, wisp as buildWisp } from '../../../towns/marshes/props';
 import { mergeStatics } from '../parts';
+import { MERES, POOLS } from './water';
+
+export { POOLS };
 
 export const CLIFF = { x: 7.5, z: 22, w: 46, h: 22 }; // its face to the road (−x), the smooth middle at z
-export const POOLS = [
-  { at: [-16, 70], r: 14 },
-  { at: [14, 84], r: 12 },
-  { at: [-12, 98], r: 11 },
-]; // (the ground’s hollows: stages/index.js’s islands)
 export const GATE = { at: [118, 176], scale: 0.62 }; // the Morannon, its face to the road (−x)
 export const COLUMN = { from: [26, 92], to: [96, 168], rows: 22, files: 4 }; // the Easterlings’ road to the Gate
 const SCALE = 0.8; // the chapter’s at the Road’s
@@ -86,17 +85,31 @@ export function buildProps({ K, heightAt, tier = 'high' }) {
     (i % 3 === 0 ? reeds : tussocks).push([x, z, s, rand(i + 600) * 6.28]);
     if (i % 9 === 0) snags.push([x * 1.1, z + 3, s * 1.4, rand(i + 700) * 6.28]);
   }
+  // reeds standing round the water's edge, thickest on the side away from the track
+  MERES.concat(POOLS).forEach((p, i) => {
+    const n = Math.round(p.r * (low ? 1 : 2.2));
+    for (let j = 0; j < n; j++) {
+      const a = (j / n) * 6.28 + rand(i * 31 + j) * 0.5;
+      const r = p.r * (0.7 + rand(i * 37 + j) * 0.2);
+      const x = p.at[0] + Math.cos(a) * r;
+      if (Math.abs(x) < 3.5) continue;
+      reeds.push([x, p.at[1] + Math.sin(a) * r, (0.6 + rand(i * 41 + j) * 0.5) * SCALE, rand(i * 43 + j) * 6.28]);
+    }
+  });
   group.add(scatter(tussockGeo(2), mats.reeds, tussocks, heightAt, 0.05));
   group.add(scatter(reedsGeo(3), mats.reeds, reeds, heightAt, 0.05));
   group.add(scatter(deadTreeGeo(4), mats.wood, snags, heightAt, 0.15));
 
-  // the pools: their levels (the scene makes their water), a candle and the faces under each
-  // (each pool’s water just under the lowest of its rim, so its sheet’s square edges are under the ground)
-  const pools = POOLS.map((p) => {
+  // the pools and the meres: their levels (the scene makes their water), a candle and the faces under each pool
+  // (each one's water just under the lowest of its rim, so its sheet’s square edges are under the ground)
+  const levelled = (p) => {
     let rim = Infinity;
     for (let a = 0; a < 6.28; a += 0.4) rim = Math.min(rim, heightAt(p.at[0] + Math.cos(a) * p.r * 0.75, p.at[1] + Math.sin(a) * p.r * 0.75));
     return { ...p, level: Math.max(heightAt(...p.at) + 0.4, rim - 0.25) };
-  });
+  };
+  const pools = POOLS.map(levelled);
+  // (on low the far meres are left dry: their water is a draw each)
+  const meres = (low ? MERES.filter((m) => Math.abs(m.at[0]) < 20) : MERES).map(levelled);
   const wisps = [];
   const faces = [];
   pools.forEach((p, i) => {
@@ -117,6 +130,17 @@ export function buildProps({ K, heightAt, tier = 'high' }) {
       faces.push(f);
     }
   });
+
+  // a candle over every other mere (high), as far out as the eye goes
+  if (!low)
+    meres.forEach((m, i) => {
+      if (i % 2) return;
+      const w = buildWisp(K);
+      w.group.position.set(m.at[0] + m.r * 0.2, m.level + 0.25, m.at[1] - m.r * 0.15);
+      w.group.scale.setScalar(SCALE);
+      group.add(w.group);
+      wisps.push(w);
+    });
 
   // Dagorlad’s ash-grey boulders, up towards the Gate
   const rocks = [];
@@ -152,6 +176,7 @@ export function buildProps({ K, heightAt, tier = 'high' }) {
     rope,
     ropeTop,
     pools,
+    meres,
     wisps,
     faces,
     gate,
