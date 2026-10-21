@@ -13,7 +13,10 @@ describe('C-137: the portal gun', () => {
       expect(portalName(d.id)).toBe(linkTarget(garagePortal, d.id).label.replace(/ to The /, ' to the '));
     }
     // the arcade (not a destination, so the trip keeps the link's own label), and anything the dial doesn't have
-    for (const dial of ['annex', 'squanch', 'nope', null, undefined]) expect(portalName(dial)).toBe('Through the portal to Blips and Chitz');
+    for (const dial of ['annex', 'gazorpazorp', 'nope', null, undefined]) expect(portalName(dial)).toBe('Through the portal to Blips and Chitz');
+    // (four of the sector's planets, and the Citadel, are on the dial now)
+    expect(portalName('squanch')).toBe('Through the portal to Planet Squanch');
+    expect(portalName('citadel')).toBe('Through the portal to the Citadel');
     expect(portalName('fantasy')).toBe('Through the portal to Fantasy World');
     expect(portalName('vat')).toBe('Through the portal to the vat of acid');
     expect(portalName('jerryboree')).toBe('Through the portal to the Jerryboree');

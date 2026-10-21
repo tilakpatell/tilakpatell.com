@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LAWN, LIFT, LINE, WAVES, callLightning, liftInput, newLawn, recallHammer, setMove, skipLift, startLawn, stepLawn, throwHammer } from './rules';
+import { BOSS_WAVE, LAWN, LIFT, LINE, WAVES, callLightning, liftInput, newLawn, recallHammer, setMove, skipLift, startAtBoss, startLawn, stepLawn, throwHammer } from './rules';
 
 const DT = 1 / 120;
 const run = (g, secs, brain) => {
@@ -337,5 +337,41 @@ describe('Hold the Lawn: the waves', () => {
       for (const e of q.enemies) if (e.kind !== 'chariot') worst = Math.max(worst, e.z);
     });
     expect(worst).toBeLessThan(LINE + 0.01);
+  });
+  it('starts again at Cull Obsidian from the checkpoint: five hearts, no lightning', () => {
+    expect(BOSS_WAVE).toBe(WAVES.length - 1);
+    expect(WAVES[BOSS_WAVE].boss).toBe(true);
+    const g = newLawn({ seed: 1 });
+    expect(startAtBoss(g)).toEqual([{ type: 'checkpoint', n: WAVES.length }]);
+    expect([g.phase, g.thor.hp, g.charge, g.score]).toEqual(['break', LAWN.hearts, 0, 0]);
+    const ev = run(g, 2);
+    expect(ev.filter((e) => e.type === 'wave')).toEqual([expect.objectContaining({ n: WAVES.length, boss: true })]);
+    expect(g.wave).toBe(BOSS_WAVE);
+    expect(g.enemies.some((e) => e.kind === 'cull')).toBe(true);
+  });
+  it('loses the checkpoint to a Thor who does nothing', () => {
+    const g = newLawn({ seed: 1 });
+    startAtBoss(g);
+    const ev = run(g, 300);
+    expect(g.phase).toBe('lost'); // at about 36 s on seeds 1 to 3
+    expect(ev.find((e) => e.type === 'lost').wave).toBe(WAVES.length);
+  });
+  it('lets a sensible Thor beat Cull Obsidian from the checkpoint', () => {
+    const g = newLawn({ seed: 1 });
+    startAtBoss(g);
+    const ev = run(g, 300, (q) => thunderer(q));
+    expect(g.phase).toBe('won'); // at 48–71 s on seeds 1 to 3
+    expect(ev.find((e) => e.type === 'won').stone).toBe(true);
+  });
+  it('carries nothing over into the checkpoint from a game just lost', () => {
+    const g = newLawn({ seed: 1 });
+    startLawn(g);
+    skipLift(g);
+    run(g, 300);
+    expect(g.phase).toBe('lost');
+    startAtBoss(g);
+    expect([g.enemies, g.bolts, g.spawns]).toEqual([[], [], []]);
+    expect(g.hammer.state).toBe('held');
+    expect([g.thor.hp, g.charge, g.score]).toEqual([LAWN.hearts, 0, 0]);
   });
 });

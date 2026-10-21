@@ -31,10 +31,8 @@
 .dm-stage { --shire-bar-clear: var(--hud-pad); } /* (no chapter bar over the office) */
 
 /* the paper toss and the fact check, over the office */
-.dm-place { position: fixed; inset: 0; z-index: 80; overflow: auto; background: rgba(233, 230, 222, 0.97); color: var(--ink, #1b1f27); outline: none; }
-:root[data-theme='dark'] .dm-place { background: rgba(14, 16, 22, 0.97); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .dm-place { background: rgba(14, 16, 22, 0.97); } }
-.dm-place-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem clamp(1rem, 4vw, 2.4rem); background: inherit; border-bottom: 1px solid rgba(120, 120, 120, 0.25); }
+.dm-place { position: fixed; inset: 0; z-index: 80; overflow: auto; background: color-mix(in srgb, var(--bg) 97%, transparent); color: var(--text-body); outline: none; }
+.dm-place-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem clamp(1rem, 4vw, 2.4rem); background: inherit; border-bottom: 1px solid var(--border); }
 .dm-place-where { margin: 0; font: 600 0.7rem/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.7; }
 .dm-place-title { margin: 0.3rem 0 0; font: 700 clamp(1.3rem, 1rem + 1.2vw, 1.9rem)/1.1 'Courier Prime', ui-monospace, monospace; }
 .dm-place-wait { padding: 2rem 0; opacity: 0.7; }
@@ -42,8 +40,8 @@
 /* without 3D */
 .dm-cards { padding-block: 2.5rem 3rem; }
 .dm-card-list { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); margin: 0; padding: 0; list-style: none; }
-.dm-card { padding: 1rem 1.1rem; border: 1px solid rgba(120, 120, 120, 0.3); border-radius: 0.8rem; background: rgba(255, 255, 255, 0.04); }
-.dm-card[data-done] { border-color: rgba(31, 78, 140, 0.6); }
+.dm-card { padding: 1rem 1.1rem; border: 1px solid var(--border); border-radius: 0.8rem; background: var(--surface); }
+.dm-card[data-done] { border-color: var(--accent); }
 .dm-card-name { margin: 0; font: 700 1.05rem/1.2 'Courier Prime', ui-monospace, monospace; }
 .dm-card-go { margin: 0.4rem 0 0; font-size: 0.92rem; opacity: 0.85; }
 

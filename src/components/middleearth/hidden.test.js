@@ -6,7 +6,8 @@ import { placeAt } from './sheet';
 describe('the hidden places', () => {
   it('stand where Tolkien’s geography puts them', () => {
     expect(hidden('orthanc').at).toEqual(placeAt('isengard'));
-    expect(hidden('minas-tirith').at).toEqual(placeAt('minas-tirith'));
+    // (Minas Tirith was one: a chapter now, on the road after Mount Doom)
+    expect(hidden('minas-tirith')).toBeNull();
     expect(hidden('edoras').at).toEqual(placeAt('edoras'));
     expect(hidden('rivendell')).toBeNull();
   });

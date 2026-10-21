@@ -9,6 +9,10 @@
 //
 //   node scripts/galaxy-surface-lod.mjs            every model in the catalogue
 //   node scripts/galaxy-surface-lod.mjs theed hive just these
+//   node scripts/galaxy-surface-lod.mjs --over=10000 coronetblock …
+//                                                  a lower line, for what
+//                                                  stands by the dozen (a
+//                                                  city's houses)
 //
 // A model under the line gets no LOD (and an old one is left for the
 // catalogue test to catch). The catalogue entry wants `lod: true` for each
@@ -100,16 +104,18 @@ function rigged() {
 }
 
 async function main() {
-  const only = process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const over = Number(args.find((a) => a.startsWith('--over='))?.slice(7) ?? LOD_OVER);
+  const only = args.filter((a) => !a.startsWith('--'));
   const skip = rigged();
   const files = readdirSync(DIR).filter((f) => f.endsWith('.glb') && !f.endsWith('.lod1.glb') && !f.endsWith('.ultra.glb') && !skip.has(f.slice(0, -4)));
   for (const f of files) {
     const kind = f.slice(0, -4);
     if (only.length && !only.includes(kind)) continue;
     const to = join(DIR, `${kind}.lod1.glb`);
-    const made = await makeLod(join(DIR, f), to);
+    const made = await makeLod(join(DIR, f), to, { over });
     if (!made) {
-      if (only.length) console.log(`${kind.padEnd(16)} under ${LOD_OVER} triangles: no LOD${existsSync(to) ? ' (an old one is there)' : ''}`);
+      if (only.length) console.log(`${kind.padEnd(16)} under ${over} triangles: no LOD${existsSync(to) ? ' (an old one is there)' : ''}`);
       continue;
     }
     if (made.skipped) {

@@ -11,6 +11,8 @@ import { ALOUD, BOSS_LINE, COMBO, LOST_LINE, MEESEEKS, OPENER, PURPOSE, SAUCE } 
 import { PANIC, choose, dash, newGame, step } from './rules';
 import { autopilot } from './pilot';
 import './portal.css';
+import RmEarnNote from '../RmEarnNote';
+import { useRmEarn } from '../useRmEarn';
 
 // Portal panic: the Rick and Morty arena game, in WebGL only (behind the
 // hardware acceleration gate). The rules are in ./rules.js, the drawing in
@@ -56,12 +58,14 @@ const KEYS = {
 };
 const is = (k, key) => KEYS[k].includes(key);
 
-export default function PortalPanic() {
-  return <GpuGate className="pp-gate">{({ soft, fail }) => <Game soft={soft} fail={fail} />}</GpuGate>;
+// `onUsed`: called once, the first wave survived (C-137 ticks its task then)
+export default function PortalPanic({ onUsed }) {
+  return <GpuGate className="pp-gate">{({ soft, fail }) => <Game soft={soft} fail={fail} onUsed={onUsed} />}</GpuGate>;
 }
 
-function Game({ soft, fail }) {
+function Game({ soft, fail, onUsed }) {
   const { unlock } = useAchievements();
+  const { earn, note: earned } = useRmEarn(); // (a boss down pays into the one wallet, each time)
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const wrap = useRef(null);
   const gl = useRef(null);
@@ -74,6 +78,9 @@ function Game({ soft, fail }) {
   const onScreen = useRef(true); // (the game on the page's screen: off it, the loop rests and the keys are the page's)
   const hud = useRef({});
   const said = useRef({});
+  // (onUsed through a ref, so drain's deps stay as they are; once a mount, not a game: start() keeps it)
+  const usedRef = useRef({ fn: onUsed, done: false });
+  usedRef.current.fn = onUsed;
   const prefs0 = local.get(PREFS, {}) ?? {};
   const [hero, setHero] = useState(HEROES.includes(prefs0.hero) ? prefs0.hero : 'rick');
   const [level, setLevel] = useState(LEVELS.includes(prefs0.level) ? prefs0.level : 'normal');
@@ -218,6 +225,10 @@ function Game({ soft, fail }) {
             break;
           case 'cleared':
             say('Wave cleared', 'good');
+            if (!usedRef.current.done) {
+              usedRef.current.done = true;
+              usedRef.current.fn?.();
+            }
             break;
           case 'offer':
             play('ding');
@@ -243,6 +254,7 @@ function Game({ soft, fail }) {
           case 'bossDown':
             play('boom');
             say(`${PANIC.bosses[e.id].name}: down`, 'good');
+            earn('boss', e.id);
             if (e.id === 'cromulon') {
               unlock('showmewhatyougot');
               clip('likeWhatYouGot');
@@ -279,7 +291,7 @@ function Game({ soft, fail }) {
       if (seeded) playCue('seed');
       g.events.length = 0;
     },
-    [say, unlock],
+    [say, unlock, earn],
   );
   const drainRef = useRef(drain);
   drainRef.current = drain;
@@ -582,6 +594,7 @@ function Game({ soft, fail }) {
   const Face = FACE[hero];
   return (
     <div className="pp" data-owns-escape={running || undefined}>
+      <RmEarnNote note={earned} />
       <div
         ref={wrap}
         className="g3 pp-screen"

@@ -8,7 +8,7 @@ import { engine } from '../../module';
 import { sayVoiced, stopVoiced } from '../../../../lib/voiced';
 import { readPad, typing } from '../../../games/pad';
 import { stepGaze } from '../../shire/rules';
-import { Bubble, Convo, QuestList, Stick, Travellers } from '../TownHud';
+import { Bubble, Convo, QuestList, Stick, TownMenu, Travellers } from '../TownHud';
 import { useTravellers } from '../useTravellers';
 import { keyDown, keyUp, moveOf, ownButton } from '../keys';
 import { drawMap } from '../map';
@@ -1016,6 +1016,7 @@ function World({ prog, done, complete, side, winSide, gl, setGl, onLeave }) {
             </p>
           </div>
           <div className="shire-side">
+            <TownMenu chapter="weathertop" />
             <canvas ref={map} className="shire-map" width="150" height="150" aria-hidden="true" />
             <button type="button" className="shire-chip" onClick={() => setList((v) => !v)} aria-expanded={list}>
               <b>{done.length}</b> of {QUESTS.length} done {!touch && <kbd>M</kbd>}

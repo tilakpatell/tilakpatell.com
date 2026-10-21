@@ -1,0 +1,106 @@
+{
+  "kind": "quad",
+  "loop": true,
+  "duration": 1,
+  "gravity": {
+    "g": 0,
+    "random": 0
+  },
+  "drag": 0,
+  "wind": 0,
+  "color": [
+    0.82,
+    0.86,
+    0.92
+  ],
+  "sizeY": null,
+  "alpha": {
+    "exponent": 1,
+    "curve": 1
+  },
+  "rotation": 0,
+  "transparency": 0.7,
+  "uv": {
+    "frames": 4,
+    "grid": [
+      4,
+      1
+    ],
+    "fps": 0,
+    "randomStart": true,
+    "overLife": false
+  },
+  "alignment": "motionStretchScreen",
+  "stretch": {
+    "mult": 8,
+    "norm": 10,
+    "min": 1,
+    "max": 18
+  },
+  "lightWrap": 0.5,
+  "soft": null,
+  "additive": false,
+  "exposure": 0,
+  "maxSpawnDistance": 0,
+  "cullingFactor": 1,
+  "follow": {
+    "source": false,
+    "velocity": false
+  },
+  "mesh": null,
+  "ribbon": null,
+  "name": "rain: the Road’s, streaks falling through a box over the walkers",
+  "sheet": "drop",
+  "maxCount": 1200,
+  "lifetime": {
+    "random": [
+      1.5,
+      1.8
+    ]
+  },
+  "spawn": {
+    "rate": 800,
+    "burst": 0,
+    "size": {
+      "random": [
+        0.045,
+        0.07
+      ]
+    },
+    "speed": {
+      "random": [
+        8.5,
+        10
+      ]
+    },
+    "rotation": 0,
+    "direction": {
+      "box": {
+        "min": [
+          -0.08,
+          -1,
+          0.02
+        ],
+        "max": [
+          -0.02,
+          -1,
+          0.08
+        ]
+      }
+    },
+    "position": {
+      "box": {
+        "center": [
+          0,
+          14,
+          0
+        ],
+        "size": [
+          30,
+          0,
+          30
+        ]
+      }
+    }
+  }
+}

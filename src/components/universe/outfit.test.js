@@ -73,7 +73,7 @@ describe('the parts', () => {
 
   it('borrow only the look of a part of their own slot (a weapon line’s, of a gun) that has one of its own', () => {
     const borrowers = PARTS.filter((p) => p.look);
-    expect(borrowers.map((p) => p.id).sort()).toEqual(['council', 'flak', 'incom', 'ion', 'missiles', 'mk2', 'vamonos']);
+    expect(borrowers.map((p) => p.id).sort()).toEqual(['council', 'crystal', 'darkmatter', 'energon', 'flak', 'incom', 'ion', 'missiles', 'mk2', 'seismic', 'vamonos']);
     for (const p of borrowers) {
       const from = partById(['secondary', 'ordnance'].includes(p.slot) ? 'guns' : p.slot, p.look);
       expect(from.id, p.id).toBe(p.look);
@@ -356,5 +356,29 @@ describe('what a smaller plant takes off', () => {
     const saved = fitInto(heavy, 'paint', r.loadout.paint);
     expect(saved).toEqual({ ...heavy, paint: 'sith' });
     expect(loadoutOf({ falcon: saved }, 'falcon', all, { ...STOCK_BUILD, hull: 'hauler' }).booster).toBe('portal');
+  });
+});
+
+describe('the skill tree on the ship (hangar/skills’ fx)', () => {
+  const fx = { boost: 0.1, accel: 0.15, cruise: 0, agility: 0.08, level: 0, cadence: 0.92, regen: 1.25, armor: 0.9, jump: 0.75 };
+  it('stacks with the parts, never replaces them', () => {
+    const plain = statsOf('xwing', STOCK_LOADOUT);
+    const skilled = statsOf('xwing', STOCK_LOADOUT, null, null, fx);
+    expect(skilled.boost).toBeCloseTo(plain.boost + 0.1);
+    expect(skilled.accel).toBeCloseTo(plain.accel + 0.15);
+    expect(skilled.cadence).toBeCloseTo(plain.cadence * 0.92);
+    expect(skilled.regen).toBeCloseTo(plain.regen * 1.25);
+    expect(skilled.agility).toBeGreaterThan(plain.agility);
+  });
+  it('softens only what the game’s ships hit you with, and leaves the parts’ plating as it is', () => {
+    const skilled = statsOf('xwing', STOCK_LOADOUT, null, null, fx);
+    expect(skilled.armor).toBe(statsOf('xwing', STOCK_LOADOUT).armor);
+    expect(skilled.armorGame).toBeCloseTo(0.9);
+    expect(skilled.jump).toBeCloseTo(0.75);
+  });
+  it('is the ship as it was with no skills', () => {
+    const plain = statsOf('xwing', STOCK_LOADOUT);
+    expect(plain.armorGame).toBe(1);
+    expect(plain.jump).toBe(1);
   });
 });

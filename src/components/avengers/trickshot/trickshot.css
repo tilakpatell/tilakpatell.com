@@ -15,7 +15,8 @@
 .ts-streak { padding: 0.08rem 0.45rem; border: 1px solid rgba(201, 162, 255, 0.75); border-radius: 4px; font-weight: 700; font-size: 0.7rem; color: #e3d2ff; }
 
 .ts-quiver { position: absolute; left: 16px; bottom: 14px; display: grid; gap: 6px; }
-.ts-arrows { display: flex; gap: 3px; }
+/* the 44-arrow quiver (rules.js QUIVER) in two rows of 22 */
+.ts-arrows { display: grid; grid-template-columns: repeat(22, max-content); gap: 3px; }
 .ts-arrows span { width: 5px; height: 24px; border-radius: 2px; background: rgba(255, 255, 255, 0.16); }
 .ts-arrows span[data-on] { background: linear-gradient(#f0eaff 0 18%, #6a35b0 18% 30%, #e9e6f0 30%); box-shadow: 0 0 6px rgba(0, 0, 0, 0.4); }
 .ts-tricks { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 20px; }

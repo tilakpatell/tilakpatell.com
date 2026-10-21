@@ -3,6 +3,7 @@
 
 import { AMON_HEN } from './amonhen';
 import { CORMALLEN } from './cormallen';
+import { HOUSES } from './houses';
 import { INN } from './inn';
 import { ITHILIEN } from './ithilien';
 import { LORIEN } from './lorien';
@@ -12,5 +13,5 @@ import { RIVENDELL } from './rivendell';
 import { TOWER } from './tower';
 import { WEATHERTOP } from './weathertop';
 
-export const THEMES = { inn: INN, rivendell: RIVENDELL, moria: MORIA, lorien: LORIEN, amonhen: AMON_HEN, party: PARTY, weathertop: WEATHERTOP, ithilien: ITHILIEN, tower: TOWER, cormallen: CORMALLEN };
+export const THEMES = { inn: INN, rivendell: RIVENDELL, moria: MORIA, lorien: LORIEN, amonhen: AMON_HEN, party: PARTY, weathertop: WEATHERTOP, ithilien: ITHILIEN, tower: TOWER, cormallen: CORMALLEN, houses: HOUSES };
 export const themeOf = (level) => THEMES[level?.theme] ?? INN;

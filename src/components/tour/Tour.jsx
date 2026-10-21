@@ -431,7 +431,7 @@ export default function Tour({ list, chapters, start, kind = 'tour', pathname, o
       {box && <div className="tour-spot" aria-hidden="true" style={box} />}
       <div
         ref={card}
-        className={`tour-card card${onMap ? ' dark-scope' : ''}`}
+        className={`tour-card card dialog${onMap ? ' dark-scope' : ''}`}
         data-map={onMap ? '' : undefined}
         role="dialog"
         aria-modal="true"

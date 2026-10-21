@@ -52,6 +52,9 @@ function hy3d21Ready() {
   return hy3d21;
 }
 
+// whether an engine's raw model comes out lying along Z, to be stood up (upright.mjs) before it's baked: trellis.cpp's Pixal3D's;
+// TRELLIS.2's, Hunyuan3D's and the fake's stand along Y, as glTF does
+export const lying = (engine, faithful) => engine === 'trelliscpp' && Boolean(faithful);
 export const pixal3dReady = () => existsSync(join(TRELLISCPP.models, 'pixal3d_shape_flow_1024.gguf'));
 
 export function command(engine, given, out, { seed = 42, res = 1024, faces, tex, faithful = false, fov, steps = 50, asked, paint21 = engine === 'hunyuan' && hy3d21Ready() } = {}) {

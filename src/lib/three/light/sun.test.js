@@ -22,6 +22,9 @@ describe('cascadesFor', () => {
     expect(ULTRA_SHADOW_FAR).toBe(140);
     expect(cascadesFor('high', v)).toEqual({ n: 4, far: 30, map: 2048 });
     expect(cascadesFor('mid', v)).toEqual({ n: 2, far: 30, map: 1024 });
+    // (fewer when asked, never more, the map kept)
+    expect(cascadesFor('high', v, { cascades: 2 })).toEqual({ n: 2, far: 30, map: 2048 });
+    expect(cascadesFor('mid', v, { cascades: 3 })).toEqual({ n: 2, far: 30, map: 1024 });
     expect(cascadesFor('low', v)).toEqual({ n: 0, far: 0, map: 0 });
     // (no record: Hoth's)
     expect(cascadesFor('high').far).toBe(30);

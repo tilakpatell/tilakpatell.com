@@ -208,8 +208,10 @@ describe('the badge on a fought-over system’s ring (its + or −)', () => {
     for (const id of WAR_SYSTEMS) expect(['below', 'above', 'side']).toContain(badgeOf(id));
     // (under Hoth, Bespin's dot; over it, nothing)
     expect(badgeOf('hoth')).toBe('above');
-    // (under Kamino, Tatooine's name; on the side away from its own, nothing)
-    expect(badgeOf('kamino')).toBe('side');
+    // (under Scarif, at the canon atlas's S-15, Tatooine's name; on the side away from its own, nothing.
+    // Kamino, past the rim, has the room under it)
+    expect(badgeOf('scarif')).toBe('side');
+    expect(badgeOf('kamino')).toBe('below');
     expect(badgeOf('coruscant')).toBe('below');
     expect(WAR_SYSTEMS.filter((id) => badgeOf(id) === 'below').length).toBeGreaterThan(WAR_SYSTEMS.length / 2);
   });

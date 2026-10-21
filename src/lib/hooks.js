@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { usePageActive } from './page';
 
 const matches = (query) => typeof window !== 'undefined' && (window.matchMedia?.(query).matches ?? false);
 
-export const prefersReducedMotion = () => matches('(prefers-reduced-motion: reduce)');
+// Motion is calmed when the system asks, or when the visitor asks on the
+// site: Settings, Motion: Reduced puts html[data-motion='reduced'] (and the
+// page's first script puts it back on a return visit, before anything reads it).
+const askedOnSite = () => typeof document !== 'undefined' && document.documentElement?.dataset?.motion === 'reduced';
+export const prefersReducedMotion = () => matches('(prefers-reduced-motion: reduce)') || askedOnSite();
 
 // Whether a media query matches, kept up to date as it changes.
 export function useMediaQuery(query) {
@@ -19,7 +23,31 @@ export function useMediaQuery(query) {
   return on;
 }
 
-export const useReducedMotion = () => useMediaQuery('(prefers-reduced-motion: reduce)');
+// One watcher on <html> for every component that asks, made with the first
+// and let go with the last.
+const askers = new Set();
+let watcher = null;
+export function watchAskedOnSite(fn) {
+  askers.add(fn);
+  if (!watcher && typeof MutationObserver !== 'undefined' && typeof document !== 'undefined') {
+    watcher = new MutationObserver(() => askers.forEach((f) => f()));
+    watcher.observe(document.documentElement, { attributes: true, attributeFilter: ['data-motion'] });
+  }
+  return () => {
+    askers.delete(fn);
+    if (!askers.size && watcher) {
+      watcher.disconnect();
+      watcher = null;
+    }
+  };
+}
+
+// Whether motion is calmed, kept up to date as either setting changes.
+export function useReducedMotion() {
+  const system = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const site = useSyncExternalStore(watchAskedOnSite, askedOnSite, () => false);
+  return system || site;
+}
 
 // Whether the page is showing (not in a hidden tab): onChange(showing) now
 // and on every change; returns the way to stop watching.

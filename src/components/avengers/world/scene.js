@@ -13,16 +13,19 @@
 //
 // createCompoundWorld(rt, { calm }) → { render(state, ms),
 // screenOf(kind, id), fx(type, data), resize, dispose, engine, info, lost }.
+//
+// The drawing is in five places: ./scene/kit.js (materials and textures),
+// ./scene/terrain.js (the ground, the cars and the woods), ./scene/doors.js
+// (the doors, beams, gems and the portal), ./scene/fx.js (the events) and
+// here, which builds the rest in the old order and draws each frame.
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { createStage, hot } from '../hq/stage';
 import { pbr, preload } from '../hq/assets';
-import { antiTile, detailNormal } from '../../../lib/three/surface';
-import { canvasTexture, rbox } from '../hq/kit/shapes';
+import { antiTile } from '../../../lib/three/surface';
 import { buildHumanoid, poseHumanoid } from '../hq/kit/humanoid';
-import { instanced } from '../hq/kit/instanced';
-import { logoTexture, scatter, trees } from '../hq/kit/world';
+import { logoTexture } from '../hq/kit/world';
 import { createVfx } from '../hq/vfx';
 import { createFeel, feelGroups } from '../hq/feel';
 import { createSpring, springGroups } from '../../../lib/spring';
@@ -30,373 +33,29 @@ import { device } from '../../../lib/device';
 import { createDust } from '../../../lib/three/dust';
 import { wireImpacts } from '../../../lib/three/impacts';
 import { createLawnProps } from './lawnProps';
-import { carGeometries, carMaterials, meterBox } from '../smash/models';
+import { meterBox } from '../smash/models';
 import { buildShield } from '../ricochet/models';
-import { buildCape, buildMjolnir, buildPortal, craterTexture } from '../lawn/models';
-import { APRON, BERM, BRIDGE, CRES, GATE, HANGAR, LAB, LAWN, PROW, RIVER, SHORE, STALLS, TRAINING, TREES, arcPt, inPoly, rng } from '../compound/plan';
-import { apronMarks, buildQuinjet, curtainTexture, flatShape, groundPaint, panelNormal, prismTop, prismWalls, solarTexture } from '../compound/models';
-import { STONES } from '../../interests/stones';
+import { buildCape, buildMjolnir, craterTexture } from '../lawn/models';
+import { APRON, BERM, BRIDGE, CRES, GATE, HANGAR, LAB, PROW, STALLS, TRAINING, arcPt, rng } from '../compound/plan';
+import { apronMarks, buildQuinjet, curtainTexture, panelNormal, prismTop, prismWalls, solarTexture } from '../compound/models';
 import { POSES, figure, loadFigure } from '../../../lib/three/rig';
 import { AVENGERS_MODELS } from '../people/models';
 import { clipsFor, loadClips, loadPerson, person } from './people';
 import { createSwing } from './swing';
 import { createFlags, createRings, staticGrounds } from './grounds';
 import { createPacks } from './packs';
-import { createGrass } from './grass';
 import { createGhosts } from '../../middleearth/towns/ghosts';
 import { groundWorld } from '../../../lib/three/groundwork';
 import { turn as easeTurn } from '../../../lib/three/gait';
 import { LIFE, createCastLife } from './castLife';
 import { createCastBody, createLook, poseKit } from './castBody';
 import { centredClips } from './borrow';
-import { ARMOUR, BUILDINGS, CAST, CLERESTORY, CRATER, GAIT, HERO, LAMPS, LAWN_TREES, MASTS, MAST_H, PARKED_CARS, PARKED_JET, PLACES, PLANTERS, PORTAL, ROADS_W, ROAD_HALF, ROOF_LIGHTS, S, SUIT, TRICK, V, aimWeb, camRoom, findPerch, floorAt, gaitFor, nearestEdge, photoView, samplePath, swingArc, swingPose, treeHeight } from './rules';
+import { ARMOUR, CAST, CLERESTORY, CRATER, GAIT, HERO, MASTS, MAST_H, PARKED_JET, PORTAL, ROOF_LIGHTS, S, SUIT, TRICK, V, aimWeb, camRoom, findPerch, floorAt, gaitFor, photoView, swingArc, swingPose } from './rules';
 import { LOOK } from './look';
-
-const SC = { s: S, v: V };
-// a plan point (x east, y south, z up, in units) in the world
-const P3 = (x, y, z = 0) => new THREE.Vector3(x * S, z * V, y * S);
-const STONE_OF = { power: 'power', reality: 'reality', mind: 'mind', 'soul-clint': 'soul', 'soul-natasha': 'soul', time: 'time', space: 'space' };
-
-// ── cloud shadows, shared by every lit material on the ground and the buildings ──
-const cloudU = { value: new THREE.Vector2() };
-function cloudy(mat, key = 'cloudy') {
-  const before = mat.onBeforeCompile;
-  mat.onBeforeCompile = (sh, r) => {
-    before?.call(mat, sh, r);
-    sh.uniforms.uCloud = cloudU;
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vCloudPos;').replace(
-      '#include <worldpos_vertex>',
-      `#include <worldpos_vertex>
-      {
-        vec4 cp = vec4(transformed, 1.0);
-        #ifdef USE_INSTANCING
-          cp = instanceMatrix * cp;
-        #endif
-        vCloudPos = (modelMatrix * cp).xyz;
-      }`,
-    );
-    sh.fragmentShader = sh.fragmentShader
-      .replace(
-        '#include <common>',
-        `#include <common>
-        varying vec3 vCloudPos;
-        uniform vec2 uCloud;
-        float cHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-        float cNoise(vec2 p) {
-          vec2 i = floor(p), f = fract(p);
-          f = f * f * (3.0 - 2.0 * f);
-          return mix(mix(cHash(i), cHash(i + vec2(1, 0)), f.x), mix(cHash(i + vec2(0, 1)), cHash(i + vec2(1, 1)), f.x), f.y);
-        }
-        float cloudShade(vec3 p) {
-          vec2 q = p.xz * 0.004 + uCloud;
-          float n = cNoise(q) * 0.55 + cNoise(q * 2.1 + 3.7) * 0.3 + cNoise(q * 4.3 - 1.3) * 0.15;
-          return 1.0 - smoothstep(0.56, 0.74, n) * 0.38;
-        }`,
-      )
-      .replace(
-        '#include <lights_fragment_end>',
-        `#include <lights_fragment_end>
-        {
-          float cs = cloudShade(vCloudPos);
-          reflectedLight.directDiffuse *= cs;
-          reflectedLight.directSpecular *= cs;
-        }`,
-      );
-  };
-  mat.customProgramCacheKey = () => key;
-  return mat;
-}
-
-// Weather on the buildings' panels (after cloudy, whose noise and world
-// position it uses): darker and warmer at the foot where the rain splashes
-// up, faint streaks down from the roofs, and a slow drift of tone across a
-// wall, so a white facade in the sun isn't one flat sheet. With `panel`
-// ([w, h] metres, the panels() normal map's), the joints between panels are
-// drawn into the colour too, from the same uv: the normal map's one-texel
-// seams vanished a few metres off, and the walls were blank. A darker
-// plinth course runs round the foot.
-function weathered(mat, { foot = 1.5, streaks = 0.12, panel = null } = {}) {
-  const before = mat.onBeforeCompile;
-  mat.onBeforeCompile = (sh, r) => {
-    before?.call(mat, sh, r);
-    sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vWallN;')
-      .replace('#include <defaultnormal_vertex>', '#include <defaultnormal_vertex>\nvWallN = normalize(mat3(modelMatrix) * objectNormal);');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWallN;').replace(
-      '#include <map_fragment>',
-      `#include <map_fragment>
-      {
-        vec3 wp = vCloudPos;
-        vec3 wn = normalize(vWallN);
-        // along the wall: x for one that faces z, z for one that faces x
-        float along = abs(wn.x) > abs(wn.z) ? wp.z : wp.x;
-        float wall = 1.0 - smoothstep(0.4, 0.7, abs(wn.y));
-        float atFoot = 1.0 - smoothstep(0.0, ${foot.toFixed(2)}, wp.y);
-        diffuseColor.rgb *= mix(vec3(1.0), vec3(0.74, 0.72, 0.68), atFoot * wall);
-        float st = cNoise(vec2(along * 2.3, wp.y * 0.07)) * cNoise(vec2(along * 0.61 + 9.0, wp.y * 0.21));
-        diffuseColor.rgb *= 1.0 - ${streaks.toFixed(3)} * smoothstep(0.22, 0.62, st) * wall;
-        diffuseColor.rgb *= mix(0.94, 1.02, cNoise(vec2(along, wp.y) * 0.045 + wp.xz * 0.01));
-        // the plinth: a darker course up to 0.45 m
-        float py = fwidth(wp.y);
-        diffuseColor.rgb *= mix(1.0, 0.64, (1.0 - smoothstep(0.45 - py, 0.45 + py, wp.y)) * wall);
-        ${
-          panel
-            ? `#ifdef USE_NORMALMAP
-        {
-          // (the normal map spans 8 m of the walls' metre uv)
-          vec2 m = vNormalMapUv * 8.0 / vec2(${panel[0].toFixed(2)}, ${panel[1].toFixed(2)});
-          vec2 fw = fwidth(m);
-          // (how far from the nearest joint, in panels: a joint 2.5 cm across, a pixel's soft edge)
-          vec2 e = 0.5 - abs(fract(m) - 0.5);
-          vec2 line = 1.0 - smoothstep(vec2(0.0125), vec2(0.0125) + fw, e);
-          float joint = max(line.x, line.y) * (1.0 - smoothstep(0.06, 0.3, max(fw.x, fw.y)));
-          diffuseColor.rgb *= 1.0 - 0.32 * joint * wall;
-        }
-        #endif`
-            : ''
-        }
-      }`,
-    );
-  };
-  const key = mat.customProgramCacheKey?.() ?? '';
-  mat.customProgramCacheKey = () => `${key}|weathered:${foot}:${streaks}:${panel ?? ''}`;
-  return mat;
-}
-
-// Dry concrete and asphalt as matte as they are: the scans' roughness maps
-// average 0.5 to 0.8, times the material's own, and a drive or a roof toward
-// the sun went white with glare. The map now only varies it between `lo`
-// and the material's roughness.
-function matte(mat, lo = 0.82) {
-  const before = mat.onBeforeCompile;
-  mat.onBeforeCompile = (sh, r) => {
-    before?.call(mat, sh, r);
-    sh.fragmentShader = sh.fragmentShader.replace(
-      '#include <roughnessmap_fragment>',
-      `float roughnessFactor = roughness;
-      #ifdef USE_ROUGHNESSMAP
-        roughnessFactor *= mix(${lo.toFixed(2)}, 1.0, texture2D(roughnessMap, vRoughnessMapUv).g);
-      #endif`,
-    );
-  };
-  const key = mat.customProgramCacheKey?.() ?? '';
-  mat.customProgramCacheKey = () => `${key}|matte:${lo}`;
-  return mat;
-}
-
-// Darkened round the foot of each building, softly, over a few metres
-// (after cloudy: its world position): what the sky's light can't get into.
-// For the grass blades, which the baked floor light doesn't reach (it's on
-// the lawn under them). `ao` is groundShade()'s.
-function grounded(mat, ao) {
-  const before = mat.onBeforeCompile;
-  mat.onBeforeCompile = (sh, r) => {
-    before?.call(mat, sh, r);
-    sh.uniforms.uGroundAO = { value: ao.texture };
-    sh.uniforms.uGroundBox = { value: ao.box };
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D uGroundAO;\nuniform vec4 uGroundBox;').replace(
-      '#include <lights_fragment_end>',
-      `#include <lights_fragment_end>
-      {
-        vec2 guv = (vCloudPos.xz - uGroundBox.xy) / (uGroundBox.zw - uGroundBox.xy);
-        float ao = texture2D(uGroundAO, guv).r;
-        reflectedLight.indirectDiffuse *= ao;
-        reflectedLight.indirectSpecular *= ao;
-        reflectedLight.directDiffuse *= mix(1.0, ao, 0.45);
-      }`,
-    );
-  };
-  const key = mat.customProgramCacheKey?.() ?? '';
-  mat.customProgramCacheKey = () => `${key}|grounded`;
-  return mat;
-}
-
-// The compound's footprints from above, black on white and blurred: how much
-// of the sky each bit of ground sees. → { texture, box: Vector4 (x0, z0, x1, z1) }
-function groundShade(feet, { px = 1024, reach = 3.2 } = {}) {
-  const xs = feet.flat().map((p) => p[0]);
-  const zs = feet.flat().map((p) => p[1]);
-  const x0 = Math.min(...xs) - 12;
-  const z0 = Math.min(...zs) - 12;
-  const side = Math.max(Math.max(...xs) + 12 - x0, Math.max(...zs) + 12 - z0);
-  const k = px / side;
-  const tex = canvasTexture(
-    px,
-    px,
-    (x) => {
-      x.fillStyle = '#fff';
-      x.fillRect(0, 0, px, px);
-      // (each footprint drawn with its own blurred shadow: the blur filter
-      // isn't in every browser's canvas, the shadow is)
-      x.shadowColor = 'rgba(0,0,0,0.85)';
-      x.shadowBlur = reach * k;
-      x.fillStyle = '#2a2a2a';
-      for (const f of feet) {
-        x.beginPath();
-        f.forEach(([fx, fz], i) => (i ? x.lineTo((fx - x0) * k, (fz - z0) * k) : x.moveTo((fx - x0) * k, (fz - z0) * k)));
-        x.closePath();
-        x.fill();
-      }
-    },
-    { srgb: false },
-  );
-  tex.flipY = false; // (row 0 is the box's north edge, as the shaders read it)
-  tex.needsUpdate = true;
-  return { texture: tex, box: new THREE.Vector4(x0, z0, x0 + side, z0 + side) };
-}
-
-// A flat ribbon along world points, `w` metres wide, at height y; uv: u
-// across, v along in metres over `tile`.
-function ribbon(points, w, y, tile = 8) {
-  const pos = [];
-  const uv = [];
-  const idx = [];
-  let run = 0;
-  for (let i = 0; i < points.length; i++) {
-    const a = points[Math.max(0, i - 1)];
-    const b = points[Math.min(points.length - 1, i + 1)];
-    let tx = b[0] - a[0];
-    let tz = b[1] - a[1];
-    const l = Math.hypot(tx, tz) || 1;
-    tx /= l;
-    tz /= l;
-    if (i) run += Math.hypot(points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]);
-    for (const s of [-1, 1]) {
-      pos.push(points[i][0] - (tz * w * s) / 2, y, points[i][1] + (tx * w * s) / 2);
-      uv.push((s + 1) / 2, run / tile);
-    }
-    if (i) {
-      const k = i * 2;
-      idx.push(k - 2, k - 1, k, k - 1, k + 1, k);
-    }
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-  g.setIndex(idx);
-  g.computeVertexNormals();
-  if (g.attributes.normal.getY(0) < 0) {
-    for (let i = 0; i < idx.length; i += 3) [idx[i + 1], idx[i + 2]] = [idx[i + 2], idx[i + 1]];
-    g.setIndex(idx);
-    g.computeVertexNormals();
-  }
-  return g;
-}
-
-// gentle waves for the river, as a tiling normal map
-function waterNormal() {
-  const t = canvasTexture(
-    256,
-    256,
-    (x, w, h) => {
-      const img = x.createImageData(w, h);
-      for (let j = 0; j < h; j++)
-        for (let i = 0; i < w; i++) {
-          const u = (i / w) * Math.PI * 2;
-          const v = (j / h) * Math.PI * 2;
-          const dx = Math.cos(u * 3 + v * 2) * 0.5 + Math.cos(u * 7 - v * 3) * 0.3 + Math.cos(u * 11 + v * 9) * 0.2;
-          const dy = Math.sin(v * 4 + u) * 0.5 + Math.sin(v * 9 - u * 5) * 0.3 + Math.sin(v * 13 + u * 7) * 0.2;
-          const k = (j * w + i) * 4;
-          img.data[k] = 128 + dx * 60;
-          img.data[k + 1] = 128 + dy * 60;
-          img.data[k + 2] = 255;
-          img.data[k + 3] = 255;
-        }
-      x.putImageData(img, 0, 0);
-    },
-    { srgb: false, repeat: [1, 1] },
-  );
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  return t;
-}
-
-// a target face for the range
-const targetTexture = () =>
-  canvasTexture(128, 128, (x, w) => {
-    const c = w / 2;
-    const rings = ['#f4f1e6', '#1d1d1d', '#2a7fd0', '#c43b2b', '#e8c03a'];
-    for (let i = 0; i < 10; i++) {
-      x.fillStyle = rings[Math.floor(i / 2)];
-      x.beginPath();
-      x.arc(c, c, c * (1 - i / 10), 0, Math.PI * 2);
-      x.fill();
-    }
-  });
-
-// a soft round shadow, for what stands on the lawn without casting one
-const blobTexture = () =>
-  canvasTexture(64, 64, (x, w) => {
-    const g = x.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
-    g.addColorStop(0, 'rgba(0,0,0,0.55)');
-    g.addColorStop(0.6, 'rgba(0,0,0,0.25)');
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    x.fillStyle = g;
-    x.fillRect(0, 0, w, w);
-  });
-
-// the name over a door, in white capitals
-const signTexture = (text) =>
-  canvasTexture(1024, 160, (x, w, h) => {
-    x.clearRect(0, 0, w, h);
-    x.fillStyle = '#ffffff';
-    x.font = '600 92px "Archivo Variable", "Helvetica Neue", Arial, sans-serif';
-    x.textAlign = 'center';
-    x.textBaseline = 'middle';
-    const letters = text.toUpperCase().split('');
-    const gap = 18;
-    const widths = letters.map((l) => x.measureText(l).width);
-    let at = w / 2 - (widths.reduce((s, v) => s + v, 0) + gap * (letters.length - 1)) / 2;
-    letters.forEach((l, i) => {
-      x.fillText(l, at + widths[i] / 2, h / 2 + 4);
-      at += widths[i] + gap;
-    });
-  });
-
-// A beam of light going up from a door: bright at the foot, fading upwards,
-// a soft column brightest down its middle (where its side faces you) and gone
-// at its edges. It fades out as the camera comes up to it: the camera swings
-// round him freely, and a beam it was beside (or in) was a flat slab of
-// colour over half the screen, bloomed out (the lab's a green one).
-function beamMaterial(color) {
-  return new THREE.ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    side: THREE.DoubleSide,
-    fog: false,
-    uniforms: { uColor: { value: new THREE.Color(color) }, uTime: { value: 0 }, uStrength: { value: 1 } },
-    vertexShader: /* glsl */ `
-      varying vec2 vUv;
-      varying vec3 vN;
-      varying vec3 vView;
-      void main() {
-        vUv = uv;
-        vec4 wp = modelMatrix * vec4(position, 1.0);
-        vN = normalize(mat3(modelMatrix) * normal);
-        vView = cameraPosition - wp.xyz;
-        gl_Position = projectionMatrix * viewMatrix * wp;
-      }`,
-    fragmentShader: /* glsl */ `
-      uniform vec3 uColor;
-      uniform float uTime, uStrength;
-      varying vec2 vUv;
-      varying vec3 vN;
-      varying vec3 vView;
-      void main() {
-        // (clamped: a hair past the top's 1 made pow() of a negative, not a number)
-        float up = clamp(1.0 - vUv.y, 0.0, 1.0);
-        float k = pow(up, 2.2) * (0.75 + 0.25 * sin(uTime * 2.0 + vUv.y * 18.0));
-        // across the column, flat to the ground: its middle faces you, its edges don't
-        vec3 v = vec3(vView.x, 0.0, vView.z);
-        float d = length(vView);
-        float facing = abs(dot(normalize(vec3(vN.x, 0.0, vN.z) + 1e-5), normalize(v + 1e-5)));
-        float core = facing * facing;
-        // nothing within a few metres of the camera, all of it from 16 m
-        float away = smoothstep(4.0, 16.0, d);
-        gl_FragColor = vec4(uColor * k * uStrength * core * away, 1.0);
-      }`,
-  });
-}
+import { SC, P3, cloudU, cloudy, weathered, matte, targetTexture } from './scene/kit';
+import { buildGround, buildWoods } from './scene/terrain';
+import { buildDoors, buildMarkers, buildSpacePortal } from './scene/doors';
+import { createEvents } from './scene/fx';
 
 export async function createCompoundWorld(rt, { calm = false } = {}) {
   // (the glow only for what's past lit paint: a white wall full in the sun
@@ -434,191 +93,8 @@ export async function createCompoundWorld(rt, { calm = false } = {}) {
     c.updateProjectionMatrix();
   }
 
-  // ── the ground ──
-  // (the scans repeat every few metres over hundreds: a second, turned copy
-  // of each is blended in by a slow noise so the repeat never lines up, and
-  // a fine grain fades in underfoot: lib/three/surface)
-  const grain = detailNormal({ renderer: engine.renderer });
-  // the grass blades darker round each building's foot, as the baked floor
-  // light has the lawn under them (groundShade)
-  const shade = groundShade(BUILDINGS.map((b) => b.foot), { px: small ? 512 : 1024 });
-  const floorMat = antiTile(cloudy(await pbr('forest-floor', { repeat: [1 / 6, 1 / 6], small, roughness: 1, metalness: 0, color: 0x6a6a52 })), { frequency: 0.035, detail: { texture: grain, scale: 0.9, strength: 0.35, range: 30 } });
-  // (round, out past where the haze is whole: from up high there's no square
-  // of ground to see the corners of)
-  const floorGeo = new THREE.CircleGeometry(1800, 96).rotateX(-Math.PI / 2).translate(100, -0.4, 80);
-  {
-    const uv = floorGeo.attributes.uv;
-    const p = floorGeo.attributes.position;
-    for (let i = 0; i < uv.count; i++) uv.setXY(i, p.getX(i), -p.getZ(i));
-  }
-  {
-    // out where the woods thin, the ground is their canopy seen from afar:
-    // dark green, not bare forest floor between the last trees and the haze
-    const before = floorMat.onBeforeCompile;
-    floorMat.onBeforeCompile = (sh, r) => {
-      before?.call(floorMat, sh, r);
-      sh.fragmentShader = sh.fragmentShader.replace(
-        '#include <color_fragment>',
-        `#include <color_fragment>
-        {
-          float canopy = smoothstep(380.0, 700.0, length(vCloudPos.xz - vec2(96.0, 83.2)));
-          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.03, 0.045, 0.022), canopy);
-        }`,
-      );
-    };
-    const key = floorMat.customProgramCacheKey;
-    floorMat.customProgramCacheKey = () => `${key ? key.call(floorMat) : ''}|canopy`;
-  }
-  const floor = new THREE.Mesh(floorGeo, floorMat);
-  floor.receiveShadow = true;
-  scene.add(floor);
-  const flats = [floor]; // what the compound's light is baked on (the ground, the lawn, the roads, the apron, what's painted on them)
+  const { grain, flats, grass, waterN } = await buildGround({ scene, engine, small, env });
   let ground = null; // (the floor light, made once the compound stands: below)
-
-  // the lawn, mown in stripes
-  const lawnMat = cloudy(await pbr('grass', { repeat: [1 / 3.2, 1 / 3.2], small, roughness: 1, metalness: 0, color: 0x9fbf72, normalScale: 0.9 }), 'lawn');
-  const stripe = lawnMat.onBeforeCompile;
-  lawnMat.onBeforeCompile = (sh, r) => {
-    stripe(sh, r);
-    sh.fragmentShader = sh.fragmentShader.replace(
-      '#include <map_fragment>',
-      `#include <map_fragment>
-      {
-        // mowing stripes, 5 m wide, along x
-        float s = smoothstep(0.42, 0.58, abs(fract(vCloudPos.z / 10.0) - 0.5) * 2.0);
-        diffuseColor.rgb *= mix(0.9, 1.07, s);
-        // patches: drier here, lusher there
-        float n = cNoise(vCloudPos.xz * 0.03) * 0.6 + cNoise(vCloudPos.xz * 0.11 + 7.0) * 0.4;
-        diffuseColor.rgb *= mix(vec3(1.08, 1.03, 0.84), vec3(0.88, 1.03, 0.92), n);
-      }`,
-    );
-  };
-  antiTile(lawnMat, { frequency: 0.05, detail: { texture: grain, scale: 1.4, strength: 0.3, range: 26 } });
-  const lawn = new THREE.Mesh(flatShape(LAWN, 0, 1, SC), lawnMat);
-  lawn.receiveShadow = true;
-  scene.add(lawn);
-  flats.push(lawn);
-
-  // grass blades on the lawn round him (./grass.js), lit and striped as the
-  // lawn is; fewer on a phone, none on the lowest tier
-  const grass =
-    engine.tier === 'low'
-      ? null
-      : createGrass(scene, {
-          count: small ? 16000 : 44000,
-          patch: small ? 22 : 30,
-          material: () => {
-            const m = cloudy(new THREE.MeshStandardMaterial({ color: 0x739446, roughness: 0.95, metalness: 0 }), 'blades');
-            const b = m.onBeforeCompile;
-            m.onBeforeCompile = (sh, r) => {
-              b(sh, r);
-              sh.fragmentShader = sh.fragmentShader.replace(
-                '#include <color_fragment>',
-                `#include <color_fragment>
-                {
-                  float s = smoothstep(0.42, 0.58, abs(fract(vCloudPos.z / 10.0) - 0.5) * 2.0);
-                  diffuseColor.rgb *= mix(0.9, 1.07, s);
-                  float n = cNoise(vCloudPos.xz * 0.03) * 0.6 + cNoise(vCloudPos.xz * 0.11 + 7.0) * 0.4;
-                  diffuseColor.rgb *= mix(vec3(1.08, 1.03, 0.84), vec3(0.88, 1.03, 0.92), n);
-                }`,
-              );
-            };
-            return grounded(m, shade);
-          },
-        });
-
-  // the river, and its bank
-  const waterN = waterNormal();
-  const water = cloudy(new THREE.MeshPhysicalMaterial({ envMap: env, color: 0x1f3c44, roughness: 0.3, metalness: 0, normalMap: waterN, normalScale: new THREE.Vector2(0.22, 0.22), envMapIntensity: 0.55, clearcoat: 0.6, clearcoatRoughness: 0.18 }), 'water');
-  waterN.repeat.set(1 / 37, 1 / 29);
-  const river = new THREE.Mesh(flatShape(RIVER, -0.25, 1, SC), water);
-  river.receiveShadow = true;
-  scene.add(river);
-  const bankTex = canvasTexture(
-    64,
-    8,
-    (x, w, h) => {
-      const g = x.createLinearGradient(0, 0, w, 0);
-      g.addColorStop(0, 'rgba(120,138,110,0)');
-      g.addColorStop(0.25, 'rgba(176,164,128,0.9)');
-      g.addColorStop(0.6, 'rgba(196,184,150,1)');
-      g.addColorStop(0.85, 'rgba(150,170,160,0.6)');
-      g.addColorStop(1, 'rgba(110,150,150,0)');
-      x.fillStyle = g;
-      x.fillRect(0, 0, w, h);
-    },
-    { repeat: [1, 1] },
-  );
-  bankTex.wrapT = THREE.RepeatWrapping;
-  const bankMat = cloudy(new THREE.MeshStandardMaterial({ map: bankTex, transparent: true, roughness: 0.95, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 }), 'bank');
-  const shore = samplePath(`M${SHORE.map((p) => p.join(' ')).join(' L')}`, 1.5).map(([x, y]) => [(x - 0.3) * S, (y - 0.5) * S]);
-  const bank = new THREE.Mesh(ribbon(shore, 9, -0.2, 6), bankMat);
-  bank.receiveShadow = true;
-  bank.renderOrder = 1;
-  scene.add(bank);
-
-  // the drives: pale concrete, a darker kerb either side
-  const roadTex = await pbr('concrete-floor', { repeat: [1, 1], small, roughness: 0.85, metalness: 0 });
-  // pale concrete, as the compound has it: the texture's relief, not its dark colour
-  const roadMat = cloudy(new THREE.MeshStandardMaterial({ color: 0xaeb0a9, roughness: 0.86, metalness: 0, normalMap: roadTex.normalMap ?? null, normalScale: new THREE.Vector2(0.7, 0.7), roughnessMap: roadTex.roughnessMap ?? null }), 'road');
-  {
-    // poured in 4 m slabs: a joint across every slab and one down the middle,
-    // the wheels' tracks a little darker, and the concrete's own blotches
-    const before = roadMat.onBeforeCompile;
-    roadMat.onBeforeCompile = (sh, r) => {
-      before(sh, r);
-      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vSlab;').replace('#include <uv_vertex>', '#include <uv_vertex>\nvSlab = uv;');
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vSlab;').replace(
-        '#include <map_fragment>',
-        `#include <map_fragment>
-        {
-          float across = 1.0 - smoothstep(0.0, 0.012, abs(fract(vSlab.y) - 0.5) - 0.488);
-          float down = 1.0 - smoothstep(0.0, 0.004, abs(vSlab.x - 0.5) - 0.002);
-          float tracks = smoothstep(0.1, 0.0, abs(abs(vSlab.x - 0.5) - 0.24));
-          float blotch = cNoise(vCloudPos.xz * 0.35) * 0.6 + cNoise(vCloudPos.xz * 1.7) * 0.4;
-          diffuseColor.rgb *= (1.0 - max(across, down) * 0.38) * (1.0 - tracks * 0.07) * mix(0.9, 1.05, blotch);
-        }`,
-      );
-    };
-    roadMat.customProgramCacheKey = () => 'road-slabs';
-  }
-  for (const t of [roadMat.normalMap, roadMat.roughnessMap]) if (t) t.repeat.set(1 / 4, 1 / 4);
-  roadMat.roughness = 1;
-  matte(roadMat);
-  const kerbMat = cloudy(new THREE.MeshStandardMaterial({ color: 0x8c918a, roughness: 0.9 }), 'kerb');
-  const roadGeos = [];
-  const kerbGeos = [];
-  for (const pts of ROADS_W) {
-    kerbGeos.push(ribbon(pts, ROAD_HALF * 2 + 1.1, 0.03));
-    roadGeos.push(ribbon(pts, ROAD_HALF * 2, 0.06, 4));
-  }
-  const roads = new THREE.Mesh(mergeGeometries(roadGeos), roadMat);
-  const kerbs = new THREE.Mesh(mergeGeometries(kerbGeos), kerbMat);
-  roads.receiveShadow = kerbs.receiveShadow = true;
-  scene.add(kerbs, roads);
-  flats.push(kerbs, roads);
-
-  // what's painted on the ground: the helipad, the track, the range, the car park
-  for (const [box, px] of [
-    [[60, 42, 80, 62], 1024],
-    [[97, 45, 127, 63], 2048],
-    [[-19, 15, -5, 65], 1024],
-    [[49, 96, 73, 106], 1024],
-  ]) {
-    const { tex } = groundPaint(box, small ? px / 2 : px);
-    const [x0, y0, x1, y1] = box;
-    const g = new THREE.PlaneGeometry((x1 - x0) * S, (y1 - y0) * S).rotateX(-Math.PI / 2).translate(((x0 + x1) / 2) * S, 0.08, ((y0 + y1) / 2) * S);
-    // (a fine relief over it, the grain the lawn has underfoot, so the paint catches the sun)
-    const relief = grain.clone();
-    relief.wrapS = relief.wrapT = THREE.RepeatWrapping;
-    relief.repeat.set(((x1 - x0) * S) / 1.4, ((y1 - y0) * S) / 1.4);
-    relief.needsUpdate = true;
-    const m = new THREE.Mesh(g, cloudy(new THREE.MeshStandardMaterial({ map: tex, normalMap: relief, normalScale: new THREE.Vector2(0.35, 0.35), transparent: true, roughness: 0.85, metalness: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), 'paint'));
-    m.receiveShadow = true;
-    m.renderOrder = 1;
-    scene.add(m);
-    flats.push(m);
-  }
 
   // ── the buildings ──
   const panels = (pw, ph) => {
@@ -838,43 +314,7 @@ export async function createCompoundWorld(rt, { calm = false } = {}) {
     flats.push(m);
   }
 
-  // ── a door into each game: glass in a dark frame, a lit lintel in the game's
-  // colour, a canopy, and the name over it ──
-  const frameMat = cloudy(new THREE.MeshStandardMaterial({ color: 0x262b32, roughness: 0.4, metalness: 0.85 }), 'frame');
-  const doorGlass = new THREE.MeshPhysicalMaterial({ envMap: env, color: 0x1d2a36, roughness: 0.05, metalness: 0.2, clearcoat: 1, envMapIntensity: 1.3, emissive: 0xffd9a8, emissiveIntensity: 0.18 });
-  const inBuilding = (x, z) => BUILDINGS.some((b) => inPoly(x, z, b.foot));
-  const doors = new THREE.Group();
-  scene.add(doors);
-  for (const p of PLACES) {
-    if (!p.sign) continue;
-    const ox = Math.cos(p.face);
-    const oz = -Math.sin(p.face);
-    // the wall: walk in from the door until it's a building
-    let d = 0;
-    while (d < 8 && !inBuilding(p.x - ox * d, p.z - oz * d)) d += 0.05;
-    const g = new THREE.Group();
-    g.position.set(p.x - ox * (d - 0.02), 0, p.z - oz * (d - 0.02));
-    g.rotation.y = Math.atan2(ox, oz);
-    const part = (geo, mat, x, y, z) => {
-      const m = new THREE.Mesh(geo, mat);
-      m.position.set(x, y, z);
-      m.castShadow = mat !== doorGlass;
-      m.receiveShadow = true;
-      g.add(m);
-      return m;
-    };
-    part(new THREE.BoxGeometry(3.6, 3.5, 0.3), frameMat, 0, 1.75, 0.08);
-    for (const s of [-1, 1]) part(new THREE.BoxGeometry(1.5, 3.0, 0.05), doorGlass, s * 0.78, 1.55, 0.26);
-    part(new THREE.BoxGeometry(0.06, 3.0, 0.08), frameMat, 0, 1.55, 0.27);
-    const lintel = part(new THREE.BoxGeometry(3.2, 0.09, 0.06), new THREE.MeshBasicMaterial({ color: hot(p.accent, 2.4), toneMapped: false }), 0, 3.18, 0.27);
-    lintel.castShadow = false;
-    part(rbox(5, 0.22, 2.4, 0.06), white, 0, 3.7, 1.1);
-    const signTex = signTexture(p.sign);
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 0.72), new THREE.MeshStandardMaterial({ map: signTex, transparent: true, emissive: 0xffffff, emissiveMap: signTex, emissiveIntensity: 0.35, roughness: 0.5, depthWrite: false }));
-    sign.position.set(0, 4.35, 0.1);
-    g.add(sign);
-    doors.add(g);
-  }
+  const { frameMat } = buildDoors({ scene, env, white });
 
   // ── floodlight masts round the lawn, the helipad and the drives (out on the
   // open lawn, they're what there is to swing from) ──
@@ -939,91 +379,9 @@ export async function createCompoundWorld(rt, { calm = false } = {}) {
     }
   }
 
-  // ── the cars in the car park ──
-  const carMats = carMaterials();
-  for (const m of Object.values(carMats)) cloudy(m, 'car');
-  const cars = { sedan: instanced(carGeometries('sedan'), carMats, 6), suv: instanced(carGeometries('suv'), carMats, 4) };
-  const m4 = new THREE.Matrix4();
-  const q = new THREE.Quaternion();
+  await buildWoods({ scene, small, sunDir });
   const v3 = new THREE.Vector3();
   const v3b = new THREE.Vector3();
-  for (const p of Object.values(cars)) {
-    scene.add(p.group);
-    p.begin();
-  }
-  for (const c of PARKED_CARS) {
-    m4.compose(v3.set(c.x, 0.07, c.z), q.setFromEuler(new THREE.Euler(0, c.yaw, 0)), new THREE.Vector3(1, 1, 1));
-    cars[c.kind].set(m4, { paint: new THREE.Color(c.color) });
-  }
-  for (const p of Object.values(cars)) p.end();
-
-  // ── the woods: firs all round the lawn, and broadleaf trees down the drives ──
-  {
-    const rand = rng(23);
-    const woods = [];
-    const tree = (x, y, i) => {
-      const fir = rand() < 0.74;
-      const kind = fir ? Math.floor(rand() * 3) : 3;
-      const h = fir ? 13 + rand() * 8 : 9 + rand() * 4;
-      woods.push([x * S, y * S, h, kind, i + rand()]);
-    };
-    TREES.forEach((t, i) => !inPoly(t.x, t.y, LAWN) && !inPoly(t.x, t.y, RIVER) && tree(t.x, t.y, i));
-    const step = small ? 4.4 : 3.5;
-    for (let y = -70; y < 180; y += step)
-      for (let x = -100; x < 240; x += step) {
-        const px = x + (rand() - 0.5) * step * 0.9;
-        const py = y + (rand() - 0.5) * step * 0.9;
-        if (inPoly(px, py, LAWN) || inPoly(px, py, RIVER)) continue;
-        const e = nearestEdge(px, py, LAWN).d;
-        if (e < 2 || e > (small ? 50 : 70)) continue;
-        tree(px, py, woods.length);
-      }
-    // and the woods going on, thinner the further out, in a ring round the
-    // lawn to where the haze has most of them (450 units, 720 m): from up a
-    // mast or the top of a swing the ground beyond was bare to the sky
-    {
-      const far = small ? 11 : 7;
-      const [cx, cy, out] = [60, 52, 450];
-      for (let y = cy - out; y < cy + out; y += far)
-        for (let x = cx - out; x < cx + out; x += far) {
-          const px = x + (rand() - 0.5) * far * 0.9;
-          const py = y + (rand() - 0.5) * far * 0.9;
-          const r = Math.hypot(px - cx, py - cy);
-          const inside = px >= -100 && px < 240 && py >= -70 && py < 180 && nearestEdge(px, py, LAWN).d <= (small ? 50 : 70);
-          const keep = r < 300 ? 0.75 : 0.75 - ((r - 300) / (out - 300)) * 0.35;
-          if (r > out || inside || rand() > keep || inPoly(px, py, LAWN) || inPoly(px, py, RIVER)) continue;
-          tree(px, py, woods.length);
-        }
-    }
-    for (const t of LAWN_TREES) woods.push([t.x, t.z, treeHeight(t), 3, t.tone * 97]);
-    scene.add(await trees(woods));
-    // street lamps down the drives (Poly Haven's, CC0), their arms out over the drive
-    // (no shadows of their own: within the triangle budget)
-    scene.add(await scatter('lamp', LAMPS.map((l) => [l.x, l.z, 1.15, l.yaw]), { shadows: false }));
-    // shrubs in the planters by the doors
-    const shrubs = [];
-    PLANTERS.forEach((p, i) => {
-      for (let k = 0; k < (small ? 1 : 2); k++) {
-        const a = i * 1.7 + k * 1.57;
-        const sc = 2.6 + ((i + k) % 3) * 0.3;
-        const r = a * 2.1 + k * 3.1;
-        // (the shrub model's middle is 0.27 m along its x from its origin: brought back over the pot)
-        const cx = 0.27 * sc;
-        shrubs.push([p.x + Math.cos(a) * 0.18 - Math.cos(r) * cx, p.z + Math.sin(a) * 0.18 + Math.sin(r) * cx, sc, r]);
-      }
-    });
-    const shrubGroup = await scatter('shrub', shrubs, { heightAt: () => 0.58, shadows: false });
-    scene.add(shrubGroup);
-    // the lawn's trees cast no shadow of their own (they're pictures): a soft one under each
-    const blobs = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }), LAWN_TREES.length);
-    LAWN_TREES.forEach((t, i) => {
-      const r = 5.5 + t.tone * 2;
-      blobs.setMatrixAt(i, m4.compose(v3.set(t.x + sunDir.x * -1.2, 0.09, t.z + sunDir.z * -1.2), q.identity(), new THREE.Vector3(r, 1, r)));
-    });
-    blobs.instanceMatrix.needsUpdate = true;
-    blobs.renderOrder = 2;
-    scene.add(blobs);
-  }
 
   // ── the Quinjets: one parked, one that comes and goes ──
   const jetMats = {
@@ -1438,41 +796,8 @@ export async function createCompoundWorld(rt, { calm = false } = {}) {
     }
   };
 
-  // ── the doors' beams and rings, and the stones won back over them ──
-  const markers = {};
-  const ringGeo = new THREE.RingGeometry(1.5, 1.85, 48).rotateX(-Math.PI / 2);
-  const beamGeo = new THREE.CylinderGeometry(0.55, 0.55, 46, 18, 1, true).translate(0, 23, 0);
-  const gemGeo = new THREE.OctahedronGeometry(1, 0).scale(0.6, 1, 0.6);
-  for (const p of PLACES) {
-    const g = new THREE.Group();
-    g.position.set(p.x, 0, p.z);
-    const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: hot(p.accent, 1.6), transparent: true, opacity: 0.85, depthWrite: false, toneMapped: false, fog: false }));
-    ring.position.y = 0.12;
-    ring.renderOrder = 3;
-    const beamMat = beamMaterial(p.accent);
-    const beam = new THREE.Mesh(beamGeo, beamMat);
-    beam.renderOrder = 4;
-    // (the gate has no stone to win: a gem nobody will see, in its own colour)
-    const color = STONES.find((s) => s.id === STONE_OF[p.stone])?.color ?? p.accent;
-    const gem = new THREE.Mesh(gemGeo, new THREE.MeshStandardMaterial({ color, emissive: new THREE.Color(color), emissiveIntensity: 2.6, roughness: 0.15, metalness: 0.1 }));
-    gem.position.y = 4.6;
-    gem.scale.setScalar(0.55);
-    gem.castShadow = false;
-    g.add(ring, beam, gem);
-    scene.add(g);
-    markers[p.id] = { g, ring, beam, beamMat, gem };
-  }
-
-  // ── the portal the Space Stone opens, over the helipad ──
-  const portal = buildPortal(8.5);
-  portal.mesh.position.set(PORTAL.x, PORTAL.y - 12, PORTAL.z);
-  portal.mesh.visible = false;
-  scene.add(portal.mesh);
-  const portalBeam = new THREE.Mesh(new THREE.CylinderGeometry(PORTAL.r, PORTAL.r, 14, 32, 1, true).translate(0, 7, 0), beamMaterial(0x6cc8ff));
-  portalBeam.position.set(PORTAL.x, 0, PORTAL.z);
-  portalBeam.visible = false;
-  portalBeam.renderOrder = 4;
-  scene.add(portalBeam);
+  const placeMarkers = buildMarkers(scene);
+  const { portal, portalBeam } = buildSpacePortal(scene);
   let portalOpen = 0; // 0..1, opening
 
   // ── the camera ──
@@ -1773,28 +1098,6 @@ export async function createCompoundWorld(rt, { calm = false } = {}) {
     }
   };
 
-  const placeMarkers = (s) => {
-    const done = new Set(s.done ?? []);
-    for (const p of PLACES) {
-      const m = markers[p.id];
-      const won = done.has(p.id);
-      const next = s.next === p.id;
-      const pulse = 0.5 + 0.5 * Math.sin(clock * 3 + p.x);
-      m.ring.visible = !won || s.near === p.id;
-      m.ring.material.opacity = (s.near === p.id ? 1 : 0.55 + pulse * 0.3) * (won ? 0.5 : 1);
-      m.ring.scale.setScalar(1 + (s.near === p.id ? 0.08 * pulse : 0));
-      // the beam is for finding the door from across the lawn: it fades as you come up to it
-      const near = Math.min(1, Math.max(0, (Math.hypot(s.hero.x - p.x, s.hero.z - p.z) - 5) / 12));
-      m.beam.visible = !won && near > 0.02;
-      m.beamMat.uniforms.uTime.value = clock;
-      m.beamMat.uniforms.uStrength.value = (next ? 1.15 : 0.55) * near;
-      m.gem.visible = won;
-      if (won) {
-        m.gem.rotation.y = clock * 0.9;
-        m.gem.position.y = 4.6 + Math.sin(clock * 1.5 + p.z) * 0.25;
-      }
-    }
-  };
 
   const render = (s, ms) => {
     if (engine.lost) return;
@@ -1809,7 +1112,7 @@ export async function createCompoundWorld(rt, { calm = false } = {}) {
     knocks.update(dt);
     placePeople(s, dt);
     ghosts.update(s.travellers ?? [], clock, dt);
-    placeMarkers(s);
+    placeMarkers(s, clock);
     flags.update(clock);
     // the grass's patch a little ahead of him, where the camera's looking
     if (grass) {
@@ -1996,69 +1299,7 @@ export async function createCompoundWorld(rt, { calm = false } = {}) {
   };
 
   // ── events ──
-  const fx = (type, d = {}) => {
-    if (type === 'enter') {
-      const p = PLACES.find((x) => x.id === d.id);
-      if (p) vfx.ring(v3.set(p.x, 0.2, p.z), { color: new THREE.Color(p.accent).getHex(), from: 0.5, to: 5, life: 0.5 });
-    } else if (type === 'portal') {
-      A.flash = 1.2;
-      vfx.ring(v3.set(PORTAL.x, 0.3, PORTAL.z), { color: 0x9fdcff, from: 1, to: 14, life: 0.8 });
-    } else if (type === 'land') {
-      // a hard one beside them gets a look and a reaction (./castLife.js)
-      for (const p of Object.values(people)) p.life.event('land', { x: d.x, z: d.z, impact: d.impact ?? 0 });
-      squash.kick((d.impact ?? 0) * 0.05);
-      const hard = Math.max(0, Math.min(1, ((d.impact ?? 0) - 9) / 14));
-      if (!calm) vfx.smoke(v3.set(d.x, (d.y ?? 0) + 0.1, d.z), { size: 1.2 + hard * 2.2, count: 5 + Math.round(hard * 10), life: 0.7 + hard * 0.6, rise: 0.4 + hard * 0.5, opacity: 0.25 + hard * 0.15, color: 0xb8b4a4, to: 0xd8d4c4, spread: 0.8 + hard * 2.4 });
-      if (hard > 0.3) {
-        vfx.ring(v3.set(d.x, (d.y ?? 0) + 0.15, d.z), { color: 0xfff1d8, from: 0.4, to: 3 + hard * 4, life: 0.45, opacity: 0.5 * hard });
-        A.punch = Math.max(A.punch, 3 * hard);
-      }
-    } else if (type === 'web' || type === 'corner') {
-      // every web out: a bump in the field of view, Insomniac's heartbeat of a swing
-      A.punch = Math.max(A.punch, 3.5);
-      swing.webbed(d.at);
-      if (!calm) vfx.smoke(v3.set(d.at[0], d.at[1], d.at[2]), { size: 0.7, count: 3, life: 0.5, rise: 0.1, opacity: 0.35, color: 0xffffff, to: 0xe8ecf2, spread: 0.3 });
-    } else if (type === 'perfect') {
-      A.punch = Math.max(A.punch, 5);
-      vfx.ring(v3.copy(hero.position), { color: 0xff8a80, from: 0.4, to: 2.4, life: 0.35, opacity: 0.45, normal: v3b.set(d.vx ?? 0, d.vy ?? 0, d.vz ?? 1).normalize() });
-    } else if (type === 'suitup') {
-      A.punch = Math.max(A.punch, 4);
-      vfx.ring(v3.set(ARMOUR.x, 0.4, ARMOUR.z), { color: 0x8fe9ff, from: 0.5, to: 5, life: 0.5, opacity: 0.7 });
-      if (!calm) vfx.smoke(v3.set(ARMOUR.x, 0.3, ARMOUR.z), { size: 1.4, count: 6, life: 0.8, rise: 0.6, opacity: 0.3, color: 0xd8e4f0, to: 0xffffff, spread: 1.2 });
-    } else if (type === 'suitoff') {
-      A.punch = Math.max(A.punch, 3);
-      if (!calm) vfx.smoke(v3.set(d.x ?? hero.position.x, (d.y ?? hero.position.y) + 1, d.z ?? hero.position.z), { size: 1, count: 5, life: 0.6, rise: 0.2, opacity: 0.3, color: 0xd8e4f0, to: 0xffffff, spread: 0.8 });
-    } else if (type === 'trick') {
-      A.punch = Math.max(A.punch, 2);
-    } else if (type === 'bank') {
-      // the style banked: a gold ring out from where he landed
-      vfx.ring(v3.set(hero.position.x, (d.y ?? hero.position.y) + 0.2, hero.position.z), { color: 0xffd98a, from: 0.5, to: 3.5 + Math.min(4, (d.style ?? 0) / 800), life: 0.55, opacity: 0.6 });
-    } else if (type === 'bail') {
-      if (!calm) vfx.smoke(v3.copy(hero.position), { size: 1, count: 5, life: 0.6, rise: 0.3, opacity: 0.3, color: 0xb8b4a4, to: 0xd8d4c4, spread: 1.2 });
-    } else if (type === 'point') {
-      A.punch = Math.max(A.punch, 4);
-      swing.webbed(d.at);
-    } else if (type === 'launch') {
-      A.punch = Math.max(A.punch, 6);
-    } else if (type === 'glide') {
-      A.punch = Math.max(A.punch, 2.5);
-    } else if (type === 'zip') {
-      A.punch = Math.max(A.punch, 5);
-      swing.zipped(d.at);
-    } else if (type === 'dive') {
-      A.punch = Math.max(A.punch, 4);
-    } else if (type === 'pack') {
-      // a backpack found: a puff of web and a ring where it was
-      const at = packs.at(d.id);
-      if (at) {
-        vfx.ring(at, { color: 0xbfe8ff, from: 0.3, to: 2.6, life: 0.45, opacity: 0.6 });
-        if (!calm) vfx.smoke(at, { size: 0.8, count: 4, life: 0.6, rise: 0.3, opacity: 0.4, color: 0xffffff, to: 0xdde6f0, spread: 0.5 });
-      }
-      A.punch = Math.max(A.punch, 2);
-    } else if (type === 'stick' || type === 'kick') {
-      if (!calm) vfx.smoke(v3.copy(hero.position), { size: 0.6, count: 3, life: 0.5, rise: 0.1, opacity: 0.18, color: 0xd8d4c4, to: 0xeeeeee, spread: 0.4 });
-    }
-  };
+  const fx = createEvents({ A, calm, hero, packs, people, squash, swing, vfx, v3, v3b });
 
   // Where something is on screen (CSS pixels of the canvas), for the speech
   // bubbles; null when it's behind the camera or off the edge.

@@ -134,6 +134,55 @@ describe('createViews', () => {
     expect(a.el.drawn).toContainEqual(['copy', 0, canvas.height - 200, 400, 200, 0, 0, 400, 200]);
   });
 
+  it('clears with no tone map and in the working colour space, then gives the view its own', () => {
+    const { views, box, renderer } = setup();
+    const a = box(1000);
+    const view = views.add(a.el, { ratio: 1, state: { toneMapping: 7, outputColorSpace: 'srgb' } });
+    view.resize(400, 200);
+    views.frame();
+    const atClear = [];
+    const clear = renderer.clear;
+    renderer.clear = (...args) => (atClear.push([renderer.toneMapping, renderer.outputColorSpace]), clear(...args));
+    const during = [];
+    view.draw(() => during.push([renderer.toneMapping, renderer.outputColorSpace]));
+    expect(atClear[0]).toEqual([0, 'srgb-linear']);
+    expect(during[0]).toEqual([7, 'srgb']);
+  });
+
+  it('gives each view its own of the node renderer’s targets for the canvas, so its tone map’s quad is its own', () => {
+    const { views, box, renderer } = setup();
+    renderer._canvasTarget = { canvas: true };
+    renderer._frameBufferTargets = new Map();
+    const shared = { name: 'shared', dispose: vi.fn() };
+    renderer._frameBufferTargets.set(renderer._canvasTarget, shared);
+    const a = box(1000);
+    const b = box(800);
+    const va = views.add(a.el, { ratio: 1 });
+    const vb = views.add(b.el, { ratio: 1 });
+    va.resize(400, 200);
+    vb.resize(300, 100);
+    views.frame();
+    // (three makes one when there is none for the canvas, and keeps it there)
+    const made = [];
+    const drawing = (name) => () => {
+      const map = renderer._frameBufferTargets;
+      if (!map.get(renderer._canvasTarget)) map.set(renderer._canvasTarget, { name, dispose: vi.fn() });
+      made.push(map.get(renderer._canvasTarget).name);
+    };
+    va.draw(drawing('a'));
+    vb.draw(drawing('b'));
+    views.flush();
+    views.frame();
+    va.draw(drawing('a again'));
+    views.flush();
+    // (the next frame, the first view's own again)
+    expect(made.slice(0, 2)).toEqual(['a', 'b']);
+    expect(made).toContain('a');
+    expect(made).not.toContain('a again');
+    expect(made).not.toContain('shared');
+    expect(renderer._frameBufferTargets.get(renderer._canvasTarget)).toBe(shared);
+  });
+
   it('moves the canvas under the view that drew the biggest buffer, dressed as it and clipped to its size', () => {
     const { views, box, canvas } = setup();
     const a = box();

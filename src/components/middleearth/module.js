@@ -195,7 +195,7 @@ export function makeWorld(rt, { createViews, doc = typeof document !== 'undefine
 
 export default {
   id: 'middleearth',
-  shading: 'glsl',
+  shading: 'nodes',
   mb: WORLD_MB['/middle-earth'],
   label: 'Middle-earth: the map on a desk, the towns of the road from the Shire to Mordor in 3D, and the kitchen, the bridge and the Ring along the way.',
   // (the sharpest a picture asks for: the stages' 1.75, lib/stage3d's

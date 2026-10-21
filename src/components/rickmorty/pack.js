@@ -8,6 +8,11 @@ export const PACK = {
     '/models/albuquerque/jesse.glb',
     '/models/albuquerque/jesse-lab.glb',
     '/models/wardrobe/portalgun.glb',
+    // (the town round the street's street lights, signs, flowers, bushes and rocks: world/town/scene.js)
+    '/models/quaternius/props/street.glb',
+    '/models/quaternius/nature/flowers.glb',
+    '/models/quaternius/nature/trees.glb',
+    '/models/quaternius/nature/rocks.glb',
     '/audio/clips/what-is-my-purpose.mp3',
     '/audio/clips/im-mr-meeseeks.mp3',
     '/audio/clips/wubba-lubba-dub-dub.mp3',

@@ -27,6 +27,7 @@
 import * as THREE from 'three';
 import { createMeshyCast } from '../portal/meshyCast';
 import { defaultLook } from '../wardrobe/looks';
+import { CAST_INK } from './look';
 import { bodyAsset, bodyKind, dress, whoOf, withWardrobe } from '../wardrobe/wear';
 import { applyEmote } from '../../../lib/emote';
 import { turn } from '../../../lib/three/gait';
@@ -100,7 +101,7 @@ export function along(loop, lengths, total, s) {
 // look: the wardrobe's Rick (looks.js), the one you walk about as; loader:
 // another GLTFLoader (a test's)
 export async function createPeople({ outdoors, factory, council, places, tier = 'high', look = null, loader = null }) {
-  const meshy = createMeshyCast(withWardrobe({ kinds: KINDS, rigged: RIGGED, cull: true, ...(loader ? { loader } : {}) }));
+  const meshy = createMeshyCast(withWardrobe({ kinds: KINDS, rigged: RIGGED, cull: true, ink: tier === 'low' ? 0 : CAST_INK, ...(loader ? { loader } : {}) }));
   let rickLook = look ?? defaultLook('rick');
   const loads = new Map(); // (a body's model, loaded once)
   const need = (asset, clips) => {

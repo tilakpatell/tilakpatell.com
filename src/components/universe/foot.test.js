@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createBolts } from '../../lib/combat/bolt';
 import { FIRST } from '../../lib/combat/accuracy';
-import { BOLT, FOOT, METRE, TROOPS, aimAt, apart, at, bearing, byTrench, createJump, facingAlong, footBodies, footSolids, inTrench, landingSpot, march, offset, person, place, rightOf, solidsOn, squad, vec, velOf, walk } from './foot';
+import { BOLT, FOOT, METRE, TROOPS, aimAt, apart, at, bearing, byTrench, createJump, facingAlong, footBodies, footSkills, footSolids, inTrench, landingSpot, march, offset, person, place, rightOf, solidsOn, squad, vec, velOf, walk } from './foot';
 
 const R = 18;
 const seeded = (seed = 1) => () => {
@@ -476,5 +476,17 @@ describe('other dimensions', () => {
     expect(a.hue).toBeLessThan(1);
     const codes = new Set(Array.from({ length: 50 }, (_, i) => dimensionOf(`pilot-${i}`).code));
     expect(codes.size).toBeGreaterThan(45);
+  });
+});
+
+describe('the skill tree on foot (hangar/skills’ fx)', () => {
+  it('takes a tenth less from each hit with tough, heals half again as fast with the medic, and hits the troops harder', () => {
+    const k = footSkills({ health: 1.1, heal: 1.5, damage: 1.15, boost: 0.1 });
+    expect(k.hurt).toBeCloseTo(1 / 1.1);
+    expect(k.heal).toBeCloseTo(FOOT.heal * 1.5);
+    expect(k.damage).toBeCloseTo(1.15);
+  });
+  it('is the foot as it was with no skills, or nonsense', () => {
+    for (const fx of [undefined, null, {}, { health: -1, heal: 'x', damage: 0 }]) expect(footSkills(fx)).toEqual({ hurt: 1, heal: FOOT.heal, damage: 1 });
   });
 });

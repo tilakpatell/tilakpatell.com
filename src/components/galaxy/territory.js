@@ -28,6 +28,9 @@ const GON = 24;
 const RIM_GON = 96;
 const EPS = 1e-9;
 
+// (how far past the disc a system out there holds space: the map's margin round the disc, mapView.js's FRAME, so it stays on it)
+const POCKET = 0.6;
+
 // how far a system's territory reaches (grid squares): further for a worthier one
 export const capOf = (id) => 1.5 + 0.4 * worthOf(id);
 
@@ -53,13 +56,16 @@ function clip(poly, n, c, tag) {
   return out;
 }
 
-export function cellsOf(points, { core = CORE, rim = RIM } = {}) {
+export function cellsOf(points, { core = CORE, rim = RIM, pocket = POCKET } = {}) {
   // (the galaxy's disc, as the edges of a 96-gon in it: nothing reaches past it)
-  const disc = Array.from({ length: RIM_GON }, (_, i) => {
-    const a = ((i + 0.5) / RIM_GON) * Math.PI * 2;
-    const n = [Math.cos(a), Math.sin(a)];
-    return [n, n[0] * core[0] + n[1] * core[1] + rim * Math.cos(Math.PI / RIM_GON)];
-  });
+  const discOf = (r) =>
+    Array.from({ length: RIM_GON }, (_, i) => {
+      const a = ((i + 0.5) / RIM_GON) * Math.PI * 2;
+      const n = [Math.cos(a), Math.sin(a)];
+      return [n, n[0] * core[0] + n[1] * core[1] + r * Math.cos(Math.PI / RIM_GON)];
+    });
+  const disc = discOf(rim);
+  const beyond = discOf(rim + pocket);
   return points.map((me) => {
     const [x0, z0] = me.pos;
     let poly = Array.from({ length: GON }, (_, i) => {
@@ -72,7 +78,10 @@ export function cellsOf(points, { core = CORE, rim = RIM } = {}) {
       // (nearer me than o: 2p·(o − me) ≤ |o|² − |me|²)
       poly = clip(poly, [x1 - x0, z1 - z0], (x1 * x1 + z1 * z1 - x0 * x0 - z0 * z0) / 2, o.id);
     }
-    for (const [n, c] of disc) poly = clip(poly, n, c, null);
+    // (a system past the disc, Kamino, holds a pocket of space of its own beyond it, as far as the map's margin goes: the disc
+    // doesn't cut it off, and nothing reaches off the map)
+    const edge = Math.hypot(x0 - core[0], z0 - core[1]) <= rim ? disc : beyond;
+    for (const [n, c] of edge) poly = clip(poly, n, c, null);
     // (a corner cut exactly on a line comes out twice: the second's the one whose edge goes on)
     poly = poly.filter((v, i) => {
       const w = poly[(i + 1) % poly.length];

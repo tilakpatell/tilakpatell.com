@@ -4,6 +4,7 @@ import { useDocumentTitle, useMediaQuery, useReducedMotion } from '../lib/hooks'
 import { WorldHost, useWorld } from '../runtime';
 import { Hud, Letterbox, Menu, MenuItem, Prompt, TouchButton, letterbox } from '../runtime/hud';
 import { wayOut } from '../components/worlds/worlds';
+import { useAchievements } from '../components/Achievements';
 import roadModule from '../components/middleearth/road/module';
 import { STAGES } from '../components/middleearth/road/stages/index';
 import Ribbon from '../components/middleearth/road/Ribbon';
@@ -11,23 +12,31 @@ import { markAt } from '../components/middleearth/road/line';
 import TitleCard from '../components/middleearth/road/TitleCard';
 import LoreCard from '../components/middleearth/road/LoreCard';
 import ResumeCard from '../components/middleearth/road/ResumeCard';
+import DeedCard from '../components/middleearth/road/DeedCard';
+import Said from '../components/middleearth/road/Said';
+import { nameOf, saidFor } from '../components/middleearth/road/talk';
+import { TALES } from '../components/middleearth/road/stages/tales';
+import { MAP, bookPageForStage } from '../components/middleearth/redbook/routes';
 import '@fontsource/cinzel/600.css';
 import '@fontsource/cinzel/700.css';
 import '../styles/lazy/road.css';
 
-const TITLE_FOR = 4000; // ms a stage’s card stays
-const FIRST_FOR = 7000; // the Road’s own card, which says how to walk it
+const TITLE_FOR = 7000; // ms a stage’s card stays (its tale to read)
+const FIRST_FOR = 10000; // the Road’s own card, which says how to walk it
 
 // The Road through Middle-earth (/middle-earth/road, ?at=moria): one ride
 // from Bag End to the Grey Havens on the world runtime, and the HUD over
 // it from the kit: the prompt, the ribbon of stages, the title and lore
-// cards, the Menu, the resume card and the letterbox.
+// cards, the Menu, the resume card and the letterbox; and the Road's own:
+// what it waits for you to do (the deed card), what the company says (the
+// subtitles, one line at a time) and a word with them (T, or Talk).
 export default function TheRoad() {
   useDocumentTitle('The Road · Middle-earth');
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const reduced = useReducedMotion();
+  const { unlock } = useAchievements();
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const portrait = useMediaQuery('(orientation: portrait)');
   // (the address is read once: the world keeps the ride after that)
@@ -38,6 +47,11 @@ export default function TheRoad() {
   const [clock, setClock] = useState({ auto: !reduced, mode: 'idle', holding: false });
   const [at, setAt] = useState({ s: 0, stage: STAGES[0].id });
   const [bars, setBars] = useState(true);
+  const [deed, setDeed] = useState(null);
+  const [talk, setTalk] = useState(null);
+  const [said, setSaid] = useState(null);
+  const lines = useRef([]); // the lines waiting their turn
+  const saying = useRef(null); // the one shown
   const mark = useRef(null);
   const menu = useRef(null);
   const lastLore = useRef(null);
@@ -52,8 +66,23 @@ export default function TheRoad() {
       setAt((was) => (was.stage === e.stage ? was : { s: e.s, stage: e.stage }));
     } else if (e.type === 'lore') setLore(lastLore.current);
     else if (e.type === 'menu') menu.current?.querySelector('.hud-btn')?.click();
-    else if (e.type === 'end') navigate('/middle-earth');
-  }, [navigate]);
+    else if (e.type === 'end') {
+      // (the end is the desk: Bag End's study, the book open, and walk it yourself)
+      if (e.ridden) unlock('lotrRoad');
+      navigate('/middle-earth?from=road');
+    }
+    else if (e.type === 'deed') setDeed(e.label ? e : null);
+    else if (e.type === 'talk') setTalk(e.who ? e : null);
+    else if (e.type === 'line' && e.text) {
+      // (queued: a beat's three voices are read one after another)
+      const line = { who: e.who, text: e.text, key: `${e.who}-${Date.now()}-${lines.current.length}` };
+      if (saying.current) lines.current.push(line);
+      else {
+        saying.current = line;
+        setSaid(line);
+      }
+    }
+  }, [navigate, unlock]);
   const { host, status, rt } = useWorld(roadModule, { props, onEvent });
   const api = useCallback(() => (rt?.current?.module === roadModule ? rt.current.world : null), [rt]);
 
@@ -62,6 +91,16 @@ export default function TheRoad() {
     const t = setTimeout(() => setTitle(null), title.first ? FIRST_FOR : TITLE_FOR);
     return () => clearTimeout(t);
   }, [title]);
+  // each line its time to read, then the next (none read while a stage's
+  // card is up: they wait, so the two never sit over each other)
+  useEffect(() => {
+    if (!said || title) return undefined;
+    const t = setTimeout(() => {
+      saying.current = lines.current.shift() ?? null;
+      setSaid(saying.current);
+    }, saidFor(said.text));
+    return () => clearTimeout(t);
+  }, [said, title]);
   useEffect(() => {
     if (!lore) return undefined;
     lastLore.current = lore;
@@ -72,7 +111,14 @@ export default function TheRoad() {
   const stage = STAGES.find((st) => st.id === at.stage) ?? STAGES[0];
   const holding = clock.holding;
   const prompt = reduced ? { k: 'Enter', verb: 'Next' } : clock.auto ? { k: 'Shift', verb: 'Run' } : { k: 'W', verb: 'Walk on' };
-  const alt = !reduced && !clock.auto ? <Prompt k="Space" verb="Let the road walk" touch={touch} onClick={() => api()?.setAuto(true)} /> : null;
+  const talkPrompt = talk && !deed ? <Prompt k="T" verb="Talk" thing={talk.name} touch={touch} onClick={() => api()?.talk()} /> : null;
+  const walkAlt = !reduced && !clock.auto ? <Prompt k="Space" verb="Let the road walk" touch={touch} onClick={() => api()?.setAuto(true)} /> : null;
+  const alt = walkAlt || talkPrompt ? (
+    <>
+      {walkAlt}
+      {talkPrompt}
+    </>
+  ) : null;
 
   return (
     <div className="pt-[var(--nav-h)]">
@@ -101,7 +147,8 @@ export default function TheRoad() {
                     Letterbox · {bars ? 'on' : 'off'}
                   </MenuItem>
                 )}
-                <MenuItem onClick={() => navigate('/middle-earth')}>The map</MenuItem>
+                <MenuItem onClick={() => navigate(`/middle-earth?page=${bookPageForStage(stage.id)}`)}>The Red Book</MenuItem>
+                <MenuItem onClick={() => navigate(MAP)}>Middle-earth’s map</MenuItem>
                 <MenuItem onClick={() => api()?.restart()}>Start again</MenuItem>
                 <MenuItem onClick={() => api()?.skipToEnd()}>Skip to the end</MenuItem>
               </Menu>
@@ -115,6 +162,11 @@ export default function TheRoad() {
           }
           thumbs={
             <div className="road-thumbs">
+              {talk && !deed && (
+                <TouchButton size={52} onPress={() => api()?.talk()} aria-label={`Talk to ${talk.name}`}>
+                  Talk
+                </TouchButton>
+              )}
               <TouchButton size={52} onPress={() => api()?.press('run', true)} onRelease={() => api()?.press('run', false)} aria-label="Run">
                 Run
               </TouchButton>
@@ -124,7 +176,9 @@ export default function TheRoad() {
             </div>
           }
         >
-          {title && !offer && <TitleCard key={title.key} name={title.name} date={title.date} first={title.first} />}
+          {title && !offer && <TitleCard key={title.key} name={title.name} date={title.date} tale={TALES[title.id]} first={title.first} />}
+          {!offer && <DeedCard deed={deed} touch={touch} api={api} />}
+          {!offer && !title && said && <Said key={said.key} line={{ name: nameOf(said.who, stage.id), text: said.text }} />}
           {lore && <LoreCard card={lore} />}
           {offer && (
             <ResumeCard

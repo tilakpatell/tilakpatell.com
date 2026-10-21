@@ -207,8 +207,9 @@ export async function seatOwn(R, kind, { x, z, face, id = kind }, { h, seatY }) 
 }
 
 // One of them as a hologram, standing in their idle: see-through cyan over
-// their own colours, flickering a little, drawn without the ink (a projection
-// has no outline). `flat` is a group of the room's that the ink leaves alone.
+// their own colours, flickering a little, drawn without the cast's line (a
+// projection has no outline). `flat` is a group of the room's for what's
+// drawn flat (its glow).
 export async function hologram(R, kind, { x, z, face, id = kind }, { h, flat }) {
   const c = await figure(R, kind, ['idle', 'walk']);
   if (!c) return null;
@@ -218,6 +219,10 @@ export async function hologram(R, kind, { x, z, face, id = kind }, { h, flat }) 
   const mats = [];
   c.group.traverse((o) => {
     if (!o.isMesh) return;
+    if (o.userData.ink) {
+      o.visible = false;
+      return;
+    }
     const m = R.own(new THREE.MeshBasicMaterial({ map: o.material.map ?? null, color: 0x7ff0ff, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
     o.material = m;
     o.castShadow = false;

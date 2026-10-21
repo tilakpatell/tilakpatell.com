@@ -31,6 +31,7 @@ import { loadScan, scanOf } from './surface/kit';
 import { forgetTexture, loadTexture } from '../../lib/three/textures';
 import PLANET_SKINS from '../../data/planetSkins.json';
 import { skinFile, skinMixAt } from './bodySkin';
+import { CHARTED_LOOKS } from './charted/looks';
 
 // each family's colour slots (uPal, in order) and params (uP0, uP1)
 export const FAMILIES = {
@@ -257,6 +258,8 @@ export const LOOKS = {
     pal: { base: '#9a4a30', dark: '#6a2e1e', bright: '#c07050', crack: '#4a1e14' },
     p: { craters: 0.8, maria: 0.4, cracks: 0 },
   },
+  // ── The charted worlds' (charted/looks.js: one copy for both renderers) ──
+  ...CHARTED_LOOKS,
 };
 
 // the game's skins, by look (scripts/bf2017-planets.mjs writes the file)

@@ -13,6 +13,7 @@ import { nearest } from '../../middleearth/towns/story';
 import { newTalk, talkNode, talkOn } from '../../middleearth/towns/talk';
 import { behindYaw, cameraMove, makeWalker, newWalker } from '../../middleearth/towns/walker';
 import { useTravellers } from '../../middleearth/towns/useTravellers';
+import { alliesText } from '../../../runtime/hud';
 import { ASKS, CAST, COLLIDERS, DOORS, HOOP, JIM, LINES, NAMES, OFFICE_ARRIVE, P, RACKS, ROOMS, SPOKEN, SPOTS, THINGS, WALLS, WAREHOUSE, WH_ARRIVE, WORLD, inLot, inWarehouse, rect, roomAt, seatOf, spot, validAt } from './layout';
 import { SHOUTS } from './shouts';
 import { CALL_COUNT, CHILI, CONVOS, FIRE, HOOPS, JELLO, QUESTS, SEAL, SPEAKERS, callOf, fireLeft, meterAt, newChili, newHoops, officeProgress, shoot, stepChili, stepHoops } from './story';
@@ -1208,8 +1209,9 @@ function Visitors({ trav }) {
       </button>
     );
   return (
-    <span className="shire-chip town-travellers" data-on title="Everyone else online in the office shows as a pale Jim from another branch: they can’t touch your jobs, nor you theirs">
+    <span className="shire-chip town-travellers" data-on data-allies={trav.allies > 0 ? trav.allies : undefined} title="Everyone else online in the office shows as a pale Jim from another branch: they can’t touch your jobs, nor you theirs">
       <b>{trav.count}</b> {trav.count === 1 ? 'visitor' : 'visitors'} here
+      {trav.allies > 0 && <em className="town-allies"> · {alliesText(trav.allies, trav.count)}</em>}
     </span>
   );
 }

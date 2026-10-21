@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   RiArrowRightLine,
   RiBriefcaseLine,
+  RiChat3Line,
   RiCodeBoxLine,
   RiCompass3Line,
   RiContrast2Line,
@@ -23,6 +24,7 @@ import {
   RiSettings3Line,
   RiSaveLine,
   RiSparkling2Line,
+  RiTeamLine,
   RiTerminalBoxLine,
 } from 'react-icons/ri';
 import { profile } from '../data/profile';
@@ -37,11 +39,13 @@ import { BACK, SCRIPTS } from '../fun/scripts';
 import { audioContext, setSound, setVoicesOn, soundOn, voicesOn } from '../lib/audio';
 import { useView } from './ViewSwitch';
 import { restartSite } from '../lib/restart';
-import { openGuide, openSettings } from '../lib/palette';
+import { openGuide, openParty, openSettings } from '../lib/palette';
+import { WORDS } from '../lib/words';
 import { TOUR_TIMES, openTour } from '../lib/tour';
 import { DESTINATIONS } from './universe/nav';
 import { byId as universeById } from './universe/universes';
 import { IconDownload, IconSound, IconUniverse } from './icons';
+import { HQ_PALETTE } from './avengers/world/links';
 import '../styles/lazy/commandpalette.css';
 
 // ⌘K / Ctrl+K: jump anywhere on the site, or run one of its tricks.
@@ -93,6 +97,9 @@ export default function CommandPalette({ onClose }) {
         : { id: 's-home', group: 'Actions', label: 'Switch to the classic site', hint: 'and open there next time', keywords: 'view mode plain pages front door start page landing home classic simple 2d', icon: RiLayoutGridLine, run: () => switchTo('classic') },
       { id: 'a-guide', group: 'Actions', label: 'Guide: the controls and tips for this page', hint: '?', keywords: 'help controls keys keyboard shortcuts how to play tips instructions question', icon: RiQuestionLine, run: openGuide },
       { id: 'a-settings', group: 'Actions', label: 'Settings', hint: 'Quality, sound, this device', keywords: 'settings preferences options quality graphics ultra high medium low performance fps sharpness resolution pixel ratio 3d sound volume music voices motion data download gpu device', icon: RiSettings3Line, run: openSettings },
+      // the party's dialog (universe/online/PartyHost.jsx hears it), on its first tab or on quick chat; offline it offers the way online
+      { id: 'a-party', group: 'Actions', label: WORDS.party, hint: 'Invite, chat, summon', keywords: 'party group team squad friends mates multiplayer online pilots players invite join leave leader summon follow chat message talk', icon: RiTeamLine, run: openParty },
+      { id: 'a-quip', group: 'Actions', label: WORDS.quickChat, hint: 'A line over your ship', keywords: 'quick chat quip say emote hello thanks wave message multiplayer online bubble', icon: RiChat3Line, run: () => openParty({ tab: 'quick' }) },
       // the three tours, the same words kept so "tour" still finds them
       { id: 'a-tour-r', group: 'Actions', label: 'Take the hiring tour', hint: TOUR_TIMES.recruiter, keywords: 'tour help onboarding walkthrough new here first time show around how to get about start recruiter hire hiring work engineering', icon: RiCompass3Line, run: () => openTour({ audience: 'recruiter' }) },
       { id: 'a-tour-p', group: 'Actions', label: 'Take the player’s tour', hint: TOUR_TIMES.player, keywords: 'tour help onboarding walkthrough new here first time show around how to get about start player play games worlds', icon: RiCompass3Line, run: () => openTour({ audience: 'player' }) },
@@ -144,7 +151,6 @@ export default function CommandPalette({ onClose }) {
       { id: 'w-edoras', group: 'Easter eggs', label: 'Edoras: the court of Rohan', keywords: 'lord of the rings lotr tolkien rohan edoras meduseld golden hall theoden gimli legolas gandalf wormtongue grima eowyn barrows simbelmyne drinking game feast beacon beacons lit rohirrim muster world walk 3d', icon: RiSparkling2Line, run: go('/middle-earth/edoras') },
       { id: 'w-cb', group: 'Easter eggs', label: 'The Caribbean: Dead man’s tide', keywords: 'pirates of the caribbean pirate ship black pearl jack sparrow kraken davy jones tortuga navy cannon broadside treasure compass sea sail game world', icon: RiSparkling2Line, run: go('/caribbean') },
       { id: 'w-inv', group: 'Easter eggs', label: 'Invincible: Think, Mark!', keywords: 'invincible mark grayson omni-man omniman nolan viltrum viltrumite thragg flaxans atom eve cecil gda think mark title card fly punch game world', icon: RiSparkling2Line, run: go('/invincible') },
-      { id: 'w-av', group: 'Easter eggs', label: 'Avengers HQ', keywords: 'marvel avengers compound tower iron man stark arc reactor thor mjolnir captain america shield hawkeye black widow hulk banner tesseract thanos infinity gauntlet snap spider-man spiderman peter parker queens web swing world', icon: RiSparkling2Line, run: go('/avengers') },
       { id: 'w-sc', group: 'Easter eggs', label: 'Scranton: Dunder Mifflin', keywords: 'the office dunder mifflin michael jim pam dwight kevin floor plan paper airplane dundies world walk 3d jello stapler chili fire drill reception', icon: RiSparkling2Line, run: go('/scranton') },
       { id: 'w-cy', group: 'Easter eggs', label: 'Cybertron', keywords: 'transformers prime optimus megatron autobots decepticons bumblebee arcee ratchet ground bridge iacon relics cybertronian world', icon: RiSparkling2Line, run: go('/cybertron') },
       { id: 'w-abq', group: 'Easter eggs', label: 'Albuquerque: Breaking Bad', keywords: 'breaking bad walter white heisenberg jesse pinkman gus fring los pollos hermanos saul goodman mike lalo hector superlab world', icon: RiSparkling2Line, run: go('/albuquerque') },
@@ -154,6 +160,8 @@ export default function CommandPalette({ onClose }) {
       { id: 'w-m64', group: 'Easter eggs', label: 'Super Mario 64 on the N64', keywords: 'mario 64 n64 nintendo emulator emulated rom z64 peach castle paintings power stars bob-omb king bowser platformer 3d jump game play', icon: RiSparkling2Line, run: go('/dot-matrix/64') },
       { id: 'w-mc', group: 'Easter eggs', label: 'Minecraft', keywords: 'minecraft mojang eaglercraft 1.12.2 1.8.8 blocks voxel survival craft crafting table mine dig build steve creeper game play password', icon: RiSparkling2Line, run: go('/dot-matrix/minecraft') },
       { id: 'w-citadel', group: 'Easter eggs', label: 'The Citadel of Ricks', keywords: 'rick and morty citadel council ricks simple rick wafers morty day care evil morty vote cop rick cowboy rick world walk 3d', icon: RiSparkling2Line, run: go('/c-137/citadel') },
+      // Avengers HQ, and each building’s game by its own address (avengers/world/links.js)
+      ...HQ_PALETTE.map((r) => ({ ...r, group: 'Worlds', icon: RiArrowRightLine, run: go(r.to) })),
       // everywhere on the universe map, by name: a station, a world, a wonder or a star system through the gate
       ...DESTINATIONS.map((d) => ({ id: `fly-${d.id}`, group: 'Fly to', label: `Fly to ${d.name}`, hint: d.via ? 'through the gate' : d.type, keywords: `universe map fly ${d.type} ${d.kind} ${universeById(d.id)?.label ?? ''} ${d.via ? 'star wars galaxy system' : ''}`, icon: RiRocket2Line, run: go(d.via ? d.to : `/universe/${d.id}`) })),
       { id: 'e-jump', group: 'Easter eggs', label: 'Jump to lightspeed', keywords: 'hyperspace star wars falcon', icon: RiSparkling2Line, run: () => window.dispatchEvent(new Event('tp:hyperspace')) },

@@ -46,6 +46,7 @@ export function makeRoom(kit, id) {
   const noInk = [];
   const ticks = [];
   const cuts = [];
+  const pieces = []; // things drawn as meshes of their own, to be shown and hidden (piece, below)
   let shownAt = null; // the last frame's time, to tell a first frame back
 
   // A frame to draw in: (u across, y up, v out of its front) about (x, z),
@@ -138,6 +139,15 @@ export function makeRoom(kit, id) {
       cuts.push({ line: [x0, z0, x1, z1], parts, k: 1, mesh: null });
       return (x, z, turn = 0) => frame(x, z, turn, { list: parts });
     },
+    // A thing that can go (taken off a shelf, say): its parts merged into a
+    // mesh of its own at build, `mesh` from then on. piece() → { frame(x,
+    // z, turn), mesh }
+    piece() {
+      const p = { parts: [], mesh: null };
+      p.frame = (x, z, turn = 0) => frame(x, z, turn, { list: p.parts });
+      pieces.push(p);
+      return p;
+    },
     // What's over a doorway: hidden while the camera is under it (it can
     // go through a doorway, as high as 2.35 m), within `near` of the line
     // (or the point); its glows go with it
@@ -179,6 +189,7 @@ export function makeRoom(kit, id) {
         ['fixed', false],
       ])
         if (lists[name].length) merge(lists[name], cast);
+      for (const p of pieces) if (p.parts.length) p.mesh = merge(p.parts, true);
       for (const cut of cuts) {
         if (cut.parts.length) cut.mesh = merge(cut.parts, false);
         if (cut.glow?.length) {

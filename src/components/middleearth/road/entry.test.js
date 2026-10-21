@@ -11,7 +11,10 @@ describe('the way in: the save, the resume card, the first visit', () => {
   });
 
   it('a save is where the ride is, whether it was ridden, and when', () => {
-    expect(savedAt(0.5, 1000, false, 0.25)).toEqual({ v: 1, s: 0.5, ridden: false, at: 1000, walked: 0.25 });
+    expect(savedAt(0.5, 1000, false, 0.25)).toEqual({ v: 1, s: 0.5, ridden: false, at: 1000, walked: 0.25, on: null });
+    // (the day it was first ridden, kept by every save after)
+    expect(savedAt(1, 2000, true, 0.8).on).toBe(2000);
+    expect(savedAt(0.1, 9000, true, 0, 2000).on).toBe(2000);
   });
 
   it('a lost context put back within a minute carries on with no title card again', () => {
