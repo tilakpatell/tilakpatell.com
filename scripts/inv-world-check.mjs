@@ -45,7 +45,8 @@ page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
 // (--play's driver says how far it's got)
 page.on('console', (m) => m.text().startsWith('[play]') && console.log(m.text()));
 const t0 = Date.now();
-await page.goto(URL, { waitUntil: 'domcontentloaded' });
+// (a cold dev server transforms the whole module graph before the page's first script runs: minutes under load)
+await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 240000 });
 await page.waitForFunction(() => window.__INVWORLD__?.api && document.querySelector('.iw-canvas[data-on]'), null, { timeout: 240000 });
 console.log('city up in', ((Date.now() - t0) / 1000).toFixed(1), 's');
 
