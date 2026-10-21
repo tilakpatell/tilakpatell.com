@@ -1,0 +1,113 @@
+/* The wand's card at the foot and the wheel of nine (SpellWheel.jsx), on
+   the world's parchment (hogwarts.css's --hud-* skin). Each spell's colour
+   is --spell, the ring and the glyph's glow; the ink stays the ink. */
+
+.hw-wand-card {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.35rem 0.8rem 0.35rem 0.4rem;
+  border: var(--hud-border);
+  border-radius: var(--hud-radius);
+  background: var(--hud-glass);
+  color: var(--hud-ink);
+  box-shadow: var(--hud-shadow);
+  pointer-events: none;
+}
+.hw-wand-glyph,
+.hw-wheel-glyph {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  border-radius: 50%;
+  /* the spell's colour in the middle, as the wand's tip shows it (a dark
+     ring under it, so a pale colour still reads on the parchment) */
+  background: radial-gradient(circle, color-mix(in srgb, var(--spell) 55%, transparent) 0 38%, rgb(42 29 18 / 0.85) 40% 100%);
+  color: #fff8e6;
+}
+.hw-glyph {
+  width: 1.3rem;
+  height: 1.3rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hw-ring {
+  position: absolute;
+  inset: -3px;
+  width: calc(100% + 6px);
+  height: calc(100% + 6px);
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+.hw-ring circle { fill: none; stroke-width: 2.5; }
+.hw-ring-track { stroke: color-mix(in srgb, var(--spell) 70%, #2a1d12); }
+/* the cooldown: the dark arc that empties as the spell comes ready */
+.hw-ring-cool { stroke: rgb(20 14 8 / 0.9); transition: stroke-dashoffset 120ms linear; }
+.hw-wand-words { display: grid; gap: 0.1rem; }
+.hw-wand-word { font: 700 0.95rem/1.15 var(--hud-title-face); letter-spacing: 0.02em; }
+.hw-wand-keys { font-size: 0.72rem; color: var(--hud-muted); }
+
+/* the wheel: nine round the middle of the view while Q is held */
+.hw-wheel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 6;
+  width: 0;
+  height: 0;
+  pointer-events: auto;
+}
+.hw-wheel::before {
+  content: '';
+  position: absolute;
+  left: -11.5rem;
+  top: -11.5rem;
+  width: 23rem;
+  height: 23rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(244 234 210 / 0.86) 0 34%, rgb(244 234 210 / 0.6) 62%, transparent 72%);
+  pointer-events: none;
+}
+.hw-wheel-item {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  width: 7rem;
+  transform: translate(-50%, -50%);
+  padding: 0.3rem;
+  border: 0;
+  border-radius: var(--hud-radius);
+  background: transparent;
+  color: var(--hud-ink);
+  font: inherit;
+  cursor: pointer;
+  transition: transform var(--t-fast, 120ms) ease-out;
+}
+.hw-wheel-item[data-on] { transform: translate(-50%, -50%) scale(1.14); }
+.hw-wheel-item[data-on] .hw-wheel-glyph { box-shadow: 0 0 0 2px var(--hud-accent), 0 0 18px color-mix(in srgb, var(--spell) 80%, transparent); }
+.hw-wheel-word { font: 600 0.75rem/1.2 var(--hud-title-face); text-align: center; white-space: nowrap; }
+.hw-wheel-middle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  font: 700 1.05rem/1.2 var(--hud-title-face);
+  color: var(--hud-ink);
+  white-space: nowrap;
+  pointer-events: none;
+}
+@media (max-width: 520px) {
+  .hw-wheel::before { left: -9.5rem; top: -9.5rem; width: 19rem; height: 19rem; }
+  .hw-wheel-item { width: 5.5rem; }
+  .hw-wand-keys { display: none; }
+}

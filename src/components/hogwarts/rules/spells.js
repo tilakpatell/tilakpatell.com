@@ -216,3 +216,50 @@ function segmentToCapsule(a, b, body, reach) {
   }
   return null;
 }
+
+// What the wand is pointed at: of the things in reach of the spell, the
+// one nearest the line from the eye along `dir` (a unit vector), within
+// `cone` radians of it (wider for a thing close by, so a stone at your
+// feet is easy to take). A thing: { id, kind, p: [x, y, z], r }. Returns
+// { ...thing, dist } or null.
+export const AIM = { cone: 0.16, near: 2.5 };
+export function pick(things, eye, dir, { range = 30, cone = AIM.cone, kinds = null } = {}) {
+  let best = null;
+  let bestScore = Infinity;
+  for (const t of things) {
+    if (kinds && !kinds.includes(t.kind)) continue;
+    const d = [t.p[0] - eye[0], t.p[1] - eye[1], t.p[2] - eye[2]];
+    const dist = Math.hypot(d[0], d[1], d[2]);
+    if (dist < 1e-6 || dist > range + (t.r ?? 0)) continue;
+    const along = (d[0] * dir[0] + d[1] * dir[1] + d[2] * dir[2]) / dist;
+    const off = Math.acos(Math.max(-1, Math.min(1, along)));
+    // (a thing’s own size widens the cone it can be taken in, and so does being close)
+    const allow = cone + Math.atan2(t.r ?? 0.3, dist) + (dist < AIM.near ? 0.25 : 0);
+    if (off > allow) continue;
+    const score = off / allow + dist / (range * 4);
+    if (score < bestScore) {
+      bestScore = score;
+      best = { ...t, dist };
+    }
+  }
+  return best;
+}
+
+// which kinds a spell takes hold of (for pick’s `kinds`): null for any
+export function kindsFor(spell) {
+  if (typeof spell === 'string') spell = spellById(spell);
+  switch (spell?.kind) {
+    case 'lift':
+      return [...LIFTS, 'person'];
+    case 'unlock':
+      return OPENS;
+    case 'summon':
+      return [...COMES, 'person'];
+    case 'fire':
+      return [...BURNS, 'person'];
+    case 'bolt':
+      return ['person'];
+    default:
+      return [];
+  }
+}

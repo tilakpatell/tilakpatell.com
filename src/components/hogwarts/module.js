@@ -15,6 +15,13 @@
 // stick), and `scene`, `walker` for the checks. In development,
 // window.__HOGWARTS__ = { state(), world }.
 //
+// The wand (play/wandfx.js) is stepped beside the walker: its events
+// ('spell', 'toast', 'points', 'wand', 'wheel' and the rest it lists) go to
+// the page the same way, and the world adds choose(id) (the wheel's pick)
+// and press(name, down) (the touch buttons: 'cast'); the development hook
+// adds cast(spell, at) (`at` a thing's id, a point [x, y, z], or nothing:
+// what the view points at).
+//
 // Where the rest hooks in (the lanes after this one): the grounds and the
 // near castle add to the scene beside the shore (Lane C: world/terrain.js
 // and world/castle/ take over from rules/shore.js and the far castle within
@@ -33,6 +40,9 @@ import { createBoats } from './world/boats';
 import { createFarCastle } from './world/castle/far';
 import { CRAG, SIZE } from './world/castle/silhouette';
 import { KEYS, createWalker } from './play/walk';
+import { WAND_KEYS, createWand } from './play/wandfx';
+import { practiceSet } from './play/props';
+import { createFeel } from '../../lib/three/feel';
 import { BOUNDS, CASTLE, DOOR, LEVEL, SPAWN, floorAt, heightAt, nearDoor } from './rules/shore';
 import { lightAt } from './rules/dusk';
 
@@ -71,7 +81,7 @@ export default {
     const renderer = rt.gfx?.renderer ?? null;
     const exposureWas = renderer?.toneMappingExposure ?? null;
 
-    rt.input?.bind?.(KEYS);
+    rt.input?.bind?.({ ...KEYS, ...WAND_KEYS });
     const touch = { x: 0, y: 0 };
     const ground = { floorAt, level: LEVEL, bounds: BOUNDS, solids: shore.solids };
     const walker = createWalker({ camera, world: ground, at: SPAWN.at, yaw: SPAWN.yaw, reduced });
@@ -82,6 +92,12 @@ export default {
       if (held) held.push([type, data]);
       else rt.events?.emit?.(type, data);
     };
+
+    // the wand, and the things beside the jetty for it to take hold of;
+    // the feel's knocks and punches on the camera after the walk has placed it
+    const feel = createFeel({ baseFov: camera.fov, calm: reduced });
+    const wand = createWand({ rt, scene, camera, house, floorAt, tell, feel });
+    wand.place(practiceSet({ at: SPAWN.at, yaw: SPAWN.yaw, floorAt, house, rt }));
 
     let clock = 0;
     let light = null;
@@ -139,6 +155,8 @@ export default {
         if (pressed('act')) go();
         const stick = input?.stick ?? touch;
         walker.step(dt, input, { x: stick.x || touch.x, y: stick.y || touch.y });
+        feel.update(dt, camera);
+        wand.step(dt, input);
         clock += dt;
         // (the light moves slowly: a few times a second is plenty)
         if ((since += dt) > 0.25) {
@@ -167,6 +185,12 @@ export default {
       },
       // the prompt's own button, and the touch stick
       go,
+      wand,
+      // the wheel's pick, and the touch buttons held and let go
+      choose: (id) => wand.choose(id),
+      press(name, down) {
+        if (name === 'cast') wand.press(down);
+      },
       stick(x, y) {
         touch.x = x;
         touch.y = y;
@@ -179,6 +203,7 @@ export default {
         shore.dispose();
         castle.dispose();
         boats.dispose();
+        wand.dispose();
         kit?.dispose();
         post?.dispose?.();
         if (typeof window !== 'undefined' && window.__HOGWARTS__?.world === world) delete window.__HOGWARTS__;
@@ -192,7 +217,7 @@ export default {
         const s = walker.state;
         return { at: [s.x, floorAt(s.x, s.z), s.z].map((v) => Math.round(v * 100) / 100), yaw: s.yaw, pitch: s.pitch, speed: s.speed, near, clock, dusk: light?.k ?? 0, tier, calls: r.drawCalls ?? r.calls ?? 0, triangles: r.triangles ?? 0 };
       };
-      window.__HOGWARTS__ = { world, state, place: (x, z, yaw) => walker.place([x, z], yaw) };
+      window.__HOGWARTS__ = { world, state, place: (x, z, yaw) => walker.place([x, z], yaw), cast: (spell, at) => wand.cast(spell, at), wand: () => wand.state() };
     }
     return world;
   },

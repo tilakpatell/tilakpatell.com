@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HOUSES, PATRONUS, SHIELD, SPELLS, at, beat, cast, newBolt, newWand, readyIn, release, shieldOf, shieldUp, spellById, spellByKey, stepBolt, throwBack } from './spells';
+import { HOUSES, PATRONUS, SHIELD, SPELLS, at, beat, cast, kindsFor, newBolt, newWand, pick, readyIn, release, shieldOf, shieldUp, spellById, spellByKey, stepBolt, throwBack } from './spells';
 
 const wand = (o) => newWand({ house: 'ravenclaw', ...o });
 
@@ -156,5 +156,27 @@ describe('bolts', () => {
     const b = newBolt('expelliarmus', [0, 1.4, 0], [0, 1.4, 1], 'me');
     expect(fly(b, [], 5).bolt.life).toBeLessThanOrEqual(0);
     expect(throwBack(b, 'x').back).toBe(true);
+  });
+});
+
+describe('aiming', () => {
+  const things = [
+    { id: 'a', kind: 'stone', p: [0, 1.6, -10], r: 0.2 },
+    { id: 'b', kind: 'stone', p: [3, 1.6, -10], r: 0.2 },
+    { id: 'c', kind: 'pumpkin', p: [0.4, 1.6, -30], r: 0.5 },
+    { id: 'd', kind: 'door', p: [0, 1.6, -5], r: 1 },
+  ];
+  it('takes the thing nearest the wand’s line, of the kinds the spell can hold', () => {
+    expect(pick(things, [0, 1.6, 0], [0, 0, -1], { kinds: kindsFor('leviosa') }).id).toBe('a');
+    expect(pick(things, [0, 1.6, 0], [0.287, 0, -0.958], { kinds: kindsFor('leviosa') }).id).toBe('b');
+    expect(pick(things, [0, 1.6, 0], [0, 0, -1], { kinds: kindsFor('alohomora') }).id).toBe('d');
+  });
+  it('nothing off the line, or out of range', () => {
+    expect(pick(things, [0, 1.6, 0], [1, 0, 0])).toBe(null);
+    expect(pick(things, [0, 1.6, 0], [0, 0, -1], { range: 5, kinds: ['stone'] })).toBe(null);
+    expect(pick(things, [0, 1.6, 0], [0, 0, -1], { kinds: kindsFor('lumos') })).toBe(null);
+  });
+  it('gives the distance', () => {
+    expect(pick(things, [0, 1.6, 0], [0, 0, -1], { kinds: ['stone'] }).dist).toBeCloseTo(10);
   });
 });
