@@ -470,3 +470,12 @@ The plain before the Mountain was bare dark ground near the road (`look-gorgorot
 - `gorgoroth-plain-column-desktop.webp`: walking beside the column, boulders and fangs either side, a camp's fire far off.
 - `gorgoroth-plain-cracks-desktop.webp`: at 51 m, before the Eye's beam, the cracks round the two.
 
+## Shelob's Lair, and Carry on (2026-10-21)
+
+- **The Lair** was big flat grey facets (`cirith-ungol-built-desktop.webp`). Now:
+  - It is the Cirith Ungol chapter's own black rock, tiled a metre and a half over the arch and along it, and darker.
+  - It is lumpier, with a third octave for the knobs and drips, and finer on high (24 round, a row every 1.5 m).
+  - It has 30 webs on high, every third one slung across the roof's corner overhead, and thicker the deeper in.
+  - `cirith-ungol-lair-desktop.webp` shows it at 70 m, the Phial ahead, the webs on the walls and the roof.
+- **Carry on** (the resume card) picks the ride up a few metres before a moment it was left inside, so the moment plays again rather than the camera holding on what's over (`carry.js`, its test and the module's).
+
