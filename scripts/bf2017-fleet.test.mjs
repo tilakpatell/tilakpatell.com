@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import PUBLISHED from '../src/data/galaxyAssets.json';
-import { HQ, ULTRA, modelsAt } from '../src/components/galaxy/models.js';
+import { HQ, ULTRA, lodUrl, modelsAt } from '../src/components/galaxy/models.js';
+import { MODELS as VEHICLES } from '../src/components/galaxy/surface/catalog/bf2017-vehicles.js';
 import { FLEET, writtenTurn } from './bf2017-fleet.mjs';
 import { qmul } from './lib/rig-clips.mjs';
 
@@ -64,6 +65,30 @@ describe('the fleets on the game’s ships', () => {
     expect(credits['galaxy-nebulonhq'].author).toBe('EA DICE');
     expect(credits['galaxy-destroyerhq']).toBeUndefined();
     expect(existsSync(at('/models/galaxy/hq/destroyer.glb'))).toBe(false);
+  });
+
+  // (lane C2 of the Battlefront-by-default design: a kind the game has flies
+  // the game's file in space on every tier, the fleet's file of it, lane V's
+  // surface cut or the Falcon's landmark, with its far copy, never a
+  // Sketchfab or Meshy model; and every craft the game has is one the galaxy
+  // flies, but the snowspeeder, an atmosphere craft, and the LAAT, which no
+  // battle in space flies)
+  it('flies the game’s own file for every craft the game has, on every tier, and leaves none of its craft out', () => {
+    const credits = JSON.parse(readFileSync(new URL('../src/data/modelCredits.json', import.meta.url), 'utf8'));
+    const byFile = new Map(Object.values(credits).map((c) => [c.file, c]));
+    const ofKind = { ...Object.fromEntries(FLEET.filter((r) => r[3].kind).map((r) => [r[0], r[3].kind])), xwing: 'xwing', interceptor: 'tieinterceptor', falcon: 'falcon', slave1: 'slave1', scimitar: 'scimitar', tiestriker: 'tiestriker' };
+    for (const detail of ['low', 'mid', 'high', 'ultra']) {
+      const models = modelsAt(detail);
+      for (const kind of Object.keys(ofKind)) {
+        const { url } = models[kind];
+        expect(byFile.get(url.replace(/\.(lod1|ultra)\.glb$/, '.glb'))?.author, `${kind} at ${detail}: ${url}`).toBe('EA DICE');
+        expect(existsSync(at(lodUrl(kind, models))), `${kind}'s far copy`).toBe(true);
+      }
+    }
+    const crafts = Object.entries(VEHICLES)
+      .filter(([k, r]) => r.from.includes('/vehicles/air/') && !k.endsWith('cockpit') && !k.startsWith('parked'))
+      .map(([k]) => k);
+    expect(crafts.filter((k) => !Object.values(ofKind).includes(k))).toEqual(['snowspeeder', 'laat']);
   });
 
   it('turns a file so its row’s nose brings it back to +z', () => {
