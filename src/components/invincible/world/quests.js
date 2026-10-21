@@ -225,4 +225,12 @@ export function stepQuests(state, hero, rawDt, world) {
 }
 
 // what to keep between visits
+// Someone else caught them (a Guardian, ./guardians.js): theirs, not his;
+// the next call comes as it would have. A mission's own (its `source`) is
+// never theirs to catch: ./inside.js only sends them to the city's.
+export function caughtBy(q, who) {
+  if (!q.rescue || q.rescue.carried) return q;
+  return { ...q, rescue: null, nextCall: 50 + rng(31 + q.calls)() * 30, ev: [...q.ev, { type: 'caughtBy', who, kind: q.rescue.kind }] };
+}
+
 export const keepQuests = (q) => ({ cards: q.cards, best: q.lesson.best, saved: q.saved });

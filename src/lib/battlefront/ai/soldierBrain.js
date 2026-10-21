@@ -15,6 +15,11 @@
 // A commander's task (`world.task`: a point, a radius, whether to interact)
 // turns following into going to the objective and staying on it, firing
 // on the way, and holding the interaction there when no enemy is close.
+// Where the game's own AI code answers a rule (`tactics.js`, and the sheet in
+// docs/superpowers/evidence/bf-ai-source/README.md), it is the law: a tactic
+// only where the template's row has it; close combat tried first, by the
+// source's test, held 3 s and left by its limits; a hiding bot firing from its
+// cover once there.
 //
 //   createBrain(s, { ai, role, rand, aimScale, system, difficulty, pve, ap }) → brain   (aimScale widens the aim box: a
 //     mode's lethality lever; system: the AI system row, ai.system by default, AISystem_PvE for a pve bot;
@@ -40,6 +45,7 @@ import { pickCover, queryFor } from './cover.js';
 import { pickTarget } from './targeting.js';
 import { queryFor as gameQuery, runQuery } from './coverQuery.js';
 import { skirmishRole, pressAbility } from './skirmish.js';
+import { aheadOf, available, closeCombat, turnFrom } from './tactics.js';
 import { AHEAD, FACING, TARGET, aimPoint, burstStep, createAim, createBurst, createEvasion, createLof, crouched, groundOk, lofStep, mayFire, noiseOf, strafeSide, takeRoll, viewMiss, viewPoint, viewStep, weaponClass } from './autoPlayer.js';
 
 // a walkable spot near a place: on the level's navmesh at the soldier's height where the battle has
@@ -130,6 +136,8 @@ export function createBrain(s, { ai, role: given = null, rand = Math.random, aim
     current: null,
     pattern: null,
     frame: 0,
+    // (when its close combat began: tactics.js)
+    closeSince: null,
     cover: null,
     coverSince: 0,
     coverStay: 0,
@@ -226,11 +234,14 @@ export function aimAt(brain, from, belief, now, who = null) {
   return [p[0] + fz * u, p[1] + v, p[2] - fx * u];
 }
 
+// (close combat first, then flee and hide, as the behaviour tree tries them: `combat_Tactics`. Each is
+// offered only where the template's row holds it, and close combat is the source's test, worked out in
+// think: tactics.js)
 const OPTIONS = [
-  { id: 'flee', rank: 5, considerations: [(c) => (c.target && c.posture === 'retreat' ? 1 : 0)] },
-  { id: 'hide', rank: 4, considerations: [(c) => (c.target && (c.suppressed >= SUPPRESSED || c.health < HIDE_HEALTH) ? 1 : 0)] },
+  { id: 'close', rank: 6, considerations: [(c) => (c.closeCombat ? 1 : 0)] },
+  { id: 'flee', rank: 5, considerations: [(c) => (c.canFlee && c.target && c.posture === 'retreat' ? 1 : 0)] },
+  { id: 'hide', rank: 4, considerations: [(c) => (c.hide ? 1 : 0)] },
   { id: 'interact', rank: 3.5, considerations: [(c) => (c.interact ? 1 : 0)] },
-  { id: 'close', rank: 3, considerations: [(c) => (c.target && c.dist <= c.close ? 1 : 0)] },
   { id: 'attack', rank: 2, considerations: [(c) => (c.target && c.dist <= c.engage && (!c.away || c.dist <= FIGHT_AWAY) ? 1 : 0), (c) => 0.5 + 0.5 * c.confidence] },
   { id: 'advance', rank: 1, considerations: [(c) => (c.target && c.dist > c.engage && !c.task ? 1 : 0)] },
   { id: 'follow', rank: 0, considerations: [() => 1] },
@@ -372,6 +383,32 @@ function thinkAutoPlayer(brain, world, now) {
   return intent;
 }
 
+// What close combat's test reads (tactics.js's closeCombat), from the bot's belief of its target. By hand:
+// heights and distances chest to chest (the source's are the target's place against the bot's feet); a
+// cover that still shields the bot from its target stands for the source's committable one; and the
+// sidestep of a bot attacking in the open counts as standing, for in the source that bot stands and fires
+// (`attack_Fire`) and the sidestep is the site's own.
+function closeInput(brain, world, b, { me, tgt, clear, now }) {
+  const s = brain.s;
+  const chest = chestOf(s);
+  const there = aheadOf(v3(b), [b.vel?.x ?? 0, 0, b.vel?.z ?? 0], !!b.visible);
+  const inCover = !!brain.cover && d2(me, flat(brain.cover.at)) < NEAR_GOAL;
+  const sidestep = brain.current === 'attack' && !brain.cover;
+  return {
+    since: brain.current === 'close' ? brain.closeSince : null,
+    now,
+    inCover,
+    toCover: !!brain.cover && !inCover && !!world.shields?.(brain.cover, tgt),
+    seen: !!b.visible,
+    lineOfFire: clear,
+    sinceSeen: b.visible ? 0 : (brain.me.now ?? now) - (b.seenAt ?? -Infinity),
+    ahead: Math.hypot(there[0] - chest[0], there[1] - chest[1], there[2] - chest[2]),
+    height: Math.abs(b.at.y - chest[1]),
+    turn: sidestep ? 0 : turnFrom(s.vel, [tgt[0] - me[0], tgt[1] - me[1]]),
+    inVehicle: world.who?.(b.id)?.kind === 'walker',
+  };
+}
+
 export function think(brain, world, now) {
   if (brain.ap) return thinkAutoPlayer(brain, world, now);
   const s = brain.s;
@@ -383,6 +420,10 @@ export function think(brain, world, now) {
   const dist = tgt ? d2(me, tgt) : Infinity;
   const task = world.task ?? null;
   const fromTask = task ? d2(me, task.at) : Infinity;
+  const from = world.muzzle ? world.muzzle(s) : chestOf(s);
+  // (the line of fire to a target in sight, asked once: close combat's test and the trigger both read it,
+  // and neither asks it of one out of sight)
+  const clear = !!b?.visible && world.lineClear(from, v3(b));
   const ctx = {
     task: !!task,
     away: !!task && fromTask > (task.radius ?? 0) + TASK_SLACK,
@@ -390,7 +431,10 @@ export function think(brain, world, now) {
     target: !!b,
     dist,
     engage: brain.tactics.engage?.distance ?? 40,
-    close: brain.tactics.closeCombat?.Distance ?? 0,
+    closeCombat: !!b && available(brain.tactics, 'closeCombat') && closeCombat(brain.tactics.closeCombat, closeInput(brain, world, b, { me, tgt, clear, now })),
+    canFlee: available(brain.tactics, 'flee'),
+    // (the hide's cause is still the site's, and so is its end with its cause: the sheet's T6 and T7 go together)
+    hide: !!b && available(brain.tactics, 'hide') && (s.suppressed >= SUPPRESSED || s.hp / s.hpMax < HIDE_HEALTH),
     posture: world.squad?.posture ?? 'hold',
     suppressed: s.suppressed,
     health: s.hp / s.hpMax,
@@ -398,6 +442,9 @@ export function think(brain, world, now) {
   };
   const choice = pick(OPTIONS, ctx, { current: brain.current, rank: (o) => o.rank });
   let mode = choice?.id ?? 'follow';
+  // (close combat's clock starts as it begins)
+  if (mode === 'close' && brain.current !== 'close') brain.closeSince = now;
+  if (mode !== 'close') brain.closeSince = null;
   brain.current = mode;
   const intent = { mode, target: b?.id ?? null, goal: null, stance: 'stand', fire: false, aim: null, sprint: false, interact: false };
   const range = brain.s.weapon?.range ?? 200;
@@ -407,11 +454,10 @@ export function think(brain, world, now) {
     runQuery(brain.gameQueries[state], { common: brain.coverScores, nav: world.nav, me, meY: s.at[1], threat: tgt, threatY: b?.at.y, enemies: world.enemies, preferred: brain.preferred, current: brain.cover, taken: world.taken, who: s.id, objective: world.objective }) ??
     pickCover(world.nav, coverCtx(brain.queries[state]));
   if (b) {
-    const from = world.muzzle ? world.muzzle(s) : chestOf(s);
     intent.aim = aimAt(brain, from, b, now, world.who?.(b.id) ?? null);
     // (a new target's first shot waits the difficulty's reaction at its distance)
     const ready = !brain.difficulty || now - brain.targetSince >= brain.difficulty.reaction(dist);
-    intent.fire = ready && b.visible && dist <= range && world.lineClear(from, v3(b));
+    intent.fire = ready && b.visible && dist <= range && clear;
     // (a Skirmish bot's class abilities; the online fill's AutoPlayers press the officer's turret alone: ai/throw.js)
     if (s.abilities.list.length > 1) intent.ability = pressAbility(brain, { target: b, now, world, autoPlayer: !brain.pve });
   }
@@ -419,12 +465,16 @@ export function think(brain, world, now) {
     const slot = findCover('flee');
     intent.goal = slot ? flat(slot.at) : fallBack(world.nav, me, tgt, world.squad?.centre, 15, s.at[1]);
     intent.sprint = true;
+    // (no fire on the way: every multiplayer flee row's move settings say so; in its cover it fires as
+    // an attacking bot does, the behaviour tree's `combatFlee_Hide`)
+    const could = intent.fire;
     intent.fire = false;
     // (fled into the cover its query chose: it hides there)
     if (slot && d2(me, intent.goal) < NEAR_GOAL) {
       intent.mode = mode = 'hide';
       intent.stance = 'crouch';
       intent.sprint = false;
+      intent.fire = could;
       brain.cover = slot;
     }
   } else if (mode === 'hide') {
@@ -432,7 +482,9 @@ export function think(brain, world, now) {
     const slot = keep ? brain.cover : findCover('hide');
     intent.goal = slot ? flat(slot.at) : fallBack(world.nav, me, tgt, world.squad?.centre, 8, s.at[1]);
     intent.stance = 'crouch';
-    intent.fire = false;
+    // (in its cover a hiding bot fires if it may, on the way there it does not: the behaviour tree's
+    // `combatHide_Hide`, and no hide row has move settings that would let it)
+    intent.fire = !!slot && d2(me, flat(slot.at)) < NEAR_GOAL && intent.fire;
     brain.cover = slot ?? null;
   } else if (mode === 'close') {
     intent.goal = tgt;

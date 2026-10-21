@@ -520,7 +520,7 @@ export const ROWS = [
       { id: 'tower-a', dx: -20, dz: -16, r: 0.8 },
       { id: 'tower-b', dx: 20, dz: -16, r: 0.8 },
     ],
-    tasks: [{ id: 'schwifty', name: 'Get schwifty', hint: 'Dial the Get Schwifty show on the portal gun, talk to Water-T, and take the mic. The heads are watching.' }],
+    tasks: [{ id: 'schwifty', name: 'Get schwifty', hint: 'Dial the Get Schwifty show and take the mic: hit the notes on the beat, and keep the heads’ meter up to the end of the song.' }],
     say: {
       watert: { who: 'Water-T', text: '“The mic’s yours, kid. Don’t think. Nobody who ever thought about it got schwifty.” He nods at the heads filling the sky.' },
       mic: { who: null, text: 'You take the mic. You don’t think. “Oh yeah, you gotta get schwifty…” The heads lean in. One of them says, slowly, “I LIKE WHAT YOU GOT.”' },
@@ -528,8 +528,8 @@ export const ROWS = [
       heads: { who: null, text: 'Three heads the size of towns hang in the sky, their mouths open. One is humming. If they don’t like the song, the planet goes.' },
       amps: { who: null, text: 'The amps go to eleven, then to a number that isn’t one. Rick wired them. Somebody has written “schwifty” on one in marker.' },
     },
-    collect: { task: 'schwifty', spots: ['watert', 'mic'] },
-    goal: 'watert',
+    rhythm: { task: 'schwifty', spot: 'mic', unlock: 'schwifty' },
+    goal: 'mic',
     kinds: ['watert', 'cromulon', 'icet'],
   }),
 ];

@@ -28,8 +28,10 @@ const FLAT = blank(128, 128, 255);
 const LUMA = vec3(0.2126, 0.7152, 0.0722);
 const ROLES = ['grass', 'road', 'steep'];
 const HUE = 0.35; // how much of a scan’s own colour comes through (the rest its light and shade)
-const NEAR = 26; // m: the scans whole to here
-const FAR = 120; // m: gone by here
+const NEAR = 24; // m: the scans whole to here
+// m: gone by here (from 120: a two-metre scan's tile, its grain too fine to see
+// beyond about forty, still showed its repeat, a lattice over every far slope)
+const FAR = 80;
 const TURN = mat2(0.8, -0.6, 0.6, 0.8); // (the second size turned, so the two never line up)
 
 export function soilHook(material, { groundMap, soil, tier = 'high' }) {

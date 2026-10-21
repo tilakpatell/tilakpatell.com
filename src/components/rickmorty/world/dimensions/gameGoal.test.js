@@ -19,6 +19,19 @@ describe('the map’s marker inside a game', () => {
     expect(gameGoal(d, { power: { phase: 'run', carrying: true }, done: [d.power.task] })).toBe(null);
   });
 
+  it('walks him to the booth, then set by set in the running order', () => {
+    const d = destinationById('cablestudio');
+    const order = ['set-sneezy', 'set-ants', 'set-bits', 'set-field', 'set-legs'];
+    expect(gameGoal(d, { sequence: { phase: 'idle', order, on: 0 } })).toBe('cablebooth');
+    expect(gameGoal(d, { sequence: { phase: 'run', order, on: 0 } })).toBe('set-sneezy');
+    expect(gameGoal(d, { sequence: { phase: 'run', order, on: 2 } })).toBe('set-bits');
+    expect(gameGoal(d, { sequence: { phase: 'lost', order, on: 2 } })).toBe(null);
+    expect(gameGoal(d, { sequence: { phase: 'run', order, on: 2 }, done: ['cablestudio'] })).toBe(null);
+    expect(gameGoal(d, { sequence: { phase: 'won', order, on: 5 } })).toBe(null);
+    // (a place with no start spot: the first of the order, from the first)
+    expect(gameGoal({ ...d, sequence: { ...d.sequence, start: null } }, { sequence: { phase: 'idle', order, on: 0 } })).toBe('set-sneezy');
+  });
+
   it('walks him round the Jerrys he’s not heard, never straight to ours', () => {
     const d = destinationById('jerryboree');
     const [a, b] = d.find.items;

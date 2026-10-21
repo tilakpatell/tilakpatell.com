@@ -234,6 +234,31 @@ const ARRIVE = {
     },
     ms: 1300,
   },
+  potter: {
+    // an owl's two notes, each falling a little, then a bell struck once
+    // over the water: its partials a church bell's (the hum, the
+    // fundamental, the minor third, the fifth, the octave), the low ones
+    // ringing longest
+    play: () => {
+      const ac = audioContext();
+      const out = ac ? output() : null;
+      if (!ac || !out) return;
+      const t = ac.currentTime + 0.02;
+      blip(ac, out, { type: 'sine', f: 420, at: t, dur: 0.32, gain: 0.07, glide: 0.94, filter: 1400 });
+      blip(ac, out, { type: 'sine', f: 400, at: t + 0.5, dur: 0.6, gain: 0.07, glide: 0.9, filter: 1400 });
+      const strike = t + 1.35;
+      for (const [k, gain, dur] of [
+        [0.5, 0.05, 3.2],
+        [1, 0.08, 2.6],
+        [1.2, 0.04, 1.8],
+        [1.5, 0.03, 1.5],
+        [2, 0.035, 1.2],
+        [2.66, 0.015, 0.8],
+      ])
+        blip(ac, out, { type: 'sine', f: 330 * k, at: strike, dur, gain });
+    },
+    ms: 2600,
+  },
 };
 
 // docking at one of the stations: two soft tones, up

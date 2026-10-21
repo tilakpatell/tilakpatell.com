@@ -1,8 +1,9 @@
 // The galaxy's ships and stations as the set pieces place them: the models
 // that load (Battlefront II (2017)'s where the game has the ship, lane S1 of
 // the galaxy-in-space design: the capitals from the space levels' kits
-// (scripts/bf2017-fleet.mjs), the fighters, the Falcon and Slave I as lane V
-// imported them (surface/), the Death Star, and the galaxy's own from
+// (scripts/bf2017-fleet.mjs), every fighter the game has (at every tier,
+// far copies too), the Falcon and Slave I as lane V imported them
+// (surface/), the Death Star, and the galaxy's own from
 // Sketchfab and Meshy for what the game has no model of: the Executor, the
 // Acclamator, the Gozanti, the Lambda shuttle, the Coreship, the B-wing, the
 // Ghost, the IG-2000, the Delta-7, the Nubian, the Munificent, the
@@ -27,17 +28,18 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import { device } from '../../lib/device';
 import { gen3dUrl } from '../../lib/three/gen3d';
 import { cloneScene, loadGLTF } from '../../lib/three/gltfCache';
-import { GLB } from '../universe/glbFleet';
 import { fitScale } from '../universe/shipFit';
 import { BUILT_KINDS } from '../universe/trafficModels';
 import { GALAXY_KINDS, buildGalaxyShip } from './fleet';
 import { createHulls } from './hulls';
 
 // which way each loaded model's nose points as it comes (turned to +z): the
-// universe's, and the galaxy's own from Sketchfab (scripts/sketchfab-galaxy.mjs),
-// which take over from the ones built in code
+// game's wherever Battlefront II (2017) has the ship, and the galaxy's own
+// from Sketchfab (scripts/sketchfab-galaxy.mjs) and Meshy where it has not,
+// which take over from the ones built in code. (The universe map's fleet,
+// universe/glbFleet.js, flies these kinds' far copies, `farCut` below,
+// through galaxy/shared/models.js; it lends this table nothing since lane C2.)
 export const MODELS = {
-  ...Object.fromEntries(Object.entries(GLB).map(([k, d]) => [k, { url: d.url, nose: d.nose }])),
   // the war's capitals from the game's space levels, each its kit at the
   // fleet's cut, written bow to +z (scripts/bf2017-fleet.mjs's `space` rows;
   // the universe map keeps its own Star Destroyer and Venator)
@@ -52,42 +54,60 @@ export const MODELS = {
   slave1: { url: '/models/galaxy/surface/slave1.glb', nose: 0 },
   scimitar: { url: '/models/galaxy/surface/scimitar.glb', nose: 0 },
   tiestriker: { url: '/models/galaxy/surface/tiestriker.glb', nose: 0 },
-  deathstar: { url: '/models/universe/death-star.glb', nose: 0 },
-  nebulon: { url: '/models/galaxy/nebulon.glb', nose: 0 },
-  awing: { url: '/models/galaxy/awing.glb', nose: 0 },
-  ywing: { url: '/models/galaxy/ywing.glb', nose: 0 },
-  bwing: { url: '/models/galaxy/bwing.glb', nose: 0 },
-  uwing: { url: '/models/galaxy/uwing.glb', nose: Math.PI },
-  ghost: { url: '/models/galaxy/ghost.glb', nose: 0 },
-  executor: { url: '/models/galaxy/executor.glb', nose: 0 },
+  // the game's other fighters, the fleet's files (scripts/bf2017-fleet.mjs's
+  // `kind` rows, credited to EA DICE since 2026-10-10): each the kind's light
+  // cut from surface/ (`<kind>.lod1.glb`, the same bytes and a turn), written
+  // turned so the row's nose brings it back to +z. A desktop draws the plain
+  // cut instead (HIGH_CUTS below), and every tier's far copy is baked from
+  // this file (scripts/galaxy-lod.mjs). None of these is a Sketchfab or Meshy
+  // model (measured 2026-10-21, lane C2 of the Battlefront-by-default design;
+  // scripts/bf2017-fleet.test.mjs holds it). The catalog's `.far` cuts are not
+  // their far copies: 20 to 331 KB each with one to four materials and maps,
+  // 1,068 KB for the fourteen, where the baked copies are one mesh and one
+  // draw each, no maps, 11 to 28 KB, 219 KB in all (`_source`:
+  // galaxyAssets.json's bytes and the files' own primitives).
   tie: { url: '/models/galaxy/tie.glb', nose: 0 },
   tiebomber: { url: '/models/galaxy/tiebomber.glb', nose: 0 },
   tieadvanced: { url: '/models/galaxy/tieadvanced.glb', nose: 0 },
+  awing: { url: '/models/galaxy/awing.glb', nose: 0 },
+  ywing: { url: '/models/galaxy/ywing.glb', nose: 0 },
+  uwing: { url: '/models/galaxy/uwing.glb', nose: Math.PI },
+  n1: { url: '/models/galaxy/n1.glb', nose: 0 },
+  arc170: { url: '/models/galaxy/arc170.glb', nose: Math.PI },
+  vulture: { url: '/models/galaxy/vulture.glb', nose: Math.PI },
+  trifighter: { url: '/models/galaxy/trifighter.glb', nose: 0 },
+  cloudcar: { url: '/models/galaxy/cloudcar.glb', nose: -Math.PI / 2 },
+  vwing: { url: '/models/galaxy/vwing.glb', nose: Math.PI / 2 },
+  hyena: { url: '/models/galaxy/hyena.glb', nose: Math.PI / 2 },
+  xwing65: { url: '/models/galaxy/xwing65.glb', nose: 0 }, // (the game's T-65, Starfighter Assault's: scripts/bf2017-fleet.mjs)
+  // the Death Star, the game's Nebulon-B and its kits' Arquitens and
+  // Lucrehulk (scripts/bf2017-fleet.mjs), and the galaxy's own from Sketchfab
+  // where the game has no model (the head's list)
+  deathstar: { url: '/models/universe/death-star.glb', nose: 0 },
+  nebulon: { url: '/models/galaxy/nebulon.glb', nose: 0 },
+  bwing: { url: '/models/galaxy/bwing.glb', nose: 0 },
+  ghost: { url: '/models/galaxy/ghost.glb', nose: 0 },
+  executor: { url: '/models/galaxy/executor.glb', nose: 0 },
   shuttle: { url: '/models/galaxy/shuttle.glb', nose: 0 },
   lightcruiser: { url: '/models/galaxy/lightcruiser.glb', nose: -Math.PI / 2 },
   gozanti: { url: '/models/galaxy/gozanti.glb', nose: 0 },
   lucrehulk: { url: '/models/galaxy/lucrehulk.glb', nose: 0 },
   coreship: { url: '/models/galaxy/coreship.glb', nose: 0 },
   munificent: { url: '/models/galaxy/munificent.glb', nose: 0 },
-  vulture: { url: '/models/galaxy/vulture.glb', nose: Math.PI },
-  trifighter: { url: '/models/galaxy/trifighter.glb', nose: 0 },
   acclamator: { url: '/models/galaxy/acclamator.glb', nose: 0 },
   delta7: { url: '/models/galaxy/delta7.glb', nose: 0 },
-  xwing65: { url: '/models/galaxy/xwing65.glb', nose: 0 }, // (the game's T-65, Starfighter Assault's: scripts/bf2017-fleet.mjs)
-  arc170: { url: '/models/galaxy/arc170.glb', nose: Math.PI },
-  n1: { url: '/models/galaxy/n1.glb', nose: 0 },
   nubian: { url: '/models/galaxy/nubian.glb', nose: 0 },
   razorcrest: { url: '/models/galaxy/surface/razorcrest.glb', nose: 0 }, // (the one the surfaces fly)
   // the ones that were built in code till somebody's model was found
-  // (scripts/sketchfab-galaxy.mjs): the YT-2400, the Xg-1, the GR-75,
-  // Bespin's cloud cars, the IG-2000 and the second Death Star (Cloud City
-  // stays built: world.js's solids and landing fit its disc); and the
+  // (scripts/sketchfab-galaxy.mjs): the YT-2400, the Xg-1, the GR-75, the
+  // IG-2000 and the second Death Star (Bespin's cloud cars came that way too,
+  // and are the game's since: above; Cloud City stays built: world.js's
+  // solids and landing fit its disc); and the
   // Interdictor, which came that way as a flat white wedge and was made
   // again with Meshy (scripts/meshy-galaxy-library.mjs, turned nose to +z)
   freighter: { url: '/models/galaxy/freighter.glb', nose: 0 },
   gunboat: { url: '/models/galaxy/gunboat.glb', nose: 0 },
   transport: { url: '/models/galaxy/transport.glb', nose: 0 },
-  cloudcar: { url: '/models/galaxy/cloudcar.glb', nose: -Math.PI / 2 },
   ig2000: { url: '/models/galaxy/ig2000.glb', nose: 0 },
   interdictor: { url: '/models/galaxy/interdictor.glb', nose: 0 },
   deathstar2: { url: '/models/galaxy/deathstar2.glb', nose: 0 }, // (N8's since, scripts/deathstar-hd.mjs: dish to +z)
@@ -96,17 +116,15 @@ export const MODELS = {
   // Hound's Tooth, the Punishing One, the Hammerhead and the Gauntlet,
   // which were built in code; and the Twilight, the TIE Defender, the
   // Eta-2, the Sentinel, the Zeta, the Fang and the Naboo yacht, for the
-  // systems to fly (the Scimitar and the TIE striker above are the game's
-  // since, as the V-wing and the Hyena are: scripts/bf2017-fleet.mjs)
+  // systems to fly (the Scimitar, the TIE striker, the V-wing and the Hyena
+  // came that way too, and are the game's since: above)
   houndstooth: { url: '/models/galaxy/houndstooth.glb', nose: Math.PI / 2 },
   punishingone: { url: '/models/galaxy/punishingone.glb', nose: Math.PI / 2 },
   hammerhead: { url: '/models/galaxy/hammerhead.glb', nose: Math.PI / 2 },
   gauntlet: { url: '/models/galaxy/gauntlet.glb', nose: Math.PI / 2 },
   twilight: { url: '/models/galaxy/twilight.glb', nose: Math.PI / 2 },
   tiedefender: { url: '/models/galaxy/tiedefender.glb', nose: Math.PI / 2 },
-  vwing: { url: '/models/galaxy/vwing.glb', nose: Math.PI / 2 },
   eta2: { url: '/models/galaxy/eta2.glb', nose: Math.PI / 2 },
-  hyena: { url: '/models/galaxy/hyena.glb', nose: Math.PI / 2 },
   sentinel: { url: '/models/galaxy/sentinel.glb', nose: Math.PI / 2 },
   zeta: { url: '/models/galaxy/zeta.glb', nose: Math.PI / 2 },
   fang: { url: '/models/galaxy/fang.glb', nose: Math.PI / 2 },
@@ -156,7 +174,11 @@ const LIGHT_DETAILS = new Set(['low', 'mid']);
 // the war's fighters read soft beside the game's (the space fidelity design,
 // 2026-10-15). A surface file faces +z as it comes (the catalog's `yaw: 0`),
 // so its nose is 0 whatever the fleet row's turn; the fleet file was written
-// turned back by that row's nose, so both draw the same way round.
+// turned back by that row's nose, so both draw the same way round. The far
+// copy, baked from the fleet file, keeps that row's turn (`farNose`, the
+// fleet row's nose: till 2026-10-21 a desktop turned it by the surface
+// file's 0, so the U-wing, the ARC-170 and the vulture flew their far copies
+// tail first and the cloud car, the V-wing and the Hyena side on; lane C2).
 // `_source`: src/data/galaxyAssets.json (the surface files' bytes: the TIE
 // fighter's 2,152 KB against the fleet's 669; the Y-wing's 3,692 against
 // 1,476) and the catalog's `tex: 1024`.
@@ -216,7 +238,7 @@ export const withHq = (models, detail) =>
     ? {
         ...models,
         ...Object.fromEntries(Object.entries(HQ).filter(([k]) => models[k]).map(([k, d]) => [k, { url: d.url, nose: d.nose, hq: true }])),
-        ...Object.fromEntries(Object.entries(HIGH_CUTS).filter(([k]) => models[k]).map(([k, d]) => [k, { ...models[k], url: d.url, nose: d.nose }])),
+        ...Object.fromEntries(Object.entries(HIGH_CUTS).filter(([k]) => models[k]).map(([k, d]) => [k, { ...models[k], url: d.url, nose: d.nose, farNose: models[k].nose }])),
         ...over(models, ULTRA),
         ...(detail === 'ultra' ? over(models, HD_MAPS) : {}),
       }
@@ -278,6 +300,15 @@ export const STAND_IN = {
 export const LOD_NEAR = 45;
 export const LOD_FAR = 900;
 export const lodUrl = (kind, models = MODELS) => (models[kind] && kind !== 'deathstar' ? `/models/galaxy/lod/${models[kind].hq ? 'hq/' : ''}${kind}.glb` : null);
+// A kind's far copy as another map flies it, whole and at every range: the
+// universe map's fleet (universe/glbFleet.js, through galaxy/shared/models.js),
+// where a fighter is a few pixels long. The file lodUrl names, and the turn
+// that brings it nose to +z: the one it was baked with (a desktop's
+// fighter's `farNose`, the fleet file's), as fitLod turns it here.
+export const farCut = (kind) => {
+  const url = lodUrl(kind);
+  return url && { url, nose: MODELS[kind].farNose ?? MODELS[kind].nose ?? 0 };
+};
 export const lodLevels = (size) => [
   [0, 'full'],
   [LOD_NEAR * size, 'lod'],
@@ -286,22 +317,25 @@ export const lodLevels = (size) => [
 
 // the models the hunters fly (universe/glbFleet.js flies them: the galaxy's
 // droids and Imperial TIEs, and its X-wings and interceptors in the cut this
-// device loads, each built until it's here). The Y-wing, the A-wing and the
-// TIE bomber are the whole models, not GLB's far-off copies: those are for
-// the universe map, where a fighter is a few pixels long, and they have no
+// device loads, each built until it's here). The fighters are the whole
+// models, not the far copies the universe map flies (glbFleet.js's GLB:
+// farCut above, where a fighter is a few pixels long), which have no
 // normals, so a wingman flying beside you came out in facets. The bounty
 // hunters' ships and the navy's gunboats are their models too, where they
-// were only ever the built ones. And the Star Destroyer and the corvette
-// that jump in on you (universe/setpieces.js) are the battles' ones, which
-// every arrival has loaded already: the game's Star Destroyer, where the
-// universe map's would have been another 470 KB of a lesser ship, and the
-// corvette is the galaxy's own.
+// were only ever the built ones; Boba Fett's Slave I is the galaxy's, the
+// game's (till lane C2 this table took glbFleet.js's whole GLB, and with it
+// the universe map's Meshy Slave I, on a hull of its own, hunter/slave1).
+// And the Star Destroyer and the corvette that jump in on you
+// (universe/setpieces.js) are the battles' ones, which every arrival has
+// loaded already: the game's Star Destroyer, where the universe map's would
+// have been another 470 KB of a lesser ship, and the corvette is the
+// galaxy's own.
 export const HUNTER_GLB = {
-  ...GLB,
   ...Object.fromEntries(['vulture', 'trifighter', 'tie', 'tieadvanced', 'xwing', 'interceptor', 'ywing', 'awing', 'tiebomber', 'gunboat', 'ig2000', 'houndstooth', 'punishingone', 'destroyer', 'corvette'].map((k) => [k, { ...MODELS[k], built: true }])),
   // (the war's other hunters and what their capital ships drop in: the
   // Republic's fighters, Wedge in an X-wing, a Mon Calamari cruiser, a Venator)
   ...Object.fromEntries(['arc170', 'delta7', 'moncal', 'venator'].map((k) => [k, { ...MODELS[k], built: false }])),
+  slave1: { ...MODELS.slave1, built: false }, // (no built one: it waits)
   redleader: { ...MODELS.xwing, built: false },
 };
 
@@ -449,7 +483,8 @@ export function createModels({ prepare = null, load: fetchModel = loadGLTF, hull
     const full = loaded.get(kind);
     const far = lods.get(kind);
     if (!full || !far || full.skinned || lodReady.has(kind)) return;
-    const holder = fitLike(far, full.fit);
+    // (turned as the file it was baked from was: a desktop's fighter's `farNose`)
+    const holder = fitLike(far, { ...full.fit, nose: MODELS[kind].farNose ?? full.fit.nose });
     lodReady.set(kind, null); // (being warmed)
     if (prepare) await prepare(holder);
     if (dead) return;

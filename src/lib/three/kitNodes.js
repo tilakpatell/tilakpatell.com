@@ -141,12 +141,15 @@ function floats(a) {
 // page's model cache's, lib/three/gltf, shared by every kit of a pack, and
 // so never changed), its positions, normals and tangents as floats with
 // `local` applied (the normals turned by its normal matrix), every other
-// attribute copied, and a weight of ones where the file gave none.
+// attribute copied, and a weight of ones where the file gave none. The
+// weight is floats too: a lone byte a vertex (the file's quantised weight,
+// or a filled-in one) is no vertex format WebGPU takes, and every bending
+// part's pipeline failed there, the leaves and the grass gone.
 function bake(geometry, local) {
   const g = geometry.clone();
-  for (const name of ['position', 'normal', 'tangent']) if (g.attributes[name]) g.setAttribute(name, floats(geometry.attributes[name]));
+  for (const name of ['position', 'normal', 'tangent', WEIGHT]) if (g.attributes[name]) g.setAttribute(name, floats(geometry.attributes[name]));
   g.applyMatrix4(local);
-  if (!g.attributes[WEIGHT]) g.setAttribute(WEIGHT, new THREE.BufferAttribute(new Uint8Array(g.attributes.position.count).fill(255), 1, true));
+  if (!g.attributes[WEIGHT]) g.setAttribute(WEIGHT, new THREE.BufferAttribute(new Float32Array(g.attributes.position.count).fill(1), 1));
   return g;
 }
 

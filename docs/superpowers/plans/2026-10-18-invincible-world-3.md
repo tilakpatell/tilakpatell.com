@@ -150,11 +150,11 @@
 - Modify: `companions.js` (two Guardians join a fight), `foes.js` (the cavalry’s hits), `people.js` (eight stand-ins by tint, names over them), `landmarks.js` (the door), `InvWorld.jsx` (go in and out through the kit’s Exit), `lines.js` (thirty-two lines)
 - Test: `hallRules.test.js`, `companions.test.js`
 
-- [ ] Tests first: `pick(fight)` chooses Bulletproof for falling people, Black Samson for a crowd within 40 m, Rex for Maulers, Robot for an unknown foe, never the same two for one fight; each signature’s rule (Kate’s copies hold a foe 2 s; Monster Girl’s 12 s; Rae’s stagger); the room is a disc of radius 28 m with eight plinths and the door at (0, 21); going in sets the zone `hall` and out restores the street.
-- [ ] The modules, the stand-ins, the inside (code-built as `landmarks.js` is: the dome from within, the plinths, Cecil’s board moved here), the cavalry.
-- [ ] `gen3d` issues for the eight; a `voices` issue for the thirty-two lines.
-- [ ] Shot `hall` with `--metrics`; `guardians` achievement.
-- [ ] Checks; commit; pull request; merge.
+- [x] Tests first: `pick(fight)` chooses Bulletproof for falling people, Black Samson for a crowd within 40 m, Rex for Maulers, Robot for an unknown foe, never the same two for one fight; each signature’s rule (Kate’s copies hold a foe 2 s; Monster Girl’s 12 s; Rae’s stagger); the room is a disc of radius 28 m with eight plinths and the door at (0, 21); going in sets the zone `hall` and out restores the street.
+- [x] The modules, the stand-ins, the inside (code-built as `landmarks.js` is: the dome from within, the plinths, Cecil’s board moved here), the cavalry.
+- [x] `gen3d` issues for the eight; a `voices` issue for the thirty-two lines.
+- [x] Shot `hall` with `--metrics`; `guardians` achievement.
+- [x] Checks; commit; pull request; merge.
 
 ### Task 8: Angstrom Levy and the dimensions
 
@@ -162,10 +162,10 @@
 - Create: `src/components/invincible/world/dimensions.js`, `dimensions.test.js`, `season2.js` (season two’s missions as data, the engine stays in `missions.js`), `season2.test.js`
 - Modify: `scene.js` (redraw the city on a dimension change: palettes, water, sky, crowd), `foes.js` (Angstrom, the mirror Mark), `ground.js` (the water level as a uniform), `map.js` (a reflected `near` for the mirror), `InvWorld.jsx`
 
-- [ ] Tests first: four dimensions with their numbers; `enter(dim)` keeps Mark’s position and clears foes; the mirror maps `x` to `−x` in `near`; only `home` serialises ruins and standing; Angstrom portals away on a hit and returns 8 m behind Mark; the mission’s three portals and the thing in each.
-- [ ] The modules and the drawing (a dimension swap re-uploads palettes and the water uniform; no new geometry).
-- [ ] `--play levy`; shot `levy` (the burnt city at night) with `--metrics`; `gen3d` issue for Angstrom; `voices` issue for his six lines.
-- [ ] Checks; commit; pull request; merge.
+- [x] Tests first: four dimensions with their numbers; `enter(dim)` keeps Mark’s position and clears foes; the mirror maps `x` to `−x` in `near`; only `home` serialises ruins and standing; Angstrom portals away on a hit and returns 8 m behind Mark; the mission’s three portals and the thing in each.
+- [x] The modules and the drawing (a dimension swap re-uploads palettes and the water uniform; no new geometry).
+- [x] `--play levy`; shot `levy` (the burnt city at night) with `--metrics`; `gen3d` issue for Angstrom; `voices` issue for his six lines.
+- [x] Checks; commit; pull request; merge.
 
 ### Task 9: The Sequids on Mars
 

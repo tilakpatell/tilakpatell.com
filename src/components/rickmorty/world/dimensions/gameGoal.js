@@ -2,15 +2,16 @@
 // it follows the game rather than staying on where the game began: the next
 // piece of a collect not yet found, the Microverse's cells or its console
 // by whether Morty's carrying one, the next Jerry not yet talked to, a thing
-// in the shop found clean to take or else the next not yet looked over. Pure
+// in the shop found clean to take or else the next not yet looked over, the
+// control booth till the countdown's started and then the next set on. Pure
 // and import-free, read by RmWorld's goalOf with what the place's stage says
 // of its game.
 //
-//   gameGoal(d, { used, done, power, find, deal }) → a spot's id, or null
+//   gameGoal(d, { used, done, power, find, deal, sequence }) → a spot's id, or null
 //     d: the place (./destinations.js); used: the spots used on this visit;
-//     done: the tasks done; power, find, deal: the stage's snapshots, if any
+//     done: the tasks done; power, find, deal, sequence: the stage's snapshots, if any
 
-export function gameGoal(d, { used = new Set(), done = [], power = null, find = null, deal = null } = {}) {
+export function gameGoal(d, { used = new Set(), done = [], power = null, find = null, deal = null, sequence = null } = {}) {
   if (!d) return null;
   const c = d.collect;
   if (c && !done.includes(c.task)) {
@@ -29,6 +30,12 @@ export function gameGoal(d, { used = new Set(), done = [], power = null, find = 
     // (a thing looked over and found clean, to take; else the next not yet looked at)
     const open = dl.items.filter((id) => !deal.taken.includes(id));
     return open.find((id) => deal.seen[id] === 'good') ?? open.find((id) => !deal.seen[id]) ?? null;
+  }
+  const sq = d.sequence;
+  if (sq && sequence && !done.includes(sq.task) && sequence.phase !== 'lost') {
+    // (the countdown first, where it has one; then the next set in the running order)
+    if (sequence.phase === 'idle' && sq.start) return sq.start;
+    return sequence.order[sequence.on] ?? null;
   }
   return null;
 }
