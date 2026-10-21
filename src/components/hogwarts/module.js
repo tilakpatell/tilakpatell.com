@@ -15,6 +15,31 @@
 // stick), and `scene`, `walker` for the checks. In development,
 // window.__HOGWARTS__ = { state(), place(x, z, yaw), dusk(s), world }.
 //
+// The wand (play/wandfx.js) is stepped beside the walker: its events
+// ('spell', 'toast', 'points', 'wand', 'wheel' and the rest it lists) go to
+// the page the same way, and the world adds choose(id) (the wheel's pick)
+// and press(name, down) (the touch buttons: 'cast'); the development hook
+// adds cast(spell, at) (`at` a thing's id, a point [x, y, z], or nothing:
+// what the view points at).
+//
+// The broom (play/broom.js) lies on the shingle by the jetty: E by it (or
+// Accio it to you first) and you're up, the walker put away until you land;
+// 'broom' { riding } as you get on and off. Quidditch (play/snitch.js): the
+// Snitch alone wherever you are (practice), or a match on the pitch (or,
+// until the grounds have one, in front of you); its events 'said', 'match',
+// 'result' and 'points' go to the page. The world adds fly(), practice(),
+// match(n) and bubble(el) (the commentator's bubble, moved over his box);
+// press(name, down) takes 'rise', 'sink' and 'catch' too. The development
+// hook adds fly(), practice(), match(n) and quidditch() (the match's state).
+//
+// The lessons (play/lessons.js): one at a time, started by lesson(id) (the
+// Menu's, until the term's lane sends you to them), held where you stand
+// until the grounds and the rooms give each its place; they have the E key
+// while they run, say what to do next ('objective' { id, text }) and what
+// a teacher says ('said', the speaker play/said.js moves over them), and
+// when one is done 'lesson' { type: 'lesson', id, quest, done } and its
+// 'points'. The development hook adds lesson(id) and lessons() (its state).
+//
 // Where the rest hooks in (the lanes after this one): the grounds and the
 // near castle add to the scene beside the shore (Lane C: world/terrain.js
 // and world/castle/ take over from rules/shore.js and the far castle within
@@ -33,6 +58,14 @@ import { createBoats } from './world/boats';
 import { createFarCastle } from './world/castle/far';
 import { CRAG, SIZE } from './world/castle/silhouette';
 import { KEYS, createWalker } from './play/walk';
+import { WAND_KEYS, createWand } from './play/wandfx';
+import { BROOM_KEYS, createBroom } from './play/broom';
+import { createQuidditch } from './play/snitch';
+import { createCards } from './play/glow';
+import { createSaid } from './play/said';
+import { createLessons } from './play/lessons';
+import { practiceSet } from './play/props';
+import { createFeel } from '../../lib/three/feel';
 import { BOUNDS, CASTLE, DOOR, LEVEL, SPAWN, floorAt, heightAt, nearDoor } from './rules/shore';
 import { lightAt } from './rules/dusk';
 
@@ -71,8 +104,8 @@ export default {
     const renderer = rt.gfx?.renderer ?? null;
     const exposureWas = renderer?.toneMappingExposure ?? null;
 
-    rt.input?.bind?.(KEYS);
-    const touch = { x: 0, y: 0 };
+    rt.input?.bind?.({ ...KEYS, ...WAND_KEYS, ...BROOM_KEYS });
+    const touch = { x: 0, y: 0, rise: false, sink: false, catch: false };
     const ground = { floorAt, level: LEVEL, bounds: BOUNDS, solids: shore.solids };
     const walker = createWalker({ camera, world: ground, at: SPAWN.at, yaw: SPAWN.yaw, reduced });
 
@@ -82,6 +115,54 @@ export default {
       if (held) held.push([type, data]);
       else rt.events?.emit?.(type, data);
     };
+
+    // the wand, and the things beside the jetty for it to take hold of;
+    // the feel's knocks and punches on the camera after the walk has placed it
+    const feel = createFeel({ baseFov: camera.fov, calm: reduced });
+    const wand = createWand({ rt, scene, camera, house, floorAt, tell, feel });
+    wand.place(practiceSet({ at: SPAWN.at, yaw: SPAWN.yaw, floorAt, house, rt }));
+
+    // the broom, and Quidditch on it; their motes and the Snitch's glint in a
+    // pool of their own (the wand's is busy with its own sparks)
+    const air = createCards({ count: 400, parent: scene });
+    const broom = createBroom({ rt, scene, camera, house, floorAt, level: LEVEL, solids: shore.solids, bounds: { x0: BOUNDS.x0 - 150, x1: BOUNDS.x1 + 150, z0: BOUNDS.z0 - 60, z1: BOUNDS.z1 + 400 }, feel, reduced, cards: air });
+    // (no pitch on the shore: a match is played on a stand-in one out on the
+    // lake, the castle behind it, until the grounds' lane builds the real one)
+    const said = createSaid({ rt, camera, tell });
+    const quidditch = createQuidditch({ rt, scene, camera, house, broom, cards: air, feel, tier, tell, said, stage: { at: [0, LEVEL + 0.15, -200], yaw: 0 } });
+    const BROOM_REACH = 2.4; // m: near enough the broom on the ground to get on it
+    const broomThing = () => wand.things.get('broom');
+    const nearBroom = () => {
+      const th = broomThing();
+      if (!th || broom.riding || th.held || th.gone) return false;
+      const p = th.object.position;
+      return Math.hypot(p.x - walker.state.x, p.z - walker.state.z) <= BROOM_REACH;
+    };
+    const fly = () => {
+      if (broom.riding) return;
+      const th = broomThing();
+      if (th) {
+        th.object.visible = false;
+        th.gone = true;
+      }
+      broom.mount([walker.state.x, walker.state.z], walker.state.yaw);
+      tell('broom', { riding: true });
+      tell('toast', { text: 'W to go, A and D to bank, Space up, C down, Shift flat out.' });
+    };
+    // down again: off you get, and the broom lies where you landed
+    const landed = ([x, z], yaw) => {
+      walker.place([x, z], yaw);
+      const th = broomThing();
+      if (th) {
+        th.object.position.set(x + Math.cos(yaw) * 0.9, floorAt(x, z) + 0.12, z - Math.sin(yaw) * 0.9);
+        th.object.rotation.y = yaw;
+        th.object.visible = true;
+        th.gone = false;
+      }
+      tell('broom', { riding: false });
+    };
+    const lessons = createLessons({ rt, scene, camera, house, houseName: 'gryffindor', wand, broom, walker, floorAt, tell, said, cards: air, figure: null, fly });
+    const lesson = (id) => lessons.start(id, { p: [walker.state.x, floorAt(walker.state.x, walker.state.z), walker.state.z], yaw: walker.state.yaw });
 
     let clock = 0;
     let light = null;
@@ -112,20 +193,28 @@ export default {
       if (renderer) renderer.toneMappingExposure = light.exposure;
     };
 
-    let near = false;
+    // the one prompt: the broom at your feet before the boats' way in
+    let near = null;
+    const heldAct = new Set(); // (E's codes held last step: a lesson hears it let go)
+    const promptNow = () => {
+      if (broom.riding) return null;
+      if (nearBroom()) return 'broom';
+      return nearDoor(walker.state.x, walker.state.z) ? 'door' : null;
+    };
     const go = () => {
-      if (!nearDoor(walker.state.x, walker.state.z)) return;
-      tell('go', { door: { label: DOOR.label } });
+      const what = promptNow();
+      if (what === 'broom') fly();
+      else if (what === 'door') tell('go', { door: { label: DOOR.label } });
     };
     const frame = (dt) => {
       key.position.copy(camera.position).addScaledVector(keyDir, 200);
       key.target.position.copy(camera.position);
       sky.update(camera, dt);
       shore.update(camera, dt);
-      const now = nearDoor(walker.state.x, walker.state.z);
+      const now = promptNow();
       if (now !== near) {
         near = now;
-        tell('near', { door: near ? { label: DOOR.label } : null });
+        tell('near', { door: near === 'broom' ? { verb: 'Fly', label: 'The broom' } : near === 'door' ? { label: DOOR.label } : null });
       }
     };
 
@@ -142,9 +231,30 @@ export default {
       step(dt, input) {
         const pressed = (name) => KEYS[name].some((c) => input?.pressed?.has?.(c));
         if (pressed('menu')) tell('menu');
-        if (pressed('act')) go();
         const stick = input?.stick ?? touch;
-        walker.step(dt, input, { x: stick.x || touch.x, y: stick.y || touch.y });
+        const pad = { x: stick.x || touch.x, y: stick.y || touch.y, rise: touch.rise, sink: touch.sink, catch: touch.catch };
+        // (a lesson has E while it runs; let go of it is its too)
+        const act = pressed('act') && lessons.act(true);
+        if (lessons.active && KEYS.act.some((c) => input?.pressed && !input.keys?.has?.(c) && heldAct.has(c))) lessons.act(false);
+        heldAct.clear();
+        for (const c of KEYS.act) if (input?.keys?.has?.(c)) heldAct.add(c);
+        let landedAt = null;
+        if (quidditch.playing) quidditch.step(dt, input, pad);
+        else if (broom.riding) {
+          const r = broom.step(dt, input, pad);
+          if (r?.landed) {
+            landed(r.landed, r.yaw);
+            landedAt = r.landed;
+          }
+        } else {
+          if (pressed('act') && !act) go();
+          walker.step(dt, input, pad);
+        }
+        lessons.step(dt, input, pad, { rider: broom.rider, landed: landedAt });
+        said.update();
+        feel.update(dt, camera);
+        wand.step(dt, input);
+        air.update(dt, camera);
         clock += dt;
         // (the light moves slowly: a few times a second is plenty)
         if ((since += dt) > 0.25) {
@@ -173,6 +283,27 @@ export default {
       },
       // the prompt's own button, and the touch stick
       go,
+      wand,
+      // the wheel's pick, and the touch buttons held and let go
+      choose: (id) => wand.choose(id),
+      press(name, down) {
+        if (name === 'cast') wand.press(down);
+        else if (name in touch) touch[name] = down;
+      },
+      fly,
+      practice: () => {
+        if (!broom.riding) fly();
+        quidditch.start({ practice: true });
+      },
+      match: (n = 1) => {
+        if (!broom.riding) fly();
+        quidditch.start({ n });
+      },
+      bubble: (el) => said.bubble(el),
+      lesson,
+      lessons,
+      broom,
+      quidditch,
       stick(x, y) {
         touch.x = x;
         touch.y = y;
@@ -185,6 +316,11 @@ export default {
         shore.dispose();
         castle.dispose();
         boats.dispose();
+        wand.dispose();
+        quidditch.dispose();
+        lessons.dispose();
+        broom.dispose();
+        air.dispose();
         kit?.dispose();
         post?.dispose?.();
         if (typeof window !== 'undefined' && window.__HOGWARTS__?.world === world) delete window.__HOGWARTS__;
@@ -203,7 +339,20 @@ export default {
         clock = sec;
         relight();
       };
-      window.__HOGWARTS__ = { world, state, place: (x, z, yaw) => walker.place([x, z], yaw), dusk };
+      window.__HOGWARTS__ = {
+        world,
+        state,
+        place: (x, z, yaw) => walker.place([x, z], yaw),
+        dusk,
+        cast: (spell, at) => wand.cast(spell, at),
+        wand: () => wand.state(),
+        fly: () => world.fly(),
+        practice: () => world.practice(),
+        match: (n) => world.match(n),
+        lesson: (id) => world.lesson(id),
+        lessons: () => lessons.state(),
+        quidditch: () => ({ ...quidditch.state(), rider: broom.rider && { p: broom.rider.p.map((v) => Math.round(v * 10) / 10), spd: Math.round(broom.rider.spd * 3.6), mode: broom.rider.mode } }),
+      };
     }
     return world;
   },
