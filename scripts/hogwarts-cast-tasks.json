@@ -1,0 +1,587 @@
+{
+  "harry": {
+    "picture": {
+      "key": "da255f57082691feae5e169c41e461defd6ad3f0",
+      "seeds": [
+        11,
+        12,
+        13,
+        14
+      ],
+      "at": "2026-10-21"
+    },
+    "pick": {
+      "seed": 12,
+      "at": "2026-10-21"
+    },
+    "model": {
+      "key": "1d2223902a1c46ecf330ba13ee5586c5329de9cc",
+      "seconds": 529,
+      "at": "2026-10-21"
+    },
+    "bake": {
+      "key": "5081500fa03fb5a41f735bd51906a199b17a2569",
+      "seconds": {
+        "hq": 242,
+        "mid": 90,
+        "lo": 32
+      },
+      "at": "2026-10-21"
+    },
+    "skin": {
+      "key": "0fed8341af3cfdb079e62050596e1d195a4315b2",
+      "hipsY": 47.9,
+      "found": {
+        "crotch": false,
+        "neck": true,
+        "arms": true
+      },
+      "on": "remeshed at 14.3 mm",
+      "at": "2026-10-21"
+    },
+    "cut": {
+      "key": "8d6b57d537b39adcf3be11523208bc98c931cc69",
+      "sizes": {
+        "hq": {
+          "triangles": 13875,
+          "bytes": 518544
+        },
+        "mid": {
+          "triangles": 7980,
+          "bytes": 301296
+        },
+        "lo": {
+          "triangles": 2492,
+          "bytes": 113496
+        }
+      },
+      "at": "2026-10-21"
+    },
+    "sheet": {
+      "key": "eb9fde5902ee0a4a796bf53e5ef1cf07804f2ae4",
+      "ok": true,
+      "numbers": {
+        "idle": {
+          "sole": [
+            -0.01640332791353939,
+            -0.015043533314586533
+          ],
+          "body": -0.01640332791353939
+        },
+        "walk": {
+          "sole": [
+            -0.032627466351063755,
+            0.00013440214796546157
+          ],
+          "body": -0.032627466351063755
+        },
+        "run": {
+          "sole": [
+            -0.006029273449514201,
+            0.08208540737806391
+          ],
+          "body": -0.006029273449514201
+        },
+        "cast": {
+          "sole": [
+            -0.017516243976208722,
+            -0.016823122205364013
+          ],
+          "body": -0.017516243976208722
+        },
+        "sit.down": {
+          "sole": [
+            -0.03359052324569163,
+            -0.008128862451532822
+          ],
+          "body": -0.03359052324569163
+        },
+        "knockdown": {
+          "sole": [
+            -0.029293754182716243,
+            0.830449508601309
+          ],
+          "body": -0.3030270698416456
+        },
+        "walkFloor": 0.032627466351063755,
+        "idleFloor": 0.01640332791353939,
+        "walkSpeed": 0.4781810010189799,
+        "drift": 0.11381181220314243
+      },
+      "problems": [],
+      "bytes": 63422,
+      "at": "2026-10-21"
+    }
+  },
+  "ron": {
+    "picture": {
+      "key": "e7656bf89bac3d874c0446eb3d61bbee55ac3453",
+      "seeds": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "at": "2026-10-21"
+    },
+    "pick": {
+      "seed": 3,
+      "at": "2026-10-21"
+    },
+    "model": {
+      "key": "9c32bbcde562d7b847dec371233afcf64080d461",
+      "seconds": 135,
+      "at": "2026-10-21"
+    },
+    "bake": {
+      "key": "c9a51aa73cf7e438f370ccdb681761c8295560b0",
+      "seconds": {
+        "hq": 113,
+        "mid": 76,
+        "lo": 57
+      },
+      "at": "2026-10-21"
+    },
+    "skin": {
+      "key": "24ee20325231aacca9afe532eaad9ddda0e6ed5d",
+      "hipsY": 33.4,
+      "found": {
+        "crotch": true,
+        "neck": true,
+        "arms": true
+      },
+      "on": "remeshed at 15.0 mm",
+      "at": "2026-10-21"
+    },
+    "cut": {
+      "key": "8da018356ed33e03d1c2cb268f333a3aea3ce341",
+      "sizes": {
+        "hq": {
+          "triangles": 13999,
+          "bytes": 322464
+        },
+        "mid": {
+          "triangles": 7997,
+          "bytes": 199436
+        },
+        "lo": {
+          "triangles": 2500,
+          "bytes": 84200
+        }
+      },
+      "at": "2026-10-21"
+    },
+    "sheet": {
+      "key": "a5ff89ebd14ac14139b06452a2be02c11ba71579",
+      "ok": false,
+      "numbers": {
+        "idle": {
+          "sole": [
+            -0.03667218613958414,
+            -0.03395554847284028
+          ],
+          "body": -0.03667218613958414
+        },
+        "walk": {
+          "sole": [
+            -0.07052701243971785,
+            0.00007545082469648961
+          ],
+          "body": -0.07052701243971785
+        },
+        "run": {
+          "sole": [
+            -0.0529866697057179,
+            0.035768959380976476
+          ],
+          "body": -0.0529866697057179
+        },
+        "cast": {
+          "sole": [
+            -0.03530692283861191,
+            -0.03360706531151486
+          ],
+          "body": -0.03530692283861191
+        },
+        "sit.down": {
+          "sole": [
+            -0.04442373597628489,
+            -0.02081755358795467
+          ],
+          "body": -0.04442373597628489
+        },
+        "knockdown": {
+          "sole": [
+            -0.0807916770695235,
+            0.5008930403316739
+          ],
+          "body": -0.41889839921945027
+        },
+        "walkFloor": 0.07052701243971785,
+        "idleFloor": 0.03667218613958414,
+        "walkSpeed": 0.3219440109038487,
+        "drift": 0.21281051023748238
+      },
+      "problems": [
+        "walk: the lowest sole comes 7.1 cm off the floor (at most 4)",
+        "idle: the soles come 3.7 cm off the floor (at most 2)",
+        "walk: a planted toe slides 0.21 m/s (at most 0.15)"
+      ],
+      "bytes": 50032,
+      "at": "2026-10-21"
+    }
+  },
+  "hermione": {
+    "picture": {
+      "key": "ff3bc619d609be1cea1a5aa0033acfdd8676dcd9",
+      "seeds": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "at": "2026-10-21"
+    },
+    "pick": {
+      "seed": 1,
+      "at": "2026-10-21"
+    },
+    "model": {
+      "key": "32b76922e80b1182062045889d1eac0e8e20d934",
+      "seconds": 638,
+      "at": "2026-10-21"
+    },
+    "bake": {
+      "key": "34bbc5aaf8382e33ca4f50cc03f2270bcc687dd7",
+      "seconds": {
+        "hq": 320,
+        "mid": 155,
+        "lo": 143
+      },
+      "at": "2026-10-21"
+    },
+    "skin": {
+      "key": "197e46ea71c3fa02d7e7ca65c532e40890f1a19b",
+      "hipsY": 31.2,
+      "found": {
+        "crotch": true,
+        "neck": true,
+        "arms": true
+      },
+      "on": "remeshed at 14.0 mm",
+      "at": "2026-10-21"
+    },
+    "cut": {
+      "key": "8b79b526c0534fdd53a38d19c11b4201bd74bafc",
+      "sizes": {
+        "hq": {
+          "triangles": 13994,
+          "bytes": 436780
+        },
+        "mid": {
+          "triangles": 7995,
+          "bytes": 275984
+        },
+        "lo": {
+          "triangles": 2498,
+          "bytes": 98532
+        }
+      },
+      "at": "2026-10-21"
+    },
+    "sheet": {
+      "key": "0dc79b4f5b954dcf7e8b34a866db2c644dd08cdc",
+      "ok": false,
+      "numbers": null,
+      "problems": null,
+      "bytes": null,
+      "at": "2026-10-21"
+    }
+  },
+  "hagrid": {
+    "picture": {
+      "key": "6619099162b5abc4c1560fcf1f2f4eeabd71b05d",
+      "seeds": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "at": "2026-10-21"
+    },
+    "pick": {
+      "seed": 4,
+      "at": "2026-10-21"
+    },
+    "bake": {
+      "key": "002845372ef3abf00d64e3bed0bc1faa7756f25a",
+      "seconds": {
+        "hq": 234,
+        "mid": 45,
+        "lo": 14
+      },
+      "at": "2026-10-21"
+    },
+    "skin": {
+      "key": "3d0bebb6069d4b5e7d0893766a58d855ba81426a",
+      "hipsY": 85.8,
+      "found": {
+        "crotch": false,
+        "neck": false,
+        "arms": true
+      },
+      "on": "remeshed at 25.6 mm",
+      "at": "2026-10-21"
+    },
+    "cut": {
+      "key": "e7526b419bd145e9864beb7310eaa78403d4fd70",
+      "sizes": {
+        "hq": {
+          "triangles": 13962,
+          "bytes": 606880
+        },
+        "mid": {
+          "triangles": 7973,
+          "bytes": 334600
+        },
+        "lo": {
+          "triangles": 2496,
+          "bytes": 107624
+        }
+      },
+      "at": "2026-10-21"
+    },
+    "model": {
+      "key": "83358b62136f2c3a40f87b47a0f7e58c8f255ad0",
+      "seconds": 1089,
+      "at": "2026-10-21"
+    },
+    "sheet": {
+      "key": "8d6bf108eb340a0f99c8a76e58b5e2cb32b70f43",
+      "ok": false,
+      "numbers": {
+        "idle": {
+          "sole": [
+            -0.05836117584621678,
+            -0.05115960228243248
+          ],
+          "body": -0.05836117584621678
+        },
+        "walk": {
+          "sole": [
+            -0.131316821717379,
+            0.02819290705754343
+          ],
+          "body": -0.131316821717379
+        },
+        "run": {
+          "sole": [
+            -0.08860248299856205,
+            0.21050953000781036
+          ],
+          "body": -0.08860248299856205
+        },
+        "cast": {
+          "sole": [
+            -0.05485561818047379,
+            -0.05158369334881027
+          ],
+          "body": -0.05485561818047379
+        },
+        "sit.down": {
+          "sole": [
+            -0.0869163302461256,
+            -0.008172378668445132
+          ],
+          "body": -0.08807789601117211
+        },
+        "knockdown": {
+          "sole": [
+            -0.12555392692680722,
+            1.3886355787877538
+          ],
+          "body": -0.6090105097266085
+        },
+        "walkFloor": 0.131316821717379,
+        "idleFloor": 0.05836117584621678,
+        "walkSpeed": 0.7815533226380266,
+        "drift": 0.13160386440596475
+      },
+      "problems": [
+        "walk: the lowest sole comes 13.1 cm off the floor (at most 4)",
+        "idle: the soles come 5.8 cm off the floor (at most 2)"
+      ],
+      "bytes": 61704,
+      "at": "2026-10-21"
+    }
+  },
+  "dumbledore": {
+    "picture": {
+      "key": "e535257ee3c6daf300ea3a7f70c5ce95757d0a7c",
+      "seeds": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "at": "2026-10-21"
+    },
+    "pick": {
+      "seed": 2,
+      "at": "2026-10-21"
+    },
+    "model": {
+      "key": "182486d38d152888bdea1d9b209b3af2fa1045bd",
+      "seconds": 1789,
+      "at": "2026-10-21"
+    }
+  },
+  "mcgonagall": {
+    "picture": {
+      "key": "2b059383008fb23f9fee8f0fe61793b780c29219",
+      "seeds": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "at": "2026-10-21"
+    },
+    "pick": {
+      "seed": 1,
+      "at": "2026-10-21"
+    },
+    "model": {
+      "key": "6f296578c21344bb3e7350af8ec24feb2bc8fe0a",
+      "seconds": 1197,
+      "at": "2026-10-21"
+    }
+  },
+  "snape": {
+    "picture": {
+      "key": "0df1bd2fca17d56f541b8137422ae35994edabf2",
+      "seeds": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "at": "2026-10-21"
+    },
+    "pick": {
+      "seed": 4,
+      "at": "2026-10-21"
+    },
+    "model": {
+      "key": "b930ca35ce6667c1c9d4b2c83917de44c90500a5",
+      "seconds": 657,
+      "at": "2026-10-21"
+    }
+  },
+  "flitwick": {
+    "picture": {
+      "key": "12ec4f412ee8feccfbb2ed389194d7d39ceb5fa2",
+      "seeds": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "at": "2026-10-21"
+    },
+    "pick": {
+      "seed": 1,
+      "at": "2026-10-21"
+    },
+    "model": {
+      "key": "76547340166b16accb59ed51107972b78285820d",
+      "seconds": 570,
+      "at": "2026-10-21"
+    }
+  },
+  "sprout": {
+    "picture": {
+      "key": "1b20087b8de78b91917b8e84265bcb309415536b",
+      "seeds": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "at": "2026-10-21"
+    },
+    "pick": {
+      "seed": 2,
+      "at": "2026-10-21"
+    },
+    "model": {
+      "key": "6a9b0f9ad819e980291b9bafbf3957e6b9b91407",
+      "seconds": 261,
+      "at": "2026-10-21"
+    }
+  },
+  "hooch": {
+    "picture": {
+      "key": "7682eeb1246f0d35b52edc9ceef0959ce827c04d",
+      "seeds": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "at": "2026-10-21"
+    },
+    "pick": {
+      "seed": 2,
+      "at": "2026-10-21"
+    }
+  },
+  "filch": {
+    "picture": {
+      "key": "62734b83a0237cbea6f3039187e5cf2d3af2f20c",
+      "seeds": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "at": "2026-10-21"
+    },
+    "pick": {
+      "seed": 1,
+      "at": "2026-10-21"
+    }
+  },
+  "pince": {
+    "picture": {
+      "key": "04fb2b48ad069b5d783e187ce899a10c9d4eded8",
+      "seeds": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "at": "2026-10-21"
+    },
+    "pick": {
+      "seed": 2,
+      "at": "2026-10-21"
+    }
+  },
+  "rosmerta": {
+    "picture": {
+      "key": "0e1efd0475d1050935df9d7657feaa4695409cea",
+      "seeds": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "at": "2026-10-21"
+    },
+    "pick": {
+      "seed": 2,
+      "at": "2026-10-21"
+    }
+  }
+}
