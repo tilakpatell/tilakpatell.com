@@ -7,7 +7,7 @@
 // built a slice a frame, a few milliseconds at a time, the one you stand in
 // first; a cell you are carried into before it is ready is built at once.
 //
-//   createCells({ land, tier, scatter, material, far, exact, budget }) → {
+//   createCells({ land, tier, scatter, material, far, exact, budget, layer }) → {
 //     group,                     the near cells’ meshes
 //     at(x, z),                  where you are: which cells, which items
 //     step(),                    a frame’s slice of the building
@@ -49,7 +49,7 @@ export function nearest(x, z, n = NEAR_CELLS) {
   return out.slice(0, n).map(({ i, j }) => ({ i, j }));
 }
 
-export function createCells({ land, tier = 'high', scatter = null, material, far = null, exact = null, budget = 5 } = {}) {
+export function createCells({ land, tier = 'high', scatter = null, material, far = null, exact = null, budget = 5, layer = null } = {}) {
   const group = new THREE.Group();
   group.name = 'hogwarts:cells';
   const built = new Map(); // key → { mesh }
@@ -67,6 +67,8 @@ export function createCells({ land, tier = 'high', scatter = null, material, far
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = `cell:${k}`;
     mesh.receiveShadow = tier !== 'low';
+    // (on the lake’s mirror’s layer too: the far ground sinks under a near cell, and the bank would go from the reflection with it)
+    if (layer != null) mesh.layers.enable(layer);
     group.add(mesh);
     built.set(k, { mesh });
     jobs.delete(k);

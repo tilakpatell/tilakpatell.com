@@ -315,7 +315,8 @@ function dial(ctx, f, y, r) {
   const s = Math.sin(f.turn);
   const at = [f.at[0] + s * 0.12, y, f.at[1] + c * 0.12];
   const segs = ctx.far ? 12 : 28;
-  const circle = (rr) => Array.from({ length: segs }, (_, i) => [Math.sin((i / segs) * TAU) * rr, Math.cos((i / segs) * TAU) * rr]);
+  // (counter-clockwise seen from in front, as shape() winds its faces)
+  const circle = (rr) => Array.from({ length: segs }, (_, i) => [Math.cos((i / segs) * TAU) * rr, Math.sin((i / segs) * TAU) * rr]);
   // the rim, then the dial a little proud of it (the dial lights first at dusk: a face you can read the time by at night)
   m.tone(TONES.lead);
   m.shape('lead', { at: [at[0] - s * 0.02, y, at[2] - c * 0.02], turn: f.turn, outline: circle(r + 0.5) });

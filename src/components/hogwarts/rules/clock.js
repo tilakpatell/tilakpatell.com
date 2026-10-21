@@ -131,9 +131,9 @@ const SUN = [
   [0.8, WHITE],
 ];
 const AMBIENT = [
-  [-0.4, 0.09],
-  [-0.1, 0.12],
-  [0.0, 0.2],
+  [-0.4, 0.1],
+  [-0.1, 0.15],
+  [0.0, 0.24],
   [0.2, 0.32],
   [0.6, 0.4],
 ];
@@ -202,7 +202,7 @@ export function keyLight(l) {
 export const skyLight = (l) => 0.4 + l.ambient * 1.8;
 
 const VIOLET = [0.195, 0.147, 0.687];
-export const SHADE = { day: 0.28, least: 0.07, sun: 0.7, moon: 0.9 };
+export const SHADE = { day: 0.28, least: 0.085, sun: 0.7, moon: 0.9 };
 export function shadeOf(l, key = keyLight(l)) {
   const sky = l.fog.colour;
   const lean = key.moon ? 0.12 : 0.35;

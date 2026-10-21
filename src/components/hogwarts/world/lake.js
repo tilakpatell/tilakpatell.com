@@ -187,7 +187,9 @@ export function createLake({ camera = null, sky = null, groundMap = null, tier =
     if (mirror) {
       // (the mirror’s picture, shifted by the ripple: the castle’s lights break into streaks down the water)
       const m = mirror.map.sample(mirror.uv.add(vec2(sx.mul(0.4), sz).mul(rough).mul(0.05)));
-      above = mix(skyCol, m.rgb, m.a.max(0).min(1));
+      // (a peaty loch gives back four fifths of what stands over it, its colour a little drained)
+      const back = mix(vec3(dot(m.rgb, vec3(0.2126, 0.7152, 0.0722))), m.rgb, 0.8).mul(0.8);
+      above = mix(skyCol, back, m.a.max(0).min(1));
     }
     // how deep it stands, from the ground map (none known past the ground: deep)
     const inside = p.x.greaterThan(-HALF).and(p.x.lessThan(HALF)).and(p.y.greaterThan(-HALF)).and(p.y.lessThan(HALF));

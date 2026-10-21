@@ -27,7 +27,7 @@
 
 import * as THREE from 'three';
 import { MeshLambertNodeMaterial } from 'three/webgpu';
-import { abs, dot, float, length, mat2, mix, normalWorldGeometry, normalize, positionLocal, positionWorld, pow, select, smoothstep, texture, uniform, uniformArray, vec2, vec3, vec4, cameraPosition, cameraViewMatrix } from 'three/tsl';
+import { abs, cameraPosition, cameraViewMatrix, dot, float, length, mat2, mix, normalWorldGeometry, normalize, positionLocal, positionWorld, pow, select, sin, smoothstep, texture, uniform, uniformArray, vec2, vec3, vec4 } from 'three/tsl';
 import { createGroundMap } from '../../../lib/three/groundmapNodes';
 import { loadScan, scanOf } from '../../../lib/three/scansNodes';
 import { onColor, onNormal, onPosition } from '../../../lib/three/hookNodes';
@@ -241,8 +241,14 @@ export function createGroundMaterial({ house = null, groundMap, coverMap, tier =
         const detail = flat('grass', xz).toVar();
         detail.assign(mix(detail, flat('floor', xz), smoothstep(0.3, 0.8, cv.x)));
         detail.assign(mix(detail, flat('way', xz), smoothstep(0.2, 0.7, cv.z)));
-        detail.assign(mix(detail, tri('steep', positionWorld), steepOf().max(cv.w.mul(0.8))));
+        const rocky = steepOf().max(cv.w.mul(0.8));
+        detail.assign(mix(detail, tri('steep', positionWorld), rocky));
         c = c.mul(mix(vec3(1), detail, near().mul(0.85)));
+        // (a cliff seen from across the water: the rock’s scan at seven times its size, never faded,
+        // and its strata, so a crag reads as rock at any distance and not as a grey slope)
+        const big = tri('steep', positionWorld.mul(0.14));
+        const strata = sin(positionWorld.y.mul(0.85).add(big.x.mul(3))).mul(0.12).add(1);
+        c = c.mul(mix(vec3(1), big.mul(strata).mul(1.05), rocky.mul(0.85)));
       }
       // the wet: darker; the snow: lying on what is level and above the water, thin where it is steep
       c = c.mul(mix(float(1), float(0.78), uWet));

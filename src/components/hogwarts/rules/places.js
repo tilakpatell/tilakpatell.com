@@ -72,7 +72,7 @@ export const PLACES = [
   { id: 'forest', name: 'The Forbidden Forest', kind: 'forest', at: [-480, -360], r: 220 },
   { id: 'clearing', name: 'The clearing', kind: 'forest', at: [-450, -330], r: 18 },
   { id: 'glen', name: 'The glen', kind: 'wild', at: [380, -350], r: 90 },
-  { id: 'moor', name: 'The moor', kind: 'wild', at: [-120, -590], r: 160 },
+  { id: 'moor', name: 'The moor', kind: 'wild', at: [200, -590], r: 150 },
   { id: 'station', name: 'Hogsmeade station', kind: 'village', at: [546, -470], r: 30 },
   { id: 'road', name: 'The road to Hogsmeade', kind: 'wild', at: [440, -390], r: 40 },
   { id: 'hogsmeade', name: 'Hogsmeade', kind: 'village', at: [665, -625], r: 60 },

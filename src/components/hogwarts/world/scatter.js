@@ -7,12 +7,12 @@
 // own key. Few models, each in its tint: a pool is a draw a level, and
 // the grounds’ draws are counted.
 //
-//   ROWS: [{ model, on, per100, clump, spread, scale, slope, tint, kind, reach }]
+//   ROWS: [{ model, on, per100, clump, spread, scale, slope, tint, kind, reach, sink }]
 //     on: 'forest' | 'moor' | 'lawn' | 'lakeside' | 'steep' | 'strand' (the ground it grows on,
 //       its density weighted by how much of that ground a point is)
 //     per100: items a hundred square metres of it; kind 'grass': dropped on low, halved on mid
 //     reach: how far its pool draws it (its far stand-ins to there), by tier
-//   CLEAR: [{ at, r } | { line, r }]: where nothing grows (the castle, the pitch, the
+//   CLEAR: [{ at, r } | { at, rx, rz, turn } | { line, r }]: where nothing grows (the castle, the pitch, the
 //     buildings, the bridges’ lines), from the places
 //   placementsFor(land, i, j, { tier }) → [{ model, x, y, z, yaw, scale, tint }] (pure, seeded by the cell)
 //   createScatter({ kitFor, tier }) → kitScatter’s, its pools’ reach from the rows
@@ -34,7 +34,7 @@ const STRAW = { Grass: { recolour: '#8a8456' } };
 const LAWN = { Grass: { recolour: '#4e6a34' } };
 const BIRCH = { Leaves_Birch: { recolour: '#6f8a3e' } };
 const OAK = { Leaves_NormalTree: { recolour: '#3e5a2a' }, Bark_NormalTree: { recolour: '#5a4c3e' } };
-const STONE = { Rocks: { recolour: '#7e786c' } };
+const STONE = { Rocks: { recolour: '#5e5950' } };
 
 export const ROWS = [
   // the Forbidden Forest: pines close and dark, a giant among them now and then, ferns and dark bushes under
@@ -44,20 +44,25 @@ export const ROWS = [
   { model: 'Fern_1', on: 'forest', per100: 0.9, clump: 5, spread: 4, scale: [0.9, 1.5], slope: 1, kind: 'grass' },
   { model: 'Bush_Common', on: 'forest', per100: 0.22, clump: 3, spread: 4, scale: [0.9, 1.5], slope: 1, tint: UNDER },
   // by the lake: birches and oaks, a bush or two
-  { model: 'Birch_3', on: 'lakeside', per100: 0.09, clump: 3, spread: 8, scale: [0.9, 1.3], slope: 0.7, tint: BIRCH },
-  { model: 'CommonTree_1', on: 'lakeside', per100: 0.05, clump: 2, spread: 9, scale: [1.1, 1.6], slope: 0.6, tint: OAK },
+  { model: 'Birch_3', on: 'lakeside', per100: 0.16, clump: 3, spread: 8, scale: [0.9, 1.3], slope: 0.8, tint: BIRCH },
+  { model: 'CommonTree_1', on: 'lakeside', per100: 0.08, clump: 2, spread: 9, scale: [1.1, 1.6], slope: 0.7, tint: OAK },
   { model: 'Bush_Large', on: 'lakeside', per100: 0.06, clump: 2, spread: 5, scale: [0.8, 1.2], slope: 0.7, tint: UNDER },
   // the lawns: grass and a few flowers, a lone oak here and there
   { model: 'Grass_Common_Short', on: 'lawn', per100: 1.6, clump: 6, spread: 3, scale: [0.8, 1.3], slope: 0.6, kind: 'grass', tint: LAWN },
   { model: 'Flower_7_Group', on: 'lawn', per100: 0.05, clump: 3, spread: 4, scale: [0.6, 0.9], slope: 0.5, kind: 'grass' },
-  { model: 'CommonTree_1', on: 'lawn', per100: 0.004, clump: 1, spread: 1, scale: [1.3, 1.8], slope: 0.4, tint: OAK },
+  { model: 'CommonTree_1', on: 'lawn', per100: 0.014, clump: 1, spread: 1, scale: [1.3, 1.9], slope: 0.6, tint: OAK },
+  { model: 'Birch_3', on: 'lawn', per100: 0.012, clump: 3, spread: 7, scale: [0.9, 1.3], slope: 0.7, tint: BIRCH },
+  { model: 'Pine_4', on: 'lawn', per100: 0.006, clump: 2, spread: 6, scale: [1.2, 1.7], slope: 0.9, tint: PINES },
   // the moor: heather in clumps, straw-coloured grass, boulders
   { model: 'Bush_Common', on: 'moor', per100: 1.2, clump: 6, spread: 5, scale: [0.6, 1.1], slope: 1, tint: HEATHER },
   { model: 'Grass_Wispy_Short', on: 'moor', per100: 0.8, clump: 5, spread: 4, scale: [0.8, 1.2], slope: 1, kind: 'grass', tint: STRAW },
   { model: 'Rock_Big_1', on: 'moor', per100: 0.012, clump: 2, spread: 6, scale: [0.7, 1.4], slope: 1.4, tint: STONE },
+  { model: 'Pine_4', on: 'moor', per100: 0.008, clump: 3, spread: 9, scale: [1.1, 1.6], slope: 1, tint: PINES },
   // the steep: rocks out of the slopes (the crag’s cliffs, the knolls’ flanks)
-  { model: 'Rock_Medium_1', on: 'steep', per100: 0.35, clump: 3, spread: 4, scale: [0.8, 1.8], slope: 3, tint: STONE },
-  { model: 'Rock_Big_1', on: 'steep', per100: 0.04, clump: 1, spread: 1, scale: [0.8, 1.6], slope: 3, tint: STONE },
+  // (and crags: the kit’s big rocks two and three times over, sunk into the cliffs, so a cliff has a broken face)
+  { model: 'Rock_Medium_1', on: 'steep', per100: 0.35, clump: 3, spread: 4, scale: [1.2, 2.8], slope: 4, tint: STONE },
+  { model: 'Rock_Big_1', on: 'steep', per100: 0.06, clump: 2, spread: 6, scale: [1.8, 3.6], slope: 4, tint: STONE, sink: 0.35 },
+  { model: 'Rock_Big_2', on: 'steep', per100: 0.05, clump: 2, spread: 6, scale: [1.8, 3.4], slope: 4, tint: STONE, sink: 0.35 },
   // the strand: pebbles and a stone or two at the water
   { model: 'Rock_Medium_1', on: 'strand', per100: 0.08, clump: 2, spread: 3, scale: [0.4, 0.9], slope: 1, tint: STONE },
   { model: 'Pebble_Round_1', on: 'strand', per100: 1.2, clump: 6, spread: 3, scale: [0.8, 1.6], slope: 1, kind: 'grass', tint: STONE },
@@ -71,7 +76,7 @@ export const BANDS = { forest: { low: [20, 70], mid: [28, 90], high: [34, 100], 
 
 const at = (id) => placeById(id).at;
 export const CLEAR = [
-  { at: [-6, -40], r: 132 }, // the castle on its crag
+  { at: [-6, -46], rx: 122, rz: 84, turn: 0.12 }, // the castle on its crag’s top (its slopes grow trees)
   { at: at('pitch'), r: 105 },
   { at: at('greenhouses'), r: 36 },
   { at: [-254, -238], r: 28 }, // the hut, the patch and the paddock
@@ -88,6 +93,13 @@ export const CLEAR = [
 ];
 const cleared = (x, z) =>
   CLEAR.some((c) => {
+    if (c.rx) {
+      const k = Math.cos(c.turn ?? 0);
+      const s = Math.sin(c.turn ?? 0);
+      const u = (x - c.at[0]) * k + (z - c.at[1]) * s;
+      const v = -(x - c.at[0]) * s + (z - c.at[1]) * k;
+      return (u / c.rx) ** 2 + (v / c.rz) ** 2 < 1;
+    }
     if (c.at) return (x - c.at[0]) ** 2 + (z - c.at[1]) ** 2 < c.r * c.r;
     const [a, b] = c.line;
     const dx = b[0] - a[0];
@@ -162,7 +174,8 @@ export function placementsFor(land, i, j, { tier = 'high', rows = ROWS } = {}) {
         if (land.pathAt(x, z) < (row.kind === 'grass' ? 0.6 : 2.2)) continue;
         if (row.on !== 'strand' && row.on !== 'steep' && cleared(x, z)) continue;
         if (land.slopeAt(x, z) > (row.slope ?? 0.7)) continue;
-        out.push({ model: row.model, x, y: h - 0.12, z, yaw, scale, tint: row.tint ?? null });
+        // (a crag’s rock sunk a share of its height into the slope, so it stands out of it and not on it)
+        out.push({ model: row.model, x, y: h - 0.12 - (row.sink ?? 0) * scale * 3, z, yaw, scale, tint: row.tint ?? null });
       }
     }
   }

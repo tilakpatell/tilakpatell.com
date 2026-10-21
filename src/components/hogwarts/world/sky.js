@@ -14,12 +14,12 @@
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { Fn, cross, dot, float, floor, max, mix, normalize, positionLocal, pow, smoothstep, step, uniform, vec2, vec3 } from 'three/tsl';
+import { Fn, cross, dot, float, floor, length, max, mix, normalize, positionLocal, pow, smoothstep, step, uniform, vec2, vec3 } from 'three/tsl';
 import { noiseWith } from '../../../lib/three/noiseNodes';
 
 const NIGHT = new THREE.Color(0.006, 0.01, 0.03);
 const DAY = new THREE.Color(0.2, 0.38, 0.72);
-const STAR_GRID = 280; // cells round the dome a star may sit in
+const STAR_GRID = 520; // cells round the dome a star may sit in (a star a point inside its cell, not the cell)
 
 export function createSky({ radius = 2500 } = {}) {
   const u = {
@@ -62,11 +62,15 @@ export function createSky({ radius = 2500 } = {}) {
     const lit = base.add(u.sunCol.mul(litSide.mul(0.9)));
     sky.assign(mix(sky, lit, cover.mul(0.82)));
     // the stars, where the sky is dark and no cloud covers them
-    const cell = floor(dir.mul(STAR_GRID));
+    const grid = dir.mul(STAR_GRID);
+    const cell = floor(grid);
     const dark = smoothstep(0.12, 0.03, dot(sky, vec3(0.2126, 0.7152, 0.0722)));
     const h = hash13(cell, u.seed);
-    const star = step(0.9962, h).mul(u.stars).mul(dark).mul(smoothstep(0.02, 0.2, dir.y)).mul(cover.oneMinus());
-    sky.addAssign(vec3(star.mul(h.sub(0.9962).mul(260).add(0.35))));
+    // (a point in the cell, put somewhere in it by a second hash, round and soft-edged)
+    const spot = vec3(hash13(cell.add(17.3), u.seed), hash13(cell.add(41.9), u.seed), hash13(cell.add(73.1), u.seed)).mul(0.5).add(0.25);
+    const point = smoothstep(0.32, 0.06, length(grid.sub(cell).sub(spot)));
+    const star = step(0.9982, h).mul(point).mul(u.stars).mul(dark).mul(smoothstep(0.02, 0.2, dir.y)).mul(cover.oneMinus());
+    sky.addAssign(vec3(star.mul(h.sub(0.9982).mul(900).add(0.45))));
     // the sun’s disc, above the horizon only
     const disc = smoothstep(0.9994, 0.9997, c).mul(smoothstep(-0.03, 0.02, u.sunDir.y)).mul(cover.mul(0.85).oneMinus());
     sky.addAssign(u.sunCol.mul(disc.mul(6)));

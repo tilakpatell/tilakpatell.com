@@ -233,7 +233,11 @@ function base(x, z) {
   h += 36 * smooth((x - 640) / 160) * smooth((z + 200) / 300);
   // past the ground’s edge the land goes up into hills, under the far range
   const edge = Math.max(Math.abs(x), Math.abs(z));
-  if (edge > HALF + 80) h += 110 * smooth((edge - HALF - 80) / 520) * (0.65 + 0.35 * fbm(x / 300, z / 300, 3, 9));
+  // (broken into peaks and the cols between them, a range and not a wall: ridged noise, squared)
+  if (edge > HALF + 60) {
+    const peaks = 1 - Math.abs(fbm(x / 240, z / 240, 4, 9));
+    h += 165 * smooth((edge - HALF - 60) / 600) * (0.22 + 0.78 * peaks * peaks);
+  }
   // a heathery roughness on the high ground
   if (h > 30) h += (h - 30) * 0.06 * fbm(x / 34, z / 34, 3, 13);
   return h;

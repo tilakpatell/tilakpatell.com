@@ -32,44 +32,44 @@ const S = 0;
 // shoulder over the ravine to the ridge the glen runs down from, the
 // covered bridge from the west gate to the stone circle’s knoll
 export const BRIDGES = {
-  viaduct: { from: [64, F, -115], to: [214, 38.4, -232] },
+  viaduct: { from: [64, F, -115], to: [214, 33.2, -232] },
   covered: { from: [-117, F, -60], to: [-204, 37.4, -80] },
 };
 const across = ({ from, to }) => Math.atan2(to[0] - from[0], to[2] - from[2]) - Math.PI; // (a gate across the way: its towers either side; it faces along it, away from the castle)
 
-export const CLOCK = { at: [74, -40], w: 13, h: 46, face: { y: 36, r: 4.2, faces: ['right', 'left'] }, bay: { y: 15, w: 5.2, h: 15, faces: ['right'] } };
+export const CLOCK = { at: [74, -40], w: 13, h: 54, face: { y: 43, r: 4.8, faces: ['right', 'left'] }, bay: { y: 18, w: 5.4, h: 17, faces: ['right'] } };
 
 export const PLAN = [
   // the south range along the cliff: the Great Hall, its two towers at the west end, the Entrance Hall at the east
-  { kind: 'hall', id: 'great-hall', at: [-12, 11], len: 70, w: 22, h: 21, roof: { h: 17 }, windows: { n: 7, w: 3.2, h: 12, sill: 5 }, ends: { window: { w: 7, h: 13, sill: 4 } }, dormers: 5 },
+  { kind: 'hall', id: 'great-hall', at: [-12, 11], len: 70, w: 22, h: 24, roof: { h: 20 }, windows: { n: 7, w: 3.2, h: 14, sill: 5.5 }, ends: { window: { w: 7, h: 15, sill: 4.5 } }, dormers: 5 },
   { kind: 'square', id: 'entrance-hall', at: [37, 8], w: 26, d: 30, h: 28, roof: 'battlement', turrets: { r: 2.8, h: 35, cone: 9 }, windows: { rows: [7, 15, 22], per: 3, side: 3, w: 1.6, h: 3.6 } },
-  { kind: 'tower', id: 'sw-tower', at: [-55, 6], r: 8, h: 46, roof: 'both', cone: { h: 20 }, windows: { rows: [10, 18, 26, 34, 40], per: 6 } },
-  { kind: 'tower', id: 'sw-turret', at: [-61, 26], r: 4.5, h: 32, cone: { h: 13 }, windows: { rows: [12, 22], per: 4 }, tone: 'old' },
-  { kind: 'tower', id: 'se-tower', at: [58, 24], r: 6, h: 38, cone: { h: 16 }, windows: { rows: [10, 20, 30], per: 5 }, tone: 'pale' },
+  { kind: 'tower', id: 'sw-tower', at: [-55, 6], r: 8, h: 56, roof: 'both', cone: { h: 24 }, windows: { rows: [10, 18, 26, 34, 42, 50], per: 6 } },
+  { kind: 'tower', id: 'sw-turret', at: [-61, 26], r: 4.5, h: 38, cone: { h: 15 }, windows: { rows: [12, 22], per: 4 }, tone: 'old' },
+  { kind: 'tower', id: 'se-tower', at: [58, 24], r: 6, h: 46, cone: { h: 19 }, windows: { rows: [10, 20, 30, 40], per: 5 }, tone: 'pale' },
   { kind: 'tower', id: 'stair-tower', at: [-14, 34], r: 3.6, h: 20, roof: 'both', cone: { h: 8 }, windows: { rows: [8, 14], per: 3, w: 0.8, h: 1.8 }, tone: 'old' },
   { kind: 'wall', id: 'terrace', from: [-58, 33], to: [-18, 36], h: 1.3, thick: 0.7, battlement: false },
   { kind: 'wall', id: 'terrace-east', from: [-10, 36], to: [50, 38], h: 1.3, thick: 0.7, battlement: false },
   // the middle: the Grand Staircase’s tower, Gryffindor’s, the west wing, Ravenclaw’s
-  { kind: 'square', id: 'grand-staircase', at: [2, -24], w: 22, h: 62, roof: 'both', spire: 16, turrets: { r: 2.4, h: 68, cone: 8 }, windows: { rows: [10, 20, 30, 40, 50], per: 3, w: 1.4, h: 3.2 } },
-  { kind: 'tower', id: 'gryffindor', at: [-34, -22], r: 7, h: 64, cone: { h: 22 }, windows: { rows: [12, 22, 32, 42, 52, 58], per: 5 } },
+  { kind: 'square', id: 'grand-staircase', at: [2, -24], w: 22, h: 72, roof: 'both', spire: 20, turrets: { r: 2.4, h: 79, cone: 9 }, windows: { rows: [10, 20, 30, 40, 50, 60], per: 3, w: 1.4, h: 3.2 } },
+  { kind: 'tower', id: 'gryffindor', at: [-34, -22], r: 7, h: 78, cone: { h: 27 }, windows: { rows: [12, 22, 32, 42, 52, 62, 70], per: 5 } },
   { kind: 'square', id: 'west-wing', at: [-74, -12], w: 26, d: 20, h: 24, roof: 'gable', ridge: 9, windows: { rows: [6, 14], per: 4, side: 3, w: 1.3, h: 2.8 }, tone: 'old' },
-  { kind: 'tower', id: 'ravenclaw', at: [-94, -32], r: 7.5, h: 56, roof: 'both', cone: { h: 18 }, windows: { rows: [14, 26, 38, 48], per: 6 }, tone: 'pale' },
+  { kind: 'tower', id: 'ravenclaw', at: [-94, -32], r: 7.5, h: 66, roof: 'both', cone: { h: 22 }, windows: { rows: [14, 26, 38, 48, 58], per: 6 }, tone: 'pale' },
   // the north: the library’s range, the Astronomy Tower at the corner, the Defence tower, the north range, the Headmaster’s tower
   { kind: 'square', id: 'library', at: [-40, -60], w: 48, d: 18, h: 24, roof: 'gable', ridge: 9, windows: { rows: [7, 15], per: 6, side: 2, w: 1.5, h: 4.2 } },
-  { kind: 'tower', id: 'astronomy', at: [-82, -86], r: 8.5, h: 84, roof: 'both', cone: { h: 24 }, windows: { rows: [14, 28, 42, 56, 70, 78], per: 4 } },
-  { kind: 'square', id: 'defence', at: [-38, -96], w: 13, h: 46, roof: 'pyramid', spire: 15, windows: { rows: [10, 22, 34], per: 2 }, tone: 'old' },
+  { kind: 'tower', id: 'astronomy', at: [-82, -86], r: 8.5, h: 102, roof: 'both', cone: { h: 30 }, windows: { rows: [14, 28, 42, 56, 70, 84, 95], per: 4 } },
+  { kind: 'square', id: 'defence', at: [-38, -96], w: 13, h: 54, roof: 'pyramid', spire: 18, windows: { rows: [10, 22, 34], per: 2 }, tone: 'old' },
   { kind: 'square', id: 'north-range', at: [-4, -100], w: 30, d: 16, h: 22, roof: 'gable', ridge: 8, windows: { rows: [6, 13], per: 5, side: 2 } },
-  { kind: 'tower', id: 'headmaster', at: [26, -80], r: 6.5, h: 54, cone: { h: 20 }, windows: { rows: [12, 24, 36, 46], per: 5 }, tone: 'pale' },
+  { kind: 'tower', id: 'headmaster', at: [26, -80], r: 6.5, h: 66, cone: { h: 24 }, windows: { rows: [12, 24, 36, 48, 58], per: 5 }, tone: 'pale' },
   // the courtyard: the clock tower on its east side, the fountain in its middle
   { kind: 'square', id: 'clock-tower', at: CLOCK.at, w: CLOCK.w, h: CLOCK.h, roof: 'pyramid', spire: 14, windows: { rows: [7, 40], per: 1 }, clock: CLOCK.face, bay: CLOCK.bay },
   { kind: 'fountain', id: 'fountain', at: [44, -52], r: 4.2 },
   // the skyline’s turrets
-  { kind: 'tower', id: 'turret-a', at: [-18, -44], r: 3.2, h: 44, cone: { h: 11 }, windows: { rows: [20, 32], per: 3, w: 0.8, h: 1.8 } },
-  { kind: 'tower', id: 'turret-b', at: [16, -44], r: 2.8, h: 38, cone: { h: 9 }, windows: { rows: [26], per: 3, w: 0.8, h: 1.8 } },
-  { kind: 'tower', id: 'turret-c', at: [-64, -50], r: 4, h: 50, cone: { h: 14 }, windows: { rows: [18, 30, 42], per: 3 }, tone: 'old' },
-  { kind: 'tower', id: 'turret-d', at: [-104, -10], r: 3.5, h: 34, cone: { h: 11 }, windows: { rows: [16, 26], per: 3 } },
-  { kind: 'tower', id: 'turret-e', at: [46, -86], r: 3, h: 36, cone: { h: 10 }, windows: { rows: [22, 30], per: 3, w: 0.8, h: 1.8 } },
-  { kind: 'tower', id: 'turret-f', at: [-20, -114], r: 3.6, h: 42, cone: { h: 12 }, windows: { rows: [18, 32], per: 3 } },
+  { kind: 'tower', id: 'turret-a', at: [-18, -44], r: 3.2, h: 54, cone: { h: 13 }, windows: { rows: [20, 32], per: 3, w: 0.8, h: 1.8 } },
+  { kind: 'tower', id: 'turret-b', at: [16, -44], r: 2.8, h: 46, cone: { h: 11 }, windows: { rows: [26], per: 3, w: 0.8, h: 1.8 } },
+  { kind: 'tower', id: 'turret-c', at: [-64, -50], r: 4, h: 60, cone: { h: 17 }, windows: { rows: [18, 30, 42], per: 3 }, tone: 'old' },
+  { kind: 'tower', id: 'turret-d', at: [-104, -10], r: 3.5, h: 40, cone: { h: 13 }, windows: { rows: [16, 26], per: 3 } },
+  { kind: 'tower', id: 'turret-e', at: [46, -86], r: 3, h: 44, cone: { h: 12 }, windows: { rows: [22, 30], per: 3, w: 0.8, h: 1.8 } },
+  { kind: 'tower', id: 'turret-f', at: [-20, -114], r: 3.6, h: 50, cone: { h: 14 }, windows: { rows: [18, 32], per: 3 } },
   { kind: 'tower', id: 'turret-g', at: [90, -64], r: 3, h: 30, cone: { h: 9 }, windows: { rows: [18], per: 3, w: 0.8, h: 1.8 }, tone: 'pale' },
   // the curtain walls between them
   { kind: 'wall', id: 'wall-west', from: [-62, -2], to: [-88, -24], h: 16 },

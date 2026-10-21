@@ -275,7 +275,7 @@ export function createMesh() {
 // from the far side’s springing) or a round head, `segs` steps a side
 export function archOutline(w, h, { pointed = true, segs = 4 } = {}) {
   const hw = w / 2;
-  const spring = Math.max(0, h - (pointed ? w * 0.86 : hw));
+  const spring = Math.max(0, h - (pointed ? w * (Math.sqrt(3) / 2) : hw));
   const out = [[0, 0], [hw, 0], [hw, spring]];
   for (let i = 1; i < segs; i++) {
     const t = i / segs;

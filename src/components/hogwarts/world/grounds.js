@@ -140,7 +140,7 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
   canopy.mesh.layers.enable(REFLECTED);
   scene.add(canopy.mesh);
   mark('canopy', since);
-  const cells = createCells({ land, tier, scatter, material: nearMat.material, far: farMat, exact: heightAt });
+  const cells = createCells({ land, tier, scatter, material: nearMat.material, far: farMat, exact: heightAt, layer: REFLECTED });
   scene.add(cells.group);
   onBuild(0.65, 'castle');
   await breathe();
