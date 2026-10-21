@@ -7,7 +7,10 @@ import { useVoiced } from '../../lib/useVoiced';
 import { CHAPTERS, chapter as chapterOf } from './chapters';
 import { hidden as hiddenPlace, hiddenAt } from './hidden';
 import { SPOKEN } from './mapCast';
-import { roadRecord } from './record';
+import { firstStep, ghost } from './hub/hubState';
+import { roadRecord, roadRidden } from './record';
+import { walkFor } from './redbook/routes';
+import { SAVE } from './road/entry';
 import { bestKey } from './rush/levels';
 import { useTravellers } from './towns/useTravellers';
 import '../../styles/lazy/middleearth.css';
@@ -331,6 +334,11 @@ export default function MapHub({ api, hover, onHover, onGo, leaving, hidden, fra
   // (a kitchen's best is read from the browser when the panel opens: it
   // can only have changed on a kitchen's page, never here)
   const road = useMemo(() => (record ? roadRecord({ unlocked, best: (id) => local.get(bestKey(id), null) }) : null), [record, unlocked]);
+  // the Road: ridden or not, it is the first way in or the one beside it (./hub/hubState.js)
+  const ride = useMemo(() => roadRidden(local.get(SAVE.key, null)), []);
+  const step = firstStep(unlocked, ride);
+  const aside = ghost(unlocked, ride);
+  const passage = here ? walkFor(here.id) : null;
 
   return (
     <div className="me-hub" data-leaving={leaving || undefined} data-hidden={hidden || undefined} data-roam={roam || undefined}>
@@ -361,9 +369,17 @@ export default function MapHub({ api, hover, onHover, onGo, leaving, hidden, fra
       )}
       {here && live && !leaving && (
         <div ref={prompt} className="me-prompt">
-          <button type="button" className="btn btn-primary btn-sm" onClick={() => onGo(here.id)}>
-            Enter {here.name} {!touch && <kbd>⏎</kbd>}
-          </button>
+          <div className="me-prompt-row">
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => onGo(here.id)}>
+              Enter {here.name} {!touch && <kbd>⏎</kbd>}
+            </button>
+            {/* (the Road from this place's stage: the films' moments on the way) */}
+            {passage && (
+              <Link to={`/middle-earth/road?at=${passage}`} className="btn btn-ghost btn-sm">
+                Watch the passage
+              </Link>
+            )}
+          </div>
         </div>
       )}
       <div className="me-pins" role="group" aria-label="Places on the map">
@@ -402,10 +418,14 @@ export default function MapHub({ api, hover, onHover, onGo, leaving, hidden, fra
         <h1 id="me-title" className="display me-hub-title">
           Where will you go?
         </h1>
-        <p className="me-hub-lead">The map of the Ring’s road. Pick a place on it, and go there.</p>
-        <Link to="/middle-earth" className="btn btn-ghost btn-sm me-hub-book">
-          <span aria-hidden="true">←</span> The Red Book
-        </Link>
+        <p className="me-hub-lead">{ride.ridden ? 'The map of the Ring’s road. Pick a place on it, and go there.' : 'The map of the Ring’s road. Ride the Road first, or pick a place on it and go there.'}</p>
+        <div className="me-hub-steps">
+          <Step step={step} onGo={onGo} primary />
+          <Step step={aside} onGo={onGo} />
+          <Link to="/middle-earth" className="btn btn-ghost btn-sm me-hub-book">
+            <span aria-hidden="true">←</span> The Red Book
+          </Link>
+        </div>
       </div>
 
       <nav className="me-hub-foot shell" aria-label="The road">
@@ -448,15 +468,36 @@ export default function MapHub({ api, hover, onHover, onGo, leaving, hidden, fra
             Back to the site
           </Link>
         </div>
-        {road && <RoadSoFar road={road} onGo={onGo} onClose={toggleRecord} />}
+        {road && <RoadSoFar road={road} ride={ride} onGo={onGo} onClose={toggleRecord} />}
       </nav>
     </div>
   );
 }
 
-// The road so far: each chapter with its seals (filled as they're won), its
-// game on the side (a star once won) and its kitchen's stars and best coins.
-function RoadSoFar({ road, onGo, onClose }) {
+// A first step: the Road is a page of its own, a place the map's flight to it.
+function Step({ step, onGo, primary = false }) {
+  const look = `btn ${primary ? 'btn-primary' : 'btn-ghost'} btn-sm`;
+  if (step.to)
+    return (
+      <Link to={step.to} className={look}>
+        {step.label}
+      </Link>
+    );
+  return (
+    <button type="button" className={look} onClick={() => onGo(step.id)}>
+      {step.label}
+    </button>
+  );
+}
+
+// the day the Road was ridden, as the journal writes it
+const DAY = { day: 'numeric', month: 'long', year: 'numeric' };
+const riddenOn = (on) => (on ? `ridden ${new Date(on).toLocaleDateString('en-GB', DAY)}` : 'ridden');
+
+// The road so far: the Road (ridden, and the day), then each chapter with
+// its seals (filled as they're won), its game on the side (a star once won)
+// and its kitchen's stars and best coins.
+function RoadSoFar({ road, ride, onGo, onClose }) {
   const t = road.totals;
   return (
     <aside id="me-record" className="me-record" aria-label="The road so far">
@@ -480,6 +521,12 @@ function RoadSoFar({ road, onGo, onClose }) {
           Close
         </button>
       </div>
+      <p className="me-record-ride" data-on={ride.ridden || undefined}>
+        <b>The Road</b> · {ride.ridden ? riddenOn(ride.on) : 'not ridden yet'}
+        <Link to="/middle-earth/road" className="btn btn-ghost btn-sm">
+          {ride.ridden ? 'Ride it again' : 'Ride it'}
+        </Link>
+      </p>
       <ol className="me-record-list">
         {road.chapters.map((c) => (
           <li key={c.id} data-won={c.won || undefined}>

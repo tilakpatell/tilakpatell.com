@@ -427,3 +427,21 @@ The keep-still deeds have the company crouch with the visitor while it's held, a
 - `gorgoroth-cracks-desktop.webp`: the Sammath Naur, the spur over the fire, Frodo at its tip and Sam behind.
 - `minas-tirith-pelennor-desktop.webp`: the White City from the Pelennor as the stage opens, the causeway up to the Great Gate.
 - `gorgoroth-eagles-desktop.webp`: the Eagles down over the rock in the fire, lit orange by it, the two just taken up.
+
+## The end, on the desk (2026-10-21)
+
+Task 33 on the site as it is now: `/middle-earth` is the Red Book on Bilbo's desk (the book's design), and the map is `/middle-earth/map`.
+
+- **The end is the desk.** The Havens' white goes to `/middle-earth?from=road`, the Red Book open at its first page with "Back at Bag End. The Road goes ever on. Now walk it yourself: Play it opens the Shire." (`RedBook.jsx`'s `HOME`, read once, the address put back to `/middle-earth`).
+- **The achievement**: `lotrRoad`, "The Road, ridden" (walked the Ring's road from Bag End to the Grey Havens), won at the end when two thirds of it were walked (`'end'` now says `{ ridden }`; `TheRoad.jsx` unlocks it). Skipping to the end wins nothing.
+- **The hub's first step** (`hub/hubState.js`'s `firstStep` and `ghost`, wired for the first time): someone new is offered **Ride the Road**, Begin at the Shire beside it; once ridden with nothing won, **Now walk it yourself · Begin at the Shire**, Ride the Road again beside it; part-way, Carry on as before, the Road beside it. The lead says "Ride the Road first, or pick a place on it and go there" until it's ridden.
+- **Watch the passage**: beside "Enter" when Frodo reaches a place, the Road from that place's stage (`redbook/routes.js`'s `walkFor`).
+- **The journal**: "The road so far" opens on the Road's row, "The Road · ridden 21 October 2026" (or not ridden yet) and a way to ride it (`record.js`'s `roadRidden`). The save keeps the day it was first ridden (`on`), and starting again no longer forgets a ride made the same visit.
+- Not wired: `entry.js`'s `firstVisitRides` (a first visit sent down the Road). The Red Book is the front door now and opens itself as you arrive; the hub offers the ride first instead.
+
+Looked at in the page (the node renderer on WebGL 2, in software): a fresh visitor's head reads Ride the Road and Begin at the Shire; one with a ridden save reads Now walk it yourself and Ride the Road again, the journal's row with its day; the Road opened at the Havens and skipped to the end lands on the book with its words, and `lotrRoad` is won; no page errors.
+
+- `hub-ride-first-desktop.webp`: a first visit's map, Ride the Road the first step.
+- `hub-ridden-desktop.webp`: after the ride, Now walk it yourself, and the road so far with the Road's row.
+- `redbook-home-desktop.webp`: the end on the desk, the book at the Shire with walk it yourself.
+
