@@ -11,7 +11,8 @@
   --shire-line: rgba(143, 182, 255, 0.36);
 }
 .dm-world .btn-primary { background: #f4f2ec; color: #14243f; }
-.dm-stage { height: clamp(30rem, calc(100svh - var(--nav-h, 64px)), 56rem); background: radial-gradient(120% 80% at 50% 20%, #e6e1d4 0%, #b9b4a8 60%, #8b877d 100%); }
+/* (66rem: a 1080p laptop's screen under the bar, filled: at 56 a band of the page showed under the world) */
+.dm-stage { height: clamp(30rem, calc(100svh - var(--nav-h, 64px)), 66rem); background: radial-gradient(120% 80% at 50% 20%, #e6e1d4 0%, #b9b4a8 60%, #8b877d 100%); }
 .dm-loading { color: #2b2f37; font-family: 'Courier Prime', ui-monospace, monospace; font-weight: 700; font-size: 1.05rem; }
 .dm-stage .shire-title,
 .dm-stage .shire-door-name,

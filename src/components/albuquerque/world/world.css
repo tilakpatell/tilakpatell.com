@@ -23,7 +23,7 @@ html[data-mode='dark'] .abq-page { --abq-desert: 10%; }
 .abq-world { position: relative; z-index: 10; padding-top: var(--nav-h); }
 .abq-world-stage {
   position: relative;
-  height: clamp(30rem, calc(100svh - var(--nav-h)), 56rem);
+  height: clamp(30rem, calc(100svh - var(--nav-h)), 66rem); /* (a 1080p laptop's screen under the bar, filled: at 56 a band of the page showed under the world) */
   overflow: hidden;
   background: linear-gradient(180deg, #3d6fb0 0%, #9cc0de 45%, #f3c78f 72%, #cfae80 100%);
   border-bottom: 1px solid var(--border);
