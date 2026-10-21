@@ -229,15 +229,19 @@ export function surround({ R, d, kit, loader = null, blocks = [] }, world, laid)
   };
   const jobs = [];
   // the place's set pieces in the ring, and its own pieces (in the box too:
-  // they cast their shadows, as the code buildings they stand for did)
+  // they cast their shadows, as the code buildings they stand for did; but
+  // never one outside a room, into it)
   const spinning = [];
-  for (const [, lots] of grouped(laid.lots.filter((l) => l.model), (l) => `${l.model}${l.piece ? ' piece' : ''}`)) {
-    const { model, h, piece } = lots[0];
+  const A = d.area;
+  const indoors = (l) => l.x >= A.x0 && l.x <= A.x1 && l.z >= A.z0 && l.z <= A.z1;
+  const casts = (l) => Boolean(l.piece) && (!room || indoors(l));
+  for (const [, lots] of grouped(laid.lots.filter((l) => l.model), (l) => `${l.model}${l.piece ? ' piece' : ''}${casts(l) ? ' casts' : ''}`)) {
+    const { model, h } = lots[0];
     jobs.push(
       castParts(model, h)
         .then((parts) => {
           if (!parts) return;
-          const meshes = stand(model, parts, lots.map((l) => ({ x: l.x, z: l.z, turn: l.turn, y: l.y, s: l.h / h })), { shadows: Boolean(piece) });
+          const meshes = stand(model, parts, lots.map((l) => ({ x: l.x, z: l.z, turn: l.turn, y: l.y, s: l.h / h })), { shadows: casts(lots[0]) });
           if (lots.some((l) => l.spin)) spinning.push({ lots, h, meshes: meshes.map((mesh, i) => ({ mesh, local: parts[i].local })) });
         })
         .catch(warn(model)),

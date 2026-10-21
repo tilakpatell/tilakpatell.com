@@ -214,6 +214,23 @@ describe('the world round a place', () => {
     for (const m of instances(group)) expect(m.castShadow).toBe(false);
   });
 
+  it('casts no shadow into a room from a piece of its own that stands outside it (the dream’s school), but one inside does', async () => {
+    const d = room();
+    const { R, group } = fakeRoom();
+    const { kit, loader } = fakeKit();
+    const SCHOOL = '/models/c137/school.glb';
+    const DESK = '/models/c137/rm/needful-shop.glb';
+    const lots = [
+      { model: SCHOOL, piece: true, x: d.centre.x, z: d.area.z0 - 40, turn: 0, w: 0, d: 0, h: 11, y: 0, spin: 0 },
+      { model: DESK, piece: true, x: d.centre.x, z: d.centre.z, turn: 0, w: 0, d: 0, h: 2, y: 0, spin: 0 },
+    ];
+    await surround(ctx(R, kit, d, loader), { look: LOOK, outside: 'ground' }, laidFor(d, { edge: [], lots, lanes: [], props: [] })).ready;
+    const [school] = instances(group).filter((m) => m.userData.surround === SCHOOL);
+    const [desk] = instances(group).filter((m) => m.userData.surround === DESK);
+    expect(school.castShadow).toBe(false);
+    expect(desk.castShadow).toBe(true);
+  });
+
   it('stands a place’s own pieces with their shadows, each at the height it’s laid at, and turns those that spin', async () => {
     const d = outdoor();
     const { R, group, ticks } = fakeRoom();
