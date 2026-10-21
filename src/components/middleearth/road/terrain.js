@@ -157,11 +157,12 @@ export function* landJob(id, { res, wide = 1024 } = {}) {
   const far = STAGES[STAGES.length - 1].id === id ? Infinity : end;
   const land = yield* heightsJob(specFor(id), { size: [wide, d], res, road, rivers, flats: g.flats ?? [], seam: [0, far] });
   // (`clear`: the stage’s built places, where nothing is planted: scatter.js reads it;
+  // `bare`: its paved ones, where no grass grows either: ground.js's paint reads it;
   // `sea`: a level the land sinks under, wet below it, as a river's water is)
   const river = wetBy(rivers);
   const sea = g.sea;
   const wet = sea == null ? river : (x, z) => river(x, z) || land.field(x, z) < sea + SHORE;
-  return { ...land, id, road, end, rivers, wet, clear: g.clear ?? [] };
+  return { ...land, id, road, end, rivers, wet, clear: g.clear ?? [], bare: g.bare ?? [] };
 }
 
 // The water stands FILL of the way up its channel, read off the cut land
