@@ -5,9 +5,11 @@
 // outskirtsOf(d, world, { tier, fogFar, tris }) → {
 //   reach                     the ground, metres from the middle (past the fog)
 //   edge: [{ kind, x0, z0, x1, z1, h, see }]   runs along the box's four sides
-//   lots: [{ side, row, style, x, z, turn, w, d, h, y, model?, steps?, stand?, landmark? }]
+//   lots: [{ side, row, style, x, z, turn, w, d, h, y, model?, steps?, stand?, landmark?, piece?, spin? }]
 //                             the ring of buildings, facing in (a model: a set piece),
-//                             the stands and the landmarks the record names
+//                             the stands and the landmarks the record names, and the
+//                             place's own pieces (models where its code buildings were;
+//                             `spin`: radians a second they turn round)
 //   skyline: [{ x, z, w, d, h, style }]
 //   path: { pts: [[x, z]…], w } | null      the forecourt's way to the hero
 //   props: [{ model, x, z, turn, s, h, edge? }]   rocks, bushes, lamps, trees…: models,
@@ -159,6 +161,10 @@ function landmarksOf(d, list) {
     const z = d.centre.z + m.at[1];
     return { side: null, row: null, style: m.style, x, z, turn: quarter(Math.atan2(d.centre.x - x, d.centre.z - z)), w: m.w, d: m.d, h: m.h, y: m.y ?? 0, landmark: true, look: m.look ?? null };
   });
+}
+// the place's own pieces: its models where the record says, in the box or out, on every level (its code buildings' places)
+function piecesOf(d, list) {
+  return (list ?? []).map((p) => ({ side: null, row: null, style: null, model: p.model, x: d.centre.x + p.at[0], z: d.centre.z + p.at[1], turn: p.turn ?? 0, w: p.w ?? 0, d: p.d ?? 0, h: p.h, y: p.y ?? 0, spin: p.spin ?? 0, piece: true }));
 }
 // models scattered out round the place (trees, rocks): as many as the level says, clear of the box and the buildings
 function scatterOf(d, list, tier, lots, r) {
@@ -367,11 +373,12 @@ export function outskirtsOf(d, world, { tier = 'high', fogFar = 300, tris = {} }
   const { path, props } = forecourtOf(d, world.forecourt, hero, r);
   const stands = outside === 'ground' ? standsOf(d, world.stands, tier, hero) : { lots: [], gathers: [] };
   const landmarks = outside === 'ground' ? landmarksOf(d, world.landmarks) : [];
-  const scattered = outside === 'ground' ? scatterOf(d, world.scatter, tier, [...lots, ...stands.lots, ...landmarks], r) : [];
+  const pieces = piecesOf(d, world.pieces);
+  const scattered = outside === 'ground' ? scatterOf(d, world.scatter, tier, [...lots, ...stands.lots, ...landmarks, ...pieces], r) : [];
   const { walkers, gathers } = crowdOf(d, world.crowd, { tier, row, room, outside, tris, hero, extra: stands.gathers });
   const lanes = outside ? lanesOf(d, world.fliers, { tier, row, room, outside, fogFar }, r) : [];
   const extents = Object.fromEntries([...walkers, ...gathers, ...lanes].map((c) => [c.key, extentOf(c)]));
-  return { reach: fogFar + 20, edge: runs, lots: [...lots, ...stands.lots, ...landmarks], skyline, path, props: [...clumps, ...props, ...scattered], walkers, gathers, lanes, extents };
+  return { reach: fogFar + 20, edge: runs, lots: [...lots, ...stands.lots, ...landmarks, ...pieces], skyline, path, props: [...clumps, ...props, ...scattered], walkers, gathers, lanes, extents };
 }
 
 // ── a walker's loop in the box, checked ──

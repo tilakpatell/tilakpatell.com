@@ -118,6 +118,15 @@ describe('a world record’s rules', () => {
     expect(problems({ ring: { n: { styles: ['block'], sets: [{ model: '/models/c137/rm/purgecottage.glb', h: 7, n: 3 }] } } })).toEqual([expect.stringMatching(/twice/)]);
     expect(problems({ ring: { n: { styles: ['block'], sets: [{ model: '/models/c137/rm/spacebeth-ship.glb', h: 3, n: 1 }] } } })).toEqual([expect.stringMatching(/spacebeth-ship/)]);
   });
+
+  it('stands a place’s own pieces from the set pieces’ models only, none a family’s own vehicle, and none on a spot', () => {
+    const piece = (o) => problems({ pieces: [{ h: 6, ...o }] });
+    expect(piece({ model: '/models/c137/rm/purgecottage.glb', at: [20, 10] })).toEqual([]);
+    expect(piece({ model: '/models/c137/rm/dirlycar.glb', at: [20, 10] })).toEqual([expect.stringMatching(/dirlycar/)]);
+    expect(piece({ model: 'q:Rock_Medium_1', at: [20, 10] })).toEqual([expect.stringMatching(/set pieces/)]);
+    // (the spot `thing` is at [0, -12]: a piece over it hides it)
+    expect(piece({ model: '/models/c137/rm/purgewell.glb', at: [0, -11] })).toEqual([expect.stringMatching(/thing/)]);
+  });
 });
 
 describe('a sight line', () => {

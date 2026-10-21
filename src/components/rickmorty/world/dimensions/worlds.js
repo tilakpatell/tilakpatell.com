@@ -20,6 +20,9 @@
 //   windows [{ wall, from, to, y0, h, mullion }], outside 'ground' | 'space',
 //     sky, fog, ground                         a room's
 //   sight [{ from: [dx, y, dz], to: [dx, y, dz] }]   lines nothing round it may stand in
+//   pieces [{ model, at: [dx, dz], turn, h, w, d, y, spin }]   the place's own
+//     models where its code buildings stood (a set piece's file, by path),
+//     on every level, casting their shadows; `spin` radians a second
 // A crowd kind is one of the cast's (../../portal/meshyCastCore.js's MESHY)
 // or one of the Citadel's light copies (`crowd:<name>`, /games/meshy/crowd).
 

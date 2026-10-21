@@ -184,12 +184,48 @@ describe('the world round a place', () => {
     expect(instances(group).map((m) => m.userData.surround)).toEqual(['/models/c137/fedship.glb']);
   });
 
-  it('casts no shadow from anything it stands', async () => {
+  it('casts no shadow from anything it stands but the place’s own pieces', async () => {
     const d = room();
     const { R, group } = fakeRoom();
     const { kit, loader } = fakeKit();
     await surround(ctx(R, kit, d, loader), { look: LOOK, outside: 'ground' }, laidFor(d, { edge: [] })).ready;
     for (const m of instances(group)) expect(m.castShadow).toBe(false);
+  });
+
+  it('stands a place’s own pieces with their shadows, each at the height it’s laid at, and turns those that spin', async () => {
+    const d = outdoor();
+    const { R, group, ticks } = fakeRoom();
+    const { kit, loader } = fakeKit();
+    const WELL = '/models/c137/rm/purgewell.glb';
+    const COG = '/models/c137/rm/sm/gearcog.glb';
+    const pieces = [
+      { model: WELL, piece: true, x: d.centre.x + 4, z: d.centre.z, turn: 0, w: 0, d: 0, h: 2.8, y: 0, spin: 0 },
+      { model: WELL, piece: true, x: d.centre.x - 4, z: d.centre.z, turn: 0, w: 0, d: 0, h: 5.6, y: 0, spin: 0 },
+      { model: COG, piece: true, x: d.centre.x, z: d.centre.z - 30, turn: 0, w: 0, d: 0, h: 1.8, y: 10, spin: 0.5 },
+    ];
+    await surround(ctx(R, kit, d, loader), { look: LOOK }, laidFor(d, { lots: pieces, lanes: [], props: [] })).ready;
+    const [well] = instances(group).filter((m) => m.userData.surround === WELL);
+    expect(well.castShadow).toBe(true);
+    const tall = (i) => {
+      const m = new THREE.Matrix4();
+      well.getMatrixAt(i, m);
+      return new THREE.Vector3().setFromMatrixScale(m).y;
+    };
+    // (the model stands a metre tall: laid at 2.8 and 5.6, the second twice the first)
+    expect(tall(1) / tall(0)).toBeCloseTo(2, 5);
+    const [cog] = instances(group).filter((m) => m.userData.surround === COG);
+    const turnOf = () => {
+      const m = new THREE.Matrix4();
+      cog.getMatrixAt(0, m);
+      const [p, q] = [new THREE.Vector3(), new THREE.Quaternion()];
+      m.decompose(p, q, new THREE.Vector3());
+      return [new THREE.Euler().setFromQuaternion(q).y, p.y];
+    };
+    ticks.forEach((fn) => fn(0, 1 / 60, { done: [] }, null));
+    const [a, y] = turnOf();
+    expect(y).toBeCloseTo(10, 5);
+    ticks.forEach((fn) => fn(1, 1 / 60, { done: [] }, null));
+    expect(turnOf()[0] - a).toBeCloseTo(0.5, 5);
   });
 
   it('lays the ground round a room with a world outside, and stars round one looking out on space', () => {

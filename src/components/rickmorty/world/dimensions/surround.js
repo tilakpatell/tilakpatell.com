@@ -173,14 +173,14 @@ export function surround({ R, d, kit, loader = null, blocks = [] }, world, laid)
     if (!files.has(url)) files.set(url, gltf.loadAsync(url));
     return files.get(url);
   };
-  const stand = (key, parts, list) => {
-    for (const mesh of instanced(parts, list, { shadows: false })) {
+  const stand = (key, parts, list, { shadows = false } = {}) =>
+    instanced(parts, list, { shadows }).map((mesh) => {
       mesh.userData.surround = key;
       R.own(mesh);
       R.add(mesh, { ink: false });
       kit.adopt?.(mesh);
-    }
-  };
+      return mesh;
+    });
   const grouped = (list, by) => list.reduce((m, o) => m.set(by(o), [...(m.get(by(o)) ?? []), o]), new Map());
   const warn = (what) => (e) => import.meta.env?.DEV && console.warn('surround: no', what, e?.message ?? e);
   // a model the cast loads (a set piece, a ship, by its path), its parts as they stand `h` tall
@@ -190,13 +190,21 @@ export function surround({ R, d, kit, loader = null, blocks = [] }, world, laid)
     return g ? partsOf(g, { tall: h, paint: false }) : null;
   };
   const jobs = [];
-  // the place's own set pieces, in the ring
-  for (const [model, lots] of grouped(laid.lots.filter((l) => l.model), (l) => l.model))
+  // the place's set pieces in the ring, and its own pieces (in the box too:
+  // they cast their shadows, as the code buildings they stand for did)
+  const spinning = [];
+  for (const [, lots] of grouped(laid.lots.filter((l) => l.model), (l) => `${l.model}${l.piece ? ' piece' : ''}`)) {
+    const { model, h, piece } = lots[0];
     jobs.push(
-      castParts(model, lots[0].h)
-        .then((parts) => parts && stand(model, parts, lots.map((l) => ({ x: l.x, z: l.z, turn: l.turn, y: l.y }))))
+      castParts(model, h)
+        .then((parts) => {
+          if (!parts) return;
+          const meshes = stand(model, parts, lots.map((l) => ({ x: l.x, z: l.z, turn: l.turn, y: l.y, s: l.h / h })), { shadows: Boolean(piece) });
+          if (lots.some((l) => l.spin)) spinning.push({ lots, h, meshes: meshes.map((mesh, i) => ({ mesh, local: parts[i].local })) });
+        })
         .catch(warn(model)),
     );
+  }
   // the props: the town's kit models, by node
   for (const [model, props] of grouped(laid.props, (p) => p.model)) {
     const node = model?.startsWith('q:') ? model.slice(2) : null;
@@ -240,7 +248,16 @@ export function surround({ R, d, kit, loader = null, blocks = [] }, world, laid)
   const v = new THREE.Vector3();
   const one = new THREE.Vector3(1, 1, 1);
   const up = new THREE.Vector3(0, 1, 0);
+  const size = new THREE.Vector3();
   R.tick((t) => {
+    for (const { lots, h, meshes } of spinning) {
+      lots.forEach((l, j) => {
+        q.setFromAxisAngle(up, l.turn + l.spin * t);
+        m4.compose(v.set(l.x, l.y, l.z), q, size.setScalar(l.h / h));
+        for (const { mesh, local } of meshes) mesh.setMatrixAt(j, each.copy(m4).multiply(local));
+      });
+      for (const { mesh } of meshes) mesh.instanceMatrix.needsUpdate = true;
+    }
     for (const { lane, meshes, len, yaw } of lanes) {
       q.setFromAxisAngle(up, yaw);
       for (let j = 0; j < lane.n; j++) {

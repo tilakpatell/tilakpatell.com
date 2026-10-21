@@ -42,7 +42,7 @@ describe('the worlds round the places', () => {
 
   it('stand their models from files there are', () => {
     for (const [id, world] of Object.entries(WORLDS)) {
-      const models = [...['n', 'e', 's', 'w'].flatMap((s) => (world.ring?.[s]?.sets ?? []).map((x) => x.model)), ...(world.fliers ?? []).map((f) => f.model)];
+      const models = [...['n', 'e', 's', 'w'].flatMap((s) => (world.ring?.[s]?.sets ?? []).map((x) => x.model)), ...(world.fliers ?? []).map((f) => f.model), ...(world.pieces ?? []).map((p) => p.model)];
       for (const m of models) expect(existsSync(`public${m}`), `${id}: ${m}`).toBe(true);
     }
   });

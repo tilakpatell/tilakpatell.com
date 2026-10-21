@@ -13,6 +13,7 @@
 //   - a crowd is gated only on tasks there are;
 //   - a window is in a room's wall, under its ceiling;
 //   - no family's own vehicle as traffic or a set piece; a set piece at most twice;
+//   - a place's own piece one of the set pieces' models, off every spot;
 //   - a landmark of a style there is, beyond the edge (or outside a room's walls);
 //   - props, scatter and the edge only the town's kit models (`q:<node>`)
 // blocksSight(laid, from, to) → whether a lot or a skyline tower stands in
@@ -107,6 +108,14 @@ export function worldProblems(d, world, { tris = {}, tasks = [], blocks = [] } =
 
   const family = (model) => FAMILY.find((f) => model?.includes(f));
   for (const f of world.fliers ?? []) if (family(f.model)) out.push(`${family(f.model)} is a family's own: never traffic`);
+  for (const p of world.pieces ?? []) {
+    if (!p.model?.startsWith('/models/c137/')) out.push(`${p.model}: a place's own piece is one of the set pieces' models`);
+    else if (family(p.model)) out.push(`${family(p.model)} is a family's own: never a set piece`);
+    // (a piece's footprint, a metre round at least, off every spot's reach)
+    const [x, z] = W(p.at);
+    const half = Math.max(1, Math.hypot(p.w ?? 0, p.d ?? 0) / 2);
+    for (const s of d.hotspots) if (Math.hypot(s.x - x, s.z - z) < (s.r ?? 1.4) + half) out.push(`a piece stands on the spot ${s.id}`);
+  }
   for (const side of SIDES)
     for (const s of world.ring?.[side]?.sets ?? []) {
       if (family(s.model)) out.push(`${family(s.model)} is a family's own: never a set piece`);

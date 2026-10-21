@@ -317,6 +317,29 @@ describe('a landmark and a scatter round a place', () => {
   });
 });
 
+describe('a place’s own pieces', () => {
+  const COTTAGE = '/models/c137/rm/purgecottage.glb';
+  const COG = '/models/c137/rm/sm/gearcog.glb';
+  const pieces = [
+    { model: COTTAGE, at: [5, 6], turn: 0.5, h: 6, w: 7, d: 6 },
+    { model: COG, at: [-60, -40], turn: Math.PI, h: 1.8, y: 12, spin: 0.4 },
+  ];
+  it('stands each where the record says, in the box or out of it, on every level and in a room too', () => {
+    for (const [d, tier] of [[outdoor(), 'high'], [outdoor(), 'low'], [room(), 'low']]) {
+      const L = lay(d, { ...world({ pieces }), outside: null }, tier);
+      const got = L.lots.filter((l) => l.piece);
+      expect(got, `${d.id} ${tier}`).toEqual([
+        expect.objectContaining({ model: COTTAGE, x: d.centre.x + 5, z: d.centre.z + 6, turn: 0.5, h: 6, w: 7, d: 6, y: 0, spin: 0 }),
+        expect.objectContaining({ model: COG, x: d.centre.x - 60, z: d.centre.z - 40, turn: Math.PI, h: 1.8, w: 0, d: 0, y: 12, spin: 0.4 }),
+      ]);
+    }
+  });
+  it('are none of the ring’s set pieces: the level’s count of those leaves them be', () => {
+    const L = lay(outdoor(), world({ pieces }), 'low');
+    expect(L.lots.filter((l) => l.piece)).toHaveLength(2);
+  });
+});
+
 describe('the outskirts of a room', () => {
   const w = world({ edge: null, outside: 'ground', windows: [{ wall: 'n', from: -10, to: 10, y0: 1, h: 4 }] });
   it('has no edge (its walls are its edge), and its buildings stand outside its walls', () => {
