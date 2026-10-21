@@ -10,12 +10,18 @@
 //   screen, lens shift and all, a vertex chunk the fog shares too; and
 //   screenRay(ndc, elements), the same lines in JS for the tests
 // CLOUD_VERT, CLOUD_FRAG: the one draw (MAX_STEPS defined by the tier)
+// FOG: the fog’s numbers, { ABSORB, GLOW }
+// FOG_VERT, FOG_FRAG: the fog round the ship (./fog.js), a layer an instance
 //
 // Light over a thick cloud tends to EMIT / ABSORB times its colour (at full
 // strength) times a nursery’s heart: 0.75 × 2.2, under the bloom’s 1.7
 // (look.js), so the gas never glows; the young stars may.
 
 export const GAS = { EMIT: 1.5, ABSORB: 2.0, DUST: 1.5 };
+// ABSORB: how much a layer’s thickness, in radii, of full gas dims (1.2 to
+// start, tuned at the in-nebula pose); GLOW: the ship’s light on the gas, a
+// warm white kept under the bloom with the colour at full strength (1 + 0.6)
+export const FOG = { ABSORB: 1.2, GLOW: [0.6, 0.54, 0.45] };
 
 // (GLSL wants 2.0, never 2)
 const glf = (x) => (Number.isInteger(x) ? x.toFixed(1) : String(x));
@@ -202,5 +208,62 @@ void main() {
     }
     gl_FragColor = vec4(light, 1.0 - T);
   }
+  #include <colorspace_fragment>
+}`;
+
+// The fog round the ship (./fog.js): each layer is the whole screen at the
+// depth of its radius, so what is nearer hides it. vRay is the ray in the
+// mesh’s space (the map’s axes, the eye at the origin, as the clouds have
+// it); vView the same ray in view space, where the ship is; vLayer the
+// layer’s (radius, thickness).
+const FOG_VARYINGS = /* glsl */ `
+varying vec3 vRay;
+varying vec3 vView;
+varying vec2 vLayer;
+`;
+
+export const FOG_VERT = /* glsl */ `
+attribute vec2 aLayer;
+${FOG_VARYINGS}
+${SCREEN_RAY}
+void main() {
+  vLayer = aLayer;
+  vView = screenRay(position.xy);
+  vRay = transpose(mat3(modelViewMatrix)) * vView;
+  vec4 at = projectionMatrix * vec4(0.0, 0.0, -aLayer.x, 1.0);
+  gl_Position = vec4(position.xy * at.w, at.z, at.w);
+}`;
+
+// One sample of the cloud's field per layer, at the layer's depth along the
+// ray; its thickness (in radii) sets how much it dims, Beer-Lambert as the
+// clouds, dust dimming without light. The ship's light is a warm white two
+// units ahead of the eye (the chase view), scattered by the gas there.
+export const FOG_FRAG = /* glsl */ `
+${FIELD}
+const float ABSORB_FOG = ${glf(FOG.ABSORB)};
+const vec3 GLOW = vec3(${FOG.GLOW.map(glf).join(', ')});
+uniform vec3 uCentre;
+uniform float uR;
+uniform vec3 uCol0;
+uniform vec3 uCol1;
+uniform vec3 uCol2;
+uniform vec3 uSeed;
+uniform vec4 uForm;
+uniform float uCore;
+uniform float uDepth;
+${FOG_VARYINGS}
+void main() {
+  // the point on this layer, in the cloud's radii from its middle, along the map's axes
+  vec3 p = (vRay * vLayer.x - uCentre) / uR;
+  vec3 tint;
+  float dust;
+  float gas = nebulaField(p, uSeed, uForm, uCore, 1.0, uCol0, uCol1, uCol2, tint, dust);
+  float sigma = gas + dust;
+  if (sigma < 1e-4) discard;
+  float alpha = 1.0 - exp(-ABSORB_FOG * sigma * vLayer.y / uR);
+  vec3 light = tint * alpha * (gas / sigma);
+  vec3 ship = vView * vLayer.x - vec3(0.0, 0.0, -2.0);
+  light += GLOW * gas * exp(-dot(ship, ship) / 36.0);
+  gl_FragColor = vec4(light, alpha) * uDepth;
   #include <colorspace_fragment>
 }`;

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { LOOK } from '../look';
 import { reservedIn } from '../__fixtures__/glsl';
 import { nebulaBudget } from './budget';
-import { FORMS } from './rules';
+import { FORMS, fogLayers } from './rules';
 import { GAS, SCREEN_RAY, screenRay } from './shaders';
 import { createNebulae } from './index';
 
@@ -135,6 +135,49 @@ describe('the nebulae’s renderer', () => {
     expect(n.inside([0, 0, 5000])).toBeNull();
     n.remove(h);
     expect(n.inside([0, 0, 0])).toBeNull();
+  });
+  it('fogs you inside, and starts the cloud’s march past the fog', () => {
+    const { n } = made('high');
+    n.add({ ...VEIL, form: 'cloud', at: [0, 0, -100] });
+    n.update(cam([0, 0, 0], [0, 0, -1]));
+    expect(n.group.getObjectByName('nebula-fog').visible).toBe(true);
+    expect(attr(n, 'aStart', 0)[0]).toBeCloseTo(fogLayers(nebulaBudget('high'), 900).at(-1), 6);
+    expect(n.inside([0, 0, 0])).toMatchObject({ id: 'veil' });
+    n.update(cam([0, 0, 5000], [0, 0, -1]));
+    expect(n.group.getObjectByName('nebula-fog').visible).toBe(false);
+    expect(attr(n, 'aStart', 0)[0]).toBe(0);
+  });
+  it('inside two at once: the deeper one’s fog, both drawn far to near', () => {
+    const { n } = made('high');
+    n.add({ ...VEIL, id: 'a', form: 'cloud', at: [0, 0, -300] });
+    n.add({ ...VEIL, id: 'b', form: 'cloud', at: [0, 0, 600] });
+    n.update(cam([0, 0, 0], [0, 0, -1]));
+    expect(n.inside([0, 0, 0]).id).toBe('a');
+    const all = Array.from({ length: clouds(n).geometry.instanceCount }, (_, i) => i);
+    const both = all.filter((i) => attr(n, 'aKind', i)[0] === 0);
+    expect(both.map((i) => attr(n, 'aDist', i)[0])).toEqual([600, 300]);
+    for (const i of both) expect(attr(n, 'aStart', i)[0]).toBeGreaterThan(0);
+  });
+  // (beyond the plan’s list: rules.js gives a small cloud no layers, so its
+  // consumer has to show no fog and march from the eye; and the fog’s mesh
+  // sits at the camera as the clouds’ does, so it reads the map’s axes alike)
+  it('inside a cloud too small to fog the ship: no fog, the march from the eye', () => {
+    const { n } = made('high');
+    n.add({ ...VEIL, form: 'cloud', r: 12, at: [0, 0, -5] });
+    n.update(cam([0, 0, 0], [0, 0, -1]));
+    expect(n.inside([0, 0, 0])).toMatchObject({ id: 'veil' });
+    expect(n.group.getObjectByName('nebula-fog').visible).toBe(false);
+    expect(attr(n, 'aStart', 0)[0]).toBe(0);
+  });
+  it('keeps the fog at the camera, with the clouds', () => {
+    const { n } = made('high');
+    n.add({ ...VEIL, form: 'cloud', at: [1e6, 200, -3e5 + 100] });
+    const eye = [1e6, 200, -3e5];
+    n.update(cam(eye, [eye[0], eye[1], eye[2] - 1]));
+    const fog = n.group.getObjectByName('nebula-fog');
+    expect(fog.visible).toBe(true);
+    expect(fog.position.toArray()).toEqual(eye);
+    expect(fog.material.uniforms.uCentre.value.toArray()).toEqual([0, 0, 100]);
   });
   it('never lets a handle from one renderer remove another’s cloud', () => {
     const a = made().n, b = made().n;

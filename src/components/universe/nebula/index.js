@@ -32,12 +32,11 @@
 
 import * as THREE from 'three';
 import { nebulaBudget } from './budget';
-import { FORMS, FORM_INDEX, LIMIT, checkDesc, detailAt, insideOf, placement, seedOf, stepsAt, youngStars } from './rules';
+import { createFog } from './fog';
+import { glslMaterial } from './material';
+import { FORMS, FORM_INDEX, LIMIT, checkDesc, detailAt, fogLayers, insideOf, placement, seedOf, stepsAt, youngStars } from './rules';
 import { CLOUD_FRAG, CLOUD_VERT } from './shaders';
 import { noiseVolume } from './volume';
-
-// (the one place this file makes a GLSL material: glsl-sites counts each)
-const glslMaterial = (opts) => new THREE.ShaderMaterial(opts);
 
 // handles count up across every renderer, so one kept from a disposed
 // renderer can never name another’s cloud
@@ -137,23 +136,21 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
   };
   group.add(mesh);
 
-  // the fog round the ship, while you’re in a cloud
-  const fog = new THREE.Mesh(new THREE.BufferGeometry());
-  fog.name = 'nebula-fog';
-  fog.visible = false;
-  fog.frustumCulled = false;
-  group.add(fog);
+  // the fog round the ship, while you’re in a cloud (./fog.js); it sits at
+  // the camera as the clouds do, so its ray reads the map’s axes alike
+  const fog = createFog({ volume, row });
+  group.add(fog.mesh);
 
   const entries = new Map(); // id → its entry, while any handle holds it
   const handles = new Map(); // handle → id
   let disposed = false;
 
-  const cloud = (i, e, pl, detail) => {
+  const cloud = (i, e, pl, detail, start) => {
     A.aCentre.setXYZ(i, pl.centre[0], pl.centre[1], pl.centre[2]);
     A.aRadius.setX(i, pl.radius);
     A.aDist.setX(i, pl.dist);
     A.aDetail.setX(i, detail);
-    A.aStart.setX(i, 0);
+    A.aStart.setX(i, start);
     A.aKind.setX(i, 0);
     A.aCol0.setXYZ(i, e.pal[0].r, e.pal[0].g, e.pal[0].b);
     A.aCol1.setXYZ(i, e.pal[1].r, e.pal[1].g, e.pal[1].b);
@@ -204,8 +201,20 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
       group.updateWorldMatrix(true, false);
       group.worldToLocal(camera.getWorldPosition(camMap));
       mesh.position.copy(camMap);
+      fog.mesh.position.copy(camMap);
       const eye = camMap.toArray();
       const limit = camera.far * LIMIT;
+      // in a cloud (the deepest, if in two), its fog is drawn round the
+      // ship, and every cloud whose sphere holds the camera is marched from
+      // past the fog’s last layer: nothing counted twice, nothing marched
+      // over the ship. A cloud too small for fog (no layers) marches from the eye
+      const here = insideOf(entries.values(), eye);
+      const within = here ? entries.get(here.id) : null;
+      const layers = within ? fogLayers(row, within.r) : [];
+      if (layers.length) {
+        fog.show({ centre: within.at.map((v, k) => v - eye[k]), r: within.r, colours: within.pal, seed: within.seed, form: FORM_INDEX[within.form], depth: here.depth }, layers);
+      } else fog.hide();
+      const start = layers.length ? layers.at(-1) : 0;
       // (the frustum in the world, where the camera’s matrices are)
       frustum.setFromProjectionMatrix(viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
       const grow = group.matrixWorld.getMaxScaleOnAxis();
@@ -223,7 +232,7 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
       let n = 0;
       kept.forEach(({ e, pl }, k) => {
         const detail = k >= kept.length - row.nearMax ? detailAt(pl.dist, e.r) : 0;
-        cloud(n++, e, pl, detail);
+        cloud(n++, e, pl, detail, pl.dist < e.r ? start * pl.scale : 0);
         // (none far, so a far pose draws no more than its clouds)
         if (detail > 0) for (const s of e.stars) star(n++, e, s, eye, pl.scale, detail);
       });
@@ -246,8 +255,7 @@ export function createNebulae({ renderer = null, tier = 'mid' } = {}) {
       quad.dispose();
       mat.dispose();
       volume.dispose();
-      fog.geometry.dispose();
-      fog.material.dispose();
+      fog.dispose();
       entries.clear();
       handles.clear();
     },
