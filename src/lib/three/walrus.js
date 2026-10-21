@@ -34,6 +34,9 @@
 //     { whole: url } that pack alone: a guest's (scripts/guest-clips.mjs),
 //     the game's clips with their position channels sized to its own body,
 //     which the game's packs, made for the 1.77 m man, must not be laid over
+//   faceAlongZ(model) → whether it had the node: the body turned to face +z
+//     whichever of the game's clips it plays, as every other figure on the
+//     site faces (AITRAJECTORY_TURN, below)
 //   cutFor(url, level): which of a 2017 figure's three files a device loads
 //     (lib/detail.js's level, from lib/device's tier): at ultra its
 //     `.ultra` (the game's top mesh, every map at the game's 2048, up to
@@ -48,6 +51,23 @@ import { CLIP_FALLBACK, SOCKETS, checkWalrus, isWalrus } from './walrusRig.js';
 import { EMOTE_HEROES } from './walrusSets/emotes.js';
 
 export const PACK_DIR = '/models/galaxy/bf2017';
+
+// The game's clips are authored facing +x, and the game turns them to a
+// figure's way by a constant −90° on AITrajectory, the root it moves a
+// figure by, whose tracks the clip packer drops (scripts/bf2017-clips.mjs's
+// DROP; the Battlefront world's figures/facing.js measures it on the
+// committed body and pack): a body with that constant put back faces +z in
+// every clip, walks the way it goes and holds its gun ahead of it. No packed
+// clip keys the node, so it stays put; a body without it (a droid on a rig
+// of its own) is left as it is.
+export const AITRAJECTORY_TURN = [0, -Math.SQRT1_2, 0, Math.SQRT1_2];
+export function faceAlongZ(model) {
+  const node = model?.getObjectByName?.('AITrajectory');
+  if (!node) return false;
+  node.quaternion.fromArray(AITRAJECTORY_TURN);
+  node.updateMatrix();
+  return true;
+}
 export const packUrls = (hero = null, { extras = true, whole = null } = {}) =>
   whole
     ? [whole]

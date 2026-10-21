@@ -21,7 +21,7 @@ import * as THREE from 'three';
 import { gltfLoader } from '../../lib/three/gltf';
 import { NO_CALLS, animatorCalls, seedOf } from '../../lib/three/figureCalls';
 import { createAnimator } from '../../lib/three/animator';
-import { cutsToLoad, loadWalrusBody, loadWalrusPacks, packUrls, richClips, swapBody } from '../../lib/three/walrus';
+import { cutsToLoad, faceAlongZ, loadWalrusBody, loadWalrusPacks, packUrls, richClips, swapBody } from '../../lib/three/walrus';
 import { createCutter, cutUrl } from '../../lib/three/walrusCuts';
 import { withStance } from '../../lib/three/walrusStance';
 import { createAdditiveLayer } from '../../lib/three/additiveLayer';
@@ -227,6 +227,8 @@ async function gameFigure(spec, loadBody) {
   const lowData = Boolean(device().saveData);
   const [first, next] = cuts ? [cutUrl(spec.src.url, cuts.lod ? 'lod1' : 'plain'), null] : cutsToLoad(spec.src.url, level, { lowData });
   const { model, clips, sockets } = await loadBody(first).catch((e) => (first === spec.src.url ? Promise.reject(e) : loadBody(spec.src.url)));
+  // (turned to face the way it goes: the game's clips face +x, lib/three/walrus.js's faceAlongZ)
+  faceAlongZ(model);
   // (each mesh's materials, the copy's own, returned for the figure to free)
   const dress = (root) => {
     const mats = [];
