@@ -6,6 +6,9 @@
 // holds the cache rule and lets any site read the files, as GitHub does.
 {
   "name": "tilakpatell-com",
+  // (the owner's account: an id, not a key, so it can be read here; the token
+  // is the repository's secret CLOUDFLARE_API_TOKEN)
+  "account_id": "b12a527ca9fde882ef12c5c60f75f2e8",
   // (the newest the pinned wrangler's local runtime knows: a Worker of files
   // alone runs no code of its own, so the date changes nothing it does)
   "compatibility_date": "2026-10-13",
