@@ -411,10 +411,18 @@ Twenty-nine new deeds, fifty-one in all, two or more on every stage (`stages/dee
 | Minas Tirith | look up at the White City; walk in through the Great Gate; bow to the King |
 | The Grey Havens | say goodbye; wave to the three on the quay |
 
-The keep-still deeds have the company crouch with the visitor while it's held, and through the beat's hold once done (`doing.js`'s `stance`). Letting the road walk, the company does a deed after 10 s (20 s across fifty-one deeds was a quarter of an hour of waiting). In the page: Haldir's wrong word gets his answer and the right one, after it, lets them on; Sam's fire goes out under the visitor's E.
+The keep-still deeds have the company crouch with the visitor while it's held, and through the beat's hold once done (`doing.js`'s `stance`). Letting the road walk, the company does a deed after 10 s (20 s across fifty-one deeds was a quarter of an hour of waiting). In the page: Haldir's wrong word gets his answer and the right one, after it, lets them on; Sam's fire dies once it's stamped out (its light 5.2 at the stamp, falling as the beat runs on past the deed: the scene reads `since.dell > deed.at`).
 
 ### The pictures
 
 - `map-minas-tirith-desktop.webp`: the map with Minas Tirith's pin over the white city, and its chip last in the route row.
 - `minas-tirith-beacons-desktop.webp`: Gondor calls for aid in the Court, the seven peaks and the names shuffled to give back.
 - `deed-lorien-haldir.webp`: Greet Haldir, under the mallorns, Mellon struck through.
+
+### Fixed on the way
+
+- The Cracks' shot stood on the ash over the Sammath Naur: the director lifts every camera over the land, and a placed shot may now say it's `under` it. On a jump into the middle of the Cracks the chamber wasn't drawn (its beat long done): it is now while the walker is within the beat's reach.
+- The Eagles' shot sat at the ground looking into the White City's green Pelennor, drawn beside Mordor's ash: Minas Tirith is now a stage the Road cuts to (`cut`), its land never drawn beside Gorgoroth's (its trees given back while hidden); the Eagles' shot cranes up behind the two, the Mountain ahead, and goes to black, and the White City opens out of black on the Pelennor.
+
+- `gorgoroth-cracks-desktop.webp`: the Sammath Naur, the spur over the fire, Frodo at its tip and Sam behind.
+- `minas-tirith-pelennor-desktop.webp`: the White City from the Pelennor as the stage opens, the causeway up to the Great Gate.
