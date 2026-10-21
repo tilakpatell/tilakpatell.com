@@ -20,7 +20,7 @@ export default function WandCard({ wand, size = 'chip' }) {
   const part = ['', '¼', '½', '¾'][Math.round((wand.inches - whole) * 4)];
   return (
     <p className="hp-wand-chip" aria-label={`Your wand: ${wand.wood}, ${wand.core}, ${inchesSaid(wand.inches)}`}>
-      <span>{wand.wood}</span>
+      <span>{`${wand.wood[0].toUpperCase()}${wand.wood.slice(1)}`}</span>
       <span aria-hidden="true"> · </span>
       <span>{wand.core}</span>
       <span aria-hidden="true"> · </span>

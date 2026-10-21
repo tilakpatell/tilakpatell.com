@@ -104,7 +104,6 @@
   background: rgb(244 234 210 / 0.86);
   border-left: 3px solid var(--hp-house, #6b4a2a);
   border-radius: 3px;
-  text-transform: capitalize;
 }
 
 /* the scarf: two colours in knitted stripes, hung from the frame’s corner */
@@ -171,5 +170,7 @@
   text-align: center;
 }
 .hud-bubble.hp-said > div::after { display: none; }
+/* (while the wand is said on its card at the foot, what's said sits over it) */
+.hud:has(.hp-wand) .hud-bubble.hp-said { bottom: calc(var(--hud-foot, 88px) + 8.5rem); }
 .hud-bubble.hp-said b { display: block; font: 700 0.74rem/1.2 Cinzel, Georgia, serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hp-house, #6b4a2a); margin-bottom: 0.2rem; }
 .hp-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; }

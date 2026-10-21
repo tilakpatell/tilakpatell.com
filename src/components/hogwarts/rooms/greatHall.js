@@ -191,11 +191,15 @@ function christmas(plan, { load }) {
   group.add(baubles);
   // (a pine of the kit stood at each spot once it loads; until then the baubles hang on nothing)
   const trees = [];
-  Promise.resolve(load?.('/kit/naturemega/Pine_3.glb'))
+  // (the MegaKit keeps its five pines in one file, each a node by its name)
+  Promise.resolve(load?.('/kit/naturemega/pine.glb'))
     .then((gltf) => {
-      if (!gltf?.scene) return;
+      const pine = gltf?.scene?.getObjectByName('Pine_3');
+      if (!pine) return;
       for (const t of plan.trees) {
-        const tree = gltf.scene.clone(true);
+        const tree = pine.clone(true);
+        tree.position.set(0, 0, 0);
+        tree.rotation.set(0, 0, 0);
         const box = new THREE.Box3().setFromObject(tree);
         const k = (7.4 * t.s) / Math.max(0.1, box.max.y - box.min.y);
         tree.scale.setScalar(k);

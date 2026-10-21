@@ -138,8 +138,11 @@ export default {
       hemi.color.setRGB(...light.hemi.sky, THREE.SRGBColorSpace);
       hemi.groundColor.setRGB(...light.hemi.ground, THREE.SRGBColorSpace);
       hemi.intensity = light.hemi.intensity * lightK;
-      scene.fog.color.setRGB(...light.fog.colour, THREE.SRGBColorSpace);
-      scene.fog.density = light.fog.density;
+      // (none while a room is up: the host keeps the grounds' fog and puts it back on the way out)
+      if (scene.fog) {
+        scene.fog.color.setRGB(...light.fog.colour, THREE.SRGBColorSpace);
+        scene.fog.density = light.fog.density;
+      }
       // (the house's fog takes the sky's own colours: the horizon low, the zenith
       // high, and the sunset's glow toward where the sun went down)
       sunDir.set(...light.sun.dir);

@@ -204,10 +204,11 @@ export function createArrival({ rt = null, scene, camera, house = null, tier = '
       for (const o of lake) if (o) o.visible = true;
       if (sky?.mesh) sky.mesh.visible = true;
     }
-    // (you stay in the hall, stood at your house’s table, the term begun)
+    // (you stay in the hall, stood at your house’s table, the term begun: in
+    // the middle of the aisle beside it, clear of the benches and their heads)
     if (hall && rooms) {
       const table = hall.plan?.tables?.find((x) => x.house === sorted?.house) ?? hall.plan?.tables?.[0];
-      const at = table ? [table.x + (table.x < 0 ? 1.95 : -1.95), -12] : [0, 20];
+      const at = table ? [table.x + (table.x < 0 ? 2.2 : -2.2), -10] : [0, 20];
       rooms.walk?.(at, 0);
     }
     hall = null;
