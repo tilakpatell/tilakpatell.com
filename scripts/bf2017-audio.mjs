@@ -10,8 +10,8 @@
 //
 // ffmpeg makes the MP3 (mono, 96 kbit/s, the level the site's clips are
 // at; `--stereo` keeps two channels at 112 kbit/s for a music stem or a bed,
-// a quad bed's front pair); the keys, SUPABASE_URL and BF2017_KEY (or
-// SUPA_KEY), are never printed. The sound export (bf2-re/findings/
+// a quad bed's front pair); the keys, R2_ACCESS_KEY_ID and
+// R2_SECRET_ACCESS_KEY (lib/bucket.mjs), are never printed. The sound export (bf2-re/findings/
 // 36-sound-export.md) lands under `web/sounds`; the Hoth set is made whole
 // from the owner's copy by scripts/bf2017-sounds.mjs, this is for one file.
 
@@ -23,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { parseArgs } from './lib/args.mjs';
 import { objectUrl } from './lib/bf2017-paths.mjs';
+import { NO_KEYS, bucketEnv, list as listAll } from './lib/bucket.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'public/audio/galaxy/bf2017');
@@ -32,27 +33,18 @@ const AUDIO = /\.(wav|ogg|opus|mp3|flac|m4a|aac)$/i;
 const ROOTS = ['data/Sound', 'web/audio', 'web/sound', 'web/sounds'];
 
 function keys() {
-  const base = process.env.SUPABASE_URL;
-  const key = process.env.BF2017_KEY || process.env.SUPA_KEY;
-  if (!base || !key) {
-    console.error('Set SUPABASE_URL and BF2017_KEY (or SUPA_KEY) and run with node --env-file=.env.local.');
+  const env = bucketEnv();
+  if (!env) {
+    console.error(NO_KEYS);
     process.exit(2);
   }
-  return { base: base.replace(/\/+$/, ''), headers: { apikey: key, Authorization: `Bearer ${key}` } };
+  return env;
 }
 
-// every object under a folder, as { path, bytes }
-async function list(env, prefix, out = []) {
-  for (let offset = 0; ; offset += 1000) {
-    const res = await fetch(`${env.base}/storage/v1/object/list/${BUCKET}`, { method: 'POST', headers: { ...env.headers, 'content-type': 'application/json' }, body: JSON.stringify({ prefix, limit: 1000, offset }) });
-    if (!res.ok) return out;
-    const page = await res.json();
-    for (const e of page) {
-      if (e.id) out.push({ path: `${prefix}/${e.name}`, bytes: e.metadata?.size ?? 0 });
-      else await list(env, `${prefix}/${e.name}`, out);
-    }
-    if (page.length < 1000) return out;
-  }
+// every object under a folder, as { path, bytes } (none when the listing is refused)
+async function list(env, prefix) {
+  const { files } = await listAll(env.fetch, BUCKET, `${prefix}/`).catch(() => ({ files: [] }));
+  return files.map((f) => ({ path: f.key, bytes: f.size }));
 }
 
 const args = parseArgs(process.argv.slice(2));
@@ -76,7 +68,7 @@ if (typeof args.as !== 'string') {
   console.error('usage: scripts/bf2017-audio.mjs <bucket path> --as <file under public/audio/galaxy/bf2017/>');
   process.exit(1);
 }
-const res = await fetch(objectUrl(env.base, BUCKET, from), { headers: env.headers });
+const res = await env.fetch(objectUrl(env.base, BUCKET, from));
 if (!res.ok) {
   console.error(`${from}: not in the bucket (${res.status})`);
   process.exit(1);

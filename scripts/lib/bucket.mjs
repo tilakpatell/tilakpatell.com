@@ -17,7 +17,7 @@
 // objectUrl(bucket, path, base) → the object's S3 address (bf2017-paths' objectUrl is this)
 // assetBase(env) → site-assets' public address (ASSET_BASE, VITE_ASSET_BASE, else PUBLIC)
 // listing(xml) → { files: [{ key, size }], folders: [prefix], next } (a ListObjectsV2 page; pure)
-// list(fetch, bucket, prefix, { delimiter }) → { files, folders }, every page
+// list(fetch, bucket, prefix, { delimiter, pages }) → { files, folders }, every page (or the first `pages`)
 // folder(fetch, bucket, prefix) → [{ name, id, metadata }], one folder's entries, by name
 // put(fetch, bucket, key, body, { type, cache }) → the response; throws on a refusal
 // remove(fetch, bucket, key) → the response; a key already gone is no error
@@ -91,10 +91,10 @@ export function listing(xml) {
   return { files, folders, next: truncated ? unxml(tags(xml, 'NextContinuationToken')[0]) || null : null };
 }
 
-export async function list(fetchImpl, bucket, prefix = '', { delimiter = '' } = {}) {
+export async function list(fetchImpl, bucket, prefix = '', { delimiter = '', pages = Infinity } = {}) {
   const files = [];
   const folders = [];
-  for (let next = null; ; ) {
+  for (let next = null, n = 1; ; n++) {
     const q = { 'list-type': '2', prefix, ...(delimiter ? { delimiter } : {}), ...(next ? { 'continuation-token': next } : {}) };
     const query = Object.entries(q).map(([k, v]) => `${strict(k)}=${strict(v)}`).join('&');
     const res = await fetchImpl(`${ENDPOINT}/${bucket}?${query}`);
@@ -102,7 +102,7 @@ export async function list(fetchImpl, bucket, prefix = '', { delimiter = '' } = 
     const page = listing(await res.text());
     files.push(...page.files);
     folders.push(...page.folders);
-    if (!page.next) return { files, folders };
+    if (!page.next || n >= pages) return { files, folders };
     next = page.next;
   }
 }

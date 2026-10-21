@@ -15,7 +15,7 @@
 // 1,024 (ultra) and 2,048 × 512 (high), a gradient at its own size. Then:
 //
 //   - each goes to the bucket bf2017-assets as web/hdr/<its export path>.<width>.ktx2
-//     (the export's tool/upload_supabase.py, the desktop's key)
+//     (scripts/bucket-put.mjs, the desktop's key)
 //   - each is copied to public/textures/galaxy/bf2017/hdr/<name>.<width>.ktx2
 //     and published to site-assets by hash (scripts/assets-publish.mjs)
 //   - every world that names one runs scripts/bf2017-picture.mjs again, so
@@ -27,7 +27,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync,
 import { basename, dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ddsToKtx2, fromHalf, zstdReady } from '../lib/ktx2-hdr.mjs';
-import { jsonLines, keyState, runCli, step, textureIndexFile } from './bf2017-desk.mjs';
+import { jsonLines, runCli, step, textureIndexFile, uploadArgs } from './bf2017-desk.mjs';
 
 // The sizes made: a panorama's two tiers, a gradient at its own.
 const PANORAMA_SIZES = [
@@ -122,8 +122,7 @@ export const spec = {
     { name: "the export's texture index", file: join(d.web, 'textures.jsonl'), fix: 'the export writes web/textures.jsonl' },
     { name: 'texconv (DirectXTex)', cmd: d.texconv, fix: 'winget install Microsoft.DirectXTex (or put texconv.exe on PATH, or set TEXCONV)' },
     { name: 'python', cmd: d.python, fix: 'Python 3 on PATH (or set PYTHON)' },
-    { name: "the export's uploader", file: join(d.tool, 'upload_supabase.py'), fix: 'the export keeps tool/upload_supabase.py' },
-    { name: "the bucket's keys", keys: true, fix: "SUPABASE_URL and SUPABASE_SERVICE_KEY in the runner's .env (~\\actions-runner\\.env), then restart the runner" },
+    { name: "the bucket's keys", keys: true, fix: "R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (R2's S3 keys) in the runner's .env (~\\actions-runner\\.env), then restart the runner" },
   ],
   async plan({ root, d }) {
     const all = skies(lightRecords(root));
@@ -172,7 +171,7 @@ export const spec = {
     if (made.length) {
       const list = join(d.webOpt, '_hdr_upload.txt');
       writeFileSync(list, `${made.map((m) => m.rel).join('\n')}\n`);
-      step(d.python, [join(d.tool, 'upload_supabase.py'), '--root', d.webOpt, '--list', list, ...(keyState(env).project ? ['--project', keyState(env).project] : []), '--bucket', 'bf2017-assets', '--prefix', 'web/'], { env, log });
+      step(process.execPath, uploadArgs(d, list), { env, log });
       step(process.execPath, ['scripts/assets-publish.mjs', '--only', `${SITE_DIR}/*`], { cwd: root, env, log });
       for (const world of [...new Set(made.flatMap((m) => m.worlds))].sort()) step(process.execPath, ['scripts/bf2017-picture.mjs', world], { cwd: root, env, log });
     }

@@ -9,9 +9,9 @@
 //
 //   node scripts/assets-check.mjs [--base <url>] [--galaxy-only] [--since <git ref>]
 //
-// The base: --base, else ASSET_BASE or VITE_ASSET_BASE, else the project's
-// (SUPABASE_URL) site-assets. One line a failure, one summary line; exit 1 on
-// any failure, 0 with nothing to check.
+// The base: --base, else ASSET_BASE or VITE_ASSET_BASE, else site-assets' own
+// domain on R2 (lib/bucket.mjs). One line a failure, one summary line; exit 1
+// on any failure, 0 with nothing to check.
 //
 // With --since, only the entries the manifests gained or changed since that
 // commit are asked for (`git show <ref>:<manifest>`; a manifest not there
@@ -30,6 +30,7 @@ import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { publishedPath, readManifest } from './lib/asset-manifest.mjs';
+import { assetBase } from './lib/bucket.mjs';
 import { createPool } from './lib/pool.mjs';
 import { galaxyPath } from './assets-manifest.mjs';
 import { manifestPath } from './assets-upload.mjs';
@@ -95,8 +96,7 @@ export async function check({ base, entries, pool, log = console.log, tally = {}
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
-  const project = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
-  const base = (typeof args.base === 'string' && args.base) || process.env.ASSET_BASE || process.env.VITE_ASSET_BASE || (project ? `${project}/storage/v1/object/public/site-assets` : '');
+  const base = (typeof args.base === 'string' && args.base) || assetBase();
   const galaxyFile = galaxyPath(root);
   const mirrorFile = manifestPath(root);
   let galaxy = readManifest(galaxyFile);
@@ -116,10 +116,6 @@ async function main() {
   if (!n) {
     console.log(`assets-check: nothing new since ${since} (${all} entries as that deploy held them)`);
     return 0;
-  }
-  if (!base) {
-    console.error('assets-check: no base (--base, ASSET_BASE, VITE_ASSET_BASE or SUPABASE_URL)');
-    return 2;
   }
   const pool = createPool({ size: 8, missing: [400, 404] });
   const tally = {};

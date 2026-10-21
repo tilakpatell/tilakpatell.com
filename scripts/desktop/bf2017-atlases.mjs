@@ -27,7 +27,7 @@ import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ddsToKtx2, zstdReady } from '../lib/ktx2-hdr.mjs';
 import { isSequel } from '../lib/bf2017-manifest.mjs';
-import { encodeAndUpload, jsonLines, keyState, ledgerAgain, runCli, step, textureIndexFile } from './bf2017-desk.mjs';
+import { encodeAndUpload, jsonLines, ledgerAgain, runCli, step, textureIndexFile, uploadArgs } from './bf2017-desk.mjs';
 import { bucketPath, hdrDirs, hdrSource, peakOf, texconvArgs } from './bf2017-panoramas.mjs';
 
 export const MAX = 4096;
@@ -68,9 +68,8 @@ export const spec = {
     { name: "the export's texture index", file: join(d.web, 'textures.jsonl'), fix: 'the export writes web/textures.jsonl' },
     { name: 'python', cmd: d.python, fix: 'Python 3 on PATH (or set PYTHON)' },
     { name: "the export's encoder", file: join(d.tool, 'ktx2_encode.py'), fix: 'the export keeps tool/ktx2_encode.py' },
-    { name: "the export's uploader", file: join(d.tool, 'upload_supabase.py'), fix: 'the export keeps tool/upload_supabase.py' },
     { name: 'texconv (DirectXTex)', cmd: d.texconv, fix: 'winget install Microsoft.DirectXTex (or put texconv.exe on PATH, or set TEXCONV)' },
-    { name: "the bucket's keys", keys: true, fix: "SUPABASE_URL and SUPABASE_SERVICE_KEY in the runner's .env (~\\actions-runner\\.env), then restart the runner" },
+    { name: "the bucket's keys", keys: true, fix: "R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (R2's S3 keys) in the runner's .env (~\\actions-runner\\.env), then restart the runner" },
   ],
   async plan({ root, d }) {
     const file = textureIndexFile(d, root);
@@ -103,8 +102,7 @@ export const spec = {
     if (hdr.length) {
       const up = join(d.webOpt, '_atlases_hdr_upload.txt');
       writeFileSync(up, `${hdr.map((h) => h.rel).join('\n')}\n`);
-      const project = keyState(env).project;
-      step(d.python, [join(d.tool, 'upload_supabase.py'), '--root', d.webOpt, '--list', up, ...(project ? ['--project', project] : []), '--bucket', 'bf2017-assets', '--prefix', 'web/'], { env, log });
+      step(process.execPath, uploadArgs(d, up), { env, log });
     }
     // then every map through the export's own encoder and uploader
     const { made, failed } = encodeAndUpload(items, { d, env, log, list: 'atlases', max: MAX });

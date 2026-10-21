@@ -16,8 +16,8 @@
 // From the bucket it reads the manifest (fetched once into lab/assets/bf2017/,
 // which git ignores), takes every A_<Hero>_* clip on the humanoid skeleton
 // and the hero's idle, fetches each, and measures it on the skeleton the clip
-// file carries. The keys: SUPABASE_URL and BF2017_KEY (or SUPA_KEY) from the
-// environment, never printed. It prints the table's strikes, one a line.
+// file carries. The keys: R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY
+// (lib/bucket.mjs) from the environment, never printed. It prints the table's strikes, one a line.
 
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
@@ -29,6 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { isSequel, readManifest } from './lib/bf2017-manifest.mjs';
 import { inBucket, objectUrl } from './lib/bf2017-paths.mjs';
+import { NO_KEYS, bucketEnv } from './lib/bucket.mjs';
 import { BLADE, classify, clipOf, emitterOf, measure, rigOf, rodOf, sourceName, tableFor } from './lib/bf2017-strokes.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -62,21 +63,18 @@ async function io() {
 }
 
 function keys() {
-  const base = process.env.SUPABASE_URL;
-  const key = process.env.BF2017_KEY || process.env.SUPA_KEY;
-  if (!base || !key) {
-    console.error('Set SUPABASE_URL and BF2017_KEY (or SUPA_KEY) in the environment, or measure a pack with --pack.');
+  const env = bucketEnv();
+  if (!env) {
+    console.error(`${NO_KEYS} (or measure a pack with --pack)`);
     process.exit(2);
   }
-  return { base, headers: { apikey: key, Authorization: `Bearer ${key}` } };
+  return env;
 }
 
 async function fetchTo(env, bucketPath) {
   const file = join(LAB, bucketPath);
   if (existsSync(file)) return file;
-  const res = await fetch(objectUrl(env.base, BUCKET, bucketPath), {
-    headers: env.headers,
-  });
+  const res = await env.fetch(objectUrl(env.base, BUCKET, bucketPath));
   if (!res.ok) return null;
   await mkdir(dirname(file), { recursive: true });
   await writeFile(file, Buffer.from(await res.arrayBuffer()));

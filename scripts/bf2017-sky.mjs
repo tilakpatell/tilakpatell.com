@@ -41,8 +41,8 @@
 //
 //   node scripts/bf2017-sky.mjs --globes
 //
-// The keys: SUPABASE_URL and BF2017_KEY (or SUPA_KEY) from the environment,
-// never printed; a face already on disk is not fetched again.
+// The keys: R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (lib/bucket.mjs) from
+// the environment, never printed; a face already on disk is not fetched again.
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, relative } from 'node:path';

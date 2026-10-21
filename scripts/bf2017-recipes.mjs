@@ -21,7 +21,7 @@
 //     encoded from the export's PNGs where the bucket has no KTX2), shared by
 //     every kind; published with the packs (scripts/assets-publish.mjs)
 //
-// The keys (SUPABASE_URL and BF2017_KEY, or SUPA_KEY in a cloud session)
+// The keys (R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY: lib/bucket.mjs)
 // come from the environment; in a cloud session Node's fetch needs
 // NODE_USE_ENV_PROXY=1. A map the bucket has not got yet (the desktop is
 // encoding them: web_opt/_surfaces_list.tsv) prints `missing:` and the
@@ -37,6 +37,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
+import { assetBase } from './lib/bucket.mjs';
 import { candidatesOf, colourIndex, countFamilies, crewRecipes, mapsWanted, recipesOf, shaderMapIndex } from './lib/bf2017-recipes.mjs';
 import { ktx2Info, dropMips, mipsToFit } from './lib/ktx2-mips.mjs';
 import { loadGameWord, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
@@ -212,7 +213,7 @@ async function crewGlbJson(kind) {
   if (existsSync(local)) return parse(await readFile(local));
   const published = JSON.parse(await readFile(join(ROOT, ASSETS), 'utf8'))[`models/galaxy/bf2017/crew/${kind}.glb`];
   if (!published) return null;
-  const url = `${process.env.SUPABASE_URL.replace(/\/+$/, '')}/storage/v1/object/public/site-assets/${published.hash}/models/galaxy/bf2017/crew/${kind}.glb`;
+  const url = `${assetBase()}/${published.hash}/models/galaxy/bf2017/crew/${kind}.glb`;
   const head = Buffer.from(await (await fetch(url, { headers: { Range: 'bytes=0-19' } })).arrayBuffer());
   const len = head.readUInt32LE(12);
   const json = Buffer.from(await (await fetch(url, { headers: { Range: `bytes=20-${19 + len}` } })).arrayBuffer());

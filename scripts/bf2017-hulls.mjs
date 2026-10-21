@@ -60,6 +60,7 @@ import { MeshoptDecoder } from 'meshoptimizer';
 import { hullOf } from '../src/lib/combat/hulls.js';
 import { packHull } from '../src/lib/physics/shapesBin.js';
 import { parseArgs } from './lib/args.mjs';
+import { assetBase } from './lib/bucket.mjs';
 import { readMap } from './lib/bf2017-level.mjs';
 import { physicsKey, readPhysicsGlb } from './lib/bf2017-physics.mjs';
 import { SPACE, piecesOf } from './lib/bf2017-space.mjs';
@@ -100,8 +101,7 @@ import { siteHull, subsystemParts } from './lib/bf2017-hulls-site.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXPORT = 'C:/Users/tilak/Downloads/BF2_Extract/web';
 const LAB = join(ROOT, 'lab/assets/bf2017/web');
-const BASE =
-  process.env.ASSET_BASE ?? process.env.VITE_ASSET_BASE ?? (process.env.SUPABASE_URL ? `${process.env.SUPABASE_URL}/storage/v1/object/public/site-assets` : 'https://jzabcqboyemokwifmjmp.supabase.co/storage/v1/object/public/site-assets');
+const BASE = assetBase();
 // _source: the hulls design §2.1 (a hull's box on its render cut's within 2 %)
 const FIT = 0.02;
 // a site hull's triangles: a fighter's, a capital's (the hulls design §2.1)

@@ -8,7 +8,7 @@
 //   ledger rows (docs/superpowers/evidence/bf2017-coverage/ledger.json.gz,
 //   state not-uploaded, part textures) → the export's index (web/textures.jsonl)
 //   → tool/ktx2_encode.py --list (ETC1S colour, UASTC the rest, at most 2,048)
-//   → tool/upload_supabase.py → the ledger made again from the uploader's record
+//   → scripts/bucket-put.mjs → the ledger made again from the uploader's record
 //
 //   node scripts/desktop/bf2017-textures.mjs [--dry] [--only fx/decals] [--limit N] [--no-pr]
 //
@@ -59,9 +59,8 @@ export const spec = {
     { name: "the export's texture index", file: join(d.web, 'textures.jsonl'), fix: 'the export writes web/textures.jsonl' },
     { name: 'python', cmd: d.python, fix: 'Python 3 on PATH (or set PYTHON)' },
     { name: "the export's encoder", file: join(d.tool, 'ktx2_encode.py'), fix: 'the export keeps tool/ktx2_encode.py' },
-    { name: "the export's uploader", file: join(d.tool, 'upload_supabase.py'), fix: 'the export keeps tool/upload_supabase.py' },
     { name: "the uploader's record", file: join(d.webOpt, 'upload_state.tsv'), fix: 'the uploader keeps web_opt/upload_state.tsv (the ledger is made again from it)' },
-    { name: "the bucket's keys", keys: true, fix: "SUPABASE_URL and SUPABASE_SERVICE_KEY in the runner's .env (~\\actions-runner\\.env), then restart the runner" },
+    { name: "the bucket's keys", keys: true, fix: "R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (R2's S3 keys) in the runner's .env (~\\actions-runner\\.env), then restart the runner" },
   ],
   async plan({ root, d }) {
     const rows = wanted(ledgerRows(root));

@@ -35,6 +35,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from './lib/args.mjs';
 import { cellIndex, packShapes, physicsKey, readPhysicsGlb, summarise } from './lib/bf2017-physics.mjs';
 import { objectUrl } from './lib/bf2017-paths.mjs';
+import { NO_KEYS, bucketEnv } from './lib/bucket.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CACHE = join(ROOT, 'lab', 'assets', 'bf2017');
@@ -43,8 +44,7 @@ const BUCKET = 'bf2017-assets';
 // A file of the web build, from the export on this machine or the bucket
 // (kept in the cache after).
 function source(from) {
-  const base = process.env.SUPABASE_URL;
-  const key = process.env.BF2017_KEY || process.env.SUPA_KEY;
+  const env = bucketEnv();
   return async function get(path) {
     if (from) {
       const f = join(from, path);
@@ -52,8 +52,8 @@ function source(from) {
     }
     const cached = join(CACHE, 'web', path);
     if (existsSync(cached)) return readFile(cached);
-    if (!base || !key) throw new Error('Set SUPABASE_URL and BF2017_KEY (or SUPA_KEY), or pass --from <web_opt>.');
-    const res = await fetch(objectUrl(base, BUCKET, `web/${path}`), { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+    if (!env) throw new Error(`${NO_KEYS} (or pass --from <web_opt>)`);
+    const res = await env.fetch(objectUrl(env.base, BUCKET, `web/${path}`));
     if (!res.ok) return null;
     const body = Buffer.from(await res.arrayBuffer());
     await mkdir(dirname(cached), { recursive: true });

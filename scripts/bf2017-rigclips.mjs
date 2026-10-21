@@ -26,7 +26,7 @@
 //   pack       a key of rigSets.js's RIGS (atat, atst, atte, atrt, droideka)
 //   skeleton   the rig's skeleton in web/anims.jsonl (checked against RIGS)
 //   root       where the fetch keeps the bucket: a clip not there is fetched,
-//              with SUPABASE_URL and BF2017_KEY (or SUPA_KEY) in the environment
+//              with R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY in the environment (lib/bucket.mjs)
 //
 // It prints each clip's site name, the game's, its keys and the pack's bytes.
 
@@ -42,6 +42,7 @@ import { RIGS } from '../src/lib/three/rigSets.js';
 import { parseArgs } from './lib/args.mjs';
 import { isSequel, readManifest } from './lib/bf2017-manifest.mjs';
 import { localPath, objectUrl } from './lib/bf2017-paths.mjs';
+import { bucketEnv } from './lib/bucket.mjs';
 import { channelFate, folded, resample, travel } from './lib/rig-clips.mjs';
 import { EVENT_RIGS } from '../src/lib/three/walrusSets/events.js';
 
@@ -70,13 +71,10 @@ async function io() {
 async function fetched(root, bucketPath) {
   const file = localPath(root, bucketPath);
   if (existsSync(file)) return file;
-  const base = process.env.SUPABASE_URL;
-  const key = process.env.BF2017_KEY || process.env.SUPA_KEY;
-  if (!base || !key) throw new Error(`${bucketPath} is not on disk, and SUPABASE_URL and BF2017_KEY are not set to fetch it`);
+  const env = bucketEnv();
+  if (!env) throw new Error(`${bucketPath} is not on disk, and R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY are not set to fetch it`);
   for (let i = 0; ; i++) {
-    const res = await fetch(objectUrl(base, 'bf2017-assets', bucketPath), {
-      headers: { apikey: key, Authorization: `Bearer ${key}` },
-    }).catch(() => null);
+    const res = await env.fetch(objectUrl(env.base, 'bf2017-assets', bucketPath)).catch(() => null);
     if (res?.ok) {
       await mkdir(dirname(file), { recursive: true });
       await writeFile(file, Buffer.from(await res.arrayBuffer()));

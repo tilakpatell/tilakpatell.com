@@ -21,7 +21,10 @@ name: Copy the buckets to R2
 #   R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY: R2 → Manage API tokens, Object
 #     Read & Write on the buckets: the Access Key ID (32 hex characters) and
 #     the Secret Access Key (64) it shows once, not the token itself
-# The R2 buckets are made by hand first, named as Supabase's. Besides the
+# The R2 buckets are made by hand first, named as Supabase's. A second job,
+# `signed`, has the scripts' own way in (scripts/lib/bucket.mjs, which signs
+# each request itself) list each bucket and ask for a key, so a fault in it
+# shows here rather than in a desktop job. Besides the
 # two the site reads, Supabase holds bf2-extract (empty on 2026-10-10) and
 # bf2-workspace-backup: named in `buckets`, they're copied too.
 
@@ -121,3 +124,19 @@ jobs:
             [ "$n_to" -ge "$n_from" ] || { echo "::error::$b: R2 holds $n_to files of Supabase's $n_from"; short=1; }
           done
           exit $short
+
+  signed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      # (no npm ci: the module and the check import nothing but node's own)
+      - name: The scripts' signing, on R2
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          BUCKETS: ${{ inputs.buckets }}
+        run: node scripts/bucket-check.mjs $BUCKETS

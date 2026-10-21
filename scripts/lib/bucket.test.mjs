@@ -122,6 +122,12 @@ describe('list and folder', () => {
     }
   });
 
+  it('stops at the pages asked for', async () => {
+    const { fetchImpl, asked } = fakeBucket(keys);
+    expect((await list(fetchImpl, 'bf2017-assets', 'web/maps/hoth/', { pages: 1 })).files.length).toBe(2);
+    expect(asked.length).toBe(1);
+  });
+
   it('says which listing was refused', async () => {
     await expect(list(async () => new Response('no', { status: 403 }), 'bf2017-assets', 'web/')).rejects.toThrow('list bf2017-assets/web/: HTTP 403');
   });

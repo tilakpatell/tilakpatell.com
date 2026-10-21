@@ -69,7 +69,7 @@ export const spec = {
   columns: ['name', 'file'],
   needs: (d) => [
     { name: 'the depot probe', file: probeFile(d), fix: "the exporter's depot probe writes maps_work/shaderdepots.jsonl (tool/bf2export.csproj)" },
-    { name: "the bucket's keys", keys: true, fix: "SUPABASE_URL and SUPABASE_SERVICE_KEY in the runner's .env (the dictionary's records come from the bucket)" },
+    { name: "the bucket's keys", keys: true, fix: "R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (R2's S3 keys) in the runner's .env (the dictionary's records come from the bucket)" },
   ],
   async plan({ d }) {
     const file = probeFile(d);

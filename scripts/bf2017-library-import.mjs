@@ -19,7 +19,7 @@
 //           kind's 512 and 256
 //   dry     the names, and nothing fetched
 //
-// The keys: SUPABASE_URL and SUPA_KEY (or BF2017_KEY), never printed;
+// The keys: R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (lib/bucket.mjs), never printed;
 // NODE_USE_ENV_PROXY=1 behind a proxy.
 
 import { spawnSync } from 'node:child_process';

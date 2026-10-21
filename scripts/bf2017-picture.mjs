@@ -32,7 +32,7 @@
 // The textures are published by hash (scripts/assets-publish.mjs, the
 // manifest src/data/galaxyAssets.json), so git keeps none of them.
 //
-// The keys: SUPABASE_URL and BF2017_KEY (or SUPA_KEY) from the environment.
+// The keys: R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (lib/bucket.mjs) from the environment.
 
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
