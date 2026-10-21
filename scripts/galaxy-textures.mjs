@@ -82,6 +82,12 @@ export const ROLES = {
   moss: { id: 'forrest_ground_01', keep: 0.3, mean: 0.74 },
   swampmud: { id: 'brown_mud_02', keep: 0.25, mean: 0.72 },
   paving: { id: 'concrete_floor_02', keep: 0.1, mean: 0.82 },
+  // Hogwarts’ castle (hogwarts/world/castle/materials.js): its walls’ dressed
+  // blocks, the rough stacked stone of its plinths, piers and the Owlery,
+  // and the dark Highland slate of its roofs and cones
+  ashlar: { id: 'stone_brick_wall_001', keep: 0.15, mean: 0.78 },
+  rubble: { id: 'castle_wall_slates', keep: 0.2, mean: 0.76 },
+  slate: { id: 'roof_slates_03', keep: 0.1, mean: 0.74 },
 };
 
 const get = async (url, as = 'json') => {
