@@ -235,12 +235,13 @@ describe('the outskirts of a room', () => {
     expect(L.edge).toEqual([]);
     for (const l of L.lots) expect(outside(d.area, l)).toBeGreaterThanOrEqual(8 - 1e-9);
   });
-  it('takes half a place’s crowd and traffic, and on low none outside', () => {
+  it('takes half a place’s crowd allowance and traffic, and on low none outside', () => {
     const d = room();
-    const out = lay(outdoor(), world());
-    const L = lay(d, w);
-    const heads = (x) => [...x.walkers, ...x.gathers].reduce((a, c) => a + c.n, 0);
-    expect(heads(L)).toBeLessThanOrEqual(Math.ceil(heads(out) / 2) + 1);
+    const tris = (x) => [...x.walkers, ...x.gathers].reduce((a, c) => a + c.n * Math.max(...c.kinds.map((k) => TRIS[k])), 0);
+    for (const tier of ['high', 'mid', 'low']) expect(tris(lay(d, w, tier)), tier).toBeLessThanOrEqual(LEVELS[tier].crowd / 2);
+    // (a queue inside it keeps its heads where they fit)
+    const queue = world({ crowd: { gather: [{ kinds: ['zigerion'], n: { high: 12, mid: 8, low: 4 }, at: [-10, 5], r: 3 }] } });
+    expect(lay(d, { ...queue, outside: 'ground' }).gathers[0].n).toBe(12);
     const low = lay(d, w, 'low');
     expect(low.lanes).toEqual([]);
     expect(low.walkers.filter((c) => c.loop === 'street' || c.out).length).toBe(0);

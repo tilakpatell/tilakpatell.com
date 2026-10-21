@@ -202,8 +202,6 @@ function crowdOf(d, crowd, { tier, row, room, outside, tris, hero }) {
   const cost = (c) => c.n * Math.max(...c.kinds.map((k) => tris[k] ?? Infinity));
   const total = all.reduce((a, c) => a + cost(c), 0);
   if (total > allow) for (const c of all) c.n = Math.floor((c.n * allow) / total);
-  // (a room's heads: half a place's too)
-  if (room) for (const c of all) c.n = Math.ceil(c.n / 2);
   const kept = all.filter((c) => c.n > 0 && Number.isFinite(cost(c)));
   return { walkers: kept.filter((c) => c.loop), gathers: kept.filter((c) => !c.loop) };
 }
