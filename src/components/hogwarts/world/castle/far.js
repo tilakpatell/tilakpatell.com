@@ -10,8 +10,9 @@
 //
 //   FAR: { low, mid, high, ultra }: metres from the castle past which only this is drawn (0: always)
 //   buildFarGeometry({ ground }) → BufferGeometry (its `aLit` 2 where nothing shines)
-//   createFarCastle({ house, ground, night }) → { mesh, material, set(night), dispose }
-//     night: a uniform node to share (the near castle’s uNight), else its own
+//   createFarCastle({ house, ground, night }) → { mesh, group (the same: Lane A’s name), material, set(night), dispose }
+//     night: a uniform node to share (the near castle’s uNight), else its own;
+//     set takes the windows’ 0…1, or a light with its `windows` (rules/clock.js’s light())
 
 import * as THREE from 'three';
 import { MeshLambertNodeMaterial } from 'three/webgpu';
@@ -47,10 +48,11 @@ export function createFarCastle({ house = null, ground = heightAt, night = null 
   mesh.name = 'hogwarts:castle:far';
   return {
     mesh,
+    group: mesh,
     material,
     uNight,
     set(n) {
-      if (!night) uNight.value = n;
+      if (!night) uNight.value = typeof n === 'number' ? n : (n?.windows ?? 0);
     },
     dispose() {
       geometry.dispose();

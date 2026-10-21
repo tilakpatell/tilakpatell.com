@@ -7,6 +7,7 @@
 // so a moonlit lawn reads as night and not as a dim day.
 //
 //   createGroundsHouse(look) → { house, adopt(root) }
+//   createHogwartsHouse(look) → the house alone (Lane A’s name, kept)
 //   gradeNode(texture, uNight) → the chain’s grade: the picture shown, tone-mapped and encoded
 //   chainFor(tier, backend, { scene, camera, grade }) → the post chain as data
 //     (lib/three/light/post.js’s kinds through rt.gfx.post; post.js’s CANNOT respected)
@@ -33,6 +34,7 @@ export function createGroundsHouse(look) {
   const house = createHouse(look);
   return { house, adopt: (root) => house.adopt(root) };
 }
+export const createHogwartsHouse = (look = {}) => createHouse(look);
 
 export function gradeNode(tex, uNight) {
   const uv = screenUV;
@@ -54,7 +56,7 @@ export function gradeNode(tex, uNight) {
 const CHAINS = {
   low: ['render', 'bloom', 'output'],
   mid: ['render', 'bloom', 'smaa', 'output'],
-  high: ['render', 'ao', 'bloom', 'grade', 'traa', 'output'],
+  high: ['render', 'bloom', 'grade', 'traa', 'output'],
   ultra: ['render', 'ao', 'bloom', 'grade', 'traa', 'output'],
 };
 
@@ -68,8 +70,8 @@ export function chainFor(tier, backend, { scene = null, camera = null, grade = n
       continue;
     }
     if (kind === 'render') out.push({ kind, scene, camera });
-    // (a little more than the house’s: the castle’s windows and the lanterns are the night’s light)
-    else if (kind === 'bloom') out.push({ kind, strength: BLOOM.strength * 1.3, radius: BLOOM.radius, threshold: BLOOM.threshold });
+    // (the house’s, as every world’s: the castle’s windows glow through it by their own brightness)
+    else if (kind === 'bloom') out.push({ kind, strength: BLOOM.strength, radius: BLOOM.radius, threshold: BLOOM.threshold });
     else if (kind === 'grade') out.push({ kind, node: grade });
     else if (kind === 'ao') out.push({ kind, radius: 0.5, scale: 0.75, denoise: true });
     else out.push({ kind });

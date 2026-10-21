@@ -10,7 +10,7 @@
 // All but 'giants' (Music's and Marvel's, recoloured from Solar System
 // Scope's maps, fetched once) are made from nothing but code.
 
-const ALL = ['middleearth', 'breakingbad', 'caribbean', 'rickmorty', 'office', 'giants'];
+const ALL = ['middleearth', 'breakingbad', 'caribbean', 'rickmorty', 'office', 'giants', 'potter'];
 const args = process.argv.slice(2);
 // (--ultra: sphere.mjs reads it before any baker is loaded)
 if (args.includes('--ultra')) process.env.PLANETS_8K = '1';
