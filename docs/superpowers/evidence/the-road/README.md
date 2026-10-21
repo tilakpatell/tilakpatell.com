@@ -492,3 +492,15 @@ Twelve stages were pictured mid-walk afresh (`lab/road/shots.mjs`), and four thi
 
 From behind the fall, at Faramir's window, the fall read as a pale fog: three broad bands falling down a sheet. It is now threads of water, in two layers (360 and 140 across its 8 m, a few centimetres each with the camera a metre and a half off), each thread at its own pace and phase. They are thinner between, so the light beyond shows through, with white foam at its foot. `ithilien-henneth-before-desktop.webp`, `ithilien-henneth-desktop.webp` (walked into, 3 s in).
 
+## The grain on WebGPU (2026-10-21)
+
+The owner's backend is WebGPU, and every picture here till now was the node renderer on WebGL 2. The lab draws on WebGPU now (`GPU=webgpu`, `lab/road/common.mjs`), and `lab/road/probe-grain.mjs` measures the flicker: six frames of Hobbiton at 40 m on high, the walk stopped, each pixel's change from frame to frame.
+
+| WebGPU, high | mean | pixels over 6 | the sky and hills |
+| --- | --- | --- | --- |
+| TRAA (before) | 1.19 | 4.21% | 0.32 |
+| none | 0.60 | 1.99% | 0.01 |
+| SMAA (after) | 0.68 | 2.30% | 0.01 |
+
+Under TRAA every edge crawled: the hills and the trees against the sky, Bag End's roof and its fence (`grain-hobbiton-traa-webgpu.webp`). A view of the velocity buffer showed why the grass did. The hills read still, but the wind's blades were moving fast every frame, so TRAA took them nearly whole, jitter and all. High and ultra end in SMAA now, as they did on WebGL 2. What still changes is what moves: Frodo, and the grass in the wind (`grain-hobbiton-smaa-webgpu.webp`; the frame, `hobbiton-smaa-webgpu.webp`).
+
