@@ -3,13 +3,13 @@
 // sky (farStars.js), one Points for them all, a little dimmer and a little
 // bigger than a loaded sector's, so they read as the distant field. Sector
 // (0, 0) is the authored map and is never one of them. The positions sit
-// in a frame centred on the middle sector, moved to it relative to the
-// floating origin, as sectors.js's do.
+// in a frame centred on the middle sector, and the group at that middle,
+// in doubles, as sectors.js's do (the map is drawn round the camera).
 //
 // beyondPlaces(universe, sx, sz, { inner = 1, outer = 3 }) → [{ id, at (map), r, color }]
 //   every system in a sector inner < d ≤ outer from (sx, sz)
 // createStarfield(parent, { skyFar = SKY_FAR })
-//   → { rebuild(universe, sx, sz, at), update(camera, dt), reanchor(at), dispose(), size() }
+//   → { rebuild(universe, sx, sz), update(camera, dt), dispose(), size() }
 
 import * as THREE from 'three';
 import { SKY_FAR } from '../../universe/deepspace';
@@ -59,19 +59,16 @@ export function createStarfield(parent, { skyFar = SKY_FAR } = {}) {
   let n = 0;
   let centre = [0, 0, 0];
   const api = {
-    rebuild(universe, sx, sz, at) {
+    rebuild(universe, sx, sz) {
       far?.dispose();
       centre = sectorCentre(sx, sz);
       const places = beyondPlaces(universe, sx, sz).map((p) => ({ ...p, at: [p.at[0] - centre[0], p.at[1] - centre[1], p.at[2] - centre[2]] }));
       n = places.length;
       far = createFarStars(group, { places, skyFar });
-      api.reanchor(at);
+      group.position.set(centre[0], centre[1], centre[2]);
     },
     update(camera, dt) {
       far?.update(camera, dt);
-    },
-    reanchor(at) {
-      group.position.set(centre[0] - at[0], centre[1] - at[1], centre[2] - at[2]);
     },
     dispose() {
       far?.dispose();

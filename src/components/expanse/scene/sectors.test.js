@@ -85,13 +85,14 @@ describe('a generated sector, drawn', () => {
     s.dispose();
   });
 
-  it('reanchors by moving only the group', () => {
+  it('sits at its sector’s middle, in doubles, its contents in the sector’s own frame', () => {
     const s = createSector(HAND);
     expect(s.group.position.toArray()).toEqual([400000, 0, 0]);
-    const before = s.group.children.map((c) => c.position.toArray());
-    s.reanchor([390000, 10, -5]);
-    expect(s.group.position.toArray()).toEqual([10000, -10, 5]);
-    expect(s.group.children.map((c) => c.position.toArray())).toEqual(before);
+    // (a star sits where the sector says, less its middle: a small number)
+    const star = named(s.group, 'star:')[0];
+    const at = HAND.systems[0].at;
+    expect(star.position.toArray()).toEqual([at[0] - 400000, at[1], at[2]]);
+    expect(s).not.toHaveProperty('reanchor');
     s.dispose();
   });
 

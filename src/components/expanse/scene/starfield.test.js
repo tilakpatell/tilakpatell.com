@@ -47,22 +47,21 @@ describe('the sectors beyond, as star specks', () => {
     expect(beyondPlaces(UNIVERSE, -3, 5, { inner: 0, outer: 1 }).length).toBeGreaterThan(0);
   });
 
-  it('draws them under an inner group, reanchored, and cleans up', () => {
+  it('draws them under an inner group at the middle sector, and cleans up', () => {
     const parent = new THREE.Group();
     const f = createStarfield(parent);
     expect(parent.children).toHaveLength(1);
-    f.rebuild(UNIVERSE, 4, 4, [480000, 0, 480000]);
+    f.rebuild(UNIVERSE, 4, 4);
     const n = f.size();
     expect(n).toBe(beyondPlaces(UNIVERSE, 4, 4).length);
     const inner = parent.children[0];
     expect(inner.children).toHaveLength(1);
-    expect(inner.position.toArray()).toEqual([0, 0, 0]);
-    f.reanchor([460000, 0, 490000]);
-    expect(inner.position.toArray()).toEqual([20000, 0, -10000]);
+    expect(inner.position.toArray()).toEqual([480000, 0, 480000]);
     const cam = new THREE.PerspectiveCamera();
     cam.updateMatrixWorld();
     expect(() => f.update(cam, 1 / 60)).not.toThrow();
-    f.rebuild(UNIVERSE, 5, 4, [600000, 0, 480000]);
+    f.rebuild(UNIVERSE, 5, 4);
+    expect(inner.position.toArray()).toEqual([600000, 0, 480000]);
     expect(inner.children).toHaveLength(1);
     f.dispose();
     expect(parent.children).toHaveLength(0);

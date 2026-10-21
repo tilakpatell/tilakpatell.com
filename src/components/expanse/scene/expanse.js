@@ -1,26 +1,24 @@
 // The Expanse on the universe map: the generated sectors (gen/sector.js)
 // round the ship, drawn, and the ones past them as a star field. Asleep
-// inside the rim (the map there is as it always was: nothing is made, the
-// origin stays at the middle); past RIM.outer, or out in an Expanse sector,
+// inside the rim (the map there is as it always was: nothing is made); past
+// RIM.outer, or out in an Expanse sector,
 // it wakes: the 3 × 3 of sectors round the ship comes in through a chunk
 // grid (runtime/chunkGrid.js, a sector a cell, radius 1), one sector built
 // a frame, nearest and ahead first, and goes again a sector behind; the
 // authored sector (0,0) is never built, it's the map. Back inside RIM.inner
 // it all goes.
 //
-// The floating origin (runtime/origin.js): out in the Expanse the ship's
-// position is checked against it each frame, and when it moves (by whole
-// cells, ORIGIN_CELL) everything here is re-anchored in that same frame:
-// the root sits at the origin and each sector's group at its middle less
-// the origin, so the sum, where it's drawn, never changes (nothing jumps)
-// while the numbers inside each sector stay small however far out. Home
-// again, the origin goes back to the middle.
+// Everything here sits in the map's own frame, in doubles: the root at the
+// map's middle and each sector's group at its sector's middle, its contents
+// in the sector's frame (small numbers). The map is drawn round the camera
+// (universe/relative.js), so what reaches the chip is small however far out
+// the ship is, and nothing here is ever re-anchored.
 //
 // Nothing generated is kept: a sector is made from its seed each time it's
 // needed (and a few are remembered while the ship's near them).
 //
-// createExpanse(parent, { universe, origin, make, makeStarfield,
-//   tier, reduced, onSector, onShift }) → { root, update({ ship, camera, t,
+// createExpanse(parent, { universe, make, makeStarfield,
+//   tier, reduced, onSector }) → { root, update({ ship, camera, t,
 //   dt }), loaded(), sector(), active(), dispose() }
 // activeAt(ship, was) → whether it's awake for a ship at (x, z), given whether it was
 
@@ -46,7 +44,7 @@ export function activeAt(ship, was) {
 
 const parseKey = (key) => key.split(',').map(Number);
 
-export function createExpanse(parent, { universe = UNIVERSE, origin, make = createSector, makeStarfield = createStarfield, tier = 'mid', reduced = false, onSector = null, onShift = null } = {}) {
+export function createExpanse(parent, { universe = UNIVERSE, make = createSector, makeStarfield = createStarfield, tier = 'mid', reduced = false, onSector = null } = {}) {
   const root = new THREE.Group();
   root.name = 'expanse';
   parent.add(root);
@@ -68,15 +66,6 @@ export function createExpanse(parent, { universe = UNIVERSE, origin, make = crea
   let field = null;
   let awake = false;
   let here = null; // the sector the ship's in, 'sx,sz'
-  let at = [0, 0, 0]; // the origin, as last anchored to
-
-  const anchor = () => {
-    at = origin ? origin.at : [0, 0, 0];
-    root.position.set(at[0], at[1], at[2]);
-    for (const d of drawn.values()) d?.reanchor(at);
-    field?.reanchor(at);
-  };
-  const same = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 
   const drop = (key) => {
     drawn.get(key)?.dispose();
@@ -90,12 +79,6 @@ export function createExpanse(parent, { universe = UNIVERSE, origin, make = crea
     field = null;
     here = null;
     awake = false;
-    if (origin && !same(origin.at, [0, 0, 0])) {
-      const shift = origin.at.map((v) => -v);
-      origin.reset();
-      onShift?.(shift);
-    }
-    anchor();
   };
 
   const api = {
@@ -107,19 +90,13 @@ export function createExpanse(parent, { universe = UNIVERSE, origin, make = crea
         return;
       }
       awake = true;
-      // the origin: moved out in the Expanse, and everything re-anchored with it
-      if (origin && inExpanse(sectorOf(ship.x, 0, ship.z))) {
-        const shift = origin.check([ship.x, ship.y ?? 0, ship.z]);
-        if (shift) onShift?.(shift);
-      }
-      if (!origin || !same(origin.at, at)) anchor();
       // the sector the ship's in: the star field round it rebuilt as it changes
       const [sx, sz] = sectorAt(ship.x, ship.z);
       const key = `${sx},${sz}`;
       if (key !== here) {
         here = key;
         field ??= makeStarfield(root, {});
-        field.rebuild(universe, sx, sz, at);
+        field.rebuild(universe, sx, sz);
         onSector?.(sectorId(sx, sz));
       }
       // the 3 × 3: what's gone behind let go, one more built
@@ -137,7 +114,6 @@ export function createExpanse(parent, { universe = UNIVERSE, origin, make = crea
           const s = sectorFor(cx, cz);
           d = make(s, { tier, reduced });
           root.add(d.group);
-          d.reanchor(at);
         }
         if (grid.done(next, gen)) drawn.set(next, d);
         else d?.dispose();

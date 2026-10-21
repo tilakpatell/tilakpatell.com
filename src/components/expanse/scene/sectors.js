@@ -1,7 +1,7 @@
 // One loaded sector of the expanse (gen/sector.js's), drawn. Everything in
 // it sits in the sector's own frame, its centre at nought, so the numbers
-// in its buffers stay small however far out it is; the group is moved to
-// where the sector is relative to the floating origin (reanchor). Each
+// in its buffers stay small however far out it is; the group sits at the
+// sector's middle, in doubles (the map is drawn round the camera). Each
 // star is a small bright sphere in its own colour; from further off than
 // where farStars.js has it real, it's a star on the sky instead, every star and
 // wonder of the sector in one Points, one draw. A system's planets are
@@ -13,8 +13,8 @@
 //
 // PLANET_NEAR, TYPE_LOOK: { [planet type]: LOOKS id }
 // createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = buildBody })
-//   → { group, sector, update(t, dt, camera), reanchor(at), dispose(), count() }
-//   The caller puts the group under a root at `at` and calls reanchor(at) whenever `at` moves.
+//   → { group, sector, update(t, dt, camera), dispose(), count() }
+//   The caller puts the group under the map's root; it sits at the sector's middle.
 
 import * as THREE from 'three';
 import { buildBody } from '../../galaxy/bodies';
@@ -214,9 +214,6 @@ export function createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = b
       for (const b of near?.bodies ?? []) b.update(t, camera);
       far.update(camera, dt);
     },
-    reanchor(at) {
-      group.position.set(o[0] - at[0], o[1] - at[1], o[2] - at[2]);
-    },
     dispose() {
       letGo();
       far.dispose();
@@ -230,6 +227,6 @@ export function createSector(sector, { tier = 'mid', skyFar = SKY_FAR, build = b
       return n;
     },
   };
-  api.reanchor([0, 0, 0]);
+  group.position.set(o[0], o[1], o[2]);
   return api;
 }
