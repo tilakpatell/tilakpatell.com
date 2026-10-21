@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useMediaQuery, useReducedMotion } from '../../lib/hooks';
 import { WorldHost, useWorld } from '../../runtime';
-import { Hud, Menu, Prompt, QuestList, Stick, Toast, TouchButton } from '../../runtime/hud';
+import { Hud, Menu, Prompt, QuestList, Stick, Toast } from '../../runtime/hud';
 import { wayOut } from '../worlds/worlds';
 import hogwartsModule from './module';
 import '@fontsource/cinzel/600.css';
@@ -18,8 +18,8 @@ const TOAST_FOR = 4000; // ms
 // Hogwarts' face: the HUD from the kit over the world (module.js), skinned
 // as parchment and ink (hogwarts.css). The title, the one Menu (Things to
 // do, empty until the term starts; Controls, the site's guide; the way out
-// by the view you came from), the one Prompt at the boats, a toast, and on
-// touch the stick and the button that does what the prompt says.
+// by the view you came from), the one Prompt at the boats (on touch it is
+// the button itself, as the kit has it), a toast, and on touch the stick.
 export default function HogwartsWorld() {
   const { pathname } = useLocation();
   const reduced = useReducedMotion();
@@ -62,16 +62,7 @@ export default function HogwartsWorld() {
           </div>
         }
         foot={door ? <Prompt k="E" verb="Go in" thing={door.label} touch={touch} onClick={() => api()?.go()} /> : null}
-        thumbs={
-          <>
-            <Stick className="hogwarts-stick" onMove={(x, y) => api()?.stick(x, y)} label="Walk" />
-            {door && (
-              <TouchButton size={76} onPress={() => api()?.go()} aria-label={`Go in: ${door.label}`}>
-                Go in
-              </TouchButton>
-            )}
-          </>
-        }
+        thumbs={<Stick className="hogwarts-stick" onMove={(x, y) => api()?.stick(x, y)} label="Walk" />}
       >
         <Toast toast={toast} className="hogwarts-toast" />
         {list && <QuestList className="hogwarts-list" title="Things to do" sub="Nothing yet: the term begins once you’re across the lake." quests={[]} next={null} onClose={() => setList(false)} onGo={() => {}} />}
