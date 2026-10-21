@@ -335,38 +335,36 @@ async function player() {
       start('ep7');
       const pts = sim.mission.spar;
       for (let i = 0; i < pts.length; i++) {
-        // with him all the way (he flies through towers; the episode wants Mark
-        // within 200 m): close over his head while he waits at a point, since he
-        // moves on to the next only with Mark within 20 m of him (companions.js
-        // DAD.sparR), and well above him while he flies
+        // with him all the way (the episode wants Mark within 200 m): close over
+        // his head while he waits at a point, since he moves on to the next only
+        // with Mark within 20 m of him (companions.js DAD.sparR), and over him
+        // while he flies (his points in the air are above the tallest tower)
         await every(() => {
           if (step() > i || step() < 0) return true;
           const d = api.debug.dad();
           const flying = len(d.v) > 5;
-          // (flying, he does 60 m/s to Mark's cruise of 40: the mark is 100 m
-          // ahead of him and 120 m up, far enough that the steer boosts, near
-          // enough that Mark is never 200 m from him)
-          if (flying) steer(add(add(d.p, d.v.map((c) => (c / (len(d.v) || 1)) * 100)), [0, 120, 0]), 15, { pass: true });
+          // (flying, he does 60 m/s to Mark's cruise of 40: the mark is 40 m
+          // ahead of him and 60 m up, far enough that the steer boosts again as
+          // he falls behind, near enough that Mark is never 200 m from him)
+          if (flying) steer(add(add(d.p, d.v.map((c) => (c / (len(d.v) || 1)) * 40)), [0, 60, 0]), 15, { pass: true });
           else steer(add(d.p, [0, 6, 0]), 3);
           return false;
-        }, 240000);
+        }, 900000); // (the longest leg is 3.8 km, over a minute of game at his 60 m/s, many of wall on a software renderer)
       }
       const door = M.placeOf('home').door;
       await travel([door[0], 6, door[2]], 2);
       await land();
       await until(() => step() >= 5 || step() < 0, 10000);
-      document.getElementById('inv-game')?.scrollIntoView();
+      // (the game's own box to the middle of the screen: the page's one live
+      // 3D view is the stage most in sight, and with the section's title at
+      // the top the game is under a quarter in, which is not enough to take
+      // the view from the city)
+      (document.querySelector('.tm-game') ?? document.getElementById('inv-game'))?.scrollIntoView({ block: 'center' });
       // Think, Mark! through its own hook, if its stage comes up in time on this
       // renderer (the city's stage has to go dark first); if it doesn't, the
       // result is fed as the page feeds it, the one step --play doesn't move
       // Mark through (the chapter is its own game, checked by its own tests)
-      let tm = null;
-      try {
-        await until(() => Boolean(window.__HQ__?.thinkmark?.view), 90000);
-        tm = window.__HQ__.thinkmark;
-      } catch {
-        tm = null;
-      }
+      const tm = (await until(() => Boolean(window.__HQ__?.thinkmark?.view), 90000)) ? window.__HQ__.thinkmark : null;
       if (tm) {
         const ch = (await import('/src/components/invincible/thinkmark/rules.js')).CHAPTERS.findIndex((c) => c.id === 'omni');
         await tm.begin(ch);
