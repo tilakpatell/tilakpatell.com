@@ -438,9 +438,10 @@ describe('the ships the game never had', () => {
     expect(hit.property).toBe(OBJECTIVE);
   }, 30000);
 
-  it('hunterCuts: the hunters whose model is not the galaxy’s cut of their kind (Slave I: the universe map’s)', async () => {
+  it('hunterCuts: the hunters whose model is not the galaxy’s cut of their kind (none since lane C2: Slave I was the universe map’s)', async () => {
     const galaxy = await importRepo('src/components/galaxy/models.js');
-    expect(hunterCuts(galaxy.HUNTER_GLB, galaxy)).toEqual([{ kind: 'slave1', url: '/models/universe/slave1.glb', nose: 0 }]);
+    expect(hunterCuts(galaxy.HUNTER_GLB, galaxy)).toEqual([]);
+    expect(hunterCuts({ slave1: { url: '/models/universe/slave1.glb', nose: 0 } }, galaxy)).toEqual([{ kind: 'slave1', url: '/models/universe/slave1.glb', nose: 0 }]);
   }, 30000);
 
   it('hq/nebulon sits on the HQ model: its box within 2 %, and point by point the way it is drawn', async () => {
@@ -460,9 +461,9 @@ describe('every kind the galaxy flies has a hull', () => {
     const roster = await rosterKinds();
     const missing = roster.filter((k) => !['deathstar', 'deathstar2'].includes(k) && !HULLS[k]);
     expect(missing).toEqual([]);
-    // (and the close-up Nebulon-B, and the hunters drawn as another model)
+    // (and the close-up Nebulon-B; no hunter is drawn as another model since lane C2)
     expect(HULLS['hq/nebulon']).toBeTruthy();
-    expect(HULLS['hunter/slave1']).toBeTruthy();
+    expect(Object.keys(HULLS).filter((k) => k.startsWith('hunter/'))).toEqual([]);
   }, 30000);
 
   it('a site hull is committed beside its model, unless its model is published only', () => {
@@ -490,7 +491,7 @@ describe('every kind the galaxy flies has a hull', () => {
       expect(facing(Float32Array.from(own.flatMap((x) => [...x.points])), drawnPoints(doc, frame)).better, key).toBeNull();
       n++;
     }
-    expect(n).toBe(19);
+    expect(n).toBe(18);
   }, 120000);
 
   it('a kind the game has, drawn on the site’s hull, says why and keeps the game’s property', () => {
