@@ -37,4 +37,25 @@ export const CALLS = {
 
 // What Dad says when his rings are done, quoted after the lap's time (which
 // changes, so only his words are said aloud).
+// Episode 8 (./missions.js), in panels over the city (./Panels.jsx): the
+// porch, and the sky. The site's own words, not the show's.
+export const PANELS = {
+  porch: [
+    ['omni', 'I’m not from here, Mark. Not from this planet.'],
+    ['omni', 'Viltrum sent me. To make this world ready for them.'],
+    ['omni', 'You were meant to be the next part of that.'],
+    ['mark', 'Dad. What are you saying?'],
+    ['omni', 'That you’ll understand. One day. Let me show you.'],
+  ],
+  sky: [
+    ['omni', 'What will you have, Mark? In five hundred years?'],
+    ['omni', 'Everyone you know, gone. And you, still here.'],
+    ['mark', 'I’d still have you, Dad.'],
+  ],
+};
+// what Dad says as each of Mark's blows lands on him (the chase), and
+// what Mom says after
+export const DAD_DRIVEN = ['Is that all?', 'You hit like a human.', 'Again. Harder.'];
+export const DEBBIE_AFTER = ['He’s gone, isn’t he.', 'Eat something. Please.', 'The GDA keep calling. I don’t pick up.', 'Your father loved you. I have to believe that.'];
+
 export const RINGS_DONE = { who: 'omni', text: 'Not bad. For a start.' };

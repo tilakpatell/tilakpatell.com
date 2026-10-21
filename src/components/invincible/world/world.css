@@ -177,6 +177,30 @@
 .iw-buttons button:active { background: var(--iw-blue); }
 .iw-buttons .iw-boost { background: var(--iw-yellow); color: #111; }
 .iw-buttons .iw-punch { background: var(--iw-blue); }
+/* episode 8's panels (./Panels.jsx): a strip across the foot of the stage, a black border, the title yellow */
+.iw-panels { position: absolute; left: 50%; bottom: calc(var(--hud-foot, 96px) + 16px); transform: translateX(-50%); width: min(720px, calc(100% - 32px)); z-index: var(--z-page, 10); pointer-events: none; }
+.iw-panel { background: rgba(12, 14, 20, 0.86); border: 3px solid #111; outline: 2px solid var(--iw-yellow, #f5c518); outline-offset: -8px; padding: 18px 22px 14px; color: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); animation: iw-panel-in var(--t-base, 220ms) ease-out; }
+.iw-panel-who { display: block; font-family: var(--iw-display, inherit); letter-spacing: 0.06em; text-transform: uppercase; color: var(--iw-yellow, #f5c518); font-size: 0.8rem; margin-bottom: 4px; }
+.iw-panel-text { margin: 0; font-size: 1.05rem; line-height: 1.35; }
+.iw-panel-hint { display: block; margin-top: 8px; font-size: 0.72rem; opacity: 0.9; }
+@keyframes iw-panel-in { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .iw-panel { animation: none; } }
+/* episode 8's panels (./Panels.jsx): a strip across the foot of the stage, a black border, the title yellow */
+.iw-panels { position: absolute; left: 50%; bottom: calc(var(--hud-foot, 96px) + 16px); transform: translateX(-50%); width: min(720px, calc(100% - 32px)); z-index: var(--z-page, 10); pointer-events: none; }
+.iw-panel { background: rgba(12, 14, 20, 0.86); border: 3px solid #111; outline: 2px solid var(--iw-yellow, #f5c518); outline-offset: -8px; padding: 18px 22px 14px; color: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); animation: iw-panel-in var(--t-base, 220ms) ease-out; }
+.iw-panel-who { display: block; font-family: var(--iw-display, inherit); letter-spacing: 0.06em; text-transform: uppercase; color: var(--iw-yellow, #f5c518); font-size: 0.8rem; margin-bottom: 4px; }
+.iw-panel-text { margin: 0; font-size: 1.05rem; line-height: 1.35; }
+.iw-panel-hint { display: block; margin-top: 8px; font-size: 0.72rem; opacity: 0.9; }
+@keyframes iw-panel-in { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .iw-panel { animation: none; } }
+/* episode 8's panels (./Panels.jsx): a strip across the foot of the stage, a black border, the title yellow */
+.iw-panels { position: absolute; left: 50%; bottom: calc(var(--hud-foot, 96px) + 16px); transform: translateX(-50%); width: min(720px, calc(100% - 32px)); z-index: var(--z-page, 10); pointer-events: none; }
+.iw-panel { background: rgba(12, 14, 20, 0.86); border: 3px solid #111; outline: 2px solid var(--iw-yellow, #f5c518); outline-offset: -8px; padding: 18px 22px 14px; color: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); animation: iw-panel-in var(--t-base, 220ms) ease-out; }
+.iw-panel-who { display: block; font-family: var(--iw-display, inherit); letter-spacing: 0.06em; text-transform: uppercase; color: var(--iw-yellow, #f5c518); font-size: 0.8rem; margin-bottom: 4px; }
+.iw-panel-text { margin: 0; font-size: 1.05rem; line-height: 1.35; }
+.iw-panel-hint { display: block; margin-top: 8px; font-size: 0.72rem; opacity: 0.9; }
+@keyframes iw-panel-in { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .iw-panel { animation: none; } }
 .iw-buttons .iw-power { background: #ff5fd2; color: #111; } /* a hero's power (./powers.js): Eve's pink, the one colour of hers */
 
 /* without 3D */

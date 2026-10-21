@@ -377,6 +377,43 @@ async function player() {
       await until(() => step() < 0, 5000);
       document.getElementById('inv-world')?.scrollIntoView();
     },
+    // the season's end: from the porch at dusk; the panels on E; up out of the river;
+    // three blows on Dad; the fallers over the plaza; the sky's panels on E, and the fall
+    async ep8() {
+      await api.setTime('dusk');
+      const door = M.placeOf('home').door;
+      await travel([door[0], 4, door[2] + 6], 3);
+      await land();
+      start('ep8');
+      await every(() => {
+        if (step() >= 1 || step() < 0) return true;
+        if (sim.panels && sim.panels.t > 0.3) press('KeyE', 'e');
+        return false;
+      }, 120000);
+      await every(() => step() >= 2 || step() < 0, 120000);
+      await every(() => {
+        if (step() >= 3 || step() < 0) return true;
+        if (!fight((e) => e.kind === 'omniman')) steer(add(chest(), [0, 8, 0]), 3);
+        return false;
+      }, 600000);
+      await every(() => {
+        if (step() >= 4 || step() < 0) return true;
+        const q = sim.quests.rescue;
+        if (q?.source === 'mission' && !q.carried) steer(q.p, 0.6);
+        else if (q?.carried) {
+          if (sim.h.mode !== 'ground') {
+            sim.pitch = -1.2;
+            hold('down');
+          }
+        } else steer([24, 30, 60], 4);
+        return false;
+      }, 300000);
+      await every(() => {
+        if (step() < 0) return true;
+        if (sim.panels && sim.panels.t > 0.3) press('KeyE', 'e');
+        return false;
+      }, 600000);
+    },
   };
 
   window.__INV_PLAY__ = {

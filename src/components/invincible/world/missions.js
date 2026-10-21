@@ -28,6 +28,10 @@
 // - protect what, time   `what`'s hp (from `hurt`) stays above 0 for `time`
 // - through at, r, speed fly through it faster than `speed`
 // - use    id            E somewhere (Think, Mark!, a photo)
+// - event  on            the world says so ({ type: on }: the launch's end, the sky's)
+// - hits   kind, n       blows landed on a kind (./foes.js's `hit`, counted, not knock-outs)
+//   a catch step with `soft` and a time ends when the time is up instead of failing
+//   (episode 8's plaza: the ones not caught are the standing's loss, not Mark's)
 //
 // The events: { type: 'at', p, mode, speed, face, npcs?, car? } each frame
 // (where he is, and where the people and the car the step cares about are),
@@ -35,6 +39,7 @@
 // { type: 'ko', kind, id }, { type: 'ring', i } (and 'lesson-start', the
 // first ring as the lesson starts), { type: 'hurt', what, hp },
 // { type: 'use', id, won? }, { type: 'land', speed, p, body? },
+// { type: 'hit', kind, id } (a blow landed), { type: <a step's `on`> },
 // { type: 'abandon' }.
 
 import { PORTAL } from './foes';
@@ -58,6 +63,8 @@ const PLACES = {
   downtown: { p: [40, 150, -60] }, // where Dad watches from
   river: { p: [1150, 120, -420] }, // over the river, by where the portal opens
   bridge: { p: [1150, 12, -440] }, // the middle bridge's deck
+  plaza: { p: [24, 0, 27] }, // on the plaza before the hall (open ground), where the top of a tower comes down (episode 8)
+  pad: { p: [1618, 0, -384] }, // the GDA's pad, where the world catches him (episode 8)
   coast: { p: [0, 30, COAST - 120] },
   sky: { p: [0, 2000, 1200] }, // the city from 2 km
 };
@@ -218,6 +225,29 @@ export const MISSIONS = [
     done: [['omni', 'Then we’ll talk again. Go inside, your mother’s waiting.']],
     achievement: 'season',
   },
+  {
+    id: 'ep8',
+    ep: 8,
+    title: 'Where I Really Come From',
+    colour: '#c1121f',
+    giver: 'omni',
+    start: { npc: 'omni', place: 'home', time: ['dusk', 'night'], after: ['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7'] },
+    intro: [['omni', 'Mark. There’s something I should have told you a long time ago.']],
+    steps: [
+      // 1. the porch: what he is, in panels (the world feeds `use panels` as they end)
+      step('use', 'Listen to Dad', { id: 'panels', marker: PLACES.home.door }),
+      // 2. the hit: Mark a projectile down the street into the river (the world feeds `recover` as he comes up)
+      step('event', 'Get up', { on: 'recover', marker: PLACES.river.p }),
+      // 3. the chase: three blows on Dad across downtown, each answered
+      step('hits', 'Hit him. Three times.', { kind: 'omniman', n: 3, spawn: [['omniman', 1, 'hero']], marker: { npc: 'omni' } }),
+      // 4. the people: the top of a tower comes down on the plaza; twelve to catch, one after another, in a minute
+      step('catch', 'Catch them', { n: 12, source: 'mission', shake: PLACES.plaza.p, every: 2.5, time: 60, soft: true, marker: PLACES.plaza.p }),
+      // 5. the sky: up through the clouds, the five hundred years, and Dad gone (the world feeds `sky`)
+      step('event', 'Say it', { on: 'sky', marker: { npc: 'omni' } }),
+    ],
+    done: [['cecil', 'He’s gone. Get some rest, kid. We’ll talk in the morning.']],
+    achievement: 'truth',
+  },
   // the radio's side calls (`side`): one at a time, when nothing else is on
   {
     id: 'chase',
@@ -331,8 +361,11 @@ export function feedMission(prev, ev) {
       p.stepT += dt;
       if (s.type === 'protect') {
         if (p.stepT >= s.time) next();
-      } else if (s.time != null && p.stepT > s.time) fail(s.type === 'race' ? 'time' : 'late');
-      else if (s.type === 'catch' && s.shake && s.beat && beatDone(s) && p.count < s.n) {
+      } else if (s.time != null && p.stepT > s.time) {
+        if (s.soft) next();
+        else fail(s.type === 'race' ? 'time' : 'late');
+      }
+      else if (s.type === 'catch' && s.shake && (!s.beat || beatDone(s)) && p.count < s.n) {
         // no quakes left to shake them off: the roof gives one up every so often
         p.shakeT += dt;
         if (p.shakeT >= s.every) {
@@ -416,6 +449,13 @@ export function feedMission(prev, ev) {
         if (p.hp <= 0) fail('lost');
       }
       break;
+    case 'hit':
+      if (s.type === 'hits' && isKind(s.kind, ev.kind)) {
+        count();
+        out.push({ type: 'driven', n: p.count, of: s.n }); // (Dad answers each one)
+        if (p.count >= s.n) next();
+      }
+      break;
     case 'use':
       if (s.type === 'use' && ev.id === s.id) {
         // (a photo wants him in its spot, facing the right way)
@@ -424,6 +464,7 @@ export function feedMission(prev, ev) {
       }
       break;
     default:
+      if (s.type === 'event' && ev.type === s.on) next();
       break;
   }
   return { progress: p, out };

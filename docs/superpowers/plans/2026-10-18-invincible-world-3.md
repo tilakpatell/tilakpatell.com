@@ -136,12 +136,12 @@
 - `flight.js`: `launch(state, dir, speed)` sets `launched` for 1.2 s; input ignored meanwhile; a wall hit passes damage through.
 - `foes.js`: `OMNIMAN` numbers (600 hp, Mach 2, charge, grab, catches a thrown car); `pickBeat(progress)`.
 
-- [ ] Tests first: ep8 starts only after ep1 to ep7 and at dusk or night from the porch; the launch ignores input for 1.2 s and reports three houses hit; three hits on Dad each produce a `driven` out with a tower id; `catchmany` with twelve rescues or a `carried` chunk reaches the sky beat; the sky beat ends on no input after the lines; after done, Dad is `gone`, `truth` is set, Mom’s line set is the new one.
-- [ ] The mission, the panels (from the viewer’s turntable renders, drawn once to a canvas each at load), the launch, the chase, the plaza catch, the sky and the contrail.
-- [ ] `--play ep8`; shots `ep8porch ep8sky` with `--metrics`.
+- [x] Tests first: ep8 starts only after ep1 to ep7 and at dusk or night from the porch; the launch ignores input for 1.2 s and reports three houses hit; three hits on Dad each produce a `driven` out with a tower id; `catchmany` with twelve rescues or a `carried` chunk reaches the sky beat; the sky beat ends on no input after the lines; after done, Dad is `gone`, `truth` is set, Mom’s line set is the new one.
+- [x] The mission, the panels (from the viewer’s turntable renders, drawn once to a canvas each at load), the launch, the chase, the plaza catch, the sky and the contrail.
+- [x] `--play ep8`; shots `ep8porch ep8sky` with `--metrics`.
 - [ ] The voices issue for the beats’ lines; Mark’s “I’d still have you, Dad” is already recorded.
-- [ ] Hand-off and architecture paragraph updated.
-- [ ] Checks; commit; pull request; merge.
+- [x] Hand-off and architecture paragraph updated.
+- [x] Checks; commit; pull request; merge.
 
 ### Task 7: The Guardians of the Globe and their hall
 
