@@ -5,8 +5,8 @@
 // the stream on its single slender arch, the Council’s court on its spur
 // with its ten chairs and the plinth, the hall where the shards of Narsil
 // lie, Bilbo’s pavilion with his desk and chair, lanterns on their bent
-// stems along the road, golden birches, and the south gate the nine walk
-// out under. The falls on the far cliff stay the stage’s own: pale sheets,
+// stems along the road, and the south gate the nine walk out under (its
+// golden birches are the nature kit's, stages/tables.js's). The falls on the far cliff stay the stage’s own: pale sheets,
 // unlit, off the chapter’s pale jointed rock. In the stage’s frame: the road along +z from 0, +x on the
 // walker’s left.
 //
@@ -17,7 +17,7 @@ import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { C, merged, mergeStatics, part } from '../parts';
 import { bridge as buildBridge, colonnade, court, gate, house, lamp, pavilion, terrace } from '../../../towns/rivendell/build';
-import { birchGeo, cliffGeo } from '../../../towns/rivendell/valley';
+import { cliffGeo } from '../../../towns/rivendell/valley';
 
 export const ELVEN = 0.8; // the Road’s man (1.8 m) over the chapter’s Big Folk (2.3)
 export const BRIDGE = { z: [43, 57], w: 2.1, rise: 1.3 * ELVEN }; // over the stream, its deck humped as the chapter’s
@@ -42,7 +42,6 @@ const TERRACES = [
   [-46, 76, 9, 9, 2.2],
 ];
 const LAMPS = [[2.6, 36, -Math.PI / 2], [-2.6, 66, Math.PI / 2], [2.6, 96, -Math.PI / 2], [-2.6, 130, Math.PI / 2]];
-const BIRCHES = [[9, 24], [-8, 30], [12, 62], [-14, 58], [10, 80], [14, 102], [-4, 116], [12, 136], [-16, 140], [18, 50], [-30, 52], [-40, 128], [22, 116], [-20, 108]];
 
 // a builder’s group stood on the land at (x, z), turned (its front, +z, to `yaw`), at the Road’s scale
 function stand(g, heightAt, x, z, yaw, s = ELVEN, foot = 0) {
@@ -105,18 +104,8 @@ export function buildProps({ K, material, heightAt, tier = 'high' }) {
   group.add(stand(gate(K).group, heightAt, 0, ARCH.z, 0, 1));
   for (const [x, z, yaw] of LAMPS) group.add(stand(lamp(K).group, heightAt, x, z, yaw));
 
-  // golden birches through the valley, one instanced draw
-  const birch = new THREE.InstancedMesh(birchGeo(2), material, BIRCHES.length);
-  const m = new THREE.Matrix4();
-  BIRCHES.forEach(([x, z], i) => {
-    const k = 0.62 + ((i * 37) % 10) * 0.03;
-    m.compose(new THREE.Vector3(x, heightAt(x, z) - 0.1, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), i * 2.1), new THREE.Vector3(k, k, k));
-    birch.setMatrixAt(i, m);
-  });
-  birch.name = 'rivendell:birches';
-  group.add(birch);
-
   // the valley’s far wall, the chapter’s rock, its face to the road (one instanced draw)
+  const m = new THREE.Matrix4();
   const wall = [];
   for (let z = -30, i = 0; z <= 200; z += 15, i++) wall.push([-152 - (i % 3) * 5, z, 1.25 + (i % 4) * 0.12, 2.7 + ((i * 5) % 7) * 0.12]);
   const cliffs = new THREE.InstancedMesh(cliffGeo(3), material, wall.length);

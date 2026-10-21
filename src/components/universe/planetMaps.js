@@ -3,7 +3,8 @@
 // and the finer set a planet wears near (nearMaps.js), swapped in place.
 //
 //   mapFile(name, level) → the file for a planet map at lib/detail's level
-//   loadTextures({ small, level }) → the textures (any that fail are just missing)
+//   loadTextures({ small, level, onStep }) → the textures (any that fail are just missing;
+//     onStep(k) hears the share of them in, 0 to 1, for the map's loading screen)
 //   mapsOf(id), nearSet(id, level) → a planet's maps, and the finer ones it wears near
 //   mapSwapper(group, T, names) → swap(T2 | null)
 
@@ -94,7 +95,7 @@ function finerSet(id, level) {
     .map(({ name, colour, files: [file, fallback] }) => ({ name, file, ...(fallback ? { fallback } : {}), colour }));
 }
 
-export async function loadTextures({ small = false, level = small ? 'mid' : detailLevel() } = {}) {
+export async function loadTextures({ small = false, level = small ? 'mid' : detailLevel(), onStep = null } = {}) {
   const T = { small }; // (and whether this is a phone, for the builders)
   const get = async (name, file, colour, fallback = null) => {
     try {
@@ -106,11 +107,13 @@ export async function loadTextures({ small = false, level = small ? 'mid' : deta
       if (fallback) await get(name, fallback, colour);
     }
   };
+  const all = Object.entries(MAPS);
+  let done = 0;
   await Promise.all(
-    Object.entries(MAPS).map(([name, { colour }]) => {
+    all.map(([name, { colour }]) => {
       const file = mapFile(name, level, { xl: false });
       const standard = mapFile(name, 'high');
-      return get(name, file, colour, file !== standard ? standard : null);
+      return get(name, file, colour, file !== standard ? standard : null).then(() => onStep?.(++done / all.length));
     }),
   );
   return T;

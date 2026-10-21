@@ -2,11 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useMediaQuery, useReducedMotion } from '../../lib/hooks';
 import { WorldHost, useWorld } from '../../runtime';
-import { Bubble, Hud, Letterbox, Menu, MenuItem, Prompt, QuestList, Stick, Toast, letterbox } from '../../runtime/hud';
+import { Bubble, Hud, Letterbox, Menu, MenuItem, Prompt, QuestList, Stick, Toast, TouchButton, letterbox } from '../../runtime/hud';
 import { wayOut } from '../worlds/worlds';
 import hogwartsModule from './module';
 import SortingCard from './hud/SortingCard';
 import WandCard, { Scarf } from './hud/WandCard';
+import SpellWheel from './hud/SpellWheel';
 import { houseColours } from './rules/sorting';
 import '@fontsource/cinzel/600.css';
 import '@fontsource/cinzel/700.css';
@@ -27,9 +28,12 @@ const lineFor = (text) => Math.max(2800, 900 + text.length * 52);
 // guide; the way out by the view you came from), the one Prompt (at the
 // boats, Enter to skip the arrival once it has been seen, Esc out of a
 // room; on touch it is the button itself, as the kit has it), a toast, and
-// on touch the stick. The arrival (Lane D) adds the letterbox, its subtitles, the
-// Sorting's card and the wand's; once sorted, the frame takes the house's
-// colours and its scarf hangs in the corner.
+// on touch the stick. The wand's card at the foot and its wheel over the
+// view (hud/SpellWheel.jsx), its toasts in the one toast, and on touch a
+// Cast button and a Spells one, out on the grounds. The arrival (Lane D)
+// adds the letterbox, its subtitles, the Sorting's card and the wand's;
+// once sorted, the frame takes the house's colours and its scarf hangs in
+// the corner.
 export default function HogwartsWorld() {
   const { pathname } = useLocation();
   const [params] = useSearchParams();
@@ -51,7 +55,11 @@ export default function HogwartsWorld() {
   const [room, setRoom] = useState(null);
   const lines = useRef([]);
   const saying = useRef(null);
+  const [spell, setSpell] = useState('lumos');
+  const [wheel, setWheel] = useState(false);
   const menu = useRef(null);
+  const card = useRef(null);
+  const ring = useRef(null);
 
   const onEvent = useCallback((e) => {
     if (e.type === 'near') setDoor(e.door);
@@ -80,9 +88,21 @@ export default function HogwartsWorld() {
       setHouse(e.house);
       setWand(e.wand);
     } else if (e.type === 'room') setRoom(e.id ? e : null);
+    else if (e.type === 'wheel') setWheel(e.open);
+    else if (e.type === 'wand') {
+      // (the rings are written straight in; only a change of spell re-renders)
+      card.current?.readout(e);
+      ring.current?.readout(e);
+      setSpell(e.active);
+    }
   }, []);
   const { host, status, rt } = useWorld(hogwartsModule, { props, onEvent });
   const api = useCallback(() => (rt?.current?.module === hogwartsModule ? rt.current.world : null), [rt]);
+  const choose = useCallback((id) => {
+    api()?.choose(id);
+    setSpell(id);
+    if (touch) setWheel(false);
+  }, [api, touch]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -144,8 +164,31 @@ export default function HogwartsWorld() {
             {house && !wandFull && <WandCard wand={wand} />}
           </div>
         }
-        foot={foot}
-        thumbs={onRide ? null : <Stick className="hogwarts-stick" onMove={(x, y) => api()?.stick(x, y)} label="Walk" />}
+        foot={
+          onRide || room ? (
+            foot
+          ) : (
+            <>
+              <SpellWheel part="card" ref={card} active={spell} touch={touch} />
+              {door ? <Prompt k="E" verb={door.verb ?? 'Go in'} thing={door.label} touch={touch} onClick={() => api()?.go()} /> : <span />}
+            </>
+          )
+        }
+        thumbs={
+          onRide ? null : room ? (
+            <Stick className="hogwarts-stick" onMove={(x, y) => api()?.stick(x, y)} label="Walk" />
+          ) : (
+            <>
+              <Stick className="hogwarts-stick" onMove={(x, y) => api()?.stick(x, y)} label="Walk" />
+              <TouchButton size={76} onPress={() => api()?.press('cast', true)} onRelease={() => api()?.press('cast', false)} aria-label="Cast the spell on the wand">
+                Cast
+              </TouchButton>
+              <TouchButton size={52} onPress={() => setWheel((w) => !w)} aria-label="Spells">
+                Spells
+              </TouchButton>
+            </>
+          )
+        }
       >
         <Scarf house={house} />
         <Toast toast={toast} className="hogwarts-toast" />
@@ -153,6 +196,7 @@ export default function HogwartsWorld() {
         {ask != null && <SortingCard q={ask} tall={portrait} onAnswer={(i) => api()?.answer(i)} />}
         {sorted && ask == null && <SortingCard result={sorted} />}
         {wandFull && wand && <WandCard wand={wand} size="full" />}
+        {!onRide && !room && <SpellWheel part="wheel" ref={ring} open={wheel} active={spell} onChoose={choose} touch={touch} />}
         {list && <QuestList className="hogwarts-list" title="Things to do" sub="Nothing yet: the term begins once you’re across the lake." quests={[]} next={null} onClose={() => setList(false)} onGo={() => {}} />}
       </Hud>
     </WorldHost>

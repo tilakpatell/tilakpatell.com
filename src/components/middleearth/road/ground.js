@@ -4,7 +4,8 @@
 // up (soil.js), its grass standing round you (blades.js), under the
 // house’s look.
 //
-//   createGround(land, { house, tier, soil, own, mounds, wind, paint, from, to }) → { mesh, groundMap, blades, update(x, z), dispose }
+//   createGround(land, { house, tier, soil, own, mounds, wind, paint, track, from, to }) → { mesh, groundMap, blades, track, update(x, z), dispose }
+//     track: the stage's road underfoot (stages/tracks.js), laid by track.js
 //     own: the stage’s `ground.paint`, over its soil’s colours
 //     mounds: the stage’s `ground.mounds` (the Hill at Hobbiton): their
 //       blades grow over them too, from a small map of their own
@@ -31,6 +32,7 @@ import { noise2 } from '../../../lib/land/layers.js';
 import { run } from './terrain';
 import { soilHook } from './soil';
 import { createBlades } from './blades';
+import { trackJob } from './track';
 import { boundsOf, distanceTo } from '../../../lib/land/paths.js';
 
 export const NEAR = 60; // m either side of the road
@@ -56,7 +58,8 @@ const TRODDEN = C(0xb8bec8);
 const BARE = C(0x5e6068); // (the rock through the snow)
 const linear = (c) => (typeof c === 'number' ? C(c) : c);
 const BARE_EDGE = 3; // m a stage's paved places ease into its grass over
-export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT, rock = ROCK, snow = null } = {}) {
+const WORN = 2.8; // m off the road's middle its dirt reaches, where a stage has no track
+export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT, rock = ROCK, snow = null, wear = null } = {}) {
   greens = greens.map(linear);
   dirt = linear(dirt);
   rock = linear(rock);
@@ -110,7 +113,9 @@ export function paintFor(land, { greens = [DEEP, GRASS, SUN], dirt = DIRT, rock 
       grass *= 1 - paved;
     }
     const d = dAt(x, z);
-    const worn = d < 2.8 ? Math.min(1, (2.8 - d) / 1.2) * (0.85 + noise2(x / 3, z / 3, 9) * 0.15) : 0;
+    // (worn WORN wide, eased over a metre and a fifth; a stage with a track (track.js) only
+    // as wide as it, eased over half a metre inside its edge, so the verge's grass comes up to it)
+    const worn = wear ? (d < wear ? Math.min(1, (wear - d) / 0.5) : 0) : d < WORN ? Math.min(1, (WORN - d) / 1.2) * (0.85 + noise2(x / 3, z / 3, 9) * 0.15) : 0;
     if (worn) {
       mix(out, out, dirt, worn);
       grass = Math.min(grass, 1 - worn);
@@ -298,11 +303,13 @@ function moundBlades(land, mounds, colour, { wind, soil, tier }) {
   };
 }
 
-export function* groundJob(land, { house = null, tier = 'high', soil = null, own = null, mounds = null, wind = null, paint = null, from, to } = {}) {
+export function* groundJob(land, { house = null, tier = 'high', soil = null, own = null, mounds = null, wind = null, paint = null, track = null, from, to } = {}) {
   const geometry = yield* geometryJob(land, { tier, from, to });
   const area = { x0: land.x0, z0: land.z0, w: land.w, d: land.d };
   const size = tier === 'low' ? 512 : 1024;
-  const colours = { ...(soil ? { greens: soil.greens, dirt: soil.dirt, rock: soil.rock } : {}), ...(own ?? {}) };
+  // (the road laid as a ribbon where the stage has a track, and the paint worn only under it)
+  const laid = yield* trackJob(land, track, { house, soil, tier });
+  const colours = { ...(soil ? { greens: soil.greens, dirt: soil.dirt, rock: soil.rock } : {}), ...(own ?? {}), ...(laid ? { wear: track.width / 2 + 0.25 } : {}) };
   const painted = yield* paintJob(area, size, paint ?? paintFor(land, colours));
   // (heights only where blades will stand on them)
   const grows = Boolean(wind && soil?.blades > 0 && tier !== 'low');
@@ -339,6 +346,7 @@ export function* groundJob(land, { house = null, tier = 'high', soil = null, own
     mesh,
     groundMap,
     blades,
+    track: laid,
     update(x, z) {
       blades?.update(x, z);
     },
@@ -347,6 +355,7 @@ export function* groundJob(land, { house = null, tier = 'high', soil = null, own
       material.dispose();
       if (raw !== material) raw.dispose();
       blades?.dispose();
+      laid?.dispose();
       groundMap.dispose();
     },
   };

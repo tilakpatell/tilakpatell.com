@@ -4,14 +4,30 @@
 // takes through C-137's dev hooks (window.__C137__, window.__RMSTORY__):
 // Morty sent somewhere and stood till it's built, E at a hotspot, the
 // objective read, a toast waited for, an episode's card checked, the story
-// played to an episode's start, a catch seen through. Kept apart from the
-// scenarios so neither file passes 800 lines.
+// played to an episode's start, a catch seen through; and where a place
+// through the portal has its way in, its portal home and its spots, read
+// from its data (./places.mjs). Kept apart from the scenarios so no file
+// passes 800 lines.
 import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { EPISODES } from '../../src/components/rickmorty/adventure/episodes.js';
+import { home, loadPlaces, stand, wayIn } from './places.mjs';
 
 export const BASE = process.env.BASE ?? 'http://127.0.0.1:5197';
 export const OUT = process.env.OUT ?? null;
 export const N = Math.PI / 2;
+
+// the places through the portal, as their data has them: Morty stood `off`
+// back from a spot facing it; where he comes in (and a catch puts him back);
+// in front of the portal home, facing it
+export const PLACES = await loadPlaces(fileURLToPath(new URL('../..', import.meta.url)));
+export const spotAt = (area, id, face = N, off) => stand(PLACES.spot(area, id), face, off);
+export const arriveOf = (area) => {
+  const a = PLACES.dest(area).arrive;
+  return [a.x, a.z, a.face];
+};
+export const wayInOf = (area) => wayIn(PLACES.dest(area));
+export const homeOf = (area) => home(PLACES.dest(area));
 
 export const exe = [
   process.env.CHROME,
@@ -65,6 +81,7 @@ export const SMALL = EPISODES[3];
 export const HEAT = EPISODES[4];
 export const DEALS = EPISODES[5];
 export const JERRY = EPISODES[6];
+export const PRIME = EPISODES[7];
 // Morty by the garage portal, stepped through it, and stood where it took him
 export async function throughPortal(page) {
   await goto(page, 'garage', -302.3, 101.4, Math.PI);

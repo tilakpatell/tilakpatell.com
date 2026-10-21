@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { roadOf } from './line';
 import { buildHeights } from './terrain';
-import { CLEAR, placements, rngOf, rowsFor } from './scatter';
+import { CLEAR, VERGE, placements, rngOf, rowsFor } from './scatter';
+import { trackOf } from './stages/tracks';
 import { SCATTER } from './stages/tables';
 import { STAGES } from './stages/index';
 import { PACK } from './pack';
@@ -89,13 +90,50 @@ describe('the scatter’s placements', () => {
     expect(placements([tree], flat, road, rngOf(11))).toEqual(placements([tree], flat, road, rngOf(11)));
   });
 
+  it('lines the road with a verge’s row, near to far off its middle, down its whole length', () => {
+    const row = { model: 'Flower_3_Group', verge: [2.2, 4.2], per100: 4, clump: 2, spread: 0.7, scale: [0.2, 0.2] };
+    const items = placements([row], flat, road, rngOf(9));
+    // (2 m a side down 200 m, four a hundred square metres, less what the clumps spill past the band)
+    expect(items.length).toBeGreaterThan(20);
+    for (const it of items) {
+      expect(Math.abs(it.x)).toBeGreaterThanOrEqual(2.2 - 1e-6);
+      expect(Math.abs(it.x)).toBeLessThanOrEqual(4.2 + 1e-6);
+    }
+    // (both sides, and from one end to the other)
+    expect(items.some((it) => it.x > 0) && items.some((it) => it.x < 0)).toBe(true);
+    expect(Math.min(...items.map((it) => it.z))).toBeLessThan(40);
+    expect(Math.max(...items.map((it) => it.z))).toBeGreaterThan(160);
+  });
+
+  it('grows every stage’s verge outside its track, and nothing nearer the road’s middle than VERGE', () => {
+    for (const st of STAGES)
+      for (const r of rowsFor(st.id).filter((r) => r.verge)) {
+        expect(r.verge[0], `${st.id} ${r.model}`).toBeGreaterThanOrEqual(VERGE);
+        // (clear of the track's broken edge: a pebble just past it, as low as the ribbon stands over the land, would be under it)
+        const t = trackOf(st.id);
+        if (t) expect(r.verge[0], `${st.id} ${r.model}`).toBeGreaterThanOrEqual(t.width / 2 + (/^Pebble/.test(r.model) ? 0.15 : 0.3));
+        expect(r.verge[1]).toBeGreaterThan(r.verge[0]);
+      }
+  });
+
+  it('stands a row with places of its own at those places alone, scaled by its own', () => {
+    const land = { x0: -100, w: 200, z0: 0, d: 200, field: () => 2 };
+    const out = placements([{ model: 'CommonTree_1', at: [[-22, 18, 1.1], [44, 150]], scale: [2, 2] }], land, roadOf([[0, 0, 0], [0, 0, 200]]), rngOf(3));
+    expect(out.map((o) => [o.x, o.y, o.z, o.scale])).toEqual([
+      [-22, 2, 18, 2.2],
+      [44, 2, 150, 2],
+    ]);
+  });
+
   it('every stage has rows, each a model of its kit by its name', () => {
     for (const st of STAGES) {
       const rows = rowsFor(st.id);
       expect(Array.isArray(rows)).toBe(true);
       for (const r of rows) {
         expect(kitOf(r)?.models[r.model], `${r.pack ?? 'naturemega'}/${r.model}`).toBeTruthy();
-        expect(r.per100).toBeGreaterThan(0);
+        // (a density, or places of its own)
+        if (r.at) expect(r.at.length).toBeGreaterThan(0);
+        else expect(r.per100).toBeGreaterThan(0);
       }
     }
     expect(SCATTER.hobbiton.length).toBeGreaterThan(0);
@@ -109,7 +147,8 @@ describe('the scatter’s placements', () => {
   it('grass keeps near the road: a band of its own, never a stage’s whole width', () => {
     for (const st of STAGES)
       for (const r of rowsFor(st.id)) {
-        if (r.kind !== 'grass') continue;
+        // (a verge's row is a band of its own: a few metres either side of the road)
+        if (r.kind !== 'grass' || r.verge) continue;
         expect(r.x, `${st.id}: ${r.model}`).toBeTruthy();
         expect(r.x[1] - r.x[0], `${st.id}: ${r.model}`).toBeLessThanOrEqual(240);
       }

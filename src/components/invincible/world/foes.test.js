@@ -447,3 +447,50 @@ describe('the Guardians’ blows (./guardians.js)', () => {
     expect(r.ev.some((e) => e.type === 'ko' && e.by === 'monster')).toBe(true);
   });
 });
+
+describe('season two’s foes (./season2.js)', () => {
+  it('Angstrom hangs before Mark and throws green bolts; hit, he portals away and is back behind him', () => {
+    const h = hero([0, 1, 0]);
+    const f = spawnFoes(newFoes(), 'angstrom', 1, [0, 0, 10]);
+    const look = [0, 0, 1];
+    const r = run(f, h, 4, { ...idle, look });
+    const e = r.f.foes[0];
+    expect(e.state).toBe('hover');
+    expect(Math.hypot(e.p[0] - 0, e.p[2] - 0)).toBeLessThan(KINDS.angstrom.off + 1);
+    expect(r.ev.some((q) => q.type === 'bolt')).toBe(true);
+    expect(r.f.bolts.every((b) => b.green)).toBe(true);
+    // a punch (in reach, 3 m before him): staggered, then away, then back 8 m behind him (he looks along +z: behind is -z)
+    e.p = [0, 1, 3];
+    const hit = run(r.f, h, 0.1, (s) => ({ ...idle, look, punch: s === 0 }));
+    expect(hit.ev.some((q) => q.type === 'hit' && q.kind === 'angstrom')).toBe(true);
+    const back = run(hit.f, h, 2, { ...idle, look });
+    expect(back.ev.some((q) => q.type === 'portalOut')).toBe(true);
+    expect(back.ev.some((q) => q.type === 'portalIn')).toBe(true);
+    const b = back.f.foes[0];
+    expect(b.state).toBe('hover');
+    expect(b.p[2]).toBeLessThan(0);
+  });
+  it('six blows put Angstrom down', () => {
+    const h = hero([0, 1, 0]);
+    let f = spawnFoes(newFoes(), 'angstrom', 1, [0, 0, 5]);
+    const kos = [];
+    for (let i = 0; i < 6; i++) {
+      const e = f.foes[0];
+      e.state = 'hover';
+      e.p = [0, 1, 3];
+      const r = run(f, h, 0.5, (s) => ({ ...idle, look: [0, 0, 1], punch: s === 0 })); // (half a second: past the punch's cooldown)
+      f = r.f;
+      kos.push(...r.ev.filter((q) => q.type === 'ko'));
+    }
+    expect(kos).toHaveLength(1);
+    expect(kos[0].kind).toBe('angstrom');
+  });
+  it('the mirror Mark flies at him and punches within reach', () => {
+    const h = hero([0, 1, 0]);
+    const f = spawnFoes(newFoes(), 'mirror', 1, [0, 0, 40]);
+    const r = run(f, h, 6);
+    expect(r.ev.some((q) => q.type === 'hurt' && q.by === 'mirror')).toBe(true);
+    expect(r.f.hp).toBeLessThan(FIGHT.hp);
+    expect(KINDS.mirror.hits).toBe(4);
+  });
+});

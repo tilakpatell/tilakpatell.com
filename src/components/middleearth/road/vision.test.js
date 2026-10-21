@@ -50,12 +50,14 @@ describe('the chain by tier and backend', () => {
     expect(kinds(chainFor('mid', 'webgpu'))).toEqual(['render', 'bloom', 'smaa', 'output']);
   });
 
-  it('high is AO, the bloom, the grade and TRAA on WebGPU; SMAA for TRAA on WebGL 2', () => {
+  it('high is AO, the bloom, the grade and SMAA, the same on WebGPU as on WebGL 2', () => {
     const grade = () => null;
-    expect(kinds(chainFor('high', 'webgpu', { grade }))).toEqual(['render', 'ao', 'bloom', 'grade', 'traa', 'output']);
-    const gl = kinds(chainFor('high', 'nodes-webgl', { grade }));
-    expect(gl).toContain('smaa');
-    expect(gl).not.toContain('traa');
+    expect(kinds(chainFor('high', 'webgpu', { grade }))).toEqual(['render', 'ao', 'bloom', 'grade', 'smaa', 'output']);
+    expect(kinds(chainFor('high', 'nodes-webgl', { grade }))).toEqual(['render', 'ao', 'bloom', 'grade', 'smaa', 'output']);
+  });
+
+  it('draws no tier temporally: the wind’s grass and the still hills both shimmered under TRAA', () => {
+    for (const tier of ['low', 'mid', 'high', 'ultra']) for (const backend of ['webgpu', 'nodes-webgl']) expect(kinds(chainFor(tier, backend, { grade: () => null }))).not.toContain('traa');
   });
 
   it('ultra adds the depth of field, and god rays only with a sun that casts shadows', () => {

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { fitRatio, precompilePasses, watchdog } from './renderer';
+import { fitRatio, precompile, precompilePasses, watchdog } from './renderer';
 import { fakeGl, fakeRenderer } from './gpuFake.fixture';
 
 // Runs `seconds` of frames through a watchdog, each frame taking
@@ -124,5 +124,18 @@ describe('precompilePasses', () => {
     expect(r.compiled).toEqual(expect.arrayContaining([blur, grade]));
     expect(seen.length).toBeGreaterThan(0);
     for (const attrs of seen) expect(attrs).toEqual(['position', 'uv']);
+  });
+});
+
+describe('precompile', () => {
+  it('tells how far it has got, rising to 1, for a loading screen that says so', async () => {
+    const r = fakeRenderer({ gl: fakeGl({ signalAfter: 1 }) });
+    const scene = new THREE.Scene();
+    for (let i = 0; i < 6; i++) scene.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ color: i })));
+    const told = [];
+    await precompile(r, scene, new THREE.PerspectiveCamera(), scene, undefined, { onStep: (k) => told.push(k) });
+    expect(told.length).toBeGreaterThan(1);
+    expect(told.at(-1)).toBe(1);
+    for (let i = 1; i < told.length; i++) expect(told[i]).toBeGreaterThanOrEqual(told[i - 1]);
   });
 });

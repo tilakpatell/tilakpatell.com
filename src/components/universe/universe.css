@@ -60,8 +60,12 @@
 }
 .universe-page[data-card] { --sheet-h: 46svh; }
 /* the panel put away: the map has the whole width (the bar left of it sits
-   up in the corner) or, on a phone, all but a slim bar at the bottom */
-.universe-page[data-tucked] { --panel-w: 0px; --tab-w: 230px; --sheet-h: calc(56px + env(safe-area-inset-bottom, 0px)); }
+   up in the corner) or, on a phone, all but a slim bar at the bottom. The
+   bar's width is what it holds: "The universe" whole (112px), the words to
+   show it (119px), the button's padding and gap, and the guide's 48px cell;
+   at 230px, from before the guide moved into it, the guide was pushed out
+   past its edge and clipped */
+.universe-page[data-tucked] { --panel-w: 0px; --tab-w: 330px; --sheet-h: calc(56px + env(safe-area-inset-bottom, 0px)); }
 .universe-map { position: absolute; inset: 0; }
 /* the map on the world runtime: its box, and the one canvas moved into it
    (the galaxy's box is a .universe-map too: galaxy.css) */
@@ -91,6 +95,10 @@
   padding: 1.5rem;
 }
 .universe-flat .minimap { max-width: 900px; }
+/* the map's veil at the panel's depth, under it (the panel comes later in
+   the page): at the veil's own 5 it lay over the tucked bar in the corner,
+   and its "Show the panel" and "?" took no press till the map was drawing */
+.loading-veil.universe-loading { z-index: 2; }
 
 /* the planets' names, moved by the scene */
 .universe-labels {
@@ -190,6 +198,7 @@ body:has(.universe-panel) .guide-btn { display: none; }
   justify-content: space-between;
   gap: 0.75rem;
   width: 100%;
+  min-width: 0; /* (a longer name gives way to the guide beside it: the eyebrow truncates, the guide stays in the bar) */
   height: 100%;
   min-height: 44px;
   padding: 0 1rem;
@@ -1282,9 +1291,8 @@ body:has(.universe-panel) .guide-btn { display: none; }
   .universe-navmap-btn { left: var(--hud-edge); bottom: calc(var(--sheet-h) + 66px); }
   .universe-navmap-btn[data-ship] { left: calc(var(--hud-edge) + 100px); }
   .universe-comms { right: 16px; left: 16px; }
-  /* the bar keeps clear of the guide's button in the corner */
+  /* (the guide is the bar's own cell, at its end: no room kept for a corner button) */
   .universe-panel[data-tucked] { padding-bottom: env(safe-area-inset-bottom, 0px); }
-  .universe-untuck { padding-right: 4.25rem; }
   .universe-face { width: 36px; height: 36px; }
   .universe-said { font-size: 0.85rem; }
 }
