@@ -117,4 +117,17 @@ describe('a row (a gallery’s, a stand’s)', () => {
     const xs = all.map((p) => p.x).sort((a, b) => a - b);
     for (let i = 1; i < xs.length; i++) expect(xs[i] - xs[i - 1]).toBeGreaterThan(0.6);
   });
+
+  it('turned to look at someone, keeps its line on its tier and turns only its people', () => {
+    const at = [10, -4];
+    const face = [10, -30];
+    const look = [40, 6];
+    for (let i = 0; i < 8; i++) {
+      const p = rowAt(at, 7, i, 8, face, 2);
+      const q = rowAt(at, 7, i, 8, face, 2, look);
+      expect([q.x, q.z]).toEqual([p.x, p.z]);
+      const want = Math.atan2(-(look[1] - q.z), look[0] - q.x);
+      expect(Math.abs(Math.atan2(Math.sin(q.yaw - want), Math.cos(q.yaw - want)))).toBeLessThan(0.35);
+    }
+  });
 });

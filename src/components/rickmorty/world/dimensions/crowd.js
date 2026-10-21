@@ -159,7 +159,8 @@ export function createCrowd(kit, R, laid, { loader = null } = {}) {
         eul.set(0, pose.yaw + Math.PI / 2, pose.sway);
       } else {
         // (a few stand close, as a group: as wide as there are people for, never wider than it's given)
-        const g = e.row ? rowAt(e.at, Math.min(e.row, e.n * ROW_EACH), j, e.n, watch ?? e.face, 1.7) : gatherAt(e.at, Math.min(e.r, DISC_EACH * Math.sqrt(e.n) + 0.6), j, e.n, watch ?? e.face, 1.7);
+        // (turned to someone, a row keeps its line: only its people turn)
+        const g = e.row ? rowAt(e.at, Math.min(e.row, e.n * ROW_EACH), j, e.n, e.face, 1.7, watch ?? e.face) : gatherAt(e.at, Math.min(e.r, DISC_EACH * Math.sqrt(e.n) + 0.6), j, e.n, watch ?? e.face, 1.7);
         v.set(g.x, (e.y ?? 0) + hopOf(t, rec.since, j), g.z);
         eul.set(0, g.yaw + Math.PI / 2, 0);
       }
