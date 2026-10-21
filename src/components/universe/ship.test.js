@@ -985,6 +985,9 @@ describe('open space', () => {
   it('has no roof, and SPACE keeps its own', () => {
     expect(OPEN_SPACE.roof).toBeNull();
     expect(SPACE.roof).toBe(ceilingAt);
+    // (the drive is wide open far above home: no ceiling term in it)
+    expect(OPEN_SPACE.driveAt(0, 50000, 0)).toBe(1);
+    expect(SPACE.driveAt(0, 50000, 0)).toBeLessThan(1);
   });
   it('flies 100,000 straight up from home, and straight down, never turned back, on the pulse drive', () => {
     for (const dir of [1, -1]) {
@@ -1073,5 +1076,16 @@ describe('open space', () => {
     }
     expect(edge).toBe(0);
     expect(s.z).toBeLessThan(oz - RM.edge - 500);
+    // outside, diving onto its top from 5,000 over its middle: held off the
+    // ball in 3D, just outside its wall, with one word of it
+    s = { ...up(-1), x: ox, y: oy + RM.edge + 5000, z: oz, speed: 40 };
+    edge = 0;
+    for (let t = 0; t < 120; t += 1 / 20) {
+      const r = step(s, { throttle: 1, boost: true }, 1 / 20, [], OPEN_SPACE);
+      edge += r.events.filter((e) => e.type === 'edge').length;
+      s = r.ship;
+      expect(fromMiddle(s)).toBeGreaterThanOrEqual(RM.edge + 2 - 1e-6);
+    }
+    expect(edge).toBe(1); // (one word of the wall, not one a frame while it slides off the ball)
   });
 });

@@ -2311,8 +2311,8 @@ export async function create(canvas, ctx) {
     state.ship = { ...state.ship, ...pose, rate: 0, tipRate: 0, rollRate: 0 };
     camQOn = false;
   };
-  // (the room a portal's way out needs: the map's solids as this frame has them; no wall at the edge, the Expanse goes on)
-  Object.defineProperty(state, 'space', { get: () => ({ solids: solidsNow, edge: Infinity, ceilingAt: OPEN_SPACE.ceilingAt }) });
+  // (the room a portal's way out needs: the map's solids as this frame has them; no wall at the edge and none above or below, the universe goes on)
+  Object.defineProperty(state, 'space', { get: () => ({ solids: solidsNow, edge: Infinity }) });
   const powers = createGalaxyPowers({ parent: map, reduced, hunters, war: null, bolts: powerBolts, flashes: powerFlashes, crashFx, pops, post: powerPost, state, emit, controls, strike: (...a) => powerStrike(...a), scored: (...a) => powerScored(...a), teleport: (pose) => powerTeleport(pose) });
   // the skill tree's four ship weapons (uniqueArms.js): fired as the guns are, played out beside the powers
   const unique = createUniqueArms({ parent: map, reduced, hunters, war: null, bolts: powerBolts, flashes: powerFlashes, state, emit, strike: (...a) => powerStrike(...a), scored: (...a) => powerScored(...a) });

@@ -583,7 +583,11 @@ export function step(s, input, dt, solids = SOLIDS, space = SPACE) {
   let v = speed;
   const r = Math.hypot(x - ox, ball ? y - oy : 0, z - oz);
   const ceil = roof ? roof(x, z) : Infinity;
-  let edge = s.edge && (r > edgeR - 1 || Math.abs(y) > ceil - 1); // clears once well back inside
+  // (out in the Expanse, the Rick and Morty pocket's edge is a wall, a ball: how far this frame lands from its middle)
+  const pocket = sec.expanse ? [x - POCKET.origin[0], y - POCKET.origin[1], z - POCKET.origin[2]] : null;
+  const pr = pocket ? Math.hypot(...pocket) : Infinity;
+  const wall = POCKET.edge + 2;
+  let edge = s.edge && (r > edgeR - 1 || Math.abs(y) > ceil - 1 || pr < wall + 1); // clears once well back inside, or off the pocket's wall
   if (r > edgeR) {
     x = ox + (x - ox) * (edgeR / r);
     if (ball) y = oy + (y - oy) * (edgeR / r);
@@ -593,21 +597,14 @@ export function step(s, input, dt, solids = SOLIDS, space = SPACE) {
     if (!edge) events.push({ type: 'edge' });
     edge = true;
   } else if (Math.abs(y) > ceil) edge = true; // (eased back from the ceiling or the floor without a word)
-  // (out in the Expanse, the Rick and Morty pocket's edge is a wall, a
-  // ball: kept off it, out along the line from its middle)
-  if (sec.expanse) {
-    const px = x - POCKET.origin[0];
-    const py = y - POCKET.origin[1];
-    const pz = z - POCKET.origin[2];
-    const pr = Math.hypot(px, py, pz);
-    const wall = POCKET.edge + 2;
-    if (pr < wall) {
-      x = POCKET.origin[0] + (pr > 1e-9 ? px / pr : 1) * wall;
-      y = POCKET.origin[1] + (pr > 1e-9 ? py / pr : 0) * wall;
-      z = POCKET.origin[2] + (pr > 1e-9 ? pz / pr : 0) * wall;
-      if (!edge) events.push({ type: 'edge' });
-      edge = true;
-    }
+  // (kept off the pocket's wall, out along the line from its middle)
+  if (pocket && pr < wall) {
+    const [px, py, pz] = pocket;
+    x = POCKET.origin[0] + (pr > 1e-9 ? px / pr : 1) * wall;
+    y = POCKET.origin[1] + (pr > 1e-9 ? py / pr : 0) * wall;
+    z = POCKET.origin[2] + (pr > 1e-9 ? pz / pr : 0) * wall;
+    if (!edge) events.push({ type: 'edge' });
+    edge = true;
   }
 
   // off a planet, never through it: out along the line from its middle,

@@ -36,7 +36,9 @@ const SEEN = new Map(); // sector id → its systems (the last few)
 function nearest(id, x, y, z) {
   let systems = SEEN.get(id);
   if (!systems) {
-    systems = fullSector(SHARED, ...parseSectorKey(id), { things: false }).systems;
+    const at = parseSectorKey(id);
+    if (!at) return ''; // (a key inExpanse took that doesn't parse: no sector, no system)
+    systems = fullSector(SHARED, ...at, { things: false }).systems;
     if (SEEN.size > 16) SEEN.clear();
     SEEN.set(id, systems);
   }
