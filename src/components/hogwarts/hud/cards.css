@@ -1,0 +1,143 @@
+/* The Sorting card, the wand card and the scarf (the design’s §4.11): the
+   kit skinned as parchment and ink, the house’s colour as the accent once
+   sorted. The frame sets --hp-house and --hp-house-2 (rules/sorting.js’s
+   houseColours); before the Sorting they fall back to the Hat’s own brown
+   and an old gold. Text over the 3D sits on glass at 0.82, never blurred. */
+
+.hp-card {
+  --hp-parchment: rgb(244 234 210 / 0.9);
+  --hp-ink: #2a1d12;
+  --hp-ink-soft: #5a4630;
+  --hp-accent: var(--hp-house, #6b4a2a);
+  --hp-accent-2: var(--hp-house-2, #c79a3a);
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  pointer-events: auto;
+  color: var(--hp-ink);
+  background: var(--hp-parchment);
+  border: 1px solid rgb(90 70 48 / 0.45);
+  border-radius: 6px;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.5) inset, 0 12px 32px rgb(10 6 2 / 0.45);
+  font-family: Cinzel, Georgia, serif;
+}
+
+.hp-card-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hp-ink-soft);
+}
+
+/* the Hat’s question: the kit’s Screen inside a card the size of a page */
+.hp-sorting {
+  top: max(var(--hud-under, 72px), 12vh);
+  width: min(92vw, 820px);
+  aspect-ratio: 1000 / 560;
+  overflow: hidden;
+}
+.hp-sorting[data-tall] {
+  width: min(94vw, 460px);
+  aspect-ratio: 600 / 900;
+  top: max(var(--hud-under, 64px), 8vh);
+}
+.hp-sorting .hud-screen { color: var(--hp-ink); }
+.hp-sorting [data-id='hp-sorting/eyebrow'] { font-size: clamp(0.72rem, 1.4vw, 0.85rem); letter-spacing: 0.14em; text-transform: uppercase; color: var(--hp-ink-soft); align-items: center; }
+.hp-sorting [data-id='hp-sorting/ask'] { font-size: clamp(1rem, 2.3vw, 1.45rem); line-height: 1.3; font-weight: 600; align-items: flex-start; }
+.hp-sorting [data-id='hp-sorting/ask'] .hud-screen-text { white-space: normal; line-height: 1.3; align-items: flex-start; }
+.hp-sorting .hud-screen-cell {
+  border: 1px solid rgb(90 70 48 / 0.4);
+  border-radius: 4px;
+  background: rgb(255 250 236 / 0.75);
+  transition: background var(--t-fast, 120ms) ease, border-color var(--t-fast, 120ms) ease;
+}
+.hp-sorting .hud-screen-cell:is(:hover, :focus-visible) { background: rgb(255 246 220); border-color: var(--hp-accent-2); }
+.hp-sorting .hud-screen-label {
+  justify-content: flex-start;
+  padding: 0 1rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 500;
+  font-size: clamp(0.82rem, 1.6vw, 1rem);
+  letter-spacing: 0;
+  line-height: 1.3;
+  text-align: left;
+  white-space: normal;
+}
+
+/* the house said: its name in its colour, a gold rule under it */
+.hp-sorted {
+  top: max(var(--hud-under, 72px), 14vh);
+  width: min(92vw, 560px);
+  padding: 1.4rem 1.6rem 1.3rem;
+  text-align: center;
+  border-top: 6px solid var(--hp-accent);
+}
+.hp-sorted-house {
+  margin: 0.1rem 0 0.5rem;
+  font-size: clamp(2rem, 6vw, 3rem);
+  font-weight: 700;
+  color: var(--hp-accent);
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid var(--hp-accent-2);
+  padding-bottom: 0.4rem;
+}
+.hp-sorted-line,
+.hp-sorted-entry { margin: 0.4rem 0 0; font-family: Georgia, 'Times New Roman', serif; font-size: 0.95rem; line-height: 1.45; }
+.hp-sorted-entry { color: var(--hp-ink-soft); font-style: italic; }
+.hp-sorted[data-house='hufflepuff'] .hp-sorted-house { color: #8a6410; }
+
+/* the wand: the card at the Sorting, then a chip under the top row */
+.hp-wand {
+  bottom: calc(var(--hud-foot, 96px) + 1rem);
+  width: min(92vw, 520px);
+  padding: 0.9rem 1.3rem 1rem;
+  text-align: center;
+}
+.hp-wand-said { margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 1.05rem; font-style: italic; line-height: 1.45; }
+.hp-wand-chip {
+  margin: 0.35rem 0 0;
+  padding: 0.25rem 0.6rem;
+  display: inline-block;
+  font-size: 0.75rem;
+  color: var(--hp-ink, #2a1d12);
+  background: rgb(244 234 210 / 0.86);
+  border-left: 3px solid var(--hp-house, #6b4a2a);
+  border-radius: 3px;
+  text-transform: capitalize;
+}
+
+/* the scarf: two colours in knitted stripes, hung from the frame’s corner */
+.hp-scarf {
+  position: absolute;
+  top: 0;
+  right: max(env(safe-area-inset-right, 0px), 10px);
+  width: 22px;
+  height: 92px;
+  pointer-events: none;
+  rotate: -4deg;
+  transform-origin: top center;
+  filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.35));
+}
+.hp-scarf-knit {
+  position: absolute;
+  inset: 0 0 10px;
+  border-radius: 0 0 3px 3px;
+  background:
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.08) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(180deg, var(--hp-house, #6b4a2a) 0 13px, var(--hp-house-2, #c79a3a) 13px 20px);
+}
+.hp-scarf-fringe {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 0;
+  height: 11px;
+  background: repeating-linear-gradient(90deg, var(--hp-house, #6b4a2a) 0 2px, transparent 2px 4px);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hp-scarf { animation: hp-scarf-sway 6s ease-in-out infinite alternate; }
+  .hp-sorted { animation: hp-sorted-in var(--t-slow, 320ms) ease both; }
+}
+@keyframes hp-scarf-sway { to { rotate: 3deg; } }
+@keyframes hp-sorted-in { from { opacity: 0; translate: -50% 8px; } }
