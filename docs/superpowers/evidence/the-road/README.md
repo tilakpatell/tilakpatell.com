@@ -445,3 +445,16 @@ Looked at in the page (the node renderer on WebGL 2, in software): a fresh visit
 - `hub-ridden-desktop.webp`: after the ride, Now walk it yourself, and the road so far with the Road's row.
 - `redbook-home-desktop.webp`: the end on the desk, the book at the Shire with walk it yourself.
 
+## The Dead Marshes, wet (2026-10-21)
+
+At 60 m the Marshes read as a dark grass field (`look-marshes-60-desktop.webp`): the three pools were the only water, and the ground's grass grew in them over the water.
+
+- **The water, for the ground and the props alike**: `stages/marshes/water.js`, pure. It holds the three pools with the candles and the faces, and eleven meres between them, either side of the track from 40 m to 118 m, each kept 4 m or more off it.
+- **The ground** sinks a hollow for each (its relief, the meres after the mountains so the layers before keep their seeds) and plants nothing in any of them (its `clear`, a little inside the hollow's edge so the rim is grown).
+- **The props** stand reeds round every pool's and mere's edge (in the reeds' one draw), and a candle over every other mere on high. On low, the far meres are left dry: their water is a draw each.
+- **The water** is murky now: `water.js`'s new `murk` gives a pool the bog's own colour and dulls the sky off it (0.85 in the Marshes).
+- `stages/marshes/water.test.js` holds the meres off the track and off one another, over the whole marsh, and the ground's hollows and clear rings to the list.
+
+- `marshes-meres-candles-desktop.webp`: the candles' beat at 60 m, the meres either side with their reeds and two candles over them.
+- `marshes-meres-desktop.webp`: walking at 79 m, Gollum leading, the water lying all the way out to the Gate's mountains.
+

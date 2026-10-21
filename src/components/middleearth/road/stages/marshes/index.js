@@ -44,9 +44,9 @@ export function build({ road, heightAt, rt, tier = 'high', sky = null }) {
   const props = buildProps({ K: town.K, heightAt, tier });
   group.add(props.group);
 
-  // the pools, still and dark
-  const waters = props.pools.map((p) => {
-    const w = createWater({ area: { x0: p.at[0] - p.r * 0.9, z0: p.at[1] - p.r * 0.9, w: p.r * 1.8, d: p.r * 1.8 }, level: p.level, kind: 'still', sky, ground: heightAt });
+  // the pools and the meres, still and dark, the bog's own colour
+  const waters = [...props.pools, ...props.meres].map((p) => {
+    const w = createWater({ area: { x0: p.at[0] - p.r * 0.9, z0: p.at[1] - p.r * 0.9, w: p.r * 1.8, d: p.r * 1.8 }, level: p.level, kind: 'still', sky, ground: heightAt, murk: 0.85 });
     w.set({ sun: { el: 0.1 }, ambient: 0.15 });
     group.add(w.mesh);
     return w;
