@@ -49,6 +49,8 @@ import { pickTarget } from './targeting.js';
 import { queryFor as gameQuery, runQuery } from './coverQuery.js';
 import { skirmishRole, pressAbility } from './skirmish.js';
 import { TICK, aheadOf, available, closeCombat, hideClock, intensityFor, patternWeapon, pulls, stillHiding, turnFrom, validAgainst } from './tactics.js';
+import { sensingOf, sightOf } from './sensing.js';
+import { DEFAULT } from './difficulty.js';
 import { AHEAD, FACING, TARGET, aimPoint, burstStep, createAim, createBurst, createEvasion, createLof, crouched, groundOk, lofStep, mayFire, noiseOf, strafeSide, takeRoll, viewMiss, viewPoint, viewStep, weaponClass } from './autoPlayer.js';
 
 // a walkable spot near a place: on the level's navmesh at the soldier's height where the battle has
@@ -64,6 +66,9 @@ const AI_WEAPONS = { rifle: 'AI_Rifle', heavy: 'AI_Heavy', pistol: 'AI_Pistol_Of
 const PATTERN_WEAPONS = { rifle: 'AssaultRifle', heavy: 'MachineGun', pistol: 'Pistol', sniper: 'SniperRifle', hero: 'AssaultRifle', special: 'AssaultRifle' };
 
 // Knobs the data does not hold, each the game's by observation:
+// (SIGHT and CONE are now an AutoPlayer's range and the fallback of a world with no rulebook rows: a soldier
+// bot sees by its difficulty row's cone, wider once its side is alerted, as the game's AI code has it:
+// sensing.js)
 export const SIGHT = 100; // metres a bot sees (the templates' sensing areas are single-player only)
 export const CONE = 0.25; // the cosine of a bot's half view angle (about 75° either side)
 const HEARING = 40; // metres a shot is heard
@@ -106,7 +111,7 @@ export function createBrain(s, { ai, role: given = null, rand = Math.random, aim
   const pveWeapon = pveTemplate ? ai.skirmish.weapons[`AI_${pveRole[0].toUpperCase()}${pveRole.slice(1)}_PvE`] : null;
   const aiWeapon = pveWeapon?.accuracyHitBox ? pveWeapon : ai.weapons[AI_WEAPONS[family] ?? 'AI_Rifle'];
   const patterns = ai.patterns.filter((p) => p.weapon === (patternWeapon(pveWeapon ?? aiWeapon) ?? PATTERN_WEAPONS[family] ?? 'AssaultRifle'));
-  return {
+  const brain = {
     s,
     role,
     aimScale,
@@ -138,6 +143,10 @@ export function createBrain(s, { ai, role: given = null, rand = Math.random, aim
     rand,
     // (an AutoPlayer's sight is its tracker's field of view, AP_TargetTrackerFieldOfViewDegrees to either side: the code's half angle)
     senses: createSenses({ sight: { range: SIGHT, cone: ap ? Math.cos(ap.fov * (Math.PI / 180)) : CONE, far: 1 }, hearing: { range: HEARING }, memory: template.targetLostTime, intuition: 2.5 }),
+    // (a soldier bot's cone, the game's: its difficulty row's, the multiplayer default where none is set;
+    // set on its senses at each think by whether its side is alerted. An AutoPlayer keeps its tracker's)
+    sensing: ap || !ai.difficulties ? null : sensingOf(difficulty?.row ?? ai.difficulties[DEFAULT]),
+    sideAlerted: false,
     me: { pos: { x: 0, y: 0, z: 0 }, dir: { x: 0, y: 0, z: 1 }, beliefs: {} },
     intent: { mode: 'follow', target: null, goal: null, stance: 'stand', fire: false, aim: null },
     current: null,
@@ -167,6 +176,8 @@ export function createBrain(s, { ai, role: given = null, rand = Math.random, aim
     aimSince: 0,
     alerted: new Set(),
   };
+  if (brain.sensing) Object.assign(brain.senses.sight, sightOf(brain.sensing, false));
+  return brain;
 }
 
 const flat = (p) => [p[0], p[2]];
@@ -430,6 +441,12 @@ function closeInput(brain, world, b, { me, tgt, clear, now }) {
 
 export function think(brain, world, now) {
   if (brain.ap) return thinkAutoPlayer(brain, world, now);
+  // (its side alerted, by the world's word or its own sight of an enemy, its cone widens and stays so:
+  // sensing.js)
+  if (brain.sensing && !brain.sideAlerted && (world.alerted || Object.values(brain.me.beliefs ?? {}).some((x) => x.visible && x.hostile))) {
+    brain.sideAlerted = true;
+    Object.assign(brain.senses.sight, sightOf(brain.sensing, true));
+  }
   const s = brain.s;
   const me = flat(s.at);
   const seen = Object.values(brain.me.beliefs ?? {}).filter((x) => x.hostile);
