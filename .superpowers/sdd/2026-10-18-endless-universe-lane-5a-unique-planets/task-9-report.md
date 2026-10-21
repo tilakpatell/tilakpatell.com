@@ -1,5 +1,0 @@
-# Task 9 report
-Implemented: expanseLife(type, biomes, system, fauna=null) (local renamed `wild`; lifeFor passes spec.fauna ?? null; density 0 or no plans = no wild rows and a dead default kind); POI_KITS, FLORA_TRUNKS, EXOTIC_KIT, landmarkRowsOf and clutterKitOf's flora/exotic layers in landmarkTables.js; landmarks.js uses landmarkRowsOf.
-TDD: RED = the three test files run before implementation, 7 failed (fourth arg ignored, exports missing). GREEN = same files plus whole `npx vitest run src/lib/land/flight src/components/expanse/flight` : 487 passed; the 2 failures there were load timeouts (landmarkTables 'names only kit models' 5 s; mapRaster 'three leaves' cost ratio). mapRaster passed on rerun alone; landmarkTables passed after the test caches each kit manifest (it re-parsed the JSON per model).
-Files: lifeTables.js(+test), landmarkTables.js(+test), components/expanse/flight/landmarks.js(+test).
-Concerns: the roster lock and planets.test.js passed in the full run. Task text says Opus in trailer per constraints.
