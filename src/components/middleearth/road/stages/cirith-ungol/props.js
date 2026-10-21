@@ -60,33 +60,41 @@ export function buildProps({ K, road, heightAt, tier = 'high' }) {
 
   // Shelob’s Lair: a rough arch of black rock over the road, its floor the land’s
   const len = LAIR.to - LAIR.from;
-  const arch = new THREE.CylinderGeometry(LAIR.r, LAIR.r, len, 14, Math.ceil(len / 3), true, -Math.PI / 2, Math.PI);
+  const arch = new THREE.CylinderGeometry(LAIR.r, LAIR.r, len, low ? 14 : 24, Math.ceil(len / (low ? 3 : 1.5)), true, -Math.PI / 2, Math.PI);
   arch.rotateX(-Math.PI / 2); // (the half with z ≥ 0 turned up: the roof)
-  // (roughened, so it reads as rock and not a pipe; the side passage’s mouth left open)
+  // (roughened, so it reads as rock and not a pipe, a third octave for the knobs and the drips; the side
+  // passage’s mouth left open; the chapter's rock a metre and a half a tile, over the arch and along it)
   const pos = arch.attributes.position;
+  const uv = arch.attributes.uv;
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
     const y = pos.getY(i);
     const z = pos.getZ(i);
-    const k = 1 + (Math.sin(z * 1.3 + x * 2.1) * 0.08 + Math.sin(z * 0.37 + y * 3.1) * 0.06);
+    const k = 1 + (Math.sin(z * 1.3 + x * 2.1) * 0.08 + Math.sin(z * 0.37 + y * 3.1) * 0.06 + Math.sin(z * 2.9 + y * 5.3 + x * 4.1) * 0.035);
     pos.setXYZ(i, x * k, y * k, z);
+    uv.setXY(i, (uv.getX(i) * Math.PI * LAIR.r) / 1.5, (uv.getY(i) * len) / 1.5);
   }
   arch.computeVertexNormals();
-  const lair = new THREE.Mesh(arch, road.material({ color: 0x3a3632, side: THREE.BackSide, flatShading: true }));
+  // (black and wet: the Cirith Ungol chapter's own rock, lit only by the Phial)
+  const lair = new THREE.Mesh(arch, road.material({ map: K.tex.rock ?? K.tex.stone, normalMap: K.tex.rockN ?? K.tex.stoneN, color: 0x403a34, roughness: 0.55, side: THREE.BackSide }));
   lair.position.set(0, heightAt(0, (LAIR.from + LAIR.to) / 2) - 0.4, (LAIR.from + LAIR.to) / 2);
   lair.name = 'cirith-ungol:lair';
   group.add(lair);
-  // the webs: sheets across the roof and the corners (one instanced draw)
+  // the webs: sheets down the walls, and every third one slung across the roof's corner overhead,
+  // thicker the deeper in (one instanced draw)
   const webs = [];
-  for (let i = 0; i < (low ? 8 : 16); i++) {
-    const z = LAIR.from + 4 + rand(i + 300) * (len - 8);
+  const tilt = new THREE.Euler();
+  for (let i = 0; i < (low ? 10 : 30); i++) {
+    const deep = rand(i + 300);
+    const z = LAIR.from + 4 + deep * (len - 8);
     const side = i % 2 ? 1 : -1;
-    webs.push([side * (1.6 + rand(i + 310) * 0.8), z, 0.8 + rand(i + 320) * 0.6, side > 0 ? -Math.PI / 2 : Math.PI / 2]);
+    const roof = i % 3 === 0;
+    webs.push({ x: side * (roof ? 0.9 + rand(i + 310) * 0.6 : 1.6 + rand(i + 310) * 0.8), y: roof ? 2.3 + rand(i + 330) * 0.5 : 1.2, z, s: (0.8 + rand(i + 320) * 0.6) * (0.8 + deep * 0.5), side, roof });
   }
   const web = new THREE.InstancedMesh(webGeo(2), mats.web, webs.length);
-  webs.forEach(([x, z, s, turn], i) => {
-    q.setFromAxisAngle(UP, turn);
-    m.compose(new THREE.Vector3(x, heightAt(0, z) + 1.2, z), q, new THREE.Vector3(s, s, s));
+  webs.forEach(({ x, y, z, s, side, roof }, i) => {
+    q.setFromEuler(tilt.set(roof ? -1.1 : 0, side > 0 ? -Math.PI / 2 : Math.PI / 2, 0, 'YXZ'));
+    m.compose(new THREE.Vector3(x, heightAt(0, z) + y, z), q, new THREE.Vector3(s, s, s));
     web.setMatrixAt(i, m);
   });
   web.name = 'cirith-ungol:webs';

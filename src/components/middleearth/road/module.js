@@ -15,12 +15,14 @@
 // the answer), 'menu' {} and 'lore' {} on their keys, 'end' { ridden } at the Havens,
 // 'line' { who, text, at } as one of the cast says something (ambience.js).
 // The world adds: goTo(stageId), setAuto(on), press(name, down) (the touch
-// buttons), carryOn(), restart(), skipToEnd(); and set(s), `s`, `scene` for the checks.
+// buttons), carryOn() (from a few metres before a moment the ride was left
+// inside: ./carry.js), restart(), skipToEnd(); and set(s), `s`, `scene` for the checks.
 // In development, window.__ROAD__ = { set(s), info(), world, weather, ambience, vision(on), fast(k) }.
 
 import * as THREE from 'three';
 import { PACE, newClock, step as stepClock } from './clock';
 import { SAVE, recent, resume, ridden as riddenOf, savedAt, shouldOffer } from './entry';
+import { carryFrom } from './carry';
 import { LOOK_LIMIT, pose, settleLook } from './director';
 import { keyLight, light as lightAt, shadeOf, skyLight } from './daylight';
 import { at as lineAt, sOf, total } from './line';
@@ -553,6 +555,9 @@ export default {
         if (!offerOpen) return;
         offerOpen = false;
         clock = { ...clock, auto: !clock.reduced };
+        // (left inside one of the moments: a few metres before it, so it plays again, ./carry.js)
+        const from = carryFrom(clock.s);
+        if (from < clock.s) jump(from);
         const st = stageById(stageId);
         tell('stage', { id: st.id, name: st.name, date: st.date, first: false });
       },

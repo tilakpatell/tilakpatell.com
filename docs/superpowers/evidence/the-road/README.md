@@ -470,3 +470,25 @@ The plain before the Mountain was bare dark ground near the road (`look-gorgorot
 - `gorgoroth-plain-column-desktop.webp`: walking beside the column, boulders and fangs either side, a camp's fire far off.
 - `gorgoroth-plain-cracks-desktop.webp`: at 51 m, before the Eye's beam, the cracks round the two.
 
+## Shelob's Lair, and Carry on (2026-10-21)
+
+- **The Lair** was big flat grey facets (`cirith-ungol-built-desktop.webp`). Now:
+  - It is the Cirith Ungol chapter's own black rock, tiled a metre and a half over the arch and along it, and darker.
+  - It is lumpier, with a third octave for the knobs and drips, and finer on high (24 round, a row every 1.5 m).
+  - It has 30 webs on high, every third one slung across the roof's corner overhead, and thicker the deeper in.
+  - `cirith-ungol-lair-desktop.webp` shows it at 70 m, the Phial ahead, the webs on the walls and the roof.
+- **Carry on** (the resume card) picks the ride up a few metres before a moment it was left inside, so the moment plays again rather than the camera holding on what's over (`carry.js`, its test and the module's).
+
+## A walk through every stage, and what it found (2026-10-21)
+
+Twelve stages were pictured mid-walk afresh (`lab/road/shots.mjs`), and four things fixed from them:
+
+- **Caradhras' snow**: a piece of the far range stood over the white in the blizzard, its foot taken by the fog and its top not. `backdrop.js`'s new `thickness(density)` lets a storm's fog take the ranges and landmarks with it: none in any stage's own air, all in Caradhras' snow (`backdrop.test.js` holds it to every stage's light and both storms). `caradhras-storm-before-desktop.webp`, `caradhras-storm-desktop.webp`.
+- **Bree's streets**: the blade grass stood up through the cobbles, black spikes under the lamps. A stage's ground may now name `bare` places (its paved ones: the paint is its dirt and grows no grass, easing back over 3 m), and Bree's town is three; the fields before the gate keep their grass. `bree-street-before-desktop.webp`, `bree-street-desktop.webp`.
+- **Moria's stair**: going down it Gandalf is 16 m ahead and 11 m under them, and the staff's light stops short of the ones behind; they were nothing. A faint cold light over Frodo, the staff's off the walls, makes them dim shapes. `moria-stair-before-desktop.webp`, `moria-stair-desktop.webp`.
+- **The rivers**: two regular swells seen at a slant flipped the water between the sky and the deep in white stripes (Rivendell, the Ford, the Anduin). The swell is lower (0.05 m, from 0.08), calmed off into the distance from 6 m, and running water gives back at most 0.7 of the sky. `rivendell-river-before-desktop.webp`, `rivendell-river-desktop.webp`.
+
+## Henneth Annûn's fall (2026-10-21)
+
+From behind the fall, at Faramir's window, the fall read as a pale fog: three broad bands falling down a sheet. It is now threads of water, in two layers (360 and 140 across its 8 m, a few centimetres each with the camera a metre and a half off), each thread at its own pace and phase. They are thinner between, so the light beyond shows through, with white foam at its foot. `ithilien-henneth-before-desktop.webp`, `ithilien-henneth-desktop.webp` (walked into, 3 s in).
+

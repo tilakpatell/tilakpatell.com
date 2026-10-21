@@ -9,7 +9,8 @@
 //   one high in the sky), each picked up by flying through it.
 // - Rescues: every minute or so, somewhere near him, someone slips off the
 //   edge of a roof, or a news helicopter loses its tail rotor and comes
-//   spinning down. Catch them before the ground, and set them down.
+//   spinning down. Catch them before the ground, and set them down. (A
+//   mission can put one there itself: its `source` says whose it is.)
 //
 // stepQuests(q, hero, dt, world) → the next state, with this step's events
 // in `ev`. The hero is ./flight.js's: { p (his feet), v, mode, zone }; out
@@ -107,13 +108,13 @@ function call(q, hero, world) {
     const tall = world.buildings.filter((b) => b.h >= 60 && !b.top && Math.hypot(b.x - hx, b.z - hz) > 250 && Math.hypot(b.x - hx, b.z - hz) < 1400);
     const pool = tall.length ? tall : world.buildings.filter((b) => b.h >= 60 && !b.top);
     const b = pool[Math.floor(r() * pool.length)];
-    return { kind, p: [b.x + b.w / 2 - 0.6, b.h, b.z], v: [0, 0, 0], out: [1, 0, 0], t: 0, phase: 'warn', carried: false, spin: 0 };
+    return { kind, p: [b.x + b.w / 2 - 0.6, b.h, b.z], v: [0, 0, 0], out: [1, 0, 0], t: 0, phase: 'warn', carried: false, spin: 0, source: 'city' };
   }
   const a = r() * Math.PI * 2;
   const d = 500 + r() * 600;
   const x = Math.max(-1500, Math.min(2500, hx + Math.cos(a) * d));
   const z = Math.max(-2000, Math.min(2000, hz + Math.sin(a) * d));
-  return { kind, p: [x, 300, z], v: [0, -4, 0], out: [0, 0, 0], t: 0, phase: 'fall', carried: false, spin: 0 };
+  return { kind, p: [x, 300, z], v: [0, -4, 0], out: [0, 0, 0], t: 0, phase: 'fall', carried: false, spin: 0, source: 'city' };
 }
 
 export function stepQuests(state, hero, rawDt, world) {
@@ -132,7 +133,8 @@ export function stepQuests(state, hero, rawDt, world) {
   } else if (!L.on) {
     if (through(RINGS[0], prev, chest)) {
       Object.assign(L, { on: true, next: 1, t: 0 });
-      q.ev.push({ type: 'lesson-start' });
+      // (and the first ring as a ring, so a mission counting rings counts it)
+      q.ev.push({ type: 'lesson-start' }, { type: 'ring', n: 0 });
     }
   } else {
     L.t += dt;
@@ -196,7 +198,8 @@ export function stepQuests(state, hero, rawDt, world) {
       const p = r.kind === 'heli' ? [r.p[0], r.p[1] + 1.5, r.p[2]] : [r.p[0], r.p[1] + 1, r.p[2]];
       if (!away && nearest(prev, chest, p) < reach) {
         r.carried = true;
-        q.ev.push({ type: 'caught', kind: r.kind });
+        // (whose it was: the city's own, or one a mission put there, which only it counts)
+        q.ev.push({ type: 'caught', kind: r.kind, source: r.source ?? 'city' });
       } else if (r.phase === 'fall' && r.p[1] <= groundAt(r.p[0], r.p[2])) {
         q.ev.push({ type: 'missed', kind: r.kind, p: [...r.p] });
         q.rescue = null;

@@ -63,19 +63,22 @@ const CITY = [0.17, -0.3];
 // the railway, from Hogsmeade's station south through the hills to the city
 const RAIL = [HOGSMEADE, [-0.17, 0.19], [-0.14, 0.13], [-0.09, 0.07], [-0.05, -0.02], [0.02, -0.1], [0.09, -0.2], [0.13, -0.26], CITY];
 
-// the continent: lobes of land (middle [e, n], radii), its outline warped
+// the continent: lobes of land (middle [e, n], radii), its outline warped;
+// big enough to fill a good part of the face it's on, as a world's one
+// continent should from orbit, and reaching east into a long tail of land
 const LOBES = [
-  [[0.04, -0.04], [0.4, 0.36]],
-  [[-0.17, 0.2], [0.23, 0.19]],
-  [[0.29, -0.27], [0.15, 0.12]],
-  [[0.12, 0.3], [0.16, 0.1]],
-  [[-0.24, -0.18], [0.1, 0.15]],
+  [[0.06, -0.04], [0.5, 0.42]],
+  [[-0.17, 0.2], [0.27, 0.22]],
+  [[0.38, -0.3], [0.2, 0.15]],
+  [[0.16, 0.34], [0.22, 0.13]],
+  [[-0.3, -0.2], [0.13, 0.18]],
+  [[0.62, 0.02], [0.2, 0.11]],
 ];
 // island chains near it, each a line of [e, n] in the frame
 const CHAINS = [
-  [[-0.48, 0.34], [-0.45, 0.18], [-0.47, 0.0]],
-  [[0.48, 0.24], [0.56, 0.08]],
-  [[-0.1, -0.52], [0.1, -0.56], [0.3, -0.52]],
+  [[-0.56, 0.36], [-0.52, 0.18], [-0.55, -0.02]],
+  [[0.58, 0.3], [0.7, 0.2]],
+  [[-0.12, -0.6], [0.1, -0.64], [0.34, -0.6]],
 ];
 // and arcs elsewhere on the globe: [lat, lon] points
 const ARCS = [
@@ -84,6 +87,8 @@ const ARCS = [
   [[48, 112], [42, 136], [33, 152]],
   [[-46, -46], [-40, -14]],
   [[8, -40], [2, -22]],
+  // (and a chain along the edge of the northern ice, all the way round the far side)
+  [[66, 70], [62, 100], [64, 130], [60, 160], [63, -170]],
 ];
 // big islands out in the ocean: [lat, lon, radius in degrees]
 const ISLES = [
@@ -92,6 +97,11 @@ const ISLES = [
   [18, 60, 5],
   [-52, -120, 6],
   [40, -160, 4],
+  // (the cold north's: big, bare and rocky, round the side the continent isn't on)
+  [56, 150, 9],
+  [60, -128, 8],
+  [50, 82, 6],
+  [-58, 30, 7],
 ];
 const onLL = ([la, lo]) => on(la, ((lo + 180) / 360) * Math.PI * 2);
 const ARC_PTS = ARCS.map((pts) => {
@@ -146,7 +156,8 @@ export async function bake() {
   const glow = new Float32Array(W * H * 3);
   const clouds = new Float32Array(W * H * 3);
 
-  const sea = ramp([[0, '#4a7a7e'], [0.12, '#336270'], [0.3, '#1f4558'], [0.55, '#163548'], [0.8, '#102a3c'], [1, '#0b2032']]);
+  // (a cold sea: slate and grey-green, never the tropics' blue)
+  const sea = ramp([[0, '#4f7676'], [0.12, '#3a6066'], [0.3, '#284852'], [0.55, '#1c3844'], [0.8, '#142c38'], [1, '#0e222e']]);
   const C = Object.fromEntries(
     Object.entries({
       loch: '#122a35', lowland: '#46613a', lowlandHi: '#577045', field: '#7c8a4e', stubble: '#8f8a5a', wood: '#2b4626', pine: '#1b2f20', pineHi: '#243c28',
@@ -159,7 +170,7 @@ export async function bake() {
     const latD = lat / deg;
     const alat = Math.abs(latD);
     const [e0, n0, d] = local(x, y, z);
-    const near = d > 0.6; // (within about 53 degrees of the continent's middle)
+    const near = d > 0.42; // (within about 65 degrees of the continent's middle)
     const grain = fbm(n2, x * 90, y * 90, z * 90, { octaves: 3 }) * 0.5 + 0.5;
     const rag = fbm(n3, x * 30, y * 30, z * 30, { octaves: 4 });
     // (the continent's outline and its lands are read through a warp, so nothing's drawn with a compass)
@@ -219,7 +230,7 @@ export async function bake() {
     const shelf = smooth(-0.3, 0.0, field);
     const swell = fbm(n2, x * 24, y * 24, z * 24, { octaves: 3 }) * 0.04;
     let col = sea(clamp(0.55 + basin * 0.5 - shelf * 0.8 + swell));
-    col = mix3(col, C.coldSea, smooth(48, 68, alat) * 0.45);
+    col = mix3(col, C.coldSea, smooth(36, 62, alat) * 0.55);
     // (the lowlands' greens vary over the country: lusher in the vales, yellower on the downs)
     const vale = fbm(n6, x * 4, y * 4, z * 4, { octaves: 3 }) * 0.5 + 0.5;
     let ground = mix3(mix3(C.lowland, C.lowlandHi, grain * 0.5 + rolling * 0.5), mix3(C.field, C.wood, rolling), smooth(0.35, 0.75, vale) * 0.35);
@@ -227,8 +238,8 @@ export async function bake() {
     const patch = fbm(n3, x * 160, y * 160, z * 160, { octaves: 2 });
     ground = mix3(ground, patch > 0.15 ? C.stubble : C.field, smooth(0.05, 0.3, Math.abs(patch)) * (1 - hi) * 0.4);
     ground = mix3(ground, C.wood, smooth(0.2, 0.42, fbm(n1, x * 45, y * 45, z * 45, { octaves: 3 })) * 0.7);
-    // far north, tundra; the big isles' hills moor and rock
-    ground = mix3(ground, mix3(C.tundra, C.rock, grain), smooth(58, 66, alat) * (1 - hi));
+    // the north, tundra (the cold isles bare and brown from the fifties); the big isles' hills moor and rock
+    ground = mix3(ground, mix3(C.tundra, C.rock, grain), smooth(50, 63, alat) * (1 - hi));
     const isleHills = near ? 0 : smooth(0.3, 0.6, field) * smooth(0.45, 0.7, ridged(n5, x * 30, y * 30, z * 30, { octaves: 4 }));
     ground = mix3(ground, mix3(C.bracken, C.rock, grain), isleHills * 0.8);
     // the Highlands: moor of heather, bracken and rough grass, grass and pine down the glens, rock on the ridges
@@ -249,14 +260,15 @@ export async function bake() {
     col = mix3(col, ground, landK);
     col = mix3(col, C.loch, lochK);
     // the poles: the cap, ragged, and the pack ice breaking up round it
-    const capEdge = 75 + fbm(n5, x * 6, y * 6, z * 6, { octaves: 5 }) * 5;
+    // (a cold world's: the caps reach down past seventy, the pack ice to the sixties)
+    const capEdge = 71 + fbm(n5, x * 6, y * 6, z * 6, { octaves: 5 }) * 5;
     const cap = smooth(capEdge, capEdge + 1.5, alat);
     let pack = 0;
-    if (alat > 64) {
+    if (alat > 58) {
       const f = floes(x, y, z);
       const open = smooth(0, 0.003, f.f2 - f.f1); // (the leads of open water between floes)
       const tone = ((f.id * 2654435761) % 1000) / 1000;
-      const thick = smooth(67, 76, alat + rag * 5 + fbm(n4, x * 9, y * 9, z * 9, { octaves: 3 }) * 5) ** 1.5;
+      const thick = smooth(61, 72, alat + rag * 5 + fbm(n4, x * 9, y * 9, z * 9, { octaves: 3 }) * 5) ** 1.5;
       pack = open * (tone < thick ? 0.55 + 0.4 * ((tone * 7.31) % 1) : 0) * (1 - landK);
     }
     const ice = Math.max(cap, pack);
