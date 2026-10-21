@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useMediaQuery, useReducedMotion } from '../../lib/hooks';
 import { WorldHost, useWorld } from '../../runtime';
-import { Hud, Menu, Prompt, QuestList, Stick, Toast, TouchButton } from '../../runtime/hud';
+import { Hud, Menu, MenuItem, Prompt, QuestList, Stick, Toast, TouchButton } from '../../runtime/hud';
 import { wayOut } from '../worlds/worlds';
 import hogwartsModule from './module';
 import SpellWheel from './hud/SpellWheel';
+import MaraudersMap from './hud/MaraudersMap';
+import { parseWeek } from './rules/term';
 import '@fontsource/cinzel/600.css';
 import '@fontsource/cinzel/700.css';
 import './hogwarts.css';
@@ -23,12 +25,15 @@ const TOAST_FOR = 4000; // ms
 // the button itself, as the kit has it), a toast, and on touch the stick.
 // The wand's card at the foot and its wheel over the view
 // (hud/SpellWheel.jsx), its toasts in the one toast, and on touch a Cast
-// button and a Spells one.
+// button and a Spells one. The Marauder’s Map (hud/MaraudersMap.jsx) is the
+// minimap, opened on M, from the Menu or with a tap of its disc; it reads
+// the world’s night every frame through `map()`, never through React.
 export default function HogwartsWorld() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const reduced = useReducedMotion();
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
-  const [props] = useState(() => ({ reduced }));
+  const narrow = useMediaQuery('(max-width: 639px)');
+  const [props] = useState(() => ({ reduced, week: parseWeek(search) ?? 1 }));
   const [door, setDoor] = useState(null);
   const [toast, setToast] = useState(null);
   const [list, setList] = useState(false);
@@ -37,6 +42,7 @@ export default function HogwartsWorld() {
   const menu = useRef(null);
   const card = useRef(null);
   const ring = useRef(null);
+  const map = useRef(null);
 
   const onEvent = useCallback((e) => {
     if (e.type === 'near') setDoor(e.door);
@@ -53,6 +59,7 @@ export default function HogwartsWorld() {
   }, []);
   const { host, status, rt } = useWorld(hogwartsModule, { props, onEvent });
   const api = useCallback(() => (rt?.current?.module === hogwartsModule ? rt.current.world : null), [rt]);
+  const night = useCallback(() => api()?.map?.() ?? null, [api]);
   const choose = useCallback((id) => {
     api()?.choose(id);
     setSpell(id);
@@ -79,7 +86,11 @@ export default function HogwartsWorld() {
         }
         tools={
           <div ref={menu}>
-            <Menu className="hogwarts-menu" way={wayOut(pathname)} todo={{ onOpen: () => setList(true), done: 0, total: 0 }} />
+            <Menu className="hogwarts-menu" way={wayOut(pathname)} todo={{ onOpen: () => setList(true), done: 0, total: 0 }}>
+              <MenuItem onClick={() => map.current?.open()} aria-keyshortcuts="M">
+                The Marauder’s Map
+              </MenuItem>
+            </Menu>
           </div>
         }
         foot={
@@ -101,6 +112,7 @@ export default function HogwartsWorld() {
         }
       >
         <Toast toast={toast} className="hogwarts-toast" />
+        <MaraudersMap ref={map} source={night} touch={touch} narrow={narrow} reduced={reduced} />
         <SpellWheel part="wheel" ref={ring} open={wheel} active={spell} onChoose={choose} touch={touch} />
         {list && <QuestList className="hogwarts-list" title="Things to do" sub="Nothing yet: the term begins once you’re across the lake." quests={[]} next={null} onClose={() => setList(false)} onGo={() => {}} />}
       </Hud>

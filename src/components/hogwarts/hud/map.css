@@ -1,0 +1,97 @@
+/* The Marauder’s Map (hud/MaraudersMap.jsx): the disc as a corner of the
+   Map, and the Map unfolded over the world, its paper in CSS (the cream,
+   the stains, the darkened edges, the folds between its panels), the ink
+   and the footprints on two canvases over it. Under 40 % of the view on a
+   wide screen and a phone alike: it stays open while you walk. */
+.hogwarts-map-disc .hud-minimap-disc { border-color: #c9b07a; background: #ecdcb6; box-shadow: 0 0 0 1px rgb(58 35 20 / 0.5), var(--hud-shadow); }
+.hogwarts-map-disc .hud-minimap-caption { font: italic 600 0.78rem/1.3 Georgia, 'Times New Roman', serif; color: #3a2314; }
+
+.hogwarts-map {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 0.4rem;
+  width: min(62vw, 860px);
+  height: min(62vh, 620px);
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+.hogwarts-map[data-narrow] { top: calc(var(--hud-under, 70px) + 0.5rem); width: calc(100vw - 2rem); height: min(42svh, 440px); transform: translateX(-50%); }
+
+.hogwarts-map-paper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 3px;
+  background-color: #ecdcb6;
+  background-image:
+    linear-gradient(90deg, transparent calc(33.3% - 1px), rgb(90 60 25 / 0.16) calc(33.3% - 1px), rgb(255 250 235 / 0.35) calc(33.3% + 1px), transparent calc(33.3% + 2px), transparent calc(66.6% - 1px), rgb(90 60 25 / 0.16) calc(66.6% - 1px), rgb(255 250 235 / 0.35) calc(66.6% + 1px), transparent calc(66.6% + 2px)),
+    radial-gradient(ellipse at 28% 22%, rgb(255 250 232 / 0.5), transparent 55%),
+    radial-gradient(ellipse at 78% 82%, rgb(130 88 36 / 0.2), transparent 50%),
+    radial-gradient(circle at 64% 30%, rgb(150 108 48 / 0.12) 0 6%, transparent 7%),
+    radial-gradient(circle at 18% 74%, rgb(150 108 48 / 0.1) 0 4%, transparent 5%);
+  box-shadow: inset 0 0 70px rgb(96 60 22 / 0.5), 0 10px 30px rgb(0 0 0 / 0.45);
+  animation: hw-unfold 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.hogwarts-map[data-phase='managed'] .hogwarts-map-paper { animation: hw-fold 0.45s ease-in 0.65s both; }
+.hogwarts-map[data-reduced] .hogwarts-map-paper { animation: none; }
+@keyframes hw-unfold {
+  from { clip-path: inset(0 41% 0 41%); transform: perspective(900px) rotateX(10deg) scale(0.96); }
+  to { clip-path: inset(0 0 0 0); transform: none; }
+}
+@keyframes hw-fold {
+  from { clip-path: inset(0 0 0 0); opacity: 1; }
+  to { clip-path: inset(0 41% 0 41%); opacity: 0; }
+}
+
+.hogwarts-map-ink,
+.hogwarts-map-life { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hogwarts-map-life { cursor: grab; touch-action: none; }
+.hogwarts-map-life:active { cursor: grabbing; }
+
+/* the words, written in ink as they’re said */
+.hogwarts-map-words {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0 1.5rem;
+  color: #3a2314;
+  font: italic 600 clamp(1.05rem, 2.4vw, 1.6rem)/1.3 Georgia, 'Times New Roman', serif;
+  text-align: center;
+  pointer-events: none;
+  animation: hw-write 1.15s steps(28, end) both, hw-sink 0.5s ease-in 1.05s forwards;
+}
+.hogwarts-map[data-phase='managed'] .hogwarts-map-words { animation: hw-write 0.6s steps(16, end) both; }
+.hogwarts-map[data-reduced] .hogwarts-map-words { animation: none; }
+@keyframes hw-write {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes hw-sink {
+  to { opacity: 0; filter: blur(1.5px); }
+}
+
+.hogwarts-map-title { position: absolute; left: 0.75rem; top: 0.55rem; display: grid; gap: 0.05rem; margin: 0; color: #3a2314; pointer-events: none; }
+.hogwarts-map-title span:first-child { font: 700 0.95rem/1.1 'Cinzel', Georgia, serif; letter-spacing: 0.06em; }
+.hogwarts-map-hour { font: italic 600 0.78rem/1.2 Georgia, serif; font-variant-numeric: tabular-nums; }
+.hogwarts-map[data-phase='swear'] .hogwarts-map-title { visibility: hidden; }
+
+.hogwarts-map-tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; }
+.hogwarts-map-btn {
+  min-height: 44px;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid rgb(58 35 20 / 0.55);
+  border-radius: 3px;
+  background: rgb(240 226 192 / 0.94);
+  color: #3a2314;
+  font: italic 600 0.85rem/1.2 Georgia, serif;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.3);
+  cursor: pointer;
+}
+.hogwarts-map-btn:hover { background: #f6ead0; }
+.hogwarts-map-btn:focus-visible { outline: 2px solid #8f1d24; outline-offset: 2px; }
+.hogwarts-map-shut { font-family: 'Cinzel', Georgia, serif; font-style: normal; font-weight: 700; letter-spacing: 0.03em; }

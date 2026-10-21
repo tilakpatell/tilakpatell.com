@@ -45,8 +45,13 @@ import { practiceSet } from './play/props';
 import { createFeel } from '../../lib/three/feel';
 import { BOUNDS, CASTLE, DOOR, LEVEL, SPAWN, floorAt, heightAt, nearDoor } from './rules/shore';
 import { lightAt } from './rules/dusk';
+import { createNight } from './play/night';
 
 export { KEYS };
+
+// where the shore’s own frame sits on the Map’s (the grounds’, rules/places.js’s): its
+// waterline on the Black Lake’s south shore, across the water from the castle
+const MAP_SHORE = [24, 445];
 
 export default {
   id: 'hogwarts',
@@ -98,6 +103,16 @@ export default {
     const feel = createFeel({ baseFov: camera.fov, calm: reduced });
     const wand = createWand({ rt, scene, camera, house, floorAt, tell, feel });
     wand.place(practiceSet({ at: SPAWN.at, yaw: SPAWN.yaw, floorAt, house, rt }));
+
+    // the night half (Lane F, play/night.js): the castle’s people on their days
+    // for the Marauder’s Map. The shore’s dusk is the arrival night’s, its clock
+    // read as the world’s hours from 19:54 (Lane C’s rules/clock.js’s ARRIVE)
+    const week = props.week ?? 1;
+    const night = createNight({
+      timeOf: () => 19.9 + clock / 60,
+      weekOf: () => week,
+      me: () => ({ x: walker.state.x + MAP_SHORE[0], z: walker.state.z + MAP_SHORE[1], yaw: walker.state.yaw, moving: walker.state.speed > 0.3, inside: null }),
+    });
 
     let clock = 0;
     let light = null;
@@ -163,6 +178,7 @@ export default {
         walker.step(dt, input, { x: stick.x || touch.x, y: stick.y || touch.y });
         feel.update(dt, camera);
         wand.step(dt, input);
+        night.step(dt);
         clock += dt;
         // (the light moves slowly: a few times a second is plenty)
         if ((since += dt) > 0.25) {
@@ -192,6 +208,8 @@ export default {
       // the prompt's own button, and the touch stick
       go,
       wand,
+      // the Marauder’s Map’s view of everyone (hud/MaraudersMap.jsx reads it every frame)
+      map: () => night.view(),
       // the wheel's pick, and the touch buttons held and let go
       choose: (id) => wand.choose(id),
       press(name, down) {
@@ -228,7 +246,7 @@ export default {
         clock = sec;
         relight();
       };
-      window.__HOGWARTS__ = { world, state, place: (x, z, yaw) => walker.place([x, z], yaw), dusk, cast: (spell, at) => wand.cast(spell, at), wand: () => wand.state() };
+      window.__HOGWARTS__ = { world, state, place: (x, z, yaw) => walker.place([x, z], yaw), dusk, cast: (spell, at) => wand.cast(spell, at), wand: () => wand.state(), night: () => night.view() };
     }
     return world;
   },
