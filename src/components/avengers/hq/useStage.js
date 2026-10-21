@@ -114,7 +114,7 @@ export function useLive(ref, { id, enabled = true, warm }) {
 // A view that failed, or was too slow (past the governor's floor, unless
 // 3D was switched on outright), stays down until a retry; a lost one is the
 // runtime's to bring back once (useWorld), and down after that.
-export function useStage(module, { enabled, id, forced = false, options = null, props: more = null }) {
+export function useStage(module, { enabled, id, forced = false, options = null, props: more = null, own3D = false }) {
   const wrap = useRef(null);
   const frame = useRef(null); // the page's frame, run by the world's draw (useStageFrame)
   const [down, setDown] = useState(null); // failed | slow: down until a retry
@@ -140,10 +140,17 @@ export function useStage(module, { enabled, id, forced = false, options = null, 
     const r = hostOf.current?.current?.getBoundingClientRect?.();
     if (mounting && r) module.measure?.(r.width, r.height);
   }, [mounting, module]);
-  const world = useWorld(module, { props, enabled: mounting, onEvent, attempt });
+  const world = useWorld(module, { props, enabled: mounting, onEvent, attempt, own3D });
   hostOf.current = world.host;
   const rt = world.rt;
   const mine = rt?.current?.module === module;
+  // (`mine` reads the runtime, which React doesn't see: a mount made while
+  // another world was on can run loading, ready and on before the page
+  // renders, so its status ends as it began and React drops the render that
+  // would find the world now ours. A count of the runtime's changes makes
+  // that render count.)
+  const [, heard] = useState(0);
+  useEffect(() => rt?.on(() => heard((n) => n + 1)), [rt]);
   useEffect(() => {
     if (world.status === 'failed' && rt?.failure?.world === module.id) setDown('failed');
   }, [world.status, rt, module]);

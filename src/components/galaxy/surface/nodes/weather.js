@@ -31,6 +31,8 @@ export const KINDS = {
   motes: { lines: false, count: 900, box: [40, 14, 40], drop: [0.15, 0.05, 0.1], size: 0.05, color: '#e8f5b0', alpha: 0.9, glow: 2.2, wobble: 1.2 },
   // sea spray, blown
   spray: { lines: false, count: 1400, box: [60, 12, 60], drop: [7, -0.4, 2], size: 0.06, color: '#e6f2ff', alpha: 0.5, wobble: 0.4, low: true },
+  // pollen and seed fluff over a meadow, slow and sunlit (flora.js's air)
+  pollen: { lines: false, count: 650, box: [44, 10, 44], drop: [0.3, 0.06, 0.15], size: 0.04, color: '#fff1c4', alpha: 0.7, glow: 1.4, wobble: 1.5 },
 };
 
 function layer(spec, { small, seed }) {

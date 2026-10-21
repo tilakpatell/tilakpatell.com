@@ -15,10 +15,13 @@
 //
 // fakeRelays() → { attach(context) (a promise: awaited before the
 // context's first page opens a socket), publish(event) (one from the check
-// itself, to every relay: the flight check's extra pilots) }
+// itself, to every relay: the flight check's extra pilots), contents() (what
+// the events sent so far carried, the last 5,000: the party check reads it
+// for a line of chat in the clear) }
 
 export function fakeRelays() {
   const relays = new Map(); // host → Set of sockets: { subs: Map(id → filter), send(msg) }
+  const carried = [];
   const relayOf = (url) => {
     let host = url;
     try {
@@ -69,6 +72,8 @@ export function fakeRelays() {
           else if (msg[0] === 'CLOSE') socket.subs.delete(msg[1]);
           else if (msg[0] === 'EVENT' && msg[1] && typeof msg[1] === 'object') {
             const ev = msg[1];
+            if (typeof ev.content === 'string') carried.push(ev.content);
+            if (carried.length > 5000) carried.shift();
             socket.send(['OK', typeof ev.id === 'string' ? ev.id : '', true, '']);
             pass(relay, ev);
           }
@@ -76,6 +81,7 @@ export function fakeRelays() {
         ws.onClose(() => relay.delete(socket));
       });
     },
+    contents: () => [...carried],
     publish(ev) {
       for (const relay of relays.values()) pass(relay, ev);
     },

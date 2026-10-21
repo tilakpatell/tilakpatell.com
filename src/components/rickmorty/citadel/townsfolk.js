@@ -26,6 +26,7 @@ import { pushOut } from '../../middleearth/towns/walker';
 import { turn } from '../../../lib/three/gait';
 import { CAST, COLLIDERS, LOOPS, WALKS, WALLS } from './mortytown';
 import { along, lookAt, yawOf } from './people';
+import { CAST_INK } from './look';
 import { catchUp, easeTurn, moveFor, regard, sayFor, stepBody } from './bodies';
 
 // kind → the model and how tall it stands, hat and all, in metres
@@ -56,7 +57,7 @@ const KEEP = 4.6; // and a found one's, catching up with his rules' place
 const push = (x, z) => pushOut(x, z, 0.3, COLLIDERS, WALLS);
 
 export async function createTownsfolk({ parent, tier = 'high', loader = null }) {
-  const meshy = createMeshyCast({ kinds: KINDS, rigged: RIGGED, cull: true, ...(loader ? { loader } : {}) });
+  const meshy = createMeshyCast({ kinds: KINDS, rigged: RIGGED, cull: true, ink: tier === 'low' ? 0 : CAST_INK, ...(loader ? { loader } : {}) });
   const assets = [...RIGGED];
   await Promise.all([meshy.load(null, assets.filter((a) => a !== 'bigmorty'), { clips: ['idle', 'walk', 'run'] }), meshy.load(null, ['bigmorty'], { clips: ['idle', 'walk', 'run', 'sit'] })]);
 

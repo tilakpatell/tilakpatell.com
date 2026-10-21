@@ -9,6 +9,8 @@
 //   layerAt(mask, x, z) → layer index | -1 (the mask's texel under a point)
 //   reachOf(type, radius, tier) → metres it is drawn out to
 //   keepShare(count, tier) → 0…1 (the tier's DENSITY_CAP over the ring's count)
+//   thinOf(distance, reach) → 0…1 (the share of a type kept that far out:
+//     all of it near, fewer toward its reach's end)
 //   tileInstances({ tx, tz, mask, layers, tier, scale, reach, centre }) → [{ type, x, z, yaw, w, h, d, r }]
 //   dissolveOf(distance, reach, range) → 0…1 (the size an instance is drawn at)
 //   tilesAround(x, z, reach) → [[tx, tz, distance]] nearest first
@@ -19,13 +21,20 @@
 export const TILE = 16;
 // metres a 1 m type is drawn out to on each tier; a larger one farther, by
 // the square root of its size (REACH_SIZE). Named: the game's scatter view
-// distance is in a render setting the export does not carry.
-export const REACH = { low: 18, mid: 28, high: 40, ultra: 56 };
+// distance is in a render setting the export does not carry. Far enough
+// that the ring's edge is out where a clump is a few pixels and fading
+// (the owner, 2026-10-20: a ring you can see change round you looks wrong;
+// 40 m on high was one), and thinned toward it (THIN) so the near ground
+// keeps the thickness it had.
+export const REACH = { low: 27, mid: 42, high: 64, ultra: 90 };
+// a type keeps all of itself to THIN[0] of its reach, then fewer, down to
+// THIN[2] of itself at the end (where the dissolve has shrunk it away)
+const THIN = [0.4, 1, 0.3];
 const REACH_SIZE = { min: 0.5, max: 6 };
 // the most instances the ring holds on each tier (the frame's budget for the
 // scatter: under 2 ms at ultra on the owner's laptop is the plan's gate); a
 // ring over it thins every type alike, never drops one
-export const DENSITY_CAP = { low: 3000, mid: 9000, high: 24000, ultra: 48000 };
+export const DENSITY_CAP = { low: 4500, mid: 13500, high: 36000, ultra: 72000 };
 // the game's dissolve range on a type that does not say (DissolveRangeRatio)
 const DISSOLVE = 0.4;
 
@@ -65,6 +74,11 @@ export function keepShare(count, tier) {
 }
 
 const lerp = (a, b, t) => a + (b - a) * t;
+
+export function thinOf(distance, reach) {
+  const t = Math.min(1, Math.max(0, (distance / reach - THIN[0]) / (THIN[1] - THIN[0])));
+  return 1 - (1 - THIN[2]) * t * t * (3 - 2 * t);
+}
 
 // layers: [{ index, types: [{ density, scale, randomness, … }] }] (scatter.json's);
 // reach(type) metres, from `centre`; scale a share of the density. An instance:

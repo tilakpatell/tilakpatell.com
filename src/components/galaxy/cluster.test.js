@@ -7,25 +7,31 @@ const el = () => {
   const vars = new Map();
   return {
     textContent: '',
+    hidden: false,
+    dataset: {},
     style: { setProperty: (k, v) => vars.set(k, v), getPropertyValue: (k) => vars.get(k) ?? '' },
     toggleAttribute: (n, on) => (on ? attrs.add(n) : attrs.delete(n)),
     hasAttribute: (n) => attrs.has(n),
   };
 };
-const PARTS = ['.fc-shield', '.fc-shield-n', '.fc-speed', '.fc-speed-n', '.fc-kills-n', '.fc-target', '.fc-target-name', '.fc-target-dist', '.fc-target-hp'];
+// (the galaxy's own blocks, and the HUD kit's vitals and arms: runtime/hud/cluster.js writes those)
+const PARTS = ['.hud-vitals', '.hud-vitals-n', '.hud-arms', '.hud-arms-name', '.fc-speed', '.fc-speed-n', '.fc-kills-n', '.fc-target', '.fc-target-name', '.fc-target-dist', '.fc-target-hp'];
+const MANY = { '.hud-arms-line': 3, '.hud-arms-pip': 8 };
 const dom = () => {
   const parts = Object.fromEntries(PARTS.map((s) => [s, el()]));
-  return { ...el(), querySelector: (s) => parts[s] ?? null };
+  const many = Object.fromEntries(Object.entries(MANY).map(([s, n]) => [s, Array.from({ length: n }, el)]));
+  return { ...el(), many, querySelector: (s) => parts[s] ?? null, querySelectorAll: (s) => many[s] ?? [] };
 };
-const v = (o = {}) => ({ on: true, shield: 82, low: false, speed: 6, top: 12, boosting: false, kills: 3, lock: null, ...o });
+const laser = { name: 'Laser cannons', line: 'primary', index: 0, ammo: 0, max: 0, filling: 0 };
+const v = (o = {}) => ({ on: true, shield: 82, low: false, speed: 6, top: 12, boosting: false, kills: 3, lock: null, arms: laser, ...o });
 
 describe('flight cluster', () => {
   it('writes the ship', () => {
     const root = dom();
     createCluster().place(root, v());
     expect(root.hasAttribute('data-on')).toBe(true);
-    expect(root.querySelector('.fc-shield-n').textContent).toBe('82%');
-    expect(root.querySelector('.fc-shield').style.getPropertyValue('--v')).toBe('0.82');
+    expect(root.querySelector('.hud-vitals-n').textContent).toBe('82%');
+    expect(root.querySelector('.hud-vitals').style.getPropertyValue('--v')).toBe('0.82');
     expect(root.querySelector('.fc-speed').style.getPropertyValue('--v')).toBe('0.5');
     expect(root.querySelector('.fc-speed-n').textContent).toBe('SPD 60');
     expect(root.querySelector('.fc-kills-n').textContent).toBe('3');
@@ -34,10 +40,10 @@ describe('flight cluster', () => {
     const root = dom();
     const c = createCluster();
     c.place(root, v({ shield: 20, low: true, boosting: true }));
-    expect(root.querySelector('.fc-shield').hasAttribute('data-low')).toBe(true);
+    expect(root.querySelector('.hud-vitals').hasAttribute('data-low')).toBe(true);
     expect(root.querySelector('.fc-speed').hasAttribute('data-boost')).toBe(true);
     c.place(root, v());
-    expect(root.querySelector('.fc-shield').hasAttribute('data-low')).toBe(false);
+    expect(root.querySelector('.hud-vitals').hasAttribute('data-low')).toBe(false);
     expect(root.querySelector('.fc-speed').hasAttribute('data-boost')).toBe(false);
   });
   it('writes the target, and clears it', () => {
@@ -52,6 +58,14 @@ describe('flight cluster', () => {
     c.place(root, v());
     expect(root.querySelector('.fc-target').hasAttribute('data-on')).toBe(false);
   });
+  it('writes the primary line, with no rack under it', () => {
+    const root = dom();
+    createCluster().place(root, v());
+    expect(root.querySelector('.hud-arms').hasAttribute('data-on')).toBe(true);
+    expect(root.querySelector('.hud-arms-name').textContent).toBe('Laser cannons');
+    expect(root.many['.hud-arms-line'].map((l) => l.hasAttribute('data-on'))).toEqual([true, false, false]);
+    expect(root.many['.hud-arms-pip'].every((p) => p.hidden)).toBe(true);
+  });
   it('shows no hull bar for a one-hit fighter', () => {
     const root = dom();
     createCluster().place(root, v({ lock: { name: 'TIE Fighter', dist: 9.26, hp: null } }));
@@ -63,7 +77,7 @@ describe('flight cluster', () => {
     const root = dom();
     const c = createCluster();
     c.place(root, v());
-    const n = root.querySelector('.fc-shield-n');
+    const n = root.querySelector('.hud-vitals-n');
     n.textContent = 'tampered';
     c.place(root, v());
     expect(n.textContent).toBe('tampered'); // (unchanged value: no write)

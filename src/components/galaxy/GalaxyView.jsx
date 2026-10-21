@@ -33,7 +33,7 @@ import KeysCard from './KeysCard';
 // While the 3D loads the box says so; without 3D, a note
 // that the galaxy needs it, and the panel and the map still work.
 
-export default function GalaxyView({ system, here, handle, ship, loadout, build = null, tune = null, net = null, frozen, onEvent, onArrive, onAt, onBoard, onCrash, onMap, oath = null, found = [], course = null, hangar = false, onHangar = null }) {
+export default function GalaxyView({ system, here, handle, holo = null, ship, loadout, build = null, tune = null, net = null, frozen, onEvent, onArrive, onAt, onBoard, onCrash, onMap, oath = null, found = [], course = null, hangar = false, onHangar = null, skillFx = null, powerPicks = null }) {
   const labels = useRef({});
   const stars = useRef({});
   const [aim, setAim] = useState(null); // the star the nose is on
@@ -75,6 +75,8 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
       loadout,
       build,
       tune,
+      skillFx, // (the skill tree's effects and the powers picked: hangar/skills's, the page's)
+      powerPicks,
       controls,
       labels,
       stars,
@@ -88,6 +90,7 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
       tags,
       frozen,
       course,
+      holo, // (the map in 3D: holo/link.js)
       allegiance: oath,
       onArrive,
       onAt,
@@ -115,7 +118,7 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
     const root = cluster.current;
     const map = root?.parentElement;
     if (!root || !map || typeof ResizeObserver !== 'function') return undefined;
-    const row = root.querySelector('.fc-row');
+    const row = root.querySelector('.hud-cluster-row');
     const fit = () => {
       const h = row.offsetHeight + (buffs.current?.offsetHeight ? buffs.current.offsetHeight + 6 : 0);
       map.style.setProperty('--fc-h', `${h}px`);
@@ -249,7 +252,7 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
               <div ref={stick} className="universe-stick" aria-hidden="true">
                 <span />
               </div>
-              <FlightCluster rootRef={cluster} ship={ship} reduced={reduced} powersRef={powers} onPower={onPower} radarRef={radar} buffsRef={buffs} />
+              <FlightCluster rootRef={cluster} ship={ship} reduced={reduced} powersRef={powers} onPower={onPower} radarRef={radar} buffsRef={buffs} picks={powerPicks} carry={skillFx?.carry} />
               <div ref={hud} className="universe-hud" aria-hidden="true">
                 <span className="universe-reticle" />
                 <span className="universe-lock">
@@ -289,6 +292,10 @@ export default function GalaxyView({ system, here, handle, ship, loadout, build 
               </div>
               <button type="button" className="universe-view" onPointerDown={(e) => (e.preventDefault(), view.current?.seat?.())} onContextMenu={(e) => e.preventDefault()}>
                 View
+              </button>
+              {/* the next line of the armoury, as the universe map's (a keyboard has R and 1 2 3) */}
+              <button type="button" className="universe-weapon" onPointerDown={(e) => (e.preventDefault(), view.current?.weapon?.())} onContextMenu={(e) => e.preventDefault()}>
+                Weapon
               </button>
               <button type="button" className="universe-fire" onPointerDown={trigger(true)} onPointerUp={trigger(false)} onPointerCancel={trigger(false)} onPointerLeave={trigger(false)} onLostPointerCapture={trigger(false)} onContextMenu={(e) => e.preventDefault()}>
                 Fire

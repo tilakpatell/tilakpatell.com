@@ -4,8 +4,8 @@ import * as glsl from './toon';
 import * as nodes from './toonNodes';
 
 describe('toonNodes, the twin of toon', () => {
-  it('has the paint’s exports, all but the ink pass (an EffectComposer pass)', () => {
-    expect(Object.keys(nodes).sort()).toEqual(Object.keys(glsl).filter((k) => k !== 'InkPass').sort());
+  it('has the paint’s exports, the same names', () => {
+    expect(Object.keys(nodes).sort()).toEqual(Object.keys(glsl).sort());
   });
 
   it('makes a toon node material on the same light steps, its extras taken', () => {

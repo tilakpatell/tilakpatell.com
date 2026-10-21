@@ -1,5 +1,6 @@
 // Portal panic’s look (components/worlds/looks.js): painted. The show’s flat
-// colours on a toon ramp with ink (./toon.js), each dimension its own sky
+// colours on a two-step toon ramp (./toon.js), a line round the cast only and
+// no film grade, each dimension its own sky
 // and ground (Portal3D.js’s DIMS); the palette is the cast’s and the
 // arenas’ own. The house tone (Neutral, through houseOn). Its bloom is under
 // white: the shots, the portals and the bursts are the light of a small
@@ -15,3 +16,7 @@ export const LOOK = {
     bloom: 'the shots, the portals and the bursts glow from high above a small arena, and the arenas’ ground stays under the threshold',
   },
 };
+
+// The line round the cast, in metres: the camera's about 21 m above the
+// arena, so wider than C-137's, as wide as the toy-box shapes' (./cast.js)
+export const CAST_INK = 0.03;

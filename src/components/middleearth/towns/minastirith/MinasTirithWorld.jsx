@@ -2,22 +2,27 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAchievements } from '../../../Achievements';
 import { audioContext } from '../../../../lib/audio';
 import { use3D } from '../../../../lib/gpu';
-import { local, useFrameLoop, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { local, useInView, useMediaQuery } from '../../../../lib/hooks';
+import { useTick } from '../../tick';
+import { engine } from '../../module';
 import { readPad, typing } from '../../../games/pad';
-import { Convo, QuestList, Stick, Travellers } from '../TownHud';
+import { Convo, QuestList, Stick, TownMenu, Travellers } from '../TownHud';
 import { keyDown, keyUp, moveOf, ownButton } from '../keys';
 import { newTalk, talkNode, talkOn } from '../talk';
 import { useTravellers } from '../useTravellers';
 import { behindYaw, cameraMove, makeWalker, newWalker } from '../walker';
 import { ARAGORN, BEREGOND, COURT_COLLIDERS, COURT_IN, CROWN_COLLIDERS, DENETHOR, GATES, HALL_COLLIDERS, HALL_DOOR, HALL_EXIT, HALL_IN, HALL_WALLS, OVERLOOK, PILE, ROAD_LEN, SLOTS, TOMATOES, onCourt, validAt } from './layout';
-import { CONVOS, FOUND, QUESTS, SEAL, SPEAKERS, minasProgress } from './story';
+import { CONVOS, FOUND, QUESTS, SEAL, SIDE, SPEAKERS, minasProgress, sideBest } from './story';
+import { BeaconsPanel } from './BeaconsPanel';
+import { SideList } from '../SideList';
+import { readSide, recordSide } from '../side';
 import { RIDE, SIEGE, flightOf, lightBeacon, loose, newRide, newSiege, newSneak, rangeOf, stepRide, stepSiege, stepSneak } from './rules';
 import '../../shire/shire.css';
 import '../bree/bree.css';
 import './minastirith.css';
 import '../../../../styles/lazy/middleearth.css';
 
-// Minas Tirith, found off the road: Pippin in the city of the kings. The
+// Minas Tirith, the road's last chapter: Pippin in the city of the kings. The
 // ride up through the seven gates on Shadowfax, the Court of the Fountain
 // and Beregond, the Steward in the hall of the kings, the beacon, the siege
 // by night, and the morning the White Tree flowered. The places are in
@@ -28,6 +33,7 @@ import '../../../../styles/lazy/middleearth.css';
 const DONE = 'tp-minastirith-done';
 const AT = 'tp-minastirith-at';
 const TOMATO = 'tp-minastirith-tomato';
+const SIDE_KEY = 'tp-minastirith-side';
 const CHAIN_T = 15;
 const GATE_NAMES = ['the Great Gate', 'the second gate', 'the third gate', 'the fourth gate', 'the fifth gate', 'the sixth gate', 'the seventh gate'];
 const sounds = () => import('./sounds');
@@ -56,8 +62,13 @@ export default function MinasTirithWorld({ onLeave }) {
   const prog = minasProgress(done);
   const [gl, setGl] = useState('loading');
   const { unlock } = useAchievements();
-  // finding the city at all is worth something
-  useEffect(() => unlock(FOUND), [unlock]);
+  // finding the city at all is worth something; and what was done before the
+  // chapter had a seal for each thing wins it now
+  const before = useRef(done);
+  useEffect(() => {
+    unlock(FOUND);
+    for (const id of before.current) if (SEAL[id]) unlock(SEAL[id]);
+  }, [unlock]);
   const complete = useCallback(
     (id) => {
       setDone((d) => {
@@ -67,6 +78,19 @@ export default function MinasTirithWorld({ onLeave }) {
         return next;
       });
       if (SEAL[id]) unlock(SEAL[id]);
+    },
+    [unlock],
+  );
+  // the beacons' names, on the side: kept apart from the story's progress
+  const [side, setSide] = useState(() => readSide(local.get(SIDE_KEY, null)));
+  const recordGo = useCallback(
+    (go) => {
+      setSide((was) => {
+        const { won, best } = recordSide(was, go, { low: true });
+        local.set(SIDE_KEY, { won, best });
+        return { won, best };
+      });
+      if (go.won) unlock(SIDE.seal);
     },
     [unlock],
   );
@@ -81,7 +105,7 @@ export default function MinasTirithWorld({ onLeave }) {
   const world = three.on && gl !== 'failed' && gl !== 'lost';
   return (
     <section className="shire-world minas-world" aria-labelledby="minas-title" data-mode={world ? '3d' : 'cards'}>
-      {world ? <World key={round} prog={prog} complete={complete} gl={gl} setGl={setGl} onLeave={onLeave} again={again} /> : <Cards prog={prog} three={three} gl={gl} retry={() => setGl('loading')} />}
+      {world ? <World key={round} prog={prog} complete={complete} side={side} recordGo={recordGo} gl={gl} setGl={setGl} onLeave={onLeave} again={again} /> : <Cards prog={prog} three={three} gl={gl} retry={() => setGl('loading')} />}
     </section>
   );
 }
@@ -89,7 +113,7 @@ export default function MinasTirithWorld({ onLeave }) {
 const seed = () => Math.floor(Math.random() * 100000) + 1;
 const freshRide = () => newRide(seed(), { slots: SLOTS, gates: GATES.map((g) => g.s), len: ROAD_LEN });
 
-function World({ prog, complete, gl, setGl, onLeave, again }) {
+function World({ prog, complete, side, recordGo, gl, setGl, onLeave, again }) {
   const touch = useMediaQuery('(hover: none) and (pointer: coarse)');
   const [box, inView] = useInView({ rootMargin: '0px', threshold: 0.3 });
   const canvas = useRef(null);
@@ -111,6 +135,20 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
   const hudKey = useRef('');
   const [toast, setToast] = useState(null);
   const [list, setList] = useState(false);
+  // the beacons' names, on the side: while it's open the walk waits (its own mode)
+  const [beacons, setBeacons] = useState(0);
+  const openSide = useCallback(() => {
+    const s = sim.current;
+    if (s.mode !== 'walk') return;
+    s.mode = 'side';
+    setList(false);
+    setBeacons(seed());
+  }, []);
+  const closeSide = useCallback(() => {
+    const s = sim.current;
+    if (s.mode === 'side') s.mode = 'walk';
+    setBeacons(0);
+  }, []);
   const say = useCallback((text, bad = false) => setToast({ text, bad, at: Date.now() }), []);
   const timers = useRef(new Set());
   const later = useCallback((fn, ms) => {
@@ -143,7 +181,9 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
       const r = c.getBoundingClientRect();
       api.current.resize(Math.round(r.width), Math.round(r.height));
     };
+    // (its code first, then the world: made in the order the code came, as before)
     import('./scene')
+      .then((m) => engine().then(() => m))
       .then(({ createMinasWorld }) => {
         if (dead || !canvas.current) return null;
         return createMinasWorld(canvas.current, { onLost: () => !dead && setGl('lost') });
@@ -452,7 +492,7 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
   }, [box, live, talkOnward, doAct]);
 
   // ── every frame ──
-  useFrameLoop((ms) => {
+  useTick((ms) => {
     const a = api.current;
     if (!a || a.lost) return;
     const s = sim.current;
@@ -655,7 +695,7 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
       setHud({ zone: s.zone, mode: s.mode, near: s.near, moved: s.moved, talking: s.talking, line: s.talk?.at ?? null, ride: r ? { gate: r.gate, knocks: r.knocks, s: r.s } : null, sneak: n ? { s: n.s, climb: n.climb, phase: n.phase, covered: n.covered, state: n.state } : null, siege: g ? { aim: g.aim, loaded: g.loaded, felled: g.felled, dread: g.dread > 0, towers: g.towers.filter((w) => w.state === 'on').map((w) => ({ i: w.i, d: w.d })) } : null });
     }
     if (++s.frame % 120 === 0 && s.mode === 'walk' && (s.zone === 'court' || s.zone === 'hall')) local.set(AT, { zone: s.zone, x: s.h.x, z: s.h.z, face: s.h.face });
-  }, live);
+  }, live, { canvas });
 
   // look round by dragging; the stick on touch
   const drag = useRef(null);
@@ -697,7 +737,8 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
   };
 
   const here = hud.near ? PROMPT[hud.near] : null;
-  const mode = hud.mode;
+  const sideTask = { ...SIDE, open: prog.done.includes(SIDE.needs), done: side.won, best: side.best != null ? sideBest(side.best) : null };
+  const mode = beacons > 0 ? 'side' : hud.mode;
   const walking = mode === 'walk';
   const convo = hud.talking ? CONVOS[hud.talking] : null;
   const node = convo && hud.line ? convo.nodes[hud.line] : convo ? convo.nodes[convo.start] : null;
@@ -723,6 +764,7 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
             </p>
           </div>
           <div className="shire-side">
+            <TownMenu chapter="minas-tirith" />
             <button type="button" className="shire-chip" onClick={() => setList((v) => !v)} aria-expanded={list}>
               <b>{prog.done.length}</b> of {QUESTS.length} done {!touch && <kbd>M</kbd>}
             </button>
@@ -854,7 +896,12 @@ function World({ prog, complete, gl, setGl, onLeave, again }) {
         </div>
       )}
       {walking && touch && <Stick onMove={onStick} />}
-      {list && <QuestList title="Things to do in Minas Tirith" quests={prog.quests} next={prog.next} onClose={() => setList(false)} />}
+      {beacons > 0 && <BeaconsPanel seed={beacons} best={side.best != null ? sideBest(side.best) : null} onDone={recordGo} onClose={closeSide} />}
+      {list && (
+        <QuestList title="Things to do in Minas Tirith" quests={prog.quests} next={prog.next} onClose={() => setList(false)}>
+          <SideList tasks={[sideTask]} onGo={openSide} canGo={(t) => t.open && sim.current.mode === 'walk'} />
+        </QuestList>
+      )}
     </div>
   );
 }

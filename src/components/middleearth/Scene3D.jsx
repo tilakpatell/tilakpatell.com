@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { prefersReducedMotion, useFrameLoop, useInView } from '../../lib/hooks';
+import { prefersReducedMotion, useInView } from '../../lib/hooks';
+import { engine } from './module';
+import { useTick } from './tick';
 import '../../styles/lazy/middleearth.css';
 
 // A Middle-earth scene in WebGL, laid over the drawing it stands in for.
 // It loads Three.js and the scene only once it is near the screen, hands the
 // scene the game's state every frame (`read`), and reports 'on' once it has
-// drawn, or 'lost' / 'failed', so the drawing can come back. `api` is a ref
+// drawn, or 'lost' / 'failed', so the drawing can come back. The scene draws
+// on the world's renderer (./module.js, ./stage.js), in the world's frames
+// (./tick.js). `api` is a ref
 // the game keeps, to tell the scene about moments (`api.current.fx(...)`).
 export default function Scene3D({ name, load, read, api, soft = false, onState }) {
   const canvas = useRef(null);
@@ -41,7 +45,9 @@ export default function Scene3D({ name, load, read, api, soft = false, onState }
       if (r && r.width > 0) scene.current?.resize(r.width, r.height);
     };
     setStatus('loading');
+    // (its code first, then the world: made in the order the code came, as before)
     load()
+      .then((create) => engine().then(() => create))
       .then((create) => {
         if (dead || !canvas.current) return;
         try {
@@ -69,7 +75,7 @@ export default function Scene3D({ name, load, read, api, soft = false, onState }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [near]);
 
-  useFrameLoop((ms) => {
+  useTick((ms) => {
     const s = scene.current;
     if (!s || s.lost) return;
     try {
@@ -85,7 +91,7 @@ export default function Scene3D({ name, load, read, api, soft = false, onState }
       if (api) api.current = null;
       setStatus('failed');
     }
-  }, inView && running && (status === 'ready' || status === 'on'));
+  }, inView && running && (status === 'ready' || status === 'on'), { canvas });
 
   return (
     <div ref={box} className="me-gl" aria-hidden="true">

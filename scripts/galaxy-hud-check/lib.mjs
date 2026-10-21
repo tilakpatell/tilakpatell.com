@@ -14,6 +14,8 @@ export const open = async (viewport, { reduced = false } = {}) => {
     window.localStorage.setItem('tp-intro', '1');
     window.localStorage.setItem('tp-sound', 'off');
     window.sessionStorage.setItem('tp-galaxy-intro', '1');
+    window.localStorage.setItem('tp-worlds', JSON.stringify('load')); // (the 3D, without the gate's asking)
+    window.localStorage.setItem('tp-software', JSON.stringify('on')); // (past the Star Wars worlds' GPU gate, lib/fit: the cloud's software GL)
   });
   const page = await ctx.newPage();
   const errors = [];

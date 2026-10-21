@@ -8,8 +8,8 @@ The Battlefront world is the 2017 game’s modes played on the site from the gam
 - [Accurate to the game](specs/2026-10-10-bf2017-accuracy-design.md): the bots’ records, the screens from the widget trees, Starfighter Assault from the handling layers, every map’s rulebook.
 - [The flow and the mods](specs/2026-10-10-battlefront-flow-and-mods-design.md): the landing menu, the honest Equip, HvV and Blast, the mods’ content.
 - [The galaxy lands on the game](specs/2026-10-10-bf2017-galaxy-on-the-game-design.md) and [the Galactic Assault deploy flow](specs/2026-10-11-galactic-assault-bf2017-flow-design.md), with the decision [one deploy flow on the galaxy](../decisions/2026-10-11-one-deploy-flow-on-the-galaxy.md).
-- [The way in is the game’s own](specs/2026-10-13-hoth-landing-game-menu-design.md), its phase 1 plan [here](plans/2026-10-13-hoth-landing-game-menu-phase1.md).
-- [The screens on the canvas](specs/2026-10-13-bf2017-ui-canvas-design.md) (phase 1 plan [here](plans/2026-10-13-bf2017-ui-canvas-phase1.md)) and [the front end’s 3D room](specs/2026-10-13-bf2017-frontend-backdrop-design.md).
+- [The way in is the game’s own](specs/2026-10-13-hoth-landing-game-menu-design.md), its phase 1 merged (#971; its plan, done, removed).
+- [The screens on the canvas](specs/2026-10-13-bf2017-ui-canvas-design.md) (phase 1 merged, #988; its plan, done, removed) and [the front end’s 3D room](specs/2026-10-13-bf2017-frontend-backdrop-design.md).
 - [Hoth](specs/2026-10-09-hoth-design.md) and the older [Galactic Assault on the galaxy’s worlds](specs/2026-10-06-galactic-assault-design.md).
 - [The saber as the game’s](specs/2026-10-10-bf2017-saber-mechanics-design.md); [saber forms, the Force and dismemberment](specs/2026-10-09-saber-forms-force-dismemberment-design.md) with the decisions [dismemberment by a clipped twin](../decisions/2026-10-09-dismemberment-by-a-clipped-twin.md) and [forms from mirrored clips](../decisions/2026-10-09-forms-from-mirrored-clips.md); [the combat revamp](specs/2026-10-08-combat-revamp-design.md).
 - [The physics from the game’s data](specs/2026-10-10-bf2017-physics-design.md).

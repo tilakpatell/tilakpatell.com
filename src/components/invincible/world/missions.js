@@ -24,7 +24,7 @@
 //                        own, unless it says); `upto` asks for that many in all
 // - race   gates, r, time   the gates in order within the time (`ring`
 //                        events from ./quests.js's course, or flying through)
-// - escort npc, to, r, within   stay with them until they're at `to`
+// - escort npc, to, within, grace   stay within `within` of them (over `grace` s away fails) until they say they're at `to` and moving on (`dadAt`)
 // - protect what, time   `what`'s hp (from `hurt`) stays above 0 for `time`
 // - through at, r, speed fly through it faster than `speed`
 // - use    id            E somewhere (Think, Mark!, a photo)
@@ -93,8 +93,15 @@ const EVE_GATES = [
   [-200, 60, 200],
   [-360, 50, -40],
 ];
-// Dad's four points for the talk, in the order he leads them
-const DAD_POINTS = [PLACES.downtown.p, PLACES.river.p, [-2610, 90, -418], [-2050.2, 40, 264]];
+// Dad's four points for the talk, in the order he leads them: over downtown,
+// the river and the school above the skyline (the tallest tower is 360 m; he
+// flies straight from one to the next, over the city, not through it), then home
+const DAD_POINTS = [
+  [40, 380, -60],
+  [1150, 380, -420],
+  [-2610, 380, -418],
+  [-2050.2, 40, 264],
+];
 // the photo spots: where to hover (a 20 m sphere), and the way to face
 const PHOTOS = [
   { id: 'photo1', name: 'The Guardians’ hall from the plaza', p: [24, 3, 27], face: -2.4 },
@@ -211,7 +218,7 @@ export const MISSIONS = [
     start: { npc: 'omni', place: 'home', time: ['dusk', 'night'], after: ['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6'] },
     intro: [['omni', 'Walk with me, Mark. Fly, I mean.']],
     steps: [
-      ...DAD_POINTS.map((p, i) => step('escort', ['Follow Dad over downtown', 'Follow Dad over the river', 'Follow Dad over the school', 'Follow Dad home'][i], { npc: 'omni', to: p, r: 30, within: 200, grace: 10, marker: { npc: 'omni' } })),
+      ...DAD_POINTS.map((p, i) => step('escort', ['Follow Dad over downtown', 'Follow Dad over the river', 'Follow Dad over the school', 'Follow Dad home'][i], { npc: 'omni', to: p, within: 200, grace: 10, marker: { npc: 'omni' } })),
       step('land', 'Land at home', { at: PLACES.home.door, r: 12, marker: PLACES.home.door }),
       step('use', 'Think, Mark!', { id: 'thinkmark', marker: PLACES.home.door }),
     ],
@@ -386,12 +393,14 @@ export function feedMission(prev, ev) {
         }
       } else if (s.type === 'through' && within(ev.p, s.at, s.r)) {
         if ((ev.speed ?? 0) > s.speed) next();
-      } else if (s.type === 'escort') {
-        const d = p.seen.npcs[s.npc];
-        if (d && within(d, s.to, s.r) && within(ev.p, d, s.within)) next();
       }
       break;
     }
+    case 'dadAt':
+      // (Dad at his point and moving on, which he does once Mark is close by
+      // him: the step is done when he says so, so the two never disagree)
+      if (s.type === 'escort' && s.npc === 'omni') next();
+      break;
     case 'lesson-start':
     case 'ring':
       // (the lesson's start is its first ring: either says so, the other then doesn't count again)

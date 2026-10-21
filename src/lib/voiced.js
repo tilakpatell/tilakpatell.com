@@ -60,7 +60,7 @@ export async function voicedSrc(who, text) {
 // Speakers whose lines are someone else's voice (Strider is Aragorn; the
 // Council are Ricks; Evil Morty is a Morty), and the ones with no voice at
 // all: whoever narrates, a caller, a voice on the wind, the beeps and roars.
-const SAME_VOICE = { strider: 'aragorn', councila: 'rick', councilb: 'rick', councilc: 'rick', evilmorty: 'morty', president: 'morty', pa: 'rick', cop: 'rick', daycare: 'rick', foreman: 'rick' };
+const SAME_VOICE = { strider: 'aragorn', gandalfwhite: 'gandalf', councila: 'rick', councilb: 'rick', councilc: 'rick', evilmorty: 'morty', president: 'morty', pa: 'rick', cop: 'rick', daycare: 'rick', foreman: 'rick' };
 const NO_VOICE = new Set(['narrator', 'voice', 'caller', 'r2', 'artoo', 'chewie', 'nazgul', 'orc', 'comms', 'bot', 'bee', 'bumblebee']);
 
 // The voice a speaker's lines are made in, or null.

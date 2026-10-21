@@ -498,3 +498,29 @@ describe('a room heard by cell', () => {
     expect(gOf(sent)).toEqual([]);
   });
 });
+
+describe('a party’s chat on the room’s own key', () => {
+  const PARTY = '0123456789abcdef';
+
+  it('a line one room seals for another opens there, on their keys, and nowhere else', async () => {
+    const net = createRelays(URLS);
+    const [a, b, c] = [join(net), join(net), join(net)];
+    const blobs = await a.seal([b.selfId], PARTY, 'Meet at Bree');
+    expect(blobs).toHaveLength(1);
+    expect(await b.open(a.selfId, PARTY, blobs)).toBe('Meet at Bree');
+    expect(await c.open(a.selfId, PARTY, blobs)).toBe(null);
+    expect(await b.open(a.selfId, 'fedcba9876543210', blobs)).toBe(null);
+  });
+
+  it('junk is null, not a throw, and a room that’s left seals and opens nothing', async () => {
+    const net = createRelays(URLS);
+    const [a, b] = [join(net), join(net)];
+    expect(await a.seal('everyone', PARTY, 'Hi')).toBe(null);
+    expect(await b.open(a.selfId, PARTY, [() => 'not a blob'])).toBe(null);
+    const blobs = await a.seal([b.selfId], PARTY, 'Hi');
+    await b.leave();
+    expect(await b.open(a.selfId, PARTY, blobs)).toBe(null);
+    await a.leave();
+    expect(await a.seal([b.selfId], PARTY, 'Hi')).toBe(null);
+  });
+});

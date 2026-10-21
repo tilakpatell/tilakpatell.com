@@ -3,7 +3,7 @@
 // rock lighting it all from below.
 
 import * as THREE from 'three';
-import { hot } from '../../../../lib/stage3d';
+import { hot } from '../../../../lib/three/stage3dNodes';
 import { B, cyl } from '../../shire/props';
 import { V, motes, stream } from './common';
 

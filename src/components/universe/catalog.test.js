@@ -8,7 +8,7 @@ import { PARTS, STOCK } from './outfit';
 import { PAINTS } from './paint';
 import { BUILD_SLOTS, modulesFor } from './shipyard/parts';
 import { STOCK_BUILD } from './shipyard/build';
-import { BANDS, CATALOG, itemFor, keyOf, needText, priceOf } from './catalog';
+import { BANDS, CATALOG, SKILL_NODES, itemFor, keyOf, needText, priceOf } from './catalog';
 
 const ITEMS = Object.values(CATALOG);
 const MODULES = BUILD_SLOTS.flatMap((slot) => modulesFor(slot));
@@ -59,8 +59,18 @@ describe('the catalogue', () => {
         expect(WAR_SIDES[needs.rank.side], key).toBeTruthy();
         expect(RANKS[needs.rank.side].map((r) => r.id), key).toContain(needs.rank.id);
       }
-      expect([null, 'starwars', 'rickmorty', 'breakingbad', 'galaxy'], key).toContain(from);
+      if (needs.skill) expect(SKILL_NODES[needs.skill], key).toBeTruthy();
+      expect([null, 'starwars', 'rickmorty', 'breakingbad', 'galaxy', 'universe'], key).toContain(from);
     }
+  });
+
+  it('sells the skill tree’s four only once their nodes are taken, and says so', () => {
+    expect(itemFor('part', 'ordnance', 'seismic')).toMatchObject({ price: 1500, from: 'starwars', needs: { skill: 'u-seismic' } });
+    expect(itemFor('part', 'secondary', 'darkmatter')).toMatchObject({ price: 1250, from: 'rickmorty', needs: { skill: 'u-darkmatter' } });
+    expect(itemFor('part', 'ordnance', 'crystal')).toMatchObject({ price: 1250, from: 'breakingbad', needs: { skill: 'u-crystal' } });
+    expect(itemFor('part', 'secondary', 'energon')).toMatchObject({ price: 1500, from: 'universe', needs: { skill: 'u-energon' } });
+    expect(needText({ skill: 'u-seismic' })).toBe('Take “Seismic charge” in the skill tree');
+    expect(needText({ level: 3, skill: 'u-energon' })).toBe('Reach level 3 and take “Energon arc” in the skill tree');
   });
 
   it('gives each universe something of its own to earn there', () => {

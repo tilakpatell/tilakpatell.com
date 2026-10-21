@@ -165,11 +165,12 @@ export default function MusicCard() {
   return (
     <li className="fun-card fun-music">
       <div className="fun-visual sitar-visual">
+        {/* the dark island is the svg, not the visual, whose rule under the picture is the card’s --border */}
         <svg
           ref={svg}
           viewBox="0 0 400 200"
           preserveAspectRatio="xMidYMid meet"
-          className="sitar-svg"
+          className="sitar-svg dark-scope"
           role="group"
           aria-label="Sitar. Keys 1 to 8 play Sa, Re, Ga, Ma, Pa, Dha, Ni and high Sa."
           tabIndex={0}

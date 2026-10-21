@@ -64,8 +64,16 @@ export function promptText({ key = 'E', verb = '', thing = '', touch = false } =
   return touch || !key ? words : `${key} ${words}`.trim();
 }
 
-// "N others here" (the glossary's players chip), or null when you're alone.
-export const othersText = (count) => (count > 0 ? `${count} ${count === 1 ? 'other' : 'others'} here` : null);
+// "N others here" (the glossary's players chip), or null when you're alone;
+// with your allies among them (the roster's: the same key in every room),
+// "· 1 ally", "· 2 allies", or "· your ally" when they're the only one here.
+export const alliesText = (allies, count = Infinity) => (allies > 0 ? (allies === 1 && count === 1 ? 'your ally' : `${allies} ${allies === 1 ? 'ally' : 'allies'}`) : null);
+export const othersText = (count, allies = 0) => {
+  if (!(count > 0)) return null;
+  const others = `${count} ${count === 1 ? 'other' : 'others'} here`;
+  const who = alliesText(allies, count);
+  return who ? `${others} · ${who}` : others;
+};
 
 export const COMPASS = { span: Math.PI * 0.9, gap: 72, reserve: 220, markerMin: 24, markerMax: 72, fov: 64 };
 
@@ -131,3 +139,10 @@ export const minimapSize = (width, touch = false) => (touch || width < MINIMAP.n
 // one line when the pause begins, null otherwise (its end says nothing)
 export const DETAIL_PAUSED = Object.freeze({ title: 'Detail paused', text: 'Detail paused by the data budget; a higher quality level raises it.' });
 export const detailToast = (was, now) => (now && !was ? DETAIL_PAUSED : null);
+
+// The letterbox (./Letterbox.jsx): two bars, top and bottom, while a scene
+// holds. Never on a phone held upright (the picture is narrow enough), under
+// reduced motion, or when the visitor has turned it off. A bar is BAR of the
+// height (the kit's --hud-bar), under the prompt's reserve at the foot.
+export const LETTERBOX = { bar: 0.07 };
+export const letterbox = ({ holding = false, portrait = false, reduced = false, off = false } = {}) => Boolean(holding) && !portrait && !reduced && !off;

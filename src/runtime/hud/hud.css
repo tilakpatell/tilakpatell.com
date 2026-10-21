@@ -59,6 +59,7 @@
 :where(.hud-btn):not(hud-none) { cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease; }
 :where(.hud-btn:hover):not(hud-none), :where(.hud-btn:focus-visible):not(hud-none) { background: var(--hud-glass-hi); border-color: var(--hud-accent); }
 :where(.hud-chip b):not(hud-none) { color: var(--hud-accent); font-family: var(--hud-num-face); font-variant-numeric: tabular-nums; }
+:where(.hud-players[data-allies]):not(hud-none) { border-color: rgb(141 255 173 / 0.55); } /* your allies are here: the site's ally green (universe/online/online.css) */
 
 /* the one Menu */
 :where(.hud-menu):not(hud-none) { position: relative; }
@@ -66,7 +67,8 @@
 :where(.hud-menu-list > *):not(hud-none) { display: block; padding: 0.55rem 0.7rem; border: 0; border-radius: 5px; background: none; color: var(--hud-ink); font: 600 0.82rem/1.2 var(--hud-face); text-align: left; text-decoration: none; cursor: pointer; }
 :where(.hud-menu-list > :is(button, a):hover, .hud-menu-list > :is(button, a):focus-visible):not(hud-none) { background: color-mix(in srgb, var(--hud-accent) 18%, transparent); outline: none; }
 :where(.hud-menu-list b):not(hud-none) { color: var(--hud-accent); }
-:where(.hud-menu-list [data-on]):not(hud-none) { cursor: default; }
+/* the count as a plain status: an arrow (the span alone: once it opens your party, the count is a button and keeps the hand) */
+:where(.hud-menu-list span[data-on]):not(hud-none) { cursor: default; }
 /* what the picture is drawn with: a note, not a button (dimmed by colour, as the house dims) */
 :where(.hud-menu-list > .hud-menu-note):not(hud-none) { margin: 0.2rem 0 0; padding-top: 0.6rem; border-top: var(--hud-border); font-weight: 500; cursor: default; max-width: 16rem; }
 :where(.hud-menu-note span):not(hud-none) { display: block; margin-top: 0.25rem; color: var(--hud-muted); font: 500 0.75rem/1.35 var(--hud-face); }
@@ -101,7 +103,8 @@
 :where(.hud-list-head p):not(hud-none), :where(.hud-list-flavour):not(hud-none) { margin: 0; }
 :where(.hud-list-flavour):not(hud-none) { margin: -0.2rem 0 0.6rem; color: var(--hud-muted); font-size: 0.82rem; }
 :where(.hud-list ul):not(hud-none) { display: grid; gap: 0.4rem; margin: 0; padding: 0; list-style: none; }
-:where(.hud-list li):not(hud-none) { display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0.7rem; border-radius: 9px; background: rgba(255, 255, 255, 0.05); }
+/* (each row a wash of the world’s ink, so it shows on a light skin’s glass too; white where a list sits in no skin) */
+:where(.hud-list li):not(hud-none) { display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0.7rem; border-radius: 9px; background: color-mix(in srgb, var(--hud-ink, #fff) 5%, transparent); }
 :where(.hud-list li[data-next]):not(hud-none) { box-shadow: inset 0 0 0 1px var(--hud-accent); }
 :where(.hud-list li:not([data-open])):not(hud-none) { color: var(--hud-muted); }
 :where(.hud-list li > div):not(hud-none) { flex: 1; min-width: 0; }
@@ -127,8 +130,21 @@
   :where(.hud-bubble > div):not(hud-none) { max-width: 13rem; font-size: 0.8rem; }
 }
 
+/* the letterbox (./Letterbox.jsx): black bars top and bottom while a scene
+   holds, each --hud-bar of the height (hud.js's LETTERBOX), in over
+   --hud-bar-in; the box itself isn't positioned, so the bars hang from the
+   world's stage or its HUD. `data-off` folds them away again. */
+:where(.hud-letterbox):not(hud-none)::before,
+:where(.hud-letterbox):not(hud-none)::after { content: ''; position: absolute; left: 0; right: 0; height: var(--hud-bar, 7%); background: #000; z-index: 3; animation: hud-bars var(--hud-bar-in, 0.6s) ease-out both; transition: transform var(--hud-bar-in, 0.6s) ease-out; pointer-events: none; }
+:where(.hud-letterbox):not(hud-none)::before { top: 0; }
+:where(.hud-letterbox):not(hud-none)::after { bottom: 0; }
+:where(.hud-letterbox[data-off]):not(hud-none)::before,
+:where(.hud-letterbox[data-off]):not(hud-none)::after { transform: scaleY(0); }
+@keyframes hud-bars { from { transform: scaleY(0); } }
+
 @media (prefers-reduced-motion: reduce) {
-  :where(.hud-toast) { animation: none; }
+  :where(.hud-toast):not(hud-none) { animation: none; }
+  :where(.hud-letterbox):not(hud-none)::before, :where(.hud-letterbox):not(hud-none)::after { animation: none; transition: none; }
 }
 
 /* a minimap (./MiniMap.jsx): a disc on glass under the top row on the right,

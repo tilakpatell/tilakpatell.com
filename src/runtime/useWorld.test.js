@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adoptable, madeFor, recoverNow, sameProps, watchNear } from './useWorld';
+import { adoptable, madeFor, recoverNow, sameProps, wants3D, watchNear } from './useWorld';
 
 // A page mounting a module finds a world of that module already on the
 // runtime: one handed over to it (adopt it), or one made for something else
@@ -119,5 +119,15 @@ describe('whether a page’s props are the ones its world has', () => {
     expect(sameProps({ a: 1 }, { a: 1, b: undefined })).toBe(false);
     expect(sameProps({ a: 1 }, null)).toBe(false);
     expect(sameProps({ a: NaN }, { a: NaN })).toBe(true);
+  });
+});
+
+describe('whether a page draws in 3D', () => {
+  it('a page with its own 3D switch decides alone; every other page still asks the site', () => {
+    expect(wants3D(true, true)).toBe(true);
+    expect(wants3D(true, false)).toBe(false);
+    expect(wants3D(true, false, true)).toBe(true);
+    expect(wants3D(false, true, true)).toBe(false);
+    expect(wants3D(false, true)).toBe(false);
   });
 });

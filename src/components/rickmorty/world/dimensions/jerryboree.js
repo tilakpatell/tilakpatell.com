@@ -2,7 +2,8 @@
 // a daycare for Jerrys, a bright room of soft colours with padded walls; a
 // ball pit, a television showing the same programme it always does, cots, a
 // reception desk with a Rick behind it and a ticket machine; Jerrys about the
-// room from the six made (Meshy), and ours by the door asking after Beth.
+// room from the six made (Meshy), one of them ours, dealt afresh each run by
+// the stage's find (../games/find.js).
 
 import { BALL, fitText } from '../interiors/shell';
 import { specks, stage } from './stage';

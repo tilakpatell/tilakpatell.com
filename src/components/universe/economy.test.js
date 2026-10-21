@@ -239,6 +239,18 @@ describe('buying', () => {
     expect(econ.canBuy(item({ needs: leader })).why).toBe('locked:rank');
   });
 
+  it('a skill need waits for its node in the skill tree', () => {
+    let taken = [];
+    const { econ } = fresh({}, { skillOf: (id) => taken.includes(id) });
+    econ.earn('killCapital');
+    const seismic = item({ needs: { skill: 'u-seismic' } });
+    expect(econ.canBuy(seismic).why).toBe('locked:skill');
+    taken = ['u-seismic'];
+    expect(econ.canBuy(seismic).ok).toBe(true);
+    // (and with no word from the tree at all, it stays shut)
+    expect(fresh().econ.canBuy(seismic).why).toBe('locked:skill');
+  });
+
   it('a lock says so before the price does', () => {
     const { econ } = fresh();
     expect(econ.canBuy(item({ price: 5000, needs: { level: 9 } })).why).toBe('locked:level');

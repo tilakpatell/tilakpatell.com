@@ -17,7 +17,7 @@
 //   groundAt(x, z) → metres; wind: { time: { value }, dir: Vector2 } (the world's one wind)
 
 import * as THREE from 'three';
-import { TILE, dissolveOf, keepShare, reachOf, tileInstances, tilesAround } from './grid.js';
+import { TILE, dissolveOf, keepShare, reachOf, thinOf, tileInstances, tilesAround } from './grid.js';
 import { applySway, swayOf } from './wind.js';
 
 // metres the visitor walks before the ring is refilled (a dissolve band is
@@ -126,16 +126,18 @@ export function createScatterScene({ scene, json, mask, load, tier = 'high', gro
     if (!widest) return;
     const near = tilesAround(x, z, widest);
     const chosen = [];
+    let weight = 0; // (how many the ring holds once thinned toward its edge)
     for (const [tx, tz] of near) {
       for (const it of instancesOf(tx, tz)) {
         const r = reachOfType[it.type];
         if (!r) continue;
         const d = Math.hypot(it.x - x, it.z - z);
         if (d > r) continue;
+        weight += thinOf(d, r);
         chosen.push(it, d);
       }
     }
-    const keep = keepShare(chosen.length / 2, tier);
+    const keep = keepShare(weight, tier);
     for (const slot of draws.values()) {
       slot.lod0.count = 0;
       if (slot.lod1) slot.lod1.count = 0;
@@ -144,10 +146,11 @@ export function createScatterScene({ scene, json, mask, load, tier = 'high', gro
     const picks = [];
     for (let i = 0; i < chosen.length; i += 2) {
       const it = chosen[i];
-      if (it.r >= keep) continue;
-      const t = flat[it.type];
       const d = chosen[i + 1];
       const r = reachOfType[it.type];
+      // (the cap's share, and thinner toward the reach's end, by its own roll: grid.js's thinOf)
+      if (it.r >= keep * thinOf(d, r)) continue;
+      const t = flat[it.type];
       const f = dissolveOf(d, r, t.dissolve?.range);
       if (f <= 0.02) continue;
       const draw = draws.get(t.mesh);
