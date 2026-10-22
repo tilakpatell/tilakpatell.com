@@ -17,6 +17,8 @@
   box-shadow: 0 10px 40px rgb(0 0 0 / 0.45);
   pointer-events: auto;
   overflow: hidden;
+  /* (over the Map’s disc and the chip, as the leaving feast’s card is) */
+  z-index: 6;
 }
 .hogwarts-binder-head {
   display: flex;

@@ -12,6 +12,7 @@ import SpellWheel from './hud/SpellWheel';
 import { houseColours } from './rules/sorting';
 import './hud/match.css';
 import Night from './hud/Night';
+import Binder from './hud/Binder';
 import MaraudersMap from './hud/MaraudersMap';
 import PointsChip from './hud/PointsChip';
 import Feast from './hud/Feast';
@@ -97,6 +98,10 @@ export default function HogwartsWorld() {
   const [cloaked, setCloaked] = useState(false);
   const [cold, setCold] = useState(0);
   const [cut, setCut] = useState(0);
+  // Hogsmeade’s (Lane F): the binder of cards, the card just found, a butterbeer’s warmth
+  const [binderOpen, setBinderOpen] = useState(false);
+  const [newCard, setNewCard] = useState(null);
+  const [warm, setWarm] = useState(0);
   // the term's view (play/school.js): the week, the quests, the points; it changes now and then, not every frame
   const [term, setTerm] = useState(null);
   const [cup, setCup] = useState(null);
@@ -151,6 +156,8 @@ export default function HogwartsWorld() {
     else if (e.type === 'cloak') setCloaked(Boolean(e.on));
     else if (e.type === 'cold') setCold(e.k);
     else if (e.type === 'cut') setCut((n) => n + 1);
+    else if (e.type === 'card') setNewCard(e.id);
+    else if (e.type === 'butterbeer') setWarm((n) => n + 1);
     else if (e.type === 'school') {
       setTerm(e);
       chip.current?.readout(e);
@@ -205,6 +212,12 @@ export default function HogwartsWorld() {
   );
   const press = useCallback((name, down) => api()?.press(name, down), [api]);
 
+  // (a card just found shows for a few seconds on its own)
+  useEffect(() => {
+    if (!newCard) return undefined;
+    const t = setTimeout(() => setNewCard(null), 5000);
+    return () => clearTimeout(t);
+  }, [newCard]);
   useEffect(() => {
     if (!toast) return undefined;
     const t = setTimeout(() => setToast(null), TOAST_FOR);
@@ -287,6 +300,9 @@ export default function HogwartsWorld() {
               {/* (up the road to the village on a Hogsmeade weekend, until the grounds’ road reaches it) */}
               {!onRide && [term?.list?.find((q) => q.id === 'hogsmeade')].some((q) => q?.open || q?.done) && room?.id !== 'hogsmeade' && <MenuItem onClick={() => api()?.enter('hogsmeade')}>Hogsmeade</MenuItem>}
               {!onRide && <MenuItem onClick={() => api()?.wait?.(21.5)}>Wait for nightfall</MenuItem>}
+              {!onRide && <MenuItem onClick={() => setBinderOpen(true)}>Chocolate Frog cards</MenuItem>}
+              {/* (the passage to the Shack from the Willow’s roots, until the grounds’ Willow stands to climb down by) */}
+              {!onRide && [term?.list?.find((q) => q.id === 'hogsmeade')].some((q) => q?.open || q?.done) && !room && <MenuItem onClick={() => api()?.enter('tunnel')}>The passage under the Willow</MenuItem>}
               {!onRide && term?.cloak && <MenuItem onClick={() => api()?.cloak?.()} aria-keyshortcuts="I">{cloaked ? 'Take the cloak off' : 'Put the cloak on'}</MenuItem>}
               {/* (the broom and the classes are the shore's, until the term's lane sends you to them in their rooms) */}
               {!onRide && !room && !riding && <MenuItem onClick={() => api()?.fly()}>Fly</MenuItem>}
@@ -348,7 +364,9 @@ export default function HogwartsWorld() {
       >
         <Scarf house={house} />
         <Toast toast={toast} className="hogwarts-toast" />
-        {!onRide && <Night watched={watched} cloaked={cloaked} cold={cold} cut={cut} reduced={reduced} />}
+        {!onRide && <Night watched={watched} cloaked={cloaked} cold={cold} cut={cut} warm={warm} reduced={reduced} />}
+        {newCard && !binderOpen && <Binder card={newCard} found={term?.cards ?? [newCard]} />}
+        {binderOpen && <Binder found={term?.cards ?? []} onClose={() => setBinderOpen(false)} />}
         {!onRide && <MaraudersMap ref={map} source={night} touch={touch} narrow={narrow} reduced={reduced} onOpen={() => unlock('hp-map')} />}
         {caption && <Bubble key={caption.key} name={caption.name} line={caption.text} className="hp-said" />}
         {ask != null && <SortingCard q={ask} tall={portrait} onAnswer={(i) => api()?.answer(i)} />}

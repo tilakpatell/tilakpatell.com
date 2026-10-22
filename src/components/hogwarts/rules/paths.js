@@ -205,6 +205,10 @@ export const ROOM_FRAMES = {
   greatHall: { at: [-12, 11], yaw: Math.PI / 2 },
   // (the village’s set is built in the Map’s own frame, its street’s middle at the set’s origin)
   hogsmeade: { at: VILLAGE.at, yaw: 0 },
+  // (the village’s insides: each its own frame with its front door toward +z, stood in its
+  // building facing the street; the Shack on its hill; the passage from the Willow toward it)
+  ...Object.fromEntries(['honeydukes', 'broomsticks', 'hogshead'].map((id) => [id, { at: buildingAt(id).at, yaw: buildingAt(id).faces }])),
+  shack: { at: SHACK.at, yaw: Math.atan2(VILLAGE.at[0] - SHACK.at[0], VILLAGE.at[1] - SHACK.at[1]) },
 };
 
 const BY_ID = new Map(SPOTS.map((s) => [s.id, s]));

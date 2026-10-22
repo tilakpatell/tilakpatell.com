@@ -23,7 +23,7 @@
 import { TERM, advance as termOn, isChristmas, isLeaving, newTerm, seasonOf, weekLabel } from '../rules/term';
 import { apply, newPoints, standings, totals, winner, words } from '../rules/points';
 import { QUESTS, advance as questOn, doneCount, listFor, newQuests, objectiveOf } from '../rules/quests';
-import { find } from '../rules/cards';
+import { CARDS, find } from '../rules/cards';
 
 export const SAVE_KEY = 'tp-hogwarts';
 export const KEYS = ['term', 'points', 'quests', 'cards', 'learnt', 'cloak'];
@@ -92,6 +92,7 @@ export function createSchool({ saves = null, tell = () => {}, house: given = nul
       feasted,
       year: term.year,
       cloak,
+      cards: [...cards],
     };
     tell('school', view);
   };
@@ -194,6 +195,7 @@ export function createSchool({ saves = null, tell = () => {}, house: given = nul
           const r = find(cards, e.card);
           cards = r.found;
           if (r.fresh) tell('card', { id: e.card });
+          if (r.fresh && cards.length === CARDS.length) tell('achievement', { id: 'hp-cards' });
         }
         quest({ type: 'pickup', id: e.id });
         break;

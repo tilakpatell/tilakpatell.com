@@ -307,6 +307,7 @@ export const ACHIEVEMENTS = {
   'hp-snitch': { name: 'Seeker', desc: 'Caught the Snitch in a Quidditch match at Hogwarts' },
   'hp-patronus': { name: 'Expecto Patronum', desc: 'Drove the dementors off the shore of the Black Lake' },
   'hp-head': { name: 'Head of house', desc: 'Did everything there is to do in a term at Hogwarts, and won your house the Cup' },
+  'hp-cards': { name: 'Collector', desc: 'Found all twenty Chocolate Frog cards at Hogwarts and in Hogsmeade' },
 };
 
 const PAGES = ['/', '/experience', '/projects', '/travel', '/contact', '/terminal'];

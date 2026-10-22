@@ -82,6 +82,7 @@ import { createSchool } from './play/school';
 import { createNoticeBoard, noticesFor } from './world/noticeBoard';
 import { createCurfew } from './play/curfew';
 import { createPresence } from './play/presence';
+import { createCardSpots } from './play/cards';
 import { createDementors, playNotes } from './world/grounds/dementors';
 import { drain, pull } from './rules/dementors';
 import { afterHours } from './rules/curfew';
@@ -270,6 +271,8 @@ export default {
     // Snape walking their rounds where you can see them, and the cloak
     const dementors = createDementors({ rt, scene, house, floorAt, shoreAt: inland, reduced });
     const presence = createPresence({ rt, scene, house });
+    // the Chocolate Frog cards hidden in the room you go into (play/cards.js)
+    const cardSpots = createCardSpots({ tell });
     let cloaked = false;
     const wear = (on) => {
       if ((on && !school.cloak) || on === cloaked) return;
@@ -353,6 +356,7 @@ export default {
       school.hear(type, data);
       if (type === 'school') board.set(data);
       if (type === 'school' || type === 'room') dress(type === 'room');
+      if (type === 'room') cardSpots.dress(rooms.room, data?.id ?? null, { house: school.house, found: school.cards });
       if (type === 'patronus') dementors.patronus();
     };
 
@@ -493,6 +497,7 @@ export default {
           school.step(dt, hours());
           nightWatch(dt);
           dementorsStep(dt);
+          cardSpots.step(dt);
           return;
         }
         if (pressed('cloak')) wear(!cloaked);
@@ -623,6 +628,7 @@ export default {
         board.dispose();
         dementors.dispose();
         presence.dispose();
+        cardSpots.dispose();
         wand.dispose();
         quidditch.dispose();
         lessons.dispose();
