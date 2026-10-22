@@ -101,6 +101,8 @@ export async function start() {
   if (await up()) return;
   if (!ready()) throw new Error('Qwen3-VL is not set up here: see scripts/gen3d/README.md');
   server = spawn(LLAMA.exe, ['-m', LLAMA.model, '--mmproj', LLAMA.mmproj, '--port', String(LLAMA.port), '-ngl', '99', '-c', '16384', '--temp', '0.1', '--log-disable'], { stdio: 'ignore' });
+  // (and ended with this process, however it ends: kept, it holds the process open and the card's memory)
+  process.once('exit', stop);
   for (let i = 0; i < 240; i++) {
     if (await up()) return;
     await new Promise((r) => setTimeout(r, 500));
