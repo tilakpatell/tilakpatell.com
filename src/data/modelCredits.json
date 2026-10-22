@@ -146,6 +146,36 @@
     ],
     "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
   },
+  "bf2017-bantha": {
+    "title": "Star Wars Battlefront II (2017): characters/npc/creatures/bantha/bantha_01/bantha_01_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "The game’s bantha",
+    "file": "/models/galaxy/bf2017/crew/bantha.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "bf2017-battledroid": {
+    "title": "Star Wars Battlefront II (2017): characters/dark/d_assault_preq/d_assault_preq_01/d_assault_preq_01_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "The game’s B1 battle droid",
+    "file": "/models/galaxy/bf2017/crew/battledroid.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
   "bf2017-birdtheed": {
     "title": "Star Wars Battlefront II (2017): characters/npc/creatures/birdtheed/birdtheed_02/birdtheed_02_b_mesh",
     "author": "EA DICE",
@@ -321,6 +351,21 @@
     "where": "galaxy-surface",
     "as": "A death trooper",
     "file": "/models/galaxy/bf2017/crew/deathtrooper.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "bf2017-dewback": {
+    "title": "Star Wars Battlefront II (2017): characters/npc/creatures/dewback/dewback_01/dewback_01_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "The game’s dewback",
+    "file": "/models/galaxy/bf2017/crew/dewback.glb",
     "also": [
       "galaxy"
     ],
@@ -557,6 +602,21 @@
     ],
     "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
   },
+  "bf2017-grievous": {
+    "title": "Star Wars Battlefront II (2017): characters/hero/generalgrievous/generalgrievous_01/generalgrievous_01_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "The game’s General Grievous",
+    "file": "/models/galaxy/bf2017/crew/grievous.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
   "bf2017-han": {
     "title": "Star Wars Battlefront II (2017): characters/hero/hansolo/hansolo_01/hansolo_01_mesh",
     "author": "EA DICE",
@@ -672,6 +732,36 @@
     "where": "galaxy-surface",
     "as": "A Rebel trooper on Hoth",
     "file": "/models/galaxy/bf2017/crew/hothtrooper.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "bf2017-iden": {
+    "title": "Star Wars Battlefront II (2017): characters/hero/iden/act1/iden_act1_01/iden_act1_01_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "The game’s Iden Versio (Inferno Squad, act 1)",
+    "file": "/models/galaxy/bf2017/crew/iden.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "bf2017-jawa": {
+    "title": "Star Wars Battlefront II (2017): characters/npc/creatures/jawa/jawa_01/jawa_01_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "The game’s jawa",
+    "file": "/models/galaxy/bf2017/crew/jawa.glb",
     "also": [
       "galaxy"
     ],
@@ -1332,6 +1422,21 @@
     "where": "galaxy-surface",
     "as": "A Wookiee warrior",
     "file": "/models/galaxy/bf2017/crew/wookiee.glb",
+    "also": [
+      "galaxy"
+    ],
+    "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
+  },
+  "bf2017-yoda": {
+    "title": "Star Wars Battlefront II (2017): characters/hero/yoda/yoda_01/yoda_01_mesh",
+    "author": "EA DICE",
+    "authorUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "license": "permission",
+    "licenseUrl": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "source": "https://www.ea.com/games/starwars/battlefront/star-wars-battlefront-2",
+    "where": "galaxy-surface",
+    "as": "The game’s Yoda",
+    "file": "/models/galaxy/bf2017/crew/yoda.glb",
     "also": [
       "galaxy"
     ],
@@ -6229,20 +6334,6 @@
       "galaxy"
     ],
     "permission": "From EA DICE’s Star Wars Battlefront II (2017), used with permission on this non-commercial fan project; Star Wars and everything in it belong to Lucasfilm."
-  },
-  "tie-interceptor": {
-    "title": "Star Wars: TIE/in Interceptor",
-    "author": "Daniel",
-    "authorUrl": "https://sketchfab.com/DanielAndersson",
-    "license": "CC-BY-4.0",
-    "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
-    "source": "https://sketchfab.com/3d-models/star-wars-tiein-interceptor-80171ec2930b4949836bcf24d9694c41",
-    "where": "universe",
-    "as": "the TIE interceptors",
-    "file": "/models/universe/tie-interceptor.glb",
-    "also": [
-      "galaxy"
-    ]
   },
   "trench": {
     "title": "Death Star Trench Run",

@@ -1,0 +1,138 @@
+/* The night on the page (hud/Night.jsx): overlays on the world that the
+   pointer passes through, and two small parchment chips in the kit’s skin. */
+
+.hogwarts-cold,
+.hogwarts-cloaked,
+.hogwarts-cut {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* the frost: white-blue creeping in from the edges, deeper as the cold does */
+.hogwarts-cold {
+  opacity: var(--cold, 0);
+  background:
+    radial-gradient(ellipse at center, transparent 46%, rgb(196 214 232 / 0.3) 72%, rgb(226 238 250 / 0.8) 100%),
+    radial-gradient(ellipse at 0% 100%, rgb(236 244 252 / 0.55), transparent 32%),
+    radial-gradient(ellipse at 100% 0%, rgb(236 244 252 / 0.45), transparent 28%);
+  mix-blend-mode: screen;
+  transition: opacity 0.4s linear;
+}
+
+/* the cloak: a silvery shimmer round the view’s edge, moving like water */
+.hogwarts-cloaked {
+  background: radial-gradient(ellipse at center, transparent 55%, rgb(170 190 210 / 0.16) 78%, rgb(210 225 240 / 0.34) 100%);
+  animation: hogwarts-cloak 5s ease-in-out infinite alternate;
+}
+.hogwarts-cloaked[data-still] {
+  animation: none;
+}
+@keyframes hogwarts-cloak {
+  from {
+    transform: scale(1);
+    filter: hue-rotate(0deg);
+    opacity: 0.85;
+  }
+  to {
+    transform: scale(1.03);
+    filter: hue-rotate(18deg);
+    opacity: 1;
+  }
+}
+
+/* the black of being walked back to bed: in, held, out */
+.hogwarts-cut {
+  background: #000;
+  animation: hogwarts-cut 1.6s ease-in-out both;
+}
+.hogwarts-cut[data-still] {
+  animation-duration: 0.6s;
+}
+@keyframes hogwarts-cut {
+  0% {
+    opacity: 0;
+  }
+  30%,
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.hogwarts-cloak-chip,
+.hogwarts-eye {
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  margin: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgb(233 222 196 / 0.86);
+  color: #2a1d12;
+  font: 600 0.8rem/1.2 Georgia, serif;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.25);
+}
+.hogwarts-cloak-chip {
+  bottom: 6.2rem;
+}
+.hogwarts-cloak-chip .hogwarts-key {
+  font: 600 0.72rem/1 ui-monospace, monospace;
+  padding: 0.12rem 0.32rem;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+}
+.hogwarts-eye {
+  top: 5.6rem;
+}
+.hogwarts-eye svg {
+  overflow: visible;
+}
+/* the eye opens as far as they are to catching you */
+.hogwarts-eye-lid {
+  fill: #f6efdf;
+  stroke: #2a1d12;
+  stroke-width: 2;
+  transform-origin: 24px 12px;
+  transform: scaleY(calc(0.25 + var(--open, 0) * 0.75));
+  transition: transform 0.25s ease-out;
+}
+.hogwarts-eye-ball {
+  fill: #7a1c14;
+  transform-origin: 24px 12px;
+  transform: scaleY(calc(0.25 + var(--open, 0) * 0.75));
+  transition: transform 0.25s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hogwarts-cold,
+  .hogwarts-eye-lid,
+  .hogwarts-eye-ball {
+    transition: none;
+  }
+}
+
+/* a butterbeer’s warmth: amber at the edge of the view, going down over a minute */
+.hogwarts-warm {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 52%, rgb(255 170 70 / 0.22) 80%, rgb(255 150 50 / 0.42) 100%);
+  animation: hogwarts-warm 60s linear both;
+}
+.hogwarts-warm[data-still] {
+  animation: hogwarts-warm 60s steps(4) both;
+}
+@keyframes hogwarts-warm {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

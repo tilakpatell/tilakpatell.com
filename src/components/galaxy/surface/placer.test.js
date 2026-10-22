@@ -233,6 +233,16 @@ describe('a kit model, by name', () => {
     expect(radii).toEqual([0.35, 0.25, 0.25 * 1.5].map((v) => expect.closeTo(v, 5)));
   });
 
+  it('stands a building solid over its box, off its origin where the box says, turned and scaled with it', async () => {
+    const { world, placer } = setup();
+    // (a city kit's building: its origin on its front wall, its middle 8 m behind it)
+    placer.scatter('citykit', [{ at: [10, 0], yaw: Math.PI / 2, scale: 2, box: [5, 4, 1, -8] }], { model: 'kit:naturemega/Fern_1' });
+    await placer.ready;
+    const [x, z, hw, hd, yaw] = world.solids.box.mock.calls[0];
+    // (its +z turned to +x: 8 m behind it is 16 m to its -x at scale 2, 1 m to its +x is 2 m to -z)
+    expect([x, z, hw, hd, yaw]).toEqual([-6, -2, 10, 8, Math.PI / 2].map((v) => expect.closeTo(v, 6)));
+  });
+
   it('draws its LOD1 far off where the level has one, shadowless, split at the model’s distance', async () => {
     high();
     const { kit, placer } = setup();

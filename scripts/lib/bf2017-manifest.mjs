@@ -22,6 +22,17 @@ export function isSequel(name) {
     .some((seg) => SEQUEL_TESTS.some((re) => re.test(seg)));
 }
 
+// The campaign's third act, thirty years on and the sequel era's (the owner's
+// rule: left out with it), which the drop files under a3/ and act3 folders
+// (Iden Versio's act 3 body) rather than under the sequel's names: a figure's
+// import refuses it as it does the sequel era. Not folded into isSequel,
+// whose callers include the levels, where the A3 maps are another question.
+export const isActThree = (name) =>
+  name
+    .toLowerCase()
+    .split('/')
+    .some((seg) => seg === 'a3' || seg.startsWith('a3_') || /(^|_)act3(_|$)/.test(seg));
+
 export function readManifest(text) {
   const m = new Map();
   for (const line of text.split('\n')) {

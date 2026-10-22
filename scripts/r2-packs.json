@@ -1,0 +1,240 @@
+{
+  "packs": {
+    "quaternius/downtown-city-megakit": {
+      "name": "Downtown City MegaKit (standard): brick and metal facades, three whole buildings, streets with kerbs, sidewalks, crosswalks, road decals, street props",
+      "licence": "CC0",
+      "author": "Quaternius",
+      "url": "https://quaternius.com/packs/downtowncitymegakit.html",
+      "added": "2026-10-21",
+      "files": [
+        {
+          "name": "quaternius-downtown-city-megakit-standard.zip",
+          "bytes": 234664247,
+          "sha256": "bf1e4ef0ace1943d777b0ffe4962629d27176f75f814dc0700419ba2c8182175"
+        }
+      ]
+    },
+    "quaternius/modular-scifi-megakit": {
+      "name": "Modular Sci-Fi MegaKit (standard): sci-fi walls, floors, doors, columns, platforms, props",
+      "licence": "CC0",
+      "author": "Quaternius",
+      "url": "https://opengameart.org/content/modular-sci-fi-megakit",
+      "added": "2026-10-21",
+      "files": [
+        {
+          "name": "quaternius-modular-scifi-megakit-standard.zip",
+          "bytes": 48563245,
+          "sha256": "4ca9acbc7a13e7baa48e24c4853b779889b7ab21587004c36668826e705c8a10"
+        }
+      ]
+    },
+    "kenney/city-kit-commercial": {
+      "name": "City Kit (Commercial): office blocks, skyscrapers, shops",
+      "licence": "CC0",
+      "author": "Kenney",
+      "url": "https://kenney.nl/assets/city-kit-commercial",
+      "added": "2026-10-21",
+      "files": [
+        {
+          "name": "kenney_city-kit-commercial_2.1.zip",
+          "bytes": 4096974,
+          "sha256": "f8b09b081c2bb88bcc126e2dec1cb40fd0dad7e7e591b6c26aaefe96fb35276b"
+        }
+      ]
+    },
+    "kenney/city-kit-industrial": {
+      "name": "City Kit (Industrial): factories, warehouses, chimneys, tanks, solar fields",
+      "licence": "CC0",
+      "author": "Kenney",
+      "url": "https://kenney.nl/assets/city-kit-industrial",
+      "added": "2026-10-21",
+      "files": [
+        {
+          "name": "kenney_city-kit-industrial_2.0.zip",
+          "bytes": 5045077,
+          "sha256": "5b381164e5760f3830a2dbee43b972deee38b2a695d091b56e238ab2910c96d2"
+        }
+      ]
+    },
+    "kenney/city-kit-suburban": {
+      "name": "City Kit (Suburban): houses, fences, trees",
+      "licence": "CC0",
+      "author": "Kenney",
+      "url": "https://kenney.nl/assets/city-kit-suburban",
+      "added": "2026-10-21",
+      "files": [
+        {
+          "name": "kenney_city-kit-suburban_20.zip",
+          "bytes": 3038740,
+          "sha256": "5869c35cf30b1c87bdb2d197b6d325eebadd2ef08ea27f04797e8e08d77a9a39"
+        }
+      ]
+    },
+    "kenney/city-kit-roads": {
+      "name": "City Kit (Roads): road tiles, crossings, lights, signs",
+      "licence": "CC0",
+      "author": "Kenney",
+      "url": "https://kenney.nl/assets/city-kit-roads",
+      "added": "2026-10-21",
+      "files": [
+        {
+          "name": "kenney_city-kit-roads.zip",
+          "bytes": 2852289,
+          "sha256": "374a4552115cbd11b4ec5c930ee31a533562dc78a09af249a655d03f7ea3b959"
+        }
+      ]
+    },
+    "sketchfab/brick-building-shop": {
+      "name": "Low-poly Old American brick building with shop.",
+      "licence": "CC-BY-4.0",
+      "author": "Orzechu (@Orzechu)",
+      "url": "https://sketchfab.com/3d-models/low-poly-old-american-brick-building-with-shop-3170993b67ee4e58b27d69d5877f71bd",
+      "added": "2026-10-21",
+      "files": [
+        {
+          "name": "brick-building-shop.glb",
+          "bytes": 3072032,
+          "sha256": "22dc16e3df0fee313f927e041cf3f35bd225d8e43434aca7965b8f075dfa931a"
+        },
+        {
+          "name": "brick-building-shop.json",
+          "bytes": 6208,
+          "sha256": "b7bad7513215a9cbd94d9ecbf3930c0e55b1842e41beecd6663c09823e534302"
+        }
+      ]
+    },
+    "sketchfab/coruscant-city": {
+      "name": "Coruscant city",
+      "licence": "CC-BY-4.0",
+      "author": "Jonteboi (@Jonteboi)",
+      "url": "https://sketchfab.com/3d-models/coruscant-city-a2a6e1b59cfd4a94af0d579ae1762da6",
+      "added": "2026-10-21",
+      "files": [
+        {
+          "name": "coruscant-city.glb",
+          "bytes": 3465660,
+          "sha256": "84d004e6593068ebe297caa6787399e875365df253666e2e9f814f7a7834ad58"
+        },
+        {
+          "name": "coruscant-city.json",
+          "bytes": 4981,
+          "sha256": "7ddb6caa94e253ebadbe0695c11c7f973d925b7e2d7026b1ea4683105d1a4631"
+        }
+      ]
+    },
+    "sketchfab/scifi-buildings-lowpoly": {
+      "name": "Sci-fi Buildings Pack (low-poly, game ready)",
+      "licence": "CC-BY-4.0",
+      "author": "TampaJoey (@TampaJoey)",
+      "url": "https://sketchfab.com/3d-models/sci-fi-buildings-pack-low-poly-game-ready-333a430644b34e688aecfdc874f4cbf2",
+      "added": "2026-10-21",
+      "files": [
+        {
+          "name": "scifi-buildings-lowpoly.glb",
+          "bytes": 7909176,
+          "sha256": "704f7e77352be962f9ba2b2e40719b9ffc961532360ec91734497a47a56642af"
+        },
+        {
+          "name": "scifi-buildings-lowpoly.json",
+          "bytes": 7430,
+          "sha256": "c80cb3320bf5a169ccaf6b2e7accaa196bb8dff41cb6cff2bd40b0a9a1c43bf5"
+        }
+      ]
+    },
+    "sketchfab/scifi-buildings-pack": {
+      "name": "Sci-Fi Buildings Pack",
+      "licence": "CC-BY-4.0",
+      "author": "golukumar (@mortalityrexotable)",
+      "url": "https://sketchfab.com/3d-models/sci-fi-buildings-pack-cc74d81f4e0e4db3acf6f3433c678250",
+      "added": "2026-10-21",
+      "files": [
+        {
+          "name": "scifi-buildings-pack.glb",
+          "bytes": 14910516,
+          "sha256": "0782b2483b0608f04b4e038ef10edeef0f5d58ecc1d046ca32eb32ca8ab7146d"
+        },
+        {
+          "name": "scifi-buildings-pack.json",
+          "bytes": 7645,
+          "sha256": "dab438602132cdd12d3ecff8fd60069cd740ceb2d80d4b7eab601bc54c027291"
+        }
+      ]
+    },
+    "sketchfab/scifi-skyscraper": {
+      "name": "Sci-Fi Building Tower Skyscraper",
+      "licence": "CC-BY-4.0",
+      "author": "Volodymyr Hrushevskiy (@HrushevskiyVolodymyr)",
+      "url": "https://sketchfab.com/3d-models/sci-fi-building-tower-skyscraper-c2ab95f390e4452dbc3a033b5a34e1c1",
+      "added": "2026-10-21",
+      "files": [
+        {
+          "name": "scifi-skyscraper.glb",
+          "bytes": 2375244,
+          "sha256": "a78765c3f9543e1c0a1f148299efbaf34c32e76e409bdefbd509b22ace24e53f"
+        },
+        {
+          "name": "scifi-skyscraper.json",
+          "bytes": 6651,
+          "sha256": "b8682f11b9b911b373214d8fa718302835668a98161c930bb31dbdffc47da42c"
+        }
+      ]
+    },
+    "sketchfab/scifi-tower": {
+      "name": "Sci-Fi Tower",
+      "licence": "CC-BY-4.0",
+      "author": "Jonathan (@jonathan.leclerc96)",
+      "url": "https://sketchfab.com/3d-models/sci-fi-tower-c271103cd2f84ed3992baeda6416bbb0",
+      "added": "2026-10-21",
+      "files": [
+        {
+          "name": "scifi-tower.glb",
+          "bytes": 3590012,
+          "sha256": "3881b1d89bde793fd5e5635fc88ad5665c556fc87c4299fd947f86c0ed828c5f"
+        },
+        {
+          "name": "scifi-tower.json",
+          "bytes": 7168,
+          "sha256": "959bc1e6d407d5d8b2ffa6aa2f1e00fdbae548ca6aab6224ce215bac1559760e"
+        }
+      ]
+    },
+    "sketchfab/starwars-lowpoly-buildings": {
+      "name": "Star Wars inspired low poly buildings",
+      "licence": "CC-BY-4.0",
+      "author": "ondrasaur (@ondrasaur)",
+      "url": "https://sketchfab.com/3d-models/star-wars-inspired-low-poly-buildings-db883b9fd31f438e94abd3cb8cb3ead5",
+      "added": "2026-10-21",
+      "files": [
+        {
+          "name": "starwars-lowpoly-buildings.glb",
+          "bytes": 4441884,
+          "sha256": "c1026aee45555fe1566897c74005a9940b6ecacceaaaec4886666526e8f937b4"
+        },
+        {
+          "name": "starwars-lowpoly-buildings.json",
+          "bytes": 5089,
+          "sha256": "52c5f7e2995d6db67123e7179af7685cbbc9d5c20fb798b507e5cc05cab3db06"
+        }
+      ]
+    },
+    "sketchfab/tatooine-kitbash": {
+      "name": "Tattoine Buildings Kitbash",
+      "licence": "CC-BY-4.0",
+      "author": "chuckcg (@chuckcg)",
+      "url": "https://sketchfab.com/3d-models/tattoine-buildings-kitbash-b5a2140fa2264bac8a4b6de3693272b6",
+      "added": "2026-10-21",
+      "files": [
+        {
+          "name": "tatooine-kitbash.glb",
+          "bytes": 25365788,
+          "sha256": "567d66081708a4c4bee4c5cfecc3b0f22da3d5c3b4cf16cfa2bbe8b08057a010"
+        },
+        {
+          "name": "tatooine-kitbash.json",
+          "bytes": 5039,
+          "sha256": "b84830783d8195ac27bda932c86dadf7db2437721bc0bd43c9ff3a37140cb9ec"
+        }
+      ]
+    }
+  }
+}

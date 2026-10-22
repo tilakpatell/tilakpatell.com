@@ -18,6 +18,22 @@ export const HOGWARTS_WALK = [
 export const HOGWARTS_KEYS = [
   { label: 'On foot', rows: HOGWARTS_WALK },
   {
+    label: 'The arrival and the Sorting',
+    rows: [
+      ['Enter', 'Straight to the castle, once you’ve seen the arrival whole'],
+      ['1 2 3 4', 'Answer the Sorting Hat'],
+      ['← → / ↑ ↓, Enter', 'Pick an answer and give it'],
+    ],
+  },
+  {
+    label: 'In the castle',
+    rows: [
+      ['E', 'Take a stair, knock, speak to a portrait, read the notice board: what the prompt says'],
+      ['Type, then Enter', 'Say a password or a riddle’s answer to the door that asks'],
+      ['Esc', 'Leave the room you’re in, back the way you came'],
+    ],
+  },
+  {
     label: 'The wand (from your first lesson)',
     rows: [
       ['hold Q', 'The spell wheel: point at a spell and let go'],
@@ -45,6 +61,7 @@ export const HOGWARTS_KEYS = [
     ],
   },
   { label: 'The Map (after the first week)', rows: [['M', 'The Marauder’s Map, open and shut']] },
+  { label: 'After dark (the cloak from Christmas)', rows: [['I', 'The invisibility cloak, on and off: Filch can’t see you under it, his cat can']] },
 ];
 
 export const HOGWARTS_TOUCH = [
@@ -56,4 +73,12 @@ export const HOGWARTS_TOUCH = [
       ['Tap', 'The prompt, to do what it says'],
     ],
   },
+  {
+    label: 'The arrival and the Sorting',
+    rows: [
+      ['Straight to the castle', 'Skip the arrival, once you’ve seen it whole'],
+      ['Tap an answer', 'Answer the Sorting Hat'],
+    ],
+  },
+  { label: 'After dark', rows: [['Menu, Put the cloak on', 'The invisibility cloak, once you have it']] },
 ];

@@ -53,9 +53,9 @@ describe('createHulls', () => {
   it('hq rows load hq/nebulon, and the special keys load as given', async () => {
     const load = vi.fn(() => Promise.resolve(bytes()));
     const hulls = createHulls({ load, models: { nebulon: { hq: true }, xwing: {} } });
-    hulls.want(['nebulon', 'xwing', 'hunter/slave1']);
+    hulls.want(['nebulon', 'xwing', 'hq/nebulon']);
     await later();
-    expect(load.mock.calls.map((c) => c[0]).sort()).toEqual(['/models/galaxy/hulls/hq/nebulon.bin', '/models/galaxy/hulls/hunter/slave1.bin', '/models/galaxy/hulls/xwing.bin']);
+    expect(load.mock.calls.map((c) => c[0]).sort()).toEqual(['/models/galaxy/hulls/hq/nebulon.bin', '/models/galaxy/hulls/xwing.bin']);
     expect(hulls.get('nebulon')).not.toBeNull();
     expect(hulls.get('hq/nebulon')).not.toBeNull();
   });

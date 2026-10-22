@@ -7,7 +7,7 @@
 // to the city's (docs/superpowers/specs/2026-10-20-galaxy-living-free-
 // roam-design.md, 2).
 //
-//   cityOf(spec, { seed }) → { things, life, flat: { r }, lots, paving }
+//   cityOf(spec, { seed }) → { things, life, flat: { r }, lots, paving, rows? }
 //     paving: its streets and its plaza, for the ground (groundPaint.js):
 //     [{ a: [x, z], b: [x, z], w } a street, { at, r, w } a ring street,
 //     { at, r } the plaza]
@@ -16,7 +16,9 @@
 //     city, each building solid over its footprint (`foot`, a kind's [w, d]
 //     at scale 1: footprints.json) where it has one
 //   spec: {
-//     plan: 'grid' | 'rings',
+//     plan: 'grid' | 'rings' | 'blocks' (the kit's brick blocks and
+//                tiled streets, cityBlocks.js: its own spec, its rows made
+//                there, `things` none),
 //     r          metres the city spreads to
 //     street     a street's width (9)
 //     block      a block's side, or a ring's depth (36)
@@ -33,6 +35,7 @@
 //   lots: how many buildings stand, for the checks
 
 import { seeded } from '../../../../lib/seeded.js';
+import { blocksOf } from './cityBlocks.js';
 
 const GAP = 1.5; // metres between a building and its lot's edge
 const KERB = 1; // metres a lamp stands in from the street's edge
@@ -197,6 +200,7 @@ function lampsAlong(from, to, { kind, every, side }, keep, out) {
 }
 
 export function cityOf(spec, { seed = 1 } = {}) {
+  if (spec.plan === 'blocks') return { things: [], ...blocksOf(spec, { seed }) };
   const rand = seeded(seed);
   const keep = [...(spec.keep ?? [])];
   const { street = 9, block = 36, plaza = 0 } = spec;

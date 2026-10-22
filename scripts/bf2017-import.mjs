@@ -86,10 +86,17 @@
 //   keep-origin  not grounded: the model keeps the game's own origin, axes
 //              and metres (a hilt or a blaster, modelled for the Wep_Root
 //              socket with its grip at the origin and its barrel up +y)
+//   tint     the colour a skin’s ObjectVariation records give a droid’s
+//              markings shader (`Color0_Base`, which the game multiplies its
+//              grey colour map by: the B1’s tan), set as the factor of each
+//              material drawn with it; the records by name, comma-separated,
+//              read under --root (lib/bf2017-markings.mjs: the bucket’s
+//              data/<name>.json.gz or the export’s web/data/<name>.json)
 //
-// It refuses the sequel era (the site shows none of it). Look at what came
-// out with node scripts/glb-shot.mjs <file> out.png three, through the dev
-// server (npx vite --port 5188 --strictPort --host 127.0.0.1).
+// It refuses the sequel era (the site shows none of it), and the campaign's
+// third act with it. Look at what came out with node scripts/glb-shot.mjs
+// <file> out.png three, through the dev server (npx vite --port 5188
+// --strictPort --host 127.0.0.1).
 
 import { Logger, NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, KHRMaterialsSpecular, KHRTextureBasisu } from '@gltf-transform/extensions';
@@ -102,7 +109,7 @@ import { dirname, join as path, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { overCaps } from './lib/bf2017-caps.mjs';
 import { parseArgs } from './lib/args.mjs';
-import { isSequel, cutsFor, fullCuts, partsOf, readManifest } from './lib/bf2017-manifest.mjs';
+import { isActThree, isSequel, cutsFor, fullCuts, partsOf, readManifest } from './lib/bf2017-manifest.mjs';
 import { glbJson, imagePath, inBucket, localPath, mapPath } from './lib/bf2017-paths.mjs';
 import { resolveImage, specularFactorOf, weaponMaterial } from './lib/bf2017-textures.mjs';
 import { meshBindings } from './lib/bf2017-variations.mjs';
@@ -110,6 +117,7 @@ import { BASIS_LZ, dropLevels, ktx2Info } from './lib/ktx2-levels.mjs';
 import { loadGameWord, slotTransfer, wantedTransfer, withTransfer } from './lib/ktx2-colour.mjs';
 import { writeCatalogueLine, writeCredit } from './lib/catalog-write.mjs';
 import { joinSkinned, shareSkins } from './lib/rig-parts.mjs';
+import { MARKINGS, markingsColour, readRecord } from './lib/bf2017-markings.mjs';
 import { glbTextures } from '../src/lib/glbTextures.js';
 import { KEPT, decalOf, dressed } from './lib/bf2017-dressing.mjs';
 import { atlasUVs } from './lib/bf2017-uv.mjs';
@@ -216,7 +224,7 @@ async function texturesOpt(opts, mesh) {
 // pipeline's derived `__normal` (its z rebuilt; the KTX2 under that name)
 export const overridePath = (name, slot) => (slot === 'normal' ? mapPath(name).replace(/\.png$/, '__normal.ktx2') : mapPath(name).replace(/\.png$/, '.ktx2'));
 
-export async function readLod(io, file, { root, derived, unpackDir, said, eyes = null, textures = null }) {
+export async function readLod(io, file, { root, derived, unpackDir, said, eyes = null, textures = null, tint = null }) {
   const glb = await readFile(localPath(root, inBucket(file)));
   // (the GLB read by hand: glTF-Transform's own reader will not open one whose
   // images are outside it; chunk 0 is the JSON, chunk 1 the binary buffer)
@@ -254,6 +262,9 @@ export async function readLod(io, file, { root, derived, unpackDir, said, eyes =
   for (const [index, m] of doc.getRoot().listMaterials().entries()) {
     for (const slot of SLOTS) if (m[`get${slot}Texture`]()?.getName() === MISSING) m[`set${slot}Texture`](null);
     const shader = String(m.getExtras()?.shader ?? '');
+    // a droid’s markings: its grey map times the skin’s colour, as the
+    // game’s shader draws it (--tint), the map itself left as it is
+    if (tint && MARKINGS.test(shader)) m.setBaseColorFactor([...tint, 1]);
     // a hair preset's colour map carries its strands' cut-out in alpha
     // (Chewbacca's cards, a hero's hair planes), whatever glTF was told
     if (/hair/i.test(shader) && m.getBaseColorTexture()) m.setAlphaMode('MASK').setAlphaCutoff(0.35).setDoubleSided(true);
@@ -589,7 +600,7 @@ export async function importModel(name, opts) {
   const entry = manifest.get(name);
   if (!entry) throw new Error(`${name}: not in the manifest (node scripts/bf2017-fetch.mjs --list '<glob>')`);
   const rig = Boolean(opts.rig);
-  const parts = typeof opts.parts === 'string' ? partsOf(manifest, name, opts.parts.split(',')).filter((p) => !isSequel(p.name)) : [];
+  const parts = typeof opts.parts === 'string' ? partsOf(manifest, name, opts.parts.split(',')).filter((p) => !isSequel(p.name) && !isActThree(p.name)) : [];
   const metres = opts.metres !== undefined && opts.metres !== true ? Number(opts.metres) : Number((entry.max[1] - entry.min[1]).toFixed(3));
   const tex = Number(opts.tex ?? 1024);
   const maps = Number(opts.maps ?? tex / 2);
@@ -610,6 +621,8 @@ export async function importModel(name, opts) {
     // (maps a shader graph binds, by material name: --textures)
     // (and those the game's mesh variation database binds: --variations <record>)
     textures: await texturesOpt(opts, name),
+    // (a droid’s markings colour from its skin’s records: --tint)
+    tint: typeof opts.tint === 'string' ? markingsColour(opts.tint.split(',').map((n) => readRecord(root, n.trim()))) : null,
     // (WebP quality: colour, then the rest; a hero at the game's full maps takes more)
     quality: Number(opts.quality ?? 82),
     mapsQuality: Number(opts.mapsQuality ?? opts.quality ?? 80),
@@ -763,6 +776,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   }
   if (isSequel(name)) {
     console.error(`${name} is sequel-era; the site shows none of it (autopilot rules)`);
+    process.exit(2);
+  }
+  // (and the campaign's third act, the sequel era's: Iden Versio comes in from act 1)
+  if (isActThree(name)) {
+    console.error(`${name} is the campaign’s third act, the sequel era’s; the site shows none of it (HANDOFF-battlefront.md, the owner’s rules)`);
     process.exit(2);
   }
   importModel(name, args).catch((e) => {

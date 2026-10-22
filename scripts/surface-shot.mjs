@@ -55,7 +55,15 @@ const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 await page.goto(`${base}/?quality=${quality}${process.env.QUERY ? `&${process.env.QUERY}` : ''}#/galaxy/${world}/surface${process.env.ROUTE_QUERY ? `?${process.env.ROUTE_QUERY}` : ''}`);
-await page.waitForFunction(() => window.__surface?.()?.phase, null, { timeout: Number(process.env.PHASE_WAIT ?? process.env.LOAD_WAIT ?? 180000) });
+// (the loading veil's tuning can hold for ever under a software GL: its "Go
+// in anyway", pressed once it's offered, as a visitor would)
+const landBy = Date.now() + Number(process.env.PHASE_WAIT ?? process.env.LOAD_WAIT ?? 180000);
+while (!(await page.evaluate(() => Boolean(window.__surface?.()?.phase)))) {
+  if (Date.now() > landBy) throw new Error('the world never came down (PHASE_WAIT)');
+  const go = page.getByText('Go in anyway');
+  if (await go.isVisible().catch(() => false)) await go.click().catch(() => {});
+  await page.waitForTimeout(2000);
+}
 await page.waitForTimeout(4000);
 // (past the landing: out of the ship and walking)
 await page.evaluate(() => window.__surfaceDo('advance', 40));

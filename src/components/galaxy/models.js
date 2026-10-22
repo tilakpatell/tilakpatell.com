@@ -28,19 +28,18 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import { device } from '../../lib/device';
 import { gen3dUrl } from '../../lib/three/gen3d';
 import { cloneScene, loadGLTF } from '../../lib/three/gltfCache';
-import { GLB } from '../universe/glbFleet';
 import { fitScale } from '../universe/shipFit';
 import { BUILT_KINDS } from '../universe/trafficModels';
 import { GALAXY_KINDS, buildGalaxyShip } from './fleet';
 import { createHulls } from './hulls';
 
 // which way each loaded model's nose points as it comes (turned to +z): the
-// universe's (the ones only it has), the game's wherever Battlefront II
-// (2017) has the ship, and the galaxy's own from Sketchfab
-// (scripts/sketchfab-galaxy.mjs) and Meshy where it has not, which take over
-// from the ones built in code
+// game's wherever Battlefront II (2017) has the ship, and the galaxy's own
+// from Sketchfab (scripts/sketchfab-galaxy.mjs) and Meshy where it has not,
+// which take over from the ones built in code. (The universe map's fleet,
+// universe/glbFleet.js, flies these kinds' far copies, `farCut` below,
+// through galaxy/shared/models.js; it lends this table nothing since lane C2.)
 export const MODELS = {
-  ...Object.fromEntries(Object.entries(GLB).map(([k, d]) => [k, { url: d.url, nose: d.nose }])),
   // the war's capitals from the game's space levels, each its kit at the
   // fleet's cut, written bow to +z (scripts/bf2017-fleet.mjs's `space` rows;
   // the universe map keeps its own Star Destroyer and Venator)
@@ -301,6 +300,15 @@ export const STAND_IN = {
 export const LOD_NEAR = 45;
 export const LOD_FAR = 900;
 export const lodUrl = (kind, models = MODELS) => (models[kind] && kind !== 'deathstar' ? `/models/galaxy/lod/${models[kind].hq ? 'hq/' : ''}${kind}.glb` : null);
+// A kind's far copy as another map flies it, whole and at every range: the
+// universe map's fleet (universe/glbFleet.js, through galaxy/shared/models.js),
+// where a fighter is a few pixels long. The file lodUrl names, and the turn
+// that brings it nose to +z: the one it was baked with (a desktop's
+// fighter's `farNose`, the fleet file's), as fitLod turns it here.
+export const farCut = (kind) => {
+  const url = lodUrl(kind);
+  return url && { url, nose: MODELS[kind].farNose ?? MODELS[kind].nose ?? 0 };
+};
 export const lodLevels = (size) => [
   [0, 'full'],
   [LOD_NEAR * size, 'lod'],
@@ -309,22 +317,25 @@ export const lodLevels = (size) => [
 
 // the models the hunters fly (universe/glbFleet.js flies them: the galaxy's
 // droids and Imperial TIEs, and its X-wings and interceptors in the cut this
-// device loads, each built until it's here). The Y-wing, the A-wing and the
-// TIE bomber are the whole models, not GLB's far-off copies: those are for
-// the universe map, where a fighter is a few pixels long, and they have no
+// device loads, each built until it's here). The fighters are the whole
+// models, not the far copies the universe map flies (glbFleet.js's GLB:
+// farCut above, where a fighter is a few pixels long), which have no
 // normals, so a wingman flying beside you came out in facets. The bounty
 // hunters' ships and the navy's gunboats are their models too, where they
-// were only ever the built ones. And the Star Destroyer and the corvette
-// that jump in on you (universe/setpieces.js) are the battles' ones, which
-// every arrival has loaded already: the game's Star Destroyer, where the
-// universe map's would have been another 470 KB of a lesser ship, and the
-// corvette is the galaxy's own.
+// were only ever the built ones; Boba Fett's Slave I is the galaxy's, the
+// game's (till lane C2 this table took glbFleet.js's whole GLB, and with it
+// the universe map's Meshy Slave I, on a hull of its own, hunter/slave1).
+// And the Star Destroyer and the corvette that jump in on you
+// (universe/setpieces.js) are the battles' ones, which every arrival has
+// loaded already: the game's Star Destroyer, where the universe map's would
+// have been another 470 KB of a lesser ship, and the corvette is the
+// galaxy's own.
 export const HUNTER_GLB = {
-  ...GLB,
   ...Object.fromEntries(['vulture', 'trifighter', 'tie', 'tieadvanced', 'xwing', 'interceptor', 'ywing', 'awing', 'tiebomber', 'gunboat', 'ig2000', 'houndstooth', 'punishingone', 'destroyer', 'corvette'].map((k) => [k, { ...MODELS[k], built: true }])),
   // (the war's other hunters and what their capital ships drop in: the
   // Republic's fighters, Wedge in an X-wing, a Mon Calamari cruiser, a Venator)
   ...Object.fromEntries(['arc170', 'delta7', 'moncal', 'venator'].map((k) => [k, { ...MODELS[k], built: false }])),
+  slave1: { ...MODELS.slave1, built: false }, // (no built one: it waits)
   redleader: { ...MODELS.xwing, built: false },
 };
 

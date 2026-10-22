@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy
 
 on:
   push:
@@ -12,30 +12,31 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
   # the last deploy that went out, read from the Actions API for the assets check
   actions: read
 
-# A deploy takes about forty minutes, and a merge to main lands more often
-# than that when several sessions work at once: with the running deploy
+# A deploy took about forty minutes then (about twelve by 2026-10-21), and a
+# merge to main lands more often than that when several sessions work at once: with the running deploy
 # cancelled by each new one, nothing reached the site for hours (2026-10-13:
 # five merges, four deploys cancelled, none finished). So the running one
 # finishes, and of those waiting only the newest is kept.
 concurrency:
-  group: pages
+  group: deploy
   cancel-in-progress: false
 
+# One job: lint, test and build `main`, then the build's files to Cloudflare,
+# the Worker tilakpatell-com (wrangler.jsonc: the files and nothing else, and
+# the account; docs/stack/cloudflare.md). Its environment, `cloudflare`,
+# lists each deploy in the repository's Deployments with the site's address,
+# marked done when the upload has gone through. (Until 2026-10-21 the files
+# went to GitHub Pages, and then to the Worker too while the domain moved:
+# docs/decisions/2026-10-21-cloudflare-for-the-site.md.)
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    env:
-      # (whether the repository holds the Cloudflare token: a step's `if`
-      # can't read a secret, and this says only true or false)
-      CLOUDFLARE_ON: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+      name: cloudflare
+      url: https://tilakpatell.com
     steps:
       - uses: actions/checkout@v7
 
@@ -92,31 +93,17 @@ jobs:
           # Unset, every file comes from the site as before
           VITE_ASSET_BASE: ${{ vars.ASSET_BASE }}
       # every WebAssembly binary the build publishes valid, and every one a
-      # chunk asks for there (scripts/wasm-check.mjs; Pages serves .wasm as
-      # application/wasm, docs/stack/webassembly.md)
+      # chunk asks for there (scripts/wasm-check.mjs; the Worker serves .wasm
+      # as application/wasm, docs/stack/webassembly.md)
       - run: node scripts/wasm-check.mjs dist
 
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: dist
-
-      - id: deployment
-        uses: actions/deploy-pages@v5
-
-      # The same build to Cloudflare, the Worker tilakpatell-com
-      # (wrangler.jsonc: the files and nothing else, and the account), once
-      # the repository has the secret CLOUDFLARE_API_TOKEN (Workers Scripts:
-      # Edit), docs/decisions/2026-10-21-cloudflare-for-the-site.md. (Until
-      # 2026-10-21 it waited for a variable with the account's id too, and a
-      # repository given the id another way skipped the upload: the id is in
-      # wrangler.jsonc now.) After GitHub Pages, so a failure here never holds
-      # the site back while the domain still points there. Wrangler sends
-      # only the files the Worker doesn't hold already (the first time,
-      # 11,362 files in under four minutes). (Its free plan takes 20,000
-      # files and 25 MiB a file: on 2026-10-21 wrangler counted 12,279 of
-      # dist/'s 11,565, and none over.)
-      - if: ${{ env.CLOUDFLARE_ON == 'true' }}
+      # Wrangler sends only the files the Worker doesn't hold already (the
+      # first time, 11,362 files in under four minutes; after, about 30 s).
+      # (Its free plan takes 20,000 files and 25 MiB a file: on 2026-10-21
+      # wrangler counted 12,279 of dist/'s 11,565, and none over.)
+      - name: The build to Cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: npx --yes wrangler@4.149.0 deploy
+        run: |
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || { echo "::error::the secret CLOUDFLARE_API_TOKEN is missing (docs/stack/cloudflare.md)"; exit 1; }
+          npx --yes wrangler@4.149.0 deploy
