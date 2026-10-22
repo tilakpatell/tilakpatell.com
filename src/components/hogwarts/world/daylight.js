@@ -7,7 +7,7 @@
 // eye opens a little at dusk as the Road’s does.
 //
 //   createDaylight({ scene, renderer, house, sky, sun, hemi }) → {
-//     set(light),               the scene in that light
+//     set(light, { cold }),     the scene in that light (cold: the dementors’, 0…1, its shade drained toward grey)
 //     follow(camera),           the key light kept over the camera (its shadow’s cascades fit there)
 //     key,                      the last keyLight (dir, colour, intensity, moon)
 //     dispose() }               the renderer’s exposure put back
@@ -16,6 +16,7 @@ import * as THREE from 'three';
 import { keyLight, shadeOf, skyLight } from '../rules/clock';
 
 const GREEN = new THREE.Color(0x3d4a2c); // (the light up off the lawns and the forest, dimmed)
+const COLD = new THREE.Color(0.42, 0.44, 0.47); // (the shade the dementors drain it toward)
 
 export function createDaylight({ scene, renderer = null, house = null, sky = null, sun, hemi }) {
   const exposureWas = renderer?.toneMappingExposure ?? null;
@@ -28,7 +29,8 @@ export function createDaylight({ scene, renderer = null, house = null, sky = nul
       return key;
     },
     dir,
-    set(l) {
+    // (`cold`: the dementors’ (Lane F’s), 0…1, the shade drained toward grey with it)
+    set(l, { cold = 0 } = {}) {
       sky?.set(l);
       key = keyLight(l);
       dir.set(...key.dir).normalize();
@@ -45,7 +47,7 @@ export function createDaylight({ scene, renderer = null, house = null, sky = nul
       if (house) {
         house.sky({ low: scene.fog?.color ?? new THREE.Color(...l.fog.colour), high: scene.fog?.color ?? new THREE.Color(...l.fog.colour), sunDir: dir });
         house.light({ sun, hemi });
-        house.set({ shadow: shade.setRGB(...shadeOf(l, key)) });
+        house.set({ shadow: shade.setRGB(...shadeOf(l, key)).lerp(COLD, cold * 0.85) });
       }
     },
     follow(camera) {

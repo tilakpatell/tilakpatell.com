@@ -233,12 +233,13 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
   let w = weatherAt({ week: termWeek, day, hour });
   let l = lightAt(hour, { week: termWeek, day, weather: w });
   let sinceLight = Infinity;
+  let cold = 0; // (the dementors’ cold, 0…1: the module’s, from Lane F’s rules/dementors.js)
   const relight = () => {
     const h = hourOf(clock);
     const d = Math.floor(clock.t / 24);
     w = weatherAt({ week: termWeek, day: d, hour: h });
     l = lightAt(h, { week: termWeek, day: d, weather: w });
-    daylight.set(l);
+    daylight.set(l, { cold });
     lake.set(l, { wind: w.wind, rain: w.rain });
     weather.set(w, l);
     sky.wind(0.6 + w.wind);
@@ -277,8 +278,19 @@ export async function createGrounds(rt, { scene, camera, tier = 'high', house = 
     doors,
     lake,
     cells,
-    setHour(h) {
-      clock = setHour(clock, h);
+    // (`forward`: never back, the hour today if it’s still to come, else tomorrow’s)
+    setHour(h, { forward = false } = {}) {
+      clock = setHour(clock, h, { forward });
+      sinceLight = Infinity;
+    },
+    // the clock going on while the grounds aren’t drawn (a room’s up): the hour, the bell’s count, nothing else
+    pass(dt) {
+      clock = stepClock(clock, dt);
+    },
+    // the cold off the dementors, 0…1: the house look’s shade drained toward grey with it
+    setCold(k) {
+      if (Math.abs(k - cold) < 0.01) return;
+      cold = k;
       sinceLight = Infinity;
     },
     setWeek(k) {

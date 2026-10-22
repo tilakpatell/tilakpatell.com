@@ -14,15 +14,29 @@
 // other worlds are loaded by URL, never imported. A model that doesn’t load
 // stands in as a plain capsule, so nobody vanishes.
 //
-//   PEOPLE                 kind → { url, tall }: the heroes and the stormtrooper
+// A kind the cast names a row of the site’s cast table for (rules/cast.js’s
+// `game`; PEOPLE’s for the player) is the 2017 game’s own body instead
+// (loadGame, gameBody.js), the same person on the game’s whole skeleton:
+// moved by the game’s clips through gameBody.js’s GAME_CLIPS, never the
+// library’s (those are made for the 24-bone skeleton; the owner’s ruling,
+// 2026-10-10), a pose the game has no clip for one frame of its nearest
+// held, or a still; fallen as the game’s fifteen bodies
+// (lib/three/ragdoll2017.js). Where the game’s body won’t load, the site’s
+// model stands in, as above.
+//
+//   PEOPLE                 kind → { url, tall, game? }: the heroes and the stormtrooper (game: its cast table row)
 //   ALIAS                  the rules’ older clip names to the library’s (hit, die, dieFwd, dieBlown, taunt)
 //   PRELOAD                the clips fetched up front, so the first fight isn’t late
 //   motionOf(speed, side = 0, turn = 0) → { move, speed, side, turn }   pure: the animator’s motion for a
 //     body going `speed` m/s ahead, `side` m/s to its right, turning `turn` rad/s to its left
 //   playerKind({ side, hero, armour }) → kind   who the player is drawn as
-//   loadPerson(kind, { tall, tint, dye, renderer }) → Promise<person>
+//   loadPerson(kind, { tall, tint, dye, renderer, game }) → Promise<person>
 //     kind: a PEOPLE key, or a model’s path; tall: metres (the kind’s own otherwise); tint: a colour
-//     multiplied into its materials; dye: dye.js’s { color, gain, keep, roughness }
+//     multiplied into its materials; dye: dye.js’s { color, gain, keep, roughness }; game: the cast
+//     table’s row to try first (PEOPLE’s by default; null for none)
+//   loadGame(game, { kind, tall, tint, dye }) → Promise<person | { droid: { scene, animations } } | null>
+//     the person on the game’s body (a droid on its own rig as a model, for people.js to draw as the
+//     surfaces’ droids are); null where it won’t load
 //     person: { object, kind, tall, hand, bones, play(name, opts), stop(layer, fade), base(name, opts),
 //       look(target | null), setAim(yaw, pitch, raised), hold(gun), fall(opts) → bool, rise(), fallen,
 //       settled, fade(k), update(dt, motion?), dispose() }
@@ -42,15 +56,21 @@ import { createAnimator } from '../../../../lib/three/animator';
 import { RICK_HIPS, borrowClips, faceForward, heading, preload, retarget } from '../../../../lib/three/clipLibrary';
 import { loadGltf } from '../../../../lib/three/gltf';
 import { rigRagdoll } from '../../../../lib/three/ragdollPhysics';
+import { rig2017 } from '../../../../lib/three/ragdoll2017';
+import { faceAlongZ } from '../../../../lib/three/walrus';
+import { bodyOf } from '../../../../lib/cast/bodies';
 import { BODY } from '../rules/walker';
+import { THIGH } from '../rules/seats';
 import { dyed } from './dye';
+import { faceOf, gameClip, gameRagdoll, isRifle, loadGameBody, loadGameDroid, loadPack, poseOf } from './gameBody';
 
 export const PEOPLE = {
-  luke: { url: '/models/galaxy/crew/luke.glb', tall: 1.72 },
-  han: { url: '/models/galaxy/crew/han.glb', tall: 1.85 },
-  leia: { url: '/models/galaxy/crew/leia.glb', tall: 1.5 },
+  luke: { url: '/models/galaxy/crew/luke.glb', tall: 1.72, game: 'luke' },
+  han: { url: '/models/galaxy/crew/han.glb', tall: 1.85, game: 'han' },
+  leia: { url: '/models/galaxy/crew/leia.glb', tall: 1.5, game: 'leia' },
+  // (old Ben stays the site’s: the game’s Obi-Wan is the Clone Wars general)
   obiwan: { url: '/models/deathstar/obiwan.glb', tall: 1.78 },
-  stormtrooper: { url: '/models/galaxy/troops/stormtrooper.glb', tall: 1.83, gloss: true },
+  stormtrooper: { url: '/models/galaxy/troops/stormtrooper.glb', tall: 1.83, gloss: true, game: 'stormtrooper' },
 };
 const HEROES = ['luke', 'han', 'leia', 'obiwan'];
 
@@ -147,6 +167,7 @@ function makeGun(kind, finish) {
 const _pq = new THREE.Quaternion();
 const _dq = new THREE.Quaternion();
 const _v = new THREE.Vector3();
+const _up = new THREE.Vector3(0, 1, 0);
 // turn a bone about an axis given in the world (its parent’s turn undone, the turn made, the parent’s put back)
 function turnWorld(bone, axis, angle) {
   if (!bone?.parent || Math.abs(angle) < 1e-5) return;
@@ -165,9 +186,15 @@ function finishes() {
   };
 }
 
+// The 24-bone skeleton’s chest and neck, the rules’ clip names as the
+// library has them, and its ragdoll; a game body’s are loadGame’s
+const MESHY = { spine: SPINE, neck: 'neck', clip: (name) => ALIAS[name] ?? name, ragdoll: (bones, opts) => rigRagdoll(bones, opts) };
+
 // What every person does whatever its body: hold a gun, aim it, carry it,
 // keep its own clock on how far it has gone, and move on its animator.
-function personOf({ object, kind, tall, hand, anim = null, bones = {}, owned }) {
+// `rig`: its skeleton’s chest and neck, the clip a name of the rules’ is on
+// it (null: a still), and how it falls (null: on its clip alone).
+function personOf({ object, kind, tall, hand, anim = null, bones = {}, owned, rig = MESHY }) {
   const finish = finishes();
   const aim = { yaw: 0, pitch: 0, wantYaw: 0, wantPitch: 0, raised: true };
   let gun = null;
@@ -194,11 +221,11 @@ function personOf({ object, kind, tall, hand, anim = null, bones = {}, owned }) 
     if (!anim || !bones.Hips) return;
     object.getWorldQuaternion(_q);
     right.set(1, 0, 0).applyQuaternion(_q).applyAxisAngle(up, -aim.yaw);
-    for (const n of SPINE) {
+    for (const n of rig.spine) {
       turnWorld(bones[n], up, -aim.yaw * SHARE.spine);
       turnWorld(bones[n], right, aim.pitch * SHARE.spine);
     }
-    for (const [n, share] of [['neck', SHARE.neck], ['Head', SHARE.head]]) {
+    for (const [n, share] of [[rig.neck, SHARE.neck], ['Head', SHARE.head]]) {
       turnWorld(bones[n], up, -aim.yaw * share);
       turnWorld(bones[n], right, aim.pitch * share);
     }
@@ -226,7 +253,8 @@ function personOf({ object, kind, tall, hand, anim = null, bones = {}, owned }) 
         anim.stop('full', fade);
         return;
       }
-      const clip = ALIAS[name] ?? name;
+      const clip = rig.clip(name);
+      if (!clip) return;
       // (a fall stays down; anything else fades back to what was under it)
       anim.play(clip, { layer, loop, hold: hold ?? FALLS.has(clip), fade, speed });
     },
@@ -260,10 +288,10 @@ function personOf({ object, kind, tall, hand, anim = null, bones = {}, owned }) 
     // and from now on update steps the body. collide, push, speed, velocity:
     // ragdollPhysics.js’s. A figure with no skeleton of ours can’t, and says so.
     fall({ collide = null, push = { x: 0, y: 0, z: 0 }, speed = 2, velocity = null } = {}) {
-      if (rag || !anim || !bones.Hips) return Boolean(rag);
+      if (rag || !anim || !bones.Hips || !rig.ragdoll) return Boolean(rag);
       person.hold(null);
       object.updateMatrixWorld(true);
-      rag = rigRagdoll(bones, { collide, push, speed, velocity });
+      rag = rig.ragdoll(bones, { collide, push, speed, velocity });
       return true;
     },
     // (up again, a checkpoint having put them back: the clips take the body back)
@@ -416,10 +444,163 @@ export function standIn(kind, tall, tint) {
   return person;
 }
 
-export async function loadPerson(kind, { tall, tint = null, dye = null, renderer = null } = {}) {
+export async function loadPerson(kind, { tall, tint = null, dye = null, renderer = null, game } = {}) {
   const who = PEOPLE[kind] ?? (typeof kind === 'string' && kind.startsWith('/') ? { url: kind, tall: BODY.h } : PEOPLE.stormtrooper);
   const height = tall ?? who.tall;
+  // (the game’s body first, where there is one; the site’s model if it won’t come)
+  const row = game === undefined ? who.game : game;
+  const own = row ? await loadGame(row, { kind, tall: height, tint, dye }) : null;
+  if (own && !own.droid) return own;
   const [gltf, clips] = await Promise.all([loadGltf(who.url, { renderer, fresh: true }), ownWalks().catch(() => ({}))]);
   if (!gltf?.scene) return standIn(kind, height, tint);
   return rig(gltf.scene, clips ?? {}, { kind, tall: height, tint, dye, gloss: Boolean(who.gloss), key: who.url });
+}
+
+// ── a person on the game's body ──
+
+// the game's skeleton's chest and neck, for the aim's turn (Meshy's are SPINE and 'neck')
+const GAME_SPINE = ['Spine', 'Spine1', 'Spine2'];
+// the station's poses that turn the body from where it faces, fitted back to
+// face the way the figure does: sat (its knees over the origin, its thighs
+// THIGH up, as rules/seats.js places a sitter), knelt and slumped
+const FITTED = { 'sit.idle': 'seat', kneel: 'turn', crouch: 'turn', 'sit.ground': 'turn' };
+
+// One of the cast on the 2017 game's own body (gameBody.js): the person
+// every other figure is, on the game's skeleton, moved by the game's clips
+// (each of the station's names through gameClip), its fall the game's
+// fifteen bodies (lib/three/ragdoll2017.js). A droid on its own rig comes
+// back as { droid: { scene, animations } }, for people.js to draw as the
+// surfaces' droids are. null where the game has no body for the kind or it
+// won't load: the site's own model stands in.
+export async function loadGame(game, { kind = game, tall, tint = null, dye = null } = {}) {
+  if (bodyOf(game)?.rig === 'own') return loadGameDroid(game).then((droid) => droid && { droid });
+  const finish = (mat) => {
+    const c = dye ? dyed(mat, dye) : mat;
+    if (c !== mat) mat.dispose();
+    if (!dye && tint != null) c.color?.multiply(new THREE.Color(tint));
+    return c;
+  };
+  const [body, row] = await Promise.all([loadGameBody(game, { finish }), gameRagdoll()]);
+  if (!body) return null;
+  const { model, owned } = body;
+  const height = tall ?? body.row.tall;
+  const bones = {};
+  model.traverse((o) => o.isBone && !bones[o.name] && (bones[o.name] = o));
+  // scaled to its height from its skeleton at rest (the top of its head, HeadEnd, to its toes), its feet on the origin
+  model.updateMatrixWorld(true);
+  const y = (n) => bones[n]?.getWorldPosition(_v).y;
+  const top = y('HeadEnd') ?? y('Head');
+  const toes = Math.min(y('LeftToeBase') ?? 0, y('RightToeBase') ?? 0);
+  const k = height / Math.max((top ?? 1.8) - toes, 1e-6);
+  model.scale.multiplyScalar(k);
+  model.position.y -= toes * k;
+  // where its chest faces at rest, for the fitted poses' turn
+  model.updateMatrixWorld(true);
+  const chest = bones.Spine2 ?? null;
+  const rest = chest && { bone: chest, forward: new THREE.Vector3(0, 0, 1).applyQuaternion(chest.getWorldQuaternion(new THREE.Quaternion()).invert()) };
+  // (and then turned to face the way it goes: the game's clips face +x, lib/three/walrus.js's faceAlongZ)
+  faceAlongZ(model);
+
+  const own = Object.fromEntries(Object.entries(body.clips).filter(([, c]) => !c.userData?.additive));
+  const anim = createAnimator(model, { clips: own, bones, unit: 1, seed: Math.floor(Math.random() * 1e6), key: `ds:${body.row.url}:${height.toFixed(3)}`, library: false });
+  const has = (n) => Object.hasOwn(own, n);
+  const fit = new THREE.Group(); // (a fitted pose's turn and lift, between the figure's turn and its model)
+  fit.add(model);
+  const turn = new THREE.Group();
+  turn.rotation.y = Math.PI; // (the game's figures face +z, as Meshy's do)
+  turn.add(fit);
+  const object = new THREE.Group();
+  object.name = `person-${kind}`;
+  object.add(turn);
+
+  const fits = new Map(); // a fitted pose's name → { yaw, x, y, z }
+  const asked = new Map(); // a pack's name → its promise
+  let gun = null;
+  let based = null;
+  // the clip one of the station's names is on this body, made ready if it can be now: a held
+  // frame added under the station's name, a pack's clip once the pack has come (null till then)
+  const ready = (name) => {
+    const spec = gameClip(name, has, { rifle: isRifle(gun) });
+    if (!spec) return null;
+    if (spec.pack && !has(spec.clip)) {
+      if (!asked.has(spec.pack))
+        asked.set(
+          spec.pack,
+          loadPack(model, spec.pack).then((got) => {
+            for (const [n, c] of Object.entries(got)) if (!has(n) && anim.add(n, c)) own[n] = c;
+            // (still sat, or down, when it came: into it now)
+            if (based && gameClip(based, has)?.pack === spec.pack) person.base(based, { again: true });
+          }),
+        );
+      return null;
+    }
+    if (!spec.pose) return spec.clip;
+    // (under a name of its own: the pack's fallbacks already hold the station's, an idle's copy)
+    const held = `${name}.held`;
+    if (!has(held)) {
+      const from = own[spec.clip];
+      const pose = from && poseOf(from, from.duration * (spec.at ?? 1), held);
+      if (!pose || !anim.add(held, pose)) return null;
+      own[held] = pose;
+    }
+    return held;
+  };
+  // a fitted pose's turn (and a seat's place), measured once on a mixer of its own from the clip as it lands
+  const fitOf = (name, clip) => {
+    if (fits.has(name)) return fits.get(name);
+    const mixer = new THREE.AnimationMixer(model);
+    mixer.clipAction(clip).play();
+    mixer.setTime(clip.duration * 0.5);
+    const yaw = faceOf(model, rest);
+    let out = { yaw, x: 0, y: 0, z: 0 };
+    if (FITTED[name] === 'seat') {
+      model.updateMatrixWorld(true);
+      const p = (n) => fit.worldToLocal(bones[n].getWorldPosition(new THREE.Vector3()));
+      const knees = p('LeftLeg').add(p('RightLeg')).multiplyScalar(0.5).applyAxisAngle(_up, -yaw);
+      const hips = p('Hips');
+      out = { yaw, x: -knees.x, y: THIGH - (hips.y + knees.y) / 2, z: -knees.z };
+    }
+    mixer.stopAllAction();
+    mixer.uncacheRoot(model);
+    fits.set(name, out);
+    return out;
+  };
+
+  const person = personOf({
+    object,
+    kind,
+    tall: height,
+    hand: bones.RightHand ?? null,
+    anim,
+    bones,
+    owned,
+    rig: {
+      spine: GAME_SPINE,
+      neck: 'Neck',
+      clip: (name) => ready(ALIAS[name] ?? name),
+      ragdoll: row ? (b, opts) => rig2017(b, row, opts) : null,
+    },
+  });
+  // its base fitted, where the pose turns it, back to the way it faces
+  const base = person.base;
+  person.base = (name, opts = {}) => {
+    if (!opts.again && (name ?? null) === based) return;
+    based = name ?? null;
+    const clip = based && ready(based);
+    const f = clip && FITTED[based] ? fitOf(based, own[clip]) : null;
+    fit.rotation.y = f ? -f.yaw : 0;
+    fit.position.set(f?.x ?? 0, f?.y ?? 0, f?.z ?? 0);
+    base(clip ?? null, opts);
+  };
+  const hold = person.hold;
+  person.hold = (g) => {
+    gun = g ?? null;
+    hold(g);
+  };
+  const dispose = person.dispose;
+  person.dispose = () => {
+    body.gone();
+    dispose();
+  };
+  return person;
 }

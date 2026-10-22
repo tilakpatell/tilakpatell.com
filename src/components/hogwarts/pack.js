@@ -4,7 +4,8 @@ export const PACK = {
   pages: ['src/pages/Hogwarts.jsx'], // page modules: the build adds their JS/CSS chunks
   src: ['src/components/hogwarts', 'src/pages/Hogwarts.jsx'], // where its source is (files or folders, repo-relative): pack-check scans these
   // the MegaKit's files the shore plants (rules/shore.js's rows): its rocks, pebbles, grass, ferns and pines
-  urls: ['/kit/naturemega/index.json', '/kit/naturemega/rock.glb', '/kit/naturemega/pebble.glb', '/kit/naturemega/grass.glb', '/kit/naturemega/fern.glb', '/kit/naturemega/pine.glb'],
+  // and the night’s creatures (world/grounds/dementorFigure.js, play/presence.js)
+  urls: ['/kit/naturemega/index.json', '/kit/naturemega/rock.glb', '/kit/naturemega/pebble.glb', '/kit/naturemega/grass.glb', '/kit/naturemega/fern.glb', '/kit/naturemega/pine.glb', '/models/hogwarts/creatures/dementor.glb', '/models/hogwarts/creatures/norris.glb'],
   // the castle's people stood in by Middle-earth's cast until Lane B's are in (cast/figures.js's STAND_IN): each figure and its idle, walk and run;
   // the weather's particle sheets (world/weather.js, the Road's, the site's own); and the photo scans the grounds and the castle
   // wear (world/ground.js, world/castle/materials.js: by role, so named by the index)

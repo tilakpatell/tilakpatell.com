@@ -24,6 +24,8 @@ vi.mock('./world/grounds', () => ({
       },
       groundAt: () => 2,
       setHour: (h) => (hour = h),
+      pass: () => {},
+      setCold: () => {},
       setWeek: (w) => (week = w),
       beforeDraw: () => (reflected += 1),
       step(dt, { at, act }) {
