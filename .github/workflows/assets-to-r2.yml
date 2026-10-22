@@ -10,9 +10,8 @@ name: Copy the buckets to R2
 # written to the runner's disk: each file streams from one to the other,
 # with its content type and cache header (-M). It only copies (unless
 # empty-supabase is asked: the last step), and a file R2 holds already at its size is skipped,
-# so a second run sends only what was published to Supabase since (the
-# public bucket's paths are content hashes, never overwritten: --size-only;
-# the working bucket's are compared by size and time as well). Last, both
+# so a second run sends only what was published to Supabase since (by
+# size alone: a file here is never rewritten in place). Last, both
 # sides' counts and bytes, and the run fails if R2 holds fewer files.
 #
 # Secrets (repository → Settings → Secrets and variables → Actions):
@@ -172,8 +171,11 @@ jobs:
           opts=(-M --transfers 16 --checkers 16 --tpslimit 10 --tpslimit-burst 10 --retries 5 --low-level-retries 20 --timeout 30m --stats 60s --stats-one-line --stats-log-level NOTICE)
           for b in $BUCKETS; do
             echo "::group::$b"
-            same=()
-            [ "$b" = site-assets ] && same=(--size-only)
+            # (by size alone, every bucket: a file here is never rewritten in
+            # place, and Supabase's times don't match what R2 keeps, so a
+            # second run by size and time sent the workspace backup's 92 GB
+            # again)
+            same=(--size-only)
             rclone copy "supabase:$b" "r2:$(to "$b")" --fast-list "${same[@]}" "${opts[@]}"
             echo "::endgroup::"
           done
