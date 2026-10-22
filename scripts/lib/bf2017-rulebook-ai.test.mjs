@@ -144,6 +144,21 @@ describe('the AI rulebook', () => {
     expect(ai.coverScores.CommonScores_AvoidCoverNearEnemies.scores.map((s) => s.type)).toEqual(['DistanceToMultiTargets', 'DistanceToClosestEnemyCover']);
   });
 
+  it('reads an older-form query’s terms with their reference direction, cover filter, switch and curve source', () => {
+    const hide = ai.cover.queries.Hide;
+    const angle = hide.terms.find((t) => t.term === 'CoverQueryStyle_Angle');
+    expect(angle).toMatchObject({ from: 'CoverQueryPosition_TargetPosition', to: 'CoverQueryPosition_CoverPosition', ref: 'CoverQueryDirection_CoverDirection' });
+    // (the filter as its set flags: the edges a cover must have, and the cover kinds it applies to)
+    expect(angle.filter).toEqual(['RightNotBlocked', 'TopBlocked', 'StandCovers', 'MediumCovers', 'CrouchCovers', 'ProneCovers']);
+    const open = hide.terms.find((t) => t.term === 'CoverQueryStyle_Distance' && t.x.length === 1);
+    expect(open).toMatchObject({ score: [-1], filter: ['OpenCovers', 'OpenDirectionalCovers'] });
+    expect(hide.terms.some((t) => 'enabled' in t || 'xSource' in t)).toBe(false);
+    const attack = ai.cover.queries.Attack_Rebel_Soldier;
+    // (a switched-off term says so; one whose X is the weapon’s preferred range says that)
+    expect(attack.terms.filter((t) => t.enabled === false)).toHaveLength(1);
+    expect(attack.terms.find((t) => t.xSource === 'WeaponPreferredRange')).toMatchObject({ score: [0, 0, 5, 5, 0], ref: 'CoverQueryDirection_TargetToActorDirection' });
+  });
+
   it('reads the difficulties: their curves with their range, their aim, reaction and damage', () => {
     const rookie = ai.difficulties['multiplayer:rookie'];
     const expert = ai.difficulties['multiplayer:expert'];
