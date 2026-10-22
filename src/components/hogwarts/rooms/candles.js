@@ -7,8 +7,10 @@
 // in the field, breathing with it.
 //
 //   placeCandles(count, box, { seed }) → [[x, y, z, phase]]  (pure)
-//   createCandles({ count, box, tier, seed }) → { group, lights, count, step(dt), set({ dim }), dispose() }
+//   createCandles({ count, box, tier, seed }) → { group, lights, count, step(dt), set({ dim }), wax(geometry), dispose() }
 //     dim: 0…1, how brightly they burn (lower by day; out for the dark)
+//     wax: a model's wax in place of the plain cylinder (./hallModels.js's
+//       waxOf), sized to it: its drips down every candle in the field
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
@@ -82,7 +84,8 @@ export function createCandles({ count, box, tier = 'high', seed = 11 }) {
   waxGeo.translate(0, WAX_H / 2, 0);
   waxGeo.setAttribute('aSpot', spot);
   const wax = new MeshStandardNodeMaterial({ color: new THREE.Color('#efe4cc'), roughness: 0.55, metalness: 0 });
-  wax.emissiveNode = vec3(1.0, 0.62, 0.3).mul(smoothstep(0.55, 1.0, uv().y).mul(0.45).mul(uDim));
+  // (warm toward its top, read off its height: a model's wax has no UVs to say)
+  wax.emissiveNode = vec3(1.0, 0.62, 0.3).mul(smoothstep(WAX_H * 0.55, WAX_H, positionGeometry.y).mul(0.45).mul(uDim));
   wax.positionNode = bob(positionLocal);
 
   // the flame: a teardrop, bright at the root, narrowing to the tip
@@ -148,6 +151,17 @@ export function createCandles({ count, box, tier = 'high', seed = 11 }) {
     set({ dim: d = dim } = {}) {
       dim = Math.max(0, Math.min(1, d));
       uDim.value = dim;
+    },
+    wax(geometry) {
+      const g = geometry.clone();
+      g.computeBoundingBox();
+      const b = g.boundingBox;
+      const r = Math.max(b.max.x - b.min.x, b.max.z - b.min.z) / 2;
+      g.translate(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
+      g.scale(WAX_R / r, WAX_H / (b.max.y - b.min.y), WAX_R / r);
+      g.setAttribute('aSpot', spot);
+      meshes[0].geometry.dispose();
+      meshes[0].geometry = g;
     },
     dispose() {
       for (const m of meshes) {

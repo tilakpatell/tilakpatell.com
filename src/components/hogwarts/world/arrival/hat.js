@@ -1,15 +1,18 @@
 // The Sorting Hat (the design’s §4.2, beat four): patched, frayed and
 // dirty, slumped on its stool before the high table; then put on, and the
 // camera goes under its brim: the view dark but for the hall seen through
-// the gap under it, the brim’s felt at the edges. A prop made here until the
-// cast lane’s Hat comes (to be `public/models/hogwarts/props/hat.glb`, the Hogwarts cast’s).
+// the gap under it, the brim’s felt at the edges. The Hat is the hero model
+// (world/heroes.js’s `sorting-hat`, Sketchfab’s, CC-BY) once it is in; the
+// one made here stands until then, and where nothing can load it.
 //
 //   hatGeometry() → BufferGeometry (the brim, the slumped crown, its wrinkles, the rip of its mouth)
-//   createHat({ kit }) → { group, place(room, origin), step(dt, { camera, under }), dispose() }
+//   createHat({ kit, load, tier }) → { group, place(room, origin), step(dt, { camera, under }), dispose() }
+//     load(url) → Promise<gltf>: the world’s loader (rt.assets.gltf)
 
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
 import { float, length, mx_fractal_noise_float, smoothstep, uniform, uv, vec2, vec3 } from 'three/tsl';
+import { fileOf, tierFor } from '../heroes';
 
 export function hatGeometry() {
   // the half-profile from the brim’s edge in to the crown and up to the tip
@@ -50,7 +53,7 @@ export function hatGeometry() {
   return g;
 }
 
-export function createHat({ kit }) {
+export function createHat({ kit, load = null, tier = 'high' }) {
   void kit;
   const group = new THREE.Group();
   group.name = 'arrival:hat';
@@ -70,6 +73,16 @@ export function createHat({ kit }) {
   const hatGroup = new THREE.Group();
   hatGroup.add(hat, mouth, brow);
   group.add(hatGroup);
+  // the model in its place, the same size on the same stool (its foot on the stool, its face to the hall)
+  let gone = false;
+  if (load)
+    Promise.resolve(load(fileOf('sorting-hat', tierFor('sorting-hat', tier))))
+      .then((gltf) => {
+        if (gone || !gltf?.scene) return;
+        hatGroup.remove(hat, mouth, brow);
+        hatGroup.add(gltf.scene.clone(true));
+      })
+      .catch(() => {});
 
   // the brim seen from under it: a sheet before the eye, dark felt but for the gap
   const uOn = uniform(0);
@@ -113,6 +126,7 @@ export function createHat({ kit }) {
       }
     },
     dispose() {
+      gone = true;
       hat.geometry.dispose();
       mouth.geometry.dispose();
       brow.geometry.dispose();

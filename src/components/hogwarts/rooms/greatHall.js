@@ -19,6 +19,7 @@ import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { createRoomKit, countOf, instanced } from './kit';
 import { HALL, hallPlan } from './plan/greatHall';
 import { createCandles } from './candles';
+import { dressHall, urlOf, waxOf } from './hallModels';
 import { createCeiling, skyAt } from './ceiling';
 import { createHourglasses } from './hourglasses';
 import { createBanners } from './banners';
@@ -96,19 +97,23 @@ function architecture(kit, plan) {
   doors(kit, { at: [0, 0, L - 0.05], ry: Math.PI, w: HALL.doors.width, h: HALL.doors.height + 1.2, open: 0 });
 }
 
-function furnish(kit, plan) {
+// the house tables, their benches and the staff’s chairs, in a kit of their
+// own: what stands until the models are in (./hallModels.js), then hidden
+function standIns(kit, plan) {
   const { table: t, bench: b } = HALL;
   for (const tb of plan.tables) table(kit, { at: [tb.x, 0, (tb.z0 + tb.z1) / 2], len: tb.z1 - tb.z0, w: t.width, top: t.top });
   for (const bn of plan.benches) bench(kit, { at: [bn.x, 0, (bn.z0 + bn.z1) / 2], len: bn.z1 - bn.z0, seat: b.top });
+  for (const s of plan.staff) if (!s.gold) chair(kit, { at: [s.at[0], HALL.dais.height, s.at[2]], ry: 0, back: 1.4 });
+}
+
+function furnish(kit, plan) {
   // the high table across the dais, its cloth to the floor on the hall’s side
   const y = HALL.dais.height;
   table(kit, { at: [0, y, plan.staffZ], ry: Math.PI / 2, len: 17.4, w: 1.2, top: 0.8 });
   kit.box(kit.paint('#4a1426', { rough: 0.9 }), 0, y + 0.06, plan.staffZ + 0.62, 17.4, 0.74, 0.04);
   kit.box(kit.paint('#c9a24a', { rough: 0.5, metal: 0.6 }), 0, y + 0.72, plan.staffZ + 0.64, 17.4, 0.06, 0.05);
-  for (const s of plan.staff) {
-    if (s.gold) throne(kit, { at: [s.at[0], y, s.at[2]], ry: 0 });
-    else chair(kit, { at: [s.at[0], y, s.at[2]], ry: 0, back: 1.4 });
-  }
+  // (the Headmaster’s gold chair; the others are the stand-ins’ and the models’)
+  for (const s of plan.staff) if (s.gold) throne(kit, { at: [s.at[0], y, s.at[2]], ry: 0 });
   lectern(kit, { at: plan.lectern.at, ry: 0 });
   // the fireplaces (their fires are lit by the room)
   return plan.fire.map((f) => fireplace(kit, { at: f.at, ry: f.yaw, w: 2.6, h: 2.6 }));
@@ -263,6 +268,13 @@ function build(rt, ctx = {}) {
   const kit = createRoomKit({ house, tier });
   architecture(kit, plan);
   const firesAt = furnish(kit, plan);
+  const stand = createRoomKit({ house, tier });
+  standIns(stand, plan);
+  const standGroup = new THREE.Group();
+  standGroup.name = 'hall:stand-ins';
+  stand.build(standGroup);
+  const load = opts.load ?? ((url) => rt?.assets?.gltf?.(url));
+  const dressed = dressHall({ plan, load, tier });
   const ware = tableware(plan, { tier });
   const hourglasses = createHourglasses({ spots: plan.hourglasses, kit, tier });
   stool(kit, { at: plan.stool.at });
@@ -280,8 +292,19 @@ function build(rt, ctx = {}) {
   const hemi = new THREE.HemisphereLight(0xe8d4b8, 0x262628, 0.38);
   const daylight = new THREE.DirectionalLight(0xdfe6f0, 0);
   daylight.position.set(-20, 30, 6);
-  group.add(ware.group, hourglasses.group, candles.group, ceiling.group, banners.group, windows.group, trees.group, hemi, daylight, daylight.target);
+  group.add(standGroup, dressed.group, ware.group, hourglasses.group, candles.group, ceiling.group, banners.group, windows.group, trees.group, hemi, daylight, daylight.target);
   let gone = false;
+  // (the models in: the stand-ins go, and the house’s look goes on the models)
+  dressed.ready.then((ok) => {
+    if (!ok || gone) return;
+    standGroup.visible = false;
+    house?.adopt?.(dressed.group);
+  });
+  // (and on ultra the candles’ wax a model’s, its drips down every one of them)
+  if (urlOf('candle', tier))
+    Promise.resolve(load(urlOf('candle', tier)))
+      .then((gltf) => !gone && gltf?.scene && candles.wax(waxOf(gltf)))
+      .catch(() => {});
   const folk = opts.people === false ? null : people(rt, plan, { tier });
   if (folk) {
     group.add(folk.group);
@@ -379,6 +402,8 @@ function build(rt, ctx = {}) {
       for (const f of fires) f.dispose();
       trees.dispose();
       ware.dispose();
+      dressed.dispose();
+      stand.dispose();
       kit.dispose();
       group.removeFromParent();
     },

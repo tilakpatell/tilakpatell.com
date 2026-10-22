@@ -69,7 +69,7 @@ export function createArrival({ rt = null, scene, camera, house = null, tier = '
   // the station and the steps, each at its own place
   const station = createStation({ rt, kit, tier, at: SETS.station });
   const steps = createSteps({ rt, kit, tier, at: SETS.steps });
-  const hat = createHat({ kit });
+  const hat = createHat({ kit, tier, load: rt?.assets?.gltf ? (url) => rt.assets.gltf(url) : null });
   group.add(flotilla.group, mist.group, squid.group, station.group, steps.group, hat.group);
   if (cliff) group.add(cliff.group);
   // (the cliff’s rock is the arrival’s own kit’s: merged on the lake with the rest of it)
