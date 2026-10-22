@@ -114,6 +114,14 @@ describe('the 2017 import', () => {
     expect(readdirSync(dir).sort()).toEqual(['bf2017.js', 'credits.json']);
     expect(await readFile(join(dir, 'bf2017.js'), 'utf8')).toBe('export const MODELS = {};\n');
   });
+
+  it('refuses the campaign’s third act as it does the sequel era, and writes nothing', async () => {
+    const dir = await scratch();
+    const r = spawnSync('node', args(dir, 'a3/characters/hero/iden/act3/iden_act3_01/iden_act3_01_mesh'), { encoding: 'utf8' });
+    expect(r.status).toBe(2);
+    expect(r.stderr).toMatch(/third act/);
+    expect(readdirSync(dir).sort()).toEqual(['bf2017.js', 'credits.json']);
+  });
 });
 
 // a skinned person in a scratch drop: Hips → Spine → RightHand → IK_Joint_RightHand

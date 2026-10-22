@@ -27,6 +27,12 @@
 
 export const LESSONS = {
   flying: { name: 'The flying lesson', quest: 2, where: 'lawn', load: () => import('./lessons/flying.js') },
+  charms: { name: 'Charms: the feather', quest: 3, where: 'charms', load: () => import('./lessons/charms.js') },
+  potions: { name: 'Potions: a Cure for Boils', quest: 4, where: 'potions', load: () => import('./lessons/potions.js') },
+  herbology: { name: 'Herbology: the Mandrakes', quest: 5, where: 'greenhouses', load: () => import('./lessons/herbology.js') },
+  buckbeak: { name: 'Buckbeak', quest: 6, where: 'paddock', load: () => import('./lessons/buckbeak.js') },
+  duel: { name: 'The duelling club', quest: 8, where: 'defence', load: () => import('./lessons/duel.js') },
+  boggart: { name: 'The boggart', quest: 9, where: 'defence', load: () => import('./lessons/boggart.js') },
 };
 
 export function createLessons(ctx) {
@@ -83,6 +89,18 @@ export function createLessons(ctx) {
     },
     act(down = true) {
       return active ? Boolean(active.lesson.act?.(down)) : false;
+    },
+    // a choice made on the page (the boggart's jokes)
+    pick(n) {
+      active?.lesson.pick?.(n);
+    },
+    // whether the lesson has your body (Buckbeak's ride): the walk waits
+    get holds() {
+      return Boolean(active?.lesson.holds);
+    },
+    // the check's bot: the lesson's own hands, a step at a time
+    bot(...args) {
+      return active?.lesson.bot?.(...args);
     },
     get active() {
       return active?.id ?? null;

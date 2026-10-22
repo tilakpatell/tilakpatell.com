@@ -231,6 +231,35 @@ export const BODIES = {
   gamorreanguard: { url: '/models/galaxy/bf2017/crew/gamorreanguard.glb', tall: 1.822, rig: 'own', ownRig: 'gamorrean', lod: true, full: true, fullMB: 38, fullDL: 22, source: 'game' },
   treadwell: { url: '/models/galaxy/bf2017/crew/treadwell.glb', tall: 1.781, rig: 'own', ownRig: 'treadwell', lod: true, far: true, full: true, fullMB: 3, fullDL: 2, source: 'game' },
   gonk: { url: '/models/galaxy/bf2017/crew/gonk.glb', tall: 1.735, rig: 'own', ownRig: 'gonk', lod: true, far: true, full: true, fullMB: 4, fullDL: 4, source: 'game' },
+  // the kinds the game has that the site had not brought in, from the
+  // desktop’s export (lane C4: docs/superpowers/plans/2026-10-21-bf-default-
+  // C4-kinds-from-the-export.md), each on its own rig with its pack
+  // (walrusSets/fauna.js; scripts/bf2017-fauna.mjs --root). Tatooine’s
+  // Jawas, dewbacks and banthas take them over from the catalogue’s
+  // Sketchfab statues: their sheets beside the site’s
+  // (docs/superpowers/evidence/bf-default-c4/) walk, run and flinch on the
+  // game’s clips where the old ones slid. Their full cuts (the game’s LOD0
+  // at its own maps) wait on the owner’s publish to the bucket, so for now
+  // the plain cut is the pipeline’s committed one (the game’s mesh within
+  // the rigged budget, its maps at 1024) beside the full import’s light and
+  // far cuts; the publish makes them `full` (HANDOFF-battlefront.md, “The
+  // cast”).
+  jawa: { url: '/models/galaxy/bf2017/crew/jawa.glb', tall: 1.001, rig: 'own', ownRig: 'jawa', lod: true, far: true, source: 'game' },
+  dewback: { url: '/models/galaxy/bf2017/crew/dewback.glb', tall: 2.107, rig: 'own', ownRig: 'dewback', lod: true, far: true, source: 'game' },
+  bantha: { url: '/models/galaxy/bf2017/crew/bantha.glb', tall: 3.2, rig: 'own', ownRig: 'bantha', lod: true, far: true, source: 'game' },
+  // Yoda and General Grievous on their own skeletons with their own packs
+  // (walrusSets/ownHeroes.js), and Iden Versio in her Inferno Squad armour
+  // from the campaign’s first act (the game’s humanoid rig and pack; act 3
+  // is the sequel era’s and never imported), from the same export. Heroes,
+  // so their plain cuts are held to the hero’s 4 MB, the game’s LOD1 (LOD2
+  // for Grievous) at 1024: on the roster they are `soon` (galaxy/heroes.js:
+  // the saber is one path, on the humanoid rig), but as people on the
+  // worlds they stand and walk now, and Yoda takes over the catalogue’s
+  // statue where Dagobah, Coruscant and Kashyyyk place him. Their full
+  // cuts wait on the owner’s publish as the Jawa’s do.
+  yoda: { url: '/models/galaxy/bf2017/crew/yoda.glb', tall: 0.865, rig: 'own', ownRig: 'yoda', lod: true, far: true, source: 'game' },
+  grievous: { url: '/models/galaxy/bf2017/crew/grievous.glb', tall: 2.395, rig: 'own', ownRig: 'grievous', lod: true, far: true, source: 'game' },
+  iden: { url: '/models/galaxy/bf2017/crew/iden.glb', tall: 1.595, rig: 'walrus', lod: true, far: true, source: 'game' },
 };
 
 // (its own kinds only: never a name off Object’s prototype)

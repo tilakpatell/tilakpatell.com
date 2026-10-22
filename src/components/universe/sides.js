@@ -26,10 +26,21 @@
 //   each of wanted.js's RESPONSE units (cop, enforcer, heavy, medic).
 // A troop: foot.js's TROOPS row by kind, with the gun it holds (gunplay.js's
 //   GUNS) or null, and the figure it's drawn as (footScene.js's troopLook: a
-//   Meshy cast kind, a model of its own, or built; the cast's own kind if none).
+//   Meshy cast kind, a model of its own, the 2017 game's body (gameTroop),
+//   or built; the cast's own kind if none).
 
 // a weighted pick from [[id, weight]…]
+import { bodyOf, cutsOf } from '../../lib/cast/bodies';
 import { pacedAll } from './ship';
+
+// A troop on the 2017 game's own body: its row of the site's one cast table
+// (lib/cast/bodies.js: the file, the game's skeleton, the cuts, of which a
+// landing draws the light one, committed), and the look built here that it
+// stands in as until that has come (footScene.js's troopFig)
+const gameTroop = (kind, built) => {
+  const row = bodyOf(kind);
+  return { url: row.url, rig: row.rig, pack: row.pack ?? null, cuts: cutsOf(row), built };
+};
 
 const weighted = (list, rand) => {
   let r = rand() * list.reduce((s, [, w]) => s + w, 0);
@@ -101,12 +112,11 @@ const STARWARS = {
   capital: 'navy', // what the Star Destroyer launches
   capitalShip: 'destroyer', // (the model the director's capital ship jumps in as)
   leviathan: 'purrgil',
-  // the Empire on the ground: stormtroopers and scout troopers (the
-  // galaxy's rigged figures, public/models/galaxy/troops: on the shared
-  // skeleton, so they walk on the borrowed clips and react on the library's,
-  // as Albuquerque's do), and a probe droid that hangs back and calls more
-  // in (built: footScene.js's LOOKS)
-  troops: { stormtrooper: { gun: 'rifle', figure: { url: '/models/galaxy/troops/stormtrooper.glb' } }, scout: { gun: 'blaster', figure: { url: '/models/galaxy/troops/scouttrooper.glb' } }, probe: { gun: null, figure: { built: 'probe' } } },
+  // the Empire on the ground: stormtroopers and scout troopers (the 2017
+  // game's, on its skeleton, so they walk, aim, flinch and fall on its own
+  // clips as the galaxy's do: gameTroop), and a probe droid that hangs back
+  // and calls more in (built: footScene.js's LOOKS)
+  troops: { stormtrooper: { gun: 'rifle', figure: gameTroop('stormtrooper', 'stormtrooper') }, scout: { gun: 'blaster', figure: gameTroop('scouttrooper', 'scout') }, probe: { gun: null, figure: { built: 'probe' } } },
   squads: (n) => (n < 1 ? ['stormtrooper', 'stormtrooper', 'probe'] : n < 3 ? ['stormtrooper', 'stormtrooper', 'scout'] : ['stormtrooper', 'scout', 'scout', 'probe']),
   ahead: { tie: 3, tieadvanced: 1, tiebomber: 1, gunboat: 1 },
 };

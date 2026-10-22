@@ -138,6 +138,12 @@ export const ABILITIES = {
   dookuWeaken: game('dooku', 'DefaultAbility_Dooku_ExposeWeakness', { kind: 'weaken', name: 'Expose weakness', about: 'Dooku’s: those in front of him take a fifth more from every stroke for a while.' }),
   palpatineLightning: game('palpatine', 'Ability_Emperor_ForceLightning', { kind: 'lightning', hold: true, cool: 0, tick: gameRow('palpatine', 'Ability_Emperor_ForceLightning').damage / GAME_HP, name: 'Force lightning', about: 'Hold it: lightning from his hands into whoever’s in front, until it runs dry.' }),
   palpatineChain: game('palpatine', 'Ability_Emperor_ChainLightningCS', { kind: 'chainLightning', name: 'Chain lightning', about: 'One bolt that leaps from the first it finds to the next, and the next.' }),
+  // (Yoda's and Grievous's, the kinds the site plays: they are on the
+  // roster `soon`, heroes.js, until a figure on its own rig fences; Yoda's
+  // absorb and barrier are kinds it does not play yet)
+  yodaRush: game('yoda', 'Ability_Yoda_DashAttack_CharacterState', { kind: 'rush', name: 'Dash attack', about: 'Yoda’s: a leap forward, blade first, through whoever’s in the way.' }),
+  grievousRush: game('grievous', 'DefaultAbility_Grievous_ClawRush', { kind: 'rush', name: 'Claw rush', about: 'Grievous’s: forward with four blades whirling, taking less while he comes.' }),
+  grievousAdvance: game('grievous', 'DefaultAbility_Grievous_UnrelentingAdvance', { kind: 'rage', name: 'Unrelenting advance', about: 'Grievous’s: for five seconds he takes less, and does not stop coming.' }),
   // (the blaster heroes' own, where the site already plays the kind: the game's cooldowns, and Chewie's leap)
   hanDetonator: game('han', 'Ability_HanSolo_DemolitionGrenade', { ...thrown('detonator'), kind: 'detonator', name: 'Detonite charge', about: 'Han’s: a charge lobbed in an arc. Breaks shields.' }),
   hanSharpshooter: game('han', 'Ability_HanSolo_Sharpshooterz', { dur: 5, kind: 'overcharge', name: 'Sharpshooter', about: 'Han’s: no heat and a harder shot for a while.' }),

@@ -104,7 +104,7 @@ import { calibrate, calibrationKey, recall, remember } from '../../lib/three/cal
 import { prepFrame } from './prepFrame';
 import { foreground } from '../../lib/foreground';
 import { settle as settleWithin } from '../../lib/settle';
-import { device } from '../../lib/device';
+import { device, pixelRatio } from '../../lib/device';
 import { stepAt } from './qualityStep';
 import { borrow } from './borrow';
 import { CHASE, DIVE_MS, FOV, chaseDist, cover, cameraFrom, focusPose, overviewPose, poseAt, startFlight, worldPos } from './flight';
@@ -649,9 +649,11 @@ export async function create(canvas, ctx) {
   // what metal reflects, and the passes after the scene (post.js)
   let env = spaceEnvironment(renderer, T['sky-glow']);
   scene.environment = env.texture;
-  // (multisampled as at the map's own 1.5 at most, module.js: made at a
-  // handover, the renderer is still at the last world's ratio)
-  const post = createPost(renderer, scene, camera, { small, ratio: Math.min(renderer.getPixelRatio(), 1.5) });
+  // (multisampled as at the ratio the map will draw at, module.js's 2 at
+  // most, lib/device's answer: made at a handover, the renderer is still at
+  // the last world's ratio. A Retina laptop's 2 draws unsampled, its pixels
+  // too small for a jagged edge, as cheap as 1.5 with four samples was)
+  const post = createPost(renderer, scene, camera, { small, ratio: pixelRatio(2) });
   // the map's lens (post.js; the galaxy keeps its picture): a floor under
   // the sky, a little more contrast, and the corners soft but on a low tier
   post.setToe(...MAP_LENS.toe);
@@ -5987,7 +5989,8 @@ export async function create(canvas, ctx) {
       size.w = window.innerWidth;
       size.h = window.innerHeight;
     }
-    const key = calibrationKey(renderer, 'universe', size.w, size.h);
+    // (keyed afresh for the 2× cap, module.js's: a level found at 1.5 says nothing of 2)
+    const key = calibrationKey(renderer, 'universe-2x', size.w, size.h);
     const kept = recall(key);
     const setLevel = (l) => {
       ctx.rt.quality?.setLevel?.(l);
